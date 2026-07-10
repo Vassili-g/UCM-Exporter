@@ -1,0 +1,14 @@
+{
+  "name": "tokenlintel",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "echo \"build placeholder\"",
+    "start": "echo \"start placeholder\""
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.68.0",
+    "esbuild": "^0.18.0",
+    "typescript": "^4.9.5"
+  }
+}

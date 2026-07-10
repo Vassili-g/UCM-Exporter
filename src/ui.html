@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>TokenLintel</title>
+    <style>body{font-family:Arial,Helvetica,sans-serif;padding:12px}button{margin:6px}</style>
+  </head>
+  <body>
+    <h3>TokenLintel</h3>
+    <button id="exportComponent">Export component</button>
+    <button id="exportTokens">Export tokens</button>
+    <div id="log" style="margin-top:12px;border:1px solid #eee;padding:8px;height:140px;overflow:auto"></div>
+    <script>
+      const log = (t)=>{const d=document.getElementById('log');d.innerText+=t+"\n";d.scrollTop=d.scrollHeight}
+      document.getElementById('exportComponent').onclick=()=>parent.postMessage({ pluginMessage:{ type:'export-component' } }, '*')
+      document.getElementById('exportTokens').onclick=()=>parent.postMessage({ pluginMessage:{ type:'export-tokens' } }, '*')
+      onmessage = (e)=>{ const m = e.data.pluginMessage; if(m?.type==='log') log(m.text) }
+    </script>
+  </body>
+</html>
