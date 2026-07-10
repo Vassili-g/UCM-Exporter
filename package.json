@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build": "echo \"build placeholder\"",
-    "start": "echo \"start placeholder\""
+    "start": "echo \"start placeholder\"",
+    "test:normalize": "node scripts/normalize-test.js"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.68.0",
