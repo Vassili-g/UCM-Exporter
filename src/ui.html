@@ -14,7 +14,7 @@
       const log = (t)=>{const d=document.getElementById('log');d.innerText+=t+"\n";d.scrollTop=d.scrollHeight}
       document.getElementById('exportComponent').onclick=()=>parent.postMessage({ pluginMessage:{ type:'export-component' } }, '*')
       document.getElementById('exportTokens').onclick=()=>parent.postMessage({ pluginMessage:{ type:'export-tokens' } }, '*')
-      onmessage = (e)=>{ const m = e.data.pluginMessage; if(m?.type==='log') log(m.text) }
+      onmessage = (e)=>{ const m = e.data.pluginMessage; if(!m) return; if(m.type==='log') log(m.text); if(m.type==='download'){ const a=document.createElement('a'); const blob=new Blob([m.content],{type:'application/json'}); const url=URL.createObjectURL(blob); a.href=url; a.download=m.filename||'download.json'; a.click(); URL.revokeObjectURL(url); log('Downloaded '+(m.filename||'file')); } }
     </script>
   </body>
 </html>
