@@ -8,11 +8,15 @@
 import normalizeName from '../utils';
 import { firstVariableAlias, VariableNameResolver } from '../variables';
 import { getAllNodes, getBinding, resolveField } from './nodeBindings';
+import { normalizePropKey } from './parsers';
 import { semanticSlotName } from './semantics';
 import type { ChildStructure, ContractStructure, TypographyTokens } from './types';
 
 /** La partie « layout » de la structure (sans les tokens de variantes). */
-type LayoutStructure = Omit<ContractStructure, 'sizes' | 'variantAxes' | 'variantTokens'>;
+type LayoutStructure = Omit<
+  ContractStructure,
+  'sizes' | 'variantAxes' | 'variantTokens' | 'variantStrokes'
+>;
 
 /** Node de départ accepté : une instance (wrapper) ou un composant direct. */
 export type LayoutRoot = InstanceNode | ComponentNode;
@@ -104,8 +108,9 @@ async function extractTypography(
  * Transforme un enfant direct du conteneur en « slot » du contrat :
  * - un calque texte devient le slot sémantique `label` (son vrai nom Figma
  *   est gardé dans `figmaLayer` pour la traçabilité) ;
- * - un calque graphique (icône…) garde son nom de calque, est marqué
- *   optionnel, et on relève son token de taille s'il existe.
+ * - un calque graphique (icône…) garde son nom dans `figmaLayer`, est marqué
+ *   optionnel, et on relève son token de taille s'il existe. Une règle `@icons`
+ *   peut ensuite le qualifier par son nom Figma, sans modifier son slot.
  */
 async function extractChild(
   child: SceneNode,
@@ -124,7 +129,12 @@ async function extractChild(
     const typography = await extractTypography(textNode, resolver, tokenNames, warnings);
     if (typography) entry.typography = typography;
   } else {
+    // Le nom du calque est gardé même quand il s'agit d'un placeholder d'icône.
+    // Une règle `@icons` peut ensuite qualifier cette icône par son nom Figma.
+    entry.figmaLayer = child.name;
     entry.optional = true;
+    const visibilityReference = child.componentPropertyReferences?.visible;
+    if (visibilityReference) entry.visibilityProp = normalizePropKey(visibilityReference);
     const size = await resolveField(child, ['width', 'height'], `${layerName}-size`, resolver, tokenNames, warnings);
     if (size) entry.size = size;
   }

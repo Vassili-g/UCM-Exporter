@@ -5,7 +5,7 @@
  * groupe) nommé `${nomDuSet}-Rules` (ex. « Button-Rules »), posé à côté du
  * composant — le type exact du conteneur importe peu, seul son nom compte. On y
  * range des instances d'un composant de configuration (`ComponentConfiguration`)
- * dont la VARIANTE porte le tag (`@usage`, `@prop`, `@do`, `@dont`, `@pairs`) et
+ * dont la VARIANTE porte le tag (`@usage`, `@prop`, `@do`, `@dont`, `@pairs`, `@icons`) et
  * dont le calque « content » porte le texte de la règle (plus un calque « prop »
  * pour `@prop`, ex. « variant.contained »).
  *
@@ -17,7 +17,7 @@
  * lue telle quelle et reversée dans le contrat.
  */
 import { normalizePropKey, normalizePropValue } from './parsers';
-import type { Intent } from './types';
+import type { IconPolicy, Intent } from './types';
 
 /** Suffixe du conteneur qui porte les règles d'un composant. */
 const RULES_SECTION_SUFFIX = '-Rules';
@@ -26,10 +26,10 @@ const RULES_CONTAINER_TYPES: readonly string[] = ['SECTION', 'FRAME', 'GROUP'];
 /** Nom (compacté) du composant qui matérialise une règle. */
 const RULES_COMPONENT_NAME = 'componentconfiguration';
 /** Tags de règle reconnus, avec ou sans « @ » devant. */
-const TAG_PATTERN = /^@?(usage|prop|do|dont|pairs)$/i;
+const TAG_PATTERN = /^@?(usage|prop|do|dont|pairs|icons)$/i;
 
 /** Les tags de règle, une fois normalisés (sans « @ », en minuscules). */
-export type RuleTag = 'usage' | 'prop' | 'do' | 'dont' | 'pairs';
+export type RuleTag = 'usage' | 'prop' | 'do' | 'dont' | 'pairs' | 'icons';
 
 /**
  * Une règle brute lue dans la section : son tag, le texte du calque « content »,
@@ -40,6 +40,16 @@ export type RuleEntry = {
   tag: RuleTag;
   content: string;
   prop?: string;
+  /** Nom lu dans le calque `icon` d'une règle `@icons`. */
+  iconName?: string;
+  /** Politique déduite de la visibilité exclusive de `modifiable` ou `strict`. */
+  iconPolicy?: IconPolicy;
+};
+
+/** Règle d'icône normalisée, reliée à son calque par son nom Figma exact. */
+export type IconRule = {
+  iconName: string;
+  policy: IconPolicy;
 };
 
 /** Ce que produit la lecture des règles : intention + doc par valeur + avertissements. */
@@ -48,6 +58,7 @@ export type RulesResult = {
   intent: Intent | null;
   /** Doc par valeur d'enum : `{ variant: { contained: "…" } }`. */
   propDescriptions: Record<string, Record<string, string>>;
+  iconRules: IconRule[];
   warnings: string[];
 };
 
@@ -63,11 +74,13 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
   const dontItems: string[] = [];
   const pairs: string[] = [];
   const propDescriptions: Record<string, Record<string, string>> = {};
+  const iconRules: IconRule[] = [];
 
   for (const entry of entries) {
     const content = entry.content.trim();
-    // Une règle sans texte est signalée mais n'interrompt rien.
-    if (!content) {
+    // Une règle `@icons` n'utilise pas le calque `content` : ses données sont
+    // portées par les calques `icon`, `modifiable` et `strict`.
+    if (!content && entry.tag !== 'icons') {
       warnings.push(`Règle @${entry.tag} sans texte (calque « content » vide).`);
       continue;
     }
@@ -85,6 +98,25 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       for (const pair of content.split(',').map((item) => item.trim()).filter(Boolean)) {
         if (!pairs.includes(pair)) pairs.push(pair);
       }
+    } else if (entry.tag === 'icons') {
+      const iconName = entry.iconName?.trim() ?? '';
+      const policy = entry.iconPolicy;
+      if (!iconName) {
+        warnings.push('Règle @icons : le calque « icon » doit contenir un nom d’icône.');
+        continue;
+      }
+      if (!policy) {
+        warnings.push(
+          `Règle @icons « ${iconName} » : rendez visible exactement un calque « modifiable » ou « strict ».`,
+        );
+        continue;
+      }
+      const normalizedName = normalizePropKey(iconName);
+      if (iconRules.some((rule) => normalizePropKey(rule.iconName) === normalizedName)) {
+        warnings.push(`Règle @icons « ${iconName} » dupliquée : seule la première est retenue.`);
+        continue;
+      }
+      iconRules.push({ iconName, policy });
     } else {
       // entry.tag === 'prop' : on attend « prop.valeur » dans le calque « prop ».
       const key = (entry.prop ?? '').trim();
@@ -106,17 +138,22 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
     ? { usage, do: doItems, dont: dontItems, pairs }
     : null;
 
-  return { intent, propDescriptions, warnings };
+  return { intent, propDescriptions, iconRules, warnings };
 }
 
 /**
  * Vrai s'il existe au moins une règle exploitable : une intention
- * (`@usage`/`@do`/`@dont`/`@pairs`) OU au moins une doc par valeur (`@prop`).
+ * (`@usage`/`@do`/`@dont`/`@pairs`) OU au moins une doc par valeur (`@prop`)
+ * OU une politique d'icône (`@icons`).
  * Sert de garde à l'export (règles obligatoires) et au retour en direct sur
  * sélection.
  */
 export function hasUsableRules(result: RulesResult): boolean {
-  return result.intent !== null || Object.keys(result.propDescriptions).length > 0;
+  return (
+    result.intent !== null ||
+    Object.keys(result.propDescriptions).length > 0 ||
+    result.iconRules.length > 0
+  );
 }
 
 /** Compacte un nom (sans espaces, en minuscules) pour comparer un nom de composant. */
@@ -131,6 +168,48 @@ function textOfLayer(instance: InstanceNode, layerName: string): string {
     (child) => child.type === 'TEXT' && child.name.trim().toLowerCase() === target,
   ) as TextNode | null;
   return node ? node.characters : '';
+}
+
+/**
+ * Lit la visibilité d'un calque de règle. `null` signifie que le calque est
+ * absent : on le distingue d'un calque présent mais masqué pour diagnostiquer
+ * correctement une configuration Figma incomplète.
+ */
+function visibilityOfLayer(instance: InstanceNode, layerName: string): boolean | null {
+  const target = layerName.trim().toLowerCase();
+  const node = instance.findOne((child) => child.name.trim().toLowerCase() === target) as
+    | (SceneNode & { visible?: boolean })
+    | null;
+  return node ? node.visible !== false : null;
+}
+
+/**
+ * Déduit la politique à partir de la visibilité exclusive des deux options.
+ * Les cas ambigus renvoient `undefined` pour que l'export avertisse sans
+ * décider à la place du designer.
+ */
+export function iconPolicyFromVisibility(
+  modifiable: boolean | null,
+  strict: boolean | null,
+): IconPolicy | undefined {
+  return modifiable === true && strict === false
+    ? 'modifiable'
+    : strict === true && modifiable === false
+      ? 'strict'
+      : undefined;
+}
+
+/** Construit l'entrée `@icons` à partir de ses trois calques dédiés. */
+function iconRuleEntry(instance: InstanceNode): RuleEntry {
+  const modifiable = visibilityOfLayer(instance, 'modifiable');
+  const strict = visibilityOfLayer(instance, 'strict');
+
+  return {
+    tag: 'icons',
+    content: '',
+    iconName: textOfLayer(instance, 'icon'),
+    iconPolicy: iconPolicyFromVisibility(modifiable, strict),
+  };
 }
 
 /**
@@ -160,6 +239,7 @@ export async function extractRules(
     return {
       intent: null,
       propDescriptions: {},
+      iconRules: [],
       warnings: [`Aucun conteneur « ${sectionName} » : composant sans règles définies.`],
       sectionFound: false,
     };
@@ -180,16 +260,20 @@ export async function extractRules(
       TAG_PATTERN.test(value),
     );
     if (!rawTag) {
-      warnings.push('Instance de règle sans variante @usage/@prop/@do/@dont/@pairs (ignorée).');
+      warnings.push('Instance de règle sans variante @usage/@prop/@do/@dont/@pairs/@icons (ignorée).');
       continue;
     }
 
     const tag = rawTag.replace('@', '').toLowerCase() as RuleTag;
-    entries.push({
-      tag,
-      content: textOfLayer(instance, 'content'),
-      prop: tag === 'prop' ? textOfLayer(instance, 'prop') : undefined,
-    });
+    entries.push(
+      tag === 'icons'
+        ? iconRuleEntry(instance)
+        : {
+            tag,
+            content: textOfLayer(instance, 'content'),
+            prop: tag === 'prop' ? textOfLayer(instance, 'prop') : undefined,
+          },
+    );
   }
 
   if (entries.length === 0) {
@@ -200,6 +284,7 @@ export async function extractRules(
   return {
     intent: built.intent,
     propDescriptions: built.propDescriptions,
+    iconRules: built.iconRules,
     warnings: [...warnings, ...built.warnings],
     sectionFound: true,
   };

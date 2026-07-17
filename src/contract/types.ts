@@ -38,8 +38,20 @@ export type StringProp = PropMeta & {
   default: string | null;
 };
 
+/**
+ * Prop runtime qui porte le nom d'une icône modifiable. Elle est ajoutée à
+ * côté du BOOLEAN Figma qui contrôle visuellement le calque correspondant.
+ */
+export type IconProp = PropMeta & {
+  type: 'icon';
+  default: string | null;
+  policy: 'modifiable';
+  /** Prop BOOLEAN Figma liée nativement à la visibilité du calque. */
+  visibilityProp: string;
+};
+
 /** Une prop publique du composant, quel que soit son type. */
-export type ContractProp = EnumProp | BooleanProp | StringProp;
+export type ContractProp = EnumProp | BooleanProp | StringProp | IconProp;
 
 /**
  * Intention d'usage du composant, lue depuis la description Figma taguée
@@ -52,6 +64,37 @@ export type Intent = {
   do: string[];
   dont: string[];
   pairs: string[];
+};
+
+/** Déclencheur d'un état d'interaction dans le contrat consommé par le code. */
+export type StateDescriptor = {
+  /** Sélecteur ou attribut attendu par l'adaptateur de rendu ; null pour l'état par défaut. */
+  selector: string | null;
+};
+
+/** Modèle d'interaction déduit d'un axe Figma `State` ou `Status`. */
+export type StateModel = {
+  /** Nom normalisé de l'axe Figma qui porte les états. */
+  axis: string;
+  /** Déclencheur de chaque valeur réellement présente dans le Component Set. */
+  states: Record<string, StateDescriptor>;
+  /** Ordre de priorité, du plus fort au plus faible. */
+  precedence: string[];
+};
+
+/** Vocabulaire de rendu des rôles visuels, commun à tous les composants. */
+export type RenderingRole = {
+  /** `paint` pour une couleur, `stroke` pour une couleur accompagnée de géométrie. */
+  kind: 'paint' | 'stroke';
+  /** Propriétés CSS candidates pour un adaptateur web. */
+  cssProperties: string[];
+  /** Stratégie de rendu complémentaire quand une propriété seule ne suffit pas. */
+  fallback?: string;
+};
+
+/** Correspondance des rôles sémantiques vers le rendu, sans logique par composant. */
+export type RenderingSemantics = {
+  roles: Record<string, RenderingRole>;
 };
 
 /**
@@ -70,10 +113,12 @@ export type TypographyTokens = Partial<{
 export type ChildStructure = {
   /** Nom du slot : rôle sémantique (`label`) ou nom du calque Figma. */
   slot: string;
-  /** Nom Figma d'origine, conservé quand `slot` a été renommé (ex. label ← « Suivant »). */
+  /** Nom Figma d'origine, toujours conservé pour tracer labels et placeholders graphiques. */
   figmaLayer?: string;
   /** Vrai pour les calques graphiques (icônes…), activables/désactivables. */
   optional?: boolean;
+  /** Prop BOOLEAN Figma liée nativement à `visible` sur ce calque, si elle existe. */
+  visibilityProp?: string;
   /** Token de taille du calque (ex. taille d'icône). */
   size?: string;
   /** Typographie du calque texte : nom de style OU détail par token. */
@@ -82,12 +127,44 @@ export type ChildStructure = {
   color?: string;
 };
 
+/** Politique d'une icône déclarée par la variante de règle `Type=@icons`. */
+export type IconPolicy = 'modifiable' | 'strict';
+
 /**
- * Tokens liés sur UN variant, rangés par rôle. Le rôle est le dernier
- * segment du nom du token : `…default.background` → rôle `background`.
- * Liste ouverte : background, foreground, border, ring, shadow…
+ * Icône déclarée dans les règles Figma. `figmaName` est à la fois le nom
+ * affiché dans le calque `icon` et la clé de rapprochement exacte avec le
+ * calque graphique du composant ; il ne décrit pas une prop d'API.
+ */
+export type IconDefinition = {
+  policy: IconPolicy;
+  /** Nom de l'icône dans Figma, conservé sans normalisation pour la traçabilité. */
+  figmaName: string;
+  /** Prop BOOLEAN qui contrôle la visibilité du calque, si Figma en déclare une. */
+  visibilityProp?: string;
+  /** Prop runtime ajoutée pour une icône `modifiable`, distincte du booléen. */
+  runtimeProp?: string;
+};
+
+/** Alignement d'un stroke Figma, conservé comme donnée structurelle. */
+export type StrokeAlignment = 'inside' | 'center' | 'outside';
+
+/** Couleur et géométrie tokenisées d'un stroke porté par un rôle (`border`, `ring`…). */
+export type StrokeTokens = {
+  color: string;
+  /** Token de largeur ; null si Figma expose une largeur non tokenisée. */
+  width: string | null;
+  /** Alignement structurel du stroke dans Figma. */
+  align: StrokeAlignment | null;
+};
+
+/**
+ * Tokens de peinture liés sur UN variant, rangés par rôle. Le rôle est le
+ * dernier segment du nom du token : `…default.background` → `background`.
  */
 export type SlotTokens = Record<string, string>;
+
+/** Strokes liés sur UN variant, séparés des peintures pour garder `variantTokens` stable. */
+export type SlotStrokes = Record<string, StrokeTokens>;
 
 /**
  * Arbre des tokens par variante, imbriqué dans l'ordre des axes donné par
@@ -100,6 +177,11 @@ export type SlotTokens = Record<string, string>;
  */
 export interface VariantTokens {
   [axisValue: string]: VariantTokens | SlotTokens;
+}
+
+/** Même arbre que `variantTokens`, mais ses feuilles ne contiennent que des strokes. */
+export interface VariantStrokes {
+  [axisValue: string]: VariantStrokes | SlotStrokes;
 }
 
 /**
@@ -132,6 +214,8 @@ export type ContractStructure = {
   children: ChildStructure[];
   /** Noms des axes de variantes, dans l'ordre d'imbrication de variantTokens. */
   variantAxes: string[];
+  /** Géométrie et couleur des strokes, rangées à part pour ne pas casser `variantTokens`. */
+  variantStrokes: VariantStrokes;
   variantTokens: VariantTokens;
 };
 
@@ -165,6 +249,12 @@ export type Contract = {
   meta: ContractMeta;
   props: Record<string, ContractProp>;
   structure: ContractStructure;
+  /** Déclencheurs et priorité des états, ou null si le composant n'a pas d'axe d'état. */
+  stateModel: StateModel | null;
+  /** Vocabulaire de rendu des rôles (`background`, `foreground`, `border`, `ring`…). */
+  rendering: RenderingSemantics;
+  /** Icônes qualifiées par les règles Figma, indexées par leur nom normalisé. */
+  icons: Record<string, IconDefinition>;
   /** Liste à plat, dédupliquée et triée, de tous les tokens consommés. */
   tokensUsed: string[];
   intent: Intent | null;

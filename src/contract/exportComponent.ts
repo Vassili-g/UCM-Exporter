@@ -8,11 +8,13 @@
 import { findWrapperReference, groupComponentsByVariant } from './componentTree';
 import { extractRules, hasUsableRules } from './extractRules';
 import { extractStructure } from './extractStructure';
-import { extractContractProps } from './parsers';
-import type { Contract, ContractMeta, ContractProp } from './types';
+import { extractContractProps, normalizePropKey } from './parsers';
+import { buildStateModel, defaultRenderingSemantics } from './semantics';
+import type { Contract, ContractMeta, ContractProp, IconDefinition, IconProp } from './types';
+import type { IconRule } from './extractRules';
 
 /** Version du schéma de contrat — à incrémenter à chaque changement de forme. */
-const UCS_VERSION = '1.1';
+const UCS_VERSION = '1.4';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
@@ -88,6 +90,87 @@ function mergePropDescriptions(
 }
 
 /**
+ * Transforme les règles `@icons` en métadonnées d'icônes. La liaison est une
+ * égalité stricte entre le texte du calque `icon` et le nom du calque graphique
+ * exporté : aucun rôle de position (`left`, `right`…) n'est deviné.
+ *
+ * Les props BOOLEAN Figma restent inchangées. Si Figma relie nativement la
+ * visibilité du calque à l'une d'elles, une prop runtime `<bool>Name` est
+ * ajoutée à côté pour une icône `modifiable`.
+ */
+export function mergeIconRules(
+  props: Record<string, ContractProp>,
+  children: Contract['structure']['children'],
+  rules: IconRule[],
+  warnings: string[],
+): Record<string, IconDefinition> {
+  const icons: Record<string, IconDefinition> = {};
+
+  for (const rule of rules) {
+    const key = normalizePropKey(rule.iconName);
+    const matches = children.filter(
+      (child) => !child.typography && child.figmaLayer === rule.iconName,
+    );
+    if (matches.length === 0) {
+      warnings.push(`@icons « ${rule.iconName} » : aucun calque graphique de ce nom.`);
+      continue;
+    }
+    if (matches.length > 1) {
+      warnings.push(
+        `@icons « ${rule.iconName} » : ${matches.length} calques graphiques portent ce nom ; règle ignorée.`,
+      );
+      continue;
+    }
+    if (icons[key]) {
+      warnings.push(`@icons « ${rule.iconName} » : clé normalisée dupliquée ; règle ignorée.`);
+      continue;
+    }
+
+    const iconChild = matches[0];
+    const icon: IconDefinition = {
+      policy: rule.policy,
+      figmaName: iconChild.figmaLayer ?? rule.iconName,
+      ...(iconChild.visibilityProp ? { visibilityProp: iconChild.visibilityProp } : {}),
+    };
+    icons[key] = icon;
+
+    if (rule.policy === 'strict') continue;
+
+    const visibilityProp = iconChild.visibilityProp;
+    if (!visibilityProp) {
+      warnings.push(
+        `@icons « ${rule.iconName} » modifiable : le calque doit lier « visible » à une prop BOOLEAN Figma pour exposer une prop runtime.`,
+      );
+      continue;
+    }
+    if (props[visibilityProp]?.type !== 'boolean') {
+      warnings.push(
+        `@icons « ${rule.iconName} » modifiable : « ${visibilityProp} » n'est pas une prop BOOLEAN Figma exploitable.`,
+      );
+      continue;
+    }
+
+    const runtimeProp = `${visibilityProp}Name`;
+    if (runtimeProp in props) {
+      warnings.push(
+        `@icons « ${rule.iconName} » modifiable : la prop runtime « ${runtimeProp} » existe déjà ; aucune prop n'est remplacée.`,
+      );
+      continue;
+    }
+    const iconProp: IconProp = {
+      type: 'icon',
+      default: null,
+      policy: 'modifiable',
+      visibilityProp,
+    };
+    props[runtimeProp] = iconProp;
+    icon.runtimeProp = runtimeProp;
+  }
+
+  return icons;
+}
+
+/**
  * Construit les métadonnées de traçabilité vers Figma.
  * `figma.fileKey` n'est pas toujours fourni par l'API (plugins en
  * développement) : dans ce cas l'URL vaut null, sans bloquer l'export.
@@ -141,6 +224,11 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   const referenceComponent = componentSet.defaultVariant ?? matrix.variants[0]?.component ?? null;
   const wrapper = referenceComponent ? await findWrapperReference(referenceComponent) : null;
   const warnings: string[] = [...rules.warnings];
+  const stateModel = buildStateModel(
+    matrix.axes,
+    matrix.variants.map((entry) => entry.values),
+    warnings,
+  );
 
   if (wrapper?.componentSet) {
     mergeWrapperProps(props, extractContractProps(wrapper.componentSet.componentPropertyDefinitions));
@@ -154,6 +242,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
 
   // La doc par valeur (@prop) s'accroche aux props enum ; l'intention est déjà lue.
   mergePropDescriptions(props, rules.propDescriptions, warnings);
+  const icons = mergeIconRules(props, extracted.structure.children, rules.iconRules, warnings);
   const intent = rules.intent;
   if (!intent) {
     warnings.push(
@@ -171,6 +260,9 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     meta,
     props,
     structure: extracted.structure,
+    stateModel,
+    rendering: defaultRenderingSemantics(),
+    icons,
     tokensUsed: extracted.tokensUsed,
     intent,
     warnings: Array.from(new Set([...warnings, ...extracted.warnings])),
