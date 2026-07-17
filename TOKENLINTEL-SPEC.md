@@ -5,9 +5,10 @@
 TokenLintel produit deux artefacts lisibles à la fois par un humain et par un
 agent IA (cf. `CONCEPT.md`) :
 
-- un **contrat de composant (UCS)** — décrit un composant tel qu'il est
-  réellement dans Figma : props, structure, tokens, intention et doc par
-  valeur (règles lues dans le conteneur `<Nom>-Rules`) ;
+- un **contrat UCS** — artefact JSON qui porte la partie design de l'UCS. Une
+  fois co-localisé avec le code réel du composant, il relie les deux sources :
+  props, structure, tokens, intention et documentation par valeur (règles lues
+  dans le conteneur `<Nom>-Rules`) ;
 - un **export de tokens** DTCG — toutes les variables, chaîne d'alias préservée.
 
 Principe directeur : décrire **fidèlement** ce qui existe dans Figma, dans un

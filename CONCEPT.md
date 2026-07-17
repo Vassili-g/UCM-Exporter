@@ -17,10 +17,16 @@ permet de le concevoir, le configurer et l'utiliser correctement :
 - intentions et bonnes pratiques d'usage (quand l'utiliser, quand ne pas) ;
 - métadonnées de traçabilité vers la source.
 
-Une **UCS** regroupe ces informations dans un **vocabulaire partagé**, lisible
-par un humain comme par un agent IA. Elle décrit les décisions contrôlées par le
-design ; les conventions propres à une plateforme (React, Font Awesome, etc.)
-restent dans le repository consommateur.
+Une **UCS** ne désigne pas seulement un fichier de contrat. C'est l'unité
+complète d'un composant, créée en plaçant **côte à côte son code réel et sa
+spécification issue du design**. Le contrat exporté par TokenLintel porte les
+props visuelles, variantes, états, tokens et règles d'usage ; le code porte son
+implémentation applicative. Leur co-localisation les maintient fortement reliés,
+là où design et développement vivaient auparavant dans des sources séparées.
+
+L'ensemble utilise un **vocabulaire partagé**, lisible par un humain comme par
+un agent IA. Les conventions propres à une plateforme (React, Font Awesome,
+etc.) restent dans le repository consommateur.
 
 ## 2. Le problème qu'on résout
 
