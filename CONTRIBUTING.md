@@ -82,12 +82,12 @@ Le code est commenté **partout, en français, pour un débutant** :
 
 ## Documentation & synchronisation
 
-- [`context.md`](./context.md) est la **spécification de référence** ; la
-  vision produit est dans [`concept.md`](./concept.md). Tout changement de
-  comportement ou de schéma se répercute dans `context.md` **dans le même
+- [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md) est la **spécification de référence** ; la
+  vision produit est dans [`CONCEPT.md`](./CONCEPT.md). Tout changement de
+  comportement ou de schéma se répercute dans `TOKENLINTEL-SPEC.md` **dans le même
   changement** — un doc désynchronisé est un bug.
 - Tout changement de forme du contrat UCS incrémente `ucsVersion`
-  (`src/contract/exportComponent.ts`) et met à jour l'exemple de `context.md`.
+  (`src/contract/exportComponent.ts`) et met à jour l'exemple de `TOKENLINTEL-SPEC.md`.
 - Garder le `README.md` fidèle à l'état réel du projet (commandes,
   architecture, statut des parties).
 

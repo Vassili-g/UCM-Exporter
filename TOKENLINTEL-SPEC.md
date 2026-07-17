@@ -3,7 +3,7 @@
 ## Vision
 
 TokenLintel produit deux artefacts lisibles à la fois par un humain et par un
-agent IA, **sans interprétation externe** (cf. `concept.md`) :
+agent IA, **sans interprétation externe** (cf. `CONCEPT.md`) :
 
 - un **contrat de composant (UCS)** — décrit un composant tel qu'il est
   réellement dans Figma : props, structure, tokens, intention et doc par

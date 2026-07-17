@@ -3,8 +3,8 @@
 Plugin Figma local à deux commandes : « Export composant » transforme un
 Component Set en contrat UCS JSON ; « Export tokens » exporte toutes les
 variables locales en DTCG (`tokens.json`), chaîne d'alias préservée. La
-spécification fonctionnelle de référence est [`context.md`](./context.md),
-la vision produit est décrite dans [`concept.md`](./concept.md).
+spécification fonctionnelle de référence est [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md),
+la vision produit est décrite dans [`CONCEPT.md`](./CONCEPT.md).
 
 ## Développement
 

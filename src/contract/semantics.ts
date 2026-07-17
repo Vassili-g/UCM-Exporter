@@ -1,6 +1,6 @@
 /**
  * Couche sémantique — les « naming conventions & mappings » de l'UCS
- * (voir concept.md).
+ * (voir CONCEPT.md).
  *
  * Les noms Figma accidentels (axe « Button-Construc-Type », calque
  * « Suivant »…) sont traduits vers un vocabulaire partagé, lisible par un
