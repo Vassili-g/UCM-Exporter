@@ -6,20 +6,16 @@ TokenLintel est un plugin Figma qui transforme les composants et variables du
 design system en artefacts structurés, lisibles par les développeurs comme par
 les agents IA.
 
-Il produit deux formats complémentaires :
-
-- **UCS — Unified Component Specification** : concept introduit par ce projet
-  pour relier fortement design et développement. Une UCS réunit, au même
-  endroit, le code réel d'un composant et son contrat issu de Figma — props
-  visuelles, variantes, états, tokens, icônes, structure et règles d'usage. Le
-  JSON produit par TokenLintel est la partie design de cette unité, pas l'UCS à
-  lui seul ;
-- **DTCG — Design Tokens Community Group** : format standard d'échange des
-  design tokens. Il décrit leurs valeurs, types et références de manière
-  indépendante des outils qui les consomment.
+Le projet repose sur l'**UCS — Unified Component Specification**, un concept
+qui relie design et développement en réunissant, dans le dossier de chaque
+composant, son code réel et sa spécification issue de Figma. TokenLintel
+automatise le passage de Figma vers cette organisation.
 
 ```text
-Figma ── TokenLintel ──► contrats UCS + tokens DTCG ──► repository consommateur
+Figma ── TokenLintel ──► contrat de composant + tokens DTCG
+                                      │
+                                      ▼
+                 code et spécification co-localisés (UCS)
 ```
 
 ## Ce que TokenLintel produit
@@ -28,6 +24,10 @@ Figma ── TokenLintel ──► contrats UCS + tokens DTCG ──► reposito
 |---|---|---|
 | **Exporter le composant** | Un Component Set sélectionné et son conteneur `<Nom>-Rules` | `<Nom>.contract.json` : props, variantes, états, structure, tokens, icônes et règles d'usage |
 | **Exporter les tokens** | Les variables locales du fichier | `tokens.json` au format DTCG, avec toute la chaîne d'alias préservée |
+
+**DTCG** signifie **Design Tokens Community Group**. C'est le standard
+d'échange utilisé pour décrire les valeurs, types et références des design
+tokens indépendamment des outils qui les consomment.
 
 Le moteur est générique : aucune règle ne dépend du nom `Button` ou d'un autre
 composant particulier. Button sert uniquement de cas de validation réel.
@@ -75,7 +75,7 @@ sélectionnez `dist/manifest.json`. Le `manifest.json` à la racine peut aussi
 
 ```text
 src/
-  contract/       Export des contrats UCS et lecture des règles Figma
+  contract/       Export des contrats de composant et lecture des règles Figma
   tokens/         Export des variables au format DTCG
   ui/             Interface du plugin
   code.ts         Routage entre l'UI et les commandes
@@ -96,7 +96,8 @@ tests/
 
 ## Périmètre actuel
 
-Le pipeline UCS/DTCG et le dépôt par PR sont validés sur Button. TokenLintel
+L'export des contrats, des tokens DTCG et le dépôt par PR sont validés sur
+Button. TokenLintel
 n'écrit jamais dans le document Figma et n'effectue aucun auto-merge. La
 prochaine validation structurante consiste à exporter un deuxième composant
 non-Button.

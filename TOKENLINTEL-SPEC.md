@@ -2,13 +2,11 @@
 
 ## Vision
 
-TokenLintel produit deux artefacts lisibles à la fois par un humain et par un
-agent IA (cf. `CONCEPT.md`) :
+TokenLintel produit les deux artefacts design nécessaires à la mise en œuvre du
+concept UCS dans un repository consommateur (cf. `CONCEPT.md`) :
 
-- un **contrat UCS** — artefact JSON qui porte la partie design de l'UCS. Une
-  fois co-localisé avec le code réel du composant, il relie les deux sources :
-  props, structure, tokens, intention et documentation par valeur (règles lues
-  dans le conteneur `<Nom>-Rules`) ;
+- un **contrat de composant** JSON — props, structure, tokens, intention et
+  documentation par valeur (règles lues dans le conteneur `<Nom>-Rules`) ;
 - un **export de tokens** DTCG — toutes les variables, chaîne d'alias préservée.
 
 Principe directeur : décrire **fidèlement** ce qui existe dans Figma, dans un

@@ -17,12 +17,12 @@ permet de le concevoir, le configurer et l'utiliser correctement :
 - intentions et bonnes pratiques d'usage (quand l'utiliser, quand ne pas) ;
 - métadonnées de traçabilité vers la source.
 
-Une **UCS** ne désigne pas seulement un fichier de contrat. C'est l'unité
-complète d'un composant, créée en plaçant **côte à côte son code réel et sa
-spécification issue du design**. Le contrat exporté par TokenLintel porte les
-props visuelles, variantes, états, tokens et règles d'usage ; le code porte son
-implémentation applicative. Leur co-localisation les maintient fortement reliés,
-là où design et développement vivaient auparavant dans des sources séparées.
+Une **UCS** est l'unité de référence complète d'un composant. Elle place **côte
+à côte son code réel et sa spécification issue du design** : le contrat exporté
+par TokenLintel porte les props visuelles, variantes, états, tokens et règles
+d'usage ; le code porte l'implémentation applicative. Leur co-localisation les
+maintient fortement reliés, là où design et développement vivaient auparavant
+dans des sources séparées.
 
 L'ensemble utilise un **vocabulaire partagé**, lisible par un humain comme par
 un agent IA. Les conventions propres à une plateforme (React, Font Awesome,
@@ -48,7 +48,7 @@ L'UCS règle les deux :
 Figma (DS propre)
    │  TokenLintel (plugin d'extraction)
    ▼
-{ tokens.json (DTCG) + <Composant>.contract.json (UCS) }
+{ tokens.json (DTCG) + <Composant>.contract.json }
    │  déposés dans le repo, AU MÊME ENDROIT que le composant
    ▼
 Repo React : contrat co-localisé + code réel écrit par un développeur
@@ -57,17 +57,17 @@ Repo React : contrat co-localisé + code réel écrit par un développeur
 Playground : un agent compose une interface avec les composants disponibles
 ```
 
-1. **Figma** — collections de tokens organisées par niveaux d'alias, composant avec toutes ses variantes
-   (couleur / taille / variant / état), et ses **règles d'usage** dans un
-   conteneur `<Nom>-Rules`.
+1. **Figma** — collections de tokens organisées par niveaux d'alias, composant
+   avec toutes ses variantes (couleur / taille / variant / état), et ses
+   **règles d'usage** dans un conteneur `<Nom>-Rules`.
 2. **TokenLintel** (ce plugin) — extrait **deux artefacts** : `tokens.json`
    (toutes les variables, chaîne d'alias préservée, entrée Style Dictionary) et
    `<Composant>.contract.json` (props, structure, `tokensUsed`, `intent`,
    doc par valeur). Cf. [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md).
 3. **Co-localisation** (voir §4) — les artefacts atterrissent dans le repo.
 4. **Code réel** — un développeur écrit `Button.tsx` contre le contrat et les
-   tokens. Les props contrôlées par le design restent alignées sur l'UCS ; les
-   attributs natifs, événements et règles d'accessibilité relèvent du code.
+   tokens. Les props contrôlées par le design restent alignées sur le contrat ;
+   les attributs natifs, événements et règles d'accessibilité relèvent du code.
 5. **Garde-fous** — la CI vérifie que le code **ne peut pas** diverger du
    contrat ni des tokens.
 6. **Playground** — on demande une interface (« trois boutons de ce type,
@@ -76,13 +76,13 @@ Playground : un agent compose une interface avec les composants disponibles
 
 ## 4. Principe fondateur : la co-localisation
 
-**Toutes les données d'un composant vivent au même endroit.** Le contrat UCS
+**Toutes les données d'un composant vivent au même endroit.** Le contrat
 est exporté **dans le dossier du composant réel**, à côté de son `.tsx` :
 
 ```
 components/Button/
   Button.tsx            ← le code réel
-  Button.contract.json  ← l'UCS exportée de Figma
+  Button.contract.json  ← la spécification design exportée de Figma
   …
 ```
 
@@ -111,7 +111,7 @@ Deux livrables **distincts**, tous deux nécessaires :
 
 La reconstruction du Button par un agent en contexte froid est uniquement un
 **test de robustesse du contrat**. Si le rendu reconstruit est faux, on vérifie
-si l'information était absente ou ambiguë dans l'UCS. Ce code généré n'est pas
+si l'information était absente ou ambiguë dans le contrat. Ce code généré n'est pas
 destiné à remplacer l'implémentation du développeur.
 
 ## 6. État & plan d'action
@@ -122,7 +122,7 @@ composant, afin de vérifier que le modèle reste générique.
 
 | Phase | Objet | État |
 |---|---|---|
-| **0** | Figer TokenLintel (export UCS/DTCG, configuration et PR) | opérationnel sur Button |
+| **0** | Figer TokenLintel (contrats, tokens DTCG, configuration et PR) | opérationnel sur Button |
 | **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary v4 ; **noms de tokens = chemins**) | opérationnel |
 | **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
 | **C** | Garde-fous CI : `tokensUsed` ⊆ tokens générés · conformité code ↔ contrat · uniformité de nommage | partiel : contrôle des tokens présent |
