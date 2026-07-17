@@ -6,6 +6,15 @@ TokenLintel est un plugin Figma qui transforme les composants et variables du
 design system en artefacts structurés, lisibles par les développeurs comme par
 les agents IA.
 
+Il produit deux formats complémentaires :
+
+- **UCS — Unified Component Specification** : concept introduit par ce projet.
+  Une UCS est le contrat JSON d'un composant : elle réunit ses props visuelles,
+  variantes, états, tokens, icônes, structure et règles d'usage ;
+- **DTCG — Design Tokens Community Group** : format standard d'échange des
+  design tokens. Il décrit leurs valeurs, types et références de manière
+  indépendante des outils qui les consomment.
+
 ```text
 Figma ── TokenLintel ──► contrats UCS + tokens DTCG ──► repository consommateur
 ```
