@@ -25,7 +25,7 @@ function tokenRole(token: string): string {
   return segments[segments.length - 1] || token;
 }
 
-/** Convertit l'alignement Figma en vocabulaire UCS. */
+/** Convertit l'alignement Figma dans le vocabulaire partagé du contrat. */
 function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment | null {
   const raw = 'strokeAlign' in node ? (node as SceneNode & { strokeAlign?: unknown }).strokeAlign : null;
   if (raw === 'INSIDE') return 'inside';

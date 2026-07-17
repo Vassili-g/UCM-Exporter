@@ -1,5 +1,5 @@
 /**
- * Types du contrat UCS (Unified Component Specification).
+ * Types du contrat de composant produit par TokenLintel.
  *
  * Ce fichier décrit la forme exacte du JSON produit par « Export composant ».
  * Aucune logique ici : uniquement des types TypeScript, pour que chaque module
@@ -55,9 +55,8 @@ export type ContractProp = EnumProp | BooleanProp | StringProp | IconProp;
 
 /**
  * Intention d'usage du composant, lue depuis la description Figma taguée
- * (`@usage`, `@do`, `@dont`, `@pairs`). C'est la partie « guidelines »
- * de l'UCS : elle dit à un humain ou à un agent IA QUAND utiliser le
- * composant, pas seulement COMMENT.
+ * (`@usage`, `@do`, `@dont`, `@pairs`). Cette partie du contrat dit à un
+ * humain ou à un agent IA QUAND utiliser le composant, pas seulement COMMENT.
  */
 export type Intent = {
   usage: string | null;
@@ -224,8 +223,8 @@ export type ContractStructure = {
  * et traçabilité vers le composant Figma d'origine (id, clé, lien URL).
  */
 export type ContractMeta = {
-  /** Version du schéma UCS — à incrémenter à chaque changement de forme. */
-  ucsVersion: string;
+  /** Version du schéma du contrat — à incrémenter à chaque changement de forme. */
+  contractVersion: string;
   /** Date/heure de l'export, au format ISO 8601. */
   exportedAt: string;
   figma: {
@@ -243,7 +242,7 @@ export type ContractMeta = {
   };
 };
 
-/** Le contrat UCS complet — la sortie de la commande « Export composant ». */
+/** Le contrat de composant complet — sortie de la commande « Export composant ». */
 export type Contract = {
   name: string;
   meta: ContractMeta;

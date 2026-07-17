@@ -1,6 +1,6 @@
 /**
- * Couche sémantique — les « naming conventions & mappings » de l'UCS
- * (voir CONCEPT.md).
+ * Couche sémantique du contrat — conventions de nommage et correspondances
+ * vers le vocabulaire partagé décrit dans CONCEPT.md.
  *
  * Les noms Figma accidentels (axe « Button-Construc-Type », calque
  * « Suivant »…) sont traduits vers un vocabulaire partagé, lisible par un
@@ -92,7 +92,7 @@ export function buildStateModel(
 
 /**
  * Retourne le mapping de rendu partagé par tous les contrats. Il est exporté
- * dans chaque UCS afin qu'un agent n'ait pas à deviner le CSS d'un rôle.
+ * dans chaque contrat afin qu'un agent n'ait pas à deviner le CSS d'un rôle.
  */
 export function defaultRenderingSemantics(): RenderingSemantics {
   return {

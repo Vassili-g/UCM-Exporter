@@ -1,6 +1,6 @@
 /**
  * Commande « Export composant » : transforme le Component Set sélectionné
- * en contrat UCS (fichier `<Nom>.contract.json` téléchargé).
+ * en contrat de composant (fichier `<Nom>.contract.json` téléchargé).
  *
  * Déroulé : sélection → props → matrice de variantes → wrapper de dimensions
  * → structure (layout, tailles, tokens) → intention → contrat final.
@@ -15,7 +15,7 @@ import { buildStateModel, defaultRenderingSemantics } from './semantics';
 import type { Contract, ContractMeta, ContractProp } from './types';
 
 /** Version du schéma de contrat — à incrémenter à chaque changement de forme. */
-const UCS_VERSION = '1.4';
+const CONTRACT_VERSION = '2.0';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
@@ -105,7 +105,7 @@ function buildMeta(componentSet: ComponentSetNode): ContractMeta {
     : null;
 
   return {
-    ucsVersion: UCS_VERSION,
+    contractVersion: CONTRACT_VERSION,
     exportedAt: new Date().toISOString(),
     figma: {
       fileName,
@@ -122,7 +122,7 @@ function safeFilename(name: string): string {
   return `${safeName || 'Component'}.contract.json`;
 }
 
-/** Point d'entrée de la commande : crée le contrat UCS du Component Set sélectionné. */
+/** Point d'entrée de la commande : crée le contrat du Component Set sélectionné. */
 export async function handleExportComponent(): Promise<ComponentExport> {
   const componentSet = getSelectedComponentSet();
 

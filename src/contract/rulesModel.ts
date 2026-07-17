@@ -1,5 +1,5 @@
 /**
- * Modèle pur des règles d'usage UCS.
+ * Modèle pur des règles d'usage d'un contrat de composant.
  *
  * Il transforme les entrées déjà lues dans Figma en intention, documentation
  * de props et politiques d'icônes, sans dépendre de l'API Figma.

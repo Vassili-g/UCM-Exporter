@@ -33,7 +33,7 @@ function showExports() {
 
 const header = createHeader(
   'TokenLintel',
-  'Transformez vos composants Figma en contrats UCS exploitables.',
+  'Transformez vos composants Figma en contrats exploitables.',
   showConfiguration,
   showExports,
 );
