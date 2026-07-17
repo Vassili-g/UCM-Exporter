@@ -10,7 +10,7 @@
     "build:manifest": "node scripts/build-manifest.js",
     "build": "npm run typecheck && npm run build:code && npm run build:ui && npm run build:manifest",
     "start": "npm run build",
-    "test": "tsx --test tests/utils.test.ts tests/parsers.test.ts tests/componentTree.test.ts tests/exportTokens.test.ts tests/rules.test.ts",
+    "test": "tsx --test tests/utils.test.ts tests/parsers.test.ts tests/componentTree.test.ts tests/exportTokens.test.ts tests/rules.test.ts tests/semantics.test.ts tests/variantTokens.test.ts tests/iconRules.test.ts",
     "test:normalize": "tsx --test tests/utils.test.ts"
   },
   "devDependencies": {

@@ -91,18 +91,39 @@ des axes). Pour chacun, relever les tokens liés (`boundVariables.fills` et
 token** (`background`, `foreground`, `border`, `ring`, `shadow`…). Un rôle
 n'apparaît que s'il est réellement lié — rien n'est forcé ni inventé.
 Résolution : `VariableAlias.id` → `getVariableByIdAsync(id).name` →
-`normalizeName()`. Sortie = arbre `variantTokens` niché selon `variantAxes` :
+`normalizeName()`. Pour un rôle porté par un `fill`, la feuille contient le
+nom du token. Les strokes sont rangés séparément dans `variantStrokes` :
+
+```json
+"ring": {
+  "color": "components.button.colors.primary.contained.focus.ring",
+  "width": "layouts.stroke.ring",
+  "align": "outside"
+}
+```
+
+Une largeur non liée produit un warning et vaut `null` ; elle n'est jamais
+remplacée par une valeur brute. Les deux arbres sont nichés selon
+`variantAxes`, avec des chaînes uniquement dans `variantTokens` :
 
 ```json
 "variantAxes": ["color", "variant", "state"],
 "variantTokens": {
   "primary": {
     "contained": { "default": { "background": "…", "foreground": "…" },
-                   "focus":   { "background": "…", "foreground": "…", "ring": "…" } },
+                   "focus":   { "background": "…", "foreground": "…" } },
     "outlined":  { "default": { "background": "…", "foreground": "…", "border": "…" } },
     "text":      { "default": { "foreground": "…" } }
   },
   "secondary": { "…": "même structure" }
+}
+```
+
+```json
+"variantStrokes": {
+  "primary": {
+    "contained": { "focus": { "ring": { "color": "…", "width": "…", "align": "outside" } } }
+  }
 }
 ```
 
@@ -118,12 +139,19 @@ par ses valeurs, comme la prop `size`), chaque valeur est extraite →
 taille. Le contrat couvre ainsi toutes les tailles, pas seulement celle
 instanciée par défaut.
 
-**4. Typographie** (test de validation n°1) — sur le calque texte, dans l'ordre :
+**4. Modèle d'interaction** — lorsqu'un axe `State` ou `Status` est présent,
+le contrat ajoute `stateModel` avec le déclencheur de chaque état connu :
+`hover` → `:hover`, `focus` → `:focus-visible`, `press` → `:active`,
+`disable`/`disabled` → `[disabled]`. La priorité générique est
+`disable > press > focus > hover > default`. Un état inconnu reste exporté
+avec un déclencheur `null` et un warning.
+
+**5. Typographie** (test de validation n°1) — sur le calque texte, dans l'ordre :
 `textStyleId` → nom du style ; sinon variables liées `fontSize` / `fontWeight`
 (fallback sur le champ `fontStyle`) / `lineHeight` / `fontFamily`. **Ce bloc
 doit être rempli en noms de tokens — jamais vide, jamais brut.**
 
-**5. Structure** — `children` = enfants directs réels du node de layout :
+**6. Structure** — `children` = enfants directs réels du node de layout :
 - calque **texte** → slot `label` (nom d'origine dans `figmaLayer`), avec
   `typography` (étape 4) et `color` (= `foreground` du variant de référence) ;
 - calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
@@ -131,7 +159,7 @@ doit être rempli en noms de tokens — jamais vide, jamais brut.**
 Slots dédupliqués (`label`, `label-2`…). Un calque inattendu est inclus tel
 quel, jamais tu.
 
-**6. Intention & doc par valeur** — lues dans un **conteneur Figma** (frame,
+**7. Intention & doc par valeur** — lues dans un **conteneur Figma** (frame,
 section ou groupe) nommé `<Nom>-Rules` (ex. `Button-Rules`), posé à côté du
 composant — seul son nom compte, pas son type. Chaque règle est
 une instance d'un composant de configuration (`ComponentConfiguration`) dont la
@@ -139,14 +167,29 @@ une instance d'un composant de configuration (`ComponentConfiguration`) dont la
 - `@usage` (un), `@do`/`@dont` (répétables), `@pairs` (virgules) → `intent` ;
 - `@prop` + calque `prop` (ex. `variant.contained`) → doc par valeur, rangée
   dans `props.<prop>.descriptions.<valeur>`.
+- `@icons` → politique d'icône dans `icons`. La variante de règle contient un
+  calque texte `icon` (nom exact du calque graphique du composant), ainsi que
+  les calques `modifiable`, `OR` et `strict`. Exactement un des calques
+  `modifiable` / `strict` doit être visible : le premier autorise le
+  remplacement de l'icône par le consommateur, le second impose celle de
+  Figma. Le rapprochement se fait uniquement par égalité exacte de nom ; aucun
+  rôle de position n'est deviné. Si le calque graphique lie nativement sa
+  propriété Figma `visible` à un BOOLEAN, ce booléen est conservé et une prop
+  runtime distincte `<bool>Name` est ajoutée pour une icône `modifiable`.
+  Sans cette liaison native, l'icône est exportée avec un warning, mais aucune
+  prop n'est inventée.
 Convention uniforme (aucune logique par composant), lue **sans jamais écrire dans
 Figma**. Les règles sont **obligatoires** : conteneur absent ou sans aucune règle
 exploitable → **export BLOQUÉ** en pré-vol (erreur explicite), aucun fichier
 produit, pas de repli sur la description. Un `@prop` visant une prop/valeur
 inexistante → warning (faute de frappe), non bloquant.
 
-**7. Garde-fous & `tokensUsed`** — toute propriété pertinente sans variable liée
-→ warning précis (calque + propriété), non exportée, **export non bloqué**.
+**8. Rendu sémantique & garde-fous** — le contrat publie aussi le mapping
+générique des rôles vers les propriétés de rendu (`background` →
+`background-color`, `foreground` → `color`/`fill`, `border` → couleur et
+largeur de bordure, `ring` → contour avec repli `box-shadow`). Toute propriété
+pertinente sans variable liée → warning précis (calque + propriété), non
+exportée, **export non bloqué**.
 `tokensUsed` = liste à plat dédupliquée de tous les tokens de `structure`.
 
 ### Sortie
@@ -158,7 +201,7 @@ comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "ucsVersion": "1.1",
+    "ucsVersion": "1.4",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "figma": {
       "fileName": "DS AI LAB",
@@ -175,8 +218,32 @@ comme un seul composant). Exemple Button :
     "disabled": { "type": "boolean", "default": false },
     "size":     { "type": "enum", "values": ["big","medium","small"], "default": "medium",
                   "figmaName": "Button-Construc-Type" },
-    "iconLeft": { "type": "boolean", "default": true },
-    "iconRight":{ "type": "boolean", "default": true }
+    "iconLeft": { "type": "boolean", "default": false },
+    "iconLeftName": { "type": "icon", "default": null,
+                       "policy": "modifiable", "visibilityProp": "iconLeft" },
+    "iconRight":{ "type": "boolean", "default": false },
+    "iconRightName": { "type": "icon", "default": null,
+                        "policy": "modifiable", "visibilityProp": "iconRight" }
+  },
+  "stateModel": {
+    "axis": "state",
+    "states": {
+      "default": { "selector": null },
+      "hover": { "selector": ":hover" },
+      "focus": { "selector": ":focus-visible" },
+      "press": { "selector": ":active" },
+      "disable": { "selector": "[disabled]" }
+    },
+    "precedence": ["disable", "press", "focus", "hover", "default"]
+  },
+  "rendering": {
+    "roles": {
+      "background": { "kind": "paint", "cssProperties": ["background-color"] },
+      "foreground": { "kind": "paint", "cssProperties": ["color", "fill"] },
+      "border": { "kind": "stroke", "cssProperties": ["border-color", "border-width"] },
+      "ring": { "kind": "stroke", "cssProperties": ["outline-color", "outline-width"],
+                 "fallback": "box-shadow" }
+    }
   },
   "structure": {
     "layout": "flex-row",
@@ -190,13 +257,22 @@ comme un seul composant). Exemple Button :
       "small":  { "…": "idem" }
     },
     "children": [
-      { "slot": "arrow-left-long", "optional": true, "size": "layouts.components.icons.base" },
+      { "slot": "iconLeft", "figmaLayer": "arrow-left-long", "optional": true,
+        "size": "layouts.components.icons.base" },
       { "slot": "label", "figmaLayer": "Suivant", "typography": { "…": "étape 4" },
         "color": "components.button.colors.primary.contained.default.foreground" },
-      { "slot": "arrow-right-long", "optional": true, "size": "layouts.components.icons.base" }
+      { "slot": "iconRight", "figmaLayer": "arrow-right-long", "optional": true,
+        "size": "layouts.components.icons.base" }
     ],
     "variantAxes": ["color","variant","state"],
-    "variantTokens": { "…": "étape 2" }
+    "variantTokens": { "…": "étape 2" },
+    "variantStrokes": { "…": "strokes séparés" }
+  },
+  "icons": {
+    "arrowLeftLong": { "policy": "modifiable", "figmaName": "arrow-left-long",
+                         "visibilityProp": "iconLeft", "runtimeProp": "iconLeftName" },
+    "arrowRightLong": { "policy": "modifiable", "figmaName": "arrow-right-long",
+                          "visibilityProp": "iconRight", "runtimeProp": "iconRightName" }
   },
   "tokensUsed": ["…"],
   "intent": null,
@@ -215,8 +291,13 @@ développement) — un warning le signale, sans bloquer.
       axe `State` exclu, `Disable` → `disabled`.
 - [ ] Couche sémantique appliquée (ex. tailles → `size`) avec `figmaName`
       conservé ; aucun mapping lié à un composant précis.
-- [ ] `variantTokens` couvre **toutes** les combinaisons d'axes, niché selon
-      `variantAxes`, rôles = dernier segment du token.
+- [ ] `variantTokens` et `variantStrokes` couvrent **toutes** les combinaisons
+      d'axes, nichés selon `variantAxes` ; le premier ne contient que des noms
+      de tokens, le second porte couleur, largeur tokenisée et alignement Figma.
+- [ ] `stateModel` mappe les états connus vers leurs déclencheurs et expose
+      une priorité déterministe ; les états inconnus restent visibles avec un
+      warning.
+- [ ] `rendering.roles` documente le rendu partagé des rôles visuels.
 - [ ] Typographie remplie en noms de tokens (**test n°1**), fallback `fontStyle`
       géré.
 - [ ] Dimensions extraites du wrapper si présent, sinon du composant ;
@@ -224,8 +305,16 @@ développement) — un warning le signale, sans bloquer.
 - [ ] `meta` présent : `ucsVersion`, `exportedAt`, traçabilité Figma
       (fileName, nodeId, componentKey, url — null toléré avec warning).
 - [ ] `children` = vrais calques (texte → `label` + `figmaLayer` ; graphique →
-      nom + `optional` + `size`).
-- [ ] Aucune valeur brute exportée ; sinon warning non bloquant.
+      nom conservé dans `figmaLayer` + `optional` + `size`).
+- [ ] Les règles `@icons` distinguent une icône `modifiable` d'une icône
+      `strict` par la visibilité de leurs calques dédiés ; le nom du calque
+      `icon` correspond exactement au calque graphique exporté.
+- [ ] `icons` conserve cette qualification sans modifier les props BOOLEAN ;
+      une icône `modifiable` ajoute une prop runtime distincte seulement quand
+      Figma lie nativement son calque à un BOOLEAN de visibilité.
+- [ ] Aucune valeur brute de design exportée ; une largeur de stroke non
+      tokenisée vaut `null` avec warning, tandis que l'alignement structurel
+      Figma (`inside`/`center`/`outside`) est conservé.
 - [ ] Règles lues dans le conteneur `<Nom>-Rules` : `@usage`/`@do`/`@dont`/`@pairs`
       → `intent`, `@prop` → `props.<prop>.descriptions.<valeur>` ; conteneur
       absent/vide → **export bloqué** ; `@prop` invalide → warning ; jamais

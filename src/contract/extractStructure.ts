@@ -21,7 +21,7 @@ export async function extractStructure(
   const resolver = new VariableNameResolver();
   const tokenNames = new Set<string>();
   const warnings = [...matrixWarnings];
-  const variantTokens = await extractVariantTokens(matrix, resolver, tokenNames, warnings);
+  const { variantTokens, variantStrokes } = await extractVariantTokens(matrix, resolver, tokenNames, warnings);
 
   // Le layout vit sur le wrapper imbriqué quand il existe, sinon directement
   // sur le composant. Un composant « plat » est donc géré sans blocage.
@@ -43,11 +43,19 @@ export async function extractStructure(
 
   // Le slot texte reprend la couleur `foreground` du variant de référence,
   // pour qu'un agent sache colorer le label sans chercher dans variantTokens.
-  const referenceSlot = referenceComponent ? await getSlotTokens(referenceComponent, resolver) : {};
+  const referenceSlot = referenceComponent
+    ? await getSlotTokens(referenceComponent, resolver)
+    : { paints: {}, strokes: {} };
   const label = layout.children.find((child) => child.typography !== undefined);
-  if (label && referenceSlot.foreground) label.color = referenceSlot.foreground;
+  const foregroundToken = referenceSlot.paints.foreground;
+  if (label && foregroundToken) label.color = foregroundToken;
 
-  const structure: ContractStructure = { ...layout, variantAxes: matrix.axes, variantTokens };
+  const structure: ContractStructure = {
+    ...layout,
+    variantAxes: matrix.axes,
+    variantTokens,
+    variantStrokes,
+  };
   if (sizes) structure.sizes = sizes;
 
   return {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildRules } from '../src/contract/extractRules';
+import { buildRules, iconPolicyFromVisibility } from '../src/contract/extractRules';
 
 test('buildRules assemble usage / do (répétable) / dont / pairs', () => {
   const { intent, warnings } = buildRules([
@@ -54,4 +54,33 @@ test('buildRules avertit sur @prop mal formée et contenu vide', () => {
 
 test('buildRules sans entrée exploitable → intent null', () => {
   assert.equal(buildRules([]).intent, null);
+});
+
+test('buildRules interprète les politiques @icons', () => {
+  const result = buildRules([
+    { tag: 'icons', content: '', iconName: 'arrow-left-long', iconPolicy: 'modifiable' },
+    { tag: 'icons', content: '', iconName: 'fa-warning', iconPolicy: 'strict' },
+  ]);
+
+  assert.deepEqual(result.iconRules, [
+    { iconName: 'arrow-left-long', policy: 'modifiable' },
+    { iconName: 'fa-warning', policy: 'strict' },
+  ]);
+});
+
+test('buildRules avertit quand une règle @icons n a pas de politique visible', () => {
+  const result = buildRules([{ tag: 'icons', content: '', iconName: 'fa-warning' }]);
+
+  assert.deepEqual(result.iconRules, []);
+  assert.deepEqual(result.warnings, [
+    'Règle @icons « fa-warning » : rendez visible exactement un calque « modifiable » ou « strict ».',
+  ]);
+});
+
+test('iconPolicyFromVisibility exige une visibilité exclusive', () => {
+  assert.equal(iconPolicyFromVisibility(true, false), 'modifiable');
+  assert.equal(iconPolicyFromVisibility(false, true), 'strict');
+  assert.equal(iconPolicyFromVisibility(true, true), undefined);
+  assert.equal(iconPolicyFromVisibility(false, false), undefined);
+  assert.equal(iconPolicyFromVisibility(null, false), undefined);
 });
