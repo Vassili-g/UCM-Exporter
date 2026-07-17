@@ -2,13 +2,14 @@
   "compilerOptions": {
     "target": "ES2019",
     "module": "ESNext",
-    "lib": ["ES2019", "DOM"],
+    "lib": ["ES2020", "DOM"],
     "strict": true,
     "moduleResolution": "Node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
     "outDir": "dist"
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*", "tests/**/*"]
 }

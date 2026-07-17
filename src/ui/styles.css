@@ -1,0 +1,161 @@
+:root {
+  color-scheme: light dark;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--figma-color-bg, #fff);
+  color: var(--figma-color-text, #1e1e1e);
+}
+
+/*
+ * Stabilité de l'UI : la barre verticale est réservée en permanence, qu'il y ait
+ * du dépassement ou non. Ainsi son apparition/disparition (selon la longueur du
+ * message d'état) ne décale plus l'interface. `scrollbar-gutter` pour les
+ * navigateurs modernes, `overflow-y: scroll` en filet de sécurité.
+ */
+html {
+  overflow-y: scroll;
+  scrollbar-gutter: stable;
+}
+
+button,
+pre {
+  font: inherit;
+}
+
+h1,
+p {
+  margin: 0;
+}
+
+.container {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.header {
+  display: grid;
+  gap: 4px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.subtitle,
+.description {
+  margin: 0;
+  color: var(--figma-color-text-secondary, #6b6b6b);
+  line-height: 18px;
+}
+
+.card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--figma-color-border, #e6e6e6);
+  border-radius: 8px;
+  background: var(--figma-color-bg-secondary, #f5f5f5);
+}
+
+.section-title {
+  font-weight: 600;
+  line-height: 18px;
+}
+
+.btn {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--figma-color-bg-brand, #0d99ff);
+  color: var(--figma-color-text-onbrand, #fff);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--figma-color-bg-brand-hover, #007be5);
+}
+
+.btn-secondary {
+  border-color: var(--figma-color-border, #d4d4d4);
+  background: var(--figma-color-bg, #fff);
+  color: var(--figma-color-text, #1e1e1e);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--figma-color-bg-hover, #f0f0f0);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--figma-color-border-brand-strong, #0d99ff);
+  outline-offset: 2px;
+}
+
+.btn:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.note {
+  /* Réserve ~2 lignes : un message court n'écrase pas la hauteur d'un message long. */
+  min-height: 54px;
+  display: flex;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 6px;
+  background: var(--figma-color-bg-tertiary, #ebebeb);
+  color: var(--figma-color-text-secondary, #6b6b6b);
+  line-height: 18px;
+}
+
+.note[data-state='loading'] {
+  color: var(--figma-color-text-brand, #007be5);
+}
+
+.note[data-state='success'] {
+  color: var(--figma-color-text-success, #168b52);
+}
+
+.note[data-state='warning'] {
+  color: var(--figma-color-text-warning, #a55b00);
+  background: var(--figma-color-bg-warning-tertiary, #fff1d6);
+}
+
+.note[data-state='error'] {
+  color: var(--figma-color-text-danger, #dc3412);
+}
+
+.log-panel-inner {
+  min-height: 96px;
+  max-height: 144px;
+  margin: 0;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--figma-color-text-secondary, #6b6b6b);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11px;
+  line-height: 16px;
+}

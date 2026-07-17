@@ -1,16 +1,20 @@
+/**
+ * Convertit un chemin Figma (collection/variable) en nom de token canonique.
+ * C'est LA règle de nommage du projet, partagée par les deux commandes :
+ * un token s'écrit exactement pareil dans un contrat et dans tokens.json.
+ *
+ * Règles : « / » → « . », espaces d'un segment → « - », tout en minuscules.
+ *
+ * @example normalizeName('Brand Tokens/Primary/default')
+ * // → 'brand-tokens.primary.default'
+ */
 export function normalizeName(name: string): string {
-  if (!name || typeof name !== 'string') return '';
-  // Split on slashes to segments, trim segments
-  const segments = name.split('/').map(s => s.trim()).filter(Boolean);
-  const normalized = segments.map(seg => {
-    // replace spaces with dashes inside segment, collapse multiple spaces
-    const withDashes = seg.replace(/\s+/g, '-');
-    // lowercase
-    return withDashes.toLowerCase();
-  }).join('.');
-  // collapse repeated dots
-  return normalized.replace(/\.\.+/g, '.');
+  return name
+    .split('/')
+    .map((segment) => segment.trim().replace(/\s+/g, '-').toLowerCase())
+    .filter(Boolean)
+    .join('.')
+    .replace(/\.{2,}/g, '.');
 }
 
-// quick default export
 export default normalizeName;

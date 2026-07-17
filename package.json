@@ -3,13 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "echo \"build placeholder\"",
-    "start": "echo \"start placeholder\"",
-    "test:normalize": "node scripts/normalize-test.js"
+    "typecheck": "tsc --noEmit",
+    "build:code": "esbuild src/code.ts --bundle --outfile=dist/code.js --platform=browser --target=chrome80 --sourcemap",
+    "build:ui:js": "esbuild src/ui/index.js --bundle --outfile=dist/ui.js --format=iife --platform=browser --target=chrome80 --minify",
+    "build:ui": "npm run build:ui:js && node scripts/build-ui.js",
+    "build:manifest": "node scripts/build-manifest.js",
+    "build": "npm run typecheck && npm run build:code && npm run build:ui && npm run build:manifest",
+    "start": "npm run build",
+    "test": "tsx --test tests/utils.test.ts tests/parsers.test.ts tests/componentTree.test.ts tests/exportTokens.test.ts tests/rules.test.ts",
+    "test:normalize": "tsx --test tests/utils.test.ts"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.68.0",
+    "@types/node": "^22.0.0",
     "esbuild": "^0.18.0",
+    "tsx": "^4.20.0",
     "typescript": "^4.9.5"
   }
 }
