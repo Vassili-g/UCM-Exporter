@@ -1,14 +1,39 @@
 # TokenLintel
 
-Plugin Figma local à deux commandes : « Export composant » transforme un
-Component Set en contrat UCS JSON ; « Export tokens » exporte toutes les
-variables locales en DTCG (`tokens.json`), chaîne d'alias préservée. La
-configuration GitHub optionnelle ouvre une PR par export ; sans configuration
-valide, le plugin conserve le téléchargement local. La
-spécification fonctionnelle de référence est [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md),
-la vision produit est décrite dans [`CONCEPT.md`](./CONCEPT.md).
+**Le pont entre un design system Figma et son implémentation dans le code.**
 
-## Développement
+TokenLintel est un plugin Figma qui transforme les composants et variables du
+design system en artefacts structurés, lisibles par les développeurs comme par
+les agents IA.
+
+```text
+Figma ── TokenLintel ──► contrats UCS + tokens DTCG ──► repository consommateur
+```
+
+## Ce que TokenLintel produit
+
+| Commande | Entrée Figma | Sortie |
+|---|---|---|
+| **Exporter le composant** | Un Component Set sélectionné et son conteneur `<Nom>-Rules` | `<Nom>.contract.json` : props, variantes, états, structure, tokens, icônes et règles d'usage |
+| **Exporter les tokens** | Les variables locales du fichier | `tokens.json` au format DTCG, avec toute la chaîne d'alias préservée |
+
+Le moteur est générique : aucune règle ne dépend du nom `Button` ou d'un autre
+composant particulier. Button sert uniquement de cas de validation réel.
+
+## Où vont les exports ?
+
+Deux modes sont disponibles :
+
+- **téléchargement local**, toujours disponible et utilisé comme solution de
+  repli ;
+- **dépôt GitHub**, optionnel : TokenLintel crée une branche et ouvre une PR
+  contenant uniquement l'artefact exporté.
+
+La configuration GitHub est conservée localement dans `figma.clientStorage`.
+Le PAT n'est ni écrit dans le document Figma, ni renvoyé à l'interface après sa
+sauvegarde, ni ajouté aux logs.
+
+## Démarrage rapide
 
 ```sh
 npm install
@@ -16,40 +41,50 @@ npm test
 npm run build
 ```
 
-Le build produit trois fichiers ignorés par Git :
+Le build génère dans `dist/` :
 
-- `dist/code.js` — code principal du plugin ;
-- `dist/ui.html` — UI autonome avec JavaScript et CSS intégrés ;
-- `dist/manifest.json` — manifest distribuable pointant vers les deux fichiers
-  ci-dessus.
+- `code.js` — logique du plugin ;
+- `ui.html` — interface autonome avec JavaScript et CSS intégrés ;
+- `manifest.json` — manifest prêt à importer dans Figma.
 
-Importez ensuite `dist/manifest.json` via **Figma → Plugins → Development →
-Import plugin from manifest**. Le `manifest.json` à la racine reste également
-utilisable directement pendant le développement.
+Dans Figma, ouvrez **Plugins → Development → Import plugin from manifest**, puis
+sélectionnez `dist/manifest.json`. Le `manifest.json` à la racine peut aussi
+être utilisé directement pendant le développement.
+
+## Commandes utiles
+
+| Commande | Rôle |
+|---|---|
+| `npm test` | Exécute les tests unitaires du moteur, de la configuration et du client GitHub |
+| `npm run typecheck` | Vérifie TypeScript sans produire de fichiers |
+| `npm run build` | Typecheck puis construit le code, l'UI et le manifest distribuable |
 
 ## Architecture
 
-- `src/contract/` — export du contrat de composant (moteur générique : axes de
-  variantes dynamiques, couche sémantique `semantics.ts`, wrapper de
-  dimensions optionnel, lecture Figma via `extractRules.ts`, modèle pur via
-  `rulesModel.ts` et liaison des icônes via `mergeIconRules.ts`) ;
-- `src/tokens/` — export DTCG des variables (types décidés sur la racine de la
-  chaîne d'alias, modes multi-marque sous `$extensions`) ;
-- `src/variables.ts` — résolution commune des noms de variables, sans aplatir
-  leurs valeurs ;
-- `src/config.ts` — validation et persistance locale des réglages GitHub ;
-- `src/github.ts` — création de branche, écriture de l'artefact et ouverture de PR ;
-- `src/base64.ts` — codec sans dépendance aux API absentes du sandbox Figma ;
-- `src/ui/` — composants et état de l’interface ;
-- `tests/` — tests des fonctions pures critiques.
+```text
+src/
+  contract/       Export des contrats UCS et lecture des règles Figma
+  tokens/         Export des variables au format DTCG
+  ui/             Interface du plugin
+  code.ts         Routage entre l'UI et les commandes
+  variables.ts    Résolution commune des noms et alias de variables
+  config.ts       Validation et stockage local de la configuration GitHub
+  github.ts       Création de branche, écriture du fichier et ouverture de PR
+tests/
+  test-exports/   Exports réels du fichier Figma de référence
+```
 
-Les exports de référence produits sur le fichier Figma réel sont conservés
-dans `tests/test-exports/` (`Button.contract.json`, `tokens.json`).
+## Pour comprendre le projet
 
-## Exporter
+- [CONCEPT.md](./CONCEPT.md) — vision du design system AI-first et plan global ;
+- [TOKENLINTEL-SPEC.md](./TOKENLINTEL-SPEC.md) — comportement exact du plugin et format des sorties ;
+- [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
+- [AGENTS.md](./AGENTS.md) — ordre de lecture et invariants pour les agents IA ;
+- [Components Playground](https://github.com/Vassili-g/Components-Playground) — repository qui consomme les artefacts exportés.
 
-Sans configuration GitHub valide, chaque commande télécharge son JSON
-localement. La page de configuration permet sinon de renseigner un repository,
-une branche, les dossiers de destination et un PAT fine-grained ; TokenLintel
-ouvre alors une PR contenant uniquement l'artefact exporté. Le PAT reste dans
-`figma.clientStorage` et n'est jamais renvoyé à l'interface après sauvegarde.
+## Périmètre actuel
+
+Le pipeline UCS/DTCG et le dépôt par PR sont validés sur Button. TokenLintel
+n'écrit jamais dans le document Figma et n'effectue aucun auto-merge. La
+prochaine validation structurante consiste à exporter un deuxième composant
+non-Button.
