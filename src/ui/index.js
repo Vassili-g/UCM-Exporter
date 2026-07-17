@@ -1,0 +1,103 @@
+import { createHeader } from './components/Header.js';
+import { createButton } from './components/Button.js';
+import { createLogPanel } from './components/LogPanel.js';
+
+const app = document.getElementById('app');
+app.className = 'container';
+
+const header = createHeader(
+  'TokenLintel',
+  'Transformez vos composants Figma en contrats UCS exploitables.'
+);
+
+const actionCard = document.createElement('section');
+actionCard.className = 'card action-panel';
+
+const actionTitle = document.createElement('div');
+actionTitle.className = 'section-title';
+actionTitle.textContent = 'Actions';
+
+actionCard.appendChild(actionTitle);
+
+const exportComponentButton = createButton({
+  label: 'Exporter le composant',
+  variant: 'primary',
+  onClick: () => requestExport('export-component')
+});
+
+const exportTokensButton = createButton({
+  label: 'Exporter les tokens',
+  variant: 'secondary',
+  onClick: () => requestExport('export-tokens')
+});
+
+const statusNote = document.createElement('div');
+statusNote.className = 'note';
+statusNote.setAttribute('role', 'status');
+statusNote.setAttribute('aria-live', 'polite');
+statusNote.textContent = 'Sélectionnez un Component Set dans Figma, puis utilisez les actions ci-dessus.';
+
+const logPanel = createLogPanel('Prêt. Cliquez sur une action pour démarrer.');
+const actionButtons = [exportComponentButton, exportTokensButton];
+
+function setBusy(isBusy) {
+  for (const button of actionButtons) button.disabled = isBusy;
+  app.setAttribute('aria-busy', String(isBusy));
+}
+
+function requestExport(type) {
+  setBusy(true);
+  // Journal remis à zéro à chaque nouvel export.
+  logPanel.clear();
+  statusNote.dataset.state = 'loading';
+  statusNote.textContent = 'Traitement en cours…';
+  parent.postMessage({ pluginMessage: { type } }, '*');
+}
+
+actionCard.append(exportComponentButton, exportTokensButton, statusNote);
+app.append(header, actionCard, logPanel.element);
+
+// Signale au plugin que l'UI est prête : il renvoie l'état de la sélection courante.
+parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
+
+onmessage = (event) => {
+  const message = event.data.pluginMessage;
+  if (!message) return;
+
+  if (message.type === 'log') {
+    logPanel.append(message.text);
+  }
+
+  if (message.type === 'status') {
+    const isLoading = message.state === 'loading';
+    setBusy(isLoading);
+    statusNote.dataset.state = message.state;
+    statusNote.textContent = message.text;
+    logPanel.append(message.text, message.state);
+  }
+
+  // Note de sélection : met à jour la seule bannière d'état, sans toucher au journal.
+  if (message.type === 'note') {
+    statusNote.dataset.state = message.state || '';
+    statusNote.textContent = message.text;
+  }
+
+  if (message.type === 'download') {
+    const link = document.createElement('a');
+    const blob = new Blob([message.content], { type: 'application/json' });
+    link.href = URL.createObjectURL(blob);
+    link.download = message.filename || 'download.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(link.href), 0);
+    logPanel.append(`Fichier téléchargé : ${message.filename || 'download.json'}`, 'success');
+  }
+};
+
+window.addEventListener('error', (event) => {
+  setBusy(false);
+  statusNote.dataset.state = 'error';
+  statusNote.textContent = `Erreur UI : ${event.message}`;
+  logPanel.append(statusNote.textContent, 'error');
+});
