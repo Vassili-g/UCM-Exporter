@@ -90,6 +90,7 @@ tests/
 
 - [CONCEPT.md](./CONCEPT.md) — vision du design system AI-first et plan global ;
 - [TOKENLINTEL-SPEC.md](./TOKENLINTEL-SPEC.md) — comportement exact du plugin et format des sorties ;
+- [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — inspirations, risques et développements possibles après le MVP ;
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
 - [AGENTS.md](./AGENTS.md) — ordre de lecture et invariants pour les agents IA ;
 - [Components Playground](https://github.com/Vassili-g/Components-Playground) — repository qui consomme les artefacts exportés.

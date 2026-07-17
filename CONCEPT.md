@@ -132,3 +132,8 @@ composant, afin de vérifier que le modèle reste générique.
 **Critère de succès du MVP** : dans le playground, l'agent n'invente aucune
 variante visuelle, utilise les props design du contrat, respecte les `@dont` et
 produit un rendu cohérent avec Figma, sans divergence de nom sur le trajet.
+
+Les inspirations externes, risques identifiés et développements envisageables
+après ce MVP sont consignés dans
+[`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md). Ce document est prospectif : il
+ne modifie ni le plan ci-dessus ni la spécification actuelle du plugin.

@@ -66,7 +66,7 @@ npm run typecheck # tsc --noEmit seul
   peuvent le bloquer (sélection invalide, conteneur de règles absent ou vide).
 - **`normalizeName()` unique** : un token s'écrit pareil dans un contrat et
   dans `tokens.json`.
-- Changement de forme du contrat → incrémenter `ucsVersion`
+- Changement de forme du contrat → incrémenter `contractVersion`
   (`src/contract/exportComponent.ts`) **et** mettre à jour `TOKENLINTEL-SPEC.md`.
 
 ## Limites de l'environnement

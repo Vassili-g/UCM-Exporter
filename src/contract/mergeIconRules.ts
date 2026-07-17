@@ -1,5 +1,5 @@
 /**
- * Fusion des règles `@icons` dans l'API publique d'un contrat UCS.
+ * Fusion des règles `@icons` dans l'API publique d'un contrat de composant.
  * La liaison repose uniquement sur les noms Figma exacts et les bindings de
  * visibilité, sans heuristique de position propre à un composant.
  */

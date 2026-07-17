@@ -209,7 +209,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "ucsVersion": "1.4",
+    "contractVersion": "2.0",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "figma": {
       "fileName": "DS AI LAB",
@@ -288,7 +288,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 }
 ```
 
-`meta` porte la version du schéma (`ucsVersion`), la date d'export et la
+`meta` porte la version du schéma du contrat (`contractVersion`), la date d'export et la
 traçabilité Figma (nom de fichier, id du nœud, clé de composant, lien URL).
 L'URL vaut `null` quand l'API ne fournit pas la clé du fichier (plugins en
 développement) — un warning le signale, sans bloquer.
@@ -312,7 +312,7 @@ développement) — un warning le signale, sans bloquer.
       géré.
 - [ ] Dimensions extraites du wrapper si présent, sinon du composant ;
       `structure.sizes` couvre chaque valeur de l'axe de tailles.
-- [ ] `meta` présent : `ucsVersion`, `exportedAt`, traçabilité Figma
+- [ ] `meta` présent : `contractVersion`, `exportedAt`, traçabilité Figma
       (fileName, nodeId, componentKey, url — null toléré avec warning).
 - [ ] `children` = vrais calques (texte → `label` + `figmaLayer` ; graphique →
       nom conservé dans `figmaLayer` + `optional` + `size`).
