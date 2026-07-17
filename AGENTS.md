@@ -1,8 +1,9 @@
 # TokenLintel — guide pour agents IA (et nouveaux contributeurs)
 
-Plugin Figma qui exporte des composants en **contrats UCS** (JSON) et les
-variables en **tokens DTCG**, pour que design et code partagent la même
-source de vérité, lisible par humains et agents IA.
+Plugin Figma qui exporte des **contrats de composant** (JSON) et les variables
+en **tokens DTCG**. Co-localisés avec le code réel, ces artefacts mettent en
+œuvre le concept UCS et donnent au design comme au développement une référence
+commune, lisible par les humains et les agents IA.
 
 ## Ordre de lecture
 
@@ -14,7 +15,7 @@ Lire dans cet ordre avant de toucher au code :
    C'est le document le plus important ; il fait foi en cas de doute.
 3. [`CONTRIBUTING.md`](./CONTRIBUTING.md) — les règles de code : commentaires
    utiles en français, robustesse, généricité, tests.
-4. [`src/contract/types.ts`](./src/contract/types.ts) — le schéma du contrat UCS,
+4. [`src/contract/types.ts`](./src/contract/types.ts) — le schéma du contrat de composant,
    type par type, commenté.
 5. [`tests/test-exports/`](./tests/test-exports/) — les sorties réelles
    produites sur le fichier Figma de référence (`Button.contract.json`,
@@ -23,7 +24,7 @@ Lire dans cet ordre avant de toucher au code :
 ## Carte du code
 
 - `src/code.ts` — point d'entrée du plugin : routage UI → handlers.
-- `src/contract/` — commande « Export composant » (contrat UCS) :
+- `src/contract/` — commande « Export composant » (contrat JSON) :
   - `exportComponent.ts` — orchestrateur + métadonnées ;
   - `componentTree.ts` — axes de variantes, matrice, détection du wrapper ;
   - `extractSlotTokens.ts` — peintures et contours liés dans un variant ;
