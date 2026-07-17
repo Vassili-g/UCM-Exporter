@@ -6,9 +6,15 @@
 import { extractRules, hasUsableRules } from './contract/extractRules';
 import handleExportComponent from './contract/exportComponent';
 import handleExportTokens from './tokens/exportTokens';
+import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
+import type { SettingsInput } from './config';
+import { publishArtifact, testGithubConnection } from './github';
+import type { ArtifactKind } from './github';
 
 /** Messages que l'UI peut envoyer au plugin. */
-type UiRequest = { type: 'export-component' | 'export-tokens' | 'ui-ready' };
+type UiRequest =
+  | { type: 'export-component' | 'export-tokens' | 'ui-ready' }
+  | { type: 'save-settings'; settings: SettingsInput };
 
 figma.showUI(__html__, { themeColors: true, width: 380, height: 500 });
 
@@ -23,6 +29,33 @@ function postStatus(state: 'loading' | 'success' | 'error', text: string): void 
  */
 function postNote(state: '' | 'warning' | 'success', text: string): void {
   figma.ui.postMessage({ type: 'note', state, text });
+}
+
+/** Met à jour l'indicateur de connexion toujours visible dans l'en-tête. */
+function postConnection(state: 'checking' | 'connected' | 'disconnected'): void {
+  figma.ui.postMessage({ type: 'connection', state });
+}
+
+/** Envoie le fichier généré à l'UI pour déclencher le téléchargement local. */
+function postDownload(filename: string, content: string): void {
+  figma.ui.postMessage({ type: 'download', filename, content });
+}
+
+/**
+ * Charge les champs publics puis teste automatiquement GitHub quand la config
+ * est valide. Le PAT reste exclusivement dans ce sandbox.
+ */
+async function refreshConfiguration(): Promise<void> {
+  const publicSettings = await loadPublicSettings();
+  figma.ui.postMessage({ type: 'settings', settings: publicSettings });
+  const validation = await loadGithubConfig();
+  if (!validation.valid || !validation.config) {
+    postConnection('disconnected');
+    return;
+  }
+  postConnection('checking');
+  const connected = await testGithubConnection(validation.config);
+  postConnection(connected ? 'connected' : 'disconnected');
 }
 
 /** Jeton anti-course : seule la dernière analyse de sélection met à jour la note. */
@@ -67,6 +100,7 @@ figma.on('selectionchange', () => {
 async function runExport(
   loadingText: string,
   successLabel: string,
+  artifactKind: ArtifactKind,
   handler: () => Promise<{
     filename: string;
     content: string;
@@ -77,18 +111,51 @@ async function runExport(
   postStatus('loading', loadingText);
   try {
     const result = await handler();
-    figma.ui.postMessage({
-      type: 'download',
-      filename: result.filename,
-      content: result.content,
-    });
     // On liste chaque avertissement dans le journal (ex. « composant sans règles »).
     for (const warning of result.warnings ?? []) {
       figma.ui.postMessage({ type: 'log', text: `⚠︎ ${warning}` });
     }
     const warningText = result.warningCount > 0 ? ` · ${result.warningCount} avertissement(s)` : '';
-    postStatus('success', `${successLabel}${warningText}.`);
-    figma.notify(`${successLabel}${warningText}.`);
+    const validation = await loadGithubConfig();
+    if (!validation.valid || !validation.config) {
+      postDownload(result.filename, result.content);
+      figma.ui.postMessage({ type: 'log', text: 'Configuration GitHub absente ou invalide : téléchargement local.' });
+      postStatus('success', `${successLabel}${warningText} · téléchargé localement.`);
+      figma.notify(`${successLabel}${warningText}.`);
+      return;
+    }
+
+    try {
+      const publication = await publishArtifact(validation.config, {
+        kind: artifactKind,
+        filename: result.filename,
+        content: result.content,
+      });
+      if (publication.status === 'unchanged') {
+        const message = `Aucun changement pour ${publication.path} : aucune PR créée.`;
+        figma.ui.postMessage({ type: 'log', text: message });
+        postStatus('success', message);
+        figma.notify('Aucun changement : aucune PR créée.');
+        return;
+      }
+
+      figma.ui.postMessage({
+        type: 'pull-request',
+        url: publication.pullRequestUrl,
+        path: publication.path,
+      });
+      postConnection('connected');
+      postStatus('success', `${successLabel}${warningText} · PR créée.`);
+      figma.notify(`${successLabel}${warningText} · PR créée.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erreur GitHub inconnue.';
+      // Un échec de publication (conflit de branche, contenu invalide, etc.)
+      // ne remet pas en cause le dernier test de connexion réussi.
+      figma.ui.postMessage({ type: 'log', text: `Échec GitHub : ${message}` });
+      postDownload(result.filename, result.content);
+      postStatus('error', `Échec GitHub · repli sur téléchargement local : ${message}`);
+      figma.notify('Échec GitHub : fichier téléchargé localement.', { error: true });
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue pendant l’export.';
     postStatus('error', message);
@@ -99,17 +166,28 @@ async function runExport(
 // Routeur des demandes de l'UI vers le bon handler.
 figma.ui.onmessage = async (message: UiRequest) => {
   if (message.type === 'ui-ready') {
-    // L'UI est prête : on lui envoie l'état de la sélection déjà en place.
-    await reportSelectionState();
+    // L'UI est prête : sélection, champs sauvegardés et test GitHub automatique.
+    await Promise.all([reportSelectionState(), refreshConfiguration()]);
+    return;
+  }
+
+  if (message.type === 'save-settings') {
+    const validation = await saveSettings(message.settings);
+    figma.ui.postMessage({ type: 'settings-validation', errors: validation.errors });
+    if (!validation.valid) {
+      figma.ui.postMessage({ type: 'settings-save-error' });
+      return;
+    }
+    await refreshConfiguration();
     return;
   }
 
   if (message.type === 'export-component') {
-    await runExport('Analyse du Component Set…', 'Contrat généré', handleExportComponent);
+    await runExport('Analyse du Component Set…', 'Contrat généré', 'component', handleExportComponent);
     return;
   }
 
   if (message.type === 'export-tokens') {
-    await runExport('Lecture des variables…', 'Tokens exportés', handleExportTokens);
+    await runExport('Lecture des variables…', 'Tokens exportés', 'tokens', handleExportTokens);
   }
 };

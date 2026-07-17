@@ -18,13 +18,13 @@ Chaque règle ci-dessous découle de ce double objectif.
 - Dépendances minimales ; respecter la configuration TypeScript du projet
   (`strict` activé — pas de `any` sauf impossibilité documentée).
 
-## Commentaires : règle systématique
+## Commentaires : expliquer les décisions
 
-Le code est commenté **partout, en français, pour un débutant** :
+Les commentaires sont en français et doivent aider un lecteur débutant :
 
 - **Chaque fichier** commence par un en-tête (`/** … */`) qui explique son
   rôle dans le plugin et le principe qui le gouverne.
-- **Chaque fonction exportée** porte une JSDoc : ce qu'elle fait, et surtout
+- **Chaque fonction exportée non triviale** porte une JSDoc : ce qu'elle fait, et surtout
   **pourquoi** elle le fait ainsi quand ce n'est pas évident. Ajouter un
   `@example` pour les utilitaires de transformation (cf. `normalizeName`).
 - **Les subtilités s'expliquent là où elles se manifestent** : une bizarrerie
@@ -40,12 +40,14 @@ Le code est commenté **partout, en français, pour un débutant** :
 
 ## Robustesse
 
-- **Un node cassé ne fait jamais échouer un export** : tout accès à l'API
+- **Un node incomplet ne fait pas échouer un export** : tout accès à l'API
   Figma susceptible de lever (`componentProperties`, `getMainComponentAsync`,
   `getStyleByIdAsync`…) est protégé (`try/catch`, `.catch(() => null)`).
 - **Les warnings n'interrompent pas l'export** : une donnée manquante ou une
   valeur non tokenisée produit un avertissement précis et l'export continue.
   On n'exporte jamais de valeur brute à la place d'un token.
+- Les préconditions obligatoires décrites dans la spécification restent
+  bloquantes : sélection invalide ou conteneur `<Nom>-Rules` absent/vide.
 - **Ne jamais perdre d'information en silence** : une collision, un doublon
   ou un cas imprévu → warning explicite. Un calque inconnu est inclus tel
   quel, jamais supprimé.
@@ -96,8 +98,9 @@ Le code est commenté **partout, en français, pour un débutant** :
 - Utiliser `src/` pour les modules TypeScript et `src/ui/` pour les sources
   UI ; le build génère l'unique fichier autonome `dist/ui.html` attendu par
   Figma.
-- Garder chaque commande Figma (Export composant / Export tokens) isolée et
-  testable ; le code partagé vit dans `src/utils.ts` et `src/variables.ts`.
+- Garder chaque commande Figma isolée et testable. Les utilitaires communs
+  vivent dans des modules dédiés (`utils`, `variables`, `config`, `github`,
+  `base64`) plutôt que dans les handlers.
 
 ## Normes Figma
 

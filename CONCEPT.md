@@ -17,10 +17,10 @@ permet de le concevoir, le configurer et l'utiliser correctement :
 - intentions et bonnes pratiques d'usage (quand l'utiliser, quand ne pas) ;
 - métadonnées de traçabilité vers la source.
 
-Une **UCS** regroupe tout ça **au même endroit**, dans un **vocabulaire
-partagé**, lisible à la fois par un humain et par un agent IA **sans
-interprétation externe**. Design et développement parlent la même langue et
-partagent la même source de vérité.
+Une **UCS** regroupe ces informations dans un **vocabulaire partagé**, lisible
+par un humain comme par un agent IA. Elle décrit les décisions contrôlées par le
+design ; les conventions propres à une plateforme (React, Font Awesome, etc.)
+restent dans le repository consommateur.
 
 ## 2. Le problème qu'on résout
 
@@ -45,14 +45,13 @@ Figma (DS propre)
 { tokens.json (DTCG) + <Composant>.contract.json (UCS) }
    │  déposés dans le repo, AU MÊME ENDROIT que le composant
    ▼
-Repo React : code réel typé + garde-fous CI
+Repo React : contrat co-localisé + code réel écrit par un développeur
    │
    ▼
-Playground : on parle à Claude Code en langage naturel,
-il compose une interface avec le composant, on voit le rendu en direct
+Playground : un agent compose une interface avec les composants disponibles
 ```
 
-1. **Figma** — tokens en 5 tiers, composant avec toutes ses variantes
+1. **Figma** — collections de tokens organisées par niveaux d'alias, composant avec toutes ses variantes
    (couleur / taille / variant / état), et ses **règles d'usage** dans un
    conteneur `<Nom>-Rules`.
 2. **TokenLintel** (ce plugin) — extrait **deux artefacts** : `tokens.json`
@@ -60,8 +59,9 @@ il compose une interface avec le composant, on voit le rendu en direct
    `<Composant>.contract.json` (props, structure, `tokensUsed`, `intent`,
    doc par valeur). Cf. [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md).
 3. **Co-localisation** (voir §4) — les artefacts atterrissent dans le repo.
-4. **Code réel** — `Button.tsx` consomme les tokens, props strictement typées,
-   alignées sur le contrat.
+4. **Code réel** — un développeur écrit `Button.tsx` contre le contrat et les
+   tokens. Les props contrôlées par le design restent alignées sur l'UCS ; les
+   attributs natifs, événements et règles d'accessibilité relèvent du code.
 5. **Garde-fous** — la CI vérifie que le code **ne peut pas** diverger du
    contrat ni des tokens.
 6. **Playground** — on demande une interface (« trois boutons de ce type,
@@ -84,9 +84,10 @@ Un agent (ou un humain) qui ouvre le dossier d'un composant y trouve **à la
 fois** l'implémentation et sa spécification design. Aucune chasse à
 l'information ailleurs.
 
-*Ouvert* : l'emplacement des **tokens** (partagés par tous les composants)
-reste à définir — vraisemblablement une racine commune (`tokens/`), puisqu'ils
-ne sont pas propres à un composant.
+Les **tokens**, partagés par tous les composants, vivent dans
+`src/tokens/tokens.json` dans le repo consommateur. Ils restent ainsi dans les
+sources applicatives, au même niveau architectural que `src/components`, sans
+être artificiellement co-localisés avec un composant particulier.
 
 ## 5. L'objectif : un MVP qui prouve
 
@@ -97,27 +98,31 @@ bout — pour ensuite le **montrer aux équipes** et décider du passage à l'é
 
 Deux livrables **distincts**, tous deux nécessaires :
 
-- **le code réel du bouton** (`Button.tsx`) — celui qui partirait en prod :
-  c'est **le livrable** ;
+- **le code réel du bouton** (`Button.tsx`) — écrit et maintenu par un
+  développeur : c'est **le livrable** ;
 - **le playground** — l'espace où l'agent génère des interfaces avec ce
   bouton : c'est **la preuve**.
 
+La reconstruction du Button par un agent en contexte froid est uniquement un
+**test de robustesse du contrat**. Si le rendu reconstruit est faux, on vérifie
+si l'information était absente ou ambiguë dans l'UCS. Ce code généré n'est pas
+destiné à remplacer l'implémentation du développeur.
+
 ## 6. État & plan d'action
 
-**Amont ~90 %** (Figma + extraction TokenLintel, validés sur Button).
-**Aval 0 %** (stack de consommation + preuve) — c'est là que se joue la
-démonstration.
+Le pipeline complet fonctionne sur Button. Le travail restant porte surtout
+sur les garde-fous du repository consommateur et la validation avec un second
+composant, afin de vérifier que le modèle reste générique.
 
 | Phase | Objet | État |
 |---|---|---|
-| **0** | Figer TokenLintel (commit du socle) | en cours |
-| **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary v4 ; **noms de tokens = chemins**) | à lancer |
-| **B** | `Button.tsx` réel, écrit **contre le contrat** (types idéalement générés depuis le contrat) | à venir |
-| **C** | Garde-fous CI : `tokensUsed` ⊆ tokens générés · conformité code ↔ contrat · uniformité de nommage | à venir |
-| **D** | Playground : rendu live + `CLAUDE.md` qui apprend à lire contrat/tokens/`intent` + prompts de test | à venir |
+| **0** | Figer TokenLintel (export UCS/DTCG, configuration et PR) | opérationnel sur Button |
+| **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary v4 ; **noms de tokens = chemins**) | opérationnel |
+| **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
+| **C** | Garde-fous CI : `tokensUsed` ⊆ tokens générés · conformité code ↔ contrat · uniformité de nommage | partiel : contrôle des tokens présent |
+| **D** | Playground : rendu live + contexte agent + test froid léger | opérationnel sur Button |
 | **E** | Passage à l'échelle : 2ᵉ composant non-Button, guide de rédaction pour les designers, industrialisation | post-MVP |
 
-**Critère de succès du MVP** : dans le playground, quoi qu'on demande, l'agent
-n'utilise que les props du contrat, respecte les `@dont`, et le rendu est
-cohérent avec Figma — le tout sans qu'aucun nom n'ait divergé sur tout le
-trajet.
+**Critère de succès du MVP** : dans le playground, l'agent n'invente aucune
+variante visuelle, utilise les props design du contrat, respecte les `@dont` et
+produit un rendu cohérent avec Figma, sans divergence de nom sur le trajet.
