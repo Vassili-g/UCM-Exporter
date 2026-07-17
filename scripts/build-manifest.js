@@ -1,3 +1,7 @@
+/**
+ * Copie le manifest de développement dans `dist` en ramenant les chemins des
+ * bundles à leurs noms de fichiers distribuables.
+ */
 const fs = require('fs');
 const path = require('path');
 

@@ -1,3 +1,9 @@
+/**
+ * Fabrique les boutons homogènes de l'interface du plugin.
+ * Le composant reste volontairement DOM natif pour garder l'UI légère.
+ */
+
+/** Crée un bouton accessible avec libellé, variante et action optionnelle. */
 export function createButton({ label, variant = 'primary', icon, onClick, disabled = false }) {
   const button = document.createElement('button');
   button.type = 'button';

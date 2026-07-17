@@ -3,7 +3,7 @@
 ## Vision
 
 TokenLintel produit deux artefacts lisibles à la fois par un humain et par un
-agent IA, **sans interprétation externe** (cf. `CONCEPT.md`) :
+agent IA (cf. `CONCEPT.md`) :
 
 - un **contrat de composant (UCS)** — décrit un composant tel qu'il est
   réellement dans Figma : props, structure, tokens, intention et doc par
@@ -11,19 +11,23 @@ agent IA, **sans interprétation externe** (cf. `CONCEPT.md`) :
 - un **export de tokens** DTCG — toutes les variables, chaîne d'alias préservée.
 
 Principe directeur : décrire **fidèlement** ce qui existe dans Figma, dans un
-**vocabulaire partagé**. Fidèle = fidèle à la *sémantique* du composant (il a
-une taille, un label, des états), pas aux noms de calques accidentels.
+**vocabulaire partagé**. Fidèle signifie fidèle à la *sémantique visuelle* du
+composant (taille, label, états), pas aux noms de calques accidentels. La
+résolution des assets et l'API applicative restent à la charge du repository
+consommateur.
 
 ## Contexte technique
 
-- Plugin Figma (Plugin API, plan Professional) : **pas** d'API Variables REST,
-  pas de Code Connect, **aucun appel réseau**.
-- Tourne dans l'éditeur, **produit des fichiers en téléchargement** ; n'écrit ni
-  dans Figma ni dans un repo (commit manuel).
+- Plugin Figma (Plugin API, plan Professional) : pas d'API Variables REST ni
+  de Code Connect. `api.github.com` est autorisé pour le dépôt optionnel des
+  artefacts via PR ; l'icône de réglages de l'UI est un SVG Font Awesome Free
+  embarqué.
+- Tourne dans l'éditeur, produit des fichiers en téléchargement sans config
+  valide, ou les dépose sur une branche GitHub dédiée avec une config valide.
 - Deux commandes indépendantes qui partagent le même code Figma :
   **Export composant** (Partie 1) et **Export tokens** (Partie 2).
-- Stack : TypeScript, `@figma/plugin-typings`, build esbuild. UI minimale
-  (deux boutons + zone de log/erreurs).
+- Stack : TypeScript, `@figma/plugin-typings`, build esbuild. L'UI expose le
+  statut GitHub, les deux commandes, la configuration et un journal.
 - **`normalizeName()` est commune aux deux commandes** :
   `Brand Tokens/Primary/default` → `brand-tokens.primary.default`
   (`/`→`.`, espaces d'un segment → `-`, minuscules). Un token s'écrit donc
@@ -71,7 +75,7 @@ sont auto-détectées (nom d'axe, valeurs, rôle de calque) et centralisées dan
 
 **Entrée** : un `COMPONENT_SET` sélectionné (`selection[0].type ===
 "COMPONENT_SET"`, sinon erreur UI explicite) **portant des règles** dans un
-conteneur `<Nom>-Rules` (sinon export bloqué, cf. étape 6).
+conteneur `<Nom>-Rules` (sinon export bloqué, cf. étape 7).
 
 ### Algorithme
 
@@ -90,6 +94,11 @@ des axes). Pour chacun, relever les tokens liés (`boundVariables.fills` et
 `.strokes` sur tout le sous-arbre), rangés par **rôle = dernier segment du
 token** (`background`, `foreground`, `border`, `ring`, `shadow`…). Un rôle
 n'apparaît que s'il est réellement lié — rien n'est forcé ni inventé.
+Chaque feuille décrit indépendamment l'état visuel complet du variant Figma :
+si un rôle est absent de la feuille d'un état dans `variantTokens` ou
+`variantStrokes`, cela signifie toujours **« ne pas rendre ce rôle dans cet
+état »**. Un consommateur ne doit jamais fusionner implicitement cette feuille
+avec celle de l'état `default`.
 Résolution : `VariableAlias.id` → `getVariableByIdAsync(id).name` →
 `normalizeName()`. Pour un rôle porté par un `fill`, la feuille contient le
 nom du token. Les strokes sont rangés séparément dans `variantStrokes` :
@@ -146,7 +155,7 @@ le contrat ajoute `stateModel` avec le déclencheur de chaque état connu :
 `disable > press > focus > hover > default`. Un état inconnu reste exporté
 avec un déclencheur `null` et un warning.
 
-**5. Typographie** (test de validation n°1) — sur le calque texte, dans l'ordre :
+**5. Typographie** — sur le calque texte, dans l'ordre :
 `textStyleId` → nom du style ; sinon variables liées `fontSize` / `fontWeight`
 (fallback sur le champ `fontStyle`) / `lineHeight` / `fontFamily`. **Ce bloc
 doit être rempli en noms de tokens — jamais vide, jamais brut.**
@@ -157,7 +166,7 @@ doit être rempli en noms de tokens — jamais vide, jamais brut.**
 - calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
 
 Slots dédupliqués (`label`, `label-2`…). Un calque inattendu est inclus tel
-quel, jamais tu.
+quel, jamais supprimé silencieusement.
 
 **7. Intention & doc par valeur** — lues dans un **conteneur Figma** (frame,
 section ou groupe) nommé `<Nom>-Rules` (ex. `Button-Rules`), posé à côté du
@@ -194,8 +203,8 @@ exportée, **export non bloqué**.
 
 ### Sortie
 
-`<Name>.contract.json` téléchargé — une **API unifiée** (wrapper + set décrits
-comme un seul composant). Exemple Button :
+`<Name>.contract.json` est téléchargé ou déposé par PR. Il décrit une **API
+unifiée** (wrapper + set comme un seul composant). Exemple Button :
 
 ```json
 {
@@ -257,12 +266,12 @@ comme un seul composant). Exemple Button :
       "small":  { "…": "idem" }
     },
     "children": [
-      { "slot": "iconLeft", "figmaLayer": "arrow-left-long", "optional": true,
-        "size": "layouts.components.icons.base" },
+      { "slot": "arrow-left-long", "figmaLayer": "arrow-left-long", "optional": true,
+        "visibilityProp": "iconLeft", "size": "components.icons.sizes.base" },
       { "slot": "label", "figmaLayer": "Suivant", "typography": { "…": "étape 4" },
         "color": "components.button.colors.primary.contained.default.foreground" },
-      { "slot": "iconRight", "figmaLayer": "arrow-right-long", "optional": true,
-        "size": "layouts.components.icons.base" }
+      { "slot": "arrow-right-long", "figmaLayer": "arrow-right-long", "optional": true,
+        "visibilityProp": "iconRight", "size": "components.icons.sizes.base" }
     ],
     "variantAxes": ["color","variant","state"],
     "variantTokens": { "…": "étape 2" },
@@ -294,6 +303,8 @@ développement) — un warning le signale, sans bloquer.
 - [ ] `variantTokens` et `variantStrokes` couvrent **toutes** les combinaisons
       d'axes, nichés selon `variantAxes` ; le premier ne contient que des noms
       de tokens, le second porte couleur, largeur tokenisée et alignement Figma.
+- [ ] Un rôle absent d'un état signifie qu'il ne doit pas être rendu ; aucun
+      consommateur ne fusionne implicitement cet état avec `default`.
 - [ ] `stateModel` mappe les états connus vers leurs déclencheurs et expose
       une priorité déterministe ; les états inconnus restent visibles avec un
       warning.
@@ -380,8 +391,48 @@ et non `number` : sans ça, un token `number` référencerait un token `dimensio
 
 ---
 
+## Partie 3 — Configuration et dépôt GitHub
+
+La configuration est optionnelle et locale à la machine via
+`figma.clientStorage`. Elle contient l'URL du repository, la branche de base,
+les chemins des composants et des tokens, ainsi qu'un PAT fine-grained. Le PAT n'est
+jamais écrit dans le document Figma, renvoyé à l'UI après sauvegarde, ni logué.
+Il doit donner au repository cible les permissions **Contents: read/write** et
+**Pull requests: read/write**.
+
+L'en-tête expose en permanence l'état `connecté` / `non connecté` et un accès à
+la page de configuration via une icône `gear` Font Awesome Free embarquée.
+Le test `GET /repos/{owner}/{repo}` est automatique à l'ouverture et après
+chaque sauvegarde. Le manifest n'autorise que
+`https://api.github.com` pour GitHub.
+
+Chaque commande conserve son périmètre :
+
+- **Exporter le composant** → PR contenant uniquement
+  `{componentsPath}/{Nom}/{Nom}.contract.json` ;
+- **Exporter les tokens** → PR contenant uniquement
+  `{tokensPath}/tokens.json`.
+
+Pour un artefact modifié, le plugin lit la ref de base, crée la branche
+`tokenlintel/export-{YYYYMMDD-HHmm}`, écrit le fichier avec l'API Contents puis
+ouvre une PR vers la branche de base. Si le contenu est identique, aucune
+branche ni PR n'est créée. Config absente/invalide ou erreur GitHub : repli
+automatique vers le téléchargement local avec message explicite.
+
+### Definition of done
+
+- [ ] Tous les champs sont persistés et validés inline ; les paths sont
+      normalisés et restent relatifs.
+- [ ] PAT masqué, conservé uniquement dans `github_pat`, jamais logué.
+- [ ] Test de connexion automatique à l'ouverture et après sauvegarde.
+- [ ] Une commande = une PR avec son unique artefact ; aucun auto-merge.
+- [ ] Aucun changement = aucune PR vide.
+- [ ] Toute erreur GitHub conserve l'artefact par téléchargement local.
+
+---
+
 ## Hors périmètre MVP
 
-Pas de commit / push / PR / PAT / réseau, pas d'écriture Figma, pas de
-multi-composant en une commande, pas de scoring. Chaque commande produit un
-fichier téléchargé ; commit manuel.
+Pas d'écriture dans le document Figma, pas d'auto-merge, pas de
+multi-composant en une commande, pas de scoring. Aucun domaine réseau autre que
+GitHub API déclarée dans le manifest.

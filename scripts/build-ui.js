@@ -1,3 +1,7 @@
+/**
+ * Assemble le JavaScript et le CSS compilés dans l'unique HTML autonome exigé
+ * par une interface de plugin Figma.
+ */
 const fs = require('fs');
 const path = require('path');
 
