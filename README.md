@@ -8,9 +8,12 @@ les agents IA.
 
 Il produit deux formats complémentaires :
 
-- **UCS — Unified Component Specification** : concept introduit par ce projet.
-  Une UCS est le contrat JSON d'un composant : elle réunit ses props visuelles,
-  variantes, états, tokens, icônes, structure et règles d'usage ;
+- **UCS — Unified Component Specification** : concept introduit par ce projet
+  pour relier fortement design et développement. Une UCS réunit, au même
+  endroit, le code réel d'un composant et son contrat issu de Figma — props
+  visuelles, variantes, états, tokens, icônes, structure et règles d'usage. Le
+  JSON produit par TokenLintel est la partie design de cette unité, pas l'UCS à
+  lui seul ;
 - **DTCG — Design Tokens Community Group** : format standard d'échange des
   design tokens. Il décrit leurs valeurs, types et références de manière
   indépendante des outils qui les consomment.
