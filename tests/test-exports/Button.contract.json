@@ -2,7 +2,7 @@
   "name": "Button",
   "meta": {
     "ucsVersion": "1.1",
-    "exportedAt": "2026-07-17T09:40:10.811Z",
+    "exportedAt": "2026-07-17T11:04:02.263Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "3:122",
@@ -282,7 +282,7 @@
           "y": "components.button.sizes.small.padding-y"
         },
         "radius": "components.button.sizes.small.border-radius",
-        "fontSize": "components.button.sizes.small.font-size-3"
+        "fontSize": "components.button.sizes.small.font-size"
       }
     }
   },
@@ -376,7 +376,7 @@
     "components.button.sizes.medium.padding-x",
     "components.button.sizes.medium.padding-y",
     "components.button.sizes.small.border-radius",
-    "components.button.sizes.small.font-size-3",
+    "components.button.sizes.small.font-size",
     "components.button.sizes.small.gap",
     "components.button.sizes.small.padding-x",
     "components.button.sizes.small.padding-y",

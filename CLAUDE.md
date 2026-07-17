@@ -6,7 +6,7 @@ commandes et les invariants à ne jamais casser.
 
 Rappels critiques :
 
-- [`context.md`](./context.md) est la spécification de référence — elle fait
+- [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md) est la spécification de référence — elle fait
   foi, et se met à jour dans le même changement que le code.
 - Avant PR : `npm test` puis `npm run build`, les deux verts.
 - Commentaires systématiques en français, pour un lecteur débutant

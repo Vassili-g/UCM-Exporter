@@ -8,8 +8,8 @@ source de vérité, lisible par humains et agents IA.
 
 Lire dans cet ordre avant de toucher au code :
 
-1. [`concept.md`](./concept.md) — la vision : ce qu'est une UCS et pourquoi.
-2. [`context.md`](./context.md) — **la spécification de référence** : le design
+1. [`CONCEPT.md`](./CONCEPT.md) — la vision : ce qu'est une UCS et pourquoi.
+2. [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md) — **la spécification de référence** : le design
    system décrit, l'algorithme des deux commandes, le schéma des sorties.
    C'est le document le plus important ; il fait foi en cas de doute.
 3. [`CONTRIBUTING.md`](./CONTRIBUTING.md) — les règles de code : commentaires
@@ -58,7 +58,7 @@ npm run typecheck # tsc --noEmit seul
 - **`normalizeName()` unique** : un token s'écrit pareil dans un contrat et
   dans `tokens.json`.
 - Changement de forme du contrat → incrémenter `ucsVersion`
-  (`src/contract/exportComponent.ts`) **et** mettre à jour `context.md`.
+  (`src/contract/exportComponent.ts`) **et** mettre à jour `TOKENLINTEL-SPEC.md`.
 
 ## Limites de l'environnement
 

@@ -2,7 +2,7 @@
 
 Ce document porte la **vision** et le **plan d'action global**. Il fait
 autorité sur le « pourquoi » et le « où on va ». La spécification technique du
-plugin d'extraction vit dans [`context.md`](./context.md).
+plugin d'extraction vit dans [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md).
 
 ---
 
@@ -58,7 +58,7 @@ il compose une interface avec le composant, on voit le rendu en direct
 2. **TokenLintel** (ce plugin) — extrait **deux artefacts** : `tokens.json`
    (toutes les variables, chaîne d'alias préservée, entrée Style Dictionary) et
    `<Composant>.contract.json` (props, structure, `tokensUsed`, `intent`,
-   doc par valeur). Cf. [`context.md`](./context.md).
+   doc par valeur). Cf. [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md).
 3. **Co-localisation** (voir §4) — les artefacts atterrissent dans le repo.
 4. **Code réel** — `Button.tsx` consomme les tokens, props strictement typées,
    alignées sur le contrat.
