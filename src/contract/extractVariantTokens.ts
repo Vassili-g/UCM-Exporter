@@ -8,6 +8,7 @@
  * partout des références de tokens sous forme de chaînes.
  */
 import type { VariantEntry, VariantMatrix } from './componentTree';
+import { normalizePropValue } from './parsers';
 import { getSlotTokens } from './extractSlotTokens';
 import type { TokenResolver } from './extractSlotTokens';
 import type { SlotStrokes, SlotTokens, VariantStrokes, VariantTokens } from './types';
@@ -64,7 +65,11 @@ export async function extractVariantTokens(
         tokenNames.add(stroke.color);
         if (stroke.width) tokenNames.add(stroke.width);
       }
-      const values = matrix.axes.length > 0 ? entry.values : { variant: entry.component.name };
+      // La clé de repli suit la même normalisation que toutes les valeurs
+      // d'axes : l'arbre reste homogène même sans axe déclaré.
+      const values = matrix.axes.length > 0
+        ? entry.values
+        : { variant: normalizePropValue(entry.component.name) };
       insertVariant(variantTokens, axes, values, leaf.paints);
       insertVariant(variantStrokes, axes, values, leaf.strokes);
     }),

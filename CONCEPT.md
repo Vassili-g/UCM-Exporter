@@ -1,10 +1,11 @@
-# Concept — Design System AI-first
+# Concept — UCM (Unified Component Model)
 
 Ce document explique le **concept global** du projet — le « pourquoi » et les
-principes. Il ne contient ni planning ni détails techniques : l'état
-d'avancement et les prochaines étapes vivent dans [`ROADMAP.md`](./ROADMAP.md),
-et le comportement exact du plugin dans
-[`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md).
+principes. Il décrit le **modèle cible**, au présent : ce qui existe déjà et ce
+qui reste à construire se lit dans [`ROADMAP.md`](./ROADMAP.md), et le
+comportement exact du plugin dans
+[`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md). Ce document ne contient ni
+planning ni détails techniques.
 
 ---
 
@@ -31,6 +32,13 @@ règles qui définissent ce qui fait d'un composant un composant unifié : **qui
 fait foi** sur quoi (§3), la **co-localisation** (§5), et la façon dont les
 composants **se composent**. Trois niveaux à ne jamais confondre : le *modèle*
 (les règles), le *composant unifié* (l'unité), le *contrat* (l'artefact design).
+
+**Se composer** : deux natures de composants. Un composant **simple** ne
+consomme que des tokens et des calques (ex. Button). Un composant **composé**
+assemble d'autres composants unifiés (ex. une Card contenant un Button) : son
+contrat déclare ces dépendances — champ `composes`, à venir — sans jamais
+redécrire leurs internes, et la cohérence se vérifie récursivement.
+*(Équivalent développeur : primitive / composite.)*
 
 Un tel composant est **co-créé** : designer et développeur s'accordent ensemble
 sur le composant et son API publique, au lieu de le retravailler chacun dans son
@@ -80,6 +88,16 @@ Réponse de l'UCM :
 - toutes les références **sont disponibles dans un format lisible**, sans requête
   vers un autre outil ou service.
 
+Deux **piliers** résument ce que le modèle doit prouver — la ROADMAP et le
+playground s'y réfèrent en permanence :
+
+- **Pilier A — la robustesse** : toute divergence entre le code, son contrat et
+  les tokens est détectée et bloquée avant merge — un composant unifié ne peut
+  pas dériver en silence.
+- **Pilier B — la confiance** : un agent guidé par le seul contrat utilise le
+  design system correctement — un développeur peut donc lui déléguer sans
+  revérifier chaque choix visuel.
+
 ## 3. Qui fait foi ? — l'arbitrage des sources
 
 L'UCM réunit deux mondes. Pour qu'ils ne se contredisent **jamais**, chaque
@@ -88,7 +106,7 @@ doute.
 
 | Information | Fait foi | Ce qui empêche la divergence |
 |---|---|---|
-| Tokens (valeurs, alias) et **structure visuelle** (variantes, états, dimensions, icônes, règles d'usage) | **Figma** | nom mécanique de bout en bout ; le code s'aligne |
+| Tokens (valeurs, alias) et **structure visuelle** (variantes, états, dimensions, icônes, règles d'usage) | **Figma** | un même nom, généré mécaniquement, de Figma jusqu'au CSS ; le code s'aligne sur ce nom |
 | **API publique** : noms et valeurs des props | **accord designer ↔ développeur, gravé dans Figma** | un seul nom validé dès la création du composant ; la CI vérifie |
 | Comportement, accessibilité, événements, attributs natifs | **code réel** | hors périmètre du contrat |
 | Liaison contrat ↔ implémentation, vérification de cohérence | **repo consommateur / CI** | adaptateurs de plateforme |
@@ -105,10 +123,16 @@ Figma est construit et nommé en collaboration entre le designer et le
 développeur** : ils s'accordent sur l'API publique **au moment même de la
 création du composant**, avant qu'une ligne de code ne soit écrite. Ce nom
 voyage ensuite intact — Figma → contrat → code — et le code le reprend à
-l'identique ; la CI le vérifie. Le contrat conserve toujours le nom Figma
-d'origine dans `figmaName` pour la traçabilité. Ce qui reste au code **seul** :
+l'identique ; la CI le vérifie. « Intact » s'entend modulo la normalisation
+mécanique d'écriture (`Contained` → `contained`). Et si un axe Figma porte
+malgré tout un nom accidentel, la couche sémantique de l'exporteur le traduit
+vers le vocabulaire partagé (ex. un axe de tailles → `size`) en conservant le
+nom d'origine dans `figmaName` : c'est un **filet de sécurité** pour les design
+systems existants, pas le régime normal. Ce qui reste au code **seul** :
 le comportement, `onClick`, les attributs `aria-*`, les règles de formulaire —
-le contrat ne les décrit pas.
+le contrat ne les décrit pas. Unique exception : `disabled`, dérivée de l'axe
+`State` de Figma, est exposée en prop parce que le design en spécifie
+l'apparence ; son comportement reste au code.
 
 **Références de tokens : toujours un lien, jamais une valeur.** Dans les deux
 artefacts, un token est cité comme **référence** vers `tokens.json`, jamais
@@ -117,15 +141,19 @@ build, parité) : c'est ce qui permet à la parité de vérifier les *noms*, pas
 seulement les valeurs finales, et ce qui préserve le multi-marque et le theming.
 Syntaxe unifiée : accolades + séparateur point, `{chemin.du.token}`, le chemin
 pointant le token tel qu'il apparaît dans `tokens.json`. Les **deux** artefacts —
-`tokens.json` et le contrat — utilisent désormais cette syntaxe
-(`contractVersion` 3.0).
+`tokens.json` et le contrat — utilisent cette même syntaxe.
+
+**Revue des exports.** Une PR d'export (contrat ou tokens) est validée par le
+**designer** — c'est lui qui porte la vérité design — en connaissance du
+développeur.
 
 **Critères de cohérence que la CI doit garantir :**
 
 - si le code d'un composant ne correspond plus à sa spec Figma (prop, variante
   ou valeur divergente), la CI **détecte et bloque** ;
-- si un token change dans Figma, le composant qui ne l'a pas suivi est
-  **signalé** ;
+- si la **valeur** d'un token change dans Figma, elle se **propage**
+  mécaniquement (le code ne référence que des noms, jamais des valeurs) ; un
+  token renommé ou supprimé est **signalé** ;
 - un token référencé qui n'existe plus → **erreur**.
 
 ## 4. Le workflow complet
@@ -137,7 +165,7 @@ Figma (DS propre)
 { tokens.json (DTCG) + <Composant>.contract.json }
    │  déposés dans le repo, AU MÊME ENDROIT que le composant
    ▼
-Repo React : contrat co-localisé + code réel écrit par un développeur
+Repo consommateur : contrat co-localisé + code réel écrit par un développeur
    │
    ▼
 Playground : un agent compose une interface avec les composants disponibles

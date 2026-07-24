@@ -111,7 +111,7 @@ async function runExport(
   postStatus('loading', loadingText);
   try {
     const result = await handler();
-    // On liste chaque avertissement dans le journal (ex. « composant sans règles »).
+    // On liste chaque avertissement dans le journal (ex. « largeur de stroke non tokenisée »).
     for (const warning of result.warnings ?? []) {
       figma.ui.postMessage({ type: 'log', text: `⚠︎ ${warning}` });
     }

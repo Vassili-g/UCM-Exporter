@@ -1,4 +1,4 @@
-# ROADMAP — Design System AI-first
+# ROADMAP — UCM
 
 **Où en est le projet et ce qui reste à faire.** Le concept est expliqué dans
 [`CONCEPT.md`](./CONCEPT.md), le comportement exact du plugin dans
@@ -13,7 +13,8 @@ bout — Figma → tokens → contrat → code → agent — monté le plus **so
 automatiquement** possible, pour ensuite le **montrer aux équipes** et décider du
 passage à l'échelle.
 
-Il doit prouver les **deux piliers** du concept (cf. [`CONCEPT.md`](./CONCEPT.md)) :
+Il doit prouver les **deux piliers** du concept (définis dans
+[`CONCEPT.md`](./CONCEPT.md) §2) :
 
 - **la robustesse** (Pilier A) — un composant unifié ne *peut pas* diverger : la
   CI détecte l'écart entre le code et son contrat, et un token qui change dans
@@ -50,9 +51,10 @@ prouve que le modèle dépasse le composant isolé.
 | Phase | Objet | État |
 |---|---|---|
 | **0** | Figer Unified Component Exporter (contrats, tokens DTCG, configuration et PR) | opérationnel sur Button |
-| **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary v4 ; **noms de tokens = chemins**, alias préservés en `var(--…)`) | opérationnel |
+| **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary ; **noms de tokens = chemins**, alias préservés en `var(--…)`) | opérationnel |
 | **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
-| **C** | Garde-fous CI : `tokensUsed` ⊆ tokens générés · conformité code ↔ contrat · uniformité de nommage | partiel : parité des tokens présente **en local**, pas encore de workflow CI |
+| **C1** | Garde-fous CI — existence des tokens (`tokensUsed` ⊆ tokens générés, `npm run check`) | vérification locale opérationnelle ; workflow CI à faire (étape 2) |
+| **C2** | Garde-fous CI — parité code ↔ contrat (props, valeurs, états, composition) | à faire (étape 4) |
 | **D** | Playground : rendu live + contexte agent + test froid léger | opérationnel sur Button |
 | **E** | **Composition** : composé minimal, champ `composes`, parité récursive | à faire — **priorité structurelle** |
 | **F** | Passage à l'échelle : composants simples supplémentaires, guide de rédaction pour les designers, industrialisation | post-MVP |
@@ -60,34 +62,25 @@ prouve que le modèle dépasse le composant isolé.
 ## 3. Prochaines étapes
 
 Dans l'ordre. Les tâches 1 à 4 sont prioritaires : 1-2 achèvent le socle sur
-Button, puis 3-4 attaquent les deux vrais points durs — la **parité** (Pilier A)
-et la **composition**.
+Button, puis 3-4 attaquent les deux vrais points durs — la **composition**,
+puis la **parité** (Pilier A), dessinée contre ce cas réel.
 
 1. **Écrire le vrai `Button.tsx` (avec le dev).** Noms et valeurs des props
    fixés ensemble en amont (cf. [`CONCEPT.md`](./CONCEPT.md) §3). États :
    `hover` / `focus` / `press` en CSS (`:hover` / `:focus-visible` / `:active`,
    déjà portés par `stateModel`), `disabled` en prop booléenne. Ce code de
    production remplace le prototype généré.
-2. **Boucler les garde-fous CI du playground (Phase C).** Aucun workflow
-   n'existe aujourd'hui : `npm run check` (build des tokens + parité
-   `tokensUsed ⊆ tokens générés`) ne tourne qu'en local. Ajouter une GitHub
-   Action qui le lance à chaque PR. *(Rien à faire côté régénération : le CSS
-   généré est reconstruit à chaque build via `prebuild`, et `outputReferences`
-   préserve déjà les alias en `var(--…)`.)*
-3. **Parité code ↔ contrat, industrialisée.** Un adaptateur React/TS extrait
-   l'API réelle du `.tsx` (via `react-docgen-typescript`) → `Button.code.json`,
-   puis un comparateur liste les écarts avec le contrat (prop manquante, valeur
-   d'enum divergente, état non géré, référence de token cassée, dépendance de
-   composition absente) **et le sens de correction** selon l'arbitrage de
-   [`CONCEPT.md`](./CONCEPT.md) §3. Déclencheurs : hook pre-commit (retour local)
-   + GitHub Action bloquante sur PR. Prévoir la **déclaration d'une divergence
-   volontaire** (annotée + justifiée), sinon la parité devient une prison qu'on
-   finit par désactiver. Aucune règle conditionnée au nom d'un composant.
-4. **Composant composé — priorité structurelle.** Deux natures de composants :
-   un **composant simple** ne consomme que des tokens et des calques (ex. Button,
-   aucune instance imbriquée) ; un **composant composé** assemble d'autres
-   composants du DS (ex. une Card contenant un Button). *(équivalent dev :
-   primitive / composite.)* On crée **volontairement** un composé minimal (Card
+2. **Boucler les garde-fous CI du playground (Phase C1).** Ajouter une GitHub
+   Action qui lance `npm run check` (build des tokens + parité
+   `tokensUsed ⊆ tokens générés`) à chaque PR, un fichier `CODEOWNERS` encodant
+   l'arbitrage (tokens → designer, code → dev — Tier 1 de
+   [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §6, coût quasi nul), et les
+   premiers tests du playground (`tokenVar`, scripts). *(Rien à faire côté
+   régénération : le CSS généré est reconstruit à chaque build via `prebuild`,
+   et `outputReferences` préserve déjà les alias en `var(--…)`.)*
+3. **Composant composé — priorité structurelle.** Les deux natures — simple /
+   composé — sont définies dans [`CONCEPT.md`](./CONCEPT.md) §1.
+   On crée **volontairement** un composé minimal (Card
    ou Header avec instances imbriquées) pour buter le vrai inconnu de
    l'architecture :
    - le plugin doit **reconnaître un nœud `INSTANCE`** d'un autre composant
@@ -100,17 +93,31 @@ et la **composition**.
      eux-mêmes conformes.
    C'est ce cas — pas un 2ᵉ composant simple — qui prouve que le modèle passe à
    l'échelle de la composition.
+4. **Parité code ↔ contrat, industrialisée.** Conçue **après** le composé
+   minimal de l'étape 3, pour dessiner la parité récursive contre un cas réel.
+   Un adaptateur React/TS extrait
+   l'API réelle du `.tsx` (via `react-docgen-typescript`) → `Button.code.json`,
+   puis un comparateur liste les écarts avec le contrat (prop manquante, valeur
+   d'enum divergente, état non géré, référence de token cassée, dépendance de
+   composition absente) **et le sens de correction** selon l'arbitrage de
+   [`CONCEPT.md`](./CONCEPT.md) §3. Déclencheurs : hook pre-commit (retour local)
+   + GitHub Action bloquante sur PR. Prévoir la **déclaration d'une divergence
+   volontaire** (annotée + justifiée), sinon la parité devient une prison qu'on
+   finit par désactiver. Aucune règle conditionnée au nom d'un composant.
 5. **Composants simples supplémentaires (généricité).** Une fois la composition
    tenue : un composant à icône `strict` (Alert) et un interactif (Checkbox /
    TextField) pour couvrir booléens, états et slots, et confirmer qu'aucune règle
    spécifique à Button ne subsiste.
 6. **Au-delà du MVP.** Une fois la généricité prouvée : JSON Schema versionné du
-   contrat, diff sémantique des contrats pour faciliter les revues, puis
+   contrat, version de schéma pour `tokens.json`, exploitation du multi-marque
+   (les modes exportés sous `$extensions["com.ucm.modes"]`), diff sémantique des
+   contrats pour faciliter les revues, formalisation du protocole de test froid
+   (états comparés, critère de réussite/échec, consignation des résultats), puis
    passerelles (génération Code Connect, exploitation Storybook). Motivations
    détaillées dans [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §4.
 
 > **Principe d'ordonnancement.** On ne conçoit `composes` ni la parité récursive
-> dans l'abstrait : créer volontairement un composé minimal (étape 4) fournit le
+> dans l'abstrait : créer volontairement un composé minimal (étape 3) fournit le
 > cas réel contre lequel on les dessine. Une abstraction ajoutée avant son cas
 > concret résout un problème théorique et réduit la généricité.
 

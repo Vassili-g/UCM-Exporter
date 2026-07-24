@@ -1,9 +1,15 @@
-# Unified Component Exporter — contexte & spécification
+# Unified Component Exporter — spécification
 
-## Vision
+**Sommaire** — Contexte technique · Le design system de référence ·
+**Partie 1** Export composant · **Partie 2** Export tokens ·
+**Partie 3** Configuration & dépôt GitHub · Hors périmètre MVP ·
+Historique du schéma du contrat.
 
-Unified Component Exporter produit les deux artefacts design nécessaires à la mise en œuvre du
-concept UCM dans un repository consommateur (cf. `CONCEPT.md`) :
+## Objet
+
+Le concept (pourquoi, arbitrage des sources, co-localisation) vit dans
+[`CONCEPT.md`](./CONCEPT.md). Ce document spécifie les deux artefacts que le
+plugin produit pour le mettre en œuvre :
 
 - un **contrat de composant** JSON — props, structure, tokens, intention et
   documentation par valeur (règles lues dans le conteneur `<Nom>-Rules`) ;
@@ -17,15 +23,16 @@ consommateur.
 
 ## Contexte technique
 
-- Plugin Figma (Plugin API, plan Professional) : pas d'API Variables REST ni
-  de Code Connect. `api.github.com` est autorisé pour le dépôt optionnel des
-  artefacts via PR ;
+- Plugin Figma (Plugin API) : pas d'API Variables REST ni de Code Connect.
+  `api.github.com` est autorisé pour le dépôt optionnel des artefacts via PR ;
 - Tourne dans l'éditeur, produit des fichiers en téléchargement sans config
   valide, ou les dépose sur une branche GitHub dédiée avec une config valide.
 - Deux commandes indépendantes qui partagent le même code Figma :
   **Export composant** (Partie 1) et **Export tokens** (Partie 2).
 - Stack : TypeScript, `@figma/plugin-typings`, build esbuild. L'UI expose le
-  statut GitHub, les deux commandes, la configuration et un journal.
+  statut GitHub, les deux commandes, la configuration, un journal et un retour
+  en direct sur la sélection (un Component Set sans règles est signalé avant
+  tout export).
 - **`normalizeName()` est commune aux deux commandes** :
   `Brand Tokens/Primary/default` → `brand-tokens.primary.default`
   (`/`→`.`, espaces d'un segment → `-`, minuscules). Un token s'écrit donc
@@ -38,10 +45,13 @@ consommateur.
   consommateur retire `{…}` avant de résoudre. Un nom de **style de texte** n'est
   pas un token : il reste une chaîne nue et n'entre pas dans `tokensUsed`.
 
-## Le design system décrit (données lues, jamais codées en dur)
+## Le design system de référence (un exemple, pas un prérequis)
 
-Le plugin **lit** cette structure dynamiquement. Collections de variables, par
-tiers d'alias :
+Le moteur n'exige **presque rien** de cette structure : il lit dynamiquement
+les collections, les variables et leurs alias, quels que soient leurs noms.
+La table ci-dessous décrit le **fichier Figma de référence** du MVP — une
+organisation réaliste qui sert de cas de validation, pas une contrainte du
+plugin. Collections de variables, par tiers d'alias :
 
 | Tier | Collection | Rôle |
 |---|---|---|
@@ -49,9 +59,9 @@ tiers d'alias :
 | 2 | **Brands** | palettes par marque → alias vers Primitives |
 | 3 | **Brand Tokens** | couleurs de marque par emphase (`strong`…`subtlest`) ; **les modes = les marques** (1 mode = 1 marque) |
 | 4 | **Utilities** | sémantiques Success / Info / Warning / Danger / Neutral → alias |
-| 5 | **Components** | mapping par composant → alias Brand Tokens / Utilities |
+| 5 | **Components** | mapping par composant → alias Brand Tokens / Utilities, plus les dimensions par taille (`Sizes`) |
 | 6 | **Sizes** | `Spacing` (feuilles px), `FontSize` → `Spacing` |
-| 7 | **Layouts** | `Sizing` / `Radius` / `Stroke` / `FontFamily` / `FontWeight` / `LineHeight` / `TextScale` + dimensions composant |
+| 7 | **Layouts** | `Sizing` / `Radius` / `Stroke` / `FontFamily` / `FontWeight` / `LineHeight` / `TextScale` |
 
 Deux propriétés structurantes :
 
@@ -65,7 +75,7 @@ Deux propriétés structurantes :
 Nommage réel (exemple Button) : couleurs sous
 `Components/Button/Colors/{color}/{variant}/{state}/{role}` (30 combinaisons =
 `2 couleurs × 3 variantes × 5 états`) ; dimensions sous
-`Layouts/Components/Button/{Big,Medium,Small}/{gap,padding-x,padding-y,border-radius,font-size}`.
+`Components/Button/Sizes/{Big,Medium,Small}/{gap,padding-x,padding-y,border-radius,font-size}`.
 Collections au pluriel (`Sizes`, `Layouts`), nom de composant au singulier.
 
 ---
@@ -85,8 +95,10 @@ conteneur `<Nom>-Rules` (sinon export bloqué, cf. étape 7).
 
 **1. Props** — traduire chaque propriété : `VARIANT` → enum, `BOOLEAN` →
 boolean, `TEXT` → string. Deux règles auto-détectées :
-- *Convention State* : un axe `State`/`Status` est design-only, **exclu des
-  props** ; sa seule valeur `Disable` devient `disabled: boolean`.
+- *Convention State* : un axe `State`/`Status` décrit des états d'interaction
+  dérivés du runtime (hover, focus…), pas des choix d'API — il est donc **exclu
+  des props** ; seule sa valeur `Disable` (orthographes `Disable` ou `Disabled`
+  acceptées) devient `disabled: boolean`.
 - *Couche sémantique* : les noms Figma peu parlants sont mappés vers le
   vocabulaire partagé — ex. un enum dont toutes les valeurs sont des tailles
   (`big/medium/small`, `xs`…`3xl`) → prop `size`. Le nom Figma d'origine est
@@ -119,8 +131,10 @@ séparément dans `variantStrokes` :
 `color` et `width` sont des **références de token** entre accolades ; `align`
 est une donnée structurelle Figma, pas un token — jamais d'accolades. Une
 largeur non liée produit un warning et vaut `null` ; elle n'est jamais
-remplacée par une valeur brute. Les deux arbres sont nichés selon
-`variantAxes`, avec des références de token uniquement dans `variantTokens` :
+remplacée par une valeur brute. Les strokes vivent dans un arbre séparé
+(`variantStrokes`) pour que les feuilles de `variantTokens` restent de pures
+références chaînes — une structure stable pour ses consommateurs. Les deux
+arbres sont nichés selon `variantAxes` :
 
 ```json
 "variantAxes": ["color", "variant", "state"],
@@ -143,9 +157,14 @@ remplacée par une valeur brute. Les deux arbres sont nichés selon
 }
 ```
 
-**3. Layout** — chercher une instance imbriquée portant des dimensions liées
-(`itemSpacing`/`padding`/`cornerRadius`) = **wrapper de dimensions**. S'il
-existe (Button : `sizeWrapperButton`), ses props sont **fusionnées** dans l'API
+**3. Layout** — certains design systems construisent leurs variantes de taille
+via un sous-composant partagé, imbriqué dans chaque variant, qui porte seul les
+dimensions : c'est le **wrapper de dimensions**. Le moteur cherche donc une
+instance imbriquée portant des dimensions liées
+(`itemSpacing`/`padding`/`cornerRadius`). Si plusieurs instances en portent,
+celle qui lie le plus de dimensions gagne ; un nom contenant « wrapper » et des
+props exposées servent de départage. S'il en
+existe une (Button : `sizeWrapperButton`), ses props sont **fusionnées** dans l'API
 (étape 1) et ses dimensions relevées ; **sinon**, dimensions lues directement
 sur le composant de référence (`defaultVariant`). → `gap`, `padding.x/y`,
 `radius`. Un composant plat est donc géré sans blocage.
@@ -153,7 +172,9 @@ sur le composant de référence (`defaultVariant`). → `gap`, `padding.x/y`,
 par ses valeurs, comme la prop `size`), chaque valeur est extraite →
 `structure.sizes.{big,medium,small}` avec gap/padding/radius/fontSize par
 taille. Le contrat couvre ainsi toutes les tailles, pas seulement celle
-instanciée par défaut.
+instanciée par défaut. Hypothèse assumée : les dimensions ne varient que selon
+l'axe de tailles — un représentant par taille suffit ; si un design system
+faisait varier un padding selon un autre axe, le contrat ne le verrait pas.
 
 **4. Modèle d'interaction** — lorsqu'un axe `State` ou `Status` est présent,
 le contrat ajoute `stateModel` avec le déclencheur de chaque état connu :
@@ -169,18 +190,20 @@ doit être rempli en noms de tokens — jamais vide, jamais brut.**
 
 **6. Structure** — `children` = enfants directs réels du node de layout :
 - calque **texte** → slot `label` (nom d'origine dans `figmaLayer`), avec
-  `typography` (étape 4) et `color` (= `foreground` du variant de référence) ;
+  `typography` (étape 5) et `color` (= `foreground` du variant de référence) ;
 - calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
 
 Slots dédupliqués (`label`, `label-2`…). Un calque inattendu est inclus tel
 quel, jamais supprimé silencieusement.
 
-**7. Intention & doc par valeur** — lues dans un **conteneur Figma** (frame,
-section ou groupe) nommé `<Nom>-Rules` (ex. `Button-Rules`), posé à côté du
-composant — seul son nom compte, pas son type. Chaque règle est
+**7. Intention & doc par valeur** — lues dans un **conteneur Figma** — frame,
+section ou groupe — nommé `<Nom>-Rules` (ex. `Button-Rules`), posé **sur la même
+page** que le composant. Chaque règle est
 une instance d'un composant de configuration (`ComponentConfiguration`) dont la
 **variante** porte le tag et le calque `content` le texte :
-- `@usage` (un), `@do`/`@dont` (répétables), `@pairs` (virgules) → `intent` ;
+- `@usage` (un), `@do`/`@dont` (répétables), `@pairs` (virgules) → `intent`.
+  `@pairs` liste les composants du design system qui s'associent bien à
+  celui-ci (ex. `Icon, Tooltip`) : un agent peut s'en servir pour composer ;
 - `@prop` + calque `prop` (ex. `variant.contained`) → doc par valeur, rangée
   dans `props.<prop>.descriptions.<valeur>`.
 - `@icons` → politique d'icône dans `icons`. La variante de règle contient un
@@ -193,7 +216,13 @@ une instance d'un composant de configuration (`ComponentConfiguration`) dont la
   propriété Figma `visible` à un BOOLEAN, ce booléen est conservé et une prop
   runtime distincte `<bool>Name` est ajoutée pour une icône `modifiable`.
   Sans cette liaison native, l'icône est exportée avec un warning, mais aucune
-  prop n'est inventée.
+  prop n'est inventée. En résumé, trois responsabilités distinctes :
+
+  | Qui | Contrôle | Défini où |
+  |---|---|---|
+  | Booléen Figma (`iconLeft`…) | la **visibilité** du calque | liaison native `visible` dans Figma |
+  | Prop runtime `<bool>Name` | **quelle** icône afficher | ajoutée par l'exporteur (icône `modifiable`) |
+  | `figmaName` | l'icône de **repli** | nom du calque Figma, utilisé quand la prop runtime est vide |
 Convention uniforme (aucune logique par composant), lue **sans jamais écrire dans
 Figma**. Les règles sont **obligatoires** : conteneur absent ou sans aucune règle
 exploitable → **export BLOQUÉ** en pré-vol (erreur explicite), aucun fichier
@@ -203,7 +232,11 @@ inexistante → warning (faute de frappe), non bloquant.
 **8. Rendu sémantique & garde-fous** — le contrat publie aussi le mapping
 générique des rôles vers les propriétés de rendu (`background` →
 `background-color`, `foreground` → `color`/`fill`, `border` → couleur et
-largeur de bordure, `ring` → contour avec repli `box-shadow`). Toute propriété
+largeur de bordure, `ring` → contour extérieur). Pour un rôle avec `fallback`,
+les `cssProperties` sont le rendu candidat et le `fallback` le rendu
+**recommandé** dès que la fidélité l'exige : un `ring` aligné `outside` se rend
+en `box-shadow` (`0 0 0 <width> <color>`), qui épouse le `border-radius` et se
+dessine hors du flux — il ne déplace jamais les éléments voisins. Toute propriété
 pertinente sans variable liée → warning précis (calque + propriété), non
 exportée, **export non bloqué**.
 `tokensUsed` = liste à plat dédupliquée de toutes les références de token de
@@ -233,12 +266,11 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
                   "descriptions": { "contained": "Action la plus importante d'une page.",
                                     "text": "Action secondaire dans un conteneur déjà bordé." } },
     "disabled": { "type": "boolean", "default": false },
-    "size":     { "type": "enum", "values": ["big","medium","small"], "default": "medium",
-                  "figmaName": "Button-Construc-Type" },
-    "iconLeft": { "type": "boolean", "default": false },
+    "size":     { "type": "enum", "values": ["big","medium","small"], "default": "medium" },
+    "iconLeft": { "type": "boolean", "default": true },
     "iconLeftName": { "type": "icon", "default": null,
                        "policy": "modifiable", "visibilityProp": "iconLeft" },
-    "iconRight":{ "type": "boolean", "default": false },
+    "iconRight":{ "type": "boolean", "default": true },
     "iconRightName": { "type": "icon", "default": null,
                         "policy": "modifiable", "visibilityProp": "iconRight" }
   },
@@ -264,10 +296,10 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
   },
   "structure": {
     "layout": "flex-row",
-    "gap": "{layouts.components.button.medium.gap}",
-    "padding": { "x": "{layouts.components.button.medium.padding-x}",
-                 "y": "{layouts.components.button.medium.padding-y}" },
-    "radius": "{layouts.components.button.medium.border-radius}",
+    "gap": "{components.button.sizes.medium.gap}",
+    "padding": { "x": "{components.button.sizes.medium.padding-x}",
+                 "y": "{components.button.sizes.medium.padding-y}" },
+    "radius": "{components.button.sizes.medium.border-radius}",
     "sizes": {
       "big":    { "gap": "…", "padding": { "x": "…", "y": "…" }, "radius": "…", "fontSize": "…" },
       "medium": { "…": "idem" },
@@ -276,7 +308,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "children": [
       { "slot": "arrow-left-long", "figmaLayer": "arrow-left-long", "optional": true,
         "visibilityProp": "iconLeft", "size": "{components.icons.sizes.base}" },
-      { "slot": "label", "figmaLayer": "Suivant", "typography": { "…": "étape 4" },
+      { "slot": "label", "figmaLayer": "Suivant", "typography": { "…": "étape 5" },
         "color": "{components.button.colors.primary.contained.default.foreground}" },
       { "slot": "arrow-right-long", "figmaLayer": "arrow-right-long", "optional": true,
         "visibilityProp": "iconRight", "size": "{components.icons.sizes.base}" }
@@ -302,45 +334,45 @@ traçabilité Figma (nom de fichier, id du nœud, clé de composant, lien URL).
 L'URL vaut `null` quand l'API ne fournit pas la clé du fichier (plugins en
 développement) — un warning le signale, sans bloquer.
 
-### Definition of done
+### Invariants
 
-- [ ] `props` : tous les axes `VARIANT`/`BOOLEAN`/`TEXT` + props du wrapper ;
+- `props` : tous les axes `VARIANT`/`BOOLEAN`/`TEXT` + props du wrapper ;
       axe `State` exclu, `Disable` → `disabled`.
-- [ ] Couche sémantique appliquée (ex. tailles → `size`) avec `figmaName`
+- Couche sémantique appliquée (ex. tailles → `size`) avec `figmaName`
       conservé ; aucun mapping lié à un composant précis.
-- [ ] `variantTokens` et `variantStrokes` couvrent **toutes** les combinaisons
+- `variantTokens` et `variantStrokes` couvrent **toutes** les combinaisons
       d'axes, nichés selon `variantAxes` ; le premier ne contient que des
       références de token `{…}`, le second porte couleur et largeur en
       références `{…}` plus l'alignement Figma nu (`inside`/`center`/`outside`).
-- [ ] Un rôle absent d'un état signifie qu'il ne doit pas être rendu ; aucun
+- Un rôle absent d'un état signifie qu'il ne doit pas être rendu ; aucun
       consommateur ne fusionne implicitement cet état avec `default`.
-- [ ] `stateModel` mappe les états connus vers leurs déclencheurs et expose
+- `stateModel` mappe les états connus vers leurs déclencheurs et expose
       une priorité déterministe ; les états inconnus restent visibles avec un
       warning.
-- [ ] `rendering.roles` documente le rendu partagé des rôles visuels.
-- [ ] Typographie remplie en références de token `{…}` (**test n°1**), fallback
+- `rendering.roles` documente le rendu partagé des rôles visuels.
+- Typographie remplie en références de token `{…}` (**test n°1**), fallback
       `fontStyle` géré ; un style de texte reste un nom nu, hors `tokensUsed`.
-- [ ] Dimensions extraites du wrapper si présent, sinon du composant ;
+- Dimensions extraites du wrapper si présent, sinon du composant ;
       `structure.sizes` couvre chaque valeur de l'axe de tailles.
-- [ ] `meta` présent : `contractVersion`, `exportedAt`, traçabilité Figma
+- `meta` présent : `contractVersion`, `exportedAt`, traçabilité Figma
       (fileName, nodeId, componentKey, url — null toléré avec warning).
-- [ ] `children` = vrais calques (texte → `label` + `figmaLayer` ; graphique →
+- `children` = vrais calques (texte → `label` + `figmaLayer` ; graphique →
       nom conservé dans `figmaLayer` + `optional` + `size`).
-- [ ] Les règles `@icons` distinguent une icône `modifiable` d'une icône
+- Les règles `@icons` distinguent une icône `modifiable` d'une icône
       `strict` par la visibilité de leurs calques dédiés ; le nom du calque
       `icon` correspond exactement au calque graphique exporté.
-- [ ] `icons` conserve cette qualification sans modifier les props BOOLEAN ;
+- `icons` conserve cette qualification sans modifier les props BOOLEAN ;
       une icône `modifiable` ajoute une prop runtime distincte seulement quand
       Figma lie nativement son calque à un BOOLEAN de visibilité.
-- [ ] Aucune valeur brute de design exportée ; tout token cité l'est comme
+- Aucune valeur brute de design exportée ; tout token cité l'est comme
       référence `{…}` ; une largeur de stroke non tokenisée vaut `null` avec
       warning, tandis que l'alignement structurel Figma
       (`inside`/`center`/`outside`) est conservé nu.
-- [ ] Règles lues dans le conteneur `<Nom>-Rules` : `@usage`/`@do`/`@dont`/`@pairs`
+- Règles lues dans le conteneur `<Nom>-Rules` : `@usage`/`@do`/`@dont`/`@pairs`
       → `intent`, `@prop` → `props.<prop>.descriptions.<valeur>` ; conteneur
       absent/vide → **export bloqué** ; `@prop` invalide → warning ; jamais
       d'écriture Figma.
-- [ ] Résultats aussi fidèles sur un composant **non-Button**.
+- Résultats aussi fidèles sur un composant **non-Button**.
 
 ---
 
@@ -363,8 +395,8 @@ FLOAT : `sizes.fontsize.base` sort `"{sizes.spacing.8}"`, pas `"8px"`. Les
 feuilles (Primitives, Spacing) portent la valeur directe.
 
 **3. Modes = marques** — la collection **Brand Tokens** utilise les modes comme
-axe multi-marque (1 mode = 1 marque) : **non ignorés**. v1 (simple, un seul
-fichier) : `$value` = valeur du mode par défaut, et **tous** les modes portés
+axe multi-marque (1 mode = 1 marque) : **non ignorés**. Stratégie actuelle (un
+seul fichier) : `$value` = valeur du mode par défaut, et **tous** les modes portés
 sous `$extensions["com.ucm.modes"]` (`{ nom-de-marque: valeur }`).
 Rien n'est perdu, tout est visible d'un coup d'œil. Collections mono-mode :
 juste `$value`. *(Évolution possible : un fichier DTCG par marque.)*
@@ -389,15 +421,15 @@ et non `number` : sans ça, un token `number` référencerait un token `dimensio
 }
 ```
 
-### Definition of done
+### Invariants
 
-- [ ] Toutes les variables exportées, chaîne d'alias préservée jusqu'aux
+- Toutes les variables exportées, chaîne d'alias préservée jusqu'aux
       primitives (aucun maillon aplati, dimensions incluses).
-- [ ] Tous les modes de Brand Tokens présents (`$value` défaut + `$extensions`) ;
+- Tous les modes de Brand Tokens présents (`$value` défaut + `$extensions`) ;
       collections mono-mode en `$value` seul.
-- [ ] `normalizeName` identique à la Partie 1 (tokens recoupables avec les
+- `normalizeName` identique à la Partie 1 (tokens recoupables avec les
       `tokensUsed`).
-- [ ] JSON DTCG valide, consommable par Style Dictionary v4.
+- JSON DTCG valide, consommable par Style Dictionary.
 
 ---
 
@@ -429,15 +461,15 @@ ouvre une PR vers la branche de base. Si le contenu est identique, aucune
 branche ni PR n'est créée. Config absente/invalide ou erreur GitHub : repli
 automatique vers le téléchargement local avec message explicite.
 
-### Definition of done
+### Invariants
 
-- [ ] Tous les champs sont persistés et validés inline ; les paths sont
+- Tous les champs sont persistés et validés inline ; les paths sont
       normalisés et restent relatifs.
-- [ ] PAT masqué, conservé uniquement dans `github_pat`, jamais logué.
-- [ ] Test de connexion automatique à l'ouverture et après sauvegarde.
-- [ ] Une commande = une PR avec son unique artefact ; aucun auto-merge.
-- [ ] Aucun changement = aucune PR vide.
-- [ ] Toute erreur GitHub conserve l'artefact par téléchargement local.
+- PAT masqué, jamais renvoyé à l'UI ni logué.
+- Test de connexion automatique à l'ouverture et après sauvegarde.
+- Une commande = une PR avec son unique artefact ; aucun auto-merge.
+- Aucun changement = aucune PR vide.
+- Toute erreur GitHub conserve l'artefact par téléchargement local.
 
 ---
 
@@ -446,3 +478,16 @@ automatique vers le téléchargement local avec message explicite.
 Pas d'écriture dans le document Figma, pas d'auto-merge, pas de
 multi-composant en une commande, pas de scoring. Aucun domaine réseau autre que
 GitHub API déclarée dans le manifest.
+
+---
+
+## Historique du schéma du contrat
+
+| Version | Changement |
+|---|---|
+| 1.x | Schéma initial (clé `meta.ucsVersion`) ; la 1.4 ajoute `stateModel`, `rendering`, `variantStrokes` et les règles d'icônes |
+| 2.0 | `meta.ucsVersion` devient `meta.contractVersion` : le schéma du contrat est dissocié du concept — rupture de clé pour les consommateurs |
+| 3.0 | Les tokens sont cités comme références `{chemin.du.token}`, plus jamais comme chemins nus — rupture pour un consommateur qui lisait le chemin littéral |
+
+`tokens.json` ne porte pas encore de version de schéma propre — prévu au-delà
+du MVP (cf. [`ROADMAP.md`](./ROADMAP.md)).

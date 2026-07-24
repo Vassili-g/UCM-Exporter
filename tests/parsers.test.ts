@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractContractProps, normalizePropKey, parseIntent } from '../src/contract/parsers';
+import { extractContractProps, normalizePropKey } from '../src/contract/parsers';
 
 test('normalizePropKey retire les identifiants Figma et produit du camelCase', () => {
   assert.equal(normalizePropKey('Icon Position#12:3'), 'iconPosition');
@@ -99,17 +99,4 @@ test('extractContractProps laisse un enum non-taille sous son nom, sans figmaNam
   assert.deepEqual(extractContractProps(definitions), {
     variant: { type: 'enum', values: ['contained', 'outlined', 'text'], default: 'contained' },
   });
-});
-
-test('parseIntent lit les tags répétables et les paires', () => {
-  assert.deepEqual(
-    parseIntent(`@usage Action principale\n@do Utiliser un verbe\n@do Être concis\n@dont Empiler\n@pairs Icon, Tooltip`),
-    {
-      usage: 'Action principale',
-      do: ['Utiliser un verbe', 'Être concis'],
-      dont: ['Empiler'],
-      pairs: ['Icon', 'Tooltip'],
-    },
-  );
-  assert.equal(parseIntent('Description sans tags'), null);
 });

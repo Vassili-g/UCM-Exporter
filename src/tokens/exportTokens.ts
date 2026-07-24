@@ -12,6 +12,8 @@ export type TokensExport = {
   filename: string;
   content: string;
   warningCount: number;
+  /** Liste des avertissements, pour affichage détaillé dans le journal de l'UI. */
+  warnings: string[];
 };
 
 /** Erreur « métier » : son message est affiché tel quel à l'utilisateur. */
@@ -212,6 +214,7 @@ export async function handleExportTokens(): Promise<TokensExport> {
     filename: 'tokens.json',
     content: JSON.stringify(tree, null, 2),
     warningCount: warnings.length,
+    warnings,
   };
 }
 

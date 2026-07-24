@@ -1,10 +1,9 @@
 /**
- * Traduction des propriétés Figma en props publiques du contrat, et lecture
- * de l'intention (`@usage`, `@do`…) depuis la description du composant.
+ * Traduction des propriétés Figma en props publiques du contrat.
  */
 import normalizeName from '../utils';
 import { semanticEnumName } from './semantics';
-import type { ContractProp, Intent } from './types';
+import type { ContractProp } from './types';
 
 /**
  * Normalise un nom de propriété Figma en clé camelCase.
@@ -102,32 +101,4 @@ export function extractContractProps(
   }
 
   return props;
-}
-
-/**
- * Lit l'intention d'usage depuis la description taguée du Component Set.
- * Tags reconnus : `@usage` (une ligne), `@do` / `@dont` (répétables),
- * `@pairs` (liste séparée par des virgules).
- * Renvoie null si aucun tag n'est présent — le contrat l'exporte alors
- * avec un warning, sans bloquer.
- */
-export function parseIntent(description: string): Intent | null {
-  const usage = description.match(/@usage\s+([^\r\n]+)/i);
-  const doItems = Array.from(description.matchAll(/@do\s+([^\r\n]+)/gi));
-  const dontItems = Array.from(description.matchAll(/@dont\s+([^\r\n]+)/gi));
-  const pairs = description.match(/@pairs\s+([^\r\n]+)/i);
-
-  if (!usage && doItems.length === 0 && dontItems.length === 0 && !pairs) return null;
-
-  return {
-    usage: usage?.[1].trim() ?? null,
-    do: doItems.map((match) => match[1].trim()),
-    dont: dontItems.map((match) => match[1].trim()),
-    pairs: pairs
-      ? pairs[1]
-          .split(',')
-          .map((item) => item.trim())
-          .filter(Boolean)
-      : [],
-  };
 }

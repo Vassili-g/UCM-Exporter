@@ -88,6 +88,10 @@ Les commentaires sont en français et doivent aider un lecteur débutant :
   vision produit est dans [`CONCEPT.md`](./CONCEPT.md). Tout changement de
   comportement ou de schéma se répercute dans `UCM-EXPORTER-SPEC.md` **dans le même
   changement** — un doc désynchronisé est un bug.
+- **Hiérarchie documentaire** : `CONCEPT.md` **définit** (une seule formulation
+  canonique par principe), `UCM-EXPORTER-SPEC.md` **précise**, tous les autres
+  documents **pointent** sans reformuler — une reformulation libre est une
+  divergence en devenir. C'est la règle `normalizeName()` appliquée à la prose.
 - Tout changement de forme du contrat incrémente `contractVersion`
   (`src/contract/exportComponent.ts`) et met à jour l'exemple de `UCM-EXPORTER-SPEC.md`.
 - Garder le `README.md` fidèle à l'état réel du projet (commandes,

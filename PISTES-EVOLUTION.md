@@ -1,7 +1,10 @@
-# Pistes d'évolution
+# Pistes d'évolution — UCM
+
+*Document de réflexion, révisé en juillet 2026. Rien ici n'engage la roadmap :
+ce sont des idées pour la suite, à réévaluer au fil des validations réelles.*
 
 Ce document rassemble l'**analyse stratégique** du projet : positionnement,
-inspirations, risques et **vision produit à horizon** (§7, tiérée). Il ne décrit
+inspirations, risques et **vision produit à horizon** (§6, tiérée). Il ne décrit
 ni des fonctionnalités promises, ni le comportement actuel du plugin, **ni des
 étapes de développement** — celles-ci vivent dans [`ROADMAP.md`](./ROADMAP.md).
 
@@ -82,18 +85,6 @@ Le gain sera plus faible pour une petite bibliothèque peu structurée, un
 design system entièrement code-first ou une organisation déjà engagée dans un
 outil où les composants codés sont directement utilisés pour concevoir.
 
-### Évaluation à l'issue du MVP Button
-
-| Critère | Note indicative | Lecture |
-|---|---:|---|
-| Pertinence | 18/20 | Le manque de contexte design fiable est un obstacle majeur à l'utilisation des agents sur des interfaces réelles |
-| Originalité | 14/20 | Les briques existent, mais leur assemblage autour d'un contrat design autonome reste distinctif |
-| Puissance potentielle | 17/20 | Le contrat peut relier Figma, code, documentation, CI et agents sans imposer un framework |
-| Exécution actuelle | 13/20 | L'architecture est sérieuse pour un MVP, mais la preuve repose encore principalement sur Button et des garde-fous partiels |
-
-Ces notes doivent évoluer avec les validations réelles. Elles ne constituent
-pas un objectif produit.
-
 ## 4. Améliorations dont s'inspirer
 
 ### 4.1 Liaison explicite entre contrat et implémentation
@@ -118,6 +109,11 @@ Cette donnée ne doit pas être exportée par Figma : elle dépend du repository
 du framework et de son organisation. Une intégration ultérieure pourrait
 générer un mapping Code Connect à partir de cette association, sans dupliquer
 manuellement la correspondance.
+
+Ce n'est pas contradictoire avec la friction n°3 de
+[`CONCEPT.md`](./CONCEPT.md) §2 : l'UCM supprime le **coût de lecture** du
+contexte design via des outils dédiés, mais peut très bien **alimenter**
+Code Connect pour les équipes qui l'utilisent déjà.
 
 **Statut :** à étudier après la validation multi-composants.
 
@@ -188,11 +184,9 @@ nouvelle vérité. Il pourrait servir de commentaire de PR ou de rapport CI.
 
 ### 4.5 Propriétaire explicite de chaque information
 
-Les approches code-first confirment l'intérêt d'une source de vérité unique par
-catégorie d'information — exactement l'arbitrage fixé dans
-[`CONCEPT.md`](./CONCEPT.md) §3 (Figma / accord designer ↔ dev / code réel / CI).
-Le point à ne pas perdre : le contrat ne doit **pas** devenir une seconde
-définition de ce qui appartient au code.
+Déjà couvert par l'arbitrage de [`CONCEPT.md`](./CONCEPT.md) §3. Seul rappel à
+ne pas perdre : le contrat ne doit **pas** devenir une seconde définition de ce
+qui appartient au code.
 
 ### 4.6 Nom des props : accord amont, mapping en échappatoire
 
@@ -212,25 +206,19 @@ reviendrait à outiller un problème qu'on n'a pas encore rencontré.
 **Statut :** non nécessaire tant que les noms sont négociés à la création du
 composant Figma.
 
-## 5. Ce qu'il ne faut pas copier
+## 5. Risques principaux
 
-Afin de préserver un contrat générique, lisible et stable, les évolutions
-suivantes sont déconseillées :
+Le modèle a **trois coutures** ; chacune peut se défaire à sa manière.
 
-- insérer des snippets React, CSS ou propres à une plateforme dans le contrat ;
-- transformer le contrat en documentation Storybook complète ;
-- exporter l'arbre Figma brut ou chercher à reproduire tout son layout ;
-- ajouter des événements applicatifs génériques comme `activate` ;
-- décrire `onClick`, les attributs `aria-*` ou les règles de formulaire dans
-  Figma ;
-- représenter toute l'implémentation dans le contrat ;
-- construire une synchronisation bidirectionnelle avant d'avoir démontré la
-  stabilité du flux actuel.
+**Figma ↔ contrat — la péremption (le risque le plus sournois).** Le plugin est
+manuel : rien ne signale qu'un export est en retard sur Figma. Un contrat
+« frais » d'apparence peut décrire un composant modifié depuis des semaines —
+toute la chaîne « impossible de diverger » repose sur un humain qui pense à
+ré-exporter. Mitigations envisageables : afficher `meta.exportedAt` dans le
+playground, badge CI d'ancienneté des artefacts, rappel périodique côté design.
 
-## 6. Risque principal
-
-La co-localisation rapproche la spécification et le code, mais ne garantit pas
-à elle seule leur cohérence :
+**Contrat ↔ code — la divergence silencieuse.** La co-localisation rapproche la
+spécification et le code, mais ne garantit pas à elle seule leur cohérence :
 
 ```text
 Figma ──► contrat de composant
@@ -247,31 +235,37 @@ Le concept atteindra sa pleine puissance lorsque la CI saura détecter :
 - un contrat incompatible avec la version de schéma prise en charge ;
 - une modification importante difficile à repérer dans le JSON brut.
 
-## 7. Vision produit (horizon ~1 an)
+**Code ↔ runtime — les conventions hors tokens.** Ce que le contrat ne porte
+pas encore se glisse dans le repo consommateur : dette non tokenisée (ratio de
+glyphe, style FontAwesome — tracée dans le skill `consommer-contrat`),
+dépendance au kit d'icônes distant. Chaque convention de ce type est une
+mini-source de vérité parallèle à résorber par tokenisation.
+
+## 6. Vision produit (horizon ~1 an, écrit mi-2026)
 
 À quoi ressemble le produit **complet**, plus un MVP. **Avertissement** : ~80 %
 de la valeur tient dans le Tier 1. Cette carte est un **filtre** — elle sert à
 savoir quoi *ne pas* faire autant que quoi faire, pas une to-do à dérouler.
 
 Tout est mesuré à l'aune des deux piliers du concept ([`CONCEPT.md`](./CONCEPT.md)
-§1-3) : **A** — robustesse / non-divergence (co-création) ; **B** — confiance
+§2) : **A** — robustesse / non-divergence (co-création) ; **B** — confiance
 des devs dans les agents.
 
 **Tier 1 — la colonne vertébrale (le cœur du produit)**
 
-- **Parité industrialisée avec exceptions déclarées** (Pilier A). Pre-commit +
-  CI, compare props/valeurs/états/tokens/slots/dépendances, dit *dans quel sens*
-  corriger, et laisse annoter une divergence volontaire — sans quoi la parité
-  devient une prison contournée. Détail en §4.2 ; substance dans
-  [`ROADMAP.md`](./ROADMAP.md) §3.
-- **Agent à deux niveaux + serveur de contexte fichiers** (Pilier B). *Usage*
+- **Parité industrialisée avec exceptions déclarées** (Pilier A). Le garde-fou
+  central du modèle : ce qu'il vérifie est détaillé en §4.2, sa mise en œuvre
+  dans [`ROADMAP.md`](./ROADMAP.md) §3. Sans divergence volontaire annotable,
+  la parité devient une prison qu'on finit par contourner.
+- **Agent à deux niveaux, contexte servi par les fichiers du repo** (Pilier B). *Usage*
   (composer une UI, le MVP) puis *contribution* (« ajoute un variant ghost au
   bouton » exécuté dans les règles du pipeline). Le contexte est servi en
-  fichiers, jamais via un service tiers — fidèle à la contrainte anti-MCP.
+  fichiers dans le repo, jamais via un service tiers à interroger — c'est la
+  friction n°3 de [`CONCEPT.md`](./CONCEPT.md) §2.
   L'agent-contributeur n'est sûr que **parce que** la parité le rattrape.
 - **CODEOWNERS encodant l'arbitrage** (Pilier A, coût quasi nul). Les tokens ne
   s'approuvent que par un designer, le code que par un dev : le §3 de CONCEPT
-  devient un fichier exécuté par la forge.
+  devient un fichier que GitHub applique à chaque PR.
 - **Modèle de composition** (composant simple vs composé, parité récursive).
   Sans lui, la robustesse s'arrête aux composants simples ; les vraies UIs sont
   des arbres de composés. Structurel, pas optionnel — c'est une **priorité**
@@ -300,17 +294,24 @@ des devs dans les agents.
 **Tier 4 — à NE PAS faire**
 
 - **Write-back automatique code → Figma.** Contredit l'invariant « Unified Component Exporter
-  n'écrit jamais dans Figma » et la discipline du §5 ci-dessus. On garde la
+  n'écrit jamais dans Figma ». On garde la
   **détection** bidirectionnelle (signaler qu'une maquette est en retard sur le
   code), jamais l'écriture dans le document.
+- **Enrichir le contrat au-delà du design.** Pas de snippets React/CSS ni de
+  documentation Storybook complète dans le contrat, pas d'arbre Figma brut ni
+  de reproduction de tout le layout, pas d'événements applicatifs (`activate`,
+  `onClick`), pas d'attributs `aria-*` ni de règles de formulaire décrits dans
+  Figma : le contrat décrit le design, jamais l'implémentation.
+- **Synchronisation bidirectionnelle** avant d'avoir démontré la stabilité du
+  flux actuel.
 
-## 8. Décisions à trancher
+## 7. Questions ouvertes
 
-Elles bloquent des choix en aval :
+Des questions à garder en tête pour la suite — aucune ne bloque le MVP :
 
-- **Ce que le contrat contrôle (à geler)** : props + valeurs + états + tokens
-  (en références) + slot icône + **dépendances de composition**. Ce qui n'y est
-  pas listé ne sera jamais vérifié par la parité.
+- **Ce que le contrat contrôle** (à geler une fois `composes` conçu) : props +
+  valeurs + états + tokens (en références) + slot icône + **dépendances de
+  composition**. Ce qui n'y est pas listé ne sera jamais vérifié par la parité.
 - **Sécurité du dépôt GitHub** : le PAT fine-grained local (actuel) suffit-il,
   ou une politique interne imposera-t-elle un proxy serveur ?
 - **Versionner le DS en package nommé** distinct : conditionne la cohabitation

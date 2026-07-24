@@ -6,16 +6,16 @@ Unified Component Exporter est un plugin Figma qui transforme les composants et 
 design system en artefacts structurés, lisibles par les développeurs comme par
 les agents IA.
 
-Le projet repose sur l'**UCM — Unified Component Model** : le modèle où chaque
-**composant unifié** réunit, dans son dossier, son code réel et sa spécification
-issue de Figma. L'exporteur automatise le passage de Figma vers cette
-organisation.
+Le projet repose sur l'**UCM — Unified Component Model** : l'ensemble des
+règles qui font d'un composant un **composant unifié** — qui fait foi sur quoi,
+la co-localisation du code réel et de la spécification issue de Figma, et la
+façon dont les composants se composent (cf. [CONCEPT.md](./CONCEPT.md)).
+L'exporteur automatise le passage de Figma vers cette organisation.
 
 L'objectif : un design system **robuste**, co-créé par le designer et le
 développeur, qui ne diverge d'aucun côté, et un frontend **« future proof »** —
 lisible par les agents IA pour que les développeurs s'appuient sur eux **en
-confiance**, plus vite et avec moins d'erreurs. Il ne s'agit pas de générer des
-interfaces à la volée.
+confiance**, plus vite et avec moins d'erreurs.
 
 ```text
 Figma ── Unified Component Exporter ──► contrat de composant + tokens DTCG
@@ -67,7 +67,8 @@ Le build génère dans `dist/` :
 
 Dans Figma, ouvrez **Plugins → Development → Import plugin from manifest**, puis
 sélectionnez `dist/manifest.json`. Le `manifest.json` à la racine peut aussi
-être utilisé directement pendant le développement.
+être importé tel quel pendant le développement : il pointe déjà vers les
+bundles construits dans `dist/`, seuls les chemins diffèrent.
 
 ## Commandes utiles
 
@@ -100,13 +101,11 @@ tests/
 - [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — analyse stratégique : positionnement, inspirations, risques ;
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
 - [AGENTS.md](./AGENTS.md) — ordre de lecture et invariants pour les agents IA ;
-- [Components Playground](https://github.com/Vassili-g/UCM-Playground) — repository qui consomme les artefacts exportés.
+- [UCM Playground](https://github.com/Vassili-g/UCM-Playground) — repository qui consomme les artefacts exportés.
 
 ## Périmètre actuel
 
 L'export des contrats, des tokens DTCG et le dépôt par PR sont validés sur
 Button. Unified Component Exporter
-n'écrit jamais dans le document Figma et n'effectue aucun auto-merge. Les
-prochains points à travailler — harmonisation des références de tokens,
-`Button.tsx` de production, garde-fous CI, puis deuxième composant non-Button —
-sont listés dans [ROADMAP.md](./ROADMAP.md).
+n'écrit jamais dans le document Figma et n'effectue aucun auto-merge. L'état
+d'avancement et les prochaines étapes sont tenus dans [ROADMAP.md](./ROADMAP.md).
