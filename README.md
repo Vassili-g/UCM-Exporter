@@ -1,15 +1,15 @@
-# TokenLintel
+# Unified Component Exporter
 
 **Le pont entre un design system Figma et son implémentation dans le code.**
 
-TokenLintel est un plugin Figma qui transforme les composants et variables du
+Unified Component Exporter est un plugin Figma qui transforme les composants et variables du
 design system en artefacts structurés, lisibles par les développeurs comme par
 les agents IA.
 
-Le projet repose sur l'**UCS — Unified Component Specification**, un concept
-qui relie design et développement en réunissant, dans le dossier de chaque
-composant, son code réel et sa spécification issue de Figma. TokenLintel
-automatise le passage de Figma vers cette organisation.
+Le projet repose sur l'**UCM — Unified Component Model** : le modèle où chaque
+**composant unifié** réunit, dans son dossier, son code réel et sa spécification
+issue de Figma. L'exporteur automatise le passage de Figma vers cette
+organisation.
 
 L'objectif : un design system **robuste**, co-créé par le designer et le
 développeur, qui ne diverge d'aucun côté, et un frontend **« future proof »** —
@@ -18,13 +18,13 @@ confiance**, plus vite et avec moins d'erreurs. Il ne s'agit pas de générer de
 interfaces à la volée.
 
 ```text
-Figma ── TokenLintel ──► contrat de composant + tokens DTCG
+Figma ── Unified Component Exporter ──► contrat de composant + tokens DTCG
                                       │
                                       ▼
-                 code et spécification co-localisés (UCS)
+                 code et spécification co-localisés (UCM)
 ```
 
-## Ce que TokenLintel produit
+## Ce que l'exporteur produit
 
 | Commande | Entrée Figma | Sortie |
 |---|---|---|
@@ -44,7 +44,7 @@ Deux modes sont disponibles :
 
 - **téléchargement local**, toujours disponible et utilisé comme solution de
   repli ;
-- **dépôt GitHub**, optionnel : TokenLintel crée une branche et ouvre une PR
+- **dépôt GitHub**, optionnel : Unified Component Exporter crée une branche et ouvre une PR
   contenant uniquement l'artefact exporté.
 
 La configuration GitHub est conservée localement dans `figma.clientStorage`.
@@ -94,8 +94,8 @@ tests/
 
 ## Pour comprendre le projet
 
-- [CONCEPT.md](./CONCEPT.md) — le concept global du projet (UCS, arbitrage, co-localisation) ;
-- [TOKENLINTEL-SPEC.md](./TOKENLINTEL-SPEC.md) — comportement exact du plugin et format des sorties ;
+- [CONCEPT.md](./CONCEPT.md) — le concept global du projet (UCM, arbitrage, co-localisation) ;
+- [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md) — comportement exact du plugin et format des sorties ;
 - [ROADMAP.md](./ROADMAP.md) — objectif MVP, état d'avancement et prochaines étapes ;
 - [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — analyse stratégique : positionnement, inspirations, risques ;
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
@@ -105,7 +105,7 @@ tests/
 ## Périmètre actuel
 
 L'export des contrats, des tokens DTCG et le dépôt par PR sont validés sur
-Button. TokenLintel
+Button. Unified Component Exporter
 n'écrit jamais dans le document Figma et n'effectue aucun auto-merge. Les
 prochains points à travailler — harmonisation des références de tokens,
 `Button.tsx` de production, garde-fous CI, puis deuxième composant non-Button —

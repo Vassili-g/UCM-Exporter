@@ -71,6 +71,6 @@ export function createHeader(title, subtitle, onSettings, onBack) {
   return { element: header, connection, settingsButton, backButton };
 }
 /**
- * En-tête partagé par les vues export et configuration de TokenLintel.
+ * En-tête partagé par les vues export et configuration de l'exporteur.
  * Il conserve l'état de connexion et les actions au même emplacement.
  */

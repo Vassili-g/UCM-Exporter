@@ -37,12 +37,14 @@ test('encodeBase64 préserve les caractères Unicode', () => {
 });
 
 test('decodeBase64 accepte les retours à la ligne GitHub et refuse une Base64 invalide', () => {
-  assert.equal(decodeBase64('VG9rZW5M\naW50ZWw='), 'TokenLintel');
+  // Charge utile volontairement neutre : ce test porte sur le décodage Base64,
+  // pas sur le nom du produit (un nom en dur ici casse à chaque renommage).
+  assert.equal(decodeBase64('ZGVzaWdu\nIHN5c3RlbQ=='), 'design system');
   assert.throws(() => decodeBase64('%%%='), /Base64 GitHub invalide/);
 });
 
-test('exportBranchName suit tokenlintel/export-YYYYMMDD-HHmm', () => {
-  assert.equal(exportBranchName(new Date(2026, 6, 17, 9, 5)), 'tokenlintel/export-20260717-0905');
+test('exportBranchName suit ucm-exporter/export-YYYYMMDD-HHmm', () => {
+  assert.equal(exportBranchName(new Date(2026, 6, 17, 9, 5)), 'ucm-exporter/export-20260717-0905');
 });
 
 test('publishArtifact ne crée aucune branche si le fichier est inchangé', async () => {
@@ -97,7 +99,7 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
     assert.deepEqual(result, {
       status: 'created',
       path: 'src/components/Button/Button.contract.json',
-      branch: 'tokenlintel/export-20260717-0905',
+      branch: 'ucm-exporter/export-20260717-0905',
       pullRequestUrl: 'https://github.com/acme/design-system/pull/12',
     });
     assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'POST', 'PUT', 'POST']);

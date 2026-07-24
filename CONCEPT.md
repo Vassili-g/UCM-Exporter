@@ -4,11 +4,11 @@ Ce document explique le **concept global** du projet — le « pourquoi » et le
 principes. Il ne contient ni planning ni détails techniques : l'état
 d'avancement et les prochaines étapes vivent dans [`ROADMAP.md`](./ROADMAP.md),
 et le comportement exact du plugin dans
-[`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md).
+[`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md).
 
 ---
 
-## 1. La vision : Unified Component Specification (UCS)
+## 1. La vision : le modèle de composant unifié (UCM)
 
 Un composant n'est pas seulement du code. C'est du code **plus** tout ce qui
 permet de le concevoir, le configurer et l'utiliser correctement :
@@ -19,13 +19,18 @@ permet de le concevoir, le configurer et l'utiliser correctement :
 - intentions et bonnes pratiques d'usage (quand l'utiliser, quand ne pas) ;
 - métadonnées de traçabilité vers la source.
 
-L'**UCS** est un **concept** qui relie design et développement en réunissant,
-**dans le dossier de chaque composant, son code réel et sa spécification issue
-de Figma**. Le contrat exporté par TokenLintel porte la spécification design —
-props visuelles, variantes, états, tokens, règles d'usage ; le code porte
-l'implémentation applicative. Leur co-localisation les maintient fortement
-reliés, là où design et développement vivaient auparavant dans des sources
-séparées.
+Un **composant unifié** réunit tout cela au même endroit : **dans le dossier de
+chaque composant, son code réel et sa spécification issue de Figma**. Le
+**contrat** exporté depuis Figma porte la spécification design — props visuelles,
+variantes, états, tokens, règles d'usage ; le code porte l'implémentation
+applicative. Leur co-localisation les maintient fortement reliés, là où design et
+développement vivaient auparavant dans des sources séparées.
+
+Le **modèle** — *Unified Component Model*, en abrégé **UCM** — est l'ensemble des
+règles qui définissent ce qui fait d'un composant un composant unifié : **qui
+fait foi** sur quoi (§3), la **co-localisation** (§5), et la façon dont les
+composants **se composent**. Trois niveaux à ne jamais confondre : le *modèle*
+(les règles), le *composant unifié* (l'unité), le *contrat* (l'artefact design).
 
 Un tel composant est **co-créé** : designer et développeur s'accordent ensemble
 sur le composant et son API publique, au lieu de le retravailler chacun dans son
@@ -58,7 +63,7 @@ agents en confiance** : parce que chaque composant porte un contrat explicite
 avec précision **quel composant utiliser, dans quel contexte et comment**. Les
 développeurs vont plus vite et commettent moins d'erreurs.
 
-Trois frictions concrètes que l'UCS lève :
+Trois frictions concrètes que l'UCM lève :
 
 1. **La divergence design ↔ code** — le travail en silo, sans alignement garanti.
 2. **Le manque de contexte design fiable pour les agents** — sans lui, leurs
@@ -66,7 +71,7 @@ Trois frictions concrètes que l'UCS lève :
 3. **Le coût des outils dédiés** (Code Connect, appels au MCP de Figma) pour
    obtenir ce contexte.
 
-Réponse de l'UCS :
+Réponse de l'UCM :
 
 - **un seul composant unifié**, co-créé design + dev : un seul nom vaut de Figma
   jusqu'au code — plus de divergence possible ;
@@ -77,7 +82,7 @@ Réponse de l'UCS :
 
 ## 3. Qui fait foi ? — l'arbitrage des sources
 
-L'UCS réunit deux mondes. Pour qu'ils ne se contredisent **jamais**, chaque
+L'UCM réunit deux mondes. Pour qu'ils ne se contredisent **jamais**, chaque
 information a **un seul propriétaire**. C'est la règle qui tranche en cas de
 doute.
 
@@ -127,7 +132,7 @@ pointant le token tel qu'il apparaît dans `tokens.json`. Les **deux** artefacts
 
 ```
 Figma (DS propre)
-   │  TokenLintel (plugin d'extraction)
+   │  Unified Component Exporter (plugin d'extraction)
    ▼
 { tokens.json (DTCG) + <Composant>.contract.json }
    │  déposés dans le repo, AU MÊME ENDROIT que le composant
@@ -142,10 +147,10 @@ Playground : un agent compose une interface avec les composants disponibles
    avec toutes ses variantes (couleur / taille / variant / état), et ses
    **règles d'usage** dans un conteneur `<Nom>-Rules`. Le composant et le **nom
    de ses props** sont définis en collaboration designer ↔ développeur (cf. §3).
-2. **TokenLintel** (ce plugin) — extrait **deux artefacts** : `tokens.json`
+2. **Unified Component Exporter** (ce plugin) — extrait **deux artefacts** : `tokens.json`
    (toutes les variables, chaîne d'alias préservée, entrée Style Dictionary) et
    `<Composant>.contract.json` (props, structure, `tokensUsed`, `intent`,
-   doc par valeur). Cf. [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md).
+   doc par valeur). Cf. [`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md).
 3. **Co-localisation** (voir §5) — les artefacts atterrissent dans le repo.
 4. **Code réel** — un développeur écrit `Button.tsx` contre le contrat et les
    tokens. Les props contrôlées par le design reprennent les noms fixés en

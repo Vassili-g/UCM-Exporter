@@ -1,9 +1,9 @@
-# TokenLintel — contexte & spécification
+# Unified Component Exporter — contexte & spécification
 
 ## Vision
 
-TokenLintel produit les deux artefacts design nécessaires à la mise en œuvre du
-concept UCS dans un repository consommateur (cf. `CONCEPT.md`) :
+Unified Component Exporter produit les deux artefacts design nécessaires à la mise en œuvre du
+concept UCM dans un repository consommateur (cf. `CONCEPT.md`) :
 
 - un **contrat de composant** JSON — props, structure, tokens, intention et
   documentation par valeur (règles lues dans le conteneur `<Nom>-Rules`) ;
@@ -19,8 +19,7 @@ consommateur.
 
 - Plugin Figma (Plugin API, plan Professional) : pas d'API Variables REST ni
   de Code Connect. `api.github.com` est autorisé pour le dépôt optionnel des
-  artefacts via PR ; l'icône de réglages de l'UI est un SVG Font Awesome Free
-  embarqué.
+  artefacts via PR ;
 - Tourne dans l'éditeur, produit des fichiers en téléchargement sans config
   valide, ou les dépose sur une branche GitHub dédiée avec une config valide.
 - Deux commandes indépendantes qui partagent le même code Figma :
@@ -366,7 +365,7 @@ feuilles (Primitives, Spacing) portent la valeur directe.
 **3. Modes = marques** — la collection **Brand Tokens** utilise les modes comme
 axe multi-marque (1 mode = 1 marque) : **non ignorés**. v1 (simple, un seul
 fichier) : `$value` = valeur du mode par défaut, et **tous** les modes portés
-sous `$extensions["com.tokenlintel.modes"]` (`{ nom-de-marque: valeur }`).
+sous `$extensions["com.ucm.modes"]` (`{ nom-de-marque: valeur }`).
 Rien n'est perdu, tout est visible d'un coup d'œil. Collections mono-mode :
 juste `$value`. *(Évolution possible : un fichier DTCG par marque.)*
 
@@ -425,7 +424,7 @@ Chaque commande conserve son périmètre :
   `{tokensPath}/tokens.json`.
 
 Pour un artefact modifié, le plugin lit la ref de base, crée la branche
-`tokenlintel/export-{YYYYMMDD-HHmm}`, écrit le fichier avec l'API Contents puis
+`ucm-exporter/export-{YYYYMMDD-HHmm}`, écrit le fichier avec l'API Contents puis
 ouvre une PR vers la branche de base. Si le contenu est identique, aucune
 branche ni PR n'est créée. Config absente/invalide ou erreur GitHub : repli
 automatique vers le téléchargement local avec message explicite.

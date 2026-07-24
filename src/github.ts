@@ -1,5 +1,5 @@
 /**
- * Client GitHub REST minimal pour déposer un artefact TokenLintel dans une
+ * Client GitHub REST minimal pour déposer un artefact Unified Component Exporter dans une
  * branche dédiée puis ouvrir une PR. Aucun PAT n'est logué ni renvoyé à l'UI.
  */
 import type { GithubConfig } from './config';
@@ -49,7 +49,7 @@ function sameContent(left: string, right: string): boolean {
 /** Génère le nom de branche déterministe demandé par la spécification. */
 export function exportBranchName(date = new Date()): string {
   const pad = (value: number) => String(value).padStart(2, '0');
-  return `tokenlintel/export-${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
+  return `ucm-exporter/export-${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
 }
 
 /** Déduit le path repo sans demander de saisie par composant. */
@@ -152,7 +152,7 @@ export async function publishArtifact(
   await githubRequest(config, `/repos/${repository}/contents/${encodePath(path)}`, {
     method: 'PUT',
     body: JSON.stringify({
-      message: `TokenLintel: export ${artifact.filename}`,
+      message: `Unified Component Exporter: export ${artifact.filename}`,
       content: encodeBase64(artifact.content),
       branch,
       ...(existing?.sha ? { sha: existing.sha } : {}),
@@ -162,10 +162,10 @@ export async function publishArtifact(
   const pullRequest = await githubRequest<{ html_url: string }>(config, `/repos/${repository}/pulls`, {
     method: 'POST',
     body: JSON.stringify({
-      title: `TokenLintel: export ${artifact.filename}`,
+      title: `Unified Component Exporter: export ${artifact.filename}`,
       head: branch,
       base: config.baseBranch,
-      body: `Export TokenLintel automatisé.\n\nFichier : \`${path}\``,
+      body: `Export Unified Component Exporter automatisé.\n\nFichier : \`${path}\``,
     }),
   });
   if (!pullRequest?.html_url) throw new GithubApiError('La PR a été créée sans URL exploitable.');

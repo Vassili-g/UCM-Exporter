@@ -6,7 +6,7 @@ ni des fonctionnalités promises, ni le comportement actuel du plugin, **ni des
 étapes de développement** — celles-ci vivent dans [`ROADMAP.md`](./ROADMAP.md).
 
 - [`CONCEPT.md`](./CONCEPT.md) porte le concept global ;
-- [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md) décrit le comportement qui fait
+- [`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md) décrit le comportement qui fait
   foi aujourd'hui ;
 - [`ROADMAP.md`](./ROADMAP.md) tient l'état d'avancement et les prochaines
   étapes ;
@@ -35,14 +35,14 @@ renforcer progressivement sa validation et son interopérabilité.
 
 ## 2. Positionnement dans l'écosystème
 
-Le problème traité par TokenLintel est largement reconnu, mais les solutions
+Le problème traité par Unified Component Exporter est largement reconnu, mais les solutions
 existantes n'en couvrent généralement qu'une partie.
 
-| Solution ou standard | Ce qu'il apporte | Différence avec TokenLintel |
+| Solution ou standard | Ce qu'il apporte | Différence avec Unified Component Exporter |
 |---|---|---|
-| [Figma Code Connect](https://help.figma.com/hc/en-us/articles/23920389749655-Code-Connect) | Relie les composants Figma au code réel, mappe leurs propriétés et améliore le contexte transmis aux agents par Figma | Le mapping et les exemples restent liés à l'écosystème Figma ; TokenLintel produit une spécification design autonome et versionnée dans le repository |
+| [Figma Code Connect](https://help.figma.com/hc/en-us/articles/23920389749655-Code-Connect) | Relie les composants Figma au code réel, mappe leurs propriétés et améliore le contexte transmis aux agents par Figma | Le mapping et les exemples restent liés à l'écosystème Figma ; Unified Component Exporter produit une spécification design autonome et versionnée dans le repository |
 | [Storybook](https://storybook.js.org/docs/8/writing-docs/autodocs) | Documente les composants à partir du code, des stories et des métadonnées de props | La source principale est le code ; Storybook n'extrait pas la vérité design ni les règles Figma |
-| [UXPin Merge](https://www.uxpin.com/docs/merge/merge-design-system-documentation/) | Utilise les composants codés réels dans l'outil de design | L'approche est code-first, alors que l'UCS maintient deux responsabilités distinctes et fortement reliées |
+| [UXPin Merge](https://www.uxpin.com/docs/merge/merge-design-system-documentation/) | Utilise les composants codés réels dans l'outil de design | L'approche est code-first, alors que l'UCM maintient deux responsabilités distinctes et fortement reliées |
 | [Backlight](https://backlight.dev/docs/make-your-first-design-system) | Réunit source, stories, tests, documentation et ressources design autour des composants | La co-localisation est proche, mais sans contrat structuré exporté depuis Figma et conçu pour les agents |
 | [DTCG](https://tr.designtokens.org/format/) | Standardise l'échange des design tokens entre outils | Le standard couvre les tokens, pas la spécification complète d'un composant |
 
@@ -60,7 +60,7 @@ projet vient de leur combinaison :
 
 Le positionnement le plus juste est celui d'une **couche de contrat design,
 Git-native et lisible par les agents, placée à côté du code réel de chaque
-composant**. TokenLintel peut compléter Code Connect, Storybook et DTCG plutôt
+composant**. Unified Component Exporter peut compléter Code Connect, Storybook et DTCG plutôt
 que chercher à les remplacer.
 
 ## 3. Utilité potentielle
@@ -99,7 +99,7 @@ pas un objectif produit.
 ### 4.1 Liaison explicite entre contrat et implémentation
 
 Code Connect relie sans ambiguïté un composant Figma, un fichier source, un
-export et les propriétés correspondantes. Le contrat TokenLintel possède déjà
+export et les propriétés correspondantes. Le contrat Unified Component Exporter possède déjà
 la traçabilité Figma (`nodeId`, `componentKey`, `url`, noms Figma).
 
 Le repository consommateur pourrait ajouter une liaison distincte :
@@ -124,7 +124,7 @@ manuellement la correspondance.
 ### 4.2 Validation du contrat contre le code
 
 L'introspection employée par Storybook suggère le garde-fou le plus important
-pour l'UCS : comparer la partie de l'API contrôlée par le design avec l'API
+pour l'UCM : comparer la partie de l'API contrôlée par le design avec l'API
 réelle du composant.
 
 Le validateur devrait vérifier que :
@@ -153,10 +153,10 @@ spécification. Un JSON Schema officiel permettrait :
 - une documentation machine des champs obligatoires et optionnels ;
 - la détection des contrats incompatibles ou obsolètes ;
 - l'intégration par d'autres outils sans importer le code TypeScript de
-  TokenLintel.
+  Unified Component Exporter.
 
 Le contrat porte sa propre version de schéma dans `contractVersion`. Cette
-version concerne le format du JSON exporté, tandis que l'UCS désigne le concept
+version concerne le format du JSON exporté, tandis que l'UCM désigne le concept
 global qui réunit ce contrat et le code réel du composant.
 
 **Statut :** priorité moyenne, nécessaire avant une diffusion large.
@@ -299,7 +299,7 @@ des devs dans les agents.
 
 **Tier 4 — à NE PAS faire**
 
-- **Write-back automatique code → Figma.** Contredit l'invariant « TokenLintel
+- **Write-back automatique code → Figma.** Contredit l'invariant « Unified Component Exporter
   n'écrit jamais dans Figma » et la discipline du §5 ci-dessus. On garde la
   **détection** bidirectionnelle (signaler qu'une maquette est en retard sur le
   code), jamais l'écriture dans le document.
