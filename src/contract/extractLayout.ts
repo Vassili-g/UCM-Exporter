@@ -6,7 +6,7 @@
  * border-radius, typographie du texte, tailles d'icônes.
  */
 import normalizeName from '../utils';
-import { firstVariableAlias, VariableNameResolver } from '../variables';
+import { firstVariableAlias, toRef, VariableNameResolver } from '../variables';
 import { getAllNodes, getBinding, resolveField } from './nodeBindings';
 import { normalizePropKey } from './parsers';
 import { semanticSlotName } from './semantics';
@@ -69,9 +69,10 @@ async function extractTypography(
   if (typeof textNode.textStyleId === 'string' && textNode.textStyleId) {
     const style = await figma.getStyleByIdAsync(textNode.textStyleId).catch(() => null);
     if (style?.name) {
-      const token = normalizeName(style.name);
-      tokenNames.add(token);
-      return token;
+      // Un style de texte Figma n'est PAS un token : on renvoie son nom tel
+      // quel (sans accolades) et on ne l'ajoute pas à `tokensUsed`, qui ne
+      // liste que des références de tokens résolvables dans tokens.json.
+      return normalizeName(style.name);
     }
   }
 
@@ -92,8 +93,9 @@ async function extractTypography(
     }
 
     if (token) {
-      typography[contractField] = token;
-      tokenNames.add(token);
+      const ref = toRef(token);
+      typography[contractField] = ref;
+      tokenNames.add(ref);
     } else {
       warnings.push(
         `Calque « ${textNode.name} » : ${contractField} sans variable liée (valeur brute ignorée).`,

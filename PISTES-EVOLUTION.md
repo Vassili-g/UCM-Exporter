@@ -1,12 +1,15 @@
 # Pistes d'évolution
 
-Ce document rassemble les réflexions stratégiques et les pistes de
-développement envisagées après le MVP de TokenLintel. Il ne décrit ni des
-fonctionnalités promises, ni le comportement actuel du plugin.
+Ce document rassemble l'**analyse stratégique** du projet : positionnement,
+inspirations et risques. Il ne décrit ni des fonctionnalités promises, ni le
+comportement actuel du plugin, **ni des étapes de développement** — celles-ci
+vivent dans [`ROADMAP.md`](./ROADMAP.md).
 
-- [`CONCEPT.md`](./CONCEPT.md) porte la vision et le plan global ;
+- [`CONCEPT.md`](./CONCEPT.md) porte le concept global ;
 - [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md) décrit le comportement qui fait
   foi aujourd'hui ;
+- [`ROADMAP.md`](./ROADMAP.md) tient l'état d'avancement et les prochaines
+  étapes ;
 - ce document conserve les idées à évaluer, leur intérêt et leurs risques.
 
 ## 1. Conclusion actuelle
@@ -185,19 +188,29 @@ nouvelle vérité. Il pourrait servir de commentaire de PR ou de rapport CI.
 
 ### 4.5 Propriétaire explicite de chaque information
 
-Les approches code-first montrent l'intérêt d'une source de vérité unique pour
-chaque catégorie d'information. Dans l'UCS, cette responsabilité doit rester
-explicite :
+Les approches code-first confirment l'intérêt d'une source de vérité unique par
+catégorie d'information — exactement l'arbitrage fixé dans
+[`CONCEPT.md`](./CONCEPT.md) §3 (Figma / accord designer ↔ dev / code réel / CI).
+Le point à ne pas perdre : le contrat ne doit **pas** devenir une seconde
+définition de ce qui appartient au code.
 
-| Information | Propriétaire |
-|---|---|
-| Variantes visuelles, tokens, états graphiques, icônes et règles d'usage | Figma |
-| Comportement, accessibilité, événements et contraintes de plateforme | Code réel |
-| Liaison entre contrat et implémentation | Repository consommateur |
-| Vérification de cohérence | CI et adaptateurs de plateforme |
+### 4.6 Nom des props : accord amont, mapping en échappatoire
 
-Le contrat ne doit pas devenir une seconde définition de ce qui appartient au
-code.
+L'arbitrage retenu (cf. [`CONCEPT.md`](./CONCEPT.md) §3) fixe le nom des props
+**en amont** : le composant Figma est co-construit designer ↔ développeur, qui
+s'accordent sur l'API publique à la création. Le nom voyage alors intact de
+Figma au code, sans renommage, donc **sans mapping à maintenir** — c'est le cas
+le plus simple et il suffit au MVP.
+
+Une échappatoire reste envisageable **à l'échelle**, si un jour design et code
+ne peuvent réellement pas partager un même nom : le repository consommateur
+déclarerait une correspondance explicite (`contrat.iconLeft ↔ code.iconStart`)
+que la CI lirait pour vérifier la parité malgré la divergence. Cette mécanique
+n'a d'intérêt que lorsqu'un renommage devient inévitable ; l'ajouter avant
+reviendrait à outiller un problème qu'on n'a pas encore rencontré.
+
+**Statut :** non nécessaire tant que les noms sont négociés à la création du
+composant Figma.
 
 ## 5. Ce qu'il ne faut pas copier
 
@@ -234,41 +247,8 @@ Le concept atteindra sa pleine puissance lorsque la CI saura détecter :
 - un contrat incompatible avec la version de schéma prise en charge ;
 - une modification importante difficile à repérer dans le JSON brut.
 
-## 7. Ordre de développement recommandé
+---
 
-1. **Ne pas enrichir le contrat par anticipation.** Stabiliser le résultat
-   actuel sur Button.
-2. **Tester un composant Alert.** Il doit notamment valider une icône `strict`
-   et une matrice visuelle différente de Button.
-3. **Tester un composant interactif différent.** Checkbox, Radio ou TextField
-   permettront de vérifier les booléens, états et slots sans ajouter de
-   sémantique applicative au contrat.
-4. **Analyser les échecs en contexte froid.** Modifier le contrat uniquement si
-   une information design nécessaire est réellement absente ou ambiguë.
-5. **Ajouter un JSON Schema.** Figer une base portable avant d'ouvrir le format
-   à d'autres consommateurs.
-6. **Construire le validateur contrat ↔ code.** Commencer par l'adaptateur
-   React/TypeScript du playground.
-7. **Ajouter un diff sémantique.** Faciliter les revues lorsque les contrats se
-   multiplient.
-8. **Étudier les passerelles.** Génération Code Connect, exploitation
-   Storybook ou autres intégrations, sans en faire des dépendances du contrat.
-
-Le deuxième et le troisième composant doivent guider les prochains changements
-de schéma. Une abstraction ajoutée avant d'avoir rencontré son cas réel risque
-de résoudre un problème théorique et de réduire la généricité du projet.
-
-## 8. Critères pour considérer le concept validé
-
-Au-delà du MVP Button, l'UCS pourra être considéré comme suffisamment robuste
-pour une expérimentation externe lorsque :
-
-- plusieurs familles de composants sont décrites sans condition spécifique à
-  leur nom ;
-- leurs contrats passent un JSON Schema versionné ;
-- les tokens utilisés sont vérifiés automatiquement ;
-- un premier adaptateur détecte les divergences entre contrat et code ;
-- un agent en contexte froid utilise correctement les variantes et règles
-  d'usage sans inventer d'API design ;
-- les erreurs répétées des agents peuvent être reliées à une ambiguïté précise
-  du contrat ou à une responsabilité qui appartient explicitement au code.
+L'ordre concret de développement (composants suivants, JSON Schema, validateur,
+diff sémantique, passerelles) et les critères de validation du concept sont
+tenus dans [`ROADMAP.md`](./ROADMAP.md).

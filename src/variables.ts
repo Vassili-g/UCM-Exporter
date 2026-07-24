@@ -29,6 +29,21 @@ export function firstVariableAlias(value: unknown): VariableAlias | null {
 }
 
 /**
+ * Enrobe un nom de token en RÉFÉRENCE de contrat, entre accolades — même
+ * convention que les références DTCG de `tokens.json`. Un token cité dans un
+ * contrat est toujours un lien vers `tokens.json`, jamais une valeur : les
+ * accolades le rendent explicite et le distinguent d'une chaîne littérale.
+ * Le chemin lui-même vient de `normalizeName()` — les accolades sont un
+ * enrobage, pas un renommage : les deux commandes restent recoupables.
+ *
+ * @example toRef('components.button.default.background')
+ * // → '{components.button.default.background}'
+ */
+export function toRef(name: string): string {
+  return `{${name}}`;
+}
+
+/**
  * Assemble le chemin canonique d'un token : collection + variable, chacun
  * normalisé. Évite les doublons si la variable répète déjà la collection.
  *

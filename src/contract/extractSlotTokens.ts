@@ -3,7 +3,7 @@
  * Les collisions et valeurs brutes produisent des warnings sans interrompre
  * l'export du composant.
  */
-import { variableAliases, VariableNameResolver } from '../variables';
+import { toRef, variableAliases, VariableNameResolver } from '../variables';
 import { getAllNodes, getBinding } from './nodeBindings';
 import type { SlotStrokes, SlotTokens, StrokeAlignment, StrokeTokens } from './types';
 
@@ -136,15 +136,18 @@ export async function getSlotTokens(
   })));
   for (const binding of resolved) {
     if (!binding.token) continue;
+    // Le rôle se lit sur le nom NU (dernier segment) ; l'enrobage `{…}`
+    // n'intervient qu'au moment où le token entre dans le contrat.
     const role = tokenRole(binding.token);
     if (binding.field === 'strokes') {
+      const width = binding.strokeStyle?.width ?? null;
       setStrokeToken(strokes, role, {
-        color: binding.token,
-        width: binding.strokeStyle?.width ?? null,
+        color: toRef(binding.token),
+        width: width ? toRef(width) : null,
         align: binding.strokeStyle?.align ?? null,
       }, binding.node, warnings);
     } else {
-      setPaintToken(paints, role, binding.token, binding.node, warnings);
+      setPaintToken(paints, role, toRef(binding.token), binding.node, warnings);
     }
   }
   return { paints, strokes };
