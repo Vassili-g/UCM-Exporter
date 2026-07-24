@@ -1,9 +1,9 @@
 # Pistes d'évolution
 
 Ce document rassemble l'**analyse stratégique** du projet : positionnement,
-inspirations et risques. Il ne décrit ni des fonctionnalités promises, ni le
-comportement actuel du plugin, **ni des étapes de développement** — celles-ci
-vivent dans [`ROADMAP.md`](./ROADMAP.md).
+inspirations, risques et **vision produit à horizon** (§7, tiérée). Il ne décrit
+ni des fonctionnalités promises, ni le comportement actuel du plugin, **ni des
+étapes de développement** — celles-ci vivent dans [`ROADMAP.md`](./ROADMAP.md).
 
 - [`CONCEPT.md`](./CONCEPT.md) porte le concept global ;
 - [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md) décrit le comportement qui fait
@@ -247,8 +247,76 @@ Le concept atteindra sa pleine puissance lorsque la CI saura détecter :
 - un contrat incompatible avec la version de schéma prise en charge ;
 - une modification importante difficile à repérer dans le JSON brut.
 
+## 7. Vision produit (horizon ~1 an)
+
+À quoi ressemble le produit **complet**, plus un MVP. **Avertissement** : ~80 %
+de la valeur tient dans le Tier 1. Cette carte est un **filtre** — elle sert à
+savoir quoi *ne pas* faire autant que quoi faire, pas une to-do à dérouler.
+
+Tout est mesuré à l'aune des deux piliers du concept ([`CONCEPT.md`](./CONCEPT.md)
+§1-3) : **A** — robustesse / non-divergence (co-création) ; **B** — confiance
+des devs dans les agents.
+
+**Tier 1 — la colonne vertébrale (le cœur du produit)**
+
+- **Parité industrialisée avec exceptions déclarées** (Pilier A). Pre-commit +
+  CI, compare props/valeurs/états/tokens/slots/dépendances, dit *dans quel sens*
+  corriger, et laisse annoter une divergence volontaire — sans quoi la parité
+  devient une prison contournée. Détail en §4.2 ; substance dans
+  [`ROADMAP.md`](./ROADMAP.md) §3.
+- **Agent à deux niveaux + serveur de contexte fichiers** (Pilier B). *Usage*
+  (composer une UI, le MVP) puis *contribution* (« ajoute un variant ghost au
+  bouton » exécuté dans les règles du pipeline). Le contexte est servi en
+  fichiers, jamais via un service tiers — fidèle à la contrainte anti-MCP.
+  L'agent-contributeur n'est sûr que **parce que** la parité le rattrape.
+- **CODEOWNERS encodant l'arbitrage** (Pilier A, coût quasi nul). Les tokens ne
+  s'approuvent que par un designer, le code que par un dev : le §3 de CONCEPT
+  devient un fichier exécuté par la forge.
+- **Modèle de composition** (composant simple vs composé, parité récursive).
+  Sans lui, la robustesse s'arrête aux composants simples ; les vraies UIs sont
+  des arbres de composés. Structurel, pas optionnel — c'est une **priorité**
+  roadmap.
+
+**Tier 2 — multiplicateurs (réels mais dérivés ; après la colonne)**
+
+- **Doc + stories dérivées du contrat** : jamais écrites à la main, donc jamais
+  fausses. Renforce les deux piliers.
+- **Changelog automatique + niveaux de confiance** (auto-merge d'un changement
+  de doc, revue humaine d'un changement de token/props), dérivés du diff de
+  contrats (§4.4).
+- **Preview deploy avant merge** : voir l'impact d'un changement de token sur
+  tous les composants, avant de fusionner.
+
+**Tier 3 — adjacent : à ADOPTER, pas à construire**
+
+- **Régression visuelle** (type Chromatic) : vraie valeur mais outil du marché,
+  non différenciant — on l'achète, on ne le bâtit pas.
+- **Observabilité / tableau de bord** (divergences non résolues, contrats
+  manquants, taux de conformité des agents, tokens orphelins) : utile *à
+  l'échelle*, prématuré tant qu'on a peu de composants.
+- **Multi-plateforme** (React Native / iOS / Android via Style Dictionary) :
+  une *portée*, pas le cœur du concept. Le multi-marque, lui, existe déjà (modes).
+
+**Tier 4 — à NE PAS faire**
+
+- **Write-back automatique code → Figma.** Contredit l'invariant « TokenLintel
+  n'écrit jamais dans Figma » et la discipline du §5 ci-dessus. On garde la
+  **détection** bidirectionnelle (signaler qu'une maquette est en retard sur le
+  code), jamais l'écriture dans le document.
+
+## 8. Décisions à trancher
+
+Elles bloquent des choix en aval :
+
+- **Ce que le contrat contrôle (à geler)** : props + valeurs + états + tokens
+  (en références) + slot icône + **dépendances de composition**. Ce qui n'y est
+  pas listé ne sera jamais vérifié par la parité.
+- **Sécurité du dépôt GitHub** : le PAT fine-grained local (actuel) suffit-il,
+  ou une politique interne imposera-t-elle un proxy serveur ?
+- **Versionner le DS en package nommé** distinct : conditionne la cohabitation
+  de plusieurs versions et le suivi d'adoption.
+
 ---
 
-L'ordre concret de développement (composants suivants, JSON Schema, validateur,
-diff sémantique, passerelles) et les critères de validation du concept sont
-tenus dans [`ROADMAP.md`](./ROADMAP.md).
+Les étapes concrètes et l'ordre de développement sont tenus dans
+[`ROADMAP.md`](./ROADMAP.md).
