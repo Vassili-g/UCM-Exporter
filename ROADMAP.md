@@ -44,8 +44,9 @@ composant, pour vérifier que le modèle reste générique.
 
 ## 3. Prochaines étapes
 
-Dans l'ordre. Les tâches restantes du MVP sont 2 et 3 ; les suivantes préparent
-la généricité.
+Dans l'ordre. Les tâches 2 à 5 sont prioritaires : 2-3 achèvent le socle sur
+Button, puis 4-5 attaquent les deux vrais points durs — la **parité** (Pilier A)
+et la **composition**.
 
 1. ~~**Harmoniser les références de tokens sur `{accolades}`**~~ — ✅ **fait**
    (`contractVersion` 3.0). Le plugin enrobe chaque token cité dans le contrat
@@ -64,26 +65,45 @@ la généricité.
    Action qui le lance à chaque PR. *(Rien à faire côté régénération : le CSS
    généré est reconstruit à chaque build via `prebuild`, et `outputReferences`
    préserve déjà les alias en `var(--…)`.)*
-4. **Valider la conformité code ↔ contrat.** Un adaptateur React/TS dans le
-   playground compare l'API design du contrat (props, valeurs d'enum, défauts) à
-   l'API réelle du composant. Aucune règle conditionnée au nom d'un composant.
-5. **Deuxième composant non-Button.** Vérifier la généricité — d'abord un
-   composant à icône `strict` (type Alert), puis un composant interactif (type
-   Checkbox / TextField) pour couvrir booléens, états et slots.
-6. **Composants imbriqués — le jour où le cas se présentera.** Quand un
-   composite réel existera (Card, Header…), une `INSTANCE` d'un autre composant
-   *ayant son propre contrat* devra être enregistrée comme **dépendance** (champ
-   `composes` à concevoir sur ce cas réel), et non décomposée en calques bruts.
-   Rien à coder tant qu'aucun composite n'est modélisé — on conçoit le champ
-   contre son premier vrai cas, pas par anticipation.
+4. **Parité code ↔ contrat, industrialisée.** Un adaptateur React/TS extrait
+   l'API réelle du `.tsx` (via `react-docgen-typescript`) → `Button.code.json`,
+   puis un comparateur liste les écarts avec le contrat (prop manquante, valeur
+   d'enum divergente, état non géré, référence de token cassée, dépendance de
+   composition absente) **et le sens de correction** selon l'arbitrage de
+   [`CONCEPT.md`](./CONCEPT.md) §3. Déclencheurs : hook pre-commit (retour local)
+   + GitHub Action bloquante sur PR. Prévoir la **déclaration d'une divergence
+   volontaire** (annotée + justifiée), sinon la parité devient une prison qu'on
+   finit par désactiver. Aucune règle conditionnée au nom d'un composant.
+5. **Composant composé — priorité structurelle.** Deux natures de composants :
+   un **composant simple** ne consomme que des tokens et des calques (ex. Button,
+   aucune instance imbriquée) ; un **composant composé** assemble d'autres
+   composants du DS (ex. une Card contenant un Button). *(équivalent dev :
+   primitive / composite.)* On crée **volontairement** un composé minimal (Card
+   ou Header avec instances imbriquées) pour buter le vrai inconnu de
+   l'architecture :
+   - le plugin doit **reconnaître un nœud `INSTANCE`** d'un autre composant
+     contracté et l'enregistrer comme **dépendance** dans un champ `composes`
+     (au lieu de descendre dans ses calques bruts) ;
+   - le contrat d'un composé ne liste que **ses propres** tokens (fond, gap entre
+     éléments…), jamais les internes des composants qu'il embarque ;
+   - la parité devient **récursive** : un composé est conforme s'il expose ses
+     props **et** utilise réellement les composants déclarés dans `composes`,
+     eux-mêmes conformes.
+   C'est ce cas — pas un 2ᵉ composant simple — qui prouve que le modèle passe à
+   l'échelle de la composition.
+6. **Composants simples supplémentaires (généricité).** Une fois la composition
+   tenue : un composant à icône `strict` (Alert) et un interactif (Checkbox /
+   TextField) pour couvrir booléens, états et slots, et confirmer qu'aucune règle
+   spécifique à Button ne subsiste.
 7. **Au-delà du MVP.** Une fois la généricité prouvée : JSON Schema versionné du
    contrat, diff sémantique des contrats pour faciliter les revues, puis
    passerelles (génération Code Connect, exploitation Storybook). Motivations
    détaillées dans [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §4.
 
-> **Principe d'ordonnancement.** Le deuxième et le troisième composant guident
-> les prochains changements de schéma : une abstraction ajoutée avant d'avoir
-> rencontré son cas réel résout un problème théorique et réduit la généricité.
+> **Principe d'ordonnancement.** On ne conçoit `composes` ni la parité récursive
+> dans l'abstrait : créer volontairement un composé minimal (étape 5) fournit le
+> cas réel contre lequel on les dessine. Une abstraction ajoutée avant son cas
+> concret résout un problème théorique et réduit la généricité.
 
 ## 4. Critères de succès & de validation
 
