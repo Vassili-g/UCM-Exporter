@@ -59,6 +59,29 @@ test('getSlotTokens avertit quand la largeur du stroke est une valeur brute', as
   ]);
 });
 
+test('extractVariantTokens normalise la clé de repli quand le set n’expose aucun axe', async () => {
+  const node = {
+    type: 'RECTANGLE',
+    name: 'Icon Only',
+    boundVariables: { fills: [colorAlias] },
+    findAll: () => [],
+  } as unknown as ComponentNode;
+  const resolver = {
+    resolve: async (alias: VariableAlias | null | undefined) =>
+      alias?.id === 'color' ? 'components.button.colors.primary.default.background' : null,
+  };
+
+  const trees = await extractVariantTokens(
+    { axes: [], variants: [{ values: {}, component: node }] },
+    resolver,
+    new Set<string>(),
+    [],
+  );
+
+  // La clé « icon-only » suit la même normalisation que les valeurs d'axes.
+  assert.deepEqual(Object.keys(trees.variantTokens), ['icon-only']);
+});
+
 test('extractVariantTokens ajoute la largeur du stroke à tokensUsed', async () => {
   const node = {
     type: 'RECTANGLE',

@@ -1,9 +1,9 @@
 /**
  * Lecture des règles d'usage d'un composant depuis la section « <Nom>-Rules ».
  *
- * Chaque composant décrit ses règles dans un conteneur Figma (frame, section ou
- * groupe) nommé `${nomDuSet}-Rules` (ex. « Button-Rules »), posé à côté du
- * composant — le type exact du conteneur importe peu, seul son nom compte. On y
+ * Chaque composant décrit ses règles dans un conteneur Figma — frame, section
+ * ou groupe — nommé `${nomDuSet}-Rules` (ex. « Button-Rules »), posé sur la
+ * même page que le composant. On y
  * range des instances d'un composant de configuration (`ComponentConfiguration`)
  * dont la VARIANTE porte le tag (`@usage`, `@prop`, `@do`, `@dont`, `@pairs`, `@icons`) et
  * dont le calque « content » porte le texte de la règle (plus un calque « prop »
@@ -23,7 +23,7 @@ export type { IconRule, RuleEntry, RuleTag, RulesResult } from './rulesModel';
 
 /** Suffixe du conteneur qui porte les règles d'un composant. */
 const RULES_SECTION_SUFFIX = '-Rules';
-/** Types de conteneur acceptés pour ce bloc (on lit ses enfants, le type importe peu). */
+/** Types de conteneur acceptés pour ce bloc (on ne lit que ses enfants). */
 const RULES_CONTAINER_TYPES: readonly string[] = ['SECTION', 'FRAME', 'GROUP'];
 /** Nom (compacté) du composant qui matérialise une règle. */
 const RULES_COMPONENT_NAME = 'componentconfiguration';

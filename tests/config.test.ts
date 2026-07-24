@@ -14,11 +14,11 @@ test('parseGithubRepository extrait owner/repo depuis une URL GitHub HTTPS', () 
 test('parseGithubRepository accepte l’URL exacte du playground et un lien Markdown copié', () => {
   assert.deepEqual(parseGithubRepository('https://github.com/Vassili-g/UCM-Playground'), {
     owner: 'Vassili-g',
-    repo: 'Components-Playground',
+    repo: 'UCM-Playground',
   });
   assert.deepEqual(
-    parseGithubRepository('[Vassili-g/Components-Playground](https://github.com/Vassili-g/UCM-Playground)'),
-    { owner: 'Vassili-g', repo: 'Components-Playground' },
+    parseGithubRepository('[Vassili-g/UCM-Playground](https://github.com/Vassili-g/UCM-Playground)'),
+    { owner: 'Vassili-g', repo: 'UCM-Playground' },
   );
 });
 
