@@ -11,6 +11,12 @@ qui relie design et développement en réunissant, dans le dossier de chaque
 composant, son code réel et sa spécification issue de Figma. TokenLintel
 automatise le passage de Figma vers cette organisation.
 
+L'objectif : un design system **robuste**, co-créé par le designer et le
+développeur, qui ne diverge d'aucun côté, et un frontend **« future proof »** —
+lisible par les agents IA pour que les développeurs s'appuient sur eux **en
+confiance**, plus vite et avec moins d'erreurs. Il ne s'agit pas de générer des
+interfaces à la volée.
+
 ```text
 Figma ── TokenLintel ──► contrat de composant + tokens DTCG
                                       │
@@ -88,9 +94,10 @@ tests/
 
 ## Pour comprendre le projet
 
-- [CONCEPT.md](./CONCEPT.md) — vision du design system AI-first et plan global ;
+- [CONCEPT.md](./CONCEPT.md) — le concept global du projet (UCS, arbitrage, co-localisation) ;
 - [TOKENLINTEL-SPEC.md](./TOKENLINTEL-SPEC.md) — comportement exact du plugin et format des sorties ;
-- [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — inspirations, risques et développements possibles après le MVP ;
+- [ROADMAP.md](./ROADMAP.md) — objectif MVP, état d'avancement et prochaines étapes ;
+- [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — analyse stratégique : positionnement, inspirations, risques ;
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
 - [AGENTS.md](./AGENTS.md) — ordre de lecture et invariants pour les agents IA ;
 - [Components Playground](https://github.com/Vassili-g/Components-Playground) — repository qui consomme les artefacts exportés.
@@ -99,6 +106,7 @@ tests/
 
 L'export des contrats, des tokens DTCG et le dépôt par PR sont validés sur
 Button. TokenLintel
-n'écrit jamais dans le document Figma et n'effectue aucun auto-merge. La
-prochaine validation structurante consiste à exporter un deuxième composant
-non-Button.
+n'écrit jamais dans le document Figma et n'effectue aucun auto-merge. Les
+prochains points à travailler — harmonisation des références de tokens,
+`Button.tsx` de production, garde-fous CI, puis deuxième composant non-Button —
+sont listés dans [ROADMAP.md](./ROADMAP.md).

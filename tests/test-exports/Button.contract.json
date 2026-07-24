@@ -1,7 +1,7 @@
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "2.0",
+    "contractVersion": "3.0",
     "exportedAt": "2026-07-17T16:11:07.100Z",
     "figma": {
       "fileName": "DS AI LAB",
@@ -78,37 +78,37 @@
   },
   "structure": {
     "layout": "flex-row",
-    "gap": "components.button.sizes.medium.gap",
+    "gap": "{components.button.sizes.medium.gap}",
     "padding": {
-      "x": "components.button.sizes.medium.padding-x",
-      "y": "components.button.sizes.medium.padding-y"
+      "x": "{components.button.sizes.medium.padding-x}",
+      "y": "{components.button.sizes.medium.padding-y}"
     },
-    "radius": "components.button.sizes.medium.border-radius",
+    "radius": "{components.button.sizes.medium.border-radius}",
     "children": [
       {
         "slot": "arrow-left-long",
         "figmaLayer": "arrow-left-long",
         "optional": true,
         "visibilityProp": "iconLeft",
-        "size": "components.icons.sizes.base"
+        "size": "{components.icons.sizes.base}"
       },
       {
         "slot": "label",
         "figmaLayer": "Suivant",
         "typography": {
-          "fontSize": "components.button.sizes.medium.font-size",
-          "fontWeight": "layouts.fontweight.600",
-          "lineHeight": "layouts.lineheight.base",
-          "fontFamily": "layouts.fontfamily.base"
+          "fontSize": "{components.button.sizes.medium.font-size}",
+          "fontWeight": "{layouts.fontweight.600}",
+          "lineHeight": "{layouts.lineheight.base}",
+          "fontFamily": "{layouts.fontfamily.base}"
         },
-        "color": "components.button.colors.primary.contained.default.foreground"
+        "color": "{components.button.colors.primary.contained.default.foreground}"
       },
       {
         "slot": "arrow-right-long",
         "figmaLayer": "arrow-right-long",
         "optional": true,
         "visibilityProp": "iconRight",
-        "size": "components.icons.sizes.base"
+        "size": "{components.icons.sizes.base}"
       }
     ],
     "variantAxes": [
@@ -120,132 +120,132 @@
       "primary": {
         "contained": {
           "default": {
-            "background": "components.button.colors.primary.contained.default.background",
-            "foreground": "components.button.colors.primary.contained.default.foreground"
+            "background": "{components.button.colors.primary.contained.default.background}",
+            "foreground": "{components.button.colors.primary.contained.default.foreground}"
           },
           "hover": {
-            "background": "components.button.colors.primary.contained.hover.background",
-            "foreground": "components.button.colors.primary.contained.hover.foreground"
+            "background": "{components.button.colors.primary.contained.hover.background}",
+            "foreground": "{components.button.colors.primary.contained.hover.foreground}"
           },
           "disable": {
-            "background": "components.button.colors.primary.contained.disable.background",
-            "foreground": "components.button.colors.primary.contained.disable.foreground"
+            "background": "{components.button.colors.primary.contained.disable.background}",
+            "foreground": "{components.button.colors.primary.contained.disable.foreground}"
           },
           "focus": {
-            "background": "components.button.colors.primary.contained.focus.background",
-            "foreground": "components.button.colors.primary.contained.focus.foreground"
+            "background": "{components.button.colors.primary.contained.focus.background}",
+            "foreground": "{components.button.colors.primary.contained.focus.foreground}"
           },
           "press": {
-            "background": "components.button.colors.primary.contained.press.background",
-            "foreground": "components.button.colors.primary.contained.press.foreground"
+            "background": "{components.button.colors.primary.contained.press.background}",
+            "foreground": "{components.button.colors.primary.contained.press.foreground}"
           }
         },
         "text": {
           "default": {
-            "foreground": "components.button.colors.primary.text.default.foreground"
+            "foreground": "{components.button.colors.primary.text.default.foreground}"
           },
           "hover": {
-            "background": "components.button.colors.primary.text.hover.background",
-            "foreground": "components.button.colors.primary.text.hover.foreground"
+            "background": "{components.button.colors.primary.text.hover.background}",
+            "foreground": "{components.button.colors.primary.text.hover.foreground}"
           },
           "disable": {
-            "foreground": "components.button.colors.primary.text.disable.foreground"
+            "foreground": "{components.button.colors.primary.text.disable.foreground}"
           },
           "focus": {
-            "background": "components.button.colors.primary.text.focus.background",
-            "foreground": "components.button.colors.primary.text.focus.foreground"
+            "background": "{components.button.colors.primary.text.focus.background}",
+            "foreground": "{components.button.colors.primary.text.focus.foreground}"
           },
           "press": {
-            "background": "components.button.colors.primary.text.press.background",
-            "foreground": "components.button.colors.primary.text.press.foreground"
+            "background": "{components.button.colors.primary.text.press.background}",
+            "foreground": "{components.button.colors.primary.text.press.foreground}"
           }
         },
         "outlined": {
           "default": {
-            "background": "components.button.colors.primary.outlined.default.background",
-            "foreground": "components.button.colors.primary.outlined.default.foreground"
+            "background": "{components.button.colors.primary.outlined.default.background}",
+            "foreground": "{components.button.colors.primary.outlined.default.foreground}"
           },
           "hover": {
-            "background": "components.button.colors.primary.outlined.hover.background",
-            "foreground": "components.button.colors.primary.outlined.hover.foreground"
+            "background": "{components.button.colors.primary.outlined.hover.background}",
+            "foreground": "{components.button.colors.primary.outlined.hover.foreground}"
           },
           "disable": {
-            "background": "components.button.colors.primary.outlined.disable.background",
-            "foreground": "components.button.colors.primary.outlined.disable.foreground"
+            "background": "{components.button.colors.primary.outlined.disable.background}",
+            "foreground": "{components.button.colors.primary.outlined.disable.foreground}"
           },
           "focus": {
-            "background": "components.button.colors.primary.outlined.focus.background",
-            "foreground": "components.button.colors.primary.outlined.focus.foreground"
+            "background": "{components.button.colors.primary.outlined.focus.background}",
+            "foreground": "{components.button.colors.primary.outlined.focus.foreground}"
           },
           "press": {
-            "background": "components.button.colors.primary.outlined.press.background",
-            "foreground": "components.button.colors.primary.outlined.press.foreground"
+            "background": "{components.button.colors.primary.outlined.press.background}",
+            "foreground": "{components.button.colors.primary.outlined.press.foreground}"
           }
         }
       },
       "secondary": {
         "contained": {
           "default": {
-            "background": "components.button.colors.secondary.contained.default.background",
-            "foreground": "components.button.colors.secondary.contained.default.foreground"
+            "background": "{components.button.colors.secondary.contained.default.background}",
+            "foreground": "{components.button.colors.secondary.contained.default.foreground}"
           },
           "hover": {
-            "background": "components.button.colors.secondary.contained.hover.background",
-            "foreground": "components.button.colors.secondary.contained.hover.foreground"
+            "background": "{components.button.colors.secondary.contained.hover.background}",
+            "foreground": "{components.button.colors.secondary.contained.hover.foreground}"
           },
           "disable": {
-            "background": "components.button.colors.secondary.contained.disable.background",
-            "foreground": "components.button.colors.secondary.contained.disable.foreground"
+            "background": "{components.button.colors.secondary.contained.disable.background}",
+            "foreground": "{components.button.colors.secondary.contained.disable.foreground}"
           },
           "focus": {
-            "background": "components.button.colors.secondary.contained.focus.background",
-            "foreground": "components.button.colors.secondary.contained.focus.foreground"
+            "background": "{components.button.colors.secondary.contained.focus.background}",
+            "foreground": "{components.button.colors.secondary.contained.focus.foreground}"
           },
           "press": {
-            "background": "components.button.colors.secondary.contained.press.background",
-            "foreground": "components.button.colors.secondary.contained.press.foreground"
+            "background": "{components.button.colors.secondary.contained.press.background}",
+            "foreground": "{components.button.colors.secondary.contained.press.foreground}"
           }
         },
         "text": {
           "default": {
-            "foreground": "components.button.colors.secondary.text.default.foreground"
+            "foreground": "{components.button.colors.secondary.text.default.foreground}"
           },
           "hover": {
-            "background": "components.button.colors.secondary.text.hover.background",
-            "foreground": "components.button.colors.secondary.text.hover.foreground"
+            "background": "{components.button.colors.secondary.text.hover.background}",
+            "foreground": "{components.button.colors.secondary.text.hover.foreground}"
           },
           "disable": {
-            "foreground": "components.button.colors.secondary.text.disable.foreground"
+            "foreground": "{components.button.colors.secondary.text.disable.foreground}"
           },
           "focus": {
-            "background": "components.button.colors.secondary.text.focus.background",
-            "foreground": "components.button.colors.secondary.text.focus.foreground"
+            "background": "{components.button.colors.secondary.text.focus.background}",
+            "foreground": "{components.button.colors.secondary.text.focus.foreground}"
           },
           "press": {
-            "background": "components.button.colors.secondary.text.press.background",
-            "foreground": "components.button.colors.secondary.text.press.foreground"
+            "background": "{components.button.colors.secondary.text.press.background}",
+            "foreground": "{components.button.colors.secondary.text.press.foreground}"
           }
         },
         "outlined": {
           "default": {
-            "background": "components.button.colors.secondary.outlined.default.background",
-            "foreground": "components.button.colors.secondary.outlined.default.foreground"
+            "background": "{components.button.colors.secondary.outlined.default.background}",
+            "foreground": "{components.button.colors.secondary.outlined.default.foreground}"
           },
           "hover": {
-            "background": "components.button.colors.secondary.outlined.hover.background",
-            "foreground": "components.button.colors.secondary.outlined.hover.foreground"
+            "background": "{components.button.colors.secondary.outlined.hover.background}",
+            "foreground": "{components.button.colors.secondary.outlined.hover.foreground}"
           },
           "disable": {
-            "background": "components.button.colors.secondary.outlined.disable.background",
-            "foreground": "components.button.colors.secondary.outlined.disable.foreground"
+            "background": "{components.button.colors.secondary.outlined.disable.background}",
+            "foreground": "{components.button.colors.secondary.outlined.disable.foreground}"
           },
           "focus": {
-            "background": "components.button.colors.secondary.outlined.focus.background",
-            "foreground": "components.button.colors.secondary.outlined.focus.foreground"
+            "background": "{components.button.colors.secondary.outlined.focus.background}",
+            "foreground": "{components.button.colors.secondary.outlined.focus.foreground}"
           },
           "press": {
-            "background": "components.button.colors.secondary.outlined.press.background",
-            "foreground": "components.button.colors.secondary.outlined.press.foreground"
+            "background": "{components.button.colors.secondary.outlined.press.background}",
+            "foreground": "{components.button.colors.secondary.outlined.press.foreground}"
           }
         }
       }
@@ -258,15 +258,15 @@
           "disable": {},
           "focus": {
             "ring": {
-              "color": "components.button.colors.primary.contained.focus.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.primary.contained.focus.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             }
           },
           "press": {
             "ring": {
-              "color": "components.button.colors.primary.contained.press.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.primary.contained.press.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             }
           }
@@ -277,15 +277,15 @@
           "disable": {},
           "focus": {
             "ring": {
-              "color": "components.button.colors.primary.text.focus.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.primary.text.focus.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             }
           },
           "press": {
             "ring": {
-              "color": "components.button.colors.primary.text.press.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.primary.text.press.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             }
           }
@@ -293,46 +293,46 @@
         "outlined": {
           "default": {
             "border": {
-              "color": "components.button.colors.primary.outlined.default.border",
-              "width": "layouts.stroke.outline",
+              "color": "{components.button.colors.primary.outlined.default.border}",
+              "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
           },
           "hover": {
             "border": {
-              "color": "components.button.colors.primary.outlined.hover.border",
-              "width": "layouts.stroke.outline",
+              "color": "{components.button.colors.primary.outlined.hover.border}",
+              "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
           },
           "disable": {
             "border": {
-              "color": "components.button.colors.primary.outlined.disable.border",
-              "width": "layouts.stroke.outline",
+              "color": "{components.button.colors.primary.outlined.disable.border}",
+              "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
           },
           "focus": {
             "ring": {
-              "color": "components.button.colors.primary.outlined.focus.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.primary.outlined.focus.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             },
             "border": {
-              "color": "components.button.colors.primary.outlined.focus.border",
-              "width": "layouts.stroke.outline",
+              "color": "{components.button.colors.primary.outlined.focus.border}",
+              "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
           },
           "press": {
             "ring": {
-              "color": "components.button.colors.primary.outlined.press.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.primary.outlined.press.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             },
             "border": {
-              "color": "components.button.colors.primary.outlined.press.border",
-              "width": "layouts.stroke.outline",
+              "color": "{components.button.colors.primary.outlined.press.border}",
+              "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
           }
@@ -345,15 +345,15 @@
           "disable": {},
           "focus": {
             "ring": {
-              "color": "components.button.colors.secondary.contained.focus.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.secondary.contained.focus.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             }
           },
           "press": {
             "ring": {
-              "color": "components.button.colors.secondary.contained.press.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.secondary.contained.press.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             }
           }
@@ -364,15 +364,15 @@
           "disable": {},
           "focus": {
             "ring": {
-              "color": "components.button.colors.secondary.text.focus.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.secondary.text.focus.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             }
           },
           "press": {
             "ring": {
-              "color": "components.button.colors.secondary.text.press.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.secondary.text.press.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             }
           }
@@ -380,46 +380,46 @@
         "outlined": {
           "default": {
             "border": {
-              "color": "components.button.colors.secondary.outlined.default.border",
-              "width": "layouts.stroke.outline",
+              "color": "{components.button.colors.secondary.outlined.default.border}",
+              "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
           },
           "hover": {
             "border": {
-              "color": "components.button.colors.secondary.outlined.hover.border",
-              "width": "layouts.stroke.outline",
+              "color": "{components.button.colors.secondary.outlined.hover.border}",
+              "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
           },
           "disable": {
             "border": {
-              "color": "components.button.colors.secondary.outlined.disable.border",
-              "width": "layouts.stroke.outline",
+              "color": "{components.button.colors.secondary.outlined.disable.border}",
+              "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
           },
           "focus": {
             "ring": {
-              "color": "components.button.colors.secondary.outlined.focus.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.secondary.outlined.focus.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             },
             "border": {
-              "color": "components.button.colors.secondary.outlined.focus.border",
-              "width": "layouts.stroke.outline",
+              "color": "{components.button.colors.secondary.outlined.focus.border}",
+              "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
           },
           "press": {
             "ring": {
-              "color": "components.button.colors.secondary.outlined.press.ring",
-              "width": "layouts.stroke.ring",
+              "color": "{components.button.colors.secondary.outlined.press.ring}",
+              "width": "{layouts.stroke.ring}",
               "align": "outside"
             },
             "border": {
-              "color": "components.button.colors.secondary.outlined.press.border",
-              "width": "layouts.stroke.outline",
+              "color": "{components.button.colors.secondary.outlined.press.border}",
+              "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
           }
@@ -428,31 +428,31 @@
     },
     "sizes": {
       "medium": {
-        "gap": "components.button.sizes.medium.gap",
+        "gap": "{components.button.sizes.medium.gap}",
         "padding": {
-          "x": "components.button.sizes.medium.padding-x",
-          "y": "components.button.sizes.medium.padding-y"
+          "x": "{components.button.sizes.medium.padding-x}",
+          "y": "{components.button.sizes.medium.padding-y}"
         },
-        "radius": "components.button.sizes.medium.border-radius",
-        "fontSize": "components.button.sizes.medium.font-size"
+        "radius": "{components.button.sizes.medium.border-radius}",
+        "fontSize": "{components.button.sizes.medium.font-size}"
       },
       "big": {
-        "gap": "components.button.sizes.big.gap",
+        "gap": "{components.button.sizes.big.gap}",
         "padding": {
-          "x": "components.button.sizes.big.padding-x",
-          "y": "components.button.sizes.big.padding-y"
+          "x": "{components.button.sizes.big.padding-x}",
+          "y": "{components.button.sizes.big.padding-y}"
         },
-        "radius": "components.button.sizes.big.border-radius",
-        "fontSize": "components.button.sizes.big.font-size"
+        "radius": "{components.button.sizes.big.border-radius}",
+        "fontSize": "{components.button.sizes.big.font-size}"
       },
       "small": {
-        "gap": "components.button.sizes.small.gap",
+        "gap": "{components.button.sizes.small.gap}",
         "padding": {
-          "x": "components.button.sizes.small.padding-x",
-          "y": "components.button.sizes.small.padding-y"
+          "x": "{components.button.sizes.small.padding-x}",
+          "y": "{components.button.sizes.small.padding-y}"
         },
-        "radius": "components.button.sizes.small.border-radius",
-        "fontSize": "components.button.sizes.small.font-size"
+        "radius": "{components.button.sizes.small.border-radius}",
+        "fontSize": "{components.button.sizes.small.font-size}"
       }
     }
   },
@@ -530,105 +530,105 @@
     }
   },
   "tokensUsed": [
-    "components.button.colors.primary.contained.default.background",
-    "components.button.colors.primary.contained.default.foreground",
-    "components.button.colors.primary.contained.disable.background",
-    "components.button.colors.primary.contained.disable.foreground",
-    "components.button.colors.primary.contained.focus.background",
-    "components.button.colors.primary.contained.focus.foreground",
-    "components.button.colors.primary.contained.focus.ring",
-    "components.button.colors.primary.contained.hover.background",
-    "components.button.colors.primary.contained.hover.foreground",
-    "components.button.colors.primary.contained.press.background",
-    "components.button.colors.primary.contained.press.foreground",
-    "components.button.colors.primary.contained.press.ring",
-    "components.button.colors.primary.outlined.default.background",
-    "components.button.colors.primary.outlined.default.border",
-    "components.button.colors.primary.outlined.default.foreground",
-    "components.button.colors.primary.outlined.disable.background",
-    "components.button.colors.primary.outlined.disable.border",
-    "components.button.colors.primary.outlined.disable.foreground",
-    "components.button.colors.primary.outlined.focus.background",
-    "components.button.colors.primary.outlined.focus.border",
-    "components.button.colors.primary.outlined.focus.foreground",
-    "components.button.colors.primary.outlined.focus.ring",
-    "components.button.colors.primary.outlined.hover.background",
-    "components.button.colors.primary.outlined.hover.border",
-    "components.button.colors.primary.outlined.hover.foreground",
-    "components.button.colors.primary.outlined.press.background",
-    "components.button.colors.primary.outlined.press.border",
-    "components.button.colors.primary.outlined.press.foreground",
-    "components.button.colors.primary.outlined.press.ring",
-    "components.button.colors.primary.text.default.foreground",
-    "components.button.colors.primary.text.disable.foreground",
-    "components.button.colors.primary.text.focus.background",
-    "components.button.colors.primary.text.focus.foreground",
-    "components.button.colors.primary.text.focus.ring",
-    "components.button.colors.primary.text.hover.background",
-    "components.button.colors.primary.text.hover.foreground",
-    "components.button.colors.primary.text.press.background",
-    "components.button.colors.primary.text.press.foreground",
-    "components.button.colors.primary.text.press.ring",
-    "components.button.colors.secondary.contained.default.background",
-    "components.button.colors.secondary.contained.default.foreground",
-    "components.button.colors.secondary.contained.disable.background",
-    "components.button.colors.secondary.contained.disable.foreground",
-    "components.button.colors.secondary.contained.focus.background",
-    "components.button.colors.secondary.contained.focus.foreground",
-    "components.button.colors.secondary.contained.focus.ring",
-    "components.button.colors.secondary.contained.hover.background",
-    "components.button.colors.secondary.contained.hover.foreground",
-    "components.button.colors.secondary.contained.press.background",
-    "components.button.colors.secondary.contained.press.foreground",
-    "components.button.colors.secondary.contained.press.ring",
-    "components.button.colors.secondary.outlined.default.background",
-    "components.button.colors.secondary.outlined.default.border",
-    "components.button.colors.secondary.outlined.default.foreground",
-    "components.button.colors.secondary.outlined.disable.background",
-    "components.button.colors.secondary.outlined.disable.border",
-    "components.button.colors.secondary.outlined.disable.foreground",
-    "components.button.colors.secondary.outlined.focus.background",
-    "components.button.colors.secondary.outlined.focus.border",
-    "components.button.colors.secondary.outlined.focus.foreground",
-    "components.button.colors.secondary.outlined.focus.ring",
-    "components.button.colors.secondary.outlined.hover.background",
-    "components.button.colors.secondary.outlined.hover.border",
-    "components.button.colors.secondary.outlined.hover.foreground",
-    "components.button.colors.secondary.outlined.press.background",
-    "components.button.colors.secondary.outlined.press.border",
-    "components.button.colors.secondary.outlined.press.foreground",
-    "components.button.colors.secondary.outlined.press.ring",
-    "components.button.colors.secondary.text.default.foreground",
-    "components.button.colors.secondary.text.disable.foreground",
-    "components.button.colors.secondary.text.focus.background",
-    "components.button.colors.secondary.text.focus.foreground",
-    "components.button.colors.secondary.text.focus.ring",
-    "components.button.colors.secondary.text.hover.background",
-    "components.button.colors.secondary.text.hover.foreground",
-    "components.button.colors.secondary.text.press.background",
-    "components.button.colors.secondary.text.press.foreground",
-    "components.button.colors.secondary.text.press.ring",
-    "components.button.sizes.big.border-radius",
-    "components.button.sizes.big.font-size",
-    "components.button.sizes.big.gap",
-    "components.button.sizes.big.padding-x",
-    "components.button.sizes.big.padding-y",
-    "components.button.sizes.medium.border-radius",
-    "components.button.sizes.medium.font-size",
-    "components.button.sizes.medium.gap",
-    "components.button.sizes.medium.padding-x",
-    "components.button.sizes.medium.padding-y",
-    "components.button.sizes.small.border-radius",
-    "components.button.sizes.small.font-size",
-    "components.button.sizes.small.gap",
-    "components.button.sizes.small.padding-x",
-    "components.button.sizes.small.padding-y",
-    "components.icons.sizes.base",
-    "layouts.fontfamily.base",
-    "layouts.fontweight.600",
-    "layouts.lineheight.base",
-    "layouts.stroke.outline",
-    "layouts.stroke.ring"
+    "{components.button.colors.primary.contained.default.background}",
+    "{components.button.colors.primary.contained.default.foreground}",
+    "{components.button.colors.primary.contained.disable.background}",
+    "{components.button.colors.primary.contained.disable.foreground}",
+    "{components.button.colors.primary.contained.focus.background}",
+    "{components.button.colors.primary.contained.focus.foreground}",
+    "{components.button.colors.primary.contained.focus.ring}",
+    "{components.button.colors.primary.contained.hover.background}",
+    "{components.button.colors.primary.contained.hover.foreground}",
+    "{components.button.colors.primary.contained.press.background}",
+    "{components.button.colors.primary.contained.press.foreground}",
+    "{components.button.colors.primary.contained.press.ring}",
+    "{components.button.colors.primary.outlined.default.background}",
+    "{components.button.colors.primary.outlined.default.border}",
+    "{components.button.colors.primary.outlined.default.foreground}",
+    "{components.button.colors.primary.outlined.disable.background}",
+    "{components.button.colors.primary.outlined.disable.border}",
+    "{components.button.colors.primary.outlined.disable.foreground}",
+    "{components.button.colors.primary.outlined.focus.background}",
+    "{components.button.colors.primary.outlined.focus.border}",
+    "{components.button.colors.primary.outlined.focus.foreground}",
+    "{components.button.colors.primary.outlined.focus.ring}",
+    "{components.button.colors.primary.outlined.hover.background}",
+    "{components.button.colors.primary.outlined.hover.border}",
+    "{components.button.colors.primary.outlined.hover.foreground}",
+    "{components.button.colors.primary.outlined.press.background}",
+    "{components.button.colors.primary.outlined.press.border}",
+    "{components.button.colors.primary.outlined.press.foreground}",
+    "{components.button.colors.primary.outlined.press.ring}",
+    "{components.button.colors.primary.text.default.foreground}",
+    "{components.button.colors.primary.text.disable.foreground}",
+    "{components.button.colors.primary.text.focus.background}",
+    "{components.button.colors.primary.text.focus.foreground}",
+    "{components.button.colors.primary.text.focus.ring}",
+    "{components.button.colors.primary.text.hover.background}",
+    "{components.button.colors.primary.text.hover.foreground}",
+    "{components.button.colors.primary.text.press.background}",
+    "{components.button.colors.primary.text.press.foreground}",
+    "{components.button.colors.primary.text.press.ring}",
+    "{components.button.colors.secondary.contained.default.background}",
+    "{components.button.colors.secondary.contained.default.foreground}",
+    "{components.button.colors.secondary.contained.disable.background}",
+    "{components.button.colors.secondary.contained.disable.foreground}",
+    "{components.button.colors.secondary.contained.focus.background}",
+    "{components.button.colors.secondary.contained.focus.foreground}",
+    "{components.button.colors.secondary.contained.focus.ring}",
+    "{components.button.colors.secondary.contained.hover.background}",
+    "{components.button.colors.secondary.contained.hover.foreground}",
+    "{components.button.colors.secondary.contained.press.background}",
+    "{components.button.colors.secondary.contained.press.foreground}",
+    "{components.button.colors.secondary.contained.press.ring}",
+    "{components.button.colors.secondary.outlined.default.background}",
+    "{components.button.colors.secondary.outlined.default.border}",
+    "{components.button.colors.secondary.outlined.default.foreground}",
+    "{components.button.colors.secondary.outlined.disable.background}",
+    "{components.button.colors.secondary.outlined.disable.border}",
+    "{components.button.colors.secondary.outlined.disable.foreground}",
+    "{components.button.colors.secondary.outlined.focus.background}",
+    "{components.button.colors.secondary.outlined.focus.border}",
+    "{components.button.colors.secondary.outlined.focus.foreground}",
+    "{components.button.colors.secondary.outlined.focus.ring}",
+    "{components.button.colors.secondary.outlined.hover.background}",
+    "{components.button.colors.secondary.outlined.hover.border}",
+    "{components.button.colors.secondary.outlined.hover.foreground}",
+    "{components.button.colors.secondary.outlined.press.background}",
+    "{components.button.colors.secondary.outlined.press.border}",
+    "{components.button.colors.secondary.outlined.press.foreground}",
+    "{components.button.colors.secondary.outlined.press.ring}",
+    "{components.button.colors.secondary.text.default.foreground}",
+    "{components.button.colors.secondary.text.disable.foreground}",
+    "{components.button.colors.secondary.text.focus.background}",
+    "{components.button.colors.secondary.text.focus.foreground}",
+    "{components.button.colors.secondary.text.focus.ring}",
+    "{components.button.colors.secondary.text.hover.background}",
+    "{components.button.colors.secondary.text.hover.foreground}",
+    "{components.button.colors.secondary.text.press.background}",
+    "{components.button.colors.secondary.text.press.foreground}",
+    "{components.button.colors.secondary.text.press.ring}",
+    "{components.button.sizes.big.border-radius}",
+    "{components.button.sizes.big.font-size}",
+    "{components.button.sizes.big.gap}",
+    "{components.button.sizes.big.padding-x}",
+    "{components.button.sizes.big.padding-y}",
+    "{components.button.sizes.medium.border-radius}",
+    "{components.button.sizes.medium.font-size}",
+    "{components.button.sizes.medium.gap}",
+    "{components.button.sizes.medium.padding-x}",
+    "{components.button.sizes.medium.padding-y}",
+    "{components.button.sizes.small.border-radius}",
+    "{components.button.sizes.small.font-size}",
+    "{components.button.sizes.small.gap}",
+    "{components.button.sizes.small.padding-x}",
+    "{components.button.sizes.small.padding-y}",
+    "{components.icons.sizes.base}",
+    "{layouts.fontfamily.base}",
+    "{layouts.fontweight.600}",
+    "{layouts.lineheight.base}",
+    "{layouts.stroke.outline}",
+    "{layouts.stroke.ring}"
   ],
   "intent": {
     "usage": "Action déclenchant une opération ; le choix des variantes dépend de l'importance et du contexte.",

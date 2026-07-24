@@ -1,8 +1,10 @@
 # Concept — Design System AI-first
 
-Ce document porte la **vision** et le **plan d'action global**. Il fait
-autorité sur le « pourquoi » et le « où on va ». La spécification technique du
-plugin d'extraction vit dans [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md).
+Ce document explique le **concept global** du projet — le « pourquoi » et les
+principes. Il ne contient ni planning ni détails techniques : l'état
+d'avancement et les prochaines étapes vivent dans [`ROADMAP.md`](./ROADMAP.md),
+et le comportement exact du plugin dans
+[`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md).
 
 ---
 
@@ -17,32 +19,111 @@ permet de le concevoir, le configurer et l'utiliser correctement :
 - intentions et bonnes pratiques d'usage (quand l'utiliser, quand ne pas) ;
 - métadonnées de traçabilité vers la source.
 
-Une **UCS** est l'unité de référence complète d'un composant. Elle place **côte
-à côte son code réel et sa spécification issue du design** : le contrat exporté
-par TokenLintel porte les props visuelles, variantes, états, tokens et règles
-d'usage ; le code porte l'implémentation applicative. Leur co-localisation les
-maintient fortement reliés, là où design et développement vivaient auparavant
-dans des sources séparées.
+L'**UCS** est un **concept** qui relie design et développement en réunissant,
+**dans le dossier de chaque composant, son code réel et sa spécification issue
+de Figma**. Le contrat exporté par TokenLintel porte la spécification design —
+props visuelles, variantes, états, tokens, règles d'usage ; le code porte
+l'implémentation applicative. Leur co-localisation les maintient fortement
+reliés, là où design et développement vivaient auparavant dans des sources
+séparées.
+
+Un tel composant est **co-créé** : designer et développeur s'accordent ensemble
+sur le composant et son API publique, au lieu de le retravailler chacun dans son
+coin. C'est ce qui rend le design system **robuste** — il ne diverge ni côté
+design ni côté code.
 
 L'ensemble utilise un **vocabulaire partagé**, lisible par un humain comme par
-un agent IA. Les conventions propres à une plateforme (React, Font Awesome,
-etc.) restent dans le repository consommateur.
+un agent IA : le frontend reste ainsi **« future proof »** face aux agents — non
+pour générer des interfaces à la volée, mais pour que les développeurs s'appuient
+sur eux **en confiance** (cf. §2). Les conventions propres à une plateforme
+(React, Font Awesome, etc.) restent dans le repository consommateur.
 
 ## 2. Le problème qu'on résout
 
-Deux frustrations concrètes, à l'origine du projet :
+Aujourd'hui, **design et développement divergent**. Chaque composant est
+travaillé séparément — le designer dans Figma, le développeur dans le code,
+chacun dans son coin — et rien ne garantit qu'ils restent alignés : noms,
+variantes, états et tokens finissent par ne plus correspondre d'un côté à
+l'autre. Le design system n'est robuste ni pour l'un, ni pour l'autre.
 
-1. **Les agents IA produisent des interfaces incohérentes** — faute d'assez
-   d'informations sur le design system et sur les intentions design.
-2. **Les noms divergent** entre le design system (Figma) et la réalité du code.
+À l'ère de l'IA, ce cloisonnement doit changer. **Designer et développeur
+co-créent des composants unifiés**, pour un design system qui ne diverge
+d'aucun côté.
 
-L'UCS règle les deux :
+Ce changement de paradigme sert un objectif : rendre le frontend
+**« future proof »** vis-à-vis des agents IA. Le but n'est **pas** de générer
+des interfaces à la volée, mais de permettre aux développeurs d'**utiliser les
+agents en confiance** : parce que chaque composant porte un contrat explicite
+(variantes, états, intention, quand l'utiliser et quand l'éviter), l'agent sait
+avec précision **quel composant utiliser, dans quel contexte et comment**. Les
+développeurs vont plus vite et commettent moins d'erreurs.
 
-- l'agent **lit** le contrat et les tokens : il *sait* quoi utiliser **et
-  quand** (l'intention est explicite, pas devinée) ;
-- **un seul nom** vaut de Figma jusqu'au code — plus de divergence possible.
+Trois frictions concrètes que l'UCS lève :
 
-## 3. Le workflow complet
+1. **La divergence design ↔ code** — le travail en silo, sans alignement garanti.
+2. **Le manque de contexte design fiable pour les agents** — sans lui, leurs
+   productions sont incohérentes, donc inexploitables en confiance.
+3. **Le coût des outils dédiés** (Code Connect, appels au MCP de Figma) pour
+   obtenir ce contexte.
+
+Réponse de l'UCS :
+
+- **un seul composant unifié**, co-créé design + dev : un seul nom vaut de Figma
+  jusqu'au code — plus de divergence possible ;
+- l'agent **lit** le contrat et les tokens : il *sait* quoi utiliser **et quand**
+  (l'intention est explicite, pas devinée) ;
+- toutes les références **sont disponibles dans un format lisible**, sans requête
+  vers un autre outil ou service.
+
+## 3. Qui fait foi ? — l'arbitrage des sources
+
+L'UCS réunit deux mondes. Pour qu'ils ne se contredisent **jamais**, chaque
+information a **un seul propriétaire**. C'est la règle qui tranche en cas de
+doute.
+
+| Information | Fait foi | Ce qui empêche la divergence |
+|---|---|---|
+| Tokens (valeurs, alias) et **structure visuelle** (variantes, états, dimensions, icônes, règles d'usage) | **Figma** | nom mécanique de bout en bout ; le code s'aligne |
+| **API publique** : noms et valeurs des props | **accord designer ↔ développeur, gravé dans Figma** | un seul nom validé dès la création du composant ; la CI vérifie |
+| Comportement, accessibilité, événements, attributs natifs | **code réel** | hors périmètre du contrat |
+| Liaison contrat ↔ implémentation, vérification de cohérence | **repo consommateur / CI** | adaptateurs de plateforme |
+
+Trois règles en découlent.
+
+**Tokens : un seul nom, mécanique.** Aucun humain ne retape un nom de token.
+`normalizeName()` produit le même identifiant de Figma → contrat → CSS. La
+divergence est impossible par construction.
+
+**Props : un seul nom, négocié en amont.** Le nom et les valeurs d'une prop
+(`variant`, `size`, `iconLeft`…) ne sont pas devinés après coup. **Le composant
+Figma est construit et nommé en collaboration entre le designer et le
+développeur** : ils s'accordent sur l'API publique **au moment même de la
+création du composant**, avant qu'une ligne de code ne soit écrite. Ce nom
+voyage ensuite intact — Figma → contrat → code — et le code le reprend à
+l'identique ; la CI le vérifie. Le contrat conserve toujours le nom Figma
+d'origine dans `figmaName` pour la traçabilité. Ce qui reste au code **seul** :
+le comportement, `onClick`, les attributs `aria-*`, les règles de formulaire —
+le contrat ne les décrit pas.
+
+**Références de tokens : toujours un lien, jamais une valeur.** Dans les deux
+artefacts, un token est cité comme **référence** vers `tokens.json`, jamais
+comme valeur aplatie. La référence n'est résolue qu'à la **lecture** (agent,
+build, parité) : c'est ce qui permet à la parité de vérifier les *noms*, pas
+seulement les valeurs finales, et ce qui préserve le multi-marque et le theming.
+Syntaxe unifiée : accolades + séparateur point, `{chemin.du.token}`, le chemin
+pointant le token tel qu'il apparaît dans `tokens.json`. Les **deux** artefacts —
+`tokens.json` et le contrat — utilisent désormais cette syntaxe
+(`contractVersion` 3.0).
+
+**Critères de cohérence que la CI doit garantir :**
+
+- si le code d'un composant ne correspond plus à sa spec Figma (prop, variante
+  ou valeur divergente), la CI **détecte et bloque** ;
+- si un token change dans Figma, le composant qui ne l'a pas suivi est
+  **signalé** ;
+- un token référencé qui n'existe plus → **erreur**.
+
+## 4. Le workflow complet
 
 ```
 Figma (DS propre)
@@ -59,22 +140,26 @@ Playground : un agent compose une interface avec les composants disponibles
 
 1. **Figma** — collections de tokens organisées par niveaux d'alias, composant
    avec toutes ses variantes (couleur / taille / variant / état), et ses
-   **règles d'usage** dans un conteneur `<Nom>-Rules`.
+   **règles d'usage** dans un conteneur `<Nom>-Rules`. Le composant et le **nom
+   de ses props** sont définis en collaboration designer ↔ développeur (cf. §3).
 2. **TokenLintel** (ce plugin) — extrait **deux artefacts** : `tokens.json`
    (toutes les variables, chaîne d'alias préservée, entrée Style Dictionary) et
    `<Composant>.contract.json` (props, structure, `tokensUsed`, `intent`,
    doc par valeur). Cf. [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md).
-3. **Co-localisation** (voir §4) — les artefacts atterrissent dans le repo.
+3. **Co-localisation** (voir §5) — les artefacts atterrissent dans le repo.
 4. **Code réel** — un développeur écrit `Button.tsx` contre le contrat et les
-   tokens. Les props contrôlées par le design restent alignées sur le contrat ;
-   les attributs natifs, événements et règles d'accessibilité relèvent du code.
+   tokens. Les props contrôlées par le design reprennent les noms fixés en
+   amont ; les attributs natifs, événements et règles d'accessibilité relèvent
+   du code.
 5. **Garde-fous** — la CI vérifie que le code **ne peut pas** diverger du
-   contrat ni des tokens.
+   contrat ni des tokens (cf. §3, critères de cohérence).
 6. **Playground** — on demande une interface (« trois boutons de ce type,
-   deux de cet autre, disposés comme ça »), l'agent l'écrit à partir du
-   contrat, on constate de ses yeux qu'il respecte le design system.
+   deux de cet autre, disposés comme ça »), l'agent l'écrit à partir du seul
+   contrat, on constate de ses yeux qu'il respecte le design system. C'est la
+   **preuve de fiabilité** qui fonde la confiance d'un développeur à déléguer à
+   un agent — pas un mode de production d'interfaces à la volée.
 
-## 4. Principe fondateur : la co-localisation
+## 5. Principe fondateur : la co-localisation
 
 **Toutes les données d'un composant vivent au même endroit.** Le contrat
 est exporté **dans le dossier du composant réel**, à côté de son `.tsx` :
@@ -95,45 +180,9 @@ Les **tokens**, partagés par tous les composants, vivent dans
 sources applicatives, au même niveau architectural que `src/components`, sans
 être artificiellement co-localisés avec un composant particulier.
 
-## 5. L'objectif : un MVP qui prouve
+---
 
-Pas un produit fini. Un **prototype qui prouve** que le pipeline complet
-Figma → tokens → code → agent fonctionne, monté le plus **solidement et
-automatiquement** possible, sur **un seul composant** (le bouton), de bout en
-bout — pour ensuite le **montrer aux équipes** et décider du passage à l'échelle.
-
-Deux livrables **distincts**, tous deux nécessaires :
-
-- **le code réel du bouton** (`Button.tsx`) — écrit et maintenu par un
-  développeur : c'est **le livrable** ;
-- **le playground** — l'espace où l'agent génère des interfaces avec ce
-  bouton : c'est **la preuve**.
-
-La reconstruction du Button par un agent en contexte froid est uniquement un
-**test de robustesse du contrat**. Si le rendu reconstruit est faux, on vérifie
-si l'information était absente ou ambiguë dans le contrat. Ce code généré n'est pas
-destiné à remplacer l'implémentation du développeur.
-
-## 6. État & plan d'action
-
-Le pipeline complet fonctionne sur Button. Le travail restant porte surtout
-sur les garde-fous du repository consommateur et la validation avec un second
-composant, afin de vérifier que le modèle reste générique.
-
-| Phase | Objet | État |
-|---|---|---|
-| **0** | Figer TokenLintel (contrats, tokens DTCG, configuration et PR) | opérationnel sur Button |
-| **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary v4 ; **noms de tokens = chemins**) | opérationnel |
-| **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
-| **C** | Garde-fous CI : `tokensUsed` ⊆ tokens générés · conformité code ↔ contrat · uniformité de nommage | partiel : contrôle des tokens présent |
-| **D** | Playground : rendu live + contexte agent + test froid léger | opérationnel sur Button |
-| **E** | Passage à l'échelle : 2ᵉ composant non-Button, guide de rédaction pour les designers, industrialisation | post-MVP |
-
-**Critère de succès du MVP** : dans le playground, l'agent n'invente aucune
-variante visuelle, utilise les props design du contrat, respecte les `@dont` et
-produit un rendu cohérent avec Figma, sans divergence de nom sur le trajet.
-
-Les inspirations externes, risques identifiés et développements envisageables
-après ce MVP sont consignés dans
-[`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md). Ce document est prospectif : il
-ne modifie ni le plan ci-dessus ni la spécification actuelle du plugin.
+**Suite.** L'objectif MVP, l'état d'avancement et les prochaines étapes sont
+dans [`ROADMAP.md`](./ROADMAP.md). Le positionnement dans l'écosystème, les
+inspirations et les risques sont dans
+[`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md).

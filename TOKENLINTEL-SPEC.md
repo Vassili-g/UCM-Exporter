@@ -32,6 +32,12 @@ consommateur.
   (`/`→`.`, espaces d'un segment → `-`, minuscules). Un token s'écrit donc
   pareil dans `tokens.json` et dans un contrat — les `tokensUsed` de la Partie 1
   recoupent la Partie 2.
+- **Références de tokens entre accolades** : dans un contrat, un token est cité
+  comme RÉFÉRENCE `"{chemin.du.token}"`, jamais comme chemin nu ni valeur
+  aplatie — même syntaxe que les références DTCG de `tokens.json`. Les accolades
+  sont un simple enrobage autour du nom produit par `normalizeName()` ; un
+  consommateur retire `{…}` avant de résoudre. Un nom de **style de texte** n'est
+  pas un token : il reste une chaîne nue et n'entre pas dans `tokensUsed`.
 
 ## Le design system décrit (données lues, jamais codées en dur)
 
@@ -99,20 +105,23 @@ si un rôle est absent de la feuille d'un état dans `variantTokens` ou
 état »**. Un consommateur ne doit jamais fusionner implicitement cette feuille
 avec celle de l'état `default`.
 Résolution : `VariableAlias.id` → `getVariableByIdAsync(id).name` →
-`normalizeName()`. Pour un rôle porté par un `fill`, la feuille contient le
-nom du token. Les strokes sont rangés séparément dans `variantStrokes` :
+`normalizeName()` → enrobage en référence `{…}`. Pour un rôle porté par un
+`fill`, la feuille contient la référence du token. Les strokes sont rangés
+séparément dans `variantStrokes` :
 
 ```json
 "ring": {
-  "color": "components.button.colors.primary.contained.focus.ring",
-  "width": "layouts.stroke.ring",
+  "color": "{components.button.colors.primary.contained.focus.ring}",
+  "width": "{layouts.stroke.ring}",
   "align": "outside"
 }
 ```
 
-Une largeur non liée produit un warning et vaut `null` ; elle n'est jamais
+`color` et `width` sont des **références de token** entre accolades ; `align`
+est une donnée structurelle Figma, pas un token — jamais d'accolades. Une
+largeur non liée produit un warning et vaut `null` ; elle n'est jamais
 remplacée par une valeur brute. Les deux arbres sont nichés selon
-`variantAxes`, avec des chaînes uniquement dans `variantTokens` :
+`variantAxes`, avec des références de token uniquement dans `variantTokens` :
 
 ```json
 "variantAxes": ["color", "variant", "state"],
@@ -198,7 +207,8 @@ générique des rôles vers les propriétés de rendu (`background` →
 largeur de bordure, `ring` → contour avec repli `box-shadow`). Toute propriété
 pertinente sans variable liée → warning précis (calque + propriété), non
 exportée, **export non bloqué**.
-`tokensUsed` = liste à plat dédupliquée de tous les tokens de `structure`.
+`tokensUsed` = liste à plat dédupliquée de toutes les références de token de
+`structure` (mêmes accolades ; un nom de style de texte en est exclu).
 
 ### Sortie
 
@@ -209,7 +219,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "2.0",
+    "contractVersion": "3.0",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "figma": {
       "fileName": "DS AI LAB",
@@ -255,10 +265,10 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
   },
   "structure": {
     "layout": "flex-row",
-    "gap": "layouts.components.button.medium.gap",
-    "padding": { "x": "layouts.components.button.medium.padding-x",
-                 "y": "layouts.components.button.medium.padding-y" },
-    "radius": "layouts.components.button.medium.border-radius",
+    "gap": "{layouts.components.button.medium.gap}",
+    "padding": { "x": "{layouts.components.button.medium.padding-x}",
+                 "y": "{layouts.components.button.medium.padding-y}" },
+    "radius": "{layouts.components.button.medium.border-radius}",
     "sizes": {
       "big":    { "gap": "…", "padding": { "x": "…", "y": "…" }, "radius": "…", "fontSize": "…" },
       "medium": { "…": "idem" },
@@ -266,11 +276,11 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     },
     "children": [
       { "slot": "arrow-left-long", "figmaLayer": "arrow-left-long", "optional": true,
-        "visibilityProp": "iconLeft", "size": "components.icons.sizes.base" },
+        "visibilityProp": "iconLeft", "size": "{components.icons.sizes.base}" },
       { "slot": "label", "figmaLayer": "Suivant", "typography": { "…": "étape 4" },
-        "color": "components.button.colors.primary.contained.default.foreground" },
+        "color": "{components.button.colors.primary.contained.default.foreground}" },
       { "slot": "arrow-right-long", "figmaLayer": "arrow-right-long", "optional": true,
-        "visibilityProp": "iconRight", "size": "components.icons.sizes.base" }
+        "visibilityProp": "iconRight", "size": "{components.icons.sizes.base}" }
     ],
     "variantAxes": ["color","variant","state"],
     "variantTokens": { "…": "étape 2" },
@@ -300,16 +310,17 @@ développement) — un warning le signale, sans bloquer.
 - [ ] Couche sémantique appliquée (ex. tailles → `size`) avec `figmaName`
       conservé ; aucun mapping lié à un composant précis.
 - [ ] `variantTokens` et `variantStrokes` couvrent **toutes** les combinaisons
-      d'axes, nichés selon `variantAxes` ; le premier ne contient que des noms
-      de tokens, le second porte couleur, largeur tokenisée et alignement Figma.
+      d'axes, nichés selon `variantAxes` ; le premier ne contient que des
+      références de token `{…}`, le second porte couleur et largeur en
+      références `{…}` plus l'alignement Figma nu (`inside`/`center`/`outside`).
 - [ ] Un rôle absent d'un état signifie qu'il ne doit pas être rendu ; aucun
       consommateur ne fusionne implicitement cet état avec `default`.
 - [ ] `stateModel` mappe les états connus vers leurs déclencheurs et expose
       une priorité déterministe ; les états inconnus restent visibles avec un
       warning.
 - [ ] `rendering.roles` documente le rendu partagé des rôles visuels.
-- [ ] Typographie remplie en noms de tokens (**test n°1**), fallback `fontStyle`
-      géré.
+- [ ] Typographie remplie en références de token `{…}` (**test n°1**), fallback
+      `fontStyle` géré ; un style de texte reste un nom nu, hors `tokensUsed`.
 - [ ] Dimensions extraites du wrapper si présent, sinon du composant ;
       `structure.sizes` couvre chaque valeur de l'axe de tailles.
 - [ ] `meta` présent : `contractVersion`, `exportedAt`, traçabilité Figma
@@ -322,9 +333,10 @@ développement) — un warning le signale, sans bloquer.
 - [ ] `icons` conserve cette qualification sans modifier les props BOOLEAN ;
       une icône `modifiable` ajoute une prop runtime distincte seulement quand
       Figma lie nativement son calque à un BOOLEAN de visibilité.
-- [ ] Aucune valeur brute de design exportée ; une largeur de stroke non
-      tokenisée vaut `null` avec warning, tandis que l'alignement structurel
-      Figma (`inside`/`center`/`outside`) est conservé.
+- [ ] Aucune valeur brute de design exportée ; tout token cité l'est comme
+      référence `{…}` ; une largeur de stroke non tokenisée vaut `null` avec
+      warning, tandis que l'alignement structurel Figma
+      (`inside`/`center`/`outside`) est conservé nu.
 - [ ] Règles lues dans le conteneur `<Nom>-Rules` : `@usage`/`@do`/`@dont`/`@pairs`
       → `intent`, `@prop` → `props.<prop>.descriptions.<valeur>` ; conteneur
       absent/vide → **export bloqué** ; `@prop` invalide → warning ; jamais

@@ -14,8 +14,13 @@ export { mergeIconRules } from './mergeIconRules';
 import { buildStateModel, defaultRenderingSemantics } from './semantics';
 import type { Contract, ContractMeta, ContractProp } from './types';
 
-/** Version du schéma de contrat — à incrémenter à chaque changement de forme. */
-const CONTRACT_VERSION = '2.0';
+/**
+ * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 3.0 : les tokens sont cités comme références DTCG entre accolades
+ * (`{chemin.du.token}`) et non plus comme chemins nus — rupture pour un
+ * consommateur qui lisait le chemin littéral.
+ */
+const CONTRACT_VERSION = '3.0';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {

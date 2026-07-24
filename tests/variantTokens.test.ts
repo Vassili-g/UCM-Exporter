@@ -28,8 +28,8 @@ test('getSlotTokens sépare les peintures de la géométrie des strokes', async 
     paints: {},
     strokes: {
       ring: {
-        color: 'components.button.colors.primary.focus.ring',
-        width: 'layouts.stroke.ring',
+        color: '{components.button.colors.primary.focus.ring}',
+        width: '{layouts.stroke.ring}',
         align: 'outside',
       },
     },
@@ -89,16 +89,16 @@ test('extractVariantTokens ajoute la largeur du stroke à tokensUsed', async () 
     variantStrokes: {
       focus: {
         ring: {
-          color: 'components.button.colors.primary.focus.ring',
-          width: 'layouts.stroke.ring',
+          color: '{components.button.colors.primary.focus.ring}',
+          width: '{layouts.stroke.ring}',
           align: 'outside',
         },
       },
     },
   });
   assert.deepEqual(Array.from(tokenNames).sort(), [
-    'components.button.colors.primary.focus.ring',
-    'layouts.stroke.ring',
+    '{components.button.colors.primary.focus.ring}',
+    '{layouts.stroke.ring}',
   ]);
   assert.deepEqual(warnings, []);
 });

@@ -9,7 +9,8 @@ commune, lisible par les humains et les agents IA.
 
 Lire dans cet ordre avant de toucher au code :
 
-1. [`CONCEPT.md`](./CONCEPT.md) — la vision : ce qu'est une UCS et pourquoi.
+1. [`CONCEPT.md`](./CONCEPT.md) — la vision : ce qu'est l'UCS, pourquoi, et
+   **qui fait foi** en cas de contradiction (§3, arbitrage des sources).
 2. [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md) — **la spécification de référence** : le design
    system décrit, l'algorithme des exports, le dépôt GitHub et le schéma des sorties.
    C'est le document le plus important ; il fait foi en cas de doute.
@@ -20,6 +21,9 @@ Lire dans cet ordre avant de toucher au code :
 5. [`tests/test-exports/`](./tests/test-exports/) — les sorties réelles
    produites sur le fichier Figma de référence (`Button.contract.json`,
    `tokens.json`). À consulter pour voir la forme concrète des exports.
+
+Pour le contexte projet — objectif MVP, état d'avancement et prochaines étapes —
+voir [`ROADMAP.md`](./ROADMAP.md).
 
 ## Carte du code
 
