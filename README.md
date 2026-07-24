@@ -100,7 +100,7 @@ tests/
 - [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — analyse stratégique : positionnement, inspirations, risques ;
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
 - [AGENTS.md](./AGENTS.md) — ordre de lecture et invariants pour les agents IA ;
-- [Components Playground](https://github.com/Vassili-g/Components-Playground) — repository qui consomme les artefacts exportés.
+- [Components Playground](https://github.com/Vassili-g/UCM-Playground) — repository qui consomme les artefacts exportés.
 
 ## Périmètre actuel
 
