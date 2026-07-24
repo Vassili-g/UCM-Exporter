@@ -112,7 +112,10 @@ puis la **parité** (Pilier A), dessinée contre ce cas réel.
    contrat, version de schéma pour `tokens.json`, exploitation du multi-marque
    (les modes exportés sous `$extensions["com.ucm.modes"]`), diff sémantique des
    contrats pour faciliter les revues, formalisation du protocole de test froid
-   (états comparés, critère de réussite/échec, consignation des résultats), puis
+   (états comparés, critère de réussite/échec, consignation des résultats), un
+   **contrat 4.0** qui assainit le format (suppression des recopies internes —
+   dimensions du niveau haut vs `sizes`, `children[label].color` vs
+   `variantTokens` — et `warnings` déplacés sous `meta`), puis
    passerelles (génération Code Connect, exploitation Storybook). Motivations
    détaillées dans [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §4.
 
