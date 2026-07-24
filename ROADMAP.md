@@ -2,7 +2,7 @@
 
 **Où en est le projet et ce qui reste à faire.** Le concept est expliqué dans
 [`CONCEPT.md`](./CONCEPT.md), le comportement exact du plugin dans
-[`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md), et l'analyse stratégique
+[`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md), et l'analyse stratégique
 (positionnement, inspirations, risques) dans
 [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md).
 
@@ -35,7 +35,7 @@ composant, pour vérifier que le modèle reste générique.
 
 | Phase | Objet | État |
 |---|---|---|
-| **0** | Figer TokenLintel (contrats, tokens DTCG, configuration et PR) | opérationnel sur Button |
+| **0** | Figer Unified Component Exporter (contrats, tokens DTCG, configuration et PR) | opérationnel sur Button |
 | **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary v4 ; **noms de tokens = chemins**, alias préservés en `var(--…)`) | opérationnel |
 | **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
 | **C** | Garde-fous CI : `tokensUsed` ⊆ tokens générés · conformité code ↔ contrat · uniformité de nommage | partiel : parité des tokens présente **en local**, pas encore de workflow CI |

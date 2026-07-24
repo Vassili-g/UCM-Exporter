@@ -1,5 +1,5 @@
 /**
- * Point d'entrée de l'interface TokenLintel.
+ * Point d'entrée de l'interface Unified Component Exporter.
  * Il assemble les vues et route les messages entre le DOM et le sandbox Figma.
  */
 import { createHeader } from './components/Header.js';
@@ -32,7 +32,7 @@ function showExports() {
 }
 
 const header = createHeader(
-  'TokenLintel',
+  'Unified Component Exporter',
   'Transformez vos composants Figma en contrats exploitables.',
   showConfiguration,
   showExports,

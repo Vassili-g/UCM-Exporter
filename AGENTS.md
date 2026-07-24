@@ -1,17 +1,17 @@
-# TokenLintel — guide pour agents IA (et nouveaux contributeurs)
+# Unified Component Exporter — guide pour agents IA (et nouveaux contributeurs)
 
 Plugin Figma qui exporte des **contrats de composant** (JSON) et les variables
 en **tokens DTCG**. Co-localisés avec le code réel, ces artefacts mettent en
-œuvre le concept UCS et donnent au design comme au développement une référence
+œuvre le concept UCM et donnent au design comme au développement une référence
 commune, lisible par les humains et les agents IA.
 
 ## Ordre de lecture
 
 Lire dans cet ordre avant de toucher au code :
 
-1. [`CONCEPT.md`](./CONCEPT.md) — la vision : ce qu'est l'UCS, pourquoi, et
+1. [`CONCEPT.md`](./CONCEPT.md) — la vision : ce qu'est l'UCM, pourquoi, et
    **qui fait foi** en cas de contradiction (§3, arbitrage des sources).
-2. [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md) — **la spécification de référence** : le design
+2. [`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md) — **la spécification de référence** : le design
    system décrit, l'algorithme des exports, le dépôt GitHub et le schéma des sorties.
    C'est le document le plus important ; il fait foi en cas de doute.
 3. [`CONTRIBUTING.md`](./CONTRIBUTING.md) — les règles de code : commentaires
@@ -71,7 +71,7 @@ npm run typecheck # tsc --noEmit seul
 - **`normalizeName()` unique** : un token s'écrit pareil dans un contrat et
   dans `tokens.json`.
 - Changement de forme du contrat → incrémenter `contractVersion`
-  (`src/contract/exportComponent.ts`) **et** mettre à jour `TOKENLINTEL-SPEC.md`.
+  (`src/contract/exportComponent.ts`) **et** mettre à jour `UCM-EXPORTER-SPEC.md`.
 
 ## Limites de l'environnement
 

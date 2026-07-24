@@ -1,6 +1,6 @@
 # Contributing & Development Rules
 
-Règles de développement pour `TokenLintel`. Objectif : un code **robuste** et
+Règles de développement pour `Unified Component Exporter`. Objectif : un code **robuste** et
 **lisible sans effort** par un agent IA comme par un développeur débutant.
 Chaque règle ci-dessous découle de ce double objectif.
 
@@ -84,12 +84,12 @@ Les commentaires sont en français et doivent aider un lecteur débutant :
 
 ## Documentation & synchronisation
 
-- [`TOKENLINTEL-SPEC.md`](./TOKENLINTEL-SPEC.md) est la **spécification de référence** ; la
+- [`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md) est la **spécification de référence** ; la
   vision produit est dans [`CONCEPT.md`](./CONCEPT.md). Tout changement de
-  comportement ou de schéma se répercute dans `TOKENLINTEL-SPEC.md` **dans le même
+  comportement ou de schéma se répercute dans `UCM-EXPORTER-SPEC.md` **dans le même
   changement** — un doc désynchronisé est un bug.
 - Tout changement de forme du contrat incrémente `contractVersion`
-  (`src/contract/exportComponent.ts`) et met à jour l'exemple de `TOKENLINTEL-SPEC.md`.
+  (`src/contract/exportComponent.ts`) et met à jour l'exemple de `UCM-EXPORTER-SPEC.md`.
 - Garder le `README.md` fidèle à l'état réel du projet (commandes,
   architecture, statut des parties).
 

@@ -105,7 +105,7 @@ function resolveRoot(variable: Variable, ctx: ExportContext): Variable {
  * - valeur directe → littérale (hex, px, nombre…) ;
  * - alias → référence `"{chemin.cible}"`, jamais la valeur résolue ;
  * - collection multi-mode (ex. Brand Tokens, 1 mode = 1 marque) → tous les
- *   modes sous `$extensions["com.tokenlintel.modes"]`, rien n'est perdu.
+ *   modes sous `$extensions["com.ucm.modes"]`, rien n'est perdu.
  */
 export function buildLeaf(
   variable: Variable,
@@ -139,7 +139,7 @@ export function buildLeaf(
   if (collection.modes.length > 1) {
     const modes: Record<string, unknown> = {};
     for (const mode of collection.modes) modes[normalizeName(mode.name)] = valueForMode(mode.modeId);
-    leaf.$extensions = { 'com.tokenlintel.modes': modes };
+    leaf.$extensions = { 'com.ucm.modes': modes };
   }
 
   return leaf;
