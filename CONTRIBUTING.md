@@ -92,6 +92,14 @@ Les commentaires sont en français et doivent aider un lecteur débutant :
   canonique par principe), `UCM-EXPORTER-SPEC.md` **précise**, tous les autres
   documents **pointent** sans reformuler — une reformulation libre est une
   divergence en devenir. C'est la règle `normalizeName()` appliquée à la prose.
+- **Trois autorités, trois périmètres** — ne pas les confondre :
+  `CONCEPT.md` fait foi sur le **pourquoi et les principes** ;
+  `UCM-EXPORTER-SPEC.md` fait foi sur le **comportement du plugin** (en cas de
+  doute sur ce que fait le code, c'est elle) ; l'arbitrage de `CONCEPT.md` §3
+  tranche, lui, la propriété des **données design** (Figma / accord
+  designer ↔ dev / code / CI), pas celle des documents.
+  `ROADMAP.md` est le seul document de **suivi qui engage** ;
+  `PISTES-EVOLUTION.md` explore sans engager.
 - Tout changement de forme du contrat incrémente `contractVersion`
   (`src/contract/exportComponent.ts`) et met à jour l'exemple de `UCM-EXPORTER-SPEC.md`.
 - Garder le `README.md` fidèle à l'état réel du projet (commandes,

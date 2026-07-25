@@ -41,15 +41,40 @@ function encodePath(path: string): string {
   return path.split('/').map((segment) => encodeURIComponent(segment)).join('/');
 }
 
-/** Compare les JSON sans considérer le style de fin de ligne du repo. */
-function sameContent(left: string, right: string): boolean {
-  return left.replace(/\r\n/g, '\n').trimEnd() === right.replace(/\r\n/g, '\n').trimEnd();
+/**
+ * Neutralise la seule donnée volatile d'un artefact : `meta.exportedAt`,
+ * régénérée à chaque export. Sans cela, deux exports identiques côté design
+ * différeraient toujours par leur horodatage et l'invariant
+ * « aucun changement = aucune PR » ne tiendrait jamais pour un contrat.
+ */
+function withoutExportTimestamp(content: string): string {
+  try {
+    const parsed = JSON.parse(content) as { meta?: { exportedAt?: unknown } };
+    if (parsed && typeof parsed === 'object' && parsed.meta && typeof parsed.meta === 'object') {
+      delete parsed.meta.exportedAt;
+    }
+    return JSON.stringify(parsed);
+  } catch {
+    return content; // Contenu non JSON : comparé tel quel.
+  }
 }
 
-/** Génère le nom de branche déterministe demandé par la spécification. */
-export function exportBranchName(date = new Date()): string {
+/** Compare les artefacts sans fin de ligne du repo ni horodatage d'export. */
+function sameContent(left: string, right: string): boolean {
+  const normalize = (value: string) => withoutExportTimestamp(value.replace(/\r\n/g, '\n').trimEnd());
+  return normalize(left) === normalize(right);
+}
+
+/**
+ * Génère le nom de branche déterministe demandé par la spécification.
+ * Le type d'artefact et les secondes évitent la collision du flux courant :
+ * exporter le contrat puis les tokens dans la même minute.
+ */
+export function exportBranchName(kind: ArtifactKind, date = new Date()): string {
   const pad = (value: number) => String(value).padStart(2, '0');
-  return `ucm-exporter/export-${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}-${pad(date.getHours())}${pad(date.getMinutes())}`;
+  const day = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
+  const time = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
+  return `ucm-exporter/export-${kind}-${day}-${time}`;
 }
 
 /** Déduit le path repo sans demander de saisie par composant. */
@@ -137,7 +162,7 @@ export async function publishArtifact(
     return { status: 'unchanged', path };
   }
 
-  const branch = exportBranchName(date);
+  const branch = exportBranchName(artifact.kind, date);
   const baseRef = await githubRequest<{ object: { sha: string } }>(
     config,
     `/repos/${repository}/git/ref/heads/${encodePath(config.baseBranch)}`,

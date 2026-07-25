@@ -24,11 +24,20 @@ function insertVariant(
   axes: string[],
   values: Record<string, string>,
   leaf: SlotTokens | SlotStrokes,
+  warnings: string[],
 ): void {
   let node = tree;
   axes.forEach((axis, index) => {
     const key = values[axis] || 'default';
     if (index === axes.length - 1) {
+      // Deux variants aux mêmes valeurs d'axes : on conserve le premier et on
+      // le signale — ne jamais perdre d'information en silence.
+      if (node[key]) {
+        warnings.push(
+          `Variants en conflit sur « ${axes.map((a) => values[a] || 'default').join('/')} » : premier conservé.`,
+        );
+        return;
+      }
       node[key] = leaf;
       return;
     }
@@ -70,8 +79,8 @@ export async function extractVariantTokens(
       const values = matrix.axes.length > 0
         ? entry.values
         : { variant: normalizePropValue(entry.component.name) };
-      insertVariant(variantTokens, axes, values, leaf.paints);
-      insertVariant(variantStrokes, axes, values, leaf.strokes);
+      insertVariant(variantTokens, axes, values, leaf.paints, warnings);
+      insertVariant(variantStrokes, axes, values, leaf.strokes, warnings);
     }),
   );
 

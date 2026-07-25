@@ -53,7 +53,7 @@ prouve que le modèle dépasse le composant isolé.
 | **0** | Figer Unified Component Exporter (contrats, tokens DTCG, configuration et PR) | opérationnel sur Button |
 | **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary ; **noms de tokens = chemins**, alias préservés en `var(--…)`) | opérationnel |
 | **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
-| **C1** | Garde-fous CI — existence des tokens (`tokensUsed` ⊆ tokens générés, `npm run check`) | vérification locale opérationnelle ; workflow CI à faire (étape 2) |
+| **C1** | Garde-fous CI — existence des tokens (`tokensUsed` ⊆ tokens générés, `npm run check`) | opérationnel : en local et en CI (GitHub Action à chaque PR/push) ; restent CODEOWNERS et tests (étape 2) |
 | **C2** | Garde-fous CI — parité code ↔ contrat (props, valeurs, états, composition) | à faire (étape 4) |
 | **D** | Playground : rendu live + contexte agent + test froid léger | opérationnel sur Button |
 | **E** | **Composition** : composé minimal, champ `composes`, parité récursive | à faire — **priorité structurelle** |
@@ -70,14 +70,11 @@ puis la **parité** (Pilier A), dessinée contre ce cas réel.
    `hover` / `focus` / `press` en CSS (`:hover` / `:focus-visible` / `:active`,
    déjà portés par `stateModel`), `disabled` en prop booléenne. Ce code de
    production remplace le prototype généré.
-2. **Boucler les garde-fous CI du playground (Phase C1).** Ajouter une GitHub
-   Action qui lance `npm run check` (build des tokens + parité
-   `tokensUsed ⊆ tokens générés`) à chaque PR, un fichier `CODEOWNERS` encodant
-   l'arbitrage (tokens → designer, code → dev — Tier 1 de
-   [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §6, coût quasi nul), et les
-   premiers tests du playground (`tokenVar`, scripts). *(Rien à faire côté
-   régénération : le CSS généré est reconstruit à chaque build via `prebuild`,
-   et `outputReferences` préserve déjà les alias en `var(--…)`.)*
+2. **Compléter les garde-fous d'équipe (Phase C1).** Ajouter un fichier
+   `CODEOWNERS` encodant l'arbitrage (tokens → designer, code → dev — Tier 1 de
+   [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §6 ; à activer avec une
+   protection de branche), et les premiers tests du playground (`tokenVar`,
+   scripts).
 3. **Composant composé — priorité structurelle.** Les deux natures — simple /
    composé — sont définies dans [`CONCEPT.md`](./CONCEPT.md) §1.
    On crée **volontairement** un composé minimal (Card
@@ -108,14 +105,19 @@ puis la **parité** (Pilier A), dessinée contre ce cas réel.
    tenue : un composant à icône `strict` (Alert) et un interactif (Checkbox /
    TextField) pour couvrir booléens, états et slots, et confirmer qu'aucune règle
    spécifique à Button ne subsiste.
-6. **Au-delà du MVP.** Une fois la généricité prouvée : JSON Schema versionné du
+6. **Au-delà du MVP.** *(Cette liste est le suivi qui engage ;
+   [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) explore librement les mêmes
+   idées sans les engager — une piste retenue entre ici.)* Une fois la
+   généricité prouvée : JSON Schema versionné du
    contrat, version de schéma pour `tokens.json`, exploitation du multi-marque
    (les modes exportés sous `$extensions["com.ucm.modes"]`), diff sémantique des
    contrats pour faciliter les revues, formalisation du protocole de test froid
    (états comparés, critère de réussite/échec, consignation des résultats), un
    **contrat 4.0** qui assainit le format (suppression des recopies internes —
    dimensions du niveau haut vs `sizes`, `children[label].color` vs
-   `variantTokens` — et `warnings` déplacés sous `meta`), puis
+   `variantTokens` — et `warnings` déplacés sous `meta`) — à regrouper avec le
+   changement de schéma de l'étape 3 (`composes`) pour n'imposer qu'un seul
+   cycle de ré-export — puis
    passerelles (génération Code Connect, exploitation Storybook). Motivations
    détaillées dans [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §4.
 

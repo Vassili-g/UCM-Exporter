@@ -9,7 +9,10 @@ planning ni détails techniques.
 
 ---
 
-## 1. La vision : le modèle de composant unifié (UCM)
+## 1. Les définitions : le modèle de composant unifié (UCM)
+
+*Ce paragraphe définit le vocabulaire du projet ; le problème qu'il résout et
+les bénéfices attendus sont en §2.*
 
 Un composant n'est pas seulement du code. C'est du code **plus** tout ce qui
 permet de le concevoir, le configurer et l'utiliser correctement :
@@ -36,20 +39,18 @@ composants **se composent**. Trois niveaux à ne jamais confondre : le *modèle*
 **Se composer** : deux natures de composants. Un composant **simple** ne
 consomme que des tokens et des calques (ex. Button). Un composant **composé**
 assemble d'autres composants unifiés (ex. une Card contenant un Button) : son
-contrat déclare ces dépendances — champ `composes`, à venir — sans jamais
-redécrire leurs internes, et la cohérence se vérifie récursivement.
+contrat déclare ces dépendances — champ `composes` *(cible — cf.
+[`ROADMAP.md`](./ROADMAP.md) étape 3)* — sans jamais redécrire leurs internes,
+et la cohérence se vérifie récursivement.
 *(Équivalent développeur : primitive / composite.)*
 
 Un tel composant est **co-créé** : designer et développeur s'accordent ensemble
 sur le composant et son API publique, au lieu de le retravailler chacun dans son
-coin. C'est ce qui rend le design system **robuste** — il ne diverge ni côté
-design ni côté code.
+coin.
 
-L'ensemble utilise un **vocabulaire partagé**, lisible par un humain comme par
-un agent IA : le frontend reste ainsi **« future proof »** face aux agents — non
-pour générer des interfaces à la volée, mais pour que les développeurs s'appuient
-sur eux **en confiance** (cf. §2). Les conventions propres à une plateforme
-(React, Font Awesome, etc.) restent dans le repository consommateur.
+Le tout s'écrit dans un **vocabulaire partagé**, lisible par un humain comme par
+un agent IA. Les conventions propres à une plateforme (React, Font Awesome,
+etc.) restent, elles, dans le repository consommateur.
 
 ## 2. Le problème qu'on résout
 
@@ -106,12 +107,12 @@ doute.
 
 | Information | Fait foi | Ce qui empêche la divergence |
 |---|---|---|
-| Tokens (valeurs, alias) et **structure visuelle** (variantes, états, dimensions, icônes, règles d'usage) | **Figma** | un même nom, généré mécaniquement, de Figma jusqu'au CSS ; le code s'aligne sur ce nom |
-| **API publique** : noms et valeurs des props | **accord designer ↔ développeur, gravé dans Figma** | un seul nom validé dès la création du composant ; la CI vérifie |
+| **Ce qui est rendu** : valeurs et alias des tokens, variantes, états, dimensions, icônes, règles d'usage | **Figma** | un même nom, généré mécaniquement, de Figma jusqu'au CSS ; le code s'aligne sur ce nom |
+| **Comment on l'appelle** : les identifiants de l'API publique (`variant`, `size`, `contained`…) | **accord designer ↔ développeur, gravé dans Figma** | un seul nom validé dès la création du composant ; la CI vérifie |
 | Comportement, accessibilité, événements, attributs natifs | **code réel** | hors périmètre du contrat |
 | Liaison contrat ↔ implémentation, vérification de cohérence | **repo consommateur / CI** | adaptateurs de plateforme |
 
-Trois règles en découlent.
+Quatre règles en découlent.
 
 **Tokens : un seul nom, mécanique.** Aucun humain ne retape un nom de token.
 `normalizeName()` produit le même identifiant de Figma → contrat → CSS. La
@@ -142,6 +143,21 @@ seulement les valeurs finales, et ce qui préserve le multi-marque et le theming
 Syntaxe unifiée : accolades + séparateur point, `{chemin.du.token}`, le chemin
 pointant le token tel qu'il apparaît dans `tokens.json`. Les **deux** artefacts —
 `tokens.json` et le contrat — utilisent cette même syntaxe.
+
+**Le code de production n'interprète pas le contrat — il est écrit contre lui.**
+Il y a deux façons d'utiliser un contrat, et une seule est permise en
+production. La mauvaise : le composant importe le JSON du contrat et y lit, au
+moment du rendu, ses couleurs, dimensions et états — le rendu est alors
+*piloté* par le contrat, un changement design arrive en production sans qu'un
+développeur ne l'ait implémenté ni relu, la parité n'a plus rien à vérifier :
+c'est la génération d'interfaces à la volée, déguisée. La bonne : le
+développeur **lit** le contrat et **écrit** le code ; le build ne lui fournit
+que des fichiers **dérivés** du design (les variables CSS générées depuis
+`tokens.json`, les unions TypeScript générées depuis les enums du contrat). Si
+le contrat change, ce code ne change pas tout seul — c'est la CI qui signale
+l'écart, et c'est exactement le garde-fou voulu. La projection runtime garde un
+seul usage légitime : le **test froid**, où un agent reconstruit le composant
+depuis le seul contrat pour en éprouver la qualité.
 
 **Revue des exports.** Une PR d'export (contrat ou tokens) est validée par le
 **designer** — c'est lui qui porte la vérité design — en connaissance du
@@ -185,7 +201,9 @@ Playground : un agent compose une interface avec les composants disponibles
    amont ; les attributs natifs, événements et règles d'accessibilité relèvent
    du code.
 5. **Garde-fous** — la CI vérifie que le code **ne peut pas** diverger du
-   contrat ni des tokens (cf. §3, critères de cohérence).
+   contrat ni des tokens (cf. §3, critères de cohérence). *(Existence des
+   tokens : opérationnel ; parité code ↔ contrat : cible — cf.
+   [`ROADMAP.md`](./ROADMAP.md) phases C1/C2.)*
 6. **Playground** — on demande une interface (« trois boutons de ce type,
    deux de cet autre, disposés comme ça »), l'agent l'écrit à partir du seul
    contrat, on constate de ses yeux qu'il respecte le design system. C'est la
