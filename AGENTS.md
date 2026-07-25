@@ -73,6 +73,10 @@ npm run typecheck # tsc --noEmit seul
   dans `tokens.json`.
 - Changement de forme du contrat → incrémenter `contractVersion`
   (`src/contract/exportComponent.ts`) **et** mettre à jour `UCM-EXPORTER-SPEC.md`.
+- **Toute modification se termine par une revue des `.md`** : mettre à jour ce
+  qui ne décrit plus la réalité, en décrivant l'état actuel et sans rien
+  répéter (règles de rédaction : [`CONTRIBUTING.md`](./CONTRIBUTING.md),
+  « Mettre à jour la documentation »).
 
 ## Limites de l'environnement
 

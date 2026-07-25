@@ -102,8 +102,28 @@ Les commentaires sont en français et doivent aider un lecteur débutant :
   `PISTES-EVOLUTION.md` explore sans engager.
 - Tout changement de forme du contrat incrémente `contractVersion`
   (`src/contract/exportComponent.ts`) et met à jour l'exemple de `UCM-EXPORTER-SPEC.md`.
-- Garder le `README.md` fidèle à l'état réel du projet (commandes,
-  architecture, statut des parties).
+
+### Mettre à jour la documentation
+
+Toute modification du repo — comportement, commande, structure, schéma —
+se termine par une **revue des fichiers `.md`** : parcourir les documents et
+corriger ceux qui ne décrivent plus la réalité. Quatre règles de rédaction.
+
+**Décrire l'état actuel, jamais l'historique.** Écrire « la commande X fait Y »,
+pas « X fait maintenant Y alors qu'avant elle faisait Z, ce qui posait
+problème ». Le passé vit dans git et dans les messages de commit ; un document
+dit ce qui **est**.
+
+**Simplifier plutôt qu'ajouter.** À information égale, le texte le plus court
+gagne. Une bonne mise à jour supprime souvent plus qu'elle n'écrit : quand une
+fonctionnalité change, chercher d'abord ce qui devient inutile.
+
+**Ne rien répéter.** Une information vit à un seul endroit ; ailleurs, on
+pointe vers lui (cf. hiérarchie documentaire ci-dessus). Deux formulations de
+la même règle finissent toujours par diverger.
+
+**Écrire pour tout le monde.** Phrases courtes, mots simples, pas de jargon
+sans définition. Un designer doit pouvoir lire un document qui le concerne.
 
 ## Notes opérationnelles
 
