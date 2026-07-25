@@ -59,6 +59,39 @@ test('getSlotTokens avertit quand la largeur du stroke est une valeur brute', as
   ]);
 });
 
+test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (premier conservé)', async () => {
+  const makeNode = (name: string, tokenId: string) => ({
+    type: 'RECTANGLE',
+    name,
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: tokenId } as VariableAlias] },
+    findAll: () => [],
+  }) as unknown as ComponentNode;
+  const resolver = {
+    resolve: async (alias: VariableAlias | null | undefined) =>
+      alias ? `components.button.colors.${alias.id}.background` : null,
+  };
+  const warnings: string[] = [];
+
+  const trees = await extractVariantTokens(
+    {
+      axes: ['state'],
+      variants: [
+        { values: { state: 'focus' }, component: makeNode('State=Focus', 'a') },
+        { values: { state: 'focus' }, component: makeNode('State=Focus (doublon)', 'b') },
+      ],
+    },
+    resolver,
+    new Set<string>(),
+    warnings,
+  );
+
+  // Le premier variant est conservé, le conflit est signalé — jamais en silence.
+  assert.deepEqual(trees.variantTokens, {
+    focus: { background: '{components.button.colors.a.background}' },
+  });
+  assert.ok(warnings.some((warning) => warning.includes('Variants en conflit sur « focus »')));
+});
+
 test('extractVariantTokens normalise la clé de repli quand le set n’expose aucun axe', async () => {
   const node = {
     type: 'RECTANGLE',

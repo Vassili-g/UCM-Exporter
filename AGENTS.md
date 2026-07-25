@@ -13,7 +13,8 @@ Lire dans cet ordre avant de toucher au code :
    **qui fait foi** en cas de contradiction (§3, arbitrage des sources).
 2. [`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md) — **la spécification de référence** : le design
    system décrit, l'algorithme des exports, le dépôt GitHub et le schéma des sorties.
-   C'est le document le plus important ; il fait foi en cas de doute.
+   Elle fait foi sur le **comportement du plugin** (CONCEPT fait foi sur les
+   principes) : c'est le document à consulter avant de toucher au moteur.
 3. [`CONTRIBUTING.md`](./CONTRIBUTING.md) — les règles de code : commentaires
    utiles en français, robustesse, généricité, tests.
 4. [`src/contract/types.ts`](./src/contract/types.ts) — le schéma du contrat de composant,

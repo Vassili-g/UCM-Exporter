@@ -182,13 +182,7 @@ nouvelle vérité. Il pourrait servir de commentaire de PR ou de rapport CI.
 
 **Statut :** priorité moyenne, après stabilisation du schéma.
 
-### 4.5 Propriétaire explicite de chaque information
-
-Déjà couvert par l'arbitrage de [`CONCEPT.md`](./CONCEPT.md) §3. Seul rappel à
-ne pas perdre : le contrat ne doit **pas** devenir une seconde définition de ce
-qui appartient au code.
-
-### 4.6 Nom des props : accord amont, mapping en échappatoire
+### 4.5 Nom des props : accord amont, mapping en échappatoire
 
 L'arbitrage retenu (cf. [`CONCEPT.md`](./CONCEPT.md) §3) fixe le nom des props
 **en amont** : le composant Figma est co-construit designer ↔ développeur, qui

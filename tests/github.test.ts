@@ -43,8 +43,17 @@ test('decodeBase64 accepte les retours à la ligne GitHub et refuse une Base64 i
   assert.throws(() => decodeBase64('%%%='), /Base64 GitHub invalide/);
 });
 
-test('exportBranchName suit ucm-exporter/export-YYYYMMDD-HHmm', () => {
-  assert.equal(exportBranchName(new Date(2026, 6, 17, 9, 5)), 'ucm-exporter/export-20260717-0905');
+test('exportBranchName inclut le type d’artefact et les secondes (anti-collision)', () => {
+  // Exporter le contrat PUIS les tokens dans la même minute est le flux
+  // courant : les deux branches doivent différer.
+  assert.equal(
+    exportBranchName('tokens', new Date(2026, 6, 17, 9, 5, 42)),
+    'ucm-exporter/export-tokens-20260717-090542',
+  );
+  assert.equal(
+    exportBranchName('component', new Date(2026, 6, 17, 9, 5, 42)),
+    'ucm-exporter/export-component-20260717-090542',
+  );
 });
 
 test('publishArtifact ne crée aucune branche si le fichier est inchangé', async () => {
@@ -67,6 +76,40 @@ test('publishArtifact ne crée aucune branche si le fichier est inchangé', asyn
       content: '{"same":true}\n',
     });
     assert.deepEqual(result, { status: 'unchanged', path: 'src/tokens/tokens.json' });
+    assert.equal(calls.length, 1);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
+test('publishArtifact ignore meta.exportedAt pour détecter un contrat inchangé', async () => {
+  const contractOnRepo = JSON.stringify({
+    name: 'Button',
+    meta: { contractVersion: '3.0', exportedAt: '2026-07-17T16:11:07.100Z' },
+    props: {},
+  }, null, 2);
+  const reExported = contractOnRepo.replace('2026-07-17T16:11:07.100Z', '2026-07-25T10:00:00.000Z');
+
+  const previousFetch = globalThis.fetch;
+  const calls: string[] = [];
+  globalThis.fetch = async (input) => {
+    calls.push(String(input));
+    return new Response(JSON.stringify({
+      type: 'file',
+      sha: 'existing-sha',
+      content: encodeBase64(contractOnRepo),
+      encoding: 'base64',
+    }), { status: 200 });
+  };
+
+  try {
+    const result = await publishArtifact(config, {
+      kind: 'component',
+      filename: 'Button.contract.json',
+      content: reExported,
+    });
+    // Seul l'horodatage diffère : aucun changement design, donc aucune PR.
+    assert.deepEqual(result, { status: 'unchanged', path: 'src/components/Button/Button.contract.json' });
     assert.equal(calls.length, 1);
   } finally {
     globalThis.fetch = previousFetch;
@@ -99,7 +142,7 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
     assert.deepEqual(result, {
       status: 'created',
       path: 'src/components/Button/Button.contract.json',
-      branch: 'ucm-exporter/export-20260717-0905',
+      branch: 'ucm-exporter/export-component-20260717-090500',
       pullRequestUrl: 'https://github.com/acme/design-system/pull/12',
     });
     assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'POST', 'PUT', 'POST']);

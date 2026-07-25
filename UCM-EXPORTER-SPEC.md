@@ -181,7 +181,9 @@ le contrat ajoute `stateModel` avec le déclencheur de chaque état connu :
 `hover` → `:hover`, `focus` → `:focus-visible`, `press` → `:active`,
 `disable`/`disabled` → `[disabled]`. La priorité générique est
 `disable > press > focus > hover > default`. Un état inconnu reste exporté
-avec un déclencheur `null` et un warning.
+avec un déclencheur `null` et un warning. Les `selector` visent
+l'implémentation CSS de **production** (pseudo-classes) ; l'outil de test
+froid, en styles inline, reproduit les mêmes états via des événements.
 
 **5. Typographie** — sur le calque texte, dans l'ordre :
 `textStyleId` → nom du style ; sinon variables liées `fontSize` / `fontWeight`
@@ -206,17 +208,22 @@ une instance d'un composant de configuration (`ComponentConfiguration`) dont la
   celui-ci (ex. `Icon, Tooltip`) : un agent peut s'en servir pour composer ;
 - `@prop` + calque `prop` (ex. `variant.contained`) → doc par valeur, rangée
   dans `props.<prop>.descriptions.<valeur>`.
-- `@icons` → politique d'icône dans `icons`. La variante de règle contient un
-  calque texte `icon` (nom exact du calque graphique du composant), ainsi que
-  les calques `modifiable`, `OR` et `strict`. Exactement un des calques
-  `modifiable` / `strict` doit être visible : le premier autorise le
-  remplacement de l'icône par le consommateur, le second impose celle de
-  Figma. Le rapprochement se fait uniquement par égalité exacte de nom ; aucun
-  rôle de position n'est deviné. Si le calque graphique lie nativement sa
-  propriété Figma `visible` à un BOOLEAN, ce booléen est conservé et une prop
-  runtime distincte `<bool>Name` est ajoutée pour une icône `modifiable`.
-  Sans cette liaison native, l'icône est exportée avec un warning, mais aucune
-  prop n'est inventée. En résumé, trois responsabilités distinctes :
+- `@icons` → politique d'icône dans `icons` :
+  - **Déclaration** — la variante de règle contient un calque texte `icon`
+    (nom exact du calque graphique du composant), plus les calques
+    `modifiable`, `OR` et `strict` ;
+  - **Politique** — exactement un des calques `modifiable` / `strict` doit
+    être visible : le premier autorise le remplacement de l'icône par le
+    consommateur, le second impose celle de Figma ;
+  - **Rapprochement** — uniquement par égalité exacte de nom avec le calque
+    graphique ; aucun rôle de position n'est deviné ;
+  - **Prop runtime** — si le calque graphique lie nativement sa propriété
+    Figma `visible` à un BOOLEAN, ce booléen est conservé et une prop runtime
+    distincte `<bool>Name` est ajoutée pour une icône `modifiable`. Sans cette
+    liaison native, l'icône est exportée avec un warning, mais aucune prop
+    n'est inventée.
+
+  En résumé, trois responsabilités distinctes :
 
   | Qui | Contrôle | Défini où |
   |---|---|---|
@@ -244,7 +251,7 @@ exportée, **export non bloqué**.
 
 ### Sortie
 
-`<Name>.contract.json` est téléchargé ou déposé par PR. Il décrit une **API
+`<Nom>.contract.json` est téléchargé ou déposé par PR. Il décrit une **API
 unifiée** (wrapper + set comme un seul composant). Exemple Button :
 
 ```json
@@ -263,8 +270,8 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
   "props": {
     "color":    { "type": "enum", "values": ["primary","secondary"], "default": "primary" },
     "variant":  { "type": "enum", "values": ["contained","outlined","text"], "default": "contained",
-                  "descriptions": { "contained": "Action la plus importante d'une page.",
-                                    "text": "Action secondaire dans un conteneur déjà bordé." } },
+                  "descriptions": { "contained": "Action la plus importante d'une page (parcours, upload…).",
+                                    "text": "Action secondaire dans un conteneur déjà bordé (card avec stroke)." } },
     "disabled": { "type": "boolean", "default": false },
     "size":     { "type": "enum", "values": ["big","medium","small"], "default": "medium" },
     "iconLeft": { "type": "boolean", "default": true },
@@ -324,7 +331,13 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
                           "visibilityProp": "iconRight", "runtimeProp": "iconRightName" }
   },
   "tokensUsed": ["…"],
-  "intent": null,
+  "intent": {
+    "usage": "Action déclenchant une opération ; le choix des variantes dépend de l'importance et du contexte.",
+    "do": [],
+    "dont": ["Utiliser size.big dans des écrans génériques.",
+              "Juxtaposer plusieurs boutons color.primary sur une même vue."],
+    "pairs": []
+  },
   "warnings": ["…"]
 }
 ```
@@ -456,8 +469,11 @@ Chaque commande conserve son périmètre :
   `{tokensPath}/tokens.json`.
 
 Pour un artefact modifié, le plugin lit la ref de base, crée la branche
-`ucm-exporter/export-{YYYYMMDD-HHmm}`, écrit le fichier avec l'API Contents puis
-ouvre une PR vers la branche de base. Si le contenu est identique, aucune
+`ucm-exporter/export-{component|tokens}-{YYYYMMDD-HHmmss}` (le type d'artefact
+et les secondes évitent toute collision quand on exporte le contrat puis les
+tokens dans la même minute), écrit le fichier avec l'API Contents puis
+ouvre une PR vers la branche de base. Si le contenu est identique — la
+comparaison ignore `meta.exportedAt`, régénéré à chaque export — aucune
 branche ni PR n'est créée. Config absente/invalide ou erreur GitHub : repli
 automatique vers le téléchargement local avec message explicite.
 
@@ -468,7 +484,7 @@ automatique vers le téléchargement local avec message explicite.
 - PAT masqué, jamais renvoyé à l'UI ni logué.
 - Test de connexion automatique à l'ouverture et après sauvegarde.
 - Une commande = une PR avec son unique artefact ; aucun auto-merge.
-- Aucun changement = aucune PR vide.
+- Aucun changement = aucune PR (comparaison insensible à `meta.exportedAt`).
 - Toute erreur GitHub conserve l'artefact par téléchargement local.
 
 ---
