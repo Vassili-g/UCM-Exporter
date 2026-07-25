@@ -53,7 +53,7 @@ prouve que le modèle dépasse le composant isolé.
 | **0** | Figer Unified Component Exporter (contrats, tokens DTCG, configuration et PR) | opérationnel sur Button |
 | **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary ; **noms de tokens = chemins**, alias préservés en `var(--…)`) | opérationnel |
 | **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
-| **C1** | Garde-fous CI — existence des tokens (`tokensUsed` ⊆ tokens générés, `npm run check`) | opérationnel : en local et en CI (GitHub Action à chaque PR/push) ; restent CODEOWNERS et tests (étape 2) |
+| **C1** | Garde-fous CI — existence des tokens (`tokensUsed` ⊆ tokens générés, `npm run check`) | opérationnel en local ; GitHub Action en place, premier run à valider (étape 2) |
 | **C2** | Garde-fous CI — parité code ↔ contrat (props, valeurs, états, composition) | à faire (étape 4) |
 | **D** | Playground : rendu live + contexte agent + test froid léger | opérationnel sur Button |
 | **E** | **Composition** : composé minimal, champ `composes`, parité récursive | à faire — **priorité structurelle** |
@@ -70,11 +70,17 @@ puis la **parité** (Pilier A), dessinée contre ce cas réel.
    `hover` / `focus` / `press` en CSS (`:hover` / `:focus-visible` / `:active`,
    déjà portés par `stateModel`), `disabled` en prop booléenne. Ce code de
    production remplace le prototype généré.
-2. **Compléter les garde-fous d'équipe (Phase C1).** Ajouter un fichier
-   `CODEOWNERS` encodant l'arbitrage (tokens → designer, code → dev — Tier 1 de
-   [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §6 ; à activer avec une
-   protection de branche), et les premiers tests du playground (`tokenVar`,
-   scripts).
+2. **Compléter les garde-fous d'équipe (Phase C1).** Trois choses :
+   - **valider la CI sur GitHub** — vérifier que les runs des deux repos
+     passent au vert (le point fragile est `npm ci`, qui exige un
+     `package-lock.json` exactement en phase avec `package.json`), puis ouvrir
+     une pull request avec un token volontairement inexistant pour voir le
+     diagnostic se publier en commentaire ;
+   - ajouter un fichier `CODEOWNERS` encodant l'arbitrage (tokens → designer,
+     code → dev — Tier 1 de
+     [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §6) et une **protection de
+     branche**, sans laquelle une PR rouge reste fusionnable ;
+   - écrire les premiers tests du playground (`tokenVar`, scripts).
 3. **Composant composé — priorité structurelle.** Les deux natures — simple /
    composé — sont définies dans [`CONCEPT.md`](./CONCEPT.md) §1.
    On crée **volontairement** un composé minimal (Card
