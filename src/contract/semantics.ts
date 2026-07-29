@@ -10,7 +10,14 @@
  * Règle d'or : le mapping se décide sur les VALEURS ou le RÔLE, jamais sur
  * le nom d'un composant — aucun cas particulier codé en dur.
  */
-import type { RenderingSemantics, StateModel } from './types';
+import type {
+  RenderingRole,
+  RenderingSemantics,
+  StateModel,
+  StrokeTokens,
+  VariantStrokes,
+  VariantTokens,
+} from './types';
 
 /** Déclencheurs web connus pour les valeurs d'un axe d'état. */
 const STATE_SELECTORS: Record<string, string | null> = {
@@ -107,4 +114,109 @@ export function defaultRenderingSemantics(): RenderingSemantics {
       },
     },
   };
+}
+
+/**
+ * Rôles réellement rendables, avec leur nature. DÉRIVÉ de
+ * `defaultRenderingSemantics()` : il n'existe volontairement pas de seconde
+ * liste de rôles à maintenir en phase avec la première.
+ */
+function renderableRoles(): Map<string, RenderingRole['kind']> {
+  return new Map(
+    Object.entries(defaultRenderingSemantics().roles).map(([role, descriptor]) => [role, descriptor.kind]),
+  );
+}
+
+/** Ce qu'on retient d'un rôle rencontré : combien de fois, et un exemple citable. */
+type RoleUsage = { count: number; example: string };
+
+/**
+ * Parcourt un arbre de variantes à profondeur quelconque et compte les rôles
+ * de ses feuilles. `readReference` dit comment lire une entrée : elle renvoie
+ * la référence de token quand l'entrée EST un rôle, ou null quand il s'agit
+ * d'un niveau d'axe supplémentaire à traverser. L'arbre n'est ainsi jamais
+ * présumé de la profondeur d'un composant particulier.
+ */
+function collectRoles(
+  tree: Record<string, unknown>,
+  readReference: (value: unknown) => string | null,
+  usages: Map<string, RoleUsage>,
+): void {
+  for (const [key, value] of Object.entries(tree)) {
+    const reference = readReference(value);
+    if (reference) {
+      const usage = usages.get(key);
+      if (usage) usage.count += 1;
+      else usages.set(key, { count: 1, example: reference });
+      continue;
+    }
+    if (value && typeof value === 'object') {
+      collectRoles(value as Record<string, unknown>, readReference, usages);
+    }
+  }
+}
+
+/** Une feuille de peinture est une simple référence de token. */
+function paintReference(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+/** Une feuille de contour est un objet dont `color` porte la référence. */
+function strokeReference(value: unknown): string | null {
+  if (!value || typeof value !== 'object') return null;
+  const color = (value as StrokeTokens).color;
+  return typeof color === 'string' ? color : null;
+}
+
+/**
+ * Contrôle du seul prérequis que le moteur impose au design system : le
+ * **dernier segment** d'un token de couleur doit nommer un rôle rendable
+ * (`background`, `foreground`, `border`, `ring`), car c'est ainsi que le rôle
+ * est déduit (cf. `extractSlotTokens.tokenRole`). Un token nommé `…/bg`
+ * produit un contrat valide que PERSONNE ne saura peindre : le consommateur
+ * ignore un rôle absent de `rendering.roles`, silencieusement.
+ *
+ * On avertit donc ici — sans bloquer, la donnée n'étant ni fausse ni perdue —
+ * et on agrège : un seul message par rôle fautif, plutôt qu'un par variante
+ * (un Button a 30 variantes qui portent les mêmes calques). Le message cite un
+ * token en exemple, car c'est le token qu'il faut renommer dans Figma.
+ *
+ * Deuxième anomalie couverte : un rôle connu mais employé à l'envers (un
+ * `…/border` posé en remplissage). Même conséquence — non rendu — donc même
+ * traitement.
+ */
+export function variantRoleWarnings(
+  variantTokens: VariantTokens,
+  variantStrokes: VariantStrokes,
+): string[] {
+  const roles = renderableRoles();
+  const warnings: string[] = [];
+
+  const review = (tree: Record<string, unknown>, readReference: (value: unknown) => string | null, found: RenderingRole['kind']) => {
+    const usages = new Map<string, RoleUsage>();
+    collectRoles(tree, readReference, usages);
+
+    for (const [role, usage] of usages) {
+      const occurrences = `${usage.count} occurrence${usage.count > 1 ? 's' : ''}, ex. ${usage.example}`;
+      const declared = roles.get(role);
+      if (!declared) {
+        warnings.push(
+          `Rôle « ${role} » inconnu de rendering.roles : non rendu (${occurrences}). ` +
+            `Derniers segments attendus : ${Array.from(roles.keys()).join(', ')}.`,
+        );
+      } else if (declared !== found) {
+        const support = found === 'paint' ? 'un remplissage' : 'un contour';
+        warnings.push(
+          `Rôle « ${role} » déclaré « ${declared} » mais lié à ${support} Figma : non rendu (${occurrences}).`,
+        );
+      }
+    }
+  };
+
+  review(variantTokens as Record<string, unknown>, paintReference, 'paint');
+  review(variantStrokes as Record<string, unknown>, strokeReference, 'stroke');
+
+  // Tri : deux exports du même fichier Figma doivent produire le même contrat,
+  // sinon l'invariant « aucun changement = aucune PR » ne tient plus.
+  return warnings.sort();
 }

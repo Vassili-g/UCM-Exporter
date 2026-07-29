@@ -5,6 +5,15 @@ on:
   push:
     branches: [main]
   pull_request:
+
+# Le job ne fait que lire le dépôt. On fige ce minimum au lieu d'hériter du
+# réglage par défaut de l'organisation, qui peut accorder l'écriture : `npm ci`
+# exécute les scripts d'installation des dépendances, inutile de leur confier
+# un jeton capable d'écrire. À étendre (`pull-requests: write`) le jour où ce
+# workflow commentera une PR, comme le fait celui du playground.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest

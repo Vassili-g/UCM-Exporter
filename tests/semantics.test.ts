@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildStateModel, defaultRenderingSemantics } from '../src/contract/semantics';
+import {
+  buildStateModel,
+  defaultRenderingSemantics,
+  variantRoleWarnings,
+} from '../src/contract/semantics';
 
 test('buildStateModel associe les états connus à leurs déclencheurs et à leur priorité', () => {
   const warnings: string[] = [];
@@ -37,6 +41,65 @@ test('buildStateModel conserve un état inconnu et avertit sans bloquer', () => 
   assert.equal(model?.states.loading.selector, null);
   assert.deepEqual(model?.precedence, ['default', 'loading']);
   assert.deepEqual(warnings, ['Axe d\'état « status » : état « loading » sans déclencheur connu.']);
+});
+
+test('variantRoleWarnings reste muet quand tous les rôles sont rendables', () => {
+  const warnings = variantRoleWarnings(
+    {
+      primary: {
+        contained: {
+          default: { background: '{c.primary.contained.default.background}', foreground: '{c.primary.contained.default.foreground}' },
+          hover: { background: '{c.primary.contained.hover.background}' },
+        },
+      },
+    },
+    {
+      primary: {
+        contained: {
+          default: {},
+          focus: { ring: { color: '{c.primary.contained.focus.ring}', width: '{l.stroke.ring}', align: 'outside' } },
+        },
+      },
+    },
+  );
+
+  assert.deepEqual(warnings, []);
+});
+
+test('variantRoleWarnings agrège un rôle inconnu en UN seul message, avec un exemple', () => {
+  // Le même calque mal nommé revient dans chaque variante : 3 occurrences ici,
+  // 30 sur un vrai Button. Le journal doit rester lisible.
+  const warnings = variantRoleWarnings(
+    {
+      primary: {
+        default: { bg: '{c.primary.default.bg}' },
+        hover: { bg: '{c.primary.hover.bg}' },
+      },
+      secondary: {
+        default: { bg: '{c.secondary.default.bg}' },
+      },
+    },
+    {},
+  );
+
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /^Rôle « bg » inconnu de rendering\.roles : non rendu \(3 occurrences, ex\. \{c\./);
+  // Le message nomme le geste correctif : les segments attendus dans Figma.
+  assert.match(warnings[0], /background, foreground, border, ring\.$/);
+});
+
+test('variantRoleWarnings signale un rôle connu employé sur le mauvais support', () => {
+  const warnings = variantRoleWarnings(
+    // « border » est déclaré « stroke » : posé en remplissage, il ne sera pas rendu.
+    { primary: { default: { border: '{c.primary.default.border}' } } },
+    // « background » est déclaré « paint » : posé en contour, même conséquence.
+    { primary: { default: { background: { color: '{c.primary.default.background}', width: null, align: 'inside' } } } },
+  );
+
+  assert.deepEqual(warnings, [
+    'Rôle « background » déclaré « paint » mais lié à un contour Figma : non rendu (1 occurrence, ex. {c.primary.default.background}).',
+    'Rôle « border » déclaré « stroke » mais lié à un remplissage Figma : non rendu (1 occurrence, ex. {c.primary.default.border}).',
+  ]);
 });
 
 test('defaultRenderingSemantics publie le vocabulaire de rendu partagé', () => {

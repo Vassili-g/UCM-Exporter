@@ -47,23 +47,54 @@ function isStateProperty(key: string): boolean {
  * VARIANT → enum, BOOLEAN → boolean, TEXT → string.
  * La couche sémantique renomme les axes reconnus (ex. axe de tailles →
  * `size`) en gardant le nom Figma d'origine dans `figmaName`.
+ *
+ * **Une clé publique, un propriétaire.** Les props du contrat vivent dans un
+ * espace de noms PLAT, alors que deux propriétés Figma parfaitement légales
+ * peuvent y prétendre : soit parce que la normalisation efface leur
+ * différence d'écriture (`Icon Left`, `icon-left` et `iconLeft` donnent tous
+ * `iconLeft`), soit parce que la couche sémantique fabrique une clé
+ * (`size`) qu'une autre propriété porte déjà. Le premier arrivé est conservé
+ * et le conflit est signalé — jamais d'écrasement en silence, conformément à
+ * la règle appliquée partout ailleurs (variants, rôles, règles d'icônes).
  */
 export function extractContractProps(
   definitions: ComponentPropertyDefinitions,
+  warnings: string[] = [],
 ): Record<string, ContractProp> {
   const props: Record<string, ContractProp> = {};
+  /** Nom Figma qui détient chaque clé publique, pour nommer les deux camps d'un conflit. */
+  const owners = new Map<string, string>();
+
+  // Première passe : TOUTES les clés brutes revendiquées par le fichier Figma.
+  // Sans elle, un renommage sémantique volerait la clé d'une propriété
+  // simplement déclarée plus loin — le résultat dépendrait de l'ordre.
+  const rawKeys = new Set(Object.keys(definitions).map((name) => normalizePropKey(name)));
+
+  /** Attribue une clé publique, ou refuse et signale le conflit. */
+  const claim = (key: string, figmaName: string, prop: ContractProp): void => {
+    const owner = owners.get(key);
+    if (owner !== undefined) {
+      warnings.push(
+        `Propriétés Figma « ${owner} » et « ${figmaName} » : même clé publique « ${key} » ; la première est conservée.`,
+      );
+      return;
+    }
+    owners.set(key, figmaName);
+    props[key] = prop;
+  };
 
   for (const [propertyName, definition] of Object.entries(definitions)) {
     const key = normalizePropKey(propertyName);
+    const rawFigmaName = propertyName.replace(/#.*$/, '');
 
     if (isStateProperty(key)) {
       const states = definition.variantOptions ?? [];
       const hasDisabledState = states.some((state) => /^disabl(?:e|ed)$/i.test(state.trim()));
       if (definition.type === 'VARIANT' && hasDisabledState) {
-        props.disabled = {
+        claim('disabled', rawFigmaName, {
           type: 'boolean',
           default: /^disabl(?:e|ed)$/i.test(String(definition.defaultValue).trim()),
-        };
+        });
       }
       continue;
     }
@@ -71,10 +102,16 @@ export function extractContractProps(
     if (definition.type === 'VARIANT') {
       const values = (definition.variantOptions ?? []).map((value) => normalizePropValue(value));
       const semantic = semanticEnumName(values);
-      // On applique le nom sémantique sans jamais écraser une prop existante.
-      const publicKey = semantic && !(semantic in props) ? semantic : key;
-      const rawFigmaName = propertyName.replace(/#.*$/, '');
-      props[publicKey] = {
+      // Le nom sémantique ne s'applique que s'il n'entre en conflit avec
+      // AUCUNE clé brute du fichier, pas seulement avec celles déjà traitées.
+      const taken = Boolean(semantic) && semantic !== key && rawKeys.has(semantic as string);
+      if (taken) {
+        warnings.push(
+          `Axe « ${rawFigmaName} » : le nom sémantique « ${semantic} » est déjà porté par une autre propriété Figma ; l'axe garde « ${key} ».`,
+        );
+      }
+      const publicKey = semantic && !taken ? semantic : key;
+      claim(publicKey, rawFigmaName, {
         type: 'enum',
         values,
         default:
@@ -83,20 +120,20 @@ export function extractContractProps(
             : values[0] ?? null,
         // figmaName n'apparaît que si la clé publique diffère du nom Figma.
         ...(publicKey !== key ? { figmaName: rawFigmaName } : {}),
-      };
+      });
       continue;
     }
 
     if (definition.type === 'BOOLEAN') {
-      props[key] = { type: 'boolean', default: Boolean(definition.defaultValue) };
+      claim(key, rawFigmaName, { type: 'boolean', default: Boolean(definition.defaultValue) });
       continue;
     }
 
     if (definition.type === 'TEXT') {
-      props[key] = {
+      claim(key, rawFigmaName, {
         type: 'string',
         default: typeof definition.defaultValue === 'string' ? definition.defaultValue : null,
-      };
+      });
     }
   }
 

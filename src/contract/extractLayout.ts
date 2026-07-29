@@ -6,7 +6,8 @@
  * border-radius, typographie du texte, tailles d'icônes.
  */
 import normalizeName from '../utils';
-import { firstVariableAlias, toRef, VariableNameResolver } from '../variables';
+import { firstVariableAlias, toRef } from '../variables';
+import type { TokenResolver } from '../variables';
 import { getAllNodes, getBinding, resolveField } from './nodeBindings';
 import { normalizePropKey } from './parsers';
 import { semanticSlotName } from './semantics';
@@ -62,7 +63,7 @@ export function firstTextNode(node: SceneNode): TextNode | null {
  */
 async function extractTypography(
   textNode: TextNode,
-  resolver: VariableNameResolver,
+  resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
 ): Promise<string | TypographyTokens | undefined> {
@@ -116,7 +117,7 @@ async function extractTypography(
  */
 async function extractChild(
   child: SceneNode,
-  resolver: VariableNameResolver,
+  resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
 ): Promise<ChildStructure> {
@@ -165,7 +166,7 @@ function dedupeSlots(children: ChildStructure[]): void {
  */
 export async function extractLayout(
   root: LayoutRoot,
-  resolver: VariableNameResolver,
+  resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
 ): Promise<LayoutStructure> {

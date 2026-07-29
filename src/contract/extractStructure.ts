@@ -4,10 +4,12 @@
  * C'est l'orchestrateur des extractions de la Partie 1.
  */
 import { VariableNameResolver } from '../variables';
+import type { TokenResolver } from '../variables';
 import type { VariantMatrix, WrapperReference } from './componentTree';
 import { extractLayout } from './extractLayout';
 import { extractSizeDimensions } from './extractSizes';
 import { extractVariantTokens, getSlotTokens } from './extractVariantTokens';
+import { variantRoleWarnings } from './semantics';
 import type { ContractStructure } from './types';
 
 export async function extractStructure(
@@ -15,13 +17,20 @@ export async function extractStructure(
   matrixWarnings: string[],
   wrapper: WrapperReference | null,
   referenceComponent: ComponentNode | null,
+  // Injectable pour que l'extraction soit vérifiable hors du runtime Figma ;
+  // en production, l'appelant laisse le résolveur mis en cache par défaut.
+  resolver: TokenResolver = new VariableNameResolver(),
 ): Promise<{ structure: ContractStructure; tokensUsed: string[]; warnings: string[] }> {
   // Le resolver met en cache les résolutions id → nom de token ;
   // tokenNames accumule tous les tokens rencontrés pour la liste `tokensUsed`.
-  const resolver = new VariableNameResolver();
   const tokenNames = new Set<string>();
   const warnings = [...matrixWarnings];
   const { variantTokens, variantStrokes } = await extractVariantTokens(matrix, resolver, tokenNames, warnings);
+
+  // Les rôles se relisent sur les arbres terminés, pas pendant l'extraction :
+  // un seul message par rôle fautif au lieu d'un par variante, et la
+  // vérification reste une fonction pure, testable sans runtime Figma.
+  warnings.push(...variantRoleWarnings(variantTokens, variantStrokes));
 
   // Le layout vit sur le wrapper imbriqué quand il existe, sinon directement
   // sur le composant. Un composant « plat » est donc géré sans blocage.
@@ -43,6 +52,10 @@ export async function extractStructure(
 
   // Le slot texte reprend la couleur `foreground` du variant de référence,
   // pour qu'un agent sache colorer le label sans chercher dans variantTokens.
+  // Aucun tableau de warnings ici, volontairement : le variant de référence
+  // est l'un des variants déjà parcourus par extractVariantTokens, donc ses
+  // avertissements ont tous été collectés — les reprendre ne ferait que des
+  // doublons.
   const referenceSlot = referenceComponent
     ? await getSlotTokens(referenceComponent, resolver)
     : { paints: {}, strokes: {} };

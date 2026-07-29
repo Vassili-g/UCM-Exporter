@@ -6,7 +6,7 @@
  * de cet axe a ses propres tokens de gap/padding/radius/font-size. On les
  * relève ici, taille par taille, pour que le contrat couvre tout.
  */
-import { VariableNameResolver } from '../variables';
+import type { TokenResolver } from '../variables';
 import { getVariantAxes, getVariantValues } from './componentTree';
 import { findLayoutNode, firstTextNode } from './extractLayout';
 import { resolveField } from './nodeBindings';
@@ -35,7 +35,7 @@ function findSizeAxis(componentSet: ComponentSetNode, components: ComponentNode[
 async function extractDimensions(
   component: ComponentNode,
   sizeValue: string,
-  resolver: VariableNameResolver,
+  resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
 ): Promise<SizeDimensions> {
@@ -73,7 +73,7 @@ async function extractDimensions(
  */
 export async function extractSizeDimensions(
   componentSet: ComponentSetNode,
-  resolver: VariableNameResolver,
+  resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
 ): Promise<Record<string, SizeDimensions> | null> {

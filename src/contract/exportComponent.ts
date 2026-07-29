@@ -57,14 +57,23 @@ function getSelectedComponentSet(): ComponentSetNode {
 /**
  * Fusionne les props du wrapper de dimensions dans l'API publique du contrat
  * (le composant est décrit comme UNE API, pas deux component sets).
- * Les props du set externe gardent la priorité en cas de doublon.
+ * Les props du set externe gardent la priorité en cas de doublon — même règle
+ * « une clé publique, un propriétaire » que `extractContractProps`, et même
+ * obligation de signaler ce qui est écarté.
  */
 function mergeWrapperProps(
   props: Record<string, ContractProp>,
   wrapperProps: Record<string, ContractProp>,
+  warnings: string[],
 ): void {
   for (const [key, prop] of Object.entries(wrapperProps)) {
-    if (!(key in props)) props[key] = prop;
+    if (key in props) {
+      warnings.push(
+        `Prop « ${key} » du wrapper de dimensions ignorée : le Component Set sélectionné en expose déjà une.`,
+      );
+      continue;
+    }
+    props[key] = prop;
   }
 }
 
@@ -97,8 +106,13 @@ function mergePropDescriptions(
 
 /**
  * Construit les métadonnées de traçabilité vers Figma.
- * `figma.fileKey` n'est pas toujours fourni par l'API (plugins en
- * développement) : dans ce cas l'URL vaut null, sans bloquer l'export.
+ *
+ * `figma.fileKey` n'est PAS une donnée que la publication débloque : l'API la
+ * réserve aux **plugins privés d'organisation** déclarant
+ * `enablePrivatePluginApi` dans leur manifest. Tant que ce n'est pas le cas,
+ * l'URL vaut null — durablement, pas « en attendant ». L'export n'est jamais
+ * bloqué pour autant : le lien est un confort de relecture, `nodeId` et
+ * `fileName` suffisent à retrouver le composant.
  */
 function buildMeta(componentSet: ComponentSetNode): ContractMeta {
   const fileKey = figma.fileKey ?? null;
@@ -143,12 +157,12 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     );
   }
 
-  const props = extractContractProps(componentSet.componentPropertyDefinitions);
+  const warnings: string[] = [...rules.warnings];
+  const props = extractContractProps(componentSet.componentPropertyDefinitions, warnings);
   const { matrix, warnings: matrixWarnings } = groupComponentsByVariant(componentSet);
   // Le variant de référence sert de base au layout et à la couleur du label.
   const referenceComponent = componentSet.defaultVariant ?? matrix.variants[0]?.component ?? null;
   const wrapper = referenceComponent ? await findWrapperReference(referenceComponent) : null;
-  const warnings: string[] = [...rules.warnings];
   const stateModel = buildStateModel(
     matrix.axes,
     matrix.variants.map((entry) => entry.values),
@@ -156,7 +170,11 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   );
 
   if (wrapper?.componentSet) {
-    mergeWrapperProps(props, extractContractProps(wrapper.componentSet.componentPropertyDefinitions));
+    mergeWrapperProps(
+      props,
+      extractContractProps(wrapper.componentSet.componentPropertyDefinitions, warnings),
+      warnings,
+    );
   }
 
   if (Object.keys(componentSet.componentPropertyDefinitions).length === 0) {
@@ -177,7 +195,14 @@ export async function handleExportComponent(): Promise<ComponentExport> {
 
   const meta = buildMeta(componentSet);
   if (!meta.figma.url) {
-    warnings.push('Clé du fichier Figma indisponible : lien URL absent des métadonnées.');
+    // Le message nomme la condition réelle : sans cela, l'avertissement paraît
+    // transitoire, on attend qu'il disparaisse tout seul, et il finit par
+    // apprendre à ne plus lire la liste des avertissements.
+    warnings.push(
+      'Lien Figma absent des métadonnées : figma.fileKey est réservé aux plugins ' +
+        'privés d’organisation (manifest « enablePrivatePluginApi »). nodeId et ' +
+        'fileName restent exploitables.',
+    );
   }
 
   const contract: Contract = {
