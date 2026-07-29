@@ -203,6 +203,11 @@ doit être rempli en noms de tokens — jamais vide, jamais brut.**
   `typography` (étape 5) et `color` (= `foreground` du variant de référence) ;
 - calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
 
+Une prop BOOLEAN Figma liée à la visibilité d'un calque donne `visibilityProp`
++ `optional` sur son slot, **quel que soit le type de calque**. Un label
+masquable (bouton à icône seule) est donc décrit comme tel : sans cela le
+contrat exposerait une prop booléenne sans dire ce qu'elle montre ou cache.
+
 Slots dédupliqués (`label`, `label-2`…). Un calque inattendu est inclus tel
 quel, jamais supprimé silencieusement.
 
@@ -388,7 +393,8 @@ et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId`
 - `meta` présent : `contractVersion`, `exportedAt`, traçabilité Figma
       (fileName, nodeId, componentKey, url — null toléré avec warning).
 - `children` = vrais calques (texte → `label` + `figmaLayer` ; graphique →
-      nom conservé dans `figmaLayer` + `optional` + `size`).
+      nom conservé dans `figmaLayer` + `optional` + `size`). Tout slot dont une
+      prop BOOLEAN pilote la visibilité porte `visibilityProp` + `optional`.
 - Les règles `@icons` distinguent une icône `modifiable` d'une icône
       `strict` par la visibilité de leurs calques dédiés ; le nom du calque
       `icon` correspond exactement au calque graphique exporté.
@@ -399,6 +405,10 @@ et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId`
       référence `{…}` ; une largeur de stroke non tokenisée vaut `null` avec
       warning, tandis que l'alignement structurel Figma
       (`inside`/`center`/`outside`) est conservé nu.
+- Un seul conteneur `<Nom>-Rules` est lu ; s'il y en a plusieurs sur la page,
+      le premier est retenu **avec un warning** — aucune règle ne disparaît en
+      silence. Deux `@prop` visant la même valeur : la première est retenue,
+      le doublon est signalé.
 - Règles lues dans le conteneur `<Nom>-Rules` : `@usage`/`@do`/`@dont`/`@pairs`
       → `intent`, `@prop` → `props.<prop>.descriptions.<valeur>` ; conteneur
       absent/vide → **export bloqué** ; `@prop` invalide → warning ; jamais
@@ -461,7 +471,9 @@ et non `number` : sans ça, un token `number` référencerait un token `dimensio
       deux**. Aucun alias ne pointe alors sur la mauvaise cible — celui qui
       visait la seconde est signalé introuvable.
 - Tous les modes de Brand Tokens présents (`$value` défaut + `$extensions`) ;
-      collections mono-mode en `$value` seul.
+      collections mono-mode en `$value` seul. Deux modes au même nom normalisé :
+      le premier est conservé, avec **un warning par collection** — jamais un
+      par variable.
 - `normalizeName` identique à la Partie 1 (tokens recoupables avec les
       `tokensUsed`).
 - JSON DTCG valide, consommable par Style Dictionary.
@@ -494,7 +506,10 @@ Pour un artefact modifié, le plugin lit la ref de base, crée la branche
 `ucm-exporter/export-{component|tokens}-{YYYYMMDD-HHmmss}` (le type d'artefact
 et les secondes évitent toute collision quand on exporte le contrat puis les
 tokens dans la même minute), écrit le fichier avec l'API Contents puis
-ouvre une PR vers la branche de base. Si le contenu est identique — la
+ouvre une PR vers la branche de base, puis l'ouvre dans le navigateur par
+défaut (`figma.openExternal` : l'iframe de l'UI est isolée et ne peut pas
+naviguer elle-même). Le lien reste dans le journal pour y revenir. Si le
+contenu est identique — la
 comparaison ignore `meta.exportedAt`, régénéré à chaque export — aucune
 branche ni PR n'est créée. Config absente/invalide ou erreur GitHub : repli
 automatique vers le téléchargement local avec message explicite.
@@ -506,6 +521,8 @@ automatique vers le téléchargement local avec message explicite.
 - PAT masqué, jamais renvoyé à l'UI ni logué.
 - Test de connexion automatique à l'ouverture et après sauvegarde.
 - Une commande = une PR avec son unique artefact ; aucun auto-merge.
+- Aucune branche ne survit à un export qui n'a pas ouvert de PR : si le commit
+      ou la PR échoue, la branche créée est supprimée avant le repli local.
 - Aucun changement = aucune PR (comparaison insensible à `meta.exportedAt`).
 - Toute erreur GitHub conserve l'artefact par téléchargement local.
 
@@ -526,6 +543,7 @@ GitHub API déclarée dans le manifest.
 | 1.x | Schéma initial (clé `meta.ucsVersion`) ; la 1.4 ajoute `stateModel`, `rendering`, `variantStrokes` et les règles d'icônes |
 | 2.0 | `meta.ucsVersion` devient `meta.contractVersion` : le schéma du contrat est dissocié du concept — rupture de clé pour les consommateurs |
 | 3.0 | Les tokens sont cités comme références `{chemin.du.token}`, plus jamais comme chemins nus — rupture pour un consommateur qui lisait le chemin littéral |
+| 3.1 | `visibilityProp` relevé sur **tous** les slots, plus seulement les calques graphiques : un label masquable (bouton à icône seule) est enfin décrit — ajout compatible |
 
 `tokens.json` ne porte pas encore de version de schéma propre — prévu au-delà
 du MVP (cf. [`ROADMAP.md`](./ROADMAP.md)).

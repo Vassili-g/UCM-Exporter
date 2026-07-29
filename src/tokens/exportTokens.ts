@@ -140,7 +140,12 @@ export function buildLeaf(
 
   if (collection.modes.length > 1) {
     const modes: Record<string, unknown> = {};
-    for (const mode of collection.modes) modes[normalizeName(mode.name)] = valueForMode(mode.modeId);
+    // Premier conservé si deux noms se normalisent pareil ; c'est
+    // `modeCollisionWarnings` qui le signale.
+    for (const mode of collection.modes) {
+      const modeName = normalizeName(mode.name);
+      if (!(modeName in modes)) modes[modeName] = valueForMode(mode.modeId);
+    }
     leaf.$extensions = { 'com.ucm.modes': modes };
   }
 
@@ -169,7 +174,6 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
     node = node[key] as DtcgTree;
   }
 
-  // Et rien ne peut prendre la place de l'existant, groupe comme feuille.
   const lastKey = segments[segments.length - 1];
   const existing = node[lastKey];
   if (existing) {
@@ -184,15 +188,44 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
 }
 
 /**
+ * Signale les collections dont deux modes portent le même nom une fois
+ * normalisé (« Marque 2 » et « marque-2 ») : leurs valeurs se retrouveraient
+ * sous une seule clé de `$extensions`, et une marque disparaîtrait.
+ *
+ * Contrôlé une fois par collection, jamais dans `buildLeaf` : le même message
+ * y serait répété pour chacune des centaines de variables de la collection.
+ */
+export function modeCollisionWarnings(collections: VariableCollection[]): string[] {
+  const warnings: string[] = [];
+
+  for (const collection of collections) {
+    const seen = new Set<string>();
+    for (const mode of collection.modes) {
+      const name = normalizeName(mode.name);
+      if (seen.has(name)) {
+        warnings.push(
+          `Collection « ${collection.name} » : deux modes donnent le nom « ${name} » ; ` +
+            `le premier est conservé. Renommez l'un des deux dans Figma.`,
+        );
+        continue;
+      }
+      seen.add(name);
+    }
+  }
+
+  return warnings;
+}
+
+/**
  * Indexe les variables par chemin canonique. Cette passe précède l'export car
  * un alias a besoin du chemin de sa cible même si elle n'a pas encore été
  * traitée.
  *
  * Deux noms Figma distincts peuvent donner le même token une fois normalisés
  * (« Foo Bar » et « foo-bar »). La première variable garde le chemin ; la
- * seconde est nommée dans un warning et laissée hors des DEUX index — un alias
- * qui la visait sera signalé introuvable plutôt que de pointer en silence sur
- * la valeur de sa rivale, ce qui serait une référence fausse et non un manque.
+ * seconde est nommée dans un warning et laissée hors des DEUX index : un alias
+ * qui la visait est alors signalé introuvable, au lieu de pointer sur la valeur
+ * de sa rivale — une référence fausse est pire qu'une référence manquante.
  */
 export function indexVariables(
   variables: Variable[],
@@ -231,7 +264,7 @@ export async function handleExportTokens(): Promise<TokensExport> {
 
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
   const variableById = new Map(variables.map((variable) => [variable.id, variable]));
-  const warnings: string[] = [];
+  const warnings: string[] = modeCollisionWarnings(collections);
   const { pathById, variableByPath } = indexVariables(variables, collectionById, warnings);
   const ctx = { collectionById, variableById, pathById };
 

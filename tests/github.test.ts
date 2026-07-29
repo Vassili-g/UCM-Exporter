@@ -116,6 +116,41 @@ test('publishArtifact ignore meta.exportedAt pour détecter un contrat inchangé
   }
 });
 
+test('publishArtifact supprime la branche quand l’ouverture de la PR échoue', async () => {
+  const previousFetch = globalThis.fetch;
+  const calls: Array<{ url: string; method: string }> = [];
+  const responses = [
+    new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
+    new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 }),
+    new Response(JSON.stringify({ ref: 'created' }), { status: 201 }),
+    new Response(JSON.stringify({ content: { sha: 'file-sha' } }), { status: 201 }),
+    // La PR est refusée : la branche et son commit ne doivent pas rester.
+    new Response(JSON.stringify({ message: 'Validation Failed' }), { status: 422 }),
+    new Response(null, { status: 204 }),
+  ];
+  globalThis.fetch = async (input, init) => {
+    calls.push({ url: String(input), method: init?.method ?? 'GET' });
+    const response = responses.shift();
+    if (!response) throw new Error('Unexpected fetch');
+    return response;
+  };
+
+  try {
+    await assert.rejects(
+      publishArtifact(
+        config,
+        { kind: 'component', filename: 'Button.contract.json', content: '{}' },
+        new Date(2026, 6, 17, 9, 5),
+      ),
+      /GitHub a répondu 422/,
+    );
+    assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'POST', 'PUT', 'POST', 'DELETE']);
+    assert.match(calls[5].url, /git\/refs\/heads\/ucm-exporter\/export-component-20260717-090500$/);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('publishArtifact crée branche, commit et PR pour un nouveau fichier', async () => {
   const previousFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string }> = [];

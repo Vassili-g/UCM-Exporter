@@ -119,7 +119,7 @@ test('extractStructure conserve les warnings de la matrice de variantes', async 
   assert.ok(warnings.includes('Aucun variant trouvé sur le Component Set sélectionné.'));
 });
 
-test('extractStructure n’ajoute pas de bloc sizes sans component set de wrapper', async () => {
+test('extractStructure n’ajoute pas de bloc sizes quand aucun axe n’est un axe de tailles', async () => {
   const reference = {
     type: 'COMPONENT',
     name: 'Color=Primary',
@@ -128,6 +128,14 @@ test('extractStructure n’ajoute pas de bloc sizes sans component set de wrappe
     children: [],
     findAll: findAllOn([]),
   } as unknown as ComponentNode;
+  // Le set existe et est atteignable, mais son seul axe porte des couleurs :
+  // c'est bien l'absence d'axe de TAILLES qui doit décider, pas celle d'un wrapper.
+  (reference as unknown as { parent: unknown }).parent = {
+    type: 'COMPONENT_SET',
+    name: 'Badge',
+    componentPropertyDefinitions: { Color: { type: 'VARIANT', variantOptions: ['Primary'] } },
+    children: [reference],
+  };
 
   const { structure } = await extractStructure(
     { axes: ['color'], variants: [{ values: { color: 'primary' }, component: reference }] },
@@ -138,4 +146,41 @@ test('extractStructure n’ajoute pas de bloc sizes sans component set de wrappe
   );
 
   assert.equal('sizes' in structure, false);
+});
+
+test('extractStructure lit les tailles d’un composant plat, sans wrapper', async () => {
+  // L'axe de tailles vit d'ordinaire sur le wrapper. Un composant plat le porte
+  // sur son propre set : ses dimensions par taille ne doivent pas disparaître.
+  const variantFor = (size: string) => ({
+    type: 'COMPONENT',
+    name: `Size=${size}`,
+    variantProperties: { Size: size },
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { itemSpacing: alias(`gap-${size}`) },
+    children: [],
+    findAll: findAllOn([]),
+  }) as unknown as ComponentNode;
+
+  const small = variantFor('Small');
+  const big = variantFor('Big');
+  const componentSet = {
+    type: 'COMPONENT_SET',
+    name: 'Chip',
+    componentPropertyDefinitions: { Size: { type: 'VARIANT', variantOptions: ['Small', 'Big'] } },
+    children: [small, big],
+  } as unknown as ComponentSetNode;
+  (small as unknown as { parent: unknown }).parent = componentSet;
+  (big as unknown as { parent: unknown }).parent = componentSet;
+
+  const { structure } = await extractStructure(
+    { axes: ['size'], variants: [{ values: { size: 'small' }, component: small }] },
+    [],
+    null,
+    small,
+    resolverFor({ 'gap-Small': 'components.chip.sizes.small.gap', 'gap-Big': 'components.chip.sizes.big.gap' }),
+  );
+
+  assert.deepEqual(Object.keys(structure.sizes ?? {}), ['small', 'big']);
+  assert.equal(structure.sizes?.small.gap, '{components.chip.sizes.small.gap}');
+  assert.equal(structure.sizes?.big.gap, '{components.chip.sizes.big.gap}');
 });

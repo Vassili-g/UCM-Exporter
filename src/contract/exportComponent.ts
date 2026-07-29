@@ -16,11 +16,9 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
- * 3.0 : les tokens sont cités comme références DTCG entre accolades
- * (`{chemin.du.token}`) et non plus comme chemins nus — rupture pour un
- * consommateur qui lisait le chemin littéral.
+ * 3.1 : `visibilityProp` est relevé sur tous les slots — ajout compatible.
  */
-export const CONTRACT_VERSION = '3.0';
+export const CONTRACT_VERSION = '3.1';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {

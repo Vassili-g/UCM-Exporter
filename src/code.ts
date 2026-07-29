@@ -4,7 +4,7 @@
  * handler et lui renvoyer le fichier produit ou l'erreur.
  */
 import { extractRules, hasUsableRules } from './contract/extractRules';
-import handleExportComponent from './contract/exportComponent';
+import handleExportComponent, { CONTRACT_VERSION } from './contract/exportComponent';
 import handleExportTokens from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
 import type { SettingsInput } from './config';
@@ -14,7 +14,8 @@ import type { ArtifactKind } from './github';
 /** Messages que l'UI peut envoyer au plugin. */
 type UiRequest =
   | { type: 'export-component' | 'export-tokens' | 'ui-ready' }
-  | { type: 'save-settings'; settings: SettingsInput };
+  | { type: 'save-settings'; settings: SettingsInput }
+  | { type: 'open-external'; url: string };
 
 figma.showUI(__html__, { themeColors: true, width: 380, height: 500 });
 
@@ -39,6 +40,16 @@ function postConnection(state: 'checking' | 'connected' | 'disconnected'): void 
 /** Envoie le fichier généré à l'UI pour déclencher le téléchargement local. */
 function postDownload(filename: string, content: string): void {
   figma.ui.postMessage({ type: 'download', filename, content });
+}
+
+/**
+ * Ouvre une URL dans le navigateur par défaut. Seul le sandbox peut le faire :
+ * l'iframe de l'UI est isolée, un `target="_blank"` n'y aboutit nulle part.
+ * On n'ouvre que du `https://` — le sandbox ne relaie pas aveuglément ce que
+ * l'iframe lui demande.
+ */
+function openExternal(url: string): void {
+  if (url.startsWith('https://')) figma.openExternal(url);
 }
 
 /**
@@ -157,6 +168,9 @@ async function runExport(
         url: publication.pullRequestUrl,
         path: publication.path,
       });
+      // Une PR d'export est faite pour être relue tout de suite par le designer
+      // qui vient de l'ouvrir : on l'amène dessus sans lui demander un clic.
+      openExternal(publication.pullRequestUrl);
       postConnection('connected');
       postStatus('success', `${successLabel}${warningText} · PR créée.`);
       figma.notify(`${successLabel}${warningText} · PR créée.`);
@@ -179,6 +193,10 @@ async function runExport(
 // Routeur des demandes de l'UI vers le bon handler.
 figma.ui.onmessage = async (message: UiRequest) => {
   if (message.type === 'ui-ready') {
+    // Figma peut servir un bundle plus ancien que celui du disque. Sans version
+    // affichée, un export « sans changement » est indiscernable d'un plugin
+    // périmé : on annonce d'emblée le schéma que ce code produit.
+    figma.ui.postMessage({ type: 'log', text: `Schéma de contrat ${CONTRACT_VERSION}.` });
     // L'UI est prête : sélection, champs sauvegardés et test GitHub automatique.
     await Promise.all([reportSelectionState(), refreshConfiguration()]);
     return;
@@ -192,6 +210,11 @@ figma.ui.onmessage = async (message: UiRequest) => {
       return;
     }
     await refreshConfiguration();
+    return;
+  }
+
+  if (message.type === 'open-external') {
+    openExternal(message.url);
     return;
   }
 

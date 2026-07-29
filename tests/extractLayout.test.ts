@@ -107,6 +107,32 @@ test('extractLayout nomme le calque texte « label » et garde son nom Figma', a
   assert.ok(warnings.some((w) => w.includes('lineHeight sans variable liée')));
 });
 
+test('extractLayout relie un label masquable à la prop qui le cache', async () => {
+  // Cas réel : un bouton à icône seule. Le calque texte porte une prop BOOLEAN
+  // Figma sur sa visibilité — sans cette liaison dans le contrat, la prop
+  // publique existe sans que rien ne dise ce qu'elle montre ou cache.
+  const texte = {
+    type: 'TEXT',
+    name: 'Suivant',
+    boundVariables: {},
+    componentPropertyReferences: { visible: 'Label#12:8' },
+  };
+  const bouton = {
+    type: 'COMPONENT',
+    name: 'Button',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [texte],
+    findAll: findAllOn([texte]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(bouton, resolverFor({}), new Set(), []);
+
+  assert.deepEqual(layout.children, [
+    { slot: 'label', figmaLayer: 'Suivant', visibilityProp: 'label', optional: true },
+  ]);
+});
+
 test('extractLayout décrit un calque graphique en slot optionnel avec sa visibilité', async () => {
   const icone = {
     type: 'VECTOR',

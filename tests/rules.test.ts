@@ -32,6 +32,20 @@ test('buildRules range @prop dans propDescriptions (prop et valeur normalisées)
   });
 });
 
+test('buildRules garde la première @prop d’une valeur et signale le doublon', () => {
+  const { propDescriptions, warnings } = buildRules([
+    { tag: 'prop', prop: 'variant.contained', content: 'Première description' },
+    { tag: 'prop', prop: 'Variant.Contained', content: 'Seconde description' },
+  ]);
+
+  // Deux règles Figma décrivant la même valeur se contredisent : c'est au
+  // designer de trancher, jamais à l'export d'écraser en silence.
+  assert.deepEqual(propDescriptions, { variant: { contained: 'Première description' } });
+  assert.deepEqual(warnings, [
+    'Règle @prop « variant.contained » dupliquée : seule la première est retenue.',
+  ]);
+});
+
 test('buildRules garde le premier @usage et avertit sur les suivants', () => {
   const { intent, warnings } = buildRules([
     { tag: 'usage', content: 'Premier' },

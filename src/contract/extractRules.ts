@@ -89,10 +89,13 @@ export async function extractRules(
   componentSet: ComponentSetNode,
 ): Promise<RulesResult & { sectionFound: boolean }> {
   const sectionName = `${componentSet.name}${RULES_SECTION_SUFFIX}`;
-  const container = figma.currentPage.findOne(
+  // On les cherche TOUS : n'en lire qu'un alors que la page en porte plusieurs
+  // ferait disparaître des règles sans que rien ne le dise.
+  const containers = figma.currentPage.findAll(
     (node) => node.name === sectionName && RULES_CONTAINER_TYPES.includes(node.type),
-  ) as (SceneNode & ChildrenMixin) | null;
+  ) as (SceneNode & ChildrenMixin)[];
 
+  const container = containers[0];
   if (!container) {
     return {
       intent: null,
@@ -109,6 +112,12 @@ export async function extractRules(
 
   const entries: RuleEntry[] = [];
   const warnings: string[] = [];
+  if (containers.length > 1) {
+    warnings.push(
+      `${containers.length} conteneurs « ${sectionName} » sur la page : seul le premier est lu. ` +
+        `Fusionnez-les dans Figma pour ne perdre aucune règle.`,
+    );
+  }
 
   for (const instance of instances) {
     if (!(await isRuleInstance(instance))) continue;
