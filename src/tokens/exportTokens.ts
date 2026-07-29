@@ -149,8 +149,8 @@ export function buildLeaf(
 
 /**
  * Insère une feuille dans l'arbre en suivant son chemin pointé.
- * Les collisions feuille/groupe (deux variables Figma partageant un chemin)
- * produisent un warning et l'existant est conservé — jamais écrasé.
+ * Un emplacement déjà occupé est TOUJOURS conservé, qu'il porte un groupe ou
+ * une autre feuille : écraser reviendrait à perdre une variable en silence.
  */
 export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: string[]): void {
   const segments = path.split('.').filter(Boolean);
@@ -169,14 +169,55 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
     node = node[key] as DtcgTree;
   }
 
-  // Et une feuille ne peut pas écraser un groupe existant.
+  // Et rien ne peut prendre la place de l'existant, groupe comme feuille.
   const lastKey = segments[segments.length - 1];
   const existing = node[lastKey];
-  if (existing && !('$value' in existing)) {
-    warnings.push(`Collision de chemin sur « ${path} » : un groupe de tokens porte déjà ce nom.`);
+  if (existing) {
+    warnings.push(
+      '$value' in existing
+        ? `Collision de chemin sur « ${path} » : un token porte déjà ce nom ; premier conservé.`
+        : `Collision de chemin sur « ${path} » : un groupe de tokens porte déjà ce nom.`,
+    );
     return;
   }
   node[lastKey] = leaf;
+}
+
+/**
+ * Indexe les variables par chemin canonique. Cette passe précède l'export car
+ * un alias a besoin du chemin de sa cible même si elle n'a pas encore été
+ * traitée.
+ *
+ * Deux noms Figma distincts peuvent donner le même token une fois normalisés
+ * (« Foo Bar » et « foo-bar »). La première variable garde le chemin ; la
+ * seconde est nommée dans un warning et laissée hors des DEUX index — un alias
+ * qui la visait sera signalé introuvable plutôt que de pointer en silence sur
+ * la valeur de sa rivale, ce qui serait une référence fausse et non un manque.
+ */
+export function indexVariables(
+  variables: Variable[],
+  collectionById: Map<string, VariableCollection>,
+  warnings: string[],
+): { pathById: Map<string, string>; variableByPath: Map<string, Variable> } {
+  const pathById = new Map<string, string>();
+  const variableByPath = new Map<string, Variable>();
+
+  for (const variable of variables) {
+    const collection = collectionById.get(variable.variableCollectionId);
+    const path = joinTokenPath(collection?.name ?? '', variable.name);
+    const firstVariable = variableByPath.get(path);
+    if (firstVariable) {
+      warnings.push(
+        `Collision de tokens : « ${firstVariable.name} » et « ${variable.name} » donnent le même ` +
+          `token « ${path} ». La seconde est ignorée ; renommez-la dans Figma.`,
+      );
+      continue;
+    }
+    variableByPath.set(path, variable);
+    pathById.set(variable.id, path);
+  }
+
+  return { pathById, variableByPath };
 }
 
 /** Point d'entrée de la commande : exporte toutes les variables locales en DTCG. */
@@ -188,26 +229,22 @@ export async function handleExportTokens(): Promise<TokensExport> {
     throw new TokensExportError('Aucune variable locale à exporter.');
   }
 
-  // On indexe tout d'abord : les alias ont besoin du chemin de leur cible
-  // même si elle n'a pas encore été traitée.
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
   const variableById = new Map(variables.map((variable) => [variable.id, variable]));
-  const pathById = new Map<string, string>();
-  for (const variable of variables) {
-    const collection = collectionById.get(variable.variableCollectionId);
-    pathById.set(variable.id, joinTokenPath(collection?.name ?? '', variable.name));
-  }
+  const warnings: string[] = [];
+  const { pathById, variableByPath } = indexVariables(variables, collectionById, warnings);
   const ctx = { collectionById, variableById, pathById };
 
+  // Parcourir l'index plutôt que la liste brute : une variable écartée pour
+  // collision n'y figure pas, et chaque chemin est déjà calculé.
   const tree: DtcgTree = {};
-  const warnings: string[] = [];
-  for (const variable of variables) {
+  for (const [path, variable] of variableByPath) {
     const collection = collectionById.get(variable.variableCollectionId);
     if (!collection) {
       warnings.push(`Variable « ${variable.name} » : collection introuvable.`);
       continue;
     }
-    insert(tree, pathById.get(variable.id) ?? '', buildLeaf(variable, collection, ctx, warnings), warnings);
+    insert(tree, path, buildLeaf(variable, collection, ctx, warnings), warnings);
   }
 
   return {

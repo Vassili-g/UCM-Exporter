@@ -66,9 +66,14 @@ test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (pr
     boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: tokenId } as VariableAlias] },
     findAll: () => [],
   }) as unknown as ComponentNode;
+  // Le premier variant de la matrice est aussi le plus LENT à résoudre : sans
+  // insertion ordonnée, c'est le second qui gagnerait le conflit.
   const resolver = {
-    resolve: async (alias: VariableAlias | null | undefined) =>
-      alias ? `components.button.colors.${alias.id}.background` : null,
+    resolve: async (alias: VariableAlias | null | undefined) => {
+      if (!alias) return null;
+      if (alias.id === 'a') for (let tick = 0; tick < 3; tick += 1) await Promise.resolve();
+      return `components.button.colors.${alias.id}.background`;
+    },
   };
   const warnings: string[] = [];
 
@@ -90,6 +95,50 @@ test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (pr
     focus: { background: '{components.button.colors.a.background}' },
   });
   assert.ok(warnings.some((warning) => warning.includes('Variants en conflit sur « focus »')));
+});
+
+test('extractVariantTokens suit l’ordre de la matrice, pas l’ordre de résolution', async () => {
+  const makeNode = (name: string, tokenId: string) => ({
+    type: 'RECTANGLE',
+    name,
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: tokenId } as VariableAlias] },
+    findAll: () => [],
+  }) as unknown as ComponentNode;
+  // Latences décroissantes : le premier variant de la matrice se règle en
+  // dernier. Sans insertion ordonnée, deux exports d'un design inchangé
+  // produiraient des JSON différents — donc une pull request pour rien.
+  const ticksById: Record<string, number> = { a: 3, b: 1, c: 0 };
+  const resolver = {
+    resolve: async (alias: VariableAlias | null | undefined) => {
+      if (!alias) return null;
+      for (let tick = 0; tick < ticksById[alias.id]; tick += 1) await Promise.resolve();
+      return null; // Aucun token lié : chaque variant produit un avertissement.
+    },
+  };
+  const warnings: string[] = [];
+
+  const trees = await extractVariantTokens(
+    {
+      axes: ['state'],
+      variants: [
+        { values: { state: 'default' }, component: makeNode('State=Default', 'a') },
+        { values: { state: 'hover' }, component: makeNode('State=Hover', 'b') },
+        { values: { state: 'focus' }, component: makeNode('State=Focus', 'c') },
+      ],
+    },
+    resolver,
+    new Set<string>(),
+    warnings,
+  );
+
+  assert.deepEqual(Object.keys(trees.variantTokens), ['default', 'hover', 'focus']);
+  assert.deepEqual(Object.keys(trees.variantStrokes), ['default', 'hover', 'focus']);
+  // Les avertissements aussi entrent dans le contrat : leur ordre suit la matrice.
+  assert.deepEqual(warnings, [
+    'Variant « State=Default » : aucune variable de couleur/contour liée.',
+    'Variant « State=Hover » : aucune variable de couleur/contour liée.',
+    'Variant « State=Focus » : aucune variable de couleur/contour liée.',
+  ]);
 });
 
 test('extractVariantTokens normalise la clé de repli quand le set n’expose aucun axe', async () => {

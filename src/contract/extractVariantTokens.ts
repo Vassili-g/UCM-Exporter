@@ -63,26 +63,40 @@ export async function extractVariantTokens(
   // liste vide pour ne jamais perdre un variant en silence.
   const axes = matrix.axes.length > 0 ? matrix.axes : ['variant'];
 
-  await Promise.all(
+  // Les allers-retours vers l'API Figma restent parallèles, mais RIEN n'est
+  // écrit pendant cette phase : chaque variant collecte ses propres
+  // avertissements. L'ordre où les promesses se règlent ne doit décider ni de
+  // l'ordre des clés, ni de quel variant gagne un conflit — sinon deux exports
+  // d'un design inchangé donneraient des JSON différents, donc une pull request
+  // pour rien. Même découpage que `getSlotTokens` : collecter, puis consommer.
+  const collected = await Promise.all(
     matrix.variants.map(async (entry: VariantEntry) => {
-      const leaf = await getSlotTokens(entry.component, resolver, warnings);
-      if (Object.keys(leaf.paints).length === 0 && Object.keys(leaf.strokes).length === 0) {
-        warnings.push(`Variant « ${entry.component.name} » : aucune variable de couleur/contour liée.`);
-      }
-      for (const token of Object.values(leaf.paints)) tokenNames.add(token);
-      for (const stroke of Object.values(leaf.strokes)) {
-        tokenNames.add(stroke.color);
-        if (stroke.width) tokenNames.add(stroke.width);
-      }
-      // La clé de repli suit la même normalisation que toutes les valeurs
-      // d'axes : l'arbre reste homogène même sans axe déclaré.
-      const values = matrix.axes.length > 0
-        ? entry.values
-        : { variant: normalizePropValue(entry.component.name) };
-      insertVariant(variantTokens, axes, values, leaf.paints, warnings);
-      insertVariant(variantStrokes, axes, values, leaf.strokes, warnings);
+      const variantWarnings: string[] = [];
+      const leaf = await getSlotTokens(entry.component, resolver, variantWarnings);
+      return { entry, leaf, variantWarnings };
     }),
   );
+
+  // Seconde phase, séquentielle : c'est la matrice qui fixe l'ordre des clés,
+  // celui des avertissements et le sens de « premier conservé ».
+  for (const { entry, leaf, variantWarnings } of collected) {
+    warnings.push(...variantWarnings);
+    if (Object.keys(leaf.paints).length === 0 && Object.keys(leaf.strokes).length === 0) {
+      warnings.push(`Variant « ${entry.component.name} » : aucune variable de couleur/contour liée.`);
+    }
+    for (const token of Object.values(leaf.paints)) tokenNames.add(token);
+    for (const stroke of Object.values(leaf.strokes)) {
+      tokenNames.add(stroke.color);
+      if (stroke.width) tokenNames.add(stroke.width);
+    }
+    // La clé de repli suit la même normalisation que toutes les valeurs
+    // d'axes : l'arbre reste homogène même sans axe déclaré.
+    const values = matrix.axes.length > 0
+      ? entry.values
+      : { variant: normalizePropValue(entry.component.name) };
+    insertVariant(variantTokens, axes, values, leaf.paints, warnings);
+    insertVariant(variantStrokes, axes, values, leaf.strokes, warnings);
+  }
 
   return { variantTokens, variantStrokes };
 }
