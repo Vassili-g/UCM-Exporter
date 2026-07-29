@@ -39,7 +39,8 @@ voir [`ROADMAP.md`](./ROADMAP.md).
   - `extractRules.ts` — règles d'usage lues dans le conteneur `<Nom>-Rules` ;
   - `rulesModel.ts` — assemblage pur des règles, intentions et politiques ;
   - `mergeIconRules.ts` — liaison générique règles ↔ calques ↔ props d'icône ;
-  - `semantics.ts` — **seul** lieu du vocabulaire sémantique (size, label…) ;
+  - `semantics.ts` — **seul** lieu du vocabulaire sémantique (size, label,
+    rôles rendables…) et contrôle des rôles relevés ;
   - `parsers.ts` — props Figma → props publiques, intention taguée ;
   - `types.ts` — schéma du contrat.
 - `src/tokens/exportTokens.ts` — commande « Export tokens » (DTCG).
@@ -49,7 +50,8 @@ voir [`ROADMAP.md`](./ROADMAP.md).
 - `src/config.ts` — validation et stockage local de la configuration GitHub.
 - `src/github.ts` — dépôt d'un artefact sur une branche et ouverture d'une PR.
 - `src/ui/` — interface (vanilla JS, un fichier autonome au build).
-- `tests/` — tests des fonctions pures (`npm test`).
+- `tests/` — tests des fonctions pures ; `scripts/run-tests.js` les découvre
+  tous, un nouveau fichier `*.test.ts` tourne sans rien déclarer (`npm test`).
 
 ## Commandes
 

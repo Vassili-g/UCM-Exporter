@@ -10,13 +10,13 @@
     "build:manifest": "node scripts/build-manifest.js",
     "build": "npm run typecheck && npm run build:code && npm run build:ui && npm run build:manifest",
     "start": "npm run build",
-    "test": "tsx --test tests/utils.test.ts tests/parsers.test.ts tests/componentTree.test.ts tests/exportTokens.test.ts tests/rules.test.ts tests/semantics.test.ts tests/variantTokens.test.ts tests/iconRules.test.ts tests/config.test.ts tests/github.test.ts"
+    "test": "node scripts/run-tests.js"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.68.0",
     "@types/node": "^22.0.0",
-    "esbuild": "^0.18.0",
+    "esbuild": "^0.25.0",
     "tsx": "^4.20.0",
-    "typescript": "^4.9.5"
+    "typescript": "^5.5.3"
   }
 }

@@ -3,9 +3,11 @@
  * Les collisions et valeurs brutes produisent des warnings sans interrompre
  * l'export du composant.
  */
-import { toRef, variableAliases, VariableNameResolver } from '../variables';
+import { toRef, variableAliases } from '../variables';
+import type { TokenResolver } from '../variables';
 import { getAllNodes, getBinding } from './nodeBindings';
 import type { SlotStrokes, SlotTokens, StrokeAlignment, StrokeTokens } from './types';
+export type { TokenResolver } from '../variables';
 
 const BOUND_FIELDS = ['fills', 'strokes'] as const;
 const STROKE_WEIGHT_FIELDS = [
@@ -15,8 +17,6 @@ const STROKE_WEIGHT_FIELDS = [
   'strokeLeftWeight',
 ] as const;
 
-/** Interface minimale pour tester l'extraction sans runtime Figma. */
-export type TokenResolver = Pick<VariableNameResolver, 'resolve'>;
 export type VariantTokenLeaves = { paints: SlotTokens; strokes: SlotStrokes };
 
 /** Déduit le rôle d'un token depuis son dernier segment. */

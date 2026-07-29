@@ -49,6 +49,8 @@ consommateur.
 
 Le moteur n'exige **presque rien** de cette structure : il lit dynamiquement
 les collections, les variables et leurs alias, quels que soient leurs noms.
+Une seule contrainte de nommage existe, et elle est vérifiée : le **dernier
+segment d'un token de couleur nomme son rôle visuel** (cf. Partie 1, étape 2).
 La table ci-dessous décrit le **fichier Figma de référence** du MVP — une
 organisation réaliste qui sert de cas de validation, pas une contrainte du
 plugin. Collections de variables, par tiers d'alias :
@@ -108,8 +110,14 @@ boolean, `TEXT` → string. Deux règles auto-détectées :
 **2. Tokens de variantes** — parcourir **tous** les variants (produit cartésien
 des axes). Pour chacun, relever les tokens liés (`boundVariables.fills` et
 `.strokes` sur tout le sous-arbre), rangés par **rôle = dernier segment du
-token** (`background`, `foreground`, `border`, `ring`, `shadow`…). Un rôle
-n'apparaît que s'il est réellement lié — rien n'est forcé ni inventé.
+token**. Les rôles rendables sont exactement ceux de `rendering.roles`
+(`background`, `foreground`, `border`, `ring`) : un rôle hors de cette liste —
+ou employé sur le mauvais support, tel un `…/border` posé en remplissage —
+donne un contrat valide qu'**aucun consommateur ne saura peindre**, puisqu'un
+rôle inconnu de `rendering.roles` est ignoré au rendu. Le cas produit donc un
+**warning agrégé** : un seul message par rôle fautif, avec son nombre
+d'occurrences et un token en exemple — celui à renommer dans Figma.
+Un rôle n'apparaît que s'il est réellement lié — rien n'est forcé ni inventé.
 Chaque feuille décrit indépendamment l'état visuel complet du variant Figma :
 si un rôle est absent de la feuille d'un état dans `variantTokens` ou
 `variantStrokes`, cela signifie toujours **« ne pas rendre ce rôle dans cet
@@ -344,8 +352,11 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 
 `meta` porte la version du schéma du contrat (`contractVersion`), la date d'export et la
 traçabilité Figma (nom de fichier, id du nœud, clé de composant, lien URL).
-L'URL vaut `null` quand l'API ne fournit pas la clé du fichier (plugins en
-développement) — un warning le signale, sans bloquer.
+L'URL vaut `null` tant que le plugin n'est pas un **plugin privé
+d'organisation** déclarant `enablePrivatePluginApi` : `figma.fileKey` leur est
+réservé. Ce n'est donc pas un état transitoire que la publication corrigerait,
+et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId` et
+`fileName` restent exploitables pour retrouver le composant.
 
 ### Invariants
 
@@ -359,6 +370,9 @@ développement) — un warning le signale, sans bloquer.
       références `{…}` plus l'alignement Figma nu (`inside`/`center`/`outside`).
 - Un rôle absent d'un état signifie qu'il ne doit pas être rendu ; aucun
       consommateur ne fusionne implicitement cet état avec `default`.
+- Tout rôle relevé appartient à `rendering.roles`, et sur le support de sa
+      nature déclarée (`paint`/`stroke`) ; sinon **warning agrégé**, un par
+      rôle fautif — jamais un par variante.
 - `stateModel` mappe les états connus vers leurs déclencheurs et expose
       une priorité déterministe ; les états inconnus restent visibles avec un
       warning.

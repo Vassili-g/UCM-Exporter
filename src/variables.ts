@@ -63,6 +63,14 @@ export function joinTokenPath(collectionName: string, variableName: string): str
 }
 
 /**
+ * Interface MINIMALE dont dépendent les modules d'extraction : résoudre un
+ * alias en nom de token, rien d'autre. Les modules la demandent plutôt que la
+ * classe concrète, si bien qu'un test peut fournir un résolveur littéral —
+ * c'est ce qui rend l'extraction vérifiable hors du runtime Figma.
+ */
+export type TokenResolver = Pick<VariableNameResolver, 'resolve'>;
+
+/**
  * Résout des ids de variables Figma en noms de tokens canoniques, avec cache.
  * Le cache évite de rappeler l'API Figma pour un même id (un composant lie
  * souvent la même variable des dizaines de fois).

@@ -53,7 +53,7 @@ prouve que le modèle dépasse le composant isolé.
 | **0** | Figer Unified Component Exporter (contrats, tokens DTCG, configuration et PR) | opérationnel sur Button |
 | **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary ; **noms de tokens = chemins**, alias préservés en `var(--…)`) | opérationnel |
 | **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
-| **C1** | Garde-fous CI — existence des tokens (`tokensUsed` ⊆ tokens générés, `npm run check`) | opérationnel en local ; GitHub Action en place, premier run à valider (étape 2) |
+| **C1** | Garde-fous CI — existence des tokens (références relevées **dans** le contrat ⊆ tokens générés) et cohérence de son index `tokensUsed` ; `npm run check` | opérationnel en local ; GitHub Action en place, premier run à valider (étape 2) |
 | **C2** | Garde-fous CI — parité code ↔ contrat (props, valeurs, états, composition) | à faire (étape 4) |
 | **D** | Playground : rendu live + contexte agent + test froid léger | opérationnel sur Button |
 | **E** | **Composition** : composé minimal, champ `composes`, parité récursive | à faire — **priorité structurelle** |

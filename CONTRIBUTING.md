@@ -76,7 +76,12 @@ Les commentaires sont en français et doivent aider un lecteur débutant :
 - **Tout bug corrigé est verrouillé par un test** qui reproduit le cas réel
   (cf. le test « lineheight aliasé sur spacing → dimension »).
 - La logique pure se teste sans Figma : simuler les nodes avec des objets
-  littéraux castés (`as unknown as ComponentNode`).
+  littéraux castés (`as unknown as ComponentNode`). Un module d'extraction
+  demande le type `TokenResolver` (résoudre un alias, rien d'autre) et non la
+  classe `VariableNameResolver`, précisément pour qu'un test puisse lui passer
+  un résolveur littéral ; `extractStructure` accepte le sien en paramètre.
+- Un nouveau fichier `tests/*.test.ts` est pris en compte tout seul :
+  `scripts/run-tests.js` lit le dossier. Aucune liste à tenir à jour.
 - Les exports réels produits sur le fichier Figma de référence sont conservés
   dans `tests/test-exports/` : ils servent de jeux de validation quand la
   structure Figma ou le code évolue.

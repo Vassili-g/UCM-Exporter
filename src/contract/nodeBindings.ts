@@ -3,7 +3,8 @@
  * parcours de sous-arbre, accès à une liaison, résolution d'un champ en
  * nom de token avec warning si la valeur n'est pas tokenisée.
  */
-import { firstVariableAlias, toRef, VariableNameResolver } from '../variables';
+import { firstVariableAlias, toRef } from '../variables';
+import type { TokenResolver } from '../variables';
 
 /** Racine de recherche acceptée : un composant ou une instance. */
 export type SearchRoot = ComponentNode | InstanceNode;
@@ -35,7 +36,7 @@ export async function resolveField(
   node: SceneNode,
   fields: string[],
   label: string,
-  resolver: VariableNameResolver,
+  resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
 ): Promise<string | null> {

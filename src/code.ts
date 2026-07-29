@@ -87,9 +87,22 @@ async function reportSelectionState(): Promise<void> {
   }
 }
 
-// Retour en direct : à chaque changement de sélection dans Figma.
+/** Immobilité exigée avant d'analyser une sélection. */
+const SELECTION_DEBOUNCE_MS = 200;
+let selectionTimer: number | null = null;
+
+// Retour en direct : à chaque changement de sélection dans Figma — mais pas
+// avant que la sélection se stabilise. Une analyse balaye TOUTE la page (pour
+// trouver le conteneur de règles) puis interroge Figma une fois par instance
+// trouvée. Parcourir ses variantes aux flèches lancerait autant de balayages
+// concurrents, dont un seul servira : le jeton anti-course jette bien les
+// résultats périmés, mais après que le travail a été payé.
 figma.on('selectionchange', () => {
-  void reportSelectionState();
+  if (selectionTimer !== null) clearTimeout(selectionTimer);
+  selectionTimer = setTimeout(() => {
+    selectionTimer = null;
+    void reportSelectionState();
+  }, SELECTION_DEBOUNCE_MS);
 });
 
 /**
