@@ -1,8 +1,8 @@
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "3.0",
-    "exportedAt": "2026-07-17T16:11:07.100Z",
+    "contractVersion": "3.1",
+    "exportedAt": "2026-07-29T14:30:56.339Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "3:122",
@@ -15,12 +15,20 @@
       "type": "enum",
       "values": [
         "secondary",
-        "primary"
+        "primary",
+        "info",
+        "success",
+        "warning",
+        "error"
       ],
       "default": "primary",
       "descriptions": {
         "primary": "Couleur principale — avec parcimonie, pour un CTA mis en avant.",
-        "secondary": "Couleur neutre de la marque — valeur par défaut."
+        "secondary": "Couleur neutre de la marque — valeur par défaut.",
+        "info": "Utilisé pour des boutons qui mènent à un contenu informatif",
+        "success": "Utilisé pour une action qui doit être identifiée comme positive (acceptation, confirmation)",
+        "warning": "Utilisé pour une action qui doit être identifiée comme critique mais non bloquante (mise à jour de données)",
+        "error": "Utilisé pour une action qui doit être identifiée comme négative  (refus, suppression, annulation)"
       }
     },
     "variant": {
@@ -40,6 +48,10 @@
     "disabled": {
       "type": "boolean",
       "default": false
+    },
+    "label": {
+      "type": "boolean",
+      "default": true
     },
     "iconRight": {
       "type": "boolean",
@@ -87,16 +99,18 @@
     "children": [
       {
         "slot": "arrow-left-long",
-        "figmaLayer": "arrow-left-long",
-        "optional": true,
         "visibilityProp": "iconLeft",
+        "optional": true,
+        "figmaLayer": "arrow-left-long",
         "size": "{components.icons.sizes.base}"
       },
       {
         "slot": "label",
         "figmaLayer": "Suivant",
+        "visibilityProp": "label",
+        "optional": true,
         "typography": {
-          "fontSize": "{components.button.sizes.medium.font-size}",
+          "fontSize": "{components.button.sizes.medium.label-size}",
           "fontWeight": "{layouts.fontweight.600}",
           "lineHeight": "{layouts.lineheight.base}",
           "fontFamily": "{layouts.fontfamily.base}"
@@ -105,9 +119,9 @@
       },
       {
         "slot": "arrow-right-long",
-        "figmaLayer": "arrow-right-long",
-        "optional": true,
         "visibilityProp": "iconRight",
+        "optional": true,
+        "figmaLayer": "arrow-right-long",
         "size": "{components.icons.sizes.base}"
       }
     ],
@@ -127,10 +141,6 @@
             "background": "{components.button.colors.primary.contained.hover.background}",
             "foreground": "{components.button.colors.primary.contained.hover.foreground}"
           },
-          "disable": {
-            "background": "{components.button.colors.primary.contained.disable.background}",
-            "foreground": "{components.button.colors.primary.contained.disable.foreground}"
-          },
           "focus": {
             "background": "{components.button.colors.primary.contained.focus.background}",
             "foreground": "{components.button.colors.primary.contained.focus.foreground}"
@@ -138,26 +148,10 @@
           "press": {
             "background": "{components.button.colors.primary.contained.press.background}",
             "foreground": "{components.button.colors.primary.contained.press.foreground}"
-          }
-        },
-        "text": {
-          "default": {
-            "foreground": "{components.button.colors.primary.text.default.foreground}"
-          },
-          "hover": {
-            "background": "{components.button.colors.primary.text.hover.background}",
-            "foreground": "{components.button.colors.primary.text.hover.foreground}"
           },
           "disable": {
-            "foreground": "{components.button.colors.primary.text.disable.foreground}"
-          },
-          "focus": {
-            "background": "{components.button.colors.primary.text.focus.background}",
-            "foreground": "{components.button.colors.primary.text.focus.foreground}"
-          },
-          "press": {
-            "background": "{components.button.colors.primary.text.press.background}",
-            "foreground": "{components.button.colors.primary.text.press.foreground}"
+            "background": "{components.button.colors.primary.contained.disable.background}",
+            "foreground": "{components.button.colors.primary.contained.disable.foreground}"
           }
         },
         "outlined": {
@@ -169,10 +163,6 @@
             "background": "{components.button.colors.primary.outlined.hover.background}",
             "foreground": "{components.button.colors.primary.outlined.hover.foreground}"
           },
-          "disable": {
-            "background": "{components.button.colors.primary.outlined.disable.background}",
-            "foreground": "{components.button.colors.primary.outlined.disable.foreground}"
-          },
           "focus": {
             "background": "{components.button.colors.primary.outlined.focus.background}",
             "foreground": "{components.button.colors.primary.outlined.focus.foreground}"
@@ -180,6 +170,30 @@
           "press": {
             "background": "{components.button.colors.primary.outlined.press.background}",
             "foreground": "{components.button.colors.primary.outlined.press.foreground}"
+          },
+          "disable": {
+            "background": "{components.button.colors.primary.outlined.disable.background}",
+            "foreground": "{components.button.colors.primary.outlined.disable.foreground}"
+          }
+        },
+        "text": {
+          "default": {
+            "foreground": "{components.button.colors.primary.text.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.primary.text.hover.background}",
+            "foreground": "{components.button.colors.primary.text.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.primary.text.focus.background}",
+            "foreground": "{components.button.colors.primary.text.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.primary.text.press.background}",
+            "foreground": "{components.button.colors.primary.text.press.foreground}"
+          },
+          "disable": {
+            "foreground": "{components.button.colors.primary.text.disable.foreground}"
           }
         }
       },
@@ -193,10 +207,6 @@
             "background": "{components.button.colors.secondary.contained.hover.background}",
             "foreground": "{components.button.colors.secondary.contained.hover.foreground}"
           },
-          "disable": {
-            "background": "{components.button.colors.secondary.contained.disable.background}",
-            "foreground": "{components.button.colors.secondary.contained.disable.foreground}"
-          },
           "focus": {
             "background": "{components.button.colors.secondary.contained.focus.background}",
             "foreground": "{components.button.colors.secondary.contained.focus.foreground}"
@@ -204,26 +214,10 @@
           "press": {
             "background": "{components.button.colors.secondary.contained.press.background}",
             "foreground": "{components.button.colors.secondary.contained.press.foreground}"
-          }
-        },
-        "text": {
-          "default": {
-            "foreground": "{components.button.colors.secondary.text.default.foreground}"
-          },
-          "hover": {
-            "background": "{components.button.colors.secondary.text.hover.background}",
-            "foreground": "{components.button.colors.secondary.text.hover.foreground}"
           },
           "disable": {
-            "foreground": "{components.button.colors.secondary.text.disable.foreground}"
-          },
-          "focus": {
-            "background": "{components.button.colors.secondary.text.focus.background}",
-            "foreground": "{components.button.colors.secondary.text.focus.foreground}"
-          },
-          "press": {
-            "background": "{components.button.colors.secondary.text.press.background}",
-            "foreground": "{components.button.colors.secondary.text.press.foreground}"
+            "background": "{components.button.colors.secondary.contained.disable.background}",
+            "foreground": "{components.button.colors.secondary.contained.disable.foreground}"
           }
         },
         "outlined": {
@@ -235,10 +229,6 @@
             "background": "{components.button.colors.secondary.outlined.hover.background}",
             "foreground": "{components.button.colors.secondary.outlined.hover.foreground}"
           },
-          "disable": {
-            "background": "{components.button.colors.secondary.outlined.disable.background}",
-            "foreground": "{components.button.colors.secondary.outlined.disable.foreground}"
-          },
           "focus": {
             "background": "{components.button.colors.secondary.outlined.focus.background}",
             "foreground": "{components.button.colors.secondary.outlined.focus.foreground}"
@@ -246,6 +236,294 @@
           "press": {
             "background": "{components.button.colors.secondary.outlined.press.background}",
             "foreground": "{components.button.colors.secondary.outlined.press.foreground}"
+          },
+          "disable": {
+            "background": "{components.button.colors.secondary.outlined.disable.background}",
+            "foreground": "{components.button.colors.secondary.outlined.disable.foreground}"
+          }
+        },
+        "text": {
+          "default": {
+            "foreground": "{components.button.colors.secondary.text.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.secondary.text.hover.background}",
+            "foreground": "{components.button.colors.secondary.text.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.secondary.text.focus.background}",
+            "foreground": "{components.button.colors.secondary.text.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.secondary.text.press.background}",
+            "foreground": "{components.button.colors.secondary.text.press.foreground}"
+          },
+          "disable": {
+            "foreground": "{components.button.colors.secondary.text.disable.foreground}"
+          }
+        }
+      },
+      "info": {
+        "contained": {
+          "default": {
+            "background": "{components.button.colors.info.contained.default.background}",
+            "foreground": "{components.button.colors.info.contained.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.info.contained.hover.background}",
+            "foreground": "{components.button.colors.info.contained.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.info.contained.focus.background}",
+            "foreground": "{components.button.colors.info.contained.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.info.contained.press.background}",
+            "foreground": "{components.button.colors.info.contained.press.foreground}"
+          },
+          "disable": {
+            "background": "{components.button.colors.info.contained.disable.background}",
+            "foreground": "{components.button.colors.info.contained.disable.foreground}"
+          }
+        },
+        "outlined": {
+          "default": {
+            "background": "{components.button.colors.info.outlined.default.background}",
+            "foreground": "{components.button.colors.info.outlined.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.info.outlined.hover.background}",
+            "foreground": "{components.button.colors.info.outlined.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.info.outlined.focus.background}",
+            "foreground": "{components.button.colors.info.outlined.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.info.outlined.press.background}",
+            "foreground": "{components.button.colors.info.outlined.press.foreground}"
+          },
+          "disable": {
+            "background": "{components.button.colors.info.outlined.disable.background}",
+            "foreground": "{components.button.colors.info.outlined.disable.foreground}"
+          }
+        },
+        "text": {
+          "default": {
+            "foreground": "{components.button.colors.info.text.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.info.text.hover.background}",
+            "foreground": "{components.button.colors.info.text.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.info.text.focus.background}",
+            "foreground": "{components.button.colors.info.text.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.info.text.press.background}",
+            "foreground": "{components.button.colors.info.text.press.foreground}"
+          },
+          "disable": {
+            "foreground": "{components.button.colors.info.text.disable.foreground}"
+          }
+        }
+      },
+      "success": {
+        "contained": {
+          "default": {
+            "background": "{components.button.colors.success.contained.default.background}",
+            "foreground": "{components.button.colors.success.contained.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.success.contained.hover.background}",
+            "foreground": "{components.button.colors.success.contained.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.success.contained.focus.background}",
+            "foreground": "{components.button.colors.success.contained.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.success.contained.press.background}",
+            "foreground": "{components.button.colors.success.contained.press.foreground}"
+          },
+          "disable": {
+            "background": "{components.button.colors.success.contained.disable.background}",
+            "foreground": "{components.button.colors.success.contained.disable.foreground}"
+          }
+        },
+        "outlined": {
+          "default": {
+            "background": "{components.button.colors.success.outlined.default.background}",
+            "foreground": "{components.button.colors.success.outlined.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.success.outlined.hover.background}",
+            "foreground": "{components.button.colors.success.outlined.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.success.outlined.focus.background}",
+            "foreground": "{components.button.colors.success.outlined.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.success.outlined.press.background}",
+            "foreground": "{components.button.colors.success.outlined.press.foreground}"
+          },
+          "disable": {
+            "background": "{components.button.colors.success.outlined.disable.background}",
+            "foreground": "{components.button.colors.success.outlined.disable.foreground}"
+          }
+        },
+        "text": {
+          "default": {
+            "foreground": "{components.button.colors.success.text.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.success.text.hover.background}",
+            "foreground": "{components.button.colors.success.text.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.success.text.focus.background}",
+            "foreground": "{components.button.colors.success.text.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.success.text.press.background}",
+            "foreground": "{components.button.colors.success.text.press.foreground}"
+          },
+          "disable": {
+            "foreground": "{components.button.colors.success.text.disable.foreground}"
+          }
+        }
+      },
+      "warning": {
+        "contained": {
+          "default": {
+            "background": "{components.button.colors.warning.contained.default.background}",
+            "foreground": "{components.button.colors.warning.contained.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.warning.contained.hover.background}",
+            "foreground": "{components.button.colors.warning.contained.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.warning.contained.focus.background}",
+            "foreground": "{components.button.colors.warning.contained.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.warning.contained.press.background}",
+            "foreground": "{components.button.colors.warning.contained.press.foreground}"
+          },
+          "disable": {
+            "background": "{components.button.colors.warning.contained.disable.background}",
+            "foreground": "{components.button.colors.warning.contained.disable.foreground}"
+          }
+        },
+        "outlined": {
+          "default": {
+            "background": "{components.button.colors.warning.outlined.default.background}",
+            "foreground": "{components.button.colors.warning.outlined.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.warning.outlined.hover.background}",
+            "foreground": "{components.button.colors.warning.outlined.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.warning.outlined.focus.background}",
+            "foreground": "{components.button.colors.warning.outlined.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.warning.outlined.press.background}",
+            "foreground": "{components.button.colors.warning.outlined.press.foreground}"
+          },
+          "disable": {
+            "background": "{components.button.colors.warning.outlined.disable.background}",
+            "foreground": "{components.button.colors.warning.outlined.disable.foreground}"
+          }
+        },
+        "text": {
+          "default": {
+            "foreground": "{components.button.colors.warning.text.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.warning.text.hover.background}",
+            "foreground": "{components.button.colors.warning.text.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.warning.text.focus.background}",
+            "foreground": "{components.button.colors.warning.text.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.warning.text.press.background}",
+            "foreground": "{components.button.colors.warning.text.press.foreground}"
+          },
+          "disable": {
+            "foreground": "{components.button.colors.warning.text.disable.foreground}"
+          }
+        }
+      },
+      "error": {
+        "contained": {
+          "default": {
+            "background": "{components.button.colors.error.contained.default.background}",
+            "foreground": "{components.button.colors.error.contained.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.error.contained.hover.background}",
+            "foreground": "{components.button.colors.error.contained.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.error.contained.focus.background}",
+            "foreground": "{components.button.colors.error.contained.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.error.contained.press.background}",
+            "foreground": "{components.button.colors.error.contained.press.foreground}"
+          },
+          "disable": {
+            "background": "{components.button.colors.error.contained.disable.background}",
+            "foreground": "{components.button.colors.error.contained.disable.foreground}"
+          }
+        },
+        "outlined": {
+          "default": {
+            "background": "{components.button.colors.error.outlined.default.background}",
+            "foreground": "{components.button.colors.error.outlined.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.error.outlined.hover.background}",
+            "foreground": "{components.button.colors.error.outlined.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.error.outlined.focus.background}",
+            "foreground": "{components.button.colors.error.outlined.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.error.outlined.press.background}",
+            "foreground": "{components.button.colors.error.outlined.press.foreground}"
+          },
+          "disable": {
+            "background": "{components.button.colors.error.outlined.disable.background}",
+            "foreground": "{components.button.colors.error.outlined.disable.foreground}"
+          }
+        },
+        "text": {
+          "default": {
+            "foreground": "{components.button.colors.error.text.default.foreground}"
+          },
+          "hover": {
+            "background": "{components.button.colors.error.text.hover.background}",
+            "foreground": "{components.button.colors.error.text.hover.foreground}"
+          },
+          "focus": {
+            "background": "{components.button.colors.error.text.focus.background}",
+            "foreground": "{components.button.colors.error.text.focus.foreground}"
+          },
+          "press": {
+            "background": "{components.button.colors.error.text.press.background}",
+            "foreground": "{components.button.colors.error.text.press.foreground}"
+          },
+          "disable": {
+            "foreground": "{components.button.colors.error.text.disable.foreground}"
           }
         }
       }
@@ -255,7 +533,6 @@
         "contained": {
           "default": {},
           "hover": {},
-          "disable": {},
           "focus": {
             "ring": {
               "color": "{components.button.colors.primary.contained.focus.ring}",
@@ -269,26 +546,8 @@
               "width": "{layouts.stroke.ring}",
               "align": "outside"
             }
-          }
-        },
-        "text": {
-          "default": {},
-          "hover": {},
-          "disable": {},
-          "focus": {
-            "ring": {
-              "color": "{components.button.colors.primary.text.focus.ring}",
-              "width": "{layouts.stroke.ring}",
-              "align": "outside"
-            }
           },
-          "press": {
-            "ring": {
-              "color": "{components.button.colors.primary.text.press.ring}",
-              "width": "{layouts.stroke.ring}",
-              "align": "outside"
-            }
-          }
+          "disable": {}
         },
         "outlined": {
           "default": {
@@ -301,13 +560,6 @@
           "hover": {
             "border": {
               "color": "{components.button.colors.primary.outlined.hover.border}",
-              "width": "{layouts.stroke.outline}",
-              "align": "inside"
-            }
-          },
-          "disable": {
-            "border": {
-              "color": "{components.button.colors.primary.outlined.disable.border}",
               "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
@@ -335,14 +587,39 @@
               "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
+          },
+          "disable": {
+            "border": {
+              "color": "{components.button.colors.primary.outlined.disable.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
           }
+        },
+        "text": {
+          "default": {},
+          "hover": {},
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.primary.text.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.primary.text.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "disable": {}
         }
       },
       "secondary": {
         "contained": {
           "default": {},
           "hover": {},
-          "disable": {},
           "focus": {
             "ring": {
               "color": "{components.button.colors.secondary.contained.focus.ring}",
@@ -356,26 +633,8 @@
               "width": "{layouts.stroke.ring}",
               "align": "outside"
             }
-          }
-        },
-        "text": {
-          "default": {},
-          "hover": {},
-          "disable": {},
-          "focus": {
-            "ring": {
-              "color": "{components.button.colors.secondary.text.focus.ring}",
-              "width": "{layouts.stroke.ring}",
-              "align": "outside"
-            }
           },
-          "press": {
-            "ring": {
-              "color": "{components.button.colors.secondary.text.press.ring}",
-              "width": "{layouts.stroke.ring}",
-              "align": "outside"
-            }
-          }
+          "disable": {}
         },
         "outlined": {
           "default": {
@@ -388,13 +647,6 @@
           "hover": {
             "border": {
               "color": "{components.button.colors.secondary.outlined.hover.border}",
-              "width": "{layouts.stroke.outline}",
-              "align": "inside"
-            }
-          },
-          "disable": {
-            "border": {
-              "color": "{components.button.colors.secondary.outlined.disable.border}",
               "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
@@ -422,7 +674,381 @@
               "width": "{layouts.stroke.outline}",
               "align": "inside"
             }
+          },
+          "disable": {
+            "border": {
+              "color": "{components.button.colors.secondary.outlined.disable.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
           }
+        },
+        "text": {
+          "default": {},
+          "hover": {},
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.secondary.text.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.secondary.text.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "disable": {}
+        }
+      },
+      "info": {
+        "contained": {
+          "default": {},
+          "hover": {},
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.info.contained.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.info.contained.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "disable": {}
+        },
+        "outlined": {
+          "default": {
+            "border": {
+              "color": "{components.button.colors.info.outlined.default.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "hover": {
+            "border": {
+              "color": "{components.button.colors.info.outlined.hover.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.info.outlined.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            },
+            "border": {
+              "color": "{components.button.colors.info.outlined.focus.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.info.outlined.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            },
+            "border": {
+              "color": "{components.button.colors.info.outlined.press.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "disable": {
+            "border": {
+              "color": "{components.button.colors.info.outlined.disable.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          }
+        },
+        "text": {
+          "default": {},
+          "hover": {},
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.info.text.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.info.text.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "disable": {}
+        }
+      },
+      "success": {
+        "contained": {
+          "default": {},
+          "hover": {},
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.success.contained.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.success.contained.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "disable": {}
+        },
+        "outlined": {
+          "default": {
+            "border": {
+              "color": "{components.button.colors.success.outlined.default.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "hover": {
+            "border": {
+              "color": "{components.button.colors.success.outlined.hover.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.success.outlined.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            },
+            "border": {
+              "color": "{components.button.colors.success.outlined.focus.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.success.outlined.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            },
+            "border": {
+              "color": "{components.button.colors.success.outlined.press.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "disable": {
+            "border": {
+              "color": "{components.button.colors.success.outlined.disable.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          }
+        },
+        "text": {
+          "default": {},
+          "hover": {},
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.success.text.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.success.text.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "disable": {}
+        }
+      },
+      "warning": {
+        "contained": {
+          "default": {},
+          "hover": {},
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.warning.contained.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.warning.contained.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "disable": {}
+        },
+        "outlined": {
+          "default": {
+            "border": {
+              "color": "{components.button.colors.warning.outlined.default.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "hover": {
+            "border": {
+              "color": "{components.button.colors.warning.outlined.hover.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.warning.outlined.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            },
+            "border": {
+              "color": "{components.button.colors.warning.outlined.focus.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.warning.outlined.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            },
+            "border": {
+              "color": "{components.button.colors.warning.outlined.press.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "disable": {
+            "border": {
+              "color": "{components.button.colors.warning.outlined.disable.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          }
+        },
+        "text": {
+          "default": {},
+          "hover": {},
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.warning.text.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.warning.text.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "disable": {}
+        }
+      },
+      "error": {
+        "contained": {
+          "default": {},
+          "hover": {},
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.error.contained.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.error.contained.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "disable": {}
+        },
+        "outlined": {
+          "default": {
+            "border": {
+              "color": "{components.button.colors.error.outlined.default.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "hover": {
+            "border": {
+              "color": "{components.button.colors.error.outlined.hover.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.error.outlined.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            },
+            "border": {
+              "color": "{components.button.colors.error.outlined.focus.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.error.outlined.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            },
+            "border": {
+              "color": "{components.button.colors.error.outlined.press.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          },
+          "disable": {
+            "border": {
+              "color": "{components.button.colors.error.outlined.disable.border}",
+              "width": "{layouts.stroke.outline}",
+              "align": "inside"
+            }
+          }
+        },
+        "text": {
+          "default": {},
+          "hover": {},
+          "focus": {
+            "ring": {
+              "color": "{components.button.colors.error.text.focus.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "press": {
+            "ring": {
+              "color": "{components.button.colors.error.text.press.ring}",
+              "width": "{layouts.stroke.ring}",
+              "align": "outside"
+            }
+          },
+          "disable": {}
         }
       }
     },
@@ -434,7 +1060,7 @@
           "y": "{components.button.sizes.medium.padding-y}"
         },
         "radius": "{components.button.sizes.medium.border-radius}",
-        "fontSize": "{components.button.sizes.medium.font-size}"
+        "fontSize": "{components.button.sizes.medium.label-size}"
       },
       "big": {
         "gap": "{components.button.sizes.big.gap}",
@@ -443,7 +1069,7 @@
           "y": "{components.button.sizes.big.padding-y}"
         },
         "radius": "{components.button.sizes.big.border-radius}",
-        "fontSize": "{components.button.sizes.big.font-size}"
+        "fontSize": "{components.button.sizes.big.label-size}"
       },
       "small": {
         "gap": "{components.button.sizes.small.gap}",
@@ -452,7 +1078,7 @@
           "y": "{components.button.sizes.small.padding-y}"
         },
         "radius": "{components.button.sizes.small.border-radius}",
-        "fontSize": "{components.button.sizes.small.font-size}"
+        "fontSize": "{components.button.sizes.small.label-size}"
       }
     }
   },
@@ -530,6 +1156,84 @@
     }
   },
   "tokensUsed": [
+    "{components.button.colors.error.contained.default.background}",
+    "{components.button.colors.error.contained.default.foreground}",
+    "{components.button.colors.error.contained.disable.background}",
+    "{components.button.colors.error.contained.disable.foreground}",
+    "{components.button.colors.error.contained.focus.background}",
+    "{components.button.colors.error.contained.focus.foreground}",
+    "{components.button.colors.error.contained.focus.ring}",
+    "{components.button.colors.error.contained.hover.background}",
+    "{components.button.colors.error.contained.hover.foreground}",
+    "{components.button.colors.error.contained.press.background}",
+    "{components.button.colors.error.contained.press.foreground}",
+    "{components.button.colors.error.contained.press.ring}",
+    "{components.button.colors.error.outlined.default.background}",
+    "{components.button.colors.error.outlined.default.border}",
+    "{components.button.colors.error.outlined.default.foreground}",
+    "{components.button.colors.error.outlined.disable.background}",
+    "{components.button.colors.error.outlined.disable.border}",
+    "{components.button.colors.error.outlined.disable.foreground}",
+    "{components.button.colors.error.outlined.focus.background}",
+    "{components.button.colors.error.outlined.focus.border}",
+    "{components.button.colors.error.outlined.focus.foreground}",
+    "{components.button.colors.error.outlined.focus.ring}",
+    "{components.button.colors.error.outlined.hover.background}",
+    "{components.button.colors.error.outlined.hover.border}",
+    "{components.button.colors.error.outlined.hover.foreground}",
+    "{components.button.colors.error.outlined.press.background}",
+    "{components.button.colors.error.outlined.press.border}",
+    "{components.button.colors.error.outlined.press.foreground}",
+    "{components.button.colors.error.outlined.press.ring}",
+    "{components.button.colors.error.text.default.foreground}",
+    "{components.button.colors.error.text.disable.foreground}",
+    "{components.button.colors.error.text.focus.background}",
+    "{components.button.colors.error.text.focus.foreground}",
+    "{components.button.colors.error.text.focus.ring}",
+    "{components.button.colors.error.text.hover.background}",
+    "{components.button.colors.error.text.hover.foreground}",
+    "{components.button.colors.error.text.press.background}",
+    "{components.button.colors.error.text.press.foreground}",
+    "{components.button.colors.error.text.press.ring}",
+    "{components.button.colors.info.contained.default.background}",
+    "{components.button.colors.info.contained.default.foreground}",
+    "{components.button.colors.info.contained.disable.background}",
+    "{components.button.colors.info.contained.disable.foreground}",
+    "{components.button.colors.info.contained.focus.background}",
+    "{components.button.colors.info.contained.focus.foreground}",
+    "{components.button.colors.info.contained.focus.ring}",
+    "{components.button.colors.info.contained.hover.background}",
+    "{components.button.colors.info.contained.hover.foreground}",
+    "{components.button.colors.info.contained.press.background}",
+    "{components.button.colors.info.contained.press.foreground}",
+    "{components.button.colors.info.contained.press.ring}",
+    "{components.button.colors.info.outlined.default.background}",
+    "{components.button.colors.info.outlined.default.border}",
+    "{components.button.colors.info.outlined.default.foreground}",
+    "{components.button.colors.info.outlined.disable.background}",
+    "{components.button.colors.info.outlined.disable.border}",
+    "{components.button.colors.info.outlined.disable.foreground}",
+    "{components.button.colors.info.outlined.focus.background}",
+    "{components.button.colors.info.outlined.focus.border}",
+    "{components.button.colors.info.outlined.focus.foreground}",
+    "{components.button.colors.info.outlined.focus.ring}",
+    "{components.button.colors.info.outlined.hover.background}",
+    "{components.button.colors.info.outlined.hover.border}",
+    "{components.button.colors.info.outlined.hover.foreground}",
+    "{components.button.colors.info.outlined.press.background}",
+    "{components.button.colors.info.outlined.press.border}",
+    "{components.button.colors.info.outlined.press.foreground}",
+    "{components.button.colors.info.outlined.press.ring}",
+    "{components.button.colors.info.text.default.foreground}",
+    "{components.button.colors.info.text.disable.foreground}",
+    "{components.button.colors.info.text.focus.background}",
+    "{components.button.colors.info.text.focus.foreground}",
+    "{components.button.colors.info.text.focus.ring}",
+    "{components.button.colors.info.text.hover.background}",
+    "{components.button.colors.info.text.hover.foreground}",
+    "{components.button.colors.info.text.press.background}",
+    "{components.button.colors.info.text.press.foreground}",
+    "{components.button.colors.info.text.press.ring}",
     "{components.button.colors.primary.contained.default.background}",
     "{components.button.colors.primary.contained.default.foreground}",
     "{components.button.colors.primary.contained.disable.background}",
@@ -608,19 +1312,97 @@
     "{components.button.colors.secondary.text.press.background}",
     "{components.button.colors.secondary.text.press.foreground}",
     "{components.button.colors.secondary.text.press.ring}",
+    "{components.button.colors.success.contained.default.background}",
+    "{components.button.colors.success.contained.default.foreground}",
+    "{components.button.colors.success.contained.disable.background}",
+    "{components.button.colors.success.contained.disable.foreground}",
+    "{components.button.colors.success.contained.focus.background}",
+    "{components.button.colors.success.contained.focus.foreground}",
+    "{components.button.colors.success.contained.focus.ring}",
+    "{components.button.colors.success.contained.hover.background}",
+    "{components.button.colors.success.contained.hover.foreground}",
+    "{components.button.colors.success.contained.press.background}",
+    "{components.button.colors.success.contained.press.foreground}",
+    "{components.button.colors.success.contained.press.ring}",
+    "{components.button.colors.success.outlined.default.background}",
+    "{components.button.colors.success.outlined.default.border}",
+    "{components.button.colors.success.outlined.default.foreground}",
+    "{components.button.colors.success.outlined.disable.background}",
+    "{components.button.colors.success.outlined.disable.border}",
+    "{components.button.colors.success.outlined.disable.foreground}",
+    "{components.button.colors.success.outlined.focus.background}",
+    "{components.button.colors.success.outlined.focus.border}",
+    "{components.button.colors.success.outlined.focus.foreground}",
+    "{components.button.colors.success.outlined.focus.ring}",
+    "{components.button.colors.success.outlined.hover.background}",
+    "{components.button.colors.success.outlined.hover.border}",
+    "{components.button.colors.success.outlined.hover.foreground}",
+    "{components.button.colors.success.outlined.press.background}",
+    "{components.button.colors.success.outlined.press.border}",
+    "{components.button.colors.success.outlined.press.foreground}",
+    "{components.button.colors.success.outlined.press.ring}",
+    "{components.button.colors.success.text.default.foreground}",
+    "{components.button.colors.success.text.disable.foreground}",
+    "{components.button.colors.success.text.focus.background}",
+    "{components.button.colors.success.text.focus.foreground}",
+    "{components.button.colors.success.text.focus.ring}",
+    "{components.button.colors.success.text.hover.background}",
+    "{components.button.colors.success.text.hover.foreground}",
+    "{components.button.colors.success.text.press.background}",
+    "{components.button.colors.success.text.press.foreground}",
+    "{components.button.colors.success.text.press.ring}",
+    "{components.button.colors.warning.contained.default.background}",
+    "{components.button.colors.warning.contained.default.foreground}",
+    "{components.button.colors.warning.contained.disable.background}",
+    "{components.button.colors.warning.contained.disable.foreground}",
+    "{components.button.colors.warning.contained.focus.background}",
+    "{components.button.colors.warning.contained.focus.foreground}",
+    "{components.button.colors.warning.contained.focus.ring}",
+    "{components.button.colors.warning.contained.hover.background}",
+    "{components.button.colors.warning.contained.hover.foreground}",
+    "{components.button.colors.warning.contained.press.background}",
+    "{components.button.colors.warning.contained.press.foreground}",
+    "{components.button.colors.warning.contained.press.ring}",
+    "{components.button.colors.warning.outlined.default.background}",
+    "{components.button.colors.warning.outlined.default.border}",
+    "{components.button.colors.warning.outlined.default.foreground}",
+    "{components.button.colors.warning.outlined.disable.background}",
+    "{components.button.colors.warning.outlined.disable.border}",
+    "{components.button.colors.warning.outlined.disable.foreground}",
+    "{components.button.colors.warning.outlined.focus.background}",
+    "{components.button.colors.warning.outlined.focus.border}",
+    "{components.button.colors.warning.outlined.focus.foreground}",
+    "{components.button.colors.warning.outlined.focus.ring}",
+    "{components.button.colors.warning.outlined.hover.background}",
+    "{components.button.colors.warning.outlined.hover.border}",
+    "{components.button.colors.warning.outlined.hover.foreground}",
+    "{components.button.colors.warning.outlined.press.background}",
+    "{components.button.colors.warning.outlined.press.border}",
+    "{components.button.colors.warning.outlined.press.foreground}",
+    "{components.button.colors.warning.outlined.press.ring}",
+    "{components.button.colors.warning.text.default.foreground}",
+    "{components.button.colors.warning.text.disable.foreground}",
+    "{components.button.colors.warning.text.focus.background}",
+    "{components.button.colors.warning.text.focus.foreground}",
+    "{components.button.colors.warning.text.focus.ring}",
+    "{components.button.colors.warning.text.hover.background}",
+    "{components.button.colors.warning.text.hover.foreground}",
+    "{components.button.colors.warning.text.press.background}",
+    "{components.button.colors.warning.text.press.foreground}",
+    "{components.button.colors.warning.text.press.ring}",
     "{components.button.sizes.big.border-radius}",
-    "{components.button.sizes.big.font-size}",
     "{components.button.sizes.big.gap}",
+    "{components.button.sizes.big.label-size}",
     "{components.button.sizes.big.padding-x}",
     "{components.button.sizes.big.padding-y}",
     "{components.button.sizes.medium.border-radius}",
-    "{components.button.sizes.medium.font-size}",
     "{components.button.sizes.medium.gap}",
+    "{components.button.sizes.medium.label-size}",
     "{components.button.sizes.medium.padding-x}",
     "{components.button.sizes.medium.padding-y}",
     "{components.button.sizes.small.border-radius}",
-    "{components.button.sizes.small.font-size}",
     "{components.button.sizes.small.gap}",
+    "{components.button.sizes.small.label-size}",
     "{components.button.sizes.small.padding-x}",
     "{components.button.sizes.small.padding-y}",
     "{components.icons.sizes.base}",
@@ -640,6 +1422,6 @@
     "pairs": []
   },
   "warnings": [
-    "Clé du fichier Figma indisponible : lien URL absent des métadonnées."
+    "Lien Figma absent des métadonnées : figma.fileKey est réservé aux plugins privés d’organisation (manifest « enablePrivatePluginApi »). nodeId et fileName restent exploitables."
   ]
 }

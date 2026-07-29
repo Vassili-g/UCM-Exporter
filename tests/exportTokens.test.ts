@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildLeaf, dtcgType, formatValue, indexVariables, insert, isUnitless, toHex } from '../src/tokens/exportTokens';
+import {
+  buildLeaf,
+  dtcgType,
+  formatValue,
+  indexVariables,
+  insert,
+  isUnitless,
+  modeCollisionWarnings,
+  toHex,
+} from '../src/tokens/exportTokens';
 import type { ExportContext } from '../src/tokens/exportTokens';
 
 test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () => {
@@ -85,6 +94,56 @@ test('indexVariables nomme les deux variables en collision et écarte la seconde
     'Collision de tokens : « Foo Bar » et « foo-bar » donnent le même token ' +
       '« brand.foo-bar ». La seconde est ignorée ; renommez-la dans Figma.',
   ]);
+});
+
+test('modeCollisionWarnings signale une fois par collection, pas une fois par variable', () => {
+  const collection = (name: string, modes: string[]) =>
+    ({
+      id: name,
+      name,
+      modes: modes.map((mode, index) => ({ modeId: `m${index}`, name: mode })),
+    }) as unknown as VariableCollection;
+
+  // « Marque 2 » et « marque-2 » se normalisent tous deux en « marque-2 » :
+  // sans avertissement, une marque entière disparaîtrait de $extensions.
+  const warnings = modeCollisionWarnings([
+    collection('Brand Tokens', ['Intencial', 'Marque 2', 'marque-2']),
+    collection('Sizes', ['Mode 1']),
+  ]);
+
+  assert.deepEqual(warnings, [
+    'Collection « Brand Tokens » : deux modes donnent le nom « marque-2 » ; ' +
+      "le premier est conservé. Renommez l'un des deux dans Figma.",
+  ]);
+});
+
+test('buildLeaf garde le premier mode quand deux noms se normalisent pareil', () => {
+  const collection = {
+    id: 'brand',
+    name: 'Brand Tokens',
+    defaultModeId: 'm1',
+    modes: [
+      { modeId: 'm1', name: 'Marque 2' },
+      { modeId: 'm2', name: 'marque-2' },
+    ],
+  } as unknown as VariableCollection;
+  const variable = {
+    id: 'v1',
+    name: 'Primary/default',
+    variableCollectionId: 'brand',
+    resolvedType: 'COLOR',
+    valuesByMode: { m1: { r: 1, g: 0, b: 0 }, m2: { r: 0, g: 0, b: 1 } },
+  } as unknown as Variable;
+
+  const leaf = buildLeaf(variable, collection, {
+    collectionById: new Map([['brand', collection]]),
+    variableById: new Map([['v1', variable]]),
+    pathById: new Map([['v1', 'brand-tokens.primary.default']]),
+  }, []);
+
+  // Premier conservé, comme partout ailleurs ; le doublon est signalé une
+  // seule fois par modeCollisionWarnings, pas à chaque variable.
+  assert.deepEqual(leaf.$extensions, { 'com.ucm.modes': { 'marque-2': '#ff0000' } });
 });
 
 test('buildLeaf type un lineheight aliasé sur spacing comme dimension (racine), pas number', () => {

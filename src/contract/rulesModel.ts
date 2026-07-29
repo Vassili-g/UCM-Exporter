@@ -83,6 +83,12 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       const propName = normalizePropKey(key.slice(0, separator));
       const value = normalizePropValue(key.slice(separator + 1));
       if (!propDescriptions[propName]) propDescriptions[propName] = {};
+      // Deux règles décrivant la même valeur se contredisent : c'est au
+      // designer de trancher, pas à l'export d'arbitrer en silence.
+      if (propDescriptions[propName][value] !== undefined) {
+        warnings.push(`Règle @prop « ${propName}.${value} » dupliquée : seule la première est retenue.`);
+        continue;
+      }
       propDescriptions[propName][value] = content;
     }
   }

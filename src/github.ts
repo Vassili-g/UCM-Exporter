@@ -133,6 +133,18 @@ export async function testGithubConnection(config: GithubConfig): Promise<boolea
   }
 }
 
+/**
+ * Retire une branche d'export qui n'a pas abouti à une PR : l'UI retombe alors
+ * sur le téléchargement local, et personne n'ira jamais voir cette branche.
+ * Son propre échec est ignoré — c'est l'erreur d'origine qui doit remonter à
+ * l'utilisateur, pas celle du ménage qui la suit.
+ */
+async function deleteBranch(config: GithubConfig, repository: string, branch: string): Promise<void> {
+  await githubRequest(config, `/repos/${repository}/git/refs/heads/${encodePath(branch)}`, {
+    method: 'DELETE',
+  }).catch(() => undefined);
+}
+
 /** Lit un fichier sur la branche de base ; `null` signifie qu'il n'existe pas encore. */
 async function getRepositoryFile(
   config: GithubConfig,
@@ -174,25 +186,35 @@ export async function publishArtifact(
     body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseRef.object.sha }),
   });
 
-  await githubRequest(config, `/repos/${repository}/contents/${encodePath(path)}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      message: `Unified Component Exporter: export ${artifact.filename}`,
-      content: encodeBase64(artifact.content),
-      branch,
-      ...(existing?.sha ? { sha: existing.sha } : {}),
-    }),
-  });
+  // Commit et PR sous le même garde : la branche ne sert qu'à porter la PR.
+  let pullRequest: { html_url: string } | null;
+  try {
+    await githubRequest(config, `/repos/${repository}/contents/${encodePath(path)}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        message: `Unified Component Exporter: export ${artifact.filename}`,
+        content: encodeBase64(artifact.content),
+        branch,
+        ...(existing?.sha ? { sha: existing.sha } : {}),
+      }),
+    });
 
-  const pullRequest = await githubRequest<{ html_url: string }>(config, `/repos/${repository}/pulls`, {
-    method: 'POST',
-    body: JSON.stringify({
-      title: `Unified Component Exporter: export ${artifact.filename}`,
-      head: branch,
-      base: config.baseBranch,
-      body: `Export Unified Component Exporter automatisé.\n\nFichier : \`${path}\``,
-    }),
-  });
+    pullRequest = await githubRequest<{ html_url: string }>(config, `/repos/${repository}/pulls`, {
+      method: 'POST',
+      body: JSON.stringify({
+        title: `Unified Component Exporter: export ${artifact.filename}`,
+        head: branch,
+        base: config.baseBranch,
+        body: `Export Unified Component Exporter automatisé.\n\nFichier : \`${path}\``,
+      }),
+    });
+  } catch (error) {
+    await deleteBranch(config, repository, branch);
+    throw error;
+  }
+
+  // Hors du try : une PR bel et bien créée ne doit pas voir sa branche
+  // supprimée sous elle — cela la refermerait aussitôt.
   if (!pullRequest?.html_url) throw new GithubApiError('La PR a été créée sans URL exploitable.');
 
   return { status: 'created', path, branch, pullRequestUrl: pullRequest.html_url };

@@ -114,7 +114,7 @@ export type ChildStructure = {
   slot: string;
   /** Nom Figma d'origine, toujours conservé pour tracer labels et placeholders graphiques. */
   figmaLayer?: string;
-  /** Vrai pour les calques graphiques (icônes…), activables/désactivables. */
+  /** Vrai pour les calques graphiques et pour tout slot qu'une prop peut masquer. */
   optional?: boolean;
   /** Prop BOOLEAN Figma liée nativement à `visible` sur ce calque, si elle existe. */
   visibilityProp?: string;

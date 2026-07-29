@@ -128,6 +128,16 @@ async function extractChild(
   const entry: ChildStructure = { slot: semantic ?? layerName };
   if (semantic && semantic !== child.name) entry.figmaLayer = child.name;
 
+  // Relevé sur TOUS les slots, pas seulement les calques graphiques : sans la
+  // liaison d'un label masquable (bouton à icône seule), le contrat exposerait
+  // une prop booléenne sans dire ce qu'elle montre ou cache. Un slot que l'on
+  // peut masquer est optionnel par construction.
+  const visibilityReference = child.componentPropertyReferences?.visible;
+  if (visibilityReference) {
+    entry.visibilityProp = normalizePropKey(visibilityReference);
+    entry.optional = true;
+  }
+
   if (textNode) {
     const typography = await extractTypography(textNode, resolver, tokenNames, warnings);
     if (typography) entry.typography = typography;
@@ -136,8 +146,6 @@ async function extractChild(
     // Une règle `@icons` peut ensuite qualifier cette icône par son nom Figma.
     entry.figmaLayer = child.name;
     entry.optional = true;
-    const visibilityReference = child.componentPropertyReferences?.visible;
-    if (visibilityReference) entry.visibilityProp = normalizePropKey(visibilityReference);
     const size = await resolveField(child, ['width', 'height'], `${layerName}-size`, resolver, tokenNames, warnings);
     if (size) entry.size = size;
   }

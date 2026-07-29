@@ -43,11 +43,17 @@ export async function extractStructure(
     warnings.push('Aucun node de layout trouvé ; structure de dimensions vide.');
   }
 
-  // Dimensions par taille : on les lit sur le component set qui porte l'axe
-  // de tailles (le wrapper en général), pour couvrir big/medium/small — pas
-  // seulement la taille instanciée par défaut.
-  const sizes = wrapper?.componentSet
-    ? await extractSizeDimensions(wrapper.componentSet, resolver, tokenNames, warnings)
+  // Dimensions par taille, pour couvrir big/medium/small et pas seulement la
+  // taille instanciée par défaut. L'axe de tailles vit d'ordinaire sur le
+  // wrapper de dimensions ; un composant PLAT le porte directement sur son
+  // propre set, qui est le parent du variant de référence. On lit donc celui
+  // qui existe — `findSizeAxis` rend null si aucun axe n'est un axe de
+  // tailles, si bien qu'un composant à taille unique reste sans `sizes`.
+  const ownSet = referenceComponent?.parent;
+  const sizeAxisOwner = wrapper?.componentSet
+    ?? (ownSet?.type === 'COMPONENT_SET' ? ownSet : null);
+  const sizes = sizeAxisOwner
+    ? await extractSizeDimensions(sizeAxisOwner, resolver, tokenNames, warnings)
     : null;
 
   // Le slot texte reprend la couleur `foreground` du variant de référence,

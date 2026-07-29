@@ -63,12 +63,11 @@ export async function extractVariantTokens(
   // liste vide pour ne jamais perdre un variant en silence.
   const axes = matrix.axes.length > 0 ? matrix.axes : ['variant'];
 
-  // Les allers-retours vers l'API Figma restent parallèles, mais RIEN n'est
-  // écrit pendant cette phase : chaque variant collecte ses propres
-  // avertissements. L'ordre où les promesses se règlent ne doit décider ni de
-  // l'ordre des clés, ni de quel variant gagne un conflit — sinon deux exports
-  // d'un design inchangé donneraient des JSON différents, donc une pull request
-  // pour rien. Même découpage que `getSlotTokens` : collecter, puis consommer.
+  // Les appels à l'API Figma restent parallèles, mais RIEN n'est écrit ici —
+  // chaque variant collecte même ses propres avertissements. L'ordre où les
+  // promesses se règlent ne doit décider ni de l'ordre des clés, ni de quel
+  // variant gagne un conflit : sinon deux exports d'un design inchangé
+  // donneraient des JSON différents, donc une pull request pour rien.
   const collected = await Promise.all(
     matrix.variants.map(async (entry: VariantEntry) => {
       const variantWarnings: string[] = [];

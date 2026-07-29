@@ -44,9 +44,12 @@ export function createLogPanel(initialText = '') {
       const marker = document.createTextNode('OK · ');
       const link = document.createElement('a');
       link.href = url;
-      link.target = '_blank';
-      link.rel = 'noreferrer';
       link.textContent = label;
+      // Seul le sandbox Figma sait ouvrir le navigateur : on lui délègue.
+      link.addEventListener('click', (event) => {
+        event.preventDefault();
+        parent.postMessage({ pluginMessage: { type: 'open-external', url } }, '*');
+      });
       line.append(marker, link);
       content.appendChild(line);
       content.scrollTop = content.scrollHeight;
