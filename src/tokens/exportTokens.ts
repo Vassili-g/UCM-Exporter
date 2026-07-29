@@ -5,7 +5,7 @@
  * un alias devient une référence `"{cible}"`, jamais sa valeur finale.
  */
 import normalizeName from '../utils';
-import { firstVariableAlias, joinTokenPath } from '../variables';
+import { collisionWarnings, firstVariableAlias, indexVariables } from '../variables';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type TokensExport = {
@@ -216,43 +216,6 @@ export function modeCollisionWarnings(collections: VariableCollection[]): string
   return warnings;
 }
 
-/**
- * Indexe les variables par chemin canonique. Cette passe précède l'export car
- * un alias a besoin du chemin de sa cible même si elle n'a pas encore été
- * traitée.
- *
- * Deux noms Figma distincts peuvent donner le même token une fois normalisés
- * (« Foo Bar » et « foo-bar »). La première variable garde le chemin ; la
- * seconde est nommée dans un warning et laissée hors des DEUX index : un alias
- * qui la visait est alors signalé introuvable, au lieu de pointer sur la valeur
- * de sa rivale — une référence fausse est pire qu'une référence manquante.
- */
-export function indexVariables(
-  variables: Variable[],
-  collectionById: Map<string, VariableCollection>,
-  warnings: string[],
-): { pathById: Map<string, string>; variableByPath: Map<string, Variable> } {
-  const pathById = new Map<string, string>();
-  const variableByPath = new Map<string, Variable>();
-
-  for (const variable of variables) {
-    const collection = collectionById.get(variable.variableCollectionId);
-    const path = joinTokenPath(collection?.name ?? '', variable.name);
-    const firstVariable = variableByPath.get(path);
-    if (firstVariable) {
-      warnings.push(
-        `Collision de tokens : « ${firstVariable.name} » et « ${variable.name} » donnent le même ` +
-          `token « ${path} ». La seconde est ignorée ; renommez-la dans Figma.`,
-      );
-      continue;
-    }
-    variableByPath.set(path, variable);
-    pathById.set(variable.id, path);
-  }
-
-  return { pathById, variableByPath };
-}
-
 /** Point d'entrée de la commande : exporte toutes les variables locales en DTCG. */
 export async function handleExportTokens(): Promise<TokensExport> {
   const collections = await figma.variables.getLocalVariableCollectionsAsync();
@@ -264,8 +227,11 @@ export async function handleExportTokens(): Promise<TokensExport> {
 
   const collectionById = new Map(collections.map((collection) => [collection.id, collection]));
   const variableById = new Map(variables.map((variable) => [variable.id, variable]));
-  const warnings: string[] = modeCollisionWarnings(collections);
-  const { pathById, variableByPath } = indexVariables(variables, collectionById, warnings);
+  const index = indexVariables(variables, collectionById);
+  const { pathById, variableByPath } = index;
+  // Cette commande exporte TOUTES les variables : elle signale donc toutes les
+  // collisions, là où l'export composant ne signale que celles qu'il rencontre.
+  const warnings: string[] = [...modeCollisionWarnings(collections), ...collisionWarnings(index)];
   const ctx = { collectionById, variableById, pathById };
 
   // Parcourir l'index plutôt que la liste brute : une variable écartée pour
