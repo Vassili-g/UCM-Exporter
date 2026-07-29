@@ -4,13 +4,13 @@ import {
   buildLeaf,
   dtcgType,
   formatValue,
-  indexVariables,
   insert,
   isUnitless,
   modeCollisionWarnings,
   toHex,
 } from '../src/tokens/exportTokens';
 import type { ExportContext } from '../src/tokens/exportTokens';
+import { collisionWarnings, indexVariables } from '../src/variables';
 
 test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () => {
   assert.equal(dtcgType('COLOR', 'primitives.terracota.600'), 'color');
@@ -77,20 +77,20 @@ test('indexVariables nomme les deux variables en collision et écarte la seconde
   // un seul et même token une fois normalisées.
   const first = variable('v1', 'Foo Bar');
   const second = variable('v2', 'foo-bar');
-  const warnings: string[] = [];
 
-  const { pathById, variableByPath } = indexVariables(
-    [first, second],
-    new Map([['brand', collection]]),
-    warnings,
-  );
+  const index = indexVariables([first, second], new Map([['brand', collection]]));
 
-  assert.deepEqual([...variableByPath.keys()], ['brand.foo-bar']);
-  assert.equal(variableByPath.get('brand.foo-bar'), first);
-  // La seconde reste hors de l'index des chemins : un alias qui la vise sera
-  // signalé introuvable, au lieu de pointer en silence sur la valeur de l'autre.
-  assert.equal(pathById.get('v2'), undefined);
-  assert.deepEqual(warnings, [
+  assert.deepEqual([...index.variableByPath.keys()], ['brand.foo-bar']);
+  assert.equal(index.variableByPath.get('brand.foo-bar'), first);
+  // La seconde reste hors de l'index des chemins : les DEUX commandes savent
+  // ainsi qu'aucune référence ne doit la désigner.
+  assert.equal(index.pathById.get('v2'), undefined);
+  assert.deepEqual(index.ambiguous.get('v2'), {
+    name: 'foo-bar',
+    owner: 'Foo Bar',
+    path: 'brand.foo-bar',
+  });
+  assert.deepEqual(collisionWarnings(index), [
     'Collision de tokens : « Foo Bar » et « foo-bar » donnent le même token ' +
       '« brand.foo-bar ». La seconde est ignorée ; renommez-la dans Figma.',
   ]);

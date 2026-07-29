@@ -466,10 +466,13 @@ et non `number` : sans ça, un token `number` référencerait un token `dimensio
 
 - Toutes les variables exportées, chaîne d'alias préservée jusqu'aux
       primitives (aucun maillon aplati, dimensions incluses).
-- Deux variables donnant le même nom normalisé (« Foo Bar » et « foo-bar ») :
-      la première est exportée, la seconde **ignorée avec un warning nommant les
-      deux**. Aucun alias ne pointe alors sur la mauvaise cible — celui qui
-      visait la seconde est signalé introuvable.
+- Deux variables donnant le même nom normalisé (« Foo Bar » et « foo-bar », ou
+      deux collections « Brand Tokens » et « brand-tokens ») : la première est
+      exportée, la seconde **ignorée avec un warning nommant les deux**. Aucun
+      alias ne pointe alors sur la mauvaise cible — celui qui visait la seconde
+      est signalé introuvable. **Les deux commandes tranchent avec le même
+      index** (`indexVariables`, dans `src/variables.ts`) : un contrat ne peut
+      donc pas citer un token que `tokens.json` attribue à une autre variable.
 - Tous les modes de Brand Tokens présents (`$value` défaut + `$extensions`) ;
       collections mono-mode en `$value` seul. Deux modes au même nom normalisé :
       le premier est conservé, avec **un warning par collection** — jamais un

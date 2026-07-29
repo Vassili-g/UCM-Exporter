@@ -12,6 +12,7 @@ import { extractContractProps } from './parsers';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { buildStateModel, defaultRenderingSemantics } from './semantics';
+import { indexVariables, VariableNameResolver } from '../variables';
 import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
@@ -179,7 +180,17 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     warnings.push('Aucune componentPropertyDefinition exposée par le Component Set sélectionné.');
   }
 
-  const extracted = await extractStructure(matrix, matrixWarnings, wrapper, referenceComponent);
+  // Le résolveur reçoit l'index des variables locales pour deux raisons : il y
+  // lit les chemins sans un aller-retour par variable, et il sait quelles
+  // variables partagent un nom — les seules qu'un contrat ne doit jamais citer.
+  const [collections, variables] = await Promise.all([
+    figma.variables.getLocalVariableCollectionsAsync(),
+    figma.variables.getLocalVariablesAsync(),
+  ]);
+  const index = indexVariables(variables, new Map(collections.map((c) => [c.id, c])));
+  const resolver = new VariableNameResolver({ index, warnings });
+
+  const extracted = await extractStructure(matrix, matrixWarnings, wrapper, referenceComponent, resolver);
 
   // La doc par valeur (@prop) s'accroche aux props enum ; l'intention est déjà lue.
   mergePropDescriptions(props, rules.propDescriptions, warnings);

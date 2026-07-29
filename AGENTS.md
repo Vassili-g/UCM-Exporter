@@ -45,7 +45,9 @@ voir [`ROADMAP.md`](./ROADMAP.md).
   - `types.ts` — schéma du contrat.
 - `src/tokens/exportTokens.ts` — commande « Export tokens » (DTCG).
 - `src/utils.ts` + `src/variables.ts` — nommage canonique et résolution
-  d'alias, **communs aux deux commandes**.
+  d'alias, **communs aux deux commandes**. `indexVariables()` y tranche les
+  collisions de noms une seule fois pour les deux : sans cet index partagé, un
+  contrat citerait un token attribué à une autre variable.
 - `src/base64.ts` — codec UTF-8/Base64 compatible avec le sandbox Figma.
 - `src/config.ts` — validation et stockage local de la configuration GitHub.
 - `src/github.ts` — dépôt d'un artefact sur une branche et ouverture d'une PR.
@@ -72,7 +74,9 @@ npm run typecheck # tsc --noEmit seul
   l'export. Seules les préconditions explicitement obligatoires dans la spec
   peuvent le bloquer (sélection invalide, conteneur de règles absent ou vide).
 - **`normalizeName()` unique** : un token s'écrit pareil dans un contrat et
-  dans `tokens.json`.
+  dans `tokens.json`. Il a plusieurs entrées pour une sortie, donc deux
+  variables Figma peuvent se disputer un nom : les départager relève de
+  `indexVariables()`, jamais d'une commande en particulier.
 - Changement de forme du contrat → incrémenter `contractVersion`
   (`src/contract/exportComponent.ts`) **et** mettre à jour `UCM-EXPORTER-SPEC.md`.
 - **Toute modification se termine par une revue des `.md`** : mettre à jour ce
