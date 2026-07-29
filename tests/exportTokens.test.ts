@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildLeaf, dtcgType, formatValue, insert, isUnitless, toHex } from '../src/tokens/exportTokens';
+import { buildLeaf, dtcgType, formatValue, indexVariables, insert, isUnitless, toHex } from '../src/tokens/exportTokens';
 import type { ExportContext } from '../src/tokens/exportTokens';
 
 test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () => {
@@ -45,6 +45,46 @@ test('insert niche les feuilles et refuse les collisions feuille/groupe dans les
 
   assert.deepEqual(tree, { a: { b: { c: { $value: '#111111', $type: 'color' } } } });
   assert.equal(warnings.length, 2);
+});
+
+test('insert conserve la première feuille quand deux tokens partagent un chemin', () => {
+  const tree = {};
+  const warnings: string[] = [];
+
+  insert(tree, 'brand.foo-bar', { $value: '#111111', $type: 'color' }, warnings);
+  insert(tree, 'brand.foo-bar', { $value: '#222222', $type: 'color' }, warnings);
+
+  // Écraser ici perdrait une variable Figma sans que rien ne le dise.
+  assert.deepEqual(tree, { brand: { 'foo-bar': { $value: '#111111', $type: 'color' } } });
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /premier conservé/);
+});
+
+test('indexVariables nomme les deux variables en collision et écarte la seconde', () => {
+  const collection = { id: 'brand', name: 'Brand' } as unknown as VariableCollection;
+  const variable = (id: string, name: string) =>
+    ({ id, name, variableCollectionId: 'brand' }) as unknown as Variable;
+  // « Foo Bar » et « foo-bar » sont deux variables distinctes dans Figma, mais
+  // un seul et même token une fois normalisées.
+  const first = variable('v1', 'Foo Bar');
+  const second = variable('v2', 'foo-bar');
+  const warnings: string[] = [];
+
+  const { pathById, variableByPath } = indexVariables(
+    [first, second],
+    new Map([['brand', collection]]),
+    warnings,
+  );
+
+  assert.deepEqual([...variableByPath.keys()], ['brand.foo-bar']);
+  assert.equal(variableByPath.get('brand.foo-bar'), first);
+  // La seconde reste hors de l'index des chemins : un alias qui la vise sera
+  // signalé introuvable, au lieu de pointer en silence sur la valeur de l'autre.
+  assert.equal(pathById.get('v2'), undefined);
+  assert.deepEqual(warnings, [
+    'Collision de tokens : « Foo Bar » et « foo-bar » donnent le même token ' +
+      '« brand.foo-bar ». La seconde est ignorée ; renommez-la dans Figma.',
+  ]);
 });
 
 test('buildLeaf type un lineheight aliasé sur spacing comme dimension (racine), pas number', () => {

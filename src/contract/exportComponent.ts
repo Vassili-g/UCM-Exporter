@@ -20,7 +20,7 @@ import type { Contract, ContractMeta, ContractProp } from './types';
  * (`{chemin.du.token}`) et non plus comme chemins nus — rupture pour un
  * consommateur qui lisait le chemin littéral.
  */
-const CONTRACT_VERSION = '3.0';
+export const CONTRACT_VERSION = '3.0';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {

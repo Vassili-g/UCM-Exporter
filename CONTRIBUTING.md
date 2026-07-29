@@ -84,7 +84,10 @@ Les commentaires sont en français et doivent aider un lecteur débutant :
   `scripts/run-tests.js` lit le dossier. Aucune liste à tenir à jour.
 - Les exports réels produits sur le fichier Figma de référence sont conservés
   dans `tests/test-exports/` : ils servent de jeux de validation quand la
-  structure Figma ou le code évolue.
+  structure Figma ou le code évolue. Un changement de schéma **ou de texte
+  d'avertissement** les périme : seul un ré-export depuis Figma les rafraîchit,
+  jamais une retouche à la main. Un test verrouille leur `contractVersion` ;
+  le reste tient à cette discipline.
 - Avant PR : `npm test` puis `npm run build` — les deux doivent être verts.
 
 ## Documentation & synchronisation

@@ -368,6 +368,10 @@ et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId`
       d'axes, nichés selon `variantAxes` ; le premier ne contient que des
       références de token `{…}`, le second porte couleur et largeur en
       références `{…}` plus l'alignement Figma nu (`inside`/`center`/`outside`).
+- L'ordre des clés de variantes et celui des `warnings` suivent la **matrice**,
+      jamais l'ordre de réponse de l'API Figma : un design inchangé réexporté
+      redonne le même fichier, condition de l'invariant « aucun changement =
+      aucune PR » (Partie 3).
 - Un rôle absent d'un état signifie qu'il ne doit pas être rendu ; aucun
       consommateur ne fusionne implicitement cet état avec `default`.
 - Tout rôle relevé appartient à `rendering.roles`, et sur le support de sa
@@ -452,6 +456,10 @@ et non `number` : sans ça, un token `number` référencerait un token `dimensio
 
 - Toutes les variables exportées, chaîne d'alias préservée jusqu'aux
       primitives (aucun maillon aplati, dimensions incluses).
+- Deux variables donnant le même nom normalisé (« Foo Bar » et « foo-bar ») :
+      la première est exportée, la seconde **ignorée avec un warning nommant les
+      deux**. Aucun alias ne pointe alors sur la mauvaise cible — celui qui
+      visait la seconde est signalé introuvable.
 - Tous les modes de Brand Tokens présents (`$value` défaut + `$extensions`) ;
       collections mono-mode en `$value` seul.
 - `normalizeName` identique à la Partie 1 (tokens recoupables avec les
