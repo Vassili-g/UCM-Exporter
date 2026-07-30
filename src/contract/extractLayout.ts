@@ -10,10 +10,16 @@ import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
+import { isIconLayer } from './extractIconLayers';
 import { BINDING_PATTERNS, getBinding, resolveField } from './nodeBindings';
 import { normalizePropKey } from './parsers';
-import { semanticSlotName } from './semantics';
-import type { ChildStructure, ContractStructure, TypographyTokens } from './types';
+import { indexedSlotName, semanticSlotName } from './semantics';
+import { composedSlotDependencies, nestedSlotVisibility } from './slotRelations';
+import type {
+  ChildStructure,
+  ContractStructure,
+  TypographyTokens,
+} from './types';
 
 /** La partie « layout » de la structure (sans les tokens de variantes). */
 type LayoutStructure = Omit<
@@ -131,40 +137,30 @@ async function extractTypography(
  *   optionnel, et on relève son token de taille s'il existe. Une règle `@icons`
  *   peut ensuite le qualifier par son nom Figma, sans modifier son slot.
  */
-/**
- * Nom du composant unifié rendu à cet emplacement — que le slot SOIT
- * l'instance ou qu'il l'enveloppe. Une Alert range son bouton dans un calque
- * « Action » : sans ce second cas, le slot ne dirait pas quoi rendre, et un
- * conteneur sans texte serait pris pour un placeholder d'icône.
- */
-function composedSlotName(
-  child: SceneNode,
-  composed: ComposedInstances,
-): string | undefined {
-  const direct = composed.get(child.id);
-  if (direct) return direct;
-  if (composed.size === 0 || !('findAll' in child)) return undefined;
-
-  // Ordre du document : le plus englobant d'abord, donc la dépendance la plus
-  // haute du slot — celles qu'elle contient relèvent de SON contrat.
-  for (const node of child.findAll(() => true)) {
-    const name = composed.get(node.id);
-    if (name) return name;
-  }
-  return undefined;
-}
-
 async function extractChild(
   child: SceneNode,
   resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
   composed: ComposedInstances,
+  iconNames: ReadonlySet<string>,
 ): Promise<ChildStructure> {
   const layerName = normalizeName(child.name).replace(/\./g, '-') || 'unnamed';
-  const composedName = composedSlotName(child, composed);
-  const textNode = composedName ? null : firstTextNode(child, warnings, composed);
-  const semantic = semanticSlotName(Boolean(textNode));
+  const dependencies = composedSlotDependencies(child, composed);
+  const composedDependency = dependencies.length === 1 ? dependencies[0] : undefined;
+  if (dependencies.length > 1) {
+    warnings.push(
+      `Slot « ${child.name} » : ${dependencies.length} composants unifiés directs ` +
+        `(${dependencies.map((dependency) => dependency.component).join(', ')}) ; ` +
+        'le champ children[].composes ne peut en nommer qu’un.',
+    );
+  }
+  const textNode = composedDependency ? null : firstTextNode(child, warnings, composed);
+  // Une dépendance occupe déjà le slot : ce qu'elle contient relève de SON
+  // contrat, y compris ses icônes.
+  const targetsIcon = !composedDependency
+    && getAllNodes(child, [], composed).some((node) => isIconLayer(node, iconNames));
+  const semantic = semanticSlotName(Boolean(textNode), targetsIcon);
 
   const entry: ChildStructure = { slot: semantic ?? layerName };
   if (semantic && semantic !== child.name) entry.figmaLayer = child.name;
@@ -173,18 +169,41 @@ async function extractChild(
   // liaison d'un label masquable (bouton à icône seule), le contrat exposerait
   // une prop booléenne sans dire ce qu'elle montre ou cache. Un slot que l'on
   // peut masquer est optionnel par construction.
-  const visibilityReference = child.componentPropertyReferences?.visible;
+  const directVisibility = child.componentPropertyReferences?.visible;
+  const dependencyVisibility = composedDependency?.visibilityProp;
+  if (
+    directVisibility
+    && dependencyVisibility
+    && normalizePropKey(directVisibility) !== dependencyVisibility
+  ) {
+    warnings.push(
+      `Slot « ${child.name} » : sa visibilité et celle du composant ` +
+        `« ${composedDependency.component} » dépendent de props différentes ; ` +
+        'la visibilité du slot reste prioritaire.',
+    );
+  }
+  // Le slot déjà masquable ne peut pas voir une visibilité plus profonde
+  // devenir la sienne — ce serait en élargir la portée. Elle reste malgré tout
+  // relevée : la taire perdrait en silence une prop que le composant doit lire.
+  const slotIsOptional = Boolean(directVisibility || dependencyVisibility);
+  const nestedVisibility = nestedSlotVisibility(child, composed, slotIsOptional);
+  const visibilityReference = directVisibility
+    ? normalizePropKey(directVisibility)
+    : dependencyVisibility ?? nestedVisibility.visibilityProp;
   if (visibilityReference) {
-    entry.visibilityProp = normalizePropKey(visibilityReference);
+    entry.visibilityProp = visibilityReference;
     entry.optional = true;
+  }
+  if (nestedVisibility.visibilityTargets) {
+    entry.visibilityTargets = nestedVisibility.visibilityTargets;
   }
 
   // Un composant unifié occupe la place d'un slot, mais rien de ce qu'il porte
   // ne se relève ici : sa taille et sa typographie appartiennent à son contrat.
   // Le nommer suffit à dire au consommateur quoi rendre à cet emplacement.
-  if (composedName) {
+  if (composedDependency) {
     entry.figmaLayer = child.name;
-    entry.composes = composedName;
+    entry.composes = composedDependency.component;
     return entry;
   }
 
@@ -219,7 +238,7 @@ function dedupeSlots(children: ChildStructure[]): void {
   for (const child of children) {
     const count = seen.get(child.slot) ?? 0;
     seen.set(child.slot, count + 1);
-    if (count > 0) child.slot = `${child.slot}-${count + 1}`;
+    child.slot = indexedSlotName(child.slot, count);
   }
 }
 
@@ -235,6 +254,9 @@ export async function extractLayout(
   tokenNames: Set<string>,
   warnings: string[],
   composed: ComposedInstances = new Map(),
+  // Noms de calques désignés par les règles `@icons` : ils donnent au slot son
+  // rôle `icon`, stable quand l'icône change d'un variant à l'autre.
+  iconNames: ReadonlySet<string> = new Set(),
 ): Promise<LayoutStructure> {
   const layoutNode = findLayoutNode(root, warnings, composed);
   const [gap, paddingX, paddingY, radius] = await Promise.all([
@@ -270,7 +292,8 @@ export async function extractLayout(
     ? layoutNode.children.filter((child) => exportableNodes.has(child))
     : [];
   const children = await Promise.all(
-    directChildren.map((child) => extractChild(child, resolver, tokenNames, warnings, composed)),
+    directChildren.map((child) =>
+      extractChild(child, resolver, tokenNames, warnings, composed, iconNames)),
   );
   dedupeSlots(children);
 

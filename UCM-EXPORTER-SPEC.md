@@ -115,7 +115,7 @@ est liée à une prop de composant ou à une variable : il peut alors être rend
 dans une autre configuration et reste exporté. Un sous-arbre statiquement
 masqué qui portait des variables produit un warning sur sa racine.
 Les rôles rendables sont exactement ceux de `rendering.roles`
-(`background`, `foreground`, `border`, `ring`) : un rôle hors de cette liste —
+(`background`, `foreground`, `icon`, `border`, `ring`) : un rôle hors de cette liste —
 ou employé sur le mauvais support, tel un `…/border` posé en remplissage —
 donne un contrat valide qu'**aucun consommateur ne saura peindre**, puisqu'un
 rôle inconnu de `rendering.roles` est ignoré au rendu. Le cas produit donc un
@@ -216,13 +216,27 @@ brute ; si aucune propriété n'est exploitable, le bloc `typography` est absent
 
 **6. Structure** — `children` = enfants directs réels du node de layout :
 - calque **texte** → slot `label` (nom d'origine dans `figmaLayer`), avec
-  `typography` (étape 5) et `color` (= `foreground` du variant de référence) ;
-- calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
+  `typography` (étape 5) ;
+- calque **graphique désigné par une règle `@icons`** → slot `icon`, `optional:
+  true`, `size` ;
+- autre calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
+
+Nommer le slot d'icône par son rôle le rend **stable sur toute la matrice** :
+des icônes qui s'excluent entre variants (`circle-info` en info, `circle-check`
+en success) partagent un seul slot, là où leurs noms de calques en auraient
+inventé un par variant. `children` décrivant le variant de référence, seul le
+premier aurait survécu. Le nom Figma reste dans `figmaLayer`, et `icons` fait
+foi sur l'icône à rendre dans chaque combinaison d'axes.
 
 Une prop BOOLEAN Figma liée à la visibilité d'un calque donne `visibilityProp`
 + `optional` sur son slot, **quel que soit le type de calque**. Un label
 masquable (bouton à icône seule) est donc décrit comme tel : sans cela le
 contrat exposerait une prop booléenne sans dire ce qu'elle montre ou cache.
+La liaison peut être portée par un descendant : elle est remontée sur le slot
+uniquement si ce descendant contrôle tout son contenu rendable **et** que le
+slot n'est pas déjà masquable. Sinon `visibilityTargets` conserve la prop et le
+chemin Figma relatif de chaque cible, sans marquer à tort le slot entier comme
+optionnel ni taire une prop que le composant doit lire.
 Une visibilité liée à une variable conserve également le calque, sans inventer
 de prop publique. Un calque statiquement masqué est exclu avec tout son
 sous-arbre ; s'il portait des variables, le warning indique ce qui a été
@@ -252,8 +266,23 @@ une instance d'un composant de configuration (`ComponentConfiguration`) dont la
   - **Politique** — exactement un des calques `modifiable` / `strict` doit
     être visible : le premier autorise le remplacement de l'icône par le
     consommateur, le second impose celle de Figma ;
-  - **Rapprochement** — uniquement par égalité exacte de nom avec le calque
-    graphique ; aucun rôle de position n'est deviné ;
+  - **Rapprochement** — uniquement par égalité exacte de nom avec un calque
+    graphique de l'un des variants ; aucun rôle de position n'est deviné. Les
+    occurrences répétées d'un même calque à travers la matrice sont résumées,
+    tandis que plusieurs occurrences dans un même variant ou des liaisons de
+    visibilité contradictoires produisent un warning ;
+  - **Variants** — si le calque n'existe que dans une partie de la matrice,
+    `icons.<clé>.variants` liste les combinaisons exactes d'axes où il est
+    présent. Le champ est absent lorsqu'il existe dans tous les variants ;
+  - **Emplacement** — `icons.<clé>.slot` nomme le slot de `structure.children`
+    que l'icône remplit, et `icons.<clé>.size` son token de taille. Ces deux
+    champs rendent une icône **auto-suffisante** : celle qui n'existe pas dans
+    le variant de référence n'apparaît dans aucun slot, et sans eux le contrat
+    dirait quand la rendre sans dire ni où ni à quelle taille. Le slot se déduit
+    du **rang** occupé parmi les calques d'icônes du variant, dans l'ordre du
+    document — la même règle que la déduplication des slots (`icon`, `icon-2`).
+    Un rang ou une taille qui change selon les variants produit un warning et
+    aucune valeur déduite ;
   - **Prop runtime** — si le calque graphique lie nativement sa propriété
     Figma `visible` à un BOOLEAN, ce booléen est conservé et une prop runtime
     distincte `<bool>Name` est ajoutée pour une icône `modifiable`. Sans cette
@@ -295,7 +324,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "4.0",
+    "contractVersion": "4.2",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -335,6 +364,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "roles": {
       "background": { "kind": "paint", "cssProperties": ["background-color"] },
       "foreground": { "kind": "paint", "cssProperties": ["color", "fill"] },
+      "icon": { "kind": "paint", "cssProperties": ["color", "fill"] },
       "border": { "kind": "stroke", "cssProperties": ["border-color", "border-width"] },
       "ring": { "kind": "stroke", "cssProperties": ["outline-color", "outline-width"],
                  "fallback": "box-shadow" }
@@ -348,10 +378,10 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
       "small":  { "…": "idem" }
     },
     "children": [
-      { "slot": "arrow-left-long", "figmaLayer": "arrow-left-long", "optional": true,
+      { "slot": "icon", "figmaLayer": "arrow-left-long", "optional": true,
         "visibilityProp": "iconLeft", "size": "{components.icons.sizes.base}" },
       { "slot": "label", "figmaLayer": "Suivant", "typography": { "…": "étape 5" } },
-      { "slot": "arrow-right-long", "figmaLayer": "arrow-right-long", "optional": true,
+      { "slot": "icon-2", "figmaLayer": "arrow-right-long", "optional": true,
         "visibilityProp": "iconRight", "size": "{components.icons.sizes.base}" }
     ],
     "variantAxes": ["color","variant","state"],
@@ -360,8 +390,10 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
   },
   "icons": {
     "arrowLeftLong": { "policy": "modifiable", "figmaName": "arrow-left-long",
+                         "slot": "icon", "size": "{components.icons.sizes.base}",
                          "visibilityProp": "iconLeft", "runtimeProp": "iconLeftName" },
     "arrowRightLong": { "policy": "modifiable", "figmaName": "arrow-right-long",
+                          "slot": "icon-2", "size": "{components.icons.sizes.base}",
                           "visibilityProp": "iconRight", "runtimeProp": "iconRightName" }
   },
   "composes": [],
@@ -386,6 +418,14 @@ calques, ses tokens et ses props appartiennent à son propre contrat. Le slot
 correspondant de `children` la nomme par `composes`, sans relever ni sa taille
 ni sa typographie. Un composant est reconnu comme unifié lorsqu'il possède un
 conteneur `<Nom>-Rules` sur la page — le même critère qui autorise son export.
+Le relevé couvre toute la matrice pour élaguer les dépendances de chaque
+variant. `structure.children` et `composes` décrivent tous deux le variant de
+référence et gardent ainsi le même ordre et la même cardinalité. Si la
+composition varie ailleurs dans la matrice, un warning nomme les variants
+concernés : le schéma courant ne prétend pas représenter un slot composé
+conditionnel qu'il ne sait pas situer dans `structure.children`. Lorsqu'un
+calque enveloppe une seule dépendance, son slot reprend aussi la
+`visibilityProp` de l'instance.
 
 ```json
 "composes": [
@@ -441,7 +481,8 @@ et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId`
       prop ou une variable de visibilité restent présents.
 - Les règles `@icons` distinguent une icône `modifiable` d'une icône
       `strict` par la visibilité de leurs calques dédiés ; le nom du calque
-      `icon` correspond exactement au calque graphique exporté.
+      `icon` correspond exactement à un calque graphique présent dans au moins
+      un variant.
 - `icons` conserve cette qualification sans modifier les props BOOLEAN ;
       une icône `modifiable` ajoute une prop runtime distincte seulement quand
       Figma lie nativement son calque à un BOOLEAN de visibilité.
@@ -596,6 +637,8 @@ GitHub API déclarée dans le manifest.
 | 3.1 | `visibilityProp` relevé sur **tous** les slots, plus seulement les calques graphiques : un label masquable (bouton à icône seule) est enfin décrit — ajout compatible |
 | 3.2 | La règle `@boolean` documente explicitement une prop BOOLEAN dans `props.<prop>.description` — ajout compatible |
 | 4.0 | Composition (`composes`) et assainissement du format — rupture : les dimensions quittent le niveau haut dès que `sizes` existe, `children[label].color` disparaît au profit de `variantTokens`, et `warnings` passe sous `meta` |
+| 4.1 | `visibilityTargets` décrit les visibilités imbriquées sans masquer tout leur slot ; `icons.*.variants` situe exactement une icône absente de certains variants — ajouts compatibles |
+| 4.2 | Un slot d'icône porte le rôle `icon` au lieu du nom de son calque, et `icons.*.slot` / `icons.*.size` rendent chaque icône plaçable — rupture : les slots graphiques désignés par `@icons` changent de nom |
 
 `tokens.json` ne porte pas encore de version de schéma propre — prévu au-delà
 du MVP (cf. [`ROADMAP.md`](./ROADMAP.md)).

@@ -54,9 +54,9 @@ prouve que le modèle dépasse le composant isolé.
 | **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary ; **noms de tokens = chemins**, alias préservés en `var(--…)`) | opérationnel |
 | **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
 | **C1** | Garde-fous CI — contrat exploitable, existence des tokens (références relevées **dans** le contrat ⊆ tokens générés) et cohérence de son index `tokensUsed` ; `npm run check` | opérationnel en local ; GitHub Action en place, premier run à valider (étape 2) |
-| **C2** | Garde-fous CI — parité code ↔ contrat | **noms de props, type et consommation des BOOLEAN opérationnels dès qu'un `.tsx` existe** ; un nouveau contrat peut le précéder ; enums, valeurs par défaut et composition à faire (étape 4) |
+| **C2** | Garde-fous CI — parité code ↔ contrat | **noms de props, type et consommation des BOOLEAN opérationnels dès qu'un `.tsx` existe** ; graphe de composition, portée JSX et cardinalité opérationnels ; comportement des `visibilityProp` testé avec chaque implémentation ; enums et valeurs par défaut à faire (étape 4) |
 | **D** | Playground : rendu live + contexte agent + test froid léger | opérationnel sur Button |
-| **E** | **Composition** : composé minimal, champ `composes`, parité récursive | moteur et garde-fous en place ; à valider par un ré-export d'Alert |
+| **E** | **Composition** : composé minimal, champ `composes`, parité récursive | moteur 4.2 et garde-fous génériques en place ; **ré-export Button/Alert à faire** (le schéma a changé), puis implémentation d'Alert |
 | **F** | Passage à l'échelle : composants simples supplémentaires, guide de rédaction pour les designers, industrialisation | post-MVP |
 
 ## 3. Prochaines étapes
@@ -93,8 +93,15 @@ puis la **parité** (Pilier A), dessinée contre ce cas réel.
    - la parité est **récursive** : un composé est conforme s'il expose ses props
      **et** rend réellement les composants déclarés dans `composes`.
 
-   Reste à faire : **ré-exporter Alert depuis Figma** en contrat 4.0 pour
-   valider la chaîne de bout en bout, puis écrire son `.tsx`.
+   Le moteur 4.2 couvre les icônes présentes seulement dans certains variants,
+   la visibilité imbriquée, le graphe et la cardinalité. Une composition qui
+   varie entre variants est détectée et signalée sans inventer un slot absent
+   de la structure de référence. Un slot d'icône porte désormais le rôle `icon`,
+   stable sur toute la matrice, et chaque icône déclare le slot et la taille qui
+   la rendent — plusieurs icônes qui s'excluent selon un axe sont donc toutes
+   rendables. **Prochain geste : ré-exporter Button et Alert depuis Figma**, le
+   changement de schéma périmant les exports 4.1 ; le `.tsx` d'Alert reste
+   volontairement hors périmètre.
 4. **Parité code ↔ contrat, industrialisée.** Conçue **après** le composé
    minimal de l'étape 3, pour dessiner la parité récursive contre un cas réel.
    Un adaptateur React/TS extrait

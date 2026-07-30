@@ -56,7 +56,10 @@ function setPaintToken(
   const existing = paints[role];
   if (!existing) paints[role] = token;
   else if (existing !== token) {
-    warnings.push(`Calque « ${node.name} » : plusieurs tokens pour le rôle « ${role} » ; premier conservé.`);
+    warnings.push(
+      `Calque « ${node.name} » : plusieurs tokens pour le rôle « ${role} » ; ` +
+        `premier conservé (${existing}), autre ignoré (${token}).`,
+    );
   }
 }
 
@@ -74,7 +77,10 @@ function setStrokeToken(
     return;
   }
   if (existing.color !== value.color || existing.width !== value.width || existing.align !== value.align) {
-    warnings.push(`Calque « ${node.name} » : plusieurs strokes pour le rôle « ${role} » ; premier conservé.`);
+    warnings.push(
+      `Calque « ${node.name} » : plusieurs strokes pour le rôle « ${role} » ; ` +
+        `premier conservé (${existing.color}), autre ignoré (${value.color}).`,
+    );
   }
 }
 
