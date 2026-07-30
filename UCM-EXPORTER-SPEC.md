@@ -1,25 +1,18 @@
 # Unified Component Exporter — spécification
 
-**Sommaire** — Contexte technique · Le design system de référence ·
-**Partie 1** Export composant · **Partie 2** Export tokens ·
-**Partie 3** Configuration & dépôt GitHub · Hors périmètre MVP ·
-Historique du schéma du contrat.
-
 ## Objet
 
-Le concept (pourquoi, arbitrage des sources, co-localisation) vit dans
-[`CONCEPT.md`](./CONCEPT.md). Ce document spécifie les deux artefacts que le
-plugin produit pour le mettre en œuvre :
+Ce document est la référence du comportement actuel du plugin. Le pourquoi et
+la répartition des responsabilités vivent dans [CONCEPT.md](./CONCEPT.md).
 
-- un **contrat de composant** JSON — props, structure, tokens, intention et
-  documentation par valeur (règles lues dans le conteneur `<Nom>-Rules`) ;
-- un **export de tokens** DTCG — toutes les variables, chaîne d'alias préservée.
+Le plugin produit :
 
-Principe directeur : décrire **fidèlement** ce qui existe dans Figma, dans un
-**vocabulaire partagé**. Fidèle signifie fidèle à la *sémantique visuelle* du
-composant (taille, label, états), pas aux noms de calques accidentels. La
-résolution des assets et l'API applicative restent à la charge du repository
-consommateur.
+- un contrat JSON décrivant la partie visuelle d’un composant ;
+- un export DTCG des variables locales, avec leurs alias et leurs modes.
+
+Le moteur conserve la traçabilité Figma tout en exprimant la sémantique
+visuelle dans un vocabulaire stable. Les assets et l’API applicative restent
+du ressort du repository consommateur.
 
 ## Contexte technique
 
@@ -45,40 +38,19 @@ consommateur.
   consommateur retire `{…}` avant de résoudre. Un nom de **style de texte** n'est
   pas un token : il reste une chaîne nue et n'entre pas dans `tokensUsed`.
 
-## Le design system de référence (un exemple, pas un prérequis)
+## Hypothèses sur le design system
 
-Le moteur n'exige **presque rien** de cette structure : il lit dynamiquement
-les collections, les variables et leurs alias, quels que soient leurs noms.
-Une seule contrainte de nommage existe, et elle est vérifiée : le **dernier
-segment d'un token de couleur nomme son rôle visuel** (cf. Partie 1, étape 2).
-La table ci-dessous décrit le **fichier Figma de référence** du MVP — une
-organisation réaliste qui sert de cas de validation, pas une contrainte du
-plugin. Collections de variables, par tiers d'alias :
+Les noms de collections et le nombre de niveaux d’alias sont libres. Le moteur
+gère les chaînes profondes et les alias de tous types.
 
-| Tier | Collection | Rôle |
-|---|---|---|
-| 1 | **Primitives** | palettes brutes — feuilles, aucun alias sortant |
-| 2 | **Brands** | palettes par marque → alias vers Primitives |
-| 3 | **Brand Tokens** | couleurs de marque par emphase (`strong`…`subtlest`) ; **les modes = les marques** (1 mode = 1 marque) |
-| 4 | **Utilities** | sémantiques Success / Info / Warning / Danger / Neutral → alias |
-| 5 | **Components** | mapping par composant → alias Brand Tokens / Utilities, plus les dimensions par taille (`Sizes`) |
-| 6 | **Sizes** | `Spacing` (feuilles px), `FontSize` → `Spacing` |
-| 7 | **Layouts** | `Sizing` / `Radius` / `Stroke` / `FontFamily` / `FontWeight` / `LineHeight` / `TextScale` |
+Une convention est nécessaire pour les couleurs de variante : le dernier
+segment du token nomme son rôle de rendu (`background`, `foreground`, `icon`,
+`border` ou `ring`). Les autres rôles sont signalés, car le consommateur ne
+saurait pas les peindre.
 
-Deux propriétés structurantes :
-
-- **Chaîne d'alias profonde** (jusqu'à 4 sauts :
-  Components → Brand Tokens → Brands → Primitives → hex). Le plugin **préserve
-  chaque maillon** comme référence, n'aplatit **jamais**.
-- **Alias cross-type** : les dimensions aussi sont aliasées
-  (`FontSize→Spacing`, `Sizing→Spacing`, `TextScale→FontSize`). La résolution
-  s'applique à **tous** les types de variables, pas seulement COLOR.
-
-Nommage réel (exemple Button) : couleurs sous
-`Components/Button/Colors/{color}/{variant}/{state}/{role}` (30 combinaisons =
-`2 couleurs × 3 variantes × 5 états`) ; dimensions sous
-`Components/Button/Sizes/{Big,Medium,Small}/{gap,padding-x,padding-y,border-radius,font-size}`.
-Collections au pluriel (`Sizes`, `Layouts`), nom de composant au singulier.
+Le fichier Figma de référence utilise plusieurs niveaux — primitives, marques,
+tokens sémantiques, composants et dimensions — uniquement pour éprouver cette
+généricité. Sa structure n’est pas imposée aux autres design systems.
 
 ---
 
@@ -93,8 +65,9 @@ sont auto-détectées (nom d'axe, valeurs, rôle de calque) et centralisées dan
 "COMPONENT_SET"`, sinon erreur UI explicite) **portant des règles** dans un
 conteneur `<Nom>-Rules` (sinon export bloqué, cf. étape 7) et dont toutes les
 combinaisons de valeurs d'axes existent réellement. Si une combinaison manque,
-l'export est bloqué avant l'extraction : le message donne le nombre attendu,
-le nombre présent, cinq variants à créer au plus et le geste exact dans Figma.
+l'export est bloqué avant l'extraction. Le message montre jusqu’à cinq variants
+présents, jusqu’à cinq combinaisons absentes, puis explique pourquoi ces
+combinaisons seraient pourtant accessibles comme props indépendantes.
 Une exception volontaire n'est pas inventée silencieusement : le schéma actuel
 décrit des props indépendantes et ne sait pas exprimer une combinaison interdite.
 
@@ -460,67 +433,21 @@ et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId`
 
 ### Invariants
 
-- `props` : tous les axes `VARIANT`/`BOOLEAN`/`TEXT` + props du wrapper ;
-      axe `State` exclu, `Disable` → `disabled`.
-- Couche sémantique appliquée (ex. tailles → `size`) avec `figmaName`
-      conservé ; le même nom public est utilisé par `props`, `variantAxes` et
-      les valeurs des variants ; aucun mapping lié à un composant précis.
-- Toutes les combinaisons des valeurs d'axes existent ; sinon export bloqué
-      avec le compte attendu/présent, les variants manquants et une instruction
-      Figma. Le contrat courant ne prétend jamais que des enums indépendantes
-      acceptent un cas absent.
-- `variantTokens` et `variantStrokes` couvrent **toutes** les combinaisons
-      d'axes, nichés selon `variantAxes` ; le premier ne contient que des
-      références de token `{…}`, le second porte couleur et largeur en
-      références `{…}` plus l'alignement Figma nu (`inside`/`center`/`outside`).
-- L'ordre des clés de variantes et celui des `warnings` suivent la **matrice**,
-      jamais l'ordre de réponse de l'API Figma : un design inchangé réexporté
-      redonne le même fichier, condition de l'invariant « aucun changement =
-      aucune PR » (Partie 3).
-- Un rôle absent d'un état signifie qu'il ne doit pas être rendu ; aucun
-      consommateur ne fusionne implicitement cet état avec `default`.
-- Tout rôle relevé appartient à `rendering.roles`, et sur le support de sa
-      nature déclarée (`paint`/`stroke`) ; sinon **warning agrégé**, un par
-      rôle fautif — jamais un par variante.
-- `stateModel` mappe les états connus vers leurs déclencheurs et expose
-      une priorité déterministe ; les états inconnus restent visibles avec un
-      warning.
-- `rendering.roles` documente le rendu partagé des rôles visuels.
-- Typographie remplie en références de token `{…}` (**test n°1**), fallback
-      `fontStyle` géré ; un style de texte reste un nom nu, hors `tokensUsed`.
-- Dimensions extraites du wrapper si présent, sinon du composant ;
-      `structure.sizes` couvre chaque valeur de l'axe de tailles. Une dimension
-      composée partielle ou asymétrique vaut `null` avec warning.
-- `meta` présent : `contractVersion`, `exportedAt`, traçabilité Figma
-      (fileName, nodeId, componentKey, url — null toléré avec warning).
-- `children` = vrais calques (texte → `label` + `figmaLayer` ; graphique →
-      nom conservé dans `figmaLayer` + `optional` + `size`). Tout slot dont une
-      prop BOOLEAN pilote la visibilité porte `visibilityProp` + `optional`.
-      Les sous-arbres statiquement masqués sont exclus ; ceux pilotés par une
-      prop ou une variable de visibilité restent présents.
-- Les règles `@icons` distinguent une icône `modifiable` d'une icône
-      `strict` par la visibilité de leurs calques dédiés ; le nom du calque
-      `icon` correspond exactement à un calque graphique présent dans au moins
-      un variant.
-- `icons` conserve cette qualification sans modifier les props BOOLEAN ;
-      une icône `modifiable` ajoute une prop runtime distincte seulement quand
-      Figma lie nativement son calque à un BOOLEAN de visibilité.
-- Aucune valeur brute de design exportée ; tout token cité l'est comme
-      référence `{…}` ; une largeur de stroke non tokenisée vaut `null` avec
-      warning, tandis que l'alignement structurel Figma
-      (`inside`/`center`/`outside`) est conservé nu.
-- Une variable liée ou sa collection introuvable ne produit aucune référence :
-      le warning cite le premier calque et le champ concernés.
-- Un seul conteneur `<Nom>-Rules` est lu ; s'il y en a plusieurs sur la page,
-      le premier est retenu **avec un warning** — aucune règle ne disparaît en
-      silence. Deux `@prop` visant la même valeur : la première est retenue,
-      le doublon est signalé. Même règle pour deux `@boolean` visant la même
-      prop.
-- Règles lues dans le conteneur `<Nom>-Rules` : `@usage`/`@do`/`@dont`/`@pairs`
-      → `intent`, `@prop` → `props.<prop>.descriptions.<valeur>`, `@boolean` →
-      `props.<prop>.description` ; conteneur absent/vide → **export bloqué** ;
-      règle invalide → warning ; jamais d'écriture Figma.
-- Résultats aussi fidèles sur un composant **non-Button**.
+- Le moteur ne dépend d’aucun nom de composant.
+- Une même clé publique relie `props`, `variantAxes` et les arbres de
+  variantes ; les noms Figma d’origine restent traçables.
+- La matrice est complète et son ordre rend l’export déterministe.
+- Le contrat ne contient aucune valeur de design brute : seulement des
+  références `{…}` et les données structurelles explicitement prévues.
+- Une liaison composée, une taille ou un contour partiel ne devient jamais une
+  valeur supposée.
+- Les calques statiquement masqués sont exclus ; les visibilités pilotées
+  restent représentées.
+- Les composants imbriqués contractés sont déclarés dans `composes` sans
+  réexporter leurs internes.
+- Le conteneur `<Nom>-Rules` est obligatoire. Une règle invalide avertit sans
+  inventer de prop ou d’icône.
+- `meta` porte la version, la date, les avertissements et la traçabilité Figma.
 
 ---
 
@@ -571,27 +498,13 @@ et non `number` : sans ça, un token `number` référencerait un token `dimensio
 
 ### Invariants
 
-- Toutes les variables exportées, chaîne d'alias préservée jusqu'aux
-      primitives (aucun maillon aplati, dimensions incluses).
-- Deux variables donnant le même nom normalisé (« Foo Bar » et « foo-bar », ou
-      deux collections « Brand Tokens » et « brand-tokens ») : la première est
-      exportée, la seconde **ignorée avec un warning nommant les deux**. Aucun
-      alias ne pointe alors sur la mauvaise cible — celui qui visait la seconde
-      est signalé introuvable. **Les deux commandes tranchent avec le même
-      index** (`indexVariables`, dans `src/variables.ts`) : un contrat ne peut
-      donc pas citer un token que `tokens.json` attribue à une autre variable.
-- Un chemin ne peut pas être à la fois une feuille et un groupe
-      (`brand.foo` / `brand.foo.bar`) : l'index commun conserve la première
-      variable rencontrée, écarte l'autre avant de construire l'arbre et refuse
-      toute référence vers la variable écartée. L'ordre Figma ne peut donc
-      produire ni écrasement ni alias pendant.
-- Tous les modes de Brand Tokens présents (`$value` défaut + `$extensions`) ;
-      collections mono-mode en `$value` seul. Deux modes au même nom normalisé :
-      le premier est conservé, avec **un warning par collection** — jamais un
-      par variable.
-- `normalizeName` identique à la Partie 1 (tokens recoupables avec les
-      `tokensUsed`).
-- JSON DTCG valide, consommable par Style Dictionary.
+- Toutes les variables et tous leurs modes sont conservés au format DTCG.
+- Les alias restent des références, quel que soit leur type.
+- Les contrats et l’export DTCG partagent `normalizeName()` et
+  `indexVariables()`.
+- Une collision de chemin ou feuille/groupe conserve la première variable,
+  écarte l’autre avec un warning et refuse tout alias vers la cible écartée.
+- La sortie reste consommable par Style Dictionary.
 
 ---
 
@@ -631,13 +544,12 @@ automatique vers le téléchargement local avec message explicite.
 
 ### Invariants
 
-- Tous les champs sont persistés et validés inline ; les paths sont
-      normalisés et restent relatifs.
+- Tous les champs sont validés ; les chemins restent relatifs.
 - PAT masqué, jamais renvoyé à l'UI ni logué.
 - Test de connexion automatique à l'ouverture et après sauvegarde.
 - Une commande = une PR avec son unique artefact ; aucun auto-merge.
 - Aucune branche ne survit à un export qui n'a pas ouvert de PR : si le commit
-      ou la PR échoue, la branche créée est supprimée avant le repli local.
+  ou la PR échoue, la branche créée est supprimée avant le repli local.
 - Aucun changement = aucune PR (comparaison insensible à `meta.exportedAt`).
 - Toute erreur GitHub conserve l'artefact par téléchargement local.
 
@@ -651,18 +563,15 @@ GitHub API déclarée dans le manifest.
 
 ---
 
-## Historique du schéma du contrat
+## Versions
 
-| Version | Changement |
-|---|---|
-| 1.x | Schéma initial (clé `meta.ucsVersion`) ; la 1.4 ajoute `stateModel`, `rendering`, `variantStrokes` et les règles d'icônes |
-| 2.0 | `meta.ucsVersion` devient `meta.contractVersion` : le schéma du contrat est dissocié du concept — rupture de clé pour les consommateurs |
-| 3.0 | Les tokens sont cités comme références `{chemin.du.token}`, plus jamais comme chemins nus — rupture pour un consommateur qui lisait le chemin littéral |
-| 3.1 | `visibilityProp` relevé sur **tous** les slots, plus seulement les calques graphiques : un label masquable (bouton à icône seule) est enfin décrit — ajout compatible |
-| 3.2 | La règle `@boolean` documente explicitement une prop BOOLEAN dans `props.<prop>.description` — ajout compatible |
-| 4.0 | Composition (`composes`) et assainissement du format — rupture : les dimensions quittent le niveau haut dès que `sizes` existe, `children[label].color` disparaît au profit de `variantTokens`, et `warnings` passe sous `meta` |
-| 4.1 | `visibilityTargets` décrit les visibilités imbriquées sans masquer tout leur slot ; `icons.*.variants` situe exactement une icône absente de certains variants — ajouts compatibles |
-| 4.2 | Un slot d'icône porte le rôle `icon` au lieu du nom de son calque, et `icons.*.slot` / `icons.*.size` rendent chaque icône plaçable — rupture : les slots graphiques désignés par `@icons` changent de nom |
+La version actuelle du contrat est **4.2**. Un consommateur ne doit jamais
+présumer qu’une version mineure est compatible : il accepte uniquement les
+versions qu’il a explicitement auditées.
 
-`tokens.json` ne porte pas encore de version de schéma propre — prévu au-delà
-du MVP (cf. [`ROADMAP.md`](./ROADMAP.md)).
+Toute modification de forme incrémente `meta.contractVersion` et adapte dans le
+même changement la présente spécification, les fixtures et les consommateurs.
+L’historique détaillé appartient à Git.
+
+`tokens.json` ne porte pas encore de version de schéma propre. Cette limite est
+suivie dans [ROADMAP.md](./ROADMAP.md).
