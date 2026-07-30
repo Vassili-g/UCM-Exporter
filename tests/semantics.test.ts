@@ -85,7 +85,7 @@ test('variantRoleWarnings agrège un rôle inconnu en UN seul message, avec un e
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /^Rôle « bg » inconnu de rendering\.roles : non rendu \(3 occurrences, ex\. \{c\./);
   // Le message nomme le geste correctif : les segments attendus dans Figma.
-  assert.match(warnings[0], /background, foreground, border, ring\.$/);
+  assert.match(warnings[0], /background, foreground, icon, border, ring\.$/);
 });
 
 test('variantRoleWarnings signale un rôle connu employé sur le mauvais support', () => {
@@ -107,6 +107,7 @@ test('defaultRenderingSemantics publie le vocabulaire de rendu partagé', () => 
     roles: {
       background: { kind: 'paint', cssProperties: ['background-color'] },
       foreground: { kind: 'paint', cssProperties: ['color', 'fill'] },
+      icon: { kind: 'paint', cssProperties: ['color', 'fill'] },
       border: { kind: 'stroke', cssProperties: ['border-color', 'border-width'] },
       ring: {
         kind: 'stroke',

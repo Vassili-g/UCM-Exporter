@@ -6,9 +6,11 @@
  * → structure (layout, tailles, tokens) → intention → contrat final.
  */
 import { findWrapperReference, groupComponentsByVariant } from './componentTree';
+import { indexContractedNames, scanComposedMatrix } from './composedComponents';
 import { extractRules, hasUsableRules } from './extractRules';
 import { extractStructure } from './extractStructure';
 import { extractContractProps } from './parsers';
+import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { buildStateModel, defaultRenderingSemantics } from './semantics';
@@ -17,9 +19,15 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
- * 3.1 : `visibilityProp` est relevé sur tous les slots — ajout compatible.
+ * 4.2 : un slot d'icône porte le rôle `icon` au lieu du nom de son calque, et
+ * chaque icône déclare le slot et la taille qui la rendent — les icônes qui se
+ * relaient entre variants deviennent toutes rendables.
+ * 4.1 : conditions de variantes des icônes et cibles de visibilité imbriquées.
+ * 4.0 : composition (`composes`) et assainissement du format — les dimensions
+ * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
+ * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '3.1';
+export const CONTRACT_VERSION = '4.2';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
@@ -113,7 +121,7 @@ function mergePropDescriptions(
  * bloqué pour autant : le lien est un confort de relecture, `nodeId` et
  * `fileName` suffisent à retrouver le composant.
  */
-function buildMeta(componentSet: ComponentSetNode): ContractMeta {
+function buildMeta(componentSet: ComponentSetNode): Omit<ContractMeta, 'warnings'> {
   const fileKey = figma.fileKey ?? null;
   const fileName = figma.root.name;
   const nodeId = componentSet.id;
@@ -159,9 +167,22 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   const warnings: string[] = [...rules.warnings];
   const props = extractContractProps(componentSet.componentPropertyDefinitions, warnings);
   const { matrix, warnings: matrixWarnings } = groupComponentsByVariant(componentSet);
-  // Le variant de référence sert de base au layout et à la couleur du label.
+  // Le variant de référence sert de base au layout.
   const referenceComponent = componentSet.defaultVariant ?? matrix.variants[0]?.component ?? null;
-  const wrapper = referenceComponent ? await findWrapperReference(referenceComponent) : null;
+
+  // La composition se relève AVANT toute extraction : un composant unifié
+  // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
+  // conditionne tout ce qui suit.
+  const { composes, composed, warnings: compositionWarnings } = await scanComposedMatrix(
+    matrix.variants.map((entry) => entry.component),
+    referenceComponent,
+    indexContractedNames(figma.currentPage),
+  );
+  warnings.push(...compositionWarnings);
+
+  const wrapper = referenceComponent
+    ? await findWrapperReference(referenceComponent, warnings, composed)
+    : null;
   const stateModel = buildStateModel(
     matrix.axes,
     matrix.variants.map((entry) => entry.values),
@@ -190,15 +211,24 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   const index = indexVariables(variables, new Map(collections.map((c) => [c.id, c])));
   const resolver = new VariableNameResolver({ index, warnings });
 
-  const extracted = await extractStructure(matrix, matrixWarnings, wrapper, referenceComponent, resolver);
+  const extracted = await extractStructure(
+    matrix,
+    matrixWarnings,
+    wrapper,
+    referenceComponent,
+    resolver,
+    composed,
+    rules.iconRules.map((rule) => rule.iconName),
+  );
 
-  // La doc par valeur (@prop) s'accroche aux props enum ; l'intention est déjà lue.
+  // La documentation issue des règles s'accroche aux props de même nature.
   mergePropDescriptions(props, rules.propDescriptions, warnings);
-  const icons = mergeIconRules(props, extracted.structure.children, rules.iconRules, warnings);
+  mergeBooleanDescriptions(props, rules.booleanDescriptions, warnings);
+  const icons = mergeIconRules(props, extracted.iconLayers, rules.iconRules, warnings);
   const intent = rules.intent;
   if (!intent) {
     warnings.push(
-      'Règles présentes mais aucune intention (@usage/@do/@dont/@pairs) — seule la doc par valeur est fournie.',
+      'Règles présentes mais aucune intention (@usage/@do/@dont/@pairs) — seule la documentation de props est fournie.',
     );
   }
 
@@ -214,24 +244,25 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     );
   }
 
+  const allWarnings = Array.from(new Set([...warnings, ...extracted.warnings]));
   const contract: Contract = {
     name: componentSet.name || 'Component',
-    meta,
+    meta: { ...meta, warnings: allWarnings },
     props,
     structure: extracted.structure,
     stateModel,
     rendering: defaultRenderingSemantics(),
     icons,
+    composes,
     tokensUsed: extracted.tokensUsed,
     intent,
-    warnings: Array.from(new Set([...warnings, ...extracted.warnings])),
   };
 
   return {
     filename: safeFilename(contract.name),
     content: JSON.stringify(contract, null, 2),
-    warningCount: contract.warnings.length,
-    warnings: contract.warnings,
+    warningCount: allWarnings.length,
+    warnings: allWarnings,
   };
 }
 

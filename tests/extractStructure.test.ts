@@ -1,8 +1,7 @@
 /**
  * Tests de l'orchestrateur de structure : assemblage layout + tailles +
- * arbres de variantes, et les deux cas limites qui ne se voient pas à l'œil
- * sur un JSON — le composant sans layout, et le rattachement de la couleur
- * du label.
+ * arbres de variantes, et les cas limites qui ne se voient pas à l'œil sur un
+ * JSON — le composant sans layout, et l'unicité des dimensions.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -35,7 +34,7 @@ test('extractStructure survit à un composant sans node de layout', async () => 
   assert.ok(warnings.includes('Aucun node de layout trouvé ; structure de dimensions vide.'));
 });
 
-test('extractStructure rattache au label la couleur foreground du variant de référence', async () => {
+test('extractStructure ne recopie pas la couleur du label hors de variantTokens', async () => {
   const texte = {
     type: 'TEXT',
     name: 'Suivant',
@@ -66,16 +65,18 @@ test('extractStructure rattache au label la couleur foreground du variant de ré
     }),
   );
 
+  // La couleur du label vit dans `variantTokens`, et nulle part ailleurs : elle
+  // dépend du variant, alors qu'un slot est unique. La recopier sur le slot
+  // fige la valeur du variant de référence pour tous les autres.
   const label = structure.children.find((child) => child.slot === 'label');
-  assert.equal(label?.color, '{components.button.colors.primary.contained.default.foreground}');
+  assert.ok(label, 'le slot label doit exister');
+  assert.equal('color' in label, false);
   assert.deepEqual(structure.variantTokens, {
     primary: {
       background: '{components.button.colors.primary.contained.default.background}',
       foreground: '{components.button.colors.primary.contained.default.foreground}',
     },
   });
-  // `tokensUsed` est trié et dédupliqué : le foreground n'y figure qu'une fois,
-  // bien qu'il soit cité par `variantTokens` ET par `children[label].color`.
   assert.deepEqual(tokensUsed, [
     '{components.button.colors.primary.contained.default.background}',
     '{components.button.colors.primary.contained.default.foreground}',
@@ -183,4 +184,33 @@ test('extractStructure lit les tailles d’un composant plat, sans wrapper', asy
   assert.deepEqual(Object.keys(structure.sizes ?? {}), ['small', 'big']);
   assert.equal(structure.sizes?.small.gap, '{components.chip.sizes.small.gap}');
   assert.equal(structure.sizes?.big.gap, '{components.chip.sizes.big.gap}');
+  // Dès que `sizes` existe, les dimensions du niveau haut disparaissent : les
+  // garder recopierait la taille de référence, et une copie finit par mentir.
+  assert.equal('gap' in structure, false);
+  assert.equal('padding' in structure, false);
+  assert.equal('radius' in structure, false);
+});
+
+test('extractStructure garde les dimensions au niveau haut sans axe de tailles', async () => {
+  const reference = {
+    type: 'COMPONENT',
+    name: 'Severity=Info',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+
+  const { structure } = await extractStructure(
+    { axes: ['severity'], variants: [{ values: { severity: 'info' }, component: reference }] },
+    [],
+    null,
+    reference,
+    resolverFor({ gap: 'components.alert.sizes.gap' }),
+  );
+
+  // Sans `sizes`, le niveau haut n'est pas une recopie : c'est le seul endroit
+  // où les dimensions existent. Les retirer les perdrait purement et simplement.
+  assert.equal(structure.gap, '{components.alert.sizes.gap}');
+  assert.equal('sizes' in structure, false);
 });

@@ -54,9 +54,9 @@ prouve que le modèle dépasse le composant isolé.
 | **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary ; **noms de tokens = chemins**, alias préservés en `var(--…)`) | opérationnel |
 | **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
 | **C1** | Garde-fous CI — contrat exploitable, existence des tokens (références relevées **dans** le contrat ⊆ tokens générés) et cohérence de son index `tokensUsed` ; `npm run check` | opérationnel en local ; GitHub Action en place, premier run à valider (étape 2) |
-| **C2** | Garde-fous CI — parité code ↔ contrat | **noms de props opérationnels dès qu'un `.tsx` existe** ; un nouveau contrat peut le précéder ; types, valeurs par défaut et composition à faire (étape 4) |
+| **C2** | Garde-fous CI — parité code ↔ contrat | **noms de props, type et consommation des BOOLEAN opérationnels dès qu'un `.tsx` existe** ; graphe de composition, portée JSX et cardinalité opérationnels ; comportement des `visibilityProp` testé avec chaque implémentation ; enums et valeurs par défaut à faire (étape 4) |
 | **D** | Playground : rendu live + contexte agent + test froid léger | opérationnel sur Button |
-| **E** | **Composition** : composé minimal, champ `composes`, parité récursive | à faire — **priorité structurelle** |
+| **E** | **Composition** : composé minimal, champ `composes`, parité récursive | moteur 4.2 et garde-fous génériques en place ; **ré-export Button/Alert à faire** (le schéma a changé), puis implémentation d'Alert |
 | **F** | Passage à l'échelle : composants simples supplémentaires, guide de rédaction pour les designers, industrialisation | post-MVP |
 
 ## 3. Prochaines étapes
@@ -82,26 +82,33 @@ puis la **parité** (Pilier A), dessinée contre ce cas réel.
      branche**, sans laquelle une PR rouge reste fusionnable ;
    - écrire les premiers tests du playground (`tokenVar`, scripts).
 3. **Composant composé — priorité structurelle.** Les deux natures — simple /
-   composé — sont définies dans [`CONCEPT.md`](./CONCEPT.md) §1.
-   On crée **volontairement** un composé minimal (Card
-   ou Header avec instances imbriquées) pour buter le vrai inconnu de
-   l'architecture :
-   - le plugin doit **reconnaître un nœud `INSTANCE`** d'un autre composant
-     contracté et l'enregistrer comme **dépendance** dans un champ `composes`
-     (au lieu de descendre dans ses calques bruts) ;
-   - le contrat d'un composé ne liste que **ses propres** tokens (fond, gap entre
-     éléments…), jamais les internes des composants qu'il embarque ;
-   - la parité devient **récursive** : un composé est conforme s'il expose ses
-     props **et** utilise réellement les composants déclarés dans `composes`,
-     eux-mêmes conformes.
-   C'est ce cas — pas un 2ᵉ composant simple — qui prouve que le modèle passe à
-   l'échelle de la composition.
+   composé — sont définies dans [`CONCEPT.md`](./CONCEPT.md) §1. Le cas réel est
+   **Alert**, qui embarque un bouton d'action : inutile d'en fabriquer un, il
+   existe et son premier export décrivait un Button. Ce qui est en place :
+   - le plugin **reconnaît un nœud `INSTANCE`** d'un autre composant contracté
+     (critère : il possède son conteneur `<Nom>-Rules`) et l'enregistre dans
+     `composes` au lieu de descendre dans ses calques bruts ;
+   - le contrat d'un composé ne liste que **ses propres** tokens, jamais les
+     internes des composants qu'il embarque ;
+   - la parité est **récursive** : un composé est conforme s'il expose ses props
+     **et** rend réellement les composants déclarés dans `composes`.
+
+   Le moteur 4.2 couvre les icônes présentes seulement dans certains variants,
+   la visibilité imbriquée, le graphe et la cardinalité. Une composition qui
+   varie entre variants est détectée et signalée sans inventer un slot absent
+   de la structure de référence. Un slot d'icône porte désormais le rôle `icon`,
+   stable sur toute la matrice, et chaque icône déclare le slot et la taille qui
+   la rendent — plusieurs icônes qui s'excluent selon un axe sont donc toutes
+   rendables. **Prochain geste : ré-exporter Button et Alert depuis Figma**, le
+   changement de schéma périmant les exports 4.1 ; le `.tsx` d'Alert reste
+   volontairement hors périmètre.
 4. **Parité code ↔ contrat, industrialisée.** Conçue **après** le composé
    minimal de l'étape 3, pour dessiner la parité récursive contre un cas réel.
    Un adaptateur React/TS extrait
    l'API réelle du `.tsx` (via `react-docgen-typescript`) → `Button.code.json`,
-   puis un comparateur liste les écarts avec le contrat (prop manquante, valeur
-   d'enum divergente, état non géré, référence de token cassée, dépendance de
+   puis un comparateur complète le socle existant (noms + BOOLEAN typés et lus) et liste les
+   autres écarts avec le contrat (valeur d'enum divergente, état non géré,
+   référence de token cassée, dépendance de
    composition absente) **et le sens de correction** selon l'arbitrage de
    [`CONCEPT.md`](./CONCEPT.md) §3. Déclencheurs : hook pre-commit (retour local)
    + GitHub Action bloquante sur PR. Prévoir la **déclaration d'une divergence
@@ -118,14 +125,11 @@ puis la **parité** (Pilier A), dessinée contre ce cas réel.
    contrat, version de schéma pour `tokens.json`, exploitation du multi-marque
    (les modes exportés sous `$extensions["com.ucm.modes"]`), diff sémantique des
    contrats pour faciliter les revues, formalisation du protocole de test froid
-   (états comparés, critère de réussite/échec, consignation des résultats), un
-   **contrat 4.0** qui assainit le format (suppression des recopies internes —
-   dimensions du niveau haut vs `sizes`, `children[label].color` vs
-   `variantTokens` — et `warnings` déplacés sous `meta`) — à regrouper avec le
-   changement de schéma de l'étape 3 (`composes`) pour n'imposer qu'un seul
-   cycle de ré-export — puis
+   (états comparés, critère de réussite/échec, consignation des résultats), puis
    passerelles (génération Code Connect, exploitation Storybook). Motivations
    détaillées dans [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §4.
+   L'assainissement du format est fait : il a été groupé avec `composes` dans le
+   contrat 4.0 de l'étape 3, pour n'imposer qu'un seul cycle de ré-export.
 
 > **Principe d'ordonnancement.** On ne conçoit `composes` ni la parité récursive
 > dans l'abstrait : créer volontairement un composé minimal (étape 3) fournit le

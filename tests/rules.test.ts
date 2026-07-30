@@ -1,6 +1,17 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildRules, iconPolicyFromVisibility } from '../src/contract/extractRules';
+import {
+  buildRules,
+  hasUsableRules,
+  iconPolicyFromVisibility,
+  ruleTagFromValue,
+} from '../src/contract/extractRules';
+
+test('ruleTagFromValue reconnaît @boolean comme les autres variantes de règle', () => {
+  assert.equal(ruleTagFromValue('@boolean'), 'boolean');
+  assert.equal(ruleTagFromValue('BOOLEAN'), 'boolean');
+  assert.equal(ruleTagFromValue('@inconnu'), null);
+});
 
 test('buildRules assemble usage / do (répétable) / dont / pairs', () => {
   const { intent, warnings } = buildRules([
@@ -43,6 +54,34 @@ test('buildRules garde la première @prop d’une valeur et signale le doublon',
   assert.deepEqual(propDescriptions, { variant: { contained: 'Première description' } });
   assert.deepEqual(warnings, [
     'Règle @prop « variant.contained » dupliquée : seule la première est retenue.',
+  ]);
+});
+
+test('buildRules range @boolean par nom de prop normalisé', () => {
+  const result = buildRules([
+    { tag: 'boolean', prop: 'icon-left', content: 'Affiche l’icône de gauche.' },
+    { tag: 'boolean', prop: 'Label', content: 'Affiche le libellé.' },
+  ]);
+
+  assert.deepEqual(result.booleanDescriptions, {
+    iconLeft: 'Affiche l’icône de gauche.',
+    label: 'Affiche le libellé.',
+  });
+  assert.deepEqual(result.warnings, []);
+  assert.equal(hasUsableRules(result), true);
+});
+
+test('buildRules garde la première @boolean et signale cible absente et doublon', () => {
+  const { booleanDescriptions, warnings } = buildRules([
+    { tag: 'boolean', prop: 'icon-left', content: 'Première description' },
+    { tag: 'boolean', prop: 'Icon Left', content: 'Seconde description' },
+    { tag: 'boolean', prop: ' ', content: 'Sans cible' },
+  ]);
+
+  assert.deepEqual(booleanDescriptions, { iconLeft: 'Première description' });
+  assert.deepEqual(warnings, [
+    'Règle @boolean « iconLeft » dupliquée : seule la première est retenue.',
+    'Règle @boolean : le calque « prop » doit contenir un nom de prop.',
   ]);
 });
 
