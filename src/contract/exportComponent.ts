@@ -5,16 +5,22 @@
  * Déroulé : sélection → props → matrice de variantes → wrapper de dimensions
  * → structure (layout, tailles, tokens) → intention → contrat final.
  */
-import { findWrapperReference, groupComponentsByVariant } from './componentTree';
+import {
+  findMissingVariantCombinations,
+  findWrapperReference,
+  groupComponentsByVariant,
+} from './componentTree';
+import type { MissingVariantSummary } from './componentTree';
 import { indexContractedNames, scanComposedMatrix } from './composedComponents';
 import { extractRules, hasUsableRules } from './extractRules';
 import { extractStructure } from './extractStructure';
-import { extractContractProps } from './parsers';
+import { extractContractPropertyModel, extractContractProps } from './parsers';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { buildStateModel, defaultRenderingSemantics } from './semantics';
 import { indexVariables, VariableNameResolver } from '../variables';
+import { codeIdentifier } from '../utils';
 import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
@@ -44,6 +50,42 @@ export class ComponentExportError extends Error {
     super(message);
     this.name = 'ComponentExportError';
   }
+}
+
+/** Message bloquant, formulé comme une action Figma plutôt que comme un concept mathématique. */
+export function missingVariantsMessage(
+  componentName: string,
+  summary: MissingVariantSummary,
+): string {
+  const plural = summary.missing > 1;
+  const axes = summary.axes.map(
+    (axis) => `• ${axis.name} : ${axis.values.join(', ')}`,
+  );
+  const present = summary.presentExamples.map((example) => `• ${example}`);
+  const presentRemaining = summary.found - summary.presentExamples.length;
+  const examples = summary.examples.map((example) => `• ${example}`);
+  const remaining = summary.missing - summary.examples.length;
+
+  return [
+    `Export impossible pour « ${componentName} » : il manque ${summary.missing} variant${plural ? 's' : ''} dans le Component Set.`,
+    '',
+    `Figma contient actuellement ${summary.found} variant${summary.found > 1 ? 's' : ''} distinct${summary.found > 1 ? 's' : ''} :`,
+    ...present,
+    ...(presentRemaining > 0
+      ? [`• … et ${presentRemaining} autre${presentRemaining > 1 ? 's' : ''}`]
+      : []),
+    '',
+    `Mais ${plural ? 'ces combinaisons n’existent' : 'cette combinaison n’existe'} dans aucun variant :`,
+    ...examples,
+    ...(remaining > 0 ? [`• … et ${remaining} autre${remaining > 1 ? 's' : ''}`] : []),
+    '',
+    'Pourquoi l’export est bloqué : après l’export, le code peut choisir séparément ces propriétés :',
+    ...axes,
+    `Il pourrait donc demander l’une des combinaisons absentes, mais Figma ne définit ni son rendu ni ses tokens (${summary.expected} combinaisons possibles, ${summary.found} définies).`,
+    '',
+    `Si ${plural ? 'ces variants doivent' : 'ce variant doit'} exister : dans Figma, dupliquez un variant existant puis attribuez-lui exactement les valeurs manquantes indiquées ci-dessus.`,
+    `Si ${plural ? 'ces combinaisons sont' : 'cette combinaison est'} volontairement interdite : ne créez rien ; le format de contrat doit d’abord être étendu pour exprimer cette interdiction.`,
+  ].join('\n');
 }
 
 /** Vérifie que la sélection est bien UN Component Set, sinon erreur claire. */
@@ -142,10 +184,9 @@ function buildMeta(componentSet: ComponentSetNode): Omit<ContractMeta, 'warnings
   };
 }
 
-/** Rend le nom du composant utilisable comme nom de fichier (Windows interdit certains caractères). */
-function safeFilename(name: string): string {
-  const safeName = name.replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-').trim();
-  return `${safeName || 'Component'}.contract.json`;
+/** Le nom de fichier EST l'identifiant de code canonique du composant. */
+export function componentContractFilename(name: string): string {
+  return `${codeIdentifier(name)}.contract.json`;
 }
 
 /** Point d'entrée de la commande : crée le contrat du Component Set sélectionné. */
@@ -165,8 +206,19 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   }
 
   const warnings: string[] = [...rules.warnings];
-  const props = extractContractProps(componentSet.componentPropertyDefinitions, warnings);
-  const { matrix, warnings: matrixWarnings } = groupComponentsByVariant(componentSet);
+  const propertyModel = extractContractPropertyModel(
+    componentSet.componentPropertyDefinitions,
+    warnings,
+  );
+  const props = propertyModel.props;
+  const missingVariants = findMissingVariantCombinations(componentSet);
+  if (missingVariants) {
+    throw new ComponentExportError(missingVariantsMessage(componentSet.name, missingVariants));
+  }
+  const { matrix, warnings: matrixWarnings } = groupComponentsByVariant(
+    componentSet,
+    propertyModel.publicVariantKeyByRawKey,
+  );
   // Le variant de référence sert de base au layout.
   const referenceComponent = componentSet.defaultVariant ?? matrix.variants[0]?.component ?? null;
 
@@ -259,7 +311,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   };
 
   return {
-    filename: safeFilename(contract.name),
+    filename: componentContractFilename(contract.name),
     content: JSON.stringify(contract, null, 2),
     warningCount: allWarnings.length,
     warnings: allWarnings,

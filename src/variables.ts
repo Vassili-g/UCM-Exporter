@@ -79,8 +79,16 @@ export type TokenUsage = {
   field: string;
 };
 
-/** Une variable écartée, et celle qui lui a pris son nom. */
-export type AmbiguousVariable = { name: string; owner: string; path: string };
+/** Une variable écartée, et celle qui occupe déjà tout ou partie de son chemin. */
+export type AmbiguousVariable = {
+  name: string;
+  owner: string;
+  /** Chemin que la variable écartée aurait dû occuper. */
+  path: string;
+  /** Chemin réellement détenu par la première variable. */
+  ownerPath: string;
+  kind: 'same-path' | 'leaf-group';
+};
 
 /**
  * Index canonique des variables LOCALES, partagé par les deux commandes.
@@ -117,9 +125,31 @@ export function indexVariables(
   for (const variable of variables) {
     const collection = collectionById.get(variable.variableCollectionId);
     const path = joinTokenPath(collection?.name ?? '', variable.name);
-    const owner = variableByPath.get(path);
-    if (owner) {
-      ambiguous.set(variable.id, { name: variable.name, owner: owner.name, path });
+    const segments = path.split('.').filter(Boolean);
+    const occupiedPath =
+      // Collision exacte : deux variables donnent la même feuille.
+      (variableByPath.has(path) ? path : null)
+      // Une feuille existante ne peut pas devenir le parent d'un groupe.
+      ?? segments
+        .slice(0, -1)
+        .map((_, index) => segments.slice(0, index + 1).join('.'))
+        .find((prefix) => variableByPath.has(prefix))
+      // Une nouvelle feuille ne peut pas remplacer le groupe implicite d'une
+      // variable déjà rencontrée plus profondément.
+      ?? Array.from(variableByPath.keys()).find((existing) => existing.startsWith(`${path}.`))
+      ?? null;
+
+    if (occupiedPath) {
+      const owner = variableByPath.get(occupiedPath);
+      // `occupiedPath` vient nécessairement des clés de `variableByPath`.
+      if (!owner) continue;
+      ambiguous.set(variable.id, {
+        name: variable.name,
+        owner: owner.name,
+        path,
+        ownerPath: occupiedPath,
+        kind: occupiedPath === path ? 'same-path' : 'leaf-group',
+      });
       continue;
     }
     variableByPath.set(path, variable);
@@ -131,10 +161,19 @@ export function indexVariables(
 
 /** Les collisions de l'index, formulées pour l'export tokens. */
 export function collisionWarnings(index: VariableIndex): string[] {
-  return Array.from(index.ambiguous.values(), (entry) =>
-    `Collision de tokens : « ${entry.owner} » et « ${entry.name} » donnent le même ` +
-    `token « ${entry.path} ». La seconde est ignorée ; renommez-la dans Figma.`,
-  );
+  return Array.from(index.ambiguous.values(), (entry) => {
+    if (entry.kind === 'same-path') {
+      return (
+        `Collision de tokens : « ${entry.owner} » et « ${entry.name} » donnent le même ` +
+        `token « ${entry.path} ». La seconde est ignorée ; renommez-la dans Figma.`
+      );
+    }
+    return (
+      `Collision feuille/groupe : les variables « ${entry.owner} » (« ${entry.ownerPath} ») ` +
+      `et « ${entry.name} » (« ${entry.path} ») ne peuvent pas coexister dans l'arbre des ` +
+      `tokens. La seconde est ignorée ; renommez ou déplacez l'une des deux dans Figma.`
+    );
+  });
 }
 
 /** Ce dont le résolveur a besoin pour ne jamais écrire une référence trompeuse. */
@@ -191,11 +230,14 @@ export class VariableNameResolver {
 
     const ambiguous = index?.ambiguous.get(variableId);
     if (ambiguous) {
-      warnings?.push(
-        `Variable « ${ambiguous.name} » : même nom normalisé que « ${ambiguous.owner} » ` +
+      warnings?.push(ambiguous.kind === 'same-path'
+        ? `Variable « ${ambiguous.name} » : même nom normalisé que « ${ambiguous.owner} » ` +
           `(« ${ambiguous.path} »). Aucune référence n'est écrite — elle désignerait l'autre ` +
-          `variable${location}. Renommez l'une des deux dans Figma.`,
-      );
+          `variable${location}. Renommez l'une des deux dans Figma.`
+        : `Variable « ${ambiguous.name} » : son chemin « ${ambiguous.path} » entre en conflit ` +
+          `avec « ${ambiguous.ownerPath} » (« ${ambiguous.owner} »), car un token ne peut pas ` +
+          `être à la fois une feuille et un groupe. Aucune référence n'est écrite${location}. ` +
+          `Renommez ou déplacez l'une des deux dans Figma.`);
       return null;
     }
 

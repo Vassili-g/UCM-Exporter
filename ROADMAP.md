@@ -99,9 +99,9 @@ puis la **parité** (Pilier A), dessinée contre ce cas réel.
    de la structure de référence. Un slot d'icône porte désormais le rôle `icon`,
    stable sur toute la matrice, et chaque icône déclare le slot et la taille qui
    la rendent — plusieurs icônes qui s'excluent selon un axe sont donc toutes
-   rendables. **Prochain geste : ré-exporter Button et Alert depuis Figma**, le
-   changement de schéma périmant les exports 4.1 ; le `.tsx` d'Alert reste
-   volontairement hors périmètre.
+   rendables. Button et Alert ont été ré-exportés en 4.2 ; le corpus de
+   référence vérifie automatiquement qu'aucun export réel ne reste sur une
+   ancienne version. Le `.tsx` d'Alert reste volontairement hors périmètre.
 4. **Parité code ↔ contrat, industrialisée.** Conçue **après** le composé
    minimal de l'étape 3, pour dessiner la parité récursive contre un cas réel.
    Un adaptateur React/TS extrait

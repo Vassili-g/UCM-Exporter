@@ -1,8 +1,8 @@
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "4.1",
-    "exportedAt": "2026-07-30T10:06:23.010Z",
+    "contractVersion": "4.2",
+    "exportedAt": "2026-07-30T12:27:22.465Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "3:122",
@@ -98,10 +98,10 @@
     "layout": "flex-row",
     "children": [
       {
-        "slot": "arrow-left-long",
+        "slot": "icon",
+        "figmaLayer": "arrow-left-long",
         "visibilityProp": "iconLeft",
         "optional": true,
-        "figmaLayer": "arrow-left-long",
         "size": "{components.icons.sizes.base}"
       },
       {
@@ -117,10 +117,10 @@
         }
       },
       {
-        "slot": "arrow-right-long",
+        "slot": "icon-2",
+        "figmaLayer": "arrow-right-long",
         "visibilityProp": "iconRight",
         "optional": true,
-        "figmaLayer": "arrow-right-long",
         "size": "{components.icons.sizes.base}"
       }
     ],
@@ -1151,12 +1151,16 @@
     "arrowLeftLong": {
       "policy": "modifiable",
       "figmaName": "arrow-left-long",
+      "slot": "icon",
+      "size": "{components.icons.sizes.base}",
       "visibilityProp": "iconLeft",
       "runtimeProp": "iconLeftName"
     },
     "arrowRightLong": {
       "policy": "modifiable",
       "figmaName": "arrow-right-long",
+      "slot": "icon-2",
+      "size": "{components.icons.sizes.base}",
       "visibilityProp": "iconRight",
       "runtimeProp": "iconRightName"
     }
