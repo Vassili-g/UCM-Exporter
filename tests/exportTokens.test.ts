@@ -89,6 +89,8 @@ test('indexVariables nomme les deux variables en collision et écarte la seconde
     name: 'foo-bar',
     owner: 'Foo Bar',
     path: 'brand.foo-bar',
+    ownerPath: 'brand.foo-bar',
+    kind: 'same-path',
   });
   assert.deepEqual(collisionWarnings(index), [
     'Collision de tokens : « Foo Bar » et « foo-bar » donnent le même token ' +

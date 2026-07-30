@@ -54,8 +54,10 @@ voir [`ROADMAP.md`](./ROADMAP.md).
 - `src/tokens/exportTokens.ts` — commande « Export tokens » (DTCG).
 - `src/utils.ts` + `src/variables.ts` — nommage canonique et résolution
   d'alias, **communs aux deux commandes**. `indexVariables()` y tranche les
-  collisions de noms une seule fois pour les deux : sans cet index partagé, un
-  contrat citerait un token attribué à une autre variable.
+  collisions de noms et feuille/groupe une seule fois pour les deux :
+  sans cet index partagé, un contrat citerait un token attribué à une autre
+  variable. `codeIdentifier()` sépare le nom Figma lisible de l'identifiant
+  PascalCase employé par les fichiers et le code.
 - `src/base64.ts` — codec UTF-8/Base64 compatible avec le sandbox Figma.
 - `src/config.ts` — validation et stockage local de la configuration GitHub.
 - `src/github.ts` — dépôt d'un artefact sur une branche et ouverture d'une PR.
@@ -87,7 +89,14 @@ npm run typecheck # tsc --noEmit seul
   d'elles, y compris celles que le variant de référence ne contient pas.
 - **Warnings non bloquants** : une donnée incomplète avertit sans interrompre
   l'export. Seules les préconditions explicitement obligatoires dans la spec
-  peuvent le bloquer (sélection invalide, conteneur de règles absent ou vide).
+  peuvent le bloquer (sélection invalide, conteneur de règles absent/vide,
+  combinaison de variantes manquante).
+- **Un axe public, une seule clé** : lorsqu'un enum est renommé sémantiquement,
+  la table produite avec les props s'applique aussi à `variantAxes` et aux
+  valeurs de chaque variant.
+- **Nom Figma ≠ identifiant de code** : `contract.name` reste exact et lisible ;
+  le nom du fichier est l'identifiant PascalCase canonique. Deux noms qui
+  convergent vers le même identifiant doivent être signalés par le consommateur.
 - **`normalizeName()` unique** : un token s'écrit pareil dans un contrat et
   dans `tokens.json`. Il a plusieurs entrées pour une sortie, donc deux
   variables Figma peuvent se disputer un nom : les départager relève de
@@ -103,7 +112,8 @@ npm run typecheck # tsc --noEmit seul
 
 - Le plugin ne s'exécute que dans Figma : un agent ne peut PAS lancer les
   exports lui-même. Les validations runtime passent par l'utilisateur, qui
-  ré-exporte et dépose les fichiers dans `tests/test-exports/`.
+  ré-exporte et dépose le petit corpus représentatif dans
+  `tests/test-exports/` ; il ne faut jamais y recopier tout le catalogue.
 - Le seul domaine réseau autorisé est `https://api.github.com`, lorsque la
   configuration locale est valide. Le plugin ouvre une PR et
   n'auto-merge jamais ; en cas d'échec, il retombe sur le téléchargement local.

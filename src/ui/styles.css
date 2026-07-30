@@ -264,8 +264,12 @@ p {
 .note {
   /* Réserve ~2 lignes : un message court n'écrase pas la hauteur d'un message long. */
   min-height: 54px;
+  max-height: 180px;
   display: flex;
   align-items: center;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   padding: 9px 10px;
   border-radius: 6px;
   background: var(--figma-color-bg-tertiary, #ebebeb);
