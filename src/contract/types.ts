@@ -127,8 +127,23 @@ export type ChildStructure = {
   size?: string;
   /** Typographie du calque texte : nom de style OU détail par token. */
   typography?: string | TypographyTokens;
-  /** Token de couleur du texte (foreground du variant de référence). */
-  color?: string;
+  /**
+   * Nom du composant unifié rendu à cet emplacement. Le slot est alors une
+   * DÉPENDANCE : ni ses tokens ni ses calques n'appartiennent à ce contrat,
+   * ils vivent dans le sien (cf. `Contract.composes`).
+   */
+  composes?: string;
+};
+
+/**
+ * Un composant unifié embarqué par un composé. `figmaLayer` situe l'instance
+ * dans le composant, `visibilityProp` dit quelle prop la montre ou la masque
+ * lorsque Figma en déclare une.
+ */
+export type ComposedDependency = {
+  component: string;
+  figmaLayer: string;
+  visibilityProp?: string;
 };
 
 /** Politique d'une icône déclarée par la variante de règle `Type=@icons`. */
@@ -200,14 +215,22 @@ export type SizeDimensions = {
   fontSize?: string;
 };
 
-/** La structure visuelle et dimensionnelle du composant. */
+/**
+ * La structure visuelle et dimensionnelle du composant.
+ *
+ * Les dimensions vivent à UN seul endroit : `sizes` quand le composant expose
+ * un axe de tailles, sinon `gap` / `padding` / `radius` au niveau haut. Les
+ * deux ne coexistent jamais — quand `sizes` existe, le niveau haut n'en serait
+ * que la recopie de la taille de référence, et deux copies finissent toujours
+ * par diverger.
+ */
 export type ContractStructure = {
   /** Sens de l'auto-layout Figma, traduit en vocabulaire CSS. */
   layout: 'flex-row' | 'flex-column';
-  /** Dimensions de la taille de référence (celle instanciée par défaut). */
-  gap: string | null;
-  padding: { x: string | null; y: string | null };
-  radius: string | null;
+  /** Dimensions du composant, uniquement s'il n'a PAS d'axe de tailles. */
+  gap?: string | null;
+  padding?: { x: string | null; y: string | null };
+  radius?: string | null;
   /**
    * Dimensions PAR taille quand le composant expose un axe de tailles
    * (clés = valeurs de la prop `size` : big, medium, small…).
@@ -232,6 +255,12 @@ export type ContractMeta = {
   contractVersion: string;
   /** Date/heure de l'export, au format ISO 8601. */
   exportedAt: string;
+  /**
+   * Ce que l'export n'a pas pu décrire, en français et adressé au designer.
+   * Rangé sous `meta` parce qu'il documente l'EXPORT, pas le composant : un
+   * consommateur du contrat n'a jamais à le lire pour rendre un composant.
+   */
+  warnings: string[];
   figma: {
     /** Nom du fichier Figma d'origine. */
     fileName: string;
@@ -259,8 +288,12 @@ export type Contract = {
   rendering: RenderingSemantics;
   /** Icônes qualifiées par les règles Figma, indexées par leur nom normalisé. */
   icons: Record<string, IconDefinition>;
+  /**
+   * Les composants unifiés que celui-ci embarque. Vide pour un composant
+   * simple ; non vide, il fait de ce contrat celui d'un composé.
+   */
+  composes: ComposedDependency[];
   /** Liste à plat, dédupliquée et triée, de tous les tokens consommés. */
   tokensUsed: string[];
   intent: Intent | null;
-  warnings: string[];
 };

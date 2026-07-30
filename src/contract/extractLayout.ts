@@ -9,6 +9,7 @@ import normalizeName from '../utils';
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
 import { getAllNodes } from './exportableNodes';
+import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, getBinding, resolveField } from './nodeBindings';
 import { normalizePropKey } from './parsers';
 import { semanticSlotName } from './semantics';
@@ -29,7 +30,11 @@ export type LayoutRoot = InstanceNode | ComponentNode;
  * sont liées à une variable : celui qui en porte le plus est notre
  * « conteneur de layout ». À défaut, on retombe sur la racine.
  */
-export function findLayoutNode(root: LayoutRoot, warnings: string[] = []): SceneNode {
+export function findLayoutNode(
+  root: LayoutRoot,
+  warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
+): SceneNode {
   const fields = [
     'itemSpacing',
     'paddingLeft',
@@ -38,7 +43,7 @@ export function findLayoutNode(root: LayoutRoot, warnings: string[] = []): Scene
     'paddingBottom',
     'cornerRadius',
   ];
-  const candidates = getAllNodes(root, warnings).map((node) => ({
+  const candidates = getAllNodes(root, warnings, composed).map((node) => ({
     node,
     score: fields.reduce((total, field) => total + (getBinding(node, field) ? 1 : 0), 0),
   }));
@@ -46,10 +51,18 @@ export function findLayoutNode(root: LayoutRoot, warnings: string[] = []): Scene
   return candidates[0]?.score ? candidates[0].node : root;
 }
 
-/** Renvoie le premier calque TEXTE d'un sous-arbre, ou null s'il n'y en a pas. */
-export function firstTextNode(node: SceneNode, warnings: string[] = []): TextNode | null {
+/**
+ * Renvoie le premier calque TEXTE d'un sous-arbre, ou null s'il n'y en a pas.
+ * Le libellé d'un composant embarqué n'en est pas un : sans l'élagage, une
+ * Alert emprunterait la typographie du bouton qu'elle contient.
+ */
+export function firstTextNode(
+  node: SceneNode,
+  warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
+): TextNode | null {
   if (node.type === 'TEXT') return node;
-  const text = getAllNodes(node, warnings).find((child) => child.type === 'TEXT');
+  const text = getAllNodes(node, warnings, composed).find((child) => child.type === 'TEXT');
   return (text as TextNode | undefined) ?? null;
 }
 
@@ -123,9 +136,11 @@ async function extractChild(
   resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
+  composed: ComposedInstances,
 ): Promise<ChildStructure> {
   const layerName = normalizeName(child.name).replace(/\./g, '-') || 'unnamed';
-  const textNode = firstTextNode(child, warnings);
+  const composedName = composed.get(child.id);
+  const textNode = composedName ? null : firstTextNode(child, warnings, composed);
   const semantic = semanticSlotName(Boolean(textNode));
 
   const entry: ChildStructure = { slot: semantic ?? layerName };
@@ -139,6 +154,15 @@ async function extractChild(
   if (visibilityReference) {
     entry.visibilityProp = normalizePropKey(visibilityReference);
     entry.optional = true;
+  }
+
+  // Un composant unifié occupe la place d'un slot, mais rien de ce qu'il porte
+  // ne se relève ici : sa taille et sa typographie appartiennent à son contrat.
+  // Le nommer suffit à dire au consommateur quoi rendre à cet emplacement.
+  if (composedName) {
+    entry.figmaLayer = child.name;
+    entry.composes = composedName;
+    return entry;
   }
 
   if (textNode) {
@@ -187,8 +211,9 @@ export async function extractLayout(
   resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
+  composed: ComposedInstances = new Map(),
 ): Promise<LayoutStructure> {
-  const layoutNode = findLayoutNode(root, warnings);
+  const layoutNode = findLayoutNode(root, warnings, composed);
   const [gap, paddingX, paddingY, radius] = await Promise.all([
     resolveField(layoutNode, BINDING_PATTERNS.gap, 'gap', resolver, tokenNames, warnings),
     resolveField(
@@ -217,12 +242,12 @@ export async function extractLayout(
     ),
   ]);
 
-  const exportableNodes = new Set(getAllNodes(layoutNode, warnings));
+  const exportableNodes = new Set(getAllNodes(layoutNode, warnings, composed));
   const directChildren = 'children' in layoutNode
     ? layoutNode.children.filter((child) => exportableNodes.has(child))
     : [];
   const children = await Promise.all(
-    directChildren.map((child) => extractChild(child, resolver, tokenNames, warnings)),
+    directChildren.map((child) => extractChild(child, resolver, tokenNames, warnings, composed)),
   );
   dedupeSlots(children);
 

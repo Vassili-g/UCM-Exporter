@@ -8,6 +8,7 @@
  */
 import type { TokenResolver } from '../variables';
 import { getVariantAxes, getVariantValues } from './componentTree';
+import type { ComposedInstances } from './exportableNodes';
 import { findLayoutNode, firstTextNode } from './extractLayout';
 import { BINDING_PATTERNS, resolveField } from './nodeBindings';
 import { semanticEnumName } from './semantics';
@@ -38,9 +39,10 @@ async function extractDimensions(
   resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
+  composed: ComposedInstances,
 ): Promise<SizeDimensions> {
-  const layoutNode = findLayoutNode(component, warnings);
-  const textNode = firstTextNode(component, warnings);
+  const layoutNode = findLayoutNode(component, warnings, composed);
+  const textNode = firstTextNode(component, warnings, composed);
   // Le libellé passé à resolveField sert aux warnings : on précise la taille
   // pour qu'un token manquant soit localisable (ex. « gap (small) »).
   const [gap, paddingX, paddingY, radius, fontSize] = await Promise.all([
@@ -104,6 +106,7 @@ export async function extractSizeDimensions(
   resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
+  composed: ComposedInstances = new Map(),
 ): Promise<Record<string, SizeDimensions> | null> {
   const components = componentSet.children.filter(
     (node): node is ComponentNode => node.type === 'COMPONENT',
@@ -121,7 +124,14 @@ export async function extractSizeDimensions(
 
   const sizes: Record<string, SizeDimensions> = {};
   for (const [value, component] of representatives) {
-    sizes[value] = await extractDimensions(component, value, resolver, tokenNames, warnings);
+    sizes[value] = await extractDimensions(
+      component,
+      value,
+      resolver,
+      tokenNames,
+      warnings,
+      composed,
+    );
   }
   return sizes;
 }

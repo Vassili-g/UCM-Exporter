@@ -6,6 +6,7 @@
 import { toRef, variableAliases } from '../variables';
 import type { TokenResolver } from '../variables';
 import { getAllNodes } from './exportableNodes';
+import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, getBinding, resolveTokenName } from './nodeBindings';
 import type { SlotStrokes, SlotTokens, StrokeAlignment, StrokeTokens } from './types';
 export type { TokenResolver } from '../variables';
@@ -82,6 +83,7 @@ export async function getSlotTokens(
   component: ComponentNode,
   resolver: TokenResolver,
   warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
 ): Promise<VariantTokenLeaves> {
   const pending: Array<{
     node: SceneNode;
@@ -94,7 +96,7 @@ export async function getSlotTokens(
     Promise<{ width: string | null; align: StrokeAlignment | null }>
   >();
 
-  for (const node of getAllNodes(component, warnings)) {
+  for (const node of getAllNodes(component, warnings, composed)) {
     for (const field of BOUND_FIELDS) {
       for (const alias of variableAliases(getBinding(node, field))) {
         let stroke = field === 'strokes' ? strokeStyles.get(node) ?? null : null;

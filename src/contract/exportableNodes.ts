@@ -4,6 +4,11 @@
  * Un calque masqué reste pertinent si une prop ou une variable peut le rendre
  * visible. À l'inverse, un sous-arbre statiquement masqué est élagué avant
  * toute extraction pour qu'il ne fournisse ni tokens, ni slots, ni wrapper.
+ *
+ * Deuxième motif d'élagage : les composants unifiés imbriqués. Leurs calques
+ * appartiennent à LEUR contrat, pas à celui du composé qui les embarque
+ * (cf. `composedComponents.ts`) ; l'instance elle-même reste visible, car le
+ * composé doit pouvoir la décrire comme un de ses slots.
  */
 import { variableAliases } from '../variables';
 import { getBinding } from './nodeBindings';
@@ -49,6 +54,35 @@ function pushOnce(warnings: string[], warning: string): void {
 }
 
 /**
+ * Les composants unifiés imbriqués d'un sous-arbre : id de l'instance → nom du
+ * composant. Une seule structure sert les deux besoins — élaguer le parcours
+ * (`has`) et nommer la dépendance dans le contrat (`get`).
+ */
+export type ComposedInstances = ReadonlyMap<string, string>;
+
+/**
+ * Vrai si un ancêtre STRICT du node, sous la racine, est une instance composée.
+ *
+ * La remontée d'ancêtres vit ici, avec les autres règles de parcours, pour
+ * n'exister qu'une fois : `getAllNodes` s'en sert pour élaguer, et
+ * `composedComponents` pour ne déclarer que ses dépendances directes.
+ */
+export function hasAncestorIn(
+  node: SceneNode,
+  root: SceneNode,
+  composed: ComposedInstances,
+): boolean {
+  if (composed.size === 0) return false;
+
+  let current: BaseNode | null | undefined = node.parent;
+  while (current && current !== root) {
+    if (composed.has(current.id)) return true;
+    current = current.parent;
+  }
+  return false;
+}
+
+/**
  * Renvoie la racine et les descendants qui peuvent être rendus.
  *
  * La racine contractée reste toujours lisible : sa visibilité sur le canvas
@@ -56,13 +90,24 @@ function pushOnce(warnings: string[], warning: string): void {
  * un parent statiquement masqué élague tout son sous-arbre. Un seul warning
  * est produit si ce sous-arbre portait des variables ; un simple repère de
  * travail masqué est ignoré sans bruit.
+ *
+ * `composed` élague de la même façon les composants unifiés imbriqués, mais
+ * SANS avertir : leurs calques ne sont pas perdus, ils sont décrits par leur
+ * propre contrat et l'instance reste listée dans `composes`.
  */
-export function getAllNodes(root: SceneNode, warnings: string[] = []): SceneNode[] {
+export function getAllNodes(
+  root: SceneNode,
+  warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
+): SceneNode[] {
   const descendants = 'findAll' in root ? root.findAll(() => true) : [];
   const ignoredBindings = new Map<SceneNode, boolean>();
   const exportable: SceneNode[] = [root];
 
   for (const node of descendants) {
+    // L'instance composée elle-même n'est pas élaguée : seul son contenu l'est.
+    if (hasAncestorIn(node, root, composed)) continue;
+
     const hidden = hiddenAncestor(node, root);
     if (!hidden) {
       exportable.push(node);
