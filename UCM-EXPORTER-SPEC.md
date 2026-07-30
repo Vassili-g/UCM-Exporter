@@ -91,7 +91,12 @@ sont auto-détectées (nom d'axe, valeurs, rôle de calque) et centralisées dan
 
 **Entrée** : un `COMPONENT_SET` sélectionné (`selection[0].type ===
 "COMPONENT_SET"`, sinon erreur UI explicite) **portant des règles** dans un
-conteneur `<Nom>-Rules` (sinon export bloqué, cf. étape 7).
+conteneur `<Nom>-Rules` (sinon export bloqué, cf. étape 7) et dont toutes les
+combinaisons de valeurs d'axes existent réellement. Si une combinaison manque,
+l'export est bloqué avant l'extraction : le message donne le nombre attendu,
+le nombre présent, cinq variants à créer au plus et le geste exact dans Figma.
+Une exception volontaire n'est pas inventée silencieusement : le schéma actuel
+décrit des props indépendantes et ne sait pas exprimer une combinaison interdite.
 
 ### Algorithme
 
@@ -105,10 +110,12 @@ boolean, `TEXT` → string. Deux règles auto-détectées :
   vocabulaire partagé — ex. un enum dont toutes les valeurs sont des tailles
   (`big/medium/small`, `xs`…`3xl`) → prop `size`. Le nom Figma d'origine est
   conservé dans `figmaName`. Mapping piloté par les **valeurs**, jamais par le
-  composant.
+  composant. La même table de correspondance renomme les clés de
+  `structure.variantAxes` et des valeurs de chaque variant : `props.size`,
+  `variantAxes` et les arbres de tokens ne peuvent pas diverger.
 
-**2. Tokens de variantes** — parcourir **tous** les variants (produit cartésien
-des axes). Pour chacun, relever les tokens liés (`boundVariables.fills` et
+**2. Tokens de variantes** — après le pré-vol de complétude, parcourir **tous**
+les variants du produit cartésien des axes. Pour chacun, relever les tokens liés (`boundVariables.fills` et
 `.strokes` sur tout le sous-arbre), rangés par **rôle = dernier segment du
 token**. Un sous-arbre `visible === false` est ignoré, sauf si sa visibilité
 est liée à une prop de composant ou à une variable : il peut alors être rendu
@@ -177,7 +184,9 @@ arbres sont nichés selon `variantAxes` :
 via un sous-composant partagé, imbriqué dans chaque variant, qui porte seul les
 dimensions : c'est le **wrapper de dimensions**. Le moteur cherche donc une
 instance imbriquée portant des dimensions liées
-(`itemSpacing`/`padding`/`cornerRadius`). Si plusieurs instances en portent,
+(`itemSpacing`/`padding`/`cornerRadius`, ou les quatre rayons de coin). Gap,
+paddings et rayon sont comptés avec les mêmes groupes complets que lors de
+l'extraction : une liaison partielle ne suffit pas à élire un wrapper. Si plusieurs instances en portent,
 celle qui lie le plus de dimensions gagne ; un nom contenant « wrapper » et des
 props exposées servent de départage. S'il en
 existe une (Button : `sizeWrapperButton`), ses props sont **fusionnées** dans l'API
@@ -317,7 +326,12 @@ exportée, **export non bloqué**.
 
 ### Sortie
 
-`<Nom>.contract.json` est téléchargé ou déposé par PR. Il décrit une **API
+`<IdentifiantCode>.contract.json` est téléchargé ou déposé par PR. Le champ
+`name` conserve le nom Figma exact ; le fichier emploie son identifiant
+PascalCase ASCII canonique (`Icon / Button` → `IconButton.contract.json`,
+`2e bouton` → `Component2eBouton.contract.json`). Ce même identifiant nomme le
+dossier, le composant React et son interface `<IdentifiantCode>Props`, sans
+faire du nom d'affichage un identifiant TypeScript. Le contrat décrit une **API
 unifiée** (wrapper + set comme un seul composant). Exemple Button :
 
 ```json
@@ -449,7 +463,12 @@ et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId`
 - `props` : tous les axes `VARIANT`/`BOOLEAN`/`TEXT` + props du wrapper ;
       axe `State` exclu, `Disable` → `disabled`.
 - Couche sémantique appliquée (ex. tailles → `size`) avec `figmaName`
-      conservé ; aucun mapping lié à un composant précis.
+      conservé ; le même nom public est utilisé par `props`, `variantAxes` et
+      les valeurs des variants ; aucun mapping lié à un composant précis.
+- Toutes les combinaisons des valeurs d'axes existent ; sinon export bloqué
+      avec le compte attendu/présent, les variants manquants et une instruction
+      Figma. Le contrat courant ne prétend jamais que des enums indépendantes
+      acceptent un cas absent.
 - `variantTokens` et `variantStrokes` couvrent **toutes** les combinaisons
       d'axes, nichés selon `variantAxes` ; le premier ne contient que des
       références de token `{…}`, le second porte couleur et largeur en
@@ -561,6 +580,11 @@ et non `number` : sans ça, un token `number` référencerait un token `dimensio
       est signalé introuvable. **Les deux commandes tranchent avec le même
       index** (`indexVariables`, dans `src/variables.ts`) : un contrat ne peut
       donc pas citer un token que `tokens.json` attribue à une autre variable.
+- Un chemin ne peut pas être à la fois une feuille et un groupe
+      (`brand.foo` / `brand.foo.bar`) : l'index commun conserve la première
+      variable rencontrée, écarte l'autre avant de construire l'arbre et refuse
+      toute référence vers la variable écartée. L'ordre Figma ne peut donc
+      produire ni écrasement ni alias pendant.
 - Tous les modes de Brand Tokens présents (`$value` défaut + `$extensions`) ;
       collections mono-mode en `$value` seul. Deux modes au même nom normalisé :
       le premier est conservé, avec **un warning par collection** — jamais un
@@ -589,7 +613,7 @@ chaque sauvegarde. Le manifest n'autorise que
 Chaque commande conserve son périmètre :
 
 - **Exporter le composant** → PR contenant uniquement
-  `{componentsPath}/{Nom}/{Nom}.contract.json` ;
+  `{componentsPath}/{IdentifiantCode}/{IdentifiantCode}.contract.json` ;
 - **Exporter les tokens** → PR contenant uniquement
   `{tokensPath}/tokens.json`.
 

@@ -47,7 +47,8 @@ Les commentaires sont en français et doivent aider un lecteur débutant :
   valeur non tokenisée produit un avertissement précis et l'export continue.
   On n'exporte jamais de valeur brute à la place d'un token.
 - Les préconditions obligatoires décrites dans la spécification restent
-  bloquantes : sélection invalide ou conteneur `<Nom>-Rules` absent/vide.
+  bloquantes : sélection invalide, conteneur `<Nom>-Rules` absent/vide ou
+  combinaison de variantes manquante.
 - **Ne jamais perdre d'information en silence** : une collision, un doublon
   ou un cas imprévu → warning explicite. Un calque inconnu est inclus tel
   quel, jamais supprimé.
@@ -83,11 +84,13 @@ Les commentaires sont en français et doivent aider un lecteur débutant :
 - Un nouveau fichier `tests/*.test.ts` est pris en compte tout seul :
   `scripts/run-tests.js` lit le dossier. Aucune liste à tenir à jour.
 - Les exports réels produits sur le fichier Figma de référence sont conservés
-  dans `tests/test-exports/` : ils servent de jeux de validation quand la
+  dans `tests/test-exports/` : c'est un **petit corpus représentatif**, jamais
+  la copie des 150 futurs composants. Il sert de jeu de validation quand la
   structure Figma ou le code évolue. Un changement de schéma **ou de texte
-  d'avertissement** les périme : seul un ré-export depuis Figma les rafraîchit,
-  jamais une retouche à la main. Un test verrouille leur `contractVersion` ;
-  le reste tient à cette discipline.
+  d'avertissement** le périme : seul un ré-export depuis Figma le rafraîchit,
+  jamais une retouche à la main. Le test découvre automatiquement tous les
+  `*.contract.json` de ce dossier et verrouille leur `contractVersion` ; le
+  coût dépend donc du corpus choisi, pas du catalogue de production.
 - Avant PR : `npm test` puis `npm run build` — les deux doivent être verts.
 
 ## Documentation & synchronisation

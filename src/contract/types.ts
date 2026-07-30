@@ -271,7 +271,11 @@ export type ContractStructure = {
   sizes?: Record<string, SizeDimensions>;
   /** Les slots enfants (icônes, label…), dans l'ordre des calques. */
   children: ChildStructure[];
-  /** Noms des axes de variantes, dans l'ordre d'imbrication de variantTokens. */
+  /**
+   * Clés PUBLIQUES des axes de variantes, dans l'ordre d'imbrication de
+   * variantTokens. Un axe sémantiquement renommé utilise ici la même clé que
+   * dans `props` (`size`, jamais son ancien nom normalisé).
+   */
   variantAxes: string[];
   /** Géométrie et couleur des strokes, rangées à part pour ne pas casser `variantTokens`. */
   variantStrokes: VariantStrokes;
@@ -310,6 +314,7 @@ export type ContractMeta = {
 
 /** Le contrat de composant complet — sortie de la commande « Export composant ». */
 export type Contract = {
+  /** Nom Figma exact, lisible ; le nom de fichier porte l'identifiant de code canonique. */
   name: string;
   meta: ContractMeta;
   props: Record<string, ContractProp>;

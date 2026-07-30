@@ -57,11 +57,18 @@ function isStateProperty(key: string): boolean {
  * et le conflit est signalé — jamais d'écrasement en silence, conformément à
  * la règle appliquée partout ailleurs (variants, rôles, règles d'icônes).
  */
-export function extractContractProps(
+export type ContractPropertyModel = {
+  props: Record<string, ContractProp>;
+  /** Axe normalisé dans Figma → clé réellement publiée dans le contrat. */
+  publicVariantKeyByRawKey: Map<string, string>;
+};
+
+export function extractContractPropertyModel(
   definitions: ComponentPropertyDefinitions,
   warnings: string[] = [],
-): Record<string, ContractProp> {
+): ContractPropertyModel {
   const props: Record<string, ContractProp> = {};
+  const publicVariantKeyByRawKey = new Map<string, string>();
   /** Nom Figma qui détient chaque clé publique, pour nommer les deux camps d'un conflit. */
   const owners = new Map<string, string>();
 
@@ -71,16 +78,17 @@ export function extractContractProps(
   const rawKeys = new Set(Object.keys(definitions).map((name) => normalizePropKey(name)));
 
   /** Attribue une clé publique, ou refuse et signale le conflit. */
-  const claim = (key: string, figmaName: string, prop: ContractProp): void => {
+  const claim = (key: string, figmaName: string, prop: ContractProp): boolean => {
     const owner = owners.get(key);
     if (owner !== undefined) {
       warnings.push(
         `Propriétés Figma « ${owner} » et « ${figmaName} » : même clé publique « ${key} » ; la première est conservée.`,
       );
-      return;
+      return false;
     }
     owners.set(key, figmaName);
     props[key] = prop;
+    return true;
   };
 
   for (const [propertyName, definition] of Object.entries(definitions)) {
@@ -88,6 +96,7 @@ export function extractContractProps(
     const rawFigmaName = propertyName.replace(/#.*$/, '');
 
     if (isStateProperty(key)) {
+      if (definition.type === 'VARIANT') publicVariantKeyByRawKey.set(key, key);
       const states = definition.variantOptions ?? [];
       const hasDisabledState = states.some((state) => /^disabl(?:e|ed)$/i.test(state.trim()));
       if (definition.type === 'VARIANT' && hasDisabledState) {
@@ -111,7 +120,7 @@ export function extractContractProps(
         );
       }
       const publicKey = semantic && !taken ? semantic : key;
-      claim(publicKey, rawFigmaName, {
+      const claimed = claim(publicKey, rawFigmaName, {
         type: 'enum',
         values,
         default:
@@ -121,6 +130,7 @@ export function extractContractProps(
         // figmaName n'apparaît que si la clé publique diffère du nom Figma.
         ...(publicKey !== key ? { figmaName: rawFigmaName } : {}),
       });
+      if (claimed) publicVariantKeyByRawKey.set(key, publicKey);
       continue;
     }
 
@@ -137,5 +147,13 @@ export function extractContractProps(
     }
   }
 
-  return props;
+  return { props, publicVariantKeyByRawKey };
+}
+
+/** Raccourci historique pour les appelants qui n'ont besoin que des props. */
+export function extractContractProps(
+  definitions: ComponentPropertyDefinitions,
+  warnings: string[] = [],
+): Record<string, ContractProp> {
+  return extractContractPropertyModel(definitions, warnings).props;
 }
