@@ -59,6 +59,103 @@ test('getSlotTokens avertit quand la largeur du stroke est une valeur brute', as
   ]);
 });
 
+test('getSlotTokens refuse une largeur de stroke partiellement liée', async () => {
+  const node = {
+    type: 'RECTANGLE',
+    name: 'Button ring',
+    boundVariables: {
+      strokes: [colorAlias],
+      strokeTopWeight: widthAlias,
+    },
+    strokeAlign: 'OUTSIDE',
+    findAll: () => [],
+  } as unknown as ComponentNode;
+  const resolver = {
+    resolve: async (candidate: VariableAlias | null | undefined) => {
+      if (candidate?.id === 'color') return 'components.button.colors.primary.focus.ring';
+      if (candidate?.id === 'width') return 'layouts.stroke.ring';
+      return null;
+    },
+  };
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(node, resolver, warnings);
+
+  assert.equal(tokens.strokes.ring?.width, null);
+  assert.ok(warnings.some((warning) => warning.includes('strokeRightWeight')));
+  assert.ok(warnings.some((warning) => warning.includes('valeur non exportée')));
+});
+
+test('getSlotTokens ignore un ancien fond statiquement masqué au profit du fond visible', async () => {
+  const cache = {
+    type: 'RECTANGLE',
+    name: 'Ancien fond',
+    visible: false,
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: 'legacy' } as VariableAlias] },
+  };
+  const visible = {
+    type: 'FRAME',
+    name: 'Fond',
+    visible: true,
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: 'current' } as VariableAlias] },
+  };
+  const component = {
+    type: 'COMPONENT',
+    name: 'Button',
+    boundVariables: {},
+    findAll: (predicate: (node: never) => boolean) =>
+      [cache, visible].filter(predicate as (node: unknown) => boolean),
+  } as unknown as ComponentNode;
+  const resolver = {
+    resolve: async (candidate: VariableAlias | null | undefined) => {
+      if (candidate?.id === 'legacy') return 'components.legacy.default.background';
+      if (candidate?.id === 'current') return 'components.button.default.background';
+      return null;
+    },
+  };
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(component, resolver, warnings);
+
+  assert.deepEqual(tokens.paints, {
+    background: '{components.button.default.background}',
+  });
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /Ancien fond/);
+  assert.doesNotMatch(warnings[0], /Calque « Fond »/);
+});
+
+test('extractVariantTokens ne place pas le token d’un calque masqué dans tokensUsed', async () => {
+  const hidden = {
+    type: 'RECTANGLE',
+    name: 'Halo obsolète',
+    visible: false,
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: 'hidden' } as VariableAlias] },
+  };
+  const component = {
+    type: 'COMPONENT',
+    name: 'State=Default',
+    boundVariables: {},
+    findAll: (predicate: (node: never) => boolean) =>
+      [hidden].filter(predicate as (node: unknown) => boolean),
+  } as unknown as ComponentNode;
+  const tokenNames = new Set<string>();
+  const warnings: string[] = [];
+
+  await extractVariantTokens(
+    { axes: ['state'], variants: [{ values: { state: 'default' }, component }] },
+    {
+      resolve: async (candidate: VariableAlias | null | undefined) =>
+        candidate?.id === 'hidden' ? 'components.button.default.ring' : null,
+    },
+    tokenNames,
+    warnings,
+  );
+
+  assert.deepEqual([...tokenNames], []);
+  assert.ok(warnings.some((warning) => warning.includes('Halo obsolète')));
+});
+
 test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (premier conservé)', async () => {
   const makeNode = (name: string, tokenId: string) => ({
     type: 'RECTANGLE',

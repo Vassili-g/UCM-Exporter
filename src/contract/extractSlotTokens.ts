@@ -5,18 +5,13 @@
  */
 import { toRef, variableAliases } from '../variables';
 import type { TokenResolver } from '../variables';
-import { getAllNodes, getBinding } from './nodeBindings';
+import { getAllNodes } from './exportableNodes';
+import type { ComposedInstances } from './exportableNodes';
+import { BINDING_PATTERNS, getBinding, resolveTokenName } from './nodeBindings';
 import type { SlotStrokes, SlotTokens, StrokeAlignment, StrokeTokens } from './types';
 export type { TokenResolver } from '../variables';
 
 const BOUND_FIELDS = ['fills', 'strokes'] as const;
-const STROKE_WEIGHT_FIELDS = [
-  'strokeTopWeight',
-  'strokeRightWeight',
-  'strokeBottomWeight',
-  'strokeLeftWeight',
-] as const;
-
 export type VariantTokenLeaves = { paints: SlotTokens; strokes: SlotStrokes };
 
 /** Déduit le rôle d'un token depuis son dernier segment. */
@@ -35,30 +30,19 @@ function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment |
   return null;
 }
 
-/** Extrait le premier alias d'une liaison simple ou multiple. */
-function firstAlias(value: unknown): VariableAlias | null {
-  return variableAliases(value)[0] ?? null;
-}
-
 /** Résout une largeur uniforme sans aplatir des côtés asymétriques. */
 async function strokeWidth(
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
 ): Promise<string | null> {
-  const uniform = await resolver.resolve(firstAlias(getBinding(node, 'strokeWeight')));
-  if (uniform) return uniform;
-  const sides = await Promise.all(
-    STROKE_WEIGHT_FIELDS.map((field) => resolver.resolve(firstAlias(getBinding(node, field)))),
+  return resolveTokenName(
+    node,
+    BINDING_PATTERNS.strokeWidth,
+    'largeur du stroke',
+    resolver,
+    warnings,
   );
-  const uniqueSides = Array.from(new Set(sides.filter((token): token is string => Boolean(token))));
-  if (uniqueSides.length === 1) return uniqueSides[0];
-  if (uniqueSides.length > 1) {
-    warnings.push(`Calque « ${node.name} » : largeurs de stroke asymétriques (${uniqueSides.join(', ')}).`);
-    return null;
-  }
-  warnings.push(`Calque « ${node.name} » : largeur du stroke sans variable liée (valeur brute ignorée).`);
-  return null;
 }
 
 /** Ajoute une peinture en rendant visible toute collision. */
@@ -72,7 +56,10 @@ function setPaintToken(
   const existing = paints[role];
   if (!existing) paints[role] = token;
   else if (existing !== token) {
-    warnings.push(`Calque « ${node.name} » : plusieurs tokens pour le rôle « ${role} » ; premier conservé.`);
+    warnings.push(
+      `Calque « ${node.name} » : plusieurs tokens pour le rôle « ${role} » ; ` +
+        `premier conservé (${existing}), autre ignoré (${token}).`,
+    );
   }
 }
 
@@ -90,7 +77,10 @@ function setStrokeToken(
     return;
   }
   if (existing.color !== value.color || existing.width !== value.width || existing.align !== value.align) {
-    warnings.push(`Calque « ${node.name} » : plusieurs strokes pour le rôle « ${role} » ; premier conservé.`);
+    warnings.push(
+      `Calque « ${node.name} » : plusieurs strokes pour le rôle « ${role} » ; ` +
+        `premier conservé (${existing.color}), autre ignoré (${value.color}).`,
+    );
   }
 }
 
@@ -99,6 +89,7 @@ export async function getSlotTokens(
   component: ComponentNode,
   resolver: TokenResolver,
   warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
 ): Promise<VariantTokenLeaves> {
   const pending: Array<{
     node: SceneNode;
@@ -111,7 +102,7 @@ export async function getSlotTokens(
     Promise<{ width: string | null; align: StrokeAlignment | null }>
   >();
 
-  for (const node of getAllNodes(component)) {
+  for (const node of getAllNodes(component, warnings, composed)) {
     for (const field of BOUND_FIELDS) {
       for (const alias of variableAliases(getBinding(node, field))) {
         let stroke = field === 'strokes' ? strokeStyles.get(node) ?? null : null;
@@ -122,7 +113,12 @@ export async function getSlotTokens(
           ]).then(([width, align]) => ({ width, align }));
           strokeStyles.set(node, stroke);
         }
-        pending.push({ node, field, promise: resolver.resolve(alias), stroke });
+        pending.push({
+          node,
+          field,
+          promise: resolver.resolve(alias, { nodeName: node.name, field }),
+          stroke,
+        });
       }
     }
   }

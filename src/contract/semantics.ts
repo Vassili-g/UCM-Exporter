@@ -54,11 +54,33 @@ export function semanticEnumName(values: string[]): string | null {
 }
 
 /**
- * Rôle sémantique d'un calque : un calque texte est toujours le `label`,
- * peu importe son nom Figma (souvent le texte d'exemple, ex. « Suivant »).
+ * Rôle sémantique d'un calque. Un calque texte est toujours le `label`, peu
+ * importe son nom Figma (souvent le texte d'exemple, ex. « Suivant »). Un
+ * calque graphique désigné par une règle `@icons` est toujours l'`icon`.
+ *
+ * Nommer l'icône par son rôle est ce qui rend son slot STABLE sur toute la
+ * matrice. Un composant dont l'icône change avec le variant (une Alert :
+ * `circle-info` en info, `circle-check` en success) garde ainsi un seul slot,
+ * là où le nom du calque en aurait inventé un par variant — et le contrat
+ * n'aurait décrit que celui du variant de référence. Le déclencheur est la
+ * règle du designer, jamais la position ni le nom du calque.
  */
-export function semanticSlotName(isText: boolean): string | null {
-  return isText ? 'label' : null;
+export function semanticSlotName(isText: boolean, isIconTarget = false): string | null {
+  if (isText) return 'label';
+  return isIconTarget ? 'icon' : null;
+}
+
+/**
+ * Nom d'un slot homonyme : le premier garde le nom de base, les suivants sont
+ * numérotés à partir de 2. Règle unique, partagée par la déduplication des
+ * slots et par le rapprochement des icônes — deux formulations du même
+ * suffixe finiraient par diverger.
+ *
+ * @example indexedSlotName('icon', 0) // → 'icon'
+ * @example indexedSlotName('icon', 1) // → 'icon-2'
+ */
+export function indexedSlotName(base: string, index: number): string {
+  return index === 0 ? base : `${base}-${index + 1}`;
 }
 
 /**
@@ -106,6 +128,7 @@ export function defaultRenderingSemantics(): RenderingSemantics {
     roles: {
       background: { kind: 'paint', cssProperties: ['background-color'] },
       foreground: { kind: 'paint', cssProperties: ['color', 'fill'] },
+      icon: { kind: 'paint', cssProperties: ['color', 'fill'] },
       border: { kind: 'stroke', cssProperties: ['border-color', 'border-width'] },
       ring: {
         kind: 'stroke',
@@ -171,7 +194,7 @@ function strokeReference(value: unknown): string | null {
 /**
  * Contrôle du seul prérequis que le moteur impose au design system : le
  * **dernier segment** d'un token de couleur doit nommer un rôle rendable
- * (`background`, `foreground`, `border`, `ring`), car c'est ainsi que le rôle
+ * (`background`, `foreground`, `icon`, `border`, `ring`), car c'est ainsi que le rôle
  * est déduit (cf. `extractSlotTokens.tokenRole`). Un token nommé `…/bg`
  * produit un contrat valide que PERSONNE ne saura peindre : le consommateur
  * ignore un rôle absent de `rendering.roles`, silencieusement.

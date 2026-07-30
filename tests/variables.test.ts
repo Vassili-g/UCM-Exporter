@@ -129,3 +129,51 @@ test('le résolveur sert l’index sans appeler l’API, et garde l’API pour l
     figmaStub.restaurer();
   }
 });
+
+test('le résolveur signale une variable liée introuvable une seule fois avec son contexte', async () => {
+  const figmaStub = stubFigma([], []);
+
+  try {
+    const warnings: string[] = [];
+    const resolver = new VariableNameResolver({ warnings });
+    const missing = { type: 'VARIABLE_ALIAS', id: 'VariableID:deleted' } as VariableAlias;
+
+    const resolved = await Promise.all([
+      resolver.resolve(missing, { nodeName: 'Ancien fond', field: 'fills' }),
+      resolver.resolve(missing, { nodeName: 'Autre calque', field: 'strokes' }),
+      resolver.resolve(missing, { nodeName: 'Troisième calque', field: 'fills' }),
+    ]);
+
+    assert.deepEqual(resolved, [null, null, null]);
+    assert.equal(figmaStub.appels(), 1);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /VariableID:deleted/);
+    assert.match(warnings[0], /Ancien fond/);
+    assert.match(warnings[0], /fills/);
+    assert.match(warnings[0], /Réassignez cette liaison dans Figma/);
+  } finally {
+    figmaStub.restaurer();
+  }
+});
+
+test('le résolveur ne fabrique pas un chemin sans collection pour une variable distante', async () => {
+  const distante = variable('remote', 'Primary/default', 'collection-missing');
+  const figmaStub = stubFigma([distante], []);
+
+  try {
+    const warnings: string[] = [];
+    const resolver = new VariableNameResolver({ warnings });
+
+    const resolved = await resolver.resolve(
+      { type: 'VARIABLE_ALIAS', id: 'remote' } as VariableAlias,
+      { nodeName: 'Fond', field: 'fills' },
+    );
+
+    assert.equal(resolved, null);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /collection-missing/);
+    assert.match(warnings[0], /Primary\/default/);
+  } finally {
+    figmaStub.restaurer();
+  }
+});

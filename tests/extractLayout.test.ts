@@ -9,6 +9,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractLayout, findLayoutNode, firstTextNode } from '../src/contract/extractLayout';
+import { nestedSlotVisibility } from '../src/contract/slotRelations';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
@@ -133,11 +134,125 @@ test('extractLayout relie un label masquable à la prop qui le cache', async () 
   ]);
 });
 
+test('extractLayout remonte une visibilité imbriquée quand elle contrôle tout le slot', async () => {
+  const texte = {
+    type: 'TEXT',
+    id: 'title',
+    name: 'Titre',
+    boundVariables: {},
+    componentPropertyReferences: { visible: 'title#12:8' },
+  };
+  const contenu = {
+    type: 'FRAME',
+    id: 'content',
+    name: 'Contenu',
+    boundVariables: {},
+    children: [texte],
+    findAll: findAllOn([texte]),
+  };
+  (texte as { parent?: unknown }).parent = contenu;
+  const racine = {
+    type: 'COMPONENT',
+    id: 'root',
+    name: 'Card',
+    layoutMode: 'VERTICAL',
+    boundVariables: {},
+    children: [contenu],
+    findAll: findAllOn([contenu, texte]),
+  } as unknown as ComponentNode;
+  (contenu as { parent?: unknown }).parent = racine;
+
+  const layout = await extractLayout(racine, resolverFor({}), new Set(), []);
+
+  assert.equal(layout.children[0].visibilityProp, 'title');
+  assert.equal(layout.children[0].optional, true);
+});
+
+test('extractLayout cible un descendant sans masquer tout son slot', async () => {
+  const titre = {
+    type: 'TEXT',
+    id: 'title',
+    name: 'Titre',
+    boundVariables: {},
+    componentPropertyReferences: { visible: 'title#12:8' },
+  };
+  const description = {
+    type: 'TEXT',
+    id: 'description',
+    name: 'Description',
+    boundVariables: {},
+  };
+  const contenu = {
+    type: 'FRAME',
+    id: 'content',
+    name: 'Contenu',
+    boundVariables: {},
+    children: [titre, description],
+    findAll: findAllOn([titre, description]),
+  };
+  (titre as { parent?: unknown }).parent = contenu;
+  (description as { parent?: unknown }).parent = contenu;
+  const racine = {
+    type: 'COMPONENT',
+    id: 'root',
+    name: 'Card',
+    layoutMode: 'VERTICAL',
+    boundVariables: {},
+    children: [contenu],
+    findAll: findAllOn([contenu, titre, description]),
+  } as unknown as ComponentNode;
+  (contenu as { parent?: unknown }).parent = racine;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(racine, resolverFor({}), new Set(), warnings);
+
+  assert.equal(layout.children[0].visibilityProp, undefined);
+  assert.deepEqual(layout.children[0].visibilityTargets, [{
+    visibilityProp: 'title',
+    figmaPath: ['Titre'],
+  }]);
+  assert.equal(warnings.some((warning) => warning.includes('visibilité imbriquée')), false);
+});
+
+test('une dépendance composée empêche de masquer tout son slot parent', () => {
+  const titre = {
+    type: 'TEXT',
+    id: 'title',
+    name: 'Titre',
+    componentPropertyReferences: { visible: 'title#12:8' },
+  };
+  const bouton = {
+    type: 'INSTANCE',
+    id: 'button',
+    name: 'Button',
+  };
+  const contenu = {
+    type: 'FRAME',
+    id: 'content',
+    name: 'Contenu',
+    children: [titre, bouton],
+    findAll: findAllOn([titre, bouton]),
+  } as unknown as SceneNode;
+  (titre as { parent?: unknown }).parent = contenu;
+  (bouton as { parent?: unknown }).parent = contenu;
+
+  const visibility = nestedSlotVisibility(
+    contenu,
+    new Map([['button', { component: 'Button', figmaLayer: 'Button' }]]),
+  );
+
+  assert.equal(visibility.visibilityProp, undefined);
+  assert.deepEqual(visibility.visibilityTargets, [{
+    visibilityProp: 'title',
+    figmaPath: ['Titre'],
+  }]);
+});
+
 test('extractLayout décrit un calque graphique en slot optionnel avec sa visibilité', async () => {
   const icone = {
     type: 'VECTOR',
     name: 'arrow-right-long',
-    boundVariables: { width: alias('taille') },
+    boundVariables: { width: alias('taille'), height: alias('taille') },
     componentPropertyReferences: { visible: 'iconRight#3:1' },
   };
   const bouton = {
@@ -146,7 +261,7 @@ test('extractLayout décrit un calque graphique en slot optionnel avec sa visibi
     layoutMode: 'HORIZONTAL',
     boundVariables: { itemSpacing: alias('gap') },
     children: [icone],
-    findAll: findAllOn([]),
+    findAll: findAllOn([icone]),
   } as unknown as ComponentNode;
 
   const layout = await extractLayout(
@@ -165,6 +280,76 @@ test('extractLayout décrit un calque graphique en slot optionnel avec sa visibi
       size: '{components.icons.sizes.base}',
     },
   ]);
+});
+
+test('extractLayout n’invente pas une taille carrée quand seule la largeur est liée', async () => {
+  const icone = {
+    type: 'VECTOR',
+    name: 'arrow-right-long',
+    boundVariables: { width: alias('taille') },
+  };
+  const bouton = {
+    type: 'COMPONENT',
+    name: 'Button',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [icone],
+    findAll: findAllOn([icone]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    bouton,
+    resolverFor({
+      gap: 'layouts.spacing.8',
+      taille: 'components.icons.sizes.base',
+    }),
+    new Set(),
+    warnings,
+  );
+
+  assert.equal(layout.children[0].size, undefined);
+  assert.ok(warnings.some((warning) => warning.includes('height')));
+  assert.ok(warnings.some((warning) => warning.includes('valeur non exportée')));
+});
+
+test('extractLayout exclut un slot statiquement masqué mais conserve un slot piloté par une prop', async () => {
+  const obsolete = {
+    type: 'VECTOR',
+    name: 'old-icon',
+    visible: false,
+    boundVariables: { width: alias('old-size'), height: alias('old-size') },
+  };
+  const optionnelle = {
+    type: 'VECTOR',
+    name: 'arrow-right-long',
+    visible: false,
+    boundVariables: { width: alias('size'), height: alias('size') },
+    componentPropertyReferences: { visible: 'iconRight#3:1' },
+  };
+  const bouton = {
+    type: 'COMPONENT',
+    name: 'Button',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [obsolete, optionnelle],
+    findAll: findAllOn([obsolete, optionnelle]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    bouton,
+    resolverFor({
+      gap: 'layouts.spacing.8',
+      'old-size': 'components.icons.sizes.legacy',
+      size: 'components.icons.sizes.base',
+    }),
+    new Set(),
+    warnings,
+  );
+
+  assert.deepEqual(layout.children.map((child) => child.slot), ['arrow-right-long']);
+  assert.ok(warnings.some((warning) => warning.includes('old-icon')));
 });
 
 test('extractLayout suffixe les slots homonymes au lieu de les écraser', async () => {
@@ -211,6 +396,33 @@ test('findLayoutNode choisit le calque qui porte le plus de dimensions liées', 
   assert.equal(findLayoutNode(racine), interne as unknown as SceneNode);
 });
 
+test('findLayoutNode ignore un porteur de dimensions statiquement masqué', () => {
+  const masque = {
+    type: 'FRAME',
+    name: 'Ancien wrapper',
+    visible: false,
+    boundVariables: {
+      itemSpacing: alias('a'),
+      paddingLeft: alias('b'),
+      paddingRight: alias('b'),
+    },
+  };
+  const visible = {
+    type: 'FRAME',
+    name: 'Wrapper actif',
+    visible: true,
+    boundVariables: { itemSpacing: alias('a') },
+  };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Button',
+    boundVariables: {},
+    findAll: findAllOn([masque, visible]),
+  } as unknown as ComponentNode;
+
+  assert.equal(findLayoutNode(racine), visible as unknown as SceneNode);
+});
+
 test('findLayoutNode retombe sur la racine quand aucune dimension n’est liée', () => {
   const racine = {
     type: 'COMPONENT',
@@ -229,4 +441,91 @@ test('firstTextNode descend dans le sous-arbre et rend null s’il n’y a pas d
 
   assert.equal(firstTextNode(avecTexte), texte as unknown as TextNode);
   assert.equal(firstTextNode(sansTexte), null);
+});
+
+test('un slot d’icône porte le rôle « icon », pas le nom de son calque', async () => {
+  // Cas réel de l'Alert : `circle-info` en severity=info, `circle-check`
+  // ailleurs. Nommer le slot d'après le calque en inventerait un par variant,
+  // et le contrat ne décrirait que celui du variant de référence.
+  const icone = {
+    type: 'VECTOR',
+    id: 'ico',
+    name: 'circle-info',
+    boundVariables: { width: alias('taille'), height: alias('taille') },
+    componentPropertyReferences: { visible: 'icon#1:2' },
+  };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [icone],
+    findAll: findAllOn([icone]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(
+    racine,
+    resolverFor({ taille: 'components.icons.sizes.base' }),
+    new Set(),
+    [],
+    new Map(),
+    new Set(['circle-info']),
+  );
+
+  assert.equal(layout.children[0].slot, 'icon');
+  assert.equal(layout.children[0].figmaLayer, 'circle-info');
+  assert.equal(layout.children[0].size, '{components.icons.sizes.base}');
+  assert.equal(layout.children[0].visibilityProp, 'icon');
+});
+
+test('un calque graphique sans règle @icons garde le nom de son calque', async () => {
+  const decor = {
+    type: 'VECTOR',
+    id: 'deco',
+    name: 'Separateur',
+    boundVariables: {},
+  };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Card',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [decor],
+    findAll: findAllOn([decor]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(racine, resolverFor({}), new Set(), [], new Map(), new Set());
+
+  assert.equal(layout.children[0].slot, 'separateur');
+});
+
+test('un slot masquable conserve les visibilités portées plus bas', () => {
+  // Deux props distinctes : celle du slot et celle du titre. Promouvoir la
+  // seconde élargirait sa portée ; la taire perdrait une prop en silence.
+  const titre = {
+    type: 'TEXT',
+    id: 'titre',
+    name: 'Titre',
+    boundVariables: {},
+    componentPropertyReferences: { visible: 'title#1:1' },
+  };
+  const contenu = {
+    type: 'FRAME',
+    id: 'contenu',
+    name: 'Contenu',
+    boundVariables: {},
+    componentPropertyReferences: { visible: 'content#2:2' },
+    children: [titre],
+    findAll: findAllOn([titre]),
+  } as unknown as SceneNode;
+  (titre as { parent?: unknown }).parent = contenu;
+
+  const sansVisibiliteDeSlot = nestedSlotVisibility(contenu, new Map());
+  assert.equal(sansVisibiliteDeSlot.visibilityProp, 'title');
+
+  const avecVisibiliteDeSlot = nestedSlotVisibility(contenu, new Map(), true);
+  assert.equal(avecVisibiliteDeSlot.visibilityProp, undefined);
+  assert.deepEqual(avecVisibiliteDeSlot.visibilityTargets, [
+    { visibilityProp: 'title', figmaPath: ['Titre'] },
+  ]);
 });

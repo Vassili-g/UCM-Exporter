@@ -1,14 +1,17 @@
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "3.1",
-    "exportedAt": "2026-07-29T14:30:56.339Z",
+    "contractVersion": "4.1",
+    "exportedAt": "2026-07-30T10:06:23.010Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "3:122",
       "componentKey": "5f81d511ff349eebb7ffa768aebf7688518e45d0",
       "url": null
-    }
+    },
+    "warnings": [
+      "Lien Figma absent des métadonnées : figma.fileKey est réservé aux plugins privés d’organisation (manifest « enablePrivatePluginApi »). nodeId et fileName restent exploitables."
+    ]
   },
   "props": {
     "color": {
@@ -51,15 +54,18 @@
     },
     "label": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Permet d’afficher ou de masquer le label"
     },
     "iconRight": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Permet d’afficher ou de masquer l’icone de droite"
     },
     "iconLeft": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Permet d’afficher ou de masquer l’icone de gauche"
     },
     "size": {
       "type": "enum",
@@ -90,12 +96,6 @@
   },
   "structure": {
     "layout": "flex-row",
-    "gap": "{components.button.sizes.medium.gap}",
-    "padding": {
-      "x": "{components.button.sizes.medium.padding-x}",
-      "y": "{components.button.sizes.medium.padding-y}"
-    },
-    "radius": "{components.button.sizes.medium.border-radius}",
     "children": [
       {
         "slot": "arrow-left-long",
@@ -114,8 +114,7 @@
           "fontWeight": "{layouts.fontweight.600}",
           "lineHeight": "{layouts.lineheight.base}",
           "fontFamily": "{layouts.fontfamily.base}"
-        },
-        "color": "{components.button.colors.primary.contained.default.foreground}"
+        }
       },
       {
         "slot": "arrow-right-long",
@@ -125,6 +124,35 @@
         "size": "{components.icons.sizes.base}"
       }
     ],
+    "sizes": {
+      "medium": {
+        "gap": "{components.button.sizes.medium.gap}",
+        "padding": {
+          "x": "{components.button.sizes.medium.padding-x}",
+          "y": "{components.button.sizes.medium.padding-y}"
+        },
+        "radius": "{components.button.sizes.medium.border-radius}",
+        "fontSize": "{components.button.sizes.medium.label-size}"
+      },
+      "big": {
+        "gap": "{components.button.sizes.big.gap}",
+        "padding": {
+          "x": "{components.button.sizes.big.padding-x}",
+          "y": "{components.button.sizes.big.padding-y}"
+        },
+        "radius": "{components.button.sizes.big.border-radius}",
+        "fontSize": "{components.button.sizes.big.label-size}"
+      },
+      "small": {
+        "gap": "{components.button.sizes.small.gap}",
+        "padding": {
+          "x": "{components.button.sizes.small.padding-x}",
+          "y": "{components.button.sizes.small.padding-y}"
+        },
+        "radius": "{components.button.sizes.small.border-radius}",
+        "fontSize": "{components.button.sizes.small.label-size}"
+      }
+    },
     "variantAxes": [
       "color",
       "variant",
@@ -1051,35 +1079,6 @@
           "disable": {}
         }
       }
-    },
-    "sizes": {
-      "medium": {
-        "gap": "{components.button.sizes.medium.gap}",
-        "padding": {
-          "x": "{components.button.sizes.medium.padding-x}",
-          "y": "{components.button.sizes.medium.padding-y}"
-        },
-        "radius": "{components.button.sizes.medium.border-radius}",
-        "fontSize": "{components.button.sizes.medium.label-size}"
-      },
-      "big": {
-        "gap": "{components.button.sizes.big.gap}",
-        "padding": {
-          "x": "{components.button.sizes.big.padding-x}",
-          "y": "{components.button.sizes.big.padding-y}"
-        },
-        "radius": "{components.button.sizes.big.border-radius}",
-        "fontSize": "{components.button.sizes.big.label-size}"
-      },
-      "small": {
-        "gap": "{components.button.sizes.small.gap}",
-        "padding": {
-          "x": "{components.button.sizes.small.padding-x}",
-          "y": "{components.button.sizes.small.padding-y}"
-        },
-        "radius": "{components.button.sizes.small.border-radius}",
-        "fontSize": "{components.button.sizes.small.label-size}"
-      }
     }
   },
   "stateModel": {
@@ -1124,6 +1123,13 @@
           "fill"
         ]
       },
+      "icon": {
+        "kind": "paint",
+        "cssProperties": [
+          "color",
+          "fill"
+        ]
+      },
       "border": {
         "kind": "stroke",
         "cssProperties": [
@@ -1155,6 +1161,7 @@
       "runtimeProp": "iconRightName"
     }
   },
+  "composes": [],
   "tokensUsed": [
     "{components.button.colors.error.contained.default.background}",
     "{components.button.colors.error.contained.default.foreground}",
@@ -1420,8 +1427,5 @@
       "Juxtaposer plusieurs boutons color.primary sur une même vue."
     ],
     "pairs": []
-  },
-  "warnings": [
-    "Lien Figma absent des métadonnées : figma.fileKey est réservé aux plugins privés d’organisation (manifest « enablePrivatePluginApi »). nodeId et fileName restent exploitables."
-  ]
+  }
 }

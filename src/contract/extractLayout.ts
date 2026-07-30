@@ -8,10 +8,18 @@
 import normalizeName from '../utils';
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
-import { getAllNodes, getBinding, resolveField } from './nodeBindings';
+import { getAllNodes } from './exportableNodes';
+import type { ComposedInstances } from './exportableNodes';
+import { isIconLayer } from './extractIconLayers';
+import { BINDING_PATTERNS, getBinding, resolveField } from './nodeBindings';
 import { normalizePropKey } from './parsers';
-import { semanticSlotName } from './semantics';
-import type { ChildStructure, ContractStructure, TypographyTokens } from './types';
+import { indexedSlotName, semanticSlotName } from './semantics';
+import { composedSlotDependencies, nestedSlotVisibility } from './slotRelations';
+import type {
+  ChildStructure,
+  ContractStructure,
+  TypographyTokens,
+} from './types';
 
 /** La partie « layout » de la structure (sans les tokens de variantes). */
 type LayoutStructure = Omit<
@@ -28,7 +36,11 @@ export type LayoutRoot = InstanceNode | ComponentNode;
  * sont liées à une variable : celui qui en porte le plus est notre
  * « conteneur de layout ». À défaut, on retombe sur la racine.
  */
-export function findLayoutNode(root: LayoutRoot): SceneNode {
+export function findLayoutNode(
+  root: LayoutRoot,
+  warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
+): SceneNode {
   const fields = [
     'itemSpacing',
     'paddingLeft',
@@ -37,7 +49,7 @@ export function findLayoutNode(root: LayoutRoot): SceneNode {
     'paddingBottom',
     'cornerRadius',
   ];
-  const candidates = getAllNodes(root).map((node) => ({
+  const candidates = getAllNodes(root, warnings, composed).map((node) => ({
     node,
     score: fields.reduce((total, field) => total + (getBinding(node, field) ? 1 : 0), 0),
   }));
@@ -45,12 +57,19 @@ export function findLayoutNode(root: LayoutRoot): SceneNode {
   return candidates[0]?.score ? candidates[0].node : root;
 }
 
-/** Renvoie le premier calque TEXTE d'un sous-arbre, ou null s'il n'y en a pas. */
-export function firstTextNode(node: SceneNode): TextNode | null {
+/**
+ * Renvoie le premier calque TEXTE d'un sous-arbre, ou null s'il n'y en a pas.
+ * Le libellé d'un composant embarqué n'en est pas un : sans l'élagage, une
+ * Alert emprunterait la typographie du bouton qu'elle contient.
+ */
+export function firstTextNode(
+  node: SceneNode,
+  warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
+): TextNode | null {
   if (node.type === 'TEXT') return node;
-  if (!('findAll' in node)) return null;
-  const texts = node.findAll((child) => child.type === 'TEXT');
-  return (texts[0] as TextNode | undefined) ?? null;
+  const text = getAllNodes(node, warnings, composed).find((child) => child.type === 'TEXT');
+  return (text as TextNode | undefined) ?? null;
 }
 
 /**
@@ -89,7 +108,10 @@ async function extractTypography(
     // On essaie chaque champ Figma possible jusqu'à trouver un token lié.
     let token: string | null = null;
     for (const figmaField of figmaFields) {
-      token = await resolver.resolve(firstVariableAlias(getBinding(textNode, figmaField)));
+      token = await resolver.resolve(firstVariableAlias(getBinding(textNode, figmaField)), {
+        nodeName: textNode.name,
+        field: `${contractField} / ${figmaField}`,
+      });
       if (token) break;
     }
 
@@ -120,10 +142,25 @@ async function extractChild(
   resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
+  composed: ComposedInstances,
+  iconNames: ReadonlySet<string>,
 ): Promise<ChildStructure> {
   const layerName = normalizeName(child.name).replace(/\./g, '-') || 'unnamed';
-  const textNode = firstTextNode(child);
-  const semantic = semanticSlotName(Boolean(textNode));
+  const dependencies = composedSlotDependencies(child, composed);
+  const composedDependency = dependencies.length === 1 ? dependencies[0] : undefined;
+  if (dependencies.length > 1) {
+    warnings.push(
+      `Slot « ${child.name} » : ${dependencies.length} composants unifiés directs ` +
+        `(${dependencies.map((dependency) => dependency.component).join(', ')}) ; ` +
+        'le champ children[].composes ne peut en nommer qu’un.',
+    );
+  }
+  const textNode = composedDependency ? null : firstTextNode(child, warnings, composed);
+  // Une dépendance occupe déjà le slot : ce qu'elle contient relève de SON
+  // contrat, y compris ses icônes.
+  const targetsIcon = !composedDependency
+    && getAllNodes(child, [], composed).some((node) => isIconLayer(node, iconNames));
+  const semantic = semanticSlotName(Boolean(textNode), targetsIcon);
 
   const entry: ChildStructure = { slot: semantic ?? layerName };
   if (semantic && semantic !== child.name) entry.figmaLayer = child.name;
@@ -132,10 +169,42 @@ async function extractChild(
   // liaison d'un label masquable (bouton à icône seule), le contrat exposerait
   // une prop booléenne sans dire ce qu'elle montre ou cache. Un slot que l'on
   // peut masquer est optionnel par construction.
-  const visibilityReference = child.componentPropertyReferences?.visible;
+  const directVisibility = child.componentPropertyReferences?.visible;
+  const dependencyVisibility = composedDependency?.visibilityProp;
+  if (
+    directVisibility
+    && dependencyVisibility
+    && normalizePropKey(directVisibility) !== dependencyVisibility
+  ) {
+    warnings.push(
+      `Slot « ${child.name} » : sa visibilité et celle du composant ` +
+        `« ${composedDependency.component} » dépendent de props différentes ; ` +
+        'la visibilité du slot reste prioritaire.',
+    );
+  }
+  // Le slot déjà masquable ne peut pas voir une visibilité plus profonde
+  // devenir la sienne — ce serait en élargir la portée. Elle reste malgré tout
+  // relevée : la taire perdrait en silence une prop que le composant doit lire.
+  const slotIsOptional = Boolean(directVisibility || dependencyVisibility);
+  const nestedVisibility = nestedSlotVisibility(child, composed, slotIsOptional);
+  const visibilityReference = directVisibility
+    ? normalizePropKey(directVisibility)
+    : dependencyVisibility ?? nestedVisibility.visibilityProp;
   if (visibilityReference) {
-    entry.visibilityProp = normalizePropKey(visibilityReference);
+    entry.visibilityProp = visibilityReference;
     entry.optional = true;
+  }
+  if (nestedVisibility.visibilityTargets) {
+    entry.visibilityTargets = nestedVisibility.visibilityTargets;
+  }
+
+  // Un composant unifié occupe la place d'un slot, mais rien de ce qu'il porte
+  // ne se relève ici : sa taille et sa typographie appartiennent à son contrat.
+  // Le nommer suffit à dire au consommateur quoi rendre à cet emplacement.
+  if (composedDependency) {
+    entry.figmaLayer = child.name;
+    entry.composes = composedDependency.component;
+    return entry;
   }
 
   if (textNode) {
@@ -146,7 +215,14 @@ async function extractChild(
     // Une règle `@icons` peut ensuite qualifier cette icône par son nom Figma.
     entry.figmaLayer = child.name;
     entry.optional = true;
-    const size = await resolveField(child, ['width', 'height'], `${layerName}-size`, resolver, tokenNames, warnings);
+    const size = await resolveField(
+      child,
+      BINDING_PATTERNS.slotSize,
+      `${layerName}-size`,
+      resolver,
+      tokenNames,
+      warnings,
+    );
     if (size) entry.size = size;
   }
 
@@ -162,7 +238,7 @@ function dedupeSlots(children: ChildStructure[]): void {
   for (const child of children) {
     const count = seen.get(child.slot) ?? 0;
     seen.set(child.slot, count + 1);
-    if (count > 0) child.slot = `${child.slot}-${count + 1}`;
+    child.slot = indexedSlotName(child.slot, count);
   }
 }
 
@@ -177,15 +253,33 @@ export async function extractLayout(
   resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
+  composed: ComposedInstances = new Map(),
+  // Noms de calques désignés par les règles `@icons` : ils donnent au slot son
+  // rôle `icon`, stable quand l'icône change d'un variant à l'autre.
+  iconNames: ReadonlySet<string> = new Set(),
 ): Promise<LayoutStructure> {
-  const layoutNode = findLayoutNode(root);
+  const layoutNode = findLayoutNode(root, warnings, composed);
   const [gap, paddingX, paddingY, radius] = await Promise.all([
-    resolveField(layoutNode, ['itemSpacing'], 'gap', resolver, tokenNames, warnings),
-    resolveField(layoutNode, ['paddingLeft', 'paddingRight'], 'padding-x', resolver, tokenNames, warnings),
-    resolveField(layoutNode, ['paddingTop', 'paddingBottom'], 'padding-y', resolver, tokenNames, warnings),
+    resolveField(layoutNode, BINDING_PATTERNS.gap, 'gap', resolver, tokenNames, warnings),
     resolveField(
       layoutNode,
-      ['cornerRadius', 'topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'],
+      BINDING_PATTERNS.paddingX,
+      'padding-x',
+      resolver,
+      tokenNames,
+      warnings,
+    ),
+    resolveField(
+      layoutNode,
+      BINDING_PATTERNS.paddingY,
+      'padding-y',
+      resolver,
+      tokenNames,
+      warnings,
+    ),
+    resolveField(
+      layoutNode,
+      BINDING_PATTERNS.radius,
       'border-radius',
       resolver,
       tokenNames,
@@ -193,9 +287,13 @@ export async function extractLayout(
     ),
   ]);
 
-  const directChildren = 'children' in layoutNode ? layoutNode.children : [];
+  const exportableNodes = new Set(getAllNodes(layoutNode, warnings, composed));
+  const directChildren = 'children' in layoutNode
+    ? layoutNode.children.filter((child) => exportableNodes.has(child))
+    : [];
   const children = await Promise.all(
-    directChildren.map((child) => extractChild(child, resolver, tokenNames, warnings)),
+    directChildren.map((child) =>
+      extractChild(child, resolver, tokenNames, warnings, composed, iconNames)),
   );
   dedupeSlots(children);
 

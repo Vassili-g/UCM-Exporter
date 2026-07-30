@@ -32,15 +32,23 @@ voir [`ROADMAP.md`](./ROADMAP.md).
 - `src/contract/` — commande « Export composant » (contrat JSON) :
   - `exportComponent.ts` — orchestrateur + métadonnées ;
   - `componentTree.ts` — axes de variantes, matrice, détection du wrapper ;
+  - `composedComponents.ts` — reconnaissance des composants unifiés imbriqués :
+    ils deviennent des dépendances (`composes`), jamais des calques à parcourir ;
   - `extractSlotTokens.ts` — peintures et contours liés dans un variant ;
   - `extractVariantTokens.ts` — assemblage des feuilles dans les arbres par axes ;
   - `extractLayout.ts` — dimensions, slots enfants, typographie ;
+  - `slotRelations.ts` — compositions et visibilités imbriquées d'un slot ;
   - `extractSizes.ts` — dimensions par taille (big/medium/small…) ;
+  - `nodeBindings.ts` — résolution complète des groupes de champs liés ;
+  - `exportableNodes.ts` — parcours des calques qui peuvent être rendus ;
   - `extractRules.ts` — règles d'usage lues dans le conteneur `<Nom>-Rules` ;
   - `rulesModel.ts` — assemblage pur des règles, intentions et politiques ;
+  - `mergeBooleanDescriptions.ts` — liaison des règles `@boolean` aux props BOOLEAN ;
+  - `extractIconLayers.ts` — inventaire des calques graphiques ciblés par
+    `@icons` sur toute la matrice : visibilité, taille et rang du slot ;
   - `mergeIconRules.ts` — liaison générique règles ↔ calques ↔ props d'icône ;
   - `semantics.ts` — **seul** lieu du vocabulaire sémantique (size, label,
-    rôles rendables…) et contrôle des rôles relevés ;
+    icon, rôles rendables…) et contrôle des rôles relevés ;
   - `parsers.ts` — props Figma → props publiques, intention taguée ;
   - `types.ts` — schéma du contrat.
 - `src/tokens/exportTokens.ts` — commande « Export tokens » (DTCG).
@@ -70,6 +78,13 @@ npm run typecheck # tsc --noEmit seul
   valeurs résolues.
 - **Renommage sémantique = traçabilité** : `figmaName` / `figmaLayer`
   conservent toujours le nom Figma d'origine.
+- **Un composant unifié imbriqué est une dépendance** : on le déclare dans
+  `composes` et on n'entre pas dans ses calques. Ses tokens, ses slots et ses
+  props appartiennent à son contrat — un composé ne décrit que ce qui est à lui.
+- **Un slot d'icône est stable sur toute la matrice** : il porte le rôle `icon`,
+  jamais le nom de son calque, car des icônes qui s'excluent entre variants
+  partagent un emplacement. `icons.<clé>.slot` et `.size` situent chacune
+  d'elles, y compris celles que le variant de référence ne contient pas.
 - **Warnings non bloquants** : une donnée incomplète avertit sans interrompre
   l'export. Seules les préconditions explicitement obligatoires dans la spec
   peuvent le bloquer (sélection invalide, conteneur de règles absent ou vide).

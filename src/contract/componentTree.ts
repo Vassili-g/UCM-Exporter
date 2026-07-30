@@ -5,7 +5,9 @@
  * Tout est dynamique : aucun nom d'axe ni de composant n'est codé en dur.
  */
 import { normalizePropKey, normalizePropValue } from './parsers';
-import { getAllNodes, getBinding } from './nodeBindings';
+import { getAllNodes } from './exportableNodes';
+import type { ComposedInstances } from './exportableNodes';
+import { getBinding } from './nodeBindings';
 
 /** Un variant du set : ses valeurs d'axes normalisées + le node Figma. */
 export type VariantEntry = {
@@ -112,10 +114,14 @@ const LAYOUT_BINDING_FIELDS = [
   'cornerRadius',
 ];
 
-/** Compte les liaisons de dimensions dans tout le sous-arbre d'une instance. */
-function countLayoutBindings(root: InstanceNode): number {
+/** Compte les liaisons de dimensions dans tout le sous-arbre rendable d'une instance. */
+function countLayoutBindings(
+  root: InstanceNode,
+  warnings: string[],
+  composed: ComposedInstances,
+): number {
   let count = 0;
-  for (const node of getAllNodes(root)) {
+  for (const node of getAllNodes(root, warnings, composed)) {
     for (const field of LAYOUT_BINDING_FIELDS) {
       if (getBinding(node, field)) count += 1;
     }
@@ -141,7 +147,11 @@ function hasComponentProperties(instance: InstanceNode): boolean {
  * (c'est ce qui définit un wrapper), le nom n'est qu'un léger bonus.
  * Score nul si elle ne porte aucune dimension liée.
  */
-async function scoreWrapper(instance: InstanceNode): Promise<{
+async function scoreWrapper(
+  instance: InstanceNode,
+  warnings: string[],
+  composed: ComposedInstances,
+): Promise<{
   score: number;
   componentSet: ComponentSetNode | null;
 }> {
@@ -150,7 +160,7 @@ async function scoreWrapper(instance: InstanceNode): Promise<{
   const componentSet = parent?.type === 'COMPONENT_SET' ? parent : null;
   const searchableName = `${instance.name} ${mainComponent?.name ?? ''} ${componentSet?.name ?? ''}`.toLowerCase();
 
-  const layoutBindings = countLayoutBindings(instance);
+  const layoutBindings = countLayoutBindings(instance, warnings, composed);
   let score = layoutBindings * 10;
   if (searchableName.includes('wrapper')) score += 5;
   if (componentSet && hasComponentProperties(instance)) score += 3;
@@ -162,13 +172,24 @@ async function scoreWrapper(instance: InstanceNode): Promise<{
  * Cherche le wrapper de dimensions imbriqué dans un variant. Optionnel :
  * un composant « plat » (sans instance de layout imbriquée) renvoie null
  * et ses dimensions seront lues directement sur lui.
+ *
+ * Un composant unifié imbriqué n'est JAMAIS candidat, quel que soit son score :
+ * un wrapper est une coquille de mise en page interne, alors qu'une dépendance
+ * est un composant à part entière. Les confondre revient à décrire les
+ * dimensions du voisin — et, par ricochet, ses slots et ses props.
  */
-export async function findWrapperReference(root: ComponentNode): Promise<WrapperReference | null> {
-  const instances = root
-    .findAll((node) => node.type === 'INSTANCE')
-    .filter((node): node is InstanceNode => node.type === 'INSTANCE');
+export async function findWrapperReference(
+  root: ComponentNode,
+  warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
+): Promise<WrapperReference | null> {
+  const instances = getAllNodes(root, warnings, composed)
+    .filter((node): node is InstanceNode => node.type === 'INSTANCE' && !composed.has(node.id));
   const scored = await Promise.all(
-    instances.map(async (instance) => ({ instance, ...(await scoreWrapper(instance)) })),
+    instances.map(async (instance) => ({
+      instance,
+      ...(await scoreWrapper(instance, warnings, composed)),
+    })),
   );
   const candidates = scored.filter((candidate) => candidate.score > 0);
   candidates.sort((left, right) => right.score - left.score);
