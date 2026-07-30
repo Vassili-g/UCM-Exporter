@@ -1,156 +1,98 @@
-# Contributing & Development Rules
+# Contribuer à Unified Component Exporter
 
-Règles de développement pour `Unified Component Exporter`. Objectif : un code **robuste** et
-**lisible sans effort** par un agent IA comme par un développeur débutant.
-Chaque règle ci-dessous découle de ce double objectif.
+Le code doit rester générique, lisible et prudent face aux données Figma
+incomplètes. Avant une modification, lire la spécification concernée dans
+[UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md).
 
-## Principes de base
+## Code
 
-- Simplicité et lisibilité avant tout (KISS) : le code le plus minimaliste et
-  efficace possible. Pas d'astuce « maligne » qu'il faut décoder — si une
-  ligne demande réflexion pour être comprise, la réécrire ou la commenter.
-- Compartimenter : approche composant, petits fichiers (< ~200 lignes),
-  une responsabilité par module.
-- Préférer les fonctions pures et petites à une logique monolithique :
-  elles se lisent, se testent et se réutilisent isolément.
-- Noms explicites et complets (`extractSizeDimensions`, pas `extSzDims`) ;
-  pas d'abréviations. Un nom doit suffire à deviner le rôle.
-- Dépendances minimales ; respecter la configuration TypeScript du projet
-  (`strict` activé — pas de `any` sauf impossibilité documentée).
+- Préférer des fonctions courtes et pures aux orchestrateurs monolithiques.
+- Le code doit être le plus simple possible, lisible même pour un débutant.
+- Donner une seule responsabilité à chaque module.
+- Utiliser des noms complets ; éviter les abréviations et les astuces
+  implicites.
+- Respecter TypeScript `strict` et limiter les dépendances.
+- Ne jamais conditionner une règle au nom d’un composant.
+- Centraliser le vocabulaire sémantique dans
+  `src/contract/semantics.ts`.
+- Conserver les noms Figma d’origine lorsqu’une valeur est normalisée ou
+  renommée.
 
-## Commentaires : expliquer les décisions
-
-Les commentaires sont en français et doivent aider un lecteur débutant :
-
-- **Chaque fichier** commence par un en-tête (`/** … */`) qui explique son
-  rôle dans le plugin et le principe qui le gouverne.
-- **Chaque fonction exportée non triviale** porte une JSDoc : ce qu'elle fait, et surtout
-  **pourquoi** elle le fait ainsi quand ce n'est pas évident. Ajouter un
-  `@example` pour les utilitaires de transformation (cf. `normalizeName`).
-- **Les subtilités s'expliquent là où elles se manifestent** : une bizarrerie
-  de l'API Figma (ex. `fontWeight` lié via `fontStyle`, `componentProperties`
-  qui peut lever sur une instance orpheline), une décision non triviale
-  (ex. type DTCG décidé sur la racine de la chaîne d'alias) se commentent
-  sur place, pas dans un document externe.
-- Un commentaire dit le **pourquoi** ; le **quoi** doit déjà se lire dans le
-  code. Interdit : paraphraser la ligne suivante (`// incrémente i`).
-- Les messages destinés à l'utilisateur (warnings, erreurs, UI) sont en
-  français, précis et actionnables : nommer le calque, la propriété, la
-  variable concernée.
+Les commentaires sont en français. Ils expliquent une décision, une
+particularité de l’API Figma ou une limite ; ils ne paraphrasent pas le code.
+Chaque fichier décrit brièvement son rôle, et chaque fonction exportée non
+triviale précise son contrat.
 
 ## Robustesse
 
-- **Un node incomplet ne fait pas échouer un export** : tout accès à l'API
-  Figma susceptible de lever (`componentProperties`, `getMainComponentAsync`,
-  `getStyleByIdAsync`…) est protégé (`try/catch`, `.catch(() => null)`).
-- **Les warnings n'interrompent pas l'export** : une donnée manquante ou une
-  valeur non tokenisée produit un avertissement précis et l'export continue.
-  On n'exporte jamais de valeur brute à la place d'un token.
-- Les préconditions obligatoires décrites dans la spécification restent
-  bloquantes : sélection invalide, conteneur `<Nom>-Rules` absent/vide ou
-  combinaison de variantes manquante.
-- **Ne jamais perdre d'information en silence** : une collision, un doublon
-  ou un cas imprévu → warning explicite. Un calque inconnu est inclus tel
-  quel, jamais supprimé.
-- Se protéger des boucles (chaînes d'alias circulaires : garder un `Set` des
-  ids visités) et des listes vides (fallbacks explicites).
+Une donnée facultative, illisible ou non tokenisée produit un avertissement et
+reste absente de l’export. Elle n’est jamais remplacée par une valeur brute ou
+une supposition.
 
-## Généricité : aucun cas particulier codé en dur
+Les préconditions définies par la spécification restent bloquantes :
 
-- Le moteur d'export décrit **n'importe quel composant** : jamais de logique
-  conditionnée au nom d'un composant (« si Button alors… » est interdit).
-- Les règles « intelligentes » se déclenchent sur des **valeurs ou des rôles**
-  (axe dont toutes les valeurs sont des tailles → `size` ; calque texte →
-  `label`) et vivent dans `src/contract/semantics.ts`, seul endroit autorisé
-  pour ce vocabulaire.
-- Tout renommage sémantique **conserve le nom Figma d'origine**
-  (`figmaName`, `figmaLayer`) : traçabilité totale, zéro perte.
-- La chaîne d'alias des variables est **préservée**, jamais aplatie : on
-  résout des noms de tokens, pas des valeurs finales.
-- `normalizeName()` est LA règle de nommage commune : un token s'écrit
-  exactement pareil dans un contrat et dans `tokens.json`.
+- sélection invalide ;
+- conteneur `<Nom>-Rules` absent ou vide ;
+- combinaison de variantes manquante.
+
+Tout accès Figma susceptible d’échouer doit être protégé. Les chaînes d’alias
+doivent détecter les cycles. Une collision ou une perte d’information ne doit
+jamais rester silencieuse.
+
+## Invariants communs
+
+- Les alias sont préservés, jamais aplatis.
+- `normalizeName()` est l’unique règle de nommage des tokens.
+- `indexVariables()` tranche les collisions pour les contrats et les tokens.
+- Une référence de token utilise la forme `{chemin.du.token}`.
+- Un composant imbriqué contracté devient une dépendance de composition ; son
+  contenu interne n’est pas réexporté par le parent.
+- Un changement de forme du contrat incrémente `contractVersion`.
+- Le plugin ne modifie jamais le document Figma.
 
 ## Tests
 
-- Tests unitaires pour tous les utilitaires critiques : normalisation de
-  noms, parsers, typage DTCG, insertion d'arbre, résolution d'alias.
-- **Tout bug corrigé est verrouillé par un test** qui reproduit le cas réel
-  (cf. le test « lineheight aliasé sur spacing → dimension »).
-- La logique pure se teste sans Figma : simuler les nodes avec des objets
-  littéraux castés (`as unknown as ComponentNode`). Un module d'extraction
-  demande le type `TokenResolver` (résoudre un alias, rien d'autre) et non la
-  classe `VariableNameResolver`, précisément pour qu'un test puisse lui passer
-  un résolveur littéral ; `extractStructure` accepte le sien en paramètre.
-- Un nouveau fichier `tests/*.test.ts` est pris en compte tout seul :
-  `scripts/run-tests.js` lit le dossier. Aucune liste à tenir à jour.
-- Les exports réels produits sur le fichier Figma de référence sont conservés
-  dans `tests/test-exports/` : c'est un **petit corpus représentatif**, jamais
-  la copie des 150 futurs composants. Il sert de jeu de validation quand la
-  structure Figma ou le code évolue. Un changement de schéma **ou de texte
-  d'avertissement** le périme : seul un ré-export depuis Figma le rafraîchit,
-  jamais une retouche à la main. Le test découvre automatiquement tous les
-  `*.contract.json` de ce dossier et verrouille leur `contractVersion` ; le
-  coût dépend donc du corpus choisi, pas du catalogue de production.
-- Avant PR : `npm test` puis `npm run build` — les deux doivent être verts.
+Tout bug corrigé doit être reproduit par un test. La logique pure se teste avec
+des objets Figma minimaux et des dépendances injectées.
 
-## Documentation & synchronisation
+`scripts/run-tests.js` découvre automatiquement les fichiers
+`tests/*.test.ts`.
 
-- [`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md) est la **spécification de référence** ; la
-  vision produit est dans [`CONCEPT.md`](./CONCEPT.md). Tout changement de
-  comportement ou de schéma se répercute dans `UCM-EXPORTER-SPEC.md` **dans le même
-  changement** — un doc désynchronisé est un bug.
-- **Hiérarchie documentaire** : `CONCEPT.md` **définit** (une seule formulation
-  canonique par principe), `UCM-EXPORTER-SPEC.md` **précise**, tous les autres
-  documents **pointent** sans reformuler — une reformulation libre est une
-  divergence en devenir. C'est la règle `normalizeName()` appliquée à la prose.
-- **Trois autorités, trois périmètres** — ne pas les confondre :
-  `CONCEPT.md` fait foi sur le **pourquoi et les principes** ;
-  `UCM-EXPORTER-SPEC.md` fait foi sur le **comportement du plugin** (en cas de
-  doute sur ce que fait le code, c'est elle) ; l'arbitrage de `CONCEPT.md` §3
-  tranche, lui, la propriété des **données design** (Figma / accord
-  designer ↔ dev / code / CI), pas celle des documents.
-  `ROADMAP.md` est le seul document de **suivi qui engage** ;
-  `PISTES-EVOLUTION.md` explore sans engager.
-- Tout changement de forme du contrat incrémente `contractVersion`
-  (`src/contract/exportComponent.ts`) et met à jour l'exemple de `UCM-EXPORTER-SPEC.md`.
+`tests/test-exports/` contient un petit corpus représentatif d’exports Figma
+réels. Son coût ne dépend pas du nombre de composants du catalogue. Ces
+fixtures ne sont rafraîchies que par un véritable réexport Figma ; elles ne
+sont pas retouchées pour faire passer un test.
 
-### Mettre à jour la documentation
+Avant une pull request :
 
-Toute modification du repo — comportement, commande, structure, schéma —
-se termine par une **revue des fichiers `.md`** : parcourir les documents et
-corriger ceux qui ne décrivent plus la réalité. Quatre règles de rédaction.
+```sh
+npm test
+npm run build
+```
 
-**Décrire l'état actuel, jamais l'historique.** Écrire « la commande X fait Y »,
-pas « X fait maintenant Y alors qu'avant elle faisait Z, ce qui posait
-problème ». Le passé vit dans git et dans les messages de commit ; un document
-dit ce qui **est**.
+## Documentation
 
-**Simplifier plutôt qu'ajouter.** À information égale, le texte le plus court
-gagne. Une bonne mise à jour supprime souvent plus qu'elle n'écrit : quand une
-fonctionnalité change, chercher d'abord ce qui devient inutile.
+Chaque document a une autorité limitée :
 
-**Ne rien répéter.** Une information vit à un seul endroit ; ailleurs, on
-pointe vers lui (cf. hiérarchie documentaire ci-dessus). Deux formulations de
-la même règle finissent toujours par diverger.
+| Document | Rôle |
+|---|---|
+| `CONCEPT.md` | Principes et responsabilités |
+| `UCM-EXPORTER-SPEC.md` | Comportement actuel du plugin |
+| `ROADMAP.md` | État et prochaines validations |
+| `PISTES-EVOLUTION.md` | Options non engagées |
+| `README.md` | Entrée dans le projet |
+| `AGENTS.md` | Instructions opérationnelles |
 
-**Écrire pour tout le monde.** Phrases courtes, mots simples, pas de jargon
-sans définition. Un designer doit pouvoir lire un document qui le concerne.
+Une modification se termine par une revue des documents concernés. Décrire
+l’état actuel, supprimer les formulations périmées et préférer un lien à une
+répétition. L’historique appartient à Git.
 
-## Notes opérationnelles
+## API Figma et build
 
-- Utiliser `src/` pour les modules TypeScript et `src/ui/` pour les sources
-  UI ; le build génère l'unique fichier autonome `dist/ui.html` attendu par
-  Figma.
-- Garder chaque commande Figma isolée et testable. Les utilitaires communs
-  vivent dans des modules dédiés (`utils`, `variables`, `config`, `github`,
-  `base64`) plutôt que dans les handlers.
-
-## Normes Figma
-
-- Vérifier régulièrement la documentation officielle de l'API Plugin Figma ;
-  des mises à jour récentes peuvent impacter la compilation et les types.
-  Adapter la structure du plugin si de nouveaux patterns officiels
-  apparaissent (bundlers recommandés, fonctions d'API variables, etc.).
-- Préférer les variantes asynchrones de l'API (`getVariableByIdAsync`,
-  `getMainComponentAsync`…) : les accès synchrones sont incompatibles avec
+- Préférer les variantes asynchrones de l’API, compatibles avec
   `documentAccess: dynamic-page`.
+- Garder les commandes Figma isolées et testables.
+- Les sources de l’interface vivent dans `src/ui/`; le build produit
+  `dist/ui.html`.
+- Si un changement dépend d’une évolution récente de l’API Figma, vérifier sa
+  documentation officielle avant de modifier les types ou l’architecture.

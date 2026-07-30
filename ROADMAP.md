@@ -1,160 +1,221 @@
-# ROADMAP — UCM
+# Roadmap — UCM
 
-**Où en est le projet et ce qui reste à faire.** Le concept est expliqué dans
-[`CONCEPT.md`](./CONCEPT.md), le comportement exact du plugin dans
-[`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md), et l'analyse stratégique
-(positionnement, inspirations, risques) dans
-[`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md).
+Ce document suit la maturité du projet et les validations restantes. Les
+principes sont dans [CONCEPT.md](./CONCEPT.md), le comportement actuel dans
+[UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md), et les idées non engagées dans
+[PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 
-## 1. L'objectif : un MVP qui prouve
+## Objectif du MVP
 
-Pas un produit fini. Un **prototype qui prouve** que le modèle tient de bout en
-bout — Figma → tokens → contrat → code → agent — monté le plus **solidement et
-automatiquement** possible, pour ensuite le **montrer aux équipes** et décider du
-passage à l'échelle.
+Le MVP doit prouver un flux complet :
 
-Il doit prouver les **deux piliers** du concept (définis dans
-[`CONCEPT.md`](./CONCEPT.md) §2) :
+```text
+Figma → contrat et tokens → code → contrôles CI → utilisation par un agent
+```
 
-- **la robustesse** (Pilier A) — un composant unifié ne *peut pas* diverger : la
-  CI détecte l'écart entre le code et son contrat, et un token qui change dans
-  Figma se propage ou est signalé ;
-- **la confiance** (Pilier B) — un agent, guidé par le seul contrat, utilise le
-  design system correctement, donc un développeur peut s'appuyer sur lui.
+Il doit établir deux résultats :
 
-**Périmètre** : un **composant simple** (Button) pour valider la machinerie
-tokens / variantes / états, **puis un composant composé minimal** — c'est lui qui
-prouve que le modèle tient à l'échelle de la composition, et non un deuxième
-composant simple.
+- **robustesse** : les divergences couvertes sont détectées avant fusion ;
+- **confiance** : le contrat suffit pour utiliser correctement l’API visuelle
+  d’un composant.
 
-Trois pièces, toutes nécessaires :
+Le MVP n’a pas besoin de couvrir tout un catalogue. Il doit en revanche tenir
+sur plusieurs formes de composants, dont au moins un composant composé.
 
-- **le code réel du bouton** (`Button.tsx`) — écrit et maintenu par un
-  développeur : c'est **le livrable** ;
-- **les garde-fous** — parité contrat ↔ code exécutée en CI : c'est **la preuve
-  du Pilier A** ;
-- **le playground** — l'espace où l'agent compose des interfaces à partir du seul
-  contrat : c'est **la preuve du Pilier B**, pas un mode d'autogénération
-  d'interfaces.
+## État actuel
 
-La reconstruction du Button par un agent en contexte froid est uniquement un
-**test de robustesse du contrat** : si le rendu reconstruit est faux, on vérifie
-si l'information était absente ou ambiguë dans le contrat. Ce code généré ne
-remplace pas l'implémentation du développeur.
+| Domaine | État |
+|---|---|
+| Export des contrats 4.2 | Opérationnel |
+| Export DTCG avec alias et modes | Opérationnel |
+| Téléchargement local et dépôt par PR GitHub | Opérationnel |
+| Validation des contrats, de la forme des props et des références de tokens | Opérationnelle |
+| Contrat accepté avant son implémentation | Opérationnel |
+| Parité statique dès que le TSX existe | Props, booléens consommés et composition JSX couverts |
+| Composition entre composants | Export, graphe, cardinalité et cycles couverts |
+| Types TypeScript et variables CSS dérivés | Opérationnels |
+| Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
+| Refus des valeurs brutes par `tokenVar` | Opérationnel |
+| Détection des chemins de tokens recopiés dans le code | Opérationnelle |
+| CI des deux repositories | Vertes sur `main` et sur les pull requests ; diagnostic publié en commentaire |
+| Rapport unique destiné au développeur | Absent — voir « Plan d’action » |
+| Audit des tokens dans le rendu | Absent — voir « Plan d’action » |
+| Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
+| Composants du consommateur | Button et Alert présents ; ne lisent pas leur contrat à l’exécution |
+| Validation multi-composants | Partielle |
+| JSON Schema public | Non commencé |
+| Multi-marque au runtime | Modes exportés, consommation non implémentée |
 
-## 2. État d'avancement
+Le projet est un **prototype avancé** dont l’outillage tient : la chaîne
+Figma → PR → CI → `main` fonctionne pour les contrats 4.2, et les deux
+repositories construisent et se testent.
 
-Le pipeline complet fonctionne sur Button. Le travail restant porte sur les
-garde-fous du repository consommateur (Pilier A) et sur la composition, qui
-prouve que le modèle dépasse le composant isolé.
+Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
+**détection** et non comme **prévention** : rien n’empêche la fusion d’une pull
+request rouge. Et la confiance n’est pas acquise : un composant peut rendre
+juste sans lire son contrat.
 
-| Phase | Objet | État |
+## Fragilités connues
+
+### Les contrôles détectent, mais n’empêchent rien
+
+Les deux repositories sont privés sur un plan GitHub qui n’ouvre pas les
+protections de branche ; l’API répond « Upgrade to GitHub Pro or make this
+repository public ». Une pull request rouge reste donc fusionnable. Aucun
+`CODEOWNERS` n’est déposé, si bien que l’arbitrage des sources
+([CONCEPT.md](./CONCEPT.md)) ne vit qu’en prose.
+
+C’est la seule fragilité qui ne se règle pas en écrivant du code : elle demande
+un changement de plan ou de visibilité. Tant qu’elle tient, « la CI détecte
+l’écart » est exact, « le code ne peut pas diverger » ne l’est pas.
+
+### Un composant peut recopier son contrat au lieu de le lire
+
+Recopier une valeur du contrat — chemin de token, nom d’icône, défaut de prop,
+priorité d’états — produit un composant au rendu exact qui ne suit plus sa
+source. L’écart n’apparaît qu’au prochain changement de design, et aucun
+contrôle de contrat ne peut le voir : ils vérifient le contrat, pas le code.
+
+Button et Alert sont dans cet état. La détection existe pour les chemins de
+tokens ; les autres formes de recopie ne sont couvertes que par les tests
+pilotés par le contrat, qui les signalent lorsque le design change.
+
+Corriger ces composants appartient au développeur. Ils sont à la fois le
+livrable et la mesure du test froid : les réécrire à leur place supprimerait ce
+que l’on cherche à mesurer. Le consommateur ne fournit pour la même raison
+aucune bibliothèque de lecture partagée, qui déplacerait l’épreuve du contrat
+vers elle.
+
+## Plan d’action — contrôles du code et rapport développeur
+
+### Principe : deux destinataires, une source
+
+Un constat porte un **propriétaire**, conformément à l’arbitrage des sources
+([CONCEPT.md](./CONCEPT.md)). Ce champ suffit à le router :
+
+| Propriétaire | Destination | Nature des constats |
 |---|---|---|
-| **0** | Figer Unified Component Exporter (contrats, tokens DTCG, configuration et PR) | opérationnel sur Button |
-| **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary ; **noms de tokens = chemins**, alias préservés en `var(--…)`) | opérationnel |
-| **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
-| **C1** | Garde-fous CI — contrat exploitable, existence des tokens (références relevées **dans** le contrat ⊆ tokens générés) et cohérence de son index `tokensUsed` ; `npm run check` | opérationnel en local ; GitHub Action en place, premier run à valider (étape 2) |
-| **C2** | Garde-fous CI — parité code ↔ contrat | **noms de props, type et consommation des BOOLEAN opérationnels dès qu'un `.tsx` existe** ; graphe de composition, portée JSX et cardinalité opérationnels ; comportement des `visibilityProp` testé avec chaque implémentation ; enums et valeurs par défaut à faire (étape 4) |
-| **D** | Playground : rendu live + contexte agent + test froid léger | opérationnel sur Button |
-| **E** | **Composition** : composé minimal, champ `composes`, parité récursive | moteur 4.2 et garde-fous génériques en place ; **ré-export Button/Alert à faire** (le schéma a changé), puis implémentation d'Alert |
-| **F** | Passage à l'échelle : composants simples supplémentaires, guide de rédaction pour les designers, industrialisation | post-MVP |
+| Designer | Commentaire de pull request | Contrat, tokens, props ou slots absents du code |
+| Développeur | Rapport en terminal et en CI | Valeurs brutes, recopies, variables inexistantes |
 
-## 3. Prochaines étapes
+Le commentaire de pull request existe. Le rapport développeur est à construire.
 
-Dans l'ordre. Les tâches 1 à 4 sont prioritaires : 1-2 achèvent le socle sur
-Button, puis 3-4 attaquent les deux vrais points durs — la **composition**,
-puis la **parité** (Pilier A), dessinée contre ce cas réel.
+### Le rapport développeur
 
-1. **Écrire le vrai `Button.tsx` (avec le dev).** Noms et valeurs des props
-   fixés ensemble en amont (cf. [`CONCEPT.md`](./CONCEPT.md) §3). États :
-   `hover` / `focus` / `press` en CSS (`:hover` / `:focus-visible` / `:active`,
-   déjà portés par `stateModel`), `disabled` en prop booléenne. Ce code de
-   production remplace le prototype généré.
-2. **Compléter les garde-fous d'équipe (Phase C1).** Trois choses :
-   - **valider la CI sur GitHub** — vérifier que les runs des deux repos
-     passent au vert (le point fragile est `npm ci`, qui exige un
-     `package-lock.json` exactement en phase avec `package.json`), puis ouvrir
-     une pull request avec un token volontairement inexistant pour voir le
-     diagnostic se publier en commentaire ;
-   - ajouter un fichier `CODEOWNERS` encodant l'arbitrage (tokens → designer,
-     code → dev — Tier 1 de
-     [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §6) et une **protection de
-     branche**, sans laquelle une PR rouge reste fusionnable ;
-   - écrire les premiers tests du playground (`tokenVar`, scripts).
-3. **Composant composé — priorité structurelle.** Les deux natures — simple /
-   composé — sont définies dans [`CONCEPT.md`](./CONCEPT.md) §1. Le cas réel est
-   **Alert**, qui embarque un bouton d'action : inutile d'en fabriquer un, il
-   existe et son premier export décrivait un Button. Ce qui est en place :
-   - le plugin **reconnaît un nœud `INSTANCE`** d'un autre composant contracté
-     (critère : il possède son conteneur `<Nom>-Rules`) et l'enregistre dans
-     `composes` au lieu de descendre dans ses calques bruts ;
-   - le contrat d'un composé ne liste que **ses propres** tokens, jamais les
-     internes des composants qu'il embarque ;
-   - la parité est **récursive** : un composé est conforme s'il expose ses props
-     **et** rend réellement les composants déclarés dans `composes`.
+Trois règles le définissent :
 
-   Le moteur 4.2 couvre les icônes présentes seulement dans certains variants,
-   la visibilité imbriquée, le graphe et la cardinalité. Une composition qui
-   varie entre variants est détectée et signalée sans inventer un slot absent
-   de la structure de référence. Un slot d'icône porte désormais le rôle `icon`,
-   stable sur toute la matrice, et chaque icône déclare le slot et la taille qui
-   la rendent — plusieurs icônes qui s'excluent selon un axe sont donc toutes
-   rendables. Button et Alert ont été ré-exportés en 4.2 ; le corpus de
-   référence vérifie automatiquement qu'aucun export réel ne reste sur une
-   ancienne version. Le `.tsx` d'Alert reste volontairement hors périmètre.
-4. **Parité code ↔ contrat, industrialisée.** Conçue **après** le composé
-   minimal de l'étape 3, pour dessiner la parité récursive contre un cas réel.
-   Un adaptateur React/TS extrait
-   l'API réelle du `.tsx` (via `react-docgen-typescript`) → `Button.code.json`,
-   puis un comparateur complète le socle existant (noms + BOOLEAN typés et lus) et liste les
-   autres écarts avec le contrat (valeur d'enum divergente, état non géré,
-   référence de token cassée, dépendance de
-   composition absente) **et le sens de correction** selon l'arbitrage de
-   [`CONCEPT.md`](./CONCEPT.md) §3. Déclencheurs : hook pre-commit (retour local)
-   + GitHub Action bloquante sur PR. Prévoir la **déclaration d'une divergence
-   volontaire** (annotée + justifiée), sinon la parité devient une prison qu'on
-   finit par désactiver. Aucune règle conditionnée au nom d'un composant.
-5. **Composants simples supplémentaires (généricité).** Une fois la composition
-   tenue : un composant à icône `strict` (Alert) et un interactif (Checkbox /
-   TextField) pour couvrir booléens, états et slots, et confirmer qu'aucune règle
-   spécifique à Button ne subsiste.
-6. **Au-delà du MVP.** *(Cette liste est le suivi qui engage ;
-   [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) explore librement les mêmes
-   idées sans les engager — une piste retenue entre ici.)* Une fois la
-   généricité prouvée : JSON Schema versionné du
-   contrat, version de schéma pour `tokens.json`, exploitation du multi-marque
-   (les modes exportés sous `$extensions["com.ucm.modes"]`), diff sémantique des
-   contrats pour faciliter les revues, formalisation du protocole de test froid
-   (états comparés, critère de réussite/échec, consignation des résultats), puis
-   passerelles (génération Code Connect, exploitation Storybook). Motivations
-   détaillées dans [`PISTES-EVOLUTION.md`](./PISTES-EVOLUTION.md) §4.
-   L'assainissement du format est fait : il a été groupé avec `composes` dans le
-   contrat 4.0 de l'étape 3, pour n'imposer qu'un seul cycle de ré-export.
+1. **Tout s’exécute, puis on rapporte.** La chaîne actuelle s’arrête au premier
+   échec et masque l’état des contrôles suivants.
+2. **Aucun contrôle n’écrit lui-même dans le terminal.** Il produit des
+   constats ; le rapport décide de leur présentation. Sans cette règle, chaque
+   contrôle ajouté crée une sortie de plus.
+3. **Un constat sans geste correctif est refusé.** Règle déjà appliquée au
+   commentaire de pull request.
 
-> **Principe d'ordonnancement.** On ne conçoit `composes` ni la parité récursive
-> dans l'abstrait : créer volontairement un composé minimal (étape 3) fournit le
-> cas réel contre lequel on les dessine. Une abstraction ajoutée avant son cas
-> concret résout un problème théorique et réduit la généricité.
+Un constat porte : contrôle, propriétaire, gravité, fichier, ligne, ce qui ne va
+pas, quoi faire.
 
-## 4. Critères de succès & de validation
+### Les contrôles
 
-**Succès du MVP** — les deux piliers, prouvés ensemble :
+| Contrôle | Ce qu’il attrape | Ce qu’il ne voit pas |
+|---|---|---|
+| Audit du rendu | Une variable CSS absente des tokens générés, une valeur qui n’en est pas une | Un chemin recopié mais valide |
+| Chemins recopiés | Une référence `{…}` écrite dans le code, y compris construite par concaténation | Les valeurs recopiées qui ne sont pas des tokens |
+| Valeurs brutes | Une couleur ou une dimension écrite à la main | Une valeur produite dynamiquement |
+| Tests pilotés par le contrat | Un rendu qui ne correspond plus au contrat après un changement de design | Ce qu’aucun test ne couvre |
 
-- **Pilier A** : la CI applique les trois critères de cohérence de
-  [`CONCEPT.md`](./CONCEPT.md) §3 (code ↔ contrat, token changé, référence
-  cassée), et la parité récursive tient sur le composé minimal ;
-- **Pilier B** : dans le playground, l'agent n'invente aucune variante visuelle,
-  n'utilise que les props du contrat, respecte les `@dont` et produit un rendu
-  cohérent avec Figma, sans divergence de nom sur le trajet.
+L’audit du rendu est le seul à garantir qu’un token **renommé** se voie : les
+contrôles de contrat ne relèvent que les références du contrat, jamais celles
+écrites dans le code. Sans lui, un renommage laisse une variable inexistante,
+que le navigateur ignore sans erreur.
 
-**Concept validé (au-delà de Button)** : le modèle pourra être proposé à une
-expérimentation externe lorsque —
+Les tests pilotés par le contrat relisent le contrat à chaque exécution. C’est
+ce qui fait d’eux le contrôle central : ils signalent la recopie au moment où
+elle devient un écart réel.
 
-- plusieurs familles de composants sont décrites sans condition liée à leur nom ;
-- leurs contrats passent un JSON Schema versionné ;
-- les tokens utilisés sont vérifiés automatiquement ;
-- un premier adaptateur détecte les divergences entre contrat et code ;
-- un agent en contexte froid utilise correctement variantes et règles d'usage
-  sans inventer d'API design ;
-- les erreurs répétées des agents se relient à une ambiguïté précise du contrat
-  ou à une responsabilité qui appartient explicitement au code.
+### Séquence
+
+| # | Étape | Motif de l’ordre |
+|---|---|---|
+| 1 | Rapport développeur ; retrait du test comparant les propriétés CSS déclarées | Poser la sortie avant d’y brancher des contrôles |
+| 2 | Audit du rendu | Ferme le cas du token renommé |
+| 3 | Chemins recopiés rebranchés sur le rapport | Le contrôle existe, seule sa sortie change |
+| 4 | Valeurs brutes, avec réglage des fausses alertes | Le seul contrôle à risque de friction, placé après les contrôles sûrs |
+| 5 | Limites écrites dans le consommateur | Chaque contrôle annonce ce qu’il vérifie |
+
+Une option reste ouverte à l’étape 4 : porter les contrôles statiques dans un
+linter, pour un retour dans l’éditeur et des exceptions justifiées et traçables.
+Le rapport et les contrôles fonctionnent sans lui.
+
+## Prochaines validations
+
+### 1. Éprouver la généricité
+
+Tester le flux complet sur quelques composants choisis pour leurs différences,
+pas pour leur nombre :
+
+- un composant simple avec plusieurs axes ;
+- un composant interactif avec booléens et états ;
+- un composant composé avec plusieurs dépendances ;
+- un composant dont la structure ou les icônes changent selon les variantes.
+
+Chaque cas doit révéler soit que le modèle suffit, soit une limite précise. Un
+nouveau champ de contrat ne se justifie qu’à partir d’une limite réelle.
+
+**Alert** couvre le dernier point et entame l’avant-dernier : elle embarque une
+dépendance — une seule, pas plusieurs — et change d’icône selon la sévérité.
+Restent un composé à plusieurs dépendances et un composant interactif à booléens
+(Checkbox, TextField).
+
+### 2. Éprouver le workflow d’équipe
+
+Le premier point conditionne les autres : sans lui, on mesure la lisibilité de
+diagnostics que rien n’oblige à lire.
+
+- rendre les contrôles bloquants — protection de branche et `CODEOWNERS` — ce
+  qui suppose de trancher la question du plan GitHub (« Fragilités connues ») ;
+- faire relire de vraies pull requests d’export par un designer et un
+  développeur ;
+- vérifier que les diagnostics sont compréhensibles sans ouvrir les logs ;
+- mesurer les faux positifs et le coût quotidien des contrôles.
+
+### 3. Compléter la parité utile
+
+La parité actuelle ne cherche pas à prouver le rendu complet. Les prochains
+contrôles candidats sont :
+
+- valeurs d’enum réellement gérées par le composant ;
+- valeurs par défaut alignées sur `props.<x>.default` ;
+- exceptions volontaires, explicites et justifiées.
+
+Le choix final dépendra des résultats multi-composants. Un garde-fou coûteux ou
+fragile ne doit pas être ajouté uniquement pour viser une parité théorique.
+
+### 4. Stabiliser l’interopérabilité
+
+Après la validation des cas réels :
+
+- publier un JSON Schema versionné du contrat ;
+- versionner aussi le format de `tokens.json` ;
+- documenter la politique de compatibilité ;
+- produire éventuellement un diff sémantique pour les revues.
+
+Le schéma ne doit pas figer trop tôt un format encore susceptible d’évoluer.
+
+## Critères de sortie du MVP
+
+Le MVP est validé lorsque :
+
+- plusieurs familles de composants passent sans règle liée à leur nom ;
+- un composé réutilise réellement ses dépendances et passe la parité ;
+- les références de tokens cassées et les écarts d’API couverts bloquent la
+  **fusion** — pas seulement la CI — avec un diagnostic actionnable ;
+- un contrat peut être fusionné avant son code sans désactiver les contrôles
+  futurs ;
+- un agent en contexte froid n’invente ni prop, ni variante, ni token, et lit le
+  contrat au lieu d’en recopier les valeurs ;
+- les limites non vérifiables sont documentées sans être présentées comme des
+  garanties.
+
+À ce stade seulement, le projet pourra être proposé à une expérimentation sur
+un catalogue plus large.
