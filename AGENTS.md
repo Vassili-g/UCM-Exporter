@@ -32,6 +32,8 @@ voir [`ROADMAP.md`](./ROADMAP.md).
 - `src/contract/` — commande « Export composant » (contrat JSON) :
   - `exportComponent.ts` — orchestrateur + métadonnées ;
   - `componentTree.ts` — axes de variantes, matrice, détection du wrapper ;
+  - `composedComponents.ts` — reconnaissance des composants unifiés imbriqués :
+    ils deviennent des dépendances (`composes`), jamais des calques à parcourir ;
   - `extractSlotTokens.ts` — peintures et contours liés dans un variant ;
   - `extractVariantTokens.ts` — assemblage des feuilles dans les arbres par axes ;
   - `extractLayout.ts` — dimensions, slots enfants, typographie ;
@@ -73,6 +75,9 @@ npm run typecheck # tsc --noEmit seul
   valeurs résolues.
 - **Renommage sémantique = traçabilité** : `figmaName` / `figmaLayer`
   conservent toujours le nom Figma d'origine.
+- **Un composant unifié imbriqué est une dépendance** : on le déclare dans
+  `composes` et on n'entre pas dans ses calques. Ses tokens, ses slots et ses
+  props appartiennent à son contrat — un composé ne décrit que ce qui est à lui.
 - **Warnings non bloquants** : une donnée incomplète avertit sans interrompre
   l'export. Seules les préconditions explicitement obligatoires dans la spec
   peuvent le bloquer (sélection invalide, conteneur de règles absent ou vide).

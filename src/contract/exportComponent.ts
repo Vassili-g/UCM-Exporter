@@ -6,6 +6,7 @@
  * → structure (layout, tailles, tokens) → intention → contrat final.
  */
 import { findWrapperReference, groupComponentsByVariant } from './componentTree';
+import { indexContractedNames, scanComposedMatrix } from './composedComponents';
 import { extractRules, hasUsableRules } from './extractRules';
 import { extractStructure } from './extractStructure';
 import { extractContractProps } from './parsers';
@@ -18,9 +19,11 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
- * 3.2 : `@boolean` documente explicitement les props BOOLEAN — ajout compatible.
+ * 4.0 : composition (`composes`) et assainissement du format — les dimensions
+ * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
+ * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '3.2';
+export const CONTRACT_VERSION = '4.0';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
@@ -114,7 +117,7 @@ function mergePropDescriptions(
  * bloqué pour autant : le lien est un confort de relecture, `nodeId` et
  * `fileName` suffisent à retrouver le composant.
  */
-function buildMeta(componentSet: ComponentSetNode): ContractMeta {
+function buildMeta(componentSet: ComponentSetNode): Omit<ContractMeta, 'warnings'> {
   const fileKey = figma.fileKey ?? null;
   const fileName = figma.root.name;
   const nodeId = componentSet.id;
@@ -160,10 +163,20 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   const warnings: string[] = [...rules.warnings];
   const props = extractContractProps(componentSet.componentPropertyDefinitions, warnings);
   const { matrix, warnings: matrixWarnings } = groupComponentsByVariant(componentSet);
-  // Le variant de référence sert de base au layout et à la couleur du label.
+  // Le variant de référence sert de base au layout.
   const referenceComponent = componentSet.defaultVariant ?? matrix.variants[0]?.component ?? null;
+
+  // La composition se relève AVANT toute extraction : un composant unifié
+  // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
+  // conditionne tout ce qui suit.
+  const { composes, composed } = await scanComposedMatrix(
+    matrix.variants.map((entry) => entry.component),
+    referenceComponent,
+    indexContractedNames(figma.currentPage),
+  );
+
   const wrapper = referenceComponent
-    ? await findWrapperReference(referenceComponent, warnings)
+    ? await findWrapperReference(referenceComponent, warnings, composed)
     : null;
   const stateModel = buildStateModel(
     matrix.axes,
@@ -193,7 +206,14 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   const index = indexVariables(variables, new Map(collections.map((c) => [c.id, c])));
   const resolver = new VariableNameResolver({ index, warnings });
 
-  const extracted = await extractStructure(matrix, matrixWarnings, wrapper, referenceComponent, resolver);
+  const extracted = await extractStructure(
+    matrix,
+    matrixWarnings,
+    wrapper,
+    referenceComponent,
+    resolver,
+    composed,
+  );
 
   // La documentation issue des règles s'accroche aux props de même nature.
   mergePropDescriptions(props, rules.propDescriptions, warnings);
@@ -218,24 +238,25 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     );
   }
 
+  const allWarnings = Array.from(new Set([...warnings, ...extracted.warnings]));
   const contract: Contract = {
     name: componentSet.name || 'Component',
-    meta,
+    meta: { ...meta, warnings: allWarnings },
     props,
     structure: extracted.structure,
     stateModel,
     rendering: defaultRenderingSemantics(),
     icons,
+    composes,
     tokensUsed: extracted.tokensUsed,
     intent,
-    warnings: Array.from(new Set([...warnings, ...extracted.warnings])),
   };
 
   return {
     filename: safeFilename(contract.name),
     content: JSON.stringify(contract, null, 2),
-    warningCount: contract.warnings.length,
-    warnings: contract.warnings,
+    warningCount: allWarnings.length,
+    warnings: allWarnings,
   };
 }
 

@@ -27,14 +27,19 @@ export {
 } from './rulesModel';
 export type { IconRule, RuleEntry, RuleTag, RulesResult } from './rulesModel';
 
-/** Suffixe du conteneur qui porte les règles d'un composant. */
-const RULES_SECTION_SUFFIX = '-Rules';
+/**
+ * Suffixe du conteneur qui porte les règles d'un composant. Exporté parce
+ * qu'il ne sert pas qu'à lire les règles : posséder un tel conteneur est ce
+ * qui fait d'un composant un composant unifié, donc une dépendance et non un
+ * calque à parcourir (cf. `composedComponents.ts`).
+ */
+export const RULES_SECTION_SUFFIX = '-Rules';
 /** Types de conteneur acceptés pour ce bloc (on ne lit que ses enfants). */
-const RULES_CONTAINER_TYPES: readonly string[] = ['SECTION', 'FRAME', 'GROUP'];
+export const RULES_CONTAINER_TYPES: readonly string[] = ['SECTION', 'FRAME', 'GROUP'];
 /** Nom (compacté) du composant qui matérialise une règle. */
 const RULES_COMPONENT_NAME = 'componentconfiguration';
 /** Compacte un nom (sans espaces, en minuscules) pour comparer un nom de composant. */
-function compactName(name: string): string {
+export function compactName(name: string): string {
   return name.replace(/\s+/g, '').toLowerCase();
 }
 

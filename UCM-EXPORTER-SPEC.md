@@ -295,8 +295,9 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "3.2",
+    "contractVersion": "4.0",
     "exportedAt": "2026-07-11T14:00:00.000Z",
+    "warnings": ["…"],
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "12:345",
@@ -341,10 +342,6 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
   },
   "structure": {
     "layout": "flex-row",
-    "gap": "{components.button.sizes.medium.gap}",
-    "padding": { "x": "{components.button.sizes.medium.padding-x}",
-                 "y": "{components.button.sizes.medium.padding-y}" },
-    "radius": "{components.button.sizes.medium.border-radius}",
     "sizes": {
       "big":    { "gap": "…", "padding": { "x": "…", "y": "…" }, "radius": "…", "fontSize": "…" },
       "medium": { "…": "idem" },
@@ -353,8 +350,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "children": [
       { "slot": "arrow-left-long", "figmaLayer": "arrow-left-long", "optional": true,
         "visibilityProp": "iconLeft", "size": "{components.icons.sizes.base}" },
-      { "slot": "label", "figmaLayer": "Suivant", "typography": { "…": "étape 5" },
-        "color": "{components.button.colors.primary.contained.default.foreground}" },
+      { "slot": "label", "figmaLayer": "Suivant", "typography": { "…": "étape 5" } },
       { "slot": "arrow-right-long", "figmaLayer": "arrow-right-long", "optional": true,
         "visibilityProp": "iconRight", "size": "{components.icons.sizes.base}" }
     ],
@@ -368,6 +364,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "arrowRightLong": { "policy": "modifiable", "figmaName": "arrow-right-long",
                           "visibilityProp": "iconRight", "runtimeProp": "iconRightName" }
   },
+  "composes": [],
   "tokensUsed": ["…"],
   "intent": {
     "usage": "Action déclenchant une opération ; le choix des variantes dépend de l'importance et du contexte.",
@@ -375,13 +372,32 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "dont": ["Utiliser size.big dans des écrans génériques.",
               "Juxtaposer plusieurs boutons color.primary sur une même vue."],
     "pairs": []
-  },
-  "warnings": ["…"]
+  }
 }
 ```
 
-`meta` porte la version du schéma du contrat (`contractVersion`), la date d'export et la
+Les dimensions ne figurent qu'à UN endroit : `sizes` les porte toutes dès que
+le composant expose un axe de tailles, sinon `gap` / `padding` / `radius`
+restent au niveau haut de `structure`. Les deux ne coexistent jamais.
+
+`composes` liste les composants unifiés que celui-ci embarque — vide pour un
+composant simple. Une instance ainsi déclarée n'est PAS parcourue : ses
+calques, ses tokens et ses props appartiennent à son propre contrat. Le slot
+correspondant de `children` la nomme par `composes`, sans relever ni sa taille
+ni sa typographie. Un composant est reconnu comme unifié lorsqu'il possède un
+conteneur `<Nom>-Rules` sur la page — le même critère qui autorise son export.
+
+```json
+"composes": [
+  { "component": "Button", "figmaLayer": "action", "visibilityProp": "action" }
+]
+```
+
+`meta` porte la version du schéma du contrat (`contractVersion`), la date
+d'export, les `warnings` de l'export et la
 traçabilité Figma (nom de fichier, id du nœud, clé de composant, lien URL).
+Les `warnings` documentent l'EXPORT, pas le composant : un consommateur n'a
+jamais à les lire pour rendre un composant.
 L'URL vaut `null` tant que le plugin n'est pas un **plugin privé
 d'organisation** déclarant `enablePrivatePluginApi` : `figma.fileKey` leur est
 réservé. Ce n'est donc pas un état transitoire que la publication corrigerait,
@@ -579,6 +595,7 @@ GitHub API déclarée dans le manifest.
 | 3.0 | Les tokens sont cités comme références `{chemin.du.token}`, plus jamais comme chemins nus — rupture pour un consommateur qui lisait le chemin littéral |
 | 3.1 | `visibilityProp` relevé sur **tous** les slots, plus seulement les calques graphiques : un label masquable (bouton à icône seule) est enfin décrit — ajout compatible |
 | 3.2 | La règle `@boolean` documente explicitement une prop BOOLEAN dans `props.<prop>.description` — ajout compatible |
+| 4.0 | Composition (`composes`) et assainissement du format — rupture : les dimensions quittent le niveau haut dès que `sizes` existe, `children[label].color` disparaît au profit de `variantTokens`, et `warnings` passe sous `meta` |
 
 `tokens.json` ne porte pas encore de version de schéma propre — prévu au-delà
 du MVP (cf. [`ROADMAP.md`](./ROADMAP.md)).

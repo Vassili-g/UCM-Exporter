@@ -8,6 +8,7 @@
  * partout des références de tokens sous forme de chaînes.
  */
 import type { VariantEntry, VariantMatrix } from './componentTree';
+import type { ComposedInstances } from './exportableNodes';
 import { normalizePropValue } from './parsers';
 import { getSlotTokens } from './extractSlotTokens';
 import type { TokenResolver } from './extractSlotTokens';
@@ -56,6 +57,7 @@ export async function extractVariantTokens(
   resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
+  composed: ComposedInstances = new Map(),
 ): Promise<{ variantTokens: VariantTokens; variantStrokes: VariantStrokes }> {
   const variantTokens: VariantTokens = {};
   const variantStrokes: VariantStrokes = {};
@@ -71,7 +73,7 @@ export async function extractVariantTokens(
   const collected = await Promise.all(
     matrix.variants.map(async (entry: VariantEntry) => {
       const variantWarnings: string[] = [];
-      const leaf = await getSlotTokens(entry.component, resolver, variantWarnings);
+      const leaf = await getSlotTokens(entry.component, resolver, variantWarnings, composed);
       return { entry, leaf, variantWarnings };
     }),
   );
