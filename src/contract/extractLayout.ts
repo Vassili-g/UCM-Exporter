@@ -131,6 +131,29 @@ async function extractTypography(
  *   optionnel, et on relève son token de taille s'il existe. Une règle `@icons`
  *   peut ensuite le qualifier par son nom Figma, sans modifier son slot.
  */
+/**
+ * Nom du composant unifié rendu à cet emplacement — que le slot SOIT
+ * l'instance ou qu'il l'enveloppe. Une Alert range son bouton dans un calque
+ * « Action » : sans ce second cas, le slot ne dirait pas quoi rendre, et un
+ * conteneur sans texte serait pris pour un placeholder d'icône.
+ */
+function composedSlotName(
+  child: SceneNode,
+  composed: ComposedInstances,
+): string | undefined {
+  const direct = composed.get(child.id);
+  if (direct) return direct;
+  if (composed.size === 0 || !('findAll' in child)) return undefined;
+
+  // Ordre du document : le plus englobant d'abord, donc la dépendance la plus
+  // haute du slot — celles qu'elle contient relèvent de SON contrat.
+  for (const node of child.findAll(() => true)) {
+    const name = composed.get(node.id);
+    if (name) return name;
+  }
+  return undefined;
+}
+
 async function extractChild(
   child: SceneNode,
   resolver: TokenResolver,
@@ -139,7 +162,7 @@ async function extractChild(
   composed: ComposedInstances,
 ): Promise<ChildStructure> {
   const layerName = normalizeName(child.name).replace(/\./g, '-') || 'unnamed';
-  const composedName = composed.get(child.id);
+  const composedName = composedSlotName(child, composed);
   const textNode = composedName ? null : firstTextNode(child, warnings, composed);
   const semantic = semanticSlotName(Boolean(textNode));
 
