@@ -1,120 +1,91 @@
-# Unified Component Exporter — guide pour agents IA (et nouveaux contributeurs)
+# Unified Component Exporter — guide agent
 
-Plugin Figma qui exporte des **contrats de composant** (JSON) et les variables
-en **tokens DTCG**. Co-localisés avec le code réel, ces artefacts mettent en
-œuvre le concept UCM et donnent au design comme au développement une référence
-commune, lisible par les humains et les agents IA.
+Plugin Figma qui exporte des contrats de composant et des tokens DTCG. Il ne
+modifie jamais le document Figma.
 
-## Ordre de lecture
+## Avant de modifier
 
-Lire dans cet ordre avant de toucher au code :
+Lire uniquement ce qui concerne la tâche :
 
-1. [`CONCEPT.md`](./CONCEPT.md) — la vision : ce qu'est l'UCM, pourquoi, et
-   **qui fait foi** en cas de contradiction (§3, arbitrage des sources).
-2. [`UCM-EXPORTER-SPEC.md`](./UCM-EXPORTER-SPEC.md) — **la spécification de référence** : le design
-   system décrit, l'algorithme des exports, le dépôt GitHub et le schéma des sorties.
-   Elle fait foi sur le **comportement du plugin** (CONCEPT fait foi sur les
-   principes) : c'est le document à consulter avant de toucher au moteur.
-3. [`CONTRIBUTING.md`](./CONTRIBUTING.md) — les règles de code : commentaires
-   utiles en français, robustesse, généricité, tests.
-4. [`src/contract/types.ts`](./src/contract/types.ts) — le schéma du contrat de composant,
-   type par type, commenté.
-5. [`tests/test-exports/`](./tests/test-exports/) — les sorties réelles
-   produites sur le fichier Figma de référence (`Button.contract.json`,
-   `tokens.json`). À consulter pour voir la forme concrète des exports.
+1. [CONCEPT.md](./CONCEPT.md) pour les responsabilités du modèle ;
+2. [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md) pour le comportement touché ;
+3. [CONTRIBUTING.md](./CONTRIBUTING.md) pour les règles de code et de test ;
+4. `src/contract/types.ts` et les tests voisins pour la forme concrète.
 
-Pour le contexte projet — objectif MVP, état d'avancement et prochaines étapes —
-voir [`ROADMAP.md`](./ROADMAP.md).
+La maturité et les priorités vivent dans [ROADMAP.md](./ROADMAP.md). Les idées
+non décidées dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 
 ## Carte du code
 
-- `src/code.ts` — point d'entrée du plugin : routage UI → handlers.
-- `src/contract/` — commande « Export composant » (contrat JSON) :
-  - `exportComponent.ts` — orchestrateur + métadonnées ;
-  - `componentTree.ts` — axes de variantes, matrice, détection du wrapper ;
-  - `composedComponents.ts` — reconnaissance des composants unifiés imbriqués :
-    ils deviennent des dépendances (`composes`), jamais des calques à parcourir ;
-  - `extractSlotTokens.ts` — peintures et contours liés dans un variant ;
-  - `extractVariantTokens.ts` — assemblage des feuilles dans les arbres par axes ;
-  - `extractLayout.ts` — dimensions, slots enfants, typographie ;
-  - `slotRelations.ts` — compositions et visibilités imbriquées d'un slot ;
-  - `extractSizes.ts` — dimensions par taille (big/medium/small…) ;
-  - `nodeBindings.ts` — résolution complète des groupes de champs liés ;
-  - `exportableNodes.ts` — parcours des calques qui peuvent être rendus ;
-  - `extractRules.ts` — règles d'usage lues dans le conteneur `<Nom>-Rules` ;
-  - `rulesModel.ts` — assemblage pur des règles, intentions et politiques ;
-  - `mergeBooleanDescriptions.ts` — liaison des règles `@boolean` aux props BOOLEAN ;
-  - `extractIconLayers.ts` — inventaire des calques graphiques ciblés par
-    `@icons` sur toute la matrice : visibilité, taille et rang du slot ;
-  - `mergeIconRules.ts` — liaison générique règles ↔ calques ↔ props d'icône ;
-  - `semantics.ts` — **seul** lieu du vocabulaire sémantique (size, label,
-    icon, rôles rendables…) et contrôle des rôles relevés ;
-  - `parsers.ts` — props Figma → props publiques, intention taguée ;
-  - `types.ts` — schéma du contrat.
-- `src/tokens/exportTokens.ts` — commande « Export tokens » (DTCG).
-- `src/utils.ts` + `src/variables.ts` — nommage canonique et résolution
-  d'alias, **communs aux deux commandes**. `indexVariables()` y tranche les
-  collisions de noms et feuille/groupe une seule fois pour les deux :
-  sans cet index partagé, un contrat citerait un token attribué à une autre
-  variable. `codeIdentifier()` sépare le nom Figma lisible de l'identifiant
-  PascalCase employé par les fichiers et le code.
-- `src/base64.ts` — codec UTF-8/Base64 compatible avec le sandbox Figma.
-- `src/config.ts` — validation et stockage local de la configuration GitHub.
-- `src/github.ts` — dépôt d'un artefact sur une branche et ouverture d'une PR.
-- `src/ui/` — interface (vanilla JS, un fichier autonome au build).
-- `tests/` — tests des fonctions pures ; `scripts/run-tests.js` les découvre
-  tous, un nouveau fichier `*.test.ts` tourne sans rien déclarer (`npm test`).
-
-## Commandes
-
-```sh
-npm test          # tests unitaires (obligatoire avant PR)
-npm run build     # typecheck + bundle + manifest (obligatoire avant PR)
-npm run typecheck # tsc --noEmit seul
+```text
+src/
+  code.ts                    routage UI → commandes
+  contract/
+    exportComponent.ts       orchestration et métadonnées
+    componentTree.ts         axes, matrice et wrapper de layout
+    parsers.ts               propriétés Figma → API publique
+    semantics.ts             vocabulaire sémantique partagé
+    extract*.ts              structure, layout, tailles, tokens et règles
+    composedComponents.ts    dépendances entre composants
+    nodeBindings.ts          groupes complets de liaisons Figma
+    types.ts                 schéma TypeScript du contrat
+  tokens/exportTokens.ts     export DTCG
+  variables.ts               index commun, collisions et alias
+  utils.ts                   normalisation et identifiant de code
+  config.ts                  configuration GitHub locale
+  github.ts                  branche, fichier et pull request
+  ui/                        interface du plugin
+tests/
+  test-exports/              petit corpus d’exports réels
 ```
 
-## Invariants à ne jamais casser
+## Invariants
 
-- **Aucune logique spécifique à un composant** (« si Button alors… » interdit).
-- **Chaîne d'alias préservée** : on exporte des noms de tokens, jamais des
-  valeurs résolues.
-- **Renommage sémantique = traçabilité** : `figmaName` / `figmaLayer`
-  conservent toujours le nom Figma d'origine.
-- **Un composant unifié imbriqué est une dépendance** : on le déclare dans
-  `composes` et on n'entre pas dans ses calques. Ses tokens, ses slots et ses
-  props appartiennent à son contrat — un composé ne décrit que ce qui est à lui.
-- **Un slot d'icône est stable sur toute la matrice** : il porte le rôle `icon`,
-  jamais le nom de son calque, car des icônes qui s'excluent entre variants
-  partagent un emplacement. `icons.<clé>.slot` et `.size` situent chacune
-  d'elles, y compris celles que le variant de référence ne contient pas.
-- **Warnings non bloquants** : une donnée incomplète avertit sans interrompre
-  l'export. Seules les préconditions explicitement obligatoires dans la spec
-  peuvent le bloquer (sélection invalide, conteneur de règles absent/vide,
-  combinaison de variantes manquante).
-- **Un axe public, une seule clé** : lorsqu'un enum est renommé sémantiquement,
-  la table produite avec les props s'applique aussi à `variantAxes` et aux
-  valeurs de chaque variant.
-- **Nom Figma ≠ identifiant de code** : `contract.name` reste exact et lisible ;
-  le nom du fichier est l'identifiant PascalCase canonique. Deux noms qui
-  convergent vers le même identifiant doivent être signalés par le consommateur.
-- **`normalizeName()` unique** : un token s'écrit pareil dans un contrat et
-  dans `tokens.json`. Il a plusieurs entrées pour une sortie, donc deux
-  variables Figma peuvent se disputer un nom : les départager relève de
-  `indexVariables()`, jamais d'une commande en particulier.
-- Changement de forme du contrat → incrémenter `contractVersion`
-  (`src/contract/exportComponent.ts`) **et** mettre à jour `UCM-EXPORTER-SPEC.md`.
-- **Toute modification se termine par une revue des `.md`** : mettre à jour ce
-  qui ne décrit plus la réalité, en décrivant l'état actuel et sans rien
-  répéter (règles de rédaction : [`CONTRIBUTING.md`](./CONTRIBUTING.md),
-  « Mettre à jour la documentation »).
+- Aucune logique liée au nom d’un composant.
+- Figma reste traçable après toute normalisation (`figmaName`,
+  `figmaLayer`).
+- Un enum renommé utilise la même clé dans `props`, `variantAxes` et les arbres
+  de variantes.
+- Les tokens restent des références et leurs alias ne sont jamais aplatis.
+- `normalizeName()` et `indexVariables()` sont communs aux deux commandes.
+- Une collision feuille/groupe ou deux chemins identiques sont tranchés avant
+  de construire l’arbre ; aucun alias ne doit pointer vers une variable
+  rejetée.
+- Un composant unifié imbriqué est déclaré dans `composes`. Le parent ne
+  réexporte pas ses internes.
+- Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
+  indiquent où et comment placer chaque icône.
+- Une liaison composée n’est valide que si tout le groupe requis est lié :
+  deux paddings, deux dimensions, quatre coins, etc.
+- Une donnée facultative incomplète avertit. Les préconditions explicitement
+  définies dans la spécification bloquent.
+- Un changement de forme du JSON incrémente `contractVersion` et met à jour la
+  spécification et les consommateurs.
 
-## Limites de l'environnement
+## Vérification
 
-- Le plugin ne s'exécute que dans Figma : un agent ne peut PAS lancer les
-  exports lui-même. Les validations runtime passent par l'utilisateur, qui
-  ré-exporte et dépose le petit corpus représentatif dans
-  `tests/test-exports/` ; il ne faut jamais y recopier tout le catalogue.
-- Le seul domaine réseau autorisé est `https://api.github.com`, lorsque la
-  configuration locale est valide. Le plugin ouvre une PR et
-  n'auto-merge jamais ; en cas d'échec, il retombe sur le téléchargement local.
-- Aucune écriture dans le document Figma.
+```sh
+npm test
+npm run typecheck
+npm run build
+```
+
+Un nouveau `tests/*.test.ts` est découvert automatiquement. Tout bug corrigé
+reçoit un test de régression.
+
+Le corpus `tests/test-exports/` reste petit et représentatif. Il est produit
+depuis Figma, pas édité à la main, et verrouille la version actuelle du
+contrat.
+
+## Limites d’environnement
+
+- L’agent ne peut pas exécuter l’export dans Figma. Une validation runtime
+  nécessite un réexport utilisateur.
+- Le réseau du plugin est limité à `https://api.github.com`.
+- La configuration GitHub est facultative ; toute erreur conserve un
+  téléchargement local.
+- Le plugin ouvre une pull request par artefact et ne fusionne jamais
+  automatiquement.
+
+Avant de terminer une modification, relire les documents directement affectés
+et retirer toute description devenue fausse ou dupliquée.
