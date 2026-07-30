@@ -36,12 +36,12 @@ sur plusieurs formes de composants, dont au moins un composant composé.
 | Types TypeScript et variables CSS dérivés | Opérationnels |
 | Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
-| Détection des chemins de tokens recopiés dans le code | Opérationnelle |
+| Tokens du code vérifiés contre leur contrat | Opérationnelle |
 | CI des deux repositories | Vertes sur `main` et sur les pull requests ; diagnostic publié en commentaire |
 | Rapport unique destiné au développeur | Absent — voir « Plan d’action » |
 | Audit des tokens dans le rendu | Absent — voir « Plan d’action » |
 | Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
-| Composants du consommateur | Button et Alert présents ; ne lisent pas leur contrat à l’exécution |
+| Composants du consommateur | Button et Alert présents ; assemblent un chemin de token à l’exécution |
 | Validation multi-composants | Partielle |
 | JSON Schema public | Non commencé |
 | Multi-marque au runtime | Modes exportés, consommation non implémentée |
@@ -53,7 +53,7 @@ repositories construisent et se testent.
 Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
 **détection** et non comme **prévention** : rien n’empêche la fusion d’une pull
 request rouge. Et la confiance n’est pas acquise : un composant peut rendre
-juste sans lire son contrat.
+juste tout en échappant à la comparaison avec son contrat.
 
 ## Fragilités connues
 
@@ -69,22 +69,23 @@ C’est la seule fragilité qui ne se règle pas en écrivant du code : elle dem
 un changement de plan ou de visibilité. Tant qu’elle tient, « la CI détecte
 l’écart » est exact, « le code ne peut pas diverger » ne l’est pas.
 
-### Un composant peut recopier son contrat au lieu de le lire
+### Une donnée du contrat peut être remplacée par une règle écrite dans le code
 
-Recopier une valeur du contrat — chemin de token, nom d’icône, défaut de prop,
-priorité d’états — produit un composant au rendu exact qui ne suit plus sa
-source. L’écart n’apparaît qu’au prochain changement de design, et aucun
-contrôle de contrat ne peut le voir : ils vérifient le contrat, pas le code.
+Le code est écrit **contre** le contrat, qu’il n’interprète pas au runtime
+([CONCEPT.md](./CONCEPT.md)). Le contrat sert alors à vérifier les valeurs que
+le composant emploie — encore faut-il pouvoir les énumérer.
 
-Button et Alert sont dans cet état. La détection existe pour les chemins de
-tokens ; les autres formes de recopie ne sont couvertes que par les tests
-pilotés par le contrat, qui les signalent lorsque le design change.
+Deux formes l’empêchent : un chemin de token assemblé à l’exécution, qu’il
+faudrait exécuter pour connaître, et une donnée du contrat reproduite par une
+règle — deviner quel rôle se peint à partir de la variante, câbler une
+correspondance sévérité → icône. Le composant rend juste et échappe au contrôle.
 
-Corriger ces composants appartient au développeur. Ils sont à la fois le
-livrable et la mesure du test froid : les réécrire à leur place supprimerait ce
-que l’on cherche à mesurer. Le consommateur ne fournit pour la même raison
-aucune bibliothèque de lecture partagée, qui déplacerait l’épreuve du contrat
-vers elle.
+La première forme est détectée. La seconde ne l’est que par les tests pilotés
+par le contrat, qui la signalent lorsque le design change. Button et Alert
+portent les deux.
+
+Corriger ces composants appartient au développeur : ils sont à la fois le
+livrable et la mesure du test froid.
 
 ## Plan d’action — contrôles du code et rapport développeur
 
@@ -96,7 +97,7 @@ Un constat porte un **propriétaire**, conformément à l’arbitrage des source
 | Propriétaire | Destination | Nature des constats |
 |---|---|---|
 | Designer | Commentaire de pull request | Contrat, tokens, props ou slots absents du code |
-| Développeur | Rapport en terminal et en CI | Valeurs brutes, recopies, variables inexistantes |
+| Développeur | Rapport en terminal et en CI | Valeurs brutes, tokens invérifiables, variables inexistantes |
 
 Le commentaire de pull request existe. Le rapport développeur est à construire.
 
@@ -119,8 +120,8 @@ pas, quoi faire.
 
 | Contrôle | Ce qu’il attrape | Ce qu’il ne voit pas |
 |---|---|---|
-| Audit du rendu | Une variable CSS absente des tokens générés, une valeur qui n’en est pas une | Un chemin recopié mais valide |
-| Chemins recopiés | Une référence `{…}` écrite dans le code, y compris construite par concaténation | Les valeurs recopiées qui ne sont pas des tokens |
+| Audit du rendu | Une variable CSS absente des tokens générés, une valeur qui n’en est pas une | Qu’un token valide soit le bon pour cette variante |
+| Tokens du code | Un chemin assemblé à l’exécution, une référence que le contrat ne déclare pas | Les données du contrat figées hors d’un chemin de token |
 | Valeurs brutes | Une couleur ou une dimension écrite à la main | Une valeur produite dynamiquement |
 | Tests pilotés par le contrat | Un rendu qui ne correspond plus au contrat après un changement de design | Ce qu’aucun test ne couvre |
 
@@ -130,16 +131,16 @@ contrôles de contrat ne relèvent que les références du contrat, jamais celle
 que le navigateur ignore sans erreur.
 
 Les tests pilotés par le contrat relisent le contrat à chaque exécution. C’est
-ce qui fait d’eux le contrôle central : ils signalent la recopie au moment où
-elle devient un écart réel.
+ce qui fait d’eux le contrôle central : ils signalent une donnée du contrat
+figée dans le code au moment où elle devient un écart réel.
 
 ### Séquence
 
 | # | Étape | Motif de l’ordre |
 |---|---|---|
-| 1 | Rapport développeur ; retrait du test comparant les propriétés CSS déclarées | Poser la sortie avant d’y brancher des contrôles |
+| 1 | Rapport développeur | Poser la sortie avant d’y brancher des contrôles |
 | 2 | Audit du rendu | Ferme le cas du token renommé |
-| 3 | Chemins recopiés rebranchés sur le rapport | Le contrôle existe, seule sa sortie change |
+| 3 | Tokens du code rebranchés sur le rapport | Le contrôle existe, seule sa sortie change |
 | 4 | Valeurs brutes, avec réglage des fausses alertes | Le seul contrôle à risque de friction, placé après les contrôles sûrs |
 | 5 | Limites écrites dans le consommateur | Chaque contrôle annonce ce qu’il vérifie |
 
@@ -212,8 +213,8 @@ Le MVP est validé lorsque :
   **fusion** — pas seulement la CI — avec un diagnostic actionnable ;
 - un contrat peut être fusionné avant son code sans désactiver les contrôles
   futurs ;
-- un agent en contexte froid n’invente ni prop, ni variante, ni token, et lit le
-  contrat au lieu d’en recopier les valeurs ;
+- un agent en contexte froid n’invente ni prop, ni variante, ni token, et
+  n’emploie que des valeurs comparables à celles du contrat ;
 - les limites non vérifiables sont documentées sans être présentées comme des
   garanties.
 
