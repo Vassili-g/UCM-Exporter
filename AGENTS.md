@@ -36,8 +36,11 @@ voir [`ROADMAP.md`](./ROADMAP.md).
   - `extractVariantTokens.ts` — assemblage des feuilles dans les arbres par axes ;
   - `extractLayout.ts` — dimensions, slots enfants, typographie ;
   - `extractSizes.ts` — dimensions par taille (big/medium/small…) ;
+  - `nodeBindings.ts` — résolution complète des groupes de champs liés ;
+  - `exportableNodes.ts` — parcours des calques qui peuvent être rendus ;
   - `extractRules.ts` — règles d'usage lues dans le conteneur `<Nom>-Rules` ;
   - `rulesModel.ts` — assemblage pur des règles, intentions et politiques ;
+  - `mergeBooleanDescriptions.ts` — liaison des règles `@boolean` aux props BOOLEAN ;
   - `mergeIconRules.ts` — liaison générique règles ↔ calques ↔ props d'icône ;
   - `semantics.ts` — **seul** lieu du vocabulaire sémantique (size, label,
     rôles rendables…) et contrôle des rôles relevés ;

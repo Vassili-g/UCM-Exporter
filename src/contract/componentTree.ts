@@ -5,7 +5,8 @@
  * Tout est dynamique : aucun nom d'axe ni de composant n'est codé en dur.
  */
 import { normalizePropKey, normalizePropValue } from './parsers';
-import { getAllNodes, getBinding } from './nodeBindings';
+import { getAllNodes } from './exportableNodes';
+import { getBinding } from './nodeBindings';
 
 /** Un variant du set : ses valeurs d'axes normalisées + le node Figma. */
 export type VariantEntry = {
@@ -112,10 +113,10 @@ const LAYOUT_BINDING_FIELDS = [
   'cornerRadius',
 ];
 
-/** Compte les liaisons de dimensions dans tout le sous-arbre d'une instance. */
-function countLayoutBindings(root: InstanceNode): number {
+/** Compte les liaisons de dimensions dans tout le sous-arbre rendable d'une instance. */
+function countLayoutBindings(root: InstanceNode, warnings: string[]): number {
   let count = 0;
-  for (const node of getAllNodes(root)) {
+  for (const node of getAllNodes(root, warnings)) {
     for (const field of LAYOUT_BINDING_FIELDS) {
       if (getBinding(node, field)) count += 1;
     }
@@ -141,7 +142,7 @@ function hasComponentProperties(instance: InstanceNode): boolean {
  * (c'est ce qui définit un wrapper), le nom n'est qu'un léger bonus.
  * Score nul si elle ne porte aucune dimension liée.
  */
-async function scoreWrapper(instance: InstanceNode): Promise<{
+async function scoreWrapper(instance: InstanceNode, warnings: string[]): Promise<{
   score: number;
   componentSet: ComponentSetNode | null;
 }> {
@@ -150,7 +151,7 @@ async function scoreWrapper(instance: InstanceNode): Promise<{
   const componentSet = parent?.type === 'COMPONENT_SET' ? parent : null;
   const searchableName = `${instance.name} ${mainComponent?.name ?? ''} ${componentSet?.name ?? ''}`.toLowerCase();
 
-  const layoutBindings = countLayoutBindings(instance);
+  const layoutBindings = countLayoutBindings(instance, warnings);
   let score = layoutBindings * 10;
   if (searchableName.includes('wrapper')) score += 5;
   if (componentSet && hasComponentProperties(instance)) score += 3;
@@ -163,12 +164,14 @@ async function scoreWrapper(instance: InstanceNode): Promise<{
  * un composant « plat » (sans instance de layout imbriquée) renvoie null
  * et ses dimensions seront lues directement sur lui.
  */
-export async function findWrapperReference(root: ComponentNode): Promise<WrapperReference | null> {
-  const instances = root
-    .findAll((node) => node.type === 'INSTANCE')
+export async function findWrapperReference(
+  root: ComponentNode,
+  warnings: string[] = [],
+): Promise<WrapperReference | null> {
+  const instances = getAllNodes(root, warnings)
     .filter((node): node is InstanceNode => node.type === 'INSTANCE');
   const scored = await Promise.all(
-    instances.map(async (instance) => ({ instance, ...(await scoreWrapper(instance)) })),
+    instances.map(async (instance) => ({ instance, ...(await scoreWrapper(instance, warnings)) })),
   );
   const candidates = scored.filter((candidate) => candidate.score > 0);
   candidates.sort((left, right) => right.score - left.score);

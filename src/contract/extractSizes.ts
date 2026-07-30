@@ -9,7 +9,7 @@
 import type { TokenResolver } from '../variables';
 import { getVariantAxes, getVariantValues } from './componentTree';
 import { findLayoutNode, firstTextNode } from './extractLayout';
-import { resolveField } from './nodeBindings';
+import { BINDING_PATTERNS, resolveField } from './nodeBindings';
 import { semanticEnumName } from './semantics';
 import type { SizeDimensions } from './types';
 
@@ -39,24 +39,52 @@ async function extractDimensions(
   tokenNames: Set<string>,
   warnings: string[],
 ): Promise<SizeDimensions> {
-  const layoutNode = findLayoutNode(component);
-  const textNode = firstTextNode(component);
+  const layoutNode = findLayoutNode(component, warnings);
+  const textNode = firstTextNode(component, warnings);
   // Le libellé passé à resolveField sert aux warnings : on précise la taille
   // pour qu'un token manquant soit localisable (ex. « gap (small) »).
   const [gap, paddingX, paddingY, radius, fontSize] = await Promise.all([
-    resolveField(layoutNode, ['itemSpacing'], `gap (${sizeValue})`, resolver, tokenNames, warnings),
-    resolveField(layoutNode, ['paddingLeft', 'paddingRight'], `padding-x (${sizeValue})`, resolver, tokenNames, warnings),
-    resolveField(layoutNode, ['paddingTop', 'paddingBottom'], `padding-y (${sizeValue})`, resolver, tokenNames, warnings),
     resolveField(
       layoutNode,
-      ['cornerRadius', 'topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'],
+      BINDING_PATTERNS.gap,
+      `gap (${sizeValue})`,
+      resolver,
+      tokenNames,
+      warnings,
+    ),
+    resolveField(
+      layoutNode,
+      BINDING_PATTERNS.paddingX,
+      `padding-x (${sizeValue})`,
+      resolver,
+      tokenNames,
+      warnings,
+    ),
+    resolveField(
+      layoutNode,
+      BINDING_PATTERNS.paddingY,
+      `padding-y (${sizeValue})`,
+      resolver,
+      tokenNames,
+      warnings,
+    ),
+    resolveField(
+      layoutNode,
+      BINDING_PATTERNS.radius,
       `border-radius (${sizeValue})`,
       resolver,
       tokenNames,
       warnings,
     ),
     textNode
-      ? resolveField(textNode, ['fontSize'], `font-size (${sizeValue})`, resolver, tokenNames, warnings)
+      ? resolveField(
+        textNode,
+        BINDING_PATTERNS.fontSize,
+        `font-size (${sizeValue})`,
+        resolver,
+        tokenNames,
+        warnings,
+      )
       : Promise.resolve(null),
   ]);
 

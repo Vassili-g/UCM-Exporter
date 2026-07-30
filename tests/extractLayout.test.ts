@@ -137,7 +137,7 @@ test('extractLayout décrit un calque graphique en slot optionnel avec sa visibi
   const icone = {
     type: 'VECTOR',
     name: 'arrow-right-long',
-    boundVariables: { width: alias('taille') },
+    boundVariables: { width: alias('taille'), height: alias('taille') },
     componentPropertyReferences: { visible: 'iconRight#3:1' },
   };
   const bouton = {
@@ -146,7 +146,7 @@ test('extractLayout décrit un calque graphique en slot optionnel avec sa visibi
     layoutMode: 'HORIZONTAL',
     boundVariables: { itemSpacing: alias('gap') },
     children: [icone],
-    findAll: findAllOn([]),
+    findAll: findAllOn([icone]),
   } as unknown as ComponentNode;
 
   const layout = await extractLayout(
@@ -165,6 +165,76 @@ test('extractLayout décrit un calque graphique en slot optionnel avec sa visibi
       size: '{components.icons.sizes.base}',
     },
   ]);
+});
+
+test('extractLayout n’invente pas une taille carrée quand seule la largeur est liée', async () => {
+  const icone = {
+    type: 'VECTOR',
+    name: 'arrow-right-long',
+    boundVariables: { width: alias('taille') },
+  };
+  const bouton = {
+    type: 'COMPONENT',
+    name: 'Button',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [icone],
+    findAll: findAllOn([icone]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    bouton,
+    resolverFor({
+      gap: 'layouts.spacing.8',
+      taille: 'components.icons.sizes.base',
+    }),
+    new Set(),
+    warnings,
+  );
+
+  assert.equal(layout.children[0].size, undefined);
+  assert.ok(warnings.some((warning) => warning.includes('height')));
+  assert.ok(warnings.some((warning) => warning.includes('valeur non exportée')));
+});
+
+test('extractLayout exclut un slot statiquement masqué mais conserve un slot piloté par une prop', async () => {
+  const obsolete = {
+    type: 'VECTOR',
+    name: 'old-icon',
+    visible: false,
+    boundVariables: { width: alias('old-size'), height: alias('old-size') },
+  };
+  const optionnelle = {
+    type: 'VECTOR',
+    name: 'arrow-right-long',
+    visible: false,
+    boundVariables: { width: alias('size'), height: alias('size') },
+    componentPropertyReferences: { visible: 'iconRight#3:1' },
+  };
+  const bouton = {
+    type: 'COMPONENT',
+    name: 'Button',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [obsolete, optionnelle],
+    findAll: findAllOn([obsolete, optionnelle]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    bouton,
+    resolverFor({
+      gap: 'layouts.spacing.8',
+      'old-size': 'components.icons.sizes.legacy',
+      size: 'components.icons.sizes.base',
+    }),
+    new Set(),
+    warnings,
+  );
+
+  assert.deepEqual(layout.children.map((child) => child.slot), ['arrow-right-long']);
+  assert.ok(warnings.some((warning) => warning.includes('old-icon')));
 });
 
 test('extractLayout suffixe les slots homonymes au lieu de les écraser', async () => {
@@ -209,6 +279,33 @@ test('findLayoutNode choisit le calque qui porte le plus de dimensions liées', 
   } as unknown as ComponentNode;
 
   assert.equal(findLayoutNode(racine), interne as unknown as SceneNode);
+});
+
+test('findLayoutNode ignore un porteur de dimensions statiquement masqué', () => {
+  const masque = {
+    type: 'FRAME',
+    name: 'Ancien wrapper',
+    visible: false,
+    boundVariables: {
+      itemSpacing: alias('a'),
+      paddingLeft: alias('b'),
+      paddingRight: alias('b'),
+    },
+  };
+  const visible = {
+    type: 'FRAME',
+    name: 'Wrapper actif',
+    visible: true,
+    boundVariables: { itemSpacing: alias('a') },
+  };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Button',
+    boundVariables: {},
+    findAll: findAllOn([masque, visible]),
+  } as unknown as ComponentNode;
+
+  assert.equal(findLayoutNode(racine), visible as unknown as SceneNode);
 });
 
 test('findLayoutNode retombe sur la racine quand aucune dimension n’est liée', () => {

@@ -54,7 +54,7 @@ prouve que le modèle dépasse le composant isolé.
 | **A** | Repo consommateur + pipeline tokens (Vite + React + Tailwind, Style Dictionary ; **noms de tokens = chemins**, alias préservés en `var(--…)`) | opérationnel |
 | **B** | `Button.tsx` réel, écrit par un développeur **contre le contrat** | prototype validé ; implémentation de production à écrire |
 | **C1** | Garde-fous CI — contrat exploitable, existence des tokens (références relevées **dans** le contrat ⊆ tokens générés) et cohérence de son index `tokensUsed` ; `npm run check` | opérationnel en local ; GitHub Action en place, premier run à valider (étape 2) |
-| **C2** | Garde-fous CI — parité code ↔ contrat | **noms de props opérationnels dès qu'un `.tsx` existe** ; un nouveau contrat peut le précéder ; types, valeurs par défaut et composition à faire (étape 4) |
+| **C2** | Garde-fous CI — parité code ↔ contrat | **noms de props, type et consommation des BOOLEAN opérationnels dès qu'un `.tsx` existe** ; un nouveau contrat peut le précéder ; enums, valeurs par défaut et composition à faire (étape 4) |
 | **D** | Playground : rendu live + contexte agent + test froid léger | opérationnel sur Button |
 | **E** | **Composition** : composé minimal, champ `composes`, parité récursive | à faire — **priorité structurelle** |
 | **F** | Passage à l'échelle : composants simples supplémentaires, guide de rédaction pour les designers, industrialisation | post-MVP |
@@ -100,8 +100,9 @@ puis la **parité** (Pilier A), dessinée contre ce cas réel.
    minimal de l'étape 3, pour dessiner la parité récursive contre un cas réel.
    Un adaptateur React/TS extrait
    l'API réelle du `.tsx` (via `react-docgen-typescript`) → `Button.code.json`,
-   puis un comparateur liste les écarts avec le contrat (prop manquante, valeur
-   d'enum divergente, état non géré, référence de token cassée, dépendance de
+   puis un comparateur complète le socle existant (noms + BOOLEAN typés et lus) et liste les
+   autres écarts avec le contrat (valeur d'enum divergente, état non géré,
+   référence de token cassée, dépendance de
    composition absente) **et le sens de correction** selon l'arbitrage de
    [`CONCEPT.md`](./CONCEPT.md) §3. Déclencheurs : hook pre-commit (retour local)
    + GitHub Action bloquante sur PR. Prévoir la **déclaration d'une divergence

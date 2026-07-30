@@ -9,6 +9,7 @@ import { findWrapperReference, groupComponentsByVariant } from './componentTree'
 import { extractRules, hasUsableRules } from './extractRules';
 import { extractStructure } from './extractStructure';
 import { extractContractProps } from './parsers';
+import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { buildStateModel, defaultRenderingSemantics } from './semantics';
@@ -17,9 +18,9 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
- * 3.1 : `visibilityProp` est relevé sur tous les slots — ajout compatible.
+ * 3.2 : `@boolean` documente explicitement les props BOOLEAN — ajout compatible.
  */
-export const CONTRACT_VERSION = '3.1';
+export const CONTRACT_VERSION = '3.2';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
@@ -161,7 +162,9 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   const { matrix, warnings: matrixWarnings } = groupComponentsByVariant(componentSet);
   // Le variant de référence sert de base au layout et à la couleur du label.
   const referenceComponent = componentSet.defaultVariant ?? matrix.variants[0]?.component ?? null;
-  const wrapper = referenceComponent ? await findWrapperReference(referenceComponent) : null;
+  const wrapper = referenceComponent
+    ? await findWrapperReference(referenceComponent, warnings)
+    : null;
   const stateModel = buildStateModel(
     matrix.axes,
     matrix.variants.map((entry) => entry.values),
@@ -192,13 +195,14 @@ export async function handleExportComponent(): Promise<ComponentExport> {
 
   const extracted = await extractStructure(matrix, matrixWarnings, wrapper, referenceComponent, resolver);
 
-  // La doc par valeur (@prop) s'accroche aux props enum ; l'intention est déjà lue.
+  // La documentation issue des règles s'accroche aux props de même nature.
   mergePropDescriptions(props, rules.propDescriptions, warnings);
+  mergeBooleanDescriptions(props, rules.booleanDescriptions, warnings);
   const icons = mergeIconRules(props, extracted.structure.children, rules.iconRules, warnings);
   const intent = rules.intent;
   if (!intent) {
     warnings.push(
-      'Règles présentes mais aucune intention (@usage/@do/@dont/@pairs) — seule la doc par valeur est fournie.',
+      'Règles présentes mais aucune intention (@usage/@do/@dont/@pairs) — seule la documentation de props est fournie.',
     );
   }
 

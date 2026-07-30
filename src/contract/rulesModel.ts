@@ -8,7 +8,13 @@ import { normalizePropKey, normalizePropValue } from './parsers';
 import type { IconPolicy, Intent } from './types';
 
 /** Tags reconnus une fois normalisés sans `@`. */
-export type RuleTag = 'usage' | 'prop' | 'do' | 'dont' | 'pairs' | 'icons';
+export type RuleTag = 'usage' | 'prop' | 'boolean' | 'do' | 'dont' | 'pairs' | 'icons';
+
+/** Reconnaît un tag porté par une valeur de variante Figma. */
+export function ruleTagFromValue(value: string): RuleTag | null {
+  const match = /^@?(usage|prop|boolean|do|dont|pairs|icons)$/i.exec(value);
+  return match ? match[1].toLowerCase() as RuleTag : null;
+}
 
 /** Entrée brute extraite d'une instance de règle Figma. */
 export type RuleEntry = {
@@ -26,6 +32,7 @@ export type IconRule = { iconName: string; policy: IconPolicy };
 export type RulesResult = {
   intent: Intent | null;
   propDescriptions: Record<string, Record<string, string>>;
+  booleanDescriptions: Record<string, string>;
   iconRules: IconRule[];
   warnings: string[];
 };
@@ -38,6 +45,7 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
   const dontItems: string[] = [];
   const pairs: string[] = [];
   const propDescriptions: Record<string, Record<string, string>> = {};
+  const booleanDescriptions: Record<string, string> = {};
   const iconRules: IconRule[] = [];
 
   for (const entry of entries) {
@@ -57,6 +65,15 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
     } else if (entry.tag === 'pairs') {
       for (const pair of content.split(',').map((item) => item.trim()).filter(Boolean)) {
         if (!pairs.includes(pair)) pairs.push(pair);
+      }
+    } else if (entry.tag === 'boolean') {
+      const propName = normalizePropKey(entry.prop?.trim() ?? '');
+      if (!propName) {
+        warnings.push('Règle @boolean : le calque « prop » doit contenir un nom de prop.');
+      } else if (booleanDescriptions[propName] !== undefined) {
+        warnings.push(`Règle @boolean « ${propName} » dupliquée : seule la première est retenue.`);
+      } else {
+        booleanDescriptions[propName] = content;
       }
     } else if (entry.tag === 'icons') {
       const iconName = entry.iconName?.trim() ?? '';
@@ -97,13 +114,14 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
   const intent: Intent | null = hasIntent
     ? { usage, do: doItems, dont: dontItems, pairs }
     : null;
-  return { intent, propDescriptions, iconRules, warnings };
+  return { intent, propDescriptions, booleanDescriptions, iconRules, warnings };
 }
 
 /** Indique si au moins une intention, documentation ou règle d'icône existe. */
 export function hasUsableRules(result: RulesResult): boolean {
   return result.intent !== null
     || Object.keys(result.propDescriptions).length > 0
+    || Object.keys(result.booleanDescriptions).length > 0
     || result.iconRules.length > 0;
 }
 
