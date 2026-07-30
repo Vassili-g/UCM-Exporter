@@ -5,9 +5,10 @@
  * ou groupe — nommé `${nomDuSet}-Rules` (ex. « Button-Rules »), posé sur la
  * même page que le composant. On y
  * range des instances d'un composant de configuration (`ComponentConfiguration`)
- * dont la VARIANTE porte le tag (`@usage`, `@prop`, `@do`, `@dont`, `@pairs`, `@icons`) et
+ * dont la VARIANTE porte le tag (`@usage`, `@prop`, `@boolean`, `@do`, `@dont`,
+ * `@pairs`, `@icons`) et
  * dont le calque « content » porte le texte de la règle (plus un calque « prop »
- * pour `@prop`, ex. « variant.contained »).
+ * pour `@prop` et `@boolean`, ex. « variant.contained » ou « icon-left »).
  *
  * Aucune logique spécifique à un composant : la section, le composant de config
  * et les tags sont des CONVENTIONS uniformes, valables pour n'importe quel
@@ -16,9 +17,14 @@
  * Le plugin n'écrit JAMAIS dans Figma : cette section reste la source de vérité,
  * lue telle quelle et reversée dans le contrat.
  */
-import { buildRules, iconPolicyFromVisibility } from './rulesModel';
+import { buildRules, iconPolicyFromVisibility, ruleTagFromValue } from './rulesModel';
 import type { RuleEntry, RuleTag, RulesResult } from './rulesModel';
-export { buildRules, hasUsableRules, iconPolicyFromVisibility } from './rulesModel';
+export {
+  buildRules,
+  hasUsableRules,
+  iconPolicyFromVisibility,
+  ruleTagFromValue,
+} from './rulesModel';
 export type { IconRule, RuleEntry, RuleTag, RulesResult } from './rulesModel';
 
 /** Suffixe du conteneur qui porte les règles d'un composant. */
@@ -27,9 +33,6 @@ const RULES_SECTION_SUFFIX = '-Rules';
 const RULES_CONTAINER_TYPES: readonly string[] = ['SECTION', 'FRAME', 'GROUP'];
 /** Nom (compacté) du composant qui matérialise une règle. */
 const RULES_COMPONENT_NAME = 'componentconfiguration';
-/** Tags de règle reconnus, avec ou sans « @ » devant. */
-const TAG_PATTERN = /^@?(usage|prop|do|dont|pairs|icons)$/i;
-
 /** Compacte un nom (sans espaces, en minuscules) pour comparer un nom de composant. */
 function compactName(name: string): string {
   return name.replace(/\s+/g, '').toLowerCase();
@@ -100,6 +103,7 @@ export async function extractRules(
     return {
       intent: null,
       propDescriptions: {},
+      booleanDescriptions: {},
       iconRules: [],
       warnings: [`Aucun conteneur « ${sectionName} » : composant sans règles définies.`],
       sectionFound: false,
@@ -123,22 +127,25 @@ export async function extractRules(
     if (!(await isRuleInstance(instance))) continue;
 
     // Le tag est la VALEUR de la variante (peu importe le nom de l'axe).
-    const rawTag = Object.values(instance.variantProperties ?? {}).find((value) =>
-      TAG_PATTERN.test(value),
-    );
-    if (!rawTag) {
-      warnings.push('Instance de règle sans variante @usage/@prop/@do/@dont/@pairs/@icons (ignorée).');
+    const tag = Object.values(instance.variantProperties ?? {})
+      .map(ruleTagFromValue)
+      .find((value): value is RuleTag => value !== null);
+    if (!tag) {
+      warnings.push(
+        'Instance de règle sans variante @usage/@prop/@boolean/@do/@dont/@pairs/@icons (ignorée).',
+      );
       continue;
     }
 
-    const tag = rawTag.replace('@', '').toLowerCase() as RuleTag;
     entries.push(
       tag === 'icons'
         ? iconRuleEntry(instance)
         : {
             tag,
             content: textOfLayer(instance, 'content'),
-            prop: tag === 'prop' ? textOfLayer(instance, 'prop') : undefined,
+            prop: tag === 'prop' || tag === 'boolean'
+              ? textOfLayer(instance, 'prop')
+              : undefined,
           },
     );
   }
@@ -151,6 +158,7 @@ export async function extractRules(
   return {
     intent: built.intent,
     propDescriptions: built.propDescriptions,
+    booleanDescriptions: built.booleanDescriptions,
     iconRules: built.iconRules,
     warnings: [...warnings, ...built.warnings],
     sectionFound: true,

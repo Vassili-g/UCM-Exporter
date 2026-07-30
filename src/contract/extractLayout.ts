@@ -8,7 +8,8 @@
 import normalizeName from '../utils';
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
-import { getAllNodes, getBinding, resolveField } from './nodeBindings';
+import { getAllNodes } from './exportableNodes';
+import { BINDING_PATTERNS, getBinding, resolveField } from './nodeBindings';
 import { normalizePropKey } from './parsers';
 import { semanticSlotName } from './semantics';
 import type { ChildStructure, ContractStructure, TypographyTokens } from './types';
@@ -28,7 +29,7 @@ export type LayoutRoot = InstanceNode | ComponentNode;
  * sont liées à une variable : celui qui en porte le plus est notre
  * « conteneur de layout ». À défaut, on retombe sur la racine.
  */
-export function findLayoutNode(root: LayoutRoot): SceneNode {
+export function findLayoutNode(root: LayoutRoot, warnings: string[] = []): SceneNode {
   const fields = [
     'itemSpacing',
     'paddingLeft',
@@ -37,7 +38,7 @@ export function findLayoutNode(root: LayoutRoot): SceneNode {
     'paddingBottom',
     'cornerRadius',
   ];
-  const candidates = getAllNodes(root).map((node) => ({
+  const candidates = getAllNodes(root, warnings).map((node) => ({
     node,
     score: fields.reduce((total, field) => total + (getBinding(node, field) ? 1 : 0), 0),
   }));
@@ -46,11 +47,10 @@ export function findLayoutNode(root: LayoutRoot): SceneNode {
 }
 
 /** Renvoie le premier calque TEXTE d'un sous-arbre, ou null s'il n'y en a pas. */
-export function firstTextNode(node: SceneNode): TextNode | null {
+export function firstTextNode(node: SceneNode, warnings: string[] = []): TextNode | null {
   if (node.type === 'TEXT') return node;
-  if (!('findAll' in node)) return null;
-  const texts = node.findAll((child) => child.type === 'TEXT');
-  return (texts[0] as TextNode | undefined) ?? null;
+  const text = getAllNodes(node, warnings).find((child) => child.type === 'TEXT');
+  return (text as TextNode | undefined) ?? null;
 }
 
 /**
@@ -89,7 +89,10 @@ async function extractTypography(
     // On essaie chaque champ Figma possible jusqu'à trouver un token lié.
     let token: string | null = null;
     for (const figmaField of figmaFields) {
-      token = await resolver.resolve(firstVariableAlias(getBinding(textNode, figmaField)));
+      token = await resolver.resolve(firstVariableAlias(getBinding(textNode, figmaField)), {
+        nodeName: textNode.name,
+        field: `${contractField} / ${figmaField}`,
+      });
       if (token) break;
     }
 
@@ -122,7 +125,7 @@ async function extractChild(
   warnings: string[],
 ): Promise<ChildStructure> {
   const layerName = normalizeName(child.name).replace(/\./g, '-') || 'unnamed';
-  const textNode = firstTextNode(child);
+  const textNode = firstTextNode(child, warnings);
   const semantic = semanticSlotName(Boolean(textNode));
 
   const entry: ChildStructure = { slot: semantic ?? layerName };
@@ -146,7 +149,14 @@ async function extractChild(
     // Une règle `@icons` peut ensuite qualifier cette icône par son nom Figma.
     entry.figmaLayer = child.name;
     entry.optional = true;
-    const size = await resolveField(child, ['width', 'height'], `${layerName}-size`, resolver, tokenNames, warnings);
+    const size = await resolveField(
+      child,
+      BINDING_PATTERNS.slotSize,
+      `${layerName}-size`,
+      resolver,
+      tokenNames,
+      warnings,
+    );
     if (size) entry.size = size;
   }
 
@@ -178,14 +188,28 @@ export async function extractLayout(
   tokenNames: Set<string>,
   warnings: string[],
 ): Promise<LayoutStructure> {
-  const layoutNode = findLayoutNode(root);
+  const layoutNode = findLayoutNode(root, warnings);
   const [gap, paddingX, paddingY, radius] = await Promise.all([
-    resolveField(layoutNode, ['itemSpacing'], 'gap', resolver, tokenNames, warnings),
-    resolveField(layoutNode, ['paddingLeft', 'paddingRight'], 'padding-x', resolver, tokenNames, warnings),
-    resolveField(layoutNode, ['paddingTop', 'paddingBottom'], 'padding-y', resolver, tokenNames, warnings),
+    resolveField(layoutNode, BINDING_PATTERNS.gap, 'gap', resolver, tokenNames, warnings),
     resolveField(
       layoutNode,
-      ['cornerRadius', 'topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'],
+      BINDING_PATTERNS.paddingX,
+      'padding-x',
+      resolver,
+      tokenNames,
+      warnings,
+    ),
+    resolveField(
+      layoutNode,
+      BINDING_PATTERNS.paddingY,
+      'padding-y',
+      resolver,
+      tokenNames,
+      warnings,
+    ),
+    resolveField(
+      layoutNode,
+      BINDING_PATTERNS.radius,
       'border-radius',
       resolver,
       tokenNames,
@@ -193,7 +217,10 @@ export async function extractLayout(
     ),
   ]);
 
-  const directChildren = 'children' in layoutNode ? layoutNode.children : [];
+  const exportableNodes = new Set(getAllNodes(layoutNode, warnings));
+  const directChildren = 'children' in layoutNode
+    ? layoutNode.children.filter((child) => exportableNodes.has(child))
+    : [];
   const children = await Promise.all(
     directChildren.map((child) => extractChild(child, resolver, tokenNames, warnings)),
   );

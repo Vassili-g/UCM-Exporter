@@ -1,8 +1,8 @@
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "3.1",
-    "exportedAt": "2026-07-29T14:30:56.339Z",
+    "contractVersion": "3.2",
+    "exportedAt": "2026-07-30T04:56:17.536Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "3:122",
@@ -51,15 +51,18 @@
     },
     "label": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Permet d’afficher ou de masquer le label"
     },
     "iconRight": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Permet d’afficher ou de masquer l’icone de droite"
     },
     "iconLeft": {
       "type": "boolean",
-      "default": true
+      "default": true,
+      "description": "Permet d’afficher ou de masquer l’icone de gauche"
     },
     "size": {
       "type": "enum",

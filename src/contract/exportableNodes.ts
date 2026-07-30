@@ -1,0 +1,84 @@
+/**
+ * Parcours des nodes qui peuvent réellement participer au contrat.
+ *
+ * Un calque masqué reste pertinent si une prop ou une variable peut le rendre
+ * visible. À l'inverse, un sous-arbre statiquement masqué est élagué avant
+ * toute extraction pour qu'il ne fournisse ni tokens, ni slots, ni wrapper.
+ */
+import { variableAliases } from '../variables';
+import { getBinding } from './nodeBindings';
+
+/** Vrai si la visibilité peut changer via l'API publique ou un mode de variable. */
+function hasDynamicVisibility(node: SceneNode): boolean {
+  return Boolean(node.componentPropertyReferences?.visible)
+    || variableAliases(getBinding(node, 'visible')).length > 0;
+}
+
+/** Un node masqué sans liaison de visibilité ne peut être rendu dans cet état. */
+function isStaticallyHidden(node: SceneNode): boolean {
+  return node.visible === false && !hasDynamicVisibility(node);
+}
+
+/** Détecte une liaison, y compris dans `boundVariables.componentProperties`. */
+function containsVariableAlias(value: unknown): boolean {
+  if (variableAliases(value).length > 0) return true;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  return Object.values(value as Record<string, unknown>).some(containsVariableAlias);
+}
+
+function hasVariableBindings(node: SceneNode): boolean {
+  return containsVariableAlias(node.boundVariables);
+}
+
+/** Plus haut ancêtre statiquement masqué entre le node et la racine exclue. */
+function hiddenAncestor(node: SceneNode, root: SceneNode): SceneNode | null {
+  let current: BaseNode | null | undefined = node;
+  let hidden: SceneNode | null = null;
+
+  while (current && current !== root) {
+    if ('visible' in current && isStaticallyHidden(current as SceneNode)) {
+      hidden = current as SceneNode;
+    }
+    current = current.parent;
+  }
+  return hidden;
+}
+
+function pushOnce(warnings: string[], warning: string): void {
+  if (!warnings.includes(warning)) warnings.push(warning);
+}
+
+/**
+ * Renvoie la racine et les descendants qui peuvent être rendus.
+ *
+ * La racine contractée reste toujours lisible : sa visibilité sur le canvas
+ * Figma ne décide pas si le composant lui-même existe. Pour les descendants,
+ * un parent statiquement masqué élague tout son sous-arbre. Un seul warning
+ * est produit si ce sous-arbre portait des variables ; un simple repère de
+ * travail masqué est ignoré sans bruit.
+ */
+export function getAllNodes(root: SceneNode, warnings: string[] = []): SceneNode[] {
+  const descendants = 'findAll' in root ? root.findAll(() => true) : [];
+  const ignoredBindings = new Map<SceneNode, boolean>();
+  const exportable: SceneNode[] = [root];
+
+  for (const node of descendants) {
+    const hidden = hiddenAncestor(node, root);
+    if (!hidden) {
+      exportable.push(node);
+      continue;
+    }
+    ignoredBindings.set(hidden, (ignoredBindings.get(hidden) ?? false) || hasVariableBindings(node));
+  }
+
+  for (const [hidden, hasBindings] of ignoredBindings) {
+    if (!hasBindings) continue;
+    pushOnce(
+      warnings,
+      `Sous-arbre « ${hidden.name} » statiquement masqué : variables liées ignorées. ` +
+        `Liez sa visibilité à une prop ou une variable si le contrat doit le décrire.`,
+    );
+  }
+
+  return exportable;
+}

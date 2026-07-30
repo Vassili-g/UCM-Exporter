@@ -201,9 +201,10 @@ Playground : un agent compose une interface avec les composants disponibles
    amont ; les attributs natifs, événements et règles d'accessibilité relèvent
    du code.
 5. **Garde-fous** — la CI vérifie que le code **ne peut pas** diverger du
-   contrat ni des tokens (cf. §3, critères de cohérence). *(Existence des
-   tokens : opérationnel ; parité code ↔ contrat : cible — cf.
-   [`ROADMAP.md`](./ROADMAP.md) phases C1/C2.)*
+   contrat ni des tokens (cf. §3, critères de cohérence). L'existence des
+   tokens, les noms de props, le type des BOOLEAN et leur consommation par le
+   composant sont contrôlés ; les autres niveaux de parité restent suivis dans
+   [`ROADMAP.md`](./ROADMAP.md) phases C1/C2.
 6. **Playground** — on demande une interface (« trois boutons de ce type,
    deux de cet autre, disposés comme ça »), l'agent l'écrit à partir du seul
    contrat, on constate de ses yeux qu'il respecte le design system. C'est la

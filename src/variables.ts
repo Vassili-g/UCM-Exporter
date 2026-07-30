@@ -70,6 +70,15 @@ export function joinTokenPath(collectionName: string, variableName: string): str
  */
 export type TokenResolver = Pick<VariableNameResolver, 'resolve'>;
 
+/**
+ * Premier emplacement où une variable est rencontrée. Le résolveur le garde
+ * dans son warning pour que le designer sache quelle liaison réassigner.
+ */
+export type TokenUsage = {
+  nodeName: string;
+  field: string;
+};
+
 /** Une variable écartée, et celle qui lui a pris son nom. */
 export type AmbiguousVariable = { name: string; owner: string; path: string };
 
@@ -156,30 +165,36 @@ export class VariableNameResolver {
   constructor(private readonly options: ResolverOptions = {}) {}
 
   /** Résout un alias (ou null) en nom de token (ou null). */
-  resolve(alias: VariableAlias | null | undefined): Promise<string | null> {
-    return alias ? this.resolveById(alias.id) : Promise.resolve(null);
+  resolve(
+    alias: VariableAlias | null | undefined,
+    usage?: TokenUsage,
+  ): Promise<string | null> {
+    return alias ? this.resolveById(alias.id, usage) : Promise.resolve(null);
   }
 
   /** Résout un id de variable en nom de token, avec mise en cache. */
-  resolveById(variableId: string): Promise<string | null> {
+  resolveById(variableId: string, usage?: TokenUsage): Promise<string | null> {
     const cached = this.namesByVariableId.get(variableId);
     if (cached) return cached;
 
-    const pending = this.loadName(variableId);
+    const pending = this.loadName(variableId, usage);
     this.namesByVariableId.set(variableId, pending);
     return pending;
   }
 
   /** Retrouve le chemin d'une variable : par l'index si possible, sinon par l'API. */
-  private async loadName(variableId: string): Promise<string | null> {
+  private async loadName(variableId: string, usage?: TokenUsage): Promise<string | null> {
     const { index, warnings } = this.options;
+    const location = usage
+      ? ` sur le calque « ${usage.nodeName} » (${usage.field})`
+      : '';
 
     const ambiguous = index?.ambiguous.get(variableId);
     if (ambiguous) {
       warnings?.push(
         `Variable « ${ambiguous.name} » : même nom normalisé que « ${ambiguous.owner} » ` +
           `(« ${ambiguous.path} »). Aucune référence n'est écrite — elle désignerait l'autre ` +
-          `variable. Renommez l'une des deux dans Figma.`,
+          `variable${location}. Renommez l'une des deux dans Figma.`,
       );
       return null;
     }
@@ -188,10 +203,23 @@ export class VariableNameResolver {
     if (known) return known;
 
     const variable = await figma.variables.getVariableByIdAsync(variableId).catch(() => null);
-    if (!variable) return null;
+    if (!variable) {
+      warnings?.push(
+        `Variable liée introuvable (id « ${variableId} »)${location}. ` +
+          `Réassignez cette liaison dans Figma.`,
+      );
+      return null;
+    }
 
     const collectionName = await this.getCollectionName(variable.variableCollectionId);
-    return joinTokenPath(collectionName ?? '', variable.name);
+    if (!collectionName) {
+      warnings?.push(
+        `Collection « ${variable.variableCollectionId} » introuvable pour la variable ` +
+          `« ${variable.name} »${location}. Réassignez ou republiez cette variable dans Figma.`,
+      );
+      return null;
+    }
+    return joinTokenPath(collectionName, variable.name);
   }
 
   /** Nom d'une collection, également mis en cache. */

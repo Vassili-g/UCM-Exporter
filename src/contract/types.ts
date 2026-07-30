@@ -30,6 +30,11 @@ export type EnumProp = PropMeta & {
 export type BooleanProp = PropMeta & {
   type: 'boolean';
   default: boolean;
+  /**
+   * Rôle de la prop, alimenté par la règle `@boolean <prop>` du conteneur
+   * `<Nom>-Rules`. Absent si cette prop n'est pas documentée explicitement.
+   */
+  description?: string;
 };
 
 /** Prop texte libre (issue d'une propriété TEXT Figma). */
