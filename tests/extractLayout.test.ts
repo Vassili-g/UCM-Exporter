@@ -396,6 +396,27 @@ test('findLayoutNode choisit le calque qui porte le plus de dimensions liées', 
   assert.equal(findLayoutNode(racine), interne as unknown as SceneNode);
 });
 
+test('findLayoutNode reconnaît un radius lié séparément sur les quatre coins', () => {
+  const interne = {
+    type: 'FRAME',
+    name: 'Wrapper à coins indépendants',
+    boundVariables: {
+      topLeftRadius: alias('radius'),
+      topRightRadius: alias('radius'),
+      bottomLeftRadius: alias('radius'),
+      bottomRightRadius: alias('radius'),
+    },
+  };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Card',
+    boundVariables: {},
+    findAll: findAllOn([interne]),
+  } as unknown as ComponentNode;
+
+  assert.equal(findLayoutNode(racine), interne as unknown as SceneNode);
+});
+
 test('findLayoutNode ignore un porteur de dimensions statiquement masqué', () => {
   const masque = {
     type: 'FRAME',

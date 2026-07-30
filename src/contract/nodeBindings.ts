@@ -42,6 +42,21 @@ export function getBinding(node: SceneNode, field: string): unknown {
   return bindings?.[field];
 }
 
+/**
+ * Vrai lorsqu'au moins une représentation technique d'une dimension est
+ * entièrement liée. La détection du porteur de layout utilise ainsi
+ * exactement les mêmes groupes que l'extraction : quatre coins liés comptent
+ * comme un radius, tandis qu'un padding gauche isolé ne prétend pas décrire X.
+ */
+export function hasCompleteBinding(
+  node: SceneNode,
+  alternatives: FieldAlternatives,
+): boolean {
+  return alternatives.some((fields) =>
+    fields.every((field) => Boolean(firstVariableAlias(getBinding(node, field)))),
+  );
+}
+
 type AlternativeResolution = {
   fields: ReadonlyArray<string>;
   aliases: Array<VariableAlias | null>;

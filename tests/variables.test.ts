@@ -57,6 +57,56 @@ test('indexVariables départage deux collections qui donnent le même nom normal
   assert.equal(index.ambiguous.get('v2')?.path, 'brand-tokens.primary');
 });
 
+test('indexVariables refuse une collision feuille/groupe quel que soit l’ordre Figma', () => {
+  const feuille = variable('leaf', 'Foo', 'c');
+  const enfant = variable('child', 'Foo/Bar', 'c');
+  const collections = new Map([['c', collection('c', 'Brand')]]);
+
+  const feuilleDabord = indexVariables([feuille, enfant], collections);
+  assert.deepEqual([...feuilleDabord.variableByPath.keys()], ['brand.foo']);
+  assert.equal(feuilleDabord.pathById.has('child'), false);
+  assert.deepEqual(feuilleDabord.ambiguous.get('child'), {
+    name: 'Foo/Bar',
+    owner: 'Foo',
+    path: 'brand.foo.bar',
+    ownerPath: 'brand.foo',
+    kind: 'leaf-group',
+  });
+
+  const enfantDabord = indexVariables([enfant, feuille], collections);
+  assert.deepEqual([...enfantDabord.variableByPath.keys()], ['brand.foo.bar']);
+  assert.equal(enfantDabord.pathById.has('leaf'), false);
+  assert.deepEqual(enfantDabord.ambiguous.get('leaf'), {
+    name: 'Foo',
+    owner: 'Foo/Bar',
+    path: 'brand.foo',
+    ownerPath: 'brand.foo.bar',
+    kind: 'leaf-group',
+  });
+});
+
+test('le résolveur ne produit jamais un alias vers la variable écartée d’une collision feuille/groupe', async () => {
+  const feuille = variable('leaf', 'Foo', 'c');
+  const enfant = variable('child', 'Foo/Bar', 'c');
+  const collections = [collection('c', 'Brand')];
+  const figmaStub = stubFigma([feuille, enfant], collections);
+
+  try {
+    const index = indexVariables([feuille, enfant], new Map([['c', collections[0]]]));
+    const warnings: string[] = [];
+    const resolver = new VariableNameResolver({ index, warnings });
+
+    assert.equal(
+      await resolver.resolve({ type: 'VARIABLE_ALIAS', id: 'child' } as VariableAlias),
+      null,
+    );
+    assert.equal(figmaStub.appels(), 0);
+    assert.match(warnings[0], /à la fois une feuille et un groupe/);
+  } finally {
+    figmaStub.restaurer();
+  }
+});
+
 test('le résolveur refuse d’écrire une référence pour une variable ambiguë', async () => {
   const gagnante = variable('v1', 'Foo Bar', 'c');
   const perdante = variable('v2', 'foo-bar', 'c');

@@ -11,7 +11,12 @@ import type { TokenResolver } from '../variables';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import { isIconLayer } from './extractIconLayers';
-import { BINDING_PATTERNS, getBinding, resolveField } from './nodeBindings';
+import {
+  BINDING_PATTERNS,
+  getBinding,
+  hasCompleteBinding,
+  resolveField,
+} from './nodeBindings';
 import { normalizePropKey } from './parsers';
 import { indexedSlotName, semanticSlotName } from './semantics';
 import { composedSlotDependencies, nestedSlotVisibility } from './slotRelations';
@@ -41,17 +46,18 @@ export function findLayoutNode(
   warnings: string[] = [],
   composed: ComposedInstances = new Map(),
 ): SceneNode {
-  const fields = [
-    'itemSpacing',
-    'paddingLeft',
-    'paddingRight',
-    'paddingTop',
-    'paddingBottom',
-    'cornerRadius',
+  const dimensions = [
+    BINDING_PATTERNS.gap,
+    BINDING_PATTERNS.paddingX,
+    BINDING_PATTERNS.paddingY,
+    BINDING_PATTERNS.radius,
   ];
   const candidates = getAllNodes(root, warnings, composed).map((node) => ({
     node,
-    score: fields.reduce((total, field) => total + (getBinding(node, field) ? 1 : 0), 0),
+    score: dimensions.reduce(
+      (total, alternatives) => total + (hasCompleteBinding(node, alternatives) ? 1 : 0),
+      0,
+    ),
   }));
   candidates.sort((left, right) => right.score - left.score);
   return candidates[0]?.score ? candidates[0].node : root;

@@ -7,9 +7,9 @@
 import { normalizePropKey, normalizePropValue } from './parsers';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
-import { getBinding } from './nodeBindings';
+import { BINDING_PATTERNS, hasCompleteBinding } from './nodeBindings';
 
-/** Un variant du set : ses valeurs d'axes normalisées + le node Figma. */
+/** Un variant du set : ses valeurs indexées par clés publiques + le node Figma. */
 export type VariantEntry = {
   /** Ex. { color: 'primary', variant: 'contained', state: 'default' }. */
   values: Record<string, string>;
@@ -18,9 +18,21 @@ export type VariantEntry = {
 
 /** La matrice complète des variants d'un Component Set. */
 export type VariantMatrix = {
-  /** Les axes de variantes, dans l'ordre de déclaration Figma. */
+  /** Les clés publiques des axes, dans l'ordre de déclaration Figma. */
   axes: string[];
   variants: VariantEntry[];
+};
+
+/** Diagnostic compact d'un Component Set dont certains mélanges n'existent pas. */
+export type MissingVariantSummary = {
+  axes: Array<{ name: string; values: string[] }>;
+  expected: number;
+  found: number;
+  missing: number;
+  /** Cinq variants réellement présents au plus, écrits comme dans Figma. */
+  presentExamples: string[];
+  /** Cinq exemples au plus, écrits avec les noms et valeurs visibles dans Figma. */
+  examples: string[];
 };
 
 /** Le wrapper de dimensions trouvé dans un variant : l'instance + son set maître. */
@@ -67,12 +79,39 @@ export function getVariantAxes(componentSet: ComponentSetNode): string[] {
     .map(([name]) => normalizePropKey(name));
 }
 
+/** Remplace les clés Figma par les clés publiques décidées lors de l'extraction des props. */
+function remapVariantValues(
+  values: Record<string, string>,
+  publicKeyByRawKey: ReadonlyMap<string, string>,
+): Record<string, string> {
+  const remapped: Record<string, string> = {};
+  for (const [rawKey, value] of Object.entries(values)) {
+    remapped[publicKeyByRawKey.get(rawKey) ?? rawKey] = value;
+  }
+  return remapped;
+}
+
 /**
  * Construit la matrice complète : chaque variant du set avec ses valeurs
- * d'axes. Aucune hypothèse sur les noms d'axes — un Button a Color/Variant/
- * State, un autre composant aura les siens.
+ * d'axes. La table optionnelle applique les mêmes renommages sémantiques que
+ * les props. Aucune hypothèse sur les noms d'axes — un Button a
+ * Color/Variant/State, un autre composant aura les siens.
  */
 export function groupComponentsByVariant(componentSet: ComponentSetNode): {
+  matrix: VariantMatrix;
+  warnings: string[];
+};
+export function groupComponentsByVariant(
+  componentSet: ComponentSetNode,
+  publicKeyByRawKey: ReadonlyMap<string, string>,
+): {
+  matrix: VariantMatrix;
+  warnings: string[];
+};
+export function groupComponentsByVariant(
+  componentSet: ComponentSetNode,
+  publicKeyByRawKey: ReadonlyMap<string, string> = new Map(),
+): {
   matrix: VariantMatrix;
   warnings: string[];
 } {
@@ -81,9 +120,11 @@ export function groupComponentsByVariant(componentSet: ComponentSetNode): {
     (node): node is ComponentNode => node.type === 'COMPONENT',
   );
 
-  let axes = getVariantAxes(componentSet);
+  let axes = getVariantAxes(componentSet).map(
+    (rawKey) => publicKeyByRawKey.get(rawKey) ?? rawKey,
+  );
   const variants: VariantEntry[] = components.map((component) => ({
-    values: getVariantValues(component),
+    values: remapVariantValues(getVariantValues(component), publicKeyByRawKey),
     component,
   }));
 
@@ -104,14 +145,103 @@ export function groupComponentsByVariant(componentSet: ComponentSetNode): {
   return { matrix: { axes, variants }, warnings };
 }
 
-/** Propriétés Figma dont la liaison à une variable signale un porteur de dimensions. */
-const LAYOUT_BINDING_FIELDS = [
-  'itemSpacing',
-  'paddingLeft',
-  'paddingRight',
-  'paddingTop',
-  'paddingBottom',
-  'cornerRadius',
+/**
+ * Vérifie que les valeurs des axes sont combinables comme des props
+ * indépendantes. Le nombre manquant se calcule sans parcourir tout le produit ;
+ * la recherche s'arrête dès que cinq exemples ont été trouvés. Le coût reste
+ * donc proportionnel au nombre de variants réellement présents.
+ */
+export function findMissingVariantCombinations(
+  componentSet: ComponentSetNode,
+  exampleLimit = 5,
+): MissingVariantSummary | null {
+  const components = componentSet.children.filter(
+    (node): node is ComponentNode => node.type === 'COMPONENT',
+  );
+  const rawVariants = components.map((component) => getVariantValues(component));
+  const axes = Object.entries(componentSet.componentPropertyDefinitions)
+    .filter(([, definition]) => definition.type === 'VARIANT')
+    .map(([figmaName, definition]) => {
+      const key = normalizePropKey(figmaName);
+      const valuesByKey = new Map<string, string>();
+      for (const value of definition.variantOptions ?? []) {
+        const normalized = normalizePropValue(value);
+        if (!valuesByKey.has(normalized)) valuesByKey.set(normalized, value.trim());
+      }
+      // Défense pour les vieux documents où `variantOptions` serait absent.
+      for (const variant of rawVariants) {
+        const normalized = variant[key];
+        if (normalized && !valuesByKey.has(normalized)) valuesByKey.set(normalized, normalized);
+      }
+      return {
+        key,
+        name: figmaName.replace(/#.*$/, '').trim(),
+        valuesByKey,
+      };
+    });
+
+  if (axes.length < 2 || axes.some((axis) => axis.valuesByKey.size === 0)) return null;
+
+  const signature = (values: readonly string[]) => values.join('\u0000');
+  const existing = new Set<string>();
+  const presentExamples: string[] = [];
+  for (const variant of rawVariants) {
+    const values = axes.map((axis) => variant[axis.key]);
+    if (values.every((value, index) => axes[index].valuesByKey.has(value))) {
+      const key = signature(values);
+      if (!existing.has(key) && presentExamples.length < exampleLimit) {
+        presentExamples.push(
+          axes
+            .map((axis, index) => `${axis.name}=${axis.valuesByKey.get(values[index])}`)
+            .join(', '),
+        );
+      }
+      existing.add(key);
+    }
+  }
+
+  const expected = axes.reduce((total, axis) => total * axis.valuesByKey.size, 1);
+  const found = existing.size;
+  const missing = expected - found;
+  if (missing <= 0) return null;
+
+  const examples: string[] = [];
+  const current: string[] = [];
+  const visit = (axisIndex: number): boolean => {
+    if (axisIndex === axes.length) {
+      if (!existing.has(signature(current))) {
+        examples.push(
+          axes
+            .map((axis, index) => `${axis.name}=${axis.valuesByKey.get(current[index])}`)
+            .join(', '),
+        );
+      }
+      return examples.length >= exampleLimit;
+    }
+    for (const value of axes[axisIndex].valuesByKey.keys()) {
+      current[axisIndex] = value;
+      if (visit(axisIndex + 1)) return true;
+    }
+    return false;
+  };
+  visit(0);
+
+  return {
+    axes: axes.map((axis) => ({ name: axis.name, values: [...axis.valuesByKey.values()] })),
+    expected,
+    found,
+    missing,
+    presentExamples,
+    examples,
+  };
+}
+
+/** Dimensions complètes dont la liaison signale un porteur de layout. */
+const LAYOUT_BINDING_PATTERNS = [
+  BINDING_PATTERNS.gap,
+  BINDING_PATTERNS.paddingX,
+  BINDING_PATTERNS.paddingY,
+  BINDING_PATTERNS.radius,
 ];
 
 /** Compte les liaisons de dimensions dans tout le sous-arbre rendable d'une instance. */
@@ -122,8 +252,8 @@ function countLayoutBindings(
 ): number {
   let count = 0;
   for (const node of getAllNodes(root, warnings, composed)) {
-    for (const field of LAYOUT_BINDING_FIELDS) {
-      if (getBinding(node, field)) count += 1;
+    for (const alternatives of LAYOUT_BINDING_PATTERNS) {
+      if (hasCompleteBinding(node, alternatives)) count += 1;
     }
   }
   return count;
