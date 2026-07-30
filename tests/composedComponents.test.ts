@@ -15,6 +15,7 @@ import {
 } from '../src/contract/composedComponents';
 import { findWrapperReference } from '../src/contract/componentTree';
 import { getAllNodes } from '../src/contract/exportableNodes';
+import { extractLayout } from '../src/contract/extractLayout';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
@@ -144,6 +145,37 @@ test('getAllNodes garde l’instance composée mais n’entre pas dedans', () =>
   // Le slot reste visible — le composé doit pouvoir dire QUOI rendre là —
   // mais le libellé du bouton n'appartient pas à l'Alert.
   assert.deepEqual(noms, ['Severity=Info', 'action']);
+});
+
+test('un slot qui enveloppe une dépendance la nomme au lieu de passer pour une icône', async () => {
+  // Cas réel de l'Alert : le bouton n'est pas un enfant direct du layout, il
+  // est rangé dans un calque « Action ». Le slot doit malgré tout dire quoi
+  // rendre — sinon il paraît vide, et son absence de texte le fait passer
+  // pour un placeholder d'icône dont on cherche la taille en vain.
+  const bouton = instance('btn', 'Button', 'Button');
+  const conteneur = {
+    type: 'FRAME',
+    id: 'act',
+    name: 'Action',
+    boundVariables: {},
+    children: [bouton],
+    findAll: () => [bouton],
+  };
+  const alert = racine('alert', 'Severity=Info', [conteneur]);
+
+  const warnings: string[] = [];
+  const layout = await extractLayout(
+    alert,
+    { resolve: async () => null },
+    new Set<string>(),
+    warnings,
+    new Map([['btn', 'Button']]),
+  );
+
+  const slot = layout.children.find((child) => child.slot === 'action');
+  assert.equal(slot?.composes, 'Button');
+  assert.equal(slot?.figmaLayer, 'Action');
+  assert.equal(warnings.some((warning) => warning.includes('action-size')), false);
 });
 
 test('findWrapperReference n’élit jamais un composant unifié imbriqué', async () => {
