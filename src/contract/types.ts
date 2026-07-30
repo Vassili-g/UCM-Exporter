@@ -113,16 +113,34 @@ export type TypographyTokens = Partial<{
   fontFamily: string;
 }>;
 
+/** Cible imbriquée dont une prop BOOLEAN contrôle la visibilité. */
+export type VisibilityTarget = {
+  /** Prop publique qui montre ou masque uniquement cette cible. */
+  visibilityProp: string;
+  /** Chemin de calques Figma relatif au slot direct, cible comprise. */
+  figmaPath: string[];
+};
+
 /** Un enfant direct du composant (un « slot ») : icône, label, etc. */
 export type ChildStructure = {
-  /** Nom du slot : rôle sémantique (`label`) ou nom du calque Figma. */
+  /** Nom du slot : rôle sémantique (`label`, `icon`) ou nom du calque Figma. */
   slot: string;
-  /** Nom Figma d'origine, toujours conservé pour tracer labels et placeholders graphiques. */
+  /**
+   * Nom Figma d'origine, toujours conservé pour tracer labels et placeholders
+   * graphiques. Il décrit le VARIANT DE RÉFÉRENCE : quand plusieurs icônes se
+   * relaient sur un même slot, `Contract.icons` fait foi sur celle à rendre
+   * dans chaque combinaison d'axes.
+   */
   figmaLayer?: string;
   /** Vrai pour les calques graphiques et pour tout slot qu'une prop peut masquer. */
   optional?: boolean;
   /** Prop BOOLEAN Figma liée nativement à `visible` sur ce calque, si elle existe. */
   visibilityProp?: string;
+  /**
+   * Visibilités portées plus profondément que le slot. Elles restent séparées
+   * pour ne jamais prétendre que la prop masque le slot entier.
+   */
+  visibilityTargets?: VisibilityTarget[];
   /** Token de taille du calque (ex. taille d'icône). */
   size?: string;
   /** Typographie du calque texte : nom de style OU détail par token. */
@@ -158,10 +176,24 @@ export type IconDefinition = {
   policy: IconPolicy;
   /** Nom de l'icône dans Figma, conservé sans normalisation pour la traçabilité. */
   figmaName: string;
+  /**
+   * Slot de `structure.children` que cette icône remplit. C'est lui qui situe
+   * une icône absente du variant de référence, donc absente de `children` :
+   * plusieurs icônes qui s'excluent entre variants partagent un même slot.
+   * Absent lorsque le calque n'occupe pas le même rang selon les variants.
+   */
+  slot?: string;
+  /** Token de taille du calque, relevé sur tous les variants où il existe. */
+  size?: string;
   /** Prop BOOLEAN qui contrôle la visibilité du calque, si Figma en déclare une. */
   visibilityProp?: string;
   /** Prop runtime ajoutée pour une icône `modifiable`, distincte du booléen. */
   runtimeProp?: string;
+  /**
+   * Combinaisons exactes d'axes où le calque existe. Absent si l'icône est
+   * présente dans tous les variants.
+   */
+  variants?: Array<Record<string, string>>;
 };
 
 /** Alignement d'un stroke Figma, conservé comme donnée structurelle. */
@@ -284,7 +316,7 @@ export type Contract = {
   structure: ContractStructure;
   /** Déclencheurs et priorité des états, ou null si le composant n'a pas d'axe d'état. */
   stateModel: StateModel | null;
-  /** Vocabulaire de rendu des rôles (`background`, `foreground`, `border`, `ring`…). */
+  /** Vocabulaire de rendu des rôles (`background`, `foreground`, `icon`, `border`, `ring`…). */
   rendering: RenderingSemantics;
   /** Icônes qualifiées par les règles Figma, indexées par leur nom normalisé. */
   icons: Record<string, IconDefinition>;

@@ -7,6 +7,8 @@ import { VariableNameResolver } from '../variables';
 import type { TokenResolver } from '../variables';
 import type { VariantMatrix, WrapperReference } from './componentTree';
 import type { ComposedInstances } from './exportableNodes';
+import { extractIconLayers } from './extractIconLayers';
+import type { IconLayerSummary } from './extractIconLayers';
 import { extractLayout } from './extractLayout';
 import { extractSizeDimensions } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
@@ -23,7 +25,15 @@ export async function extractStructure(
   resolver: TokenResolver = new VariableNameResolver(),
   // Instances des composants unifiés embarqués, et le nom de chacun.
   composed: ComposedInstances = new Map(),
-): Promise<{ structure: ContractStructure; tokensUsed: string[]; warnings: string[] }> {
+  // Calques désignés par les règles `@icons`, relevés avant les slots : c'est
+  // leur inventaire qui donne son rôle `icon` au slot correspondant.
+  iconNames: readonly string[] = [],
+): Promise<{
+  structure: ContractStructure;
+  iconLayers: IconLayerSummary[];
+  tokensUsed: string[];
+  warnings: string[];
+}> {
   // Le resolver met en cache les résolutions id → nom de token ;
   // tokenNames accumule tous les tokens rencontrés pour la liste `tokensUsed`.
   const tokenNames = new Set<string>();
@@ -41,11 +51,24 @@ export async function extractStructure(
   // vérification reste une fonction pure, testable sans runtime Figma.
   warnings.push(...variantRoleWarnings(variantTokens, variantStrokes));
 
+  // L'inventaire des icônes précède les slots : il couvre TOUTE la matrice,
+  // là où le layout ne décrit que le variant de référence. C'est lui qui relève
+  // les icônes que ce variant ne contient pas, et qui nomme leur slot.
+  const iconLayers = await extractIconLayers(
+    matrix,
+    iconNames,
+    resolver,
+    tokenNames,
+    warnings,
+    composed,
+  );
+  const targetedLayers = new Set(iconLayers.map((layer) => layer.figmaLayer));
+
   // Le layout vit sur le wrapper imbriqué quand il existe, sinon directement
   // sur le composant. Un composant « plat » est donc géré sans blocage.
   const layoutRoot = wrapper?.instance ?? referenceComponent;
   const layout = layoutRoot
-    ? await extractLayout(layoutRoot, resolver, tokenNames, warnings, composed)
+    ? await extractLayout(layoutRoot, resolver, tokenNames, warnings, composed, targetedLayers)
     : { layout: 'flex-row' as const, gap: null, padding: { x: null, y: null }, radius: null, children: [] };
 
   if (!layoutRoot) {
@@ -82,6 +105,7 @@ export async function extractStructure(
 
   return {
     structure,
+    iconLayers,
     tokensUsed: Array.from(tokenNames).sort(),
     warnings,
   };

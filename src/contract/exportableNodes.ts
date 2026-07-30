@@ -12,6 +12,7 @@
  */
 import { variableAliases } from '../variables';
 import { getBinding } from './nodeBindings';
+import type { ComposedDependency } from './types';
 
 /** Vrai si la visibilité peut changer via l'API publique ou un mode de variable. */
 function hasDynamicVisibility(node: SceneNode): boolean {
@@ -54,11 +55,11 @@ function pushOnce(warnings: string[], warning: string): void {
 }
 
 /**
- * Les composants unifiés imbriqués d'un sous-arbre : id de l'instance → nom du
- * composant. Une seule structure sert les deux besoins — élaguer le parcours
- * (`has`) et nommer la dépendance dans le contrat (`get`).
+ * Les composants unifiés imbriqués d'un sous-arbre : id de l'instance →
+ * dépendance complète. Une seule structure sert les deux besoins — élaguer le
+ * parcours (`has`) et décrire fidèlement le slot (`get`), visibilité comprise.
  */
-export type ComposedInstances = ReadonlyMap<string, string>;
+export type ComposedInstances = ReadonlyMap<string, ComposedDependency>;
 
 /**
  * Vrai si un ancêtre STRICT du node, sous la racine, est une instance composée.

@@ -20,15 +20,21 @@ import type { ComposedDependency } from './types';
 /** Noms compactés des composants qui possèdent leur propre contrat. */
 export type ContractedNames = ReadonlySet<string>;
 
-/** Ce que le parcours d'un composé apprend sur ses dépendances. */
-export type ComposedScan = {
+/** Ce que le parcours d'un variant apprend sur ses dépendances. */
+type ComposedInstancesScan = {
   /** Les dépendances directes, dans l'ordre des calques. */
   composes: ComposedDependency[];
   /**
    * TOUTES les instances contractées rencontrées, y compris imbriquées les
    * unes dans les autres : c'est ce relevé qui sert à élaguer le parcours.
-   */
-  composed: Map<string, string>;
+  */
+  composed: Map<string, ComposedDependency>;
+};
+
+/** Relevé de toute la matrice, avec ses éventuels écarts entre variants. */
+export type ComposedMatrixScan = ComposedInstancesScan & {
+  /** Écarts entre variants que le schéma courant ne doit jamais taire. */
+  warnings: string[];
 };
 
 /**
@@ -87,7 +93,7 @@ async function contractedOwnerName(
 export async function scanComposedInstances(
   root: SceneNode,
   contracted: ContractedNames,
-): Promise<ComposedScan> {
+): Promise<ComposedInstancesScan> {
   // Le parcours passe par `getAllNodes` comme toutes les autres extractions :
   // un sous-arbre statiquement masqué ne fournit ni tokens, ni slots, ni
   // wrapper — il ne fournit pas non plus de dépendance. Ses avertissements
@@ -107,18 +113,21 @@ export async function scanComposedInstances(
     if (owner) ownerByInstance.set(instance, owner);
   }
 
-  const composed = new Map(
-    Array.from(ownerByInstance, ([instance, component]) => [instance.id, component] as const),
-  );
-  const composes: ComposedDependency[] = [];
-
+  const dependencyByInstance = new Map<InstanceNode, ComposedDependency>();
   for (const [instance, component] of ownerByInstance) {
-    // Une dépendance d'une dépendance relève du contrat de cette dernière.
-    if (hasAncestorIn(instance, root, composed)) continue;
-
     const dependency: ComposedDependency = { component, figmaLayer: instance.name };
     const visibility = instance.componentPropertyReferences?.visible;
     if (visibility) dependency.visibilityProp = normalizePropKey(visibility);
+    dependencyByInstance.set(instance, dependency);
+  }
+
+  const composed = new Map(
+    Array.from(dependencyByInstance, ([instance, dependency]) => [instance.id, dependency] as const),
+  );
+  const composes: ComposedDependency[] = [];
+  for (const [instance, dependency] of dependencyByInstance) {
+    // Une dépendance d'une dépendance relève du contrat de cette dernière.
+    if (hasAncestorIn(instance, root, composed)) continue;
     composes.push(dependency);
   }
 
@@ -130,27 +139,49 @@ export async function scanComposedInstances(
  *
  * Chaque variant porte ses propres instances, avec leurs propres ids : élaguer
  * d'après le seul variant de référence ne protégerait que celui-là, et les
- * autres continueraient d'aspirer les couleurs du composant embarqué. Les
- * dépendances déclarées viennent en revanche du variant de référence seul —
- * elles ne changent pas d'un variant à l'autre, et les répéter ferait autant
- * d'entrées `composes` que de variants.
+ * autres continueraient d'aspirer les couleurs du composant embarqué.
+ *
+ * `structure.children` décrit le variant de référence. `composes` doit donc
+ * décrire exactement le même variant pour que les deux champs ne se
+ * contredisent jamais. Une composition différente ailleurs dans la matrice
+ * produit un warning : le schéma courant ne sait pas représenter un slot
+ * composé qui apparaît ou disparaît selon un axe.
  */
 export async function scanComposedMatrix(
   variants: readonly SceneNode[],
   reference: SceneNode | null,
   contracted: ContractedNames,
-): Promise<ComposedScan> {
-  const roots = reference && !variants.includes(reference) ? [reference, ...variants] : variants;
+): Promise<ComposedMatrixScan> {
+  const roots = reference
+    ? [reference, ...variants.filter((variant) => variant !== reference)]
+    : variants;
   const scans = await Promise.all(roots.map((root) => scanComposedInstances(root, contracted)));
 
-  const composed = new Map<string, string>();
+  const composed = new Map<string, ComposedDependency>();
   for (const scan of scans) {
-    for (const [id, component] of scan.composed) composed.set(id, component);
+    for (const [id, dependency] of scan.composed) composed.set(id, dependency);
   }
 
-  const referenceIndex = reference ? roots.indexOf(reference) : -1;
-  return {
-    composes: referenceIndex >= 0 ? scans[referenceIndex].composes : [],
-    composed,
-  };
+  const signature = (dependency: ComposedDependency) =>
+    [dependency.component, dependency.figmaLayer, dependency.visibilityProp ?? ''].join('\u0000');
+  const sequences = scans.map((scan) => scan.composes.map(signature));
+  const referenceSequence = JSON.stringify(sequences[0] ?? []);
+  const divergentVariants = roots.filter(
+    (_, index) => JSON.stringify(sequences[index]) !== referenceSequence,
+  );
+  const examples = divergentVariants
+    .slice(0, 3)
+    .map((root) => `« ${root.name} »`)
+    .join(', ');
+  const remaining = divergentVariants.length - 3;
+  const warnings = divergentVariants.length > 0
+    ? [
+      `Composition différente sur ${divergentVariants.length} variant(s), ex. ${examples}` +
+        `${remaining > 0 ? ` (+${remaining})` : ''} : le contrat décrit le variant de ` +
+        `référence « ${roots[0]?.name ?? 'inconnu'} ». Harmonisez la composition Figma ` +
+        'entre les variants ou séparez-les en composants distincts.',
+    ]
+    : [];
+
+  return { composes: scans[0]?.composes ?? [], composed, warnings };
 }

@@ -19,11 +19,15 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 4.2 : un slot d'icône porte le rôle `icon` au lieu du nom de son calque, et
+ * chaque icône déclare le slot et la taille qui la rendent — les icônes qui se
+ * relaient entre variants deviennent toutes rendables.
+ * 4.1 : conditions de variantes des icônes et cibles de visibilité imbriquées.
  * 4.0 : composition (`composes`) et assainissement du format — les dimensions
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '4.0';
+export const CONTRACT_VERSION = '4.2';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
@@ -169,11 +173,12 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   // La composition se relève AVANT toute extraction : un composant unifié
   // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
   // conditionne tout ce qui suit.
-  const { composes, composed } = await scanComposedMatrix(
+  const { composes, composed, warnings: compositionWarnings } = await scanComposedMatrix(
     matrix.variants.map((entry) => entry.component),
     referenceComponent,
     indexContractedNames(figma.currentPage),
   );
+  warnings.push(...compositionWarnings);
 
   const wrapper = referenceComponent
     ? await findWrapperReference(referenceComponent, warnings, composed)
@@ -213,12 +218,13 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     referenceComponent,
     resolver,
     composed,
+    rules.iconRules.map((rule) => rule.iconName),
   );
 
   // La documentation issue des règles s'accroche aux props de même nature.
   mergePropDescriptions(props, rules.propDescriptions, warnings);
   mergeBooleanDescriptions(props, rules.booleanDescriptions, warnings);
-  const icons = mergeIconRules(props, extracted.structure.children, rules.iconRules, warnings);
+  const icons = mergeIconRules(props, extracted.iconLayers, rules.iconRules, warnings);
   const intent = rules.intent;
   if (!intent) {
     warnings.push(

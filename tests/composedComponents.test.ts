@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   indexContractedNames,
+  scanComposedMatrix,
   scanComposedInstances,
 } from '../src/contract/composedComponents';
 import { findWrapperReference } from '../src/contract/componentTree';
@@ -103,7 +104,11 @@ test('scanComposedInstances déclare une instance contractée comme dépendance'
     { component: 'Button', figmaLayer: 'action', visibilityProp: 'action' },
   ]);
   // Le relevé sert ensuite à élaguer : il porte l'id ET le nom du composant.
-  assert.equal(composed.get('btn'), 'Button');
+  assert.deepEqual(composed.get('btn'), {
+    component: 'Button',
+    figmaLayer: 'action',
+    visibilityProp: 'action',
+  });
 });
 
 test('scanComposedInstances ignore une instance sans contrat', async () => {
@@ -140,19 +145,25 @@ test('getAllNodes garde l’instance composée mais n’entre pas dedans', () =>
   const bouton = instance('btn', 'action', 'Button', { children: [interne] });
   const alert = racine('alert', 'Severity=Info', [bouton]);
 
-  const noms = getAllNodes(alert, [], new Map([['btn', 'Button']])).map((node) => node.name);
+  const noms = getAllNodes(
+    alert,
+    [],
+    new Map([['btn', { component: 'Button', figmaLayer: 'action' }]]),
+  ).map((node) => node.name);
 
   // Le slot reste visible — le composé doit pouvoir dire QUOI rendre là —
   // mais le libellé du bouton n'appartient pas à l'Alert.
   assert.deepEqual(noms, ['Severity=Info', 'action']);
 });
 
-test('un slot qui enveloppe une dépendance la nomme au lieu de passer pour une icône', async () => {
+test('un slot qui enveloppe une dépendance reprend aussi sa visibilité', async () => {
   // Cas réel de l'Alert : le bouton n'est pas un enfant direct du layout, il
   // est rangé dans un calque « Action ». Le slot doit malgré tout dire quoi
   // rendre — sinon il paraît vide, et son absence de texte le fait passer
   // pour un placeholder d'icône dont on cherche la taille en vain.
-  const bouton = instance('btn', 'Button', 'Button');
+  const bouton = instance('btn', 'Button', 'Button', {
+    componentPropertyReferences: { visible: 'action#9:1' },
+  });
   const conteneur = {
     type: 'FRAME',
     id: 'act',
@@ -169,13 +180,96 @@ test('un slot qui enveloppe une dépendance la nomme au lieu de passer pour une 
     { resolve: async () => null },
     new Set<string>(),
     warnings,
-    new Map([['btn', 'Button']]),
+    new Map([['btn', {
+      component: 'Button',
+      figmaLayer: 'Button',
+      visibilityProp: 'action',
+    }]]),
   );
 
   const slot = layout.children.find((child) => child.slot === 'action');
   assert.equal(slot?.composes, 'Button');
   assert.equal(slot?.figmaLayer, 'Action');
+  assert.equal(slot?.visibilityProp, 'action');
+  assert.equal(slot?.optional, true);
   assert.equal(warnings.some((warning) => warning.includes('action-size')), false);
+});
+
+test('scanComposedMatrix n’invente pas un slot absent du variant de référence', async () => {
+  const sansAction = racine('info', 'Severity=Info', []);
+  const avecAction = racine(
+    'success',
+    'Severity=Success',
+    [instance('btn-success', 'Button', 'Button')],
+  );
+
+  const result = await scanComposedMatrix(
+    [sansAction, avecAction],
+    sansAction,
+    new Set(['button']),
+  );
+
+  assert.deepEqual(result.composes, []);
+  assert.equal(result.composed.has('btn-success'), true);
+  assert.equal(result.warnings.length, 1);
+  assert.match(result.warnings[0], /Composition différente sur 1 variant/);
+  assert.match(result.warnings[0], /décrit le variant de référence/);
+});
+
+test('scanComposedMatrix garde la cardinalité du variant de référence', async () => {
+  const simple = racine(
+    'simple',
+    'Mode=Simple',
+    [instance('btn-simple', 'Action', 'Button')],
+  );
+  const double = racine(
+    'double',
+    'Mode=Double',
+    [
+      instance('btn-double-1', 'Action', 'Button'),
+      instance('btn-double-2', 'Action', 'Button'),
+    ],
+  );
+
+  const result = await scanComposedMatrix([simple, double], simple, new Set(['button']));
+
+  assert.equal(result.composes.length, 1);
+  assert.deepEqual(
+    result.composes.map((dependency) => dependency.component),
+    ['Button'],
+  );
+  assert.equal(result.warnings.length, 1);
+});
+
+test('scanComposedMatrix signale aussi un ordre de composition différent', async () => {
+  const reference = racine(
+    'reference',
+    'Mode=Reference',
+    [
+      instance('button-reference', 'Action', 'Button'),
+      instance('link-reference', 'Lien', 'Link'),
+    ],
+  );
+  const inverse = racine(
+    'inverse',
+    'Mode=Inverse',
+    [
+      instance('link-inverse', 'Lien', 'Link'),
+      instance('button-inverse', 'Action', 'Button'),
+    ],
+  );
+
+  const result = await scanComposedMatrix(
+    [reference, inverse],
+    reference,
+    new Set(['button', 'link']),
+  );
+
+  assert.deepEqual(
+    result.composes.map((dependency) => dependency.component),
+    ['Button', 'Link'],
+  );
+  assert.equal(result.warnings.length, 1);
 });
 
 test('findWrapperReference n’élit jamais un composant unifié imbriqué', async () => {
@@ -189,6 +283,10 @@ test('findWrapperReference n’élit jamais un composant unifié imbriqué', asy
 
   // Déclaré comme dépendance, il cesse d'être candidat et l'Alert lit ses
   // propres dimensions.
-  const avecComposition = await findWrapperReference(alert, [], new Map([['btn', 'Button']]));
+  const avecComposition = await findWrapperReference(
+    alert,
+    [],
+    new Map([['btn', { component: 'Button', figmaLayer: 'action' }]]),
+  );
   assert.equal(avecComposition, null);
 });
