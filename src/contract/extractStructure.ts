@@ -13,7 +13,7 @@ import { extractLayout, findLayoutNode } from './extractLayout';
 import { extractSizeDimensions } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
 import { variantRoleWarnings } from './semantics';
-import type { ContractStructure } from './types';
+import type { ContractStructure, SizeDimensions } from './types';
 
 export async function extractStructure(
   matrix: VariantMatrix,
@@ -82,16 +82,25 @@ export async function extractStructure(
 
   // Dimensions par taille, pour couvrir big/medium/small et pas seulement la
   // taille instanciée par défaut. L'axe de tailles vit d'ordinaire sur le
-  // wrapper de dimensions ; un composant PLAT le porte directement sur son
-  // propre set, qui est le parent du variant de référence. On lit donc celui
-  // qui existe — `findSizeAxis` rend null si aucun axe n'est un axe de
-  // tailles, si bien qu'un composant à taille unique reste sans `sizes`.
+  // wrapper de dimensions, mais rien ne l'y oblige : il peut rester sur le set
+  // sélectionné pendant que le wrapper porte ses propres axes. On interroge
+  // donc les deux propriétaires possibles et on garde le premier qui rend des
+  // dimensions. Élire le propriétaire sur le TYPE du node ferait disparaître
+  // `sizes` en silence dès que le wrapper n'a pas d'axe de tailles, alors que
+  // `props.size` continuerait d'annoncer ses valeurs au consommateur.
   const ownSet = referenceComponent?.parent;
-  const sizeAxisOwner = wrapper?.componentSet
-    ?? (ownSet?.type === 'COMPONENT_SET' ? ownSet : null);
-  const sizes = sizeAxisOwner
-    ? await extractSizeDimensions(sizeAxisOwner, resolver, warnings, composed)
-    : null;
+  const sizeAxisOwners = [
+    wrapper?.componentSet,
+    ownSet?.type === 'COMPONENT_SET' ? ownSet : null,
+  ].filter((owner): owner is ComponentSetNode => Boolean(owner));
+
+  let sizes: Record<string, SizeDimensions> | null = null;
+  for (const owner of sizeAxisOwners) {
+    // `extractSizeDimensions` rend null sans rien signaler quand le set n'a pas
+    // d'axe de tailles : passer au suivant ne produit donc aucun bruit.
+    sizes = await extractSizeDimensions(owner, resolver, warnings, composed);
+    if (sizes) break;
+  }
 
   // Les dimensions ne vivent qu'à UN endroit : `sizes` les porte toutes dès
   // qu'un axe de tailles existe, sinon elles restent au niveau haut. Les
