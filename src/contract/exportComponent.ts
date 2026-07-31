@@ -118,9 +118,9 @@ function mergeWrapperProps(
   for (const [key, prop] of Object.entries(wrapperProps)) {
     if (key in props) {
       warnings.push(
-        `Propriété « ${key} » : le composant imbriqué qui porte les dimensions et le jeu de ` +
-          `composants sélectionné l’exposent tous les deux. Seule celle du jeu sélectionné ` +
-          `est exportée. Renommez l’une des deux.`,
+        `Component property « ${key} » : le composant imbriqué qui porte les dimensions et ` +
+          `le component set sélectionné l’exposent tous les deux. Seule celle du component ` +
+          `set sélectionné est exportée. Renommez l’une des deux.`,
       );
       continue;
     }
@@ -141,12 +141,12 @@ function mergePropDescriptions(
   for (const [propName, valueDescriptions] of Object.entries(propDescriptions)) {
     const prop = props[propName];
     if (!prop || prop.type !== 'enum') {
-      warnings.push(`Règle @prop « ${propName} » : le composant n’a aucune propriété de type variante portant ce nom. Vérifiez l’orthographe dans le calque « prop ».`);
+      warnings.push(`Règle @prop « ${propName} » : le composant n’a aucune variant property portant ce nom. Vérifiez l’orthographe dans le layer « prop ».`);
       continue;
     }
     for (const [value, description] of Object.entries(valueDescriptions)) {
       if (!prop.values.includes(value)) {
-        warnings.push(`Règle @prop « ${propName}.${value} » : la propriété « ${propName} » n’a pas de valeur « ${value} ». Vérifiez l’orthographe dans le calque « prop ».`);
+        warnings.push(`Règle @prop « ${propName}.${value} » : la variant property « ${propName} » n’a pas de valeur « ${value} ». Vérifiez l’orthographe dans le layer « prop ».`);
         continue;
       }
       if (!prop.descriptions) prop.descriptions = {};
@@ -253,8 +253,8 @@ export async function handleExportComponent(): Promise<ComponentExport> {
 
   if (Object.keys(componentSet.componentPropertyDefinitions).length === 0) {
     warnings.push(
-      'Le jeu de composants sélectionné n’expose aucune propriété de composant : le ' +
-        'contrat ne décrira ni variantes ni options.',
+      'Le component set sélectionné n’expose aucune component property : le contrat ne ' +
+        'décrira ni variants ni options.',
     );
   }
 

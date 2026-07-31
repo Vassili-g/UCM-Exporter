@@ -101,7 +101,7 @@ test('extractContractProps ne laisse pas le nom sémantique voler la clé d’un
     size: { type: 'string', default: 'texte libre' },
   });
   assert.deepEqual(warnings, [
-    'Propriété « Taille » : ses valeurs sont des tailles, mais une autre propriété porte déjà le nom « size ». Elle reste exportée sous « taille ». Renommez l\'une des deux si vous voulez « size ».',
+    'Variant property « Taille » : ses valeurs sont des tailles, mais une autre component property porte déjà le nom « size ». Elle reste exportée sous « taille ». Renommez l\'une des deux si vous voulez « size ».',
   ]);
 });
 
@@ -128,7 +128,7 @@ test('extractContractProps conserve la première prop quand deux écritures donn
     iconLeft: { type: 'boolean', default: true },
   });
   assert.deepEqual(warnings, [
-    'Propriétés « Icon Left » et « icon-left » : leurs noms deviennent identiques une fois normalisés (« iconLeft »). Seule « Icon Left » est exportée. Renommez l’une des deux.',
+    'Component properties « Icon Left » et « icon-left » : leurs noms deviennent identiques une fois normalisés (« iconLeft »). Seule « Icon Left » est exportée. Renommez l’une des deux.',
   ]);
 });
 

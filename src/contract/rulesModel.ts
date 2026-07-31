@@ -51,7 +51,7 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
   for (const entry of entries) {
     const content = entry.content.trim();
     if (!content && entry.tag !== 'icons') {
-      warnings.push(`Règle @${entry.tag} : le calque « content » est vide. Écrivez-y le texte de la règle.`);
+      warnings.push(`Règle @${entry.tag} : le layer « content » est vide. Écrivez-y le texte de la règle.`);
       continue;
     }
 
@@ -69,7 +69,7 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
     } else if (entry.tag === 'boolean') {
       const propName = normalizePropKey(entry.prop?.trim() ?? '');
       if (!propName) {
-        warnings.push('Règle @boolean : le calque « prop » est vide. Écrivez-y le nom de la propriété booléenne du composant, par exemple « icon-left ».');
+        warnings.push('Règle @boolean : le layer « prop » est vide. Écrivez-y le nom de la boolean property du composant, par exemple « icon-left ».');
       } else if (booleanDescriptions[propName] !== undefined) {
         warnings.push(`Règle @boolean « ${propName} » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.`);
       } else {
@@ -78,10 +78,10 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
     } else if (entry.tag === 'icons') {
       const iconName = entry.iconName?.trim() ?? '';
       if (!iconName) {
-        warnings.push('Règle @icons : le calque « icon » est vide. Écrivez-y le nom exact du calque d’icône, tel qu’il apparaît dans le composant.');
+        warnings.push('Règle @icons : le layer « icon » est vide. Écrivez-y le nom exact du layer d’icône, tel qu’il apparaît dans le composant.');
       } else if (!entry.iconPolicy) {
         warnings.push(
-          `Règle @icons « ${iconName} » : aucune politique n’est choisie. Rendez visible exactement un des deux calques « modifiable » ou « strict ».`,
+          `Règle @icons « ${iconName} » : aucune politique n’est choisie. Rendez visible exactement un des deux layers « modifiable » ou « strict ».`,
         );
       } else if (iconRules.some((rule) => (
         normalizePropKey(rule.iconName) === normalizePropKey(iconName)
@@ -94,7 +94,7 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       const key = (entry.prop ?? '').trim();
       const separator = key.indexOf('.');
       if (separator <= 0 || separator === key.length - 1) {
-        warnings.push(`Règle @prop : le calque « prop » contient « ${key || 'rien'} », alors qu’il faut « propriété.valeur », par exemple « variant.contained ».`);
+        warnings.push(`Règle @prop : le layer « prop » contient « ${key || 'rien'} », alors qu’il faut « property.valeur », par exemple « variant.contained ».`);
         continue;
       }
       const propName = normalizePropKey(key.slice(0, separator));

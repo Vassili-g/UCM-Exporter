@@ -48,8 +48,8 @@ test('extractLayout relève les dimensions d’un composant plat (sans wrapper)'
   // Invariant SPEC : une dimension non liée avertit, elle ne sort jamais en brut.
   assert.deepEqual(layout.padding, { x: null, y: null });
   assert.equal(layout.radius, null);
-  assert.ok(warnings.some((w) => w.includes('marges intérieures gauche et droite : aucune variable')));
-  assert.ok(warnings.some((w) => w.includes('arrondi des angles : aucune variable')));
+  assert.ok(warnings.some((w) => w.includes('horizontal padding : aucune variable')));
+  assert.ok(warnings.some((w) => w.includes('corner radius : aucune variable')));
 });
 
 test('extractLayout traduit un auto-layout vertical en flex-column', async () => {
@@ -104,7 +104,7 @@ test('extractLayout nomme le calque texte « label » et garde son nom Figma', a
     },
   ]);
   // Les champs typographiques non liés avertissent au lieu d'être devinés.
-  assert.ok(warnings.some((w) => w.includes('interligne')));
+  assert.ok(warnings.some((w) => w.includes('line height')));
 });
 
 test('extractLayout relie un label masquable à la prop qui le cache', async () => {
@@ -306,7 +306,7 @@ test('extractLayout n’invente pas une taille carrée quand seule la largeur es
   );
 
   assert.equal(layout.children[0].size, undefined);
-  assert.ok(warnings.some((warning) => warning.includes('hauteur')));
+  assert.ok(warnings.some((warning) => warning.includes('height')));
   assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
 });
 

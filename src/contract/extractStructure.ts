@@ -75,8 +75,8 @@ export async function extractStructure(
 
   if (!layoutRoot) {
     warnings.push(
-      'Aucun cadre de mise en page trouvé dans le composant : ni espacement, ni marges, ' +
-        'ni arrondi ne sont exportés.',
+      'Aucun auto layout frame trouvé dans le composant : ni gap, ni padding, ni corner ' +
+        'radius ne sont exportés.',
     );
   }
 

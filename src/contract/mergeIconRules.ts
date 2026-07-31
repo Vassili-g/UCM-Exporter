@@ -31,12 +31,12 @@ function iconSlot(layer: IconLayerSummary, warnings: string[]): string | undefin
 
   warnings.push(
     layer.slots.length === 1
-      ? `Icône « ${layer.figmaLayer} » : le calque n’est pas placé directement dans le cadre ` +
-        `d’auto-layout qui porte l’espacement et les marges. Le contrat ne peut pas dire où ` +
-        `l’afficher. Déplacez-le dans ce cadre.`
-      : `Icône « ${layer.figmaLayer} » : le calque n’occupe pas la même place selon les ` +
-        `variantes (${listValues(layer.slots, 'aucune')}). Le contrat ne peut pas dire où ` +
-        `l’afficher. Placez-le au même rang dans toutes les variantes.`,
+      ? `Icône « ${layer.figmaLayer} » : le layer n’est pas placé directement dans l’auto ` +
+        `layout frame qui porte le gap et le padding. Le contrat ne peut pas dire où ` +
+        `l’afficher. Déplacez-le dans ce frame.`
+      : `Icône « ${layer.figmaLayer} » : le layer n’occupe pas la même place selon les ` +
+        `variants (${listValues(layer.slots, 'aucune')}). Le contrat ne peut pas dire où ` +
+        `l’afficher. Placez-le au même rang dans tous les variants.`,
   );
   return undefined;
 }
@@ -56,9 +56,9 @@ function iconSize(layer: IconLayerSummary, warnings: string[]): string | undefin
   if (layer.sizes.length <= 1) return undefined;
 
   warnings.push(
-    `Icône « ${layer.figmaLayer} » : sa taille change selon les variantes ` +
-      `(${listValues(layer.sizes, 'aucune')}). Aucune taille n’est exportée. Reliez largeur ` +
-      `et hauteur à la même variable dans toutes les variantes où le calque existe.`,
+    `Icône « ${layer.figmaLayer} » : sa taille change selon les variants ` +
+      `(${listValues(layer.sizes, 'aucune')}). Aucune taille n’est exportée. Reliez width et ` +
+      `height à la même variable dans tous les variants où le layer existe.`,
   );
   return undefined;
 }
@@ -79,19 +79,19 @@ export function mergeIconRules(
     const key = normalizePropKey(rule.iconName);
     const layer = layers.find((candidate) => candidate.figmaLayer === rule.iconName);
     if (!layer) {
-      warnings.push(`Règle @icons « ${rule.iconName} » : aucun calque de ce nom dans le composant. Vérifiez l’orthographe dans le calque « icon » de la règle.`);
+      warnings.push(`Règle @icons « ${rule.iconName} » : aucun layer de ce nom dans le composant. Vérifiez l’orthographe dans le layer « icon » de la règle.`);
       continue;
     }
     if (layer.maximumOccurrences > 1) {
       warnings.push(
-        `Règle @icons « ${rule.iconName} » : jusqu’à ${layer.maximumOccurrences} calques ` +
-          `portent ce nom dans une même variante. La règle est ignorée. Donnez-leur des ` +
+        `Règle @icons « ${rule.iconName} » : jusqu’à ${layer.maximumOccurrences} layers ` +
+          `portent ce nom dans un même variant. La règle est ignorée. Donnez-leur des ` +
           `noms distincts.`,
       );
       continue;
     }
     if (icons[key]) {
-      warnings.push(`Règle @icons « ${rule.iconName} » : une autre règle vise déjà un calque au nom équivalent (majuscules et tirets ignorés). Celle-ci est ignorée.`);
+      warnings.push(`Règle @icons « ${rule.iconName} » : une autre règle vise déjà un layer au nom équivalent (majuscules et tirets ignorés). Celle-ci est ignorée.`);
       continue;
     }
 
@@ -100,8 +100,9 @@ export function mergeIconRules(
       : undefined;
     if (layer.visibilityProps.length > 1) {
       warnings.push(
-        `Icône « ${rule.iconName} » : sa visibilité dépend d’une propriété différente selon ` +
-          `les variantes. Le contrat n’en publie aucune. Utilisez la même propriété partout.`,
+        `Icône « ${rule.iconName} » : sa visibilité dépend d’une component property ` +
+          `différente selon les variants. Le contrat n’en publie aucune. Utilisez la même ` +
+          `partout.`,
       );
     }
     const slot = iconSlot(layer, warnings);
@@ -119,16 +120,16 @@ export function mergeIconRules(
 
     if (!visibilityProp) {
       warnings.push(
-        `Icône « ${rule.iconName} » déclarée modifiable : aucune propriété booléenne n’est ` +
+        `Icône « ${rule.iconName} » déclarée modifiable : aucune boolean property n’est ` +
           `reliée à sa visibilité, le développeur ne pourra donc pas la remplacer. Reliez ` +
-          `« Visible » à une propriété booléenne du composant.`,
+          `« Visible » à une boolean property du composant.`,
       );
       continue;
     }
     if (props[visibilityProp]?.type !== 'boolean') {
       warnings.push(
-        `Icône « ${rule.iconName} » déclarée modifiable : « ${visibilityProp} » n'est pas une ` +
-          `propriété booléenne du composant. Le développeur ne pourra pas la remplacer.`,
+        `Icône « ${rule.iconName} » déclarée modifiable : « ${visibilityProp} » n'est pas ` +
+          `une boolean property du composant. Le développeur ne pourra pas la remplacer.`,
       );
       continue;
     }
@@ -137,7 +138,8 @@ export function mergeIconRules(
     if (runtimeProp in props) {
       warnings.push(
         `Icône « ${rule.iconName} » déclarée modifiable : le composant expose déjà une ` +
-          `propriété « ${runtimeProp} ». Aucune n'est remplacée ; renommez l'une des deux.`,
+          `component property « ${runtimeProp} ». Aucune n'est remplacée ; renommez l'une ` +
+          `des deux.`,
       );
       continue;
     }

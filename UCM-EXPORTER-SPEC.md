@@ -557,6 +557,19 @@ comparaison ignore `meta.exportedAt`, régénéré à chaque export — aucune
 branche ni PR n'est créée. Config absente/invalide ou erreur GitHub : repli
 automatique vers le téléchargement local avec message explicite.
 
+**Le corps de la pull request porte les avertissements de l'export.** C'est la
+page que le plugin ouvre juste après l'export : le designer y lit ce qui n'a pas
+pu être décrit sans ouvrir le JSON ni le journal du plugin. Les deux artefacts
+sont couverts par le même mécanisme — `tokens.json` n'a aucun champ où
+transporter les siens, là où un contrat les garde aussi dans `meta.warnings`.
+Un avertissement ne bloque jamais : seules les préconditions arrêtent un export
+(cf. [CONCEPT.md](./CONCEPT.md)).
+
+Chaque avertissement nomme l'élément Figma concerné avec l'intitulé que Figma
+affiche, dit ce qui manquera au développeur, puis le geste à faire dans Figma.
+La règle et le vocabulaire vivent dans
+[CONTRIBUTING.md](./CONTRIBUTING.md).
+
 ### Invariants
 
 - Tous les champs sont validés ; les chemins restent relatifs.
@@ -566,6 +579,8 @@ automatique vers le téléchargement local avec message explicite.
 - Aucune branche ne survit à un export qui n'a pas ouvert de PR : si le commit
   ou la PR échoue, la branche créée est supprimée avant le repli local.
 - Aucun changement = aucune PR (comparaison insensible à `meta.exportedAt`).
+- Le corps de la PR porte les avertissements de l'export, pour les deux
+  artefacts ; ils ne bloquent pas.
 - Toute erreur GitHub conserve l'artefact par téléchargement local.
 
 ---

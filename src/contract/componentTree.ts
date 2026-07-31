@@ -139,7 +139,7 @@ export function groupComponentsByVariant(
   }
 
   if (components.length === 0) {
-    warnings.push('Le jeu de composants sélectionné ne contient aucune variante.');
+    warnings.push('Le component set sélectionné ne contient aucun variant.');
   }
 
   return { matrix: { axes, variants }, warnings };

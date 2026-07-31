@@ -36,7 +36,7 @@ test('mergeBooleanDescriptions avertit si la cible est absente ou non boolean', 
   );
 
   assert.deepEqual(warnings, [
-    'Règle @boolean « variant » : le composant n’a aucune propriété booléenne portant ce nom. Vérifiez l’orthographe dans le calque « prop ».',
-    'Règle @boolean « inconnu » : le composant n’a aucune propriété booléenne portant ce nom. Vérifiez l’orthographe dans le calque « prop ».',
+    'Règle @boolean « variant » : le composant n’a aucune boolean property portant ce nom. Vérifiez l’orthographe dans le layer « prop ».',
+    'Règle @boolean « inconnu » : le composant n’a aucune boolean property portant ce nom. Vérifiez l’orthographe dans le layer « prop ».',
   ]);
 });

@@ -107,7 +107,7 @@ export function buildStateModel(
       : null;
     states[value] = { selector };
     if (!(value in STATE_SELECTORS)) {
-      warnings.push(`Propriété « ${axis} » : l'état « ${value} » n'est pas reconnu, le contrat ne dira pas quand l'afficher. États reconnus : default, hover, focus, press, disable.`);
+      warnings.push(`Variant property « ${axis} » : l'état « ${value} » n'est pas reconnu, le contrat ne dira pas quand l'afficher. États reconnus : default, hover, focus, press, disable.`);
     }
   }
 
@@ -220,19 +220,19 @@ export function variantRoleWarnings(
     collectRoles(tree, readReference, usages);
 
     for (const [role, usage] of usages) {
-      const calques = `${usage.count} calque${usage.count > 1 ? 's' : ''} concerné${usage.count > 1 ? 's' : ''}`;
+      const layers = `sur ${usage.count} layer${usage.count > 1 ? 's' : ''}`;
       const declared = roles.get(role);
       if (!declared) {
         warnings.push(
           `Token ${usage.example} : son dernier segment « ${role} » n’indique pas ce qui doit ` +
-            `être peint, donc rien ne sera affiché (${calques}). Renommez le token pour qu'il ` +
+            `être peint, donc rien ne sera affiché (${layers}). Renommez le token pour qu'il ` +
             `se termine par ${Array.from(roles.keys()).join(', ')}.`,
         );
       } else if (declared !== found) {
         warnings.push(
           `Token ${usage.example} : son dernier segment « ${role} » désigne ` +
-            `${declared === 'paint' ? 'un remplissage' : 'un contour'}, mais il est appliqué en ` +
-            `${found === 'paint' ? 'remplissage' : 'contour'} — rien ne sera affiché (${calques}). ` +
+            `${declared === 'paint' ? 'un fill' : 'un stroke'}, mais il est appliqué en ` +
+            `${found === 'paint' ? 'fill' : 'stroke'} — rien ne sera affiché (${layers}). ` +
             `Appliquez-le du bon côté dans Figma, ou renommez-le.`,
         );
       }

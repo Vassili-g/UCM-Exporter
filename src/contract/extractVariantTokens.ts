@@ -35,9 +35,9 @@ function insertVariant(
       // le signale — ne jamais perdre d'information en silence.
       if (node[key]) {
         warnings.push(
-          `Variantes « ${axes.map((a) => values[a] || 'default').join(' / ')} » : deux ` +
-            `variantes portent les mêmes valeurs une fois normalisées (majuscules et ` +
-            `espaces ignorés). Seule la première est exportée ; renommez l'une des deux.`,
+          `Variants « ${axes.map((a) => values[a] || 'default').join(' / ')} » : deux ` +
+            `variants portent les mêmes valeurs une fois normalisées (majuscules et ` +
+            `espaces ignorés). Seul le premier est exporté ; renommez l'un des deux.`,
         );
         return;
       }
@@ -83,7 +83,7 @@ export async function extractVariantTokens(
   for (const { entry, leaf, variantWarnings } of collected) {
     warnings.push(...variantWarnings);
     if (Object.keys(leaf.paints).length === 0 && Object.keys(leaf.strokes).length === 0) {
-      warnings.push(`Variante « ${entry.component.name} » : aucun remplissage ni contour n’est relié à une variable. Aucune couleur n’est exportée pour elle.`);
+      warnings.push(`Variant « ${entry.component.name} » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui.`);
     }
     // La clé de repli suit la même normalisation que toutes les valeurs
     // d'axes : l'arbre reste homogène même sans axe déclaré.

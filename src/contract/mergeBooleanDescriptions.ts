@@ -13,7 +13,7 @@ export function mergeBooleanDescriptions(
   for (const [propName, description] of Object.entries(descriptions)) {
     const prop = props[propName];
     if (!prop || prop.type !== 'boolean') {
-      warnings.push(`Règle @boolean « ${propName} » : le composant n’a aucune propriété booléenne portant ce nom. Vérifiez l’orthographe dans le calque « prop ».`);
+      warnings.push(`Règle @boolean « ${propName} » : le composant n’a aucune boolean property portant ce nom. Vérifiez l’orthographe dans le layer « prop ».`);
       continue;
     }
     prop.description = description;

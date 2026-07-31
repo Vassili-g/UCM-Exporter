@@ -41,7 +41,7 @@ test('buildStateModel conserve un état inconnu et avertit sans bloquer', () => 
   assert.equal(model?.states.loading.selector, null);
   assert.deepEqual(model?.precedence, ['default', 'loading']);
   assert.deepEqual(warnings, [
-    'Propriété « status » : l\'état « loading » n\'est pas reconnu, le contrat ne dira pas quand l\'afficher. États reconnus : default, hover, focus, press, disable.',
+    'Variant property « status » : l\'état « loading » n\'est pas reconnu, le contrat ne dira pas quand l\'afficher. États reconnus : default, hover, focus, press, disable.',
   ]);
 });
 
@@ -86,7 +86,7 @@ test('variantRoleWarnings agrège un rôle inconnu en UN seul message, avec un e
 
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /^Token \{c\..* : son dernier segment « bg » n’indique pas/);
-  assert.match(warnings[0], /3 calques concernés/);
+  assert.match(warnings[0], /sur 3 layers/);
   // Le message nomme le geste correctif : les segments attendus dans Figma.
   assert.match(warnings[0], /background, foreground, icon, border, ring\.$/);
 });
@@ -100,8 +100,8 @@ test('variantRoleWarnings signale un rôle connu employé sur le mauvais support
   );
 
   assert.deepEqual(warnings, [
-    'Token {c.primary.default.background} : son dernier segment « background » désigne un remplissage, mais il est appliqué en contour — rien ne sera affiché (1 calque concerné). Appliquez-le du bon côté dans Figma, ou renommez-le.',
-    'Token {c.primary.default.border} : son dernier segment « border » désigne un contour, mais il est appliqué en remplissage — rien ne sera affiché (1 calque concerné). Appliquez-le du bon côté dans Figma, ou renommez-le.',
+    'Token {c.primary.default.background} : son dernier segment « background » désigne un fill, mais il est appliqué en stroke — rien ne sera affiché (sur 1 layer). Appliquez-le du bon côté dans Figma, ou renommez-le.',
+    'Token {c.primary.default.border} : son dernier segment « border » désigne un stroke, mais il est appliqué en fill — rien ne sera affiché (sur 1 layer). Appliquez-le du bon côté dans Figma, ou renommez-le.',
   ]);
 });
 

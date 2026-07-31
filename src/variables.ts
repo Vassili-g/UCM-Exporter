@@ -287,7 +287,7 @@ export class VariableNameResolver {
   private async loadName(variableId: string, usage?: TokenUsage): Promise<string | null> {
     const { index, warnings } = this.options;
     const location = usage
-      ? ` sur le calque « ${usage.nodeName} » (${usage.field})`
+      ? ` sur le layer « ${usage.nodeName} » (${usage.field})`
       : '';
 
     const ambiguous = index?.ambiguous.get(variableId);
