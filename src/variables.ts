@@ -109,6 +109,20 @@ export type VariableIndex = {
 };
 
 /**
+ * Chemins des ancêtres d'un token, du plus court au plus long.
+ * `['a','b','c']` → `['a', 'a.b']`. La feuille elle-même n'en fait pas partie.
+ */
+function ancestorPaths(segments: string[]): string[] {
+  const ancestors: string[] = [];
+  let current = '';
+  for (let depth = 0; depth < segments.length - 1; depth += 1) {
+    current = current ? `${current}.${segments[depth]}` : segments[depth];
+    ancestors.push(current);
+  }
+  return ancestors;
+}
+
+/**
  * Construit l'index sans rien signaler : ce sont les commandes qui décident
  * de quoi avertir. L'export tokens les signale toutes (il exporte tout) ;
  * l'export composant ne signale que celles qu'un calque lie réellement, sinon
@@ -121,22 +135,31 @@ export function indexVariables(
   const pathById = new Map<string, string>();
   const variableByPath = new Map<string, Variable>();
   const ambiguous = new Map<string, AmbiguousVariable>();
+  /**
+   * Chemins déjà occupés par un GROUPE : chaque ancêtre d'une variable insérée,
+   * associé au chemin complet de la première variable qui l'a créé — celle que
+   * le diagnostic doit citer.
+   *
+   * L'index existe pour le coût. Sans lui, reconnaître un groupe suppose de
+   * balayer toutes les variables déjà vues, pour chacune des suivantes : sur un
+   * design system de plusieurs milliers de variables, ce balayage gèle l'UI du
+   * plugin le temps de l'export.
+   */
+  const groupOwnerByPath = new Map<string, string>();
 
   for (const variable of variables) {
     const collection = collectionById.get(variable.variableCollectionId);
     const path = joinTokenPath(collection?.name ?? '', variable.name);
     const segments = path.split('.').filter(Boolean);
+    const ancestors = ancestorPaths(segments);
     const occupiedPath =
       // Collision exacte : deux variables donnent la même feuille.
       (variableByPath.has(path) ? path : null)
       // Une feuille existante ne peut pas devenir le parent d'un groupe.
-      ?? segments
-        .slice(0, -1)
-        .map((_, index) => segments.slice(0, index + 1).join('.'))
-        .find((prefix) => variableByPath.has(prefix))
+      ?? ancestors.find((ancestor) => variableByPath.has(ancestor))
       // Une nouvelle feuille ne peut pas remplacer le groupe implicite d'une
       // variable déjà rencontrée plus profondément.
-      ?? Array.from(variableByPath.keys()).find((existing) => existing.startsWith(`${path}.`))
+      ?? groupOwnerByPath.get(path)
       ?? null;
 
     if (occupiedPath) {
@@ -154,6 +177,10 @@ export function indexVariables(
     }
     variableByPath.set(path, variable);
     pathById.set(variable.id, path);
+    // Le premier occupant d'un groupe reste le sien : ne jamais l'écraser.
+    for (const ancestor of ancestors) {
+      if (!groupOwnerByPath.has(ancestor)) groupOwnerByPath.set(ancestor, path);
+    }
   }
 
   return { pathById, variableByPath, ambiguous };
