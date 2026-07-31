@@ -7,6 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { extractStructure } from '../src/contract/extractStructure';
 import { collectTokenReferences } from '../src/variables';
 import { extractSizeDimensions } from '../src/contract/extractSizes';
 
@@ -127,4 +128,70 @@ test('extractSizeDimensions détecte l’axe par ses valeurs, quel que soit son 
   const sizes = await extractSizeDimensions(componentSet, resolverFor({}), []);
 
   assert.deepEqual(Object.keys(sizes ?? {}), ['xs', 'sm', 'lg']);
+});
+
+test('l’axe de tailles est lu sur le set sélectionné quand le wrapper n’en porte pas', async () => {
+  // Rien n'oblige l'axe de tailles à vivre sur le wrapper : il peut rester sur
+  // le set sélectionné pendant que le wrapper porte ses propres axes. Élire le
+  // propriétaire sur le type du node faisait alors disparaître `sizes` en
+  // silence, alors que `props.size` continuait d'annoncer ses valeurs.
+  const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
+  const node = (type: string, name: string, enfants: any[] = [], extra: any = {}): any => {
+    const self: any = { type, id: name, name, visible: true, boundVariables: {}, children: enfants, ...extra };
+    self.findAll = (predicat: (candidat: any) => boolean) => {
+      const trouves: any[] = [];
+      const parcourir = (noeuds: any[]) => {
+        for (const enfant of noeuds) {
+          if (predicat(enfant)) trouves.push(enfant);
+          parcourir(enfant.children ?? []);
+        }
+      };
+      parcourir(enfants);
+      return trouves;
+    };
+    return self;
+  };
+
+  const variante = (nom: string, gapId: string) => {
+    const interne = node('FRAME', 'row', [node('TEXT', 'Label')], {
+      layoutMode: 'HORIZONTAL',
+      boundVariables: { itemSpacing: alias(gapId) },
+    });
+    const instanceWrapper = node('INSTANCE', 'wrap', [interne]);
+    const composant = node('COMPONENT', nom, [instanceWrapper], { layoutMode: 'HORIZONTAL' });
+    composant.variantProperties = { Size: nom.split('=')[1] };
+    return { composant, instanceWrapper };
+  };
+
+  const big = variante('Size=Big', 'gBig');
+  const small = variante('Size=Small', 'gSmall');
+  const setSelectionne = node('COMPONENT_SET', 'Button', [big.composant, small.composant], {
+    componentPropertyDefinitions: { Size: { type: 'VARIANT', variantOptions: ['Big', 'Small'] } },
+  });
+  big.composant.parent = setSelectionne;
+  small.composant.parent = setSelectionne;
+  // Le set du wrapper existe, mais son seul axe n'est pas un axe de tailles.
+  const setDuWrapper = node('COMPONENT_SET', 'SizeWrapper', [], {
+    componentPropertyDefinitions: { Type: { type: 'VARIANT', variantOptions: ['Filled', 'Ghost'] } },
+  });
+
+  const { structure } = await extractStructure(
+    {
+      axes: ['size'],
+      variants: [
+        { values: { size: 'big' }, component: big.composant },
+        { values: { size: 'small' }, component: small.composant },
+      ],
+    },
+    [],
+    { instance: big.instanceWrapper, componentSet: setDuWrapper },
+    big.composant,
+    resolverFor({ gBig: 'components.button.sizes.big.gap', gSmall: 'components.button.sizes.small.gap' }),
+  );
+
+  assert.deepEqual(Object.keys(structure.sizes ?? {}), ['big', 'small']);
+  assert.equal(structure.sizes?.big.gap, '{components.button.sizes.big.gap}');
+  assert.equal(structure.sizes?.small.gap, '{components.button.sizes.small.gap}');
+  // `sizes` porte les dimensions : le niveau haut ne les recopie pas.
+  assert.equal(structure.gap, undefined);
 });

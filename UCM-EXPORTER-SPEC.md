@@ -173,8 +173,11 @@ pour `padding.y`, largeur + hauteur pour la taille d'un slot, et
 ou asymétrique produit un warning et vaut `null` (ou reste absente pour la
 taille d'un slot) : le contrat n'affirme jamais une symétrie que Figma ne
 prouve pas.
-**Dimensions par taille** : si le wrapper expose un axe de tailles (détecté
-par ses valeurs, comme la prop `size`), chaque valeur est extraite →
+**Dimensions par taille** : l'axe de tailles est cherché sur le wrapper de
+dimensions puis, s'il n'en porte pas, sur le Component Set sélectionné — un
+wrapper qui expose ses propres axes ne doit pas faire disparaître les
+dimensions par taille. Détecté par ses valeurs (comme la prop `size`), chaque
+valeur est extraite →
 `structure.sizes.{big,medium,small}` avec gap/padding/radius/fontSize par
 taille. Le contrat couvre ainsi toutes les tailles, pas seulement celle
 instanciée par défaut. Hypothèse assumée : les dimensions ne varient que selon
