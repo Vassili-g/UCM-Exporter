@@ -58,7 +58,7 @@ test('un sous-arbre statiquement masqué est élagué et son token est signalé'
 
   assert.deepEqual(nodes.map((node) => node.name), ['Button', 'Fond']);
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /« Archive ».*variables liées ignorées/);
+  assert.match(warnings[0], /« Archive ».*exclu de l'export/);
 });
 
 test('un calque masqué par une prop ou une variable de visibilité reste exportable', () => {

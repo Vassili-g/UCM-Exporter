@@ -31,17 +31,12 @@ export async function extractStructure(
 ): Promise<{
   structure: ContractStructure;
   iconLayers: IconLayerSummary[];
-  tokensUsed: string[];
   warnings: string[];
 }> {
-  // Le resolver met en cache les résolutions id → nom de token ;
-  // tokenNames accumule tous les tokens rencontrés pour la liste `tokensUsed`.
-  const tokenNames = new Set<string>();
   const warnings = [...matrixWarnings];
   const { variantTokens, variantStrokes } = await extractVariantTokens(
     matrix,
     resolver,
-    tokenNames,
     warnings,
     composed,
   );
@@ -69,18 +64,20 @@ export async function extractStructure(
     matrix,
     iconNames,
     resolver,
-    tokenNames,
     warnings,
     composed,
     referenceLayout,
   );
   const targetedLayers = new Set(iconLayers.map((layer) => layer.figmaLayer));
   const layout = layoutRoot
-    ? await extractLayout(layoutRoot, resolver, tokenNames, warnings, composed, targetedLayers)
+    ? await extractLayout(layoutRoot, resolver, warnings, composed, targetedLayers)
     : { layout: 'flex-row' as const, gap: null, padding: { x: null, y: null }, radius: null, children: [] };
 
   if (!layoutRoot) {
-    warnings.push('Aucun node de layout trouvé ; structure de dimensions vide.');
+    warnings.push(
+      'Aucun cadre de mise en page trouvé dans le composant : ni espacement, ni marges, ' +
+        'ni arrondi ne sont exportés.',
+    );
   }
 
   // Dimensions par taille, pour couvrir big/medium/small et pas seulement la
@@ -93,7 +90,7 @@ export async function extractStructure(
   const sizeAxisOwner = wrapper?.componentSet
     ?? (ownSet?.type === 'COMPONENT_SET' ? ownSet : null);
   const sizes = sizeAxisOwner
-    ? await extractSizeDimensions(sizeAxisOwner, resolver, tokenNames, warnings, composed)
+    ? await extractSizeDimensions(sizeAxisOwner, resolver, warnings, composed)
     : null;
 
   // Les dimensions ne vivent qu'à UN endroit : `sizes` les porte toutes dès
@@ -111,10 +108,5 @@ export async function extractStructure(
     variantStrokes,
   };
 
-  return {
-    structure,
-    iconLayers,
-    tokensUsed: Array.from(tokenNames).sort(),
-    warnings,
-  };
+  return { structure, iconLayers, warnings };
 }

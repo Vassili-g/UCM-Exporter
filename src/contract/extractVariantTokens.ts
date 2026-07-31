@@ -35,7 +35,9 @@ function insertVariant(
       // le signale — ne jamais perdre d'information en silence.
       if (node[key]) {
         warnings.push(
-          `Variants en conflit sur « ${axes.map((a) => values[a] || 'default').join('/')} » : premier conservé.`,
+          `Variantes « ${axes.map((a) => values[a] || 'default').join(' / ')} » : deux ` +
+            `variantes portent les mêmes valeurs une fois normalisées (majuscules et ` +
+            `espaces ignorés). Seule la première est exportée ; renommez l'une des deux.`,
         );
         return;
       }
@@ -49,13 +51,11 @@ function insertVariant(
 
 /**
  * Point d'entrée : construit l'arbre complet des tokens de variantes
- * (tous les axes, tous les rôles). Chaque token rencontré est aussi ajouté
- * à `tokenNames` pour alimenter la liste `tokensUsed` du contrat.
+ * (tous les axes, tous les rôles).
  */
 export async function extractVariantTokens(
   matrix: VariantMatrix,
   resolver: TokenResolver,
-  tokenNames: Set<string>,
   warnings: string[],
   composed: ComposedInstances = new Map(),
 ): Promise<{ variantTokens: VariantTokens; variantStrokes: VariantStrokes }> {
@@ -83,12 +83,7 @@ export async function extractVariantTokens(
   for (const { entry, leaf, variantWarnings } of collected) {
     warnings.push(...variantWarnings);
     if (Object.keys(leaf.paints).length === 0 && Object.keys(leaf.strokes).length === 0) {
-      warnings.push(`Variant « ${entry.component.name} » : aucune variable de couleur/contour liée.`);
-    }
-    for (const token of Object.values(leaf.paints)) tokenNames.add(token);
-    for (const stroke of Object.values(leaf.strokes)) {
-      tokenNames.add(stroke.color);
-      if (stroke.width) tokenNames.add(stroke.width);
+      warnings.push(`Variante « ${entry.component.name} » : aucun remplissage ni contour n’est relié à une variable. Aucune couleur n’est exportée pour elle.`);
     }
     // La clé de repli suit la même normalisation que toutes les valeurs
     // d'axes : l'arbre reste homogène même sans axe déclaré.

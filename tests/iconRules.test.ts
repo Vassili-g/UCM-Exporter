@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractIconLayers } from '../src/contract/extractIconLayers';
+import { collectTokenReferences } from '../src/variables';
 import { mergeIconRules } from '../src/contract/exportComponent';
 
 const layer = (
@@ -108,7 +109,9 @@ test('mergeIconRules avertit au lieu de deviner un calque graphique', () => {
   );
 
   assert.deepEqual(icons, {});
-  assert.deepEqual(warnings, ['@icons « arrow-right-long » : aucun calque graphique de ce nom.']);
+  assert.deepEqual(warnings, [
+    'Règle @icons « arrow-right-long » : aucun calque de ce nom dans le composant. Vérifiez l’orthographe dans le calque « icon » de la règle.',
+  ]);
 });
 
 test('mergeIconRules avertit lorsqu une icône modifiable n est liée à aucun booléen Figma', () => {
@@ -125,7 +128,7 @@ test('mergeIconRules avertit lorsqu une icône modifiable n est liée à aucun b
     arrowLeftLong: { policy: 'modifiable', figmaName: 'arrow-left-long', slot: 'icon' },
   });
   assert.deepEqual(warnings, [
-    '@icons « arrow-left-long » modifiable : le calque doit lier « visible » à une prop BOOLEAN Figma pour exposer une prop runtime.',
+    'Icône « arrow-left-long » déclarée modifiable : aucune propriété booléenne n’est reliée à sa visibilité, le développeur ne pourra donc pas la remplacer. Reliez « Visible » à une propriété booléenne du composant.',
   ]);
 });
 
@@ -164,7 +167,7 @@ test('mergeIconRules n’invente aucun slot quand le slot change entre variants'
 
   assert.equal(icons.statusIcon.slot, undefined);
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /slot différent selon les variants \(icon, icon-2\)/);
+  assert.match(warnings[0], /pas la même place selon les variantes \(icon, icon-2\)/);
 });
 
 test('mergeIconRules publie la taille de l’icône et refuse une taille instable', () => {
@@ -187,7 +190,7 @@ test('mergeIconRules publie la taille de l’icône et refuse une taille instabl
   );
   assert.equal(divergentes.circleCheck.size, undefined);
   assert.equal(instable.length, 1);
-  assert.match(instable[0], /taille non uniforme sur la matrice/);
+  assert.match(instable[0], /sa taille change selon les variantes/);
 });
 
 test('extractIconLayers trouve une icône présente uniquement hors du variant de référence', async () => {
@@ -208,7 +211,6 @@ test('extractIconLayers trouve une icône présente uniquement hors du variant d
     ),
     ['circle-info', 'circle-check', 'triangle-exclamation'],
     sansToken,
-    new Set<string>(),
     [],
   );
 
@@ -227,20 +229,18 @@ test('extractIconLayers relève la taille liée sur le calque', async () => {
       boundVariables: { width: alias('size'), height: alias('size') },
     }),
   ]);
-  const tokenNames = new Set<string>();
 
   const layers = await extractIconLayers(
     matrice([{ values: { mode: 'default' }, component: composant }], ['mode']),
     ['circle-info'],
     { resolve: async () => 'components.icons.sizes.base' },
-    tokenNames,
     [],
   );
 
   assert.deepEqual(layers[0].sizes, ['{components.icons.sizes.base}']);
-  // La taille d'une icône absente du variant de référence doit malgré tout
-  // rejoindre `tokensUsed`, sinon le garde-fou du consommateur la refuse.
-  assert.deepEqual([...tokenNames], ['{components.icons.sizes.base}']);
+  // La taille d'une icône absente du variant de référence est relevée ici : le
+  // contrat la publiera dans `icons`, d'où `tokensUsed` la dérivera.
+  assert.deepEqual(Array.from(collectTokenReferences(layers)), ['{components.icons.sizes.base}']);
 });
 
 test('extractIconLayers nomme la condition même si le set n’expose aucun axe', async () => {
@@ -257,7 +257,6 @@ test('extractIconLayers nomme la condition même si le set n’expose aucun axe'
     ),
     ['status-icon'],
     sansToken,
-    new Set<string>(),
     [],
   );
 
@@ -273,7 +272,6 @@ test('extractIconLayers ignore une instance qui possède son propre contrat', as
     matrice([{ values: { mode: 'default' }, component: composant }], ['mode']),
     ['status-icon'],
     sansToken,
-    new Set<string>(),
     [],
     new Map([['icon', { component: 'Icon', figmaLayer: 'status-icon' }]]),
   );
@@ -323,8 +321,8 @@ test('mergeIconRules refuse une visibilité incohérente entre variants', () => 
     statusIcon: { policy: 'modifiable', figmaName: 'status-icon', slot: 'icon' },
   });
   assert.equal(warnings.length, 2);
-  assert.match(warnings[0], /liaison de visibilité différente/);
-  assert.match(warnings[1], /doit lier « visible »/);
+  assert.match(warnings[0], /sa visibilité dépend d’une propriété différente/);
+  assert.match(warnings[1], /Reliez « Visible » à une propriété booléenne/);
 });
 
 test('mergeIconRules refuse une taille absente d’une partie de la matrice', () => {
@@ -342,6 +340,6 @@ test('mergeIconRules refuse une taille absente d’une partie de la matrice', ()
   // et une icône sans taille n'est pas rendable.
   assert.equal(icons.circleCheck.size, undefined);
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /taille non uniforme sur la matrice/);
+  assert.match(warnings[0], /sa taille change selon les variantes/);
   assert.match(warnings[0], /aucune/);
 });

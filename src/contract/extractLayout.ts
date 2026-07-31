@@ -73,7 +73,6 @@ export function findLayoutNode(
 async function extractTypography(
   textNode: TextNode,
   resolver: TokenResolver,
-  tokenNames: Set<string>,
   warnings: string[],
 ): Promise<string | TypographyTokens | undefined> {
   if (typeof textNode.textStyleId === 'string' && textNode.textStyleId) {
@@ -86,32 +85,33 @@ async function extractTypography(
     }
   }
 
-  const fields: Array<[keyof TypographyTokens, string[]]> = [
-    ['fontSize', ['fontSize']],
-    ['fontWeight', ['fontWeight', 'fontStyle']],
-    ['lineHeight', ['lineHeight']],
-    ['fontFamily', ['fontFamily']],
+  // Le libellé est celui que le designer lit dans Figma, pas le nom du champ.
+  const fields: Array<[keyof TypographyTokens, string, string[]]> = [
+    ['fontSize', 'la taille du texte', ['fontSize']],
+    ['fontWeight', 'la graisse', ['fontWeight', 'fontStyle']],
+    ['lineHeight', 'l’interligne', ['lineHeight']],
+    ['fontFamily', 'la police', ['fontFamily']],
   ];
   const typography: TypographyTokens = {};
 
-  for (const [contractField, figmaFields] of fields) {
+  for (const [contractField, label, figmaFields] of fields) {
     // On essaie chaque champ Figma possible jusqu'à trouver un token lié.
     let token: string | null = null;
     for (const figmaField of figmaFields) {
       token = await resolver.resolve(firstVariableAlias(getBinding(textNode, figmaField)), {
         nodeName: textNode.name,
-        field: `${contractField} / ${figmaField}`,
+        field: label,
       });
       if (token) break;
     }
 
     if (token) {
-      const ref = toRef(token);
-      typography[contractField] = ref;
-      tokenNames.add(ref);
+      typography[contractField] = toRef(token);
     } else {
       warnings.push(
-        `Calque « ${textNode.name} » : ${contractField} sans variable liée (valeur brute ignorée).`,
+        `Calque « ${textNode.name} » : ${label} n'est reliée à aucune variable. La valeur ` +
+          `fixe n'est pas exportée. Reliez-la à une variable, ou appliquez un style de ` +
+          `texte au calque, puis réexportez.`,
       );
     }
   }
@@ -133,18 +133,16 @@ async function extractChild(
   // définition, libre de diverger de celle que les icônes citent.
   slot: string,
   resolver: TokenResolver,
-  tokenNames: Set<string>,
   warnings: string[],
   composed: ComposedInstances,
 ): Promise<ChildStructure> {
-  const layerName = normalizeName(child.name).replace(/\./g, '-') || 'unnamed';
   const dependencies = composedSlotDependencies(child, composed);
   const composedDependency = dependencies.length === 1 ? dependencies[0] : undefined;
   if (dependencies.length > 1) {
     warnings.push(
-      `Slot « ${child.name} » : ${dependencies.length} composants unifiés directs ` +
-        `(${dependencies.map((dependency) => dependency.component).join(', ')}) ; ` +
-        'le champ children[].composes ne peut en nommer qu’un.',
+      `Calque « ${child.name} » : il contient ${dependencies.length} composants qui ont ` +
+        `leur propre contrat (${dependencies.map((dependency) => dependency.component).join(', ')}). ` +
+        `Le contrat n'en déclare qu'un par emplacement. Placez-les dans des calques distincts.`,
     );
   }
   const textNode = composedDependency ? null : firstTextNode(child, warnings, composed);
@@ -166,9 +164,9 @@ async function extractChild(
     && normalizePropKey(directVisibility) !== dependencyVisibility
   ) {
     warnings.push(
-      `Slot « ${child.name} » : sa visibilité et celle du composant ` +
-        `« ${composedDependency.component} » dépendent de props différentes ; ` +
-        'la visibilité du slot reste prioritaire.',
+      `Calque « ${child.name} » : sa visibilité et celle du composant ` +
+        `« ${composedDependency.component} » qu'il contient dépendent de deux propriétés ` +
+        `différentes. Seule celle du calque est exportée. Utilisez la même pour les deux.`,
     );
   }
   // Le slot déjà masquable ne peut pas voir une visibilité plus profonde
@@ -197,7 +195,7 @@ async function extractChild(
   }
 
   if (textNode) {
-    const typography = await extractTypography(textNode, resolver, tokenNames, warnings);
+    const typography = await extractTypography(textNode, resolver, warnings);
     if (typography) entry.typography = typography;
   } else {
     // Le nom du calque est gardé même quand il s'agit d'un placeholder d'icône.
@@ -207,9 +205,8 @@ async function extractChild(
     const size = await resolveField(
       child,
       BINDING_PATTERNS.slotSize,
-      `${layerName}-size`,
+      'taille',
       resolver,
-      tokenNames,
       warnings,
     );
     if (size) entry.size = size;
@@ -227,7 +224,6 @@ async function extractChild(
 export async function extractLayout(
   root: LayoutRoot,
   resolver: TokenResolver,
-  tokenNames: Set<string>,
   warnings: string[],
   composed: ComposedInstances = new Map(),
   // Noms de calques désignés par les règles `@icons` : ils donnent au slot son
@@ -236,36 +232,33 @@ export async function extractLayout(
 ): Promise<LayoutStructure> {
   const layoutNode = findLayoutNode(root, warnings, composed);
   const [gap, paddingX, paddingY, radius] = await Promise.all([
-    resolveField(layoutNode, BINDING_PATTERNS.gap, 'gap', resolver, tokenNames, warnings),
+    resolveField(layoutNode, BINDING_PATTERNS.gap, 'espacement', resolver, warnings),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.paddingX,
-      'padding-x',
+      'marges intérieures gauche et droite',
       resolver,
-      tokenNames,
       warnings,
     ),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.paddingY,
-      'padding-y',
+      'marges intérieures haut et bas',
       resolver,
-      tokenNames,
       warnings,
     ),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.radius,
-      'border-radius',
+      'arrondi des angles',
       resolver,
-      tokenNames,
       warnings,
     ),
   ]);
 
   const children = await Promise.all(
     assignSlots(layoutNode, iconNames, warnings, composed).map(({ child, slot }) =>
-      extractChild(child, slot, resolver, tokenNames, warnings, composed)),
+      extractChild(child, slot, resolver, warnings, composed)),
   );
 
   // layoutMode vient de l'auto-layout Figma ; on le traduit en vocabulaire CSS.

@@ -26,21 +26,18 @@ test('un groupe conjonctif incomplet n’affirme pas une valeur symétrique', as
     boundVariables: { paddingLeft: alias('padding') },
   } as unknown as SceneNode;
   const warnings: string[] = [];
-  const tokenNames = new Set<string>();
 
   const result = await resolveField(
     node,
     [['paddingLeft', 'paddingRight']],
     'padding-x',
     resolverFor({ padding: 'layouts.spacing.16' }),
-    tokenNames,
     warnings,
   );
 
   assert.equal(result, null);
-  assert.deepEqual([...tokenNames], []);
-  assert.ok(warnings.some((warning) => warning.includes('paddingRight')));
-  assert.ok(warnings.some((warning) => warning.includes('valeur non exportée')));
+  assert.ok(warnings.some((warning) => warning.includes('marge droite')));
+  assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
 });
 
 test('un groupe conjonctif complet exporte son unique token', async () => {
@@ -53,19 +50,17 @@ test('un groupe conjonctif complet exporte son unique token', async () => {
     },
   } as unknown as SceneNode;
   const warnings: string[] = [];
-  const tokenNames = new Set<string>();
 
   const result = await resolveField(
     node,
     [['paddingLeft', 'paddingRight']],
     'padding-x',
     resolverFor({ padding: 'layouts.spacing.16' }),
-    tokenNames,
     warnings,
   );
 
   assert.equal(result, '{layouts.spacing.16}');
-  assert.deepEqual([...tokenNames], ['{layouts.spacing.16}']);
+  assert.equal(result, '{layouts.spacing.16}');
   assert.deepEqual(warnings, []);
 });
 
@@ -92,8 +87,8 @@ test('un groupe complet mais asymétrique ne conserve pas arbitrairement le prem
   );
 
   assert.equal(result, null);
-  assert.ok(warnings.some((warning) => warning.includes('asymétriques')));
-  assert.ok(warnings.some((warning) => warning.includes('valeur non exportée')));
+  assert.ok(warnings.some((warning) => warning.includes('pas reliés à la même variable')));
+  assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
 });
 
 test('les représentations du rayon sont alternatives mais chacune reste complète', async () => {
@@ -158,5 +153,5 @@ test('les représentations du rayon sont alternatives mais chacune reste complè
     ),
     null,
   );
-  assert.ok(warnings.some((warning) => warning.includes('bottomRightRadius')));
+  assert.ok(warnings.some((warning) => warning.includes('angle bas droit')));
 });

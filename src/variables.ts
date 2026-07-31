@@ -43,6 +43,41 @@ export function toRef(name: string): string {
   return `{${name}}`;
 }
 
+/** Forme exacte d'une référence, telle que `toRef` la produit. */
+const TOKEN_REFERENCE = /^\{[^{}\s]+\.[^{}\s]+\}$/;
+
+/**
+ * Vrai si cette valeur est une référence de token, et rien d'autre.
+ *
+ * La chaîne ENTIÈRE doit être la référence : une phrase qui en cite une — un
+ * avertissement, une règle d'usage écrite par le designer — n'en est pas une.
+ */
+export function isTokenReference(value: unknown): value is string {
+  return typeof value === 'string' && TOKEN_REFERENCE.test(value);
+}
+
+/**
+ * Toutes les références de token contenues dans une valeur, à profondeur
+ * quelconque.
+ *
+ * Aucune connaissance de la forme du contrat n'est nécessaire : un champ qui
+ * porterait demain une référence est couvert sans toucher à cette fonction.
+ * C'est ce qui permet à `tokensUsed` d'être l'index du contrat terminé plutôt
+ * qu'un relevé tenu pendant l'extraction — un relevé y ferait entrer les tokens
+ * lus pour décider, puis écartés.
+ */
+export function collectTokenReferences(
+  value: unknown,
+  found = new Set<string>(),
+): Set<string> {
+  if (isTokenReference(value)) found.add(value);
+  else if (Array.isArray(value)) for (const item of value) collectTokenReferences(item, found);
+  else if (value && typeof value === 'object') {
+    for (const item of Object.values(value)) collectTokenReferences(item, found);
+  }
+  return found;
+}
+
 /**
  * Assemble le chemin canonique d'un token : collection + variable, chacun
  * normalisé. Évite les doublons si la variable répète déjà la collection.
@@ -191,14 +226,14 @@ export function collisionWarnings(index: VariableIndex): string[] {
   return Array.from(index.ambiguous.values(), (entry) => {
     if (entry.kind === 'same-path') {
       return (
-        `Collision de tokens : « ${entry.owner} » et « ${entry.name} » donnent le même ` +
-        `token « ${entry.path} ». La seconde est ignorée ; renommez-la dans Figma.`
+        `Variables « ${entry.owner} » et « ${entry.name} » : leurs noms donnent le même token ` +
+        `« ${entry.path} ». Seule la première est exportée ; renommez la seconde.`
       );
     }
     return (
-      `Collision feuille/groupe : les variables « ${entry.owner} » (« ${entry.ownerPath} ») ` +
-      `et « ${entry.name} » (« ${entry.path} ») ne peuvent pas coexister dans l'arbre des ` +
-      `tokens. La seconde est ignorée ; renommez ou déplacez l'une des deux dans Figma.`
+      `Variables « ${entry.owner} » (« ${entry.ownerPath} ») et « ${entry.name} » ` +
+      `(« ${entry.path} ») : un token ne peut pas être à la fois une valeur et un groupe de ` +
+      `tokens. Seule la première est exportée ; renommez ou déplacez l'une des deux.`
     );
   });
 }
@@ -258,13 +293,13 @@ export class VariableNameResolver {
     const ambiguous = index?.ambiguous.get(variableId);
     if (ambiguous) {
       warnings?.push(ambiguous.kind === 'same-path'
-        ? `Variable « ${ambiguous.name} » : même nom normalisé que « ${ambiguous.owner} » ` +
-          `(« ${ambiguous.path} »). Aucune référence n'est écrite — elle désignerait l'autre ` +
-          `variable${location}. Renommez l'une des deux dans Figma.`
-        : `Variable « ${ambiguous.name} » : son chemin « ${ambiguous.path} » entre en conflit ` +
-          `avec « ${ambiguous.ownerPath} » (« ${ambiguous.owner} »), car un token ne peut pas ` +
-          `être à la fois une feuille et un groupe. Aucune référence n'est écrite${location}. ` +
-          `Renommez ou déplacez l'une des deux dans Figma.`);
+        ? `Variable « ${ambiguous.name} » : une fois normalisé, son nom est identique à celui ` +
+          `de « ${ambiguous.owner} » (« ${ambiguous.path} »). Aucune référence n'est écrite` +
+          `${location} — elle désignerait l'autre variable. Renommez l'une des deux.`
+        : `Variable « ${ambiguous.name} » : son nom « ${ambiguous.path} » entre en conflit avec ` +
+          `« ${ambiguous.ownerPath} » (« ${ambiguous.owner} ») — un token ne peut pas être à la ` +
+          `fois une valeur et un groupe de tokens. Aucune référence n'est écrite${location}. ` +
+          `Renommez ou déplacez l'une des deux.`);
       return null;
     }
 
@@ -274,8 +309,9 @@ export class VariableNameResolver {
     const variable = await figma.variables.getVariableByIdAsync(variableId).catch(() => null);
     if (!variable) {
       warnings?.push(
-        `Variable liée introuvable (id « ${variableId} »)${location}. ` +
-          `Réassignez cette liaison dans Figma.`,
+        `Variable introuvable${location} : elle a sans doute été supprimée, ou vient d'une ` +
+          `bibliothèque qui n'est plus publiée. Rien n'est exporté pour cette valeur. ` +
+          `Reliez de nouveau une variable existante.`,
       );
       return null;
     }
@@ -283,8 +319,8 @@ export class VariableNameResolver {
     const collectionName = await this.getCollectionName(variable.variableCollectionId);
     if (!collectionName) {
       warnings?.push(
-        `Collection « ${variable.variableCollectionId} » introuvable pour la variable ` +
-          `« ${variable.name} »${location}. Réassignez ou republiez cette variable dans Figma.`,
+        `Variable « ${variable.name} »${location} : sa collection est introuvable. Rien n'est ` +
+          `exporté pour cette valeur. Republiez la bibliothèque, ou reliez une variable locale.`,
       );
       return null;
     }

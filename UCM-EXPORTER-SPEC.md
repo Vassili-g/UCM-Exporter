@@ -300,8 +300,15 @@ en `box-shadow` (`0 0 0 <width> <color>`), qui épouse le `border-radius` et se
 dessine hors du flux — il ne déplace jamais les éléments voisins. Toute propriété
 pertinente sans variable liée → warning précis (calque + propriété), non
 exportée, **export non bloqué**.
-`tokensUsed` = liste à plat dédupliquée de toutes les références de token de
-`structure` (mêmes accolades ; un nom de style de texte en est exclu).
+`tokensUsed` = liste à plat, dédupliquée et triée, de **toutes** les références
+de token du contrat — `icons.<clé>.size` vit hors de `structure` et en fait
+partie. L'index est **dérivé du contrat terminé**, jamais tenu pendant
+l'extraction : le moteur lit des tokens pour décider (la taille d'une icône sur
+chaque variante, les couleurs d'une variante en conflit) et les écarte ensuite ;
+un relevé les y ferait entrer alors que le contrat ne les emploie pas. Une
+référence se reconnaît à la chaîne **entière** : un nom de style de texte reste
+une chaîne nue, et une phrase qui cite des tokens — un avertissement, une règle
+d'usage — n'en est pas une.
 
 ### Sortie
 

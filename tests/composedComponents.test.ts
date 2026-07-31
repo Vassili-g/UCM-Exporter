@@ -178,7 +178,6 @@ test('un slot qui enveloppe une dépendance reprend aussi sa visibilité', async
   const layout = await extractLayout(
     alert,
     { resolve: async () => null },
-    new Set<string>(),
     warnings,
     new Map([['btn', {
       component: 'Button',

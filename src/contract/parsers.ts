@@ -82,7 +82,8 @@ export function extractContractPropertyModel(
     const owner = owners.get(key);
     if (owner !== undefined) {
       warnings.push(
-        `Propriétés Figma « ${owner} » et « ${figmaName} » : même clé publique « ${key} » ; la première est conservée.`,
+        `Propriétés « ${owner} » et « ${figmaName} » : leurs noms deviennent identiques une ` +
+          `fois normalisés (« ${key} »). Seule « ${owner} » est exportée. Renommez l’une des deux.`,
       );
       return false;
     }
@@ -116,7 +117,9 @@ export function extractContractPropertyModel(
       const taken = Boolean(semantic) && semantic !== key && rawKeys.has(semantic as string);
       if (taken) {
         warnings.push(
-          `Axe « ${rawFigmaName} » : le nom sémantique « ${semantic} » est déjà porté par une autre propriété Figma ; l'axe garde « ${key} ».`,
+          `Propriété « ${rawFigmaName} » : ses valeurs sont des tailles, mais une autre ` +
+            `propriété porte déjà le nom « ${semantic} ». Elle reste exportée sous « ${key} ». ` +
+            `Renommez l'une des deux si vous voulez « ${semantic} ».`,
         );
       }
       const publicKey = semantic && !taken ? semantic : key;

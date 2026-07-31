@@ -84,7 +84,6 @@ export async function extractIconLayers(
   matrix: VariantMatrix,
   iconNames: readonly string[],
   resolver: TokenResolver,
-  tokenNames: Set<string>,
   warnings: string[],
   composed: ComposedInstances = new Map(),
   referenceLayout: ReferenceLayout | null = null,
@@ -121,14 +120,7 @@ export async function extractIconLayers(
       // référence n'a aucun slot où la lire. Le résolveur met ses résolutions
       // en cache, et les avertissements identiques se dédupliquent à l'export.
       summary.sizes.add(
-        await resolveField(
-          node,
-          BINDING_PATTERNS.slotSize,
-          `${node.name}-size`,
-          resolver,
-          tokenNames,
-          warnings,
-        ),
+        await resolveField(node, BINDING_PATTERNS.slotSize, 'taille', resolver, warnings),
       );
     }
 

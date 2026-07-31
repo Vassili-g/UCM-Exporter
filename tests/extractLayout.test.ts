@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { firstTextNode } from '../src/contract/exportableNodes';
 import { extractLayout, findLayoutNode } from '../src/contract/extractLayout';
+import { collectTokenReferences } from '../src/variables';
 import { nestedSlotVisibility } from '../src/contract/slotRelations';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
@@ -33,24 +34,22 @@ test('extractLayout relève les dimensions d’un composant plat (sans wrapper)'
     children: [],
     findAll: findAllOn([]),
   } as unknown as ComponentNode;
-  const tokenNames = new Set<string>();
   const warnings: string[] = [];
 
   const layout = await extractLayout(
     bouton,
     resolverFor({ gap: 'components.button.sizes.medium.gap' }),
-    tokenNames,
     warnings,
   );
 
   assert.equal(layout.layout, 'flex-row');
   assert.equal(layout.gap, '{components.button.sizes.medium.gap}');
-  assert.deepEqual(Array.from(tokenNames), ['{components.button.sizes.medium.gap}']);
+  assert.deepEqual(Array.from(collectTokenReferences(layout)), ['{components.button.sizes.medium.gap}']);
   // Invariant SPEC : une dimension non liée avertit, elle ne sort jamais en brut.
   assert.deepEqual(layout.padding, { x: null, y: null });
   assert.equal(layout.radius, null);
-  assert.ok(warnings.some((w) => w.includes('padding-x sans variable liée')));
-  assert.ok(warnings.some((w) => w.includes('border-radius sans variable liée')));
+  assert.ok(warnings.some((w) => w.includes('marges intérieures gauche et droite : aucune variable')));
+  assert.ok(warnings.some((w) => w.includes('arrondi des angles : aucune variable')));
 });
 
 test('extractLayout traduit un auto-layout vertical en flex-column', async () => {
@@ -63,7 +62,7 @@ test('extractLayout traduit un auto-layout vertical en flex-column', async () =>
     findAll: findAllOn([]),
   } as unknown as ComponentNode;
 
-  const layout = await extractLayout(carte, resolverFor({ gap: 'layouts.spacing.8' }), new Set(), []);
+  const layout = await extractLayout(carte, resolverFor({ gap: 'layouts.spacing.8' }), []);
 
   assert.equal(layout.layout, 'flex-column');
 });
@@ -91,7 +90,6 @@ test('extractLayout nomme le calque texte « label » et garde son nom Figma', a
       fs: 'components.button.sizes.medium.font-size',
       fw: 'layouts.fontweight.600',
     }),
-    new Set(),
     warnings,
   );
 
@@ -106,7 +104,7 @@ test('extractLayout nomme le calque texte « label » et garde son nom Figma', a
     },
   ]);
   // Les champs typographiques non liés avertissent au lieu d'être devinés.
-  assert.ok(warnings.some((w) => w.includes('lineHeight sans variable liée')));
+  assert.ok(warnings.some((w) => w.includes('interligne')));
 });
 
 test('extractLayout relie un label masquable à la prop qui le cache', async () => {
@@ -128,7 +126,7 @@ test('extractLayout relie un label masquable à la prop qui le cache', async () 
     findAll: findAllOn([texte]),
   } as unknown as ComponentNode;
 
-  const layout = await extractLayout(bouton, resolverFor({}), new Set(), []);
+  const layout = await extractLayout(bouton, resolverFor({}), []);
 
   assert.deepEqual(layout.children, [
     { slot: 'label', figmaLayer: 'Suivant', visibilityProp: 'label', optional: true },
@@ -163,7 +161,7 @@ test('extractLayout remonte une visibilité imbriquée quand elle contrôle tout
   } as unknown as ComponentNode;
   (contenu as { parent?: unknown }).parent = racine;
 
-  const layout = await extractLayout(racine, resolverFor({}), new Set(), []);
+  const layout = await extractLayout(racine, resolverFor({}), []);
 
   assert.equal(layout.children[0].visibilityProp, 'title');
   assert.equal(layout.children[0].optional, true);
@@ -205,7 +203,7 @@ test('extractLayout cible un descendant sans masquer tout son slot', async () =>
   (contenu as { parent?: unknown }).parent = racine;
   const warnings: string[] = [];
 
-  const layout = await extractLayout(racine, resolverFor({}), new Set(), warnings);
+  const layout = await extractLayout(racine, resolverFor({}), []);
 
   assert.equal(layout.children[0].visibilityProp, undefined);
   assert.deepEqual(layout.children[0].visibilityTargets, [{
@@ -268,7 +266,6 @@ test('extractLayout décrit un calque graphique en slot optionnel avec sa visibi
   const layout = await extractLayout(
     bouton,
     resolverFor({ gap: 'layouts.spacing.8', taille: 'components.icons.sizes.base' }),
-    new Set(),
     [],
   );
 
@@ -305,13 +302,12 @@ test('extractLayout n’invente pas une taille carrée quand seule la largeur es
       gap: 'layouts.spacing.8',
       taille: 'components.icons.sizes.base',
     }),
-    new Set(),
     warnings,
   );
 
   assert.equal(layout.children[0].size, undefined);
-  assert.ok(warnings.some((warning) => warning.includes('height')));
-  assert.ok(warnings.some((warning) => warning.includes('valeur non exportée')));
+  assert.ok(warnings.some((warning) => warning.includes('hauteur')));
+  assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
 });
 
 test('extractLayout exclut un slot statiquement masqué mais conserve un slot piloté par une prop', async () => {
@@ -345,7 +341,6 @@ test('extractLayout exclut un slot statiquement masqué mais conserve un slot pi
       'old-size': 'components.icons.sizes.legacy',
       size: 'components.icons.sizes.base',
     }),
-    new Set(),
     warnings,
   );
 
@@ -368,7 +363,6 @@ test('extractLayout suffixe les slots homonymes au lieu de les écraser', async 
   const layout = await extractLayout(
     bouton,
     resolverFor({ gap: 'layouts.spacing.8', fs: 'layouts.textscale.body' }),
-    new Set(),
     [],
   );
 
@@ -488,7 +482,6 @@ test('un slot d’icône porte le rôle « icon », pas le nom de son calque', a
   const layout = await extractLayout(
     racine,
     resolverFor({ taille: 'components.icons.sizes.base' }),
-    new Set(),
     [],
     new Map(),
     new Set(['circle-info']),
@@ -516,7 +509,7 @@ test('un calque graphique sans règle @icons garde le nom de son calque', async 
     findAll: findAllOn([decor]),
   } as unknown as ComponentNode;
 
-  const layout = await extractLayout(racine, resolverFor({}), new Set(), [], new Map(), new Set());
+  const layout = await extractLayout(racine, resolverFor({}), [], new Map(), new Set());
 
   assert.equal(layout.children[0].slot, 'separateur');
 });

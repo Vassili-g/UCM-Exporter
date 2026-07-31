@@ -66,7 +66,7 @@ test('insert conserve la première feuille quand deux tokens partagent un chemin
   // Écraser ici perdrait une variable Figma sans que rien ne le dise.
   assert.deepEqual(tree, { brand: { 'foo-bar': { $value: '#111111', $type: 'color' } } });
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /premier conservé/);
+  assert.match(warnings[0], /Seul le premier est exporté/);
 });
 
 test('indexVariables nomme les deux variables en collision et écarte la seconde', () => {
@@ -93,8 +93,8 @@ test('indexVariables nomme les deux variables en collision et écarte la seconde
     kind: 'same-path',
   });
   assert.deepEqual(collisionWarnings(index), [
-    'Collision de tokens : « Foo Bar » et « foo-bar » donnent le même token ' +
-      '« brand.foo-bar ». La seconde est ignorée ; renommez-la dans Figma.',
+    'Variables « Foo Bar » et « foo-bar » : leurs noms donnent le même token ' +
+      '« brand.foo-bar ». Seule la première est exportée ; renommez la seconde.',
   ]);
 });
 
@@ -114,8 +114,8 @@ test('modeCollisionWarnings signale une fois par collection, pas une fois par va
   ]);
 
   assert.deepEqual(warnings, [
-    'Collection « Brand Tokens » : deux modes donnent le nom « marque-2 » ; ' +
-      "le premier est conservé. Renommez l'un des deux dans Figma.",
+    'Collection « Brand Tokens » : deux de ses modes donnent le même nom ' +
+      "« marque-2 ». Seul le premier est exporté ; renommez l'un des deux.",
   ]);
 });
 

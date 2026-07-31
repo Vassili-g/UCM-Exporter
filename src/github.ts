@@ -15,6 +15,8 @@ export type RepositoryArtifact = {
   kind: ArtifactKind;
   filename: string;
   content: string;
+  /** Ce que l'export n'a pas pu décrire, rédigé pour le designer. */
+  warnings: string[];
 };
 
 export type PublishResult =
@@ -82,6 +84,33 @@ export function artifactPath(config: GithubConfig, artifact: RepositoryArtifact)
   if (artifact.kind === 'tokens') return `${config.tokensPath}/tokens.json`;
   const componentName = artifact.filename.replace(/\.contract\.json$/i, '');
   return `${config.componentsPath}/${componentName}/${artifact.filename}`;
+}
+
+/**
+ * Corps de la pull request ouverte pour un export.
+ *
+ * Les avertissements y figurent parce que c'est la page que le plugin ouvre
+ * juste après l'export : celui qui produit le constat l'écrit là où son
+ * destinataire arrive. Un contrat n'a donc pas à être ouvert pour être relu, et
+ * `tokens.json`, qui n'a aucun champ où les transporter, est couvert de la même
+ * façon que les contrats.
+ */
+export function pullRequestBody(path: string, warnings: string[]): string {
+  const header = `Export automatique depuis Figma.\n\nFichier : \`${path}\``;
+  if (warnings.length === 0) return `${header}\n\nAucun point signalé.`;
+
+  const plural = warnings.length > 1 ? 's' : '';
+  return [
+    header,
+    '',
+    `## ⚠️ ${warnings.length} point${plural} signalé${plural} par l'export`,
+    '',
+    `L'export a réussi, mais ${warnings.length > 1 ? 'ces informations n’ont' : 'cette information n’a'} ` +
+      'pas pu être décrit' + (warnings.length > 1 ? 'es' : 'e') +
+      '. Chaque point se corrige dans Figma, puis se réexporte.',
+    '',
+    ...warnings.map((warning) => `- ${warning}`),
+  ].join('\n');
 }
 
 /** Effectue un appel GitHub authentifié avec un message d'erreur exploitable. */
@@ -205,7 +234,7 @@ export async function publishArtifact(
         title: `Unified Component Exporter: export ${artifact.filename}`,
         head: branch,
         base: config.baseBranch,
-        body: `Export Unified Component Exporter automatisé.\n\nFichier : \`${path}\``,
+        body: pullRequestBody(path, artifact.warnings),
       }),
     });
   } catch (error) {

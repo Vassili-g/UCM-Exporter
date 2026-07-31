@@ -107,7 +107,7 @@ export function buildStateModel(
       : null;
     states[value] = { selector };
     if (!(value in STATE_SELECTORS)) {
-      warnings.push(`Axe d'état « ${axis} » : état « ${value} » sans déclencheur connu.`);
+      warnings.push(`Propriété « ${axis} » : l'état « ${value} » n'est pas reconnu, le contrat ne dira pas quand l'afficher. États reconnus : default, hover, focus, press, disable.`);
     }
   }
 
@@ -220,17 +220,20 @@ export function variantRoleWarnings(
     collectRoles(tree, readReference, usages);
 
     for (const [role, usage] of usages) {
-      const occurrences = `${usage.count} occurrence${usage.count > 1 ? 's' : ''}, ex. ${usage.example}`;
+      const calques = `${usage.count} calque${usage.count > 1 ? 's' : ''} concerné${usage.count > 1 ? 's' : ''}`;
       const declared = roles.get(role);
       if (!declared) {
         warnings.push(
-          `Rôle « ${role} » inconnu de rendering.roles : non rendu (${occurrences}). ` +
-            `Derniers segments attendus : ${Array.from(roles.keys()).join(', ')}.`,
+          `Token ${usage.example} : son dernier segment « ${role} » n’indique pas ce qui doit ` +
+            `être peint, donc rien ne sera affiché (${calques}). Renommez le token pour qu'il ` +
+            `se termine par ${Array.from(roles.keys()).join(', ')}.`,
         );
       } else if (declared !== found) {
-        const support = found === 'paint' ? 'un remplissage' : 'un contour';
         warnings.push(
-          `Rôle « ${role} » déclaré « ${declared} » mais lié à ${support} Figma : non rendu (${occurrences}).`,
+          `Token ${usage.example} : son dernier segment « ${role} » désigne ` +
+            `${declared === 'paint' ? 'un remplissage' : 'un contour'}, mais il est appliqué en ` +
+            `${found === 'paint' ? 'remplissage' : 'contour'} — rien ne sera affiché (${calques}). ` +
+            `Appliquez-le du bon côté dans Figma, ou renommez-le.`,
         );
       }
     }

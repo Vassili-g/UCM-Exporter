@@ -23,6 +23,37 @@ particularité de l’API Figma ou une limite ; ils ne paraphrasent pas le code.
 Chaque fichier décrit brièvement son rôle, et chaque fonction exportée non
 triviale précise son contrat.
 
+## Avertissements
+
+Les avertissements d’un export sont adressés au **designer**, et lui parviennent
+par le corps de la pull request que le plugin ouvre. Ils sont donc écrits dans
+son vocabulaire, jamais dans celui du code.
+
+Chacun répond à trois questions, dans cet ordre :
+
+| | Contenu |
+|---|---|
+| **Où** | Le nom exact de l’élément Figma — calque, variante, propriété — tel qu’il s’affiche dans le panneau des calques |
+| **Quoi** | Ce qui n’a pas pu être exporté, donc ce qui manquera au développeur |
+| **Comment** | Le geste à faire dans Figma |
+
+Les noms techniques sont traduits à la source, jamais par une couche de
+remplacement :
+
+| Terme du code | Terme employé | | Terme du code | Terme employé |
+|---|---|---|---|---|
+| `node de layout` | cadre d’auto-layout | | `itemSpacing` | espacement |
+| `sous-arbre` | le calque et son contenu | | `padding*` | marges intérieures |
+| `matrice` | les variantes | | `cornerRadius` | arrondi des angles |
+| `slot` | l’emplacement, le calque | | `strokeWeight` | épaisseur du contour |
+| `componentPropertyDefinition` | propriété de composant | | `fills` | remplissage |
+| `prop enum` | propriété de type variante | | `strokes` | contour |
+| `prop BOOLEAN` | propriété booléenne | | `feuille` / `groupe` | token / groupe de tokens |
+| `Component Set` | jeu de composants | | `alias` | variable qui en référence une autre |
+
+`fieldLabel()` dans `src/contract/nodeBindings.ts` tient cette table pour les
+propriétés Figma citées dans un message.
+
 ## Robustesse
 
 Une donnée facultative, illisible ou non tokenisée produit un avertissement et
@@ -44,7 +75,11 @@ jamais rester silencieuse.
 - Les alias sont préservés, jamais aplatis.
 - `normalizeName()` est l’unique règle de nommage des tokens.
 - `indexVariables()` tranche les collisions pour les contrats et les tokens.
-- Une référence de token utilise la forme `{chemin.du.token}`.
+- Une référence de token utilise la forme `{chemin.du.token}`. `variables.ts`
+  la produit (`toRef`) et la reconnaît (`isTokenReference`) : une seule autorité
+  sur sa forme.
+- `tokensUsed` se dérive du contrat terminé, jamais d’un relevé tenu pendant
+  l’extraction.
 - Un composant imbriqué contracté devient une dépendance de composition ; son
   contenu interne n’est pas réexporté par le parent.
 - Un changement de forme du contrat incrémente `contractVersion`.

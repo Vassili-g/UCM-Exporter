@@ -7,6 +7,7 @@ import {
   encodeBase64,
   exportBranchName,
   publishArtifact,
+  pullRequestBody,
 } from '../src/github';
 
 const config: GithubConfig = {
@@ -21,11 +22,11 @@ const config: GithubConfig = {
 
 test('artifactPath dérive les paths du composant et des tokens', () => {
   assert.equal(
-    artifactPath(config, { kind: 'component', filename: 'Button.contract.json', content: '{}' }),
+    artifactPath(config, { kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }),
     'src/components/Button/Button.contract.json',
   );
   assert.equal(
-    artifactPath(config, { kind: 'tokens', filename: 'tokens.json', content: '{}' }),
+    artifactPath(config, { kind: 'tokens', filename: 'tokens.json', content: '{}', warnings: [] }),
     'src/tokens/tokens.json',
   );
 });
@@ -74,6 +75,7 @@ test('publishArtifact ne crée aucune branche si le fichier est inchangé', asyn
       kind: 'tokens',
       filename: 'tokens.json',
       content: '{"same":true}\n',
+      warnings: [],
     });
     assert.deepEqual(result, { status: 'unchanged', path: 'src/tokens/tokens.json' });
     assert.equal(calls.length, 1);
@@ -107,6 +109,7 @@ test('publishArtifact ignore meta.exportedAt pour détecter un contrat inchangé
       kind: 'component',
       filename: 'Button.contract.json',
       content: reExported,
+      warnings: [],
     });
     // Seul l'horodatage diffère : aucun changement design, donc aucune PR.
     assert.deepEqual(result, { status: 'unchanged', path: 'src/components/Button/Button.contract.json' });
@@ -139,7 +142,7 @@ test('publishArtifact supprime la branche quand l’ouverture de la PR échoue',
     await assert.rejects(
       publishArtifact(
         config,
-        { kind: 'component', filename: 'Button.contract.json', content: '{}' },
+        { kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] },
         new Date(2026, 6, 17, 9, 5),
       ),
       /GitHub a répondu 422/,
@@ -171,7 +174,7 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
   try {
     const result = await publishArtifact(
       config,
-      { kind: 'component', filename: 'Button.contract.json', content: '{}' },
+      { kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] },
       new Date(2026, 6, 17, 9, 5),
     );
     assert.deepEqual(result, {
@@ -184,4 +187,21 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
   } finally {
     globalThis.fetch = previousFetch;
   }
+});
+
+test('le corps de la pull request porte les avertissements de l’export', () => {
+  // C'est la page que le plugin ouvre juste après l'export : les constats
+  // destinés au designer y arrivent sans qu'il ait à ouvrir le JSON ni le
+  // journal du plugin.
+  const sain = pullRequestBody('src/tokens/tokens.json', []);
+  assert.match(sain, /Fichier : `src\/tokens\/tokens\.json`/);
+  assert.match(sain, /Aucun point signalé\./);
+
+  const signale = pullRequestBody('src/components/Alert/Alert.contract.json', [
+    'Icône « triangle-exclamation » : sa taille change selon les variantes.',
+    'Calque « row » — espacement : aucune variable Figma n’est reliée.',
+  ]);
+  assert.match(signale, /## ⚠️ 2 points signalés par l'export/);
+  assert.match(signale, /- Icône « triangle-exclamation » /);
+  assert.match(signale, /- Calque « row » — espacement /);
 });

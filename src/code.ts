@@ -154,6 +154,7 @@ async function runExport(
         kind: artifactKind,
         filename: result.filename,
         content: result.content,
+        warnings: result.warnings ?? [],
       });
       if (publication.status === 'unchanged') {
         const message = `Aucun changement pour ${publication.path} : aucune PR créée.`;

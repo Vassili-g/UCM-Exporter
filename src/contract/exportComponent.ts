@@ -19,7 +19,7 @@ import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { buildStateModel, defaultRenderingSemantics } from './semantics';
-import { indexVariables, VariableNameResolver } from '../variables';
+import { collectTokenReferences, indexVariables, VariableNameResolver } from '../variables';
 import { codeIdentifier } from '../utils';
 import type { Contract, ContractMeta, ContractProp } from './types';
 
@@ -118,7 +118,9 @@ function mergeWrapperProps(
   for (const [key, prop] of Object.entries(wrapperProps)) {
     if (key in props) {
       warnings.push(
-        `Prop « ${key} » du wrapper de dimensions ignorée : le Component Set sélectionné en expose déjà une.`,
+        `Propriété « ${key} » : le composant imbriqué qui porte les dimensions et le jeu de ` +
+          `composants sélectionné l’exposent tous les deux. Seule celle du jeu sélectionné ` +
+          `est exportée. Renommez l’une des deux.`,
       );
       continue;
     }
@@ -139,12 +141,12 @@ function mergePropDescriptions(
   for (const [propName, valueDescriptions] of Object.entries(propDescriptions)) {
     const prop = props[propName];
     if (!prop || prop.type !== 'enum') {
-      warnings.push(`@prop « ${propName} » : aucune prop enum de ce nom.`);
+      warnings.push(`Règle @prop « ${propName} » : le composant n’a aucune propriété de type variante portant ce nom. Vérifiez l’orthographe dans le calque « prop ».`);
       continue;
     }
     for (const [value, description] of Object.entries(valueDescriptions)) {
       if (!prop.values.includes(value)) {
-        warnings.push(`@prop « ${propName}.${value} » : valeur inconnue de la prop.`);
+        warnings.push(`Règle @prop « ${propName}.${value} » : la propriété « ${propName} » n’a pas de valeur « ${value} ». Vérifiez l’orthographe dans le calque « prop ».`);
         continue;
       }
       if (!prop.descriptions) prop.descriptions = {};
@@ -250,7 +252,10 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   }
 
   if (Object.keys(componentSet.componentPropertyDefinitions).length === 0) {
-    warnings.push('Aucune componentPropertyDefinition exposée par le Component Set sélectionné.');
+    warnings.push(
+      'Le jeu de composants sélectionné n’expose aucune propriété de composant : le ' +
+        'contrat ne décrira ni variantes ni options.',
+    );
   }
 
   // Le résolveur reçoit l'index des variables locales pour deux raisons : il y
@@ -280,7 +285,8 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   const intent = rules.intent;
   if (!intent) {
     warnings.push(
-      'Règles présentes mais aucune intention (@usage/@do/@dont/@pairs) — seule la documentation de props est fournie.',
+      'Aucune règle @usage, @do, @dont ou @pairs : le contrat dira comment utiliser le ' +
+        'composant, mais pas quand. Ajoutez au moins une règle @usage.',
     );
   }
 
@@ -290,9 +296,9 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     // transitoire, on attend qu'il disparaisse tout seul, et il finit par
     // apprendre à ne plus lire la liste des avertissements.
     warnings.push(
-      'Lien Figma absent des métadonnées : figma.fileKey est réservé aux plugins ' +
-        'privés d’organisation (manifest « enablePrivatePluginApi »). nodeId et ' +
-        'fileName restent exploitables.',
+      'Lien vers Figma absent du contrat : l’API ne le fournit qu’aux plugins privés ' +
+        'd’organisation. Le nom du fichier et l’identifiant du composant restent ' +
+        'exportés, et suffisent à le retrouver.',
     );
   }
 
@@ -306,9 +312,15 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     rendering: defaultRenderingSemantics(),
     icons,
     composes,
-    tokensUsed: extracted.tokensUsed,
+    tokensUsed: [],
     intent,
   };
+  // `tokensUsed` est l'index des références du contrat : il se DÉRIVE du contrat
+  // terminé. L'alimenter pendant l'extraction y ferait entrer des tokens lus
+  // pour décider puis écartés — la taille d'une icône relevée sur chaque
+  // variante, les couleurs d'une variante en conflit — et le contrat citerait
+  // alors des tokens qu'il n'emploie pas.
+  contract.tokensUsed = Array.from(collectTokenReferences(contract)).sort();
 
   return {
     filename: componentContractFilename(contract.name),

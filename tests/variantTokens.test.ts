@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractVariantTokens, getSlotTokens } from '../src/contract/extractVariantTokens';
+import { collectTokenReferences } from '../src/variables';
 
 const colorAlias = { type: 'VARIABLE_ALIAS', id: 'color' } as VariableAlias;
 const widthAlias = { type: 'VARIABLE_ALIAS', id: 'width' } as VariableAlias;
@@ -55,7 +56,7 @@ test('getSlotTokens avertit quand la largeur du stroke est une valeur brute', as
 
   assert.equal(tokens.strokes.ring?.width, null);
   assert.deepEqual(warnings, [
-    'Calque « Button ring » : largeur du stroke sans variable liée (valeur brute ignorée).',
+    `Calque « Button ring » — épaisseur du contour : aucune variable Figma n'est reliée. La valeur fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
   ]);
 });
 
@@ -82,8 +83,8 @@ test('getSlotTokens refuse une largeur de stroke partiellement liée', async () 
   const tokens = await getSlotTokens(node, resolver, warnings);
 
   assert.equal(tokens.strokes.ring?.width, null);
-  assert.ok(warnings.some((warning) => warning.includes('strokeRightWeight')));
-  assert.ok(warnings.some((warning) => warning.includes('valeur non exportée')));
+  assert.ok(warnings.some((warning) => warning.includes('contour droit')));
+  assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
 });
 
 test('getSlotTokens ignore un ancien fond statiquement masqué au profit du fond visible', async () => {
@@ -139,7 +140,6 @@ test('extractVariantTokens ne place pas le token d’un calque masqué dans toke
     findAll: (predicate: (node: never) => boolean) =>
       [hidden].filter(predicate as (node: unknown) => boolean),
   } as unknown as ComponentNode;
-  const tokenNames = new Set<string>();
   const warnings: string[] = [];
 
   await extractVariantTokens(
@@ -148,11 +148,9 @@ test('extractVariantTokens ne place pas le token d’un calque masqué dans toke
       resolve: async (candidate: VariableAlias | null | undefined) =>
         candidate?.id === 'hidden' ? 'components.button.default.ring' : null,
     },
-    tokenNames,
     warnings,
   );
 
-  assert.deepEqual([...tokenNames], []);
   assert.ok(warnings.some((warning) => warning.includes('Halo obsolète')));
 });
 
@@ -183,7 +181,6 @@ test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (pr
       ],
     },
     resolver,
-    new Set<string>(),
     warnings,
   );
 
@@ -191,7 +188,7 @@ test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (pr
   assert.deepEqual(trees.variantTokens, {
     focus: { background: '{components.button.colors.a.background}' },
   });
-  assert.ok(warnings.some((warning) => warning.includes('Variants en conflit sur « focus »')));
+  assert.ok(warnings.some((warning) => warning.includes('Variantes « focus »')));
 });
 
 test('extractVariantTokens suit l’ordre de la matrice, pas l’ordre de résolution', async () => {
@@ -224,7 +221,6 @@ test('extractVariantTokens suit l’ordre de la matrice, pas l’ordre de résol
       ],
     },
     resolver,
-    new Set<string>(),
     warnings,
   );
 
@@ -232,9 +228,9 @@ test('extractVariantTokens suit l’ordre de la matrice, pas l’ordre de résol
   assert.deepEqual(Object.keys(trees.variantStrokes), ['default', 'hover', 'focus']);
   // Les avertissements aussi entrent dans le contrat : leur ordre suit la matrice.
   assert.deepEqual(warnings, [
-    'Variant « State=Default » : aucune variable de couleur/contour liée.',
-    'Variant « State=Hover » : aucune variable de couleur/contour liée.',
-    'Variant « State=Focus » : aucune variable de couleur/contour liée.',
+    'Variante « State=Default » : aucun remplissage ni contour n’est relié à une variable. Aucune couleur n’est exportée pour elle.',
+    'Variante « State=Hover » : aucun remplissage ni contour n’est relié à une variable. Aucune couleur n’est exportée pour elle.',
+    'Variante « State=Focus » : aucun remplissage ni contour n’est relié à une variable. Aucune couleur n’est exportée pour elle.',
   ]);
 });
 
@@ -253,7 +249,6 @@ test('extractVariantTokens normalise la clé de repli quand le set n’expose au
   const trees = await extractVariantTokens(
     { axes: [], variants: [{ values: {}, component: node }] },
     resolver,
-    new Set<string>(),
     [],
   );
 
@@ -276,13 +271,11 @@ test('extractVariantTokens ajoute la largeur du stroke à tokensUsed', async () 
       return null;
     },
   };
-  const tokenNames = new Set<string>();
   const warnings: string[] = [];
 
   const trees = await extractVariantTokens(
     { axes: ['state'], variants: [{ values: { state: 'focus' }, component: node }] },
     resolver,
-    tokenNames,
     warnings,
   );
 
@@ -298,7 +291,7 @@ test('extractVariantTokens ajoute la largeur du stroke à tokensUsed', async () 
       },
     },
   });
-  assert.deepEqual(Array.from(tokenNames).sort(), [
+  assert.deepEqual(Array.from(collectTokenReferences(trees)).sort(), [
     '{components.button.colors.primary.focus.ring}',
     '{layouts.stroke.ring}',
   ]);
