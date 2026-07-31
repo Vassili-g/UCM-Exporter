@@ -12,7 +12,7 @@
  * conteneur « <Nom>-Rules » sur la page (cf. `extractRules`). Aucune liste de
  * noms n'est tenue nulle part, donc aucune règle liée à un composant précis.
  */
-import { compactName, RULES_CONTAINER_TYPES, RULES_SECTION_SUFFIX } from './extractRules';
+import { compactName, rulesContainerOwner } from './extractRules';
 import { getAllNodes, hasAncestorIn } from './exportableNodes';
 import { normalizePropKey } from './parsers';
 import type { ComposedDependency } from './types';
@@ -48,15 +48,10 @@ export type ComposedMatrixScan = ComposedInstancesScan & {
  * // → Set { 'button' }
  */
 export function indexContractedNames(page: PageNode): Set<string> {
-  const containers = page.findAll(
-    (node) =>
-      RULES_CONTAINER_TYPES.includes(node.type) && node.name.trim().endsWith(RULES_SECTION_SUFFIX),
-  );
-
   const names = new Set<string>();
-  for (const container of containers) {
-    const compacted = compactName(container.name.trim().slice(0, -RULES_SECTION_SUFFIX.length));
-    if (compacted) names.add(compacted);
+  for (const container of page.findAll((node) => rulesContainerOwner(node) !== null)) {
+    const owner = rulesContainerOwner(container);
+    if (owner) names.add(owner);
   }
   return names;
 }

@@ -9,13 +9,13 @@ const layer = (
   maximumOccurrences = 1,
   variants: Array<Record<string, string>> = [{}],
   totalVariants = variants.length,
-  slotIndexes: number[] = [0],
+  slots: Array<string | null> = ['icon'],
   sizes: Array<string | null> = [null],
 ) => ({
   figmaLayer,
   visibilityProps,
   maximumOccurrences,
-  slotIndexes,
+  slots,
   sizes,
   variants,
   totalVariants,
@@ -41,6 +41,9 @@ const variant = (id: string, name: string, enfants: unknown[]) => ({
   id,
   name,
   boundVariables: {},
+  // Un COMPONENT Figma porte toujours `children` : le slot de ses icônes se lit
+  // sur ses enfants directs, pas seulement sur `findAll`.
+  children: enfants,
   findAll: () => enfants,
 }) as unknown as ComponentNode;
 
@@ -126,14 +129,14 @@ test('mergeIconRules avertit lorsqu une icône modifiable n est liée à aucun b
   ]);
 });
 
-test('mergeIconRules situe une icône au rang qu’elle occupe dans son variant', () => {
+test('mergeIconRules situe une icône au slot qu’elle occupe dans son variant', () => {
   const warnings: string[] = [];
 
   const icons = mergeIconRules(
     {},
     [
-      layer('arrow-left-long', [null], 1, [{}], 1, [0]),
-      layer('arrow-right-long', [null], 1, [{}], 1, [1]),
+      layer('arrow-left-long', [null], 1, [{}], 1, ['icon']),
+      layer('arrow-right-long', [null], 1, [{}], 1, ['icon-2']),
     ],
     [
       { iconName: 'arrow-left-long', policy: 'strict' },
@@ -149,26 +152,26 @@ test('mergeIconRules situe une icône au rang qu’elle occupe dans son variant'
   assert.deepEqual(warnings, []);
 });
 
-test('mergeIconRules n’invente aucun slot quand le rang change entre variants', () => {
+test('mergeIconRules n’invente aucun slot quand le slot change entre variants', () => {
   const warnings: string[] = [];
 
   const icons = mergeIconRules(
     {},
-    [layer('status-icon', [null], 1, [{}], 1, [0, 1])],
+    [layer('status-icon', [null], 1, [{}], 1, ['icon', 'icon-2'])],
     [{ iconName: 'status-icon', policy: 'strict' }],
     warnings,
   );
 
   assert.equal(icons.statusIcon.slot, undefined);
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /rang différent selon les variants \(0, 1\)/);
+  assert.match(warnings[0], /slot différent selon les variants \(icon, icon-2\)/);
 });
 
 test('mergeIconRules publie la taille de l’icône et refuse une taille instable', () => {
   const stable: string[] = [];
   const icons = mergeIconRules(
     {},
-    [layer('circle-check', [null], 1, [{}], 1, [0], ['{components.icons.sizes.base}'])],
+    [layer('circle-check', [null], 1, [{}], 1, ['icon'], ['{components.icons.sizes.base}'])],
     [{ iconName: 'circle-check', policy: 'strict' }],
     stable,
   );
@@ -178,13 +181,13 @@ test('mergeIconRules publie la taille de l’icône et refuse une taille instabl
   const instable: string[] = [];
   const divergentes = mergeIconRules(
     {},
-    [layer('circle-check', [null], 1, [{}], 1, [0], ['{a.base}', '{a.large}'])],
+    [layer('circle-check', [null], 1, [{}], 1, ['icon'], ['{a.base}', '{a.large}'])],
     [{ iconName: 'circle-check', policy: 'strict' }],
     instable,
   );
   assert.equal(divergentes.circleCheck.size, undefined);
   assert.equal(instable.length, 1);
-  assert.match(instable[0], /tailles différentes selon les variants/);
+  assert.match(instable[0], /taille non uniforme sur la matrice/);
 });
 
 test('extractIconLayers trouve une icône présente uniquement hors du variant de référence', async () => {
@@ -209,11 +212,11 @@ test('extractIconLayers trouve une icône présente uniquement hors du variant d
     [],
   );
 
-  // Les deux icônes s'excluent, occupent le même rang, donc le même slot :
-  // c'est ce qui rend rendable celle que le variant de référence ne porte pas.
+  // Les deux icônes s'excluent et occupent le même slot : c'est ce qui rend
+  // rendable celle que le variant de référence ne porte pas.
   assert.deepEqual(layers, [
-    layer('circle-info', [null], 1, [{ severity: 'info' }], 2, [0]),
-    layer('circle-check', ['icon'], 1, [{ severity: 'success' }], 2, [0]),
+    layer('circle-info', [null], 1, [{ severity: 'info' }], 2, ['icon']),
+    layer('circle-check', ['icon'], 1, [{ severity: 'success' }], 2, ['icon']),
   ]);
 });
 
@@ -259,7 +262,7 @@ test('extractIconLayers nomme la condition même si le set n’expose aucun axe'
   );
 
   assert.deepEqual(layers, [
-    layer('status-icon', [null], 1, [{ variant: 'active' }], 2, [0]),
+    layer('status-icon', [null], 1, [{ variant: 'active' }], 2, ['icon']),
   ]);
 });
 
@@ -322,4 +325,23 @@ test('mergeIconRules refuse une visibilité incohérente entre variants', () => 
   assert.equal(warnings.length, 2);
   assert.match(warnings[0], /liaison de visibilité différente/);
   assert.match(warnings[1], /doit lier « visible »/);
+});
+
+test('mergeIconRules refuse une taille absente d’une partie de la matrice', () => {
+  const warnings: string[] = [];
+
+  const icons = mergeIconRules(
+    {},
+    [layer('circle-check', [null], 1, [{}], 1, ['icon'], ['{a.base}', null])],
+    [{ iconName: 'circle-check', policy: 'strict' }],
+    warnings,
+  );
+
+  // La liaison a sauté sur un variant. La taille n'est pas « celle qu'on a
+  // trouvée » : elle est non uniforme, exactement comme deux tokens concurrents,
+  // et une icône sans taille n'est pas rendable.
+  assert.equal(icons.circleCheck.size, undefined);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /taille non uniforme sur la matrice/);
+  assert.match(warnings[0], /aucune/);
 });

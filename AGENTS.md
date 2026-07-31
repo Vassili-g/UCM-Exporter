@@ -26,6 +26,7 @@ src/
     parsers.ts               propriétés Figma → API publique
     semantics.ts             vocabulaire sémantique partagé
     extract*.ts              structure, layout, tailles, tokens et règles
+    slotNames.ts             nommage des slots et calques d'icônes
     composedComponents.ts    dépendances entre composants
     nodeBindings.ts          groupes complets de liaisons Figma
     types.ts                 schéma TypeScript du contrat
@@ -51,10 +52,14 @@ tests/
 - Une collision feuille/groupe ou deux chemins identiques sont tranchés avant
   de construire l’arbre ; aucun alias ne doit pointer vers une variable
   rejetée.
-- Un composant unifié imbriqué est déclaré dans `composes`. Le parent ne
-  réexporte pas ses internes.
+- Un composant unifié imbriqué est déclaré dans `composes`. Le critère « ce node
+  porte les règles de X » n’existe qu’une fois (`rulesContainerOwner`) : ce qui
+  autorise un export et ce qui reconnaît une dépendance sont la même règle. Le
+  parent ne réexporte pas ses internes.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
-  indiquent où et comment placer chaque icône.
+  indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
+  autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours
+  un slot réel de `structure.children`.
 - Une liaison composée n’est valide que si tout le groupe requis est lié :
   deux paddings, deux dimensions, quatre coins, etc.
 - Une donnée facultative incomplète avertit. Les préconditions explicitement

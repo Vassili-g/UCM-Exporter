@@ -2,10 +2,14 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   buildRules,
+  compactName,
+  extractRules,
   hasUsableRules,
   iconPolicyFromVisibility,
   ruleTagFromValue,
+  rulesContainerOwner,
 } from '../src/contract/extractRules';
+import { indexContractedNames } from '../src/contract/composedComponents';
 
 test('ruleTagFromValue reconnaît @boolean comme les autres variantes de règle', () => {
   assert.equal(ruleTagFromValue('@boolean'), 'boolean');
@@ -136,4 +140,27 @@ test('iconPolicyFromVisibility exige une visibilité exclusive', () => {
   assert.equal(iconPolicyFromVisibility(true, true), undefined);
   assert.equal(iconPolicyFromVisibility(false, false), undefined);
   assert.equal(iconPolicyFromVisibility(null, false), undefined);
+});
+
+test('le conteneur de règles est reconnu par UNE seule règle, à la casse près', async () => {
+  // Le Component Set s'appelle « Icon Button », le conteneur « iconbutton-Rules ».
+  // Les deux lectures doivent conclure la même chose : un composant reconnu comme
+  // dépendance unifiée par ses parents doit rester exportable lui-même.
+  const container = { type: 'FRAME', name: 'iconbutton-Rules', findAll: () => [] };
+  const page = { findAll: (predicat: (node: any) => boolean) => [container].filter(predicat) };
+  (globalThis as any).figma = { currentPage: page };
+
+  const componentSet = { name: 'Icon Button' } as ComponentSetNode;
+  const rules = await extractRules(componentSet);
+
+  assert.equal(rules.sectionFound, true);
+  assert.equal(rulesContainerOwner(container), compactName(componentSet.name));
+  assert.deepEqual([...indexContractedNames(page as unknown as PageNode)], ['iconbutton']);
+});
+
+test('rulesContainerOwner ignore un conteneur qui n’en est pas un', () => {
+  assert.equal(rulesContainerOwner({ type: 'FRAME', name: 'Button' }), null);
+  assert.equal(rulesContainerOwner({ type: 'COMPONENT', name: 'Button-Rules' }), null);
+  assert.equal(rulesContainerOwner({ type: 'SECTION', name: '-Rules' }), null);
+  assert.equal(rulesContainerOwner({ type: 'SECTION', name: ' Button-Rules ' }), 'button');
 });

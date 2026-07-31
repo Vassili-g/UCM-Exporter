@@ -229,7 +229,10 @@ tel quel, jamais supprimé silencieusement.
 
 **7. Intention & documentation des props** — lues dans un **conteneur Figma** — frame,
 section ou groupe — nommé `<Nom>-Rules` (ex. `Button-Rules`), posé **sur la même
-page** que le composant. Chaque règle est
+page** que le composant. Le rapprochement du nom ignore la casse et les espaces
+(`button-Rules` et `Icon Button-Rules` conviennent) : une majuscule dans un nom
+de calque n'est pas une intention de design, et ne doit donc bloquer aucun
+export. Chaque règle est
 une instance d'un composant de configuration (`ComponentConfiguration`) dont la
 **variante** porte le tag et le calque `content` le texte :
 - `@usage` (un), `@do`/`@dont` (répétables), `@pairs` (virgules) → `intent`.
@@ -260,11 +263,14 @@ une instance d'un composant de configuration (`ComponentConfiguration`) dont la
     que l'icône remplit, et `icons.<clé>.size` son token de taille. Ces deux
     champs rendent une icône **auto-suffisante** : celle qui n'existe pas dans
     le variant de référence n'apparaît dans aucun slot, et sans eux le contrat
-    dirait quand la rendre sans dire ni où ni à quelle taille. Le slot se déduit
-    du **rang** occupé parmi les calques d'icônes du variant, dans l'ordre du
-    document — la même règle que la déduplication des slots (`icon`, `icon-2`).
-    Un rang ou une taille qui change selon les variants produit un warning et
-    aucune valeur déduite ;
+    dirait quand la rendre sans dire ni où ni à quelle taille. Le slot est celui
+    de l'**enfant direct du node de layout qui contient le calque**, dans le
+    variant concerné — la même attribution que `structure.children`, produite
+    par un calcul unique. Deux icônes rangées dans le même enfant direct
+    partagent donc son slot. Un calque situé hors de ce conteneur n'occupe aucun
+    slot ; un slot ou une taille qui change selon les variants — y compris une
+    taille présente ici et absente ailleurs — produit un warning et aucune
+    valeur déduite ;
   - **Prop runtime** — si le calque graphique lie nativement sa propriété
     Figma `visible` à un BOOLEAN, ce booléen est conservé et une prop runtime
     distincte `<bool>Name` est ajoutée pour une icône `modifiable`. Sans cette
@@ -404,7 +410,9 @@ composant simple. Une instance ainsi déclarée n'est PAS parcourue : ses
 calques, ses tokens et ses props appartiennent à son propre contrat. Le slot
 correspondant de `children` la nomme par `composes`, sans relever ni sa taille
 ni sa typographie. Un composant est reconnu comme unifié lorsqu'il possède un
-conteneur `<Nom>-Rules` sur la page — le même critère qui autorise son export.
+conteneur `<Nom>-Rules` sur la page — le même critère qui autorise son export,
+évalué par la même fonction, si bien que les deux lectures ne peuvent pas se
+contredire.
 Le relevé couvre toute la matrice pour élaguer les dépendances de chaque
 variant. `structure.children` et `composes` décrivent tous deux le variant de
 référence et gardent ainsi le même ordre et la même cardinalité. Si la
