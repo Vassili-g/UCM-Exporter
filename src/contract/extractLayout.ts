@@ -8,9 +8,8 @@
 import normalizeName from '../utils';
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
-import { getAllNodes } from './exportableNodes';
+import { firstTextNode, getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
-import { isIconLayer } from './extractIconLayers';
 import {
   BINDING_PATTERNS,
   getBinding,
@@ -18,7 +17,7 @@ import {
   resolveField,
 } from './nodeBindings';
 import { normalizePropKey } from './parsers';
-import { indexedSlotName, semanticSlotName } from './semantics';
+import { assignSlots } from './slotNames';
 import { composedSlotDependencies, nestedSlotVisibility } from './slotRelations';
 import type {
   ChildStructure,
@@ -61,21 +60,6 @@ export function findLayoutNode(
   }));
   candidates.sort((left, right) => right.score - left.score);
   return candidates[0]?.score ? candidates[0].node : root;
-}
-
-/**
- * Renvoie le premier calque TEXTE d'un sous-arbre, ou null s'il n'y en a pas.
- * Le libellé d'un composant embarqué n'en est pas un : sans l'élagage, une
- * Alert emprunterait la typographie du bouton qu'elle contient.
- */
-export function firstTextNode(
-  node: SceneNode,
-  warnings: string[] = [],
-  composed: ComposedInstances = new Map(),
-): TextNode | null {
-  if (node.type === 'TEXT') return node;
-  const text = getAllNodes(node, warnings, composed).find((child) => child.type === 'TEXT');
-  return (text as TextNode | undefined) ?? null;
 }
 
 /**
@@ -145,11 +129,13 @@ async function extractTypography(
  */
 async function extractChild(
   child: SceneNode,
+  // Décidé par `slotNames.assignSlots` : le déduire ici en ferait une seconde
+  // définition, libre de diverger de celle que les icônes citent.
+  slot: string,
   resolver: TokenResolver,
   tokenNames: Set<string>,
   warnings: string[],
   composed: ComposedInstances,
-  iconNames: ReadonlySet<string>,
 ): Promise<ChildStructure> {
   const layerName = normalizeName(child.name).replace(/\./g, '-') || 'unnamed';
   const dependencies = composedSlotDependencies(child, composed);
@@ -162,14 +148,11 @@ async function extractChild(
     );
   }
   const textNode = composedDependency ? null : firstTextNode(child, warnings, composed);
-  // Une dépendance occupe déjà le slot : ce qu'elle contient relève de SON
-  // contrat, y compris ses icônes.
-  const targetsIcon = !composedDependency
-    && getAllNodes(child, [], composed).some((node) => isIconLayer(node, iconNames));
-  const semantic = semanticSlotName(Boolean(textNode), targetsIcon);
 
-  const entry: ChildStructure = { slot: semantic ?? layerName };
-  if (semantic && semantic !== child.name) entry.figmaLayer = child.name;
+  const entry: ChildStructure = { slot };
+  // Traçabilité : la couche sémantique et la déduplication renomment le slot,
+  // le nom Figma d'origine ne doit pas disparaître pour autant.
+  if (slot !== child.name) entry.figmaLayer = child.name;
 
   // Relevé sur TOUS les slots, pas seulement les calques graphiques : sans la
   // liaison d'un label masquable (bouton à icône seule), le contrat exposerait
@@ -236,19 +219,6 @@ async function extractChild(
 }
 
 /**
- * Garantit des noms de slots uniques : si deux calques donnent le même slot,
- * on suffixe les suivants (`label`, `label-2`, …).
- */
-function dedupeSlots(children: ChildStructure[]): void {
-  const seen = new Map<string, number>();
-  for (const child of children) {
-    const count = seen.get(child.slot) ?? 0;
-    seen.set(child.slot, count + 1);
-    child.slot = indexedSlotName(child.slot, count);
-  }
-}
-
-/**
  * Point d'entrée du module : relève les dimensions du conteneur (gap,
  * paddings, radius) puis construit les slots enfants. Tout est exprimé en
  * noms de tokens ; une propriété non liée produit un warning, jamais une
@@ -293,15 +263,10 @@ export async function extractLayout(
     ),
   ]);
 
-  const exportableNodes = new Set(getAllNodes(layoutNode, warnings, composed));
-  const directChildren = 'children' in layoutNode
-    ? layoutNode.children.filter((child) => exportableNodes.has(child))
-    : [];
   const children = await Promise.all(
-    directChildren.map((child) =>
-      extractChild(child, resolver, tokenNames, warnings, composed, iconNames)),
+    assignSlots(layoutNode, iconNames, warnings, composed).map(({ child, slot }) =>
+      extractChild(child, slot, resolver, tokenNames, warnings, composed)),
   );
-  dedupeSlots(children);
 
   // layoutMode vient de l'auto-layout Figma ; on le traduit en vocabulaire CSS.
   const layoutMode = 'layoutMode' in layoutNode ? layoutNode.layoutMode : 'HORIZONTAL';

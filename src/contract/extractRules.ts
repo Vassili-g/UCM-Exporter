@@ -43,6 +43,28 @@ export function compactName(name: string): string {
   return name.replace(/\s+/g, '').toLowerCase();
 }
 
+/** Suffixe compacté : toute comparaison de conteneur passe par des noms compactés. */
+const COMPACT_RULES_SUFFIX = compactName(RULES_SECTION_SUFFIX);
+
+/**
+ * Nom compacté du composant dont ce node porte les règles, ou null si ce n'en
+ * est pas un conteneur.
+ *
+ * Unique définition de « ce node porte les règles de X ». Ce que `extractRules`
+ * exige pour autoriser un export et ce que `composedComponents` exige pour
+ * reconnaître une dépendance unifiée sont ainsi la même condition, qu'aucune
+ * évolution ne peut faire diverger.
+ *
+ * La comparaison ignore la casse et les espaces : dans un nom de calque Figma,
+ * ils ne portent aucune intention de design et ne doivent bloquer aucun export.
+ */
+export function rulesContainerOwner(node: { type: string; name: string }): string | null {
+  if (!RULES_CONTAINER_TYPES.includes(node.type)) return null;
+  const compacted = compactName(node.name);
+  if (!compacted.endsWith(COMPACT_RULES_SUFFIX)) return null;
+  return compacted.slice(0, -COMPACT_RULES_SUFFIX.length) || null;
+}
+
 /** Texte du premier calque TEXTE d'un nom donné dans une instance (vide si absent). */
 function textOfLayer(instance: InstanceNode, layerName: string): string {
   const target = layerName.trim().toLowerCase();
@@ -96,11 +118,14 @@ async function isRuleInstance(instance: InstanceNode): Promise<boolean> {
 export async function extractRules(
   componentSet: ComponentSetNode,
 ): Promise<RulesResult & { sectionFound: boolean }> {
+  // Le nom canonique sert aux messages ; la RECONNAISSANCE, elle, passe par
+  // `rulesContainerOwner`, qui tolère la casse et les espaces.
   const sectionName = `${componentSet.name}${RULES_SECTION_SUFFIX}`;
+  const owner = compactName(componentSet.name);
   // On les cherche TOUS : n'en lire qu'un alors que la page en porte plusieurs
   // ferait disparaître des règles sans que rien ne le dise.
   const containers = figma.currentPage.findAll(
-    (node) => node.name === sectionName && RULES_CONTAINER_TYPES.includes(node.type),
+    (node) => rulesContainerOwner(node) === owner,
   ) as (SceneNode & ChildrenMixin)[];
 
   const container = containers[0];

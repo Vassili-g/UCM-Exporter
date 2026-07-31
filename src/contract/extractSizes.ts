@@ -8,8 +8,9 @@
  */
 import type { TokenResolver } from '../variables';
 import { getVariantAxes, getVariantValues } from './componentTree';
+import { firstTextNode } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
-import { findLayoutNode, firstTextNode } from './extractLayout';
+import { findLayoutNode } from './extractLayout';
 import { BINDING_PATTERNS, resolveField } from './nodeBindings';
 import { semanticEnumName } from './semantics';
 import type { SizeDimensions } from './types';

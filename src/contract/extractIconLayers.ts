@@ -15,8 +15,10 @@ import type { TokenResolver } from '../variables';
 import type { VariantMatrix } from './componentTree';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
+import { findLayoutNode } from './extractLayout';
 import { BINDING_PATTERNS, resolveField } from './nodeBindings';
 import { normalizePropKey, normalizePropValue } from './parsers';
+import { assignSlots, iconSlotsByLayer, isIconLayer } from './slotNames';
 
 /** Ce que la matrice complète apprend sur un nom de calque graphique. */
 export type IconLayerSummary = {
@@ -26,11 +28,12 @@ export type IconLayerSummary = {
   /** Plus grand nombre de calques homonymes dans un même variant. */
   maximumOccurrences: number;
   /**
-   * Rangs distincts occupés parmi les calques d'icônes de son variant. Un rang
-   * unique donne un slot stable ; plusieurs rangs signalent une structure qui
-   * change d'un variant à l'autre.
+   * Slots distincts occupés à travers la matrice (cf. `slotNames.ts`). Un slot
+   * unique est stable, donc publiable ; plusieurs décrivent une structure qui
+   * change d'un variant à l'autre. `null` marque un calque qui n'appartient à
+   * aucun enfant direct du node de layout, donc à aucun slot.
    */
-  slotIndexes: number[];
+  slots: Array<string | null>;
   /** Tokens de taille distincts relevés sur le calque ; `null` si aucun. */
   sizes: Array<string | null>;
   /** Combinaisons exactes d'axes dans lesquelles le calque existe. */
@@ -39,22 +42,11 @@ export type IconLayerSummary = {
   totalVariants: number;
 };
 
-/**
- * Vrai si ce node est un calque graphique désigné par une règle `@icons`.
- * Un Component Set ou un texte ne peut pas être la cible graphique d'une règle.
- */
-export function isIconLayer(node: SceneNode, iconNames: ReadonlySet<string>): boolean {
-  return iconNames.has(node.name)
-    && node.type !== 'TEXT'
-    && node.type !== 'COMPONENT'
-    && node.type !== 'COMPONENT_SET';
-}
-
 /** Ce qu'on accumule pour un nom de calque avant de le résumer. */
 type IconLayerAccumulator = {
   visibilityProps: Set<string | null>;
   maximumOccurrences: number;
-  slotIndexes: Set<number>;
+  slots: Set<string | null>;
   sizes: Set<string | null>;
   variants: Array<Record<string, string>>;
 };
@@ -63,18 +55,30 @@ function newAccumulator(): IconLayerAccumulator {
   return {
     visibilityProps: new Set(),
     maximumOccurrences: 0,
-    slotIndexes: new Set(),
+    slots: new Set(),
     sizes: new Set(),
     variants: [],
   };
 }
 
+/** Le variant que `structure.children` décrit, et le node de layout retenu pour lui. */
+export type ReferenceLayout = {
+  component: ComponentNode;
+  layoutNode: SceneNode;
+};
+
 /**
  * Résume les calques dont le nom est demandé par les règles, sur tous les
  * variants. La correspondance reste strictement nominale : aucune position ni
- * convention propre à un composant n'est devinée. Le RANG, lui, se lit dans
- * l'ordre du document — c'est ce qui permet de nommer le slot d'une icône
- * absente du variant de référence sans deviner sa place.
+ * convention propre à un composant n'est devinée. Le slot vient de
+ * `slotNames.assignSlots`, la même source que `structure.children`.
+ *
+ * `referenceLayout` porte le node de layout déjà retenu pour le variant de
+ * référence. Le fournir est ce qui garantit que les slots cités décrivent bien
+ * ceux du contrat : le node de layout d'un variant s'élit au score, et une
+ * seconde élection menée depuis une autre racine peut en désigner un autre. Les
+ * autres variants élisent le leur ; un désaccord se solde par plusieurs slots,
+ * donc par un avertissement et aucune valeur — jamais par un slot inventé.
  */
 export async function extractIconLayers(
   matrix: VariantMatrix,
@@ -83,6 +87,7 @@ export async function extractIconLayers(
   tokenNames: Set<string>,
   warnings: string[],
   composed: ComposedInstances = new Map(),
+  referenceLayout: ReferenceLayout | null = null,
 ): Promise<IconLayerSummary[]> {
   const uniqueNames = Array.from(new Set(iconNames));
   if (uniqueNames.length === 0) return [];
@@ -91,21 +96,27 @@ export async function extractIconLayers(
   const summaries = new Map<string, IconLayerAccumulator>();
 
   for (const entry of matrix.variants) {
-    // L'ordre du document donne le rang du slot : les calques d'icônes se
-    // succèdent dans l'ordre où le consommateur les rendra.
+    const layoutNode = entry.component === referenceLayout?.component
+      ? referenceLayout.layoutNode
+      : findLayoutNode(entry.component, [], composed);
+    const slotByLayer = iconSlotsByLayer(
+      assignSlots(layoutNode, requested, [], composed),
+      requested,
+      composed,
+    );
     const layers = getAllNodes(entry.component, [], composed).filter(
       (node) => !composed.has(node.id) && isIconLayer(node, requested),
     );
 
     const occurrences = new Map<string, number>();
-    for (const [rang, node] of layers.entries()) {
+    for (const node of layers) {
       occurrences.set(node.name, (occurrences.get(node.name) ?? 0) + 1);
       const summary = summaries.get(node.name) ?? newAccumulator();
       summaries.set(node.name, summary);
 
       const reference = node.componentPropertyReferences?.visible;
       summary.visibilityProps.add(reference ? normalizePropKey(reference) : null);
-      summary.slotIndexes.add(rang);
+      summary.slots.add(slotByLayer.get(node) ?? null);
       // La taille se relève ici parce qu'une icône absente du variant de
       // référence n'a aucun slot où la lire. Le résolveur met ses résolutions
       // en cache, et les avertissements identiques se dédupliquent à l'export.
@@ -141,7 +152,7 @@ export async function extractIconLayers(
         figmaLayer: name,
         visibilityProps: Array.from(summary.visibilityProps),
         maximumOccurrences: summary.maximumOccurrences,
-        slotIndexes: Array.from(summary.slotIndexes),
+        slots: Array.from(summary.slots),
         sizes: Array.from(summary.sizes),
         variants: summary.variants,
         totalVariants: matrix.variants.length,

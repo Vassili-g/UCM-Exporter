@@ -8,7 +8,8 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractLayout, findLayoutNode, firstTextNode } from '../src/contract/extractLayout';
+import { firstTextNode } from '../src/contract/exportableNodes';
+import { extractLayout, findLayoutNode } from '../src/contract/extractLayout';
 import { nestedSlotVisibility } from '../src/contract/slotRelations';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;

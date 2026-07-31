@@ -9,7 +9,7 @@ import type { VariantMatrix, WrapperReference } from './componentTree';
 import type { ComposedInstances } from './exportableNodes';
 import { extractIconLayers } from './extractIconLayers';
 import type { IconLayerSummary } from './extractIconLayers';
-import { extractLayout } from './extractLayout';
+import { extractLayout, findLayoutNode } from './extractLayout';
 import { extractSizeDimensions } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
 import { variantRoleWarnings } from './semantics';
@@ -51,6 +51,17 @@ export async function extractStructure(
   // vérification reste une fonction pure, testable sans runtime Figma.
   warnings.push(...variantRoleWarnings(variantTokens, variantStrokes));
 
+  // Le layout vit sur le wrapper imbriqué quand il existe, sinon directement
+  // sur le composant. Un composant « plat » est donc géré sans blocage.
+  const layoutRoot = wrapper?.instance ?? referenceComponent;
+  // Le node de layout du variant de référence est élu ICI, une fois, et servira
+  // aux deux extractions. `findLayoutNode` élit au score : le relancer depuis
+  // une autre racine — le variant plutôt que le wrapper — peut désigner un
+  // autre node, et les slots des icônes cesseraient de décrire ceux du contrat.
+  const referenceLayout = layoutRoot && referenceComponent
+    ? { component: referenceComponent, layoutNode: findLayoutNode(layoutRoot, warnings, composed) }
+    : null;
+
   // L'inventaire des icônes précède les slots : il couvre TOUTE la matrice,
   // là où le layout ne décrit que le variant de référence. C'est lui qui relève
   // les icônes que ce variant ne contient pas, et qui nomme leur slot.
@@ -61,12 +72,9 @@ export async function extractStructure(
     tokenNames,
     warnings,
     composed,
+    referenceLayout,
   );
   const targetedLayers = new Set(iconLayers.map((layer) => layer.figmaLayer));
-
-  // Le layout vit sur le wrapper imbriqué quand il existe, sinon directement
-  // sur le composant. Un composant « plat » est donc géré sans blocage.
-  const layoutRoot = wrapper?.instance ?? referenceComponent;
   const layout = layoutRoot
     ? await extractLayout(layoutRoot, resolver, tokenNames, warnings, composed, targetedLayers)
     : { layout: 'flex-row' as const, gap: null, padding: { x: null, y: null }, radius: null, children: [] };

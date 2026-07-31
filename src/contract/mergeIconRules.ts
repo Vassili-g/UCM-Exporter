@@ -6,43 +6,60 @@
 import { normalizePropKey } from './parsers';
 import type { IconLayerSummary } from './extractIconLayers';
 import type { IconRule } from './rulesModel';
-import { indexedSlotName } from './semantics';
 import type { ContractProp, IconDefinition, IconProp } from './types';
 
 /**
- * Slot occupé par une icône, ou undefined si elle n'en occupe pas un seul.
+ * Énumère des valeurs relevées sur la matrice pour un message d'avertissement.
+ * Le tri rend le message stable : deux exports d'un design inchangé doivent
+ * produire le même contrat, avertissements compris.
+ */
+function listValues(values: Array<string | null>, absentLabel: string): string {
+  return [...new Set(values.map((value) => value ?? absentLabel))].sort().join(', ');
+}
+
+/**
+ * Slot occupé par une icône, ou undefined si elle n'en occupe pas exactement un.
  *
- * Le rang vient de l'ordre du document, la même source que la déduplication
- * des slots : une icône présente au premier rang de son variant remplit le
- * slot `icon`, celle du deuxième rang `icon-2`. C'est ce qui donne un slot aux
- * icônes absentes du variant de référence, sans deviner leur place. Deux rangs
- * différents décrivent une structure qui change entre variants : le contrat
- * n'en invente aucun et le dit.
+ * Plusieurs slots décrivent une structure qui change d'un variant à l'autre ;
+ * `null` désigne un calque posé hors du conteneur de dimensions, que
+ * `structure.children` ne décrit donc pas. Dans les deux cas le contrat préfère
+ * se taire à situer l'icône au hasard.
  */
 function iconSlot(layer: IconLayerSummary, warnings: string[]): string | undefined {
-  if (layer.slotIndexes.length === 1) return indexedSlotName('icon', layer.slotIndexes[0]);
+  const onlySlot = layer.slots.length === 1 ? layer.slots[0] : null;
+  if (onlySlot) return onlySlot;
+
   warnings.push(
-    `@icons « ${layer.figmaLayer} » : rang différent selon les variants ` +
-      `(${[...layer.slotIndexes].sort((left, right) => left - right).join(', ')}) ; ` +
-      'aucun slot n’est déduit. Placez l’icône au même rang dans tous les variants.',
+    layer.slots.length === 1
+      ? `@icons « ${layer.figmaLayer} » : le calque n’est pas un enfant direct du conteneur ` +
+        'qui porte les dimensions ; aucun slot n’est déduit, donc aucun consommateur ne ' +
+        'saura où le rendre. Déplacez-le dans ce conteneur.'
+      : `@icons « ${layer.figmaLayer} » : slot différent selon les variants ` +
+        `(${listValues(layer.slots, 'aucun')}) ; aucun slot n’est déduit. Placez l’icône au ` +
+        'même emplacement dans tous les variants.',
   );
   return undefined;
 }
 
 /**
- * Token de taille de l'icône, ou undefined s'il n'est pas unique. Une taille
- * qui change d'un variant à l'autre n'est pas représentable par le schéma
- * courant : on ne conserve pas la première, qui serait celle du hasard.
+ * Token de taille de l'icône, ou undefined s'il n'est pas unique sur toute la
+ * matrice.
+ *
+ * Une taille absente d'une partie des variants compte comme une divergence, au
+ * même titre que deux tokens concurrents : une icône sans taille n'est pas
+ * rendable, et retenir la seule valeur trouvée affirmerait une uniformité que
+ * Figma ne montre pas.
  */
 function iconSize(layer: IconLayerSummary, warnings: string[]): string | undefined {
-  const sizes = layer.sizes.filter((size): size is string => Boolean(size));
-  if (layer.sizes.length === 1) return sizes[0];
-  if (sizes.length > 1) {
-    warnings.push(
-      `@icons « ${layer.figmaLayer} » : tailles différentes selon les variants ` +
-        `(${sizes.join(', ')}) ; aucune taille n’est déduite.`,
-    );
-  }
+  const onlySize = layer.sizes.length === 1 ? layer.sizes[0] : null;
+  if (onlySize) return onlySize;
+  if (layer.sizes.length <= 1) return undefined;
+
+  warnings.push(
+    `@icons « ${layer.figmaLayer} » : taille non uniforme sur la matrice ` +
+      `(${listValues(layer.sizes, 'aucune')}) ; aucune taille n’est déduite. Liez width et ` +
+      'height au même token dans tous les variants où le calque existe.',
+  );
   return undefined;
 }
 

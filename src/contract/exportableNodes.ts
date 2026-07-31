@@ -128,3 +128,18 @@ export function getAllNodes(
 
   return exportable;
 }
+
+/**
+ * Renvoie le premier calque TEXTE d'un sous-arbre, ou null s'il n'y en a pas.
+ * Le libellé d'un composant embarqué n'en est pas un : sans l'élagage, une
+ * Alert emprunterait la typographie du bouton qu'elle contient.
+ */
+export function firstTextNode(
+  node: SceneNode,
+  warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
+): TextNode | null {
+  if (node.type === 'TEXT') return node;
+  const text = getAllNodes(node, warnings, composed).find((child) => child.type === 'TEXT');
+  return (text as TextNode | undefined) ?? null;
+}
