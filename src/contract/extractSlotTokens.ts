@@ -7,7 +7,7 @@ import { toRef, variableAliases } from '../variables';
 import type { TokenResolver } from '../variables';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
-import { BINDING_PATTERNS, getBinding, resolveTokenName } from './nodeBindings';
+import { BINDING_PATTERNS, fieldLabel, getBinding, resolveTokenName } from './nodeBindings';
 import type { SlotStrokes, SlotTokens, StrokeAlignment, StrokeTokens } from './types';
 export type { TokenResolver } from '../variables';
 
@@ -26,7 +26,7 @@ function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment |
   if (raw === 'INSIDE') return 'inside';
   if (raw === 'CENTER') return 'center';
   if (raw === 'OUTSIDE') return 'outside';
-  warnings.push(`Calque « ${node.name} » : alignement du stroke indisponible.`);
+  warnings.push(`Calque « ${node.name} » : l’alignement du contour est illisible. Le contrat ne dira pas s’il est intérieur, centré ou extérieur.`);
   return null;
 }
 
@@ -39,7 +39,7 @@ async function strokeWidth(
   return resolveTokenName(
     node,
     BINDING_PATTERNS.strokeWidth,
-    'largeur du stroke',
+    'épaisseur du contour',
     resolver,
     warnings,
   );
@@ -57,8 +57,8 @@ function setPaintToken(
   if (!existing) paints[role] = token;
   else if (existing !== token) {
     warnings.push(
-      `Calque « ${node.name} » : plusieurs tokens pour le rôle « ${role} » ; ` +
-        `premier conservé (${existing}), autre ignoré (${token}).`,
+      `Calque « ${node.name} » : deux remplissages visent le même rôle « ${role} ». Seul ` +
+        `${existing} est exporté, ${token} est ignoré. Ne gardez qu'un remplissage par rôle.`,
     );
   }
 }
@@ -78,8 +78,8 @@ function setStrokeToken(
   }
   if (existing.color !== value.color || existing.width !== value.width || existing.align !== value.align) {
     warnings.push(
-      `Calque « ${node.name} » : plusieurs strokes pour le rôle « ${role} » ; ` +
-        `premier conservé (${existing.color}), autre ignoré (${value.color}).`,
+      `Calque « ${node.name} » : deux contours visent le même rôle « ${role} ». Seul ` +
+        `${existing.color} est exporté, ${value.color} est ignoré. Ne gardez qu'un contour par rôle.`,
     );
   }
 }
@@ -116,7 +116,7 @@ export async function getSlotTokens(
         pending.push({
           node,
           field,
-          promise: resolver.resolve(alias, { nodeName: node.name, field }),
+          promise: resolver.resolve(alias, { nodeName: node.name, field: fieldLabel(field) }),
           stroke,
         });
       }

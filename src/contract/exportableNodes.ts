@@ -121,8 +121,9 @@ export function getAllNodes(
     if (!hasBindings) continue;
     pushOnce(
       warnings,
-      `Sous-arbre « ${hidden.name} » statiquement masqué : variables liées ignorées. ` +
-        `Liez sa visibilité à une prop ou une variable si le contrat doit le décrire.`,
+      `Calque « ${hidden.name} » : masqué dans Figma, il est exclu de l'export avec tout ` +
+        `son contenu et les variables qu'il porte. Si le composant doit pouvoir l'afficher, ` +
+        `reliez sa visibilité à une propriété booléenne ou à une variable.`,
     );
   }
 

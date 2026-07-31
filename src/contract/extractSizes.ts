@@ -38,7 +38,6 @@ async function extractDimensions(
   component: ComponentNode,
   sizeValue: string,
   resolver: TokenResolver,
-  tokenNames: Set<string>,
   warnings: string[],
   composed: ComposedInstances,
 ): Promise<SizeDimensions> {
@@ -50,42 +49,37 @@ async function extractDimensions(
     resolveField(
       layoutNode,
       BINDING_PATTERNS.gap,
-      `gap (${sizeValue})`,
+      `espacement (taille « ${sizeValue} »)`,
       resolver,
-      tokenNames,
       warnings,
     ),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.paddingX,
-      `padding-x (${sizeValue})`,
+      `marges intérieures gauche et droite (taille « ${sizeValue} »)`,
       resolver,
-      tokenNames,
       warnings,
     ),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.paddingY,
-      `padding-y (${sizeValue})`,
+      `marges intérieures haut et bas (taille « ${sizeValue} »)`,
       resolver,
-      tokenNames,
       warnings,
     ),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.radius,
-      `border-radius (${sizeValue})`,
+      `arrondi des angles (taille « ${sizeValue} »)`,
       resolver,
-      tokenNames,
       warnings,
     ),
     textNode
       ? resolveField(
         textNode,
         BINDING_PATTERNS.fontSize,
-        `font-size (${sizeValue})`,
+        `taille du texte (taille « ${sizeValue} »)`,
         resolver,
-        tokenNames,
         warnings,
       )
       : Promise.resolve(null),
@@ -105,7 +99,6 @@ async function extractDimensions(
 export async function extractSizeDimensions(
   componentSet: ComponentSetNode,
   resolver: TokenResolver,
-  tokenNames: Set<string>,
   warnings: string[],
   composed: ComposedInstances = new Map(),
 ): Promise<Record<string, SizeDimensions> | null> {
@@ -125,14 +118,7 @@ export async function extractSizeDimensions(
 
   const sizes: Record<string, SizeDimensions> = {};
   for (const [value, component] of representatives) {
-    sizes[value] = await extractDimensions(
-      component,
-      value,
-      resolver,
-      tokenNames,
-      warnings,
-      composed,
-    );
+    sizes[value] = await extractDimensions(component, value, resolver, warnings, composed);
   }
   return sizes;
 }

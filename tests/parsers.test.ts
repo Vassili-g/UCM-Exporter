@@ -101,7 +101,7 @@ test('extractContractProps ne laisse pas le nom sémantique voler la clé d’un
     size: { type: 'string', default: 'texte libre' },
   });
   assert.deepEqual(warnings, [
-    'Axe « Taille » : le nom sémantique « size » est déjà porté par une autre propriété Figma ; l\'axe garde « taille ».',
+    'Propriété « Taille » : ses valeurs sont des tailles, mais une autre propriété porte déjà le nom « size ». Elle reste exportée sous « taille ». Renommez l\'une des deux si vous voulez « size ».',
   ]);
 });
 
@@ -128,7 +128,7 @@ test('extractContractProps conserve la première prop quand deux écritures donn
     iconLeft: { type: 'boolean', default: true },
   });
   assert.deepEqual(warnings, [
-    'Propriétés Figma « Icon Left » et « icon-left » : même clé publique « iconLeft » ; la première est conservée.',
+    'Propriétés « Icon Left » et « icon-left » : leurs noms deviennent identiques une fois normalisés (« iconLeft »). Seule « Icon Left » est exportée. Renommez l’une des deux.',
   ]);
 });
 
@@ -145,7 +145,7 @@ test('extractContractProps protège le défaut de disabled contre un BOOLEAN hom
     disabled: { type: 'boolean', default: true },
   });
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /même clé publique « disabled »/);
+  assert.match(warnings[0], /identiques une fois normalisés \(« disabled »\)/);
 });
 
 test('extractContractProps laisse un enum non-taille sous son nom, sans figmaName', () => {

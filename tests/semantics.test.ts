@@ -40,7 +40,9 @@ test('buildStateModel conserve un état inconnu et avertit sans bloquer', () => 
 
   assert.equal(model?.states.loading.selector, null);
   assert.deepEqual(model?.precedence, ['default', 'loading']);
-  assert.deepEqual(warnings, ['Axe d\'état « status » : état « loading » sans déclencheur connu.']);
+  assert.deepEqual(warnings, [
+    'Propriété « status » : l\'état « loading » n\'est pas reconnu, le contrat ne dira pas quand l\'afficher. États reconnus : default, hover, focus, press, disable.',
+  ]);
 });
 
 test('variantRoleWarnings reste muet quand tous les rôles sont rendables', () => {
@@ -83,7 +85,8 @@ test('variantRoleWarnings agrège un rôle inconnu en UN seul message, avec un e
   );
 
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /^Rôle « bg » inconnu de rendering\.roles : non rendu \(3 occurrences, ex\. \{c\./);
+  assert.match(warnings[0], /^Token \{c\..* : son dernier segment « bg » n’indique pas/);
+  assert.match(warnings[0], /3 calques concernés/);
   // Le message nomme le geste correctif : les segments attendus dans Figma.
   assert.match(warnings[0], /background, foreground, icon, border, ring\.$/);
 });
@@ -97,8 +100,8 @@ test('variantRoleWarnings signale un rôle connu employé sur le mauvais support
   );
 
   assert.deepEqual(warnings, [
-    'Rôle « background » déclaré « paint » mais lié à un contour Figma : non rendu (1 occurrence, ex. {c.primary.default.background}).',
-    'Rôle « border » déclaré « stroke » mais lié à un remplissage Figma : non rendu (1 occurrence, ex. {c.primary.default.border}).',
+    'Token {c.primary.default.background} : son dernier segment « background » désigne un remplissage, mais il est appliqué en contour — rien ne sera affiché (1 calque concerné). Appliquez-le du bon côté dans Figma, ou renommez-le.',
+    'Token {c.primary.default.border} : son dernier segment « border » désigne un contour, mais il est appliqué en remplissage — rien ne sera affiché (1 calque concerné). Appliquez-le du bon côté dans Figma, ou renommez-le.',
   ]);
 });
 

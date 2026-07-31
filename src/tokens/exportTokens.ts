@@ -124,13 +124,13 @@ export function buildLeaf(
   const valueForMode = (modeId: string): unknown => {
     const raw = variable.valuesByMode[modeId];
     if (raw === undefined) {
-      warnings.push(`Variable « ${variable.name} » : aucune valeur pour un mode.`);
+      warnings.push(`Variable « ${variable.name} » : un de ses modes n’a pas de valeur. Ce mode est exporté vide ; donnez-lui une valeur dans Figma.`);
       return null;
     }
     const alias = firstVariableAlias(raw);
     if (alias) {
       const target = pathById.get(alias.id);
-      if (!target) warnings.push(`Variable « ${variable.name} » : alias cible introuvable.`);
+      if (!target) warnings.push(`Variable « ${variable.name} » : elle référence une variable introuvable. Aucune référence n’est écrite ; reliez-la de nouveau.`);
       return target ? `{${target}}` : null;
     }
     return formatValue(raw, variable.resolvedType, rootPath);
@@ -167,7 +167,7 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
     const existing = node[key];
     // Un groupe ne peut pas traverser une feuille existante.
     if (existing && '$value' in existing) {
-      warnings.push(`Collision de chemin sur « ${path} » : token déjà présent comme feuille.`);
+      warnings.push(`Token « ${path} » : un token porte déjà ce nom plus haut dans l’arborescence. Il n’est pas exporté ; renommez ou déplacez l’un des deux.`);
       return;
     }
     node[key] = (existing as DtcgTree) ?? {};
@@ -179,8 +179,8 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
   if (existing) {
     warnings.push(
       '$value' in existing
-        ? `Collision de chemin sur « ${path} » : un token porte déjà ce nom ; premier conservé.`
-        : `Collision de chemin sur « ${path} » : un groupe de tokens porte déjà ce nom.`,
+        ? `Token « ${path} » : un autre token porte déjà ce nom. Seul le premier est exporté ; renommez le second.`
+        : `Token « ${path} » : un groupe de tokens porte déjà ce nom — un token ne peut pas être à la fois une valeur et un groupe. Il n’est pas exporté ; renommez ou déplacez l’un des deux.`,
     );
     return;
   }
@@ -204,8 +204,8 @@ export function modeCollisionWarnings(collections: VariableCollection[]): string
       const name = normalizeName(mode.name);
       if (seen.has(name)) {
         warnings.push(
-          `Collection « ${collection.name} » : deux modes donnent le nom « ${name} » ; ` +
-            `le premier est conservé. Renommez l'un des deux dans Figma.`,
+          `Collection « ${collection.name} » : deux de ses modes donnent le même nom ` +
+            `« ${name} ». Seul le premier est exporté ; renommez l'un des deux.`,
         );
         continue;
       }
@@ -240,7 +240,7 @@ export async function handleExportTokens(): Promise<TokensExport> {
   for (const [path, variable] of variableByPath) {
     const collection = collectionById.get(variable.variableCollectionId);
     if (!collection) {
-      warnings.push(`Variable « ${variable.name} » : collection introuvable.`);
+      warnings.push(`Variable « ${variable.name} » : sa collection est introuvable, elle n’est pas exportée.`);
       continue;
     }
     insert(tree, path, buildLeaf(variable, collection, ctx, warnings), warnings);

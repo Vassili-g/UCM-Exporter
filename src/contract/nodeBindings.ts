@@ -33,6 +33,39 @@ export const BINDING_PATTERNS = {
 } as const satisfies Record<string, FieldAlternatives>;
 
 /**
+ * Nom lisible de chaque propriété Figma citée dans un avertissement. Sans
+ * cette table, un message destiné au designer nommerait des champs de l'API
+ * (`paddingLeft`, `strokeTopWeight`) qu'aucun panneau Figma n'affiche.
+ */
+const FIELD_LABELS: Record<string, string> = {
+  itemSpacing: 'espacement',
+  paddingLeft: 'marge gauche',
+  paddingRight: 'marge droite',
+  paddingTop: 'marge haute',
+  paddingBottom: 'marge basse',
+  cornerRadius: 'arrondi',
+  topLeftRadius: 'angle haut gauche',
+  topRightRadius: 'angle haut droit',
+  bottomLeftRadius: 'angle bas gauche',
+  bottomRightRadius: 'angle bas droit',
+  width: 'largeur',
+  height: 'hauteur',
+  strokeWeight: 'épaisseur du contour',
+  strokeTopWeight: 'contour haut',
+  strokeRightWeight: 'contour droit',
+  strokeBottomWeight: 'contour bas',
+  strokeLeftWeight: 'contour gauche',
+  fontSize: 'taille du texte',
+  fills: 'remplissage',
+  strokes: 'contour',
+};
+
+/** Nom lisible d'une propriété Figma, ou le champ brut s'il n'en a pas. */
+export function fieldLabel(field: string): string {
+  return FIELD_LABELS[field] ?? field;
+}
+
+/**
  * Liaison de variable d'un champ (ex. `fills`, `itemSpacing`).
  * `boundVariables` n'est pas typé champ par champ dans l'API, d'où le
  * passage par un Record générique.
@@ -85,7 +118,7 @@ export async function resolveTokenName(
         aliases.map((alias, index) =>
           resolver.resolve(alias, {
             nodeName: node.name,
-            field: `${label} / ${fields[index]}`,
+            field: `${label} — ${fieldLabel(fields[index])}`,
           }),
         ),
       );
@@ -103,8 +136,9 @@ export async function resolveTokenName(
     const asymmetric = tokensByAlternative.find((tokens) => tokens.length > 1);
     if (asymmetric) {
       warnings.push(
-        `Calque « ${node.name} » : variables ${label} asymétriques ` +
-          `(${asymmetric.join(', ')}) ; valeur non exportée.`,
+        `Calque « ${node.name} » — ${label} : les côtés ne sont pas reliés à la même ` +
+          `variable (${asymmetric.join(', ')}). Rien n'est exporté pour cette valeur. ` +
+          `Reliez-les toutes à la même variable, puis réexportez.`,
       );
       return null;
     }
@@ -112,8 +146,9 @@ export async function resolveTokenName(
     const candidates = Array.from(new Set(tokensByAlternative.flat()));
     if (candidates.length > 1) {
       warnings.push(
-        `Calque « ${node.name} » : représentations ${label} contradictoires ` +
-          `(${candidates.join(', ')}) ; valeur non exportée.`,
+        `Calque « ${node.name} » — ${label} : deux réglages Figma se contredisent ` +
+          `(${candidates.join(', ')}). Rien n'est exporté pour cette valeur. Ne définissez ` +
+          `cette valeur que d'une seule façon, puis réexportez.`,
       );
       return null;
     }
@@ -122,7 +157,10 @@ export async function resolveTokenName(
 
   const withBindings = resolved.filter((entry) => entry.aliases.some(Boolean));
   if (withBindings.length === 0) {
-    warnings.push(`Calque « ${node.name} » : ${label} sans variable liée (valeur brute ignorée).`);
+    warnings.push(
+      `Calque « ${node.name} » — ${label} : aucune variable Figma n'est reliée. La valeur ` +
+        `fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
+    );
     return null;
   }
 
@@ -137,32 +175,30 @@ export async function resolveTokenName(
     (_, index) => Boolean(best.aliases[index]) && !best.tokens[index],
   );
   const details = [
-    missing.length > 0 ? `sans variable : ${missing.join(', ')}` : null,
-    unresolved.length > 0 ? `liaison introuvable : ${unresolved.join(', ')}` : null,
+    missing.length > 0
+      ? `sans variable : ${missing.map(fieldLabel).join(', ')}`
+      : null,
+    unresolved.length > 0
+      ? `variable introuvable : ${unresolved.map(fieldLabel).join(', ')}`
+      : null,
   ].filter((detail): detail is string => Boolean(detail));
 
   warnings.push(
-    `Calque « ${node.name} » : ${label} incomplet (${details.join(' ; ')}) ; ` +
-      `valeur non exportée.`,
+    `Calque « ${node.name} » — ${label} : la définition est incomplète ` +
+      `(${details.join(' ; ')}). Rien n'est exporté pour cette valeur. Reliez les ` +
+      `variables manquantes, puis réexportez.`,
   );
   return null;
 }
 
-/**
- * Résout un groupe puis écrit sa référence dans le contrat et `tokensUsed`.
- */
+/** Résout un groupe complet et l'enrobe en référence de contrat. */
 export async function resolveField(
   node: SceneNode,
   alternatives: FieldAlternatives,
   label: string,
   resolver: TokenResolver,
-  tokenNames: Set<string>,
   warnings: string[],
 ): Promise<string | null> {
   const token = await resolveTokenName(node, alternatives, label, resolver, warnings);
-  if (!token) return null;
-
-  const ref = toRef(token);
-  tokenNames.add(ref);
-  return ref;
+  return token ? toRef(token) : null;
 }

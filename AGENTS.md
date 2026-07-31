@@ -64,6 +64,10 @@ tests/
   deux paddings, deux dimensions, quatre coins, etc.
 - Une donnée facultative incomplète avertit. Les préconditions explicitement
   définies dans la spécification bloquent.
+- Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
+  geste à faire. Il lui parvient par le corps de la pull request.
+- `tokensUsed` se dérive du contrat terminé ; le relever pendant l’extraction y
+  ferait entrer des tokens lus pour décider puis écartés.
 - Un changement de forme du JSON incrémente `contractVersion` et met à jour la
   spécification et les consommateurs.
 

@@ -57,7 +57,7 @@ test('buildRules garde la première @prop d’une valeur et signale le doublon',
   // designer de trancher, jamais à l'export d'écraser en silence.
   assert.deepEqual(propDescriptions, { variant: { contained: 'Première description' } });
   assert.deepEqual(warnings, [
-    'Règle @prop « variant.contained » dupliquée : seule la première est retenue.',
+    'Règle @prop « variant.contained » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.',
   ]);
 });
 
@@ -84,8 +84,8 @@ test('buildRules garde la première @boolean et signale cible absente et doublon
 
   assert.deepEqual(booleanDescriptions, { iconLeft: 'Première description' });
   assert.deepEqual(warnings, [
-    'Règle @boolean « iconLeft » dupliquée : seule la première est retenue.',
-    'Règle @boolean : le calque « prop » doit contenir un nom de prop.',
+    'Règle @boolean « iconLeft » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.',
+    'Règle @boolean : le calque « prop » est vide. Écrivez-y le nom de la propriété booléenne du composant, par exemple « icon-left ».',
   ]);
 });
 
@@ -130,7 +130,7 @@ test('buildRules avertit quand une règle @icons n a pas de politique visible', 
 
   assert.deepEqual(result.iconRules, []);
   assert.deepEqual(result.warnings, [
-    'Règle @icons « fa-warning » : rendez visible exactement un calque « modifiable » ou « strict ».',
+    'Règle @icons « fa-warning » : aucune politique n’est choisie. Rendez visible exactement un des deux calques « modifiable » ou « strict ».',
   ]);
 });
 

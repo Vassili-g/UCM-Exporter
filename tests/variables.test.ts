@@ -101,7 +101,7 @@ test('le résolveur ne produit jamais un alias vers la variable écartée d’un
       null,
     );
     assert.equal(figmaStub.appels(), 0);
-    assert.match(warnings[0], /à la fois une feuille et un groupe/);
+    assert.match(warnings[0], /à la fois une valeur et un groupe de tokens/);
   } finally {
     figmaStub.restaurer();
   }
@@ -127,7 +127,7 @@ test('le résolveur refuse d’écrire une référence pour une variable ambigu�
     // le calque avec la valeur de sa rivale.
     assert.equal(surLaPerdante, null);
     assert.equal(warnings.length, 1);
-    assert.match(warnings[0], /« foo-bar » : même nom normalisé que « Foo Bar »/);
+    assert.match(warnings[0], /« foo-bar » : une fois normalisé, son nom est identique à celui de « Foo Bar »/);
   } finally {
     figmaStub.restaurer();
   }
@@ -189,18 +189,18 @@ test('le résolveur signale une variable liée introuvable une seule fois avec s
     const missing = { type: 'VARIABLE_ALIAS', id: 'VariableID:deleted' } as VariableAlias;
 
     const resolved = await Promise.all([
-      resolver.resolve(missing, { nodeName: 'Ancien fond', field: 'fills' }),
+      resolver.resolve(missing, { nodeName: 'Ancien fond', field: 'remplissage' }),
       resolver.resolve(missing, { nodeName: 'Autre calque', field: 'strokes' }),
-      resolver.resolve(missing, { nodeName: 'Troisième calque', field: 'fills' }),
+      resolver.resolve(missing, { nodeName: 'Troisième calque', field: 'remplissage' }),
     ]);
 
     assert.deepEqual(resolved, [null, null, null]);
     assert.equal(figmaStub.appels(), 1);
     assert.equal(warnings.length, 1);
-    assert.match(warnings[0], /VariableID:deleted/);
+    assert.match(warnings[0], /Variable introuvable/);
     assert.match(warnings[0], /Ancien fond/);
-    assert.match(warnings[0], /fills/);
-    assert.match(warnings[0], /Réassignez cette liaison dans Figma/);
+    assert.match(warnings[0], /remplissage/);
+    assert.match(warnings[0], /Reliez de nouveau une variable existante/);
   } finally {
     figmaStub.restaurer();
   }
@@ -216,12 +216,12 @@ test('le résolveur ne fabrique pas un chemin sans collection pour une variable 
 
     const resolved = await resolver.resolve(
       { type: 'VARIABLE_ALIAS', id: 'remote' } as VariableAlias,
-      { nodeName: 'Fond', field: 'fills' },
+      { nodeName: 'Fond', field: 'remplissage' },
     );
 
     assert.equal(resolved, null);
     assert.equal(warnings.length, 1);
-    assert.match(warnings[0], /collection-missing/);
+    assert.match(warnings[0], /sa collection est introuvable/);
     assert.match(warnings[0], /Primary\/default/);
   } finally {
     figmaStub.restaurer();

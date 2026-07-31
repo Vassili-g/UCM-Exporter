@@ -24,6 +24,11 @@ sur plusieurs formes de composants, dont au moins un composant composé.
 
 ## État actuel
 
+Ce tableau décrit **`main` des deux repositories**. Une branche en cours peut
+donc y être rouge sans le contredire : c’est le cas de la ligne « Tokens du code
+vérifiés contre leur contrat » ci-dessous, dont le contrôle n’est pas encore
+fusionné et détecte à dessein les deux fragilités connues.
+
 | Domaine | État |
 |---|---|
 | Export des contrats 4.2 | Opérationnel |

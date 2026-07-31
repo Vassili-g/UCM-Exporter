@@ -148,8 +148,8 @@ export async function extractRules(
   const warnings: string[] = [];
   if (containers.length > 1) {
     warnings.push(
-      `${containers.length} conteneurs « ${sectionName} » sur la page : seul le premier est lu. ` +
-        `Fusionnez-les dans Figma pour ne perdre aucune règle.`,
+      `${containers.length} cadres « ${sectionName} » sur la page : seul le premier est lu, ` +
+        `les règles des autres sont perdues. Regroupez-les dans un seul cadre.`,
     );
   }
 
@@ -162,7 +162,9 @@ export async function extractRules(
       .find((value): value is RuleTag => value !== null);
     if (!tag) {
       warnings.push(
-        'Instance de règle sans variante @usage/@prop/@boolean/@do/@dont/@pairs/@icons (ignorée).',
+        `Une règle du cadre « ${sectionName} » n’a pas de variante reconnue ` +
+          `(@usage, @do, @dont, @pairs, @prop, @boolean, @icons) : elle est ignorée. ` +
+          `Choisissez sa variante dans Figma.`,
       );
       continue;
     }
@@ -181,7 +183,10 @@ export async function extractRules(
   }
 
   if (entries.length === 0) {
-    warnings.push(`Conteneur « ${sectionName} » vide : aucune règle ComponentConfiguration lisible.`);
+    warnings.push(
+      `Cadre « ${sectionName} » : il ne contient aucune instance de « ComponentConfiguration » ` +
+        `lisible. Ajoutez-y au moins une règle, puis réexportez.`,
+    );
   }
 
   const built = buildRules(entries);

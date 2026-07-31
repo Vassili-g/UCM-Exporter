@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractStructure } from '../src/contract/extractStructure';
+import { collectTokenReferences } from '../src/variables';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
@@ -18,7 +19,7 @@ const findAllOn = (enfants: unknown[]) => (predicat: (node: never) => boolean) =
   enfants.filter(predicat as (node: unknown) => boolean);
 
 test('extractStructure survit à un composant sans node de layout', async () => {
-  const { structure, tokensUsed, warnings } = await extractStructure(
+  const { structure, warnings } = await extractStructure(
     { axes: [], variants: [] },
     [],
     null,
@@ -30,8 +31,8 @@ test('extractStructure survit à un composant sans node de layout', async () => 
   assert.equal(structure.layout, 'flex-row');
   assert.deepEqual(structure.children, []);
   assert.deepEqual(structure.variantTokens, {});
-  assert.deepEqual(tokensUsed, []);
-  assert.ok(warnings.includes('Aucun node de layout trouvé ; structure de dimensions vide.'));
+  assert.deepEqual(Array.from(collectTokenReferences(structure)).sort(), []);
+  assert.ok(warnings.some((w) => w.includes('Aucun cadre de mise en page trouvé')));
 });
 
 test('extractStructure ne recopie pas la couleur du label hors de variantTokens', async () => {
@@ -52,7 +53,7 @@ test('extractStructure ne recopie pas la couleur du label hors de variantTokens'
     findAll: findAllOn([texte]),
   } as unknown as ComponentNode;
 
-  const { structure, tokensUsed } = await extractStructure(
+  const { structure } = await extractStructure(
     { axes: ['color'], variants: [{ values: { color: 'primary' }, component: reference }] },
     [],
     null,
@@ -77,7 +78,7 @@ test('extractStructure ne recopie pas la couleur du label hors de variantTokens'
       foreground: '{components.button.colors.primary.contained.default.foreground}',
     },
   });
-  assert.deepEqual(tokensUsed, [
+  assert.deepEqual(Array.from(collectTokenReferences(structure)).sort(), [
     '{components.button.colors.primary.contained.default.background}',
     '{components.button.colors.primary.contained.default.foreground}',
     '{components.button.sizes.medium.font-size}',
@@ -105,19 +106,19 @@ test('extractStructure remonte les warnings de rôle non rendable', async () => 
     resolverFor({ bg: 'components.button.colors.primary.default.bg' }),
   );
 
-  assert.ok(warnings.some((w) => w.startsWith('Rôle « bg » inconnu de rendering.roles')));
+  assert.ok(warnings.some((w) => w.includes('son dernier segment « bg » n’indique pas')));
 });
 
 test('extractStructure conserve les warnings de la matrice de variantes', async () => {
   const { warnings } = await extractStructure(
     { axes: [], variants: [] },
-    ['Aucun variant trouvé sur le Component Set sélectionné.'],
+    ['Le jeu de composants sélectionné ne contient aucune variante.'],
     null,
     null,
     resolverFor({}),
   );
 
-  assert.ok(warnings.includes('Aucun variant trouvé sur le Component Set sélectionné.'));
+  assert.ok(warnings.includes('Le jeu de composants sélectionné ne contient aucune variante.'));
 });
 
 test('extractStructure n’ajoute pas de bloc sizes quand aucun axe n’est un axe de tailles', async () => {
