@@ -82,8 +82,9 @@ export function extractContractPropertyModel(
     const owner = owners.get(key);
     if (owner !== undefined) {
       warnings.push(
-        `Propriétés « ${owner} » et « ${figmaName} » : leurs noms deviennent identiques une ` +
-          `fois normalisés (« ${key} »). Seule « ${owner} » est exportée. Renommez l’une des deux.`,
+        `Component properties « ${owner} » et « ${figmaName} » : leurs noms deviennent ` +
+          `identiques une fois normalisés (« ${key} »). Seule « ${owner} » est exportée. ` +
+          `Renommez l’une des deux.`,
       );
       return false;
     }
@@ -117,9 +118,9 @@ export function extractContractPropertyModel(
       const taken = Boolean(semantic) && semantic !== key && rawKeys.has(semantic as string);
       if (taken) {
         warnings.push(
-          `Propriété « ${rawFigmaName} » : ses valeurs sont des tailles, mais une autre ` +
-            `propriété porte déjà le nom « ${semantic} ». Elle reste exportée sous « ${key} ». ` +
-            `Renommez l'une des deux si vous voulez « ${semantic} ».`,
+          `Variant property « ${rawFigmaName} » : ses valeurs sont des tailles, mais une ` +
+            `autre component property porte déjà le nom « ${semantic} ». Elle reste exportée ` +
+            `sous « ${key} ». Renommez l'une des deux si vous voulez « ${semantic} ».`,
         );
       }
       const publicKey = semantic && !taken ? semantic : key;

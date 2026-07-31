@@ -109,7 +109,7 @@ test('les couleurs d’une variante écartée pour conflit n’entrent pas dans 
   );
 
   // Deux variantes se normalisent pareil : la seconde est écartée, et signalée.
-  assert.ok(warnings.some((warning) => warning.includes('Variantes « primary »')));
+  assert.ok(warnings.some((warning) => warning.includes('Variants « primary »')));
 
   const references = collectTokenReferences(variantTokens);
   assert.equal(

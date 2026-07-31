@@ -49,28 +49,28 @@ async function extractDimensions(
     resolveField(
       layoutNode,
       BINDING_PATTERNS.gap,
-      `espacement (taille « ${sizeValue} »)`,
+      `gap (variant « ${sizeValue} »)`,
       resolver,
       warnings,
     ),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.paddingX,
-      `marges intérieures gauche et droite (taille « ${sizeValue} »)`,
+      `horizontal padding (variant « ${sizeValue} »)`,
       resolver,
       warnings,
     ),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.paddingY,
-      `marges intérieures haut et bas (taille « ${sizeValue} »)`,
+      `vertical padding (variant « ${sizeValue} »)`,
       resolver,
       warnings,
     ),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.radius,
-      `arrondi des angles (taille « ${sizeValue} »)`,
+      `corner radius (variant « ${sizeValue} »)`,
       resolver,
       warnings,
     ),
@@ -78,7 +78,7 @@ async function extractDimensions(
       ? resolveField(
         textNode,
         BINDING_PATTERNS.fontSize,
-        `taille du texte (taille « ${sizeValue} »)`,
+        `font size (variant « ${sizeValue} »)`,
         resolver,
         warnings,
       )

@@ -56,7 +56,7 @@ test('getSlotTokens avertit quand la largeur du stroke est une valeur brute', as
 
   assert.equal(tokens.strokes.ring?.width, null);
   assert.deepEqual(warnings, [
-    `Calque « Button ring » — épaisseur du contour : aucune variable Figma n'est reliée. La valeur fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
+    `Layer « Button ring » — stroke weight : aucune variable Figma n'est reliée. La valeur fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
   ]);
 });
 
@@ -83,7 +83,7 @@ test('getSlotTokens refuse une largeur de stroke partiellement liée', async () 
   const tokens = await getSlotTokens(node, resolver, warnings);
 
   assert.equal(tokens.strokes.ring?.width, null);
-  assert.ok(warnings.some((warning) => warning.includes('contour droit')));
+  assert.ok(warnings.some((warning) => warning.includes('right stroke weight')));
   assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
 });
 
@@ -188,7 +188,7 @@ test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (pr
   assert.deepEqual(trees.variantTokens, {
     focus: { background: '{components.button.colors.a.background}' },
   });
-  assert.ok(warnings.some((warning) => warning.includes('Variantes « focus »')));
+  assert.ok(warnings.some((warning) => warning.includes('Variants « focus »')));
 });
 
 test('extractVariantTokens suit l’ordre de la matrice, pas l’ordre de résolution', async () => {
@@ -228,9 +228,9 @@ test('extractVariantTokens suit l’ordre de la matrice, pas l’ordre de résol
   assert.deepEqual(Object.keys(trees.variantStrokes), ['default', 'hover', 'focus']);
   // Les avertissements aussi entrent dans le contrat : leur ordre suit la matrice.
   assert.deepEqual(warnings, [
-    'Variante « State=Default » : aucun remplissage ni contour n’est relié à une variable. Aucune couleur n’est exportée pour elle.',
-    'Variante « State=Hover » : aucun remplissage ni contour n’est relié à une variable. Aucune couleur n’est exportée pour elle.',
-    'Variante « State=Focus » : aucun remplissage ni contour n’est relié à une variable. Aucune couleur n’est exportée pour elle.',
+    'Variant « State=Default » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui.',
+    'Variant « State=Hover » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui.',
+    'Variant « State=Focus » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui.',
   ]);
 });
 

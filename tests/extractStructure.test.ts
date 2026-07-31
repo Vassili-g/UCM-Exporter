@@ -32,7 +32,7 @@ test('extractStructure survit à un composant sans node de layout', async () => 
   assert.deepEqual(structure.children, []);
   assert.deepEqual(structure.variantTokens, {});
   assert.deepEqual(Array.from(collectTokenReferences(structure)).sort(), []);
-  assert.ok(warnings.some((w) => w.includes('Aucun cadre de mise en page trouvé')));
+  assert.ok(warnings.some((w) => w.includes('Aucun auto layout frame trouvé')));
 });
 
 test('extractStructure ne recopie pas la couleur du label hors de variantTokens', async () => {
@@ -112,13 +112,13 @@ test('extractStructure remonte les warnings de rôle non rendable', async () => 
 test('extractStructure conserve les warnings de la matrice de variantes', async () => {
   const { warnings } = await extractStructure(
     { axes: [], variants: [] },
-    ['Le jeu de composants sélectionné ne contient aucune variante.'],
+    ['Le component set sélectionné ne contient aucun variant.'],
     null,
     null,
     resolverFor({}),
   );
 
-  assert.ok(warnings.includes('Le jeu de composants sélectionné ne contient aucune variante.'));
+  assert.ok(warnings.includes('Le component set sélectionné ne contient aucun variant.'));
 });
 
 test('extractStructure n’ajoute pas de bloc sizes quand aucun axe n’est un axe de tailles', async () => {

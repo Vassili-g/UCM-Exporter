@@ -120,7 +120,7 @@ export async function extractIconLayers(
       // référence n'a aucun slot où la lire. Le résolveur met ses résolutions
       // en cache, et les avertissements identiques se dédupliquent à l'export.
       summary.sizes.add(
-        await resolveField(node, BINDING_PATTERNS.slotSize, 'taille', resolver, warnings),
+        await resolveField(node, BINDING_PATTERNS.slotSize, 'width et height', resolver, warnings),
       );
     }
 

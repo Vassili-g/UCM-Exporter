@@ -33,31 +33,34 @@ export const BINDING_PATTERNS = {
 } as const satisfies Record<string, FieldAlternatives>;
 
 /**
- * Nom lisible de chaque propriété Figma citée dans un avertissement. Sans
- * cette table, un message destiné au designer nommerait des champs de l'API
- * (`paddingLeft`, `strokeTopWeight`) qu'aucun panneau Figma n'affiche.
+ * Libellé Figma de chaque propriété citée dans un avertissement.
+ *
+ * Ce sont les intitulés que Figma affiche, repris tels quels : un designer doit
+ * pouvoir chercher dans son écran le mot que le message emploie. Les champs de
+ * l'API qui n'apparaissent nulle part dans le panneau (`paddingLeft`,
+ * `strokeTopWeight`) sont rendus par ce que ce panneau montre à leur place.
  */
 const FIELD_LABELS: Record<string, string> = {
-  itemSpacing: 'espacement',
-  paddingLeft: 'marge gauche',
-  paddingRight: 'marge droite',
-  paddingTop: 'marge haute',
-  paddingBottom: 'marge basse',
-  cornerRadius: 'arrondi',
-  topLeftRadius: 'angle haut gauche',
-  topRightRadius: 'angle haut droit',
-  bottomLeftRadius: 'angle bas gauche',
-  bottomRightRadius: 'angle bas droit',
-  width: 'largeur',
-  height: 'hauteur',
-  strokeWeight: 'épaisseur du contour',
-  strokeTopWeight: 'contour haut',
-  strokeRightWeight: 'contour droit',
-  strokeBottomWeight: 'contour bas',
-  strokeLeftWeight: 'contour gauche',
-  fontSize: 'taille du texte',
-  fills: 'remplissage',
-  strokes: 'contour',
+  itemSpacing: 'gap',
+  paddingLeft: 'left padding',
+  paddingRight: 'right padding',
+  paddingTop: 'top padding',
+  paddingBottom: 'bottom padding',
+  cornerRadius: 'corner radius',
+  topLeftRadius: 'top left corner radius',
+  topRightRadius: 'top right corner radius',
+  bottomLeftRadius: 'bottom left corner radius',
+  bottomRightRadius: 'bottom right corner radius',
+  width: 'width',
+  height: 'height',
+  strokeWeight: 'stroke weight',
+  strokeTopWeight: 'top stroke weight',
+  strokeRightWeight: 'right stroke weight',
+  strokeBottomWeight: 'bottom stroke weight',
+  strokeLeftWeight: 'left stroke weight',
+  fontSize: 'font size',
+  fills: 'fill',
+  strokes: 'stroke',
 };
 
 /** Nom lisible d'une propriété Figma, ou le champ brut s'il n'en a pas. */
@@ -136,7 +139,7 @@ export async function resolveTokenName(
     const asymmetric = tokensByAlternative.find((tokens) => tokens.length > 1);
     if (asymmetric) {
       warnings.push(
-        `Calque « ${node.name} » — ${label} : les côtés ne sont pas reliés à la même ` +
+        `Layer « ${node.name} » — ${label} : les côtés ne sont pas reliés à la même ` +
           `variable (${asymmetric.join(', ')}). Rien n'est exporté pour cette valeur. ` +
           `Reliez-les toutes à la même variable, puis réexportez.`,
       );
@@ -146,7 +149,7 @@ export async function resolveTokenName(
     const candidates = Array.from(new Set(tokensByAlternative.flat()));
     if (candidates.length > 1) {
       warnings.push(
-        `Calque « ${node.name} » — ${label} : deux réglages Figma se contredisent ` +
+        `Layer « ${node.name} » — ${label} : deux réglages Figma se contredisent ` +
           `(${candidates.join(', ')}). Rien n'est exporté pour cette valeur. Ne définissez ` +
           `cette valeur que d'une seule façon, puis réexportez.`,
       );
@@ -158,7 +161,7 @@ export async function resolveTokenName(
   const withBindings = resolved.filter((entry) => entry.aliases.some(Boolean));
   if (withBindings.length === 0) {
     warnings.push(
-      `Calque « ${node.name} » — ${label} : aucune variable Figma n'est reliée. La valeur ` +
+      `Layer « ${node.name} » — ${label} : aucune variable Figma n'est reliée. La valeur ` +
         `fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
     );
     return null;
@@ -184,7 +187,7 @@ export async function resolveTokenName(
   ].filter((detail): detail is string => Boolean(detail));
 
   warnings.push(
-    `Calque « ${node.name} » — ${label} : la définition est incomplète ` +
+    `Layer « ${node.name} » — ${label} : la définition est incomplète ` +
       `(${details.join(' ; ')}). Rien n'est exporté pour cette valeur. Reliez les ` +
       `variables manquantes, puis réexportez.`,
   );

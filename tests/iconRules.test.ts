@@ -110,7 +110,7 @@ test('mergeIconRules avertit au lieu de deviner un calque graphique', () => {
 
   assert.deepEqual(icons, {});
   assert.deepEqual(warnings, [
-    'Règle @icons « arrow-right-long » : aucun calque de ce nom dans le composant. Vérifiez l’orthographe dans le calque « icon » de la règle.',
+    'Règle @icons « arrow-right-long » : aucun layer de ce nom dans le composant. Vérifiez l’orthographe dans le layer « icon » de la règle.',
   ]);
 });
 
@@ -128,7 +128,7 @@ test('mergeIconRules avertit lorsqu une icône modifiable n est liée à aucun b
     arrowLeftLong: { policy: 'modifiable', figmaName: 'arrow-left-long', slot: 'icon' },
   });
   assert.deepEqual(warnings, [
-    'Icône « arrow-left-long » déclarée modifiable : aucune propriété booléenne n’est reliée à sa visibilité, le développeur ne pourra donc pas la remplacer. Reliez « Visible » à une propriété booléenne du composant.',
+    'Icône « arrow-left-long » déclarée modifiable : aucune boolean property n’est reliée à sa visibilité, le développeur ne pourra donc pas la remplacer. Reliez « Visible » à une boolean property du composant.',
   ]);
 });
 
@@ -167,7 +167,7 @@ test('mergeIconRules n’invente aucun slot quand le slot change entre variants'
 
   assert.equal(icons.statusIcon.slot, undefined);
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /pas la même place selon les variantes \(icon, icon-2\)/);
+  assert.match(warnings[0], /pas la même place selon les variants \(icon, icon-2\)/);
 });
 
 test('mergeIconRules publie la taille de l’icône et refuse une taille instable', () => {
@@ -190,7 +190,7 @@ test('mergeIconRules publie la taille de l’icône et refuse une taille instabl
   );
   assert.equal(divergentes.circleCheck.size, undefined);
   assert.equal(instable.length, 1);
-  assert.match(instable[0], /sa taille change selon les variantes/);
+  assert.match(instable[0], /sa taille change selon les variants/);
 });
 
 test('extractIconLayers trouve une icône présente uniquement hors du variant de référence', async () => {
@@ -321,8 +321,8 @@ test('mergeIconRules refuse une visibilité incohérente entre variants', () => 
     statusIcon: { policy: 'modifiable', figmaName: 'status-icon', slot: 'icon' },
   });
   assert.equal(warnings.length, 2);
-  assert.match(warnings[0], /sa visibilité dépend d’une propriété différente/);
-  assert.match(warnings[1], /Reliez « Visible » à une propriété booléenne/);
+  assert.match(warnings[0], /sa visibilité dépend d’une component property/);
+  assert.match(warnings[1], /Reliez « Visible » à une boolean property/);
 });
 
 test('mergeIconRules refuse une taille absente d’une partie de la matrice', () => {
@@ -340,6 +340,6 @@ test('mergeIconRules refuse une taille absente d’une partie de la matrice', ()
   // et une icône sans taille n'est pas rendable.
   assert.equal(icons.circleCheck.size, undefined);
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /sa taille change selon les variantes/);
+  assert.match(warnings[0], /sa taille change selon les variants/);
   assert.match(warnings[0], /aucune/);
 });

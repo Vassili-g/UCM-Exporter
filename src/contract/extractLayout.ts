@@ -87,10 +87,10 @@ async function extractTypography(
 
   // Le libellé est celui que le designer lit dans Figma, pas le nom du champ.
   const fields: Array<[keyof TypographyTokens, string, string[]]> = [
-    ['fontSize', 'la taille du texte', ['fontSize']],
-    ['fontWeight', 'la graisse', ['fontWeight', 'fontStyle']],
-    ['lineHeight', 'l’interligne', ['lineHeight']],
-    ['fontFamily', 'la police', ['fontFamily']],
+    ['fontSize', 'font size', ['fontSize']],
+    ['fontWeight', 'font weight', ['fontWeight', 'fontStyle']],
+    ['lineHeight', 'line height', ['lineHeight']],
+    ['fontFamily', 'font family', ['fontFamily']],
   ];
   const typography: TypographyTokens = {};
 
@@ -109,9 +109,9 @@ async function extractTypography(
       typography[contractField] = toRef(token);
     } else {
       warnings.push(
-        `Calque « ${textNode.name} » : ${label} n'est reliée à aucune variable. La valeur ` +
-          `fixe n'est pas exportée. Reliez-la à une variable, ou appliquez un style de ` +
-          `texte au calque, puis réexportez.`,
+        `Layer « ${textNode.name} » — ${label} : aucune variable Figma n'est reliée. La ` +
+          `valeur fixe n'est pas exportée. Reliez-la à une variable, ou appliquez un text ` +
+          `style au layer, puis réexportez.`,
       );
     }
   }
@@ -140,9 +140,9 @@ async function extractChild(
   const composedDependency = dependencies.length === 1 ? dependencies[0] : undefined;
   if (dependencies.length > 1) {
     warnings.push(
-      `Calque « ${child.name} » : il contient ${dependencies.length} composants qui ont ` +
+      `Layer « ${child.name} » : il contient ${dependencies.length} composants qui ont ` +
         `leur propre contrat (${dependencies.map((dependency) => dependency.component).join(', ')}). ` +
-        `Le contrat n'en déclare qu'un par emplacement. Placez-les dans des calques distincts.`,
+        `Le contrat n'en déclare qu'un par emplacement. Placez-les dans des layers distincts.`,
     );
   }
   const textNode = composedDependency ? null : firstTextNode(child, warnings, composed);
@@ -164,9 +164,10 @@ async function extractChild(
     && normalizePropKey(directVisibility) !== dependencyVisibility
   ) {
     warnings.push(
-      `Calque « ${child.name} » : sa visibilité et celle du composant ` +
-        `« ${composedDependency.component} » qu'il contient dépendent de deux propriétés ` +
-        `différentes. Seule celle du calque est exportée. Utilisez la même pour les deux.`,
+      `Layer « ${child.name} » : sa visibilité et celle du composant ` +
+        `« ${composedDependency.component} » qu'il contient dépendent de deux component ` +
+        `properties différentes. Seule celle du layer est exportée. Utilisez la même pour ` +
+        `les deux.`,
     );
   }
   // Le slot déjà masquable ne peut pas voir une visibilité plus profonde
@@ -205,7 +206,7 @@ async function extractChild(
     const size = await resolveField(
       child,
       BINDING_PATTERNS.slotSize,
-      'taille',
+      'width et height',
       resolver,
       warnings,
     );
@@ -232,25 +233,25 @@ export async function extractLayout(
 ): Promise<LayoutStructure> {
   const layoutNode = findLayoutNode(root, warnings, composed);
   const [gap, paddingX, paddingY, radius] = await Promise.all([
-    resolveField(layoutNode, BINDING_PATTERNS.gap, 'espacement', resolver, warnings),
+    resolveField(layoutNode, BINDING_PATTERNS.gap, 'gap', resolver, warnings),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.paddingX,
-      'marges intérieures gauche et droite',
+      'horizontal padding',
       resolver,
       warnings,
     ),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.paddingY,
-      'marges intérieures haut et bas',
+      'vertical padding',
       resolver,
       warnings,
     ),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.radius,
-      'arrondi des angles',
+      'corner radius',
       resolver,
       warnings,
     ),

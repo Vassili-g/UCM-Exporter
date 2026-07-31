@@ -85,7 +85,7 @@ test('buildRules garde la première @boolean et signale cible absente et doublon
   assert.deepEqual(booleanDescriptions, { iconLeft: 'Première description' });
   assert.deepEqual(warnings, [
     'Règle @boolean « iconLeft » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.',
-    'Règle @boolean : le calque « prop » est vide. Écrivez-y le nom de la propriété booléenne du composant, par exemple « icon-left ».',
+    'Règle @boolean : le layer « prop » est vide. Écrivez-y le nom de la boolean property du composant, par exemple « icon-left ».',
   ]);
 });
 
@@ -130,7 +130,7 @@ test('buildRules avertit quand une règle @icons n a pas de politique visible', 
 
   assert.deepEqual(result.iconRules, []);
   assert.deepEqual(result.warnings, [
-    'Règle @icons « fa-warning » : aucune politique n’est choisie. Rendez visible exactement un des deux calques « modifiable » ou « strict ».',
+    'Règle @icons « fa-warning » : aucune politique n’est choisie. Rendez visible exactement un des deux layers « modifiable » ou « strict ».',
   ]);
 });
 

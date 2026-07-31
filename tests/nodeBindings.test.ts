@@ -36,7 +36,7 @@ test('un groupe conjonctif incomplet n’affirme pas une valeur symétrique', as
   );
 
   assert.equal(result, null);
-  assert.ok(warnings.some((warning) => warning.includes('marge droite')));
+  assert.ok(warnings.some((warning) => warning.includes('right padding')));
   assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
 });
 
@@ -153,5 +153,5 @@ test('les représentations du rayon sont alternatives mais chacune reste complè
     ),
     null,
   );
-  assert.ok(warnings.some((warning) => warning.includes('angle bas droit')));
+  assert.ok(warnings.some((warning) => warning.includes('bottom right corner radius')));
 });

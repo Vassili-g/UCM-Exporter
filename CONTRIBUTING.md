@@ -37,22 +37,27 @@ Chacun répond à trois questions, dans cet ordre :
 | **Quoi** | Ce qui n’a pas pu être exporté, donc ce qui manquera au développeur |
 | **Comment** | Le geste à faire dans Figma |
 
-Les noms techniques sont traduits à la source, jamais par une couche de
-remplacement :
+Un message emploie **les intitulés que Figma affiche**, repris tels quels : le
+designer doit pouvoir chercher dans son écran le mot que le message emploie.
+La phrase reste en français ; seul le nom de l’élément Figma est repris à
+l’identique. Ne traduisez jamais un libellé de panneau — `padding` ne devient
+pas « marges intérieures ».
 
 | Terme du code | Terme employé | | Terme du code | Terme employé |
 |---|---|---|---|---|
-| `node de layout` | cadre d’auto-layout | | `itemSpacing` | espacement |
-| `sous-arbre` | le calque et son contenu | | `padding*` | marges intérieures |
-| `matrice` | les variantes | | `cornerRadius` | arrondi des angles |
-| `slot` | l’emplacement, le calque | | `strokeWeight` | épaisseur du contour |
-| `componentPropertyDefinition` | propriété de composant | | `fills` | remplissage |
-| `prop enum` | propriété de type variante | | `strokes` | contour |
-| `prop BOOLEAN` | propriété booléenne | | `feuille` / `groupe` | token / groupe de tokens |
-| `Component Set` | jeu de composants | | `alias` | variable qui en référence une autre |
+| `node de layout` | auto layout frame | | `itemSpacing` | gap |
+| `sous-arbre` | le layer et son contenu | | `padding*` | left / right / top / bottom padding |
+| `matrice` | les variants | | `cornerRadius` | corner radius |
+| `slot`, `calque` | layer | | `strokeWeight` | stroke weight |
+| `componentPropertyDefinition` | component property | | `fills` | fill |
+| `prop enum` | variant property | | `strokes` | stroke |
+| `prop BOOLEAN` | boolean property | | `fontSize`, `lineHeight` | font size, line height |
+| `Component Set` | component set | | `feuille` / `groupe` | token / groupe de tokens |
 
 `fieldLabel()` dans `src/contract/nodeBindings.ts` tient cette table pour les
-propriétés Figma citées dans un message.
+propriétés Figma citées dans un message ; les libellés passés à `resolveField()`
+suivent la même règle. Aucune couche de remplacement : la traduction se fait à
+la source.
 
 ## Robustesse
 

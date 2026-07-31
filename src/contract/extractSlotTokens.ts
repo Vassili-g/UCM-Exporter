@@ -26,7 +26,7 @@ function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment |
   if (raw === 'INSIDE') return 'inside';
   if (raw === 'CENTER') return 'center';
   if (raw === 'OUTSIDE') return 'outside';
-  warnings.push(`Calque « ${node.name} » : l’alignement du contour est illisible. Le contrat ne dira pas s’il est intérieur, centré ou extérieur.`);
+  warnings.push(`Layer « ${node.name} » : l’alignement du stroke est illisible. Le contrat ne dira pas s’il est inside, center ou outside.`);
   return null;
 }
 
@@ -39,7 +39,7 @@ async function strokeWidth(
   return resolveTokenName(
     node,
     BINDING_PATTERNS.strokeWidth,
-    'épaisseur du contour',
+    'stroke weight',
     resolver,
     warnings,
   );
@@ -57,8 +57,8 @@ function setPaintToken(
   if (!existing) paints[role] = token;
   else if (existing !== token) {
     warnings.push(
-      `Calque « ${node.name} » : deux remplissages visent le même rôle « ${role} ». Seul ` +
-        `${existing} est exporté, ${token} est ignoré. Ne gardez qu'un remplissage par rôle.`,
+      `Layer « ${node.name} » : deux fills visent le même rôle « ${role} ». Seul ` +
+        `${existing} est exporté, ${token} est ignoré. Ne gardez qu'un fill par rôle.`,
     );
   }
 }
@@ -78,8 +78,8 @@ function setStrokeToken(
   }
   if (existing.color !== value.color || existing.width !== value.width || existing.align !== value.align) {
     warnings.push(
-      `Calque « ${node.name} » : deux contours visent le même rôle « ${role} ». Seul ` +
-        `${existing.color} est exporté, ${value.color} est ignoré. Ne gardez qu'un contour par rôle.`,
+      `Layer « ${node.name} » : deux strokes visent le même rôle « ${role} ». Seul ` +
+        `${existing.color} est exporté, ${value.color} est ignoré. Ne gardez qu'un stroke par rôle.`,
     );
   }
 }

@@ -121,9 +121,9 @@ export function getAllNodes(
     if (!hasBindings) continue;
     pushOnce(
       warnings,
-      `Calque « ${hidden.name} » : masqué dans Figma, il est exclu de l'export avec tout ` +
+      `Layer « ${hidden.name} » : masqué dans Figma, il est exclu de l'export avec tout ` +
         `son contenu et les variables qu'il porte. Si le composant doit pouvoir l'afficher, ` +
-        `reliez sa visibilité à une propriété booléenne ou à une variable.`,
+        `reliez sa visibilité à une boolean property ou à une variable.`,
     );
   }
 
