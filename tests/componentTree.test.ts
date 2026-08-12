@@ -122,6 +122,9 @@ test('findWrapperReference ne choisit jamais une instance statiquement masquée'
     type: 'INSTANCE',
     name,
     visible,
+    // Un wrapper qui porte gap et paddings est un auto-layout : sans ce mode,
+    // Figma n'applique pas ces valeurs et elles ne le désignent plus.
+    layoutMode: 'HORIZONTAL',
     boundVariables,
     componentProperties: {},
     findAll: () => [],

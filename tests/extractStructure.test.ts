@@ -269,3 +269,86 @@ test('extractStructure avertit quand les parties texte divergent entre variants'
       && warning.includes('Severity=Info'),
   ));
 });
+
+test('extractStructure avertit quand l’alignement Flex diverge entre variants', async () => {
+  const variant = (name: string, counterAxisAlignItems: string) => ({
+    type: 'COMPONENT',
+    id: name,
+    name,
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems,
+    boundVariables: {},
+    children: [],
+    findAll: findAllOn([]),
+  }) as unknown as ComponentNode;
+  const reference = variant('Severity=Info', 'CENTER');
+  const divergent = variant('Severity=Warning', 'MIN');
+
+  const { structure, warnings } = await extractStructure(
+    {
+      axes: ['severity'],
+      variants: [
+        { values: { severity: 'info' }, component: reference },
+        { values: { severity: 'warning' }, component: divergent },
+      ],
+    },
+    [],
+    null,
+    reference,
+    resolverFor({}),
+  );
+
+  assert.equal(structure.alignItems, 'center');
+  assert.ok(warnings.some(
+    (warning) => warning.includes('Auto layout différent')
+      && warning.includes('Severity=Warning')
+      && warning.includes('Severity=Info'),
+  ));
+});
+
+test('extractStructure avertit quand le remplissage d’un slot diverge entre variants', async () => {
+  const variant = (name: string, layoutGrow: number) => {
+    const label = {
+      type: 'TEXT',
+      id: `${name}-label`,
+      name: 'Message',
+      layoutGrow,
+      layoutAlign: 'INHERIT',
+      boundVariables: {},
+    };
+    return {
+      type: 'COMPONENT',
+      id: name,
+      name,
+      layoutMode: 'HORIZONTAL',
+      primaryAxisAlignItems: 'MIN',
+      counterAxisAlignItems: 'CENTER',
+      boundVariables: {},
+      children: [label],
+      findAll: findAllOn([label]),
+    } as unknown as ComponentNode;
+  };
+  const reference = variant('Severity=Info', 1);
+  const divergent = variant('Severity=Warning', 0);
+
+  const { structure, warnings } = await extractStructure(
+    {
+      axes: ['severity'],
+      variants: [
+        { values: { severity: 'info' }, component: reference },
+        { values: { severity: 'warning' }, component: divergent },
+      ],
+    },
+    [],
+    null,
+    reference,
+    resolverFor({}),
+  );
+
+  assert.equal(structure.children[0].flexGrow, 1);
+  assert.ok(warnings.some(
+    (warning) => warning.includes('Auto layout différent')
+      && warning.includes('Severity=Warning'),
+  ));
+});

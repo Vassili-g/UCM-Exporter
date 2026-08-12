@@ -9,7 +9,12 @@ import type { VariantMatrix, WrapperReference } from './componentTree';
 import type { ComposedInstances } from './exportableNodes';
 import { extractIconLayers } from './extractIconLayers';
 import type { IconLayerSummary } from './extractIconLayers';
-import { extractLayout, findLayoutNode, textStructureSignature } from './extractLayout';
+import {
+  extractLayout,
+  findLayoutNode,
+  flexLayoutSignature,
+  textStructureSignature,
+} from './extractLayout';
 import { extractSizeDimensions } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
 import { variantRoleWarnings } from './semantics';
@@ -97,6 +102,32 @@ export async function extractStructure(
           `référence « ${referenceLayout.component.name} ». L'ordre ou la disposition des autres ` +
           `variants ne sera pas représenté. Alignez leurs layers de texte dans Figma ; si la ` +
           `différence est intentionnelle, conservez-la et signalez cette limite du schéma.`,
+      );
+    }
+
+    const referenceFlexSignature = flexLayoutSignature(
+      referenceLayout.layoutNode,
+      targetedLayers,
+      composed,
+    );
+    const flexDivergentVariants = matrix.variants.filter(({ component }) => {
+      const layoutNode = component === referenceLayout.component
+        ? referenceLayout.layoutNode
+        : findLayoutNode(component, [], composed);
+      return flexLayoutSignature(layoutNode, targetedLayers, composed) !== referenceFlexSignature;
+    });
+    if (flexDivergentVariants.length > 0) {
+      const examples = flexDivergentVariants
+        .slice(0, 3)
+        .map(({ component }) => `« ${component.name} »`)
+        .join(', ');
+      const remaining = flexDivergentVariants.length - 3;
+      warnings.push(
+        `Auto layout différent sur ${flexDivergentVariants.length} variant(s), ex. ${examples}` +
+          `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
+          `référence « ${referenceLayout.component.name} ». Son alignement ou le remplissage ` +
+          `de ses layers ne représentera pas les autres variants. Alignez les auto layouts dans ` +
+          `Figma ; si la différence est intentionnelle, conservez-la et signalez cette limite du schéma.`,
       );
     }
   }

@@ -19,6 +19,11 @@ import {
 import { normalizePropKey } from './parsers';
 import { assignSlots } from './slotNames';
 import { composedSlotDependencies, nestedSlotVisibility } from './slotRelations';
+import {
+  flexContainerProperties,
+  flexItemProperties,
+  isLinearAutoLayout,
+} from './flexLayout';
 import type {
   ChildStructure,
   ContractStructure,
@@ -64,9 +69,10 @@ export function findLayoutNode(
 
 /** Sens d'un auto-layout Figma applicable, sans valeur inventée pour `NONE` ou `GRID`. */
 function autoLayoutDirection(node: SceneNode): 'flex-row' | 'flex-column' | null {
-  if (!('layoutMode' in node)) return null;
-  if (node.layoutMode === 'HORIZONTAL') return 'flex-row';
-  if (node.layoutMode === 'VERTICAL') return 'flex-column';
+  if (!isLinearAutoLayout(node)) return null;
+  const mode = (node as unknown as Record<string, unknown>).layoutMode;
+  if (mode === 'HORIZONTAL') return 'flex-row';
+  if (mode === 'VERTICAL') return 'flex-column';
   return null;
 }
 
@@ -209,7 +215,7 @@ async function extractTextChildren(
     .filter(({ child }) => branchIds.has(child.id));
   const children = (await Promise.all(
     assignments.map(({ child, slot }) =>
-      extractTextBranch(child, slot, resolver, warnings, composed, iconNames)),
+      extractTextBranch(node, child, slot, resolver, warnings, composed, iconNames)),
   )).filter((child): child is ChildStructure => Boolean(child));
 
   entry.children = children;
@@ -227,12 +233,14 @@ async function extractTextChildren(
   }
 
   entry.layout = direction;
+  Object.assign(entry, flexContainerProperties(node, warnings));
   const gap = await resolveField(node, BINDING_PATTERNS.gap, 'gap', resolver, warnings);
   if (gap) entry.gap = gap;
 }
 
 /** Une branche de l'arbre textuel 4.3, jusqu'au vrai calque `TEXT`. */
 async function extractTextBranch(
+  parent: SceneNode,
   node: SceneNode,
   slot: string,
   resolver: TokenResolver,
@@ -243,7 +251,7 @@ async function extractTextBranch(
   const texts = textNodes(node, warnings, composed);
   if (texts.length === 0) return null;
 
-  const entry: ChildStructure = { slot };
+  const entry: ChildStructure = { slot, ...flexItemProperties(parent, node, warnings) };
   if (slot !== node.name) entry.figmaLayer = node.name;
   const isOptional = applyDirectVisibility(entry, node);
 
@@ -296,6 +304,7 @@ async function extractChild(
   // Décidé par `slotNames.assignSlots` : le déduire ici en ferait une seconde
   // définition, libre de diverger de celle que les icônes citent.
   slot: string,
+  parent: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
   composed: ComposedInstances,
@@ -318,7 +327,7 @@ async function extractChild(
   // typographie et des visibilités internes : les parts, et non plus le slot.
   const describesParts = texts.length > 1;
 
-  const entry: ChildStructure = { slot };
+  const entry: ChildStructure = { slot, ...flexItemProperties(parent, child, warnings) };
   // Traçabilité : la couche sémantique et la déduplication renomment le slot,
   // le nom Figma d'origine ne doit pas disparaître pour autant.
   if (slot !== child.name) entry.figmaLayer = child.name;
@@ -413,7 +422,7 @@ async function extractChild(
 }
 
 /**
- * Signature déterministe de l'arbre textuel 4.3 d'un node de layout.
+ * Signature déterministe de l'arbre textuel 4.3 et de son flux Flex 4.4.
  *
  * Elle ne contient aucun token : elle sert uniquement à comparer la structure
  * des variants avant de publier celle du variant de référence.
@@ -423,7 +432,11 @@ export function textStructureSignature(
   iconNames: ReadonlySet<string> = new Set(),
   composed: ComposedInstances = new Map(),
 ): string {
-  const branchSignature = (node: SceneNode, slot: string): unknown | null => {
+  const branchSignature = (
+    parent: SceneNode,
+    node: SceneNode,
+    slot: string,
+  ): unknown | null => {
     const texts = textNodes(node, [], composed);
     if (texts.length === 0) return null;
 
@@ -433,28 +446,52 @@ export function textStructureSignature(
       visibilityProp: node.componentPropertyReferences?.visible
         ? normalizePropKey(node.componentPropertyReferences.visible)
         : null,
+      ...flexItemProperties(parent, node),
     };
     if (node.type === 'TEXT') return { ...common, type: 'text' };
 
     const branchIds = textBranchNodeIds(node, texts);
     const children = assignSlots(node, iconNames, [], composed)
       .filter(({ child }) => branchIds.has(child.id))
-      .map(({ child, slot: childSlot }) => branchSignature(child, childSlot))
+      .map(({ child, slot: childSlot }) => branchSignature(node, child, childSlot))
       .filter((child): child is NonNullable<typeof child> => Boolean(child));
     return {
       ...common,
       type: 'container',
       layout: autoLayoutDirection(node),
+      ...flexContainerProperties(node),
       children,
     };
   };
 
   const trees = assignSlots(layoutNode, iconNames, [], composed).flatMap(({ child, slot }) => {
     if (textNodes(child, [], composed).length < 2) return [];
-    const signature = branchSignature(child, slot);
+    const signature = branchSignature(layoutNode, child, slot);
     return signature ? [signature] : [];
   });
   return JSON.stringify(trees);
+}
+
+/**
+ * Signature du flux direct du composant, indépendamment des tokens.
+ *
+ * `structure.children` ne décrit qu'un variant de référence : tout écart de
+ * direction, d'alignement ou de remplissage sur un autre variant doit donc
+ * avertir plutôt que d'être transcrit comme s'il était universel.
+ */
+export function flexLayoutSignature(
+  layoutNode: SceneNode,
+  iconNames: ReadonlySet<string> = new Set(),
+  composed: ComposedInstances = new Map(),
+): string {
+  return JSON.stringify({
+    layout: autoLayoutDirection(layoutNode),
+    ...flexContainerProperties(layoutNode),
+    children: assignSlots(layoutNode, iconNames, [], composed).map(({ child, slot }) => ({
+      slot,
+      ...flexItemProperties(layoutNode, child),
+    })),
+  });
 }
 
 /**
@@ -500,11 +537,12 @@ export async function extractLayout(
 
   const children = await Promise.all(
     assignSlots(layoutNode, iconNames, warnings, composed).map(({ child, slot }) =>
-      extractChild(child, slot, resolver, warnings, composed, iconNames)),
+      extractChild(child, slot, layoutNode, resolver, warnings, composed, iconNames)),
   );
 
   return {
     layout: layoutDirection(layoutNode),
+    ...flexContainerProperties(layoutNode, warnings),
     gap,
     padding: { x: paddingX, y: paddingY },
     radius,

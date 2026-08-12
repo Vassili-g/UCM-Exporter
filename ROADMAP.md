@@ -31,7 +31,8 @@ fusionné et détecte à dessein les deux fragilités connues.
 
 | Domaine | État |
 |---|---|
-| Export des contrats 4.2 | Opérationnel |
+| Export des contrats 4.3 | Opérationnel |
+| Export Flex 4.4 | En validation : extraction, consommateur et tests prêts ; réexport Figma requis |
 | Export DTCG avec alias et modes | Opérationnel |
 | Téléchargement local et dépôt par PR GitHub | Opérationnel |
 | Validation des contrats, de la forme des props et des références de tokens | Opérationnelle |
@@ -52,8 +53,10 @@ fusionné et détecte à dessein les deux fragilités connues.
 | Multi-marque au runtime | Modes exportés, consommation non implémentée |
 
 Le projet est un **prototype avancé** dont l’outillage tient : la chaîne
-Figma → PR → CI → `main` fonctionne pour les contrats 4.2, et les deux
-repositories construisent et se testent.
+Figma → PR → CI → `main` fonctionne pour les contrats 4.3, et les deux
+repositories construisent et se testent. La 4.4 Flex reste à éprouver par un
+réexport Figma et une génération froide ; elle ne prétend pas encore couvrir
+grille, wrap ni positionnement absolu.
 
 Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
 **détection** et non comme **prévention** : rien n’empêche la fusion d’une pull
