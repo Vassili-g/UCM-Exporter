@@ -1,7 +1,7 @@
 # Plan — structure profonde et propriétés de mise en page
 
-**Statut : révisé le 12 août 2026 — finalisation 4.3 mise en œuvre, arbre
-général non engagé.** Ce document conserve la recherche et les formes invalidées
+**Statut : révisé le 12 août 2026 — 4.4 Flex mise en œuvre, arbre général non
+engagé.** Ce document conserve la recherche et les formes invalidées
 pour expliquer la décision. La seule séquence exécutable est celle du §10.
 
 Les principes vivent dans [CONCEPT.md](./CONCEPT.md), le comportement actuel
@@ -385,16 +385,16 @@ ont été mélangés dans la première révision de ce document :
 - **extension générale non justifiée** : reproduire toute la profondeur de
   Figma avec les propriétés de flex, de grille et de texte.
 
-La 4.3 doit être conservée et finalisée, sans rouvrir son choix de forme. La
-seconde reste une piste de recherche tant qu’un test froid n’en a pas établi le
-minimum nécessaire.
+La 4.3 reste acquise, sans rouvrir son choix de forme. Le test froid a depuis
+établi le minimum Flex nécessaire ; il est livré en 4.4 sans engager l'arbre
+général.
 
-### Livraison 1 — stabiliser le socle 4.3
+### Livraison 1 — stabiliser le socle 4.3 (terminée)
 
 La mise à jour des textes est la version 4.3 décidée. Il ne faut pas la ramener
 à 4.2, mais terminer sa livraison coordonnée :
 
-1. conserver `contractVersion: 4.3` dans l’exporteur et la borne maximale 4.3
+1. avoir livré `contractVersion: 4.3` dans l’exporteur et la borne maximale 4.3
    dans le consommateur ;
 2. garder provisoirement le corpus Figma 4.2 inchangé — il ne peut être rafraîchi que par un
    réexport utilisateur ;
@@ -463,11 +463,33 @@ nouvelle version qu’après ces adaptations.
 **Statut** : code, spécification, validateurs et tests adaptés. Aucun composant
 JSX/TSX, test de rendu ou contrat JSON du Playground n’est modifié : ces
 artefacts produits à froid restent la preuve de qualité des contrats. Le corpus
-Figma 4.2 attend son réexport humain en 4.3.
+Figma 4.2 attend son réexport humain dans le dernier schéma, désormais 4.4.
 
-### Livraison 3 — mesurer le layout manquant
+### Livraison 3 — fermer le minimum Flex révélé par le test froid
 
-**Non engagée.** Elle précède obligatoirement toute version 4.4.
+**Engagée et implémentée en 4.4.** La nouvelle génération froide d'Alert a
+établi une limite précise : le contrat 4.3 ne disait pas que son auto-layout
+aligne les enfants au centre sur l'axe secondaire. L'icône pouvait donc être
+placée en haut sans qu'aucune donnée du contrat ne le contredise. Le même test
+a montré que le remplissage horizontal du label ne peut pas être inventé.
+
+La 4.4 ajoute uniquement les données Figma nécessaires à ce flux :
+
+1. `justifyContent` et `alignItems` sur le node de layout linéaire ;
+2. `alignSelf` et `flexGrow: 1` sur les slots directs qui dérogent au flux
+   commun ou remplissent l'axe principal ;
+3. une comparaison de ces données sur toute la matrice de variants ;
+4. un warning pour un layer `Absolute`, dont les coordonnées restent hors de
+   la forme publique.
+
+Cette livraison ne transforme pas `children` en arbre général et ne couvre ni
+grille, ni wrap, ni coordonnées absolues. Aucun JSX/TSX ni contrat JSON froid
+n'est modifié : un prochain réexport Figma et une prochaine génération froide
+doivent démontrer que `alignItems: "center"` est maintenant cité par le contrat.
+
+### Livraison 4 — mesurer le layout restant
+
+**Non engagée.** Elle précède toute extension structurelle au-delà de la 4.4.
 
 Instrumenter le test froid sans changer le schéma. Pour chaque composant de
 validation, relever les décisions impossibles à prendre depuis le contrat et
@@ -489,7 +511,7 @@ les icônes et la comparaison de variants. `findLayoutNode` reste en place tant
 que ce point d’entrée n’a pas de remplaçant commun aux dimensions, tailles et
 icônes.
 
-### Livraison 4 — arbre général, seulement si le test froid le justifie
+### Livraison 5 — arbre général, seulement si le test froid le justifie
 
 Spécifier alors, dans un document séparé, le plus petit arbre qui ferme les
 limites mesurées. Exigences minimales :

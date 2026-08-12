@@ -113,6 +113,15 @@ export type TypographyTokens = Partial<{
   fontFamily: string;
 }>;
 
+/** Répartition des enfants sur l'axe principal d'un conteneur Flex. */
+export type JustifyContent = 'flex-start' | 'center' | 'flex-end' | 'space-between';
+
+/** Alignement commun des enfants sur l'axe secondaire d'un conteneur Flex. */
+export type AlignItems = 'flex-start' | 'center' | 'flex-end' | 'baseline';
+
+/** Exception d'alignement d'un enfant Flex direct. */
+export type AlignSelf = 'flex-start' | 'center' | 'flex-end' | 'stretch';
+
 /** Cible imbriquée dont une prop BOOLEAN contrôle la visibilité. */
 export type VisibilityTarget = {
   /** Prop publique qui montre ou masque uniquement cette cible. */
@@ -143,6 +152,10 @@ export type ChildStructure = {
   visibilityTargets?: VisibilityTarget[];
   /** Token de taille du calque (ex. taille d'icône). */
   size?: string;
+  /** Exception d'alignement de ce layer dans l'auto layout de son parent. */
+  alignSelf?: AlignSelf;
+  /** Le layer remplit l'axe principal de son parent (`layoutGrow: 1` dans Figma). */
+  flexGrow?: 1;
   /**
    * Typographie du calque texte : nom de style OU détail par token.
    * Absente lorsque le slot porte `children` : chaque part y décrit la sienne.
@@ -160,6 +173,10 @@ export type ChildStructure = {
   children?: ChildStructure[];
   /** Sens de l'auto-layout du slot, présent uniquement avec `children`. */
   layout?: 'flex-row' | 'flex-column';
+  /** Répartition sur l'axe principal de ce conteneur à parts. */
+  justifyContent?: JustifyContent;
+  /** Alignement sur l'axe secondaire de ce conteneur à parts. */
+  alignItems?: AlignItems;
   /** Gap interne du slot, présent uniquement avec `children`. */
   gap?: string | null;
   /**
@@ -276,6 +293,10 @@ export type SizeDimensions = {
 export type ContractStructure = {
   /** Sens de l'auto-layout Figma, traduit en vocabulaire CSS. */
   layout: 'flex-row' | 'flex-column';
+  /** Répartition Figma sur l'axe principal, absente hors auto-layout linéaire. */
+  justifyContent?: JustifyContent;
+  /** Alignement Figma sur l'axe secondaire, absent hors auto-layout linéaire. */
+  alignItems?: AlignItems;
   /** Dimensions du composant, uniquement s'il n'a PAS d'axe de tailles. */
   gap?: string | null;
   padding?: { x: string | null; y: string | null };

@@ -61,6 +61,9 @@ tests/
   aussi à la description. Le slot n’a alors pas de `typography`; les nodes
   représentés dans ses parts portent leurs visibilités. Les cibles graphiques
   non représentées restent dans `visibilityTargets`.
+- Un auto-layout linéaire publie son alignement (`justifyContent`, `alignItems`)
+  et ses slots publient seulement leurs exceptions (`alignSelf`, `flexGrow`).
+  Une absence signifie hors flux ou non applicable, jamais `flex-start` deviné.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours

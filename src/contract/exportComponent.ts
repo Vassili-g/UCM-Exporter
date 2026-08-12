@@ -25,6 +25,10 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 4.4 : l'auto-layout publie l'alignement du conteneur et le remplissage de
+ * ses enfants ; un consommateur n'a plus à inventer `alignItems` ou `flexGrow`.
+ * 4.3 : les slots multi-textes deviennent récursifs, afin que chaque calque
+ * texte porte sa propre typographie et sa propre visibilité.
  * 4.2 : un slot d'icône porte le rôle `icon` au lieu du nom de son calque, et
  * chaque icône déclare le slot et la taille qui la rendent — les icônes qui se
  * relaient entre variants deviennent toutes rendables.
@@ -33,7 +37,7 @@ import type { Contract, ContractMeta, ContractProp } from './types';
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '4.3';
+export const CONTRACT_VERSION = '4.4';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {

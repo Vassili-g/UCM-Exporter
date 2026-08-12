@@ -63,6 +63,81 @@ const FIELD_LABELS: Record<string, string> = {
   strokes: 'stroke',
 };
 
+/**
+ * Valeurs Figma qui n'ont aucun effet visuel et que le contrat sait déjà
+ * représenter par l'absence du champ. Elles ne demandent donc pas de token.
+ *
+ * La table est volontairement portée par les propriétés de l'API, et non par
+ * les libellés d'export (`gap`, `padding.x`...) : tous les appelants de
+ * `resolveTokenName` profitent de la même règle. Une propriété absente n'est
+ * pas assimilée à sa valeur par défaut : Figma doit l'avoir effectivement
+ * fournie.
+ */
+const IMPLICIT_DEFAULTS: Readonly<Record<string, number>> = {
+  itemSpacing: 0,
+  paddingLeft: 0,
+  paddingRight: 0,
+  paddingTop: 0,
+  paddingBottom: 0,
+  cornerRadius: 0,
+  topLeftRadius: 0,
+  topRightRadius: 0,
+  bottomLeftRadius: 0,
+  bottomRightRadius: 0,
+};
+
+/**
+ * Champs qui n'existent QUE sous un auto-layout. Sans lui, Figma ne les
+ * applique pas : leur absence du contrat ne vaut pas zéro, elle veut dire que
+ * la question ne se pose pas. Les distinguer des valeurs neutres ci-dessus est
+ * ce qui permet à un consommateur d'interpréter une absence.
+ */
+const AUTO_LAYOUT_FIELDS: ReadonlySet<string> = new Set([
+  'itemSpacing',
+  'paddingLeft',
+  'paddingRight',
+  'paddingTop',
+  'paddingBottom',
+]);
+
+/** Raison pour laquelle Figma ne peut pas porter une valeur contractuelle. */
+type InapplicableReason = 'no-auto-layout' | 'space-between';
+
+/** Vrai si le node dispose réellement ses enfants (auto-layout ou grille). */
+function distributesChildren(node: SceneNode): boolean {
+  const mode = (node as unknown as Record<string, unknown>).layoutMode;
+  return typeof mode === 'string' && mode !== 'NONE';
+}
+
+/**
+ * Vrai si Figma répartit l'espace lui-même. `itemSpacing` est alors ignoré :
+ * l'exporter ferait affirmer au contrat un écart fixe que le rendu n'a pas, et
+ * conseiller de le relier à une variable n'y changerait rien.
+ */
+function distributesBySpaceBetween(node: SceneNode): boolean {
+  const alignment = (node as unknown as Record<string, unknown>).primaryAxisAlignItems;
+  return alignment === 'SPACE_BETWEEN';
+}
+
+/**
+ * Dit si Figma peut porter cette dimension sur ce node, avant même de regarder
+ * les liaisons. Une liaison survit à la désactivation de l'auto-layout : sans
+ * ce contrôle en tête, un `itemSpacing` resté lié exporterait un gap sans
+ * aucun effet visuel.
+ */
+function inapplicableReason(
+  node: SceneNode,
+  alternatives: FieldAlternatives,
+): InapplicableReason | null {
+  const fields = alternatives.flat();
+  if (!fields.some((field) => AUTO_LAYOUT_FIELDS.has(field))) return null;
+  if (!distributesChildren(node)) return 'no-auto-layout';
+  if (fields.includes('itemSpacing') && distributesBySpaceBetween(node)) {
+    return 'space-between';
+  }
+  return null;
+}
+
 /** Nom lisible d'une propriété Figma, ou le champ brut s'il n'en a pas. */
 export function fieldLabel(field: string): string {
   return FIELD_LABELS[field] ?? field;
@@ -79,6 +154,18 @@ export function getBinding(node: SceneNode, field: string): unknown {
 }
 
 /**
+ * Vrai si une représentation entière porte uniquement ses valeurs neutres
+ * par défaut. Le champ reste absent du contrat, mais ne produit pas un
+ * avertissement demandant un token qui ne changerait pas le rendu.
+ */
+function hasImplicitDefaultValue(node: SceneNode, alternatives: FieldAlternatives): boolean {
+  const values = node as unknown as Record<string, unknown>;
+  return alternatives.some((fields) =>
+    fields.every((field) => field in IMPLICIT_DEFAULTS && values[field] === IMPLICIT_DEFAULTS[field]),
+  );
+}
+
+/**
  * Vrai lorsqu'au moins une représentation technique d'une dimension est
  * entièrement liée. La détection du porteur de layout utilise ainsi
  * exactement les mêmes groupes que l'extraction : quatre coins liés comptent
@@ -88,6 +175,10 @@ export function hasCompleteBinding(
   node: SceneNode,
   alternatives: FieldAlternatives,
 ): boolean {
+  // Une liaison que Figma n'applique pas ne fait pas de ce node un porteur de
+  // layout : l'élection et l'extraction doivent voir la même chose, sinon le
+  // node élu n'exporte rien.
+  if (inapplicableReason(node, alternatives)) return false;
   return alternatives.some((fields) =>
     fields.every((field) => Boolean(firstVariableAlias(getBinding(node, field)))),
   );
@@ -114,6 +205,27 @@ export async function resolveTokenName(
   resolver: TokenResolver,
   warnings: string[],
 ): Promise<string | null> {
+  // Avant toute liaison : Figma applique-t-il seulement cette dimension ici ?
+  const inapplicable = inapplicableReason(node, alternatives);
+  if (inapplicable === 'no-auto-layout') {
+    // Volontairement sans `label` : les trois appels (gap, padding X, padding Y)
+    // produisent le même texte et la déduplication n'en garde qu'un. Le geste à
+    // faire est le même pour les trois.
+    warnings.push(
+      `Layer « ${node.name} » : ce layer n'utilise pas d'auto layout. Son gap et ses ` +
+        `paddings n'existent pas dans Figma et restent absents du contrat — leur absence ` +
+        `ne veut donc pas dire zéro. Appliquez un auto layout au layer si son espacement ` +
+        `doit être contractuel, puis réexportez.`,
+    );
+    return null;
+  }
+  if (inapplicable === 'space-between') {
+    // La répartition est désormais publiée par `structure.justifyContent`.
+    // `itemSpacing` reste inapplicable : son éventuelle liaison ne doit ni
+    // élire ce node comme porteur de dimensions, ni produire un gap fixe.
+    return null;
+  }
+
   const resolved: AlternativeResolution[] = await Promise.all(
     alternatives.map(async (fields) => {
       const aliases = fields.map((field) => firstVariableAlias(getBinding(node, field)));
@@ -160,6 +272,7 @@ export async function resolveTokenName(
 
   const withBindings = resolved.filter((entry) => entry.aliases.some(Boolean));
   if (withBindings.length === 0) {
+    if (hasImplicitDefaultValue(node, alternatives)) return null;
     warnings.push(
       `Layer « ${node.name} » — ${label} : aucune variable Figma n'est reliée. La valeur ` +
         `fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,

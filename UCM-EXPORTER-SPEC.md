@@ -172,7 +172,30 @@ pour `padding.y`, largeur + hauteur pour la taille d'un slot, et
 `cornerRadius` ou les quatre coins pour le rayon. Une représentation partielle
 ou asymétrique produit un warning et vaut `null` (ou reste absente pour la
 taille d'un slot) : le contrat n'affirme jamais une symétrie que Figma ne
-prouve pas.
+prouve pas. Une valeur neutre par défaut effectivement fournie par Figma (par
+exemple `0` pour un gap, un padding ou un rayon) reste elle aussi absente, mais
+ne produit pas de warning : la demander comme token n'ajouterait aucune
+information au rendu.
+
+**Applicabilité avant liaison.** Un gap et des paddings n'existent que sous un
+auto-layout, et une liaison de variable survit à sa désactivation. L'exporteur
+tranche donc l'applicabilité **avant** de regarder les liaisons, sans quoi un
+`itemSpacing` resté lié exporterait un écart que le rendu n'a pas. Deux cas
+produisent chacun leur propre diagnostic, distinct de « aucune variable
+reliée » :
+
+- **pas d'auto-layout** (`layoutMode: NONE`, ou un node qui n'en a pas) — gap
+  et paddings restent absents et un warning unique par calque dit au designer
+  que leur absence **ne vaut pas zéro** ; c'est ce qui permet à un consommateur
+  de distinguer « neutre » de « la question ne se pose pas » ;
+- **espacement « Auto »** (`primaryAxisAlignItems: SPACE_BETWEEN`) — Figma
+  ignore `itemSpacing` et répartit l'espace disponible. Le `gap` reste donc
+  absent, mais `justifyContent: "space-between"` décrit la répartition ; une
+  liaison conservée sur `itemSpacing` ne produit ni token ni warning.
+
+La même règle vaut pour l'élection du porteur de layout : une liaison
+inapplicable ne désigne pas un calque comme conteneur de dimensions, sinon le
+calque élu n'exporterait rien.
 **Dimensions par taille** : l'axe de tailles est cherché sur le wrapper de
 dimensions puis, s'il n'en porte pas, sur le Component Set sélectionné — un
 wrapper qui expose ses propres axes ne doit pas faire disparaître les
@@ -270,6 +293,23 @@ Une visibilité liée à une variable conserve également le calque, sans invent
 de prop publique. Un calque statiquement masqué est exclu avec tout son
 sous-arbre ; s'il portait des variables, le warning indique ce qui a été
 ignoré.
+
+**Alignement Flex (4.4).** Sur un auto-layout `HORIZONTAL` ou `VERTICAL`, le
+contrat publie toujours les deux alignements du conteneur :
+`primaryAxisAlignItems` devient `justifyContent` (`MIN` → `flex-start`,
+`CENTER` → `center`, `MAX` → `flex-end`, `SPACE_BETWEEN` →
+`space-between`) et `counterAxisAlignItems` devient `alignItems` (`MIN`,
+`CENTER`, `MAX` et `BASELINE`). Ils restent absents pour `NONE`, `GRID` ou une
+propriété illisible : aucune valeur CSS par défaut n'est devinée.
+
+Chaque enfant direct du flux peut porter `alignSelf` quand son `layoutAlign`
+diffère de `INHERIT` (`STRETCH` inclus) et `flexGrow: 1` quand Figma publie
+`layoutGrow: 1`. Les valeurs neutres `INHERIT` et `0` restent absentes. Un
+layer en position `Absolute` est averti et ne reçoit aucune propriété Flex : le
+contrat ne décrit pas encore ses coordonnées. Direction, alignements et
+propriétés de flux des slots sont comparés sur toute la matrice ; une différence
+entre variants avertit au lieu d'être généralisée depuis le variant de
+référence.
 
 Slots dédupliqués (`label`, `label-2`…). Un calque rendable inattendu est inclus
 tel quel, jamais supprimé silencieusement.
@@ -371,7 +411,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "4.3",
+    "contractVersion": "4.4",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -654,10 +694,11 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **4.3** : `structure.children` y devient
-récursif sur les branches textuelles, pour qu'un slot à plusieurs textes décrive
-ses parts au lieu de leur imposer une typographie unique (étape 6). Un composant
-dont chaque slot ne porte qu'un texte produit la même structure qu'en 4.2.
+La version actuelle du contrat est **4.4** : après la récursion textuelle 4.3,
+elle ajoute `justifyContent` et `alignItems` au conteneur Flex, ainsi que
+`alignSelf` et `flexGrow` sur ses slots. Un consommateur peut donc placer une
+icône au centre vertical de son auto-layout sans le déduire du nom ou du type
+de composant.
 
 Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
 il accepte uniquement les versions qu’il a explicitement auditées.

@@ -67,6 +67,106 @@ test('extractLayout traduit un auto-layout vertical en flex-column', async () =>
   assert.equal(layout.layout, 'flex-column');
 });
 
+test('extractLayout publie l’alignement Flex et le remplissage des slots directs', async () => {
+  const icon = {
+    type: 'VECTOR',
+    id: 'icon',
+    name: 'Info',
+    layoutAlign: 'INHERIT',
+    layoutGrow: 0,
+    boundVariables: {},
+  };
+  const label = {
+    type: 'TEXT',
+    id: 'label',
+    name: 'Message',
+    layoutAlign: 'INHERIT',
+    layoutGrow: 1,
+    boundVariables: {},
+  };
+  const action = {
+    type: 'VECTOR',
+    id: 'action',
+    name: 'Action',
+    layoutAlign: 'STRETCH',
+    layoutGrow: 0,
+    boundVariables: {},
+  };
+  const alert = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+    boundVariables: {},
+    children: [icon, label, action],
+    findAll: findAllOn([icon, label, action]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(alert, resolverFor({}), []);
+
+  assert.equal(layout.layout, 'flex-row');
+  assert.equal(layout.justifyContent, 'flex-start');
+  assert.equal(layout.alignItems, 'center');
+  assert.equal(layout.children[0].alignSelf, undefined);
+  assert.equal(layout.children[1].flexGrow, 1);
+  assert.equal(layout.children[2].alignSelf, 'stretch');
+});
+
+test('extractLayout décrit Auto par justifyContent sans inventer de gap fixe', async () => {
+  const row = {
+    type: 'COMPONENT',
+    name: 'Toolbar',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'SPACE_BETWEEN',
+    counterAxisAlignItems: 'CENTER',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    row,
+    resolverFor({ gap: 'layouts.spacing.8' }),
+    warnings,
+  );
+
+  assert.equal(layout.justifyContent, 'space-between');
+  assert.equal(layout.alignItems, 'center');
+  assert.equal(layout.gap, null);
+  assert.ok(!warnings.some((warning) => warning.includes('espacement est réglé sur « Auto »')));
+});
+
+test('un layer absolu n’est pas inventé comme item Flex', async () => {
+  const badge = {
+    type: 'VECTOR',
+    id: 'badge',
+    name: 'Badge',
+    layoutPositioning: 'ABSOLUTE',
+    layoutAlign: 'STRETCH',
+    layoutGrow: 1,
+    boundVariables: {},
+  };
+  const card = {
+    type: 'COMPONENT',
+    name: 'Card',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+    boundVariables: {},
+    children: [badge],
+    findAll: findAllOn([badge]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(card, resolverFor({}), warnings);
+
+  assert.equal(layout.children[0].alignSelf, undefined);
+  assert.equal(layout.children[0].flexGrow, undefined);
+  assert.ok(warnings.some((warning) => warning.includes('position « Absolute »')));
+});
+
 test('extractLayout nomme le calque texte « label » et garde son nom Figma', async () => {
   const texte = {
     type: 'TEXT',
@@ -128,6 +228,8 @@ test('un slot à deux textes décrit chaque part avec SA typographie', async () 
     id: 'text',
     name: 'Text',
     layoutMode: 'VERTICAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
     boundVariables: { itemSpacing: alias('interligne') },
     children: [titre, description],
     findAll: findAllOn([titre, description]),
@@ -165,6 +267,8 @@ test('un slot à deux textes décrit chaque part avec SA typographie', async () 
   assert.equal(slot.slot, 'label');
   assert.equal(slot.figmaLayer, 'Text');
   assert.equal(slot.layout, 'flex-column');
+  assert.equal(slot.justifyContent, 'flex-start');
+  assert.equal(slot.alignItems, 'center');
   assert.equal(slot.gap, '{components.alert.sizes.text-gap}');
   assert.deepEqual(slot.children, [
     {
@@ -724,6 +828,7 @@ test('findLayoutNode ignore un porteur de dimensions statiquement masqué', () =
     type: 'FRAME',
     name: 'Ancien wrapper',
     visible: false,
+    layoutMode: 'HORIZONTAL',
     boundVariables: {
       itemSpacing: alias('a'),
       paddingLeft: alias('b'),
@@ -734,6 +839,7 @@ test('findLayoutNode ignore un porteur de dimensions statiquement masqué', () =
     type: 'FRAME',
     name: 'Wrapper actif',
     visible: true,
+    layoutMode: 'HORIZONTAL',
     boundVariables: { itemSpacing: alias('a') },
   };
   const racine = {
