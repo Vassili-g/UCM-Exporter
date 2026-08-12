@@ -9,7 +9,7 @@ import type { VariantMatrix, WrapperReference } from './componentTree';
 import type { ComposedInstances } from './exportableNodes';
 import { extractIconLayers } from './extractIconLayers';
 import type { IconLayerSummary } from './extractIconLayers';
-import { extractLayout, findLayoutNode } from './extractLayout';
+import { extractLayout, findLayoutNode, textStructureSignature } from './extractLayout';
 import { extractSizeDimensions } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
 import { variantRoleWarnings } from './semantics';
@@ -69,6 +69,38 @@ export async function extractStructure(
     referenceLayout,
   );
   const targetedLayers = new Set(iconLayers.map((layer) => layer.figmaLayer));
+
+  // `structure.children` décrit le variant de référence. Une récursion
+  // textuelle différente ailleurs dans la matrice ne peut donc pas être
+  // fusionnée silencieusement dans cet arbre unique.
+  if (referenceLayout) {
+    const referenceSignature = textStructureSignature(
+      referenceLayout.layoutNode,
+      targetedLayers,
+      composed,
+    );
+    const divergentVariants = matrix.variants.filter(({ component }) => {
+      const layoutNode = component === referenceLayout.component
+        ? referenceLayout.layoutNode
+        : findLayoutNode(component, [], composed);
+      return textStructureSignature(layoutNode, targetedLayers, composed) !== referenceSignature;
+    });
+    if (divergentVariants.length > 0) {
+      const examples = divergentVariants
+        .slice(0, 3)
+        .map(({ component }) => `« ${component.name} »`)
+        .join(', ');
+      const remaining = divergentVariants.length - 3;
+      warnings.push(
+        `Parties texte différentes sur ${divergentVariants.length} variant(s), ex. ${examples}` +
+          `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
+          `référence « ${referenceLayout.component.name} ». L'ordre ou la disposition des autres ` +
+          `variants ne sera pas représenté. Alignez leurs layers de texte dans Figma ; si la ` +
+          `différence est intentionnelle, conservez-la et signalez cette limite du schéma.`,
+      );
+    }
+  }
+
   const layout = layoutRoot
     ? await extractLayout(layoutRoot, resolver, warnings, composed, targetedLayers)
     : { layout: 'flex-row' as const, gap: null, padding: { x: null, y: null }, radius: null, children: [] };

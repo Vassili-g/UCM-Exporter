@@ -78,6 +78,36 @@ test('extractSizeDimensions couvre chaque valeur de l’axe de tailles', async (
   assert.equal(collectTokenReferences(sizes).size, 10);
 });
 
+test('plusieurs textes n’inventent pas une font size commune par taille', async () => {
+  const avecDeuxTextes = (valeur: string, suffixe: string) => {
+    const variant = variantDeTaille(AXE, valeur, suffixe);
+    const titre = { type: 'TEXT', name: 'Titre', boundVariables: { fontSize: alias(`title-${suffixe}`) } };
+    const description = { type: 'TEXT', name: 'Description', boundVariables: { fontSize: alias(`body-${suffixe}`) } };
+    variant.children = [titre, description];
+    variant.findAll = findAllOn([titre, description]);
+    return variant;
+  };
+  const big = avecDeuxTextes('Big', 'big');
+  const small = avecDeuxTextes('Small', 'small');
+  const componentSet = {
+    componentPropertyDefinitions: {
+      [AXE]: { type: 'VARIANT', variantOptions: ['Big', 'Small'], defaultValue: 'Big' },
+    },
+    children: [big, small],
+  } as unknown as ComponentSetNode;
+  const warnings: string[] = [];
+
+  const sizes = await extractSizeDimensions(
+    componentSet,
+    resolverFor(TOKENS),
+    warnings,
+  );
+
+  assert.equal(sizes?.big.fontSize, undefined);
+  assert.ok(warnings.some((warning) => warning.includes("Aucune font size globale n'est exportée")));
+  assert.equal(warnings.some((warning) => warning.includes("Ne gardez qu'un layer")), false);
+});
+
 test('extractSizeDimensions rend null quand aucun axe n’est un axe de tailles', async () => {
   const componentSet = {
     componentPropertyDefinitions: {

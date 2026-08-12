@@ -33,7 +33,7 @@ import type { Contract, ContractMeta, ContractProp } from './types';
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '4.2';
+export const CONTRACT_VERSION = '4.3';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
