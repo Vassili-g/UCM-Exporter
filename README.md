@@ -39,6 +39,11 @@ Le build produit dans `dist/` le code du plugin, son interface autonome et le
 manifest importable dans Figma. Pour le développement, le `manifest.json` à la
 racine pointe également vers les bundles construits.
 
+L’identifiant `0000000000000000000` du manifest est un placeholder de
+développement. Il ne doit être remplacé qu’à la préparation d’une publication,
+avec l’identifiant effectivement attribué par Figma ; il reste tel quel pour un
+build local.
+
 | Commande | Rôle |
 |---|---|
 | `npm test` | Exécute les tests de l’exporteur |
@@ -70,6 +75,8 @@ Chaque document a un rôle unique :
 - [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md) — comportement exact du plugin
   et format actuel des sorties ;
 - [ROADMAP.md](./ROADMAP.md) — maturité, limites et prochaines validations ;
+- [PLAN-STRUCTURE-PROFONDE.md](./PLAN-STRUCTURE-PROFONDE.md) — décisions
+  validées et conditions d’une future extension de structure ou de layout ;
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
 - [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — options non engagées ;
 - [AGENTS.md](./AGENTS.md) — guide opérationnel pour contribuer avec un agent ;

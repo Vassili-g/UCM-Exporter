@@ -25,14 +25,13 @@ sur plusieurs formes de composants, dont au moins un composant composé.
 ## État actuel
 
 Ce tableau décrit **`main` des deux repositories**. Une branche en cours peut
-donc y être rouge sans le contredire : c’est le cas de la ligne « Tokens du code
-vérifiés contre leur contrat » ci-dessous, dont le contrôle n’est pas encore
-fusionné et détecte à dessein les deux fragilités connues.
+être rouge sans le contredire ; les validations listées ci-dessous désignent
+uniquement ce qui est déjà intégré et vérifié.
 
 | Domaine | État |
 |---|---|
-| Export des contrats 4.3 | Opérationnel |
-| Export Flex 4.4 | En validation : extraction, consommateur et tests prêts ; réexport Figma requis |
+| Export des contrats 4.2 à 4.4 | Opérationnel |
+| Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma 4.4 de l’Exporter |
 | Export DTCG avec alias et modes | Opérationnel |
 | Téléchargement local et dépôt par PR GitHub | Opérationnel |
 | Validation des contrats, de la forme des props et des références de tokens | Opérationnelle |
@@ -44,19 +43,20 @@ fusionné et détecte à dessein les deux fragilités connues.
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
 | Tokens du code vérifiés contre leur contrat | Opérationnelle |
 | CI des deux repositories | Vertes sur `main` et sur les pull requests ; diagnostic publié en commentaire |
-| Rapport unique destiné au développeur | Absent — voir « Plan d’action » |
-| Audit des tokens dans le rendu | Absent — voir « Plan d’action » |
+| Rapport unique destiné au développeur | Opérationnel : `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
+| Références de tokens du code | Opérationnelles : chemins assemblés et tokens absents du contrat sont bloquants ; audit visuel navigateur hors périmètre |
 | Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
-| Composants du consommateur | Button et Alert présents ; assemblent un chemin de token à l’exécution |
+| Composants du consommateur | Button et Alert reconstruits à froid contre leurs contrats 4.4, avec références littérales vérifiables |
 | Validation multi-composants | Partielle |
 | JSON Schema public | Non commencé |
 | Multi-marque au runtime | Modes exportés, consommation non implémentée |
 
 Le projet est un **prototype avancé** dont l’outillage tient : la chaîne
-Figma → PR → CI → `main` fonctionne pour les contrats 4.3, et les deux
-repositories construisent et se testent. La 4.4 Flex reste à éprouver par un
-réexport Figma et une génération froide ; elle ne prétend pas encore couvrir
-grille, wrap ni positionnement absolu.
+Figma → PR → CI → `main` fonctionne pour les contrats 4.2 à 4.4, et les deux
+repositories construisent et se testent. La 4.4 Flex a été éprouvée par les
+réexports Figma Alert et Button, le corpus de référence de l'Exporter et leurs
+générations froides. Elle ne prétend pas couvrir grille, wrap ni positionnement
+absolu.
 
 Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
 **détection** et non comme **prévention** : rien n’empêche la fusion d’une pull
@@ -88,14 +88,12 @@ faudrait exécuter pour connaître, et une donnée du contrat reproduite par une
 règle — deviner quel rôle se peint à partir de la variante, câbler une
 correspondance sévérité → icône. Le composant rend juste et échappe au contrôle.
 
-La première forme est détectée. La seconde ne l’est que par les tests pilotés
-par le contrat, qui la signalent lorsque le design change. Button et Alert
-portent les deux.
+La première forme est détectée. La seconde est couverte, pour les cas
+reconstruits, par des tests pilotés par le contrat qui relisent variantes,
+icônes, visibilités et flux Flex. Cette couverture reste ciblée : un nouveau
+champ ou une nouvelle branche de rendu doit recevoir son propre test de rendu.
 
-Corriger ces composants appartient au développeur : ils sont à la fois le
-livrable et la mesure du test froid.
-
-## Plan d’action — contrôles du code et rapport développeur
+## Contrôles du code et rapport développeur
 
 ### Principe : deux destinataires, une source
 
@@ -107,19 +105,21 @@ Un constat porte un **propriétaire**, conformément à l’arbitrage des source
 | Designer | Commentaire de pull request | Contrat, tokens, props ou slots absents du code |
 | Développeur | Rapport en terminal et en CI | Valeurs brutes, tokens invérifiables, variables inexistantes |
 
-Le commentaire de pull request existe. Le rapport développeur est à construire.
+Le commentaire de pull request et le rapport développeur existent dans
+`check-contract.mjs`. Le rapport agrège les contrats, le graphe, la parité et
+les références de tokens du code, puis publie le même diagnostic dans le
+terminal, le résumé CI et le commentaire de pull request.
 
-### Le rapport développeur
+### État du rapport développeur
 
-Trois règles le définissent :
+`check-contract` exécute ses validations de contrat, de graphe, de parité et de
+références de tokens avant de composer un diagnostic unique. Chaque constat
+nomme son propriétaire, le fichier concerné et le geste correctif.
 
-1. **Tout s’exécute, puis on rapporte.** La chaîne actuelle s’arrête au premier
-   échec et masque l’état des contrôles suivants.
-2. **Aucun contrôle n’écrit lui-même dans le terminal.** Il produit des
-   constats ; le rapport décide de leur présentation. Sans cette règle, chaque
-   contrôle ajouté crée une sortie de plus.
-3. **Un constat sans geste correctif est refusé.** Règle déjà appliquée au
-   commentaire de pull request.
+La chaîne globale `npm run check` conserve néanmoins ses étapes séquentielles :
+un échec des tests empêche les étapes suivantes. Ce n'est pas une perte de
+diagnostic dans `check-contract`, mais une limite du workflow à mesurer avant
+de modifier la CI.
 
 Un constat porte : contrôle, propriétaire, gravité, fichier, ligne, ce qui ne va
 pas, quoi faire.
@@ -142,15 +142,13 @@ Les tests pilotés par le contrat relisent le contrat à chaque exécution. C’
 ce qui fait d’eux le contrôle central : ils signalent une donnée du contrat
 figée dans le code au moment où elle devient un écart réel.
 
-### Séquence
+### Suite ciblée
 
 | # | Étape | Motif de l’ordre |
 |---|---|---|
-| 1 | Rapport développeur | Poser la sortie avant d’y brancher des contrôles |
-| 2 | Audit du rendu | Ferme le cas du token renommé |
-| 3 | Tokens du code rebranchés sur le rapport | Le contrôle existe, seule sa sortie change |
-| 4 | Valeurs brutes, avec réglage des fausses alertes | Le seul contrôle à risque de friction, placé après les contrôles sûrs |
-| 5 | Limites écrites dans le consommateur | Chaque contrôle annonce ce qu’il vérifie |
+| 1 | Étendre les tests de rendu pilotés par contrat au prochain cas réel | Toute donnée figée hors d’une référence de token doit avoir une preuve dynamique |
+| 2 | Mesurer les valeurs brutes sur un corpus réel | Régler les faux positifs avant de rendre ce contrôle bloquant |
+| 3 | Écrire les limites de chaque contrôle avec son diagnostic | Éviter que les garanties soient surinterprétées |
 
 Une option reste ouverte à l’étape 4 : porter les contrôles statiques dans un
 linter, pour un retour dans l’éditeur et des exceptions justifiées et traçables.

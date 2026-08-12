@@ -132,20 +132,24 @@ test('extractContractProps conserve la première prop quand deux écritures donn
   ]);
 });
 
-test('extractContractProps protège le défaut de disabled contre un BOOLEAN homonyme', () => {
-  // L'axe State impose `disabled: true` ; un BOOLEAN « Disabled » à false
-  // renversait ce défaut sans laisser de trace.
-  const definitions = {
-    State: { type: 'VARIANT', defaultValue: 'Disable', variantOptions: ['Default', 'Disable'] },
-    Disabled: { type: 'BOOLEAN', defaultValue: false },
-  } as unknown as ComponentPropertyDefinitions;
-  const warnings: string[] = [];
-
-  assert.deepEqual(extractContractProps(definitions, warnings), {
+test('extractContractProps priorise State sur un BOOLEAN Disabled dans les deux ordres', () => {
+  const state = { type: 'VARIANT', defaultValue: 'Disable', variantOptions: ['Default', 'Disable'] };
+  const boolean = { type: 'BOOLEAN', defaultValue: false };
+  const firstWarnings: string[] = [];
+  const secondWarnings: string[] = [];
+  const expected = {
     disabled: { type: 'boolean', default: true },
-  });
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /identiques une fois normalisés \(« disabled »\)/);
+  };
+
+  assert.deepEqual(extractContractProps({ State: state, Disabled: boolean } as ComponentPropertyDefinitions, firstWarnings), expected);
+  assert.deepEqual(extractContractProps({ Disabled: boolean, State: state } as ComponentPropertyDefinitions, secondWarnings), expected);
+  assert.deepEqual(firstWarnings, secondWarnings);
+  assert.deepEqual(firstWarnings, [
+    'Component property « Disabled » : l’axe « State » possède déjà le variant « Disable », qui devient la prop ' +
+      'publique « disabled ». Cette boolean property n’est pas exportée séparément, donc sa valeur par défaut ' +
+      'manquerait au développeur. Supprimez-la si elle pilote le même état ; sinon renommez-la selon le layer ' +
+      'distinct qu’elle pilote, puis réexportez.',
+  ]);
 });
 
 test('extractContractProps laisse un enum non-taille sous son nom, sans figmaName', () => {
