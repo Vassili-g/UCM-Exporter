@@ -16,20 +16,28 @@ test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () =
   assert.equal(dtcgType('COLOR', 'primitives.terracota.600'), 'color');
   assert.equal(dtcgType('FLOAT', 'sizes.spacing.8'), 'dimension');
   assert.equal(dtcgType('FLOAT', 'layouts.fontweight.600'), 'number');
+  assert.equal(dtcgType('FLOAT', 'layouts.font-weight.600'), 'number');
   assert.equal(dtcgType('FLOAT', 'layouts.lineheight.base'), 'number');
+  assert.equal(dtcgType('FLOAT', 'layouts.line-height.base'), 'number');
   assert.equal(dtcgType('BOOLEAN', 'flags.x'), 'boolean');
   assert.equal(dtcgType('STRING', 'layouts.fontfamily.base'), 'string');
 });
 
 test('isUnitless détecte les groupes sans unité', () => {
   assert.equal(isUnitless('layouts.fontweight.600'), true);
+  assert.equal(isUnitless('layouts.font-weight.600'), true);
+  assert.equal(isUnitless('layouts.line-height.base'), true);
   assert.equal(isUnitless('layouts.opacity.disabled'), true);
+  assert.equal(isUnitless('layouts.z-index.modal'), true);
+  assert.equal(isUnitless('layouts.aspect-ratio.square'), true);
+  assert.equal(isUnitless('layouts.font-weighted.600'), false);
   assert.equal(isUnitless('sizes.spacing.8'), false);
 });
 
 test('formatValue suffixe px les dimensions, laisse les nombres bruts', () => {
   assert.equal(formatValue(8, 'FLOAT', 'sizes.spacing.8'), '8px');
   assert.equal(formatValue(600, 'FLOAT', 'layouts.fontweight.600'), 600);
+  assert.equal(formatValue(600, 'FLOAT', 'layouts.font-weight.600'), 600);
   assert.equal(formatValue('Open Sans', 'STRING', 'layouts.fontfamily.base'), 'Open Sans');
 });
 

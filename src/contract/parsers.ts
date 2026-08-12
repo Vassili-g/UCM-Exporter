@@ -77,6 +77,26 @@ export function extractContractPropertyModel(
   // simplement déclarée plus loin — le résultat dépendrait de l'ordre.
   const rawKeys = new Set(Object.keys(definitions).map((name) => normalizePropKey(name)));
 
+  // La convention State/Status possède une priorité sémantique : son variant
+  // Disable décrit l'état interactif du composant. Réserver cette prop avant
+  // de parcourir les BOOLEAN rend la sortie indépendante de leur ordre Figma.
+  const disabledState = Object.entries(definitions).find(([propertyName, definition]) =>
+    isStateProperty(normalizePropKey(propertyName)) &&
+    definition.type === 'VARIANT' &&
+    (definition.variantOptions ?? []).some((state) => /^disabl(?:e|ed)$/i.test(state.trim())),
+  );
+  if (disabledState) {
+    const [propertyName, definition] = disabledState;
+    if (definition.type === 'VARIANT') {
+      const rawFigmaName = propertyName.replace(/#.*$/, '');
+      owners.set('disabled', rawFigmaName);
+      props.disabled = {
+        type: 'boolean',
+        default: /^disabl(?:e|ed)$/i.test(String(definition.defaultValue).trim()),
+      };
+    }
+  }
+
   /** Attribue une clé publique, ou refuse et signale le conflit. */
   const claim = (key: string, figmaName: string, prop: ContractProp): boolean => {
     const owner = owners.get(key);
@@ -99,14 +119,6 @@ export function extractContractPropertyModel(
 
     if (isStateProperty(key)) {
       if (definition.type === 'VARIANT') publicVariantKeyByRawKey.set(key, key);
-      const states = definition.variantOptions ?? [];
-      const hasDisabledState = states.some((state) => /^disabl(?:e|ed)$/i.test(state.trim()));
-      if (definition.type === 'VARIANT' && hasDisabledState) {
-        claim('disabled', rawFigmaName, {
-          type: 'boolean',
-          default: /^disabl(?:e|ed)$/i.test(String(definition.defaultValue).trim()),
-        });
-      }
       continue;
     }
 
@@ -139,6 +151,20 @@ export function extractContractPropertyModel(
     }
 
     if (definition.type === 'BOOLEAN') {
+      if (key === 'disabled' && disabledState) {
+        const [statePropertyName, stateDefinition] = disabledState;
+        const stateFigmaName = statePropertyName.replace(/#.*$/, '');
+        const disabledStateName = stateDefinition.type === 'VARIANT'
+          ? (stateDefinition.variantOptions ?? []).find((state) => /^disabl(?:e|ed)$/i.test(state.trim())) ?? 'Disable'
+          : 'Disable';
+        warnings.push(
+          `Component property « ${rawFigmaName} » : l’axe « ${stateFigmaName} » possède déjà le variant ` +
+            `« ${disabledStateName} », qui devient la prop publique « disabled ». Cette boolean property ` +
+            `n’est pas exportée séparément, donc sa valeur par défaut manquerait au développeur. ` +
+            `Supprimez-la si elle pilote le même état ; sinon renommez-la selon le layer distinct qu’elle pilote, puis réexportez.`,
+        );
+        continue;
+      }
       claim(key, rawFigmaName, { type: 'boolean', default: Boolean(definition.defaultValue) });
       continue;
     }

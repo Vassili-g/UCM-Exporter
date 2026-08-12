@@ -119,6 +119,7 @@ Chaque document a une autorité limitée :
 | `CONCEPT.md` | Principes et responsabilités |
 | `UCM-EXPORTER-SPEC.md` | Comportement actuel du plugin |
 | `ROADMAP.md` | État et prochaines validations |
+| `PLAN-STRUCTURE-PROFONDE.md` | Décisions validées et préconditions avant une extension de structure ou de layout |
 | `PISTES-EVOLUTION.md` | Options non engagées |
 | `README.md` | Entrée dans le projet |
 | `AGENTS.md` | Instructions opérationnelles |

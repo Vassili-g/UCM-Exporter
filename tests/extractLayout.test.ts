@@ -8,7 +8,6 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { firstTextNode } from '../src/contract/exportableNodes';
 import { extractLayout, findLayoutNode } from '../src/contract/extractLayout';
 import { collectTokenReferences } from '../src/variables';
 import { nestedSlotVisibility } from '../src/contract/slotRelations';
@@ -861,15 +860,6 @@ test('findLayoutNode retombe sur la racine quand aucune dimension n’est liée'
   } as unknown as ComponentNode;
 
   assert.equal(findLayoutNode(racine), racine as unknown as SceneNode);
-});
-
-test('firstTextNode descend dans le sous-arbre et rend null s’il n’y a pas de texte', () => {
-  const texte = { type: 'TEXT', name: 'Suivant' };
-  const avecTexte = { type: 'FRAME', name: 'Contenu', findAll: findAllOn([texte]) } as unknown as SceneNode;
-  const sansTexte = { type: 'FRAME', name: 'Contenu', findAll: findAllOn([]) } as unknown as SceneNode;
-
-  assert.equal(firstTextNode(avecTexte), texte as unknown as TextNode);
-  assert.equal(firstTextNode(sansTexte), null);
 });
 
 test('un slot d’icône porte le rôle « icon », pas le nom de son calque', async () => {

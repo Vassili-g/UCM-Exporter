@@ -150,12 +150,3 @@ export function textNodes(
     (child): child is TextNode => child.type === 'TEXT',
   );
 }
-
-/** Renvoie le premier calque TEXTE d'un sous-arbre, ou null s'il n'y en a pas. */
-export function firstTextNode(
-  node: SceneNode,
-  warnings: string[] = [],
-  composed: ComposedInstances = new Map(),
-): TextNode | null {
-  return textNodes(node, warnings, composed)[0] ?? null;
-}

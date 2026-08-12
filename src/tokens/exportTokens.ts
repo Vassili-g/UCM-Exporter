@@ -33,11 +33,11 @@ type DtcgTree = { [key: string]: DtcgTree | DtcgLeaf };
  * Groupes dont les valeurs FLOAT sont des ratios ou des nombres purs, pas
  * des longueurs : exportés en "number", jamais suffixés « px ».
  */
-const UNITLESS_HINTS = ['fontweight', 'lineheight', 'opacity', 'z-index', 'aspect-ratio'];
+const UNITLESS_GROUPS = new Set(['fontweight', 'lineheight', 'opacity', 'zindex', 'aspectratio']);
 
 /** Vrai si le chemin du token appartient à un groupe sans unité. */
 export function isUnitless(path: string): boolean {
-  return UNITLESS_HINTS.some((hint) => path.includes(hint));
+  return path.split('.').some((segment) => UNITLESS_GROUPS.has(segment.replace(/-/g, '')));
 }
 
 /** Traduit un type de variable Figma en type DTCG. */
