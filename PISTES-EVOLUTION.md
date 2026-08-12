@@ -22,7 +22,48 @@ Figma, une bibliothèque de composants et un besoin de traçabilité. Sa valeur
 est plus faible pour un système entièrement code-first ou une petite
 bibliothèque sans workflow de revue.
 
+### Comparaison avec handoff (Convertiv)
+
+[handoff](https://github.com/Convertiv/handoff-app) lit Figma et produit des
+variables CSS, comme l’UCM. Le chevauchement s’arrête là. Il lit par l’API
+REST, donc sans les Variables — leur endpoint est réservé aux organisations
+Enterprise — et s’appuie sur les Styles Figma. Il aplatit les valeurs et ne
+conserve une référence que lorsqu’un Style est appliqué. Son mapping est écrit
+à la main par composant, sous forme de chemins de calques. Son livrable est un
+site de documentation statique dont les composants de prévisualisation sont
+distincts du code de production : rien n’y compare une implémentation réelle à
+Figma.
+
+handoff documente ; l’UCM contraint. Les deux peuvent coexister, l’export DTCG
+alimentant un pipeline Style Dictionary équivalent au leur.
+
+Deux enseignements. Leur option `useVariables`, ajoutée après coup pour émettre
+`var(--x)` plutôt qu’une valeur, confirme par l’échec l’invariant « les tokens
+restent des références ». Et leur `fetch` tourne en CI quand notre export
+demande un humain dans Figma : c’est le prix de l’accès aux Variables, mais il
+rend le risque « export périmé » plus concret, donc `meta.exportedAt` mérite de
+remonter dans le rapport développeur.
+
 ## Options à étudier après le MVP
+
+### Manifeste d’icônes
+
+Une prop `type: "icon"` en `policy: "modifiable"` n’énonce aucune valeur
+légale : ni la CI ni un agent ne peuvent savoir quels noms existent. Exporter
+le catalogue des icônes du fichier — nom Figma et identifiant de code —
+fermerait ce cas. C’est la seule donnée du contrat qu’un agent en contexte
+froid doit aujourd’hui inventer.
+
+### Chemin de slot pour une icône imbriquée
+
+`icons.*.slot` est un nom de slot unique, donc toujours celui d’un enfant direct
+du node de layout. Depuis que `structure.children` est récursif (4.3), une icône
+peut se trouver dans un slot décrit par ses parts : le contrat la situe alors
+sur le slot parent, pas sur la part exacte qui la contient. Rien n’est faux — le
+slot cité existe bel et bien — mais la position est moins précise que l’arbre ne
+le permettrait. Y remédier demanderait de transformer ce champ en chemin, et
+d’adapter `iconSlotsByLayer` ainsi que le garde-fou qui vérifie que le slot cité
+existe. À faire le jour où un design réel présentera ce cas.
 
 ### Liaison explicite avec l’implémentation
 

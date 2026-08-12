@@ -143,8 +143,25 @@ export type ChildStructure = {
   visibilityTargets?: VisibilityTarget[];
   /** Token de taille du calque (ex. taille d'icône). */
   size?: string;
-  /** Typographie du calque texte : nom de style OU détail par token. */
+  /**
+   * Typographie du calque texte : nom de style OU détail par token.
+   * Absente lorsque le slot porte `children` : chaque part y décrit la sienne.
+   */
   typography?: string | TypographyTokens;
+  /**
+   * Parts internes d'un slot qui contient PLUSIEURS calques texte.
+   *
+   * Un titre et une description n'ont pas la même typographie ; une seule
+   * entrée `typography` sur le slot appliquerait celle du premier calque aux
+   * deux. Le slot décrit alors uniquement les branches qui mènent à ces textes
+   * — même forme, à toute profondeur — et ce sont eux qui portent typographie
+   * et visibilité. Les dessins voisins ne deviennent pas des parts.
+   */
+  children?: ChildStructure[];
+  /** Sens de l'auto-layout du slot, présent uniquement avec `children`. */
+  layout?: 'flex-row' | 'flex-column';
+  /** Gap interne du slot, présent uniquement avec `children`. */
+  gap?: string | null;
   /**
    * Nom du composant unifié rendu à cet emplacement. Le slot est alors une
    * DÉPENDANCE : ni ses tokens ni ses calques n'appartiennent à ce contrat,

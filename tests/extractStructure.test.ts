@@ -215,3 +215,57 @@ test('extractStructure garde les dimensions au niveau haut sans axe de tailles',
   assert.equal(structure.gap, '{components.alert.sizes.gap}');
   assert.equal('sizes' in structure, false);
 });
+
+test('extractStructure avertit quand les parties texte divergent entre variants', async () => {
+  const variant = (name: string, secondText: string) => {
+    const titre = { type: 'TEXT', id: `${name}-title`, name: 'Titre', boundVariables: {} };
+    const description = { type: 'TEXT', id: `${name}-body`, name: secondText, boundVariables: {} };
+    const contenu = {
+      type: 'FRAME',
+      id: `${name}-content`,
+      name: 'Contenu',
+      layoutMode: 'VERTICAL',
+      boundVariables: { itemSpacing: alias('text-gap') },
+      children: [titre, description],
+      findAll: findAllOn([titre, description]),
+    };
+    (titre as { parent?: unknown }).parent = contenu;
+    (description as { parent?: unknown }).parent = contenu;
+    const component = {
+      type: 'COMPONENT',
+      id: name,
+      name,
+      layoutMode: 'HORIZONTAL',
+      boundVariables: { itemSpacing: alias('gap') },
+      children: [contenu],
+      findAll: findAllOn([contenu, titre, description]),
+    } as unknown as ComponentNode;
+    (contenu as { parent?: unknown }).parent = component;
+    return component;
+  };
+  const reference = variant('Severity=Info', 'Description');
+  const divergent = variant('Severity=Warning', 'Détail');
+
+  const { warnings } = await extractStructure(
+    {
+      axes: ['severity'],
+      variants: [
+        { values: { severity: 'info' }, component: reference },
+        { values: { severity: 'warning' }, component: divergent },
+      ],
+    },
+    [],
+    null,
+    reference,
+    resolverFor({
+      gap: 'components.alert.sizes.gap',
+      'text-gap': 'components.alert.sizes.text-gap',
+    }),
+  );
+
+  assert.ok(warnings.some(
+    (warning) => warning.includes('Parties texte différentes')
+      && warning.includes('Severity=Warning')
+      && warning.includes('Severity=Info'),
+  ));
+});

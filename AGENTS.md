@@ -56,6 +56,11 @@ tests/
   porte les règles de X » n’existe qu’une fois (`rulesContainerOwner`) : ce qui
   autorise un export et ce qui reconnaît une dépendance sont la même règle. Le
   parent ne réexporte pas ses internes.
+- Une typographie appartient à UN calque texte. Un slot qui en contient
+  plusieurs décrit ses parts dans `children` — sinon celle du titre s’applique
+  aussi à la description. Le slot n’a alors pas de `typography`; les nodes
+  représentés dans ses parts portent leurs visibilités. Les cibles graphiques
+  non représentées restent dans `visibilityTargets`.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours

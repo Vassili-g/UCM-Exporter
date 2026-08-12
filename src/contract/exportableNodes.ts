@@ -131,16 +131,31 @@ export function getAllNodes(
 }
 
 /**
- * Renvoie le premier calque TEXTE d'un sous-arbre, ou null s'il n'y en a pas.
+ * Renvoie TOUS les calques TEXTE d'un sous-arbre, dans l'ordre du document.
  * Le libellé d'un composant embarqué n'en est pas un : sans l'élagage, une
  * Alert emprunterait la typographie du bouton qu'elle contient.
+ *
+ * Le compte importe autant que le premier élément : un calque qui en contient
+ * plusieurs porte plusieurs typographies, et n'en retenir qu'une appliquerait
+ * celle du titre à la description. Les deux besoins partagent donc ce parcours,
+ * plutôt qu'un « premier texte » et un « compte des textes » libres de diverger.
  */
+export function textNodes(
+  node: SceneNode,
+  warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
+): TextNode[] {
+  if (node.type === 'TEXT') return [node];
+  return getAllNodes(node, warnings, composed).filter(
+    (child): child is TextNode => child.type === 'TEXT',
+  );
+}
+
+/** Renvoie le premier calque TEXTE d'un sous-arbre, ou null s'il n'y en a pas. */
 export function firstTextNode(
   node: SceneNode,
   warnings: string[] = [],
   composed: ComposedInstances = new Map(),
 ): TextNode | null {
-  if (node.type === 'TEXT') return node;
-  const text = getAllNodes(node, warnings, composed).find((child) => child.type === 'TEXT');
-  return (text as TextNode | undefined) ?? null;
+  return textNodes(node, warnings, composed)[0] ?? null;
 }

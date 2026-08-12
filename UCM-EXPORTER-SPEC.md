@@ -198,13 +198,54 @@ froid, en styles inline, reproduit les mêmes états via des événements.
 (fallback sur le champ `fontStyle`) / `lineHeight` / `fontFamily`. Chaque
 propriété non liée produit un warning et n'est jamais remplacée par une valeur
 brute ; si aucune propriété n'est exploitable, le bloc `typography` est absent.
+Le relevé porte sur **un** calque texte : un slot qui en contient plusieurs est
+décrit par ses parts (étape 6), chacune avec la sienne.
+
+`sizes.<valeur>.fontSize` ne note en revanche qu'une font size par taille. Un
+composant à plusieurs textes n'en exporte donc aucune pour cet axe, et
+avertit — la retenir reviendrait à présenter celle du premier calque comme
+celle de tous.
 
 **6. Structure** — `children` = enfants directs réels du node de layout :
 - calque **texte** → slot `label` (nom d'origine dans `figmaLayer`), avec
   `typography` (étape 5) ;
+- calque contenant **plusieurs textes** → slot décrit par `children`,
+  récursivement sur ses seules branches textuelles, plus `layout` et `gap`
+  lorsqu'ils sont applicables ; voir ci-dessous ;
 - calque **graphique désigné par une règle `@icons`** → slot `icon`, `optional:
   true`, `size` ;
 - autre calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
+
+Un slot ne porte qu'une `typography`. Dès qu'il contient plus d'un calque texte
+— un titre et une description —, celle du premier s'appliquerait aux deux et la
+seconde ne serait jamais exportée. Le slot décrit alors ses **parts** dans
+`children`, à la même forme et à toute profondeur, mais uniquement sur les
+branches qui mènent à un vrai calque `TEXT`. La typographie descend jusqu'à ce
+calque ; un frame intermédiaire porte son `figmaLayer`, sa visibilité et ses
+enfants, jamais la typographie du texte qu'il enveloppe. Un dessin ou une
+instance composée voisine ne devient pas une part et ne déclenche aucun warning
+de taille interne.
+
+Le slot lui-même n'a alors pas de `typography`. Les visibilités portées par les
+nodes représentés descendent à leur place exacte ; une cible graphique exclue
+de l'arbre textuel reste dans `visibilityTargets`, sans perte silencieuse.
+`layout` et `gap` ne sont relevés que lorsqu'au moins deux branches sont
+disposées par un auto-layout `HORIZONTAL` ou `VERTICAL`. Pour `NONE`, `GRID` ou
+un node sans auto-layout, les deux champs restent absents et un warning explique
+que la disposition interne manquera. Sonder le padding ou le radius avertirait
+sur tout design pourtant correct et reste hors de cette récursion 4.3.
+
+Les parts sont nommées par la règle qui nomme déjà les slots (`label`,
+`label-2`…) : aucune heuristique sur le nom du calque, et `figmaLayer` conserve
+« Titre » ou « Description » pour les distinguer.
+
+L'arbre textuel est comparé sur toute la matrice. Une différence de cardinalité,
+d'ordre, de nom Figma ou de disposition avertit en nommant les variants ; le
+contrat continue de décrire le variant de référence et ne fusionne jamais des
+arbres incompatibles par supposition.
+
+`icons.<clé>.slot` continue de nommer un slot de **premier niveau**, y compris
+pour une icône imbriquée dans un slot à parts.
 
 Nommer le slot d'icône par son rôle le rend **stable sur toute la matrice** :
 des icônes qui s'excluent entre variants (`circle-info` en info, `circle-check`
@@ -221,7 +262,10 @@ La liaison peut être portée par un descendant : elle est remontée sur le slot
 uniquement si ce descendant contrôle tout son contenu rendable **et** que le
 slot n'est pas déjà masquable. Sinon `visibilityTargets` conserve la prop et le
 chemin Figma relatif de chaque cible, sans marquer à tort le slot entier comme
-optionnel ni taire une prop que le composant doit lire.
+optionnel ni taire une prop que le composant doit lire. Dans un slot décrit par
+ses parts, les cibles représentées dans l'arbre portent leur visibilité à leur
+place exacte. Les cibles non textuelles restent dans `visibilityTargets` : les
+retirer ferait perdre une prop que l'arbre textuel n'a nulle part où publier.
 Une visibilité liée à une variable conserve également le calque, sans inventer
 de prop publique. Un calque statiquement masqué est exclu avec tout son
 sous-arbre ; s'il portait des variables, le warning indique ce qui a été
@@ -327,7 +371,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "4.2",
+    "contractVersion": "4.3",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -386,6 +430,18 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
       { "slot": "label", "figmaLayer": "Suivant", "typography": { "…": "étape 5" } },
       { "slot": "icon-2", "figmaLayer": "arrow-right-long", "optional": true,
         "visibilityProp": "iconRight", "size": "{components.icons.sizes.base}" }
+    ],
+    "…": "un slot à plusieurs textes remplace sa typography par ses parts :",
+    "children (Alert)": [
+      { "slot": "label", "figmaLayer": "Text", "layout": "flex-column",
+        "gap": "{components.alert.sizes.text-gap}",
+        "children": [
+          { "slot": "label", "figmaLayer": "Titre", "optional": true,
+            "visibilityProp": "title",
+            "typography": { "fontSize": "{components.alert.sizes.title-size}", "…": "étape 5" } },
+          { "slot": "label-2", "figmaLayer": "Description",
+            "typography": { "fontSize": "{components.alert.sizes.description-size}", "…": "étape 5" } }
+        ] }
     ],
     "variantAxes": ["color","variant","state"],
     "variantTokens": { "…": "étape 2" },
@@ -598,9 +654,13 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **4.2**. Un consommateur ne doit jamais
-présumer qu’une version mineure est compatible : il accepte uniquement les
-versions qu’il a explicitement auditées.
+La version actuelle du contrat est **4.3** : `structure.children` y devient
+récursif sur les branches textuelles, pour qu'un slot à plusieurs textes décrive
+ses parts au lieu de leur imposer une typographie unique (étape 6). Un composant
+dont chaque slot ne porte qu'un texte produit la même structure qu'en 4.2.
+
+Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
+il accepte uniquement les versions qu’il a explicitement auditées.
 
 Toute modification de forme incrémente `meta.contractVersion` et adapte dans le
 même changement la présente spécification, les fixtures et les consommateurs.

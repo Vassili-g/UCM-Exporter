@@ -107,6 +107,302 @@ test('extractLayout nomme le calque texte « label » et garde son nom Figma', a
   assert.ok(warnings.some((w) => w.includes('line height')));
 });
 
+test('un slot à deux textes décrit chaque part avec SA typographie', async () => {
+  // Régression : l'Alert exportée en 4.2 ne portait qu'une typographie pour un
+  // slot « Text » contenant « Titre » et « Description ». Celle du titre était
+  // appliquée aux deux, et `description-size` n'entrait jamais dans le contrat.
+  const titre = {
+    type: 'TEXT',
+    id: 'title',
+    name: 'Titre',
+    boundVariables: { fontSize: alias('titre'), fontWeight: alias('gras') },
+  };
+  const description = {
+    type: 'TEXT',
+    id: 'description',
+    name: 'Description',
+    boundVariables: { fontSize: alias('desc'), fontWeight: alias('normal') },
+  };
+  const bloc = {
+    type: 'FRAME',
+    id: 'text',
+    name: 'Text',
+    layoutMode: 'VERTICAL',
+    boundVariables: { itemSpacing: alias('interligne') },
+    children: [titre, description],
+    findAll: findAllOn([titre, description]),
+  };
+  (titre as { parent?: unknown }).parent = bloc;
+  (description as { parent?: unknown }).parent = bloc;
+  const alerte = {
+    type: 'COMPONENT',
+    id: 'root',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [bloc],
+    findAll: findAllOn([bloc, titre, description]),
+  } as unknown as ComponentNode;
+  (bloc as { parent?: unknown }).parent = alerte;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    alerte,
+    resolverFor({
+      gap: 'components.alert.sizes.gap',
+      interligne: 'components.alert.sizes.text-gap',
+      titre: 'components.alert.sizes.title-size',
+      desc: 'components.alert.sizes.description-size',
+      gras: 'layouts.fontweight.600',
+      normal: 'layouts.fontweight.400',
+    }),
+    warnings,
+  );
+
+  const slot = layout.children[0];
+  // Le slot ne s'attribue plus une typographie qui n'appartient qu'à une part.
+  assert.equal(slot.typography, undefined);
+  assert.equal(slot.slot, 'label');
+  assert.equal(slot.figmaLayer, 'Text');
+  assert.equal(slot.layout, 'flex-column');
+  assert.equal(slot.gap, '{components.alert.sizes.text-gap}');
+  assert.deepEqual(slot.children, [
+    {
+      slot: 'label',
+      figmaLayer: 'Titre',
+      typography: {
+        fontSize: '{components.alert.sizes.title-size}',
+        fontWeight: '{layouts.fontweight.600}',
+      },
+    },
+    {
+      slot: 'label-2',
+      figmaLayer: 'Description',
+      typography: {
+        fontSize: '{components.alert.sizes.description-size}',
+        fontWeight: '{layouts.fontweight.400}',
+      },
+    },
+  ]);
+  // `tokensUsed` se dérive du contrat terminé : la taille de description doit y
+  // entrer, sans quoi le token resterait orphelin comme dans l'export 4.2.
+  assert.ok(collectTokenReferences(layout).has('{components.alert.sizes.description-size}'));
+});
+
+test('la récursion textuelle ignore un dessin voisin au lieu d’en faire une part', async () => {
+  const titre = { type: 'TEXT', id: 'title', name: 'Titre', boundVariables: { fontSize: alias('title') } };
+  const icone = {
+    type: 'VECTOR',
+    id: 'icon',
+    name: 'circle-info',
+    boundVariables: { width: alias('icon-size'), height: alias('icon-size') },
+    componentPropertyReferences: { visible: 'showIcon#1:2' },
+  };
+  const description = { type: 'TEXT', id: 'body', name: 'Description', boundVariables: { fontSize: alias('body') } };
+  const bloc = {
+    type: 'FRAME',
+    id: 'content',
+    name: 'Contenu',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { itemSpacing: alias('text-gap') },
+    children: [titre, icone, description],
+    findAll: findAllOn([titre, icone, description]),
+  };
+  for (const child of [titre, icone, description]) {
+    (child as { parent?: unknown }).parent = bloc;
+  }
+  const racine = {
+    type: 'COMPONENT',
+    id: 'root',
+    name: 'Alert',
+    layoutMode: 'VERTICAL',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [bloc],
+    findAll: findAllOn([bloc, titre, icone, description]),
+  } as unknown as ComponentNode;
+  (bloc as { parent?: unknown }).parent = racine;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    racine,
+    resolverFor({
+      gap: 'components.alert.sizes.gap',
+      'text-gap': 'components.alert.sizes.text-gap',
+      title: 'components.alert.sizes.title-size',
+      body: 'components.alert.sizes.description-size',
+      'icon-size': 'components.icons.sizes.base',
+    }),
+    warnings,
+    new Map(),
+    new Set(['circle-info']),
+  );
+
+  assert.deepEqual(layout.children[0].children?.map((part) => part.figmaLayer), [
+    'Titre',
+    'Description',
+  ]);
+  assert.equal(
+    warnings.some((warning) => warning.includes('circle-info') && warning.includes('width')),
+    false,
+  );
+  assert.deepEqual(layout.children[0].visibilityTargets, [{
+    visibilityProp: 'showIcon',
+    figmaPath: ['circle-info'],
+  }]);
+});
+
+test('une visibilité graphique imbriquée appartient à la branche textuelle la plus proche', async () => {
+  const titre = { type: 'TEXT', id: 'title', name: 'Titre', boundVariables: {} };
+  const icone = {
+    type: 'VECTOR',
+    id: 'icon',
+    name: 'circle-info',
+    boundVariables: {},
+    componentPropertyReferences: { visible: 'showIcon#1:2' },
+  };
+  const groupeTitre = {
+    type: 'FRAME',
+    id: 'title-group',
+    name: 'Groupe titre',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [titre, icone],
+    findAll: findAllOn([titre, icone]),
+  };
+  const description = { type: 'TEXT', id: 'body', name: 'Description', boundVariables: {} };
+  const bloc = {
+    type: 'FRAME',
+    id: 'content',
+    name: 'Contenu',
+    layoutMode: 'VERTICAL',
+    boundVariables: {},
+    children: [groupeTitre, description],
+    findAll: findAllOn([groupeTitre, titre, icone, description]),
+  };
+  (titre as { parent?: unknown }).parent = groupeTitre;
+  (icone as { parent?: unknown }).parent = groupeTitre;
+  (groupeTitre as { parent?: unknown }).parent = bloc;
+  (description as { parent?: unknown }).parent = bloc;
+  const racine = {
+    type: 'COMPONENT',
+    id: 'root',
+    name: 'Alert',
+    layoutMode: 'VERTICAL',
+    boundVariables: {},
+    children: [bloc],
+    findAll: findAllOn([bloc, groupeTitre, titre, icone, description]),
+  } as unknown as ComponentNode;
+  (bloc as { parent?: unknown }).parent = racine;
+
+  const layout = await extractLayout(racine, resolverFor({}), []);
+  const slot = layout.children[0];
+  const brancheTitre = slot.children?.[0];
+
+  assert.equal(slot.visibilityTargets, undefined);
+  assert.deepEqual(brancheTitre?.visibilityTargets, [{
+    visibilityProp: 'showIcon',
+    figmaPath: ['circle-info'],
+  }]);
+  assert.deepEqual(brancheTitre?.children?.map((part) => part.figmaLayer), ['Titre']);
+});
+
+test('la typographie descend jusqu’au vrai calque texte, pas sur son frame', async () => {
+  const titre = { type: 'TEXT', id: 'title', name: 'Titre', boundVariables: { fontSize: alias('title') } };
+  const enveloppe = {
+    type: 'FRAME',
+    id: 'title-wrapper',
+    name: 'Enveloppe titre',
+    layoutMode: 'NONE',
+    boundVariables: {},
+    children: [titre],
+    findAll: findAllOn([titre]),
+  };
+  const description = { type: 'TEXT', id: 'body', name: 'Description', boundVariables: { fontSize: alias('body') } };
+  const bloc = {
+    type: 'FRAME',
+    id: 'content',
+    name: 'Contenu',
+    layoutMode: 'VERTICAL',
+    boundVariables: { itemSpacing: alias('text-gap') },
+    children: [enveloppe, description],
+    findAll: findAllOn([enveloppe, titre, description]),
+  };
+  (titre as { parent?: unknown }).parent = enveloppe;
+  (enveloppe as { parent?: unknown }).parent = bloc;
+  (description as { parent?: unknown }).parent = bloc;
+  const racine = {
+    type: 'COMPONENT',
+    id: 'root',
+    name: 'Alert',
+    layoutMode: 'VERTICAL',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [bloc],
+    findAll: findAllOn([bloc, enveloppe, titre, description]),
+  } as unknown as ComponentNode;
+  (bloc as { parent?: unknown }).parent = racine;
+
+  const layout = await extractLayout(
+    racine,
+    resolverFor({
+      gap: 'components.alert.sizes.gap',
+      'text-gap': 'components.alert.sizes.text-gap',
+      title: 'components.alert.sizes.title-size',
+      body: 'components.alert.sizes.description-size',
+    }),
+    [],
+  );
+
+  const enveloppeContractuelle = layout.children[0].children?.[0];
+  assert.equal(enveloppeContractuelle?.figmaLayer, 'Enveloppe titre');
+  assert.equal(enveloppeContractuelle?.typography, undefined);
+  assert.equal(enveloppeContractuelle?.children?.[0].figmaLayer, 'Titre');
+  assert.deepEqual(enveloppeContractuelle?.children?.[0].typography, {
+    fontSize: '{components.alert.sizes.title-size}',
+  });
+});
+
+test('un conteneur de textes sans auto-layout n’invente pas flex-row', async () => {
+  const titre = { type: 'TEXT', id: 'title', name: 'Titre', boundVariables: { fontSize: alias('title') } };
+  const description = { type: 'TEXT', id: 'body', name: 'Description', boundVariables: { fontSize: alias('body') } };
+  const bloc = {
+    type: 'FRAME',
+    id: 'content',
+    name: 'Contenu',
+    layoutMode: 'NONE',
+    boundVariables: { itemSpacing: alias('ignored-gap') },
+    children: [titre, description],
+    findAll: findAllOn([titre, description]),
+  };
+  (titre as { parent?: unknown }).parent = bloc;
+  (description as { parent?: unknown }).parent = bloc;
+  const racine = {
+    type: 'COMPONENT',
+    id: 'root',
+    name: 'Alert',
+    layoutMode: 'VERTICAL',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [bloc],
+    findAll: findAllOn([bloc, titre, description]),
+  } as unknown as ComponentNode;
+  (bloc as { parent?: unknown }).parent = racine;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    racine,
+    resolverFor({
+      gap: 'components.alert.sizes.gap',
+      'ignored-gap': 'components.alert.sizes.text-gap',
+      title: 'components.alert.sizes.title-size',
+      body: 'components.alert.sizes.description-size',
+    }),
+    warnings,
+  );
+
+  assert.equal(layout.children[0].layout, undefined);
+  assert.equal(layout.children[0].gap, undefined);
+  assert.ok(warnings.some((warning) => warning.includes('Contenu') && warning.includes('disposition')));
+});
+
 test('extractLayout relie un label masquable à la prop qui le cache', async () => {
   // Cas réel : un bouton à icône seule. Le calque texte porte une prop BOOLEAN
   // Figma sur sa visibilité — sans cette liaison dans le contrat, la prop
@@ -203,13 +499,24 @@ test('extractLayout cible un descendant sans masquer tout son slot', async () =>
   (contenu as { parent?: unknown }).parent = racine;
   const warnings: string[] = [];
 
-  const layout = await extractLayout(racine, resolverFor({}), []);
+  const layout = await extractLayout(racine, resolverFor({}), warnings);
 
-  assert.equal(layout.children[0].visibilityProp, undefined);
-  assert.deepEqual(layout.children[0].visibilityTargets, [{
-    visibilityProp: 'title',
-    figmaPath: ['Titre'],
-  }]);
+  // L'intention d'origine tient : une visibilité portée par un descendant ne
+  // rend pas tout le slot masquable.
+  const slot = layout.children[0];
+  assert.equal(slot.visibilityProp, undefined);
+  assert.equal(slot.optional, undefined);
+  // Le slot porte deux textes : chaque part la déclare à sa place exacte, et
+  // `visibilityTargets` disparaît — sinon deux propriétaires pour un même fait.
+  assert.equal(slot.visibilityTargets, undefined);
+  assert.deepEqual(slot.children?.map((part) => ({
+    slot: part.slot,
+    figmaLayer: part.figmaLayer,
+    visibilityProp: part.visibilityProp,
+  })), [
+    { slot: 'label', figmaLayer: 'Titre', visibilityProp: 'title' },
+    { slot: 'label-2', figmaLayer: 'Description', visibilityProp: undefined },
+  ]);
   assert.equal(warnings.some((warning) => warning.includes('visibilité imbriquée')), false);
 });
 

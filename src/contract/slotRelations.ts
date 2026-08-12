@@ -60,17 +60,23 @@ function figmaPath(node: SceneNode, root: SceneNode): string[] {
  * promotion ne ferait que masquer la seconde. Les cibles sont malgré tout
  * décrites : un slot masquable qui contient une sous-partie masquable expose
  * bien deux props, et n'en taire aucune est la règle.
+ *
+ * `representedTargets` contient les nodes dont une structure plus précise
+ * porte déjà la visibilité (les parts textuelles 4.3). Ils sont retirés avant
+ * toute promotion pour qu'un même fait n'ait jamais deux propriétaires.
  */
 export function nestedSlotVisibility(
   child: SceneNode,
   composed: ComposedInstances,
   slotIsOptional = false,
+  representedTargets: ReadonlySet<string> = new Set(),
 ): { visibilityProp?: string; visibilityTargets?: VisibilityTarget[] } {
   const nodes = getAllNodes(child, [], composed);
   const targets = nodes.filter(
     (node) =>
       node !== child
       && !composed.has(node.id)
+      && !representedTargets.has(node.id)
       && Boolean(node.componentPropertyReferences?.visible),
   );
   if (targets.length === 0) return {};
