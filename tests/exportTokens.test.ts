@@ -17,8 +17,10 @@ test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () =
   assert.equal(dtcgType('FLOAT', 'sizes.spacing.8'), 'dimension');
   assert.equal(dtcgType('FLOAT', 'layouts.fontweight.600'), 'number');
   assert.equal(dtcgType('FLOAT', 'layouts.font-weight.600'), 'number');
-  assert.equal(dtcgType('FLOAT', 'layouts.lineheight.base'), 'number');
-  assert.equal(dtcgType('FLOAT', 'layouts.line-height.base'), 'number');
+  assert.equal(dtcgType('FLOAT', 'layouts.lineheight.base'), 'dimension');
+  assert.equal(dtcgType('FLOAT', 'layouts.line-height.base'), 'dimension');
+  assert.equal(dtcgType('FLOAT', 'fondations.taille-de-ligne', ['LINE_HEIGHT']), 'dimension');
+  assert.equal(dtcgType('FLOAT', 'fondations.graisse', ['FONT_WEIGHT']), 'number');
   assert.equal(dtcgType('BOOLEAN', 'flags.x'), 'boolean');
   assert.equal(dtcgType('STRING', 'layouts.fontfamily.base'), 'string');
 });
@@ -26,7 +28,8 @@ test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () =
 test('isUnitless détecte les groupes sans unité', () => {
   assert.equal(isUnitless('layouts.fontweight.600'), true);
   assert.equal(isUnitless('layouts.font-weight.600'), true);
-  assert.equal(isUnitless('layouts.line-height.base'), true);
+  assert.equal(isUnitless('layouts.line-height.base'), false);
+  assert.equal(isUnitless('fondations.taille-de-ligne', ['LINE_HEIGHT']), false);
   assert.equal(isUnitless('layouts.opacity.disabled'), true);
   assert.equal(isUnitless('layouts.z-index.modal'), true);
   assert.equal(isUnitless('layouts.aspect-ratio.square'), true);
@@ -38,6 +41,8 @@ test('formatValue suffixe px les dimensions, laisse les nombres bruts', () => {
   assert.equal(formatValue(8, 'FLOAT', 'sizes.spacing.8'), '8px');
   assert.equal(formatValue(600, 'FLOAT', 'layouts.fontweight.600'), 600);
   assert.equal(formatValue(600, 'FLOAT', 'layouts.font-weight.600'), 600);
+  assert.equal(formatValue(24, 'FLOAT', 'layouts.lineheight.base'), '24px');
+  assert.equal(formatValue(24, 'FLOAT', 'fondations.taille-de-ligne', ['LINE_HEIGHT']), '24px');
   assert.equal(formatValue('Open Sans', 'STRING', 'layouts.fontfamily.base'), 'Open Sans');
 });
 
