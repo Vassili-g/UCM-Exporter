@@ -3,16 +3,14 @@
  *
  * On part d'un « node racine » (le wrapper de dimensions s'il existe, sinon
  * le composant lui-même) et on relève les tokens liés : gap, paddings,
- * border-radius, typographie du texte, tailles d'icônes.
+ * border-radius et tailles d'icônes. La typographie est extraite séparément
+ * sur toute la matrice par `extractVariantTypography`.
  */
-import normalizeName from '../utils';
-import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
 import { getAllNodes, textNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import {
   BINDING_PATTERNS,
-  getBinding,
   hasCompleteBinding,
   resolveField,
 } from './nodeBindings';
@@ -27,13 +25,12 @@ import {
 import type {
   ChildStructure,
   ContractStructure,
-  TypographyTokens,
 } from './types';
 
 /** La partie « layout » de la structure (sans les tokens de variantes). */
 type LayoutStructure = Omit<
   ContractStructure,
-  'sizes' | 'variantAxes' | 'variantTokens' | 'variantStrokes'
+  'sizes' | 'variantAxes' | 'variantTokens' | 'variantStrokes' | 'variantTypography'
 >;
 
 /** Node de départ accepté : une instance (wrapper) ou un composant direct. */
@@ -83,63 +80,6 @@ function autoLayoutDirection(node: SceneNode): 'flex-row' | 'flex-column' | null
  */
 function layoutDirection(node: SceneNode): 'flex-row' | 'flex-column' {
   return autoLayoutDirection(node) ?? 'flex-row';
-}
-
-/**
- * Extrait la typographie d'un calque texte, en NOMS de tokens.
- * Deux cas, dans l'ordre :
- * 1. le calque utilise un style de texte Figma → on exporte son nom ;
- * 2. sinon on relève chaque variable liée (fontSize, fontWeight…).
- * Particularité Figma : fontWeight est parfois lié via le champ « fontStyle »,
- * d'où le double essai.
- */
-async function extractTypography(
-  textNode: TextNode,
-  resolver: TokenResolver,
-  warnings: string[],
-): Promise<string | TypographyTokens | undefined> {
-  if (typeof textNode.textStyleId === 'string' && textNode.textStyleId) {
-    const style = await figma.getStyleByIdAsync(textNode.textStyleId).catch(() => null);
-    if (style?.name) {
-      // Un style de texte Figma n'est PAS un token : on renvoie son nom tel
-      // quel (sans accolades) et on ne l'ajoute pas à `tokensUsed`, qui ne
-      // liste que des références de tokens résolvables dans tokens.json.
-      return normalizeName(style.name);
-    }
-  }
-
-  // Le libellé est celui que le designer lit dans Figma, pas le nom du champ.
-  const fields: Array<[keyof TypographyTokens, string, string[]]> = [
-    ['fontSize', 'font size', ['fontSize']],
-    ['fontWeight', 'font weight', ['fontWeight', 'fontStyle']],
-    ['lineHeight', 'line height', ['lineHeight']],
-    ['fontFamily', 'font family', ['fontFamily']],
-  ];
-  const typography: TypographyTokens = {};
-
-  for (const [contractField, label, figmaFields] of fields) {
-    // On essaie chaque champ Figma possible jusqu'à trouver un token lié.
-    let token: string | null = null;
-    for (const figmaField of figmaFields) {
-      token = await resolver.resolve(firstVariableAlias(getBinding(textNode, figmaField)), {
-        nodeName: textNode.name,
-        field: label,
-      });
-      if (token) break;
-    }
-
-    if (token) {
-      typography[contractField] = toRef(token);
-    } else {
-      warnings.push(
-        `Layer « ${textNode.name} » — ${label} : aucune variable Figma n'est reliée. La ` +
-          `valeur fixe n'est pas exportée. Reliez-la à une variable, ou appliquez un text ` +
-          `style au layer, puis réexportez.`,
-      );
-    }
-  }
-
-  return Object.keys(typography).length > 0 ? typography : undefined;
 }
 
 /**
@@ -256,8 +196,6 @@ async function extractTextBranch(
   const isOptional = applyDirectVisibility(entry, node);
 
   if (node.type === 'TEXT') {
-    const typography = await extractTypography(node, resolver, warnings);
-    if (typography) entry.typography = typography;
     return entry;
   }
 
@@ -400,10 +338,7 @@ async function extractChild(
   }
 
   const textNode = texts[0] ?? null;
-  if (textNode) {
-    const typography = await extractTypography(textNode, resolver, warnings);
-    if (typography) entry.typography = typography;
-  } else {
+  if (!textNode) {
     // Le nom du calque est gardé même quand il s'agit d'un placeholder d'icône.
     // Une règle `@icons` peut ensuite qualifier cette icône par son nom Figma.
     entry.figmaLayer = child.name;

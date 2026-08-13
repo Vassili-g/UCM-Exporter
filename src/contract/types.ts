@@ -101,17 +101,28 @@ export type RenderingSemantics = {
   roles: Record<string, RenderingRole>;
 };
 
-/**
- * Typographie du calque texte, exprimée en NOMS de tokens (jamais en valeurs
- * brutes). Chaque champ est optionnel : on n'exporte que ce qui est
- * réellement lié à une variable dans Figma.
- */
+/** Tokens réellement liés aux propriétés d'un text style Figma. */
 export type TypographyTokens = Partial<{
   fontSize: string;
   fontWeight: string;
   lineHeight: string;
   fontFamily: string;
+  letterSpacing: string;
 }>;
+
+/** Définition d'un text style utilisé par le composant, avec son nom Figma traçable. */
+export type TextStyleDefinition = {
+  figmaName: string;
+  tokens: TypographyTokens;
+};
+
+/** Application d'un text style à un slot textuel précis d'un variant. */
+export type TextStyleUse = {
+  /** Chemin de slots depuis `structure.children` jusqu'au texte concerné. */
+  slotPath: string[];
+  /** Clé normalisée d'une entrée de `Contract.textStyles`. */
+  style: string;
+};
 
 /** Répartition des enfants sur l'axe principal d'un conteneur Flex. */
 export type JustifyContent = 'flex-start' | 'center' | 'flex-end' | 'space-between';
@@ -157,18 +168,12 @@ export type ChildStructure = {
   /** Le layer remplit l'axe principal de son parent (`layoutGrow: 1` dans Figma). */
   flexGrow?: 1;
   /**
-   * Typographie du calque texte : nom de style OU détail par token.
-   * Absente lorsque le slot porte `children` : chaque part y décrit la sienne.
-   */
-  typography?: string | TypographyTokens;
-  /**
    * Parts internes d'un slot qui contient PLUSIEURS calques texte.
    *
-   * Un titre et une description n'ont pas la même typographie ; une seule
-   * entrée `typography` sur le slot appliquerait celle du premier calque aux
-   * deux. Le slot décrit alors uniquement les branches qui mènent à ces textes
-   * — même forme, à toute profondeur — et ce sont eux qui portent typographie
-   * et visibilité. Les dessins voisins ne deviennent pas des parts.
+   * Le slot décrit uniquement les branches qui mènent à ces textes — même
+   * forme, à toute profondeur. Leur typographie est publiée séparément dans
+   * `structure.variantTypography`; leurs visibilités restent portées ici.
+   * Les dessins voisins ne deviennent pas des parts.
    */
   children?: ChildStructure[];
   /** Sens de l'auto-layout du slot, présent uniquement avec `children`. */
@@ -270,6 +275,14 @@ export interface VariantStrokes {
 }
 
 /**
+ * Arbre parallèle aux variantes dont chaque feuille situe les text styles
+ * réellement appliqués aux slots de cette combinaison.
+ */
+export interface VariantTypography {
+  [axisValue: string]: VariantTypography | TextStyleUse[];
+}
+
+/**
  * Dimensions d'UNE taille du composant (une valeur de la prop `size`).
  * Tout est exprimé en noms de tokens.
  */
@@ -277,8 +290,6 @@ export type SizeDimensions = {
   gap: string | null;
   padding: { x: string | null; y: string | null };
   radius: string | null;
-  /** Token de taille de police propre à cette taille, si lié. */
-  fontSize?: string;
 };
 
 /**
@@ -318,6 +329,8 @@ export type ContractStructure = {
   /** Géométrie et couleur des strokes, rangées à part pour ne pas casser `variantTokens`. */
   variantStrokes: VariantStrokes;
   variantTokens: VariantTokens;
+  /** Text styles appliqués à chaque slot de chaque combinaison d'axes. */
+  variantTypography: VariantTypography;
 };
 
 /**
@@ -363,6 +376,8 @@ export type Contract = {
   rendering: RenderingSemantics;
   /** Icônes qualifiées par les règles Figma, indexées par leur nom normalisé. */
   icons: Record<string, IconDefinition>;
+  /** Text styles réellement utilisés, liés à leurs tokens DTCG. */
+  textStyles: Record<string, TextStyleDefinition>;
   /**
    * Les composants unifiés que celui-ci embarque. Vide pour un composant
    * simple ; non vide, il fait de ce contrat celui d'un composé.

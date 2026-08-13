@@ -43,6 +43,28 @@ export function compactName(name: string): string {
   return name.replace(/\s+/g, '').toLowerCase();
 }
 
+/** Résultat de lecture enrichi pour distinguer l'absence du conteneur de son contenu invalide. */
+export type ExtractedRules = RulesResult & { sectionFound: boolean };
+
+/**
+ * Formule le blocage des règles sans jeter les diagnostics déjà produits par
+ * leur lecture. Le même texte sert au pré-vol de l'UI et à l'export : un
+ * conteneur absent n'est pas confondu avec une règle présente mais invalide.
+ */
+export function unusableRulesMessage(componentName: string, rules: ExtractedRules): string {
+  const sectionName = `${componentName}${RULES_SECTION_SUFFIX}`;
+  const fallback = rules.sectionFound
+    ? `Frame « ${sectionName} » : aucune règle utilisable n'a été lue. Ajoutez-y au moins une règle, puis réexportez.`
+    : `Ajoutez un conteneur « ${sectionName} » (frame, section ou groupe) avec au moins une règle, puis réexportez.`;
+  const diagnostics = rules.warnings.length > 0 ? [...rules.warnings] : [];
+  if (!rules.sectionFound || diagnostics.length === 0) diagnostics.push(fallback);
+
+  return [
+    `Export impossible pour « ${componentName} » : aucune règle utilisable.`,
+    ...diagnostics,
+  ].join('\n');
+}
+
 /** Suffixe compacté : toute comparaison de conteneur passe par des noms compactés. */
 const COMPACT_RULES_SUFFIX = compactName(RULES_SECTION_SUFFIX);
 
@@ -117,7 +139,7 @@ async function isRuleInstance(instance: InstanceNode): Promise<boolean> {
  */
 export async function extractRules(
   componentSet: ComponentSetNode,
-): Promise<RulesResult & { sectionFound: boolean }> {
+): Promise<ExtractedRules> {
   // Le nom canonique sert aux messages ; la RECONNAISSANCE, elle, passe par
   // `rulesContainerOwner`, qui tolère la casse et les espaces.
   const sectionName = `${componentSet.name}${RULES_SECTION_SUFFIX}`;

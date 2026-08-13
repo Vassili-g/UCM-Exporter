@@ -1,0 +1,167 @@
+/** Non-régression du lien TextStyle Figma → tokens → usages par variant. */
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { extractVariantTypography, textSlots } from '../src/contract/extractVariantTypography';
+import { collectTokenReferences } from '../src/variables';
+
+const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
+
+const resolverFor = (tokens: Record<string, string>) => ({
+  resolve: async (candidate: VariableAlias | null | undefined) =>
+    candidate ? tokens[candidate.id] ?? null : null,
+});
+
+function node(type: string, id: string, name: string, children: any[] = [], extra: object = {}) {
+  const result: any = {
+    type,
+    id,
+    name,
+    children,
+    boundVariables: {},
+    ...extra,
+  };
+  for (const child of children) child.parent = result;
+  result.findAll = (predicate: (candidate: any) => boolean) => {
+    const found: any[] = [];
+    const visit = (items: any[]) => {
+      for (const item of items) {
+        if (predicate(item)) found.push(item);
+        visit(item.children ?? []);
+      }
+    };
+    visit(children);
+    return found;
+  };
+  return result;
+}
+
+function variant(name: string, titleStyle: string, bodyStyle: string) {
+  const title = node('TEXT', `${name}-title`, 'Titre', [], { textStyleId: titleStyle });
+  const body = node('TEXT', `${name}-body`, 'Description', [], { textStyleId: bodyStyle });
+  const content = node('FRAME', `${name}-content`, 'Text', [title, body], {
+    layoutMode: 'VERTICAL',
+  });
+  return node('COMPONENT', name, name, [content], {
+    layoutMode: 'HORIZONTAL',
+    variantProperties: { Size: name },
+  }) as ComponentNode;
+}
+
+function style(name: string, prefix: string): BaseStyle {
+  return {
+    type: 'TEXT',
+    name,
+    boundVariables: {
+      fontFamily: alias(`${prefix}-family`),
+      fontSize: alias(`${prefix}-size`),
+      fontWeight: alias(`${prefix}-weight`),
+      lineHeight: alias(`${prefix}-line`),
+      letterSpacing: alias(`${prefix}-spacing`),
+    },
+  } as unknown as BaseStyle;
+}
+
+test('textSlots reprend les chemins des parts textuelles récursives', () => {
+  const component = variant('Big', 'body-large', 'body-small');
+
+  assert.deepEqual(
+    textSlots(component).map(({ slotPath, textNode }) => ({ slotPath, layer: textNode.name })),
+    [
+      { slotPath: ['label', 'label'], layer: 'Titre' },
+      { slotPath: ['label', 'label-2'], layer: 'Description' },
+    ],
+  );
+});
+
+test('extractVariantTypography lie les styles à leurs tokens sur chaque variant', async () => {
+  const big = variant('Big', 'body-large', 'body-small');
+  const small = variant('Small', 'body-medium', 'body-small');
+  const styles: Record<string, BaseStyle> = {
+    'body-large': style('Body/Large', 'large'),
+    'body-medium': style('Body/Medium', 'medium'),
+    'body-small': style('Body/Small', 'small'),
+  };
+  const tokens = Object.fromEntries(
+    ['large', 'medium', 'small'].flatMap((size) => [
+      [`${size}-family`, 'primitives.fontfamily.base'],
+      [`${size}-size`, `typography.body.${size}.fontsize`],
+      [`${size}-weight`, `typography.body.${size}.fontweight`],
+      [`${size}-line`, `typography.body.${size}.lineheight`],
+      [`${size}-spacing`, `typography.body.${size}.letterspacing`],
+    ]),
+  );
+  const warnings: string[] = [];
+  const loads: string[] = [];
+
+  const result = await extractVariantTypography(
+    {
+      axes: ['size'],
+      variants: [
+        { values: { size: 'big' }, component: big },
+        { values: { size: 'small' }, component: small },
+      ],
+    },
+    resolverFor(tokens),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    async (id) => {
+      loads.push(id);
+      return styles[id] ?? null;
+    },
+  );
+
+  assert.deepEqual(result.variantTypography, {
+    big: [
+      { slotPath: ['label', 'label'], style: 'body.large' },
+      { slotPath: ['label', 'label-2'], style: 'body.small' },
+    ],
+    small: [
+      { slotPath: ['label', 'label'], style: 'body.medium' },
+      { slotPath: ['label', 'label-2'], style: 'body.small' },
+    ],
+  });
+  assert.deepEqual(result.textStyles['body.large'], {
+    figmaName: 'Body/Large',
+    tokens: {
+      fontFamily: '{primitives.fontfamily.base}',
+      fontSize: '{typography.body.large.fontsize}',
+      fontWeight: '{typography.body.large.fontweight}',
+      lineHeight: '{typography.body.large.lineheight}',
+      letterSpacing: '{typography.body.large.letterspacing}',
+    },
+  });
+  assert.equal(loads.filter((id) => id === 'body-small').length, 1);
+  assert.ok(
+    collectTokenReferences(result).has('{typography.body.small.letterspacing}'),
+  );
+  assert.deepEqual(warnings, []);
+});
+
+test('un texte sans style et une liaison incomplète avertissent sans valeur brute', async () => {
+  const component = variant('Big', '', 'body-small');
+  const warnings: string[] = [];
+  const result = await extractVariantTypography(
+    { axes: ['size'], variants: [{ values: { size: 'big' }, component }] },
+    resolverFor({ size: 'typography.body.small.fontsize' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    async () => ({
+      type: 'TEXT',
+      name: 'Body/Small',
+      boundVariables: { fontSize: alias('size') },
+    } as unknown as BaseStyle),
+  );
+
+  assert.deepEqual(result.variantTypography, {
+    big: [{ slotPath: ['label', 'label-2'], style: 'body.small' }],
+  });
+  assert.deepEqual(result.textStyles['body.small'].tokens, {
+    fontSize: '{typography.body.small.fontsize}',
+  });
+  assert.ok(warnings.some((warning) => warning.includes('aucun text style unique')));
+  assert.ok(warnings.some((warning) => warning.includes('letter spacing')));
+});

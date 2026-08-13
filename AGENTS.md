@@ -56,11 +56,12 @@ tests/
   porte les règles de X » n’existe qu’une fois (`rulesContainerOwner`) : ce qui
   autorise un export et ce qui reconnaît une dépendance sont la même règle. Le
   parent ne réexporte pas ses internes.
-- Une typographie appartient à UN calque texte. Un slot qui en contient
-  plusieurs décrit ses parts dans `children` — sinon celle du titre s’applique
-  aussi à la description. Le slot n’a alors pas de `typography`; les nodes
-  représentés dans ses parts portent leurs visibilités. Les cibles graphiques
-  non représentées restent dans `visibilityTargets`.
+- Une typographie appartient à UN calque texte et vient de son text style.
+  `textStyles` lie le style à ses variables ; `variantTypography` situe son
+  usage sur chaque variant par un chemin de slots. Un slot à plusieurs textes
+  décrit donc ses parts dans `children`. Les nodes représentés dans ses parts
+  portent leurs visibilités ; les cibles graphiques non représentées restent
+  dans `visibilityTargets`.
 - Un auto-layout linéaire publie son alignement (`justifyContent`, `alignItems`)
   et ses slots publient seulement leurs exceptions (`alignSelf`, `flexGrow`).
   Une absence signifie hors flux ou non applicable, jamais `flex-start` deviné.

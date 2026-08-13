@@ -12,7 +12,7 @@ import {
 } from './componentTree';
 import type { MissingVariantSummary } from './componentTree';
 import { indexContractedNames, scanComposedMatrix } from './composedComponents';
-import { extractRules, hasUsableRules } from './extractRules';
+import { extractRules, hasUsableRules, unusableRulesMessage } from './extractRules';
 import { extractStructure } from './extractStructure';
 import { extractContractPropertyModel, extractContractProps } from './parsers';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
@@ -25,6 +25,11 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 4.6 : les text styles et leurs tokens sont catalogués une fois, puis leurs
+ * usages sont décrits sur toute la matrice par `variantTypography`.
+ * 4.5 : quand `sizes` décrit une font size par taille, celle du slot de
+ * référence est retirée de `typography` ; la carte des tailles est son unique
+ * autorité.
  * 4.4 : l'auto-layout publie l'alignement du conteneur et le remplissage de
  * ses enfants ; un consommateur n'a plus à inventer `alignItems` ou `flexGrow`.
  * 4.3 : les slots multi-textes deviennent récursifs, afin que chaque calque
@@ -37,7 +42,7 @@ import type { Contract, ContractMeta, ContractProp } from './types';
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '4.4';
+export const CONTRACT_VERSION = '4.6';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
@@ -204,11 +209,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   // toute extraction, pour un retour immédiat à l'utilisateur.
   const rules = await extractRules(componentSet);
   if (!hasUsableRules(rules)) {
-    throw new ComponentExportError(
-      `Aucune règle associée à « ${componentSet.name} ». Ajoutez un conteneur ` +
-        `« ${componentSet.name}-Rules » (frame, section ou groupe) avec au moins ` +
-        `une règle, puis réexportez.`,
-    );
+    throw new ComponentExportError(unusableRulesMessage(componentSet.name, rules));
   }
 
   const warnings: string[] = [...rules.warnings];
@@ -315,6 +316,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     stateModel,
     rendering: defaultRenderingSemantics(),
     icons,
+    textStyles: extracted.textStyles,
     composes,
     tokensUsed: [],
     intent,
