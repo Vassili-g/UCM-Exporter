@@ -140,10 +140,9 @@ test('un dimensionnement HUG sur l’axe secondaire prime sur un layoutAlign STR
 });
 
 test('une hauteur en hug ne fait pas disparaître une largeur en fill', async () => {
-  // Le réglage courant d'un texte au milieu d'une alerte : il occupe la place
-  // restante en largeur et se contente de sa hauteur. Les deux menus sont
-  // indépendants ; lire le second pour décider du premier retirait du contrat
-  // un remplissage toujours vrai dans Figma.
+  // Les deux menus de dimensionnement sont indépendants : un texte qui occupe
+  // la place restante en largeur et se contente de sa hauteur est un réglage
+  // courant, pas une contradiction.
   const label = {
     type: 'TEXT',
     id: 'label',
@@ -809,10 +808,10 @@ test('extractLayout décrit un calque graphique en slot optionnel avec sa visibi
   ]);
 });
 
-test('le composant publie fill par défaut, et hug seulement quand Figma le dit', async () => {
+test('le composant publie stretch par défaut, et fit-content sur un Hug', async () => {
   // Une largeur fixe sur un variant sert à aligner le component set dans
   // Figma. La publier imposerait cette largeur à toutes les pages qui
-  // intègrent le composant : le contrat retient donc `fill`.
+  // intègrent le composant : le contrat retient donc `stretch`.
   const fixe = {
     type: 'COMPONENT',
     name: 'Alert',
@@ -826,10 +825,10 @@ test('le composant publie fill par défaut, et hug seulement quand Figma le dit'
 
   const layout = await extractLayout(fixe, resolverFor({}), []);
 
-  assert.deepEqual(layout.sizing, { horizontal: 'fill', vertical: 'hug' });
+  assert.deepEqual(layout.sizing, { width: 'stretch', height: 'fit-content' });
 });
 
-test('un composant sans menu de dimensionnement lisible reste en fill sur les deux axes', async () => {
+test('un composant sans menu de dimensionnement lisible reste en stretch sur les deux axes', async () => {
   const plat = {
     type: 'COMPONENT',
     name: 'Button',
@@ -841,7 +840,7 @@ test('un composant sans menu de dimensionnement lisible reste en fill sur les de
 
   const layout = await extractLayout(plat, resolverFor({}), []);
 
-  assert.deepEqual(layout.sizing, { horizontal: 'fill', vertical: 'fill' });
+  assert.deepEqual(layout.sizing, { width: 'stretch', height: 'stretch' });
 });
 
 test('un slot de texte figé publie sa dimension au lieu de passer pour un hug', async () => {

@@ -69,8 +69,10 @@ tests/
   jamais de l’autre. Pour un slot, `Fill` se publie et `Fixed` cite une variable
   dans `size` ; l’absence vaut donc `Hug`, et une dimension figée sans variable
   avertit plutôt que de disparaître. Pour le composant, `structure.sizing` est
-  toujours publié et vaut `fill` par défaut : une largeur fixe posée sur un
-  variant présente le component set, elle ne décrit pas le composant.
+  toujours publié, en vocabulaire CSS (`stretch`, `fit-content`) et par
+  propriété (`width`, `height`) : sa taille n’est pas une propriété de flux. Une
+  largeur fixe posée sur un variant présente le component set, elle ne décrit
+  pas le composant, et vaut donc `stretch`.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours

@@ -326,7 +326,7 @@ variable produit un avertissement au lieu d'être tue. Un consommateur peut donc
 rendre un slot sans `flexGrow`, sans `alignSelf` et sans `size` comme un
 `fit-content`.
 
-**Dimensions figées des slots (4.7).** Le relevé vise **tous** les slots, texte
+**Dimensions figées des slots (4.8).** Le relevé vise **tous** les slots, texte
 compris, et se fait axe par axe : un axe en `Hug` ou en `Fill` est déjà décrit
 et ne réclame rien, un axe figé doit citer une variable. `size` porte alors la
 référence seule quand les deux côtés sont identiques — le carré des icônes — et
@@ -335,17 +335,24 @@ dimension figée sans variable produit un avertissement et reste absente : c'est
 ce qui autorise à lire une absence comme un `Hug`. Seule la dépendance composée
 échappe au relevé, sa taille appartenant à son propre contrat.
 
-**Dimensionnement du composant (4.7).** `structure.sizing` publie le
-comportement du composant lui-même sur les deux axes (`fill` ou `hug`), et il
+**Dimensionnement du composant (4.8).** `structure.sizing` publie le
+comportement du composant lui-même, en valeurs de `width` et de `height`, et il
 est toujours présent : c'est la première décision de qui l'intègre, et la
-déduire d'une absence reviendrait à la deviner. `Hug` est repris tel quel ;
-tout le reste vaut `fill`, y compris une largeur fixe — celle-ci sert à aligner
-les variants d'un component set dans Figma, et la publier imposerait une
-largeur de maquette à toutes les pages qui intègrent le composant. C'est
-l'inverse de la règle des slots, parce qu'un slot vit dans un auto-layout que
-ce contrat décrit entièrement, là où un composant ne connaît pas son futur
-parent. Le dimensionnement est lu sur le variant, jamais sur le wrapper de
-layout, et comparé sur toute la matrice comme le reste du flux.
+déduire d'une absence reviendrait à la deviner. Le vocabulaire est celui de
+CSS, pas celui du panneau Figma : `Hug` devient `fit-content`, tout le reste
+`stretch`. Une largeur fixe entre dans ce « tout le reste » — elle sert à
+aligner les variants d'un component set dans Figma, et la publier imposerait
+une largeur de maquette à toutes les pages qui intègrent le composant.
+
+`stretch` nomme une intention, « occupe la place donnée » ; la technique
+appartient au développeur, qui écrit `width: stretch`, `width: 100%` ou
+`flex: 1` selon le contexte d'intégration. La clé est la propriété CSS et non
+l'axe Figma, parce que la taille d'un composant n'est pas une propriété de
+flux : il ne connaît pas le conteneur qui l'accueillera. C'est aussi ce qui
+distingue cette règle de celle des slots, qui vivent dans un auto-layout que ce
+contrat décrit entièrement. Le dimensionnement est lu sur le variant, jamais
+sur le wrapper de layout, et comparé sur toute la matrice comme le reste du
+flux.
 
 Un layer en position `Absolute` est averti et ne reçoit aucune propriété Flex : le
 contrat ne décrit pas encore ses coordonnées. Direction, alignements et
@@ -453,7 +460,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "4.7",
+    "contractVersion": "4.8",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -501,7 +508,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
   },
   "structure": {
     "layout": "flex-row",
-    "sizing": { "horizontal": "hug", "vertical": "hug" },
+    "sizing": { "width": "fit-content", "height": "fit-content" },
     "sizes": {
       "big":    { "gap": "…", "padding": { "x": "…", "y": "…" }, "radius": "…" },
       "medium": { "…": "idem" },
@@ -761,12 +768,13 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **4.7** : après la récursion textuelle 4.3,
-le flux Flex 4.4, le jalon transitoire 4.5 et les text styles 4.6, elle ferme le
-dimensionnement. `structure.sizing` publie le comportement du composant sur ses
-deux axes, et `size` décrit la dimension figée de n'importe quel slot, côté par
-côté. Une absence de dimensionnement se lit désormais comme un `Hug`, sans avoir
-à le supposer.
+La version actuelle du contrat est **4.8** : après la récursion textuelle 4.3,
+le flux Flex 4.4, le jalon transitoire 4.5 et les text styles 4.6, la 4.7 ferme
+le dimensionnement et la 4.8 l'exprime en CSS. `structure.sizing` publie le
+comportement du composant en valeurs de `width` et `height` (`stretch` ou
+`fit-content`), et `size` décrit la dimension figée de n'importe quel slot, côté
+par côté. Une absence de dimensionnement se lit comme un `fit-content`, sans
+avoir à le supposer.
 
 Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
 il accepte uniquement les versions qu’il a explicitement auditées.

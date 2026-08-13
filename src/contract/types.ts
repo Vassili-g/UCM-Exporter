@@ -135,16 +135,31 @@ export type AlignSelf = 'flex-start' | 'center' | 'flex-end' | 'stretch';
 
 /**
  * Comportement d'un composant sur un axe, face à la place qu'on lui donne.
- * `fill` occupe cette place, `hug` s'en tient au contenu. Il n'y a pas de
- * troisième terme : une dimension fixe posée dans Figma sert à présenter les
- * variants, elle ne décrit pas le composant.
+ *
+ * Ce sont les mots de CSS, pas ceux de Figma : `Fill` et `Hug` sont les
+ * intitulés d'un panneau, `stretch` et `fit-content` sont des valeurs de
+ * `width` et `height`. Le contrat traduit partout ailleurs (`flex-start`,
+ * `stretch`, `flexGrow`), et il ne garde un terme Figma que là où CSS n'a
+ * rien à proposer — l'alignement d'un stroke, par exemple. Ici CSS a le mot
+ * exact : le consommateur écrit la valeur, il ne la devine pas.
+ *
+ * Il n'y a pas de troisième terme : une dimension fixe posée dans Figma sert à
+ * présenter les variants, elle ne décrit pas le composant.
  */
-export type AxisSizing = 'fill' | 'hug';
+export type AxisSizing = 'stretch' | 'fit-content';
 
-/** Dimensionnement propre du composant, publié sur les deux axes. */
+/**
+ * Dimensionnement propre du composant, publié sur les deux axes.
+ *
+ * Les clés sont les propriétés CSS concernées, et non les axes de Figma : la
+ * taille d'un composant n'est pas une propriété de flux, elle ne dépend pas
+ * d'un conteneur qu'il ne connaît pas. `stretch` reste une intention —
+ * « occupe la place donnée » — dont la technique appartient au développeur :
+ * `width: stretch`, `width: 100%` ou `flex: 1` selon le contexte d'intégration.
+ */
 export type ContainerSizing = {
-  horizontal: AxisSizing;
-  vertical: AxisSizing;
+  width: AxisSizing;
+  height: AxisSizing;
 };
 
 /**

@@ -8,6 +8,7 @@
 import type {
   AlignItems,
   AlignSelf,
+  AxisSizing,
   ContainerSizing,
   JustifyContent,
 } from './types';
@@ -80,15 +81,17 @@ function childSizing(parent: SceneNode, child: SceneNode): { main: unknown; cros
 }
 
 /**
- * Dimensionnement propre du composant, axe par axe.
+ * Dimensionnement propre du composant, traduit en valeurs de `width` et
+ * `height`.
  *
  * Seul `Hug` est une intention de comportement : il dit que le composant se
- * limite à son contenu. Une largeur fixe posée sur un variant ne l'est pas —
- * c'est le plus souvent une commodité de mise en page dans Figma, pour aligner
- * les variants d'un component set entre eux. La publier reviendrait à figer
- * dans le contrat une décision de présentation, et à imposer cette largeur à
- * toutes les pages qui intègrent le composant. Le défaut est donc `fill` : le
- * composant occupe la place que son intégration lui donne.
+ * limite à son contenu, ce que CSS écrit `fit-content`. Une largeur fixe posée
+ * sur un variant ne l'est pas — c'est le plus souvent une commodité de mise en
+ * page dans Figma, pour aligner les variants d'un component set entre eux. La
+ * publier reviendrait à figer dans le contrat une décision de présentation, et
+ * à imposer cette largeur à toutes les pages qui intègrent le composant. Le
+ * défaut est donc `stretch` : le composant occupe la place que son intégration
+ * lui donne.
  *
  * C'est l'inverse de la règle des slots, et pour une raison : un slot vit dans
  * l'auto-layout de ce composant, dont le contrat décrit tout le contexte ; un
@@ -96,9 +99,11 @@ function childSizing(parent: SceneNode, child: SceneNode): { main: unknown; cros
  */
 export function containerSizing(node: SceneNode): ContainerSizing {
   const values = asPropertyBag(node);
+  const cssSizing = (sizing: unknown): AxisSizing =>
+    sizing === 'HUG' ? 'fit-content' : 'stretch';
   return {
-    horizontal: values.layoutSizingHorizontal === 'HUG' ? 'hug' : 'fill',
-    vertical: values.layoutSizingVertical === 'HUG' ? 'hug' : 'fill',
+    width: cssSizing(values.layoutSizingHorizontal),
+    height: cssSizing(values.layoutSizingVertical),
   };
 }
 
@@ -177,10 +182,10 @@ export function flexItemProperties(
 
   // Axe secondaire. Dans Figma, HUG et STRETCH sont incompatibles sur le même
   // axe. Des nodes anciens ou des instances peuvent toutefois exposer les deux
-  // valeurs ; le menu de dimensionnement est alors l'intention la plus précise.
-  // Sans cette priorité, le consommateur CSS étirerait un composant que Figma
-  // garde hug. Un HUG n'annule que l'étirement : `MIN`, `CENTER` et `MAX`
-  // alignent un enfant sans rien dire de sa taille, et restent publiés.
+  // valeurs ; le menu de dimensionnement porte alors l'intention la plus
+  // précise, et un consommateur qui suivrait `layoutAlign` étirerait un
+  // composant que Figma garde hug. Un HUG n'annule que l'étirement : `MIN`,
+  // `CENTER` et `MAX` alignent un enfant sans rien dire de sa taille.
   const rawAlign = values.layoutAlign;
   if (sizing.cross === 'FILL') {
     result.alignSelf = 'stretch';
@@ -198,8 +203,7 @@ export function flexItemProperties(
 
   // Axe principal, lu avec la même autorité. Le dimensionnement d'un axe ne
   // décide jamais de l'autre : une hauteur en hug laisse intacte une largeur
-  // en fill, et l'oublier ferait disparaître du contrat un remplissage encore
-  // vrai dans Figma.
+  // en fill.
   if (sizing.main === 'FILL') return { ...result, flexGrow: 1 };
   if (sizing.main === 'HUG') return result;
 
