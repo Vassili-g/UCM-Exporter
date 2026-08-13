@@ -610,12 +610,16 @@ juste `$value`. *(Évolution possible : un fichier DTCG par marque.)*
 
 **4. DTCG** — chaque variable → `{ $value, $type }`, groupes = objets imbriqués.
 Types : `COLOR`→`color` ; `FLOAT`→`dimension` (+`px`) **sauf** groupes sans
-unité (`opacity`, `fontweight` / `font-weight`, `lineheight` / `line-height`,
-`z-index`, `aspect-ratio`) → `number` ; `STRING`→`string` ;
+unité (`opacity`, `fontweight` / `font-weight`, `z-index`, `aspect-ratio`) →
+`number` ; `STRING`→`string` ;
 `BOOLEAN`→`boolean`.
-La détection compare chaque segment normalisé du chemin en ignorant seulement
-ses tirets : `Font Weight/Bold` devient donc un nombre sans unité, tandis que
-`Font Weighted/Bold` reste une dimension.
+Le scope Figma précis prévaut (`LINE_HEIGHT`, `FONT_SIZE`, `LETTER_SPACING`
+restent des dimensions ; `FONT_WEIGHT` conserve son type Figma, souvent
+`string`, que le transform de plateforme traduit en poids CSS). Lorsqu'une variable
+est disponible dans tous les scopes, le repli compare chaque segment normalisé
+du chemin en ignorant seulement ses tirets : un token `FLOAT` `Font Weight/Bold`
+devient donc un nombre sans unité, tandis que `Font Weighted/Bold` reste une
+dimension.
 **Le type se décide sur la racine de la chaîne d'alias**, pas sur le token
 courant : Figma garde le même `resolvedType` le long d'une chaîne, mais le nom
 change à chaque maillon. Ex. `lineheight` alias `spacing` (des px) → `dimension`,

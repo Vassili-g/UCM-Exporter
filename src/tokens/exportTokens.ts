@@ -31,22 +31,46 @@ type DtcgTree = { [key: string]: DtcgTree | DtcgLeaf };
 
 /**
  * Groupes dont les valeurs FLOAT sont des ratios ou des nombres purs, pas
- * des longueurs : exportés en "number", jamais suffixés « px ».
+ * des longueurs : exportés en "number", jamais suffixés « px ». Une hauteur
+ * de ligne Figma est au contraire une longueur : `line-height: 24` signifie
+ * vingt-quatre fois la taille de police en CSS, là où Figma décrit 24 px.
  */
-const UNITLESS_GROUPS = new Set(['fontweight', 'lineheight', 'opacity', 'zindex', 'aspectratio']);
+const UNITLESS_GROUPS = new Set(['fontweight', 'opacity', 'zindex', 'aspectratio']);
 
-/** Vrai si le chemin du token appartient à un groupe sans unité. */
-export function isUnitless(path: string): boolean {
+/** Scopes Figma qui désignent sans ambiguïté une longueur CSS. */
+const DIMENSION_SCOPES = new Set<VariableScope>([
+  'CORNER_RADIUS',
+  'WIDTH_HEIGHT',
+  'GAP',
+  'STROKE_FLOAT',
+  'EFFECT_FLOAT',
+  'FONT_SIZE',
+  'LINE_HEIGHT',
+  'LETTER_SPACING',
+  'PARAGRAPH_SPACING',
+  'PARAGRAPH_INDENT',
+]);
+
+/** Vrai si le token est un ratio ou nombre CSS sans unité. */
+export function isUnitless(path: string, scopes: readonly VariableScope[] = []): boolean {
+  // Le scope Figma est l'autorité quand il est précis. `ALL_SCOPES` ne dit
+  // rien sur l'unité ; le nom normalisé reste alors le repli compatible.
+  if (scopes.some((scope) => DIMENSION_SCOPES.has(scope))) return false;
+  if (scopes.includes('FONT_WEIGHT') || scopes.includes('OPACITY')) return true;
   return path.split('.').some((segment) => UNITLESS_GROUPS.has(segment.replace(/-/g, '')));
 }
 
 /** Traduit un type de variable Figma en type DTCG. */
-export function dtcgType(resolvedType: VariableResolvedDataType, path: string): string {
+export function dtcgType(
+  resolvedType: VariableResolvedDataType,
+  path: string,
+  scopes: readonly VariableScope[] = [],
+): string {
   switch (resolvedType) {
     case 'COLOR':
       return 'color';
     case 'FLOAT':
-      return isUnitless(path) ? 'number' : 'dimension';
+      return isUnitless(path, scopes) ? 'number' : 'dimension';
     case 'BOOLEAN':
       return 'boolean';
     default:
@@ -63,11 +87,16 @@ export function toHex(color: RGB | RGBA): string {
 }
 
 /** Met en forme une valeur directe (non-alias) pour le `$value` DTCG. */
-export function formatValue(raw: VariableValue, resolvedType: VariableResolvedDataType, path: string): unknown {
+export function formatValue(
+  raw: VariableValue,
+  resolvedType: VariableResolvedDataType,
+  path: string,
+  scopes: readonly VariableScope[] = [],
+): unknown {
   if (resolvedType === 'COLOR') return toHex(raw as RGB | RGBA);
   if (resolvedType === 'FLOAT') {
     const value = raw as number;
-    return isUnitless(path) ? value : `${value}px`;
+    return isUnitless(path, scopes) ? value : `${value}px`;
   }
   return raw; // BOOLEAN et STRING passent tels quels.
 }
@@ -119,7 +148,7 @@ export function buildLeaf(
   const path = pathById.get(variable.id) ?? normalizeName(variable.name);
   const root = resolveRoot(variable, ctx);
   const rootPath = pathById.get(root.id) ?? path;
-  const $type = dtcgType(root.resolvedType, rootPath);
+  const $type = dtcgType(root.resolvedType, rootPath, root.scopes);
 
   const valueForMode = (modeId: string): unknown => {
     const raw = variable.valuesByMode[modeId];
@@ -133,7 +162,7 @@ export function buildLeaf(
       if (!target) warnings.push(`Variable « ${variable.name} » : elle référence une variable introuvable. Aucune référence n’est écrite ; reliez-la de nouveau.`);
       return target ? `{${target}}` : null;
     }
-    return formatValue(raw, variable.resolvedType, rootPath);
+    return formatValue(raw, variable.resolvedType, rootPath, root.scopes);
   };
 
   const leaf: DtcgLeaf = { $value: valueForMode(collection.defaultModeId), $type };
