@@ -30,7 +30,8 @@ uniquement ce qui est déjà intégré et vérifié.
 
 | Domaine | État |
 |---|---|
-| Export des contrats 4.2 à 4.8 | 4.7 consommée : contrats Figma Alert et Button fusionnés dans le Playground. Le moteur écrit la 4.8, qui attend un premier réexport |
+| Export des contrats 4.2 à 4.9 | 4.8 consommée : contrats Figma Alert et Button fusionnés dans le Playground et reconstruits à froid. Le moteur écrit la 4.9, qui attend un premier réexport |
+| Cadre enveloppant une dépendance | Publié comme conteneur depuis la 4.9 : le test froid 4.8 avait rendu le Button à la place de son calque « Action », faute de flux sur ce slot |
 | Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma 4.4 de l’Exporter |
 | Export DTCG avec alias et modes | Opérationnel |
 | Téléchargement local et dépôt par PR GitHub | Opérationnel |

@@ -56,6 +56,10 @@ tests/
   porte les règles de X » n’existe qu’une fois (`rulesContainerOwner`) : ce qui
   autorise un export et ce qui reconnaît une dépendance sont la même règle. Le
   parent ne réexporte pas ses internes.
+- `composes` ne désigne que le calque qui EST l’instance. Un calque qui
+  l’enveloppe appartient au contrat parent : il publie son flux et range la
+  dépendance dans `children`, comme tout conteneur. Sans cette distinction, son
+  alignement atterrit sur le composant, dont `structure.sizing` le neutralise.
 - Une typographie appartient à UN calque texte et vient de son text style.
   `textStyles` lie le style à ses variables ; `variantTypography` situe son
   usage sur chaque variant par un chemin de slots. Un slot à plusieurs textes

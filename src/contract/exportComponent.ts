@@ -25,6 +25,13 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 4.9 : un calque qui ENVELOPPE un composant unifié devient un conteneur de ce
+ * contrat — il publie son flux et range la dépendance dans `children`. Seul le
+ * calque qui EST l'instance porte encore `composes`.
+ * 4.8 : `structure.sizing` s'écrit en CSS, par propriété (`width`, `height`) et
+ * en valeurs `stretch` / `fit-content`.
+ * 4.7 : le dimensionnement se ferme — `structure.sizing` est toujours publié et
+ * `size` décrit la dimension figée de n'importe quel slot, côté par côté.
  * 4.6 : les text styles et leurs tokens sont catalogués une fois, puis leurs
  * usages sont décrits sur toute la matrice par `variantTypography`.
  * 4.5 : quand `sizes` décrit une font size par taille, celle du slot de
@@ -42,7 +49,7 @@ import type { Contract, ContractMeta, ContractProp } from './types';
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '4.8';
+export const CONTRACT_VERSION = '4.9';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
