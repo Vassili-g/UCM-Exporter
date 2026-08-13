@@ -13,11 +13,14 @@ import {
   BINDING_PATTERNS,
   hasCompleteBinding,
   resolveField,
+  resolveSlotSize,
 } from './nodeBindings';
 import { normalizePropKey } from './parsers';
 import { assignSlots } from './slotNames';
 import { composedSlotDependencies, nestedSlotVisibility } from './slotRelations';
 import {
+  containerSizing,
+  fixedDimensions,
   flexContainerProperties,
   flexItemProperties,
   isLinearAutoLayout,
@@ -25,6 +28,7 @@ import {
 import type {
   ChildStructure,
   ContractStructure,
+  SlotSize,
 } from './types';
 
 /** La partie « layout » de la structure (sans les tokens de variantes). */
@@ -195,6 +199,11 @@ async function extractTextBranch(
   if (slot !== node.name) entry.figmaLayer = node.name;
   const isOptional = applyDirectVisibility(entry, node);
 
+  // Une part est un élément du flux comme un autre : sa dimension figée se
+  // relève ici, sinon un titre à largeur imposée passerait pour un hug.
+  const size = await resolveSlotSize(node, resolver, warnings);
+  if (size) entry.size = size;
+
   if (node.type === 'TEXT') {
     return entry;
   }
@@ -334,24 +343,20 @@ async function extractChild(
       composed,
       iconNames,
     );
-    return entry;
-  }
-
-  const textNode = texts[0] ?? null;
-  if (!textNode) {
+  } else if (!texts[0]) {
     // Le nom du calque est gardé même quand il s'agit d'un placeholder d'icône.
     // Une règle `@icons` peut ensuite qualifier cette icône par son nom Figma.
     entry.figmaLayer = child.name;
     entry.optional = true;
-    const size = await resolveField(
-      child,
-      BINDING_PATTERNS.slotSize,
-      'width et height',
-      resolver,
-      warnings,
-    );
-    if (size) entry.size = size;
   }
+
+  // Relevé sur TOUS les slots dont ce contrat possède les dimensions, texte
+  // compris : un calque de texte peut être figé comme une icône, et le taire
+  // ferait dire à son absence « hug » alors que Figma impose une largeur.
+  // Seule la dépendance composée en est exclue, plus haut : sa taille
+  // appartient à son propre contrat.
+  const size = await resolveSlotSize(child, resolver, warnings);
+  if (size) entry.size = size;
 
   return entry;
 }
@@ -418,9 +423,13 @@ export function flexLayoutSignature(
   layoutNode: SceneNode,
   iconNames: ReadonlySet<string> = new Set(),
   composed: ComposedInstances = new Map(),
+  // Le dimensionnement appartient au composant, pas au wrapper qui porte son
+  // auto-layout : c'est le variant qu'on instancie, et lui seul.
+  component: SceneNode = layoutNode,
 ): string {
   return JSON.stringify({
     layout: autoLayoutDirection(layoutNode),
+    sizing: containerSizing(component),
     ...flexContainerProperties(layoutNode),
     children: assignSlots(layoutNode, iconNames, [], composed).map(({ child, slot }) => ({
       slot,
@@ -443,6 +452,10 @@ export async function extractLayout(
   // Noms de calques désignés par les règles `@icons` : ils donnent au slot son
   // rôle `icon`, stable quand l'icône change d'un variant à l'autre.
   iconNames: ReadonlySet<string> = new Set(),
+  // Le composant lui-même, quand un wrapper de layout s'intercale entre lui et
+  // ses slots. C'est son comportement que le contrat publie : un wrapper décrit
+  // comment il se place DANS le composant, pas comment le composant s'intègre.
+  component: SceneNode = root,
 ): Promise<LayoutStructure> {
   const layoutNode = findLayoutNode(root, warnings, composed);
   const [gap, paddingX, paddingY, radius] = await Promise.all([
@@ -477,6 +490,7 @@ export async function extractLayout(
 
   return {
     layout: layoutDirection(layoutNode),
+    sizing: containerSizing(component),
     ...flexContainerProperties(layoutNode, warnings),
     gap,
     padding: { x: paddingX, y: paddingY },

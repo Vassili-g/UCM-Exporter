@@ -43,7 +43,7 @@ uniquement ce qui est déjà intégré et vérifié.
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
 | Tokens du code vérifiés contre leur contrat | Opérationnelle |
 | CI des deux repositories | Tests, builds et contrôle complet du Playground verts avec les contrats 4.6 |
-| Rapport unique destiné au développeur | Opérationnel : `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
+| Rapport unique destiné au développeur | Opérationnel : `check.mjs` enchaîne les contrôles sans s’arrêter au premier échec, `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
 | Références de tokens du code | Opérationnelles : chemins assemblés et tokens absents du contrat sont bloquants ; audit visuel navigateur hors périmètre |
 | Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
 | Composants du consommateur | Button et Alert reconstruits à froid contre leurs contrats 4.6, typographies et références littérales vérifiées |
@@ -56,7 +56,10 @@ Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 4.6, et les
 repositories construisent et se testent. Alert et Button appliquent désormais
 les text styles exportés à leurs vrais slots texte ; les tests relisent les cinq
 propriétés typographiques et la totalité des références déclarées. Le flux Flex ne prétend pas
-couvrir grille, wrap ni positionnement absolu.
+couvrir grille, wrap ni positionnement absolu. Le **dimensionnement** est
+fermé depuis la 4.7 : une absence vaut `Hug`, puisqu'un `Fill` se publie, qu'une
+dimension figée cite une variable ou avertit sur n'importe quel slot, et que le
+composant publie toujours son propre comportement.
 
 Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
 **détection** et non comme **prévention** : rien n’empêche la fusion d’une pull
@@ -116,10 +119,14 @@ terminal, le résumé CI et le commentaire de pull request.
 références de tokens avant de composer un diagnostic unique. Chaque constat
 nomme son propriétaire, le fichier concerné et le geste correctif.
 
-La chaîne globale `npm run check` conserve néanmoins ses étapes séquentielles :
-un échec des tests empêche les étapes suivantes. Ce n'est pas une perte de
-diagnostic dans `check-contract`, mais une limite du workflow à mesurer avant
-de modifier la CI.
+La chaîne globale `npm run check` ne s'arrête plus au premier échec :
+`check.mjs` exécute les tests, les tokens puis `check-contract`, et lui
+transmet les tests en échec pour qu'ils figurent dans le même rapport. Un test
+rouge refusait auparavant la pull request avant que le rapport ne soit écrit —
+le blocage était réel, le message absent. La règle qui en découle : **tout
+contrôle qui refuse une fusion doit laisser un message au designer**, y compris
+les sorties anticipées du garde-fou et l'échec de la construction, complété par
+le workflow.
 
 Un constat porte : contrôle, propriétaire, gravité, fichier, ligne, ce qui ne va
 pas, quoi faire.

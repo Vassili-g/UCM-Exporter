@@ -8,6 +8,7 @@
 import type {
   AlignItems,
   AlignSelf,
+  ContainerSizing,
   JustifyContent,
 } from './types';
 
@@ -58,16 +59,65 @@ function alignSelf(value: unknown): AlignSelf | null {
 }
 
 /**
- * Dimensionnement explicite de l'enfant sur l'axe secondaire du parent.
- * `layoutAlign` est une API historique ; `layoutSizing…` est le reflet direct
- * des menus Horizontal / Vertical sizing de Figma et tranche ses incohérences.
+ * Dimensionnement explicite de l'enfant, rangé par axe du parent.
+ *
+ * `layoutAlign` et `layoutGrow` sont des API historiques ; `layoutSizing…` est
+ * le reflet direct des menus Horizontal / Vertical sizing de Figma et tranche
+ * leurs incohérences. Les deux axes sont lus ensemble mais restent
+ * indépendants : un enfant qui remplit la largeur et hug la hauteur est un
+ * réglage courant, pas une contradiction.
  */
-function crossAxisSizing(parent: SceneNode, child: SceneNode): unknown {
+function childSizing(parent: SceneNode, child: SceneNode): { main: unknown; cross: unknown } {
   const parentMode = asPropertyBag(parent).layoutMode;
-  const childValues = asPropertyBag(child);
-  if (parentMode === 'HORIZONTAL') return childValues.layoutSizingVertical;
-  if (parentMode === 'VERTICAL') return childValues.layoutSizingHorizontal;
-  return undefined;
+  const values = asPropertyBag(child);
+  if (parentMode === 'HORIZONTAL') {
+    return { main: values.layoutSizingHorizontal, cross: values.layoutSizingVertical };
+  }
+  if (parentMode === 'VERTICAL') {
+    return { main: values.layoutSizingVertical, cross: values.layoutSizingHorizontal };
+  }
+  return { main: undefined, cross: undefined };
+}
+
+/**
+ * Dimensionnement propre du composant, axe par axe.
+ *
+ * Seul `Hug` est une intention de comportement : il dit que le composant se
+ * limite à son contenu. Une largeur fixe posée sur un variant ne l'est pas —
+ * c'est le plus souvent une commodité de mise en page dans Figma, pour aligner
+ * les variants d'un component set entre eux. La publier reviendrait à figer
+ * dans le contrat une décision de présentation, et à imposer cette largeur à
+ * toutes les pages qui intègrent le composant. Le défaut est donc `fill` : le
+ * composant occupe la place que son intégration lui donne.
+ *
+ * C'est l'inverse de la règle des slots, et pour une raison : un slot vit dans
+ * l'auto-layout de ce composant, dont le contrat décrit tout le contexte ; un
+ * composant, lui, ne connaît pas son futur parent.
+ */
+export function containerSizing(node: SceneNode): ContainerSizing {
+  const values = asPropertyBag(node);
+  return {
+    horizontal: values.layoutSizingHorizontal === 'HUG' ? 'hug' : 'fill',
+    vertical: values.layoutSizingVertical === 'HUG' ? 'hug' : 'fill',
+  };
+}
+
+/**
+ * Axes dont la dimension est figée, et qui doivent donc être publiés.
+ *
+ * `Hug` et `Fill` sont déjà décrits — par l'absence pour le premier, par
+ * `flexGrow` / `alignSelf` pour le second — et ne demandent aucune variable.
+ * Tout le reste est traité comme figé : un menu que l'API n'expose pas laisse
+ * le doute, et mieux vaut réclamer une variable en trop que taire une
+ * dimension que le contrat ne saurait pas reconstituer.
+ */
+export function fixedDimensions(node: SceneNode): { width: boolean; height: boolean } {
+  const values = asPropertyBag(node);
+  const figee = (sizing: unknown) => sizing !== 'HUG' && sizing !== 'FILL';
+  return {
+    width: figee(values.layoutSizingHorizontal),
+    height: figee(values.layoutSizingVertical),
+  };
 }
 
 /**
@@ -123,25 +173,35 @@ export function flexItemProperties(
   }
 
   const result: FlexItemProperties = {};
-  const sizing = crossAxisSizing(parent, child);
-  // Dans Figma, HUG et STRETCH sont incompatibles sur le mÃªme axe. Des nodes
-  // anciens ou des instances peuvent toutefois exposer les deux valeurs ; le
-  // menu de dimensionnement est alors l'intention la plus prÃ©cise. Sans cette
-  // prioritÃ©, le consommateur CSS Ã©tirerait un composant que Figma garde hug.
-  if (sizing === 'HUG') return result;
+  const sizing = childSizing(parent, child);
 
+  // Axe secondaire. Dans Figma, HUG et STRETCH sont incompatibles sur le même
+  // axe. Des nodes anciens ou des instances peuvent toutefois exposer les deux
+  // valeurs ; le menu de dimensionnement est alors l'intention la plus précise.
+  // Sans cette priorité, le consommateur CSS étirerait un composant que Figma
+  // garde hug. Un HUG n'annule que l'étirement : `MIN`, `CENTER` et `MAX`
+  // alignent un enfant sans rien dire de sa taille, et restent publiés.
   const rawAlign = values.layoutAlign;
-  if (rawAlign !== undefined && rawAlign !== 'INHERIT') {
+  if (sizing.cross === 'FILL') {
+    result.alignSelf = 'stretch';
+  } else if (rawAlign !== undefined && rawAlign !== 'INHERIT') {
     const mapped = alignSelf(rawAlign);
-    if (mapped) {
-      result.alignSelf = mapped;
-    } else {
+    if (!mapped) {
       warnings.push(
         `Layer « ${child.name} » : son alignement dans l'auto layout « ${parent.name} » est illisible. ` +
           `Le contrat ne publie pas alignSelf. Réglez ce layer dans Figma, puis réexportez.`,
       );
+    } else if (mapped !== 'stretch' || sizing.cross !== 'HUG') {
+      result.alignSelf = mapped;
     }
   }
+
+  // Axe principal, lu avec la même autorité. Le dimensionnement d'un axe ne
+  // décide jamais de l'autre : une hauteur en hug laisse intacte une largeur
+  // en fill, et l'oublier ferait disparaître du contrat un remplissage encore
+  // vrai dans Figma.
+  if (sizing.main === 'FILL') return { ...result, flexGrow: 1 };
+  if (sizing.main === 'HUG') return result;
 
   const rawGrow = values.layoutGrow;
   if (rawGrow === undefined || rawGrow === 0) return result;

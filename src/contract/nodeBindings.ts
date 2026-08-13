@@ -7,6 +7,8 @@
  */
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
+import { fixedDimensions } from './flexLayout';
+import type { SlotSize } from './types';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
 export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;
@@ -24,7 +26,12 @@ export const BINDING_PATTERNS = {
     ['cornerRadius'],
     ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'],
   ],
+  // Un carré, pour une icône : les deux côtés doivent citer la MÊME variable.
   slotSize: [['width', 'height']],
+  // Les deux côtés d'un slot, lus séparément : une largeur figée et une hauteur
+  // qui hug est un réglage courant, qu'un groupe conjoint refuserait.
+  slotWidth: [['width']],
+  slotHeight: [['height']],
   fontSize: [['fontSize']],
   strokeWidth: [
     ['strokeWeight'],
@@ -317,4 +324,39 @@ export async function resolveField(
 ): Promise<string | null> {
   const token = await resolveTokenName(node, alternatives, label, resolver, warnings);
   return token ? toRef(token) : null;
+}
+
+/**
+ * Dimension figée d'un slot, relevée axe par axe.
+ *
+ * Le menu de dimensionnement décide de ce qu'on lit : un axe en `Hug` ou en
+ * `Fill` est déjà décrit ailleurs et ne demande aucune variable — le lui
+ * réclamer produirait un avertissement pour une valeur que le contrat n'a pas
+ * à porter. Un axe figé, en revanche, doit citer une variable : sans elle, la
+ * dimension disparaîtrait en silence et l'absence ne voudrait plus rien dire.
+ *
+ * Un carré garde la forme courte : c'est la même valeur, et l'objet
+ * n'apprendrait rien de plus au consommateur.
+ */
+export async function resolveSlotSize(
+  node: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<SlotSize | null> {
+  const fixed = fixedDimensions(node);
+  const [width, height] = await Promise.all([
+    fixed.width
+      ? resolveField(node, BINDING_PATTERNS.slotWidth, 'width', resolver, warnings)
+      : null,
+    fixed.height
+      ? resolveField(node, BINDING_PATTERNS.slotHeight, 'height', resolver, warnings)
+      : null,
+  ]);
+
+  if (!width && !height) return null;
+  if (width && width === height) return width;
+  return {
+    ...(width ? { width } : {}),
+    ...(height ? { height } : {}),
+  };
 }

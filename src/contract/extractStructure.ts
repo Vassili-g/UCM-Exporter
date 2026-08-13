@@ -111,12 +111,14 @@ export async function extractStructure(
       referenceLayout.layoutNode,
       targetedLayers,
       composed,
+      referenceLayout.component,
     );
     const flexDivergentVariants = matrix.variants.filter(({ component }) => {
       const layoutNode = component === referenceLayout.component
         ? referenceLayout.layoutNode
         : findLayoutNode(component, [], composed);
-      return flexLayoutSignature(layoutNode, targetedLayers, composed) !== referenceFlexSignature;
+      return flexLayoutSignature(layoutNode, targetedLayers, composed, component)
+        !== referenceFlexSignature;
     });
     if (flexDivergentVariants.length > 0) {
       const examples = flexDivergentVariants
@@ -135,8 +137,24 @@ export async function extractStructure(
   }
 
   const layout = layoutRoot
-    ? await extractLayout(layoutRoot, resolver, warnings, composed, targetedLayers)
-    : { layout: 'flex-row' as const, gap: null, padding: { x: null, y: null }, radius: null, children: [] };
+    ? await extractLayout(
+      layoutRoot,
+      resolver,
+      warnings,
+      composed,
+      targetedLayers,
+      referenceComponent ?? layoutRoot,
+    )
+    // Sans composant à interroger, le contrat retient le comportement par
+    // défaut plutôt que d'inventer un hug que rien ne montre.
+    : {
+      layout: 'flex-row' as const,
+      sizing: { horizontal: 'fill' as const, vertical: 'fill' as const },
+      gap: null,
+      padding: { x: null, y: null },
+      radius: null,
+      children: [],
+    };
 
   if (!layoutRoot) {
     warnings.push(

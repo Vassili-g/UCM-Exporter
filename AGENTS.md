@@ -65,6 +65,12 @@ tests/
 - Un auto-layout linéaire publie son alignement (`justifyContent`, `alignItems`)
   et ses slots publient seulement leurs exceptions (`alignSelf`, `flexGrow`).
   Une absence signifie hors flux ou non applicable, jamais `flex-start` deviné.
+- Le menu de dimensionnement Figma fait autorité, axe par axe : un axe ne décide
+  jamais de l’autre. Pour un slot, `Fill` se publie et `Fixed` cite une variable
+  dans `size` ; l’absence vaut donc `Hug`, et une dimension figée sans variable
+  avertit plutôt que de disparaître. Pour le composant, `structure.sizing` est
+  toujours publié et vaut `fill` par défaut : une largeur fixe posée sur un
+  variant présente le component set, elle ne décrit pas le composant.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours

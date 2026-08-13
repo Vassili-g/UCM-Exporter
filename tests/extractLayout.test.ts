@@ -139,6 +139,119 @@ test('un dimensionnement HUG sur l’axe secondaire prime sur un layoutAlign STR
   assert.equal(layout.children[0].alignSelf, undefined);
 });
 
+test('une hauteur en hug ne fait pas disparaître une largeur en fill', async () => {
+  // Le réglage courant d'un texte au milieu d'une alerte : il occupe la place
+  // restante en largeur et se contente de sa hauteur. Les deux menus sont
+  // indépendants ; lire le second pour décider du premier retirait du contrat
+  // un remplissage toujours vrai dans Figma.
+  const label = {
+    type: 'TEXT',
+    id: 'label',
+    name: 'Text',
+    layoutAlign: 'INHERIT',
+    layoutGrow: 1,
+    layoutSizingHorizontal: 'FILL',
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+  };
+  const alert = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+    boundVariables: {},
+    children: [label],
+    findAll: findAllOn([label]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(alert, resolverFor({}), []);
+
+  assert.equal(layout.children[0].flexGrow, 1);
+  assert.equal(layout.children[0].alignSelf, undefined);
+});
+
+test('un hug sur l’axe principal retire le remplissage, même avec un layoutGrow historique', async () => {
+  const action = {
+    type: 'INSTANCE',
+    id: 'action',
+    name: 'Action',
+    layoutAlign: 'INHERIT',
+    layoutGrow: 1,
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+  };
+  const alert = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+    boundVariables: {},
+    children: [action],
+    findAll: findAllOn([action]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(alert, resolverFor({}), []);
+
+  assert.equal(layout.children[0].flexGrow, undefined);
+});
+
+test('un hug sur l’axe secondaire garde l’alignement propre du layer', async () => {
+  // HUG parle de taille, `MAX` parle de position : annuler le second avec le
+  // premier déplacerait le layer dans le rendu.
+  const icon = {
+    type: 'INSTANCE',
+    id: 'icon',
+    name: 'Icon',
+    layoutAlign: 'MAX',
+    layoutGrow: 0,
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+  };
+  const alert = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+    boundVariables: {},
+    children: [icon],
+    findAll: findAllOn([icon]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(alert, resolverFor({}), []);
+
+  assert.equal(layout.children[0].alignSelf, 'flex-end');
+});
+
+test('un fill sur l’axe secondaire étire, même sans layoutAlign à jour', async () => {
+  const action = {
+    type: 'INSTANCE',
+    id: 'action',
+    name: 'Action',
+    layoutAlign: 'INHERIT',
+    layoutGrow: 0,
+    layoutSizingVertical: 'FILL',
+    boundVariables: {},
+  };
+  const alert = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+    boundVariables: {},
+    children: [action],
+    findAll: findAllOn([action]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(alert, resolverFor({}), []);
+
+  assert.equal(layout.children[0].alignSelf, 'stretch');
+});
+
 test('extractLayout décrit Auto par justifyContent sans inventer de gap fixe', async () => {
   const row = {
     type: 'COMPONENT',
@@ -696,7 +809,154 @@ test('extractLayout décrit un calque graphique en slot optionnel avec sa visibi
   ]);
 });
 
-test('extractLayout n’invente pas une taille carrée quand seule la largeur est liée', async () => {
+test('le composant publie fill par défaut, et hug seulement quand Figma le dit', async () => {
+  // Une largeur fixe sur un variant sert à aligner le component set dans
+  // Figma. La publier imposerait cette largeur à toutes les pages qui
+  // intègrent le composant : le contrat retient donc `fill`.
+  const fixe = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(fixe, resolverFor({}), []);
+
+  assert.deepEqual(layout.sizing, { horizontal: 'fill', vertical: 'hug' });
+});
+
+test('un composant sans menu de dimensionnement lisible reste en fill sur les deux axes', async () => {
+  const plat = {
+    type: 'COMPONENT',
+    name: 'Button',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(plat, resolverFor({}), []);
+
+  assert.deepEqual(layout.sizing, { horizontal: 'fill', vertical: 'fill' });
+});
+
+test('un slot de texte figé publie sa dimension au lieu de passer pour un hug', async () => {
+  const label = {
+    type: 'TEXT',
+    name: 'Text',
+    characters: 'Titre',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'HUG',
+    boundVariables: { width: alias('largeur') },
+  };
+  const alerte = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [label],
+    findAll: findAllOn([label]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    alerte,
+    resolverFor({ largeur: 'components.alert.label-width' }),
+    warnings,
+  );
+
+  assert.deepEqual(layout.children[0].size, { width: '{components.alert.label-width}' });
+  // La hauteur hug ne réclame aucune variable : elle est déjà décrite par son
+  // absence, et l'exiger enverrait le designer corriger un réglage correct.
+  assert.equal(warnings.some((warning) => warning.includes('height')), false);
+});
+
+test('un slot dont les deux axes hug ne réclame aucune variable de dimension', async () => {
+  const icone = {
+    type: 'INSTANCE',
+    name: 'circle-info',
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+  };
+  const alerte = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [icone],
+    findAll: findAllOn([icone]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(alerte, resolverFor({}), warnings);
+
+  assert.equal(layout.children[0].size, undefined);
+  // Le conteneur avertit pour ses propres dimensions ; le slot, lui, n'a rien
+  // à déclarer et ne doit produire aucun message.
+  assert.deepEqual(warnings.filter((warning) => warning.includes('circle-info')), []);
+});
+
+test('un slot figé et non carré nomme chacun de ses deux côtés', async () => {
+  const media = {
+    type: 'RECTANGLE',
+    name: 'Thumbnail',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'FIXED',
+    boundVariables: { width: alias('largeur'), height: alias('hauteur') },
+  };
+  const carte = {
+    type: 'COMPONENT',
+    name: 'Card',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [media],
+    findAll: findAllOn([media]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(
+    carte,
+    resolverFor({ largeur: 'components.card.media-width', hauteur: 'components.card.media-height' }),
+    [],
+  );
+
+  assert.deepEqual(layout.children[0].size, {
+    width: '{components.card.media-width}',
+    height: '{components.card.media-height}',
+  });
+});
+
+test('un slot figé et carré garde la forme courte', async () => {
+  const icone = {
+    type: 'VECTOR',
+    name: 'circle-info',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'FIXED',
+    boundVariables: { width: alias('taille'), height: alias('taille') },
+  };
+  const alerte = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [icone],
+    findAll: findAllOn([icone]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(
+    alerte,
+    resolverFor({ taille: 'components.icons.sizes.base' }),
+    [],
+  );
+
+  assert.equal(layout.children[0].size, '{components.icons.sizes.base}');
+});
+
+test('extractLayout publie la largeur seule sans inventer de taille carrée', async () => {
   const icone = {
     type: 'VECTOR',
     name: 'arrow-right-long',
@@ -721,9 +981,12 @@ test('extractLayout n’invente pas une taille carrée quand seule la largeur es
     warnings,
   );
 
-  assert.equal(layout.children[0].size, undefined);
+  // La largeur est connue et tokenisée : la taire la ferait passer pour un
+  // hug. La hauteur, elle, reste figée sans variable — donc avertie, jamais
+  // recopiée depuis la largeur.
+  assert.deepEqual(layout.children[0].size, { width: '{components.icons.sizes.base}' });
   assert.ok(warnings.some((warning) => warning.includes('height')));
-  assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
+  assert.ok(warnings.some((warning) => warning.includes("La valeur fixe n'est pas exportée")));
 });
 
 test('extractLayout exclut un slot statiquement masqué mais conserve un slot piloté par une prop', async () => {
