@@ -30,7 +30,7 @@ uniquement ce qui est déjà intégré et vérifié.
 
 | Domaine | État |
 |---|---|
-| Export des contrats 4.2 à 4.6 | 4.6 consommée : contrats Figma Alert et Button fusionnés, puis reconstruits à froid dans le Playground |
+| Export des contrats 4.2 à 4.8 | 4.7 consommée : contrats Figma Alert et Button fusionnés dans le Playground. Le moteur écrit la 4.8, qui attend un premier réexport |
 | Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma 4.4 de l’Exporter |
 | Export DTCG avec alias et modes | Opérationnel |
 | Téléchargement local et dépôt par PR GitHub | Opérationnel |
@@ -42,24 +42,25 @@ uniquement ce qui est déjà intégré et vérifié.
 | Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
 | Tokens du code vérifiés contre leur contrat | Opérationnelle |
-| CI des deux repositories | Tests, builds et contrôle complet du Playground verts avec les contrats 4.6 |
+| CI des deux repositories | Tests, builds et contrôle complet du Playground verts avec les contrats 4.7 |
 | Rapport unique destiné au développeur | Opérationnel : `check.mjs` enchaîne les contrôles sans s’arrêter au premier échec, `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
 | Références de tokens du code | Opérationnelles : chemins assemblés et tokens absents du contrat sont bloquants ; audit visuel navigateur hors périmètre |
 | Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
-| Composants du consommateur | Button et Alert reconstruits à froid contre leurs contrats 4.6, typographies et références littérales vérifiées |
+| Composants du consommateur | Button et Alert reconstruits à froid contre leurs contrats 4.6, typographies et références littérales vérifiées ; leurs tests suivent les contrats 4.7 |
 | Validation multi-composants | Partielle |
 | JSON Schema public | Non commencé |
 | Multi-marque au runtime | Modes exportés, consommation non implémentée |
 
 Le projet est un **prototype avancé** dont l’outillage tient : la chaîne
-Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 4.6, et les deux
+Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 4.7, et les deux
 repositories construisent et se testent. Alert et Button appliquent désormais
 les text styles exportés à leurs vrais slots texte ; les tests relisent les cinq
 propriétés typographiques et la totalité des références déclarées. Le flux Flex ne prétend pas
-couvrir grille, wrap ni positionnement absolu. Le **dimensionnement** est
-fermé depuis la 4.7 : une absence vaut `Hug`, puisqu'un `Fill` se publie, qu'une
-dimension figée cite une variable ou avertit sur n'importe quel slot, et que le
-composant publie toujours son propre comportement.
+couvrir grille, wrap ni positionnement absolu. Le **dimensionnement**, lui, est
+complet : l'absence d'une dimension sur un slot vaut `fit-content`, puisqu'un
+remplissage se publie et qu'une dimension figée cite une variable ou avertit ;
+et le composant publie toujours son propre comportement, en valeurs de `width`
+et de `height`.
 
 Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
 **détection** et non comme **prévention** : rien n’empêche la fusion d’une pull
@@ -119,14 +120,12 @@ terminal, le résumé CI et le commentaire de pull request.
 références de tokens avant de composer un diagnostic unique. Chaque constat
 nomme son propriétaire, le fichier concerné et le geste correctif.
 
-La chaîne globale `npm run check` ne s'arrête plus au premier échec :
+La chaîne globale `npm run check` ne s'arrête pas au premier échec :
 `check.mjs` exécute les tests, les tokens puis `check-contract`, et lui
-transmet les tests en échec pour qu'ils figurent dans le même rapport. Un test
-rouge refusait auparavant la pull request avant que le rapport ne soit écrit —
-le blocage était réel, le message absent. La règle qui en découle : **tout
-contrôle qui refuse une fusion doit laisser un message au designer**, y compris
-les sorties anticipées du garde-fou et l'échec de la construction, complété par
-le workflow.
+transmet les tests en échec pour qu'ils figurent dans le même rapport. La règle
+qu'elle sert : **tout contrôle qui refuse une fusion laisse un message au
+designer**, y compris les sorties anticipées du garde-fou et l'échec de la
+construction, que le workflow ajoute au rapport.
 
 Un constat porte : contrôle, propriétaire, gravité, fichier, ligne, ce qui ne va
 pas, quoi faire.

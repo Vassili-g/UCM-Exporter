@@ -149,7 +149,7 @@ export async function extractStructure(
     // défaut plutôt que d'inventer un hug que rien ne montre.
     : {
       layout: 'flex-row' as const,
-      sizing: { horizontal: 'fill' as const, vertical: 'fill' as const },
+      sizing: { width: 'stretch' as const, height: 'stretch' as const },
       gap: null,
       padding: { x: null, y: null },
       radius: null,
