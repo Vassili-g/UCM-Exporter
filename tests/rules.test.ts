@@ -8,6 +8,7 @@ import {
   iconPolicyFromVisibility,
   ruleTagFromValue,
   rulesContainerOwner,
+  unusableRulesMessage,
 } from '../src/contract/extractRules';
 import { indexContractedNames } from '../src/contract/composedComponents';
 
@@ -111,6 +112,34 @@ test('buildRules avertit sur @prop mal formée et contenu vide', () => {
 
 test('buildRules sans entrée exploitable → intent null', () => {
   assert.equal(buildRules([]).intent, null);
+});
+
+test('unusableRulesMessage conserve le diagnostic d’un conteneur absent et son geste', () => {
+  const message = unusableRulesMessage('Alert', {
+    intent: null,
+    propDescriptions: {},
+    booleanDescriptions: {},
+    iconRules: [],
+    warnings: ['Aucun conteneur « Alert-Rules » : composant sans règles définies.'],
+    sectionFound: false,
+  });
+
+  assert.match(message, /Aucun conteneur « Alert-Rules »/);
+  assert.match(message, /Ajoutez un conteneur « Alert-Rules »/);
+});
+
+test('unusableRulesMessage garde la cause exacte d’une règle invalide', () => {
+  const message = unusableRulesMessage('Alert', {
+    intent: null,
+    propDescriptions: {},
+    booleanDescriptions: {},
+    iconRules: [],
+    warnings: ['Règle @icons : le layer « icon » est vide. Écrivez-y le nom exact du layer d’icône.'],
+    sectionFound: true,
+  });
+
+  assert.match(message, /Règle @icons : le layer « icon » est vide/);
+  assert.doesNotMatch(message, /Ajoutez un conteneur/);
 });
 
 test('buildRules interprète les politiques @icons', () => {

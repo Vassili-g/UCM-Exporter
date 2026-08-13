@@ -35,8 +35,9 @@ du ressort du repository consommateur.
   comme RÉFÉRENCE `"{chemin.du.token}"`, jamais comme chemin nu ni valeur
   aplatie — même syntaxe que les références DTCG de `tokens.json`. Les accolades
   sont un simple enrobage autour du nom produit par `normalizeName()` ; un
-  consommateur retire `{…}` avant de résoudre. Un nom de **style de texte** n'est
-  pas un token : il reste une chaîne nue et n'entre pas dans `tokensUsed`.
+  consommateur retire `{…}` avant de résoudre. Un nom de **text style** n'est
+  pas un token ; en revanche, les variables liées au style sont exportées comme
+  références dans `textStyles.*.tokens` et entrent dans `tokensUsed`.
 
 ## Hypothèses sur le design system
 
@@ -201,9 +202,10 @@ dimensions puis, s'il n'en porte pas, sur le Component Set sélectionné — un
 wrapper qui expose ses propres axes ne doit pas faire disparaître les
 dimensions par taille. Détecté par ses valeurs (comme la prop `size`), chaque
 valeur est extraite →
-`structure.sizes.{big,medium,small}` avec gap/padding/radius/fontSize par
-taille. Le contrat couvre ainsi toutes les tailles, pas seulement celle
-instanciée par défaut. Hypothèse assumée : les dimensions ne varient que selon
+`structure.sizes.{big,medium,small}` avec gap/padding/radius par taille. La
+typographie n'est pas une dimension du conteneur : elle est décrite pour chaque
+texte et chaque variant par `variantTypography`. Le contrat couvre ainsi toutes
+les tailles, pas seulement celle instanciée par défaut. Hypothèse assumée : les dimensions ne varient que selon
 l'axe de tailles — un représentant par taille suffit ; si un design system
 faisait varier un padding selon un autre axe, le contrat ne le verrait pas.
 
@@ -216,22 +218,25 @@ avec un déclencheur `null` et un warning. Les `selector` visent
 l'implémentation CSS de **production** (pseudo-classes) ; l'outil de test
 froid, en styles inline, reproduit les mêmes états via des événements.
 
-**5. Typographie** — sur le calque texte, dans l'ordre :
-`textStyleId` → nom du style ; sinon variables liées `fontSize` / `fontWeight`
-(fallback sur le champ `fontStyle`) / `lineHeight` / `fontFamily`. Chaque
-propriété non liée produit un warning et n'est jamais remplacée par une valeur
-brute ; si aucune propriété n'est exploitable, le bloc `typography` est absent.
-Le relevé porte sur **un** calque texte : un slot qui en contient plusieurs est
-décrit par ses parts (étape 6), chacune avec la sienne.
+**5. Typographie** — chaque calque texte de chaque variant doit porter un text
+style Figma unique. Le moteur lit l'objet `TextStyle`, conserve son nom exact
+dans `textStyles.<clé>.figmaName`, puis résout ses `boundVariables` :
+`fontFamily`, `fontSize`, `fontWeight` (fallback `fontStyle`), `lineHeight` et
+`letterSpacing`. La clé du catalogue est le nom normalisé du style ; aucun lien
+vers les tokens n'est déduit de ce nom. Chaque propriété non liée produit un
+warning et n'est jamais remplacée par une valeur brute.
 
-`sizes.<valeur>.fontSize` ne note en revanche qu'une font size par taille. Un
-composant à plusieurs textes n'en exporte donc aucune pour cet axe, et
-avertit — la retenir reviendrait à présenter celle du premier calque comme
-celle de tous.
+`structure.variantTypography` reprend la même profondeur et le même ordre
+d'axes que `variantTokens`. Chaque feuille liste `{ slotPath, style }` pour
+situer le style de chaque texte dans la structure. `slotPath` est une liste de
+slots depuis `structure.children` jusqu'à la part concernée. Le catalogue ne
+contient que les styles réellement utilisés ; ses références alimentent
+`tokensUsed`. Un layer sans style, un style introuvable ou deux noms normalisés
+en collision avertissent et l'usage ambigu reste absent.
 
 **6. Structure** — `children` = enfants directs réels du node de layout :
-- calque **texte** → slot `label` (nom d'origine dans `figmaLayer`), avec
-  `typography` (étape 5) ;
+- calque **texte** → slot `label` (nom d'origine dans `figmaLayer`) ; son style
+  est situé par `variantTypography` (étape 5) ;
 - calque contenant **plusieurs textes** → slot décrit par `children`,
   récursivement sur ses seules branches textuelles, plus `layout` et `gap`
   lorsqu'ils sont applicables ; voir ci-dessous ;
@@ -239,17 +244,14 @@ celle de tous.
   true`, `size` ;
 - autre calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
 
-Un slot ne porte qu'une `typography`. Dès qu'il contient plus d'un calque texte
-— un titre et une description —, celle du premier s'appliquerait aux deux et la
-seconde ne serait jamais exportée. Le slot décrit alors ses **parts** dans
-`children`, à la même forme et à toute profondeur, mais uniquement sur les
-branches qui mènent à un vrai calque `TEXT`. La typographie descend jusqu'à ce
-calque ; un frame intermédiaire porte son `figmaLayer`, sa visibilité et ses
-enfants, jamais la typographie du texte qu'il enveloppe. Un dessin ou une
-instance composée voisine ne devient pas une part et ne déclenche aucun warning
-de taille interne.
+Un slot qui contient plusieurs calques texte — un titre et une description —
+décrit ses **parts** dans `children`, à la même forme et à toute profondeur,
+mais uniquement sur les branches qui mènent à un vrai calque `TEXT`. Ces parts
+fournissent les chemins stables que `variantTypography` cible. Un frame
+intermédiaire porte son `figmaLayer`, sa visibilité et ses enfants. Un dessin
+ou une instance composée voisine ne devient pas une part.
 
-Le slot lui-même n'a alors pas de `typography`. Les visibilités portées par les
+Les visibilités portées par les
 nodes représentés descendent à leur place exacte ; une cible graphique exclue
 de l'arbre textuel reste dans `visibilityTargets`, sans perte silencieuse.
 `layout` et `gap` ne sont relevés que lorsqu'au moins deux branches sont
@@ -394,7 +396,7 @@ l'extraction : le moteur lit des tokens pour décider (la taille d'une icône su
 chaque variante, les couleurs d'une variante en conflit) et les écarte ensuite ;
 un relevé les y ferait entrer alors que le contrat ne les emploie pas. Une
 référence se reconnaît à la chaîne **entière** : un nom de style de texte reste
-une chaîne nue, et une phrase qui cite des tokens — un avertissement, une règle
+une chaîne nue ; ses variables, elles, sont de vraies références. Une phrase qui cite des tokens — un avertissement, une règle
 d'usage — n'en est pas une.
 
 ### Sortie
@@ -411,7 +413,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "4.4",
+    "contractVersion": "4.6",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -460,32 +462,47 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
   "structure": {
     "layout": "flex-row",
     "sizes": {
-      "big":    { "gap": "…", "padding": { "x": "…", "y": "…" }, "radius": "…", "fontSize": "…" },
+      "big":    { "gap": "…", "padding": { "x": "…", "y": "…" }, "radius": "…" },
       "medium": { "…": "idem" },
       "small":  { "…": "idem" }
     },
     "children": [
       { "slot": "icon", "figmaLayer": "arrow-left-long", "optional": true,
         "visibilityProp": "iconLeft", "size": "{components.icons.sizes.base}" },
-      { "slot": "label", "figmaLayer": "Suivant", "typography": { "…": "étape 5" } },
+      { "slot": "label", "figmaLayer": "Suivant" },
       { "slot": "icon-2", "figmaLayer": "arrow-right-long", "optional": true,
         "visibilityProp": "iconRight", "size": "{components.icons.sizes.base}" }
     ],
-    "…": "un slot à plusieurs textes remplace sa typography par ses parts :",
+    "…": "un slot à plusieurs textes publie ses parts :",
     "children (Alert)": [
       { "slot": "label", "figmaLayer": "Text", "layout": "flex-column",
         "gap": "{components.alert.sizes.text-gap}",
         "children": [
           { "slot": "label", "figmaLayer": "Titre", "optional": true,
-            "visibilityProp": "title",
-            "typography": { "fontSize": "{components.alert.sizes.title-size}", "…": "étape 5" } },
-          { "slot": "label-2", "figmaLayer": "Description",
-            "typography": { "fontSize": "{components.alert.sizes.description-size}", "…": "étape 5" } }
+            "visibilityProp": "title" },
+          { "slot": "label-2", "figmaLayer": "Description" }
         ] }
     ],
     "variantAxes": ["color","variant","state"],
     "variantTokens": { "…": "étape 2" },
-    "variantStrokes": { "…": "strokes séparés" }
+    "variantStrokes": { "…": "strokes séparés" },
+    "variantTypography": {
+      "…axes…": [
+        { "slotPath": ["label"], "style": "label.large" }
+      ]
+    }
+  },
+  "textStyles": {
+    "label.large": {
+      "figmaName": "Label/Large",
+      "tokens": {
+        "fontSize": "{typography.label.large.fontsize}",
+        "fontWeight": "{typography.label.large.fontweight}",
+        "lineHeight": "{typography.label.large.lineheight}",
+        "letterSpacing": "{typography.label.large.letterspacing}",
+        "fontFamily": "{primitives.fontfamily.base}"
+      }
+    }
   },
   "icons": {
     "arrowLeftLong": { "policy": "modifiable", "figmaName": "arrow-left-long",
@@ -507,9 +524,10 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 }
 ```
 
-Les dimensions ne figurent qu'à UN endroit : `sizes` les porte toutes dès que
-le composant expose un axe de tailles, sinon `gap` / `padding` / `radius`
-restent au niveau haut de `structure`. Les deux ne coexistent jamais.
+Les dimensions géométriques ne figurent qu'à UN endroit : `sizes` les porte
+dès que le composant expose un axe de tailles ; sinon `gap` / `padding` /
+`radius` restent au niveau haut de `structure`. Toute la typographie appartient
+au catalogue `textStyles` et à ses usages dans `variantTypography`.
 
 `composes` liste les composants unifiés que celui-ci embarque — vide pour un
 composant simple. Une instance ainsi déclarée n'est PAS parcourue : ses
@@ -698,11 +716,10 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **4.4** : après la récursion textuelle 4.3,
-elle ajoute `justifyContent` et `alignItems` au conteneur Flex, ainsi que
-`alignSelf` et `flexGrow` sur ses slots. Un consommateur peut donc placer une
-icône au centre vertical de son auto-layout sans le déduire du nom ou du type
-de composant.
+La version actuelle du contrat est **4.6** : après la récursion textuelle 4.3,
+le flux Flex 4.4 et le jalon transitoire 4.5, elle publie les text styles liés à
+leurs tokens et leurs usages sur toute la matrice. La typographie n'est plus
+décrite dans un slot de référence ni dans les dimensions par taille.
 
 Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
 il accepte uniquement les versions qu’il a explicitement auditées.

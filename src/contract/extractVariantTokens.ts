@@ -20,11 +20,11 @@ export type { VariantTokenLeaves } from './extractSlotTokens';
  * Insère une feuille dans l'arbre en suivant l'ordre des axes.
  * Un axe sans valeur retombe sur la clé « default ».
  */
-function insertVariant(
+export function insertVariantLeaf<T>(
   tree: Record<string, unknown>,
   axes: string[],
   values: Record<string, string>,
-  leaf: SlotTokens | SlotStrokes,
+  leaf: T,
   warnings: string[],
 ): void {
   let node = tree;
@@ -90,8 +90,8 @@ export async function extractVariantTokens(
     const values = matrix.axes.length > 0
       ? entry.values
       : { variant: normalizePropValue(entry.component.name) };
-    insertVariant(variantTokens, axes, values, leaf.paints, warnings);
-    insertVariant(variantStrokes, axes, values, leaf.strokes, warnings);
+    insertVariantLeaf(variantTokens, axes, values, leaf.paints, warnings);
+    insertVariantLeaf(variantStrokes, axes, values, leaf.strokes, warnings);
   }
 
   return { variantTokens, variantStrokes };

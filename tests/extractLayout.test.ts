@@ -166,7 +166,7 @@ test('un layer absolu n’est pas inventé comme item Flex', async () => {
   assert.ok(warnings.some((warning) => warning.includes('position « Absolute »')));
 });
 
-test('extractLayout nomme le calque texte « label » et garde son nom Figma', async () => {
+test('extractLayout nomme le calque texte « label » sans recopier sa typographie', async () => {
   const texte = {
     type: 'TEXT',
     name: 'Suivant',
@@ -196,17 +196,12 @@ test('extractLayout nomme le calque texte « label » et garde son nom Figma', a
     {
       slot: 'label',
       figmaLayer: 'Suivant',
-      typography: {
-        fontSize: '{components.button.sizes.medium.font-size}',
-        fontWeight: '{layouts.fontweight.600}',
-      },
     },
   ]);
-  // Les champs typographiques non liés avertissent au lieu d'être devinés.
-  assert.ok(warnings.some((w) => w.includes('line height')));
+  assert.equal(warnings.some((warning) => warning.includes('font')), false);
 });
 
-test('un slot à deux textes décrit chaque part avec SA typographie', async () => {
+test('un slot à deux textes conserve chaque part pour que variantTypography puisse la cibler', async () => {
   // Régression : l'Alert exportée en 4.2 ne portait qu'une typographie pour un
   // slot « Text » contenant « Titre » et « Description ». Celle du titre était
   // appliquée aux deux, et `description-size` n'entrait jamais dans le contrat.
@@ -261,8 +256,6 @@ test('un slot à deux textes décrit chaque part avec SA typographie', async () 
   );
 
   const slot = layout.children[0];
-  // Le slot ne s'attribue plus une typographie qui n'appartient qu'à une part.
-  assert.equal(slot.typography, undefined);
   assert.equal(slot.slot, 'label');
   assert.equal(slot.figmaLayer, 'Text');
   assert.equal(slot.layout, 'flex-column');
@@ -273,23 +266,13 @@ test('un slot à deux textes décrit chaque part avec SA typographie', async () 
     {
       slot: 'label',
       figmaLayer: 'Titre',
-      typography: {
-        fontSize: '{components.alert.sizes.title-size}',
-        fontWeight: '{layouts.fontweight.600}',
-      },
     },
     {
       slot: 'label-2',
       figmaLayer: 'Description',
-      typography: {
-        fontSize: '{components.alert.sizes.description-size}',
-        fontWeight: '{layouts.fontweight.400}',
-      },
     },
   ]);
-  // `tokensUsed` se dérive du contrat terminé : la taille de description doit y
-  // entrer, sans quoi le token resterait orphelin comme dans l'export 4.2.
-  assert.ok(collectTokenReferences(layout).has('{components.alert.sizes.description-size}'));
+  assert.equal(collectTokenReferences(layout).has('{components.alert.sizes.description-size}'), false);
 });
 
 test('la récursion textuelle ignore un dessin voisin au lieu d’en faire une part', async () => {
@@ -457,11 +440,7 @@ test('la typographie descend jusqu’au vrai calque texte, pas sur son frame', a
 
   const enveloppeContractuelle = layout.children[0].children?.[0];
   assert.equal(enveloppeContractuelle?.figmaLayer, 'Enveloppe titre');
-  assert.equal(enveloppeContractuelle?.typography, undefined);
   assert.equal(enveloppeContractuelle?.children?.[0].figmaLayer, 'Titre');
-  assert.deepEqual(enveloppeContractuelle?.children?.[0].typography, {
-    fontSize: '{components.alert.sizes.title-size}',
-  });
 });
 
 test('un conteneur de textes sans auto-layout n’invente pas flex-row', async () => {

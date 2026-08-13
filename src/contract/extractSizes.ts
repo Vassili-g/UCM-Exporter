@@ -3,12 +3,12 @@
  *
  * Le contrat ne doit pas décrire une seule taille : si le composant expose un
  * axe de tailles (souvent porté par le wrapper de dimensions), chaque valeur
- * de cet axe a ses propres tokens de gap/padding/radius/font-size. On les
- * relève ici, taille par taille, pour que le contrat couvre tout.
+ * de cet axe a ses propres tokens géométriques de gap/padding/radius. On les
+ * relève ici, taille par taille, pour que le contrat couvre tout. La
+ * typographie est extraite depuis les styles de texte pour chaque variant.
  */
 import type { TokenResolver } from '../variables';
 import { getVariantAxes, getVariantValues } from './componentTree';
-import { textNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import { findLayoutNode } from './extractLayout';
 import { BINDING_PATTERNS, resolveField } from './nodeBindings';
@@ -42,24 +42,9 @@ async function extractDimensions(
   composed: ComposedInstances,
 ): Promise<SizeDimensions> {
   const layoutNode = findLayoutNode(component, warnings, composed);
-  // `sizes.<valeur>.fontSize` ne porte qu'UNE font size par taille. Quand le
-  // composant a plusieurs textes, celle du premier serait présentée comme celle
-  // de tous : on ne l'exporte pas, et on dit au designer ce qui manquera.
-  const texts = textNodes(component, warnings, composed);
-  if (texts.length > 1) {
-    warnings.push(
-      `Variant « ${component.name} » — layers ${texts.map((text) => `« ${text.name} »`).join(', ')} : `
-        + `le component possède plusieurs font sizes, mais l'export ne peut en noter qu'une par `
-        + `taille. Aucune font size globale n'est exportée pour ce variant. Si elles varient `
-        + `entre tailles, cette variation manquera au développeur : conservez le design et `
-        + `signalez cette limite. Sinon appliquez les mêmes variables ou text styles aux `
-        + `variants, puis réexportez.`,
-    );
-  }
-  const textNode = texts.length === 1 ? texts[0] : null;
   // Le libellé passé à resolveField sert aux warnings : on précise la taille
   // pour qu'un token manquant soit localisable (ex. « gap (small) »).
-  const [gap, paddingX, paddingY, radius, fontSize] = await Promise.all([
+  const [gap, paddingX, paddingY, radius] = await Promise.all([
     resolveField(
       layoutNode,
       BINDING_PATTERNS.gap,
@@ -88,20 +73,9 @@ async function extractDimensions(
       resolver,
       warnings,
     ),
-    textNode
-      ? resolveField(
-        textNode,
-        BINDING_PATTERNS.fontSize,
-        `font size (variant « ${sizeValue} »)`,
-        resolver,
-        warnings,
-      )
-      : Promise.resolve(null),
   ]);
 
-  const dimensions: SizeDimensions = { gap, padding: { x: paddingX, y: paddingY }, radius };
-  if (fontSize) dimensions.fontSize = fontSize;
-  return dimensions;
+  return { gap, padding: { x: paddingX, y: paddingY }, radius };
 }
 
 /**

@@ -21,9 +21,9 @@ const resolverFor = (tokens: Record<string, string>) => ({
 const findAllOn = (enfants: unknown[]) => (predicat: (node: never) => boolean) =>
   enfants.filter(predicat as (node: unknown) => boolean);
 
-/** Un variant de taille : son axe, ses dimensions liées, son calque texte. */
+/** Un variant de taille : son axe et ses dimensions géométriques liées. */
 function variantDeTaille(axe: string, valeur: string, suffixe: string) {
-  const texte = { type: 'TEXT', name: 'Suivant', boundVariables: { fontSize: alias(`fs-${suffixe}`) } };
+  const texte = { type: 'TEXT', name: 'Suivant', boundVariables: {} };
   return {
     type: 'COMPONENT',
     name: `${axe}=${valeur}`,
@@ -49,12 +49,10 @@ const TOKENS = {
   'px-big': 'components.button.sizes.big.padding-x',
   'py-big': 'components.button.sizes.big.padding-y',
   'r-big': 'components.button.sizes.big.border-radius',
-  'fs-big': 'components.button.sizes.big.font-size',
   'gap-small': 'components.button.sizes.small.gap',
   'px-small': 'components.button.sizes.small.padding-x',
   'py-small': 'components.button.sizes.small.padding-y',
   'r-small': 'components.button.sizes.small.border-radius',
-  'fs-small': 'components.button.sizes.small.font-size',
 };
 
 test('extractSizeDimensions couvre chaque valeur de l’axe de tailles', async () => {
@@ -72,13 +70,12 @@ test('extractSizeDimensions couvre chaque valeur de l’axe de tailles', async (
     gap: '{components.button.sizes.big.gap}',
     padding: { x: '{components.button.sizes.big.padding-x}', y: '{components.button.sizes.big.padding-y}' },
     radius: '{components.button.sizes.big.border-radius}',
-    fontSize: '{components.button.sizes.big.font-size}',
   });
-  // Chaque token relevé alimente `tokensUsed` : 5 par taille, 2 tailles.
-  assert.equal(collectTokenReferences(sizes).size, 10);
+  // Quatre dimensions géométriques par taille ; la typographie vit dans les text styles.
+  assert.equal(collectTokenReferences(sizes).size, 8);
 });
 
-test('plusieurs textes n’inventent pas une font size commune par taille', async () => {
+test('les textes ne changent pas la carte des dimensions par taille', async () => {
   const avecDeuxTextes = (valeur: string, suffixe: string) => {
     const variant = variantDeTaille(AXE, valeur, suffixe);
     const titre = { type: 'TEXT', name: 'Titre', boundVariables: { fontSize: alias(`title-${suffixe}`) } };
@@ -103,9 +100,8 @@ test('plusieurs textes n’inventent pas une font size commune par taille', asyn
     warnings,
   );
 
-  assert.equal(sizes?.big.fontSize, undefined);
-  assert.ok(warnings.some((warning) => warning.includes("Aucune font size globale n'est exportée")));
-  assert.equal(warnings.some((warning) => warning.includes("Ne gardez qu'un layer")), false);
+  assert.equal('fontSize' in (sizes?.big ?? {}), false);
+  assert.deepEqual(warnings, []);
 });
 
 test('extractSizeDimensions rend null quand aucun axe n’est un axe de tailles', async () => {
@@ -216,7 +212,10 @@ test('l’axe de tailles est lu sur le set sélectionné quand le wrapper n’en
     [],
     { instance: big.instanceWrapper, componentSet: setDuWrapper },
     big.composant,
-    resolverFor({ gBig: 'components.button.sizes.big.gap', gSmall: 'components.button.sizes.small.gap' }),
+    resolverFor({
+      gBig: 'components.button.sizes.big.gap',
+      gSmall: 'components.button.sizes.small.gap',
+    }),
   );
 
   assert.deepEqual(Object.keys(structure.sizes ?? {}), ['big', 'small']);

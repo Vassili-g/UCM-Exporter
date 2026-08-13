@@ -3,7 +3,7 @@
  * Rôle : afficher l'UI, écouter ses demandes d'export, lancer le bon
  * handler et lui renvoyer le fichier produit ou l'erreur.
  */
-import { extractRules, hasUsableRules } from './contract/extractRules';
+import { extractRules, hasUsableRules, unusableRulesMessage } from './contract/extractRules';
 import handleExportComponent, { CONTRACT_VERSION } from './contract/exportComponent';
 import handleExportTokens from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
@@ -92,7 +92,7 @@ async function reportSelectionState(): Promise<void> {
   if (token !== selectionToken) return;
 
   if (!hasUsableRules(rules)) {
-    postNote('warning', `Impossible d'exporter « ${componentSet.name} » : aucune règle d'utilisation détectée.`);
+    postNote('warning', unusableRulesMessage(componentSet.name, rules));
   } else {
     postNote('success', `« ${componentSet.name} » prêt à l'export.`);
   }

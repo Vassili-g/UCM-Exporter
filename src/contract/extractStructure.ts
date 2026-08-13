@@ -17,8 +17,9 @@ import {
 } from './extractLayout';
 import { extractSizeDimensions } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
+import { extractVariantTypography, textSlots } from './extractVariantTypography';
 import { variantRoleWarnings } from './semantics';
-import type { ContractStructure, SizeDimensions } from './types';
+import type { ContractStructure, SizeDimensions, TextStyleDefinition } from './types';
 
 export async function extractStructure(
   matrix: VariantMatrix,
@@ -35,6 +36,7 @@ export async function extractStructure(
   iconNames: readonly string[] = [],
 ): Promise<{
   structure: ContractStructure;
+  textStyles: Record<string, TextStyleDefinition>;
   iconLayers: IconLayerSummary[];
   warnings: string[];
 }> {
@@ -143,6 +145,21 @@ export async function extractStructure(
     );
   }
 
+  const referenceTextSlotPaths = new Set(
+    referenceLayout
+      ? textSlots(referenceLayout.layoutNode, targetedLayers, composed)
+        .map(({ slotPath }) => JSON.stringify(slotPath))
+      : [],
+  );
+  const typography = await extractVariantTypography(
+    matrix,
+    resolver,
+    warnings,
+    composed,
+    targetedLayers,
+    referenceTextSlotPaths,
+  );
+
   // Dimensions par taille, pour couvrir big/medium/small et pas seulement la
   // taille instanciée par défaut. L'axe de tailles vit d'ordinaire sur le
   // wrapper de dimensions, mais rien ne l'y oblige : il peut rester sur le set
@@ -165,10 +182,9 @@ export async function extractStructure(
     if (sizes) break;
   }
 
-  // Les dimensions ne vivent qu'à UN endroit : `sizes` les porte toutes dès
-  // qu'un axe de tailles existe, sinon elles restent au niveau haut. Les
-  // publier aux deux endroits reviendrait à recopier la taille de référence,
-  // et une recopie finit toujours par diverger de son original.
+  // Les dimensions géométriques ne vivent qu'à UN endroit : `sizes` les porte
+  // toutes dès qu'un axe de tailles existe, sinon elles restent au niveau haut.
+  // La typographie a son propre catalogue et son arbre complet de variants.
   const { gap, padding, radius, ...slots } = layout;
   const dimensions = sizes ? { sizes } : { gap, padding, radius };
 
@@ -178,7 +194,8 @@ export async function extractStructure(
     variantAxes: matrix.axes,
     variantTokens,
     variantStrokes,
+    variantTypography: typography.variantTypography,
   };
 
-  return { structure, iconLayers, warnings };
+  return { structure, textStyles: typography.textStyles, iconLayers, warnings };
 }

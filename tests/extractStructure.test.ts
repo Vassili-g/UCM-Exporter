@@ -81,7 +81,6 @@ test('extractStructure ne recopie pas la couleur du label hors de variantTokens'
   assert.deepEqual(Array.from(collectTokenReferences(structure)).sort(), [
     '{components.button.colors.primary.contained.default.background}',
     '{components.button.colors.primary.contained.default.foreground}',
-    '{components.button.sizes.medium.font-size}',
     '{components.button.sizes.medium.gap}',
   ]);
 });

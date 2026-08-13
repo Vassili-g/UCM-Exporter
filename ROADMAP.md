@@ -30,7 +30,7 @@ uniquement ce qui est déjà intégré et vérifié.
 
 | Domaine | État |
 |---|---|
-| Export des contrats 4.2 à 4.4 | Opérationnel |
+| Export des contrats 4.2 à 4.6 | 4.2–4.5 consommés ; extraction 4.6 implémentée et testée, réexports Figma encore requis |
 | Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma 4.4 de l’Exporter |
 | Export DTCG avec alias et modes | Opérationnel |
 | Téléchargement local et dépôt par PR GitHub | Opérationnel |
@@ -42,7 +42,7 @@ uniquement ce qui est déjà intégré et vérifié.
 | Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
 | Tokens du code vérifiés contre leur contrat | Opérationnelle |
-| CI des deux repositories | Vertes sur `main` et sur les pull requests ; diagnostic publié en commentaire |
+| CI des deux repositories | Tests et builds verts ; contrôle complet du Playground rouge tant que les composants 4.5 n'ont pas été reconstruits contre les futurs contrats 4.6 |
 | Rapport unique destiné au développeur | Opérationnel : `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
 | Références de tokens du code | Opérationnelles : chemins assemblés et tokens absents du contrat sont bloquants ; audit visuel navigateur hors périmètre |
 | Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
@@ -52,11 +52,12 @@ uniquement ce qui est déjà intégré et vérifié.
 | Multi-marque au runtime | Modes exportés, consommation non implémentée |
 
 Le projet est un **prototype avancé** dont l’outillage tient : la chaîne
-Figma → PR → CI → `main` fonctionne pour les contrats 4.2 à 4.4, et les deux
-repositories construisent et se testent. La 4.4 Flex a été éprouvée par les
-réexports Figma Alert et Button, le corpus de référence de l'Exporter et leurs
-générations froides. Elle ne prétend pas couvrir grille, wrap ni positionnement
-absolu.
+Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 4.5, et les deux
+repositories construisent et se testent. La 4.6 ajoute l'extraction des text
+styles liés à leurs tokens sur toute la matrice ; sa logique pure est couverte,
+mais sa validation runtime attend les réexports Figma Alert et Button, puis la
+reconstruction de leurs composants de test froid. Le flux Flex ne prétend pas
+couvrir grille, wrap ni positionnement absolu.
 
 Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
 **détection** et non comme **prévention** : rien n’empêche la fusion d’une pull
