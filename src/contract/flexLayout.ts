@@ -58,6 +58,19 @@ function alignSelf(value: unknown): AlignSelf | null {
 }
 
 /**
+ * Dimensionnement explicite de l'enfant sur l'axe secondaire du parent.
+ * `layoutAlign` est une API historique ; `layoutSizing…` est le reflet direct
+ * des menus Horizontal / Vertical sizing de Figma et tranche ses incohérences.
+ */
+function crossAxisSizing(parent: SceneNode, child: SceneNode): unknown {
+  const parentMode = asPropertyBag(parent).layoutMode;
+  const childValues = asPropertyBag(child);
+  if (parentMode === 'HORIZONTAL') return childValues.layoutSizingVertical;
+  if (parentMode === 'VERTICAL') return childValues.layoutSizingHorizontal;
+  return undefined;
+}
+
+/**
  * Alignement du conteneur Figma. Les deux champs forment une paire : si l'API
  * ne fournit pas les deux, le contrat les omet plutôt que de compléter le
  * second avec un défaut CSS inventé.
@@ -110,6 +123,13 @@ export function flexItemProperties(
   }
 
   const result: FlexItemProperties = {};
+  const sizing = crossAxisSizing(parent, child);
+  // Dans Figma, HUG et STRETCH sont incompatibles sur le mÃªme axe. Des nodes
+  // anciens ou des instances peuvent toutefois exposer les deux valeurs ; le
+  // menu de dimensionnement est alors l'intention la plus prÃ©cise. Sans cette
+  // prioritÃ©, le consommateur CSS Ã©tirerait un composant que Figma garde hug.
+  if (sizing === 'HUG') return result;
+
   const rawAlign = values.layoutAlign;
   if (rawAlign !== undefined && rawAlign !== 'INHERIT') {
     const mapped = alignSelf(rawAlign);

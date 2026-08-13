@@ -112,6 +112,33 @@ test('extractLayout publie l’alignement Flex et le remplissage des slots direc
   assert.equal(layout.children[2].alignSelf, 'stretch');
 });
 
+test('un dimensionnement HUG sur l’axe secondaire prime sur un layoutAlign STRETCH contradictoire', async () => {
+  const action = {
+    type: 'INSTANCE',
+    id: 'action',
+    name: 'Action',
+    layoutAlign: 'STRETCH',
+    layoutGrow: 0,
+    // Parent horizontal : la hauteur est son axe secondaire.
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+  };
+  const alert = {
+    type: 'COMPONENT',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+    boundVariables: {},
+    children: [action],
+    findAll: findAllOn([action]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(alert, resolverFor({}), []);
+
+  assert.equal(layout.children[0].alignSelf, undefined);
+});
+
 test('extractLayout décrit Auto par justifyContent sans inventer de gap fixe', async () => {
   const row = {
     type: 'COMPONENT',
