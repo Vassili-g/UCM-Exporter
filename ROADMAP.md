@@ -30,7 +30,7 @@ uniquement ce qui est déjà intégré et vérifié.
 
 | Domaine | État |
 |---|---|
-| Export des contrats 4.2 à 4.6 | 4.2–4.5 consommés ; extraction 4.6 implémentée et testée, réexports Figma encore requis |
+| Export des contrats 4.2 à 4.6 | 4.6 consommée : contrats Figma Alert et Button fusionnés, puis reconstruits à froid dans le Playground |
 | Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma 4.4 de l’Exporter |
 | Export DTCG avec alias et modes | Opérationnel |
 | Téléchargement local et dépôt par PR GitHub | Opérationnel |
@@ -42,21 +42,20 @@ uniquement ce qui est déjà intégré et vérifié.
 | Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
 | Tokens du code vérifiés contre leur contrat | Opérationnelle |
-| CI des deux repositories | Tests et builds verts ; contrôle complet du Playground rouge tant que les composants 4.5 n'ont pas été reconstruits contre les futurs contrats 4.6 |
+| CI des deux repositories | Tests, builds et contrôle complet du Playground verts avec les contrats 4.6 |
 | Rapport unique destiné au développeur | Opérationnel : `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
 | Références de tokens du code | Opérationnelles : chemins assemblés et tokens absents du contrat sont bloquants ; audit visuel navigateur hors périmètre |
 | Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
-| Composants du consommateur | Button et Alert reconstruits à froid contre leurs contrats 4.4, avec références littérales vérifiables |
+| Composants du consommateur | Button et Alert reconstruits à froid contre leurs contrats 4.6, typographies et références littérales vérifiées |
 | Validation multi-composants | Partielle |
 | JSON Schema public | Non commencé |
 | Multi-marque au runtime | Modes exportés, consommation non implémentée |
 
 Le projet est un **prototype avancé** dont l’outillage tient : la chaîne
-Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 4.5, et les deux
-repositories construisent et se testent. La 4.6 ajoute l'extraction des text
-styles liés à leurs tokens sur toute la matrice ; sa logique pure est couverte,
-mais sa validation runtime attend les réexports Figma Alert et Button, puis la
-reconstruction de leurs composants de test froid. Le flux Flex ne prétend pas
+Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 4.6, et les deux
+repositories construisent et se testent. Alert et Button appliquent désormais
+les text styles exportés à leurs vrais slots texte ; les tests relisent les cinq
+propriétés typographiques et la totalité des références déclarées. Le flux Flex ne prétend pas
 couvrir grille, wrap ni positionnement absolu.
 
 Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
@@ -174,6 +173,21 @@ nouveau champ de contrat ne se justifie qu’à partir d’une limite réelle.
 dépendance — une seule, pas plusieurs — et change d’icône selon la sévérité.
 Restent un composé à plusieurs dépendances et un composant interactif à booléens
 (Checkbox, TextField).
+
+La validation 4.6 laisse un cas typographique précis à éprouver. Button expose
+`size` depuis un wrapper imbriqué, tandis que `variantTypography` suit les axes
+du Component Set principal. Le contrat actuel est complet parce que toutes les
+tailles utilisent réellement `Label/Large`, mais il ne démontre pas le cas où
+le text style varierait selon un axe du wrapper. Avant de changer le schéma :
+
+1. construire dans Figma un cas réel où le style varie selon cet axe imbriqué ;
+2. vérifier si l’export peut parcourir les variants du wrapper sans perdre les
+   overrides portés par ses instances ;
+3. si la limite est confirmée, donner à la typographie ses propres axes effectifs
+   et compresser ceux qui n’influencent aucun style, plutôt que de dupliquer une
+   feuille identique sur toute la matrice ;
+4. versionner cette nouvelle forme, puis adapter validateur, test froid et
+   documentation dans le même changement.
 
 ### 2. Éprouver le workflow d’équipe
 
