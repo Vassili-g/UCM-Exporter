@@ -306,7 +306,10 @@ propriété illisible : aucune valeur CSS par défaut n'est devinée.
 
 Chaque enfant direct du flux peut porter `alignSelf` quand son `layoutAlign`
 diffère de `INHERIT` (`STRETCH` inclus) et `flexGrow: 1` quand Figma publie
-`layoutGrow: 1`. Les valeurs neutres `INHERIT` et `0` restent absentes. Un
+`layoutGrow: 1`. Le dimensionnement explicite du layer sur l'axe secondaire
+prévaut : `HUG` laisse `alignSelf` absent, même si une instance expose aussi
+un `layoutAlign: STRETCH` historique. Les valeurs neutres `INHERIT` et `0`
+restent absentes. Un
 layer en position `Absolute` est averti et ne reçoit aucune propriété Flex : le
 contrat ne décrit pas encore ses coordonnées. Direction, alignements et
 propriétés de flux des slots sont comparés sur toute la matrice ; une différence
