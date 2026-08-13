@@ -332,8 +332,10 @@ et ne réclame rien, un axe figé doit citer une variable. `size` porte alors la
 référence seule quand les deux côtés sont identiques — le carré des icônes — et
 `{ "width": "…", "height": "…" }` sinon, chaque côté figé nommant le sien. Une
 dimension figée sans variable produit un avertissement et reste absente : c'est
-ce qui autorise à lire une absence comme un `Hug`. Seule la dépendance composée
-échappe au relevé, sa taille appartenant à son propre contrat.
+ce qui autorise à lire une absence comme un `Hug`. Seul le calque qui EST une
+dépendance composée échappe au relevé, sa taille appartenant à son propre
+contrat ; le cadre qui l'enveloppe est un calque de ce contrat-ci et publie la
+sienne.
 
 **Dimensionnement du composant (4.8).** `structure.sizing` publie le
 comportement du composant lui-même, en valeurs de `width` et de `height`, et il
@@ -585,6 +587,32 @@ ni sa typographie. Un composant est reconnu comme unifié lorsqu'il possède un
 conteneur `<Nom>-Rules` sur la page — le même critère qui autorise son export,
 évalué par la même fonction, si bien que les deux lectures ne peuvent pas se
 contredire.
+
+**Un cadre qui enveloppe une dépendance (4.9).** Le slot peut ÊTRE l'instance,
+ou l'envelopper : une Alert range son bouton dans un calque « Action » dont
+l'auto-layout le centre et remplit la hauteur. Ce cadre appartient à ce
+contrat-ci, pas au Button, et se décrit donc comme n'importe quel conteneur —
+son `layout`, son `justifyContent`, son `alignItems`, sa dimension figée, puis
+la dépendance dans `children`. Seul le calque qui EST l'instance porte
+`composes`.
+
+La distinction n'est pas cosmétique : porter `composes` sur le cadre le ferait
+passer pour le composant, et son `alignSelf` atterrirait sur un composant qui
+publie déjà son propre `structure.sizing`, où une taille explicite neutralise
+l'étirement. Le cadre disparaîtrait avec son alignement. `gap` reste tu sur un
+tel cadre : seule la branche menant à la dépendance est publiée, et espacer des
+enfants absents du contrat ne voudrait rien dire. Un cadre sans auto-layout
+linéaire avertit au lieu de laisser deviner sa disposition.
+
+```json
+{ "slot": "action", "alignSelf": "stretch", "figmaLayer": "Action",
+  "visibilityProp": "action", "optional": true,
+  "layout": "flex-row", "justifyContent": "center", "alignItems": "center",
+  "children": [
+    { "slot": "button", "figmaLayer": "Button", "composes": "Button" }
+  ] }
+```
+
 Le relevé couvre toute la matrice pour élaguer les dépendances de chaque
 variant. `structure.children` et `composes` décrivent tous deux le variant de
 référence et gardent ainsi le même ordre et la même cardinalité. Si la
@@ -768,13 +796,18 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **4.8** : après la récursion textuelle 4.3,
+La version actuelle du contrat est **4.9** : après la récursion textuelle 4.3,
 le flux Flex 4.4, le jalon transitoire 4.5 et les text styles 4.6, la 4.7 ferme
 le dimensionnement et la 4.8 l'exprime en CSS. `structure.sizing` publie le
 comportement du composant en valeurs de `width` et `height` (`stretch` ou
 `fit-content`), et `size` décrit la dimension figée de n'importe quel slot, côté
 par côté. Une absence de dimensionnement se lit comme un `fit-content`, sans
 avoir à le supposer.
+
+La 4.9 ferme la composition du même mouvement : un calque qui ENVELOPPE un
+composant unifié est un conteneur de ce contrat-ci, publie son flux et range la
+dépendance dans `children`. Seul le calque qui EST l'instance porte encore
+`composes`.
 
 Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
 il accepte uniquement les versions qu’il a explicitement auditées.

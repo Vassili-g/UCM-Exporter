@@ -27,6 +27,7 @@ import {
 } from './flexLayout';
 import type {
   ChildStructure,
+  ComposedDependency,
   ContractStructure,
   SlotSize,
 } from './types';
@@ -236,6 +237,106 @@ async function extractTextBranch(
 }
 
 /**
+ * Cadre qui enveloppe un composant unifié, décrit comme le conteneur qu'il est.
+ *
+ * Ce calque appartient à CE contrat. Il publie donc son flux, puis la dépendance dans
+ * `children`, exactement comme un slot à parts. Porter `composes` sur le cadre
+ * lui-même le ferait passer pour le composant : son `alignSelf` atterrirait sur
+ * un composant qui publie déjà son propre `structure.sizing`, où une taille
+ * explicite neutralise l'étirement. Le cadre disparaîtrait avec son alignement.
+ *
+ * `gap` reste tu : seules les branches menant à la dépendance sont publiées, et
+ * un espacement décrirait des enfants absents du contrat.
+ */
+async function describeComposedWrapper(
+  entry: ChildStructure,
+  wrapper: SceneNode,
+  dependency: ComposedDependency,
+  resolver: TokenResolver,
+  warnings: string[],
+  composed: ComposedInstances,
+  iconNames: ReadonlySet<string>,
+): Promise<void> {
+  const branches = assignSlots(wrapper, iconNames, warnings, composed)
+    .filter(({ child }) => composedSlotDependencies(child, composed).length > 0);
+
+  // La dépendance est là — `composedSlotDependencies` l'a trouvée — mais aucune
+  // branche exportable n'y mène : elle est rangée sous un calque masqué. Publier
+  // un conteneur vide donnerait un contrat que le consommateur refuse ; on
+  // revient à la forme du slot-instance, et on dit ce qui manquera.
+  if (branches.length === 0) {
+    entry.composes = dependency.component;
+    warnings.push(
+      `Layer « ${wrapper.name} » : il enveloppe le composant « ${dependency.component} » mais ` +
+        `aucun de ses calques exportables n'y mène. Le contrat nomme la dépendance sans la ` +
+        `disposition de ce calque, et le développeur rendra le composant sans son cadre. ` +
+        `Rendez visible le calque qui porte l'instance, puis réexportez.`,
+    );
+    return;
+  }
+
+  const direction = autoLayoutDirection(wrapper);
+  if (direction) {
+    entry.layout = direction;
+    Object.assign(entry, flexContainerProperties(wrapper, warnings));
+  } else {
+    warnings.push(
+      `Layer « ${wrapper.name} » : il enveloppe le composant « ${dependency.component} » mais ` +
+        `n'utilise pas un auto layout horizontal ou vertical. Le contrat publie la dépendance ` +
+        `sans la disposition de ce calque, et le développeur rendra le composant sans son ` +
+        `cadre. Appliquez un auto layout à ce layer, puis réexportez.`,
+    );
+  }
+
+  // Le cadre est un élément du flux comme un autre : sa dimension figée lui
+  // appartient. Seule celle de l'INSTANCE reste hors de ce contrat.
+  const size = await resolveSlotSize(wrapper, resolver, warnings);
+  if (size) entry.size = size;
+
+  entry.children = await Promise.all(
+    branches.map(({ child, slot }) =>
+      extractComposedBranch(wrapper, child, slot, resolver, warnings, composed, iconNames)),
+  );
+}
+
+/** Une branche qui mène à un composant unifié : la dépendance, ou un cadre de plus. */
+async function extractComposedBranch(
+  parent: SceneNode,
+  node: SceneNode,
+  slot: string,
+  resolver: TokenResolver,
+  warnings: string[],
+  composed: ComposedInstances,
+  iconNames: ReadonlySet<string>,
+): Promise<ChildStructure> {
+  const entry: ChildStructure = { slot, ...flexItemProperties(parent, node, warnings) };
+  entry.figmaLayer = node.name;
+
+  const direct = composed.get(node.id);
+  if (direct) {
+    entry.composes = direct.component;
+    return entry;
+  }
+
+  // La visibilité de la branche est déjà publiée par le slot de premier niveau,
+  // qui reprend celle du calque comme celle de l'instance. La répéter ici
+  // laisserait croire à deux conditions distinctes.
+  const dependency = composedSlotDependencies(node, composed)[0];
+  if (dependency) {
+    await describeComposedWrapper(
+      entry,
+      node,
+      dependency,
+      resolver,
+      warnings,
+      composed,
+      iconNames,
+    );
+  }
+  return entry;
+}
+
+/**
  * Transforme un enfant direct du conteneur en « slot » du contrat :
  * - un calque texte devient le slot sémantique `label` (son vrai nom Figma
  *   est gardé dans `figmaLayer` pour la traçabilité) ;
@@ -324,12 +425,24 @@ async function extractChild(
     entry.visibilityTargets = nestedVisibility.visibilityTargets;
   }
 
-  // Un composant unifié occupe la place d'un slot, mais rien de ce qu'il porte
-  // ne se relève ici : sa taille et sa typographie appartiennent à son contrat.
-  // Le nommer suffit à dire au consommateur quoi rendre à cet emplacement.
   if (composedDependency) {
     entry.figmaLayer = child.name;
-    entry.composes = composedDependency.component;
+    // Un composant unifié occupe la place d'un slot, mais rien de ce qu'il
+    // porte ne se relève ici : sa taille et sa typographie appartiennent à son
+    // contrat. Le nommer suffit à dire quoi rendre à cet emplacement.
+    if (composed.has(child.id)) {
+      entry.composes = composedDependency.component;
+      return entry;
+    }
+    await describeComposedWrapper(
+      entry,
+      child,
+      composedDependency,
+      resolver,
+      warnings,
+      composed,
+      iconNames,
+    );
     return entry;
   }
 
@@ -434,8 +547,26 @@ export function flexLayoutSignature(
     children: assignSlots(layoutNode, iconNames, [], composed).map(({ child, slot }) => ({
       slot,
       ...flexItemProperties(layoutNode, child),
+      // Le cadre d'une dépendance publie désormais son propre flux : sans lui
+      // dans la signature, deux variants qui centrent leur bouton différemment
+      // passeraient pour identiques et le contrat publierait celui de la
+      // référence.
+      ...composedWrapperSignature(child, composed),
     })),
   });
+}
+
+/** Flux du cadre qui enveloppe une dépendance, vide pour tout autre slot. */
+function composedWrapperSignature(child: SceneNode, composed: ComposedInstances): object {
+  if (composed.has(child.id) || composedSlotDependencies(child, composed).length === 0) {
+    return {};
+  }
+  return {
+    wrapper: {
+      layout: autoLayoutDirection(child),
+      ...flexContainerProperties(child),
+    },
+  };
 }
 
 /**

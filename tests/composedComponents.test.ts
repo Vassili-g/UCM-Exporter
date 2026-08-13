@@ -163,12 +163,16 @@ test('un slot qui enveloppe une dépendance reprend aussi sa visibilité', async
   // pour un placeholder d'icône dont on cherche la taille en vain.
   const bouton = instance('btn', 'Button', 'Button', {
     componentPropertyReferences: { visible: 'action#9:1' },
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
   });
   const conteneur = {
     type: 'FRAME',
     id: 'act',
     name: 'Action',
     boundVariables: {},
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'FILL',
     children: [bouton],
     findAll: () => [bouton],
   };
@@ -187,10 +191,15 @@ test('un slot qui enveloppe une dépendance reprend aussi sa visibilité', async
   );
 
   const slot = layout.children.find((child) => child.slot === 'action');
-  assert.equal(slot?.composes, 'Button');
   assert.equal(slot?.figmaLayer, 'Action');
   assert.equal(slot?.visibilityProp, 'action');
   assert.equal(slot?.optional, true);
+  // Le cadre est un conteneur de CE contrat : la dépendance est en dessous, et
+  // la visibilité reste sur le slot, seule condition d'affichage.
+  assert.equal(slot?.composes, undefined);
+  assert.deepEqual(slot?.children, [
+    { slot: 'button', figmaLayer: 'Button', composes: 'Button' },
+  ]);
   assert.equal(warnings.some((warning) => warning.includes('action-size')), false);
 });
 

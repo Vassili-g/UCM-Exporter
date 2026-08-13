@@ -216,26 +216,36 @@ export type ChildStructure = {
    */
   flexGrow?: 1;
   /**
-   * Parts internes d'un slot qui contient PLUSIEURS calques texte.
+   * Parts internes du slot, dans les deux cas où il est un conteneur : il
+   * contient PLUSIEURS calques texte, ou il enveloppe un composant unifié.
    *
-   * Le slot décrit uniquement les branches qui mènent à ces textes — même
-   * forme, à toute profondeur. Leur typographie est publiée séparément dans
-   * `structure.variantTypography`; leurs visibilités restent portées ici.
-   * Les dessins voisins ne deviennent pas des parts.
+   * Le slot décrit uniquement les branches qui mènent à ces textes ou à cette
+   * dépendance — même forme, à toute profondeur. La typographie des parts est
+   * publiée séparément dans `structure.variantTypography`; leurs visibilités
+   * restent portées ici. Les dessins voisins ne deviennent pas des parts.
    */
   children?: ChildStructure[];
   /** Sens de l'auto-layout du slot, présent uniquement avec `children`. */
   layout?: 'flex-row' | 'flex-column';
-  /** Répartition sur l'axe principal de ce conteneur à parts. */
+  /** Répartition sur l'axe principal de ce conteneur. */
   justifyContent?: JustifyContent;
-  /** Alignement sur l'axe secondaire de ce conteneur à parts. */
+  /** Alignement sur l'axe secondaire de ce conteneur. */
   alignItems?: AlignItems;
-  /** Gap interne du slot, présent uniquement avec `children`. */
+  /**
+   * Gap interne du slot. Présent uniquement avec des parts textuelles : un
+   * cadre de dépendance ne publie que la branche qui y mène, et espacer des
+   * enfants absents du contrat ne voudrait rien dire.
+   */
   gap?: string | null;
   /**
    * Nom du composant unifié rendu à cet emplacement. Le slot est alors une
    * DÉPENDANCE : ni ses tokens ni ses calques n'appartiennent à ce contrat,
    * ils vivent dans le sien (cf. `Contract.composes`).
+   *
+   * Ce champ ne décrit QUE le calque qui est l'instance. Un calque qui
+   * l'enveloppe est un conteneur de ce contrat-ci : il publie son flux et range
+   * la dépendance dans `children`. Sans cette distinction, l'alignement du
+   * cadre atterrit sur le composant, dont le `structure.sizing` le neutralise.
    */
   composes?: string;
 };

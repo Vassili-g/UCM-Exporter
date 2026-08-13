@@ -1215,3 +1215,211 @@ test('un slot masquable conserve les visibilités portées plus bas', () => {
     { visibilityProp: 'title', figmaPath: ['Titre'] },
   ]);
 });
+
+/**
+ * Cadre qui enveloppe un composant unifié.
+ *
+ * Une Alert range son bouton dans un calque « Action » : ce calque appartient à
+ * l'Alert, pas au Button. Sans son flux, `alignSelf` atterrit sur le composant,
+ * dont le `structure.sizing` neutralise l'étirement — le cadre disparaît.
+ */
+const boutonDependant = (extra: Record<string, unknown> = {}) => ({
+  type: 'INSTANCE',
+  id: 'btn',
+  name: 'Button',
+  layoutSizingHorizontal: 'HUG',
+  layoutSizingVertical: 'HUG',
+  boundVariables: {},
+  children: [],
+  findAll: findAllOn([]),
+  ...extra,
+});
+
+const dependanceDe = (composant = 'Button') =>
+  new Map([['btn', { component: composant, figmaLayer: 'Button' }]]);
+
+const alerteAvec = (slotAction: unknown) => ({
+  type: 'COMPONENT',
+  name: 'Alert',
+  layoutMode: 'HORIZONTAL',
+  primaryAxisAlignItems: 'MIN',
+  counterAxisAlignItems: 'CENTER',
+  boundVariables: {},
+  children: [slotAction],
+  findAll: findAllOn([slotAction]),
+} as unknown as ComponentNode);
+
+test('un cadre qui enveloppe une dépendance publie son flux et la range dans children', async () => {
+  const bouton = boutonDependant();
+  const cadre = {
+    type: 'FRAME',
+    id: 'act',
+    name: 'Action',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'CENTER',
+    counterAxisAlignItems: 'CENTER',
+    // H:fill W:hug, le réglage réel du calque « Action ».
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'FILL',
+    boundVariables: {},
+    children: [bouton],
+    findAll: findAllOn([bouton]),
+  };
+  (bouton as { parent?: unknown }).parent = cadre;
+
+  const warnings: string[] = [];
+  const layout = await extractLayout(
+    alerteAvec(cadre),
+    resolverFor({}),
+    warnings,
+    dependanceDe(),
+  );
+
+  const slot = layout.children[0];
+  // Le cadre remplit la hauteur de l'Alert…
+  assert.equal(slot.alignSelf, 'stretch');
+  assert.equal(slot.layout, 'flex-row');
+  assert.equal(slot.justifyContent, 'center');
+  assert.equal(slot.alignItems, 'center');
+  // … et c'est la dépendance qu'il contient, pas lui, qui est le composant.
+  assert.equal(slot.composes, undefined);
+  assert.deepEqual(slot.children, [
+    { slot: 'button', figmaLayer: 'Button', composes: 'Button' },
+  ]);
+  // Un espacement décrirait des enfants que le contrat ne publie pas.
+  assert.equal(slot.gap, undefined);
+  // Le cadre est complètement décrit : rien à réclamer au designer sur lui.
+  assert.equal(warnings.some((warning) => warning.includes('« Action »')), false);
+});
+
+test('un slot qui EST la dépendance garde sa forme : composes, sans conteneur', async () => {
+  const bouton = boutonDependant({ layoutSizingVertical: 'FILL' });
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    alerteAvec(bouton),
+    resolverFor({}),
+    warnings,
+    dependanceDe(),
+  );
+
+  const slot = layout.children[0];
+  assert.equal(slot.composes, 'Button');
+  assert.equal(slot.children, undefined);
+  assert.equal(slot.layout, undefined);
+  // Le dimensionnement de l'instance appartient à SON contrat : rien n'est
+  // réclamé ici, même sur un axe rempli.
+  assert.equal(slot.size, undefined);
+  assert.equal(warnings.some((warning) => warning.includes('« Button »')), false);
+});
+
+test('un cadre de dépendance sans auto-layout avertit au lieu de deviner sa disposition', async () => {
+  const bouton = boutonDependant();
+  const cadre = {
+    type: 'FRAME',
+    id: 'act',
+    name: 'Action',
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'FILL',
+    boundVariables: {},
+    children: [bouton],
+    findAll: findAllOn([bouton]),
+  };
+  (bouton as { parent?: unknown }).parent = cadre;
+
+  const warnings: string[] = [];
+  const layout = await extractLayout(
+    alerteAvec(cadre),
+    resolverFor({}),
+    warnings,
+    dependanceDe(),
+  );
+
+  const slot = layout.children[0];
+  assert.equal(slot.layout, undefined);
+  assert.equal(slot.justifyContent, undefined);
+  // La dépendance reste dite : c'est la disposition du cadre qui manque.
+  assert.deepEqual(slot.children, [
+    { slot: 'button', figmaLayer: 'Button', composes: 'Button' },
+  ]);
+  assert.ok(warnings.some((warning) =>
+    warning.includes('« Action »') && warning.includes('auto layout')));
+});
+
+test('un cadre de dépendance à dimension figée cite sa variable', async () => {
+  const bouton = boutonDependant();
+  const cadre = {
+    type: 'FRAME',
+    id: 'act',
+    name: 'Action',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'CENTER',
+    counterAxisAlignItems: 'CENTER',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'FILL',
+    boundVariables: { width: alias('largeur') },
+    children: [bouton],
+    findAll: findAllOn([bouton]),
+  };
+  (bouton as { parent?: unknown }).parent = cadre;
+
+  const layout = await extractLayout(
+    alerteAvec(cadre),
+    resolverFor({ largeur: 'components.alert.sizes.action-width' }),
+    [],
+    dependanceDe(),
+  );
+
+  assert.deepEqual(layout.children[0].size, {
+    width: '{components.alert.sizes.action-width}',
+  });
+});
+
+test('un cadre imbriqué dans un cadre descend jusqu’à la dépendance', async () => {
+  const bouton = boutonDependant();
+  const interne = {
+    type: 'FRAME',
+    id: 'inner',
+    name: 'Inner',
+    layoutMode: 'VERTICAL',
+    primaryAxisAlignItems: 'CENTER',
+    counterAxisAlignItems: 'MAX',
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+    children: [bouton],
+    findAll: findAllOn([bouton]),
+  };
+  const cadre = {
+    type: 'FRAME',
+    id: 'act',
+    name: 'Action',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'CENTER',
+    counterAxisAlignItems: 'CENTER',
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'FILL',
+    boundVariables: {},
+    children: [interne],
+    findAll: findAllOn([interne, bouton]),
+  };
+  (bouton as { parent?: unknown }).parent = interne;
+  (interne as { parent?: unknown }).parent = cadre;
+
+  const layout = await extractLayout(
+    alerteAvec(cadre),
+    resolverFor({}),
+    [],
+    dependanceDe(),
+  );
+
+  const slot = layout.children[0];
+  assert.equal(slot.layout, 'flex-row');
+  const intermediaire = slot.children?.[0];
+  assert.equal(intermediaire?.slot, 'inner');
+  assert.equal(intermediaire?.layout, 'flex-column');
+  assert.equal(intermediaire?.alignItems, 'flex-end');
+  assert.deepEqual(intermediaire?.children, [
+    { slot: 'button', figmaLayer: 'Button', composes: 'Button' },
+  ]);
+});
