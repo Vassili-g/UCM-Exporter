@@ -306,11 +306,48 @@ propriété illisible : aucune valeur CSS par défaut n'est devinée.
 
 Chaque enfant direct du flux peut porter `alignSelf` quand son `layoutAlign`
 diffère de `INHERIT` (`STRETCH` inclus) et `flexGrow: 1` quand Figma publie
-`layoutGrow: 1`. Le dimensionnement explicite du layer sur l'axe secondaire
-prévaut : `HUG` laisse `alignSelf` absent, même si une instance expose aussi
-un `layoutAlign: STRETCH` historique. Les valeurs neutres `INHERIT` et `0`
-restent absentes. Un
-layer en position `Absolute` est averti et ne reçoit aucune propriété Flex : le
+`layoutGrow: 1`. Les valeurs neutres `INHERIT` et `0` restent absentes.
+
+Le menu de dimensionnement du layer (`layoutSizingHorizontal` /
+`layoutSizingVertical`) prévaut sur ces deux API historiques, **axe par axe**.
+Sur l'axe secondaire : `FILL` donne `alignSelf: stretch`, `HUG` laisse
+`alignSelf` absent même si une instance expose encore un `layoutAlign: STRETCH`
+contradictoire — mais un `MIN`, `CENTER` ou `MAX` reste publié, puisqu'il
+aligne le layer sans rien dire de sa taille. Sur l'axe principal : `FILL` donne
+`flexGrow: 1`, `HUG` l'omet. Les deux axes sont indépendants : une hauteur en
+hug ne retire pas une largeur en fill, sans quoi le contrat perdrait un
+remplissage encore vrai dans Figma.
+
+**Une absence de dimensionnement vaut `Hug`.** Le contrat ne publie que les
+exceptions, et cette lecture est valide parce que les deux autres intentions
+sont couvertes ailleurs : un `Fill` devient `flexGrow` ou `alignSelf`, une
+dimension fixe reliée à une variable devient `size`, et une dimension fixe sans
+variable produit un avertissement au lieu d'être tue. Un consommateur peut donc
+rendre un slot sans `flexGrow`, sans `alignSelf` et sans `size` comme un
+`fit-content`.
+
+**Dimensions figées des slots (4.7).** Le relevé vise **tous** les slots, texte
+compris, et se fait axe par axe : un axe en `Hug` ou en `Fill` est déjà décrit
+et ne réclame rien, un axe figé doit citer une variable. `size` porte alors la
+référence seule quand les deux côtés sont identiques — le carré des icônes — et
+`{ "width": "…", "height": "…" }` sinon, chaque côté figé nommant le sien. Une
+dimension figée sans variable produit un avertissement et reste absente : c'est
+ce qui autorise à lire une absence comme un `Hug`. Seule la dépendance composée
+échappe au relevé, sa taille appartenant à son propre contrat.
+
+**Dimensionnement du composant (4.7).** `structure.sizing` publie le
+comportement du composant lui-même sur les deux axes (`fill` ou `hug`), et il
+est toujours présent : c'est la première décision de qui l'intègre, et la
+déduire d'une absence reviendrait à la deviner. `Hug` est repris tel quel ;
+tout le reste vaut `fill`, y compris une largeur fixe — celle-ci sert à aligner
+les variants d'un component set dans Figma, et la publier imposerait une
+largeur de maquette à toutes les pages qui intègrent le composant. C'est
+l'inverse de la règle des slots, parce qu'un slot vit dans un auto-layout que
+ce contrat décrit entièrement, là où un composant ne connaît pas son futur
+parent. Le dimensionnement est lu sur le variant, jamais sur le wrapper de
+layout, et comparé sur toute la matrice comme le reste du flux.
+
+Un layer en position `Absolute` est averti et ne reçoit aucune propriété Flex : le
 contrat ne décrit pas encore ses coordonnées. Direction, alignements et
 propriétés de flux des slots sont comparés sur toute la matrice ; une différence
 entre variants avertit au lieu d'être généralisée depuis le variant de
@@ -416,7 +453,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "4.6",
+    "contractVersion": "4.7",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -464,6 +501,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
   },
   "structure": {
     "layout": "flex-row",
+    "sizing": { "horizontal": "hug", "vertical": "hug" },
     "sizes": {
       "big":    { "gap": "…", "padding": { "x": "…", "y": "…" }, "radius": "…" },
       "medium": { "…": "idem" },
@@ -723,10 +761,12 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **4.6** : après la récursion textuelle 4.3,
-le flux Flex 4.4 et le jalon transitoire 4.5, elle publie les text styles liés à
-leurs tokens et leurs usages sur toute la matrice. La typographie n'est plus
-décrite dans un slot de référence ni dans les dimensions par taille.
+La version actuelle du contrat est **4.7** : après la récursion textuelle 4.3,
+le flux Flex 4.4, le jalon transitoire 4.5 et les text styles 4.6, elle ferme le
+dimensionnement. `structure.sizing` publie le comportement du composant sur ses
+deux axes, et `size` décrit la dimension figée de n'importe quel slot, côté par
+côté. Une absence de dimensionnement se lit désormais comme un `Hug`, sans avoir
+à le supposer.
 
 Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
 il accepte uniquement les versions qu’il a explicitement auditées.

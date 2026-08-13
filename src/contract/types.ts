@@ -133,6 +133,30 @@ export type AlignItems = 'flex-start' | 'center' | 'flex-end' | 'baseline';
 /** Exception d'alignement d'un enfant Flex direct. */
 export type AlignSelf = 'flex-start' | 'center' | 'flex-end' | 'stretch';
 
+/**
+ * Comportement d'un composant sur un axe, face à la place qu'on lui donne.
+ * `fill` occupe cette place, `hug` s'en tient au contenu. Il n'y a pas de
+ * troisième terme : une dimension fixe posée dans Figma sert à présenter les
+ * variants, elle ne décrit pas le composant.
+ */
+export type AxisSizing = 'fill' | 'hug';
+
+/** Dimensionnement propre du composant, publié sur les deux axes. */
+export type ContainerSizing = {
+  horizontal: AxisSizing;
+  vertical: AxisSizing;
+};
+
+/**
+ * Dimension figée d'un slot, toujours tokenisée.
+ *
+ * Un carré garde la forme courte — c'est le cas de presque toutes les icônes,
+ * et l'objet n'y apprendrait rien. Dès que les deux axes diffèrent, ou qu'un
+ * seul est figé, chacun est nommé : réduire les deux à une valeur ferait
+ * affirmer au contrat une dimension que Figma n'a pas.
+ */
+export type SlotSize = string | { width?: string; height?: string };
+
 /** Cible imbriquée dont une prop BOOLEAN contrôle la visibilité. */
 export type VisibilityTarget = {
   /** Prop publique qui montre ou masque uniquement cette cible. */
@@ -161,11 +185,20 @@ export type ChildStructure = {
    * pour ne jamais prétendre que la prop masque le slot entier.
    */
   visibilityTargets?: VisibilityTarget[];
-  /** Token de taille du calque (ex. taille d'icône). */
-  size?: string;
+  /**
+   * Dimension figée du calque (ex. taille d'icône), relevée sur les axes que
+   * Figma tient en `Fixed`. Un axe en `Hug` ou en `Fill` n'apparaît pas ici :
+   * il est déjà décrit par l'absence, ou par `flexGrow` / `alignSelf`.
+   */
+  size?: SlotSize;
   /** Exception d'alignement de ce layer dans l'auto layout de son parent. */
   alignSelf?: AlignSelf;
-  /** Le layer remplit l'axe principal de son parent (`layoutGrow: 1` dans Figma). */
+  /**
+   * Le layer remplit l'axe principal de son parent (`Fill` dans Figma, exposé
+   * par `layoutSizing…` ou par l'historique `layoutGrow: 1`). Son absence vaut
+   * `Hug` : une dimension fixe est publiée par `size` quand elle est reliée à
+   * une variable, et avertie quand elle ne l'est pas.
+   */
   flexGrow?: 1;
   /**
    * Parts internes d'un slot qui contient PLUSIEURS calques texte.
@@ -304,6 +337,12 @@ export type SizeDimensions = {
 export type ContractStructure = {
   /** Sens de l'auto-layout Figma, traduit en vocabulaire CSS. */
   layout: 'flex-row' | 'flex-column';
+  /**
+   * Comportement du composant face à la place qu'on lui donne. Toujours
+   * publié : c'est la première décision de qui l'intègre, et la déduire d'une
+   * absence reviendrait à la deviner.
+   */
+  sizing: ContainerSizing;
   /** Répartition Figma sur l'axe principal, absente hors auto-layout linéaire. */
   justifyContent?: JustifyContent;
   /** Alignement Figma sur l'axe secondaire, absent hors auto-layout linéaire. */
