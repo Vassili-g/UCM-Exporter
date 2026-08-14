@@ -26,6 +26,7 @@ src/
     layoutNodes.ts           élection du node de layout, une fois par variant
     exportableNodes.ts       parcours de l'arbre, hors dépendances composées
     parsers.ts               propriétés Figma → API publique
+    merge*.ts                doc et icônes des règles, rangées sur leur axe
     semantics.ts             vocabulaire sémantique partagé
     extract*.ts              structure, layout, tailles, tokens et règles
     flexLayout.ts            propriétés de flux et avertissements non portables
@@ -94,6 +95,14 @@ tests/
 - Une propriété Figma que le schéma ne sait pas porter — grille, wrap, bornes
   min/max, position absolue — avertit au lieu de disparaître. `layout` reste
   publié parce que sa forme l’exige, mais un repli `flex-row` se signale.
+- Un axe publié est documentable. Les axes d’API vivent dans `props`, l’axe
+  d’états dans `stateModel` : une règle `@prop` suit cette répartition au lieu
+  de la contredire. N’est une faute de frappe que ce que le contrat ne publie
+  nulle part.
+- Masquer et remplacer sont deux libertés distinctes. Le booléen Figma dit SI
+  une icône s’affiche, la prop runtime dit LAQUELLE rendre : une icône toujours
+  visible est modifiable comme une autre, et son absence de booléen ne se
+  signale pas.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours
@@ -102,6 +111,9 @@ tests/
   deux paddings, deux dimensions, quatre coins, etc.
 - Une donnée facultative incomplète avertit. Les préconditions explicitement
   définies dans la spécification bloquent.
+- On n’avertit que sur ce qu’on publie. Une valeur que le contrat va jeter —
+  les dimensions du calque de référence quand `sizes` existe — n’est ni
+  relevée ni signalée : le geste demandé au designer ne changerait rien.
 - Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
   geste à faire. Il lui parvient par le corps de la pull request.
 - `tokensUsed` se dérive du contrat terminé ; le relever pendant l’extraction y

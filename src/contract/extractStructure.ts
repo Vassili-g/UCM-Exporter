@@ -21,6 +21,29 @@ import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNo
 import { variantRoleWarnings } from './semantics';
 import type { ContractStructure, SizeDimensions, TextStyleDefinition } from './types';
 
+/**
+ * Sets susceptibles de porter l'axe de tailles, dans l'ordre où on les
+ * interroge.
+ *
+ * L'axe vit d'ordinaire sur le wrapper de dimensions, mais rien ne l'y oblige :
+ * il peut rester sur le set sélectionné pendant que le wrapper porte ses
+ * propres axes. On retient donc les deux propriétaires possibles et on garde le
+ * premier qui rend des dimensions. Élire le propriétaire sur le TYPE du node
+ * ferait disparaître `sizes` en silence dès que le wrapper n'a pas d'axe de
+ * tailles, alors que `props.size` continuerait d'annoncer ses valeurs au
+ * consommateur.
+ */
+function proprietairesDAxeDeTailles(
+  wrapper: WrapperReference | null,
+  referenceComponent: ComponentNode | null,
+): ComponentSetNode[] {
+  const ownSet = referenceComponent?.parent;
+  return [
+    wrapper?.componentSet,
+    ownSet?.type === 'COMPONENT_SET' ? ownSet : null,
+  ].filter((owner): owner is ComponentSetNode => Boolean(owner));
+}
+
 export async function extractStructure(
   matrix: VariantMatrix,
   matrixWarnings: string[],
@@ -137,6 +160,13 @@ export async function extractStructure(
     }
   }
 
+  // « Où vivent les dimensions » se décide AVANT de les relever, et une seule
+  // fois : c'est cette réponse que suivent à la fois l'extraction du layout de
+  // référence et le choix final de `dimensions`. La décider après coup ferait
+  // relever — donc avertir sur — des valeurs aussitôt jetées.
+  const sizeAxisOwners = proprietairesDAxeDeTailles(wrapper, referenceComponent);
+  const aUnAxeDeTailles = sizeAxisOwners.some((owner) => findSizeRepresentatives(owner) !== null);
+
   const layout = referenceLayout
     ? await extractLayout(
       referenceLayout.layoutNode,
@@ -145,6 +175,7 @@ export async function extractStructure(
       composed,
       targetedLayers,
       referenceLayout.component,
+      !aUnAxeDeTailles,
     )
     // Sans composant à interroger, le contrat retient le comportement par
     // défaut plutôt que d'inventer un hug que rien ne montre.
@@ -181,19 +212,7 @@ export async function extractStructure(
   );
 
   // Dimensions par taille, pour couvrir big/medium/small et pas seulement la
-  // taille instanciée par défaut. L'axe de tailles vit d'ordinaire sur le
-  // wrapper de dimensions, mais rien ne l'y oblige : il peut rester sur le set
-  // sélectionné pendant que le wrapper porte ses propres axes. On interroge
-  // donc les deux propriétaires possibles et on garde le premier qui rend des
-  // dimensions. Élire le propriétaire sur le TYPE du node ferait disparaître
-  // `sizes` en silence dès que le wrapper n'a pas d'axe de tailles, alors que
-  // `props.size` continuerait d'annoncer ses valeurs au consommateur.
-  const ownSet = referenceComponent?.parent;
-  const sizeAxisOwners = [
-    wrapper?.componentSet,
-    ownSet?.type === 'COMPONENT_SET' ? ownSet : null,
-  ].filter((owner): owner is ComponentSetNode => Boolean(owner));
-
+  // taille instanciée par défaut.
   let sizes: Record<string, SizeDimensions> | null = null;
   for (const owner of sizeAxisOwners) {
     // Un set sans axe de tailles n'a pas de représentants : on passe au suivant

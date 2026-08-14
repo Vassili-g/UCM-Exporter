@@ -109,6 +109,32 @@ Un schéma public rendrait le contrat validable dans d’autres langages et
 ajout compatible et rupture. Cette étape vient après les validations
 multi-composants afin de ne pas figer une abstraction prématurée.
 
+### Avertissements typés
+
+`meta.warnings` ne porte que de la prose. L’exporteur sait pourtant quelle
+propriété n’a pas pu être décrite, sur quel calque, dans quel variant, et quel
+champ du contrat reste vide en conséquence — puis il aplatit tout cela en une
+phrase. Les consommateurs doivent alors redéduire ce savoir, et s’en tirent
+mal : une référence du code absente du contrat peut venir d’une migration de
+tokens comme d’une propriété non exportée, et rien ne permet de trancher. Le
+Playground contourne ce manque sans deviner : il énonce ce qu’il possède —
+l’écart contrat ↔ code, et le voisinage de la référence orpheline, une
+migration emportant un groupe entier là où une variable déliée n’emporte qu’une
+feuille — puis renvoie aux mots de l’export au lieu d’en reconstituer la cause.
+Il reconnaît aussi à son texte le seul avertissement que personne ne peut lever
+(le lien Figma).
+
+Une forme structurée — `code`, `severity`, `figma.{variantName, layerName,
+nodeId}`, et le `contractPath` resté vide — rendrait la corrélation exacte et
+permettrait de décider si un défaut de design doit bloquer. Le `message` y
+resterait pour le lecteur humain.
+
+Ce n’est pas engagé parce que le coût réel n’est pas dans le code : c’est une
+rupture de forme du JSON, donc `contractVersion`, spécification et
+consommateurs — et surtout un réexport depuis Figma du corpus
+`tests/test-exports/`, que personne ne peut produire hors du plugin. À grouper
+avec le prochain changement de schéma plutôt qu’à porter seul.
+
 ### Diff sémantique
 
 Un commentaire de pull request pourrait résumer un changement de contrat :

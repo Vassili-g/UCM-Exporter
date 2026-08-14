@@ -237,3 +237,72 @@ test('l’axe de tailles est lu sur le set sélectionné quand le wrapper n’en
   // `sizes` porte les dimensions : le niveau haut ne les recopie pas.
   assert.equal(structure.gap, undefined);
 });
+
+test('le node de référence n’avertit pas sur des dimensions que `sizes` va porter', async () => {
+  // Le cas réel : l'axe de tailles vit sur le set du wrapper, qui porte des gaps
+  // liés, tandis que le calque élu du variant de référence n'en a aucun. Comme
+  // `sizes` gagne, ce gap de haut niveau est jeté — l'annoncer au designer
+  // l'enverrait relier une variable sans qu'aucune ligne du contrat ne change,
+  // sur un nom de calque commun à tous les variants du set.
+  const noeud = (type: string, nom: string, enfants: any[] = [], extra: any = {}): any => {
+    const self: any = { type, id: nom, name: nom, visible: true, boundVariables: {}, children: enfants, ...extra };
+    self.findAll = (predicat: (candidat: any) => boolean) => {
+      const trouves: any[] = [];
+      const parcourir = (noeuds: any[]) => {
+        for (const enfant of noeuds) {
+          if (predicat(enfant)) trouves.push(enfant);
+          parcourir(enfant.children ?? []);
+        }
+      };
+      parcourir(enfants);
+      return trouves;
+    };
+    return self;
+  };
+
+  // Les variants du wrapper portent l'axe de tailles ET des gaps liés.
+  const variantDuWrapper = (valeur: string, gapId: string) =>
+    noeud('COMPONENT', `Size=${valeur}`, [noeud('TEXT', 'Label')], {
+      layoutMode: 'HORIZONTAL',
+      variantProperties: { Size: valeur },
+      boundVariables: { itemSpacing: alias(gapId) },
+    });
+  const setDuWrapper = noeud(
+    'COMPONENT_SET',
+    'SizeWrapper',
+    [variantDuWrapper('Big', 'gBig'), variantDuWrapper('Small', 'gSmall')],
+    { componentPropertyDefinitions: { Size: { type: 'VARIANT', variantOptions: ['Big', 'Small'] } } },
+  );
+
+  // Le composant sélectionné n'a, lui, aucune dimension liée.
+  const instanceWrapper = noeud('INSTANCE', 'sizeWrapperButton', [noeud('TEXT', 'Label')], {
+    layoutMode: 'HORIZONTAL',
+  });
+  const composant = noeud('COMPONENT', 'Type=Filled', [instanceWrapper], {
+    layoutMode: 'HORIZONTAL',
+    variantProperties: { Type: 'Filled' },
+  });
+  const setSelectionne = noeud('COMPONENT_SET', 'Button', [composant], {
+    componentPropertyDefinitions: { Type: { type: 'VARIANT', variantOptions: ['Filled'] } },
+  });
+  composant.parent = setSelectionne;
+
+  const { structure, warnings } = await extractStructure(
+    { axes: ['type'], variants: [{ values: { type: 'filled' }, component: composant }] },
+    [],
+    { instance: instanceWrapper, componentSet: setDuWrapper },
+    composant,
+    resolverFor({
+      gBig: 'components.button.sizes.big.gap',
+      gSmall: 'components.button.sizes.small.gap',
+    }),
+  );
+
+  assert.deepEqual(Object.keys(structure.sizes ?? {}), ['big', 'small']);
+  assert.equal(structure.gap, undefined);
+  // Les dimensions réellement publiées, elles, avertissent toujours : ce sont
+  // celles des représentants de tailles, et le message nomme leur variant.
+  assert.ok(warnings.some((message) => /Layer « Size=Big » — corner radius/.test(message)));
+  // Le calque de référence, dont rien ne sera publié, ne dit plus rien.
+  assert.deepEqual(warnings.filter((message) => message.includes('sizeWrapperButton')), []);
+});
