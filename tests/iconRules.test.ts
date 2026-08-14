@@ -4,6 +4,7 @@ import { extractIconLayers } from '../src/contract/extractIconLayers';
 import { findLayoutNode } from '../src/contract/layoutNodes';
 import { collectTokenReferences } from '../src/variables';
 import { mergeIconRules } from '../src/contract/exportComponent';
+import type { ContractProp } from '../src/contract/types';
 
 const layer = (
   figmaLayer: string,
@@ -123,22 +124,63 @@ test('mergeIconRules avertit au lieu de deviner un calque graphique', () => {
   ]);
 });
 
-test('mergeIconRules avertit lorsqu une icône modifiable n est liée à aucun booléen Figma', () => {
+/**
+ * « Modifiable » et « masquable » sont deux libertés distinctes. Une icône
+ * toujours affichée est remplaçable comme une autre : elle reçoit sa prop
+ * runtime, nommée d'après son calque puisqu'aucun booléen ne la nomme, et
+ * l'export n'a rien à reprocher au designer.
+ */
+test('mergeIconRules donne sa prop runtime à une icône modifiable sans booléen Figma', () => {
   const warnings: string[] = [];
+  const props: Record<string, ContractProp> = {};
 
   const icons = mergeIconRules(
-    {},
+    props,
     [layer('arrow-left-long')],
     [{ iconName: 'arrow-left-long', policy: 'modifiable' }],
     warnings,
   );
 
   assert.deepEqual(icons, {
-    arrowLeftLong: { policy: 'modifiable', figmaName: 'arrow-left-long', slot: 'icon' },
+    arrowLeftLong: {
+      policy: 'modifiable',
+      figmaName: 'arrow-left-long',
+      slot: 'icon',
+      runtimeProp: 'arrowLeftLongName',
+    },
   });
-  assert.deepEqual(warnings, [
-    'Icône « arrow-left-long » déclarée modifiable : aucune boolean property n’est reliée à sa visibilité, le développeur ne pourra donc pas la remplacer. Reliez « Visible » à une boolean property du composant.',
-  ]);
+  assert.deepEqual(props, {
+    arrowLeftLongName: { type: 'icon', default: null, policy: 'modifiable' },
+  });
+  assert.deepEqual(warnings, []);
+});
+
+/**
+ * Le nom du booléen prime quand il existe : « iconLeft » et « iconLeftName »
+ * se lisent en paire, et le contrat ne change pas de convention selon que
+ * l'icône est masquable ou non.
+ */
+test('mergeIconRules nomme la prop runtime d’après le booléen quand il existe', () => {
+  const warnings: string[] = [];
+  const props: Record<string, ContractProp> = {
+    iconLeft: { type: 'boolean', default: true },
+  };
+
+  const icons = mergeIconRules(
+    props,
+    [layer('arrow-left-long', ['iconLeft'])],
+    [{ iconName: 'arrow-left-long', policy: 'modifiable' }],
+    warnings,
+  );
+
+  assert.equal(icons.arrowLeftLong.runtimeProp, 'iconLeftName');
+  assert.deepEqual(props.iconLeftName, {
+    type: 'icon',
+    default: null,
+    policy: 'modifiable',
+    visibilityProp: 'iconLeft',
+  });
+  assert.deepEqual(warnings, []);
 });
 
 test('mergeIconRules situe une icône au slot qu’elle occupe dans son variant', () => {
@@ -359,12 +401,19 @@ test('mergeIconRules refuse une visibilité incohérente entre variants', () => 
     warnings,
   );
 
+  // La visibilité diverge : le contrat n'en publie aucune et le dit. L'icône
+  // reste remplaçable pour autant — c'est une liberté indépendante — et sa
+  // prop runtime prend le nom du calque, faute d'un booléen pour la nommer.
   assert.deepEqual(icons, {
-    statusIcon: { policy: 'modifiable', figmaName: 'status-icon', slot: 'icon' },
+    statusIcon: {
+      policy: 'modifiable',
+      figmaName: 'status-icon',
+      slot: 'icon',
+      runtimeProp: 'statusIconName',
+    },
   });
-  assert.equal(warnings.length, 2);
+  assert.equal(warnings.length, 1);
   assert.match(warnings[0], /sa visibilité dépend d’une component property/);
-  assert.match(warnings[1], /Reliez « Visible » à une boolean property/);
 });
 
 test('mergeIconRules refuse une taille absente d’une partie de la matrice', () => {

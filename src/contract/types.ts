@@ -44,15 +44,19 @@ export type StringProp = PropMeta & {
 };
 
 /**
- * Prop runtime qui porte le nom d'une icône modifiable. Elle est ajoutée à
- * côté du BOOLEAN Figma qui contrôle visuellement le calque correspondant.
+ * Prop runtime qui porte le nom d'une icône modifiable — QUELLE icône rendre.
+ *
+ * Elle est indépendante de la visibilité du calque : une icône toujours
+ * affichée reste parfaitement remplaçable. `visibilityProp` n'apparaît donc
+ * que si Figma déclare un BOOLEAN qui montre ou masque ce calque, auquel cas
+ * les deux props se lisent en paire (`iconLeft` / `iconLeftName`).
  */
 export type IconProp = PropMeta & {
   type: 'icon';
   default: string | null;
   policy: 'modifiable';
-  /** Prop BOOLEAN Figma liée nativement à la visibilité du calque. */
-  visibilityProp: string;
+  /** Prop BOOLEAN Figma liée nativement à la visibilité du calque, si elle existe. */
+  visibilityProp?: string;
 };
 
 /** Une prop publique du composant, quel que soit son type. */
@@ -74,6 +78,12 @@ export type Intent = {
 export type StateDescriptor = {
   /** Sélecteur ou attribut attendu par l'adaptateur de rendu ; null pour l'état par défaut. */
   selector: string | null;
+  /**
+   * Doc de l'état, déclarée par une règle `@prop <axe>.<état>`. L'axe d'états
+   * n'étant pas une prop, sa documentation vit ici — au même endroit que le
+   * reste de ce que le contrat en dit.
+   */
+  description?: string;
 };
 
 /** Modèle d'interaction déduit d'un axe Figma `State` ou `Status`. */

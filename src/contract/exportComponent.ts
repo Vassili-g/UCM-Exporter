@@ -18,6 +18,8 @@ import { extractContractPropertyModel, extractContractProps } from './parsers';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
+import { mergePropDescriptions } from './mergePropDescriptions';
+export { mergePropDescriptions } from './mergePropDescriptions';
 import { buildStateModel, defaultRenderingSemantics } from './semantics';
 import { collectTokenReferences, indexVariables, VariableNameResolver } from '../variables';
 import { codeIdentifier } from '../utils';
@@ -25,6 +27,10 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 5.0 : chaque axe publié devient documentable et chaque icône modifiable
+ * devient remplaçable. L'axe d'états accueille sa doc dans
+ * `stateModel.states.<état>.description`, et `IconProp.visibilityProp` devient
+ * facultatif — une icône toujours visible a désormais sa prop runtime.
  * 4.9 : un calque qui ENVELOPPE un composant unifié devient un conteneur de ce
  * contrat — il publie son flux et range la dépendance dans `children`. Seul le
  * calque qui EST l'instance porte encore `composes`.
@@ -49,7 +55,7 @@ import type { Contract, ContractMeta, ContractProp } from './types';
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '4.9';
+export const CONTRACT_VERSION = '5.0';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
@@ -144,33 +150,6 @@ export function mergeWrapperProps(
       continue;
     }
     props[key] = prop;
-  }
-}
-
-/**
- * Accroche la doc par valeur (issue des règles `@prop`) sur les props enum.
- * Une prop inconnue ou une valeur absente de l'enum déclenche un warning précis
- * (faute de frappe dans une règle) sans bloquer l'export.
- */
-function mergePropDescriptions(
-  props: Record<string, ContractProp>,
-  propDescriptions: Record<string, Record<string, string>>,
-  warnings: string[],
-): void {
-  for (const [propName, valueDescriptions] of Object.entries(propDescriptions)) {
-    const prop = props[propName];
-    if (!prop || prop.type !== 'enum') {
-      warnings.push(`Règle @prop « ${propName} » : le composant n’a aucune variant property portant ce nom. Vérifiez l’orthographe dans le layer « prop ».`);
-      continue;
-    }
-    for (const [value, description] of Object.entries(valueDescriptions)) {
-      if (!prop.values.includes(value)) {
-        warnings.push(`Règle @prop « ${propName}.${value} » : la variant property « ${propName} » n’a pas de valeur « ${value} ». Vérifiez l’orthographe dans le layer « prop ».`);
-        continue;
-      }
-      if (!prop.descriptions) prop.descriptions = {};
-      prop.descriptions[value] = description;
-    }
   }
 }
 
@@ -293,8 +272,9 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     rules.iconRules.map((rule) => rule.iconName),
   );
 
-  // La documentation issue des règles s'accroche aux props de même nature.
-  mergePropDescriptions(props, rules.propDescriptions, warnings);
+  // La documentation issue des règles s'accroche aux props de même nature, et
+  // aux états pour l'axe que `stateModel` publie à la place des props.
+  mergePropDescriptions(props, stateModel, rules.propDescriptions, warnings);
   mergeBooleanDescriptions(props, rules.booleanDescriptions, warnings);
   const icons = mergeIconRules(props, extracted.iconLayers, rules.iconRules, warnings);
   const intent = rules.intent;

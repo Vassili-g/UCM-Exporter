@@ -79,7 +79,10 @@ boolean, `TEXT` → string. Deux règles auto-détectées :
 - *Convention State* : un axe `State`/`Status` décrit des états d'interaction
   dérivés du runtime (hover, focus…), pas des choix d'API — il est donc **exclu
   des props** ; seule sa valeur `Disable` (orthographes `Disable` ou `Disabled`
-  acceptées) devient `disabled: boolean`.
+  acceptées) devient `disabled: boolean`. Exclu des props ne veut pas dire
+  absent du contrat : `stateModel` le publie avec toutes ses valeurs, et il
+  indexe les arbres de variantes. C'est donc là, et non dans `props`, que sa
+  documentation `@prop` est rangée.
 - *Couche sémantique* : les noms Figma peu parlants sont mappés vers le
   vocabulaire partagé — ex. un enum dont toutes les valeurs sont des tailles
   (`big/medium/small`, `xs`…`3xl`) → prop `size`. Le nom Figma d'origine est
@@ -229,7 +232,8 @@ l'axe de tailles — un représentant par taille suffit ; si un design system
 faisait varier un padding selon un autre axe, le contrat ne le verrait pas.
 
 **4. Modèle d'interaction** — lorsqu'un axe `State` ou `Status` est présent,
-le contrat ajoute `stateModel` avec le déclencheur de chaque état connu :
+le contrat ajoute `stateModel` avec le déclencheur et, si une règle `@prop` la
+déclare, la description de chaque état connu :
 `hover` → `:hover`, `focus` → `:focus-visible`, `press` → `:active`,
 `disable`/`disabled` → `[disabled]`. La priorité générique est
 `disable > press > focus > hover > default`. Un état inconnu reste exporté
@@ -408,7 +412,10 @@ une instance d'un composant de configuration (`ComponentConfiguration`) dont la
   `@pairs` liste les composants du design system qui s'associent bien à
   celui-ci (ex. `Icon, Tooltip`) : un agent peut s'en servir pour composer ;
 - `@prop` + calque `prop` (ex. `variant.contained`) → doc par valeur, rangée
-  dans `props.<prop>.descriptions.<valeur>`.
+  dans `props.<prop>.descriptions.<valeur>`. Une règle qui vise l'axe
+  `State`/`Status` est rangée dans `stateModel.states.<état>.description` : cet
+  axe est publié par `stateModel` et non par `props`, la documentation suit donc
+  l'axe là où il vit. Un nom ou une valeur introuvable reste un warning.
 - `@boolean` + calque `prop` (ex. `icon-left`) → description de la prop BOOLEAN,
   rangée dans `props.<prop>.description`. Le nom est normalisé comme les props
   exportées (`icon-left` → `iconLeft`) ; une cible absente ou non booléenne
@@ -440,18 +447,23 @@ une instance d'un composant de configuration (`ComponentConfiguration`) dont la
     slot ; un slot ou une taille qui change selon les variants — y compris une
     taille présente ici et absente ailleurs — produit un warning et aucune
     valeur déduite ;
-  - **Prop runtime** — si le calque graphique lie nativement sa propriété
-    Figma `visible` à un BOOLEAN, ce booléen est conservé et une prop runtime
-    distincte `<bool>Name` est ajoutée pour une icône `modifiable`. Sans cette
-    liaison native, l'icône est exportée avec un warning, mais aucune prop
-    n'est inventée.
+  - **Prop runtime** — une icône `modifiable` reçoit toujours une prop runtime
+    qui dit QUELLE icône rendre. Son nom suit le BOOLEAN de visibilité quand le
+    calque graphique lie nativement sa propriété Figma `visible` à l'un d'eux
+    (`iconLeft` → `iconLeftName`, qui se lisent alors en paire) ; sans cette
+    liaison, il vient du calque lui-même (`chess` → `chessName`) et
+    `visibilityProp` est absent. Une icône toujours visible est remplaçable
+    comme une autre : l'absence de booléen n'est donc pas un défaut et ne
+    produit aucun warning. Si le composant expose déjà une component property
+    du même nom, aucune n'est remplacée et un warning demande un renommage.
 
-  En résumé, trois responsabilités distinctes :
+  En résumé, trois responsabilités distinctes — et c'est bien parce qu'elles
+  sont distinctes que la deuxième ne dépend pas de la première :
 
   | Qui | Contrôle | Défini où |
   |---|---|---|
-  | Booléen Figma (`iconLeft`…) | la **visibilité** du calque | liaison native `visible` dans Figma |
-  | Prop runtime `<bool>Name` | **quelle** icône afficher | ajoutée par l'exporteur (icône `modifiable`) |
+  | Booléen Figma (`iconLeft`…) | **si** le calque s'affiche | liaison native `visible` dans Figma |
+  | Prop runtime `<nom>Name` | **quelle** icône afficher | ajoutée par l'exporteur (icône `modifiable`) |
   | `figmaName` | l'icône de **repli** | nom du calque Figma, utilisé quand la prop runtime est vide |
 Convention uniforme (aucune logique par composant), lue **sans jamais écrire dans
 Figma**. Les règles sont **obligatoires** : conteneur absent ou sans aucune règle
@@ -493,7 +505,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "4.9",
+    "contractVersion": "5.0",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -522,7 +534,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "axis": "state",
     "states": {
       "default": { "selector": null },
-      "hover": { "selector": ":hover" },
+      "hover": { "selector": ":hover", "description": "Le pointeur survole le bouton." },
       "focus": { "selector": ":focus-visible" },
       "press": { "selector": ":active" },
       "disable": { "selector": "[disabled]" }
@@ -842,7 +854,17 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **4.9** : après la récursion textuelle 4.3,
+La version actuelle du contrat est **5.0** : elle rend documentable tout axe que
+le contrat publie, et remplaçable toute icône déclarée modifiable. Une règle
+`@prop` visant l'axe `State`/`Status` range sa description dans
+`stateModel.states.<état>.description`, là où le contrat publie déjà cet axe —
+il était jusqu'ici refusé comme une faute de frappe alors qu'il indexe tous les
+arbres de variantes. Et `IconProp.visibilityProp` devient facultatif : une icône
+sans booléen de visibilité reçoit désormais sa prop runtime, nommée d'après son
+calque. Un consommateur qui lisait `visibilityProp` sans le tester doit être
+adapté — c'est ce qui en fait une version majeure.
+
+Avant elle : après la récursion textuelle 4.3,
 le flux Flex 4.4, le jalon transitoire 4.5 et les text styles 4.6, la 4.7 ferme
 le dimensionnement et la 4.8 l'exprime en CSS. `structure.sizing` publie le
 comportement du composant en valeurs de `width` et `height` (`stretch` ou
@@ -855,10 +877,9 @@ composant unifié est un conteneur de ce contrat-ci, publie son flux et range la
 dépendance dans `children`. Seul le calque qui EST l'instance porte encore
 `composes`.
 
-Les diagnostics se sont étoffés depuis, sans toucher à la forme : élection
-unique du node de layout, calques écartés par cette élection ou par le cadre
-d'une dépendance, auto layout en grille ou en wrap, bornes min/max. Aucun champ
-n'a été ajouté ni retiré, `contractVersion` reste donc `4.9`.
+Entre les deux, les diagnostics se sont étoffés sans toucher à la forme :
+élection unique du node de layout, calques écartés par cette élection ou par le
+cadre d'une dépendance, auto layout en grille ou en wrap, bornes min/max.
 
 Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
 il accepte uniquement les versions qu’il a explicitement auditées.

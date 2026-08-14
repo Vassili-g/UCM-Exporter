@@ -31,6 +31,7 @@ uniquement ce qui est déjà intégré et vérifié.
 | Domaine | État |
 |---|---|
 | Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
+| Écriture de la 5.0 | Le moteur l’écrit, personne ne la consomme encore : le corpus et le Playground restent en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button |
 | Reconstruction à froid | Menée sur la 4.8. La 4.9 a été absorbée en adaptant les composants et le skill, sans nouvelle reconstruction : le test froid a donc un contrat de retard |
 | Cadre enveloppant une dépendance | Publié comme conteneur : il porte son flux, sa dimension figée et range la dépendance dans `children`. Seul le calque qui EST l’instance porte `composes` |
 | Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma de l’Exporter |
@@ -213,7 +214,9 @@ une propriété Figma non couverte.
 
 Avant d’ajouter un composant, la 4.9 doit recevoir sa propre reconstruction à
 froid : le dernier test froid porte sur la 4.8, et le cadre enveloppant une
-dépendance est précisément ce que la 4.9 a changé.
+dépendance est précisément ce que la 4.9 a changé. La 5.0 attend d’abord un
+réexport Figma d’Alert et de Button — le corpus est la seule preuve que le
+moteur écrit bien ce que la spécification décrit.
 
 Un cas typographique précis reste à éprouver. Button expose
 `size` depuis un wrapper imbriqué, tandis que `variantTypography` suit les axes
