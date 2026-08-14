@@ -3,7 +3,7 @@
  * La liaison repose uniquement sur les noms Figma exacts et les bindings de
  * visibilité, sans heuristique de position propre à un composant.
  */
-import { normalizePropKey } from './parsers';
+import { normalizePropKey, propByName } from './parsers';
 import type { IconLayerSummary } from './extractIconLayers';
 import type { IconRule } from './rulesModel';
 import type { ContractProp, IconDefinition, IconProp } from './types';
@@ -66,6 +66,10 @@ function iconSize(layer: IconLayerSummary, warnings: string[]): string | undefin
 /**
  * Ajoute les métadonnées d'icônes et les props runtime des règles modifiables,
  * tout en conservant les booléens Figma comme contrôles de visibilité.
+ *
+ * Les deux responsabilités restent séparées : le booléen dit SI le calque
+ * s'affiche, la prop runtime dit QUELLE icône y rendre. Une icône modifiable
+ * sans booléen est donc normale, pas une anomalie à signaler.
  */
 export function mergeIconRules(
   props: Record<string, ContractProp>,
@@ -122,15 +126,7 @@ export function mergeIconRules(
     icons.set(key, icon);
     if (rule.policy === 'strict') continue;
 
-    if (!visibilityProp) {
-      warnings.push(
-        `Icône « ${rule.iconName} » déclarée modifiable : aucune boolean property n’est ` +
-          `reliée à sa visibilité, le développeur ne pourra donc pas la remplacer. Reliez ` +
-          `« Visible » à une boolean property du composant.`,
-      );
-      continue;
-    }
-    if (props[visibilityProp]?.type !== 'boolean') {
+    if (visibilityProp && propByName(props, visibilityProp)?.type !== 'boolean') {
       warnings.push(
         `Icône « ${rule.iconName} » déclarée modifiable : « ${visibilityProp} » n'est pas ` +
           `une boolean property du composant. Le développeur ne pourra pas la remplacer.`,
@@ -138,8 +134,13 @@ export function mergeIconRules(
       continue;
     }
 
-    const runtimeProp = `${visibilityProp}Name`;
-    if (runtimeProp in props) {
+    // « Modifiable » dit QUELLE icône rendre, jamais SI on la rend : une icône
+    // toujours affichée est remplaçable comme une autre. Le nom de la prop
+    // runtime suit donc le booléen de visibilité seulement quand il existe —
+    // pour que « iconLeft » et « iconLeftName » se lisent en paire — et vient
+    // sinon du calque lui-même.
+    const runtimeProp = `${visibilityProp ?? key}Name`;
+    if (propByName(props, runtimeProp)) {
       warnings.push(
         `Icône « ${rule.iconName} » déclarée modifiable : le composant expose déjà une ` +
           `component property « ${runtimeProp} ». Aucune n'est remplacée ; renommez l'une ` +
@@ -151,7 +152,7 @@ export function mergeIconRules(
       type: 'icon',
       default: null,
       policy: 'modifiable',
-      visibilityProp,
+      ...(visibilityProp ? { visibilityProp } : {}),
     };
     props[runtimeProp] = iconProp;
     icon.runtimeProp = runtimeProp;

@@ -87,9 +87,10 @@ Chaque document a un rôle unique :
 
 ## État
 
-Le moteur écrit la version **4.9** du contrat. Le pipeline est opérationnel sur
+Le moteur écrit la version **5.0** du contrat. Le pipeline est opérationnel sur
 un composant simple et un premier contrat composé : Button et Alert sont
 exportés en 4.9, consommés par le Playground et vérifiés par sa chaîne de
-contrôles. Les protections principales sont testées, mais la généricité reste à
-valider sur plusieurs familles de composants avant toute industrialisation.
+contrôles ; leur réexport en 5.0 reste à faire. Les protections principales sont
+testées, mais la généricité reste à valider sur plusieurs familles de composants
+avant toute industrialisation.
 Voir [ROADMAP.md](./ROADMAP.md) pour le périmètre de validation.
