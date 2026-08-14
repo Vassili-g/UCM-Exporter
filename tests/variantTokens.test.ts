@@ -9,6 +9,8 @@ import { collectTokenReferences } from '../src/variables';
 
 const colorAlias = { type: 'VARIABLE_ALIAS', id: 'color' } as VariableAlias;
 const widthAlias = { type: 'VARIABLE_ALIAS', id: 'width' } as VariableAlias;
+const iconAlias = { type: 'VARIABLE_ALIAS', id: 'icon' } as VariableAlias;
+const surfaceAlias = { type: 'VARIABLE_ALIAS', id: 'surface' } as VariableAlias;
 
 test('getSlotTokens sépare les peintures de la géométrie des strokes', async () => {
   const node = {
@@ -38,7 +40,45 @@ test('getSlotTokens sépare les peintures de la géométrie des strokes', async 
         align: 'outside',
       },
     },
+    // « ring » nomme un rôle partagé : le designer l'a déclaré, il n'y a rien
+    // à déduire du calque.
+    roles: new Map(),
   });
+  assert.deepEqual(warnings, []);
+});
+
+test('getSlotTokens déduit le rôle d’une clé qui n’en nomme aucun, depuis le calque', async () => {
+  // Trois calques de natures différentes portent des tokens dont le dernier
+  // segment ne dit rien de ce qu'ils peignent. C'est Figma qui le dit.
+  const label = { type: 'TEXT', name: 'Titre', boundVariables: { fills: [colorAlias] }, findAll: () => [] };
+  const glyphe = { type: 'VECTOR', name: 'circle-info', boundVariables: { fills: [iconAlias] }, findAll: () => [] };
+  const cadre = {
+    type: 'COMPONENT',
+    name: 'Color=Primary',
+    boundVariables: { fills: [surfaceAlias] },
+    children: [label, glyphe],
+    findAll: () => [label, glyphe],
+  } as unknown as ComponentNode;
+  const resolver = {
+    resolve: async (alias: VariableAlias | null | undefined) => {
+      if (alias?.id === 'color') return 'components.card.colors.title';
+      if (alias?.id === 'icon') return 'components.card.colors.glyph';
+      if (alias?.id === 'surface') return 'components.card.colors.scale-1';
+      return null;
+    },
+  };
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(cadre, resolver, warnings, new Map(), new Set(['circle-info']));
+
+  assert.deepEqual(tokens.roles, new Map([
+    ['scale-1', 'background'],
+    ['title', 'foreground'],
+    ['glyph', 'icon'],
+  ]));
+  // Les clés restent celles du design system : rien n'est renommé, rien n'est
+  // perdu, les trois couleurs coexistent dans la feuille.
+  assert.deepEqual(Object.keys(tokens.paints).sort(), ['glyph', 'scale-1', 'title']);
   assert.deepEqual(warnings, []);
 });
 
@@ -294,6 +334,7 @@ test('extractVariantTokens ajoute la largeur du stroke à tokensUsed', async () 
         },
       },
     },
+    discoveredRoles: new Map(),
   });
   assert.deepEqual(Array.from(collectTokenReferences(trees)).sort(), [
     '{components.button.colors.primary.focus.ring}',

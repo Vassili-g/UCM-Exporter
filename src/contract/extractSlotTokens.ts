@@ -8,14 +8,30 @@ import type { TokenResolver } from '../variables';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, fieldLabel, getBinding, resolveTokenName } from './nodeBindings';
+import { isRenderableRole, paintSiteRole } from './semantics';
+import { isIconLayer } from './slotNames';
 import type { SlotStrokes, SlotTokens, StrokeAlignment, StrokeTokens } from './types';
 export type { TokenResolver } from '../variables';
 
 const BOUND_FIELDS = ['fills', 'strokes'] as const;
-export type VariantTokenLeaves = { paints: SlotTokens; strokes: SlotStrokes };
+export type VariantTokenLeaves = {
+  paints: SlotTokens;
+  strokes: SlotStrokes;
+  /**
+   * Rôle de rendu déduit pour chaque clé qui n'en nomme aucun. L'appelant les
+   * fusionne sur toute la matrice, puis `renderingSemanticsFor` les publie.
+   */
+  roles: Map<string, string>;
+};
 
-/** Déduit le rôle d'un token depuis son dernier segment. */
-function tokenRole(token: string): string {
+/**
+ * Clé d'une couleur dans la feuille d'un variant : le dernier segment du nom
+ * de la variable Figma.
+ *
+ * C'est une IDENTITÉ, pas un rôle. Ce que la couleur peint se lit sur le calque
+ * qui la porte (`paintSiteRole`), jamais sur ce nom.
+ */
+function tokenKey(token: string): string {
   const segments = token.split('.');
   return segments[segments.length - 1] || token;
 }
@@ -91,12 +107,21 @@ function setStrokeToken(
   }
 }
 
-/** Récolte tous les tokens liés et les range par rôle peinture ou contour. */
+/**
+ * Récolte tous les tokens liés d'un variant, rangés par clé, et relève au
+ * passage le rôle de rendu de chaque clé qui n'en nomme pas.
+ *
+ * `iconNames` porte les calques désignés par les règles `@icons`. C'est
+ * `slotNames.isIconLayer` qui répond ici comme ailleurs à « ce calque est-il
+ * une icône » : une seconde définition finirait par nommer `icon` un calque que
+ * le rendu peindrait autrement.
+ */
 export async function getSlotTokens(
   component: ComponentNode,
   resolver: TokenResolver,
   warnings: string[] = [],
   composed: ComposedInstances = new Map(),
+  iconNames: ReadonlySet<string> = new Set(),
 ): Promise<VariantTokenLeaves> {
   const pending: Array<{
     node: SceneNode;
@@ -132,6 +157,7 @@ export async function getSlotTokens(
 
   const paints = new Map<string, string>();
   const strokes = new Map<string, StrokeTokens>();
+  const roles = new Map<string, string>();
   const resolved = await Promise.all(pending.map(async (binding) => ({
     ...binding,
     token: await binding.promise,
@@ -139,19 +165,30 @@ export async function getSlotTokens(
   })));
   for (const binding of resolved) {
     if (!binding.token) continue;
-    // Le rôle se lit sur le nom NU (dernier segment) ; l'enrobage `{…}`
+    // La clé se lit sur le nom NU (dernier segment) ; l'enrobage `{…}`
     // n'intervient qu'au moment où le token entre dans le contrat.
-    const role = tokenRole(binding.token);
-    if (binding.field === 'strokes') {
+    const key = tokenKey(binding.token);
+    const isStroke = binding.field === 'strokes';
+    // Une clé qui nomme un rôle partagé n'a rien à déduire : le designer l'a
+    // déclaré. `variantRoleWarnings` signale séparément celles qu'il a
+    // déclarées du mauvais côté.
+    if (!isRenderableRole(key) && !roles.has(key)) {
+      roles.set(key, paintSiteRole({
+        isStroke,
+        isText: binding.node.type === 'TEXT',
+        isIconTarget: isIconLayer(binding.node, iconNames),
+      }));
+    }
+    if (isStroke) {
       const width = binding.strokeStyle?.width ?? null;
-      setStrokeToken(strokes, role, {
+      setStrokeToken(strokes, key, {
         color: toRef(binding.token),
         width: width ? toRef(width) : null,
         align: binding.strokeStyle?.align ?? null,
       }, binding.node, warnings);
     } else {
-      setPaintToken(paints, role, toRef(binding.token), binding.node, warnings);
+      setPaintToken(paints, key, toRef(binding.token), binding.node, warnings);
     }
   }
-  return { paints: Object.fromEntries(paints), strokes: Object.fromEntries(strokes) };
+  return { paints: Object.fromEntries(paints), strokes: Object.fromEntries(strokes), roles };
 }

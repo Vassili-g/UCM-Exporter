@@ -103,6 +103,14 @@ tests/
   une icône s’affiche, la prop runtime dit LAQUELLE rendre : une icône toujours
   visible est modifiable comme une autre, et son absence de booléen ne se
   signale pas.
+- Ce qu’une couleur peint se lit sur le calque qui la porte, jamais sur le nom
+  de son token. Le dernier segment est la CLÉ de la couleur dans la feuille du
+  variant — une identité — et `rendering.roles` publie le rendu de chaque clé
+  qui ne nomme aucun rôle partagé. Un nom qui EST un rôle partagé reste une
+  déclaration du designer et l’emporte : c’est le seul moyen de distinguer un
+  `ring` d’un `border`. Exiger ce nommage était impossible à satisfaire, la
+  feuille n’ayant qu’une entrée par clé : six `…/scale-N` renommés
+  `…/background` n’en auraient laissé qu’un.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours

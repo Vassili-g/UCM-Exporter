@@ -127,7 +127,7 @@ export function buildStateModel(
 }
 
 /**
- * Retourne le mapping de rendu partagé par tous les contrats. Il est exporté
+ * Retourne le vocabulaire de rendu partagé par tous les contrats. Il est exporté
  * dans chaque contrat afin qu'un agent n'ait pas à deviner le CSS d'un rôle.
  */
 export function defaultRenderingSemantics(): RenderingSemantics {
@@ -155,6 +155,88 @@ function renderableRoles(): Map<string, RenderingRole['kind']> {
   return new Map(
     Object.entries(defaultRenderingSemantics().roles).map(([role, descriptor]) => [role, descriptor.kind]),
   );
+}
+
+/**
+ * Vrai si cette clé nomme un des rôles que `rendering.roles` publie pour tous
+ * les composants. Une seule fonction répond à cette question : l'extraction et
+ * les avertissements la posent tous les deux, et deux tests équivalents en
+ * apparence finiraient par diverger au premier rôle ajouté.
+ */
+export function isRenderableRole(key: string): boolean {
+  return renderableRoles().has(key);
+}
+
+/**
+ * Rôle de rendu déduit du SITE d'application, c'est-à-dire de ce que Figma
+ * peint réellement — jamais du nom du token.
+ *
+ * C'est la contrepartie de la règle d'or en haut de ce fichier : un token
+ * nommé `…/scale-1` ne dit rien de ce qu'il peint, mais le calque qui le porte
+ * le dit entièrement. Le nom reste l'IDENTITÉ de la couleur dans la feuille de
+ * variante ; il ne décide plus de son rendu.
+ *
+ * Même ordre que `semanticSlotName` — le texte d'abord, l'icône ensuite — pour
+ * que les deux se lisent comme une seule règle. Le défaut est la surface :
+ * seuls deux signaux explicites (être un texte, être désigné par une règle
+ * `@icons`) en font de l'encre. Le type du node ne tranche pas — un
+ * `RECTANGLE` est une surface ou un tracé d'icône selon l'usage — et le
+ * promouvoir en signal remplacerait une convention de nommage visible par une
+ * convention de typage invisible.
+ *
+ * Pour un contour, `border` couvre le rendu ; c'est `align`, déjà publié sur
+ * chaque feuille de `variantStrokes`, qui dit au consommateur si le dessiner en
+ * bordure ou en `box-shadow`. Le contrat n'a donc pas à deviner un `ring` : la
+ * donnée structurelle est déjà là, et elle est observée, pas supposée.
+ */
+export function paintSiteRole(site: {
+  isStroke: boolean;
+  isText: boolean;
+  isIconTarget: boolean;
+}): string {
+  if (site.isStroke) return 'border';
+  if (site.isText) return 'foreground';
+  return site.isIconTarget ? 'icon' : 'background';
+}
+
+/**
+ * Vocabulaire de rendu d'UN contrat : les rôles partagés, plus une entrée par
+ * couleur dont le nom ne déclare aucun rôle.
+ *
+ * Sans cela, une couleur nommée `…/scale-1` produit un contrat valide que
+ * personne ne sait peindre : le consommateur ignore une clé absente de
+ * `rendering.roles`, silencieusement. Publier son rendu déduit ferme ce trou
+ * sans imposer au design system de renommer ses variables — et un renommage
+ * n'était de toute façon pas possible partout, la feuille d'un variant n'ayant
+ * qu'une entrée par rôle.
+ *
+ * `discovered` associe chaque clé au rôle partagé dont elle emprunte le rendu.
+ * Les descripteurs sont RECOPIÉS depuis `defaultRenderingSemantics()` : il
+ * n'existe pas de seconde table de propriétés CSS à tenir en phase.
+ *
+ * Les clés déduites sont triées : deux exports d'un design inchangé doivent
+ * produire le même JSON, sinon l'invariant « aucun changement = aucune PR »
+ * tombe.
+ */
+export function renderingSemanticsFor(
+  discovered: ReadonlyMap<string, string>,
+): RenderingSemantics {
+  const semantics = defaultRenderingSemantics();
+  for (const key of Array.from(discovered.keys()).sort()) {
+    const role = discovered.get(key);
+    const shared = role ? semantics.roles[role] : undefined;
+    // Une clé qui nomme déjà un rôle partagé garde le rendu publié pour tous :
+    // c'est le designer qui l'a déclaré, et l'écraser ferait diverger deux
+    // contrats sur le sens du même mot.
+    if (!shared || isRenderableRole(key)) continue;
+    // Les clés viennent de Figma. `roles[key] = …` laisserait un token nommé
+    // « __proto__ » écrire dans le prototype : l'entrée disparaîtrait du JSON
+    // sans un mot, et le contrat citerait un rendu qu'il ne publie pas.
+    Object.defineProperty(semantics.roles, key, {
+      value: { ...shared }, enumerable: true, writable: true, configurable: true,
+    });
+  }
+  return semantics;
 }
 
 /** Ce qu'on retient d'un rôle rencontré : combien de fois, et un exemple citable. */
@@ -199,21 +281,21 @@ function strokeReference(value: unknown): string | null {
 }
 
 /**
- * Contrôle du seul prérequis que le moteur impose au design system : le
- * **dernier segment** d'un token de couleur doit nommer un rôle rendable
- * (`background`, `foreground`, `icon`, `border`, `ring`), car c'est ainsi que le rôle
- * est déduit (cf. `extractSlotTokens.tokenRole`). Un token nommé `…/bg`
- * produit un contrat valide que PERSONNE ne saura peindre : le consommateur
- * ignore un rôle absent de `rendering.roles`, silencieusement.
+ * Signale un rôle partagé employé à l'envers : un `…/border` posé en
+ * remplissage, un `…/background` posé en contour. Le designer a nommé le rôle
+ * explicitement, et le calque qui le porte dit le contraire — l'une des deux
+ * intentions est fausse, et le contrat ne peut pas trancher à sa place.
  *
- * On avertit donc ici — sans bloquer, la donnée n'étant ni fausse ni perdue —
- * et on agrège : un seul message par rôle fautif, plutôt qu'un par variante
- * (un Button a 30 variantes qui portent les mêmes calques). Le message cite un
- * token en exemple, car c'est le token qu'il faut renommer dans Figma.
+ * Une clé qui ne nomme AUCUN rôle partagé n'est plus une anomalie : son rendu
+ * se déduit du site d'application (`paintSiteRole`) et se publie dans
+ * `rendering.roles` (`renderingSemanticsFor`). Exiger qu'elle se termine par un
+ * rôle était impossible à satisfaire dès qu'un variant peint plusieurs
+ * surfaces : la feuille n'ayant qu'une entrée par rôle, le renommage demandé
+ * aurait fait perdre toutes les couleurs sauf une.
  *
- * Deuxième anomalie couverte : un rôle connu mais employé à l'envers (un
- * `…/border` posé en remplissage). Même conséquence — non rendu — donc même
- * traitement.
+ * On agrège : un seul message par rôle fautif, plutôt qu'un par variante — un
+ * Button a 30 variantes qui portent les mêmes calques. Le message cite un token
+ * en exemple, car c'est celui à corriger dans Figma.
  */
 export function variantRoleWarnings(
   variantTokens: VariantTokens,
@@ -229,13 +311,10 @@ export function variantRoleWarnings(
     for (const [role, usage] of usages) {
       const layers = `sur ${usage.count} layer${usage.count > 1 ? 's' : ''}`;
       const declared = roles.get(role);
-      if (!declared) {
-        warnings.push(
-          `Token ${usage.example} : son dernier segment « ${role} » n’indique pas ce qui doit ` +
-            `être peint, donc rien ne sera affiché (${layers}). Renommez le token pour qu'il ` +
-            `se termine par ${Array.from(roles.keys()).join(', ')}.`,
-        );
-      } else if (declared !== found) {
+      // Clé sans rôle déclaré : `rendering.roles` publie son rendu déduit, il
+      // n'y a rien à signaler ni rien à renommer.
+      if (!declared) continue;
+      if (declared !== found) {
         warnings.push(
           `Token ${usage.example} : son dernier segment « ${role} » désigne ` +
             `${declared === 'paint' ? 'un fill' : 'un stroke'}, mais il est appliqué en ` +

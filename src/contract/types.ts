@@ -106,7 +106,13 @@ export type RenderingRole = {
   fallback?: string;
 };
 
-/** Correspondance des rôles sémantiques vers le rendu, sans logique par composant. */
+/**
+ * Correspondance des rôles vers le rendu. Les rôles partagés (`background`,
+ * `foreground`, `icon`, `border`, `ring`) sont publiés par tout contrat ; s'y
+ * ajoutent les clés de couleur du composant qui n'en nomment aucun, avec le
+ * rendu déduit du calque qui les porte. La RÈGLE reste sans logique par
+ * composant — seules les clés observées changent d'un contrat à l'autre.
+ */
 export type RenderingSemantics = {
   roles: Record<string, RenderingRole>;
 };
@@ -316,8 +322,10 @@ export type StrokeTokens = {
 };
 
 /**
- * Tokens de peinture liés sur UN variant, rangés par rôle. Le rôle est le
- * dernier segment du nom du token : `…default.background` → `background`.
+ * Tokens de peinture liés sur UN variant, rangés par clé. La clé est le dernier
+ * segment du nom du token : `…default.background` → `background`,
+ * `…colors.scale-1` → `scale-1`. Elle IDENTIFIE la couleur ; ce qu'elle peint
+ * se lit dans `rendering.roles`.
  */
 export type SlotTokens = Record<string, string>;
 
