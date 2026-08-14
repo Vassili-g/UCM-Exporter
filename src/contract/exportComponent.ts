@@ -126,7 +126,7 @@ function getSelectedComponentSet(): ComponentSetNode {
  * « une clé publique, un propriétaire » que `extractContractProps`, et même
  * obligation de signaler ce qui est écarté.
  */
-function mergeWrapperProps(
+export function mergeWrapperProps(
   props: Record<string, ContractProp>,
   wrapperProps: Record<string, ContractProp>,
   warnings: string[],
