@@ -171,12 +171,18 @@ test('iconPolicyFromVisibility exige une visibilité exclusive', () => {
   assert.equal(iconPolicyFromVisibility(null, false), undefined);
 });
 
-test('le conteneur de règles est reconnu par UNE seule règle, à la casse près', async () => {
+test('le conteneur de règles est reconnu par UNE seule règle, à la casse près', async (t) => {
   // Le Component Set s'appelle « Icon Button », le conteneur « iconbutton-Rules ».
   // Les deux lectures doivent conclure la même chose : un composant reconnu comme
   // dépendance unifiée par ses parents doit rester exportable lui-même.
   const container = { type: 'FRAME', name: 'iconbutton-Rules', findAll: () => [] };
   const page = { findAll: (predicat: (node: any) => boolean) => [container].filter(predicat) };
+  // Restauré en sortie : sans cela, les tests suivants du fichier héritent d'un
+  // faux `figma` qui ne décrit pas leur cas.
+  const precedent = (globalThis as { figma?: unknown }).figma;
+  t.after(() => {
+    (globalThis as { figma?: unknown }).figma = precedent;
+  });
   (globalThis as any).figma = { currentPage: page };
 
   const componentSet = { name: 'Icon Button' } as ComponentSetNode;

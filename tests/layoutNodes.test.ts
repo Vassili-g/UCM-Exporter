@@ -73,7 +73,15 @@ function variantAvecWrapper(nom: string) {
   return { composant: composant as unknown as ComponentNode, wrapper, interne };
 }
 
-test('un seul node de layout sert les slots, la typographie et les icônes', async () => {
+test('un seul node de layout sert les slots, la typographie et les icônes', async (t) => {
+  // Restauré en sortie : les tests d'un même fichier s'exécutent dans le même
+  // processus, et un faux `figma` laissé en place serait hérité par les
+  // suivants — qui passeraient alors sur un fichier Figma qu'ils ne décrivent
+  // pas.
+  const precedent = (globalThis as { figma?: unknown }).figma;
+  t.after(() => {
+    (globalThis as { figma?: unknown }).figma = precedent;
+  });
   (globalThis as unknown as { figma: unknown }).figma = {
     getStyleByIdAsync: async (id: string) => ({
       id, type: 'TEXT', name: 'Label/Large',
