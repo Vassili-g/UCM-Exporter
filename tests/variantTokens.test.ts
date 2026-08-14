@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractVariantTokens, getSlotTokens } from '../src/contract/extractVariantTokens';
+import {
+  extractVariantTokens,
+  getSlotTokens,
+  insertVariantLeaf,
+} from '../src/contract/extractVariantTokens';
 import { collectTokenReferences } from '../src/variables';
 
 const colorAlias = { type: 'VARIABLE_ALIAS', id: 'color' } as VariableAlias;
@@ -295,5 +299,24 @@ test('extractVariantTokens ajoute la largeur du stroke à tokensUsed', async () 
     '{components.button.colors.primary.focus.ring}',
     '{layouts.stroke.ring}',
   ]);
+  assert.deepEqual(warnings, []);
+});
+
+test('une valeur d’axe héritée d’Object.prototype reste une clé comme une autre', () => {
+  const warnings: string[] = [];
+  const arbre: Record<string, unknown> = {};
+
+  insertVariantLeaf(arbre, ['variant'], { variant: 'constructor' }, { background: '{a.b}' }, warnings);
+  insertVariantLeaf(arbre, ['tone', 'state'], { tone: '__proto__', state: 'default' }, { background: '{c.d}' }, warnings);
+
+  // Lus et écrits en propriétés PROPRES : sans cela « constructor » passait pour
+  // un doublon et « __proto__ » écrivait dans le prototype — l'arbre sortait
+  // amputé, sans un mot. La comparaison passe par le JSON produit : un objet
+  // littéral `{ __proto__: … }` fixerait lui aussi un prototype au lieu d'une clé.
+  assert.deepEqual(Object.keys(arbre), ['constructor', '__proto__']);
+  assert.equal(
+    JSON.stringify(arbre),
+    '{"constructor":{"background":"{a.b}"},"__proto__":{"default":{"background":"{c.d}"}}}',
+  );
   assert.deepEqual(warnings, []);
 });

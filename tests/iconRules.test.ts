@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractIconLayers } from '../src/contract/extractIconLayers';
+import { findLayoutNode } from '../src/contract/extractLayout';
 import { collectTokenReferences } from '../src/variables';
 import { mergeIconRules } from '../src/contract/exportComponent';
 
@@ -30,6 +31,14 @@ const matrice = (
   variants: Array<{ values: Record<string, string>; component: ComponentNode }>,
   axes: string[],
 ) => ({ axes, variants });
+
+/**
+ * L'élection du node de layout appartient à `layoutNodes.ts` : l'inventaire des
+ * icônes la reçoit, il ne la refait pas. Les tests fournissent donc le même
+ * relevé que la production.
+ */
+const nodesDeLayout = (matrix: ReturnType<typeof matrice>) =>
+  new Map(matrix.variants.map(({ component }) => [component, findLayoutNode(component)]));
 
 const graphique = (
   id: string,
@@ -201,14 +210,16 @@ test('extractIconLayers trouve une icône présente uniquement hors du variant d
     }),
   ]);
 
+  const matrix = matrice(
+    [
+      { values: { severity: 'info' }, component: info },
+      { values: { severity: 'success' }, component: success },
+    ],
+    ['severity'],
+  );
   const layers = await extractIconLayers(
-    matrice(
-      [
-        { values: { severity: 'info' }, component: info },
-        { values: { severity: 'success' }, component: success },
-      ],
-      ['severity'],
-    ),
+    matrix,
+    nodesDeLayout(matrix),
     ['circle-info', 'circle-check', 'triangle-exclamation'],
     sansToken,
     [],
@@ -230,8 +241,10 @@ test('extractIconLayers relève la taille liée sur le calque', async () => {
     }),
   ]);
 
+  const matrix = matrice([{ values: { mode: 'default' }, component: composant }], ['mode']);
   const layers = await extractIconLayers(
-    matrice([{ values: { mode: 'default' }, component: composant }], ['mode']),
+    matrix,
+    nodesDeLayout(matrix),
     ['circle-info'],
     { resolve: async () => 'components.icons.sizes.base' },
     [],
@@ -243,18 +256,45 @@ test('extractIconLayers relève la taille liée sur le calque', async () => {
   assert.deepEqual(Array.from(collectTokenReferences(layers)), ['{components.icons.sizes.base}']);
 });
 
+test('une icône en hug ne réclame aucune variable de taille', async () => {
+  // Le menu de dimensionnement fait autorité ici comme pour les slots : une
+  // icône qui hug n'a pas de dimension figée à citer, et la lui réclamer
+  // produisait un avertissement que `resolveSlotSize` ne produit pas.
+  const composant = variant('component', 'Mode=Default', [
+    graphique('icon', 'circle-info', {
+      layoutSizingHorizontal: 'HUG',
+      layoutSizingVertical: 'HUG',
+    }),
+  ]);
+
+  const matrix = matrice([{ values: { mode: 'default' }, component: composant }], ['mode']);
+  const warnings: string[] = [];
+  const layers = await extractIconLayers(
+    matrix,
+    nodesDeLayout(matrix),
+    ['circle-info'],
+    sansToken,
+    warnings,
+  );
+
+  assert.deepEqual(layers[0].sizes, [null]);
+  assert.deepEqual(warnings, []);
+});
+
 test('extractIconLayers nomme la condition même si le set n’expose aucun axe', async () => {
   const actif = variant('active', 'Active', [graphique('icon', 'status-icon')]);
   const inactif = variant('inactive', 'Inactive', []);
 
+  const matrix = matrice(
+    [
+      { values: {}, component: actif },
+      { values: {}, component: inactif },
+    ],
+    [],
+  );
   const layers = await extractIconLayers(
-    matrice(
-      [
-        { values: {}, component: actif },
-        { values: {}, component: inactif },
-      ],
-      [],
-    ),
+    matrix,
+    nodesDeLayout(matrix),
     ['status-icon'],
     sansToken,
     [],
@@ -268,8 +308,10 @@ test('extractIconLayers nomme la condition même si le set n’expose aucun axe'
 test('extractIconLayers ignore une instance qui possède son propre contrat', async () => {
   const composant = variant('component', 'Mode=Default', [graphique('icon', 'status-icon')]);
 
+  const matrix = matrice([{ values: { mode: 'default' }, component: composant }], ['mode']);
   const layers = await extractIconLayers(
-    matrice([{ values: { mode: 'default' }, component: composant }], ['mode']),
+    matrix,
+    nodesDeLayout(matrix),
     ['status-icon'],
     sansToken,
     [],

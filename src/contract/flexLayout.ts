@@ -125,6 +125,38 @@ export function fixedDimensions(node: SceneNode): { width: boolean; height: bool
   };
 }
 
+/** Bornes de taille Figma, avec l'intitulé que le panneau affiche. */
+const SIZE_CONSTRAINTS = [
+  ['minWidth', 'min width'],
+  ['maxWidth', 'max width'],
+  ['minHeight', 'min height'],
+  ['maxHeight', 'max height'],
+] as const;
+
+/**
+ * Signale les bornes de taille que le contrat ne sait pas porter.
+ *
+ * Figma laisse fixer une largeur ou une hauteur minimale et maximale, et un
+ * layout un peu riche s'en sert presque toujours. Le contrat n'a aucun champ où
+ * les écrire : sans ce message, un layer que la maquette tient entre deux
+ * bornes serait rendu sans elles, et personne ne saurait pourquoi le résultat
+ * diffère.
+ */
+export function warnSizeConstraints(node: SceneNode, warnings: string[]): void {
+  const values = asPropertyBag(node);
+  const bornes = SIZE_CONSTRAINTS
+    .filter(([field]) => typeof values[field] === 'number')
+    .map(([, label]) => label);
+  if (bornes.length === 0) return;
+
+  warnings.push(
+    `Layer « ${node.name} » : il fixe ${bornes.join(', ')}. Le contrat n'a pas de champ pour ces ` +
+      `bornes, et le développeur rendra donc ce layer sans elles. Retirez-les si le layer doit ` +
+      `se comporter comme le contrat le décrit ; sinon, elles resteront à écrire à la main dans ` +
+      `le code.`,
+  );
+}
+
 /**
  * Alignement du conteneur Figma. Les deux champs forment une paire : si l'API
  * ne fournit pas les deux, le contrat les omet plutôt que de compléter le
@@ -137,6 +169,17 @@ export function flexContainerProperties(
   if (!isLinearAutoLayout(node)) return {};
 
   const values = asPropertyBag(node);
+  // Le passage à la ligne n'a pas de champ dans le contrat, et son gap entre
+  // lignes (`counterAxisSpacing`) non plus. Le taire ferait rendre sur une
+  // seule ligne un conteneur qui en occupe plusieurs dans la maquette.
+  if (values.layoutWrap === 'WRAP') {
+    warnings.push(
+      `Layer « ${node.name} » : son auto layout utilise le wrap. Le contrat ne décrit ni le ` +
+        `passage à la ligne ni le gap entre les lignes : le développeur alignera tous ses ` +
+        `layers sur une seule ligne. Retirez le wrap si cette disposition doit être ` +
+        `contractuelle, puis réexportez.`,
+    );
+  }
   const primary = values.primaryAxisAlignItems;
   const counter = values.counterAxisAlignItems;
   if (primary === undefined || counter === undefined) return {};
@@ -165,10 +208,9 @@ export function flexItemProperties(
   child: SceneNode,
   warnings: string[] = [],
 ): FlexItemProperties {
-  if (!isLinearAutoLayout(parent)) return {};
-
-  const values = asPropertyBag(child);
-  if (values.layoutPositioning === 'ABSOLUTE') {
+  // Testé avant l'auto layout linéaire : une grille aussi porte des enfants en
+  // position absolue, et sortir plus tôt les rendrait invisibles au diagnostic.
+  if (asPropertyBag(child).layoutPositioning === 'ABSOLUTE') {
     warnings.push(
       `Layer « ${child.name} » : il est en position « Absolute » dans l'auto layout « ${parent.name} ». ` +
         `Le contrat ne publie pas ses coordonnées ; son placement manquera au développeur. ` +
@@ -176,7 +218,9 @@ export function flexItemProperties(
     );
     return {};
   }
+  if (!isLinearAutoLayout(parent)) return {};
 
+  const values = asPropertyBag(child);
   const result: FlexItemProperties = {};
   const sizing = childSizing(parent, child);
 

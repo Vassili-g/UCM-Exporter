@@ -185,26 +185,39 @@ export function buildLeaf(
  * Insère une feuille dans l'arbre en suivant son chemin pointé.
  * Un emplacement déjà occupé est TOUJOURS conservé, qu'il porte un groupe ou
  * une autre feuille : écraser reviendrait à perdre une variable en silence.
+ *
+ * Les segments viennent des noms Figma : ils sont lus et écrits en propriétés
+ * PROPRES. Un groupe nommé `constructor` passerait sinon pour un emplacement
+ * occupé, et `__proto__` écrirait dans le prototype — le token quitterait le
+ * fichier sans un mot.
  */
 export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: string[]): void {
   const segments = path.split('.').filter(Boolean);
   if (segments.length === 0) return;
 
+  const own = (node: DtcgTree, key: string) =>
+    (Object.prototype.hasOwnProperty.call(node, key) ? node[key] : undefined);
+  const set = (node: DtcgTree, key: string, value: DtcgTree | DtcgLeaf) => {
+    Object.defineProperty(node, key, {
+      value, enumerable: true, writable: true, configurable: true,
+    });
+  };
+
   let node = tree;
   for (let index = 0; index < segments.length - 1; index += 1) {
     const key = segments[index];
-    const existing = node[key];
+    const existing = own(node, key);
     // Un groupe ne peut pas traverser une feuille existante.
     if (existing && '$value' in existing) {
       warnings.push(`Token « ${path} » : un token porte déjà ce nom plus haut dans l’arborescence. Il n’est pas exporté ; renommez ou déplacez l’un des deux.`);
       return;
     }
-    node[key] = (existing as DtcgTree) ?? {};
+    if (!existing) set(node, key, {});
     node = node[key] as DtcgTree;
   }
 
   const lastKey = segments[segments.length - 1];
-  const existing = node[lastKey];
+  const existing = own(node, lastKey);
   if (existing) {
     warnings.push(
       '$value' in existing
@@ -213,7 +226,7 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
     );
     return;
   }
-  node[lastKey] = leaf;
+  set(node, lastKey, leaf);
 }
 
 /**

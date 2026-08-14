@@ -6,17 +6,19 @@
  * border-radius et tailles d'icônes. La typographie est extraite séparément
  * sur toute la matrice par `extractVariantTypography`.
  */
+import { firstVariableAlias } from '../variables';
 import type { TokenResolver } from '../variables';
 import { getAllNodes, textNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import {
   BINDING_PATTERNS,
+  getBinding,
   hasCompleteBinding,
   resolveField,
   resolveSlotSize,
 } from './nodeBindings';
 import { normalizePropKey } from './parsers';
-import { assignSlots } from './slotNames';
+import { assignSlots, isIconLayer } from './slotNames';
 import { composedSlotDependencies, nestedSlotVisibility } from './slotRelations';
 import {
   containerSizing,
@@ -38,17 +40,18 @@ type LayoutStructure = Omit<
   'sizes' | 'variantAxes' | 'variantTokens' | 'variantStrokes' | 'variantTypography'
 >;
 
-/** Node de départ accepté : une instance (wrapper) ou un composant direct. */
-export type LayoutRoot = InstanceNode | ComponentNode;
-
 /**
  * Trouve le calque qui porte les dimensions. On compte, pour chaque calque
  * du sous-arbre, combien de propriétés de layout (gap, paddings, radius)
  * sont liées à une variable : celui qui en porte le plus est notre
  * « conteneur de layout ». À défaut, on retombe sur la racine.
+ *
+ * Le résultat dépend de la racine reçue : le score maximal d'un sous-arbre
+ * n'est pas celui de son parent. C'est `layoutNodes.ts` qui tranche cette
+ * racine, une fois par variant ; ne rappelez pas cette fonction ailleurs.
  */
 export function findLayoutNode(
-  root: LayoutRoot,
+  root: SceneNode,
   warnings: string[] = [],
   composed: ComposedInstances = new Map(),
 ): SceneNode {
@@ -257,7 +260,8 @@ async function describeComposedWrapper(
   composed: ComposedInstances,
   iconNames: ReadonlySet<string>,
 ): Promise<void> {
-  const branches = assignSlots(wrapper, iconNames, warnings, composed)
+  const assignments = assignSlots(wrapper, iconNames, warnings, composed);
+  const branches = assignments
     .filter(({ child }) => composedSlotDependencies(child, composed).length > 0);
 
   // La dépendance est là — `composedSlotDependencies` l'a trouvée — mais aucune
@@ -285,6 +289,20 @@ async function describeComposedWrapper(
         `n'utilise pas un auto layout horizontal ou vertical. Le contrat publie la dépendance ` +
         `sans la disposition de ce calque, et le développeur rendra le composant sans son ` +
         `cadre. Appliquez un auto layout à ce layer, puis réexportez.`,
+    );
+  }
+
+  // Seule la branche qui mène à la dépendance est publiée. Ce qui l'accompagne
+  // dans ce cadre n'a donc ni slot, ni typographie, ni visibilité, alors que
+  // ses couleurs entrent bien dans `variantTokens` : sans ce message, le
+  // développeur ne saurait pas qu'un calque a disparu.
+  for (const { child } of assignments) {
+    if (branches.some((branch) => branch.child === child)) continue;
+    warnings.push(
+      `Layer « ${child.name} » : il partage le layer « ${wrapper.name} » avec le composant ` +
+        `« ${dependency.component} », dont le contrat ne décrit que la branche. Ni son slot, ni ` +
+        `sa typographie, ni sa visibilité ne sont exportés : le développeur ne le rendra pas. ` +
+        `Sortez-le de ce layer, puis réexportez.`,
     );
   }
 
@@ -551,13 +569,24 @@ export function flexLayoutSignature(
       // dans la signature, deux variants qui centrent leur bouton différemment
       // passeraient pour identiques et le contrat publierait celui de la
       // référence.
-      ...composedWrapperSignature(child, composed),
+      ...composedWrapperSignature(child, iconNames, composed),
+      ...fixedSizeSignature(child, iconNames),
     })),
   });
 }
 
-/** Flux du cadre qui enveloppe une dépendance, vide pour tout autre slot. */
-function composedWrapperSignature(child: SceneNode, composed: ComposedInstances): object {
+/**
+ * Flux du cadre qui enveloppe une dépendance, vide pour tout autre slot.
+ *
+ * `extractComposedBranch` descend de cadre en cadre jusqu'à l'instance : la
+ * signature suit la même récursion, sinon deux variants dont seul le cadre
+ * intérieur diffère passeraient pour identiques.
+ */
+function composedWrapperSignature(
+  child: SceneNode,
+  iconNames: ReadonlySet<string>,
+  composed: ComposedInstances,
+): object {
   if (composed.has(child.id) || composedSlotDependencies(child, composed).length === 0) {
     return {};
   }
@@ -565,8 +594,91 @@ function composedWrapperSignature(child: SceneNode, composed: ComposedInstances)
     wrapper: {
       layout: autoLayoutDirection(child),
       ...flexContainerProperties(child),
+      children: assignSlots(child, iconNames, [], composed)
+        .filter(({ child: branch }) => composedSlotDependencies(branch, composed).length > 0)
+        .map(({ child: branch, slot }) => ({
+          slot,
+          composes: composed.get(branch.id)?.component ?? null,
+          ...flexItemProperties(child, branch),
+          ...composedWrapperSignature(branch, iconNames, composed),
+        })),
     },
   };
+}
+
+/**
+ * Dimensions figées d'un slot, réduites aux liaisons que Figma porte.
+ *
+ * `structure.children[].size` ne décrit que le variant de référence : une
+ * largeur figée qui change ailleurs dans la matrice n'a aucun endroit où vivre
+ * dans le schéma. Sans elle dans la signature, le contrat publierait celle de
+ * la référence en silence. Les calques d'icônes en sont exclus : `icons.*.size`
+ * compare déjà leur taille sur toute la matrice, et deux messages diraient la
+ * même chose.
+ */
+function fixedSizeSignature(node: SceneNode, iconNames: ReadonlySet<string>): object {
+  if (isIconLayer(node, iconNames)) return {};
+
+  const fixed = fixedDimensions(node);
+  const boundVariableId = (field: string) =>
+    firstVariableAlias(getBinding(node, field))?.id ?? null;
+  return {
+    size: {
+      width: fixed.width ? boundVariableId('width') : null,
+      height: fixed.height ? boundVariableId('height') : null,
+    },
+  };
+}
+
+/**
+ * Calques que l'élection du node de layout laisse hors du contrat.
+ *
+ * `structure.children` ne décrit que les enfants directs du node élu. Ce qui
+ * vit à côté du chemin qui y mène — un badge, un liseré, un second bloc — n'a
+ * donc ni slot, ni typographie, ni visibilité, alors que ses couleurs entrent
+ * bien dans `variantTokens`, relevé sur le variant entier. Sans ce message, le
+ * contrat annoncerait un rôle que plus aucun calque ne porte.
+ */
+function warnLayersOutsideLayoutNode(
+  component: SceneNode,
+  layoutNode: SceneNode,
+  warnings: string[],
+  composed: ComposedInstances,
+): void {
+  if (component === layoutNode) return;
+
+  const exportable = new Set(getAllNodes(component, [], composed).map((node) => node.id));
+  let current: BaseNode | null | undefined = layoutNode;
+  while (current && current !== component) {
+    const parent: BaseNode | null | undefined = current.parent;
+    if (parent && 'children' in parent) {
+      for (const sibling of parent.children) {
+        if (sibling.id === current.id || !exportable.has(sibling.id)) continue;
+        warnings.push(
+          `Layer « ${sibling.name} » : il est posé à côté de l'auto layout frame qui porte le ` +
+            `gap et le padding, pas dedans. Le contrat ne lui donne ni slot, ni typographie, ni ` +
+            `visibilité : le développeur ne le rendra pas. Déplacez-le dans cet auto layout ` +
+            `frame, puis réexportez.`,
+        );
+      }
+    }
+    current = parent;
+  }
+}
+
+/**
+ * `structure.layout` est obligatoire dans la forme du contrat, et `flex-row`
+ * en est le repli. Une grille ou un frame sans auto layout seraient donc
+ * décrits comme une rangée horizontale sans que rien ne le dise.
+ */
+function warnMissingDirection(layoutNode: SceneNode, warnings: string[]): void {
+  if (autoLayoutDirection(layoutNode)) return;
+  warnings.push(
+    `Layer « ${layoutNode.name} » : il n'utilise pas d'auto layout horizontal ou vertical. Le ` +
+      `contrat annonce malgré tout une disposition horizontale, la seule qu'il sache écrire, et ` +
+      `le développeur placera donc ses layers autrement que dans Figma. Appliquez un auto ` +
+      `layout horizontal ou vertical à ce layer, puis réexportez.`,
+  );
 }
 
 /**
@@ -574,9 +686,12 @@ function composedWrapperSignature(child: SceneNode, composed: ComposedInstances)
  * paddings, radius) puis construit les slots enfants. Tout est exprimé en
  * noms de tokens ; une propriété non liée produit un warning, jamais une
  * valeur brute.
+ *
+ * `layoutNode` est déjà élu par `layoutNodes.ts` : ce module ne choisit pas le
+ * calque qu'il décrit, il le reçoit.
  */
 export async function extractLayout(
-  root: LayoutRoot,
+  layoutNode: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
   composed: ComposedInstances = new Map(),
@@ -586,9 +701,10 @@ export async function extractLayout(
   // Le composant lui-même, quand un wrapper de layout s'intercale entre lui et
   // ses slots. C'est son comportement que le contrat publie : un wrapper décrit
   // comment il se place DANS le composant, pas comment le composant s'intègre.
-  component: SceneNode = root,
+  component: SceneNode = layoutNode,
 ): Promise<LayoutStructure> {
-  const layoutNode = findLayoutNode(root, warnings, composed);
+  warnLayersOutsideLayoutNode(component, layoutNode, warnings, composed);
+  warnMissingDirection(layoutNode, warnings);
   const [gap, paddingX, paddingY, radius] = await Promise.all([
     resolveField(layoutNode, BINDING_PATTERNS.gap, 'gap', resolver, warnings),
     resolveField(

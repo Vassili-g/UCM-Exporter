@@ -15,7 +15,8 @@ import type { TokenResolver } from '../variables';
 import type { VariantMatrix } from './componentTree';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
-import { findLayoutNode } from './extractLayout';
+import { fixedDimensions } from './flexLayout';
+import type { VariantLayoutNodes } from './layoutNodes';
 import { BINDING_PATTERNS, resolveField } from './nodeBindings';
 import { normalizePropKey, normalizePropValue } from './parsers';
 import { assignSlots, iconSlotsByLayer, isIconLayer } from './slotNames';
@@ -61,32 +62,25 @@ function newAccumulator(): IconLayerAccumulator {
   };
 }
 
-/** Le variant que `structure.children` décrit, et le node de layout retenu pour lui. */
-export type ReferenceLayout = {
-  component: ComponentNode;
-  layoutNode: SceneNode;
-};
-
 /**
  * Résume les calques dont le nom est demandé par les règles, sur tous les
  * variants. La correspondance reste strictement nominale : aucune position ni
  * convention propre à un composant n'est devinée. Le slot vient de
  * `slotNames.assignSlots`, la même source que `structure.children`.
  *
- * `referenceLayout` porte le node de layout déjà retenu pour le variant de
- * référence. Le fournir est ce qui garantit que les slots cités décrivent bien
- * ceux du contrat : le node de layout d'un variant s'élit au score, et une
- * seconde élection menée depuis une autre racine peut en désigner un autre. Les
- * autres variants élisent le leur ; un désaccord se solde par plusieurs slots,
- * donc par un avertissement et aucune valeur — jamais par un slot inventé.
+ * `layoutNodes` porte le node de layout déjà élu pour chaque variant
+ * (`layoutNodes.ts`). Le recevoir est ce qui garantit que les slots cités
+ * existent dans le contrat : élire de nouveau, depuis une autre racine,
+ * désignerait parfois un autre node et situerait les icônes dans un arbre que
+ * `structure.children` ne décrit pas.
  */
 export async function extractIconLayers(
   matrix: VariantMatrix,
+  layoutNodes: VariantLayoutNodes,
   iconNames: readonly string[],
   resolver: TokenResolver,
   warnings: string[],
   composed: ComposedInstances = new Map(),
-  referenceLayout: ReferenceLayout | null = null,
 ): Promise<IconLayerSummary[]> {
   const uniqueNames = Array.from(new Set(iconNames));
   if (uniqueNames.length === 0) return [];
@@ -95,9 +89,7 @@ export async function extractIconLayers(
   const summaries = new Map<string, IconLayerAccumulator>();
 
   for (const entry of matrix.variants) {
-    const layoutNode = entry.component === referenceLayout?.component
-      ? referenceLayout.layoutNode
-      : findLayoutNode(entry.component, [], composed);
+    const layoutNode = layoutNodes.get(entry.component) ?? entry.component;
     const slotByLayer = iconSlotsByLayer(
       assignSlots(layoutNode, requested, [], composed),
       requested,
@@ -119,8 +111,17 @@ export async function extractIconLayers(
       // La taille se relève ici parce qu'une icône absente du variant de
       // référence n'a aucun slot où la lire. Le résolveur met ses résolutions
       // en cache, et les avertissements identiques se dédupliquent à l'export.
+      //
+      // Le menu de dimensionnement décide de ce qu'on lit, comme pour les slots
+      // (`resolveSlotSize`) : une icône en `Hug` ou en `Fill` n'a pas de
+      // dimension figée à citer, et `slotSize` exige les DEUX côtés sur la même
+      // variable — un seul axe figé ne pourrait donc que produire un
+      // avertissement, pour une valeur que le contrat n'a pas à porter.
+      const fixed = fixedDimensions(node);
       summary.sizes.add(
-        await resolveField(node, BINDING_PATTERNS.slotSize, 'width et height', resolver, warnings),
+        fixed.width && fixed.height
+          ? await resolveField(node, BINDING_PATTERNS.slotSize, 'width et height', resolver, warnings)
+          : null,
       );
     }
 

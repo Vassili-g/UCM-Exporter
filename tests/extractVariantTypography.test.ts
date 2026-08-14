@@ -2,6 +2,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractVariantTypography, textSlots } from '../src/contract/extractVariantTypography';
+import { findLayoutNode } from '../src/contract/extractLayout';
 import { collectTokenReferences } from '../src/variables';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
@@ -33,6 +34,14 @@ function node(type: string, id: string, name: string, children: any[] = [], extr
     return found;
   };
   return result;
+}
+
+/**
+ * L'élection du node de layout appartient à `layoutNodes.ts` : la typographie
+ * la reçoit, elle ne la refait pas. Les tests fournissent le même relevé.
+ */
+function nodesDeLayout(...components: ComponentNode[]) {
+  return new Map(components.map((component) => [component, findLayoutNode(component)]));
 }
 
 function variant(name: string, titleStyle: string, bodyStyle: string) {
@@ -101,6 +110,7 @@ test('extractVariantTypography lie les styles à leurs tokens sur chaque variant
         { values: { size: 'small' }, component: small },
       ],
     },
+    nodesDeLayout(big, small),
     resolverFor(tokens),
     warnings,
     new Map(),
@@ -144,6 +154,7 @@ test('un texte sans style et une liaison incomplète avertissent sans valeur bru
   const warnings: string[] = [];
   const result = await extractVariantTypography(
     { axes: ['size'], variants: [{ values: { size: 'big' }, component }] },
+    nodesDeLayout(component),
     resolverFor({ size: 'typography.body.small.fontsize' }),
     warnings,
     new Map(),
@@ -164,4 +175,27 @@ test('un texte sans style et une liaison incomplète avertissent sans valeur bru
   });
   assert.ok(warnings.some((warning) => warning.includes('aucun text style unique')));
   assert.ok(warnings.some((warning) => warning.includes('letter spacing')));
+});
+
+test('le chemin d’une part descend jusqu’au calque texte, pas jusqu’à son frame', () => {
+  // `extractTextBranch` publie une part pour le frame ET pour le texte qu'il
+  // contient. Un chemin qui s'arrêtait au frame désignait un slot porteur de
+  // `children`, où le consommateur ne trouvait aucune typographie à appliquer.
+  const description = node('TEXT', 'description', 'Description', [], {
+    textStyleId: 'body-small',
+  });
+  const bloc = node('FRAME', 'bloc', 'Bloc', [description], { layoutMode: 'VERTICAL' });
+  const titre = node('TEXT', 'titre', 'Titre', [], { textStyleId: 'body-large' });
+  const contenu = node('FRAME', 'contenu', 'Text', [titre, bloc], { layoutMode: 'VERTICAL' });
+  const composant = node('COMPONENT', 'big', 'Big', [contenu], {
+    layoutMode: 'HORIZONTAL',
+  }) as ComponentNode;
+
+  assert.deepEqual(
+    textSlots(composant).map(({ slotPath, textNode }) => ({ slotPath, layer: textNode.name })),
+    [
+      { slotPath: ['label', 'label'], layer: 'Titre' },
+      { slotPath: ['label', 'label-2', 'label'], layer: 'Description' },
+    ],
+  );
 });

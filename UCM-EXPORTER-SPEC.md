@@ -154,7 +154,22 @@ arbres sont nichés selon `variantAxes` :
 }
 ```
 
-**3. Layout** — certains design systems construisent leurs variantes de taille
+**3. Layout** — le **node de layout** d'un variant est le calque dont les
+enfants directs deviennent ses slots. Il s'élit au score : le calque qui porte
+le plus de dimensions complètes liées, la racine à défaut. Ce score dépend de la
+racine d'où part la recherche, si bien que l'élection a lieu **une seule fois
+par variant**, avec la même règle pour tous : depuis le wrapper de dimensions
+quand le composant en possède un, sinon depuis le variant. Les slots, les slots
+d'icônes et les chemins de `variantTypography` décrivent donc toujours le même
+arbre. Un variant privé de ce wrapper est signalé plutôt que rattrapé en
+silence.
+
+Ce que l'élection écarte n'est pas oublié : un calque posé **à côté** du node
+élu — un badge, un liseré, un second bloc — ne reçoit ni slot, ni typographie,
+ni visibilité, alors que ses couleurs entrent bien dans `variantTokens`, relevé
+sur le variant entier. Chaque calque écarté produit donc un avertissement.
+
+Certains design systems construisent leurs variantes de taille
 via un sous-composant partagé, imbriqué dans chaque variant, qui porte seul les
 dimensions : c'est le **wrapper de dimensions**. Le moteur cherche donc une
 instance imbriquée portant des dimensions liées
@@ -192,7 +207,11 @@ reliée » :
 - **espacement « Auto »** (`primaryAxisAlignItems: SPACE_BETWEEN`) — Figma
   ignore `itemSpacing` et répartit l'espace disponible. Le `gap` reste donc
   absent, mais `justifyContent: "space-between"` décrit la répartition ; une
-  liaison conservée sur `itemSpacing` ne produit ni token ni warning.
+  liaison conservée sur `itemSpacing` ne produit ni token ni warning ;
+- **auto layout en grille** (`layoutMode: GRID`) — Figma y espace les enfants
+  par le gap des lignes et des colonnes, que le contrat ne lit pas.
+  `itemSpacing` reste lisible sans aucun effet : le `gap` reste absent et un
+  warning dit que cette absence ne vaut pas zéro.
 
 La même règle vaut pour l'élection du porteur de layout : une liaison
 inapplicable ne désigne pas un calque comme conteneur de dimensions, sinon le
@@ -357,10 +376,22 @@ sur le wrapper de layout, et comparé sur toute la matrice comme le reste du
 flux.
 
 Un layer en position `Absolute` est averti et ne reçoit aucune propriété Flex : le
-contrat ne décrit pas encore ses coordonnées. Direction, alignements et
-propriétés de flux des slots sont comparés sur toute la matrice ; une différence
-entre variants avertit au lieu d'être généralisée depuis le variant de
-référence.
+contrat ne décrit pas encore ses coordonnées. L'avertissement précède la lecture
+du flux, car une grille aussi porte des enfants en position absolue. Direction,
+alignements, dimensions figées et propriétés de flux des slots sont comparés sur
+toute la matrice — cadres de dépendance imbriqués compris ; une différence entre
+variants avertit au lieu d'être généralisée depuis le variant de référence.
+
+**Ce que Figma porte et que le schéma ne sait pas écrire** avertit plutôt que de
+disparaître, puisque le rendu, lui, en dépend :
+
+- `structure.layout` reste obligatoire, et `flex-row` en est le repli. Un node
+  de layout qui n'est pas un auto layout horizontal ou vertical — grille, frame
+  sans auto layout — est donc publié comme une rangée, et le warning le dit ;
+- un auto layout qui passe à la ligne (`layoutWrap: WRAP`) est publié sans son
+  retour à la ligne ni son gap entre lignes (`counterAxisSpacing`) ;
+- les bornes de taille d'un calque (`min width`, `max width`, `min height`,
+  `max height`) n'ont aucun champ dans le contrat.
 
 Slots dédupliqués (`label`, `label-2`…). Un calque rendable inattendu est inclus
 tel quel, jamais supprimé silencieusement.
@@ -462,7 +493,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "4.8",
+    "contractVersion": "4.9",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -613,6 +644,10 @@ linéaire avertit au lieu de laisser deviner sa disposition.
   ] }
 ```
 
+Seule la branche qui mène à la dépendance est publiée : un calque qui partage ce
+cadre avec elle — un texte, un dessin — n'a ni slot, ni typographie, ni
+visibilité dans le contrat, et produit donc son propre avertissement.
+
 Le relevé couvre toute la matrice pour élaguer les dépendances de chaque
 variant. `structure.children` et `composes` décrivent tous deux le variant de
 référence et gardent ainsi le même ordre et la même cardinalité. Si la
@@ -622,9 +657,12 @@ conditionnel qu'il ne sait pas situer dans `structure.children`. Lorsqu'un
 calque enveloppe une seule dépendance, son slot reprend aussi la
 `visibilityProp` de l'instance.
 
+`figmaLayer` y nomme le calque de **l'instance**, jamais le cadre qui
+l'enveloppe : c'est ce calque qu'on retrouve dans Figma.
+
 ```json
 "composes": [
-  { "component": "Button", "figmaLayer": "action", "visibilityProp": "action" }
+  { "component": "Button", "figmaLayer": "Button", "visibilityProp": "action" }
 ]
 ```
 
@@ -642,6 +680,8 @@ et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId`
 ### Invariants
 
 - Le moteur ne dépend d’aucun nom de composant.
+- Le node de layout de chaque variant est élu une seule fois ; slots, icônes et
+  chemins de typographie décrivent le même arbre.
 - Une même clé publique relie `props`, `variantAxes` et les arbres de
   variantes ; les noms Figma d’origine restent traçables.
 - La matrice est complète et son ordre rend l’export déterministe.
@@ -808,6 +848,11 @@ La 4.9 ferme la composition du même mouvement : un calque qui ENVELOPPE un
 composant unifié est un conteneur de ce contrat-ci, publie son flux et range la
 dépendance dans `children`. Seul le calque qui EST l'instance porte encore
 `composes`.
+
+Les diagnostics se sont étoffés depuis, sans toucher à la forme : élection
+unique du node de layout, calques écartés par cette élection ou par le cadre
+d'une dépendance, auto layout en grille ou en wrap, bornes min/max. Aucun champ
+n'a été ajouté ni retiré, `contractVersion` reste donc `4.9`.
 
 Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
 il accepte uniquement les versions qu’il a explicitement auditées.

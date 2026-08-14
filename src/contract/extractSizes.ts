@@ -11,6 +11,7 @@ import type { TokenResolver } from '../variables';
 import { getVariantAxes, getVariantValues } from './componentTree';
 import type { ComposedInstances } from './exportableNodes';
 import { findLayoutNode } from './extractLayout';
+import type { VariantLayoutNodes } from './layoutNodes';
 import { BINDING_PATTERNS, resolveField } from './nodeBindings';
 import { semanticEnumName } from './semantics';
 import type { SizeDimensions } from './types';
@@ -40,8 +41,14 @@ async function extractDimensions(
   resolver: TokenResolver,
   warnings: string[],
   composed: ComposedInstances,
+  layoutNodes: VariantLayoutNodes,
 ): Promise<SizeDimensions> {
-  const layoutNode = findLayoutNode(component, warnings, composed);
+  // Quand l'axe de tailles vit sur le set sélectionné, ce composant EST un
+  // variant de la matrice : ses dimensions doivent être lues sur le node que
+  // `structure.children` décrit, pas sur un second élu. Les variants du wrapper,
+  // eux, appartiennent à un autre arbre et élisent le leur.
+  const layoutNode = layoutNodes.get(component)
+    ?? findLayoutNode(component, warnings, composed);
   // Le libellé passé à resolveField sert aux warnings : on précise la taille
   // pour qu'un token manquant soit localisable (ex. « gap (small) »).
   const [gap, paddingX, paddingY, radius] = await Promise.all([
@@ -89,6 +96,9 @@ export async function extractSizeDimensions(
   resolver: TokenResolver,
   warnings: string[],
   composed: ComposedInstances = new Map(),
+  // Nodes de layout déjà élus pour la matrice (`layoutNodes.ts`) : un variant du
+  // set sélectionné y figure, et ne doit pas être réélu.
+  layoutNodes: VariantLayoutNodes = new Map(),
 ): Promise<Record<string, SizeDimensions> | null> {
   const components = componentSet.children.filter(
     (node): node is ComponentNode => node.type === 'COMPONENT',
@@ -106,7 +116,9 @@ export async function extractSizeDimensions(
 
   const sizes: Record<string, SizeDimensions> = {};
   for (const [value, component] of representatives) {
-    sizes[value] = await extractDimensions(component, value, resolver, warnings, composed);
+    sizes[value] = await extractDimensions(
+      component, value, resolver, warnings, composed, layoutNodes,
+    );
   }
   return sizes;
 }

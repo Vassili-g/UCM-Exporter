@@ -23,9 +23,12 @@ src/
   contract/
     exportComponent.ts       orchestration et métadonnées
     componentTree.ts         axes, matrice et wrapper de layout
+    layoutNodes.ts           élection du node de layout, une fois par variant
+    exportableNodes.ts       parcours de l'arbre, hors dépendances composées
     parsers.ts               propriétés Figma → API publique
     semantics.ts             vocabulaire sémantique partagé
     extract*.ts              structure, layout, tailles, tokens et règles
+    flexLayout.ts            propriétés de flux et avertissements non portables
     slotNames.ts             nommage des slots et calques d'icônes
     composedComponents.ts    dépendances entre composants
     nodeBindings.ts          groupes complets de liaisons Figma
@@ -77,6 +80,18 @@ tests/
   propriété (`width`, `height`) : sa taille n’est pas une propriété de flux. Une
   largeur fixe posée sur un variant présente le component set, elle ne décrit
   pas le composant, et vaut donc `stretch`.
+- Le node de layout d’un variant s’élit au score, donc en fonction de la racine
+  d’où part la recherche. `layoutNodes.ts` en est l’unique autorité : il élit une
+  fois par variant, avec la même règle pour tous, et les extractions reçoivent
+  son résultat. Une seconde élection ferait décrire trois arbres différents au
+  même contrat — les slots, les icônes et les chemins de la typographie.
+- Ce que l’élection écarte est dit. Un calque posé hors du node élu, ou à côté
+  d’une dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni
+  visibilité alors que ses couleurs entrent dans `variantTokens` : il produit
+  donc un avertissement.
+- Une propriété Figma que le schéma ne sait pas porter — grille, wrap, bornes
+  min/max, position absolue — avertit au lieu de disparaître. `layout` reste
+  publié parce que sa forme l’exige, mais un repli `flex-row` se signale.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours

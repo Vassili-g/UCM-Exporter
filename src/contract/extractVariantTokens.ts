@@ -19,6 +19,11 @@ export type { VariantTokenLeaves } from './extractSlotTokens';
 /**
  * Insère une feuille dans l'arbre en suivant l'ordre des axes.
  * Un axe sans valeur retombe sur la clé « default ».
+ *
+ * Les clés viennent de Figma : elles sont testées et écrites en propriétés
+ * PROPRES. `constructor` ou `toString` passeraient sinon pour un doublon
+ * inexistant, et `__proto__` écrirait dans le prototype — la branche
+ * disparaîtrait du JSON sans un mot. Même précaution que `buildStateModel`.
  */
 export function insertVariantLeaf<T>(
   tree: Record<string, unknown>,
@@ -27,13 +32,21 @@ export function insertVariantLeaf<T>(
   leaf: T,
   warnings: string[],
 ): void {
+  const has = (node: Record<string, unknown>, key: string) =>
+    Object.prototype.hasOwnProperty.call(node, key);
+  const set = (node: Record<string, unknown>, key: string, value: unknown) => {
+    Object.defineProperty(node, key, {
+      value, enumerable: true, writable: true, configurable: true,
+    });
+  };
+
   let node = tree;
   axes.forEach((axis, index) => {
     const key = values[axis] || 'default';
     if (index === axes.length - 1) {
       // Deux variants aux mêmes valeurs d'axes : on conserve le premier et on
       // le signale — ne jamais perdre d'information en silence.
-      if (node[key]) {
+      if (has(node, key)) {
         warnings.push(
           `Variants « ${axes.map((a) => values[a] || 'default').join(' / ')} » : deux ` +
             `variants portent les mêmes valeurs une fois normalisées (majuscules et ` +
@@ -41,10 +54,11 @@ export function insertVariantLeaf<T>(
         );
         return;
       }
-      node[key] = leaf;
+      set(node, key, leaf);
       return;
     }
-    if (!node[key] || typeof node[key] !== 'object' || Array.isArray(node[key])) node[key] = {};
+    const branch = has(node, key) ? node[key] : null;
+    if (!branch || typeof branch !== 'object' || Array.isArray(branch)) set(node, key, {});
     node = node[key] as Record<string, unknown>;
   });
 }
