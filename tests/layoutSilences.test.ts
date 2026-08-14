@@ -185,18 +185,23 @@ test('un layer Absolute est signalé même sous un auto layout en grille', () =>
   assert.match(warnings[0], /position « Absolute »/);
 });
 
-test('les bornes min et max d’un layer sont signalées, faute de champ pour les porter', async () => {
+/**
+ * Une page dont l'unique slot « Colonne » porte les bornes qu'on lui donne.
+ *
+ * Le slot remplit sa largeur : c'est le cas qui rend les bornes indispensables
+ * — aucune valeur de `size` ne sait dire « prends la place, sans dépasser ».
+ */
+const pageAvecColonne = (bornes: Record<string, unknown>) => {
   const colonne = {
     type: 'FRAME',
     id: 'colonne',
     name: 'Colonne',
     layoutSizingHorizontal: 'FILL',
     layoutSizingVertical: 'HUG',
-    minWidth: 320,
-    maxWidth: 640,
-    boundVariables: {},
     children: [],
     findAll: findAllOn([]),
+    boundVariables: {},
+    ...bornes,
   };
   const racine = {
     type: 'COMPONENT',
@@ -204,18 +209,135 @@ test('les bornes min et max d’un layer sont signalées, faute de champ pour le
     layoutMode: 'HORIZONTAL',
     primaryAxisAlignItems: 'MIN',
     counterAxisAlignItems: 'MIN',
+    layoutSizingHorizontal: 'FILL',
+    layoutSizingVertical: 'HUG',
     boundVariables: { itemSpacing: alias('gap') },
     children: [colonne],
     findAll: findAllOn([colonne]),
   } as unknown as ComponentNode;
   lie(colonne, racine);
+  return racine;
+};
+
+test('les bornes d’un slot reliées à une variable sont publiées, pas signalées', async () => {
+  const racine = pageAvecColonne({
+    minWidth: 320,
+    maxWidth: 640,
+    boundVariables: { minWidth: alias('min'), maxWidth: alias('max') },
+  });
 
   const warnings: string[] = [];
-  await extractLayout(racine, resolverFor({ gap: 'l.gap' }), warnings);
+  const layout = await extractLayout(
+    racine,
+    resolverFor({ gap: 'l.gap', min: 'size.column.min', max: 'size.column.max' }),
+    warnings,
+  );
 
-  assert.ok(warnings.some((warning) => (
-    warning.includes('« Colonne »') && warning.includes('min width, max width')
-  )));
+  assert.deepEqual(layout.children[0].bounds, {
+    minWidth: '{size.column.min}',
+    maxWidth: '{size.column.max}',
+  });
+  // Le contrat porte désormais ces bornes : rien ne reste à dire au designer
+  // sur ce layer. Les autres messages visent le padding et le radius du
+  // composant, hors sujet ici.
+  assert.equal(warnings.filter((warning) => warning.includes('« Colonne »')).length, 0);
+});
+
+test('une borne écrite à la main réclame sa variable, sans demander qu’on la retire', async () => {
+  const racine = pageAvecColonne({ minWidth: 320, maxWidth: 640 });
+
+  const warnings: string[] = [];
+  const layout = await extractLayout(racine, resolverFor({ gap: 'l.gap' }), warnings);
+
+  assert.equal(layout.children[0].bounds, undefined);
+  const borne = warnings.find((warning) => warning.includes('« Colonne »'));
+  assert.ok(borne?.includes('min width, max width'));
+  assert.ok(borne?.includes('Reliez ces bornes à une variable'));
+  // La borne appartient au design : le geste demandé est de la nommer, jamais
+  // de modifier la maquette pour qu'elle tienne dans le contrat.
+  assert.ok(!borne?.includes('Retirez'));
+});
+
+test('les bornes du composant lui-même sont publiées à côté de son sizing', async () => {
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Divider',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'MIN',
+    layoutSizingHorizontal: 'FILL',
+    layoutSizingVertical: 'HUG',
+    maxWidth: 640,
+    boundVariables: { maxWidth: alias('max') },
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+
+  const warnings: string[] = [];
+  const layout = await extractLayout(racine, resolverFor({ max: 'size.divider.max' }), warnings);
+
+  assert.deepEqual(layout.sizing, { width: 'stretch', height: 'fit-content' });
+  assert.deepEqual(layout.bounds, { maxWidth: '{size.divider.max}' });
+});
+
+test('une borne posée sur un wrapper de layout est signalée, faute de propriétaire', async () => {
+  // Le wrapper prête son flux au composant sans jamais paraître dans le
+  // contrat : sa borne retient le CONTENU, et la publier sur le composant
+  // dirait autre chose que la maquette.
+  const texte = { type: 'TEXT', id: 'txt', name: 'Label', boundVariables: {} };
+  const wrapper = {
+    type: 'FRAME',
+    id: 'wrapper',
+    name: 'Contenu',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+    maxWidth: 640,
+    boundVariables: { itemSpacing: alias('gap'), maxWidth: alias('max') },
+    children: [texte],
+    findAll: findAllOn([texte]),
+  };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Carte',
+    layoutSizingHorizontal: 'FILL',
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+    children: [wrapper],
+    findAll: findAllOn([wrapper, texte]),
+  } as unknown as ComponentNode;
+  lie(texte, wrapper);
+  lie(wrapper, racine);
+
+  const warnings: string[] = [];
+  const layout = await extractLayout(
+    wrapper as unknown as SceneNode,
+    resolverFor({ gap: 'l.gap', max: 'size.carte.max' }),
+    warnings,
+    new Map(),
+    new Set(),
+    racine,
+  );
+
+  assert.equal(layout.bounds, undefined);
+  const borne = warnings.find((warning) => warning.includes('s’intercale')
+    || warning.includes("s'intercale"));
+  assert.ok(borne?.includes('« Contenu »'));
+  assert.ok(borne?.includes('max width'));
+});
+
+test('une borne qui change d’un variant à l’autre change la signature du flux', () => {
+  const signature = (maxWidth: unknown, variable: string | null) =>
+    flexLayoutSignature(pageAvecColonne({
+      maxWidth,
+      boundVariables: variable ? { maxWidth: alias(variable) } : {},
+    }) as unknown as SceneNode);
+
+  // Trois écarts que le contrat publierait sinon depuis le seul variant de
+  // référence : la borne retirée, la borne non tokenisée, la borne renommée.
+  assert.notEqual(signature(640, 'max'), signature(undefined, null));
+  assert.notEqual(signature(640, 'max'), signature(640, null));
+  assert.notEqual(signature(640, 'max'), signature(640, 'autre'));
 });
 
 test('un calque voisin d’une dépendance dans son cadre est signalé', async () => {

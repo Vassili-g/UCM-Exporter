@@ -415,6 +415,29 @@ matrice comme le reste du flux — la comparaison porte sur l'identifiant de la
 variable, sans quoi deux variants de tailles différentes passeraient pour
 identiques.
 
+**Bornes de taille (5.3).** `bounds` publie `minWidth`, `maxWidth`, `minHeight`
+et `maxHeight`, sur le composant à côté de `sizing` et sur chaque slot à côté de
+`size`. Une borne ne se confond avec aucun des deux : le menu de dimensionnement
+dit quelle place le layer prend, la borne dit jusqu'où cette place peut aller.
+Elles coexistent, et le cas le plus courant est justement celui qu'aucune valeur
+de `size` ne saurait écrire — un layer en `Fill` qu'un `max width` retient. Le
+champ est donc indépendant du menu, lu sur la seule présence de la borne, et
+chaque côté se lit seul : Figma laisse poser un `max width` sans `min width`.
+
+Le silence suit la règle commune, celle du gap, du padding et de la taille d'un
+slot : **une borne reliée à une variable se publie, une borne écrite à la main
+avertit**. Le geste demandé au designer est de nommer la borne — jamais de la
+retirer. Une borne appartient au design ; c'est au contrat de savoir la porter,
+et l'avoir tue puis fait retirer était une limite du schéma déguisée en
+correction de maquette.
+
+Le contrat n'a que deux propriétaires de bornes, le composant et un slot. Un
+calque intermédiaire — le wrapper de layout, qui prête son flux au composant
+sans jamais paraître comme un node — avertit donc au lieu d'être publié : sa
+borne retient le contenu, et la porter sur le composant retiendrait le cadre.
+Les bornes entrent dans la comparaison des variants comme le reste du flux, y
+compris sur les calques d'icônes, qu'`icons.*.size` ne couvre que pour la taille.
+
 Un layer en position `Absolute` est averti et ne reçoit aucune propriété Flex : le
 contrat ne décrit pas encore ses coordonnées. L'avertissement précède la lecture
 du flux, car une grille aussi porte des enfants en position absolue. Direction,
@@ -430,8 +453,8 @@ disparaître, puisque le rendu, lui, en dépend :
   sans auto layout — est donc publié comme une rangée, et le warning le dit ;
 - un auto layout qui passe à la ligne (`layoutWrap: WRAP`) est publié sans son
   retour à la ligne ni son gap entre lignes (`counterAxisSpacing`) ;
-- les bornes de taille d'un calque (`min width`, `max width`, `min height`,
-  `max height`) n'ont aucun champ dans le contrat.
+- les bornes d'un calque intermédiaire, entre le composant et ses slots, n'ont
+  aucun propriétaire dans le contrat.
 
 Slots dédupliqués (`label`, `label-2`…). Un calque rendable inattendu est inclus
 tel quel, jamais supprimé silencieusement.
@@ -895,8 +918,18 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **5.2** : un axe de `structure.sizing` peut
-citer un token. Une dimension figée sans variable reste `stretch` — c'est une
+La version actuelle du contrat est **5.3** : les bornes de taille deviennent
+contractuelles. `bounds` publie `minWidth`, `maxWidth`, `minHeight` et
+`maxHeight`, sur le composant comme sur chaque slot, tokenisées. Le champ est
+facultatif et purement additif — un composant sans borne produit un contrat
+identique — mais il retourne le geste demandé au designer : le contrat cessait
+de savoir écrire une borne et lui conseillait de la retirer, alors qu'une borne
+est une décision de design que le rendu porte. C'est désormais au contrat de la
+nommer. Un consommateur qui rendait un composant sans lire ce champ le rend trop
+large, d'où la version.
+
+La 5.2 ouvrait chaque axe de `structure.sizing` à un token. Une dimension figée
+sans variable reste `stretch` — c'est une
 taille de maquette, et rien ne change pour les composants qui en publiaient
 déjà — mais celle qui cite une variable est une décision du design system, et le
 token l'emporte. Un consommateur qui traitait ce champ comme un enum de deux
@@ -936,7 +969,7 @@ dépendance dans `children`. Seul le calque qui EST l'instance porte encore
 
 Entre les deux, les diagnostics se sont étoffés sans toucher à la forme :
 élection unique du node de layout, calques écartés par cette élection ou par le
-cadre d'une dépendance, auto layout en grille ou en wrap, bornes min/max.
+cadre d'une dépendance, auto layout en grille ou en wrap.
 
 Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
 il accepte uniquement les versions qu’il a explicitement auditées.

@@ -96,9 +96,16 @@ tests/
   d’une dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni
   visibilité alors que ses couleurs entrent dans `variantTokens` : il produit
   donc un avertissement.
-- Une propriété Figma que le schéma ne sait pas porter — grille, wrap, bornes
-  min/max, position absolue — avertit au lieu de disparaître. `layout` reste
-  publié parce que sa forme l’exige, mais un repli `flex-row` se signale.
+- Une propriété Figma que le schéma ne sait pas porter — grille, wrap, position
+  absolue — avertit au lieu de disparaître. `layout` reste publié parce que sa
+  forme l’exige, mais un repli `flex-row` se signale.
+- Une borne de taille est une décision de design, pas une gêne à contourner :
+  `bounds` la publie sur le composant et sur chaque slot. Elle est indépendante
+  du menu de dimensionnement — un axe en `Fill` qu’un `max width` retient est le
+  cas courant — et suit la règle commune, un nombre brut avertit et une variable
+  liée se publie. Le geste demandé est de nommer la borne, jamais de la retirer.
+  Un calque intermédiaire n’en est pas propriétaire et avertit : sa borne retient
+  le contenu, la porter sur le composant dirait autre chose.
 - Un axe publié est documentable. Les axes d’API vivent dans `props`, l’axe
   d’états dans `stateModel` : une règle `@prop` suit cette répartition au lieu
   de la contredire. N’est une faute de frappe que ce que le contrat ne publie

@@ -27,6 +27,10 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 5.3 : les bornes de taille deviennent contractuelles. `bounds` publie
+ * `minWidth`, `maxWidth`, `minHeight` et `maxHeight` sur le composant comme sur
+ * chaque slot, tokenisées. Le contrat cesse de demander qu'on retire du design
+ * ce qu'il ne savait pas écrire : une borne reliée à une variable se publie.
  * 5.2 : un axe de `structure.sizing` peut citer un token. Une dimension figée
  * sans variable reste `stretch` — c'est une taille de maquette — mais celle qui
  * cite une variable est une décision du design system, et le token l'emporte.
@@ -63,7 +67,7 @@ import type { Contract, ContractMeta, ContractProp } from './types';
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '5.2';
+export const CONTRACT_VERSION = '5.3';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
