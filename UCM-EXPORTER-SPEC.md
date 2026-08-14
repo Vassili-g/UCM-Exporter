@@ -44,10 +44,12 @@ du ressort du repository consommateur.
 Les noms de collections et le nombre de niveaux d’alias sont libres. Le moteur
 gère les chaînes profondes et les alias de tous types.
 
-Une convention est nécessaire pour les couleurs de variante : le dernier
-segment du token nomme son rôle de rendu (`background`, `foreground`, `icon`,
-`border` ou `ring`). Les autres rôles sont signalés, car le consommateur ne
-saurait pas les peindre.
+Aucune convention de nommage n'est imposée aux couleurs de variante. Le dernier
+segment du token en est la **clé** ; ce qu'il peint se déduit du calque qui le
+porte, et le contrat le publie dans `rendering.roles`. Un design system qui
+nomme ses rôles (`…/background`, `…/foreground`, `…/icon`, `…/border`,
+`…/ring`) voit sa déclaration l'emporter sur la déduction — c'est le seul moyen
+de distinguer un `ring` d'un `border`.
 
 Le fichier Figma de référence utilise plusieurs niveaux — primitives, marques,
 tokens sémantiques, composants et dimensions — uniquement pour éprouver cette
@@ -93,18 +95,32 @@ boolean, `TEXT` → string. Deux règles auto-détectées :
 
 **2. Tokens de variantes** — après le pré-vol de complétude, parcourir **tous**
 les variants du produit cartésien des axes. Pour chacun, relever les tokens liés (`boundVariables.fills` et
-`.strokes` sur tout le sous-arbre), rangés par **rôle = dernier segment du
+`.strokes` sur tout le sous-arbre), rangés par **clé = dernier segment du
 token**. Un sous-arbre `visible === false` est ignoré, sauf si sa visibilité
 est liée à une prop de composant ou à une variable : il peut alors être rendu
 dans une autre configuration et reste exporté. Un sous-arbre statiquement
 masqué qui portait des variables produit un warning sur sa racine.
-Les rôles rendables sont exactement ceux de `rendering.roles`
-(`background`, `foreground`, `icon`, `border`, `ring`) : un rôle hors de cette liste —
-ou employé sur le mauvais support, tel un `…/border` posé en remplissage —
-donne un contrat valide qu'**aucun consommateur ne saura peindre**, puisqu'un
-rôle inconnu de `rendering.roles` est ignoré au rendu. Le cas produit donc un
-**warning agrégé** : un seul message par rôle fautif, avec son nombre
-d'occurrences et un token en exemple — celui à renommer dans Figma.
+
+La clé **identifie** la couleur ; elle ne dit pas ce qu'elle peint. Ce que la
+couleur peint se lit sur le **calque qui la porte**, jamais sur son nom : un
+`fill` sur un texte est un `foreground`, sur un calque désigné par une règle
+`@icons` un `icon`, ailleurs un `background` ; un `stroke` est un `border`, et
+c'est son `align` — déjà publié sur la feuille — qui dit au consommateur de le
+dessiner en bordure ou en `box-shadow`. Une clé qui ne nomme aucun rôle partagé
+reçoit donc son rendu dans `rendering.roles`, à côté des cinq rôles communs à
+tous les contrats.
+
+Un design system reste libre de nommer ses rôles (`…/background`,
+`…/foreground`, `…/icon`, `…/border`, `…/ring`) : cette **déclaration fait
+autorité** sur la déduction, et c'est le seul moyen de distinguer un `ring` d'un
+`border`. En revanche elle n'est plus exigée — l'exiger était impossible à
+satisfaire dès qu'un variant peint plusieurs surfaces, la feuille n'ayant
+qu'une entrée par clé : six `…/scale-N` renommés `…/background` n'en auraient
+laissé qu'un seul.
+Seul subsiste le **warning agrégé** du rôle déclaré puis employé sur le mauvais
+support — un `…/border` posé en remplissage : le nom et le calque se
+contredisent, et le contrat ne peut pas trancher. Un seul message par rôle
+fautif, avec son nombre d'occurrences et un token en exemple.
 Un rôle n'apparaît que s'il est réellement lié — rien n'est forcé ni inventé.
 Chaque feuille décrit indépendamment l'état visuel complet du variant Figma :
 si un rôle est absent de la feuille d'un état dans `variantTokens` ou
@@ -474,7 +490,12 @@ inexistante → warning (faute de frappe), non bloquant.
 **8. Rendu sémantique & garde-fous** — le contrat publie aussi le mapping
 générique des rôles vers les propriétés de rendu (`background` →
 `background-color`, `foreground` → `color`/`fill`, `border` → couleur et
-largeur de bordure, `ring` → contour extérieur). Pour un rôle avec `fallback`,
+largeur de bordure, `ring` → contour extérieur), **plus une entrée par clé de
+couleur qui ne nomme aucun de ces rôles**, avec le rendu déduit de son calque
+(étape 2). La règle reste sans logique par composant ; seules les clés observées
+changent d'un contrat à l'autre, et un consommateur répond toujours à « comment
+peindre cette clé » par un seul accès à `rendering.roles`.
+Pour un rôle avec `fallback`,
 les `cssProperties` sont le rendu candidat et le `fallback` le rendu
 **recommandé** dès que la fidélité l'exige : un `ring` aligné `outside` se rend
 en `box-shadow` (`0 0 0 <width> <color>`), qui épouse le `border-radius` et se
@@ -505,7 +526,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "5.0",
+    "contractVersion": "5.1",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -854,7 +875,16 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **5.0** : elle rend documentable tout axe que
+La version actuelle du contrat est **5.1** : ce qu'une couleur peint se lit sur
+le calque qui la porte, plus sur le nom de son token. Le dernier segment reste
+la clé de la couleur, et `rendering.roles` publie le rendu de chaque clé qui ne
+nomme aucun rôle partagé. Un composant peut donc peindre plusieurs surfaces sans
+qu'aucun renommage impossible soit demandé au designer. La forme du JSON ne
+change pas et un design system qui nommait déjà ses rôles produit un contrat
+identique ; c'est le consommateur qui doit cesser de présumer les cinq rôles et
+lire `rendering.roles` par clé — d'où la version.
+
+La 5.0 rendait documentable tout axe que
 le contrat publie, et remplaçable toute icône déclarée modifiable. Une règle
 `@prop` visant l'axe `State`/`Status` range sa description dans
 `stateModel.states.<état>.description`, là où le contrat publie déjà cet axe —

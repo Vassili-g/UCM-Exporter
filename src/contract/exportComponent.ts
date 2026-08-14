@@ -20,13 +20,18 @@ import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { mergePropDescriptions } from './mergePropDescriptions';
 export { mergePropDescriptions } from './mergePropDescriptions';
-import { buildStateModel, defaultRenderingSemantics } from './semantics';
+import { buildStateModel, renderingSemanticsFor } from './semantics';
 import { collectTokenReferences, indexVariables, VariableNameResolver } from '../variables';
 import { codeIdentifier } from '../utils';
 import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 5.1 : ce qu'une couleur peint se lit sur le calque qui la porte, plus sur le
+ * nom du token. Le dernier segment reste la CLÉ de la couleur, et
+ * `rendering.roles` publie le rendu de celles qui ne nomment aucun rôle
+ * partagé — un composant peut donc peindre plusieurs surfaces sans qu'aucun
+ * renommage impossible soit demandé au designer.
  * 5.0 : chaque axe publié devient documentable et chaque icône modifiable
  * devient remplaçable. L'axe d'états accueille sa doc dans
  * `stateModel.states.<état>.description`, et `IconProp.visibilityProp` devient
@@ -55,7 +60,7 @@ import type { Contract, ContractMeta, ContractProp } from './types';
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '5.0';
+export const CONTRACT_VERSION = '5.1';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
@@ -304,7 +309,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     props,
     structure: extracted.structure,
     stateModel,
-    rendering: defaultRenderingSemantics(),
+    rendering: renderingSemanticsFor(extracted.discoveredRoles),
     icons,
     textStyles: extracted.textStyles,
     composes,

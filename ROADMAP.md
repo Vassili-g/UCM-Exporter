@@ -31,7 +31,7 @@ uniquement ce qui est déjà intégré et vérifié.
 | Domaine | État |
 |---|---|
 | Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
-| Écriture de la 5.0 | Le moteur l’écrit, personne ne la consomme encore : le corpus et le Playground restent en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button |
+| Écriture de la 5.1 | Le moteur l’écrit, personne ne la consomme encore : le corpus et le Playground restent en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button. Un design system dont chaque couleur nomme son rôle produit un contrat identique — le réexport reste dû pour la 5.0, pas pour la 5.1 |
 | Reconstruction à froid | Menée sur la 4.8. La 4.9 a été absorbée en adaptant les composants et le skill, sans nouvelle reconstruction : le test froid a donc un contrat de retard |
 | Cadre enveloppant une dépendance | Publié comme conteneur : il porte son flux, sa dimension figée et range la dépendance dans `children`. Seul le calque qui EST l’instance porte `composes` |
 | Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma de l’Exporter |
@@ -206,6 +206,16 @@ elle interdit d’ajouter un champ par anticipation. Un nouveau champ de contrat
 se justifie qu’à partir d’une limite réelle, et les conditions d’une extension
 de structure sont posées dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 
+Un composant d’épreuve à plusieurs surfaces peintes — une échelle de six
+échantillons, trois couleurs de texte dans un même cadre — a déjà donné son
+premier résultat, et il portait sur le moteur plutôt que sur le schéma : le rôle
+de rendu était lu sur le nom du token, et le renommage que l’export réclamait
+aurait fait perdre toutes les couleurs d’un variant sauf une. La 5.1 lit
+désormais le calque. Ce que ce composant établit encore comme limite — situer
+chaque surface peinte dans `structure.children` — est consigné dans
+[PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) et n’appelle pas de champ nouveau
+tant qu’un composant du catalogue ne le réclame pas.
+
 **Button** couvre le premier point, **Alert** le quatrième et entame le
 troisième : elle embarque une dépendance — une seule, pas plusieurs — et change
 d’icône selon la sévérité. Restent un composé à plusieurs dépendances, un
@@ -214,9 +224,9 @@ une propriété Figma non couverte.
 
 Avant d’ajouter un composant, la 4.9 doit recevoir sa propre reconstruction à
 froid : le dernier test froid porte sur la 4.8, et le cadre enveloppant une
-dépendance est précisément ce que la 4.9 a changé. La 5.0 attend d’abord un
-réexport Figma d’Alert et de Button — le corpus est la seule preuve que le
-moteur écrit bien ce que la spécification décrit.
+dépendance est précisément ce que la 4.9 a changé. Les 5.0 et 5.1 attendent
+d’abord un réexport Figma d’Alert et de Button — le corpus est la seule preuve
+que le moteur écrit bien ce que la spécification décrit.
 
 Un cas typographique précis reste à éprouver. Button expose
 `size` depuis un wrapper imbriqué, tandis que `variantTypography` suit les axes

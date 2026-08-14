@@ -61,14 +61,20 @@ export async function extractStructure(
   structure: ContractStructure;
   textStyles: Record<string, TextStyleDefinition>;
   iconLayers: IconLayerSummary[];
+  /** Rôle de rendu déduit des clés de couleur qui n'en nomment aucun. */
+  discoveredRoles: Map<string, string>;
   warnings: string[];
 }> {
   const warnings = [...matrixWarnings];
-  const { variantTokens, variantStrokes } = await extractVariantTokens(
+  // Les règles `@icons` sont relevées avant toute extraction : c'est leur
+  // inventaire qui distingue l'encre d'une icône de la surface d'un cadre.
+  const iconTargets = new Set(iconNames);
+  const { variantTokens, variantStrokes, discoveredRoles } = await extractVariantTokens(
     matrix,
     resolver,
     warnings,
     composed,
+    iconTargets,
   );
 
   // Les rôles se relisent sur les arbres terminés, pas pendant l'extraction :
@@ -246,5 +252,5 @@ export async function extractStructure(
     variantTypography: typography.variantTypography,
   };
 
-  return { structure, textStyles: typography.textStyles, iconLayers, warnings };
+  return { structure, textStyles: typography.textStyles, iconLayers, discoveredRoles, warnings };
 }

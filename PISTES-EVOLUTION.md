@@ -65,6 +65,26 @@ le permettrait. Y remédier demanderait de transformer ce champ en chemin, et
 d’adapter `iconSlotsByLayer` ainsi que le garde-fou qui vérifie que le slot cité
 existe. À faire le jour où un design réel présentera ce cas.
 
+### Situer chaque surface peinte d’un variant
+
+Depuis la 5.1, une couleur dont le token ne nomme aucun rôle reçoit son rendu
+dans `rendering.roles` : un consommateur sait **comment** la peindre. Il ne sait
+toujours pas **où**. La feuille d’un variant range les couleurs par clé, à plat,
+sans lien vers `structure.children` — et `assignSlots` ne nomme que les enfants
+directs du node de layout, si bien qu’un cadre contenant six échantillons
+n’expose qu’un slot pour les six.
+
+Le développeur s’en sort : le nom du token le lui dit, ce que
+[CONCEPT.md](./CONCEPT.md) range explicitement sous « accord designer–développeur
+enregistré dans Figma ». Aucun contrôle ne peut en revanche vérifier que le bon
+échantillon a reçu la bonne couleur.
+
+Y remédier suppose d’adresser les couleurs par un chemin de slots, comme le fait
+déjà `variantTypography` — donc que `structure.children` décrive les calques
+peints, donc l’arbre de layout général ci-dessous et sa checklist entière. À
+n’ouvrir que si un composant réel du catalogue le réclame, pas pour un composant
+d’épreuve.
+
 ### Arbre de layout général
 
 `structure.children` décrit les slots nécessaires à une reconstruction
