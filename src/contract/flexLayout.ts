@@ -81,8 +81,8 @@ function childSizing(parent: SceneNode, child: SceneNode): { main: unknown; cros
 }
 
 /**
- * Dimensionnement propre du composant, traduit en valeurs de `width` et
- * `height`.
+ * Dimensionnement du composant lu sur le SEUL menu de Figma, traduit en valeurs
+ * de `width` et `height`.
  *
  * Seul `Hug` est une intention de comportement : il dit que le composant se
  * limite à son contenu, ce que CSS écrit `fit-content`. Une largeur fixe posée
@@ -93,9 +93,11 @@ function childSizing(parent: SceneNode, child: SceneNode): { main: unknown; cros
  * défaut est donc `stretch` : le composant occupe la place que son intégration
  * lui donne.
  *
- * C'est l'inverse de la règle des slots, et pour une raison : un slot vit dans
- * l'auto-layout de ce composant, dont le contrat décrit tout le contexte ; un
- * composant, lui, ne connaît pas son futur parent.
+ * Ce n'est que la moitié de la règle : une dimension figée qui cite une
+ * variable est au contraire une décision du design system, et le token
+ * l'emporte sur ce `stretch`. Cette arbitrage demande de résoudre une liaison,
+ * et vit donc dans `nodeBindings.resolveContainerSizing`, avec celui des slots.
+ * Ce module reste l'autorité sur le vocabulaire CSS, et fournit ici le repli.
  */
 export function containerSizing(node: SceneNode): ContainerSizing {
   const values = asPropertyBag(node);

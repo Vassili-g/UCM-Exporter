@@ -78,9 +78,13 @@ tests/
   dans `size` ; l’absence vaut donc `Hug`, et une dimension figée sans variable
   avertit plutôt que de disparaître. Pour le composant, `structure.sizing` est
   toujours publié, en vocabulaire CSS (`stretch`, `fit-content`) et par
-  propriété (`width`, `height`) : sa taille n’est pas une propriété de flux. Une
-  largeur fixe posée sur un variant présente le component set, elle ne décrit
-  pas le composant, et vaut donc `stretch`.
+  propriété (`width`, `height`) : sa taille n’est pas une propriété de flux.
+- Une dimension figée du composant reliée à une variable publie son token. Ce
+  qui distingue une taille de maquette d’une décision du design system est la
+  liaison, jamais le fait d’être figé : sans variable, la largeur présente le
+  component set et vaut `stretch` ; avec variable, elle décrit le composant et
+  l’emporte. C’est le signal qui vaut partout ailleurs — un nombre brut n’est
+  jamais contractuel, une variable liée l’est toujours.
 - Le node de layout d’un variant s’élit au score, donc en fonction de la racine
   d’où part la recherche. `layoutNodes.ts` en est l’unique autorité, et
   `findLayoutNode` n’y est pas seulement documenté : il y vit. Aucune extraction

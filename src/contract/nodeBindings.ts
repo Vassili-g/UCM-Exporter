@@ -7,8 +7,8 @@
  */
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
-import { fixedDimensions, warnSizeConstraints } from './flexLayout';
-import type { SlotSize } from './types';
+import { containerSizing, fixedDimensions, warnSizeConstraints } from './flexLayout';
+import type { ContainerSizing, SlotSize } from './types';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
 export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;
@@ -28,10 +28,12 @@ export const BINDING_PATTERNS = {
   ],
   // Un carré, pour une icône : les deux côtés doivent citer la MÊME variable.
   slotSize: [['width', 'height']],
-  // Les deux côtés d'un slot, lus séparément : une largeur figée et une hauteur
-  // qui hug est un réglage courant, qu'un groupe conjoint refuserait.
-  slotWidth: [['width']],
-  slotHeight: [['height']],
+  // Les deux côtés lus séparément : une largeur figée et une hauteur qui hug
+  // est un réglage courant, qu'un groupe conjoint refuserait. Ils servent aux
+  // slots comme au composant lui-même — la dimension d'un axe se lit de la même
+  // façon quel que soit le calque qui la porte.
+  width: [['width']],
+  height: [['height']],
   fontSize: [['fontSize']],
   strokeWidth: [
     ['strokeWeight'],
@@ -370,10 +372,10 @@ export async function resolveSlotSize(
   const fixed = fixedDimensions(node);
   const [width, height] = await Promise.all([
     fixed.width
-      ? resolveField(node, BINDING_PATTERNS.slotWidth, 'width', resolver, warnings)
+      ? resolveField(node, BINDING_PATTERNS.width, 'width', resolver, warnings)
       : null,
     fixed.height
-      ? resolveField(node, BINDING_PATTERNS.slotHeight, 'height', resolver, warnings)
+      ? resolveField(node, BINDING_PATTERNS.height, 'height', resolver, warnings)
       : null,
   ]);
 
@@ -383,4 +385,52 @@ export async function resolveSlotSize(
     ...(width ? { width } : {}),
     ...(height ? { height } : {}),
   };
+}
+
+/**
+ * Token d'un axe du composant, relevé seulement là où Figma en porte un.
+ *
+ * La différence avec un slot tient au silence : un axe figé que le designer n'a
+ * relié à aucune variable est une taille de maquette assumée, décrite par le
+ * `stretch` de `containerSizing`, et rien ne manque au contrat. Réclamer une
+ * variable ici avertirait sur presque tous les component sets, dont le cadre
+ * fixe est la norme. Une liaison présente mais irrésolue avertit en revanche
+ * par `resolveField` : le designer a bien désigné une variable, et le contrat
+ * n'a pas su la nommer.
+ */
+async function resolveComponentAxis(
+  node: SceneNode,
+  field: 'width' | 'height',
+  isFixed: boolean,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<string | null> {
+  if (!isFixed) return null;
+  if (!firstVariableAlias(getBinding(node, field))) return null;
+  return resolveField(node, BINDING_PATTERNS[field], field, resolver, warnings);
+}
+
+/**
+ * Dimensionnement du composant, où un token l'emporte sur le menu.
+ *
+ * `containerSizing` lit le menu seul et ramène toute dimension figée à
+ * `stretch`, faute de pouvoir distinguer une taille de maquette d'une décision
+ * de design. La liaison de variable est ce qui les sépare — le même signal que
+ * pour un gap, un padding ou la taille d'un slot : un nombre brut n'est jamais
+ * contractuel, une variable liée l'est toujours. Un axe figé qui cite une
+ * variable publie donc sa référence, et le composant porte enfin la taille que
+ * le design system lui donne, quel que soit le conteneur qui l'accueillera.
+ */
+export async function resolveContainerSizing(
+  node: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<ContainerSizing> {
+  const menu = containerSizing(node);
+  const fixed = fixedDimensions(node);
+  const [width, height] = await Promise.all([
+    resolveComponentAxis(node, 'width', fixed.width, resolver, warnings),
+    resolveComponentAxis(node, 'height', fixed.height, resolver, warnings),
+  ]);
+  return { width: width ?? menu.width, height: height ?? menu.height };
 }

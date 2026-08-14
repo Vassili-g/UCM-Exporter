@@ -809,8 +809,8 @@ test('extractLayout décrit un calque graphique en slot optionnel avec sa visibi
 });
 
 test('le composant publie stretch par défaut, et fit-content sur un Hug', async () => {
-  // Une largeur fixe sur un variant sert à aligner le component set dans
-  // Figma. La publier imposerait cette largeur à toutes les pages qui
+  // Une largeur fixe SANS variable sur un variant sert à aligner le component
+  // set dans Figma. La publier imposerait cette largeur à toutes les pages qui
   // intègrent le composant : le contrat retient donc `stretch`.
   const fixe = {
     type: 'COMPONENT',
@@ -822,10 +822,118 @@ test('le composant publie stretch par défaut, et fit-content sur un Hug', async
     children: [],
     findAll: findAllOn([]),
   } as unknown as ComponentNode;
+  const warnings: string[] = [];
 
-  const layout = await extractLayout(fixe, resolverFor({}), []);
+  const layout = await extractLayout(fixe, resolverFor({}), warnings);
 
   assert.deepEqual(layout.sizing, { width: 'stretch', height: 'fit-content' });
+  // Le contrat ne perd rien en publiant `stretch` : réclamer une variable
+  // avertirait sur presque tous les component sets, dont le cadre fixe est la
+  // norme.
+  assert.ok(!warnings.some((w) => w.includes('width')));
+});
+
+test('une dimension figée du composant reliée à une variable publie son token', async () => {
+  // Une tuile carrée dont le design system nomme le côté : ce n'est plus une
+  // commodité de maquette, c'est une décision que le composant connaît de
+  // lui-même, quel que soit le conteneur qui l'accueillera.
+  const tuile = {
+    type: 'COMPONENT',
+    name: 'TileLink',
+    layoutMode: 'HORIZONTAL',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'FIXED',
+    boundVariables: { width: alias('cote'), height: alias('cote') },
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    tuile,
+    resolverFor({ cote: 'components.tilelink.sizes.tile' }),
+    warnings,
+  );
+
+  assert.deepEqual(layout.sizing, {
+    width: '{components.tilelink.sizes.tile}',
+    height: '{components.tilelink.sizes.tile}',
+  });
+  // Le token entre dans `tokensUsed` comme n'importe quelle référence du
+  // contrat, puisqu'elle s'en dérive.
+  assert.ok(collectTokenReferences(layout).has('{components.tilelink.sizes.tile}'));
+});
+
+test('les deux axes du composant restent indépendants', async () => {
+  // Le menu de dimensionnement fait autorité axe par axe : une hauteur qui hug
+  // ne retire pas la largeur que le design system fixe.
+  const banniere = {
+    type: 'COMPONENT',
+    name: 'Banner',
+    layoutMode: 'HORIZONTAL',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'HUG',
+    boundVariables: { width: alias('largeur') },
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(
+    banniere,
+    resolverFor({ largeur: 'components.banner.sizes.width' }),
+    [],
+  );
+
+  assert.deepEqual(layout.sizing, {
+    width: '{components.banner.sizes.width}',
+    height: 'fit-content',
+  });
+});
+
+test('une liaison résiduelle sur un axe en Hug ou en Fill ne devient pas une taille', async () => {
+  // Une liaison survit au changement de menu dans Figma. La lire ferait publier
+  // une taille que le rendu n'a pas, et contredirait le `fit-content` voisin.
+  const carte = {
+    type: 'COMPONENT',
+    name: 'Card',
+    layoutMode: 'HORIZONTAL',
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'FILL',
+    boundVariables: { width: alias('largeur'), height: alias('hauteur') },
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+
+  const layout = await extractLayout(
+    carte,
+    resolverFor({ largeur: 'layouts.sizes.240', hauteur: 'layouts.sizes.120' }),
+    [],
+  );
+
+  assert.deepEqual(layout.sizing, { width: 'fit-content', height: 'stretch' });
+});
+
+test('une variable introuvable sur une dimension du composant avertit', async () => {
+  // Le silence n'est acquis qu'à l'axe sans liaison. Ici le designer a bien
+  // désigné une variable, et c'est le contrat qui n'a pas su la nommer.
+  const tuile = {
+    type: 'COMPONENT',
+    name: 'TileLink',
+    layoutMode: 'HORIZONTAL',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'HUG',
+    boundVariables: { width: alias('disparue') },
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(tuile, resolverFor({}), warnings);
+
+  assert.deepEqual(layout.sizing, { width: 'stretch', height: 'fit-content' });
+  assert.ok(warnings.some((w) => (
+    w.includes('« TileLink » — width') && w.includes('variable introuvable')
+  )));
 });
 
 test('un composant sans menu de dimensionnement lisible reste en stretch sur les deux axes', async () => {
