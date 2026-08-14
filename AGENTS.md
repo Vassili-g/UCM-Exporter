@@ -78,9 +78,13 @@ tests/
   dans `size` ; l’absence vaut donc `Hug`, et une dimension figée sans variable
   avertit plutôt que de disparaître. Pour le composant, `structure.sizing` est
   toujours publié, en vocabulaire CSS (`stretch`, `fit-content`) et par
-  propriété (`width`, `height`) : sa taille n’est pas une propriété de flux. Une
-  largeur fixe posée sur un variant présente le component set, elle ne décrit
-  pas le composant, et vaut donc `stretch`.
+  propriété (`width`, `height`) : sa taille n’est pas une propriété de flux.
+- Une dimension figée du composant reliée à une variable publie son token. Ce
+  qui distingue une taille de maquette d’une décision du design system est la
+  liaison, jamais le fait d’être figé : sans variable, la largeur présente le
+  component set et vaut `stretch` ; avec variable, elle décrit le composant et
+  l’emporte. C’est le signal qui vaut partout ailleurs — un nombre brut n’est
+  jamais contractuel, une variable liée l’est toujours.
 - Le node de layout d’un variant s’élit au score, donc en fonction de la racine
   d’où part la recherche. `layoutNodes.ts` en est l’unique autorité, et
   `findLayoutNode` n’y est pas seulement documenté : il y vit. Aucune extraction
@@ -92,9 +96,16 @@ tests/
   d’une dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni
   visibilité alors que ses couleurs entrent dans `variantTokens` : il produit
   donc un avertissement.
-- Une propriété Figma que le schéma ne sait pas porter — grille, wrap, bornes
-  min/max, position absolue — avertit au lieu de disparaître. `layout` reste
-  publié parce que sa forme l’exige, mais un repli `flex-row` se signale.
+- Une propriété Figma que le schéma ne sait pas porter — grille, wrap, position
+  absolue — avertit au lieu de disparaître. `layout` reste publié parce que sa
+  forme l’exige, mais un repli `flex-row` se signale.
+- Une borne de taille est une décision de design, pas une gêne à contourner :
+  `bounds` la publie sur le composant et sur chaque slot. Elle est indépendante
+  du menu de dimensionnement — un axe en `Fill` qu’un `max width` retient est le
+  cas courant — et suit la règle commune, un nombre brut avertit et une variable
+  liée se publie. Le geste demandé est de nommer la borne, jamais de la retirer.
+  Un calque intermédiaire n’en est pas propriétaire et avertit : sa borne retient
+  le contenu, la porter sur le composant dirait autre chose.
 - Un axe publié est documentable. Les axes d’API vivent dans `props`, l’axe
   d’états dans `stateModel` : une règle `@prop` suit cette répartition au lieu
   de la contredire. N’est une faute de frappe que ce que le contrat ne publie
@@ -103,6 +114,14 @@ tests/
   une icône s’affiche, la prop runtime dit LAQUELLE rendre : une icône toujours
   visible est modifiable comme une autre, et son absence de booléen ne se
   signale pas.
+- Ce qu’une couleur peint se lit sur le calque qui la porte, jamais sur le nom
+  de son token. Le dernier segment est la CLÉ de la couleur dans la feuille du
+  variant — une identité — et `rendering.roles` publie le rendu de chaque clé
+  qui ne nomme aucun rôle partagé. Un nom qui EST un rôle partagé reste une
+  déclaration du designer et l’emporte : c’est le seul moyen de distinguer un
+  `ring` d’un `border`. Exiger ce nommage était impossible à satisfaire, la
+  feuille n’ayant qu’une entrée par clé : six `…/scale-N` renommés
+  `…/background` n’en auraient laissé qu’un.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours

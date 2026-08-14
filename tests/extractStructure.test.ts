@@ -85,9 +85,11 @@ test('extractStructure ne recopie pas la couleur du label hors de variantTokens'
   ]);
 });
 
-test('extractStructure remonte les warnings de rôle non rendable', async () => {
-  // Un token nommé « …/bg » produit un contrat valide que personne ne peindra :
-  // le contrôle des rôles doit traverser l'orchestrateur jusqu'aux warnings.
+test('extractStructure déduit le rôle d’une clé qui n’en nomme aucun, sans rien signaler', async () => {
+  // Un token nommé « …/bg » ne dit pas ce qu'il peint, mais le calque qui le
+  // porte le dit : un fill sur un cadre est une surface. Demander au designer
+  // de le renommer « background » ne servait à rien, et l'aurait fait perdre
+  // dès qu'un second calque du même variant est peint.
   const reference = {
     type: 'COMPONENT',
     name: 'Color=Primary',
@@ -97,7 +99,7 @@ test('extractStructure remonte les warnings de rôle non rendable', async () => 
     findAll: findAllOn([]),
   } as unknown as ComponentNode;
 
-  const { warnings } = await extractStructure(
+  const { warnings, discoveredRoles } = await extractStructure(
     { axes: ['color'], variants: [{ values: { color: 'primary' }, component: reference }] },
     [],
     null,
@@ -105,7 +107,8 @@ test('extractStructure remonte les warnings de rôle non rendable', async () => 
     resolverFor({ bg: 'components.button.colors.primary.default.bg' }),
   );
 
-  assert.ok(warnings.some((w) => w.includes('son dernier segment « bg » n’indique pas')));
+  assert.deepEqual(discoveredRoles, new Map([['bg', 'background']]));
+  assert.ok(!warnings.some((w) => w.includes('« bg »')));
 });
 
 test('extractStructure conserve les warnings de la matrice de variantes', async () => {

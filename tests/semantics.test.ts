@@ -3,6 +3,8 @@ import test from 'node:test';
 import {
   buildStateModel,
   defaultRenderingSemantics,
+  paintSiteRole,
+  renderingSemanticsFor,
   variantRoleWarnings,
 } from '../src/contract/semantics';
 
@@ -68,13 +70,16 @@ test('variantRoleWarnings reste muet quand tous les rôles sont rendables', () =
   assert.deepEqual(warnings, []);
 });
 
-test('variantRoleWarnings agrège un rôle inconnu en UN seul message, avec un exemple', () => {
-  // Le même calque mal nommé revient dans chaque variante : 3 occurrences ici,
-  // 30 sur un vrai Button. Le journal doit rester lisible.
+test('variantRoleWarnings ne réclame plus qu’une clé nomme son rôle', () => {
+  // Ce message demandait de renommer le token pour qu'il se termine par un
+  // rôle. Le geste était impossible dès qu'un variant peint plusieurs
+  // surfaces : la feuille n'a qu'une entrée par rôle, et six « scale-N »
+  // renommés « background » n'en auraient laissé qu'un. Le rendu se déduit
+  // désormais du calque et se publie dans `rendering.roles`.
   const warnings = variantRoleWarnings(
     {
       primary: {
-        default: { bg: '{c.primary.default.bg}' },
+        default: { bg: '{c.primary.default.bg}', 'scale-1': '{c.primary.default.scale-1}' },
         hover: { bg: '{c.primary.hover.bg}' },
       },
       secondary: {
@@ -84,11 +89,63 @@ test('variantRoleWarnings agrège un rôle inconnu en UN seul message, avec un e
     {},
   );
 
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /^Token \{c\..* : son dernier segment « bg » n’indique pas/);
-  assert.match(warnings[0], /sur 3 layers/);
-  // Le message nomme le geste correctif : les segments attendus dans Figma.
-  assert.match(warnings[0], /background, foreground, icon, border, ring\.$/);
+  assert.deepEqual(warnings, []);
+});
+
+test('renderingSemanticsFor publie le rendu des clés sans rôle, après les rôles partagés', () => {
+  const semantics = renderingSemanticsFor(new Map([
+    ['title', 'foreground'],
+    ['scale-1', 'background'],
+    ['glyph', 'icon'],
+    // Une clé qui nomme déjà un rôle partagé garde le rendu publié pour tous :
+    // deux contrats ne doivent pas diverger sur le sens du même mot.
+    ['border', 'background'],
+  ]));
+
+  // Les cinq rôles partagés d'abord, dans leur ordre fixe, puis les clés
+  // déduites triées : deux exports d'un design inchangé donnent le même JSON.
+  assert.deepEqual(Object.keys(semantics.roles), [
+    'background', 'foreground', 'icon', 'border', 'ring',
+    'glyph', 'scale-1', 'title',
+  ]);
+  assert.deepEqual(semantics.roles['scale-1'], { kind: 'paint', cssProperties: ['background-color'] });
+  assert.deepEqual(semantics.roles.title, { kind: 'paint', cssProperties: ['color', 'fill'] });
+  assert.deepEqual(semantics.roles.border, { kind: 'stroke', cssProperties: ['border-color', 'border-width'] });
+});
+
+test('un design system dont chaque couleur nomme son rôle publie le vocabulaire partagé, inchangé', () => {
+  // Garantie de compatibilité : Alert, Button, TileLink et le corpus n'ont que
+  // des clés qui nomment un rôle. Leur `rendering` ne doit pas bouger d'un
+  // octet, sans quoi ce changement imposerait un réexport Figma.
+  assert.deepEqual(renderingSemanticsFor(new Map()), defaultRenderingSemantics());
+});
+
+test('renderingSemanticsFor range une clé héritée d’Object.prototype comme une autre', () => {
+  // Les clés viennent de Figma. Écrite en affectation simple, une variable
+  // nommée « __proto__ » fixerait le prototype au lieu d'occuper une clé : le
+  // contrat citerait un rendu qu'il ne publie pas.
+  const semantics = renderingSemanticsFor(new Map([['__proto__', 'background']]));
+
+  assert.ok(Object.prototype.hasOwnProperty.call(semantics.roles, '__proto__'));
+  assert.deepEqual(
+    (semantics.roles as Record<string, unknown>).__proto__,
+    { kind: 'paint', cssProperties: ['background-color'] },
+  );
+});
+
+test('paintSiteRole lit le calque, jamais le nom du token', () => {
+  const role = (site: { isStroke?: boolean; isText?: boolean; isIconTarget?: boolean }) =>
+    paintSiteRole({ isStroke: false, isText: false, isIconTarget: false, ...site });
+
+  assert.equal(role({ isText: true }), 'foreground');
+  assert.equal(role({ isIconTarget: true }), 'icon');
+  assert.equal(role({}), 'background');
+  // Un contour se rend en bordure ; c'est `align`, déjà publié sur la feuille,
+  // qui dira au consommateur de le dessiner en box-shadow. Le contrat n'a pas
+  // à deviner un « ring ».
+  assert.equal(role({ isStroke: true }), 'border');
+  // Même priorité que `semanticSlotName` : le texte d'abord, l'icône ensuite.
+  assert.equal(role({ isText: true, isIconTarget: true }), 'foreground');
 });
 
 test('variantRoleWarnings signale un rôle connu employé sur le mauvais support', () => {

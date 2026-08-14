@@ -72,9 +72,17 @@ export async function extractVariantTokens(
   resolver: TokenResolver,
   warnings: string[],
   composed: ComposedInstances = new Map(),
-): Promise<{ variantTokens: VariantTokens; variantStrokes: VariantStrokes }> {
+  iconNames: ReadonlySet<string> = new Set(),
+): Promise<{
+  variantTokens: VariantTokens;
+  variantStrokes: VariantStrokes;
+  /** Rôle de rendu déduit de chaque clé qui n'en nomme aucun, sur toute la matrice. */
+  discoveredRoles: Map<string, string>;
+}> {
   const variantTokens: VariantTokens = {};
   const variantStrokes: VariantStrokes = {};
+  const discoveredRoles = new Map<string, string>();
+  const reportedRoleConflicts = new Set<string>();
   // Un Component Set a toujours au moins un axe, mais on se protège d'une
   // liste vide pour ne jamais perdre un variant en silence.
   const axes = matrix.axes.length > 0 ? matrix.axes : ['variant'];
@@ -87,7 +95,13 @@ export async function extractVariantTokens(
   const collected = await Promise.all(
     matrix.variants.map(async (entry: VariantEntry) => {
       const variantWarnings: string[] = [];
-      const leaf = await getSlotTokens(entry.component, resolver, variantWarnings, composed);
+      const leaf = await getSlotTokens(
+        entry.component,
+        resolver,
+        variantWarnings,
+        composed,
+        iconNames,
+      );
       return { entry, leaf, variantWarnings };
     }),
   );
@@ -104,9 +118,29 @@ export async function extractVariantTokens(
     const values = matrix.axes.length > 0
       ? entry.values
       : { variant: normalizePropValue(entry.component.name) };
+    // Le rôle déduit d'une clé est relevé sur toute la matrice, dans l'ordre
+    // des variants. Le même token posé sur des calques de natures différentes
+    // selon le variant ne peut recevoir qu'un rendu : on garde le premier et on
+    // le dit, plutôt que de laisser l'ordre des promesses trancher en silence.
+    for (const [key, role] of leaf.roles) {
+      const known = discoveredRoles.get(key);
+      if (!known) {
+        discoveredRoles.set(key, role);
+        continue;
+      }
+      // Un seul message par clé : le même calque revient dans chaque variant, et
+      // un Button en a 30.
+      if (known === role || reportedRoleConflicts.has(key)) continue;
+      reportedRoleConflicts.add(key);
+      warnings.push(
+        `Token « ${key} » : il est appliqué à des layers de natures différentes selon les ` +
+          `variants (${known}, ${role}). Le contrat ne peut décrire qu'une façon de le ` +
+          `peindre et retient « ${known} ». Utilisez une variable par nature de layer.`,
+      );
+    }
     insertVariantLeaf(variantTokens, axes, values, leaf.paints, warnings);
     insertVariantLeaf(variantStrokes, axes, values, leaf.strokes, warnings);
   }
 
-  return { variantTokens, variantStrokes };
+  return { variantTokens, variantStrokes, discoveredRoles };
 }
