@@ -385,3 +385,19 @@ test('mergeIconRules refuse une taille absente d’une partie de la matrice', ()
   assert.match(warnings[0], /sa taille change selon les variants/);
   assert.match(warnings[0], /aucune/);
 });
+
+test('une icône homonyme d’Object.prototype n’est pas prise pour un doublon', () => {
+  const warnings: string[] = [];
+
+  const icons = mergeIconRules(
+    {},
+    [layer('constructor')],
+    [{ iconName: 'constructor', policy: 'strict' }],
+    warnings,
+  );
+
+  // L'index littéral rendait `Object` pour cette clé : la règle était écartée
+  // au nom d'une « autre règle » que le composant ne portait pas.
+  assert.deepEqual(Object.keys(icons), ['constructor']);
+  assert.deepEqual(warnings, []);
+});

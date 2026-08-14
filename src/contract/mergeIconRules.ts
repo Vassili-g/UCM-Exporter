@@ -73,7 +73,11 @@ export function mergeIconRules(
   rules: IconRule[],
   warnings: string[],
 ): Record<string, IconDefinition> {
-  const icons: Record<string, IconDefinition> = {};
+  // Les clés viennent du nom Figma du calque d'icône. Une `Map` n'a aucune clé
+  // héritée, là où un objet littéral rendrait `Object` pour une icône nommée
+  // « constructor » : la règle serait écartée sous un avertissement de doublon
+  // qui désigne une autre règle inexistante.
+  const icons = new Map<string, IconDefinition>();
 
   for (const rule of rules) {
     const key = normalizePropKey(rule.iconName);
@@ -90,7 +94,7 @@ export function mergeIconRules(
       );
       continue;
     }
-    if (icons[key]) {
+    if (icons.has(key)) {
       warnings.push(`Règle @icons « ${rule.iconName} » : une autre règle vise déjà un layer au nom équivalent (majuscules et tirets ignorés). Celle-ci est ignorée.`);
       continue;
     }
@@ -115,7 +119,7 @@ export function mergeIconRules(
       ...(visibilityProp ? { visibilityProp } : {}),
       ...(layer.variants.length < layer.totalVariants ? { variants: layer.variants } : {}),
     };
-    icons[key] = icon;
+    icons.set(key, icon);
     if (rule.policy === 'strict') continue;
 
     if (!visibilityProp) {
@@ -153,5 +157,5 @@ export function mergeIconRules(
     icon.runtimeProp = runtimeProp;
   }
 
-  return icons;
+  return Object.fromEntries(icons);
 }

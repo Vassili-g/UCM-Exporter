@@ -320,3 +320,22 @@ test('une valeur d’axe héritée d’Object.prototype reste une clé comme une
   );
   assert.deepEqual(warnings, []);
 });
+
+test('un rôle homonyme d’Object.prototype n’invente pas une collision de fills', async () => {
+  const node = {
+    type: 'RECTANGLE',
+    name: 'Fond',
+    boundVariables: { fills: [colorAlias] },
+    findAll: () => [],
+  } as unknown as ComponentNode;
+  const resolver = { resolve: async () => 'components.button.constructor' };
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(node, resolver, warnings);
+
+  // Un seul fill suffisait : l'accumulateur littéral rendait `Object` pour ce
+  // rôle, le prenait pour une peinture déjà posée, écartait le token et
+  // accusait le designer d'avoir mis deux fills sur un rôle qui n'en a qu'un.
+  assert.deepEqual(tokens.paints, { constructor: '{components.button.constructor}' });
+  assert.deepEqual(warnings, []);
+});

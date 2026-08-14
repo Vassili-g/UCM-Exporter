@@ -45,16 +45,23 @@ async function strokeWidth(
   );
 }
 
-/** Ajoute une peinture en rendant visible toute collision. */
+/**
+ * Ajoute une peinture en rendant visible toute collision.
+ *
+ * Les rôles se lisent sur le dernier segment d'un nom de variable Figma :
+ * l'accumulateur est une `Map`, sans clé héritée. Un objet littéral rendrait
+ * `Object` pour un rôle « constructor », et le token serait écarté sous un
+ * avertissement de collision que rien ne justifie.
+ */
 function setPaintToken(
-  paints: SlotTokens,
+  paints: Map<string, string>,
   role: string,
   token: string,
   node: SceneNode,
   warnings: string[],
 ): void {
-  const existing = paints[role];
-  if (!existing) paints[role] = token;
+  const existing = paints.get(role);
+  if (!existing) paints.set(role, token);
   else if (existing !== token) {
     warnings.push(
       `Layer « ${node.name} » : deux fills visent le même rôle « ${role} ». Seul ` +
@@ -63,17 +70,17 @@ function setPaintToken(
   }
 }
 
-/** Ajoute un contour en rendant visible toute collision. */
+/** Ajoute un contour en rendant visible toute collision. Même `Map` que `setPaintToken`, et pour la même raison. */
 function setStrokeToken(
-  strokes: SlotStrokes,
+  strokes: Map<string, StrokeTokens>,
   role: string,
   value: StrokeTokens,
   node: SceneNode,
   warnings: string[],
 ): void {
-  const existing = strokes[role];
+  const existing = strokes.get(role);
   if (!existing) {
-    strokes[role] = value;
+    strokes.set(role, value);
     return;
   }
   if (existing.color !== value.color || existing.width !== value.width || existing.align !== value.align) {
@@ -123,8 +130,8 @@ export async function getSlotTokens(
     }
   }
 
-  const paints: SlotTokens = {};
-  const strokes: SlotStrokes = {};
+  const paints = new Map<string, string>();
+  const strokes = new Map<string, StrokeTokens>();
   const resolved = await Promise.all(pending.map(async (binding) => ({
     ...binding,
     token: await binding.promise,
@@ -146,5 +153,5 @@ export async function getSlotTokens(
       setPaintToken(paints, role, toRef(binding.token), binding.node, warnings);
     }
   }
-  return { paints, strokes };
+  return { paints: Object.fromEntries(paints), strokes: Object.fromEntries(strokes) };
 }

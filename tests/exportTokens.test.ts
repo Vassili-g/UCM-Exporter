@@ -206,3 +206,45 @@ test('un groupe de tokens hérité d’Object.prototype reste une clé comme une
   assert.equal(({} as Record<string, unknown>).primary, undefined);
   assert.deepEqual(warnings, []);
 });
+
+test('un mode homonyme d’Object.prototype reste une marque exportée', () => {
+  const collection = {
+    id: 'c1', name: 'Brand', defaultModeId: 'm1',
+    modes: [
+      { modeId: 'm1', name: 'constructor' },
+      { modeId: 'm2', name: '__proto__' },
+      { modeId: 'm3', name: 'marque-3' },
+    ],
+  } as unknown as VariableCollection;
+  const variable = {
+    id: 'v1', name: 'color/primary', variableCollectionId: 'c1',
+    resolvedType: 'COLOR', scopes: [],
+    valuesByMode: {
+      m1: { r: 1, g: 0, b: 0, a: 1 },
+      m2: { r: 0, g: 1, b: 0, a: 1 },
+      m3: { r: 0, g: 0, b: 1, a: 1 },
+    },
+  } as unknown as Variable;
+  const warnings: string[] = [];
+
+  const leaf = buildLeaf(variable, collection, {
+    collectionById: new Map([['c1', collection]]),
+    variableById: new Map([['v1', variable]]),
+    pathById: new Map([['v1', 'brand.color.primary']]),
+  }, warnings);
+
+  // L'index littéral tenait « constructor » pour un mode déjà écrit et laissait
+  // « __proto__ » fixer son prototype : deux marques quittaient tokens.json
+  // sans qu'aucun avertissement ne le dise.
+  //
+  // L'attendu se compare par ses clés et son JSON : écrit en littéral,
+  // `{ __proto__: … }` fixerait lui aussi un prototype au lieu d'une clé, et le
+  // test échouerait sur sa propre construction.
+  const modes = (leaf.$extensions as Record<string, unknown>)['com.ucm.modes'];
+  assert.deepEqual(Object.keys(modes as object), ['constructor', '__proto__', 'marque-3']);
+  assert.equal(
+    JSON.stringify(modes),
+    '{"constructor":"#ff0000","__proto__":"#00ff00","marque-3":"#0000ff"}',
+  );
+  assert.deepEqual(warnings, []);
+});
