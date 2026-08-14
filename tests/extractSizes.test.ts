@@ -9,7 +9,19 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractStructure } from '../src/contract/extractStructure';
 import { collectTokenReferences } from '../src/variables';
-import { extractSizeDimensions } from '../src/contract/extractSizes';
+import { extractSizeDimensions, findSizeRepresentatives } from '../src/contract/extractSizes';
+import { electSizeVariantLayoutNodes } from '../src/contract/layoutNodes';
+
+/**
+ * Même élection que la production : `layoutNodes.ts` élit pour les seuls
+ * représentants de tailles, et `extractSizeDimensions` reçoit son résultat.
+ */
+const nodesDeTailles = (componentSet: ComponentSetNode) =>
+  electSizeVariantLayoutNodes(
+    findSizeRepresentatives(componentSet)?.values() ?? [],
+    new Map(),
+    [],
+  );
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
@@ -63,7 +75,7 @@ test('extractSizeDimensions couvre chaque valeur de l’axe de tailles', async (
     children: [variantDeTaille(AXE, 'Big', 'big'), variantDeTaille(AXE, 'Small', 'small')],
   } as unknown as ComponentSetNode;
 
-  const sizes = await extractSizeDimensions(componentSet, resolverFor(TOKENS), []);
+  const sizes = await extractSizeDimensions(componentSet, resolverFor(TOKENS), [], nodesDeTailles(componentSet));
 
   assert.deepEqual(Object.keys(sizes ?? {}), ['big', 'small']);
   assert.deepEqual(sizes?.big, {
@@ -98,6 +110,7 @@ test('les textes ne changent pas la carte des dimensions par taille', async () =
     componentSet,
     resolverFor(TOKENS),
     warnings,
+    nodesDeTailles(componentSet),
   );
 
   assert.equal('fontSize' in (sizes?.big ?? {}), false);
@@ -116,7 +129,7 @@ test('extractSizeDimensions rend null quand aucun axe n’est un axe de tailles'
 
   // Composant à taille unique : le contrat garde seulement les dimensions
   // de référence, sans bloc `sizes` inventé.
-  assert.equal(await extractSizeDimensions(componentSet, resolverFor({}), []), null);
+  assert.equal(await extractSizeDimensions(componentSet, resolverFor({}), [], nodesDeTailles(componentSet)), null);
 });
 
 test('extractSizeDimensions ne relève qu’un représentant par taille', async () => {
@@ -133,7 +146,7 @@ test('extractSizeDimensions ne relève qu’un représentant par taille', async 
     children: [premierBig, secondBig, variantDeTaille(AXE, 'Small', 'small')],
   } as unknown as ComponentSetNode;
 
-  const sizes = await extractSizeDimensions(componentSet, resolverFor(TOKENS), []);
+  const sizes = await extractSizeDimensions(componentSet, resolverFor(TOKENS), [], nodesDeTailles(componentSet));
 
   assert.deepEqual(Object.keys(sizes ?? {}), ['big', 'small']);
   // C'est bien le PREMIER variant rencontré qui fait référence.
@@ -151,7 +164,7 @@ test('extractSizeDimensions détecte l’axe par ses valeurs, quel que soit son 
     children: ['xs', 'sm', 'lg'].map((valeur) => variantDeTaille(axe, valeur, valeur)),
   } as unknown as ComponentSetNode;
 
-  const sizes = await extractSizeDimensions(componentSet, resolverFor({}), []);
+  const sizes = await extractSizeDimensions(componentSet, resolverFor({}), [], nodesDeTailles(componentSet));
 
   assert.deepEqual(Object.keys(sizes ?? {}), ['xs', 'sm', 'lg']);
 });

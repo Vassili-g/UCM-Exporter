@@ -81,10 +81,12 @@ tests/
   largeur fixe posée sur un variant présente le component set, elle ne décrit
   pas le composant, et vaut donc `stretch`.
 - Le node de layout d’un variant s’élit au score, donc en fonction de la racine
-  d’où part la recherche. `layoutNodes.ts` en est l’unique autorité : il élit une
-  fois par variant, avec la même règle pour tous, et les extractions reçoivent
-  son résultat. Une seconde élection ferait décrire trois arbres différents au
-  même contrat — les slots, les icônes et les chemins de la typographie.
+  d’où part la recherche. `layoutNodes.ts` en est l’unique autorité, et
+  `findLayoutNode` n’y est pas seulement documenté : il y vit. Aucune extraction
+  ne choisit le calque qu’elle décrit — toutes reçoivent l’élection, `sizes`
+  comprise, dont les représentants de tailles sont élus avant l’appel. Une
+  seconde élection ferait décrire quatre arbres différents au même contrat : les
+  slots, les icônes, les chemins de la typographie et les dimensions par taille.
 - Ce que l’élection écarte est dit. Un calque posé hors du node élu, ou à côté
   d’une dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni
   visibilité alors que ses couleurs entrent dans `variantTokens` : il produit

@@ -10,7 +10,6 @@
 import type { TokenResolver } from '../variables';
 import { getVariantAxes, getVariantValues } from './componentTree';
 import type { ComposedInstances } from './exportableNodes';
-import { findLayoutNode } from './extractLayout';
 import type { VariantLayoutNodes } from './layoutNodes';
 import { BINDING_PATTERNS, resolveField } from './nodeBindings';
 import { semanticEnumName } from './semantics';
@@ -40,15 +39,12 @@ async function extractDimensions(
   sizeValue: string,
   resolver: TokenResolver,
   warnings: string[],
-  composed: ComposedInstances,
   layoutNodes: VariantLayoutNodes,
 ): Promise<SizeDimensions> {
-  // Quand l'axe de tailles vit sur le set sélectionné, ce composant EST un
-  // variant de la matrice : ses dimensions doivent être lues sur le node que
-  // `structure.children` décrit, pas sur un second élu. Les variants du wrapper,
-  // eux, appartiennent à un autre arbre et élisent le leur.
-  const layoutNode = layoutNodes.get(component)
-    ?? findLayoutNode(component, warnings, composed);
+  // Ce module ne choisit pas le calque dont il lit les dimensions : il le
+  // reçoit. `layoutNodes.ts` a élu pour tous les représentants de tailles, avec
+  // la même règle que pour la matrice. Le repli n'existe que pour le typage.
+  const layoutNode = layoutNodes.get(component) ?? component;
   // Le libellé passé à resolveField sert aux warnings : on précise la taille
   // pour qu'un token manquant soit localisable (ex. « gap (small) »).
   const [gap, paddingX, paddingY, radius] = await Promise.all([
@@ -86,6 +82,34 @@ async function extractDimensions(
 }
 
 /**
+ * Les variants dont le contrat lira les dimensions : un représentant par valeur
+ * de l'axe de tailles. Renvoie null si le set n'a pas d'axe de tailles.
+ *
+ * Un représentant suffit : les dimensions ne varient pas selon les autres axes
+ * (iconLeft/iconRight ne changent pas le padding).
+ *
+ * Exporté parce que l'élection du node de layout appartient à `layoutNodes.ts`,
+ * qui doit savoir POUR QUI élire — et seulement pour eux : élire au-delà ferait
+ * remonter des avertissements sur des variants que le contrat n'ouvre jamais.
+ */
+export function findSizeRepresentatives(
+  componentSet: ComponentSetNode,
+): Map<string, ComponentNode> | null {
+  const components = componentSet.children.filter(
+    (node): node is ComponentNode => node.type === 'COMPONENT',
+  );
+  const sizeAxis = findSizeAxis(componentSet, components);
+  if (!sizeAxis) return null;
+
+  const representatives = new Map<string, ComponentNode>();
+  for (const component of components) {
+    const value = getVariantValues(component)[sizeAxis];
+    if (value && !representatives.has(value)) representatives.set(value, component);
+  }
+  return representatives;
+}
+
+/**
  * Point d'entrée : construit la carte `{ taille → dimensions }` à partir du
  * component set qui porte l'axe de tailles. Renvoie null si cet axe n'existe
  * pas (composant à taille unique) — dans ce cas le contrat garde seulement
@@ -95,30 +119,18 @@ export async function extractSizeDimensions(
   componentSet: ComponentSetNode,
   resolver: TokenResolver,
   warnings: string[],
-  composed: ComposedInstances = new Map(),
-  // Nodes de layout déjà élus pour la matrice (`layoutNodes.ts`) : un variant du
-  // set sélectionné y figure, et ne doit pas être réélu.
-  layoutNodes: VariantLayoutNodes = new Map(),
+  // Nodes de layout élus par `layoutNodes.ts` pour ces représentants. Sans
+  // valeur par défaut : un appelant qui l'oublierait ferait lire les dimensions
+  // sur la racine du variant, et `sizes` décrirait un autre calque que
+  // `structure.children`.
+  layoutNodes: VariantLayoutNodes,
 ): Promise<Record<string, SizeDimensions> | null> {
-  const components = componentSet.children.filter(
-    (node): node is ComponentNode => node.type === 'COMPONENT',
-  );
-  const sizeAxis = findSizeAxis(componentSet, components);
-  if (!sizeAxis) return null;
-
-  // Un représentant par valeur de taille suffit : les dimensions ne varient
-  // pas selon les autres axes (iconLeft/iconRight ne changent pas le padding).
-  const representatives = new Map<string, ComponentNode>();
-  for (const component of components) {
-    const value = getVariantValues(component)[sizeAxis];
-    if (value && !representatives.has(value)) representatives.set(value, component);
-  }
+  const representatives = findSizeRepresentatives(componentSet);
+  if (!representatives) return null;
 
   const sizes: Record<string, SizeDimensions> = {};
   for (const [value, component] of representatives) {
-    sizes[value] = await extractDimensions(
-      component, value, resolver, warnings, composed, layoutNodes,
-    );
+    sizes[value] = await extractDimensions(component, value, resolver, warnings, layoutNodes);
   }
   return sizes;
 }

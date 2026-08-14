@@ -14,10 +14,10 @@ import {
   flexLayoutSignature,
   textStructureSignature,
 } from './extractLayout';
-import { extractSizeDimensions } from './extractSizes';
+import { extractSizeDimensions, findSizeRepresentatives } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
-import { electVariantLayoutNodes } from './layoutNodes';
+import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNodes';
 import { variantRoleWarnings } from './semantics';
 import type { ContractStructure, SizeDimensions, TextStyleDefinition } from './types';
 
@@ -196,9 +196,19 @@ export async function extractStructure(
 
   let sizes: Record<string, SizeDimensions> | null = null;
   for (const owner of sizeAxisOwners) {
-    // `extractSizeDimensions` rend null sans rien signaler quand le set n'a pas
-    // d'axe de tailles : passer au suivant ne produit donc aucun bruit.
-    sizes = await extractSizeDimensions(owner, resolver, warnings, composed, layoutNodes);
+    // Un set sans axe de tailles n'a pas de représentants : on passe au suivant
+    // sans avoir rien élu ni rien signalé.
+    const representatives = findSizeRepresentatives(owner);
+    if (!representatives) continue;
+    // Les variants du wrapper n'appartiennent pas à la matrice et n'ont donc
+    // pas encore de node élu ; ceux du set sélectionné gardent celui de la
+    // matrice. L'élection reste dans `layoutNodes.ts`, ici comme ailleurs.
+    sizes = await extractSizeDimensions(
+      owner,
+      resolver,
+      warnings,
+      electSizeVariantLayoutNodes(representatives.values(), layoutNodes, warnings, composed),
+    );
     if (sizes) break;
   }
 

@@ -18,7 +18,40 @@ import { findWrapperReference } from './componentTree';
 import type { WrapperReference } from './componentTree';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
-import { findLayoutNode } from './extractLayout';
+import { BINDING_PATTERNS, hasCompleteBinding } from './nodeBindings';
+
+/**
+ * Trouve le calque qui porte les dimensions. On compte, pour chaque calque
+ * du sous-arbre, combien de propriétés de layout (gap, paddings, radius)
+ * sont liées à une variable : celui qui en porte le plus est notre
+ * « conteneur de layout ». À défaut, on retombe sur la racine.
+ *
+ * Le résultat dépend de la racine reçue : le score maximal d'un sous-arbre
+ * n'est pas celui de son parent. Cette fonction vit donc dans le module qui
+ * tranche cette racine, et n'est appelée que par les deux élections
+ * ci-dessous : aucune extraction ne choisit le calque qu'elle décrit.
+ */
+export function findLayoutNode(
+  root: SceneNode,
+  warnings: string[] = [],
+  composed: ComposedInstances = new Map(),
+): SceneNode {
+  const dimensions = [
+    BINDING_PATTERNS.gap,
+    BINDING_PATTERNS.paddingX,
+    BINDING_PATTERNS.paddingY,
+    BINDING_PATTERNS.radius,
+  ];
+  const candidates = getAllNodes(root, warnings, composed).map((node) => ({
+    node,
+    score: dimensions.reduce(
+      (total, alternatives) => total + (hasCompleteBinding(node, alternatives) ? 1 : 0),
+      0,
+    ),
+  }));
+  candidates.sort((left, right) => right.score - left.score);
+  return candidates[0]?.score ? candidates[0].node : root;
+}
 
 /**
  * Node de layout retenu pour chaque variant, indexé par le composant lui-même.
@@ -115,5 +148,33 @@ export async function electVariantLayoutNodes(
     nodes.set(variant, findLayoutNode(instance ?? variant, [], composed));
   }
 
+  return nodes;
+}
+
+/**
+ * Complète une élection pour des variants qui n'appartiennent pas à la matrice
+ * — ceux du wrapper de dimensions, quand c'est lui qui porte l'axe de tailles.
+ *
+ * Ces variants-là vivent dans un autre arbre : aucun wrapper ne s'intercale, ils
+ * élisent depuis eux-mêmes. Ceux qui figurent DÉJÀ dans `elected` gardent en
+ * revanche l'élection de la matrice — c'est le cas quand l'axe de tailles vit
+ * sur le set sélectionné, et les réélire ferait décrire à `sizes` un arbre que
+ * `structure.children` ne décrit pas.
+ *
+ * L'appelant ne passe que les variants dont il lira réellement les dimensions :
+ * élire au-delà ferait remonter les avertissements de parcours de calques que
+ * le contrat n'ouvre jamais.
+ */
+export function electSizeVariantLayoutNodes(
+  components: Iterable<ComponentNode>,
+  elected: VariantLayoutNodes,
+  warnings: string[],
+  composed: ComposedInstances = new Map(),
+): VariantLayoutNodes {
+  const nodes = new Map(elected);
+  for (const component of components) {
+    if (nodes.has(component)) continue;
+    nodes.set(component, findLayoutNode(component, warnings, composed));
+  }
   return nodes;
 }

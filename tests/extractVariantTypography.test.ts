@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractVariantTypography, textSlots } from '../src/contract/extractVariantTypography';
-import { findLayoutNode } from '../src/contract/extractLayout';
+import { findLayoutNode } from '../src/contract/layoutNodes';
 import { collectTokenReferences } from '../src/variables';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;

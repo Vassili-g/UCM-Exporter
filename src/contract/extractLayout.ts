@@ -13,7 +13,6 @@ import type { ComposedInstances } from './exportableNodes';
 import {
   BINDING_PATTERNS,
   getBinding,
-  hasCompleteBinding,
   resolveField,
   resolveSlotSize,
 } from './nodeBindings';
@@ -39,38 +38,6 @@ type LayoutStructure = Omit<
   ContractStructure,
   'sizes' | 'variantAxes' | 'variantTokens' | 'variantStrokes' | 'variantTypography'
 >;
-
-/**
- * Trouve le calque qui porte les dimensions. On compte, pour chaque calque
- * du sous-arbre, combien de propriétés de layout (gap, paddings, radius)
- * sont liées à une variable : celui qui en porte le plus est notre
- * « conteneur de layout ». À défaut, on retombe sur la racine.
- *
- * Le résultat dépend de la racine reçue : le score maximal d'un sous-arbre
- * n'est pas celui de son parent. C'est `layoutNodes.ts` qui tranche cette
- * racine, une fois par variant ; ne rappelez pas cette fonction ailleurs.
- */
-export function findLayoutNode(
-  root: SceneNode,
-  warnings: string[] = [],
-  composed: ComposedInstances = new Map(),
-): SceneNode {
-  const dimensions = [
-    BINDING_PATTERNS.gap,
-    BINDING_PATTERNS.paddingX,
-    BINDING_PATTERNS.paddingY,
-    BINDING_PATTERNS.radius,
-  ];
-  const candidates = getAllNodes(root, warnings, composed).map((node) => ({
-    node,
-    score: dimensions.reduce(
-      (total, alternatives) => total + (hasCompleteBinding(node, alternatives) ? 1 : 0),
-      0,
-    ),
-  }));
-  candidates.sort((left, right) => right.score - left.score);
-  return candidates[0]?.score ? candidates[0].node : root;
-}
 
 /** Sens d'un auto-layout Figma applicable, sans valeur inventée pour `NONE` ou `GRID`. */
 function autoLayoutDirection(node: SceneNode): 'flex-row' | 'flex-column' | null {

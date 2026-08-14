@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractIconLayers } from '../src/contract/extractIconLayers';
-import { findLayoutNode } from '../src/contract/extractLayout';
+import { findLayoutNode } from '../src/contract/layoutNodes';
 import { collectTokenReferences } from '../src/variables';
 import { mergeIconRules } from '../src/contract/exportComponent';
 
