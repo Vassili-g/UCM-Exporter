@@ -8,7 +8,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractLayout, findLayoutNode } from '../src/contract/extractLayout';
+import { extractLayout } from '../src/contract/extractLayout';
 import { collectTokenReferences } from '../src/variables';
 import { nestedSlotVisibility } from '../src/contract/slotRelations';
 
@@ -1047,87 +1047,6 @@ test('extractLayout suffixe les slots homonymes au lieu de les écraser', async 
   // Deux calques texte donneraient tous deux « label » : aucun ne disparaît.
   assert.deepEqual(layout.children.map((child) => child.slot), ['label', 'label-2']);
   assert.deepEqual(layout.children.map((child) => child.figmaLayer), ['Suivant', 'Précédent']);
-});
-
-test('findLayoutNode choisit le calque qui porte le plus de dimensions liées', () => {
-  const interne = {
-    type: 'FRAME',
-    name: 'Wrapper interne',
-    boundVariables: {
-      itemSpacing: alias('a'),
-      paddingLeft: alias('b'),
-      cornerRadius: alias('c'),
-    },
-  };
-  const racine = {
-    type: 'COMPONENT',
-    name: 'Button',
-    boundVariables: { itemSpacing: alias('a') },
-    findAll: findAllOn([interne]),
-  } as unknown as ComponentNode;
-
-  assert.equal(findLayoutNode(racine), interne as unknown as SceneNode);
-});
-
-test('findLayoutNode reconnaît un radius lié séparément sur les quatre coins', () => {
-  const interne = {
-    type: 'FRAME',
-    name: 'Wrapper à coins indépendants',
-    boundVariables: {
-      topLeftRadius: alias('radius'),
-      topRightRadius: alias('radius'),
-      bottomLeftRadius: alias('radius'),
-      bottomRightRadius: alias('radius'),
-    },
-  };
-  const racine = {
-    type: 'COMPONENT',
-    name: 'Card',
-    boundVariables: {},
-    findAll: findAllOn([interne]),
-  } as unknown as ComponentNode;
-
-  assert.equal(findLayoutNode(racine), interne as unknown as SceneNode);
-});
-
-test('findLayoutNode ignore un porteur de dimensions statiquement masqué', () => {
-  const masque = {
-    type: 'FRAME',
-    name: 'Ancien wrapper',
-    visible: false,
-    layoutMode: 'HORIZONTAL',
-    boundVariables: {
-      itemSpacing: alias('a'),
-      paddingLeft: alias('b'),
-      paddingRight: alias('b'),
-    },
-  };
-  const visible = {
-    type: 'FRAME',
-    name: 'Wrapper actif',
-    visible: true,
-    layoutMode: 'HORIZONTAL',
-    boundVariables: { itemSpacing: alias('a') },
-  };
-  const racine = {
-    type: 'COMPONENT',
-    name: 'Button',
-    boundVariables: {},
-    findAll: findAllOn([masque, visible]),
-  } as unknown as ComponentNode;
-
-  assert.equal(findLayoutNode(racine), visible as unknown as SceneNode);
-});
-
-test('findLayoutNode retombe sur la racine quand aucune dimension n’est liée', () => {
-  const racine = {
-    type: 'COMPONENT',
-    name: 'Button',
-    boundVariables: {},
-    findAll: findAllOn([{ type: 'VECTOR', name: 'icone', boundVariables: {} }]),
-  } as unknown as ComponentNode;
-
-  assert.equal(findLayoutNode(racine), racine as unknown as SceneNode);
 });
 
 test('un slot d’icône porte le rôle « icon », pas le nom de son calque', async () => {

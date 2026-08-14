@@ -8,12 +8,9 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  extractLayout,
-  findLayoutNode,
-  flexLayoutSignature,
-} from '../src/contract/extractLayout';
+import { extractLayout, flexLayoutSignature } from '../src/contract/extractLayout';
 import { flexItemProperties } from '../src/contract/flexLayout';
+import { findLayoutNode } from '../src/contract/layoutNodes';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
