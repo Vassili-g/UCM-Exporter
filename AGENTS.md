@@ -102,6 +102,9 @@ tests/
   deux paddings, deux dimensions, quatre coins, etc.
 - Une donnée facultative incomplète avertit. Les préconditions explicitement
   définies dans la spécification bloquent.
+- On n’avertit que sur ce qu’on publie. Une valeur que le contrat va jeter —
+  les dimensions du calque de référence quand `sizes` existe — n’est ni
+  relevée ni signalée : le geste demandé au designer ne changerait rien.
 - Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
   geste à faire. Il lui parvient par le corps de la pull request.
 - `tokensUsed` se dérive du contrat terminé ; le relever pendant l’extraction y
