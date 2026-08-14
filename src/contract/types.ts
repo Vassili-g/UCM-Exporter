@@ -106,7 +106,13 @@ export type RenderingRole = {
   fallback?: string;
 };
 
-/** Correspondance des rôles sémantiques vers le rendu, sans logique par composant. */
+/**
+ * Correspondance des rôles vers le rendu. Les rôles partagés (`background`,
+ * `foreground`, `icon`, `border`, `ring`) sont publiés par tout contrat ; s'y
+ * ajoutent les clés de couleur du composant qui n'en nomment aucun, avec le
+ * rendu déduit du calque qui les porte. La RÈGLE reste sans logique par
+ * composant — seules les clés observées changent d'un contrat à l'autre.
+ */
 export type RenderingSemantics = {
   roles: Record<string, RenderingRole>;
 };
@@ -152,11 +158,25 @@ export type AlignSelf = 'flex-start' | 'center' | 'flex-end' | 'stretch';
  * `stretch`, `flexGrow`), et il ne garde un terme Figma que là où CSS n'a
  * rien à proposer — l'alignement d'un stroke, par exemple. Ici CSS a le mot
  * exact : le consommateur écrit la valeur, il ne la devine pas.
- *
- * Il n'y a pas de troisième terme : une dimension fixe posée dans Figma sert à
- * présenter les variants, elle ne décrit pas le composant.
  */
 export type AxisSizing = 'stretch' | 'fit-content';
+
+/**
+ * Un axe du composant : un comportement CSS, ou la référence du token qui fixe
+ * cette dimension.
+ *
+ * Le troisième terme est une référence `{…}`, et il l'emporte sur les deux
+ * autres. Une dimension figée SANS variable reste une commodité de maquette —
+ * elle aligne les variants d'un component set — et vaut `stretch` ; une
+ * dimension figée qui cite une variable est une décision du design system, que
+ * le composant connaît de lui-même quel que soit son futur conteneur. C'est la
+ * règle des slots, appliquée au composant : un nombre brut n'est jamais
+ * contractuel, une variable liée l'est toujours.
+ *
+ * Le type dégénère structurellement en `string`, comme partout où le contrat
+ * porte une référence de token ; le nom sépare les deux intentions.
+ */
+export type ContainerAxisSizing = AxisSizing | string;
 
 /**
  * Dimensionnement propre du composant, publié sur les deux axes.
@@ -168,8 +188,8 @@ export type AxisSizing = 'stretch' | 'fit-content';
  * `width: stretch`, `width: 100%` ou `flex: 1` selon le contexte d'intégration.
  */
 export type ContainerSizing = {
-  width: AxisSizing;
-  height: AxisSizing;
+  width: ContainerAxisSizing;
+  height: ContainerAxisSizing;
 };
 
 /**
@@ -181,6 +201,26 @@ export type ContainerSizing = {
  * affirmer au contrat une dimension que Figma n'a pas.
  */
 export type SlotSize = string | { width?: string; height?: string };
+
+/**
+ * Bornes de taille, toujours tokenisées.
+ *
+ * Elles sont SÉPARÉES de `size` et de `sizing` parce qu'elles ne répondent pas
+ * à la même question. Le menu de dimensionnement dit quelle place le calque
+ * prend ; une borne dit jusqu'où cette place peut aller. Les deux coexistent :
+ * le cas le plus courant est un calque en `Fill` qu'un `max width` retient,
+ * exactement ce qu'aucune valeur de `size` ne saurait écrire.
+ *
+ * Les clés sont celles de CSS, comme partout ailleurs dans le contrat, et le
+ * consommateur les écrit telles quelles. Une borne absente ne veut pas dire
+ * zéro : elle veut dire que Figma n'en pose aucune sur cet axe.
+ */
+export type SizeBounds = {
+  minWidth?: string;
+  maxWidth?: string;
+  minHeight?: string;
+  maxHeight?: string;
+};
 
 /** Cible imbriquée dont une prop BOOLEAN contrôle la visibilité. */
 export type VisibilityTarget = {
@@ -216,6 +256,12 @@ export type ChildStructure = {
    * il est déjà décrit par l'absence, ou par `flexGrow` / `alignSelf`.
    */
   size?: SlotSize;
+  /**
+   * Bornes de taille du calque, indépendantes de son menu de dimensionnement.
+   * Un slot qui remplit son axe principal peut être retenu par un `max width`,
+   * et le rendre sans lui donnerait une autre maquette.
+   */
+  bounds?: SizeBounds;
   /** Exception d'alignement de ce layer dans l'auto layout de son parent. */
   alignSelf?: AlignSelf;
   /**
@@ -316,8 +362,10 @@ export type StrokeTokens = {
 };
 
 /**
- * Tokens de peinture liés sur UN variant, rangés par rôle. Le rôle est le
- * dernier segment du nom du token : `…default.background` → `background`.
+ * Tokens de peinture liés sur UN variant, rangés par clé. La clé est le dernier
+ * segment du nom du token : `…default.background` → `background`,
+ * `…colors.scale-1` → `scale-1`. Elle IDENTIFIE la couleur ; ce qu'elle peint
+ * se lit dans `rendering.roles`.
  */
 export type SlotTokens = Record<string, string>;
 
@@ -378,6 +426,13 @@ export type ContractStructure = {
    * absence reviendrait à la deviner.
    */
   sizing: ContainerSizing;
+  /**
+   * Bornes de taille du composant lui-même. `sizing` dit comment il occupe la
+   * place qu'on lui donne, ces bornes disent jusqu'où. Facultatives, à la
+   * différence de `sizing` : une absence de borne est une information complète,
+   * là où un comportement absent resterait à deviner.
+   */
+  bounds?: SizeBounds;
   /** Répartition Figma sur l'axe principal, absente hors auto-layout linéaire. */
   justifyContent?: JustifyContent;
   /** Alignement Figma sur l'axe secondaire, absent hors auto-layout linéaire. */

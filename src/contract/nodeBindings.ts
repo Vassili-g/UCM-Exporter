@@ -7,8 +7,8 @@
  */
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
-import { fixedDimensions, warnSizeConstraints } from './flexLayout';
-import type { SlotSize } from './types';
+import { containerSizing, fixedDimensions, sizeBoundFields } from './flexLayout';
+import type { ContainerSizing, SizeBounds, SlotSize } from './types';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
 export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;
@@ -28,10 +28,19 @@ export const BINDING_PATTERNS = {
   ],
   // Un carré, pour une icône : les deux côtés doivent citer la MÊME variable.
   slotSize: [['width', 'height']],
-  // Les deux côtés d'un slot, lus séparément : une largeur figée et une hauteur
-  // qui hug est un réglage courant, qu'un groupe conjoint refuserait.
-  slotWidth: [['width']],
-  slotHeight: [['height']],
+  // Les deux côtés lus séparément : une largeur figée et une hauteur qui hug
+  // est un réglage courant, qu'un groupe conjoint refuserait. Ils servent aux
+  // slots comme au composant lui-même — la dimension d'un axe se lit de la même
+  // façon quel que soit le calque qui la porte.
+  width: [['width']],
+  height: [['height']],
+  // Les quatre bornes, lues chacune pour elle-même : Figma laisse poser un
+  // `max width` sans `min width`, et exiger la paire refuserait le réglage le
+  // plus courant.
+  minWidth: [['minWidth']],
+  maxWidth: [['maxWidth']],
+  minHeight: [['minHeight']],
+  maxHeight: [['maxHeight']],
   fontSize: [['fontSize']],
   strokeWidth: [
     ['strokeWeight'],
@@ -60,6 +69,10 @@ const FIELD_LABELS: Record<string, string> = {
   bottomRightRadius: 'bottom right corner radius',
   width: 'width',
   height: 'height',
+  minWidth: 'min width',
+  maxWidth: 'max width',
+  minHeight: 'min height',
+  maxHeight: 'max height',
   strokeWeight: 'stroke weight',
   strokeTopWeight: 'top stroke weight',
   strokeRightWeight: 'right stroke weight',
@@ -363,17 +376,13 @@ export async function resolveSlotSize(
   resolver: TokenResolver,
   warnings: string[],
 ): Promise<SlotSize | null> {
-  // Relevé ici parce que tout ce qui occupe un slot passe par cette fonction :
-  // une borne min/max est une décision de taille comme une autre, et le contrat
-  // n'a pas de champ où l'écrire.
-  warnSizeConstraints(node, warnings);
   const fixed = fixedDimensions(node);
   const [width, height] = await Promise.all([
     fixed.width
-      ? resolveField(node, BINDING_PATTERNS.slotWidth, 'width', resolver, warnings)
+      ? resolveField(node, BINDING_PATTERNS.width, 'width', resolver, warnings)
       : null,
     fixed.height
-      ? resolveField(node, BINDING_PATTERNS.slotHeight, 'height', resolver, warnings)
+      ? resolveField(node, BINDING_PATTERNS.height, 'height', resolver, warnings)
       : null,
   ]);
 
@@ -383,4 +392,98 @@ export async function resolveSlotSize(
     ...(width ? { width } : {}),
     ...(height ? { height } : {}),
   };
+}
+
+/**
+ * Bornes de taille d'un node, chacune tokenisée ou avertie.
+ *
+ * Une borne n'est pas une taille : elle survit au menu de dimensionnement et
+ * s'applique aussi bien à un axe en `Fill` qu'à un axe figé. Elle est donc lue
+ * inconditionnellement, là où `resolveSlotSize` ne lit que ce que le menu tient
+ * en `Fixed`.
+ *
+ * Le silence, en revanche, suit la même règle que partout : une borne écrite à
+ * la main est une mesure de maquette, une borne reliée à une variable est une
+ * décision du design system. La première avertit — le geste demandé est de
+ * relier la variable, non de retirer la borne : elle appartient au design, et
+ * c'est au contrat de savoir la porter.
+ */
+export async function resolveSizeBounds(
+  node: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<SizeBounds | null> {
+  const fields = sizeBoundFields(node);
+  if (fields.length === 0) return null;
+
+  const bound = fields.filter((field) => Boolean(firstVariableAlias(getBinding(node, field))));
+  const unbound = fields.filter((field) => !bound.includes(field));
+  if (unbound.length > 0) {
+    warnings.push(
+      `Layer « ${node.name} » : il fixe ${unbound.map(fieldLabel).join(', ')} sans variable ` +
+        `Figma. Le contrat ne publie que les bornes reliées à une variable — un nombre écrit à ` +
+        `la main est une mesure de maquette, pas une décision du design system — et le ` +
+        `développeur rendra donc ce layer sans elles. Reliez ces bornes à une variable, puis ` +
+        `réexportez.`,
+    );
+  }
+
+  const references = await Promise.all(
+    bound.map((field) =>
+      resolveField(node, BINDING_PATTERNS[field], fieldLabel(field), resolver, warnings)),
+  );
+  const bounds: SizeBounds = {};
+  bound.forEach((field, index) => {
+    const reference = references[index];
+    if (reference) bounds[field] = reference;
+  });
+  return Object.keys(bounds).length > 0 ? bounds : null;
+}
+
+/**
+ * Token d'un axe du composant, relevé seulement là où Figma en porte un.
+ *
+ * La différence avec un slot tient au silence : un axe figé que le designer n'a
+ * relié à aucune variable est une taille de maquette assumée, décrite par le
+ * `stretch` de `containerSizing`, et rien ne manque au contrat. Réclamer une
+ * variable ici avertirait sur presque tous les component sets, dont le cadre
+ * fixe est la norme. Une liaison présente mais irrésolue avertit en revanche
+ * par `resolveField` : le designer a bien désigné une variable, et le contrat
+ * n'a pas su la nommer.
+ */
+async function resolveComponentAxis(
+  node: SceneNode,
+  field: 'width' | 'height',
+  isFixed: boolean,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<string | null> {
+  if (!isFixed) return null;
+  if (!firstVariableAlias(getBinding(node, field))) return null;
+  return resolveField(node, BINDING_PATTERNS[field], field, resolver, warnings);
+}
+
+/**
+ * Dimensionnement du composant, où un token l'emporte sur le menu.
+ *
+ * `containerSizing` lit le menu seul et ramène toute dimension figée à
+ * `stretch`, faute de pouvoir distinguer une taille de maquette d'une décision
+ * de design. La liaison de variable est ce qui les sépare — le même signal que
+ * pour un gap, un padding ou la taille d'un slot : un nombre brut n'est jamais
+ * contractuel, une variable liée l'est toujours. Un axe figé qui cite une
+ * variable publie donc sa référence, et le composant porte enfin la taille que
+ * le design system lui donne, quel que soit le conteneur qui l'accueillera.
+ */
+export async function resolveContainerSizing(
+  node: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<ContainerSizing> {
+  const menu = containerSizing(node);
+  const fixed = fixedDimensions(node);
+  const [width, height] = await Promise.all([
+    resolveComponentAxis(node, 'width', fixed.width, resolver, warnings),
+    resolveComponentAxis(node, 'height', fixed.height, resolver, warnings),
+  ]);
+  return { width: width ?? menu.width, height: height ?? menu.height };
 }

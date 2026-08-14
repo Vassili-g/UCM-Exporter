@@ -11,6 +11,7 @@ import type {
   AxisSizing,
   ContainerSizing,
   JustifyContent,
+  SizeBounds,
 } from './types';
 
 type FlexContainerProperties = {
@@ -81,8 +82,8 @@ function childSizing(parent: SceneNode, child: SceneNode): { main: unknown; cros
 }
 
 /**
- * Dimensionnement propre du composant, traduit en valeurs de `width` et
- * `height`.
+ * Dimensionnement du composant lu sur le SEUL menu de Figma, traduit en valeurs
+ * de `width` et `height`.
  *
  * Seul `Hug` est une intention de comportement : il dit que le composant se
  * limite à son contenu, ce que CSS écrit `fit-content`. Une largeur fixe posée
@@ -93,9 +94,11 @@ function childSizing(parent: SceneNode, child: SceneNode): { main: unknown; cros
  * défaut est donc `stretch` : le composant occupe la place que son intégration
  * lui donne.
  *
- * C'est l'inverse de la règle des slots, et pour une raison : un slot vit dans
- * l'auto-layout de ce composant, dont le contrat décrit tout le contexte ; un
- * composant, lui, ne connaît pas son futur parent.
+ * Ce n'est que la moitié de la règle : une dimension figée qui cite une
+ * variable est au contraire une décision du design system, et le token
+ * l'emporte sur ce `stretch`. Cette arbitrage demande de résoudre une liaison,
+ * et vit donc dans `nodeBindings.resolveContainerSizing`, avec celui des slots.
+ * Ce module reste l'autorité sur le vocabulaire CSS, et fournit ici le repli.
  */
 export function containerSizing(node: SceneNode): ContainerSizing {
   const values = asPropertyBag(node);
@@ -125,36 +128,29 @@ export function fixedDimensions(node: SceneNode): { width: boolean; height: bool
   };
 }
 
-/** Bornes de taille Figma, avec l'intitulé que le panneau affiche. */
-const SIZE_CONSTRAINTS = [
-  ['minWidth', 'min width'],
-  ['maxWidth', 'max width'],
-  ['minHeight', 'min height'],
-  ['maxHeight', 'max height'],
-] as const;
+/** Les quatre bornes de taille de Figma, dans l'ordre du panneau. */
+export const SIZE_BOUND_FIELDS = [
+  'minWidth',
+  'maxWidth',
+  'minHeight',
+  'maxHeight',
+] as const satisfies ReadonlyArray<keyof SizeBounds>;
 
 /**
- * Signale les bornes de taille que le contrat ne sait pas porter.
+ * Bornes que Figma pose réellement sur ce node.
  *
- * Figma laisse fixer une largeur ou une hauteur minimale et maximale, et un
- * layout un peu riche s'en sert presque toujours. Le contrat n'a aucun champ où
- * les écrire : sans ce message, un layer que la maquette tient entre deux
- * bornes serait rendu sans elles, et personne ne saurait pourquoi le résultat
- * diffère.
+ * Une borne est indépendante du menu de dimensionnement : un calque en `Fill`
+ * qu'un `max width` retient est le cas le plus courant, et l'axe figé n'est pas
+ * une condition. Chaque champ est donc lu seul, sur sa seule présence — Figma
+ * renvoie `null` quand rien n'est posé, jamais la dimension courante.
+ *
+ * Ce module lit le panneau, il ne résout aucune liaison : le token de chaque
+ * borne est l'affaire de `nodeBindings.resolveSizeBounds`, exactement comme
+ * `fixedDimensions` laisse à `resolveSlotSize` le soin de nommer la variable.
  */
-export function warnSizeConstraints(node: SceneNode, warnings: string[]): void {
+export function sizeBoundFields(node: SceneNode): ReadonlyArray<keyof SizeBounds> {
   const values = asPropertyBag(node);
-  const bornes = SIZE_CONSTRAINTS
-    .filter(([field]) => typeof values[field] === 'number')
-    .map(([, label]) => label);
-  if (bornes.length === 0) return;
-
-  warnings.push(
-    `Layer « ${node.name} » : il fixe ${bornes.join(', ')}. Le contrat n'a pas de champ pour ces ` +
-      `bornes, et le développeur rendra donc ce layer sans elles. Retirez-les si le layer doit ` +
-      `se comporter comme le contrat le décrit ; sinon, elles resteront à écrire à la main dans ` +
-      `le code.`,
-  );
+  return SIZE_BOUND_FIELDS.filter((field) => typeof values[field] === 'number');
 }
 
 /**
