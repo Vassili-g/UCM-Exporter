@@ -296,6 +296,27 @@ test('la signature de flux distingue deux dimensions figées différentes', () =
   );
 });
 
+test('la signature de flux distingue deux tailles de composant tokenisées', () => {
+  const tuile = (variable: string) => ({
+    type: 'COMPONENT',
+    name: 'TileLink',
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'CENTER',
+    counterAxisAlignItems: 'CENTER',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'FIXED',
+    boundVariables: { width: alias(variable), height: alias(variable) },
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as SceneNode);
+
+  // `structure.sizing` ne décrit que la référence. Deux variants dont seul le
+  // token de taille diffère doivent donc avertir : le contrat n'a nulle part
+  // où loger la seconde taille.
+  assert.notEqual(flexLayoutSignature(tuile('grande')), flexLayoutSignature(tuile('petite')));
+  assert.equal(flexLayoutSignature(tuile('grande')), flexLayoutSignature(tuile('grande')));
+});
+
 test('la signature de flux descend dans les cadres imbriqués d’une dépendance', () => {
   const actionAlignee = (alignement: string) => {
     const bouton = boutonDependant();

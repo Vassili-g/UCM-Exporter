@@ -13,6 +13,7 @@ import type { ComposedInstances } from './exportableNodes';
 import {
   BINDING_PATTERNS,
   getBinding,
+  resolveContainerSizing,
   resolveField,
   resolveSlotSize,
 } from './nodeBindings';
@@ -527,7 +528,7 @@ export function flexLayoutSignature(
 ): string {
   return JSON.stringify({
     layout: autoLayoutDirection(layoutNode),
-    sizing: containerSizing(component),
+    sizing: containerSizingSignature(component),
     ...flexContainerProperties(layoutNode),
     children: assignSlots(layoutNode, iconNames, [], composed).map(({ child, slot }) => ({
       slot,
@@ -540,6 +541,28 @@ export function flexLayoutSignature(
       ...fixedSizeSignature(child, iconNames),
     })),
   });
+}
+
+/**
+ * Dimensionnement du composant, sous la forme que la signature sait comparer.
+ *
+ * `structure.sizing` ne décrit que le variant de référence, et publie désormais
+ * un token quand un axe figé en cite un. La signature reste synchrone : elle
+ * compare l'IDENTIFIANT de la variable, pas le nom résolu, comme
+ * `fixedSizeSignature` le fait pour les slots. Sans lui, deux variants dont
+ * seule la taille tokenisée diffère passeraient pour identiques et le contrat
+ * publierait celle de la référence en silence.
+ */
+function containerSizingSignature(component: SceneNode): object {
+  const menu = containerSizing(component);
+  const fixed = fixedDimensions(component);
+  const axis = (field: 'width' | 'height') => ({
+    css: menu[field],
+    variable: fixed[field]
+      ? firstVariableAlias(getBinding(component, field))?.id ?? null
+      : null,
+  });
+  return { width: axis('width'), height: axis('height') };
 }
 
 /**
@@ -705,6 +728,11 @@ export async function extractLayout(
     ])
     : [null, null, null, null];
 
+  // Lu sur le composant même quand `sizes` porte les dimensions : la taille du
+  // composant n'est pas une dimension parmi d'autres, c'est la première
+  // décision de qui l'intègre, et `structure.sizing` est toujours publié.
+  const sizing = await resolveContainerSizing(component, resolver, warnings);
+
   const children = await Promise.all(
     assignSlots(layoutNode, iconNames, warnings, composed).map(({ child, slot }) =>
       extractChild(child, slot, layoutNode, resolver, warnings, composed, iconNames)),
@@ -712,7 +740,7 @@ export async function extractLayout(
 
   return {
     layout: layoutDirection(layoutNode),
-    sizing: containerSizing(component),
+    sizing,
     ...flexContainerProperties(layoutNode, warnings),
     gap,
     padding: { x: paddingX, y: paddingY },

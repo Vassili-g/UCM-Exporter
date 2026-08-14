@@ -27,6 +27,9 @@ import type { Contract, ContractMeta, ContractProp } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 5.2 : un axe de `structure.sizing` peut citer un token. Une dimension figée
+ * sans variable reste `stretch` — c'est une taille de maquette — mais celle qui
+ * cite une variable est une décision du design system, et le token l'emporte.
  * 5.1 : ce qu'une couleur peint se lit sur le calque qui la porte, plus sur le
  * nom du token. Le dernier segment reste la CLÉ de la couleur, et
  * `rendering.roles` publie le rendu de celles qui ne nomment aucun rôle
@@ -60,7 +63,7 @@ import type { Contract, ContractMeta, ContractProp } from './types';
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '5.1';
+export const CONTRACT_VERSION = '5.2';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {

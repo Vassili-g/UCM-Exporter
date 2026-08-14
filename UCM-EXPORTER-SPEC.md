@@ -376,24 +376,44 @@ dépendance composée échappe au relevé, sa taille appartenant à son propre
 contrat ; le cadre qui l'enveloppe est un calque de ce contrat-ci et publie la
 sienne.
 
-**Dimensionnement du composant (4.8).** `structure.sizing` publie le
+**Dimensionnement du composant (4.8, 5.2).** `structure.sizing` publie le
 comportement du composant lui-même, en valeurs de `width` et de `height`, et il
 est toujours présent : c'est la première décision de qui l'intègre, et la
 déduire d'une absence reviendrait à la deviner. Le vocabulaire est celui de
-CSS, pas celui du panneau Figma : `Hug` devient `fit-content`, tout le reste
-`stretch`. Une largeur fixe entre dans ce « tout le reste » — elle sert à
-aligner les variants d'un component set dans Figma, et la publier imposerait
-une largeur de maquette à toutes les pages qui intègrent le composant.
+CSS, pas celui du panneau Figma, et chaque axe se lit séparément :
+
+| menu Figma | liaison | valeur publiée |
+| --- | --- | --- |
+| `Hug` | — | `fit-content` |
+| `Fill` | — | `stretch` |
+| `Fixed` | une variable | la référence du token |
+| `Fixed` | aucune | `stretch` |
+
+La dernière ligne est la règle d'origine, devenue le repli : une largeur fixe
+que rien ne nomme sert à aligner les variants d'un component set dans Figma, et
+la publier imposerait une largeur de maquette à toutes les pages qui intègrent
+le composant. **La liaison de variable est ce qui sépare les deux cas** — le
+même signal que pour un gap, un padding ou la taille d'un slot : un nombre brut
+n'est jamais contractuel, une variable liée l'est toujours. Une tuile dont le
+design system nomme le côté n'est pas une commodité de maquette, et le token
+l'emporte donc sur `stretch`.
+
+Un axe en `Hug` ou en `Fill` ne lit aucune liaison : une variable y survivrait
+au changement de menu et publierait une taille que le rendu n'a pas. Un axe
+figé sans variable n'avertit pas non plus — le contrat ne perd rien, `stretch`
+est une lecture assumée, et le réclamer avertirait sur presque tous les
+component sets, dont le cadre fixe est la norme. Une variable désignée mais
+introuvable avertit en revanche, comme partout ailleurs.
 
 `stretch` nomme une intention, « occupe la place donnée » ; la technique
 appartient au développeur, qui écrit `width: stretch`, `width: 100%` ou
 `flex: 1` selon le contexte d'intégration. La clé est la propriété CSS et non
 l'axe Figma, parce que la taille d'un composant n'est pas une propriété de
-flux : il ne connaît pas le conteneur qui l'accueillera. C'est aussi ce qui
-distingue cette règle de celle des slots, qui vivent dans un auto-layout que ce
-contrat décrit entièrement. Le dimensionnement est lu sur le variant, jamais
-sur le wrapper de layout, et comparé sur toute la matrice comme le reste du
-flux.
+flux : il ne connaît pas le conteneur qui l'accueillera. Le dimensionnement est
+lu sur le variant, jamais sur le wrapper de layout, et comparé sur toute la
+matrice comme le reste du flux — la comparaison porte sur l'identifiant de la
+variable, sans quoi deux variants de tailles différentes passeraient pour
+identiques.
 
 Un layer en position `Absolute` est averti et ne reçoit aucune propriété Flex : le
 contrat ne décrit pas encore ses coordonnées. L'avertissement précède la lecture
@@ -875,8 +895,15 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **5.1** : ce qu'une couleur peint se lit sur
-le calque qui la porte, plus sur le nom de son token. Le dernier segment reste
+La version actuelle du contrat est **5.2** : un axe de `structure.sizing` peut
+citer un token. Une dimension figée sans variable reste `stretch` — c'est une
+taille de maquette, et rien ne change pour les composants qui en publiaient
+déjà — mais celle qui cite une variable est une décision du design system, et le
+token l'emporte. Un consommateur qui traitait ce champ comme un enum de deux
+valeurs doit désormais reconnaître une référence `{…}`, d'où la version.
+
+La 5.1 faisait lire sur le calque qui la porte ce qu'une couleur peint, plus sur
+le nom de son token. Le dernier segment reste
 la clé de la couleur, et `rendering.roles` publie le rendu de chaque clé qui ne
 nomme aucun rôle partagé. Un composant peut donc peindre plusieurs surfaces sans
 qu'aucun renommage impossible soit demandé au designer. La forme du JSON ne

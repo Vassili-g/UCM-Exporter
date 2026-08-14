@@ -158,11 +158,25 @@ export type AlignSelf = 'flex-start' | 'center' | 'flex-end' | 'stretch';
  * `stretch`, `flexGrow`), et il ne garde un terme Figma que là où CSS n'a
  * rien à proposer — l'alignement d'un stroke, par exemple. Ici CSS a le mot
  * exact : le consommateur écrit la valeur, il ne la devine pas.
- *
- * Il n'y a pas de troisième terme : une dimension fixe posée dans Figma sert à
- * présenter les variants, elle ne décrit pas le composant.
  */
 export type AxisSizing = 'stretch' | 'fit-content';
+
+/**
+ * Un axe du composant : un comportement CSS, ou la référence du token qui fixe
+ * cette dimension.
+ *
+ * Le troisième terme est une référence `{…}`, et il l'emporte sur les deux
+ * autres. Une dimension figée SANS variable reste une commodité de maquette —
+ * elle aligne les variants d'un component set — et vaut `stretch` ; une
+ * dimension figée qui cite une variable est une décision du design system, que
+ * le composant connaît de lui-même quel que soit son futur conteneur. C'est la
+ * règle des slots, appliquée au composant : un nombre brut n'est jamais
+ * contractuel, une variable liée l'est toujours.
+ *
+ * Le type dégénère structurellement en `string`, comme partout où le contrat
+ * porte une référence de token ; le nom sépare les deux intentions.
+ */
+export type ContainerAxisSizing = AxisSizing | string;
 
 /**
  * Dimensionnement propre du composant, publié sur les deux axes.
@@ -174,8 +188,8 @@ export type AxisSizing = 'stretch' | 'fit-content';
  * `width: stretch`, `width: 100%` ou `flex: 1` selon le contexte d'intégration.
  */
 export type ContainerSizing = {
-  width: AxisSizing;
-  height: AxisSizing;
+  width: ContainerAxisSizing;
+  height: ContainerAxisSizing;
 };
 
 /**
