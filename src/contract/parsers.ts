@@ -33,6 +33,22 @@ export function normalizePropValue(value: string): string {
 }
 
 /**
+ * Lit une prop par son nom sans jamais atteindre le prototype d'`Object`.
+ *
+ * Les noms interrogés viennent de Figma ou du texte libre d'une règle, et
+ * `props` est un objet littéral : demander « constructor » ou « toString » y
+ * obtiendrait une fonction héritée pour réponse, donc une prop que le composant
+ * n'expose pas. Unique autorité sur cette lecture, pour que la précaution ne
+ * dépende pas de la vigilance de chaque appelant.
+ */
+export function propByName(
+  props: Record<string, ContractProp>,
+  name: string,
+): ContractProp | undefined {
+  return Object.prototype.hasOwnProperty.call(props, name) ? props[name] : undefined;
+}
+
+/**
  * Un axe « état » (hover, focus, disabled…) est design-only : il décrit des
  * états d'interaction, pas des choix d'API. Il est exclu des props — seule
  * sa valeur Disable devient une prop booléenne `disabled`. Détecté par le
