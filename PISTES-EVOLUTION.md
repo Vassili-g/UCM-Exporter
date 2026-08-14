@@ -117,9 +117,12 @@ champ du contrat reste vide en conséquence — puis il aplatit tout cela en une
 phrase. Les consommateurs doivent alors redéduire ce savoir, et s’en tirent
 mal : une référence du code absente du contrat peut venir d’une migration de
 tokens comme d’une propriété non exportée, et rien ne permet de trancher. Le
-Playground contourne ce manque en n’affirmant plus de cause dès que l’export a
-signalé quelque chose, et en reconnaissant à son texte le seul avertissement
-que personne ne peut lever (le lien Figma).
+Playground contourne ce manque sans deviner : il énonce ce qu’il possède —
+l’écart contrat ↔ code, et le voisinage de la référence orpheline, une
+migration emportant un groupe entier là où une variable déliée n’emporte qu’une
+feuille — puis renvoie aux mots de l’export au lieu d’en reconstituer la cause.
+Il reconnaît aussi à son texte le seul avertissement que personne ne peut lever
+(le lien Figma).
 
 Une forme structurée — `code`, `severity`, `figma.{variantName, layerName,
 nodeId}`, et le `contractPath` resté vide — rendrait la corrélation exacte et
