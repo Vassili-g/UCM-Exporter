@@ -65,6 +65,36 @@ le permettrait. Y remédier demanderait de transformer ce champ en chemin, et
 d’adapter `iconSlotsByLayer` ainsi que le garde-fou qui vérifie que le slot cité
 existe. À faire le jour où un design réel présentera ce cas.
 
+### Arbre de layout général
+
+`structure.children` décrit les slots nécessaires à une reconstruction
+vérifiable, pas l’arbre Figma : ni grille, ni wrap, ni coordonnées. Les cas que
+cette forme ne sait pas porter avertissent au lieu de disparaître, si bien
+qu’une extension n’a plus à deviner ce qui manque — l’export le nomme, calque
+par calque, dans le corps de la pull request.
+
+Un arbre plus général reste **non engagé**. Il ne pourra être proposé qu’après
+une limite observée sur un composant réel, et avec, dans le même changement :
+
+- une fonction pure unique qui décide si un node est un conteneur contractuel,
+  une feuille, une dépendance composée ou un élément graphique interne ;
+- des gardes d’applicabilité : auto-layout linéaire avant Flex, `WRAP` avant
+  `rowGap`, `GRID` avant les propriétés de grille ;
+- un traitement explicite de `figma.mixed` et des liaisons de texte par plage,
+  qui ne doivent jamais disparaître silencieusement à la sérialisation ;
+- des groupes conservés comme un seul élément de flux, sans les aplatir ;
+- une comparaison de structure sur la matrice entière, une limite de profondeur
+  et des diagnostics adressés au designer ;
+- des chemins de slots définis en même temps que les validateurs du Playground,
+  les icônes et la composition ;
+- une migration de version et un réexport Figma des fixtures.
+
+Les propriétés candidates sont `textCase`, `textDecoration`, un padding par
+côté — le contrat groupe aujourd’hui `padding.x` et `padding.y` —, le wrap et
+la grille. Elles ne deviennent pas des champs du contrat tant qu’un composant
+réel n’établit pas leur propriétaire, leur forme et leur comportement en cas de
+donnée facultative incomplète.
+
 ### Liaison explicite avec l’implémentation
 
 La convention de co-localisation suffit au prototype. À plus grande échelle,
