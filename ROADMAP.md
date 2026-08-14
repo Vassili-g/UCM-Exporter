@@ -30,9 +30,10 @@ uniquement ce qui est déjà intégré et vérifié.
 
 | Domaine | État |
 |---|---|
-| Export des contrats 4.2 à 4.9 | 4.8 consommée : contrats Figma Alert et Button fusionnés dans le Playground et reconstruits à froid. Le moteur écrit la 4.9, qui attend un premier réexport |
-| Cadre enveloppant une dépendance | Publié comme conteneur depuis la 4.9 : le test froid 4.8 avait rendu le Button à la place de son calque « Action », faute de flux sur ce slot |
-| Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma 4.4 de l’Exporter |
+| Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
+| Reconstruction à froid | Menée sur la 4.8. La 4.9 a été absorbée en adaptant les composants et le skill, sans nouvelle reconstruction : le test froid a donc un contrat de retard |
+| Cadre enveloppant une dépendance | Publié comme conteneur : il porte son flux, sa dimension figée et range la dépendance dans `children`. Seul le calque qui EST l’instance porte `composes` |
+| Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma de l’Exporter |
 | Export DTCG avec alias et modes | Opérationnel |
 | Téléchargement local et dépôt par PR GitHub | Opérationnel |
 | Validation des contrats, de la forme des props et des références de tokens | Opérationnelle |
@@ -43,25 +44,28 @@ uniquement ce qui est déjà intégré et vérifié.
 | Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
 | Tokens du code vérifiés contre leur contrat | Opérationnelle |
-| CI des deux repositories | Tests, builds et contrôle complet du Playground verts avec les contrats 4.7 |
+| CI des deux repositories | Verts avec les contrats 4.9 : 210 tests, typecheck et build côté Exporter ; 102 tests et `npm run check` complet côté Playground |
 | Rapport unique destiné au développeur | Opérationnel : `check.mjs` enchaîne les contrôles sans s’arrêter au premier échec, `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
 | Références de tokens du code | Opérationnelles : chemins assemblés et tokens absents du contrat sont bloquants ; audit visuel navigateur hors périmètre |
 | Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
-| Composants du consommateur | Button et Alert reconstruits à froid contre leurs contrats 4.6, typographies et références littérales vérifiées ; leurs tests suivent les contrats 4.7 |
+| Composants du consommateur | Button et Alert conformes à leurs contrats 4.9 : `check-contract` vérifie 39 références Alert et 254 références Button, avec parité et tokens du code |
 | Validation multi-composants | Partielle |
 | JSON Schema public | Non commencé |
 | Multi-marque au runtime | Modes exportés, consommation non implémentée |
 
 Le projet est un **prototype avancé** dont l’outillage tient : la chaîne
-Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 4.7, et les deux
-repositories construisent et se testent. Alert et Button appliquent désormais
-les text styles exportés à leurs vrais slots texte ; les tests relisent les cinq
-propriétés typographiques et la totalité des références déclarées. Le flux Flex ne prétend pas
-couvrir grille, wrap ni positionnement absolu. Le **dimensionnement**, lui, est
-complet : l'absence d'une dimension sur un slot vaut `fit-content`, puisqu'un
-remplissage se publie et qu'une dimension figée cite une variable ou avertit ;
-et le composant publie toujours son propre comportement, en valeurs de `width`
-et de `height`.
+Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 4.9, et les deux
+repositories construisent et se testent. Alert et Button appliquent les text
+styles exportés à leurs vrais slots texte ; les tests relisent les cinq
+propriétés typographiques — `fontFamily`, `fontSize`, `fontWeight`,
+`lineHeight`, `letterSpacing` — et la totalité des références déclarées. Le flux
+Flex ne prétend pas couvrir grille, wrap ni positionnement absolu — mais il ne
+les tait plus : chacun de ces cas, comme les bornes min/max et les calques
+écartés par l'élection du node de layout, produit son avertissement. Le
+**dimensionnement**, lui, est complet : l'absence d'une dimension sur un slot
+vaut `fit-content`, puisqu'un remplissage se publie et qu'une dimension figée
+cite une variable ou avertit ; et le composant publie toujours son propre
+comportement, en valeurs de `width` et de `height`.
 
 Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
 **détection** et non comme **prévention** : rien n’empêche la fusion d’une pull
@@ -69,6 +73,17 @@ request rouge. Et la confiance n’est pas acquise : un composant peut rendre
 juste tout en échappant à la comparaison avec son contrat.
 
 ## Fragilités connues
+
+### Une dépendance dont les règles vivent sur une autre page
+
+Un composant est reconnu comme unifié parce qu'un conteneur `<Nom>-Rules` existe
+**sur la page courante**. Une dépendance dont ce conteneur vit ailleurs n'est
+donc pas reconnue : ses calques, ses textes et ses couleurs sont décrits par le
+contrat du parent au lieu d'être déclarés dans `composes`, et rien ne le
+signale. La convention « une page par composant » est courante ; tant que cette
+limite tient, un composant et les composants qu'il embarque doivent partager
+leur page. Lever la limite suppose `figma.loadAllPagesAsync()`, dont le coût sur
+un gros fichier reste à mesurer.
 
 ### Les contrôles détectent, mais n’empêchent rien
 
@@ -122,11 +137,15 @@ références de tokens avant de composer un diagnostic unique. Chaque constat
 nomme son propriétaire, le fichier concerné et le geste correctif.
 
 La chaîne globale `npm run check` ne s'arrête pas au premier échec :
-`check.mjs` exécute les tests, les tokens puis `check-contract`, et lui
-transmet les tests en échec pour qu'ils figurent dans le même rapport. La règle
-qu'elle sert : **tout contrôle qui refuse une fusion laisse un message au
-designer**, y compris les sorties anticipées du garde-fou et l'échec de la
-construction, que le workflow ajoute au rapport.
+`check.mjs` exécute les tests, les tokens, `check-contract` puis la génération
+des types, et transmet les tests en échec à `check-contract` pour qu'ils
+figurent dans le même rapport. La règle qu'elle sert : **tout contrôle qui
+refuse une fusion laisse un message au designer**, y compris les sorties
+anticipées du garde-fou et l'échec de la construction, que le workflow ajoute au
+rapport.
+
+Cette chaîne n'inclut pas `tsc --noEmit`, qui vit dans `npm run build` : un
+`check` vert en local peut donc devenir rouge en CI sur une erreur de type.
 
 Un constat porte : contrôle, propriétaire, gravité, fichier, ligne, ce qui ne va
 pas, quoi faire.
@@ -147,7 +166,11 @@ que le navigateur ignore sans erreur.
 
 Les tests pilotés par le contrat relisent le contrat à chaque exécution. C’est
 ce qui fait d’eux le contrôle central : ils signalent une donnée du contrat
-figée dans le code au moment où elle devient un écart réel.
+figée dans le code au moment où elle devient un écart réel. Ils sont écrits à la
+main, un fichier par composant — `Alert.test.tsx` et `Button.test.tsx` — donc
+hors de la règle « aucun contrôle ne connaît le nom d’un composant ». Rendre
+cette vérification générique fait l’objet d’une proposition non décidée,
+[PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md).
 
 ### Suite ciblée
 
@@ -171,17 +194,28 @@ pas pour leur nombre :
 - un composant simple avec plusieurs axes ;
 - un composant interactif avec booléens et états ;
 - un composant composé avec plusieurs dépendances ;
-- un composant dont la structure ou les icônes changent selon les variantes.
+- un composant dont la structure ou les icônes changent selon les variantes ;
+- un composant qui emploie réellement wrap, une grille, un padding asymétrique
+  ou une propriété typographique non couverte.
 
-Chaque cas doit révéler soit que le modèle suffit, soit une limite précise. Un
-nouveau champ de contrat ne se justifie qu’à partir d’une limite réelle.
+Pour chaque cas, relever uniquement une décision qu’un agent ne peut pas prendre
+depuis le contrat : node Figma concerné, propriété manquante, effet visuel et
+propriété minimale qui la fermerait. L’absence d’écart est aussi un résultat :
+elle interdit d’ajouter un champ par anticipation. Un nouveau champ de contrat ne
+se justifie qu’à partir d’une limite réelle, et les conditions d’une extension
+de structure sont posées dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 
-**Alert** couvre le dernier point et entame l’avant-dernier : elle embarque une
-dépendance — une seule, pas plusieurs — et change d’icône selon la sévérité.
-Restent un composé à plusieurs dépendances et un composant interactif à booléens
-(Checkbox, TextField).
+**Button** couvre le premier point, **Alert** le quatrième et entame le
+troisième : elle embarque une dépendance — une seule, pas plusieurs — et change
+d’icône selon la sévérité. Restent un composé à plusieurs dépendances, un
+composant interactif à booléens (Checkbox, TextField) et un composant qui expose
+une propriété Figma non couverte.
 
-La validation 4.6 laisse un cas typographique précis à éprouver. Button expose
+Avant d’ajouter un composant, la 4.9 doit recevoir sa propre reconstruction à
+froid : le dernier test froid porte sur la 4.8, et le cadre enveloppant une
+dépendance est précisément ce que la 4.9 a changé.
+
+Un cas typographique précis reste à éprouver. Button expose
 `size` depuis un wrapper imbriqué, tandis que `variantTypography` suit les axes
 du Component Set principal. Le contrat actuel est complet parce que toutes les
 tailles utilisent réellement `Label/Large`, mais il ne démontre pas le cas où

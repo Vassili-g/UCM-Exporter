@@ -75,17 +75,21 @@ Chaque document a un rôle unique :
 - [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md) — comportement exact du plugin
   et format actuel des sorties ;
 - [ROADMAP.md](./ROADMAP.md) — maturité, limites et prochaines validations ;
-- [PLAN-STRUCTURE-PROFONDE.md](./PLAN-STRUCTURE-PROFONDE.md) — décisions
-  validées et conditions d’une future extension de structure ou de layout ;
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
-- [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — options non engagées ;
+- [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — options non engagées, dont les
+  conditions d’une future extension de structure ou de layout ;
+- [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) — proposition, aucune
+  décision prise : rendre générique la vérification de rendu du repository
+  consommateur ;
 - [AGENTS.md](./AGENTS.md) — guide opérationnel pour contribuer avec un agent ;
 - [UCM Playground](https://github.com/Vassili-g/UCM-Playground) — consommateur
   de référence des artefacts.
 
 ## État
 
-Le pipeline est opérationnel sur un composant simple et un premier contrat
-composé. Les protections principales sont testées, mais la généricité reste à
+Le moteur écrit la version **4.9** du contrat. Le pipeline est opérationnel sur
+un composant simple et un premier contrat composé : Button et Alert sont
+exportés en 4.9, consommés par le Playground et vérifiés par sa chaîne de
+contrôles. Les protections principales sont testées, mais la généricité reste à
 valider sur plusieurs familles de composants avant toute industrialisation.
 Voir [ROADMAP.md](./ROADMAP.md) pour le périmètre de validation.
