@@ -7,8 +7,8 @@
  */
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
-import { containerSizing, fixedDimensions, warnSizeConstraints } from './flexLayout';
-import type { ContainerSizing, SlotSize } from './types';
+import { containerSizing, fixedDimensions, sizeBoundFields } from './flexLayout';
+import type { ContainerSizing, SizeBounds, SlotSize } from './types';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
 export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;
@@ -34,6 +34,13 @@ export const BINDING_PATTERNS = {
   // façon quel que soit le calque qui la porte.
   width: [['width']],
   height: [['height']],
+  // Les quatre bornes, lues chacune pour elle-même : Figma laisse poser un
+  // `max width` sans `min width`, et exiger la paire refuserait le réglage le
+  // plus courant.
+  minWidth: [['minWidth']],
+  maxWidth: [['maxWidth']],
+  minHeight: [['minHeight']],
+  maxHeight: [['maxHeight']],
   fontSize: [['fontSize']],
   strokeWidth: [
     ['strokeWeight'],
@@ -62,6 +69,10 @@ const FIELD_LABELS: Record<string, string> = {
   bottomRightRadius: 'bottom right corner radius',
   width: 'width',
   height: 'height',
+  minWidth: 'min width',
+  maxWidth: 'max width',
+  minHeight: 'min height',
+  maxHeight: 'max height',
   strokeWeight: 'stroke weight',
   strokeTopWeight: 'top stroke weight',
   strokeRightWeight: 'right stroke weight',
@@ -365,10 +376,6 @@ export async function resolveSlotSize(
   resolver: TokenResolver,
   warnings: string[],
 ): Promise<SlotSize | null> {
-  // Relevé ici parce que tout ce qui occupe un slot passe par cette fonction :
-  // une borne min/max est une décision de taille comme une autre, et le contrat
-  // n'a pas de champ où l'écrire.
-  warnSizeConstraints(node, warnings);
   const fixed = fixedDimensions(node);
   const [width, height] = await Promise.all([
     fixed.width
@@ -385,6 +392,52 @@ export async function resolveSlotSize(
     ...(width ? { width } : {}),
     ...(height ? { height } : {}),
   };
+}
+
+/**
+ * Bornes de taille d'un node, chacune tokenisée ou avertie.
+ *
+ * Une borne n'est pas une taille : elle survit au menu de dimensionnement et
+ * s'applique aussi bien à un axe en `Fill` qu'à un axe figé. Elle est donc lue
+ * inconditionnellement, là où `resolveSlotSize` ne lit que ce que le menu tient
+ * en `Fixed`.
+ *
+ * Le silence, en revanche, suit la même règle que partout : une borne écrite à
+ * la main est une mesure de maquette, une borne reliée à une variable est une
+ * décision du design system. La première avertit — le geste demandé est de
+ * relier la variable, non de retirer la borne : elle appartient au design, et
+ * c'est au contrat de savoir la porter.
+ */
+export async function resolveSizeBounds(
+  node: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<SizeBounds | null> {
+  const fields = sizeBoundFields(node);
+  if (fields.length === 0) return null;
+
+  const bound = fields.filter((field) => Boolean(firstVariableAlias(getBinding(node, field))));
+  const unbound = fields.filter((field) => !bound.includes(field));
+  if (unbound.length > 0) {
+    warnings.push(
+      `Layer « ${node.name} » : il fixe ${unbound.map(fieldLabel).join(', ')} sans variable ` +
+        `Figma. Le contrat ne publie que les bornes reliées à une variable — un nombre écrit à ` +
+        `la main est une mesure de maquette, pas une décision du design system — et le ` +
+        `développeur rendra donc ce layer sans elles. Reliez ces bornes à une variable, puis ` +
+        `réexportez.`,
+    );
+  }
+
+  const references = await Promise.all(
+    bound.map((field) =>
+      resolveField(node, BINDING_PATTERNS[field], fieldLabel(field), resolver, warnings)),
+  );
+  const bounds: SizeBounds = {};
+  bound.forEach((field, index) => {
+    const reference = references[index];
+    if (reference) bounds[field] = reference;
+  });
+  return Object.keys(bounds).length > 0 ? bounds : null;
 }
 
 /**

@@ -12,9 +12,11 @@ import { getAllNodes, textNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import {
   BINDING_PATTERNS,
+  fieldLabel,
   getBinding,
   resolveContainerSizing,
   resolveField,
+  resolveSizeBounds,
   resolveSlotSize,
 } from './nodeBindings';
 import { normalizePropKey } from './parsers';
@@ -26,12 +28,13 @@ import {
   flexContainerProperties,
   flexItemProperties,
   isLinearAutoLayout,
+  SIZE_BOUND_FIELDS,
+  sizeBoundFields,
 } from './flexLayout';
 import type {
   ChildStructure,
   ComposedDependency,
   ContractStructure,
-  SlotSize,
 } from './types';
 
 /** La partie « layout » de la structure (sans les tokens de variantes). */
@@ -99,6 +102,30 @@ function delegatedTextTargetIds(
     for (const node of getAllNodes(child, [], composed)) delegated.add(node.id);
   }
   return delegated;
+}
+
+/**
+ * Écrit sur un slot tout ce que Figma dit de sa taille : sa dimension figée et
+ * ses bornes.
+ *
+ * Les deux vont ensemble partout où un calque occupe une place dans le flux —
+ * slot direct, part textuelle, cadre de dépendance — et répondent à deux
+ * questions distinctes : quelle place il prend, jusqu'où cette place peut
+ * aller. Les séparer en trois appels recopiés laisserait un jour l'un des trois
+ * sans bornes.
+ */
+async function applySizing(
+  entry: ChildStructure,
+  node: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<void> {
+  const [size, bounds] = await Promise.all([
+    resolveSlotSize(node, resolver, warnings),
+    resolveSizeBounds(node, resolver, warnings),
+  ]);
+  if (size) entry.size = size;
+  if (bounds) entry.bounds = bounds;
 }
 
 /** Applique la visibilité native d'un node à la part exacte qui la porte. */
@@ -173,8 +200,7 @@ async function extractTextBranch(
 
   // Une part est un élément du flux comme un autre : sa dimension figée se
   // relève ici, sinon un titre à largeur imposée passerait pour un hug.
-  const size = await resolveSlotSize(node, resolver, warnings);
-  if (size) entry.size = size;
+  await applySizing(entry, node, resolver, warnings);
 
   if (node.type === 'TEXT') {
     return entry;
@@ -274,10 +300,10 @@ async function describeComposedWrapper(
     );
   }
 
-  // Le cadre est un élément du flux comme un autre : sa dimension figée lui
-  // appartient. Seule celle de l'INSTANCE reste hors de ce contrat.
-  const size = await resolveSlotSize(wrapper, resolver, warnings);
-  if (size) entry.size = size;
+  // Le cadre est un élément du flux comme un autre : sa dimension figée et ses
+  // bornes lui appartiennent. Seules celles de l'INSTANCE restent hors de ce
+  // contrat.
+  await applySizing(entry, wrapper, resolver, warnings);
 
   entry.children = await Promise.all(
     branches.map(({ child, slot }) =>
@@ -454,8 +480,7 @@ async function extractChild(
   // ferait dire à son absence « hug » alors que Figma impose une largeur.
   // Seule la dépendance composée en est exclue, plus haut : sa taille
   // appartient à son propre contrat.
-  const size = await resolveSlotSize(child, resolver, warnings);
-  if (size) entry.size = size;
+  await applySizing(entry, child, resolver, warnings);
 
   return entry;
 }
@@ -538,7 +563,7 @@ export function flexLayoutSignature(
       // passeraient pour identiques et le contrat publierait celui de la
       // référence.
       ...composedWrapperSignature(child, iconNames, composed),
-      ...fixedSizeSignature(child, iconNames),
+      ...slotSizeSignature(child, iconNames),
     })),
   });
 }
@@ -562,7 +587,31 @@ function containerSizingSignature(component: SceneNode): object {
       ? firstVariableAlias(getBinding(component, field))?.id ?? null
       : null,
   });
-  return { width: axis('width'), height: axis('height') };
+  return {
+    width: axis('width'),
+    height: axis('height'),
+    bounds: sizeBoundsSignature(component),
+  };
+}
+
+/**
+ * Bornes d'un node, sous la forme que la signature sait comparer.
+ *
+ * On compare la PRÉSENCE de la borne autant que la variable citée : un variant
+ * qui retire son `max width` publierait sinon celui de la référence, et un
+ * variant qui le relie ailleurs passerait pour identique. La comparaison porte
+ * sur l'identifiant, comme partout dans les signatures, qui restent synchrones.
+ */
+function sizeBoundsSignature(node: SceneNode): object {
+  const posees = sizeBoundFields(node);
+  return Object.fromEntries(
+    SIZE_BOUND_FIELDS.map((field) => [
+      field,
+      posees.includes(field)
+        ? firstVariableAlias(getBinding(node, field))?.id ?? 'sans-variable'
+        : null,
+    ]),
+  );
 }
 
 /**
@@ -597,22 +646,27 @@ function composedWrapperSignature(
 }
 
 /**
- * Dimensions figées d'un slot, réduites aux liaisons que Figma porte.
+ * Dimensions figées et bornes d'un slot, réduites aux liaisons que Figma porte.
  *
- * `structure.children[].size` ne décrit que le variant de référence : une
- * largeur figée qui change ailleurs dans la matrice n'a aucun endroit où vivre
- * dans le schéma. Sans elle dans la signature, le contrat publierait celle de
- * la référence en silence. Les calques d'icônes en sont exclus : `icons.*.size`
- * compare déjà leur taille sur toute la matrice, et deux messages diraient la
- * même chose.
+ * `structure.children[].size` et `.bounds` ne décrivent que le variant de
+ * référence : une largeur figée ou une borne qui change ailleurs dans la
+ * matrice n'a aucun endroit où vivre dans le schéma. Sans elles dans la
+ * signature, le contrat publierait celles de la référence en silence.
+ *
+ * Les calques d'icônes sont exclus de la seule `size` : `icons.*.size` compare
+ * déjà leur taille sur toute la matrice, et deux messages diraient la même
+ * chose. Leurs bornes, elles, restent comparées — aucun champ d'`icons` ne les
+ * porte, et l'exclusion les rendrait muettes.
  */
-function fixedSizeSignature(node: SceneNode, iconNames: ReadonlySet<string>): object {
-  if (isIconLayer(node, iconNames)) return {};
+function slotSizeSignature(node: SceneNode, iconNames: ReadonlySet<string>): object {
+  const bounds = { bounds: sizeBoundsSignature(node) };
+  if (isIconLayer(node, iconNames)) return bounds;
 
   const fixed = fixedDimensions(node);
   const boundVariableId = (field: string) =>
     firstVariableAlias(getBinding(node, field))?.id ?? null;
   return {
+    ...bounds,
     size: {
       width: fixed.width ? boundVariableId('width') : null,
       height: fixed.height ? boundVariableId('height') : null,
@@ -653,6 +707,37 @@ function warnLayersOutsideLayoutNode(
       }
     }
     current = parent;
+  }
+}
+
+/**
+ * Bornes posées sur un calque intermédiaire, entre le composant et ses slots.
+ *
+ * Le contrat n'a que deux propriétaires de bornes : le composant et un slot.
+ * Un wrapper de layout n'est ni l'un ni l'autre — il prête son flux au
+ * composant sans jamais apparaître comme un node — et le `max width` qu'il
+ * porte n'a donc aucun endroit où vivre. Le publier sur le composant serait
+ * pire que le taire : la borne du wrapper retient le CONTENU, pas le cadre.
+ */
+function warnIntermediateBounds(
+  component: SceneNode,
+  layoutNode: SceneNode,
+  warnings: string[],
+): void {
+  let current: SceneNode | null = layoutNode;
+  while (current && current !== component) {
+    const bornes = sizeBoundFields(current);
+    if (bornes.length > 0) {
+      warnings.push(
+        `Layer « ${current.name} » : il fixe ${bornes.map(fieldLabel).join(', ')}, mais il ` +
+          `s'intercale entre le composant et ses slots. Le contrat publie les bornes du ` +
+          `composant et celles de chaque slot, jamais celles d'un layer intermédiaire : le ` +
+          `développeur rendra ce layer sans elles. Portez ces bornes sur le composant ou sur le ` +
+          `slot concerné, puis réexportez.`,
+      );
+    }
+    const parent: BaseNode | null = current.parent;
+    current = parent && 'type' in parent ? (parent as SceneNode) : null;
   }
 }
 
@@ -700,6 +785,7 @@ export async function extractLayout(
   publishDimensions = true,
 ): Promise<LayoutStructure> {
   warnLayersOutsideLayoutNode(component, layoutNode, warnings, composed);
+  warnIntermediateBounds(component, layoutNode, warnings);
   warnMissingDirection(layoutNode, warnings);
   const [gap, paddingX, paddingY, radius] = publishDimensions
     ? await Promise.all([
@@ -728,10 +814,15 @@ export async function extractLayout(
     ])
     : [null, null, null, null];
 
-  // Lu sur le composant même quand `sizes` porte les dimensions : la taille du
+  // Lus sur le composant même quand `sizes` porte les dimensions : la taille du
   // composant n'est pas une dimension parmi d'autres, c'est la première
-  // décision de qui l'intègre, et `structure.sizing` est toujours publié.
-  const sizing = await resolveContainerSizing(component, resolver, warnings);
+  // décision de qui l'intègre, et `structure.sizing` est toujours publié. Ses
+  // bornes disent jusqu'où ce comportement va, et le taire ferait affirmer au
+  // contrat un `stretch` que la maquette retient.
+  const [sizing, bounds] = await Promise.all([
+    resolveContainerSizing(component, resolver, warnings),
+    resolveSizeBounds(component, resolver, warnings),
+  ]);
 
   const children = await Promise.all(
     assignSlots(layoutNode, iconNames, warnings, composed).map(({ child, slot }) =>
@@ -741,6 +832,7 @@ export async function extractLayout(
   return {
     layout: layoutDirection(layoutNode),
     sizing,
+    ...(bounds ? { bounds } : {}),
     ...flexContainerProperties(layoutNode, warnings),
     gap,
     padding: { x: paddingX, y: paddingY },

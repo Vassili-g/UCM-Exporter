@@ -31,7 +31,7 @@ uniquement ce qui est déjà intégré et vérifié.
 | Domaine | État |
 |---|---|
 | Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
-| Écriture de la 5.1 | Le moteur l’écrit, personne ne la consomme encore : le corpus et le Playground restent en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button. Un design system dont chaque couleur nomme son rôle produit un contrat identique — le réexport reste dû pour la 5.0, pas pour la 5.1 |
+| Écriture de la 5.3 | Le moteur l’écrit, personne ne la consomme encore : le corpus et le Playground restent en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button. Les 5.1 et 5.3 sont neutres pour un composant qui nomme déjà ses rôles et ne pose aucune borne — le réexport reste dû pour la 5.0 et la 5.2 |
 | Reconstruction à froid | Menée sur la 4.8. La 4.9 a été absorbée en adaptant les composants et le skill, sans nouvelle reconstruction : le test froid a donc un contrat de retard |
 | Cadre enveloppant une dépendance | Publié comme conteneur : il porte son flux, sa dimension figée et range la dépendance dans `children`. Seul le calque qui EST l’instance porte `composes` |
 | Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma de l’Exporter |
@@ -45,7 +45,7 @@ uniquement ce qui est déjà intégré et vérifié.
 | Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
 | Tokens du code vérifiés contre leur contrat | Opérationnelle |
-| CI des deux repositories | Verts avec les contrats 4.9 : 210 tests, typecheck et build côté Exporter ; 102 tests et `npm run check` complet côté Playground |
+| CI des deux repositories | Verts avec les contrats 4.9, hors les deux tests de corpus ci-dessus : 243 tests, typecheck et build côté Exporter ; 124 tests et `npm run check` complet côté Playground |
 | Rapport unique destiné au développeur | Opérationnel : `check.mjs` enchaîne les contrôles sans s’arrêter au premier échec, `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
 | Références de tokens du code | Opérationnelles : chemins assemblés et tokens absents du contrat sont bloquants ; audit visuel navigateur hors périmètre |
 | Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
@@ -61,12 +61,15 @@ styles exportés à leurs vrais slots texte ; les tests relisent les cinq
 propriétés typographiques — `fontFamily`, `fontSize`, `fontWeight`,
 `lineHeight`, `letterSpacing` — et la totalité des références déclarées. Le flux
 Flex ne prétend pas couvrir grille, wrap ni positionnement absolu — mais il ne
-les tait plus : chacun de ces cas, comme les bornes min/max et les calques
-écartés par l'élection du node de layout, produit son avertissement. Le
+les tait plus : chacun de ces cas, comme les calques écartés par l'élection du
+node de layout, produit son avertissement. Le
 **dimensionnement**, lui, est complet : l'absence d'une dimension sur un slot
 vaut `fit-content`, puisqu'un remplissage se publie et qu'une dimension figée
-cite une variable ou avertit ; et le composant publie toujours son propre
-comportement, en valeurs de `width` et de `height`.
+cite une variable ou avertit ; le composant publie toujours son propre
+comportement, en valeurs de `width` et de `height` ; et les bornes min/max, que
+le contrat demandait naguère de retirer, sont publiées par `bounds` dès qu'une
+variable les nomme. Seules celles d'un calque intermédiaire restent sans
+propriétaire, et avertissent.
 
 Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
 **détection** et non comme **prévention** : rien n’empêche la fusion d’une pull

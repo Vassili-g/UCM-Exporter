@@ -202,6 +202,26 @@ export type ContainerSizing = {
  */
 export type SlotSize = string | { width?: string; height?: string };
 
+/**
+ * Bornes de taille, toujours tokenisées.
+ *
+ * Elles sont SÉPARÉES de `size` et de `sizing` parce qu'elles ne répondent pas
+ * à la même question. Le menu de dimensionnement dit quelle place le calque
+ * prend ; une borne dit jusqu'où cette place peut aller. Les deux coexistent :
+ * le cas le plus courant est un calque en `Fill` qu'un `max width` retient,
+ * exactement ce qu'aucune valeur de `size` ne saurait écrire.
+ *
+ * Les clés sont celles de CSS, comme partout ailleurs dans le contrat, et le
+ * consommateur les écrit telles quelles. Une borne absente ne veut pas dire
+ * zéro : elle veut dire que Figma n'en pose aucune sur cet axe.
+ */
+export type SizeBounds = {
+  minWidth?: string;
+  maxWidth?: string;
+  minHeight?: string;
+  maxHeight?: string;
+};
+
 /** Cible imbriquée dont une prop BOOLEAN contrôle la visibilité. */
 export type VisibilityTarget = {
   /** Prop publique qui montre ou masque uniquement cette cible. */
@@ -236,6 +256,12 @@ export type ChildStructure = {
    * il est déjà décrit par l'absence, ou par `flexGrow` / `alignSelf`.
    */
   size?: SlotSize;
+  /**
+   * Bornes de taille du calque, indépendantes de son menu de dimensionnement.
+   * Un slot qui remplit son axe principal peut être retenu par un `max width`,
+   * et le rendre sans lui donnerait une autre maquette.
+   */
+  bounds?: SizeBounds;
   /** Exception d'alignement de ce layer dans l'auto layout de son parent. */
   alignSelf?: AlignSelf;
   /**
@@ -400,6 +426,13 @@ export type ContractStructure = {
    * absence reviendrait à la deviner.
    */
   sizing: ContainerSizing;
+  /**
+   * Bornes de taille du composant lui-même. `sizing` dit comment il occupe la
+   * place qu'on lui donne, ces bornes disent jusqu'où. Facultatives, à la
+   * différence de `sizing` : une absence de borne est une information complète,
+   * là où un comportement absent resterait à deviner.
+   */
+  bounds?: SizeBounds;
   /** Répartition Figma sur l'axe principal, absente hors auto-layout linéaire. */
   justifyContent?: JustifyContent;
   /** Alignement Figma sur l'axe secondaire, absent hors auto-layout linéaire. */
