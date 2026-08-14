@@ -168,14 +168,18 @@ export function buildLeaf(
   const leaf: DtcgLeaf = { $value: valueForMode(collection.defaultModeId), $type };
 
   if (collection.modes.length > 1) {
-    const modes: Record<string, unknown> = {};
+    // Les noms de modes viennent de Figma. Une `Map` n'a aucune clé héritée, là
+    // où un objet littéral prendrait un mode « constructor » pour un doublon
+    // déjà présent et laisserait « __proto__ » fixer son prototype : une marque
+    // entière quitterait `tokens.json` sans qu'aucun avertissement ne le dise.
+    const modes = new Map<string, unknown>();
     // Premier conservé si deux noms se normalisent pareil ; c'est
     // `modeCollisionWarnings` qui le signale.
     for (const mode of collection.modes) {
       const modeName = normalizeName(mode.name);
-      if (!(modeName in modes)) modes[modeName] = valueForMode(mode.modeId);
+      if (!modes.has(modeName)) modes.set(modeName, valueForMode(mode.modeId));
     }
-    leaf.$extensions = { 'com.ucm.modes': modes };
+    leaf.$extensions = { 'com.ucm.modes': Object.fromEntries(modes) };
   }
 
   return leaf;

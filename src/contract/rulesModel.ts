@@ -44,8 +44,13 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
   const doItems: string[] = [];
   const dontItems: string[] = [];
   const pairs: string[] = [];
-  const propDescriptions: Record<string, Record<string, string>> = {};
-  const booleanDescriptions: Record<string, string> = {};
+  // Les noms de props et les valeurs viennent du texte libre que le designer
+  // écrit dans le layer « prop » — le seul canal réellement ouvert de tout
+  // l'export. Une `Map` n'a aucune clé héritée : avec un objet littéral, une
+  // règle « constructor.foo » lisait `Object`, le trouvait déjà rempli, puis
+  // écrivait sa description SUR la fonction `Object` globale du runtime.
+  const propDescriptions = new Map<string, Map<string, string>>();
+  const booleanDescriptions = new Map<string, string>();
   const iconRules: IconRule[] = [];
 
   for (const entry of entries) {
@@ -70,10 +75,10 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       const propName = normalizePropKey(entry.prop?.trim() ?? '');
       if (!propName) {
         warnings.push('Règle @boolean : le layer « prop » est vide. Écrivez-y le nom de la boolean property du composant, par exemple « icon-left ».');
-      } else if (booleanDescriptions[propName] !== undefined) {
+      } else if (booleanDescriptions.has(propName)) {
         warnings.push(`Règle @boolean « ${propName} » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.`);
       } else {
-        booleanDescriptions[propName] = content;
+        booleanDescriptions.set(propName, content);
       }
     } else if (entry.tag === 'icons') {
       const iconName = entry.iconName?.trim() ?? '';
@@ -99,14 +104,18 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       }
       const propName = normalizePropKey(key.slice(0, separator));
       const value = normalizePropValue(key.slice(separator + 1));
-      if (!propDescriptions[propName]) propDescriptions[propName] = {};
+      let valueDescriptions = propDescriptions.get(propName);
+      if (!valueDescriptions) {
+        valueDescriptions = new Map<string, string>();
+        propDescriptions.set(propName, valueDescriptions);
+      }
       // Deux règles décrivant la même valeur se contredisent : c'est au
       // designer de trancher, pas à l'export d'arbitrer en silence.
-      if (propDescriptions[propName][value] !== undefined) {
+      if (valueDescriptions.has(value)) {
         warnings.push(`Règle @prop « ${propName}.${value} » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.`);
         continue;
       }
-      propDescriptions[propName][value] = content;
+      valueDescriptions.set(value, content);
     }
   }
 
@@ -114,7 +123,16 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
   const intent: Intent | null = hasIntent
     ? { usage, do: doItems, dont: dontItems, pairs }
     : null;
-  return { intent, propDescriptions, booleanDescriptions, iconRules, warnings };
+  return {
+    intent,
+    propDescriptions: Object.fromEntries(
+      Array.from(propDescriptions, ([propName, valueDescriptions]) =>
+        [propName, Object.fromEntries(valueDescriptions)] as const),
+    ),
+    booleanDescriptions: Object.fromEntries(booleanDescriptions),
+    iconRules,
+    warnings,
+  };
 }
 
 /** Indique si au moins une intention, documentation ou règle d'icône existe. */

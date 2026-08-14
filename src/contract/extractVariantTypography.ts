@@ -183,7 +183,12 @@ export async function extractVariantTypography(
   textStyles: Record<string, TextStyleDefinition>;
   variantTypography: VariantTypography;
 }> {
-  const textStyles: Record<string, TextStyleDefinition> = {};
+  // Les clés viennent du nom normalisé d'un text style Figma. Une `Map` n'a
+  // aucune clé héritée : dans un objet littéral, un style nommé « __proto__ »
+  // fixerait le prototype au lieu d'occuper une clé, et `variantTypography`
+  // citerait un style absent de `textStyles`. Même structure que sa jumelle
+  // `styleIdByKey`, qui arbitre déjà les homonymes.
+  const textStyles = new Map<string, TextStyleDefinition>();
   const styleIdByKey = new Map<string, string>();
   const styleCache = new Map<string, Promise<LoadedStyle | null>>();
   const variantTypography: VariantTypography = {};
@@ -220,7 +225,7 @@ export async function extractVariantTypography(
         continue;
       }
       styleIdByKey.set(loaded.key, loaded.id);
-      textStyles[loaded.key] = loaded.definition;
+      textStyles.set(loaded.key, loaded.definition);
       uses.push({ slotPath, style: loaded.key });
     }
 
@@ -230,5 +235,5 @@ export async function extractVariantTypography(
     insertVariantLeaf(variantTypography, axes, values, uses, warnings);
   }
 
-  return { textStyles, variantTypography };
+  return { textStyles: Object.fromEntries(textStyles), variantTypography };
 }

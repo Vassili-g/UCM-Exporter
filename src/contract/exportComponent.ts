@@ -132,7 +132,10 @@ function mergeWrapperProps(
   warnings: string[],
 ): void {
   for (const [key, prop] of Object.entries(wrapperProps)) {
-    if (key in props) {
+    // En propriété propre : `key in props` répondrait vrai pour une component
+    // property nommée « constructor », et le wrapper perdrait sa prop sous un
+    // avertissement de collision avec une prop que le composant n'expose pas.
+    if (Object.prototype.hasOwnProperty.call(props, key)) {
       warnings.push(
         `Component property « ${key} » : le composant imbriqué qui porte les dimensions et ` +
           `le component set sélectionné l’exposent tous les deux. Seule celle du component ` +

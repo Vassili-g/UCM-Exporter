@@ -120,3 +120,33 @@ test('defaultRenderingSemantics publie le vocabulaire de rendu partagé', () => 
     },
   });
 });
+
+test('un état homonyme d’Object.prototype reste un état comme un autre', () => {
+  const warnings: string[] = [];
+  const model = buildStateModel(
+    ['state'],
+    [{ state: 'default' }, { state: 'constructor' }, { state: '__proto__' }],
+    warnings,
+  );
+
+  // « __proto__ » fixait le prototype de `states` au lieu d'y occuper une clé,
+  // alors que `precedence` se construit depuis les valeurs : le contrat citait
+  // un état qu'il ne décrivait nulle part.
+  assert.deepEqual(Object.keys(model!.states), ['default', 'constructor', '__proto__']);
+  assert.deepEqual(
+    model!.precedence.filter(
+      (state) => !Object.prototype.hasOwnProperty.call(model!.states, state),
+    ),
+    [],
+    'precedence ne doit citer aucun état absent de states',
+  );
+
+  // « constructor » appartient à Object.prototype : la lecture du déclencheur
+  // le tenait pour inconnu (déclencheur nul) pendant que l'avertissement le
+  // tenait pour connu, et le designer n'apprenait donc rien.
+  assert.deepEqual(
+    warnings.filter((warning) => warning.includes('constructor')).length,
+    1,
+  );
+  assert.equal(warnings.filter((warning) => warning.includes('__proto__')).length, 1);
+});

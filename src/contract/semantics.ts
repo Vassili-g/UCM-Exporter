@@ -13,6 +13,7 @@
 import type {
   RenderingRole,
   RenderingSemantics,
+  StateDescriptor,
   StateModel,
   StrokeTokens,
   VariantStrokes,
@@ -99,14 +100,20 @@ export function buildStateModel(
   const values = Array.from(
     new Set(variantValues.map((entry) => entry[axis]).filter((value): value is string => Boolean(value))),
   );
-  const states: StateModel['states'] = {};
+  // Les valeurs d'axe viennent de Figma. Une `Map` n'a aucune clé héritée, là
+  // où un objet littéral laisserait un état « __proto__ » fixer son prototype
+  // au lieu d'occuper une clé : `precedence`, construit depuis `values`,
+  // citerait alors un état absent de `states` et le contrat se contredirait.
+  const states = new Map<string, StateDescriptor>();
 
   for (const value of values) {
-    const selector = Object.prototype.hasOwnProperty.call(STATE_SELECTORS, value)
-      ? STATE_SELECTORS[value]
-      : null;
-    states[value] = { selector };
-    if (!(value in STATE_SELECTORS)) {
+    // Une seule définition de « cet état est reconnu » : la table est un objet
+    // littéral, donc `value in STATE_SELECTORS` répondrait vrai pour
+    // « constructor » et supprimerait l'avertissement que la ligne suivante doit
+    // produire.
+    const known = Object.prototype.hasOwnProperty.call(STATE_SELECTORS, value);
+    states.set(value, { selector: known ? STATE_SELECTORS[value] : null });
+    if (!known) {
       warnings.push(`Variant property « ${axis} » : l'état « ${value} » n'est pas reconnu, le contrat ne dira pas quand l'afficher. États reconnus : default, hover, focus, press, disable.`);
     }
   }
@@ -116,7 +123,7 @@ export function buildStateModel(
     ...values.filter((value) => !STATE_PRECEDENCE.includes(value)),
   ];
 
-  return { axis, states, precedence };
+  return { axis, states: Object.fromEntries(states), precedence };
 }
 
 /**

@@ -193,3 +193,21 @@ test('rulesContainerOwner ignore un conteneur qui n’en est pas un', () => {
   assert.equal(rulesContainerOwner({ type: 'SECTION', name: '-Rules' }), null);
   assert.equal(rulesContainerOwner({ type: 'SECTION', name: ' Button-Rules ' }), 'button');
 });
+
+test('une règle @prop homonyme d’Object.prototype n’écrit pas sur le runtime', () => {
+  const { propDescriptions, warnings } = buildRules([
+    { tag: 'prop', content: 'Bouton plein', prop: 'constructor.contained' },
+  ]);
+
+  // Le layer « prop » est le seul canal de texte libre de tout l'export.
+  // `descriptions[nom][valeur] = …` lisait `Object` pour ce nom, le trouvait
+  // déjà rempli, puis écrivait la description SUR la fonction Object globale.
+  assert.equal(
+    (Object as unknown as Record<string, unknown>).contained,
+    undefined,
+    'la fonction Object globale ne doit pas être modifiée',
+  );
+  assert.deepEqual(Object.keys(propDescriptions), ['constructor']);
+  assert.deepEqual(propDescriptions.constructor, { contained: 'Bouton plein' });
+  assert.deepEqual(warnings, []);
+});
