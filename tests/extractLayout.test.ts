@@ -1342,3 +1342,56 @@ test('un cadre imbriqué dans un cadre descend jusqu’à la dépendance', async
     { slot: 'button', figmaLayer: 'Button', composes: 'Button' },
   ]);
 });
+
+test('un axe de tailles fait taire les dimensions de haut niveau au lieu de les jeter', async () => {
+  // Quand `sizes` porte gap, paddings et radius, `extractStructure` jette ceux
+  // du niveau haut. Les relever quand même ferait avertir le designer sur une
+  // valeur que le contrat ne publiera jamais : il relierait une variable sans
+  // que rien ne change, et le nom de calque cité désigne le même layer dans
+  // TOUS les variants du set — il ne saurait même pas lequel ouvrir.
+  const wrapper = {
+    type: 'COMPONENT',
+    name: 'sizeWrapperButton',
+    layoutMode: 'HORIZONTAL',
+    // Aucune dimension liée : c'est exactement ce qui déclenchait le warning.
+    boundVariables: {},
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    wrapper,
+    resolverFor({}),
+    warnings,
+    new Map(),
+    new Set(),
+    wrapper,
+    false,
+  );
+
+  assert.equal(layout.gap, null);
+  assert.equal(layout.padding?.x, null);
+  assert.equal(layout.padding?.y, null);
+  assert.equal(layout.radius, null);
+  assert.deepEqual(warnings, []);
+});
+
+test('sans axe de tailles, une dimension non liée avertit toujours', async () => {
+  // Le pendant du test précédent : c'est bien l'axe de tailles qui fait taire
+  // l'avertissement, pas la mise en sourdine générale des dimensions.
+  const alerte = {
+    type: 'COMPONENT',
+    name: 'Severity=Info, Variant=Standard',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [],
+    findAll: findAllOn([]),
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(alerte, resolverFor({}), warnings);
+
+  assert.equal(layout.gap, null);
+  assert.ok(warnings.some((message) => /— gap : aucune variable Figma n'est reliée/.test(message)));
+});

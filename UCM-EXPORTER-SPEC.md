@@ -607,8 +607,14 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 
 Les dimensions géométriques ne figurent qu'à UN endroit : `sizes` les porte
 dès que le composant expose un axe de tailles ; sinon `gap` / `padding` /
-`radius` restent au niveau haut de `structure`. Toute la typographie appartient
-au catalogue `textStyles` et à ses usages dans `variantTypography`.
+`radius` restent au niveau haut de `structure`. Cette question se tranche
+**avant** de relever quoi que ce soit, et les avertissements suivent la même
+réponse : dès qu'un axe de tailles existe, les dimensions du calque de
+référence ne sont ni relevées ni signalées. Les signaler enverrait le designer
+relier une variable sur un calque dont rien ne sera publié — et le message le
+nommerait par un nom de layer commun à tous les variants du set, sans lui dire
+lequel ouvrir. Toute la typographie appartient au catalogue `textStyles` et à
+ses usages dans `variantTypography`.
 
 `composes` liste les composants unifiés que celui-ci embarque — vide pour un
 composant simple. Une instance ainsi déclarée n'est PAS parcourue : ses

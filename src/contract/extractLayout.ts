@@ -669,33 +669,41 @@ export async function extractLayout(
   // ses slots. C'est son comportement que le contrat publie : un wrapper décrit
   // comment il se place DANS le composant, pas comment le composant s'intègre.
   component: SceneNode = layoutNode,
+  // Faux quand un axe de tailles existe : `sizes` porte alors gap, paddings et
+  // radius, et `extractStructure` jette ceux-ci. Les relever quand même ferait
+  // avertir le designer sur une valeur que le contrat ne publiera pas — il
+  // relierait une variable sans que rien ne change, et le nom de calque cité
+  // désigne le même layer dans tous les variants du set.
+  publishDimensions = true,
 ): Promise<LayoutStructure> {
   warnLayersOutsideLayoutNode(component, layoutNode, warnings, composed);
   warnMissingDirection(layoutNode, warnings);
-  const [gap, paddingX, paddingY, radius] = await Promise.all([
-    resolveField(layoutNode, BINDING_PATTERNS.gap, 'gap', resolver, warnings),
-    resolveField(
-      layoutNode,
-      BINDING_PATTERNS.paddingX,
-      'horizontal padding',
-      resolver,
-      warnings,
-    ),
-    resolveField(
-      layoutNode,
-      BINDING_PATTERNS.paddingY,
-      'vertical padding',
-      resolver,
-      warnings,
-    ),
-    resolveField(
-      layoutNode,
-      BINDING_PATTERNS.radius,
-      'corner radius',
-      resolver,
-      warnings,
-    ),
-  ]);
+  const [gap, paddingX, paddingY, radius] = publishDimensions
+    ? await Promise.all([
+      resolveField(layoutNode, BINDING_PATTERNS.gap, 'gap', resolver, warnings),
+      resolveField(
+        layoutNode,
+        BINDING_PATTERNS.paddingX,
+        'horizontal padding',
+        resolver,
+        warnings,
+      ),
+      resolveField(
+        layoutNode,
+        BINDING_PATTERNS.paddingY,
+        'vertical padding',
+        resolver,
+        warnings,
+      ),
+      resolveField(
+        layoutNode,
+        BINDING_PATTERNS.radius,
+        'corner radius',
+        resolver,
+        warnings,
+      ),
+    ])
+    : [null, null, null, null];
 
   const children = await Promise.all(
     assignSlots(layoutNode, iconNames, warnings, composed).map(({ child, slot }) =>
