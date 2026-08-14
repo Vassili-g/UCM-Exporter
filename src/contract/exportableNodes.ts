@@ -101,6 +101,12 @@ export function getAllNodes(
   warnings: string[] = [],
   composed: ComposedInstances = new Map(),
 ): SceneNode[] {
+  // La racine elle-même peut ÊTRE un composant unifié : c'est la forme d'un
+  // slot qui rend directement sa dépendance. `hasAncestorIn` ne teste que les
+  // ancêtres STRICTS et ne la couvre donc pas ; sans cette ligne, le parent
+  // décrirait les calques, les visibilités et les icônes d'un contrat voisin.
+  if (composed.has(root.id)) return [root];
+
   const descendants = 'findAll' in root ? root.findAll(() => true) : [];
   const ignoredBindings = new Map<SceneNode, boolean>();
   const exportable: SceneNode[] = [root];

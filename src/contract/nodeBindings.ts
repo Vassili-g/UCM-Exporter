@@ -7,7 +7,7 @@
  */
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
-import { fixedDimensions } from './flexLayout';
+import { fixedDimensions, warnSizeConstraints } from './flexLayout';
 import type { SlotSize } from './types';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
@@ -108,12 +108,22 @@ const AUTO_LAYOUT_FIELDS: ReadonlySet<string> = new Set([
 ]);
 
 /** Raison pour laquelle Figma ne peut pas porter une valeur contractuelle. */
-type InapplicableReason = 'no-auto-layout' | 'space-between';
+type InapplicableReason = 'no-auto-layout' | 'space-between' | 'grid';
 
 /** Vrai si le node dispose réellement ses enfants (auto-layout ou grille). */
 function distributesChildren(node: SceneNode): boolean {
   const mode = (node as unknown as Record<string, unknown>).layoutMode;
   return typeof mode === 'string' && mode !== 'NONE';
+}
+
+/**
+ * Vrai pour l'auto layout en grille. Figma y espace les enfants par le gap des
+ * lignes et des colonnes (`gridRowGap`, `gridColumnGap`) : `itemSpacing` reste
+ * lisible mais n'a plus aucun effet, exactement comme sous un espacement
+ * « Auto ». Une liaison qui y survit exporterait un écart que le rendu n'a pas.
+ */
+function distributesAsGrid(node: SceneNode): boolean {
+  return (node as unknown as Record<string, unknown>).layoutMode === 'GRID';
 }
 
 /**
@@ -139,8 +149,9 @@ function inapplicableReason(
   const fields = alternatives.flat();
   if (!fields.some((field) => AUTO_LAYOUT_FIELDS.has(field))) return null;
   if (!distributesChildren(node)) return 'no-auto-layout';
-  if (fields.includes('itemSpacing') && distributesBySpaceBetween(node)) {
-    return 'space-between';
+  if (fields.includes('itemSpacing')) {
+    if (distributesAsGrid(node)) return 'grid';
+    if (distributesBySpaceBetween(node)) return 'space-between';
   }
   return null;
 }
@@ -223,6 +234,15 @@ export async function resolveTokenName(
         `paddings n'existent pas dans Figma et restent absents du contrat — leur absence ` +
         `ne veut donc pas dire zéro. Appliquez un auto layout au layer si son espacement ` +
         `doit être contractuel, puis réexportez.`,
+    );
+    return null;
+  }
+  if (inapplicable === 'grid') {
+    warnings.push(
+      `Layer « ${node.name} » : son auto layout est une grille. Figma y règle l'espacement par ` +
+        `le gap des lignes et des colonnes, que le contrat ne lit pas : aucun gap n'est exporté ` +
+        `pour ce layer, et son absence ne veut donc pas dire zéro. Passez ce layer en auto ` +
+        `layout horizontal ou vertical si son espacement doit être contractuel, puis réexportez.`,
     );
     return null;
   }
@@ -343,6 +363,10 @@ export async function resolveSlotSize(
   resolver: TokenResolver,
   warnings: string[],
 ): Promise<SlotSize | null> {
+  // Relevé ici parce que tout ce qui occupe un slot passe par cette fonction :
+  // une borne min/max est une décision de taille comme une autre, et le contrat
+  // n'a pas de champ où l'écrire.
+  warnSizeConstraints(node, warnings);
   const fixed = fixedDimensions(node);
   const [width, height] = await Promise.all([
     fixed.width

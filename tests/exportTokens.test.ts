@@ -190,3 +190,19 @@ test('buildLeaf type un lineheight aliasé sur spacing comme dimension (racine),
     $type: 'dimension',
   });
 });
+
+test('un groupe de tokens hérité d’Object.prototype reste une clé comme une autre', () => {
+  const feuille = { $value: '#fff', $type: 'color' };
+  const arbre = {};
+  const warnings: string[] = [];
+
+  insert(arbre, 'constructor.primary', feuille, warnings);
+  insert(arbre, '__proto__.primary', feuille, warnings);
+
+  // Sans lecture en propriété propre, « constructor » passait pour un
+  // emplacement occupé et « __proto__ » écrivait dans le prototype : les deux
+  // tokens quittaient le fichier, dont un sans le moindre message.
+  assert.deepEqual(Object.keys(arbre), ['constructor', '__proto__']);
+  assert.equal(({} as Record<string, unknown>).primary, undefined);
+  assert.deepEqual(warnings, []);
+});

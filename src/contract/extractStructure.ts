@@ -11,13 +11,13 @@ import { extractIconLayers } from './extractIconLayers';
 import type { IconLayerSummary } from './extractIconLayers';
 import {
   extractLayout,
-  findLayoutNode,
   flexLayoutSignature,
   textStructureSignature,
 } from './extractLayout';
 import { extractSizeDimensions } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
+import { electVariantLayoutNodes } from './layoutNodes';
 import { variantRoleWarnings } from './semantics';
 import type { ContractStructure, SizeDimensions, TextStyleDefinition } from './types';
 
@@ -53,15 +53,22 @@ export async function extractStructure(
   // vérification reste une fonction pure, testable sans runtime Figma.
   warnings.push(...variantRoleWarnings(variantTokens, variantStrokes));
 
-  // Le layout vit sur le wrapper imbriqué quand il existe, sinon directement
-  // sur le composant. Un composant « plat » est donc géré sans blocage.
-  const layoutRoot = wrapper?.instance ?? referenceComponent;
-  // Le node de layout du variant de référence est élu ICI, une fois, et servira
-  // aux deux extractions. `findLayoutNode` élit au score : le relancer depuis
-  // une autre racine — le variant plutôt que le wrapper — peut désigner un
-  // autre node, et les slots des icônes cesseraient de décrire ceux du contrat.
-  const referenceLayout = layoutRoot && referenceComponent
-    ? { component: referenceComponent, layoutNode: findLayoutNode(layoutRoot, warnings, composed) }
+  // Le node de layout de CHAQUE variant est élu ici, une fois. `findLayoutNode`
+  // élit au score, et le score dépend de la racine : relancer l'élection depuis
+  // une autre racine — le variant plutôt que son wrapper — désigne parfois un
+  // autre node, et les slots des icônes comme les chemins de la typographie
+  // cesseraient alors de décrire ceux du contrat.
+  const layoutNodes = await electVariantLayoutNodes(
+    matrix.variants.map((entry) => entry.component),
+    referenceComponent ? { component: referenceComponent, wrapper } : null,
+    warnings,
+    composed,
+  );
+  // La carte couvre toute la matrice ; le repli n'existe que pour le typage.
+  const layoutNodeOf = (component: ComponentNode): SceneNode =>
+    layoutNodes.get(component) ?? component;
+  const referenceLayout = referenceComponent
+    ? { component: referenceComponent, layoutNode: layoutNodeOf(referenceComponent) }
     : null;
 
   // L'inventaire des icônes précède les slots : il couvre TOUTE la matrice,
@@ -69,11 +76,11 @@ export async function extractStructure(
   // les icônes que ce variant ne contient pas, et qui nomme leur slot.
   const iconLayers = await extractIconLayers(
     matrix,
+    layoutNodes,
     iconNames,
     resolver,
     warnings,
     composed,
-    referenceLayout,
   );
   const targetedLayers = new Set(iconLayers.map((layer) => layer.figmaLayer));
 
@@ -86,12 +93,9 @@ export async function extractStructure(
       targetedLayers,
       composed,
     );
-    const divergentVariants = matrix.variants.filter(({ component }) => {
-      const layoutNode = component === referenceLayout.component
-        ? referenceLayout.layoutNode
-        : findLayoutNode(component, [], composed);
-      return textStructureSignature(layoutNode, targetedLayers, composed) !== referenceSignature;
-    });
+    const divergentVariants = matrix.variants.filter(({ component }) =>
+      textStructureSignature(layoutNodeOf(component), targetedLayers, composed)
+        !== referenceSignature);
     if (divergentVariants.length > 0) {
       const examples = divergentVariants
         .slice(0, 3)
@@ -113,13 +117,9 @@ export async function extractStructure(
       composed,
       referenceLayout.component,
     );
-    const flexDivergentVariants = matrix.variants.filter(({ component }) => {
-      const layoutNode = component === referenceLayout.component
-        ? referenceLayout.layoutNode
-        : findLayoutNode(component, [], composed);
-      return flexLayoutSignature(layoutNode, targetedLayers, composed, component)
-        !== referenceFlexSignature;
-    });
+    const flexDivergentVariants = matrix.variants.filter(({ component }) =>
+      flexLayoutSignature(layoutNodeOf(component), targetedLayers, composed, component)
+        !== referenceFlexSignature);
     if (flexDivergentVariants.length > 0) {
       const examples = flexDivergentVariants
         .slice(0, 3)
@@ -129,21 +129,22 @@ export async function extractStructure(
       warnings.push(
         `Auto layout différent sur ${flexDivergentVariants.length} variant(s), ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
-          `référence « ${referenceLayout.component.name} ». Son alignement ou le remplissage ` +
-          `de ses layers ne représentera pas les autres variants. Alignez les auto layouts dans ` +
-          `Figma ; si la différence est intentionnelle, conservez-la et signalez cette limite du schéma.`,
+          `référence « ${referenceLayout.component.name} ». Son alignement, le remplissage de ses ` +
+          `layers ou leur dimension figée ne représentera pas les autres variants. Alignez les ` +
+          `auto layouts dans Figma ; si la différence est intentionnelle, conservez-la et ` +
+          `signalez cette limite du schéma.`,
       );
     }
   }
 
-  const layout = layoutRoot
+  const layout = referenceLayout
     ? await extractLayout(
-      layoutRoot,
+      referenceLayout.layoutNode,
       resolver,
       warnings,
       composed,
       targetedLayers,
-      referenceComponent ?? layoutRoot,
+      referenceLayout.component,
     )
     // Sans composant à interroger, le contrat retient le comportement par
     // défaut plutôt que d'inventer un hug que rien ne montre.
@@ -156,7 +157,7 @@ export async function extractStructure(
       children: [],
     };
 
-  if (!layoutRoot) {
+  if (!referenceLayout) {
     warnings.push(
       'Aucun auto layout frame trouvé dans le composant : ni gap, ni padding, ni corner ' +
         'radius ne sont exportés.',
@@ -171,6 +172,7 @@ export async function extractStructure(
   );
   const typography = await extractVariantTypography(
     matrix,
+    layoutNodes,
     resolver,
     warnings,
     composed,
@@ -196,7 +198,7 @@ export async function extractStructure(
   for (const owner of sizeAxisOwners) {
     // `extractSizeDimensions` rend null sans rien signaler quand le set n'a pas
     // d'axe de tailles : passer au suivant ne produit donc aucun bruit.
-    sizes = await extractSizeDimensions(owner, resolver, warnings, composed);
+    sizes = await extractSizeDimensions(owner, resolver, warnings, composed, layoutNodes);
     if (sizes) break;
   }
 

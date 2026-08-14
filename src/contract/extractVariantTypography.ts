@@ -8,9 +8,9 @@ import normalizeName from '../utils';
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
 import type { VariantMatrix } from './componentTree';
-import { findLayoutNode } from './extractLayout';
 import { textNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
+import type { VariantLayoutNodes } from './layoutNodes';
 import { normalizePropValue } from './parsers';
 import { assignSlots } from './slotNames';
 import { composedSlotDependencies } from './slotRelations';
@@ -69,30 +69,39 @@ function textBranchNodeIds(root: SceneNode, texts: readonly TextNode[]): Set<str
 }
 
 /**
- * Retrouve les mêmes chemins textuels que `structure.children` : un slot à un
- * seul texte garde son propre chemin ; plusieurs textes descendent jusqu'à
- * leurs parts récursives.
+ * Retrouve les mêmes chemins textuels que `structure.children`.
+ *
+ * Les deux règles sont celles de l'extraction, à leur niveau respectif :
+ * un enfant direct du node de layout n'a de parts que s'il porte PLUSIEURS
+ * textes (`extractChild` y décide `describesParts`) ; en dessous, la descente
+ * continue tant que le node n'est pas un vrai `TEXT` (`extractTextBranch`).
+ * Sans cette distinction, le chemin d'une description rangée seule dans un
+ * frame désignerait ce frame et non la part que le contrat décrit.
  */
 export function textSlots(
   layoutNode: SceneNode,
   iconNames: ReadonlySet<string> = new Set(),
   composed: ComposedInstances = new Map(),
 ): TextSlot[] {
-  const visit = (node: SceneNode, slotPath: string[]): TextSlot[] => {
-    if (composedSlotDependencies(node, composed).length > 0) return [];
+  /** Une part interne : la feuille est le calque texte lui-même. */
+  const visitPart = (node: SceneNode, slotPath: string[]): TextSlot[] => {
+    if (node.type === 'TEXT') return [{ slotPath, textNode: node }];
+
     const texts = textNodes(node, [], composed);
     if (texts.length === 0) return [];
-    if (texts.length === 1) return [{ slotPath, textNode: texts[0] }];
-
     const branchIds = textBranchNodeIds(node, texts);
     return assignSlots(node, iconNames, [], composed).flatMap(({ child, slot }) =>
-      branchIds.has(child.id) ? visit(child, [...slotPath, slot]) : [],
+      branchIds.has(child.id) ? visitPart(child, [...slotPath, slot]) : [],
     );
   };
 
-  return assignSlots(layoutNode, iconNames, [], composed).flatMap(({ child, slot }) =>
-    visit(child, [slot]),
-  );
+  return assignSlots(layoutNode, iconNames, [], composed).flatMap(({ child, slot }) => {
+    if (composedSlotDependencies(child, composed).length > 0) return [];
+    const texts = textNodes(child, [], composed);
+    if (texts.length === 0) return [];
+    if (texts.length === 1) return [{ slotPath: [slot], textNode: texts[0] }];
+    return visitPart(child, [slot]);
+  });
 }
 
 /** Lit les liaisons du style lui-même, jamais celles recopiées sur le calque. */
@@ -153,9 +162,17 @@ async function loadTextStyle(
   return { id: styleId, key, definition: { figmaName: style.name, tokens } };
 }
 
-/** Extrait le catalogue et son usage exact sur toutes les combinaisons d'axes. */
+/**
+ * Extrait le catalogue et son usage exact sur toutes les combinaisons d'axes.
+ *
+ * `layoutNodes` porte le node de layout déjà élu pour chaque variant
+ * (`layoutNodes.ts`). Élire de nouveau ici désignerait parfois un autre node —
+ * y compris pour le variant de référence, que le contrat accuserait alors de
+ * diverger de lui-même — et toute la typographie disparaîtrait.
+ */
 export async function extractVariantTypography(
   matrix: VariantMatrix,
+  layoutNodes: VariantLayoutNodes,
   resolver: TokenResolver,
   warnings: string[],
   composed: ComposedInstances = new Map(),
@@ -173,7 +190,7 @@ export async function extractVariantTypography(
   const axes = matrix.axes.length > 0 ? matrix.axes : ['variant'];
 
   for (const entry of matrix.variants) {
-    const layoutNode = findLayoutNode(entry.component, warnings, composed);
+    const layoutNode = layoutNodes.get(entry.component) ?? entry.component;
     const uses: TextStyleUse[] = [];
     for (const { slotPath, textNode } of textSlots(layoutNode, iconNames, composed)) {
       if (allowedSlotPaths && !allowedSlotPaths.has(JSON.stringify(slotPath))) {
