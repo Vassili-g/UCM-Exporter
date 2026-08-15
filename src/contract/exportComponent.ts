@@ -297,6 +297,23 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     );
   }
 
+  // `composes` se DÉRIVE de l'arbre publié, comme `tokensUsed` se dérive du
+  // contrat terminé. Le scan dit ce que Figma contient ; seul `structure.children`
+  // dit où le développeur doit rendre quoi, et le consommateur refuse un contrat
+  // dont les deux séquences diffèrent. Une dépendance que l'arbre n'a pas su
+  // placer sort donc des deux champs à la fois — jamais d'un seul.
+  const composesPlacees = composes.filter((dependency) => extracted.placedComposes.has(dependency));
+  for (const dependency of composes) {
+    if (extracted.placedComposes.has(dependency)) continue;
+    warnings.push(
+      `Layer « ${dependency.figmaLayer} » : il porte le composant « ${dependency.component} », ` +
+        `qui a son propre contrat, mais le contrat n'a trouvé aucun emplacement où le situer. ` +
+        `La dépendance ne sera ni décrite dans structure.children, ni déclarée dans composes : ` +
+        `le développeur ne la rendra pas. Placez ce layer dans l'auto layout frame que le ` +
+        `composant décrit, puis réexportez.`,
+    );
+  }
+
   const meta = buildMeta(componentSet);
   if (!meta.figma.url) {
     // Le message nomme la condition réelle : sans cela, l'avertissement paraît
@@ -319,7 +336,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     rendering: renderingSemanticsFor(extracted.discoveredRoles),
     icons,
     textStyles: extracted.textStyles,
-    composes,
+    composes: composesPlacees,
     tokensUsed: [],
     intent,
   };

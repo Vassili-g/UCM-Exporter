@@ -233,42 +233,69 @@ async function extractTextBranch(
   return entry;
 }
 
+/** « le composant « A » » ou « les composants « A », « B » », pour un message. */
+function nommerDependances(dependencies: readonly ComposedDependency[]): string {
+  const noms = dependencies.map((dependency) => `« ${dependency.component} »`);
+  return noms.length === 1 ? `le composant ${noms[0]}` : `les composants ${noms.join(', ')}`;
+}
+
 /**
- * Cadre qui enveloppe un composant unifié, décrit comme le conteneur qu'il est.
+ * Cadre qui enveloppe un ou plusieurs composants unifiés, décrit comme le
+ * conteneur qu'il est.
  *
- * Ce calque appartient à CE contrat. Il publie donc son flux, puis la dépendance dans
- * `children`, exactement comme un slot à parts. Porter `composes` sur le cadre
- * lui-même le ferait passer pour le composant : son `alignSelf` atterrirait sur
- * un composant qui publie déjà son propre `structure.sizing`, où une taille
- * explicite neutralise l'étirement. Le cadre disparaîtrait avec son alignement.
+ * Ce calque appartient à CE contrat. Il publie donc son flux, puis les
+ * dépendances dans `children`, exactement comme un slot à parts. Porter
+ * `composes` sur le cadre lui-même le ferait passer pour le composant : son
+ * `alignSelf` atterrirait sur un composant qui publie déjà son propre
+ * `structure.sizing`, où une taille explicite neutralise l'étirement. Le cadre
+ * disparaîtrait avec son alignement.
  *
- * `gap` reste tu : seules les branches menant à la dépendance sont publiées, et
- * un espacement décrirait des enfants absents du contrat.
+ * Leur NOMBRE ne change pas la règle : un cadre qui range trois liens en publie
+ * trois. Le contrat ne saurait sinon ni où ils vont, ni combien il en faut —
+ * alors que `composes` continuerait de les déclarer, et le consommateur refuse
+ * un contrat dont les deux champs ne décrivent pas la même séquence.
  */
 async function describeComposedWrapper(
   entry: ChildStructure,
   wrapper: SceneNode,
-  dependency: ComposedDependency,
+  dependencies: readonly ComposedDependency[],
   resolver: TokenResolver,
   warnings: string[],
   composed: ComposedInstances,
   iconNames: ReadonlySet<string>,
+  placed: Set<ComposedDependency>,
+  // Vrai quand le slot de ce cadre publie déjà une visibilité. Les branches se
+  // taisent alors, pour ne pas laisser croire à deux conditions distinctes.
+  parentPublishesVisibility: boolean,
 ): Promise<void> {
   const assignments = assignSlots(wrapper, iconNames, warnings, composed);
   const branches = assignments
     .filter(({ child }) => composedSlotDependencies(child, composed).length > 0);
+  // Les messages s'adressent au designer : ils nomment ce qu'il voit, donc au
+  // pluriel quand son calque range plusieurs composants.
+  const plusieurs = dependencies.length > 1;
 
-  // La dépendance est là — `composedSlotDependencies` l'a trouvée — mais aucune
-  // branche exportable n'y mène : elle est rangée sous un calque masqué. Publier
-  // un conteneur vide donnerait un contrat que le consommateur refuse ; on
-  // revient à la forme du slot-instance, et on dit ce qui manquera.
+  // Les dépendances sont là — `composedSlotDependencies` les a trouvées — mais
+  // aucune branche exportable n'y mène : elles sont rangées sous un calque
+  // masqué. Publier un conteneur vide donnerait un contrat que le consommateur
+  // refuse ; on revient à la forme du slot-instance quand une seule dépendance
+  // est en jeu, et on dit dans tous les cas ce qui manquera. Un slot ne portant
+  // qu'un `composes`, plusieurs dépendances ne peuvent pas s'y replier : elles
+  // sortent alors du contrat, `composes` compris.
   if (branches.length === 0) {
-    entry.composes = dependency.component;
+    if (dependencies.length === 1) {
+      entry.composes = dependencies[0].component;
+      placed.add(dependencies[0]);
+    }
     warnings.push(
-      `Layer « ${wrapper.name} » : il enveloppe le composant « ${dependency.component} » mais ` +
-        `aucun de ses calques exportables n'y mène. Le contrat nomme la dépendance sans la ` +
-        `disposition de ce calque, et le développeur rendra le composant sans son cadre. ` +
-        `Rendez visible le calque qui porte l'instance, puis réexportez.`,
+      `Layer « ${wrapper.name} » : il enveloppe ${nommerDependances(dependencies)} mais aucun ` +
+        `de ses calques exportables n'y mène. ${plusieurs
+          ? 'Le contrat ne peut placer aucune de ces dépendances — un slot ne porte qu’un ' +
+            'composant — et le développeur ne les rendra pas. Rendez visibles les calques qui ' +
+            'portent les instances'
+          : 'Le contrat nomme la dépendance sans la disposition de ce calque, et le développeur ' +
+            'rendra le composant sans son cadre. Rendez visible le calque qui porte l’instance'}, ` +
+        `puis réexportez.`,
     );
     return;
   }
@@ -279,24 +306,26 @@ async function describeComposedWrapper(
     Object.assign(entry, flexContainerProperties(wrapper, warnings));
   } else {
     warnings.push(
-      `Layer « ${wrapper.name} » : il enveloppe le composant « ${dependency.component} » mais ` +
-        `n'utilise pas un auto layout horizontal ou vertical. Le contrat publie la dépendance ` +
-        `sans la disposition de ce calque, et le développeur rendra le composant sans son ` +
-        `cadre. Appliquez un auto layout à ce layer, puis réexportez.`,
+      `Layer « ${wrapper.name} » : il enveloppe ${nommerDependances(dependencies)} mais ` +
+        `n'utilise pas un auto layout horizontal ou vertical. Le contrat publie ` +
+        `${plusieurs ? 'les dépendances' : 'la dépendance'} sans la disposition de ce calque, ` +
+        `et le développeur ${plusieurs ? 'les rendra' : 'le rendra'} sans ce cadre. ` +
+        `Appliquez un auto layout à ce layer, puis réexportez.`,
     );
   }
 
-  // Seule la branche qui mène à la dépendance est publiée. Ce qui l'accompagne
-  // dans ce cadre n'a donc ni slot, ni typographie, ni visibilité, alors que
-  // ses couleurs entrent bien dans `variantTokens` : sans ce message, le
-  // développeur ne saurait pas qu'un calque a disparu.
+  // Seules les branches qui mènent à une dépendance sont publiées. Ce qui les
+  // accompagne dans ce cadre n'a donc ni slot, ni typographie, ni visibilité,
+  // alors que ses couleurs entrent bien dans `variantTokens` : sans ce message,
+  // le développeur ne saurait pas qu'un calque a disparu.
   for (const { child } of assignments) {
     if (branches.some((branch) => branch.child === child)) continue;
     warnings.push(
-      `Layer « ${child.name} » : il partage le layer « ${wrapper.name} » avec le composant ` +
-        `« ${dependency.component} », dont le contrat ne décrit que la branche. Ni son slot, ni ` +
-        `sa typographie, ni sa visibilité ne sont exportés : le développeur ne le rendra pas. ` +
-        `Sortez-le de ce layer, puis réexportez.`,
+      `Layer « ${child.name} » : il partage le layer « ${wrapper.name} » avec ` +
+        `${nommerDependances(dependencies)}, dont le contrat ne décrit que ` +
+        `${plusieurs ? 'les branches' : 'la branche'}. Ni son slot, ni sa typographie, ni sa ` +
+        `visibilité ne sont exportés : le développeur ne le rendra pas. Sortez-le de ce layer, ` +
+        `puis réexportez.`,
     );
   }
 
@@ -305,9 +334,30 @@ async function describeComposedWrapper(
   // contrat.
   await applySizing(entry, wrapper, resolver, warnings);
 
+  // `gap` décrit l'espace ENTRE des enfants : il n'est publié que lorsque le
+  // cadre en range plusieurs et qu'ils sont TOUS dans le contrat. Un cadre à
+  // une seule dépendance n'espace rien — réclamer une variable pour lui
+  // enverrait le designer relier une valeur qui ne se voit pas. Et dès qu'un
+  // calque du cadre reste hors du contrat, l'espacement décrirait une suite
+  // d'enfants qui n'existe nulle part.
+  if (branches.length > 1 && branches.length === assignments.length) {
+    const gap = await resolveField(wrapper, BINDING_PATTERNS.gap, 'gap', resolver, warnings);
+    if (gap) entry.gap = gap;
+  }
+
   entry.children = await Promise.all(
     branches.map(({ child, slot }) =>
-      extractComposedBranch(wrapper, child, slot, resolver, warnings, composed, iconNames)),
+      extractComposedBranch(
+        wrapper,
+        child,
+        slot,
+        resolver,
+        warnings,
+        composed,
+        iconNames,
+        placed,
+        parentPublishesVisibility,
+      )),
   );
 }
 
@@ -320,29 +370,38 @@ async function extractComposedBranch(
   warnings: string[],
   composed: ComposedInstances,
   iconNames: ReadonlySet<string>,
+  placed: Set<ComposedDependency>,
+  parentPublishesVisibility: boolean,
 ): Promise<ChildStructure> {
   const entry: ChildStructure = { slot, ...flexItemProperties(parent, node, warnings) };
   entry.figmaLayer = node.name;
 
+  // Le slot de premier niveau ne peut reprendre qu'UNE visibilité : celle d'une
+  // dépendance unique. Dès qu'un cadre en range plusieurs, il n'en prend aucune
+  // — la sienne masquerait les autres — et chaque branche porte donc la sienne.
+  // Sans cela, un cadre à deux boutons masquables les rendrait tous les deux
+  // inconditionnellement, alors que Figma les montre séparément.
+  if (!parentPublishesVisibility) applyDirectVisibility(entry, node);
+
   const direct = composed.get(node.id);
   if (direct) {
     entry.composes = direct.component;
+    placed.add(direct);
     return entry;
   }
 
-  // La visibilité de la branche est déjà publiée par le slot de premier niveau,
-  // qui reprend celle du calque comme celle de l'instance. La répéter ici
-  // laisserait croire à deux conditions distinctes.
-  const dependency = composedSlotDependencies(node, composed)[0];
-  if (dependency) {
+  const dependencies = composedSlotDependencies(node, composed);
+  if (dependencies.length > 0) {
     await describeComposedWrapper(
       entry,
       node,
-      dependency,
+      dependencies,
       resolver,
       warnings,
       composed,
       iconNames,
+      placed,
+      parentPublishesVisibility || Boolean(entry.visibilityProp),
     );
   }
   return entry;
@@ -371,16 +430,12 @@ async function extractChild(
   // Nécessaire pour nommer les parts internes avec la MÊME règle que les slots
   // de premier niveau ; sans lui, une icône imbriquée perdrait son rôle.
   iconNames: ReadonlySet<string>,
+  // Les dépendances que l'arbre place réellement. `composes` s'en dérive : les
+  // deux champs ne peuvent pas diverger s'ils n'ont qu'une source.
+  placed: Set<ComposedDependency>,
 ): Promise<ChildStructure> {
   const dependencies = composedSlotDependencies(child, composed);
-  const composedDependency = dependencies.length === 1 ? dependencies[0] : undefined;
-  if (dependencies.length > 1) {
-    warnings.push(
-      `Layer « ${child.name} » : il contient ${dependencies.length} composants qui ont ` +
-        `leur propre contrat (${dependencies.map((dependency) => dependency.component).join(', ')}). ` +
-        `Le contrat n'en déclare qu'un par emplacement. Placez-les dans des layers distincts.`,
-    );
-  }
+  const composedDependency = dependencies[0];
   const texts = composedDependency ? [] : textNodes(child, warnings, composed);
   // Le slot décrit ses parts dès qu'il porte plus d'un texte. La décision est
   // prise ici, avant toute écriture, parce qu'elle change le PROPRIÉTAIRE de la
@@ -397,18 +452,22 @@ async function extractChild(
   // une prop booléenne sans dire ce qu'elle montre ou cache. Un slot que l'on
   // peut masquer est optionnel par construction.
   const directVisibility = child.componentPropertyReferences?.visible;
-  const dependencyVisibility = composedDependency?.visibilityProp;
-  if (
-    directVisibility
-    && dependencyVisibility
-    && normalizePropKey(directVisibility) !== dependencyVisibility
-  ) {
-    warnings.push(
-      `Layer « ${child.name} » : sa visibilité et celle du composant ` +
-        `« ${composedDependency.component} » qu'il contient dépendent de deux component ` +
-        `properties différentes. Seule celle du layer est exportée. Utilisez la même pour ` +
-        `les deux.`,
-    );
+  // Une seule dépendance peut prêter sa visibilité au slot. À plusieurs, la
+  // retenir en masquerait les autres : chaque branche publie alors la sienne.
+  const dependencyVisibility = dependencies.length === 1
+    ? dependencies[0].visibilityProp
+    : undefined;
+  if (directVisibility) {
+    for (const dependency of dependencies) {
+      if (!dependency.visibilityProp) continue;
+      if (normalizePropKey(directVisibility) === dependency.visibilityProp) continue;
+      warnings.push(
+        `Layer « ${child.name} » : sa visibilité et celle du composant ` +
+          `« ${dependency.component} » qu'il contient dépendent de deux component ` +
+          `properties différentes. Seule celle du layer est exportée. Utilisez la même pour ` +
+          `les deux.`,
+      );
+    }
   }
   // Le slot déjà masquable ne peut pas voir une visibilité plus profonde
   // devenir la sienne — ce serait en élargir la portée. Elle reste malgré tout
@@ -444,16 +503,19 @@ async function extractChild(
     // contrat. Le nommer suffit à dire quoi rendre à cet emplacement.
     if (composed.has(child.id)) {
       entry.composes = composedDependency.component;
+      placed.add(composedDependency);
       return entry;
     }
     await describeComposedWrapper(
       entry,
       child,
-      composedDependency,
+      dependencies,
       resolver,
       warnings,
       composed,
       iconNames,
+      placed,
+      Boolean(entry.visibilityProp),
     );
     return entry;
   }
@@ -529,6 +591,11 @@ export function textStructureSignature(
   };
 
   const trees = assignSlots(layoutNode, iconNames, [], composed).flatMap(({ child, slot }) => {
+    // Un slot qui porte une dépendance ne décrit aucune part textuelle : ses
+    // textes voisins sortent du contrat, et `textSlots` les écarte déjà. Les
+    // comparer ici ferait avertir « Parties texte différentes » sur un contenu
+    // que le contrat ne publie nulle part.
+    if (composedSlotDependencies(child, composed).length > 0) return [];
     if (textNodes(child, [], composed).length < 2) return [];
     const signature = branchSignature(layoutNode, child, slot);
     return signature ? [signature] : [];
@@ -783,6 +850,11 @@ export async function extractLayout(
   // relierait une variable sans que rien ne change, et le nom de calque cité
   // désigne le même layer dans tous les variants du set.
   publishDimensions = true,
+  // Reçoit les dépendances que l'arbre place réellement. `composes` s'en dérive
+  // au lieu d'être scanné à part : deux relevés indépendants de la même
+  // information finiraient par se contredire, et le consommateur refuse un
+  // contrat dont les deux champs ne décrivent pas la même séquence.
+  placed: Set<ComposedDependency> = new Set(),
 ): Promise<LayoutStructure> {
   warnLayersOutsideLayoutNode(component, layoutNode, warnings, composed);
   warnIntermediateBounds(component, layoutNode, warnings);
@@ -826,7 +898,7 @@ export async function extractLayout(
 
   const children = await Promise.all(
     assignSlots(layoutNode, iconNames, warnings, composed).map(({ child, slot }) =>
-      extractChild(child, slot, layoutNode, resolver, warnings, composed, iconNames)),
+      extractChild(child, slot, layoutNode, resolver, warnings, composed, iconNames, placed)),
   );
 
   return {

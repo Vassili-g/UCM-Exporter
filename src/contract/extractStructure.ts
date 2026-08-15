@@ -19,7 +19,12 @@ import { extractVariantTokens } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
 import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNodes';
 import { variantRoleWarnings } from './semantics';
-import type { ContractStructure, SizeDimensions, TextStyleDefinition } from './types';
+import type {
+  ComposedDependency,
+  ContractStructure,
+  SizeDimensions,
+  TextStyleDefinition,
+} from './types';
 
 /**
  * Sets susceptibles de porter l'axe de tailles, dans l'ordre où on les
@@ -63,9 +68,16 @@ export async function extractStructure(
   iconLayers: IconLayerSummary[];
   /** Rôle de rendu déduit des clés de couleur qui n'en nomment aucun. */
   discoveredRoles: Map<string, string>;
+  /**
+   * Dépendances que `structure.children` place réellement. C'est d'elles que
+   * `composes` se dérive : le scan dit ce que Figma contient, l'arbre dit ce que
+   * le contrat décrit, et seul le second engage le développeur.
+   */
+  placedComposes: Set<ComposedDependency>;
   warnings: string[];
 }> {
   const warnings = [...matrixWarnings];
+  const placedComposes = new Set<ComposedDependency>();
   // Les règles `@icons` sont relevées avant toute extraction : c'est leur
   // inventaire qui distingue l'encre d'une icône de la surface d'un cadre.
   const iconTargets = new Set(iconNames);
@@ -182,6 +194,7 @@ export async function extractStructure(
       targetedLayers,
       referenceLayout.component,
       !aUnAxeDeTailles,
+      placedComposes,
     )
     // Sans composant à interroger, le contrat retient le comportement par
     // défaut plutôt que d'inventer un hug que rien ne montre.
@@ -252,5 +265,12 @@ export async function extractStructure(
     variantTypography: typography.variantTypography,
   };
 
-  return { structure, textStyles: typography.textStyles, iconLayers, discoveredRoles, warnings };
+  return {
+    structure,
+    textStyles: typography.textStyles,
+    iconLayers,
+    discoveredRoles,
+    placedComposes,
+    warnings,
+  };
 }

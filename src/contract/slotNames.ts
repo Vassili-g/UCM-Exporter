@@ -37,16 +37,19 @@ export function isIconLayer(node: SceneNode, iconNames: ReadonlySet<string>): bo
 /**
  * Nom de slot d'un enfant direct, avant déduplication des homonymes.
  *
- * Un enfant qui porte une dépendance unifiée garde le nom de son calque : son
- * texte et ses icônes appartiennent au contrat de cette dépendance, pas à
- * celui qui l'embarque.
+ * Un enfant qui porte une ou plusieurs dépendances unifiées garde le nom de son
+ * calque : leurs textes et leurs icônes appartiennent au contrat de ces
+ * dépendances, pas à celui qui les embarque. Le compte n'y change rien — c'est
+ * le test que `extractLayout`, `extractVariantTypography` et les signatures
+ * appliquent tous, et un cadre à deux boutons ne devient pas un `label` parce
+ * qu'un texte y traîne.
  */
 function baseSlotName(
   child: SceneNode,
   iconNames: ReadonlySet<string>,
   composed: ComposedInstances,
 ): string {
-  const isDependency = composedSlotDependencies(child, composed).length === 1;
+  const isDependency = composedSlotDependencies(child, composed).length > 0;
   // `getAllNodes` renvoie le calque lui-même en plus de ses descendants : un
   // slot qui EST un texte est donc reconnu comme un slot qui en contient un.
   const contents = isDependency ? [] : getAllNodes(child, [], composed);

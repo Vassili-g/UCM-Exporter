@@ -67,8 +67,11 @@ function regleUsage(texte: string) {
 }
 
 /** Un variant : un auto layout horizontal dont le gap cite une variable. */
-function variant(nom: string) {
-  return node('COMPONENT', nom, [node('TEXT', 'Suivant', [], { characters: 'Suivant' })], {
+function variant(nom: string, enfantsEnPlus: any[] = []) {
+  return node('COMPONENT', nom, [
+    node('TEXT', 'Suivant', [], { characters: 'Suivant' }),
+    ...enfantsEnPlus,
+  ], {
     layoutMode: 'HORIZONTAL',
     primaryAxisAlignItems: 'MIN',
     counterAxisAlignItems: 'CENTER',
@@ -78,9 +81,16 @@ function variant(nom: string) {
 }
 
 /** Le fichier Figma complet dont l'export a besoin, monté sur `globalThis`. */
-function monterFigma(options: { selection?: unknown[]; avecRegles?: boolean } = {}) {
-  const contained = variant('Variant=Contained');
-  const outlined = variant('Variant=Outlined');
+function monterFigma(options: {
+  selection?: unknown[];
+  avecRegles?: boolean;
+  /** Calques ajoutés à CHAQUE variant. Une fabrique : les ids doivent différer. */
+  enfantsDuVariant?: () => any[];
+  /** Composants que la page reconnaît comme unifiés, par leur conteneur de règles. */
+  dependancesContractees?: string[];
+} = {}) {
+  const contained = variant('Variant=Contained', options.enfantsDuVariant?.() ?? []);
+  const outlined = variant('Variant=Outlined', options.enfantsDuVariant?.() ?? []);
   const componentSet = node('COMPONENT_SET', 'Button', [contained, outlined], {
     key: 'cle-button',
     componentPropertyDefinitions: {
@@ -96,6 +106,9 @@ function monterFigma(options: { selection?: unknown[]; avecRegles?: boolean } = 
   const enfantsDeLaPage: any[] = [componentSet];
   if (options.avecRegles !== false) {
     enfantsDeLaPage.push(node('FRAME', 'Button-Rules', [regleUsage('Action principale')]));
+  }
+  for (const nom of options.dependancesContractees ?? []) {
+    enfantsDeLaPage.push(node('FRAME', `${nom}-Rules`, []));
   }
   const page = node('PAGE', 'Composants', enfantsDeLaPage);
 
@@ -167,6 +180,51 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
     // la même liste que le corps de la pull request.
     assert.equal(resultat.warningCount, contrat.meta.warnings.length);
     assert.deepEqual(resultat.warnings, contrat.meta.warnings);
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('composes se dérive de l’arbre : deux dépendances d’un même cadre y ont chacune leur place', async () => {
+  const lien = (nom: string) =>
+    node('INSTANCE', nom, [], {
+      componentProperties: {},
+      layoutSizingHorizontal: 'HUG',
+      layoutSizingVertical: 'HUG',
+      getMainComponentAsync: async () => ({
+        name: 'Link',
+        parent: { type: 'COMPONENT_SET', name: 'Link' },
+      }),
+    });
+  const figmaFaux = monterFigma({
+    dependancesContractees: ['Link'],
+    enfantsDuVariant: () => [
+      node('FRAME', 'Liens', [lien('Lien 1'), lien('Lien 2')], {
+        layoutMode: 'HORIZONTAL',
+        primaryAxisAlignItems: 'MIN',
+        counterAxisAlignItems: 'CENTER',
+        layoutSizingHorizontal: 'HUG',
+        layoutSizingVertical: 'HUG',
+      }),
+    ],
+  });
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    // Le cadre appartient au contrat et publie son flux ; les deux dépendances
+    // sont ses enfants, chacune à son emplacement.
+    const cadre = contrat.structure.children.find(
+      (child: any) => child.figmaLayer === 'Liens',
+    );
+    assert.equal(cadre.layout, 'flex-row');
+    assert.deepEqual(cadre.children.map((child: any) => child.composes), ['Link', 'Link']);
+
+    // `composes` décrit la même séquence : c'est le contrôle que le consommateur
+    // applique, et il compte les occurrences pour la parité du code.
+    assert.deepEqual(contrat.composes, [
+      { component: 'Link', figmaLayer: 'Lien 1' },
+      { component: 'Link', figmaLayer: 'Lien 2' },
+    ]);
   } finally {
     figmaFaux.restaurer();
   }

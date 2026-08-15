@@ -17,6 +17,7 @@ import {
 import { findWrapperReference } from '../src/contract/componentTree';
 import { getAllNodes } from '../src/contract/exportableNodes';
 import { extractLayout } from '../src/contract/extractLayout';
+import type { ChildStructure, ComposedDependency } from '../src/contract/types';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
@@ -297,4 +298,157 @@ test('findWrapperReference n’élit jamais un composant unifié imbriqué', asy
     new Map([['btn', { component: 'Button', figmaLayer: 'action' }]]),
   );
   assert.equal(avecComposition, null);
+});
+
+/** Un cadre d'auto layout qui appartient au contrat et range des calques. */
+function cadre(id: string, name: string, enfants: unknown[], extra: Record<string, unknown> = {}) {
+  return {
+    type: 'FRAME',
+    id,
+    name,
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MAX',
+    counterAxisAlignItems: 'CENTER',
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+    boundVariables: {},
+    children: enfants,
+    findAll: (predicat: (n: never) => boolean = () => true) =>
+      enfants.filter(predicat as (n: unknown) => boolean),
+    ...extra,
+  } as unknown as SceneNode;
+}
+
+/** Une dépendance prête à être posée dans `composed`. */
+const dependance = (component: string, figmaLayer: string, visibilityProp?: string) =>
+  (visibilityProp ? { component, figmaLayer, visibilityProp } : { component, figmaLayer });
+
+/** Les `composes` rencontrés en parcourant l'arbre : le contrôle du consommateur. */
+function composesDeLArbre(children: readonly ChildStructure[] = []): string[] {
+  return children.flatMap((child) => [
+    ...(child.composes ? [child.composes] : []),
+    ...composesDeLArbre(child.children),
+  ]);
+}
+
+test('un cadre qui range plusieurs dépendances les publie toutes, chacune à sa place', async () => {
+  const primaire = instance('btn-1', 'Primaire', 'Button', {
+    componentPropertyReferences: { visible: 'primary#1:0' },
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+  });
+  const secondaire = instance('btn-2', 'Secondaire', 'Button', {
+    componentPropertyReferences: { visible: 'secondary#1:0' },
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+  });
+  const actions = cadre('acts', 'Actions', [primaire, secondaire], {
+    boundVariables: { itemSpacing: alias('gap-actions') },
+  });
+  const carte = racine('card', 'Variant=Default', [actions]);
+
+  const warnings: string[] = [];
+  const placed = new Set<ComposedDependency>();
+  const layout = await extractLayout(
+    carte,
+    {
+      resolve: async (reference: unknown) =>
+        (reference as { id?: string } | null)?.id === 'gap-actions'
+          ? 'components.card.sizes.gap-actions'
+          : null,
+    },
+    warnings,
+    new Map([
+      ['btn-1', dependance('Button', 'Primaire', 'primary')],
+      ['btn-2', dependance('Button', 'Secondaire', 'secondary')],
+    ]),
+    new Set(),
+    carte,
+    true,
+    placed,
+  );
+
+  // Le cadre appartient à CE contrat : il publie son flux, y compris l'espace
+  // entre deux dépendances que le contrat porte toutes les deux.
+  const slot = layout.children[0];
+  assert.equal(slot.slot, 'actions');
+  assert.equal(slot.layout, 'flex-row');
+  assert.equal(slot.justifyContent, 'flex-end');
+  assert.equal(slot.alignItems, 'center');
+  assert.equal(slot.gap, '{components.card.sizes.gap-actions}');
+  assert.equal(slot.composes, undefined);
+
+  // Chaque dépendance a son emplacement ET sa propre condition d'affichage :
+  // le cadre n'en a repris aucune, il les masquerait toutes ensemble.
+  assert.deepEqual(slot.children, [
+    {
+      slot: 'primaire',
+      figmaLayer: 'Primaire',
+      visibilityProp: 'primary',
+      optional: true,
+      composes: 'Button',
+    },
+    {
+      slot: 'secondaire',
+      figmaLayer: 'Secondaire',
+      visibilityProp: 'secondary',
+      optional: true,
+      composes: 'Button',
+    },
+  ]);
+  assert.equal(placed.size, 2);
+  // Le calque n'est plus un défaut de design : il n'y a plus rien à réclamer.
+  assert.equal(
+    warnings.some((warning) => warning.includes('emplacement')),
+    false,
+  );
+});
+
+test('l’arbre place exactement les dépendances que le scan a relevées', async () => {
+  const lien = (id: string, name: string) =>
+    instance(id, name, 'Link', { layoutSizingHorizontal: 'HUG', layoutSizingVertical: 'HUG' });
+  const liens = cadre('wrap', 'Liens', [lien('l1', 'Lien 1'), lien('l2', 'Lien 2'), lien('l3', 'Lien 3')]);
+  const carte = racine('card', 'Variant=Default', [liens]);
+
+  const { composes, composed } = await scanComposedInstances(carte, new Set(['link']));
+  const placed = new Set<ComposedDependency>();
+  const layout = await extractLayout(
+    carte,
+    { resolve: async () => null },
+    [],
+    composed,
+    new Set(),
+    carte,
+    true,
+    placed,
+  );
+
+  // C'est le contrôle que le consommateur applique au contrat : `composes` et
+  // les slots récursifs doivent décrire la même séquence de dépendances.
+  assert.deepEqual(composesDeLArbre(layout.children), ['Link', 'Link', 'Link']);
+  assert.deepEqual(composes.filter((entry) => placed.has(entry)), composes);
+});
+
+test('une dépendance posée hors du node de layout n’est pas placée, et se signale', async () => {
+  const perdu = instance('btn-perdu', 'Bouton perdu', 'Button');
+  const contenu = cadre('inner', 'Contenu', []);
+  const carte = racine('card', 'Variant=Default', [contenu, perdu]);
+
+  const warnings: string[] = [];
+  const placed = new Set<ComposedDependency>();
+  await extractLayout(
+    contenu,
+    { resolve: async () => null },
+    warnings,
+    new Map([['btn-perdu', dependance('Button', 'Bouton perdu')]]),
+    new Set(),
+    carte,
+    true,
+    placed,
+  );
+
+  // L'arbre ne peut pas la situer : `composes` la laissera donc tomber elle
+  // aussi, plutôt que d'annoncer une dépendance sans emplacement.
+  assert.equal(placed.size, 0);
+  assert.equal(warnings.some((warning) => warning.includes('« Bouton perdu »')), true);
 });

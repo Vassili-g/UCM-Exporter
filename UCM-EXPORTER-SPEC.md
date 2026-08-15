@@ -701,21 +701,34 @@ conteneur `<Nom>-Rules` sur la page — le même critère qui autorise son expor
 évalué par la même fonction, si bien que les deux lectures ne peuvent pas se
 contredire.
 
-**Un cadre qui enveloppe une dépendance (4.9).** Le slot peut ÊTRE l'instance,
-ou l'envelopper : une Alert range son bouton dans un calque « Action » dont
-l'auto-layout le centre et remplit la hauteur. Ce cadre appartient à ce
-contrat-ci, pas au Button, et se décrit donc comme n'importe quel conteneur —
-son `layout`, son `justifyContent`, son `alignItems`, sa dimension figée, puis
-la dépendance dans `children`. Seul le calque qui EST l'instance porte
-`composes`.
+**Un cadre qui enveloppe une ou plusieurs dépendances (4.9).** Le slot peut ÊTRE
+l'instance, ou l'envelopper : une Alert range son bouton dans un calque
+« Action » dont l'auto-layout le centre et remplit la hauteur. Ce cadre
+appartient à ce contrat-ci, pas au Button, et se décrit donc comme n'importe
+quel conteneur — son `layout`, son `justifyContent`, son `alignItems`, sa
+dimension figée, puis la dépendance dans `children`. Seul le calque qui EST
+l'instance porte `composes`.
+
+Leur NOMBRE ne change pas la règle : un cadre qui range trois liens publie trois
+enfants, chacun avec son emplacement et son `composes`. Le contrat ne saurait
+sinon ni où ils vont, ni combien il en faut.
 
 La distinction n'est pas cosmétique : porter `composes` sur le cadre le ferait
 passer pour le composant, et son `alignSelf` atterrirait sur un composant qui
 publie déjà son propre `structure.sizing`, où une taille explicite neutralise
-l'étirement. Le cadre disparaîtrait avec son alignement. `gap` reste tu sur un
-tel cadre : seule la branche menant à la dépendance est publiée, et espacer des
-enfants absents du contrat ne voudrait rien dire. Un cadre sans auto-layout
-linéaire avertit au lieu de laisser deviner sa disposition.
+l'étirement. Le cadre disparaîtrait avec son alignement. Un cadre sans
+auto-layout linéaire avertit au lieu de laisser deviner sa disposition.
+
+`gap` décrit l'espace ENTRE des enfants : le cadre ne le publie que lorsqu'il en
+range plusieurs et qu'ils sont TOUS dans le contrat. Un cadre à une seule
+dépendance n'espace rien, et réclamer une variable pour lui enverrait le
+designer relier une valeur qui ne se voit pas ; dès qu'un calque du cadre reste
+hors du contrat, l'espacement décrirait une suite d'enfants qui n'existe nulle
+part.
+
+Une seule dépendance peut prêter sa `visibilityProp` au slot du cadre. À
+plusieurs, la retenir masquerait les autres avec elle : le cadre n'en prend
+alors aucune, et chaque branche publie la sienne.
 
 ```json
 { "slot": "action", "alignSelf": "stretch", "figmaLayer": "Action",
@@ -732,12 +745,22 @@ visibilité dans le contrat, et produit donc son propre avertissement.
 
 Le relevé couvre toute la matrice pour élaguer les dépendances de chaque
 variant. `structure.children` et `composes` décrivent tous deux le variant de
-référence et gardent ainsi le même ordre et la même cardinalité. Si la
-composition varie ailleurs dans la matrice, un warning nomme les variants
+référence et gardent ainsi le même ordre et la même cardinalité. Ils ne le
+gardent pas par accord de deux relevés : `composes` se DÉRIVE de l'arbre publié,
+comme `tokensUsed` se dérive du contrat terminé. Le scan dit ce que Figma
+contient ; seul `structure.children` dit où le développeur doit rendre quoi.
+
+Une dépendance que l'arbre n'a su situer nulle part — posée hors du node de
+layout élu, ou rangée sous un calque masqué avec d'autres — sort donc des deux
+champs à la fois, jamais d'un seul, et un warning la nomme. Le consommateur
+comptant les occurrences de `composes` pour vérifier la parité du code, un
+composant qui disparaît ainsi du contrat rendra sa parité rouge tant que le code
+continuera de le rendre : c'est le diagnostic voulu, le contrat ne le demandant
+plus.
+
+Si la composition varie ailleurs dans la matrice, un warning nomme les variants
 concernés : le schéma courant ne prétend pas représenter un slot composé
-conditionnel qu'il ne sait pas situer dans `structure.children`. Lorsqu'un
-calque enveloppe une seule dépendance, son slot reprend aussi la
-`visibilityProp` de l'instance.
+conditionnel qu'il ne sait pas situer dans `structure.children`.
 
 `figmaLayer` y nomme le calque de **l'instance**, jamais le cadre qui
 l'enveloppe : c'est ce calque qu'on retrouve dans Figma.

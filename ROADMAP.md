@@ -33,14 +33,14 @@ uniquement ce qui est déjà intégré et vérifié.
 | Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
 | Écriture de la 5.3 | Le moteur l’écrit, personne ne la consomme encore : le corpus et le Playground restent en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button. Les 5.1 et 5.3 sont neutres pour un composant qui nomme déjà ses rôles et ne pose aucune borne — le réexport reste dû pour la 5.0 et la 5.2 |
 | Reconstruction à froid | Menée sur la 4.8. La 4.9 a été absorbée en adaptant les composants et le skill, sans nouvelle reconstruction : le test froid a donc un contrat de retard |
-| Cadre enveloppant une dépendance | Publié comme conteneur : il porte son flux, sa dimension figée et range la dépendance dans `children`. Seul le calque qui EST l’instance porte `composes` |
+| Cadre enveloppant une ou plusieurs dépendances | Publié comme conteneur : il porte son flux, sa dimension figée et range chaque dépendance dans `children`. Seul le calque qui EST l’instance porte `composes` |
 | Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma de l’Exporter |
 | Export DTCG avec alias et modes | Opérationnel |
 | Téléchargement local et dépôt par PR GitHub | Opérationnel |
 | Validation des contrats, de la forme des props et des références de tokens | Opérationnelle |
 | Contrat accepté avant son implémentation | Opérationnel |
 | Parité statique dès que le TSX existe | Props, booléens consommés et composition JSX couverts |
-| Composition entre composants | Export, graphe, cardinalité et cycles couverts |
+| Composition entre composants | Export, graphe, cardinalité et cycles couverts. Un cadre à plusieurs dépendances les publie toutes, et `composes` se dérive de l’arbre au lieu d’être relevé à part |
 | Types TypeScript et variables CSS dérivés | Opérationnels |
 | Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
@@ -224,6 +224,15 @@ troisième : elle embarque une dépendance — une seule, pas plusieurs — et c
 d’icône selon la sévérité. Restent un composé à plusieurs dépendances, un
 composant interactif à booléens (Checkbox, TextField) et un composant qui expose
 une propriété Figma non couverte.
+
+Un composant d’épreuve a déjà fait tomber la première marche du troisième point,
+et là encore sur le moteur plutôt que sur le schéma : un calque qui rangeait
+plusieurs dépendances les faisait toutes disparaître de `structure.children`
+alors que `composes` continuait de les déclarer, si bien que le consommateur
+refusait le contrat. Le cadre les publie désormais toutes, et `composes` se
+dérive de l’arbre. Ce que ce cas n’établit pas : un composé dont les dépendances
+sont de natures DIFFÉRENTES et se répondent, qui reste à éprouver sur un
+composant réel.
 
 Avant d’ajouter un composant, la 4.9 doit recevoir sa propre reconstruction à
 froid : le dernier test froid porte sur la 4.8, et le cadre enveloppant une
