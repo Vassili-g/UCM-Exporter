@@ -64,6 +64,16 @@ tests/
   l’enveloppe appartient au contrat parent : il publie son flux et range la
   dépendance dans `children`, comme tout conteneur. Sans cette distinction, son
   alignement atterrit sur le composant, dont `structure.sizing` le neutralise.
+  Leur nombre ne change pas la règle : un cadre qui range trois liens publie
+  trois enfants, chacun avec son emplacement et sa visibilité — le cadre n’en
+  reprend une que lorsqu’une seule dépendance l’occupe.
+- `composes` se dérive de l’arbre publié, comme `tokensUsed` du contrat terminé.
+  Le scan dit ce que Figma contient, `structure.children` dit ce que le contrat
+  décrit, et seul le second engage le développeur. Une dépendance que l’arbre
+  n’a pas su situer sort donc des deux champs à la fois, sous un avertissement :
+  deux relevés indépendants de la même information finiraient par se
+  contredire, et le consommateur refuse un contrat dont les deux séquences
+  diffèrent.
 - Une typographie appartient à UN calque texte et vient de son text style.
   `textStyles` lie le style à ses variables ; `variantTypography` situe son
   usage sur chaque variant par un chemin de slots. Un slot à plusieurs textes
