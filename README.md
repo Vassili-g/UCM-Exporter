@@ -87,7 +87,7 @@ Chaque document a un rôle unique :
 
 ## État
 
-Le moteur écrit la version **5.1** du contrat. Le pipeline est opérationnel sur
+Le moteur écrit la version **5.5** du contrat. Le pipeline est opérationnel sur
 un composant simple et un premier contrat composé : Button et Alert sont
 exportés en 4.9, consommés par le Playground et vérifiés par sa chaîne de
 contrôles ; leur réexport reste à faire. Les protections principales sont

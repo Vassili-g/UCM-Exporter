@@ -31,7 +31,7 @@ uniquement ce qui est déjà intégré et vérifié.
 | Domaine | État |
 |---|---|
 | Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
-| Écriture de la 5.4 | Le moteur l’écrit, personne ne la consomme encore : le corpus et le Playground restent en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button. Les 5.1, 5.3 et 5.4 sont neutres pour un composant qui nomme déjà ses rôles, ne pose aucune borne et ne passe pas à la ligne — le réexport reste dû pour la 5.0 et la 5.2. Le Playground accepte la borne de version, mais aucun de ses composants n’emploie le wrap : le champ est écrit et audité, pas encore exercé |
+| Écriture de la 5.5 | Le moteur l’écrit, personne ne la consomme encore : le corpus reste en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button. Les 5.1, 5.3, 5.4 et 5.5 sont neutres pour un composant qui nomme déjà ses rôles, ne pose aucune borne, ne passe pas à la ligne et ne conteste aucune clef — le réexport reste dû pour la 5.0 et la 5.2. Le Playground accepte la borne de version ; ni le wrap ni la clef allongée ne sont encore exercés par un de ses composants |
 | Reconstruction à froid | Menée sur la 4.8. La 4.9 a été absorbée en adaptant les composants et le skill, sans nouvelle reconstruction : le test froid a donc un contrat de retard |
 | Cadre enveloppant une ou plusieurs dépendances | Publié comme conteneur : il porte son flux, sa dimension figée et range chaque dépendance dans `children`. Seul le calque qui EST l’instance porte `composes` |
 | Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma de l’Exporter |
@@ -215,10 +215,11 @@ Un composant d’épreuve à plusieurs surfaces peintes — une échelle de six
 premier résultat, et il portait sur le moteur plutôt que sur le schéma : le rôle
 de rendu était lu sur le nom du token, et le renommage que l’export réclamait
 aurait fait perdre toutes les couleurs d’un variant sauf une. La 5.1 lit
-désormais le calque. Ce que ce composant établit encore comme limite — situer
-chaque surface peinte dans `structure.children` — est consigné dans
-[PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) et n’appelle pas de champ nouveau
-tant qu’un composant du catalogue ne le réclame pas.
+désormais le calque, et la 5.5 a fermé la perte qui subsistait quand deux
+variables finissaient par le même segment. Ce que ce composant établit encore
+comme limite — situer chaque surface peinte dans `structure.children` — est
+consigné dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) et n’appelle pas de
+champ nouveau tant qu’un composant du catalogue ne le réclame pas.
 
 **Button** couvre le premier point, **Alert** le quatrième et entame le
 troisième : elle embarque une dépendance — une seule, pas plusieurs — et change
@@ -240,12 +241,21 @@ quatre résultats, dont trois portaient encore sur le moteur :
   publie désormais tous ses calques ;
 - le **wrap** était le quatrième, et le seul à demander un champ : c’est la 5.4.
 
-Ce que ce passage n’a PAS fermé : deux calques du même composant dont les
-variables finissent par le même segment se disputent toujours une clef de la
-feuille de variant. L’export nomme désormais les deux calques et demande le seul
-geste qui marche — un dernier segment différent —, mais fermer le cas suppose
-l’adressage par chemin de slots, que [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md)
-réserve à un composant réel du catalogue.
+Un quatrième passage a livré le cinquième résultat, et lui aussi portait sur le
+moteur : deux calques du même composant dont les variables finissent par le même
+segment se disputaient une clef de la feuille de variant, et l’export en jetait
+une. Le design Figma était pourtant correct — le design system nommait déjà
+chaque surface, `…userinput.colors.background` et `…divider.colors.background` —
+et le geste réclamé au designer compensait une troncature du moteur. La 5.5
+allonge la clef des segments qui séparent deux couleurs cohabitantes, décidée
+une seule fois sur toute la matrice pour qu’aucune coordonnée de variant n’y
+entre.
+
+Ce que ce passage n’a PAS fermé : le contrat dit comment peindre une clef, pas
+sur quel calque, et ne sait pas dire laquelle de deux couleurs empilées sur un
+même calque est au-dessus. Fermer ces deux cas suppose l’adressage par chemin de
+slots, que [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) réserve à un composant
+réel du catalogue.
 
 Un composant d’épreuve a déjà fait tomber la première marche du troisième point,
 et là encore sur le moteur plutôt que sur le schéma : un calque qui rangeait

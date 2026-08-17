@@ -68,13 +68,17 @@ existe. À faire le jour où un design réel présentera ce cas.
 ### Situer chaque surface peinte d’un variant
 
 Depuis la 5.1, une couleur dont le token ne nomme aucun rôle reçoit son rendu
-dans `rendering.roles` : un consommateur sait **comment** la peindre. Il ne sait
-toujours pas **où**. La feuille d’un variant range les couleurs par clé, à plat,
+dans `rendering.roles` : un consommateur sait **comment** la peindre. Depuis la
+5.5, deux couleurs d’un même variant dont les variables finissent pareil ne se
+disputent plus une clé : aucune n’est perdue. Il ne sait toujours pas **où**.
+La feuille d’un variant range les couleurs par clé, à plat,
 sans lien vers `structure.children` — et `assignSlots` ne nomme que les enfants
 directs du node de layout, si bien qu’un cadre contenant six échantillons
-n’expose qu’un slot pour les six.
+n’expose qu’un slot pour les six. Le contrat ne sait pas davantage dire laquelle
+de deux couleurs empilées sur un même calque est au-dessus.
 
-Le développeur s’en sort : le nom du token le lui dit, ce que
+Le développeur s’en sort : le nom du token le lui dit — et la clé, quand elle
+s’allonge, le lui répète —, ce que
 [CONCEPT.md](./CONCEPT.md) range explicitement sous « accord designer–développeur
 enregistré dans Figma ». Aucun contrôle ne peut en revanche vérifier que le bon
 échantillon a reçu la bonne couleur.

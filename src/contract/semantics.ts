@@ -10,6 +10,8 @@
  * Règle d'or : le mapping se décide sur les VALEURS ou le RÔLE, jamais sur
  * le nom d'un composant — aucun cas particulier codé en dur.
  */
+import { refPath } from '../variables';
+import { tokenKey } from './colorKeys';
 import type {
   RenderingRole,
   RenderingSemantics,
@@ -206,9 +208,11 @@ export function paintSiteRole(site: {
  * Sans cela, une couleur nommée `…/scale-1` produit un contrat valide que
  * personne ne sait peindre : le consommateur ignore une clé absente de
  * `rendering.roles`, silencieusement. Publier son rendu déduit ferme ce trou
- * sans imposer au design system de renommer ses variables — et un renommage
- * n'était de toute façon pas possible partout, la feuille d'un variant n'ayant
- * qu'une entrée par rôle.
+ * sans imposer au design system de renommer ses variables.
+ *
+ * C'est aussi ce qui rend lisible une clé ALLONGÉE : `userinput.border` ne
+ * nomme aucun rôle partagé, et le consommateur y trouve le rendu que son
+ * dernier segment déclarait.
  *
  * `discovered` associe chaque clé au rôle partagé dont elle emprunte le rendu.
  * Les descripteurs sont RECOPIÉS depuis `defaultRenderingSemantics()` : il
@@ -254,9 +258,15 @@ function collectRoles(
   readReference: (value: unknown) => string | null,
   usages: Map<string, RoleUsage>,
 ): void {
-  for (const [key, value] of Object.entries(tree)) {
+  for (const value of Object.values(tree)) {
     const reference = readReference(value);
     if (reference) {
+      // Le rôle se lit sur le dernier segment du TOKEN, là où le designer le
+      // déclare — jamais sur la clé de l'arbre, qui s'allonge quand deux
+      // couleurs cohabitent : `userinput.border` ne nomme aucun rôle partagé,
+      // et ce garde-fou se tairait pour toutes les couleurs d'un composant à
+      // surfaces multiples.
+      const key = tokenKey(refPath(reference));
       const usage = usages.get(key);
       if (usage) usage.count += 1;
       else usages.set(key, { count: 1, example: reference });
@@ -289,9 +299,11 @@ function strokeReference(value: unknown): string | null {
  * Une clé qui ne nomme AUCUN rôle partagé n'est plus une anomalie : son rendu
  * se déduit du site d'application (`paintSiteRole`) et se publie dans
  * `rendering.roles` (`renderingSemanticsFor`). Exiger qu'elle se termine par un
- * rôle était impossible à satisfaire dès qu'un variant peint plusieurs
- * surfaces : la feuille n'ayant qu'une entrée par rôle, le renommage demandé
- * aurait fait perdre toutes les couleurs sauf une.
+ * rôle imposerait au design system un renommage que rien ne justifie.
+ *
+ * Le rôle se lit sur le dernier segment du TOKEN, jamais sur la clé de l'arbre :
+ * celle-ci s'allonge quand deux couleurs cohabitent, et un `…/border` publié
+ * sous `userinput.border` doit rester signalé s'il est posé en fill.
  *
  * On agrège : un seul message par rôle fautif, plutôt qu'un par variante — un
  * Button a 30 variantes qui portent les mêmes calques. Le message cite un token

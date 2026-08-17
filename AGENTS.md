@@ -28,6 +28,7 @@ src/
     parsers.ts               propriétés Figma → API publique
     merge*.ts                doc et icônes des règles, rangées sur leur axe
     semantics.ts             vocabulaire sémantique partagé
+    colorKeys.ts             clé d'une couleur dans la feuille d'un variant
     extract*.ts              structure, layout, tailles, tokens et règles
     flexLayout.ts            propriétés de flux et avertissements non portables
     slotNames.ts             nommage des slots et calques d'icônes
@@ -141,18 +142,28 @@ tests/
   une icône s’affiche, la prop runtime dit LAQUELLE rendre : une icône toujours
   visible est modifiable comme une autre, et son absence de booléen ne se
   signale pas.
-- Une clé de couleur que deux calques se disputent nomme LES DEUX calques : le
-  geste utile est de donner un dernier segment différent à l’une des variables,
-  jamais de retirer une couleur. La feuille n’ayant qu’une entrée par clé, c’est
-  la limite que fermerait l’adressage par chemin de slots — non engagé.
+- Aucune couleur n’est perdue par troncature de clé. Le dernier segment est la
+  BASE de la clé ; quand deux couleurs COHABITENT dans la feuille d’un même
+  variant en la partageant, la clé s’allonge des segments qui les séparent
+  (`userinput.background` / `divider.background`). Le design system nommait déjà
+  ces surfaces distinctement — c’est l’export qui tronquait, et le geste demandé
+  au designer compensait un bug du moteur.
+- `colorKeys.ts` est l’unique autorité sur cette clé, et la décide sur TOUTE la
+  matrice : la clé d’un token est la même dans toutes les feuilles. Parmi les
+  sélections de segments qui séparent les couleurs cohabitantes, on retient
+  celle qui produit LE MOINS DE CLÉS DISTINCTES — c’est ce qui garde une
+  coordonnée de variant hors de la clé. Allonger « jusqu’à ce que chaque token
+  soit unique » publierait une clé par variant et rendrait la feuille
+  inindexable.
 - Ce qu’une couleur peint se lit sur le calque qui la porte, jamais sur le nom
-  de son token. Le dernier segment est la CLÉ de la couleur dans la feuille du
-  variant — une identité — et `rendering.roles` publie le rendu de chaque clé
-  qui ne nomme aucun rôle partagé. Un nom qui EST un rôle partagé reste une
-  déclaration du designer et l’emporte : c’est le seul moyen de distinguer un
-  `ring` d’un `border`. Exiger ce nommage était impossible à satisfaire, la
-  feuille n’ayant qu’une entrée par clé : six `…/scale-N` renommés
-  `…/background` n’en auraient laissé qu’un.
+  de son token. La clé est une identité, et `rendering.roles` publie le rendu de
+  chacune qui ne nomme aucun rôle partagé — clés allongées comprises. Un nom qui
+  EST un rôle partagé reste une déclaration du designer et l’emporte : c’est le
+  seul moyen de distinguer un `ring` d’un `border`, et cette déclaration se lit
+  sur le dernier segment du TOKEN, jamais sur la clé publiée.
+- Situer chaque couleur dans `structure.children` reste ouvert : le contrat dit
+  COMMENT peindre une clé, pas SUR QUEL calque. C’est l’adressage par chemin de
+  slots — non engagé.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours

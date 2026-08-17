@@ -72,10 +72,8 @@ test('variantRoleWarnings reste muet quand tous les rôles sont rendables', () =
 
 test('variantRoleWarnings ne réclame plus qu’une clé nomme son rôle', () => {
   // Ce message demandait de renommer le token pour qu'il se termine par un
-  // rôle. Le geste était impossible dès qu'un variant peint plusieurs
-  // surfaces : la feuille n'a qu'une entrée par rôle, et six « scale-N »
-  // renommés « background » n'en auraient laissé qu'un. Le rendu se déduit
-  // désormais du calque et se publie dans `rendering.roles`.
+  // rôle, alors que rien ne l'exige : le rendu se déduit du calque et se publie
+  // dans `rendering.roles`.
   const warnings = variantRoleWarnings(
     {
       primary: {
@@ -160,6 +158,20 @@ test('variantRoleWarnings signale un rôle connu employé sur le mauvais support
     'Token {c.primary.default.background} : son dernier segment « background » désigne un fill, mais il est appliqué en stroke — rien ne sera affiché (sur 1 layer). Appliquez-le du bon côté dans Figma, ou renommez-le.',
     'Token {c.primary.default.border} : son dernier segment « border » désigne un stroke, mais il est appliqué en fill — rien ne sera affiché (sur 1 layer). Appliquez-le du bon côté dans Figma, ou renommez-le.',
   ]);
+});
+
+test('le garde-fou survit à une clé allongée : il lit le token, pas la clé', () => {
+  // `userinput.border` ne nomme aucun rôle partagé. Lu sur la clé de l'arbre,
+  // ce garde-fou se tairait pour toutes les couleurs d'un composant à surfaces
+  // multiples — exactement celles qui en ont le plus besoin.
+  const warnings = variantRoleWarnings(
+    { default: { 'userinput.border': '{c.userinput.colors.border}' } },
+    {},
+  );
+
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /\{c\.userinput\.colors\.border\}/);
+  assert.match(warnings[0], /« border » désigne un stroke/);
 });
 
 test('defaultRenderingSemantics publie le vocabulaire de rendu partagé', () => {
