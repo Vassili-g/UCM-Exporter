@@ -3,7 +3,7 @@
  * La liaison repose uniquement sur les noms Figma exacts et les bindings de
  * visibilité, sans heuristique de position propre à un composant.
  */
-import { normalizePropKey, propByName } from './parsers';
+import { definePropOn, normalizePropKey, propByName } from './parsers';
 import type { IconLayerSummary } from './extractIconLayers';
 import type { IconRule } from './rulesModel';
 import type { ContractProp, IconDefinition, IconProp } from './types';
@@ -154,7 +154,7 @@ export function mergeIconRules(
       policy: 'modifiable',
       ...(visibilityProp ? { visibilityProp } : {}),
     };
-    props[runtimeProp] = iconProp;
+    definePropOn(props, runtimeProp, iconProp);
     icon.runtimeProp = runtimeProp;
   }
 
