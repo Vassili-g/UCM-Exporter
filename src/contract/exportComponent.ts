@@ -113,7 +113,7 @@ import type {
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '6.0';
+export const CONTRACT_VERSION = '7.0';
 
 /**
  * Les dépendances de l'arbre publié, dans son ordre — celui des calques Figma.
@@ -236,12 +236,11 @@ export function mergeWrapperProps(
 /**
  * Construit les métadonnées de traçabilité vers Figma.
  *
- * `figma.fileKey` n'est PAS une donnée que la publication débloque : l'API la
- * réserve aux **plugins privés d'organisation** déclarant
- * `enablePrivatePluginApi` dans leur manifest. Tant que ce n'est pas le cas,
- * l'URL vaut null — durablement, pas « en attendant ». L'export n'est jamais
- * bloqué pour autant : le lien est un confort de relecture, `nodeId` et
- * `fileName` suffisent à retrouver le composant.
+ * `figma.fileKey` est réservé aux plugins qui déclarent `enablePrivatePluginApi`
+ * dans leur manifest — ce que fait celui-ci. L'API le referme pour un plugin
+ * publié sur la Community : l'URL vaut alors null, et l'export n'est pas bloqué
+ * pour autant. Le lien est un confort de relecture ; `nodeId` et `fileName`
+ * suffisent à retrouver le composant.
  */
 function buildMeta(componentSet: ComponentSetNode): Omit<ContractMeta, 'warnings'> {
   const fileKey = figma.fileKey ?? null;
@@ -389,13 +388,14 @@ export async function handleExportComponent(): Promise<ComponentExport> {
 
   const meta = buildMeta(componentSet);
   if (!meta.figma.url) {
-    // Le message nomme la condition réelle : sans cela, l'avertissement paraît
-    // transitoire, on attend qu'il disparaisse tout seul, et il finit par
-    // apprendre à ne plus lire la liste des avertissements.
+    // Le message ne promet rien qu'on ne sache tenir : le manifest déclare
+    // `enablePrivatePluginApi`, donc le cas normal est l'URL. Reste celui où
+    // l'API ne la fournit pas — un plugin publié sur la Community — et le dire
+    // en une phrase vaut mieux qu'un avertissement qui paraît transitoire.
     warnings.push(
-      'Lien vers Figma absent du contrat : l’API ne le fournit qu’aux plugins privés ' +
-        'd’organisation. Le nom du fichier et l’identifiant du composant restent ' +
-        'exportés, et suffisent à le retrouver.',
+      'Lien vers Figma absent du contrat : l’API n’a pas fourni la clé du fichier à ce ' +
+        'plugin. Le nom du fichier et l’identifiant du composant restent exportés, et ' +
+        'suffisent à le retrouver.',
     );
   }
 

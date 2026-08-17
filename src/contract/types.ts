@@ -158,6 +158,9 @@ export type AlignSelf = 'flex-start' | 'center' | 'flex-end' | 'stretch';
  * cellule exactement comme un flex les aligne sur son axe secondaire.
  */
 export type GridPlacement = {
+  /** Place de la cellule d'ancrage, en valeurs CSS — comptées à partir de 1. */
+  columnStart?: number;
+  rowStart?: number;
   columnSpan?: number;
   rowSpan?: number;
   justifySelf?: AlignSelf;
@@ -241,6 +244,47 @@ export type ContainerSizing = {
 export type SlotSize = string | { width?: string; height?: string };
 
 /**
+ * Une valeur que Figma laisse régler côté par côté, toujours tokenisée.
+ *
+ * C'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une
+ * décision par bord : une RÉFÉRENCE quand tous les côtés citent la même
+ * variable — la forme de presque tous les composants, inchangée — et le DÉTAIL
+ * par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces
+ * variables séparément (`padding-left`, `radius-top-left`) : les refuser
+ * demandait au designer d'aplatir une décision qui lui appartient.
+ *
+ * Le détail est complet ou n'existe pas. Un seul côté relié ne publie rien et
+ * avertit : la règle des groupes composés ne change pas, seule l'exigence
+ * « une seule et même variable » disparaît.
+ */
+export type SidedRefs<K extends string> = string | Record<K, string>;
+
+/** Padding horizontal : une référence, ou le détail gauche/droite. */
+export type PaddingX = SidedRefs<'left' | 'right'>;
+
+/** Padding vertical : une référence, ou le détail haut/bas. */
+export type PaddingY = SidedRefs<'top' | 'bottom'>;
+
+/** Padding d'un conteneur, rangé par axe comme le panneau Figma le présente. */
+export type Padding = { x: PaddingX | null; y: PaddingY | null };
+
+/** Rayon : une référence, ou le détail des quatre coins, dans l'ordre CSS. */
+export type Radius = SidedRefs<'topLeft' | 'topRight' | 'bottomRight' | 'bottomLeft'>;
+
+/** Épaisseur de contour : une référence, ou le détail des quatre bords. */
+export type StrokeWidth = SidedRefs<'top' | 'right' | 'bottom' | 'left'>;
+
+/**
+ * Taille d'UNE piste de grille, dans le vocabulaire de `grid-template-*`.
+ *
+ * `1fr` pour une piste qui se partage la place, `fit-content` pour une piste qui
+ * se règle sur son contenu. Une piste figée à la main vaut `null` : c'est un
+ * nombre de maquette, que le contrat n'écrit jamais, et l'export le signale. La
+ * place dans le tableau est conservée — retirer la piste décalerait les autres.
+ */
+export type GridTrack = string | null;
+
+/**
  * Bornes de taille, toujours tokenisées.
  *
  * Elles sont SÉPARÉES de `size` et de `sizing` parce qu'elles ne répondent pas
@@ -292,6 +336,12 @@ export type ChildStructure = {
    * Dimension figée du calque (ex. taille d'icône), relevée sur les axes que
    * Figma tient en `Fixed`. Un axe en `Hug` ou en `Fill` n'apparaît pas ici :
    * il est déjà décrit par l'absence, ou par `flexGrow` / `alignSelf`.
+   *
+   * Sous un parent `layout: grid`, l'absence se lit autrement : c'est la CELLULE
+   * qui décide, décrite par `columnSizes` / `rowSizes` et par la place du layer.
+   * Le layer ne publie alors sa dimension que s'il cite une variable — une
+   * décision qui lui appartient malgré la cellule — et son silence ne vaut
+   * jamais `Hug`.
    */
   size?: SlotSize;
   /**
@@ -308,7 +358,21 @@ export type ChildStructure = {
    */
   position?: 'absolute';
   constraints?: LayoutConstraints;
-  /** Étendue et alignement dans la cellule, quand le parent est une grille. */
+  /**
+   * Place du layer dans la grille de son parent.
+   *
+   * `columnStart` et `rowStart` sont les valeurs de `grid-column-start` et
+   * `grid-row-start` — donc comptées à partir de 1, là où Figma indexe à partir
+   * de 0. Elles sont publiées sur tout enfant de grille EN FLUX : Figma pose une
+   * ancre sur chacun, et la redéduire supposerait de réimplémenter son placement
+   * automatique. Un enfant en position absolue n'en a pas : il est hors de la
+   * grille, et `constraints` dit à quels bords il s'accroche.
+   *
+   * Les étendues gardent leur règle : absentes quand elles valent 1, la cellule
+   * elle-même.
+   */
+  columnStart?: number;
+  rowStart?: number;
   columnSpan?: number;
   rowSpan?: number;
   justifySelf?: AlignSelf;
@@ -337,12 +401,19 @@ export type ChildStructure = {
   columns?: number;
   rows?: number;
   /**
+   * Taille de chaque piste, dans l'ordre du panneau Figma — colonnes de gauche
+   * à droite, lignes de haut en bas. Publiées avec `layout: grid`, et seulement
+   * quand Figma les expose.
+   */
+  columnSizes?: GridTrack[];
+  rowSizes?: GridTrack[];
+  /**
    * Dimensions propres du conteneur, aux mêmes conditions que celles du
    * composant : une valeur reliée à une variable se publie, une valeur neutre
    * reste absente sans un mot, et un nombre écrit à la main avertit.
    */
-  padding?: { x: string | null; y: string | null };
-  radius?: string | null;
+  padding?: Padding;
+  radius?: Radius | null;
   /** Répartition sur l'axe principal de ce conteneur. */
   justifyContent?: JustifyContent;
   /** Alignement sur l'axe secondaire de ce conteneur. */
@@ -428,8 +499,12 @@ export type StrokeAlignment = 'inside' | 'center' | 'outside';
 /** Couleur et géométrie tokenisées d'un stroke porté par un rôle (`border`, `ring`…). */
 export type StrokeTokens = {
   color: string;
-  /** Token de largeur ; null si Figma expose une largeur non tokenisée. */
-  width: string | null;
+  /**
+   * Largeur du contour : une référence quand les quatre bords partagent leur
+   * variable, le détail par bord sinon, `null` quand Figma expose une largeur
+   * non tokenisée.
+   */
+  width: StrokeWidth | null;
   /** Alignement structurel du stroke dans Figma. */
   align: StrokeAlignment | null;
 };
@@ -489,8 +564,8 @@ export type SizeDimensions = {
   rowGap: string | null;
   /** Espace entre les colonnes d'une grille, aux mêmes conditions. */
   columnGap: string | null;
-  padding: { x: string | null; y: string | null };
-  radius: string | null;
+  padding: Padding;
+  radius: Radius | null;
 };
 
 /**
@@ -508,6 +583,14 @@ export type ContractStructure = {
   /** Nombre de pistes, quand `layout` vaut `grid`. */
   columns?: number;
   rows?: number;
+  /**
+   * Taille de chaque piste, dans l'ordre du panneau Figma. Elles disent, avec
+   * `columns` / `rows` et la place de chaque enfant, la boîte que la grille
+   * donne à ses calques — ce qu'aucune dimension de calque ne décrit sous une
+   * grille.
+   */
+  columnSizes?: GridTrack[];
+  rowSizes?: GridTrack[];
   /** Espace entre les COLONNES d'une grille. */
   columnGap?: string | null;
   /**
@@ -536,8 +619,8 @@ export type ContractStructure = {
   gap?: string | null;
   /** Espace entre les lignes, aux mêmes conditions que `gap`. */
   rowGap?: string | null;
-  padding?: { x: string | null; y: string | null };
-  radius?: string | null;
+  padding?: Padding;
+  radius?: Radius | null;
   /**
    * Dimensions PAR taille quand le composant expose un axe de tailles
    * (clés = valeurs de la prop `size` : big, medium, small…).

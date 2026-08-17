@@ -11,10 +11,17 @@ import type { TokenResolver } from '../variables';
 import { tokenKey } from './colorKeys';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
-import { BINDING_PATTERNS, fieldLabel, getBinding, resolveTokenName } from './nodeBindings';
+import {
+  BINDING_PATTERNS,
+  fieldLabel,
+  getBinding,
+  resolveSidedTokenNames,
+  SIDE_KEYS,
+  toSidedRef,
+} from './nodeBindings';
 import { isRenderableRole, paintSiteRole } from './semantics';
 import { isIconLayer } from './slotNames';
-import type { StrokeAlignment } from './types';
+import type { StrokeAlignment, StrokeWidth } from './types';
 export type { TokenResolver } from '../variables';
 
 const BOUND_FIELDS = ['fills', 'strokes'] as const;
@@ -37,7 +44,7 @@ export type VariantColor = {
 
 /** Une couleur de contour, avec la géométrie que le contrat publie à côté. */
 export type VariantStrokeColor = VariantColor & {
-  width: string | null;
+  width: StrokeWidth | null;
   align: StrokeAlignment | null;
 };
 
@@ -57,18 +64,40 @@ function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment |
   return null;
 }
 
-/** Résout une largeur uniforme sans aplatir des côtés asymétriques. */
+/**
+ * Résout l'épaisseur d'un contour : une valeur quand les quatre bords partagent
+ * leur variable, le détail par bord sinon. Les tokens sont NUS ici ; l'enrobage
+ * en référence a lieu au moment de publier la feuille.
+ */
 async function strokeWidth(
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
-): Promise<string | null> {
-  return resolveTokenName(
+): Promise<StrokeWidth | null> {
+  return resolveSidedTokenNames(
     node,
     BINDING_PATTERNS.strokeWidth,
+    SIDE_KEYS.strokeWidth,
     'stroke weight',
     resolver,
     warnings,
+  );
+}
+
+/**
+ * Vrai si deux largeurs de contour décrivent la même géométrie.
+ *
+ * Une comparaison d'identité suffisait tant qu'une largeur était une chaîne ;
+ * détaillée par bord, elle produit un objet neuf à chaque lecture, et deux
+ * calques réglés exactement pareil auraient déclenché un avertissement que
+ * AUCUN geste du designer n'aurait fait disparaître.
+ */
+function memeLargeur(left: StrokeWidth | null, right: StrokeWidth | null): boolean {
+  if (left === null || right === null) return left === right;
+  if (typeof left === 'string' || typeof right === 'string') return left === right;
+  const sides = new Set([...Object.keys(left), ...Object.keys(right)]);
+  return Array.from(sides).every(
+    (side) => (left as Record<string, string>)[side] === (right as Record<string, string>)[side],
   );
 }
 
@@ -108,11 +137,11 @@ export async function getSlotTokens(
     node: SceneNode;
     field: (typeof BOUND_FIELDS)[number];
     promise: Promise<string | null>;
-    stroke: Promise<{ width: string | null; align: StrokeAlignment | null }> | null;
+    stroke: Promise<{ width: StrokeWidth | null; align: StrokeAlignment | null }> | null;
   }> = [];
   const strokeStyles = new Map<
     SceneNode,
-    Promise<{ width: string | null; align: StrokeAlignment | null }>
+    Promise<{ width: StrokeWidth | null; align: StrokeAlignment | null }>
   >();
 
   for (const node of getAllNodes(component, warnings, composed)) {
@@ -192,7 +221,7 @@ export async function getSlotTokens(
       const value: VariantStrokeColor = {
         token: binding.token,
         role,
-        width: width ? toRef(width) : null,
+        width: toSidedRef(width),
         align: binding.strokeStyle?.align ?? null,
       };
       const known = seenStrokes.get(binding.token);
@@ -203,7 +232,7 @@ export async function getSlotTokens(
       }
       // Même token, géométrie différente : la feuille n'a qu'une entrée par
       // token, ce cas reste réellement irreprésentable.
-      if (known.value.width === value.width && known.value.align === value.align) continue;
+      if (memeLargeur(known.value.width, value.width) && known.value.align === value.align) continue;
       warnings.push(
         `Layer « ${binding.node.name} » : son stroke ${toRef(binding.token)} est déjà posé par le ` +
           `layer « ${known.node.name} », avec une stroke weight ou un alignement différents. Le ` +

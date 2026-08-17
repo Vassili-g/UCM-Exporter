@@ -7,7 +7,12 @@
  */
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
-import { containerSizing, fixedDimensions, sizeBoundFields } from './flexLayout';
+import {
+  containerSizing,
+  fixedDimensions,
+  gridCellSizedAxes,
+  sizeBoundFields,
+} from './flexLayout';
 import type { ContainerSizing, SizeBounds, SlotSize } from './types';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
@@ -290,6 +295,38 @@ export function hasCompleteBinding(
   );
 }
 
+/**
+ * Correspondance entre le champ Figma d'un côté et la clé que le contrat publie.
+ *
+ * Elle n'existe que pour les groupes dont chaque côté peut porter SA décision :
+ * les deux paddings, les quatre coins, les quatre bords d'un contour. Les autres
+ * groupes composés — `slotSize` en particulier, où les deux côtés d'un carré
+ * doivent citer la même variable — n'en ont pas, et gardent l'exigence d'une
+ * variable unique.
+ *
+ * Les clés publiées sont celles de CSS, dans l'ordre de CSS : un consommateur
+ * écrit `border-radius: topLeft topRight bottomRight bottomLeft` sans réordonner.
+ */
+export const SIDE_KEYS = {
+  paddingX: { paddingLeft: 'left', paddingRight: 'right' },
+  paddingY: { paddingTop: 'top', paddingBottom: 'bottom' },
+  radius: {
+    topLeftRadius: 'topLeft',
+    topRightRadius: 'topRight',
+    bottomRightRadius: 'bottomRight',
+    bottomLeftRadius: 'bottomLeft',
+  },
+  strokeWidth: {
+    strokeTopWeight: 'top',
+    strokeRightWeight: 'right',
+    strokeBottomWeight: 'bottom',
+    strokeLeftWeight: 'left',
+  },
+} as const;
+
+/** Un groupe résolu : une valeur unique, ou le détail par côté. */
+type GroupResolution<K extends string> = string | Record<K, string> | null;
+
 type AlternativeResolution = {
   fields: ReadonlyArray<string>;
   aliases: Array<VariableAlias | null>;
@@ -301,16 +338,24 @@ type AlternativeResolution = {
  *
  * Le tableau extérieur décrit des alternatives (`cornerRadius` OU quatre
  * coins) ; chaque tableau intérieur est une conjonction (gauche ET droite).
- * Une représentation partielle ou asymétrique vaut `null` : conserver le
- * premier token ferait affirmer au contrat une valeur que Figma ne prouve pas.
+ * Une représentation PARTIELLE vaut `null` : conserver le premier token ferait
+ * affirmer au contrat une valeur que Figma ne prouve pas.
+ *
+ * Des côtés complets mais reliés à des variables différentes valent `null` eux
+ * aussi, SAUF pour les groupes qui savent les publier séparément — `sides` les
+ * désigne. C'est la seule dérogation, et elle ne concerne pas les groupes dont
+ * les champs ne sont pas des côtés.
  */
-export async function resolveTokenName(
+async function resolveGroup<K extends string>(
   node: SceneNode,
   alternatives: FieldAlternatives,
   label: string,
   resolver: TokenResolver,
   warnings: string[],
-): Promise<string | null> {
+  // Fourni pour les seuls groupes dont chaque côté porte sa propre décision.
+  // Sans lui, des côtés qui citent deux variables restent une contradiction.
+  sides?: Readonly<Record<string, K>>,
+): Promise<GroupResolution<K>> {
   // Avant toute liaison : Figma applique-t-il seulement cette dimension ici ?
   const inapplicable = inapplicableReason(node, alternatives);
   if (inapplicable === 'no-auto-layout') {
@@ -379,12 +424,26 @@ export async function resolveTokenName(
     const tokensByAlternative = complete.map((entry) =>
       Array.from(new Set(entry.tokens.filter((token): token is string => Boolean(token)))),
     );
-    const asymmetric = tokensByAlternative.find((tokens) => tokens.length > 1);
-    if (asymmetric) {
+    const asymmetricIndex = tokensByAlternative.findIndex((tokens) => tokens.length > 1);
+    if (asymmetricIndex !== -1) {
+      const entry = complete[asymmetricIndex];
+      // Chaque côté cite SA variable. Le design system les nomme déjà
+      // séparément : le contrat publie le détail au lieu de tout perdre.
+      // Deux représentations complètes à la fois restent une contradiction —
+      // `cornerRadius` ET quatre coins ne se départagent pas.
+      const publiable = sides && complete.length === 1
+        && entry.fields.every((field) => sides[field] !== undefined);
+      if (publiable) {
+        const detail = {} as Record<K, string>;
+        entry.fields.forEach((field, index) => {
+          detail[sides[field]] = entry.tokens[index] as string;
+        });
+        return detail;
+      }
       warnings.push(
         `Layer « ${node.name} » — ${label} : les côtés ne sont pas reliés à la même ` +
-          `variable (${asymmetric.join(', ')}). Rien n'est exporté pour cette valeur. ` +
-          `Reliez-les toutes à la même variable, puis réexportez.`,
+          `variable (${tokensByAlternative[asymmetricIndex].join(', ')}). Rien n'est exporté ` +
+          `pour cette valeur. Reliez-les toutes à la même variable, puis réexportez.`,
       );
       return null;
     }
@@ -436,6 +495,70 @@ export async function resolveTokenName(
       `variables manquantes, puis réexportez.`,
   );
   return null;
+}
+
+/**
+ * Résout un groupe dont TOUS les côtés doivent citer la même variable.
+ *
+ * C'est le cas de `slotSize` : un carré dont les deux axes citeraient deux
+ * variables n'est plus un carré, et le contrat le dit plutôt que d'inventer.
+ */
+export async function resolveTokenName(
+  node: SceneNode,
+  alternatives: FieldAlternatives,
+  label: string,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<string | null> {
+  return resolveGroup(node, alternatives, label, resolver, warnings) as Promise<string | null>;
+}
+
+/**
+ * Résout un groupe dont chaque côté peut porter SA décision : une valeur unique
+ * quand tous citent la même variable, le détail par côté sinon.
+ *
+ * Le reste de la règle ne bouge pas : un groupe partiel — un côté relié, l'autre
+ * écrit à la main — ne publie rien et avertit. C'est ce qui garde l'extraction
+ * d'accord avec `hasCompleteBinding`, donc avec l'élection du node de layout :
+ * publier un demi-padding ferait décrire par le contrat un calque que l'élection
+ * n'a pas retenu.
+ */
+export async function resolveSidedTokenNames<K extends string>(
+  node: SceneNode,
+  alternatives: FieldAlternatives,
+  sides: Readonly<Record<string, K>>,
+  label: string,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<GroupResolution<K>> {
+  return resolveGroup(node, alternatives, label, resolver, warnings, sides);
+}
+
+/** Enrobe en référence de contrat une valeur unique ou détaillée par côté. */
+export function toSidedRef<K extends string>(
+  resolved: GroupResolution<K>,
+): string | Record<K, string> | null {
+  if (resolved === null) return null;
+  if (typeof resolved === 'string') return toRef(resolved);
+  const refs = {} as Record<K, string>;
+  for (const [side, token] of Object.entries(resolved) as Array<[K, string]>) {
+    refs[side] = toRef(token);
+  }
+  return refs;
+}
+
+/** `resolveField`, pour un groupe dont les côtés peuvent différer. */
+export async function resolveSidedField<K extends string>(
+  node: SceneNode,
+  alternatives: FieldAlternatives,
+  sides: Readonly<Record<string, K>>,
+  label: string,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<string | Record<K, string> | null> {
+  return toSidedRef(
+    await resolveSidedTokenNames(node, alternatives, sides, label, resolver, warnings),
+  );
 }
 
 /**
@@ -503,16 +626,20 @@ export async function resolveSlotSize(
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
+  // Le parent décide sur un axe quand il est une grille : la cellule fait alors
+  // autorité, et le calque ne publie que ce qu'il porte vraiment.
+  parent?: SceneNode,
 ): Promise<SlotSize | null> {
   const fixed = fixedDimensions(node);
-  const [width, height] = await Promise.all([
-    fixed.width
-      ? resolveField(node, BINDING_PATTERNS.width, 'width', resolver, warnings)
-      : null,
-    fixed.height
-      ? resolveField(node, BINDING_PATTERNS.height, 'height', resolver, warnings)
-      : null,
-  ]);
+  const cellule = parent
+    ? gridCellSizedAxes(parent, node)
+    : { width: false, height: false };
+  const axe = (field: 'width' | 'height'): Promise<string | null> | null => {
+    if (!fixed[field]) return null;
+    if (cellule[field]) return resolveBoundAxis(node, field, resolver, warnings);
+    return resolveField(node, BINDING_PATTERNS[field], field, resolver, warnings);
+  };
+  const [width, height] = await Promise.all([axe('width'), axe('height')]);
 
   if (!width && !height) return null;
   if (width && width === height) return width;
@@ -569,24 +696,24 @@ export async function resolveSizeBounds(
 }
 
 /**
- * Token d'un axe du composant, relevé seulement là où Figma en porte un.
+ * Token d'un axe dont la dimension figée est déjà expliquée par ailleurs.
  *
- * La différence avec un slot tient au silence : un axe figé que le designer n'a
- * relié à aucune variable est une taille de maquette assumée, décrite par le
- * `stretch` de `containerSizing`, et rien ne manque au contrat. Réclamer une
- * variable ici avertirait sur presque tous les component sets, dont le cadre
- * fixe est la norme. Une liaison présente mais irrésolue avertit en revanche
- * par `resolveField` : le designer a bien désigné une variable, et le contrat
- * n'a pas su la nommer.
+ * Deux calques sont dans ce cas, pour la même raison. Le composant : un axe figé
+ * sans variable est une taille de maquette assumée, décrite par le `stretch` de
+ * `containerSizing`, et réclamer une variable avertirait sur presque tous les
+ * component sets. Un enfant de grille : sa boîte est celle de sa cellule, que
+ * les pistes décrivent déjà. Dans les deux cas le geste demandé ne changerait
+ * rien, et le silence n'est pas une perte.
+ *
+ * Une liaison présente mais irrésolue avertit en revanche par `resolveField` :
+ * le designer a bien désigné une variable, et le contrat n'a pas su la nommer.
  */
-async function resolveComponentAxis(
+async function resolveBoundAxis(
   node: SceneNode,
   field: 'width' | 'height',
-  isFixed: boolean,
   resolver: TokenResolver,
   warnings: string[],
 ): Promise<string | null> {
-  if (!isFixed) return null;
   if (!firstVariableAlias(getBinding(node, field))) return null;
   return resolveField(node, BINDING_PATTERNS[field], field, resolver, warnings);
 }
@@ -610,8 +737,8 @@ export async function resolveContainerSizing(
   const menu = containerSizing(node);
   const fixed = fixedDimensions(node);
   const [width, height] = await Promise.all([
-    resolveComponentAxis(node, 'width', fixed.width, resolver, warnings),
-    resolveComponentAxis(node, 'height', fixed.height, resolver, warnings),
+    fixed.width ? resolveBoundAxis(node, 'width', resolver, warnings) : null,
+    fixed.height ? resolveBoundAxis(node, 'height', resolver, warnings) : null,
   ]);
   return { width: width ?? menu.width, height: height ?? menu.height };
 }

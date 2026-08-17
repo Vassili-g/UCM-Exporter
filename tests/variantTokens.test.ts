@@ -640,3 +640,58 @@ test('un variant écarté pour doublon d’axes n’allonge pas la clé du varia
   });
   assert.ok(warnings.some((warning) => warning.includes('Variants « focus »')));
 });
+
+/**
+ * Contrat 7.0 : une largeur de contour se détaille par bord.
+ *
+ * Elle ne peut donc plus se comparer par identité — deux calques réglés
+ * exactement pareil produisaient deux objets distincts, et l'avertissement de
+ * géométrie contradictoire se serait déclenché sur un design correct, sans
+ * qu'aucun geste du designer ne le fasse disparaître.
+ */
+test('getSlotTokens publie une largeur de stroke détaillée par bord', async () => {
+  const bord = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
+  const cadre = (name: string) => ({
+    type: 'RECTANGLE',
+    name,
+    boundVariables: {
+      strokes: [colorAlias],
+      strokeTopWeight: bord('haut'),
+      strokeRightWeight: bord('cote'),
+      strokeBottomWeight: bord('bas'),
+      strokeLeftWeight: bord('cote'),
+    },
+    strokeAlign: 'INSIDE',
+    findAll: () => [],
+  });
+  const gauche = cadre('Encadré');
+  const droite = cadre('Encadré jumeau');
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Card',
+    boundVariables: {},
+    children: [gauche, droite],
+    findAll: (predicat: (node: never) => boolean) =>
+      [gauche, droite].filter(predicat as (node: unknown) => boolean),
+  } as unknown as ComponentNode;
+  const resolver = {
+    resolve: async (candidate: VariableAlias | null | undefined) => ({
+      color: 'components.card.colors.border',
+      haut: 'layouts.stroke.thick',
+      cote: 'layouts.stroke.thin',
+      bas: 'layouts.stroke.thick',
+    } as Record<string, string>)[candidate?.id ?? ''] ?? null,
+  };
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(racine, resolver, warnings);
+
+  assert.deepEqual(tokens.strokes[0]?.width, {
+    top: '{layouts.stroke.thick}',
+    right: '{layouts.stroke.thin}',
+    bottom: '{layouts.stroke.thick}',
+    left: '{layouts.stroke.thin}',
+  });
+  // Deux calques réglés à l'identique ne se contredisent pas.
+  assert.deepEqual(warnings, []);
+});

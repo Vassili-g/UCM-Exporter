@@ -234,13 +234,29 @@ existe une (Button : `sizeWrapperButton`), ses props sont **fusionnées** dans l
 (étape 1) et ses dimensions relevées ; **sinon**, dimensions lues directement
 sur le composant de référence (`defaultVariant`). → `gap`, `padding.x/y`,
 `radius`. Un composant plat est donc géré sans blocage.
-Une dimension composée n'est exportée que si une représentation complète se
-résout vers un token unique : gauche + droite pour `padding.x`, haut + bas
-pour `padding.y`, largeur + hauteur pour la taille d'un slot, et
-`cornerRadius` ou les quatre coins pour le rayon. Une représentation partielle
-ou asymétrique produit un warning et vaut `null` (ou reste absente pour la
-taille d'un slot) : le contrat n'affirme jamais une symétrie que Figma ne
-prouve pas. Une valeur neutre par défaut effectivement fournie par Figma (par
+Une dimension composée n'est exportée que si une représentation **complète** se
+résout : gauche + droite pour `padding.x`, haut + bas pour `padding.y`, largeur
++ hauteur pour la taille d'un slot, et `cornerRadius` ou les quatre coins pour
+le rayon. Une représentation partielle produit un warning et vaut `null` (ou
+reste absente pour la taille d'un slot) : le contrat n'affirme jamais une
+dimension que Figma ne prouve pas.
+
+**Les côtés, eux, peuvent différer** (7.0). Quand tous citent la même variable,
+le champ garde sa forme courte — une référence — et le contrat d'un composant
+déjà correct ne change pas. Quand ils en citent plusieurs, le contrat publie le
+DÉTAIL par côté au lieu de tout perdre : `padding.x` devient
+`{ "left": "{…}", "right": "{…}" }`, `radius` devient
+`{ "topLeft", "topRight", "bottomRight", "bottomLeft" }`, et la largeur d'un
+stroke `{ "top", "right", "bottom", "left" }`. Le design system nomme déjà ces
+variables séparément ; exiger une variable unique demandait au designer
+d'aplatir une décision qui lui appartient. La règle du groupe complet, elle, ne
+bouge pas : un seul côté relié ne publie toujours rien, et le contrat resterait
+sinon en désaccord avec l'élection du node de layout, qui compte les mêmes
+groupes.
+
+La taille d'un slot n'entre pas dans cette liste : ses deux axes ne sont pas
+deux côtés d'un même champ, et deux variables y décrivent une dimension que le
+contrat ne saurait pas écrire. Elle garde donc l'exigence d'une variable unique. Une valeur neutre par défaut effectivement fournie par Figma (par
 exemple `0` pour un gap, un padding ou un rayon) reste elle aussi absente, mais
 ne produit pas de warning : la demander comme token n'ajouterait aucune
 information au rendu.
@@ -352,8 +368,8 @@ contrôle tout le contenu du slot le rend optionnel comme avant : c'est l'enfant
 qui se tait alors, pour qu'un même fait n'ait jamais deux propriétaires.
 
 `layout`, `justifyContent`, `alignItems` et `wrap` sont relevés dès que le
-conteneur est un auto layout linéaire ; `columns`, `rows`, `columnGap` et
-`rowGap` dès qu'il est une grille. `gap` n'est relevé qu'à partir de deux
+conteneur est un auto layout linéaire ; `columns`, `rows`, `columnSizes`,
+`rowSizes`, `columnGap` et `rowGap` dès qu'il est une grille. `gap` n'est relevé qu'à partir de deux
 enfants — un conteneur qui n'en range qu'un n'espace rien. `padding` et `radius`
 sont relevés sur chaque conteneur, à la règle commune : une valeur neutre reste
 absente sans un mot, une valeur écrite à la main avertit. Pour un node sans
@@ -507,9 +523,34 @@ contrat : un offset Figma ne se relie à aucune variable, et un nombre écrit à
 la main n'est jamais contractuel. Un avertissement le dit. La lecture précède
 celle du flux, car une grille aussi porte des enfants en position absolue.
 
-Un enfant de **grille** publie sa place dans sa cellule : `columnSpan` et
+Un enfant de **grille** publie sa place dans sa cellule : `columnStart` et
+`rowStart` — les valeurs de `grid-column-start` et `grid-row-start`, donc
+comptées à partir de 1 là où Figma indexe à partir de 0 —, `columnSpan` et
 `rowSpan` (absents quand ils valent 1, la valeur neutre), `justifySelf` et
-`alignSelf` (absents sur `AUTO`). Direction,
+`alignSelf` (absents sur `AUTO`). Les ancres sont publiées sur tout enfant resté
+dans le flux : Figma en pose une sur chacun, et les redéduire supposerait de
+réimplémenter son placement automatique. Un enfant absolu n'en a pas — il est
+hors de la grille.
+
+**Sous une grille, c'est la cellule qui décide de la boîte.** Un enfant qui s'y
+étire — son alignement vaut `AUTO` sur cet axe — ne se voit donc réclamer aucune
+variable de taille : `columnSizes`, `rowSizes` et sa place disent déjà quelle
+place il occupe, et le geste demandé au designer ne changerait rien. Il publie
+sa dimension seulement s'il cite une variable, comme le composant lui-même. Un
+enfant explicitement aligné, lui, s'est décollé des bords de sa cellule : sa
+dimension redevient la sienne, et la règle commune s'applique — figée sans
+variable, elle avertit.
+
+`columnSizes` et `rowSizes` portent la taille de chaque piste dans le
+vocabulaire de `grid-template-*` : `"1fr"` (piste `FLEX`, avec son facteur),
+`"fit-content"` (piste `HUG`), et `null` pour une piste figée à la main — un
+nombre brut n'est jamais contractuel. La place dans le tableau est conservée, et
+un avertissement nomme les pistes concernées : le geste est de les régler en
+`Fill` ou `Hug` et de porter la dimension, reliée à une variable, sur les calques
+que la grille dispose. Un runtime Figma qui n'expose pas ces champs ne publie
+rien et n'avertit de rien : une propriété absente n'est pas une valeur.
+
+Direction,
 alignements, dimensions figées et propriétés de flux des slots sont comparés sur
 toute la matrice — cadres de dépendance imbriqués compris ; une différence entre
 variants avertit au lieu d'être généralisée depuis le variant de référence.
@@ -676,7 +717,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "5.4",
+    "contractVersion": "7.0",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -892,10 +933,10 @@ d'export, les `warnings` de l'export et la
 traçabilité Figma (nom de fichier, id du nœud, clé de composant, lien URL).
 Les `warnings` documentent l'EXPORT, pas le composant : un consommateur n'a
 jamais à les lire pour rendre un composant.
-L'URL vaut `null` tant que le plugin n'est pas un **plugin privé
-d'organisation** déclarant `enablePrivatePluginApi` : `figma.fileKey` leur est
-réservé. Ce n'est donc pas un état transitoire que la publication corrigerait,
-et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId` et
+L'URL est construite depuis `figma.fileKey`, que l'API réserve aux plugins
+déclarant `enablePrivatePluginApi` dans leur manifest — ce que fait celui-ci.
+Elle vaut `null` là où l'API ne fournit pas cette clé, un plugin publié sur la
+Community notamment : un warning le signale alors, sans bloquer, et `nodeId` et
 `fileName` restent exploitables pour retrouver le composant.
 
 ### Invariants
@@ -1066,7 +1107,34 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **6.0** : `structure.children` cesse de
+La version actuelle du contrat est **7.0**, et elle ferme deux pertes que le
+composant d'épreuve StressTest a rendues visibles.
+
+**Un champ à quatre côtés publie le détail au lieu de tout perdre.** `padding.x`,
+`padding.y`, `radius` et la largeur d'un stroke cessent d'être des chaînes : ce
+sont désormais une référence — quand tous les côtés citent la même variable, la
+forme courte, inchangée — OU un objet par côté. Le design system nommait déjà ces
+variables séparément (`padding-left`, `radius-top-left`) ; le moteur les refusait
+et se contredisait au passage, puisque l'élection du node de layout comptait ce
+padding comme complet quand l'extraction n'en publiait rien. Un consommateur qui
+écrivait `padding.x` dans une chaîne de style doit désormais tester la forme —
+c'est ce qui en fait une version majeure. La règle du groupe complet ne change
+pas : un seul côté relié ne publie toujours rien et avertit.
+
+**Sous une grille, c'est la cellule qui décide.** Les pistes sont publiées
+(`columnSizes`, `rowSizes`, en `1fr` / `fit-content`, `null` pour une piste figée
+à la main, sous avertissement) et chaque enfant publie son ancre (`columnStart`,
+`rowStart`, en valeurs CSS comptées à partir de 1). En contrepartie, un enfant
+qui s'étire dans sa cellule ne se voit plus réclamer une variable pour une
+hauteur que la grille lui impose : le contrat le disait manquant alors que rien
+ne manquait. L'absence de `size` sous un parent `layout: grid` se lit donc « la
+cellule décide », et non plus « Hug ».
+
+`meta.figma.url` n'est plus perdu : le manifest déclare `enablePrivatePluginApi`,
+et `figma.fileKey` est fourni à ce plugin. L'avertissement qui présentait la
+perte comme une fatalité de l'API disparaît de tout export normal.
+
+La 6.0 : `structure.children` cesse de
 s'arrêter au premier calque qui n'est ni un texte ni une dépendance. Le contrat
 descend désormais dès qu'un descendant porte une information qu'une feuille ne
 sait pas exprimer, à n'importe quelle profondeur : un auto layout dans un auto

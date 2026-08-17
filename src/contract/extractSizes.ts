@@ -11,7 +11,14 @@ import type { TokenResolver } from '../variables';
 import { getVariantAxes, getVariantValues } from './componentTree';
 import type { ComposedInstances } from './exportableNodes';
 import type { VariantLayoutNodes } from './layoutNodes';
-import { BINDING_PATTERNS, gapLabel, resolveField, resolveRowGap } from './nodeBindings';
+import {
+  BINDING_PATTERNS,
+  gapLabel,
+  resolveField,
+  resolveRowGap,
+  resolveSidedField,
+  SIDE_KEYS,
+} from './nodeBindings';
 import { isGridAutoLayout } from './flexLayout';
 import { semanticEnumName } from './semantics';
 import type { SizeDimensions } from './types';
@@ -66,23 +73,26 @@ async function extractDimensions(
     grille
       ? resolveField(layoutNode, BINDING_PATTERNS.gridColumnGap, `column gap (variant « ${sizeValue} »)`, resolver, warnings)
       : null,
-    resolveField(
+    resolveSidedField(
       layoutNode,
       BINDING_PATTERNS.paddingX,
+      SIDE_KEYS.paddingX,
       `horizontal padding (variant « ${sizeValue} »)`,
       resolver,
       warnings,
     ),
-    resolveField(
+    resolveSidedField(
       layoutNode,
       BINDING_PATTERNS.paddingY,
+      SIDE_KEYS.paddingY,
       `vertical padding (variant « ${sizeValue} »)`,
       resolver,
       warnings,
     ),
-    resolveField(
+    resolveSidedField(
       layoutNode,
       BINDING_PATTERNS.radius,
+      SIDE_KEYS.radius,
       `corner radius (variant « ${sizeValue} »)`,
       resolver,
       warnings,

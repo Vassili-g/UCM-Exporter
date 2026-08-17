@@ -191,7 +191,23 @@ tests/
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours
   un slot réel de `structure.children`.
 - Une liaison composée n’est valide que si tout le groupe requis est lié :
-  deux paddings, deux dimensions, quatre coins, etc.
+  deux paddings, deux dimensions, quatre coins, etc. Les côtés d’un même champ
+  peuvent en revanche citer des variables DIFFÉRENTES : le contrat publie alors
+  le détail (`padding.x`, `padding.y`, `radius`, largeur d’un stroke) au lieu de
+  tout perdre, et garde la forme courte quand ils la partagent. Le design system
+  nommait déjà ces variables séparément — c’est le moteur qui exigeait
+  l’aplatissement. La taille d’un slot n’en est pas : ses deux axes ne sont pas
+  deux côtés, et deux variables y décrivent une dimension inexprimable.
+  Publier un groupe partiel, en revanche, remettrait l’extraction en désaccord
+  avec `hasCompleteBinding`, donc avec l’élection du node de layout.
+- Sous une grille, la CELLULE fait autorité sur la boîte. Les pistes
+  (`columnSizes`, `rowSizes`) et la place de l’enfant (`columnStart`,
+  `rowStart`, spans) la décrivent ; un enfant qui s’y étire ne se voit réclamer
+  aucune variable de taille, et ne publie la sienne que s’il en cite une —
+  la règle du composant, pour la même raison. Un enfant explicitement aligné
+  s’est décollé de sa cellule : la règle commune revient. Une piste figée à la
+  main vaut `null` et avertit ; un runtime qui n’expose pas les pistes ne publie
+  rien et ne dit rien.
 - Une donnée facultative incomplète avertit. Les préconditions explicitement
   définies dans la spécification bloquent.
 - On n’avertit que sur ce qu’on publie. Une valeur que le contrat va jeter —

@@ -584,3 +584,110 @@ test('la signature de flux descend dans les cadres imbriqués d’une dépendanc
     structureSignature(actionAlignee('MAX'), new Set(), dependanceDe()),
   );
 });
+
+/** Une tuile de grille : un rectangle peint, donc un calque que le contrat publie. */
+const tuileDeGrille = (extra: Record<string, unknown> = {}) => ({
+  type: 'RECTANGLE',
+  id: 'tile',
+  name: 'Tile',
+  visible: true,
+  layoutSizingHorizontal: 'FILL',
+  // Sous une grille, Figma ne renvoie pas `FILL` sur cet axe : c'est ce que le
+  // moteur lisait comme une hauteur figée, alors que la cellule la décide.
+  layoutSizingVertical: 'FIXED',
+  gridColumnAnchorIndex: 1,
+  gridRowAnchorIndex: 2,
+  boundVariables: { fills: [alias('couleur')] },
+  findAll: findAllOn([]),
+  ...extra,
+});
+
+/** La grille qui la range, avec les pistes que Figma expose. */
+const grilleDeTuiles = (tuile: unknown, pistes: Record<string, unknown> = {}) => {
+  const grille = {
+    type: 'COMPONENT',
+    name: 'TilesGrid',
+    layoutMode: 'GRID',
+    gridColumnCount: 2,
+    gridRowCount: 3,
+    boundVariables: { gridColumnGap: alias('col'), gridRowGap: alias('row') },
+    children: [tuile],
+    findAll: findAllOn([tuile]),
+    ...pistes,
+  } as unknown as ComponentNode;
+  lie(tuile, grille);
+  return grille;
+};
+
+test('un enfant de grille ne se voit pas réclamer la dimension que sa cellule décide', async () => {
+  const tuile = tuileDeGrille();
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
+    warnings,
+  );
+
+  // La boîte de la tuile est celle de sa cellule : la réclamer enverrait le
+  // designer relier une variable qui ne changerait rien.
+  assert.equal(layout.children[0]?.size, undefined);
+  assert.equal(warnings.some((warning) => warning.includes('« Tile » — height')), false);
+  // Sa place, elle, est publiée : Figma indexe à partir de 0, CSS à partir de 1.
+  assert.equal(layout.children[0]?.columnStart, 2);
+  assert.equal(layout.children[0]?.rowStart, 3);
+});
+
+test('un enfant de grille explicitement aligné garde la règle commune', async () => {
+  // Un alignement explicite le décolle des bords de sa cellule : sa dimension
+  // redevient la sienne, et un nombre écrit à la main se signale.
+  const tuile = tuileDeGrille({ gridChildVerticalAlign: 'CENTER' });
+  const warnings: string[] = [];
+
+  await extractLayout(
+    grilleDeTuiles(tuile),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
+    warnings,
+  );
+
+  assert.ok(warnings.some((warning) => warning.includes('« Tile » — height')));
+});
+
+test('les pistes d’une grille sont publiées, et une piste figée se signale', async () => {
+  const tuile = tuileDeGrille();
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile, {
+      gridColumnSizes: [{ type: 'FLEX', value: 1 }, { type: 'FLEX', value: 2 }],
+      gridRowSizes: [{ type: 'HUG' }, { type: 'FIXED', value: 120 }, { type: 'FLEX' }],
+    }),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
+    warnings,
+  );
+
+  assert.deepEqual(layout.columnSizes, ['1fr', '2fr']);
+  // La piste figée vaut `null` : un nombre brut n'est jamais contractuel, et sa
+  // place dans le tableau est conservée.
+  assert.deepEqual(layout.rowSizes, ['fit-content', null, '1fr']);
+  assert.ok(warnings.some((warning) => (
+    warning.includes('« TilesGrid »') && warning.includes('ligne 2')
+  )));
+});
+
+test('une grille dont Figma n’expose pas les pistes ne publie ni n’avertit', async () => {
+  const tuile = tuileDeGrille();
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
+    warnings,
+  );
+
+  // Une propriété absente n'est pas une valeur : un runtime qui ne la fournit
+  // pas ne doit rien faire dire au contrat.
+  assert.equal('columnSizes' in layout, false);
+  assert.equal('rowSizes' in layout, false);
+  assert.equal(warnings.some((warning) => warning.includes('à la main')), false);
+});
