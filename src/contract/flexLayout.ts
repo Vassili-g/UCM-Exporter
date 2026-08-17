@@ -10,7 +10,9 @@ import type {
   AlignSelf,
   AxisSizing,
   ContainerSizing,
+  GridPlacement,
   JustifyContent,
+  LayoutConstraints,
   SizeBounds,
 } from './types';
 
@@ -23,6 +25,8 @@ type FlexContainerProperties = {
 type FlexItemProperties = {
   alignSelf?: AlignSelf;
   flexGrow?: 1;
+  position?: 'absolute';
+  constraints?: LayoutConstraints;
 };
 
 type FigmaPropertyBag = Record<string, unknown>;
@@ -31,6 +35,93 @@ type FigmaPropertyBag = Record<string, unknown>;
 export function isLinearAutoLayout(node: SceneNode): boolean {
   const mode = (node as unknown as FigmaPropertyBag).layoutMode;
   return mode === 'HORIZONTAL' || mode === 'VERTICAL';
+}
+
+/**
+ * Vrai pour l'auto layout en grille.
+ *
+ * Figma y dispose ses enfants en lignes et en colonnes, avec deux gaps propres
+ * (`gridRowGap`, `gridColumnGap`) que le contrat sait citer comme des tokens :
+ * ils sont tous deux liables à une variable. La grille n'est donc plus un repli
+ * `flex-row` accompagné d'un regret — c'est une disposition que le contrat
+ * décrit, avec son nombre de pistes et la place de chaque enfant.
+ */
+export function isGridAutoLayout(node: SceneNode): boolean {
+  return (node as unknown as FigmaPropertyBag).layoutMode === 'GRID';
+}
+
+/** Nombre de pistes d'une grille, quand Figma l'expose. */
+export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: number } {
+  if (!isGridAutoLayout(node)) return {};
+  const values = asPropertyBag(node);
+  return {
+    ...(typeof values.gridColumnCount === 'number' ? { columns: values.gridColumnCount } : {}),
+    ...(typeof values.gridRowCount === 'number' ? { rows: values.gridRowCount } : {}),
+  };
+}
+
+/** Alignement d'un enfant de grille dans sa cellule ; `AUTO` est la valeur neutre. */
+function gridSelfAlignment(value: unknown): AlignSelf | null {
+  if (value === 'MIN') return 'flex-start';
+  if (value === 'CENTER') return 'center';
+  if (value === 'MAX') return 'flex-end';
+  return null;
+}
+
+/**
+ * Place d'un enfant dans la grille de son parent : son étendue et son
+ * alignement dans sa cellule.
+ *
+ * Une étendue de 1 est la valeur neutre — c'est la cellule elle-même — et reste
+ * absente, comme `INHERIT` et `0` du côté Flex. `AUTO` en est l'équivalent pour
+ * les alignements : l'enfant suit alors la règle de la grille.
+ */
+export function gridItemProperties(parent: SceneNode, child: SceneNode): GridPlacement {
+  if (!isGridAutoLayout(parent)) return {};
+  const values = asPropertyBag(child);
+  const placement: GridPlacement = {};
+
+  if (typeof values.gridColumnSpan === 'number' && values.gridColumnSpan > 1) {
+    placement.columnSpan = values.gridColumnSpan;
+  }
+  if (typeof values.gridRowSpan === 'number' && values.gridRowSpan > 1) {
+    placement.rowSpan = values.gridRowSpan;
+  }
+  const justify = gridSelfAlignment(values.gridChildHorizontalAlign);
+  if (justify) placement.justifySelf = justify;
+  const align = gridSelfAlignment(values.gridChildVerticalAlign);
+  if (align) placement.alignSelf = align;
+  return placement;
+}
+
+/**
+ * Contraintes d'un calque en position absolue, traduites en côtés CSS.
+ *
+ * Ce sont les seules données de placement que le contrat sache porter sans
+ * écrire un nombre de maquette : les offsets, eux, ne sont liables à aucune
+ * variable dans Figma, et un `x` brut n'est jamais contractuel. Une contrainte
+ * dit au moins à quel bord le calque s'accroche — sans elle, un badge posé en
+ * haut à droite se retrouvait en haut à gauche sans que rien ne le dise.
+ */
+export function layoutConstraints(node: SceneNode): LayoutConstraints | null {
+  const constraints = asPropertyBag(node).constraints as
+    | { horizontal?: unknown; vertical?: unknown }
+    | undefined;
+  if (!constraints) return null;
+
+  const horizontal = ({
+    MIN: 'left', CENTER: 'center', MAX: 'right', STRETCH: 'stretch', SCALE: 'scale',
+  } as Record<string, LayoutConstraints['horizontal']>)[String(constraints.horizontal)];
+  const vertical = ({
+    MIN: 'top', CENTER: 'center', MAX: 'bottom', STRETCH: 'stretch', SCALE: 'scale',
+  } as Record<string, LayoutConstraints['vertical']>)[String(constraints.vertical)];
+  if (!horizontal || !vertical) return null;
+  return { horizontal, vertical };
+}
+
+/** Vrai si Figma sort ce calque du flux de son parent. */
+export function isAbsolutePositioned(node: SceneNode): boolean {
+  return asPropertyBag(node).layoutPositioning === 'ABSOLUTE';
 }
 
 function asPropertyBag(node: SceneNode): FigmaPropertyBag {
@@ -201,17 +292,24 @@ export function flexItemProperties(
   parent: SceneNode,
   child: SceneNode,
   warnings: string[] = [],
-): FlexItemProperties {
+): FlexItemProperties & GridPlacement {
   // Testé avant l'auto layout linéaire : une grille aussi porte des enfants en
-  // position absolue, et sortir plus tôt les rendrait invisibles au diagnostic.
-  if (asPropertyBag(child).layoutPositioning === 'ABSOLUTE') {
+  // position absolue. Le calque sort du flux, mais il n'en disparaît plus pour
+  // autant : ses contraintes disent à quel bord il s'accroche, et c'est tout ce
+  // que le contrat peut porter sans écrire un nombre de maquette — un offset
+  // Figma n'est liable à aucune variable.
+  if (isAbsolutePositioned(child)) {
+    const constraints = layoutConstraints(child);
     warnings.push(
-      `Layer « ${child.name} » : il est en position « Absolute » dans l'auto layout « ${parent.name} ». ` +
-        `Le contrat ne publie pas ses coordonnées ; son placement manquera au développeur. ` +
-        `Replacez-le dans le flux de l'auto layout si ce placement doit être contractuel, puis réexportez.`,
+      `Layer « ${child.name} » : il est en position « Absolute » dans « ${parent.name} ». Le ` +
+        `contrat publie les bords auxquels il s'accroche, jamais sa distance à ces bords — un ` +
+        `offset Figma ne se relie à aucune variable, et un nombre écrit à la main n'est pas une ` +
+        `décision du design system. Le développeur le placera contre ces bords, sans décalage. ` +
+        `Replacez ce layer dans le flux si sa position exacte doit être contractuelle, puis réexportez.`,
     );
-    return {};
+    return { position: 'absolute', ...(constraints ? { constraints } : {}) };
   }
+  if (isGridAutoLayout(parent)) return gridItemProperties(parent, child);
   if (!isLinearAutoLayout(parent)) return {};
 
   const values = asPropertyBag(child);

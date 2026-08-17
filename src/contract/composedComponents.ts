@@ -102,11 +102,19 @@ export async function scanComposedInstances(
 
   // Deux passes : savoir si une instance est imbriquée dans une autre suppose
   // de connaître d'abord toutes les dépendances du sous-arbre.
+  // `getMainComponentAsync` est un aller-retour par instance. Les enchaîner en
+  // série coûtait, sur un set de trente variants portant chacun ses instances,
+  // autant d'allers-retours consécutifs — et l'UI du plugin est mono-thread.
+  // Les lancer ensemble ne change RIEN au résultat : l'ordre de `composes`
+  // vient de `instances`, qui reste l'ordre du document.
+  const owners = await Promise.all(
+    instances.map((instance) => contractedOwnerName(instance, contracted)),
+  );
   const ownerByInstance = new Map<InstanceNode, string>();
-  for (const instance of instances) {
-    const owner = await contractedOwnerName(instance, contracted);
+  instances.forEach((instance, index) => {
+    const owner = owners[index];
     if (owner) ownerByInstance.set(instance, owner);
-  }
+  });
 
   const dependencyByInstance = new Map<InstanceNode, ComposedDependency>();
   for (const [instance, component] of ownerByInstance) {

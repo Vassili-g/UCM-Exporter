@@ -150,6 +150,44 @@ export type AlignItems = 'flex-start' | 'center' | 'flex-end' | 'baseline';
 export type AlignSelf = 'flex-start' | 'center' | 'flex-end' | 'stretch';
 
 /**
+ * Place d'un enfant dans la grille de son parent.
+ *
+ * Les étendues valent 1 par défaut — la cellule elle-même — et restent alors
+ * absentes, comme toute valeur neutre du contrat. Les deux alignements suivent
+ * le vocabulaire de `AlignSelf` : une grille aligne ses enfants dans leur
+ * cellule exactement comme un flex les aligne sur son axe secondaire.
+ */
+export type GridPlacement = {
+  columnSpan?: number;
+  rowSpan?: number;
+  justifySelf?: AlignSelf;
+  alignSelf?: AlignSelf;
+};
+
+/**
+ * Bords auxquels un calque hors flux s'accroche.
+ *
+ * C'est tout ce que le contrat sait porter d'une position absolue. La distance
+ * à ces bords, elle, n'est liable à aucune variable dans Figma : ce serait un
+ * nombre de maquette, et le contrat n'en écrit jamais. Les clés sont celles de
+ * CSS plutôt que le `MIN`/`MAX` de Figma, comme partout ailleurs.
+ */
+export type LayoutConstraints = {
+  horizontal: 'left' | 'center' | 'right' | 'stretch' | 'scale';
+  vertical: 'top' | 'center' | 'bottom' | 'stretch' | 'scale';
+};
+
+/**
+ * Disposition d'un conteneur, dans le vocabulaire de CSS.
+ *
+ * `grid` n'est plus un repli honteux : Figma y expose deux gaps liables à une
+ * variable et le nombre de ses pistes, soit exactement ce que le contrat sait
+ * porter. Un conteneur sans auto layout reste décrit comme une rangée, faute de
+ * mieux, et le dit.
+ */
+export type LayoutDirection = 'flex-row' | 'flex-column' | 'grid';
+
+/**
  * Comportement d'un composant sur un axe, face à la place qu'on lui donne.
  *
  * Ce sont les mots de CSS, pas ceux de Figma : `Fill` et `Hug` sont les
@@ -265,6 +303,16 @@ export type ChildStructure = {
   /** Exception d'alignement de ce layer dans l'auto layout de son parent. */
   alignSelf?: AlignSelf;
   /**
+   * Le layer est hors du flux de son parent. `constraints` dit alors à quels
+   * bords il s'accroche ; sa distance à ces bords n'est pas contractuelle.
+   */
+  position?: 'absolute';
+  constraints?: LayoutConstraints;
+  /** Étendue et alignement dans la cellule, quand le parent est une grille. */
+  columnSpan?: number;
+  rowSpan?: number;
+  justifySelf?: AlignSelf;
+  /**
    * Le layer remplit l'axe principal de son parent (`Fill` dans Figma, exposé
    * par `layoutSizing…` ou par l'historique `layoutGrow: 1`). Son absence vaut
    * `Hug` : une dimension fixe est publiée par `size` quand elle est reliée à
@@ -272,17 +320,29 @@ export type ChildStructure = {
    */
   flexGrow?: 1;
   /**
-   * Parts internes du slot, dans les deux cas où il est un conteneur : il
-   * contient PLUSIEURS calques texte, ou il enveloppe un composant unifié.
+   * Calques internes du slot, à profondeur quelconque et de toute nature.
    *
-   * Le slot décrit uniquement les branches qui mènent à ces textes ou à cette
-   * dépendance — même forme, à toute profondeur. La typographie des parts est
-   * publiée séparément dans `structure.variantTypography`; leurs visibilités
-   * restent portées ici. Les dessins voisins ne deviennent pas des parts.
+   * Le contrat descend dès qu'un descendant porte une information qu'une
+   * feuille ne sait pas exprimer : un texte, une icône, une dépendance, ou
+   * n'importe quelle liaison de variable. Un auto layout dans un auto layout
+   * dans une grille est donc décrit jusqu'au bout, chaque niveau avec sa
+   * disposition, ses dimensions et ses bornes. Seule exception, qui évite un
+   * étage inutile : un cadre dont la seule information est un unique calque
+   * texte reste ce texte. `structureTree.ts` en est l'unique autorité.
    */
   children?: ChildStructure[];
-  /** Sens de l'auto-layout du slot, présent uniquement avec `children`. */
-  layout?: 'flex-row' | 'flex-column';
+  /** Disposition du slot, présente uniquement avec `children`. */
+  layout?: LayoutDirection;
+  /** Nombre de pistes, quand `layout` vaut `grid`. */
+  columns?: number;
+  rows?: number;
+  /**
+   * Dimensions propres du conteneur, aux mêmes conditions que celles du
+   * composant : une valeur reliée à une variable se publie, une valeur neutre
+   * reste absente sans un mot, et un nombre écrit à la main avertit.
+   */
+  padding?: { x: string | null; y: string | null };
+  radius?: string | null;
   /** Répartition sur l'axe principal de ce conteneur. */
   justifyContent?: JustifyContent;
   /** Alignement sur l'axe secondaire de ce conteneur. */
@@ -298,11 +358,14 @@ export type ChildStructure = {
    */
   wrap?: true;
   /**
-   * Espace entre les LIGNES d'un conteneur en `wrap`. Absent, il vaut `gap` —
-   * Figma synchronise les deux tant que le designer ne les dissocie pas, et CSS
-   * fait de même avec une valeur de `gap` unique.
+   * Espace entre les LIGNES : celles d'un conteneur en `wrap`, ou celles d'une
+   * grille. Absent sous `wrap`, il vaut `gap` — Figma synchronise les deux tant
+   * que le designer ne les dissocie pas, et CSS fait de même avec une valeur de
+   * `gap` unique.
    */
   rowGap?: string | null;
+  /** Espace entre les COLONNES d'une grille. */
+  columnGap?: string | null;
   /**
    * Nom du composant unifié rendu à cet emplacement. Le slot est alors une
    * DÉPENDANCE : ni ses tokens ni ses calques n'appartiennent à ce contrat,
@@ -424,6 +487,8 @@ export type SizeDimensions = {
   gap: string | null;
   /** Espace entre les lignes, publié aux mêmes conditions que `gap`. */
   rowGap: string | null;
+  /** Espace entre les colonnes d'une grille, aux mêmes conditions. */
+  columnGap: string | null;
   padding: { x: string | null; y: string | null };
   radius: string | null;
 };
@@ -438,8 +503,13 @@ export type SizeDimensions = {
  * par diverger.
  */
 export type ContractStructure = {
-  /** Sens de l'auto-layout Figma, traduit en vocabulaire CSS. */
-  layout: 'flex-row' | 'flex-column';
+  /** Disposition Figma du composant, traduite en vocabulaire CSS. */
+  layout: LayoutDirection;
+  /** Nombre de pistes, quand `layout` vaut `grid`. */
+  columns?: number;
+  rows?: number;
+  /** Espace entre les COLONNES d'une grille. */
+  columnGap?: string | null;
   /**
    * Comportement du composant face à la place qu'on lui donne. Toujours
    * publié : c'est la première décision de qui l'intègre, et la déduire d'une

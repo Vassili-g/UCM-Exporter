@@ -261,9 +261,11 @@ reliée » :
   absent, mais `justifyContent: "space-between"` décrit la répartition ; une
   liaison conservée sur `itemSpacing` ne produit ni token ni warning ;
 - **auto layout en grille** (`layoutMode: GRID`) — Figma y espace les enfants
-  par le gap des lignes et des colonnes, que le contrat ne lit pas.
-  `itemSpacing` reste lisible sans aucun effet : le `gap` reste absent et un
-  warning dit que cette absence ne vaut pas zéro.
+  par `gridColumnGap` et `gridRowGap`, tous deux **liables à une variable**.
+  Le contrat les publie donc comme `columnGap` et `rowGap`, à côté de
+  `columns` et `rows`, et `layout` vaut `grid`. `itemSpacing` reste lisible
+  sans aucun effet : le `gap` reste absent, et rien n'est signalé — il n'y a
+  plus rien qui manque.
 
 La même règle vaut pour l'élection du porteur de layout : une liaison
 inapplicable ne désigne pas un calque comme conteneur de dimensions, sinon le
@@ -309,28 +311,54 @@ en collision avertissent et l'usage ambigu reste absent.
 **6. Structure** — `children` = enfants directs réels du node de layout :
 - calque **texte** → slot `label` (nom d'origine dans `figmaLayer`) ; son style
   est situé par `variantTypography` (étape 5) ;
-- calque contenant **plusieurs textes** → slot décrit par `children`,
-  récursivement sur ses seules branches textuelles, plus `layout` et `gap`
-  lorsqu'ils sont applicables ; voir ci-dessous ;
 - calque **graphique désigné par une règle `@icons`** → slot `icon`, `optional:
   true`, `size` ;
+- **conteneur** → slot décrit par `children`, récursivement, plus sa
+  disposition et ses dimensions propres ; voir ci-dessous ;
 - autre calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
 
-Un slot qui contient plusieurs calques texte — un titre et une description —
-décrit ses **parts** dans `children`, à la même forme et à toute profondeur,
-mais uniquement sur les branches qui mènent à un vrai calque `TEXT`. Ces parts
-fournissent les chemins stables que `variantTypography` cible. Un frame
-intermédiaire porte son `figmaLayer`, sa visibilité et ses enfants. Un dessin
-ou une instance composée voisine ne devient pas une part.
+**La descente ne connaît ni profondeur, ni nature de composant.** Un calque est
+un CONTENEUR dès qu'un de ses descendants porte une information qu'une feuille
+ne sait pas exprimer : un calque texte, une icône, une dépendance composée, ou
+n'importe quelle liaison de variable. Une feuille dit son nom, sa taille, ses
+bornes et sa place dans le flux ; elle ne sait dire ni la disposition interne,
+ni les couleurs, ni les tailles de ce qu'elle contient. Un auto layout dans un
+auto layout dans une grille est donc décrit jusqu'au bout, chaque niveau avec
+son `layout`, son `gap`, son `padding`, son `radius`, sa `size` et ses
+`bounds`.
+
+La règle a une borne, et elle compte autant : **un calque dont aucun descendant
+ne porte d'information reste une feuille.** Sans elle, l'export publierait les
+trente tracés d'une icône importée. C'est aussi pourquoi une liaison de
+variable — et non le type du node — est le signal : le contrat décrit ce que le
+design system a nommé, pas ce que Figma contient. `structureTree.ts` en est
+l'unique autorité, partagée par l'extraction, les chemins de
+`variantTypography` et les signatures de comparaison des variants : un second
+calcul finirait par viser un slot que `structure.children` ne contient pas.
+
+Un conteneur publie **tous** ses calques rendables, jamais une sélection : un
+titre, une description, un dessin voisin et un tag sont tous des calques de ce
+contrat-ci. Le taire ferait annoncer au contrat des couleurs qu'aucun calque
+publié ne porte, puisque `variantTokens` les relève sur le variant entier.
+
+La profondeur est bornée à **12 niveaux**. Une coupure qui emporte un
+sous-arbre réellement porteur produit un avertissement ; une coupure qui ne
+laisse qu'un dessin ne dit rien.
 
 Les visibilités portées par les
-nodes représentés descendent à leur place exacte ; une cible graphique exclue
-de l'arbre textuel reste dans `visibilityTargets`, sans perte silencieuse.
-`layout` et `gap` ne sont relevés que lorsqu'au moins deux branches sont
-disposées par un auto-layout `HORIZONTAL` ou `VERTICAL`. Pour `NONE`, `GRID` ou
-un node sans auto-layout, les deux champs restent absents et un warning explique
-que la disposition interne manquera. Sonder le padding ou le radius avertirait
-sur tout design pourtant correct et reste hors de cette récursion 4.3.
+nodes publiés descendent à leur place exacte ; une cible que l'arbre ne publie
+pas reste dans `visibilityTargets`, sans perte silencieuse. Une cible unique qui
+contrôle tout le contenu du slot le rend optionnel comme avant : c'est l'enfant
+qui se tait alors, pour qu'un même fait n'ait jamais deux propriétaires.
+
+`layout`, `justifyContent`, `alignItems` et `wrap` sont relevés dès que le
+conteneur est un auto layout linéaire ; `columns`, `rows`, `columnGap` et
+`rowGap` dès qu'il est une grille. `gap` n'est relevé qu'à partir de deux
+enfants — un conteneur qui n'en range qu'un n'espace rien. `padding` et `radius`
+sont relevés sur chaque conteneur, à la règle commune : une valeur neutre reste
+absente sans un mot, une valeur écrite à la main avertit. Pour un node sans
+disposition, `layout` reste absent et un warning explique que la disposition
+interne manquera — sauf autour d'un enfant unique, où il n'y a rien à décrire.
 
 Les parts sont nommées par la règle qui nomme déjà les slots (`label`,
 `label-2`…) : aucune heuristique sur le nom du calque, et `figmaLayer` conserve
@@ -471,21 +499,46 @@ borne retient le contenu, et la porter sur le composant retiendrait le cadre.
 Les bornes entrent dans la comparaison des variants comme le reste du flux, y
 compris sur les calques d'icônes, qu'`icons.*.size` ne couvre que pour la taille.
 
-Un layer en position `Absolute` est averti et ne reçoit aucune propriété Flex : le
-contrat ne décrit pas encore ses coordonnées. L'avertissement précède la lecture
-du flux, car une grille aussi porte des enfants en position absolue. Direction,
+Un layer en position `Absolute` sort du flux, mais n'en disparaît plus : le
+contrat publie `position: "absolute"` et les `constraints` — les bords
+auxquels il s'accroche, en vocabulaire CSS (`left`/`center`/`right`/`stretch`/
+`scale`, `top`/`center`/`bottom`/…). Sa DISTANCE à ces bords reste hors du
+contrat : un offset Figma ne se relie à aucune variable, et un nombre écrit à
+la main n'est jamais contractuel. Un avertissement le dit. La lecture précède
+celle du flux, car une grille aussi porte des enfants en position absolue.
+
+Un enfant de **grille** publie sa place dans sa cellule : `columnSpan` et
+`rowSpan` (absents quand ils valent 1, la valeur neutre), `justifySelf` et
+`alignSelf` (absents sur `AUTO`). Direction,
 alignements, dimensions figées et propriétés de flux des slots sont comparés sur
 toute la matrice — cadres de dépendance imbriqués compris ; une différence entre
 variants avertit au lieu d'être généralisée depuis le variant de référence.
 
 **Ce que Figma porte et que le schéma ne sait pas écrire** avertit plutôt que de
-disparaître, puisque le rendu, lui, en dépend :
+disparaître, puisque le rendu, lui, en dépend. C'est la contrepartie de tout ce
+qui précède : le contrat ne prétend pas décrire Figma en entier, mais il ne perd
+rien en silence.
 
 - `structure.layout` reste obligatoire, et `flex-row` en est le repli. Un node
-  de layout qui n'est pas un auto layout horizontal ou vertical — grille, frame
-  sans auto layout — est donc publié comme une rangée, et le warning le dit ;
+  de layout sans auto layout est donc publié comme une rangée, et le warning le
+  dit. La grille, elle, n'est plus concernée : elle est décrite ;
 - les bornes d'un calque intermédiaire, entre le composant et ses slots, n'ont
-  aucun propriétaire dans le contrat.
+  aucun propriétaire dans le contrat ;
+- la distance d'un calque absolu à ses bords d'accroche ;
+- sur **chaque calque publié**, et sur lui seul, les propriétés à effet visuel
+  qu'aucun champ ne porte : les **effets** (ombre, flou), l'**opacité**
+  partielle, une peinture non unie (**dégradé**, image) en `fill` ou en
+  `stroke`, plusieurs peintures « mixed » sur un même calque, un **blend mode**
+  non neutre, un **pointillé**, et pour un texte : l'**alignement** dans une
+  boîte qui n'est pas en `Hug`, la **casse**, la **décoration**, la
+  **troncature**.
+
+Ce relevé vit dans l'extraction, jamais dans un balayage à part : on n'avertit
+que sur ce qu'on publie, et les entrailles d'une icône ou les calques d'une
+dépendance ne regardent pas ce contrat-ci. Aucune valeur au défaut de Figma ne
+produit de message — un `clip content` activé, un masque d'icône ou une rotation
+résiduelle de tracé importé ne manquent à personne, et un rapport que le
+designer cesse de lire ne protège plus rien.
 
 **Passage à la ligne (4.4).** Un auto layout en `layoutWrap: WRAP` publie
 `wrap: true`, sur le composant comme sur n'importe quel conteneur de `children`.
@@ -850,6 +903,12 @@ et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId`
 - Le moteur ne dépend d’aucun nom de composant.
 - Le node de layout de chaque variant est élu une seule fois ; slots, icônes et
   chemins de typographie décrivent le même arbre.
+- Une seule autorité décide qui est un conteneur et qui est une feuille
+  (`structureTree.ts`). L’extraction, les chemins de typographie et les
+  signatures de comparaison la consultent ; aucun ne la recalcule.
+- Une propriété Figma à effet visuel, portée par un calque que le contrat
+  publie, et qu’aucun champ ne sait écrire, produit un avertissement. Une valeur
+  au défaut de Figma n’en produit jamais.
 - Une même clé publique relie `props`, `variantAxes` et les arbres de
   variantes ; les noms Figma d’origine restent traçables.
 - Aucune couleur n’est perdue par troncature de clé. La clé d’une couleur est
@@ -1007,7 +1066,26 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **5.5** : une couleur cesse d'en évincer une
+La version actuelle du contrat est **6.0** : `structure.children` cesse de
+s'arrêter au premier calque qui n'est ni un texte ni une dépendance. Le contrat
+descend désormais dès qu'un descendant porte une information qu'une feuille ne
+sait pas exprimer, à n'importe quelle profondeur : un auto layout dans un auto
+layout dans une grille est décrit jusqu'au bout, chaque niveau avec sa
+disposition, son `padding`, son `radius`, sa taille et ses bornes. Tout un
+sous-arbre graphique — la piste et le curseur d'un Toggle, le rail d'une
+Progress, trois cadres bordés emboîtés — se réduisait jusqu'ici à un slot opaque,
+alors que ses couleurs entraient bien dans `variantTokens` : le contrat annonçait
+des peintures qu'aucun calque publié ne portait. La même version rend
+contractuelles deux dispositions que le moteur se contentait d'avertir : la
+**grille** (`layout: "grid"`, `columns`, `rows`, `columnGap`, `rowGap`, et
+`columnSpan` / `rowSpan` / `justifySelf` sur chaque enfant) et la **position
+absolue** (`position` et `constraints`). Un consommateur doit désormais parcourir
+`structure.children` récursivement sans supposer que seules les branches de texte
+se ramifient, accepter un `layout` valant `grid`, et lire des chemins de
+`variantTypography` qui gagnent un étage dès qu'un texte est rangé dans son
+propre cadre — d'où la version majeure.
+
+La 5.5 : une couleur cesse d'en évincer une autre : une couleur cesse d'en évincer une
 autre. La clé d'une couleur garde pour base le dernier segment de sa variable,
 mais quand deux couleurs d'un même variant le partagent, elle s'allonge des
 segments qui les séparent — `userinput.background` et `divider.background` — au

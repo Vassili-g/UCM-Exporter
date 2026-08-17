@@ -5,6 +5,12 @@
  * le composant lui-même) et on relève les tokens liés : gap, paddings,
  * border-radius et tailles d'icônes. La typographie est extraite séparément
  * sur toute la matrice par `extractVariantTypography`.
+ *
+ * La descente est UNE seule fonction récursive, `describeNode`, qui ne connaît
+ * ni profondeur ni nature de composant : un auto layout dans une grille dans un
+ * cadre de dépendances se décrit avec la même règle à chaque étage.
+ * `structureTree.ts` décide qui est un conteneur et qui est une feuille ; ce
+ * module se contente de suivre cette décision et de résoudre les tokens.
  */
 import { firstVariableAlias } from '../variables';
 import type { TokenResolver } from '../variables';
@@ -13,8 +19,10 @@ import type { ComposedInstances } from './exportableNodes';
 import {
   BINDING_PATTERNS,
   fieldLabel,
+  exposesAnyField,
   gapLabel,
   getBinding,
+  hasCornerRadiusProperty,
   resolveContainerSizing,
   resolveField,
   resolveRowGap,
@@ -22,13 +30,21 @@ import {
   resolveSlotSize,
 } from './nodeBindings';
 import { normalizePropKey } from './parsers';
-import { assignSlots, composedWrapperSlots, isIconLayer } from './slotNames';
+import { isIconLayer } from './slotNames';
 import { composedSlotDependencies, nestedSlotVisibility } from './slotRelations';
+import {
+  depthLimitWarning,
+  publishedSlots,
+  publishesChildren,
+} from './structureTree';
+import { unsupportedPropertyWarnings } from './unsupportedProperties';
 import {
   containerSizing,
   fixedDimensions,
   flexContainerProperties,
   flexItemProperties,
+  gridTrackCounts,
+  isGridAutoLayout,
   isLinearAutoLayout,
   SIZE_BOUND_FIELDS,
   sizeBoundFields,
@@ -37,6 +53,7 @@ import type {
   ChildStructure,
   ComposedDependency,
   ContractStructure,
+  LayoutDirection,
 } from './types';
 
 /**
@@ -57,8 +74,15 @@ type LayoutStructure = Omit<
   'sizes' | 'variantAxes' | 'variantTokens' | 'variantStrokes' | 'variantTypography'
 >;
 
-/** Sens d'un auto-layout Figma applicable, sans valeur inventée pour `NONE` ou `GRID`. */
-function autoLayoutDirection(node: SceneNode): 'flex-row' | 'flex-column' | null {
+/**
+ * Disposition d'un node, sans valeur inventée pour un frame qui n'en a pas.
+ *
+ * La grille en fait désormais partie : Figma y expose deux gaps liables à une
+ * variable et le nombre de ses pistes, soit tout ce que le contrat sait porter.
+ * La décrire comme une rangée était un repli, pas une lecture.
+ */
+function autoLayoutDirection(node: SceneNode): LayoutDirection | null {
+  if (isGridAutoLayout(node)) return 'grid';
   if (!isLinearAutoLayout(node)) return null;
   const mode = (node as unknown as Record<string, unknown>).layoutMode;
   if (mode === 'HORIZONTAL') return 'flex-row';
@@ -67,78 +91,24 @@ function autoLayoutDirection(node: SceneNode): 'flex-row' | 'flex-column' | null
 }
 
 /**
- * Sens du conteneur racine. La forme historique du contrat rend ce champ
- * obligatoire et conserve `flex-row` comme repli. La récursion 4.3 n'utilise
- * jamais ce repli : elle omet le layout non applicable et avertit.
+ * Sens du conteneur racine. La forme du contrat rend ce champ obligatoire et
+ * conserve `flex-row` comme repli. La récursion n'utilise jamais ce repli :
+ * elle omet le layout non applicable et avertit.
  */
-function layoutDirection(node: SceneNode): 'flex-row' | 'flex-column' {
+function layoutDirection(node: SceneNode): LayoutDirection {
   return autoLayoutDirection(node) ?? 'flex-row';
 }
 
 /**
- * Nodes qui relient un conteneur à ses calques texte, textes compris.
+ * Signale ce qu'un calque PUBLIÉ porte et que le schéma ne sait pas écrire.
  *
- * Cette frontière empêche la récursion 4.3 de devenir une copie générale de
- * Figma : une icône ou une instance composée voisine n'est pas sur un chemin
- * de texte et ne devient donc jamais une part du slot.
+ * L'appel vit dans l'extraction, et non dans un balayage à part, parce que la
+ * règle du projet est « on n'avertit que sur ce qu'on publie » : un second
+ * parcours crierait sur les entrailles des icônes et sur les calques d'une
+ * dépendance, que ce contrat-ci ne décrit pas.
  */
-function textBranchNodeIds(root: SceneNode, texts: readonly TextNode[]): Set<string> {
-  const ids = new Set<string>();
-  for (const text of texts) {
-    let current: BaseNode | null | undefined = text;
-    while (current && current !== root) {
-      if ('id' in current) ids.add(current.id);
-      current = current.parent;
-    }
-  }
-  return ids;
-}
-
-/**
- * Cibles dont la visibilité sera décrite par un enfant récursif plus précis.
- *
- * Tout le sous-arbre d'une branche textuelle directe est délégué à cette
- * branche. Une cible graphique qui lui appartient y gardera son
- * `visibilityTargets`; un dessin directement voisin des branches reste au
- * contraire la responsabilité du conteneur courant.
- */
-function delegatedTextTargetIds(
-  root: SceneNode,
-  texts: readonly TextNode[],
-  composed: ComposedInstances,
-): Set<string> {
-  const branchIds = textBranchNodeIds(root, texts);
-  const delegated = new Set<string>();
-  if (!('children' in root)) return delegated;
-
-  for (const child of root.children) {
-    if (!branchIds.has(child.id)) continue;
-    for (const node of getAllNodes(child, [], composed)) delegated.add(node.id);
-  }
-  return delegated;
-}
-
-/**
- * Nodes délégués aux enfants qu'un cadre de dépendances publie.
- *
- * Depuis que ce cadre décrit TOUS ses calques, chaque visibilité plus profonde
- * a un propriétaire : la branche qui la porte, à sa place exacte. Le cadre qui
- * n'a su placer aucune dépendance ne publie rien, en revanche, et garde donc
- * ses cibles — sans quoi la prop disparaîtrait des deux côtés à la fois.
- *
- * Vide pour tout autre slot : un slot ordinaire décrit ses cibles lui-même.
- */
-function delegatedWrapperTargetIds(
-  child: SceneNode,
-  composed: ComposedInstances,
-  iconNames: ReadonlySet<string>,
-): Set<string> {
-  const delegated = new Set<string>();
-  if (composedSlotDependencies(child, composed).length === 0) return delegated;
-  for (const branch of composedWrapperSlots(assignSlots(child, iconNames, [], composed), composed)) {
-    for (const node of getAllNodes(branch.child, [], composed)) delegated.add(node.id);
-  }
-  return delegated;
+function warnUnsupportedProperties(node: SceneNode, warnings: string[]): void {
+  warnings.push(...unsupportedPropertyWarnings(node));
 }
 
 /**
@@ -146,10 +116,10 @@ function delegatedWrapperTargetIds(
  * ses bornes.
  *
  * Les deux vont ensemble partout où un calque occupe une place dans le flux —
- * slot direct, part textuelle, cadre de dépendance — et répondent à deux
+ * slot direct, part interne, cadre de dépendance — et répondent à deux
  * questions distinctes : quelle place il prend, jusqu'où cette place peut
- * aller. Les séparer en trois appels recopiés laisserait un jour l'un des trois
- * sans bornes.
+ * aller. Les séparer en appels recopiés laisserait un jour l'un d'eux sans
+ * bornes.
  */
 async function applySizing(
   entry: ChildStructure,
@@ -165,111 +135,112 @@ async function applySizing(
   if (bounds) entry.bounds = bounds;
 }
 
-/** Applique la visibilité native d'un node à la part exacte qui la porte. */
-function applyDirectVisibility(entry: ChildStructure, node: SceneNode): boolean {
-  const reference = node.componentPropertyReferences?.visible;
-  if (!reference) return false;
-  entry.visibilityProp = normalizePropKey(reference);
-  entry.optional = true;
-  return true;
-}
-
 /**
- * Décrit les enfants textuels d'un conteneur déjà créé.
+ * Écrit sur un conteneur sa disposition et ses dimensions propres.
  *
- * Seules les branches menant à un `TEXT` survivent. `layout` et `gap` ne sont
- * applicables que lorsque plusieurs branches sont réellement disposées par un
- * auto-layout horizontal ou vertical.
+ * C'est le même relevé qu'à la racine, appliqué à n'importe quelle profondeur :
+ * un auto layout imbriqué a son gap, ses paddings et son rayon exactement comme
+ * le composant. Les taire faisait perdre la moitié d'un design à trois étages,
+ * et l'argument d'autrefois — « sonder le padding avertirait sur tout design
+ * correct » — ne tient plus : une valeur neutre effectivement fournie par Figma
+ * reste absente SANS avertissement (`IMPLICIT_DEFAULTS`).
+ *
+ * Le padding et le gap ne sont sondés que sous un auto layout, où Figma les
+ * applique réellement ; le rayon l'est partout, car un frame sans auto layout a
+ * des coins comme un autre.
  */
-async function extractTextChildren(
-  node: SceneNode,
-  texts: readonly TextNode[],
+async function applyContainerProperties(
   entry: ChildStructure,
+  node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
-  composed: ComposedInstances,
-  iconNames: ReadonlySet<string>,
+  childCount: number,
+  dependencies: readonly ComposedDependency[],
 ): Promise<void> {
-  const branchIds = textBranchNodeIds(node, texts);
-  const assignments = assignSlots(node, iconNames, warnings, composed)
-    .filter(({ child }) => branchIds.has(child.id));
-  const children = (await Promise.all(
-    assignments.map(({ child, slot }) =>
-      extractTextBranch(node, child, slot, resolver, warnings, composed, iconNames)),
-  )).filter((child): child is ChildStructure => Boolean(child));
-
-  entry.children = children;
-  if (children.length < 2) return;
-
   const direction = autoLayoutDirection(node);
   if (!direction) {
-    warnings.push(
-      `Layer « ${node.name} » : il contient plusieurs branches de texte mais n'utilise pas ` +
-        `un auto layout horizontal ou vertical. Le contrat exporte leurs typographies et ` +
-        `visibilités, mais pas leur disposition. Appliquez un auto layout au layer si cette ` +
-        `disposition doit être contractuelle, puis réexportez.`,
-    );
+    // Un conteneur à un seul enfant n'a d'ordinaire aucune disposition à
+    // décrire — le réclamer enverrait le designer régler ce qui ne se voit
+    // pas. Un cadre de dépendance fait exception : c'est lui qui place le
+    // composant qu'il enveloppe, et sa disposition manque même autour d'un seul.
+    if (childCount > 1) {
+      warnings.push(
+        `Layer « ${node.name} » : il range ${childCount} layers mais n'utilise pas d'auto ` +
+          `layout. Le contrat exporte leurs tokens et leurs visibilités, mais pas leur ` +
+          `disposition : le développeur les placera autrement que dans Figma. Appliquez un auto ` +
+          `layout à ce layer, puis réexportez.`,
+      );
+    } else if (dependencies.length > 0) {
+      warnings.push(
+        `Layer « ${node.name} » : il enveloppe ${nommerDependances(dependencies)} mais ` +
+          `n'utilise pas d'auto layout. Le contrat publie la dépendance sans la disposition ` +
+          `de ce calque, et le développeur la rendra sans ce cadre. Appliquez un auto layout ` +
+          `à ce layer, puis réexportez.`,
+      );
+    }
+    await applyContainerRadius(entry, node, resolver, warnings);
     return;
   }
 
   entry.layout = direction;
-  Object.assign(entry, flexContainerProperties(node, warnings));
-  const gap = await resolveField(node, BINDING_PATTERNS.gap, gapLabel(node), resolver, warnings);
-  if (gap) entry.gap = gap;
-  const rowGap = await resolveRowGap(node, resolver, warnings);
-  if (rowGap) entry.rowGap = rowGap;
+  if (direction === 'grid') {
+    Object.assign(entry, gridTrackCounts(node));
+    const [columnGap, rowGap] = await Promise.all([
+      resolveField(node, BINDING_PATTERNS.gridColumnGap, 'column gap', resolver, warnings),
+      resolveField(node, BINDING_PATTERNS.gridRowGap, 'row gap', resolver, warnings),
+    ]);
+    if (columnGap) entry.columnGap = columnGap;
+    if (rowGap) entry.rowGap = rowGap;
+  } else {
+    Object.assign(entry, flexContainerProperties(node, warnings));
+    // `gap` décrit l'espace ENTRE des enfants : un conteneur qui n'en range
+    // qu'un n'espace rien, et réclamer une variable pour lui enverrait le
+    // designer relier une valeur qui ne se voit pas.
+    if (childCount > 1) {
+      const gap = await resolveField(
+        node,
+        BINDING_PATTERNS.gap,
+        gapLabel(node),
+        resolver,
+        warnings,
+      );
+      if (gap) entry.gap = gap;
+      const rowGap = await resolveRowGap(node, resolver, warnings);
+      if (rowGap) entry.rowGap = rowGap;
+    }
+  }
+
+  // Un layer dont Figma n'expose pas le padding n'en a pas : ce n'est ni une
+  // valeur neutre, ni un nombre écrit à la main.
+  const [paddingX, paddingY] = exposesAnyField(node, BINDING_PATTERNS.paddingX)
+    || exposesAnyField(node, BINDING_PATTERNS.paddingY)
+    ? await Promise.all([
+      resolveField(node, BINDING_PATTERNS.paddingX, 'horizontal padding', resolver, warnings),
+      resolveField(node, BINDING_PATTERNS.paddingY, 'vertical padding', resolver, warnings),
+    ])
+    : [null, null];
+  if (paddingX || paddingY) entry.padding = { x: paddingX, y: paddingY };
+  await applyContainerRadius(entry, node, resolver, warnings);
 }
 
-/** Une branche de l'arbre textuel 4.3, jusqu'au vrai calque `TEXT`. */
-async function extractTextBranch(
-  parent: SceneNode,
+/** Le rayon d'un conteneur, sondé quel que soit son mode de disposition. */
+async function applyContainerRadius(
+  entry: ChildStructure,
   node: SceneNode,
-  slot: string,
   resolver: TokenResolver,
   warnings: string[],
-  composed: ComposedInstances,
-  iconNames: ReadonlySet<string>,
-): Promise<ChildStructure | null> {
-  const texts = textNodes(node, warnings, composed);
-  if (texts.length === 0) return null;
-
-  const entry: ChildStructure = { slot, ...flexItemProperties(parent, node, warnings) };
-  if (slot !== node.name) entry.figmaLayer = node.name;
-  const isOptional = applyDirectVisibility(entry, node);
-
-  // Une part est un élément du flux comme un autre : sa dimension figée se
-  // relève ici, sinon un titre à largeur imposée passerait pour un hug.
-  await applySizing(entry, node, resolver, warnings);
-
-  if (node.type === 'TEXT') {
-    return entry;
-  }
-
-  const representedTargets = delegatedTextTargetIds(node, texts, composed);
-  const nestedVisibility = nestedSlotVisibility(
+): Promise<void> {
+  // Un GROUP n'a pas de coins : lui réclamer une variable enverrait le
+  // designer chercher un champ que son panneau ne montre pas.
+  if (!hasCornerRadiusProperty(node)) return;
+  const radius = await resolveField(
     node,
-    composed,
-    isOptional,
-    representedTargets,
-  );
-  if (nestedVisibility.visibilityProp && !entry.visibilityProp) {
-    entry.visibilityProp = nestedVisibility.visibilityProp;
-    entry.optional = true;
-  }
-  if (nestedVisibility.visibilityTargets) {
-    entry.visibilityTargets = nestedVisibility.visibilityTargets;
-  }
-
-  await extractTextChildren(
-    node,
-    texts,
-    entry,
+    BINDING_PATTERNS.radius,
+    'corner radius',
     resolver,
     warnings,
-    composed,
-    iconNames,
   );
-  return entry;
+  if (radius) entry.radius = radius;
 }
 
 /** « le composant « A » » ou « les composants « A », « B » », pour un message. */
@@ -279,203 +250,38 @@ function nommerDependances(dependencies: readonly ComposedDependency[]): string 
 }
 
 /**
- * Cadre qui enveloppe un ou plusieurs composants unifiés, décrit comme le
- * conteneur qu'il est.
- *
- * Ce calque appartient à CE contrat. Il publie donc son flux, puis ses enfants
- * dans `children`, exactement comme un slot à parts. Porter `composes` sur le
- * cadre lui-même le ferait passer pour le composant : son `alignSelf`
- * atterrirait sur un composant qui publie déjà son propre `structure.sizing`,
- * où une taille explicite neutralise l'étirement. Le cadre disparaîtrait avec
- * son alignement.
- *
- * Leur NOMBRE ne change pas la règle : un cadre qui range trois liens en publie
- * trois. Le contrat ne saurait sinon ni où ils vont, ni combien il en faut —
- * alors que `composes` continuerait de les déclarer, et le consommateur refuse
- * un contrat dont les deux champs ne décrivent pas la même séquence.
- *
- * Ce que le cadre range À CÔTÉ de ses dépendances lui appartient tout autant :
- * un tag, un texte, un dessin y sont des calques de ce contrat-ci, décrits par
- * la règle commune. Ne publier que les branches de dépendance les faisait
- * disparaître avec leur slot, leur typographie et leur visibilité, alors que
- * leurs couleurs entraient bien dans `variantTokens` — le contrat annonçait des
- * couleurs que plus aucun calque ne portait.
+ * Les nodes dont la visibilité sera portée par un enfant publié, à sa place
+ * exacte. Les retirer de `visibilityTargets` évite qu'un même fait ait deux
+ * propriétaires.
  */
-async function describeComposedWrapper(
-  entry: ChildStructure,
-  wrapper: SceneNode,
-  dependencies: readonly ComposedDependency[],
-  resolver: TokenResolver,
-  warnings: string[],
-  composed: ComposedInstances,
-  iconNames: ReadonlySet<string>,
-  placed: PlacedDependencies,
-  // Vrai quand le slot de ce cadre publie déjà une visibilité. Les branches se
-  // taisent alors, pour ne pas laisser croire à deux conditions distinctes.
-  parentPublishesVisibility: boolean,
-): Promise<void> {
-  const assignments = assignSlots(wrapper, iconNames, warnings, composed);
-  const published = composedWrapperSlots(assignments, composed);
-  // Les messages s'adressent au designer : ils nomment ce qu'il voit, donc au
-  // pluriel quand son calque range plusieurs composants.
-  const plusieurs = dependencies.length > 1;
-
-  // Les dépendances sont là — `composedSlotDependencies` les a trouvées — mais
-  // aucune branche exportable n'y mène : elles sont rangées sous un calque
-  // masqué. Publier un conteneur vide donnerait un contrat que le consommateur
-  // refuse ; on revient à la forme du slot-instance quand une seule dépendance
-  // est en jeu, et on dit dans tous les cas ce qui manquera. Un slot ne portant
-  // qu'un `composes`, plusieurs dépendances ne peuvent pas s'y replier : elles
-  // sortent alors du contrat, `composes` compris.
-  if (published.length === 0) {
-    if (dependencies.length === 1) {
-      entry.composes = dependencies[0].component;
-      placed.set(entry, dependencies[0]);
-    }
-    warnings.push(
-      `Layer « ${wrapper.name} » : il enveloppe ${nommerDependances(dependencies)} mais aucun ` +
-        `de ses calques exportables n'y mène. ${plusieurs
-          ? 'Le contrat ne peut placer aucune de ces dépendances — un slot ne porte qu’un ' +
-            'composant — et le développeur ne les rendra pas. Rendez visibles les calques qui ' +
-            'portent les instances'
-          : 'Le contrat nomme la dépendance sans la disposition de ce calque, et le développeur ' +
-            'rendra le composant sans son cadre. Rendez visible le calque qui porte l’instance'}, ` +
-        `puis réexportez.`,
-    );
-    return;
-  }
-
-  const direction = autoLayoutDirection(wrapper);
-  if (direction) {
-    entry.layout = direction;
-    Object.assign(entry, flexContainerProperties(wrapper, warnings));
-  } else {
-    warnings.push(
-      `Layer « ${wrapper.name} » : il enveloppe ${nommerDependances(dependencies)} mais ` +
-        `n'utilise pas un auto layout horizontal ou vertical. Le contrat publie ` +
-        `${plusieurs ? 'les dépendances' : 'la dépendance'} sans la disposition de ce calque, ` +
-        `et le développeur ${plusieurs ? 'les rendra' : 'le rendra'} sans ce cadre. ` +
-        `Appliquez un auto layout à ce layer, puis réexportez.`,
-    );
-  }
-
-  // Le cadre est un élément du flux comme un autre : sa dimension figée et ses
-  // bornes lui appartiennent. Seules celles de l'INSTANCE restent hors de ce
-  // contrat.
-  await applySizing(entry, wrapper, resolver, warnings);
-
-  // `gap` décrit l'espace ENTRE des enfants : le cadre le publie dès qu'il en
-  // range plusieurs. Un cadre à une seule dépendance n'espace rien — réclamer
-  // une variable pour lui enverrait le designer relier une valeur qui ne se
-  // voit pas. La réserve d'autrefois — « et qu'ils sont TOUS dans le contrat »
-  // — est désormais vraie par construction : le cadre les décrit tous.
-  if (published.length > 1) {
-    const gap = await resolveField(
-      wrapper,
-      BINDING_PATTERNS.gap,
-      gapLabel(wrapper),
-      resolver,
-      warnings,
-    );
-    if (gap) entry.gap = gap;
-    const rowGap = await resolveRowGap(wrapper, resolver, warnings);
-    if (rowGap) entry.rowGap = rowGap;
-  }
-
-  entry.children = await Promise.all(
-    published.map(({ child, slot }) =>
-      (composedSlotDependencies(child, composed).length > 0
-        ? extractComposedBranch(
-          wrapper,
-          child,
-          slot,
-          resolver,
-          warnings,
-          composed,
-          iconNames,
-          placed,
-          parentPublishesVisibility,
-        )
-        // Ce qui accompagne les dépendances est un calque de ce contrat, décrit
-        // par la règle commune. La visibilité déjà publiée par le cadre lui est
-        // passée pour qu'un même fait n'ait jamais deux propriétaires.
-        : extractChild(
-          child,
-          slot,
-          wrapper,
-          resolver,
-          warnings,
-          composed,
-          iconNames,
-          placed,
-          entry.visibilityProp,
-        ))),
-  );
-}
-
-/** Une branche qui mène à un composant unifié : la dépendance, ou un cadre de plus. */
-async function extractComposedBranch(
-  parent: SceneNode,
+function delegatedTargetIds(
   node: SceneNode,
-  slot: string,
-  resolver: TokenResolver,
-  warnings: string[],
   composed: ComposedInstances,
   iconNames: ReadonlySet<string>,
-  placed: PlacedDependencies,
-  parentPublishesVisibility: boolean,
-): Promise<ChildStructure> {
-  const entry: ChildStructure = { slot, ...flexItemProperties(parent, node, warnings) };
-  entry.figmaLayer = node.name;
-
-  // Le slot de premier niveau ne peut reprendre qu'UNE visibilité : celle d'une
-  // dépendance unique. Dès qu'un cadre en range plusieurs, il n'en prend aucune
-  // — la sienne masquerait les autres — et chaque branche porte donc la sienne.
-  // Sans cela, un cadre à deux boutons masquables les rendrait tous les deux
-  // inconditionnellement, alors que Figma les montre séparément.
-  if (!parentPublishesVisibility) applyDirectVisibility(entry, node);
-
-  const direct = composed.get(node.id);
-  if (direct) {
-    entry.composes = direct.component;
-    placed.set(entry, direct);
-    return entry;
+  warnings: string[],
+): Set<string> {
+  const delegated = new Set<string>();
+  for (const { child } of publishedSlots(node, iconNames, composed, warnings)) {
+    for (const descendant of getAllNodes(child, [], composed)) delegated.add(descendant.id);
   }
-
-  const dependencies = composedSlotDependencies(node, composed);
-  if (dependencies.length > 0) {
-    await describeComposedWrapper(
-      entry,
-      node,
-      dependencies,
-      resolver,
-      warnings,
-      composed,
-      iconNames,
-      placed,
-      parentPublishesVisibility || Boolean(entry.visibilityProp),
-    );
-  }
-  return entry;
+  return delegated;
 }
 
 /**
- * Transforme un enfant direct du conteneur en « slot » du contrat :
- * - un calque texte devient le slot sémantique `label` (son vrai nom Figma
- *   est gardé dans `figmaLayer` pour la traçabilité) ;
- * - un calque qui contient PLUSIEURS textes décrit ses enfants dans `children`,
- *   récursivement : une typographie unique y écraserait celle de la description
- *   par celle du titre ;
- * - un calque graphique (icône…) garde son nom dans `figmaLayer`, est marqué
- *   optionnel, et on relève son token de taille s'il existe. Une règle `@icons`
- *   peut ensuite le qualifier par son nom Figma, sans modifier son slot.
+ * Décrit UN calque publié, à quelque profondeur qu'il vive.
+ *
+ * Fonction unique et récursive : un slot de premier niveau, une part textuelle,
+ * un cadre de dépendances et un auto layout imbriqué sont le même cas, traité
+ * par le même code. Les quatre fonctions séparées d'autrefois se répondaient à
+ * peu près, et « à peu près » finissait par publier un chemin de slots que
+ * `structure.children` ne contenait pas.
  */
-async function extractChild(
+async function describeNode(
+  parent: SceneNode,
   child: SceneNode,
   // Décidé par `slotNames.assignSlots` : le déduire ici en ferait une seconde
   // définition, libre de diverger de celle que les icônes citent.
   slot: string,
-  parent: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
   composed: ComposedInstances,
@@ -485,29 +291,31 @@ async function extractChild(
   // Les dépendances que l'arbre place réellement. `composes` s'en dérive : les
   // deux champs ne peuvent pas diverger s'ils n'ont qu'une source.
   placed: PlacedDependencies,
-  // Visibilité déjà publiée par le slot qui contient celui-ci, quand un cadre
-  // de dépendances décrit ses calques. La republier à l'identique donnerait
-  // deux propriétaires au même fait ; une prop DIFFÉRENTE reste publiée, c'est
-  // une seconde condition que le composant doit lire.
+  depth: number,
+  // Visibilité déjà publiée par le slot qui contient celui-ci. La republier à
+  // l'identique donnerait deux propriétaires au même fait ; une prop DIFFÉRENTE
+  // reste publiée, c'est une seconde condition que le composant doit lire.
   parentVisibilityProp?: string,
 ): Promise<ChildStructure> {
-  const dependencies = composedSlotDependencies(child, composed);
-  const composedDependency = dependencies[0];
-  const texts = composedDependency ? [] : textNodes(child, warnings, composed);
-  // Le slot décrit ses parts dès qu'il porte plus d'un texte. La décision est
-  // prise ici, avant toute écriture, parce qu'elle change le PROPRIÉTAIRE de la
-  // typographie et des visibilités internes : les parts, et non plus le slot.
-  const describesParts = texts.length > 1;
-
   const entry: ChildStructure = { slot, ...flexItemProperties(parent, child, warnings) };
-  // Traçabilité : la couche sémantique et la déduplication renomment le slot,
-  // le nom Figma d'origine ne doit pas disparaître pour autant.
   if (slot !== child.name) entry.figmaLayer = child.name;
 
-  // Relevé sur TOUS les slots, pas seulement les calques graphiques : sans la
-  // liaison d'un label masquable (bouton à icône seule), le contrat exposerait
-  // une prop booléenne sans dire ce qu'elle montre ou cache. Un slot que l'on
-  // peut masquer est optionnel par construction.
+  const dependencies = composedSlotDependencies(child, composed);
+  const estUneDependance = composed.has(child.id);
+  // Un calque qui EST une dépendance porte les propriétés de son propre
+  // contrat : c'est à lui de s'en plaindre, pas à celui-ci.
+  if (!estUneDependance) warnUnsupportedProperties(child, warnings);
+
+  const describesChildren = publishesChildren(child, iconNames, composed, depth);
+  // La borne de profondeur se dit ici, et non dans une branche : un calque coupé
+  // peut porter des textes comme des dessins, et le contrat perd son contenu
+  // dans les deux cas.
+  if (!describesChildren && !estUneDependance) {
+    const coupe = depthLimitWarning(child, iconNames, composed, depth);
+    if (coupe) warnings.push(coupe);
+  }
+
+  // ---- Visibilités -------------------------------------------------------
   const directVisibility = child.componentPropertyReferences?.visible;
   // Une seule dépendance peut prêter sa visibilité au slot. À plusieurs, la
   // retenir en masquerait les autres : chaque branche publie alors la sienne.
@@ -526,23 +334,16 @@ async function extractChild(
       );
     }
   }
-  // Le slot déjà masquable ne peut pas voir une visibilité plus profonde
-  // devenir la sienne — ce serait en élargir la portée. Elle reste malgré tout
-  // relevée : la taire perdrait en silence une prop que le composant doit lire.
   const slotIsOptional = Boolean(directVisibility || dependencyVisibility);
-  // Les visibilités portées plus bas appartiennent aux structures qui les
-  // décrivent : les parts d'un slot textuel, et désormais les enfants d'un
-  // cadre de dépendances. Les laisser aussi dans `visibilityTargets` leur
-  // donnerait deux propriétaires.
-  const representedTargets = describesParts
-    ? delegatedTextTargetIds(child, texts, composed)
-    : delegatedWrapperTargetIds(child, composed, iconNames);
-  const nestedVisibility = nestedSlotVisibility(
-    child,
-    composed,
-    slotIsOptional,
-    representedTargets,
-  );
+  // Les visibilités portées plus bas appartiennent aux enfants publiés, qui les
+  // décrivent à leur place exacte. Les laisser aussi dans `visibilityTargets`
+  // leur donnerait deux propriétaires.
+  const representedTargets = describesChildren
+    ? delegatedTargetIds(child, composed, iconNames, [])
+    : new Set<string>();
+  const nestedVisibility = estUneDependance
+    ? {}
+    : nestedSlotVisibility(child, composed, slotIsOptional, representedTargets);
   const visibilityReference = directVisibility
     ? normalizePropKey(directVisibility)
     : dependencyVisibility ?? nestedVisibility.visibilityProp;
@@ -550,48 +351,69 @@ async function extractChild(
     entry.visibilityProp = visibilityReference;
     entry.optional = true;
   }
-  // Les cibles de l'arbre textuel ont été retirées par `representedTargets` :
-  // leurs parts les portent. Une cible graphique voisine reste ici pour ne pas
-  // disparaître sous prétexte que le slot contient aussi plusieurs textes.
   if (nestedVisibility.visibilityTargets) {
     entry.visibilityTargets = nestedVisibility.visibilityTargets;
   }
 
-  if (composedDependency) {
+  // ---- Une dépendance : le contrat la nomme, et s'arrête là --------------
+  if (estUneDependance) {
     entry.figmaLayer = child.name;
-    // Un composant unifié occupe la place d'un slot, mais rien de ce qu'il
-    // porte ne se relève ici : sa taille et sa typographie appartiennent à son
-    // contrat. Le nommer suffit à dire quoi rendre à cet emplacement.
-    if (composed.has(child.id)) {
-      entry.composes = composedDependency.component;
-      placed.set(entry, composedDependency);
-      return entry;
+    const dependency = dependencies[0] ?? composed.get(child.id);
+    if (dependency) {
+      entry.composes = dependency.component;
+      placed.set(entry, dependency);
     }
-    await describeComposedWrapper(
-      entry,
-      child,
-      dependencies,
-      resolver,
-      warnings,
-      composed,
-      iconNames,
-      placed,
-      Boolean(entry.visibilityProp),
-    );
     return entry;
   }
 
-  if (describesParts) {
-    await extractTextChildren(
-      child,
-      texts,
+  // ---- Un cadre dont aucune branche rendable ne mène à sa dépendance ------
+  if (dependencies.length > 0 && !describesChildren) {
+    if (dependencies.length === 1) {
+      entry.composes = dependencies[0].component;
+      placed.set(entry, dependencies[0]);
+    }
+    const plusieurs = dependencies.length > 1;
+    warnings.push(
+      `Layer « ${child.name} » : il enveloppe ${nommerDependances(dependencies)} mais aucun ` +
+        `de ses calques exportables n'y mène. ${plusieurs
+          ? 'Le contrat ne peut placer aucune de ces dépendances — un slot ne porte qu’un ' +
+            'composant — et le développeur ne les rendra pas. Rendez visibles les calques qui ' +
+            'portent les instances'
+          : 'Le contrat nomme la dépendance sans la disposition de ce calque, et le développeur ' +
+            'rendra le composant sans son cadre. Rendez visible le calque qui porte l’instance'}, ` +
+        `puis réexportez.`,
+    );
+    await applySizing(entry, child, resolver, warnings);
+    return entry;
+  }
+
+  // ---- Un conteneur : sa disposition, ses dimensions, puis ses enfants ----
+  if (describesChildren) {
+    const assignments = publishedSlots(child, iconNames, composed, warnings);
+    await applyContainerProperties(
       entry,
+      child,
       resolver,
       warnings,
-      composed,
-      iconNames,
+      assignments.length,
+      dependencies,
     );
-  } else if (!texts[0]) {
+    entry.children = await Promise.all(
+      assignments.map(({ child: branch, slot: branchSlot }) =>
+        describeNode(
+          child,
+          branch,
+          branchSlot,
+          resolver,
+          warnings,
+          composed,
+          iconNames,
+          placed,
+          depth + 1,
+          entry.visibilityProp,
+        )),
+    );
+  } else if (dependencies.length === 0 && textNodes(child, warnings, composed).length === 0) {
     // Le nom du calque est gardé même quand il s'agit d'un placeholder d'icône.
     // Une règle `@icons` peut ensuite qualifier cette icône par son nom Figma.
     entry.figmaLayer = child.name;
@@ -601,20 +423,23 @@ async function extractChild(
   // Relevé sur TOUS les slots dont ce contrat possède les dimensions, texte
   // compris : un calque de texte peut être figé comme une icône, et le taire
   // ferait dire à son absence « hug » alors que Figma impose une largeur.
-  // Seule la dépendance composée en est exclue, plus haut : sa taille
-  // appartient à son propre contrat.
   await applySizing(entry, child, resolver, warnings);
-
   return entry;
 }
 
 /**
- * Signature déterministe de l'arbre textuel 4.3 et de son flux Flex 4.4.
+ * Signature déterministe de l'arbre publié et de son flux.
  *
- * Elle ne contient aucun token : elle sert uniquement à comparer la structure
- * des variants avant de publier celle du variant de référence.
+ * Elle s'appelait `textStructureSignature` quand l'arbre ne descendait que sur
+ * les branches de texte. Elle couvre désormais tout ce que le contrat publie,
+ * à toute profondeur — même règle de descente, donc même autorité.
+ *
+ * Elle ne contient aucun token résolu : elle sert uniquement à comparer la
+ * structure des variants avant de publier celle du variant de référence. Depuis
+ * que l'arbre descend partout, elle descend partout aussi — sans quoi deux
+ * variants dont seul un cadre intérieur diffère passeraient pour identiques.
  */
-export function textStructureSignature(
+export function structureSignature(
   layoutNode: SceneNode,
   iconNames: ReadonlySet<string> = new Set(),
   composed: ComposedInstances = new Map(),
@@ -623,54 +448,59 @@ export function textStructureSignature(
     parent: SceneNode,
     node: SceneNode,
     slot: string,
-  ): unknown | null => {
-    const texts = textNodes(node, [], composed);
-    if (texts.length === 0) return null;
-
+    depth: number,
+  ): unknown => {
     const common = {
       slot,
       figmaLayer: node.name,
+      composes: composed.get(node.id)?.component ?? null,
       visibilityProp: node.componentPropertyReferences?.visible
         ? normalizePropKey(node.componentPropertyReferences.visible)
         : null,
       ...flexItemProperties(parent, node),
     };
-    if (node.type === 'TEXT') return { ...common, type: 'text' };
-
-    const branchIds = textBranchNodeIds(node, texts);
-    const children = assignSlots(node, iconNames, [], composed)
-      .filter(({ child }) => branchIds.has(child.id))
-      .map(({ child, slot: childSlot }) => branchSignature(node, child, childSlot))
-      .filter((child): child is NonNullable<typeof child> => Boolean(child));
+    if (!publishesChildren(node, iconNames, composed, depth)) {
+      return { ...common, type: node.type === 'TEXT' ? 'text' : 'leaf' };
+    }
     return {
       ...common,
       type: 'container',
       layout: autoLayoutDirection(node),
+      ...gridTrackCounts(node),
       ...flexContainerProperties(node),
-      children,
+      dimensions: containerDimensionsSignature(node),
+      children: publishedSlots(node, iconNames, composed).map(({ child, slot: childSlot }) =>
+        branchSignature(node, child, childSlot, depth + 1)),
     };
   };
 
-  /**
-   * Un slot publié, à quelque profondeur qu'il vive. Un cadre de dépendances
-   * décrit désormais ses propres calques : ses parts textuelles se comparent
-   * donc comme les autres, sans quoi une différence entre variants y resterait
-   * muette. L'instance, elle, appartient à son contrat.
-   */
-  const slotSignature = (parent: SceneNode, child: SceneNode, slot: string): unknown[] => {
-    if (composed.has(child.id)) return [];
-    if (composedSlotDependencies(child, composed).length > 0) {
-      return composedWrapperSlots(assignSlots(child, iconNames, [], composed), composed)
-        .flatMap(({ child: branch, slot: branchSlot }) => slotSignature(child, branch, branchSlot));
-    }
-    if (textNodes(child, [], composed).length < 2) return [];
-    const signature = branchSignature(parent, child, slot);
-    return signature ? [signature] : [];
-  };
+  return JSON.stringify(
+    publishedSlots(layoutNode, iconNames, composed)
+      .map(({ child, slot }) => branchSignature(layoutNode, child, slot, 1)),
+  );
+}
 
-  const trees = assignSlots(layoutNode, iconNames, [], composed)
-    .flatMap(({ child, slot }) => slotSignature(layoutNode, child, slot));
-  return JSON.stringify(trees);
+/**
+ * Dimensions d'un conteneur, réduites aux variables citées.
+ *
+ * La comparaison porte sur l'IDENTIFIANT de la variable, jamais sur le nom
+ * résolu : les signatures restent synchrones. Sans elle, un cadre imbriqué dont
+ * le padding change d'un variant à l'autre publierait celui de la référence en
+ * silence.
+ */
+function containerDimensionsSignature(node: SceneNode): object {
+  const variable = (field: string) => firstVariableAlias(getBinding(node, field))?.id ?? null;
+  return {
+    gap: variable('itemSpacing'),
+    rowGap: variable('counterAxisSpacing'),
+    gridRowGap: variable('gridRowGap'),
+    gridColumnGap: variable('gridColumnGap'),
+    paddingLeft: variable('paddingLeft'),
+    paddingRight: variable('paddingRight'),
+    paddingTop: variable('paddingTop'),
+    paddingBottom: variable('paddingBottom'),
+    radius: variable('cornerRadius'),
+  };
 }
 
 /**
@@ -690,16 +520,12 @@ export function flexLayoutSignature(
 ): string {
   return JSON.stringify({
     layout: autoLayoutDirection(layoutNode),
+    ...gridTrackCounts(layoutNode),
     sizing: containerSizingSignature(component),
     ...flexContainerProperties(layoutNode),
-    children: assignSlots(layoutNode, iconNames, [], composed).map(({ child, slot }) => ({
+    children: publishedSlots(layoutNode, iconNames, composed).map(({ child, slot }) => ({
       slot,
       ...flexItemProperties(layoutNode, child),
-      // Le cadre d'une dépendance publie désormais son propre flux : sans lui
-      // dans la signature, deux variants qui centrent leur bouton différemment
-      // passeraient pour identiques et le contrat publierait celui de la
-      // référence.
-      ...composedWrapperSignature(child, iconNames, composed),
       ...slotSizeSignature(child, iconNames),
     })),
   });
@@ -708,12 +534,9 @@ export function flexLayoutSignature(
 /**
  * Dimensionnement du composant, sous la forme que la signature sait comparer.
  *
- * `structure.sizing` ne décrit que le variant de référence, et publie désormais
- * un token quand un axe figé en cite un. La signature reste synchrone : elle
- * compare l'IDENTIFIANT de la variable, pas le nom résolu, comme
- * `fixedSizeSignature` le fait pour les slots. Sans lui, deux variants dont
- * seule la taille tokenisée diffère passeraient pour identiques et le contrat
- * publierait celle de la référence en silence.
+ * `structure.sizing` ne décrit que le variant de référence, et publie un token
+ * quand un axe figé en cite un. La signature reste synchrone : elle compare
+ * l'IDENTIFIANT de la variable, pas le nom résolu.
  */
 function containerSizingSignature(component: SceneNode): object {
   const menu = containerSizing(component);
@@ -735,9 +558,7 @@ function containerSizingSignature(component: SceneNode): object {
  * Bornes d'un node, sous la forme que la signature sait comparer.
  *
  * On compare la PRÉSENCE de la borne autant que la variable citée : un variant
- * qui retire son `max width` publierait sinon celui de la référence, et un
- * variant qui le relie ailleurs passerait pour identique. La comparaison porte
- * sur l'identifiant, comme partout dans les signatures, qui restent synchrones.
+ * qui retire son `max width` publierait sinon celui de la référence.
  */
 function sizeBoundsSignature(node: SceneNode): object {
   const posees = sizeBoundFields(node);
@@ -752,50 +573,11 @@ function sizeBoundsSignature(node: SceneNode): object {
 }
 
 /**
- * Flux du cadre qui enveloppe une dépendance, vide pour tout autre slot.
- *
- * `extractComposedBranch` descend de cadre en cadre jusqu'à l'instance : la
- * signature suit la même récursion, sinon deux variants dont seul le cadre
- * intérieur diffère passeraient pour identiques. Elle couvre TOUS les enfants
- * du cadre, comme l'arbre publié, et leur dimension figée avec eux — celle de
- * l'instance seule reste hors du contrat.
- */
-function composedWrapperSignature(
-  child: SceneNode,
-  iconNames: ReadonlySet<string>,
-  composed: ComposedInstances,
-): object {
-  if (composed.has(child.id) || composedSlotDependencies(child, composed).length === 0) {
-    return {};
-  }
-  return {
-    wrapper: {
-      layout: autoLayoutDirection(child),
-      ...flexContainerProperties(child),
-      children: composedWrapperSlots(assignSlots(child, iconNames, [], composed), composed)
-        .map(({ child: branch, slot }) => ({
-          slot,
-          composes: composed.get(branch.id)?.component ?? null,
-          ...flexItemProperties(child, branch),
-          ...(composed.has(branch.id) ? {} : slotSizeSignature(branch, iconNames)),
-          ...composedWrapperSignature(branch, iconNames, composed),
-        })),
-    },
-  };
-}
-
-/**
  * Dimensions figées et bornes d'un slot, réduites aux liaisons que Figma porte.
- *
- * `structure.children[].size` et `.bounds` ne décrivent que le variant de
- * référence : une largeur figée ou une borne qui change ailleurs dans la
- * matrice n'a aucun endroit où vivre dans le schéma. Sans elles dans la
- * signature, le contrat publierait celles de la référence en silence.
  *
  * Les calques d'icônes sont exclus de la seule `size` : `icons.*.size` compare
  * déjà leur taille sur toute la matrice, et deux messages diraient la même
- * chose. Leurs bornes, elles, restent comparées — aucun champ d'`icons` ne les
- * porte, et l'exclusion les rendrait muettes.
+ * chose. Leurs bornes, elles, restent comparées.
  */
 function slotSizeSignature(node: SceneNode, iconNames: ReadonlySet<string>): object {
   const bounds = { bounds: sizeBoundsSignature(node) };
@@ -819,10 +601,13 @@ function slotSizeSignature(node: SceneNode, iconNames: ReadonlySet<string>): obj
  * `structure.children` ne décrit que les enfants directs du node élu. Ce qui
  * vit à côté du chemin qui y mène — un badge, un liseré, un second bloc — n'a
  * donc ni slot, ni typographie, ni visibilité, alors que ses couleurs entrent
- * bien dans `variantTokens`, relevé sur le variant entier. Sans ce message, le
- * contrat annoncerait un rôle que plus aucun calque ne porte.
+ * bien dans `variantTokens`, relevé sur le variant entier.
+ *
+ * Exporté parce que ce relevé couvre TOUTE la matrice, là où
+ * `structure.children` ne décrit que la référence : un calque écarté dans un
+ * autre variant apporte ses couleurs exactement de la même façon.
  */
-function warnLayersOutsideLayoutNode(
+export function warnLayersOutsideLayoutNode(
   component: SceneNode,
   layoutNode: SceneNode,
   warnings: string[],
@@ -855,8 +640,7 @@ function warnLayersOutsideLayoutNode(
  * Le contrat n'a que deux propriétaires de bornes : le composant et un slot.
  * Un wrapper de layout n'est ni l'un ni l'autre — il prête son flux au
  * composant sans jamais apparaître comme un node — et le `max width` qu'il
- * porte n'a donc aucun endroit où vivre. Le publier sur le composant serait
- * pire que le taire : la borne du wrapper retient le CONTENU, pas le cadre.
+ * porte n'a donc aucun endroit où vivre.
  */
 function warnIntermediateBounds(
   component: SceneNode,
@@ -882,16 +666,17 @@ function warnIntermediateBounds(
 
 /**
  * `structure.layout` est obligatoire dans la forme du contrat, et `flex-row`
- * en est le repli. Une grille ou un frame sans auto layout seraient donc
- * décrits comme une rangée horizontale sans que rien ne le dise.
+ * en est le repli. Un frame sans auto layout serait donc décrit comme une
+ * rangée horizontale sans que rien ne le dise. Une grille, elle, est désormais
+ * décrite pour ce qu'elle est.
  */
 function warnMissingDirection(layoutNode: SceneNode, warnings: string[]): void {
   if (autoLayoutDirection(layoutNode)) return;
   warnings.push(
-    `Layer « ${layoutNode.name} » : il n'utilise pas d'auto layout horizontal ou vertical. Le ` +
-      `contrat annonce malgré tout une disposition horizontale, la seule qu'il sache écrire, et ` +
-      `le développeur placera donc ses layers autrement que dans Figma. Appliquez un auto ` +
-      `layout horizontal ou vertical à ce layer, puis réexportez.`,
+    `Layer « ${layoutNode.name} » : il n'utilise pas d'auto layout. Le ` +
+      `contrat annonce malgré tout une disposition horizontale, la seule qu'il sache écrire par ` +
+      `défaut, et le développeur placera donc ses layers autrement que dans Figma. Appliquez un ` +
+      `auto layout à ce layer, puis réexportez.`,
   );
 }
 
@@ -913,74 +698,70 @@ export async function extractLayout(
   // rôle `icon`, stable quand l'icône change d'un variant à l'autre.
   iconNames: ReadonlySet<string> = new Set(),
   // Le composant lui-même, quand un wrapper de layout s'intercale entre lui et
-  // ses slots. C'est son comportement que le contrat publie : un wrapper décrit
-  // comment il se place DANS le composant, pas comment le composant s'intègre.
+  // ses slots. C'est son comportement que le contrat publie.
   component: SceneNode = layoutNode,
   // Faux quand un axe de tailles existe : `sizes` porte alors gap, paddings et
-  // radius, et `extractStructure` jette ceux-ci. Les relever quand même ferait
-  // avertir le designer sur une valeur que le contrat ne publiera pas — il
-  // relierait une variable sans que rien ne change, et le nom de calque cité
-  // désigne le même layer dans tous les variants du set.
+  // radius, et `extractStructure` jette ceux-ci.
   publishDimensions = true,
   // Reçoit les dépendances que l'arbre place réellement. `composes` s'en dérive
-  // au lieu d'être scanné à part : deux relevés indépendants de la même
-  // information finiraient par se contredire, et le consommateur refuse un
-  // contrat dont les deux champs ne décrivent pas la même séquence.
+  // au lieu d'être scanné à part.
   placed: PlacedDependencies = new Map(),
 ): Promise<LayoutStructure> {
   warnLayersOutsideLayoutNode(component, layoutNode, warnings, composed);
   warnIntermediateBounds(component, layoutNode, warnings);
   warnMissingDirection(layoutNode, warnings);
-  const [gap, rowGap, paddingX, paddingY, radius] = publishDimensions
+  warnUnsupportedProperties(layoutNode, warnings);
+
+  const grille = isGridAutoLayout(layoutNode);
+  const [gap, rowGap, columnGap, paddingX, paddingY, radius] = publishDimensions
     ? await Promise.all([
-      resolveField(layoutNode, BINDING_PATTERNS.gap, gapLabel(layoutNode), resolver, warnings),
-      resolveRowGap(layoutNode, resolver, warnings),
-      resolveField(
-        layoutNode,
-        BINDING_PATTERNS.paddingX,
-        'horizontal padding',
-        resolver,
-        warnings,
-      ),
-      resolveField(
-        layoutNode,
-        BINDING_PATTERNS.paddingY,
-        'vertical padding',
-        resolver,
-        warnings,
-      ),
-      resolveField(
-        layoutNode,
-        BINDING_PATTERNS.radius,
-        'corner radius',
-        resolver,
-        warnings,
-      ),
+      grille
+        ? null
+        : resolveField(layoutNode, BINDING_PATTERNS.gap, gapLabel(layoutNode), resolver, warnings),
+      grille
+        ? resolveField(layoutNode, BINDING_PATTERNS.gridRowGap, 'row gap', resolver, warnings)
+        : resolveRowGap(layoutNode, resolver, warnings),
+      grille
+        ? resolveField(layoutNode, BINDING_PATTERNS.gridColumnGap, 'column gap', resolver, warnings)
+        : null,
+      resolveField(layoutNode, BINDING_PATTERNS.paddingX, 'horizontal padding', resolver, warnings),
+      resolveField(layoutNode, BINDING_PATTERNS.paddingY, 'vertical padding', resolver, warnings),
+      resolveField(layoutNode, BINDING_PATTERNS.radius, 'corner radius', resolver, warnings),
     ])
-    : [null, null, null, null, null];
+    : [null, null, null, null, null, null];
 
   // Lus sur le composant même quand `sizes` porte les dimensions : la taille du
   // composant n'est pas une dimension parmi d'autres, c'est la première
-  // décision de qui l'intègre, et `structure.sizing` est toujours publié. Ses
-  // bornes disent jusqu'où ce comportement va, et le taire ferait affirmer au
-  // contrat un `stretch` que la maquette retient.
+  // décision de qui l'intègre, et `structure.sizing` est toujours publié.
   const [sizing, bounds] = await Promise.all([
     resolveContainerSizing(component, resolver, warnings),
     resolveSizeBounds(component, resolver, warnings),
   ]);
 
   const children = await Promise.all(
-    assignSlots(layoutNode, iconNames, warnings, composed).map(({ child, slot }) =>
-      extractChild(child, slot, layoutNode, resolver, warnings, composed, iconNames, placed)),
+    publishedSlots(layoutNode, iconNames, composed, warnings).map(({ child, slot }) =>
+      describeNode(
+        layoutNode,
+        child,
+        slot,
+        resolver,
+        warnings,
+        composed,
+        iconNames,
+        placed,
+        1,
+      )),
   );
 
   return {
     layout: layoutDirection(layoutNode),
+    ...gridTrackCounts(layoutNode),
     sizing,
     ...(bounds ? { bounds } : {}),
     ...flexContainerProperties(layoutNode, warnings),
     gap,
     rowGap,
+    columnGap,
     padding: { x: paddingX, y: paddingY },
     radius,
     children,

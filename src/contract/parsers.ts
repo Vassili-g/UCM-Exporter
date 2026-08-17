@@ -49,6 +49,27 @@ export function propByName(
 }
 
 /**
+ * Écrit une prop sans jamais atteindre le prototype d'`Object`.
+ *
+ * Les clés viennent de Figma — nom d'une component property, nom d'un calque
+ * d'icône — et `props` est un objet littéral : `props[key] = prop` laisserait
+ * une propriété nommée « __proto__ » FIXER le prototype au lieu d'occuper une
+ * clé. La prop quitterait le contrat sans un mot, et `propByName` continuerait
+ * de répondre qu'elle n'existe pas. C'est la contrepartie exacte de
+ * `propByName` en écriture, et la seule autorité : la précaution ne doit pas
+ * dépendre de la vigilance de chaque appelant.
+ */
+export function definePropOn(
+  props: Record<string, ContractProp>,
+  key: string,
+  prop: ContractProp,
+): void {
+  Object.defineProperty(props, key, {
+    value: prop, enumerable: true, writable: true, configurable: true,
+  });
+}
+
+/**
  * Un axe « état » (hover, focus, disabled…) est design-only : il décrit des
  * états d'interaction, pas des choix d'API. Il est exclu des props — seule
  * sa valeur Disable devient une prop booléenne `disabled`. Détecté par le
@@ -106,10 +127,10 @@ export function extractContractPropertyModel(
     if (definition.type === 'VARIANT') {
       const rawFigmaName = propertyName.replace(/#.*$/, '');
       owners.set('disabled', rawFigmaName);
-      props.disabled = {
+      definePropOn(props, 'disabled', {
         type: 'boolean',
         default: /^disabl(?:e|ed)$/i.test(String(definition.defaultValue).trim()),
-      };
+      });
     }
   }
 
@@ -125,7 +146,7 @@ export function extractContractPropertyModel(
       return false;
     }
     owners.set(key, figmaName);
-    props[key] = prop;
+    definePropOn(props, key, prop);
     return true;
   };
 

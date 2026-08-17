@@ -23,6 +23,11 @@ export const BINDING_PATTERNS = {
   // L'espace entre les LIGNES d'un conteneur qui passe à la ligne. Figma scinde
   // alors son champ gap en deux, et n'applique celui-ci que sous `WRAP`.
   rowGap: [['counterAxisSpacing']],
+  // Les deux gaps d'une grille. Figma les expose séparément d'`itemSpacing`,
+  // qu'il ignore sous `GRID`, et tous deux se relient à une variable : une
+  // grille tokenisée est donc aussi contractuelle qu'une rangée.
+  gridRowGap: [['gridRowGap']],
+  gridColumnGap: [['gridColumnGap']],
   paddingX: [['paddingLeft', 'paddingRight']],
   paddingY: [['paddingTop', 'paddingBottom']],
   radius: [
@@ -100,6 +105,8 @@ const FIELD_LABELS: Record<string, string> = {
 const IMPLICIT_DEFAULTS: Readonly<Record<string, number>> = {
   itemSpacing: 0,
   counterAxisSpacing: 0,
+  gridRowGap: 0,
+  gridColumnGap: 0,
   paddingLeft: 0,
   paddingRight: 0,
   paddingTop: 0,
@@ -120,6 +127,8 @@ const IMPLICIT_DEFAULTS: Readonly<Record<string, number>> = {
 const AUTO_LAYOUT_FIELDS: ReadonlySet<string> = new Set([
   'itemSpacing',
   'counterAxisSpacing',
+  'gridRowGap',
+  'gridColumnGap',
   'paddingLeft',
   'paddingRight',
   'paddingTop',
@@ -131,6 +140,7 @@ type InapplicableReason =
   | 'no-auto-layout'
   | 'space-between'
   | 'grid'
+  | 'no-grid'
   | 'no-wrap'
   | 'rows-space-between';
 
@@ -195,7 +205,43 @@ function inapplicableReason(
     if (!wrapsChildren(node)) return 'no-wrap';
     if (distributesRowsBySpaceBetween(node)) return 'rows-space-between';
   }
+  // Les gaps de grille n'existent que sous une grille. Une liaison qui survit
+  // au passage en auto layout linéaire ne doit rien exporter, exactement comme
+  // un `itemSpacing` resté lié sous une grille.
+  if ((fields.includes('gridRowGap') || fields.includes('gridColumnGap'))
+    && !distributesAsGrid(node)) {
+    return 'no-grid';
+  }
   return null;
+}
+
+/**
+ * Vrai si Figma expose au moins un des champs de cette dimension sur ce node.
+ *
+ * Trois états, et non deux : la valeur neutre (`IMPLICIT_DEFAULTS`), la valeur
+ * écrite à la main qui réclame sa variable, et la propriété qui N'EXISTE PAS
+ * sur ce type de layer. Depuis que le contrat décrit les conteneurs à toute
+ * profondeur, il rencontre le troisième cas — un GROUP n'a ni coins ni
+ * padding — et lui réclamer une variable enverrait le designer chercher un
+ * champ que son panneau ne montre pas.
+ */
+export function exposesAnyField(node: SceneNode, alternatives: FieldAlternatives): boolean {
+  const values = node as unknown as Record<string, unknown>;
+  return alternatives.some((fields) => fields.some((field) => values[field] !== undefined))
+    || alternatives.some((fields) =>
+      fields.some((field) => Boolean(firstVariableAlias(getBinding(node, field)))));
+}
+
+/**
+ * Vrai si Figma expose un corner radius sur ce node.
+ *
+ * Un GROUP, une LINE ou un SLICE n'en ont pas : la propriété n'existe pas, elle
+ * n'est donc ni absente ni écrite à la main. Depuis que le contrat décrit les
+ * conteneurs à toute profondeur, il en rencontre ; leur réclamer une variable
+ * enverrait le designer chercher un champ que son panneau ne montre pas.
+ */
+export function hasCornerRadiusProperty(node: SceneNode): boolean {
+  return exposesAnyField(node, BINDING_PATTERNS.radius);
 }
 
 /** Nom lisible d'une propriété Figma, ou le champ brut s'il n'en a pas. */
@@ -280,12 +326,13 @@ export async function resolveTokenName(
     return null;
   }
   if (inapplicable === 'grid') {
-    warnings.push(
-      `Layer « ${node.name} » : son auto layout est une grille. Figma y règle l'espacement par ` +
-        `le gap des lignes et des colonnes, que le contrat ne lit pas : aucun gap n'est exporté ` +
-        `pour ce layer, et son absence ne veut donc pas dire zéro. Passez ce layer en auto ` +
-        `layout horizontal ou vertical si son espacement doit être contractuel, puis réexportez.`,
-    );
+    // Figma ignore `itemSpacing` sous une grille : ses deux gaps propres sont
+    // publiés à part (`columnGap`, `rowGap`), et il n'y a donc rien à signaler.
+    return null;
+  }
+  if (inapplicable === 'no-grid') {
+    // Symétrique : une liaison de gap de grille survit au passage en auto
+    // layout linéaire, où Figma ne l'applique plus.
     return null;
   }
   if (inapplicable === 'no-wrap') {

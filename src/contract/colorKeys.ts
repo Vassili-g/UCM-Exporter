@@ -77,12 +77,22 @@ function distinguish(
   const paths = new Map(tokens.map((token) => [token, token.split('.')]));
   const longest = Math.max(...tokens.map((token) => paths.get(token)!.length));
 
-  // Une profondeur où tous les tokens portent le même segment ne sépare rien :
-  // l'ajouter allongerait la clé sans rien distinguer.
+  // Seule une profondeur qui SÉPARE une paire cohabitante peut servir. Les
+  // autres ne font que raffiner : ajouter une profondeur à une sélection ne peut
+  // que scinder des clés, jamais en fondre deux, si bien qu'une profondeur qui
+  // ne sépare rien reste retirable d'une sélection valide sans rien lui coûter.
+  // La restriction préserve donc EXACTEMENT l'optimum — et elle borne le coût,
+  // exponentiel dans le nombre de candidates : trente tokens
+  // `…<color>.<variant>.<state>.background` diffèrent à trois profondeurs, mais
+  // s'ils ne se disputent leur base qu'avec une seule surface partagée, une
+  // seule profondeur les sépare.
+  const separeUnePaire = (depth: number) =>
+    cohabitations.some(([left, right]) =>
+      (segmentAt(paths.get(left)!, depth) ?? '') !== (segmentAt(paths.get(right)!, depth) ?? ''));
+
   const candidates: number[] = [];
   for (let depth = 2; depth <= longest; depth += 1) {
-    const segments = new Set(tokens.map((token) => segmentAt(paths.get(token)!, depth) ?? ''));
-    if (segments.size > 1) candidates.push(depth);
+    if (separeUnePaire(depth)) candidates.push(depth);
   }
 
   let best: { depths: number[]; distinct: number } | null = null;

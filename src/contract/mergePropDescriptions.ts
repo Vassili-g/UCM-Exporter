@@ -73,7 +73,12 @@ export function mergePropDescriptions(
         continue;
       }
       if (!prop.descriptions) prop.descriptions = {};
-      prop.descriptions[value] = description;
+      // La valeur vient de Figma : une valeur nommée « __proto__ » fixerait le
+      // prototype au lieu d'occuper une clé, et la documentation quitterait le
+      // contrat sans un mot. Même précaution que partout ailleurs.
+      Object.defineProperty(prop.descriptions, value, {
+        value: description, enumerable: true, writable: true, configurable: true,
+      });
     }
   }
 }

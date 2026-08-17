@@ -12,7 +12,7 @@ import { textNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import type { VariantLayoutNodes } from './layoutNodes';
 import { normalizePropValue } from './parsers';
-import { assignSlots, composedWrapperSlots } from './slotNames';
+import { publishedSlots, publishesChildren } from './structureTree';
 import { composedSlotDependencies } from './slotRelations';
 import { insertVariantLeaf } from './extractVariantTokens';
 import type {
@@ -55,74 +55,34 @@ const TYPOGRAPHY_FIELDS: Array<{
   },
 ];
 
-/** Nodes qui relient un conteneur à ses textes, textes compris. */
-function textBranchNodeIds(root: SceneNode, texts: readonly TextNode[]): Set<string> {
-  const ids = new Set<string>();
-  for (const text of texts) {
-    let current: BaseNode | null | undefined = text;
-    while (current && current !== root) {
-      if ('id' in current) ids.add(current.id);
-      current = current.parent;
-    }
-  }
-  return ids;
-}
-
 /**
- * Retrouve les mêmes chemins textuels que `structure.children`.
+ * Retrouve les mêmes chemins que `structure.children`, avec la même autorité.
  *
- * Les règles sont celles de l'extraction, à leur niveau respectif : un slot n'a
- * de parts que s'il porte PLUSIEURS textes (`extractChild` y décide
- * `describesParts`) ; en dessous, la descente continue tant que le node n'est
- * pas un vrai `TEXT` (`extractTextBranch`). Sans cette distinction, le chemin
- * d'une description rangée seule dans un frame désignerait ce frame et non la
- * part que le contrat décrit.
- *
- * Un cadre de dépendances n'est pas une exception : depuis qu'il décrit tous
- * ses calques, ses slots se nomment comme les autres, un rang plus bas.
+ * `structureTree.publishesChildren` décide de la descente, ici comme dans
+ * `extractLayout` : un second calcul finirait par viser un slot que le contrat
+ * ne contient pas, et le consommateur refuse une typographie qui désigne un
+ * slot absent. La profondeur part de 1, comme celle de l'extraction.
  */
 export function textSlots(
   layoutNode: SceneNode,
   iconNames: ReadonlySet<string> = new Set(),
   composed: ComposedInstances = new Map(),
 ): TextSlot[] {
-  /** Une part interne : la feuille est le calque texte lui-même. */
-  const visitPart = (node: SceneNode, slotPath: string[]): TextSlot[] => {
-    if (node.type === 'TEXT') return [{ slotPath, textNode: node }];
-
-    const texts = textNodes(node, [], composed);
-    if (texts.length === 0) return [];
-    const branchIds = textBranchNodeIds(node, texts);
-    return assignSlots(node, iconNames, [], composed).flatMap(({ child, slot }) =>
-      branchIds.has(child.id) ? visitPart(child, [...slotPath, slot]) : [],
-    );
-  };
-
-  /**
-   * Un slot publié, à quelque profondeur qu'il vive.
-   *
-   * La règle est celle de `extractChild`, appliquée au même arbre : l'instance
-   * d'une dépendance n'a aucun texte à nous, le cadre qui la range décrit tous
-   * ses calques — donc on y descend —, un slot à un seul texte est une feuille,
-   * et un slot à plusieurs textes décrit ses parts. `composedWrapperSlots`
-   * tranche le seul cas ambigu : un cadre dont aucune branche ne mène à une
-   * dépendance ne publie rien, et y descendre désignerait des slots que
-   * `structure.children` ne contient pas.
-   */
-  const visitSlot = (child: SceneNode, slotPath: string[]): TextSlot[] => {
+  const visit = (child: SceneNode, slotPath: string[], depth: number): TextSlot[] => {
     if (composed.has(child.id)) return [];
-    if (composedSlotDependencies(child, composed).length > 0) {
-      return composedWrapperSlots(assignSlots(child, iconNames, [], composed), composed)
-        .flatMap(({ child: branch, slot }) => visitSlot(branch, [...slotPath, slot]));
+    if (publishesChildren(child, iconNames, composed, depth)) {
+      return publishedSlots(child, iconNames, composed).flatMap(({ child: branch, slot }) =>
+        visit(branch, [...slotPath, slot], depth + 1));
     }
+    // Une feuille qui enveloppe une dépendance ne porte aucun texte à nous :
+    // `describeNode` s'y arrête de la même façon.
+    if (composedSlotDependencies(child, composed).length > 0) return [];
     const texts = textNodes(child, [], composed);
-    if (texts.length === 0) return [];
-    if (texts.length === 1) return [{ slotPath, textNode: texts[0] }];
-    return visitPart(child, slotPath);
+    return texts.length === 0 ? [] : [{ slotPath, textNode: texts[0] }];
   };
 
-  return assignSlots(layoutNode, iconNames, [], composed)
-    .flatMap(({ child, slot }) => visitSlot(child, [slot]));
+  return publishedSlots(layoutNode, iconNames, composed)
+    .flatMap(({ child, slot }) => visit(child, [slot], 1));
 }
 
 /** Lit les liaisons du style lui-même, jamais celles recopiées sur le calque. */

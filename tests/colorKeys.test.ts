@@ -145,3 +145,43 @@ test('deux exports du même design produisent les mêmes clés', () => {
     Array.from(resolveColorKeys(feuilles)),
   );
 });
+
+test('seule une profondeur qui sépare une paire cohabitante entre dans la clé', () => {
+  // Le cas du Button : trente couleurs qui ne se côtoient JAMAIS, plus deux
+  // surfaces qui se disputent réellement la base « background » dans la même
+  // feuille. L'exploration ne doit retenir que la profondeur qui sépare ces
+  // deux-là — sinon la clé emporterait une coordonnée de variant, et chaque
+  // variant publierait la sienne.
+  const feuilles = [
+    ['c.primary.contained.default.background', 'c.userinput.colors.background'],
+    ['c.primary.contained.hover.background'],
+    ['c.secondary.outlined.focus.background'],
+  ];
+  const cles = resolveColorKeys(feuilles);
+
+  // L'invariant : les couleurs qui ne se côtoient jamais gardent TOUTES la même
+  // clé, quel que soit leur variant. C'est ce qui garde une coordonnée de
+  // variant hors de la clé et laisse la feuille indexable.
+  const parVariant = [
+    'c.primary.contained.default.background',
+    'c.primary.contained.hover.background',
+    'c.secondary.outlined.focus.background',
+  ].map((token) => cles.get(token));
+  assert.equal(new Set(parVariant).size, 1);
+  // Et la seule surface qui les côtoie vraiment s'en détache.
+  assert.notEqual(cles.get('c.userinput.colors.background'), parVariant[0]);
+  // Deux clés en tout : la sélection retenue est bien celle qui en produit le
+  // moins, et non la première qui sépare la paire.
+  assert.equal(new Set(cles.values()).size, 2);
+});
+
+test('deux chemins profonds qui se disputent une base n’explosent pas le calcul', () => {
+  // Le nombre de sélections explorées est exponentiel dans le nombre de
+  // profondeurs CANDIDATES : les restreindre à celles qui séparent réellement
+  // une paire est ce qui garde ce calcul instantané sur des noms très profonds.
+  const profond = (queue: string) => `a.b.c.d.e.f.g.h.i.j.${queue}.background`;
+  const debut = Date.now();
+  const cles = resolveColorKeys([[profond('un'), profond('deux')]]);
+  assert.ok(Date.now() - debut < 1000);
+  assert.notEqual(cles.get(profond('un')), cles.get(profond('deux')));
+});
