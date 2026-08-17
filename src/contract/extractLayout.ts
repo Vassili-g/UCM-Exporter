@@ -26,8 +26,10 @@ import {
   resolveContainerSizing,
   resolveField,
   resolveRowGap,
+  resolveSidedField,
   resolveSizeBounds,
   resolveSlotSize,
+  SIDE_KEYS,
 } from './nodeBindings';
 import { normalizePropKey } from './parsers';
 import { isIconLayer } from './slotNames';
@@ -44,6 +46,7 @@ import {
   flexContainerProperties,
   flexItemProperties,
   gridTrackCounts,
+  gridTrackSizes,
   isGridAutoLayout,
   isLinearAutoLayout,
   SIZE_BOUND_FIELDS,
@@ -54,6 +57,9 @@ import type {
   ComposedDependency,
   ContractStructure,
   LayoutDirection,
+  PaddingX,
+  PaddingY,
+  Radius,
 } from './types';
 
 /**
@@ -123,12 +129,13 @@ function warnUnsupportedProperties(node: SceneNode, warnings: string[]): void {
  */
 async function applySizing(
   entry: ChildStructure,
+  parent: SceneNode,
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
 ): Promise<void> {
   const [size, bounds] = await Promise.all([
-    resolveSlotSize(node, resolver, warnings),
+    resolveSlotSize(node, resolver, warnings, parent),
     resolveSizeBounds(node, resolver, warnings),
   ]);
   if (size) entry.size = size;
@@ -184,7 +191,7 @@ async function applyContainerProperties(
 
   entry.layout = direction;
   if (direction === 'grid') {
-    Object.assign(entry, gridTrackCounts(node));
+    Object.assign(entry, gridTrackCounts(node), gridTrackSizes(node, warnings));
     const [columnGap, rowGap] = await Promise.all([
       resolveField(node, BINDING_PATTERNS.gridColumnGap, 'column gap', resolver, warnings),
       resolveField(node, BINDING_PATTERNS.gridRowGap, 'row gap', resolver, warnings),
@@ -214,13 +221,46 @@ async function applyContainerProperties(
   // valeur neutre, ni un nombre écrit à la main.
   const [paddingX, paddingY] = exposesAnyField(node, BINDING_PATTERNS.paddingX)
     || exposesAnyField(node, BINDING_PATTERNS.paddingY)
-    ? await Promise.all([
-      resolveField(node, BINDING_PATTERNS.paddingX, 'horizontal padding', resolver, warnings),
-      resolveField(node, BINDING_PATTERNS.paddingY, 'vertical padding', resolver, warnings),
-    ])
+    ? await resolvePaddings(node, resolver, warnings)
     : [null, null];
   if (paddingX || paddingY) entry.padding = { x: paddingX, y: paddingY };
   await applyContainerRadius(entry, node, resolver, warnings);
+}
+
+/**
+ * Les deux paddings d'un conteneur, chacun réduit à une référence quand ses deux
+ * côtés partagent leur variable, et détaillé sinon.
+ *
+ * Une seule fonction pour la racine et pour chaque conteneur imbriqué : deux
+ * appels recopiés finiraient par publier deux formes différentes du même champ.
+ */
+function resolvePaddings(
+  node: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<[PaddingX | null, PaddingY | null]> {
+  return Promise.all([
+    resolveSidedField(
+      node, BINDING_PATTERNS.paddingX, SIDE_KEYS.paddingX,
+      'horizontal padding', resolver, warnings,
+    ),
+    resolveSidedField(
+      node, BINDING_PATTERNS.paddingY, SIDE_KEYS.paddingY,
+      'vertical padding', resolver, warnings,
+    ),
+  ]);
+}
+
+/** Le rayon d'un node, sous la même règle : une référence, ou les quatre coins. */
+function resolveRadius(
+  node: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<Radius | null> {
+  return resolveSidedField(
+    node, BINDING_PATTERNS.radius, SIDE_KEYS.radius,
+    'corner radius', resolver, warnings,
+  );
 }
 
 /** Le rayon d'un conteneur, sondé quel que soit son mode de disposition. */
@@ -233,13 +273,7 @@ async function applyContainerRadius(
   // Un GROUP n'a pas de coins : lui réclamer une variable enverrait le
   // designer chercher un champ que son panneau ne montre pas.
   if (!hasCornerRadiusProperty(node)) return;
-  const radius = await resolveField(
-    node,
-    BINDING_PATTERNS.radius,
-    'corner radius',
-    resolver,
-    warnings,
-  );
+  const radius = await resolveRadius(node, resolver, warnings);
   if (radius) entry.radius = radius;
 }
 
@@ -383,7 +417,7 @@ async function describeNode(
             'rendra le composant sans son cadre. Rendez visible le calque qui porte l’instance'}, ` +
         `puis réexportez.`,
     );
-    await applySizing(entry, child, resolver, warnings);
+    await applySizing(entry, parent, child, resolver, warnings);
     return entry;
   }
 
@@ -423,7 +457,7 @@ async function describeNode(
   // Relevé sur TOUS les slots dont ce contrat possède les dimensions, texte
   // compris : un calque de texte peut être figé comme une icône, et le taire
   // ferait dire à son absence « hug » alors que Figma impose une largeur.
-  await applySizing(entry, child, resolver, warnings);
+  await applySizing(entry, parent, child, resolver, warnings);
   return entry;
 }
 
@@ -467,6 +501,7 @@ export function structureSignature(
       type: 'container',
       layout: autoLayoutDirection(node),
       ...gridTrackCounts(node),
+      ...gridTrackSizes(node),
       ...flexContainerProperties(node),
       dimensions: containerDimensionsSignature(node),
       children: publishedSlots(node, iconNames, composed).map(({ child, slot: childSlot }) =>
@@ -499,7 +534,14 @@ function containerDimensionsSignature(node: SceneNode): object {
     paddingRight: variable('paddingRight'),
     paddingTop: variable('paddingTop'),
     paddingBottom: variable('paddingBottom'),
+    // Les quatre coins comptent autant que le rayon uniforme : depuis qu'ils
+    // peuvent citer quatre variables, un variant dont un seul coin change
+    // publierait sinon celui de la référence en silence.
     radius: variable('cornerRadius'),
+    topLeftRadius: variable('topLeftRadius'),
+    topRightRadius: variable('topRightRadius'),
+    bottomRightRadius: variable('bottomRightRadius'),
+    bottomLeftRadius: variable('bottomLeftRadius'),
   };
 }
 
@@ -521,6 +563,7 @@ export function flexLayoutSignature(
   return JSON.stringify({
     layout: autoLayoutDirection(layoutNode),
     ...gridTrackCounts(layoutNode),
+    ...gridTrackSizes(layoutNode),
     sizing: containerSizingSignature(component),
     ...flexContainerProperties(layoutNode),
     children: publishedSlots(layoutNode, iconNames, composed).map(({ child, slot }) => ({
@@ -583,6 +626,11 @@ function slotSizeSignature(node: SceneNode, iconNames: ReadonlySet<string>): obj
   const bounds = { bounds: sizeBoundsSignature(node) };
   if (isIconLayer(node, iconNames)) return bounds;
 
+  // La règle de la cellule (`gridCellSizedAxes`) ne change rien ici : ce qu'on
+  // compare est la VARIABLE citée, et c'est exactement ce que `resolveSlotSize`
+  // publie sous une grille comme ailleurs. Un axe figé sans variable vaut donc
+  // `null` dans les deux régimes, et la signature n'a pas de second calcul à
+  // tenir à jour.
   const fixed = fixedDimensions(node);
   const boundVariableId = (field: string) =>
     firstVariableAlias(getBinding(node, field))?.id ?? null;
@@ -713,7 +761,7 @@ export async function extractLayout(
   warnUnsupportedProperties(layoutNode, warnings);
 
   const grille = isGridAutoLayout(layoutNode);
-  const [gap, rowGap, columnGap, paddingX, paddingY, radius] = publishDimensions
+  const [gap, rowGap, columnGap, paddings, radius] = publishDimensions
     ? await Promise.all([
       grille
         ? null
@@ -724,11 +772,11 @@ export async function extractLayout(
       grille
         ? resolveField(layoutNode, BINDING_PATTERNS.gridColumnGap, 'column gap', resolver, warnings)
         : null,
-      resolveField(layoutNode, BINDING_PATTERNS.paddingX, 'horizontal padding', resolver, warnings),
-      resolveField(layoutNode, BINDING_PATTERNS.paddingY, 'vertical padding', resolver, warnings),
-      resolveField(layoutNode, BINDING_PATTERNS.radius, 'corner radius', resolver, warnings),
+      resolvePaddings(layoutNode, resolver, warnings),
+      resolveRadius(layoutNode, resolver, warnings),
     ])
-    : [null, null, null, null, null, null];
+    : [null, null, null, [null, null] as [PaddingX | null, PaddingY | null], null];
+  const [paddingX, paddingY] = paddings;
 
   // Lus sur le composant même quand `sizes` porte les dimensions : la taille du
   // composant n'est pas une dimension parmi d'autres, c'est la première
@@ -756,6 +804,7 @@ export async function extractLayout(
   return {
     layout: layoutDirection(layoutNode),
     ...gridTrackCounts(layoutNode),
+    ...gridTrackSizes(layoutNode, warnings),
     sizing,
     ...(bounds ? { bounds } : {}),
     ...flexContainerProperties(layoutNode, warnings),

@@ -11,6 +11,7 @@ import type {
   AxisSizing,
   ContainerSizing,
   GridPlacement,
+  GridTrack,
   JustifyContent,
   LayoutConstraints,
   SizeBounds,
@@ -60,6 +61,82 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
   };
 }
 
+/**
+ * Taille de chaque piste d'une grille, dans le vocabulaire de `grid-template-*`.
+ *
+ * Figma expose `gridRowSizes` / `gridColumnSizes` : un type (`FLEX`, `HUG`,
+ * `FIXED`) et sa valeur. Les deux premiers sont des comportements, que CSS
+ * écrit `1fr` et `fit-content` ; le troisième est un nombre de pixels, et le
+ * contrat n'écrit jamais un nombre brut — la piste vaut alors `null`, sa place
+ * conservée dans le tableau, et l'export le signale.
+ *
+ * La lecture est défensive : un runtime qui n'expose pas ces champs ne publie
+ * rien et n'avertit de rien. Une propriété absente n'est pas une valeur.
+ */
+export function gridTrackSizes(
+  node: SceneNode,
+  warnings: string[] = [],
+): { columnSizes?: GridTrack[]; rowSizes?: GridTrack[] } {
+  if (!isGridAutoLayout(node)) return {};
+  const values = asPropertyBag(node);
+  const axe = (field: 'gridColumnSizes' | 'gridRowSizes', nom: string): GridTrack[] | undefined => {
+    const tracks = values[field];
+    if (!Array.isArray(tracks)) return undefined;
+    const sizes = (tracks as Array<{ type?: unknown; value?: unknown }>).map((track): GridTrack => {
+      if (!track || typeof track !== 'object') return null;
+      if (track.type === 'FLEX') {
+        return `${typeof track.value === 'number' ? track.value : 1}fr`;
+      }
+      if (track.type === 'HUG') return 'fit-content';
+      return null;
+    });
+    const figees = sizes
+      .map((size, index) => (size === null ? index + 1 : 0))
+      .filter((rang) => rang > 0);
+    if (figees.length > 0) {
+      warnings.push(
+        `Layer « ${node.name} » : sa grille fixe la taille de ${figees.length > 1 ? 'ses' : 'sa'} ` +
+          `${nom}${figees.length > 1 ? 's' : ''} ${figees.join(', ')} à la main. Le contrat ne ` +
+          `publie pas un nombre écrit à la main : le développeur ne saura pas quelle place ` +
+          `${figees.length > 1 ? 'ces pistes prennent' : 'cette piste prend'}. Réglez-${figees.length > 1 ? 'les' : 'la'} ` +
+          `sur « Fill » ou « Hug » et portez cette dimension sur les layers que la grille ` +
+          `dispose, reliée à une variable, puis réexportez.`,
+      );
+    }
+    return sizes;
+  };
+
+  const columnSizes = axe('gridColumnSizes', 'colonne');
+  const rowSizes = axe('gridRowSizes', 'ligne');
+  return {
+    ...(columnSizes ? { columnSizes } : {}),
+    ...(rowSizes ? { rowSizes } : {}),
+  };
+}
+
+/**
+ * Axes dont la CELLULE décide, pour un enfant de grille resté dans le flux.
+ *
+ * Figma étire un enfant dans sa cellule tant que son alignement vaut `AUTO` : sa
+ * boîte est alors celle de la cellule, décrite par les pistes et par la place du
+ * calque, et lui réclamer une variable de taille demanderait un geste qui ne
+ * changerait rien. Un alignement explicite le décolle au contraire des bords :
+ * sa dimension redevient la sienne, et la règle commune s'applique.
+ */
+export function gridCellSizedAxes(
+  parent: SceneNode,
+  child: SceneNode,
+): { width: boolean; height: boolean } {
+  if (!isGridAutoLayout(parent) || isAbsolutePositioned(child)) {
+    return { width: false, height: false };
+  }
+  const values = asPropertyBag(child);
+  return {
+    width: gridSelfAlignment(values.gridChildHorizontalAlign) === null,
+    height: gridSelfAlignment(values.gridChildVerticalAlign) === null,
+  };
+}
+
 /** Alignement d'un enfant de grille dans sa cellule ; `AUTO` est la valeur neutre. */
 function gridSelfAlignment(value: unknown): AlignSelf | null {
   if (value === 'MIN') return 'flex-start';
@@ -81,6 +158,15 @@ export function gridItemProperties(parent: SceneNode, child: SceneNode): GridPla
   const values = asPropertyBag(child);
   const placement: GridPlacement = {};
 
+  // L'ancre, elle, n'est pas neutralisable : Figma en pose une sur chaque
+  // enfant, et la redéduire supposerait de réimplémenter son placement
+  // automatique. Figma compte à partir de 0, CSS à partir de 1.
+  if (typeof values.gridColumnAnchorIndex === 'number') {
+    placement.columnStart = values.gridColumnAnchorIndex + 1;
+  }
+  if (typeof values.gridRowAnchorIndex === 'number') {
+    placement.rowStart = values.gridRowAnchorIndex + 1;
+  }
   if (typeof values.gridColumnSpan === 'number' && values.gridColumnSpan > 1) {
     placement.columnSpan = values.gridColumnSpan;
   }

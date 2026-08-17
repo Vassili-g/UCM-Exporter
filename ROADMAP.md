@@ -31,7 +31,8 @@ uniquement ce qui est déjà intégré et vérifié.
 | Domaine | État |
 |---|---|
 | Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
-| Écriture de la 6.0 | Le moteur l'écrit, personne ne la consomme encore. `structure.children` descend désormais à toute profondeur, la grille et la position absolue sont décrites. Le Playground borne son audit à la 5.5 : sa borne et son validateur doivent être portés avant qu'un export 6.0 soit accepté |
+| Écriture de la 7.0 | Le moteur l'écrit, personne ne la consomme encore. `padding.x`, `padding.y`, `radius` et la largeur d'un stroke deviennent polymorphes — une référence, ou le détail par côté — et la grille publie ses pistes et la place de ses enfants, la cellule faisant autorité sur la boîte. `meta.figma.url` est de nouveau exporté. Le Playground borne son audit à la 5.5 : sa borne (`version-contrat.mjs`), `validerStructure`, `validerBornes` et la lecture des strokes doivent être portés avant qu'un export 6.x ou 7.0 soit accepté |
+| Écriture de la 6.0 | `structure.children` descend à toute profondeur, la grille et la position absolue sont décrites. Absorbée par la 7.0, jamais consommée telle quelle |
 | Écriture de la 5.5 | Le moteur l’écrit, personne ne la consomme encore : le corpus reste en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button. Les 5.1, 5.3, 5.4 et 5.5 sont neutres pour un composant qui nomme déjà ses rôles, ne pose aucune borne, ne passe pas à la ligne et ne conteste aucune clef — le réexport reste dû pour la 5.0 et la 5.2. Le Playground accepte la borne de version ; ni le wrap ni la clef allongée ne sont encore exercés par un de ses composants |
 | Reconstruction à froid | Menée sur la 4.8. La 4.9 a été absorbée en adaptant les composants et le skill, sans nouvelle reconstruction : le test froid a donc un contrat de retard |
 | Cadre enveloppant une ou plusieurs dépendances | Publié comme conteneur : il porte son flux, sa dimension figée et range chaque dépendance dans `children`. Seul le calque qui EST l’instance porte `composes` |
@@ -60,10 +61,12 @@ Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 4.9, et les
 repositories construisent et se testent. Alert et Button appliquent les text
 styles exportés à leurs vrais slots texte ; les tests relisent les cinq
 propriétés typographiques — `fontFamily`, `fontSize`, `fontWeight`,
-`lineHeight`, `letterSpacing` — et la totalité des références déclarées. Le flux
-Flex ne prétend pas couvrir grille ni positionnement absolu — mais il ne les tait
-plus : chacun de ces cas, comme les calques écartés par l'élection du node de
-layout, produit son avertissement. Le **wrap**, lui, est désormais décrit :
+`lineHeight`, `letterSpacing` — et la totalité des références déclarées. La grille et le positionnement absolu ne
+sont plus des angles morts du flux Flex : la première publie ses pistes, ses deux
+gaps et la place de chaque enfant, le second ses bords d'accroche. Ce qui reste
+hors du schéma — la distance d'un calque absolu à ses bords, une piste figée à la
+main — produit son avertissement, comme les calques écartés par l'élection du
+node de layout. Le **wrap**, lui, est désormais décrit :
 `wrap` et `rowGap` publient le passage à la ligne et l'espace entre les lignes. Le
 **dimensionnement**, lui, est complet : l'absence d'une dimension sur un slot
 vaut `fit-content`, puisqu'un remplissage se publie et qu'une dimension figée

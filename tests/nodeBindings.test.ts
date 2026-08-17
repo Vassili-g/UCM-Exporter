@@ -8,8 +8,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  BINDING_PATTERNS,
   resolveField,
+  resolveSidedField,
   resolveTokenName,
+  SIDE_KEYS,
 } from '../src/contract/nodeBindings';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
@@ -260,4 +263,147 @@ test('les représentations du rayon sont alternatives mais chacune reste complè
     null,
   );
   assert.ok(warnings.some((warning) => warning.includes('bottom right corner radius')));
+});
+
+/**
+ * Contrat 7.0 : un champ à quatre côtés publie le détail au lieu de tout perdre.
+ *
+ * Le design system nomme déjà ces variables séparément (`padding-left`,
+ * `radius-top-left`). Exiger une variable unique demandait au designer d'aplatir
+ * une décision qui lui appartient, et le moteur se contredisait : l'élection du
+ * node de layout comptait ce padding comme complet, l'extraction n'en publiait
+ * rien.
+ */
+test('un padding dont les côtés citent deux variables publie les deux', async () => {
+  const node = {
+    type: 'FRAME',
+    name: 'UserInput',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {
+      paddingLeft: alias('left'),
+      paddingRight: alias('right'),
+    },
+  } as unknown as SceneNode;
+  const warnings: string[] = [];
+
+  const result = await resolveSidedField(
+    node,
+    BINDING_PATTERNS.paddingX,
+    SIDE_KEYS.paddingX,
+    'horizontal padding',
+    resolverFor({ left: 'sizes.padding-left', right: 'sizes.padding-right' }),
+    warnings,
+  );
+
+  assert.deepEqual(result, { left: '{sizes.padding-left}', right: '{sizes.padding-right}' });
+  assert.deepEqual(warnings, []);
+});
+
+test('un padding dont les côtés partagent leur variable garde la forme courte', async () => {
+  const node = {
+    type: 'FRAME',
+    name: 'UserInput',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {
+      paddingTop: alias('py'),
+      paddingBottom: alias('py'),
+    },
+  } as unknown as SceneNode;
+  const warnings: string[] = [];
+
+  const result = await resolveSidedField(
+    node,
+    BINDING_PATTERNS.paddingY,
+    SIDE_KEYS.paddingY,
+    'vertical padding',
+    resolverFor({ py: 'sizes.padding-y' }),
+    warnings,
+  );
+
+  assert.equal(result, '{sizes.padding-y}');
+  assert.deepEqual(warnings, []);
+});
+
+test('un padding dont un seul côté est relié ne publie toujours rien', async () => {
+  const node = {
+    type: 'FRAME',
+    name: 'UserInput',
+    layoutMode: 'HORIZONTAL',
+    paddingLeft: 16,
+    paddingRight: 24,
+    boundVariables: { paddingLeft: alias('left') },
+  } as unknown as SceneNode;
+  const warnings: string[] = [];
+
+  const result = await resolveSidedField(
+    node,
+    BINDING_PATTERNS.paddingX,
+    SIDE_KEYS.paddingX,
+    'horizontal padding',
+    resolverFor({ left: 'sizes.padding-left' }),
+    warnings,
+  );
+
+  // Publier un demi-padding ferait diverger l'extraction de `hasCompleteBinding`,
+  // donc de l'élection du node de layout.
+  assert.equal(result, null);
+  assert.ok(warnings.some((warning) => warning.includes('right padding')));
+  assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
+});
+
+test('quatre coins reliés à quatre variables publient les quatre', async () => {
+  const node = {
+    type: 'FRAME',
+    name: 'Carte',
+    boundVariables: {
+      topLeftRadius: alias('tl'),
+      topRightRadius: alias('tr'),
+      bottomRightRadius: alias('br'),
+      bottomLeftRadius: alias('bl'),
+    },
+  } as unknown as SceneNode;
+  const warnings: string[] = [];
+
+  const result = await resolveSidedField(
+    node,
+    BINDING_PATTERNS.radius,
+    SIDE_KEYS.radius,
+    'corner radius',
+    resolverFor({
+      tl: 'radius.md', tr: 'radius.xs', br: 'radius.full', bl: 'radius.xl',
+    }),
+    warnings,
+  );
+
+  assert.deepEqual(result, {
+    topLeft: '{radius.md}',
+    topRight: '{radius.xs}',
+    bottomRight: '{radius.full}',
+    bottomLeft: '{radius.xl}',
+  });
+  assert.deepEqual(warnings, []);
+});
+
+test('un carré garde l’exigence d’une variable unique sur ses deux axes', async () => {
+  const icone = {
+    type: 'VECTOR',
+    name: 'Icon',
+    layoutSizingHorizontal: 'FIXED',
+    layoutSizingVertical: 'FIXED',
+    boundVariables: { width: alias('w'), height: alias('h') },
+  } as unknown as SceneNode;
+  const warnings: string[] = [];
+
+  // `slotSize` n'a pas de côtés publiables : deux variables n'y sont pas une
+  // décision par bord, mais une taille que le contrat ne saurait pas écrire.
+  const result = await resolveTokenName(
+    icone,
+    BINDING_PATTERNS.slotSize,
+    'icon size',
+    resolverFor({ w: 'sizes.icon-16', h: 'sizes.icon-24' }),
+    warnings,
+  );
+
+  assert.equal(result, null);
+  assert.ok(warnings.some((warning) => warning.includes('pas reliés à la même variable')));
 });

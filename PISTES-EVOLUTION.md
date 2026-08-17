@@ -113,15 +113,23 @@ une limite observée sur un composant réel, et avec, dans le même changement :
   les icônes et la composition ;
 - une migration de version et un réexport Figma des fixtures.
 
-Les propriétés candidates sont `textCase`, `textDecoration`, un padding par
-côté — le contrat groupe aujourd’hui `padding.x` et `padding.y` — et la grille. Elles ne deviennent pas des champs du contrat tant qu’un composant
-réel n’établit pas leur propriétaire, leur forme et leur comportement en cas de
-donnée facultative incomplète.
+Les propriétés candidates sont `textCase` et `textDecoration`. Elles ne
+deviennent pas des champs du contrat tant qu’un composant réel n’établit pas
+leur propriétaire, leur forme et leur comportement en cas de donnée facultative
+incomplète.
 
 Le wrap a quitté cette liste en 5.4 : un composant d’épreuve a établi les trois
 — propriétaire (le conteneur), forme (`wrap` et `rowGap`, parallèles à `layout`
 et `gap`), comportement (la règle commune, un nombre brut avertit, une variable
-liée se publie). L’exigence de cette liste porte sur ce que le composant
+liée se publie). La grille l’a quittée en 6.0 puis en 7.0 : d’abord son
+existence (`layout: "grid"`, `columns`, `rows`, les deux gaps), puis ce qui
+donne réellement une boîte à ses enfants (`columnSizes`, `rowSizes`,
+`columnStart`, `rowStart`) — propriétaire (le conteneur pour les pistes,
+l’enfant pour sa place), forme (le vocabulaire de `grid-template-*`),
+comportement (une piste figée à la main vaut `null` et avertit). Le padding par
+côté l’a quittée en 7.0, avec le rayon et la largeur d’un stroke : propriétaire
+(le calque qui porte le champ), forme (une référence, ou le détail par côté),
+comportement (un groupe incomplet ne publie rien et avertit, comme avant). L’exigence de cette liste porte sur ce que le composant
 ÉTABLIT, non sur son statut ; celle des couleurs ci-dessus exclut en revanche
 explicitement un composant d’épreuve, parce qu’elle engage tout l’arbre de
 layout général.

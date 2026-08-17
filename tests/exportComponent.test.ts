@@ -88,6 +88,8 @@ function monterFigma(options: {
   enfantsDuVariant?: () => any[];
   /** Composants que la page reconnaît comme unifiés, par leur conteneur de règles. */
   dependancesContractees?: string[];
+  /** Clé du fichier, telle que l API la donne à un plugin privé. */
+  fileKey?: string | null;
 } = {}) {
   const contained = variant('Variant=Contained', options.enfantsDuVariant?.() ?? []);
   const outlined = variant('Variant=Outlined', options.enfantsDuVariant?.() ?? []);
@@ -133,7 +135,7 @@ function monterFigma(options: {
       selection: options.selection ?? [componentSet],
     }),
     root: { name: 'Design System' },
-    fileKey: null,
+    fileKey: options.fileKey ?? null,
     getStyleByIdAsync: async () => null,
     variables: {
       getLocalVariableCollectionsAsync: async () => [collection],
@@ -272,4 +274,48 @@ test('mergeWrapperProps garde la prop du set sélectionné et nomme le conflit',
   assert.deepEqual(props.iconLeft, { type: 'boolean', default: false });
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /« disabled »/);
+});
+
+/**
+ * Le lien Figma dépend d'un seul réglage : `enablePrivatePluginApi` dans le
+ * manifest. Sans lui, `figma.fileKey` reste indéfini et le contrat perd son
+ * lien — c'est ce qui est arrivé, sous un avertissement qui présentait la perte
+ * comme une fatalité de l'API.
+ */
+test('meta.figma.url est construit dès que l’API fournit la clé du fichier', async () => {
+  const figmaFaux = monterFigma({ fileKey: 'ABCdef123456789012345678' });
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    // Le nom du fichier est encodé, et les « : » de l'id de nœud deviennent
+    // des « - » : c'est le format que Figma sait rouvrir.
+    assert.equal(
+      contrat.meta.figma.url,
+      'https://www.figma.com/design/ABCdef123456789012345678/Design%20System'
+        + `?node-id=${String(contrat.meta.figma.nodeId).replace(/:/g, '-')}`,
+    );
+    assert.equal(String(contrat.meta.figma.url).split('node-id=')[1].includes(':'), false);
+    assert.equal(
+      contrat.meta.warnings.some((warning: string) => warning.includes('Lien vers Figma')),
+      false,
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('sans clé de fichier, le contrat le dit sans bloquer l’export', async () => {
+  const figmaFaux = monterFigma();
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(contrat.meta.figma.url, null);
+    assert.equal(contrat.meta.figma.fileName, 'Design System');
+    assert.ok(contrat.meta.figma.nodeId);
+    assert.ok(
+      contrat.meta.warnings.some((warning: string) => warning.includes('Lien vers Figma')),
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
 });
