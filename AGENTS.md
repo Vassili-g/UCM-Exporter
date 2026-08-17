@@ -60,6 +60,11 @@ tests/
   porte les règles de X » n’existe qu’une fois (`rulesContainerOwner`) : ce qui
   autorise un export et ce qui reconnaît une dépendance sont la même règle. Le
   parent ne réexporte pas ses internes.
+- Le parcours conserve le calque de l’instance pour que la structure puisse le
+  décrire comme un slot ; tout ce qu’il PORTE reste hors du contrat parent. Ses
+  couleurs appartiennent à son contrat (`getSlotTokens`), et ses dimensions ne
+  la font pas élire node de layout (`findLayoutNode`) — l’élire viderait
+  `structure.children`, le parcours d’une dépendance s’arrêtant à elle.
 - `composes` ne désigne que le calque qui EST l’instance. Un calque qui
   l’enveloppe appartient au contrat parent : il publie son flux et range la
   dépendance dans `children`, comme tout conteneur. Sans cette distinction, son
@@ -67,7 +72,14 @@ tests/
   Leur nombre ne change pas la règle : un cadre qui range trois liens publie
   trois enfants, chacun avec son emplacement et sa visibilité — le cadre n’en
   reprend une que lorsqu’une seule dépendance l’occupe.
-- `composes` se dérive de l’arbre publié, comme `tokensUsed` du contrat terminé.
+- Ce cadre publie TOUS ses calques, pas seulement les branches de dépendance :
+  un tag, un texte, un dessin y sont des calques de ce contrat, décrits par la
+  règle commune. `composedWrapperSlots` tranche l’unique exception — un cadre
+  dont aucune branche ne mène à une dépendance ne publie rien — et les chemins
+  de `variantTypography` comme les signatures suivent cette même réponse, sinon
+  ils désigneraient des slots absents de `structure.children`.
+- `composes` se dérive de l’arbre publié, dans SON ordre, comme `tokensUsed` du
+  contrat terminé.
   Le scan dit ce que Figma contient, `structure.children` dit ce que le contrat
   décrit, et seul le second engage le développeur. Une dépendance que l’arbre
   n’a pas su situer sort donc des deux champs à la fois, sous un avertissement :
@@ -106,9 +118,14 @@ tests/
   d’une dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni
   visibilité alors que ses couleurs entrent dans `variantTokens` : il produit
   donc un avertissement.
-- Une propriété Figma que le schéma ne sait pas porter — grille, wrap, position
+- Une propriété Figma que le schéma ne sait pas porter — grille, position
   absolue — avertit au lieu de disparaître. `layout` reste publié parce que sa
   forme l’exige, mais un repli `flex-row` se signale.
+- Le wrap, lui, se publie : `wrap` est une propriété de flux et reste au niveau
+  haut même sous `sizes` ; `rowGap` est un token et suit la règle commune. Son
+  absence sous `wrap` vaut `gap` — Figma synchronise les deux champs sans le
+  dire, et son API renvoie alors la valeur d’`itemSpacing` sans liaison propre.
+  Réclamer une variable là avertirait tous les conteneurs déjà corrects.
 - Une borne de taille est une décision de design, pas une gêne à contourner :
   `bounds` la publie sur le composant et sur chaque slot. Elle est indépendante
   du menu de dimensionnement — un axe en `Fill` qu’un `max width` retient est le
@@ -124,6 +141,10 @@ tests/
   une icône s’affiche, la prop runtime dit LAQUELLE rendre : une icône toujours
   visible est modifiable comme une autre, et son absence de booléen ne se
   signale pas.
+- Une clé de couleur que deux calques se disputent nomme LES DEUX calques : le
+  geste utile est de donner un dernier segment différent à l’une des variables,
+  jamais de retirer une couleur. La feuille n’ayant qu’une entrée par clé, c’est
+  la limite que fermerait l’adressage par chemin de slots — non engagé.
 - Ce qu’une couleur peint se lit sur le calque qui la porte, jamais sur le nom
   de son token. Le dernier segment est la CLÉ de la couleur dans la feuille du
   variant — une identité — et `rendering.roles` publie le rendu de chaque clé

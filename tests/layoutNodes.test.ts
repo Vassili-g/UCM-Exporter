@@ -249,3 +249,43 @@ test('findLayoutNode retombe sur la racine quand aucune dimension n’est liée'
 
   assert.equal(findLayoutNode(racine), racine as unknown as SceneNode);
 });
+
+test('une dépendance ne gagne pas l’élection du node de layout de son parent', () => {
+  // Une Alert embarquée porte évidemment ses propres gap, paddings et radius —
+  // plus que le cadre qui la range. La laisser concourir la faisait élire, et
+  // le parcours d'une dépendance s'arrêtant à elle, `structure.children`
+  // devenait vide sans un mot.
+  const dependance = {
+    type: 'INSTANCE',
+    id: 'alert',
+    name: 'Alert',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {
+      itemSpacing: alias('gap'),
+      paddingLeft: alias('px'),
+      paddingRight: alias('px'),
+      paddingTop: alias('py'),
+      paddingBottom: alias('py'),
+      cornerRadius: alias('radius'),
+    },
+    children: [],
+    findAll: findAllOn([]),
+  };
+  const racine = {
+    type: 'COMPONENT',
+    id: 'page',
+    name: 'Variant=Default',
+    layoutMode: 'VERTICAL',
+    boundVariables: { itemSpacing: alias('gap') },
+    children: [dependance],
+    findAll: findAllOn([dependance]),
+  } as unknown as SceneNode;
+  (dependance as { parent?: unknown }).parent = racine;
+
+  const composed = new Map([['alert', { component: 'Alert', figmaLayer: 'Alert' }]]);
+
+  assert.equal(findLayoutNode(racine, [], composed), racine);
+  // Sans l'élagage, c'est bien elle qui l'emportait : le test décrit une
+  // dépendance réelle, pas un cas de laboratoire.
+  assert.equal(findLayoutNode(racine), dependance as unknown as SceneNode);
+});

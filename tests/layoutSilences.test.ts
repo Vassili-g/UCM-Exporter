@@ -148,24 +148,103 @@ test('une grille ne devient pas une rangée horizontale en silence', async () =>
   assert.ok(warnings.some((warning) => warning.includes('son auto layout est une grille')));
 });
 
-test('un auto layout qui passe à la ligne est signalé', async () => {
-  const racine = {
-    type: 'COMPONENT',
-    name: 'Tags',
-    layoutMode: 'HORIZONTAL',
-    layoutWrap: 'WRAP',
-    primaryAxisAlignItems: 'MIN',
-    counterAxisAlignItems: 'MIN',
+/** Un conteneur qui passe à la ligne, avec les réglages Figma qu'on lui donne. */
+const conteneurEnWrap = (reglages: Record<string, unknown>) => ({
+  type: 'COMPONENT',
+  name: 'Tags',
+  layoutMode: 'HORIZONTAL',
+  layoutWrap: 'WRAP',
+  primaryAxisAlignItems: 'MIN',
+  counterAxisAlignItems: 'MIN',
+  itemSpacing: 12,
+  children: [],
+  findAll: findAllOn([]),
+  ...reglages,
+} as unknown as ComponentNode);
+
+test('un auto layout qui passe à la ligne publie son wrap et son gap entre lignes', async () => {
+  const racine = conteneurEnWrap({
     counterAxisSpacing: 8,
-    boundVariables: { itemSpacing: alias('gap') },
-    children: [],
-    findAll: findAllOn([]),
-  } as unknown as ComponentNode;
+    boundVariables: { itemSpacing: alias('gap'), counterAxisSpacing: alias('row') },
+  });
 
   const warnings: string[] = [];
-  await extractLayout(racine, resolverFor({ gap: 'l.gap' }), warnings);
+  const layout = await extractLayout(racine, resolverFor({ gap: 'l.gap', row: 'l.row' }), warnings);
 
-  assert.ok(warnings.some((warning) => warning.includes('utilise le wrap')));
+  assert.equal(layout.wrap, true);
+  assert.equal(layout.gap, '{l.gap}');
+  assert.equal(layout.rowGap, '{l.row}');
+  assert.equal(warnings.some((warning) => warning.includes('gap')), false);
+});
+
+test('un gap entre lignes synchronisé sur le gap principal ne réclame rien', async () => {
+  // Figma laisse ce champ synchronisé, et son API renvoie alors la valeur
+  // d'`itemSpacing` sans liaison propre : réclamer une variable avertirait tous
+  // les conteneurs correctement tokenisés.
+  const racine = conteneurEnWrap({
+    counterAxisSpacing: 12,
+    boundVariables: { itemSpacing: alias('gap') },
+  });
+
+  const warnings: string[] = [];
+  const layout = await extractLayout(racine, resolverFor({ gap: 'l.gap' }), warnings);
+
+  assert.equal(layout.wrap, true);
+  assert.equal(layout.rowGap, null);
+  assert.equal(warnings.some((warning) => warning.includes('gap')), false);
+});
+
+test('un gap entre lignes dissocié mais sans variable est signalé', async () => {
+  const racine = conteneurEnWrap({
+    counterAxisSpacing: 24,
+    boundVariables: { itemSpacing: alias('gap') },
+  });
+
+  const warnings: string[] = [];
+  const layout = await extractLayout(racine, resolverFor({ gap: 'l.gap' }), warnings);
+
+  assert.equal(layout.rowGap, null);
+  assert.ok(warnings.some((warning) => warning.includes('vertical gap')));
+});
+
+test('un wrap dont Figma répartit les lignes lui-même est signalé', async () => {
+  const racine = conteneurEnWrap({
+    counterAxisAlignContent: 'SPACE_BETWEEN',
+    counterAxisSpacing: 24,
+    boundVariables: { itemSpacing: alias('gap'), counterAxisSpacing: alias('row') },
+  });
+
+  const warnings: string[] = [];
+  const layout = await extractLayout(racine, resolverFor({ gap: 'l.gap', row: 'l.row' }), warnings);
+
+  // La liaison survit au réglage « Auto » : l'exporter ferait affirmer au
+  // contrat un espacement que le rendu n'a pas.
+  assert.equal(layout.rowGap, null);
+  assert.ok(warnings.some((warning) => warning.includes('« Auto »')));
+});
+
+test('sans wrap, une liaison restée sur le gap entre lignes n’exporte rien', async () => {
+  const racine = conteneurEnWrap({
+    layoutWrap: 'NO_WRAP',
+    counterAxisSpacing: 24,
+    boundVariables: { itemSpacing: alias('gap'), counterAxisSpacing: alias('row') },
+  });
+
+  const warnings: string[] = [];
+  const layout = await extractLayout(racine, resolverFor({ gap: 'l.gap', row: 'l.row' }), warnings);
+
+  assert.equal(layout.wrap, undefined);
+  assert.equal(layout.rowGap, null);
+  assert.equal(warnings.some((warning) => warning.includes('gap')), false);
+});
+
+test('sous le wrap, le gap principal est nommé comme le panneau Figma', async () => {
+  const racine = conteneurEnWrap({ counterAxisSpacing: 12, boundVariables: {} });
+
+  const warnings: string[] = [];
+  await extractLayout(racine, resolverFor({}), warnings);
+
+  assert.ok(warnings.some((warning) => warning.includes('horizontal gap')));
 });
 
 test('un layer Absolute est signalé même sous un auto layout en grille', () => {
@@ -340,7 +419,7 @@ test('une borne qui change d’un variant à l’autre change la signature du fl
   assert.notEqual(signature(640, 'max'), signature(640, 'autre'));
 });
 
-test('un calque voisin d’une dépendance dans son cadre est signalé', async () => {
+test('un calque voisin d’une dépendance dans son cadre est décrit comme un slot', async () => {
   const bouton = boutonDependant();
   const mention = {
     type: 'TEXT',
@@ -374,14 +453,17 @@ test('un calque voisin d’une dépendance dans son cadre est signalé', async (
     dependanceDe(),
   );
 
-  // Seule la branche qui mène à la dépendance est publiée : le voisin, lui,
-  // doit être nommé.
+  // Le cadre appartient à CE contrat : ce qu'il range à côté de sa dépendance
+  // aussi. Le voisin reçoit donc son slot au lieu de disparaître sous un
+  // avertissement, et sa typographie a désormais un chemin où vivre.
   assert.deepEqual(layout.children[0].children, [
     { slot: 'button', figmaLayer: 'Button', composes: 'Button' },
+    { slot: 'label', figmaLayer: 'Mention légale' },
   ]);
-  assert.ok(warnings.some((warning) => (
-    warning.includes('« Mention légale »') && warning.includes('partage le layer « Action »')
-  )));
+  assert.equal(
+    warnings.some((warning) => warning.includes('partage le layer')),
+    false,
+  );
 });
 
 test('la signature de flux distingue deux dimensions figées différentes', () => {

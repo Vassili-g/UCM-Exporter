@@ -20,6 +20,9 @@ export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;
  */
 export const BINDING_PATTERNS = {
   gap: [['itemSpacing']],
+  // L'espace entre les LIGNES d'un conteneur qui passe à la ligne. Figma scinde
+  // alors son champ gap en deux, et n'applique celui-ci que sous `WRAP`.
+  rowGap: [['counterAxisSpacing']],
   paddingX: [['paddingLeft', 'paddingRight']],
   paddingY: [['paddingTop', 'paddingBottom']],
   radius: [
@@ -58,6 +61,7 @@ export const BINDING_PATTERNS = {
  */
 const FIELD_LABELS: Record<string, string> = {
   itemSpacing: 'gap',
+  counterAxisSpacing: 'vertical gap',
   paddingLeft: 'left padding',
   paddingRight: 'right padding',
   paddingTop: 'top padding',
@@ -95,6 +99,7 @@ const FIELD_LABELS: Record<string, string> = {
  */
 const IMPLICIT_DEFAULTS: Readonly<Record<string, number>> = {
   itemSpacing: 0,
+  counterAxisSpacing: 0,
   paddingLeft: 0,
   paddingRight: 0,
   paddingTop: 0,
@@ -114,6 +119,7 @@ const IMPLICIT_DEFAULTS: Readonly<Record<string, number>> = {
  */
 const AUTO_LAYOUT_FIELDS: ReadonlySet<string> = new Set([
   'itemSpacing',
+  'counterAxisSpacing',
   'paddingLeft',
   'paddingRight',
   'paddingTop',
@@ -121,7 +127,12 @@ const AUTO_LAYOUT_FIELDS: ReadonlySet<string> = new Set([
 ]);
 
 /** Raison pour laquelle Figma ne peut pas porter une valeur contractuelle. */
-type InapplicableReason = 'no-auto-layout' | 'space-between' | 'grid';
+type InapplicableReason =
+  | 'no-auto-layout'
+  | 'space-between'
+  | 'grid'
+  | 'no-wrap'
+  | 'rows-space-between';
 
 /** Vrai si le node dispose réellement ses enfants (auto-layout ou grille). */
 function distributesChildren(node: SceneNode): boolean {
@@ -137,6 +148,20 @@ function distributesChildren(node: SceneNode): boolean {
  */
 function distributesAsGrid(node: SceneNode): boolean {
   return (node as unknown as Record<string, unknown>).layoutMode === 'GRID';
+}
+
+/** Vrai si l'auto layout passe à la ligne. Sans wrap, il n'y a aucune ligne à espacer. */
+function wrapsChildren(node: SceneNode): boolean {
+  return (node as unknown as Record<string, unknown>).layoutWrap === 'WRAP';
+}
+
+/**
+ * Vrai si Figma répartit les LIGNES lui-même. Le champ « vertical gap » affiche
+ * alors « Auto » : `counterAxisSpacing` reste lisible sans aucun effet, comme
+ * `itemSpacing` sous un espacement « Auto » de l'axe principal.
+ */
+function distributesRowsBySpaceBetween(node: SceneNode): boolean {
+  return (node as unknown as Record<string, unknown>).counterAxisAlignContent === 'SPACE_BETWEEN';
 }
 
 /**
@@ -165,6 +190,10 @@ function inapplicableReason(
   if (fields.includes('itemSpacing')) {
     if (distributesAsGrid(node)) return 'grid';
     if (distributesBySpaceBetween(node)) return 'space-between';
+  }
+  if (fields.includes('counterAxisSpacing')) {
+    if (!wrapsChildren(node)) return 'no-wrap';
+    if (distributesRowsBySpaceBetween(node)) return 'rows-space-between';
   }
   return null;
 }
@@ -259,6 +288,21 @@ export async function resolveTokenName(
     );
     return null;
   }
+  if (inapplicable === 'no-wrap') {
+    // Sans wrap, il n'y a pas de deuxième ligne : rien ne manque au contrat, et
+    // une liaison qui survit au retrait du wrap ne doit rien exporter.
+    return null;
+  }
+  if (inapplicable === 'rows-space-between') {
+    warnings.push(
+      `Layer « ${node.name} » : son vertical gap est réglé sur « Auto », donc Figma répartit ` +
+        `lui-même l'espace entre ses lignes. Le contrat ne sait pas décrire cette répartition : ` +
+        `aucun gap entre les lignes n'est exporté, et son absence ne veut donc pas dire zéro. ` +
+        `Donnez une valeur reliée à une variable au vertical gap si cet espacement doit être ` +
+        `contractuel, puis réexportez.`,
+    );
+    return null;
+  }
   if (inapplicable === 'space-between') {
     // La répartition est désormais publiée par `structure.justifyContent`.
     // `itemSpacing` reste inapplicable : son éventuelle liaison ne doit ni
@@ -345,6 +389,43 @@ export async function resolveTokenName(
       `variables manquantes, puis réexportez.`,
   );
   return null;
+}
+
+/**
+ * Intitulé du gap principal, tel que le panneau Figma l'affiche.
+ *
+ * Sous le wrap, Figma scinde son champ gap en deux — « horizontal gap » et
+ * « vertical gap ». Un message qui dirait « gap » enverrait alors le designer
+ * chercher un champ que son écran ne montre plus.
+ */
+export function gapLabel(node: SceneNode): string {
+  return wrapsChildren(node) ? 'horizontal gap' : 'gap';
+}
+
+/**
+ * Gap entre les LIGNES d'un conteneur qui passe à la ligne.
+ *
+ * Figma laisse ce champ synchronisé sur le gap principal, et son API ne dit pas
+ * qu'il l'est : `counterAxisSpacing` ne renvoie jamais `null`, il renvoie la
+ * valeur d'`itemSpacing` sans porter de liaison propre. Réclamer une variable
+ * dans ce cas avertirait TOUS les conteneurs correctement tokenisés, dont le
+ * gap unique décrit déjà les deux axes — et c'est aussi ce que dit le contrat :
+ * sous `wrap`, un `rowGap` absent vaut le `gap`.
+ *
+ * Le contrat ne publie donc ce champ que sur une liaison PROPRE, et n'avertit
+ * que lorsque la valeur diffère du gap principal : là, le designer a bien
+ * dissocié ses deux espacements, et l'un des deux est écrit à la main.
+ */
+export async function resolveRowGap(
+  node: SceneNode,
+  resolver: TokenResolver,
+  warnings: string[],
+): Promise<string | null> {
+  const values = node as unknown as Record<string, unknown>;
+  const synchronise = !firstVariableAlias(getBinding(node, 'counterAxisSpacing'))
+    && values.counterAxisSpacing === values.itemSpacing;
+  if (synchronise) return null;
+  return resolveField(node, BINDING_PATTERNS.rowGap, 'vertical gap', resolver, warnings);
 }
 
 /** Résout un groupe complet et l'enrobe en référence de contrat. */

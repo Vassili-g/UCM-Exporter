@@ -17,6 +17,7 @@ import type {
 type FlexContainerProperties = {
   justifyContent?: JustifyContent;
   alignItems?: AlignItems;
+  wrap?: true;
 };
 
 type FlexItemProperties = {
@@ -154,9 +155,13 @@ export function sizeBoundFields(node: SceneNode): ReadonlyArray<keyof SizeBounds
 }
 
 /**
- * Alignement du conteneur Figma. Les deux champs forment une paire : si l'API
- * ne fournit pas les deux, le contrat les omet plutôt que de compléter le
- * second avec un défaut CSS inventé.
+ * Alignement du conteneur Figma, et son passage à la ligne.
+ *
+ * Les deux alignements forment une paire : si l'API ne fournit pas les deux, le
+ * contrat les omet plutôt que de compléter le second avec un défaut CSS
+ * inventé. Le wrap, lui, ne dépend pas d'eux et survit donc à leur absence :
+ * un alignement illisible ne doit pas emporter avec lui la disposition sur
+ * plusieurs lignes.
  */
 export function flexContainerProperties(
   node: SceneNode,
@@ -165,31 +170,24 @@ export function flexContainerProperties(
   if (!isLinearAutoLayout(node)) return {};
 
   const values = asPropertyBag(node);
-  // Le passage à la ligne n'a pas de champ dans le contrat, et son gap entre
-  // lignes (`counterAxisSpacing`) non plus. Le taire ferait rendre sur une
-  // seule ligne un conteneur qui en occupe plusieurs dans la maquette.
-  if (values.layoutWrap === 'WRAP') {
-    warnings.push(
-      `Layer « ${node.name} » : son auto layout utilise le wrap. Le contrat ne décrit ni le ` +
-        `passage à la ligne ni le gap entre les lignes : le développeur alignera tous ses ` +
-        `layers sur une seule ligne. Retirez le wrap si cette disposition doit être ` +
-        `contractuelle, puis réexportez.`,
-    );
-  }
+  // Le passage à la ligne est une décision de disposition, pas une dimension :
+  // il se publie ici, à côté des alignements. L'espace entre les lignes, lui,
+  // est un token, et `nodeBindings.resolveRowGap` le nomme.
+  const wrap: FlexContainerProperties = values.layoutWrap === 'WRAP' ? { wrap: true } : {};
   const primary = values.primaryAxisAlignItems;
   const counter = values.counterAxisAlignItems;
-  if (primary === undefined || counter === undefined) return {};
+  if (primary === undefined || counter === undefined) return wrap;
 
   const justify = justifyContent(primary);
   const align = alignItems(counter);
-  if (justify && align) return { justifyContent: justify, alignItems: align };
+  if (justify && align) return { ...wrap, justifyContent: justify, alignItems: align };
 
   warnings.push(
     `Layer « ${node.name} » : son alignement d'auto layout est illisible. Le contrat ne ` +
       `publie ni justifyContent ni alignItems, car une valeur CSS devinée déplacerait ses ` +
       `enfants. Réglez l'alignement principal et secondaire dans Figma, puis réexportez.`,
   );
-  return {};
+  return wrap;
 }
 
 /**

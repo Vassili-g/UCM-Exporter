@@ -42,13 +42,22 @@ export function findLayoutNode(
     BINDING_PATTERNS.paddingY,
     BINDING_PATTERNS.radius,
   ];
-  const candidates = getAllNodes(root, warnings, composed).map((node) => ({
-    node,
-    score: dimensions.reduce(
-      (total, alternatives) => total + (hasCompleteBinding(node, alternatives) ? 1 : 0),
-      0,
-    ),
-  }));
+  const candidates = getAllNodes(root, warnings, composed)
+    // `getAllNodes` conserve l'instance d'un composant unifié pour que la
+    // structure puisse la décrire comme un slot. Elle porte évidemment ses
+    // propres dimensions, et la laisser concourir la ferait élire : le contrat
+    // décrirait alors un arbre dont `assignSlots` ne tire aucun slot, puisque
+    // le parcours d'une dépendance s'arrête à elle. `structure.children`
+    // deviendrait vide, en silence. C'est la garde qu'appliquent déjà
+    // `matchingWrapperInstance` et `findWrapperReference`.
+    .filter((node) => !composed.has(node.id))
+    .map((node) => ({
+      node,
+      score: dimensions.reduce(
+        (total, alternatives) => total + (hasCompleteBinding(node, alternatives) ? 1 : 0),
+        0,
+      ),
+    }));
   candidates.sort((left, right) => right.score - left.score);
   return candidates[0]?.score ? candidates[0].node : root;
 }

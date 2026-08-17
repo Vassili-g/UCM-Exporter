@@ -38,11 +38,11 @@ export function isIconLayer(node: SceneNode, iconNames: ReadonlySet<string>): bo
  * Nom de slot d'un enfant direct, avant déduplication des homonymes.
  *
  * Un enfant qui porte une ou plusieurs dépendances unifiées garde le nom de son
- * calque : leurs textes et leurs icônes appartiennent au contrat de ces
- * dépendances, pas à celui qui les embarque. Le compte n'y change rien — c'est
+ * calque, sans jamais devenir un `label` : ce cadre est un conteneur de ce
+ * contrat-ci, et son rôle n'est pas celui d'un texte. Ses propres calques, eux,
+ * sont bien décrits — par ses enfants, chacun nommé par cette même règle. C'est
  * le test que `extractLayout`, `extractVariantTypography` et les signatures
- * appliquent tous, et un cadre à deux boutons ne devient pas un `label` parce
- * qu'un texte y traîne.
+ * appliquent tous : le déplacer ferait bouger tous les chemins de slots.
  */
 function baseSlotName(
   child: SceneNode,
@@ -82,6 +82,28 @@ export function assignSlots(
     countByBaseName.set(baseName, alreadySeen + 1);
     return { child, slot: indexedSlotName(baseName, alreadySeen) };
   });
+}
+
+/**
+ * Enfants qu'un cadre de dépendances publie réellement.
+ *
+ * Un cadre décrit TOUS ses calques — la dépendance et ce qui l'accompagne — sauf
+ * quand aucune de ses branches ne mène à une dépendance : ses instances sont
+ * alors rangées sous un calque masqué, le contrat se replie sur le seul nom du
+ * composant et n'ouvre aucun `children`.
+ *
+ * Cette réponse est prise ici, une fois. `extractLayout` la suit pour publier,
+ * `textSlots` et les signatures pour situer : un second calcul finirait par
+ * désigner des chemins de slots que `structure.children` ne contient pas, et le
+ * consommateur refuse un contrat dont la typographie vise un slot absent.
+ */
+export function composedWrapperSlots(
+  assignments: readonly SlotAssignment[],
+  composed: ComposedInstances,
+): readonly SlotAssignment[] {
+  const meneAUneDependance = ({ child }: SlotAssignment) =>
+    composedSlotDependencies(child, composed).length > 0;
+  return assignments.some(meneAUneDependance) ? assignments : [];
 }
 
 /**

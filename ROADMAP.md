@@ -31,7 +31,7 @@ uniquement ce qui est déjà intégré et vérifié.
 | Domaine | État |
 |---|---|
 | Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
-| Écriture de la 5.3 | Le moteur l’écrit, personne ne la consomme encore : le corpus et le Playground restent en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button. Les 5.1 et 5.3 sont neutres pour un composant qui nomme déjà ses rôles et ne pose aucune borne — le réexport reste dû pour la 5.0 et la 5.2 |
+| Écriture de la 5.4 | Le moteur l’écrit, personne ne la consomme encore : le corpus et le Playground restent en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button. Les 5.1, 5.3 et 5.4 sont neutres pour un composant qui nomme déjà ses rôles, ne pose aucune borne et ne passe pas à la ligne — le réexport reste dû pour la 5.0 et la 5.2. Le Playground accepte la borne de version, mais aucun de ses composants n’emploie le wrap : le champ est écrit et audité, pas encore exercé |
 | Reconstruction à froid | Menée sur la 4.8. La 4.9 a été absorbée en adaptant les composants et le skill, sans nouvelle reconstruction : le test froid a donc un contrat de retard |
 | Cadre enveloppant une ou plusieurs dépendances | Publié comme conteneur : il porte son flux, sa dimension figée et range chaque dépendance dans `children`. Seul le calque qui EST l’instance porte `composes` |
 | Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma de l’Exporter |
@@ -60,9 +60,10 @@ repositories construisent et se testent. Alert et Button appliquent les text
 styles exportés à leurs vrais slots texte ; les tests relisent les cinq
 propriétés typographiques — `fontFamily`, `fontSize`, `fontWeight`,
 `lineHeight`, `letterSpacing` — et la totalité des références déclarées. Le flux
-Flex ne prétend pas couvrir grille, wrap ni positionnement absolu — mais il ne
-les tait plus : chacun de ces cas, comme les calques écartés par l'élection du
-node de layout, produit son avertissement. Le
+Flex ne prétend pas couvrir grille ni positionnement absolu — mais il ne les tait
+plus : chacun de ces cas, comme les calques écartés par l'élection du node de
+layout, produit son avertissement. Le **wrap**, lui, est désormais décrit :
+`wrap` et `rowGap` publient le passage à la ligne et l'espace entre les lignes. Le
 **dimensionnement**, lui, est complet : l'absence d'une dimension sur un slot
 vaut `fit-content`, puisqu'un remplissage se publie et qu'une dimension figée
 cite une variable ou avertit ; le composant publie toujours son propre
@@ -224,6 +225,27 @@ troisième : elle embarque une dépendance — une seule, pas plusieurs — et c
 d’icône selon la sévérité. Restent un composé à plusieurs dépendances, un
 composant interactif à booléens (Checkbox, TextField) et un composant qui expose
 une propriété Figma non couverte.
+
+Un troisième passage de ce même composant d’épreuve — un composant à sept
+dépendances, un cadre en wrap et deux dépendances rangées avec un tag — a livré
+quatre résultats, dont trois portaient encore sur le moteur :
+
+- les couleurs d’une dépendance entraient dans le contrat du parent, par le
+  calque de l’instance que le parcours conserve pour la décrire comme un slot.
+  Elles y évinçaient, sur la clef `background`, trois couleurs du composant ;
+- ses dimensions pouvaient de la même façon la faire élire node de layout, ce
+  qui aurait vidé `structure.children` sans un mot. Aucun export ne l’avait
+  encore montré — il fallait une dépendance mieux tokenisée que son parent ;
+- un cadre qui range des dépendances ET autre chose perdait cet autre chose. Il
+  publie désormais tous ses calques ;
+- le **wrap** était le quatrième, et le seul à demander un champ : c’est la 5.4.
+
+Ce que ce passage n’a PAS fermé : deux calques du même composant dont les
+variables finissent par le même segment se disputent toujours une clef de la
+feuille de variant. L’export nomme désormais les deux calques et demande le seul
+geste qui marche — un dernier segment différent —, mais fermer le cas suppose
+l’adressage par chemin de slots, que [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md)
+réserve à un composant réel du catalogue.
 
 Un composant d’épreuve a déjà fait tomber la première marche du troisième point,
 et là encore sur le moteur plutôt que sur le schéma : un calque qui rangeait

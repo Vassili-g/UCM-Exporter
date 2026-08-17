@@ -96,7 +96,10 @@ boolean, `TEXT` → string. Deux règles auto-détectées :
 **2. Tokens de variantes** — après le pré-vol de complétude, parcourir **tous**
 les variants du produit cartésien des axes. Pour chacun, relever les tokens liés (`boundVariables.fills` et
 `.strokes` sur tout le sous-arbre), rangés par **clé = dernier segment du
-token**. Un sous-arbre `visible === false` est ignoré, sauf si sa visibilité
+token**. Un composant unifié imbriqué n'y contribue rien : ni son contenu, ni le
+calque de l'instance elle-même, dont le fond appartient à son propre contrat.
+Le relever ferait entrer dans `variantTokens` et dans `tokensUsed` une couleur
+que ce contrat-ci ne peint pas — et, sur une clé partagée, évincerait la sienne. Un sous-arbre `visible === false` est ignoré, sauf si sa visibilité
 est liée à une prop de composant ou à une variable : il peut alors être rendu
 dans une autre configuration et reste exporté. Un sous-arbre statiquement
 masqué qui portait des variables produit un warning sur sa racine.
@@ -122,6 +125,12 @@ support — un `…/border` posé en remplissage : le nom et le calque se
 contredisent, et le contrat ne peut pas trancher. Un seul message par rôle
 fautif, avec son nombre d'occurrences et un token en exemple.
 Un rôle n'apparaît que s'il est réellement lié — rien n'est forcé ni inventé.
+La feuille n'ayant qu'une entrée par clé, deux calques dont les variables
+finissent par le même segment se la disputent : le contrat garde le premier et
+avertit en nommant **les deux calques**, car le geste utile est de donner un
+dernier segment différent à l'une des variables — jamais de retirer une couleur.
+Situer chaque surface peinte dans `structure.children` fermerait ce cas ; c'est
+une extension non engagée, suivie dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 Chaque feuille décrit indépendamment l'état visuel complet du variant Figma :
 si un rôle est absent de la feuille d'un état dans `variantTokens` ou
 `variantStrokes`, cela signifie toujours **« ne pas rendre ce rôle dans cet
@@ -451,10 +460,30 @@ disparaître, puisque le rendu, lui, en dépend :
 - `structure.layout` reste obligatoire, et `flex-row` en est le repli. Un node
   de layout qui n'est pas un auto layout horizontal ou vertical — grille, frame
   sans auto layout — est donc publié comme une rangée, et le warning le dit ;
-- un auto layout qui passe à la ligne (`layoutWrap: WRAP`) est publié sans son
-  retour à la ligne ni son gap entre lignes (`counterAxisSpacing`) ;
 - les bornes d'un calque intermédiaire, entre le composant et ses slots, n'ont
   aucun propriétaire dans le contrat.
+
+**Passage à la ligne (4.4).** Un auto layout en `layoutWrap: WRAP` publie
+`wrap: true`, sur le composant comme sur n'importe quel conteneur de `children`.
+C'est une propriété de flux, pas une dimension : elle reste au niveau haut même
+quand `sizes` porte les dimensions. L'espace entre les LIGNES est un token,
+`rowGap`, et suit la règle commune. Trois silences y répondent chacun à une
+question distincte :
+
+- **pas de wrap** — `counterAxisSpacing` reste lisible sans effet, comme un
+  `itemSpacing` sous une grille. Rien n'est exporté et rien n'est signalé : il
+  n'y a pas de deuxième ligne, donc rien ne manque ;
+- **champ synchronisé** — Figma laisse les deux gaps liés tant que le designer
+  ne les dissocie pas, et son API ne le dit pas : `counterAxisSpacing` ne renvoie
+  jamais `null`, il renvoie la valeur d'`itemSpacing` sans liaison propre.
+  `rowGap` reste donc absent, sans warning, et **son absence vaut `gap`** — la
+  lecture de Figma comme celle de CSS ;
+- **répartition « Auto »** (`counterAxisAlignContent: SPACE_BETWEEN`) — Figma
+  répartit lui-même l'espace entre les lignes. Aucun champ ne sait l'écrire, à la
+  différence de `justifyContent` sur l'axe principal : le warning le dit.
+
+Sous le wrap, Figma scinde son champ gap en deux. Les messages emploient donc
+« horizontal gap » et « vertical gap », les intitulés que le panneau affiche.
 
 Slots dédupliqués (`label`, `label-2`…). Un calque rendable inattendu est inclus
 tel quel, jamais supprimé silencieusement.
@@ -569,7 +598,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "5.1",
+    "contractVersion": "5.4",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "figma": {
@@ -719,12 +748,9 @@ publie déjà son propre `structure.sizing`, où une taille explicite neutralise
 l'étirement. Le cadre disparaîtrait avec son alignement. Un cadre sans
 auto-layout linéaire avertit au lieu de laisser deviner sa disposition.
 
-`gap` décrit l'espace ENTRE des enfants : le cadre ne le publie que lorsqu'il en
-range plusieurs et qu'ils sont TOUS dans le contrat. Un cadre à une seule
-dépendance n'espace rien, et réclamer une variable pour lui enverrait le
-designer relier une valeur qui ne se voit pas ; dès qu'un calque du cadre reste
-hors du contrat, l'espacement décrirait une suite d'enfants qui n'existe nulle
-part.
+`gap` décrit l'espace ENTRE des enfants : le cadre le publie dès qu'il en range
+plusieurs. Un cadre à un seul enfant n'espace rien, et réclamer une variable pour
+lui enverrait le designer relier une valeur qui ne se voit pas.
 
 Une seule dépendance peut prêter sa `visibilityProp` au slot du cadre. À
 plusieurs, la retenir masquerait les autres avec elle : le cadre n'en prend
@@ -739,15 +765,27 @@ alors aucune, et chaque branche publie la sienne.
   ] }
 ```
 
-Seule la branche qui mène à la dépendance est publiée : un calque qui partage ce
-cadre avec elle — un texte, un dessin — n'a ni slot, ni typographie, ni
-visibilité dans le contrat, et produit donc son propre avertissement.
+Ce que le cadre range À CÔTÉ de ses dépendances lui appartient tout autant : un
+tag, un texte, un dessin y sont des calques de ce contrat-ci, décrits par la
+règle commune, avec leur slot, leur typographie et leur visibilité. Ne publier
+que les branches de dépendance les faisait disparaître alors que leurs couleurs
+entraient bien dans `variantTokens` — le contrat annonçait des couleurs que plus
+aucun calque ne portait.
+
+Un cadre dont AUCUNE branche exportable ne mène à une dépendance fait exception :
+ses instances sont rangées sous un calque masqué, le contrat se replie sur le
+seul nom du composant et n'ouvre aucun `children`. Les chemins de
+`variantTypography` suivent cette même réponse, sinon ils viseraient des slots
+que `structure.children` ne contient pas.
 
 Le relevé couvre toute la matrice pour élaguer les dépendances de chaque
 variant. `structure.children` et `composes` décrivent tous deux le variant de
 référence et gardent ainsi le même ordre et la même cardinalité. Ils ne le
 gardent pas par accord de deux relevés : `composes` se DÉRIVE de l'arbre publié,
-comme `tokensUsed` se dérive du contrat terminé. Le scan dit ce que Figma
+comme `tokensUsed` se dérive du contrat terminé. La séquence se LIT sur cet
+arbre, et non dans l'ordre où l'extraction a rangé ses trouvailles : celui-ci
+dépend de l'ordonnancement des lectures asynchrones, et deux cadres frères
+pourraient se doubler sans qu'aucun design ait changé. Le scan dit ce que Figma
 contient ; seul `structure.children` dit où le développeur doit rendre quoi.
 
 Une dépendance que l'arbre n'a su situer nulle part — posée hors du node de
@@ -941,7 +979,20 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **5.3** : les bornes de taille deviennent
+La version actuelle du contrat est **5.4** : le passage à la ligne devient
+contractuel. `wrap` et `rowGap` décrivent un auto layout qui déborde sur
+plusieurs lignes, sur le composant comme sur n'importe quel conteneur de
+`children` ; le contrat se contentait jusqu'ici d'avertir, et le développeur
+alignait tout sur une seule ligne. Les deux champs sont facultatifs et purement
+additifs — un composant sans wrap produit un contrat identique — mais un
+consommateur qui les ignore rend sur une seule ligne ce que la maquette étale sur
+plusieurs, d'où la version. La même version élargit ce qu'un cadre de
+dépendances publie : ses calques voisins cessent de disparaître avec leur slot,
+leur typographie et leur visibilité. La forme du JSON ne change pas pour eux —
+ce sont des slots comme les autres — mais un consommateur qui présumait qu'un tel
+cadre ne contient que des `composes` doit cesser de le faire.
+
+La 5.3 : les bornes de taille deviennent
 contractuelles. `bounds` publie `minWidth`, `maxWidth`, `minHeight` et
 `maxHeight`, sur le composant comme sur chaque slot, tokenisées. Le champ est
 facultatif et purement additif — un composant sans borne produit un contrat

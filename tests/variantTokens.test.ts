@@ -380,3 +380,103 @@ test('un rôle homonyme d’Object.prototype n’invente pas une collision de fi
   assert.deepEqual(tokens.paints, { constructor: '{components.button.constructor}' });
   assert.deepEqual(warnings, []);
 });
+
+/**
+ * Un composé et sa dépendance, chacun peignant une surface dont la variable
+ * finit par le même segment.
+ *
+ * C'est le cas ordinaire d'un design system : le fond d'une Alert s'appelle
+ * `…background`, celui du cadre qui la range aussi. Rien n'oblige le designer
+ * à les distinguer, puisqu'ils vivent dans deux contrats différents.
+ */
+const composeAvecDependance = () => {
+  const instance = {
+    type: 'INSTANCE',
+    id: 'alert',
+    name: 'Alert',
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: 'alert-bg' }] },
+    children: [],
+    findAll: () => [],
+  };
+  const cadre = {
+    type: 'FRAME',
+    id: 'panneau',
+    name: 'Panneau',
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: 'panneau-bg' }] },
+    children: [],
+    findAll: () => [],
+  };
+  const racine = {
+    type: 'COMPONENT',
+    id: 'variant',
+    name: 'Variant=Default',
+    boundVariables: {},
+    children: [instance, cadre],
+    findAll: () => [instance, cadre],
+  } as unknown as ComponentNode;
+  (instance as { parent?: unknown }).parent = racine;
+  (cadre as { parent?: unknown }).parent = racine;
+  return racine;
+};
+
+const resolveurDeFonds = {
+  resolve: async (alias: VariableAlias | null | undefined) => {
+    if (alias?.id === 'alert-bg') return 'components.alert.colors.info.background';
+    if (alias?.id === 'panneau-bg') return 'components.page.colors.background';
+    return null;
+  },
+};
+
+test('la couleur portée par une dépendance n’entre pas dans le contrat du composé', async () => {
+  const racine = composeAvecDependance();
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(
+    racine,
+    resolveurDeFonds,
+    warnings,
+    new Map([['alert', { component: 'Alert', figmaLayer: 'Alert' }]]),
+  );
+
+  // `getAllNodes` conserve l'instance pour que la structure la décrive comme un
+  // slot ; sa couleur, elle, appartient au contrat de l'Alert. La relever ici
+  // la ferait entrer dans `variantTokens` ET évincerait, sur la même clé, la
+  // couleur que ce contrat possède vraiment.
+  assert.deepEqual(tokens.paints, { background: '{components.page.colors.background}' });
+  assert.deepEqual(warnings, []);
+});
+
+test('deux calques du composant qui se disputent une clé nomment les deux calques', async () => {
+  const racine = composeAvecDependance();
+  const warnings: string[] = [];
+
+  // Sans élagage — l'ancien comportement — les deux couleurs se disputent la
+  // clé « background ». Le message doit alors nommer les DEUX layers : demander
+  // « ne gardez qu'un fill » à un calque qui n'en a qu'un est insuivable.
+  await getSlotTokens(racine, resolveurDeFonds, warnings);
+
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /« Panneau »/);
+  assert.match(warnings[0], /« Alert »/);
+  assert.match(warnings[0], /dernier segment différent/);
+});
+
+test('deux fills du MÊME calque gardent le message qui leur correspond', async () => {
+  const calque = {
+    type: 'FRAME',
+    name: 'Panneau',
+    boundVariables: {
+      fills: [
+        { type: 'VARIABLE_ALIAS', id: 'alert-bg' },
+        { type: 'VARIABLE_ALIAS', id: 'panneau-bg' },
+      ],
+    },
+    findAll: () => [],
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  await getSlotTokens(calque, resolveurDeFonds, warnings);
+
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /deux fills portent la même clé/);
+});
