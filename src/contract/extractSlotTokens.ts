@@ -61,50 +61,93 @@ async function strokeWidth(
   );
 }
 
+/** Une couleur retenue pour une clé, et le calque qui l'a posée. */
+type KeyedPaint<T> = { value: T; node: SceneNode };
+
+/**
+ * Message d'une clé que deux couleurs se disputent.
+ *
+ * La feuille d'un variant n'a qu'une entrée par clé, et le contrat garde la
+ * première. Le geste à faire dépend de qui porte les deux : un seul calque a un
+ * fill de trop, deux calques ont deux surfaces distinctes que la même clé ne
+ * sait pas séparer. Leur demander de n'en garder qu'une ferait perdre une
+ * couleur — c'est l'erreur que la 5.1 a fermée côté nommage, et la refaire dans
+ * un message la rouvrirait.
+ */
+function collisionWarning(
+  field: 'fills' | 'strokes',
+  key: string,
+  existing: { token: string; node: SceneNode },
+  incoming: { token: string; node: SceneNode },
+): string {
+  if (existing.node === incoming.node) {
+    return `Layer « ${incoming.node.name} » : deux ${field} portent la même clé « ${key} ». ` +
+      `Seul ${existing.token} est exporté, ${incoming.token} est ignoré. Ne gardez qu'un ` +
+      `${field === 'fills' ? 'fill' : 'stroke'} par clé.`;
+  }
+  return `Layer « ${incoming.node.name} » : sa couleur ${incoming.token} porte la même clé ` +
+    `« ${key} » que celle du layer « ${existing.node.name} » (${existing.token}) — la clé est le ` +
+    `dernier segment du nom de la variable. Le contrat n'en garde qu'une par variant et exporte ` +
+    `${existing.token} : la couleur de ce layer manquera au développeur. Donnez à l'une des deux ` +
+    `variables un dernier segment différent, puis réexportez.`;
+}
+
 /**
  * Ajoute une peinture en rendant visible toute collision.
  *
- * Les rôles se lisent sur le dernier segment d'un nom de variable Figma :
+ * Les clés se lisent sur le dernier segment d'un nom de variable Figma :
  * l'accumulateur est une `Map`, sans clé héritée. Un objet littéral rendrait
- * `Object` pour un rôle « constructor », et le token serait écarté sous un
+ * `Object` pour une clé « constructor », et le token serait écarté sous un
  * avertissement de collision que rien ne justifie.
  */
 function setPaintToken(
-  paints: Map<string, string>,
-  role: string,
+  paints: Map<string, KeyedPaint<string>>,
+  key: string,
   token: string,
   node: SceneNode,
   warnings: string[],
 ): void {
-  const existing = paints.get(role);
-  if (!existing) paints.set(role, token);
-  else if (existing !== token) {
-    warnings.push(
-      `Layer « ${node.name} » : deux fills visent le même rôle « ${role} ». Seul ` +
-        `${existing} est exporté, ${token} est ignoré. Ne gardez qu'un fill par rôle.`,
-    );
+  const existing = paints.get(key);
+  if (!existing) {
+    paints.set(key, { value: token, node });
+    return;
   }
+  if (existing.value === token) return;
+  warnings.push(collisionWarning('fills', key, { token: existing.value, node: existing.node }, { token, node }));
 }
 
 /** Ajoute un contour en rendant visible toute collision. Même `Map` que `setPaintToken`, et pour la même raison. */
 function setStrokeToken(
-  strokes: Map<string, StrokeTokens>,
-  role: string,
+  strokes: Map<string, KeyedPaint<StrokeTokens>>,
+  key: string,
   value: StrokeTokens,
   node: SceneNode,
   warnings: string[],
 ): void {
-  const existing = strokes.get(role);
+  const existing = strokes.get(key);
   if (!existing) {
-    strokes.set(role, value);
+    strokes.set(key, { value, node });
     return;
   }
-  if (existing.color !== value.color || existing.width !== value.width || existing.align !== value.align) {
-    warnings.push(
-      `Layer « ${node.name} » : deux strokes visent le même rôle « ${role} ». Seul ` +
-        `${existing.color} est exporté, ${value.color} est ignoré. Ne gardez qu'un stroke par rôle.`,
-    );
+  if (existing.value.color !== value.color) {
+    warnings.push(collisionWarning(
+      'strokes',
+      key,
+      { token: existing.value.color, node: existing.node },
+      { token: value.color, node },
+    ));
+    return;
   }
+  // Même couleur, géométrie différente : citer deux fois le même token ne
+  // dirait rien au designer. C'est la largeur ou l'alignement qu'il doit voir.
+  if (existing.value.width === value.width && existing.value.align === value.align) return;
+  warnings.push(
+    `Layer « ${node.name} » : son stroke ${value.color} porte la même clé « ${key} » que celui ` +
+      `du layer « ${existing.node.name} », avec une stroke weight ou un alignement différents. ` +
+      `Le contrat n'en garde qu'un par variant et exporte celui de « ${existing.node.name} » : ` +
+      `la géométrie de ce layer manquera au développeur. Réglez les deux strokes de la même ` +
+      `façon, ou donnez à l'une des deux variables un dernier segment différent, puis réexportez.`,
+  );
 }
 
 /**
@@ -135,6 +178,12 @@ export async function getSlotTokens(
   >();
 
   for (const node of getAllNodes(component, warnings, composed)) {
+    // `getAllNodes` conserve l'instance d'un composant unifié pour que la
+    // structure puisse la décrire comme un slot. Ses couleurs, elles, ne sont
+    // pas les nôtres : elles appartiennent à son propre contrat, et les relever
+    // ici les ferait entrer dans `variantTokens` et dans `tokensUsed` du parent
+    // — jusqu'à évincer, sur la même clé, une couleur que ce contrat possède.
+    if (composed.has(node.id)) continue;
     for (const field of BOUND_FIELDS) {
       for (const alias of variableAliases(getBinding(node, field))) {
         let stroke = field === 'strokes' ? strokeStyles.get(node) ?? null : null;
@@ -155,8 +204,8 @@ export async function getSlotTokens(
     }
   }
 
-  const paints = new Map<string, string>();
-  const strokes = new Map<string, StrokeTokens>();
+  const paints = new Map<string, KeyedPaint<string>>();
+  const strokes = new Map<string, KeyedPaint<StrokeTokens>>();
   const roles = new Map<string, string>();
   const resolved = await Promise.all(pending.map(async (binding) => ({
     ...binding,
@@ -190,5 +239,7 @@ export async function getSlotTokens(
       setPaintToken(paints, key, toRef(binding.token), binding.node, warnings);
     }
   }
-  return { paints: Object.fromEntries(paints), strokes: Object.fromEntries(strokes), roles };
+  const leafOf = <T>(retenus: Map<string, KeyedPaint<T>>): Record<string, T> =>
+    Object.fromEntries(Array.from(retenus, ([key, retenu]) => [key, retenu.value]));
+  return { paints: leafOf(paints), strokes: leafOf(strokes), roles };
 }

@@ -14,6 +14,7 @@ import {
   flexLayoutSignature,
   textStructureSignature,
 } from './extractLayout';
+import type { PlacedDependencies } from './extractLayout';
 import { extractSizeDimensions, findSizeRepresentatives } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
@@ -69,15 +70,16 @@ export async function extractStructure(
   /** Rôle de rendu déduit des clés de couleur qui n'en nomment aucun. */
   discoveredRoles: Map<string, string>;
   /**
-   * Dépendances que `structure.children` place réellement. C'est d'elles que
-   * `composes` se dérive : le scan dit ce que Figma contient, l'arbre dit ce que
-   * le contrat décrit, et seul le second engage le développeur.
+   * Dépendances que `structure.children` place réellement, indexées par le slot
+   * qui les rend. C'est d'elles que `composes` se dérive, dans l'ordre de
+   * l'arbre : le scan dit ce que Figma contient, l'arbre dit ce que le contrat
+   * décrit, et seul le second engage le développeur.
    */
-  placedComposes: Set<ComposedDependency>;
+  placedComposes: PlacedDependencies;
   warnings: string[];
 }> {
   const warnings = [...matrixWarnings];
-  const placedComposes = new Set<ComposedDependency>();
+  const placedComposes: PlacedDependencies = new Map();
   // Les règles `@icons` sont relevées avant toute extraction : c'est leur
   // inventaire qui distingue l'encre d'une icône de la surface d'un cadre.
   const iconTargets = new Set(iconNames);
@@ -202,6 +204,7 @@ export async function extractStructure(
       layout: 'flex-row' as const,
       sizing: { width: 'stretch' as const, height: 'stretch' as const },
       gap: null,
+      rowGap: null,
       padding: { x: null, y: null },
       radius: null,
       children: [],
@@ -253,8 +256,8 @@ export async function extractStructure(
   // Les dimensions géométriques ne vivent qu'à UN endroit : `sizes` les porte
   // toutes dès qu'un axe de tailles existe, sinon elles restent au niveau haut.
   // La typographie a son propre catalogue et son arbre complet de variants.
-  const { gap, padding, radius, ...slots } = layout;
-  const dimensions = sizes ? { sizes } : { gap, padding, radius };
+  const { gap, rowGap, padding, radius, ...slots } = layout;
+  const dimensions = sizes ? { sizes } : { gap, rowGap, padding, radius };
 
   const structure: ContractStructure = {
     ...slots,

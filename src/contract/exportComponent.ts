@@ -14,6 +14,7 @@ import type { MissingVariantSummary } from './componentTree';
 import { indexContractedNames, scanComposedMatrix } from './composedComponents';
 import { extractRules, hasUsableRules, unusableRulesMessage } from './extractRules';
 import { extractStructure } from './extractStructure';
+import type { PlacedDependencies } from './extractLayout';
 import { extractContractPropertyModel, extractContractProps } from './parsers';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { mergeIconRules } from './mergeIconRules';
@@ -23,10 +24,23 @@ export { mergePropDescriptions } from './mergePropDescriptions';
 import { buildStateModel, renderingSemanticsFor } from './semantics';
 import { collectTokenReferences, indexVariables, VariableNameResolver } from '../variables';
 import { codeIdentifier } from '../utils';
-import type { Contract, ContractMeta, ContractProp } from './types';
+import type {
+  ChildStructure,
+  ComposedDependency,
+  Contract,
+  ContractMeta,
+  ContractProp,
+} from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 5.4 : le passage à la ligne devient contractuel. `wrap` et `rowGap` décrivent
+ * un auto layout qui déborde sur plusieurs lignes, sur le composant comme sur
+ * n'importe quel conteneur de `children` ; le contrat se contentait jusqu'ici
+ * d'avertir, et le développeur alignait tout sur une seule ligne. Un `rowGap`
+ * absent sous `wrap` vaut le `gap`, comme dans Figma et comme en CSS. La même
+ * version élargit ce qu'un cadre de dépendances publie : ses calques voisins
+ * cessent de disparaître avec leur slot, leur typographie et leur visibilité.
  * 5.3 : les bornes de taille deviennent contractuelles. `bounds` publie
  * `minWidth`, `maxWidth`, `minHeight` et `maxHeight` sur le composant comme sur
  * chaque slot, tokenisées. Le contrat cesse de demander qu'on retire du design
@@ -67,7 +81,26 @@ import type { Contract, ContractMeta, ContractProp } from './types';
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '5.3';
+export const CONTRACT_VERSION = '5.4';
+
+/**
+ * Les dépendances de l'arbre publié, dans son ordre — celui des calques Figma.
+ *
+ * C'est la séquence que le consommateur recompte pour vérifier la parité du
+ * code : `composes` et `structure.children` doivent la partager exactement.
+ */
+function dependanciesDeLArbre(
+  children: readonly ChildStructure[],
+  placed: PlacedDependencies,
+): ComposedDependency[] {
+  const dependencies: ComposedDependency[] = [];
+  for (const child of children) {
+    const dependency = placed.get(child);
+    if (dependency) dependencies.push(dependency);
+    if (child.children) dependencies.push(...dependanciesDeLArbre(child.children, placed));
+  }
+  return dependencies;
+}
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type ComponentExport = {
@@ -302,9 +335,14 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   // dit où le développeur doit rendre quoi, et le consommateur refuse un contrat
   // dont les deux séquences diffèrent. Une dépendance que l'arbre n'a pas su
   // placer sort donc des deux champs à la fois — jamais d'un seul.
-  const composesPlacees = composes.filter((dependency) => extracted.placedComposes.has(dependency));
+  //
+  // La séquence se lit sur l'ARBRE, pas sur l'ordre où l'extraction a rangé ses
+  // trouvailles : celui-ci dépend de l'ordonnancement des `await`, et deux
+  // cadres frères pourraient se doubler sans qu'aucun design ait changé.
+  const composesPlacees = dependanciesDeLArbre(extracted.structure.children, extracted.placedComposes);
+  const placees = new Set(composesPlacees);
   for (const dependency of composes) {
-    if (extracted.placedComposes.has(dependency)) continue;
+    if (placees.has(dependency)) continue;
     warnings.push(
       `Layer « ${dependency.figmaLayer} » : il porte le composant « ${dependency.component} », ` +
         `qui a son propre contrat, mais le contrat n'a trouvé aucun emplacement où le situer. ` +

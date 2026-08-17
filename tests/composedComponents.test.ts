@@ -17,6 +17,7 @@ import {
 import { findWrapperReference } from '../src/contract/componentTree';
 import { getAllNodes } from '../src/contract/exportableNodes';
 import { extractLayout } from '../src/contract/extractLayout';
+import type { PlacedDependencies } from '../src/contract/extractLayout';
 import type { ChildStructure, ComposedDependency } from '../src/contract/types';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
@@ -348,7 +349,7 @@ test('un cadre qui range plusieurs dépendances les publie toutes, chacune à sa
   const carte = racine('card', 'Variant=Default', [actions]);
 
   const warnings: string[] = [];
-  const placed = new Set<ComposedDependency>();
+  const placed: PlacedDependencies = new Map();
   const layout = await extractLayout(
     carte,
     {
@@ -411,7 +412,7 @@ test('l’arbre place exactement les dépendances que le scan a relevées', asyn
   const carte = racine('card', 'Variant=Default', [liens]);
 
   const { composes, composed } = await scanComposedInstances(carte, new Set(['link']));
-  const placed = new Set<ComposedDependency>();
+  const placed: PlacedDependencies = new Map();
   const layout = await extractLayout(
     carte,
     { resolve: async () => null },
@@ -426,7 +427,7 @@ test('l’arbre place exactement les dépendances que le scan a relevées', asyn
   // C'est le contrôle que le consommateur applique au contrat : `composes` et
   // les slots récursifs doivent décrire la même séquence de dépendances.
   assert.deepEqual(composesDeLArbre(layout.children), ['Link', 'Link', 'Link']);
-  assert.deepEqual(composes.filter((entry) => placed.has(entry)), composes);
+  assert.deepEqual(Array.from(placed.values()), composes);
 });
 
 test('une dépendance posée hors du node de layout n’est pas placée, et se signale', async () => {
@@ -435,7 +436,7 @@ test('une dépendance posée hors du node de layout n’est pas placée, et se s
   const carte = racine('card', 'Variant=Default', [contenu, perdu]);
 
   const warnings: string[] = [];
-  const placed = new Set<ComposedDependency>();
+  const placed: PlacedDependencies = new Map();
   await extractLayout(
     contenu,
     { resolve: async () => null },

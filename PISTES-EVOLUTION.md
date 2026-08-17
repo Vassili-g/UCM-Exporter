@@ -110,10 +110,17 @@ une limite observée sur un composant réel, et avec, dans le même changement :
 - une migration de version et un réexport Figma des fixtures.
 
 Les propriétés candidates sont `textCase`, `textDecoration`, un padding par
-côté — le contrat groupe aujourd’hui `padding.x` et `padding.y` —, le wrap et
-la grille. Elles ne deviennent pas des champs du contrat tant qu’un composant
+côté — le contrat groupe aujourd’hui `padding.x` et `padding.y` — et la grille. Elles ne deviennent pas des champs du contrat tant qu’un composant
 réel n’établit pas leur propriétaire, leur forme et leur comportement en cas de
 donnée facultative incomplète.
+
+Le wrap a quitté cette liste en 5.4 : un composant d’épreuve a établi les trois
+— propriétaire (le conteneur), forme (`wrap` et `rowGap`, parallèles à `layout`
+et `gap`), comportement (la règle commune, un nombre brut avertit, une variable
+liée se publie). L’exigence de cette liste porte sur ce que le composant
+ÉTABLIT, non sur son statut ; celle des couleurs ci-dessus exclut en revanche
+explicitement un composant d’épreuve, parce qu’elle engage tout l’arbre de
+layout général.
 
 ### Liaison explicite avec l’implémentation
 

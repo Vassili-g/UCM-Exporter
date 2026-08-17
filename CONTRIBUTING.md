@@ -45,7 +45,7 @@ pas « marges intérieures ».
 
 | Terme du code | Terme employé | | Terme du code | Terme employé |
 |---|---|---|---|---|
-| `node de layout` | auto layout frame | | `itemSpacing` | gap |
+| `node de layout` | auto layout frame | | `itemSpacing` | gap, ou horizontal gap sous le wrap |
 | `sous-arbre` | le layer et son contenu | | `padding*` | left / right / top / bottom padding |
 | `matrice` | les variants | | `cornerRadius` | corner radius |
 | `slot`, `calque` | layer | | `strokeWeight` | stroke weight |
@@ -53,6 +53,7 @@ pas « marges intérieures ».
 | `prop enum` | variant property | | `strokes` | stroke |
 | `prop BOOLEAN` | boolean property | | `fontSize`, `lineHeight` | font size, line height |
 | `Component Set` | component set | | `feuille` / `groupe` | token / groupe de tokens |
+| `layoutWrap` | wrap | | `counterAxisSpacing` | vertical gap |
 
 `fieldLabel()` dans `src/contract/nodeBindings.ts` tient cette table pour les
 propriétés Figma citées dans un message ; les libellés passés à `resolveField()`

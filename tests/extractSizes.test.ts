@@ -80,6 +80,9 @@ test('extractSizeDimensions couvre chaque valeur de l’axe de tailles', async (
   assert.deepEqual(Object.keys(sizes ?? {}), ['big', 'small']);
   assert.deepEqual(sizes?.big, {
     gap: '{components.button.sizes.big.gap}',
+    // Sans wrap, il n'y a pas de deuxième ligne à espacer : le champ existe,
+    // vide, comme toute dimension que Figma ne porte pas.
+    rowGap: null,
     padding: { x: '{components.button.sizes.big.padding-x}', y: '{components.button.sizes.big.padding-y}' },
     radius: '{components.button.sizes.big.border-radius}',
   });

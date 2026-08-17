@@ -288,11 +288,21 @@ export type ChildStructure = {
   /** Alignement sur l'axe secondaire de ce conteneur. */
   alignItems?: AlignItems;
   /**
-   * Gap interne du slot. Présent uniquement avec des parts textuelles : un
-   * cadre de dépendance ne publie que la branche qui y mène, et espacer des
-   * enfants absents du contrat ne voudrait rien dire.
+   * Gap interne du slot, publié dès que le conteneur range plusieurs enfants
+   * décrits par le contrat.
    */
   gap?: string | null;
+  /**
+   * Le conteneur passe à la ligne. Son absence vaut « une seule ligne » : c'est
+   * le défaut de Figma comme celui de CSS.
+   */
+  wrap?: true;
+  /**
+   * Espace entre les LIGNES d'un conteneur en `wrap`. Absent, il vaut `gap` —
+   * Figma synchronise les deux tant que le designer ne les dissocie pas, et CSS
+   * fait de même avec une valeur de `gap` unique.
+   */
+  rowGap?: string | null;
   /**
    * Nom du composant unifié rendu à cet emplacement. Le slot est alors une
    * DÉPENDANCE : ni ses tokens ni ses calques n'appartiennent à ce contrat,
@@ -404,6 +414,8 @@ export interface VariantTypography {
  */
 export type SizeDimensions = {
   gap: string | null;
+  /** Espace entre les lignes, publié aux mêmes conditions que `gap`. */
+  rowGap: string | null;
   padding: { x: string | null; y: string | null };
   radius: string | null;
 };
@@ -437,8 +449,15 @@ export type ContractStructure = {
   justifyContent?: JustifyContent;
   /** Alignement Figma sur l'axe secondaire, absent hors auto-layout linéaire. */
   alignItems?: AlignItems;
+  /**
+   * Le composant passe à la ligne. Ce n'est pas une dimension mais une
+   * propriété de flux : elle reste ici même quand `sizes` porte les dimensions.
+   */
+  wrap?: true;
   /** Dimensions du composant, uniquement s'il n'a PAS d'axe de tailles. */
   gap?: string | null;
+  /** Espace entre les lignes, aux mêmes conditions que `gap`. */
+  rowGap?: string | null;
   padding?: { x: string | null; y: string | null };
   radius?: string | null;
   /**

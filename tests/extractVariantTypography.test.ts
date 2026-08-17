@@ -2,7 +2,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractVariantTypography, textSlots } from '../src/contract/extractVariantTypography';
+import { extractLayout } from '../src/contract/extractLayout';
 import { findLayoutNode } from '../src/contract/layoutNodes';
+import type { ChildStructure } from '../src/contract/types';
 import { collectTokenReferences } from '../src/variables';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
@@ -198,4 +200,53 @@ test('le chemin d’une part descend jusqu’au calque texte, pas jusqu’à son
       { slotPath: ['label', 'label-2', 'label'], layer: 'Description' },
     ],
   );
+});
+
+test('textSlots situe les textes qu’un cadre de dépendances range à côté d’elles', async () => {
+  // Le cas que StressTest a fait tomber : un cadre qui contient deux boutons et
+  // un tag. Le tag est un calque de CE contrat, et sa typographie doit viser un
+  // chemin que `structure.children` publie réellement — sans quoi le
+  // consommateur refuse le contrat pour un chemin de slots inconnu.
+  const bouton = node('INSTANCE', 'btn', 'Button');
+  const texteDuTag = node('TEXT', 'tag-txt', 'Nouveau', [], { characters: 'Nouveau' });
+  const tag = node('FRAME', 'tag', 'Tag', [texteDuTag]);
+  const cadre = node('FRAME', 'cadre', 'UserInput', [bouton, tag], {
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+  });
+  const composant = node('COMPONENT', 'variant', 'Variant=Default', [cadre], {
+    layoutMode: 'VERTICAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'MIN',
+  }) as ComponentNode;
+  const composed = new Map([['btn', { component: 'Button', figmaLayer: 'Button' }]]);
+
+  const chemins = textSlots(composant, new Set(), composed)
+    .map(({ slotPath, textNode }) => ({ slotPath, layer: textNode.name }));
+
+  assert.deepEqual(chemins, [{ slotPath: ['userinput', 'label'], layer: 'Nouveau' }]);
+
+  // Et ce chemin doit exister dans l'arbre publié : c'est le contrôle exact que
+  // le consommateur applique.
+  const layout = await extractLayout(
+    composant,
+    resolverFor({}),
+    [],
+    composed,
+    new Set(),
+    composant,
+    true,
+    new Map(),
+  );
+  const cheminsPublies = new Set<string>();
+  const parcourir = (children: readonly ChildStructure[], prefixe: string[]) => {
+    for (const child of children) {
+      const chemin = [...prefixe, child.slot];
+      cheminsPublies.add(JSON.stringify(chemin));
+      if (child.children) parcourir(child.children, chemin);
+    }
+  };
+  parcourir(layout.children, []);
+  assert.ok(cheminsPublies.has(JSON.stringify(['userinput', 'label'])));
 });

@@ -11,7 +11,7 @@ import type { TokenResolver } from '../variables';
 import { getVariantAxes, getVariantValues } from './componentTree';
 import type { ComposedInstances } from './exportableNodes';
 import type { VariantLayoutNodes } from './layoutNodes';
-import { BINDING_PATTERNS, resolveField } from './nodeBindings';
+import { BINDING_PATTERNS, gapLabel, resolveField, resolveRowGap } from './nodeBindings';
 import { semanticEnumName } from './semantics';
 import type { SizeDimensions } from './types';
 
@@ -47,14 +47,15 @@ async function extractDimensions(
   const layoutNode = layoutNodes.get(component) ?? component;
   // Le libellé passé à resolveField sert aux warnings : on précise la taille
   // pour qu'un token manquant soit localisable (ex. « gap (small) »).
-  const [gap, paddingX, paddingY, radius] = await Promise.all([
+  const [gap, rowGap, paddingX, paddingY, radius] = await Promise.all([
     resolveField(
       layoutNode,
       BINDING_PATTERNS.gap,
-      `gap (variant « ${sizeValue} »)`,
+      `${gapLabel(layoutNode)} (variant « ${sizeValue} »)`,
       resolver,
       warnings,
     ),
+    resolveRowGap(layoutNode, resolver, warnings),
     resolveField(
       layoutNode,
       BINDING_PATTERNS.paddingX,
@@ -78,7 +79,7 @@ async function extractDimensions(
     ),
   ]);
 
-  return { gap, padding: { x: paddingX, y: paddingY }, radius };
+  return { gap, rowGap, padding: { x: paddingX, y: paddingY }, radius };
 }
 
 /**
