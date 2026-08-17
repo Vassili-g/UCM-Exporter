@@ -15,7 +15,7 @@ import { indexContractedNames, scanComposedMatrix } from './composedComponents';
 import { extractRules, hasUsableRules, unusableRulesMessage } from './extractRules';
 import { extractStructure } from './extractStructure';
 import type { PlacedDependencies } from './extractLayout';
-import { extractContractPropertyModel, extractContractProps } from './parsers';
+import { definePropOn, extractContractPropertyModel, extractContractProps } from './parsers';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
@@ -34,6 +34,31 @@ import type {
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 6.0 : `structure.children` cesse de s'arrêter au premier calque qui n'est ni
+ * un texte ni une dépendance. Le contrat descend désormais dès qu'un descendant
+ * porte une information qu'une feuille ne sait pas exprimer — un texte, une
+ * icône, une dépendance ou n'importe quelle liaison de variable — et le fait à
+ * n'importe quelle profondeur : un auto layout dans un auto layout dans une
+ * grille est décrit jusqu'au bout, chaque niveau avec sa disposition, son
+ * `padding`, son `radius`, sa taille et ses bornes. Jusqu'ici, tout un
+ * sous-arbre graphique — la piste et le curseur d'un Toggle, le rail et le
+ * remplissage d'une Progress, trois cadres bordés emboîtés — se réduisait à un
+ * slot opaque, alors que ses couleurs entraient bien dans `variantTokens` : le
+ * contrat annonçait des peintures qu'aucun calque publié ne portait.
+ * `structureTree.ts` en est l'unique autorité, partagée par l'extraction, les
+ * chemins de `variantTypography` et les signatures de comparaison.
+ * La même version rend contractuelles deux dispositions que le moteur se
+ * contentait d'avertir : la GRILLE (`layout: "grid"`, `columns`, `rows`,
+ * `columnGap`, `rowGap`, et `columnSpan` / `rowSpan` / `justifySelf` sur chaque
+ * enfant — les deux gaps de Figma se relient à une variable, donc une grille est
+ * aussi contractuelle qu'une rangée) et la POSITION ABSOLUE (`position` et
+ * `constraints`, soit les bords auxquels un calque hors flux s'accroche ; sa
+ * distance à ces bords ne se relie à aucune variable et reste hors du contrat).
+ * Un consommateur doit désormais parcourir `structure.children` récursivement
+ * sans supposer que seules les branches de texte se ramifient, accepter un
+ * `layout` valant `grid`, et lire les chemins de `variantTypography` qui
+ * gagnent un étage dès qu'un texte est rangé dans son propre cadre — d'où la
+ * version majeure.
  * 5.5 : une couleur cesse d'en évincer une autre. La clé reste le dernier
  * segment du token, mais quand deux couleurs d'un même variant le partagent,
  * elle s'allonge des segments qui les séparent (`userinput.background` /
@@ -88,7 +113,7 @@ import type {
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '5.5';
+export const CONTRACT_VERSION = '6.0';
 
 /**
  * Les dépendances de l'arbre publié, dans son ordre — celui des calques Figma.
@@ -201,7 +226,10 @@ export function mergeWrapperProps(
       );
       continue;
     }
-    props[key] = prop;
+    // Même précaution que la lecture ci-dessus, en écriture : une component
+    // property nommée « __proto__ » fixerait le prototype de `props` au lieu
+    // d'occuper une clé, et le wrapper perdrait sa prop sans un mot.
+    definePropOn(props, key, prop);
   }
 }
 

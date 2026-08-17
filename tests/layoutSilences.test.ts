@@ -8,7 +8,11 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractLayout, flexLayoutSignature } from '../src/contract/extractLayout';
+import {
+  extractLayout,
+  flexLayoutSignature,
+  structureSignature,
+} from '../src/contract/extractLayout';
 import { flexItemProperties } from '../src/contract/flexLayout';
 import { findLayoutNode } from '../src/contract/layoutNodes';
 
@@ -124,28 +128,45 @@ test('un calque posé hors du node de layout élu est signalé, pas oublié', as
   )));
 });
 
-test('une grille ne devient pas une rangée horizontale en silence', async () => {
+test('une grille est décrite comme une grille, pas repliée en rangée', async () => {
   const grille = {
     type: 'COMPONENT',
     name: 'Galerie',
     layoutMode: 'GRID',
-    boundVariables: { itemSpacing: alias('gap') },
+    gridColumnCount: 3,
+    gridRowCount: 2,
+    // `itemSpacing` survit au passage en grille sans plus aucun effet : Figma
+    // y espace les enfants par les deux gaps propres de la grille.
+    boundVariables: {
+      itemSpacing: alias('gap'),
+      gridColumnGap: alias('col'),
+      gridRowGap: alias('row'),
+    },
     children: [],
     findAll: findAllOn([]),
   } as unknown as ComponentNode;
 
   const warnings: string[] = [];
-  const layout = await extractLayout(grille, resolverFor({ gap: 'l.gap' }), warnings);
+  const layout = await extractLayout(
+    grille,
+    resolverFor({ gap: 'l.gap', col: 'l.column-gap', row: 'l.row-gap' }),
+    warnings,
+  );
 
-  // La forme du contrat impose ce champ : le repli reste publié, mais dit.
-  assert.equal(layout.layout, 'flex-row');
-  assert.ok(warnings.some((warning) => (
-    warning.includes("n'utilise pas d'auto layout horizontal ou vertical")
-  )));
-  // Figma espace une grille par le gap de ses lignes et de ses colonnes :
-  // un `itemSpacing` qui y survit n'a plus aucun effet visuel.
+  // Les deux gaps d'une grille se relient à une variable : elle est aussi
+  // contractuelle qu'une rangée, et n'a plus à être repliée en `flex-row`.
+  assert.equal(layout.layout, 'grid');
+  assert.equal(layout.columns, 3);
+  assert.equal(layout.rows, 2);
+  assert.equal(layout.columnGap, '{l.column-gap}');
+  assert.equal(layout.rowGap, '{l.row-gap}');
+  // L'`itemSpacing` resté lié n'exporte rien : il n'a aucun effet sous GRID.
   assert.equal(layout.gap, null);
-  assert.ok(warnings.some((warning) => warning.includes('son auto layout est une grille')));
+  // Plus rien à reprocher au designer SUR SA GRILLE : elle est entièrement
+  // décrite. Le padding et le rayon du composant restent réclamés comme
+  // partout ailleurs — c'est la règle commune, pas une lacune de la grille.
+  assert.equal(warnings.some((warning) => warning.includes('grille')), false);
+  assert.equal(warnings.some((warning) => warning.includes('auto layout')), false);
 });
 
 /** Un conteneur qui passe à la ligne, avec les réglages Figma qu'on lui donne. */
@@ -555,8 +576,11 @@ test('la signature de flux descend dans les cadres imbriqués d’une dépendanc
     return alerteAvec(cadre);
   };
 
+  // `flexLayoutSignature` compare le flux DIRECT du composant ; c'est
+  // `structureSignature` qui descend dans l'arbre publié, à toute profondeur.
+  // Les deux tournent sur chaque variant, et l'une des deux doit voir l'écart.
   assert.notEqual(
-    flexLayoutSignature(actionAlignee('CENTER'), new Set(), dependanceDe()),
-    flexLayoutSignature(actionAlignee('MAX'), new Set(), dependanceDe()),
+    structureSignature(actionAlignee('CENTER'), new Set(), dependanceDe()),
+    structureSignature(actionAlignee('MAX'), new Set(), dependanceDe()),
   );
 });

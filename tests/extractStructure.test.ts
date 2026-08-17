@@ -266,7 +266,7 @@ test('extractStructure avertit quand les parties texte divergent entre variants'
   );
 
   assert.ok(warnings.some(
-    (warning) => warning.includes('Parties texte différentes')
+    (warning) => warning.includes('Structure différente')
       && warning.includes('Severity=Warning')
       && warning.includes('Severity=Info'),
   ));

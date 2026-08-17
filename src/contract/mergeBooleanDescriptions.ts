@@ -3,6 +3,7 @@
  * `@boolean`. Ce module reste pur pour pouvoir vérifier la convention sans
  * dépendre de l'API Figma.
  */
+import { propByName } from './parsers';
 import type { ContractProp } from './types';
 
 export function mergeBooleanDescriptions(
@@ -11,7 +12,9 @@ export function mergeBooleanDescriptions(
   warnings: string[],
 ): void {
   for (const [propName, description] of Object.entries(descriptions)) {
-    const prop = props[propName];
+    // Le nom vient du texte libre d'une règle : la lecture passe par l'unique
+    // autorité, qui n'atteint jamais le prototype d'`Object`.
+    const prop = propByName(props, propName);
     if (!prop || prop.type !== 'boolean') {
       warnings.push(`Règle @boolean « ${propName} » : le composant n’a aucune boolean property portant ce nom. Vérifiez l’orthographe dans le layer « prop ».`);
       continue;

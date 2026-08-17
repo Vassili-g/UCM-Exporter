@@ -85,28 +85,6 @@ export function assignSlots(
 }
 
 /**
- * Enfants qu'un cadre de dépendances publie réellement.
- *
- * Un cadre décrit TOUS ses calques — la dépendance et ce qui l'accompagne — sauf
- * quand aucune de ses branches ne mène à une dépendance : ses instances sont
- * alors rangées sous un calque masqué, le contrat se replie sur le seul nom du
- * composant et n'ouvre aucun `children`.
- *
- * Cette réponse est prise ici, une fois. `extractLayout` la suit pour publier,
- * `textSlots` et les signatures pour situer : un second calcul finirait par
- * désigner des chemins de slots que `structure.children` ne contient pas, et le
- * consommateur refuse un contrat dont la typographie vise un slot absent.
- */
-export function composedWrapperSlots(
-  assignments: readonly SlotAssignment[],
-  composed: ComposedInstances,
-): readonly SlotAssignment[] {
-  const meneAUneDependance = ({ child }: SlotAssignment) =>
-    composedSlotDependencies(child, composed).length > 0;
-  return assignments.some(meneAUneDependance) ? assignments : [];
-}
-
-/**
  * Slot de chaque calque d'icône, d'après les slots fournis.
  *
  * Un calque absent du résultat n'appartient à aucun enfant direct du node de

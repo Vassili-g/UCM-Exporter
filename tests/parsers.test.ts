@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractContractProps, normalizePropKey } from '../src/contract/parsers';
+import { extractContractProps, normalizePropKey, propByName } from '../src/contract/parsers';
 
 test('normalizePropKey retire les identifiants Figma et produit du camelCase', () => {
   assert.equal(normalizePropKey('Icon Position#12:3'), 'iconPosition');
@@ -164,4 +164,22 @@ test('extractContractProps laisse un enum non-taille sous son nom, sans figmaNam
   assert.deepEqual(extractContractProps(definitions), {
     variant: { type: 'enum', values: ['contained', 'outlined', 'text'], default: 'contained' },
   });
+});
+
+test('une component property nommée « __proto__ » ne disparaît pas dans le prototype', () => {
+  // Le seul canal par lequel un nom Figma arrive jusqu'à une écriture d'objet.
+  // `props[key] = prop` aurait FIXÉ le prototype au lieu d'occuper une clé : la
+  // prop quittait le contrat sans un mot, et `propByName` continuait de répondre
+  // qu'elle n'existait pas. Tout le reste du moteur se protège déjà ainsi.
+  // Le littéral `{ __proto__: … }` fixerait le prototype au lieu de créer une
+  // clé : on construit la définition comme Figma la livre, en propriété propre.
+  const definitions = {} as unknown as ComponentPropertyDefinitions;
+  Object.defineProperty(definitions, '__proto__', {
+    value: { type: 'BOOLEAN', defaultValue: true }, enumerable: true, configurable: true,
+  });
+  const props = extractContractProps(definitions);
+
+  assert.deepEqual(Object.keys(props), ['__proto__']);
+  assert.deepEqual(propByName(props, '__proto__'), { type: 'boolean', default: true });
+  assert.equal(Object.getPrototypeOf(props), Object.prototype);
 });

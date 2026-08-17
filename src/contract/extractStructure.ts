@@ -12,7 +12,8 @@ import type { IconLayerSummary } from './extractIconLayers';
 import {
   extractLayout,
   flexLayoutSignature,
-  textStructureSignature,
+  structureSignature,
+  warnLayersOutsideLayoutNode,
 } from './extractLayout';
 import type { PlacedDependencies } from './extractLayout';
 import { extractSizeDimensions, findSizeRepresentatives } from './extractSizes';
@@ -131,13 +132,13 @@ export async function extractStructure(
   // textuelle différente ailleurs dans la matrice ne peut donc pas être
   // fusionnée silencieusement dans cet arbre unique.
   if (referenceLayout) {
-    const referenceSignature = textStructureSignature(
+    const referenceSignature = structureSignature(
       referenceLayout.layoutNode,
       targetedLayers,
       composed,
     );
     const divergentVariants = matrix.variants.filter(({ component }) =>
-      textStructureSignature(layoutNodeOf(component), targetedLayers, composed)
+      structureSignature(layoutNodeOf(component), targetedLayers, composed)
         !== referenceSignature);
     if (divergentVariants.length > 0) {
       const examples = divergentVariants
@@ -146,11 +147,12 @@ export async function extractStructure(
         .join(', ');
       const remaining = divergentVariants.length - 3;
       warnings.push(
-        `Parties texte différentes sur ${divergentVariants.length} variant(s), ex. ${examples}` +
+        `Structure différente sur ${divergentVariants.length} variant(s), ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
-          `référence « ${referenceLayout.component.name} ». L'ordre ou la disposition des autres ` +
-          `variants ne sera pas représenté. Alignez leurs layers de texte dans Figma ; si la ` +
-          `différence est intentionnelle, conservez-la et signalez cette limite du schéma.`,
+          `référence « ${referenceLayout.component.name} ». L'ordre, l'imbrication ou la ` +
+          `disposition des layers des autres variants ne sera pas représenté. Alignez leurs ` +
+          `layers dans Figma ; si la différence est intentionnelle, conservez-la et signalez ` +
+          `cette limite du schéma.`,
       );
     }
 
@@ -180,6 +182,15 @@ export async function extractStructure(
     }
   }
 
+  // Un calque posé hors du node élu apporte ses couleurs à `variantTokens` dans
+  // TOUS les variants, pas seulement dans la référence : le relevé des couleurs
+  // couvre la matrice entière. `extractLayout` ne voit que la référence, on
+  // complète donc ici. Les messages identiques se dédupliquent à l'export.
+  for (const { component } of matrix.variants) {
+    if (component === referenceLayout?.component) continue;
+    warnLayersOutsideLayoutNode(component, layoutNodeOf(component), warnings, composed);
+  }
+
   // « Où vivent les dimensions » se décide AVANT de les relever, et une seule
   // fois : c'est cette réponse que suivent à la fois l'extraction du layout de
   // référence et le choix final de `dimensions`. La décider après coup ferait
@@ -205,6 +216,7 @@ export async function extractStructure(
       sizing: { width: 'stretch' as const, height: 'stretch' as const },
       gap: null,
       rowGap: null,
+      columnGap: null,
       padding: { x: null, y: null },
       radius: null,
       children: [],
@@ -256,8 +268,8 @@ export async function extractStructure(
   // Les dimensions géométriques ne vivent qu'à UN endroit : `sizes` les porte
   // toutes dès qu'un axe de tailles existe, sinon elles restent au niveau haut.
   // La typographie a son propre catalogue et son arbre complet de variants.
-  const { gap, rowGap, padding, radius, ...slots } = layout;
-  const dimensions = sizes ? { sizes } : { gap, rowGap, padding, radius };
+  const { gap, rowGap, columnGap, padding, radius, ...slots } = layout;
+  const dimensions = sizes ? { sizes } : { gap, rowGap, columnGap, padding, radius };
 
   const structure: ContractStructure = {
     ...slots,
