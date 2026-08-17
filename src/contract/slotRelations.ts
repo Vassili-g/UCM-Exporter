@@ -61,9 +61,12 @@ function figmaPath(node: SceneNode, root: SceneNode): string[] {
  * décrites : un slot masquable qui contient une sous-partie masquable expose
  * bien deux props, et n'en taire aucune est la règle.
  *
- * `representedTargets` contient les nodes dont une structure plus précise
- * porte déjà la visibilité (les parts textuelles 4.3). Ils sont retirés avant
- * toute promotion pour qu'un même fait n'ait jamais deux propriétaires.
+ * `representedTargets` contient les nodes qu'un enfant publié décrit déjà. Ils
+ * sont retirés de `visibilityTargets` — un même fait n'a jamais deux
+ * propriétaires — mais PAS du test de promotion : une cible unique qui
+ * contrôle tout le contenu rend bien le slot entier optionnel, et l'oublier
+ * ferait rendre un cadre vide autour d'un enfant masqué. C'est l'enfant qui se
+ * tait alors, par le `parentVisibilityProp` que l'extraction lui passe.
  */
 export function nestedSlotVisibility(
   child: SceneNode,
@@ -76,7 +79,6 @@ export function nestedSlotVisibility(
     (node) =>
       node !== child
       && !composed.has(node.id)
-      && !representedTargets.has(node.id)
       && Boolean(node.componentPropertyReferences?.visible),
   );
   if (targets.length === 0) return {};
@@ -96,8 +98,11 @@ export function nestedSlotVisibility(
     }
   }
 
+  // Les cibles qu'un enfant publié porte déjà à sa place exacte sortent d'ici.
+  const restantes = targets.filter((target) => !representedTargets.has(target.id));
+  if (restantes.length === 0) return {};
   return {
-    visibilityTargets: targets.map((target) => ({
+    visibilityTargets: restantes.map((target) => ({
       visibilityProp: normalizePropKey(target.componentPropertyReferences!.visible!),
       figmaPath: figmaPath(target, child),
     })),

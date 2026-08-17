@@ -29,6 +29,8 @@ src/
     merge*.ts                doc et icônes des règles, rangées sur leur axe
     semantics.ts             vocabulaire sémantique partagé
     colorKeys.ts             clé d'une couleur dans la feuille d'un variant
+    structureTree.ts         qui est un conteneur, qui est une feuille
+    unsupportedProperties.ts ce qu'un calque publié porte et que le schéma ignore
     extract*.ts              structure, layout, tailles, tokens et règles
     flexLayout.ts            propriétés de flux et avertissements non portables
     slotNames.ts             nommage des slots et calques d'icônes
@@ -75,10 +77,10 @@ tests/
   reprend une que lorsqu’une seule dépendance l’occupe.
 - Ce cadre publie TOUS ses calques, pas seulement les branches de dépendance :
   un tag, un texte, un dessin y sont des calques de ce contrat, décrits par la
-  règle commune. `composedWrapperSlots` tranche l’unique exception — un cadre
-  dont aucune branche ne mène à une dépendance ne publie rien — et les chemins
-  de `variantTypography` comme les signatures suivent cette même réponse, sinon
-  ils désigneraient des slots absents de `structure.children`.
+  règle commune. `structureTree.publishesChildren` tranche l’unique exception —
+  un cadre dont aucune branche ne mène à une dépendance ne publie rien — et les
+  chemins de `variantTypography` comme les signatures suivent cette même
+  réponse, sinon ils désigneraient des slots absents de `structure.children`.
 - `composes` se dérive de l’arbre publié, dans SON ordre, comme `tokensUsed` du
   contrat terminé.
   Le scan dit ce que Figma contient, `structure.children` dit ce que le contrat
@@ -87,6 +89,26 @@ tests/
   deux relevés indépendants de la même information finiraient par se
   contredire, et le consommateur refuse un contrat dont les deux séquences
   diffèrent.
+- `structure.children` descend dès qu'un descendant porte une information qu'une
+  feuille ne sait pas exprimer — un texte, une icône, une dépendance, ou une
+  liaison de variable — et à n'importe quelle profondeur. La borne compte autant
+  que la règle : un calque dont aucun descendant ne porte d'information reste une
+  feuille, sinon l'export publierait les tracés d'une icône importée.
+  `structureTree.ts` en est l'unique autorité : l'extraction, `textSlots` et les
+  signatures la consultent, aucun ne la recalcule. Un second calcul finirait par
+  viser un slot que `structure.children` ne contient pas, et le consommateur
+  refuse une typographie qui désigne un slot absent. La profondeur est bornée, et
+  la coupure est dite dès qu'elle emporte autre chose qu'un dessin.
+- Un conteneur publie TOUS ses calques rendables, à quelque profondeur qu'il
+  vive — jamais une sélection. `variantTokens` relève les couleurs du variant
+  entier : n'en publier qu'une partie ferait annoncer au contrat des peintures
+  qu'aucun calque publié ne porte.
+- Une propriété Figma à effet visuel que le schéma ne sait pas écrire produit un
+  avertissement — mais seulement sur un calque que le contrat PUBLIE, et jamais
+  pour une valeur au défaut de Figma. Les deux réserves sont ce qui distingue un
+  diagnostic d'un rapport que le designer cesse de lire : `clipsContent` est
+  activé par défaut sur toute frame, un masque est le mécanisme normal d'une
+  icône, et l'alignement d'un texte en `Hug` n'a aucun effet.
 - Une typographie appartient à UN calque texte et vient de son text style.
   `textStyles` lie le style à ses variables ; `variantTypography` situe son
   usage sur chaque variant par un chemin de slots. Un slot à plusieurs textes

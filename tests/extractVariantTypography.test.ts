@@ -225,7 +225,10 @@ test('textSlots situe les textes qu’un cadre de dépendances range à côté d
   const chemins = textSlots(composant, new Set(), composed)
     .map(({ slotPath, textNode }) => ({ slotPath, layer: textNode.name }));
 
-  assert.deepEqual(chemins, [{ slotPath: ['userinput', 'label'], layer: 'Nouveau' }]);
+  // Le tag n'enveloppe qu'un texte, et il est malgré tout décrit comme le cadre
+  // qu'il est : sa taille, ses coins et son padding appartiennent au contrat.
+  // Le texte vit donc un étage plus bas.
+  assert.deepEqual(chemins, [{ slotPath: ['userinput', 'label', 'label'], layer: 'Nouveau' }]);
 
   // Et ce chemin doit exister dans l'arbre publié : c'est le contrôle exact que
   // le consommateur applique.

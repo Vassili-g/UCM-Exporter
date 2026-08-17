@@ -414,7 +414,7 @@ test('un slot à deux textes conserve chaque part pour que variantTypography pui
   assert.equal(collectTokenReferences(layout).has('{components.alert.sizes.description-size}'), false);
 });
 
-test('la récursion textuelle ignore un dessin voisin au lieu d’en faire une part', async () => {
+test('un conteneur publie TOUS ses calques, dessins compris', async () => {
   const titre = { type: 'TEXT', id: 'title', name: 'Titre', boundVariables: { fontSize: alias('title') } };
   const icone = {
     type: 'VECTOR',
@@ -462,21 +462,27 @@ test('la récursion textuelle ignore un dessin voisin au lieu d’en faire une p
     new Set(['circle-info']),
   );
 
+  // Le dessin voisin n'est plus perdu. Il disparaissait de `structure.children`
+  // alors que sa couleur entrait bien dans `variantTokens` : le contrat
+  // annonçait une peinture qu'aucun calque publié ne portait.
   assert.deepEqual(layout.children[0].children?.map((part) => part.figmaLayer), [
     'Titre',
+    'circle-info',
     'Description',
   ]);
   assert.equal(
     warnings.some((warning) => warning.includes('circle-info') && warning.includes('width')),
     false,
   );
-  assert.deepEqual(layout.children[0].visibilityTargets, [{
-    visibilityProp: 'showIcon',
-    figmaPath: ['circle-info'],
-  }]);
+  // La visibilité de l'icône n'est plus décrite de loin par un chemin Figma :
+  // le calque est publié, il la porte donc lui-même, à sa place exacte.
+  assert.equal(layout.children[0].visibilityTargets, undefined);
+  const iconeSlot = layout.children[0].children?.[1];
+  assert.equal(iconeSlot?.visibilityProp, 'showIcon');
+  assert.equal(iconeSlot?.optional, true);
 });
 
-test('une visibilité graphique imbriquée appartient à la branche textuelle la plus proche', async () => {
+test('une visibilité graphique imbriquée est portée par le calque exact qui la subit', async () => {
   const titre = { type: 'TEXT', id: 'title', name: 'Titre', boundVariables: {} };
   const icone = {
     type: 'VECTOR',
@@ -524,11 +530,17 @@ test('une visibilité graphique imbriquée appartient à la branche textuelle la
   const brancheTitre = slot.children?.[0];
 
   assert.equal(slot.visibilityTargets, undefined);
-  assert.deepEqual(brancheTitre?.visibilityTargets, [{
-    visibilityProp: 'showIcon',
-    figmaPath: ['circle-info'],
-  }]);
-  assert.deepEqual(brancheTitre?.children?.map((part) => part.figmaLayer), ['Titre']);
+  // L'icône est désormais un calque publié : elle porte sa visibilité à sa
+  // place exacte au lieu d'être décrite de loin par un chemin Figma. Un
+  // `visibilityTargets` ne subsiste que pour ce que l'arbre ne publie pas.
+  assert.equal(brancheTitre?.visibilityTargets, undefined);
+  assert.deepEqual(brancheTitre?.children?.map((part) => part.figmaLayer), [
+    'Titre',
+    'circle-info',
+  ]);
+  const icone2 = brancheTitre?.children?.[1];
+  assert.equal(icone2?.visibilityProp, 'showIcon');
+  assert.equal(icone2?.optional, true);
 });
 
 test('la typographie descend jusqu’au vrai calque texte, pas sur son frame', async () => {

@@ -12,6 +12,7 @@ import { getVariantAxes, getVariantValues } from './componentTree';
 import type { ComposedInstances } from './exportableNodes';
 import type { VariantLayoutNodes } from './layoutNodes';
 import { BINDING_PATTERNS, gapLabel, resolveField, resolveRowGap } from './nodeBindings';
+import { isGridAutoLayout } from './flexLayout';
 import { semanticEnumName } from './semantics';
 import type { SizeDimensions } from './types';
 
@@ -47,15 +48,24 @@ async function extractDimensions(
   const layoutNode = layoutNodes.get(component) ?? component;
   // Le libellé passé à resolveField sert aux warnings : on précise la taille
   // pour qu'un token manquant soit localisable (ex. « gap (small) »).
-  const [gap, rowGap, paddingX, paddingY, radius] = await Promise.all([
-    resolveField(
+  // Une grille espace ses enfants par ses deux gaps propres ; un auto layout
+  // linéaire par son gap et, sous le wrap, celui de ses lignes. La même taille
+  // se lit donc sur des champs différents selon la disposition du calque.
+  const grille = isGridAutoLayout(layoutNode);
+  const [gap, rowGap, columnGap, paddingX, paddingY, radius] = await Promise.all([
+    grille ? null : resolveField(
       layoutNode,
       BINDING_PATTERNS.gap,
       `${gapLabel(layoutNode)} (variant « ${sizeValue} »)`,
       resolver,
       warnings,
     ),
-    resolveRowGap(layoutNode, resolver, warnings),
+    grille
+      ? resolveField(layoutNode, BINDING_PATTERNS.gridRowGap, `row gap (variant « ${sizeValue} »)`, resolver, warnings)
+      : resolveRowGap(layoutNode, resolver, warnings),
+    grille
+      ? resolveField(layoutNode, BINDING_PATTERNS.gridColumnGap, `column gap (variant « ${sizeValue} »)`, resolver, warnings)
+      : null,
     resolveField(
       layoutNode,
       BINDING_PATTERNS.paddingX,
@@ -79,7 +89,7 @@ async function extractDimensions(
     ),
   ]);
 
-  return { gap, rowGap, padding: { x: paddingX, y: paddingY }, radius };
+  return { gap, rowGap, columnGap, padding: { x: paddingX, y: paddingY }, radius };
 }
 
 /**
