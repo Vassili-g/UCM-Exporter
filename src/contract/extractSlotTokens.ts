@@ -1,40 +1,51 @@
 /**
- * Extraction des peintures et contours liés dans le sous-arbre d'un variant.
- * Les collisions et valeurs brutes produisent des warnings sans interrompre
- * l'export du composant.
+ * Relevé des peintures et contours liés dans le sous-arbre d'un variant.
+ *
+ * Ce module dit QUELLES couleurs un variant porte et COMMENT chacune se peint.
+ * Il ne décide pas de leur clé dans la feuille : `colorKeys.ts` en est l'unique
+ * autorité, et la décide sur toute la matrice — une clé lue variant par variant
+ * changerait d'un état à l'autre.
  */
 import { toRef, variableAliases } from '../variables';
 import type { TokenResolver } from '../variables';
+import { tokenKey } from './colorKeys';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, fieldLabel, getBinding, resolveTokenName } from './nodeBindings';
 import { isRenderableRole, paintSiteRole } from './semantics';
 import { isIconLayer } from './slotNames';
-import type { SlotStrokes, SlotTokens, StrokeAlignment, StrokeTokens } from './types';
+import type { StrokeAlignment } from './types';
 export type { TokenResolver } from '../variables';
 
 const BOUND_FIELDS = ['fills', 'strokes'] as const;
-export type VariantTokenLeaves = {
-  paints: SlotTokens;
-  strokes: SlotStrokes;
-  /**
-   * Rôle de rendu déduit pour chaque clé qui n'en nomme aucun. L'appelant les
-   * fusionne sur toute la matrice, puis `renderingSemanticsFor` les publie.
-   */
-  roles: Map<string, string>;
-};
 
 /**
- * Clé d'une couleur dans la feuille d'un variant : le dernier segment du nom
- * de la variable Figma.
+ * Une couleur liée d'un variant, telle que Figma la porte.
  *
- * C'est une IDENTITÉ, pas un rôle. Ce que la couleur peint se lit sur le calque
- * qui la porte (`paintSiteRole`), jamais sur ce nom.
+ * Aucun `SceneNode` n'en fait partie : tous les avertissements de ce niveau
+ * sont locaux à un variant et sont émis ici. Laisser un node franchir la
+ * frontière du module l'exposerait à `collectTokenReferences`, qui parcourt une
+ * valeur en profondeur sans garde-fou de cycle — `parent` ↔ `children` y
+ * ferait exploser la pile.
  */
-function tokenKey(token: string): string {
-  const segments = token.split('.');
-  return segments[segments.length - 1] || token;
-}
+export type VariantColor = {
+  /** Nom NU du token, sans accolades : la clé s'en déduit. */
+  token: string;
+  /** Rôle de rendu : déclaré par le dernier segment, sinon déduit du calque. */
+  role: string;
+};
+
+/** Une couleur de contour, avec la géométrie que le contrat publie à côté. */
+export type VariantStrokeColor = VariantColor & {
+  width: string | null;
+  align: StrokeAlignment | null;
+};
+
+/** Ce qu'un variant porte comme couleurs, dans l'ordre du parcours des calques. */
+export type VariantTokenLeaves = {
+  paints: VariantColor[];
+  strokes: VariantStrokeColor[];
+};
 
 /** Convertit l'alignement Figma dans le vocabulaire partagé du contrat. */
 function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment | null {
@@ -61,98 +72,25 @@ async function strokeWidth(
   );
 }
 
-/** Une couleur retenue pour une clé, et le calque qui l'a posée. */
-type KeyedPaint<T> = { value: T; node: SceneNode };
-
 /**
- * Message d'une clé que deux couleurs se disputent.
+ * Rôle de rendu d'une couleur.
  *
- * La feuille d'un variant n'a qu'une entrée par clé, et le contrat garde la
- * première. Le geste à faire dépend de qui porte les deux : un seul calque a un
- * fill de trop, deux calques ont deux surfaces distinctes que la même clé ne
- * sait pas séparer. Leur demander de n'en garder qu'une ferait perdre une
- * couleur — c'est l'erreur que la 5.1 a fermée côté nommage, et la refaire dans
- * un message la rouvrirait.
+ * Un dernier segment qui NOMME un rôle partagé est une déclaration du designer
+ * et l'emporte : c'est le seul moyen de distinguer un `ring` d'un `border`, et
+ * c'est ce qui fait qu'un `…/ring` publié sous une clé allongée conserve son
+ * `outline-*` et son `fallback: box-shadow`. Sinon, ce que la couleur peint se
+ * lit sur le calque qui la porte.
  */
-function collisionWarning(
-  field: 'fills' | 'strokes',
-  key: string,
-  existing: { token: string; node: SceneNode },
-  incoming: { token: string; node: SceneNode },
-): string {
-  if (existing.node === incoming.node) {
-    return `Layer « ${incoming.node.name} » : deux ${field} portent la même clé « ${key} ». ` +
-      `Seul ${existing.token} est exporté, ${incoming.token} est ignoré. Ne gardez qu'un ` +
-      `${field === 'fills' ? 'fill' : 'stroke'} par clé.`;
-  }
-  return `Layer « ${incoming.node.name} » : sa couleur ${incoming.token} porte la même clé ` +
-    `« ${key} » que celle du layer « ${existing.node.name} » (${existing.token}) — la clé est le ` +
-    `dernier segment du nom de la variable. Le contrat n'en garde qu'une par variant et exporte ` +
-    `${existing.token} : la couleur de ce layer manquera au développeur. Donnez à l'une des deux ` +
-    `variables un dernier segment différent, puis réexportez.`;
-}
-
-/**
- * Ajoute une peinture en rendant visible toute collision.
- *
- * Les clés se lisent sur le dernier segment d'un nom de variable Figma :
- * l'accumulateur est une `Map`, sans clé héritée. Un objet littéral rendrait
- * `Object` pour une clé « constructor », et le token serait écarté sous un
- * avertissement de collision que rien ne justifie.
- */
-function setPaintToken(
-  paints: Map<string, KeyedPaint<string>>,
-  key: string,
+function colorRole(
   token: string,
-  node: SceneNode,
-  warnings: string[],
-): void {
-  const existing = paints.get(key);
-  if (!existing) {
-    paints.set(key, { value: token, node });
-    return;
-  }
-  if (existing.value === token) return;
-  warnings.push(collisionWarning('fills', key, { token: existing.value, node: existing.node }, { token, node }));
-}
-
-/** Ajoute un contour en rendant visible toute collision. Même `Map` que `setPaintToken`, et pour la même raison. */
-function setStrokeToken(
-  strokes: Map<string, KeyedPaint<StrokeTokens>>,
-  key: string,
-  value: StrokeTokens,
-  node: SceneNode,
-  warnings: string[],
-): void {
-  const existing = strokes.get(key);
-  if (!existing) {
-    strokes.set(key, { value, node });
-    return;
-  }
-  if (existing.value.color !== value.color) {
-    warnings.push(collisionWarning(
-      'strokes',
-      key,
-      { token: existing.value.color, node: existing.node },
-      { token: value.color, node },
-    ));
-    return;
-  }
-  // Même couleur, géométrie différente : citer deux fois le même token ne
-  // dirait rien au designer. C'est la largeur ou l'alignement qu'il doit voir.
-  if (existing.value.width === value.width && existing.value.align === value.align) return;
-  warnings.push(
-    `Layer « ${node.name} » : son stroke ${value.color} porte la même clé « ${key} » que celui ` +
-      `du layer « ${existing.node.name} », avec une stroke weight ou un alignement différents. ` +
-      `Le contrat n'en garde qu'un par variant et exporte celui de « ${existing.node.name} » : ` +
-      `la géométrie de ce layer manquera au développeur. Réglez les deux strokes de la même ` +
-      `façon, ou donnez à l'une des deux variables un dernier segment différent, puis réexportez.`,
-  );
+  site: { isStroke: boolean; isText: boolean; isIconTarget: boolean },
+): string {
+  const base = tokenKey(token);
+  return isRenderableRole(base) ? base : paintSiteRole(site);
 }
 
 /**
- * Récolte tous les tokens liés d'un variant, rangés par clé, et relève au
- * passage le rôle de rendu de chaque clé qui n'en nomme pas.
+ * Récolte toutes les couleurs liées d'un variant.
  *
  * `iconNames` porte les calques désignés par les règles `@icons`. C'est
  * `slotNames.isIconLayer` qui répond ici comme ailleurs à « ce calque est-il
@@ -182,7 +120,7 @@ export async function getSlotTokens(
     // structure puisse la décrire comme un slot. Ses couleurs, elles, ne sont
     // pas les nôtres : elles appartiennent à son propre contrat, et les relever
     // ici les ferait entrer dans `variantTokens` et dans `tokensUsed` du parent
-    // — jusqu'à évincer, sur la même clé, une couleur que ce contrat possède.
+    // — le contrat annoncerait une couleur qu'aucun de ses calques ne peint.
     if (composed.has(node.id)) continue;
     for (const field of BOUND_FIELDS) {
       for (const alias of variableAliases(getBinding(node, field))) {
@@ -204,42 +142,82 @@ export async function getSlotTokens(
     }
   }
 
-  const paints = new Map<string, KeyedPaint<string>>();
-  const strokes = new Map<string, KeyedPaint<StrokeTokens>>();
-  const roles = new Map<string, string>();
+  const paints: VariantColor[] = [];
+  const strokes: VariantStrokeColor[] = [];
+  // Une feuille n'a qu'une entrée par token : deux calques qui portent la même
+  // couleur ne la publient qu'une fois, en silence — c'est la même couleur.
+  const seenPaints = new Set<string>();
+  const seenStrokes = new Map<string, { node: SceneNode; value: VariantStrokeColor }>();
+  // Ce qu'un calque a déjà posé, par champ et par clé de base : c'est ce qui
+  // reconnaît deux couleurs EMPILÉES sur le même calque.
+  const stacked = new Map<SceneNode, Map<string, string>>();
+
   const resolved = await Promise.all(pending.map(async (binding) => ({
     ...binding,
     token: await binding.promise,
     strokeStyle: binding.stroke ? await binding.stroke : null,
   })));
+
   for (const binding of resolved) {
     if (!binding.token) continue;
-    // La clé se lit sur le nom NU (dernier segment) ; l'enrobage `{…}`
-    // n'intervient qu'au moment où le token entre dans le contrat.
-    const key = tokenKey(binding.token);
     const isStroke = binding.field === 'strokes';
-    // Une clé qui nomme un rôle partagé n'a rien à déduire : le designer l'a
-    // déclaré. `variantRoleWarnings` signale séparément celles qu'il a
-    // déclarées du mauvais côté.
-    if (!isRenderableRole(key) && !roles.has(key)) {
-      roles.set(key, paintSiteRole({
-        isStroke,
-        isText: binding.node.type === 'TEXT',
-        isIconTarget: isIconLayer(binding.node, iconNames),
-      }));
+    const role = colorRole(binding.token, {
+      isStroke,
+      isText: binding.node.type === 'TEXT',
+      isIconTarget: isIconLayer(binding.node, iconNames),
+    });
+
+    // Deux couleurs différentes empilées sur le même calque : le contrat les
+    // publie toutes les deux — rien n'est perdu — mais il ne sait pas dire
+    // laquelle est au-dessus. Un seul message par calque et par clé de base.
+    const marker = `${binding.field}::${tokenKey(binding.token)}`;
+    const posees = stacked.get(binding.node) ?? new Map<string, string>();
+    stacked.set(binding.node, posees);
+    const dessous = posees.get(marker);
+    if (dessous === undefined) {
+      posees.set(marker, binding.token);
+    } else if (dessous !== binding.token && dessous !== '') {
+      posees.set(marker, '');
+      warnings.push(
+        `Layer « ${binding.node.name} » : deux ${isStroke ? 'strokes' : 'fills'} ` +
+          `y sont reliés à des variables dont le nom finit pareil (${toRef(dessous)} et ` +
+          `${toRef(binding.token)}). Les deux couleurs sont exportées, mais le contrat ne dira ` +
+          `pas laquelle est au-dessus de l'autre. Ne gardez qu'un ` +
+          `${isStroke ? 'stroke' : 'fill'} lié sur ce layer, puis réexportez.`,
+      );
     }
+
     if (isStroke) {
       const width = binding.strokeStyle?.width ?? null;
-      setStrokeToken(strokes, key, {
-        color: toRef(binding.token),
+      const value: VariantStrokeColor = {
+        token: binding.token,
+        role,
         width: width ? toRef(width) : null,
         align: binding.strokeStyle?.align ?? null,
-      }, binding.node, warnings);
-    } else {
-      setPaintToken(paints, key, toRef(binding.token), binding.node, warnings);
+      };
+      const known = seenStrokes.get(binding.token);
+      if (!known) {
+        seenStrokes.set(binding.token, { node: binding.node, value });
+        strokes.push(value);
+        continue;
+      }
+      // Même token, géométrie différente : la feuille n'a qu'une entrée par
+      // token, ce cas reste réellement irreprésentable.
+      if (known.value.width === value.width && known.value.align === value.align) continue;
+      warnings.push(
+        `Layer « ${binding.node.name} » : son stroke ${toRef(binding.token)} est déjà posé par le ` +
+          `layer « ${known.node.name} », avec une stroke weight ou un alignement différents. Le ` +
+          `contrat n'en garde qu'un par token et exporte celui de « ${known.node.name} » : la ` +
+          `géométrie de ce layer manquera au développeur. Réglez les deux strokes de la même ` +
+          `façon, ou reliez-les à deux variables différentes, puis réexportez.`,
+      );
+      continue;
     }
+
+    if (seenPaints.has(binding.token)) continue;
+    seenPaints.add(binding.token);
+    paints.push({ token: binding.token, role });
   }
-  const leafOf = <T>(retenus: Map<string, KeyedPaint<T>>): Record<string, T> =>
-    Object.fromEntries(Array.from(retenus, ([key, retenu]) => [key, retenu.value]));
-  return { paints: leafOf(paints), strokes: leafOf(strokes), roles };
+
+  return { paints, strokes };
 }

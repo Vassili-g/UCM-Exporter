@@ -57,6 +57,22 @@ export function isTokenReference(value: unknown): value is string {
 }
 
 /**
+ * Chemin nu d'une référence : l'inverse exact de `toRef`. Une chaîne qui n'est
+ * pas une référence est rendue telle quelle.
+ *
+ * Cette fonction vit ici parce que `variables.ts` est l'unique autorité sur la
+ * forme d'une référence. Déballer les accolades ailleurs finirait par lire
+ * « border} » comme le dernier segment d'un token, et un garde-fou entier se
+ * tairait sans un mot.
+ *
+ * @example refPath('{components.button.default.border}')
+ * // → 'components.button.default.border'
+ */
+export function refPath(reference: string): string {
+  return isTokenReference(reference) ? reference.slice(1, -1) : reference;
+}
+
+/**
  * Toutes les références de token contenues dans une valeur, à profondeur
  * quelconque.
  *

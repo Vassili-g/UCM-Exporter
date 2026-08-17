@@ -5,6 +5,7 @@ import {
   getSlotTokens,
   insertVariantLeaf,
 } from '../src/contract/extractVariantTokens';
+import { renderingSemanticsFor } from '../src/contract/semantics';
 import { collectTokenReferences } from '../src/variables';
 
 const colorAlias = { type: 'VARIABLE_ALIAS', id: 'color' } as VariableAlias;
@@ -32,17 +33,15 @@ test('getSlotTokens sépare les peintures de la géométrie des strokes', async 
   const tokens = await getSlotTokens(node, resolver, warnings);
 
   assert.deepEqual(tokens, {
-    paints: {},
-    strokes: {
-      ring: {
-        color: '{components.button.colors.primary.focus.ring}',
-        width: '{layouts.stroke.ring}',
-        align: 'outside',
-      },
-    },
-    // « ring » nomme un rôle partagé : le designer l'a déclaré, il n'y a rien
-    // à déduire du calque.
-    roles: new Map(),
+    paints: [],
+    strokes: [{
+      token: 'components.button.colors.primary.focus.ring',
+      // « ring » nomme un rôle partagé : le designer l'a déclaré, il n'y a rien
+      // à déduire du calque.
+      role: 'ring',
+      width: '{layouts.stroke.ring}',
+      align: 'outside',
+    }],
   });
   assert.deepEqual(warnings, []);
 });
@@ -71,14 +70,14 @@ test('getSlotTokens déduit le rôle d’une clé qui n’en nomme aucun, depuis
 
   const tokens = await getSlotTokens(cadre, resolver, warnings, new Map(), new Set(['circle-info']));
 
-  assert.deepEqual(tokens.roles, new Map([
-    ['scale-1', 'background'],
-    ['title', 'foreground'],
-    ['glyph', 'icon'],
-  ]));
-  // Les clés restent celles du design system : rien n'est renommé, rien n'est
-  // perdu, les trois couleurs coexistent dans la feuille.
-  assert.deepEqual(Object.keys(tokens.paints).sort(), ['glyph', 'scale-1', 'title']);
+  assert.deepEqual(
+    tokens.paints.map((color) => [color.token, color.role]).sort(),
+    [
+      ['components.card.colors.glyph', 'icon'],
+      ['components.card.colors.scale-1', 'background'],
+      ['components.card.colors.title', 'foreground'],
+    ],
+  );
   assert.deepEqual(warnings, []);
 });
 
@@ -98,7 +97,7 @@ test('getSlotTokens avertit quand la largeur du stroke est une valeur brute', as
 
   const tokens = await getSlotTokens(node, resolver, warnings);
 
-  assert.equal(tokens.strokes.ring?.width, null);
+  assert.equal(tokens.strokes[0]?.width, null);
   assert.deepEqual(warnings, [
     `Layer « Button ring » — stroke weight : aucune variable Figma n'est reliée. La valeur fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
   ]);
@@ -126,7 +125,7 @@ test('getSlotTokens refuse une largeur de stroke partiellement liée', async () 
 
   const tokens = await getSlotTokens(node, resolver, warnings);
 
-  assert.equal(tokens.strokes.ring?.width, null);
+  assert.equal(tokens.strokes[0]?.width, null);
   assert.ok(warnings.some((warning) => warning.includes('right stroke weight')));
   assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
 });
@@ -162,9 +161,9 @@ test('getSlotTokens ignore un ancien fond statiquement masqué au profit du fond
 
   const tokens = await getSlotTokens(component, resolver, warnings);
 
-  assert.deepEqual(tokens.paints, {
-    background: '{components.button.default.background}',
-  });
+  assert.deepEqual(tokens.paints, [
+    { token: 'components.button.default.background', role: 'background' },
+  ]);
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /Ancien fond/);
   assert.doesNotMatch(warnings[0], /Calque « Fond »/);
@@ -377,7 +376,9 @@ test('un rôle homonyme d’Object.prototype n’invente pas une collision de fi
   // Un seul fill suffisait : l'accumulateur littéral rendait `Object` pour ce
   // rôle, le prenait pour une peinture déjà posée, écartait le token et
   // accusait le designer d'avoir mis deux fills sur un rôle qui n'en a qu'un.
-  assert.deepEqual(tokens.paints, { constructor: '{components.button.constructor}' });
+  assert.deepEqual(tokens.paints, [
+    { token: 'components.button.constructor', role: 'background' },
+  ]);
   assert.deepEqual(warnings, []);
 });
 
@@ -440,28 +441,32 @@ test('la couleur portée par une dépendance n’entre pas dans le contrat du co
 
   // `getAllNodes` conserve l'instance pour que la structure la décrive comme un
   // slot ; sa couleur, elle, appartient au contrat de l'Alert. La relever ici
-  // la ferait entrer dans `variantTokens` ET évincerait, sur la même clé, la
-  // couleur que ce contrat possède vraiment.
-  assert.deepEqual(tokens.paints, { background: '{components.page.colors.background}' });
+  // la ferait entrer dans `variantTokens` et dans `tokensUsed` du parent : le
+  // contrat annoncerait une couleur qu'aucun de ses calques ne peint.
+  assert.deepEqual(tokens.paints, [
+    { token: 'components.page.colors.background', role: 'background' },
+  ]);
   assert.deepEqual(warnings, []);
 });
 
-test('deux calques du composant qui se disputent une clé nomment les deux calques', async () => {
+test('deux calques dont les variables finissent pareil gardent chacun leur couleur', async () => {
   const racine = composeAvecDependance();
   const warnings: string[] = [];
 
-  // Sans élagage — l'ancien comportement — les deux couleurs se disputent la
-  // clé « background ». Le message doit alors nommer les DEUX layers : demander
-  // « ne gardez qu'un fill » à un calque qui n'en a qu'un est insuivable.
-  await getSlotTokens(racine, resolveurDeFonds, warnings);
+  // Sans élagage — deux calques de ce contrat-ci — les deux couleurs portent le
+  // même dernier segment. Elles sont RELEVÉES toutes les deux : c'est
+  // `resolveColorKeys` qui leur donnera deux clés, pas le designer qui doit
+  // renommer une variable.
+  const tokens = await getSlotTokens(racine, resolveurDeFonds, warnings);
 
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /« Panneau »/);
-  assert.match(warnings[0], /« Alert »/);
-  assert.match(warnings[0], /dernier segment différent/);
+  assert.deepEqual(tokens.paints.map((color) => color.token), [
+    'components.alert.colors.info.background',
+    'components.page.colors.background',
+  ]);
+  assert.deepEqual(warnings, []);
 });
 
-test('deux fills du MÊME calque gardent le message qui leur correspond', async () => {
+test('deux fills du MÊME calque sont publiés, mais leur empilement est signalé', async () => {
   const calque = {
     type: 'FRAME',
     name: 'Panneau',
@@ -475,8 +480,163 @@ test('deux fills du MÊME calque gardent le message qui leur correspond', async 
   } as unknown as ComponentNode;
   const warnings: string[] = [];
 
-  await getSlotTokens(calque, resolveurDeFonds, warnings);
+  const tokens = await getSlotTokens(calque, resolveurDeFonds, warnings);
 
+  // Les deux couleurs sortent — rien n'est perdu — mais un seul calque ne peut
+  // porter qu'un fond : le contrat ne sait pas dire lequel est au-dessus.
+  assert.equal(tokens.paints.length, 2);
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /deux fills portent la même clé/);
+  assert.match(warnings[0], /« Panneau »/);
+  assert.match(warnings[0], /laquelle est au-dessus/);
+});
+
+/**
+ * Le cas qui a motivé la 5.5, en vrai : un variant peint plusieurs surfaces,
+ * dont deux fonds et deux bordures que le design system nomme par leur section.
+ * Le contrat gardait la première de chaque paire et jetait l'autre.
+ */
+test('un variant à plusieurs surfaces publie TOUTES ses couleurs', async () => {
+  const layer = (name: string, id: string, field: 'fills' | 'strokes') => ({
+    type: 'FRAME',
+    name,
+    boundVariables: { [field]: [{ type: 'VARIABLE_ALIAS', id } as VariableAlias] },
+    strokeAlign: 'INSIDE',
+  });
+  const userInput = layer('UserInput', 'userinput-bg', 'fills');
+  const divider = layer('Divider', 'divider-bg', 'fills');
+  const bordure = layer('UserInput', 'userinput-border', 'strokes');
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Variant=Default',
+    boundVariables: { strokes: [{ type: 'VARIABLE_ALIAS', id: 'base-border' } as VariableAlias] },
+    strokeAlign: 'INSIDE',
+    findAll: () => [userInput, divider, bordure],
+  } as unknown as ComponentNode;
+  const resolver = {
+    resolve: async (alias: VariableAlias | null | undefined) => {
+      if (alias?.id === 'userinput-bg') return 'components.stresstest.info.userinput.colors.background';
+      if (alias?.id === 'divider-bg') return 'components.stresstest.info.divider.colors.background';
+      if (alias?.id === 'base-border') return 'components.stresstest.info.base.colors.border';
+      if (alias?.id === 'userinput-border') return 'components.stresstest.info.userinput.colors.border';
+      return null;
+    },
+  };
+  const warnings: string[] = [];
+
+  const trees = await extractVariantTokens(
+    { axes: ['variant'], variants: [{ values: { variant: 'default' }, component: racine }] },
+    resolver,
+    warnings,
+  );
+
+  assert.deepEqual(trees.variantTokens, {
+    default: {
+      'userinput.background': '{components.stresstest.info.userinput.colors.background}',
+      'divider.background': '{components.stresstest.info.divider.colors.background}',
+    },
+  });
+  assert.deepEqual(Object.keys(trees.variantStrokes.default as object).sort(), [
+    'base.border',
+    'userinput.border',
+  ]);
+  // Plus rien à demander au designer : son nommage suffisait.
+  assert.deepEqual(warnings.filter((warning) => warning.includes('dernier segment')), []);
+});
+
+test('une clé allongée reçoit dans rendering.roles le rendu que son token déclare', async () => {
+  const anneau = {
+    type: 'FRAME',
+    name: 'Halo',
+    boundVariables: { strokes: [{ type: 'VARIABLE_ALIAS', id: 'halo' } as VariableAlias] },
+    strokeAlign: 'OUTSIDE',
+  };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Variant=Default',
+    boundVariables: { strokes: [{ type: 'VARIABLE_ALIAS', id: 'base' } as VariableAlias] },
+    strokeAlign: 'OUTSIDE',
+    findAll: () => [anneau],
+  } as unknown as ComponentNode;
+  const resolver = {
+    resolve: async (alias: VariableAlias | null | undefined) => {
+      if (alias?.id === 'halo') return 'components.card.halo.colors.ring';
+      if (alias?.id === 'base') return 'components.card.base.colors.ring';
+      return null;
+    },
+  };
+
+  const trees = await extractVariantTokens(
+    { axes: ['variant'], variants: [{ values: { variant: 'default' }, component: racine }] },
+    resolver,
+    [],
+  );
+  const rendering = renderingSemanticsFor(trees.discoveredRoles);
+
+  // « ring » est une DÉCLARATION du designer : allongée, la clé conserve son
+  // contour extérieur et son repli en box-shadow.
+  assert.deepEqual(rendering.roles['halo.ring'], {
+    kind: 'stroke',
+    cssProperties: ['outline-color', 'outline-width'],
+    fallback: 'box-shadow',
+  });
+  assert.deepEqual(rendering.roles['base.ring'], rendering.roles['halo.ring']);
+});
+
+test('un composant dont les clés nomment toutes un rôle partagé ne déduit aucun rendu', async () => {
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Variant=Default',
+    boundVariables: { fills: [colorAlias] },
+    findAll: () => [],
+  } as unknown as ComponentNode;
+
+  const trees = await extractVariantTokens(
+    { axes: ['variant'], variants: [{ values: { variant: 'default' }, component: racine }] },
+    { resolve: async () => 'components.button.colors.primary.default.background' },
+    [],
+  );
+
+  // La porte reste fermée sur les cinq rôles partagés : `rendering.roles` d'un
+  // composant déjà correct ne gagne aucune entrée.
+  assert.deepEqual(trees.discoveredRoles, new Map());
+  assert.deepEqual(
+    Object.keys(renderingSemanticsFor(trees.discoveredRoles).roles),
+    ['background', 'foreground', 'icon', 'border', 'ring'],
+  );
+});
+
+test('un variant écarté pour doublon d’axes n’allonge pas la clé du variant conservé', async () => {
+  const makeNode = (name: string, id: string) => ({
+    type: 'RECTANGLE',
+    name,
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id } as VariableAlias] },
+    findAll: () => [],
+  }) as unknown as ComponentNode;
+  const resolver = {
+    resolve: async (alias: VariableAlias | null | undefined) => {
+      if (alias?.id === 'garde') return 'components.card.base.colors.background';
+      if (alias?.id === 'ecarte') return 'components.card.autre.colors.background';
+      return null;
+    },
+  };
+  const warnings: string[] = [];
+
+  const trees = await extractVariantTokens(
+    {
+      axes: ['state'],
+      variants: [
+        { values: { state: 'focus' }, component: makeNode('State=Focus', 'garde') },
+        { values: { state: 'focus' }, component: makeNode('State=Focus (doublon)', 'ecarte') },
+      ],
+    },
+    resolver,
+    warnings,
+  );
+
+  // La couleur du variant écarté n'existe pas pour le contrat : elle ne conteste
+  // rien, et la clé du variant conservé reste simple.
+  assert.deepEqual(trees.variantTokens, {
+    focus: { background: '{components.card.base.colors.background}' },
+  });
+  assert.ok(warnings.some((warning) => warning.includes('Variants « focus »')));
 });

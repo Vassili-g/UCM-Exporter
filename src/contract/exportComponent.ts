@@ -34,6 +34,13 @@ import type {
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 5.5 : une couleur cesse d'en évincer une autre. La clé reste le dernier
+ * segment du token, mais quand deux couleurs d'un même variant le partagent,
+ * elle s'allonge des segments qui les séparent (`userinput.background` /
+ * `divider.background`) au lieu de n'en garder qu'une. Le design system nommait
+ * déjà ces surfaces distinctement : c'est l'export qui tronquait. Un
+ * consommateur doit désormais accepter une clé contenant des points et cesser
+ * de présumer qu'un des cinq rôles est présent.
  * 5.4 : le passage à la ligne devient contractuel. `wrap` et `rowGap` décrivent
  * un auto layout qui déborde sur plusieurs lignes, sur le composant comme sur
  * n'importe quel conteneur de `children` ; le contrat se contentait jusqu'ici
@@ -81,7 +88,7 @@ import type {
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '5.4';
+export const CONTRACT_VERSION = '5.5';
 
 /**
  * Les dépendances de l'arbre publié, dans son ordre — celui des calques Figma.

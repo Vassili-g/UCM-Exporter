@@ -2,16 +2,23 @@
  * Extraction des tokens de couleur/contour de CHAQUE variant du composant.
  *
  * Résultat : l'arbre `variantTokens`, imbriqué selon les axes du set
- * (ex. couleur → variante → état), avec pour feuilles les tokens rangés
- * par rôle (background, foreground…). Les strokes sont exportés dans un arbre
- * parallèle afin que les consommateurs historiques de `variantTokens` gardent
- * partout des références de tokens sous forme de chaînes.
+ * (ex. couleur → variante → état), avec pour feuilles les couleurs rangées par
+ * clé. Les strokes sont exportés dans un arbre parallèle afin que les
+ * consommateurs historiques de `variantTokens` gardent partout des références
+ * de tokens sous forme de chaînes.
+ *
+ * Les clés se décident ici, une seule fois, sur TOUTE la matrice
+ * (`colorKeys.ts`) : lues variant par variant, elles changeraient d'un état à
+ * l'autre et plus rien ne serait indexable.
  */
+import { resolveColorKeys } from './colorKeys';
 import type { VariantEntry, VariantMatrix } from './componentTree';
 import type { ComposedInstances } from './exportableNodes';
 import { normalizePropValue } from './parsers';
 import { getSlotTokens } from './extractSlotTokens';
-import type { TokenResolver } from './extractSlotTokens';
+import type { TokenResolver, VariantColor, VariantStrokeColor } from './extractSlotTokens';
+import { isRenderableRole } from './semantics';
+import { toRef } from '../variables';
 import type { SlotStrokes, SlotTokens, VariantStrokes, VariantTokens } from './types';
 export { getSlotTokens } from './extractSlotTokens';
 export type { VariantTokenLeaves } from './extractSlotTokens';
@@ -19,6 +26,10 @@ export type { VariantTokenLeaves } from './extractSlotTokens';
 /**
  * Insère une feuille dans l'arbre en suivant l'ordre des axes.
  * Un axe sans valeur retombe sur la clé « default ».
+ *
+ * Renvoie `false` quand un variant occupe déjà ces valeurs d'axes : c'est
+ * l'unique autorité sur « deux variants aux mêmes valeurs », et l'appelant s'en
+ * sert pour savoir quels variants le contrat publie réellement.
  *
  * Les clés viennent de Figma : elles sont testées et écrites en propriétés
  * PROPRES. `constructor` ou `toString` passeraient sinon pour un doublon
@@ -31,7 +42,7 @@ export function insertVariantLeaf<T>(
   values: Record<string, string>,
   leaf: T,
   warnings: string[],
-): void {
+): boolean {
   const has = (node: Record<string, unknown>, key: string) =>
     Object.prototype.hasOwnProperty.call(node, key);
   const set = (node: Record<string, unknown>, key: string, value: unknown) => {
@@ -41,6 +52,7 @@ export function insertVariantLeaf<T>(
   };
 
   let node = tree;
+  let inserted = false;
   axes.forEach((axis, index) => {
     const key = values[axis] || 'default';
     if (index === axes.length - 1) {
@@ -55,17 +67,35 @@ export function insertVariantLeaf<T>(
         return;
       }
       set(node, key, leaf);
+      inserted = true;
       return;
     }
     const branch = has(node, key) ? node[key] : null;
     if (!branch || typeof branch !== 'object' || Array.isArray(branch)) set(node, key, {});
     node = node[key] as Record<string, unknown>;
   });
+  return inserted;
+}
+
+/** Feuille de peintures : une référence de token par clé. */
+function paintLeaf(colors: readonly VariantColor[], keys: ReadonlyMap<string, string>): SlotTokens {
+  return Object.fromEntries(colors.map((color) => [keys.get(color.token), toRef(color.token)]));
+}
+
+/** Feuille de contours : la couleur et la géométrie que le contrat publie. */
+function strokeLeaf(
+  colors: readonly VariantStrokeColor[],
+  keys: ReadonlyMap<string, string>,
+): SlotStrokes {
+  return Object.fromEntries(colors.map((color) => [
+    keys.get(color.token),
+    { color: toRef(color.token), width: color.width, align: color.align },
+  ]));
 }
 
 /**
  * Point d'entrée : construit l'arbre complet des tokens de variantes
- * (tous les axes, tous les rôles).
+ * (tous les axes, toutes les couleurs).
  */
 export async function extractVariantTokens(
   matrix: VariantMatrix,
@@ -106,11 +136,14 @@ export async function extractVariantTokens(
     }),
   );
 
-  // Seconde phase, séquentielle : c'est la matrice qui fixe l'ordre des clés,
-  // celui des avertissements et le sens de « premier conservé ».
+  // Première passe, séquentielle : c'est la matrice qui fixe l'ordre des clés,
+  // celui des avertissements et le sens de « premier conservé ». Elle dit aussi
+  // quels variants le contrat publie — un variant écarté ne doit peser sur rien.
+  const reserved: Record<string, unknown> = {};
+  const retained: Array<{ leaf: (typeof collected)[number]['leaf']; values: Record<string, string> }> = [];
   for (const { entry, leaf, variantWarnings } of collected) {
     warnings.push(...variantWarnings);
-    if (Object.keys(leaf.paints).length === 0 && Object.keys(leaf.strokes).length === 0) {
+    if (leaf.paints.length === 0 && leaf.strokes.length === 0) {
       warnings.push(`Variant « ${entry.component.name} » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui.`);
     }
     // La clé de repli suit la même normalisation que toutes les valeurs
@@ -118,28 +151,47 @@ export async function extractVariantTokens(
     const values = matrix.axes.length > 0
       ? entry.values
       : { variant: normalizePropValue(entry.component.name) };
-    // Le rôle déduit d'une clé est relevé sur toute la matrice, dans l'ordre
-    // des variants. Le même token posé sur des calques de natures différentes
-    // selon le variant ne peut recevoir qu'un rendu : on garde le premier et on
-    // le dit, plutôt que de laisser l'ordre des promesses trancher en silence.
-    for (const [key, role] of leaf.roles) {
+    if (!insertVariantLeaf(reserved, axes, values, true, warnings)) continue;
+    retained.push({ leaf, values });
+  }
+
+  // Deuxième passe : les clés, décidées sur les seules feuilles publiées. Les
+  // couleurs d'un variant écarté n'en allongent aucune — on ne renomme que ce
+  // qu'on publie, comme on n'avertit que sur ce qu'on publie.
+  const keys = resolveColorKeys(
+    retained.flatMap(({ leaf }) => [
+      leaf.paints.map((color) => color.token),
+      leaf.strokes.map((color) => color.token),
+    ]),
+  );
+
+  // Troisième passe : l'écriture, toujours dans l'ordre de la matrice.
+  for (const { leaf, values } of retained) {
+    // Le rôle d'une clé est relevé sur toute la matrice. Une clé qui NOMME un
+    // rôle partagé n'a rien à publier : le consommateur la résout directement.
+    // Le même token posé sur des calques de natures différentes selon le variant
+    // ne peut recevoir qu'un rendu : on garde le premier et on le dit, plutôt
+    // que de laisser l'ordre des promesses trancher en silence.
+    for (const color of [...leaf.paints, ...leaf.strokes]) {
+      const key = keys.get(color.token) ?? color.token;
+      if (isRenderableRole(key)) continue;
       const known = discoveredRoles.get(key);
       if (!known) {
-        discoveredRoles.set(key, role);
+        discoveredRoles.set(key, color.role);
         continue;
       }
       // Un seul message par clé : le même calque revient dans chaque variant, et
       // un Button en a 30.
-      if (known === role || reportedRoleConflicts.has(key)) continue;
+      if (known === color.role || reportedRoleConflicts.has(key)) continue;
       reportedRoleConflicts.add(key);
       warnings.push(
-        `Token « ${key} » : il est appliqué à des layers de natures différentes selon les ` +
-          `variants (${known}, ${role}). Le contrat ne peut décrire qu'une façon de le ` +
+        `Token ${toRef(color.token)} : il est appliqué à des layers de natures différentes selon ` +
+          `les variants (${known}, ${color.role}). Le contrat ne peut décrire qu'une façon de le ` +
           `peindre et retient « ${known} ». Utilisez une variable par nature de layer.`,
       );
     }
-    insertVariantLeaf(variantTokens, axes, values, leaf.paints, warnings);
-    insertVariantLeaf(variantStrokes, axes, values, leaf.strokes, warnings);
+    insertVariantLeaf(variantTokens, axes, values, paintLeaf(leaf.paints, keys), warnings);
+    insertVariantLeaf(variantStrokes, axes, values, strokeLeaf(leaf.strokes, keys), warnings);
   }
 
   return { variantTokens, variantStrokes, discoveredRoles };

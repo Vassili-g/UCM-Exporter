@@ -376,6 +376,14 @@ export type StrokeTokens = {
  * segment du nom du token : `…default.background` → `background`,
  * `…colors.scale-1` → `scale-1`. Elle IDENTIFIE la couleur ; ce qu'elle peint
  * se lit dans `rendering.roles`.
+ *
+ * Quand deux couleurs d'un même variant portent le même dernier segment, la clé
+ * s'allonge des segments qui les séparent : `…userinput.colors.background` et
+ * `…divider.colors.background` deviennent `userinput.background` et
+ * `divider.background`. Une clé allongée contient donc un point, jamais une clé
+ * simple — un segment de token n'en contient aucun. `colorKeys.ts` en est
+ * l'unique autorité et la décide sur toute la matrice, si bien que la clé d'un
+ * token est la même dans toutes les feuilles.
  */
 export type SlotTokens = Record<string, string>;
 

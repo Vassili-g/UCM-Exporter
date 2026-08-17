@@ -45,11 +45,15 @@ Les noms de collections et le nombre de niveaux d’alias sont libres. Le moteur
 gère les chaînes profondes et les alias de tous types.
 
 Aucune convention de nommage n'est imposée aux couleurs de variante. Le dernier
-segment du token en est la **clé** ; ce qu'il peint se déduit du calque qui le
-porte, et le contrat le publie dans `rendering.roles`. Un design system qui
-nomme ses rôles (`…/background`, `…/foreground`, `…/icon`, `…/border`,
+segment du token en est la **clé de base** ; ce qu'il peint se déduit du calque
+qui le porte, et le contrat le publie dans `rendering.roles`. Un design system
+qui nomme ses rôles (`…/background`, `…/foreground`, `…/icon`, `…/border`,
 `…/ring`) voit sa déclaration l'emporter sur la déduction — c'est le seul moyen
 de distinguer un `ring` d'un `border`.
+
+Un design system reste également libre de peindre plusieurs surfaces d'un même
+variant avec des variables dont le nom finit pareil : la clé s'allonge alors des
+segments qui les séparent, et aucune couleur n'est perdue.
 
 Le fichier Figma de référence utilise plusieurs niveaux — primitives, marques,
 tokens sémantiques, composants et dimensions — uniquement pour éprouver cette
@@ -95,8 +99,8 @@ boolean, `TEXT` → string. Deux règles auto-détectées :
 
 **2. Tokens de variantes** — après le pré-vol de complétude, parcourir **tous**
 les variants du produit cartésien des axes. Pour chacun, relever les tokens liés (`boundVariables.fills` et
-`.strokes` sur tout le sous-arbre), rangés par **clé = dernier segment du
-token**. Un composant unifié imbriqué n'y contribue rien : ni son contenu, ni le
+`.strokes` sur tout le sous-arbre), rangés par **clé**, dont la base est le
+dernier segment du token. Un composant unifié imbriqué n'y contribue rien : ni son contenu, ni le
 calque de l'instance elle-même, dont le fond appartient à son propre contrat.
 Le relever ferait entrer dans `variantTokens` et dans `tokensUsed` une couleur
 que ce contrat-ci ne peint pas — et, sur une clé partagée, évincerait la sienne. Un sous-arbre `visible === false` est ignoré, sauf si sa visibilité
@@ -116,21 +120,41 @@ tous les contrats.
 Un design system reste libre de nommer ses rôles (`…/background`,
 `…/foreground`, `…/icon`, `…/border`, `…/ring`) : cette **déclaration fait
 autorité** sur la déduction, et c'est le seul moyen de distinguer un `ring` d'un
-`border`. En revanche elle n'est plus exigée — l'exiger était impossible à
-satisfaire dès qu'un variant peint plusieurs surfaces, la feuille n'ayant
-qu'une entrée par clé : six `…/scale-N` renommés `…/background` n'en auraient
-laissé qu'un seul.
+`border`. Elle se lit sur le dernier segment du **token**, jamais sur la clé
+publiée. En revanche elle n'est pas exigée : l'exiger imposerait au design
+system un renommage que rien ne justifie.
 Seul subsiste le **warning agrégé** du rôle déclaré puis employé sur le mauvais
 support — un `…/border` posé en remplissage : le nom et le calque se
 contredisent, et le contrat ne peut pas trancher. Un seul message par rôle
 fautif, avec son nombre d'occurrences et un token en exemple.
 Un rôle n'apparaît que s'il est réellement lié — rien n'est forcé ni inventé.
-La feuille n'ayant qu'une entrée par clé, deux calques dont les variables
-finissent par le même segment se la disputent : le contrat garde le premier et
-avertit en nommant **les deux calques**, car le geste utile est de donner un
-dernier segment différent à l'une des variables — jamais de retirer une couleur.
-Situer chaque surface peinte dans `structure.children` fermerait ce cas ; c'est
-une extension non engagée, suivie dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
+
+**Une clé que deux couleurs partagent s'allonge.** Deux calques d'un même
+variant dont les variables finissent par le même segment ne se disputent plus
+rien : la clé garde ce segment comme BASE et lui ajoute les segments du chemin
+qui **séparent** les deux couleurs. `…info.userinput.colors.background` et
+`…info.divider.colors.background` deviennent `userinput.background` et
+`divider.background` — `colors`, commun aux deux, n'apporte rien et reste
+dehors. Le design system nommait déjà ces surfaces distinctement ; c'est
+l'export qui tronquait au dernier segment, et le renommage qu'il réclamait
+compensait un défaut du moteur.
+
+Le choix des segments obéit à une règle unique, décidée **une seule fois pour
+tout le composant** : parmi les sélections qui séparent les couleurs
+**cohabitant dans une même feuille**, on retient celle qui produit **le moins de
+clés distinctes**. C'est ce qui garde une coordonnée de variant hors de la clé —
+trente couleurs `…<color>.<variant>.<state>.background` qui ne se côtoient jamais
+gardent une seule et même clé, et seule une surface qui les côtoie vraiment s'en
+détache. Une clé allongée contient donc un point, et une clé simple jamais : un
+segment de token n'en contient aucun. La clé d'un token est la même dans toutes
+les feuilles.
+
+Ce qui reste ouvert : le contrat dit COMMENT peindre chaque clé, pas SUR QUEL
+calque. Situer chaque surface peinte dans `structure.children` demande
+l'adressage par chemin de slots, extension non engagée suivie dans
+[PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md). Deux couleurs **empilées sur un
+même calque** sont publiées toutes les deux, mais le contrat ne dit pas laquelle
+est au-dessus : un warning le signale.
 Chaque feuille décrit indépendamment l'état visuel complet du variant Figma :
 si un rôle est absent de la feuille d'un état dans `variantTokens` ou
 `variantStrokes`, cela signifie toujours **« ne pas rendre ce rôle dans cet
@@ -563,7 +587,8 @@ inexistante → warning (faute de frappe), non bloquant.
 générique des rôles vers les propriétés de rendu (`background` →
 `background-color`, `foreground` → `color`/`fill`, `border` → couleur et
 largeur de bordure, `ring` → contour extérieur), **plus une entrée par clé de
-couleur qui ne nomme aucun de ces rôles**, avec le rendu déduit de son calque
+couleur qui ne nomme aucun de ces rôles** — clés allongées comprises, dont le
+rendu est celui que leur dernier segment déclare —, avec le rendu déduit de son calque
 (étape 2). La règle reste sans logique par composant ; seules les clés observées
 changent d'un contrat à l'autre, et un consommateur répond toujours à « comment
 peindre cette clé » par un seul accès à `rendering.roles`.
@@ -827,6 +852,9 @@ et le warning qui le signale — sans bloquer — le dit explicitement. `nodeId`
   chemins de typographie décrivent le même arbre.
 - Une même clé publique relie `props`, `variantAxes` et les arbres de
   variantes ; les noms Figma d’origine restent traçables.
+- Aucune couleur n’est perdue par troncature de clé. La clé d’une couleur est
+  décidée une seule fois pour tout le composant : elle est la même dans toutes
+  les feuilles, et ne porte jamais une coordonnée de variant.
 - La matrice est complète et son ordre rend l’export déterministe.
 - Le contrat ne contient aucune valeur de design brute : seulement des
   références `{…}` et les données structurelles explicitement prévues.
@@ -979,7 +1007,19 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **5.4** : le passage à la ligne devient
+La version actuelle du contrat est **5.5** : une couleur cesse d'en évincer une
+autre. La clé d'une couleur garde pour base le dernier segment de sa variable,
+mais quand deux couleurs d'un même variant le partagent, elle s'allonge des
+segments qui les séparent — `userinput.background` et `divider.background` — au
+lieu de n'en publier qu'une. Le contrat perdait jusqu'ici une couleur pour de
+bon et demandait au designer de renommer une variable pour compenser une
+troncature du moteur. La forme du JSON ne change pas et un composant dont
+aucune clé n'est contestée produit un contrat identique ; c'est le consommateur
+qui doit accepter une clé contenant des points et cesser de présumer qu'un des
+cinq rôles partagés est présent — d'où la version. Ce qui reste ouvert : le
+contrat dit toujours comment peindre une clé, pas sur quel calque.
+
+La 5.4 : le passage à la ligne devient
 contractuel. `wrap` et `rowGap` décrivent un auto layout qui déborde sur
 plusieurs lignes, sur le composant comme sur n'importe quel conteneur de
 `children` ; le contrat se contentait jusqu'ici d'avertir, et le développeur
@@ -1010,10 +1050,12 @@ token l'emporte. Un consommateur qui traitait ce champ comme un enum de deux
 valeurs doit désormais reconnaître une référence `{…}`, d'où la version.
 
 La 5.1 faisait lire sur le calque qui la porte ce qu'une couleur peint, plus sur
-le nom de son token. Le dernier segment reste
-la clé de la couleur, et `rendering.roles` publie le rendu de chaque clé qui ne
-nomme aucun rôle partagé. Un composant peut donc peindre plusieurs surfaces sans
-qu'aucun renommage impossible soit demandé au designer. La forme du JSON ne
+le nom de son token. Le dernier segment restait
+la clé de la couleur, et `rendering.roles` publiait le rendu de chaque clé qui ne
+nomme aucun rôle partagé. Un composant pouvait donc peindre plusieurs surfaces
+sans qu'aucun renommage impossible soit demandé au designer — mais deux surfaces
+dont les variables finissaient pareil se disputaient encore une clé, ce que la
+5.5 a fermé. La forme du JSON ne
 change pas et un design system qui nommait déjà ses rôles produit un contrat
 identique ; c'est le consommateur qui doit cesser de présumer les cinq rôles et
 lire `rendering.roles` par clé — d'où la version.
