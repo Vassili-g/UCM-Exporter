@@ -619,11 +619,11 @@ const grilleDeTuiles = (tuile: unknown, pistes: Record<string, unknown> = {}) =>
   return grille;
 };
 
-test('un enfant de grille garde la règle commune sur sa dimension figée', async () => {
-  // Une grille n'est pas une dispense : un calque qui porte SA hauteur la porte
-  // pour de bon, et la taire ferait rendre la tuile à la taille de son contenu.
-  // Seul un enfant réellement en `Fill` est déjà décrit par sa cellule, et
-  // `fixedDimensions` le sait sans qu'aucune règle de grille s'en mêle.
+test('un enfant de grille ne se voit pas réclamer ce que sa cellule décide', async () => {
+  // Remplir sa cellule est le DÉFAUT d'un enfant de grille, en CSS comme dans
+  // Figma. L'API, elle, ne sait pas l'exposer dans une piste qui hug : elle rend
+  // la taille calculée là où le panneau affiche « Fill ». Le geste demandé au
+  // designer n'aurait donc rien à corriger.
   const tuile = tuileDeGrille();
   const warnings: string[] = [];
 
@@ -634,14 +634,16 @@ test('un enfant de grille garde la règle commune sur sa dimension figée', asyn
   );
 
   assert.equal(layout.children[0]?.size, undefined);
-  assert.ok(warnings.some((warning) => warning.includes('« Tile » — height')));
+  assert.equal(warnings.some((warning) => warning.includes('« Tile » — height')), false);
   // Sa place, elle, est publiée : Figma indexe à partir de 0, CSS à partir de 1.
   assert.equal(layout.children[0]?.columnStart, 2);
   assert.equal(layout.children[0]?.rowStart, 3);
 });
 
-test('un enfant de grille qui remplit sa cellule ne réclame rien', async () => {
-  const tuile = tuileDeGrille({ layoutSizingVertical: 'FILL' });
+test('un enfant de grille explicitement aligné garde la règle commune', async () => {
+  // Le même mot qu'en CSS : un enfant en `center` ne s'étire plus, sa dimension
+  // redevient la sienne, et un nombre écrit à la main se signale.
+  const tuile = tuileDeGrille({ gridChildVerticalAlign: 'CENTER' });
   const warnings: string[] = [];
 
   await extractLayout(
@@ -650,7 +652,23 @@ test('un enfant de grille qui remplit sa cellule ne réclame rien', async () => 
     warnings,
   );
 
-  assert.equal(warnings.some((warning) => warning.includes('« Tile » — height')), false);
+  assert.ok(warnings.some((warning) => warning.includes('« Tile » — height')));
+});
+
+test('un enfant de grille publie la dimension qu’il relie à une variable', async () => {
+  // La cellule n'efface pas une décision : une hauteur qui cite une variable est
+  // le design system qui parle, et elle survit à la grille.
+  const tuile = tuileDeGrille({ boundVariables: { fills: [alias('couleur')], height: alias('h') } });
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile', h: 'sizes.tile-height' }),
+    warnings,
+  );
+
+  assert.deepEqual(layout.children[0]?.size, { height: '{sizes.tile-height}' });
+  assert.deepEqual(warnings.filter((warning) => warning.includes('« Tile »')), []);
 });
 
 test('les pistes d’une grille sont publiées, et une piste figée se signale', async () => {

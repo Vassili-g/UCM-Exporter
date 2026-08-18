@@ -129,12 +129,13 @@ function warnUnsupportedProperties(node: SceneNode, warnings: string[]): void {
  */
 async function applySizing(
   entry: ChildStructure,
+  parent: SceneNode,
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
 ): Promise<void> {
   const [size, bounds] = await Promise.all([
-    resolveSlotSize(node, resolver, warnings),
+    resolveSlotSize(node, resolver, warnings, parent),
     resolveSizeBounds(node, resolver, warnings),
   ]);
   if (size) entry.size = size;
@@ -416,7 +417,7 @@ async function describeNode(
             'rendra le composant sans son cadre. Rendez visible le calque qui porte l’instance'}, ` +
         `puis réexportez.`,
     );
-    await applySizing(entry, child, resolver, warnings);
+    await applySizing(entry, parent, child, resolver, warnings);
     return entry;
   }
 
@@ -456,7 +457,7 @@ async function describeNode(
   // Relevé sur TOUS les slots dont ce contrat possède les dimensions, texte
   // compris : un calque de texte peut être figé comme une icône, et le taire
   // ferait dire à son absence « hug » alors que Figma impose une largeur.
-  await applySizing(entry, child, resolver, warnings);
+  await applySizing(entry, parent, child, resolver, warnings);
   return entry;
 }
 
