@@ -200,14 +200,15 @@ tests/
   deux côtés, et deux variables y décrivent une dimension inexprimable.
   Publier un groupe partiel, en revanche, remettrait l’extraction en désaccord
   avec `hasCompleteBinding`, donc avec l’élection du node de layout.
-- Sous une grille, la CELLULE fait autorité sur la boîte. Les pistes
-  (`columnSizes`, `rowSizes`) et la place de l’enfant (`columnStart`,
-  `rowStart`, spans) la décrivent ; un enfant qui s’y étire ne se voit réclamer
-  aucune variable de taille, et ne publie la sienne que s’il en cite une —
-  la règle du composant, pour la même raison. Un enfant explicitement aligné
-  s’est décollé de sa cellule : la règle commune revient. Une piste figée à la
-  main vaut `null` et avertit ; un runtime qui n’expose pas les pistes ne publie
-  rien et ne dit rien.
+- Une grille publie ce qui décide de la boîte de ses enfants : ses pistes
+  (`columnSizes`, `rowSizes`) et la place de chacun (`columnStart`, `rowStart`,
+  spans). Elle ne dispense en revanche AUCUN calque de la règle commune : un
+  enfant qui remplit sa cellule est en `Fill`, donc déjà décrit par l’absence,
+  et un enfant qui porte sa propre dimension la publie ou avertit comme partout
+  ailleurs. Taire une hauteur parce qu’une grille l’entoure ferait perdre au
+  contrat une dimension que Figma applique. Une piste figée à la main vaut
+  `null` et avertit ; un runtime qui n’expose pas les pistes ne publie rien et
+  ne dit rien.
 - Une donnée facultative incomplète avertit. Les préconditions explicitement
   définies dans la spécification bloquent.
 - On n’avertit que sur ce qu’on publie. Une valeur que le contrat va jeter —

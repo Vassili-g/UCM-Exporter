@@ -619,7 +619,11 @@ const grilleDeTuiles = (tuile: unknown, pistes: Record<string, unknown> = {}) =>
   return grille;
 };
 
-test('un enfant de grille ne se voit pas réclamer la dimension que sa cellule décide', async () => {
+test('un enfant de grille garde la règle commune sur sa dimension figée', async () => {
+  // Une grille n'est pas une dispense : un calque qui porte SA hauteur la porte
+  // pour de bon, et la taire ferait rendre la tuile à la taille de son contenu.
+  // Seul un enfant réellement en `Fill` est déjà décrit par sa cellule, et
+  // `fixedDimensions` le sait sans qu'aucune règle de grille s'en mêle.
   const tuile = tuileDeGrille();
   const warnings: string[] = [];
 
@@ -629,19 +633,15 @@ test('un enfant de grille ne se voit pas réclamer la dimension que sa cellule d
     warnings,
   );
 
-  // La boîte de la tuile est celle de sa cellule : la réclamer enverrait le
-  // designer relier une variable qui ne changerait rien.
   assert.equal(layout.children[0]?.size, undefined);
-  assert.equal(warnings.some((warning) => warning.includes('« Tile » — height')), false);
+  assert.ok(warnings.some((warning) => warning.includes('« Tile » — height')));
   // Sa place, elle, est publiée : Figma indexe à partir de 0, CSS à partir de 1.
   assert.equal(layout.children[0]?.columnStart, 2);
   assert.equal(layout.children[0]?.rowStart, 3);
 });
 
-test('un enfant de grille explicitement aligné garde la règle commune', async () => {
-  // Un alignement explicite le décolle des bords de sa cellule : sa dimension
-  // redevient la sienne, et un nombre écrit à la main se signale.
-  const tuile = tuileDeGrille({ gridChildVerticalAlign: 'CENTER' });
+test('un enfant de grille qui remplit sa cellule ne réclame rien', async () => {
+  const tuile = tuileDeGrille({ layoutSizingVertical: 'FILL' });
   const warnings: string[] = [];
 
   await extractLayout(
@@ -650,7 +650,7 @@ test('un enfant de grille explicitement aligné garde la règle commune', async 
     warnings,
   );
 
-  assert.ok(warnings.some((warning) => warning.includes('« Tile » — height')));
+  assert.equal(warnings.some((warning) => warning.includes('« Tile » — height')), false);
 });
 
 test('les pistes d’une grille sont publiées, et une piste figée se signale', async () => {
@@ -689,5 +689,5 @@ test('une grille dont Figma n’expose pas les pistes ne publie ni n’avertit',
   // pas ne doit rien faire dire au contrat.
   assert.equal('columnSizes' in layout, false);
   assert.equal('rowSizes' in layout, false);
-  assert.equal(warnings.some((warning) => warning.includes('à la main')), false);
+  assert.equal(warnings.some((warning) => warning.includes('nombre en pixels')), false);
 });

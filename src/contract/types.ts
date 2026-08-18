@@ -337,11 +337,9 @@ export type ChildStructure = {
    * Figma tient en `Fixed`. Un axe en `Hug` ou en `Fill` n'apparaît pas ici :
    * il est déjà décrit par l'absence, ou par `flexGrow` / `alignSelf`.
    *
-   * Sous un parent `layout: grid`, l'absence se lit autrement : c'est la CELLULE
-   * qui décide, décrite par `columnSizes` / `rowSizes` et par la place du layer.
-   * Le layer ne publie alors sa dimension que s'il cite une variable — une
-   * décision qui lui appartient malgré la cellule — et son silence ne vaut
-   * jamais `Hug`.
+   * Une grille ne change pas cette lecture : un enfant qui remplit sa cellule
+   * est en `Fill`, donc déjà décrit par l'absence ; un enfant qui porte sa
+   * propre dimension la publie comme n'importe quel slot.
    */
   size?: SlotSize;
   /**

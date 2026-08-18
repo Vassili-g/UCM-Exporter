@@ -94,13 +94,15 @@ export function gridTrackSizes(
       .map((size, index) => (size === null ? index + 1 : 0))
       .filter((rang) => rang > 0);
     if (figees.length > 0) {
+      const plusieurs = figees.length > 1;
       warnings.push(
-        `Layer « ${node.name} » : sa grille fixe la taille de ${figees.length > 1 ? 'ses' : 'sa'} ` +
-          `${nom}${figees.length > 1 ? 's' : ''} ${figees.join(', ')} à la main. Le contrat ne ` +
-          `publie pas un nombre écrit à la main : le développeur ne saura pas quelle place ` +
-          `${figees.length > 1 ? 'ces pistes prennent' : 'cette piste prend'}. Réglez-${figees.length > 1 ? 'les' : 'la'} ` +
-          `sur « Fill » ou « Hug » et portez cette dimension sur les layers que la grille ` +
-          `dispose, reliée à une variable, puis réexportez.`,
+        `Layer « ${node.name} » : la taille ${plusieurs ? 'des' : 'de la'} ${nom}` +
+          `${plusieurs ? 's' : ''} ${figees.join(', ')} de sa grille est un nombre en pixels. ` +
+          `Le contrat ne publie pas un nombre écrit à la main : le développeur ne saura pas ` +
+          `quelle place ${plusieurs ? 'ces pistes prennent' : 'cette piste prend'}. Donnez leur ` +
+          `taille aux layers que cette grille y dispose, reliée à une variable, et réglez ` +
+          `${plusieurs ? 'ces pistes' : 'cette piste'} sur « Hug » pour qu'${plusieurs ? 'elles suivent' : 'elle suive'} ` +
+          `; puis réexportez.`,
       );
     }
     return sizes;
@@ -111,29 +113,6 @@ export function gridTrackSizes(
   return {
     ...(columnSizes ? { columnSizes } : {}),
     ...(rowSizes ? { rowSizes } : {}),
-  };
-}
-
-/**
- * Axes dont la CELLULE décide, pour un enfant de grille resté dans le flux.
- *
- * Figma étire un enfant dans sa cellule tant que son alignement vaut `AUTO` : sa
- * boîte est alors celle de la cellule, décrite par les pistes et par la place du
- * calque, et lui réclamer une variable de taille demanderait un geste qui ne
- * changerait rien. Un alignement explicite le décolle au contraire des bords :
- * sa dimension redevient la sienne, et la règle commune s'applique.
- */
-export function gridCellSizedAxes(
-  parent: SceneNode,
-  child: SceneNode,
-): { width: boolean; height: boolean } {
-  if (!isGridAutoLayout(parent) || isAbsolutePositioned(child)) {
-    return { width: false, height: false };
-  }
-  const values = asPropertyBag(child);
-  return {
-    width: gridSelfAlignment(values.gridChildHorizontalAlign) === null,
-    height: gridSelfAlignment(values.gridChildVerticalAlign) === null,
   };
 }
 

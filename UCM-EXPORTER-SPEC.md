@@ -532,14 +532,11 @@ dans le flux : Figma en pose une sur chacun, et les redéduire supposerait de
 réimplémenter son placement automatique. Un enfant absolu n'en a pas — il est
 hors de la grille.
 
-**Sous une grille, c'est la cellule qui décide de la boîte.** Un enfant qui s'y
-étire — son alignement vaut `AUTO` sur cet axe — ne se voit donc réclamer aucune
-variable de taille : `columnSizes`, `rowSizes` et sa place disent déjà quelle
-place il occupe, et le geste demandé au designer ne changerait rien. Il publie
-sa dimension seulement s'il cite une variable, comme le composant lui-même. Un
-enfant explicitement aligné, lui, s'est décollé des bords de sa cellule : sa
-dimension redevient la sienne, et la règle commune s'applique — figée sans
-variable, elle avertit.
+Une grille ne dispense aucun calque de la règle commune. Un enfant qui remplit
+sa cellule est en `Fill` : sa dimension est déjà décrite par l'absence, et rien
+ne lui est réclamé. Un enfant qui porte SA dimension la porte pour de bon,
+cellule ou pas — la taire ferait perdre au contrat une taille que Figma applique,
+et le développeur rendrait le calque à celle de son contenu.
 
 `columnSizes` et `rowSizes` portent la taille de chaque piste dans le
 vocabulaire de `grid-template-*` : `"1fr"` (piste `FLEX`, avec son facteur),
@@ -1121,14 +1118,12 @@ padding comme complet quand l'extraction n'en publiait rien. Un consommateur qui
 c'est ce qui en fait une version majeure. La règle du groupe complet ne change
 pas : un seul côté relié ne publie toujours rien et avertit.
 
-**Sous une grille, c'est la cellule qui décide.** Les pistes sont publiées
+**Une grille publie ce qui décide de la boîte de ses enfants.** Les pistes
 (`columnSizes`, `rowSizes`, en `1fr` / `fit-content`, `null` pour une piste figée
-à la main, sous avertissement) et chaque enfant publie son ancre (`columnStart`,
-`rowStart`, en valeurs CSS comptées à partir de 1). En contrepartie, un enfant
-qui s'étire dans sa cellule ne se voit plus réclamer une variable pour une
-hauteur que la grille lui impose : le contrat le disait manquant alors que rien
-ne manquait. L'absence de `size` sous un parent `layout: grid` se lit donc « la
-cellule décide », et non plus « Hug ».
+à la main, sous avertissement) et l'ancre de chaque enfant (`columnStart`,
+`rowStart`, en valeurs CSS comptées à partir de 1). Sans elles, une tuile qui
+remplit sa cellule n'avait nulle part où lire sa taille. La règle commune, elle,
+ne change pas : l'absence de `size` se lit partout de la même façon.
 
 `meta.figma.url` n'est plus perdu : le manifest déclare `enablePrivatePluginApi`,
 et `figma.fileKey` est fourni à ce plugin. L'avertissement qui présentait la
