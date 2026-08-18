@@ -187,13 +187,17 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
       'outlined',
     ]);
     assert.ok(contrat.variants.every((entry: any) => (
-      entry.tokens && entry.strokes && Array.isArray(entry.typography)
-        && Array.isArray(entry.composes) && entry.icons
+      entry.tokens && entry.strokes && contrat.variantViews[entry.view]
     )));
+    assert.equal(Object.keys(contrat.variantViews).length, 1);
     assert.deepEqual(Object.keys(contrat).sort(), [
-      'composes', 'icons', 'intent', 'meta', 'name', 'propertyBindings', 'props',
-      'rendering', 'stateModel', 'structure', 'textStyles', 'tokensUsed', 'variants',
+      'composes', 'icons', 'intent', 'meta', 'name', 'propertyBindingDefinitions',
+      'props', 'rendering', 'stateModel', 'structure', 'textStyles', 'tokensUsed',
+      'variantViews', 'variants',
     ]);
+    assert.equal('variantTokens' in contrat.structure, false);
+    assert.equal('variantStrokes' in contrat.structure, false);
+    assert.equal('variantTypography' in contrat.structure, false);
     assert.deepEqual(contrat.meta.coverage, { portable: 'partial' });
     assert.equal(contrat.meta.diagnostics.length, contrat.meta.warnings.length);
     assert.ok(contrat.meta.diagnostics.every((diagnostic: any) => (
@@ -301,8 +305,9 @@ test('une dépendance absente du variant de référence reste dans la variante e
   try {
     const contrat = JSON.parse((await handleExportComponent()).content);
 
-    assert.deepEqual(contrat.variants[0].composes, []);
-    assert.deepEqual(contrat.variants[1].composes, [
+    const views = contrat.variants.map((variant: any) => contrat.variantViews[variant.view]);
+    assert.deepEqual(views[0].composes, []);
+    assert.deepEqual(views[1].composes, [
       { component: 'Link', figmaLayer: 'Action secondaire' },
     ]);
     assert.deepEqual(contrat.composes, [
@@ -334,10 +339,12 @@ test('un COMPONENT standalone produit une variante exacte sans axe', async () =>
     assert.deepEqual(contrat.variants[0].tokens, {
       background: '{tokens.components.standalone.colors.background}',
     });
+    assert.ok(contrat.tokensUsed.includes('{tokens.components.standalone.colors.background}'));
     assert.deepEqual(contrat.variants[0].strokes, {});
-    assert.deepEqual(contrat.variants[0].typography, []);
-    assert.deepEqual(contrat.variants[0].composes, []);
-    assert.deepEqual(contrat.variants[0].icons, {});
+    const view = contrat.variantViews[contrat.variants[0].view];
+    assert.deepEqual(view.typography, []);
+    assert.deepEqual(view.composes, []);
+    assert.deepEqual(view.icons, {});
   } finally {
     figmaFaux.restaurer();
   }
@@ -455,10 +462,13 @@ test('les props propres au wrapper sont fusionnées avant leurs liaisons natives
     const contrat = JSON.parse((await handleExportComponent()).content);
 
     assert.equal(contrat.props.wrapperLabel.type, 'string');
-    assert.ok(contrat.propertyBindings.some((binding: any) => (
-      binding.prop === 'wrapperLabel'
-        && binding.figmaPropName === 'Wrapper label#2:3'
-        && binding.target === 'characters'
+    assert.ok(contrat.variants.some((variant: any) => (
+      (variant.bindings ?? []).some((placement: any) => {
+        const binding = contrat.propertyBindingDefinitions[placement.definition];
+        return binding.prop === 'wrapperLabel'
+          && binding.figmaPropName === 'Wrapper label#2:3'
+          && binding.target === 'characters';
+      })
     )));
     assert.equal(
       contrat.meta.warnings.some((warning: string) => (

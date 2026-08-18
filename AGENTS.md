@@ -49,17 +49,20 @@ tests/
 
 ## Invariants
 
-- La v8 publie uniquement le contrat portable : les données Figma utilisées
+- La v9 publie uniquement le contrat portable : les données Figma utilisées
   pendant l'extraction ne sont pas embarquées dans l'artefact. Toute limite de
   traduction produit un diagnostic et rend `meta.coverage.portable` partiel.
 - `variants` décrit chaque combinaison réellement présente depuis sa vraie
   racine, y compris un COMPONENT sans axe et une matrice clairsemée. Chaque
-  entrée porte son arbre, ses tokens, strokes, usages typographiques, icônes et
-  dépendances exacts. Le champ historique `structure` reste la projection du
-  variant de référence ; les enums ne réautorisent pas leur produit cartésien.
+  entrée porte ses tokens et strokes exacts et référence une vue complète de
+  `variantViews` pour son arbre, ses usages typographiques, ses icônes et ses
+  dépendances. Deux vues ne sont réunies que par égalité stricte, sans héritage
+  ni merge. `structure` reste la projection du variant de référence ; les enums
+  ne réautorisent pas leur produit cartésien.
 - Une propriété native garde son type (`INSTANCE_SWAP`, `SLOT`) et ses liaisons
-  `visible`, `characters` ou `mainComponent` dans `propertyBindings`, sans
-  rapprochement par nom de calque.
+  `visible`, `characters` ou `mainComponent` : leur définition stable vit dans
+  `propertyBindingDefinitions`, leur `nodeId` exact dans `variants[].bindings`,
+  sans rapprochement par nom de calque.
 - Aucune logique liée au nom d’un composant.
 - Figma reste traçable après toute normalisation (`figmaName`,
   `figmaLayer`).
@@ -91,9 +94,10 @@ tests/
   un tag, un texte, un dessin y sont des calques de ce contrat, décrits par la
   règle commune. `structureTree.publishesChildren` tranche l’unique exception —
   un cadre dont aucune branche ne mène à une dépendance ne publie rien — et les
-  chemins de `variantTypography` comme les signatures suivent cette même
+  chemins de typographie des vues comme les signatures suivent cette même
   réponse, sinon ils désigneraient des slots absents de `structure.children`.
-- Chaque `variants[].composes` se dérive de SON arbre publié, dans son ordre ;
+- Chaque `variantViews[variants[].view].composes` se dérive de SON arbre
+  publié, dans son ordre ;
   le `composes` global en est l'union ordonnée à cardinalité maximale, comme
   `tokensUsed` se dérive du contrat terminé.
   Le scan dit ce que Figma contient, `structure.children` dit ce que le contrat
@@ -113,7 +117,7 @@ tests/
   refuse une typographie qui désigne un slot absent. La profondeur est bornée, et
   la coupure est dite dès qu'elle emporte autre chose qu'un dessin.
 - Un conteneur publie TOUS ses calques rendables, à quelque profondeur qu'il
-  vive — jamais une sélection. `variantTokens` relève les couleurs du variant
+  vive — jamais une sélection. `variants[].tokens` relève les couleurs du variant
   entier : n'en publier qu'une partie ferait annoncer au contrat des peintures
   qu'aucun calque publié ne porte.
 - Une propriété Figma à effet visuel que le schéma ne sait pas écrire produit un
@@ -123,7 +127,7 @@ tests/
   activé par défaut sur toute frame, un masque est le mécanisme normal d'une
   icône, et l'alignement d'un texte en `Hug` n'a aucun effet.
 - Une typographie appartient à UN calque texte et vient de son text style.
-  `textStyles` lie le style à ses variables ; `variantTypography` situe son
+  `textStyles` lie le style à ses variables ; la vue exacte situe son
   usage sur chaque variant par un chemin de slots. Un slot à plusieurs textes
   décrit donc ses parts dans `children`. Les nodes représentés dans ses parts
   portent leurs visibilités ; les cibles graphiques non représentées restent
@@ -152,7 +156,7 @@ tests/
   slots, les icônes, les chemins de la typographie et les dimensions par taille.
 - Ce que l’élection écarte est dit. Un calque posé hors du node élu, ou à côté
   d’une dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni
-  visibilité alors que ses couleurs entrent dans `variantTokens` : il produit
+  visibilité alors que ses couleurs entrent dans `variants[].tokens` : il produit
   donc un avertissement.
 - Une propriété Figma que le schéma ne sait pas porter — grille, position
   absolue — avertit au lieu de disparaître. `layout` reste publié parce que sa

@@ -25,7 +25,7 @@ import { variantRoleWarnings } from './semantics';
 import type {
   ComposedDependency,
   ContractStructure,
-  ContractVariant,
+  ExtractedContractVariant,
   SizeDimensions,
   TextStyleDefinition,
 } from './types';
@@ -83,7 +83,7 @@ export async function extractStructure(
   /** Compatibilité historique ou documentation, sans perte dans la vue exacte. */
   notices: string[];
   /** Une structure portable par combinaison réellement présente. */
-  variants: ContractVariant[];
+  variants: ExtractedContractVariant[];
 }> {
   const warnings = [...matrixWarnings];
   const notices: string[] = [];
@@ -166,9 +166,9 @@ export async function extractStructure(
       notices.push(
         `Structure différente sur ${divergentVariants.length} variant(s), ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
-          `référence « ${referenceLayout.component.name} ». La vue exacte de chaque entrée de ` +
-          `« variants » conserve sa propre structure ; seul le champ historique « structure » ` +
-          `reste celui de la référence.`,
+          `référence « ${referenceLayout.component.name} ». La vue exacte référencée par ` +
+          `chaque entrée de « variants » conserve sa propre structure ; seule la projection ` +
+          `« structure » reste celle de la référence.`,
       );
     }
 
@@ -191,7 +191,7 @@ export async function extractStructure(
         `Auto layout différent sur ${flexDivergentVariants.length} variant(s), ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
           `référence « ${referenceLayout.component.name} ». Les vues exactes de « variants » ` +
-          `conservent leurs flux respectifs ; seul le champ historique « structure » reste celui ` +
+          `conservent leurs flux respectifs ; seule la projection « structure » reste celle ` +
           `de la référence.`,
       );
     }
@@ -248,11 +248,11 @@ export async function extractStructure(
 
   // Vue fidèle de chaque combinaison : elle part de la vraie racine du variant
   // et conserve donc les wrappers que l'ancienne projection de référence
-  // écartait par élection. Le champ historique `structure` reste produit pour
-  // les consommateurs 4.x–7.x ; `variants` est l'autorité de la 8.0.
+  // écartait par élection. `structure` reste la projection de référence ; les
+  // vues exactes sont l'autorité depuis la 8.0.
   const exactLayouts: Array<{
     entry: VariantMatrix['variants'][number];
-    structure: ContractVariant['structure'];
+    structure: ExtractedContractVariant['structure'];
     placed: PlacedDependencies;
   }> = [];
   for (const entry of matrix.variants) {
@@ -296,7 +296,7 @@ export async function extractStructure(
     composed,
     targetedLayers,
   );
-  const variants: ContractVariant[] = exactLayouts.map(({ entry, structure: exactStructure, placed }) => (
+  const variants: ExtractedContractVariant[] = exactLayouts.map(({ entry, structure: exactStructure, placed }) => (
     {
       nodeId: entry.component.id,
       figmaName: entry.component.name,

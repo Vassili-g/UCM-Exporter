@@ -30,7 +30,8 @@ runtime Figma, après un réexport réel du petit corpus.
 
 | Domaine | État |
 |---|---|
-| Écriture de la 8.0 | Implémentée sur `refactor/ucm-lossless-export` : contrat portable sans capture propriétaire, COMPONENT standalone, matrices clairsemées, vues autonomes par variante (arbre, tokens, strokes, typographie, icônes, composition), `INSTANCE_SWAP`, `SLOT`, liaisons natives et diagnostics structurés. Le Playground valide ces champs, le graphe conditionnel et dérive les seules combinaisons d'enums réelles. Reste la validation runtime : réexporter Alert et Button depuis Figma, sans éditer leurs JSON à la main |
+| Écriture de la 9.0 | Implémentée sur `main` : les vues exactes complètes sont dédupliquées dans `variantViews`, les définitions de liaisons dans `propertyBindingDefinitions`, et les trois index historiques de matrice sont retirés. Aucun merge partiel : chaque divergence crée une vue distincte. Le Playground résout et valide cette forme, y compris la composition conditionnelle et les références orphelines. Reste la validation runtime : réexporter le petit corpus depuis Figma, sans éditer les JSON à la main |
+| Écriture de la 8.0 | Validée par les réexports Figma Alert, Button et StressTest fusionnés dans le Playground : COMPONENT standalone, matrices clairsemées, vues exactes par variante, `INSTANCE_SWAP`, `SLOT`, liaisons natives et diagnostics structurés. Cette validation a révélé la répétition massive des vues de Button et le faux diagnostic de structure sur les icônes interchangeables, fermés par la 9.0 |
 | Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
 | Écriture de la 7.0 | Le moteur l'écrit et le Playground l'accepte : sa plage auditée va désormais de la 4.2 à la 7.0, grille, pistes, ancres et position absolue comprises, et le contrat StressTest y est fusionné. `padding.x`, `padding.y`, `radius` et la largeur d'un stroke sont polymorphes — une référence, ou le détail par côté — la grille publie ses pistes et la place de ses enfants — ce qui décide de la boîte d'une tuile — et `meta.figma.url` est de nouveau exporté. Aucun composant du Playground n'exerce encore ces formes : ses côtés partagent leurs variables et aucun n'emploie de grille, donc la 7.0 est auditée sans test de rendu |
 | Écriture de la 6.0 | `structure.children` descend à toute profondeur, la grille et la position absolue sont décrites. Absorbée par la 7.0, jamais consommée telle quelle |
@@ -48,17 +49,17 @@ runtime Figma, après un réexport réel du petit corpus.
 | Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
 | Tokens du code vérifiés contre leur contrat | Opérationnelle |
-| CI des deux repositories | Typecheck et build verts côté Exporter ; `npm run check`, tests et build verts côté Playground. Seuls les deux tests de corpus Exporter restent volontairement rouges jusqu'au réexport Figma 8.0 |
+| CI des deux repositories | Typecheck et build verts côté Exporter ; `npm run check`, tests et build verts côté Playground. Seuls les deux tests de corpus Exporter restent volontairement rouges jusqu'au réexport Figma 9.0 |
 | Rapport unique destiné au développeur | Opérationnel : `check.mjs` enchaîne les contrôles sans s’arrêter au premier échec, `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
 | Références de tokens du code | Opérationnelles : chemins assemblés et tokens absents du contrat sont bloquants ; audit visuel navigateur hors périmètre |
 | Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
-| Composants du consommateur | Button et Alert conformes à leurs contrats 4.9 : `check-contract` vérifie 39 références Alert et 254 références Button, avec parité et tokens du code |
+| Composants du consommateur | Button et Alert conformes à leurs contrats Figma 8.0, avec parité et tokens du code ; le prochain réexport exercera leur représentation compacte 9.0 |
 | Validation multi-composants | Partielle |
 | JSON Schema public | Non commencé |
 | Multi-marque au runtime | Modes exportés, consommation non implémentée |
 
 Le projet est un **prototype avancé** dont l’outillage tient : la chaîne
-Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 4.9, et les deux
+Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 8.0, et les deux
 repositories construisent et se testent. Alert et Button appliquent les text
 styles exportés à leurs vrais slots texte ; les tests relisent les cinq
 propriétés typographiques — `fontFamily`, `fontSize`, `fontWeight`,

@@ -156,7 +156,10 @@ test('les variantes aux mêmes coordonnées gardent leurs propres couleurs et st
   assert.deepEqual(structure.variantTokens, {
     focus: { background: '{colors.first.background}' },
   });
-  assert.ok(warnings.some((warning) => warning.includes('Les deux restent dans la liste exacte')));
+  assert.equal(
+    warnings.some((warning) => warning.includes('Les deux restent dans la liste exacte')),
+    false,
+  );
 });
 
 test('extractStructure conserve les warnings de la matrice de variantes', async () => {

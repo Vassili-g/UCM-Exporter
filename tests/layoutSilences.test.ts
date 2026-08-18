@@ -57,6 +57,28 @@ const alerteAvec = (slotAction: unknown) => ({
   findAll: findAllOn([slotAction]),
 } as unknown as ComponentNode);
 
+test('la signature structurelle identifie une icône interchangeable par son slot', () => {
+  const avecIcone = (name: string) => {
+    const icon = {
+      type: 'VECTOR', id: name, name, visible: true, boundVariables: {},
+      findAll: findAllOn([]),
+    };
+    const root = alerteAvec(icon);
+    lie(icon, root);
+    return root;
+  };
+  const iconNames = new Set(['circle-info', 'circle-check']);
+
+  assert.equal(
+    structureSignature(avecIcone('circle-info'), iconNames),
+    structureSignature(avecIcone('circle-check'), iconNames),
+  );
+  assert.notEqual(
+    structureSignature(avecIcone('circle-info')),
+    structureSignature(avecIcone('circle-check')),
+  );
+});
+
 test('un slot qui EST une dépendance ne réexporte pas ses visibilités internes', async () => {
   // `arrow-left-long` appartient au contrat du Button : `iconLeft` est SA prop,
   // pas celle de l'Alert qui l'embarque.

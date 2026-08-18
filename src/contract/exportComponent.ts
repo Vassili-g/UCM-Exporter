@@ -16,6 +16,7 @@ import { extractStructure } from './extractStructure';
 import { definePropOn, extractContractPropertyModel } from './parsers';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { extractPropertyBindings } from './propertyBindings';
+import { compactVariants } from './compactVariants';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { mergePropDescriptions } from './mergePropDescriptions';
@@ -29,10 +30,15 @@ import type {
   Contract,
   ContractMeta,
   ContractProp,
+  ExtractedContractVariant,
 } from './types';
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 9.0 : les vues exactes identiques sont cataloguées dans `variantViews`, et
+ * les liaisons natives partagent `propertyBindingDefinitions`. Chaque variant
+ * conserve ses feuilles et ses placements propres par référence exacte ; les
+ * trois anciens index parallèles de `structure` disparaissent.
  * 8.0 : `variants` publie un arbre portable par combinaison exacte, y compris
  * pour un COMPONENT standalone et un set clairsemé. `propertyBindings` situe
  * les liaisons natives, `INSTANCE_SWAP` et `SLOT` gardent leur type, et les
@@ -117,11 +123,11 @@ import type {
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '8.0';
+export const CONTRACT_VERSION = '9.0';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(
-  variants: ReadonlyArray<Contract['variants'][number]>,
+  variants: ReadonlyArray<ExtractedContractVariant>,
 ): ComposedDependency[] {
   const result: ComposedDependency[] = [];
   const maximumBySignature = new Map<string, number>();
@@ -292,7 +298,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   if (missingVariants) {
     warnings.push(
       `Component Set « ${componentSet.name} » : ${missingVariants.missing} combinaison(s) du `
-        + `produit cartésien de ses axes n'existent pas. Le contrat 8.0 publie uniquement les `
+        + `produit cartésien de ses axes n'existent pas. Le contrat ${CONTRACT_VERSION} publie uniquement les `
         + `combinaisons exactes présentes dans « variants » ; aucune combinaison interdite `
         + `n'est inventée.`,
     );
@@ -439,7 +445,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   }
   warningCursor = warnings.length;
 
-  // Chaque `variants[].composes` se DÉRIVE de son arbre exact, comme
+  // Chaque composition de vue se DÉRIVE de son arbre exact, comme
   // `tokensUsed` se dérive du contrat terminé. Le champ global en est l'union
   // ordonnée à cardinalité maximale : une dépendance conditionnelle ne disparaît
   // donc pas seulement parce qu'elle manque au variant de référence.
@@ -484,6 +490,13 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     severity: 'warning' as const,
     message,
   }));
+  const compacted = compactVariants(extracted.variants, propertyBindings);
+  const {
+    variantTokens: _variantTokens,
+    variantStrokes: _variantStrokes,
+    variantTypography: _variantTypography,
+    ...referenceStructure
+  } = extracted.structure;
   const contract: Contract = {
     name: componentSet.name || 'Component',
     meta: {
@@ -495,9 +508,10 @@ export async function handleExportComponent(): Promise<ComponentExport> {
       },
     },
     props,
-    variants: extracted.variants,
-    propertyBindings,
-    structure: extracted.structure,
+    variantViews: compacted.variantViews,
+    propertyBindingDefinitions: compacted.propertyBindingDefinitions,
+    variants: compacted.variants,
+    structure: referenceStructure,
     stateModel,
     rendering: renderingSemanticsFor(extracted.discoveredRoles),
     icons,
@@ -513,8 +527,9 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   // de `variants`, elles, font partie du contrat et contribuent normalement.
   contract.tokensUsed = Array.from(collectTokenReferences({
     props: contract.props,
+    variantViews: contract.variantViews,
     variants: contract.variants,
-    propertyBindings: contract.propertyBindings,
+    propertyBindingDefinitions: contract.propertyBindingDefinitions,
     structure: contract.structure,
     stateModel: contract.stateModel,
     rendering: contract.rendering,

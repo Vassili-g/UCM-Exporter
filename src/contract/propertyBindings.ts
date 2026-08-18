@@ -2,7 +2,7 @@
 import type { VariantMatrix } from './componentTree';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
-import type { ComponentPropertyBinding } from './types';
+import type { ExtractedPropertyBinding } from './types';
 
 function pathFrom(node: SceneNode, root: ComponentNode): string[] {
   const path: string[] = [];
@@ -24,8 +24,8 @@ export function extractPropertyBindings(
   publicKeyByFigmaName: ReadonlyMap<string, string>,
   warnings: string[],
   composed: ComposedInstances = new Map(),
-): ComponentPropertyBinding[] {
-  const bindings: ComponentPropertyBinding[] = [];
+): ExtractedPropertyBinding[] {
+  const bindings: ExtractedPropertyBinding[] = [];
   const unresolved = new Set<string>();
 
   for (const entry of matrix.variants) {
@@ -57,8 +57,8 @@ export function extractPropertyBindings(
           figmaPropName,
           target,
           nodeId: node.id,
+          variantNodeId: entry.component.id,
           figmaPath: pathFrom(node, entry.component),
-          variant: { ...entry.values },
         });
       }
     }

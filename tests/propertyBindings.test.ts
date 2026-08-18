@@ -45,15 +45,15 @@ test('les liaisons natives visible, characters et mainComponent gardent leur cib
   assert.deepEqual(bindings, [
     {
       prop: 'showIcon', figmaPropName: 'Show icon#1:1', target: 'visible',
-      nodeId: 'Icon-id', figmaPath: ['Content', 'Icon'], variant: { state: 'default' },
+      nodeId: 'Icon-id', variantNodeId: 'State=Default-id', figmaPath: ['Content', 'Icon'],
     },
     {
       prop: 'iconChoice', figmaPropName: 'Icon choice#1:2', target: 'mainComponent',
-      nodeId: 'Icon-id', figmaPath: ['Content', 'Icon'], variant: { state: 'default' },
+      nodeId: 'Icon-id', variantNodeId: 'State=Default-id', figmaPath: ['Content', 'Icon'],
     },
     {
       prop: 'label', figmaPropName: 'Label#1:3', target: 'characters',
-      nodeId: 'Label-id', figmaPath: ['Content', 'Label'], variant: { state: 'default' },
+      nodeId: 'Label-id', variantNodeId: 'State=Default-id', figmaPath: ['Content', 'Label'],
     },
   ]);
   assert.deepEqual(warnings, []);
@@ -93,8 +93,8 @@ test('une liaison portée par la racine du variant n’est publiée qu’une foi
     figmaPropName: 'Visible#8:3',
     target: 'visible',
     nodeId: 'Simple-id',
+    variantNodeId: 'Simple-id',
     figmaPath: [],
-    variant: {},
   }]);
   assert.deepEqual(warnings, []);
 });

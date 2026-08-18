@@ -88,8 +88,9 @@ produire un contrat cohérent.
 
 Figma est l'entrée de construction du contrat, pas une dépendance de son
 consommateur. Le contrat publié contient uniquement la projection UCM utile :
-`props`, `variants`, `structure`, `rendering`, `tokensUsed` et les métadonnées
-de traçabilité. Il n'embarque ni représentation propriétaire ni asset de rendu.
+`props`, `variantViews`, `variants`, `structure`, `rendering`, `tokensUsed` et
+les métadonnées de traçabilité. Il n'embarque ni représentation propriétaire ni
+asset de rendu.
 
 Toute information nécessaire au consommateur doit donc être modélisée dans le
 vocabulaire portable. Lorsqu'elle ne peut pas l'être sans ambiguïté,
@@ -97,13 +98,15 @@ vocabulaire portable. Lorsqu'elle ne peut pas l'être sans ambiguïté,
 contrat ne masque pas la perte et ne demande pas au consommateur d'interpréter
 une autre représentation.
 
-Chaque entrée de `variants` est une vue portable autonome de la combinaison
-réelle : son arbre, ses peintures, ses strokes, ses usages typographiques, ses
-icônes situées et ses dépendances. Les champs historiques de `structure`
-restent des index pratiques et une projection de référence, mais ne peuvent
-plus effacer une différence intentionnelle entre variantes. Les enums de
-`props` décrivent les valeurs possibles axe par axe ; la liste `variants`
-décrit les seules combinaisons autorisées.
+Chaque entrée de `variants`, jointe à la vue complète qu'elle référence dans
+`variantViews`, est une vue portable autonome de la combinaison réelle : arbre,
+peintures, strokes, usages typographiques, icônes situées, dépendances et
+liaisons natives. Deux combinaisons ne partagent une vue que si ces blocs sont
+strictement identiques ; il n'existe ni héritage ni merge implicite. `structure`
+garde la projection de référence et les dimensions par taille, mais plus aucun
+index parallèle de la matrice. Les enums de `props` décrivent les valeurs
+possibles axe par axe ; la liste `variants` décrit les seules combinaisons
+autorisées.
 
 ## 5. Le workflow
 
