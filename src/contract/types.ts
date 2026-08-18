@@ -288,11 +288,11 @@ export type SlotSize = string | { width?: string; height?: string };
  * variables séparément (`padding-left`, `radius-top-left`) : les refuser
  * demandait au designer d'aplatir une décision qui lui appartient.
  *
- * Le détail est complet ou n'existe pas. Un seul côté relié ne publie rien et
- * avertit : la règle des groupes composés ne change pas, seule l'exigence
- * « une seule et même variable » disparaît.
+ * Le détail peut être partiel lorsque les autres côtés sont au défaut neutre
+ * de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les
+ * côtés reliés restent néanmoins utilisables par le consommateur.
  */
-export type SidedRefs<K extends string> = string | Record<K, string>;
+export type SidedRefs<K extends string> = string | Partial<Record<K, string>>;
 
 /** Padding horizontal : une référence, ou le détail gauche/droite. */
 export type PaddingX = SidedRefs<'left' | 'right'>;
@@ -312,12 +312,18 @@ export type StrokeWidth = SidedRefs<'top' | 'right' | 'bottom' | 'left'>;
 /**
  * Taille d'UNE piste de grille, dans le vocabulaire de `grid-template-*`.
  *
- * `1fr` pour une piste qui se partage la place, `fit-content` pour une piste qui
- * se règle sur son contenu. Une piste figée à la main vaut `null` : c'est un
- * nombre de maquette, que le contrat n'écrit jamais, et l'export le signale. La
- * place dans le tableau est conservée — retirer la piste décalerait les autres.
+ * `1fr` pour une piste qui se partage la place, `fit-content(100%)` pour une
+ * piste qui se règle sur son contenu. Exception propre aux grilles, une piste
+ * FIXED conserve sa valeur calculée en pixels (`120px`) : elle décrit la
+ * structure de la grille sans devenir un token.
  */
-export type GridTrack = string | null;
+export type GridTrack = `${number}fr` | 'fit-content(100%)' | `${number}px` | 'auto';
+
+/** Emplacements exacts des peintures et contours d'une vue, par clé de feuille. */
+export type VariantPaintPlacements = {
+  fills: Record<string, string[][]>;
+  strokes: Record<string, string[][]>;
+};
 
 /**
  * Bornes de taille, toujours tokenisées.
@@ -698,6 +704,8 @@ export type ContractVariantView = {
   composes: ComposedDependency[];
   /** Slots exacts des icônes, relatifs à `structure.children`. */
   icons: Record<string, VariantIconPlacement>;
+  /** Calques exacts que chaque clé de peinture ou de contour habille. */
+  paintPlacements: VariantPaintPlacements;
 };
 
 /**

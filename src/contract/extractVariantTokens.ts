@@ -95,6 +95,28 @@ function strokeLeaf(
   ]));
 }
 
+/** Cibles Figma internes, converties ensuite en chemins par l'arbre déjà extrait. */
+export type VariantPaintNodeIds = {
+  fills: Record<string, string[]>;
+  strokes: Record<string, string[]>;
+};
+
+function placementNodeIds(
+  leaf: { paints: readonly VariantColor[]; strokes: readonly VariantStrokeColor[] },
+  keys: ReadonlyMap<string, string>,
+): VariantPaintNodeIds {
+  return {
+    fills: Object.fromEntries(leaf.paints.map((color) => [
+      keys.get(color.token) ?? color.token,
+      color.nodeIds ?? [],
+    ])),
+    strokes: Object.fromEntries(leaf.strokes.map((color) => [
+      keys.get(color.token) ?? color.token,
+      color.nodeIds ?? [],
+    ])),
+  };
+}
+
 /**
  * Point d'entrée : construit l'arbre complet des tokens de variantes
  * (tous les axes, toutes les couleurs).
@@ -113,6 +135,8 @@ export async function extractVariantTokens(
   tokensByComponent: Map<ComponentNode, SlotTokens>;
   /** Strokes exacts de chaque node, avec la même garantie que `tokensByComponent`. */
   strokesByComponent: Map<ComponentNode, SlotStrokes>;
+  /** Cibles internes de chaque clé, converties en chemins de slots par `extractStructure`. */
+  paintNodeIdsByComponent: Map<ComponentNode, VariantPaintNodeIds>;
   /** Rôle de rendu déduit de chaque clé qui n'en nomme aucun, sur toute la matrice. */
   discoveredRoles: Map<string, string>;
 }> {
@@ -120,6 +144,7 @@ export async function extractVariantTokens(
   const variantStrokes: VariantStrokes = {};
   const tokensByComponent = new Map<ComponentNode, SlotTokens>();
   const strokesByComponent = new Map<ComponentNode, SlotStrokes>();
+  const paintNodeIdsByComponent = new Map<ComponentNode, VariantPaintNodeIds>();
   const discoveredRoles = new Map<string, string>();
   const reportedRoleConflicts = new Set<string>();
   // Un Component Set a toujours au moins un axe, mais on se protège d'une
@@ -189,6 +214,7 @@ export async function extractVariantTokens(
   for (const { entry, leaf } of exact) {
     tokensByComponent.set(entry.component, paintLeaf(leaf.paints, keys));
     strokesByComponent.set(entry.component, strokeLeaf(leaf.strokes, keys));
+    paintNodeIdsByComponent.set(entry.component, placementNodeIds(leaf, keys));
     // Le rôle d'une clé est relevé sur toute la matrice. Une clé qui NOMME un
     // rôle partagé n'a rien à publier : le consommateur la résout directement.
     // Le même token posé sur des calques de natures différentes selon le variant
@@ -226,6 +252,7 @@ export async function extractVariantTokens(
     variantStrokes,
     tokensByComponent,
     strokesByComponent,
+    paintNodeIdsByComponent,
     discoveredRoles,
   };
 }

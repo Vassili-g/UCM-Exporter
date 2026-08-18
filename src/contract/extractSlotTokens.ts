@@ -29,17 +29,18 @@ const BOUND_FIELDS = ['fills', 'strokes'] as const;
 /**
  * Une couleur liée d'un variant, telle que Figma la porte.
  *
- * Aucun `SceneNode` n'en fait partie : tous les avertissements de ce niveau
- * sont locaux à un variant et sont émis ici. Laisser un node franchir la
- * frontière du module l'exposerait à `collectTokenReferences`, qui parcourt une
- * valeur en profondeur sans garde-fou de cycle — `parent` ↔ `children` y
- * ferait exploser la pile.
+ * Aucun `SceneNode` n'en fait partie : seuls ses identifiants internes peuvent
+ * franchir la frontière afin d'être convertis ensuite en chemins publics. Cela
+ * évite aussi d'exposer à `collectTokenReferences` les cycles
+ * `parent` ↔ `children` de l'arbre Figma.
  */
 export type VariantColor = {
   /** Nom NU du token, sans accolades : la clé s'en déduit. */
   token: string;
   /** Rôle de rendu : déclaré par le dernier segment, sinon déduit du calque. */
   role: string;
+  /** Identifiants internes des calques qui portent ce token dans ce variant. */
+  nodeIds?: string[];
 };
 
 /** Une couleur de contour, avec la géométrie que le contrat publie à côté. */
@@ -223,6 +224,7 @@ export async function getSlotTokens(
         role,
         width: toSidedRef(width),
         align: binding.strokeStyle?.align ?? null,
+        ...(binding.node.id ? { nodeIds: [binding.node.id] } : {}),
       };
       const known = seenStrokes.get(binding.token);
       if (!known) {
@@ -241,7 +243,12 @@ export async function getSlotTokens(
       }
       // Même token, géométrie différente : la feuille n'a qu'une entrée par
       // token, ce cas reste réellement irreprésentable.
-      if (memeLargeur(known.value.width, value.width) && known.value.align === value.align) continue;
+      if (memeLargeur(known.value.width, value.width) && known.value.align === value.align) {
+        if (binding.node.id && !known.value.nodeIds?.includes(binding.node.id)) {
+          known.value.nodeIds = [...(known.value.nodeIds ?? []), binding.node.id];
+        }
+        continue;
+      }
       warnings.push(
         `Layer « ${binding.node.name} » : son stroke ${toRef(binding.token)} est déjà posé par le ` +
           `layer « ${known.node.name} », avec une stroke weight ou un alignement différents. Le ` +
@@ -263,10 +270,20 @@ export async function getSlotTokens(
             `réexportez.`,
         );
       }
+      if (binding.node.id) {
+        const color = paints.find((candidate) => candidate.token === binding.token);
+        if (color && !color.nodeIds?.includes(binding.node.id)) {
+          color.nodeIds = [...(color.nodeIds ?? []), binding.node.id];
+        }
+      }
       continue;
     }
     seenPaints.set(binding.token, { node: binding.node, role });
-    paints.push({ token: binding.token, role });
+    paints.push({
+      token: binding.token,
+      role,
+      ...(binding.node.id ? { nodeIds: [binding.node.id] } : {}),
+    });
   }
 
   return { paints, strokes };

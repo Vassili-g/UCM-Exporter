@@ -13,7 +13,7 @@ import {
   flexLayoutSignature,
   structureSignature,
 } from '../src/contract/extractLayout';
-import { flexItemProperties } from '../src/contract/flexLayout';
+import { flexItemProperties, gridTrackSizes } from '../src/contract/flexLayout';
 import { findLayoutNode } from '../src/contract/layoutNodes';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
@@ -693,25 +693,24 @@ test('un enfant de grille publie la dimension qu’il relie à une variable', as
   assert.deepEqual(warnings.filter((warning) => warning.includes('« Tile »')), []);
 });
 
-test('les pistes d’une grille sont publiées, et une piste figée se signale', async () => {
+test('les pistes fixes d’une grille sont publiées en pixels avec une notice non bloquante', () => {
   const tuile = tuileDeGrille();
   const warnings: string[] = [];
+  const notices: string[] = [];
 
-  const layout = await extractLayout(
-    grilleDeTuiles(tuile, {
-      gridColumnSizes: [{ type: 'FLEX', value: 1 }, { type: 'FLEX', value: 2 }],
-      gridRowSizes: [{ type: 'HUG' }, { type: 'FIXED', value: 120 }, { type: 'FLEX' }],
-    }),
-    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
-    warnings,
-  );
+  const layout = gridTrackSizes(grilleDeTuiles(tuile, {
+    gridColumnSizes: [{ type: 'FLEX', value: 1 }, { type: 'FLEX', value: 2 }],
+    gridRowSizes: [{ type: 'HUG' }, { type: 'FIXED', value: 120 }, { type: 'FLEX' }],
+  }), warnings, notices);
 
   assert.deepEqual(layout.columnSizes, ['1fr', '2fr']);
-  // La piste figée vaut `null` : un nombre brut n'est jamais contractuel, et sa
-  // place dans le tableau est conservée.
-  assert.deepEqual(layout.rowSizes, ['fit-content', null, '1fr']);
-  assert.ok(warnings.some((warning) => (
-    warning.includes('« TilesGrid »') && warning.includes('ligne 2')
+  // La piste FIXED est une donnée structurelle non liable de la grille : elle
+  // reste en pixels sans devenir un token.
+  assert.deepEqual(layout.rowSizes, ['fit-content(100%)', '120px', '1fr']);
+  assert.deepEqual(warnings, []);
+  assert.ok(notices.some((notice) => (
+    notice.includes('« TilesGrid »') && notice.includes('piste')
+      && notice.includes('pixels') && notice.includes('aucune modification')
   )));
 });
 

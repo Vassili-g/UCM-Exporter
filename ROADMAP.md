@@ -2,12 +2,12 @@
 
 Ce document suit la maturité du projet et les validations restantes. Les
 principes sont dans [CONCEPT.md](./CONCEPT.md), le comportement actuel dans
-[UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md), et les idées non engagées dans
+[UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md), et les options non engagées dans
 [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 
 ## Objectif du MVP
 
-Le MVP doit prouver un flux complet :
+Le MVP doit éprouver un flux complet :
 
 ```text
 Figma → contrat et tokens → code → contrôles CI → utilisation par un agent
@@ -15,338 +15,136 @@ Figma → contrat et tokens → code → contrôles CI → utilisation par un ag
 
 Il doit établir deux résultats :
 
-- **robustesse** : les divergences couvertes sont détectées avant fusion ;
+- **robustesse** : les divergences couvertes sont détectées avant fusion et
+  reçoivent un diagnostic actionnable ;
 - **confiance** : le contrat suffit pour utiliser correctement l’API visuelle
-  d’un composant.
+  de plusieurs familles de composants.
 
-Le MVP n’a pas besoin de couvrir tout un catalogue. Il doit en revanche tenir
-sur plusieurs formes de composants, dont au moins un composant composé.
+Le but n’est pas de couvrir tout un catalogue, mais de tenir sans règle liée au
+nom d’un composant, dont au moins un composant composé.
 
 ## État actuel
 
-Ce tableau décrit la **branche courante des deux repositories**. Une capacité
-n'est dite validée qu'après ses tests automatisés et, lorsqu'elle dépend du
-runtime Figma, après un réexport réel du petit corpus.
+Ce tableau décrit la branche courante des deux repositories. Une capacité qui
+dépend de Figma n’est validée qu’après un export réel ; les JSON de référence ne
+sont jamais corrigés à la main.
 
 | Domaine | État |
 |---|---|
-| Écriture de la 9.0 | Implémentée sur `main` : les vues exactes complètes sont dédupliquées dans `variantViews`, les définitions de liaisons dans `propertyBindingDefinitions`, et les trois index historiques de matrice sont retirés. Aucun merge partiel : chaque divergence crée une vue distincte. Le Playground résout et valide cette forme, y compris la composition conditionnelle et les références orphelines. Reste la validation runtime : réexporter le petit corpus depuis Figma, sans éditer les JSON à la main |
-| Écriture de la 8.0 | Validée par les réexports Figma Alert, Button et StressTest fusionnés dans le Playground : COMPONENT standalone, matrices clairsemées, vues exactes par variante, `INSTANCE_SWAP`, `SLOT`, liaisons natives et diagnostics structurés. Cette validation a révélé la répétition massive des vues de Button et le faux diagnostic de structure sur les icônes interchangeables, fermés par la 9.0 |
-| Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
-| Écriture de la 7.0 | Le moteur l'écrit et le Playground l'accepte : sa plage auditée va désormais de la 4.2 à la 7.0, grille, pistes, ancres et position absolue comprises, et le contrat StressTest y est fusionné. `padding.x`, `padding.y`, `radius` et la largeur d'un stroke sont polymorphes — une référence, ou le détail par côté — la grille publie ses pistes et la place de ses enfants — ce qui décide de la boîte d'une tuile — et `meta.figma.url` est de nouveau exporté. Aucun composant du Playground n'exerce encore ces formes : ses côtés partagent leurs variables et aucun n'emploie de grille, donc la 7.0 est auditée sans test de rendu |
-| Écriture de la 6.0 | `structure.children` descend à toute profondeur, la grille et la position absolue sont décrites. Absorbée par la 7.0, jamais consommée telle quelle |
-| Écriture de la 5.5 | Le moteur l’écrit, personne ne la consomme encore : le corpus reste en 4.9, et les deux tests de corpus resteront rouges jusqu’à un réexport Figma d’Alert et de Button. Les 5.1, 5.3, 5.4 et 5.5 sont neutres pour un composant qui nomme déjà ses rôles, ne pose aucune borne, ne passe pas à la ligne et ne conteste aucune clef — le réexport reste dû pour la 5.0 et la 5.2. Le Playground accepte la borne de version ; ni le wrap ni la clef allongée ne sont encore exercés par un de ses composants |
-| Reconstruction à froid | Menée sur la 4.8. La 4.9 a été absorbée en adaptant les composants et le skill, sans nouvelle reconstruction : le test froid a donc un contrat de retard |
-| Cadre enveloppant une ou plusieurs dépendances | Publié comme conteneur : il porte son flux, sa dimension figée et range chaque dépendance dans `children`. Seul le calque qui EST l’instance porte `composes` |
-| Export Flex 4.4 | Validé par les contrats Figma Alert et Button, leurs reconstructions froides, leurs tests et le corpus Figma de l’Exporter |
-| Export DTCG avec alias et modes | Opérationnel |
-| Téléchargement local et dépôt par PR GitHub | Opérationnel |
-| Validation des contrats, de la forme des props et des références de tokens | Opérationnelle |
-| Contrat accepté avant son implémentation | Opérationnel |
-| Parité statique dès que le TSX existe | Props, booléens consommés et composition JSX couverts |
-| Composition entre composants | Export, graphe, cardinalité, cycles et dépendances conditionnelles couverts. Chaque variante dérive `composes` de son arbre exact ; le champ global agrège toutes les cibles à cardinalité maximale |
-| Types TypeScript et variables CSS dérivés | Opérationnels |
-| Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
-| Refus des valeurs brutes par `tokenVar` | Opérationnel |
-| Tokens du code vérifiés contre leur contrat | Opérationnelle |
-| CI des deux repositories | Typecheck et build verts côté Exporter ; `npm run check`, tests et build verts côté Playground. Seuls les deux tests de corpus Exporter restent volontairement rouges jusqu'au réexport Figma 9.0 |
-| Rapport unique destiné au développeur | Opérationnel : `check.mjs` enchaîne les contrôles sans s’arrêter au premier échec, `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
-| Références de tokens du code | Opérationnelles : chemins assemblés et tokens absents du contrat sont bloquants ; audit visuel navigateur hors périmètre |
-| Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
-| Composants du consommateur | Button et Alert conformes à leurs contrats Figma 8.0, avec parité et tokens du code ; le prochain réexport exercera leur représentation compacte 9.0 |
-| Validation multi-composants | Partielle |
-| JSON Schema public | Non commencé |
-| Multi-marque au runtime | Modes exportés, consommation non implémentée |
+| Contrat 10.0 | L’Exporter situe les peintures dans les vues exactes, conserve les pistes FIXED de grille en pixels et publie les côtés tokenisés clairsemés jusque sur les feuilles |
+| Consommation 10.0 | Le Playground accepte les versions 4.2 à 10.0 et valide les chemins de peintures, les pistes CSS et les groupes par côté de la v10 |
+| Validation Figma 9.0 | Alert, Button et StressTest ont été réexportés et fusionnés dans le Playground ; le corpus `tests/test-exports/` de l’Exporter reste en 4.9 et doit encore être renouvelé par un export réel |
+| Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
+| Structure portable | Flex, wrap, grille, position absolue, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat |
+| Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
+| Contrôles du Playground | Forme et version des contrats, graphe, parité statique, références de tokens, tests de rendu co-localisés, génération des types et du CSS |
+| Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
+| Test froid | Une reconstruction 9.0 d’Alert, Button et StressTest est présente dans le Playground. Le build est vert, mais quatre assertions des tests co-localisés d’Alert et Button lisent encore les index retirés en 9.0 ; `npm run check` reste rouge et le test froid n’est pas validé |
+| Multi-composants | Button, Alert, TileLink et StressTest ont une implémentation ; StressTest exerce grille, wrap, champs asymétriques et composition multiple, et TileLink publie désormais son sizing tokenisé |
+| Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
+| Interopérabilité | Pas encore de JSON Schema public ni de version propre pour `tokens.json` |
+| Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
 
-Le projet est un **prototype avancé** dont l’outillage tient : la chaîne
-Figma → PR → CI → `main` a été éprouvée jusqu'aux contrats 8.0, et les deux
-repositories construisent et se testent. Alert et Button appliquent les text
-styles exportés à leurs vrais slots texte ; les tests relisent les cinq
-propriétés typographiques — `fontFamily`, `fontSize`, `fontWeight`,
-`lineHeight`, `letterSpacing` — et la totalité des références déclarées. La grille et le positionnement absolu ne
-sont plus des angles morts du flux Flex : la première publie ses pistes, ses deux
-gaps et la place de chaque enfant, le second ses bords d'accroche. Ce qui reste
-hors du schéma — la distance d'un calque absolu à ses bords, une piste figée à la
-main — produit son avertissement, comme les calques écartés par l'élection du
-node de layout. Le **wrap**, lui, est désormais décrit :
-`wrap` et `rowGap` publient le passage à la ligne et l'espace entre les lignes. Le
-**dimensionnement**, lui, est complet : l'absence d'une dimension sur un slot
-vaut `fit-content`, puisqu'un remplissage se publie et qu'une dimension figée
-cite une variable ou avertit ; le composant publie toujours son propre
-comportement, en valeurs de `width` et de `height` ; et les bornes min/max, que
-le contrat demandait naguère de retirer, sont publiées par `bounds` dès qu'une
-variable les nomme. Seules celles d'un calque intermédiaire restent sans
-propriétaire, et avertissent.
-
-Deux réserves bornent ce qu’on peut en conclure. La robustesse est prouvée comme
-**détection** et non comme **prévention** : rien n’empêche la fusion d’une pull
-request rouge. Et la confiance n’est pas acquise : un composant peut rendre
-juste tout en échappant à la comparaison avec son contrat.
+Le projet est un **prototype avancé**. Le pipeline Figma → pull request → CI →
+`main` est éprouvé avec des contrats 9.0 réels ; la forme 10.0 est couverte par
+les tests purs mais attend encore son réexport Figma. Cette preuve porte sur
+l’extraction, la validation et la consommation statique ; elle ne prouve ni la
+fraîcheur d’un export, ni une ressemblance visuelle complète avec Figma.
 
 ## Fragilités connues
 
-### Une instance détachée rentre dans le contrat sans un mot
+### Une instance détachée n’est plus identifiable
 
-Une instance détachée redevient un `FRAME` : elle cesse d'être reconnue comme
-dépendance, et ses calques, ses textes et ses couleurs sont décrits par le
-contrat du parent au lieu d'être déclarés dans `composes`. C'est le symétrique
-exact de la limite ci-dessous, et rien ne le signale aujourd'hui.
+Une instance détachée redevient un `FRAME`. L’Exporter ne peut plus savoir
+qu’elle provenait d’un composant unifié : ses calques entrent dans le contrat du
+parent au lieu d’apparaître dans `composes`, sans diagnostic spécifique.
 
 ### Le scan des dépendances charge toutes les pages
 
-La 8.0 appelle `figma.loadAllPagesAsync()` puis indexe une fois tous les
-conteneurs `<Nom>-Rules`, marqueurs des contrats UCM autonomes. La dépendance
-qui vit sur une autre page est donc reconnue correctement sans confondre un
-wrapper interne avec un contrat. Le coût sur un très gros fichier reste à
-mesurer dans Figma ; il ne change pas le contrat produit, mais peut allonger
-l'export.
+L’Exporter appelle `figma.loadAllPagesAsync()` puis indexe les conteneurs de
+règles une seule fois. Cette lecture reconnaît correctement une dépendance
+placée sur une autre page, mais son coût reste à mesurer sur un très gros fichier
+Figma.
 
-### Les contrôles détectent, mais n’empêchent rien
+### La CI détecte sans empêcher la fusion
 
-Les deux repositories sont privés sur un plan GitHub qui n’ouvre pas les
-protections de branche ; l’API répond « Upgrade to GitHub Pro or make this
-repository public ». Une pull request rouge reste donc fusionnable. Aucun
-`CODEOWNERS` n’est déposé, si bien que l’arbitrage des sources
-([CONCEPT.md](./CONCEPT.md)) ne vit qu’en prose.
+Les repositories privés n’ont pas accès aux protections de branche avec le plan
+GitHub actuel. Sans protection de `main` ni `CODEOWNERS`, les contrôles restent
+consultatifs. La documentation doit donc parler de détection, jamais de
+prévention.
 
-C’est la seule fragilité qui ne se règle pas en écrivant du code : elle demande
-un changement de plan ou de visibilité. Tant qu’elle tient, « la CI détecte
-l’écart » est exact, « le code ne peut pas diverger » ne l’est pas.
+### La preuve du rendu reste ciblée
 
-### Une donnée du contrat peut être remplacée par une règle écrite dans le code
-
-Le code est écrit **contre** le contrat, qu’il n’interprète pas au runtime
-([CONCEPT.md](./CONCEPT.md)). Le contrat sert alors à vérifier les valeurs que
-le composant emploie — encore faut-il pouvoir les énumérer.
-
-Deux formes l’empêchent : un chemin de token assemblé à l’exécution, qu’il
-faudrait exécuter pour connaître, et une donnée du contrat reproduite par une
-règle — deviner quel rôle se peint à partir de la variante, câbler une
-correspondance sévérité → icône. Le composant rend juste et échappe au contrôle.
-
-La première forme est détectée. La seconde est couverte, pour les cas
-reconstruits, par des tests pilotés par le contrat qui relisent variantes,
-icônes, visibilités et flux Flex. Cette couverture reste ciblée : un nouveau
-champ ou une nouvelle branche de rendu doit recevoir son propre test de rendu.
-
-## Contrôles du code et rapport développeur
-
-### Principe : deux destinataires, une source
-
-Un constat porte un **propriétaire**, conformément à l’arbitrage des sources
-([CONCEPT.md](./CONCEPT.md)). Ce champ suffit à le router :
-
-| Propriétaire | Destination | Nature des constats |
-|---|---|---|
-| Designer | Commentaire de pull request | Contrat, tokens, props ou slots absents du code |
-| Développeur | Rapport en terminal et en CI | Valeurs brutes, tokens invérifiables, variables inexistantes |
-
-Le commentaire de pull request et le rapport développeur existent dans
-`check-contract.mjs`. Le rapport agrège les contrats, le graphe, la parité et
-les références de tokens du code, puis publie le même diagnostic dans le
-terminal, le résumé CI et le commentaire de pull request.
-
-### État du rapport développeur
-
-`check-contract` exécute ses validations de contrat, de graphe, de parité et de
-références de tokens avant de composer un diagnostic unique. Chaque constat
-nomme son propriétaire, le fichier concerné et le geste correctif.
-
-La chaîne globale `npm run check` ne s'arrête pas au premier échec :
-`check.mjs` exécute les tests, les tokens, `check-contract` puis la génération
-des types, et transmet les tests en échec à `check-contract` pour qu'ils
-figurent dans le même rapport. La règle qu'elle sert : **tout contrôle qui
-refuse une fusion laisse un message au designer**, y compris les sorties
-anticipées du garde-fou et l'échec de la construction, que le workflow ajoute au
-rapport.
-
-Cette chaîne n'inclut pas `tsc --noEmit`, qui vit dans `npm run build` : un
-`check` vert en local peut donc devenir rouge en CI sur une erreur de type.
-
-Un constat porte : contrôle, propriétaire, gravité, fichier, ligne, ce qui ne va
-pas, quoi faire.
-
-### Les contrôles
-
-| Contrôle | Ce qu’il attrape | Ce qu’il ne voit pas |
-|---|---|---|
-| Audit du rendu | Une variable CSS absente des tokens générés, une valeur qui n’en est pas une | Qu’un token valide soit le bon pour cette variante |
-| Tokens du code | Un chemin assemblé à l’exécution, une référence que le contrat ne déclare pas | Les données du contrat figées hors d’un chemin de token |
-| Valeurs brutes | Une couleur ou une dimension écrite à la main | Une valeur produite dynamiquement |
-| Tests pilotés par le contrat | Un rendu qui ne correspond plus au contrat après un changement de design | Ce qu’aucun test ne couvre |
-
-L’audit du rendu est le seul à garantir qu’un token **renommé** se voie : les
-contrôles de contrat ne relèvent que les références du contrat, jamais celles
-écrites dans le code. Sans lui, un renommage laisse une variable inexistante,
-que le navigateur ignore sans erreur.
-
-Les tests pilotés par le contrat relisent le contrat à chaque exécution. C’est
-ce qui fait d’eux le contrôle central : ils signalent une donnée du contrat
-figée dans le code au moment où elle devient un écart réel. Ils sont écrits à la
-main, un fichier par composant — `Alert.test.tsx` et `Button.test.tsx` — donc
-hors de la règle « aucun contrôle ne connaît le nom d’un composant ». Rendre
-cette vérification générique fait l’objet d’une proposition non décidée,
-[PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md).
-
-### Suite ciblée
-
-| # | Étape | Motif de l’ordre |
-|---|---|---|
-| 1 | Étendre les tests de rendu pilotés par contrat au prochain cas réel | Toute donnée figée hors d’une référence de token doit avoir une preuve dynamique |
-| 2 | Mesurer les valeurs brutes sur un corpus réel | Régler les faux positifs avant de rendre ce contrôle bloquant |
-| 3 | Écrire les limites de chaque contrôle avec son diagnostic | Éviter que les garanties soient surinterprétées |
-
-Une option reste ouverte à l’étape 4 : porter les contrôles statiques dans un
-linter, pour un retour dans l’éditeur et des exceptions justifiées et traçables.
-Le rapport et les contrôles fonctionnent sans lui.
+Les références de tokens littérales sont comparables au contrat ; un chemin
+assemblé à l’exécution est refusé. En revanche, une donnée visuelle recopiée
+dans une règle de code peut échapper à l’analyse statique. Des tests de rendu
+pilotés par le contrat existent pour Alert et Button, mais ils doivent suivre la
+résolution v9 et aucun vérificateur générique n’exerce encore tous les composants
+et toutes leurs vues exactes. La proposition correspondante est détaillée dans
+[PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) ; elle n’est pas engagée.
 
 ## Prochaines validations
 
-### 1. Éprouver la généricité
+### 1. Fermer la validation 10.0
 
-Tester le flux complet sur quelques composants choisis pour leurs différences,
-pas pour leur nombre :
+1. Réexporter Alert et Button depuis Figma vers `tests/test-exports/` afin que le
+   corpus de l’Exporter corresponde au schéma courant.
+2. Réexporter StressTest et vérifier visuellement TilesGrid, Divider, TileLink,
+   ScaleWrap et les peintures situées, sans modifier ses TSX.
+3. Adapter les quatre tests co-localisés historiques d’Alert et Button à
+   `variants` / `variantViews`, puis obtenir `npm run check` vert.
 
-- un composant simple avec plusieurs axes ;
+### 2. Éprouver d’autres familles de composants
+
+Choisir les cas pour leur différence, pas pour leur nombre :
+
 - un composant interactif avec booléens et états ;
-- un composant composé avec plusieurs dépendances ;
-- un composant dont la structure ou les icônes changent selon les variantes ;
-- un composant qui emploie réellement wrap, une grille, un padding asymétrique
-  ou une propriété typographique non couverte.
+- un composé avec plusieurs types de dépendances ;
+- un composant qui exerce réellement wrap, grille ou position absolue ;
+- un composant dont la typographie ou la structure varie entre deux vues ;
+- un composant qui expose un champ à côtés asymétriques.
 
-Pour chaque cas, relever uniquement une décision qu’un agent ne peut pas prendre
-depuis le contrat : node Figma concerné, propriété manquante, effet visuel et
-propriété minimale qui la fermerait. L’absence d’écart est aussi un résultat :
-elle interdit d’ajouter un champ par anticipation. Un nouveau champ de contrat ne
-se justifie qu’à partir d’une limite réelle, et les conditions d’une extension
-de structure sont posées dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
+Une limite ne justifie un nouveau champ que si le contrat ne permet aucune
+décision correcte sur un cas réel. Les options correspondantes restent dans
+[PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 
-Un composant d’épreuve à plusieurs surfaces peintes — une échelle de six
-échantillons, trois couleurs de texte dans un même cadre — a déjà donné son
-premier résultat, et il portait sur le moteur plutôt que sur le schéma : le rôle
-de rendu était lu sur le nom du token, et le renommage que l’export réclamait
-aurait fait perdre toutes les couleurs d’un variant sauf une. La 5.1 lit
-désormais le calque, et la 5.5 a fermé la perte qui subsistait quand deux
-variables finissaient par le même segment. Ce que ce composant établit encore
-comme limite — situer chaque surface peinte dans `structure.children` — est
-consigné dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) et n’appelle pas de
-champ nouveau tant qu’un composant du catalogue ne le réclame pas.
+### 3. Éprouver le workflow d’équipe
 
-**Button** couvre le premier point, **Alert** le quatrième et entame le
-troisième : elle embarque une dépendance — une seule, pas plusieurs — et change
-d’icône selon la sévérité. Restent un composé à plusieurs dépendances, un
-composant interactif à booléens (Checkbox, TextField) et un composant qui expose
-une propriété Figma non couverte.
-
-Un troisième passage de ce même composant d’épreuve — un composant à sept
-dépendances, un cadre en wrap et deux dépendances rangées avec un tag — a livré
-quatre résultats, dont trois portaient encore sur le moteur :
-
-- les couleurs d’une dépendance entraient dans le contrat du parent, par le
-  calque de l’instance que le parcours conserve pour la décrire comme un slot.
-  Elles y évinçaient, sur la clef `background`, trois couleurs du composant ;
-- ses dimensions pouvaient de la même façon la faire élire node de layout, ce
-  qui aurait vidé `structure.children` sans un mot. Aucun export ne l’avait
-  encore montré — il fallait une dépendance mieux tokenisée que son parent ;
-- un cadre qui range des dépendances ET autre chose perdait cet autre chose. Il
-  publie désormais tous ses calques ;
-- le **wrap** était le quatrième, et le seul à demander un champ : c’est la 5.4.
-
-Un quatrième passage a livré le cinquième résultat, et lui aussi portait sur le
-moteur : deux calques du même composant dont les variables finissent par le même
-segment se disputaient une clef de la feuille de variant, et l’export en jetait
-une. Le design Figma était pourtant correct — le design system nommait déjà
-chaque surface, `…userinput.colors.background` et `…divider.colors.background` —
-et le geste réclamé au designer compensait une troncature du moteur. La 5.5
-allonge la clef des segments qui séparent deux couleurs cohabitantes, décidée
-une seule fois sur toute la matrice pour qu’aucune coordonnée de variant n’y
-entre.
-
-Ce que ce passage n’a PAS fermé : le contrat dit comment peindre une clef, pas
-sur quel calque, et ne sait pas dire laquelle de deux couleurs empilées sur un
-même calque est au-dessus. Fermer ces deux cas suppose l’adressage par chemin de
-slots, que [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) réserve à un composant
-réel du catalogue.
-
-Un composant d’épreuve a déjà fait tomber la première marche du troisième point,
-et là encore sur le moteur plutôt que sur le schéma : un calque qui rangeait
-plusieurs dépendances les faisait toutes disparaître de `structure.children`
-alors que `composes` continuait de les déclarer, si bien que le consommateur
-refusait le contrat. Le cadre les publie désormais toutes, et `composes` se
-dérive de l’arbre. Ce que ce cas n’établit pas : un composé dont les dépendances
-sont de natures DIFFÉRENTES et se répondent, qui reste à éprouver sur un
-composant réel.
-
-Avant d’ajouter un composant, la 4.9 doit recevoir sa propre reconstruction à
-froid : le dernier test froid porte sur la 4.8, et le cadre enveloppant une
-dépendance est précisément ce que la 4.9 a changé. Les 5.0 et 5.1 attendent
-d’abord un réexport Figma d’Alert et de Button — le corpus est la seule preuve
-que le moteur écrit bien ce que la spécification décrit.
-
-Un cas typographique précis reste à éprouver. Button expose
-`size` depuis un wrapper imbriqué, tandis que `variantTypography` suit les axes
-du Component Set principal. Le contrat actuel est complet parce que toutes les
-tailles utilisent réellement `Label/Large`, mais il ne démontre pas le cas où
-le text style varierait selon un axe du wrapper. Avant de changer le schéma :
-
-1. construire dans Figma un cas réel où le style varie selon cet axe imbriqué ;
-2. vérifier si l’export peut parcourir les variants du wrapper sans perdre les
-   overrides portés par ses instances ;
-3. si la limite est confirmée, donner à la typographie ses propres axes effectifs
-   et compresser ceux qui n’influencent aucun style, plutôt que de dupliquer une
-   feuille identique sur toute la matrice ;
-4. versionner cette nouvelle forme, puis adapter validateur, test froid et
-   documentation dans le même changement.
-
-### 2. Éprouver le workflow d’équipe
-
-Le premier point conditionne les autres : sans lui, on mesure la lisibilité de
-diagnostics que rien n’oblige à lire.
-
-- rendre les contrôles bloquants — protection de branche et `CODEOWNERS` — ce
-  qui suppose de trancher la question du plan GitHub (« Fragilités connues ») ;
+- rendre les contrôles bloquants après décision sur le plan GitHub ou la
+  visibilité des repositories ;
 - faire relire de vraies pull requests d’export par un designer et un
   développeur ;
-- vérifier que les diagnostics sont compréhensibles sans ouvrir les logs ;
+- vérifier que chaque diagnostic est compréhensible sans ouvrir les logs ;
 - mesurer les faux positifs et le coût quotidien des contrôles.
 
-### 3. Compléter la parité utile
+### 4. Renforcer la parité utile
 
-La parité actuelle ne cherche pas à prouver le rendu complet. Les prochains
-contrôles candidats sont :
+Les prochains contrôles candidats sont les valeurs d’enum réellement gérées,
+les valeurs par défaut et les exceptions volontaires documentées. Leur coût et
+leurs faux positifs doivent être mesurés sur plusieurs composants avant de les
+rendre bloquants.
 
-- valeurs d’enum réellement gérées par le composant ;
-- valeurs par défaut alignées sur `props.<x>.default` ;
-- exceptions volontaires, explicites et justifiées.
+### 5. Stabiliser l’interopérabilité
 
-Le choix final dépendra des résultats multi-composants. Un garde-fou coûteux ou
-fragile ne doit pas être ajouté uniquement pour viser une parité théorique.
-
-### 4. Stabiliser l’interopérabilité
-
-Après la validation des cas réels :
+Après les validations multi-composants :
 
 - publier un JSON Schema versionné du contrat ;
-- versionner aussi le format de `tokens.json` ;
+- versionner le format de `tokens.json` ;
 - documenter la politique de compatibilité ;
-- produire éventuellement un diff sémantique pour les revues.
-
-Le schéma ne doit pas figer trop tôt un format encore susceptible d’évoluer.
+- évaluer un diff sémantique pour les revues.
 
 ## Critères de sortie du MVP
 
 Le MVP est validé lorsque :
 
 - plusieurs familles de composants passent sans règle liée à leur nom ;
-- un composé réutilise réellement ses dépendances et passe la parité ;
-- les références de tokens cassées et les écarts d’API couverts bloquent la
-  **fusion** — pas seulement la CI — avec un diagnostic actionnable ;
-- un contrat peut être fusionné avant son code sans désactiver les contrôles
-  futurs ;
-- un agent en contexte froid n’invente ni prop, ni variante, ni token, et
-  n’emploie que des valeurs comparables à celles du contrat ;
+- un composé réutilise réellement plusieurs dépendances et passe la parité ;
+- les références de tokens cassées et les écarts d’API couverts empêchent la
+  fusion avec un diagnostic actionnable ;
+- un contrat peut précéder son code sans désactiver les contrôles futurs ;
+- un agent en contexte froid n’invente ni prop, ni variante, ni token ;
 - les limites non vérifiables sont documentées sans être présentées comme des
   garanties.
 
-À ce stade seulement, le projet pourra être proposé à une expérimentation sur
-un catalogue plus large.
+À ce stade, le projet pourra être proposé à une expérimentation sur un
+catalogue plus large.

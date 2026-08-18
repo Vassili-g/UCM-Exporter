@@ -26,6 +26,7 @@ function variant(nodeId: string, state: string, radius: string | null): Extracte
     typography: [],
     composes: [],
     icons: {},
+    paintPlacements: { fills: {}, strokes: {} },
   };
 }
 
@@ -70,4 +71,15 @@ test('compactVariants déduplique la définition mais garde chaque cible sur son
   assert.deepEqual(result.variants[1].bindings, [
     { definition: 'b1', nodeId: 'label-focus' },
   ]);
+});
+
+test('deux placements de peinture différents produisent deux vues distinctes', () => {
+  const first = variant('default', 'default', null);
+  const second = variant('hover', 'hover', null);
+  first.paintPlacements.fills.background = [['surface']];
+  second.paintPlacements.fills.background = [['label']];
+
+  const result = compactVariants([first, second], []);
+
+  assert.notEqual(result.variants[0]?.view, result.variants[1]?.view);
 });

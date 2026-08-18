@@ -317,3 +317,54 @@ test('les chemins de typographie suivent exactement l’arbre publié', async ()
   assert.equal(chemins.length, 1);
   assert.ok(existe(chemins[0]), `chemin absent de l'arbre : ${chemins[0].join(' > ')}`);
 });
+
+test('une feuille publie les seuls coins tokenisés et laisse les coins à zéro absents', async () => {
+  const premier = node('RECTANGLE', 'Step', [], {
+    topLeftRadius: 8,
+    topRightRadius: 0,
+    bottomRightRadius: 0,
+    bottomLeftRadius: 16,
+    boundVariables: {
+      fills: [alias('fill-left')],
+      topLeftRadius: alias('top-left'),
+      bottomLeftRadius: alias('bottom-left'),
+    },
+  });
+  const dernier = node('RECTANGLE', 'Step', [], {
+    topLeftRadius: 0,
+    topRightRadius: 4,
+    bottomRightRadius: 999,
+    bottomLeftRadius: 0,
+    boundVariables: {
+      fills: [alias('fill-right')],
+      topRightRadius: alias('top-right'),
+      bottomRightRadius: alias('bottom-right'),
+    },
+  });
+  const racine = node('COMPONENT', 'ScaleWrap', [premier, dernier], {
+    layoutMode: 'HORIZONTAL',
+    primaryAxisAlignItems: 'MIN',
+    counterAxisAlignItems: 'CENTER',
+    cornerRadius: 0,
+  }) as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const layout = await extractLayout(racine, resolverFor({
+    'fill-left': 'colors.left',
+    'fill-right': 'colors.right',
+    'top-left': 'radius.md',
+    'bottom-left': 'radius.xl',
+    'top-right': 'radius.xs',
+    'bottom-right': 'radius.full',
+  }), warnings);
+
+  assert.deepEqual(layout.children[0]?.radius, {
+    topLeft: '{radius.md}',
+    bottomLeft: '{radius.xl}',
+  });
+  assert.deepEqual(layout.children[1]?.radius, {
+    topRight: '{radius.xs}',
+    bottomRight: '{radius.full}',
+  });
+  assert.deepEqual(warnings.filter((warning) => warning.includes('corner radius')), []);
+});

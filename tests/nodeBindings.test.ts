@@ -324,7 +324,7 @@ test('un padding dont les côtés partagent leur variable garde la forme courte'
   assert.deepEqual(warnings, []);
 });
 
-test('un padding dont un seul côté est relié ne publie toujours rien', async () => {
+test('un padding publie son côté relié et signale seulement le côté fixe non neutre', async () => {
   const node = {
     type: 'FRAME',
     name: 'UserInput',
@@ -344,11 +344,9 @@ test('un padding dont un seul côté est relié ne publie toujours rien', async 
     warnings,
   );
 
-  // Publier un demi-padding ferait diverger l'extraction de `hasCompleteBinding`,
-  // donc de l'élection du node de layout.
-  assert.equal(result, null);
+  assert.deepEqual(result, { left: '{sizes.padding-left}' });
   assert.ok(warnings.some((warning) => warning.includes('right padding')));
-  assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
+  assert.ok(warnings.some((warning) => warning.includes('les côtés tokenisés sont exportés')));
 });
 
 test('quatre coins reliés à quatre variables publient les quatre', async () => {

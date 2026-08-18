@@ -35,6 +35,10 @@ import type {
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 10.0 : les pistes FIXED d'une grille conservent exceptionnellement leur
+ * valeur CSS en pixels, les valeurs par côté peuvent être clairsemées lorsque
+ * les autres côtés sont neutres, toute feuille publie son radius, et chaque
+ * vue situe ses fills et strokes par des chemins exacts de slots.
  * 9.0 : les vues exactes identiques sont cataloguées dans `variantViews`, et
  * les liaisons natives partagent `propertyBindingDefinitions`. Chaque variant
  * conserve ses feuilles et ses placements propres par référence exacte ; les
@@ -123,7 +127,7 @@ import type {
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '9.0';
+export const CONTRACT_VERSION = '10.0';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(

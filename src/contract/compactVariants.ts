@@ -63,9 +63,11 @@ export function compactVariants(
   }
 
   const variants = expandedVariants.map((variant): ContractVariant => {
-    const { structure, typography, composes, icons, ...identityAndLeaves } = variant;
+    const {
+      structure, typography, composes, icons, paintPlacements, ...identityAndLeaves
+    } = variant;
     const view = intern(
-      { structure, typography, composes, icons },
+      { structure, typography, composes, icons, paintPlacements },
       'v',
       viewIds,
       variantViews,

@@ -85,6 +85,62 @@ test('extractStructure ne recopie pas la couleur du label hors de variantTokens'
   ]);
 });
 
+test('chaque couleur et contour est situé sur son chemin exact dans la vue', async () => {
+  const divider = {
+    type: 'RECTANGLE',
+    id: 'divider-id',
+    name: 'Divider',
+    strokeWeight: 0,
+    strokeAlign: 'INSIDE',
+    boundVariables: { strokes: [alias('border')] },
+    children: [],
+    findAll: findAllOn([]),
+  };
+  const panneau = {
+    type: 'FRAME',
+    id: 'panel-id',
+    name: 'Panel',
+    layoutMode: 'VERTICAL',
+    itemSpacing: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    cornerRadius: 0,
+    boundVariables: { fills: [alias('surface')] },
+    children: [divider],
+    findAll: findAllOn([divider]),
+  };
+  const reference = {
+    type: 'COMPONENT',
+    id: 'variant-id',
+    name: 'State=Default',
+    layoutMode: 'HORIZONTAL',
+    itemSpacing: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    cornerRadius: 0,
+    boundVariables: {},
+    children: [panneau],
+    findAll: findAllOn([panneau, divider]),
+  } as unknown as ComponentNode;
+
+  const { variants } = await extractStructure(
+    { axes: ['state'], variants: [{ values: { state: 'default' }, component: reference }] },
+    [],
+    null,
+    reference,
+    resolverFor({ surface: 'colors.surface', border: 'colors.border' }),
+  );
+
+  assert.deepEqual(variants[0]?.paintPlacements, {
+    fills: { surface: [['panel']] },
+    strokes: { border: [['panel', 'divider']] },
+  });
+});
+
 test('extractStructure déduit le rôle d’une clé qui n’en nomme aucun, sans rien signaler', async () => {
   // Un token nommé « …/bg » ne dit pas ce qu'il peint, mais le calque qui le
   // porte le dit : un fill sur un cadre est une surface. Demander au designer
