@@ -197,7 +197,7 @@ test('extractVariantTokens ne place pas le token d’un calque masqué dans toke
   assert.ok(warnings.some((warning) => warning.includes('Halo obsolète')));
 });
 
-test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (premier conservé)', async () => {
+test('deux variants aux mêmes axes gardent leurs feuilles sans diagnostic d’index v9', async () => {
   const makeNode = (name: string, tokenId: string) => ({
     type: 'RECTANGLE',
     name,
@@ -229,8 +229,9 @@ test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (pr
     warnings,
   );
 
-  // L'index historique conserve le premier ; les deux feuilles exactes restent
-  // disponibles par composant, et le conflit est signalé — jamais en silence.
+  // L'index interne conserve le premier, mais il n'est plus sérialisé en v9 :
+  // les deux feuilles exactes restent disponibles et aucune perte n'est à
+  // corriger dans Figma.
   assert.deepEqual(trees.variantTokens, {
     focus: { background: '{components.button.colors.a.background}' },
   });
@@ -240,7 +241,7 @@ test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (pr
   assert.deepEqual(trees.tokensByComponent.get(second), {
     background: '{components.button.colors.b.background}',
   });
-  assert.ok(warnings.some((warning) => warning.includes('Variants « focus »')));
+  assert.deepEqual(warnings, []);
 });
 
 test('extractVariantTokens suit l’ordre de la matrice, pas l’ordre de résolution', async () => {
@@ -704,11 +705,12 @@ test('un doublon d’axes garde une clé stable dans les vues exactes et l’ind
   );
 
   // Les couleurs ne cohabitent dans aucune feuille exacte : elles partagent
-  // donc la clé simple. L'index historique garde la première occurrence.
+  // donc la clé simple. L'index interne garde la première occurrence, mais la
+  // v9 ne le sérialise plus.
   assert.deepEqual(trees.variantTokens, {
     focus: { background: '{components.card.base.colors.background}' },
   });
-  assert.ok(warnings.some((warning) => warning.includes('Variants « focus »')));
+  assert.deepEqual(warnings, []);
 });
 
 /**

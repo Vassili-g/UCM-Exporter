@@ -80,10 +80,12 @@ produit cartésien est valide.
 
 **1. Props** — traduire chaque propriété : `VARIANT` → enum, `BOOLEAN` →
 boolean, `TEXT` → string, `INSTANCE_SWAP` → `instance-swap`, `SLOT` → `slot`.
-Le champ `propertyBindings` relie le nom technique Figma complet aux calques et
-aux cibles natives `visible`, `characters` et `mainComponent`, variante par
-variante. Les props propres au wrapper sont fusionnées avant ce relevé ; les
-internes d'une dépendance composée restent dans le contrat de cette dépendance.
+`propertyBindingDefinitions` catalogue le nom technique Figma complet, le
+chemin et la cible native (`visible`, `characters`, `mainComponent`). Chaque
+`variants[].bindings` référence cette définition et conserve le `nodeId` exact
+du calque dans CE variant. Les props propres au wrapper sont fusionnées avant ce
+relevé ; les internes d'une dépendance composée restent dans le contrat de cette
+dépendance.
 Deux règles auto-détectées :
 - *Convention State* : un axe `State`/`Status` décrit des états d'interaction
   dérivés du runtime (hover, focus…), pas des choix d'API — il est donc **exclu
@@ -106,7 +108,7 @@ chacun, relever les tokens liés (`boundVariables.fills` et
 `.strokes` sur tout le sous-arbre), rangés par **clé**, dont la base est le
 dernier segment du token. Un composant unifié imbriqué n'y contribue rien : ni son contenu, ni le
 calque de l'instance elle-même, dont le fond appartient à son propre contrat.
-Le relever ferait entrer dans `variantTokens` et dans `tokensUsed` une couleur
+Le relever ferait entrer dans `variants[].tokens` et dans `tokensUsed` une couleur
 que ce contrat-ci ne peint pas — et, sur une clé partagée, évincerait la sienne. Un sous-arbre `visible === false` est ignoré, sauf si sa visibilité
 est liée à une prop de composant ou à une variable : il peut alors être rendu
 dans une autre configuration et reste exporté. Un sous-arbre statiquement
@@ -114,10 +116,9 @@ masqué qui portait des variables produit un warning sur sa racine.
 
 Deux variants qui aboutissent aux mêmes valeurs d'axes après normalisation
 restent deux entrées autonomes de `variants`, chacune avec ses propres tokens,
-strokes et usages typographiques. Les arbres historiques de `structure` ne
-peuvent pas indexer deux feuilles à la même coordonnée : ils gardent la première
-et un diagnostic demande de lever l'ambiguïté dans Figma. Cette limite d'index
-ne retire jamais la seconde entrée de la vue exacte.
+strokes, liaisons et référence de vue. La v9 ne construit plus d'index public
+qui devrait choisir entre ces coordonnées identiques : aucune feuille n'est
+écartée et aucun renommage compensatoire n'est demandé au designer.
 
 La clé **identifie** la couleur ; elle ne dit pas ce qu'elle peint. Ce que la
 couleur peint se lit sur le **calque qui la porte**, jamais sur son nom : un
@@ -170,8 +171,8 @@ l'adressage par chemin de slots, extension non engagée suivie dans
 même calque** sont publiées toutes les deux, mais le contrat ne dit pas laquelle
 est au-dessus : un warning le signale.
 Chaque feuille décrit indépendamment l'état visuel complet du variant Figma :
-si un rôle est absent de la feuille d'un état dans `variantTokens` ou
-`variantStrokes`, cela signifie toujours **« ne pas rendre ce rôle dans cet
+si un rôle est absent des `tokens` ou `strokes` d'un variant, cela signifie
+toujours **« ne pas rendre ce rôle dans cet
 état »**. Un consommateur ne doit jamais fusionner implicitement cette feuille
 avec celle de l'état `default`.
 Résolution : `VariableAlias.id` → `getVariableByIdAsync(id).name` →
@@ -179,7 +180,7 @@ Résolution : `VariableAlias.id` → `getVariableByIdAsync(id).name` →
 `fill`, la feuille contient la référence du token. Un id de variable ou sa
 collection introuvable produit un warning contextualisé par le premier calque
 concerné et aucune référence n'est écrite. Les strokes sont rangés
-séparément dans `variantStrokes` :
+séparément dans `variants[].strokes` :
 
 ```json
 "ring": {
@@ -194,29 +195,16 @@ est une donnée structurelle Figma, pas un token — jamais d'accolades. Une
 largeur est uniforme si `strokeWeight` est lié, ou si ses quatre côtés sont
 liés au même token. Une représentation absente, partielle ou asymétrique
 produit un warning et vaut `null` ; elle n'est jamais remplacée par une valeur
-brute ni par le premier côté trouvé. Les strokes vivent dans un arbre séparé
-(`variantStrokes`) pour que les feuilles de `variantTokens` restent de pures
-références chaînes — une structure stable pour ses consommateurs. Les deux
-arbres sont nichés selon `variantAxes` :
+brute ni par le premier côté trouvé. Les strokes vivent dans le champ séparé
+`strokes` de chaque variant pour que `tokens` reste une feuille de pures
+références chaînes. `values` porte les coordonnées exactes, sans reconstruire
+un arbre cartésien :
 
 ```json
-"variantAxes": ["color", "variant", "state"],
-"variantTokens": {
-  "primary": {
-    "contained": { "default": { "background": "…", "foreground": "…" },
-                   "focus":   { "background": "…", "foreground": "…" } },
-    "outlined":  { "default": { "background": "…", "foreground": "…", "border": "…" } },
-    "text":      { "default": { "foreground": "…" } }
-  },
-  "secondary": { "…": "même structure" }
-}
-```
-
-```json
-"variantStrokes": {
-  "primary": {
-    "contained": { "focus": { "ring": { "color": "…", "width": "…", "align": "outside" } } }
-  }
+{
+  "values": { "color": "primary", "variant": "contained", "state": "focus" },
+  "tokens": { "background": "…", "foreground": "…" },
+  "strokes": { "ring": { "color": "…", "width": "…", "align": "outside" } }
 }
 ```
 
@@ -226,13 +214,13 @@ le plus de dimensions complètes liées, la racine à défaut. Ce score dépend 
 racine d'où part la recherche, si bien que l'élection a lieu **une seule fois
 par variant**, avec la même règle pour tous : depuis le wrapper de dimensions
 quand le composant en possède un, sinon depuis le variant. Les slots, les slots
-d'icônes et les chemins de `variantTypography` décrivent donc toujours le même
+d'icônes et les chemins de `variantViews[variants[].view].typography` décrivent donc toujours le même
 arbre. Un variant privé de ce wrapper est signalé plutôt que rattrapé en
 silence.
 
 Ce que l'élection écarte n'est pas oublié : un calque posé **à côté** du node
 élu — un badge, un liseré, un second bloc — ne reçoit ni slot, ni typographie,
-ni visibilité, alors que ses couleurs entrent bien dans `variantTokens`, relevé
+ni visibilité, alors que ses couleurs entrent bien dans `variants[].tokens`, relevé
 sur le variant entier. Chaque calque écarté produit donc un avertissement.
 
 Certains design systems construisent leurs variantes de taille
@@ -307,7 +295,7 @@ dimensions par taille. Détecté par ses valeurs (comme la prop `size`), chaque
 valeur est extraite →
 `structure.sizes.{big,medium,small}` avec gap/padding/radius par taille. La
 typographie n'est pas une dimension du conteneur : elle est décrite pour chaque
-texte et chaque variant par `variantTypography`. Le contrat couvre ainsi toutes
+texte dans la vue exacte du variant. Le contrat couvre ainsi toutes
 les tailles, pas seulement celle instanciée par défaut. Hypothèse assumée : les dimensions ne varient que selon
 l'axe de tailles — un représentant par taille suffit ; si un design system
 faisait varier un padding selon un autre axe, le contrat ne le verrait pas.
@@ -330,17 +318,16 @@ dans `textStyles.<clé>.figmaName`, puis résout ses `boundVariables` :
 vers les tokens n'est déduit de ce nom. Chaque propriété non liée produit un
 warning et n'est jamais remplacée par une valeur brute.
 
-`structure.variantTypography` reprend la même profondeur et le même ordre
-d'axes que `variantTokens`. Chaque feuille liste `{ slotPath, style }` pour
-situer le style de chaque texte dans la structure. `slotPath` est une liste de
-slots depuis `structure.children` jusqu'à la part concernée. Le catalogue ne
+Chaque `variantViews.*.typography` liste `{ slotPath, style }` pour situer le
+style de chaque texte dans la structure de cette même vue. `slotPath` est une
+liste de slots depuis `structure.children` jusqu'à la part concernée. Le catalogue ne
 contient que les styles réellement utilisés ; ses références alimentent
 `tokensUsed`. Un layer sans style, un style introuvable ou deux noms normalisés
 en collision avertissent et l'usage ambigu reste absent.
 
 **6. Structure** — `children` = enfants directs réels du node de layout :
 - calque **texte** → slot `label` (nom d'origine dans `figmaLayer`) ; son style
-  est situé par `variantTypography` (étape 5) ;
+  est situé par la `typography` de sa vue (étape 5) ;
 - calque **graphique désigné par une règle `@icons`** → slot `icon`, `optional:
   true`, `size` ;
 - **conteneur** → slot décrit par `children`, récursivement, plus sa
@@ -363,13 +350,13 @@ trente tracés d'une icône importée. C'est aussi pourquoi une liaison de
 variable — et non le type du node — est le signal : le contrat décrit ce que le
 design system a nommé, pas ce que Figma contient. `structureTree.ts` en est
 l'unique autorité, partagée par l'extraction, les chemins de
-`variantTypography` et les signatures de comparaison des variants : un second
+la typographie des vues et les signatures de comparaison des variants : un second
 calcul finirait par viser un slot que `structure.children` ne contient pas.
 
 Un conteneur publie **tous** ses calques rendables, jamais une sélection : un
 titre, une description, un dessin voisin et un tag sont tous des calques de ce
 contrat-ci. Le taire ferait annoncer au contrat des couleurs qu'aucun calque
-publié ne porte, puisque `variantTokens` les relève sur le variant entier.
+publié ne porte, puisque `variants[].tokens` les relève sur le variant entier.
 
 La profondeur est bornée à **12 niveaux**. Une coupure qui emporte un
 sous-arbre réellement porteur produit un avertissement ; une coupure qui ne
@@ -394,16 +381,15 @@ Les parts sont nommées par la règle qui nomme déjà les slots (`label`,
 `label-2`…) : aucune heuristique sur le nom du calque, et `figmaLayer` conserve
 « Titre » ou « Description » pour les distinguer.
 
-L'arbre historique `structure.children` est comparé sur toute la matrice. Une
-différence de cardinalité, d'ordre, de nom Figma ou de disposition avertit en
-nommant les variants ; ce champ continue de décrire le variant de référence et
-ne fusionne jamais des arbres incompatibles. Depuis la 8.0, chaque entrée de
-`variants` part de la vraie racine du variant concerné et conserve son propre
-arbre portable : l'écart n'est donc plus perdu par le contrat. Chaque entrée
-porte aussi ses feuilles `tokens` et `strokes`, ses usages `typography`, ses
-`icons` situées par chemin de slots et ses `composes`, tous relatifs à CET
-arbre. Elle peut donc être consommée sans reconstruire une feuille dans les
-index historiques de `structure`.
+La projection de référence `structure.children` est comparée sur toute la
+matrice. Une différence de cardinalité, d'ordre ou de disposition avertit en
+nommant les variants ; un changement de nom Figma avertit aussi, sauf pour une
+icône reconnue dont le slot stable et la vue exacte portent déjà l'identité.
+Depuis la 8.0, l'écart n'est jamais perdu. La v9 catalogue dans `variantViews`
+chaque bloc complet distinct — `structure`, `typography`, `icons`, `composes` —
+et chaque entrée de `variants` le référence par `view`, à côté de ses feuilles
+exactes `tokens` et `strokes`. L'égalité du bloc JSON complet est l'unique règle
+de partage : aucun merge, défaut ou héritage ne peut masquer une divergence.
 
 `icons.<clé>.slot` continue de nommer un slot de **premier niveau**, y compris
 pour une icône imbriquée dans un slot à parts.
@@ -412,9 +398,9 @@ Nommer le slot d'icône par son rôle le rend **stable sur toute la matrice** :
 des icônes qui s'excluent entre variants (`circle-info` en info, `circle-check`
 en success) partagent un seul slot, là où leurs noms de calques en auraient
 inventé un par variant. `children` décrivant le variant de référence, seul le
-premier survivait dans la projection historique. Le nom Figma reste dans
-`figmaLayer`, `icons` fait foi sur l'icône à rendre, et chaque
-`variants[].icons` la situe dans son arbre exact par `slotPath`.
+premier y apparaît. Le nom Figma reste dans `figmaLayer`, `icons` fait foi sur
+l'icône à rendre, et `variantViews[variants[].view].icons` la situe dans son
+arbre exact par `slotPath`.
 
 Une prop BOOLEAN Figma liée à la visibilité d'un calque donne `visibilityProp`
 + `optional` sur son slot, **quel que soit le type de calque**. Un label
@@ -681,7 +667,7 @@ une instance d'un composant de configuration (`ComponentConfiguration`) dont la
     slot ; un slot ou une taille qui change selon les variants — y compris une
     taille présente ici et absente ailleurs — produit un warning et aucune
     valeur déduite ;
-  - **Emplacement exact 8.0** — `variants[].icons.<clé>.slotPath` situe l'icône
+  - **Emplacement exact** — `variantViews[variants[].view].icons.<clé>.slotPath` situe l'icône
     dans l'arbre de CETTE combinaison, y compris lorsqu'elle est absente de la
     référence ou imbriquée à plusieurs niveaux. La clé renvoie au catalogue
     global `icons`, qui garde politique, prop runtime et taille ;
@@ -751,7 +737,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "8.0",
+    "contractVersion": "9.0",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "diagnostics": [
@@ -781,18 +767,24 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "iconRightName": { "type": "icon", "default": null,
                         "policy": "modifiable", "visibilityProp": "iconRight" }
   },
+  "variantViews": {
+    "v1": {
+      "structure": { "layout": "flex-row", "sizing": { "width": "fit-content",
+        "height": "fit-content" }, "children": [] },
+      "typography": [], "composes": [], "icons": {}
+    }
+  },
+  "propertyBindingDefinitions": {
+    "b1": { "prop": "iconLeft", "figmaPropName": "iconLeft#12:3",
+      "target": "visible", "figmaPath": ["Icon left"] }
+  },
   "variants": [
     { "nodeId": "12:346", "figmaName": "Color=Primary, Variant=Contained",
       "values": { "color": "primary", "variant": "contained", "state": "default" },
-      "structure": { "layout": "flex-row", "sizing": { "width": "fit-content",
-        "height": "fit-content" }, "children": [] },
+      "view": "v1",
       "tokens": { "background": "{components.button.colors.primary}" },
-      "strokes": {}, "typography": [], "composes": [], "icons": {} }
-  ],
-  "propertyBindings": [
-    { "prop": "iconLeft", "figmaPropName": "iconLeft#12:3", "target": "visible",
-      "nodeId": "12:350", "figmaPath": ["Icon left"],
-      "variant": { "color": "primary", "variant": "contained", "state": "default" } }
+      "strokes": {},
+      "bindings": [{ "definition": "b1", "nodeId": "12:350" }] }
   ],
   "stateModel": {
     "axis": "state",
@@ -840,14 +832,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
           { "slot": "label-2", "figmaLayer": "Description" }
         ] }
     ],
-    "variantAxes": ["color","variant","state"],
-    "variantTokens": { "…": "étape 2" },
-    "variantStrokes": { "…": "strokes séparés" },
-    "variantTypography": {
-      "…axes…": [
-        { "slotPath": ["label"], "style": "label.large" }
-      ]
-    }
+    "variantAxes": ["color","variant","state"]
   },
   "textStyles": {
     "label.large": {
@@ -889,8 +874,8 @@ réponse : dès qu'un axe de tailles existe, les dimensions du calque de
 référence ne sont ni relevées ni signalées. Les signaler enverrait le designer
 relier une variable sur un calque dont rien ne sera publié — et le message le
 nommerait par un nom de layer commun à tous les variants du set, sans lui dire
-lequel ouvrir. Toute la typographie appartient au catalogue `textStyles` et à
-ses usages dans `variantTypography`.
+lequel ouvrir. Toute la typographie appartient au catalogue `textStyles` et aux
+usages exacts de chaque `variantViews`.
 
 `composes` liste les composants unifiés que celui-ci embarque — vide pour un
 composant simple. Une instance ainsi déclarée n'est PAS parcourue : ses
@@ -943,17 +928,18 @@ Ce que le cadre range À CÔTÉ de ses dépendances lui appartient tout autant :
 tag, un texte, un dessin y sont des calques de ce contrat-ci, décrits par la
 règle commune, avec leur slot, leur typographie et leur visibilité. Ne publier
 que les branches de dépendance les faisait disparaître alors que leurs couleurs
-entraient bien dans `variantTokens` — le contrat annonçait des couleurs que plus
+entraient bien dans `variants[].tokens` — le contrat annonçait des couleurs que plus
 aucun calque ne portait.
 
 Un cadre dont AUCUNE branche exportable ne mène à une dépendance fait exception :
 ses instances sont rangées sous un calque masqué, le contrat se replie sur le
 seul nom du composant et n'ouvre aucun `children`. Les chemins de
-`variantTypography` suivent cette même réponse, sinon ils viseraient des slots
+la typographie des vues suit cette même réponse, sinon elle viserait des slots
 que `structure.children` ne contient pas.
 
-Le relevé couvre toute la matrice. Chaque `variants[].composes` se DÉRIVE de
-SON arbre exact et en garde l'ordre et la cardinalité. Le champ global
+Le relevé couvre toute la matrice. Chaque
+`variantViews[variants[].view].composes` se DÉRIVE de SON arbre exact et en
+garde l'ordre et la cardinalité. Le champ global
 `composes` en est l'union ordonnée à cardinalité maximale : une dépendance
 conditionnelle n'est jamais perdue parce qu'elle manque au variant de
 référence. Comme `tokensUsed`, ces champs se dérivent du contrat terminé. La
@@ -972,9 +958,9 @@ continuera de le rendre : c'est le diagnostic voulu, le contrat ne le demandant
 plus.
 
 Si la composition varie dans la matrice, une notice nomme les variants
-concernés : `structure` reste la projection historique de référence, les arbres
-de `variants` portent les dépendances exactes de chaque combinaison, et le
-`composes` global garantit que le graphe n'oublie aucune cible conditionnelle.
+concernés : `structure` reste la projection de référence, les vues cataloguées
+portent les dépendances exactes de chaque combinaison, et le `composes` global
+garantit que le graphe n'oublie aucune cible conditionnelle.
 
 `figmaLayer` y nomme le calque de **l'instance**, jamais le cadre qui
 l'enveloppe : c'est ce calque qu'on retrouve dans Figma.
@@ -1170,8 +1156,28 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **7.0**, et elle ferme deux pertes que le
-composant d'épreuve StressTest a rendues visibles.
+La version actuelle du contrat est **9.0**. Elle normalise la projection exacte
+introduite en 8.0 sans perdre une seule valeur : `variantViews` catalogue chaque
+bloc complet distinct (`structure`, `typography`, `icons`, `composes`) et chaque
+entrée de `variants` le référence par `view`, à côté de ses `tokens`, `strokes`
+et placements de bindings exacts. `propertyBindingDefinitions` ne garde qu'une
+copie de la partie stable d'une liaison ; `variants[].bindings` conserve son
+`nodeId` dans chaque COMPONENT. Aucun champ n'est fusionné partiellement : deux
+vues ne partagent une clé que si leur JSON complet est identique.
+
+Les trois index de matrice `structure.variantTokens`, `variantStrokes` et
+`variantTypography`, ainsi que la liste plate `propertyBindings`, disparaissent.
+Toute leur information existe déjà dans les variants, leurs vues et leurs
+bindings. Cette normalisation réduit fortement le fichier et supprime le risque
+que deux représentations du même fait divergent.
+
+La 8.0 rendait la projection portable exacte par combinaison : matrices
+clairsemées, COMPONENT standalone, arbres, couleurs, strokes, typographie,
+icônes, composition et liaisons natives. Elle conservait encore les index
+historiques et répétait chaque arbre dans chaque variant.
+
+La 7.0 fermait deux pertes que le composant d'épreuve StressTest avait rendues
+visibles.
 
 **Un champ à quatre côtés publie le détail au lieu de tout perdre.** `padding.x`,
 `padding.y`, `radius` et la largeur d'un stroke cessent d'être des chaînes : ce

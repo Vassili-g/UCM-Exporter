@@ -508,7 +508,11 @@ export function structureSignature(
   ): unknown => {
     const common = {
       slot,
-      figmaLayer: node.name,
+      // Une icône reconnue change normalement de calque entre variants. Son
+      // slot stable et la vue exacte portent déjà son identité :
+      // comparer ici `circle-info` à `circle-check` inventerait une divergence
+      // structurelle alors que seul le dessin interchangeable change.
+      ...(iconNames.has(node.name) ? {} : { figmaLayer: node.name }),
       composes: composed.get(node.id)?.component ?? null,
       visibilityProp: node.componentPropertyReferences?.visible
         ? normalizePropKey(node.componentPropertyReferences.visible)

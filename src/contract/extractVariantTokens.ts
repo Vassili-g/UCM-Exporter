@@ -167,7 +167,10 @@ export async function extractVariantTokens(
       : { variant: normalizePropValue(entry.component.name) };
     const exactEntry = { entry, leaf, values };
     exact.push(exactEntry);
-    if (insertVariantLeaf(reserved, axes, values, true, warnings)) retained.push(exactEntry);
+    // La v9 ne sérialise plus cet index : un doublon de coordonnées n'y perd
+    // donc aucune donnée et ne demande plus de correction au designer. On garde
+    // encore l'arbre en interne pour les extracteurs historiques et leurs tests.
+    if (insertVariantLeaf(reserved, axes, values, true, [])) retained.push(exactEntry);
   }
 
   // Deuxième passe : les clés se décident sur TOUTES les feuilles exactes. Un

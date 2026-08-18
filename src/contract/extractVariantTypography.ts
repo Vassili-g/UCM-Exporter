@@ -218,7 +218,10 @@ export async function extractVariantTypography(
       ? entry.values
       : { variant: normalizePropValue(entry.component.name) };
     typographyByComponent.set(entry.component, uses);
-    insertVariantLeaf(variantTypography, axes, values, uses, warnings);
+    // Cet index reste un détail interne depuis la v9. Les usages exacts sont
+    // tous conservés dans les vues, même si deux variants partagent les mêmes
+    // coordonnées normalisées.
+    insertVariantLeaf(variantTypography, axes, values, uses, []);
   }
 
   return {

@@ -87,11 +87,11 @@ Chaque document a un rôle unique :
 
 ## État
 
-Le moteur écrit la version **8.0** du contrat. Elle accepte un Component seul ou
+Le moteur écrit la version **9.0** du contrat. Elle accepte un Component seul ou
 un Component Set, y compris une matrice clairsemée. Le contrat reste une
-projection UCM portable et autosuffisante ; chaque variante exacte porte son
-arbre, ses tokens, strokes, typographie,
-icônes et dépendances exacts ; le Playground dérive un type discriminé des
+projection UCM portable et autosuffisante ; chaque variante exacte porte ses
+tokens et strokes et référence une vue complète dédupliquée pour son arbre, sa
+typographie, ses icônes et ses dépendances ; le Playground dérive un type discriminé des
 seules combinaisons d'enums présentes. Alert et Button doivent
 encore être réexportés depuis Figma pour renouveler le corpus réel, qui ne doit
 jamais être édité à la main.

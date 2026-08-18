@@ -690,30 +690,64 @@ export type VariantIconPlacement = {
   slotPath: string[];
 };
 
-/** Une combinaison réellement présente dans Figma et sa structure propre. */
-export type ContractVariant = {
-  nodeId: string;
-  figmaName: string;
-  values: Record<string, string>;
+/** Vue complète partagée par les variants qui rendent exactement la même chose. */
+export type ContractVariantView = {
   structure: VariantStructure;
-  /** Feuilles sémantiques directement adressables, sans axe synthétique. */
-  tokens: SlotTokens;
-  strokes: SlotStrokes;
   typography: TextStyleUse[];
-  /** Dépendances de CETTE combinaison, dans l'ordre de son arbre. */
+  /** Dépendances de cette vue, dans l'ordre de son arbre. */
   composes: ComposedDependency[];
   /** Slots exacts des icônes, relatifs à `structure.children`. */
   icons: Record<string, VariantIconPlacement>;
 };
 
-/** L'endroit exact où une component property agit dans un variant. */
-export type ComponentPropertyBinding = {
+/**
+ * Vue développée pendant l'extraction.
+ *
+ * Elle n'est jamais sérialisée telle quelle : `compactVariants.ts` catalogue
+ * les vues identiques avant de construire le contrat public.
+ */
+export type ExtractedContractVariant = ContractVariantView & {
+  nodeId: string;
+  figmaName: string;
+  values: Record<string, string>;
+  /** Feuilles sémantiques directement adressables, sans axe synthétique. */
+  tokens: SlotTokens;
+  strokes: SlotStrokes;
+};
+
+/** Partie stable d'une liaison native, cataloguée une seule fois. */
+export type PropertyBindingDefinition = {
   prop: string;
   figmaPropName: string;
   target: 'visible' | 'characters' | 'mainComponent';
-  nodeId: string;
   figmaPath: string[];
-  variant: Record<string, string>;
+};
+
+/** L'endroit exact où une définition de liaison agit dans un variant. */
+export type VariantPropertyBinding = {
+  definition: string;
+  nodeId: string;
+};
+
+/** Liaison développée pendant l'extraction, avant sa normalisation. */
+export type ExtractedPropertyBinding = PropertyBindingDefinition & {
+  nodeId: string;
+  /** Id du COMPONENT exact, distinct de l'id du calque ciblé. */
+  variantNodeId: string;
+};
+
+/** Une combinaison réellement présente dans Figma et sa vue exacte. */
+export type ContractVariant = {
+  nodeId: string;
+  figmaName: string;
+  values: Record<string, string>;
+  /** Clé d'une vue complète de `variantViews`. */
+  view: string;
+  /** Feuilles sémantiques directement adressables, sans axe synthétique. */
+  tokens: SlotTokens;
+  strokes: SlotStrokes;
+  /** Cibles natives propres à ce node Figma. Absentes quand il n'en porte aucune. */
+  bindings?: VariantPropertyBinding[];
 };
 
 export type ContractDiagnostic = {
@@ -773,11 +807,22 @@ export type Contract = {
   name: string;
   meta: ContractMeta;
   props: Record<string, ContractProp>;
+  /** Vues exactes dédupliquées ; chaque entrée de `variants` en référence une. */
+  variantViews: Record<string, ContractVariantView>;
+  /** Définitions stables des liaisons natives, réutilisées par les variants. */
+  propertyBindingDefinitions: Record<string, PropertyBindingDefinition>;
   /** Combinaisons exactes : aucune matrice cartésienne n'est inventée. */
   variants: ContractVariant[];
-  /** Cibles natives des component properties, situées sans convention de nom. */
-  propertyBindings: ComponentPropertyBinding[];
-  structure: ContractStructure;
+  /**
+   * Projection de référence et dimensions par taille.
+   *
+   * Les anciens index de matrice vivent désormais dans `variants` et
+   * `variantViews`, sans seconde copie susceptible de diverger.
+   */
+  structure: Omit<
+    ContractStructure,
+    'variantTokens' | 'variantStrokes' | 'variantTypography'
+  >;
   /** Déclencheurs et priorité des états, ou null si le composant n'a pas d'axe d'état. */
   stateModel: StateModel | null;
   /** Vocabulaire de rendu des rôles (`background`, `foreground`, `icon`, `border`, `ring`…). */
