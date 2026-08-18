@@ -7,7 +7,6 @@ import {
   groupComponentsByVariant,
 } from '../src/contract/componentTree';
 import { extractContractPropertyModel } from '../src/contract/parsers';
-import { missingVariantsMessage } from '../src/contract/exportComponent';
 
 function fakeComponent(name: string, variantProperties?: Record<string, string>): ComponentNode {
   return { name, variantProperties } as unknown as ComponentNode;
@@ -28,6 +27,18 @@ test('getVariantValues privilégie variantProperties sur le nom parsé', () => {
 
 test('getVariantValues normalise clés et valeurs (espaces, casse)', () => {
   assert.deepEqual(getVariantValues(fakeComponent('Icon Left=True')), { iconLeft: 'true' });
+});
+
+test('un axe nommé __proto__ reste une coordonnée propre du variant', () => {
+  const component = {
+    name: '__proto__=Visible',
+    variantProperties: { __proto__: 'Visible' },
+  } as unknown as ComponentNode;
+
+  const values = getVariantValues(component);
+
+  assert.equal(Object.prototype.hasOwnProperty.call(values, '__proto__'), true);
+  assert.equal(values.__proto__, 'visible');
 });
 
 test('groupComponentsByVariant utilise la même clé sémantique que props', () => {
@@ -62,7 +73,7 @@ test('groupComponentsByVariant utilise la même clé sémantique que props', () 
   ]);
 });
 
-test('une combinaison de variantes absente produit un diagnostic Figma directement actionnable', () => {
+test('une combinaison de variantes absente est relevée sans inventer la case', () => {
   const componentSet = {
     name: 'Button',
     componentPropertyDefinitions: {
@@ -101,15 +112,6 @@ test('une combinaison de variantes absente produit un diagnostic Figma directeme
     examples: ['Color=Red, Size=Large'],
   });
 
-  const message = missingVariantsMessage('Button', summary!);
-  assert.match(message, /il manque 1 variant/);
-  assert.match(message, /Figma contient actuellement 3 variants distincts/);
-  assert.match(message, /Color=Blue, Size=Small/);
-  assert.match(message, /Color=Red, Size=Large/);
-  assert.match(message, /le code peut choisir séparément ces propriétés/);
-  assert.match(message, /4 combinaisons possibles, 3 définies/);
-  assert.match(message, /dupliquez un variant existant/);
-  assert.match(message, /volontairement interdite/);
 });
 
 test('findWrapperReference ne choisit jamais une instance statiquement masquée', async () => {

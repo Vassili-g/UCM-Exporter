@@ -12,6 +12,7 @@ import type { IconLayerSummary } from './extractIconLayers';
 import {
   extractLayout,
   flexLayoutSignature,
+  placedDependenciesFromTree,
   structureSignature,
   warnLayersOutsideLayoutNode,
 } from './extractLayout';
@@ -24,6 +25,7 @@ import { variantRoleWarnings } from './semantics';
 import type {
   ComposedDependency,
   ContractStructure,
+  ContractVariant,
   SizeDimensions,
   TextStyleDefinition,
 } from './types';
@@ -78,24 +80,39 @@ export async function extractStructure(
    */
   placedComposes: PlacedDependencies;
   warnings: string[];
+  /** Compatibilité historique ou documentation, sans perte dans la vue exacte. */
+  notices: string[];
+  /** Une structure portable par combinaison réellement présente. */
+  variants: ContractVariant[];
 }> {
   const warnings = [...matrixWarnings];
+  const notices: string[] = [];
   const placedComposes: PlacedDependencies = new Map();
   // Les règles `@icons` sont relevées avant toute extraction : c'est leur
   // inventaire qui distingue l'encre d'une icône de la surface d'un cadre.
   const iconTargets = new Set(iconNames);
-  const { variantTokens, variantStrokes, discoveredRoles } = await extractVariantTokens(
+  const {
+    variantTokens,
+    variantStrokes,
+    tokensByComponent,
+    strokesByComponent,
+    discoveredRoles,
+  } = await extractVariantTokens(
     matrix,
     resolver,
     warnings,
     composed,
     iconTargets,
+    notices,
   );
 
   // Les rôles se relisent sur les arbres terminés, pas pendant l'extraction :
   // un seul message par rôle fautif au lieu d'un par variante, et la
   // vérification reste une fonction pure, testable sans runtime Figma.
-  warnings.push(...variantRoleWarnings(variantTokens, variantStrokes));
+  warnings.push(...variantRoleWarnings(
+    Object.fromEntries(Array.from(tokensByComponent, ([component, leaf]) => [component.id, leaf])),
+    Object.fromEntries(Array.from(strokesByComponent, ([component, leaf]) => [component.id, leaf])),
+  ));
 
   // Le node de layout de CHAQUE variant est élu ici, une fois. `findLayoutNode`
   // élit au score, et le score dépend de la racine : relancer l'élection depuis
@@ -146,13 +163,12 @@ export async function extractStructure(
         .map(({ component }) => `« ${component.name} »`)
         .join(', ');
       const remaining = divergentVariants.length - 3;
-      warnings.push(
+      notices.push(
         `Structure différente sur ${divergentVariants.length} variant(s), ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
-          `référence « ${referenceLayout.component.name} ». L'ordre, l'imbrication ou la ` +
-          `disposition des layers des autres variants ne sera pas représenté. Alignez leurs ` +
-          `layers dans Figma ; si la différence est intentionnelle, conservez-la et signalez ` +
-          `cette limite du schéma.`,
+          `référence « ${referenceLayout.component.name} ». La vue exacte de chaque entrée de ` +
+          `« variants » conserve sa propre structure ; seul le champ historique « structure » ` +
+          `reste celui de la référence.`,
       );
     }
 
@@ -171,13 +187,12 @@ export async function extractStructure(
         .map(({ component }) => `« ${component.name} »`)
         .join(', ');
       const remaining = flexDivergentVariants.length - 3;
-      warnings.push(
+      notices.push(
         `Auto layout différent sur ${flexDivergentVariants.length} variant(s), ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
-          `référence « ${referenceLayout.component.name} ». Son alignement, le remplissage de ses ` +
-          `layers ou leur dimension figée ne représentera pas les autres variants. Alignez les ` +
-          `auto layouts dans Figma ; si la différence est intentionnelle, conservez-la et ` +
-          `signalez cette limite du schéma.`,
+          `référence « ${referenceLayout.component.name} ». Les vues exactes de « variants » ` +
+          `conservent leurs flux respectifs ; seul le champ historique « structure » reste celui ` +
+          `de la référence.`,
       );
     }
   }
@@ -188,7 +203,7 @@ export async function extractStructure(
   // complète donc ici. Les messages identiques se dédupliquent à l'export.
   for (const { component } of matrix.variants) {
     if (component === referenceLayout?.component) continue;
-    warnLayersOutsideLayoutNode(component, layoutNodeOf(component), warnings, composed);
+    warnLayersOutsideLayoutNode(component, layoutNodeOf(component), notices, composed);
   }
 
   // « Où vivent les dimensions » se décide AVANT de les relever, et une seule
@@ -208,6 +223,8 @@ export async function extractStructure(
       referenceLayout.component,
       !aUnAxeDeTailles,
       placedComposes,
+      new Set(),
+      notices,
     )
     // Sans composant à interroger, le contrat retient le comportement par
     // défaut plutôt que d'inventer un hug que rien ne montre.
@@ -229,6 +246,31 @@ export async function extractStructure(
     );
   }
 
+  // Vue fidèle de chaque combinaison : elle part de la vraie racine du variant
+  // et conserve donc les wrappers que l'ancienne projection de référence
+  // écartait par élection. Le champ historique `structure` reste produit pour
+  // les consommateurs 4.x–7.x ; `variants` est l'autorité de la 8.0.
+  const exactLayouts: Array<{
+    entry: VariantMatrix['variants'][number];
+    structure: ContractVariant['structure'];
+    placed: PlacedDependencies;
+  }> = [];
+  for (const entry of matrix.variants) {
+    const exactPlaced: PlacedDependencies = new Map();
+    const exactStructure = await extractLayout(
+      entry.component,
+      resolver,
+      warnings,
+      composed,
+      targetedLayers,
+      entry.component,
+      true,
+      exactPlaced,
+      aUnAxeDeTailles ? new Set([layoutNodeOf(entry.component).id]) : new Set(),
+    );
+    exactLayouts.push({ entry, structure: exactStructure, placed: exactPlaced });
+  }
+
   const referenceTextSlotPaths = new Set(
     referenceLayout
       ? textSlots(referenceLayout.layoutNode, targetedLayers, composed)
@@ -243,7 +285,30 @@ export async function extractStructure(
     composed,
     targetedLayers,
     referenceTextSlotPaths,
+    undefined,
+    notices,
   );
+  const exactTypography = await extractVariantTypography(
+    matrix,
+    new Map(matrix.variants.map((entry) => [entry.component, entry.component])),
+    resolver,
+    warnings,
+    composed,
+    targetedLayers,
+  );
+  const variants: ContractVariant[] = exactLayouts.map(({ entry, structure: exactStructure, placed }) => (
+    {
+      nodeId: entry.component.id,
+      figmaName: entry.component.name,
+      values: { ...entry.values },
+      structure: exactStructure,
+      tokens: tokensByComponent.get(entry.component) ?? {},
+      strokes: strokesByComponent.get(entry.component) ?? {},
+      typography: exactTypography.typographyByComponent.get(entry.component) ?? [],
+      composes: placedDependenciesFromTree(exactStructure.children, placed),
+      icons: {},
+    }
+  ));
 
   // Dimensions par taille, pour couvrir big/medium/small et pas seulement la
   // taille instanciée par défaut.
@@ -282,10 +347,12 @@ export async function extractStructure(
 
   return {
     structure,
-    textStyles: typography.textStyles,
+    textStyles: { ...typography.textStyles, ...exactTypography.textStyles },
     iconLayers,
     discoveredRoles,
     placedComposes,
     warnings,
+    notices,
+    variants,
   };
 }

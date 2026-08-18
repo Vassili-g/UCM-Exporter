@@ -27,9 +27,9 @@ export type { VariantTokenLeaves } from './extractSlotTokens';
  * Insère une feuille dans l'arbre en suivant l'ordre des axes.
  * Un axe sans valeur retombe sur la clé « default ».
  *
- * Renvoie `false` quand un variant occupe déjà ces valeurs d'axes : c'est
- * l'unique autorité sur « deux variants aux mêmes valeurs », et l'appelant s'en
- * sert pour savoir quels variants le contrat publie réellement.
+ * Renvoie `false` quand un variant occupe déjà ces valeurs d'axes. L'arbre
+ * historique ne peut représenter ce doublon, mais la liste exacte `variants`
+ * conserve chacune des occurrences et leurs feuilles propres.
  *
  * Les clés viennent de Figma : elles sont testées et écrites en propriétés
  * PROPRES. `constructor` ou `toString` passeraient sinon pour un doublon
@@ -62,7 +62,9 @@ export function insertVariantLeaf<T>(
         warnings.push(
           `Variants « ${axes.map((a) => values[a] || 'default').join(' / ')} » : deux ` +
             `variants portent les mêmes valeurs une fois normalisées (majuscules et ` +
-            `espaces ignorés). Seul le premier est exporté ; renommez l'un des deux.`,
+            `espaces ignorés). Les deux restent dans la liste exacte « variants », mais ` +
+            `l'arbre historique ne peut en indexer qu'un et garde le premier. Renommez ` +
+            `l'un des deux pour rendre aussi cet index non ambigu.`,
         );
         return;
       }
@@ -103,14 +105,21 @@ export async function extractVariantTokens(
   warnings: string[],
   composed: ComposedInstances = new Map(),
   iconNames: ReadonlySet<string> = new Set(),
+  notices: string[] = warnings,
 ): Promise<{
   variantTokens: VariantTokens;
   variantStrokes: VariantStrokes;
+  /** Feuille exacte de chaque node, y compris lorsque ses coordonnées sont dupliquées. */
+  tokensByComponent: Map<ComponentNode, SlotTokens>;
+  /** Strokes exacts de chaque node, avec la même garantie que `tokensByComponent`. */
+  strokesByComponent: Map<ComponentNode, SlotStrokes>;
   /** Rôle de rendu déduit de chaque clé qui n'en nomme aucun, sur toute la matrice. */
   discoveredRoles: Map<string, string>;
 }> {
   const variantTokens: VariantTokens = {};
   const variantStrokes: VariantStrokes = {};
+  const tokensByComponent = new Map<ComponentNode, SlotTokens>();
+  const strokesByComponent = new Map<ComponentNode, SlotStrokes>();
   const discoveredRoles = new Map<string, string>();
   const reportedRoleConflicts = new Set<string>();
   // Un Component Set a toujours au moins un axe, mais on se protège d'une
@@ -137,36 +146,46 @@ export async function extractVariantTokens(
   );
 
   // Première passe, séquentielle : c'est la matrice qui fixe l'ordre des clés,
-  // celui des avertissements et le sens de « premier conservé ». Elle dit aussi
-  // quels variants le contrat publie — un variant écarté ne doit peser sur rien.
+  // celui des avertissements et le sens de « premier conservé » dans les seuls
+  // arbres historiques. Aucun variant réel n'est écarté de la vue exacte.
   const reserved: Record<string, unknown> = {};
-  const retained: Array<{ leaf: (typeof collected)[number]['leaf']; values: Record<string, string> }> = [];
+  const exact: Array<{
+    entry: VariantEntry;
+    leaf: (typeof collected)[number]['leaf'];
+    values: Record<string, string>;
+  }> = [];
+  const retained: typeof exact = [];
   for (const { entry, leaf, variantWarnings } of collected) {
     warnings.push(...variantWarnings);
     if (leaf.paints.length === 0 && leaf.strokes.length === 0) {
-      warnings.push(`Variant « ${entry.component.name} » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui.`);
+      notices.push(`Variant « ${entry.component.name} » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui.`);
     }
     // La clé de repli suit la même normalisation que toutes les valeurs
     // d'axes : l'arbre reste homogène même sans axe déclaré.
     const values = matrix.axes.length > 0
       ? entry.values
       : { variant: normalizePropValue(entry.component.name) };
-    if (!insertVariantLeaf(reserved, axes, values, true, warnings)) continue;
-    retained.push({ leaf, values });
+    const exactEntry = { entry, leaf, values };
+    exact.push(exactEntry);
+    if (insertVariantLeaf(reserved, axes, values, true, warnings)) retained.push(exactEntry);
   }
 
-  // Deuxième passe : les clés, décidées sur les seules feuilles publiées. Les
-  // couleurs d'un variant écarté n'en allongent aucune — on ne renomme que ce
-  // qu'on publie, comme on n'avertit que sur ce qu'on publie.
+  // Deuxième passe : les clés se décident sur TOUTES les feuilles exactes. Un
+  // doublon de coordonnées reste un variant publié ; ses couleurs doivent donc
+  // participer à la clé stable de toute la matrice.
   const keys = resolveColorKeys(
-    retained.flatMap(({ leaf }) => [
+    exact.flatMap(({ leaf }) => [
       leaf.paints.map((color) => color.token),
       leaf.strokes.map((color) => color.token),
     ]),
   );
 
-  // Troisième passe : l'écriture, toujours dans l'ordre de la matrice.
-  for (const { leaf, values } of retained) {
+  // Troisième passe : les feuilles exactes et les rôles, toujours dans l'ordre
+  // de la matrice. Les maps sont internes à l'orchestrateur et ne sont jamais
+  // sérialisées telles quelles.
+  for (const { entry, leaf } of exact) {
+    tokensByComponent.set(entry.component, paintLeaf(leaf.paints, keys));
+    strokesByComponent.set(entry.component, strokeLeaf(leaf.strokes, keys));
     // Le rôle d'une clé est relevé sur toute la matrice. Une clé qui NOMME un
     // rôle partagé n'a rien à publier : le consommateur la résout directement.
     // Le même token posé sur des calques de natures différentes selon le variant
@@ -190,9 +209,20 @@ export async function extractVariantTokens(
           `peindre et retient « ${known} ». Utilisez une variable par nature de layer.`,
       );
     }
-    insertVariantLeaf(variantTokens, axes, values, paintLeaf(leaf.paints, keys), warnings);
-    insertVariantLeaf(variantStrokes, axes, values, strokeLeaf(leaf.strokes, keys), warnings);
   }
 
-  return { variantTokens, variantStrokes, discoveredRoles };
+  // Les index historiques gardent leur forme : quand deux variants occupent la
+  // même coordonnée, la première passe a déjà choisi et documenté le premier.
+  for (const { entry, values } of retained) {
+    insertVariantLeaf(variantTokens, axes, values, tokensByComponent.get(entry.component) ?? {}, []);
+    insertVariantLeaf(variantStrokes, axes, values, strokesByComponent.get(entry.component) ?? {}, []);
+  }
+
+  return {
+    variantTokens,
+    variantStrokes,
+    tokensByComponent,
+    strokesByComponent,
+    discoveredRoles,
+  };
 }

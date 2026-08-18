@@ -11,6 +11,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   indexContractedNames,
+  indexContractedNamesInDocument,
   scanComposedMatrix,
   scanComposedInstances,
 } from '../src/contract/composedComponents';
@@ -92,6 +93,64 @@ test('indexContractedNames relève les composants qui possèdent un conteneur de
   } as unknown as PageNode;
 
   assert.deepEqual(Array.from(indexContractedNames(page)).sort(), ['alert', 'button']);
+});
+
+test('indexContractedNames ne confond pas composant exportable et dépendance UCM', () => {
+  const standalone = { type: 'COMPONENT', name: 'Badge', parent: { type: 'PAGE' } };
+  const set = { type: 'COMPONENT_SET', name: 'Button' };
+  const variant = { type: 'COMPONENT', name: 'Size=Small', parent: set };
+  const page = {
+    findAll: (predicate: (node: never) => boolean) => [standalone, set, variant]
+      .filter(predicate as (node: unknown) => boolean),
+  } as unknown as PageNode;
+
+  assert.deepEqual(Array.from(indexContractedNames(page)).sort(), []);
+});
+
+test('l’index de production laisse un wrapper interne parcourable', async () => {
+  const wrapperSet = { type: 'COMPONENT_SET', name: 'Button-Construc' };
+  const wrapperVariant = { type: 'COMPONENT', name: 'Size=Medium', parent: wrapperSet };
+  const wrapper = instance('wrap', 'Button-Wrapper', 'Button-Construc');
+  const bouton = racine('button', 'Color=Primary', [wrapper]);
+  const page = {
+    findAll: (predicate: (node: never) => boolean) => [
+      wrapperSet,
+      wrapperVariant,
+      { type: 'FRAME', name: 'Button-Rules' },
+    ].filter(predicate as (node: unknown) => boolean),
+  } as unknown as PageNode;
+
+  const contracted = indexContractedNames(page);
+  const { composes, composed } = await scanComposedInstances(bouton, contracted);
+
+  assert.deepEqual(Array.from(contracted), ['button']);
+  assert.deepEqual(composes, []);
+  assert.equal(composed.size, 0);
+});
+
+test('indexContractedNamesInDocument charge et indexe toutes les pages', async () => {
+  const page = (name: string) => ({
+    type: 'PAGE',
+    name,
+    findAll: (predicate: (node: never) => boolean) => [
+      { type: 'FRAME', name: `${name}-Rules` },
+    ].filter(predicate as (node: unknown) => boolean),
+  });
+  const pages = [page('Button'), page('Alert')];
+  const precedent = (globalThis as { figma?: unknown }).figma;
+  let loaded = 0;
+  (globalThis as { figma?: unknown }).figma = {
+    root: { children: pages },
+    currentPage: pages[0],
+    loadAllPagesAsync: async () => { loaded += 1; },
+  };
+  try {
+    const names = await indexContractedNamesInDocument();
+    assert.equal(loaded, 1);
+    assert.deepEqual(Array.from(names).sort(), ['alert', 'button']);
+  } finally {
+    (globalThis as { figma?: unknown }).figma = precedent;
+  }
 });
 
 test('scanComposedInstances déclare une instance contractée comme dépendance', async () => {

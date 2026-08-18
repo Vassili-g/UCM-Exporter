@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { extractContractProps, normalizePropKey, propByName } from '../src/contract/parsers';
+import {
+  extractContractPropertyModel,
+  extractContractProps,
+  normalizePropKey,
+  propByName,
+} from '../src/contract/parsers';
 
 test('normalizePropKey retire les identifiants Figma et produit du camelCase', () => {
   assert.equal(normalizePropKey('Icon Position#12:3'), 'iconPosition');
@@ -164,6 +169,52 @@ test('extractContractProps laisse un enum non-taille sous son nom, sans figmaNam
   assert.deepEqual(extractContractProps(definitions), {
     variant: { type: 'enum', values: ['contained', 'outlined', 'text'], default: 'contained' },
   });
+});
+
+test('extractContractPropertyModel conserve INSTANCE_SWAP, SLOT et leurs noms techniques', () => {
+  const definitions = {
+    'Leading icon#12:3': {
+      type: 'INSTANCE_SWAP',
+      defaultValue: 'component-id',
+      preferredValues: [{ type: 'COMPONENT', key: 'icon-key' }],
+    },
+    'Content#12:4': {
+      type: 'SLOT',
+      defaultValue: '',
+      preferredValues: [{ type: 'COMPONENT_SET', key: 'content-key' }],
+      description: 'Contenu libre',
+      slotSettings: {
+        stretchChildOnInsert: true,
+        displayEmptyByDefault: false,
+        minChildren: 0,
+        maxChildren: 2,
+        allowPreferredValuesOnly: true,
+      },
+    },
+  } as unknown as ComponentPropertyDefinitions;
+
+  const model = extractContractPropertyModel(definitions);
+
+  assert.deepEqual(model.props.leadingIcon, {
+    type: 'instance-swap',
+    default: 'component-id',
+    preferredValues: [{ type: 'COMPONENT', key: 'icon-key' }],
+  });
+  assert.deepEqual(model.props.content, {
+    type: 'slot',
+    default: '',
+    preferredValues: [{ type: 'COMPONENT_SET', key: 'content-key' }],
+    description: 'Contenu libre',
+    settings: {
+      stretchChildOnInsert: true,
+      displayEmptyByDefault: false,
+      minChildren: 0,
+      maxChildren: 2,
+      allowPreferredValuesOnly: true,
+    },
+  });
+  assert.equal(model.publicPropertyKeyByFigmaName.get('Leading icon#12:3'), 'leadingIcon');
+  assert.equal(model.publicPropertyKeyByFigmaName.get('Content#12:4'), 'content');
 });
 
 test('une component property nommée « __proto__ » ne disparaît pas dans le prototype', () => {

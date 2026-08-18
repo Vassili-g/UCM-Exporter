@@ -74,6 +74,23 @@ import type {
  */
 export type PlacedDependencies = Map<ChildStructure, ComposedDependency>;
 
+/**
+ * Dépendances réellement publiées par un arbre, dans l'ordre de ses calques.
+ * Cette fonction est l'unique pont entre le scan Figma et les listes `composes`.
+ */
+export function placedDependenciesFromTree(
+  children: readonly ChildStructure[],
+  placed: PlacedDependencies,
+): ComposedDependency[] {
+  const dependencies: ComposedDependency[] = [];
+  for (const child of children) {
+    const dependency = placed.get(child);
+    if (dependency) dependencies.push(dependency);
+    if (child.children) dependencies.push(...placedDependenciesFromTree(child.children, placed));
+  }
+  return dependencies;
+}
+
 /** La partie « layout » de la structure (sans les tokens de variantes). */
 type LayoutStructure = Omit<
   ContractStructure,
@@ -133,9 +150,12 @@ async function applySizing(
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
+  suppressedSizeNodeIds: ReadonlySet<string>,
 ): Promise<void> {
   const [size, bounds] = await Promise.all([
-    resolveSlotSize(node, resolver, warnings, parent),
+    suppressedSizeNodeIds.has(node.id)
+      ? null
+      : resolveSlotSize(node, resolver, warnings, parent),
     resolveSizeBounds(node, resolver, warnings),
   ]);
   if (size) entry.size = size;
@@ -330,6 +350,7 @@ async function describeNode(
   // l'identique donnerait deux propriétaires au même fait ; une prop DIFFÉRENTE
   // reste publiée, c'est une seconde condition que le composant doit lire.
   parentVisibilityProp?: string,
+  suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
 ): Promise<ChildStructure> {
   const entry: ChildStructure = { slot, ...flexItemProperties(parent, child, warnings) };
   if (slot !== child.name) entry.figmaLayer = child.name;
@@ -417,7 +438,7 @@ async function describeNode(
             'rendra le composant sans son cadre. Rendez visible le calque qui porte l’instance'}, ` +
         `puis réexportez.`,
     );
-    await applySizing(entry, parent, child, resolver, warnings);
+    await applySizing(entry, parent, child, resolver, warnings, suppressedSizeNodeIds);
     return entry;
   }
 
@@ -445,6 +466,7 @@ async function describeNode(
           placed,
           depth + 1,
           entry.visibilityProp,
+          suppressedSizeNodeIds,
         )),
     );
   } else if (dependencies.length === 0 && textNodes(child, warnings, composed).length === 0) {
@@ -457,7 +479,7 @@ async function describeNode(
   // Relevé sur TOUS les slots dont ce contrat possède les dimensions, texte
   // compris : un calque de texte peut être figé comme une icône, et le taire
   // ferait dire à son absence « hug » alors que Figma impose une largeur.
-  await applySizing(entry, parent, child, resolver, warnings);
+  await applySizing(entry, parent, child, resolver, warnings, suppressedSizeNodeIds);
   return entry;
 }
 
@@ -749,8 +771,10 @@ export async function extractLayout(
   // Reçoit les dépendances que l'arbre place réellement. `composes` s'en dérive
   // au lieu d'être scanné à part.
   placed: PlacedDependencies = new Map(),
+  suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
+  layoutElectionWarnings: string[] = warnings,
 ): Promise<LayoutStructure> {
-  warnLayersOutsideLayoutNode(component, layoutNode, warnings, composed);
+  warnLayersOutsideLayoutNode(component, layoutNode, layoutElectionWarnings, composed);
   warnIntermediateBounds(component, layoutNode, warnings);
   warnMissingDirection(layoutNode, warnings);
   warnUnsupportedProperties(layoutNode, warnings);
@@ -793,6 +817,8 @@ export async function extractLayout(
         iconNames,
         placed,
         1,
+        undefined,
+        suppressedSizeNodeIds,
       )),
   );
 

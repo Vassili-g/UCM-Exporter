@@ -175,10 +175,10 @@ export async function getSlotTokens(
   const strokes: VariantStrokeColor[] = [];
   // Une feuille n'a qu'une entrée par token : deux calques qui portent la même
   // couleur ne la publient qu'une fois, en silence — c'est la même couleur.
-  const seenPaints = new Set<string>();
+  const seenPaints = new Map<string, { node: SceneNode; role: string }>();
   const seenStrokes = new Map<string, { node: SceneNode; value: VariantStrokeColor }>();
-  // Ce qu'un calque a déjà posé, par champ et par clé de base : c'est ce qui
-  // reconnaît deux couleurs EMPILÉES sur le même calque.
+  // Ce qu'un calque a déjà posé, par champ : toute paire de variables
+  // distinctes y est empilée, même si leurs noms ne partagent aucune base.
   const stacked = new Map<SceneNode, Map<string, string>>();
 
   const resolved = await Promise.all(pending.map(async (binding) => ({
@@ -198,8 +198,8 @@ export async function getSlotTokens(
 
     // Deux couleurs différentes empilées sur le même calque : le contrat les
     // publie toutes les deux — rien n'est perdu — mais il ne sait pas dire
-    // laquelle est au-dessus. Un seul message par calque et par clé de base.
-    const marker = `${binding.field}::${tokenKey(binding.token)}`;
+    // laquelle est au-dessus. Un seul message par calque et par champ.
+    const marker = binding.field;
     const posees = stacked.get(binding.node) ?? new Map<string, string>();
     stacked.set(binding.node, posees);
     const dessous = posees.get(marker);
@@ -209,9 +209,9 @@ export async function getSlotTokens(
       posees.set(marker, '');
       warnings.push(
         `Layer « ${binding.node.name} » : deux ${isStroke ? 'strokes' : 'fills'} ` +
-          `y sont reliés à des variables dont le nom finit pareil (${toRef(dessous)} et ` +
-          `${toRef(binding.token)}). Les deux couleurs sont exportées, mais le contrat ne dira ` +
-          `pas laquelle est au-dessus de l'autre. Ne gardez qu'un ` +
+          `y sont reliés à des variables différentes (${toRef(dessous)} et ` +
+          `${toRef(binding.token)}). Les deux couleurs sont exportées, mais le contrat ne peut pas ` +
+          `exprimer laquelle est au-dessus de l'autre. Ne gardez qu'un ` +
           `${isStroke ? 'stroke' : 'fill'} lié sur ce layer, puis réexportez.`,
       );
     }
@@ -230,6 +230,15 @@ export async function getSlotTokens(
         strokes.push(value);
         continue;
       }
+      if (known.value.role !== value.role) {
+        warnings.push(
+          `Layer « ${binding.node.name} » : le stroke ${toRef(binding.token)} peint ici le rôle ` +
+            `« ${value.role} », mais le layer « ${known.node.name} » lui donne déjà le rôle ` +
+            `« ${known.value.role} ». Le contrat garde le premier rôle et ne représente pas le ` +
+            `second. Reliez ces usages à deux variables distinctes, ` +
+            `puis réexportez.`,
+        );
+      }
       // Même token, géométrie différente : la feuille n'a qu'une entrée par
       // token, ce cas reste réellement irreprésentable.
       if (memeLargeur(known.value.width, value.width) && known.value.align === value.align) continue;
@@ -243,8 +252,20 @@ export async function getSlotTokens(
       continue;
     }
 
-    if (seenPaints.has(binding.token)) continue;
-    seenPaints.add(binding.token);
+    const known = seenPaints.get(binding.token);
+    if (known) {
+      if (known.role !== role) {
+        warnings.push(
+            `Layer « ${binding.node.name} » : la couleur ${toRef(binding.token)} peint ici le rôle ` +
+            `« ${role} », mais le layer « ${known.node.name} » lui donne déjà le rôle ` +
+            `« ${known.role} ». Le contrat garde le premier rôle et ne représente pas le second. ` +
+            `Reliez ces usages à deux variables distinctes, puis ` +
+            `réexportez.`,
+        );
+      }
+      continue;
+    }
+    seenPaints.set(binding.token, { node: binding.node, role });
     paints.push({ token: binding.token, role });
   }
 

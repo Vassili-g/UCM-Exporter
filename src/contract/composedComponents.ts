@@ -7,10 +7,11 @@
  * dimensions, jusqu'à ses props. Un composé ne liste donc que SES tokens, et
  * déclare les autres comme dépendances.
  *
- * Le critère de reconnaissance est celui que le plugin s'applique déjà à
- * lui-même pour autoriser un export : un composant est unifié s'il possède un
- * conteneur « <Nom>-Rules » sur la page (cf. `extractRules`). Aucune liste de
- * noms n'est tenue nulle part, donc aucune règle liée à un composant précis.
+ * Tout COMPONENT ou COMPONENT_SET peut être exporté depuis la 8.0, mais cela
+ * ne suffit pas à en faire une dépendance UCM. Le conteneur `<Nom>-Rules` reste
+ * le marqueur documentaire qui dit qu'un contrat autonome existe : sans lui,
+ * un component set peut n'être qu'un wrapper ou un détail d'implémentation du
+ * composant parent.
  */
 import { compactName, rulesContainerOwner } from './extractRules';
 import { getAllNodes, hasAncestorIn } from './exportableNodes';
@@ -38,7 +39,7 @@ export type ComposedMatrixScan = ComposedInstancesScan & {
 };
 
 /**
- * Relève en UNE fois les composants contractés de la page.
+ * Relève en UNE fois les composants unifiés déclarés sur la page.
  *
  * `extractRules` balaye la page entière pour un seul nom ; refaire ce balayage
  * à chaque instance imbriquée serait quadratique. L'index est donc construit
@@ -52,6 +53,27 @@ export function indexContractedNames(page: PageNode): Set<string> {
   for (const container of page.findAll((node) => rulesContainerOwner(node) !== null)) {
     const owner = rulesContainerOwner(container);
     if (owner) names.add(owner);
+  }
+  return names;
+}
+
+/**
+ * Indexe les contrats du document entier, pas seulement la page courante.
+ *
+ * En chargement dynamique Figma, les autres pages doivent être chargées avant
+ * leur parcours. Le repli sur `currentPage` garde les tests et les anciens
+ * runtimes fonctionnels sans réduire la portée dans un document moderne.
+ */
+export async function indexContractedNamesInDocument(): Promise<Set<string>> {
+  if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync();
+  const pages = (figma.root.children ?? []).filter(
+    (node): node is PageNode => node.type === 'PAGE',
+  );
+  if (pages.length === 0) pages.push(figma.currentPage);
+
+  const names = new Set<string>();
+  for (const page of pages) {
+    for (const name of indexContractedNames(page)) names.add(name);
   }
   return names;
 }
@@ -144,11 +166,10 @@ export async function scanComposedInstances(
  * d'après le seul variant de référence ne protégerait que celui-là, et les
  * autres continueraient d'aspirer les couleurs du composant embarqué.
  *
- * `structure.children` décrit le variant de référence. `composes` doit donc
- * décrire exactement le même variant pour que les deux champs ne se
- * contredisent jamais. Une composition différente ailleurs dans la matrice
- * produit un warning : le schéma courant ne sait pas représenter un slot
- * composé qui apparaît ou disparaît selon un axe.
+ * `structure.children` décrit encore le variant de référence, mais chaque
+ * entrée de `variants` porte désormais son arbre et ses dépendances exactes.
+ * Une composition différente produit donc une notice de compatibilité ; le
+ * champ global `composes` sera ensuite agrégé depuis ces vues exactes.
  */
 export async function scanComposedMatrix(
   variants: readonly SceneNode[],
@@ -181,8 +202,9 @@ export async function scanComposedMatrix(
     ? [
       `Composition différente sur ${divergentVariants.length} variant(s), ex. ${examples}` +
         `${remaining > 0 ? ` (+${remaining})` : ''} : le contrat décrit le variant de ` +
-        `référence « ${roots[0]?.name ?? 'inconnu'} ». Harmonisez la composition Figma ` +
-        'entre les variants ou séparez-les en composants distincts.',
+        `référence « ${roots[0]?.name ?? 'inconnu'} ». Les arbres exacts de « variants » ` +
+        `conservent ces compositions différentes ; le champ global « composes » en publie ` +
+        `l'union ordonnée, tandis que « structure » reste la vue historique de référence.`,
     ]
     : [];
 

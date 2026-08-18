@@ -81,7 +81,7 @@ test('une taille d’icône lue sur toute la matrice puis écartée n’entre pa
   );
 });
 
-test('les couleurs d’une variante écartée pour conflit n’entrent pas dans l’index', async () => {
+test('un doublon d’axes garde toutes ses couleurs dans la vue exacte', async () => {
   const variante = (nom: string, valeur: string, couleurId: string) => ({
     type: 'COMPONENT',
     id: nom,
@@ -93,12 +93,14 @@ test('les couleurs d’une variante écartée pour conflit n’entrent pas dans 
   }) as unknown as ComponentNode;
 
   const warnings: string[] = [];
-  const { variantTokens } = await extractVariantTokens(
+  const first = variante('Color=Primary', 'Primary', 'premiere');
+  const second = variante('Color=primary', 'primary', 'seconde');
+  const { variantTokens, tokensByComponent } = await extractVariantTokens(
     {
       axes: ['color'],
       variants: [
-        { values: { color: 'primary' }, component: variante('Color=Primary', 'Primary', 'premiere') },
-        { values: { color: 'primary' }, component: variante('Color=primary', 'primary', 'seconde') },
+        { values: { color: 'primary' }, component: first },
+        { values: { color: 'primary' }, component: second },
       ],
     },
     resolverFor({
@@ -108,14 +110,23 @@ test('les couleurs d’une variante écartée pour conflit n’entrent pas dans 
     warnings,
   );
 
-  // Deux variantes se normalisent pareil : la seconde est écartée, et signalée.
+  // Deux variantes se normalisent pareil : l'index historique garde la première
+  // mais les deux feuilles exactes restent contractuelles.
   assert.ok(warnings.some((warning) => warning.includes('Variants « primary »')));
 
   const references = collectTokenReferences(variantTokens);
   assert.equal(
     references.has('{components.button.colors.secondary.background}'),
     false,
-    'la variante écartée n’apparaît pas dans le contrat : ses couleurs non plus',
+    'l’index historique ne peut porter que la première coordonnée',
+  );
+  assert.deepEqual(tokensByComponent.get(second), {
+    background: '{components.button.colors.secondary.background}',
+  });
+  assert.equal(
+    collectTokenReferences(Array.from(tokensByComponent.values()))
+      .has('{components.button.colors.secondary.background}'),
+    true,
   );
 });
 

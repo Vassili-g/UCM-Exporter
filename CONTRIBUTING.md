@@ -69,8 +69,11 @@ une supposition.
 Les préconditions définies par la spécification restent bloquantes :
 
 - sélection invalide ;
-- conteneur `<Nom>-Rules` absent ou vide ;
-- combinaison de variantes manquante.
+- composant ou component set sans aucun variant exportable.
+
+L'absence de règles et une matrice clairsemée sont des diagnostics, pas des
+blocages : la liste exacte `variants` permet désormais de produire un contrat
+cohérent dans les deux cas.
 
 Tout accès Figma susceptible d’échouer doit être protégé. Les chaînes d’alias
 doivent détecter les cycles. Une collision ou une perte d’information ne doit

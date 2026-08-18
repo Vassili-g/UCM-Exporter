@@ -3,7 +3,7 @@
  * Rôle : afficher l'UI, écouter ses demandes d'export, lancer le bon
  * handler et lui renvoyer le fichier produit ou l'erreur.
  */
-import { extractRules, hasUsableRules, unusableRulesMessage } from './contract/extractRules';
+import { extractRules, hasUsableRules } from './contract/extractRules';
 import handleExportComponent, { CONTRACT_VERSION } from './contract/exportComponent';
 import handleExportTokens from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
@@ -73,28 +73,35 @@ async function refreshConfiguration(): Promise<void> {
 let selectionToken = 0;
 
 /**
- * Analyse la sélection courante et prévient l'utilisateur AVANT toute action :
- * un Component Set sans règles ne pourra pas être exporté, on le signale tout de
- * suite en mode « warning ».
+ * Analyse la sélection courante et prévient l'utilisateur AVANT toute action.
+ * Les règles enrichissent la documentation ; elles ne bloquent plus la capture.
  */
 async function reportSelectionState(): Promise<void> {
   const token = (selectionToken += 1);
   const selection = figma.currentPage.selection;
 
-  if (selection.length !== 1 || selection[0].type !== 'COMPONENT_SET') {
-    postNote('', 'Sélectionnez un Component Set dans Figma, puis utilisez les actions ci-dessus.');
+  if (
+    selection.length !== 1
+    || (selection[0].type !== 'COMPONENT_SET' && selection[0].type !== 'COMPONENT')
+  ) {
+    postNote('', 'Sélectionnez un Component ou Component Set dans Figma, puis utilisez les actions ci-dessus.');
     return;
   }
 
-  const componentSet = selection[0];
-  const rules = await extractRules(componentSet);
+  const component = selection[0];
+  const rules = await extractRules(component);
   // La sélection a pu changer pendant la lecture asynchrone : on abandonne alors.
   if (token !== selectionToken) return;
 
   if (!hasUsableRules(rules)) {
-    postNote('warning', unusableRulesMessage(componentSet.name, rules));
+    postNote(
+      'warning',
+      `« ${component.name} » est exportable, mais aucune règle d’usage exploitable ne documente `
+        + `quand l’utiliser. Les diagnostics diront ce que le contrat sait décrire, et intent `
+        + `vaudra null.`,
+    );
   } else {
-    postNote('success', `« ${componentSet.name} » prêt à l'export.`);
+    postNote('success', `« ${component.name} » prêt à l'export.`);
   }
 }
 
@@ -220,7 +227,7 @@ figma.ui.onmessage = async (message: UiRequest) => {
   }
 
   if (message.type === 'export-component') {
-    await runExport('Analyse du Component Set…', 'Contrat généré', 'component', handleExportComponent);
+    await runExport('Analyse du composant…', 'Contrat généré', 'component', handleExportComponent);
     return;
   }
 

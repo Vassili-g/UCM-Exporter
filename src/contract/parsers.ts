@@ -98,6 +98,8 @@ export type ContractPropertyModel = {
   props: Record<string, ContractProp>;
   /** Axe normalisé dans Figma → clé réellement publiée dans le contrat. */
   publicVariantKeyByRawKey: Map<string, string>;
+  /** Nom technique Figma complet (`Label#12:3`) → prop publique. */
+  publicPropertyKeyByFigmaName: Map<string, string>;
 };
 
 export function extractContractPropertyModel(
@@ -106,6 +108,7 @@ export function extractContractPropertyModel(
 ): ContractPropertyModel {
   const props: Record<string, ContractProp> = {};
   const publicVariantKeyByRawKey = new Map<string, string>();
+  const publicPropertyKeyByFigmaName = new Map<string, string>();
   /** Nom Figma qui détient chaque clé publique, pour nommer les deux camps d'un conflit. */
   const owners = new Map<string, string>();
 
@@ -183,7 +186,10 @@ export function extractContractPropertyModel(
         // figmaName n'apparaît que si la clé publique diffère du nom Figma.
         ...(publicKey !== key ? { figmaName: rawFigmaName } : {}),
       });
-      if (claimed) publicVariantKeyByRawKey.set(key, publicKey);
+      if (claimed) {
+        publicVariantKeyByRawKey.set(key, publicKey);
+        publicPropertyKeyByFigmaName.set(propertyName, publicKey);
+      }
       continue;
     }
 
@@ -202,19 +208,44 @@ export function extractContractPropertyModel(
         );
         continue;
       }
-      claim(key, rawFigmaName, { type: 'boolean', default: Boolean(definition.defaultValue) });
+      if (claim(key, rawFigmaName, { type: 'boolean', default: Boolean(definition.defaultValue) })) {
+        publicPropertyKeyByFigmaName.set(propertyName, key);
+      }
       continue;
     }
 
     if (definition.type === 'TEXT') {
-      claim(key, rawFigmaName, {
+      if (claim(key, rawFigmaName, {
         type: 'string',
         default: typeof definition.defaultValue === 'string' ? definition.defaultValue : null,
-      });
+      })) publicPropertyKeyByFigmaName.set(propertyName, key);
+      continue;
+    }
+
+    if (definition.type === 'INSTANCE_SWAP') {
+      if (claim(key, rawFigmaName, {
+        type: 'instance-swap',
+        default: typeof definition.defaultValue === 'string' ? definition.defaultValue : null,
+        preferredValues: [...(definition.preferredValues ?? [])],
+      })) publicPropertyKeyByFigmaName.set(propertyName, key);
+      continue;
+    }
+
+    if (definition.type === 'SLOT') {
+      if (claim(key, rawFigmaName, {
+        type: 'slot',
+        default:
+          typeof definition.defaultValue === 'string' || typeof definition.defaultValue === 'boolean'
+            ? definition.defaultValue
+            : null,
+        preferredValues: [...(definition.preferredValues ?? [])],
+        ...(definition.description ? { description: definition.description } : {}),
+        ...(definition.slotSettings ? { settings: { ...definition.slotSettings } } : {}),
+      })) publicPropertyKeyByFigmaName.set(propertyName, key);
     }
   }
 
-  return { props, publicVariantKeyByRawKey };
+  return { props, publicVariantKeyByRawKey, publicPropertyKeyByFigmaName };
 }
 
 /** Raccourci historique pour les appelants qui n'ont besoin que des props. */
