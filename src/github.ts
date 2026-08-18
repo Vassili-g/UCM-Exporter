@@ -3,8 +3,8 @@
  * branche dédiée puis ouvrir une PR. Aucun PAT n'est logué ni renvoyé à l'UI.
  */
 import type { GithubConfig } from './config';
-import { decodeBase64, encodeBase64 } from './base64';
-export { decodeBase64, encodeBase64 } from './base64';
+import { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
+export { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_API_VERSION = '2022-11-28';
@@ -210,7 +210,7 @@ export async function publishArtifact(
   date = new Date(),
 ): Promise<PublishResult> {
   const maximumGithubFileSize = 100 * 1024 * 1024;
-  if (new TextEncoder().encode(artifact.content).byteLength > maximumGithubFileSize) {
+  if (utf8ByteLength(artifact.content) > maximumGithubFileSize) {
     throw new GithubApiError(
       'Le contrat dépasse la limite GitHub de 100 Mo. Il reste disponible en téléchargement local.',
     );

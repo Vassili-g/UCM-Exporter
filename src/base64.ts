@@ -64,6 +64,11 @@ export function encodeBase64(value: string): string {
   return binaryToBase64(unicodeToBinary(value));
 }
 
+/** Taille UTF-8 d'une chaîne, sans dépendre de `TextEncoder` dans le sandbox Figma. */
+export function utf8ByteLength(value: string): number {
+  return unicodeToBinary(value).length;
+}
+
 /** Décode le contenu Base64 UTF-8 renvoyé par GitHub. */
 export function decodeBase64(value: string): string {
   return binaryToUnicode(base64ToBinary(value));

@@ -8,6 +8,7 @@ import {
   exportBranchName,
   publishArtifact,
   pullRequestBody,
+  utf8ByteLength,
 } from '../src/github';
 
 const config: GithubConfig = {
@@ -35,6 +36,10 @@ test('encodeBase64 préserve les caractères Unicode', () => {
   const value = '{"usage":"Être cohérent"}';
   assert.equal(encodeBase64(value), Buffer.from(value, 'utf8').toString('base64'));
   assert.equal(decodeBase64(encodeBase64(value)), value);
+});
+
+test('utf8ByteLength reste disponible sans TextEncoder', () => {
+  assert.equal(utf8ByteLength('Être cohérent'), Buffer.byteLength('Être cohérent', 'utf8'));
 });
 
 test('decodeBase64 accepte les retours à la ligne GitHub et refuse une Base64 invalide', () => {
@@ -81,6 +86,31 @@ test('publishArtifact ne crée aucune branche si le fichier est inchangé', asyn
     assert.equal(calls.length, 1);
   } finally {
     globalThis.fetch = previousFetch;
+  }
+});
+
+test('publishArtifact fonctionne dans un runtime Figma sans TextEncoder', async () => {
+  const previousFetch = globalThis.fetch;
+  const previousTextEncoder = (globalThis as any).TextEncoder;
+  (globalThis as any).TextEncoder = undefined;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    type: 'file',
+    sha: 'existing-sha',
+    content: encodeBase64('{"same":true}\n'),
+    encoding: 'base64',
+  }), { status: 200 });
+
+  try {
+    const result = await publishArtifact(config, {
+      kind: 'tokens',
+      filename: 'tokens.json',
+      content: '{"same":true}\n',
+      warnings: [],
+    });
+    assert.deepEqual(result, { status: 'unchanged', path: 'src/tokens/tokens.json' });
+  } finally {
+    globalThis.fetch = previousFetch;
+    (globalThis as any).TextEncoder = previousTextEncoder;
   }
 });
 
