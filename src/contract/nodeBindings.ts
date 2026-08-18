@@ -7,7 +7,12 @@
  */
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
-import { containerSizing, fixedDimensions, sizeBoundFields } from './flexLayout';
+import {
+  containerSizing,
+  fixedDimensions,
+  gridCellSizedAxes,
+  sizeBoundFields,
+} from './flexLayout';
 import type { ContainerSizing, SizeBounds, SlotSize } from './types';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
@@ -621,22 +626,21 @@ export async function resolveSlotSize(
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
+  // La cellule d'une grille décide de la boîte de son enfant : le parent est
+  // donc nécessaire pour savoir ce que ce calque possède vraiment.
+  parent?: SceneNode,
 ): Promise<SlotSize | null> {
   const fixed = fixedDimensions(node);
-  // Une grille ne change rien ici. Un enfant qui remplit sa cellule est déjà en
-  // `Fill` — `fixedDimensions` le sait, et rien ne lui est réclamé. Un enfant
-  // qui porte une hauteur À LUI la porte pour de bon, cellule ou pas : le taire
-  // parce qu'une grille l'entoure ferait perdre au contrat une dimension que
-  // Figma applique, et le développeur rendrait la tuile à la taille de son
-  // contenu.
-  const [width, height] = await Promise.all([
-    fixed.width
-      ? resolveField(node, BINDING_PATTERNS.width, 'width', resolver, warnings)
-      : null,
-    fixed.height
-      ? resolveField(node, BINDING_PATTERNS.height, 'height', resolver, warnings)
-      : null,
-  ]);
+  const cellule = parent ? gridCellSizedAxes(parent, node) : { width: false, height: false };
+  const axe = (field: 'width' | 'height'): Promise<string | null> | null => {
+    if (!fixed[field]) return null;
+    // Sur un axe que la cellule décide, une dimension citant une variable reste
+    // publiée — c'est une décision que le calque porte malgré la cellule — mais
+    // son absence ne se réclame pas : la piste et l'étendue disent déjà la place.
+    if (cellule[field]) return resolveBoundAxis(node, field, resolver, warnings);
+    return resolveField(node, BINDING_PATTERNS[field], field, resolver, warnings);
+  };
+  const [width, height] = await Promise.all([axe('width'), axe('height')]);
 
   if (!width && !height) return null;
   if (width && width === height) return width;
@@ -693,13 +697,14 @@ export async function resolveSizeBounds(
 }
 
 /**
- * Token d'un axe du composant, relevé seulement là où Figma en porte un.
+ * Token d'un axe dont la dimension figée est déjà expliquée par ailleurs.
  *
- * La différence avec un slot tient au silence : un axe figé que le designer n'a
- * relié à aucune variable est une taille de maquette assumée, décrite par le
- * `stretch` de `containerSizing`, et rien ne manque au contrat. Réclamer une
- * variable ici avertirait sur presque tous les component sets, dont le cadre
- * fixe est la norme.
+ * Deux calques sont dans ce cas, pour la même raison. Le composant : un axe figé
+ * sans variable est une taille de maquette assumée, décrite par le `stretch` de
+ * `containerSizing`, et réclamer une variable avertirait sur presque tous les
+ * component sets. Un enfant de grille : sa boîte est celle de sa cellule, que
+ * les pistes et son étendue décrivent déjà. Dans les deux cas, le geste demandé
+ * ne changerait rien au rendu.
  *
  * Une liaison présente mais irrésolue avertit en revanche par `resolveField` :
  * le designer a bien désigné une variable, et le contrat n'a pas su la nommer.

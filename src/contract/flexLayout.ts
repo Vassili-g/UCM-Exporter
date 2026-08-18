@@ -116,6 +116,37 @@ export function gridTrackSizes(
   };
 }
 
+/**
+ * Axes dont la CELLULE décide, pour un enfant de grille resté dans le flux.
+ *
+ * Remplir sa cellule est le DÉFAUT d'un enfant de grille — `stretch` en CSS,
+ * « Fill » dans le panneau de Figma — et son alignement vaut alors `AUTO`. Sa
+ * boîte est celle de la cellule, que les pistes et son étendue décrivent déjà.
+ *
+ * Ce que l'API rend sur cet axe ne peut pas servir à en juger : Figma n'expose
+ * pas de remplissage dans une piste qui hug, exactement comme une piste `FLEX`
+ * est un état invalide sous un conteneur qui hug. Il rend alors la taille
+ * CALCULÉE du calque là où le panneau affiche « Fill ». Lui réclamer une
+ * variable envoie le designer vérifier un champ qui lui donne déjà raison.
+ *
+ * Un alignement explicite est la seule exception, et c'est le même mot en CSS :
+ * un enfant en `center` ou en `flex-start` ne s'étire plus, sa dimension
+ * redevient la sienne, et la règle commune s'applique.
+ */
+export function gridCellSizedAxes(
+  parent: SceneNode,
+  child: SceneNode,
+): { width: boolean; height: boolean } {
+  if (!isGridAutoLayout(parent) || isAbsolutePositioned(child)) {
+    return { width: false, height: false };
+  }
+  const values = asPropertyBag(child);
+  return {
+    width: gridSelfAlignment(values.gridChildHorizontalAlign) === null,
+    height: gridSelfAlignment(values.gridChildVerticalAlign) === null,
+  };
+}
+
 /** Alignement d'un enfant de grille dans sa cellule ; `AUTO` est la valeur neutre. */
 function gridSelfAlignment(value: unknown): AlignSelf | null {
   if (value === 'MIN') return 'flex-start';

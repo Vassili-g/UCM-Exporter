@@ -126,9 +126,8 @@ existence (`layout: "grid"`, `columns`, `rows`, les deux gaps), puis ce qui
 donne réellement une boîte à ses enfants (`columnSizes`, `rowSizes`,
 `columnStart`, `rowStart`) — propriétaire (le conteneur pour les pistes,
 l’enfant pour sa place), forme (le vocabulaire de `grid-template-*`),
-comportement (une piste figée à la main vaut `null` et avertit). La grille ne
-dispense pour autant aucun calque de la règle commune : sa dimension propre se
-publie ou avertit comme partout ailleurs. Le padding par
+comportement (une piste figée à la main vaut `null` et avertit, et un enfant qui
+remplit sa cellule lit sa boîte dans les pistes au lieu de la réclamer). Le padding par
 côté l’a quittée en 7.0, avec le rayon et la largeur d’un stroke : propriétaire
 (le calque qui porte le champ), forme (une référence, ou le détail par côté),
 comportement (un groupe incomplet ne publie rien et avertit, comme avant). L’exigence de cette liste porte sur ce que le composant
