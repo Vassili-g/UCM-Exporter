@@ -129,13 +129,12 @@ function warnUnsupportedProperties(node: SceneNode, warnings: string[]): void {
  */
 async function applySizing(
   entry: ChildStructure,
-  parent: SceneNode,
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
 ): Promise<void> {
   const [size, bounds] = await Promise.all([
-    resolveSlotSize(node, resolver, warnings, parent),
+    resolveSlotSize(node, resolver, warnings),
     resolveSizeBounds(node, resolver, warnings),
   ]);
   if (size) entry.size = size;
@@ -417,7 +416,7 @@ async function describeNode(
             'rendra le composant sans son cadre. Rendez visible le calque qui porte l’instance'}, ` +
         `puis réexportez.`,
     );
-    await applySizing(entry, parent, child, resolver, warnings);
+    await applySizing(entry, child, resolver, warnings);
     return entry;
   }
 
@@ -457,7 +456,7 @@ async function describeNode(
   // Relevé sur TOUS les slots dont ce contrat possède les dimensions, texte
   // compris : un calque de texte peut être figé comme une icône, et le taire
   // ferait dire à son absence « hug » alors que Figma impose une largeur.
-  await applySizing(entry, parent, child, resolver, warnings);
+  await applySizing(entry, child, resolver, warnings);
   return entry;
 }
 
@@ -626,11 +625,6 @@ function slotSizeSignature(node: SceneNode, iconNames: ReadonlySet<string>): obj
   const bounds = { bounds: sizeBoundsSignature(node) };
   if (isIconLayer(node, iconNames)) return bounds;
 
-  // La règle de la cellule (`gridCellSizedAxes`) ne change rien ici : ce qu'on
-  // compare est la VARIABLE citée, et c'est exactement ce que `resolveSlotSize`
-  // publie sous une grille comme ailleurs. Un axe figé sans variable vaut donc
-  // `null` dans les deux régimes, et la signature n'a pas de second calcul à
-  // tenir à jour.
   const fixed = fixedDimensions(node);
   const boundVariableId = (field: string) =>
     firstVariableAlias(getBinding(node, field))?.id ?? null;
