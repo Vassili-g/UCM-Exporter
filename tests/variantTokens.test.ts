@@ -103,7 +103,7 @@ test('getSlotTokens avertit quand la largeur du stroke est une valeur brute', as
   ]);
 });
 
-test('getSlotTokens refuse une largeur de stroke partiellement liée', async () => {
+test('getSlotTokens publie une largeur de stroke partiellement liée', async () => {
   const node = {
     type: 'RECTANGLE',
     name: 'Button ring',
@@ -125,9 +125,9 @@ test('getSlotTokens refuse une largeur de stroke partiellement liée', async () 
 
   const tokens = await getSlotTokens(node, resolver, warnings);
 
-  assert.equal(tokens.strokes[0]?.width, null);
+  assert.deepEqual(tokens.strokes[0]?.width, { top: '{layouts.stroke.ring}' });
   assert.ok(warnings.some((warning) => warning.includes('right stroke weight')));
-  assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
+  assert.ok(warnings.some((warning) => warning.includes('les côtés tokenisés sont exportés')));
 });
 
 test('getSlotTokens ignore un ancien fond statiquement masqué au profit du fond visible', async () => {
@@ -351,6 +351,10 @@ test('extractVariantTokens ajoute la largeur du stroke à tokensUsed', async () 
         align: 'outside',
       },
     }]]),
+    paintNodeIdsByComponent: new Map([[node, {
+      fills: {},
+      strokes: { ring: [] },
+    }]]),
     discoveredRoles: new Map(),
   });
   assert.deepEqual(Array.from(collectTokenReferences(trees)).sort(), [
@@ -462,7 +466,7 @@ test('la couleur portée par une dépendance n’entre pas dans le contrat du co
   // la ferait entrer dans `variantTokens` et dans `tokensUsed` du parent : le
   // contrat annoncerait une couleur qu'aucun de ses calques ne peint.
   assert.deepEqual(tokens.paints, [
-    { token: 'components.page.colors.background', role: 'background' },
+    { token: 'components.page.colors.background', role: 'background', nodeIds: ['panneau'] },
   ]);
   assert.deepEqual(warnings, []);
 });
@@ -555,7 +559,11 @@ test('un même token utilisé pour deux rôles ne perd pas le conflit en silence
 
   const tokens = await getSlotTokens(racine, resolver, warnings);
 
-  assert.deepEqual(tokens.paints, [{ token: 'colors.shared', role: 'background' }]);
+  assert.deepEqual(tokens.paints, [{
+    token: 'colors.shared',
+    role: 'background',
+    nodeIds: ['racine', 'texte'],
+  }]);
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /« background »/);
   assert.match(warnings[0], /« foreground »/);

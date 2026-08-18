@@ -7,7 +7,7 @@ Il produit deux artefacts :
 
 | Commande | Sortie | Contenu |
 |---|---|---|
-| **Exporter le composant** | `<IdentifiantCode>.contract.json` | Capture Figma exhaustive, API visuelle portable, variantes exactes, états, structure, tokens, icônes et règles d’usage |
+| **Exporter le composant** | `<IdentifiantCode>.contract.json` | Projection visuelle portable, variantes exactes, états, structure, tokens, icônes et règles d’usage |
 | **Exporter les tokens** | `tokens.json` | Variables locales au format DTCG, avec leurs alias et leurs modes |
 
 Ces artefacts mettent en œuvre l’**UCM — Unified Component Model** : Figma porte
@@ -76,23 +76,27 @@ Chaque document a un rôle unique :
   et format actuel des sorties ;
 - [ROADMAP.md](./ROADMAP.md) — maturité, limites et prochaines validations ;
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
-- [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — options non engagées, dont les
-  conditions d’une future extension de structure ou de layout ;
-- [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) — proposition, aucune
-  décision prise : rendre générique la vérification de rendu du repository
-  consommateur ;
+- [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — options non engagées et
+  conditions à réunir avant de les ouvrir ;
+- [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) — proposition non décidée
+  pour rendre générique la vérification du rendu côté consommateur ;
 - [AGENTS.md](./AGENTS.md) — guide opérationnel pour contribuer avec un agent ;
 - [UCM Playground](https://github.com/Vassili-g/UCM-Playground) — consommateur
   de référence des artefacts.
 
 ## État
 
-Le moteur écrit la version **9.0** du contrat. Elle accepte un Component seul ou
-un Component Set, y compris une matrice clairsemée. Le contrat reste une
-projection UCM portable et autosuffisante ; chaque variante exacte porte ses
-tokens et strokes et référence une vue complète dédupliquée pour son arbre, sa
-typographie, ses icônes et ses dépendances ; le Playground dérive un type discriminé des
-seules combinaisons d'enums présentes. Alert et Button doivent
-encore être réexportés depuis Figma pour renouveler le corpus réel, qui ne doit
-jamais être édité à la main.
+Le moteur écrit la version **10.0** du contrat. Elle accepte un Component seul ou
+un Component Set, y compris une matrice clairsemée. Chaque variante exacte
+porte ses tokens et ses strokes, puis référence une vue complète dédupliquée
+pour son arbre, sa typographie, ses icônes, ses dépendances et les chemins de
+ses peintures. Les pistes FIXED d'une grille sont conservées en pixels et les
+valeurs par côté peuvent être clairsemées. Le Playground
+consomme cette forme et dérive un type discriminé des seules combinaisons
+d’enums présentes.
+
+Les exports Figma 9.0 d’Alert, Button et StressTest restent intégrés au Playground.
+Un réexport 10.0 est nécessaire pour valider les nouveaux champs sur Figma.
+Le corpus de régression de ce dépôt contient encore Alert et Button en 4.9 : il
+doit être renouvelé par un réexport Figma, jamais en éditant les JSON à la main.
 Voir [ROADMAP.md](./ROADMAP.md) pour le périmètre de validation.

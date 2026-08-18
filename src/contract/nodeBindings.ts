@@ -121,6 +121,10 @@ const IMPLICIT_DEFAULTS: Readonly<Record<string, number>> = {
   topRightRadius: 0,
   bottomLeftRadius: 0,
   bottomRightRadius: 0,
+  strokeTopWeight: 0,
+  strokeRightWeight: 0,
+  strokeBottomWeight: 0,
+  strokeLeftWeight: 0,
 };
 
 /**
@@ -325,7 +329,7 @@ export const SIDE_KEYS = {
 } as const;
 
 /** Un groupe résolu : une valeur unique, ou le détail par côté. */
-type GroupResolution<K extends string> = string | Record<K, string> | null;
+type GroupResolution<K extends string> = string | Partial<Record<K, string>> | null;
 
 type AlternativeResolution = {
   fields: ReadonlyArray<string>;
@@ -338,7 +342,9 @@ type AlternativeResolution = {
  *
  * Le tableau extérieur décrit des alternatives (`cornerRadius` OU quatre
  * coins) ; chaque tableau intérieur est une conjonction (gauche ET droite).
- * Une représentation PARTIELLE vaut `null` : conserver le premier token ferait
+ * Une représentation partielle sans sémantique de côtés vaut `null`. Pour un
+ * groupe latéral, seuls les côtés réellement résolus peuvent être publiés :
+ * conserver le premier token pour les autres ferait
  * affirmer au contrat une valeur que Figma ne prouve pas.
  *
  * Des côtés complets mais reliés à des variables différentes valent `null` eux
@@ -460,6 +466,49 @@ async function resolveGroup<K extends string>(
     return candidates[0] ?? null;
   }
 
+  // Une valeur réglable côté par côté peut être volontairement clairsemée :
+  // deux coins arrondis et deux coins à zéro, ou un seul bord visible. Les
+  // côtés neutres n'ont rien à tokeniser ; les côtés liés restent publiables.
+  if (sides) {
+    const sided = resolved.find((entry) => (
+      entry.fields.every((field) => sides[field] !== undefined)
+      && entry.aliases.some(Boolean)
+    ));
+    if (sided) {
+      const detail: Partial<Record<K, string>> = {};
+      const missing: string[] = [];
+      const unresolved: string[] = [];
+      const values = node as unknown as Record<string, unknown>;
+      sided.fields.forEach((field, index) => {
+        const alias = sided.aliases[index];
+        const token = sided.tokens[index];
+        if (alias && token) {
+          detail[sides[field]] = token;
+          return;
+        }
+        if (alias) {
+          unresolved.push(field);
+          return;
+        }
+        if (values[field] !== IMPLICIT_DEFAULTS[field]) missing.push(field);
+      });
+      const details = [
+        missing.length > 0 ? `sans variable : ${missing.map(fieldLabel).join(', ')}` : null,
+        unresolved.length > 0
+          ? `variable introuvable : ${unresolved.map(fieldLabel).join(', ')}`
+          : null,
+      ].filter((value): value is string => Boolean(value));
+      if (details.length > 0) {
+        warnings.push(
+          `Layer « ${node.name} » — ${label} : les côtés tokenisés sont exportés, mais la `
+            + `définition reste partielle (${details.join(' ; ')}). Reliez les valeurs non `
+            + `neutres manquantes à des variables, puis réexportez.`,
+        );
+      }
+      if (Object.keys(detail).length > 0) return detail;
+    }
+  }
+
   const withBindings = resolved.filter((entry) => entry.aliases.some(Boolean));
   if (withBindings.length === 0) {
     if (hasImplicitDefaultValue(node, alternatives)) return null;
@@ -517,11 +566,11 @@ export async function resolveTokenName(
  * Résout un groupe dont chaque côté peut porter SA décision : une valeur unique
  * quand tous citent la même variable, le détail par côté sinon.
  *
- * Le reste de la règle ne bouge pas : un groupe partiel — un côté relié, l'autre
- * écrit à la main — ne publie rien et avertit. C'est ce qui garde l'extraction
- * d'accord avec `hasCompleteBinding`, donc avec l'élection du node de layout :
- * publier un demi-padding ferait décrire par le contrat un calque que l'élection
- * n'a pas retenu.
+ * Un groupe par côté peut être clairsemé : les côtés liés sont publiés, les
+ * côtés à zéro restent absents, et les valeurs fixes non neutres avertissent.
+ * `hasCompleteBinding` demeure volontairement plus strict pour l'élection du
+ * node de layout : une valeur partielle se décrit sur un calque déjà publié,
+ * mais ne suffit pas à en faire le wrapper de dimensions.
  */
 export async function resolveSidedTokenNames<K extends string>(
   node: SceneNode,
@@ -537,10 +586,10 @@ export async function resolveSidedTokenNames<K extends string>(
 /** Enrobe en référence de contrat une valeur unique ou détaillée par côté. */
 export function toSidedRef<K extends string>(
   resolved: GroupResolution<K>,
-): string | Record<K, string> | null {
+): string | Partial<Record<K, string>> | null {
   if (resolved === null) return null;
   if (typeof resolved === 'string') return toRef(resolved);
-  const refs = {} as Record<K, string>;
+  const refs: Partial<Record<K, string>> = {};
   for (const [side, token] of Object.entries(resolved) as Array<[K, string]>) {
     refs[side] = toRef(token);
   }
@@ -555,7 +604,7 @@ export async function resolveSidedField<K extends string>(
   label: string,
   resolver: TokenResolver,
   warnings: string[],
-): Promise<string | Record<K, string> | null> {
+): Promise<string | Partial<Record<K, string>> | null> {
   return toSidedRef(
     await resolveSidedTokenNames(node, alternatives, sides, label, resolver, warnings),
   );

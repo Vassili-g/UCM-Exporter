@@ -23,10 +23,12 @@ src/
   contract/
     exportComponent.ts       orchestration et métadonnées
     componentTree.ts         axes, matrice et wrapper de layout
+    compactVariants.ts       catalogue v9 des vues et liaisons exactes
     layoutNodes.ts           élection du node de layout, une fois par variant
     exportableNodes.ts       parcours de l'arbre, hors dépendances composées
     parsers.ts               propriétés Figma → API publique
     merge*.ts                doc et icônes des règles, rangées sur leur axe
+    rulesModel.ts            modèle pur des règles d’usage
     semantics.ts             vocabulaire sémantique partagé
     colorKeys.ts             clé d'une couleur dans la feuille d'un variant
     structureTree.ts         qui est un conteneur, qui est une feuille
@@ -34,8 +36,10 @@ src/
     extract*.ts              structure, layout, tailles, tokens et règles
     flexLayout.ts            propriétés de flux et avertissements non portables
     slotNames.ts             nommage des slots et calques d'icônes
+    slotRelations.ts         composition et visibilité dans un slot
     composedComponents.ts    dépendances entre composants
     nodeBindings.ts          groupes complets de liaisons Figma
+    propertyBindings.ts      component properties situées dans chaque variant
     types.ts                 schéma TypeScript du contrat
   tokens/exportTokens.ts     export DTCG
   variables.ts               index commun, collisions et alias
@@ -158,9 +162,9 @@ tests/
   d’une dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni
   visibilité alors que ses couleurs entrent dans `variants[].tokens` : il produit
   donc un avertissement.
-- Une propriété Figma que le schéma ne sait pas porter — grille, position
-  absolue — avertit au lieu de disparaître. `layout` reste publié parce que sa
-  forme l’exige, mais un repli `flex-row` se signale.
+- Une propriété Figma que le schéma ne sait pas porter avertit au lieu de
+  disparaître. `layout` reste publié parce que sa forme l’exige, mais un repli
+  `flex-row` se signale.
 - Le wrap, lui, se publie : `wrap` est une propriété de flux et reste au niveau
   haut même sous `sizes` ; `rowGap` est un token et suit la règle commune. Son
   absence sous `wrap` vaut `gap` — Figma synchronise les deux champs sans le
@@ -199,23 +203,23 @@ tests/
   EST un rôle partagé reste une déclaration du designer et l’emporte : c’est le
   seul moyen de distinguer un `ring` d’un `border`, et cette déclaration se lit
   sur le dernier segment du TOKEN, jamais sur la clé publiée.
-- Situer chaque couleur dans `structure.children` reste ouvert : le contrat dit
-  COMMENT peindre une clé, pas SUR QUEL calque. C’est l’adressage par chemin de
-  slots — non engagé.
+- Chaque `variantViews.*.paintPlacements` situe les fills et strokes par les
+  chemins exacts de l'arbre publié ; `[]` cible la racine. Les chemins sont
+  collectés pendant l'unique extraction de `structure.children`.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours
   un slot réel de `structure.children`.
-- Une liaison composée n’est valide que si tout le groupe requis est lié :
-  deux paddings, deux dimensions, quatre coins, etc. Les côtés d’un même champ
+- Une valeur uniforme n’est valide que si tout le groupe requis est lié. Les côtés d’un même champ
   peuvent en revanche citer des variables DIFFÉRENTES : le contrat publie alors
   le détail (`padding.x`, `padding.y`, `radius`, largeur d’un stroke) au lieu de
   tout perdre, et garde la forme courte quand ils la partagent. Le design system
   nommait déjà ces variables séparément — c’est le moteur qui exigeait
   l’aplatissement. La taille d’un slot n’en est pas : ses deux axes ne sont pas
-  deux côtés, et deux variables y décrivent une dimension inexprimable.
-  Publier un groupe partiel, en revanche, remettrait l’extraction en désaccord
-  avec `hasCompleteBinding`, donc avec l’élection du node de layout.
+  deux côtés, et deux variables y décrivent une dimension inexprimable. Un
+  groupe par côté peut être partiel quand les côtés absents valent zéro ; un
+  côté fixe non neutre avertit. Cette publication ne change pas l'élection du
+  node de layout, qui continue de compter seulement `hasCompleteBinding`.
 - Sous une grille, la CELLULE décide de la boîte, et les pistes (`columnSizes`,
   `rowSizes`) avec la place de chaque enfant (`columnStart`, `rowStart`, spans)
   la décrivent. Remplir sa cellule est le DÉFAUT d’un enfant de grille —
@@ -225,9 +229,10 @@ tests/
   alors la taille CALCULÉE là où le panneau affiche « Fill ». Un enfant ne publie
   donc sa dimension que s’il cite une variable, et son absence ne se réclame
   jamais. Seul un alignement explicite le décolle de sa cellule : la règle
-  commune revient, le même mot qu’en CSS. Une piste figée à la main vaut `null`
-  et avertit ; un runtime qui n’expose pas les pistes ne publie rien et ne dit
-  rien.
+  commune revient, le même mot qu’en CSS. Exception propre aux grilles, une
+  piste FIXED publie sa valeur structurelle en pixels avec une notice explicite,
+  sans devenir un token ni dégrader la couverture ; un runtime qui n’expose pas
+  les pistes ne publie rien et ne dit rien.
 - Une donnée facultative incomplète avertit. Les préconditions explicitement
   définies dans la spécification bloquent.
 - On n’avertit que sur ce qu’on publie. Une valeur que le contrat va jeter —

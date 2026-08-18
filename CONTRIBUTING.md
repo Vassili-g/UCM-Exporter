@@ -111,6 +111,7 @@ Avant une pull request :
 
 ```sh
 npm test
+npm run typecheck
 npm run build
 ```
 
@@ -124,7 +125,7 @@ Chaque document a une autorité limitée :
 | `UCM-EXPORTER-SPEC.md` | Comportement actuel du plugin |
 | `ROADMAP.md` | État et prochaines validations |
 | `PISTES-EVOLUTION.md` | Options non engagées |
-| `PLAN-CONFORMITE-DEV.md` | Proposition sans décision ; aucune autorité tant qu’elle n’est pas tranchée |
+| `PLAN-CONFORMITE-DEV.md` | Proposition détaillée sans décision ni implémentation |
 | `README.md` | Entrée dans le projet |
 | `AGENTS.md` | Instructions opérationnelles |
 

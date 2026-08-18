@@ -66,9 +66,9 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
  *
  * Figma expose `gridRowSizes` / `gridColumnSizes` : un type (`FLEX`, `HUG`,
  * `FIXED`) et sa valeur. Les deux premiers sont des comportements, que CSS
- * écrit `1fr` et `fit-content` ; le troisième est un nombre de pixels, et le
- * contrat n'écrit jamais un nombre brut — la piste vaut alors `null`, sa place
- * conservée dans le tableau, et l'export le signale.
+ * écrit `1fr` et `fit-content(100%)`. Exception limitée à cette structure de
+ * grille, une piste FIXED est publiée en pixels : ce n'est pas un token et une
+ * notice l'explique sans dégrader la portabilité du contrat.
  *
  * La lecture est défensive : un runtime qui n'expose pas ces champs ne publie
  * rien et n'avertit de rien. Une propriété absente n'est pas une valeur.
@@ -76,33 +76,45 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
 export function gridTrackSizes(
   node: SceneNode,
   warnings: string[] = [],
+  notices: string[] = warnings,
 ): { columnSizes?: GridTrack[]; rowSizes?: GridTrack[] } {
   if (!isGridAutoLayout(node)) return {};
   const values = asPropertyBag(node);
   const axe = (field: 'gridColumnSizes' | 'gridRowSizes', nom: string): GridTrack[] | undefined => {
     const tracks = values[field];
     if (!Array.isArray(tracks)) return undefined;
-    const sizes = (tracks as Array<{ type?: unknown; value?: unknown }>).map((track): GridTrack => {
-      if (!track || typeof track !== 'object') return null;
+    const fixed: number[] = [];
+    const sizes = (tracks as Array<{ type?: unknown; value?: unknown }>).map((track, index): GridTrack => {
+      if (!track || typeof track !== 'object') {
+        warnings.push(
+          `Layer « ${node.name} » : la taille de la ${nom} ${index + 1} de sa grille est `
+            + `illisible. Le contrat publie « auto » pour conserver la piste ; vérifiez ce `
+            + `réglage dans Figma, puis réexportez.`,
+        );
+        return 'auto';
+      }
       if (track.type === 'FLEX') {
         return `${typeof track.value === 'number' ? track.value : 1}fr`;
       }
-      if (track.type === 'HUG') return 'fit-content';
-      return null;
-    });
-    const figees = sizes
-      .map((size, index) => (size === null ? index + 1 : 0))
-      .filter((rang) => rang > 0);
-    if (figees.length > 0) {
-      const plusieurs = figees.length > 1;
+      if (track.type === 'HUG') return 'fit-content(100%)';
+      if (track.type === 'FIXED' && typeof track.value === 'number' && Number.isFinite(track.value)) {
+        fixed.push(index + 1);
+        return `${track.value}px`;
+      }
       warnings.push(
-        `Layer « ${node.name} » : la taille ${plusieurs ? 'des' : 'de la'} ${nom}` +
-          `${plusieurs ? 's' : ''} ${figees.join(', ')} de sa grille est un nombre en pixels. ` +
-          `Le contrat ne publie pas un nombre écrit à la main : le développeur ne saura pas ` +
-          `quelle place ${plusieurs ? 'ces pistes prennent' : 'cette piste prend'}. Donnez leur ` +
-          `taille aux layers que cette grille y dispose, reliée à une variable, et réglez ` +
-          `${plusieurs ? 'ces pistes' : 'cette piste'} sur « Hug » pour qu'${plusieurs ? 'elles suivent' : 'elle suive'} ` +
-          `; puis réexportez.`,
+        `Layer « ${node.name} » : la taille de la ${nom} ${index + 1} de sa grille est `
+          + `illisible. Le contrat publie « auto » pour conserver la piste ; vérifiez ce `
+          + `réglage dans Figma, puis réexportez.`,
+      );
+      return 'auto';
+    });
+    if (fixed.length > 0) {
+      const plusieurs = fixed.length > 1;
+      notices.push(
+        `Layer « ${node.name} » : ${plusieurs ? 'les' : 'la'} ${nom}${plusieurs ? 's' : ''} `
+          + `${fixed.join(', ')} ${plusieurs ? 'sont publiées' : 'est publiée'} en pixels, `
+          + `exception propre aux pistes FIXED d'une grille. Ces valeurs décrivent sa structure `
+          + `Figma sans devenir des tokens ; aucune modification du design n'est demandée.`,
       );
     }
     return sizes;

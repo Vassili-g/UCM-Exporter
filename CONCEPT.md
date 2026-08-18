@@ -88,8 +88,9 @@ produire un contrat cohérent.
 
 Figma est l'entrée de construction du contrat, pas une dépendance de son
 consommateur. Le contrat publié contient uniquement la projection UCM utile :
-`props`, `variantViews`, `variants`, `structure`, `rendering`, `tokensUsed` et
-les métadonnées de traçabilité. Il n'embarque ni représentation propriétaire ni
+API visuelle, variantes et vues exactes, liaisons natives, structure,
+typographie, icônes, composition, règles d’usage, tokens employés et
+métadonnées de traçabilité. Il n'embarque ni représentation propriétaire ni
 asset de rendu.
 
 Toute information nécessaire au consommateur doit donc être modélisée dans le
@@ -100,7 +101,7 @@ une autre représentation.
 
 Chaque entrée de `variants`, jointe à la vue complète qu'elle référence dans
 `variantViews`, est une vue portable autonome de la combinaison réelle : arbre,
-peintures, strokes, usages typographiques, icônes situées, dépendances et
+peintures et strokes situés par chemins de slots, usages typographiques, icônes situées, dépendances et
 liaisons natives. Deux combinaisons ne partagent une vue que si ces blocs sont
 strictement identiques ; il n'existe ni héritage ni merge implicite. `structure`
 garde la projection de référence et les dimensions par taille, mais plus aucun
@@ -133,8 +134,8 @@ du contrat ; son résultat n’est pas le code de production.
 
 ## 6. Ce que le modèle cherche à prouver
 
-- **Robustesse** : un écart couvert par les garde-fous ne peut pas être fusionné
-  silencieusement.
+- **Robustesse** : un écart couvert par les garde-fous est détecté avant la
+  fusion et reçoit un diagnostic actionnable.
 - **Confiance** : un humain ou un agent peut choisir et utiliser un composant
   sans inventer son API visuelle.
 

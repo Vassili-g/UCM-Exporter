@@ -17,6 +17,7 @@ import {
   warnLayersOutsideLayoutNode,
 } from './extractLayout';
 import type { PlacedDependencies } from './extractLayout';
+import type { PublishedNodePaths } from './extractLayout';
 import { extractSizeDimensions, findSizeRepresentatives } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
@@ -28,7 +29,36 @@ import type {
   ExtractedContractVariant,
   SizeDimensions,
   TextStyleDefinition,
+  VariantPaintPlacements,
 } from './types';
+
+function paintPlacementsFromPaths(
+  nodeIds: { fills: Record<string, string[]>; strokes: Record<string, string[]> } | undefined,
+  paths: PublishedNodePaths,
+  variantName: string,
+  warnings: string[],
+): VariantPaintPlacements {
+  const field = (entries: Record<string, string[]> = {}): Record<string, string[][]> => (
+    Object.fromEntries(Object.entries(entries).map(([key, ids]) => {
+      const placements = ids
+        .map((id) => paths.get(id))
+        .filter((path): path is string[] => Boolean(path));
+      const missing = ids.length - placements.length;
+      if (missing > 0) {
+        warnings.push(
+          `Variant « ${variantName} » : ${missing} layer(s) qui portent la clé « ${key} » `
+            + `n'ont aucun chemin dans l'arbre publié. Cette peinture ne pourra pas être `
+            + `située ; rendez ces layers publiables, puis réexportez.`,
+        );
+      }
+      return [key, placements];
+    }))
+  );
+  return {
+    fills: field(nodeIds?.fills),
+    strokes: field(nodeIds?.strokes),
+  };
+}
 
 /**
  * Sets susceptibles de porter l'axe de tailles, dans l'ordre où on les
@@ -96,6 +126,7 @@ export async function extractStructure(
     variantStrokes,
     tokensByComponent,
     strokesByComponent,
+    paintNodeIdsByComponent,
     discoveredRoles,
   } = await extractVariantTokens(
     matrix,
@@ -225,6 +256,7 @@ export async function extractStructure(
       placedComposes,
       new Set(),
       notices,
+      notices,
     )
     // Sans composant à interroger, le contrat retient le comportement par
     // défaut plutôt que d'inventer un hug que rien ne montre.
@@ -254,9 +286,11 @@ export async function extractStructure(
     entry: VariantMatrix['variants'][number];
     structure: ExtractedContractVariant['structure'];
     placed: PlacedDependencies;
+    paths: PublishedNodePaths;
   }> = [];
   for (const entry of matrix.variants) {
     const exactPlaced: PlacedDependencies = new Map();
+    const exactPaths: PublishedNodePaths = new Map();
     const exactStructure = await extractLayout(
       entry.component,
       resolver,
@@ -267,8 +301,11 @@ export async function extractStructure(
       true,
       exactPlaced,
       aUnAxeDeTailles ? new Set([layoutNodeOf(entry.component).id]) : new Set(),
+      warnings,
+      notices,
+      exactPaths,
     );
-    exactLayouts.push({ entry, structure: exactStructure, placed: exactPlaced });
+    exactLayouts.push({ entry, structure: exactStructure, placed: exactPlaced, paths: exactPaths });
   }
 
   const referenceTextSlotPaths = new Set(
@@ -296,7 +333,9 @@ export async function extractStructure(
     composed,
     targetedLayers,
   );
-  const variants: ExtractedContractVariant[] = exactLayouts.map(({ entry, structure: exactStructure, placed }) => (
+  const variants: ExtractedContractVariant[] = exactLayouts.map(({
+    entry, structure: exactStructure, placed, paths,
+  }) => (
     {
       nodeId: entry.component.id,
       figmaName: entry.component.name,
@@ -307,6 +346,12 @@ export async function extractStructure(
       typography: exactTypography.typographyByComponent.get(entry.component) ?? [],
       composes: placedDependenciesFromTree(exactStructure.children, placed),
       icons: {},
+      paintPlacements: paintPlacementsFromPaths(
+        paintNodeIdsByComponent.get(entry.component),
+        paths,
+        entry.component.name,
+        warnings,
+      ),
     }
   ));
 

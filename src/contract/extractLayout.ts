@@ -73,6 +73,8 @@ import type {
  * design n'ait changé.
  */
 export type PlacedDependencies = Map<ChildStructure, ComposedDependency>;
+/** Chemin exact de chaque node publié, collecté pendant l'unique descente de l'arbre. */
+export type PublishedNodePaths = Map<string, string[]>;
 
 /**
  * Dépendances réellement publiées par un arbre, dans l'ordre de ses calques.
@@ -181,6 +183,7 @@ async function applyContainerProperties(
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
+  notices: string[],
   childCount: number,
   dependencies: readonly ComposedDependency[],
 ): Promise<void> {
@@ -205,13 +208,12 @@ async function applyContainerProperties(
           `à ce layer, puis réexportez.`,
       );
     }
-    await applyContainerRadius(entry, node, resolver, warnings);
     return;
   }
 
   entry.layout = direction;
   if (direction === 'grid') {
-    Object.assign(entry, gridTrackCounts(node), gridTrackSizes(node, warnings));
+    Object.assign(entry, gridTrackCounts(node), gridTrackSizes(node, warnings, notices));
     const [columnGap, rowGap] = await Promise.all([
       resolveField(node, BINDING_PATTERNS.gridColumnGap, 'column gap', resolver, warnings),
       resolveField(node, BINDING_PATTERNS.gridRowGap, 'row gap', resolver, warnings),
@@ -244,7 +246,6 @@ async function applyContainerProperties(
     ? await resolvePaddings(node, resolver, warnings)
     : [null, null];
   if (paddingX || paddingY) entry.padding = { x: paddingX, y: paddingY };
-  await applyContainerRadius(entry, node, resolver, warnings);
 }
 
 /**
@@ -283,8 +284,8 @@ function resolveRadius(
   );
 }
 
-/** Le rayon d'un conteneur, sondé quel que soit son mode de disposition. */
-async function applyContainerRadius(
+/** Le rayon d'un calque publié, feuille ou conteneur. */
+async function applyNodeRadius(
   entry: ChildStructure,
   node: SceneNode,
   resolver: TokenResolver,
@@ -351,8 +352,12 @@ async function describeNode(
   // reste publiée, c'est une seconde condition que le composant doit lire.
   parentVisibilityProp?: string,
   suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
+  notices: string[] = warnings,
+  path: readonly string[] = [slot],
+  publishedNodePaths: PublishedNodePaths = new Map(),
 ): Promise<ChildStructure> {
   const entry: ChildStructure = { slot, ...flexItemProperties(parent, child, warnings) };
+  publishedNodePaths.set(child.id, [...path]);
   if (slot !== child.name) entry.figmaLayer = child.name;
 
   const dependencies = composedSlotDependencies(child, composed);
@@ -421,6 +426,10 @@ async function describeNode(
     return entry;
   }
 
+  // Le rayon appartient au calque qui le porte, même lorsqu'il s'agit d'une
+  // feuille graphique sans enfants publiés (les extrémités de ScaleWrap).
+  await applyNodeRadius(entry, child, resolver, warnings);
+
   // ---- Un cadre dont aucune branche rendable ne mène à sa dépendance ------
   if (dependencies.length > 0 && !describesChildren) {
     if (dependencies.length === 1) {
@@ -450,6 +459,7 @@ async function describeNode(
       child,
       resolver,
       warnings,
+      notices,
       assignments.length,
       dependencies,
     );
@@ -467,6 +477,9 @@ async function describeNode(
           depth + 1,
           entry.visibilityProp,
           suppressedSizeNodeIds,
+          notices,
+          [...path, branchSlot],
+          publishedNodePaths,
         )),
     );
   } else if (dependencies.length === 0 && textNodes(child, warnings, composed).length === 0) {
@@ -777,11 +790,15 @@ export async function extractLayout(
   placed: PlacedDependencies = new Map(),
   suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
   layoutElectionWarnings: string[] = warnings,
+  notices: string[] = warnings,
+  publishedNodePaths: PublishedNodePaths = new Map(),
 ): Promise<LayoutStructure> {
   warnLayersOutsideLayoutNode(component, layoutNode, layoutElectionWarnings, composed);
   warnIntermediateBounds(component, layoutNode, warnings);
   warnMissingDirection(layoutNode, warnings);
   warnUnsupportedProperties(layoutNode, warnings);
+  publishedNodePaths.set(component.id, []);
+  publishedNodePaths.set(layoutNode.id, []);
 
   const grille = isGridAutoLayout(layoutNode);
   const [gap, rowGap, columnGap, paddings, radius] = publishDimensions
@@ -823,13 +840,16 @@ export async function extractLayout(
         1,
         undefined,
         suppressedSizeNodeIds,
+        notices,
+        [slot],
+        publishedNodePaths,
       )),
   );
 
   return {
     layout: layoutDirection(layoutNode),
     ...gridTrackCounts(layoutNode),
-    ...gridTrackSizes(layoutNode, warnings),
+    ...gridTrackSizes(layoutNode, warnings, notices),
     sizing,
     ...(bounds ? { bounds } : {}),
     ...flexContainerProperties(layoutNode, warnings),
