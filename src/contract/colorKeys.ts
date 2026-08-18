@@ -40,15 +40,74 @@ function keyFor(segments: readonly string[], depths: readonly number[]): string 
   return [...chosen, segments[segments.length - 1]].join('.');
 }
 
-/** Toutes les parties d'un ensemble de profondeurs, la plus petite d'abord. */
-function subsets(depths: readonly number[]): number[][] {
-  const all: number[][] = [];
-  for (let mask = 0; mask < 2 ** depths.length; mask += 1) {
-    all.push(depths.filter((_, index) => (mask & (1 << index)) !== 0));
+/** L'optimum exact reste abordable jusqu'à 2^16 états ; au-delà, coût borné. */
+const MAX_EXACT_CANDIDATES = 16;
+
+function keysFor(
+  tokens: readonly string[],
+  paths: ReadonlyMap<string, readonly string[]>,
+  depths: readonly number[],
+): Map<string, string> {
+  return new Map(tokens.map((token) => [token, keyFor(paths.get(token)!, depths)]));
+}
+
+function separatesAll(
+  keys: ReadonlyMap<string, string>,
+  cohabitations: ReadonlyArray<readonly [string, string]>,
+): boolean {
+  return cohabitations.every(([left, right]) => keys.get(left) !== keys.get(right));
+}
+
+/**
+ * Repli polynomial pour les chemins artificiellement très profonds.
+ *
+ * À chaque tour on choisit la profondeur qui sépare le plus de conflits encore
+ * ouverts, puis celle qui fabrique le moins de clés. Une passe finale retire
+ * toute profondeur redevenue inutile. La stratégie est déterministe et son
+ * coût est borné par candidats × conflits × tokens — aucun `2^n` caché.
+ */
+function greedyDepths(
+  tokens: readonly string[],
+  paths: ReadonlyMap<string, readonly string[]>,
+  candidates: readonly number[],
+  cohabitations: ReadonlyArray<readonly [string, string]>,
+): number[] {
+  const selected: number[] = [];
+  const remaining = new Set(candidates);
+
+  while (true) {
+    const currentKeys = keysFor(tokens, paths, selected);
+    const unresolved = cohabitations.filter(
+      ([left, right]) => currentKeys.get(left) === currentKeys.get(right),
+    );
+    if (unresolved.length === 0) break;
+
+    let best: { depth: number; separated: number; distinct: number } | null = null;
+    for (const depth of remaining) {
+      const trial = keysFor(tokens, paths, [...selected, depth]);
+      const separated = unresolved.filter(
+        ([left, right]) => trial.get(left) !== trial.get(right),
+      ).length;
+      const distinct = new Set(trial.values()).size;
+      if (
+        !best
+        || separated > best.separated
+        || (separated === best.separated && distinct < best.distinct)
+        || (separated === best.separated && distinct === best.distinct && depth < best.depth)
+      ) best = { depth, separated, distinct };
+    }
+    if (!best || best.separated === 0) break;
+    selected.push(best.depth);
+    remaining.delete(best.depth);
   }
-  return all.sort(
-    (left, right) => left.length - right.length || left.join('.').localeCompare(right.join('.')),
-  );
+
+  for (const depth of [...selected]) {
+    const without = selected.filter((candidate) => candidate !== depth);
+    if (separatesAll(keysFor(tokens, paths, without), cohabitations)) {
+      selected.splice(selected.indexOf(depth), 1);
+    }
+  }
+  return selected.sort((left, right) => left - right);
 }
 
 /**
@@ -95,19 +154,29 @@ function distinguish(
     if (separeUnePaire(depth)) candidates.push(depth);
   }
 
-  let best: { depths: number[]; distinct: number } | null = null;
-  for (const depths of subsets(candidates)) {
-    const keys = new Map(tokens.map((token) => [token, keyFor(paths.get(token)!, depths)]));
-    const separates = cohabitations.every(([left, right]) => keys.get(left) !== keys.get(right));
-    if (!separates) continue;
-    const distinct = new Set(keys.values()).size;
-    // `subsets` est déjà trié par taille puis lexicographiquement : à nombre de
-    // clés égal, la première rencontrée est la plus petite sélection, et deux
-    // exports d'un design inchangé produisent le même contrat.
-    if (!best || distinct < best.distinct) best = { depths, distinct };
+  let depths: number[];
+  if (candidates.length <= MAX_EXACT_CANDIDATES) {
+    let best: { depths: number[]; distinct: number } | null = null;
+    const combinations = 2 ** candidates.length;
+    for (let mask = 0; mask < combinations; mask += 1) {
+      const selected = candidates.filter((_, index) => (mask & (2 ** index)) !== 0);
+      const keys = keysFor(tokens, paths, selected);
+      if (!separatesAll(keys, cohabitations)) continue;
+      const distinct = new Set(keys.values()).size;
+      const lexicographic = selected.join('.');
+      const bestLexicographic = best?.depths.join('.') ?? '';
+      if (
+        !best
+        || distinct < best.distinct
+        || (distinct === best.distinct && selected.length < best.depths.length)
+        || (distinct === best.distinct && selected.length === best.depths.length
+          && lexicographic.localeCompare(bestLexicographic) < 0)
+      ) best = { depths: selected, distinct };
+    }
+    depths = best?.depths ?? candidates;
+  } else {
+    depths = greedyDepths(tokens, paths, candidates, cohabitations);
   }
-
-  const depths = best ? best.depths : candidates;
   return new Map(tokens.map((token) => [token, keyFor(paths.get(token)!, depths)]));
 }
 

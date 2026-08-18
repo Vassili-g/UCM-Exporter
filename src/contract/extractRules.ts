@@ -30,8 +30,9 @@ export type { IconRule, RuleEntry, RuleTag, RulesResult } from './rulesModel';
 /**
  * Suffixe du conteneur qui porte les règles d'un composant. Exporté parce
  * qu'il ne sert pas qu'à lire les règles : posséder un tel conteneur est ce
- * qui fait d'un composant un composant unifié, donc une dépendance et non un
- * calque à parcourir (cf. `composedComponents.ts`).
+ * qui déclare un composant comme dépendance UCM, plutôt que comme détail
+ * interne à parcourir (cf. `composedComponents.ts`). Il ne conditionne plus
+ * l'export du composant lui-même depuis la 8.0.
  */
 export const RULES_SECTION_SUFFIX = '-Rules';
 /** Types de conteneur acceptés pour ce bloc (on ne lit que ses enfants). */
@@ -46,25 +47,6 @@ export function compactName(name: string): string {
 /** Résultat de lecture enrichi pour distinguer l'absence du conteneur de son contenu invalide. */
 export type ExtractedRules = RulesResult & { sectionFound: boolean };
 
-/**
- * Formule le blocage des règles sans jeter les diagnostics déjà produits par
- * leur lecture. Le même texte sert au pré-vol de l'UI et à l'export : un
- * conteneur absent n'est pas confondu avec une règle présente mais invalide.
- */
-export function unusableRulesMessage(componentName: string, rules: ExtractedRules): string {
-  const sectionName = `${componentName}${RULES_SECTION_SUFFIX}`;
-  const fallback = rules.sectionFound
-    ? `Frame « ${sectionName} » : aucune règle utilisable n'a été lue. Ajoutez-y au moins une règle, puis réexportez.`
-    : `Ajoutez un conteneur « ${sectionName} » (frame, section ou groupe) avec au moins une règle, puis réexportez.`;
-  const diagnostics = rules.warnings.length > 0 ? [...rules.warnings] : [];
-  if (!rules.sectionFound || diagnostics.length === 0) diagnostics.push(fallback);
-
-  return [
-    `Export impossible pour « ${componentName} » : aucune règle utilisable.`,
-    ...diagnostics,
-  ].join('\n');
-}
-
 /** Suffixe compacté : toute comparaison de conteneur passe par des noms compactés. */
 const COMPACT_RULES_SUFFIX = compactName(RULES_SECTION_SUFFIX);
 
@@ -72,10 +54,11 @@ const COMPACT_RULES_SUFFIX = compactName(RULES_SECTION_SUFFIX);
  * Nom compacté du composant dont ce node porte les règles, ou null si ce n'en
  * est pas un conteneur.
  *
- * Unique définition de « ce node porte les règles de X ». Ce que `extractRules`
- * exige pour autoriser un export et ce que `composedComponents` exige pour
- * reconnaître une dépendance unifiée sont ainsi la même condition, qu'aucune
- * évolution ne peut faire diverger.
+ * Unique définition de « ce node porte les règles de X ». `extractRules`
+ * l'utilise pour enrichir le contrat et `composedComponents` pour reconnaître
+ * une dépendance unifiée. L'absence de règles n'empêche plus de capturer le
+ * composant sélectionné, mais elle empêche ses parents de supposer qu'un
+ * contrat autonome existe déjà pour lui.
  *
  * La comparaison ignore la casse et les espaces : dans un nom de calque Figma,
  * ils ne portent aucune intention de design et ne doivent bloquer aucun export.
@@ -138,7 +121,7 @@ async function isRuleInstance(instance: InstanceNode): Promise<boolean> {
  * (composant sans règles) de « section présente mais vide », pour un warning précis.
  */
 export async function extractRules(
-  componentSet: ComponentSetNode,
+  componentSet: ComponentNode | ComponentSetNode,
 ): Promise<ExtractedRules> {
   // Le nom canonique sert aux messages ; la RECONNAISSANCE, elle, passe par
   // `rulesContainerOwner`, qui tolère la casse et les espaces.

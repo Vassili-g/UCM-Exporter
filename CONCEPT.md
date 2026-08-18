@@ -84,6 +84,27 @@ Une information ambiguë ou inexploitable produit un diagnostic. Les seules
 erreurs bloquantes de l’export sont les préconditions qui empêcheraient de
 produire un contrat cohérent.
 
+### Le contrat est portable et autosuffisant
+
+Figma est l'entrée de construction du contrat, pas une dépendance de son
+consommateur. Le contrat publié contient uniquement la projection UCM utile :
+`props`, `variants`, `structure`, `rendering`, `tokensUsed` et les métadonnées
+de traçabilité. Il n'embarque ni représentation propriétaire ni asset de rendu.
+
+Toute information nécessaire au consommateur doit donc être modélisée dans le
+vocabulaire portable. Lorsqu'elle ne peut pas l'être sans ambiguïté,
+`meta.diagnostics` l'explique et `meta.coverage.portable` devient `partial` : le
+contrat ne masque pas la perte et ne demande pas au consommateur d'interpréter
+une autre représentation.
+
+Chaque entrée de `variants` est une vue portable autonome de la combinaison
+réelle : son arbre, ses peintures, ses strokes, ses usages typographiques, ses
+icônes situées et ses dépendances. Les champs historiques de `structure`
+restent des index pratiques et une projection de référence, mais ne peuvent
+plus effacer une différence intentionnelle entre variantes. Les enums de
+`props` décrivent les valeurs possibles axe par axe ; la liste `variants`
+décrit les seules combinaisons autorisées.
+
 ## 5. Le workflow
 
 ```text

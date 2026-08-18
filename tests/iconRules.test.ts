@@ -14,14 +14,18 @@ const layer = (
   totalVariants = variants.length,
   slots: Array<string | null> = ['icon'],
   sizes: Array<string | null> = [null],
+  swapProps: Array<string | null> = [null],
+  variantNodeIds: string[] = [],
 ) => ({
   figmaLayer,
   visibilityProps,
+  swapProps,
   maximumOccurrences,
   slots,
   sizes,
   variants,
   totalVariants,
+  variantNodeIds,
 });
 
 /** Résolveur littéral : `null` signifie « aucune variable liée ». */
@@ -155,6 +159,28 @@ test('mergeIconRules donne sa prop runtime à une icône modifiable sans boolée
   assert.deepEqual(warnings, []);
 });
 
+test('mergeIconRules réutilise INSTANCE_SWAP au lieu de créer une seconde prop', () => {
+  const warnings: string[] = [];
+  const props: Record<string, ContractProp> = {
+    iconChoice: {
+      type: 'instance-swap',
+      default: '12:34',
+      preferredValues: [],
+    },
+  };
+
+  const icons = mergeIconRules(
+    props,
+    [layer('arrow-left-long', [null], 1, [{}], 1, ['icon'], [null], ['iconChoice'])],
+    [{ iconName: 'arrow-left-long', policy: 'modifiable' }],
+    warnings,
+  );
+
+  assert.equal(icons.arrowLeftLong.runtimeProp, 'iconChoice');
+  assert.deepEqual(Object.keys(props), ['iconChoice']);
+  assert.deepEqual(warnings, []);
+});
+
 /**
  * Le nom du booléen prime quand il existe : « iconLeft » et « iconLeftName »
  * se lisent en paire, et le contrat ne change pas de convention selon que
@@ -270,9 +296,28 @@ test('extractIconLayers trouve une icône présente uniquement hors du variant d
   // Les deux icônes s'excluent et occupent le même slot : c'est ce qui rend
   // rendable celle que le variant de référence ne porte pas.
   assert.deepEqual(layers, [
-    layer('circle-info', [null], 1, [{ severity: 'info' }], 2, ['icon']),
-    layer('circle-check', ['icon'], 1, [{ severity: 'success' }], 2, ['icon']),
+    layer('circle-info', [null], 1, [{ severity: 'info' }], 2, ['icon'], [null], [null], ['info']),
+    layer('circle-check', ['icon'], 1, [{ severity: 'success' }], 2, ['icon'], [null], [null], ['success']),
   ]);
+});
+
+test('extractIconLayers relève la liaison native de remplacement d’une icône', async () => {
+  const composant = variant('component', 'Mode=Default', [
+    graphique('icon', 'circle-info', {
+      componentPropertyReferences: { mainComponent: 'Icon choice#3:2' },
+    }),
+  ]);
+  const matrix = matrice([{ values: { mode: 'default' }, component: composant }], ['mode']);
+
+  const layers = await extractIconLayers(
+    matrix,
+    nodesDeLayout(matrix),
+    ['circle-info'],
+    sansToken,
+    [],
+  );
+
+  assert.deepEqual(layers[0].swapProps, ['iconChoice']);
 });
 
 test('extractIconLayers relève la taille liée sur le calque', async () => {
@@ -343,8 +388,28 @@ test('extractIconLayers nomme la condition même si le set n’expose aucun axe'
   );
 
   assert.deepEqual(layers, [
-    layer('status-icon', [null], 1, [{ variant: 'active' }], 2, ['icon']),
+    layer('status-icon', [null], 1, [{ variant: 'active' }], 2, ['icon'], [null], [null], ['active']),
   ]);
+});
+
+test('extractIconLayers distingue deux variants aux mêmes coordonnées', async () => {
+  const absent = variant('absent', 'State=Focus', []);
+  const present = variant('present', 'State=focus', [graphique('icon', 'status-icon')]);
+  const matrix = matrice([
+    { values: { state: 'focus' }, component: absent },
+    { values: { state: 'focus' }, component: present },
+  ], ['state']);
+
+  const layers = await extractIconLayers(
+    matrix,
+    nodesDeLayout(matrix),
+    ['status-icon'],
+    sansToken,
+    [],
+  );
+
+  assert.deepEqual(layers[0].variants, [{ state: 'focus' }]);
+  assert.deepEqual(layers[0].variantNodeIds, ['present']);
 });
 
 test('extractIconLayers ignore une instance qui possède son propre contrat', async () => {

@@ -30,6 +30,11 @@ type GithubFile = {
   encoding?: string;
 };
 
+type GithubBlob = {
+  content: string;
+  encoding: string;
+};
+
 /** Erreur réseau nettoyée : elle contient un statut et un message, jamais les headers. */
 export class GithubApiError extends Error {
   constructor(message: string, public readonly status: number | null = null) {
@@ -179,12 +184,20 @@ async function getRepositoryFile(
   config: GithubConfig,
   path: string,
 ): Promise<GithubFile | null> {
-  return githubRequest<GithubFile>(
+  const file = await githubRequest<GithubFile>(
     config,
     `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${encodePath(path)}?ref=${encodeURIComponent(config.baseBranch)}`,
     {},
     true,
   );
+  if (file?.type === 'file' && file.encoding === 'none') {
+    const blob = await githubRequest<GithubBlob>(
+      config,
+      `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/git/blobs/${encodeURIComponent(file.sha)}`,
+    );
+    if (blob) return { ...file, content: blob.content, encoding: blob.encoding };
+  }
+  return file;
 }
 
 /**
@@ -196,6 +209,12 @@ export async function publishArtifact(
   artifact: RepositoryArtifact,
   date = new Date(),
 ): Promise<PublishResult> {
+  const maximumGithubFileSize = 100 * 1024 * 1024;
+  if (new TextEncoder().encode(artifact.content).byteLength > maximumGithubFileSize) {
+    throw new GithubApiError(
+      'Le contrat dépasse la limite GitHub de 100 Mo. Il reste disponible en téléchargement local.',
+    );
+  }
   const repository = `${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
   const path = artifactPath(config, artifact);
   const existing = await getRepositoryFile(config, path);

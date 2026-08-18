@@ -185,3 +185,18 @@ test('deux chemins profonds qui se disputent une base n’explosent pas le calcu
   assert.ok(Date.now() - debut < 1000);
   assert.notEqual(cles.get(profond('un')), cles.get(profond('deux')));
 });
+
+test('plus de seize profondeurs candidates utilisent le calcul borné', () => {
+  const chemin = (prefixe: string) => [
+    ...Array.from({ length: 24 }, (_, index) => `${prefixe}${index}`),
+    'background',
+  ].join('.');
+  const gauche = chemin('a');
+  const droite = chemin('b');
+  const debut = Date.now();
+
+  const cles = resolveColorKeys([[gauche, droite]]);
+
+  assert.ok(Date.now() - debut < 1000);
+  assert.notEqual(cles.get(gauche), cles.get(droite));
+});

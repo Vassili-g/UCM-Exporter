@@ -84,6 +84,33 @@ test('publishArtifact ne crée aucune branche si le fichier est inchangé', asyn
   }
 });
 
+test('publishArtifact compare aussi un fichier GitHub supérieur à 1 Mo via son blob', async () => {
+  const previousFetch = globalThis.fetch;
+  const calls: string[] = [];
+  const content = '{"same":true}\n';
+  globalThis.fetch = async (input) => {
+    calls.push(String(input));
+    if (calls.length === 1) {
+      return new Response(JSON.stringify({
+        type: 'file', sha: 'large-sha', content: '', encoding: 'none',
+      }), { status: 200 });
+    }
+    return new Response(JSON.stringify({
+      content: encodeBase64(content), encoding: 'base64',
+    }), { status: 200 });
+  };
+
+  try {
+    const result = await publishArtifact(config, {
+      kind: 'tokens', filename: 'tokens.json', content, warnings: [],
+    });
+    assert.deepEqual(result, { status: 'unchanged', path: 'src/tokens/tokens.json' });
+    assert.match(calls[1], /\/git\/blobs\/large-sha$/);
+  } finally {
+    globalThis.fetch = previousFetch;
+  }
+});
+
 test('publishArtifact ignore meta.exportedAt pour détecter un contrat inchangé', async () => {
   const contractOnRepo = JSON.stringify({
     name: 'Button',

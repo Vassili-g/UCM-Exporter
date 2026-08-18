@@ -179,6 +179,57 @@ test('un texte sans style et une liaison incomplète avertissent sans valeur bru
   assert.ok(warnings.some((warning) => warning.includes('letter spacing')));
 });
 
+test('deux variantes aux mêmes coordonnées gardent leurs usages typographiques exacts', async () => {
+  const component = (id: string, styleId: string) => node(
+    'COMPONENT',
+    id,
+    `State=${id}`,
+    [node('TEXT', `${id}-label`, 'Label', [], { textStyleId: styleId })],
+    { layoutMode: 'HORIZONTAL' },
+  ) as ComponentNode;
+  const first = component('first', 'style-first');
+  const second = component('second', 'style-second');
+  const styles: Record<string, BaseStyle> = {
+    'style-first': {
+      type: 'TEXT', name: 'Body/First', boundVariables: { fontSize: alias('first-size') },
+    } as unknown as BaseStyle,
+    'style-second': {
+      type: 'TEXT', name: 'Body/Second', boundVariables: { fontSize: alias('second-size') },
+    } as unknown as BaseStyle,
+  };
+  const warnings: string[] = [];
+
+  const result = await extractVariantTypography(
+    {
+      axes: ['state'],
+      variants: [
+        { values: { state: 'focus' }, component: first },
+        { values: { state: 'focus' }, component: second },
+      ],
+    },
+    nodesDeLayout(first, second),
+    resolverFor({
+      'first-size': 'typography.body.first.fontsize',
+      'second-size': 'typography.body.second.fontsize',
+    }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    async (id) => styles[id] ?? null,
+  );
+
+  assert.deepEqual(result.typographyByComponent.get(first), [
+    { slotPath: ['label'], style: 'body.first' },
+  ]);
+  assert.deepEqual(result.typographyByComponent.get(second), [
+    { slotPath: ['label'], style: 'body.second' },
+  ]);
+  assert.deepEqual(result.variantTypography, {
+    focus: [{ slotPath: ['label'], style: 'body.first' }],
+  });
+});
+
 test('le chemin d’une part descend jusqu’au calque texte, pas jusqu’à son frame', () => {
   // `extractTextBranch` publie une part pour le frame ET pour le texte qu'il
   // contient. Un chemin qui s'arrêtait au frame désignait un slot porteur de

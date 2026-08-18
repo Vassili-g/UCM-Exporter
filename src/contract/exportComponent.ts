@@ -1,22 +1,21 @@
 /**
- * Commande « Export composant » : transforme le Component Set sélectionné
+ * Commande « Export composant » : transforme le Component ou Component Set sélectionné
  * en contrat de composant (fichier `<Nom>.contract.json` téléchargé).
  *
  * Déroulé : sélection → props → matrice de variantes → wrapper de dimensions
  * → structure (layout, tailles, tokens) → intention → contrat final.
  */
 import {
+  buildVariantMatrix,
   findMissingVariantCombinations,
   findWrapperReference,
-  groupComponentsByVariant,
 } from './componentTree';
-import type { MissingVariantSummary } from './componentTree';
-import { indexContractedNames, scanComposedMatrix } from './composedComponents';
-import { extractRules, hasUsableRules, unusableRulesMessage } from './extractRules';
+import { indexContractedNamesInDocument, scanComposedMatrix } from './composedComponents';
+import { extractRules } from './extractRules';
 import { extractStructure } from './extractStructure';
-import type { PlacedDependencies } from './extractLayout';
-import { definePropOn, extractContractPropertyModel, extractContractProps } from './parsers';
+import { definePropOn, extractContractPropertyModel } from './parsers';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
+import { extractPropertyBindings } from './propertyBindings';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { mergePropDescriptions } from './mergePropDescriptions';
@@ -34,6 +33,11 @@ import type {
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 8.0 : `variants` publie un arbre portable par combinaison exacte, y compris
+ * pour un COMPONENT standalone et un set clairsemé. `propertyBindings` situe
+ * les liaisons natives, `INSTANCE_SWAP` et `SLOT` gardent leur type, et les
+ * diagnostics rendent explicites les limites de la projection portable. Les
+ * règles ne sont plus une précondition d'export.
  * 6.0 : `structure.children` cesse de s'arrêter au premier calque qui n'est ni
  * un texte ni une dépendance. Le contrat descend désormais dès qu'un descendant
  * porte une information qu'une feuille ne sait pas exprimer — un texte, une
@@ -113,25 +117,46 @@ import type {
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '7.0';
+export const CONTRACT_VERSION = '8.0';
 
-/**
- * Les dépendances de l'arbre publié, dans son ordre — celui des calques Figma.
- *
- * C'est la séquence que le consommateur recompte pour vérifier la parité du
- * code : `composes` et `structure.children` doivent la partager exactement.
- */
-function dependanciesDeLArbre(
-  children: readonly ChildStructure[],
-  placed: PlacedDependencies,
+/** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
+function mergeVariantDependencies(
+  variants: ReadonlyArray<Contract['variants'][number]>,
 ): ComposedDependency[] {
-  const dependencies: ComposedDependency[] = [];
-  for (const child of children) {
-    const dependency = placed.get(child);
-    if (dependency) dependencies.push(dependency);
-    if (child.children) dependencies.push(...dependanciesDeLArbre(child.children, placed));
+  const result: ComposedDependency[] = [];
+  const maximumBySignature = new Map<string, number>();
+  for (const variant of variants) {
+    const occurrences = new Map<string, number>();
+    for (const dependency of variant.composes) {
+      const signature = JSON.stringify([
+        dependency.component,
+        dependency.figmaLayer,
+        dependency.visibilityProp ?? null,
+      ]);
+      const occurrence = (occurrences.get(signature) ?? 0) + 1;
+      occurrences.set(signature, occurrence);
+      if (occurrence > (maximumBySignature.get(signature) ?? 0)) {
+        maximumBySignature.set(signature, occurrence);
+        result.push(dependency);
+      }
+    }
   }
-  return dependencies;
+  return result;
+}
+
+function iconPaths(children: readonly ChildStructure[], figmaName: string): string[][] {
+  const paths: string[][] = [];
+  const visit = (entries: readonly ChildStructure[], parent: string[]) => {
+    for (const entry of entries) {
+      const path = [...parent, entry.slot];
+      if (entry.figmaLayer === figmaName || (!entry.figmaLayer && entry.slot === figmaName)) {
+        paths.push(path);
+      }
+      if (entry.children) visit(entry.children, path);
+    }
+  };
+  visit(children, []);
+  return paths;
 }
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
@@ -152,51 +177,16 @@ export class ComponentExportError extends Error {
 }
 
 /** Message bloquant, formulé comme une action Figma plutôt que comme un concept mathématique. */
-export function missingVariantsMessage(
-  componentName: string,
-  summary: MissingVariantSummary,
-): string {
-  const plural = summary.missing > 1;
-  const axes = summary.axes.map(
-    (axis) => `• ${axis.name} : ${axis.values.join(', ')}`,
-  );
-  const present = summary.presentExamples.map((example) => `• ${example}`);
-  const presentRemaining = summary.found - summary.presentExamples.length;
-  const examples = summary.examples.map((example) => `• ${example}`);
-  const remaining = summary.missing - summary.examples.length;
-
-  return [
-    `Export impossible pour « ${componentName} » : il manque ${summary.missing} variant${plural ? 's' : ''} dans le Component Set.`,
-    '',
-    `Figma contient actuellement ${summary.found} variant${summary.found > 1 ? 's' : ''} distinct${summary.found > 1 ? 's' : ''} :`,
-    ...present,
-    ...(presentRemaining > 0
-      ? [`• … et ${presentRemaining} autre${presentRemaining > 1 ? 's' : ''}`]
-      : []),
-    '',
-    `Mais ${plural ? 'ces combinaisons n’existent' : 'cette combinaison n’existe'} dans aucun variant :`,
-    ...examples,
-    ...(remaining > 0 ? [`• … et ${remaining} autre${remaining > 1 ? 's' : ''}`] : []),
-    '',
-    'Pourquoi l’export est bloqué : après l’export, le code peut choisir séparément ces propriétés :',
-    ...axes,
-    `Il pourrait donc demander l’une des combinaisons absentes, mais Figma ne définit ni son rendu ni ses tokens (${summary.expected} combinaisons possibles, ${summary.found} définies).`,
-    '',
-    `Si ${plural ? 'ces variants doivent' : 'ce variant doit'} exister : dans Figma, dupliquez un variant existant puis attribuez-lui exactement les valeurs manquantes indiquées ci-dessus.`,
-    `Si ${plural ? 'ces combinaisons sont' : 'cette combinaison est'} volontairement interdite : ne créez rien ; le format de contrat doit d’abord être étendu pour exprimer cette interdiction.`,
-  ].join('\n');
-}
-
-/** Vérifie que la sélection est bien UN Component Set, sinon erreur claire. */
-function getSelectedComponentSet(): ComponentSetNode {
+/** Vérifie que la sélection est bien UN composant exportable, sinon erreur claire. */
+function getSelectedComponent(): ComponentNode | ComponentSetNode {
   const selection = figma.currentPage.selection;
   if (selection.length !== 1) {
-    throw new ComponentExportError('Sélectionnez un seul Component Set dans Figma.');
+    throw new ComponentExportError('Sélectionnez un seul Component ou Component Set dans Figma.');
   }
 
   const node = selection[0];
-  if (node.type !== 'COMPONENT_SET') {
-    throw new ComponentExportError('La sélection doit être un COMPONENT_SET.');
+  if (node.type !== 'COMPONENT_SET' && node.type !== 'COMPONENT') {
+    throw new ComponentExportError('La sélection doit être un COMPONENT ou un COMPONENT_SET.');
   }
 
   return node;
@@ -242,7 +232,9 @@ export function mergeWrapperProps(
  * pour autant. Le lien est un confort de relecture ; `nodeId` et `fileName`
  * suffisent à retrouver le composant.
  */
-function buildMeta(componentSet: ComponentSetNode): Omit<ContractMeta, 'warnings'> {
+function buildMeta(
+  componentSet: ComponentNode | ComponentSetNode,
+): Omit<ContractMeta, 'warnings' | 'diagnostics' | 'coverage'> {
   const fileKey = figma.fileKey ?? null;
   const fileName = figma.root.name;
   const nodeId = componentSet.id;
@@ -268,44 +260,71 @@ export function componentContractFilename(name: string): string {
   return `${codeIdentifier(name)}.contract.json`;
 }
 
-/** Point d'entrée de la commande : crée le contrat du Component Set sélectionné. */
+/** Point d'entrée de la commande : crée le contrat du composant sélectionné. */
 export async function handleExportComponent(): Promise<ComponentExport> {
-  const componentSet = getSelectedComponentSet();
+  const componentSet = getSelectedComponent();
 
-  // Pré-vol : des règles sont OBLIGATOIRES. On lit le conteneur « <Nom>-Rules »
-  // et on BLOQUE l'export tout de suite s'il n'y a aucune règle associée — avant
-  // toute extraction, pour un retour immédiat à l'utilisateur.
+  // Les règles enrichissent l'intention et la documentation, mais ne sont plus
+  // une précondition d'export. Leur absence reste visible dans les diagnostics.
   const rules = await extractRules(componentSet);
-  if (!hasUsableRules(rules)) {
-    throw new ComponentExportError(unusableRulesMessage(componentSet.name, rules));
-  }
-
   const warnings: string[] = [...rules.warnings];
+  // Sous-ensemble qui mesure réellement la projection UCM. Les avertissements
+  // de documentation (règles), de traçabilité (URL) et de compatibilité avec
+  // l'ancienne vue de référence ne rendent pas un arbre exact incomplet.
+  const projectionWarnings: string[] = [];
+  const addProjectionWarnings = (messages: readonly string[]) => {
+    projectionWarnings.push(...messages);
+  };
+  const markProjectionWarningsSince = (index: number) => {
+    addProjectionWarnings(warnings.slice(index));
+  };
+  let warningCursor = warnings.length;
   const propertyModel = extractContractPropertyModel(
     componentSet.componentPropertyDefinitions,
     warnings,
   );
+  markProjectionWarningsSince(warningCursor);
+  warningCursor = warnings.length;
   const props = propertyModel.props;
-  const missingVariants = findMissingVariantCombinations(componentSet);
+  const missingVariants = componentSet.type === 'COMPONENT_SET'
+    ? findMissingVariantCombinations(componentSet)
+    : null;
   if (missingVariants) {
-    throw new ComponentExportError(missingVariantsMessage(componentSet.name, missingVariants));
+    warnings.push(
+      `Component Set « ${componentSet.name} » : ${missingVariants.missing} combinaison(s) du `
+        + `produit cartésien de ses axes n'existent pas. Le contrat 8.0 publie uniquement les `
+        + `combinaisons exactes présentes dans « variants » ; aucune combinaison interdite `
+        + `n'est inventée.`,
+    );
   }
-  const { matrix, warnings: matrixWarnings } = groupComponentsByVariant(
+  // La liste exacte porte cet écart : il ne manque rien à la projection v8.
+  warningCursor = warnings.length;
+  const { matrix, warnings: matrixWarnings } = buildVariantMatrix(
     componentSet,
     propertyModel.publicVariantKeyByRawKey,
   );
+  if (matrix.variants.length === 0) {
+    throw new ComponentExportError(
+      `Export impossible pour « ${componentSet.name} » : ce Component Set ne contient aucun `
+        + `variant COMPONENT. Ajoutez au moins un variant dans Figma, puis réexportez.`,
+    );
+  }
   // Le variant de référence sert de base au layout.
-  const referenceComponent = componentSet.defaultVariant ?? matrix.variants[0]?.component ?? null;
+  const referenceComponent = componentSet.type === 'COMPONENT_SET'
+    ? componentSet.defaultVariant ?? matrix.variants[0]?.component ?? null
+    : componentSet;
 
   // La composition se relève AVANT toute extraction : un composant unifié
   // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
   // conditionne tout ce qui suit.
-  const { composes, composed, warnings: compositionWarnings } = await scanComposedMatrix(
+  const { composes: scannedComposes, composed, warnings: compositionWarnings } = await scanComposedMatrix(
     matrix.variants.map((entry) => entry.component),
     referenceComponent,
-    indexContractedNames(figma.currentPage),
+    await indexContractedNamesInDocument(),
   );
   warnings.push(...compositionWarnings);
+  // Les arbres exacts portent la composition propre à chaque variante.
+  warningCursor = warnings.length;
 
   const wrapper = referenceComponent
     ? await findWrapperReference(referenceComponent, warnings, composed)
@@ -316,20 +335,42 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     warnings,
   );
 
+  const publicPropertyKeyByFigmaName = new Map(propertyModel.publicPropertyKeyByFigmaName);
   if (wrapper?.componentSet) {
-    mergeWrapperProps(
-      props,
-      extractContractProps(wrapper.componentSet.componentPropertyDefinitions, warnings),
+    const wrapperModel = extractContractPropertyModel(
+      wrapper.componentSet.componentPropertyDefinitions,
       warnings,
     );
+    const existingKeys = new Set(Object.keys(props));
+    mergeWrapperProps(
+      props,
+      wrapperModel.props,
+      warnings,
+    );
+    for (const [figmaName, publicKey] of wrapperModel.publicPropertyKeyByFigmaName) {
+      if (!existingKeys.has(publicKey)) publicPropertyKeyByFigmaName.set(figmaName, publicKey);
+    }
   }
+  markProjectionWarningsSince(warningCursor);
+  warningCursor = warnings.length;
+
+  const propertyBindings = extractPropertyBindings(
+    matrix,
+    publicPropertyKeyByFigmaName,
+    warnings,
+    composed,
+  );
+  markProjectionWarningsSince(warningCursor);
+  warningCursor = warnings.length;
 
   if (Object.keys(componentSet.componentPropertyDefinitions).length === 0) {
     warnings.push(
-      'Le component set sélectionné n’expose aucune component property : le contrat ne ' +
+      'Le composant sélectionné n’expose aucune component property : le contrat ne ' +
         'décrira ni variants ni options.',
     );
   }
+  // Une API vide est complète pour un composant qui n'expose aucune propriété.
+  warningCursor = warnings.length;
 
   // Le résolveur reçoit l'index des variables locales pour deux raisons : il y
   // lit les chemins sans un aller-retour par variable, et il sait quelles
@@ -350,12 +391,45 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     composed,
     rules.iconRules.map((rule) => rule.iconName),
   );
+  markProjectionWarningsSince(warningCursor);
+  addProjectionWarnings(extracted.warnings);
+  warnings.push(...extracted.notices);
+  warningCursor = warnings.length;
 
   // La documentation issue des règles s'accroche aux props de même nature, et
   // aux états pour l'axe que `stateModel` publie à la place des props.
   mergePropDescriptions(props, stateModel, rules.propDescriptions, warnings);
   mergeBooleanDescriptions(props, rules.booleanDescriptions, warnings);
+  // Ces deux fusions ne portent que la documentation des règles.
+  warningCursor = warnings.length;
   const icons = mergeIconRules(props, extracted.iconLayers, rules.iconRules, warnings);
+  markProjectionWarningsSince(warningCursor);
+  warningCursor = warnings.length;
+  for (const variant of extracted.variants) {
+    for (const [key, definition] of Object.entries(icons)) {
+      const exactLayer = extracted.iconLayers.find(
+        (layer) => layer.figmaLayer === definition.figmaName,
+      );
+      // Les coordonnées d'axes ne suffisent pas quand deux variants se
+      // normalisent pareil. L'inventaire garde donc l'id du node exact : une
+      // icône présente dans le second ne doit pas être inventée dans le premier.
+      const active = exactLayer?.variantNodeIds.includes(variant.nodeId) ?? false;
+      if (!active) continue;
+      const paths = iconPaths(variant.structure.children, definition.figmaName);
+      if (paths.length === 1) {
+        variant.icons[key] = { figmaName: definition.figmaName, slotPath: paths[0] };
+        continue;
+      }
+      const message = paths.length === 0
+        ? `Icône « ${definition.figmaName} » du variant « ${variant.figmaName} » : aucun slot `
+          + `exact ne la situe. Rendez son layer publiable dans le composant, puis réexportez.`
+        : `Icône « ${definition.figmaName} » du variant « ${variant.figmaName} » : plusieurs `
+          + `slots exacts portent ce nom. Donnez un nom Figma distinct à chaque layer, puis réexportez.`;
+      warnings.push(message);
+      projectionWarnings.push(message);
+    }
+  }
+  warningCursor = warnings.length;
   const intent = rules.intent;
   if (!intent) {
     warnings.push(
@@ -363,27 +437,28 @@ export async function handleExportComponent(): Promise<ComponentExport> {
         'composant, mais pas quand. Ajoutez au moins une règle @usage.',
     );
   }
+  warningCursor = warnings.length;
 
-  // `composes` se DÉRIVE de l'arbre publié, comme `tokensUsed` se dérive du
-  // contrat terminé. Le scan dit ce que Figma contient ; seul `structure.children`
-  // dit où le développeur doit rendre quoi, et le consommateur refuse un contrat
-  // dont les deux séquences diffèrent. Une dépendance que l'arbre n'a pas su
-  // placer sort donc des deux champs à la fois — jamais d'un seul.
+  // Chaque `variants[].composes` se DÉRIVE de son arbre exact, comme
+  // `tokensUsed` se dérive du contrat terminé. Le champ global en est l'union
+  // ordonnée à cardinalité maximale : une dépendance conditionnelle ne disparaît
+  // donc pas seulement parce qu'elle manque au variant de référence.
   //
-  // La séquence se lit sur l'ARBRE, pas sur l'ordre où l'extraction a rangé ses
+  // Chaque séquence se lit sur SON ARBRE, pas sur l'ordre où l'extraction a rangé ses
   // trouvailles : celui-ci dépend de l'ordonnancement des `await`, et deux
   // cadres frères pourraient se doubler sans qu'aucun design ait changé.
-  const composesPlacees = dependanciesDeLArbre(extracted.structure.children, extracted.placedComposes);
+  const composesPlacees = mergeVariantDependencies(extracted.variants);
   const placees = new Set(composesPlacees);
-  for (const dependency of composes) {
+  for (const dependency of scannedComposes) {
     if (placees.has(dependency)) continue;
-    warnings.push(
+    const message =
       `Layer « ${dependency.figmaLayer} » : il porte le composant « ${dependency.component} », ` +
         `qui a son propre contrat, mais le contrat n'a trouvé aucun emplacement où le situer. ` +
         `La dépendance ne sera ni décrite dans structure.children, ni déclarée dans composes : ` +
         `le développeur ne la rendra pas. Placez ce layer dans l'auto layout frame que le ` +
-        `composant décrit, puis réexportez.`,
-    );
+        `composant décrit, puis réexportez.`;
+    warnings.push(message);
+    projectionWarnings.push(message);
   }
 
   const meta = buildMeta(componentSet);
@@ -400,10 +475,28 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   }
 
   const allWarnings = Array.from(new Set([...warnings, ...extracted.warnings]));
+  const portableWarningSet = new Set(projectionWarnings);
+  const hasPortableLoss = portableWarningSet.size > 0;
+  const diagnostics = allWarnings.map((message) => ({
+    code: portableWarningSet.has(message)
+      ? 'UCM_PORTABLE_PROJECTION_WARNING'
+      : 'UCM_EXPORT_NOTICE',
+    severity: 'warning' as const,
+    message,
+  }));
   const contract: Contract = {
     name: componentSet.name || 'Component',
-    meta: { ...meta, warnings: allWarnings },
+    meta: {
+      ...meta,
+      warnings: allWarnings,
+      diagnostics,
+      coverage: {
+        portable: hasPortableLoss ? 'partial' : 'complete',
+      },
+    },
     props,
+    variants: extracted.variants,
+    propertyBindings,
     structure: extracted.structure,
     stateModel,
     rendering: renderingSemanticsFor(extracted.discoveredRoles),
@@ -415,10 +508,21 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   };
   // `tokensUsed` est l'index des références du contrat : il se DÉRIVE du contrat
   // terminé. L'alimenter pendant l'extraction y ferait entrer des tokens lus
-  // pour décider puis écartés — la taille d'une icône relevée sur chaque
-  // variante, les couleurs d'une variante en conflit — et le contrat citerait
-  // alors des tokens qu'il n'emploie pas.
-  contract.tokensUsed = Array.from(collectTokenReferences(contract)).sort();
+  // pour décider puis écartés — par exemple une taille d'icône instable — et le
+  // contrat citerait alors des tokens qu'il n'emploie pas. Les feuilles exactes
+  // de `variants`, elles, font partie du contrat et contribuent normalement.
+  contract.tokensUsed = Array.from(collectTokenReferences({
+    props: contract.props,
+    variants: contract.variants,
+    propertyBindings: contract.propertyBindings,
+    structure: contract.structure,
+    stateModel: contract.stateModel,
+    rendering: contract.rendering,
+    icons: contract.icons,
+    textStyles: contract.textStyles,
+    composes: contract.composes,
+    intent: contract.intent,
+  })).sort();
 
   return {
     filename: componentContractFilename(contract.name),

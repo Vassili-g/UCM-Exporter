@@ -49,6 +49,17 @@ tests/
 
 ## Invariants
 
+- La v8 publie uniquement le contrat portable : les données Figma utilisées
+  pendant l'extraction ne sont pas embarquées dans l'artefact. Toute limite de
+  traduction produit un diagnostic et rend `meta.coverage.portable` partiel.
+- `variants` décrit chaque combinaison réellement présente depuis sa vraie
+  racine, y compris un COMPONENT sans axe et une matrice clairsemée. Chaque
+  entrée porte son arbre, ses tokens, strokes, usages typographiques, icônes et
+  dépendances exacts. Le champ historique `structure` reste la projection du
+  variant de référence ; les enums ne réautorisent pas leur produit cartésien.
+- Une propriété native garde son type (`INSTANCE_SWAP`, `SLOT`) et ses liaisons
+  `visible`, `characters` ou `mainComponent` dans `propertyBindings`, sans
+  rapprochement par nom de calque.
 - Aucune logique liée au nom d’un composant.
 - Figma reste traçable après toute normalisation (`figmaName`,
   `figmaLayer`).
@@ -60,9 +71,10 @@ tests/
   de construire l’arbre ; aucun alias ne doit pointer vers une variable
   rejetée.
 - Un composant unifié imbriqué est déclaré dans `composes`. Le critère « ce node
-  porte les règles de X » n’existe qu’une fois (`rulesContainerOwner`) : ce qui
-  autorise un export et ce qui reconnaît une dépendance sont la même règle. Le
-  parent ne réexporte pas ses internes.
+  porte les règles de X » n’existe qu’une fois (`rulesContainerOwner`) et est
+  indexé sur toutes les pages. Les règles documentent mais n'autorisent plus
+  l'export : tout COMPONENT ou COMPONENT_SET sélectionné est capturable. Le
+  parent ne réexporte pas les internes d'une dépendance reconnue.
 - Le parcours conserve le calque de l’instance pour que la structure puisse le
   décrire comme un slot ; tout ce qu’il PORTE reste hors du contrat parent. Ses
   couleurs appartiennent à son contrat (`getSlotTokens`), et ses dimensions ne
@@ -81,8 +93,9 @@ tests/
   un cadre dont aucune branche ne mène à une dépendance ne publie rien — et les
   chemins de `variantTypography` comme les signatures suivent cette même
   réponse, sinon ils désigneraient des slots absents de `structure.children`.
-- `composes` se dérive de l’arbre publié, dans SON ordre, comme `tokensUsed` du
-  contrat terminé.
+- Chaque `variants[].composes` se dérive de SON arbre publié, dans son ordre ;
+  le `composes` global en est l'union ordonnée à cardinalité maximale, comme
+  `tokensUsed` se dérive du contrat terminé.
   Le scan dit ce que Figma contient, `structure.children` dit ce que le contrat
   décrit, et seul le second engage le développeur. Une dépendance que l’arbre
   n’a pas su situer sort donc des deux champs à la fois, sous un avertissement :
@@ -171,12 +184,11 @@ tests/
   ces surfaces distinctement — c’est l’export qui tronquait, et le geste demandé
   au designer compensait un bug du moteur.
 - `colorKeys.ts` est l’unique autorité sur cette clé, et la décide sur TOUTE la
-  matrice : la clé d’un token est la même dans toutes les feuilles. Parmi les
-  sélections de segments qui séparent les couleurs cohabitantes, on retient
-  celle qui produit LE MOINS DE CLÉS DISTINCTES — c’est ce qui garde une
-  coordonnée de variant hors de la clé. Allonger « jusqu’à ce que chaque token
-  soit unique » publierait une clé par variant et rendrait la feuille
-  inindexable.
+  matrice : la clé d’un token est la même dans toutes les feuilles. Jusqu'à
+  seize profondeurs candidates, elle minimise exactement le nombre de clés ;
+  au-delà, une sélection gloutonne déterministe borne le coût et retire les
+  profondeurs inutiles. Allonger « jusqu’à ce que chaque token soit unique »
+  publierait une clé par variant et rendrait la feuille inindexable.
 - Ce qu’une couleur peint se lit sur le calque qui la porte, jamais sur le nom
   de son token. La clé est une identité, et `rendering.roles` publie le rendu de
   chacune qui ne nomme aucun rôle partagé — clés allongées comprises. Un nom qui

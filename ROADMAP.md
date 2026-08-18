@@ -24,12 +24,13 @@ sur plusieurs formes de composants, dont au moins un composant composé.
 
 ## État actuel
 
-Ce tableau décrit **`main` des deux repositories**. Une branche en cours peut
-être rouge sans le contredire ; les validations listées ci-dessous désignent
-uniquement ce qui est déjà intégré et vérifié.
+Ce tableau décrit la **branche courante des deux repositories**. Une capacité
+n'est dite validée qu'après ses tests automatisés et, lorsqu'elle dépend du
+runtime Figma, après un réexport réel du petit corpus.
 
 | Domaine | État |
 |---|---|
+| Écriture de la 8.0 | Implémentée sur `refactor/ucm-lossless-export` : contrat portable sans capture propriétaire, COMPONENT standalone, matrices clairsemées, vues autonomes par variante (arbre, tokens, strokes, typographie, icônes, composition), `INSTANCE_SWAP`, `SLOT`, liaisons natives et diagnostics structurés. Le Playground valide ces champs, le graphe conditionnel et dérive les seules combinaisons d'enums réelles. Reste la validation runtime : réexporter Alert et Button depuis Figma, sans éditer leurs JSON à la main |
 | Export des contrats 4.2 à 4.9 | 4.9 consommée : les contrats Figma Alert et Button en 4.9 sont fusionnés dans le Playground, dont la plage auditée couvre 4.2 à 4.9. Le corpus de l’Exporter porte les deux mêmes exports |
 | Écriture de la 7.0 | Le moteur l'écrit et le Playground l'accepte : sa plage auditée va désormais de la 4.2 à la 7.0, grille, pistes, ancres et position absolue comprises, et le contrat StressTest y est fusionné. `padding.x`, `padding.y`, `radius` et la largeur d'un stroke sont polymorphes — une référence, ou le détail par côté — la grille publie ses pistes et la place de ses enfants — ce qui décide de la boîte d'une tuile — et `meta.figma.url` est de nouveau exporté. Aucun composant du Playground n'exerce encore ces formes : ses côtés partagent leurs variables et aucun n'emploie de grille, donc la 7.0 est auditée sans test de rendu |
 | Écriture de la 6.0 | `structure.children` descend à toute profondeur, la grille et la position absolue sont décrites. Absorbée par la 7.0, jamais consommée telle quelle |
@@ -42,12 +43,12 @@ uniquement ce qui est déjà intégré et vérifié.
 | Validation des contrats, de la forme des props et des références de tokens | Opérationnelle |
 | Contrat accepté avant son implémentation | Opérationnel |
 | Parité statique dès que le TSX existe | Props, booléens consommés et composition JSX couverts |
-| Composition entre composants | Export, graphe, cardinalité et cycles couverts. Un cadre à plusieurs dépendances les publie toutes, et `composes` se dérive de l’arbre au lieu d’être relevé à part |
+| Composition entre composants | Export, graphe, cardinalité, cycles et dépendances conditionnelles couverts. Chaque variante dérive `composes` de son arbre exact ; le champ global agrège toutes les cibles à cardinalité maximale |
 | Types TypeScript et variables CSS dérivés | Opérationnels |
 | Tests de rendu : visibilité, cible imbriquée, icône par variante | Opérationnels |
 | Refus des valeurs brutes par `tokenVar` | Opérationnel |
 | Tokens du code vérifiés contre leur contrat | Opérationnelle |
-| CI des deux repositories | Verts avec les contrats 4.9, hors les deux tests de corpus ci-dessus : 243 tests, typecheck et build côté Exporter ; 124 tests et `npm run check` complet côté Playground |
+| CI des deux repositories | Typecheck et build verts côté Exporter ; `npm run check`, tests et build verts côté Playground. Seuls les deux tests de corpus Exporter restent volontairement rouges jusqu'au réexport Figma 8.0 |
 | Rapport unique destiné au développeur | Opérationnel : `check.mjs` enchaîne les contrôles sans s’arrêter au premier échec, `check-contract` agrège le terminal, le résumé CI et le commentaire de pull request |
 | Références de tokens du code | Opérationnelles : chemins assemblés et tokens absents du contrat sont bloquants ; audit visuel navigateur hors périmètre |
 | Blocage effectif d’une fusion non conforme | Absent — voir « Fragilités connues » |
@@ -90,16 +91,14 @@ dépendance, et ses calques, ses textes et ses couleurs sont décrits par le
 contrat du parent au lieu d'être déclarés dans `composes`. C'est le symétrique
 exact de la limite ci-dessous, et rien ne le signale aujourd'hui.
 
-### Une dépendance dont les règles vivent sur une autre page
+### Le scan des dépendances charge toutes les pages
 
-Un composant est reconnu comme unifié parce qu'un conteneur `<Nom>-Rules` existe
-**sur la page courante**. Une dépendance dont ce conteneur vit ailleurs n'est
-donc pas reconnue : ses calques, ses textes et ses couleurs sont décrits par le
-contrat du parent au lieu d'être déclarés dans `composes`, et rien ne le
-signale. La convention « une page par composant » est courante ; tant que cette
-limite tient, un composant et les composants qu'il embarque doivent partager
-leur page. Lever la limite suppose `figma.loadAllPagesAsync()`, dont le coût sur
-un gros fichier reste à mesurer.
+La 8.0 appelle `figma.loadAllPagesAsync()` puis indexe une fois tous les
+conteneurs `<Nom>-Rules`, marqueurs des contrats UCM autonomes. La dépendance
+qui vit sur une autre page est donc reconnue correctement sans confondre un
+wrapper interne avec un contrat. Le coût sur un très gros fichier reste à
+mesurer dans Figma ; il ne change pas le contrat produit, mais peut allonger
+l'export.
 
 ### Les contrôles détectent, mais n’empêchent rien
 

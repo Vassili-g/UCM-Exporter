@@ -61,7 +61,7 @@ const statusNote = document.createElement('div');
 statusNote.className = 'note';
 statusNote.setAttribute('role', 'status');
 statusNote.setAttribute('aria-live', 'polite');
-statusNote.textContent = 'Sélectionnez un Component Set dans Figma, puis utilisez les actions ci-dessus.';
+statusNote.textContent = 'Sélectionnez un Component ou Component Set dans Figma, puis utilisez les actions ci-dessus.';
 
 const logPanel = createLogPanel('Prêt. Cliquez sur une action pour démarrer.');
 const actionButtons = [exportComponentButton, exportTokensButton];

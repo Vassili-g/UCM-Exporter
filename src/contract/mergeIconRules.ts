@@ -126,6 +126,34 @@ export function mergeIconRules(
     icons.set(key, icon);
     if (rule.policy === 'strict') continue;
 
+    const swapProp = layer.swapProps.length === 1
+      ? layer.swapProps[0] ?? undefined
+      : undefined;
+    if (layer.swapProps.length > 1) {
+      warnings.push(
+        `Icône « ${rule.iconName} » : son remplacement dépend d’une INSTANCE_SWAP différente ` +
+          `selon les variants. Le contrat ne publie aucune prop de remplacement pour elle. ` +
+          `Utilisez la même component property partout.`,
+      );
+      continue;
+    }
+    if (swapProp) {
+      const nativeSwap = propByName(props, swapProp);
+      if (nativeSwap?.type !== 'instance-swap') {
+        warnings.push(
+          `Icône « ${rule.iconName} » : le layer référence « ${swapProp} » pour son ` +
+            `remplacement, mais cette INSTANCE_SWAP n’existe pas dans les component properties ` +
+            `publiées. Corrigez sa liaison dans Figma, puis réexportez.`,
+        );
+        continue;
+      }
+      // Figma expose déjà exactement la liberté demandée par `@icons`. Publier
+      // une seconde prop synthétique obligerait le consommateur à choisir entre
+      // deux sources de vérité pour le même remplacement.
+      icon.runtimeProp = swapProp;
+      continue;
+    }
+
     if (visibilityProp && propByName(props, visibilityProp)?.type !== 'boolean') {
       warnings.push(
         `Icône « ${rule.iconName} » déclarée modifiable : « ${visibilityProp} » n'est pas ` +

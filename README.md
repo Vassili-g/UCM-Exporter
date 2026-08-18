@@ -7,7 +7,7 @@ Il produit deux artefacts :
 
 | Commande | Sortie | Contenu |
 |---|---|---|
-| **Exporter le composant** | `<IdentifiantCode>.contract.json` | API visuelle, variantes, états, structure, tokens, icônes et règles d’usage |
+| **Exporter le composant** | `<IdentifiantCode>.contract.json` | Capture Figma exhaustive, API visuelle portable, variantes exactes, états, structure, tokens, icônes et règles d’usage |
 | **Exporter les tokens** | `tokens.json` | Variables locales au format DTCG, avec leurs alias et leurs modes |
 
 Ces artefacts mettent en œuvre l’**UCM — Unified Component Model** : Figma porte
@@ -87,10 +87,12 @@ Chaque document a un rôle unique :
 
 ## État
 
-Le moteur écrit la version **5.5** du contrat. Le pipeline est opérationnel sur
-un composant simple et un premier contrat composé : Button et Alert sont
-exportés en 4.9, consommés par le Playground et vérifiés par sa chaîne de
-contrôles ; leur réexport reste à faire. Les protections principales sont
-testées, mais la généricité reste à valider sur plusieurs familles de composants
-avant toute industrialisation.
+Le moteur écrit la version **8.0** du contrat. Elle accepte un Component seul ou
+un Component Set, y compris une matrice clairsemée. Le contrat reste une
+projection UCM portable et autosuffisante ; chaque variante exacte porte son
+arbre, ses tokens, strokes, typographie,
+icônes et dépendances exacts ; le Playground dérive un type discriminé des
+seules combinaisons d'enums présentes. Alert et Button doivent
+encore être réexportés depuis Figma pour renouveler le corpus réel, qui ne doit
+jamais être édité à la main.
 Voir [ROADMAP.md](./ROADMAP.md) pour le périmètre de validation.

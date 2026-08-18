@@ -59,8 +59,43 @@ export type IconProp = PropMeta & {
   visibilityProp?: string;
 };
 
+/** Valeur recommandée par Figma pour un INSTANCE_SWAP ou un SLOT. */
+export type PreferredComponentValue = {
+  type: 'COMPONENT' | 'COMPONENT_SET';
+  key: string;
+};
+
+/** Prop native de remplacement d'instance. */
+export type InstanceSwapProp = PropMeta & {
+  type: 'instance-swap';
+  /** Id du composant Figma choisi par défaut. */
+  default: string | null;
+  preferredValues: PreferredComponentValue[];
+};
+
+/** Réglages natifs d'une component property SLOT. */
+export type SlotProp = PropMeta & {
+  type: 'slot';
+  default: string | boolean | null;
+  preferredValues: PreferredComponentValue[];
+  description?: string;
+  settings?: {
+    stretchChildOnInsert?: boolean;
+    displayEmptyByDefault?: boolean;
+    minChildren?: number | null;
+    maxChildren?: number | null;
+    allowPreferredValuesOnly?: boolean;
+  };
+};
+
 /** Une prop publique du composant, quel que soit son type. */
-export type ContractProp = EnumProp | BooleanProp | StringProp | IconProp;
+export type ContractProp =
+  | EnumProp
+  | BooleanProp
+  | StringProp
+  | IconProp
+  | InstanceSwapProp
+  | SlotProp;
 
 /**
  * Intention d'usage du composant, lue depuis la description Figma taguée
@@ -643,6 +678,62 @@ export type ContractStructure = {
   variantTypography: VariantTypography;
 };
 
+/** Structure portable d'une combinaison exacte, sans les index globaux de matrice. */
+export type VariantStructure = Omit<
+  ContractStructure,
+  'sizes' | 'variantAxes' | 'variantStrokes' | 'variantTokens' | 'variantTypography'
+>;
+
+/** Emplacement d'une icône dans l'arbre exact d'un variant. */
+export type VariantIconPlacement = {
+  figmaName: string;
+  slotPath: string[];
+};
+
+/** Une combinaison réellement présente dans Figma et sa structure propre. */
+export type ContractVariant = {
+  nodeId: string;
+  figmaName: string;
+  values: Record<string, string>;
+  structure: VariantStructure;
+  /** Feuilles sémantiques directement adressables, sans axe synthétique. */
+  tokens: SlotTokens;
+  strokes: SlotStrokes;
+  typography: TextStyleUse[];
+  /** Dépendances de CETTE combinaison, dans l'ordre de son arbre. */
+  composes: ComposedDependency[];
+  /** Slots exacts des icônes, relatifs à `structure.children`. */
+  icons: Record<string, VariantIconPlacement>;
+};
+
+/** L'endroit exact où une component property agit dans un variant. */
+export type ComponentPropertyBinding = {
+  prop: string;
+  figmaPropName: string;
+  target: 'visible' | 'characters' | 'mainComponent';
+  nodeId: string;
+  figmaPath: string[];
+  variant: Record<string, string>;
+};
+
+export type ContractDiagnostic = {
+  code: string;
+  severity: 'warning' | 'error';
+  message: string;
+  figma?: {
+    nodeId?: string;
+    nodeName?: string;
+    variantName?: string;
+    property?: string;
+  };
+  contractPath?: string;
+};
+
+export type ContractCoverage = {
+  /** Partiel dès que le contrat portable demande l'attention du designer. */
+  portable: 'complete' | 'partial';
+};
+
 /**
  * Métadonnées d'identité du contrat : version du schéma, date d'export,
  * et traçabilité vers le composant Figma d'origine (id, clé, lien URL).
@@ -658,6 +749,9 @@ export type ContractMeta = {
    * consommateur du contrat n'a jamais à le lire pour rendre un composant.
    */
   warnings: string[];
+  /** Diagnostics structurés ; `warnings` reste le miroir lisible et compatible. */
+  diagnostics: ContractDiagnostic[];
+  coverage: ContractCoverage;
   figma: {
     /** Nom du fichier Figma d'origine. */
     fileName: string;
@@ -679,6 +773,10 @@ export type Contract = {
   name: string;
   meta: ContractMeta;
   props: Record<string, ContractProp>;
+  /** Combinaisons exactes : aucune matrice cartésienne n'est inventée. */
+  variants: ContractVariant[];
+  /** Cibles natives des component properties, situées sans convention de nom. */
+  propertyBindings: ComponentPropertyBinding[];
   structure: ContractStructure;
   /** Déclencheurs et priorité des états, ou null si le composant n'a pas d'axe d'état. */
   stateModel: StateModel | null;

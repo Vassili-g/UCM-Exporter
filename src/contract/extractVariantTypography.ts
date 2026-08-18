@@ -160,9 +160,12 @@ export async function extractVariantTypography(
   iconNames: ReadonlySet<string> = new Set(),
   allowedSlotPaths?: ReadonlySet<string>,
   loadStyle: TextStyleLoader = (id) => figma.getStyleByIdAsync(id),
+  pathNotices: string[] = warnings,
 ): Promise<{
   textStyles: Record<string, TextStyleDefinition>;
   variantTypography: VariantTypography;
+  /** Usages exacts par node, même si deux variants partagent leurs coordonnées. */
+  typographyByComponent: Map<ComponentNode, TextStyleUse[]>;
 }> {
   // Les clés viennent du nom normalisé d'un text style Figma. Une `Map` n'a
   // aucune clé héritée : dans un objet littéral, un style nommé « __proto__ »
@@ -173,6 +176,7 @@ export async function extractVariantTypography(
   const styleIdByKey = new Map<string, string>();
   const styleCache = new Map<string, Promise<LoadedStyle | null>>();
   const variantTypography: VariantTypography = {};
+  const typographyByComponent = new Map<ComponentNode, TextStyleUse[]>();
   const axes = matrix.axes.length > 0 ? matrix.axes : ['variant'];
 
   for (const entry of matrix.variants) {
@@ -180,7 +184,7 @@ export async function extractVariantTypography(
     const uses: TextStyleUse[] = [];
     for (const { slotPath, textNode } of textSlots(layoutNode, iconNames, composed)) {
       if (allowedSlotPaths && !allowedSlotPaths.has(JSON.stringify(slotPath))) {
-        warnings.push(
+        pathNotices.push(
           `Variant « ${entry.component.name} » — layer « ${textNode.name} » : son chemin de ` +
             `slots diffère du variant de référence. Son text style ne peut pas être situé dans ` +
             `le contrat. Alignez les branches de texte entre variants, puis réexportez.`,
@@ -213,8 +217,13 @@ export async function extractVariantTypography(
     const values = matrix.axes.length > 0
       ? entry.values
       : { variant: normalizePropValue(entry.component.name) };
+    typographyByComponent.set(entry.component, uses);
     insertVariantLeaf(variantTypography, axes, values, uses, warnings);
   }
 
-  return { textStyles: Object.fromEntries(textStyles), variantTypography };
+  return {
+    textStyles: Object.fromEntries(textStyles),
+    variantTypography,
+    typographyByComponent,
+  };
 }

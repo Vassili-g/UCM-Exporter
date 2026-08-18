@@ -51,7 +51,12 @@ function parseVariantName(name: string): Record<string, string> {
     const separator = entry.indexOf('=');
     if (separator === -1) continue;
     const key = normalizePropKey(entry.slice(0, separator));
-    variants[key] = normalizePropValue(entry.slice(separator + 1));
+    Object.defineProperty(variants, key, {
+      value: normalizePropValue(entry.slice(separator + 1)),
+      enumerable: true,
+      writable: true,
+      configurable: true,
+    });
   }
   return variants;
 }
@@ -66,7 +71,12 @@ export function getVariantValues(component: ComponentNode): Record<string, strin
 
   for (const [propertyName, value] of Object.entries(source)) {
     const key = normalizePropKey(propertyName);
-    variants[key] = normalizePropValue(value);
+    Object.defineProperty(variants, key, {
+      value: normalizePropValue(value),
+      enumerable: true,
+      writable: true,
+      configurable: true,
+    });
   }
 
   return variants;
@@ -86,7 +96,12 @@ function remapVariantValues(
 ): Record<string, string> {
   const remapped: Record<string, string> = {};
   for (const [rawKey, value] of Object.entries(values)) {
-    remapped[publicKeyByRawKey.get(rawKey) ?? rawKey] = value;
+    Object.defineProperty(remapped, publicKeyByRawKey.get(rawKey) ?? rawKey, {
+      value,
+      enumerable: true,
+      writable: true,
+      configurable: true,
+    });
   }
   return remapped;
 }
@@ -143,6 +158,25 @@ export function groupComponentsByVariant(
   }
 
   return { matrix: { axes, variants }, warnings };
+}
+
+/**
+ * Matrice d'un export, qu'il parte d'un Component Set ou d'un Component seul.
+ * Un composant simple possède une combinaison exacte sans axe ; les arbres de
+ * variantes utilisent ensuite leur clé de repli historique, tandis que
+ * `Contract.variants` conserve correctement `values: {}`.
+ */
+export function buildVariantMatrix(
+  component: ComponentNode | ComponentSetNode,
+  publicKeyByRawKey: ReadonlyMap<string, string> = new Map(),
+): { matrix: VariantMatrix; warnings: string[] } {
+  if (component.type === 'COMPONENT_SET') {
+    return groupComponentsByVariant(component, publicKeyByRawKey);
+  }
+  return {
+    matrix: { axes: [], variants: [{ values: {}, component }] },
+    warnings: [],
+  };
 }
 
 /**

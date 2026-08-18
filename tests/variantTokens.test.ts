@@ -214,22 +214,31 @@ test('extractVariantTokens signale deux variants aux mêmes valeurs d’axes (pr
     },
   };
   const warnings: string[] = [];
+  const first = makeNode('State=Focus', 'a');
+  const second = makeNode('State=Focus (doublon)', 'b');
 
   const trees = await extractVariantTokens(
     {
       axes: ['state'],
       variants: [
-        { values: { state: 'focus' }, component: makeNode('State=Focus', 'a') },
-        { values: { state: 'focus' }, component: makeNode('State=Focus (doublon)', 'b') },
+        { values: { state: 'focus' }, component: first },
+        { values: { state: 'focus' }, component: second },
       ],
     },
     resolver,
     warnings,
   );
 
-  // Le premier variant est conservé, le conflit est signalé — jamais en silence.
+  // L'index historique conserve le premier ; les deux feuilles exactes restent
+  // disponibles par composant, et le conflit est signalé — jamais en silence.
   assert.deepEqual(trees.variantTokens, {
     focus: { background: '{components.button.colors.a.background}' },
+  });
+  assert.deepEqual(trees.tokensByComponent.get(first), {
+    background: '{components.button.colors.a.background}',
+  });
+  assert.deepEqual(trees.tokensByComponent.get(second), {
+    background: '{components.button.colors.b.background}',
   });
   assert.ok(warnings.some((warning) => warning.includes('Variants « focus »')));
 });
@@ -333,6 +342,14 @@ test('extractVariantTokens ajoute la largeur du stroke à tokensUsed', async () 
         },
       },
     },
+    tokensByComponent: new Map([[node, {}]]),
+    strokesByComponent: new Map([[node, {
+      ring: {
+        color: '{components.button.colors.primary.focus.ring}',
+        width: '{layouts.stroke.ring}',
+        align: 'outside',
+      },
+    }]]),
     discoveredRoles: new Map(),
   });
   assert.deepEqual(Array.from(collectTokenReferences(trees)).sort(), [
@@ -490,6 +507,59 @@ test('deux fills du MÊME calque sont publiés, mais leur empilement est signal�
   assert.match(warnings[0], /laquelle est au-dessus/);
 });
 
+test('deux fills empilés avertissent même quand leurs noms finissent différemment', async () => {
+  const calque = {
+    type: 'FRAME',
+    name: 'Dégradé',
+    boundVariables: {
+      fills: [
+        { type: 'VARIABLE_ALIAS', id: 'fond' },
+        { type: 'VARIABLE_ALIAS', id: 'accent' },
+      ],
+    },
+    findAll: () => [],
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+  const resolver = {
+    resolve: async (value: VariableAlias | null | undefined) =>
+      value?.id === 'fond' ? 'colors.background' : 'colors.accent',
+  };
+
+  const tokens = await getSlotTokens(calque, resolver, warnings);
+
+  assert.deepEqual(tokens.paints.map((color) => color.token), [
+    'colors.background',
+    'colors.accent',
+  ]);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /ne peut pas exprimer laquelle est au-dessus/);
+});
+
+test('un même token utilisé pour deux rôles ne perd pas le conflit en silence', async () => {
+  const texte = {
+    type: 'TEXT',
+    id: 'texte',
+    name: 'Texte',
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: 'shared' }] },
+  };
+  const racine = {
+    type: 'COMPONENT',
+    id: 'racine',
+    name: 'Carte',
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: 'shared' }] },
+    findAll: () => [texte],
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+  const resolver = { resolve: async () => 'colors.shared' };
+
+  const tokens = await getSlotTokens(racine, resolver, warnings);
+
+  assert.deepEqual(tokens.paints, [{ token: 'colors.shared', role: 'background' }]);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /« background »/);
+  assert.match(warnings[0], /« foreground »/);
+});
+
 /**
  * Le cas qui a motivé la 5.5, en vrai : un variant peint plusieurs surfaces,
  * dont deux fonds et deux bordures que le design system nomme par leur section.
@@ -605,7 +675,7 @@ test('un composant dont les clés nomment toutes un rôle partagé ne déduit au
   );
 });
 
-test('un variant écarté pour doublon d’axes n’allonge pas la clé du variant conservé', async () => {
+test('un doublon d’axes garde une clé stable dans les vues exactes et l’index historique', async () => {
   const makeNode = (name: string, id: string) => ({
     type: 'RECTANGLE',
     name,
@@ -633,8 +703,8 @@ test('un variant écarté pour doublon d’axes n’allonge pas la clé du varia
     warnings,
   );
 
-  // La couleur du variant écarté n'existe pas pour le contrat : elle ne conteste
-  // rien, et la clé du variant conservé reste simple.
+  // Les couleurs ne cohabitent dans aucune feuille exacte : elles partagent
+  // donc la clé simple. L'index historique garde la première occurrence.
   assert.deepEqual(trees.variantTokens, {
     focus: { background: '{components.card.base.colors.background}' },
   });

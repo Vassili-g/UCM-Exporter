@@ -111,6 +111,54 @@ test('extractStructure déduit le rôle d’une clé qui n’en nomme aucun, san
   assert.ok(!warnings.some((w) => w.includes('« bg »')));
 });
 
+test('les variantes aux mêmes coordonnées gardent leurs propres couleurs et strokes', async () => {
+  const variant = (id: string, name: string, fill: string, stroke: string) => ({
+    type: 'COMPONENT',
+    id,
+    name,
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { fills: [alias(fill)], strokes: [alias(stroke)] },
+    children: [],
+    findAll: findAllOn([]),
+  }) as unknown as ComponentNode;
+  const first = variant('first', 'State=Focus', 'fill-first', 'stroke-first');
+  const second = variant('second', 'State=focus', 'fill-second', 'stroke-second');
+
+  const { structure, variants, warnings } = await extractStructure(
+    {
+      axes: ['state'],
+      variants: [
+        { values: { state: 'focus' }, component: first },
+        { values: { state: 'focus' }, component: second },
+      ],
+    },
+    [],
+    null,
+    first,
+    resolverFor({
+      'fill-first': 'colors.first.background',
+      'stroke-first': 'colors.first.border',
+      'fill-second': 'colors.second.background',
+      'stroke-second': 'colors.second.border',
+    }),
+  );
+
+  assert.deepEqual(variants.map(({ tokens, strokes }) => ({ tokens, strokes })), [
+    {
+      tokens: { background: '{colors.first.background}' },
+      strokes: { border: { color: '{colors.first.border}', width: null, align: null } },
+    },
+    {
+      tokens: { background: '{colors.second.background}' },
+      strokes: { border: { color: '{colors.second.border}', width: null, align: null } },
+    },
+  ]);
+  assert.deepEqual(structure.variantTokens, {
+    focus: { background: '{colors.first.background}' },
+  });
+  assert.ok(warnings.some((warning) => warning.includes('Les deux restent dans la liste exacte')));
+});
+
 test('extractStructure conserve les warnings de la matrice de variantes', async () => {
   const { warnings } = await extractStructure(
     { axes: [], variants: [] },
@@ -248,7 +296,7 @@ test('extractStructure avertit quand les parties texte divergent entre variants'
   const reference = variant('Severity=Info', 'Description');
   const divergent = variant('Severity=Warning', 'Détail');
 
-  const { warnings } = await extractStructure(
+  const { notices } = await extractStructure(
     {
       axes: ['severity'],
       variants: [
@@ -265,7 +313,7 @@ test('extractStructure avertit quand les parties texte divergent entre variants'
     }),
   );
 
-  assert.ok(warnings.some(
+  assert.ok(notices.some(
     (warning) => warning.includes('Structure différente')
       && warning.includes('Severity=Warning')
       && warning.includes('Severity=Info'),
@@ -287,7 +335,7 @@ test('extractStructure avertit quand l’alignement Flex diverge entre variants'
   const reference = variant('Severity=Info', 'CENTER');
   const divergent = variant('Severity=Warning', 'MIN');
 
-  const { structure, warnings } = await extractStructure(
+  const { structure, notices } = await extractStructure(
     {
       axes: ['severity'],
       variants: [
@@ -302,7 +350,7 @@ test('extractStructure avertit quand l’alignement Flex diverge entre variants'
   );
 
   assert.equal(structure.alignItems, 'center');
-  assert.ok(warnings.some(
+  assert.ok(notices.some(
     (warning) => warning.includes('Auto layout différent')
       && warning.includes('Severity=Warning')
       && warning.includes('Severity=Info'),
@@ -334,7 +382,7 @@ test('extractStructure avertit quand le remplissage d’un slot diverge entre va
   const reference = variant('Severity=Info', 1);
   const divergent = variant('Severity=Warning', 0);
 
-  const { structure, warnings } = await extractStructure(
+  const { structure, notices } = await extractStructure(
     {
       axes: ['severity'],
       variants: [
@@ -349,7 +397,7 @@ test('extractStructure avertit quand le remplissage d’un slot diverge entre va
   );
 
   assert.equal(structure.children[0].flexGrow, 1);
-  assert.ok(warnings.some(
+  assert.ok(notices.some(
     (warning) => warning.includes('Auto layout différent')
       && warning.includes('Severity=Warning'),
   ));

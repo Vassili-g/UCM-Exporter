@@ -26,6 +26,8 @@ export type IconLayerSummary = {
   figmaLayer: string;
   /** Liaisons de visibilité distinctes rencontrées ; `null` signifie aucune liaison. */
   visibilityProps: Array<string | null>;
+  /** Liaisons INSTANCE_SWAP distinctes ; `null` signifie aucun remplacement natif. */
+  swapProps: Array<string | null>;
   /** Plus grand nombre de calques homonymes dans un même variant. */
   maximumOccurrences: number;
   /**
@@ -39,6 +41,8 @@ export type IconLayerSummary = {
   sizes: Array<string | null>;
   /** Combinaisons exactes d'axes dans lesquelles le calque existe. */
   variants: Array<Record<string, string>>;
+  /** Nodes exacts dans lesquels le calque existe, même si leurs axes se répètent. */
+  variantNodeIds: string[];
   /** Nombre total de variants inspectés, pour reconnaître une présence globale. */
   totalVariants: number;
 };
@@ -46,19 +50,23 @@ export type IconLayerSummary = {
 /** Ce qu'on accumule pour un nom de calque avant de le résumer. */
 type IconLayerAccumulator = {
   visibilityProps: Set<string | null>;
+  swapProps: Set<string | null>;
   maximumOccurrences: number;
   slots: Set<string | null>;
   sizes: Set<string | null>;
   variants: Array<Record<string, string>>;
+  variantNodeIds: string[];
 };
 
 function newAccumulator(): IconLayerAccumulator {
   return {
     visibilityProps: new Set(),
+    swapProps: new Set(),
     maximumOccurrences: 0,
     slots: new Set(),
     sizes: new Set(),
     variants: [],
+    variantNodeIds: [],
   };
 }
 
@@ -107,6 +115,8 @@ export async function extractIconLayers(
 
       const reference = node.componentPropertyReferences?.visible;
       summary.visibilityProps.add(reference ? normalizePropKey(reference) : null);
+      const swapReference = node.componentPropertyReferences?.mainComponent;
+      summary.swapProps.add(swapReference ? normalizePropKey(swapReference) : null);
       summary.slots.add(slotByLayer.get(node) ?? null);
       // La taille se relève ici parce qu'une icône absente du variant de
       // référence n'a aucun slot où la lire. Le résolveur met ses résolutions
@@ -135,6 +145,7 @@ export async function extractIconLayers(
         ? entry.values
         : { variant: normalizePropValue(entry.component.name) };
       summary.variants.push({ ...values });
+      summary.variantNodeIds.push(entry.component.id);
     }
   }
 
@@ -144,10 +155,12 @@ export async function extractIconLayers(
       ? [{
         figmaLayer: name,
         visibilityProps: Array.from(summary.visibilityProps),
+        swapProps: Array.from(summary.swapProps),
         maximumOccurrences: summary.maximumOccurrences,
         slots: Array.from(summary.slots),
         sizes: Array.from(summary.sizes),
         variants: summary.variants,
+        variantNodeIds: summary.variantNodeIds,
         totalVariants: matrix.variants.length,
       }]
       : [];

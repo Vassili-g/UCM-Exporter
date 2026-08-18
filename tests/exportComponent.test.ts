@@ -128,6 +128,14 @@ function monterFigma(options: {
     scopes: ['GAP'],
     valuesByMode: { mode: 8 },
   };
+  const variableBackground = {
+    id: 'background',
+    name: 'components/standalone/colors/background',
+    variableCollectionId: 'collection',
+    resolvedType: 'COLOR',
+    scopes: ['ALL_FILLS'],
+    valuesByMode: { mode: { r: 1, g: 1, b: 1, a: 1 } },
+  };
 
   const precedent = (globalThis as { figma?: unknown }).figma;
   (globalThis as { figma?: unknown }).figma = {
@@ -139,7 +147,7 @@ function monterFigma(options: {
     getStyleByIdAsync: async () => null,
     variables: {
       getLocalVariableCollectionsAsync: async () => [collection],
-      getLocalVariablesAsync: async () => [variableGap],
+      getLocalVariablesAsync: async () => [variableGap, variableBackground],
       getVariableByIdAsync: async () => null,
       getVariableCollectionByIdAsync: async () => collection,
     },
@@ -173,6 +181,24 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
     assert.deepEqual(contrat.structure.variantAxes, ['variant']);
     assert.equal(contrat.structure.layout, 'flex-row');
     assert.equal(contrat.structure.gap, '{tokens.sizes.gap}');
+    assert.equal(contrat.variants.length, 2);
+    assert.deepEqual(contrat.variants.map((entry: any) => entry.values.variant), [
+      'contained',
+      'outlined',
+    ]);
+    assert.ok(contrat.variants.every((entry: any) => (
+      entry.tokens && entry.strokes && Array.isArray(entry.typography)
+        && Array.isArray(entry.composes) && entry.icons
+    )));
+    assert.deepEqual(Object.keys(contrat).sort(), [
+      'composes', 'icons', 'intent', 'meta', 'name', 'propertyBindings', 'props',
+      'rendering', 'stateModel', 'structure', 'textStyles', 'tokensUsed', 'variants',
+    ]);
+    assert.deepEqual(contrat.meta.coverage, { portable: 'partial' });
+    assert.equal(contrat.meta.diagnostics.length, contrat.meta.warnings.length);
+    assert.ok(contrat.meta.diagnostics.every((diagnostic: any) => (
+      Object.keys(diagnostic).sort().join(',') === 'code,message,severity'
+    )));
 
     // `tokensUsed` se dérive du contrat TERMINÉ : il ne cite donc que ce que le
     // contrat emploie, et il le cite dès qu'un champ le porte.
@@ -232,22 +258,224 @@ test('composes se dérive de l’arbre : deux dépendances d’un même cadre y 
   }
 });
 
-test('handleExportComponent refuse une sélection qui n’est pas un seul Component Set', async () => {
+test('handleExportComponent refuse une sélection qui n’est pas un seul composant', async () => {
   const figmaFaux = monterFigma({ selection: [] });
   try {
     await assert.rejects(
       handleExportComponent(),
-      /Sélectionnez un seul Component Set/,
+      /Sélectionnez un seul Component ou Component Set/,
     );
   } finally {
     figmaFaux.restaurer();
   }
 });
 
-test('handleExportComponent bloque avant toute extraction quand aucune règle n’est lisible', async () => {
+test('handleExportComponent exporte sans règles et diagnostique la documentation absente', async () => {
   const figmaFaux = monterFigma({ avecRegles: false });
   try {
-    await assert.rejects(handleExportComponent(), /aucune règle utilisable/);
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(contrat.intent, null);
+    assert.ok(
+      contrat.meta.warnings.some((warning: string) => warning.includes('Aucune règle @usage')),
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('une dépendance absente du variant de référence reste dans la variante exacte et le graphe global', async () => {
+  const figmaFaux = monterFigma({ dependancesContractees: ['Link'] });
+  const outlined = figmaFaux.componentSet.children[1];
+  const link = node('INSTANCE', 'Action secondaire', [], {
+    componentProperties: {},
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+    getMainComponentAsync: async () => ({
+      name: 'Default',
+      parent: { type: 'COMPONENT_SET', name: 'Link' },
+    }),
+  });
+  outlined.children.push(link);
+  link.parent = outlined;
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.deepEqual(contrat.variants[0].composes, []);
+    assert.deepEqual(contrat.variants[1].composes, [
+      { component: 'Link', figmaLayer: 'Action secondaire' },
+    ]);
+    assert.deepEqual(contrat.composes, [
+      { component: 'Link', figmaLayer: 'Action secondaire' },
+    ]);
+    assert.equal(contrat.structure.children.some((child: any) => child.composes === 'Link'), false);
+    assert.ok(contrat.meta.diagnostics.some((diagnostic: any) => (
+      diagnostic.code === 'UCM_EXPORT_NOTICE'
+        && diagnostic.message.includes('Composition différente')
+    )));
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('un COMPONENT standalone produit une variante exacte sans axe', async () => {
+  const figmaFaux = monterFigma({ avecRegles: false });
+  const standalone = figmaFaux.componentSet.children[0];
+  standalone.name = 'Standalone';
+  standalone.componentPropertyDefinitions = {};
+  standalone.boundVariables = { fills: [alias('background')] };
+  (globalThis as any).figma.currentPage.selection = [standalone];
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(contrat.name, 'Standalone');
+    assert.deepEqual(contrat.structure.variantAxes, []);
+    assert.deepEqual(contrat.variants.map((entry: any) => entry.values), [{}]);
+    assert.deepEqual(contrat.variants[0].tokens, {
+      background: '{tokens.components.standalone.colors.background}',
+    });
+    assert.deepEqual(contrat.variants[0].strokes, {});
+    assert.deepEqual(contrat.variants[0].typography, []);
+    assert.deepEqual(contrat.variants[0].composes, []);
+    assert.deepEqual(contrat.variants[0].icons, {});
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('les notices de documentation ne rendent pas la projection portable partielle', async () => {
+  const figmaFaux = monterFigma({ avecRegles: false });
+  const standalone = node('COMPONENT', 'Empty', [], {
+    key: 'empty-key',
+    componentPropertyDefinitions: {},
+    layoutMode: 'HORIZONTAL',
+    itemSpacing: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    cornerRadius: 0,
+  });
+  (globalThis as any).figma.currentPage.selection = [standalone];
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(
+      contrat.meta.coverage.portable,
+      'complete',
+      JSON.stringify(contrat.meta.warnings),
+    );
+    assert.ok(contrat.meta.diagnostics.length > 0);
+    assert.ok(
+      contrat.meta.diagnostics.every((diagnostic: any) => diagnostic.code === 'UCM_EXPORT_NOTICE'),
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('une collision de props rend la projection portable explicitement partielle', async () => {
+  const figmaFaux = monterFigma({ avecRegles: false });
+  const standalone = node('COMPONENT', 'Collision', [], {
+    key: 'collision-key',
+    componentPropertyDefinitions: {
+      'Icon Left#1:1': { type: 'BOOLEAN', defaultValue: true },
+      'icon-left#1:2': { type: 'BOOLEAN', defaultValue: false },
+    },
+    layoutMode: 'HORIZONTAL',
+  });
+  (globalThis as any).figma.currentPage.selection = [standalone];
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(contrat.meta.coverage.portable, 'partial');
+    assert.ok(
+      contrat.meta.diagnostics.some(
+        (diagnostic: any) => diagnostic.code === 'UCM_PORTABLE_PROJECTION_WARNING',
+      ),
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('un Component Set clairsemé exporte uniquement les combinaisons existantes', async () => {
+  const figmaFaux = monterFigma();
+  const [contained, outlined] = figmaFaux.componentSet.children;
+  figmaFaux.componentSet.componentPropertyDefinitions = {
+    Variant: {
+      type: 'VARIANT',
+      variantOptions: ['Contained', 'Outlined'],
+      defaultValue: 'Contained',
+    },
+    Size: {
+      type: 'VARIANT',
+      variantOptions: ['Small', 'Large'],
+      defaultValue: 'Small',
+    },
+  };
+  contained.name = 'Variant=Contained, Size=Small';
+  contained.variantProperties = { Variant: 'Contained', Size: 'Small' };
+  outlined.name = 'Variant=Outlined, Size=Large';
+  outlined.variantProperties = { Variant: 'Outlined', Size: 'Large' };
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(contrat.variants.length, 2);
+    assert.deepEqual(contrat.variants.map((entry: any) => entry.values), [
+      { variant: 'contained', size: 'small' },
+      { variant: 'outlined', size: 'large' },
+    ]);
+    assert.ok(
+      contrat.meta.warnings.some((warning: string) => warning.includes('produit cartésien')),
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('les props propres au wrapper sont fusionnées avant leurs liaisons natives', async () => {
+  const figmaFaux = monterFigma({
+    enfantsDuVariant: () => {
+      const wrapperSet = node('COMPONENT_SET', 'Dimensions', [], {
+        componentPropertyDefinitions: {
+          'Wrapper label#2:3': { type: 'TEXT', defaultValue: 'Libellé' },
+        },
+      });
+      return [node('INSTANCE', 'Wrapper', [], {
+        layoutMode: 'HORIZONTAL',
+        boundVariables: { itemSpacing: alias('gap') },
+        componentProperties: { 'Wrapper label#2:3': { type: 'TEXT', value: 'Libellé' } },
+        componentPropertyReferences: { characters: 'Wrapper label#2:3' },
+        getMainComponentAsync: async () => ({ name: 'Dimensions=Default', parent: wrapperSet }),
+      })];
+    },
+  });
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(contrat.props.wrapperLabel.type, 'string');
+    assert.ok(contrat.propertyBindings.some((binding: any) => (
+      binding.prop === 'wrapperLabel'
+        && binding.figmaPropName === 'Wrapper label#2:3'
+        && binding.target === 'characters'
+    )));
+    assert.equal(
+      contrat.meta.warnings.some((warning: string) => (
+        warning.includes('Wrapper label') && warning.includes('aucune prop publique')
+      )),
+      false,
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('un Component Set vide bloque avant de produire une fausse variante', async () => {
+  const figmaFaux = monterFigma();
+  figmaFaux.componentSet.children = [];
+  try {
+    await assert.rejects(handleExportComponent(), /ne contient aucun variant COMPONENT/);
   } finally {
     figmaFaux.restaurer();
   }

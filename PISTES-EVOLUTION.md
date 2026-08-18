@@ -89,16 +89,14 @@ peints, donc l’arbre de layout général ci-dessous et sa checklist entière. 
 n’ouvrir que si un composant réel du catalogue le réclame, pas pour un composant
 d’épreuve.
 
-### Arbre de layout général
+### Arbre de layout général — socle engagé
 
-`structure.children` décrit les slots nécessaires à une reconstruction
-vérifiable, pas l’arbre Figma : ni grille, ni wrap, ni coordonnées. Les cas que
-cette forme ne sait pas porter avertissent au lieu de disparaître, si bien
-qu’une extension n’a plus à deviner ce qui manque — l’export le nomme, calque
-par calque, dans le corps de la pull request.
+La 6.0 a rendu `structure.children` récursif, la 7.0 a ajouté grille, pistes et
+position absolue, et la 8.0 publie un arbre portable distinct pour chaque
+variante exacte.
 
-Un arbre plus général reste **non engagé**. Il ne pourra être proposé qu’après
-une limite observée sur un composant réel, et avec, dans le même changement :
+Les extensions sémantiques restantes ne pourront être proposées qu’après une
+limite observée sur un composant réel, et avec, dans le même changement :
 
 - une fonction pure unique qui décide si un node est un conteneur contractuel,
   une feuille, une dépendance composée ou un élément graphique interne ;
@@ -149,9 +147,14 @@ Un schéma public rendrait le contrat validable dans d’autres langages et
 ajout compatible et rupture. Cette étape vient après les validations
 multi-composants afin de ne pas figer une abstraction prématurée.
 
-### Avertissements typés
+### Diagnostics structurés — premier socle engagé
 
-`meta.warnings` ne porte que de la prose. L’exporteur sait pourtant quelle
+La 8.0 duplique chaque avertissement dans `meta.diagnostics` avec `code`,
+`severity` et `message`, et publie `meta.coverage.portable`. Ce socle permet déjà
+à un consommateur de distinguer un contrat complet d'une projection portable
+partielle. `meta.warnings` reste présent pour l'UI et les anciens consommateurs.
+
+L’exporteur sait toutefois quelle
 propriété n’a pas pu être décrite, sur quel calque, dans quel variant, et quel
 champ du contrat reste vide en conséquence — puis il aplatit tout cela en une
 phrase. Les consommateurs doivent alors redéduire ce savoir, et s’en tirent
@@ -164,16 +167,13 @@ feuille — puis renvoie aux mots de l’export au lieu d’en reconstituer la c
 Il reconnaît aussi à son texte le seul avertissement que personne ne peut lever
 (le lien Figma).
 
-Une forme structurée — `code`, `severity`, `figma.{variantName, layerName,
+L'étape suivante est une localisation structurée — `figma.{variantName, layerName,
 nodeId}`, et le `contractPath` resté vide — rendrait la corrélation exacte et
 permettrait de décider si un défaut de design doit bloquer. Le `message` y
 resterait pour le lecteur humain.
 
-Ce n’est pas engagé parce que le coût réel n’est pas dans le code : c’est une
-rupture de forme du JSON, donc `contractVersion`, spécification et
-consommateurs — et surtout un réexport depuis Figma du corpus
-`tests/test-exports/`, que personne ne peut produire hors du plugin. À grouper
-avec le prochain changement de schéma plutôt qu’à porter seul.
+Cette localisation fine n'est pas engagée : elle demande de remplacer les
+tableaux de chaînes internes par un collecteur typé dans tous les extracteurs.
 
 ### Diff sémantique
 

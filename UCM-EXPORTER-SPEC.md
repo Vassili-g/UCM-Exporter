@@ -24,8 +24,7 @@ du ressort du repository consommateur.
   **Export composant** (Partie 1) et **Export tokens** (Partie 2).
 - Stack : TypeScript, `@figma/plugin-typings`, build esbuild. L'UI expose le
   statut GitHub, les deux commandes, la configuration, un journal et un retour
-  en direct sur la sélection (un Component Set sans règles est signalé avant
-  tout export).
+  en direct sur la sélection.
 - **`normalizeName()` est commune aux deux commandes** :
   `Brand Tokens/Primary/default` → `brand-tokens.primary.default`
   (`/`→`.`, espaces d'un segment → `-`, minuscules). Un token s'écrit donc
@@ -63,25 +62,29 @@ généricité. Sa structure n’est pas imposée aux autres design systems.
 
 ## Partie 1 — Export composant (moteur générique)
 
-Décrit **n'importe quel** component set en lisant sa vraie structure Figma.
+Décrit **n'importe quel** composant ou component set en lisant sa vraie
+structure Figma.
 **Rien n'est codé en dur sur un composant précis** : les règles « intelligentes »
 sont auto-détectées (nom d'axe, valeurs, rôle de calque) et centralisées dans
 `semantics.ts`. Button sert d'exemple de référence.
 
-**Entrée** : un `COMPONENT_SET` sélectionné (`selection[0].type ===
-"COMPONENT_SET"`, sinon erreur UI explicite) **portant des règles** dans un
-conteneur `<Nom>-Rules` (sinon export bloqué, cf. étape 7) et dont toutes les
-combinaisons de valeurs d'axes existent réellement. Si une combinaison manque,
-l'export est bloqué avant l'extraction. Le message montre jusqu’à cinq variants
-présents, jusqu’à cinq combinaisons absentes, puis explique pourquoi ces
-combinaisons seraient pourtant accessibles comme props indépendantes.
-Une exception volontaire n'est pas inventée silencieusement : le schéma actuel
-décrit des props indépendantes et ne sait pas exprimer une combinaison interdite.
+**Entrée** : exactement un `COMPONENT` ou un `COMPONENT_SET` sélectionné. Les
+règles `<Nom>-Rules` enrichissent l'intention mais ne conditionnent plus la
+fidélité de l'export. Un set clairsemé n'est pas complété artificiellement : le
+champ `variants` publie uniquement les combinaisons réellement présentes et un
+diagnostic nomme l'écart avec le produit cartésien des axes. Un consommateur
+compose les enums avec cette liste exacte ; il ne présume jamais que leur
+produit cartésien est valide.
 
 ### Algorithme
 
 **1. Props** — traduire chaque propriété : `VARIANT` → enum, `BOOLEAN` →
-boolean, `TEXT` → string. Deux règles auto-détectées :
+boolean, `TEXT` → string, `INSTANCE_SWAP` → `instance-swap`, `SLOT` → `slot`.
+Le champ `propertyBindings` relie le nom technique Figma complet aux calques et
+aux cibles natives `visible`, `characters` et `mainComponent`, variante par
+variante. Les props propres au wrapper sont fusionnées avant ce relevé ; les
+internes d'une dépendance composée restent dans le contrat de cette dépendance.
+Deux règles auto-détectées :
 - *Convention State* : un axe `State`/`Status` décrit des états d'interaction
   dérivés du runtime (hover, focus…), pas des choix d'API — il est donc **exclu
   des props** ; seule sa valeur `Disable` (orthographes `Disable` ou `Disabled`
@@ -97,8 +100,9 @@ boolean, `TEXT` → string. Deux règles auto-détectées :
   `structure.variantAxes` et des valeurs de chaque variant : `props.size`,
   `variantAxes` et les arbres de tokens ne peuvent pas diverger.
 
-**2. Tokens de variantes** — après le pré-vol de complétude, parcourir **tous**
-les variants du produit cartésien des axes. Pour chacun, relever les tokens liés (`boundVariables.fills` et
+**2. Tokens de variantes** — parcourir **tous les variants réellement
+présents**, sans fabriquer les cases absentes d'un produit cartésien. Pour
+chacun, relever les tokens liés (`boundVariables.fills` et
 `.strokes` sur tout le sous-arbre), rangés par **clé**, dont la base est le
 dernier segment du token. Un composant unifié imbriqué n'y contribue rien : ni son contenu, ni le
 calque de l'instance elle-même, dont le fond appartient à son propre contrat.
@@ -107,6 +111,13 @@ que ce contrat-ci ne peint pas — et, sur une clé partagée, évincerait la si
 est liée à une prop de composant ou à une variable : il peut alors être rendu
 dans une autre configuration et reste exporté. Un sous-arbre statiquement
 masqué qui portait des variables produit un warning sur sa racine.
+
+Deux variants qui aboutissent aux mêmes valeurs d'axes après normalisation
+restent deux entrées autonomes de `variants`, chacune avec ses propres tokens,
+strokes et usages typographiques. Les arbres historiques de `structure` ne
+peuvent pas indexer deux feuilles à la même coordonnée : ils gardent la première
+et un diagnostic demande de lever l'ambiguïté dans Figma. Cette limite d'index
+ne retire jamais la seconde entrée de la vue exacte.
 
 La clé **identifie** la couleur ; elle ne dit pas ce qu'elle peint. Ce que la
 couleur peint se lit sur le **calque qui la porte**, jamais sur son nom : un
@@ -139,10 +150,13 @@ dehors. Le design system nommait déjà ces surfaces distinctement ; c'est
 l'export qui tronquait au dernier segment, et le renommage qu'il réclamait
 compensait un défaut du moteur.
 
-Le choix des segments obéit à une règle unique, décidée **une seule fois pour
-tout le composant** : parmi les sélections qui séparent les couleurs
-**cohabitant dans une même feuille**, on retient celle qui produit **le moins de
-clés distinctes**. C'est ce qui garde une coordonnée de variant hors de la clé —
+Le choix des segments est décidé **une seule fois pour tout le composant**. Pour
+au plus seize profondeurs candidates, le moteur retient exactement la sélection
+qui produit **le moins de clés distinctes**. Au-delà, il emploie une sélection
+gloutonne déterministe puis retire les profondeurs inutiles : le coût reste
+borné au lieu d'explorer `2^n` combinaisons. Dans les deux cas, seules les
+couleurs **cohabitant dans une même feuille** doivent être séparées. C'est ce
+qui garde une coordonnée de variant hors de la clé —
 trente couleurs `…<color>.<variant>.<state>.background` qui ne se côtoient jamais
 gardent une seule et même clé, et seule une surface qui les côtoie vraiment s'en
 détache. Une clé allongée contient donc un point, et une clé simple jamais : un
@@ -380,10 +394,16 @@ Les parts sont nommées par la règle qui nomme déjà les slots (`label`,
 `label-2`…) : aucune heuristique sur le nom du calque, et `figmaLayer` conserve
 « Titre » ou « Description » pour les distinguer.
 
-L'arbre textuel est comparé sur toute la matrice. Une différence de cardinalité,
-d'ordre, de nom Figma ou de disposition avertit en nommant les variants ; le
-contrat continue de décrire le variant de référence et ne fusionne jamais des
-arbres incompatibles par supposition.
+L'arbre historique `structure.children` est comparé sur toute la matrice. Une
+différence de cardinalité, d'ordre, de nom Figma ou de disposition avertit en
+nommant les variants ; ce champ continue de décrire le variant de référence et
+ne fusionne jamais des arbres incompatibles. Depuis la 8.0, chaque entrée de
+`variants` part de la vraie racine du variant concerné et conserve son propre
+arbre portable : l'écart n'est donc plus perdu par le contrat. Chaque entrée
+porte aussi ses feuilles `tokens` et `strokes`, ses usages `typography`, ses
+`icons` situées par chemin de slots et ses `composes`, tous relatifs à CET
+arbre. Elle peut donc être consommée sans reconstruire une feuille dans les
+index historiques de `structure`.
 
 `icons.<clé>.slot` continue de nommer un slot de **premier niveau**, y compris
 pour une icône imbriquée dans un slot à parts.
@@ -392,8 +412,9 @@ Nommer le slot d'icône par son rôle le rend **stable sur toute la matrice** :
 des icônes qui s'excluent entre variants (`circle-info` en info, `circle-check`
 en success) partagent un seul slot, là où leurs noms de calques en auraient
 inventé un par variant. `children` décrivant le variant de référence, seul le
-premier aurait survécu. Le nom Figma reste dans `figmaLayer`, et `icons` fait
-foi sur l'icône à rendre dans chaque combinaison d'axes.
+premier survivait dans la projection historique. Le nom Figma reste dans
+`figmaLayer`, `icons` fait foi sur l'icône à rendre, et chaque
+`variants[].icons` la situe dans son arbre exact par `slotPath`.
 
 Une prop BOOLEAN Figma liée à la visibilité d'un calque donne `visibilityProp`
 + `optional` sur son slot, **quel que soit le type de calque**. Un label
@@ -559,7 +580,8 @@ rien et n'avertit de rien : une propriété absente n'est pas une valeur.
 Direction,
 alignements, dimensions figées et propriétés de flux des slots sont comparés sur
 toute la matrice — cadres de dépendance imbriqués compris ; une différence entre
-variants avertit au lieu d'être généralisée depuis le variant de référence.
+variants produit une notice de compatibilité au lieu d'être généralisée depuis
+le variant de référence ; les arbres exacts conservent les deux valeurs.
 
 **Ce que Figma porte et que le schéma ne sait pas écrire** avertit plutôt que de
 disparaître, puisque le rendu, lui, en dépend. C'est la contrepartie de tout ce
@@ -659,15 +681,22 @@ une instance d'un composant de configuration (`ComponentConfiguration`) dont la
     slot ; un slot ou une taille qui change selon les variants — y compris une
     taille présente ici et absente ailleurs — produit un warning et aucune
     valeur déduite ;
+  - **Emplacement exact 8.0** — `variants[].icons.<clé>.slotPath` situe l'icône
+    dans l'arbre de CETTE combinaison, y compris lorsqu'elle est absente de la
+    référence ou imbriquée à plusieurs niveaux. La clé renvoie au catalogue
+    global `icons`, qui garde politique, prop runtime et taille ;
   - **Prop runtime** — une icône `modifiable` reçoit toujours une prop runtime
-    qui dit QUELLE icône rendre. Son nom suit le BOOLEAN de visibilité quand le
-    calque graphique lie nativement sa propriété Figma `visible` à l'un d'eux
-    (`iconLeft` → `iconLeftName`, qui se lisent alors en paire) ; sans cette
-    liaison, il vient du calque lui-même (`chess` → `chessName`) et
-    `visibilityProp` est absent. Une icône toujours visible est remplaçable
-    comme une autre : l'absence de booléen n'est donc pas un défaut et ne
-    produit aucun warning. Si le composant expose déjà une component property
-    du même nom, aucune n'est remplacée et un warning demande un renommage.
+    qui dit QUELLE icône rendre. Si son instance lie nativement `mainComponent`
+    à une `INSTANCE_SWAP`, cette prop fait autorité et aucune seconde prop n'est
+    inventée. Sinon, le nom synthétique suit le BOOLEAN de visibilité quand le
+    calque graphique lie `visible` à l'un d'eux (`iconLeft` → `iconLeftName`, qui
+    se lisent alors en paire) ; sans cette liaison, il vient du calque lui-même
+    (`chess` → `chessName`) et `visibilityProp` est absent. Une icône toujours
+    visible est remplaçable comme une autre : l'absence de booléen n'est donc pas
+    un défaut et ne produit aucun warning. Si le composant expose déjà une
+    component property du même nom, aucune n'est remplacée et un warning demande
+    un renommage. Une liaison `INSTANCE_SWAP` qui varie entre variants produit
+    également un warning au lieu d'une seconde API concurrente.
 
   En résumé, trois responsabilités distinctes — et c'est bien parce qu'elles
   sont distinctes que la deuxième ne dépend pas de la première :
@@ -675,13 +704,12 @@ une instance d'un composant de configuration (`ComponentConfiguration`) dont la
   | Qui | Contrôle | Défini où |
   |---|---|---|
   | Booléen Figma (`iconLeft`…) | **si** le calque s'affiche | liaison native `visible` dans Figma |
-  | Prop runtime `<nom>Name` | **quelle** icône afficher | ajoutée par l'exporteur (icône `modifiable`) |
+  | `INSTANCE_SWAP` ou prop runtime `<nom>Name` | **quelle** icône afficher | liaison native `mainComponent`, sinon ajoutée par l'exporteur |
   | `figmaName` | l'icône de **repli** | nom du calque Figma, utilisé quand la prop runtime est vide |
 Convention uniforme (aucune logique par composant), lue **sans jamais écrire dans
-Figma**. Les règles sont **obligatoires** : conteneur absent ou sans aucune règle
-exploitable → **export BLOQUÉ** en pré-vol (erreur explicite), aucun fichier
-produit, pas de repli sur la description. Un `@prop` visant une prop/valeur
-inexistante → warning (faute de frappe), non bloquant.
+Figma**. Les règles sont facultatives : leur absence laisse `intent: null` et
+produit un diagnostic de documentation, sans réduire `meta.coverage.portable`.
+Un `@prop` visant une prop/valeur inexistante produit un warning non bloquant.
 
 **8. Rendu sémantique & garde-fous** — le contrat publie aussi le mapping
 générique des rôles vers les propriétés de rendu (`background` →
@@ -723,9 +751,14 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "7.0",
+    "contractVersion": "8.0",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
+    "diagnostics": [
+      { "code": "UCM_EXPORT_NOTICE", "severity": "warning",
+        "message": "…" }
+    ],
+    "coverage": { "portable": "partial" },
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "12:345",
@@ -748,6 +781,19 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "iconRightName": { "type": "icon", "default": null,
                         "policy": "modifiable", "visibilityProp": "iconRight" }
   },
+  "variants": [
+    { "nodeId": "12:346", "figmaName": "Color=Primary, Variant=Contained",
+      "values": { "color": "primary", "variant": "contained", "state": "default" },
+      "structure": { "layout": "flex-row", "sizing": { "width": "fit-content",
+        "height": "fit-content" }, "children": [] },
+      "tokens": { "background": "{components.button.colors.primary}" },
+      "strokes": {}, "typography": [], "composes": [], "icons": {} }
+  ],
+  "propertyBindings": [
+    { "prop": "iconLeft", "figmaPropName": "iconLeft#12:3", "target": "visible",
+      "nodeId": "12:350", "figmaPath": ["Icon left"],
+      "variant": { "color": "primary", "variant": "contained", "state": "default" } }
+  ],
   "stateModel": {
     "axis": "state",
     "states": {
@@ -850,10 +896,13 @@ ses usages dans `variantTypography`.
 composant simple. Une instance ainsi déclarée n'est PAS parcourue : ses
 calques, ses tokens et ses props appartiennent à son propre contrat. Le slot
 correspondant de `children` la nomme par `composes`, sans relever ni sa taille
-ni sa typographie. Un composant est reconnu comme unifié lorsqu'il possède un
-conteneur `<Nom>-Rules` sur la page — le même critère qui autorise son export,
-évalué par la même fonction, si bien que les deux lectures ne peuvent pas se
-contredire.
+ ni sa typographie. Depuis la 8.0, tout `COMPONENT_SET` et tout `COMPONENT`
+standalone sélectionné est exportable, même sans règles. Cette capacité ne le
+transforme pas automatiquement en dépendance : le conteneur `<Nom>-Rules`
+déclare qu'un contrat UCM autonome existe pour ce nom. Sans ce marqueur, un set
+imbriqué reste parcouru comme wrapper ou détail d'implémentation du parent. Un
+variant interne d'un set reconnu prend le nom du set. Le moteur charge toutes
+les pages une fois avant le scan des marqueurs.
 
 **Un cadre qui enveloppe une ou plusieurs dépendances (4.9).** Le slot peut ÊTRE
 l'instance, ou l'envelopper : une Alert range son bouton dans un calque
@@ -903,27 +952,29 @@ seul nom du composant et n'ouvre aucun `children`. Les chemins de
 `variantTypography` suivent cette même réponse, sinon ils viseraient des slots
 que `structure.children` ne contient pas.
 
-Le relevé couvre toute la matrice pour élaguer les dépendances de chaque
-variant. `structure.children` et `composes` décrivent tous deux le variant de
-référence et gardent ainsi le même ordre et la même cardinalité. Ils ne le
-gardent pas par accord de deux relevés : `composes` se DÉRIVE de l'arbre publié,
-comme `tokensUsed` se dérive du contrat terminé. La séquence se LIT sur cet
-arbre, et non dans l'ordre où l'extraction a rangé ses trouvailles : celui-ci
+Le relevé couvre toute la matrice. Chaque `variants[].composes` se DÉRIVE de
+SON arbre exact et en garde l'ordre et la cardinalité. Le champ global
+`composes` en est l'union ordonnée à cardinalité maximale : une dépendance
+conditionnelle n'est jamais perdue parce qu'elle manque au variant de
+référence. Comme `tokensUsed`, ces champs se dérivent du contrat terminé. La
+séquence se LIT sur chaque arbre, et non dans l'ordre où l'extraction a rangé
+ses trouvailles : celui-ci
 dépend de l'ordonnancement des lectures asynchrones, et deux cadres frères
 pourraient se doubler sans qu'aucun design ait changé. Le scan dit ce que Figma
 contient ; seul `structure.children` dit où le développeur doit rendre quoi.
 
-Une dépendance que l'arbre n'a su situer nulle part — posée hors du node de
-layout élu, ou rangée sous un calque masqué avec d'autres — sort donc des deux
-champs à la fois, jamais d'un seul, et un warning la nomme. Le consommateur
+Une dépendance qu'aucun arbre exact n'a su situer — par exemple rangée sous un
+calque masqué — sort donc des deux champs à la fois, jamais d'un seul, et un
+warning la nomme. Le consommateur
 comptant les occurrences de `composes` pour vérifier la parité du code, un
 composant qui disparaît ainsi du contrat rendra sa parité rouge tant que le code
 continuera de le rendre : c'est le diagnostic voulu, le contrat ne le demandant
 plus.
 
-Si la composition varie ailleurs dans la matrice, un warning nomme les variants
-concernés : le schéma courant ne prétend pas représenter un slot composé
-conditionnel qu'il ne sait pas situer dans `structure.children`.
+Si la composition varie dans la matrice, une notice nomme les variants
+concernés : `structure` reste la projection historique de référence, les arbres
+de `variants` portent les dépendances exactes de chaque combinaison, et le
+`composes` global garantit que le graphe n'oublie aucune cible conditionnelle.
 
 `figmaLayer` y nomme le calque de **l'instance**, jamais le cadre qui
 l'enveloppe : c'est ce calque qu'on retrouve dans Figma.
@@ -961,7 +1012,8 @@ Community notamment : un warning le signale alors, sans bloquer, et `nodeId` et
 - Aucune couleur n’est perdue par troncature de clé. La clé d’une couleur est
   décidée une seule fois pour tout le composant : elle est la même dans toutes
   les feuilles, et ne porte jamais une coordonnée de variant.
-- La matrice est complète et son ordre rend l’export déterministe.
+- La matrice contient exactement les combinaisons présentes et son ordre rend
+  l’export déterministe ; aucune case cartésienne absente n'est inventée.
 - Le contrat ne contient aucune valeur de design brute : seulement des
   références `{…}` et les données structurelles explicitement prévues.
 - Une liaison composée, une taille ou un contour partiel ne devient jamais une
@@ -970,8 +1022,8 @@ Community notamment : un warning le signale alors, sans bloquer, et `nodeId` et
   restent représentées.
 - Les composants imbriqués contractés sont déclarés dans `composes` sans
   réexporter leurs internes.
-- Le conteneur `<Nom>-Rules` est obligatoire. Une règle invalide avertit sans
-  inventer de prop ou d’icône.
+- Le conteneur `<Nom>-Rules` est facultatif. Son absence ou une règle invalide
+  avertit sans bloquer l’export ni inventer de prop ou d’icône.
 - `meta` porte la version, la date, les avertissements et la traçabilité Figma.
 
 ---
@@ -1074,6 +1126,11 @@ contenu est identique — la
 comparaison ignore `meta.exportedAt`, régénéré à chaque export — aucune
 branche ni PR n'est créée. Config absente/invalide ou erreur GitHub : repli
 automatique vers le téléchargement local avec message explicite.
+
+L'API Contents omet le contenu des fichiers supérieurs à 1 Mo : dans ce cas,
+le plugin lit le blob Git correspondant avant de comparer, afin de ne pas
+créer une PR inchangée. Au-delà de la limite GitHub de 100 Mo, il n'essaie pas
+de créer une branche et conserve directement le téléchargement local.
 
 **Le corps de la pull request porte les avertissements de l'export.** C'est la
 page que le plugin ouvre juste après l'export : le designer y lit ce qui n'a pas
