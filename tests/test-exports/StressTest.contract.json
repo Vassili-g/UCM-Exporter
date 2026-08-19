@@ -1,8 +1,8 @@
 {
   "name": "StressTest",
   "meta": {
-    "contractVersion": "10.0",
-    "exportedAt": "2026-08-19T08:44:42.951Z",
+    "contractVersion": "10.1",
+    "exportedAt": "2026-08-19T11:10:39.387Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "360:2136",
@@ -10,13 +10,19 @@
       "url": "https://www.figma.com/design/adkqrNcmyIs16hBus808R7/DS%20AI%20LAB?node-id=360-2136"
     },
     "warnings": [
-      "Layer « TilesGrid » : la ligne 1 est publiée en pixels, exception propre aux pistes FIXED d'une grille. Ces valeurs décrivent sa structure Figma sans devenir des tokens ; aucune modification du design n'est demandée."
+      "Layer « TilesGrid » : la ligne 1 est publiée en pixels, exception propre aux pistes FIXED d'une grille. Ces valeurs décrivent sa structure Figma sans devenir des tokens ; aucune modification du design n'est demandée.",
+      "Layer « TilesGrid » : les enfants de ses lignes qui hug publient leur taille en pixels, exception propre aux grilles. Figma n'expose pas leur remplissage sous une piste qui hug et n'en rend que la taille résolue. Ces valeurs décrivent sa structure Figma sans devenir des tokens ; aucune modification du design n'est demandée."
     ],
     "diagnostics": [
       {
         "code": "UCM_EXPORT_INFO",
         "severity": "warning",
         "message": "Layer « TilesGrid » : la ligne 1 est publiée en pixels, exception propre aux pistes FIXED d'une grille. Ces valeurs décrivent sa structure Figma sans devenir des tokens ; aucune modification du design n'est demandée."
+      },
+      {
+        "code": "UCM_EXPORT_INFO",
+        "severity": "warning",
+        "message": "Layer « TilesGrid » : les enfants de ses lignes qui hug publient leur taille en pixels, exception propre aux grilles. Figma n'expose pas leur remplissage sous une piste qui hug et n'en rend que la taille résolue. Ces valeurs décrivent sa structure Figma sans devenir des tokens ; aucune modification du design n'est demandée."
       }
     ],
     "coverage": {
@@ -141,7 +147,10 @@
                 "rowStart": 2,
                 "figmaLayer": "Tile",
                 "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-                "optional": true
+                "optional": true,
+                "structuralSize": {
+                  "height": "15px"
+                }
               },
               {
                 "slot": "tile-6",
@@ -150,7 +159,10 @@
                 "columnSpan": 2,
                 "figmaLayer": "Tile",
                 "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-                "optional": true
+                "optional": true,
+                "structuralSize": {
+                  "height": "15px"
+                }
               },
               {
                 "slot": "tile-7",
@@ -158,7 +170,10 @@
                 "rowStart": 2,
                 "figmaLayer": "Tile",
                 "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-                "optional": true
+                "optional": true,
+                "structuralSize": {
+                  "height": "15px"
+                }
               },
               {
                 "slot": "tile-8",
@@ -168,7 +183,10 @@
                 "rowSpan": 2,
                 "figmaLayer": "Tile",
                 "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-                "optional": true
+                "optional": true,
+                "structuralSize": {
+                  "height": "40px"
+                }
               },
               {
                 "slot": "tile-9",
@@ -176,7 +194,10 @@
                 "rowStart": 5,
                 "figmaLayer": "Tile",
                 "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-                "optional": true
+                "optional": true,
+                "structuralSize": {
+                  "height": "15px"
+                }
               },
               {
                 "slot": "tile-10",
@@ -184,7 +205,10 @@
                 "rowStart": 5,
                 "figmaLayer": "Tile",
                 "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-                "optional": true
+                "optional": true,
+                "structuralSize": {
+                  "height": "15px"
+                }
               },
               {
                 "slot": "tile-11",
@@ -192,7 +216,10 @@
                 "rowStart": 5,
                 "figmaLayer": "Tile",
                 "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-                "optional": true
+                "optional": true,
+                "structuralSize": {
+                  "height": "15px"
+                }
               },
               {
                 "slot": "tile-12",
@@ -200,7 +227,10 @@
                 "rowStart": 5,
                 "figmaLayer": "Tile",
                 "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-                "optional": true
+                "optional": true,
+                "structuralSize": {
+                  "height": "15px"
+                }
               }
             ]
           },
@@ -929,7 +959,10 @@
             "rowStart": 2,
             "figmaLayer": "Tile",
             "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-            "optional": true
+            "optional": true,
+            "structuralSize": {
+              "height": "15px"
+            }
           },
           {
             "slot": "tile-6",
@@ -938,7 +971,10 @@
             "columnSpan": 2,
             "figmaLayer": "Tile",
             "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-            "optional": true
+            "optional": true,
+            "structuralSize": {
+              "height": "15px"
+            }
           },
           {
             "slot": "tile-7",
@@ -946,7 +982,10 @@
             "rowStart": 2,
             "figmaLayer": "Tile",
             "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-            "optional": true
+            "optional": true,
+            "structuralSize": {
+              "height": "15px"
+            }
           },
           {
             "slot": "tile-8",
@@ -956,7 +995,10 @@
             "rowSpan": 2,
             "figmaLayer": "Tile",
             "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-            "optional": true
+            "optional": true,
+            "structuralSize": {
+              "height": "40px"
+            }
           },
           {
             "slot": "tile-9",
@@ -964,7 +1006,10 @@
             "rowStart": 5,
             "figmaLayer": "Tile",
             "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-            "optional": true
+            "optional": true,
+            "structuralSize": {
+              "height": "15px"
+            }
           },
           {
             "slot": "tile-10",
@@ -972,7 +1017,10 @@
             "rowStart": 5,
             "figmaLayer": "Tile",
             "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-            "optional": true
+            "optional": true,
+            "structuralSize": {
+              "height": "15px"
+            }
           },
           {
             "slot": "tile-11",
@@ -980,7 +1028,10 @@
             "rowStart": 5,
             "figmaLayer": "Tile",
             "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-            "optional": true
+            "optional": true,
+            "structuralSize": {
+              "height": "15px"
+            }
           },
           {
             "slot": "tile-12",
@@ -988,7 +1039,10 @@
             "rowStart": 5,
             "figmaLayer": "Tile",
             "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
-            "optional": true
+            "optional": true,
+            "structuralSize": {
+              "height": "15px"
+            }
           }
         ]
       },
