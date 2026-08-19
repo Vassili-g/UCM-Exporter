@@ -1,17 +1,19 @@
 {
   "name": "Alert",
   "meta": {
-    "contractVersion": "4.9",
-    "exportedAt": "2026-08-13T15:36:58.481Z",
+    "contractVersion": "10.1",
+    "exportedAt": "2026-08-19T11:10:30.891Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "229:496",
       "componentKey": "a352533396f05ca1612a52195f35d303c30e61e1",
-      "url": null
+      "url": "https://www.figma.com/design/adkqrNcmyIs16hBus808R7/DS%20AI%20LAB?node-id=229-496"
     },
-    "warnings": [
-      "Lien vers Figma absent du contrat : l’API ne le fournit qu’aux plugins privés d’organisation. Le nom du fichier et l’identifiant du composant restent exportés, et suffisent à le retrouver."
-    ]
+    "warnings": [],
+    "diagnostics": [],
+    "coverage": {
+      "portable": "complete"
+    }
   },
   "props": {
     "icon": {
@@ -58,6 +60,1029 @@
       }
     }
   },
+  "variantViews": {
+    "v1": {
+      "structure": {
+        "layout": "flex-row",
+        "sizing": {
+          "width": "stretch",
+          "height": "fit-content"
+        },
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "{components.alert.sizes.gap}",
+        "rowGap": null,
+        "columnGap": null,
+        "padding": {
+          "x": "{components.alert.sizes.padding-x}",
+          "y": "{components.alert.sizes.padding-y}"
+        },
+        "radius": "{components.alert.sizes.border-radius}",
+        "children": [
+          {
+            "slot": "icon",
+            "figmaLayer": "circle-info",
+            "visibilityProp": "icon",
+            "optional": true,
+            "size": "{components.icons.sizes.base}"
+          },
+          {
+            "slot": "label",
+            "flexGrow": 1,
+            "figmaLayer": "Text",
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "flex-start",
+            "children": [
+              {
+                "slot": "label",
+                "figmaLayer": "Titre",
+                "visibilityProp": "title",
+                "optional": true
+              },
+              {
+                "slot": "label-2",
+                "figmaLayer": "Description"
+              }
+            ]
+          },
+          {
+            "slot": "action",
+            "alignSelf": "stretch",
+            "figmaLayer": "Action",
+            "visibilityProp": "action",
+            "optional": true,
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "children": [
+              {
+                "slot": "button",
+                "alignSelf": "stretch",
+                "figmaLayer": "Button",
+                "composes": "Button"
+              }
+            ]
+          }
+        ]
+      },
+      "typography": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "style": "body.large"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "style": "body.small"
+        }
+      ],
+      "composes": [
+        {
+          "component": "Button",
+          "figmaLayer": "Button",
+          "visibilityProp": "action"
+        }
+      ],
+      "icons": {
+        "circleInfo": {
+          "figmaName": "circle-info",
+          "slotPath": [
+            "icon"
+          ]
+        }
+      },
+      "paintPlacements": {
+        "fills": {
+          "background": [
+            []
+          ],
+          "icon": [
+            [
+              "icon"
+            ]
+          ],
+          "foreground": [
+            [
+              "label",
+              "label"
+            ],
+            [
+              "label",
+              "label-2"
+            ]
+          ]
+        },
+        "strokes": {}
+      }
+    },
+    "v2": {
+      "structure": {
+        "layout": "flex-row",
+        "sizing": {
+          "width": "stretch",
+          "height": "fit-content"
+        },
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "{components.alert.sizes.gap}",
+        "rowGap": null,
+        "columnGap": null,
+        "padding": {
+          "x": "{components.alert.sizes.padding-x}",
+          "y": "{components.alert.sizes.padding-y}"
+        },
+        "radius": "{components.alert.sizes.border-radius}",
+        "children": [
+          {
+            "slot": "icon",
+            "figmaLayer": "circle-info",
+            "visibilityProp": "icon",
+            "optional": true,
+            "size": "{components.icons.sizes.base}"
+          },
+          {
+            "slot": "label",
+            "flexGrow": 1,
+            "figmaLayer": "Text",
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "flex-start",
+            "children": [
+              {
+                "slot": "label",
+                "figmaLayer": "Titre",
+                "visibilityProp": "title",
+                "optional": true
+              },
+              {
+                "slot": "label-2",
+                "figmaLayer": "Description"
+              }
+            ]
+          },
+          {
+            "slot": "action",
+            "alignSelf": "stretch",
+            "figmaLayer": "Action",
+            "visibilityProp": "action",
+            "optional": true,
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "children": [
+              {
+                "slot": "button",
+                "alignSelf": "stretch",
+                "figmaLayer": "Button",
+                "composes": "Button"
+              }
+            ]
+          }
+        ]
+      },
+      "typography": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "style": "body.large"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "style": "body.small"
+        }
+      ],
+      "composes": [
+        {
+          "component": "Button",
+          "figmaLayer": "Button",
+          "visibilityProp": "action"
+        }
+      ],
+      "icons": {
+        "circleInfo": {
+          "figmaName": "circle-info",
+          "slotPath": [
+            "icon"
+          ]
+        }
+      },
+      "paintPlacements": {
+        "fills": {
+          "icon": [
+            [
+              "icon"
+            ]
+          ],
+          "foreground": [
+            [
+              "label",
+              "label"
+            ],
+            [
+              "label",
+              "label-2"
+            ]
+          ]
+        },
+        "strokes": {
+          "border": [
+            []
+          ]
+        }
+      }
+    },
+    "v3": {
+      "structure": {
+        "layout": "flex-row",
+        "sizing": {
+          "width": "stretch",
+          "height": "fit-content"
+        },
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "{components.alert.sizes.gap}",
+        "rowGap": null,
+        "columnGap": null,
+        "padding": {
+          "x": "{components.alert.sizes.padding-x}",
+          "y": "{components.alert.sizes.padding-y}"
+        },
+        "radius": "{components.alert.sizes.border-radius}",
+        "children": [
+          {
+            "slot": "icon",
+            "figmaLayer": "circle-check",
+            "visibilityProp": "icon",
+            "optional": true,
+            "size": "{components.icons.sizes.base}"
+          },
+          {
+            "slot": "label",
+            "flexGrow": 1,
+            "figmaLayer": "Text",
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "flex-start",
+            "children": [
+              {
+                "slot": "label",
+                "figmaLayer": "Titre",
+                "visibilityProp": "title",
+                "optional": true
+              },
+              {
+                "slot": "label-2",
+                "figmaLayer": "Description"
+              }
+            ]
+          },
+          {
+            "slot": "action",
+            "alignSelf": "stretch",
+            "figmaLayer": "Action",
+            "visibilityProp": "action",
+            "optional": true,
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "children": [
+              {
+                "slot": "button",
+                "alignSelf": "stretch",
+                "figmaLayer": "Button",
+                "composes": "Button"
+              }
+            ]
+          }
+        ]
+      },
+      "typography": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "style": "body.large"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "style": "body.small"
+        }
+      ],
+      "composes": [
+        {
+          "component": "Button",
+          "figmaLayer": "Button",
+          "visibilityProp": "action"
+        }
+      ],
+      "icons": {
+        "circleCheck": {
+          "figmaName": "circle-check",
+          "slotPath": [
+            "icon"
+          ]
+        }
+      },
+      "paintPlacements": {
+        "fills": {
+          "background": [
+            []
+          ],
+          "icon": [
+            [
+              "icon"
+            ]
+          ],
+          "foreground": [
+            [
+              "label",
+              "label"
+            ],
+            [
+              "label",
+              "label-2"
+            ]
+          ]
+        },
+        "strokes": {}
+      }
+    },
+    "v4": {
+      "structure": {
+        "layout": "flex-row",
+        "sizing": {
+          "width": "stretch",
+          "height": "fit-content"
+        },
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "{components.alert.sizes.gap}",
+        "rowGap": null,
+        "columnGap": null,
+        "padding": {
+          "x": "{components.alert.sizes.padding-x}",
+          "y": "{components.alert.sizes.padding-y}"
+        },
+        "radius": "{components.alert.sizes.border-radius}",
+        "children": [
+          {
+            "slot": "icon",
+            "figmaLayer": "circle-check",
+            "visibilityProp": "icon",
+            "optional": true,
+            "size": "{components.icons.sizes.base}"
+          },
+          {
+            "slot": "label",
+            "flexGrow": 1,
+            "figmaLayer": "Text",
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "flex-start",
+            "children": [
+              {
+                "slot": "label",
+                "figmaLayer": "Titre",
+                "visibilityProp": "title",
+                "optional": true
+              },
+              {
+                "slot": "label-2",
+                "figmaLayer": "Description"
+              }
+            ]
+          },
+          {
+            "slot": "action",
+            "alignSelf": "stretch",
+            "figmaLayer": "Action",
+            "visibilityProp": "action",
+            "optional": true,
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "children": [
+              {
+                "slot": "button",
+                "alignSelf": "stretch",
+                "figmaLayer": "Button",
+                "composes": "Button"
+              }
+            ]
+          }
+        ]
+      },
+      "typography": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "style": "body.large"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "style": "body.small"
+        }
+      ],
+      "composes": [
+        {
+          "component": "Button",
+          "figmaLayer": "Button",
+          "visibilityProp": "action"
+        }
+      ],
+      "icons": {
+        "circleCheck": {
+          "figmaName": "circle-check",
+          "slotPath": [
+            "icon"
+          ]
+        }
+      },
+      "paintPlacements": {
+        "fills": {
+          "icon": [
+            [
+              "icon"
+            ]
+          ],
+          "foreground": [
+            [
+              "label",
+              "label"
+            ],
+            [
+              "label",
+              "label-2"
+            ]
+          ]
+        },
+        "strokes": {
+          "border": [
+            []
+          ]
+        }
+      }
+    },
+    "v5": {
+      "structure": {
+        "layout": "flex-row",
+        "sizing": {
+          "width": "stretch",
+          "height": "fit-content"
+        },
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "{components.alert.sizes.gap}",
+        "rowGap": null,
+        "columnGap": null,
+        "padding": {
+          "x": "{components.alert.sizes.padding-x}",
+          "y": "{components.alert.sizes.padding-y}"
+        },
+        "radius": "{components.alert.sizes.border-radius}",
+        "children": [
+          {
+            "slot": "icon",
+            "figmaLayer": "triangle-exclamation",
+            "visibilityProp": "icon",
+            "optional": true,
+            "size": "{components.icons.sizes.base}"
+          },
+          {
+            "slot": "label",
+            "flexGrow": 1,
+            "figmaLayer": "Text",
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "flex-start",
+            "children": [
+              {
+                "slot": "label",
+                "figmaLayer": "Titre",
+                "visibilityProp": "title",
+                "optional": true
+              },
+              {
+                "slot": "label-2",
+                "figmaLayer": "Description"
+              }
+            ]
+          },
+          {
+            "slot": "action",
+            "alignSelf": "stretch",
+            "figmaLayer": "Action",
+            "visibilityProp": "action",
+            "optional": true,
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "children": [
+              {
+                "slot": "button",
+                "alignSelf": "stretch",
+                "figmaLayer": "Button",
+                "composes": "Button"
+              }
+            ]
+          }
+        ]
+      },
+      "typography": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "style": "body.large"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "style": "body.small"
+        }
+      ],
+      "composes": [
+        {
+          "component": "Button",
+          "figmaLayer": "Button",
+          "visibilityProp": "action"
+        }
+      ],
+      "icons": {
+        "triangleExclamation": {
+          "figmaName": "triangle-exclamation",
+          "slotPath": [
+            "icon"
+          ]
+        }
+      },
+      "paintPlacements": {
+        "fills": {
+          "background": [
+            []
+          ],
+          "icon": [
+            [
+              "icon"
+            ]
+          ],
+          "foreground": [
+            [
+              "label",
+              "label"
+            ],
+            [
+              "label",
+              "label-2"
+            ]
+          ]
+        },
+        "strokes": {}
+      }
+    },
+    "v6": {
+      "structure": {
+        "layout": "flex-row",
+        "sizing": {
+          "width": "stretch",
+          "height": "fit-content"
+        },
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "{components.alert.sizes.gap}",
+        "rowGap": null,
+        "columnGap": null,
+        "padding": {
+          "x": "{components.alert.sizes.padding-x}",
+          "y": "{components.alert.sizes.padding-y}"
+        },
+        "radius": "{components.alert.sizes.border-radius}",
+        "children": [
+          {
+            "slot": "icon",
+            "figmaLayer": "triangle-exclamation",
+            "visibilityProp": "icon",
+            "optional": true,
+            "size": "{components.icons.sizes.base}"
+          },
+          {
+            "slot": "label",
+            "flexGrow": 1,
+            "figmaLayer": "Text",
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "flex-start",
+            "children": [
+              {
+                "slot": "label",
+                "figmaLayer": "Titre",
+                "visibilityProp": "title",
+                "optional": true
+              },
+              {
+                "slot": "label-2",
+                "figmaLayer": "Description"
+              }
+            ]
+          },
+          {
+            "slot": "action",
+            "alignSelf": "stretch",
+            "figmaLayer": "Action",
+            "visibilityProp": "action",
+            "optional": true,
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "children": [
+              {
+                "slot": "button",
+                "alignSelf": "stretch",
+                "figmaLayer": "Button",
+                "composes": "Button"
+              }
+            ]
+          }
+        ]
+      },
+      "typography": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "style": "body.large"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "style": "body.small"
+        }
+      ],
+      "composes": [
+        {
+          "component": "Button",
+          "figmaLayer": "Button",
+          "visibilityProp": "action"
+        }
+      ],
+      "icons": {
+        "triangleExclamation": {
+          "figmaName": "triangle-exclamation",
+          "slotPath": [
+            "icon"
+          ]
+        }
+      },
+      "paintPlacements": {
+        "fills": {
+          "icon": [
+            [
+              "icon"
+            ]
+          ],
+          "foreground": [
+            [
+              "label",
+              "label"
+            ],
+            [
+              "label",
+              "label-2"
+            ]
+          ]
+        },
+        "strokes": {
+          "border": [
+            []
+          ]
+        }
+      }
+    }
+  },
+  "propertyBindingDefinitions": {
+    "b1": {
+      "prop": "icon",
+      "figmaPropName": "Icon#265:4",
+      "target": "visible",
+      "figmaPath": [
+        "circle-info"
+      ]
+    },
+    "b2": {
+      "prop": "title",
+      "figmaPropName": "Title#265:13",
+      "target": "visible",
+      "figmaPath": [
+        "Text",
+        "Titre"
+      ]
+    },
+    "b3": {
+      "prop": "action",
+      "figmaPropName": "Action#265:22",
+      "target": "visible",
+      "figmaPath": [
+        "Action",
+        "Button"
+      ]
+    },
+    "b4": {
+      "prop": "icon",
+      "figmaPropName": "Icon#265:4",
+      "target": "visible",
+      "figmaPath": [
+        "circle-check"
+      ]
+    },
+    "b5": {
+      "prop": "icon",
+      "figmaPropName": "Icon#265:4",
+      "target": "visible",
+      "figmaPath": [
+        "triangle-exclamation"
+      ]
+    }
+  },
+  "variants": [
+    {
+      "nodeId": "229:495",
+      "figmaName": "Severity=Info, Variant=Standard",
+      "values": {
+        "severity": "info",
+        "variant": "standard"
+      },
+      "tokens": {
+        "background": "{components.alert.colors.info.standard.background}",
+        "icon": "{components.alert.colors.info.standard.icon}",
+        "foreground": "{components.alert.colors.info.standard.foreground}"
+      },
+      "strokes": {},
+      "view": "v1",
+      "bindings": [
+        {
+          "definition": "b1",
+          "nodeId": "232:516"
+        },
+        {
+          "definition": "b2",
+          "nodeId": "279:637"
+        },
+        {
+          "definition": "b3",
+          "nodeId": "233:574"
+        }
+      ]
+    },
+    {
+      "nodeId": "260:1793",
+      "figmaName": "Severity=Info, Variant=Outlined",
+      "values": {
+        "severity": "info",
+        "variant": "outlined"
+      },
+      "tokens": {
+        "icon": "{components.alert.colors.info.outlined.icon}",
+        "foreground": "{components.alert.colors.info.outlined.foreground}"
+      },
+      "strokes": {
+        "border": {
+          "color": "{components.alert.colors.info.outlined.border}",
+          "width": "{layouts.stroke.outline}",
+          "align": "inside"
+        }
+      },
+      "view": "v2",
+      "bindings": [
+        {
+          "definition": "b1",
+          "nodeId": "260:1794"
+        },
+        {
+          "definition": "b2",
+          "nodeId": "281:644"
+        },
+        {
+          "definition": "b3",
+          "nodeId": "260:1799"
+        }
+      ]
+    },
+    {
+      "nodeId": "260:1786",
+      "figmaName": "Severity=Success, Variant=Standard",
+      "values": {
+        "severity": "success",
+        "variant": "standard"
+      },
+      "tokens": {
+        "background": "{components.alert.colors.success.standard.background}",
+        "icon": "{components.alert.colors.success.standard.icon}",
+        "foreground": "{components.alert.colors.success.standard.foreground}"
+      },
+      "strokes": {},
+      "view": "v3",
+      "bindings": [
+        {
+          "definition": "b4",
+          "nodeId": "260:1787"
+        },
+        {
+          "definition": "b2",
+          "nodeId": "281:638"
+        },
+        {
+          "definition": "b3",
+          "nodeId": "260:1792"
+        }
+      ]
+    },
+    {
+      "nodeId": "238:673",
+      "figmaName": "Severity=Success, Variant=Outlined",
+      "values": {
+        "severity": "success",
+        "variant": "outlined"
+      },
+      "tokens": {
+        "icon": "{components.alert.colors.success.outlined.icon}",
+        "foreground": "{components.alert.colors.success.outlined.foreground}"
+      },
+      "strokes": {
+        "border": {
+          "color": "{components.alert.colors.success.outlined.border}",
+          "width": "{layouts.stroke.outline}",
+          "align": "inside"
+        }
+      },
+      "view": "v4",
+      "bindings": [
+        {
+          "definition": "b4",
+          "nodeId": "238:674"
+        },
+        {
+          "definition": "b2",
+          "nodeId": "281:646"
+        },
+        {
+          "definition": "b3",
+          "nodeId": "238:679"
+        }
+      ]
+    },
+    {
+      "nodeId": "260:1822",
+      "figmaName": "Severity=Warning, Variant=Standard",
+      "values": {
+        "severity": "warning",
+        "variant": "standard"
+      },
+      "tokens": {
+        "background": "{components.alert.colors.warning.standard.background}",
+        "icon": "{components.alert.colors.warning.standard.icon}",
+        "foreground": "{components.alert.colors.warning.standard.foreground}"
+      },
+      "strokes": {},
+      "view": "v5",
+      "bindings": [
+        {
+          "definition": "b5",
+          "nodeId": "260:1823"
+        },
+        {
+          "definition": "b2",
+          "nodeId": "281:640"
+        },
+        {
+          "definition": "b3",
+          "nodeId": "260:1828"
+        }
+      ]
+    },
+    {
+      "nodeId": "260:1810",
+      "figmaName": "Severity=Warning, Variant=Outlined",
+      "values": {
+        "severity": "warning",
+        "variant": "outlined"
+      },
+      "tokens": {
+        "icon": "{components.alert.colors.warning.outlined.icon}",
+        "foreground": "{components.alert.colors.warning.outlined.foreground}"
+      },
+      "strokes": {
+        "border": {
+          "color": "{components.alert.colors.warning.outlined.border}",
+          "width": "{layouts.stroke.outline}",
+          "align": "inside"
+        }
+      },
+      "view": "v6",
+      "bindings": [
+        {
+          "definition": "b5",
+          "nodeId": "260:1811"
+        },
+        {
+          "definition": "b2",
+          "nodeId": "281:648"
+        },
+        {
+          "definition": "b3",
+          "nodeId": "260:1816"
+        }
+      ]
+    },
+    {
+      "nodeId": "260:1834",
+      "figmaName": "Severity=Error, Variant=Standard",
+      "values": {
+        "severity": "error",
+        "variant": "standard"
+      },
+      "tokens": {
+        "background": "{components.alert.colors.error.standard.background}",
+        "icon": "{components.alert.colors.error.standard.icon}",
+        "foreground": "{components.alert.colors.error.standard.foreground}"
+      },
+      "strokes": {},
+      "view": "v5",
+      "bindings": [
+        {
+          "definition": "b5",
+          "nodeId": "260:1835"
+        },
+        {
+          "definition": "b2",
+          "nodeId": "281:642"
+        },
+        {
+          "definition": "b3",
+          "nodeId": "260:1840"
+        }
+      ]
+    },
+    {
+      "nodeId": "260:1846",
+      "figmaName": "Severity=Error, Variant=Outlined",
+      "values": {
+        "severity": "error",
+        "variant": "outlined"
+      },
+      "tokens": {
+        "icon": "{components.alert.colors.error.outlined.icon}",
+        "foreground": "{components.alert.colors.error.outlined.foreground}"
+      },
+      "strokes": {
+        "border": {
+          "color": "{components.alert.colors.error.outlined.border}",
+          "width": "{layouts.stroke.outline}",
+          "align": "inside"
+        }
+      },
+      "view": "v6",
+      "bindings": [
+        {
+          "definition": "b5",
+          "nodeId": "260:1847"
+        },
+        {
+          "definition": "b2",
+          "nodeId": "281:650"
+        },
+        {
+          "definition": "b3",
+          "nodeId": "260:1852"
+        }
+      ]
+    }
+  ],
   "structure": {
     "layout": "flex-row",
     "sizing": {
@@ -78,6 +1103,9 @@
         "slot": "label",
         "flexGrow": 1,
         "figmaLayer": "Text",
+        "layout": "flex-column",
+        "justifyContent": "center",
+        "alignItems": "flex-start",
         "children": [
           {
             "slot": "label",
@@ -89,10 +1117,7 @@
             "slot": "label-2",
             "figmaLayer": "Description"
           }
-        ],
-        "layout": "flex-column",
-        "justifyContent": "center",
-        "alignItems": "flex-start"
+        ]
       },
       {
         "slot": "action",
@@ -114,6 +1139,8 @@
       }
     ],
     "gap": "{components.alert.sizes.gap}",
+    "rowGap": null,
+    "columnGap": null,
     "padding": {
       "x": "{components.alert.sizes.padding-x}",
       "y": "{components.alert.sizes.padding-y}"
@@ -122,233 +1149,7 @@
     "variantAxes": [
       "severity",
       "variant"
-    ],
-    "variantTokens": {
-      "info": {
-        "standard": {
-          "background": "{components.alert.colors.info.standard.background}",
-          "icon": "{components.alert.colors.info.standard.icon}",
-          "foreground": "{components.alert.colors.info.standard.foreground}"
-        },
-        "outlined": {
-          "icon": "{components.alert.colors.info.outlined.icon}",
-          "foreground": "{components.alert.colors.info.outlined.foreground}"
-        }
-      },
-      "success": {
-        "standard": {
-          "background": "{components.alert.colors.success.standard.background}",
-          "icon": "{components.alert.colors.success.standard.icon}",
-          "foreground": "{components.alert.colors.success.standard.foreground}"
-        },
-        "outlined": {
-          "icon": "{components.alert.colors.success.outlined.icon}",
-          "foreground": "{components.alert.colors.success.outlined.foreground}"
-        }
-      },
-      "warning": {
-        "standard": {
-          "background": "{components.alert.colors.warning.standard.background}",
-          "icon": "{components.alert.colors.warning.standard.icon}",
-          "foreground": "{components.alert.colors.warning.standard.foreground}"
-        },
-        "outlined": {
-          "icon": "{components.alert.colors.warning.outlined.icon}",
-          "foreground": "{components.alert.colors.warning.outlined.foreground}"
-        }
-      },
-      "error": {
-        "standard": {
-          "background": "{components.alert.colors.error.standard.background}",
-          "icon": "{components.alert.colors.error.standard.icon}",
-          "foreground": "{components.alert.colors.error.standard.foreground}"
-        },
-        "outlined": {
-          "icon": "{components.alert.colors.error.outlined.icon}",
-          "foreground": "{components.alert.colors.error.outlined.foreground}"
-        }
-      }
-    },
-    "variantStrokes": {
-      "info": {
-        "standard": {},
-        "outlined": {
-          "border": {
-            "color": "{components.alert.colors.info.outlined.border}",
-            "width": "{layouts.stroke.outline}",
-            "align": "inside"
-          }
-        }
-      },
-      "success": {
-        "standard": {},
-        "outlined": {
-          "border": {
-            "color": "{components.alert.colors.success.outlined.border}",
-            "width": "{layouts.stroke.outline}",
-            "align": "inside"
-          }
-        }
-      },
-      "warning": {
-        "standard": {},
-        "outlined": {
-          "border": {
-            "color": "{components.alert.colors.warning.outlined.border}",
-            "width": "{layouts.stroke.outline}",
-            "align": "inside"
-          }
-        }
-      },
-      "error": {
-        "standard": {},
-        "outlined": {
-          "border": {
-            "color": "{components.alert.colors.error.outlined.border}",
-            "width": "{layouts.stroke.outline}",
-            "align": "inside"
-          }
-        }
-      }
-    },
-    "variantTypography": {
-      "info": {
-        "standard": [
-          {
-            "slotPath": [
-              "label",
-              "label"
-            ],
-            "style": "body.large"
-          },
-          {
-            "slotPath": [
-              "label",
-              "label-2"
-            ],
-            "style": "body.small"
-          }
-        ],
-        "outlined": [
-          {
-            "slotPath": [
-              "label",
-              "label"
-            ],
-            "style": "body.large"
-          },
-          {
-            "slotPath": [
-              "label",
-              "label-2"
-            ],
-            "style": "body.small"
-          }
-        ]
-      },
-      "success": {
-        "standard": [
-          {
-            "slotPath": [
-              "label",
-              "label"
-            ],
-            "style": "body.large"
-          },
-          {
-            "slotPath": [
-              "label",
-              "label-2"
-            ],
-            "style": "body.small"
-          }
-        ],
-        "outlined": [
-          {
-            "slotPath": [
-              "label",
-              "label"
-            ],
-            "style": "body.large"
-          },
-          {
-            "slotPath": [
-              "label",
-              "label-2"
-            ],
-            "style": "body.small"
-          }
-        ]
-      },
-      "warning": {
-        "standard": [
-          {
-            "slotPath": [
-              "label",
-              "label"
-            ],
-            "style": "body.large"
-          },
-          {
-            "slotPath": [
-              "label",
-              "label-2"
-            ],
-            "style": "body.small"
-          }
-        ],
-        "outlined": [
-          {
-            "slotPath": [
-              "label",
-              "label"
-            ],
-            "style": "body.large"
-          },
-          {
-            "slotPath": [
-              "label",
-              "label-2"
-            ],
-            "style": "body.small"
-          }
-        ]
-      },
-      "error": {
-        "standard": [
-          {
-            "slotPath": [
-              "label",
-              "label"
-            ],
-            "style": "body.large"
-          },
-          {
-            "slotPath": [
-              "label",
-              "label-2"
-            ],
-            "style": "body.small"
-          }
-        ],
-        "outlined": [
-          {
-            "slotPath": [
-              "label",
-              "label"
-            ],
-            "style": "body.large"
-          },
-          {
-            "slotPath": [
-              "label",
-              "label-2"
-            ],
-            "style": "body.small"
-          }
-        ]
-      }
-    }
+    ]
   },
   "stateModel": null,
   "rendering": {

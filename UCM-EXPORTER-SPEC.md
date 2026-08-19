@@ -576,6 +576,23 @@ explicite la présence de pixels et ne demande aucune modification au designer.
 Un runtime Figma qui n'expose pas ces champs ne publie
 rien et n'avertit de rien : une propriété absente n'est pas une valeur.
 
+**Cette exception s'étend de la piste à la cellule, et là seulement.** Une piste
+`HUG` est le seul endroit d'une grille où la cellule ne décide de rien : elle se
+dimensionne sur son contenu, et n'a aucune valeur à publier —
+`GridTrackSize.value` n'existe que sur `FIXED` et `FLEX`. La mesure ne vit alors
+que sur l'enfant, et sans elle la piste retombe à zéro : le contrat décrirait une
+grille que personne ne peut rendre. Un enfant dont TOUTES les pistes couvertes
+sur un axe sont `HUG` publie donc sa taille résolue en pixels dans
+`structuralSize`, sous la même notice sans geste et sans dégrader la couverture.
+Une seule piste non `HUG` sous son étendue rend l'axe indécis : la place vient
+d'ailleurs, et rien n'est publié.
+
+`size` reste strictement tokenisé : une variable liée décrit le design system et
+l'emporte toujours, `structuralSize` se tait alors. Publier les deux ferait
+porter deux vérités au même axe. Aucun geste n'est demandé au designer — ces
+enfants sont en `Fill` dans le panneau, et c'est Figma qui n'expose pas ce
+remplissage sous une piste qui hug.
+
 Direction,
 alignements, dimensions figées et propriétés de flux des slots sont comparés sur
 toute la matrice — cadres de dépendance imbriqués compris ; une différence entre
@@ -750,7 +767,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "10.0",
+    "contractVersion": "10.1",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "diagnostics": [
@@ -1009,6 +1026,12 @@ Community notamment : un warning le signale alors, sans bloquer, et `nodeId` et
   au défaut de Figma n’en produit jamais.
 - Une même clé publique relie `props`, `variantAxes` et les arbres de
   variantes ; les noms Figma d’origine restent traçables.
+- Une peinture unie posée à la main, sur un calque que l’extraction parcourt,
+  produit un avertissement et rend `meta.coverage.portable` partiel : le contrat
+  ne publie que les couleurs liées, et le développeur rendrait ce calque sans
+  elle. Un paint masqué ou d’opacité nulle, un stroke d’épaisseur zéro et une
+  peinture non unie n’en produisent pas — le premier n’a aucun effet, la
+  dernière relève du relevé des propriétés non portables.
 - Aucune couleur n’est perdue par troncature de clé. La clé d’une couleur est
   décidée une seule fois pour tout le composant : elle est la même dans toutes
   les feuilles, et ne porte jamais une coordonnée de variant.
@@ -1170,7 +1193,7 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **10.0**. `variantViews` catalogue chaque
+La version actuelle du contrat est **10.1**. `variantViews` catalogue chaque
 bloc complet distinct (`structure`, `typography`, `icons`, `composes`,
 `paintPlacements`) et chaque
 entrée de `variants` le référence par `view`, à côté de ses `tokens`, `strokes`

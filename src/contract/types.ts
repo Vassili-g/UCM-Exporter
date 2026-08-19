@@ -192,6 +192,19 @@ export type AlignSelf = 'flex-start' | 'center' | 'flex-end' | 'stretch';
  * le vocabulaire de `AlignSelf` : une grille aligne ses enfants dans leur
  * cellule exactement comme un flex les aligne sur son axe secondaire.
  */
+/**
+ * Mesure en pixels qu'un enfant de grille donne à sa piste, par axe.
+ *
+ * Toujours un objet, même pour un carré : la forme courte de `SlotSize` sert à
+ * ne pas répéter une RÉFÉRENCE, et rien ici n'en est une. Les pixels sont écrits
+ * comme ceux de `columnSizes` / `rowSizes`, le seul autre endroit où le contrat
+ * en publie.
+ */
+export type GridStructuralSize = {
+  width?: `${number}px`;
+  height?: `${number}px`;
+};
+
 export type GridPlacement = {
   /** Place de la cellule d'ancrage, en valeurs CSS — comptées à partir de 1. */
   columnStart?: number;
@@ -386,6 +399,23 @@ export type ChildStructure = {
    * ordinaire.
    */
   size?: SlotSize;
+  /**
+   * Taille en pixels qu'un enfant donne à une piste de grille qui hug.
+   *
+   * C'est l'exception propre aux grilles, étendue de la piste à la cellule. Une
+   * piste `FIXED` publie déjà sa valeur structurelle en pixels ; une piste `HUG`
+   * n'en a aucune à publier — `GridTrackSize.value` n'existe que sur `FIXED` et
+   * `FLEX` — et la mesure ne vit alors que sur l'enfant. Sans elle, une piste qui
+   * hug des enfants sans dimension retombe à zéro : le contrat décrirait une
+   * grille que personne ne peut rendre.
+   *
+   * Ce n'est ni un token ni une décision du designer : dans Figma ces enfants
+   * sont en `Fill`, et Figma n'expose pas ce remplissage sous une piste qui hug —
+   * son API rend la taille RÉSOLUE. Aucun geste n'est donc demandé, la couverture
+   * n'est pas dégradée, et `size` reste strictement tokenisé : une variable liée
+   * l'emporte toujours et se publie là-bas, jamais ici.
+   */
+  structuralSize?: GridStructuralSize;
   /**
    * Bornes de taille du calque, indépendantes de son menu de dimensionnement.
    * Un slot qui remplit son axe principal peut être retenu par un `max width`,

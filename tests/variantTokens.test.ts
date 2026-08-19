@@ -775,3 +775,108 @@ test('getSlotTokens publie une largeur de stroke détaillée par bord', async ()
   // Deux calques réglés à l'identique ne se contredisent pas.
   assert.deepEqual(warnings, []);
 });
+
+/**
+ * Régression : une couleur écrite à la main disparaissait en silence.
+ *
+ * Le cas réel est un variant sur quatre-vingt-dix — l'icône de droite d'un
+ * bouton dont le fill avait perdu sa variable. La vue exacte cessait de citer ce
+ * calque dans `paintPlacements`, le rendu le laissait sans encre, et
+ * `meta.warnings` restait vide : rien ne ramenait le designer sur le calque
+ * fautif.
+ */
+test('un fill posé à la main sur un calque publié est signalé', async () => {
+  const glyphe = {
+    type: 'VECTOR',
+    name: 'Vector',
+    fills: [{ type: 'SOLID', color: { r: 0.99, g: 0.99, b: 0.99 } }],
+    boundVariables: {},
+    findAll: () => [],
+  };
+  const icone = {
+    type: 'INSTANCE',
+    name: 'arrow-right-long',
+    children: [glyphe],
+    findAll: () => [glyphe],
+  };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Color=Primary, Variant=Contained, State=Hover',
+    boundVariables: { fills: [colorAlias] },
+    fills: [{ type: 'SOLID', color: { r: 0.5, g: 0.2, b: 0.2 } }],
+    children: [icone],
+    findAll: () => [icone, glyphe],
+  } as unknown as ComponentNode;
+  const resolver = {
+    resolve: async () => 'components.button.colors.primary.contained.hover.background',
+  };
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(racine, resolver, warnings);
+
+  assert.equal(tokens.paints.length, 1, 'seule la couleur liée entre dans la feuille');
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /Vector/);
+  assert.match(warnings[0], /aucune variable Figma/);
+  assert.match(warnings[0], /réexportez/);
+});
+
+test('une peinture sans effet visible ne réclame aucune variable', async () => {
+  // Chaque calque porte exactement une réserve : masqué, transparent, contour
+  // d'épaisseur nulle, ou peinture qu'aucune variable de couleur ne sait tenir.
+  const masque = {
+    type: 'RECTANGLE',
+    name: 'Masqué',
+    fills: [{ type: 'SOLID', visible: false, color: { r: 0, g: 0, b: 0 } }],
+    findAll: () => [],
+  };
+  const transparent = {
+    type: 'RECTANGLE',
+    name: 'Transparent',
+    fills: [{ type: 'SOLID', opacity: 0, color: { r: 0, g: 0, b: 0 } }],
+    findAll: () => [],
+  };
+  const sansEpaisseur = {
+    type: 'RECTANGLE',
+    name: 'Sans épaisseur',
+    strokes: [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }],
+    strokeWeight: 0,
+    findAll: () => [],
+  };
+  const degrade = {
+    type: 'RECTANGLE',
+    name: 'Dégradé',
+    fills: [{ type: 'GRADIENT_LINEAR' }],
+    findAll: () => [],
+  };
+  const enfants = [masque, transparent, sansEpaisseur, degrade];
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Variant=Default',
+    children: enfants,
+    findAll: () => enfants,
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  await getSlotTokens(racine, { resolve: async () => null }, warnings);
+
+  assert.deepEqual(warnings, []);
+});
+
+test('un fill entièrement lié ne produit aucun avertissement', async () => {
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Variant=Default',
+    fills: [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }],
+    boundVariables: { fills: [colorAlias] },
+    findAll: () => [],
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(racine, {
+    resolve: async () => 'components.card.colors.background',
+  }, warnings);
+
+  assert.equal(tokens.paints.length, 1);
+  assert.deepEqual(warnings, []);
+});
