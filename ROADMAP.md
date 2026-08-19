@@ -42,7 +42,7 @@ sont jamais corrigés à la main.
 | Test froid | Les quatre composants du Playground ont été reconstruits depuis les seuls contrats et le skill, et `npm run check` est vert. Le test a trouvé deux pertes réelles — une icône dont le fill avait perdu sa variable, et une grille dont les pistes qui hug retombaient à zéro — toutes deux fermées : la première par un avertissement d’export et une correction dans Figma, la seconde par `structuralSize` |
 | Multi-composants | Button, Alert, TileLink et StressTest ont une implémentation ; StressTest exerce grille, wrap, champs asymétriques et composition multiple, et TileLink publie désormais son sizing tokenisé |
 | Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
-| Interopérabilité | Pas encore de JSON Schema public ni de version propre pour `tokens.json` |
+| Interopérabilité | Le JSON Schema du contrat est publié dans `schema/`, dérivé de `types.ts` et vendu au Playground pour l’éditeur ; il décrit la forme, jamais la cohérence, et ne bloque aucune fusion. `tokens.json` n’a toujours pas de version propre |
 | Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
 
 Le projet est un **prototype avancé**. Le pipeline Figma → pull request → CI →
@@ -127,9 +127,13 @@ rendre bloquants.
 
 ### 5. Stabiliser l’interopérabilité
 
-Après les validations multi-composants :
+Le JSON Schema est publié, avant la clôture du point 1 et non après. Ce
+décalage est assumé : le schéma est dérivé de `types.ts`, il ne bloque aucune
+fusion et il ne prétend rien prouver, donc il ne dépend d’aucune validation en
+cours. Un contrôle bloquant, lui, aurait dû attendre.
 
-- publier un JSON Schema versionné du contrat ;
+Restent ouverts :
+
 - versionner le format de `tokens.json` ;
 - documenter la politique de compatibilité ;
 - évaluer un diff sémantique pour les revues.

@@ -52,6 +52,8 @@ src/
   ui/                        interface du plugin
 tests/
   test-exports/              petit corpus d’exports réels
+schema/
+  ucm-contract.schema.json   forme du contrat, dérivée de types.ts
 ```
 
 ## Invariants
@@ -274,6 +276,10 @@ tests/
   ferait entrer des tokens lus pour décider puis écartés.
 - Un changement de forme du JSON incrémente `contractVersion` et met à jour la
   spécification et les consommateurs.
+- `schema/ucm-contract.schema.json` est dérivé de `types.ts` par `npm run
+  schema`, jamais rédigé. Il décrit la forme, pas la cohérence : il ignore les
+  renvois internes et le format des valeurs tokenisées. Il ne remplace aucun
+  contrôle du consommateur, et sa propre `description` énonce ses limites.
 
 ## Vérification
 
@@ -285,6 +291,11 @@ npm run build
 
 Un nouveau `tests/*.test.ts` est découvert automatiquement. Tout bug corrigé
 reçoit un test de régression.
+
+Un changement dans `src/contract/types.ts` demande `npm run schema` : le schéma
+commité en est dérivé, et `tests/schema.test.ts` refuse la version périmée en
+la régénérant pour la comparer. Ce contrôle vit dans `npm test`, à la
+différence de `check:fixtures`, parce qu’un agent peut le satisfaire seul.
 
 Le corpus `tests/test-exports/` reste petit et représentatif. Il est produit
 depuis Figma, pas édité à la main, et verrouille la version actuelle du

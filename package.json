@@ -11,12 +11,15 @@
     "build": "npm run typecheck && npm run build:code && npm run build:ui && npm run build:manifest",
     "start": "npm run build",
     "test": "node scripts/run-tests.js",
-    "check:fixtures": "tsx scripts/check-fixtures.ts"
+    "check:fixtures": "tsx scripts/check-fixtures.ts",
+    "schema": "tsx scripts/build-schema.ts"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.68.0",
     "@types/node": "^22.0.0",
+    "ajv": "^8.20.0",
     "esbuild": "^0.25.0",
+    "ts-json-schema-generator": "^2.9.0",
     "tsx": "^4.20.0",
     "typescript": "^5.5.3"
   }
