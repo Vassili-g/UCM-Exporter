@@ -49,6 +49,8 @@ build local.
 | `npm test` | Exécute les tests de l’exporteur |
 | `npm run typecheck` | Vérifie TypeScript |
 | `npm run build` | Vérifie puis construit le plugin complet |
+| `npm run schema` | Régénère le JSON Schema du contrat depuis `types.ts` |
+| `npm run check:fixtures` | Constate que le corpus de référence est à la version courante |
 
 ## Architecture
 
@@ -62,7 +64,14 @@ src/
   github.ts       Dépôt optionnel par pull request
 tests/
   test-exports/   Petit corpus d’exports Figma réels
+schema/
+  ucm-contract.schema.json   Forme du contrat, dérivée de `types.ts`
 ```
+
+Le schéma est publié pour les consommateurs qui ne lisent pas TypeScript et
+pour les éditeurs. Il décrit la forme d’un contrat, pas sa cohérence : les
+renvois internes et le format des valeurs tokenisées restent à la charge du
+consommateur, et sa propre `description` le dit.
 
 Le moteur ne contient aucune règle propre à `Button` ou à un autre composant.
 Les exemples réels servent uniquement à éprouver sa généricité.

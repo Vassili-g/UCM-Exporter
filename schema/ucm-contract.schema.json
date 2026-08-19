@@ -1,0 +1,1775 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-10.1.schema.json",
+  "title": "Contrat de composant UCM 10.1",
+  "description": "Ce schéma décrit la FORME d'un contrat, pas sa cohérence interne. Il ne vérifie pas les renvois internes : une entrée de `variants` peut citer une vue absente de `variantViews`, une icône un slot absent de `structure`, un token une référence inexistante. Il ne contraint pas non plus le FORMAT des valeurs : une référence de token `{chemin.du.token}`, une mesure `120px` et une piste `1fr` y sont de simples chaînes, parce que TypeScript les décrit par des types que JSON Schema ne sait pas porter. Un contrat valide au sens de ce schéma reste donc à vérifier par un consommateur.",
+  "x-ucm-contract-version": "10.1",
+  "$ref": "#/definitions/Contract",
+  "definitions": {
+    "Contract": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Nom Figma exact, lisible ; le nom de fichier porte l'identifiant de code canonique."
+        },
+        "meta": {
+          "$ref": "#/definitions/ContractMeta"
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ContractProp"
+          }
+        },
+        "variantViews": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ContractVariantView"
+          },
+          "description": "Vues exactes dédupliquées ; chaque entrée de `variants` en référence une."
+        },
+        "propertyBindingDefinitions": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/PropertyBindingDefinition"
+          },
+          "description": "Définitions stables des liaisons natives, réutilisées par les variants."
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ContractVariant"
+          },
+          "description": "Combinaisons exactes : aucune matrice cartésienne n'est inventée."
+        },
+        "structure": {
+          "type": "object",
+          "properties": {
+            "layout": {
+              "$ref": "#/definitions/LayoutDirection",
+              "description": "Disposition Figma du composant, traduite en vocabulaire CSS."
+            },
+            "columns": {
+              "type": "number",
+              "description": "Nombre de pistes, quand `layout` vaut `grid`."
+            },
+            "rows": {
+              "type": "number"
+            },
+            "columnSizes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/GridTrack"
+              },
+              "description": "Taille de chaque piste, dans l'ordre du panneau Figma. Elles disent, avec `columns` / `rows` et la place de chaque enfant, la boîte que la grille donne à ses calques — ce qu'aucune dimension de calque ne décrit sous une grille."
+            },
+            "rowSizes": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/GridTrack"
+              }
+            },
+            "columnGap": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Espace entre les COLONNES d'une grille."
+            },
+            "sizing": {
+              "$ref": "#/definitions/ContainerSizing",
+              "description": "Comportement du composant face à la place qu'on lui donne. Toujours publié : c'est la première décision de qui l'intègre, et la déduire d'une absence reviendrait à la deviner."
+            },
+            "bounds": {
+              "$ref": "#/definitions/SizeBounds",
+              "description": "Bornes de taille du composant lui-même. `sizing` dit comment il occupe la place qu'on lui donne, ces bornes disent jusqu'où. Facultatives, à la différence de `sizing` : une absence de borne est une information complète, là où un comportement absent resterait à deviner."
+            },
+            "justifyContent": {
+              "$ref": "#/definitions/JustifyContent",
+              "description": "Répartition Figma sur l'axe principal, absente hors auto-layout linéaire."
+            },
+            "alignItems": {
+              "$ref": "#/definitions/AlignItems",
+              "description": "Alignement Figma sur l'axe secondaire, absent hors auto-layout linéaire."
+            },
+            "wrap": {
+              "type": "boolean",
+              "const": true,
+              "description": "Le composant passe à la ligne. Ce n'est pas une dimension mais une propriété de flux : elle reste ici même quand `sizes` porte les dimensions."
+            },
+            "gap": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Dimensions du composant, uniquement s'il n'a PAS d'axe de tailles."
+            },
+            "rowGap": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Espace entre les lignes, aux mêmes conditions que `gap`."
+            },
+            "padding": {
+              "$ref": "#/definitions/Padding"
+            },
+            "radius": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Radius"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "sizes": {
+              "type": "object",
+              "additionalProperties": {
+                "$ref": "#/definitions/SizeDimensions"
+              },
+              "description": "Dimensions PAR taille quand le composant expose un axe de tailles (clés = valeurs de la prop `size` : big, medium, small…). Absent pour un composant sans axe de tailles."
+            },
+            "children": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/ChildStructure"
+              },
+              "description": "Les slots enfants (icônes, label…), dans l'ordre des calques."
+            },
+            "variantAxes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Clés PUBLIQUES des axes de variantes, dans l'ordre d'imbrication de variantTokens. Un axe sémantiquement renommé utilise ici la même clé que dans `props` (`size`, jamais son ancien nom normalisé)."
+            }
+          },
+          "required": [
+            "layout",
+            "sizing",
+            "children",
+            "variantAxes"
+          ],
+          "additionalProperties": false,
+          "description": "Projection de référence et dimensions par taille.\n\nLes anciens index de matrice vivent désormais dans `variants` et `variantViews`, sans seconde copie susceptible de diverger."
+        },
+        "stateModel": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StateModel"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Déclencheurs et priorité des états, ou null si le composant n'a pas d'axe d'état."
+        },
+        "rendering": {
+          "$ref": "#/definitions/RenderingSemantics",
+          "description": "Vocabulaire de rendu des rôles (`background`, `foreground`, `icon`, `border`, `ring`…)."
+        },
+        "icons": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/IconDefinition"
+          },
+          "description": "Icônes qualifiées par les règles Figma, indexées par leur nom normalisé."
+        },
+        "textStyles": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/TextStyleDefinition"
+          },
+          "description": "Text styles réellement utilisés, liés à leurs tokens DTCG."
+        },
+        "composes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComposedDependency"
+          },
+          "description": "Les composants unifiés que celui-ci embarque. Vide pour un composant simple ; non vide, il fait de ce contrat celui d'un composé."
+        },
+        "tokensUsed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Liste à plat, dédupliquée et triée, de tous les tokens consommés."
+        },
+        "intent": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Intent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "meta",
+        "props",
+        "variantViews",
+        "propertyBindingDefinitions",
+        "variants",
+        "structure",
+        "stateModel",
+        "rendering",
+        "icons",
+        "textStyles",
+        "composes",
+        "tokensUsed",
+        "intent"
+      ],
+      "additionalProperties": false,
+      "description": "Le contrat de composant complet — sortie de la commande « Export composant »."
+    },
+    "ContractMeta": {
+      "type": "object",
+      "properties": {
+        "contractVersion": {
+          "type": "string",
+          "description": "Version du schéma du contrat — à incrémenter à chaque changement de forme.",
+          "const": "10.1"
+        },
+        "exportedAt": {
+          "type": "string",
+          "description": "Date/heure de l'export, au format ISO 8601."
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ce que l'export n'a pas pu décrire, en français et adressé au designer. Rangé sous `meta` parce qu'il documente l'EXPORT, pas le composant : un consommateur du contrat n'a jamais à le lire pour rendre un composant."
+        },
+        "diagnostics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ContractDiagnostic"
+          },
+          "description": "Diagnostics structurés ; `warnings` reste le miroir lisible et compatible."
+        },
+        "coverage": {
+          "$ref": "#/definitions/ContractCoverage"
+        },
+        "figma": {
+          "type": "object",
+          "properties": {
+            "fileName": {
+              "type": "string",
+              "description": "Nom du fichier Figma d'origine."
+            },
+            "nodeId": {
+              "type": "string",
+              "description": "Id du nœud Component Set dans le fichier (ex. « 12:345 »)."
+            },
+            "componentKey": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Clé de publication du composant (null si non publié)."
+            },
+            "url": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Lien direct vers le composant dans Figma. Null quand l'API ne fournit pas la clé du fichier (cas des plugins en développement)."
+            }
+          },
+          "required": [
+            "fileName",
+            "nodeId",
+            "componentKey",
+            "url"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "contractVersion",
+        "exportedAt",
+        "warnings",
+        "diagnostics",
+        "coverage",
+        "figma"
+      ],
+      "additionalProperties": false,
+      "description": "Métadonnées d'identité du contrat : version du schéma, date d'export, et traçabilité vers le composant Figma d'origine (id, clé, lien URL)."
+    },
+    "ContractDiagnostic": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": [
+            "warning",
+            "error"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "figma": {
+          "type": "object",
+          "properties": {
+            "nodeId": {
+              "type": "string"
+            },
+            "nodeName": {
+              "type": "string"
+            },
+            "variantName": {
+              "type": "string"
+            },
+            "property": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        },
+        "contractPath": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "severity",
+        "message"
+      ],
+      "additionalProperties": false
+    },
+    "ContractCoverage": {
+      "type": "object",
+      "properties": {
+        "portable": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial"
+          ],
+          "description": "Partiel dès que le contrat portable demande l'attention du designer."
+        }
+      },
+      "required": [
+        "portable"
+      ],
+      "additionalProperties": false
+    },
+    "ContractProp": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/EnumProp"
+        },
+        {
+          "$ref": "#/definitions/BooleanProp"
+        },
+        {
+          "$ref": "#/definitions/StringProp"
+        },
+        {
+          "$ref": "#/definitions/IconProp"
+        },
+        {
+          "$ref": "#/definitions/InstanceSwapProp"
+        },
+        {
+          "$ref": "#/definitions/SlotProp"
+        }
+      ],
+      "description": "Une prop publique du composant, quel que soit son type."
+    },
+    "EnumProp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "enum"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "default": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "descriptions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Documentation par valeur, alimentée par les règles `@prop <prop>.<valeur>` (section `<Nom>-Rules`). Clé = valeur de l'enum, texte = quand l'utiliser. Absent si aucune règle `@prop` ne cible cette prop."
+        },
+        "figmaName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "default",
+        "type",
+        "values"
+      ],
+      "description": "Prop à choix multiples (issue d'un axe de variantes Figma)."
+    },
+    "BooleanProp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "boolean"
+        },
+        "default": {
+          "type": "boolean"
+        },
+        "description": {
+          "type": "string",
+          "description": "Rôle de la prop, alimenté par la règle `@boolean <prop>` du conteneur `<Nom>-Rules`. Absent si cette prop n'est pas documentée explicitement."
+        },
+        "figmaName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "default",
+        "type"
+      ],
+      "description": "Prop vrai/faux (issue d'une propriété BOOLEAN Figma)."
+    },
+    "StringProp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "string"
+        },
+        "default": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "figmaName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "default",
+        "type"
+      ],
+      "description": "Prop texte libre (issue d'une propriété TEXT Figma)."
+    },
+    "IconProp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "icon"
+        },
+        "default": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "policy": {
+          "type": "string",
+          "const": "modifiable"
+        },
+        "visibilityProp": {
+          "type": "string",
+          "description": "Prop BOOLEAN Figma liée nativement à la visibilité du calque, si elle existe."
+        },
+        "figmaName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "default",
+        "policy",
+        "type"
+      ],
+      "description": "Prop runtime qui porte le nom d'une icône modifiable — QUELLE icône rendre.\n\nElle est indépendante de la visibilité du calque : une icône toujours affichée reste parfaitement remplaçable. `visibilityProp` n'apparaît donc que si Figma déclare un BOOLEAN qui montre ou masque ce calque, auquel cas les deux props se lisent en paire (`iconLeft` / `iconLeftName`)."
+    },
+    "InstanceSwapProp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "instance-swap"
+        },
+        "default": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Id du composant Figma choisi par défaut."
+        },
+        "preferredValues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PreferredComponentValue"
+          }
+        },
+        "figmaName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "default",
+        "preferredValues",
+        "type"
+      ],
+      "description": "Prop native de remplacement d'instance."
+    },
+    "PreferredComponentValue": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "COMPONENT",
+            "COMPONENT_SET"
+          ]
+        },
+        "key": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "key"
+      ],
+      "additionalProperties": false,
+      "description": "Valeur recommandée par Figma pour un INSTANCE_SWAP ou un SLOT."
+    },
+    "SlotProp": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "slot"
+        },
+        "default": {
+          "type": [
+            "string",
+            "boolean",
+            "null"
+          ]
+        },
+        "preferredValues": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PreferredComponentValue"
+          }
+        },
+        "description": {
+          "type": "string"
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "stretchChildOnInsert": {
+              "type": "boolean"
+            },
+            "displayEmptyByDefault": {
+              "type": "boolean"
+            },
+            "minChildren": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "maxChildren": {
+              "type": [
+                "number",
+                "null"
+              ]
+            },
+            "allowPreferredValuesOnly": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "figmaName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "default",
+        "preferredValues",
+        "type"
+      ],
+      "description": "Réglages natifs d'une component property SLOT."
+    },
+    "ContractVariantView": {
+      "type": "object",
+      "properties": {
+        "structure": {
+          "$ref": "#/definitions/VariantStructure"
+        },
+        "typography": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TextStyleUse"
+          }
+        },
+        "composes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComposedDependency"
+          },
+          "description": "Dépendances de cette vue, dans l'ordre de son arbre."
+        },
+        "icons": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/VariantIconPlacement"
+          },
+          "description": "Slots exacts des icônes, relatifs à `structure.children`."
+        },
+        "paintPlacements": {
+          "$ref": "#/definitions/VariantPaintPlacements",
+          "description": "Calques exacts que chaque clé de peinture ou de contour habille."
+        }
+      },
+      "required": [
+        "structure",
+        "typography",
+        "composes",
+        "icons",
+        "paintPlacements"
+      ],
+      "additionalProperties": false,
+      "description": "Vue complète partagée par les variants qui rendent exactement la même chose."
+    },
+    "VariantStructure": {
+      "type": "object",
+      "properties": {
+        "layout": {
+          "$ref": "#/definitions/LayoutDirection",
+          "description": "Disposition Figma du composant, traduite en vocabulaire CSS."
+        },
+        "columns": {
+          "type": "number",
+          "description": "Nombre de pistes, quand `layout` vaut `grid`."
+        },
+        "rows": {
+          "type": "number"
+        },
+        "columnSizes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GridTrack"
+          },
+          "description": "Taille de chaque piste, dans l'ordre du panneau Figma. Elles disent, avec `columns` / `rows` et la place de chaque enfant, la boîte que la grille donne à ses calques — ce qu'aucune dimension de calque ne décrit sous une grille."
+        },
+        "rowSizes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GridTrack"
+          }
+        },
+        "columnGap": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Espace entre les COLONNES d'une grille."
+        },
+        "sizing": {
+          "$ref": "#/definitions/ContainerSizing",
+          "description": "Comportement du composant face à la place qu'on lui donne. Toujours publié : c'est la première décision de qui l'intègre, et la déduire d'une absence reviendrait à la deviner."
+        },
+        "bounds": {
+          "$ref": "#/definitions/SizeBounds",
+          "description": "Bornes de taille du composant lui-même. `sizing` dit comment il occupe la place qu'on lui donne, ces bornes disent jusqu'où. Facultatives, à la différence de `sizing` : une absence de borne est une information complète, là où un comportement absent resterait à deviner."
+        },
+        "justifyContent": {
+          "$ref": "#/definitions/JustifyContent",
+          "description": "Répartition Figma sur l'axe principal, absente hors auto-layout linéaire."
+        },
+        "alignItems": {
+          "$ref": "#/definitions/AlignItems",
+          "description": "Alignement Figma sur l'axe secondaire, absent hors auto-layout linéaire."
+        },
+        "wrap": {
+          "type": "boolean",
+          "const": true,
+          "description": "Le composant passe à la ligne. Ce n'est pas une dimension mais une propriété de flux : elle reste ici même quand `sizes` porte les dimensions."
+        },
+        "gap": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Dimensions du composant, uniquement s'il n'a PAS d'axe de tailles."
+        },
+        "rowGap": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Espace entre les lignes, aux mêmes conditions que `gap`."
+        },
+        "padding": {
+          "$ref": "#/definitions/Padding"
+        },
+        "radius": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Radius"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChildStructure"
+          },
+          "description": "Les slots enfants (icônes, label…), dans l'ordre des calques."
+        }
+      },
+      "required": [
+        "layout",
+        "sizing",
+        "children"
+      ],
+      "additionalProperties": false,
+      "description": "Structure portable d'une combinaison exacte, sans les index globaux de matrice."
+    },
+    "LayoutDirection": {
+      "type": "string",
+      "enum": [
+        "flex-row",
+        "flex-column",
+        "grid"
+      ],
+      "description": "Disposition d'un conteneur, dans le vocabulaire de CSS.\n\n`grid` n'est plus un repli honteux : Figma y expose deux gaps liables à une variable et le nombre de ses pistes, soit exactement ce que le contrat sait porter. Un conteneur sans auto layout reste décrit comme une rangée, faute de mieux, et le dit."
+    },
+    "GridTrack": {
+      "type": "string",
+      "description": "Taille d'UNE piste de grille, dans le vocabulaire de `grid-template-*`.\n\n`1fr` pour une piste qui se partage la place, `fit-content(100%)` pour une piste qui se règle sur son contenu. Exception propre aux grilles, une piste FIXED conserve sa valeur calculée en pixels (`120px`) : elle décrit la structure de la grille sans devenir un token."
+    },
+    "ContainerSizing": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "$ref": "#/definitions/ContainerAxisSizing"
+        },
+        "height": {
+          "$ref": "#/definitions/ContainerAxisSizing"
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "additionalProperties": false,
+      "description": "Dimensionnement propre du composant, publié sur les deux axes.\n\nLes clés sont les propriétés CSS concernées, et non les axes de Figma : la taille d'un composant n'est pas une propriété de flux, elle ne dépend pas d'un conteneur qu'il ne connaît pas. `stretch` reste une intention — « occupe la place donnée » — dont la technique appartient au développeur : `width: stretch`, `width: 100%` ou `flex: 1` selon le contexte d'intégration."
+    },
+    "ContainerAxisSizing": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/AxisSizing"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Un axe du composant : un comportement CSS, ou la référence du token qui fixe cette dimension.\n\nLe troisième terme est une référence `{…}`, et il l'emporte sur les deux autres. Une dimension figée SANS variable reste une commodité de maquette — elle aligne les variants d'un component set — et vaut `stretch` ; une dimension figée qui cite une variable est une décision du design system, que le composant connaît de lui-même quel que soit son futur conteneur. C'est la règle des slots, appliquée au composant : un nombre brut n'est jamais contractuel, une variable liée l'est toujours.\n\nLe type dégénère structurellement en `string`, comme partout où le contrat porte une référence de token ; le nom sépare les deux intentions."
+    },
+    "AxisSizing": {
+      "type": "string",
+      "enum": [
+        "stretch",
+        "fit-content"
+      ],
+      "description": "Comportement d'un composant sur un axe, face à la place qu'on lui donne.\n\nCe sont les mots de CSS, pas ceux de Figma : `Fill` et `Hug` sont les intitulés d'un panneau, `stretch` et `fit-content` sont des valeurs de `width` et `height`. Le contrat traduit partout ailleurs (`flex-start`, `stretch`, `flexGrow`), et il ne garde un terme Figma que là où CSS n'a rien à proposer — l'alignement d'un stroke, par exemple. Ici CSS a le mot exact : le consommateur écrit la valeur, il ne la devine pas."
+    },
+    "SizeBounds": {
+      "type": "object",
+      "properties": {
+        "minWidth": {
+          "type": "string"
+        },
+        "maxWidth": {
+          "type": "string"
+        },
+        "minHeight": {
+          "type": "string"
+        },
+        "maxHeight": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Bornes de taille, toujours tokenisées.\n\nElles sont SÉPARÉES de `size` et de `sizing` parce qu'elles ne répondent pas à la même question. Le menu de dimensionnement dit quelle place le calque prend ; une borne dit jusqu'où cette place peut aller. Les deux coexistent : le cas le plus courant est un calque en `Fill` qu'un `max width` retient, exactement ce qu'aucune valeur de `size` ne saurait écrire.\n\nLes clés sont celles de CSS, comme partout ailleurs dans le contrat, et le consommateur les écrit telles quelles. Une borne absente ne veut pas dire zéro : elle veut dire que Figma n'en pose aucune sur cet axe."
+    },
+    "JustifyContent": {
+      "type": "string",
+      "enum": [
+        "flex-start",
+        "center",
+        "flex-end",
+        "space-between"
+      ],
+      "description": "Répartition des enfants sur l'axe principal d'un conteneur Flex."
+    },
+    "AlignItems": {
+      "type": "string",
+      "enum": [
+        "flex-start",
+        "center",
+        "flex-end",
+        "baseline"
+      ],
+      "description": "Alignement commun des enfants sur l'axe secondaire d'un conteneur Flex."
+    },
+    "Padding": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PaddingX"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "y": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/PaddingY"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false,
+      "description": "Padding d'un conteneur, rangé par axe comme le panneau Figma le présente."
+    },
+    "PaddingX": {
+      "$ref": "#/definitions/SidedRefs%3C(%22left%22%7C%22right%22)%3E",
+      "description": "Padding horizontal : une référence, ou le détail gauche/droite."
+    },
+    "SidedRefs<(\"left\"|\"right\")>": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "left": {
+              "type": "string"
+            },
+            "right": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Une valeur que Figma laisse régler côté par côté, toujours tokenisée.\n\nC'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une décision par bord : une RÉFÉRENCE quand tous les côtés citent la même variable — la forme de presque tous les composants, inchangée — et le DÉTAIL par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces variables séparément (`padding-left`, `radius-top-left`) : les refuser demandait au designer d'aplatir une décision qui lui appartient.\n\nLe détail peut être partiel lorsque les autres côtés sont au défaut neutre de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les côtés reliés restent néanmoins utilisables par le consommateur."
+    },
+    "PaddingY": {
+      "$ref": "#/definitions/SidedRefs%3C(%22top%22%7C%22bottom%22)%3E",
+      "description": "Padding vertical : une référence, ou le détail haut/bas."
+    },
+    "SidedRefs<(\"top\"|\"bottom\")>": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "top": {
+              "type": "string"
+            },
+            "bottom": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Une valeur que Figma laisse régler côté par côté, toujours tokenisée.\n\nC'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une décision par bord : une RÉFÉRENCE quand tous les côtés citent la même variable — la forme de presque tous les composants, inchangée — et le DÉTAIL par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces variables séparément (`padding-left`, `radius-top-left`) : les refuser demandait au designer d'aplatir une décision qui lui appartient.\n\nLe détail peut être partiel lorsque les autres côtés sont au défaut neutre de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les côtés reliés restent néanmoins utilisables par le consommateur."
+    },
+    "Radius": {
+      "$ref": "#/definitions/SidedRefs%3C(%22topLeft%22%7C%22topRight%22%7C%22bottomRight%22%7C%22bottomLeft%22)%3E",
+      "description": "Rayon : une référence, ou le détail des quatre coins, dans l'ordre CSS."
+    },
+    "SidedRefs<(\"topLeft\"|\"topRight\"|\"bottomRight\"|\"bottomLeft\")>": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "topLeft": {
+              "type": "string"
+            },
+            "topRight": {
+              "type": "string"
+            },
+            "bottomRight": {
+              "type": "string"
+            },
+            "bottomLeft": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Une valeur que Figma laisse régler côté par côté, toujours tokenisée.\n\nC'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une décision par bord : une RÉFÉRENCE quand tous les côtés citent la même variable — la forme de presque tous les composants, inchangée — et le DÉTAIL par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces variables séparément (`padding-left`, `radius-top-left`) : les refuser demandait au designer d'aplatir une décision qui lui appartient.\n\nLe détail peut être partiel lorsque les autres côtés sont au défaut neutre de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les côtés reliés restent néanmoins utilisables par le consommateur."
+    },
+    "ChildStructure": {
+      "type": "object",
+      "properties": {
+        "slot": {
+          "type": "string",
+          "description": "Nom du slot : rôle sémantique (`label`, `icon`) ou nom du calque Figma."
+        },
+        "figmaLayer": {
+          "type": "string",
+          "description": "Nom Figma d'origine, toujours conservé pour tracer labels et placeholders graphiques. Il décrit le VARIANT DE RÉFÉRENCE : quand plusieurs icônes se relaient sur un même slot, `Contract.icons` fait foi sur celle à rendre dans chaque combinaison d'axes."
+        },
+        "optional": {
+          "type": "boolean",
+          "description": "Vrai pour les calques graphiques et pour tout slot qu'une prop peut masquer."
+        },
+        "visibilityProp": {
+          "type": "string",
+          "description": "Prop BOOLEAN Figma liée nativement à `visible` sur ce calque, si elle existe."
+        },
+        "visibilityTargets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VisibilityTarget"
+          },
+          "description": "Visibilités portées plus profondément que le slot. Elles restent séparées pour ne jamais prétendre que la prop masque le slot entier."
+        },
+        "size": {
+          "$ref": "#/definitions/SlotSize",
+          "description": "Dimension figée du calque (ex. taille d'icône), relevée sur les axes que Figma tient en `Fixed`. Un axe en `Hug` ou en `Fill` n'apparaît pas ici : il est déjà décrit par l'absence, ou par `flexGrow` / `alignSelf`.\n\nSous un parent `layout: grid`, l'absence se lit autrement : remplir sa cellule est le DÉFAUT d'un enfant de grille — `stretch` en CSS — et c'est donc la cellule qui décide, décrite par `columnSizes` / `rowSizes` et par la place du layer. Un layer explicitement aligné dans sa cellule ne s'étire plus : sa dimension redevient la sienne, et l'absence reprend son sens ordinaire."
+        },
+        "structuralSize": {
+          "$ref": "#/definitions/GridStructuralSize",
+          "description": "Taille en pixels qu'un enfant donne à une piste de grille qui hug.\n\nC'est l'exception propre aux grilles, étendue de la piste à la cellule. Une piste `FIXED` publie déjà sa valeur structurelle en pixels ; une piste `HUG` n'en a aucune à publier — `GridTrackSize.value` n'existe que sur `FIXED` et `FLEX` — et la mesure ne vit alors que sur l'enfant. Sans elle, une piste qui hug des enfants sans dimension retombe à zéro : le contrat décrirait une grille que personne ne peut rendre.\n\nCe n'est ni un token ni une décision du designer : dans Figma ces enfants sont en `Fill`, et Figma n'expose pas ce remplissage sous une piste qui hug — son API rend la taille RÉSOLUE. Aucun geste n'est donc demandé, la couverture n'est pas dégradée, et `size` reste strictement tokenisé : une variable liée l'emporte toujours et se publie là-bas, jamais ici."
+        },
+        "bounds": {
+          "$ref": "#/definitions/SizeBounds",
+          "description": "Bornes de taille du calque, indépendantes de son menu de dimensionnement. Un slot qui remplit son axe principal peut être retenu par un `max width`, et le rendre sans lui donnerait une autre maquette."
+        },
+        "alignSelf": {
+          "$ref": "#/definitions/AlignSelf",
+          "description": "Exception d'alignement de ce layer dans l'auto layout de son parent."
+        },
+        "position": {
+          "type": "string",
+          "const": "absolute",
+          "description": "Le layer est hors du flux de son parent. `constraints` dit alors à quels bords il s'accroche ; sa distance à ces bords n'est pas contractuelle."
+        },
+        "constraints": {
+          "$ref": "#/definitions/LayoutConstraints"
+        },
+        "columnStart": {
+          "type": "number",
+          "description": "Place du layer dans la grille de son parent.\n\n`columnStart` et `rowStart` sont les valeurs de `grid-column-start` et `grid-row-start` — donc comptées à partir de 1, là où Figma indexe à partir de 0. Elles sont publiées sur tout enfant de grille EN FLUX : Figma pose une ancre sur chacun, et la redéduire supposerait de réimplémenter son placement automatique. Un enfant en position absolue n'en a pas : il est hors de la grille, et `constraints` dit à quels bords il s'accroche.\n\nLes étendues gardent leur règle : absentes quand elles valent 1, la cellule elle-même."
+        },
+        "rowStart": {
+          "type": "number"
+        },
+        "columnSpan": {
+          "type": "number"
+        },
+        "rowSpan": {
+          "type": "number"
+        },
+        "justifySelf": {
+          "$ref": "#/definitions/AlignSelf"
+        },
+        "flexGrow": {
+          "type": "number",
+          "const": 1,
+          "description": "Le layer remplit l'axe principal de son parent (`Fill` dans Figma, exposé par `layoutSizing…` ou par l'historique `layoutGrow: 1`). Son absence vaut `Hug` : une dimension fixe est publiée par `size` quand elle est reliée à une variable, et avertie quand elle ne l'est pas."
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChildStructure"
+          },
+          "description": "Calques internes du slot, à profondeur quelconque et de toute nature.\n\nLe contrat descend dès qu'un descendant porte une information qu'une feuille ne sait pas exprimer : un texte, une icône, une dépendance, ou n'importe quelle liaison de variable. Un auto layout dans un auto layout dans une grille est donc décrit jusqu'au bout, chaque niveau avec sa disposition, ses dimensions et ses bornes. Seule exception, qui évite un étage inutile : un cadre dont la seule information est un unique calque texte reste ce texte. `structureTree.ts` en est l'unique autorité."
+        },
+        "layout": {
+          "$ref": "#/definitions/LayoutDirection",
+          "description": "Disposition du slot, présente uniquement avec `children`."
+        },
+        "columns": {
+          "type": "number",
+          "description": "Nombre de pistes, quand `layout` vaut `grid`."
+        },
+        "rows": {
+          "type": "number"
+        },
+        "columnSizes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GridTrack"
+          },
+          "description": "Taille de chaque piste, dans l'ordre du panneau Figma — colonnes de gauche à droite, lignes de haut en bas. Publiées avec `layout: grid`, et seulement quand Figma les expose."
+        },
+        "rowSizes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GridTrack"
+          }
+        },
+        "padding": {
+          "$ref": "#/definitions/Padding",
+          "description": "Dimensions propres du conteneur, aux mêmes conditions que celles du composant : une valeur reliée à une variable se publie, une valeur neutre reste absente sans un mot, et un nombre écrit à la main avertit."
+        },
+        "radius": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Radius"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "justifyContent": {
+          "$ref": "#/definitions/JustifyContent",
+          "description": "Répartition sur l'axe principal de ce conteneur."
+        },
+        "alignItems": {
+          "$ref": "#/definitions/AlignItems",
+          "description": "Alignement sur l'axe secondaire de ce conteneur."
+        },
+        "gap": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Gap interne du slot, publié dès que le conteneur range plusieurs enfants décrits par le contrat."
+        },
+        "wrap": {
+          "type": "boolean",
+          "const": true,
+          "description": "Le conteneur passe à la ligne. Son absence vaut « une seule ligne » : c'est le défaut de Figma comme celui de CSS."
+        },
+        "rowGap": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Espace entre les LIGNES : celles d'un conteneur en `wrap`, ou celles d'une grille. Absent sous `wrap`, il vaut `gap` — Figma synchronise les deux tant que le designer ne les dissocie pas, et CSS fait de même avec une valeur de `gap` unique."
+        },
+        "columnGap": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Espace entre les COLONNES d'une grille."
+        },
+        "composes": {
+          "type": "string",
+          "description": "Nom du composant unifié rendu à cet emplacement. Le slot est alors une DÉPENDANCE : ni ses tokens ni ses calques n'appartiennent à ce contrat, ils vivent dans le sien (cf. `Contract.composes`).\n\nCe champ ne décrit QUE le calque qui est l'instance. Un calque qui l'enveloppe est un conteneur de ce contrat-ci : il publie son flux et range la dépendance dans `children`. Sans cette distinction, l'alignement du cadre atterrit sur le composant, dont le `structure.sizing` le neutralise."
+        }
+      },
+      "required": [
+        "slot"
+      ],
+      "additionalProperties": false,
+      "description": "Un enfant direct du composant (un « slot ») : icône, label, etc."
+    },
+    "VisibilityTarget": {
+      "type": "object",
+      "properties": {
+        "visibilityProp": {
+          "type": "string",
+          "description": "Prop publique qui montre ou masque uniquement cette cible."
+        },
+        "figmaPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Chemin de calques Figma relatif au slot direct, cible comprise."
+        }
+      },
+      "required": [
+        "visibilityProp",
+        "figmaPath"
+      ],
+      "additionalProperties": false,
+      "description": "Cible imbriquée dont une prop BOOLEAN contrôle la visibilité."
+    },
+    "SlotSize": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "width": {
+              "type": "string"
+            },
+            "height": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Dimension figée d'un slot, toujours tokenisée.\n\nUn carré garde la forme courte — c'est le cas de presque toutes les icônes, et l'objet n'y apprendrait rien. Dès que les deux axes diffèrent, ou qu'un seul est figé, chacun est nommé : réduire les deux à une valeur ferait affirmer au contrat une dimension que Figma n'a pas."
+    },
+    "GridStructuralSize": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "string"
+        },
+        "height": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Mesure en pixels qu'un enfant de grille donne à sa piste, par axe.\n\nToujours un objet, même pour un carré : la forme courte de `SlotSize` sert à ne pas répéter une RÉFÉRENCE, et rien ici n'en est une. Les pixels sont écrits comme ceux de `columnSizes` / `rowSizes`, le seul autre endroit où le contrat en publie."
+    },
+    "AlignSelf": {
+      "type": "string",
+      "enum": [
+        "flex-start",
+        "center",
+        "flex-end",
+        "stretch"
+      ],
+      "description": "Exception d'alignement d'un enfant Flex direct."
+    },
+    "LayoutConstraints": {
+      "type": "object",
+      "properties": {
+        "horizontal": {
+          "type": "string",
+          "enum": [
+            "left",
+            "center",
+            "right",
+            "stretch",
+            "scale"
+          ]
+        },
+        "vertical": {
+          "type": "string",
+          "enum": [
+            "top",
+            "center",
+            "bottom",
+            "stretch",
+            "scale"
+          ]
+        }
+      },
+      "required": [
+        "horizontal",
+        "vertical"
+      ],
+      "additionalProperties": false,
+      "description": "Bords auxquels un calque hors flux s'accroche.\n\nC'est tout ce que le contrat sait porter d'une position absolue. La distance à ces bords, elle, n'est liable à aucune variable dans Figma : ce serait un nombre de maquette, et le contrat n'en écrit jamais. Les clés sont celles de CSS plutôt que le `MIN`/`MAX` de Figma, comme partout ailleurs."
+    },
+    "TextStyleUse": {
+      "type": "object",
+      "properties": {
+        "slotPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Chemin de slots depuis `structure.children` jusqu'au texte concerné."
+        },
+        "style": {
+          "type": "string",
+          "description": "Clé normalisée d'une entrée de `Contract.textStyles`."
+        }
+      },
+      "required": [
+        "slotPath",
+        "style"
+      ],
+      "additionalProperties": false,
+      "description": "Application d'un text style à un slot textuel précis d'un variant."
+    },
+    "ComposedDependency": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "type": "string"
+        },
+        "figmaLayer": {
+          "type": "string"
+        },
+        "visibilityProp": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "component",
+        "figmaLayer"
+      ],
+      "additionalProperties": false,
+      "description": "Un composant unifié embarqué par un composé. `figmaLayer` situe l'instance dans le composant, `visibilityProp` dit quelle prop la montre ou la masque lorsque Figma en déclare une."
+    },
+    "VariantIconPlacement": {
+      "type": "object",
+      "properties": {
+        "figmaName": {
+          "type": "string"
+        },
+        "slotPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "figmaName",
+        "slotPath"
+      ],
+      "additionalProperties": false,
+      "description": "Emplacement d'une icône dans l'arbre exact d'un variant."
+    },
+    "VariantPaintPlacements": {
+      "type": "object",
+      "properties": {
+        "fills": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "strokes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "fills",
+        "strokes"
+      ],
+      "additionalProperties": false,
+      "description": "Emplacements exacts des peintures et contours d'une vue, par clé de feuille."
+    },
+    "PropertyBindingDefinition": {
+      "type": "object",
+      "properties": {
+        "prop": {
+          "type": "string"
+        },
+        "figmaPropName": {
+          "type": "string"
+        },
+        "target": {
+          "type": "string",
+          "enum": [
+            "visible",
+            "characters",
+            "mainComponent"
+          ]
+        },
+        "figmaPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "prop",
+        "figmaPropName",
+        "target",
+        "figmaPath"
+      ],
+      "additionalProperties": false,
+      "description": "Partie stable d'une liaison native, cataloguée une seule fois."
+    },
+    "ContractVariant": {
+      "type": "object",
+      "properties": {
+        "nodeId": {
+          "type": "string"
+        },
+        "figmaName": {
+          "type": "string"
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "view": {
+          "type": "string",
+          "description": "Clé d'une vue complète de `variantViews`."
+        },
+        "tokens": {
+          "$ref": "#/definitions/SlotTokens",
+          "description": "Feuilles sémantiques directement adressables, sans axe synthétique."
+        },
+        "strokes": {
+          "$ref": "#/definitions/SlotStrokes"
+        },
+        "bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/VariantPropertyBinding"
+          },
+          "description": "Cibles natives propres à ce node Figma. Absentes quand il n'en porte aucune."
+        }
+      },
+      "required": [
+        "nodeId",
+        "figmaName",
+        "values",
+        "view",
+        "tokens",
+        "strokes"
+      ],
+      "additionalProperties": false,
+      "description": "Une combinaison réellement présente dans Figma et sa vue exacte."
+    },
+    "SlotTokens": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Tokens de peinture liés sur UN variant, rangés par clé. La clé est le dernier segment du nom du token : `…default.background` → `background`, `…colors.scale-1` → `scale-1`. Elle IDENTIFIE la couleur ; ce qu'elle peint se lit dans `rendering.roles`.\n\nQuand deux couleurs d'un même variant portent le même dernier segment, la clé s'allonge des segments qui les séparent : `…userinput.colors.background` et `…divider.colors.background` deviennent `userinput.background` et `divider.background`. Une clé allongée contient donc un point, jamais une clé simple — un segment de token n'en contient aucun. `colorKeys.ts` en est l'unique autorité et la décide sur toute la matrice, si bien que la clé d'un token est la même dans toutes les feuilles."
+    },
+    "SlotStrokes": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/StrokeTokens"
+      },
+      "description": "Strokes liés sur UN variant, séparés des peintures pour garder `variantTokens` stable."
+    },
+    "StrokeTokens": {
+      "type": "object",
+      "properties": {
+        "color": {
+          "type": "string"
+        },
+        "width": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StrokeWidth"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Largeur du contour : une référence quand les quatre bords partagent leur variable, le détail par bord sinon, `null` quand Figma expose une largeur non tokenisée."
+        },
+        "align": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/StrokeAlignment"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Alignement structurel du stroke dans Figma."
+        }
+      },
+      "required": [
+        "color",
+        "width",
+        "align"
+      ],
+      "additionalProperties": false,
+      "description": "Couleur et géométrie tokenisées d'un stroke porté par un rôle (`border`, `ring`…)."
+    },
+    "StrokeWidth": {
+      "$ref": "#/definitions/SidedRefs%3C(%22top%22%7C%22right%22%7C%22bottom%22%7C%22left%22)%3E",
+      "description": "Épaisseur de contour : une référence, ou le détail des quatre bords."
+    },
+    "SidedRefs<(\"top\"|\"right\"|\"bottom\"|\"left\")>": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "top": {
+              "type": "string"
+            },
+            "right": {
+              "type": "string"
+            },
+            "bottom": {
+              "type": "string"
+            },
+            "left": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Une valeur que Figma laisse régler côté par côté, toujours tokenisée.\n\nC'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une décision par bord : une RÉFÉRENCE quand tous les côtés citent la même variable — la forme de presque tous les composants, inchangée — et le DÉTAIL par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces variables séparément (`padding-left`, `radius-top-left`) : les refuser demandait au designer d'aplatir une décision qui lui appartient.\n\nLe détail peut être partiel lorsque les autres côtés sont au défaut neutre de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les côtés reliés restent néanmoins utilisables par le consommateur."
+    },
+    "StrokeAlignment": {
+      "type": "string",
+      "enum": [
+        "inside",
+        "center",
+        "outside"
+      ],
+      "description": "Alignement d'un stroke Figma, conservé comme donnée structurelle."
+    },
+    "VariantPropertyBinding": {
+      "type": "object",
+      "properties": {
+        "definition": {
+          "type": "string"
+        },
+        "nodeId": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "definition",
+        "nodeId"
+      ],
+      "additionalProperties": false,
+      "description": "L'endroit exact où une définition de liaison agit dans un variant."
+    },
+    "SizeDimensions": {
+      "type": "object",
+      "properties": {
+        "gap": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rowGap": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Espace entre les lignes, publié aux mêmes conditions que `gap`."
+        },
+        "columnGap": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Espace entre les colonnes d'une grille, aux mêmes conditions."
+        },
+        "padding": {
+          "$ref": "#/definitions/Padding"
+        },
+        "radius": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/Radius"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "gap",
+        "rowGap",
+        "columnGap",
+        "padding",
+        "radius"
+      ],
+      "additionalProperties": false,
+      "description": "Dimensions d'UNE taille du composant (une valeur de la prop `size`). Tout est exprimé en noms de tokens."
+    },
+    "StateModel": {
+      "type": "object",
+      "properties": {
+        "axis": {
+          "type": "string",
+          "description": "Nom normalisé de l'axe Figma qui porte les états."
+        },
+        "states": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/StateDescriptor"
+          },
+          "description": "Déclencheur de chaque valeur réellement présente dans le Component Set."
+        },
+        "precedence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ordre de priorité, du plus fort au plus faible."
+        }
+      },
+      "required": [
+        "axis",
+        "states",
+        "precedence"
+      ],
+      "additionalProperties": false,
+      "description": "Modèle d'interaction déduit d'un axe Figma `State` ou `Status`."
+    },
+    "StateDescriptor": {
+      "type": "object",
+      "properties": {
+        "selector": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Sélecteur ou attribut attendu par l'adaptateur de rendu ; null pour l'état par défaut."
+        },
+        "description": {
+          "type": "string",
+          "description": "Doc de l'état, déclarée par une règle `@prop <axe>.<état>`. L'axe d'états n'étant pas une prop, sa documentation vit ici — au même endroit que le reste de ce que le contrat en dit."
+        }
+      },
+      "required": [
+        "selector"
+      ],
+      "additionalProperties": false,
+      "description": "Déclencheur d'un état d'interaction dans le contrat consommé par le code."
+    },
+    "RenderingSemantics": {
+      "type": "object",
+      "properties": {
+        "roles": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/RenderingRole"
+          }
+        }
+      },
+      "required": [
+        "roles"
+      ],
+      "additionalProperties": false,
+      "description": "Correspondance des rôles vers le rendu. Les rôles partagés (`background`, `foreground`, `icon`, `border`, `ring`) sont publiés par tout contrat ; s'y ajoutent les clés de couleur du composant qui n'en nomment aucun, avec le rendu déduit du calque qui les porte. La RÈGLE reste sans logique par composant — seules les clés observées changent d'un contrat à l'autre."
+    },
+    "RenderingRole": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "paint",
+            "stroke"
+          ],
+          "description": "`paint` pour une couleur, `stroke` pour une couleur accompagnée de géométrie."
+        },
+        "cssProperties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Propriétés CSS candidates pour un adaptateur web."
+        },
+        "fallback": {
+          "type": "string",
+          "description": "Stratégie de rendu complémentaire quand une propriété seule ne suffit pas."
+        }
+      },
+      "required": [
+        "kind",
+        "cssProperties"
+      ],
+      "additionalProperties": false,
+      "description": "Vocabulaire de rendu des rôles visuels, commun à tous les composants."
+    },
+    "IconDefinition": {
+      "type": "object",
+      "properties": {
+        "policy": {
+          "$ref": "#/definitions/IconPolicy"
+        },
+        "figmaName": {
+          "type": "string",
+          "description": "Nom de l'icône dans Figma, conservé sans normalisation pour la traçabilité."
+        },
+        "slot": {
+          "type": "string",
+          "description": "Slot de `structure.children` que cette icône remplit. C'est lui qui situe une icône absente du variant de référence, donc absente de `children` : plusieurs icônes qui s'excluent entre variants partagent un même slot. Absent lorsque le calque n'occupe pas le même rang selon les variants."
+        },
+        "size": {
+          "type": "string",
+          "description": "Token de taille du calque, relevé sur tous les variants où il existe."
+        },
+        "visibilityProp": {
+          "type": "string",
+          "description": "Prop BOOLEAN qui contrôle la visibilité du calque, si Figma en déclare une."
+        },
+        "runtimeProp": {
+          "type": "string",
+          "description": "Prop runtime ajoutée pour une icône `modifiable`, distincte du booléen."
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "description": "Combinaisons exactes d'axes où le calque existe. Absent si l'icône est présente dans tous les variants."
+        }
+      },
+      "required": [
+        "policy",
+        "figmaName"
+      ],
+      "additionalProperties": false,
+      "description": "Icône déclarée dans les règles Figma. `figmaName` est à la fois le nom affiché dans le calque `icon` et la clé de rapprochement exacte avec le calque graphique du composant ; il ne décrit pas une prop d'API."
+    },
+    "IconPolicy": {
+      "type": "string",
+      "enum": [
+        "modifiable",
+        "strict"
+      ],
+      "description": "Politique d'une icône déclarée par la variante de règle `Type=@icons`."
+    },
+    "TextStyleDefinition": {
+      "type": "object",
+      "properties": {
+        "figmaName": {
+          "type": "string"
+        },
+        "tokens": {
+          "$ref": "#/definitions/TypographyTokens"
+        }
+      },
+      "required": [
+        "figmaName",
+        "tokens"
+      ],
+      "additionalProperties": false,
+      "description": "Définition d'un text style utilisé par le composant, avec son nom Figma traçable."
+    },
+    "TypographyTokens": {
+      "type": "object",
+      "properties": {
+        "fontSize": {
+          "type": "string"
+        },
+        "fontWeight": {
+          "type": "string"
+        },
+        "lineHeight": {
+          "type": "string"
+        },
+        "fontFamily": {
+          "type": "string"
+        },
+        "letterSpacing": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Tokens réellement liés aux propriétés d'un text style Figma."
+    },
+    "Intent": {
+      "type": "object",
+      "properties": {
+        "usage": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "do": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "dont": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "pairs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "usage",
+        "do",
+        "dont",
+        "pairs"
+      ],
+      "additionalProperties": false,
+      "description": "Intention d'usage du composant, lue depuis la description Figma taguée (`@usage`, `@do`, `@dont`, `@pairs`). Cette partie du contrat dit à un humain ou à un agent IA QUAND utiliser le composant, pas seulement COMMENT."
+    }
+  }
+}

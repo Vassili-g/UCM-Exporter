@@ -54,13 +54,17 @@ le diagnostic qui l’explique. Elle exige un collecteur typé partagé par tous
 extracteurs ; ajouter quelques champs à une partie des messages créerait une
 seconde représentation incomplète.
 
-### JSON Schema et compatibilité
+### Compatibilité et interopérabilité
 
-Un JSON Schema public rendrait le contrat validable dans d’autres langages et
-éditeurs. Il devra couvrir les invariants que le validateur du Playground sait
-réellement prouver, publier sa propre version et documenter la politique de
-compatibilité. Le format de `tokens.json` devra recevoir une version explicite
-dans le même effort d’interopérabilité.
+Le JSON Schema du contrat est publié : il vit dans `schema/`, dérivé de
+`types.ts`, et n’est plus une option. Ce qu’il a laissé ouvert le reste :
+`tokens.json` n’a pas de version explicite, et la politique de compatibilité
+n’est écrite nulle part.
+
+Une porte de CI fondée sur ce schéma a été examinée puis écartée : le
+Playground prouve déjà la forme, et une seconde autorité sur la même
+convention finirait par accepter ce que la première refuse. Elle ne se
+rouvrira que si un consommateur hors Node en a besoin.
 
 ### Diff sémantique
 

@@ -1,0 +1,4 @@
+# Le schéma du contrat est écrit par un script, qui ne produit que des LF.
+# Sans cette ligne, une extraction sous Windows le convertirait en CRLF et
+# toute régénération — ou toute recopie — l'afficherait comme modifié.
+schema/*.json text eol=lf
