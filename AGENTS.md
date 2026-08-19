@@ -208,7 +208,15 @@ schema/
   EST un rôle partagé reste une déclaration du designer et l’emporte : c’est le
   seul moyen de distinguer un `ring` d’un `border`, et cette déclaration se lit
   sur le dernier segment du TOKEN, jamais sur la clé publiée.
-- Le contrat ne publie que les couleurs LIÉES. Une peinture posée à la main sur
+- Le contrat ne publie que les couleurs LIÉES, et ce que le relevé retient comme
+  ce dont il avertit sortent d'une seule lecture (`lirePeintures`). Chaque
+  peinture porte sa propre liaison ; `node.boundVariables.fills` est une liste
+  que Figma n'aligne pas sur `fills`, et deux lectures d'une même chose
+  finissaient par se contredire — un fill masqué relié équilibrait le compte
+  d'un fill visible posé à la main, rien n'était dit, et c'est la couleur du
+  paint MASQUÉ que le contrat publiait. La liste du node reste le repli quand la
+  lecture exacte ne conclut pas : ne perdre aucune couleur passe avant gagner un
+  diagnostic. Une peinture posée à la main sur
   un calque que l'export parcourt avertit donc au lieu de disparaître, et rend
   `meta.coverage.portable` partiel : sans ce mot, la vue exacte cessait de citer
   le calque dans `paintPlacements`, le rendu le laissait sans encre, et rien ne
@@ -265,6 +273,11 @@ schema/
   hug retombait à zéro et le contrat décrivait une grille que personne ne
   pouvait rendre. La borne compte autant que la règle : une seule piste non
   `HUG` sous l’étendue de l’enfant rend l’axe indécis, et rien n’est publié.
+  L’exception ne parle par ailleurs que là où la dimension s’est tue : elle
+  n’existe que parce que le panneau affiche « Fill », et un alignement explicite
+  le retire. La réclamer alors contredirait mot pour mot l’avertissement que
+  `resolveSlotSize` vient d’écrire sur le même axe — et cet avertissement serait
+  faux, puisque la valeur serait publiée.
 - Une donnée facultative incomplète avertit. Les préconditions explicitement
   définies dans la spécification bloquent.
 - On n’avertit que sur ce qu’on publie. Une valeur que le contrat va jeter —
@@ -296,6 +309,10 @@ Un changement dans `src/contract/types.ts` demande `npm run schema` : le schéma
 commité en est dérivé, et `tests/schema.test.ts` refuse la version périmée en
 la régénérant pour la comparer. Ce contrôle vit dans `npm test`, à la
 différence de `check:fixtures`, parce qu’un agent peut le satisfaire seul.
+C’est aussi pourquoi ce test ne confronte au schéma que les contrats du corpus
+qui déclarent la version COURANTE : `contractVersion.const` refuserait les
+autres d’avance, et `npm test` redeviendrait rouge pour la seule raison qu’un
+humain n’a pas encore rouvert Figma.
 
 Le corpus `tests/test-exports/` reste petit et représentatif. Il est produit
 depuis Figma, pas édité à la main, et verrouille la version actuelle du

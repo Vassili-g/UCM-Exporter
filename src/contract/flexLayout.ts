@@ -165,14 +165,18 @@ export function gridCellSizedAxes(
  * Axes sur lesquels TOUTES les pistes qu'un enfant couvre se dimensionnent sur
  * lui (`HUG`).
  *
- * C'est l'inverse exact de `gridCellSizedAxes`, et la seule situation où la
- * cellule ne décide de rien : une piste qui hug ne peut pas étirer son contenu,
- * c'est lui qui la mesure. Figma n'y expose donc aucun remplissage et rend la
- * taille RÉSOLUE de l'enfant — la seule mesure qui existe, `GridTrackSize.value`
- * n'étant applicable qu'aux pistes `FIXED` et `FLEX`.
+ * Une piste qui hug ne peut pas étirer son contenu : c'est lui qui la mesure.
+ * Figma n'y expose donc aucun remplissage et rend la taille RÉSOLUE de l'enfant
+ * — la seule mesure qui existe, `GridTrackSize.value` n'étant applicable qu'aux
+ * pistes `FIXED` et `FLEX`.
  *
  * Une seule piste non `HUG` sous l'étendue suffit à rendre l'axe indécis : la
  * place vient alors d'ailleurs, et la mesure de l'enfant ne la décrit plus.
+ *
+ * Fait de PISTES, et rien de plus : cette réponse ne dit pas si le contrat doit
+ * publier la mesure. Un enfant explicitement aligné hug la même piste sans
+ * remplir sa cellule, et `gridCellSizedAxes` est seul à en juger — c'est
+ * `gridStructuralSize` qui croise les deux.
  *
  * La lecture reste défensive, comme dans `gridTrackSizes` : un runtime qui
  * n'expose pas ces champs ne répond rien, et le comportement ordinaire reprend.

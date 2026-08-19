@@ -120,32 +120,81 @@ function colorRole(
 }
 
 /**
- * Nombre de peintures VISIBLES qu'un calque porte sans les relier à une
- * variable, pour un champ donné.
+ * Vrai si cette peinture met réellement de l'encre sur le calque.
  *
- * On compte au lieu d'indexer : `boundVariables.fills` est un tableau que Figma
- * n'aligne pas sur `fills`, et un index supposé accuserait le mauvais paint.
- *
- * Les réserves sont ce qui distingue ce diagnostic d'un rapport qu'on cesse de
- * lire. Un paint masqué ou d'opacité nulle ne peint rien ; un stroke d'épaisseur
- * zéro non plus ; et une peinture non SOLID n'est de toute façon liable à aucune
- * variable de couleur — le geste demandé n'existerait pas.
+ * Les réserves sont ce qui distingue un diagnostic d'un rapport qu'on cesse de
+ * lire, et elles valent dans les DEUX sens : un paint masqué ou d'opacité nulle
+ * ne réclame aucune variable, et la couleur qu'il porterait n'appartient à aucun
+ * calque du contrat. Une peinture non SOLID n'est de toute façon liable à
+ * aucune variable de couleur — `unsupportedProperties` la signale ailleurs, et
+ * le geste demandé ici n'existerait pas.
  */
-function unboundPaintCount(node: SceneNode, field: (typeof BOUND_FIELDS)[number]): number {
-  const values = node as unknown as Record<string, unknown>;
-  const paints = values[field];
-  // `figma.mixed` ou champ absent : rien de lisible, donc rien à réclamer.
-  if (!Array.isArray(paints)) return 0;
-  if (field === 'strokes' && values.strokeWeight === 0) return 0;
-  const visibles = paints.filter((paint): paint is SolidPaint => Boolean(
+function peint(paint: unknown): paint is SolidPaint {
+  return Boolean(
     paint
       && typeof paint === 'object'
       && (paint as Paint).type === 'SOLID'
       && (paint as Paint).visible !== false
       && ((paint as SolidPaint).opacity ?? 1) > 0,
-  ));
-  const liees = variableAliases(getBinding(node, field)).length;
-  return Math.max(visibles.length - liees, 0);
+  );
+}
+
+/** La variable qu'une peinture porte elle-même, ou `null`. */
+function aliasDuPaint(paint: unknown): VariableAlias | null {
+  const bound = (paint as { boundVariables?: { color?: unknown } } | null)?.boundVariables?.color;
+  return variableAliases(bound)[0] ?? null;
+}
+
+/**
+ * Ce qu'un champ de peintures apporte au contrat : les variables à relever, et
+ * le nombre de peintures qu'aucune ne tient.
+ *
+ * Les deux réponses sortent de la MÊME lecture, et c'est tout l'objet de cette
+ * fonction. Tant que le relevé lisait `node.boundVariables` pendant que
+ * l'avertissement comptait les paints, un calque pouvait porter un fill visible
+ * posé à la main ET un fill masqué relié : les deux comptes s'équilibraient,
+ * rien n'était dit, et le contrat publiait la couleur de la peinture MASQUÉE
+ * comme si elle peignait le calque. Deux lectures d'une même chose finissent
+ * toujours par se contredire.
+ *
+ * La lecture exacte est celle de la peinture : chacune porte sa propre liaison
+ * (`SolidPaint.boundVariables.color`), seule à associer une variable à un paint
+ * précis. `node.boundVariables[field]` reste une liste que Figma n'aligne pas
+ * sur `fills` — sa documentation ne le promet que pour `inferredVariables` — et
+ * un index supposé accuserait le mauvais paint.
+ *
+ * Le repli rend exactement le comportement d'avant quand cette lecture ne peut
+ * rien conclure : champ « mixed » ou absent, et surtout liste du node plus
+ * riche que ce que les peintures déclarent. Ne perdre aucune couleur passe
+ * avant gagner un diagnostic — c'est la seule chose qu'on ne s'autorise pas.
+ */
+function lirePeintures(
+  node: SceneNode,
+  field: (typeof BOUND_FIELDS)[number],
+): { aliases: VariableAlias[]; libres: number } {
+  const duNode = variableAliases(getBinding(node, field));
+  const values = node as unknown as Record<string, unknown>;
+  const liste = values[field];
+  // `figma.mixed` ou champ absent : rien de lisible, donc rien à réclamer.
+  if (!Array.isArray(liste)) return { aliases: duNode, libres: 0 };
+  // Un contour d'épaisseur nulle ne trace rien. Ce qu'il PUBLIE ne change pas
+  // pour autant : la réserve porte sur le geste demandé, pas sur le relevé.
+  if (field === 'strokes' && values.strokeWeight === 0) return { aliases: duNode, libres: 0 };
+  // Le node connaît une liaison qu'aucune peinture ne déclare : la lecture
+  // exacte est incomplète, et seul le repli garantit qu'aucune ne se perd.
+  if (liste.filter((paint) => aliasDuPaint(paint)).length < duNode.length) {
+    return { aliases: duNode, libres: 0 };
+  }
+
+  const aliases: VariableAlias[] = [];
+  let libres = 0;
+  for (const paint of liste) {
+    if (!peint(paint)) continue;
+    const alias = aliasDuPaint(paint);
+    if (alias) aliases.push(alias);
+    else libres += 1;
+  }
+  return { aliases, libres };
 }
 
 /**
@@ -160,20 +209,22 @@ function unboundPaintCount(node: SceneNode, field: (typeof BOUND_FIELDS)[number]
  * Le message part dans `warnings` : il demande un geste, et la couleur manque
  * réellement au développeur.
  */
-function warnUnboundPaints(node: SceneNode, warnings: string[]): void {
-  for (const field of BOUND_FIELDS) {
-    const count = unboundPaintCount(node, field);
-    if (count === 0) continue;
-    const stroke = field === 'strokes';
-    const plusieurs = count > 1;
-    const nom = `${stroke ? 'stroke' : 'fill'}${plusieurs ? 's' : ''}`;
-    warnings.push(
-      `Layer « ${node.name} » : ${plusieurs ? `${count} ${nom} ne sont reliés` : `son ${nom} n’est relié`} `
-        + `à aucune variable Figma. Le contrat ne publie que les couleurs liées, et le `
-        + `développeur rendra donc ce layer sans ${stroke ? 'ce contour' : 'cette couleur'}. `
-        + `Reliez ${plusieurs ? 'ces' : 'ce'} ${nom} à une variable, puis réexportez.`,
-    );
-  }
+function warnPeinturesLibres(
+  node: SceneNode,
+  field: (typeof BOUND_FIELDS)[number],
+  libres: number,
+  warnings: string[],
+): void {
+  if (libres === 0) return;
+  const stroke = field === 'strokes';
+  const plusieurs = libres > 1;
+  const nom = `${stroke ? 'stroke' : 'fill'}${plusieurs ? 's' : ''}`;
+  warnings.push(
+    `Layer « ${node.name} » : ${plusieurs ? `${libres} ${nom} ne sont reliés` : `son ${nom} n’est relié`} `
+      + `à aucune variable Figma. Le contrat ne publie que les couleurs liées, et le `
+      + `développeur rendra donc ce layer sans ${stroke ? 'ce contour' : 'cette couleur'}. `
+      + `Reliez ${plusieurs ? 'ces' : 'ce'} ${nom} à une variable, puis réexportez.`,
+  );
 }
 
 /**
@@ -209,9 +260,10 @@ export async function getSlotTokens(
     // ici les ferait entrer dans `variantTokens` et dans `tokensUsed` du parent
     // — le contrat annoncerait une couleur qu'aucun de ses calques ne peint.
     if (composed.has(node.id)) continue;
-    warnUnboundPaints(node, warnings);
     for (const field of BOUND_FIELDS) {
-      for (const alias of variableAliases(getBinding(node, field))) {
+      const { aliases, libres } = lirePeintures(node, field);
+      warnPeinturesLibres(node, field, libres, warnings);
+      for (const alias of aliases) {
         let stroke = field === 'strokes' ? strokeStyles.get(node) ?? null : null;
         if (field === 'strokes' && !stroke) {
           stroke = Promise.all([

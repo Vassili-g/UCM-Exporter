@@ -40,6 +40,7 @@ sont jamais corrigés à la main.
 | Contrôles du Playground | Forme et version des contrats, graphe, parité statique, références de tokens, tests de rendu co-localisés, génération des types et du CSS |
 | Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
 | Test froid | Les quatre composants du Playground ont été reconstruits depuis les seuls contrats et le skill, et `npm run check` est vert. Le test a trouvé deux pertes réelles — une icône dont le fill avait perdu sa variable, et une grille dont les pistes qui hug retombaient à zéro — toutes deux fermées : la première par un avertissement d’export et une correction dans Figma, la seconde par `structuralSize` |
+| Revue de code | Deux défauts fermés depuis, sans changer la forme du contrat : la lecture des peintures ne sortait plus de la même source que son avertissement, et l’exception pixel des grilles contredisait l’avertissement de dimension quand l’enfant était explicitement aligné |
 | Multi-composants | Button, Alert, TileLink et StressTest ont une implémentation ; StressTest exerce grille, wrap, champs asymétriques et composition multiple, et TileLink publie désormais son sizing tokenisé |
 | Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
 | Interopérabilité | Le JSON Schema du contrat est publié dans `schema/`, dérivé de `types.ts` et vendu au Playground pour l’éditeur ; il décrit la forme, jamais la cohérence, et ne bloque aucune fusion. `tokens.json` n’a toujours pas de version propre |
@@ -134,6 +135,11 @@ cours. Un contrôle bloquant, lui, aurait dû attendre.
 
 Restent ouverts :
 
+- documenter le schéma là où il est muet : 85 de ses 179 propriétés n’ont
+  aucune `description`, dont `ContractDiagnostic`, `ContractCoverage` et toutes
+  les formes de `props`. Le texte vient des commentaires de `types.ts`, donc le
+  geste est d’écrire là-bas ce qu’un consommateur d’un autre langage n’a nulle
+  part ailleurs ;
 - versionner le format de `tokens.json` ;
 - documenter la politique de compatibilité ;
 - évaluer un diff sémantique pour les revues.

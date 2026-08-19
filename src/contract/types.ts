@@ -185,14 +185,6 @@ export type AlignItems = 'flex-start' | 'center' | 'flex-end' | 'baseline';
 export type AlignSelf = 'flex-start' | 'center' | 'flex-end' | 'stretch';
 
 /**
- * Place d'un enfant dans la grille de son parent.
- *
- * Les étendues valent 1 par défaut — la cellule elle-même — et restent alors
- * absentes, comme toute valeur neutre du contrat. Les deux alignements suivent
- * le vocabulaire de `AlignSelf` : une grille aligne ses enfants dans leur
- * cellule exactement comme un flex les aligne sur son axe secondaire.
- */
-/**
  * Mesure en pixels qu'un enfant de grille donne à sa piste, par axe.
  *
  * Toujours un objet, même pour un carré : la forme courte de `SlotSize` sert à
@@ -205,6 +197,14 @@ export type GridStructuralSize = {
   height?: `${number}px`;
 };
 
+/**
+ * Place d'un enfant dans la grille de son parent.
+ *
+ * Les étendues valent 1 par défaut — la cellule elle-même — et restent alors
+ * absentes, comme toute valeur neutre du contrat. Les deux alignements suivent
+ * le vocabulaire de `AlignSelf` : une grille aligne ses enfants dans leur
+ * cellule exactement comme un flex les aligne sur son axe secondaire.
+ */
 export type GridPlacement = {
   /** Place de la cellule d'ancrage, en valeurs CSS — comptées à partir de 1. */
   columnStart?: number;

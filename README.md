@@ -100,7 +100,8 @@ Le moteur écrit la version publiée par `CONTRACT_VERSION`
 un Component Set. Chaque variante exacte
 porte ses tokens, puis référence une vue complète dédupliquée
 pour son arbre, sa typographie, ses icônes, ses dépendances et les chemins de
-ses peintures. Les pistes FIXED d'une grille sont conservées en pixels et les
+ses peintures. Les pistes FIXED d'une grille sont conservées en pixels, une
+cellule dont la piste hug publie sa mesure dans `structuralSize`, et les
 valeurs par côté peuvent être clairsemées. Le Playground
 consomme cette forme et dérive un type discriminé des seules combinaisons
 d’enums présentes.
