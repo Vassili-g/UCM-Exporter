@@ -375,6 +375,21 @@ async function describeNode(
     if (coupe) warnings.push(coupe);
   }
 
+  // Une peinture posée SOUS une feuille appartient à cette feuille. Le contrat
+  // ne descend volontairement pas dans les tracés d'une icône, mais leur couleur
+  // entre bien dans `variants[].tokens` : sans chemin, `paintPlacements`
+  // publierait une clé sans aucune cible et le consommateur, à qui l'on interdit
+  // de déduire la cible du nom de la clé, ne peindrait plus aucune icône. Le
+  // calque publié qui les porte est leur chemin — c'est de toute façon là que le
+  // rendu applique la couleur, `color` et `fill` cascadant du slot vers le
+  // dessin. Vaut pour toute feuille, y compris celle qu'a coupée la borne de
+  // profondeur.
+  if (!describesChildren) {
+    for (const descendant of getAllNodes(child, [], composed)) {
+      publishedNodePaths.set(descendant.id, [...path]);
+    }
+  }
+
   // ---- Visibilités -------------------------------------------------------
   const directVisibility = child.componentPropertyReferences?.visible;
   // Une seule dépendance peut prêter sa visibilité au slot. À plusieurs, la

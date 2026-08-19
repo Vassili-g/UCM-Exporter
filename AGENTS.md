@@ -208,7 +208,15 @@ tests/
   sur le dernier segment du TOKEN, jamais sur la clé publiée.
 - Chaque `variantViews.*.paintPlacements` situe les fills et strokes par les
   chemins exacts de l'arbre publié ; `[]` cible la racine. Les chemins sont
-  collectés pendant l'unique extraction de `structure.children`.
+  collectés pendant l'unique extraction de `structure.children`. Le chemin d'une
+  peinture est celui du calque PUBLIÉ qui la porte : une couleur posée sous une
+  feuille appartient à cette feuille. Les deux relevés ne parcourent pas le même
+  arbre — les couleurs descendent partout, l'arbre s'arrête aux icônes — et
+  exiger l'égalité des deux ferait perdre l'encre de toute icône, puisque le
+  fill vit sur son tracé. C'est aussi ce que le rendu applique : `color` et
+  `fill` cascadent du slot vers le dessin. Deux tracés d'une même icône ne
+  donnent donc qu'une cible, et aucun geste n'est demandé au designer — le
+  moteur refuse par principe de publier ces tracés.
 - Un slot d’icône porte un rôle stable ; `icons.*.slot` et `icons.*.size`
   indiquent où et comment placer chaque icône. `slotNames.ts` est l’unique
   autorité sur le nommage des slots : un `icons.*.slot` publié désigne toujours
