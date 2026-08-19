@@ -120,6 +120,63 @@ function colorRole(
 }
 
 /**
+ * Nombre de peintures VISIBLES qu'un calque porte sans les relier à une
+ * variable, pour un champ donné.
+ *
+ * On compte au lieu d'indexer : `boundVariables.fills` est un tableau que Figma
+ * n'aligne pas sur `fills`, et un index supposé accuserait le mauvais paint.
+ *
+ * Les réserves sont ce qui distingue ce diagnostic d'un rapport qu'on cesse de
+ * lire. Un paint masqué ou d'opacité nulle ne peint rien ; un stroke d'épaisseur
+ * zéro non plus ; et une peinture non SOLID n'est de toute façon liable à aucune
+ * variable de couleur — le geste demandé n'existerait pas.
+ */
+function unboundPaintCount(node: SceneNode, field: (typeof BOUND_FIELDS)[number]): number {
+  const values = node as unknown as Record<string, unknown>;
+  const paints = values[field];
+  // `figma.mixed` ou champ absent : rien de lisible, donc rien à réclamer.
+  if (!Array.isArray(paints)) return 0;
+  if (field === 'strokes' && values.strokeWeight === 0) return 0;
+  const visibles = paints.filter((paint): paint is SolidPaint => Boolean(
+    paint
+      && typeof paint === 'object'
+      && (paint as Paint).type === 'SOLID'
+      && (paint as Paint).visible !== false
+      && ((paint as SolidPaint).opacity ?? 1) > 0,
+  ));
+  const liees = variableAliases(getBinding(node, field)).length;
+  return Math.max(visibles.length - liees, 0);
+}
+
+/**
+ * Signale les peintures qu'un calque porte à la main.
+ *
+ * Le contrat ne publie que les couleurs LIÉES : une couleur écrite en dur
+ * disparaissait donc sans un mot, et `coverage.portable` continuait d'annoncer
+ * `complete`. Le consommateur, à qui l'on interdit de déduire une cible du nom
+ * d'une clé, laissait alors le calque sans encre — un seul variant sur quatre-
+ * vingt-dix suffit à le rendre invisible en relecture.
+ *
+ * Le message part dans `warnings` : il demande un geste, et la couleur manque
+ * réellement au développeur.
+ */
+function warnUnboundPaints(node: SceneNode, warnings: string[]): void {
+  for (const field of BOUND_FIELDS) {
+    const count = unboundPaintCount(node, field);
+    if (count === 0) continue;
+    const stroke = field === 'strokes';
+    const plusieurs = count > 1;
+    const nom = `${stroke ? 'stroke' : 'fill'}${plusieurs ? 's' : ''}`;
+    warnings.push(
+      `Layer « ${node.name} » : ${plusieurs ? `${count} ${nom} ne sont reliés` : `son ${nom} n’est relié`} `
+        + `à aucune variable Figma. Le contrat ne publie que les couleurs liées, et le `
+        + `développeur rendra donc ce layer sans ${stroke ? 'ce contour' : 'cette couleur'}. `
+        + `Reliez ${plusieurs ? 'ces' : 'ce'} ${nom} à une variable, puis réexportez.`,
+    );
+  }
+}
+
+/**
  * Récolte toutes les couleurs liées d'un variant.
  *
  * `iconNames` porte les calques désignés par les règles `@icons`. C'est
@@ -152,6 +209,7 @@ export async function getSlotTokens(
     // ici les ferait entrer dans `variantTokens` et dans `tokensUsed` du parent
     // — le contrat annoncerait une couleur qu'aucun de ses calques ne peint.
     if (composed.has(node.id)) continue;
+    warnUnboundPaints(node, warnings);
     for (const field of BOUND_FIELDS) {
       for (const alias of variableAliases(getBinding(node, field))) {
         let stroke = field === 'strokes' ? strokeStyles.get(node) ?? null : null;

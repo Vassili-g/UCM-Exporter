@@ -161,6 +161,54 @@ export function gridCellSizedAxes(
   };
 }
 
+/**
+ * Axes sur lesquels TOUTES les pistes qu'un enfant couvre se dimensionnent sur
+ * lui (`HUG`).
+ *
+ * C'est l'inverse exact de `gridCellSizedAxes`, et la seule situation où la
+ * cellule ne décide de rien : une piste qui hug ne peut pas étirer son contenu,
+ * c'est lui qui la mesure. Figma n'y expose donc aucun remplissage et rend la
+ * taille RÉSOLUE de l'enfant — la seule mesure qui existe, `GridTrackSize.value`
+ * n'étant applicable qu'aux pistes `FIXED` et `FLEX`.
+ *
+ * Une seule piste non `HUG` sous l'étendue suffit à rendre l'axe indécis : la
+ * place vient alors d'ailleurs, et la mesure de l'enfant ne la décrit plus.
+ *
+ * La lecture reste défensive, comme dans `gridTrackSizes` : un runtime qui
+ * n'expose pas ces champs ne répond rien, et le comportement ordinaire reprend.
+ */
+export function gridHugAxes(
+  parent: SceneNode,
+  child: SceneNode,
+): { width: boolean; height: boolean } {
+  if (!isGridAutoLayout(parent) || isAbsolutePositioned(child)) {
+    return { width: false, height: false };
+  }
+  const tracksOf = asPropertyBag(parent);
+  const placement = asPropertyBag(child);
+  const axe = (
+    field: 'gridColumnSizes' | 'gridRowSizes',
+    anchor: 'gridColumnAnchorIndex' | 'gridRowAnchorIndex',
+    span: 'gridColumnSpan' | 'gridRowSpan',
+  ): boolean => {
+    const tracks = tracksOf[field];
+    const start = placement[anchor];
+    if (!Array.isArray(tracks) || typeof start !== 'number') return false;
+    const length = typeof placement[span] === 'number' && (placement[span] as number) > 1
+      ? placement[span] as number
+      : 1;
+    const couvertes = tracks.slice(start, start + length);
+    if (couvertes.length !== length) return false;
+    return couvertes.every((track) => (
+      Boolean(track) && typeof track === 'object' && (track as { type?: unknown }).type === 'HUG'
+    ));
+  };
+  return {
+    width: axe('gridColumnSizes', 'gridColumnAnchorIndex', 'gridColumnSpan'),
+    height: axe('gridRowSizes', 'gridRowAnchorIndex', 'gridRowSpan'),
+  };
+}
+
 /** Alignement d'un enfant de grille dans sa cellule ; `AUTO` est la valeur neutre. */
 function gridSelfAlignment(value: unknown): AlignSelf | null {
   if (value === 'MIN') return 'flex-start';

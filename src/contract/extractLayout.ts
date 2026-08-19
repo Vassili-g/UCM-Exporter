@@ -28,6 +28,7 @@ import {
   resolveRowGap,
   resolveSidedField,
   resolveSizeBounds,
+  gridStructuralSize,
   resolveSlotSize,
   SIDE_KEYS,
 } from './nodeBindings';
@@ -152,16 +153,21 @@ async function applySizing(
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
+  infos: string[],
   suppressedSizeNodeIds: ReadonlySet<string>,
 ): Promise<void> {
+  const supprimee = suppressedSizeNodeIds.has(node.id);
   const [size, bounds] = await Promise.all([
-    suppressedSizeNodeIds.has(node.id)
-      ? null
-      : resolveSlotSize(node, resolver, warnings, parent),
+    supprimee ? null : resolveSlotSize(node, resolver, warnings, parent),
     resolveSizeBounds(node, resolver, warnings),
   ]);
   if (size) entry.size = size;
   if (bounds) entry.bounds = bounds;
+  // La mesure d'une piste qui hug suit le sort de `size` : ce que `sizes`
+  // republiera par taille n'est ni relevé ici, ni signalé.
+  if (supprimee) return;
+  const structural = gridStructuralSize(node, parent, infos);
+  if (structural) entry.structuralSize = structural;
 }
 
 /**
@@ -462,7 +468,7 @@ async function describeNode(
             'rendra le composant sans son cadre. Rendez visible le calque qui porte l’instance'}, ` +
         `puis réexportez.`,
     );
-    await applySizing(entry, parent, child, resolver, warnings, suppressedSizeNodeIds);
+    await applySizing(entry, parent, child, resolver, warnings, infos, suppressedSizeNodeIds);
     return entry;
   }
 
@@ -507,7 +513,7 @@ async function describeNode(
   // Relevé sur TOUS les slots dont ce contrat possède les dimensions, texte
   // compris : un calque de texte peut être figé comme une icône, et le taire
   // ferait dire à son absence « hug » alors que Figma impose une largeur.
-  await applySizing(entry, parent, child, resolver, warnings, suppressedSizeNodeIds);
+  await applySizing(entry, parent, child, resolver, warnings, infos, suppressedSizeNodeIds);
   return entry;
 }
 

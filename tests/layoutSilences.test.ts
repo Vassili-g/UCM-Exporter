@@ -732,3 +732,176 @@ test('une grille dont Figma n’expose pas les pistes ne publie ni n’avertit',
   assert.equal('rowSizes' in layout, false);
   assert.equal(warnings.some((warning) => warning.includes('nombre en pixels')), false);
 });
+
+/**
+ * Une piste qui hug est le seul endroit d'une grille où la cellule ne décide de
+ * rien : c'est l'enfant qui la mesure. Figma n'y expose aucun remplissage et ne
+ * rend que la taille résolue, et `GridTrackSize.value` n'existe pas sur ce type
+ * — la mesure ne vit donc que sur l'enfant. Sans elle, la piste retombait à zéro
+ * et le contrat décrivait une grille que personne ne pouvait rendre.
+ */
+const pistesDeTuiles = {
+  gridColumnSizes: [{ type: 'FLEX', value: 1 }, { type: 'FLEX', value: 1 }],
+  gridRowSizes: [{ type: 'FIXED', value: 15 }, { type: 'HUG' }, { type: 'HUG' }],
+};
+
+test('un enfant publie la mesure de sa piste qui hug, en pixels et sans rien réclamer', async () => {
+  const tuile = tuileDeGrille({ height: 15 });
+  const warnings: string[] = [];
+  const infos: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile, pistesDeTuiles),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    true,
+    new Map(),
+    new Set(),
+    warnings,
+    infos,
+  );
+
+  assert.deepEqual(layout.children[0]?.structuralSize, { height: '15px' });
+  // `size` reste strictement tokenisé : la mesure ne s'y invite pas.
+  assert.equal(layout.children[0]?.size, undefined);
+  // Sa colonne est en `FLEX` : de ce côté, la cellule décide toujours.
+  assert.equal(layout.children[0]?.structuralSize?.width, undefined);
+  // Le constat ne demande aucun geste, il ne rejoint donc pas les points à corriger.
+  assert.deepEqual(warnings.filter((warning) => warning.includes('« Tile »')), []);
+  // La note de la piste FIXED partage ce canal : on isole celle des cellules.
+  const notes = infos.filter((info) => info.includes('qui hug publient'));
+  assert.equal(notes.length, 1);
+  assert.match(notes[0], /« TilesGrid »/);
+  assert.match(notes[0], /aucune modification du design n'est demandée/);
+});
+
+test('sous une piste qui ne hug pas, la cellule décide encore et rien n’est publié', async () => {
+  const tuile = tuileDeGrille({ height: 15 });
+  const warnings: string[] = [];
+  const infos: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile, {
+      ...pistesDeTuiles,
+      gridRowSizes: [{ type: 'HUG' }, { type: 'HUG' }, { type: 'FIXED', value: 15 }],
+    }),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    true,
+    new Map(),
+    new Set(),
+    warnings,
+    infos,
+  );
+
+  assert.equal(layout.children[0]?.structuralSize, undefined);
+  assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
+});
+
+test('une étendue qui déborde d’une piste qui hug ne publie aucune mesure', async () => {
+  // La place vient alors d'ailleurs, et la mesure de l'enfant ne la décrit plus.
+  const tuile = tuileDeGrille({ height: 40, gridRowAnchorIndex: 1, gridRowSpan: 2 });
+  const warnings: string[] = [];
+  const infos: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile, {
+      ...pistesDeTuiles,
+      gridRowSizes: [{ type: 'HUG' }, { type: 'FIXED', value: 15 }, { type: 'HUG' }],
+    }),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    true,
+    new Map(),
+    new Set(),
+    warnings,
+    infos,
+  );
+
+  assert.equal(layout.children[0]?.structuralSize, undefined);
+  assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
+});
+
+test('une étendue entièrement dans des pistes qui hug publie sa mesure', async () => {
+  const tuile = tuileDeGrille({ height: 40, gridRowAnchorIndex: 1, gridRowSpan: 2 });
+  const warnings: string[] = [];
+  const infos: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile, pistesDeTuiles),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    true,
+    new Map(),
+    new Set(),
+    warnings,
+    infos,
+  );
+
+  assert.deepEqual(layout.children[0]?.structuralSize, { height: '40px' });
+  assert.equal(layout.children[0]?.rowSpan, 2);
+});
+
+test('une variable liée l’emporte sur la mesure de la piste', async () => {
+  // Ce qui distingue une taille de maquette d'une décision du design system est
+  // la liaison. Publier les deux ferait porter deux vérités au même axe.
+  const tuile = tuileDeGrille({
+    height: 15,
+    boundVariables: { fills: [alias('couleur')], height: alias('h') },
+  });
+  const warnings: string[] = [];
+  const infos: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile, pistesDeTuiles),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile', h: 'sizes.tile-height' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    true,
+    new Map(),
+    new Set(),
+    warnings,
+    infos,
+  );
+
+  assert.deepEqual(layout.children[0]?.size, { height: '{sizes.tile-height}' });
+  assert.equal(layout.children[0]?.structuralSize, undefined);
+  assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
+});
+
+test('une grille dont le runtime n’expose pas les pistes ne publie ni ne dit rien', async () => {
+  const tuile = tuileDeGrille({ height: 15 });
+  const warnings: string[] = [];
+  const infos: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    true,
+    new Map(),
+    new Set(),
+    warnings,
+    infos,
+  );
+
+  assert.equal(layout.children[0]?.structuralSize, undefined);
+  assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
+});

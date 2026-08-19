@@ -35,6 +35,10 @@ import type {
 
 /**
  * Version du schéma de contrat — à incrémenter à chaque changement de forme.
+ * 10.1 : `structuralSize` étend l'exception pixel des grilles de la piste à la
+ * cellule. Sous une piste qui hug, la mesure ne vit que sur l'enfant — Figma n'y
+ * expose aucun remplissage et `GridTrackSize.value` n'existe pas sur ce type —
+ * et sans elle la piste retombait à zéro. `size` reste strictement tokenisé.
  * 10.0 : les pistes FIXED d'une grille conservent exceptionnellement leur
  * valeur CSS en pixels, les valeurs par côté peuvent être clairsemées lorsque
  * les autres côtés sont neutres, toute feuille publie son radius, et chaque
@@ -127,7 +131,7 @@ import type {
  * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
  * `variantTokens`, et `warnings` documente l'export sous `meta`.
  */
-export const CONTRACT_VERSION = '10.0';
+export const CONTRACT_VERSION = '10.1';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(
