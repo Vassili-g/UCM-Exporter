@@ -370,7 +370,7 @@ async function resolveGroup<K extends string>(
     // faire est le même pour les trois.
     warnings.push(
       `Layer « ${node.name} » : ce layer n'utilise pas d'auto layout. Son gap et ses ` +
-        `paddings n'existent pas dans Figma et restent absents du contrat — leur absence ` +
+        `paddings n'existent pas dans Figma et restent absents du contrat. Leur absence ` +
         `ne veut donc pas dire zéro. Appliquez un auto layout au layer si son espacement ` +
         `doit être contractuel, puis réexportez.`,
     );
@@ -415,7 +415,7 @@ async function resolveGroup<K extends string>(
         aliases.map((alias, index) =>
           resolver.resolve(alias, {
             nodeName: node.name,
-            field: `${label} — ${fieldLabel(fields[index])}`,
+            field: `${label}, ${fieldLabel(fields[index])}`,
           }),
         ),
       );
@@ -447,7 +447,7 @@ async function resolveGroup<K extends string>(
         return detail;
       }
       warnings.push(
-        `Layer « ${node.name} » — ${label} : les côtés ne sont pas reliés à la même ` +
+        `Layer « ${node.name} », ${label} : les côtés ne sont pas reliés à la même ` +
           `variable (${tokensByAlternative[asymmetricIndex].join(', ')}). Rien n'est exporté ` +
           `pour cette valeur. Reliez-les toutes à la même variable, puis réexportez.`,
       );
@@ -457,7 +457,7 @@ async function resolveGroup<K extends string>(
     const candidates = Array.from(new Set(tokensByAlternative.flat()));
     if (candidates.length > 1) {
       warnings.push(
-        `Layer « ${node.name} » — ${label} : deux réglages Figma se contredisent ` +
+        `Layer « ${node.name} », ${label} : deux réglages Figma se contredisent ` +
           `(${candidates.join(', ')}). Rien n'est exporté pour cette valeur. Ne définissez ` +
           `cette valeur que d'une seule façon, puis réexportez.`,
       );
@@ -500,7 +500,7 @@ async function resolveGroup<K extends string>(
       ].filter((value): value is string => Boolean(value));
       if (details.length > 0) {
         warnings.push(
-          `Layer « ${node.name} » — ${label} : les côtés tokenisés sont exportés, mais la `
+          `Layer « ${node.name} », ${label} : les côtés tokenisés sont exportés, mais la `
             + `définition reste partielle (${details.join(' ; ')}). Reliez les valeurs non `
             + `neutres manquantes à des variables, puis réexportez.`,
         );
@@ -513,7 +513,7 @@ async function resolveGroup<K extends string>(
   if (withBindings.length === 0) {
     if (hasImplicitDefaultValue(node, alternatives)) return null;
     warnings.push(
-      `Layer « ${node.name} » — ${label} : aucune variable Figma n'est reliée. La valeur ` +
+      `Layer « ${node.name} », ${label} : aucune variable Figma n'est reliée. La valeur ` +
         `fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
     );
     return null;
@@ -539,7 +539,7 @@ async function resolveGroup<K extends string>(
   ].filter((detail): detail is string => Boolean(detail));
 
   warnings.push(
-    `Layer « ${node.name} » — ${label} : la définition est incomplète ` +
+    `Layer « ${node.name} », ${label} : la définition est incomplète ` +
       `(${details.join(' ; ')}). Rien n'est exporté pour cette valeur. Reliez les ` +
       `variables manquantes, puis réexportez.`,
   );
@@ -726,8 +726,8 @@ export async function resolveSizeBounds(
   if (unbound.length > 0) {
     warnings.push(
       `Layer « ${node.name} » : il fixe ${unbound.map(fieldLabel).join(', ')} sans variable ` +
-        `Figma. Le contrat ne publie que les bornes reliées à une variable — un nombre écrit à ` +
-        `la main est une mesure de maquette, pas une décision du design system — et le ` +
+        `Figma. Le contrat ne publie que les bornes reliées à une variable. Un nombre écrit à ` +
+        `la main est une mesure de maquette, pas une décision du design system. Le ` +
         `développeur rendra donc ce layer sans elles. Reliez ces bornes à une variable, puis ` +
         `réexportez.`,
     );

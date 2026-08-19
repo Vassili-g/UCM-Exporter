@@ -134,7 +134,7 @@ onmessage = (event) => {
   }
 
   if (message.type === 'pull-request') {
-    logPanel.appendLink(`Ouvrir la PR · ${message.path}`, message.url);
+    logPanel.appendLink(`Ouvrir la PR : ${message.path}`, message.url);
   }
 };
 

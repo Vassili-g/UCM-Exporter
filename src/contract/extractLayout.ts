@@ -440,8 +440,8 @@ async function describeNode(
     warnings.push(
       `Layer « ${child.name} » : il enveloppe ${nommerDependances(dependencies)} mais aucun ` +
         `de ses calques exportables n'y mène. ${plusieurs
-          ? 'Le contrat ne peut placer aucune de ces dépendances — un slot ne porte qu’un ' +
-            'composant — et le développeur ne les rendra pas. Rendez visibles les calques qui ' +
+          ? 'Le contrat ne peut placer aucune de ces dépendances. Un slot ne porte qu’un ' +
+            'composant, donc le développeur ne les rendra pas. Rendez visibles les calques qui ' +
             'portent les instances'
           : 'Le contrat nomme la dépendance sans la disposition de ce calque, et le développeur ' +
             'rendra le composant sans son cadre. Rendez visible le calque qui porte l’instance'}, ` +

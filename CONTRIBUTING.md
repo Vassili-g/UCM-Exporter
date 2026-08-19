@@ -23,7 +23,62 @@ particularité de l’API Figma ou une limite ; ils ne paraphrasent pas le code.
 Chaque fichier décrit brièvement son rôle, et chaque fonction exportée non
 triviale précise son contrat.
 
-## Avertissements
+## Messages destinés au designer
+
+Les messages de l’interface, des pull requests et des rapports CI sont lus par
+un designer. Ils donnent un constat et une action, sans raconter le
+fonctionnement interne des contrôles.
+
+Un diagnostic agrégé suit cet ordre :
+
+1. le problème principal, puis le nombre d’éléments concernés ;
+2. la liste des composants, contrats ou tokens concernés ;
+3. les écarts précis, sous forme de liste ;
+4. l’action, avec son responsable ;
+5. l’état de la fusion.
+
+```md
+### ❌ Le code n’est plus conforme aux contrats (2 composants)
+
+Les tests de conformité échouent pour :
+
+- Alert
+- Button
+
+#### Écarts détectés
+
+- Alert : le texte n’utilise pas le style déclaré par le contrat.
+
+#### Action
+
+Un développeur doit mettre à jour les composants.
+
+La fusion reste bloquée.
+```
+
+Le titre commence par le problème, jamais par une liste de composants. Une
+phrase porte une seule idée et un paragraphe deux phrases au maximum. Le texte
+principal reste court ; les chemins, piles d’erreur et autres détails réservés
+au développeur peuvent être placés dans un bloc repliable.
+
+Règles de rédaction :
+
+- employer la voix active et des verbes concrets ;
+- nommer la personne qui doit agir : designer, développeur ou mainteneur du
+  plugin ;
+- écrire explicitement si le point bloque la fusion ;
+- distinguer le fait observé de sa cause supposée ;
+- gérer le singulier et le pluriel, sans forme comme `composant(s)` ;
+- ne pas employer de tiret cadratin, de métaphore, de question rhétorique ou
+  d’introduction narrative ;
+- supprimer toute phrase qui n’aide pas à comprendre le problème ou à agir.
+
+Une assertion de conformité en échec prouve un écart entre le code et le
+contrat. Une erreur d’exécution prouve seulement que le contrôle n’a pas pu
+aboutir. Le message ne doit jamais attribuer une cause que le contrôle n’a pas
+établie.
+
+### Avertissements de l’export
 
 Les avertissements d’un export sont adressés au **designer**, et lui parviennent
 par le corps de la pull request que le plugin ouvre. Ils sont donc écrits dans
@@ -36,6 +91,12 @@ Chacun répond à trois questions, dans cet ordre :
 | **Où** | Le nom exact de l’élément Figma — calque, variante, propriété — tel qu’il s’affiche dans le panneau des calques |
 | **Quoi** | Ce qui n’a pas pu être exporté, donc ce qui manquera au développeur |
 | **Comment** | Le geste à faire dans Figma |
+
+Un avertissement unitaire emploie cette forme :
+
+```text
+{Élément Figma} : {information non exportée}. {action dans Figma}.
+```
 
 Un message emploie **les intitulés que Figma affiche**, repris tels quels : le
 designer doit pouvoir chercher dans son écran le mot que le message emploie.

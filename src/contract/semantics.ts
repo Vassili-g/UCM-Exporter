@@ -330,7 +330,7 @@ export function variantRoleWarnings(
         warnings.push(
           `Token ${usage.example} : son dernier segment « ${role} » désigne ` +
             `${declared === 'paint' ? 'un fill' : 'un stroke'}, mais il est appliqué en ` +
-            `${found === 'paint' ? 'fill' : 'stroke'} — rien ne sera affiché (${layers}). ` +
+            `${found === 'paint' ? 'fill' : 'stroke'}. Rien ne sera affiché (${layers}). ` +
             `Appliquez-le du bon côté dans Figma, ou renommez-le.`,
         );
       }

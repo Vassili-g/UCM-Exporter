@@ -252,13 +252,16 @@ test('le corps de la pull request porte les avertissements de l’export', () =>
   // journal du plugin.
   const sain = pullRequestBody('src/tokens/tokens.json', []);
   assert.match(sain, /Fichier : `src\/tokens\/tokens\.json`/);
-  assert.match(sain, /Aucun point signalé\./);
+  assert.match(sain, /Aucun avertissement d'export\./);
 
   const signale = pullRequestBody('src/components/Alert/Alert.contract.json', [
     'Icône « triangle-exclamation » : sa taille change selon les variantes.',
-    'Calque « row » — espacement : aucune variable Figma n’est reliée.',
+    'Calque « row », espacement : aucune variable Figma n’est reliée.',
   ]);
-  assert.match(signale, /## ⚠️ 2 points signalés par l'export/);
+  assert.match(signale, /## ⚠️ L'export n'a pas pu décrire certaines informations \(2 points\)/);
   assert.match(signale, /- Icône « triangle-exclamation » /);
-  assert.match(signale, /- Calque « row » — espacement /);
+  assert.match(signale, /- Calque « row », espacement /);
+  assert.match(signale, /### Action/);
+  assert.match(signale, /Ces avertissements ne bloquent pas la fusion/);
+  assert.doesNotMatch(signale, /—|\w+\(s\)/);
 });

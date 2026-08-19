@@ -87,16 +87,10 @@ Chaque document a un rôle unique :
 ## État
 
 Le moteur écrit la version **10.0** du contrat. Elle accepte un Component seul ou
-un Component Set, y compris une matrice clairsemée. Chaque variante exacte
-porte ses tokens et ses strokes, puis référence une vue complète dédupliquée
+un Component Set. Chaque variante exacte
+porte ses tokens, puis référence une vue complète dédupliquée
 pour son arbre, sa typographie, ses icônes, ses dépendances et les chemins de
 ses peintures. Les pistes FIXED d'une grille sont conservées en pixels et les
 valeurs par côté peuvent être clairsemées. Le Playground
 consomme cette forme et dérive un type discriminé des seules combinaisons
 d’enums présentes.
-
-Les exports Figma 9.0 d’Alert, Button et StressTest restent intégrés au Playground.
-Un réexport 10.0 est nécessaire pour valider les nouveaux champs sur Figma.
-Le corpus de régression de ce dépôt contient encore Alert et Button en 4.9 : il
-doit être renouvelé par un réexport Figma, jamais en éditant les JSON à la main.
-Voir [ROADMAP.md](./ROADMAP.md) pour le périmètre de validation.

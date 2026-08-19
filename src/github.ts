@@ -102,19 +102,23 @@ export function artifactPath(config: GithubConfig, artifact: RepositoryArtifact)
  */
 export function pullRequestBody(path: string, warnings: string[]): string {
   const header = `Export automatique depuis Figma.\n\nFichier : \`${path}\``;
-  if (warnings.length === 0) return `${header}\n\nAucun point signalé.`;
+  if (warnings.length === 0) return `${header}\n\nAucun avertissement d'export.`;
 
-  const plural = warnings.length > 1 ? 's' : '';
+  const points = `${warnings.length} point${warnings.length === 1 ? '' : 's'}`;
   return [
     header,
     '',
-    `## ⚠️ ${warnings.length} point${plural} signalé${plural} par l'export`,
+    `## ⚠️ L'export n'a pas pu décrire certaines informations (${points})`,
     '',
-    `L'export a réussi, mais ${warnings.length > 1 ? 'ces informations n’ont' : 'cette information n’a'} ` +
-      'pas pu être décrit' + (warnings.length > 1 ? 'es' : 'e') +
-      '. Chaque point se corrige dans Figma, puis se réexporte.',
+    'Les informations suivantes sont absentes de l’artefact exporté :',
     '',
     ...warnings.map((warning) => `- ${warning}`),
+    '',
+    '### Action',
+    '',
+    'Corrigez chaque point dans Figma, puis relancez l’export.',
+    '',
+    'Ces avertissements ne bloquent pas la fusion.',
   ].join('\n');
 }
 
@@ -146,7 +150,7 @@ async function githubRequest<T>(
     let detail = '';
     try {
       const body = await response.json() as { message?: string };
-      detail = body.message ? ` — ${body.message}` : '';
+      detail = body.message ? ` : ${body.message}` : '';
     } catch {
       // Une réponse non JSON reste décrite par son statut HTTP.
     }
