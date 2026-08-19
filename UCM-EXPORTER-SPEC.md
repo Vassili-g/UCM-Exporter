@@ -1193,7 +1193,9 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-La version actuelle du contrat est **10.1**. `variantViews` catalogue chaque
+La version actuelle du contrat est celle que publie `CONTRACT_VERSION`, dans
+`src/contract/exportComponent.ts` — l'unique endroit où elle est écrite.
+`variantViews` catalogue chaque
 bloc complet distinct (`structure`, `typography`, `icons`, `composes`,
 `paintPlacements`) et chaque
 entrée de `variants` le référence par `view`, à côté de ses `tokens`, `strokes`

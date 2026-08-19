@@ -288,7 +288,11 @@ reçoit un test de régression.
 
 Le corpus `tests/test-exports/` reste petit et représentatif. Il est produit
 depuis Figma, pas édité à la main, et verrouille la version actuelle du
-contrat.
+contrat. `npm run check:fixtures` le constate, et se lance avant une pull
+request plutôt que dans `npm test` : il ne dit rien du code, seulement qu'un
+humain a relancé le plugin depuis le dernier changement de forme. Un agent ne
+peut pas le satisfaire seul, et ne doit pas chercher à le faire — retoucher un
+fichier du corpus détruirait ce qui en fait la valeur.
 
 ## Limites d’environnement
 

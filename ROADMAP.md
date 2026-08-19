@@ -32,7 +32,7 @@ sont jamais corrigés à la main.
 | Domaine | État |
 |---|---|
 | Contrat 10.1 | L’Exporter situe les peintures dans les vues exactes, signale toute peinture posée à la main, conserve les pistes FIXED de grille en pixels et publie dans `structuralSize` la mesure d’une cellule dont la piste hug |
-| Consommation 10.1 | Le Playground accepte les versions 4.2 à 10.1, valide `structuralSize` comme une mesure en pixels distincte de `size`, et la pose telle quelle sur les tuiles de StressTest ; un test de rendu l’exerce |
+| Consommation 10.1 | Le Playground valide `structuralSize` comme une mesure en pixels distincte de `size`, et la pose telle quelle sur les tuiles de StressTest ; un test de rendu l’exerce |
 | Validation Figma 10.1 | Les quatre composants ont été réexportés depuis Figma en 10.1, fusionnés dans le Playground et déposés dans le corpus `tests/test-exports/` de l’Exporter. L’export de Button ne porte plus aucun avertissement et ses 90 variants partagent enfin la même vue ; celui de StressTest publie la mesure de ses cellules sous une piste qui hug |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
 | Structure portable | Flex, wrap, grille, position absolue, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat |
@@ -46,7 +46,8 @@ sont jamais corrigés à la main.
 | Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
 
 Le projet est un **prototype avancé**. Le pipeline Figma → pull request → CI →
-`main` est éprouvé avec des contrats 10.1 réels, que le corpus de référence de
+`main` est éprouvé avec des contrats réels de la version courante, que le
+corpus de référence de
 l’Exporter verrouille et qu’un test de rendu exerce. Cette preuve porte sur
 l’extraction, la validation et la consommation statique ; elle ne prouve ni la
 fraîcheur d’un export, ni une ressemblance visuelle complète avec Figma.

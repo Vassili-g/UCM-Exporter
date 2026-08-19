@@ -86,7 +86,8 @@ Chaque document a un rôle unique :
 
 ## État
 
-Le moteur écrit la version **10.1** du contrat. Elle accepte un Component seul ou
+Le moteur écrit la version publiée par `CONTRACT_VERSION`
+(`src/contract/exportComponent.ts`). Elle accepte un Component seul ou
 un Component Set. Chaque variante exacte
 porte ses tokens, puis référence une vue complète dédupliquée
 pour son arbre, sa typographie, ses icônes, ses dépendances et les chemins de
