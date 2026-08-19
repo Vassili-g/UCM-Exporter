@@ -883,6 +883,36 @@ test('une variable liée l’emporte sur la mesure de la piste', async () => {
   assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
 });
 
+test('un enfant aligné sous une piste qui hug garde la règle commune', async () => {
+  // L'exception pixel n'existe que parce que le panneau Figma affiche « Fill ».
+  // Un alignement explicite le lui retire : la dimension redevient celle du
+  // calque, `resolveSlotSize` en réclame la variable — et publier la même
+  // valeur en pixels sous une note « aucun geste demandé » contredirait mot
+  // pour mot cet avertissement, sur le même axe du même calque.
+  const tuile = tuileDeGrille({ height: 15, gridChildVerticalAlign: 'CENTER' });
+  const warnings: string[] = [];
+  const infos: string[] = [];
+
+  const layout = await extractLayout(
+    grilleDeTuiles(tuile, pistesDeTuiles),
+    resolverFor({ col: 'l.col', row: 'l.row', couleur: 'c.tile' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    true,
+    new Map(),
+    new Set(),
+    warnings,
+    infos,
+  );
+
+  assert.equal(layout.children[0]?.structuralSize, undefined);
+  assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
+  // L'avertissement, lui, reste : cette hauteur est bien une décision du calque.
+  assert.ok(warnings.some((warning) => warning.includes('« Tile », height')));
+});
+
 test('une grille dont le runtime n’expose pas les pistes ne publie ni ne dit rien', async () => {
   const tuile = tuileDeGrille({ height: 15 });
   const warnings: string[] = [];

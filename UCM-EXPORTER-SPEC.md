@@ -593,6 +593,12 @@ porter deux vérités au même axe. Aucun geste n'est demandé au designer — c
 enfants sont en `Fill` dans le panneau, et c'est Figma qui n'expose pas ce
 remplissage sous une piste qui hug.
 
+C'est aussi ce qui borne l'exception : elle tient à ce que le panneau affiche
+« Fill », et un alignement explicite le retire. L'enfant reprend alors la règle
+commune — sa dimension figée réclame une variable — et `structuralSize` se tait,
+sans quoi le contrat publierait en pixels la valeur que son propre
+avertissement, devenu faux, déclarerait absente.
+
 Direction,
 alignements, dimensions figées et propriétés de flux des slots sont comparés sur
 toute la matrice — cadres de dépendance imbriqués compris ; une différence entre
@@ -1032,6 +1038,12 @@ Community notamment : un warning le signale alors, sans bloquer, et `nodeId` et
   elle. Un paint masqué ou d’opacité nulle, un stroke d’épaisseur zéro et une
   peinture non unie n’en produisent pas — le premier n’a aucun effet, la
   dernière relève du relevé des propriétés non portables.
+- La couleur publiée et l’avertissement sortent de la même lecture, peinture par
+  peinture : la variable d’un paint est celle qu’il porte lui-même. Une peinture
+  sans effet ne publie donc pas plus sa couleur qu’elle ne réclame la sienne, et
+  un fill masqué relié ne couvre plus le fill visible posé à la main. Quand
+  cette lecture ne peut pas conclure, la liste du node reprend la main sans
+  avertir : perdre une couleur coûterait plus qu’un diagnostic manquant.
 - Aucune couleur n’est perdue par troncature de clé. La clé d’une couleur est
   décidée une seule fois pour tout le composant : elle est la même dans toutes
   les feuilles, et ne porte jamais une coordonnée de variant.

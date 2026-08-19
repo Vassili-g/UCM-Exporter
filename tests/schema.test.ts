@@ -33,9 +33,9 @@ function contratDuCorpus(nom: string): unknown {
 const contrats = readdirSync(corpus).filter((nom) => nom.endsWith('.contract.json'));
 
 test('le schéma commité est celui que produit types.ts aujourd\'hui', () => {
-  // La comparaison porte sur le JSON analysé, pas sur les octets : le dépôt
-  // n'a pas de `.gitattributes`, et une extraction sous Windows convertit les
-  // fins de ligne. Comparer le texte rendrait ce test rouge sans dérive.
+  // La comparaison porte sur le JSON analysé, pas sur les octets. `.gitattributes`
+  // fige bien ce fichier en LF, mais une copie de travail issue d'un autre outil
+  // peut le rendre en CRLF : comparer le texte serait rouge sans aucune dérive.
   assert.deepEqual(
     schemaCommite,
     construireLeSchema(),
@@ -51,7 +51,14 @@ test('les exports réels du corpus valident le schéma', () => {
   const valider = valideur(schemaCommite);
   assert.ok(contrats.length > 0, 'le corpus de référence a disparu');
   for (const nom of contrats) {
-    const contrat = contratDuCorpus(nom);
+    const contrat = contratDuCorpus(nom) as { meta?: { contractVersion?: unknown } };
+    // Un contrat d'une AUTRE version n'est pas du ressort de ce schéma : il en
+    // décrit une seule, `contractVersion.const` le dit, et le refus serait donc
+    // acquis d'avance. Sans cette réserve, une montée de `CONTRACT_VERSION`
+    // rendrait `npm test` rouge jusqu'au réexport du corpus depuis Figma — le
+    // seul geste qu'un poste de développement ne peut pas faire, et la raison
+    // même pour laquelle ce constat vit dans « npm run check:fixtures ».
+    if (contrat.meta?.contractVersion !== CONTRACT_VERSION) continue;
     assert.ok(
       valider(contrat),
       `${nom} ne valide pas le schéma : ${JSON.stringify(valider.errors?.slice(0, 3))}`,

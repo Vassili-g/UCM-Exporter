@@ -722,7 +722,19 @@ export function gridStructuralSize(
   infos: string[],
 ): GridStructuralSize | null {
   if (!parent) return null;
-  const hug = gridHugAxes(parent, node);
+  // L'exception ne parle que là où `resolveSlotSize` s'est tu, donc sur un axe
+  // que la CELLULE décide. Un alignement explicite le lui reprend : le panneau
+  // Figma cesse d'afficher « Fill », la dimension redevient celle du calque, et
+  // `resolveSlotSize` en réclame la variable. Publier alors cette même valeur en
+  // pixels sous une note « aucune modification n'est demandée » contredirait mot
+  // pour mot l'avertissement qu'il vient d'écrire, sur le même axe du même
+  // calque — et l'avertissement serait faux, puisque la valeur SERAIT publiée.
+  const cellule = gridCellSizedAxes(parent, node);
+  const pistes = gridHugAxes(parent, node);
+  const hug = {
+    width: pistes.width && cellule.width,
+    height: pistes.height && cellule.height,
+  };
   if (!hug.width && !hug.height) return null;
 
   const fixed = fixedDimensions(node);

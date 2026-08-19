@@ -880,3 +880,92 @@ test('un fill entièrement lié ne produit aucun avertissement', async () => {
   assert.equal(tokens.paints.length, 1);
   assert.deepEqual(warnings, []);
 });
+test('un fill masqué relié ne couvre plus le fill visible posé à la main', async () => {
+  // Les comptes s'équilibraient : une peinture visible libre, une liaison au
+  // node, donc aucun avertissement — et le contrat publiait la couleur de la
+  // peinture MASQUÉE comme si elle peignait le calque. La liaison portée par
+  // chaque peinture tranche ce que la liste du node ne sait pas dire.
+  const surface = {
+    type: 'RECTANGLE',
+    name: 'Surface',
+    fills: [
+      { type: 'SOLID', color: { r: 1, g: 0, b: 0 } },
+      {
+        type: 'SOLID',
+        visible: false,
+        color: { r: 0, g: 0, b: 1 },
+        boundVariables: { color: colorAlias },
+      },
+    ],
+    boundVariables: { fills: [colorAlias] },
+    findAll: () => [],
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(surface, {
+    resolve: async () => 'components.card.colors.legacy',
+  }, warnings);
+
+  // Rien ne peint ce calque de façon contractuelle : la couleur du paint masqué
+  // n'appartient à aucun calque publié.
+  assert.deepEqual(tokens.paints, []);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /« Surface »/);
+  assert.match(warnings[0], /n’est relié/);
+});
+
+test('la liaison portée par chaque peinture désigne la couleur qui peint', async () => {
+  // Deux peintures, une seule visible, et c'est bien SA variable que le contrat
+  // publie — pas celle de l'autre, ni les deux.
+  const surface = {
+    type: 'RECTANGLE',
+    name: 'Surface',
+    fills: [
+      {
+        type: 'SOLID',
+        visible: false,
+        color: { r: 0, g: 0, b: 1 },
+        boundVariables: { color: surfaceAlias },
+      },
+      {
+        type: 'SOLID',
+        color: { r: 1, g: 1, b: 1 },
+        boundVariables: { color: colorAlias },
+      },
+    ],
+    boundVariables: { fills: [surfaceAlias, colorAlias] },
+    findAll: () => [],
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(surface, {
+    resolve: async (alias: VariableAlias | null | undefined) =>
+      (alias?.id === 'color' ? 'components.card.colors.background' : 'components.card.colors.legacy'),
+  }, warnings);
+
+  assert.deepEqual(tokens.paints, [
+    { token: 'components.card.colors.background', role: 'background' },
+  ]);
+  // Aucun empilement à signaler : une seule peinture met de l'encre.
+  assert.deepEqual(warnings, []);
+});
+
+test('une liaison que les peintures ne déclarent pas fait replier la lecture', async () => {
+  // Le node connaît une variable qu'aucun paint ne porte : la lecture exacte
+  // est incomplète, et le repli garde la couleur plutôt qu'un diagnostic.
+  const surface = {
+    type: 'RECTANGLE',
+    name: 'Surface',
+    fills: [{ type: 'SOLID', color: { r: 1, g: 1, b: 1 } }],
+    boundVariables: { fills: [colorAlias] },
+    findAll: () => [],
+  } as unknown as ComponentNode;
+  const warnings: string[] = [];
+
+  const tokens = await getSlotTokens(surface, {
+    resolve: async () => 'components.card.colors.background',
+  }, warnings);
+
+  assert.equal(tokens.paints.length, 1);
+  assert.deepEqual(warnings, []);
+});
