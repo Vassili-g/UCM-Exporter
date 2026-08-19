@@ -32,22 +32,22 @@ sont jamais corrigés à la main.
 | Domaine | État |
 |---|---|
 | Contrat 10.1 | L’Exporter situe les peintures dans les vues exactes, signale toute peinture posée à la main, conserve les pistes FIXED de grille en pixels et publie dans `structuralSize` la mesure d’une cellule dont la piste hug |
-| Consommation 10.0 | Le Playground accepte les versions 4.2 à 10.0 et valide les chemins de peintures, les pistes CSS et les groupes par côté de la v10 ; `structuralSize` n’est ni lu ni rendu, et un contrat 10.1 sera refusé tant que ses lecteurs ne seront pas adaptés |
-| Validation Figma 10.0 | Alert, Button et StressTest ont été réexportés depuis Figma, fusionnés dans le Playground et déposés dans le corpus `tests/test-exports/` de l’Exporter ; le bump 10.1 les laisse en arrière du schéma et `npm test` le dit, TileLink reste sur son export 9.0 |
+| Consommation 10.1 | Le Playground accepte les versions 4.2 à 10.1, valide `structuralSize` comme une mesure en pixels distincte de `size`, et la pose telle quelle sur les tuiles de StressTest ; un test de rendu l’exerce |
+| Validation Figma 10.1 | Les quatre composants ont été réexportés depuis Figma en 10.1, fusionnés dans le Playground et déposés dans le corpus `tests/test-exports/` de l’Exporter. L’export de Button ne porte plus aucun avertissement et ses 90 variants partagent enfin la même vue ; celui de StressTest publie la mesure de ses cellules sous une piste qui hug |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
 | Structure portable | Flex, wrap, grille, position absolue, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
 | Contrôles du Playground | Forme et version des contrats, graphe, parité statique, références de tokens, tests de rendu co-localisés, génération des types et du CSS |
 | Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
-| Test froid | Les quatre composants du Playground ont été reconstruits depuis les seuls contrats et le skill, et `npm run check` est vert : les deux assertions de `Button.test.tsx` qui comparaient le rendu à `structure` lisent désormais la vue exacte. Le test a trouvé deux pertes réelles — une icône dont le fill avait perdu sa variable, et une grille dont les pistes qui hug retombaient à zéro — toutes deux corrigées dans le moteur |
+| Test froid | Les quatre composants du Playground ont été reconstruits depuis les seuls contrats et le skill, et `npm run check` est vert. Le test a trouvé deux pertes réelles — une icône dont le fill avait perdu sa variable, et une grille dont les pistes qui hug retombaient à zéro — toutes deux fermées : la première par un avertissement d’export et une correction dans Figma, la seconde par `structuralSize` |
 | Multi-composants | Button, Alert, TileLink et StressTest ont une implémentation ; StressTest exerce grille, wrap, champs asymétriques et composition multiple, et TileLink publie désormais son sizing tokenisé |
 | Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
 | Interopérabilité | Pas encore de JSON Schema public ni de version propre pour `tokens.json` |
 | Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
 
 Le projet est un **prototype avancé**. Le pipeline Figma → pull request → CI →
-`main` est éprouvé avec des contrats 10.0 réels ; la forme 10.1 est couverte par
-les tests purs et attend son réexport Figma. Cette preuve porte sur
+`main` est éprouvé avec des contrats 10.1 réels, que le corpus de référence de
+l’Exporter verrouille et qu’un test de rendu exerce. Cette preuve porte sur
 l’extraction, la validation et la consommation statique ; elle ne prouve ni la
 fraîcheur d’un export, ni une ressemblance visuelle complète avec Figma.
 
@@ -87,15 +87,12 @@ et toutes leurs vues exactes. La proposition correspondante est détaillée dans
 
 ### 1. Fermer la validation 10.1
 
-1. Réexporter Alert, Button et StressTest vers `tests/test-exports/` : le bump
-   10.1 les laisse en arrière du schéma, et le corpus ne se corrige pas à la
-   main. Réexporter TileLink au passage, seul contrat encore en 9.0.
-2. Vérifier sur l’export de Button que l’icône de droite du variant
-   `Primary / Contained / Hover` retrouve sa cible dans `paintPlacements`, la
-   variable ayant été reliée dans Figma.
-3. Adapter les lecteurs du Playground à `structuralSize`, porter sa plage de
-   versions à 10.1, puis vérifier visuellement TilesGrid, Divider, TileLink,
-   ScaleWrap et les peintures situées de StressTest sans modifier ses TSX.
+1. Vérifier visuellement TilesGrid, Divider, TileLink, ScaleWrap et les
+   peintures situées de StressTest dans le navigateur, sans modifier ses TSX :
+   la conformité statique est verte, la ressemblance ne l’est pas encore.
+2. Étendre les tests de rendu aux états que `renderToStaticMarkup` n’atteint
+   pas. La perte de Button vivait sur `hover`, et aucun test co-localisé ne
+   franchit aujourd’hui l’état par défaut.
 
 ### 2. Éprouver d’autres familles de composants
 
