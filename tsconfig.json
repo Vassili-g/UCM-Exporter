@@ -11,5 +11,5 @@
     "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
     "outDir": "dist"
   },
-  "include": ["src/**/*", "tests/**/*"]
+  "include": ["src/**/*", "tests/**/*", "scripts/**/*"]
 }

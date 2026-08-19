@@ -10,7 +10,8 @@
     "build:manifest": "node scripts/build-manifest.js",
     "build": "npm run typecheck && npm run build:code && npm run build:ui && npm run build:manifest",
     "start": "npm run build",
-    "test": "node scripts/run-tests.js"
+    "test": "node scripts/run-tests.js",
+    "check:fixtures": "tsx scripts/check-fixtures.ts"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.68.0",

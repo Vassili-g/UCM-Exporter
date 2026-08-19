@@ -190,12 +190,20 @@ réels. Son coût ne dépend pas du nombre de composants du catalogue. Ces
 fixtures ne sont rafraîchies que par un véritable réexport Figma ; elles ne
 sont pas retouchées pour faire passer un test.
 
+`npm run check:fixtures` constate que ce corpus vient bien de la version
+courante du schéma. Il vit hors de `npm test` délibérément : ce qu’il constate
+n’est pas une propriété du code, mais qu’un humain a relancé le plugin dans
+Figma depuis le dernier changement de forme. Personne ne peut le faire depuis
+un poste de développement, donc le laisser échouer à chaque itération locale
+n’apprendrait qu’à le contourner. Il est demandé au moment où il porte.
+
 Avant une pull request :
 
 ```sh
 npm test
 npm run typecheck
 npm run build
+npm run check:fixtures
 ```
 
 ## Documentation
