@@ -137,6 +137,7 @@ async function runExport(
     content: string;
     warningCount: number;
     warnings?: string[];
+    infos?: string[];
   }>,
 ): Promise<void> {
   postStatus('loading', loadingText);
@@ -145,6 +146,11 @@ async function runExport(
     // On liste chaque avertissement dans le journal (ex. « largeur de stroke non tokenisée »).
     for (const warning of result.warnings ?? []) {
       figma.ui.postMessage({ type: 'log', text: `⚠︎ ${warning}` });
+    }
+    // Les notes disent ce que le contrat publie, pas ce qui lui manque : elles
+    // portent donc une puce neutre et ne gonflent pas le compte d'avertissements.
+    for (const info of result.infos ?? []) {
+      figma.ui.postMessage({ type: 'log', text: `• ${info}` });
     }
     const warningText = result.warningCount > 0
       ? ` ${result.warningCount} avertissement${result.warningCount === 1 ? '' : 's'}.`
@@ -165,6 +171,7 @@ async function runExport(
         filename: result.filename,
         content: result.content,
         warnings: result.warnings ?? [],
+        infos: result.infos ?? [],
       });
       if (publication.status === 'unchanged') {
         const message = `Aucun changement pour ${publication.path} : aucune PR créée.`;

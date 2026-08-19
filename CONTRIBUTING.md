@@ -84,6 +84,28 @@ Les avertissements d’un export sont adressés au **designer**, et lui parvienn
 par le corps de la pull request que le plugin ouvre. Ils sont donc écrits dans
 son vocabulaire, jamais dans celui du code.
 
+Un export produit deux natures de constats, et elles ne se mélangent pas :
+
+| | Un **avertissement** | Une **note** |
+|---|---|---|
+| Ce qu’il dit | Une information manque à l’artefact | Le contrat publie ce point sous une forme inhabituelle |
+| Geste attendu | Oui, nommé dans le message | Aucun |
+| Canal | `warnings` | `infos` |
+| Corps de la pull request | « L’export n’a pas pu décrire… », puis « Corrigez chaque point » | « Notes d’export », sans action |
+
+Écrire une note dans le canal `warnings` produit un texte qui se contredit : le
+titre annonce une information absente, la phrase répond qu’elle est bien là. La
+piste FIXED d’une grille, publiée en pixels, est le cas type d’une note.
+
+`meta.warnings` du contrat reste le miroir complet des deux, et
+`meta.diagnostics` les distingue par leur `code` :
+`UCM_PORTABLE_PROJECTION_WARNING` pour une perte de portabilité,
+`UCM_EXPORT_INFO` pour une note, `UCM_EXPORT_NOTICE` pour le reste. Attention :
+« sans perte de portabilité » ne veut pas dire « sans geste à faire » — une
+combinaison de variants absente ne coûte rien à l’arbre exact, et le designer
+doit pourtant y retourner. Seul `UCM_EXPORT_INFO` promet qu’il n’y a rien à
+faire.
+
 Chacun répond à trois questions, dans cet ordre :
 
 | | Contenu |

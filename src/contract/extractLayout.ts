@@ -183,7 +183,7 @@ async function applyContainerProperties(
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
-  notices: string[],
+  infos: string[],
   childCount: number,
   dependencies: readonly ComposedDependency[],
 ): Promise<void> {
@@ -213,7 +213,7 @@ async function applyContainerProperties(
 
   entry.layout = direction;
   if (direction === 'grid') {
-    Object.assign(entry, gridTrackCounts(node), gridTrackSizes(node, warnings, notices));
+    Object.assign(entry, gridTrackCounts(node), gridTrackSizes(node, warnings, infos));
     const [columnGap, rowGap] = await Promise.all([
       resolveField(node, BINDING_PATTERNS.gridColumnGap, 'column gap', resolver, warnings),
       resolveField(node, BINDING_PATTERNS.gridRowGap, 'row gap', resolver, warnings),
@@ -352,7 +352,7 @@ async function describeNode(
   // reste publiée, c'est une seconde condition que le composant doit lire.
   parentVisibilityProp?: string,
   suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
-  notices: string[] = warnings,
+  infos: string[] = warnings,
   path: readonly string[] = [slot],
   publishedNodePaths: PublishedNodePaths = new Map(),
 ): Promise<ChildStructure> {
@@ -459,7 +459,7 @@ async function describeNode(
       child,
       resolver,
       warnings,
-      notices,
+      infos,
       assignments.length,
       dependencies,
     );
@@ -477,7 +477,7 @@ async function describeNode(
           depth + 1,
           entry.visibilityProp,
           suppressedSizeNodeIds,
-          notices,
+          infos,
           [...path, branchSlot],
           publishedNodePaths,
         )),
@@ -790,7 +790,11 @@ export async function extractLayout(
   placed: PlacedDependencies = new Map(),
   suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
   layoutElectionWarnings: string[] = warnings,
-  notices: string[] = warnings,
+  // Constats que l'export publie sans rien perdre et sans rien demander : le
+  // designer n'a aucun geste à faire. Par défaut ils rejoignent `warnings` ;
+  // `extractStructure` leur donne leur propre liste, que la pull request
+  // présente à part des points à corriger.
+  infos: string[] = warnings,
   publishedNodePaths: PublishedNodePaths = new Map(),
 ): Promise<LayoutStructure> {
   warnLayersOutsideLayoutNode(component, layoutNode, layoutElectionWarnings, composed);
@@ -840,7 +844,7 @@ export async function extractLayout(
         1,
         undefined,
         suppressedSizeNodeIds,
-        notices,
+        infos,
         [slot],
         publishedNodePaths,
       )),
@@ -849,7 +853,7 @@ export async function extractLayout(
   return {
     layout: layoutDirection(layoutNode),
     ...gridTrackCounts(layoutNode),
-    ...gridTrackSizes(layoutNode, warnings, notices),
+    ...gridTrackSizes(layoutNode, warnings, infos),
     sizing,
     ...(bounds ? { bounds } : {}),
     ...flexContainerProperties(layoutNode, warnings),

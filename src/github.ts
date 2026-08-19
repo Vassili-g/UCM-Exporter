@@ -17,6 +17,8 @@ export type RepositoryArtifact = {
   content: string;
   /** Ce que l'export n'a pas pu décrire, rédigé pour le designer. */
   warnings: string[];
+  /** Ce que l'export documente sans rien perdre : aucun geste n'est demandé. */
+  infos?: string[];
 };
 
 export type PublishResult =
@@ -99,10 +101,30 @@ export function artifactPath(config: GithubConfig, artifact: RepositoryArtifact)
  * destinataire arrive. Un contrat n'a donc pas à être ouvert pour être relu, et
  * `tokens.json`, qui n'a aucun champ où les transporter, est couvert de la même
  * façon que les contrats.
+ *
+ * Deux listes, parce qu'un export produit deux natures de constats. Un
+ * AVERTISSEMENT dit qu'une information manque à l'artefact et nomme le geste
+ * qui la ramènera. Une NOTE dit ce que le contrat publie sous une forme
+ * inhabituelle : la valeur y est, et rien n'est à corriger. Les ranger sous le
+ * même titre réclamerait une correction que le texte de la note dit inutile.
  */
-export function pullRequestBody(path: string, warnings: string[]): string {
+export function pullRequestBody(
+  path: string,
+  warnings: string[],
+  infos: string[] = [],
+): string {
   const header = `Export automatique depuis Figma.\n\nFichier : \`${path}\``;
-  if (warnings.length === 0) return `${header}\n\nAucun avertissement d'export.`;
+  const notes = infos.length === 0 ? [] : [
+    '',
+    `## Notes d’export (${infos.length} note${infos.length === 1 ? '' : 's'})`,
+    '',
+    'Ces points sont dans l’artefact exporté et n’appellent aucune correction :',
+    '',
+    ...infos.map((info) => `- ${info}`),
+  ];
+  if (warnings.length === 0) {
+    return [header, '', `Aucun avertissement d'export.`, ...notes].join('\n');
+  }
 
   const points = `${warnings.length} point${warnings.length === 1 ? '' : 's'}`;
   return [
@@ -119,6 +141,7 @@ export function pullRequestBody(path: string, warnings: string[]): string {
     'Corrigez chaque point dans Figma, puis relancez l’export.',
     '',
     'Ces avertissements ne bloquent pas la fusion.',
+    ...notes,
   ].join('\n');
 }
 
@@ -257,7 +280,7 @@ export async function publishArtifact(
         title: `Unified Component Exporter: export ${artifact.filename}`,
         head: branch,
         base: config.baseBranch,
-        body: pullRequestBody(path, artifact.warnings),
+        body: pullRequestBody(path, artifact.warnings, artifact.infos ?? []),
       }),
     });
   } catch (error) {

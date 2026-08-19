@@ -112,11 +112,18 @@ export async function extractStructure(
   warnings: string[];
   /** Compatibilité historique ou documentation, sans perte dans la vue exacte. */
   notices: string[];
+  /**
+   * Constats sans perte ET sans geste à faire dans Figma. Ils décrivent ce que
+   * le contrat publie, jamais ce qu'il a dû laisser tomber : la pull request
+   * les range hors de la liste des points à corriger.
+   */
+  infos: string[];
   /** Une structure portable par combinaison réellement présente. */
   variants: ExtractedContractVariant[];
 }> {
   const warnings = [...matrixWarnings];
   const notices: string[] = [];
+  const infos: string[] = [];
   const placedComposes: PlacedDependencies = new Map();
   // Les règles `@icons` sont relevées avant toute extraction : c'est leur
   // inventaire qui distingue l'encre d'une icône de la surface d'un cadre.
@@ -194,7 +201,7 @@ export async function extractStructure(
         .map(({ component }) => `« ${component.name} »`)
         .join(', ');
       const remaining = divergentVariants.length - 3;
-      notices.push(
+      infos.push(
         `Structure différente sur ${divergentVariants.length} variant(s), ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
           `référence « ${referenceLayout.component.name} ». La vue exacte référencée par ` +
@@ -218,7 +225,7 @@ export async function extractStructure(
         .map(({ component }) => `« ${component.name} »`)
         .join(', ');
       const remaining = flexDivergentVariants.length - 3;
-      notices.push(
+      infos.push(
         `Auto layout différent sur ${flexDivergentVariants.length} variant(s), ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
           `référence « ${referenceLayout.component.name} ». Les vues exactes de « variants » ` +
@@ -256,7 +263,7 @@ export async function extractStructure(
       placedComposes,
       new Set(),
       notices,
-      notices,
+      infos,
     )
     // Sans composant à interroger, le contrat retient le comportement par
     // défaut plutôt que d'inventer un hug que rien ne montre.
@@ -302,7 +309,7 @@ export async function extractStructure(
       exactPlaced,
       aUnAxeDeTailles ? new Set([layoutNodeOf(entry.component).id]) : new Set(),
       warnings,
-      notices,
+      infos,
       exactPaths,
     );
     exactLayouts.push({ entry, structure: exactStructure, placed: exactPlaced, paths: exactPaths });
@@ -398,6 +405,7 @@ export async function extractStructure(
     placedComposes,
     warnings,
     notices,
+    infos,
     variants,
   };
 }

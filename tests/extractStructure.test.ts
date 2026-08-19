@@ -325,7 +325,7 @@ test('extractStructure garde les dimensions au niveau haut sans axe de tailles',
   assert.equal('sizes' in structure, false);
 });
 
-test('extractStructure avertit quand les parties texte divergent entre variants', async () => {
+test('extractStructure note la divergence de structure entre variants, sans rien réclamer', async () => {
   const variant = (name: string, secondText: string) => {
     const titre = { type: 'TEXT', id: `${name}-title`, name: 'Titre', boundVariables: {} };
     const description = { type: 'TEXT', id: `${name}-body`, name: secondText, boundVariables: {} };
@@ -355,7 +355,7 @@ test('extractStructure avertit quand les parties texte divergent entre variants'
   const reference = variant('Severity=Info', 'Description');
   const divergent = variant('Severity=Warning', 'Détail');
 
-  const { notices } = await extractStructure(
+  const { infos } = await extractStructure(
     {
       axes: ['severity'],
       variants: [
@@ -372,14 +372,14 @@ test('extractStructure avertit quand les parties texte divergent entre variants'
     }),
   );
 
-  assert.ok(notices.some(
-    (warning) => warning.includes('Structure différente')
-      && warning.includes('Severity=Warning')
-      && warning.includes('Severity=Info'),
+  assert.ok(infos.some(
+    (note) => note.includes('Structure différente')
+      && note.includes('Severity=Warning')
+      && note.includes('Severity=Info'),
   ));
 });
 
-test('extractStructure avertit quand l’alignement Flex diverge entre variants', async () => {
+test('extractStructure note la divergence d’auto layout entre variants, sans rien réclamer', async () => {
   const variant = (name: string, counterAxisAlignItems: string) => ({
     type: 'COMPONENT',
     id: name,
@@ -394,7 +394,7 @@ test('extractStructure avertit quand l’alignement Flex diverge entre variants'
   const reference = variant('Severity=Info', 'CENTER');
   const divergent = variant('Severity=Warning', 'MIN');
 
-  const { structure, notices } = await extractStructure(
+  const { structure, infos } = await extractStructure(
     {
       axes: ['severity'],
       variants: [
@@ -409,14 +409,14 @@ test('extractStructure avertit quand l’alignement Flex diverge entre variants'
   );
 
   assert.equal(structure.alignItems, 'center');
-  assert.ok(notices.some(
-    (warning) => warning.includes('Auto layout différent')
-      && warning.includes('Severity=Warning')
-      && warning.includes('Severity=Info'),
+  assert.ok(infos.some(
+    (note) => note.includes('Auto layout différent')
+      && note.includes('Severity=Warning')
+      && note.includes('Severity=Info'),
   ));
 });
 
-test('extractStructure avertit quand le remplissage d’un slot diverge entre variants', async () => {
+test('extractStructure note le remplissage divergent d’un slot entre variants', async () => {
   const variant = (name: string, layoutGrow: number) => {
     const label = {
       type: 'TEXT',
@@ -441,7 +441,7 @@ test('extractStructure avertit quand le remplissage d’un slot diverge entre va
   const reference = variant('Severity=Info', 1);
   const divergent = variant('Severity=Warning', 0);
 
-  const { structure, notices } = await extractStructure(
+  const { structure, infos } = await extractStructure(
     {
       axes: ['severity'],
       variants: [
@@ -456,8 +456,8 @@ test('extractStructure avertit quand le remplissage d’un slot diverge entre va
   );
 
   assert.equal(structure.children[0].flexGrow, 1);
-  assert.ok(notices.some(
-    (warning) => warning.includes('Auto layout différent')
-      && warning.includes('Severity=Warning'),
+  assert.ok(infos.some(
+    (note) => note.includes('Auto layout différent')
+      && note.includes('Severity=Warning'),
   ));
 });
