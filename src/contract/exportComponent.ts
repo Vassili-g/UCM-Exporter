@@ -174,8 +174,14 @@ export type ComponentExport = {
   filename: string;
   content: string;
   warningCount: number;
-  /** Liste des avertissements, pour affichage détaillé dans le journal de l'UI. */
+  /** Ce qui manque au contrat et appelle un geste dans Figma. */
   warnings: string[];
+  /**
+   * Ce que l'export documente sans rien perdre : la valeur est dans le
+   * contrat et le designer n'a rien à corriger. Séparé de `warnings` pour que
+   * la pull request ne réclame pas une correction qu'elle dit inutile.
+   */
+  infos: string[];
 };
 
 /** Erreur « métier » : son message est affiché tel quel à l'utilisateur. */
@@ -282,6 +288,14 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   // de documentation (règles), de traçabilité (URL) et de compatibilité avec
   // l'ancienne vue de référence ne rendent pas un arbre exact incomplet.
   const projectionWarnings: string[] = [];
+  // Ce que l'export DOCUMENTE, par opposition à ce qu'il n'a pas su décrire.
+  // Rien n'y manque et rien n'y est à corriger : la pull request les range
+  // hors des points à traiter, et le compteur de l'UI les ignore. Deux
+  // sous-ensembles distincts, parce que « sans perte de portabilité » ne veut
+  // pas dire « sans geste à faire » : une combinaison de variants absente ou
+  // une règle d'usage qui cite une prop inconnue ne coûtent rien à l'arbre
+  // exact, mais le designer doit bien y retourner.
+  const exportInfos: string[] = [];
   const addProjectionWarnings = (messages: readonly string[]) => {
     projectionWarnings.push(...messages);
   };
@@ -403,7 +417,8 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   );
   markProjectionWarningsSince(warningCursor);
   addProjectionWarnings(extracted.warnings);
-  warnings.push(...extracted.notices);
+  warnings.push(...extracted.notices, ...extracted.infos);
+  exportInfos.push(...extracted.infos);
   warningCursor = warnings.length;
 
   // La documentation issue des règles s'accroche aux props de même nature, et
@@ -477,23 +492,34 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     // `enablePrivatePluginApi`, donc le cas normal est l'URL. Reste celui où
     // l'API ne la fournit pas — un plugin publié sur la Community — et le dire
     // en une phrase vaut mieux qu'un avertissement qui paraît transitoire.
-    warnings.push(
-      'Lien vers Figma absent du contrat : l’API n’a pas fourni la clé du fichier à ce ' +
-        'plugin. Le nom du fichier et l’identifiant du composant restent exportés, et ' +
-        'suffisent à le retrouver.',
-    );
+    // Le designer n'y peut rien : c'est un constat, pas un point à corriger.
+    const lienAbsent = 'Lien vers Figma absent du contrat : l’API n’a pas fourni la clé du '
+      + 'fichier à ce plugin. Le nom du fichier et l’identifiant du composant restent '
+      + 'exportés, et suffisent à le retrouver.';
+    warnings.push(lienAbsent);
+    exportInfos.push(lienAbsent);
   }
 
   const allWarnings = Array.from(new Set([...warnings, ...extracted.warnings]));
   const portableWarningSet = new Set(projectionWarnings);
   const hasPortableLoss = portableWarningSet.size > 0;
+  // Une perte de portabilité l'emporte toujours : un même texte relevé des deux
+  // côtés reste un point à corriger.
+  const infoSet = new Set(exportInfos.filter((message) => !portableWarningSet.has(message)));
   const diagnostics = allWarnings.map((message) => ({
     code: portableWarningSet.has(message)
       ? 'UCM_PORTABLE_PROJECTION_WARNING'
-      : 'UCM_EXPORT_NOTICE',
+      : infoSet.has(message)
+        ? 'UCM_EXPORT_INFO'
+        : 'UCM_EXPORT_NOTICE',
     severity: 'warning' as const,
     message,
   }));
+  // `meta.warnings` reste le miroir complet des diagnostics ; ce que la pull
+  // request et le compteur de l'UI appellent « avertissement » n'est que la
+  // part qui demande un geste.
+  const actionableWarnings = allWarnings.filter((message) => !infoSet.has(message));
+  const exportedInfos = allWarnings.filter((message) => infoSet.has(message));
   const compacted = compactVariants(extracted.variants, propertyBindings);
   const {
     variantTokens: _variantTokens,
@@ -546,8 +572,9 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   return {
     filename: componentContractFilename(contract.name),
     content: JSON.stringify(contract, null, 2),
-    warningCount: allWarnings.length,
-    warnings: allWarnings,
+    warningCount: actionableWarnings.length,
+    warnings: actionableWarnings,
+    infos: exportedInfos,
   };
 }
 

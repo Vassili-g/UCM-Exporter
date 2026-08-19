@@ -208,10 +208,20 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
     // contrat emploie, et il le cite dès qu'un champ le porte.
     assert.deepEqual(contrat.tokensUsed, ['{tokens.sizes.gap}']);
 
-    // Les avertissements comptés sont ceux publiés, et le journal de l'UI reçoit
-    // la même liste que le corps de la pull request.
-    assert.equal(resultat.warningCount, contrat.meta.warnings.length);
-    assert.deepEqual(resultat.warnings, contrat.meta.warnings);
+    // `meta.warnings` reste le miroir complet des diagnostics. Ce que l'UI
+    // compte et ce que la pull request titre « avertissement » n'en est que la
+    // part qui demande un geste ; les notes voyagent à côté, sans rien perdre.
+    assert.equal(resultat.warningCount, resultat.warnings.length);
+    assert.deepEqual(
+      [...resultat.warnings, ...resultat.infos].sort(),
+      [...contrat.meta.warnings].sort(),
+    );
+    assert.deepEqual(
+      resultat.infos,
+      contrat.meta.diagnostics
+        .filter((diagnostic: any) => diagnostic.code === 'UCM_EXPORT_INFO')
+        .map((diagnostic: any) => diagnostic.message),
+    );
   } finally {
     figmaFaux.restaurer();
   }
@@ -373,9 +383,50 @@ test('les notices de documentation ne rendent pas la projection portable partiel
       JSON.stringify(contrat.meta.warnings),
     );
     assert.ok(contrat.meta.diagnostics.length > 0);
+    // Aucun de ces constats ne retire quoi que ce soit à l'arbre exact : ils
+    // sont soit une notice de documentation, soit une note sans geste à faire.
     assert.ok(
-      contrat.meta.diagnostics.every((diagnostic: any) => diagnostic.code === 'UCM_EXPORT_NOTICE'),
+      contrat.meta.diagnostics.every(
+        (diagnostic: any) => diagnostic.code === 'UCM_EXPORT_NOTICE'
+          || diagnostic.code === 'UCM_EXPORT_INFO',
+      ),
     );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('une piste FIXED de grille est une note, pas un avertissement', async () => {
+  // Le réflexe du designer devant « avertissement » est de retourner dans
+  // Figma. Ici la valeur EST dans le contrat et le message le dit lui-même :
+  // la ranger parmi les points à corriger enverrait chercher une correction
+  // qui n'existe pas.
+  const figmaFaux = monterFigma({ avecRegles: false });
+  const standalone = node('COMPONENT', 'TilesGrid', [], {
+    key: 'grid-key',
+    componentPropertyDefinitions: {},
+    layoutMode: 'GRID',
+    gridRowCount: 2,
+    gridColumnCount: 1,
+    gridRowSizes: [{ type: 'FIXED', value: 120 }, { type: 'FLEX', value: 1 }],
+    gridColumnSizes: [{ type: 'FLEX', value: 1 }],
+  });
+  (globalThis as any).figma.currentPage.selection = [standalone];
+  try {
+    const resultat = await handleExportComponent();
+    const contrat = JSON.parse(resultat.content);
+    const enPixels = (message: string) => message.includes('publiée en pixels');
+
+    // Rien ne manque : la piste est publiée telle que Figma la règle.
+    assert.deepEqual(contrat.structure.rowSizes, ['120px', '1fr']);
+    assert.ok(resultat.infos.some(enPixels));
+    assert.equal(resultat.warnings.some(enPixels), false);
+    assert.equal(
+      contrat.meta.diagnostics.find((diagnostic: any) => enPixels(diagnostic.message))?.code,
+      'UCM_EXPORT_INFO',
+    );
+    // Le miroir complet du contrat, lui, la garde.
+    assert.ok(contrat.meta.warnings.some(enPixels));
   } finally {
     figmaFaux.restaurer();
   }

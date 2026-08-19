@@ -265,3 +265,34 @@ test('le corps de la pull request porte les avertissements de l’export', () =>
   assert.match(signale, /Ces avertissements ne bloquent pas la fusion/);
   assert.doesNotMatch(signale, /—|\w+\(s\)/);
 });
+
+test('une note d’export ne se présente pas comme un point à corriger', () => {
+  // Le message dit lui-même qu'aucune modification du design n'est demandée.
+  // Le titrer « l'export n'a pas pu décrire » puis conclure par « corrigez
+  // chaque point » enverrait le designer chercher une correction inexistante.
+  const note = 'Layer « TilesGrid » : la ligne 1 est publiée en pixels, exception propre aux '
+    + "pistes FIXED d'une grille.";
+  const seulesDesNotes = pullRequestBody(
+    'src/components/StressTest/StressTest.contract.json',
+    [],
+    [note],
+  );
+  assert.match(seulesDesNotes, /Aucun avertissement d'export\./);
+  assert.doesNotMatch(seulesDesNotes, /n'a pas pu décrire/);
+  assert.doesNotMatch(seulesDesNotes, /Corrigez chaque point/);
+  assert.match(seulesDesNotes, /## Notes d’export \(1 note\)/);
+  assert.match(seulesDesNotes, /n’appellent aucune correction/);
+  assert.match(seulesDesNotes, /- Layer « TilesGrid »/);
+
+  // Les deux natures coexistent sans se confondre : la consigne « corrigez »
+  // ne porte que sur la liste des avertissements, qui la précède.
+  const lesDeux = pullRequestBody(
+    'src/components/StressTest/StressTest.contract.json',
+    ['Calque « row », espacement : aucune variable Figma n’est reliée.'],
+    [note, note],
+  );
+  assert.match(lesDeux, /\(1 point\)/);
+  assert.match(lesDeux, /## Notes d’export \(2 notes\)/);
+  assert.ok(lesDeux.indexOf('Corrigez chaque point') < lesDeux.indexOf('Notes d’export'));
+});
+

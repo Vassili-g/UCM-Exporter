@@ -67,8 +67,10 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
  * Figma expose `gridRowSizes` / `gridColumnSizes` : un type (`FLEX`, `HUG`,
  * `FIXED`) et sa valeur. Les deux premiers sont des comportements, que CSS
  * écrit `1fr` et `fit-content(100%)`. Exception limitée à cette structure de
- * grille, une piste FIXED est publiée en pixels : ce n'est pas un token et une
- * notice l'explique sans dégrader la portabilité du contrat.
+ * grille, une piste FIXED est publiée en pixels : ce n'est pas un token, et la
+ * valeur figure bien dans le contrat. Rien ne manque et rien n'est à corriger,
+ * donc le message part dans `infos` — le canal des constats sans action — et
+ * non dans `warnings`, qui n'annonce que ce que l'export a dû laisser tomber.
  *
  * La lecture est défensive : un runtime qui n'expose pas ces champs ne publie
  * rien et n'avertit de rien. Une propriété absente n'est pas une valeur.
@@ -76,7 +78,7 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
 export function gridTrackSizes(
   node: SceneNode,
   warnings: string[] = [],
-  notices: string[] = warnings,
+  infos: string[] = warnings,
 ): { columnSizes?: GridTrack[]; rowSizes?: GridTrack[] } {
   if (!isGridAutoLayout(node)) return {};
   const values = asPropertyBag(node);
@@ -110,7 +112,7 @@ export function gridTrackSizes(
     });
     if (fixed.length > 0) {
       const plusieurs = fixed.length > 1;
-      notices.push(
+      infos.push(
         `Layer « ${node.name} » : ${plusieurs ? 'les' : 'la'} ${nom}${plusieurs ? 's' : ''} `
           + `${fixed.join(', ')} ${plusieurs ? 'sont publiées' : 'est publiée'} en pixels, `
           + `exception propre aux pistes FIXED d'une grille. Ces valeurs décrivent sa structure `

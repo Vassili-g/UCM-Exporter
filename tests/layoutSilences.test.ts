@@ -693,24 +693,26 @@ test('un enfant de grille publie la dimension qu’il relie à une variable', as
   assert.deepEqual(warnings.filter((warning) => warning.includes('« Tile »')), []);
 });
 
-test('les pistes fixes d’une grille sont publiées en pixels avec une notice non bloquante', () => {
+test('les pistes fixes d’une grille sont publiées en pixels avec une note sans action', () => {
   const tuile = tuileDeGrille();
   const warnings: string[] = [];
-  const notices: string[] = [];
+  const infos: string[] = [];
 
   const layout = gridTrackSizes(grilleDeTuiles(tuile, {
     gridColumnSizes: [{ type: 'FLEX', value: 1 }, { type: 'FLEX', value: 2 }],
     gridRowSizes: [{ type: 'HUG' }, { type: 'FIXED', value: 120 }, { type: 'FLEX' }],
-  }), warnings, notices);
+  }), warnings, infos);
 
   assert.deepEqual(layout.columnSizes, ['1fr', '2fr']);
   // La piste FIXED est une donnée structurelle non liable de la grille : elle
   // reste en pixels sans devenir un token.
   assert.deepEqual(layout.rowSizes, ['fit-content(100%)', '120px', '1fr']);
   assert.deepEqual(warnings, []);
-  assert.ok(notices.some((notice) => (
-    notice.includes('« TilesGrid »') && notice.includes('piste')
-      && notice.includes('pixels') && notice.includes('aucune modification')
+  // La note part dans `infos`, jamais dans `warnings` : rien ne manque au
+  // contrat, donc la pull request ne doit réclamer aucun geste.
+  assert.ok(infos.some((info) => (
+    info.includes('« TilesGrid »') && info.includes('piste')
+      && info.includes('pixels') && info.includes('aucune modification')
   )));
 });
 

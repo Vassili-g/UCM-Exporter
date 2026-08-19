@@ -12,6 +12,11 @@ Identifier d’abord le fait prouvé, les éléments concernés, la personne qui
 corriger, l’action nécessaire et le caractère bloquant. Ne pas déduire une
 cause de la simple coexistence de plusieurs diagnostics.
 
+Trancher ensuite : le message demande-t-il un geste ? Si non, c’est une NOTE, et
+elle part dans le canal `infos`, jamais dans `warnings`. Un message qui écrit
+« aucune modification n’est demandée » sous un titre qui réclame une correction
+se contredit devant son lecteur.
+
 Pour un rapport agrégé, présenter dans cet ordre : problème, éléments
 concernés, écarts, action, état de la fusion. Pour un avertissement unitaire,
 utiliser la forme définie dans `CONTRIBUTING.md`.
