@@ -1,0 +1,1588 @@
+{
+  "name": "StressTest",
+  "meta": {
+    "contractVersion": "10.0",
+    "exportedAt": "2026-08-19T08:44:42.951Z",
+    "figma": {
+      "fileName": "DS AI LAB",
+      "nodeId": "360:2136",
+      "componentKey": "cc6b3df9c14d3afab17ab63a004f07f8462d228d",
+      "url": "https://www.figma.com/design/adkqrNcmyIs16hBus808R7/DS%20AI%20LAB?node-id=360-2136"
+    },
+    "warnings": [
+      "Layer « TilesGrid » : la ligne 1 est publiée en pixels, exception propre aux pistes FIXED d'une grille. Ces valeurs décrivent sa structure Figma sans devenir des tokens ; aucune modification du design n'est demandée."
+    ],
+    "diagnostics": [
+      {
+        "code": "UCM_EXPORT_INFO",
+        "severity": "warning",
+        "message": "Layer « TilesGrid » : la ligne 1 est publiée en pixels, exception propre aux pistes FIXED d'une grille. Ces valeurs décrivent sa structure Figma sans devenir des tokens ; aucune modification du design n'est demandée."
+      }
+    ],
+    "coverage": {
+      "portable": "complete"
+    }
+  },
+  "props": {
+    "variant": {
+      "type": "enum",
+      "values": [
+        "default"
+      ],
+      "default": "default",
+      "descriptions": {
+        "default": "Variation par défaut du composant"
+      }
+    }
+  },
+  "variantViews": {
+    "v1": {
+      "structure": {
+        "layout": "flex-column",
+        "sizing": {
+          "width": "fit-content",
+          "height": "fit-content"
+        },
+        "justifyContent": "center",
+        "alignItems": "center",
+        "gap": "{components.stresstest.info.base.sizes.gap}",
+        "rowGap": null,
+        "columnGap": null,
+        "padding": {
+          "x": "{components.stresstest.info.base.sizes.padding}",
+          "y": "{components.stresstest.info.base.sizes.padding}"
+        },
+        "radius": "{components.stresstest.info.base.sizes.border-radius}",
+        "children": [
+          {
+            "slot": "label",
+            "alignSelf": "stretch",
+            "figmaLayer": "Head",
+            "layout": "flex-column",
+            "justifyContent": "flex-start",
+            "alignItems": "flex-start",
+            "gap": "{components.stresstest.info.head.sizes.gap}",
+            "children": [
+              {
+                "slot": "label",
+                "figmaLayer": "Titre"
+              },
+              {
+                "slot": "label-2",
+                "alignSelf": "stretch",
+                "figmaLayer": "Description de l’élément sur quelques lignes, idéalement deux au maximum."
+              }
+            ]
+          },
+          {
+            "slot": "alert",
+            "alignSelf": "stretch",
+            "figmaLayer": "Alert",
+            "composes": "Alert"
+          },
+          {
+            "slot": "tilesgrid",
+            "alignSelf": "stretch",
+            "figmaLayer": "TilesGrid",
+            "layout": "grid",
+            "columns": 4,
+            "rows": 5,
+            "columnSizes": [
+              "1fr",
+              "1fr",
+              "1fr",
+              "1fr"
+            ],
+            "rowSizes": [
+              "15px",
+              "fit-content(100%)",
+              "fit-content(100%)",
+              "fit-content(100%)",
+              "fit-content(100%)"
+            ],
+            "columnGap": "{components.stresstest.info.tilesgrid.sizes.gap-col}",
+            "rowGap": "{components.stresstest.info.tilesgrid.sizes.gap-rows}",
+            "children": [
+              {
+                "slot": "tile",
+                "columnStart": 1,
+                "rowStart": 1,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-2",
+                "columnStart": 2,
+                "rowStart": 1,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-3",
+                "columnStart": 3,
+                "rowStart": 1,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-4",
+                "columnStart": 4,
+                "rowStart": 1,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-5",
+                "columnStart": 1,
+                "rowStart": 2,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-6",
+                "columnStart": 2,
+                "rowStart": 2,
+                "columnSpan": 2,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-7",
+                "columnStart": 4,
+                "rowStart": 2,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-8",
+                "columnStart": 1,
+                "rowStart": 3,
+                "columnSpan": 4,
+                "rowSpan": 2,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-9",
+                "columnStart": 1,
+                "rowStart": 5,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-10",
+                "columnStart": 2,
+                "rowStart": 5,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-11",
+                "columnStart": 3,
+                "rowStart": 5,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              },
+              {
+                "slot": "tile-12",
+                "columnStart": 4,
+                "rowStart": 5,
+                "figmaLayer": "Tile",
+                "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+                "optional": true
+              }
+            ]
+          },
+          {
+            "slot": "userinput",
+            "alignSelf": "stretch",
+            "figmaLayer": "UserInput",
+            "radius": "{components.stresstest.info.userinput.sizes.border-radius}",
+            "layout": "flex-row",
+            "justifyContent": "space-between",
+            "alignItems": "center",
+            "padding": {
+              "x": {
+                "left": "{components.stresstest.info.userinput.sizes.padding-left}",
+                "right": "{components.stresstest.info.userinput.sizes.padding-right}"
+              },
+              "y": {
+                "top": "{components.stresstest.info.userinput.sizes.padding-top}",
+                "bottom": "{components.stresstest.info.userinput.sizes.padding-bottom}"
+              }
+            },
+            "children": [
+              {
+                "slot": "button",
+                "figmaLayer": "Button",
+                "composes": "Button"
+              },
+              {
+                "slot": "label",
+                "figmaLayer": "Tag",
+                "radius": "{components.stresstest.info.userinput.sizes.border-radius-tag}",
+                "layout": "flex-row",
+                "justifyContent": "flex-start",
+                "alignItems": "flex-start",
+                "padding": {
+                  "x": "{components.stresstest.info.userinput.sizes.padding-x-tag}",
+                  "y": "{components.stresstest.info.userinput.sizes.padding-y-tag}"
+                },
+                "children": [
+                  {
+                    "slot": "label",
+                    "figmaLayer": "ou"
+                  }
+                ]
+              },
+              {
+                "slot": "button-2",
+                "figmaLayer": "Button",
+                "composes": "Button"
+              }
+            ]
+          },
+          {
+            "slot": "label-2",
+            "alignSelf": "stretch",
+            "figmaLayer": "TextColumns",
+            "layout": "flex-row",
+            "justifyContent": "flex-start",
+            "alignItems": "flex-start",
+            "gap": "{components.stresstest.info.textcolumns.sizes.gap}",
+            "children": [
+              {
+                "slot": "label",
+                "flexGrow": 1,
+                "figmaLayer": "Col",
+                "layout": "flex-column",
+                "justifyContent": "center",
+                "alignItems": "flex-start",
+                "gap": "{components.stresstest.info.textcolumns.sizes.gap-col}",
+                "children": [
+                  {
+                    "slot": "label",
+                    "alignSelf": "stretch",
+                    "figmaLayer": "Point 1"
+                  },
+                  {
+                    "slot": "label-2",
+                    "alignSelf": "stretch",
+                    "figmaLayer": "Ce qui est important de faire pour le point 1 c’est de suivre impérativement les règles du point 1"
+                  },
+                  {
+                    "slot": "label-3",
+                    "alignSelf": "stretch",
+                    "figmaLayer": "Lien vers ressource 1"
+                  }
+                ]
+              },
+              {
+                "slot": "label-2",
+                "flexGrow": 1,
+                "figmaLayer": "Col",
+                "layout": "flex-column",
+                "justifyContent": "center",
+                "alignItems": "flex-start",
+                "gap": "{components.stresstest.info.textcolumns.sizes.gap-col}",
+                "children": [
+                  {
+                    "slot": "label",
+                    "alignSelf": "stretch",
+                    "figmaLayer": "Point 2"
+                  },
+                  {
+                    "slot": "label-2",
+                    "alignSelf": "stretch",
+                    "figmaLayer": "Ce qui est important de faire pour le point 2 c’est de suivre impérativement les règles du point 2"
+                  },
+                  {
+                    "slot": "label-3",
+                    "alignSelf": "stretch",
+                    "figmaLayer": "Lien vers ressource 2"
+                  }
+                ]
+              },
+              {
+                "slot": "label-3",
+                "flexGrow": 1,
+                "figmaLayer": "Col",
+                "layout": "flex-column",
+                "justifyContent": "center",
+                "alignItems": "flex-start",
+                "gap": "{components.stresstest.info.textcolumns.sizes.gap-col}",
+                "children": [
+                  {
+                    "slot": "label",
+                    "alignSelf": "stretch",
+                    "figmaLayer": "Point 3"
+                  },
+                  {
+                    "slot": "label-2",
+                    "alignSelf": "stretch",
+                    "figmaLayer": "Ce qui est important de faire pour le point 3 c’est de suivre impérativement les règles du point 3"
+                  },
+                  {
+                    "slot": "label-3",
+                    "alignSelf": "stretch",
+                    "figmaLayer": "Lien vers ressource 3"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "slot": "divider",
+            "alignSelf": "stretch",
+            "figmaLayer": "Divider",
+            "optional": true,
+            "size": {
+              "height": "{components.stresstest.info.divider.sizes.height}"
+            },
+            "bounds": {
+              "maxWidth": "{components.stresstest.info.divider.sizes.max-width}"
+            }
+          },
+          {
+            "slot": "tilelinkswrap",
+            "alignSelf": "stretch",
+            "figmaLayer": "TileLinksWrap",
+            "layout": "flex-row",
+            "wrap": true,
+            "justifyContent": "flex-start",
+            "alignItems": "center",
+            "gap": "{components.stresstest.info.tilelinkswrap.sizes.gap-x}",
+            "rowGap": "{components.stresstest.info.tilelinkswrap.sizes.gap-y}",
+            "children": [
+              {
+                "slot": "tilelink",
+                "figmaLayer": "TileLink",
+                "composes": "TileLink"
+              },
+              {
+                "slot": "tilelink-2",
+                "figmaLayer": "TileLink",
+                "composes": "TileLink"
+              },
+              {
+                "slot": "tilelink-3",
+                "figmaLayer": "TileLink",
+                "composes": "TileLink"
+              },
+              {
+                "slot": "tilelink-4",
+                "figmaLayer": "TileLink",
+                "composes": "TileLink"
+              },
+              {
+                "slot": "tilelink-5",
+                "figmaLayer": "TileLink",
+                "composes": "TileLink"
+              },
+              {
+                "slot": "tilelink-6",
+                "figmaLayer": "TileLink",
+                "composes": "TileLink"
+              },
+              {
+                "slot": "tilelink-7",
+                "figmaLayer": "TileLink",
+                "composes": "TileLink"
+              }
+            ]
+          },
+          {
+            "slot": "scalewrap",
+            "alignSelf": "stretch",
+            "figmaLayer": "ScaleWrap",
+            "layout": "flex-row",
+            "wrap": true,
+            "justifyContent": "flex-start",
+            "alignItems": "center",
+            "children": [
+              {
+                "slot": "step",
+                "alignSelf": "stretch",
+                "flexGrow": 1,
+                "figmaLayer": "Step",
+                "radius": {
+                  "topLeft": "{components.stresstest.info.scalewrap.sizes.radius-top-left}",
+                  "bottomLeft": "{components.stresstest.info.scalewrap.sizes.radius-bottom-left}"
+                },
+                "optional": true
+              },
+              {
+                "slot": "step-2",
+                "alignSelf": "stretch",
+                "flexGrow": 1,
+                "figmaLayer": "Step",
+                "optional": true
+              },
+              {
+                "slot": "step-3",
+                "alignSelf": "stretch",
+                "flexGrow": 1,
+                "figmaLayer": "Step",
+                "optional": true
+              },
+              {
+                "slot": "step-4",
+                "alignSelf": "stretch",
+                "flexGrow": 1,
+                "figmaLayer": "Step",
+                "optional": true
+              },
+              {
+                "slot": "step-5",
+                "alignSelf": "stretch",
+                "flexGrow": 1,
+                "figmaLayer": "Step",
+                "optional": true
+              },
+              {
+                "slot": "step-6",
+                "alignSelf": "stretch",
+                "flexGrow": 1,
+                "figmaLayer": "Step",
+                "radius": {
+                  "topRight": "{components.stresstest.info.scalewrap.sizes.radius-top-right}",
+                  "bottomRight": "{components.stresstest.info.scalewrap.sizes.radius-bottom-right}"
+                },
+                "optional": true
+              }
+            ],
+            "size": {
+              "height": "{components.stresstest.info.scalewrap.sizes.height}"
+            }
+          }
+        ]
+      },
+      "typography": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "style": "title.medium"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "style": "body.medium"
+        },
+        {
+          "slotPath": [
+            "userinput",
+            "label",
+            "label"
+          ],
+          "style": "label.small"
+        },
+        {
+          "slotPath": [
+            "label-2",
+            "label",
+            "label"
+          ],
+          "style": "body.large"
+        },
+        {
+          "slotPath": [
+            "label-2",
+            "label",
+            "label-2"
+          ],
+          "style": "body.small"
+        },
+        {
+          "slotPath": [
+            "label-2",
+            "label",
+            "label-3"
+          ],
+          "style": "label.small"
+        },
+        {
+          "slotPath": [
+            "label-2",
+            "label-2",
+            "label"
+          ],
+          "style": "body.large"
+        },
+        {
+          "slotPath": [
+            "label-2",
+            "label-2",
+            "label-2"
+          ],
+          "style": "body.small"
+        },
+        {
+          "slotPath": [
+            "label-2",
+            "label-2",
+            "label-3"
+          ],
+          "style": "label.small"
+        },
+        {
+          "slotPath": [
+            "label-2",
+            "label-3",
+            "label"
+          ],
+          "style": "body.large"
+        },
+        {
+          "slotPath": [
+            "label-2",
+            "label-3",
+            "label-2"
+          ],
+          "style": "body.small"
+        },
+        {
+          "slotPath": [
+            "label-2",
+            "label-3",
+            "label-3"
+          ],
+          "style": "label.small"
+        }
+      ],
+      "composes": [
+        {
+          "component": "Alert",
+          "figmaLayer": "Alert"
+        },
+        {
+          "component": "Button",
+          "figmaLayer": "Button"
+        },
+        {
+          "component": "Button",
+          "figmaLayer": "Button"
+        },
+        {
+          "component": "TileLink",
+          "figmaLayer": "TileLink"
+        },
+        {
+          "component": "TileLink",
+          "figmaLayer": "TileLink"
+        },
+        {
+          "component": "TileLink",
+          "figmaLayer": "TileLink"
+        },
+        {
+          "component": "TileLink",
+          "figmaLayer": "TileLink"
+        },
+        {
+          "component": "TileLink",
+          "figmaLayer": "TileLink"
+        },
+        {
+          "component": "TileLink",
+          "figmaLayer": "TileLink"
+        },
+        {
+          "component": "TileLink",
+          "figmaLayer": "TileLink"
+        }
+      ],
+      "icons": {},
+      "paintPlacements": {
+        "fills": {
+          "text": [
+            [
+              "label",
+              "label"
+            ],
+            [
+              "label",
+              "label-2"
+            ]
+          ],
+          "tile": [
+            [
+              "tilesgrid",
+              "tile"
+            ],
+            [
+              "tilesgrid",
+              "tile-2"
+            ],
+            [
+              "tilesgrid",
+              "tile-3"
+            ],
+            [
+              "tilesgrid",
+              "tile-4"
+            ],
+            [
+              "tilesgrid",
+              "tile-5"
+            ],
+            [
+              "tilesgrid",
+              "tile-6"
+            ],
+            [
+              "tilesgrid",
+              "tile-7"
+            ],
+            [
+              "tilesgrid",
+              "tile-8"
+            ],
+            [
+              "tilesgrid",
+              "tile-9"
+            ],
+            [
+              "tilesgrid",
+              "tile-10"
+            ],
+            [
+              "tilesgrid",
+              "tile-11"
+            ],
+            [
+              "tilesgrid",
+              "tile-12"
+            ]
+          ],
+          "userinput.background": [
+            [
+              "userinput"
+            ]
+          ],
+          "background-tag": [
+            [
+              "userinput",
+              "label"
+            ]
+          ],
+          "text-color-tag": [
+            [
+              "userinput",
+              "label",
+              "label"
+            ]
+          ],
+          "title": [
+            [
+              "label-2",
+              "label",
+              "label"
+            ],
+            [
+              "label-2",
+              "label-2",
+              "label"
+            ],
+            [
+              "label-2",
+              "label-3",
+              "label"
+            ]
+          ],
+          "description": [
+            [
+              "label-2",
+              "label",
+              "label-2"
+            ],
+            [
+              "label-2",
+              "label-2",
+              "label-2"
+            ],
+            [
+              "label-2",
+              "label-3",
+              "label-2"
+            ]
+          ],
+          "link": [
+            [
+              "label-2",
+              "label",
+              "label-3"
+            ],
+            [
+              "label-2",
+              "label-2",
+              "label-3"
+            ],
+            [
+              "label-2",
+              "label-3",
+              "label-3"
+            ]
+          ],
+          "divider.background": [
+            [
+              "divider"
+            ]
+          ],
+          "scale-1": [
+            [
+              "scalewrap",
+              "step"
+            ]
+          ],
+          "scale-2": [
+            [
+              "scalewrap",
+              "step-2"
+            ]
+          ],
+          "scale-3": [
+            [
+              "scalewrap",
+              "step-3"
+            ]
+          ],
+          "scale-4": [
+            [
+              "scalewrap",
+              "step-4"
+            ]
+          ],
+          "scale-5": [
+            [
+              "scalewrap",
+              "step-5"
+            ]
+          ],
+          "scale-6": [
+            [
+              "scalewrap",
+              "step-6"
+            ]
+          ]
+        },
+        "strokes": {
+          "base.border": [
+            []
+          ],
+          "userinput.border": [
+            [
+              "userinput"
+            ]
+          ]
+        }
+      }
+    }
+  },
+  "propertyBindingDefinitions": {},
+  "variants": [
+    {
+      "nodeId": "360:2135",
+      "figmaName": "Variant=Default",
+      "values": {
+        "variant": "default"
+      },
+      "tokens": {
+        "text": "{components.stresstest.info.head.colors.text}",
+        "tile": "{components.stresstest.info.tilesgrid.colors.tile}",
+        "userinput.background": "{components.stresstest.info.userinput.colors.background}",
+        "background-tag": "{components.stresstest.info.userinput.colors.background-tag}",
+        "text-color-tag": "{components.stresstest.info.userinput.colors.text-color-tag}",
+        "title": "{components.stresstest.info.textcolumns.colors.title}",
+        "description": "{components.stresstest.info.textcolumns.colors.description}",
+        "link": "{components.stresstest.info.textcolumns.colors.link}",
+        "divider.background": "{components.stresstest.info.divider.colors.background}",
+        "scale-1": "{components.stresstest.info.scalewrap.colors.scale-1}",
+        "scale-2": "{components.stresstest.info.scalewrap.colors.scale-2}",
+        "scale-3": "{components.stresstest.info.scalewrap.colors.scale-3}",
+        "scale-4": "{components.stresstest.info.scalewrap.colors.scale-4}",
+        "scale-5": "{components.stresstest.info.scalewrap.colors.scale-5}",
+        "scale-6": "{components.stresstest.info.scalewrap.colors.scale-6}"
+      },
+      "strokes": {
+        "base.border": {
+          "color": "{components.stresstest.info.base.colors.border}",
+          "width": "{components.stresstest.info.base.sizes.border-width}",
+          "align": "inside"
+        },
+        "userinput.border": {
+          "color": "{components.stresstest.info.userinput.colors.border}",
+          "width": "{components.stresstest.info.userinput.sizes.border-width}",
+          "align": "inside"
+        }
+      },
+      "view": "v1"
+    }
+  ],
+  "structure": {
+    "layout": "flex-column",
+    "sizing": {
+      "width": "fit-content",
+      "height": "fit-content"
+    },
+    "justifyContent": "center",
+    "alignItems": "center",
+    "children": [
+      {
+        "slot": "label",
+        "alignSelf": "stretch",
+        "figmaLayer": "Head",
+        "layout": "flex-column",
+        "justifyContent": "flex-start",
+        "alignItems": "flex-start",
+        "gap": "{components.stresstest.info.head.sizes.gap}",
+        "children": [
+          {
+            "slot": "label",
+            "figmaLayer": "Titre"
+          },
+          {
+            "slot": "label-2",
+            "alignSelf": "stretch",
+            "figmaLayer": "Description de l’élément sur quelques lignes, idéalement deux au maximum."
+          }
+        ]
+      },
+      {
+        "slot": "alert",
+        "alignSelf": "stretch",
+        "figmaLayer": "Alert",
+        "composes": "Alert"
+      },
+      {
+        "slot": "tilesgrid",
+        "alignSelf": "stretch",
+        "figmaLayer": "TilesGrid",
+        "layout": "grid",
+        "columns": 4,
+        "rows": 5,
+        "columnSizes": [
+          "1fr",
+          "1fr",
+          "1fr",
+          "1fr"
+        ],
+        "rowSizes": [
+          "15px",
+          "fit-content(100%)",
+          "fit-content(100%)",
+          "fit-content(100%)",
+          "fit-content(100%)"
+        ],
+        "columnGap": "{components.stresstest.info.tilesgrid.sizes.gap-col}",
+        "rowGap": "{components.stresstest.info.tilesgrid.sizes.gap-rows}",
+        "children": [
+          {
+            "slot": "tile",
+            "columnStart": 1,
+            "rowStart": 1,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-2",
+            "columnStart": 2,
+            "rowStart": 1,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-3",
+            "columnStart": 3,
+            "rowStart": 1,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-4",
+            "columnStart": 4,
+            "rowStart": 1,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-5",
+            "columnStart": 1,
+            "rowStart": 2,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-6",
+            "columnStart": 2,
+            "rowStart": 2,
+            "columnSpan": 2,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-7",
+            "columnStart": 4,
+            "rowStart": 2,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-8",
+            "columnStart": 1,
+            "rowStart": 3,
+            "columnSpan": 4,
+            "rowSpan": 2,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-9",
+            "columnStart": 1,
+            "rowStart": 5,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-10",
+            "columnStart": 2,
+            "rowStart": 5,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-11",
+            "columnStart": 3,
+            "rowStart": 5,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          },
+          {
+            "slot": "tile-12",
+            "columnStart": 4,
+            "rowStart": 5,
+            "figmaLayer": "Tile",
+            "radius": "{components.stresstest.info.tilesgrid.sizes.radius}",
+            "optional": true
+          }
+        ]
+      },
+      {
+        "slot": "userinput",
+        "alignSelf": "stretch",
+        "figmaLayer": "UserInput",
+        "radius": "{components.stresstest.info.userinput.sizes.border-radius}",
+        "layout": "flex-row",
+        "justifyContent": "space-between",
+        "alignItems": "center",
+        "padding": {
+          "x": {
+            "left": "{components.stresstest.info.userinput.sizes.padding-left}",
+            "right": "{components.stresstest.info.userinput.sizes.padding-right}"
+          },
+          "y": {
+            "top": "{components.stresstest.info.userinput.sizes.padding-top}",
+            "bottom": "{components.stresstest.info.userinput.sizes.padding-bottom}"
+          }
+        },
+        "children": [
+          {
+            "slot": "button",
+            "figmaLayer": "Button",
+            "composes": "Button"
+          },
+          {
+            "slot": "label",
+            "figmaLayer": "Tag",
+            "radius": "{components.stresstest.info.userinput.sizes.border-radius-tag}",
+            "layout": "flex-row",
+            "justifyContent": "flex-start",
+            "alignItems": "flex-start",
+            "padding": {
+              "x": "{components.stresstest.info.userinput.sizes.padding-x-tag}",
+              "y": "{components.stresstest.info.userinput.sizes.padding-y-tag}"
+            },
+            "children": [
+              {
+                "slot": "label",
+                "figmaLayer": "ou"
+              }
+            ]
+          },
+          {
+            "slot": "button-2",
+            "figmaLayer": "Button",
+            "composes": "Button"
+          }
+        ]
+      },
+      {
+        "slot": "label-2",
+        "alignSelf": "stretch",
+        "figmaLayer": "TextColumns",
+        "layout": "flex-row",
+        "justifyContent": "flex-start",
+        "alignItems": "flex-start",
+        "gap": "{components.stresstest.info.textcolumns.sizes.gap}",
+        "children": [
+          {
+            "slot": "label",
+            "flexGrow": 1,
+            "figmaLayer": "Col",
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "flex-start",
+            "gap": "{components.stresstest.info.textcolumns.sizes.gap-col}",
+            "children": [
+              {
+                "slot": "label",
+                "alignSelf": "stretch",
+                "figmaLayer": "Point 1"
+              },
+              {
+                "slot": "label-2",
+                "alignSelf": "stretch",
+                "figmaLayer": "Ce qui est important de faire pour le point 1 c’est de suivre impérativement les règles du point 1"
+              },
+              {
+                "slot": "label-3",
+                "alignSelf": "stretch",
+                "figmaLayer": "Lien vers ressource 1"
+              }
+            ]
+          },
+          {
+            "slot": "label-2",
+            "flexGrow": 1,
+            "figmaLayer": "Col",
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "flex-start",
+            "gap": "{components.stresstest.info.textcolumns.sizes.gap-col}",
+            "children": [
+              {
+                "slot": "label",
+                "alignSelf": "stretch",
+                "figmaLayer": "Point 2"
+              },
+              {
+                "slot": "label-2",
+                "alignSelf": "stretch",
+                "figmaLayer": "Ce qui est important de faire pour le point 2 c’est de suivre impérativement les règles du point 2"
+              },
+              {
+                "slot": "label-3",
+                "alignSelf": "stretch",
+                "figmaLayer": "Lien vers ressource 2"
+              }
+            ]
+          },
+          {
+            "slot": "label-3",
+            "flexGrow": 1,
+            "figmaLayer": "Col",
+            "layout": "flex-column",
+            "justifyContent": "center",
+            "alignItems": "flex-start",
+            "gap": "{components.stresstest.info.textcolumns.sizes.gap-col}",
+            "children": [
+              {
+                "slot": "label",
+                "alignSelf": "stretch",
+                "figmaLayer": "Point 3"
+              },
+              {
+                "slot": "label-2",
+                "alignSelf": "stretch",
+                "figmaLayer": "Ce qui est important de faire pour le point 3 c’est de suivre impérativement les règles du point 3"
+              },
+              {
+                "slot": "label-3",
+                "alignSelf": "stretch",
+                "figmaLayer": "Lien vers ressource 3"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "slot": "divider",
+        "alignSelf": "stretch",
+        "figmaLayer": "Divider",
+        "optional": true,
+        "size": {
+          "height": "{components.stresstest.info.divider.sizes.height}"
+        },
+        "bounds": {
+          "maxWidth": "{components.stresstest.info.divider.sizes.max-width}"
+        }
+      },
+      {
+        "slot": "tilelinkswrap",
+        "alignSelf": "stretch",
+        "figmaLayer": "TileLinksWrap",
+        "layout": "flex-row",
+        "wrap": true,
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "gap": "{components.stresstest.info.tilelinkswrap.sizes.gap-x}",
+        "rowGap": "{components.stresstest.info.tilelinkswrap.sizes.gap-y}",
+        "children": [
+          {
+            "slot": "tilelink",
+            "figmaLayer": "TileLink",
+            "composes": "TileLink"
+          },
+          {
+            "slot": "tilelink-2",
+            "figmaLayer": "TileLink",
+            "composes": "TileLink"
+          },
+          {
+            "slot": "tilelink-3",
+            "figmaLayer": "TileLink",
+            "composes": "TileLink"
+          },
+          {
+            "slot": "tilelink-4",
+            "figmaLayer": "TileLink",
+            "composes": "TileLink"
+          },
+          {
+            "slot": "tilelink-5",
+            "figmaLayer": "TileLink",
+            "composes": "TileLink"
+          },
+          {
+            "slot": "tilelink-6",
+            "figmaLayer": "TileLink",
+            "composes": "TileLink"
+          },
+          {
+            "slot": "tilelink-7",
+            "figmaLayer": "TileLink",
+            "composes": "TileLink"
+          }
+        ]
+      },
+      {
+        "slot": "scalewrap",
+        "alignSelf": "stretch",
+        "figmaLayer": "ScaleWrap",
+        "layout": "flex-row",
+        "wrap": true,
+        "justifyContent": "flex-start",
+        "alignItems": "center",
+        "children": [
+          {
+            "slot": "step",
+            "alignSelf": "stretch",
+            "flexGrow": 1,
+            "figmaLayer": "Step",
+            "radius": {
+              "topLeft": "{components.stresstest.info.scalewrap.sizes.radius-top-left}",
+              "bottomLeft": "{components.stresstest.info.scalewrap.sizes.radius-bottom-left}"
+            },
+            "optional": true
+          },
+          {
+            "slot": "step-2",
+            "alignSelf": "stretch",
+            "flexGrow": 1,
+            "figmaLayer": "Step",
+            "optional": true
+          },
+          {
+            "slot": "step-3",
+            "alignSelf": "stretch",
+            "flexGrow": 1,
+            "figmaLayer": "Step",
+            "optional": true
+          },
+          {
+            "slot": "step-4",
+            "alignSelf": "stretch",
+            "flexGrow": 1,
+            "figmaLayer": "Step",
+            "optional": true
+          },
+          {
+            "slot": "step-5",
+            "alignSelf": "stretch",
+            "flexGrow": 1,
+            "figmaLayer": "Step",
+            "optional": true
+          },
+          {
+            "slot": "step-6",
+            "alignSelf": "stretch",
+            "flexGrow": 1,
+            "figmaLayer": "Step",
+            "radius": {
+              "topRight": "{components.stresstest.info.scalewrap.sizes.radius-top-right}",
+              "bottomRight": "{components.stresstest.info.scalewrap.sizes.radius-bottom-right}"
+            },
+            "optional": true
+          }
+        ],
+        "size": {
+          "height": "{components.stresstest.info.scalewrap.sizes.height}"
+        }
+      }
+    ],
+    "gap": "{components.stresstest.info.base.sizes.gap}",
+    "rowGap": null,
+    "columnGap": null,
+    "padding": {
+      "x": "{components.stresstest.info.base.sizes.padding}",
+      "y": "{components.stresstest.info.base.sizes.padding}"
+    },
+    "radius": "{components.stresstest.info.base.sizes.border-radius}",
+    "variantAxes": [
+      "variant"
+    ]
+  },
+  "stateModel": null,
+  "rendering": {
+    "roles": {
+      "background": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "foreground": {
+        "kind": "paint",
+        "cssProperties": [
+          "color",
+          "fill"
+        ]
+      },
+      "icon": {
+        "kind": "paint",
+        "cssProperties": [
+          "color",
+          "fill"
+        ]
+      },
+      "border": {
+        "kind": "stroke",
+        "cssProperties": [
+          "border-color",
+          "border-width"
+        ]
+      },
+      "ring": {
+        "kind": "stroke",
+        "cssProperties": [
+          "outline-color",
+          "outline-width"
+        ],
+        "fallback": "box-shadow"
+      },
+      "background-tag": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "base.border": {
+        "kind": "stroke",
+        "cssProperties": [
+          "border-color",
+          "border-width"
+        ]
+      },
+      "description": {
+        "kind": "paint",
+        "cssProperties": [
+          "color",
+          "fill"
+        ]
+      },
+      "divider.background": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "link": {
+        "kind": "paint",
+        "cssProperties": [
+          "color",
+          "fill"
+        ]
+      },
+      "scale-1": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "scale-2": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "scale-3": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "scale-4": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "scale-5": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "scale-6": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "text": {
+        "kind": "paint",
+        "cssProperties": [
+          "color",
+          "fill"
+        ]
+      },
+      "text-color-tag": {
+        "kind": "paint",
+        "cssProperties": [
+          "color",
+          "fill"
+        ]
+      },
+      "tile": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "title": {
+        "kind": "paint",
+        "cssProperties": [
+          "color",
+          "fill"
+        ]
+      },
+      "userinput.background": {
+        "kind": "paint",
+        "cssProperties": [
+          "background-color"
+        ]
+      },
+      "userinput.border": {
+        "kind": "stroke",
+        "cssProperties": [
+          "border-color",
+          "border-width"
+        ]
+      }
+    }
+  },
+  "icons": {},
+  "textStyles": {
+    "title.medium": {
+      "figmaName": "Title/Medium",
+      "tokens": {
+        "fontFamily": "{primitives.fontfamily.base}",
+        "fontSize": "{typography.title.medium.fontsize}",
+        "fontWeight": "{typography.title.medium.fontweight}",
+        "lineHeight": "{typography.title.medium.lineheight}",
+        "letterSpacing": "{typography.title.medium.letterspacing}"
+      }
+    },
+    "body.medium": {
+      "figmaName": "Body/Medium",
+      "tokens": {
+        "fontFamily": "{primitives.fontfamily.base}",
+        "fontSize": "{typography.body.medium.fontsize}",
+        "fontWeight": "{typography.body.medium.fontweight}",
+        "lineHeight": "{typography.body.medium.lineheight}",
+        "letterSpacing": "{typography.body.medium.letterspacing}"
+      }
+    },
+    "label.small": {
+      "figmaName": "Label/Small",
+      "tokens": {
+        "fontFamily": "{primitives.fontfamily.base}",
+        "fontSize": "{typography.label.small.fontsize}",
+        "fontWeight": "{typography.label.small.fontweight}",
+        "lineHeight": "{typography.label.small.lineheight}",
+        "letterSpacing": "{typography.label.small.letterspacing}"
+      }
+    },
+    "body.large": {
+      "figmaName": "Body/Large",
+      "tokens": {
+        "fontFamily": "{primitives.fontfamily.base}",
+        "fontSize": "{typography.body.large.fontsize}",
+        "fontWeight": "{typography.body.large.fontweight}",
+        "lineHeight": "{typography.body.large.lineheight}",
+        "letterSpacing": "{typography.body.large.letterspacing}"
+      }
+    },
+    "body.small": {
+      "figmaName": "Body/Small",
+      "tokens": {
+        "fontFamily": "{primitives.fontfamily.base}",
+        "fontSize": "{typography.body.small.fontsize}",
+        "fontWeight": "{typography.body.small.fontweight}",
+        "lineHeight": "{typography.body.small.lineheight}",
+        "letterSpacing": "{typography.body.small.letterspacing}"
+      }
+    }
+  },
+  "composes": [
+    {
+      "component": "Alert",
+      "figmaLayer": "Alert"
+    },
+    {
+      "component": "Button",
+      "figmaLayer": "Button"
+    },
+    {
+      "component": "Button",
+      "figmaLayer": "Button"
+    },
+    {
+      "component": "TileLink",
+      "figmaLayer": "TileLink"
+    },
+    {
+      "component": "TileLink",
+      "figmaLayer": "TileLink"
+    },
+    {
+      "component": "TileLink",
+      "figmaLayer": "TileLink"
+    },
+    {
+      "component": "TileLink",
+      "figmaLayer": "TileLink"
+    },
+    {
+      "component": "TileLink",
+      "figmaLayer": "TileLink"
+    },
+    {
+      "component": "TileLink",
+      "figmaLayer": "TileLink"
+    },
+    {
+      "component": "TileLink",
+      "figmaLayer": "TileLink"
+    }
+  ],
+  "tokensUsed": [
+    "{components.stresstest.info.base.colors.border}",
+    "{components.stresstest.info.base.sizes.border-radius}",
+    "{components.stresstest.info.base.sizes.border-width}",
+    "{components.stresstest.info.base.sizes.gap}",
+    "{components.stresstest.info.base.sizes.padding}",
+    "{components.stresstest.info.divider.colors.background}",
+    "{components.stresstest.info.divider.sizes.height}",
+    "{components.stresstest.info.divider.sizes.max-width}",
+    "{components.stresstest.info.head.colors.text}",
+    "{components.stresstest.info.head.sizes.gap}",
+    "{components.stresstest.info.scalewrap.colors.scale-1}",
+    "{components.stresstest.info.scalewrap.colors.scale-2}",
+    "{components.stresstest.info.scalewrap.colors.scale-3}",
+    "{components.stresstest.info.scalewrap.colors.scale-4}",
+    "{components.stresstest.info.scalewrap.colors.scale-5}",
+    "{components.stresstest.info.scalewrap.colors.scale-6}",
+    "{components.stresstest.info.scalewrap.sizes.height}",
+    "{components.stresstest.info.scalewrap.sizes.radius-bottom-left}",
+    "{components.stresstest.info.scalewrap.sizes.radius-bottom-right}",
+    "{components.stresstest.info.scalewrap.sizes.radius-top-left}",
+    "{components.stresstest.info.scalewrap.sizes.radius-top-right}",
+    "{components.stresstest.info.textcolumns.colors.description}",
+    "{components.stresstest.info.textcolumns.colors.link}",
+    "{components.stresstest.info.textcolumns.colors.title}",
+    "{components.stresstest.info.textcolumns.sizes.gap-col}",
+    "{components.stresstest.info.textcolumns.sizes.gap}",
+    "{components.stresstest.info.tilelinkswrap.sizes.gap-x}",
+    "{components.stresstest.info.tilelinkswrap.sizes.gap-y}",
+    "{components.stresstest.info.tilesgrid.colors.tile}",
+    "{components.stresstest.info.tilesgrid.sizes.gap-col}",
+    "{components.stresstest.info.tilesgrid.sizes.gap-rows}",
+    "{components.stresstest.info.tilesgrid.sizes.radius}",
+    "{components.stresstest.info.userinput.colors.background-tag}",
+    "{components.stresstest.info.userinput.colors.background}",
+    "{components.stresstest.info.userinput.colors.border}",
+    "{components.stresstest.info.userinput.colors.text-color-tag}",
+    "{components.stresstest.info.userinput.sizes.border-radius-tag}",
+    "{components.stresstest.info.userinput.sizes.border-radius}",
+    "{components.stresstest.info.userinput.sizes.border-width}",
+    "{components.stresstest.info.userinput.sizes.padding-bottom}",
+    "{components.stresstest.info.userinput.sizes.padding-left}",
+    "{components.stresstest.info.userinput.sizes.padding-right}",
+    "{components.stresstest.info.userinput.sizes.padding-top}",
+    "{components.stresstest.info.userinput.sizes.padding-x-tag}",
+    "{components.stresstest.info.userinput.sizes.padding-y-tag}",
+    "{primitives.fontfamily.base}",
+    "{typography.body.large.fontsize}",
+    "{typography.body.large.fontweight}",
+    "{typography.body.large.letterspacing}",
+    "{typography.body.large.lineheight}",
+    "{typography.body.medium.fontsize}",
+    "{typography.body.medium.fontweight}",
+    "{typography.body.medium.letterspacing}",
+    "{typography.body.medium.lineheight}",
+    "{typography.body.small.fontsize}",
+    "{typography.body.small.fontweight}",
+    "{typography.body.small.letterspacing}",
+    "{typography.body.small.lineheight}",
+    "{typography.label.small.fontsize}",
+    "{typography.label.small.fontweight}",
+    "{typography.label.small.letterspacing}",
+    "{typography.label.small.lineheight}",
+    "{typography.title.medium.fontsize}",
+    "{typography.title.medium.fontweight}",
+    "{typography.title.medium.letterspacing}",
+    "{typography.title.medium.lineheight}"
+  ],
+  "intent": {
+    "usage": "Composant au layout complexe utilisé uniquement pour stress-tester l’exporter de contrats.",
+    "do": [],
+    "dont": [],
+    "pairs": []
+  }
+}
