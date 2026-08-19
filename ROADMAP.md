@@ -31,23 +31,23 @@ sont jamais corrigés à la main.
 
 | Domaine | État |
 |---|---|
-| Contrat 10.0 | L’Exporter situe les peintures dans les vues exactes, conserve les pistes FIXED de grille en pixels et publie les côtés tokenisés clairsemés jusque sur les feuilles |
-| Consommation 10.0 | Le Playground accepte les versions 4.2 à 10.0 et valide les chemins de peintures, les pistes CSS et les groupes par côté de la v10 |
-| Validation Figma 9.0 | Alert, Button et StressTest ont été réexportés et fusionnés dans le Playground ; le corpus `tests/test-exports/` de l’Exporter reste en 4.9 et doit encore être renouvelé par un export réel |
+| Contrat 10.1 | L’Exporter situe les peintures dans les vues exactes, signale toute peinture posée à la main, conserve les pistes FIXED de grille en pixels et publie dans `structuralSize` la mesure d’une cellule dont la piste hug |
+| Consommation 10.1 | Le Playground accepte les versions 4.2 à 10.1, valide `structuralSize` comme une mesure en pixels distincte de `size`, et la pose telle quelle sur les tuiles de StressTest ; un test de rendu l’exerce |
+| Validation Figma 10.1 | Les quatre composants ont été réexportés depuis Figma en 10.1, fusionnés dans le Playground et déposés dans le corpus `tests/test-exports/` de l’Exporter. L’export de Button ne porte plus aucun avertissement et ses 90 variants partagent enfin la même vue ; celui de StressTest publie la mesure de ses cellules sous une piste qui hug |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
 | Structure portable | Flex, wrap, grille, position absolue, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
 | Contrôles du Playground | Forme et version des contrats, graphe, parité statique, références de tokens, tests de rendu co-localisés, génération des types et du CSS |
 | Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
-| Test froid | Une reconstruction 9.0 d’Alert, Button et StressTest est présente dans le Playground. Le build est vert, mais quatre assertions des tests co-localisés d’Alert et Button lisent encore les index retirés en 9.0 ; `npm run check` reste rouge et le test froid n’est pas validé |
+| Test froid | Les quatre composants du Playground ont été reconstruits depuis les seuls contrats et le skill, et `npm run check` est vert. Le test a trouvé deux pertes réelles — une icône dont le fill avait perdu sa variable, et une grille dont les pistes qui hug retombaient à zéro — toutes deux fermées : la première par un avertissement d’export et une correction dans Figma, la seconde par `structuralSize` |
 | Multi-composants | Button, Alert, TileLink et StressTest ont une implémentation ; StressTest exerce grille, wrap, champs asymétriques et composition multiple, et TileLink publie désormais son sizing tokenisé |
 | Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
 | Interopérabilité | Pas encore de JSON Schema public ni de version propre pour `tokens.json` |
 | Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
 
 Le projet est un **prototype avancé**. Le pipeline Figma → pull request → CI →
-`main` est éprouvé avec des contrats 9.0 réels ; la forme 10.0 est couverte par
-les tests purs mais attend encore son réexport Figma. Cette preuve porte sur
+`main` est éprouvé avec des contrats 10.1 réels, que le corpus de référence de
+l’Exporter verrouille et qu’un test de rendu exerce. Cette preuve porte sur
 l’extraction, la validation et la consommation statique ; elle ne prouve ni la
 fraîcheur d’un export, ni une ressemblance visuelle complète avec Figma.
 
@@ -79,20 +79,20 @@ Les références de tokens littérales sont comparables au contrat ; un chemin
 assemblé à l’exécution est refusé. En revanche, une donnée visuelle recopiée
 dans une règle de code peut échapper à l’analyse statique. Des tests de rendu
 pilotés par le contrat existent pour Alert et Button, mais ils doivent suivre la
-résolution v9 et aucun vérificateur générique n’exerce encore tous les composants
+résolution v10 et aucun vérificateur générique n’exerce encore tous les composants
 et toutes leurs vues exactes. La proposition correspondante est détaillée dans
 [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) ; elle n’est pas engagée.
 
 ## Prochaines validations
 
-### 1. Fermer la validation 10.0
+### 1. Fermer la validation 10.1
 
-1. Réexporter Alert et Button depuis Figma vers `tests/test-exports/` afin que le
-   corpus de l’Exporter corresponde au schéma courant.
-2. Réexporter StressTest et vérifier visuellement TilesGrid, Divider, TileLink,
-   ScaleWrap et les peintures situées, sans modifier ses TSX.
-3. Adapter les quatre tests co-localisés historiques d’Alert et Button à
-   `variants` / `variantViews`, puis obtenir `npm run check` vert.
+1. Vérifier visuellement TilesGrid, Divider, TileLink, ScaleWrap et les
+   peintures situées de StressTest dans le navigateur, sans modifier ses TSX :
+   la conformité statique est verte, la ressemblance ne l’est pas encore.
+2. Étendre les tests de rendu aux états que `renderToStaticMarkup` n’atteint
+   pas. La perte de Button vivait sur `hover`, et aucun test co-localisé ne
+   franchit aujourd’hui l’état par défaut.
 
 ### 2. Éprouver d’autres familles de composants
 

@@ -26,7 +26,7 @@ src/
   contract/
     exportComponent.ts       orchestration et métadonnées
     componentTree.ts         axes, matrice et wrapper de layout
-    compactVariants.ts       catalogue v9 des vues et liaisons exactes
+    compactVariants.ts       catalogue v10 des vues et liaisons exactes
     layoutNodes.ts           élection du node de layout, une fois par variant
     exportableNodes.ts       parcours de l'arbre, hors dépendances composées
     parsers.ts               propriétés Figma → API publique
@@ -56,7 +56,7 @@ tests/
 
 ## Invariants
 
-- La v9 publie uniquement le contrat portable : les données Figma utilisées
+- La v10 publie uniquement le contrat portable : les données Figma utilisées
   pendant l'extraction ne sont pas embarquées dans l'artefact. Toute limite de
   traduction produit un diagnostic et rend `meta.coverage.portable` partiel.
 - `variants` décrit chaque combinaison réellement présente depuis sa vraie
@@ -206,6 +206,16 @@ tests/
   EST un rôle partagé reste une déclaration du designer et l’emporte : c’est le
   seul moyen de distinguer un `ring` d’un `border`, et cette déclaration se lit
   sur le dernier segment du TOKEN, jamais sur la clé publiée.
+- Le contrat ne publie que les couleurs LIÉES. Une peinture posée à la main sur
+  un calque que l'export parcourt avertit donc au lieu de disparaître, et rend
+  `meta.coverage.portable` partiel : sans ce mot, la vue exacte cessait de citer
+  le calque dans `paintPlacements`, le rendu le laissait sans encre, et rien ne
+  ramenait le designer dessus — un variant sur quatre-vingt-dix suffit à le
+  rendre invisible en relecture. Les réserves sont ce qui distingue ce
+  diagnostic d'un rapport qu'on cesse de lire : un paint masqué ou d'opacité
+  nulle ne peint rien, un stroke d'épaisseur zéro non plus, et une peinture non
+  SOLID n'est liable à aucune variable de couleur — le geste demandé
+  n'existerait pas.
 - Chaque `variantViews.*.paintPlacements` situe les fills et strokes par les
   chemins exacts de l'arbre publié ; `[]` cible la racine. Les chemins sont
   collectés pendant l'unique extraction de `structure.children`. Le chemin d'une
@@ -244,6 +254,15 @@ tests/
   piste FIXED publie sa valeur structurelle en pixels avec une notice explicite,
   sans devenir un token ni dégrader la couverture ; un runtime qui n’expose pas
   les pistes ne publie rien et ne dit rien.
+- Cette exception s’étend de la piste à la CELLULE, et là seulement : sous une
+  piste qui hug, la cellule ne décide de rien — c’est l’enfant qui la mesure —
+  et la mesure ne vit que sur lui, `GridTrackSize.value` n’existant que sur
+  `FIXED` et `FLEX`. `structuralSize` la publie donc en pixels, sous la même
+  notice sans geste, pendant que `size` reste strictement tokenisé : une
+  variable liée l’emporte toujours et se publie là-bas. Sans elle, une piste qui
+  hug retombait à zéro et le contrat décrivait une grille que personne ne
+  pouvait rendre. La borne compte autant que la règle : une seule piste non
+  `HUG` sous l’étendue de l’enfant rend l’axe indécis, et rien n’est publié.
 - Une donnée facultative incomplète avertit. Les préconditions explicitement
   définies dans la spécification bloquent.
 - On n’avertit que sur ce qu’on publie. Une valeur que le contrat va jeter —

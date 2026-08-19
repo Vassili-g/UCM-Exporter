@@ -11,9 +11,10 @@ import {
   containerSizing,
   fixedDimensions,
   gridCellSizedAxes,
+  gridHugAxes,
   sizeBoundFields,
 } from './flexLayout';
-import type { ContainerSizing, SizeBounds, SlotSize } from './types';
+import type { ContainerSizing, GridStructuralSize, SizeBounds, SlotSize } from './types';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
 export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;
@@ -693,6 +694,63 @@ export async function resolveSlotSize(
 
   if (!width && !height) return null;
   if (width && width === height) return width;
+  return {
+    ...(width ? { width } : {}),
+    ...(height ? { height } : {}),
+  };
+}
+
+/**
+ * Mesure qu'un enfant donne à une piste de grille qui hug.
+ *
+ * `size` reste strictement tokenisé : une variable liée y publie son token, et
+ * cette fonction ne dit rien. Elle ne parle que là où le contrat n'a RIEN à
+ * publier et où la piste retomberait à zéro — la cellule d'une piste `HUG`,
+ * qu'aucune valeur ne décrit puisque `GridTrackSize.value` n'existe pas sur ce
+ * type. La grille est déjà l'endroit où le contrat accepte un pixel structurel
+ * pour une piste `FIXED` ; c'est la même exception, un cran plus bas.
+ *
+ * Aucun geste n'est demandé au designer : ces enfants sont en `Fill` dans le
+ * panneau, et Figma n'expose pas ce remplissage sous une piste qui hug. Le
+ * message part donc dans `infos`, et il nomme la GRILLE plutôt que chaque
+ * enfant — douze tuiles produiraient douze fois le même constat, que le
+ * dédoublonnage de l'export ramène à un seul.
+ */
+export function gridStructuralSize(
+  node: SceneNode,
+  parent: SceneNode | undefined,
+  infos: string[],
+): GridStructuralSize | null {
+  if (!parent) return null;
+  const hug = gridHugAxes(parent, node);
+  if (!hug.width && !hug.height) return null;
+
+  const fixed = fixedDimensions(node);
+  const values = node as unknown as Record<string, unknown>;
+  const mesure = (field: 'width' | 'height'): `${number}px` | null => {
+    if (!hug[field] || !fixed[field]) return null;
+    // Une variable liée décrit le design system et l'emporte : `resolveSlotSize`
+    // la publie dans `size`, et publier ici la même dimension en pixels ferait
+    // porter deux vérités au même axe.
+    if (firstVariableAlias(getBinding(node, field))) return null;
+    const value = values[field];
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) return null;
+    // Deux décimales : la mesure vient d'un calcul de Figma, et publier ses
+    // dix-sept chiffres ferait bouger l'artefact d'un export à l'autre.
+    return `${Math.round(value * 100) / 100}px`;
+  };
+
+  const width = mesure('width');
+  const height = mesure('height');
+  if (!width && !height) return null;
+
+  const axes = [width ? 'colonnes' : null, height ? 'lignes' : null].filter(Boolean).join(' et ');
+  infos.push(
+    `Layer « ${parent.name} » : les enfants de ses ${axes} qui hug publient leur taille en `
+      + `pixels, exception propre aux grilles. Figma n'expose pas leur remplissage sous une `
+      + `piste qui hug et n'en rend que la taille résolue. Ces valeurs décrivent sa structure `
+      + `Figma sans devenir des tokens ; aucune modification du design n'est demandée.`,
+  );
   return {
     ...(width ? { width } : {}),
     ...(height ? { height } : {}),
