@@ -171,6 +171,16 @@ pendant l'unique construction de `structure.children`, jamais recalculés depuis
 un nom de calque. Deux couleurs **empilées sur un même calque** sont publiées
 toutes les deux et reçoivent le même chemin, mais leur ordre reste
 irreprésentable : un warning le signale.
+
+Le chemin publié est celui du calque **publié** qui porte la peinture. Une
+couleur posée **sous une feuille** appartient à cette feuille : le contrat ne
+descend pas dans les tracés d'une icône importée, alors que le fill d'une icône
+vit précisément sur son tracé. Situer cette couleur sur le slot de l'icône est
+la seule lecture qui laisse le consommateur la peindre, et c'est de toute façon
+là que le rendu l'applique — `color` et `fill` cascadent du slot vers le dessin.
+Deux tracés d'une même icône ne produisent donc **qu'une** cible. Aucun
+avertissement n'accompagne ce cas : le moteur refuse par principe de publier ces
+tracés, et aucun geste du designer ne l'en ferait changer.
 Chaque feuille décrit indépendamment l'état visuel complet du variant Figma :
 si un rôle est absent des `tokens` ou `strokes` d'un variant, cela signifie
 toujours **« ne pas rendre ce rôle dans cet

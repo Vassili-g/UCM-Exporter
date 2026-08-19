@@ -141,6 +141,144 @@ test('chaque couleur et contour est situé sur son chemin exact dans la vue', as
   });
 });
 
+test('la couleur des tracés d’une icône est située sur le slot de l’icône', async () => {
+  // Le contrat ne publie pas les tracés d'une icône importée — c'est la règle,
+  // et aucun geste du designer ne la changera. Leur fill entre pourtant dans
+  // `variants[].tokens` : le situer sur le calque publié qui les porte est la
+  // seule lecture qui laisse le consommateur peindre l'icône. Deux tracés d'une
+  // même icône ne donnent qu'une cible, et rien n'est demandé au designer.
+  const traces = ['Vector', 'Vector 2'].map((name, index) => ({
+    type: 'VECTOR',
+    id: `vector-${index}`,
+    name,
+    boundVariables: { fills: [alias('fg')] },
+    children: [],
+    findAll: findAllOn([]),
+  }));
+  const icone = {
+    type: 'INSTANCE',
+    id: 'icon-id',
+    name: 'arrow-right-long',
+    boundVariables: {},
+    children: traces,
+    findAll: findAllOn(traces),
+  };
+  const libelle = {
+    type: 'TEXT',
+    id: 'label-id',
+    name: 'Suivant',
+    boundVariables: { fills: [alias('fg')] },
+  };
+  const reference = {
+    type: 'COMPONENT',
+    id: 'variant-id',
+    name: 'Color=Primary',
+    layoutMode: 'HORIZONTAL',
+    itemSpacing: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    cornerRadius: 0,
+    boundVariables: {},
+    children: [libelle, icone],
+    findAll: findAllOn([libelle, icone, ...traces]),
+  } as unknown as ComponentNode;
+
+  const { variants, warnings } = await extractStructure(
+    { axes: ['color'], variants: [{ values: { color: 'primary' }, component: reference }] },
+    [],
+    null,
+    reference,
+    resolverFor({ fg: 'components.button.colors.primary.foreground' }),
+    new Map(),
+    ['arrow-right-long'],
+  );
+
+  // Le texte est publié, l'icône aussi ; ses deux tracés partagent son chemin.
+  assert.deepEqual(variants[0]?.paintPlacements, {
+    fills: { foreground: [['label'], ['icon']] },
+    strokes: {},
+  });
+  assert.equal(
+    warnings.some((warning) => warning.includes('arbre publié')),
+    false,
+    'aucun avertissement ne réclame de rendre publiable un tracé d’icône',
+  );
+});
+
+test('un calque écarté de la projection garde sa place dans la vue exacte', async () => {
+  // La vue exacte part de la VRAIE racine du variant, pas du node de layout élu :
+  // un calque posé à côté de ce node y est publié, et sa peinture y est située.
+  // C'est la projection `structure` qui l'écarte, et elle a déjà son message et
+  // son geste. Un second message sur la même peinture réclamerait autre chose au
+  // même designer pour le même calque.
+  const errant = {
+    type: 'RECTANGLE',
+    id: 'stray-id',
+    name: 'Repère',
+    boundVariables: { fills: [alias('stray')] },
+    children: [],
+    findAll: findAllOn([]),
+  };
+  const libelle = {
+    type: 'TEXT',
+    id: 'label-id',
+    name: 'Suivant',
+    boundVariables: {},
+  };
+  const cadre = {
+    type: 'FRAME',
+    id: 'frame-id',
+    name: 'Wrapper',
+    layoutMode: 'HORIZONTAL',
+    itemSpacing: 0,
+    paddingLeft: 0,
+    paddingRight: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    cornerRadius: 0,
+    boundVariables: { itemSpacing: alias('gap'), fills: [alias('bg')] },
+    children: [libelle],
+    findAll: findAllOn([libelle]),
+  };
+  const reference = {
+    type: 'COMPONENT',
+    id: 'variant-id',
+    name: 'Color=Primary',
+    boundVariables: {},
+    children: [cadre, errant],
+    findAll: findAllOn([cadre, libelle, errant]),
+  } as unknown as ComponentNode;
+  // La remontée d'ancêtres est ce qui repère un calque posé à côté du node élu.
+  (cadre as { parent?: unknown }).parent = reference;
+
+  const { structure, variants, warnings, notices } = await extractStructure(
+    { axes: ['color'], variants: [{ values: { color: 'primary' }, component: reference }] },
+    [],
+    null,
+    reference,
+    resolverFor({
+      gap: 'components.button.sizes.gap',
+      bg: 'components.button.colors.primary.background',
+      stray: 'components.button.colors.primary.stray',
+    }),
+  );
+
+  // La projection l'écarte : elle ne décrit que les enfants du node élu.
+  assert.deepEqual(structure.children.map((child) => child.slot), ['label']);
+  // La vue exacte, elle, le situe — c'est elle que le consommateur lit.
+  assert.deepEqual(variants[0]?.paintPlacements.fills.stray, [['repère']]);
+  // Son déplacement est demandé une seule fois, par la note dédiée à la
+  // projection ; la peinture, elle, ne réclame plus rien.
+  assert.ok(notices.some((note) => note.includes('Repère')
+    && note.includes('Déplacez-le dans cet auto layout frame')));
+  assert.equal(
+    [...warnings, ...notices].some((message) => message.includes('arbre publié')),
+    false,
+  );
+});
+
 test('extractStructure déduit le rôle d’une clé qui n’en nomme aucun, sans rien signaler', async () => {
   // Un token nommé « …/bg » ne dit pas ce qu'il peint, mais le calque qui le
   // porte le dit : un fill sur un cadre est une surface. Demander au designer

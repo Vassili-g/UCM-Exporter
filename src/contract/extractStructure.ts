@@ -20,6 +20,7 @@ import type { PlacedDependencies } from './extractLayout';
 import type { PublishedNodePaths } from './extractLayout';
 import { extractSizeDimensions, findSizeRepresentatives } from './extractSizes';
 import { extractVariantTokens } from './extractVariantTokens';
+import type { VariantPaintNodeIds } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
 import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNodes';
 import { variantRoleWarnings } from './semantics';
@@ -32,24 +33,38 @@ import type {
   VariantPaintPlacements,
 } from './types';
 
+/**
+ * Situe chaque clé de couleur par les chemins de l'arbre publié.
+ *
+ * Le chemin d'une peinture est celui du calque PUBLIÉ qui la porte : une couleur
+ * posée sous une feuille appartient à cette feuille. C'est ce que le rendu
+ * applique de toute façon, `color` et `fill` cascadant du slot vers le dessin.
+ *
+ * Aucun avertissement n'est produit ici, et il n'y a rien à y remettre : la vue
+ * exacte part de la VRAIE racine du variant, la même que celle où `getSlotTokens`
+ * relève les couleurs. Tout calque peint reçoit donc un chemin. Réclamer au
+ * designer de « rendre publiable » un tracé d'icône lui demandait un geste que le
+ * moteur refuse par principe d'honorer — le genre d'avertissement qu'on cesse de
+ * lire, et qui laissait `paintPlacements` sans aucune cible pour cette clé.
+ */
 function paintPlacementsFromPaths(
-  nodeIds: { fills: Record<string, string[]>; strokes: Record<string, string[]> } | undefined,
+  nodeIds: VariantPaintNodeIds | undefined,
   paths: PublishedNodePaths,
-  variantName: string,
-  warnings: string[],
 ): VariantPaintPlacements {
   const field = (entries: Record<string, string[]> = {}): Record<string, string[][]> => (
     Object.fromEntries(Object.entries(entries).map(([key, ids]) => {
-      const placements = ids
-        .map((id) => paths.get(id))
-        .filter((path): path is string[] => Boolean(path));
-      const missing = ids.length - placements.length;
-      if (missing > 0) {
-        warnings.push(
-          `Variant « ${variantName} » : ${missing} layer(s) qui portent la clé « ${key} » `
-            + `n'ont aucun chemin dans l'arbre publié. Cette peinture ne pourra pas être `
-            + `située ; rendez ces layers publiables, puis réexportez.`,
-        );
+      // Deux tracés d'une même icône partagent le calque qui les publie : leur
+      // chemin est le même, et le publier deux fois ferait compter au
+      // consommateur deux cibles là où il n'en peindra jamais qu'une. Les
+      // segments d'un slot ne contiennent pas de « / » (`normalizeName`), la
+      // jointure identifie donc un chemin sans ambiguïté.
+      const seen = new Set<string>();
+      const placements: string[][] = [];
+      for (const id of ids) {
+        const path = paths.get(id);
+        if (!path || seen.has(path.join('/'))) continue;
+        seen.add(path.join('/'));
+        placements.push(path);
       }
       return [key, placements];
     }))
@@ -356,8 +371,6 @@ export async function extractStructure(
       paintPlacements: paintPlacementsFromPaths(
         paintNodeIdsByComponent.get(entry.component),
         paths,
-        entry.component.name,
-        warnings,
       ),
     }
   ));
