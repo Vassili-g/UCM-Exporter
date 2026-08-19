@@ -146,13 +146,16 @@ async function runExport(
     for (const warning of result.warnings ?? []) {
       figma.ui.postMessage({ type: 'log', text: `⚠︎ ${warning}` });
     }
-    const warningText = result.warningCount > 0 ? ` · ${result.warningCount} avertissement(s)` : '';
+    const warningText = result.warningCount > 0
+      ? ` ${result.warningCount} avertissement${result.warningCount === 1 ? '' : 's'}.`
+      : '';
+    const successText = `${successLabel}.${warningText}`;
     const validation = await loadGithubConfig();
     if (!validation.valid || !validation.config) {
       postDownload(result.filename, result.content);
       figma.ui.postMessage({ type: 'log', text: 'Configuration GitHub absente ou invalide : téléchargement local.' });
-      postStatus('success', `${successLabel}${warningText} · téléchargé localement.`);
-      figma.notify(`${successLabel}${warningText}.`);
+      postStatus('success', `${successText} Téléchargement local terminé.`);
+      figma.notify(successText);
       return;
     }
 
@@ -180,15 +183,15 @@ async function runExport(
       // qui vient de l'ouvrir : on l'amène dessus sans lui demander un clic.
       openExternal(publication.pullRequestUrl);
       postConnection('connected');
-      postStatus('success', `${successLabel}${warningText} · PR créée.`);
-      figma.notify(`${successLabel}${warningText} · PR créée.`);
+      postStatus('success', `${successText} Pull request créée.`);
+      figma.notify(`${successText} Pull request créée.`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur GitHub inconnue.';
       // Un échec de publication (conflit de branche, contenu invalide, etc.)
       // ne remet pas en cause le dernier test de connexion réussi.
       figma.ui.postMessage({ type: 'log', text: `Échec GitHub : ${message}` });
       postDownload(result.filename, result.content);
-      postStatus('error', `Échec GitHub · repli sur téléchargement local : ${message}`);
+      postStatus('error', `Échec GitHub. Le fichier a été téléchargé localement : ${message}`);
       figma.notify('Échec GitHub : fichier téléchargé localement.', { error: true });
     }
   } catch (error) {

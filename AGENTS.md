@@ -12,6 +12,9 @@ Lire uniquement ce qui concerne la tâche :
 3. [CONTRIBUTING.md](./CONTRIBUTING.md) pour les règles de code et de test ;
 4. `src/contract/types.ts` et les tests voisins pour la forme concrète.
 
+Pour créer ou modifier un message destiné au designer, charger aussi la skill
+[`rediger-diagnostics-ucm`](./.agents/skills/rediger-diagnostics-ucm/SKILL.md).
+
 La maturité et les priorités vivent dans [ROADMAP.md](./ROADMAP.md). Les idées
 non décidées dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 

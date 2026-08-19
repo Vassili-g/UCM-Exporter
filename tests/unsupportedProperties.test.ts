@@ -74,7 +74,7 @@ test('une ombre visible est signalée, une ombre masquée ne l’est pas', () =>
   });
   const avertissements = unsupportedPropertyWarnings(avecOmbre);
   assert.equal(avertissements.length, 1);
-  assert.ok(avertissements[0].includes('Layer « Container » — effect'));
+  assert.ok(avertissements[0].includes('Layer « Container », effect'));
   assert.ok(avertissements[0].includes('l’ombre ou le flou'));
   assert.ok(avertissements[0].includes('réexportez'));
 
@@ -99,19 +99,19 @@ test('un dégradé est signalé : le relevé des couleurs ne le voit pas', () =>
   });
   const avertissements = unsupportedPropertyWarnings(degrade);
   assert.equal(avertissements.length, 1);
-  assert.ok(avertissements[0].includes('— fill'));
+  assert.ok(avertissements[0].includes(', fill'));
   assert.ok(avertissements[0].includes('dégradé'));
 
   // Un stroke non uni suit exactement la même règle, sur son propre champ.
   const strokeImage = frameParDefaut({ strokes: [{ type: 'IMAGE', visible: true }] });
-  assert.ok(unsupportedPropertyWarnings(strokeImage)[0].includes('— stroke'));
+  assert.ok(unsupportedPropertyWarnings(strokeImage)[0].includes(', stroke'));
 });
 
 test('des fills « mixed » sont signalés : le contrat n’en décrit qu’un jeu par layer', () => {
   const melange = frameParDefaut({ fills: Symbol('figma.mixed') });
   const avertissements = unsupportedPropertyWarnings(melange);
   assert.equal(avertissements.length, 1);
-  assert.ok(avertissements[0].includes('— fill'));
+  assert.ok(avertissements[0].includes(', fill'));
 });
 
 test('un blend mode et un pointillé sont signalés, leurs valeurs neutres non', () => {
@@ -165,7 +165,7 @@ test('deux propriétés du même layer donnent deux messages : deux gestes diff�
   });
   const avertissements = unsupportedPropertyWarnings(cumul);
   assert.equal(avertissements.length, 2);
-  assert.ok(avertissements.every((message) => message.startsWith('Layer « Container » — ')));
+  assert.ok(avertissements.every((message) => message.startsWith('Layer « Container », ')));
 });
 
 test('un node qui n’expose aucune de ces propriétés ne fait pas échouer le relevé', () => {

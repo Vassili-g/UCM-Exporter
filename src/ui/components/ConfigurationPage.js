@@ -150,7 +150,7 @@ export function createConfigurationPage(onSave) {
       hasStoredPat = Boolean(settings.hasPat);
       githubPat.input.value = '';
       githubPat.input.placeholder = hasStoredPat
-        ? 'Token enregistré — laisser vide pour le conserver'
+        ? 'Token enregistré. Laissez ce champ vide pour le conserver.'
         : '';
     },
     acceptRemoteSettings(settings) {
@@ -163,8 +163,8 @@ export function createConfigurationPage(onSave) {
       if (element.hidden) return;
       status.dataset.state = state === 'connected' ? 'success' : 'error';
       status.textContent = state === 'connected'
-        ? 'Configuration enregistrée · repository connecté.'
-        : 'Configuration enregistrée · connexion impossible.';
+        ? 'Configuration enregistrée. Connexion au dépôt GitHub réussie.'
+        : 'Configuration enregistrée. Connexion au dépôt GitHub impossible.';
     },
     showSaveError() {
       saveButton.disabled = false;

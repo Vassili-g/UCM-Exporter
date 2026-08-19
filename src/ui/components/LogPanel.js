@@ -25,7 +25,7 @@ export function createLogPanel(initialText = '') {
   function appendLine(message, level = 'info') {
     const line = document.createElement('div');
     line.className = `log-line log-${level}`;
-    const marker = level === 'error' ? 'Erreur · ' : level === 'success' ? 'OK · ' : '';
+    const marker = level === 'error' ? 'Erreur : ' : level === 'success' ? 'OK : ' : '';
     line.textContent = `${marker}${message}`;
     content.appendChild(line);
     content.scrollTop = content.scrollHeight;
@@ -41,7 +41,7 @@ export function createLogPanel(initialText = '') {
     appendLink(label, url) {
       const line = document.createElement('div');
       line.className = 'log-line log-success';
-      const marker = document.createTextNode('OK · ');
+      const marker = document.createTextNode('OK : ');
       const link = document.createElement('a');
       link.href = url;
       link.textContent = label;

@@ -656,7 +656,7 @@ test('un enfant de grille ne se voit pas réclamer ce que sa cellule décide', a
   );
 
   assert.equal(layout.children[0]?.size, undefined);
-  assert.equal(warnings.some((warning) => warning.includes('« Tile » — height')), false);
+  assert.equal(warnings.some((warning) => warning.includes('« Tile », height')), false);
   // Sa place, elle, est publiée : Figma indexe à partir de 0, CSS à partir de 1.
   assert.equal(layout.children[0]?.columnStart, 2);
   assert.equal(layout.children[0]?.rowStart, 3);
@@ -674,7 +674,7 @@ test('un enfant de grille explicitement aligné garde la règle commune', async 
     warnings,
   );
 
-  assert.ok(warnings.some((warning) => warning.includes('« Tile » — height')));
+  assert.ok(warnings.some((warning) => warning.includes('« Tile », height')));
 });
 
 test('un enfant de grille publie la dimension qu’il relie à une variable', async () => {

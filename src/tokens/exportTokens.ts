@@ -226,7 +226,7 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
     warnings.push(
       '$value' in existing
         ? `Token « ${path} » : un autre token porte déjà ce nom. Seul le premier est exporté ; renommez le second.`
-        : `Token « ${path} » : un groupe de tokens porte déjà ce nom — un token ne peut pas être à la fois une valeur et un groupe. Il n’est pas exporté ; renommez ou déplacez l’un des deux.`,
+        : `Token « ${path} » : un groupe de tokens porte déjà ce nom. Un token ne peut pas être à la fois une valeur et un groupe. Il n’est pas exporté ; renommez ou déplacez l’un des deux.`,
     );
     return;
   }

@@ -306,7 +306,7 @@ test('le node de référence n’avertit pas sur des dimensions que `sizes` va p
   assert.equal(structure.gap, undefined);
   // Les dimensions réellement publiées, elles, avertissent toujours : ce sont
   // celles des représentants de tailles, et le message nomme leur variant.
-  assert.ok(warnings.some((message) => /Layer « Size=Big » — corner radius/.test(message)));
+  assert.ok(warnings.some((message) => /Layer « Size=Big », corner radius/.test(message)));
   // Le calque de référence, dont rien ne sera publié, ne dit plus rien.
   assert.deepEqual(warnings.filter((message) => message.includes('sizeWrapperButton')), []);
 });

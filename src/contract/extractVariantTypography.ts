@@ -132,7 +132,7 @@ async function loadTextStyle(
     if (token) tokens[contractField] = toRef(token);
     else {
       warnings.push(
-        `Text style « ${style.name} » — ${label} : aucune variable Figma n'est reliée. ` +
+        `Text style « ${style.name} », ${label} : aucune variable Figma n'est reliée. ` +
           `Cette propriété typographique manquera au développeur. Reliez-la à une variable ` +
           `dans le text style, puis réexportez.`,
       );
@@ -185,7 +185,7 @@ export async function extractVariantTypography(
     for (const { slotPath, textNode } of textSlots(layoutNode, iconNames, composed)) {
       if (allowedSlotPaths && !allowedSlotPaths.has(JSON.stringify(slotPath))) {
         pathNotices.push(
-          `Variant « ${entry.component.name} » — layer « ${textNode.name} » : son chemin de ` +
+          `Variant « ${entry.component.name} », layer « ${textNode.name} » : son chemin de ` +
             `slots diffère du variant de référence. Son text style ne peut pas être situé dans ` +
             `le contrat. Alignez les branches de texte entre variants, puis réexportez.`,
         );

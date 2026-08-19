@@ -410,7 +410,7 @@ export function flexItemProperties(
     const constraints = layoutConstraints(child);
     warnings.push(
       `Layer « ${child.name} » : il est en position « Absolute » dans « ${parent.name} ». Le ` +
-        `contrat publie les bords auxquels il s'accroche, jamais sa distance à ces bords — un ` +
+        `contrat publie les bords auxquels il s'accroche, jamais sa distance à ces bords. Un ` +
         `offset Figma ne se relie à aucune variable, et un nombre écrit à la main n'est pas une ` +
         `décision du design system. Le développeur le placera contre ces bords, sans décalage. ` +
         `Replacez ce layer dans le flux si sa position exacte doit être contractuelle, puis réexportez.`,

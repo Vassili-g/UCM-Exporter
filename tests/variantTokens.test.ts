@@ -99,7 +99,7 @@ test('getSlotTokens avertit quand la largeur du stroke est une valeur brute', as
 
   assert.equal(tokens.strokes[0]?.width, null);
   assert.deepEqual(warnings, [
-    `Layer « Button ring » — stroke weight : aucune variable Figma n'est reliée. La valeur fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
+    `Layer « Button ring », stroke weight : aucune variable Figma n'est reliée. La valeur fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
   ]);
 });
 

@@ -311,9 +311,9 @@ export class VariableNameResolver {
       warnings?.push(ambiguous.kind === 'same-path'
         ? `Variable « ${ambiguous.name} » : une fois normalisé, son nom est identique à celui ` +
           `de « ${ambiguous.owner} » (« ${ambiguous.path} »). Aucune référence n'est écrite` +
-          `${location} — elle désignerait l'autre variable. Renommez l'une des deux.`
+          `${location}. Elle désignerait l'autre variable. Renommez l'une des deux.`
         : `Variable « ${ambiguous.name} » : son nom « ${ambiguous.path} » entre en conflit avec ` +
-          `« ${ambiguous.ownerPath} » (« ${ambiguous.owner} ») — un token ne peut pas être à la ` +
+          `« ${ambiguous.ownerPath} » (« ${ambiguous.owner} »). Un token ne peut pas être à la ` +
           `fois une valeur et un groupe de tokens. Aucune référence n'est écrite${location}. ` +
           `Renommez ou déplacez l'une des deux.`);
       return null;

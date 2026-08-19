@@ -155,8 +155,8 @@ test('variantRoleWarnings signale un rôle connu employé sur le mauvais support
   );
 
   assert.deepEqual(warnings, [
-    'Token {c.primary.default.background} : son dernier segment « background » désigne un fill, mais il est appliqué en stroke — rien ne sera affiché (sur 1 layer). Appliquez-le du bon côté dans Figma, ou renommez-le.',
-    'Token {c.primary.default.border} : son dernier segment « border » désigne un stroke, mais il est appliqué en fill — rien ne sera affiché (sur 1 layer). Appliquez-le du bon côté dans Figma, ou renommez-le.',
+    'Token {c.primary.default.background} : son dernier segment « background » désigne un fill, mais il est appliqué en stroke. Rien ne sera affiché (sur 1 layer). Appliquez-le du bon côté dans Figma, ou renommez-le.',
+    'Token {c.primary.default.border} : son dernier segment « border » désigne un stroke, mais il est appliqué en fill. Rien ne sera affiché (sur 1 layer). Appliquez-le du bon côté dans Figma, ou renommez-le.',
   ]);
 });
 

@@ -944,7 +944,7 @@ test('une variable introuvable sur une dimension du composant avertit', async ()
 
   assert.deepEqual(layout.sizing, { width: 'stretch', height: 'fit-content' });
   assert.ok(warnings.some((w) => (
-    w.includes('« TileLink » — width') && w.includes('variable introuvable')
+    w.includes('« TileLink », width') && w.includes('variable introuvable')
   )));
 });
 
@@ -1513,5 +1513,5 @@ test('sans axe de tailles, une dimension non liée avertit toujours', async () =
   const layout = await extractLayout(alerte, resolverFor({}), warnings);
 
   assert.equal(layout.gap, null);
-  assert.ok(warnings.some((message) => /— gap : aucune variable Figma n'est reliée/.test(message)));
+  assert.ok(warnings.some((message) => /, gap : aucune variable Figma n'est reliée/.test(message)));
 });

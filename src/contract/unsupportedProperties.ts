@@ -218,6 +218,6 @@ function proprietesDeTexteNonPortees(
  */
 export function unsupportedPropertyWarnings(node: SceneNode): string[] {
   return proprietesNonPortees(node).map(({ champ, manque, geste }) =>
-    `Layer « ${node.name} » — ${champ} : le contrat ne sait pas écrire cette propriété. `
+    `Layer « ${node.name} », ${champ} : le contrat ne sait pas écrire cette propriété. `
       + `Le développeur n’aura pas ${manque}. ${geste}, puis réexportez.`);
 }
