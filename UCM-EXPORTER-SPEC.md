@@ -1287,17 +1287,22 @@ le plugin lit le blob Git correspondant avant de comparer, afin de ne pas
 créer une PR inchangée. Au-delà de la limite GitHub de 100 Mo, il n'essaie pas
 de créer une branche et conserve directement le téléchargement local.
 
-**Le corps de la pull request porte les avertissements de l'export.** C'est la
-page que le plugin ouvre juste après l'export : le designer y lit ce qui n'a pas
-pu être décrit sans ouvrir le JSON ni le journal du plugin. Les deux artefacts
-sont couverts par le même mécanisme — `tokens.json` n'a aucun champ où
-transporter les siens, là où un contrat les garde aussi dans `meta.warnings`.
-Un avertissement ne bloque jamais : seules les préconditions arrêtent un export
-(cf. [CONCEPT.md](./CONCEPT.md)).
+**Le corps de la pull request porte les avertissements de l'export, et rien
+d'autre.** C'est la page que le plugin ouvre juste après l'export : le designer
+y lit ce qui n'a pas pu être décrit sans ouvrir le JSON ni le journal du plugin.
+Les deux artefacts sont couverts par le même mécanisme — `tokens.json` n'a aucun
+champ où transporter les siens, là où un contrat les garde aussi dans
+`meta.warnings`. Un avertissement ne bloque jamais : seules les préconditions
+arrêtent un export (cf. [CONCEPT.md](./CONCEPT.md)).
 
 Chaque avertissement nomme l'élément Figma concerné avec l'intitulé que Figma
 affiche, dit ce qui manquera au développeur, puis le geste à faire dans Figma.
-La règle et le vocabulaire vivent dans
+Les trois sont exigés : un constat qui ne nomme aucun geste est une note, et
+une note n'entre pas dans la pull request. Elle reste dans `meta.diagnostics`,
+sous le code `UCM_EXPORT_INFO`, et dans le journal du plugin. La raison tient en
+une phrase : une liste dont la conclusion est toujours « rien à faire » apprend
+à son lecteur qu'elle se survole, et il survolera ensuite celles qui demandent
+un geste. La règle et le vocabulaire vivent dans
 [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 Tous les champs de configuration sont validés et les chemins restent

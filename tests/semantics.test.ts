@@ -43,7 +43,7 @@ test('buildStateModel conserve un état inconnu et avertit sans bloquer', () => 
   assert.equal(model?.states.loading.selector, null);
   assert.deepEqual(model?.precedence, ['default', 'loading']);
   assert.deepEqual(warnings, [
-    'Variant property « status » : l\'état « loading » n\'est pas reconnu, le contrat ne dira pas quand l\'afficher. États reconnus : default, hover, focus, press, disable.',
+    'Variant property « status » : l\'état « loading » n\'est pas reconnu, le contrat ne dira pas quand l\'afficher. États reconnus : default, hover, focus, press, disable. Renommez cette valeur avec l\'un d\'eux, puis réexportez.',
   ]);
 });
 

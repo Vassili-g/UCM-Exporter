@@ -260,8 +260,13 @@ Le raisonnement vit dans la spécification, en lien.
   dimensions du calque de référence quand `sizes` existe — n’est ni relevée ni
   signalée.
 - Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
-  geste à faire. Il lui parvient par le corps de la pull request. Avertissement
-  et note ne partagent pas le même canal.
+  geste à faire. Les trois sont exigés ; un constat qui ne nomme aucun geste
+  n’est pas un avertissement.
+- Le corps de la pull request ne porte QUE les avertissements. Une note n’y
+  entre pas : sa conclusion est toujours « rien à faire », et une liste dont on
+  apprend qu’elle se survole coûte la lecture de celles qui demandent un geste.
+  Les notes vivent dans `meta.diagnostics` pour un consommateur du contrat, et
+  dans le journal du plugin pour le designer qui exporte.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
 
 ### Échantillon de maquette

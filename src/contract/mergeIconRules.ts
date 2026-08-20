@@ -99,7 +99,7 @@ export function mergeIconRules(
       continue;
     }
     if (icons.has(key)) {
-      warnings.push(`Règle @icons « ${rule.iconName} » : une autre règle vise déjà un layer au nom équivalent (majuscules et tirets ignorés). Celle-ci est ignorée.`);
+      warnings.push(`Règle @icons « ${rule.iconName} » : une autre règle vise déjà un layer au nom équivalent (majuscules et tirets ignorés). Celle-ci est ignorée. Renommez l'un des deux layers ou supprimez la règle en double, puis réexportez.`);
       continue;
     }
 
@@ -157,7 +157,8 @@ export function mergeIconRules(
     if (visibilityProp && propByName(props, visibilityProp)?.type !== 'boolean') {
       warnings.push(
         `Icône « ${rule.iconName} » déclarée modifiable : « ${visibilityProp} » n'est pas ` +
-          `une boolean property du composant. Le développeur ne pourra pas la remplacer.`,
+          `une boolean property du composant. Le développeur ne pourra pas la remplacer. ` +
+          `Citez une boolean property du composant, puis réexportez.`,
       );
       continue;
     }

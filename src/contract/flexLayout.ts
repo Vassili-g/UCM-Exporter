@@ -74,6 +74,16 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
  *
  * La lecture est défensive : un runtime qui n'expose pas ces champs ne publie
  * rien et n'avertit de rien. Une propriété absente n'est pas une valeur.
+ *
+ * Le message nomme la GRILLE et son axe, jamais l'index des pistes. Cette
+ * fonction est appelée une fois par variant, et un même calque de grille n'a pas
+ * les mêmes pistes FIXED partout : citer les index produisait deux constats qui
+ * se contredisaient sur le même nom de calque — « la ligne 1 » ici, « les lignes
+ * 1, 2, 3 » là — sans que rien ne dise de quel variant chacun parlait. Le
+ * dédoublonnage de l'export les ramène désormais à un seul, et les valeurs
+ * elles-mêmes se lisent dans `rowSizes` / `columnSizes`. C'est le choix déjà
+ * fait par `gridStructuralSize`, qui nomme la grille plutôt que chacun de ses
+ * enfants.
  */
 export function gridTrackSizes(
   node: SceneNode,
@@ -85,7 +95,7 @@ export function gridTrackSizes(
   const axe = (field: 'gridColumnSizes' | 'gridRowSizes', nom: string): GridTrack[] | undefined => {
     const tracks = values[field];
     if (!Array.isArray(tracks)) return undefined;
-    const fixed: number[] = [];
+    let fixed = false;
     const sizes = (tracks as Array<{ type?: unknown; value?: unknown }>).map((track, index): GridTrack => {
       if (!track || typeof track !== 'object') {
         warnings.push(
@@ -100,7 +110,7 @@ export function gridTrackSizes(
       }
       if (track.type === 'HUG') return 'fit-content(100%)';
       if (track.type === 'FIXED' && typeof track.value === 'number' && Number.isFinite(track.value)) {
-        fixed.push(index + 1);
+        fixed = true;
         return `${track.value}px`;
       }
       warnings.push(
@@ -110,11 +120,9 @@ export function gridTrackSizes(
       );
       return 'auto';
     });
-    if (fixed.length > 0) {
-      const plusieurs = fixed.length > 1;
+    if (fixed) {
       infos.push(
-        `Layer « ${node.name} » : ${plusieurs ? 'les' : 'la'} ${nom}${plusieurs ? 's' : ''} `
-          + `${fixed.join(', ')} ${plusieurs ? 'sont publiées' : 'est publiée'} en pixels, `
+        `Layer « ${node.name} » : ses ${nom}s de taille fixe sont publiées en pixels, `
           + `exception propre aux pistes FIXED d'une grille. Ces valeurs décrivent sa structure `
           + `Figma sans devenir des tokens ; aucune modification du design n'est demandée.`,
       );

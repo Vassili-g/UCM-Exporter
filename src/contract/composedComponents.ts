@@ -260,7 +260,8 @@ export async function scanComposedMatrix(
   const remaining = divergentVariants.length - 3;
   const infos = divergentVariants.length > 0
     ? [
-      `Composition différente sur ${divergentVariants.length} variant(s), ex. ${examples}` +
+      `Composition différente sur ${divergentVariants.length} `
+      + `variant${divergentVariants.length > 1 ? 's' : ''}, ex. ${examples}` +
         `${remaining > 0 ? ` (+${remaining})` : ''} : le contrat décrit le variant de ` +
         `référence « ${roots[0]?.name ?? 'inconnu'} ». Les arbres exacts de « variants » ` +
         `conservent ces compositions différentes ; le champ global « composes » en publie ` +

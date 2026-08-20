@@ -17,8 +17,6 @@ export type RepositoryArtifact = {
   content: string;
   /** Ce que l'export n'a pas pu décrire, rédigé pour le designer. */
   warnings: string[];
-  /** Ce que l'export documente sans rien perdre : aucun geste n'est demandé. */
-  infos?: string[];
 };
 
 export type PublishResult =
@@ -102,28 +100,20 @@ export function artifactPath(config: GithubConfig, artifact: RepositoryArtifact)
  * `tokens.json`, qui n'a aucun champ où les transporter, est couvert de la même
  * façon que les contrats.
  *
- * Deux listes, parce qu'un export produit deux natures de constats. Un
- * AVERTISSEMENT dit qu'une information manque à l'artefact et nomme le geste
- * qui la ramènera. Une NOTE dit ce que le contrat publie sous une forme
- * inhabituelle : la valeur y est, et rien n'est à corriger. Les ranger sous le
- * même titre réclamerait une correction que le texte de la note dit inutile.
+ * Une seule liste, et une règle qui la borne : n'arrive ici que ce qui nomme un
+ * geste à faire dans Figma. Le canal `infos` n'y entre pas. Une note dit ce que
+ * le contrat publie sous une forme inhabituelle — la valeur y est, rien ne
+ * manque, rien n'est à corriger — et la publier ici reviendrait à demander au
+ * designer de relire, à chaque export, des lignes dont la conclusion est
+ * toujours « rien à faire ». Au bout de quelques PR il ne lirait plus les
+ * autres non plus. Les notes restent dans `meta.diagnostics`, où un consommateur
+ * du contrat les trouve, et dans le journal du plugin, où le designer les a sous
+ * les yeux pendant l'export.
  */
-export function pullRequestBody(
-  path: string,
-  warnings: string[],
-  infos: string[] = [],
-): string {
+export function pullRequestBody(path: string, warnings: string[]): string {
   const header = `Export automatique depuis Figma.\n\nFichier : \`${path}\``;
-  const notes = infos.length === 0 ? [] : [
-    '',
-    `## Notes d’export (${infos.length} note${infos.length === 1 ? '' : 's'})`,
-    '',
-    'Ces points sont dans l’artefact exporté et n’appellent aucune correction :',
-    '',
-    ...infos.map((info) => `- ${info}`),
-  ];
   if (warnings.length === 0) {
-    return [header, '', `Aucun avertissement d'export.`, ...notes].join('\n');
+    return [header, '', `Aucun avertissement d'export.`].join('\n');
   }
 
   const points = `${warnings.length} point${warnings.length === 1 ? '' : 's'}`;
@@ -141,7 +131,6 @@ export function pullRequestBody(
     'Corrigez chaque point dans Figma, puis relancez l’export.',
     '',
     'Ces avertissements ne bloquent pas la fusion.',
-    ...notes,
   ].join('\n');
 }
 
@@ -280,7 +269,7 @@ export async function publishArtifact(
         title: `Unified Component Exporter: export ${artifact.filename}`,
         head: branch,
         base: config.baseBranch,
-        body: pullRequestBody(path, artifact.warnings, artifact.infos ?? []),
+        body: pullRequestBody(path, artifact.warnings),
       }),
     });
   } catch (error) {

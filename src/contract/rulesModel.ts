@@ -99,7 +99,7 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       const key = (entry.prop ?? '').trim();
       const separator = key.indexOf('.');
       if (separator <= 0 || separator === key.length - 1) {
-        warnings.push(`Règle @prop : le layer « prop » contient « ${key || 'rien'} », alors qu’il faut « property.valeur », par exemple « variant.contained ».`);
+        warnings.push(`Règle @prop : le layer « prop » contient « ${key || 'rien'} », alors qu’il faut « property.valeur », par exemple « variant.contained ». Corrigez ce layer, puis réexportez.`);
         continue;
       }
       const propName = normalizePropKey(key.slice(0, separator));

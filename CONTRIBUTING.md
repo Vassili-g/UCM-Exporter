@@ -91,11 +91,24 @@ Un export produit deux natures de constats, et elles ne se mélangent pas :
 | Ce qu’il dit | Une information manque à l’artefact | Le contrat publie ce point sous une forme inhabituelle |
 | Geste attendu | Oui, nommé dans le message | Aucun |
 | Canal | `warnings` | `infos` |
-| Corps de la pull request | « L’export n’a pas pu décrire… », puis « Corrigez chaque point » | « Notes d’export », sans action |
+| Corps de la pull request | « L’export n’a pas pu décrire… », puis « Corrigez chaque point » | Rien : elle n’y apparaît pas |
+| Où la lire | Pull request, journal du plugin, `meta.diagnostics` | Journal du plugin, `meta.diagnostics` |
 
 Écrire une note dans le canal `warnings` produit un texte qui se contredit : le
 titre annonce une information absente, la phrase répond qu’elle est bien là. La
 piste FIXED d’une grille, publiée en pixels, est le cas type d’une note.
+
+**Le corps de la pull request ne porte que des avertissements.** C’est la seule
+page que le designer relira à froid, et ce qu’il y trouve décide s’il relira la
+suivante. Une note y aurait toujours la même conclusion, « rien à faire » : la
+publier, c’est lui apprendre que ces listes se survolent, et le jour où un
+avertissement demandera un geste il le survolera aussi. Les notes restent donc
+dans le journal du plugin, sous les yeux de qui exporte, et dans
+`meta.diagnostics`, pour qui consomme le contrat.
+
+Même règle du côté des avertissements : un constat qui ne nomme aucun geste n’a
+rien à faire dans cette liste. Soit il en nomme un, soit c’est une note. La forme
+unitaire ci-dessous n’est pas une recommandation, c’est ce qui distingue les deux.
 
 `meta.warnings` du contrat reste le miroir complet des deux, et
 `meta.diagnostics` les distingue par leur `code` :
