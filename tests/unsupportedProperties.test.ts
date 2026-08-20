@@ -60,12 +60,38 @@ test('un layer aux valeurs par défaut de Figma ne produit aucun avertissement',
   assert.deepEqual(unsupportedPropertyWarnings(texteParDefaut()), []);
 });
 
-test('« clip content », un masque et une rotation ne sont pas des anomalies', () => {
-  // `clipsContent` est le défaut de Figma ; `isMask` est le mécanisme normal de
-  // dessin d'une icône importée, et une rotation résiduelle accompagne tout
-  // tracé vectoriel importé. Les signaler crierait sur des designs corrects.
-  const suspects = frameParDefaut({ clipsContent: true, isMask: true, rotation: 1.5 });
-  assert.deepEqual(unsupportedPropertyWarnings(suspects), []);
+test('« clip content » n’est pas une anomalie : c’est le défaut de Figma', () => {
+  const suspect = frameParDefaut({ clipsContent: true });
+  assert.deepEqual(unsupportedPropertyWarnings(suspect), []);
+});
+
+test('une rotation est signalée, un résidu de flottant ne l’est pas', () => {
+  // Le silence accordé jadis à la rotation invoquait les tracés importés. Ils ne
+  // passent jamais ici : ce relevé ne voit que les calques PUBLIÉS, et les
+  // entrailles d'une icône n'en sont pas. Restait donc le seul cas réel, un
+  // chevron retourné ou un badge incliné, perdu sans un mot.
+  const incline = frameParDefaut({ rotation: -90 });
+  const avertissements = unsupportedPropertyWarnings(incline);
+  assert.equal(avertissements.length, 1);
+  assert.ok(avertissements[0].includes('Layer « Container », rotation'));
+  assert.ok(avertissements[0].includes('rendu droit'));
+
+  // Une transformation successive laisse dans Figma un résidu que personne ne
+  // voit et que personne ne peut remettre à zéro : le signaler enverrait le
+  // designer corriger un layer droit.
+  assert.deepEqual(unsupportedPropertyWarnings(frameParDefaut({ rotation: 3e-13 })), []);
+  assert.deepEqual(unsupportedPropertyWarnings(frameParDefaut({ rotation: -1e-9 })), []);
+});
+
+test('un mask est signalé : le contrat ne perd pas sa surface, il l’invente', () => {
+  // Les autres propriétés de ce relevé manquent au rendu. Celle-ci fait pire :
+  // la couleur du mask entre bien dans `variants[].tokens`, et le développeur la
+  // peindrait par-dessus le contenu qu'elle était censée découper.
+  const masque = frameParDefaut({ isMask: true });
+  const avertissements = unsupportedPropertyWarnings(masque);
+  assert.equal(avertissements.length, 1);
+  assert.ok(avertissements[0].includes('Layer « Container », mask'));
+  assert.ok(avertissements[0].includes('par-dessus les layers qu’il masque'));
 });
 
 test('une ombre visible est signalée, une ombre masquée ne l’est pas', () => {

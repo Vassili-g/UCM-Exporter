@@ -665,18 +665,29 @@ rien en silence.
 - la distance d'un calque absolu à ses bords d'accroche ;
 - sur **chaque calque publié**, et sur lui seul, les propriétés à effet visuel
   qu'aucun champ ne porte : les **effets** (ombre, flou), l'**opacité**
-  partielle, une peinture non unie (**dégradé**, image) en `fill` ou en
-  `stroke`, plusieurs peintures « mixed » sur un même calque, un **blend mode**
-  non neutre, un **pointillé**, et pour un texte : l'**alignement** dans une
-  boîte qui n'est pas en `Hug`, la **casse**, la **décoration**, la
-  **troncature**.
+  partielle, une **rotation**, un **mask**, une peinture non unie (**dégradé**,
+  image) en `fill` ou en `stroke`, plusieurs peintures « mixed » sur un même
+  calque, un **blend mode** non neutre, un **pointillé**, et pour un texte :
+  l'**alignement** dans une boîte qui n'est pas en `Hug`, la **casse**, la
+  **décoration**, la **troncature**.
+
+Le `mask` est le seul de cette liste dont le contrat ne perd pas la propriété
+mais en **invente** une : la couleur du calque masquant entre normalement dans
+`variants[].tokens`, et un développeur qui la peint recouvre le contenu qu'elle
+était censée découper.
 
 Ce relevé vit dans l'extraction, jamais dans un balayage à part : on n'avertit
 que sur ce qu'on publie, et les entrailles d'une icône ou les calques d'une
 dépendance ne regardent pas ce contrat-ci. Aucune valeur au défaut de Figma ne
-produit de message — un `clip content` activé, un masque d'icône ou une rotation
-résiduelle de tracé importé ne manquent à personne, et un rapport que le
-designer cesse de lire ne protège plus rien.
+produit de message : un `clip content` activé ne manque à personne, et un
+rapport que le designer cesse de lire ne protège plus rien. C'est la seule
+réserve, et elle se lit sur la valeur, jamais sur l'usage supposé du calque. Le
+masque d'une icône et la rotation résiduelle d'un tracé importé ont longtemps
+été cités ici : ils relèvent en réalité de la portée du relevé, qui ne voit
+jamais ces calques, et les invoquer coûtait un chevron retourné ou un découpage
+à chaque design qui employait ces propriétés pour de bon. Le seuil de neutralité
+de la rotation reste un centième de degré, très en dessous du premier pixel
+visible et très au-dessus du bruit de flottant.
 
 ##### Passage à la ligne
 
