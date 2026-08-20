@@ -75,8 +75,21 @@ export function definePropOn(
  * sa valeur Disable devient une prop booléenne `disabled`. Détecté par le
  * nom de l'axe, donc valable pour n'importe quel composant.
  */
-function isStateProperty(key: string): boolean {
+export function isStateProperty(key: string): boolean {
   return key === 'state' || key === 'status';
+}
+
+/**
+ * Vrai pour la valeur d'axe d'états qui devient la prop publique `disabled`.
+ *
+ * Unique autorité sur cette orthographe : le modèle des props la consulte pour
+ * fabriquer la prop, l'échantillon pour dire qu'une dépendance la porte. Deux
+ * expressions régulières jumelles finiraient par accepter des graphies
+ * différentes, et le contrat annoncerait une prop que l'échantillon ne remplit
+ * jamais.
+ */
+export function isDisabledStateValue(value: unknown): boolean {
+  return /^disabl(?:e|ed)$/i.test(String(value).trim());
 }
 
 /**
@@ -123,7 +136,7 @@ export function extractContractPropertyModel(
   const disabledState = Object.entries(definitions).find(([propertyName, definition]) =>
     isStateProperty(normalizePropKey(propertyName)) &&
     definition.type === 'VARIANT' &&
-    (definition.variantOptions ?? []).some((state) => /^disabl(?:e|ed)$/i.test(state.trim())),
+    (definition.variantOptions ?? []).some(isDisabledStateValue),
   );
   if (disabledState) {
     const [propertyName, definition] = disabledState;
@@ -132,7 +145,7 @@ export function extractContractPropertyModel(
       owners.set('disabled', rawFigmaName);
       definePropOn(props, 'disabled', {
         type: 'boolean',
-        default: /^disabl(?:e|ed)$/i.test(String(definition.defaultValue).trim()),
+        default: isDisabledStateValue(definition.defaultValue),
       });
     }
   }
@@ -198,7 +211,7 @@ export function extractContractPropertyModel(
         const [statePropertyName, stateDefinition] = disabledState;
         const stateFigmaName = statePropertyName.replace(/#.*$/, '');
         const disabledStateName = stateDefinition.type === 'VARIANT'
-          ? (stateDefinition.variantOptions ?? []).find((state) => /^disabl(?:e|ed)$/i.test(state.trim())) ?? 'Disable'
+          ? (stateDefinition.variantOptions ?? []).find(isDisabledStateValue) ?? 'Disable'
           : 'Disable';
         warnings.push(
           `Component property « ${rawFigmaName} » : l’axe « ${stateFigmaName} » possède déjà le variant ` +

@@ -73,14 +73,35 @@ export function hasAncestorIn(
   root: SceneNode,
   composed: ComposedInstances,
 ): boolean {
-  if (composed.size === 0) return false;
+  return nearestAncestorIn(node, root, composed) !== null;
+}
+
+/**
+ * Le PLUS PROCHE ancêtre strict du node qui est une instance composée, ou null.
+ *
+ * Même remontée que `hasAncestorIn`, dont elle est devenue l'implémentation :
+ * répondre « lequel » plutôt que « y en a-t-il un » suffit à rattacher chaque
+ * dépendance imbriquée à celle qui la contient, sans qu'une seconde remontée
+ * d'ancêtres existe ailleurs.
+ *
+ * Strictement ANCÊTRE, comme son aînée : inclure le node lui-même ferait
+ * élaguer l'instance de dépendance par `getAllNodes`, et le composé perdrait le
+ * slot qui la rend.
+ */
+export function nearestAncestorIn(
+  node: SceneNode,
+  root: SceneNode,
+  composed: ComposedInstances,
+): ComposedDependency | null {
+  if (composed.size === 0) return null;
 
   let current: BaseNode | null | undefined = node.parent;
   while (current && current !== root) {
-    if (composed.has(current.id)) return true;
+    const dependency = composed.get(current.id);
+    if (dependency) return dependency;
     current = current.parent;
   }
-  return false;
+  return null;
 }
 
 /**

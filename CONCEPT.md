@@ -43,6 +43,15 @@ déclare ces dépendances sans recopier leurs détails internes.
 | Noms de l’API visuelle | Accord designer–développeur, enregistré dans Figma |
 | Comportement, événements, accessibilité et attributs natifs | Code |
 | Association contrat–code et détection des écarts | Repository consommateur et CI |
+| Contenu et props affichés dans la maquette | Figma, à titre **indicatif** |
+
+La dernière ligne se lit autrement que les autres. Tout ce qui précède est
+**normatif** : le contrat l'affirme, et un contrôle peut l'opposer au code. Le
+contenu de maquette est **indicatif** : il dit ce que Figma montrait au moment de
+l'export, pour qu'un humain ou un agent retrouve l'esthétique voulue sans avoir à
+la deviner. Aucun contrôle ne le compare au code, et il ne contient jamais de
+donnée de rendu — une couleur ou une dimension qui manquerait là est un trou du
+contrat normatif, pas de l'échantillon.
 
 Cette répartition évite deux erreurs :
 

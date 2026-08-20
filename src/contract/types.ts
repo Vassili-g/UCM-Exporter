@@ -751,6 +751,17 @@ export type ExtractedContractVariant = ContractVariantView & {
   /** Feuilles sémantiques directement adressables, sans axe synthétique. */
   tokens: SlotTokens;
   strokes: SlotStrokes;
+  /**
+   * Ce que ce variant montre dans la maquette.
+   *
+   * Il vit ici et non sur `ContractVariantView` : la vue se déduplique par
+   * égalité stricte de son bloc JSON, et deux variants au rendu identique mais
+   * au contenu différent cesseraient de la partager. Le contenu est volatil et
+   * minuscule, la structure stable et volumineuse — les mêler ferait hériter la
+   * seconde de la volatilité du premier. C'est déjà la raison pour laquelle
+   * `tokens` et `strokes` vivent par variant.
+   */
+  sample?: ContractSample;
 };
 
 /** Partie stable d'une liaison native, cataloguée une seule fois. */
@@ -786,6 +797,95 @@ export type ContractVariant = {
   strokes: SlotStrokes;
   /** Cibles natives propres à ce node Figma. Absentes quand il n'en porte aucune. */
   bindings?: VariantPropertyBinding[];
+  /**
+   * Clé d'un échantillon de `Contract.samples`. Absente quand ce variant ne
+   * montre rien que le contrat sache capturer.
+   */
+  sample?: string;
+};
+
+/**
+ * Un texte de la maquette, dans un slot de CE contrat.
+ *
+ * Porte les deux adresses, comme `VariantIconPlacement` (`figmaName` +
+ * `slotPath`) et `IconDefinition` (`figmaName` + `slot`) : un chemin de slots
+ * est POSITIONNEL — `label-2`, `icon-2` — et un calque ajouté le décale, là où
+ * le nom Figma reste stable.
+ *
+ * `figmaLayer` est celui de la FEUILLE publiée, pas celui du calque texte
+ * qu'elle enveloppe : c'est la seule façon qu'il s'accorde toujours avec le
+ * `figmaLayer` que la vue publie au même `slotPath`. Quand il vaut `value`, le
+ * calque n'a jamais été renommé — la redondance est le signal, pas du bruit.
+ */
+export type SampleText = {
+  /** Chemin de slots depuis `variantViews[variants[].view].structure.children`. */
+  slotPath: string[];
+  figmaLayer: string;
+  value: string;
+};
+
+/**
+ * Ce que CE parent a surchargé dans une instance de dépendance.
+ *
+ * La frontière n'est pas une convention mais une lecture : `InstanceNode.overrides`
+ * dit ce que cette instance-ci a changé, par opposition à ce que son composant
+ * fournit — qui appartient au contrat de la dépendance. Les champs retenus sont
+ * les trois que le contrat sait porter sans décrire de rendu ; une surcharge de
+ * couleur ou de dimension est écartée, et signale plutôt un manque du contrat
+ * normatif de la dépendance.
+ */
+export type SampleOverride = {
+  /** Chemin de calques Figma relatif à l'instance, cible comprise. */
+  figmaPath: string[];
+  text?: string;
+  visible?: boolean;
+};
+
+/**
+ * L'usage exact d'une dépendance dans la maquette.
+ *
+ * `args` emploie les clés PUBLIQUES du contrat de la dépendance et vaut pour un
+ * SOUS-ENSEMBLE : une clé absente ne signifie pas que la maquette ne la pose
+ * pas. Il porte aussi la valeur de l'axe d'états, sous la clé de cet axe, pour
+ * qu'il puisse se rapprocher des `variants[].values` de ce contrat-là.
+ */
+export type SampleInstance = {
+  /**
+   * Chemin de slots du calque qui EST l'instance. Absent pour une dépendance
+   * imbriquée dans une autre : elle vit hors de l'arbre publié de ce contrat.
+   *
+   * Sous un cadre qui ne publie pas ses enfants — le cas déjà signalé d'une
+   * branche masquée menant à une dépendance — le chemin est celui du cadre.
+   */
+  slotPath?: string[];
+  /** Nom du calque : identité, et seule ancre d'une dépendance imbriquée. */
+  figmaLayer: string;
+  /** Nom du composant unifié, comme `ComposedDependency.component`. */
+  component: string;
+  args?: Record<string, string | boolean>;
+  overrides?: SampleOverride[];
+  composes?: SampleInstance[];
+};
+
+/**
+ * Ce qu'un variant montre réellement dans Figma — jamais normatif.
+ *
+ * Aucun contrôle du consommateur ne le compare au code : il donne le contexte
+ * qui permet de retrouver la maquette, sans en faire une obligation. Il ne
+ * contient que des valeurs qu'un développeur pourrait écrire lui-même — du
+ * texte, un booléen, une valeur d'enum — jamais un token, une dimension ou un
+ * layout ; une donnée de rendu qui manquerait ici manque au contrat normatif,
+ * et c'est là qu'il faut la corriger.
+ *
+ * `args` porte les valeurs appliquées des props de CE composant dans CE
+ * variant : la visibilité réelle d'un slot optionnel, le texte d'une TEXT
+ * property, le composant d'un INSTANCE_SWAP.
+ */
+export type ContractSample = {
+  args?: Record<string, string | boolean>;
+  text?: SampleText[];
+  /** Usage de chaque dépendance, dans l'ordre de l'arbre publié. */
+  composes?: SampleInstance[];
 };
 
 export type ContractDiagnostic = {
@@ -874,6 +974,15 @@ export type Contract = {
    * simple ; non vide, il fait de ce contrat celui d'un composé.
    */
   composes: ComposedDependency[];
+  /**
+   * Échantillons de maquette dédupliqués ; chaque entrée de `variants` en
+   * référence une par `sample`. Toujours publié, vide compris.
+   *
+   * C'est l'unique propriétaire du non normatif : retirer `samples` et les
+   * `variants[].sample` redonne le contrat que produisait la version
+   * précédente, `meta` mis à part.
+   */
+  samples: Record<string, ContractSample>;
   /** Liste à plat, dédupliquée et triée, de tous les tokens consommés. */
   tokensUsed: string[];
   intent: Intent | null;

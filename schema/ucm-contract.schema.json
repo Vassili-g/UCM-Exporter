@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-10.1.schema.json",
-  "title": "Contrat de composant UCM 10.1",
+  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-10.2.schema.json",
+  "title": "Contrat de composant UCM 10.2",
   "description": "Ce schéma décrit la FORME d'un contrat, pas sa cohérence interne. Il ne vérifie pas les renvois internes : une entrée de `variants` peut citer une vue absente de `variantViews`, une icône un slot absent de `structure`, un token une référence inexistante. Il ne contraint pas non plus le FORMAT des valeurs : une référence de token `{chemin.du.token}`, une mesure `120px` et une piste `1fr` y sont de simples chaînes, parce que TypeScript les décrit par des types que JSON Schema ne sait pas porter. Un contrat valide au sens de ce schéma reste donc à vérifier par un consommateur.",
-  "x-ucm-contract-version": "10.1",
+  "x-ucm-contract-version": "10.2",
   "$ref": "#/definitions/Contract",
   "definitions": {
     "Contract": {
@@ -192,6 +192,13 @@
           },
           "description": "Les composants unifiés que celui-ci embarque. Vide pour un composant simple ; non vide, il fait de ce contrat celui d'un composé."
         },
+        "samples": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ContractSample"
+          },
+          "description": "Échantillons de maquette dédupliqués ; chaque entrée de `variants` en référence une par `sample`. Toujours publié, vide compris.\n\nC'est l'unique propriétaire du non normatif : retirer `samples` et les `variants[].sample` redonne le contrat que produisait la version précédente, `meta` mis à part."
+        },
         "tokensUsed": {
           "type": "array",
           "items": {
@@ -223,6 +230,7 @@
         "icons",
         "textStyles",
         "composes",
+        "samples",
         "tokensUsed",
         "intent"
       ],
@@ -235,7 +243,7 @@
         "contractVersion": {
           "type": "string",
           "description": "Version du schéma du contrat — à incrémenter à chaque changement de forme.",
-          "const": "10.1"
+          "const": "10.2"
         },
         "exportedAt": {
           "type": "string",
@@ -1379,6 +1387,10 @@
             "$ref": "#/definitions/VariantPropertyBinding"
           },
           "description": "Cibles natives propres à ce node Figma. Absentes quand il n'en porte aucune."
+        },
+        "sample": {
+          "type": "string",
+          "description": "Clé d'un échantillon de `Contract.samples`. Absente quand ce variant ne montre rien que le contrat sache capturer."
         }
       },
       "required": [
@@ -1733,6 +1745,130 @@
       },
       "additionalProperties": false,
       "description": "Tokens réellement liés aux propriétés d'un text style Figma."
+    },
+    "ContractSample": {
+      "type": "object",
+      "properties": {
+        "args": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "boolean"
+            ]
+          }
+        },
+        "text": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SampleText"
+          }
+        },
+        "composes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SampleInstance"
+          },
+          "description": "Usage de chaque dépendance, dans l'ordre de l'arbre publié."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Ce qu'un variant montre réellement dans Figma — jamais normatif.\n\nAucun contrôle du consommateur ne le compare au code : il donne le contexte qui permet de retrouver la maquette, sans en faire une obligation. Il ne contient que des valeurs qu'un développeur pourrait écrire lui-même — du texte, un booléen, une valeur d'enum — jamais un token, une dimension ou un layout ; une donnée de rendu qui manquerait ici manque au contrat normatif, et c'est là qu'il faut la corriger.\n\n`args` porte les valeurs appliquées des props de CE composant dans CE variant : la visibilité réelle d'un slot optionnel, le texte d'une TEXT property, le composant d'un INSTANCE_SWAP."
+    },
+    "SampleText": {
+      "type": "object",
+      "properties": {
+        "slotPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Chemin de slots depuis `variantViews[variants[].view].structure.children`."
+        },
+        "figmaLayer": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "slotPath",
+        "figmaLayer",
+        "value"
+      ],
+      "additionalProperties": false,
+      "description": "Un texte de la maquette, dans un slot de CE contrat.\n\nPorte les deux adresses, comme `VariantIconPlacement` (`figmaName` + `slotPath`) et `IconDefinition` (`figmaName` + `slot`) : un chemin de slots est POSITIONNEL — `label-2`, `icon-2` — et un calque ajouté le décale, là où le nom Figma reste stable.\n\n`figmaLayer` est celui de la FEUILLE publiée, pas celui du calque texte qu'elle enveloppe : c'est la seule façon qu'il s'accorde toujours avec le `figmaLayer` que la vue publie au même `slotPath`. Quand il vaut `value`, le calque n'a jamais été renommé — la redondance est le signal, pas du bruit."
+    },
+    "SampleInstance": {
+      "type": "object",
+      "properties": {
+        "slotPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Chemin de slots du calque qui EST l'instance. Absent pour une dépendance imbriquée dans une autre : elle vit hors de l'arbre publié de ce contrat.\n\nSous un cadre qui ne publie pas ses enfants — le cas déjà signalé d'une branche masquée menant à une dépendance — le chemin est celui du cadre."
+        },
+        "figmaLayer": {
+          "type": "string",
+          "description": "Nom du calque : identité, et seule ancre d'une dépendance imbriquée."
+        },
+        "component": {
+          "type": "string",
+          "description": "Nom du composant unifié, comme `ComposedDependency.component`."
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": {
+            "type": [
+              "string",
+              "boolean"
+            ]
+          }
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SampleOverride"
+          }
+        },
+        "composes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SampleInstance"
+          }
+        }
+      },
+      "required": [
+        "figmaLayer",
+        "component"
+      ],
+      "additionalProperties": false,
+      "description": "L'usage exact d'une dépendance dans la maquette.\n\n`args` emploie les clés PUBLIQUES du contrat de la dépendance et vaut pour un SOUS-ENSEMBLE : une clé absente ne signifie pas que la maquette ne la pose pas. Il porte aussi la valeur de l'axe d'états, sous la clé de cet axe, pour qu'il puisse se rapprocher des `variants[].values` de ce contrat-là."
+    },
+    "SampleOverride": {
+      "type": "object",
+      "properties": {
+        "figmaPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Chemin de calques Figma relatif à l'instance, cible comprise."
+        },
+        "text": {
+          "type": "string"
+        },
+        "visible": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "figmaPath"
+      ],
+      "additionalProperties": false,
+      "description": "Ce que CE parent a surchargé dans une instance de dépendance.\n\nLa frontière n'est pas une convention mais une lecture : `InstanceNode.overrides` dit ce que cette instance-ci a changé, par opposition à ce que son composant fournit — qui appartient au contrat de la dépendance. Les champs retenus sont les trois que le contrat sait porter sans décrire de rendu ; une surcharge de couleur ou de dimension est écartée, et signale plutôt un manque du contrat normatif de la dépendance."
     },
     "Intent": {
       "type": "object",

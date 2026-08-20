@@ -38,8 +38,15 @@ function belongsTo(node: SceneNode, ancestor: SceneNode): boolean {
   return false;
 }
 
-/** Chemin de calques Figma relatif au slot direct, cible comprise. */
-function figmaPath(node: SceneNode, root: SceneNode): string[] {
+/**
+ * Chemin de calques Figma relatif à une racine, cible comprise.
+ *
+ * Unique autorité : `visibilityTargets` s'en sert pour situer une visibilité
+ * imbriquée, l'échantillon pour situer une surcharge dans une dépendance. Deux
+ * constructions finiraient par différer d'un segment, et le consommateur
+ * joindrait sur des chemins qui ne se correspondent plus.
+ */
+export function figmaPath(node: SceneNode, root: SceneNode): string[] {
   const path: string[] = [];
   let current: BaseNode | null | undefined = node;
   while (current && current !== root) {

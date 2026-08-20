@@ -716,6 +716,83 @@ Sous le wrap, Figma scinde son champ gap en deux. Les messages emploient donc
 Slots dédupliqués (`label`, `label-2`…). Un calque rendable inattendu est inclus
 tel quel, jamais supprimé silencieusement.
 
+#### 9. Échantillon de maquette
+
+`samples` capture ce que Figma **affiche** — le contenu textuel et les valeurs de
+props réellement appliquées — pour le composant exporté comme pour chaque
+composant enfant qu'il embarque, récursivement. Chaque entrée de `variants` en
+référence une par `sample` ; le catalogue déduplique par égalité stricte du bloc
+JSON, si bien qu'un component set dont tous les variants montrent le même contenu
+n'en publie qu'une.
+
+Cette information existait déjà dans le contrat, mais par accident : Figma nomme
+un calque texte d'après son contenu tant que personne ne l'a renommé, si bien que
+`figmaLayer` répondait tantôt « quel calque », tantôt « quel texte ». Le même
+composant produisait les deux — `Titre` pour un calque renommé, la phrase entière
+pour un calque qui ne l'a jamais été — sans que rien ne permette de les
+distinguer, et le contenu disparaissait le jour où un designer nommait son
+calque. **`figmaLayer` est désormais une identité, jamais un contenu ; le contenu
+se lit dans `samples`, ou nulle part.**
+
+**Ce que l'échantillon porte.** `args` donne les valeurs appliquées dans CE
+variant : la visibilité réelle d'un slot optionnel — que `optional` ne disait pas,
+il annonçait seulement qu'un slot PEUT être masqué — le texte d'une TEXT
+property, le composant d'un INSTANCE_SWAP. `text` donne le contenu des slots
+qu'aucune prop ne porte, situé par son chemin de slots ET par le nom de son
+calque. `composes` donne l'usage de chaque dépendance : ses `args` aux clés
+publiques de SON contrat, et `overrides` pour ce que ce parent a écrit dedans.
+
+**La règle d'adressage.** On adresse par slot ce que ce contrat décrit, et par
+nom de calque Figma ce qu'il ne décrit pas. Le nom de calque est la seule
+identité que deux contrats partagent : celui de la dépendance publie `figmaLayer`
+sur chacun de ses slots, et c'est la clé de jointure. D'où l'asymétrie —
+`ContractSample` n'a pas d'`overrides`, `SampleInstance` n'a pas de `text` : on
+n'a de slots que chez soi, on ne surcharge que chez autrui.
+
+**La frontière avec la composition.** Le parent ne réexporte pas les internes
+d'une dépendance. Ce que `overrides` publie n'en est pas : `InstanceNode.overrides`
+répond « qu'est-ce que CE parent a changé ici », par opposition à ce que le
+composant fournit. Un texte que le parent a saisi dans une Alert n'est écrit
+nulle part ailleurs. Deux champs seulement sont retenus, `characters` et
+`visible` ; toute autre surcharge décrit du RENDU et signale plutôt un manque du
+contrat normatif de la dépendance.
+
+**Ce qu'il ne demande jamais.** L'échantillon n'avertit de rien, ne dégrade
+jamais `meta.coverage.portable`, et ne contribue pas à `tokensUsed` — un texte de
+maquette en forme de référence n'est pas un token. Ce qu'il ne sait pas lire, il
+l'omet. En contrepartie, `args` est publié comme un **sous-ensemble**, et voici
+ce qu'il ne sait structurellement pas porter :
+
+- une prop d'une dépendance portée par son wrapper de dimensions et non exposée —
+  elle n'est ni dans `componentProperties`, ni dans `exposedInstances` ;
+- une prop d'icône synthétique (`iconLeftName`), fabriquée par les règles `@icons`
+  sans component property Figma derrière ;
+- une icône substituée sans propriété : Figma n'expose pas `mainComponent` dans
+  son relevé de surcharges. Le geste attendu est d'exposer un `INSTANCE_SWAP` ;
+- une valeur en conflit entre deux calques d'un même variant — la clé est omise ;
+- le second texte d'une feuille qui en porte plusieurs ;
+- une dépendance sous un calque statiquement masqué, déjà absente de `composes`.
+
+En cas de désaccord entre un échantillon et une donnée normative, **la normative
+l'emporte** : l'échantillon décrit la maquette du jour de l'export.
+
+**Le contenu d'une dépendance se lit en deux temps** : ses valeurs par défaut
+dans SON contrat — l'échantillon du variant que `args` désigne — et les écarts
+dans `overrides`. C'est la mécanique de Figma elle-même, composant plus
+surcharges, et elle évite de recopier le contenu d'une Alert dans chaque contrat
+qui l'emploie.
+
+**Ce qu'il ne publie pas, faute d'apporter quoi que ce soit.** Les icônes du
+composant exporté sont déjà dans `variantViews[].icons`, par vue exacte. Celles
+d'une dépendance se dérivent de ses `args` et de son propre contrat, qu'il faut
+de toute façon lire pour la rendre. Une seconde copie pourrait contredire la
+première.
+
+**Une notice, jamais un avertissement.** Deux échantillons là où le design en
+attendait un révèlent un libellé retouché dans un seul variant. Le constat suit
+ses jumeaux sur la structure et la composition, et emprunte le même canal :
+rien ne manque, rien n'est à corriger.
+
 #### 7. Intention et documentation des props
 
 L'intention et la documentation des props sont lues dans un **conteneur
@@ -888,8 +965,25 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
       "view": "v1",
       "tokens": { "background": "{components.button.colors.primary}" },
       "strokes": {},
-      "bindings": [{ "definition": "b1", "nodeId": "12:350" }] }
+      "bindings": [{ "definition": "b1", "nodeId": "12:350" }],
+      "sample": "s1" }
   ],
+  "samples": {
+    "s1": {
+      "args": { "iconLeft": true, "iconRight": true },
+      "text": [
+        { "slotPath": ["label"], "figmaLayer": "Suivant", "value": "Suivant" }
+      ],
+      "composes": [
+        { "slotPath": ["action", "button"], "figmaLayer": "Button",
+          "component": "Button",
+          "args": { "color": "info", "variant": "outlined", "label": true },
+          "overrides": [
+            { "figmaPath": ["sizeWrapperButton", "Suivant"], "text": "Compléter" }
+          ] }
+      ]
+    }
+  },
   "stateModel": {
     "axis": "state",
     "states": {
@@ -1233,6 +1327,12 @@ et placements de bindings exacts. `propertyBindingDefinitions` ne garde qu'une
 copie de la partie stable d'une liaison ; `variants[].bindings` conserve son
 `nodeId` dans chaque COMPONENT. Aucun champ n'est fusionné partiellement : deux
 vues ne partagent une clé que si leur JSON complet est identique.
+
+`samples` catalogue à part ce que la maquette montre, et chaque entrée de
+`variants` le référence par `sample`. Il est le seul champ non normatif du
+contrat : le retirer, avec les `variants[].sample`, redonne exactement la forme
+précédente, `meta` mis à part. Il vit hors de `variantViews` pour que le contenu,
+volatil, ne fasse pas éclater la déduplication des vues, qui est stable.
 
 Toute information exacte se lit dans une entrée de `variants`, la vue
 qu’elle référence et ses placements de bindings. La projection de référence

@@ -32,7 +32,7 @@ test('les liaisons natives visible, characters et mainComponent gardent leur cib
   const root = node('COMPONENT', 'State=Default', [node('FRAME', 'Content', [icon, label])]);
   const warnings: string[] = [];
 
-  const bindings = extractPropertyBindings(
+  const { bindings } = extractPropertyBindings(
     { axes: ['state'], variants: [{ values: { state: 'default' }, component: root }] },
     new Map([
       ['Show icon#1:1', 'showIcon'],
@@ -65,7 +65,7 @@ test('une liaison orpheline avertit explicitement de son absence du contrat', ()
   });
   const warnings: string[] = [];
 
-  const bindings = extractPropertyBindings(
+  const { bindings } = extractPropertyBindings(
     { axes: [], variants: [{ values: {}, component: root }] },
     new Map(),
     warnings,
@@ -82,7 +82,7 @@ test('une liaison portée par la racine du variant n’est publiée qu’une foi
   });
   const warnings: string[] = [];
 
-  const bindings = extractPropertyBindings(
+  const { bindings } = extractPropertyBindings(
     { axes: [], variants: [{ values: {}, component: root }] },
     new Map([['Visible#8:3', 'visible']]),
     warnings,
@@ -107,7 +107,7 @@ test('les bindings internes d’une dépendance composée restent dans son propr
   const root = node('COMPONENT', 'Parent', [dependency]);
   const warnings: string[] = [];
 
-  const bindings = extractPropertyBindings(
+  const { bindings } = extractPropertyBindings(
     { axes: [], variants: [{ values: {}, component: root }] },
     new Map(),
     warnings,

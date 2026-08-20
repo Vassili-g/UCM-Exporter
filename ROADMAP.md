@@ -34,6 +34,9 @@ sont jamais corrigés à la main.
 | Contrat 10.1 | L’Exporter situe les peintures dans les vues exactes, signale toute peinture posée à la main, conserve les pistes FIXED de grille en pixels et publie dans `structuralSize` la mesure d’une cellule dont la piste hug |
 | Consommation 10.1 | Le Playground valide `structuralSize` comme une mesure en pixels distincte de `size`, et la pose telle quelle sur les tuiles de StressTest ; un test de rendu l’exerce |
 | Validation Figma 10.1 | Les quatre composants ont été réexportés depuis Figma en 10.1, fusionnés dans le Playground et déposés dans le corpus `tests/test-exports/` de l’Exporter. L’export de Button ne porte aucun avertissement et ses 90 variants partagent la même vue ; celui de StressTest publie la mesure de ses cellules sous une piste qui hug |
+| Contrat 10.2 | `samples` capture ce que la maquette montre — contenu textuel, visibilité réelle des slots optionnels, props appliquées de chaque dépendance et de ses imbriquées. Non normatif : aucun contrôle ne le compare au code, et le retirer redonne la forme 10.1 |
+| Consommation 10.2 | **À faire.** Les lecteurs du Playground doivent d’abord tolérer le champ et l’exclure du relevé des références de tokens ; la bascule de version suit un réexport humain depuis Figma |
+| Validation Figma 10.2 | **À faire.** La sémantique d’`InstanceNode.overrides` sur une dépendance imbriquée est documentée sans être précisée : le premier export réel doit la constater. La lecture est défensive et ne peut rien dégrader de normatif |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
 | Structure portable | Flex, wrap, grille, position absolue, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
