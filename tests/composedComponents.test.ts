@@ -627,35 +627,3 @@ test('le relevé d’un maître s’arrête sur les dépendances qu’il embarqu
 
   assert.deepEqual(Array.from(defauts.keys()), []);
 });
-
-test('un calque d’une dépendance repeint à la main est signalé, avec son geste', async () => {
-  // La couleur d'un calque appartient au contrat de la dépendance. Posée à la
-  // main par le parent, elle n'entre dans aucun contrat et disparaît en
-  // silence : la maquette montre alors une couleur que rien ne rendra.
-  const label = { type: 'TEXT', id: 'lbl', name: 'Label' };
-  const bouton = instance('b1', 'Button', 'Button', {
-    overrides: [{ id: 'lbl', overriddenFields: ['fills'] }],
-    findAll: () => [label],
-  });
-  const root = racine('c1', 'Alert', [bouton]);
-
-  const scan = await scanComposedInstances(root, new Set(['button']));
-
-  assert.equal(scan.warnings.length, 1);
-  assert.match(scan.warnings[0], /Layer « Button »/);
-  assert.match(scan.warnings[0], /repeint à la main le calque « Label »/);
-  assert.match(scan.warnings[0], /puis réexportez/);
-});
-
-test('une surcharge de texte dans une dépendance ne réclame aucun geste', async () => {
-  const label = { type: 'TEXT', id: 'lbl', name: 'Label' };
-  const bouton = instance('b1', 'Button', 'Button', {
-    overrides: [{ id: 'lbl', overriddenFields: ['characters'] }],
-    findAll: () => [label],
-  });
-  const root = racine('c1', 'Alert', [bouton]);
-
-  const scan = await scanComposedInstances(root, new Set(['button']));
-
-  assert.deepEqual(scan.warnings, []);
-});

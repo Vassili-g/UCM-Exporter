@@ -757,11 +757,10 @@ répond « qu'est-ce que CE parent a changé ici », par opposition à ce que le
 composant fournit. Un texte que le parent a saisi dans une Alert n'est écrit
 nulle part ailleurs. Deux champs seulement sont retenus, `characters` et
 `visible` ; toute autre surcharge décrit du RENDU et signale plutôt un manque du
-contrat normatif de la dépendance. Une surcharge de PEINTURE ne se contente plus
-d'être écartée : ce parent repeint alors un calque qui appartient au contrat de
-la dépendance, la couleur n'entre dans aucun des deux contrats, et l'export le
-dit — nom du calque, ce qui manquera, et le geste, qui est de piloter cette
-couleur par une propriété de la dépendance.
+contrat normatif de la dépendance. Une surcharge de peinture y est
+particulièrement trompeuse : remplacer une icône fait rapporter par Figma les
+`fills` des `Vector` du nouveau tracé, et rien ne distingue ce relevé d'une
+couleur posée à la main. C'est `swaps`, et lui seul, qui décrit le remplacement.
 
 **Ce que `overrides` ne peut pas voir : `swaps`.** Figma ne rapporte pas un
 remplacement d'instance — `NodeChangeProperty` ne contient pas `mainComponent` —
