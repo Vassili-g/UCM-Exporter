@@ -233,7 +233,8 @@ export async function extractStructure(
         .join(', ');
       const remaining = divergentVariants.length - 3;
       infos.push(
-        `Structure différente sur ${divergentVariants.length} variant(s), ex. ${examples}` +
+        `Structure différente sur ${divergentVariants.length} `
+        + `variant${divergentVariants.length > 1 ? 's' : ''}, ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
           `référence « ${referenceLayout.component.name} ». La vue exacte référencée par ` +
           `chaque entrée de « variants » conserve sa propre structure ; seule la projection ` +
@@ -257,7 +258,8 @@ export async function extractStructure(
         .join(', ');
       const remaining = flexDivergentVariants.length - 3;
       infos.push(
-        `Auto layout différent sur ${flexDivergentVariants.length} variant(s), ex. ${examples}` +
+        `Auto layout différent sur ${flexDivergentVariants.length} `
+        + `variant${flexDivergentVariants.length > 1 ? 's' : ''}, ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
           `référence « ${referenceLayout.component.name} ». Les vues exactes de « variants » ` +
           `conservent leurs flux respectifs ; seule la projection « structure » reste celle ` +

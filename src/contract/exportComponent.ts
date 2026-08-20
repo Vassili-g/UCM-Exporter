@@ -229,11 +229,19 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     ? findMissingVariantCombinations(componentSet)
     : null;
   if (missingVariants) {
+    // Une matrice clairsemée est parfois voulue, parfois oubliée : le contrat ne
+    // peut pas trancher, mais le designer si. Le constat reste donc un
+    // avertissement, et nomme le geste — sans quoi il ne serait qu'une ligne de
+    // plus à survoler dans la pull request.
+    const plusieurs = missingVariants.missing > 1;
     warnings.push(
-      `Component Set « ${componentSet.name} » : ${missingVariants.missing} combinaison(s) du `
-        + `produit cartésien de ses axes n'existent pas. Le contrat ${CONTRACT_VERSION} publie uniquement les `
-        + `combinaisons exactes présentes dans « variants » ; aucune combinaison interdite `
-        + `n'est inventée.`,
+      `Component Set « ${componentSet.name} » : ${missingVariants.missing} `
+        + `combinaison${plusieurs ? 's' : ''} du produit cartésien de ses axes `
+        + `${plusieurs ? "n'existent" : "n'existe"} pas. Le contrat ${CONTRACT_VERSION} publie `
+        + `uniquement les combinaisons exactes présentes dans « variants » ; aucune `
+        + `combinaison interdite n'est inventée. ${plusieurs ? 'Si ces combinaisons doivent '
+          + 'exister, ajoutez-les' : 'Si cette combinaison doit exister, ajoutez-la'} dans Figma, `
+        + `puis réexportez.`,
     );
   }
   // La liste exacte porte cet écart : il ne manque rien à la projection v8.

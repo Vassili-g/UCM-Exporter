@@ -473,7 +473,7 @@ test('une piste FIXED de grille est une note, pas un avertissement', async () =>
   try {
     const resultat = await handleExportComponent();
     const contrat = JSON.parse(resultat.content);
-    const enPixels = (message: string) => message.includes('publiée en pixels');
+    const enPixels = (message: string) => message.includes('publiées en pixels');
 
     // Rien ne manque : la piste est publiée telle que Figma la règle.
     assert.deepEqual(contrat.structure.rowSizes, ['120px', '1fr']);
@@ -823,6 +823,40 @@ test('une règle @icons sans layer est rangée comme une perte de portabilité',
       diagnosticPour(contrat, 'aucun layer de ce nom').code,
       'UCM_PORTABLE_PROJECTION_WARNING',
     );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('deux variants dont la grille diffère ne produisent qu’une note', async () => {
+  // La note de piste FIXED est écrite une fois par variant, et un même calque
+  // de grille n'a pas les mêmes pistes partout. Quand elle citait les index,
+  // deux constats se contredisaient sur le même nom de calque — « la ligne 1 »
+  // et « les lignes 1, 2, 3 » — sans dire de quel variant chacun parlait.
+  let appel = 0;
+  const figmaFaux = monterFigma({
+    avecRegles: false,
+    enfantsDuVariant: () => {
+      appel += 1;
+      return [
+        node('FRAME', 'TilesGrid', [node('TEXT', 'Tuile', [], { characters: 'Tuile' })], {
+          layoutMode: 'GRID',
+          gridRowSizes: appel === 1
+            ? [{ type: 'FIXED', value: 15 }, { type: 'HUG' }]
+            : [{ type: 'FIXED', value: 15 }, { type: 'FIXED', value: 20 }, { type: 'HUG' }],
+          gridColumnSizes: [{ type: 'FLEX', value: 1 }],
+        }),
+      ];
+    },
+  });
+  try {
+    const resultat = await handleExportComponent();
+    const enPixels = resultat.infos.filter((info) => info.includes('publiées en pixels'));
+    assert.equal(enPixels.length, 1);
+    assert.match(enPixels[0], /Layer « TilesGrid » : ses lignes de taille fixe/);
+    // Le constat ne cite aucun index : c'est ce qui le rend identique d'un
+    // variant à l'autre, donc dédoublonnable.
+    assert.doesNotMatch(enPixels[0], /\d/);
   } finally {
     figmaFaux.restaurer();
   }

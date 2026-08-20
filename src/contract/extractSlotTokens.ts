@@ -61,7 +61,7 @@ function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment |
   if (raw === 'INSIDE') return 'inside';
   if (raw === 'CENTER') return 'center';
   if (raw === 'OUTSIDE') return 'outside';
-  warnings.push(`Layer « ${node.name} » : l’alignement du stroke est illisible. Le contrat ne dira pas s’il est inside, center ou outside.`);
+  warnings.push(`Layer « ${node.name} » : l’alignement du stroke est illisible. Le contrat ne dira pas s’il est inside, center ou outside. Vérifiez ce réglage dans Figma, puis réexportez.`);
   return null;
 }
 

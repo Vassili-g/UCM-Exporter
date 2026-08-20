@@ -286,7 +286,7 @@ export async function handleExportTokens(): Promise<TokensExport> {
   for (const [path, variable] of variableByPath) {
     const collection = collectionById.get(variable.variableCollectionId);
     if (!collection) {
-      warnings.push(`Variable « ${variable.name} » : sa collection est introuvable, elle n’est pas exportée.`);
+      warnings.push(`Variable « ${variable.name} » : sa collection est introuvable, elle n’est pas exportée. Vérifiez que cette variable appartient à une collection du fichier, puis réexportez.`);
       continue;
     }
     insert(tree, path, buildLeaf(variable, collection, ctx, warnings), warnings);

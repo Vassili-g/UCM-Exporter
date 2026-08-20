@@ -435,7 +435,13 @@ test('plusieurs contenus dans une même matrice se constatent, sans rien réclam
     { figmaName: 'Color=Secondary', sample: 's1' },
     { figmaName: 'Color=Error', sample: 's2' },
   ]);
-  assert.match(notice ?? '', /Contenu de maquette différent sur 1 variante\(s\)/);
+  assert.match(notice ?? '', /Contenu de maquette différent sur 1 variante,/);
   assert.match(notice ?? '', /« Color=Error »/);
-  assert.match(notice ?? '', /réexportez\.$/);
+  assert.match(notice ?? '', /« samples »\.$/);
+
+  // « sans rien réclamer » au pied de la lettre : l'échantillon n'a pas le droit
+  // de demander un geste, et un axe de variantes existe précisément pour montrer
+  // des contenus différents — la phrase impérative tombait donc sur le cas
+  // normal, à chaque export.
+  assert.doesNotMatch(notice ?? '', /réexportez|alignez|Corrigez|dans Figma/);
 });

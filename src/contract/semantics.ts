@@ -116,7 +116,7 @@ export function buildStateModel(
     const known = Object.prototype.hasOwnProperty.call(STATE_SELECTORS, value);
     states.set(value, { selector: known ? STATE_SELECTORS[value] : null });
     if (!known) {
-      warnings.push(`Variant property « ${axis} » : l'état « ${value} » n'est pas reconnu, le contrat ne dira pas quand l'afficher. États reconnus : default, hover, focus, press, disable.`);
+      warnings.push(`Variant property « ${axis} » : l'état « ${value} » n'est pas reconnu, le contrat ne dira pas quand l'afficher. États reconnus : default, hover, focus, press, disable. Renommez cette valeur avec l'un d'eux, puis réexportez.`);
     }
   }
 

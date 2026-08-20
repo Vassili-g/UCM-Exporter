@@ -281,9 +281,9 @@ test('extractVariantTokens suit l’ordre de la matrice, pas l’ordre de résol
   assert.deepEqual(Object.keys(trees.variantStrokes), ['default', 'hover', 'focus']);
   // Les avertissements aussi entrent dans le contrat : leur ordre suit la matrice.
   assert.deepEqual(warnings, [
-    'Variant « State=Default » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui.',
-    'Variant « State=Hover » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui.',
-    'Variant « State=Focus » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui.',
+    'Variant « State=Default » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui. Reliez ses fills et ses strokes à des variables Figma, puis réexportez.',
+    'Variant « State=Hover » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui. Reliez ses fills et ses strokes à des variables Figma, puis réexportez.',
+    'Variant « State=Focus » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui. Reliez ses fills et ses strokes à des variables Figma, puis réexportez.',
   ]);
 });
 

@@ -358,10 +358,16 @@ function trouverProprietaire(
  * Constate qu'un même component set montre plusieurs contenus de maquette.
  *
  * Ce n'est pas un avertissement : rien ne manque, et le contrat conserve chaque
- * contenu. Mais deux échantillons là où le design en attendait un révèlent une
- * incohérence — un libellé retouché dans un seul variant — que rien ne rendait
- * visible jusqu'ici. Le message suit ses jumeaux sur la structure et la
- * composition, et emprunte le même canal qu'eux.
+ * contenu. Le message suit ses jumeaux sur la structure et la composition, et
+ * emprunte le même canal qu'eux.
+ *
+ * Il ne demande RIEN, et sa formulation s'y tient. Il réclamait d'aligner les
+ * contenus dans Figma « si ces variantes devaient montrer le même texte » :
+ * c'était un geste demandé par l'échantillon, que l'invariant lui interdit, et
+ * il tombait sur le cas le plus normal qui soit — un axe de variantes existe
+ * précisément pour montrer des contenus différents. Reste le constat, qui dit
+ * où lire chaque contenu ; c'est au designer de décider s'il y a une
+ * incohérence, et le contrat lui donne de quoi la voir.
  */
 export function sampleVarianceNotice(
   variants: ReadonlyArray<{ figmaName: string; sample?: string }>,
@@ -387,8 +393,8 @@ export function sampleVarianceNotice(
   const exemples = ecarts.slice(0, 3).map((variant) => `« ${variant.figmaName} »`).join(', ');
   const reste = ecarts.length - 3;
 
-  return `Contenu de maquette différent sur ${ecarts.length} variante(s), ex. ${exemples}`
+  return `Contenu de maquette différent sur ${ecarts.length} `
+    + `variante${ecarts.length > 1 ? 's' : ''}, ex. ${exemples}`
     + `${reste > 0 ? ` (+${reste})` : ''} : le contrat conserve chaque contenu dans `
-    + `« samples ». Si ces variantes devaient montrer le même texte, alignez-les dans `
-    + `Figma, puis réexportez.`;
+    + `« samples ».`;
 }

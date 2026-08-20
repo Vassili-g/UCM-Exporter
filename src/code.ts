@@ -149,6 +149,9 @@ async function runExport(
     }
     // Les notes disent ce que le contrat publie, pas ce qui lui manque : elles
     // portent donc une puce neutre et ne gonflent pas le compte d'avertissements.
+    // Ce journal est leur seul canal humain : la pull request ne les reprend pas,
+    // parce qu'une ligne dont la conclusion est toujours « rien à faire » finit
+    // par coûter la lecture de celles qui, elles, demandent un geste.
     for (const info of result.infos ?? []) {
       figma.ui.postMessage({ type: 'log', text: `• ${info}` });
     }
@@ -171,7 +174,6 @@ async function runExport(
         filename: result.filename,
         content: result.content,
         warnings: result.warnings ?? [],
-        infos: result.infos ?? [],
       });
       if (publication.status === 'unchanged') {
         const message = `Aucun changement pour ${publication.path} : aucune PR créée.`;

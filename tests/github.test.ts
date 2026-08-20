@@ -266,33 +266,29 @@ test('le corps de la pull request porte les avertissements de l’export', () =>
   assert.doesNotMatch(signale, /—|\w+\(s\)/);
 });
 
-test('une note d’export ne se présente pas comme un point à corriger', () => {
-  // Le message dit lui-même qu'aucune modification du design n'est demandée.
-  // Le titrer « l'export n'a pas pu décrire » puis conclure par « corrigez
-  // chaque point » enverrait le designer chercher une correction inexistante.
-  const note = 'Layer « TilesGrid » : la ligne 1 est publiée en pixels, exception propre aux '
-    + "pistes FIXED d'une grille.";
-  const seulesDesNotes = pullRequestBody(
-    'src/components/StressTest/StressTest.contract.json',
-    [],
-    [note],
-  );
-  assert.match(seulesDesNotes, /Aucun avertissement d'export\./);
-  assert.doesNotMatch(seulesDesNotes, /n'a pas pu décrire/);
-  assert.doesNotMatch(seulesDesNotes, /Corrigez chaque point/);
-  assert.match(seulesDesNotes, /## Notes d’export \(1 note\)/);
-  assert.match(seulesDesNotes, /n’appellent aucune correction/);
-  assert.match(seulesDesNotes, /- Layer « TilesGrid »/);
+test('une note d’export n’atteint pas le corps de la pull request', () => {
+  // La PR est le seul canal que le designer relit à froid, et ce qu'il y lit
+  // décide s'il relira la suivante. Une note dit elle-même qu'aucune
+  // modification n'est demandée : la publier ici, c'est lui apprendre que ces
+  // listes se survolent, et le jour où un avertissement demandera un geste il
+  // le survolera aussi. Les notes vivent dans `meta.diagnostics` et dans le
+  // journal du plugin.
+  const note = 'Layer « TilesGrid » : ses lignes de taille fixe sont publiées en pixels, '
+    + "exception propre aux pistes FIXED d'une grille.";
+  const corps = pullRequestBody('src/components/StressTest/StressTest.contract.json', []);
+  assert.match(corps, /Aucun avertissement d'export\./);
+  assert.doesNotMatch(corps, /Notes d’export/);
+  assert.equal(corps.includes(note), false);
+  assert.equal(corps.includes('TilesGrid'), false);
 
-  // Les deux natures coexistent sans se confondre : la consigne « corrigez »
-  // ne porte que sur la liste des avertissements, qui la précède.
-  const lesDeux = pullRequestBody(
+  // Un avertissement, lui, garde toute la page : la liste ne contient plus que
+  // ce qui nomme un geste, et la consigne finale porte donc sur chaque ligne.
+  const signale = pullRequestBody(
     'src/components/StressTest/StressTest.contract.json',
     ['Calque « row », espacement : aucune variable Figma n’est reliée.'],
-    [note, note],
   );
-  assert.match(lesDeux, /\(1 point\)/);
-  assert.match(lesDeux, /## Notes d’export \(2 notes\)/);
-  assert.ok(lesDeux.indexOf('Corrigez chaque point') < lesDeux.indexOf('Notes d’export'));
+  assert.match(signale, /\(1 point\)/);
+  assert.match(signale, /Corrigez chaque point/);
+  assert.doesNotMatch(signale, /Notes d’export/);
 });
 
