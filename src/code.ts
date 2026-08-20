@@ -74,7 +74,7 @@ let selectionToken = 0;
 
 /**
  * Analyse la sélection courante et prévient l'utilisateur AVANT toute action.
- * Les règles enrichissent la documentation ; elles ne bloquent plus la capture.
+ * Les règles enrichissent la documentation ; elles ne conditionnent pas la capture.
  */
 async function reportSelectionState(): Promise<void> {
   const token = (selectionToken += 1);

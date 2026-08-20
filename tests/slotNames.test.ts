@@ -167,7 +167,12 @@ test('les slots viennent du node de layout retenu, pas d’une seconde élection
     [node('VECTOR', 'arrow-left-long'), node('TEXT', 'Suivant')],
     { layoutMode: 'HORIZONTAL', boundVariables: { itemSpacing: alias('gap') } },
   );
-  const wrapperInstance = node('INSTANCE', 'sizeWrapper', [row]);
+  // Un wrapper est une instance qu'on saura retrouver dans les autres variants,
+  // par l'id de son maître : sans lui, l'élection retombe sur le composant pour
+  // tout le monde, référence comprise.
+  const wrapperInstance = node('INSTANCE', 'sizeWrapper', [row], {
+    getMainComponentAsync: async () => ({ id: 'main-wrapper', name: 'sizeWrapper', parent: null }),
+  });
   const reference = node(
     'COMPONENT',
     'Color=Primary',

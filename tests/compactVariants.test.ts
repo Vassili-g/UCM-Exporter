@@ -1,4 +1,4 @@
-/** Régression de la normalisation v9 : compacte, mais sans aucune fusion. */
+/** Normalisation des variants : compacte, mais sans aucune fusion. */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { compactVariants } from '../src/contract/compactVariants';

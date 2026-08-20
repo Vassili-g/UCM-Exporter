@@ -33,15 +33,14 @@ sont jamais corrigés à la main.
 |---|---|
 | Contrat 10.1 | L’Exporter situe les peintures dans les vues exactes, signale toute peinture posée à la main, conserve les pistes FIXED de grille en pixels et publie dans `structuralSize` la mesure d’une cellule dont la piste hug |
 | Consommation 10.1 | Le Playground valide `structuralSize` comme une mesure en pixels distincte de `size`, et la pose telle quelle sur les tuiles de StressTest ; un test de rendu l’exerce |
-| Validation Figma 10.1 | Les quatre composants ont été réexportés depuis Figma en 10.1, fusionnés dans le Playground et déposés dans le corpus `tests/test-exports/` de l’Exporter. L’export de Button ne porte plus aucun avertissement et ses 90 variants partagent enfin la même vue ; celui de StressTest publie la mesure de ses cellules sous une piste qui hug |
+| Validation Figma 10.1 | Les quatre composants ont été réexportés depuis Figma en 10.1, fusionnés dans le Playground et déposés dans le corpus `tests/test-exports/` de l’Exporter. L’export de Button ne porte aucun avertissement et ses 90 variants partagent la même vue ; celui de StressTest publie la mesure de ses cellules sous une piste qui hug |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
 | Structure portable | Flex, wrap, grille, position absolue, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
 | Contrôles du Playground | Forme et version des contrats, graphe, parité statique, références de tokens, tests de rendu co-localisés, génération des types et du CSS |
 | Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
-| Test froid | Les quatre composants du Playground ont été reconstruits depuis les seuls contrats et le skill, et `npm run check` est vert. Le test a trouvé deux pertes réelles — une icône dont le fill avait perdu sa variable, et une grille dont les pistes qui hug retombaient à zéro — toutes deux fermées : la première par un avertissement d’export et une correction dans Figma, la seconde par `structuralSize` |
-| Revue de code | Deux défauts fermés depuis, sans changer la forme du contrat : la lecture des peintures ne sortait plus de la même source que son avertissement, et l’exception pixel des grilles contredisait l’avertissement de dimension quand l’enfant était explicitement aligné |
-| Multi-composants | Button, Alert, TileLink et StressTest ont une implémentation ; StressTest exerce grille, wrap, champs asymétriques et composition multiple, et TileLink publie désormais son sizing tokenisé |
+| Test froid | Les quatre composants du Playground sont reconstructibles depuis les seuls contrats et le skill, et `npm run check` est vert |
+| Multi-composants | Button, Alert, TileLink et StressTest ont une implémentation ; StressTest exerce grille, wrap, champs asymétriques et composition multiple, et TileLink publie son sizing tokenisé |
 | Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
 | Interopérabilité | Le JSON Schema du contrat est publié dans `schema/`, dérivé de `types.ts` et vendu au Playground pour l’éditeur ; il décrit la forme, jamais la cohérence, et ne bloque aucune fusion. `tokens.json` n’a toujours pas de version propre |
 | Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |

@@ -176,7 +176,7 @@ export function isRenderableRole(key: string): boolean {
  * C'est la contrepartie de la règle d'or en haut de ce fichier : un token
  * nommé `…/scale-1` ne dit rien de ce qu'il peint, mais le calque qui le porte
  * le dit entièrement. Le nom reste l'IDENTITÉ de la couleur dans la feuille de
- * variante ; il ne décide plus de son rendu.
+ * variante ; il ne décide pas de son rendu.
  *
  * Même ordre que `semanticSlotName` — le texte d'abord, l'icône ensuite — pour
  * que les deux se lisent comme une seule règle. Le défaut est la surface :
@@ -296,7 +296,7 @@ function strokeReference(value: unknown): string | null {
  * explicitement, et le calque qui le porte dit le contraire — l'une des deux
  * intentions est fausse, et le contrat ne peut pas trancher à sa place.
  *
- * Une clé qui ne nomme AUCUN rôle partagé n'est plus une anomalie : son rendu
+ * Une clé qui ne nomme AUCUN rôle partagé n'est pas une anomalie : son rendu
  * se déduit du site d'application (`paintSiteRole`) et se publie dans
  * `rendering.roles` (`renderingSemanticsFor`). Exiger qu'elle se termine par un
  * rôle imposerait au design system un renommage que rien ne justifie.

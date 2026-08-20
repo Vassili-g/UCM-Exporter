@@ -155,8 +155,8 @@ Les préconditions définies par la spécification restent bloquantes :
 - composant ou component set sans aucun variant exportable.
 
 L'absence de règles et une matrice clairsemée sont des diagnostics, pas des
-blocages : la liste exacte `variants` permet désormais de produire un contrat
-cohérent dans les deux cas.
+blocages : la liste exacte `variants` produit un contrat cohérent dans les deux
+cas.
 
 Tout accès Figma susceptible d’échouer doit être protégé. Les chaînes d’alias
 doivent détecter les cycles. Une collision ou une perte d’information ne doit
@@ -226,6 +226,24 @@ Chaque document a une autorité limitée :
 Une modification se termine par une revue des documents concernés. Décrire
 l’état actuel, supprimer les formulations périmées et préférer un lien à une
 répétition. L’historique appartient à Git.
+
+### Une règle, un domicile
+
+Une même règle écrite à deux endroits finit par diverger. Chaque endroit en
+porte donc une altitude différente, et une seule fait autorité :
+
+| Endroit | Ce qu’il porte |
+|---|---|
+| `UCM-EXPORTER-SPEC.md` | La règle et son pourquoi — l’autorité |
+| `AGENTS.md` | La règle, sa borne, le fichier qui la porte, un lien vers la spécification |
+| Commentaire de code | Ce qui ne vaut qu’à cet endroit du code |
+| Nom de test | La clause vérifiable, une par test |
+
+Ailleurs, un lien. Une mention d’une phrase à une autre altitude — le `README`
+qui résume, la `ROADMAP` qui date une étape — n’est pas une répétition.
+
+Écrire dans la spécification demande une ancre : ses titres sont les cibles des
+liens d’`AGENTS.md`, et `npm test` échoue sur un lien mort.
 
 ## API Figma et build
 

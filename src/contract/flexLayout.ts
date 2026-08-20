@@ -43,9 +43,9 @@ export function isLinearAutoLayout(node: SceneNode): boolean {
  *
  * Figma y dispose ses enfants en lignes et en colonnes, avec deux gaps propres
  * (`gridRowGap`, `gridColumnGap`) que le contrat sait citer comme des tokens :
- * ils sont tous deux liables à une variable. La grille n'est donc plus un repli
- * `flex-row` accompagné d'un regret — c'est une disposition que le contrat
- * décrit, avec son nombre de pistes et la place de chaque enfant.
+ * ils sont tous deux liables à une variable. La grille n'est donc pas un repli
+ * `flex-row` : c'est une disposition que le contrat décrit, avec son nombre de
+ * pistes et la place de chaque enfant.
  */
 export function isGridAutoLayout(node: SceneNode): boolean {
   return (node as unknown as FigmaPropertyBag).layoutMode === 'GRID';

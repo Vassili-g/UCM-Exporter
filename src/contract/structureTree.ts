@@ -1,15 +1,7 @@
 /**
  * Qui est un conteneur du contrat, et qui est une feuille — unique autorité.
  *
- * `structure.children` décrivait jusqu'ici deux sortes de branches : celles qui
- * mènent à un calque texte, et celles qui mènent à un composant unifié. Tout le
- * reste devenait une feuille opaque, quelle que soit sa richesse : un auto
- * layout dans un auto layout dans un auto layout, trois cadres bordés
- * emboîtés, une grille de tuiles — un seul slot, et rien dedans. Leurs couleurs
- * entraient pourtant dans `variantTokens`, si bien que le contrat annonçait des
- * peintures qu'aucun calque publié ne portait.
- *
- * La règle est désormais unique et ne connaît ni profondeur, ni nature de
+ * La règle est unique et ne connaît ni profondeur, ni nature de
  * composant : **on descend dans un calque dès qu'un de ses descendants porte
  * une information que la forme feuille ne sait pas exprimer.** Une feuille dit
  * son nom, sa taille, ses bornes et sa place dans le flux ; elle ne sait pas
@@ -19,7 +11,9 @@
  * La règle n'a pas d'exception, et c'est ce qui la rend tenable : un cadre qui
  * n'enveloppe qu'un libellé est décrit comme un cadre, avec son padding, sa
  * taille et son alignement, puis le libellé dedans. L'étage supplémentaire
- * n'est pas du bruit — c'est exactement ce que l'ancienne forme perdait.
+ * n'est pas du bruit : sans lui, le slot serait opaque alors que ses couleurs
+ * entrent dans `variantTokens`, et le contrat annoncerait des peintures
+ * qu'aucun calque publié ne porte.
  *
  * Cette décision vit ici et nulle part ailleurs. `extractLayout` la suit pour
  * publier, `textSlots` pour situer les typographies, les signatures pour

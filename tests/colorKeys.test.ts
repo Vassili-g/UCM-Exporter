@@ -17,8 +17,8 @@ test('une clé que personne ne conteste reste le dernier segment', () => {
 
 /**
  * Le cas StressTest : deux surfaces du MÊME variant, deux variables que le
- * design system nomme déjà distinctement. L'export tronquait au dernier
- * segment et perdait une couleur pour de bon.
+ * design system nomme déjà distinctement. Tronquer au dernier segment perdrait
+ * une couleur pour de bon.
  */
 test('deux couleurs qui cohabitent s’allongent du seul segment qui les sépare', () => {
   const keys = resolveColorKeys([

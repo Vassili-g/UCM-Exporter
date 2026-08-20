@@ -341,9 +341,9 @@ test('extractLayout nomme le calque texte « label » sans recopier sa typograph
 });
 
 test('un slot à deux textes conserve chaque part pour que variantTypography puisse la cibler', async () => {
-  // Régression : l'Alert exportée en 4.2 ne portait qu'une typographie pour un
-  // slot « Text » contenant « Titre » et « Description ». Celle du titre était
-  // appliquée aux deux, et `description-size` n'entrait jamais dans le contrat.
+  // Un slot « Text » contenant « Titre » et « Description » porte une
+  // typographie par part. Une seule ferait appliquer celle du titre aux deux, et
+  // `description-size` n'entrerait jamais dans le contrat.
   const titre = {
     type: 'TEXT',
     id: 'title',
@@ -462,9 +462,9 @@ test('un conteneur publie TOUS ses calques, dessins compris', async () => {
     new Set(['circle-info']),
   );
 
-  // Le dessin voisin n'est plus perdu. Il disparaissait de `structure.children`
-  // alors que sa couleur entrait bien dans `variantTokens` : le contrat
-  // annonçait une peinture qu'aucun calque publié ne portait.
+  // Le dessin voisin est publié. L'omettre de `structure.children` alors que sa
+  // couleur entre dans `variantTokens` ferait annoncer au contrat une peinture
+  // qu'aucun calque publié ne porte.
   assert.deepEqual(layout.children[0].children?.map((part) => part.figmaLayer), [
     'Titre',
     'circle-info',
@@ -474,7 +474,7 @@ test('un conteneur publie TOUS ses calques, dessins compris', async () => {
     warnings.some((warning) => warning.includes('circle-info') && warning.includes('width')),
     false,
   );
-  // La visibilité de l'icône n'est plus décrite de loin par un chemin Figma :
+  // La visibilité de l'icône n'est pas décrite de loin par un chemin Figma :
   // le calque est publié, il la porte donc lui-même, à sa place exacte.
   assert.equal(layout.children[0].visibilityTargets, undefined);
   const iconeSlot = layout.children[0].children?.[1];
@@ -530,7 +530,7 @@ test('une visibilité graphique imbriquée est portée par le calque exact qui l
   const brancheTitre = slot.children?.[0];
 
   assert.equal(slot.visibilityTargets, undefined);
-  // L'icône est désormais un calque publié : elle porte sa visibilité à sa
+  // L'icône est un calque publié : elle porte sa visibilité à sa
   // place exacte au lieu d'être décrite de loin par un chemin Figma. Un
   // `visibilityTargets` ne subsiste que pour ce que l'arbre ne publie pas.
   assert.equal(brancheTitre?.visibilityTargets, undefined);
@@ -846,7 +846,7 @@ test('le composant publie stretch par défaut, et fit-content sur un Hug', async
 });
 
 test('une dimension figée du composant reliée à une variable publie son token', async () => {
-  // Une tuile carrée dont le design system nomme le côté : ce n'est plus une
+  // Une tuile carrée dont le design system nomme le côté : ce n'est pas une
   // commodité de maquette, c'est une décision que le composant connaît de
   // lui-même, quel que soit le conteneur qui l'accueillera.
   const tuile = {

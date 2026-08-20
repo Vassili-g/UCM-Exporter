@@ -103,9 +103,9 @@ type LayoutStructure = Omit<
 /**
  * Disposition d'un node, sans valeur inventée pour un frame qui n'en a pas.
  *
- * La grille en fait désormais partie : Figma y expose deux gaps liables à une
- * variable et le nombre de ses pistes, soit tout ce que le contrat sait porter.
- * La décrire comme une rangée était un repli, pas une lecture.
+ * La grille en fait partie : Figma y expose deux gaps liables à une variable et
+ * le nombre de ses pistes, soit tout ce que le contrat sait porter. La décrire
+ * comme une rangée serait un repli, pas une lecture.
  */
 function autoLayoutDirection(node: SceneNode): LayoutDirection | null {
   if (isGridAutoLayout(node)) return 'grid';
@@ -175,10 +175,10 @@ async function applySizing(
  *
  * C'est le même relevé qu'à la racine, appliqué à n'importe quelle profondeur :
  * un auto layout imbriqué a son gap, ses paddings et son rayon exactement comme
- * le composant. Les taire faisait perdre la moitié d'un design à trois étages,
- * et l'argument d'autrefois — « sonder le padding avertirait sur tout design
- * correct » — ne tient plus : une valeur neutre effectivement fournie par Figma
- * reste absente SANS avertissement (`IMPLICIT_DEFAULTS`).
+ * le composant. Les taire ferait perdre la moitié d'un design à trois étages.
+ * Sonder le padding n'avertit pas pour autant sur tout design correct : une
+ * valeur neutre effectivement fournie par Figma reste absente SANS
+ * avertissement (`IMPLICIT_DEFAULTS`).
  *
  * Le padding et le gap ne sont sondés que sous un auto layout, où Figma les
  * applique réellement ; le rayon l'est partout, car un frame sans auto layout a
@@ -333,9 +333,9 @@ function delegatedTargetIds(
  *
  * Fonction unique et récursive : un slot de premier niveau, une part textuelle,
  * un cadre de dépendances et un auto layout imbriqué sont le même cas, traité
- * par le même code. Les quatre fonctions séparées d'autrefois se répondaient à
- * peu près, et « à peu près » finissait par publier un chemin de slots que
- * `structure.children` ne contenait pas.
+ * par le même code. Quatre fonctions séparées ne se répondraient qu'à peu près,
+ * et « à peu près » publie un chemin de slots que `structure.children` ne
+ * contient pas.
  */
 async function describeNode(
   parent: SceneNode,
@@ -520,13 +520,12 @@ async function describeNode(
 /**
  * Signature déterministe de l'arbre publié et de son flux.
  *
- * Elle s'appelait `textStructureSignature` quand l'arbre ne descendait que sur
- * les branches de texte. Elle couvre désormais tout ce que le contrat publie,
- * à toute profondeur — même règle de descente, donc même autorité.
+ * Elle couvre tout ce que le contrat publie, à toute profondeur — même règle
+ * de descente que l'arbre, donc même autorité.
  *
  * Elle ne contient aucun token résolu : elle sert uniquement à comparer la
- * structure des variants avant de publier celle du variant de référence. Depuis
- * que l'arbre descend partout, elle descend partout aussi — sans quoi deux
+ * structure des variants avant de publier celle du variant de référence.
+ * L'arbre descendant partout, elle descend partout aussi — sans quoi deux
  * variants dont seul un cadre intérieur diffère passeraient pour identiques.
  */
 export function structureSignature(
@@ -770,8 +769,8 @@ function warnIntermediateBounds(
 /**
  * `structure.layout` est obligatoire dans la forme du contrat, et `flex-row`
  * en est le repli. Un frame sans auto layout serait donc décrit comme une
- * rangée horizontale sans que rien ne le dise. Une grille, elle, est désormais
- * décrite pour ce qu'elle est.
+ * rangée horizontale sans que rien ne le dise. Une grille, elle, est décrite
+ * pour ce qu'elle est.
  */
 function warnMissingDirection(layoutNode: SceneNode, warnings: string[]): void {
   if (autoLayoutDirection(layoutNode)) return;

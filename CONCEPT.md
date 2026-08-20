@@ -87,10 +87,7 @@ produire un contrat cohérent.
 ### Le contrat est portable et autosuffisant
 
 Figma est l'entrée de construction du contrat, pas une dépendance de son
-consommateur. Le contrat publié contient uniquement la projection UCM utile :
-API visuelle, variantes et vues exactes, liaisons natives, structure,
-typographie, icônes, composition, règles d’usage, tokens employés et
-métadonnées de traçabilité. Il n'embarque ni représentation propriétaire ni
+consommateur. Le contrat publié n'embarque ni représentation propriétaire ni
 asset de rendu.
 
 Toute information nécessaire au consommateur doit donc être modélisée dans le
@@ -99,15 +96,10 @@ vocabulaire portable. Lorsqu'elle ne peut pas l'être sans ambiguïté,
 contrat ne masque pas la perte et ne demande pas au consommateur d'interpréter
 une autre représentation.
 
-Chaque entrée de `variants`, jointe à la vue complète qu'elle référence dans
-`variantViews`, est une vue portable autonome de la combinaison réelle : arbre,
-peintures et strokes situés par chemins de slots, usages typographiques, icônes situées, dépendances et
-liaisons natives. Deux combinaisons ne partagent une vue que si ces blocs sont
-strictement identiques ; il n'existe ni héritage ni merge implicite. `structure`
-garde la projection de référence et les dimensions par taille, mais plus aucun
-index parallèle de la matrice. Les enums de `props` décrivent les valeurs
-possibles axe par axe ; la liste `variants` décrit les seules combinaisons
-autorisées.
+Chaque combinaison réelle est décrite de façon autonome, sans héritage ni merge
+implicite entre elles : deux combinaisons ne partagent une description que si
+elle leur est strictement identique. La forme exacte de cette projection vit
+dans [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md).
 
 ## 5. Le workflow
 

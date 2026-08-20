@@ -111,7 +111,7 @@ test('un doublon d’axes garde toutes ses couleurs dans la vue exacte', async (
   );
 
   // Deux variantes se normalisent pareil : l'index interne garde la première,
-  // mais la v9 ne le sérialise plus et les deux feuilles exactes restent
+  // mais il n'est pas sérialisé et les deux feuilles exactes restent
   // contractuelles sans demander un renommage au designer.
   assert.deepEqual(warnings, []);
 

@@ -69,7 +69,7 @@ sont auto-détectées (nom d'axe, valeurs, rôle de calque) et centralisées dan
 `semantics.ts`. Button sert d'exemple de référence.
 
 **Entrée** : exactement un `COMPONENT` ou un `COMPONENT_SET` sélectionné. Les
-règles `<Nom>-Rules` enrichissent l'intention mais ne conditionnent plus la
+règles `<Nom>-Rules` enrichissent l'intention mais ne conditionnent pas la
 fidélité de l'export. Un set clairsemé n'est pas complété artificiellement : le
 champ `variants` publie uniquement les combinaisons réellement présentes et un
 diagnostic nomme l'écart avec le produit cartésien des axes. Un consommateur
@@ -78,7 +78,23 @@ produit cartésien est valide.
 
 ### Algorithme
 
-**1. Props** — traduire chaque propriété : `VARIANT` → enum, `BOOLEAN` →
+#### La règle commune
+
+Plusieurs champs — gap, paddings, rayons, taille d'un slot, bornes, largeur d'un
+stroke — répondent au même silence, cité plus bas sous ce nom :
+
+- une valeur reliée à une variable se publie, comme référence de token ;
+- une valeur figée qu'aucune variable ne nomme avertit et reste absente : un
+  nombre brut n'est jamais contractuel, une variable liée l'est toujours ;
+- une valeur neutre effectivement fournie par Figma — un gap, un padding ou un
+  rayon à zéro — reste absente sans un mot, la publier n'apprenant rien.
+
+Le geste demandé au designer est toujours de NOMMER la valeur, jamais de la
+retirer du design.
+
+#### 1. Props
+
+Traduire chaque propriété : `VARIANT` → enum, `BOOLEAN` →
 boolean, `TEXT` → string, `INSTANCE_SWAP` → `instance-swap`, `SLOT` → `slot`.
 `propertyBindingDefinitions` catalogue le nom technique Figma complet, le
 chemin et la cible native (`visible`, `characters`, `mainComponent`). Chaque
@@ -102,7 +118,9 @@ Deux règles auto-détectées :
   `structure.variantAxes` et des valeurs de chaque variant : `props.size`,
   `variantAxes` et les arbres de tokens ne peuvent pas diverger.
 
-**2. Tokens de variantes** — parcourir **tous les variants réellement
+#### 2. Tokens de variantes
+
+Parcourir **tous les variants réellement
 présents**, sans fabriquer les cases absentes d'un produit cartésien. Pour
 chacun, relever les tokens liés (`boundVariables.fills` et
 `.strokes` sur tout le sous-arbre), rangés par **clé**, dont la base est le
@@ -116,9 +134,9 @@ masqué qui portait des variables produit un warning sur sa racine.
 
 Deux variants qui aboutissent aux mêmes valeurs d'axes après normalisation
 restent deux entrées autonomes de `variants`, chacune avec ses propres tokens,
-strokes, liaisons et référence de vue. La v9 ne construit plus d'index public
-qui devrait choisir entre ces coordonnées identiques : aucune feuille n'est
-écartée et aucun renommage compensatoire n'est demandé au designer.
+strokes, liaisons et référence de vue. Aucun index public n'a à trancher entre
+ces coordonnées identiques : aucune feuille n'est écartée et aucun renommage
+compensatoire n'est demandé au designer.
 
 La clé **identifie** la couleur ; elle ne dit pas ce qu'elle peint. Ce que la
 couleur peint se lit sur le **calque qui la porte**, jamais sur son nom : un
@@ -141,15 +159,28 @@ contredisent, et le contrat ne peut pas trancher. Un seul message par rôle
 fautif, avec son nombre d'occurrences et un token en exemple.
 Un rôle n'apparaît que s'il est réellement lié — rien n'est forcé ni inventé.
 
+Le contrat ne publie que les couleurs LIÉES. Une peinture unie posée à la main
+sur un calque que l'extraction parcourt produit un avertissement et rend
+`meta.coverage.portable` partiel : sans elle, le développeur rendrait ce calque
+sans encre. Trois cas n'en produisent aucun — un paint masqué ou d'opacité nulle
+et un stroke d'épaisseur zéro ne peignent rien, et une peinture non unie relève
+du relevé des propriétés non portables.
+
+La couleur publiée et l'avertissement sortent de la MÊME lecture, peinture par
+peinture : la variable d'un paint est celle qu'il porte lui-même. Une peinture
+sans effet ne publie donc pas plus sa couleur qu'elle ne réclame la sienne, et
+un fill masqué relié ne couvre pas le fill visible posé à la main. Quand cette
+lecture ne peut pas conclure, la liste du node reprend la main sans avertir :
+perdre une couleur coûterait plus qu'un diagnostic manquant.
+
 **Une clé que deux couleurs partagent s'allonge.** Deux calques d'un même
-variant dont les variables finissent par le même segment ne se disputent plus
-rien : la clé garde ce segment comme BASE et lui ajoute les segments du chemin
+variant dont les variables finissent par le même segment ne s'évincent pas :
+la clé garde ce segment comme BASE et lui ajoute les segments du chemin
 qui **séparent** les deux couleurs. `…info.userinput.colors.background` et
 `…info.divider.colors.background` deviennent `userinput.background` et
 `divider.background` — `colors`, commun aux deux, n'apporte rien et reste
-dehors. Le design system nommait déjà ces surfaces distinctement ; c'est
-l'export qui tronquait au dernier segment, et le renommage qu'il réclamait
-compensait un défaut du moteur.
+dehors. Le design system nomme déjà ces surfaces distinctement ; aucun
+renommage n'est demandé au designer.
 
 Le choix des segments est décidé **une seule fois pour tout le composant**. Pour
 au plus seize profondeurs candidates, le moteur retient exactement la sélection
@@ -220,7 +251,9 @@ un arbre cartésien :
 }
 ```
 
-**3. Layout** — le **node de layout** d'un variant est le calque dont les
+#### 3. Layout
+
+Le **node de layout** d'un variant est le calque dont les
 enfants directs deviennent ses slots. Il s'élit au score : le calque qui porte
 le plus de dimensions complètes liées, la racine à défaut. Ce score dépend de la
 racine d'où part la recherche, si bien que l'élection a lieu **une seule fois
@@ -262,12 +295,12 @@ DÉTAIL par côté au lieu de tout perdre : `padding.x` devient
 `{ "left": "{…}", "right": "{…}" }`, `radius` devient
 `{ "topLeft", "topRight", "bottomRight", "bottomLeft" }`, et la largeur d'un
 stroke `{ "top", "right", "bottom", "left" }`. Le design system nomme déjà ces
-variables séparément ; exiger une variable unique demandait au designer
-d'aplatir une décision qui lui appartient. Depuis la 10.0, cet objet peut être
-clairsemé : deux coins gauches tokenisés et deux coins droits à zéro publient
+variables séparément ; exiger une variable unique lui ferait aplatir une
+décision qui lui appartient. Cet objet peut être clairsemé : deux coins gauches
+tokenisés et deux coins droits à zéro publient
 uniquement `topLeft` et `bottomLeft`. L'élection du node de layout continue de
 ne compter que les groupes complets : une valeur partielle ne choisit jamais le
-wrapper, mais elle n'est plus perdue sur un calque déjà publié.
+wrapper, mais elle reste publiée sur un calque qui l'est déjà.
 
 La taille d'un slot n'entre pas dans cette liste : ses deux axes ne sont pas
 deux côtés d'un même champ, et deux variables y décrivent une dimension que le
@@ -313,7 +346,9 @@ les tailles, pas seulement celle instanciée par défaut. Hypothèse assumée : 
 l'axe de tailles — un représentant par taille suffit ; si un design system
 faisait varier un padding selon un autre axe, le contrat ne le verrait pas.
 
-**4. Modèle d'interaction** — lorsqu'un axe `State` ou `Status` est présent,
+#### 4. Modèle d'interaction
+
+Lorsqu'un axe `State` ou `Status` est présent,
 le contrat ajoute `stateModel` avec le déclencheur et, si une règle `@prop` la
 déclare, la description de chaque état connu :
 `hover` → `:hover`, `focus` → `:focus-visible`, `press` → `:active`,
@@ -323,7 +358,9 @@ avec un déclencheur `null` et un warning. Les `selector` visent
 l'implémentation CSS de **production** (pseudo-classes) ; l'outil de test
 froid, en styles inline, reproduit les mêmes états via des événements.
 
-**5. Typographie** — chaque calque texte de chaque variant doit porter un text
+#### 5. Typographie
+
+Chaque calque texte de chaque variant doit porter un text
 style Figma unique. Le moteur lit l'objet `TextStyle`, conserve son nom exact
 dans `textStyles.<clé>.figmaName`, puis résout ses `boundVariables` :
 `fontFamily`, `fontSize`, `fontWeight` (fallback `fontStyle`), `lineHeight` et
@@ -338,7 +375,9 @@ contient que les styles réellement utilisés ; ses références alimentent
 `tokensUsed`. Un layer sans style, un style introuvable ou deux noms normalisés
 en collision avertissent et l'usage ambigu reste absent.
 
-**6. Structure** — `children` = enfants directs réels du node de layout :
+#### 6. Structure
+
+`children` = enfants directs réels du node de layout :
 - calque **texte** → slot `label` (nom d'origine dans `figmaLayer`) ; son style
   est situé par la `typography` de sa vue (étape 5) ;
 - calque **graphique désigné par une règle `@icons`** → slot `icon`, `optional:
@@ -385,8 +424,7 @@ qui se tait alors, pour qu'un même fait n'ait jamais deux propriétaires.
 conteneur est un auto layout linéaire ; `columns`, `rows`, `columnSizes`,
 `rowSizes`, `columnGap` et `rowGap` dès qu'il est une grille. `gap` n'est relevé qu'à partir de deux
 enfants — un conteneur qui n'en range qu'un n'espace rien. `padding` et `radius`
-sont relevés sur chaque conteneur, à la règle commune : une valeur neutre reste
-absente sans un mot, une valeur écrite à la main avertit. Pour un node sans
+sont relevés sur chaque conteneur, à la règle commune. Pour un node sans
 disposition, `layout` reste absent et un warning explique que la disposition
 interne manquera — sauf autour d'un enfant unique, où il n'y a rien à décrire.
 
@@ -398,7 +436,7 @@ La projection de référence `structure.children` est comparée sur toute la
 matrice. Une différence de cardinalité, d'ordre ou de disposition avertit en
 nommant les variants ; un changement de nom Figma avertit aussi, sauf pour une
 icône reconnue dont le slot stable et la vue exacte portent déjà l'identité.
-L'écart n'est jamais perdu. La v9 catalogue dans `variantViews`
+L'écart n'est jamais perdu. `variantViews` catalogue
 chaque bloc complet distinct — `structure`, `typography`, `icons`, `composes` —
 et chaque entrée de `variants` le référence par `view`, à côté de ses feuilles
 exactes `tokens` et `strokes`. L'égalité du bloc JSON complet est l'unique règle
@@ -432,7 +470,9 @@ de prop publique. Un calque statiquement masqué est exclu avec tout son
 sous-arbre ; s'il portait des variables, le warning indique ce qui a été
 ignoré.
 
-**Alignement Flex.** Sur un auto-layout `HORIZONTAL` ou `VERTICAL`, le
+##### Flux et alignement
+
+Sur un auto-layout `HORIZONTAL` ou `VERTICAL`, le
 contrat publie toujours les deux alignements du conteneur :
 `primaryAxisAlignItems` devient `justifyContent` (`MIN` → `flex-start`,
 `CENTER` → `center`, `MAX` → `flex-end`, `SPACE_BETWEEN` →
@@ -462,6 +502,8 @@ variable produit un avertissement au lieu d'être tue. Un consommateur peut donc
 rendre un slot sans `flexGrow`, sans `alignSelf` et sans `size` comme un
 `fit-content`.
 
+##### Dimensions et bornes
+
 **Dimensions figées des slots.** Le relevé vise **tous** les slots, texte
 compris, et se fait axe par axe : un axe en `Hug` ou en `Fill` est déjà décrit
 et ne réclame rien, un axe figé doit citer une variable. `size` porte alors la
@@ -489,9 +531,8 @@ CSS, pas celui du panneau Figma, et chaque axe se lit séparément :
 La dernière ligne est la règle d'origine, devenue le repli : une largeur fixe
 que rien ne nomme sert à aligner les variants d'un component set dans Figma, et
 la publier imposerait une largeur de maquette à toutes les pages qui intègrent
-le composant. **La liaison de variable est ce qui sépare les deux cas** — le
-même signal que pour un gap, un padding ou la taille d'un slot : un nombre brut
-n'est jamais contractuel, une variable liée l'est toujours. Une tuile dont le
+le composant. **La liaison de variable est ce qui sépare les deux cas**, à la
+règle commune. Une tuile dont le
 design system nomme le côté n'est pas une commodité de maquette, et le token
 l'emporte donc sur `stretch`.
 
@@ -521,12 +562,8 @@ de `size` ne saurait écrire — un layer en `Fill` qu'un `max width` retient. L
 champ est donc indépendant du menu, lu sur la seule présence de la borne, et
 chaque côté se lit seul : Figma laisse poser un `max width` sans `min width`.
 
-Le silence suit la règle commune, celle du gap, du padding et de la taille d'un
-slot : **une borne reliée à une variable se publie, une borne écrite à la main
-avertit**. Le geste demandé au designer est de nommer la borne — jamais de la
-retirer. Une borne appartient au design ; c'est au contrat de savoir la porter,
-et l'avoir tue puis fait retirer était une limite du schéma déguisée en
-correction de maquette.
+Le silence suit la règle commune. Une borne appartient au design : c'est au
+contrat de savoir la porter, non au designer de la retirer.
 
 Le contrat n'a que deux propriétaires de bornes, le composant et un slot. Un
 calque intermédiaire — le wrapper de layout, qui prête son flux au composant
@@ -535,6 +572,8 @@ borne retient le contenu, et la porter sur le composant retiendrait le cadre.
 Les bornes entrent dans la comparaison des variants comme le reste du flux, y
 compris sur les calques d'icônes, qu'`icons.*.size` ne couvre que pour la taille.
 
+##### Position absolue
+
 Un layer en position `Absolute` sort du flux, mais n'en disparaît plus : le
 contrat publie `position: "absolute"` et les `constraints` — les bords
 auxquels il s'accroche, en vocabulaire CSS (`left`/`center`/`right`/`stretch`/
@@ -542,6 +581,8 @@ auxquels il s'accroche, en vocabulaire CSS (`left`/`center`/`right`/`stretch`/
 contrat : un offset Figma ne se relie à aucune variable, et un nombre écrit à
 la main n'est jamais contractuel. Un avertissement le dit. La lecture précède
 celle du flux, car une grille aussi porte des enfants en position absolue.
+
+##### Grilles
 
 Un enfant de **grille** publie sa place dans sa cellule : `columnStart` et
 `rowStart` — les valeurs de `grid-column-start` et `grid-row-start`, donc
@@ -587,6 +628,10 @@ sur un axe sont `HUG` publie donc sa taille résolue en pixels dans
 Une seule piste non `HUG` sous son étendue rend l'axe indécis : la place vient
 d'ailleurs, et rien n'est publié.
 
+La mesure est arrondie à deux décimales. Elle vient d'un calcul de Figma, dont
+les dix-sept chiffres feraient bouger l'artefact d'un export à l'autre sans
+qu'aucun design ait changé.
+
 `size` reste strictement tokenisé : une variable liée décrit le design system et
 l'emporte toujours, `structuralSize` se tait alors. Publier les deux ferait
 porter deux vérités au même axe. Aucun geste n'est demandé au designer — ces
@@ -605,6 +650,8 @@ toute la matrice — cadres de dépendance imbriqués compris ; une différence 
 variants produit une notice de compatibilité au lieu d'être généralisée depuis
 le variant de référence ; les arbres exacts conservent les deux valeurs.
 
+##### Propriétés non portables
+
 **Ce que Figma porte et que le schéma ne sait pas écrire** avertit plutôt que de
 disparaître, puisque le rendu, lui, en dépend. C'est la contrepartie de tout ce
 qui précède : le contrat ne prétend pas décrire Figma en entier, mais il ne perd
@@ -612,7 +659,7 @@ rien en silence.
 
 - `structure.layout` reste obligatoire, et `flex-row` en est le repli. Un node
   de layout sans auto layout est donc publié comme une rangée, et le warning le
-  dit. La grille, elle, n'est plus concernée : elle est décrite ;
+  dit. La grille n'est pas concernée : elle est décrite ;
 - les bornes d'un calque intermédiaire, entre le composant et ses slots, n'ont
   aucun propriétaire dans le contrat ;
 - la distance d'un calque absolu à ses bords d'accroche ;
@@ -631,7 +678,9 @@ produit de message — un `clip content` activé, un masque d'icône ou une rota
 résiduelle de tracé importé ne manquent à personne, et un rapport que le
 designer cesse de lire ne protège plus rien.
 
-**Passage à la ligne.** Un auto layout en `layoutWrap: WRAP` publie
+##### Passage à la ligne
+
+Un auto layout en `layoutWrap: WRAP` publie
 `wrap: true`, sur le composant comme sur n'importe quel conteneur de `children`.
 C'est une propriété de flux, pas une dimension : elle reste au niveau haut même
 quand `sizes` porte les dimensions. L'espace entre les LIGNES est un token,
@@ -656,7 +705,10 @@ Sous le wrap, Figma scinde son champ gap en deux. Les messages emploient donc
 Slots dédupliqués (`label`, `label-2`…). Un calque rendable inattendu est inclus
 tel quel, jamais supprimé silencieusement.
 
-**7. Intention & documentation des props** — lues dans un **conteneur Figma** — frame,
+#### 7. Intention et documentation des props
+
+L'intention et la documentation des props sont lues dans un **conteneur
+Figma** — frame,
 section ou groupe — nommé `<Nom>-Rules` (ex. `Button-Rules`), posé **sur la même
 page** que le composant. Le rapprochement du nom ignore la casse et les espaces
 (`button-Rules` et `Icon Button-Rules` conviennent) : une majuscule dans un nom
@@ -733,7 +785,9 @@ Figma**. Les règles sont facultatives : leur absence laisse `intent: null` et
 produit un diagnostic de documentation, sans réduire `meta.coverage.portable`.
 Un `@prop` visant une prop/valeur inexistante produit un warning non bloquant.
 
-**8. Rendu sémantique & garde-fous** — le contrat publie aussi le mapping
+#### 8. Rendu sémantique et garde-fous
+
+Le contrat publie aussi le mapping
 générique des rôles vers les propriétés de rendu (`background` →
 `background-color`, `foreground` → `color`/`fill`, `border` → couleur et
 largeur de bordure, `ring` → contour extérieur), **plus une entrée par clé de
@@ -760,6 +814,8 @@ une chaîne nue ; ses variables, elles, sont de vraies références. Une phrase 
 d'usage — n'en est pas une.
 
 ### Sortie
+
+#### Fichier et exemple
 
 `<IdentifiantCode>.contract.json` est téléchargé ou déposé par PR. Le champ
 `name` conserve le nom Figma exact ; le fichier emploie son identifiant
@@ -914,6 +970,8 @@ nommerait par un nom de layer commun à tous les variants du set, sans lui dire
 lequel ouvrir. Toute la typographie appartient au catalogue `textStyles` et aux
 usages exacts de chaque `variantViews`.
 
+#### Composition et dépendances
+
 `composes` liste les composants unifiés que celui-ci embarque — vide pour un
 composant simple. Une instance ainsi déclarée n'est PAS parcourue : ses
 calques, ses tokens et ses props appartiennent à son propre contrat. Le slot
@@ -925,6 +983,8 @@ déclare qu'un contrat UCM autonome existe pour ce nom. Sans ce marqueur, un set
 imbriqué reste parcouru comme wrapper ou détail d'implémentation du parent. Un
 variant interne d'un set reconnu prend le nom du set. Le moteur charge toutes
 les pages une fois avant le scan des marqueurs.
+
+##### Cadre de dépendance
 
 **Un cadre qui enveloppe une ou plusieurs dépendances.** Le slot peut ÊTRE
 l'instance, ou l'envelopper : une Alert range son bouton dans un calque
@@ -964,9 +1024,9 @@ alors aucune, et chaque branche publie la sienne.
 Ce que le cadre range À CÔTÉ de ses dépendances lui appartient tout autant : un
 tag, un texte, un dessin y sont des calques de ce contrat-ci, décrits par la
 règle commune, avec leur slot, leur typographie et leur visibilité. Ne publier
-que les branches de dépendance les faisait disparaître alors que leurs couleurs
-entraient bien dans `variants[].tokens` — le contrat annonçait des couleurs que plus
-aucun calque ne portait.
+que les branches de dépendance les ferait disparaître alors que leurs couleurs
+entrent dans `variants[].tokens` : le contrat annoncerait des couleurs qu'aucun
+calque publié ne porte.
 
 Un cadre dont AUCUNE branche exportable ne mène à une dépendance fait exception :
 ses instances sont rangées sous un calque masqué, le contrat se replie sur le
@@ -1008,6 +1068,8 @@ l'enveloppe : c'est ce calque qu'on retrouve dans Figma.
 ]
 ```
 
+#### Métadonnées
+
 `meta` porte la version du schéma du contrat (`contractVersion`), la date
 d'export, les `warnings` de l'export et la
 traçabilité Figma (nom de fichier, id du nœud, clé de composant, lien URL).
@@ -1018,48 +1080,6 @@ déclarant `enablePrivatePluginApi` dans leur manifest — ce que fait celui-ci.
 Elle vaut `null` là où l'API ne fournit pas cette clé, un plugin publié sur la
 Community notamment : un warning le signale alors, sans bloquer, et `nodeId` et
 `fileName` restent exploitables pour retrouver le composant.
-
-### Invariants
-
-- Le moteur ne dépend d’aucun nom de composant.
-- Le node de layout de chaque variant est élu une seule fois ; slots, icônes et
-  chemins de typographie décrivent le même arbre.
-- Une seule autorité décide qui est un conteneur et qui est une feuille
-  (`structureTree.ts`). L’extraction, les chemins de typographie et les
-  signatures de comparaison la consultent ; aucun ne la recalcule.
-- Une propriété Figma à effet visuel, portée par un calque que le contrat
-  publie, et qu’aucun champ ne sait écrire, produit un avertissement. Une valeur
-  au défaut de Figma n’en produit jamais.
-- Une même clé publique relie `props`, `variantAxes` et les arbres de
-  variantes ; les noms Figma d’origine restent traçables.
-- Une peinture unie posée à la main, sur un calque que l’extraction parcourt,
-  produit un avertissement et rend `meta.coverage.portable` partiel : le contrat
-  ne publie que les couleurs liées, et le développeur rendrait ce calque sans
-  elle. Un paint masqué ou d’opacité nulle, un stroke d’épaisseur zéro et une
-  peinture non unie n’en produisent pas — le premier n’a aucun effet, la
-  dernière relève du relevé des propriétés non portables.
-- La couleur publiée et l’avertissement sortent de la même lecture, peinture par
-  peinture : la variable d’un paint est celle qu’il porte lui-même. Une peinture
-  sans effet ne publie donc pas plus sa couleur qu’elle ne réclame la sienne, et
-  un fill masqué relié ne couvre plus le fill visible posé à la main. Quand
-  cette lecture ne peut pas conclure, la liste du node reprend la main sans
-  avertir : perdre une couleur coûterait plus qu’un diagnostic manquant.
-- Aucune couleur n’est perdue par troncature de clé. La clé d’une couleur est
-  décidée une seule fois pour tout le composant : elle est la même dans toutes
-  les feuilles, et ne porte jamais une coordonnée de variant.
-- La matrice contient exactement les combinaisons présentes et son ordre rend
-  l’export déterministe ; aucune case cartésienne absente n'est inventée.
-- Le contrat ne contient aucune valeur de design brute : seulement des
-  références `{…}` et les données structurelles explicitement prévues.
-- Une liaison composée, une taille ou un contour partiel ne devient jamais une
-  valeur supposée.
-- Les calques statiquement masqués sont exclus ; les visibilités pilotées
-  restent représentées.
-- Les composants imbriqués contractés sont déclarés dans `composes` sans
-  réexporter leurs internes.
-- Le conteneur `<Nom>-Rules` est facultatif. Son absence ou une règle invalide
-  avertit sans bloquer l’export ni inventer de prop ou d’icône.
-- `meta` porte la version, la date, les avertissements et la traçabilité Figma.
 
 ---
 
@@ -1116,15 +1136,10 @@ et non `number` : sans ça, un token `number` référencerait un token `dimensio
 }
 ```
 
-### Invariants
-
-- Toutes les variables et tous leurs modes sont conservés au format DTCG.
-- Les alias restent des références, quel que soit leur type.
-- Les contrats et l’export DTCG partagent `normalizeName()` et
-  `indexVariables()`.
-- Une collision de chemin ou feuille/groupe conserve la première variable,
-  écarte l’autre avec un warning et refuse tout alias vers la cible écartée.
-- La sortie reste consommable par Style Dictionary.
+`normalizeName()` et `indexVariables()` sont partagés avec l'export de
+contrat : les deux commandes nomment un token de la même façon. Une collision
+de chemin ou feuille/groupe conserve la première variable, écarte l'autre
+avec un warning, et refuse tout alias vers la cible écartée.
 
 ---
 
@@ -1180,18 +1195,10 @@ affiche, dit ce qui manquera au développeur, puis le geste à faire dans Figma.
 La règle et le vocabulaire vivent dans
 [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-### Invariants
-
-- Tous les champs sont validés ; les chemins restent relatifs.
-- PAT masqué, jamais renvoyé à l'UI ni logué.
-- Test de connexion automatique à l'ouverture et après sauvegarde.
-- Une commande = une PR avec son unique artefact ; aucun auto-merge.
-- Aucune branche ne survit à un export qui n'a pas ouvert de PR : si le commit
-  ou la PR échoue, la branche créée est supprimée avant le repli local.
-- Aucun changement = aucune PR (comparaison insensible à `meta.exportedAt`).
-- Le corps de la PR porte les avertissements de l'export, pour les deux
-  artefacts ; ils ne bloquent pas.
-- Toute erreur GitHub conserve l'artefact par téléchargement local.
+Tous les champs de configuration sont validés et les chemins restent
+relatifs. Aucune branche ne survit à un export qui n'a pas ouvert de PR : si
+le commit ou la PR échoue, la branche créée est supprimée avant le repli
+local.
 
 ---
 
@@ -1216,8 +1223,7 @@ copie de la partie stable d'une liaison ; `variants[].bindings` conserve son
 `nodeId` dans chaque COMPONENT. Aucun champ n'est fusionné partiellement : deux
 vues ne partagent une clé que si leur JSON complet est identique.
 
-Les index historiques de matrice et la liste plate des liaisons n’existent plus
-depuis la 9.0. Toute information exacte se lit dans une entrée de `variants`, la vue
+Toute information exacte se lit dans une entrée de `variants`, la vue
 qu’elle référence et ses placements de bindings. La projection de référence
 `structure` reste disponible pour l’entrée générale du composant et les
 dimensions par taille ; elle ne remplace jamais la vue exacte d’une variante.

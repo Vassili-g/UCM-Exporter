@@ -103,11 +103,9 @@ consommateur.
 
 ### Extraction multi-repository
 
-Les validateurs et le rapport pourront devenir des paquets partagés lorsqu’un
-deuxième repository les consommera. Le cœur devra rester indépendant du
-framework ; seule la découverte et le rendu des composants changent selon la
-technologie. Publier ces paquets pour le seul Playground ajouterait aujourd’hui
-du coût sans prouver leur réutilisabilité.
+Le découpage en paquets partagés est détaillé dans
+[PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md). La condition tient en une
+phrase : rien à publier tant qu’un seul repository consomme des contrats.
 
 ### Passerelles
 

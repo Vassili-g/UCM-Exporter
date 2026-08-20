@@ -33,47 +33,33 @@ composant**. Les contrôles sont pilotés par la forme du contrat, jamais par de
 cas particuliers. Ajouter un composant ne doit demander aucune modification de
 l'outillage.
 
-Une seconde règle : **le code ne lit pas le contrat quand l'application
-tourne**. Le développeur écrit les valeurs dans son composant, et le contrat
-sert ensuite à vérifier que ce sont les bonnes. Un composant qui lirait son
-contrat au moment de s'afficher rendrait cette vérification impossible.
+Une seconde règle, développée dans [CONCEPT.md](./CONCEPT.md) : **le code ne
+lit pas le contrat quand l'application tourne**. Sans elle, la vérification
+n'aurait plus de témoin indépendant.
 
 ---
 
 ## 3. Ce qui existe aujourd'hui
 
-Les contrôles suivants tournent déjà, à chaque pull request, et produisent un
-message unique publié à la fois dans le terminal et en commentaire de la pull
-request.
+Forme et version du contrat, existence des tokens, graphe de composition,
+parité, références de tokens du code, construction : ces contrôles tournent à
+chaque pull request et produisent un message unique, dans le terminal comme en
+commentaire. [ROADMAP.md](./ROADMAP.md) en tient l'état.
 
-| Contrôle | Ce qu'il vérifie |
-|---|---|
-| Forme du contrat | Le fichier JSON est complet et exploitable. |
-| Version du contrat | Le format est dans la plage que le repository sait lire. |
-| Existence des tokens | Chaque référence citée par le contrat correspond à une variable CSS réellement générée. |
-| Graphe de composition | Quand un composant en embarque un autre, la cible existe et il n'y a pas de boucle. |
-| Parité | Les options du contrat existent dans l'API publique du composant. |
-| Références de tokens du code | Le composant ne cite que des références écrites en toutes lettres et déclarées par son contrat. |
-| Construction | Le repository compile. |
-
-**Ce qui manque : la vérification du rendu.** Rien ne prouve aujourd'hui, de
-façon générique, que le composant affiche réellement la bonne couleur, la
-bonne dimension et la bonne disposition pour chaque combinaison. Cette
-vérification n'existe que dans deux fichiers écrits à la main, un par
-composant, ce qui contredit la règle du point 2.
+**Ce qui manque : la vérification du rendu.** Rien ne prouve, de façon
+générique, que le composant affiche réellement la bonne couleur, la bonne
+dimension et la bonne disposition pour chaque combinaison. Cette vérification
+n'existe que dans des fichiers de test écrits à la main, un par composant, ce
+qui contredit la règle du point 2.
 
 ---
 
 ## 4. Où ça intervient dans le workflow
 
-| Moment | Qui agit | Ce qui se passe |
-|---|---|---|
-| Export depuis Figma | Le designer, via le plugin | Une pull request est ouverte avec le contrat et/ou les tokens mis à jour. |
-| Pull request ouverte | La CI | Tous les contrôles tournent. Un rapport unique est publié en commentaire. |
-| Contrat validé | Le designer et un développeur | Le contrat peut être fusionné **avant** que le composant existe en code. |
-| Écriture du composant | Le développeur | Contrôles en local, et retour dans l'éditeur pendant la frappe. |
-| Push | La CI | Mêmes contrôles, même rapport, mêmes mots. |
-| Réexport ultérieur | La CI | Si le design a changé et que le code n'a pas suivi, l'écart apparaît. |
+Le workflow est décrit par [CONCEPT.md](./CONCEPT.md). Ce qui compte ici : les
+contrôles tournent en local pendant l'écriture ET en CI au push, avec le même
+rapport et les mêmes mots, et un réexport ultérieur fait apparaître l'écart
+quand le design a changé sans que le code suive.
 
 ---
 
