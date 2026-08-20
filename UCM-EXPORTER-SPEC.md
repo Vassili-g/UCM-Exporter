@@ -142,8 +142,9 @@ La clé **identifie** la couleur ; elle ne dit pas ce qu'elle peint. Ce que la
 couleur peint se lit sur le **calque qui la porte**, jamais sur son nom : un
 `fill` sur un texte est un `foreground`, sur un calque désigné par une règle
 `@icons` un `icon`, ailleurs un `background` ; un `stroke` est un `border`, et
-c'est son `align` — déjà publié sur la feuille — qui dit au consommateur de le
-dessiner en bordure ou en `box-shadow`. Une clé qui ne nomme aucun rôle partagé
+c'est son `align` — déjà publié sur la feuille — qui dit **de quel côté** de la
+boîte le dessiner, jamais avec quelle technique : un contour Figma se dessine
+hors du flux et se rend donc en `box-shadow`. Une clé qui ne nomme aucun rôle partagé
 reçoit donc son rendu dans `rendering.roles`, à côté des cinq rôles communs à
 tous les contrats.
 
@@ -740,7 +741,8 @@ il annonçait seulement qu'un slot PEUT être masqué — le texte d'une TEXT
 property, le composant d'un INSTANCE_SWAP. `text` donne le contenu des slots
 qu'aucune prop ne porte, situé par son chemin de slots ET par le nom de son
 calque. `composes` donne l'usage de chaque dépendance : ses `args` aux clés
-publiques de SON contrat, et `overrides` pour ce que ce parent a écrit dedans.
+publiques de SON contrat, `overrides` pour ce que ce parent a écrit dedans, et
+`swaps` pour les calques dont il y a remplacé le composant.
 
 **La règle d'adressage.** On adresse par slot ce que ce contrat décrit, et par
 nom de calque Figma ce qu'il ne décrit pas. Le nom de calque est la seule
@@ -755,7 +757,34 @@ répond « qu'est-ce que CE parent a changé ici », par opposition à ce que le
 composant fournit. Un texte que le parent a saisi dans une Alert n'est écrit
 nulle part ailleurs. Deux champs seulement sont retenus, `characters` et
 `visible` ; toute autre surcharge décrit du RENDU et signale plutôt un manque du
-contrat normatif de la dépendance.
+contrat normatif de la dépendance. Une surcharge de PEINTURE ne se contente plus
+d'être écartée : ce parent repeint alors un calque qui appartient au contrat de
+la dépendance, la couleur n'entre dans aucun des deux contrats, et l'export le
+dit — nom du calque, ce qui manquera, et le geste, qui est de piloter cette
+couleur par une propriété de la dépendance.
+
+**Ce que `overrides` ne peut pas voir : `swaps`.** Figma ne rapporte pas un
+remplacement d'instance — `NodeChangeProperty` ne contient pas `mainComponent` —
+et la prop d'icône que les règles `@icons` fabriquent (`chessName`,
+`iconLeftName`) n'a aucun porteur Figma, donc n'apparaît jamais dans
+`componentProperties` ni dans `args`. Une icône substituée dans une dépendance
+n'avait ainsi aucun canal : sept TileLink montrant sept icônes différentes
+produisaient sept échantillons identiques. `swaps` ouvre ce canal, et se lit
+en comparant l'instance à son composant maître, **position par position** — la
+structure d'une instance est isomorphe à celle de son maître, puisque Figma
+interdit d'y ajouter, d'y retirer et d'y réordonner un calque.
+
+Trois bornes le tiennent. La comparaison porte sur le composant PROPRIÉTAIRE et
+non sur la variante : choisir une autre variante d'un même component set n'est
+pas un remplacement, et le contrat de la dépendance décrit déjà ce choix. Le
+relevé s'arrête sur une dépendance de la dépendance, dont l'échantillon est
+ailleurs, et sous un calque déjà déclaré remplacé, dont plus aucune position ne
+correspond au maître. Enfin `masterPath` nomme les calques du MAÎTRE, pas ceux
+de l'instance : Figma renomme le calque qu'on remplace d'après son nouveau
+composant, si bien que le chemin lu dans l'instance répéterait `component` et ne
+joindrait plus rien — alors que le nom du maître est celui que le contrat de la
+dépendance publie dans `icons.*.figmaName`. Un champ, une question : c'est le
+nom distinct, et non `figmaPath`, qui empêche le doute qui a coûté `figmaLayer`.
 
 **Ce qu'il ne demande jamais.** L'échantillon n'avertit de rien, ne dégrade
 jamais `meta.coverage.portable`, et ne contribue pas à `tokensUsed` — un texte de
@@ -766,9 +795,10 @@ ce qu'il ne sait structurellement pas porter :
 - une prop d'une dépendance portée par son wrapper de dimensions et non exposée —
   elle n'est ni dans `componentProperties`, ni dans `exposedInstances` ;
 - une prop d'icône synthétique (`iconLeftName`), fabriquée par les règles `@icons`
-  sans component property Figma derrière ;
-- une icône substituée sans propriété : Figma n'expose pas `mainComponent` dans
-  son relevé de surcharges. Le geste attendu est d'exposer un `INSTANCE_SWAP` ;
+  sans component property Figma derrière : aucune valeur ne peut entrer dans
+  `args`, et c'est précisément pourquoi `swaps` existe ;
+- un remplacement dont le composant maître est illisible, ou qui vit sous un
+  calque statiquement masqué — la maquette n'en montre rien ;
 - une valeur en conflit entre deux calques d'un même variant — la clé est omise ;
 - le second texte d'une feuille qui en porte plusieurs ;
 - une dépendance sous un calque statiquement masqué, déjà absente de `composes`.
@@ -783,10 +813,12 @@ surcharges, et elle évite de recopier le contenu d'une Alert dans chaque contra
 qui l'emploie.
 
 **Ce qu'il ne publie pas, faute d'apporter quoi que ce soit.** Les icônes du
-composant exporté sont déjà dans `variantViews[].icons`, par vue exacte. Celles
-d'une dépendance se dérivent de ses `args` et de son propre contrat, qu'il faut
-de toute façon lire pour la rendre. Une seconde copie pourrait contredire la
-première.
+composant exporté sont déjà dans `variantViews[].icons`, par vue exacte : leur
+emplacement comme leur nom de calque. Celles d'une dépendance non plus, tant que
+la maquette laisse celles que son contrat fournit — c'est SON échantillon qui
+les décrit, et une seconde copie pourrait contredire la première. `swaps` ne
+publie donc que l'écart : le calque du maître, et le composant que ce parent y a
+mis à la place.
 
 **Une notice, jamais un avertissement.** Deux échantillons là où le design en
 attendait un révèlent un libellé retouché dans un seul variant. Le constat suit
@@ -877,8 +909,8 @@ Un `@prop` visant une prop/valeur inexistante produit un warning non bloquant.
 
 Le contrat publie aussi le mapping
 générique des rôles vers les propriétés de rendu (`background` →
-`background-color`, `foreground` → `color`/`fill`, `border` → couleur et
-largeur de bordure, `ring` → contour extérieur), **plus une entrée par clé de
+`background-color`, `foreground` → `color`/`fill`, `border` → `box-shadow`,
+`ring` → contour extérieur), **plus une entrée par clé de
 couleur qui ne nomme aucun de ces rôles** — clés allongées comprises, dont le
 rendu est celui que leur dernier segment déclare —, avec le rendu déduit de son calque
 (étape 2). La règle reste sans logique par composant ; seules les clés observées
@@ -888,7 +920,20 @@ Pour un rôle avec `fallback`,
 les `cssProperties` sont le rendu candidat et le `fallback` le rendu
 **recommandé** dès que la fidélité l'exige : un `ring` aligné `outside` se rend
 en `box-shadow` (`0 0 0 <width> <color>`), qui épouse le `border-radius` et se
-dessine hors du flux — il ne déplace jamais les éléments voisins. Toute propriété
+dessine hors du flux — il ne déplace jamais les éléments voisins.
+
+**Aucun rôle de contour ne cite une propriété qui consomme la boîte.** Dans
+Figma un `stroke` ne prend aucune place : il ne pousse ni son contenu ni ses
+voisins, quel que soit son alignement. Une `border` CSS, elle, élargit
+l'élément et décale tout ce qui l'entoure. `border` publiait
+`border-color` / `border-width`, et le consommateur qui les suivait rendait
+fidèlement la couleur en déplaçant tout le reste : c'est `box-shadow` qui rend
+un contour Figma, et `align` en donne la forme —
+`inside` → `inset 0 0 0 <width> <color>`, `outside` → `0 0 0 <width> <color>`,
+`center` → la moitié de la largeur de chaque côté. Une largeur détaillée par
+bord se rend en autant d'ombres. Quand plusieurs rôles visent `box-shadow` sur
+un même calque — un `border` et un `ring` en focus — ils se composent en **une**
+déclaration, séparés par des virgules, les `inset` d'abord. Toute propriété
 pertinente sans variable liée → warning précis (calque + propriété), non
 exportée, **export non bloqué**.
 `tokensUsed` = liste à plat, dédupliquée et triée, de **toutes** les références
@@ -1000,7 +1045,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
       "background": { "kind": "paint", "cssProperties": ["background-color"] },
       "foreground": { "kind": "paint", "cssProperties": ["color", "fill"] },
       "icon": { "kind": "paint", "cssProperties": ["color", "fill"] },
-      "border": { "kind": "stroke", "cssProperties": ["border-color", "border-width"] },
+      "border": { "kind": "stroke", "cssProperties": ["box-shadow"] },
       "ring": { "kind": "stroke", "cssProperties": ["outline-color", "outline-width"],
                  "fallback": "box-shadow" }
     }
@@ -1333,8 +1378,9 @@ copie de la partie stable d'une liaison ; `variants[].bindings` conserve son
 `nodeId` dans chaque COMPONENT. Aucun champ n'est fusionné partiellement : deux
 vues ne partagent une clé que si leur JSON complet est identique.
 
-`samples` catalogue à part ce que la maquette montre, et chaque entrée de
-`variants` le référence par `sample`. Il est le seul champ non normatif du
+`samples` catalogue à part ce que la maquette montre — textes, valeurs de props,
+surcharges et remplacements d'instance dans les dépendances —, et chaque entrée
+de `variants` le référence par `sample`. Il est le seul champ non normatif du
 contrat : le retirer, avec les `variants[].sample`, redonne exactement la forme
 précédente, `meta` mis à part. Il vit hors de `variantViews` pour que le contenu,
 volatil, ne fasse pas éclater la déduplication des vues, qui est stable.

@@ -12,6 +12,7 @@ import test from 'node:test';
 import {
   indexContractedNames,
   indexContractedNamesInDocument,
+  indexMasterInstances,
   scanComposedMatrix,
   scanComposedInstances,
 } from '../src/contract/composedComponents';
@@ -562,4 +563,99 @@ test('le même layer orphelin ne se signale qu’une fois pour toute la matrice'
 
   assert.equal(result.warnings.length, 1);
   assert.match(result.warnings[0], /« action »/);
+});
+
+/** Une instance nue, avec ses enfants et son maître, pour le relevé des maîtres. */
+function instanceMaitre(
+  id: string,
+  name: string,
+  componentName: string,
+  setName: string | null,
+  children: unknown[] = [],
+) {
+  const main = {
+    id: `${componentName}-maitre`,
+    name: componentName,
+    parent: setName ? { type: 'COMPONENT_SET', name: setName } : { type: 'PAGE' },
+  };
+  const node = {
+    type: 'INSTANCE',
+    id,
+    name,
+    children,
+    visible: true,
+    boundVariables: {},
+    getMainComponentAsync: async () => main,
+    componentProperties: {},
+    findAll: () => [],
+  };
+  for (const child of children) (child as { parent?: unknown }).parent = node;
+  return node as unknown as InstanceNode;
+}
+
+test('indexMasterInstances situe chaque instance du maître par sa position', async () => {
+  // Le nom ne peut pas être la clé : Figma renomme le calque qu'on remplace
+  // d'après son nouveau composant, c'est-à-dire dans le seul cas qui compte.
+  const icone = instanceMaitre('m-icon', 'chess', 'chess', null);
+  const cadre = {
+    type: 'FRAME', id: 'm-frame', name: 'Content', children: [icone], visible: true,
+  };
+  (icone as unknown as { parent?: unknown }).parent = cadre;
+  const master = {
+    type: 'COMPONENT', id: 'TileLink-maitre', name: 'Variant=Info', children: [cadre],
+  } as unknown as ComponentNode;
+
+  const defauts = await indexMasterInstances(master, new Set());
+
+  assert.deepEqual(Array.from(defauts.entries()), [
+    ['0.0', { masterPath: ['Content', 'chess'], component: 'chess' }],
+  ]);
+});
+
+test('le relevé d’un maître s’arrête sur les dépendances qu’il embarque', async () => {
+  // Ce que le bouton d'une Alert contient appartient au contrat de Button :
+  // le relever ici rangerait une trouvaille sous un propriétaire qui ne la
+  // porte pas.
+  const icone = instanceMaitre('m-icon', 'arrow-left-long', 'arrow-left-long', null);
+  const bouton = instanceMaitre('m-btn', 'Button', 'Color=Info', 'Button', [icone]);
+  const master = {
+    type: 'COMPONENT', id: 'Alert-maitre', name: 'Severity=Info', children: [bouton],
+  } as unknown as ComponentNode;
+  (bouton as unknown as { parent?: unknown }).parent = master;
+
+  const defauts = await indexMasterInstances(master, new Set(['button']));
+
+  assert.deepEqual(Array.from(defauts.keys()), []);
+});
+
+test('un calque d’une dépendance repeint à la main est signalé, avec son geste', async () => {
+  // La couleur d'un calque appartient au contrat de la dépendance. Posée à la
+  // main par le parent, elle n'entre dans aucun contrat et disparaît en
+  // silence : la maquette montre alors une couleur que rien ne rendra.
+  const label = { type: 'TEXT', id: 'lbl', name: 'Label' };
+  const bouton = instance('b1', 'Button', 'Button', {
+    overrides: [{ id: 'lbl', overriddenFields: ['fills'] }],
+    findAll: () => [label],
+  });
+  const root = racine('c1', 'Alert', [bouton]);
+
+  const scan = await scanComposedInstances(root, new Set(['button']));
+
+  assert.equal(scan.warnings.length, 1);
+  assert.match(scan.warnings[0], /Layer « Button »/);
+  assert.match(scan.warnings[0], /repeint à la main le calque « Label »/);
+  assert.match(scan.warnings[0], /puis réexportez/);
+});
+
+test('une surcharge de texte dans une dépendance ne réclame aucun geste', async () => {
+  const label = { type: 'TEXT', id: 'lbl', name: 'Label' };
+  const bouton = instance('b1', 'Button', 'Button', {
+    overrides: [{ id: 'lbl', overriddenFields: ['characters'] }],
+    findAll: () => [label],
+  });
+  const root = racine('c1', 'Alert', [bouton]);
+
+  const scan = await scanComposedInstances(root, new Set(['button']));
+
+  assert.deepEqual(scan.warnings, []);
 });

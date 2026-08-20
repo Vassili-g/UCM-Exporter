@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-10.2.schema.json",
-  "title": "Contrat de composant UCM 10.2",
+  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-10.3.schema.json",
+  "title": "Contrat de composant UCM 10.3",
   "description": "Ce schéma décrit la FORME d'un contrat, pas sa cohérence interne. Il ne vérifie pas les renvois internes : une entrée de `variants` peut citer une vue absente de `variantViews`, une icône un slot absent de `structure`, un token une référence inexistante. Il ne contraint pas non plus le FORMAT des valeurs : une référence de token `{chemin.du.token}`, une mesure `120px` et une piste `1fr` y sont de simples chaînes, parce que TypeScript les décrit par des types que JSON Schema ne sait pas porter. Un contrat valide au sens de ce schéma reste donc à vérifier par un consommateur.",
-  "x-ucm-contract-version": "10.2",
+  "x-ucm-contract-version": "10.3",
   "$ref": "#/definitions/Contract",
   "definitions": {
     "Contract": {
@@ -243,7 +243,7 @@
         "contractVersion": {
           "type": "string",
           "description": "Version du schéma du contrat — à incrémenter à chaque changement de forme.",
-          "const": "10.2"
+          "const": "10.3"
         },
         "exportedAt": {
           "type": "string",
@@ -1444,7 +1444,7 @@
               "type": "null"
             }
           ],
-          "description": "Alignement structurel du stroke dans Figma."
+          "description": "Alignement structurel du stroke dans Figma, et donc forme du `box-shadow` qui le rend (cf. `StrokeAlignment`). Un détail par côté se rend en autant d'ombres, jamais en `border-width` : la bordure entrerait dans la boîte."
         }
       },
       "required": [
@@ -1492,7 +1492,7 @@
         "center",
         "outside"
       ],
-      "description": "Alignement d'un stroke Figma, conservé comme donnée structurelle."
+      "description": "Alignement d'un stroke Figma, conservé comme donnée structurelle.\n\nIl dit de quel côté de la boîte le contour se dessine, JAMAIS avec quelle technique CSS : un stroke Figma ne consomme pas la boîte et ne déplace aucun voisin, quel que soit son alignement. Il se rend donc en `box-shadow`, et `align` en choisit la forme — `inside` → `inset 0 0 0 <width> <color>`, `outside` → `0 0 0 <width> <color>`, `center` → la moitié de chaque côté."
     },
     "VariantPropertyBinding": {
       "type": "object",
@@ -1641,7 +1641,7 @@
           "items": {
             "type": "string"
           },
-          "description": "Propriétés CSS candidates pour un adaptateur web."
+          "description": "Propriétés CSS candidates pour un adaptateur web.\n\nUn rôle `stroke` n'en cite jamais qui consomme la boîte : dans Figma un contour se dessine hors du flux et ne déplace aucun voisin, alors qu'une `border` CSS élargit l'élément et décale tout ce qui l'entoure. Plusieurs rôles peuvent donc viser `box-shadow` sur un même calque : ils se composent en UNE déclaration, séparés par des virgules, les `inset` d'abord."
         },
         "fallback": {
           "type": "string",
@@ -1833,6 +1833,13 @@
             "$ref": "#/definitions/SampleOverride"
           }
         },
+        "swaps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SampleSwap"
+          },
+          "description": "Les calques de la dépendance dont ce parent a remplacé le composant, dans l'ordre du maître. Une icône substituée sans `INSTANCE_SWAP` n'a pas d'autre porteur : la prop runtime que les règles `@icons` fabriquent (`chessName`, `iconLeftName`) n'existe pas dans Figma, donc jamais dans `args`."
+        },
         "composes": {
           "type": "array",
           "items": {
@@ -1869,6 +1876,28 @@
       ],
       "additionalProperties": false,
       "description": "Ce que CE parent a surchargé dans une instance de dépendance.\n\nLa frontière n'est pas une convention mais une lecture : `InstanceNode.overrides` dit ce que cette instance-ci a changé, par opposition à ce que son composant fournit — qui appartient au contrat de la dépendance. Les champs retenus sont les trois que le contrat sait porter sans décrire de rendu ; une surcharge de couleur ou de dimension est écartée, et signale plutôt un manque du contrat normatif de la dépendance."
+    },
+    "SampleSwap": {
+      "type": "object",
+      "properties": {
+        "masterPath": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Chemin de calques dans le COMPOSANT MAÎTRE de la dépendance, cible comprise."
+        },
+        "component": {
+          "type": "string",
+          "description": "Nom du composant réellement placé, ou de son component set."
+        }
+      },
+      "required": [
+        "masterPath",
+        "component"
+      ],
+      "additionalProperties": false,
+      "description": "Un calque d'une dépendance dont CE parent a remplacé le composant.\n\nSéparé de `SampleOverride` parce que les deux relevés n'ont ni la même source ni la même adresse. Figma ne rapporte pas un remplacement dans `InstanceNode.overrides` — `NodeChangeProperty` ne contient pas `mainComponent` —, il se lit donc en comparant l'instance au composant maître de la dépendance, calque par calque.\n\nDe là `masterPath` plutôt que `figmaPath` : Figma renomme le calque qu'on remplace d'après son nouveau composant, si bien que le chemin lu dans l'instance nommerait déjà `component` et ne joindrait plus rien. Le chemin publié est celui du MAÎTRE — le seul vocabulaire que le contrat de la dépendance publie, et donc la seule clé de jointure avec ses `icons.*.figmaName`. Un champ, une question : le doute qui a coûté `figmaLayer` ne doit pas renaître ici."
     },
     "Intent": {
       "type": "object",

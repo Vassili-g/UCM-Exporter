@@ -135,7 +135,15 @@ export type StateModel = {
 export type RenderingRole = {
   /** `paint` pour une couleur, `stroke` pour une couleur accompagnée de géométrie. */
   kind: 'paint' | 'stroke';
-  /** Propriétés CSS candidates pour un adaptateur web. */
+  /**
+   * Propriétés CSS candidates pour un adaptateur web.
+   *
+   * Un rôle `stroke` n'en cite jamais qui consomme la boîte : dans Figma un
+   * contour se dessine hors du flux et ne déplace aucun voisin, alors qu'une
+   * `border` CSS élargit l'élément et décale tout ce qui l'entoure. Plusieurs
+   * rôles peuvent donc viser `box-shadow` sur un même calque : ils se composent
+   * en UNE déclaration, séparés par des virgules, les `inset` d'abord.
+   */
   cssProperties: string[];
   /** Stratégie de rendu complémentaire quand une propriété seule ne suffit pas. */
   fallback?: string;
@@ -565,7 +573,15 @@ export type IconDefinition = {
   variants?: Array<Record<string, string>>;
 };
 
-/** Alignement d'un stroke Figma, conservé comme donnée structurelle. */
+/**
+ * Alignement d'un stroke Figma, conservé comme donnée structurelle.
+ *
+ * Il dit de quel côté de la boîte le contour se dessine, JAMAIS avec quelle
+ * technique CSS : un stroke Figma ne consomme pas la boîte et ne déplace aucun
+ * voisin, quel que soit son alignement. Il se rend donc en `box-shadow`, et
+ * `align` en choisit la forme — `inside` → `inset 0 0 0 <width> <color>`,
+ * `outside` → `0 0 0 <width> <color>`, `center` → la moitié de chaque côté.
+ */
 export type StrokeAlignment = 'inside' | 'center' | 'outside';
 
 /** Couleur et géométrie tokenisées d'un stroke porté par un rôle (`border`, `ring`…). */
@@ -577,7 +593,11 @@ export type StrokeTokens = {
    * non tokenisée.
    */
   width: StrokeWidth | null;
-  /** Alignement structurel du stroke dans Figma. */
+  /**
+   * Alignement structurel du stroke dans Figma, et donc forme du `box-shadow`
+   * qui le rend (cf. `StrokeAlignment`). Un détail par côté se rend en autant
+   * d'ombres, jamais en `border-width` : la bordure entrerait dans la boîte.
+   */
   align: StrokeAlignment | null;
 };
 
@@ -842,6 +862,30 @@ export type SampleOverride = {
 };
 
 /**
+ * Un calque d'une dépendance dont CE parent a remplacé le composant.
+ *
+ * Séparé de `SampleOverride` parce que les deux relevés n'ont ni la même
+ * source ni la même adresse. Figma ne rapporte pas un remplacement dans
+ * `InstanceNode.overrides` — `NodeChangeProperty` ne contient pas
+ * `mainComponent` —, il se lit donc en comparant l'instance au composant
+ * maître de la dépendance, calque par calque.
+ *
+ * De là `masterPath` plutôt que `figmaPath` : Figma renomme le calque qu'on
+ * remplace d'après son nouveau composant, si bien que le chemin lu dans
+ * l'instance nommerait déjà `component` et ne joindrait plus rien. Le chemin
+ * publié est celui du MAÎTRE — le seul vocabulaire que le contrat de la
+ * dépendance publie, et donc la seule clé de jointure avec ses
+ * `icons.*.figmaName`. Un champ, une question : le doute qui a coûté
+ * `figmaLayer` ne doit pas renaître ici.
+ */
+export type SampleSwap = {
+  /** Chemin de calques dans le COMPOSANT MAÎTRE de la dépendance, cible comprise. */
+  masterPath: string[];
+  /** Nom du composant réellement placé, ou de son component set. */
+  component: string;
+};
+
+/**
  * L'usage exact d'une dépendance dans la maquette.
  *
  * `args` emploie les clés PUBLIQUES du contrat de la dépendance et vaut pour un
@@ -864,6 +908,14 @@ export type SampleInstance = {
   component: string;
   args?: Record<string, string | boolean>;
   overrides?: SampleOverride[];
+  /**
+   * Les calques de la dépendance dont ce parent a remplacé le composant, dans
+   * l'ordre du maître. Une icône substituée sans `INSTANCE_SWAP` n'a pas
+   * d'autre porteur : la prop runtime que les règles `@icons` fabriquent
+   * (`chessName`, `iconLeftName`) n'existe pas dans Figma, donc jamais dans
+   * `args`.
+   */
+  swaps?: SampleSwap[];
   composes?: SampleInstance[];
 };
 

@@ -48,8 +48,33 @@ type ComposedInstancesScan = {
   mainByInstanceId: Map<string, ComponentNode>;
 };
 
+/**
+ * Ce qu'un composant maître place à chaque position de son propre arbre :
+ * chemin d'index (« 0.2.1 ») → nom du calque dans le maître et composant qui
+ * s'y trouve par défaut.
+ *
+ * Le chemin d'INDEX est la clé, jamais le nom : Figma interdit d'ajouter, de
+ * retirer ou de réordonner un calque dans une instance, si bien que la position
+ * y est isomorphe à celle du maître — alors que le nom, lui, suit le composant
+ * dès qu'on remplace une instance, c'est-à-dire exactement dans le cas qu'on
+ * cherche à reconnaître.
+ */
+export type MasterInstanceDefaults = ReadonlyMap<
+  string,
+  { masterPath: string[]; component: string }
+>;
+
+/** Relevé des maîtres, indexé par l'id du composant maître d'une dépendance. */
+export type SwapDefaults = ReadonlyMap<string, MasterInstanceDefaults>;
+
 /** Relevé de toute la matrice, avec ses éventuels écarts entre variants. */
 export type ComposedMatrixScan = ComposedInstancesScan & {
+  /**
+   * Ce que chaque composant maître de dépendance contient par défaut, pour que
+   * l'échantillon reconnaisse un remplacement SANS refaire d'aller-retour
+   * asynchrone. Cf. `MasterInstanceDefaults`.
+   */
+  swapDefaults: SwapDefaults;
   /**
    * Écarts entre variants que le schéma courant ne doit jamais taire.
    *
@@ -137,6 +162,143 @@ async function contractedOwner(
   return { name: contracted.has(compactName(owner.name)) ? owner.name : null, main };
 }
 
+/** Nom du composant unifié derrière un maître : celui du SET quand il existe. */
+export function ownerComponentName(main: ComponentNode): string {
+  return main.parent?.type === 'COMPONENT_SET' ? main.parent.name : main.name;
+}
+
+/** Une instance rencontrée dans un maître, avec sa position et son nom de calque. */
+type MasterInstance = { indexPath: string; masterPath: string[]; instance: InstanceNode };
+
+/**
+ * Toutes les instances d'un sous-arbre, avec leur chemin d'index ET leur chemin
+ * de noms, dans l'ordre du document.
+ *
+ * Le parcours descend par `children` plutôt que par `findAll` parce que c'est
+ * la POSITION qui l'intéresse : `findAll` aplatit l'arbre et perdrait l'indice
+ * de chaque enfant, seule clé qu'une instance et son maître partagent.
+ */
+function masterInstances(root: SceneNode): MasterInstance[] {
+  const found: MasterInstance[] = [];
+  const visit = (node: SceneNode, indexes: readonly number[], names: readonly string[]) => {
+    const children = 'children' in node ? node.children : [];
+    children.forEach((child, index) => {
+      const nextIndexes = [...indexes, index];
+      const nextNames = [...names, child.name];
+      if (child.type === 'INSTANCE') {
+        found.push({
+          indexPath: nextIndexes.join('.'),
+          masterPath: nextNames,
+          instance: child,
+        });
+      }
+      visit(child, nextIndexes, nextNames);
+    });
+  };
+  visit(root, [], []);
+  return found;
+}
+
+/**
+ * Ce qu'un composant maître place à chaque position, dépendances exclues.
+ *
+ * Le relevé s'arrête sur une instance contractée, exactement comme
+ * `getAllNodes` élague le parcours du contrat : ce qu'une dépendance de la
+ * dépendance contient appartient à SON contrat, et le comparer ici rangerait
+ * une trouvaille sous un propriétaire qui ne la porte pas.
+ */
+export async function indexMasterInstances(
+  master: ComponentNode,
+  contracted: ContractedNames,
+): Promise<MasterInstanceDefaults> {
+  const releves = masterInstances(master);
+  const mains = await Promise.all(
+    releves.map((releve) => releve.instance.getMainComponentAsync().catch(() => null)),
+  );
+
+  const defauts = new Map<string, { masterPath: string[]; component: string }>();
+  const frontieres: string[] = [];
+  releves.forEach((releve, index) => {
+    const main = mains[index];
+    // Un maître illisible est déjà signalé là où il compte, sur le document
+    // exporté. Ici son absence retire seulement une position du relevé : aucune
+    // comparaison ne s'y fera, donc aucun remplacement ne sera inventé.
+    if (!main) return;
+    const component = ownerComponentName(main);
+    if (contracted.has(compactName(component))) {
+      frontieres.push(`${releve.indexPath}.`);
+      return;
+    }
+    defauts.set(releve.indexPath, { masterPath: releve.masterPath, component });
+  });
+
+  for (const cle of Array.from(defauts.keys())) {
+    if (frontieres.some((frontiere) => cle.startsWith(frontiere))) defauts.delete(cle);
+  }
+  return defauts;
+}
+
+/**
+ * Champs de `InstanceNode.overrides` par lesquels un parent REPEINT un calque
+ * d'une dépendance.
+ *
+ * L'échantillon les écarte par principe — il ne porte que des valeurs de props
+ * — et le contrat normatif ne peut pas les porter non plus : la couleur d'un
+ * calque appartient au contrat de la dépendance. Sans ce constat, la maquette
+ * montre une couleur que le développeur ne rendra jamais, et rien ne le dit.
+ */
+const REPAINT_FIELDS = new Set<string>([
+  'fills', 'strokes', 'strokeWeight', 'fillStyleId', 'strokeStyleId', 'effects', 'effectStyleId',
+]);
+
+/**
+ * Signale les calques d'une dépendance que CE composant a repeints à la main.
+ *
+ * Le geste demandé est de piloter la couleur par une propriété de la
+ * dépendance : c'est la seule façon dont elle traverse le contrat, et c'est
+ * aussi ce que le design system attend — une Alert de sévérité `success` porte
+ * un bouton `success` parce que sa VARIANTE le dit, pas parce qu'on l'a
+ * repeint.
+ */
+function repaintWarnings(
+  dependencyByInstance: ReadonlyMap<InstanceNode, ComposedDependency>,
+): string[] {
+  const messages: string[] = [];
+  for (const [instance, dependency] of dependencyByInstance) {
+    let releves: readonly { id: string; overriddenFields: NodeChangeProperty[] }[] = [];
+    try {
+      releves = instance.overrides ?? [];
+    } catch {
+      continue;
+    }
+    const nodesById = new Map<string, SceneNode>();
+    for (const node of instance.findAll(() => true)) nodesById.set(node.id, node);
+    nodesById.set(instance.id, instance);
+
+    const repeints: string[] = [];
+    for (const releve of releves) {
+      if (!(releve.overriddenFields ?? []).some((champ) => REPAINT_FIELDS.has(champ))) continue;
+      const node = nodesById.get(releve.id);
+      if (node && !repeints.includes(node.name)) repeints.push(node.name);
+    }
+    if (repeints.length === 0) continue;
+
+    const plusieurs = repeints.length > 1;
+    const cites = repeints.slice(0, 3).map((nom) => `« ${nom} »`).join(', ');
+    const reste = repeints.length - 3;
+    messages.push(
+      `Layer « ${instance.name} » : ce composant repeint à la main `
+        + `${plusieurs ? 'les calques' : 'le calque'} ${cites}${reste > 0 ? ` (+${reste})` : ''} `
+        + `du composant « ${dependency.component} », qui a son propre contrat. Une couleur posée `
+        + `ainsi n'entre dans aucun contrat : le développeur rendra celle que `
+        + `« ${dependency.component} » publie, et la maquette montrera une autre couleur que `
+        + `l'application. Pilotez-la par une propriété de « ${dependency.component} » — sa `
+        + `variante de couleur, par exemple — puis réexportez.`,
+    );
+  }
+  return messages;
+}
+
 /**
  * Sépare, dans un variant, ce qui lui appartient de ce qui appartient aux
  * composants qu'il embarque.
@@ -212,6 +374,8 @@ export async function scanComposedInstances(
     composes.push(dependency);
   }
 
+  warnings.push(...repaintWarnings(dependencyByInstance));
+
   return { composes, composed, warnings, mainByInstanceId };
 }
 
@@ -246,6 +410,24 @@ export async function scanComposedMatrix(
     for (const [id, main] of scan.mainByInstanceId) mainByInstanceId.set(id, main);
   }
 
+  // Les maîtres se relèvent une fois pour toute la matrice, et une seule fois
+  // par maître : trente variants qui embarquent le même Button ne coûtent qu'un
+  // parcours. C'est aussi ce qui garde `extractSamples` synchrone — un module
+  // pur qui n'attend rien ne peut pas ordonner ses trouvailles au hasard des
+  // allers-retours.
+  const maitres = new Map<string, ComponentNode>();
+  for (const id of composed.keys()) {
+    const main = mainByInstanceId.get(id);
+    if (main) maitres.set(main.id, main);
+  }
+  const relevesMaitres = await Promise.all(
+    Array.from(maitres.values(), async (main) => [
+      main.id,
+      await indexMasterInstances(main, contracted),
+    ] as const),
+  );
+  const swapDefaults = new Map(relevesMaitres);
+
   const signature = (dependency: ComposedDependency) =>
     [dependency.component, dependency.figmaLayer, dependency.visibilityProp ?? ''].join('\u0000');
   const sequences = scans.map((scan) => scan.composes.map(signature));
@@ -274,5 +456,12 @@ export async function scanComposedMatrix(
   // du variant : le dédoublonnage rend donc exactement un constat par layer.
   const warnings = Array.from(new Set(scans.flatMap((scan) => scan.warnings)));
 
-  return { composes: scans[0]?.composes ?? [], composed, warnings, infos, mainByInstanceId };
+  return {
+    composes: scans[0]?.composes ?? [],
+    composed,
+    warnings,
+    infos,
+    mainByInstanceId,
+    swapDefaults,
+  };
 }

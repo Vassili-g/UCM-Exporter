@@ -108,7 +108,7 @@ test('renderingSemanticsFor publie le rendu des clés sans rôle, après les rô
   ]);
   assert.deepEqual(semantics.roles['scale-1'], { kind: 'paint', cssProperties: ['background-color'] });
   assert.deepEqual(semantics.roles.title, { kind: 'paint', cssProperties: ['color', 'fill'] });
-  assert.deepEqual(semantics.roles.border, { kind: 'stroke', cssProperties: ['border-color', 'border-width'] });
+  assert.deepEqual(semantics.roles.border, { kind: 'stroke', cssProperties: ['box-shadow'] });
 });
 
 test('un design system dont chaque couleur nomme son rôle publie le vocabulaire partagé, inchangé', () => {
@@ -180,7 +180,9 @@ test('defaultRenderingSemantics publie le vocabulaire de rendu partagé', () => 
       background: { kind: 'paint', cssProperties: ['background-color'] },
       foreground: { kind: 'paint', cssProperties: ['color', 'fill'] },
       icon: { kind: 'paint', cssProperties: ['color', 'fill'] },
-      border: { kind: 'stroke', cssProperties: ['border-color', 'border-width'] },
+      // Un stroke Figma se dessine hors du flux : le rendre en bordure CSS
+      // élargirait la boîte et décalerait tout le contenu du composant.
+      border: { kind: 'stroke', cssProperties: ['box-shadow'] },
       ring: {
         kind: 'stroke',
         cssProperties: ['outline-color', 'outline-width'],

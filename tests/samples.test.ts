@@ -53,9 +53,22 @@ function instance(
 /** Le composant maître d'une dépendance, avec les définitions de son set. */
 function maitre(setName: string, definitions: Record<string, any>) {
   return {
+    id: `${setName}-maitre`,
     name: `${setName}-variant`,
     parent: { type: 'COMPONENT_SET', id: `${setName}-set`, name: setName, componentPropertyDefinitions: definitions },
   } as unknown as ComponentNode;
+}
+
+/** Le composant maître d'une icône : un composant seul, sans component set. */
+function maitreIcone(name: string) {
+  return { id: `${name}-maitre`, name, parent: { type: 'PAGE' } } as unknown as ComponentNode;
+}
+
+/** Ce qu'un maître place à une position, tel que le relève `indexMasterInstances`. */
+function defauts(entrees: Array<[string, string[], string]>) {
+  return new Map(
+    entrees.map(([position, masterPath, component]) => [position, { masterPath, component }]),
+  );
 }
 
 const DEFINITIONS_ALERT = {
@@ -444,4 +457,147 @@ test('plusieurs contenus dans une même matrice se constatent, sans rien réclam
   // des contenus différents — la phrase impérative tombait donc sur le cas
   // normal, à chaque export.
   assert.doesNotMatch(notice ?? '', /réexportez|alignez|Corrigez|dans Figma/);
+});
+
+test('une icône remplacée dans une dépendance est relevée, au chemin du maître', () => {
+  // Le cas exact du corpus : sept TileLink montrant sept icônes différentes.
+  // Figma renomme le calque d'après le composant qu'on y place — le chemin lu
+  // dans l'instance dirait donc « star », et ne joindrait plus rien avec le
+  // contrat de TileLink, qui ne connaît que « chess ».
+  const icone = node('INSTANCE', 'i1', 'star', [], {
+    componentProperties: {}, exposedInstances: [], overrides: [],
+  });
+  const tuile = instance('t1', 'TileLink', {}, [icone]);
+  const component = node('COMPONENT', 'c1', 'StressTest', [tuile], {
+    layoutMode: 'HORIZONTAL',
+  }) as ComponentNode;
+
+  const sample = extractVariantSample(
+    { component, paths: new Map([['t1', ['tilelink']]]) },
+    undefined,
+    new Set(),
+    new Map([['t1', { component: 'TileLink', figmaLayer: 'TileLink' }]]),
+    new Map<string, ComponentNode>([
+      ['t1', maitre('TileLink', {})],
+      ['i1', maitreIcone('star')],
+    ]),
+    new Map([['TileLink-maitre', defauts([['0', ['chess'], 'chess']])]]),
+  );
+
+  assert.deepEqual(sample.composes?.[0].swaps, [{ masterPath: ['chess'], component: 'star' }]);
+});
+
+test('choisir une autre variante d’un même set n’est pas un remplacement', () => {
+  // Le contrat de la dépendance décrit déjà ce choix : le publier ici en ferait
+  // un second propriétaire, et le premier remplacement venu deviendrait illisible.
+  const interne = node('INSTANCE', 'w1', 'sizeWrapperButton', [], {
+    componentProperties: {}, exposedInstances: [], overrides: [],
+  });
+  const bouton = instance('b1', 'Button', {}, [interne]);
+  const component = node('COMPONENT', 'c1', 'Carte', [bouton], {
+    layoutMode: 'HORIZONTAL',
+  }) as ComponentNode;
+
+  const sample = extractVariantSample(
+    { component, paths: new Map([['b1', ['button']]]) },
+    undefined,
+    new Set(),
+    new Map([['b1', { component: 'Button', figmaLayer: 'Button' }]]),
+    new Map<string, ComponentNode>([
+      ['b1', maitre('Button', DEFINITIONS_BUTTON)],
+      // Une AUTRE variante du même set : le propriétaire ne bouge pas.
+      ['w1', maitre('sizeWrapperButton', {})],
+    ]),
+    new Map([[
+      'Button-maitre',
+      defauts([['0', ['sizeWrapperButton'], 'sizeWrapperButton']]),
+    ]]),
+  );
+
+  assert.equal(sample.composes?.[0].swaps, undefined);
+});
+
+test('le relevé des remplacements s’arrête sur une dépendance de la dépendance', () => {
+  // L'icône du bouton d'une alerte appartient au bouton. La ranger sous
+  // l'alerte publierait un chemin de maître que le contrat d'Alert ne contient
+  // pas, et que celui de Button ne reconnaîtrait pas.
+  const icone = node('INSTANCE', 'i1', 'check', [], {
+    componentProperties: {}, exposedInstances: [], overrides: [],
+  });
+  const bouton = instance('b1', 'Button', {}, [icone]);
+  const alerte = instance('a1', 'Alert', {}, [bouton]);
+  const component = node('COMPONENT', 'c1', 'StressTest', [alerte], {
+    layoutMode: 'VERTICAL',
+  }) as ComponentNode;
+
+  const sample = extractVariantSample(
+    { component, paths: new Map([['a1', ['alert']]]) },
+    undefined,
+    new Set(),
+    new Map([
+      ['a1', { component: 'Alert', figmaLayer: 'Alert' }],
+      ['b1', { component: 'Button', figmaLayer: 'Button' }],
+    ]),
+    new Map<string, ComponentNode>([
+      ['a1', maitre('Alert', DEFINITIONS_ALERT)],
+      ['b1', maitre('Button', DEFINITIONS_BUTTON)],
+      ['i1', maitreIcone('check')],
+    ]),
+    new Map([
+      // Le maître d'Alert s'arrête lui aussi sur le Button : la position « 0 »
+      // n'y figure pas.
+      ['Alert-maitre', defauts([])],
+      ['Button-maitre', defauts([['0', ['arrow-left-long'], 'arrow-left-long']])],
+    ]),
+  );
+
+  const echantillonAlerte = sample.composes?.[0];
+  assert.equal(echantillonAlerte?.swaps, undefined);
+  assert.deepEqual(echantillonAlerte?.composes?.[0].swaps, [
+    { masterPath: ['arrow-left-long'], component: 'check' },
+  ]);
+});
+
+test('un calque masqué d’une dépendance ne montre rien, donc ne remplace rien', () => {
+  const icone = node('INSTANCE', 'i1', 'star', [], {
+    componentProperties: {}, exposedInstances: [], overrides: [], visible: false,
+  });
+  const tuile = instance('t1', 'TileLink', {}, [icone]);
+  const component = node('COMPONENT', 'c1', 'StressTest', [tuile], {
+    layoutMode: 'HORIZONTAL',
+  }) as ComponentNode;
+
+  const sample = extractVariantSample(
+    { component, paths: new Map([['t1', ['tilelink']]]) },
+    undefined,
+    new Set(),
+    new Map([['t1', { component: 'TileLink', figmaLayer: 'TileLink' }]]),
+    new Map<string, ComponentNode>([
+      ['t1', maitre('TileLink', {})],
+      ['i1', maitreIcone('star')],
+    ]),
+    new Map([['TileLink-maitre', defauts([['0', ['chess'], 'chess']])]]),
+  );
+
+  assert.equal(sample.composes?.[0].swaps, undefined);
+});
+
+test('sans relevé du maître, aucun remplacement n’est inventé', () => {
+  const icone = node('INSTANCE', 'i1', 'star', [], {
+    componentProperties: {}, exposedInstances: [], overrides: [],
+  });
+  const tuile = instance('t1', 'TileLink', {}, [icone]);
+  const component = node('COMPONENT', 'c1', 'StressTest', [tuile], {
+    layoutMode: 'HORIZONTAL',
+  }) as ComponentNode;
+
+  const sample = extractVariantSample(
+    { component, paths: new Map([['t1', ['tilelink']]]) },
+    undefined,
+    new Set(),
+    new Map([['t1', { component: 'TileLink', figmaLayer: 'TileLink' }]]),
+    new Map<string, ComponentNode>([['t1', maitre('TileLink', {})]]),
+  );
+
+  assert.equal(sample.composes?.[0].swaps, undefined);
 });

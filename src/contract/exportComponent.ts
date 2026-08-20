@@ -42,7 +42,7 @@ import type {
  * La forme courante est décrite par UCM-EXPORTER-SPEC.md et `types.ts` ;
  * ce qui a changé d'une version à l'autre se lit dans Git.
  */
-export const CONTRACT_VERSION = '10.2';
+export const CONTRACT_VERSION = '10.3';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(
@@ -270,6 +270,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     mainByInstanceId,
     warnings: compositionWarnings,
     infos: compositionInfos,
+    swapDefaults,
   } = await scanComposedMatrix(
     matrix.variants.map((entry) => entry.component),
     referenceComponent,
@@ -440,6 +441,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
       extracted.targetedLayers,
       composed,
       mainByInstanceId,
+      swapDefaults,
     );
     if (Object.keys(sample).length > 0) variant.sample = sample;
   }
