@@ -1,8 +1,8 @@
 {
   "name": "Alert",
   "meta": {
-    "contractVersion": "10.1",
-    "exportedAt": "2026-08-19T11:10:30.891Z",
+    "contractVersion": "10.2",
+    "exportedAt": "2026-08-20T11:44:23.219Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "229:496",
@@ -857,7 +857,8 @@
           "definition": "b3",
           "nodeId": "233:574"
         }
-      ]
+      ],
+      "sample": "s1"
     },
     {
       "nodeId": "260:1793",
@@ -891,7 +892,8 @@
           "definition": "b3",
           "nodeId": "260:1799"
         }
-      ]
+      ],
+      "sample": "s1"
     },
     {
       "nodeId": "260:1786",
@@ -920,7 +922,8 @@
           "definition": "b3",
           "nodeId": "260:1792"
         }
-      ]
+      ],
+      "sample": "s1"
     },
     {
       "nodeId": "238:673",
@@ -954,7 +957,8 @@
           "definition": "b3",
           "nodeId": "238:679"
         }
-      ]
+      ],
+      "sample": "s1"
     },
     {
       "nodeId": "260:1822",
@@ -983,7 +987,8 @@
           "definition": "b3",
           "nodeId": "260:1828"
         }
-      ]
+      ],
+      "sample": "s1"
     },
     {
       "nodeId": "260:1810",
@@ -1017,7 +1022,8 @@
           "definition": "b3",
           "nodeId": "260:1816"
         }
-      ]
+      ],
+      "sample": "s1"
     },
     {
       "nodeId": "260:1834",
@@ -1046,7 +1052,8 @@
           "definition": "b3",
           "nodeId": "260:1840"
         }
-      ]
+      ],
+      "sample": "s1"
     },
     {
       "nodeId": "260:1846",
@@ -1080,7 +1087,8 @@
           "definition": "b3",
           "nodeId": "260:1852"
         }
-      ]
+      ],
+      "sample": "s1"
     }
   ],
   "structure": {
@@ -1281,6 +1289,61 @@
       "visibilityProp": "action"
     }
   ],
+  "samples": {
+    "s1": {
+      "args": {
+        "icon": true,
+        "title": true,
+        "action": true
+      },
+      "text": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "figmaLayer": "Titre",
+          "value": "Titre"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "figmaLayer": "Description",
+          "value": "Description"
+        }
+      ],
+      "composes": [
+        {
+          "figmaLayer": "Button",
+          "component": "Button",
+          "args": {
+            "color": "info",
+            "variant": "text",
+            "state": "default",
+            "iconLeft": false,
+            "iconRight": false,
+            "label": true,
+            "size": "small"
+          },
+          "slotPath": [
+            "action",
+            "button"
+          ],
+          "overrides": [
+            {
+              "figmaPath": [
+                "sizeWrapperButton",
+                "Suivant"
+              ],
+              "text": "Action"
+            }
+          ]
+        }
+      ]
+    }
+  },
   "tokensUsed": [
     "{components.alert.colors.error.outlined.border}",
     "{components.alert.colors.error.outlined.foreground}",
