@@ -37,7 +37,7 @@ const perimes = contrats.flatMap((nom) => {
 
 if (perimes.length > 0) {
   console.error(
-    `✗ Le moteur écrit désormais du ${CONTRACT_VERSION}, et le corpus de référence ne l'a pas vu :`,
+    `✗ Le moteur écrit du ${CONTRACT_VERSION}, et le corpus de référence ne l'a pas vu :`,
   );
   for (const { nom, version } of perimes) {
     console.error(`    ${nom} — produit par le schéma ${String(version)}`);

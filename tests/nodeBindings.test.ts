@@ -116,7 +116,7 @@ test('un espacement réparti par Figma n’est pas présenté comme un gap fixe'
   );
 
   assert.equal(result, null);
-  // La répartition elle-même est désormais publiée par justifyContent. Ce
+  // La répartition elle-même est publiée par justifyContent. Ce
   // contrôle ne traite que le gap, que Figma ignore en mode « Auto ».
   assert.deepEqual(warnings, []);
 });
@@ -266,13 +266,12 @@ test('les représentations du rayon sont alternatives mais chacune reste complè
 });
 
 /**
- * Contrat 7.0 : un champ à quatre côtés publie le détail au lieu de tout perdre.
+ * Un champ à quatre côtés publie le détail au lieu de tout perdre.
  *
  * Le design system nomme déjà ces variables séparément (`padding-left`,
- * `radius-top-left`). Exiger une variable unique demandait au designer d'aplatir
- * une décision qui lui appartient, et le moteur se contredisait : l'élection du
- * node de layout comptait ce padding comme complet, l'extraction n'en publiait
- * rien.
+ * `radius-top-left`). Exiger une variable unique lui ferait aplatir une décision
+ * qui lui appartient, et le moteur se contredirait : l'élection du node de
+ * layout compte ce padding comme complet, l'extraction n'en publierait rien.
  */
 test('un padding dont les côtés citent deux variables publie les deux', async () => {
   const node = {

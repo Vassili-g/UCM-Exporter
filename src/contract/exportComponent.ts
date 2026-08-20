@@ -34,102 +34,12 @@ import type {
 } from './types';
 
 /**
- * Version du schéma de contrat — à incrémenter à chaque changement de forme.
- * 10.1 : `structuralSize` étend l'exception pixel des grilles de la piste à la
- * cellule. Sous une piste qui hug, la mesure ne vit que sur l'enfant — Figma n'y
- * expose aucun remplissage et `GridTrackSize.value` n'existe pas sur ce type —
- * et sans elle la piste retombait à zéro. `size` reste strictement tokenisé.
- * 10.0 : les pistes FIXED d'une grille conservent exceptionnellement leur
- * valeur CSS en pixels, les valeurs par côté peuvent être clairsemées lorsque
- * les autres côtés sont neutres, toute feuille publie son radius, et chaque
- * vue situe ses fills et strokes par des chemins exacts de slots.
- * 9.0 : les vues exactes identiques sont cataloguées dans `variantViews`, et
- * les liaisons natives partagent `propertyBindingDefinitions`. Chaque variant
- * conserve ses feuilles et ses placements propres par référence exacte ; les
- * trois anciens index parallèles de `structure` disparaissent.
- * 8.0 : `variants` publie un arbre portable par combinaison exacte, y compris
- * pour un COMPONENT standalone et un set clairsemé. `propertyBindings` situe
- * les liaisons natives, `INSTANCE_SWAP` et `SLOT` gardent leur type, et les
- * diagnostics rendent explicites les limites de la projection portable. Les
- * règles ne sont plus une précondition d'export.
- * 6.0 : `structure.children` cesse de s'arrêter au premier calque qui n'est ni
- * un texte ni une dépendance. Le contrat descend désormais dès qu'un descendant
- * porte une information qu'une feuille ne sait pas exprimer — un texte, une
- * icône, une dépendance ou n'importe quelle liaison de variable — et le fait à
- * n'importe quelle profondeur : un auto layout dans un auto layout dans une
- * grille est décrit jusqu'au bout, chaque niveau avec sa disposition, son
- * `padding`, son `radius`, sa taille et ses bornes. Jusqu'ici, tout un
- * sous-arbre graphique — la piste et le curseur d'un Toggle, le rail et le
- * remplissage d'une Progress, trois cadres bordés emboîtés — se réduisait à un
- * slot opaque, alors que ses couleurs entraient bien dans `variantTokens` : le
- * contrat annonçait des peintures qu'aucun calque publié ne portait.
- * `structureTree.ts` en est l'unique autorité, partagée par l'extraction, les
- * chemins de `variantTypography` et les signatures de comparaison.
- * La même version rend contractuelles deux dispositions que le moteur se
- * contentait d'avertir : la GRILLE (`layout: "grid"`, `columns`, `rows`,
- * `columnGap`, `rowGap`, et `columnSpan` / `rowSpan` / `justifySelf` sur chaque
- * enfant — les deux gaps de Figma se relient à une variable, donc une grille est
- * aussi contractuelle qu'une rangée) et la POSITION ABSOLUE (`position` et
- * `constraints`, soit les bords auxquels un calque hors flux s'accroche ; sa
- * distance à ces bords ne se relie à aucune variable et reste hors du contrat).
- * Un consommateur doit désormais parcourir `structure.children` récursivement
- * sans supposer que seules les branches de texte se ramifient, accepter un
- * `layout` valant `grid`, et lire les chemins de `variantTypography` qui
- * gagnent un étage dès qu'un texte est rangé dans son propre cadre — d'où la
- * version majeure.
- * 5.5 : une couleur cesse d'en évincer une autre. La clé reste le dernier
- * segment du token, mais quand deux couleurs d'un même variant le partagent,
- * elle s'allonge des segments qui les séparent (`userinput.background` /
- * `divider.background`) au lieu de n'en garder qu'une. Le design system nommait
- * déjà ces surfaces distinctement : c'est l'export qui tronquait. Un
- * consommateur doit désormais accepter une clé contenant des points et cesser
- * de présumer qu'un des cinq rôles est présent.
- * 5.4 : le passage à la ligne devient contractuel. `wrap` et `rowGap` décrivent
- * un auto layout qui déborde sur plusieurs lignes, sur le composant comme sur
- * n'importe quel conteneur de `children` ; le contrat se contentait jusqu'ici
- * d'avertir, et le développeur alignait tout sur une seule ligne. Un `rowGap`
- * absent sous `wrap` vaut le `gap`, comme dans Figma et comme en CSS. La même
- * version élargit ce qu'un cadre de dépendances publie : ses calques voisins
- * cessent de disparaître avec leur slot, leur typographie et leur visibilité.
- * 5.3 : les bornes de taille deviennent contractuelles. `bounds` publie
- * `minWidth`, `maxWidth`, `minHeight` et `maxHeight` sur le composant comme sur
- * chaque slot, tokenisées. Le contrat cesse de demander qu'on retire du design
- * ce qu'il ne savait pas écrire : une borne reliée à une variable se publie.
- * 5.2 : un axe de `structure.sizing` peut citer un token. Une dimension figée
- * sans variable reste `stretch` — c'est une taille de maquette — mais celle qui
- * cite une variable est une décision du design system, et le token l'emporte.
- * 5.1 : ce qu'une couleur peint se lit sur le calque qui la porte, plus sur le
- * nom du token. Le dernier segment reste la CLÉ de la couleur, et
- * `rendering.roles` publie le rendu de celles qui ne nomment aucun rôle
- * partagé — un composant peut donc peindre plusieurs surfaces sans qu'aucun
- * renommage impossible soit demandé au designer.
- * 5.0 : chaque axe publié devient documentable et chaque icône modifiable
- * devient remplaçable. L'axe d'états accueille sa doc dans
- * `stateModel.states.<état>.description`, et `IconProp.visibilityProp` devient
- * facultatif — une icône toujours visible a désormais sa prop runtime.
- * 4.9 : un calque qui ENVELOPPE un composant unifié devient un conteneur de ce
- * contrat — il publie son flux et range la dépendance dans `children`. Seul le
- * calque qui EST l'instance porte encore `composes`.
- * 4.8 : `structure.sizing` s'écrit en CSS, par propriété (`width`, `height`) et
- * en valeurs `stretch` / `fit-content`.
- * 4.7 : le dimensionnement se ferme — `structure.sizing` est toujours publié et
- * `size` décrit la dimension figée de n'importe quel slot, côté par côté.
- * 4.6 : les text styles et leurs tokens sont catalogués une fois, puis leurs
- * usages sont décrits sur toute la matrice par `variantTypography`.
- * 4.5 : quand `sizes` décrit une font size par taille, celle du slot de
- * référence est retirée de `typography` ; la carte des tailles est son unique
- * autorité.
- * 4.4 : l'auto-layout publie l'alignement du conteneur et le remplissage de
- * ses enfants ; un consommateur n'a plus à inventer `alignItems` ou `flexGrow`.
- * 4.3 : les slots multi-textes deviennent récursifs, afin que chaque calque
- * texte porte sa propre typographie et sa propre visibilité.
- * 4.2 : un slot d'icône porte le rôle `icon` au lieu du nom de son calque, et
- * chaque icône déclare le slot et la taille qui la rendent — les icônes qui se
- * relaient entre variants deviennent toutes rendables.
- * 4.1 : conditions de variantes des icônes et cibles de visibilité imbriquées.
- * 4.0 : composition (`composes`) et assainissement du format — les dimensions
- * ne sont plus recopiées hors de `sizes`, la couleur du label vient de
- * `variantTokens`, et `warnings` documente l'export sous `meta`.
+ * Version du schéma de contrat, et unique endroit où elle est écrite.
+ *
+ * À incrémenter à chaque changement de FORME du JSON, avec la spécification,
+ * les fixtures et les consommateurs dans le même changement.
+ * La forme courante est décrite par UCM-EXPORTER-SPEC.md et `types.ts` ;
+ * ce qui a changé d'une version à l'autre se lit dans Git.
  */
 export const CONTRACT_VERSION = '10.1';
 
@@ -345,13 +255,28 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   // La composition se relève AVANT toute extraction : un composant unifié
   // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
   // conditionne tout ce qui suit.
-  const { composes: scannedComposes, composed, warnings: compositionWarnings } = await scanComposedMatrix(
+  const {
+    composes: scannedComposes,
+    composed,
+    warnings: compositionWarnings,
+    infos: compositionInfos,
+  } = await scanComposedMatrix(
     matrix.variants.map((entry) => entry.component),
     referenceComponent,
     await indexContractedNamesInDocument(),
   );
-  warnings.push(...compositionWarnings);
-  // Les arbres exacts portent la composition propre à chaque variante.
+  warnings.push(...compositionWarnings, ...compositionInfos);
+  // Une instance dont le composant maître est illisible coûte au contrat : ses
+  // layers passent pour les nôtres et la dépendance manque à `composes`. C'est
+  // une perte de portabilité, et elle se marque comme telle.
+  addProjectionWarnings(compositionWarnings);
+  // Les arbres exacts portent la composition propre à chaque variante : la note
+  // le dit elle-même, et ne demande donc aucun geste. La ranger dans le seul
+  // canal `warnings` la faisait compter dans `warningCount` et paraître sous
+  // « Corrigez chaque point », où son propre texte répond qu'il n'y a rien à
+  // corriger. Son jumeau, « Structure différente sur N variants », vit dans
+  // `infos` depuis toujours.
+  exportInfos.push(...compositionInfos);
   warningCursor = warnings.length;
 
   const wrapper = referenceComponent

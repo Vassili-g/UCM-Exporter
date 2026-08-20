@@ -192,9 +192,9 @@ export async function extractVariantTokens(
       : { variant: normalizePropValue(entry.component.name) };
     const exactEntry = { entry, leaf, values };
     exact.push(exactEntry);
-    // La v9 ne sérialise plus cet index : un doublon de coordonnées n'y perd
-    // donc aucune donnée et ne demande plus de correction au designer. On garde
-    // encore l'arbre en interne pour les extracteurs historiques et leurs tests.
+    // Cet index n'est pas sérialisé : un doublon de coordonnées n'y perd aucune
+    // donnée et ne demande aucune correction au designer. L'arbre reste tenu en
+    // interne pour les extracteurs qui s'en servent et leurs tests.
     if (insertVariantLeaf(reserved, axes, values, true, [])) retained.push(exactEntry);
   }
 

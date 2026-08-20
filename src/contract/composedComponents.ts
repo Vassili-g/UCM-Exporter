@@ -30,12 +30,26 @@ type ComposedInstancesScan = {
    * unes dans les autres : c'est ce relevé qui sert à élaguer le parcours.
   */
   composed: Map<string, ComposedDependency>;
+  /**
+   * Ce que le parcours n'a pas su lire, et qui coûte au contrat. Une seule
+   * chose entre ici : une instance dont le composant maître est illisible,
+   * donc qu'aucun relevé ne peut reconnaître comme dépendance.
+   */
+  warnings: string[];
 };
 
 /** Relevé de toute la matrice, avec ses éventuels écarts entre variants. */
 export type ComposedMatrixScan = ComposedInstancesScan & {
-  /** Écarts entre variants que le schéma courant ne doit jamais taire. */
-  warnings: string[];
+  /**
+   * Écarts entre variants que le schéma courant ne doit jamais taire.
+   *
+   * Ce sont des NOTES, pas des avertissements : le texte dit lui-même que les
+   * arbres exacts conservent ces compositions et que `composes` en publie
+   * l'union. Rien ne manque, aucun geste n'est demandé, et les ranger dans le
+   * canal des points à corriger produirait un titre que leur propre phrase
+   * dément.
+   */
+  infos: string[];
 };
 
 /**
@@ -86,11 +100,28 @@ export async function indexContractedNamesInDocument(): Promise<Set<string>> {
 async function contractedOwnerName(
   instance: InstanceNode,
   contracted: ContractedNames,
+  warnings: string[],
 ): Promise<string | null> {
   // `getMainComponentAsync` lève sur une instance orpheline : un node cassé ne
-  // doit pas faire échouer l'export entier.
+  // doit pas faire échouer l'export entier. Il ne doit pas non plus disparaître.
+  // Sans ce nom, l'instance n'entre pas dans `composed` ; `getAllNodes` cesse
+  // alors de l'élaguer, et le contrat publie les internes du voisin comme les
+  // siens — ses calques en slots, ses couleurs dans ses tokens — pendant que la
+  // dépendance manque à `composes`. Le relevé ne l'ayant jamais trouvée, même
+  // l'avertissement « dépendance non située » ne peut pas partir : c'est ici,
+  // ou nulle part.
   const main = await instance.getMainComponentAsync().catch(() => null);
-  if (!main) return null;
+  if (!main) {
+    warnings.push(
+      `Layer « ${instance.name} » : le composant qu'il instancie est introuvable. `
+        + `L'export ne peut pas reconnaître une dépendance derrière ce layer. Si ce `
+        + `composant a son propre contrat, le contrat en cours publiera ses layers parmi `
+        + `ses propres slots et ses couleurs parmi ses propres tokens, sans le déclarer `
+        + `dans « composes ». Restaurez le composant principal de cette instance, puis `
+        + `réexportez.`,
+    );
+    return null;
+  }
 
   const owner = main.parent?.type === 'COMPONENT_SET' ? main.parent : main;
   return contracted.has(compactName(owner.name)) ? owner.name : null;
@@ -129,9 +160,19 @@ export async function scanComposedInstances(
   // autant d'allers-retours consécutifs — et l'UI du plugin est mono-thread.
   // Les lancer ensemble ne change RIEN au résultat : l'ordre de `composes`
   // vient de `instances`, qui reste l'ordre du document.
-  const owners = await Promise.all(
-    instances.map((instance) => contractedOwnerName(instance, contracted)),
+  // Chaque lecture écrit dans SA propre liste : `Promise.all` ne garantit aucun
+  // ordre d'exécution, et un tableau partagé rendrait l'ordre des messages
+  // dépendant de la latence du réseau. Les listes sont ensuite concaténées dans
+  // l'ordre de `instances`, qui est celui du document.
+  const lectures = await Promise.all(
+    instances.map(async (instance) => {
+      const warnings: string[] = [];
+      const owner = await contractedOwnerName(instance, contracted, warnings);
+      return { owner, warnings };
+    }),
   );
+  const owners = lectures.map((lecture) => lecture.owner);
+  const warnings = lectures.flatMap((lecture) => lecture.warnings);
   const ownerByInstance = new Map<InstanceNode, string>();
   instances.forEach((instance, index) => {
     const owner = owners[index];
@@ -156,7 +197,7 @@ export async function scanComposedInstances(
     composes.push(dependency);
   }
 
-  return { composes, composed };
+  return { composes, composed, warnings };
 }
 
 /**
@@ -166,8 +207,8 @@ export async function scanComposedInstances(
  * d'après le seul variant de référence ne protégerait que celui-là, et les
  * autres continueraient d'aspirer les couleurs du composant embarqué.
  *
- * `structure.children` décrit encore le variant de référence, mais chaque
- * entrée de `variants` porte désormais son arbre et ses dépendances exactes.
+ * `structure.children` décrit le variant de référence ; chaque entrée de
+ * `variants` porte son arbre et ses dépendances exactes.
  * Une composition différente produit donc une notice de compatibilité ; le
  * champ global `composes` sera ensuite agrégé depuis ces vues exactes.
  */
@@ -198,7 +239,7 @@ export async function scanComposedMatrix(
     .map((root) => `« ${root.name} »`)
     .join(', ');
   const remaining = divergentVariants.length - 3;
-  const warnings = divergentVariants.length > 0
+  const infos = divergentVariants.length > 0
     ? [
       `Composition différente sur ${divergentVariants.length} variant(s), ex. ${examples}` +
         `${remaining > 0 ? ` (+${remaining})` : ''} : le contrat décrit le variant de ` +
@@ -208,5 +249,10 @@ export async function scanComposedMatrix(
     ]
     : [];
 
-  return { composes: scans[0]?.composes ?? [], composed, warnings };
+  // Une instance orpheline vit dans TOUS les variants du set, et chaque scan la
+  // relève avec le même texte. Le message porte le nom du layer, jamais celui
+  // du variant : le dédoublonnage rend donc exactement un constat par layer.
+  const warnings = Array.from(new Set(scans.flatMap((scan) => scan.warnings)));
+
+  return { composes: scans[0]?.composes ?? [], composed, warnings, infos };
 }

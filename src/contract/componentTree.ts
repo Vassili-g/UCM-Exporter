@@ -310,6 +310,15 @@ function hasComponentProperties(instance: InstanceNode): boolean {
  * Le critère principal est le NOMBRE de tokens de layout qu'elle porte
  * (c'est ce qui définit un wrapper), le nom n'est qu'un léger bonus.
  * Score nul si elle ne porte aucune dimension liée.
+ *
+ * Score nul, aussi, si son composant maître est illisible. Un wrapper n'est
+ * élu qu'une fois, sur la référence ; les autres variants retrouvent ensuite
+ * LEUR instance du même maître, par son id. Une instance orpheline ne peut donc
+ * par construction être appariée nulle part : l'élire ferait décrire à la
+ * référence un arbre que plus aucun autre variant ne décrit, sans qu'aucun id
+ * ne reste à comparer pour s'en apercevoir. C'est la
+ * garde qu'applique déjà `!composed.has(node.id)`, pour la même raison — un
+ * candidat qu'on ne saura pas suivre n'est pas un candidat.
  */
 async function scoreWrapper(
   instance: InstanceNode,
@@ -329,7 +338,8 @@ async function scoreWrapper(
   if (searchableName.includes('wrapper')) score += 5;
   if (componentSet && hasComponentProperties(instance)) score += 3;
 
-  return { score: layoutBindings > 0 ? score : 0, componentSet };
+  const suivable = mainComponent !== null;
+  return { score: layoutBindings > 0 && suivable ? score : 0, componentSet };
 }
 
 /**

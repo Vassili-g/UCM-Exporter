@@ -231,7 +231,7 @@ export type LayoutConstraints = {
 /**
  * Disposition d'un conteneur, dans le vocabulaire de CSS.
  *
- * `grid` n'est plus un repli honteux : Figma y expose deux gaps liables à une
+ * `grid` n'est pas un repli : Figma y expose deux gaps liables à une
  * variable et le nombre de ses pistes, soit exactement ce que le contrat sait
  * porter. Un conteneur sans auto layout reste décrit comme une rangée, faute de
  * mieux, et le dit.
@@ -854,8 +854,8 @@ export type Contract = {
   /**
    * Projection de référence et dimensions par taille.
    *
-   * Les anciens index de matrice vivent désormais dans `variants` et
-   * `variantViews`, sans seconde copie susceptible de diverger.
+   * Les données exactes de matrice vivent dans `variants` et `variantViews`,
+   * sans seconde copie susceptible de diverger.
    */
   structure: Omit<
     ContractStructure,

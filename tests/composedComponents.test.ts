@@ -280,9 +280,12 @@ test('scanComposedMatrix n’invente pas un slot absent du variant de référenc
 
   assert.deepEqual(result.composes, []);
   assert.equal(result.composed.has('btn-success'), true);
-  assert.equal(result.warnings.length, 1);
-  assert.match(result.warnings[0], /Composition différente sur 1 variant/);
-  assert.match(result.warnings[0], /décrit le variant de référence/);
+  // Une composition différente est une NOTE : les arbres exacts la conservent,
+  // rien ne manque, et le message ne demande aucun geste.
+  assert.deepEqual(result.warnings, []);
+  assert.equal(result.infos.length, 1);
+  assert.match(result.infos[0], /Composition différente sur 1 variant/);
+  assert.match(result.infos[0], /décrit le variant de référence/);
 });
 
 test('scanComposedMatrix garde la cardinalité du variant de référence', async () => {
@@ -307,7 +310,7 @@ test('scanComposedMatrix garde la cardinalité du variant de référence', async
     result.composes.map((dependency) => dependency.component),
     ['Button'],
   );
-  assert.equal(result.warnings.length, 1);
+  assert.equal(result.infos.length, 1);
 });
 
 test('scanComposedMatrix signale aussi un ordre de composition différent', async () => {
@@ -338,7 +341,7 @@ test('scanComposedMatrix signale aussi un ordre de composition différent', asyn
     result.composes.map((dependency) => dependency.component),
     ['Button', 'Link'],
   );
-  assert.equal(result.warnings.length, 1);
+  assert.equal(result.infos.length, 1);
 });
 
 test('findWrapperReference n’élit jamais un composant unifié imbriqué', async () => {
@@ -457,7 +460,7 @@ test('un cadre qui range plusieurs dépendances les publie toutes, chacune à sa
     },
   ]);
   assert.equal(placed.size, 2);
-  // Le calque n'est plus un défaut de design : il n'y a plus rien à réclamer.
+  // Le calque n'est pas un défaut de design : il n'y a rien à réclamer.
   assert.equal(
     warnings.some((warning) => warning.includes('emplacement')),
     false,
@@ -511,4 +514,52 @@ test('une dépendance posée hors du node de layout n’est pas placée, et se s
   // aussi, plutôt que d'annoncer une dépendance sans emplacement.
   assert.equal(placed.size, 0);
   assert.equal(warnings.some((warning) => warning.includes('« Bouton perdu »')), true);
+});
+
+test('une instance dont le maître est illisible avertit au lieu de disparaître', async () => {
+  // Sans ce nom, l'instance n'entre pas dans `composed`. Le parcours cesse de
+  // l'élaguer, et le contrat publie les internes du voisin comme les siens :
+  // ses layers en slots, ses couleurs dans ses tokens, pendant que la
+  // dépendance manque à `composes`. Le relevé ne l'ayant jamais trouvée, même
+  // l'avertissement « dépendance non située » ne peut pas partir.
+  const orpheline = instance('btn', 'action', 'Button', {
+    getMainComponentAsync: async () => {
+      throw new Error('instance orpheline');
+    },
+  });
+  const alert = racine('alert', 'Severity=Info', [orpheline]);
+
+  const { composes, composed, warnings } = await scanComposedInstances(
+    alert,
+    new Set(['button']),
+  );
+
+  assert.deepEqual(composes, []);
+  assert.equal(composed.size, 0);
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /« action »/);
+  assert.match(warnings[0], /introuvable/);
+  assert.match(warnings[0], /réexportez/);
+});
+
+test('le même layer orphelin ne se signale qu’une fois pour toute la matrice', async () => {
+  // Une instance orpheline vit dans TOUS les variants du set, et chaque scan la
+  // relève avec le même texte. Le message porte le nom du layer, jamais celui
+  // du variant : un constat par layer, pas un par variant.
+  const orphelin = (id: string) => instance(id, 'action', 'Button', {
+    getMainComponentAsync: async () => {
+      throw new Error('instance orpheline');
+    },
+  });
+  const premier = racine('a', 'Severity=Info', [orphelin('btn-a')]);
+  const second = racine('b', 'Severity=Error', [orphelin('btn-b')]);
+
+  const result = await scanComposedMatrix(
+    [premier, second],
+    premier,
+    new Set(['button']),
+  );
+
+  assert.equal(result.warnings.length, 1);
+  assert.match(result.warnings[0], /« action »/);
 });

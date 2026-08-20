@@ -1,13 +1,12 @@
 /**
  * L'arbre de structure général : imbrication quelconque, dispositions mêlées.
  *
- * Le contrat s'arrêtait au premier calque qui n'était ni un texte ni une
- * dépendance. Un Toggle, une Progress, trois cadres bordés emboîtés se
- * réduisaient à un slot opaque — alors que leurs couleurs entraient bien dans
- * `variantTokens`, si bien que le contrat annonçait des peintures qu'aucun
- * calque publié ne portait.
+ * S'arrêter au premier calque qui n'est ni un texte ni une dépendance
+ * réduirait un Toggle, une Progress ou trois cadres bordés emboîtés à un slot
+ * opaque — alors que leurs couleurs entrent dans `variantTokens`, si bien que
+ * le contrat annoncerait des peintures qu'aucun calque publié ne porte.
  *
- * Ces tests figent la règle qui remplace cette limite, et surtout ses BORNES :
+ * Ces tests figent la règle de descente, et surtout ses BORNES :
  * on descend là où il y a une information, et nulle part ailleurs. Un moteur qui
  * recopierait l'arbre Figma entier serait tout aussi faux — il publierait les
  * trente tracés d'une icône importée.
@@ -112,7 +111,7 @@ test('trois auto layouts emboîtés sont décrits jusqu’au bout, chacun avec s
   const deux = un.children?.[0];
   assert.equal(deux?.slot, 'niveau2');
   assert.equal(deux?.layout, 'flex-column');
-  // Le rayon d'un conteneur imbriqué était perdu : il vit désormais sur lui.
+  // Le rayon d'un conteneur imbriqué vit sur lui.
   assert.equal(deux?.radius, '{sizes.radius-2}');
   const trois = deux?.children?.[0];
   assert.equal(trois?.slot, 'niveau3');

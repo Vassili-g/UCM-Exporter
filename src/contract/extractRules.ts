@@ -56,7 +56,7 @@ const COMPACT_RULES_SUFFIX = compactName(RULES_SECTION_SUFFIX);
  *
  * Unique définition de « ce node porte les règles de X ». `extractRules`
  * l'utilise pour enrichir le contrat et `composedComponents` pour reconnaître
- * une dépendance unifiée. L'absence de règles n'empêche plus de capturer le
+ * une dépendance unifiée. L'absence de règles n'empêche pas de capturer le
  * composant sélectionné, mais elle empêche ses parents de supposer qu'un
  * contrat autonome existe déjà pour lui.
  *

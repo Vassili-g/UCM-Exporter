@@ -313,7 +313,8 @@ test('une dépendance absente du variant de référence reste dans la variante e
   outlined.children.push(link);
   link.parent = outlined;
   try {
-    const contrat = JSON.parse((await handleExportComponent()).content);
+    const resultat = await handleExportComponent();
+    const contrat = JSON.parse(resultat.content);
 
     const views = contrat.variants.map((variant: any) => contrat.variantViews[variant.view]);
     assert.deepEqual(views[0].composes, []);
@@ -324,10 +325,19 @@ test('une dépendance absente du variant de référence reste dans la variante e
       { component: 'Link', figmaLayer: 'Action secondaire' },
     ]);
     assert.equal(contrat.structure.children.some((child: any) => child.composes === 'Link'), false);
+    // Le message dit lui-même que les arbres exacts conservent ces
+    // compositions : rien ne manque, aucun geste n'est demandé. C'est une NOTE.
     assert.ok(contrat.meta.diagnostics.some((diagnostic: any) => (
-      diagnostic.code === 'UCM_EXPORT_NOTICE'
+      diagnostic.code === 'UCM_EXPORT_INFO'
         && diagnostic.message.includes('Composition différente')
     )));
+    // Et il ne doit donc paraître ni sous « Corrigez chaque point » dans le
+    // corps de la pull request, ni dans le compteur d'avertissements de l'UI.
+    assert.equal(
+      (resultat.warnings ?? []).some((message) => message.includes('Composition différente')),
+      false,
+    );
+    assert.ok((resultat.infos ?? []).some((message) => message.includes('Composition différente')));
   } finally {
     figmaFaux.restaurer();
   }
@@ -603,6 +613,167 @@ test('sans clé de fichier, le contrat le dit sans bloquer l’export', async ()
     assert.ok(contrat.meta.figma.nodeId);
     assert.ok(
       contrat.meta.warnings.some((warning: string) => warning.includes('Lien vers Figma')),
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+/*
+ * Classification des diagnostics.
+ *
+ * `handleExportComponent` range chaque message dans l'une de trois catégories,
+ * et c'est ce rangement que publient `meta.diagnostics[].code` et
+ * `meta.coverage.portable`. Le mécanisme est une fenêtre ouverte avant une
+ * étape et refermée après : tout ce que l'étape a poussé entre les deux est
+ * une perte de portabilité.
+ *
+ * Rien ne le vérifiait. Les assertions existantes portent sur le RÉSULTAT
+ * (« la couverture est partielle », « un diagnostic de perte existe ») dans des
+ * scénarios où plusieurs étapes produisent une perte : supprimer n'importe
+ * laquelle des cinq fermetures laissait la suite entièrement verte. Ces tests
+ * portent donc sur le code du message de CHAQUE étape, un par fenêtre — la
+ * seule forme d'assertion qu'un oubli de rangement fasse échouer.
+ */
+
+/** Le diagnostic unique dont le message contient cet extrait. */
+function diagnosticPour(contrat: any, extrait: string) {
+  const trouves = contrat.meta.diagnostics.filter(
+    (diagnostic: any) => diagnostic.message.includes(extrait),
+  );
+  assert.equal(
+    trouves.length,
+    1,
+    `attendu un seul diagnostic contenant « ${extrait} ». Diagnostics publiés :\n`
+      + contrat.meta.diagnostics.map((d: any) => `  [${d.code}] ${d.message}`).join('\n'),
+  );
+  return trouves[0];
+}
+
+test('une collision de props du set est rangée comme une perte de portabilité', async () => {
+  const figmaFaux = monterFigma();
+  figmaFaux.componentSet.componentPropertyDefinitions = {
+    ...figmaFaux.componentSet.componentPropertyDefinitions,
+    'Icon Left#1:1': { type: 'BOOLEAN', defaultValue: true },
+    'icon-left#1:2': { type: 'BOOLEAN', defaultValue: false },
+  };
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    // Une des deux props n'est pas exportée : le contrat décrit moins que Figma.
+    assert.equal(
+      diagnosticPour(contrat, 'leurs noms deviennent identiques').code,
+      'UCM_PORTABLE_PROJECTION_WARNING',
+    );
+    assert.equal(contrat.meta.coverage.portable, 'partial');
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('une collision de props du wrapper est rangée comme une perte de portabilité', async () => {
+  // Le wrapper apporte ses propres props, et sa lecture a sa propre fenêtre.
+  const figmaFaux = monterFigma({
+    enfantsDuVariant: () => {
+      const wrapperSet = node('COMPONENT_SET', 'Dimensions', [], {
+        componentPropertyDefinitions: {
+          'Wrapper label#2:3': { type: 'TEXT', defaultValue: 'Libellé' },
+          'wrapper-label#2:4': { type: 'TEXT', defaultValue: 'Doublon' },
+        },
+      });
+      return [node('INSTANCE', 'Wrapper', [], {
+        layoutMode: 'HORIZONTAL',
+        boundVariables: { itemSpacing: alias('gap') },
+        componentProperties: { 'Wrapper label#2:3': { type: 'TEXT', value: 'Libellé' } },
+        getMainComponentAsync: async () => ({ name: 'Dimensions=Default', parent: wrapperSet }),
+      })];
+    },
+  });
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(
+      diagnosticPour(contrat, 'wrapper-label').code,
+      'UCM_PORTABLE_PROJECTION_WARNING',
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('une liaison native sans prop publique est rangée comme une perte de portabilité', async () => {
+  // Le layer référence une component property que la collision a écartée : la
+  // liaison n'est pas publiée, et le développeur ne saura pas la rendre.
+  const figmaFaux = monterFigma({
+    enfantsDuVariant: () => [node('FRAME', 'Zone', [], {
+      componentPropertyReferences: { visible: 'Fantôme#3:1' },
+    })],
+  });
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(
+      diagnosticPour(contrat, 'aucune prop publique ne peut la porter').code,
+      'UCM_PORTABLE_PROJECTION_WARNING',
+    );
+    assert.equal(contrat.meta.coverage.portable, 'partial');
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('une variable introuvable est rangée comme une perte de portabilité', async () => {
+  // Le résolveur écrit pendant l'extraction de la structure, dans la fenêtre
+  // de celle-ci : c'est une couleur que le contrat ne publiera pas.
+  const figmaFaux = monterFigma({
+    enfantsDuVariant: () => [node('FRAME', 'Zone', [], {
+      fills: [{
+        type: 'SOLID',
+        color: { r: 0, g: 0, b: 0 },
+        boundVariables: { color: alias('variable-supprimee') },
+      }],
+      boundVariables: { fills: [alias('variable-supprimee')] },
+    })],
+  });
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(
+      diagnosticPour(contrat, 'Variable introuvable').code,
+      'UCM_PORTABLE_PROJECTION_WARNING',
+    );
+    assert.equal(contrat.meta.coverage.portable, 'partial');
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('une règle @icons sans layer est rangée comme une perte de portabilité', async () => {
+  // La fusion des règles d'icônes a sa propre fenêtre, la dernière des cinq.
+  const figmaFaux = monterFigma();
+  const setDeConfiguration = { type: 'COMPONENT_SET', name: 'ComponentConfiguration' };
+  // La politique se lit sur la visibilité EXCLUSIVE de deux layers : les deux
+  // doivent exister, un seul être visible.
+  const regleIcones = node('INSTANCE', 'Règle', [
+    node('TEXT', 'icon', [], { characters: 'fantome' }),
+    node('FRAME', 'modifiable', []),
+    node('FRAME', 'strict', [], { visible: false }),
+  ], {
+    variantProperties: { Type: '@icons' },
+    componentProperties: {},
+    getMainComponentAsync: async () => ({ name: '@icons', parent: setDeConfiguration }),
+  });
+  const conteneur = (globalThis as any).figma.currentPage.children.find(
+    (enfant: any) => enfant.name === 'Button-Rules',
+  );
+  conteneur.children.push(regleIcones);
+  regleIcones.parent = conteneur;
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.equal(
+      diagnosticPour(contrat, 'aucun layer de ce nom').code,
+      'UCM_PORTABLE_PROJECTION_WARNING',
     );
   } finally {
     figmaFaux.restaurer();

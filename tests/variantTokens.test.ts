@@ -229,7 +229,7 @@ test('deux variants aux mêmes axes gardent leurs feuilles sans diagnostic d’i
     warnings,
   );
 
-  // L'index interne conserve le premier, mais il n'est plus sérialisé en v9 :
+  // L'index interne conserve le premier, mais il n'est pas sérialisé :
   // les deux feuilles exactes restent disponibles et aucune perte n'est à
   // corriger dans Figma.
   assert.deepEqual(trees.variantTokens, {
@@ -713,8 +713,8 @@ test('un doublon d’axes garde une clé stable dans les vues exactes et l’ind
   );
 
   // Les couleurs ne cohabitent dans aucune feuille exacte : elles partagent
-  // donc la clé simple. L'index interne garde la première occurrence, mais la
-  // v9 ne le sérialise plus.
+  // donc la clé simple. L'index interne garde la première occurrence, mais il
+  // n'est pas sérialisé.
   assert.deepEqual(trees.variantTokens, {
     focus: { background: '{components.card.base.colors.background}' },
   });
@@ -722,11 +722,11 @@ test('un doublon d’axes garde une clé stable dans les vues exactes et l’ind
 });
 
 /**
- * Contrat 7.0 : une largeur de contour se détaille par bord.
+ * Une largeur de contour se détaille par bord.
  *
- * Elle ne peut donc plus se comparer par identité — deux calques réglés
- * exactement pareil produisaient deux objets distincts, et l'avertissement de
- * géométrie contradictoire se serait déclenché sur un design correct, sans
+ * Elle ne peut donc pas se comparer par identité : deux calques réglés
+ * exactement pareil produisent deux objets distincts, et l'avertissement de
+ * géométrie contradictoire se déclencherait sur un design correct, sans
  * qu'aucun geste du designer ne le fasse disparaître.
  */
 test('getSlotTokens publie une largeur de stroke détaillée par bord', async () => {
@@ -777,13 +777,13 @@ test('getSlotTokens publie une largeur de stroke détaillée par bord', async ()
 });
 
 /**
- * Régression : une couleur écrite à la main disparaissait en silence.
+ * Une couleur écrite à la main ne doit pas disparaître en silence.
  *
- * Le cas réel est un variant sur quatre-vingt-dix — l'icône de droite d'un
- * bouton dont le fill avait perdu sa variable. La vue exacte cessait de citer ce
- * calque dans `paintPlacements`, le rendu le laissait sans encre, et
- * `meta.warnings` restait vide : rien ne ramenait le designer sur le calque
- * fautif.
+ * Le cas type est un variant sur quatre-vingt-dix — l'icône de droite d'un
+ * bouton dont le fill a perdu sa variable. Sans avertissement, la vue exacte
+ * cesse de citer ce calque dans `paintPlacements`, le rendu le laisse sans
+ * encre, et `meta.warnings` reste vide : rien ne ramène le designer sur le
+ * calque fautif.
  */
 test('un fill posé à la main sur un calque publié est signalé', async () => {
   const glyphe = {
@@ -880,11 +880,12 @@ test('un fill entièrement lié ne produit aucun avertissement', async () => {
   assert.equal(tokens.paints.length, 1);
   assert.deepEqual(warnings, []);
 });
-test('un fill masqué relié ne couvre plus le fill visible posé à la main', async () => {
-  // Les comptes s'équilibraient : une peinture visible libre, une liaison au
-  // node, donc aucun avertissement — et le contrat publiait la couleur de la
-  // peinture MASQUÉE comme si elle peignait le calque. La liaison portée par
-  // chaque peinture tranche ce que la liste du node ne sait pas dire.
+test('un fill masqué relié ne couvre pas le fill visible posé à la main', async () => {
+  // Compter sur la liste du node équilibrerait les comptes : une peinture
+  // visible libre, une liaison au node, donc aucun avertissement — et le
+  // contrat publierait la couleur de la peinture MASQUÉE comme si elle peignait
+  // le calque. La liaison portée par chaque peinture tranche ce que la liste du
+  // node ne sait pas dire.
   const surface = {
     type: 'RECTANGLE',
     name: 'Surface',

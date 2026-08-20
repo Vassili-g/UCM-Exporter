@@ -1,8 +1,8 @@
 /**
  * Non-régression des silences du moteur de layout.
  *
- * Chaque test ci-dessous fige un cas où le contrat affirmait, oubliait ou
- * réclamait quelque chose sans le dire. Ils partagent un même invariant : une
+ * Chaque test ci-dessous fige un cas où le contrat pourrait affirmer, oublier
+ * ou réclamer quelque chose sans le dire. Ils partagent un même invariant : une
  * donnée que le schéma ne sait pas porter doit produire un avertissement
  * adressé au designer, jamais disparaître.
  */
@@ -176,7 +176,7 @@ test('une grille est décrite comme une grille, pas repliée en rangée', async 
   );
 
   // Les deux gaps d'une grille se relient à une variable : elle est aussi
-  // contractuelle qu'une rangée, et n'a plus à être repliée en `flex-row`.
+  // contractuelle qu'une rangée, et n'a pas à être repliée en `flex-row`.
   assert.equal(layout.layout, 'grid');
   assert.equal(layout.columns, 3);
   assert.equal(layout.rows, 2);
@@ -359,7 +359,7 @@ test('les bornes d’un slot reliées à une variable sont publiées, pas signal
     minWidth: '{size.column.min}',
     maxWidth: '{size.column.max}',
   });
-  // Le contrat porte désormais ces bornes : rien ne reste à dire au designer
+  // Le contrat porte ces bornes : rien ne reste à dire au designer
   // sur ce layer. Les autres messages visent le padding et le radius du
   // composant, hors sujet ici.
   assert.equal(warnings.filter((warning) => warning.includes('« Colonne »')).length, 0);
@@ -498,7 +498,7 @@ test('un calque voisin d’une dépendance dans son cadre est décrit comme un s
 
   // Le cadre appartient à CE contrat : ce qu'il range à côté de sa dépendance
   // aussi. Le voisin reçoit donc son slot au lieu de disparaître sous un
-  // avertissement, et sa typographie a désormais un chemin où vivre.
+  // avertissement, et sa typographie a un chemin où vivre.
   assert.deepEqual(layout.children[0].children, [
     { slot: 'button', figmaLayer: 'Button', composes: 'Button' },
     { slot: 'label', figmaLayer: 'Mention légale' },
@@ -737,8 +737,8 @@ test('une grille dont Figma n’expose pas les pistes ne publie ni n’avertit',
  * Une piste qui hug est le seul endroit d'une grille où la cellule ne décide de
  * rien : c'est l'enfant qui la mesure. Figma n'y expose aucun remplissage et ne
  * rend que la taille résolue, et `GridTrackSize.value` n'existe pas sur ce type
- * — la mesure ne vit donc que sur l'enfant. Sans elle, la piste retombait à zéro
- * et le contrat décrivait une grille que personne ne pouvait rendre.
+ * — la mesure ne vit donc que sur l'enfant. Sans elle, la piste retomberait à
+ * zéro et le contrat décrirait une grille impossible à rendre.
  */
 const pistesDeTuiles = {
   gridColumnSizes: [{ type: 'FLEX', value: 1 }, { type: 'FLEX', value: 1 }],

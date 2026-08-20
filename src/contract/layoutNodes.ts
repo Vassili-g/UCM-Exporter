@@ -133,11 +133,20 @@ export async function electVariantLayoutNodes(
   const wrapperOwnerId = wrapperInstance
     ? reference?.wrapper?.componentSet?.id ?? (await instanceOwnerId(wrapperInstance))
     : null;
+  // Un wrapper qu'on ne saura pas retrouver ailleurs ne peut pas non plus servir
+  // de racine à la référence. Sans cet id, `matchingWrapperInstance` n'a rien à
+  // comparer : les autres variants éliraient depuis eux-mêmes pendant que la
+  // référence élirait depuis le wrapper, et l'avertissement plus bas resterait
+  // muet, sa garde tombant avec l'id. La référence décrirait alors un arbre que
+  // plus aucun variant ne décrit — la divergence même que ce module existe pour
+  // empêcher. `scoreWrapper` écarte déjà ce candidat à la source ; ceci tient la
+  // propriété pour un appelant qui construirait la référence autrement.
+  const racineDeLaReference = wrapperOwnerId ? wrapperInstance : null;
 
   for (const variant of variants) {
     // Le variant de référence part du wrapper déjà trouvé pour lui.
     if (variant === reference?.component) {
-      nodes.set(variant, findLayoutNode(wrapperInstance ?? variant, warnings, composed));
+      nodes.set(variant, findLayoutNode(racineDeLaReference ?? variant, warnings, composed));
       continue;
     }
 

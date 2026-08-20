@@ -154,7 +154,7 @@
             "variantAxes"
           ],
           "additionalProperties": false,
-          "description": "Projection de référence et dimensions par taille.\n\nLes anciens index de matrice vivent désormais dans `variants` et `variantViews`, sans seconde copie susceptible de diverger."
+          "description": "Projection de référence et dimensions par taille.\n\nLes données exactes de matrice vivent dans `variants` et `variantViews`, sans seconde copie susceptible de diverger."
         },
         "stateModel": {
           "anyOf": [
@@ -770,7 +770,7 @@
         "flex-column",
         "grid"
       ],
-      "description": "Disposition d'un conteneur, dans le vocabulaire de CSS.\n\n`grid` n'est plus un repli honteux : Figma y expose deux gaps liables à une variable et le nombre de ses pistes, soit exactement ce que le contrat sait porter. Un conteneur sans auto layout reste décrit comme une rangée, faute de mieux, et le dit."
+      "description": "Disposition d'un conteneur, dans le vocabulaire de CSS.\n\n`grid` n'est pas un repli : Figma y expose deux gaps liables à une variable et le nombre de ses pistes, soit exactement ce que le contrat sait porter. Un conteneur sans auto layout reste décrit comme une rangée, faute de mieux, et le dit."
     },
     "GridTrack": {
       "type": "string",

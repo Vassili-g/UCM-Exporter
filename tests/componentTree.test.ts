@@ -130,7 +130,10 @@ test('findWrapperReference ne choisit jamais une instance statiquement masquée'
     boundVariables,
     componentProperties: {},
     findAll: () => [],
-    getMainComponentAsync: async () => null,
+    // Un wrapper est une instance qu'on saura retrouver dans les autres
+    // variants, par l'id de son maître. Sans maître lisible, aucun appariement
+    // n'est possible et le score retombe à zéro : le stub doit donc en porter un.
+    getMainComponentAsync: async () => ({ id: `main-${name}`, name, parent: null }),
   });
   const hidden = candidate('Ancien wrapper', false, {
     itemSpacing: alias('gap-old'),
@@ -168,7 +171,7 @@ test('findWrapperReference reconnaît un wrapper dont le radius est lié coin pa
     },
     componentProperties: {},
     findAll: () => [],
-    getMainComponentAsync: async () => null,
+    getMainComponentAsync: async () => ({ id: 'main-wrapper', name: 'Wrapper', parent: null }),
   };
   const root = {
     type: 'COMPONENT',
@@ -181,4 +184,38 @@ test('findWrapperReference reconnaît un wrapper dont le radius est lié coin pa
     (await findWrapperReference(root))?.instance,
     wrapper as unknown as InstanceNode,
   );
+});
+
+test('une instance dont le composant maître est illisible n’est pas un wrapper', async () => {
+  // Un wrapper n'est élu qu'une fois, sur la référence ; les autres variants
+  // retrouvent ensuite LEUR instance du même maître, par son id. Une instance
+  // orpheline n'a pas cet id : l'élire faisait décrire à la référence un arbre
+  // que plus aucun autre variant ne décrivait, et la garde d'appariement, qui
+  // tombe avec l'id, restait muette. Elle porte pourtant de vraies dimensions
+  // liées, et c'est bien ce score qui la faisait gagner.
+  const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
+  const orpheline = {
+    type: 'INSTANCE',
+    name: 'sizeWrapper',
+    visible: true,
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {
+      itemSpacing: alias('gap'),
+      paddingLeft: alias('px'),
+      paddingRight: alias('px'),
+    },
+    componentProperties: {},
+    findAll: () => [],
+    getMainComponentAsync: async () => {
+      throw new Error('instance orpheline');
+    },
+  };
+  const root = {
+    type: 'COMPONENT',
+    name: 'Card',
+    findAll: (predicate: (node: never) => boolean) =>
+      [orpheline].filter(predicate as (node: unknown) => boolean),
+  } as unknown as ComponentNode;
+
+  assert.equal(await findWrapperReference(root), null);
 });

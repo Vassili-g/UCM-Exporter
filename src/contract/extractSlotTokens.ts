@@ -88,10 +88,10 @@ async function strokeWidth(
 /**
  * Vrai si deux largeurs de contour décrivent la même géométrie.
  *
- * Une comparaison d'identité suffisait tant qu'une largeur était une chaîne ;
- * détaillée par bord, elle produit un objet neuf à chaque lecture, et deux
- * calques réglés exactement pareil auraient déclenché un avertissement que
- * AUCUN geste du designer n'aurait fait disparaître.
+ * Une comparaison d'identité suffit pour une largeur en chaîne. Détaillée par
+ * bord, elle produit un objet neuf à chaque lecture : deux calques réglés
+ * exactement pareil déclencheraient un avertissement qu'AUCUN geste du designer
+ * ne ferait disparaître.
  */
 function memeLargeur(left: StrokeWidth | null, right: StrokeWidth | null): boolean {
   if (left === null || right === null) return left === right;
@@ -150,12 +150,12 @@ function aliasDuPaint(paint: unknown): VariableAlias | null {
  * le nombre de peintures qu'aucune ne tient.
  *
  * Les deux réponses sortent de la MÊME lecture, et c'est tout l'objet de cette
- * fonction. Tant que le relevé lisait `node.boundVariables` pendant que
- * l'avertissement comptait les paints, un calque pouvait porter un fill visible
- * posé à la main ET un fill masqué relié : les deux comptes s'équilibraient,
- * rien n'était dit, et le contrat publiait la couleur de la peinture MASQUÉE
- * comme si elle peignait le calque. Deux lectures d'une même chose finissent
- * toujours par se contredire.
+ * fonction. Un relevé qui lirait `node.boundVariables` pendant que
+ * l'avertissement compte les paints laisserait un calque porter un fill visible
+ * posé à la main ET un fill masqué relié : les deux comptes s'équilibreraient,
+ * rien ne serait dit, et le contrat publierait la couleur de la peinture
+ * MASQUÉE comme si elle peignait le calque. Deux lectures d'une même chose
+ * finissent toujours par se contredire.
  *
  * La lecture exacte est celle de la peinture : chacune porte sa propre liaison
  * (`SolidPaint.boundVariables.color`), seule à associer une variable à un paint

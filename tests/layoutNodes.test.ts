@@ -289,3 +289,36 @@ test('une dépendance ne gagne pas l’élection du node de layout de son parent
   // dépendance réelle, pas un cas de laboratoire.
   assert.equal(findLayoutNode(racine), dependance as unknown as SceneNode);
 });
+
+test('un wrapper qu’aucun id n’identifie ne fait pas diverger la référence', async () => {
+  // `findWrapperReference` écarte désormais ce candidat à la source. Ce test
+  // tient la propriété au niveau du module, qui est exporté : sans l'id du
+  // maître, `matchingWrapperInstance` n'a rien à comparer, les autres variants
+  // élisaient depuis eux-mêmes pendant que la référence élisait depuis le
+  // wrapper, et la garde qui signale un variant sans wrapper tombait avec l'id.
+  // La référence décrivait alors un arbre que plus aucun variant ne décrivait.
+  const premier = variantAvecWrapper('Variant=A');
+  const second = variantAvecWrapper('Variant=B');
+  const orphelin = {
+    ...premier.wrapper,
+    getMainComponentAsync: async () => {
+      throw new Error('instance orpheline');
+    },
+  };
+  const warnings: string[] = [];
+
+  const nodes = await electVariantLayoutNodes(
+    [premier.composant, second.composant],
+    {
+      component: premier.composant,
+      wrapper: { instance: orphelin as unknown as InstanceNode, componentSet: null },
+    },
+    warnings,
+  );
+
+  // La même règle pour tout le monde : chacun élit depuis lui-même.
+  assert.equal(nodes.get(premier.composant), premier.composant as unknown as SceneNode);
+  assert.equal(nodes.get(second.composant), second.composant as unknown as SceneNode);
+  // Et aucun variant n'est accusé de manquer un wrapper que personne n'a.
+  assert.deepEqual(warnings, []);
+});

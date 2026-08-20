@@ -403,7 +403,7 @@ async function resolveGroup<K extends string>(
     return null;
   }
   if (inapplicable === 'space-between') {
-    // La répartition est désormais publiée par `structure.justifyContent`.
+    // La répartition est publiée par `structure.justifyContent`.
     // `itemSpacing` reste inapplicable : son éventuelle liaison ne doit ni
     // élire ce node comme porteur de dimensions, ni produire un gap fixe.
     return null;
@@ -703,18 +703,12 @@ export async function resolveSlotSize(
 /**
  * Mesure qu'un enfant donne à une piste de grille qui hug.
  *
- * `size` reste strictement tokenisé : une variable liée y publie son token, et
- * cette fonction ne dit rien. Elle ne parle que là où le contrat n'a RIEN à
- * publier et où la piste retomberait à zéro — la cellule d'une piste `HUG`,
- * qu'aucune valeur ne décrit puisque `GridTrackSize.value` n'existe pas sur ce
- * type. La grille est déjà l'endroit où le contrat accepte un pixel structurel
- * pour une piste `FIXED` ; c'est la même exception, un cran plus bas.
+ * Règle et bornes : UCM-EXPORTER-SPEC.md, « Grilles ».
  *
- * Aucun geste n'est demandé au designer : ces enfants sont en `Fill` dans le
- * panneau, et Figma n'expose pas ce remplissage sous une piste qui hug. Le
- * message part donc dans `infos`, et il nomme la GRILLE plutôt que chaque
- * enfant — douze tuiles produiraient douze fois le même constat, que le
- * dédoublonnage de l'export ramène à un seul.
+ * Le message part dans `infos` et non dans `warnings` parce qu'aucun geste
+ * n'est demandé au designer. Il nomme la GRILLE plutôt que chaque enfant :
+ * douze tuiles produiraient douze fois le même constat, que le dédoublonnage
+ * de l'export ramène à un seul.
  */
 export function gridStructuralSize(
   node: SceneNode,
@@ -722,13 +716,10 @@ export function gridStructuralSize(
   infos: string[],
 ): GridStructuralSize | null {
   if (!parent) return null;
-  // L'exception ne parle que là où `resolveSlotSize` s'est tu, donc sur un axe
-  // que la CELLULE décide. Un alignement explicite le lui reprend : le panneau
-  // Figma cesse d'afficher « Fill », la dimension redevient celle du calque, et
-  // `resolveSlotSize` en réclame la variable. Publier alors cette même valeur en
-  // pixels sous une note « aucune modification n'est demandée » contredirait mot
-  // pour mot l'avertissement qu'il vient d'écrire, sur le même axe du même
-  // calque — et l'avertissement serait faux, puisque la valeur SERAIT publiée.
+  // Les deux conditions sont requises : la piste doit hug ET la cellule doit
+  // décider de l'axe. Un alignement explicite rend l'axe au calque, et
+  // `resolveSlotSize` en réclame alors la variable — publier ici la même valeur
+  // en pixels démentirait l'avertissement qu'il vient d'écrire sur cet axe.
   const cellule = gridCellSizedAxes(parent, node);
   const pistes = gridHugAxes(parent, node);
   const hug = {
