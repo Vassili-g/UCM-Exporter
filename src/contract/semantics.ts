@@ -138,7 +138,12 @@ export function defaultRenderingSemantics(): RenderingSemantics {
       background: { kind: 'paint', cssProperties: ['background-color'] },
       foreground: { kind: 'paint', cssProperties: ['color', 'fill'] },
       icon: { kind: 'paint', cssProperties: ['color', 'fill'] },
-      border: { kind: 'stroke', cssProperties: ['border-color', 'border-width'] },
+      // Un stroke Figma se dessine HORS du flux : il n'élargit pas la boîte et
+      // ne déplace aucun voisin. `border-color` / `border-width` disaient le
+      // contraire au consommateur, qui rendait une bordure CSS et décalait tout
+      // le contenu du composant. `align` dit de quel côté la dessiner
+      // (cf. `StrokeAlignment`) ; aucune de ses valeurs ne justifie une bordure.
+      border: { kind: 'stroke', cssProperties: ['box-shadow'] },
       ring: {
         kind: 'stroke',
         cssProperties: ['outline-color', 'outline-width'],
@@ -187,9 +192,11 @@ export function isRenderableRole(key: string): boolean {
  * convention de typage invisible.
  *
  * Pour un contour, `border` couvre le rendu ; c'est `align`, déjà publié sur
- * chaque feuille de `variantStrokes`, qui dit au consommateur si le dessiner en
- * bordure ou en `box-shadow`. Le contrat n'a donc pas à deviner un `ring` : la
- * donnée structurelle est déjà là, et elle est observée, pas supposée.
+ * chaque feuille de `variantStrokes`, qui dit au consommateur de quel côté de
+ * la boîte le dessiner — jamais avec quelle technique, puisque les deux rôles
+ * de contour se rendent hors du flux. Le contrat n'a donc pas à deviner un
+ * `ring` : la donnée structurelle est déjà là, et elle est observée, pas
+ * supposée.
  */
 export function paintSiteRole(site: {
   isStroke: boolean;

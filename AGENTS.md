@@ -113,6 +113,14 @@ Le raisonnement vit dans la spécification, en lien.
   son token. `rendering.roles` publie le rendu de chaque clé qui ne nomme aucun
   rôle partagé. Un nom qui EST un rôle partagé l’emporte, et se lit sur le
   dernier segment du TOKEN, jamais sur la clé publiée.
+- Un rôle de contour ne cite jamais une propriété CSS qui consomme la boîte :
+  un stroke Figma se dessine hors du flux et ne déplace aucun voisin, là où
+  une `border` élargit l’élément et décale tout ce qui l’entoure. `border`
+  se rend donc en `box-shadow` et `ring` en `outline`, jamais l'un ni l'autre en
+  bordure ; `align` donne la forme de l'ombre — `inside` inset, `outside`
+  outset, `center` moitié de chaque côté.
+  `defaultRenderingSemantics()` en est l’unique autorité.
+  → [spec](./UCM-EXPORTER-SPEC.md#8-rendu-sémantique-et-garde-fous)
 - Le contrat ne publie que les couleurs liées. `lirePeintures` est l’unique
   lecture : ce qui est retenu et ce dont on avertit en sortent ensemble, la liste
   du node servant de repli. Une peinture posée à la main sur un calque parcouru
@@ -133,10 +141,17 @@ Le raisonnement vit dans la spécification, en lien.
   toutes les pages. Les règles documentent sans autoriser : tout `COMPONENT` ou
   `COMPONENT_SET` sélectionné est exportable, et le parent ne réexporte pas les
   internes d’une dépendance reconnue. Une seule chose en remonte, et elle n’est
-  pas normative : ce que CE parent a SURCHARGÉ dans l’instance, au sens de
-  `InstanceNode.overrides`. Ce que la dépendance fournit reste à son contrat ;
-  ce que le parent y a écrit n’est écrit nulle part ailleurs.
+  pas normative : ce que CE parent a CHANGÉ par rapport au maître — les surcharges
+  de `InstanceNode.overrides`, et le remplacement d’une instance, que ce relevé
+  ne rapporte pas et qui se lit en comparant l’instance à son maître, position par
+  position. Ce que la dépendance fournit reste à son contrat ; ce que le parent
+  y a écrit n’est écrit nulle part ailleurs.
   → [échantillon](#échantillon-de-maquette)
+- Une surcharge de PEINTURE dans une dépendance n’est portable par aucun des
+  deux contrats : elle avertit et nomme le geste — piloter la couleur par une
+  propriété de la dépendance. Bornes : les seuls champs relevés sont ceux qui
+  repeignent (`fills`, `strokes`, `strokeWeight`, `effects`, et leurs styles),
+  et un seul message par calque d’instance.
 - Le parcours conserve le calque de l’instance pour le décrire comme un slot ;
   ce qu’il porte reste hors du contrat parent. Ses couleurs appartiennent à son
   contrat (`getSlotTokens`), ses dimensions ne le font pas élire node de layout
@@ -295,6 +310,15 @@ Le raisonnement vit dans la spécification, en lien.
 - On adresse par slot ce que CE contrat décrit, et par nom de calque Figma ce
   qu’il ne décrit pas — le nom de calque est la seule identité que deux contrats
   partagent. D’où l’asymétrie : `text` chez soi, `overrides` chez autrui.
+- Un remplacement d’instance dans une dépendance se publie dans `swaps`, jamais
+  dans `overrides` : les deux relevés n’ont ni la même source — Figma ne
+  rapporte pas `mainComponent` — ni la même adresse. `masterPath` nomme les
+  calques du MAÎTRE, parce que Figma renomme le calque remplacé d’après son
+  nouveau composant et que le nom du maître est le seul que le contrat de la
+  dépendance publie. Bornes : on compare le composant PROPRIÉTAIRE et non la
+  variante, et le relevé s’arrête sur une dépendance de la dépendance comme
+  sous un calque déjà déclaré remplacé.
+  → [spec](./UCM-EXPORTER-SPEC.md#9-échantillon-de-maquette)
 
 ### Versionnage
 

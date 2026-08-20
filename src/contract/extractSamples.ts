@@ -19,10 +19,13 @@
  *    contexte, il n'engage personne.
  * 3. **On lit ce qu'une instance EXPOSE, jamais ce qu'elle contient.** Les
  *    calques d'une dépendance appartiennent à son contrat. Seules ses props et
- *    ce que CE parent y a surchargé — au sens de `InstanceNode.overrides` —
- *    remontent ici.
+ *    ce que CE parent y a CHANGÉ remontent ici : les surcharges que
+ *    `InstanceNode.overrides` rapporte, et les remplacements d'instance qu'il ne
+ *    rapporte pas, lus en comparant l'instance à son maître.
  */
-import { nearestAncestorIn } from './exportableNodes';
+import { ownerComponentName } from './composedComponents';
+import type { MasterInstanceDefaults, SwapDefaults } from './composedComponents';
+import { isStaticallyHidden, nearestAncestorIn } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import type { PublishedNodePaths } from './extractLayout';
 import { textSlots } from './extractVariantTypography';
@@ -39,6 +42,7 @@ import type {
   ContractSample,
   SampleInstance,
   SampleOverride,
+  SampleSwap,
   SampleText,
 } from './types';
 
@@ -197,6 +201,7 @@ export function extractVariantSample(
   iconNames: ReadonlySet<string>,
   composed: ComposedInstances,
   mainByInstanceId: ReadonlyMap<string, ComponentNode>,
+  swapDefaults: SwapDefaults = new Map(),
 ): ContractSample {
   const sample: ContractSample = {};
 
@@ -211,10 +216,62 @@ export function extractVariantSample(
   }
   if (texts.length > 0) sample.text = texts;
 
-  const composes = dependencySamples(source, composed, mainByInstanceId);
+  const composes = dependencySamples(source, composed, mainByInstanceId, swapDefaults);
   if (composes.length > 0) sample.composes = composes;
 
   return sample;
+}
+
+/**
+ * Les instances que CE parent a remplacées dans une dépendance.
+ *
+ * Figma ne rapporte pas un remplacement : `NodeChangeProperty` ne contient pas
+ * `mainComponent`, et `InstanceNode.overrides` reste donc muet. Il se lit par
+ * comparaison avec le composant maître, position par position — la structure
+ * d'une instance est isomorphe à celle de son maître, puisqu'on n'y ajoute, n'y
+ * retire et n'y réordonne aucun calque.
+ *
+ * Deux bornes, qui sont la frontière de composition elle-même :
+ *
+ * 1. On ne descend pas dans une dépendance de la dépendance : ce qu'elle
+ *    contient appartient à SON contrat, et elle a son propre échantillon.
+ * 2. On ne descend pas sous un calque déjà déclaré remplacé : son contenu vient
+ *    d'un autre composant, et plus aucune position n'y correspond au maître.
+ *
+ * La comparaison porte sur le composant PROPRIÉTAIRE, jamais sur la variante :
+ * choisir une autre variante d'un même component set n'est pas un
+ * remplacement, et le contrat de la dépendance décrit déjà ce choix.
+ */
+function swapsOf(
+  instance: InstanceNode,
+  defaults: MasterInstanceDefaults,
+  composed: ComposedInstances,
+  mainByInstanceId: ReadonlyMap<string, ComponentNode>,
+): SampleSwap[] {
+  const swaps: SampleSwap[] = [];
+  const visit = (node: SceneNode, indexes: readonly number[]) => {
+    const children = 'children' in node ? node.children : [];
+    children.forEach((child, index) => {
+      // Un calque que rien ne peut afficher ne montre rien.
+      if (isStaticallyHidden(child)) return;
+      if (composed.has(child.id)) return;
+      const position = [...indexes, index];
+      if (child.type === 'INSTANCE') {
+        const defaut = defaults.get(position.join('.'));
+        const main = mainByInstanceId.get(child.id);
+        if (defaut && main) {
+          const component = ownerComponentName(main);
+          if (component !== defaut.component) {
+            swaps.push({ masterPath: defaut.masterPath, component });
+            return;
+          }
+        }
+      }
+      visit(child, position);
+    });
+  };
+  visit(instance, []);
+  return swaps;
 }
 
 /**
@@ -230,6 +287,7 @@ function dependencySamples(
   source: SampleSource,
   composed: ComposedInstances,
   mainByInstanceId: ReadonlyMap<string, ComponentNode>,
+  swapDefaults: SwapDefaults,
 ): SampleInstance[] {
   const instances = source.component
     .findAll((node) => composed.has(node.id))
@@ -267,6 +325,11 @@ function dependencySamples(
     };
     const args = instanceArguments(instance, modelOf);
     if (Object.keys(args).length > 0) echantillon.args = args;
+
+    const main = mainByInstanceId.get(instance.id);
+    const defauts = main ? swapDefaults.get(main.id) : undefined;
+    const swaps = defauts ? swapsOf(instance, defauts, composed, mainByInstanceId) : [];
+    if (swaps.length > 0) echantillon.swaps = swaps;
 
     echantillons.set(instance.id, echantillon);
     const parent = nearestAncestorIn(instance, source.component, composed);

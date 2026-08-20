@@ -20,8 +20,15 @@ function hasDynamicVisibility(node: SceneNode): boolean {
     || variableAliases(getBinding(node, 'visible')).length > 0;
 }
 
-/** Un node masqué sans liaison de visibilité ne peut être rendu dans cet état. */
-function isStaticallyHidden(node: SceneNode): boolean {
+/**
+ * Un node masqué sans liaison de visibilité ne peut être rendu dans cet état.
+ *
+ * Exporté pour rester l'unique autorité : l'échantillon compare une instance à
+ * son maître par POSITION, donc sans passer par `getAllNodes`, et doit taire
+ * les mêmes calques que lui — sans quoi la maquette « montrerait » un calque
+ * que le contrat déclare invisible.
+ */
+export function isStaticallyHidden(node: SceneNode): boolean {
   return node.visible === false && !hasDynamicVisibility(node);
 }
 
