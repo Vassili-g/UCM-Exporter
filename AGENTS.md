@@ -218,8 +218,11 @@ Le raisonnement vit dans la spécification, en lien.
   `flex-row` se signale.
 - Une propriété à effet visuel que le schéma ne sait pas écrire avertit, mais
   seulement sur un calque PUBLIÉ et jamais pour une valeur au défaut de Figma.
-  Ces deux réserves écartent `clipsContent`, le masque d’une icône et
-  l’alignement d’un texte en `Hug`.
+  La première réserve écarte le masque et la rotation d’une icône, dont ce
+  relevé ne voit jamais les tracés ; la seconde écarte `clipsContent`,
+  l’alignement d’un texte en `Hug` et une rotation sous le centième de degré.
+  Aucune réserve ne se lit sur l’usage supposé d’un calque : sur un calque
+  publié, `rotation` et `isMask` avertissent comme le reste.
   → [spec](./UCM-EXPORTER-SPEC.md#propriétés-non-portables)
 
 ### Grilles

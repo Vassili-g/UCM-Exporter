@@ -14,9 +14,17 @@
  *   tout le sous-arbre ferait crier sur les entrailles de chaque icône, que le
  *   contrat n'a jamais prétendu décrire.
  * - **Aucune valeur neutre n'avertit.** Une propriété au défaut de Figma ne
- *   manque à personne. Un `clipsContent` — activé par défaut sur toute frame —
- *   ou une rotation résiduelle de tracé importé ne sont donc pas relevés : un
- *   rapport que le designer cesse de lire ne protège plus rien.
+ *   manque à personne. Un `clipsContent`, activé par défaut sur toute frame,
+ *   n'est donc pas relevé : un rapport que le designer cesse de lire ne protège
+ *   plus rien. Le seuil de `rotation` suit la même règle, en flottant.
+ *
+ * Ces deux garde-fous se répondent, et c'est ce qui a longtemps laissé passer
+ * `rotation` et `isMask`. Le silence leur avait été accordé au nom du second —
+ * une rotation résiduelle de tracé importé, le masque interne d'une icône — mais
+ * ces calques-là relèvent du PREMIER : ils ne sont jamais publiés, donc jamais
+ * soumis à ce relevé. Le silence ne protégeait aucun design correct, et coûtait
+ * un chevron retourné ou un découpage à chaque design qui les employait pour de
+ * bon.
  */
 
 /** `boundVariables` et les propriétés visuelles ne sont pas typées champ par champ. */
@@ -62,6 +70,16 @@ type ProprieteNonPortee = {
 const FUSIONS_NEUTRES: ReadonlySet<unknown> = new Set(['PASS_THROUGH', 'NORMAL']);
 
 /**
+ * Rotation en deçà de laquelle un layer est considéré comme droit, en degrés.
+ *
+ * Figma stocke la rotation en flottant : une transformation successive laisse
+ * des résidus de l'ordre de 1e-13, qu'aucun écran ne rend et qu'aucun designer
+ * ne peut remettre à zéro. Un centième de degré est très en dessous du premier
+ * pixel visible, et très au-dessus de ce bruit.
+ */
+const ROTATION_NEUTRE = 0.01;
+
+/**
  * Relève, sur UN calque publié, ce que le schéma ne sait pas porter.
  *
  * Fonction pure : elle ne lit que le node et ne connaît ni la matrice, ni le
@@ -95,6 +113,17 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
     });
   }
 
+  // Une rotation est une décision de design comme une autre : un chevron
+  // retourné, un badge incliné. Aucun champ ne la porte, et le développeur
+  // rendra le layer droit.
+  if (typeof values.rotation === 'number' && Math.abs(values.rotation) > ROTATION_NEUTRE) {
+    relevees.push({
+      champ: 'rotation',
+      manque: 'la rotation de ce layer, qui sera rendu droit',
+      geste: 'Remettez ce layer droit et faites tourner son dessin si la rotation n’a pas à être contractuelle, ou signalez cette limite du schéma',
+    });
+  }
+
   // Le contrat ne cite que des tokens de couleur : seule une peinture SOLID
   // reliée à une variable y entre. Un dégradé ou une image disparaît donc sans
   // que le relevé des couleurs s'en aperçoive.
@@ -123,6 +152,19 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
       champ: 'blend mode',
       manque: 'le mode de fusion de ce layer, qui sera rendu en normal',
       geste: 'Repassez ce layer en blend mode « Normal » si sa fusion n’est pas nécessaire, ou signalez cette limite du schéma',
+    });
+  }
+
+  // Un mask ne peint pas : il découpe. Le contrat, lui, ne connaît que des
+  // surfaces, et publie la sienne dans `variants[].tokens`. Sans ce message, le
+  // développeur peindrait par-dessus le contenu la couleur qui était censée le
+  // révéler — le seul cas où le contrat ne perd pas une propriété mais en
+  // invente une.
+  if (values.isMask === true) {
+    relevees.push({
+      champ: 'mask',
+      manque: 'le découpage que ce layer applique : sa surface sera rendue par-dessus les layers qu’il masque',
+      geste: 'Aplatissez ce mask dans le dessin qu’il découpe si le rendu peut s’en passer, ou signalez cette limite du schéma',
     });
   }
 
