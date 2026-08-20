@@ -36,6 +36,16 @@ type ComposedInstancesScan = {
    * donc qu'aucun relevé ne peut reconnaître comme dépendance.
    */
   warnings: string[];
+  /**
+   * Composant maître de CHAQUE instance rencontrée, contractée ou non.
+   *
+   * `contractedOwner` interroge déjà `getMainComponentAsync` sur toutes les
+   * instances du sous-arbre ; jeter le node pour n'en garder qu'un nom
+   * obligerait tout autre lecteur à refaire les mêmes allers-retours, sur le
+   * fil unique de l'UI. Cette carte reste interne : rien n'en sort dans le
+   * contrat.
+   */
+  mainByInstanceId: Map<string, ComponentNode>;
 };
 
 /** Relevé de toute la matrice, avec ses éventuels écarts entre variants. */
@@ -97,11 +107,11 @@ export async function indexContractedNamesInDocument(): Promise<Set<string>> {
  * Un variant appartient à son Component Set : c'est le SET qui porte le nom
  * contracté, jamais le variant (« Size=Big ») pris isolément.
  */
-async function contractedOwnerName(
+async function contractedOwner(
   instance: InstanceNode,
   contracted: ContractedNames,
   warnings: string[],
-): Promise<string | null> {
+): Promise<{ name: string | null; main: ComponentNode | null }> {
   // `getMainComponentAsync` lève sur une instance orpheline : un node cassé ne
   // doit pas faire échouer l'export entier. Il ne doit pas non plus disparaître.
   // Sans ce nom, l'instance n'entre pas dans `composed` ; `getAllNodes` cesse
@@ -120,11 +130,11 @@ async function contractedOwnerName(
         + `dans « composes ». Restaurez le composant principal de cette instance, puis `
         + `réexportez.`,
     );
-    return null;
+    return { name: null, main: null };
   }
 
   const owner = main.parent?.type === 'COMPONENT_SET' ? main.parent : main;
-  return contracted.has(compactName(owner.name)) ? owner.name : null;
+  return { name: contracted.has(compactName(owner.name)) ? owner.name : null, main };
 }
 
 /**
@@ -167,12 +177,17 @@ export async function scanComposedInstances(
   const lectures = await Promise.all(
     instances.map(async (instance) => {
       const warnings: string[] = [];
-      const owner = await contractedOwnerName(instance, contracted, warnings);
-      return { owner, warnings };
+      const { name, main } = await contractedOwner(instance, contracted, warnings);
+      return { owner: name, main, warnings };
     }),
   );
   const owners = lectures.map((lecture) => lecture.owner);
   const warnings = lectures.flatMap((lecture) => lecture.warnings);
+  const mainByInstanceId = new Map<string, ComponentNode>();
+  instances.forEach((instance, index) => {
+    const main = lectures[index]?.main;
+    if (main) mainByInstanceId.set(instance.id, main);
+  });
   const ownerByInstance = new Map<InstanceNode, string>();
   instances.forEach((instance, index) => {
     const owner = owners[index];
@@ -197,7 +212,7 @@ export async function scanComposedInstances(
     composes.push(dependency);
   }
 
-  return { composes, composed, warnings };
+  return { composes, composed, warnings, mainByInstanceId };
 }
 
 /**
@@ -223,8 +238,12 @@ export async function scanComposedMatrix(
   const scans = await Promise.all(roots.map((root) => scanComposedInstances(root, contracted)));
 
   const composed = new Map<string, ComposedDependency>();
+  const mainByInstanceId = new Map<string, ComponentNode>();
   for (const scan of scans) {
     for (const [id, dependency] of scan.composed) composed.set(id, dependency);
+    // Les ids de node sont uniques par variant : la fusion ne peut pas écraser
+    // la lecture d'un autre variant par celle d'un homonyme.
+    for (const [id, main] of scan.mainByInstanceId) mainByInstanceId.set(id, main);
   }
 
   const signature = (dependency: ComposedDependency) =>
@@ -254,5 +273,5 @@ export async function scanComposedMatrix(
   // du variant : le dédoublonnage rend donc exactement un constat par layer.
   const warnings = Array.from(new Set(scans.flatMap((scan) => scan.warnings)));
 
-  return { composes: scans[0]?.composes ?? [], composed, warnings, infos };
+  return { composes: scans[0]?.composes ?? [], composed, warnings, infos, mainByInstanceId };
 }

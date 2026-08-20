@@ -17,6 +17,7 @@ import { definePropOn, extractContractPropertyModel } from './parsers';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { extractPropertyBindings } from './propertyBindings';
 import { compactVariants } from './compactVariants';
+import { extractVariantSample, sampleVarianceNotice } from './extractSamples';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { mergePropDescriptions } from './mergePropDescriptions';
@@ -41,7 +42,7 @@ import type {
  * La forme courante est décrite par UCM-EXPORTER-SPEC.md et `types.ts` ;
  * ce qui a changé d'une version à l'autre se lit dans Git.
  */
-export const CONTRACT_VERSION = '10.1';
+export const CONTRACT_VERSION = '10.2';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(
@@ -258,6 +259,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   const {
     composes: scannedComposes,
     composed,
+    mainByInstanceId,
     warnings: compositionWarnings,
     infos: compositionInfos,
   } = await scanComposedMatrix(
@@ -307,11 +309,12 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   markProjectionWarningsSince(warningCursor);
   warningCursor = warnings.length;
 
-  const propertyBindings = extractPropertyBindings(
+  const { bindings: propertyBindings, applied: appliedByVariant } = extractPropertyBindings(
     matrix,
     publicPropertyKeyByFigmaName,
     warnings,
     composed,
+    mainByInstanceId,
   );
   markProjectionWarningsSince(warningCursor);
   warningCursor = warnings.length;
@@ -415,6 +418,35 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     projectionWarnings.push(message);
   }
 
+  // L'échantillon se pose ici, une fois l'arbre exact connu et les valeurs
+  // appliquées relevées : il ne recalcule ni chemin de slot, ni reconnaissance
+  // de dépendance, il assemble ce que les deux extractions savent déjà.
+  for (const variant of extracted.variants) {
+    const component = matrix.variants.find(
+      (entry) => entry.component.id === variant.nodeId,
+    )?.component;
+    if (!component) continue;
+    const sample = extractVariantSample(
+      { component, paths: extracted.exactPathsByVariant.get(component) ?? new Map() },
+      appliedByVariant.get(variant.nodeId),
+      extracted.targetedLayers,
+      composed,
+      mainByInstanceId,
+    );
+    if (Object.keys(sample).length > 0) variant.sample = sample;
+  }
+
+  const compacted = compactVariants(extracted.variants, propertyBindings);
+  // Le catalogue sait combien de contenus distincts la matrice montre. Deux là
+  // où le design en attendait un révèlent un libellé retouché dans un seul
+  // variant — rien ne manque, donc rien à corriger, et le constat passe par le
+  // canal qui le dit.
+  const varianceEchantillon = sampleVarianceNotice(compacted.variants);
+  if (varianceEchantillon) {
+    warnings.push(varianceEchantillon);
+    exportInfos.push(varianceEchantillon);
+  }
+
   const meta = buildMeta(componentSet);
   if (!meta.figma.url) {
     // Le message ne promet rien qu'on ne sache tenir : le manifest déclare
@@ -449,7 +481,6 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   // part qui demande un geste.
   const actionableWarnings = allWarnings.filter((message) => !infoSet.has(message));
   const exportedInfos = allWarnings.filter((message) => infoSet.has(message));
-  const compacted = compactVariants(extracted.variants, propertyBindings);
   const {
     variantTokens: _variantTokens,
     variantStrokes: _variantStrokes,
@@ -476,6 +507,10 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     icons,
     textStyles: extracted.textStyles,
     composes: composesPlacees,
+    // Toujours publié, vide compris : `composes` et `tokensUsed` suivent la
+    // même règle, et un champ qui apparaît et disparaît obligerait chaque
+    // lecteur à distinguer « aucun échantillon » de « version sans échantillon ».
+    samples: compacted.samples,
     tokensUsed: [],
     intent,
   };

@@ -5,6 +5,7 @@
  * même document produisent donc le même JSON, sans hash opaque ni héritage.
  */
 import type {
+  ContractSample,
   ContractVariant,
   ContractVariantView,
   ExtractedContractVariant,
@@ -17,10 +18,11 @@ type CompactedVariants = {
   variants: ContractVariant[];
   variantViews: Record<string, ContractVariantView>;
   propertyBindingDefinitions: Record<string, PropertyBindingDefinition>;
+  samples: Record<string, ContractSample>;
 };
 
 /** Catalogue une valeur JSON exacte et retourne sa clé courte et déterministe. */
-function intern<T>(
+export function intern<T>(
   value: T,
   prefix: string,
   idsBySignature: Map<string, string>,
@@ -45,8 +47,13 @@ export function compactVariants(
 ): CompactedVariants {
   const variantViews: Record<string, ContractVariantView> = {};
   const propertyBindingDefinitions: Record<string, PropertyBindingDefinition> = {};
+  const samples: Record<string, ContractSample> = {};
   const viewIds = new Map<string, string>();
   const bindingIds = new Map<string, string>();
+  // Chaque catalogue a SA table de signatures : `intern` numérote sur la taille
+  // de celle qu'on lui passe, et une table commune donnerait des identifiants
+  // troués (« s3 » sans « s1 ») selon l'ordre des appels.
+  const sampleIds = new Map<string, string>();
   const bindingsByVariant = new Map<string, VariantPropertyBinding[]>();
 
   for (const binding of expandedBindings) {
@@ -64,7 +71,7 @@ export function compactVariants(
 
   const variants = expandedVariants.map((variant): ContractVariant => {
     const {
-      structure, typography, composes, icons, paintPlacements, ...identityAndLeaves
+      structure, typography, composes, icons, paintPlacements, sample, ...identityAndLeaves
     } = variant;
     const view = intern(
       { structure, typography, composes, icons, paintPlacements },
@@ -72,13 +79,21 @@ export function compactVariants(
       viewIds,
       variantViews,
     );
+    // `sample` est déstructuré à part et catalogué à part : le laisser dans la
+    // vue ferait diverger deux variants au rendu identique dès que leur contenu
+    // de maquette diffère, et le laisser dans le reste le recopierait en clair
+    // sur chaque variant.
     const bindings = bindingsByVariant.get(variant.nodeId);
+    const sampleId = sample && Object.keys(sample).length > 0
+      ? intern(sample, 's', sampleIds, samples)
+      : null;
     return {
       ...identityAndLeaves,
       view,
       ...(bindings && bindings.length > 0 ? { bindings } : {}),
+      ...(sampleId ? { sample: sampleId } : {}),
     };
   });
 
-  return { variants, variantViews, propertyBindingDefinitions };
+  return { variants, variantViews, propertyBindingDefinitions, samples };
 }

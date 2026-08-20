@@ -27,6 +27,15 @@ type TextStyleLoader = (id: string) => Promise<BaseStyle | null>;
 type TextSlot = {
   slotPath: string[];
   textNode: TextNode;
+  /**
+   * Le calque PUBLIÉ qui occupe ce slot.
+   *
+   * Il n'est pas toujours `textNode` : un cadre dont la seule information est un
+   * unique texte reste ce texte, et c'est alors le CADRE que l'arbre publie sous
+   * ce slot. Qui veut nommer le calque d'un slot doit donc lire celui-ci, sous
+   * peine de contredire le `figmaLayer` que la vue publie au même chemin.
+   */
+  leaf: SceneNode;
 };
 
 type LoadedStyle = {
@@ -78,7 +87,7 @@ export function textSlots(
     // `describeNode` s'y arrête de la même façon.
     if (composedSlotDependencies(child, composed).length > 0) return [];
     const texts = textNodes(child, [], composed);
-    return texts.length === 0 ? [] : [{ slotPath, textNode: texts[0] }];
+    return texts.length === 0 ? [] : [{ slotPath, textNode: texts[0], leaf: child }];
   };
 
   return publishedSlots(layoutNode, iconNames, composed)

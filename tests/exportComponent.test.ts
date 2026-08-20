@@ -192,7 +192,7 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
     assert.equal(Object.keys(contrat.variantViews).length, 1);
     assert.deepEqual(Object.keys(contrat).sort(), [
       'composes', 'icons', 'intent', 'meta', 'name', 'propertyBindingDefinitions',
-      'props', 'rendering', 'stateModel', 'structure', 'textStyles', 'tokensUsed',
+      'props', 'rendering', 'samples', 'stateModel', 'structure', 'textStyles', 'tokensUsed',
       'variantViews', 'variants',
     ]);
     assert.equal('variantTokens' in contrat.structure, false);
@@ -221,6 +221,54 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
       contrat.meta.diagnostics
         .filter((diagnostic: any) => diagnostic.code === 'UCM_EXPORT_INFO')
         .map((diagnostic: any) => diagnostic.message),
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('l’échantillon reste hors du contrat normatif : ni token, ni couverture, ni avertissement', async () => {
+  // Un texte de maquette peut ressembler à une référence de token — un montant,
+  // un gabarit de message. `tokensUsed` se dérive d'une liste blanche de champs
+  // dont `samples` est absent : le contrat ne doit pas citer un token que rien
+  // ne peint, ni envoyer le designer chercher une variable qui n'existe pas.
+  const figmaFaux = monterFigma({
+    enfantsDuVariant: () => [
+      node('TEXT', 'Montant', [], { characters: '{components.piege.background}' }),
+    ],
+  });
+  try {
+    const resultat = await handleExportComponent();
+    const contrat = JSON.parse(resultat.content);
+
+    assert.ok(
+      !contrat.tokensUsed.includes('{components.piege.background}'),
+      'un texte de maquette n’est pas une référence de token',
+    );
+    const echantillon = contrat.samples[contrat.variants[0].sample];
+    assert.deepEqual(
+      echantillon.text.map((entree: any) => entree.value).sort(),
+      ['Suivant', '{components.piege.background}'],
+    );
+    // Le contenu de la maquette est identique sur les deux variants : un seul
+    // échantillon, deux renvois — c'est la dédup qui tient la légèreté.
+    assert.equal(Object.keys(contrat.samples).length, 1);
+    assert.equal(contrat.variants[0].sample, contrat.variants[1].sample);
+
+    // Rien n'est réclamé au designer : les avertissements de ce montage portent
+    // TOUS sur le text style absent, un manque du contrat NORMATIF qui existait
+    // avant l'échantillon. Aucun ne vient de lui, et la couverture ne bouge donc
+    // pas de ce qu'elle valait sans lui.
+    const perteDePortabilite = contrat.meta.diagnostics.filter(
+      (diagnostic: any) => diagnostic.code === 'UCM_PORTABLE_PROJECTION_WARNING',
+    );
+    assert.ok(
+      perteDePortabilite.every((diagnostic: any) => !/maquette|samples/.test(diagnostic.message)),
+      'aucune perte de portabilité ne vient de l’échantillon',
+    );
+    assert.ok(
+      !resultat.warnings.some((message: string) => message.includes('maquette')),
+      'l’échantillon n’ajoute aucun point à corriger',
     );
   } finally {
     figmaFaux.restaurer();

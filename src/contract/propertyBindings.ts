@@ -4,6 +4,42 @@ import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import type { ExtractedPropertyBinding } from './types';
 
+/**
+ * Valeur appliquée de chaque prop publique, par variant.
+ *
+ * Le relevé se fait ici parce que c'est ici qu'on sait déjà QUEL calque porte
+ * QUELLE prop dans CE variant ; le refaire ailleurs demanderait de redécider ce
+ * rapprochement, que ce module possède seul. Elle reste hors de
+ * `ExtractedPropertyBinding` : la définition d'une liaison se déduplique par
+ * égalité de son bloc, et une valeur propre à un variant l'en empêcherait.
+ */
+export type AppliedPropertyValues = Map<string, Record<string, string | boolean>>;
+
+/** Le résultat complet du relevé : la partie publiée, et la partie indicative. */
+export type PropertyBindingScan = {
+  bindings: ExtractedPropertyBinding[];
+  applied: AppliedPropertyValues;
+};
+
+/**
+ * Ce que la maquette montre pour une cible native, ou `undefined`.
+ *
+ * `mainComponent` ne se lit pas sur le node : sa valeur utile est le NOM du
+ * composant placé, que le scan de composition a déjà rapporté pour toutes les
+ * instances. Le résoudre autrement coûterait un aller-retour par swap.
+ */
+function appliedValue(
+  node: SceneNode,
+  target: 'visible' | 'characters' | 'mainComponent',
+  mainByInstanceId: ReadonlyMap<string, ComponentNode>,
+): string | boolean | undefined {
+  if (target === 'visible') return node.visible !== false;
+  if (target === 'characters') return node.type === 'TEXT' ? node.characters : undefined;
+  const main = mainByInstanceId.get(node.id);
+  if (!main) return undefined;
+  return main.parent?.type === 'COMPONENT_SET' ? main.parent.name : main.name;
+}
+
 function pathFrom(node: SceneNode, root: ComponentNode): string[] {
   const path: string[] = [];
   let current: BaseNode | null | undefined = node;
@@ -24,8 +60,13 @@ export function extractPropertyBindings(
   publicKeyByFigmaName: ReadonlyMap<string, string>,
   warnings: string[],
   composed: ComposedInstances = new Map(),
-): ExtractedPropertyBinding[] {
+  mainByInstanceId: ReadonlyMap<string, ComponentNode> = new Map(),
+): PropertyBindingScan {
   const bindings: ExtractedPropertyBinding[] = [];
+  const applied: AppliedPropertyValues = new Map();
+  // Une clé qu'un même variant renseigne deux fois différemment n'a pas de
+  // réponse : le contrat préfère se taire à trancher au hasard.
+  const contested = new Map<string, Set<string>>();
   const unresolved = new Set<string>();
 
   for (const entry of matrix.variants) {
@@ -60,8 +101,24 @@ export function extractPropertyBindings(
           variantNodeId: entry.component.id,
           figmaPath: pathFrom(node, entry.component),
         });
+
+        const value = appliedValue(node, target, mainByInstanceId);
+        if (value === undefined) continue;
+        const values = applied.get(entry.component.id) ?? {};
+        const litiges = contested.get(entry.component.id) ?? new Set<string>();
+        if (litiges.has(prop)) continue;
+        if (Object.prototype.hasOwnProperty.call(values, prop) && values[prop] !== value) {
+          litiges.add(prop);
+          contested.set(entry.component.id, litiges);
+          delete values[prop];
+          continue;
+        }
+        Object.defineProperty(values, prop, {
+          value, enumerable: true, writable: true, configurable: true,
+        });
+        applied.set(entry.component.id, values);
       }
     }
   }
-  return bindings;
+  return { bindings, applied };
 }

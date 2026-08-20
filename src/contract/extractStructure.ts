@@ -135,6 +135,22 @@ export async function extractStructure(
   infos: string[];
   /** Une structure portable par combinaison réellement présente. */
   variants: ExtractedContractVariant[];
+  /**
+   * Chemins de slots de chaque node publié, par variant.
+   *
+   * Ils sont collectés pendant l'unique descente de l'arbre exact ; les rendre
+   * évite qu'un autre module recalcule des chemins, et donc qu'il finisse par
+   * en désigner que la vue ne contient pas.
+   */
+  exactPathsByVariant: Map<ComponentNode, PublishedNodePaths>;
+  /**
+   * Les calques que les règles `@icons` désignent RÉELLEMENT dans la matrice.
+   *
+   * C'est cet ensemble — et non l'inventaire brut des règles — que suivent
+   * l'extraction, les signatures et la typographie. Un lecteur qui voudrait
+   * retrouver les mêmes slots doit partir de là.
+   */
+  targetedLayers: Set<string>;
 }> {
   const warnings = [...matrixWarnings];
   const notices: string[] = [];
@@ -329,6 +345,9 @@ export async function extractStructure(
     );
     exactLayouts.push({ entry, structure: exactStructure, placed: exactPlaced, paths: exactPaths });
   }
+  const exactPathsByVariant = new Map(
+    exactLayouts.map(({ entry, paths }) => [entry.component, paths] as const),
+  );
 
   const referenceTextSlotPaths = new Set(
     referenceLayout
@@ -420,5 +439,7 @@ export async function extractStructure(
     notices,
     infos,
     variants,
+    exactPathsByVariant,
+    targetedLayers,
   };
 }

@@ -42,6 +42,7 @@ src/
     unsupportedProperties.ts ce qu'un calque publié porte et que le schéma ignore
     extract*.ts              structure, layout, tailles, tokens et règles
     flexLayout.ts            propriétés de flux et avertissements non portables
+    extractSamples.ts        ce que la maquette montre, sans rien exiger
     slotNames.ts             nommage des slots et calques d'icônes
     slotRelations.ts         composition et visibilité dans un slot
     composedComponents.ts    dépendances entre composants
@@ -131,7 +132,11 @@ Le raisonnement vit dans la spécification, en lien.
   porte les règles de X » n’existe qu’une fois (`rulesContainerOwner`), indexé sur
   toutes les pages. Les règles documentent sans autoriser : tout `COMPONENT` ou
   `COMPONENT_SET` sélectionné est exportable, et le parent ne réexporte pas les
-  internes d’une dépendance reconnue.
+  internes d’une dépendance reconnue. Une seule chose en remonte, et elle n’est
+  pas normative : ce que CE parent a SURCHARGÉ dans l’instance, au sens de
+  `InstanceNode.overrides`. Ce que la dépendance fournit reste à son contrat ;
+  ce que le parent y a écrit n’est écrit nulle part ailleurs.
+  → [échantillon](#échantillon-de-maquette)
 - Le parcours conserve le calque de l’instance pour le décrire comme un slot ;
   ce qu’il porte reste hors du contrat parent. Ses couleurs appartiennent à son
   contrat (`getSlotTokens`), ses dimensions ne le font pas élire node de layout
@@ -248,7 +253,9 @@ Le raisonnement vit dans la spécification, en lien.
 ### Diagnostics
 
 - Une donnée facultative incomplète avertit. Les préconditions explicitement
-  définies dans la spécification bloquent.
+  définies dans la spécification bloquent. Unique exception, motivée plus bas :
+  l’échantillon de maquette ne réclame jamais rien.
+  → [échantillon](#échantillon-de-maquette)
 - On n’avertit que sur ce qu’on publie. Une valeur que le contrat va jeter — les
   dimensions du calque de référence quand `sizes` existe — n’est ni relevée ni
   signalée.
@@ -256,6 +263,33 @@ Le raisonnement vit dans la spécification, en lien.
   geste à faire. Il lui parvient par le corps de la pull request. Avertissement
   et note ne partagent pas le même canal.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
+
+### Échantillon de maquette
+
+- `figmaLayer` est une **identité** Figma, jamais un contenu. Figma nomme un
+  calque texte d’après ce qu’il dit tant que personne ne l’a renommé, si bien que
+  le champ répondait tantôt « quel calque », tantôt « quel texte », sans qu’on
+  puisse distinguer les deux. Le contenu se lit dans `samples`, ou nulle part.
+- L’échantillon ne contient que des valeurs qu’un développeur pourrait écrire
+  lui-même — texte, booléen, valeur d’enum, nom de composant. Jamais un token,
+  une couleur, une dimension, un layout. Une donnée de rendu qui manquerait ici
+  manque au contrat NORMATIF, et c’est là qu’il faut la corriger.
+- Tout le non normatif vit sous `samples` et `variants[].sample`, et nulle part
+  ailleurs : les retirer redonne le contrat de la version précédente, `meta` mis
+  à part. C’est ce qui rend vérifiable la promesse « aucun contrôle ne le compare
+  au code », au lieu de la laisser à la bonne volonté des consommateurs.
+- Corollaire : une donnée non normative ne doit jamais pouvoir dégrader une
+  structure normative — ni sa taille, ni sa déduplication, ni sa validation. D’où
+  un catalogue à part, et non un champ dans `variantViews`, que le contenu ferait
+  éclater dès que deux variants au rendu identique n’affichent pas le même texte.
+- L’échantillon n’avertit de rien et ne dégrade jamais `meta.coverage.portable` :
+  ce qu’il ne sait pas lire, il l’omet. En contrepartie, la spécification énumère
+  ce qu’il ne sait structurellement pas porter, et `args` est publié comme un
+  SOUS-ENSEMBLE. En cas de désaccord avec une donnée normative, la normative
+  l’emporte.
+- On adresse par slot ce que CE contrat décrit, et par nom de calque Figma ce
+  qu’il ne décrit pas — le nom de calque est la seule identité que deux contrats
+  partagent. D’où l’asymétrie : `text` chez soi, `overrides` chez autrui.
 
 ### Versionnage
 
