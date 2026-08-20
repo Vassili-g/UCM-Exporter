@@ -239,67 +239,6 @@ export async function indexMasterInstances(
 }
 
 /**
- * Champs de `InstanceNode.overrides` par lesquels un parent REPEINT un calque
- * d'une dépendance.
- *
- * L'échantillon les écarte par principe — il ne porte que des valeurs de props
- * — et le contrat normatif ne peut pas les porter non plus : la couleur d'un
- * calque appartient au contrat de la dépendance. Sans ce constat, la maquette
- * montre une couleur que le développeur ne rendra jamais, et rien ne le dit.
- */
-const REPAINT_FIELDS = new Set<string>([
-  'fills', 'strokes', 'strokeWeight', 'fillStyleId', 'strokeStyleId', 'effects', 'effectStyleId',
-]);
-
-/**
- * Signale les calques d'une dépendance que CE composant a repeints à la main.
- *
- * Le geste demandé est de piloter la couleur par une propriété de la
- * dépendance : c'est la seule façon dont elle traverse le contrat, et c'est
- * aussi ce que le design system attend — une Alert de sévérité `success` porte
- * un bouton `success` parce que sa VARIANTE le dit, pas parce qu'on l'a
- * repeint.
- */
-function repaintWarnings(
-  dependencyByInstance: ReadonlyMap<InstanceNode, ComposedDependency>,
-): string[] {
-  const messages: string[] = [];
-  for (const [instance, dependency] of dependencyByInstance) {
-    let releves: readonly { id: string; overriddenFields: NodeChangeProperty[] }[] = [];
-    try {
-      releves = instance.overrides ?? [];
-    } catch {
-      continue;
-    }
-    const nodesById = new Map<string, SceneNode>();
-    for (const node of instance.findAll(() => true)) nodesById.set(node.id, node);
-    nodesById.set(instance.id, instance);
-
-    const repeints: string[] = [];
-    for (const releve of releves) {
-      if (!(releve.overriddenFields ?? []).some((champ) => REPAINT_FIELDS.has(champ))) continue;
-      const node = nodesById.get(releve.id);
-      if (node && !repeints.includes(node.name)) repeints.push(node.name);
-    }
-    if (repeints.length === 0) continue;
-
-    const plusieurs = repeints.length > 1;
-    const cites = repeints.slice(0, 3).map((nom) => `« ${nom} »`).join(', ');
-    const reste = repeints.length - 3;
-    messages.push(
-      `Layer « ${instance.name} » : ce composant repeint à la main `
-        + `${plusieurs ? 'les calques' : 'le calque'} ${cites}${reste > 0 ? ` (+${reste})` : ''} `
-        + `du composant « ${dependency.component} », qui a son propre contrat. Une couleur posée `
-        + `ainsi n'entre dans aucun contrat : le développeur rendra celle que `
-        + `« ${dependency.component} » publie, et la maquette montrera une autre couleur que `
-        + `l'application. Pilotez-la par une propriété de « ${dependency.component} » — sa `
-        + `variante de couleur, par exemple — puis réexportez.`,
-    );
-  }
-  return messages;
-}
-
-/**
  * Sépare, dans un variant, ce qui lui appartient de ce qui appartient aux
  * composants qu'il embarque.
  *
@@ -373,8 +312,6 @@ export async function scanComposedInstances(
     if (hasAncestorIn(instance, root, composed)) continue;
     composes.push(dependency);
   }
-
-  warnings.push(...repaintWarnings(dependencyByInstance));
 
   return { composes, composed, warnings, mainByInstanceId };
 }

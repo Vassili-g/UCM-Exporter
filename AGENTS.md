@@ -147,11 +147,6 @@ Le raisonnement vit dans la spécification, en lien.
   position. Ce que la dépendance fournit reste à son contrat ; ce que le parent
   y a écrit n’est écrit nulle part ailleurs.
   → [échantillon](#échantillon-de-maquette)
-- Une surcharge de PEINTURE dans une dépendance n’est portable par aucun des
-  deux contrats : elle avertit et nomme le geste — piloter la couleur par une
-  propriété de la dépendance. Bornes : les seuls champs relevés sont ceux qui
-  repeignent (`fills`, `strokes`, `strokeWeight`, `effects`, et leurs styles),
-  et un seul message par calque d’instance.
 - Le parcours conserve le calque de l’instance pour le décrire comme un slot ;
   ce qu’il porte reste hors du contrat parent. Ses couleurs appartiennent à son
   contrat (`getSlotTokens`), ses dimensions ne le font pas élire node de layout
