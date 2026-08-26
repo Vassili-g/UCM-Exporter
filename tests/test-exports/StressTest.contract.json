@@ -1,8 +1,8 @@
 {
   "name": "StressTest",
   "meta": {
-    "contractVersion": "10.2",
-    "exportedAt": "2026-08-20T12:26:36.294Z",
+    "contractVersion": "10.3",
+    "exportedAt": "2026-08-20T17:23:29.229Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "360:2136",
@@ -2131,8 +2131,7 @@
       "border": {
         "kind": "stroke",
         "cssProperties": [
-          "border-color",
-          "border-width"
+          "box-shadow"
         ]
       },
       "ring": {
@@ -2152,8 +2151,7 @@
       "base.border": {
         "kind": "stroke",
         "cssProperties": [
-          "border-color",
-          "border-width"
+          "box-shadow"
         ]
       },
       "description": {
@@ -2248,8 +2246,7 @@
       "userinput.border": {
         "kind": "stroke",
         "cssProperties": [
-          "border-color",
-          "border-width"
+          "box-shadow"
         ]
       }
     }
@@ -2505,6 +2502,15 @@
             "label": true,
             "size": "medium"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                ".sizeWrapperButton",
+                "arrow-left-long"
+              ],
+              "component": "check"
+            }
+          ],
           "slotPath": [
             "userinput",
             "button"
@@ -2512,7 +2518,7 @@
           "overrides": [
             {
               "figmaPath": [
-                "sizeWrapperButton",
+                ".sizeWrapperButton",
                 "Suivant"
               ],
               "text": "Accepter"
@@ -2531,6 +2537,15 @@
             "label": true,
             "size": "medium"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                ".sizeWrapperButton",
+                "arrow-left-long"
+              ],
+              "component": "xmark"
+            }
+          ],
           "slotPath": [
             "userinput",
             "button-2"
@@ -2538,7 +2553,7 @@
           "overrides": [
             {
               "figmaPath": [
-                "sizeWrapperButton",
+                ".sizeWrapperButton",
                 "Suivant"
               ],
               "text": "Refuser"
@@ -2564,6 +2579,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "circle-9"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-2"
@@ -2576,6 +2599,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "duck"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-3"
@@ -2588,6 +2619,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "oil-temperature"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-4"
@@ -2600,6 +2639,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "fence"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-5"
@@ -2612,6 +2659,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "wheat"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-6"
@@ -2624,6 +2679,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "candle-holder"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-7"
@@ -2714,7 +2777,7 @@
               "figmaLayer": "Button",
               "component": "Button",
               "args": {
-                "color": "info",
+                "color": "success",
                 "variant": "text",
                 "state": "default",
                 "iconLeft": false,
@@ -2732,6 +2795,14 @@
             "variant": "success",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "chess-king-piece"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink"
@@ -2744,6 +2815,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "circle-arrow-up"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-2"
@@ -2756,6 +2835,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "dumbbell"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-3"
@@ -2768,6 +2855,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "oil-can-drip"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-4"
@@ -2780,6 +2875,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "ferris-wheel"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-5"
@@ -2792,6 +2895,14 @@
             "variant": "info",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "whale"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-6"
@@ -2804,6 +2915,14 @@
             "variant": "success",
             "state": "default"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                "chess"
+              ],
+              "component": "candy"
+            }
+          ],
           "slotPath": [
             "tilelinkswrap",
             "tilelink-7"
@@ -2821,6 +2940,15 @@
             "label": true,
             "size": "medium"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                ".sizeWrapperButton",
+                "arrow-left-long"
+              ],
+              "component": "arrow-right-long"
+            }
+          ],
           "slotPath": [
             "actionswrap",
             "button"
@@ -2828,7 +2956,7 @@
           "overrides": [
             {
               "figmaPath": [
-                "sizeWrapperButton",
+                ".sizeWrapperButton",
                 "Suivant"
               ],
               "text": "Retour"
@@ -2847,6 +2975,15 @@
             "label": false,
             "size": "medium"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                ".sizeWrapperButton",
+                "arrow-left-long"
+              ],
+              "component": "ballot"
+            }
+          ],
           "slotPath": [
             "actionswrap",
             "button-2"
@@ -2854,7 +2991,7 @@
           "overrides": [
             {
               "figmaPath": [
-                "sizeWrapperButton",
+                ".sizeWrapperButton",
                 "Suivant"
               ],
               "text": "Poursuivre"
@@ -2873,6 +3010,15 @@
             "label": true,
             "size": "medium"
           },
+          "swaps": [
+            {
+              "masterPath": [
+                ".sizeWrapperButton",
+                "arrow-left-long"
+              ],
+              "component": "arrow-right-long"
+            }
+          ],
           "slotPath": [
             "actionswrap",
             "button-3"
@@ -2880,7 +3026,7 @@
           "overrides": [
             {
               "figmaPath": [
-                "sizeWrapperButton",
+                ".sizeWrapperButton",
                 "Suivant"
               ],
               "text": "Poursuivre"

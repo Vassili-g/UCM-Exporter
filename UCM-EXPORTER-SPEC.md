@@ -773,17 +773,37 @@ en comparant l'instance à son composant maître, **position par position** — 
 structure d'une instance est isomorphe à celle de son maître, puisque Figma
 interdit d'y ajouter, d'y retirer et d'y réordonner un calque.
 
-Trois bornes le tiennent. La comparaison porte sur le composant PROPRIÉTAIRE et
+Quatre bornes le tiennent. La comparaison porte sur le composant PROPRIÉTAIRE et
 non sur la variante : choisir une autre variante d'un même component set n'est
 pas un remplacement, et le contrat de la dépendance décrit déjà ce choix. Le
 relevé s'arrête sur une dépendance de la dépendance, dont l'échantillon est
 ailleurs, et sous un calque déjà déclaré remplacé, dont plus aucune position ne
-correspond au maître. Enfin `masterPath` nomme les calques du MAÎTRE, pas ceux
+correspond au maître. Il s'arrête aussi sur un calque dont `args` répond déjà —
+voir « Quand la dépendance expose son remplacement » plus bas. Enfin `masterPath`
+nomme les calques du MAÎTRE, pas ceux
 de l'instance : Figma renomme le calque qu'on remplace d'après son nouveau
 composant, si bien que le chemin lu dans l'instance répéterait `component` et ne
 joindrait plus rien — alors que le nom du maître est celui que le contrat de la
 dépendance publie dans `icons.*.figmaName`. Un champ, une question : c'est le
 nom distinct, et non `figmaPath`, qui empêche le doute qui a coûté `figmaLayer`.
+
+**Quand la dépendance expose son remplacement.** Tout ce qui précède décrit le
+cas où Figma n'offre aucun porteur. Lorsque la dépendance déclare une
+INSTANCE_SWAP sur ce calque, elle en a un, et son contrat en tire une prop :
+`mergeIconRules` pose alors `runtimeProp` sur la prop NATIVE plutôt que d'en
+fabriquer une seconde, « pour ne pas obliger le consommateur à choisir entre deux
+sources de vérité ». `args` répond donc, et `swaps` se tait — un même fait n'a
+jamais deux propriétaires.
+
+Encore faut-il que `args` réponde quelque chose de lisible. Pour une
+INSTANCE_SWAP, `componentProperties` rend l'IDENTIFIANT du node placé (« 1:1 »),
+jamais son nom : publié tel quel, il donnait une clé publique à une valeur que la
+règle 1 interdit. La valeur publiée est donc le NOM du composant propriétaire,
+résolu comme le fait déjà `propertyBindings.appliedValue` pour le composant
+exporté — sans aucun aller-retour, le scan de composition connaissant le maître
+de chaque instance rencontrée. Un remplacement qu'on ne sait pas nommer est
+**omis** d'`args`, et `swaps` redevient alors le seul relevé : la règle 2
+interdit d'inventer, elle n'autorise pas à perdre.
 
 **Ce qu'il ne demande jamais.** L'échantillon n'avertit de rien, ne dégrade
 jamais `meta.coverage.portable`, et ne contribue pas à `tokensUsed` — un texte de
