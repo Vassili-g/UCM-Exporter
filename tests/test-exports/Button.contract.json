@@ -1,8 +1,8 @@
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "10.2",
-    "exportedAt": "2026-08-20T11:44:40.126Z",
+    "contractVersion": "10.3",
+    "exportedAt": "2026-08-20T17:23:45.171Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "3:122",
@@ -117,7 +117,7 @@
         "children": [
           {
             "slot": "label",
-            "figmaLayer": "sizeWrapperButton",
+            "figmaLayer": ".sizeWrapperButton",
             "radius": "{components.button.sizes.medium.border-radius}",
             "layout": "flex-row",
             "justifyContent": "center",
@@ -223,7 +223,7 @@
         "children": [
           {
             "slot": "label",
-            "figmaLayer": "sizeWrapperButton",
+            "figmaLayer": ".sizeWrapperButton",
             "radius": "{components.button.sizes.medium.border-radius}",
             "layout": "flex-row",
             "justifyContent": "center",
@@ -335,7 +335,7 @@
         "children": [
           {
             "slot": "label",
-            "figmaLayer": "sizeWrapperButton",
+            "figmaLayer": ".sizeWrapperButton",
             "radius": "{components.button.sizes.medium.border-radius}",
             "layout": "flex-row",
             "justifyContent": "center",
@@ -436,7 +436,7 @@
         "children": [
           {
             "slot": "label",
-            "figmaLayer": "sizeWrapperButton",
+            "figmaLayer": ".sizeWrapperButton",
             "radius": "{components.button.sizes.medium.border-radius}",
             "layout": "flex-row",
             "justifyContent": "center",
@@ -546,7 +546,7 @@
         "children": [
           {
             "slot": "label",
-            "figmaLayer": "sizeWrapperButton",
+            "figmaLayer": ".sizeWrapperButton",
             "radius": "{components.button.sizes.medium.border-radius}",
             "layout": "flex-row",
             "justifyContent": "center",
@@ -661,7 +661,7 @@
         "children": [
           {
             "slot": "label",
-            "figmaLayer": "sizeWrapperButton",
+            "figmaLayer": ".sizeWrapperButton",
             "radius": "{components.button.sizes.medium.border-radius}",
             "layout": "flex-row",
             "justifyContent": "center",
@@ -773,7 +773,7 @@
         "children": [
           {
             "slot": "label",
-            "figmaLayer": "sizeWrapperButton",
+            "figmaLayer": ".sizeWrapperButton",
             "radius": "{components.button.sizes.medium.border-radius}",
             "layout": "flex-row",
             "justifyContent": "center",
@@ -861,7 +861,7 @@
       "figmaPropName": "Icon-Left#1261:147",
       "target": "visible",
       "figmaPath": [
-        "sizeWrapperButton",
+        ".sizeWrapperButton",
         "arrow-left-long"
       ]
     },
@@ -870,7 +870,7 @@
       "figmaPropName": "Label#234:0",
       "target": "visible",
       "figmaPath": [
-        "sizeWrapperButton",
+        ".sizeWrapperButton",
         "Suivant"
       ]
     },
@@ -879,7 +879,7 @@
       "figmaPropName": "Icon-Right#1261:138",
       "target": "visible",
       "figmaPath": [
-        "sizeWrapperButton",
+        ".sizeWrapperButton",
         "arrow-right-long"
       ]
     }
@@ -4078,8 +4078,7 @@
       "border": {
         "kind": "stroke",
         "cssProperties": [
-          "border-color",
-          "border-width"
+          "box-shadow"
         ]
       },
       "ring": {
