@@ -314,6 +314,15 @@ Le raisonnement vit dans la spécification, en lien.
   variante, et le relevé s’arrête sur une dépendance de la dépendance comme
   sous un calque déjà déclaré remplacé.
   → [spec](./UCM-EXPORTER-SPEC.md#9-échantillon-de-maquette)
+- `swaps` ne rapporte que ce qu’`args` ne sait pas dire. Une INSTANCE_SWAP native
+  a déjà sa prop dans le contrat de la dépendance — `mergeIconRules` y pose
+  `runtimeProp` plutôt qu’une prop de synthèse — et la republier rouvrirait le
+  choix entre deux sources de vérité que cette décision-là a fermé.
+- Une valeur d’INSTANCE_SWAP se publie par le NOM du composant propriétaire,
+  jamais par l’identifiant de node que rend `componentProperties`.
+  `propertyBindings.appliedValue` porte cette règle pour le composant exporté,
+  `argumentsOf` pour ses dépendances ; ni l’un ni l’autre n’ajoute d’aller-retour.
+  Un remplacement qu’on ne sait pas nommer est omis, et `swaps` reste seul.
 
 ### Versionnage
 

@@ -63,6 +63,46 @@ function componentPropertiesOf(instance: InstanceNode): ComponentProperties {
 }
 
 /**
+ * Le calque que chaque liaison `mainComponent` de cette instance désigne.
+ *
+ * Le relevé s'arrête sur une dépendance de la dépendance : ses calques sont
+ * liés à SES propriétés, et un nom technique homonyme y volerait la réponse.
+ * Il ne descend pas non plus sous un calque déjà lié — une INSTANCE_SWAP place
+ * un composant entier, dont les liaisons internes appartiennent à celui-ci.
+ */
+function swapTargets(
+  scope: InstanceNode,
+  composed: ComposedInstances,
+): Map<string, InstanceNode> {
+  const cibles = new Map<string, InstanceNode>();
+  const visit = (node: SceneNode) => {
+    const children = 'children' in node ? node.children : [];
+    for (const child of children) {
+      if (composed.has(child.id)) continue;
+      const reference = swapReferenceOf(child);
+      if (reference && child.type === 'INSTANCE') {
+        // L'ordre du document tranche : Figma interdit deux calques liés à la
+        // même INSTANCE_SWAP, mais la lecture ne doit pas en dépendre.
+        if (!cibles.has(reference)) cibles.set(reference, child);
+        continue;
+      }
+      visit(child);
+    }
+  };
+  visit(scope);
+  return cibles;
+}
+
+/** La propriété INSTANCE_SWAP dont ce calque tient son composant, si Figma en déclare une. */
+function swapReferenceOf(node: SceneNode): string | undefined {
+  try {
+    return node.componentPropertyReferences?.mainComponent ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Traduit les propriétés appliquées d'une instance dans les clés publiques du
  * contrat de son composant.
  *
@@ -71,11 +111,21 @@ function componentPropertiesOf(instance: InstanceNode): ComponentProperties {
  * publiés ici sont donc les siens, renommage sémantique compris. Ses
  * avertissements sont jetés — ils appartiennent à cet export-là, pas à
  * celui-ci.
+ *
+ * `resolveSwap` existe parce que `componentProperties` rend, pour une
+ * INSTANCE_SWAP, l'IDENTIFIANT du node placé — « 1:1 » — et jamais son nom.
+ * Publier cette valeur brute donnerait à `args` une clé publique et une valeur
+ * illisible, là où la règle 1 n'admet que ce qu'un développeur pourrait écrire
+ * lui-même. `propertyBindings.appliedValue` avait déjà tranché la question pour
+ * le composant exporté ; l'échantillon d'une dépendance n'en avait pas hérité.
  */
 function argumentsOf(
   properties: ComponentProperties,
   model: ContractPropertyModel,
   args: Record<string, string | boolean>,
+  resolveSwap: (figmaName: string) => InstanceNode | undefined,
+  mainByInstanceId: ReadonlyMap<string, ComponentNode>,
+  viaProps: Set<string>,
 ): void {
   for (const [figmaName, property] of Object.entries(properties)) {
     const brute = normalizePropKey(figmaName);
@@ -83,9 +133,20 @@ function argumentsOf(
     const key = model.publicPropertyKeyByFigmaName.get(figmaName)
       ?? model.publicVariantKeyByRawKey.get(brute)
       ?? brute;
-    const value = property.type === 'VARIANT' && typeof property.value === 'string'
-      ? normalizePropValue(property.value)
-      : property.value;
+
+    let value: string | boolean | undefined;
+    let cible: InstanceNode | undefined;
+    if (property.type === 'VARIANT' && typeof property.value === 'string') {
+      value = normalizePropValue(property.value);
+    } else if (property.type === 'INSTANCE_SWAP') {
+      cible = resolveSwap(figmaName);
+      const main = cible ? mainByInstanceId.get(cible.id) : undefined;
+      // Un remplacement qu'on ne sait pas nommer est OMIS, jamais deviné : la
+      // règle 2 interdit de dégrader, et `swaps` reste alors le seul relevé.
+      value = main ? ownerComponentName(main) : undefined;
+    } else {
+      value = property.value;
+    }
 
     // L'axe d'états n'est pas une prop — le contrat de la dépendance le publie
     // dans `stateModel`. Sa valeur reste néanmoins publiée sous la clé de
@@ -97,12 +158,23 @@ function argumentsOf(
         value: true, enumerable: true, writable: true, configurable: true,
       });
     }
+    if (value === undefined) continue;
     if (Object.prototype.hasOwnProperty.call(args, key)) continue;
     Object.defineProperty(args, key, {
       value, enumerable: true, writable: true, configurable: true,
     });
+    // Ce calque a désormais son propriétaire dans `args` : `swaps` ne doit plus
+    // le rapporter. Cf. `swapsOf`.
+    if (cible) viaProps.add(cible.id);
   }
 }
+
+/** Ce qu'une instance applique, et les calques dont `args` répond déjà. */
+type InstanceArguments = {
+  args: Record<string, string | boolean>;
+  /** Ids des calques qu'une INSTANCE_SWAP publiée a déjà nommés. Cf. `swapsOf`. */
+  viaProps: Set<string>;
+};
 
 /**
  * Les valeurs appliquées d'une instance, y compris celles de ses instances
@@ -116,14 +188,34 @@ function argumentsOf(
  *
  * L'ordre suit la règle de fusion de l'export : les clés du composant lui-même
  * l'emportent, celles d'une instance exposée ne comblent que les trous.
+ *
+ * Le relevé des cibles d'INSTANCE_SWAP est PARESSEUX : un composé dont aucune
+ * dépendance n'expose de remplacement natif ne parcourt aucun sous-arbre de
+ * plus qu'avant.
  */
 function instanceArguments(
   instance: InstanceNode,
   modelOf: (instance: InstanceNode) => ContractPropertyModel | null,
-): Record<string, string | boolean> {
+  composed: ComposedInstances,
+  mainByInstanceId: ReadonlyMap<string, ComponentNode>,
+): InstanceArguments {
   const args: Record<string, string | boolean> = {};
+  const viaProps = new Set<string>();
+  const resolveurPour = (scope: InstanceNode) => {
+    let cibles: Map<string, InstanceNode> | null = null;
+    return (figmaName: string): InstanceNode | undefined => {
+      cibles ??= swapTargets(scope, composed);
+      return cibles.get(figmaName);
+    };
+  };
+
   const model = modelOf(instance);
-  if (model) argumentsOf(componentPropertiesOf(instance), model, args);
+  if (model) {
+    argumentsOf(
+      componentPropertiesOf(instance), model, args,
+      resolveurPour(instance), mainByInstanceId, viaProps,
+    );
+  }
 
   let exposees: readonly InstanceNode[] = [];
   try {
@@ -133,9 +225,14 @@ function instanceArguments(
   }
   for (const exposee of exposees) {
     const exposeeModel = modelOf(exposee);
-    if (exposeeModel) argumentsOf(componentPropertiesOf(exposee), exposeeModel, args);
+    if (exposeeModel) {
+      argumentsOf(
+        componentPropertiesOf(exposee), exposeeModel, args,
+        resolveurPour(exposee), mainByInstanceId, viaProps,
+      );
+    }
   }
-  return args;
+  return { args, viaProps };
 }
 
 /**
@@ -241,12 +338,20 @@ export function extractVariantSample(
  * La comparaison porte sur le composant PROPRIÉTAIRE, jamais sur la variante :
  * choisir une autre variante d'un même component set n'est pas un
  * remplacement, et le contrat de la dépendance décrit déjà ce choix.
+ *
+ * Troisième borne, et elle vient d'ailleurs : ce qu'`args` a déjà nommé n'est
+ * pas republié. Quand la dépendance expose une INSTANCE_SWAP sur ce calque,
+ * son contrat en tire une prop — `mergeIconRules` y pose `runtimeProp` plutôt
+ * qu'une prop de synthèse, précisément « pour ne pas obliger le consommateur à
+ * choisir entre deux sources de vérité ». Ce relevé-ci ne doit pas rouvrir le
+ * choix que celui-là a fermé : un même fait n'a jamais deux propriétaires.
  */
 function swapsOf(
   instance: InstanceNode,
   defaults: MasterInstanceDefaults,
   composed: ComposedInstances,
   mainByInstanceId: ReadonlyMap<string, ComponentNode>,
+  viaProps: ReadonlySet<string>,
 ): SampleSwap[] {
   const swaps: SampleSwap[] = [];
   const visit = (node: SceneNode, indexes: readonly number[]) => {
@@ -257,6 +362,9 @@ function swapsOf(
       if (composed.has(child.id)) return;
       const position = [...indexes, index];
       if (child.type === 'INSTANCE') {
+        // `args` répond déjà pour ce calque : le contenu vient d'ailleurs, et
+        // plus aucune position n'y correspond au maître — comme après un swap.
+        if (viaProps.has(child.id)) return;
         const defaut = defaults.get(position.join('.'));
         const main = mainByInstanceId.get(child.id);
         if (defaut && main) {
@@ -323,12 +431,16 @@ function dependencySamples(
       figmaLayer: instance.name,
       component: dependency.component,
     };
-    const args = instanceArguments(instance, modelOf);
+    const { args, viaProps } = instanceArguments(
+      instance, modelOf, composed, mainByInstanceId,
+    );
     if (Object.keys(args).length > 0) echantillon.args = args;
 
     const main = mainByInstanceId.get(instance.id);
     const defauts = main ? swapDefaults.get(main.id) : undefined;
-    const swaps = defauts ? swapsOf(instance, defauts, composed, mainByInstanceId) : [];
+    const swaps = defauts
+      ? swapsOf(instance, defauts, composed, mainByInstanceId, viaProps)
+      : [];
     if (swaps.length > 0) echantillon.swaps = swaps;
 
     echantillons.set(instance.id, echantillon);
