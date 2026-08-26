@@ -558,6 +558,144 @@ test('le relevé des remplacements s’arrête sur une dépendance de la dépend
   ]);
 });
 
+/** Les définitions d'une dépendance qui expose NATIVEMENT le remplacement de son icône. */
+const DEFINITIONS_TILELINK_SWAP = {
+  Variant: { type: 'VARIANT', variantOptions: ['Info', 'Success'], defaultValue: 'Info' },
+  'ChessIcon#7:1': { type: 'INSTANCE_SWAP', defaultValue: '1:1' },
+};
+
+/** Une tuile dont l'icône tient son composant de la prop `ChessIcon#7:1`. */
+function tuileALiaisonNative(nomDuCalque: string) {
+  const icone = node('INSTANCE', 'i1', nomDuCalque, [], {
+    componentProperties: {},
+    exposedInstances: [],
+    overrides: [],
+    componentPropertyReferences: { mainComponent: 'ChessIcon#7:1' },
+  });
+  const tuile = instance(
+    't1',
+    'TileLink',
+    { 'ChessIcon#7:1': { type: 'INSTANCE_SWAP', value: '9:9' } },
+    [icone],
+  );
+  return { icone, tuile };
+}
+
+test('une INSTANCE_SWAP de dépendance publie le NOM du composant, jamais son identifiant', () => {
+  // `componentProperties` rend « 9:9 », l'identifiant du node placé. Publié tel
+  // quel, `args.chessIcon` valait un identifiant Figma sous une clé publique —
+  // exactement ce que la règle 1 interdit, et illisible pour le consommateur.
+  // `propertyBindings.appliedValue` résolvait déjà le nom pour le composant
+  // exporté ; la dépendance n'en héritait pas.
+  const { tuile } = tuileALiaisonNative('star');
+  const component = node('COMPONENT', 'c1', 'StressTest', [tuile], {
+    layoutMode: 'HORIZONTAL',
+  }) as ComponentNode;
+
+  const sample = extractVariantSample(
+    { component, paths: new Map([['t1', ['tilelink']]]) },
+    undefined,
+    new Set(),
+    new Map([['t1', { component: 'TileLink', figmaLayer: 'TileLink' }]]),
+    new Map<string, ComponentNode>([
+      ['t1', maitre('TileLink', DEFINITIONS_TILELINK_SWAP)],
+      ['i1', maitreIcone('star')],
+    ]),
+    new Map([['TileLink-maitre', defauts([['0', ['chess'], 'chess']])]]),
+  );
+
+  assert.equal(sample.composes?.[0].args?.chessIcon, 'star');
+});
+
+test('un remplacement que sa prop publie n’est pas republié dans swaps', () => {
+  // `mergeIconRules` pose `runtimeProp` sur la prop NATIVE plutôt que d'inventer
+  // une prop de synthèse, « pour ne pas obliger le consommateur à choisir entre
+  // deux sources de vérité ». Un `swaps` en plus rouvrirait ce choix.
+  const { tuile } = tuileALiaisonNative('star');
+  const component = node('COMPONENT', 'c1', 'StressTest', [tuile], {
+    layoutMode: 'HORIZONTAL',
+  }) as ComponentNode;
+
+  const sample = extractVariantSample(
+    { component, paths: new Map([['t1', ['tilelink']]]) },
+    undefined,
+    new Set(),
+    new Map([['t1', { component: 'TileLink', figmaLayer: 'TileLink' }]]),
+    new Map<string, ComponentNode>([
+      ['t1', maitre('TileLink', DEFINITIONS_TILELINK_SWAP)],
+      ['i1', maitreIcone('star')],
+    ]),
+    new Map([['TileLink-maitre', defauts([['0', ['chess'], 'chess']])]]),
+  );
+
+  assert.equal(sample.composes?.[0].swaps, undefined);
+});
+
+test('un remplacement natif qu’on ne sait pas nommer est omis, et swaps reste seul', () => {
+  // Règle 2 : l'échantillon n'invente rien et ne dégrade rien. Sans maître
+  // lisible pour l'icône, `args` se tait — mais le geste du designer ne doit pas
+  // disparaître avec lui, et la comparaison au maître le rapporte encore.
+  const { tuile } = tuileALiaisonNative('star');
+  const component = node('COMPONENT', 'c1', 'StressTest', [tuile], {
+    layoutMode: 'HORIZONTAL',
+  }) as ComponentNode;
+
+  const sample = extractVariantSample(
+    { component, paths: new Map([['t1', ['tilelink']]]) },
+    undefined,
+    new Set(),
+    new Map([['t1', { component: 'TileLink', figmaLayer: 'TileLink' }]]),
+    // Le maître de « i1 » manque : c'est le seul cas où le nom est hors de portée.
+    new Map<string, ComponentNode>([['t1', maitre('TileLink', DEFINITIONS_TILELINK_SWAP)]]),
+    new Map([['TileLink-maitre', defauts([['0', ['chess'], 'chess']])]]),
+  );
+
+  assert.equal(sample.composes?.[0].args?.chessIcon, undefined);
+  assert.equal(sample.composes?.[0].swaps, undefined);
+});
+
+test('la liaison d’une dépendance de la dépendance ne répond pas pour son parent', () => {
+  // Deux composants peuvent nommer leur INSTANCE_SWAP pareil : les noms
+  // techniques Figma ne sont uniques que par composant. Le relevé s'arrête donc
+  // sur une dépendance contractée, comme tous les autres parcours du module.
+  const iconeDuBouton = node('INSTANCE', 'i2', 'check', [], {
+    componentProperties: {},
+    exposedInstances: [],
+    overrides: [],
+    componentPropertyReferences: { mainComponent: 'ChessIcon#7:1' },
+  });
+  const bouton = instance('b1', 'Button', {}, [iconeDuBouton]);
+  const tuile = instance(
+    't1',
+    'TileLink',
+    { 'ChessIcon#7:1': { type: 'INSTANCE_SWAP', value: '9:9' } },
+    [bouton],
+  );
+  const component = node('COMPONENT', 'c1', 'StressTest', [tuile], {
+    layoutMode: 'HORIZONTAL',
+  }) as ComponentNode;
+
+  const sample = extractVariantSample(
+    { component, paths: new Map([['t1', ['tilelink']]]) },
+    undefined,
+    new Set(),
+    new Map([
+      ['t1', { component: 'TileLink', figmaLayer: 'TileLink' }],
+      ['b1', { component: 'Button', figmaLayer: 'Button' }],
+    ]),
+    new Map<string, ComponentNode>([
+      ['t1', maitre('TileLink', DEFINITIONS_TILELINK_SWAP)],
+      ['b1', maitre('Button', DEFINITIONS_BUTTON)],
+      ['i2', maitreIcone('check')],
+    ]),
+    new Map([['TileLink-maitre', defauts([])]]),
+  );
+
+  // « check » appartient au Button : le reprendre ici publierait sous TileLink
+  // une valeur que son contrat ne reconnaîtrait pas.
+  assert.equal(sample.composes?.[0].args?.chessIcon, undefined);
+});
+
 test('un calque masqué d’une dépendance ne montre rien, donc ne remplace rien', () => {
   const icone = node('INSTANCE', 'i1', 'star', [], {
     componentProperties: {}, exposedInstances: [], overrides: [], visible: false,
