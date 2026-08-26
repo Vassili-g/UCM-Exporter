@@ -1,16 +1,24 @@
 {
   "name": "Alert",
   "meta": {
-    "contractVersion": "10.2",
-    "exportedAt": "2026-08-20T11:44:23.219Z",
+    "contractVersion": "10.3",
+    "exportedAt": "2026-08-20T17:23:17.693Z",
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "229:496",
       "componentKey": "a352533396f05ca1612a52195f35d303c30e61e1",
       "url": "https://www.figma.com/design/adkqrNcmyIs16hBus808R7/DS%20AI%20LAB?node-id=229-496"
     },
-    "warnings": [],
-    "diagnostics": [],
+    "warnings": [
+      "Contenu de maquette différent sur 6 variantes, ex. « Severity=Success, Variant=Standard », « Severity=Success, Variant=Outlined », « Severity=Warning, Variant=Standard » (+3) : le contrat conserve chaque contenu dans « samples »."
+    ],
+    "diagnostics": [
+      {
+        "code": "UCM_EXPORT_INFO",
+        "severity": "warning",
+        "message": "Contenu de maquette différent sur 6 variantes, ex. « Severity=Success, Variant=Standard », « Severity=Success, Variant=Outlined », « Severity=Warning, Variant=Standard » (+3) : le contrat conserve chaque contenu dans « samples »."
+      }
+    ],
     "coverage": {
       "portable": "complete"
     }
@@ -118,7 +126,6 @@
             "children": [
               {
                 "slot": "button",
-                "alignSelf": "stretch",
                 "figmaLayer": "Button",
                 "composes": "Button"
               }
@@ -238,7 +245,6 @@
             "children": [
               {
                 "slot": "button",
-                "alignSelf": "stretch",
                 "figmaLayer": "Button",
                 "composes": "Button"
               }
@@ -359,7 +365,6 @@
             "children": [
               {
                 "slot": "button",
-                "alignSelf": "stretch",
                 "figmaLayer": "Button",
                 "composes": "Button"
               }
@@ -479,7 +484,6 @@
             "children": [
               {
                 "slot": "button",
-                "alignSelf": "stretch",
                 "figmaLayer": "Button",
                 "composes": "Button"
               }
@@ -600,7 +604,6 @@
             "children": [
               {
                 "slot": "button",
-                "alignSelf": "stretch",
                 "figmaLayer": "Button",
                 "composes": "Button"
               }
@@ -720,7 +723,6 @@
             "children": [
               {
                 "slot": "button",
-                "alignSelf": "stretch",
                 "figmaLayer": "Button",
                 "composes": "Button"
               }
@@ -923,7 +925,7 @@
           "nodeId": "260:1792"
         }
       ],
-      "sample": "s1"
+      "sample": "s2"
     },
     {
       "nodeId": "238:673",
@@ -958,7 +960,7 @@
           "nodeId": "238:679"
         }
       ],
-      "sample": "s1"
+      "sample": "s2"
     },
     {
       "nodeId": "260:1822",
@@ -988,7 +990,7 @@
           "nodeId": "260:1828"
         }
       ],
-      "sample": "s1"
+      "sample": "s3"
     },
     {
       "nodeId": "260:1810",
@@ -1023,7 +1025,7 @@
           "nodeId": "260:1816"
         }
       ],
-      "sample": "s1"
+      "sample": "s3"
     },
     {
       "nodeId": "260:1834",
@@ -1053,7 +1055,7 @@
           "nodeId": "260:1840"
         }
       ],
-      "sample": "s1"
+      "sample": "s4"
     },
     {
       "nodeId": "260:1846",
@@ -1088,7 +1090,7 @@
           "nodeId": "260:1852"
         }
       ],
-      "sample": "s1"
+      "sample": "s4"
     }
   ],
   "structure": {
@@ -1139,7 +1141,6 @@
         "children": [
           {
             "slot": "button",
-            "alignSelf": "stretch",
             "figmaLayer": "Button",
             "composes": "Button"
           }
@@ -1185,8 +1186,7 @@
       "border": {
         "kind": "stroke",
         "cssProperties": [
-          "border-color",
-          "border-width"
+          "box-shadow"
         ]
       },
       "ring": {
@@ -1334,7 +1334,166 @@
           "overrides": [
             {
               "figmaPath": [
-                "sizeWrapperButton",
+                ".sizeWrapperButton",
+                "Suivant"
+              ],
+              "text": "Action"
+            }
+          ]
+        }
+      ]
+    },
+    "s2": {
+      "args": {
+        "icon": true,
+        "title": true,
+        "action": true
+      },
+      "text": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "figmaLayer": "Titre",
+          "value": "Titre"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "figmaLayer": "Description",
+          "value": "Description"
+        }
+      ],
+      "composes": [
+        {
+          "figmaLayer": "Button",
+          "component": "Button",
+          "args": {
+            "color": "success",
+            "variant": "text",
+            "state": "default",
+            "iconLeft": false,
+            "iconRight": false,
+            "label": true,
+            "size": "small"
+          },
+          "slotPath": [
+            "action",
+            "button"
+          ],
+          "overrides": [
+            {
+              "figmaPath": [
+                ".sizeWrapperButton",
+                "Suivant"
+              ],
+              "text": "Action"
+            }
+          ]
+        }
+      ]
+    },
+    "s3": {
+      "args": {
+        "icon": true,
+        "title": true,
+        "action": true
+      },
+      "text": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "figmaLayer": "Titre",
+          "value": "Titre"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "figmaLayer": "Description",
+          "value": "Description"
+        }
+      ],
+      "composes": [
+        {
+          "figmaLayer": "Button",
+          "component": "Button",
+          "args": {
+            "color": "warning",
+            "variant": "text",
+            "state": "default",
+            "iconLeft": false,
+            "iconRight": false,
+            "label": true,
+            "size": "small"
+          },
+          "slotPath": [
+            "action",
+            "button"
+          ],
+          "overrides": [
+            {
+              "figmaPath": [
+                ".sizeWrapperButton",
+                "Suivant"
+              ],
+              "text": "Action"
+            }
+          ]
+        }
+      ]
+    },
+    "s4": {
+      "args": {
+        "icon": true,
+        "title": true,
+        "action": true
+      },
+      "text": [
+        {
+          "slotPath": [
+            "label",
+            "label"
+          ],
+          "figmaLayer": "Titre",
+          "value": "Titre"
+        },
+        {
+          "slotPath": [
+            "label",
+            "label-2"
+          ],
+          "figmaLayer": "Description",
+          "value": "Description"
+        }
+      ],
+      "composes": [
+        {
+          "figmaLayer": "Button",
+          "component": "Button",
+          "args": {
+            "color": "error",
+            "variant": "text",
+            "state": "default",
+            "iconLeft": false,
+            "iconRight": false,
+            "label": true,
+            "size": "small"
+          },
+          "slotPath": [
+            "action",
+            "button"
+          ],
+          "overrides": [
+            {
+              "figmaPath": [
+                ".sizeWrapperButton",
                 "Suivant"
               ],
               "text": "Action"
