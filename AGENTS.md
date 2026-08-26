@@ -302,6 +302,32 @@ Le raisonnement vit dans la spécification, en lien.
   ce qu’il ne sait structurellement pas porter, et `args` est publié comme un
   SOUS-ENSEMBLE. En cas de désaccord avec une donnée normative, la normative
   l’emporte.
+- `args` est la projection fermée de la même surface publique que `props` :
+  owner direct, puis unique wrapper de dimensions élu et exposé. Aucun repli
+  sur une clé brute, aucune autre instance exposée, aucun `SLOT`. Une collision
+  ou une provenance ambiguë s’omet au lieu de choisir une première occurrence.
+- Ce que la visibilité effective filtre est le relevé POSITIONNEL NU — `text`,
+  `override.text`, `swaps` — celui qui rapporte ce qu’un calque porte sans
+  rapporter la condition qui le masque. Une valeur d’`args` n’en est jamais :
+  le booléen qui la masque voyage dans le MÊME `args`, et le filtrer publierait
+  `false` pour une prop qui vaut `true`. D’où ce qui reste publié sous un calque
+  masqué : une valeur `false` d’`args`, un `override.visible`, et l’entrée d’une
+  dépendance. La frontière de la remontée est la racine du composant EXPORTÉ,
+  jamais l’instance de dépendance : un cadre optionnel masqué au-dessus d’une
+  dépendance ne montre rien de ce qu’elle contient. `isVisibleInSample` en est
+  l’unique autorité. Perte assumée, et lisible dans l’autre sens : le variant
+  qui affiche ce cadre publie, lui, ce que le relevé y trouve.
+- Un `SLOT` ne borne QUE les comparaisons positionnelles, qui supposent
+  l’instance isomorphe à son maître. Une lecture NOMINALE — joindre
+  `componentPropertyReferences` à une propriété déclarée — le traverse : couper
+  là retirerait la clé d’`args` sans que `swaps` reprenne la main, et le fait
+  n’aurait plus aucun propriétaire.
+- `propertySurfaces` est l’unique autorité sur la surface publique d’une
+  dépendance, parce que c’est elle qui a élu son wrapper, du même geste que
+  l’export autonome de cette dépendance. Un owner absent de l’index laisse la
+  dépendance SANS `args` : une surface fabriquée en dernier recours répondrait
+  sans wrapper, faute de pouvoir l’élire sans aller-retour, et donnerait une
+  seconde réponse à une question qui n’en admet qu’une.
 - On adresse par slot ce que CE contrat décrit, et par nom de calque Figma ce
   qu’il ne décrit pas — le nom de calque est la seule identité que deux contrats
   partagent. D’où l’asymétrie : `text` chez soi, `overrides` chez autrui.
@@ -311,8 +337,8 @@ Le raisonnement vit dans la spécification, en lien.
   calques du MAÎTRE, parce que Figma renomme le calque remplacé d’après son
   nouveau composant et que le nom du maître est le seul que le contrat de la
   dépendance publie. Bornes : on compare le composant PROPRIÉTAIRE et non la
-  variante, et le relevé s’arrête sur une dépendance de la dépendance comme
-  sous un calque déjà déclaré remplacé.
+  variante, et le relevé s’arrête sur une dépendance de la dépendance, un
+  `SLOT`, ou un calque déjà déclaré remplacé.
   → [spec](./UCM-EXPORTER-SPEC.md#9-échantillon-de-maquette)
 - `swaps` ne rapporte que ce qu’`args` ne sait pas dire. Une INSTANCE_SWAP native
   a déjà sa prop dans le contrat de la dépendance — `mergeIconRules` y pose

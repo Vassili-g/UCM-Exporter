@@ -849,10 +849,10 @@ export type SampleText = {
  *
  * La frontière n'est pas une convention mais une lecture : `InstanceNode.overrides`
  * dit ce que cette instance-ci a changé, par opposition à ce que son composant
- * fournit — qui appartient au contrat de la dépendance. Les champs retenus sont
- * les trois que le contrat sait porter sans décrire de rendu ; une surcharge de
- * couleur ou de dimension est écartée, et signale plutôt un manque du contrat
- * normatif de la dépendance.
+ * fournit — qui appartient au contrat de la dépendance. Les deux champs retenus
+ * sont le texte effectivement visible et la valeur de visibilité elle-même ;
+ * une surcharge de couleur ou de dimension est écartée, et signale plutôt un
+ * manque du contrat normatif de la dépendance.
  */
 export type SampleOverride = {
   /** Chemin de calques Figma relatif à l'instance, cible comprise. */
@@ -890,7 +890,9 @@ export type SampleSwap = {
  *
  * `args` emploie les clés PUBLIQUES du contrat de la dépendance et vaut pour un
  * SOUS-ENSEMBLE : une clé absente ne signifie pas que la maquette ne la pose
- * pas. Il porte aussi la valeur de l'axe d'états, sous la clé de cet axe, pour
+ * pas. Sa surface est fermée : owner direct, puis unique wrapper élu et exposé,
+ * sans repli sur une clé brute ni valeur de `SLOT`. Il porte aussi la valeur de
+ * l'axe d'états, sous la clé de cet axe, pour
  * qu'il puisse se rapprocher des `variants[].values` de ce contrat-là.
  */
 export type SampleInstance = {
@@ -931,7 +933,9 @@ export type SampleInstance = {
  *
  * `args` porte les valeurs appliquées des props de CE composant dans CE
  * variant : la visibilité réelle d'un slot optionnel, le texte d'une TEXT
- * property, le composant d'un INSTANCE_SWAP.
+ * property, le composant d'un INSTANCE_SWAP. Le texte et les remplacements
+ * suivent la visibilité effective du calque et de tous ses ancêtres ; les
+ * booléens `false` restent des valeurs explicites.
  */
 export type ContractSample = {
   args?: Record<string, string | boolean>;

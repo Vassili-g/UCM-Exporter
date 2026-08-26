@@ -14,8 +14,11 @@
  * composant parent.
  */
 import { compactName, rulesContainerOwner } from './extractRules';
+import { findWrapperReference } from './componentTree';
 import { getAllNodes, hasAncestorIn } from './exportableNodes';
 import { normalizePropKey } from './parsers';
+import { buildContractPropertySurface } from './propertySurface';
+import type { ContractPropertySurface } from './propertySurface';
 import type { ComposedDependency } from './types';
 
 /** Noms compactés des composants qui possèdent leur propre contrat. */
@@ -67,6 +70,15 @@ export type MasterInstanceDefaults = ReadonlyMap<
 /** Relevé des maîtres, indexé par l'id du composant maître d'une dépendance. */
 export type SwapDefaults = ReadonlyMap<string, MasterInstanceDefaults>;
 
+/** Surface publique d'un owner contracté, avec la source wrapper autorisée. */
+export type DependencyPropertySurface = ContractPropertySurface & {
+  /** Owner Figma du seul wrapper élu ; absent quand le composant est plat. */
+  wrapperOwnerId?: string;
+};
+
+/** Surfaces indexées par l'id du Component ou Component Set propriétaire. */
+export type DependencyPropertySurfaces = ReadonlyMap<string, DependencyPropertySurface>;
+
 /** Relevé de toute la matrice, avec ses éventuels écarts entre variants. */
 export type ComposedMatrixScan = ComposedInstancesScan & {
   /**
@@ -75,6 +87,8 @@ export type ComposedMatrixScan = ComposedInstancesScan & {
    * asynchrone. Cf. `MasterInstanceDefaults`.
    */
   swapDefaults: SwapDefaults;
+  /** Même surface publique que lors de l'export autonome de chaque dépendance. */
+  propertySurfaces: DependencyPropertySurfaces;
   /**
    * Écarts entre variants que le schéma courant ne doit jamais taire.
    *
@@ -180,23 +194,80 @@ type MasterInstance = { indexPath: string; masterPath: string[]; instance: Insta
  */
 function masterInstances(root: SceneNode): MasterInstance[] {
   const found: MasterInstance[] = [];
-  const visit = (node: SceneNode, indexes: readonly number[], names: readonly string[]) => {
-    const children = 'children' in node ? node.children : [];
-    children.forEach((child, index) => {
-      const nextIndexes = [...indexes, index];
-      const nextNames = [...names, child.name];
-      if (child.type === 'INSTANCE') {
-        found.push({
-          indexPath: nextIndexes.join('.'),
-          masterPath: nextNames,
-          instance: child,
-        });
-      }
-      visit(child, nextIndexes, nextNames);
-    });
-  };
-  visit(root, [], []);
+  const stack: Array<{
+    node: SceneNode;
+    indexes: readonly number[];
+    names: readonly string[];
+  }> = [{ node: root, indexes: [], names: [] }];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) break;
+    if (current.node !== root && current.node.type === 'INSTANCE') {
+      found.push({
+        indexPath: current.indexes.join('.'),
+        masterPath: [...current.names],
+        instance: current.node,
+      });
+    }
+    // Le contenu d'un SLOT est libre : il n'est pas isomorphe au maître et ne
+    // peut donc participer à aucune comparaison positionnelle fiable.
+    if (current.node.type === 'SLOT') continue;
+    const children = 'children' in current.node ? current.node.children : [];
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      const child = children[index];
+      stack.push({
+        node: child,
+        indexes: [...current.indexes, index],
+        names: [...current.names, child.name],
+      });
+    }
+  }
   return found;
+}
+
+/** Le Component ou Component Set qui possède l'API publique d'un maître. */
+function componentOwner(main: ComponentNode): ComponentNode | ComponentSetNode {
+  return main.parent?.type === 'COMPONENT_SET' ? main.parent : main;
+}
+
+/**
+ * Construit une surface par owner, depuis son variant de référence.
+ *
+ * Trente occurrences ou variants d'une même dépendance ne relancent donc ni
+ * l'élection du wrapper ni la construction du modèle. Les avertissements sont
+ * volontairement jetés : ils appartiennent à l'export autonome de cet owner.
+ */
+async function indexDependencyPropertySurfaces(
+  mains: readonly ComponentNode[],
+  contracted: ContractedNames,
+): Promise<Map<string, DependencyPropertySurface>> {
+  const representatives = new Map<string, {
+    owner: ComponentNode | ComponentSetNode;
+    component: ComponentNode;
+  }>();
+  for (const main of mains) {
+    const owner = componentOwner(main);
+    if (representatives.has(owner.id)) continue;
+    const component = owner.type === 'COMPONENT_SET'
+      ? owner.defaultVariant ?? main
+      : owner;
+    representatives.set(owner.id, { owner, component });
+  }
+
+  const entries = await Promise.all(Array.from(representatives, async ([ownerId, entry]) => {
+    const nested = await scanComposedInstances(entry.component, contracted);
+    const wrapper = await findWrapperReference(entry.component, [], nested.composed);
+    const surface: DependencyPropertySurface = {
+      ...buildContractPropertySurface(
+        entry.owner.componentPropertyDefinitions ?? {},
+        wrapper?.componentSet?.componentPropertyDefinitions,
+        [],
+      ),
+      ...(wrapper?.componentSet ? { wrapperOwnerId: wrapper.componentSet.id } : {}),
+    };
+    return [ownerId, surface] as const;
+  }));
+  return new Map(entries);
 }
 
 /**
@@ -217,8 +288,14 @@ export async function indexMasterInstances(
   );
 
   const defauts = new Map<string, { masterPath: string[]; component: string }>();
-  const frontieres: string[] = [];
+  const frontieres = new Set<string>();
   releves.forEach((releve, index) => {
+    const segments = releve.indexPath.split('.');
+    let prefix = segments[0] ?? '';
+    for (let depth = 1; depth < segments.length; depth += 1) {
+      if (frontieres.has(prefix)) return;
+      prefix += `.${segments[depth]}`;
+    }
     const main = mains[index];
     // Un maître illisible est déjà signalé là où il compte, sur le document
     // exporté. Ici son absence retire seulement une position du relevé : aucune
@@ -226,15 +303,11 @@ export async function indexMasterInstances(
     if (!main) return;
     const component = ownerComponentName(main);
     if (contracted.has(compactName(component))) {
-      frontieres.push(`${releve.indexPath}.`);
+      frontieres.add(releve.indexPath);
       return;
     }
     defauts.set(releve.indexPath, { masterPath: releve.masterPath, component });
   });
-
-  for (const cle of Array.from(defauts.keys())) {
-    if (frontieres.some((frontiere) => cle.startsWith(frontiere))) defauts.delete(cle);
-  }
   return defauts;
 }
 
@@ -364,6 +437,10 @@ export async function scanComposedMatrix(
     ] as const),
   );
   const swapDefaults = new Map(relevesMaitres);
+  const propertySurfaces = await indexDependencyPropertySurfaces(
+    Array.from(maitres.values()),
+    contracted,
+  );
 
   const signature = (dependency: ComposedDependency) =>
     [dependency.component, dependency.figmaLayer, dependency.visibilityProp ?? ''].join('\u0000');
@@ -400,5 +477,6 @@ export async function scanComposedMatrix(
     infos,
     mainByInstanceId,
     swapDefaults,
+    propertySurfaces,
   };
 }

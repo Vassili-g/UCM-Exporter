@@ -1773,7 +1773,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "Ce qu'un variant montre réellement dans Figma — jamais normatif.\n\nAucun contrôle du consommateur ne le compare au code : il donne le contexte qui permet de retrouver la maquette, sans en faire une obligation. Il ne contient que des valeurs qu'un développeur pourrait écrire lui-même — du texte, un booléen, une valeur d'enum — jamais un token, une dimension ou un layout ; une donnée de rendu qui manquerait ici manque au contrat normatif, et c'est là qu'il faut la corriger.\n\n`args` porte les valeurs appliquées des props de CE composant dans CE variant : la visibilité réelle d'un slot optionnel, le texte d'une TEXT property, le composant d'un INSTANCE_SWAP."
+      "description": "Ce qu'un variant montre réellement dans Figma — jamais normatif.\n\nAucun contrôle du consommateur ne le compare au code : il donne le contexte qui permet de retrouver la maquette, sans en faire une obligation. Il ne contient que des valeurs qu'un développeur pourrait écrire lui-même — du texte, un booléen, une valeur d'enum — jamais un token, une dimension ou un layout ; une donnée de rendu qui manquerait ici manque au contrat normatif, et c'est là qu'il faut la corriger.\n\n`args` porte les valeurs appliquées des props de CE composant dans CE variant : la visibilité réelle d'un slot optionnel, le texte d'une TEXT property, le composant d'un INSTANCE_SWAP. Le texte et les remplacements suivent la visibilité effective du calque et de tous ses ancêtres ; les booléens `false` restent des valeurs explicites."
     },
     "SampleText": {
       "type": "object",
@@ -1852,7 +1852,7 @@
         "component"
       ],
       "additionalProperties": false,
-      "description": "L'usage exact d'une dépendance dans la maquette.\n\n`args` emploie les clés PUBLIQUES du contrat de la dépendance et vaut pour un SOUS-ENSEMBLE : une clé absente ne signifie pas que la maquette ne la pose pas. Il porte aussi la valeur de l'axe d'états, sous la clé de cet axe, pour qu'il puisse se rapprocher des `variants[].values` de ce contrat-là."
+      "description": "L'usage exact d'une dépendance dans la maquette.\n\n`args` emploie les clés PUBLIQUES du contrat de la dépendance et vaut pour un SOUS-ENSEMBLE : une clé absente ne signifie pas que la maquette ne la pose pas. Sa surface est fermée : owner direct, puis unique wrapper élu et exposé, sans repli sur une clé brute ni valeur de `SLOT`. Il porte aussi la valeur de l'axe d'états, sous la clé de cet axe, pour qu'il puisse se rapprocher des `variants[].values` de ce contrat-là."
     },
     "SampleOverride": {
       "type": "object",
@@ -1875,7 +1875,7 @@
         "figmaPath"
       ],
       "additionalProperties": false,
-      "description": "Ce que CE parent a surchargé dans une instance de dépendance.\n\nLa frontière n'est pas une convention mais une lecture : `InstanceNode.overrides` dit ce que cette instance-ci a changé, par opposition à ce que son composant fournit — qui appartient au contrat de la dépendance. Les champs retenus sont les trois que le contrat sait porter sans décrire de rendu ; une surcharge de couleur ou de dimension est écartée, et signale plutôt un manque du contrat normatif de la dépendance."
+      "description": "Ce que CE parent a surchargé dans une instance de dépendance.\n\nLa frontière n'est pas une convention mais une lecture : `InstanceNode.overrides` dit ce que cette instance-ci a changé, par opposition à ce que son composant fournit — qui appartient au contrat de la dépendance. Les deux champs retenus sont le texte effectivement visible et la valeur de visibilité elle-même ; une surcharge de couleur ou de dimension est écartée, et signale plutôt un manque du contrat normatif de la dépendance."
     },
     "SampleSwap": {
       "type": "object",

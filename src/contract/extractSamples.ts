@@ -24,13 +24,16 @@
  *    rapporte pas, lus en comparant l'instance à son maître.
  */
 import { ownerComponentName } from './composedComponents';
-import type { MasterInstanceDefaults, SwapDefaults } from './composedComponents';
-import { isStaticallyHidden, nearestAncestorIn } from './exportableNodes';
+import type {
+  DependencyPropertySurface,
+  DependencyPropertySurfaces,
+  MasterInstanceDefaults,
+  SwapDefaults,
+} from './composedComponents';
 import type { ComposedInstances } from './exportableNodes';
 import type { PublishedNodePaths } from './extractLayout';
 import { textSlots } from './extractVariantTypography';
 import {
-  extractContractPropertyModel,
   isDisabledStateValue,
   isStateProperty,
   normalizePropKey,
@@ -39,6 +42,7 @@ import {
 import type { ContractPropertyModel } from './parsers';
 import { figmaPath } from './slotRelations';
 import type {
+  ComposedDependency,
   ContractSample,
   SampleInstance,
   SampleOverride,
@@ -63,33 +67,74 @@ function componentPropertiesOf(instance: InstanceNode): ComponentProperties {
 }
 
 /**
+ * Visibilité effective d'un node dans l'instantané courant, `owner` inclus.
+ *
+ * Contrairement à `isStaticallyHidden`, une liaison dynamique ne transforme
+ * pas `false` en « potentiellement visible » : l'échantillon décrit ce que la
+ * maquette affiche maintenant.
+ *
+ * Ce que cette lecture filtre n'est PAS « tout ce qui est rendu » : c'est le
+ * relevé POSITIONNEL NU — `text`, `override.text`, `swaps` —, celui qui rapporte
+ * ce qu'un calque porte sans rapporter la condition qui le masque. Une valeur
+ * d'`args` n'en est jamais : le booléen qui la masque voyage dans le MÊME
+ * `args`, et la reconstruction n'a donc besoin de rien retirer pour être juste.
+ * Filtrer `args` publierait au contraire `false` pour une prop qui vaut `true`.
+ *
+ * La frontière est toujours la racine du composant exporté, jamais l'instance
+ * de dépendance : un cadre optionnel masqué AU-DESSUS d'une dépendance ne montre
+ * rien de ce qu'elle contient. Elle se compose — `node` visible jusqu'à son
+ * instance, puis l'instance visible jusqu'à la racine — pour que la remontée
+ * garde au passage sa garde de confinement.
+ */
+export function isVisibleInSample(node: SceneNode, owner: SceneNode): boolean {
+  let current: BaseNode | null | undefined = node;
+  while (current) {
+    if ('visible' in current && current.visible === false) return false;
+    if (current === owner) return true;
+    current = current.parent;
+  }
+  return false;
+}
+
+/**
  * Le calque que chaque liaison `mainComponent` de cette instance désigne.
  *
  * Le relevé s'arrête sur une dépendance de la dépendance : ses calques sont
  * liés à SES propriétés, et un nom technique homonyme y volerait la réponse.
  * Il ne descend pas non plus sous un calque déjà lié — une INSTANCE_SWAP place
  * un composant entier, dont les liaisons internes appartiennent à celui-ci.
+ *
+ * Un `SLOT`, en revanche, ne coupe RIEN ici. Cette borne-là appartient aux
+ * comparaisons POSITIONNELLES, qui supposent l'instance isomorphe à son maître ;
+ * cette lecture-ci est NOMINALE — elle joint `componentPropertyReferences` à une
+ * propriété déclarée. Couper sur un `SLOT` retirerait la clé d'`args` ET la
+ * cible de `viaProps`, sans que `swaps` reprenne la main : le fait n'aurait plus
+ * aucun propriétaire.
  */
 function swapTargets(
   scope: InstanceNode,
   composed: ComposedInstances,
 ): Map<string, InstanceNode> {
   const cibles = new Map<string, InstanceNode>();
-  const visit = (node: SceneNode) => {
-    const children = 'children' in node ? node.children : [];
-    for (const child of children) {
-      if (composed.has(child.id)) continue;
-      const reference = swapReferenceOf(child);
-      if (reference && child.type === 'INSTANCE') {
+  const stack: SceneNode[] = [scope];
+  while (stack.length > 0) {
+    const node = stack.pop();
+    if (!node) break;
+    if (node !== scope) {
+      if (composed.has(node.id)) continue;
+      const reference = swapReferenceOf(node);
+      if (reference && node.type === 'INSTANCE') {
         // L'ordre du document tranche : Figma interdit deux calques liés à la
         // même INSTANCE_SWAP, mais la lecture ne doit pas en dépendre.
-        if (!cibles.has(reference)) cibles.set(reference, child);
+        if (!cibles.has(reference)) cibles.set(reference, node);
         continue;
       }
-      visit(child);
     }
-  };
-  visit(scope);
+    const children = 'children' in node ? node.children : [];
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      stack.push(children[index]);
+    }
+  }
   return cibles;
 }
 
@@ -126,26 +171,31 @@ function argumentsOf(
   resolveSwap: (figmaName: string) => InstanceNode | undefined,
   mainByInstanceId: ReadonlyMap<string, ComponentNode>,
   viaProps: Set<string>,
+  acceptedKeys?: ReadonlySet<string>,
 ): void {
   for (const [figmaName, property] of Object.entries(properties)) {
     const brute = normalizePropKey(figmaName);
     // Une VARIANT property est indexée sans son « #id », les autres avec.
     const key = model.publicPropertyKeyByFigmaName.get(figmaName)
-      ?? model.publicVariantKeyByRawKey.get(brute)
-      ?? brute;
+      ?? model.publicVariantKeyByRawKey.get(brute);
+    // Une propriété rejetée du modèle public ne doit jamais réapparaître sous
+    // sa clé brute. Même garde pour une clé du wrapper écartée par collision.
+    if (!key || (acceptedKeys && !acceptedKeys.has(key))) continue;
 
     let value: string | boolean | undefined;
     let cible: InstanceNode | undefined;
     if (property.type === 'VARIANT' && typeof property.value === 'string') {
       value = normalizePropValue(property.value);
+    } else if (property.type === 'BOOLEAN' && typeof property.value === 'boolean') {
+      value = property.value;
+    } else if (property.type === 'TEXT' && typeof property.value === 'string') {
+      value = property.value;
     } else if (property.type === 'INSTANCE_SWAP') {
       cible = resolveSwap(figmaName);
       const main = cible ? mainByInstanceId.get(cible.id) : undefined;
       // Un remplacement qu'on ne sait pas nommer est OMIS, jamais deviné : la
       // règle 2 interdit de dégrader, et `swaps` reste alors le seul relevé.
       value = main ? ownerComponentName(main) : undefined;
-    } else {
-      value = property.value;
     }
 
     // L'axe d'états n'est pas une prop — le contrat de la dépendance le publie
@@ -177,17 +227,15 @@ type InstanceArguments = {
 };
 
 /**
- * Les valeurs appliquées d'une instance, y compris celles de ses instances
- * exposées.
+ * Les valeurs appliquées d'une instance et de son seul wrapper public élu.
  *
- * Une instance exposée n'est pas un interne : Figma remonte ses propriétés au
- * niveau de l'instance englobante, elles font donc partie de sa surface
- * publique. C'est ce qui rattrape une prop portée par le wrapper de dimensions
- * d'une dépendance — `size` chez un Button — que `componentProperties` seul ne
- * voit pas.
+ * Figma peut remonter plusieurs instances exposées au niveau de l'instance
+ * englobante. Seule celle dont l'owner est le wrapper de dimensions élu lors
+ * de l'export autonome appartient toutefois à la surface publique du contrat.
+ * Les autres restent des détails internes et ne sont jamais aplaties ici.
  *
  * L'ordre suit la règle de fusion de l'export : les clés du composant lui-même
- * l'emportent, celles d'une instance exposée ne comblent que les trous.
+ * l'emportent, celles du wrapper élu ne comblent que les trous.
  *
  * Le relevé des cibles d'INSTANCE_SWAP est PARESSEUX : un composé dont aucune
  * dépendance n'expose de remplacement natif ne parcourt aucun sous-arbre de
@@ -195,7 +243,7 @@ type InstanceArguments = {
  */
 function instanceArguments(
   instance: InstanceNode,
-  modelOf: (instance: InstanceNode) => ContractPropertyModel | null,
+  surface: DependencyPropertySurface,
   composed: ComposedInstances,
   mainByInstanceId: ReadonlyMap<string, ComponentNode>,
 ): InstanceArguments {
@@ -209,26 +257,32 @@ function instanceArguments(
     };
   };
 
-  const model = modelOf(instance);
-  if (model) {
-    argumentsOf(
-      componentPropertiesOf(instance), model, args,
-      resolveurPour(instance), mainByInstanceId, viaProps,
-    );
-  }
+  argumentsOf(
+    componentPropertiesOf(instance), surface.direct, args,
+    resolveurPour(instance), mainByInstanceId, viaProps,
+  );
 
-  let exposees: readonly InstanceNode[] = [];
-  try {
-    exposees = instance.exposedInstances ?? [];
-  } catch {
-    exposees = [];
-  }
-  for (const exposee of exposees) {
-    const exposeeModel = modelOf(exposee);
-    if (exposeeModel) {
+  if (surface.wrapper && surface.wrapperOwnerId) {
+    let exposees: readonly InstanceNode[] = [];
+    try {
+      exposees = instance.exposedInstances ?? [];
+    } catch {
+      exposees = [];
+    }
+    const wrappers = exposees.filter((exposee) => {
+      const main = mainByInstanceId.get(exposee.id);
+      if (!main) return false;
+      const owner = main.parent?.type === 'COMPONENT_SET' ? main.parent : main;
+      return owner.id === surface.wrapperOwnerId;
+    });
+    // Zéro ou plusieurs correspondances ne donnent aucune réponse fiable :
+    // jamais de première occurrence arbitraire.
+    if (wrappers.length === 1) {
+      const wrapper = wrappers[0];
       argumentsOf(
-        componentPropertiesOf(exposee), exposeeModel, args,
-        resolveurPour(exposee), mainByInstanceId, viaProps,
+        componentPropertiesOf(wrapper), surface.wrapper.model, args,
+        resolveurPour(wrapper), mainByInstanceId, viaProps,
+        surface.wrapper.acceptedKeys,
       );
     }
   }
@@ -247,8 +301,12 @@ function instanceArguments(
  */
 function overridesOf(
   instance: InstanceNode,
+  root: SceneNode,
   nodesById: ReadonlyMap<string, SceneNode>,
 ): Array<{ node: SceneNode; override: SampleOverride }> {
+  // Une instance que la maquette ne montre pas n'affiche aucun de ses textes.
+  // Le calcul se fait une fois pour tout le relevé, pas par surcharge.
+  const instanceVisible = isVisibleInSample(instance, root);
   let releves: readonly { id: string; overriddenFields: NodeChangeProperty[] }[] = [];
   try {
     releves = instance.overrides ?? [];
@@ -269,7 +327,12 @@ function overridesOf(
     const champs = new Set<string>(releve.overriddenFields ?? []);
     const override: SampleOverride = { figmaPath: [] };
     let porte = false;
-    if (champs.has('characters') && node.type === 'TEXT') {
+    if (
+      champs.has('characters')
+      && node.type === 'TEXT'
+      && instanceVisible
+      && isVisibleInSample(node, instance)
+    ) {
       override.text = node.characters;
       porte = true;
     }
@@ -299,6 +362,7 @@ export function extractVariantSample(
   composed: ComposedInstances,
   mainByInstanceId: ReadonlyMap<string, ComponentNode>,
   swapDefaults: SwapDefaults = new Map(),
+  propertySurfaces: DependencyPropertySurfaces = new Map(),
 ): ContractSample {
   const sample: ContractSample = {};
 
@@ -309,11 +373,18 @@ export function extractVariantSample(
   const texts: SampleText[] = [];
   for (const { slotPath, textNode, leaf } of textSlots(source.component, iconNames, composed)) {
     if (textNode.componentPropertyReferences?.characters) continue;
+    if (!isVisibleInSample(textNode, source.component)) continue;
     texts.push({ slotPath, figmaLayer: leaf.name, value: textNode.characters });
   }
   if (texts.length > 0) sample.text = texts;
 
-  const composes = dependencySamples(source, composed, mainByInstanceId, swapDefaults);
+  const composes = dependencySamples(
+    source,
+    composed,
+    mainByInstanceId,
+    swapDefaults,
+    propertySurfaces,
+  );
   if (composes.length > 0) sample.composes = composes;
 
   return sample;
@@ -325,15 +396,22 @@ export function extractVariantSample(
  * Figma ne rapporte pas un remplacement : `NodeChangeProperty` ne contient pas
  * `mainComponent`, et `InstanceNode.overrides` reste donc muet. Il se lit par
  * comparaison avec le composant maître, position par position — la structure
- * d'une instance est isomorphe à celle de son maître, puisqu'on n'y ajoute, n'y
- * retire et n'y réordonne aucun calque.
+ * d'une instance est isomorphe à celle de son maître hors contenu libre d'un
+ * SLOT.
  *
  * Deux bornes, qui sont la frontière de composition elle-même :
  *
  * 1. On ne descend pas dans une dépendance de la dépendance : ce qu'elle
  *    contient appartient à SON contrat, et elle a son propre échantillon.
- * 2. On ne descend pas sous un calque déjà déclaré remplacé : son contenu vient
- *    d'un autre composant, et plus aucune position n'y correspond au maître.
+ * 2. On ne descend ni dans le contenu libre d'un SLOT, ni sous un calque déjà
+ *    déclaré remplacé : son contenu vient d'un autre composant, et plus aucune
+ *    position n'y correspond au maître.
+ *
+ * Le relevé suit la visibilité effective, racine du composant exportée comprise.
+ * La perte est assumée et se lit dans l'autre sens : un remplacement posé sous
+ * un cadre que CE variant masque n'est pas publié, parce que l'échantillon dit
+ * ce que la maquette montre, variant par variant — le variant qui affiche ce
+ * cadre publie, lui, le remplacement.
  *
  * La comparaison porte sur le composant PROPRIÉTAIRE, jamais sur la variante :
  * choisir une autre variante d'un même component set n'est pas un
@@ -348,37 +426,54 @@ export function extractVariantSample(
  */
 function swapsOf(
   instance: InstanceNode,
+  root: SceneNode,
   defaults: MasterInstanceDefaults,
   composed: ComposedInstances,
   mainByInstanceId: ReadonlyMap<string, ComponentNode>,
   viaProps: ReadonlySet<string>,
 ): SampleSwap[] {
   const swaps: SampleSwap[] = [];
-  const visit = (node: SceneNode, indexes: readonly number[]) => {
-    const children = 'children' in node ? node.children : [];
-    children.forEach((child, index) => {
-      // Un calque que rien ne peut afficher ne montre rien.
-      if (isStaticallyHidden(child)) return;
-      if (composed.has(child.id)) return;
-      const position = [...indexes, index];
-      if (child.type === 'INSTANCE') {
-        // `args` répond déjà pour ce calque : le contenu vient d'ailleurs, et
-        // plus aucune position n'y correspond au maître — comme après un swap.
-        if (viaProps.has(child.id)) return;
-        const defaut = defaults.get(position.join('.'));
-        const main = mainByInstanceId.get(child.id);
-        if (defaut && main) {
-          const component = ownerComponentName(main);
-          if (component !== defaut.component) {
-            swaps.push({ masterPath: defaut.masterPath, component });
-            return;
-          }
+  const stack: Array<{
+    node: SceneNode;
+    indexes: readonly number[];
+    visible: boolean;
+  }> = [{ node: instance, indexes: [], visible: isVisibleInSample(instance, root) }];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) break;
+    if (
+      !current.visible
+      || (current.node !== instance && composed.has(current.node.id))
+    ) continue;
+
+    if (current.node !== instance && current.node.type === 'INSTANCE') {
+      // `args` répond déjà pour ce calque : le contenu vient d'ailleurs, et
+      // plus aucune position n'y correspond au maître — comme après un swap.
+      if (viaProps.has(current.node.id)) continue;
+      const defaut = defaults.get(current.indexes.join('.'));
+      const main = mainByInstanceId.get(current.node.id);
+      if (defaut && main) {
+        const component = ownerComponentName(main);
+        if (component !== defaut.component) {
+          swaps.push({ masterPath: defaut.masterPath, component });
+          continue;
         }
       }
-      visit(child, position);
-    });
-  };
-  visit(instance, []);
+    }
+
+    if (current.node.type === 'SLOT') continue;
+    const children = 'children' in current.node ? current.node.children : [];
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      const child = children[index];
+      stack.push({
+        node: child,
+        indexes: [...current.indexes, index],
+        // La visibilité héritée voyage avec le parcours : chaque calque est
+        // lu une seule fois, même sur un arbre très profond.
+        visible: current.visible && child.visible !== false,
+      });
+    }
+  }
   return swaps;
 }
 
@@ -396,55 +491,48 @@ function dependencySamples(
   composed: ComposedInstances,
   mainByInstanceId: ReadonlyMap<string, ComponentNode>,
   swapDefaults: SwapDefaults,
+  propertySurfaces: DependencyPropertySurfaces,
 ): SampleInstance[] {
-  const instances = source.component
-    .findAll((node) => composed.has(node.id))
-    .filter((node): node is InstanceNode => node.type === 'INSTANCE');
-  if (instances.length === 0) return [];
+  const index = indexSampleDependencies(source.component, composed);
+  if (index.entries.length === 0) return [];
 
-  const modelesParOwner = new Map<string, ContractPropertyModel>();
-  const modelOf = (instance: InstanceNode): ContractPropertyModel | null => {
+  // `propertySurfaces` est l'UNIQUE autorité sur la surface publique d'une
+  // dépendance : c'est elle qui a élu le wrapper, du même geste que l'export
+  // autonome de cette dépendance. En fabriquer une ici en dernier recours
+  // donnerait une seconde réponse — sans wrapper, faute de pouvoir l'élire
+  // sans aller-retour — à une question qui n'en admet qu'une. Un owner absent
+  // de l'index laisse donc la dépendance sans `args`, jamais avec des `args`
+  // que l'export de cette dépendance contredirait.
+  const surfaceOf = (instance: InstanceNode): DependencyPropertySurface | null => {
     const main = mainByInstanceId.get(instance.id);
     if (!main) return null;
     const owner = main.parent?.type === 'COMPONENT_SET' ? main.parent : main;
-    const connu = modelesParOwner.get(owner.id);
-    if (connu) return connu;
-    // Les avertissements de ce modèle appartiennent à l'export de la
-    // dépendance, qui les produira sur son propre document.
-    //
-    // Le repli sur `{}` n'est pas de la superstition : un composant maître peut
-    // n'exposer aucune propriété, et l'échantillon ne doit jamais être la raison
-    // pour laquelle un export échoue.
-    const model = extractContractPropertyModel(owner.componentPropertyDefinitions ?? {}, []);
-    modelesParOwner.set(owner.id, model);
-    return model;
+    return propertySurfaces.get(owner.id) ?? null;
   };
 
   const echantillons = new Map<string, SampleInstance>();
   const racines: SampleInstance[] = [];
   const enfantsPar = new Map<string, SampleInstance[]>();
 
-  for (const instance of instances) {
-    const dependency = composed.get(instance.id);
-    if (!dependency) continue;
+  for (const { instance, dependency, parent } of index.entries) {
     const echantillon: SampleInstance = {
       figmaLayer: instance.name,
       component: dependency.component,
     };
-    const { args, viaProps } = instanceArguments(
-      instance, modelOf, composed, mainByInstanceId,
-    );
+    const surface = surfaceOf(instance);
+    const { args, viaProps } = surface
+      ? instanceArguments(instance, surface, composed, mainByInstanceId)
+      : { args: {}, viaProps: new Set<string>() };
     if (Object.keys(args).length > 0) echantillon.args = args;
 
     const main = mainByInstanceId.get(instance.id);
     const defauts = main ? swapDefaults.get(main.id) : undefined;
     const swaps = defauts
-      ? swapsOf(instance, defauts, composed, mainByInstanceId, viaProps)
+      ? swapsOf(instance, source.component, defauts, composed, mainByInstanceId, viaProps)
       : [];
     if (swaps.length > 0) echantillon.swaps = swaps;
 
     echantillons.set(instance.id, echantillon);
-    const parent = nearestAncestorIn(instance, source.component, composed);
     if (!parent) {
       // Une dépendance que l'arbre publié ne situe pas est déjà signalée
       // ailleurs, et absente de `composes` : la publier sans chemin ferait
@@ -454,22 +542,77 @@ function dependencySamples(
       racines.push(echantillon);
       continue;
     }
-    const parentInstance = instances.find(
-      (candidate) => composed.get(candidate.id) === parent,
-    );
-    if (!parentInstance) continue;
-    const fratrie = enfantsPar.get(parentInstance.id) ?? [];
+    const fratrie = enfantsPar.get(parent.id) ?? [];
     fratrie.push(echantillon);
-    enfantsPar.set(parentInstance.id, fratrie);
+    enfantsPar.set(parent.id, fratrie);
   }
 
-  attribuerSurcharges(instances, source.component, composed, echantillons);
+  attribuerSurcharges(
+    index.entries.map(({ instance }) => instance),
+    source.component,
+    echantillons,
+    index.nodesById,
+    index.ownerByNodeId,
+  );
 
   for (const [id, enfants] of enfantsPar) {
     const parent = echantillons.get(id);
     if (parent && enfants.length > 0) parent.composes = enfants;
   }
   return racines;
+}
+
+type IndexedSampleDependency = {
+  instance: InstanceNode;
+  dependency: ComposedDependency;
+  /** Dépendance propriétaire immédiate, absente pour une racine. */
+  parent: InstanceNode | null;
+};
+
+/**
+ * Indexe en une passe les dépendances et le propriétaire de chaque node.
+ *
+ * Transporter le propriétaire pendant la descente évite de remonter les parents
+ * pour chaque dépendance et chaque surcharge. L'ordre reste celui du document.
+ */
+function indexSampleDependencies(
+  root: ComponentNode,
+  composed: ComposedInstances,
+): {
+  entries: IndexedSampleDependency[];
+  nodesById: Map<string, SceneNode>;
+  ownerByNodeId: Map<string, InstanceNode>;
+} {
+  const entries: IndexedSampleDependency[] = [];
+  const nodesById = new Map<string, SceneNode>();
+  const ownerByNodeId = new Map<string, InstanceNode>();
+
+  const stack: Array<{ node: SceneNode; owner: InstanceNode | null }> = [
+    { node: root, owner: null },
+  ];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) break;
+    const { node, owner } = current;
+    nodesById.set(node.id, node);
+    // Le node qui EST une dépendance appartient encore à son parent ; ses
+    // descendants, eux, lui appartiennent. C'est la sémantique exacte de
+    // `nearestAncestorIn`, sans une remontée par trouvaille.
+    if (owner) ownerByNodeId.set(node.id, owner);
+
+    let childOwner = owner;
+    const dependency = composed.get(node.id);
+    if (dependency && node.type === 'INSTANCE') {
+      entries.push({ instance: node, dependency, parent: owner });
+      childOwner = node;
+    }
+
+    const children = 'children' in node ? node.children : [];
+    for (let index = children.length - 1; index >= 0; index -= 1) {
+      stack.push({ node: children[index], owner: childOwner });
+    }
+  }
+  return { entries, nodesById, ownerByNodeId };
 }
 
 /**
@@ -482,29 +625,24 @@ function dependencySamples(
  * router plutôt que présumer rend la lecture juste dans les deux cas, et le
  * dédoublonnage par node absorbe une éventuelle double déclaration.
  *
- * Le texte que le bouton d'une alerte affiche appartient au bouton, pas à
- * l'alerte : sans ce routage, un composé publierait sous une dépendance des
- * valeurs qui en concernent une autre.
+ * Le contenu d'une dépendance imbriquée lui appartient, pas à son parent : sans
+ * ce routage, un composé publierait sous une dépendance des valeurs qui en
+ * concernent une autre.
  */
 function attribuerSurcharges(
   instances: readonly InstanceNode[],
-  racine: SceneNode,
-  composed: ComposedInstances,
+  root: SceneNode,
   echantillons: ReadonlyMap<string, SampleInstance>,
+  nodesById: ReadonlyMap<string, SceneNode>,
+  ownerByNodeId: ReadonlyMap<string, InstanceNode>,
 ): void {
-  const parInstance = new Map(instances.map((instance) => [instance.id, instance] as const));
   const vues = new Set<string>();
 
   for (const instance of instances) {
-    // Un seul parcours du sous-arbre, pour résoudre les identifiants du relevé.
-    const nodesById = new Map<string, SceneNode>();
-    for (const node of instance.findAll(() => true)) nodesById.set(node.id, node);
-    nodesById.set(instance.id, instance);
-
-    for (const { node, override } of overridesOf(instance, nodesById)) {
+    for (const { node, override } of overridesOf(instance, root, nodesById)) {
       if (vues.has(node.id)) continue;
       vues.add(node.id);
-      const proprietaire = trouverProprietaire(node, racine, composed, parInstance);
+      const proprietaire = ownerByNodeId.get(node.id);
       if (!proprietaire) continue;
       const echantillon = echantillons.get(proprietaire.id);
       if (!echantillon) continue;
@@ -512,21 +650,6 @@ function attribuerSurcharges(
       (echantillon.overrides ??= []).push(override);
     }
   }
-}
-
-/** L'instance contractée la plus proche qui contient ce node, si on la connaît. */
-function trouverProprietaire(
-  node: SceneNode,
-  racine: SceneNode,
-  composed: ComposedInstances,
-  parInstance: ReadonlyMap<string, InstanceNode>,
-): InstanceNode | null {
-  const dependance = nearestAncestorIn(node, racine, composed);
-  if (!dependance) return null;
-  for (const instance of parInstance.values()) {
-    if (composed.get(instance.id) === dependance) return instance;
-  }
-  return null;
 }
 
 /**
@@ -555,10 +678,13 @@ export function sampleVarianceNotice(
 
   // Le contenu le plus répandu sert de référence : ce sont les autres qui
   // s'en écartent, et que le message nomme.
+  const counts = new Map<string, number>();
+  for (const variant of references) {
+    counts.set(variant.sample, (counts.get(variant.sample) ?? 0) + 1);
+  }
   let majoritaire = '';
   let meilleur = 0;
-  for (const cle of distincts) {
-    const compte = references.filter((variant) => variant.sample === cle).length;
+  for (const [cle, compte] of counts) {
     if (compte > meilleur) {
       meilleur = compte;
       majoritaire = cle;
