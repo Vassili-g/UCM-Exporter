@@ -612,6 +612,55 @@ test('indexMasterInstances situe chaque instance du maître par sa position', as
   ]);
 });
 
+test('scanComposedMatrix indexe la surface directe et le seul wrapper élu', async () => {
+  const wrapperOwner = {
+    type: 'COMPONENT_SET',
+    id: 'wrapper-owner',
+    name: 'Wrapper',
+    componentPropertyDefinitions: {
+      Scale: { type: 'VARIANT', variantOptions: ['S', 'L'], defaultValue: 'S' },
+    },
+  } as unknown as ComponentSetNode;
+  const wrapperMain = {
+    type: 'COMPONENT',
+    id: 'wrapper-main',
+    name: 'Scale=S',
+    parent: wrapperOwner,
+  } as unknown as ComponentNode;
+  const wrapperReference = instance('wrapper-reference', 'Wrapper layer', null, {
+    boundVariables: dimensionsLiees,
+    componentProperties: { Scale: { type: 'VARIANT', value: 'S' } },
+    getMainComponentAsync: async () => wrapperMain,
+  });
+  const branchMain = racine('branch-main', 'Mode=Default', [wrapperReference]);
+  const branchOwner = {
+    type: 'COMPONENT_SET',
+    id: 'branch-owner',
+    name: 'Branch',
+    defaultVariant: branchMain,
+    componentPropertyDefinitions: {
+      Mode: { type: 'VARIANT', variantOptions: ['Default', 'Quiet'], defaultValue: 'Default' },
+    },
+  } as unknown as ComponentSetNode;
+  (branchMain as unknown as { parent: BaseNode }).parent = branchOwner;
+
+  const exposedWrapper = instance('wrapper-instance', 'Wrapper layer', null, {
+    getMainComponentAsync: async () => wrapperMain,
+  });
+  const branch = instance('branch', 'Branch layer', null, {
+    children: [exposedWrapper],
+    exposedInstances: [exposedWrapper],
+    getMainComponentAsync: async () => branchMain,
+  });
+  const root = racine('root', 'Root', [branch]);
+
+  const scan = await scanComposedMatrix([root], root, new Set(['branch']));
+  const surface = scan.propertySurfaces.get(branchOwner.id);
+
+  assert.equal(surface?.wrapperOwnerId, wrapperOwner.id);
+  assert.deepEqual(Object.keys(surface?.props ?? {}).sort(), ['mode', 'scale']);
+});
+
 test('le relevé d’un maître s’arrête sur les dépendances qu’il embarque', async () => {
   // Ce que le bouton d'une Alert contient appartient au contrat de Button :
   // le relever ici rangerait une trouvaille sous un propriétaire qui ne la

@@ -102,6 +102,10 @@ chemin et la cible native (`visible`, `characters`, `mainComponent`). Chaque
 du calque dans CE variant. Les props propres au wrapper sont fusionnées avant ce
 relevé ; les internes d'une dépendance composée restent dans le contrat de cette
 dépendance.
+Cette fusion conserve sa provenance : la surface publique est celle du
+Component ou Component Set propriétaire, complétée par le seul wrapper de
+dimensions élu. Deux occurrences exposées, ou une instance exposée qui ne vient
+pas de ce wrapper, ne peuvent jamais devenir une source implicite de props.
 Deux règles auto-détectées :
 - *Convention State* : un axe `State`/`Status` décrit des états d'interaction
   dérivés du runtime (hover, focus…), pas des choix d'API — il est donc **exclu
@@ -744,6 +748,38 @@ calque. `composes` donne l'usage de chaque dépendance : ses `args` aux clés
 publiques de SON contrat, `overrides` pour ce que ce parent a écrit dedans, et
 `swaps` pour les calques dont il y a remplacé le composant.
 
+`args` est une projection fermée de l'API publique, jamais une copie libre de
+`componentProperties`. Une clé n'entre que si le modèle de propriétés l'a
+acceptée ; une collision ou une propriété rejetée ne réapparaît donc pas sous
+son nom brut. Les valeurs portables sont celles de `VARIANT`, `BOOLEAN`, `TEXT`
+et d'un `INSTANCE_SWAP` dont le composant peut être nommé. `SLOT` est omis : son
+contenu libre n'est pas une valeur qu'un développeur peut reconstruire depuis
+ce champ. Pour une dépendance, le moteur lit d'abord les propriétés de son owner,
+puis celles de l'unique occurrence exposée qui appartient au wrapper élu lors
+de l'export autonome. Zéro ou plusieurs occurrences correspondantes rendent ce
+complément indécidable et il est omis, sans choisir la première.
+
+Le **relevé positionnel nu** suit la visibilité **effective** de l'instantané : le
+calque et tous ses parents jusqu'à la racine du composant EXPORTÉ doivent être
+visibles — pas jusqu'à l'instance de dépendance, car un cadre optionnel masqué
+au-dessus d'une dépendance ne montre rien de ce qu'elle contient.
+
+La règle vise `ContractSample.text`, `SampleOverride.text` et `swaps`, et le
+critère n'est pas « c'est du rendu » mais « ce relevé rapporte ce qu'un calque
+porte SANS rapporter la condition qui le masque ». C'est ce qui explique
+l'exception apparente d'`args` : le texte d'une TEXT property et le composant
+d'un INSTANCE_SWAP sont bien affichés, mais le booléen qui les masque voyage
+dans le MÊME `args`, et la reconstruction n'a donc rien à retirer pour être
+juste. Filtrer `args` publierait au contraire `false` pour une prop qui vaut
+`true`. Restent donc publiés sous un calque masqué : une valeur `false`
+d'`args`, un `override.visible`, et l'entrée de la dépendance — ces valeurs
+décrivent précisément l'état masqué que la reconstruction doit conserver.
+
+La perte est assumée et se lit dans l'autre sens : un remplacement posé sous un
+cadre que CE variant masque n'est pas publié par CE variant, et le variant qui
+affiche ce cadre le publie. L'échantillon décrit un instantané, variant par
+variant, pas la réunion de ce que la maquette pourrait montrer.
+
 **La règle d'adressage.** On adresse par slot ce que ce contrat décrit, et par
 nom de calque Figma ce qu'il ne décrit pas. Le nom de calque est la seule
 identité que deux contrats partagent : celui de la dépendance publie `figmaLayer`
@@ -754,7 +790,7 @@ n'a de slots que chez soi, on ne surcharge que chez autrui.
 **La frontière avec la composition.** Le parent ne réexporte pas les internes
 d'une dépendance. Ce que `overrides` publie n'en est pas : `InstanceNode.overrides`
 répond « qu'est-ce que CE parent a changé ici », par opposition à ce que le
-composant fournit. Un texte que le parent a saisi dans une Alert n'est écrit
+composant fournit. Un texte que le parent a saisi dans une dépendance n'est écrit
 nulle part ailleurs. Deux champs seulement sont retenus, `characters` et
 `visible` ; toute autre surcharge décrit du RENDU et signale plutôt un manque du
 contrat normatif de la dépendance. Une surcharge de peinture y est
@@ -767,18 +803,23 @@ remplacement d'instance — `NodeChangeProperty` ne contient pas `mainComponent`
 et la prop d'icône que les règles `@icons` fabriquent (`chessName`,
 `iconLeftName`) n'a aucun porteur Figma, donc n'apparaît jamais dans
 `componentProperties` ni dans `args`. Une icône substituée dans une dépendance
-n'avait ainsi aucun canal : sept TileLink montrant sept icônes différentes
-produisaient sept échantillons identiques. `swaps` ouvre ce canal, et se lit
+n'avait ainsi aucun canal : plusieurs occurrences montrant des icônes différentes
+produisaient des échantillons identiques. `swaps` ouvre ce canal, et se lit
 en comparant l'instance à son composant maître, **position par position** — la
-structure d'une instance est isomorphe à celle de son maître, puisque Figma
-interdit d'y ajouter, d'y retirer et d'y réordonner un calque.
+structure d'une instance est isomorphe à celle de son maître hors contenu libre
+d'un `SLOT`.
 
-Quatre bornes le tiennent. La comparaison porte sur le composant PROPRIÉTAIRE et
+Cinq bornes le tiennent. La comparaison porte sur le composant PROPRIÉTAIRE et
 non sur la variante : choisir une autre variante d'un même component set n'est
 pas un remplacement, et le contrat de la dépendance décrit déjà ce choix. Le
 relevé s'arrête sur une dépendance de la dépendance, dont l'échantillon est
 ailleurs, et sous un calque déjà déclaré remplacé, dont plus aucune position ne
-correspond au maître. Il s'arrête aussi sur un calque dont `args` répond déjà —
+correspond au maître. Un `SLOT` coupe lui aussi la comparaison : son contenu
+peut différer librement entre le maître et l'instance. Cette borne-là est
+PROPRE au positionnel : la résolution NOMINALE d'une INSTANCE_SWAP — joindre
+`componentPropertyReferences` à une propriété déclarée — traverse un `SLOT`,
+sans quoi la clé quitterait `args` sans que `swaps` reprenne la main. Le relevé s'arrête enfin
+sur un calque dont `args` répond déjà —
 voir « Quand la dépendance expose son remplacement » plus bas. Enfin `masterPath`
 nomme les calques du MAÎTRE, pas ceux
 de l'instance : Figma renomme le calque qu'on remplace d'après son nouveau
@@ -811,13 +852,20 @@ maquette en forme de référence n'est pas un token. Ce qu'il ne sait pas lire, 
 l'omet. En contrepartie, `args` est publié comme un **sous-ensemble**, et voici
 ce qu'il ne sait structurellement pas porter :
 
-- une prop d'une dépendance portée par son wrapper de dimensions et non exposée —
-  elle n'est ni dans `componentProperties`, ni dans `exposedInstances` ;
+- une prop d'une dépendance portée par son wrapper de dimensions quand Figma
+  n'expose pas exactement une occurrence de ce wrapper — zéro ou plusieurs, la
+  provenance est indécidable et TOUTES les props du wrapper s'omettent, là où
+  `props` continue de les publier : la fusion porte sur les définitions, qui ne
+  dépendent d'aucune occurrence ;
+- une prop d'une dépendance dont l'owner n'a pas été indexé par le relevé de
+  composition : `args` se tait plutôt que de répondre depuis une surface
+  reconstruite à la volée, qui ignorerait le wrapper ;
 - une prop d'icône synthétique (`iconLeftName`), fabriquée par les règles `@icons`
   sans component property Figma derrière : aucune valeur ne peut entrer dans
   `args`, et c'est précisément pourquoi `swaps` existe ;
-- un remplacement dont le composant maître est illisible, ou qui vit sous un
-  calque statiquement masqué — la maquette n'en montre rien ;
+- un remplacement dont le composant maître est illisible, qui vit sous un
+  calque effectivement masqué, ou dans le contenu libre d'un `SLOT` — la
+  maquette n'en donne aucune comparaison fiable ;
 - une valeur en conflit entre deux calques d'un même variant — la clé est omise ;
 - le second texte d'une feuille qui en porte plusieurs ;
 - une dépendance sous un calque statiquement masqué, déjà absente de `composes`.
@@ -828,8 +876,23 @@ l'emporte** : l'échantillon décrit la maquette du jour de l'export.
 **Le contenu d'une dépendance se lit en deux temps** : ses valeurs par défaut
 dans SON contrat — l'échantillon du variant que `args` désigne — et les écarts
 dans `overrides`. C'est la mécanique de Figma elle-même, composant plus
-surcharges, et elle évite de recopier le contenu d'une Alert dans chaque contrat
-qui l'emploie.
+surcharges, et elle évite de recopier le contenu d'une dépendance dans chaque
+contrat qui l'emploie.
+
+**La reconstruction est un zipper récursif, pas une recherche globale.** Pour
+chaque variant, le consommateur résout d'abord sa vue et son `sample`. Il applique
+`args` et `text` à ce composant, puis rapproche chaque dépendance racine du slot
+exact donné par `slotPath`. Dans une `SampleInstance`, les enfants de `composes`
+se rapprochent des dépendances directes de leur propriétaire immédiat, dans
+l'ordre, avec le couple `component` + `figmaLayer` ; deux occurrences homonymes
+restent donc deux positions de la séquence. Le consommateur ouvre alors le
+contrat de cette dépendance, choisit son variant depuis les valeurs connues de
+`args`, applique son propre échantillon, puis superpose les `args`, `overrides`
+et `swaps` du parent. Une valeur `false` est explicite ; une clé absente hérite
+du défaut de la dépendance. La même opération continue jusqu'aux feuilles, sans
+limite de profondeur arbitraire. Une adresse absente ou ambiguë fait omettre
+l'atome indicatif concerné ; elle n'autorise ni une recherche par nom dans tout
+l'arbre, ni la dégradation d'une donnée normative.
 
 **Ce qu'il ne publie pas, faute d'apporter quoi que ce soit.** Les icônes du
 composant exporté sont déjà dans `variantViews[].icons`, par vue exacte : leur
@@ -981,7 +1044,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "10.1",
+    "contractVersion": "10.3",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "warnings": ["…"],
     "diagnostics": [

@@ -31,29 +31,25 @@ sont jamais corrigés à la main.
 
 | Domaine | État |
 |---|---|
-| Contrat 10.1 | L’Exporter situe les peintures dans les vues exactes, signale toute peinture posée à la main, conserve les pistes FIXED de grille en pixels et publie dans `structuralSize` la mesure d’une cellule dont la piste hug |
-| Consommation 10.1 | Le Playground valide `structuralSize` comme une mesure en pixels distincte de `size`, et la pose telle quelle sur les tuiles de StressTest ; un test de rendu l’exerce |
-| Validation Figma 10.1 | Les quatre composants ont été réexportés depuis Figma en 10.1, fusionnés dans le Playground et déposés dans le corpus `tests/test-exports/` de l’Exporter. L’export de Button ne porte aucun avertissement et ses 90 variants partagent la même vue ; celui de StressTest publie la mesure de ses cellules sous une piste qui hug |
-| Contrat 10.2 | `samples` capture ce que la maquette montre — contenu textuel, visibilité réelle des slots optionnels, props appliquées de chaque dépendance et de ses imbriquées. Non normatif : aucun contrôle ne le compare au code, et le retirer redonne la forme 10.1 |
-| Consommation 10.2 | **À faire.** Les lecteurs du Playground doivent d’abord tolérer le champ et l’exclure du relevé des références de tokens ; la bascule de version suit un réexport humain depuis Figma |
-| Validation Figma 10.2 | **À faire.** La sémantique d’`InstanceNode.overrides` sur une dépendance imbriquée est documentée sans être précisée : le premier export réel doit la constater. La lecture est défensive et ne peut rien dégrader de normatif |
+| Contrat 10.3 | L’Exporter publie les vues exactes et un `samples` récursif non normatif. Les `args` d’une dépendance viennent de sa surface publique directe et de son seul wrapper élu ; le contenu rendu suit la visibilité effective ; les comparaisons positionnelles s’arrêtent aux `SLOT`. Ces lois sont couvertes par des arbres synthétiques sans nom de composant du corpus |
+| Consommation 10.3 | Le Playground documente une reconstruction récursive relative au propriétaire immédiat, sans recherche globale ni limite de profondeur. `validation-echantillons.mjs` joint TOUTES les adresses d’un échantillon — clés et valeurs d’`args`, `masterPath`, `composes` imbriqué, `slotPath` d’une racine et d’un texte — sur des contrats synthétiques, cas absents, ambigus et profonds compris. Aucun ne regarde QUELLE valeur est placée, et une racine omise reste tolérée |
+| Validation Figma 10.3 | **À refaire après cette correction.** Seul un réexport humain peut confirmer les valeurs produites par l’API Figma. Les composants actuels du Playground sont des sondes jetables, pas des hypothèses du moteur ni un critère de généralité |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
 | Structure portable | Flex, wrap, grille, position absolue, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
 | Contrôles du Playground | Forme et version des contrats, graphe, parité statique, références de tokens, tests de rendu co-localisés, génération des types et du CSS |
 | Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
-| Test froid | Les quatre composants du Playground sont reconstructibles depuis les seuls contrats et le skill, et `npm run check` est vert |
-| Multi-composants | Button, Alert, TileLink et StressTest ont une implémentation ; StressTest exerce grille, wrap, champs asymétriques et composition multiple, et TileLink publie son sizing tokenisé |
+| Test froid | Le protocole générique est documenté et ses lois d’adressage sont testées. La preuve visuelle doit encore être rejouée sur un export frais ; aucun composant existant n’est considéré comme une preuve durable |
+| Corpus de démonstration | Les composants et tests actuels servent d’exemples remplaçables. La maturité se mesure sur les invariants synthétiques, puis sur de nouvelles familles Figma choisies sans règle liée à leur nom |
 | Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
 | Interopérabilité | Le JSON Schema du contrat est publié dans `schema/`, dérivé de `types.ts` et vendu au Playground pour l’éditeur ; il décrit la forme, jamais la cohérence, et ne bloque aucune fusion. `tokens.json` n’a toujours pas de version propre |
 | Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
 
 Le projet est un **prototype avancé**. Le pipeline Figma → pull request → CI →
-`main` est éprouvé avec des contrats réels de la version courante, que le
-corpus de référence de
-l’Exporter verrouille et qu’un test de rendu exerce. Cette preuve porte sur
-l’extraction, la validation et la consommation statique ; elle ne prouve ni la
-fraîcheur d’un export, ni une ressemblance visuelle complète avec Figma.
+`main` a déjà été exercé sur des contrats réels, mais les corrections de
+projection compatibles avec la 10.3 exigent un nouveau passage humain dans
+Figma. Les preuves durables portent sur des lois du moteur ; les composants du
+corpus constatent un comportement à une date donnée et restent remplaçables.
 
 ## Fragilités connues
 
@@ -70,6 +66,23 @@ règles une seule fois. Cette lecture reconnaît correctement une dépendance
 placée sur une autre page, mais son coût reste à mesurer sur un très gros fichier
 Figma.
 
+### Le relevé de composition résout trois fois le même maître
+
+`scanComposedMatrix` parcourt le sous-arbre de chaque dépendance distincte trois
+fois, avec un `getMainComponentAsync` par instance à chaque passe :
+`indexMasterInstances` pour les positions du maître, puis
+`indexDependencyPropertySurfaces` qui enchaîne `scanComposedInstances` et
+`findWrapperReference`. Le coût est linéaire dans les occurrences et se paie une
+fois par owner, jamais par variant — trente variants qui embarquent le même
+composant n'en font pas trente. Il reste que le runtime du plugin est
+mono-thread, et que ces allers-retours s'additionnent.
+
+La correction connue est une mémoïsation de `getMainComponentAsync` par id de
+node, partagée entre les trois passes. Elle traverse quatre signatures et n'a
+aucun effet sur le contrat produit : elle attend d'être justifiée par une mesure
+plutôt que par une intuition. C'est cette mesure, et non la mémoïsation, qui
+manque.
+
 ### La CI détecte sans empêcher la fusion
 
 Les repositories privés n’ont pas accès aux protections de branche avec le plan
@@ -81,11 +94,22 @@ prévention.
 
 Les références de tokens littérales sont comparables au contrat ; un chemin
 assemblé à l’exécution est refusé. En revanche, une donnée visuelle recopiée
-dans une règle de code peut échapper à l’analyse statique. Des tests de rendu
-pilotés par le contrat existent pour Alert et Button, mais ils doivent suivre la
-résolution v10 et aucun vérificateur générique n’exerce encore tous les composants
-et toutes leurs vues exactes. La proposition correspondante est détaillée dans
+dans une règle de code peut échapper à l’analyse statique. Quelques tests de
+rendu pilotés par le contrat existent dans le corpus de démonstration, mais ils
+restent jetables et aucun vérificateur générique n’exerce encore toutes les vues
+exactes d’un composant arbitraire. La proposition correspondante est détaillée dans
 [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) ; elle n’est pas engagée.
+
+C’est là, et nulle part ailleurs, que vit la preuve de bout en bout. Les
+jointures d’adresses du Playground constatent que deux contrats se joignent ;
+elles ne constatent à aucun moment qu’une reconstruction a effectivement
+consommé l’échantillon. Le vérificateur générique le ferait — un embryon existe
+déjà, qui rend le TSX et compte les dépendances de chaque composé. Ce qu’il ne
+faut PAS faire en attendant : écrire dans le Playground une fonction de
+reconstruction. Ce serait une seconde implémentation du protocole que porte le
+skill `consommer-contrat`, deux implémentations divergent, et c’est celle qui
+n’est pas jetable qui deviendrait la vérité — exactement ce que le corpus de
+démonstration est censé ne jamais devenir.
 
 ### Un remplacement natif publie un identifiant, pas un nom
 
@@ -102,14 +126,18 @@ et n’est pas engagée.
 
 ## Prochaines validations
 
-### 1. Fermer la validation 10.1
+### 1. Fermer la validation 10.3
 
-1. Vérifier visuellement TilesGrid, Divider, TileLink, ScaleWrap et les
-   peintures situées de StressTest dans le navigateur, sans modifier ses TSX :
-   la conformité statique est verte, la ressemblance ne l’est pas encore.
-2. Étendre les tests de rendu aux états que `renderToStaticMarkup` n’atteint
-   pas. La perte de Button vivait sur `hover`, et aucun test co-localisé ne
-   franchit aujourd’hui l’état par défaut.
+1. Réexporter depuis Figma un composant composé choisi après l’implémentation,
+   avec plusieurs occurrences, des homonymes, un wrapper exposé, un `SLOT` et
+   au moins trois niveaux d’imbrication. Ne corriger aucun JSON à la main.
+2. Reconstruire ce composant en contexte froid avec le protocole récursif,
+   sans modifier un composant existant et sans ajouter de branche liée à son
+   nom. Comparer ensuite le rendu à Figma.
+
+Le coût du relevé de composition sur une grosse matrice n’entre pas dans cette
+clôture : c’est une dette de performance, elle a maintenant une cause nommée, et
+elle est rangée avec les fragilités connues.
 
 ### 2. Éprouver d’autres familles de composants
 

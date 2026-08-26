@@ -15,6 +15,7 @@ import {
 import { extractPropertyBindings } from '../src/contract/propertyBindings';
 import { getAllNodes } from '../src/contract/exportableNodes';
 import { compactVariants } from '../src/contract/compactVariants';
+import { buildContractPropertySurface } from '../src/contract/propertySurface';
 import type { ComposedDependency, ExtractedContractVariant } from '../src/contract/types';
 
 function node(type: string, id: string, name: string, children: any[] = [], extra: object = {}) {
@@ -62,6 +63,24 @@ function maitre(setName: string, definitions: Record<string, any>) {
 /** Le composant maître d'une icône : un composant seul, sans component set. */
 function maitreIcone(name: string) {
   return { id: `${name}-maitre`, name, parent: { type: 'PAGE' } } as unknown as ComponentNode;
+}
+
+/**
+ * L'index des surfaces publiques, tel que `scanComposedMatrix` le construit.
+ *
+ * Les tests le DÉCLARENT au lieu de le laisser fabriquer : `extractVariantSample`
+ * n'a plus de repli, et c'est voulu. La surface d'une dépendance vient de
+ * l'élection faite pour SON export ; une reconstruction locale répondrait sans
+ * wrapper, faute de pouvoir l'élire sans aller-retour, et donnerait donc une
+ * seconde réponse à une question qui n'en admet qu'une.
+ */
+function surfaces(...owners: Array<[string, Record<string, any>]>) {
+  return new Map(
+    owners.map(([setName, definitions]) => [
+      `${setName}-set`,
+      buildContractPropertySurface(definitions as ComponentPropertyDefinitions),
+    ] as const),
+  );
 }
 
 /** Ce qu'un maître place à une position, tel que le relève `indexMasterInstances`. */
@@ -219,6 +238,8 @@ test('une dépendance publie ses args aux clés publiques de son propre contrat'
     new Set(),
     new Map([['a1', dependance]]),
     new Map([['a1', maitre('Alert', DEFINITIONS_ALERT)]]),
+    new Map(),
+    surfaces(['Alert', DEFINITIONS_ALERT]),
   );
 
   assert.deepEqual(sample.composes, [{
@@ -244,6 +265,8 @@ test('l’axe d’états reste sous sa clé, et Disable porte en plus la prop pu
     new Set(),
     new Map([['b1', { component: 'Button', figmaLayer: 'Button' }]]),
     new Map([['b1', maitre('Button', DEFINITIONS_BUTTON)]]),
+    new Map(),
+    surfaces(['Button', DEFINITIONS_BUTTON]),
   );
 
   // `state` permet de retrouver le variant de Button ; `disabled` est la prop
@@ -254,6 +277,9 @@ test('l’axe d’états reste sous sa clé, et Disable porte en plus la prop pu
 });
 
 test('les instances exposées comblent les props portées par un wrapper', () => {
+  const wrapperDefinitions = {
+    Size: { type: 'VARIANT', variantOptions: ['Small', 'Big'], defaultValue: 'Small' },
+  };
   const wrapper = instance('w1', 'sizeWrapperButton', {
     Size: { type: 'VARIANT', value: 'Small' },
   });
@@ -271,10 +297,19 @@ test('les instances exposées comblent les props portées par un wrapper', () =>
     new Map([['b1', { component: 'Button', figmaLayer: 'Button' }]]),
     new Map([
       ['b1', maitre('Button', DEFINITIONS_BUTTON)],
-      ['w1', maitre('SizeWrapper', {
-        Size: { type: 'VARIANT', variantOptions: ['Small', 'Big'], defaultValue: 'Small' },
-      })],
+      ['w1', maitre('SizeWrapper', wrapperDefinitions)],
     ]),
+    new Map(),
+    new Map([[
+      'Button-set',
+      {
+        ...buildContractPropertySurface(
+          DEFINITIONS_BUTTON as ComponentPropertyDefinitions,
+          wrapperDefinitions as ComponentPropertyDefinitions,
+        ),
+        wrapperOwnerId: 'SizeWrapper-set',
+      },
+    ]]),
   );
 
   assert.deepEqual(sample.composes?.[0].args, { color: 'info', size: 'small' });
@@ -353,6 +388,8 @@ test('une dépendance imbriquée revient à son parent, sans chemin de slot', ()
       ['a1', maitre('Alert', DEFINITIONS_ALERT)],
       ['b1', maitre('Button', DEFINITIONS_BUTTON)],
     ]),
+    new Map(),
+    surfaces(['Alert', DEFINITIONS_ALERT], ['Button', DEFINITIONS_BUTTON]),
   );
 
   assert.equal(sample.composes?.length, 1);
@@ -482,6 +519,7 @@ test('une icône remplacée dans une dépendance est relevée, au chemin du maî
       ['i1', maitreIcone('star')],
     ]),
     new Map([['TileLink-maitre', defauts([['0', ['chess'], 'chess']])]]),
+    surfaces(['TileLink', DEFINITIONS_TILELINK_SWAP]),
   );
 
   assert.deepEqual(sample.composes?.[0].swaps, [{ masterPath: ['chess'], component: 'star' }]);
@@ -602,6 +640,7 @@ test('une INSTANCE_SWAP de dépendance publie le NOM du composant, jamais son id
       ['i1', maitreIcone('star')],
     ]),
     new Map([['TileLink-maitre', defauts([['0', ['chess'], 'chess']])]]),
+    surfaces(['TileLink', DEFINITIONS_TILELINK_SWAP]),
   );
 
   assert.equal(sample.composes?.[0].args?.chessIcon, 'star');
@@ -626,6 +665,7 @@ test('un remplacement que sa prop publie n’est pas republié dans swaps', () =
       ['i1', maitreIcone('star')],
     ]),
     new Map([['TileLink-maitre', defauts([['0', ['chess'], 'chess']])]]),
+    surfaces(['TileLink', DEFINITIONS_TILELINK_SWAP]),
   );
 
   assert.equal(sample.composes?.[0].swaps, undefined);
@@ -648,6 +688,7 @@ test('un remplacement natif qu’on ne sait pas nommer est omis, et swaps reste 
     // Le maître de « i1 » manque : c'est le seul cas où le nom est hors de portée.
     new Map<string, ComponentNode>([['t1', maitre('TileLink', DEFINITIONS_TILELINK_SWAP)]]),
     new Map([['TileLink-maitre', defauts([['0', ['chess'], 'chess']])]]),
+    surfaces(['TileLink', DEFINITIONS_TILELINK_SWAP]),
   );
 
   assert.equal(sample.composes?.[0].args?.chessIcon, undefined);
@@ -715,6 +756,7 @@ test('un calque masqué d’une dépendance ne montre rien, donc ne remplace rie
       ['i1', maitreIcone('star')],
     ]),
     new Map([['TileLink-maitre', defauts([['0', ['chess'], 'chess']])]]),
+    surfaces(['TileLink', DEFINITIONS_TILELINK_SWAP]),
   );
 
   assert.equal(sample.composes?.[0].swaps, undefined);

@@ -13,7 +13,9 @@ import {
 import { indexContractedNamesInDocument, scanComposedMatrix } from './composedComponents';
 import { extractRules } from './extractRules';
 import { extractStructure } from './extractStructure';
-import { definePropOn, extractContractPropertyModel } from './parsers';
+import { extractContractPropertyModel } from './parsers';
+import { buildContractPropertySurface } from './propertySurface';
+export { mergeWrapperProps } from './propertySurface';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { extractPropertyBindings } from './propertyBindings';
 import { compactVariants } from './compactVariants';
@@ -30,7 +32,6 @@ import type {
   ComposedDependency,
   Contract,
   ContractMeta,
-  ContractProp,
   ExtractedContractVariant,
 } from './types';
 
@@ -124,37 +125,6 @@ function getSelectedComponent(): ComponentNode | ComponentSetNode {
 }
 
 /**
- * Fusionne les props du wrapper de dimensions dans l'API publique du contrat
- * (le composant est décrit comme UNE API, pas deux component sets).
- * Les props du set externe gardent la priorité en cas de doublon — même règle
- * « une clé publique, un propriétaire » que `extractContractProps`, et même
- * obligation de signaler ce qui est écarté.
- */
-export function mergeWrapperProps(
-  props: Record<string, ContractProp>,
-  wrapperProps: Record<string, ContractProp>,
-  warnings: string[],
-): void {
-  for (const [key, prop] of Object.entries(wrapperProps)) {
-    // En propriété propre : `key in props` répondrait vrai pour une component
-    // property nommée « constructor », et le wrapper perdrait sa prop sous un
-    // avertissement de collision avec une prop que le composant n'expose pas.
-    if (Object.prototype.hasOwnProperty.call(props, key)) {
-      warnings.push(
-        `Component property « ${key} » : le composant imbriqué qui porte les dimensions et ` +
-          `le component set sélectionné l’exposent tous les deux. Seule celle du component ` +
-          `set sélectionné est exportée. Renommez l’une des deux.`,
-      );
-      continue;
-    }
-    // Même précaution que la lecture ci-dessus, en écriture : une component
-    // property nommée « __proto__ » fixerait le prototype de `props` au lieu
-    // d'occuper une clé, et le wrapper perdrait sa prop sans un mot.
-    definePropOn(props, key, prop);
-  }
-}
-
-/**
  * Construit les métadonnées de traçabilité vers Figma.
  *
  * `figma.fileKey` est réservé aux plugins qui déclarent `enablePrivatePluginApi`
@@ -224,7 +194,6 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   );
   markProjectionWarningsSince(warningCursor);
   warningCursor = warnings.length;
-  const props = propertyModel.props;
   const missingVariants = componentSet.type === 'COMPONENT_SET'
     ? findMissingVariantCombinations(componentSet)
     : null;
@@ -271,6 +240,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     warnings: compositionWarnings,
     infos: compositionInfos,
     swapDefaults,
+    propertySurfaces,
   } = await scanComposedMatrix(
     matrix.variants.map((entry) => entry.component),
     referenceComponent,
@@ -299,22 +269,14 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     warnings,
   );
 
-  const publicPropertyKeyByFigmaName = new Map(propertyModel.publicPropertyKeyByFigmaName);
-  if (wrapper?.componentSet) {
-    const wrapperModel = extractContractPropertyModel(
-      wrapper.componentSet.componentPropertyDefinitions,
-      warnings,
-    );
-    const existingKeys = new Set(Object.keys(props));
-    mergeWrapperProps(
-      props,
-      wrapperModel.props,
-      warnings,
-    );
-    for (const [figmaName, publicKey] of wrapperModel.publicPropertyKeyByFigmaName) {
-      if (!existingKeys.has(publicKey)) publicPropertyKeyByFigmaName.set(figmaName, publicKey);
-    }
-  }
+  const propertySurface = buildContractPropertySurface(
+    componentSet.componentPropertyDefinitions,
+    wrapper?.componentSet?.componentPropertyDefinitions,
+    warnings,
+    propertyModel,
+  );
+  const props = propertySurface.props;
+  const publicPropertyKeyByFigmaName = propertySurface.publicPropertyKeyByFigmaName;
   markProjectionWarningsSince(warningCursor);
   warningCursor = warnings.length;
 
@@ -442,6 +404,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
       composed,
       mainByInstanceId,
       swapDefaults,
+      propertySurfaces,
     );
     if (Object.keys(sample).length > 0) variant.sample = sample;
   }
