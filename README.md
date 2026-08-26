@@ -89,6 +89,9 @@ Chaque document a un rôle unique :
   conditions à réunir avant de les ouvrir ;
 - [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) — proposition non décidée
   pour rendre générique la vérification du rendu côté consommateur ;
+- [PLAN-SWAP-NOMME.md](./PLAN-SWAP-NOMME.md) — proposition non décidée pour que
+  la valeur par défaut d'un remplacement natif publie un nom, jamais un
+  identifiant Figma ;
 - [AGENTS.md](./AGENTS.md) — guide opérationnel pour contribuer avec un agent ;
 - [UCM Playground](https://github.com/Vassili-g/UCM-Playground) — consommateur
   de référence des artefacts.

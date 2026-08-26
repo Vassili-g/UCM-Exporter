@@ -87,6 +87,19 @@ résolution v10 et aucun vérificateur générique n’exerce encore tous les co
 et toutes leurs vues exactes. La proposition correspondante est détaillée dans
 [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) ; elle n’est pas engagée.
 
+### Un remplacement natif publie un identifiant, pas un nom
+
+La valeur par défaut d’une component property `INSTANCE_SWAP` ou `SLOT`, et les
+clés de ses `preferredValues`, sortent de Figma comme identifiants opaques
+(« 1:1 », clé de publication) et sont republiées telles quelles. Le développeur
+ne peut ni les lire, ni les écrire, ce que la règle du contrat portable
+interdit. Latent tant qu’aucun composant du corpus n’expose de remplacement
+natif — les props d’icône synthétiques des règles `@icons` publient `null` —
+mais sur le chemin nominal de la composition d’icônes. La correction demande de
+nommer le node maître, que `parsers.ts` n’a pas et ne doit pas aller chercher
+lui-même : elle est détaillée dans [PLAN-SWAP-NOMME.md](./PLAN-SWAP-NOMME.md),
+et n’est pas engagée.
+
 ## Prochaines validations
 
 ### 1. Fermer la validation 10.1

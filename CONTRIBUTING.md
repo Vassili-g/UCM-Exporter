@@ -233,6 +233,7 @@ Chaque document a une autorité limitée :
 | `ROADMAP.md` | État et prochaines validations |
 | `PISTES-EVOLUTION.md` | Options non engagées |
 | `PLAN-CONFORMITE-DEV.md` | Proposition détaillée sans décision ni implémentation |
+| `PLAN-SWAP-NOMME.md` | Proposition détaillée sans décision ni implémentation |
 | `README.md` | Entrée dans le projet |
 | `AGENTS.md` | Instructions opérationnelles |
 
