@@ -45,8 +45,9 @@ test('extractLayout relève les dimensions d’un composant plat (sans wrapper)'
   assert.equal(layout.gap, '{components.button.sizes.medium.gap}');
   assert.deepEqual(Array.from(collectTokenReferences(layout)), ['{components.button.sizes.medium.gap}']);
   // Invariant SPEC : une dimension non liée avertit, elle ne sort jamais en brut.
-  assert.deepEqual(layout.padding, { x: null, y: null });
-  assert.equal(layout.radius, null);
+  // Rien à publier, donc rien de publié : la clé est absente, pas vide.
+  assert.equal(layout.padding, undefined);
+  assert.equal(layout.radius, undefined);
   assert.ok(warnings.some((w) => w.includes('horizontal padding : aucune variable')));
   assert.ok(warnings.some((w) => w.includes('corner radius : aucune variable')));
 });
@@ -272,7 +273,7 @@ test('extractLayout décrit Auto par justifyContent sans inventer de gap fixe', 
 
   assert.equal(layout.justifyContent, 'space-between');
   assert.equal(layout.alignItems, 'center');
-  assert.equal(layout.gap, null);
+  assert.equal(layout.gap, undefined);
   assert.ok(!warnings.some((warning) => warning.includes('espacement est réglé sur « Auto »')));
 });
 
@@ -1490,10 +1491,9 @@ test('un axe de tailles fait taire les dimensions de haut niveau au lieu de les 
     false,
   );
 
-  assert.equal(layout.gap, null);
-  assert.equal(layout.padding?.x, null);
-  assert.equal(layout.padding?.y, null);
-  assert.equal(layout.radius, null);
+  assert.equal(layout.gap, undefined);
+  assert.equal(layout.padding, undefined);
+  assert.equal(layout.radius, undefined);
   assert.deepEqual(warnings, []);
 });
 
@@ -1512,6 +1512,6 @@ test('sans axe de tailles, une dimension non liée avertit toujours', async () =
 
   const layout = await extractLayout(alerte, resolverFor({}), warnings);
 
-  assert.equal(layout.gap, null);
+  assert.equal(layout.gap, undefined);
   assert.ok(warnings.some((message) => /, gap : aucune variable Figma n'est reliée/.test(message)));
 });

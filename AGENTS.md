@@ -30,7 +30,9 @@ src/
   contract/
     exportComponent.ts       orchestration et métadonnées
     componentTree.ts         axes, matrice et wrapper de layout
-    compactVariants.ts       catalogue v10 des vues et liaisons exactes
+    compactVariants.ts       catalogue par partie de vue, et liaisons exactes
+    elideNeutrals.ts         ce que le contrat n’écrit pas : null, {} et []
+    serializeJson.ts         une entrée par ligne, sur deux niveaux
     layoutNodes.ts           élection du node de layout, une fois par variant
     exportableNodes.ts       parcours de l'arbre, hors dépendances composées
     parsers.ts               propriétés Figma → API publique
@@ -74,10 +76,23 @@ Le raisonnement vit dans la spécification, en lien.
 - Aucune logique liée au nom d’un composant.
 - Figma reste traçable après normalisation (`figmaName`, `figmaLayer`).
 - `variants` décrit chaque combinaison réellement présente — `COMPONENT` sans axe
-  et matrice clairsemée comprises — et référence une vue de `variantViews`. Deux
-  vues ne se partagent que par égalité stricte du bloc JSON : ni merge, ni
-  héritage, ni défaut. `structure` reste la projection du variant de référence.
-  → [spec](./UCM-EXPORTER-SPEC.md#sortie)
+  et matrice clairsemée comprises — et référence une vue de `variantViews`. Une
+  vue est cinq renvois : `structure`, `typography`, `composes`, `icons`,
+  `paintPlacements`, chacun catalogué à part. Chaque PARTIE se partage par
+  égalité stricte de son bloc JSON, à l’ordre des clés près — ni merge, ni
+  héritage, ni défaut : résoudre les cinq renvois redonne la vue exacte.
+  `structure` est la projection du variant de référence, publiée elle aussi par
+  renvoi, INCONDITIONNELLEMENT : elle rejoint le catalogue des structures quand
+  elle n’y correspond à aucune. → [spec](./UCM-EXPORTER-SPEC.md#sortie)
+- Le contrat n’écrit aucune valeur neutre : une clé qui vaudrait `null`, `{}` ou
+  `[]` est absente. Borne, et elle porte tout : UN seul passage, jamais de point
+  fixe. Une valeur qui EST vide ne s’écrit pas ; une valeur qui CONTIENT du vide
+  s’écrit sans lui et reste — sous un dictionnaire, la clé est une donnée, et
+  `stateModel.states.default` vaut `{}`. `elideNeutrals.ts` en est l’unique
+  autorité, et chaque sous-arbre n’y passe qu’une fois.
+- L’artefact s’écrit une entrée par ligne sur deux niveaux (`serializeJson.ts`),
+  sans seuil : la forme du fichier ne dépend jamais du nombre de variants, sans
+  quoi un variant ajouté reformaterait tout.
 - Une propriété native garde son type (`INSTANCE_SWAP`, `SLOT`) et ses liaisons
   `visible`, `characters`, `mainComponent` : définition dans
   `propertyBindingDefinitions`, `nodeId` dans `variants[].bindings`, aucun
@@ -96,7 +111,10 @@ Le raisonnement vit dans la spécification, en lien.
 - Une collision feuille/groupe ou deux chemins identiques sont tranchés avant la
   construction de l’arbre ; aucun alias ne pointe vers une variable rejetée.
   → [spec](./UCM-EXPORTER-SPEC.md#partie-2--export-tokens)
-- `tokensUsed` se dérive du contrat terminé, jamais pendant l’extraction.
+- Le contrat ne publie AUCUN index de ses tokens. `tokensUsed` se dérivait du
+  contrat terminé ; ce qui se dérive ne se publie pas. Un consommateur qui en a
+  besoin balaie les références du contrat, `samples` et `meta` exclus — un texte
+  de maquette peut valoir « {montant.total} » sans nommer un token.
   → [spec](./UCM-EXPORTER-SPEC.md#8-rendu-sémantique-et-garde-fous)
 
 ### Couleurs
@@ -272,6 +290,10 @@ Le raisonnement vit dans la spécification, en lien.
 - Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
   geste à faire. Les trois sont exigés ; un constat qui ne nomme aucun geste
   n’est pas un avertissement.
+- `meta.diagnostics` est l’unique propriétaire des messages de l’export. Le
+  miroir en texte brut qui vivait sous `meta.warnings` disait la même liste, dans
+  le même ordre : qui veut la version lisible lit `message`, sans filtrer sur
+  `severity`.
 - Le corps de la pull request ne porte QUE les avertissements. Une note n’y
   entre pas : sa conclusion est toujours « rien à faire », et une liste dont on
   apprend qu’elle se survole coûte la lecture de celles qui demandent un geste.
@@ -366,6 +388,14 @@ npm test
 npm run typecheck
 npm run build
 ```
+
+`npm run verifier:migration` prend les contrats 10.3 encore présents dans le
+corpus, leur applique les fonctions du moteur, les remonte dans l'autre sens et
+compare au fichier de départ, clé par clé. Le seul écart toléré est « clé
+absente ↔ valeur neutre ». C'est la preuve qu'un poste de développement peut
+donner qu'une montée de schéma ne perd rien, faute de pouvoir lancer l'export.
+Le même contrôle vit dans `npm test` (`tests/migration11.test.ts`), et s'éteint
+de lui-même une fois le corpus réexporté.
 
 Un nouveau `tests/*.test.ts` est découvert automatiquement. Tout bug corrigé
 reçoit un test de régression.

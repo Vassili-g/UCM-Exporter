@@ -6,7 +6,7 @@ import type { ContractProp, StateModel } from '../src/contract/types';
 /** Modèle d'interaction minimal, tel que `buildStateModel` le produit. */
 const modeleEtats = (axis = 'state'): StateModel => ({
   axis,
-  states: { default: { selector: null }, hover: { selector: ':hover' } },
+  states: { default: {}, hover: { selector: ':hover' } },
   precedence: ['hover', 'default'],
 });
 

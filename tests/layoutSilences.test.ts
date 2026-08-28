@@ -183,7 +183,7 @@ test('une grille est décrite comme une grille, pas repliée en rangée', async 
   assert.equal(layout.columnGap, '{l.column-gap}');
   assert.equal(layout.rowGap, '{l.row-gap}');
   // L'`itemSpacing` resté lié n'exporte rien : il n'a aucun effet sous GRID.
-  assert.equal(layout.gap, null);
+  assert.equal(layout.gap, undefined);
   // Plus rien à reprocher au designer SUR SA GRILLE : elle est entièrement
   // décrite. Le padding et le rayon du composant restent réclamés comme
   // partout ailleurs — c'est la règle commune, pas une lacune de la grille.
@@ -233,7 +233,7 @@ test('un gap entre lignes synchronisé sur le gap principal ne réclame rien', a
   const layout = await extractLayout(racine, resolverFor({ gap: 'l.gap' }), warnings);
 
   assert.equal(layout.wrap, true);
-  assert.equal(layout.rowGap, null);
+  assert.equal(layout.rowGap, undefined);
   assert.equal(warnings.some((warning) => warning.includes('gap')), false);
 });
 
@@ -246,7 +246,7 @@ test('un gap entre lignes dissocié mais sans variable est signalé', async () =
   const warnings: string[] = [];
   const layout = await extractLayout(racine, resolverFor({ gap: 'l.gap' }), warnings);
 
-  assert.equal(layout.rowGap, null);
+  assert.equal(layout.rowGap, undefined);
   assert.ok(warnings.some((warning) => warning.includes('vertical gap')));
 });
 
@@ -262,7 +262,7 @@ test('un wrap dont Figma répartit les lignes lui-même est signalé', async () 
 
   // La liaison survit au réglage « Auto » : l'exporter ferait affirmer au
   // contrat un espacement que le rendu n'a pas.
-  assert.equal(layout.rowGap, null);
+  assert.equal(layout.rowGap, undefined);
   assert.ok(warnings.some((warning) => warning.includes('« Auto »')));
 });
 
@@ -277,7 +277,7 @@ test('sans wrap, une liaison restée sur le gap entre lignes n’exporte rien', 
   const layout = await extractLayout(racine, resolverFor({ gap: 'l.gap', row: 'l.row' }), warnings);
 
   assert.equal(layout.wrap, undefined);
-  assert.equal(layout.rowGap, null);
+  assert.equal(layout.rowGap, undefined);
   assert.equal(warnings.some((warning) => warning.includes('gap')), false);
 });
 

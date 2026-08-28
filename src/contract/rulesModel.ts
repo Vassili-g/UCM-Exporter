@@ -121,7 +121,12 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
 
   const hasIntent = usage !== null || doItems.length > 0 || dontItems.length > 0 || pairs.length > 0;
   const intent: Intent | null = hasIntent
-    ? { usage, do: doItems, dont: dontItems, pairs }
+    ? {
+      ...(usage !== null ? { usage } : {}),
+      do: doItems,
+      dont: dontItems,
+      pairs,
+    }
     : null;
   return {
     intent,

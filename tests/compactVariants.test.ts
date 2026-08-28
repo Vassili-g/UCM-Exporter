@@ -7,11 +7,7 @@ import type { ExtractedContractVariant, ExtractedPropertyBinding } from '../src/
 const structure = (radius: string | null) => ({
   layout: 'flex-row' as const,
   sizing: { width: 'fit-content' as const, height: 'fit-content' as const },
-  gap: null,
-  rowGap: null,
-  columnGap: null,
-  padding: { x: null, y: null },
-  radius,
+  ...(radius ? { radius } : {}),
   children: [],
 });
 
@@ -39,8 +35,10 @@ test('compactVariants catalogue chaque vue complète distincte une seule fois', 
 
   assert.deepEqual(Object.keys(result.variantViews), ['v1', 'v2']);
   assert.deepEqual(result.variants.map(({ view }) => view), ['v1', 'v1', 'v2']);
-  assert.equal(result.variantViews.v1.structure.radius, null);
-  assert.equal(result.variantViews.v2.structure.radius, '{radius.focus}');
+  // La vue renvoie à une STRUCTURE cataloguée : deux arbres distincts, deux clés.
+  assert.deepEqual(Object.keys(result.viewStructures), ['st1', 'st2']);
+  assert.equal(result.viewStructures[result.variantViews.v1.structure].radius, undefined);
+  assert.equal(result.viewStructures[result.variantViews.v2.structure].radius, '{radius.focus}');
   assert.deepEqual(result.variants.map(({ tokens }) => tokens), [
     { background: '{button.default}' },
     { background: '{button.hover}' },

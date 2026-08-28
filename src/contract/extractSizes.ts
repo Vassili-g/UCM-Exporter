@@ -99,7 +99,15 @@ async function extractDimensions(
     ),
   ]);
 
-  return { gap, rowGap, columnGap, padding: { x: paddingX, y: paddingY }, radius };
+  return {
+    ...(gap ? { gap } : {}),
+    ...(rowGap ? { rowGap } : {}),
+    ...(columnGap ? { columnGap } : {}),
+    ...(paddingX || paddingY
+      ? { padding: { ...(paddingX ? { x: paddingX } : {}), ...(paddingY ? { y: paddingY } : {}) } }
+      : {}),
+    ...(radius ? { radius } : {}),
+  };
 }
 
 /**

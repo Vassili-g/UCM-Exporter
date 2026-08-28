@@ -179,7 +179,6 @@ export function mergeIconRules(
     }
     const iconProp: IconProp = {
       type: 'icon',
-      default: null,
       policy: 'modifiable',
       ...(visibilityProp ? { visibilityProp } : {}),
     };

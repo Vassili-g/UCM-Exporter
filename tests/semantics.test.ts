@@ -25,7 +25,7 @@ test('buildStateModel associe les états connus à leurs déclencheurs et à leu
   assert.deepEqual(model, {
     axis: 'state',
     states: {
-      default: { selector: null },
+      default: {},
       hover: { selector: ':hover' },
       focus: { selector: ':focus-visible' },
       press: { selector: ':active' },
@@ -40,7 +40,7 @@ test('buildStateModel conserve un état inconnu et avertit sans bloquer', () => 
   const warnings: string[] = [];
   const model = buildStateModel(['status'], [{ status: 'loading' }, { status: 'default' }], warnings);
 
-  assert.equal(model?.states.loading.selector, null);
+  assert.equal(model?.states.loading.selector, undefined);
   assert.deepEqual(model?.precedence, ['default', 'loading']);
   assert.deepEqual(warnings, [
     'Variant property « status » : l\'état « loading » n\'est pas reconnu, le contrat ne dira pas quand l\'afficher. États reconnus : default, hover, focus, press, disable. Renommez cette valeur avec l\'un d\'eux, puis réexportez.',
@@ -151,7 +151,7 @@ test('variantRoleWarnings signale un rôle connu employé sur le mauvais support
     // « border » est déclaré « stroke » : posé en remplissage, il ne sera pas rendu.
     { primary: { default: { border: '{c.primary.default.border}' } } },
     // « background » est déclaré « paint » : posé en contour, même conséquence.
-    { primary: { default: { background: { color: '{c.primary.default.background}', width: null, align: 'inside' } } } },
+    { primary: { default: { background: { color: '{c.primary.default.background}', align: 'inside' } } } },
   );
 
   assert.deepEqual(warnings, [

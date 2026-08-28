@@ -374,7 +374,15 @@ export function extractVariantSample(
   for (const { slotPath, textNode, leaf } of textSlots(source.component, iconNames, composed)) {
     if (textNode.componentPropertyReferences?.characters) continue;
     if (!isVisibleInSample(textNode, source.component)) continue;
-    texts.push({ slotPath, figmaLayer: leaf.name, value: textNode.characters });
+    // `figmaLayer` qui vaut le texte lui-même est le cas ORDINAIRE : Figma nomme
+    // un calque texte d'après ce qu'il dit tant que personne ne l'a renommé. Le
+    // signal reste entier sans être écrit deux fois — son absence dit « jamais
+    // renommé », exactement ce que la redondance disait.
+    texts.push({
+      slotPath,
+      ...(leaf.name === textNode.characters ? {} : { figmaLayer: leaf.name }),
+      value: textNode.characters,
+    });
   }
   if (texts.length > 0) sample.text = texts;
 
@@ -668,10 +676,11 @@ function attribuerSurcharges(
  * incohérence, et le contrat lui donne de quoi la voir.
  */
 export function sampleVarianceNotice(
-  variants: ReadonlyArray<{ figmaName: string; sample?: string }>,
+  variants: ReadonlyArray<{ figmaName?: string; sample?: string }>,
 ): string | null {
   const references = variants.filter(
-    (variant): variant is { figmaName: string; sample: string } => Boolean(variant.sample),
+    (variant): variant is { figmaName: string; sample: string } =>
+      Boolean(variant.sample) && Boolean(variant.figmaName),
   );
   const distincts = new Set(references.map((variant) => variant.sample));
   if (distincts.size <= 1) return null;

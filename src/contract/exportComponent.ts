@@ -6,6 +6,7 @@
  * → structure (layout, tailles, tokens) → intention → contrat final.
  */
 import {
+  buildFigmaVariantLabels,
   buildVariantMatrix,
   findMissingVariantCombinations,
   findWrapperReference,
@@ -18,14 +19,16 @@ import { buildContractPropertySurface } from './propertySurface';
 export { mergeWrapperProps } from './propertySurface';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
 import { extractPropertyBindings } from './propertyBindings';
-import { compactVariants } from './compactVariants';
+import { compactVariants, intern, signature } from './compactVariants';
+import { CATALOGUES_DE_VUES, elideContract, elideNeutrals } from './elideNeutrals';
+import { serializeJson } from './serializeJson';
 import { extractVariantSample, sampleVarianceNotice } from './extractSamples';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { mergePropDescriptions } from './mergePropDescriptions';
 export { mergePropDescriptions } from './mergePropDescriptions';
 import { buildStateModel, renderingSemanticsFor } from './semantics';
-import { collectTokenReferences, indexVariables, VariableNameResolver } from '../variables';
+import { indexVariables, VariableNameResolver } from '../variables';
 import { codeIdentifier } from '../utils';
 import type {
   ChildStructure,
@@ -43,7 +46,7 @@ import type {
  * La forme courante est décrite par UCM-EXPORTER-SPEC.md et `types.ts` ;
  * ce qui a changé d'une version à l'autre se lit dans Git.
  */
-export const CONTRACT_VERSION = '10.3';
+export const CONTRACT_VERSION = '11.0';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(
@@ -135,14 +138,14 @@ function getSelectedComponent(): ComponentNode | ComponentSetNode {
  */
 function buildMeta(
   componentSet: ComponentNode | ComponentSetNode,
-): Omit<ContractMeta, 'warnings' | 'diagnostics' | 'coverage'> {
+): Omit<ContractMeta, 'diagnostics' | 'coverage'> {
   const fileKey = figma.fileKey ?? null;
   const fileName = figma.root.name;
   const nodeId = componentSet.id;
   // Format d'URL Figma : les « : » de l'id de nœud deviennent des « - ».
   const url = fileKey
     ? `https://www.figma.com/design/${fileKey}/${encodeURIComponent(fileName)}?node-id=${nodeId.replace(/:/g, '-')}`
-    : null;
+    : undefined;
 
   return {
     contractVersion: CONTRACT_VERSION,
@@ -150,8 +153,8 @@ function buildMeta(
     figma: {
       fileName,
       nodeId,
-      componentKey: componentSet.key || null,
-      url,
+      ...(componentSet.key ? { componentKey: componentSet.key } : {}),
+      ...(url ? { url } : {}),
     },
   };
 }
@@ -449,66 +452,74 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     severity: 'warning' as const,
     message,
   }));
-  // `meta.warnings` reste le miroir complet des diagnostics ; ce que la pull
-  // request et le compteur de l'UI appellent « avertissement » n'est que la
-  // part qui demande un geste.
+  // Ce que la pull request et le compteur de l'UI appellent « avertissement »
+  // n'est que la part qui demande un geste ; `meta.diagnostics` porte tout.
   const actionableWarnings = allWarnings.filter((message) => !infoSet.has(message));
   const exportedInfos = allWarnings.filter((message) => infoSet.has(message));
   const {
     variantTokens: _variantTokens,
     variantStrokes: _variantStrokes,
     variantTypography: _variantTypography,
-    ...referenceStructure
+    sizes,
+    variantAxes,
+    ...projectionDeReference
   } = extracted.structure;
-  const contract: Contract = {
+  // La projection de référence rejoint le catalogue des structures au lieu d'en
+  // recopier une. Le renvoi est INCONDITIONNEL : quand l'élection du node de
+  // layout la fait différer de toutes les vues — un wrapper de dimensions
+  // sauté —, elle ajoute son entrée. Une seule forme, donc un seul chemin de
+  // lecture chez le consommateur.
+  const viewStructures = compacted.viewStructures;
+  const structureIds = new Map(
+    Object.entries(viewStructures).map(([id, value]) => [signature(value), id] as const),
+  );
+  const projectionPropre = elideNeutrals(projectionDeReference);
+  const structureView = intern(projectionPropre, 'st', structureIds, viewStructures);
+  // Les étiquettes Figma des axes viennent de la SOURCE, jamais d'une relecture
+  // des noms publiés : reconstruire un nom depuis la table et le comparer ne
+  // valide pas l'appariement axe ↔ étiquette, qu'une permutation traverse sans
+  // être vue.
+  const figmaVariantLabels = buildFigmaVariantLabels(componentSet, matrix, propertyModel.publicVariantKeyByRawKey);
+  const variants = figmaVariantLabels
+    ? compacted.variants.map(({ figmaName: _figmaName, ...reste }) => reste)
+    : compacted.variants;
+
+  const contract: Contract = elideContract<Contract>({
     name: componentSet.name || 'Component',
     meta: {
       ...meta,
-      warnings: allWarnings,
       diagnostics,
       coverage: {
         portable: hasPortableLoss ? 'partial' : 'complete',
       },
     },
     props,
+    ...(figmaVariantLabels ? { figmaVariantLabels } : {}),
+    viewStructures,
+    viewTypographies: compacted.viewTypographies,
+    viewComposes: compacted.viewComposes,
+    viewIcons: compacted.viewIcons,
+    viewPaintPlacements: compacted.viewPaintPlacements,
     variantViews: compacted.variantViews,
     propertyBindingDefinitions: compacted.propertyBindingDefinitions,
-    variants: compacted.variants,
-    structure: referenceStructure,
-    stateModel,
+    variants,
+    structure: {
+      view: structureView,
+      ...(sizes ? { sizes } : {}),
+      variantAxes,
+    },
+    ...(stateModel ? { stateModel } : {}),
     rendering: renderingSemanticsFor(extracted.discoveredRoles),
     icons,
     textStyles: extracted.textStyles,
     composes: composesPlacees,
-    // Toujours publié, vide compris : `composes` et `tokensUsed` suivent la
-    // même règle, et un champ qui apparaît et disparaît obligerait chaque
-    // lecteur à distinguer « aucun échantillon » de « version sans échantillon ».
     samples: compacted.samples,
-    tokensUsed: [],
-    intent,
-  };
-  // `tokensUsed` est l'index des références du contrat : il se DÉRIVE du contrat
-  // terminé. L'alimenter pendant l'extraction y ferait entrer des tokens lus
-  // pour décider puis écartés — par exemple une taille d'icône instable — et le
-  // contrat citerait alors des tokens qu'il n'emploie pas. Les feuilles exactes
-  // de `variants`, elles, font partie du contrat et contribuent normalement.
-  contract.tokensUsed = Array.from(collectTokenReferences({
-    props: contract.props,
-    variantViews: contract.variantViews,
-    variants: contract.variants,
-    propertyBindingDefinitions: contract.propertyBindingDefinitions,
-    structure: contract.structure,
-    stateModel: contract.stateModel,
-    rendering: contract.rendering,
-    icons: contract.icons,
-    textStyles: contract.textStyles,
-    composes: contract.composes,
-    intent: contract.intent,
-  })).sort();
+    ...(intent ? { intent } : {}),
+  }, CATALOGUES_DE_VUES);
 
   return {
     filename: componentContractFilename(contract.name),
-    content: JSON.stringify(contract, null, 2),
+    content: serializeJson(contract),
     warningCount: actionableWarnings.length,
     warnings: actionableWarnings,
     infos: exportedInfos,

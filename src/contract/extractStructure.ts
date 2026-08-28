@@ -303,11 +303,6 @@ export async function extractStructure(
     : {
       layout: 'flex-row' as const,
       sizing: { width: 'stretch' as const, height: 'stretch' as const },
-      gap: null,
-      rowGap: null,
-      columnGap: null,
-      padding: { x: null, y: null },
-      radius: null,
       children: [],
     };
 
@@ -420,7 +415,15 @@ export async function extractStructure(
   // toutes dès qu'un axe de tailles existe, sinon elles restent au niveau haut.
   // La typographie a son propre catalogue et son arbre complet de variants.
   const { gap, rowGap, columnGap, padding, radius, ...slots } = layout;
-  const dimensions = sizes ? { sizes } : { gap, rowGap, columnGap, padding, radius };
+  const dimensions = sizes
+    ? { sizes }
+    : {
+      ...(gap ? { gap } : {}),
+      ...(rowGap ? { rowGap } : {}),
+      ...(columnGap ? { columnGap } : {}),
+      ...(padding ? { padding } : {}),
+      ...(radius ? { radius } : {}),
+    };
 
   const structure: ContractStructure = {
     ...slots,
