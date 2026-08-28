@@ -268,7 +268,7 @@ test('un calque écarté de la projection garde sa place dans la vue exacte', as
   // La projection l'écarte : elle ne décrit que les enfants du node élu.
   assert.deepEqual(structure.children.map((child) => child.slot), ['label']);
   // La vue exacte, elle, le situe — c'est elle que le consommateur lit.
-  assert.deepEqual(variants[0]?.paintPlacements.fills.stray, [['repère']]);
+  assert.deepEqual(variants[0]?.paintPlacements.fills?.stray, [['repère']]);
   // Son déplacement est demandé une seule fois, par la note dédiée à la
   // projection ; la peinture, elle, ne réclame rien.
   assert.ok(notices.some((note) => note.includes('Repère')
