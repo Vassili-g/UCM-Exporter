@@ -473,7 +473,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   const structureIds = new Map(
     Object.entries(viewStructures).map(([id, value]) => [signature(value), id] as const),
   );
-  const projectionPropre = elideNeutrals(projectionDeReference);
+  const projectionPropre = elideNeutrals(projectionDeReference, 'viewStructures.*');
   const structureView = intern(projectionPropre, 'st', structureIds, viewStructures);
   // Les étiquettes Figma des axes viennent de la SOURCE, jamais d'une relecture
   // des noms publiés : reconstruire un nom depuis la table et le comparer ne
