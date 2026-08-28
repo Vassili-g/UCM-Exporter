@@ -22,9 +22,15 @@ import type {
   VariantTokens,
 } from './types';
 
-/** Déclencheurs web connus pour les valeurs d'un axe d'état. */
-const STATE_SELECTORS: Record<string, string | null> = {
-  default: null,
+/**
+ * Déclencheurs web connus pour les valeurs d'un axe d'état.
+ *
+ * `default` n'en a aucun, et c'est une réponse : l'état par défaut est celui
+ * qu'aucun sélecteur ne déclenche. Il vaut donc la chaîne vide ici, et le
+ * descripteur publié n'a pas de `selector` du tout.
+ */
+const STATE_SELECTORS: Record<string, string> = {
+  default: '',
   hover: ':hover',
   focus: ':focus-visible',
   press: ':active',
@@ -114,7 +120,8 @@ export function buildStateModel(
     // « constructor » et supprimerait l'avertissement que la ligne suivante doit
     // produire.
     const known = Object.prototype.hasOwnProperty.call(STATE_SELECTORS, value);
-    states.set(value, { selector: known ? STATE_SELECTORS[value] : null });
+    const selector = known ? STATE_SELECTORS[value] : '';
+    states.set(value, selector ? { selector } : {});
     if (!known) {
       warnings.push(`Variant property « ${axis} » : l'état « ${value} » n'est pas reconnu, le contrat ne dira pas quand l'afficher. États reconnus : default, hover, focus, press, disable. Renommez cette valeur avec l'un d'eux, puis réexportez.`);
     }

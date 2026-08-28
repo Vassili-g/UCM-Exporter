@@ -31,9 +31,9 @@ sont jamais corrigés à la main.
 
 | Domaine | État |
 |---|---|
-| Contrat 10.3 | L’Exporter publie les vues exactes et un `samples` récursif non normatif. Les `args` d’une dépendance viennent de sa surface publique directe et de son seul wrapper élu ; le contenu rendu suit la visibilité effective ; les comparaisons positionnelles s’arrêtent aux `SLOT`. Ces lois sont couvertes par des arbres synthétiques sans nom de composant du corpus |
-| Consommation 10.3 | Le Playground documente une reconstruction récursive relative au propriétaire immédiat, sans recherche globale ni limite de profondeur. `validation-echantillons.mjs` joint TOUTES les adresses d’un échantillon — clés et valeurs d’`args`, `masterPath`, `composes` imbriqué, `slotPath` d’une racine et d’un texte — sur des contrats synthétiques, cas absents, ambigus et profonds compris. Aucun ne regarde QUELLE valeur est placée, et une racine omise reste tolérée |
-| Validation Figma 10.3 | **À refaire après cette correction.** Seul un réexport humain peut confirmer les valeurs produites par l’API Figma. Les composants actuels du Playground sont des sondes jetables, pas des hypothèses du moteur ni un critère de généralité |
+| Contrat 11.0 | L’Exporter publie les vues exactes — cinq renvois vers cinq catalogues de parties — et un `samples` récursif non normatif. Il n’écrit aucune valeur neutre, aucun index dérivable (`tokensUsed`, `meta.warnings`), et une entrée par ligne : le contrat coûte 53 % de tokens en moins à lire, à donnée strictement égale (`npm run verifier:migration`). Les `args` d’une dépendance viennent de sa surface publique directe et de son seul wrapper élu ; le contenu rendu suit la visibilité effective ; les comparaisons positionnelles s’arrêtent aux `SLOT`. Ces lois sont couvertes par des arbres synthétiques sans nom de composant du corpus |
+| Consommation 10.3 (à monter en 11.0) | Le Playground documente une reconstruction récursive relative au propriétaire immédiat, sans recherche globale ni limite de profondeur. `validation-echantillons.mjs` joint TOUTES les adresses d’un échantillon — clés et valeurs d’`args`, `masterPath`, `composes` imbriqué, `slotPath` d’une racine et d’un texte — sur des contrats synthétiques, cas absents, ambigus et profonds compris. Aucun ne regarde QUELLE valeur est placée, et une racine omise reste tolérée |
+| Validation Figma 11.0 | **À refaire après cette correction.** Seul un réexport humain peut confirmer les valeurs produites par l’API Figma. Les composants actuels du Playground sont des sondes jetables, pas des hypothèses du moteur ni un critère de généralité |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
 | Structure portable | Flex, wrap, grille, position absolue, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
@@ -46,9 +46,11 @@ sont jamais corrigés à la main.
 | Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
 
 Le projet est un **prototype avancé**. Le pipeline Figma → pull request → CI →
-`main` a déjà été exercé sur des contrats réels, mais les corrections de
-projection compatibles avec la 10.3 exigent un nouveau passage humain dans
-Figma. Les preuves durables portent sur des lois du moteur ; les composants du
+`main` a déjà été exercé sur des contrats réels, mais la forme 11.0 exige un
+nouveau passage humain dans Figma : le corpus et les contrats du Playground sont
+encore en 10.3, et personne d’autre qu’un humain ne peut relancer le plugin.
+Tant que ce réexport n’a pas eu lieu, le Playground reste un consommateur de
+10.3 et ne doit pas être monté : il n’aurait aucun contrat à lire. Les preuves durables portent sur des lois du moteur ; les composants du
 corpus constatent un comportement à une date donnée et restent remplaçables.
 
 ## Fragilités connues
@@ -111,22 +113,20 @@ skill `consommer-contrat`, deux implémentations divergent, et c’est celle qui
 n’est pas jetable qui deviendrait la vérité — exactement ce que le corpus de
 démonstration est censé ne jamais devenir.
 
-### Un remplacement natif publie un identifiant, pas un nom
-
-La valeur par défaut d’une component property `INSTANCE_SWAP` ou `SLOT`, et les
-clés de ses `preferredValues`, sortent de Figma comme identifiants opaques
-(« 1:1 », clé de publication) et sont republiées telles quelles. Le développeur
-ne peut ni les lire, ni les écrire, ce que la règle du contrat portable
-interdit. Latent tant qu’aucun composant du corpus n’expose de remplacement
-natif — les props d’icône synthétiques des règles `@icons` publient `null` —
-mais sur le chemin nominal de la composition d’icônes. La correction demande de
-nommer le node maître, que `parsers.ts` n’a pas et ne doit pas aller chercher
-lui-même : elle est détaillée dans [PLAN-SWAP-NOMME.md](./PLAN-SWAP-NOMME.md),
-et n’est pas engagée.
-
 ## Prochaines validations
 
-### 1. Fermer la validation 10.3
+### 1. Réexporter le corpus en 11.0, puis monter le Playground
+
+1. Rouvrir Figma et réexporter les quatre composants du corpus. `npm run
+   check:fixtures` le constate ; `npm test` valide alors la forme contre le
+   schéma 11.0, et `tests/migration11.test.ts` s’éteint de lui-même.
+2. Monter le Playground : `VERSION_CONTRAT_MINIMALE` et `MAXIMALE` à 11.0, copie
+   du schéma, résolution des cinq renvois de vue dans `variant-views.mjs`, index
+   de tokens dérivé dans `references-token.mjs`, lecture de `meta.diagnostics`,
+   retrait du croisement `nonListes` / `fantomes` de `check-contract.mjs` —
+   `manquants` reste, c’est lui qui protège le design.
+
+### 2. Fermer la validation de projection
 
 1. Réexporter depuis Figma un composant composé choisi après l’implémentation,
    avec plusieurs occurrences, des homonymes, un wrapper exposé, un `SLOT` et

@@ -17,7 +17,8 @@ type PropMeta = { figmaName?: string };
 export type EnumProp = PropMeta & {
   type: 'enum';
   values: string[];
-  default: string | null;
+  /** Absent quand Figma n'en déclare aucun ; l'absence EST « aucun défaut ». */
+  default?: string;
   /**
    * Documentation par valeur, alimentée par les règles `@prop <prop>.<valeur>`
    * (section `<Nom>-Rules`). Clé = valeur de l'enum, texte = quand l'utiliser.
@@ -40,7 +41,7 @@ export type BooleanProp = PropMeta & {
 /** Prop texte libre (issue d'une propriété TEXT Figma). */
 export type StringProp = PropMeta & {
   type: 'string';
-  default: string | null;
+  default?: string;
 };
 
 /**
@@ -53,7 +54,7 @@ export type StringProp = PropMeta & {
  */
 export type IconProp = PropMeta & {
   type: 'icon';
-  default: string | null;
+  default?: string;
   policy: 'modifiable';
   /** Prop BOOLEAN Figma liée nativement à la visibilité du calque, si elle existe. */
   visibilityProp?: string;
@@ -69,15 +70,15 @@ export type PreferredComponentValue = {
 export type InstanceSwapProp = PropMeta & {
   type: 'instance-swap';
   /** Id du composant Figma choisi par défaut. */
-  default: string | null;
-  preferredValues: PreferredComponentValue[];
+  default?: string;
+  preferredValues?: PreferredComponentValue[];
 };
 
 /** Réglages natifs d'une component property SLOT. */
 export type SlotProp = PropMeta & {
   type: 'slot';
-  default: string | boolean | null;
-  preferredValues: PreferredComponentValue[];
+  default?: string | boolean;
+  preferredValues?: PreferredComponentValue[];
   description?: string;
   settings?: {
     stretchChildOnInsert?: boolean;
@@ -103,16 +104,16 @@ export type ContractProp =
  * humain ou à un agent IA QUAND utiliser le composant, pas seulement COMMENT.
  */
 export type Intent = {
-  usage: string | null;
-  do: string[];
-  dont: string[];
-  pairs: string[];
+  usage?: string;
+  do?: string[];
+  dont?: string[];
+  pairs?: string[];
 };
 
 /** Déclencheur d'un état d'interaction dans le contrat consommé par le code. */
 export type StateDescriptor = {
-  /** Sélecteur ou attribut attendu par l'adaptateur de rendu ; null pour l'état par défaut. */
-  selector: string | null;
+  /** Sélecteur attendu par l'adaptateur de rendu ; ABSENT pour l'état par défaut. */
+  selector?: string;
   /**
    * Doc de l'état, déclarée par une règle `@prop <axe>.<état>`. L'axe d'états
    * n'étant pas une prop, sa documentation vit ici — au même endroit que le
@@ -322,7 +323,7 @@ export type PaddingX = SidedRefs<'left' | 'right'>;
 export type PaddingY = SidedRefs<'top' | 'bottom'>;
 
 /** Padding d'un conteneur, rangé par axe comme le panneau Figma le présente. */
-export type Padding = { x: PaddingX | null; y: PaddingY | null };
+export type Padding = { x?: PaddingX; y?: PaddingY };
 
 /** Rayon : une référence, ou le détail des quatre coins, dans l'ordre CSS. */
 export type Radius = SidedRefs<'topLeft' | 'topRight' | 'bottomRight' | 'bottomLeft'>;
@@ -592,13 +593,13 @@ export type StrokeTokens = {
    * variable, le détail par bord sinon, `null` quand Figma expose une largeur
    * non tokenisée.
    */
-  width: StrokeWidth | null;
+  width?: StrokeWidth;
   /**
    * Alignement structurel du stroke dans Figma, et donc forme du `box-shadow`
    * qui le rend (cf. `StrokeAlignment`). Un détail par côté se rend en autant
    * d'ombres, jamais en `border-width` : la bordure entrerait dans la boîte.
    */
-  align: StrokeAlignment | null;
+  align?: StrokeAlignment;
 };
 
 /**
@@ -651,13 +652,13 @@ export interface VariantTypography {
  * Tout est exprimé en noms de tokens.
  */
 export type SizeDimensions = {
-  gap: string | null;
+  gap?: string;
   /** Espace entre les lignes, publié aux mêmes conditions que `gap`. */
-  rowGap: string | null;
+  rowGap?: string;
   /** Espace entre les colonnes d'une grille, aux mêmes conditions. */
-  columnGap: string | null;
-  padding: Padding;
-  radius: Radius | null;
+  columnGap?: string;
+  padding?: Padding;
+  radius?: Radius;
 };
 
 /**
@@ -746,8 +747,13 @@ export type VariantIconPlacement = {
   slotPath: string[];
 };
 
-/** Vue complète partagée par les variants qui rendent exactement la même chose. */
-export type ContractVariantView = {
+/**
+ * Vue développée : ce qu'un variant rend exactement, avant catalogage.
+ *
+ * Elle n'est jamais publiée telle quelle. `compactVariants.ts` catalogue chaque
+ * PARTIE séparément et publie une `ContractVariantView` de renvois.
+ */
+export type ExpandedVariantView = {
   structure: VariantStructure;
   typography: TextStyleUse[];
   /** Dépendances de cette vue, dans l'ordre de son arbre. */
@@ -759,12 +765,85 @@ export type ContractVariantView = {
 };
 
 /**
+ * Vue publiée : cinq renvois vers les catalogues de parties.
+ *
+ * Chaque partie est partagée par ÉGALITÉ STRICTE de son bloc JSON — aucun
+ * merge, aucun défaut, aucun héritage : résoudre les cinq renvois redonne la
+ * vue exacte, au bit près. Seule la GRANULARITÉ du partage change : deux vues
+ * qui ne diffèrent que par leurs peintures cessent de republier tout leur arbre
+ * de slots, et leur divergence reste lisible sur le renvoi qui diffère.
+ *
+ * Une partie vide n'est pas cataloguée : son renvoi est simplement absent, à la
+ * règle commune des valeurs neutres.
+ */
+export type ContractVariantView = {
+  /** Clé d'une entrée de `Contract.viewStructures`. */
+  structure: string;
+  /** Clé d'une entrée de `Contract.viewTypographies`. */
+  typography?: string;
+  /** Clé d'une entrée de `Contract.viewComposes`. */
+  composes?: string;
+  /** Clé d'une entrée de `Contract.viewIcons`. */
+  icons?: string;
+  /** Clé d'une entrée de `Contract.viewPaintPlacements`. */
+  paintPlacements?: string;
+};
+
+/**
+ * Projection de référence du composant : un renvoi, plus ce qui n'appartient
+ * qu'au niveau global.
+ *
+ * `structure` décrivait le même arbre qu'une vue, recopié. Le renvoi est
+ * INCONDITIONNEL : quand la projection ne correspond à aucune structure déjà
+ * cataloguée — le cas d'un composant dont l'élection du node de layout saute un
+ * wrapper de dimensions — elle en ajoute une au catalogue. Une seule forme,
+ * donc un seul chemin de lecture chez le consommateur.
+ */
+export type ContractReferenceStructure = {
+  /** Clé d'une entrée de `Contract.viewStructures`. */
+  view: string;
+  /** Dimensions PAR taille, quand le composant expose un axe de tailles. */
+  sizes?: Record<string, SizeDimensions>;
+  /**
+   * Clés PUBLIQUES des axes de variantes, dans l'ordre de la matrice. Absentes
+   * pour un `COMPONENT` sans axe.
+   */
+  variantAxes?: string[];
+};
+
+/**
+ * Étiquettes Figma des axes et de leurs valeurs.
+ *
+ * Le nom Figma d'un variant — « Color=Primary, State=Hover » — répète ses
+ * `values` avec les majuscules de Figma. Publié sur chaque variant, il coûtait
+ * quatre-vingt-dix fois la même information sur un composant à quatre-vingt-dix
+ * combinaisons ; publié une fois par axe et par valeur, il coûte autant que le
+ * nombre de valeurs.
+ *
+ * Les deux tables viennent de la SOURCE — `componentPropertyDefinitions` pour
+ * le nom d'un axe, `variantProperties` pour la valeur brute — jamais d'une
+ * relecture du nom publié : reconstruire le nom depuis la table et le comparer
+ * ne suffit pas à valider l'appariement axe ↔ étiquette, qu'une permutation
+ * traverse sans être vue.
+ *
+ * Absentes quand le composant n'a pas d'axe, ou quand une seule combinaison ne
+ * se reconstruit pas à l'identique : `variants[].figmaName` reprend alors la
+ * main, variant par variant.
+ */
+export type FigmaVariantLabels = {
+  /** Nom Figma de chaque axe, indexé par sa clé publique. */
+  axes: Record<string, string>;
+  /** Valeur Figma d'origine, indexée par axe puis par valeur normalisée. */
+  values: Record<string, Record<string, string>>;
+};
+
+/**
  * Vue développée pendant l'extraction.
  *
  * Elle n'est jamais sérialisée telle quelle : `compactVariants.ts` catalogue
- * les vues identiques avant de construire le contrat public.
+ * chaque partie avant de construire le contrat public.
  */
-export type ExtractedContractVariant = ContractVariantView & {
+export type ExtractedContractVariant = ExpandedVariantView & {
   nodeId: string;
   figmaName: string;
   values: Record<string, string>;
@@ -790,6 +869,21 @@ export type PropertyBindingDefinition = {
   figmaPropName: string;
   target: 'visible' | 'characters' | 'mainComponent';
   figmaPath: string[];
+  /**
+   * Fin d'identifiant commune à toutes les occurrences de cette définition,
+   * point-virgule compris (« ;3:429 »).
+   *
+   * Figma écrit l'identifiant d'un calque atteint DANS une instance
+   * « I<chaîne d'instances>;<id du calque dans le maître> ». Le dernier segment
+   * ne dépend donc que de la définition, jamais du variant : le publier une
+   * fois ici retire une répétition par variant et par liaison. Les `nodeId` de
+   * `variants[].bindings` sont alors écrits SANS cette fin ; les recoller la
+   * redonne à l'identique.
+   *
+   * Absente quand la définition ne vise pas un calque d'instance, ou quand ses
+   * occurrences ne partagent pas la même fin.
+   */
+  nodeSuffix?: string;
 };
 
 /** L'endroit exact où une définition de liaison agit dans un variant. */
@@ -808,13 +902,22 @@ export type ExtractedPropertyBinding = PropertyBindingDefinition & {
 /** Une combinaison réellement présente dans Figma et sa vue exacte. */
 export type ContractVariant = {
   nodeId: string;
-  figmaName: string;
-  values: Record<string, string>;
-  /** Clé d'une vue complète de `variantViews`. */
+  /**
+   * Nom Figma exact de la combinaison. Absent quand
+   * `Contract.figmaVariantLabels` le reconstruit pour TOUS les variants ; il
+   * reprend la main, sur tous, dès qu'une seule combinaison y échappe.
+   */
+  figmaName?: string;
+  /**
+   * Valeur de chaque axe. Absente pour un `COMPONENT` sans axe : la seule
+   * combinaison possible n'a rien à nommer.
+   */
+  values?: Record<string, string>;
+  /** Clé d'une vue de `variantViews`. */
   view: string;
   /** Feuilles sémantiques directement adressables, sans axe synthétique. */
-  tokens: SlotTokens;
-  strokes: SlotStrokes;
+  tokens?: SlotTokens;
+  strokes?: SlotStrokes;
   /** Cibles natives propres à ce node Figma. Absentes quand il n'en porte aucune. */
   bindings?: VariantPropertyBinding[];
   /**
@@ -834,13 +937,19 @@ export type ContractVariant = {
  *
  * `figmaLayer` est celui de la FEUILLE publiée, pas celui du calque texte
  * qu'elle enveloppe : c'est la seule façon qu'il s'accorde toujours avec le
- * `figmaLayer` que la vue publie au même `slotPath`. Quand il vaut `value`, le
- * calque n'a jamais été renommé — la redondance est le signal, pas du bruit.
+ * `figmaLayer` que la vue publie au même `slotPath`.
  */
 export type SampleText = {
-  /** Chemin de slots depuis `variantViews[variants[].view].structure.children`. */
+  /** Chemin de slots jusqu'au texte, dans la structure de la vue du variant. */
   slotPath: string[];
-  figmaLayer: string;
+  /**
+   * Nom du calque, ABSENT quand il vaut `value`.
+   *
+   * Figma nomme un calque texte d'après ce qu'il dit tant que personne ne l'a
+   * renommé : le cas ordinaire écrivait donc le même contenu deux fois. Son
+   * absence porte le même signal — « jamais renommé » — sans le répéter.
+   */
+  figmaLayer?: string;
   value: string;
 };
 
@@ -946,7 +1055,12 @@ export type ContractSample = {
 
 export type ContractDiagnostic = {
   code: string;
-  severity: 'warning' | 'error';
+  /**
+   * Une seule valeur aujourd'hui : l'export n'émet que des avertissements.
+   * L'élargir demanderait de dire, dans la spécification, ce qu'un consommateur
+   * doit faire d'une erreur — et ce que devient alors la couverture.
+   */
+  severity: 'warning';
   message: string;
   figma?: {
     nodeId?: string;
@@ -975,23 +1089,29 @@ export type ContractMeta = {
    * Ce que l'export n'a pas pu décrire, en français et adressé au designer.
    * Rangé sous `meta` parce qu'il documente l'EXPORT, pas le composant : un
    * consommateur du contrat n'a jamais à le lire pour rendre un composant.
+   *
+   * Un miroir en texte brut vivait à côté, sous `warnings`. Il redisait
+   * exactement `diagnostics[].message`, dans le même ordre, et le contrat
+   * publiait donc chaque avertissement deux fois. Le miroir est parti ; qui
+   * veut la liste lisible lit `message`, sans filtrer sur `severity` — un
+   * diagnostic est un diagnostic, quelle que soit sa gravité.
+   *
+   * Absent quand l'export n'a rien à signaler.
    */
-  warnings: string[];
-  /** Diagnostics structurés ; `warnings` reste le miroir lisible et compatible. */
-  diagnostics: ContractDiagnostic[];
+  diagnostics?: ContractDiagnostic[];
   coverage: ContractCoverage;
   figma: {
     /** Nom du fichier Figma d'origine. */
     fileName: string;
     /** Id du nœud Component Set dans le fichier (ex. « 12:345 »). */
     nodeId: string;
-    /** Clé de publication du composant (null si non publié). */
-    componentKey: string | null;
+    /** Clé de publication du composant. Absente si le composant n'est pas publié. */
+    componentKey?: string;
     /**
-     * Lien direct vers le composant dans Figma. Null quand l'API ne fournit
+     * Lien direct vers le composant dans Figma. Absent quand l'API ne fournit
      * pas la clé du fichier (cas des plugins en développement).
      */
-    url: string | null;
+    url?: string;
   };
 };
 
@@ -1000,46 +1120,58 @@ export type Contract = {
   /** Nom Figma exact, lisible ; le nom de fichier porte l'identifiant de code canonique. */
   name: string;
   meta: ContractMeta;
-  props: Record<string, ContractProp>;
-  /** Vues exactes dédupliquées ; chaque entrée de `variants` en référence une. */
+  /** Absent pour un composant qui n'expose aucune prop. */
+  props?: Record<string, ContractProp>;
+  /** Étiquettes Figma des axes ; absentes quand chaque variant porte son nom. */
+  figmaVariantLabels?: FigmaVariantLabels;
+  /**
+   * Catalogue des arbres de slots. `variantViews[].structure` et
+   * `structure.view` y renvoient tous les deux.
+   */
+  viewStructures: Record<string, VariantStructure>;
+  /** Catalogue des applications de text styles. */
+  viewTypographies?: Record<string, TextStyleUse[]>;
+  /** Catalogue des dépendances placées. */
+  viewComposes?: Record<string, ComposedDependency[]>;
+  /** Catalogue des emplacements d'icônes. */
+  viewIcons?: Record<string, Record<string, VariantIconPlacement>>;
+  /** Catalogue des emplacements de peintures et de contours. */
+  viewPaintPlacements?: Record<string, VariantPaintPlacements>;
+  /** Vues exactes : cinq renvois vers les catalogues ci-dessus. */
   variantViews: Record<string, ContractVariantView>;
   /** Définitions stables des liaisons natives, réutilisées par les variants. */
-  propertyBindingDefinitions: Record<string, PropertyBindingDefinition>;
+  propertyBindingDefinitions?: Record<string, PropertyBindingDefinition>;
   /** Combinaisons exactes : aucune matrice cartésienne n'est inventée. */
   variants: ContractVariant[];
   /**
-   * Projection de référence et dimensions par taille.
+   * Projection de référence : un renvoi vers `viewStructures`, plus les
+   * dimensions par taille et les axes de la matrice.
    *
    * Les données exactes de matrice vivent dans `variants` et `variantViews`,
    * sans seconde copie susceptible de diverger.
    */
-  structure: Omit<
-    ContractStructure,
-    'variantTokens' | 'variantStrokes' | 'variantTypography'
-  >;
-  /** Déclencheurs et priorité des états, ou null si le composant n'a pas d'axe d'état. */
-  stateModel: StateModel | null;
+  structure: ContractReferenceStructure;
+  /** Déclencheurs et priorité des états ; absent sans axe d'état. */
+  stateModel?: StateModel;
   /** Vocabulaire de rendu des rôles (`background`, `foreground`, `icon`, `border`, `ring`…). */
   rendering: RenderingSemantics;
   /** Icônes qualifiées par les règles Figma, indexées par leur nom normalisé. */
-  icons: Record<string, IconDefinition>;
+  icons?: Record<string, IconDefinition>;
   /** Text styles réellement utilisés, liés à leurs tokens DTCG. */
-  textStyles: Record<string, TextStyleDefinition>;
+  textStyles?: Record<string, TextStyleDefinition>;
   /**
-   * Les composants unifiés que celui-ci embarque. Vide pour un composant
-   * simple ; non vide, il fait de ce contrat celui d'un composé.
+   * Les composants unifiés que celui-ci embarque. Absent pour un composant
+   * simple ; présent, il fait de ce contrat celui d'un composé.
    */
-  composes: ComposedDependency[];
+  composes?: ComposedDependency[];
   /**
    * Échantillons de maquette dédupliqués ; chaque entrée de `variants` en
-   * référence une par `sample`. Toujours publié, vide compris.
+   * référence une par `sample`.
    *
    * C'est l'unique propriétaire du non normatif : retirer `samples` et les
-   * `variants[].sample` redonne le contrat que produisait la version
-   * précédente, `meta` mis à part.
+   * `variants[].sample` redonne un contrat strictement normatif.
    */
-  samples: Record<string, ContractSample>;
-  /** Liste à plat, dédupliquée et triée, de tous les tokens consommés. */
-  tokensUsed: string[];
-  intent: Intent | null;
+  samples?: Record<string, ContractSample>;
+  /** Intention d'usage, absente quand aucune règle `@usage` ne la déclare. */
+  intent?: Intent;
 };

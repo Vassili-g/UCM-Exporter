@@ -251,7 +251,9 @@ async function applyContainerProperties(
     || exposesAnyField(node, BINDING_PATTERNS.paddingY)
     ? await resolvePaddings(node, resolver, warnings)
     : [null, null];
-  if (paddingX || paddingY) entry.padding = { x: paddingX, y: paddingY };
+  if (paddingX || paddingY) {
+    entry.padding = { ...(paddingX ? { x: paddingX } : {}), ...(paddingY ? { y: paddingY } : {}) };
+  }
 }
 
 /**
@@ -877,11 +879,13 @@ export async function extractLayout(
     sizing,
     ...(bounds ? { bounds } : {}),
     ...flexContainerProperties(layoutNode, warnings),
-    gap,
-    rowGap,
-    columnGap,
-    padding: { x: paddingX, y: paddingY },
-    radius,
+    ...(gap ? { gap } : {}),
+    ...(rowGap ? { rowGap } : {}),
+    ...(columnGap ? { columnGap } : {}),
+    ...(paddingX || paddingY
+      ? { padding: { ...(paddingX ? { x: paddingX } : {}), ...(paddingY ? { y: paddingY } : {}) } }
+      : {}),
+    ...(radius ? { radius } : {}),
     children,
   };
 }

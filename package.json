@@ -12,7 +12,8 @@
     "start": "npm run build",
     "test": "node scripts/run-tests.js",
     "check:fixtures": "tsx scripts/check-fixtures.ts",
-    "schema": "tsx scripts/build-schema.ts"
+    "schema": "tsx scripts/build-schema.ts",
+    "verifier:migration": "tsx scripts/verifier-migration.ts"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.68.0",

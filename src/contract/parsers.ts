@@ -230,7 +230,9 @@ export function extractContractPropertyModel(
     if (definition.type === 'TEXT') {
       if (claim(key, rawFigmaName, {
         type: 'string',
-        default: typeof definition.defaultValue === 'string' ? definition.defaultValue : null,
+        ...(typeof definition.defaultValue === 'string'
+          ? { default: definition.defaultValue }
+          : {}),
       })) publicPropertyKeyByFigmaName.set(propertyName, key);
       continue;
     }
@@ -238,7 +240,9 @@ export function extractContractPropertyModel(
     if (definition.type === 'INSTANCE_SWAP') {
       if (claim(key, rawFigmaName, {
         type: 'instance-swap',
-        default: typeof definition.defaultValue === 'string' ? definition.defaultValue : null,
+        ...(typeof definition.defaultValue === 'string'
+          ? { default: definition.defaultValue }
+          : {}),
         preferredValues: [...(definition.preferredValues ?? [])],
       })) publicPropertyKeyByFigmaName.set(propertyName, key);
       continue;
@@ -247,10 +251,10 @@ export function extractContractPropertyModel(
     if (definition.type === 'SLOT') {
       if (claim(key, rawFigmaName, {
         type: 'slot',
-        default:
-          typeof definition.defaultValue === 'string' || typeof definition.defaultValue === 'boolean'
-            ? definition.defaultValue
-            : null,
+        ...(typeof definition.defaultValue === 'string'
+          || typeof definition.defaultValue === 'boolean'
+          ? { default: definition.defaultValue }
+          : {}),
         preferredValues: [...(definition.preferredValues ?? [])],
         ...(definition.description ? { description: definition.description } : {}),
         ...(definition.slotSettings ? { settings: { ...definition.slotSettings } } : {}),

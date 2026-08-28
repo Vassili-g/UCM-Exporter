@@ -87,7 +87,6 @@ test('mergeIconRules lie une icône modifiable à son nom Figma exact', () => {
     iconLeft: { type: 'boolean', default: false },
     iconLeftName: {
       type: 'icon',
-      default: null,
       policy: 'modifiable',
       visibilityProp: 'iconLeft',
     },
@@ -154,7 +153,7 @@ test('mergeIconRules donne sa prop runtime à une icône modifiable sans boolée
     },
   });
   assert.deepEqual(props, {
-    arrowLeftLongName: { type: 'icon', default: null, policy: 'modifiable' },
+    arrowLeftLongName: { type: 'icon', policy: 'modifiable' },
   });
   assert.deepEqual(warnings, []);
 });
@@ -202,7 +201,6 @@ test('mergeIconRules nomme la prop runtime d’après le booléen quand il exist
   assert.equal(icons.arrowLeftLong.runtimeProp, 'iconLeftName');
   assert.deepEqual(props.iconLeftName, {
     type: 'icon',
-    default: null,
     policy: 'modifiable',
     visibilityProp: 'iconLeft',
   });

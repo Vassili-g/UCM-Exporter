@@ -18,6 +18,7 @@ import handleExportComponent, {
   componentContractFilename,
   mergeWrapperProps,
 } from '../src/contract/exportComponent';
+import { collectTokenReferences } from '../src/variables';
 import type { ContractProp } from '../src/contract/types';
 
 let compteur = 0;
@@ -161,6 +162,28 @@ function monterFigma(options: {
   };
 }
 
+/** L'arbre de la projection de référence, derrière son renvoi au catalogue. */
+function structureDe(contrat: any): any {
+  return contrat.viewStructures[contrat.structure.view];
+}
+
+/** La vue d'un variant, ses cinq parties résolues. */
+function vueDe(contrat: any, variant: any): any {
+  const vue = contrat.variantViews[variant.view];
+  return {
+    structure: contrat.viewStructures[vue.structure],
+    typography: contrat.viewTypographies?.[vue.typography] ?? [],
+    composes: contrat.viewComposes?.[vue.composes] ?? [],
+    icons: contrat.viewIcons?.[vue.icons] ?? {},
+    paintPlacements: contrat.viewPaintPlacements?.[vue.paintPlacements] ?? {},
+  };
+}
+
+/** Les messages de l'export, tels que `meta.diagnostics` les porte. */
+function messagesDe(contrat: any): string[] {
+  return (contrat.meta.diagnostics ?? []).map((diagnostic: any) => diagnostic.message);
+}
+
 test('handleExportComponent assemble un contrat complet à partir du Component Set sélectionné', async () => {
   const figmaFaux = monterFigma();
   try {
@@ -179,42 +202,46 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
     // Les props du set, la matrice et le layout se sont transmis leurs résultats.
     assert.deepEqual(contrat.props.variant.values, ['contained', 'outlined']);
     assert.deepEqual(contrat.structure.variantAxes, ['variant']);
-    assert.equal(contrat.structure.layout, 'flex-row');
-    assert.equal(contrat.structure.gap, '{tokens.sizes.gap}');
+    assert.equal(structureDe(contrat).layout, 'flex-row');
+    assert.equal(structureDe(contrat).gap, '{tokens.sizes.gap}');
     assert.equal(contrat.variants.length, 2);
     assert.deepEqual(contrat.variants.map((entry: any) => entry.values.variant), [
       'contained',
       'outlined',
     ]);
-    assert.ok(contrat.variants.every((entry: any) => (
-      entry.tokens && entry.strokes && contrat.variantViews[entry.view]
-    )));
+    assert.ok(contrat.variants.every((entry: any) => contrat.variantViews[entry.view]));
     assert.equal(Object.keys(contrat.variantViews).length, 1);
+    // Le contrat ne publie que ce qu'il a : ce composant n'a ni icône, ni text
+    // style, ni liaison native, ni axe d'état. Les champs correspondants sont
+    // absents, pas vides.
     assert.deepEqual(Object.keys(contrat).sort(), [
-      'composes', 'icons', 'intent', 'meta', 'name', 'propertyBindingDefinitions',
-      'props', 'rendering', 'samples', 'stateModel', 'structure', 'textStyles', 'tokensUsed',
-      'variantViews', 'variants',
+      'figmaVariantLabels', 'intent', 'meta', 'name', 'props', 'rendering', 'samples',
+      'structure', 'variantViews', 'variants', 'viewStructures',
     ]);
-    assert.equal('variantTokens' in contrat.structure, false);
-    assert.equal('variantStrokes' in contrat.structure, false);
-    assert.equal('variantTypography' in contrat.structure, false);
+    assert.equal('variantTokens' in structureDe(contrat), false);
+    assert.equal('variantStrokes' in structureDe(contrat), false);
+    assert.equal('variantTypography' in structureDe(contrat), false);
+    // Le renvoi est inconditionnel : `structure` ne recopie plus aucun arbre.
+    assert.deepEqual(Object.keys(contrat.structure).sort(), ['variantAxes', 'view']);
     assert.deepEqual(contrat.meta.coverage, { portable: 'partial' });
-    assert.equal(contrat.meta.diagnostics.length, contrat.meta.warnings.length);
     assert.ok(contrat.meta.diagnostics.every((diagnostic: any) => (
       Object.keys(diagnostic).sort().join(',') === 'code,message,severity'
     )));
+    // Le miroir en texte brut a disparu : `diagnostics` porte tout, une seule fois.
+    assert.equal('warnings' in contrat.meta, false);
 
-    // `tokensUsed` se dérive du contrat TERMINÉ : il ne cite donc que ce que le
-    // contrat emploie, et il le cite dès qu'un champ le porte.
-    assert.deepEqual(contrat.tokensUsed, ['{tokens.sizes.gap}']);
+    // L'index des tokens a disparu lui aussi : il se dérive du contrat terminé,
+    // et le contrat cite bien ce qu'il emploie.
+    assert.equal('tokensUsed' in contrat, false);
+    assert.deepEqual(Array.from(collectTokenReferences(contrat)), ['{tokens.sizes.gap}']);
 
-    // `meta.warnings` reste le miroir complet des diagnostics. Ce que l'UI
-    // compte et ce que la pull request titre « avertissement » n'en est que la
-    // part qui demande un geste ; les notes voyagent à côté, sans rien perdre.
+    // Ce que l'UI compte et ce que la pull request titre « avertissement » n'est
+    // que la part qui demande un geste ; les notes voyagent à côté, sans rien
+    // perdre — la réunion des deux redonne exactement `meta.diagnostics`.
     assert.equal(resultat.warningCount, resultat.warnings.length);
     assert.deepEqual(
       [...resultat.warnings, ...resultat.infos].sort(),
-      [...contrat.meta.warnings].sort(),
+      messagesDe(contrat).sort(),
     );
     assert.deepEqual(
       resultat.infos,
@@ -241,9 +268,10 @@ test('l’échantillon reste hors du contrat normatif : ni token, ni couverture,
     const resultat = await handleExportComponent();
     const contrat = JSON.parse(resultat.content);
 
-    assert.ok(
-      !contrat.tokensUsed.includes('{components.piege.background}'),
-      'un texte de maquette n’est pas une référence de token',
+    assert.equal(
+      JSON.stringify(contrat).includes('{components.piege.background}'),
+      true,
+      'le texte de maquette reste publié dans son échantillon',
     );
     const echantillon = contrat.samples[contrat.variants[0].sample];
     assert.deepEqual(
@@ -303,7 +331,7 @@ test('composes se dérive de l’arbre : deux dépendances d’un même cadre y 
 
     // Le cadre appartient au contrat et publie son flux ; les deux dépendances
     // sont ses enfants, chacune à son emplacement.
-    const cadre = contrat.structure.children.find(
+    const cadre = structureDe(contrat).children.find(
       (child: any) => child.figmaLayer === 'Liens',
     );
     assert.equal(cadre.layout, 'flex-row');
@@ -337,9 +365,9 @@ test('handleExportComponent exporte sans règles et diagnostique la documentatio
   try {
     const contrat = JSON.parse((await handleExportComponent()).content);
 
-    assert.equal(contrat.intent, null);
+    assert.equal(contrat.intent, undefined);
     assert.ok(
-      contrat.meta.warnings.some((warning: string) => warning.includes('Aucune règle @usage')),
+      messagesDe(contrat).some((warning: string) => warning.includes('Aucune règle @usage')),
     );
   } finally {
     figmaFaux.restaurer();
@@ -364,7 +392,7 @@ test('une dépendance absente du variant de référence reste dans la variante e
     const resultat = await handleExportComponent();
     const contrat = JSON.parse(resultat.content);
 
-    const views = contrat.variants.map((variant: any) => contrat.variantViews[variant.view]);
+    const views = contrat.variants.map((variant: any) => vueDe(contrat, variant));
     assert.deepEqual(views[0].composes, []);
     assert.deepEqual(views[1].composes, [
       { component: 'Link', figmaLayer: 'Action secondaire' },
@@ -372,7 +400,7 @@ test('une dépendance absente du variant de référence reste dans la variante e
     assert.deepEqual(contrat.composes, [
       { component: 'Link', figmaLayer: 'Action secondaire' },
     ]);
-    assert.equal(contrat.structure.children.some((child: any) => child.composes === 'Link'), false);
+    assert.equal(structureDe(contrat).children.some((child: any) => child.composes === 'Link'), false);
     // Le message dit lui-même que les arbres exacts conservent ces
     // compositions : rien ne manque, aucun geste n'est demandé. C'est une NOTE.
     assert.ok(contrat.meta.diagnostics.some((diagnostic: any) => (
@@ -402,14 +430,14 @@ test('un COMPONENT standalone produit une variante exacte sans axe', async () =>
     const contrat = JSON.parse((await handleExportComponent()).content);
 
     assert.equal(contrat.name, 'Standalone');
-    assert.deepEqual(contrat.structure.variantAxes, []);
-    assert.deepEqual(contrat.variants.map((entry: any) => entry.values), [{}]);
+    assert.equal(contrat.structure.variantAxes, undefined);
+    // Sans axe, il n'y a rien à nommer : la seule combinaison n'a pas de `values`.
+    assert.deepEqual(contrat.variants.map((entry: any) => entry.values), [undefined]);
     assert.deepEqual(contrat.variants[0].tokens, {
       background: '{tokens.components.standalone.colors.background}',
     });
-    assert.ok(contrat.tokensUsed.includes('{tokens.components.standalone.colors.background}'));
-    assert.deepEqual(contrat.variants[0].strokes, {});
-    const view = contrat.variantViews[contrat.variants[0].view];
+    assert.equal(contrat.variants[0].strokes, undefined);
+    const view = vueDe(contrat, contrat.variants[0]);
     assert.deepEqual(view.typography, []);
     assert.deepEqual(view.composes, []);
     assert.deepEqual(view.icons, {});
@@ -476,7 +504,7 @@ test('une piste FIXED de grille est une note, pas un avertissement', async () =>
     const enPixels = (message: string) => message.includes('publiées en pixels');
 
     // Rien ne manque : la piste est publiée telle que Figma la règle.
-    assert.deepEqual(contrat.structure.rowSizes, ['120px', '1fr']);
+    assert.deepEqual(structureDe(contrat).rowSizes, ['120px', '1fr']);
     assert.ok(resultat.infos.some(enPixels));
     assert.equal(resultat.warnings.some(enPixels), false);
     assert.equal(
@@ -484,7 +512,7 @@ test('une piste FIXED de grille est une note, pas un avertissement', async () =>
       'UCM_EXPORT_INFO',
     );
     // Le miroir complet du contrat, lui, la garde.
-    assert.ok(contrat.meta.warnings.some(enPixels));
+    assert.ok(messagesDe(contrat).some(enPixels));
   } finally {
     figmaFaux.restaurer();
   }
@@ -543,7 +571,7 @@ test('un Component Set clairsemé exporte uniquement les combinaisons existantes
       { variant: 'outlined', size: 'large' },
     ]);
     assert.ok(
-      contrat.meta.warnings.some((warning: string) => warning.includes('produit cartésien')),
+      messagesDe(contrat).some((warning: string) => warning.includes('produit cartésien')),
     );
   } finally {
     figmaFaux.restaurer();
@@ -580,7 +608,7 @@ test('les props propres au wrapper sont fusionnées avant leurs liaisons natives
       })
     )));
     assert.equal(
-      contrat.meta.warnings.some((warning: string) => (
+      messagesDe(contrat).some((warning: string) => (
         warning.includes('Wrapper label') && warning.includes('aucune prop publique')
       )),
       false,
@@ -643,7 +671,7 @@ test('meta.figma.url est construit dès que l’API fournit la clé du fichier',
     );
     assert.equal(String(contrat.meta.figma.url).split('node-id=')[1].includes(':'), false);
     assert.equal(
-      contrat.meta.warnings.some((warning: string) => warning.includes('Lien vers Figma')),
+      messagesDe(contrat).some((warning: string) => warning.includes('Lien vers Figma')),
       false,
     );
   } finally {
@@ -656,11 +684,11 @@ test('sans clé de fichier, le contrat le dit sans bloquer l’export', async ()
   try {
     const contrat = JSON.parse((await handleExportComponent()).content);
 
-    assert.equal(contrat.meta.figma.url, null);
+    assert.equal(contrat.meta.figma.url, undefined);
     assert.equal(contrat.meta.figma.fileName, 'Design System');
     assert.ok(contrat.meta.figma.nodeId);
     assert.ok(
-      contrat.meta.warnings.some((warning: string) => warning.includes('Lien vers Figma')),
+      messagesDe(contrat).some((warning: string) => warning.includes('Lien vers Figma')),
     );
   } finally {
     figmaFaux.restaurer();

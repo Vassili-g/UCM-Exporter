@@ -28,7 +28,7 @@ du ressort du repository consommateur.
 - **`normalizeName()` est commune aux deux commandes** :
   `Brand Tokens/Primary/default` → `brand-tokens.primary.default`
   (`/`→`.`, espaces d'un segment → `-`, minuscules). Un token s'écrit donc
-  pareil dans `tokens.json` et dans un contrat — les `tokensUsed` de la Partie 1
+  pareil dans `tokens.json` et dans un contrat — les références de la Partie 1
   recoupent la Partie 2.
 - **Références de tokens entre accolades** : dans un contrat, un token est cité
   comme RÉFÉRENCE `"{chemin.du.token}"`, jamais comme chemin nu ni valeur
@@ -36,7 +36,7 @@ du ressort du repository consommateur.
   sont un simple enrobage autour du nom produit par `normalizeName()` ; un
   consommateur retire `{…}` avant de résoudre. Un nom de **text style** n'est
   pas un token ; en revanche, les variables liées au style sont exportées comme
-  références dans `textStyles.*.tokens` et entrent dans `tokensUsed`.
+  références dans `textStyles.*.tokens`, et comptent comme telles.
 
 ## Hypothèses sur le design system
 
@@ -130,7 +130,7 @@ chacun, relever les tokens liés (`boundVariables.fills` et
 `.strokes` sur tout le sous-arbre), rangés par **clé**, dont la base est le
 dernier segment du token. Un composant unifié imbriqué n'y contribue rien : ni son contenu, ni le
 calque de l'instance elle-même, dont le fond appartient à son propre contrat.
-Le relever ferait entrer dans `variants[].tokens` et dans `tokensUsed` une couleur
+Le relever ferait entrer dans `variants[].tokens` une couleur
 que ce contrat-ci ne peint pas — et, sur une clé partagée, évincerait la sienne. Un sous-arbre `visible === false` est ignoré, sauf si sa visibilité
 est liée à une prop de composant ou à une variable : il peut alors être rendu
 dans une autre configuration et reste exporté. Un sous-arbre statiquement
@@ -376,8 +376,7 @@ warning et n'est jamais remplacée par une valeur brute.
 Chaque `variantViews.*.typography` liste `{ slotPath, style }` pour situer le
 style de chaque texte dans la structure de cette même vue. `slotPath` est une
 liste de slots depuis `structure.children` jusqu'à la part concernée. Le catalogue ne
-contient que les styles réellement utilisés ; ses références alimentent
-`tokensUsed`. Un layer sans style, un style introuvable ou deux noms normalisés
+contient que les styles réellement utilisés. Un layer sans style, un style introuvable ou deux noms normalisés
 en collision avertissent et l'usage ambigu reste absent.
 
 #### 6. Structure
@@ -441,11 +440,27 @@ La projection de référence `structure.children` est comparée sur toute la
 matrice. Une différence de cardinalité, d'ordre ou de disposition avertit en
 nommant les variants ; un changement de nom Figma avertit aussi, sauf pour une
 icône reconnue dont le slot stable et la vue exacte portent déjà l'identité.
-L'écart n'est jamais perdu. `variantViews` catalogue
-chaque bloc complet distinct — `structure`, `typography`, `icons`, `composes` —
-et chaque entrée de `variants` le référence par `view`, à côté de ses feuilles
-exactes `tokens` et `strokes`. L'égalité du bloc JSON complet est l'unique règle
-de partage : aucun merge, défaut ou héritage ne peut masquer une divergence.
+L'écart n'est jamais perdu. `variantViews` catalogue chaque vue distincte, et
+chaque entrée de `variants` la référence par `view`, à côté de ses feuilles
+exactes `tokens` et `strokes`. Une vue n'est pas un bloc mais **cinq renvois** —
+`structure`, `typography`, `composes`, `icons`, `paintPlacements` — vers cinq
+catalogues séparés (`viewStructures`, `viewTypographies`, `viewComposes`,
+`viewIcons`, `viewPaintPlacements`).
+
+L'égalité stricte reste l'unique règle de partage, appliquée à chaque PARTIE :
+aucun merge, défaut ou héritage ne peut masquer une divergence, et résoudre les
+cinq renvois redonne la vue exacte, au bit près. Ce qui change est la
+granularité, et elle vaut cher : deux vues qui ne diffèrent que par leurs
+peintures republiaient tout leur arbre de slots. Deux réserves closent la
+règle — l'ordre des clés d'un objet ne compte pas dans la signature (deux
+extractions du même arbre peuvent le produire dans un ordre différent), et une
+partie vide n'est pas cataloguée : son renvoi est simplement absent.
+
+`structure` suit la même mécanique : elle publie un renvoi vers
+`viewStructures`, **inconditionnellement**. Quand l'élection du node de layout
+la fait différer de toute vue — un wrapper de dimensions sauté — elle ajoute son
+entrée au catalogue plutôt que de recopier un arbre. Une seule forme, donc un
+seul chemin de lecture.
 
 `icons.<clé>.slot` continue de nommer un slot de **premier niveau**, y compris
 pour une icône imbriquée dans un slot à parts.
@@ -847,8 +862,8 @@ de chaque instance rencontrée. Un remplacement qu'on ne sait pas nommer est
 interdit d'inventer, elle n'autorise pas à perdre.
 
 **Ce qu'il ne demande jamais.** L'échantillon n'avertit de rien, ne dégrade
-jamais `meta.coverage.portable`, et ne contribue pas à `tokensUsed` — un texte de
-maquette en forme de référence n'est pas un token. Ce qu'il ne sait pas lire, il
+jamais `meta.coverage.portable`, et n'entre dans aucun relevé de tokens — un
+texte de maquette en forme de référence n'est pas un token. Ce qu'il ne sait pas lire, il
 l'omet. En contrepartie, `args` est publié comme un **sous-ensemble**, et voici
 ce qu'il ne sait structurellement pas porter :
 
@@ -1018,15 +1033,17 @@ un même calque — un `border` et un `ring` en focus — ils se composent en **
 déclaration, séparés par des virgules, les `inset` d'abord. Toute propriété
 pertinente sans variable liée → warning précis (calque + propriété), non
 exportée, **export non bloqué**.
-`tokensUsed` = liste à plat, dédupliquée et triée, de **toutes** les références
-de token du contrat — `icons.<clé>.size` vit hors de `structure` et en fait
-partie. L'index est **dérivé du contrat terminé**, jamais tenu pendant
-l'extraction : le moteur lit des tokens pour décider (la taille d'une icône sur
-chaque variante, les couleurs d'une variante en conflit) et les écarte ensuite ;
-un relevé les y ferait entrer alors que le contrat ne les emploie pas. Une
-référence se reconnaît à la chaîne **entière** : un nom de style de texte reste
-une chaîne nue ; ses variables, elles, sont de vraies références. Une phrase qui cite des tokens — un avertissement, une règle
-d'usage — n'en est pas une.
+Le contrat ne publie **aucun index de ses tokens**. Il en portait un,
+`tokensUsed`, dérivé du contrat terminé : ce qui se dérive ne se publie pas, et
+l'index coûtait jusqu'à 7 % de la lecture pour ne rien dire de neuf.
+
+Un consommateur qui a besoin de la liste la relève lui-même, et la règle est
+celle que le moteur appliquait : balayer TOUT le contrat **sauf `samples` et
+`meta`**. L'exclusion n'est pas cosmétique — un texte de maquette peut valoir
+« {montant.total} » sans nommer aucun token, et un avertissement peut citer une
+référence dans une phrase. Une référence se reconnaît à la chaîne **entière** :
+un nom de style de texte reste une chaîne nue ; ses variables, elles, sont de
+vraies références.
 
 ### Sortie
 
@@ -1044,9 +1061,8 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "10.3",
+    "contractVersion": "11.0",
     "exportedAt": "2026-07-11T14:00:00.000Z",
-    "warnings": ["…"],
     "diagnostics": [
       { "code": "UCM_EXPORT_NOTICE", "severity": "warning",
         "message": "…" }
@@ -1055,7 +1071,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "12:345",
-      "componentKey": "…ou null si non publié",
+      "componentKey": "…absent si non publié",
       "url": "https://www.figma.com/design/<fileKey>/…?node-id=12-345"
     }
   },
@@ -1068,30 +1084,41 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "size":     { "type": "enum", "values": ["big","medium","small"], "default": "medium" },
     "iconLeft": { "type": "boolean", "default": true,
                   "description": "Affiche l'icône placée avant le libellé." },
-    "iconLeftName": { "type": "icon", "default": null,
-                       "policy": "modifiable", "visibilityProp": "iconLeft" },
+    "iconLeftName": { "type": "icon", "policy": "modifiable", "visibilityProp": "iconLeft" },
     "iconRight":{ "type": "boolean", "default": true },
-    "iconRightName": { "type": "icon", "default": null,
-                        "policy": "modifiable", "visibilityProp": "iconRight" }
+    "iconRightName": { "type": "icon", "policy": "modifiable", "visibilityProp": "iconRight" }
+  },
+  "figmaVariantLabels": {
+    "axes": { "color": "Color", "variant": "Variant", "state": "State" },
+    "values": { "color": { "primary": "Primary" }, "variant": { "contained": "Contained" },
+                 "state": { "default": "Default" } }
+  },
+  "viewStructures": {
+    "st1": { "layout": "flex-row",
+      "sizing": { "width": "fit-content", "height": "fit-content" },
+      "children": [
+        { "slot": "icon", "figmaLayer": "arrow-left-long", "optional": true,
+          "visibilityProp": "iconLeft", "size": "{components.icons.sizes.base}" },
+        { "slot": "label", "figmaLayer": "Suivant" },
+        { "slot": "icon-2", "figmaLayer": "arrow-right-long", "optional": true,
+          "visibilityProp": "iconRight", "size": "{components.icons.sizes.base}" }
+      ] }
+  },
+  "viewPaintPlacements": {
+    "pp1": { "fills": { "background": [[]] } }
   },
   "variantViews": {
-    "v1": {
-      "structure": { "layout": "flex-row", "sizing": { "width": "fit-content",
-        "height": "fit-content" }, "children": [] },
-      "typography": [], "composes": [], "icons": {},
-      "paintPlacements": { "fills": { "background": [[]] }, "strokes": {} }
-    }
+    "v1": { "structure": "st1", "paintPlacements": "pp1" }
   },
   "propertyBindingDefinitions": {
     "b1": { "prop": "iconLeft", "figmaPropName": "iconLeft#12:3",
       "target": "visible", "figmaPath": ["Icon left"] }
   },
   "variants": [
-    { "nodeId": "12:346", "figmaName": "Color=Primary, Variant=Contained",
+    { "nodeId": "12:346",
       "values": { "color": "primary", "variant": "contained", "state": "default" },
-      "view": "v1",
       "tokens": { "background": "{components.button.colors.primary}" },
-      "strokes": {},
+      "view": "v1",
       "bindings": [{ "definition": "b1", "nodeId": "12:350" }],
       "sample": "s1" }
   ],
@@ -1099,7 +1126,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "s1": {
       "args": { "iconLeft": true, "iconRight": true },
       "text": [
-        { "slotPath": ["label"], "figmaLayer": "Suivant", "value": "Suivant" }
+        { "slotPath": ["label"], "value": "Suivant" }
       ],
       "composes": [
         { "slotPath": ["action", "button"], "figmaLayer": "Button",
@@ -1114,7 +1141,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
   "stateModel": {
     "axis": "state",
     "states": {
-      "default": { "selector": null },
+      "default": {},
       "hover": { "selector": ":hover", "description": "Le pointeur survole le bouton." },
       "focus": { "selector": ":focus-visible" },
       "press": { "selector": ":active" },
@@ -1133,32 +1160,23 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     }
   },
   "structure": {
-    "layout": "flex-row",
-    "sizing": { "width": "fit-content", "height": "fit-content" },
+    "view": "st1",
     "sizes": {
       "big":    { "gap": "…", "padding": { "x": "…", "y": "…" }, "radius": "…" },
       "medium": { "…": "idem" },
       "small":  { "…": "idem" }
     },
-    "children": [
-      { "slot": "icon", "figmaLayer": "arrow-left-long", "optional": true,
-        "visibilityProp": "iconLeft", "size": "{components.icons.sizes.base}" },
-      { "slot": "label", "figmaLayer": "Suivant" },
-      { "slot": "icon-2", "figmaLayer": "arrow-right-long", "optional": true,
-        "visibilityProp": "iconRight", "size": "{components.icons.sizes.base}" }
-    ],
-    "…": "un slot à plusieurs textes publie ses parts :",
-    "children (Alert)": [
-      { "slot": "label", "figmaLayer": "Text", "layout": "flex-column",
-        "gap": "{components.alert.sizes.text-gap}",
-        "children": [
-          { "slot": "label", "figmaLayer": "Titre", "optional": true,
-            "visibilityProp": "title" },
-          { "slot": "label-2", "figmaLayer": "Description" }
-        ] }
-    ],
     "variantAxes": ["color","variant","state"]
   },
+  "… un slot à plusieurs textes publie ses parts, dans SA structure de vue :": [
+    { "slot": "label", "figmaLayer": "Text", "layout": "flex-column",
+      "gap": "{components.alert.sizes.text-gap}",
+      "children": [
+        { "slot": "label", "figmaLayer": "Titre", "optional": true,
+          "visibilityProp": "title" },
+        { "slot": "label-2", "figmaLayer": "Description" }
+      ] }
+  ],
   "textStyles": {
     "label.large": {
       "figmaName": "Label/Large",
@@ -1179,14 +1197,10 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
                           "slot": "icon-2", "size": "{components.icons.sizes.base}",
                           "visibilityProp": "iconRight", "runtimeProp": "iconRightName" }
   },
-  "composes": [],
-  "tokensUsed": ["…"],
   "intent": {
     "usage": "Action déclenchant une opération ; le choix des variantes dépend de l'importance et du contexte.",
-    "do": [],
     "dont": ["Utiliser size.big dans des écrans génériques.",
-              "Juxtaposer plusieurs boutons color.primary sur une même vue."],
-    "pairs": []
+              "Juxtaposer plusieurs boutons color.primary sur une même vue."]
   }
 }
 ```
@@ -1271,7 +1285,7 @@ Le relevé couvre toute la matrice. Chaque
 garde l'ordre et la cardinalité. Le champ global
 `composes` en est l'union ordonnée à cardinalité maximale : une dépendance
 conditionnelle n'est jamais perdue parce qu'elle manque au variant de
-référence. Comme `tokensUsed`, ces champs se dérivent du contrat terminé. La
+référence. Ces champs se dérivent du contrat terminé. La
 séquence se LIT sur chaque arbre, et non dans l'ordre où l'extraction a rangé
 ses trouvailles : celui-ci
 dépend de l'ordonnancement des lectures asynchrones, et deux cadres frères
@@ -1419,7 +1433,7 @@ d'autre.** C'est la page que le plugin ouvre juste après l'export : le designer
 y lit ce qui n'a pas pu être décrit sans ouvrir le JSON ni le journal du plugin.
 Les deux artefacts sont couverts par le même mécanisme — `tokens.json` n'a aucun
 champ où transporter les siens, là où un contrat les garde aussi dans
-`meta.warnings`. Un avertissement ne bloque jamais : seules les préconditions
+`meta.diagnostics`. Un avertissement ne bloque jamais : seules les préconditions
 arrêtent un export (cf. [CONCEPT.md](./CONCEPT.md)).
 
 Chaque avertissement nomme l'élément Figma concerné avec l'intitulé que Figma

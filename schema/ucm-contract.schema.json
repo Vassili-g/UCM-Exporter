@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-10.3.schema.json",
-  "title": "Contrat de composant UCM 10.3",
+  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-11.0.schema.json",
+  "title": "Contrat de composant UCM 11.0",
   "description": "Ce schéma décrit la FORME d'un contrat, pas sa cohérence interne. Il ne vérifie pas les renvois internes : une entrée de `variants` peut citer une vue absente de `variantViews`, une icône un slot absent de `structure`, un token une référence inexistante. Il ne contraint pas non plus le FORMAT des valeurs : une référence de token `{chemin.du.token}`, une mesure `120px` et une piste `1fr` y sont de simples chaînes, parce que TypeScript les décrit par des types que JSON Schema ne sait pas porter. Un contrat valide au sens de ce schéma reste donc à vérifier par un consommateur.",
-  "x-ucm-contract-version": "10.3",
+  "x-ucm-contract-version": "11.0",
   "$ref": "#/definitions/Contract",
   "definitions": {
     "Contract": {
@@ -20,14 +20,63 @@
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/ContractProp"
-          }
+          },
+          "description": "Absent pour un composant qui n'expose aucune prop."
+        },
+        "figmaVariantLabels": {
+          "$ref": "#/definitions/FigmaVariantLabels",
+          "description": "Étiquettes Figma des axes ; absentes quand chaque variant porte son nom."
+        },
+        "viewStructures": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/VariantStructure"
+          },
+          "description": "Catalogue des arbres de slots. `variantViews[].structure` et `structure.view` y renvoient tous les deux."
+        },
+        "viewTypographies": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/TextStyleUse"
+            }
+          },
+          "description": "Catalogue des applications de text styles."
+        },
+        "viewComposes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/ComposedDependency"
+            }
+          },
+          "description": "Catalogue des dépendances placées."
+        },
+        "viewIcons": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/definitions/VariantIconPlacement"
+            }
+          },
+          "description": "Catalogue des emplacements d'icônes."
+        },
+        "viewPaintPlacements": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/VariantPaintPlacements"
+          },
+          "description": "Catalogue des emplacements de peintures et de contours."
         },
         "variantViews": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/ContractVariantView"
           },
-          "description": "Vues exactes dédupliquées ; chaque entrée de `variants` en référence une."
+          "description": "Vues exactes : cinq renvois vers les catalogues ci-dessus."
         },
         "propertyBindingDefinitions": {
           "type": "object",
@@ -44,128 +93,12 @@
           "description": "Combinaisons exactes : aucune matrice cartésienne n'est inventée."
         },
         "structure": {
-          "type": "object",
-          "properties": {
-            "layout": {
-              "$ref": "#/definitions/LayoutDirection",
-              "description": "Disposition Figma du composant, traduite en vocabulaire CSS."
-            },
-            "columns": {
-              "type": "number",
-              "description": "Nombre de pistes, quand `layout` vaut `grid`."
-            },
-            "rows": {
-              "type": "number"
-            },
-            "columnSizes": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/GridTrack"
-              },
-              "description": "Taille de chaque piste, dans l'ordre du panneau Figma. Elles disent, avec `columns` / `rows` et la place de chaque enfant, la boîte que la grille donne à ses calques — ce qu'aucune dimension de calque ne décrit sous une grille."
-            },
-            "rowSizes": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/GridTrack"
-              }
-            },
-            "columnGap": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "description": "Espace entre les COLONNES d'une grille."
-            },
-            "sizing": {
-              "$ref": "#/definitions/ContainerSizing",
-              "description": "Comportement du composant face à la place qu'on lui donne. Toujours publié : c'est la première décision de qui l'intègre, et la déduire d'une absence reviendrait à la deviner."
-            },
-            "bounds": {
-              "$ref": "#/definitions/SizeBounds",
-              "description": "Bornes de taille du composant lui-même. `sizing` dit comment il occupe la place qu'on lui donne, ces bornes disent jusqu'où. Facultatives, à la différence de `sizing` : une absence de borne est une information complète, là où un comportement absent resterait à deviner."
-            },
-            "justifyContent": {
-              "$ref": "#/definitions/JustifyContent",
-              "description": "Répartition Figma sur l'axe principal, absente hors auto-layout linéaire."
-            },
-            "alignItems": {
-              "$ref": "#/definitions/AlignItems",
-              "description": "Alignement Figma sur l'axe secondaire, absent hors auto-layout linéaire."
-            },
-            "wrap": {
-              "type": "boolean",
-              "const": true,
-              "description": "Le composant passe à la ligne. Ce n'est pas une dimension mais une propriété de flux : elle reste ici même quand `sizes` porte les dimensions."
-            },
-            "gap": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "description": "Dimensions du composant, uniquement s'il n'a PAS d'axe de tailles."
-            },
-            "rowGap": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "description": "Espace entre les lignes, aux mêmes conditions que `gap`."
-            },
-            "padding": {
-              "$ref": "#/definitions/Padding"
-            },
-            "radius": {
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/Radius"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
-            "sizes": {
-              "type": "object",
-              "additionalProperties": {
-                "$ref": "#/definitions/SizeDimensions"
-              },
-              "description": "Dimensions PAR taille quand le composant expose un axe de tailles (clés = valeurs de la prop `size` : big, medium, small…). Absent pour un composant sans axe de tailles."
-            },
-            "children": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/ChildStructure"
-              },
-              "description": "Les slots enfants (icônes, label…), dans l'ordre des calques."
-            },
-            "variantAxes": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "description": "Clés PUBLIQUES des axes de variantes, dans l'ordre d'imbrication de variantTokens. Un axe sémantiquement renommé utilise ici la même clé que dans `props` (`size`, jamais son ancien nom normalisé)."
-            }
-          },
-          "required": [
-            "layout",
-            "sizing",
-            "children",
-            "variantAxes"
-          ],
-          "additionalProperties": false,
-          "description": "Projection de référence et dimensions par taille.\n\nLes données exactes de matrice vivent dans `variants` et `variantViews`, sans seconde copie susceptible de diverger."
+          "$ref": "#/definitions/ContractReferenceStructure",
+          "description": "Projection de référence : un renvoi vers `viewStructures`, plus les dimensions par taille et les axes de la matrice.\n\nLes données exactes de matrice vivent dans `variants` et `variantViews`, sans seconde copie susceptible de diverger."
         },
         "stateModel": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StateModel"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Déclencheurs et priorité des états, ou null si le composant n'a pas d'axe d'état."
+          "$ref": "#/definitions/StateModel",
+          "description": "Déclencheurs et priorité des états ; absent sans axe d'état."
         },
         "rendering": {
           "$ref": "#/definitions/RenderingSemantics",
@@ -190,49 +123,28 @@
           "items": {
             "$ref": "#/definitions/ComposedDependency"
           },
-          "description": "Les composants unifiés que celui-ci embarque. Vide pour un composant simple ; non vide, il fait de ce contrat celui d'un composé."
+          "description": "Les composants unifiés que celui-ci embarque. Absent pour un composant simple ; présent, il fait de ce contrat celui d'un composé."
         },
         "samples": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/ContractSample"
           },
-          "description": "Échantillons de maquette dédupliqués ; chaque entrée de `variants` en référence une par `sample`. Toujours publié, vide compris.\n\nC'est l'unique propriétaire du non normatif : retirer `samples` et les `variants[].sample` redonne le contrat que produisait la version précédente, `meta` mis à part."
-        },
-        "tokensUsed": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Liste à plat, dédupliquée et triée, de tous les tokens consommés."
+          "description": "Échantillons de maquette dédupliqués ; chaque entrée de `variants` en référence une par `sample`.\n\nC'est l'unique propriétaire du non normatif : retirer `samples` et les `variants[].sample` redonne un contrat strictement normatif."
         },
         "intent": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Intent"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/definitions/Intent",
+          "description": "Intention d'usage, absente quand aucune règle `@usage` ne la déclare."
         }
       },
       "required": [
         "name",
         "meta",
-        "props",
+        "viewStructures",
         "variantViews",
-        "propertyBindingDefinitions",
         "variants",
         "structure",
-        "stateModel",
-        "rendering",
-        "icons",
-        "textStyles",
-        "composes",
-        "samples",
-        "tokensUsed",
-        "intent"
+        "rendering"
       ],
       "additionalProperties": false,
       "description": "Le contrat de composant complet — sortie de la commande « Export composant »."
@@ -243,25 +155,18 @@
         "contractVersion": {
           "type": "string",
           "description": "Version du schéma du contrat — à incrémenter à chaque changement de forme.",
-          "const": "10.3"
+          "const": "11.0"
         },
         "exportedAt": {
           "type": "string",
           "description": "Date/heure de l'export, au format ISO 8601."
-        },
-        "warnings": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "description": "Ce que l'export n'a pas pu décrire, en français et adressé au designer. Rangé sous `meta` parce qu'il documente l'EXPORT, pas le composant : un consommateur du contrat n'a jamais à le lire pour rendre un composant."
         },
         "diagnostics": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/ContractDiagnostic"
           },
-          "description": "Diagnostics structurés ; `warnings` reste le miroir lisible et compatible."
+          "description": "Ce que l'export n'a pas pu décrire, en français et adressé au designer. Rangé sous `meta` parce qu'il documente l'EXPORT, pas le composant : un consommateur du contrat n'a jamais à le lire pour rendre un composant.\n\nUn miroir en texte brut vivait à côté, sous `warnings`. Il redisait exactement `diagnostics[].message`, dans le même ordre, et le contrat publiait donc chaque avertissement deux fois. Le miroir est parti ; qui veut la liste lisible lit `message`, sans filtrer sur `severity` — un diagnostic est un diagnostic, quelle que soit sa gravité.\n\nAbsent quand l'export n'a rien à signaler."
         },
         "coverage": {
           "$ref": "#/definitions/ContractCoverage"
@@ -278,25 +183,17 @@
               "description": "Id du nœud Component Set dans le fichier (ex. « 12:345 »)."
             },
             "componentKey": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "description": "Clé de publication du composant (null si non publié)."
+              "type": "string",
+              "description": "Clé de publication du composant. Absente si le composant n'est pas publié."
             },
             "url": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "description": "Lien direct vers le composant dans Figma. Null quand l'API ne fournit pas la clé du fichier (cas des plugins en développement)."
+              "type": "string",
+              "description": "Lien direct vers le composant dans Figma. Absent quand l'API ne fournit pas la clé du fichier (cas des plugins en développement)."
             }
           },
           "required": [
             "fileName",
-            "nodeId",
-            "componentKey",
-            "url"
+            "nodeId"
           ],
           "additionalProperties": false
         }
@@ -304,8 +201,6 @@
       "required": [
         "contractVersion",
         "exportedAt",
-        "warnings",
-        "diagnostics",
         "coverage",
         "figma"
       ],
@@ -320,10 +215,8 @@
         },
         "severity": {
           "type": "string",
-          "enum": [
-            "warning",
-            "error"
-          ]
+          "const": "warning",
+          "description": "Une seule valeur aujourd'hui : l'export n'émet que des avertissements. L'élargir demanderait de dire, dans la spécification, ce qu'un consommateur doit faire d'une erreur — et ce que devient alors la couverture."
         },
         "message": {
           "type": "string"
@@ -412,10 +305,8 @@
           }
         },
         "default": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": "string",
+          "description": "Absent quand Figma n'en déclare aucun ; l'absence EST « aucun défaut »."
         },
         "descriptions": {
           "type": "object",
@@ -429,7 +320,6 @@
         }
       },
       "required": [
-        "default",
         "type",
         "values"
       ],
@@ -469,17 +359,13 @@
           "const": "string"
         },
         "default": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": "string"
         },
         "figmaName": {
           "type": "string"
         }
       },
       "required": [
-        "default",
         "type"
       ],
       "description": "Prop texte libre (issue d'une propriété TEXT Figma)."
@@ -493,10 +379,7 @@
           "const": "icon"
         },
         "default": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": "string"
         },
         "policy": {
           "type": "string",
@@ -511,7 +394,6 @@
         }
       },
       "required": [
-        "default",
         "policy",
         "type"
       ],
@@ -526,10 +408,7 @@
           "const": "instance-swap"
         },
         "default": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": "string",
           "description": "Id du composant Figma choisi par défaut."
         },
         "preferredValues": {
@@ -543,8 +422,6 @@
         }
       },
       "required": [
-        "default",
-        "preferredValues",
         "type"
       ],
       "description": "Prop native de remplacement d'instance."
@@ -581,8 +458,7 @@
         "default": {
           "type": [
             "string",
-            "boolean",
-            "null"
+            "boolean"
           ]
         },
         "preferredValues": {
@@ -626,52 +502,37 @@
         }
       },
       "required": [
-        "default",
-        "preferredValues",
         "type"
       ],
       "description": "Réglages natifs d'une component property SLOT."
     },
-    "ContractVariantView": {
+    "FigmaVariantLabels": {
       "type": "object",
       "properties": {
-        "structure": {
-          "$ref": "#/definitions/VariantStructure"
-        },
-        "typography": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/TextStyleUse"
-          }
-        },
-        "composes": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ComposedDependency"
-          },
-          "description": "Dépendances de cette vue, dans l'ordre de son arbre."
-        },
-        "icons": {
+        "axes": {
           "type": "object",
           "additionalProperties": {
-            "$ref": "#/definitions/VariantIconPlacement"
+            "type": "string"
           },
-          "description": "Slots exacts des icônes, relatifs à `structure.children`."
+          "description": "Nom Figma de chaque axe, indexé par sa clé publique."
         },
-        "paintPlacements": {
-          "$ref": "#/definitions/VariantPaintPlacements",
-          "description": "Calques exacts que chaque clé de peinture ou de contour habille."
+        "values": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "description": "Valeur Figma d'origine, indexée par axe puis par valeur normalisée."
         }
       },
       "required": [
-        "structure",
-        "typography",
-        "composes",
-        "icons",
-        "paintPlacements"
+        "axes",
+        "values"
       ],
       "additionalProperties": false,
-      "description": "Vue complète partagée par les variants qui rendent exactement la même chose."
+      "description": "Étiquettes Figma des axes et de leurs valeurs.\n\nLe nom Figma d'un variant — « Color=Primary, State=Hover » — répète ses `values` avec les majuscules de Figma. Publié sur chaque variant, il coûtait quatre-vingt-dix fois la même information sur un composant à quatre-vingt-dix combinaisons ; publié une fois par axe et par valeur, il coûte autant que le nombre de valeurs.\n\nLes deux tables viennent de la SOURCE — `componentPropertyDefinitions` pour le nom d'un axe, `variantProperties` pour la valeur brute — jamais d'une relecture du nom publié : reconstruire le nom depuis la table et le comparer ne suffit pas à valider l'appariement axe ↔ étiquette, qu'une permutation traverse sans être vue.\n\nAbsentes quand le composant n'a pas d'axe, ou quand une seule combinaison ne se reconstruit pas à l'identique : `variants[].figmaName` reprend alors la main, variant par variant."
     },
     "VariantStructure": {
       "type": "object",
@@ -863,30 +724,12 @@
       "type": "object",
       "properties": {
         "x": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PaddingX"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/definitions/PaddingX"
         },
         "y": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PaddingY"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/definitions/PaddingY"
         }
       },
-      "required": [
-        "x",
-        "y"
-      ],
       "additionalProperties": false,
       "description": "Padding d'un conteneur, rangé par axe comme le panneau Figma le présente."
     },
@@ -1322,6 +1165,36 @@
       "additionalProperties": false,
       "description": "Emplacements exacts des peintures et contours d'une vue, par clé de feuille."
     },
+    "ContractVariantView": {
+      "type": "object",
+      "properties": {
+        "structure": {
+          "type": "string",
+          "description": "Clé d'une entrée de `Contract.viewStructures`."
+        },
+        "typography": {
+          "type": "string",
+          "description": "Clé d'une entrée de `Contract.viewTypographies`."
+        },
+        "composes": {
+          "type": "string",
+          "description": "Clé d'une entrée de `Contract.viewComposes`."
+        },
+        "icons": {
+          "type": "string",
+          "description": "Clé d'une entrée de `Contract.viewIcons`."
+        },
+        "paintPlacements": {
+          "type": "string",
+          "description": "Clé d'une entrée de `Contract.viewPaintPlacements`."
+        }
+      },
+      "required": [
+        "structure"
+      ],
+      "additionalProperties": false,
+      "description": "Vue publiée : cinq renvois vers les catalogues de parties.\n\nChaque partie est partagée par ÉGALITÉ STRICTE de son bloc JSON — aucun merge, aucun défaut, aucun héritage : résoudre les cinq renvois redonne la vue exacte, au bit près. Seule la GRANULARITÉ du partage change : deux vues qui ne diffèrent que par leurs peintures cessent de republier tout leur arbre de slots, et leur divergence reste lisible sur le renvoi qui diffère.\n\nUne partie vide n'est pas cataloguée : son renvoi est simplement absent, à la règle commune des valeurs neutres."
+    },
     "PropertyBindingDefinition": {
       "type": "object",
       "properties": {
@@ -1344,6 +1217,10 @@
           "items": {
             "type": "string"
           }
+        },
+        "nodeSuffix": {
+          "type": "string",
+          "description": "Fin d'identifiant commune à toutes les occurrences de cette définition, point-virgule compris (« ;3:429 »).\n\nFigma écrit l'identifiant d'un calque atteint DANS une instance « I<chaîne d'instances>;<id du calque dans le maître> ». Le dernier segment ne dépend donc que de la définition, jamais du variant : le publier une fois ici retire une répétition par variant et par liaison. Les `nodeId` de `variants[].bindings` sont alors écrits SANS cette fin ; les recoller la redonne à l'identique.\n\nAbsente quand la définition ne vise pas un calque d'instance, ou quand ses occurrences ne partagent pas la même fin."
         }
       },
       "required": [
@@ -1362,17 +1239,19 @@
           "type": "string"
         },
         "figmaName": {
-          "type": "string"
+          "type": "string",
+          "description": "Nom Figma exact de la combinaison. Absent quand `Contract.figmaVariantLabels` le reconstruit pour TOUS les variants ; il reprend la main, sur tous, dès qu'une seule combinaison y échappe."
         },
         "values": {
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "description": "Valeur de chaque axe. Absente pour un `COMPONENT` sans axe : la seule combinaison possible n'a rien à nommer."
         },
         "view": {
           "type": "string",
-          "description": "Clé d'une vue complète de `variantViews`."
+          "description": "Clé d'une vue de `variantViews`."
         },
         "tokens": {
           "$ref": "#/definitions/SlotTokens",
@@ -1395,11 +1274,7 @@
       },
       "required": [
         "nodeId",
-        "figmaName",
-        "values",
-        "view",
-        "tokens",
-        "strokes"
+        "view"
       ],
       "additionalProperties": false,
       "description": "Une combinaison réellement présente dans Figma et sa vue exacte."
@@ -1425,32 +1300,16 @@
           "type": "string"
         },
         "width": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StrokeWidth"
-            },
-            {
-              "type": "null"
-            }
-          ],
+          "$ref": "#/definitions/StrokeWidth",
           "description": "Largeur du contour : une référence quand les quatre bords partagent leur variable, le détail par bord sinon, `null` quand Figma expose une largeur non tokenisée."
         },
         "align": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/StrokeAlignment"
-            },
-            {
-              "type": "null"
-            }
-          ],
+          "$ref": "#/definitions/StrokeAlignment",
           "description": "Alignement structurel du stroke dans Figma, et donc forme du `box-shadow` qui le rend (cf. `StrokeAlignment`). Un détail par côté se rend en autant d'ombres, jamais en `border-width` : la bordure entrerait dans la boîte."
         }
       },
       "required": [
-        "color",
-        "width",
-        "align"
+        "color"
       ],
       "additionalProperties": false,
       "description": "Couleur et géométrie tokenisées d'un stroke porté par un rôle (`border`, `ring`…)."
@@ -1511,50 +1370,55 @@
       "additionalProperties": false,
       "description": "L'endroit exact où une définition de liaison agit dans un variant."
     },
+    "ContractReferenceStructure": {
+      "type": "object",
+      "properties": {
+        "view": {
+          "type": "string",
+          "description": "Clé d'une entrée de `Contract.viewStructures`."
+        },
+        "sizes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/SizeDimensions"
+          },
+          "description": "Dimensions PAR taille, quand le composant expose un axe de tailles."
+        },
+        "variantAxes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Clés PUBLIQUES des axes de variantes, dans l'ordre de la matrice. Absentes pour un `COMPONENT` sans axe."
+        }
+      },
+      "required": [
+        "view"
+      ],
+      "additionalProperties": false,
+      "description": "Projection de référence du composant : un renvoi, plus ce qui n'appartient qu'au niveau global.\n\n`structure` décrivait le même arbre qu'une vue, recopié. Le renvoi est INCONDITIONNEL : quand la projection ne correspond à aucune structure déjà cataloguée — le cas d'un composant dont l'élection du node de layout saute un wrapper de dimensions — elle en ajoute une au catalogue. Une seule forme, donc un seul chemin de lecture chez le consommateur."
+    },
     "SizeDimensions": {
       "type": "object",
       "properties": {
         "gap": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": "string"
         },
         "rowGap": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": "string",
           "description": "Espace entre les lignes, publié aux mêmes conditions que `gap`."
         },
         "columnGap": {
-          "type": [
-            "string",
-            "null"
-          ],
+          "type": "string",
           "description": "Espace entre les colonnes d'une grille, aux mêmes conditions."
         },
         "padding": {
           "$ref": "#/definitions/Padding"
         },
         "radius": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Radius"
-            },
-            {
-              "type": "null"
-            }
-          ]
+          "$ref": "#/definitions/Radius"
         }
       },
-      "required": [
-        "gap",
-        "rowGap",
-        "columnGap",
-        "padding",
-        "radius"
-      ],
       "additionalProperties": false,
       "description": "Dimensions d'UNE taille du composant (une valeur de la prop `size`). Tout est exprimé en noms de tokens."
     },
@@ -1592,20 +1456,14 @@
       "type": "object",
       "properties": {
         "selector": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "description": "Sélecteur ou attribut attendu par l'adaptateur de rendu ; null pour l'état par défaut."
+          "type": "string",
+          "description": "Sélecteur attendu par l'adaptateur de rendu ; ABSENT pour l'état par défaut."
         },
         "description": {
           "type": "string",
           "description": "Doc de l'état, déclarée par une règle `@prop <axe>.<état>`. L'axe d'états n'étant pas une prop, sa documentation vit ici — au même endroit que le reste de ce que le contrat en dit."
         }
       },
-      "required": [
-        "selector"
-      ],
       "additionalProperties": false,
       "description": "Déclencheur d'un état d'interaction dans le contrat consommé par le code."
     },
@@ -1783,10 +1641,11 @@
           "items": {
             "type": "string"
           },
-          "description": "Chemin de slots depuis `variantViews[variants[].view].structure.children`."
+          "description": "Chemin de slots jusqu'au texte, dans la structure de la vue du variant."
         },
         "figmaLayer": {
-          "type": "string"
+          "type": "string",
+          "description": "Nom du calque, ABSENT quand il vaut `value`.\n\nFigma nomme un calque texte d'après ce qu'il dit tant que personne ne l'a renommé : le cas ordinaire écrivait donc le même contenu deux fois. Son absence porte le même signal — « jamais renommé » — sans le répéter."
         },
         "value": {
           "type": "string"
@@ -1794,11 +1653,10 @@
       },
       "required": [
         "slotPath",
-        "figmaLayer",
         "value"
       ],
       "additionalProperties": false,
-      "description": "Un texte de la maquette, dans un slot de CE contrat.\n\nPorte les deux adresses, comme `VariantIconPlacement` (`figmaName` + `slotPath`) et `IconDefinition` (`figmaName` + `slot`) : un chemin de slots est POSITIONNEL — `label-2`, `icon-2` — et un calque ajouté le décale, là où le nom Figma reste stable.\n\n`figmaLayer` est celui de la FEUILLE publiée, pas celui du calque texte qu'elle enveloppe : c'est la seule façon qu'il s'accorde toujours avec le `figmaLayer` que la vue publie au même `slotPath`. Quand il vaut `value`, le calque n'a jamais été renommé — la redondance est le signal, pas du bruit."
+      "description": "Un texte de la maquette, dans un slot de CE contrat.\n\nPorte les deux adresses, comme `VariantIconPlacement` (`figmaName` + `slotPath`) et `IconDefinition` (`figmaName` + `slot`) : un chemin de slots est POSITIONNEL — `label-2`, `icon-2` — et un calque ajouté le décale, là où le nom Figma reste stable.\n\n`figmaLayer` est celui de la FEUILLE publiée, pas celui du calque texte qu'elle enveloppe : c'est la seule façon qu'il s'accorde toujours avec le `figmaLayer` que la vue publie au même `slotPath`."
     },
     "SampleInstance": {
       "type": "object",
@@ -1903,10 +1761,7 @@
       "type": "object",
       "properties": {
         "usage": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "type": "string"
         },
         "do": {
           "type": "array",
@@ -1927,12 +1782,6 @@
           }
         }
       },
-      "required": [
-        "usage",
-        "do",
-        "dont",
-        "pairs"
-      ],
       "additionalProperties": false,
       "description": "Intention d'usage du composant, lue depuis la description Figma taguée (`@usage`, `@do`, `@dont`, `@pairs`). Cette partie du contrat dit à un humain ou à un agent IA QUAND utiliser le composant, pas seulement COMMENT."
     }

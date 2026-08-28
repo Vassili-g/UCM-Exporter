@@ -6,6 +6,7 @@
  */
 import normalizeName from '../utils';
 import { collisionWarnings, firstVariableAlias, indexVariables } from '../variables';
+import { serializeJson } from '../contract/serializeJson';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type TokensExport = {
@@ -294,7 +295,7 @@ export async function handleExportTokens(): Promise<TokensExport> {
 
   return {
     filename: 'tokens.json',
-    content: JSON.stringify(tree, null, 2),
+    content: serializeJson(tree),
     warningCount: warnings.length,
     warnings,
   };

@@ -125,11 +125,9 @@ test('le texte d’un slot est capturé même quand le calque a été renommé',
 
   assert.deepEqual(sample.text, [
     { slotPath: ['label', 'label'], figmaLayer: 'Titre', value: 'Bien préparer votre dossier' },
-    {
-      slotPath: ['label', 'label-2'],
-      figmaLayer: 'Description de l’élément',
-      value: 'Description de l’élément',
-    },
+    // Ce calque-là n'a jamais été renommé : `figmaLayer` répéterait `value`,
+    // et son absence dit exactement la même chose.
+    { slotPath: ['label', 'label-2'], value: 'Description de l’élément' },
   ]);
 });
 

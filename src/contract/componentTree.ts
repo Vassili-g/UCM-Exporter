@@ -5,6 +5,7 @@
  * Tout est dynamique : aucun nom d'axe ni de composant n'est codé en dur.
  */
 import { normalizePropKey, normalizePropValue } from './parsers';
+import type { FigmaVariantLabels } from './types';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, hasCompleteBinding } from './nodeBindings';
@@ -370,4 +371,78 @@ export async function findWrapperReference(
 
   const best = candidates[0];
   return best ? { instance: best.instance, componentSet: best.componentSet } : null;
+}
+
+
+/**
+ * Étiquettes Figma des axes et de leurs valeurs, lues à la SOURCE.
+ *
+ * Le nom Figma d'un variant — « Color=Primary, State=Hover » — redit ses
+ * `values` avec les majuscules de Figma. Sur une matrice à quatre-vingt-dix
+ * combinaisons, c'est quatre-vingt-dix fois la même information ; une table par
+ * axe et par valeur la dit une fois.
+ *
+ * Les deux moitiés viennent de l'API, pas d'une relecture du nom publié :
+ * `componentPropertyDefinitions` donne le nom d'un axe, `variantProperties`
+ * donne la valeur brute. Reconstruire les noms depuis une table déduite du nom
+ * lui-même et les comparer ne prouverait rien : l'appariement axe ↔ étiquette
+ * peut être permuté sans qu'aucun nom reconstruit ne change.
+ *
+ * Rend `null` — et chaque variant garde alors son `figmaName` — dès qu'une
+ * seule chose ne se vérifie pas : aucun axe, une valeur normalisée qui
+ * correspondrait à deux valeurs Figma, ou un seul nom qui ne se reconstruit pas
+ * à l'identique. Tout ou rien : une table partielle obligerait le consommateur
+ * à savoir laquelle des deux sources fait foi.
+ */
+export function buildFigmaVariantLabels(
+  componentSet: ComponentSetNode | ComponentNode,
+  matrix: VariantMatrix,
+  publicVariantKeyByRawKey: ReadonlyMap<string, string>,
+): FigmaVariantLabels | null {
+  if (matrix.axes.length === 0) return null;
+
+  const axes: Record<string, string> = {};
+  for (const [figmaName, definition] of Object.entries(componentSet.componentPropertyDefinitions)) {
+    if (definition.type !== 'VARIANT') continue;
+    const rawKey = normalizePropKey(figmaName);
+    const publicKey = publicVariantKeyByRawKey.get(rawKey) ?? rawKey;
+    Object.defineProperty(axes, publicKey, {
+      value: figmaName, enumerable: true, writable: true, configurable: true,
+    });
+  }
+  if (matrix.axes.some((axis) => axes[axis] === undefined)) return null;
+
+  const values: Record<string, Record<string, string>> = {};
+  for (const axis of matrix.axes) {
+    Object.defineProperty(values, axis, {
+      value: {}, enumerable: true, writable: true, configurable: true,
+    });
+  }
+  for (const entry of matrix.variants) {
+    for (const [figmaName, rawValue] of Object.entries(entry.component.variantProperties ?? {})) {
+      const rawKey = normalizePropKey(figmaName);
+      const publicKey = publicVariantKeyByRawKey.get(rawKey) ?? rawKey;
+      const table = values[publicKey];
+      if (!table) return null;
+      const normalized = normalizePropValue(rawValue);
+      const known = table[normalized];
+      // Deux valeurs Figma pour une même valeur normalisée : la table ne peut
+      // plus répondre, et choisir la première serait choisir au hasard.
+      if (known !== undefined && known !== rawValue) return null;
+      Object.defineProperty(table, normalized, {
+        value: rawValue, enumerable: true, writable: true, configurable: true,
+      });
+    }
+  }
+
+  // Dernier contrôle, celui qui porte : la table doit rendre chaque nom Figma
+  // à l'identique, sur TOUS les variants.
+  for (const entry of matrix.variants) {
+    const rebuilt = matrix.axes
+      .map((axis) => `${axes[axis]}=${values[axis]?.[entry.values[axis]]}`)
+      .join(', ');
+    if (rebuilt !== entry.component.name) return null;
+  }
+
+  return { axes, values };
 }
