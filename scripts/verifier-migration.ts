@@ -69,7 +69,7 @@ export function migrer(ancien: Json): Json {
     Object.entries(viewStructures).map(([id, valeur]) => [signature(valeur), id] as const),
   );
   const vueDeReference = intern(
-    elideNeutrals(projection),
+    elideNeutrals(projection, 'viewStructures.*'),
     'st',
     idsDeStructure,
     viewStructures,
@@ -217,6 +217,24 @@ export function remonter(nouveau: Json): Json {
     variantAxes: variantAxes ?? [],
   };
 
+  // `figmaLayer` d'un texte d'échantillon est absent quand il vaut `value` :
+  // son absence EST le signal « calque jamais renommé ». On le recolle.
+  const samples: Record<string, Json> = {};
+  for (const [cle, echantillon] of Object.entries((nouveau.samples ?? {}) as Record<string, Json>)) {
+    samples[cle] = {
+      ...echantillon,
+      ...(echantillon.text
+        ? {
+          text: (echantillon.text as Json[]).map((entree) => ({
+            slotPath: entree.slotPath,
+            figmaLayer: entree.figmaLayer ?? entree.value,
+            value: entree.value,
+          })),
+        }
+        : {}),
+    };
+  }
+
   const contrat: Json = {
     name: nouveau.name,
     meta: {
@@ -234,7 +252,7 @@ export function remonter(nouveau: Json): Json {
     icons: nouveau.icons ?? {},
     textStyles: nouveau.textStyles ?? {},
     composes: nouveau.composes ?? [],
-    samples: nouveau.samples ?? {},
+    samples,
     tokensUsed: [],
     intent: nouveau.intent ?? null,
   };
@@ -267,11 +285,30 @@ export function ecarts(remonte: unknown, origine: unknown, chemin = ''): Ecart[]
   return [{ chemin, remonte, origine }];
 }
 
-/** Le seul écart tolérable : une clé absente d'un côté, neutre de l'autre. */
+/**
+ * Vrai quand l'écart ne porte AUCUNE donnée. Deux cas, et deux seulement :
+ *
+ * - une clé absente d'un côté et vide de l'autre — c'est l'élision ;
+ * - deux valeurs présentes qui deviennent identiques une fois leurs `null`
+ *   retirés : `{"x":null,"y":null}` et `{}` disent la même chose, l'une avec
+ *   des silences écrits, l'autre sans.
+ *
+ * Tout le reste est un échec : une valeur changée, une clé perdue qui portait
+ * quelque chose, un ordre modifié.
+ */
 export function estUneAbsenceDeNeutre({ remonte, origine }: Ecart): boolean {
   if (remonte === undefined) return isNeutral(origine);
   if (origine === undefined) return isNeutral(remonte);
-  return false;
+  const sansSilences = (valeur: unknown): unknown => {
+    if (Array.isArray(valeur)) return valeur.map(sansSilences);
+    if (valeur === null || typeof valeur !== 'object') return valeur;
+    return Object.fromEntries(
+      Object.entries(valeur as Record<string, unknown>)
+        .filter(([, item]) => item !== null)
+        .map(([cle, item]) => [cle, sansSilences(item)]),
+    );
+  };
+  return JSON.stringify(sansSilences(remonte)) === JSON.stringify(sansSilences(origine));
 }
 
 function compter(texte: string): { octets: number; lignes: number } {

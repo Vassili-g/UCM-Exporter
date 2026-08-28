@@ -76,12 +76,20 @@ export function intern<T>(
 /** Un catalogue et sa table de signatures, pour une partie de vue. */
 type Catalogue<T> = {
   prefix: string;
+  /**
+   * Où cette partie vivra dans le contrat publié.
+   *
+   * `elideNeutrals` en a besoin : c'est ce chemin qui lui dit si une valeur vide
+   * est un silence à retirer ou une entrée de dictionnaire à garder. Le `*`
+   * tient la place de la clé, qui n'est pas encore attribuée.
+   */
+  chemin: string;
   ids: Map<string, string>;
   entries: Record<string, T>;
 };
 
-function catalogue<T>(prefix: string): Catalogue<T> {
-  return { prefix, ids: new Map(), entries: {} };
+function catalogue<T>(prefix: string, chemin: string): Catalogue<T> {
+  return { prefix, chemin, ids: new Map(), entries: {} };
 }
 
 /**
@@ -94,7 +102,7 @@ function catalogue<T>(prefix: string): Catalogue<T> {
  */
 function ranger<T>(cat: Catalogue<T>, value: T | undefined): string | undefined {
   if (value === undefined) return undefined;
-  const propre = elideNeutrals(value);
+  const propre = elideNeutrals(value, cat.chemin);
   if (isNeutral(propre)) return undefined;
   return intern(propre, cat.prefix, cat.ids, cat.entries);
 }
@@ -135,11 +143,11 @@ export function compactVariants(
   expandedVariants: readonly ExtractedContractVariant[],
   expandedBindings: readonly ExtractedPropertyBinding[],
 ): CompactedVariants {
-  const structures = catalogue<VariantStructure>('st');
-  const typographies = catalogue<TextStyleUse[]>('ty');
-  const composes = catalogue<ComposedDependency[]>('cp');
-  const icons = catalogue<Record<string, VariantIconPlacement>>('ic');
-  const paintPlacements = catalogue<VariantPaintPlacements>('pp');
+  const structures = catalogue<VariantStructure>('st', 'viewStructures.*');
+  const typographies = catalogue<TextStyleUse[]>('ty', 'viewTypographies.*');
+  const composes = catalogue<ComposedDependency[]>('cp', 'viewComposes.*');
+  const icons = catalogue<Record<string, VariantIconPlacement>>('ic', 'viewIcons.*');
+  const paintPlacements = catalogue<VariantPaintPlacements>('pp', 'viewPaintPlacements.*');
 
   const variantViews: Record<string, ContractVariantView> = {};
   const propertyBindingDefinitions: Record<string, PropertyBindingDefinition> = {};
