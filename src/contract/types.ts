@@ -341,10 +341,17 @@ export type StrokeWidth = SidedRefs<'top' | 'right' | 'bottom' | 'left'>;
  */
 export type GridTrack = `${number}fr` | 'fit-content(100%)' | `${number}px` | 'auto';
 
-/** Emplacements exacts des peintures et contours d'une vue, par clé de feuille. */
+/**
+ * Emplacements exacts des peintures et contours d'une vue, par clé de feuille.
+ *
+ * Un groupe vide n'est pas écrit : un composant qui ne peint aucun contour n'a
+ * pas de `strokes`, et l'absence le dit aussi bien que `{}`. Les CLÉS d'un
+ * groupe, elles, sont des données — elles nomment les couleurs — et une clé sans
+ * cible survivrait donc à l'élision.
+ */
 export type VariantPaintPlacements = {
-  fills: Record<string, string[][]>;
-  strokes: Record<string, string[][]>;
+  fills?: Record<string, string[][]>;
+  strokes?: Record<string, string[][]>;
 };
 
 /**
