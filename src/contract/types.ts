@@ -466,7 +466,7 @@ export type ChildStructure = {
   justifySelf?: AlignSelf;
   /**
    * Le layer remplit l'axe principal de son parent (`Fill` dans Figma, exposé
-   * par `layoutSizing…` ou par l'historique `layoutGrow: 1`). Son absence vaut
+   * par `layoutSizing…` ou `layoutGrow: 1`). Son absence vaut
    * `Hug` : une dimension fixe est publiée par `size` quand elle est reliée à
    * une variable, et avertie quand elle ne l'est pas.
    */
@@ -800,11 +800,10 @@ export type ContractVariantView = {
  * Projection de référence du composant : un renvoi, plus ce qui n'appartient
  * qu'au niveau global.
  *
- * `structure` décrivait le même arbre qu'une vue, recopié. Le renvoi est
- * INCONDITIONNEL : quand la projection ne correspond à aucune structure déjà
- * cataloguée — le cas d'un composant dont l'élection du node de layout saute un
- * wrapper de dimensions — elle en ajoute une au catalogue. Une seule forme,
- * donc un seul chemin de lecture chez le consommateur.
+ * Le renvoi est inconditionnel. Quand la projection ne correspond à aucune
+ * structure déjà cataloguée — notamment lorsque l'élection du node de layout
+ * saute un wrapper de dimensions — sa structure possède sa propre entrée. Le
+ * consommateur résout toujours un arbre par le même catalogue.
  */
 export type ContractReferenceStructure = {
   /** Clé d'une entrée de `Contract.viewStructures`. */
@@ -821,11 +820,9 @@ export type ContractReferenceStructure = {
 /**
  * Étiquettes Figma des axes et de leurs valeurs.
  *
- * Le nom Figma d'un variant — « Color=Primary, State=Hover » — répète ses
- * `values` avec les majuscules de Figma. Publié sur chaque variant, il coûtait
- * quatre-vingt-dix fois la même information sur un composant à quatre-vingt-dix
- * combinaisons ; publié une fois par axe et par valeur, il coûte autant que le
- * nombre de valeurs.
+ * Elles permettent de reconstruire le nom Figma d'un variant —
+ * « Color=Primary, State=Hover » — à partir des clés et valeurs publiques, sans
+ * répéter ces libellés dans chaque combinaison.
  *
  * Les deux tables viennent de la SOURCE — `componentPropertyDefinitions` pour
  * le nom d'un axe, `variantProperties` pour la valeur brute — jamais d'une
@@ -882,10 +879,9 @@ export type PropertyBindingDefinition = {
    *
    * Figma écrit l'identifiant d'un calque atteint DANS une instance
    * « I<chaîne d'instances>;<id du calque dans le maître> ». Le dernier segment
-   * ne dépend donc que de la définition, jamais du variant : le publier une
-   * fois ici retire une répétition par variant et par liaison. Les `nodeId` de
-   * `variants[].bindings` sont alors écrits SANS cette fin ; les recoller la
-   * redonne à l'identique.
+   * ne dépend donc que de la définition, jamais du variant. Les `nodeId` de
+   * `variants[].bindings` omettent cette fin commune ; la concaténation des deux
+   * champs redonne l'identifiant exact.
    *
    * Absente quand la définition ne vise pas un calque d'instance, ou quand ses
    * occurrences ne partagent pas la même fin.
@@ -1079,7 +1075,7 @@ export type ContractDiagnostic = {
 };
 
 export type ContractCoverage = {
-  /** Partiel dès que le contrat portable demande l'attention du designer. */
+  /** Partiel uniquement lorsqu'une information n'a pas de projection portable. */
   portable: 'complete' | 'partial';
 };
 
@@ -1093,15 +1089,10 @@ export type ContractMeta = {
   /** Date/heure de l'export, au format ISO 8601. */
   exportedAt: string;
   /**
-   * Ce que l'export n'a pas pu décrire, en français et adressé au designer.
-   * Rangé sous `meta` parce qu'il documente l'EXPORT, pas le composant : un
-   * consommateur du contrat n'a jamais à le lire pour rendre un composant.
-   *
-   * Un miroir en texte brut vivait à côté, sous `warnings`. Il redisait
-   * exactement `diagnostics[].message`, dans le même ordre, et le contrat
-   * publiait donc chaque avertissement deux fois. Le miroir est parti ; qui
-   * veut la liste lisible lit `message`, sans filtrer sur `severity` — un
-   * diagnostic est un diagnostic, quelle que soit sa gravité.
+   * Constats de l'export, en français et adressés au designer. Rangés sous
+   * `meta` parce qu'ils documentent l'EXPORT, pas le composant : un consommateur
+   * n'a jamais à les lire pour rendre un composant. Qui veut la liste lisible
+   * lit `diagnostics[].message`, sans filtrer sur `severity`.
    *
    * Absent quand l'export n'a rien à signaler.
    */
@@ -1110,7 +1101,7 @@ export type ContractMeta = {
   figma: {
     /** Nom du fichier Figma d'origine. */
     fileName: string;
-    /** Id du nœud Component Set dans le fichier (ex. « 12:345 »). */
+    /** Id du Component ou Component Set exporté (ex. « 12:345 »). */
     nodeId: string;
     /** Clé de publication du composant. Absente si le composant n'est pas publié. */
     componentKey?: string;

@@ -1,7 +1,12 @@
 # Plan de travail — vérification de conformité côté développeur
 
-**Statut : proposition. Aucune décision n'est prise.** Ce document sert de
-support de discussion. Les points marqués **[À DÉCIDER]** sont ouverts.
+**Statut : recherche proposée pour une prochaine phase.** Aucun vérificateur
+générique de rendu n’est implémenté et aucune décision de réalisation n’est
+prise. Les points marqués **[À DÉCIDER]** sont ouverts.
+
+Ce document conserve le détail de la piste. Il distingue les garde-fous déjà
+disponibles dans le Playground des blocs qui restent à concevoir ; il ne sert ni
+de changelog, ni de description normative du contrat.
 
 ---
 
@@ -42,9 +47,9 @@ n'aurait plus de témoin indépendant.
 ## 3. Ce qui existe aujourd'hui
 
 Forme et version du contrat, existence des tokens, graphe de composition,
-parité, références de tokens du code, construction : ces contrôles tournent à
-chaque pull request et produisent un message unique, dans le terminal comme en
-commentaire. [ROADMAP.md](./ROADMAP.md) en tient l'état.
+adresses des échantillons, parité, références de tokens du code et tests ciblés
+sont contrôlés par le Playground. `npm run check` les agrège dans le terminal et
+dans `ci-report.md`. [ROADMAP.md](./ROADMAP.md) en tient l'état.
 
 **Ce qui manque : la vérification du rendu.** Rien ne prouve, de façon
 générique, que le composant affiche réellement la bonne couleur, la bonne
@@ -107,8 +112,10 @@ seule fois. Rien à maintenir ensuite.
 ### Étapes
 
 1. Écrire la convention dans la documentation du repository consommateur.
-2. L'ajouter aux composants existants (Button, Alert).
-3. L'ajouter à la procédure suivie pour écrire un nouveau composant.
+2. L’éprouver sur un composant de validation reconstruit à froid pour cette
+   recherche, sans modifier les composants existants.
+3. L'ajouter à la procédure suivie pour écrire un nouveau composant si la
+   convention est retenue.
 
 ### Ce que ça ne fait pas
 
@@ -145,7 +152,7 @@ Elle est appelée par le bloc C, une fois par combinaison de chaque composant.
 
 | Donnée du contrat | Ce qui est comparé |
 |---|---|
-| Couleurs par combinaison | Chaque rôle déclaré (fond, texte, icône) est peint avec le token du contrat, et un rôle absent n'est peint par rien. |
+| Couleurs par combinaison | Chaque clé est peinte avec le token du contrat sur les chemins publiés dans `paintPlacements`; un rôle absent n'est peint par rien. |
 | Bordures et contours | Couleur et épaisseur présentes ensemble. Une épaisseur absente ne doit rien afficher. |
 | Typographie | Les cinq propriétés du style de texte arrivent sur le slot désigné par le contrat. |
 | Dimensions | Espacement interne, marges et rayon des angles pour la taille en cours. |
@@ -160,11 +167,11 @@ Elle est appelée par le bloc C, une fois par combinaison de chaque composant.
 
 **Le comparateur n'affirme jamais plus précisément que le contrat.**
 
-Exemple : le contrat range les couleurs par rôle (« fond », « texte »), sans
-dire sur quel élément exact elles se posent. Le comparateur vérifie donc que la
-variable est employée quelque part dans le composant, avec un usage compatible
-— jamais « sur tel élément », que le contrat ne dit pas. À l'inverse, la
-typographie est rattachée à un slot précis : là, la vérification est exacte.
+Exemple : le contrat situe les peintures sur des chemins de slots exacts, mais
+`rendering.roles.cssProperties` reste une indication d’implémentation. Le
+comparateur peut donc exiger le bon token sur le bon slot ; il ne peut pas
+imposer `background-color` plutôt que `background` quand les deux rendent la
+même peinture.
 
 Sans cette règle, le comparateur imposerait une façon d'écrire le code, et
 deviendrait une source de vérité concurrente du contrat.
@@ -199,8 +206,10 @@ sur chaque pull request.
 
 1. Il trouve tous les contrats du repository.
 2. Pour chacun, il importe le composant depuis le dossier voisin.
-3. Il lit les axes dans le contrat et construit toutes les combinaisons.
-4. Pour chaque combinaison, il affiche le composant et appelle le comparateur.
+3. Il parcourt les entrées exactes de `variants`, sans reconstruire de produit
+   cartésien.
+4. Pour chaque variante exacte, il résout sa vue et affiche le composant avant
+   d’appeler le comparateur.
 5. Il affiche en plus chaque option de visibilité à `vrai` puis à `faux`, pour
    vérifier que le slot concerné apparaît et disparaît.
 6. Si un composant ne peut pas être affiché, il le signale explicitement au
@@ -227,10 +236,11 @@ de navigateur simulé.
 1. Écrire la découverte des contrats et l'import des composants.
 2. Écrire la couche d'affichage React.
 3. Écrire le parcours des combinaisons et des options de visibilité.
-4. Ajouter l'attribut du bloc A à Button et Alert.
-5. Vérifier que le résultat est vert sur ces deux composants.
-6. Retirer les deux fichiers de vérification écrits à la main, dans le même
-   changement, et mettre à jour les documents qui les décrivent.
+4. Éprouver la convention sur un nouveau composant de validation reconstruit à
+   froid, explicitement prévu pour cette recherche.
+5. Comparer sa couverture à celle des tests de rendu co-localisés.
+6. Ne retirer un test ciblé que si le vérificateur générique prouve la même
+   clause avec un diagnostic au moins aussi précis.
 
 ### [À DÉCIDER]
 
@@ -299,8 +309,8 @@ Pendant l'écriture du code.
 2. Ajouter la vérification des types TypeScript à la commande de contrôle.
    Actuellement elle n'y est pas, donc un résultat vert en local peut devenir
    rouge en CI.
-3. Reprendre dans le message deux informations du contrat qui n'y figurent
-   pas : les avertissements produits par l'export, et la date de l'export.
+3. Ajouter, si la revue en a besoin, la date de l’export au rapport. Les
+   avertissements actionnables de l’Exporter y sont déjà repris.
 4. Optionnel : trois règles d'éditeur qui signalent en direct un chemin de
    token construit morceau par morceau, une référence absente du contrat, et
    une couleur écrite en dur.
@@ -409,7 +419,7 @@ garanties qu'ils n'ont pas.
 | Niveau | Signification | Exemples |
 |---|---|---|
 | **Bloquant** | Un écart a été constaté. | Token inexistant, option manquante, et tout écart de rendu constaté par le vérificateur : couleur comme disposition. |
-| **Avertissement** | La vérification n'a pas pu avoir lieu. Ce n'est pas un écart moins grave, c'est un trou dans la preuve. | Composant impossible à afficher, état d'interaction non couvert, avertissement produit par l'export. |
+| **Avertissement** | La vérification n'a pas pu avoir lieu. Ce n'est pas un écart moins grave, c'est un trou dans la preuve. | Composant impossible à afficher, état d'interaction non couvert. Les diagnostics de l’Exporter conservent leur propre sémantique. |
 | **Informatif** | État d'avancement, aucune action attendue. | Contrat sans composant associé, nombre de combinaisons vérifiées. |
 
 **Point à discuter :** faut-il traiter la disposition et l'architecture
@@ -448,8 +458,8 @@ contrôles restent des recommandations.
 
 1. Adopte-t-on l'attribut `data-ucm-slot` dans le code des composants ?
 2. Le laisse-t-on en production ?
-3. Retire-t-on les deux fichiers de vérification actuels dans le même
-   changement que la mise en service du vérificateur ?
+3. À quelles conditions un test de rendu ciblé peut-il être remplacé par le
+   vérificateur générique sans perdre de clause ni de diagnostic ?
 4. Le vérificateur bloque-t-il dès sa mise en service ?
 5. Couvre-t-on les états d'interaction, et à quel moment ?
 6. Que fait-on d'un composant impossible à afficher seul ?

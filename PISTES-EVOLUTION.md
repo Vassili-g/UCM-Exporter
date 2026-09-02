@@ -38,21 +38,23 @@ icône.
 
 ### Localisation structurée des diagnostics
 
-`meta.diagnostics` publie déjà `code`, `severity` et `message`, tandis que
+`meta.diagnostics` publie `code`, `severity` et `message`, tandis que
 `meta.coverage.portable` distingue une projection complète d’une projection
-partielle. Une étape ultérieure pourrait ajouter la localisation exacte :
+partielle. Le type prévoit aussi une localisation facultative :
 
 ```text
 figma.variantName
-figma.layerName
+figma.nodeName
 figma.nodeId
+figma.property
 contractPath
 ```
 
-Cette forme permettrait au consommateur de corréler une propriété absente avec
-le diagnostic qui l’explique. Elle exige un collecteur typé partagé par tous les
-extracteurs ; ajouter quelques champs à une partie des messages créerait une
-seconde représentation incomplète.
+L’export courant ne renseigne pas encore ces champs. Les alimenter de façon
+cohérente permettrait au consommateur de corréler une propriété absente avec le
+diagnostic qui l’explique. Cette étape exige un collecteur typé partagé par tous
+les extracteurs ; quelques localisations isolées donneraient une représentation
+incomplète.
 
 ### Compatibilité et interopérabilité
 
@@ -78,8 +80,9 @@ source de vérité.
 ### Vérification générique du rendu
 
 Cette option est détaillée dans
-[PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md). Le plan reste une proposition
-sans décision ni implémentation ; ce document ne la duplique pas.
+[PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md). Le vérificateur générique de
+toutes les vues reste une proposition de recherche, sans décision ni
+implémentation.
 
 ### Liaison explicite avec l’implémentation
 
@@ -103,9 +106,9 @@ consommateur.
 
 ### Extraction multi-repository
 
-Le découpage en paquets partagés est détaillé dans
-[PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md). La condition tient en une
-phrase : rien à publier tant qu’un seul repository consomme des contrats.
+La condition tient en une phrase : rien à publier tant qu’un seul repository
+consomme des contrats. Un découpage éventuel doit conserver une seule autorité
+pour les conventions de version, d’identifiant et de références de tokens.
 
 ### Passerelles
 

@@ -51,6 +51,7 @@ build local.
 | `npm run build` | Vérifie puis construit le plugin complet |
 | `npm run schema` | Régénère le JSON Schema du contrat depuis `types.ts` |
 | `npm run check:fixtures` | Constate que le corpus de référence est à la version courante |
+| `npm run verifier:migration` | Vérifie que la projection 11.0 conserve les données normatives des contrats 10.3 du corpus |
 
 ## Architecture
 
@@ -87,21 +88,23 @@ Chaque document a un rôle unique :
 - [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
 - [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — options non engagées et
   conditions à réunir avant de les ouvrir ;
-- [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) — proposition non décidée
-  pour rendre générique la vérification du rendu côté consommateur ;
+- [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) — recherche proposée pour
+  une vérification générique du rendu lors des prochaines phases ;
 - [AGENTS.md](./AGENTS.md) — guide opérationnel pour contribuer avec un agent ;
 - [UCM Playground](https://github.com/Vassili-g/UCM-Playground) — consommateur
   de référence des artefacts.
 
 ## État
 
-Le moteur écrit la version publiée par `CONTRACT_VERSION`
-(`src/contract/exportComponent.ts`). Elle accepte un Component seul ou
-un Component Set. Chaque variante exacte
-porte ses tokens, puis référence une vue complète dédupliquée
-pour son arbre, sa typographie, ses icônes, ses dépendances et les chemins de
-ses peintures. Les pistes FIXED d'une grille sont conservées en pixels, une
-cellule dont la piste hug publie sa mesure dans `structuralSize`, et les
-valeurs par côté peuvent être clairsemées. Le Playground
-consomme cette forme et dérive un type discriminé des seules combinaisons
-d’enums présentes.
+Le moteur écrit le contrat 11.0 publié par `CONTRACT_VERSION`
+(`src/contract/exportComponent.ts`). Il accepte un Component seul ou un
+Component Set. Chaque combinaison exacte porte ses tokens et référence une vue
+composée de cinq renvois indépendants : structure, typographie, icônes,
+dépendances et chemins de peintures. La projection de référence renvoie au même
+catalogue de structures, les valeurs neutres sont élidées et aucun index de
+tokens dérivable n’est publié.
+
+Le Playground de référence accepte encore exactement le contrat 10.3 et ses
+quatre exports Figma actuels. Son adaptation au 11.0 dépend d’un réexport humain
+du corpus ; cette différence de version est suivie dans
+[ROADMAP.md](./ROADMAP.md).
