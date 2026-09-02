@@ -701,13 +701,10 @@ que sur ce qu'on publie, et les entrailles d'une icône ou les calques d'une
 dépendance ne regardent pas ce contrat-ci. Aucune valeur au défaut de Figma ne
 produit de message : un `clip content` activé ne manque à personne, et un
 rapport que le designer cesse de lire ne protège plus rien. C'est la seule
-réserve, et elle se lit sur la valeur, jamais sur l'usage supposé du calque. Le
-masque d'une icône et la rotation résiduelle d'un tracé importé ont longtemps
-été cités ici : ils relèvent en réalité de la portée du relevé, qui ne voit
-jamais ces calques, et les invoquer coûtait un chevron retourné ou un découpage
-à chaque design qui employait ces propriétés pour de bon. Le seuil de neutralité
-de la rotation reste un centième de degré, très en dessous du premier pixel
-visible et très au-dessus du bruit de flottant.
+réserve, et elle se lit sur la valeur, jamais sur l'usage supposé du calque. Les
+tracés internes d’une icône restent hors de la portée du relevé. Le seuil de
+neutralité de la rotation est un centième de degré, très en dessous du premier
+pixel visible et très au-dessus du bruit de flottant.
 
 ##### Passage à la ligne
 
@@ -745,14 +742,10 @@ référence une par `sample` ; le catalogue déduplique par égalité stricte du
 JSON, si bien qu'un component set dont tous les variants montrent le même contenu
 n'en publie qu'une.
 
-Cette information existait déjà dans le contrat, mais par accident : Figma nomme
-un calque texte d'après son contenu tant que personne ne l'a renommé, si bien que
-`figmaLayer` répondait tantôt « quel calque », tantôt « quel texte ». Le même
-composant produisait les deux — `Titre` pour un calque renommé, la phrase entière
-pour un calque qui ne l'a jamais été — sans que rien ne permette de les
-distinguer, et le contenu disparaissait le jour où un designer nommait son
-calque. **`figmaLayer` est désormais une identité, jamais un contenu ; le contenu
-se lit dans `samples`, ou nulle part.**
+`figmaLayer` porte uniquement l’identité Figma du calque. Figma peut donner à un
+calque texte non renommé le même nom que son contenu, mais cette égalité ne
+change pas la responsabilité du champ : le contenu se lit dans `samples`, ou
+nulle part.
 
 **Ce que l'échantillon porte.** `args` donne les valeurs appliquées dans CE
 variant : la visibilité réelle d'un slot optionnel — que `optional` ne disait pas,
@@ -817,10 +810,9 @@ couleur posée à la main. C'est `swaps`, et lui seul, qui décrit le remplaceme
 remplacement d'instance — `NodeChangeProperty` ne contient pas `mainComponent` —
 et la prop d'icône que les règles `@icons` fabriquent (`chessName`,
 `iconLeftName`) n'a aucun porteur Figma, donc n'apparaît jamais dans
-`componentProperties` ni dans `args`. Une icône substituée dans une dépendance
-n'avait ainsi aucun canal : plusieurs occurrences montrant des icônes différentes
-produisaient des échantillons identiques. `swaps` ouvre ce canal, et se lit
-en comparant l'instance à son composant maître, **position par position** — la
+`componentProperties` ni dans `args`. `swaps` est l’unique propriétaire de cette
+information et se lit en comparant l'instance à son composant maître,
+**position par position** — la
 structure d'une instance est isomorphe à celle de son maître hors contenu libre
 d'un `SLOT`.
 
@@ -1022,10 +1014,8 @@ dessine hors du flux — il ne déplace jamais les éléments voisins.
 **Aucun rôle de contour ne cite une propriété qui consomme la boîte.** Dans
 Figma un `stroke` ne prend aucune place : il ne pousse ni son contenu ni ses
 voisins, quel que soit son alignement. Une `border` CSS, elle, élargit
-l'élément et décale tout ce qui l'entoure. `border` publiait
-`border-color` / `border-width`, et le consommateur qui les suivait rendait
-fidèlement la couleur en déplaçant tout le reste : c'est `box-shadow` qui rend
-un contour Figma, et `align` en donne la forme —
+l'élément et décale tout ce qui l'entoure. Le rôle `border` se rend donc avec
+`box-shadow`, et `align` en donne la forme —
 `inside` → `inset 0 0 0 <width> <color>`, `outside` → `0 0 0 <width> <color>`,
 `center` → la moitié de la largeur de chaque côté. Une largeur détaillée par
 bord se rend en autant d'ombres. Quand plusieurs rôles visent `box-shadow` sur
@@ -1033,9 +1023,8 @@ un même calque — un `border` et un `ring` en focus — ils se composent en **
 déclaration, séparés par des virgules, les `inset` d'abord. Toute propriété
 pertinente sans variable liée → warning précis (calque + propriété), non
 exportée, **export non bloqué**.
-Le contrat ne publie **aucun index de ses tokens**. Il en portait un,
-`tokensUsed`, dérivé du contrat terminé : ce qui se dérive ne se publie pas, et
-l'index coûtait jusqu'à 7 % de la lecture pour ne rien dire de neuf.
+Le contrat ne publie **aucun index de ses tokens**. Cette liste se dérive du
+contrat terminé et n’apporte aucune information propre.
 
 Un consommateur qui a besoin de la liste la relève lui-même, et la règle est
 celle que le moteur appliquait : balayer TOUT le contrat **sauf `samples` et
@@ -1064,14 +1053,13 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
     "contractVersion": "11.0",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "diagnostics": [
-      { "code": "UCM_EXPORT_NOTICE", "severity": "warning",
+      { "code": "UCM_PORTABLE_PROJECTION_WARNING", "severity": "warning",
         "message": "…" }
     ],
     "coverage": { "portable": "partial" },
     "figma": {
       "fileName": "DS AI LAB",
       "nodeId": "12:345",
-      "componentKey": "…absent si non publié",
       "url": "https://www.figma.com/design/<fileKey>/…?node-id=12-345"
     }
   },
@@ -1316,16 +1304,20 @@ l'enveloppe : c'est ce calque qu'on retrouve dans Figma.
 
 #### Métadonnées
 
-`meta` porte la version du schéma du contrat (`contractVersion`), la date
-d'export, les `warnings` de l'export et la
-traçabilité Figma (nom de fichier, id du nœud, clé de composant, lien URL).
-Les `warnings` documentent l'EXPORT, pas le composant : un consommateur n'a
-jamais à les lire pour rendre un composant.
-L'URL est construite depuis `figma.fileKey`, que l'API réserve aux plugins
-déclarant `enablePrivatePluginApi` dans leur manifest — ce que fait celui-ci.
-Elle vaut `null` là où l'API ne fournit pas cette clé, un plugin publié sur la
-Community notamment : un warning le signale alors, sans bloquer, et `nodeId` et
-`fileName` restent exploitables pour retrouver le composant.
+`meta` porte la version du schéma (`contractVersion`), la date d’export, la
+couverture portable, les diagnostics et la traçabilité Figma : nom du fichier,
+id du nœud, clé du composant et URL lorsqu’elles sont disponibles.
+
+`diagnostics` documente l’export, pas le composant. Chaque entrée porte un
+`code`, la sévérité `warning` et un message en français adressé au designer.
+Le champ est absent quand l’export n’a rien à signaler. Une perte portable rend
+`coverage.portable` partiel ; une note ou un avertissement sans perte portable
+ne le dégrade pas.
+
+L’URL est construite depuis `figma.fileKey`, accessible grâce à
+`enablePrivatePluginApi` dans le manifest. Quand l’API ne fournit pas cette clé,
+`url` est absent et `nodeId` avec `fileName` restent exploitables pour retrouver
+le composant.
 
 ---
 
@@ -1465,21 +1457,22 @@ GitHub API déclarée dans le manifest.
 
 La version actuelle du contrat est celle que publie `CONTRACT_VERSION`, dans
 `src/contract/exportComponent.ts` — l'unique endroit où elle est écrite.
-`variantViews` catalogue chaque
-bloc complet distinct (`structure`, `typography`, `icons`, `composes`,
-`paintPlacements`) et chaque
-entrée de `variants` le référence par `view`, à côté de ses `tokens`, `strokes`
-et placements de bindings exacts. `propertyBindingDefinitions` ne garde qu'une
-copie de la partie stable d'une liaison ; `variants[].bindings` conserve son
-`nodeId` dans chaque COMPONENT. Aucun champ n'est fusionné partiellement : deux
-vues ne partagent une clé que si leur JSON complet est identique.
+`viewStructures`, `viewTypographies`, `viewIcons`, `viewComposes` et
+`viewPaintPlacements` cataloguent séparément chaque partie exacte. Une entrée de
+`variantViews` porte jusqu’à cinq renvois vers ces catalogues ; chaque entrée de
+`variants` référence la vue correspondante par `view`, à côté de ses `tokens`,
+`strokes` et placements de bindings. Deux parties ne partagent une clé que si
+leur JSON est strictement identique, à l’ordre des clés près. Il n’existe ni
+merge, ni héritage, ni valeur par défaut entre vues.
+
+`propertyBindingDefinitions` porte la partie stable d’une liaison ;
+`variants[].bindings` conserve sa cible exacte dans chaque COMPONENT.
 
 `samples` catalogue à part ce que la maquette montre — textes, valeurs de props,
-surcharges et remplacements d'instance dans les dépendances —, et chaque entrée
+surcharges et remplacements d’instance dans les dépendances —, et chaque entrée
 de `variants` le référence par `sample`. Il est le seul champ non normatif du
-contrat : le retirer, avec les `variants[].sample`, redonne exactement la forme
-précédente, `meta` mis à part. Il vit hors de `variantViews` pour que le contenu,
-volatil, ne fasse pas éclater la déduplication des vues, qui est stable.
+contrat. Il vit hors de `variantViews` pour que le contenu, volatil, ne fasse pas
+éclater la déduplication des vues normatives.
 
 Toute information exacte se lit dans une entrée de `variants`, la vue
 qu’elle référence et ses placements de bindings. La projection de référence
@@ -1489,9 +1482,8 @@ dimensions par taille ; elle ne remplace jamais la vue exacte d’une variante.
 Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
 il accepte uniquement les versions qu’il a explicitement auditées.
 
-Toute modification de forme incrémente `meta.contractVersion` et adapte dans le
-même changement la présente spécification, les fixtures et les consommateurs.
-L’historique détaillé appartient à Git.
+Toute modification de forme incrémente `meta.contractVersion` et adapte la
+présente spécification, le schéma, les tests et les consommateurs concernés.
 
 `tokens.json` ne porte pas encore de version de schéma propre. Cette limite est
 suivie dans [ROADMAP.md](./ROADMAP.md).

@@ -31,27 +31,25 @@ sont jamais corrigés à la main.
 
 | Domaine | État |
 |---|---|
-| Contrat 11.0 | L’Exporter publie les vues exactes — cinq renvois vers cinq catalogues de parties — et un `samples` récursif non normatif. Il n’écrit aucune valeur neutre, aucun index dérivable (`tokensUsed`, `meta.warnings`), et une entrée par ligne : le contrat coûte 53 % de tokens en moins à lire, à donnée strictement égale (`npm run verifier:migration`). Les `args` d’une dépendance viennent de sa surface publique directe et de son seul wrapper élu ; le contenu rendu suit la visibilité effective ; les comparaisons positionnelles s’arrêtent aux `SLOT`. Ces lois sont couvertes par des arbres synthétiques sans nom de composant du corpus |
+| Contrat 11.0 | L’Exporter publie les vues exactes sous cinq catalogues de parties et un `samples` récursif non normatif. Il élide les valeurs neutres, ne publie ni `tokensUsed` ni `meta.warnings`, et sérialise une entrée par ligne sur deux niveaux. Les `args` d’une dépendance viennent de sa surface publique directe et de son seul wrapper élu ; le contenu positionnel suit la visibilité effective et s’arrête aux `SLOT`. Ces lois sont couvertes par des tests synthétiques sans logique liée au nom d’un composant |
 | Consommation 10.3 (à monter en 11.0) | Le Playground documente une reconstruction récursive relative au propriétaire immédiat, sans recherche globale ni limite de profondeur. `validation-echantillons.mjs` joint TOUTES les adresses d’un échantillon — clés et valeurs d’`args`, `masterPath`, `composes` imbriqué, `slotPath` d’une racine et d’un texte — sur des contrats synthétiques, cas absents, ambigus et profonds compris. Aucun ne regarde QUELLE valeur est placée, et une racine omise reste tolérée |
-| Validation Figma 11.0 | **À refaire après cette correction.** Seul un réexport humain peut confirmer les valeurs produites par l’API Figma. Les composants actuels du Playground sont des sondes jetables, pas des hypothèses du moteur ni un critère de généralité |
+| Validation Figma 11.0 | En attente d’un réexport humain, seul moyen de confirmer les valeurs produites par l’API Figma. Les composants du Playground restent des artefacts de validation à préserver, mais ne constituent pas à eux seuls un critère de généralité du moteur |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
 | Structure portable | Flex, wrap, grille, position absolue, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
 | Contrôles du Playground | Forme et version des contrats, graphe, parité statique, références de tokens, tests de rendu co-localisés, génération des types et du CSS |
 | Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
-| Test froid | Le protocole générique est documenté et ses lois d’adressage sont testées. La preuve visuelle doit encore être rejouée sur un export frais ; aucun composant existant n’est considéré comme une preuve durable |
-| Corpus de démonstration | Les composants et tests actuels servent d’exemples remplaçables. La maturité se mesure sur les invariants synthétiques, puis sur de nouvelles familles Figma choisies sans règle liée à leur nom |
+| Test froid | Le protocole générique est documenté et ses lois d’adressage sont testées. La preuve visuelle dépend d’un export frais et d’une comparaison avec Figma ; un composant existant ne vaut que pour le contrat qu’il accompagne |
+| Corpus de démonstration | Les composants et tests actuels sont des artefacts de validation à ne pas réécrire pour obtenir du vert. La maturité se mesure aussi sur les invariants synthétiques et sur de nouvelles familles Figma choisies sans règle liée à leur nom |
 | Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
 | Interopérabilité | Le JSON Schema du contrat est publié dans `schema/`, dérivé de `types.ts` et vendu au Playground pour l’éditeur ; il décrit la forme, jamais la cohérence, et ne bloque aucune fusion. `tokens.json` n’a toujours pas de version propre |
 | Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
 
-Le projet est un **prototype avancé**. Le pipeline Figma → pull request → CI →
-`main` a déjà été exercé sur des contrats réels, mais la forme 11.0 exige un
-nouveau passage humain dans Figma : le corpus et les contrats du Playground sont
-encore en 10.3, et personne d’autre qu’un humain ne peut relancer le plugin.
-Tant que ce réexport n’a pas eu lieu, le Playground reste un consommateur de
-10.3 et ne doit pas être monté : il n’aurait aucun contrat à lire. Les preuves durables portent sur des lois du moteur ; les composants du
-corpus constatent un comportement à une date donnée et restent remplaçables.
+Le projet est un **prototype avancé**. L’Exporter écrit la forme 11.0, tandis
+que le corpus Figma et le Playground restent en 10.3. Seul un humain peut
+produire les exports 11.0 nécessaires à l’adaptation du consommateur. Les
+preuves durables portent sur les lois du moteur ; les composants du corpus
+constatent un comportement à une date donnée et restent remplaçables.
 
 ## Fragilités connues
 
@@ -98,9 +96,10 @@ Les références de tokens littérales sont comparables au contrat ; un chemin
 assemblé à l’exécution est refusé. En revanche, une donnée visuelle recopiée
 dans une règle de code peut échapper à l’analyse statique. Quelques tests de
 rendu pilotés par le contrat existent dans le corpus de démonstration, mais ils
-restent jetables et aucun vérificateur générique n’exerce encore toutes les vues
-exactes d’un composant arbitraire. La proposition correspondante est détaillée dans
-[PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) ; elle n’est pas engagée.
+restent ciblés et aucun vérificateur générique n’exerce encore toutes les vues
+exactes d’un composant arbitraire. Les contrôles disponibles et cette limite
+sont détaillés dans
+[PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md).
 
 C’est là, et nulle part ailleurs, que vit la preuve de bout en bout. Les
 jointures d’adresses du Playground constatent que deux contrats se joignent ;
@@ -139,7 +138,7 @@ Le coût du relevé de composition sur une grosse matrice n’entre pas dans cet
 clôture : c’est une dette de performance, elle a maintenant une cause nommée, et
 elle est rangée avec les fragilités connues.
 
-### 2. Éprouver d’autres familles de composants
+### 3. Éprouver d’autres familles de composants
 
 Choisir les cas pour leur différence, pas pour leur nombre :
 
@@ -153,7 +152,7 @@ Une limite ne justifie un nouveau champ que si le contrat ne permet aucune
 décision correcte sur un cas réel. Les options correspondantes restent dans
 [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 
-### 3. Éprouver le workflow d’équipe
+### 4. Éprouver le workflow d’équipe
 
 - rendre les contrôles bloquants après décision sur le plan GitHub ou la
   visibilité des repositories ;
@@ -162,14 +161,14 @@ décision correcte sur un cas réel. Les options correspondantes restent dans
 - vérifier que chaque diagnostic est compréhensible sans ouvrir les logs ;
 - mesurer les faux positifs et le coût quotidien des contrôles.
 
-### 4. Renforcer la parité utile
+### 5. Renforcer la parité utile
 
 Les prochains contrôles candidats sont les valeurs d’enum réellement gérées,
 les valeurs par défaut et les exceptions volontaires documentées. Leur coût et
 leurs faux positifs doivent être mesurés sur plusieurs composants avant de les
 rendre bloquants.
 
-### 5. Stabiliser l’interopérabilité
+### 6. Stabiliser l’interopérabilité
 
 Le JSON Schema est publié, avant la clôture du point 1 et non après. Ce
 décalage est assumé : le schéma est dérivé de `types.ts`, il ne bloque aucune

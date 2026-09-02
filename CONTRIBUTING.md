@@ -90,7 +90,7 @@ Un export produit deux natures de constats, et elles ne se mélangent pas :
 |---|---|---|
 | Ce qu’il dit | Une information manque à l’artefact | Le contrat publie ce point sous une forme inhabituelle |
 | Geste attendu | Oui, nommé dans le message | Aucun |
-| Canal | `warnings` | `infos` |
+| Canal interne | `warnings` | `infos` |
 | Corps de la pull request | « L’export n’a pas pu décrire… », puis « Corrigez chaque point » | Rien : elle n’y apparaît pas |
 | Où la lire | Pull request, journal du plugin, `meta.diagnostics` | Journal du plugin, `meta.diagnostics` |
 
@@ -110,8 +110,8 @@ Même règle du côté des avertissements : un constat qui ne nomme aucun geste 
 rien à faire dans cette liste. Soit il en nomme un, soit c’est une note. La forme
 unitaire ci-dessous n’est pas une recommandation, c’est ce qui distingue les deux.
 
-`meta.warnings` du contrat reste le miroir complet des deux, et
-`meta.diagnostics` les distingue par leur `code` :
+`meta.diagnostics` est l’unique représentation publiée dans le contrat. Il
+distingue les constats par leur `code` :
 `UCM_PORTABLE_PROJECTION_WARNING` pour une perte de portabilité,
 `UCM_EXPORT_INFO` pour une note, `UCM_EXPORT_NOTICE` pour le reste. Attention :
 « sans perte de portabilité » ne veut pas dire « sans geste à faire » — une
@@ -183,8 +183,8 @@ jamais rester silencieuse.
 - Une référence de token utilise la forme `{chemin.du.token}`. `variables.ts`
   la produit (`toRef`) et la reconnaît (`isTokenReference`) : une seule autorité
   sur sa forme.
-- `tokensUsed` se dérive du contrat terminé, jamais d’un relevé tenu pendant
-  l’extraction.
+- Le contrat ne publie aucun `tokensUsed`. Un consommateur qui a besoin de cet
+  index le dérive du contrat terminé, `samples` et `meta` exclus.
 - Un composant imbriqué contracté devient une dépendance de composition ; son
   contenu interne n’est pas réexporté par le parent.
 - Un changement de forme du contrat incrémente `contractVersion`.
@@ -232,8 +232,7 @@ Chaque document a une autorité limitée :
 | `UCM-EXPORTER-SPEC.md` | Comportement actuel du plugin |
 | `ROADMAP.md` | État et prochaines validations |
 | `PISTES-EVOLUTION.md` | Options non engagées |
-| `PLAN-CONFORMITE-DEV.md` | Proposition détaillée sans décision ni implémentation |
-| `PLAN-SWAP-NOMME.md` | Proposition détaillée sans décision ni implémentation |
+| `PLAN-CONFORMITE-DEV.md` | Recherche proposée pour les prochaines phases de conformité du rendu |
 | `README.md` | Entrée dans le projet |
 | `AGENTS.md` | Instructions opérationnelles |
 

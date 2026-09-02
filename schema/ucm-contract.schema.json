@@ -166,7 +166,7 @@
           "items": {
             "$ref": "#/definitions/ContractDiagnostic"
           },
-          "description": "Ce que l'export n'a pas pu décrire, en français et adressé au designer. Rangé sous `meta` parce qu'il documente l'EXPORT, pas le composant : un consommateur du contrat n'a jamais à le lire pour rendre un composant.\n\nUn miroir en texte brut vivait à côté, sous `warnings`. Il redisait exactement `diagnostics[].message`, dans le même ordre, et le contrat publiait donc chaque avertissement deux fois. Le miroir est parti ; qui veut la liste lisible lit `message`, sans filtrer sur `severity` — un diagnostic est un diagnostic, quelle que soit sa gravité.\n\nAbsent quand l'export n'a rien à signaler."
+          "description": "Constats de l'export, en français et adressés au designer. Rangés sous `meta` parce qu'ils documentent l'EXPORT, pas le composant : un consommateur n'a jamais à les lire pour rendre un composant. Qui veut la liste lisible lit `diagnostics[].message`, sans filtrer sur `severity`.\n\nAbsent quand l'export n'a rien à signaler."
         },
         "coverage": {
           "$ref": "#/definitions/ContractCoverage"
@@ -180,7 +180,7 @@
             },
             "nodeId": {
               "type": "string",
-              "description": "Id du nœud Component Set dans le fichier (ex. « 12:345 »)."
+              "description": "Id du Component ou Component Set exporté (ex. « 12:345 »)."
             },
             "componentKey": {
               "type": "string",
@@ -259,7 +259,7 @@
             "complete",
             "partial"
           ],
-          "description": "Partiel dès que le contrat portable demande l'attention du designer."
+          "description": "Partiel uniquement lorsqu'une information n'a pas de projection portable."
         }
       },
       "required": [
@@ -532,7 +532,7 @@
         "values"
       ],
       "additionalProperties": false,
-      "description": "Étiquettes Figma des axes et de leurs valeurs.\n\nLe nom Figma d'un variant — « Color=Primary, State=Hover » — répète ses `values` avec les majuscules de Figma. Publié sur chaque variant, il coûtait quatre-vingt-dix fois la même information sur un composant à quatre-vingt-dix combinaisons ; publié une fois par axe et par valeur, il coûte autant que le nombre de valeurs.\n\nLes deux tables viennent de la SOURCE — `componentPropertyDefinitions` pour le nom d'un axe, `variantProperties` pour la valeur brute — jamais d'une relecture du nom publié : reconstruire le nom depuis la table et le comparer ne suffit pas à valider l'appariement axe ↔ étiquette, qu'une permutation traverse sans être vue.\n\nAbsentes quand le composant n'a pas d'axe, ou quand une seule combinaison ne se reconstruit pas à l'identique : `variants[].figmaName` reprend alors la main, variant par variant."
+      "description": "Étiquettes Figma des axes et de leurs valeurs.\n\nElles permettent de reconstruire le nom Figma d'un variant — « Color=Primary, State=Hover » — à partir des clés et valeurs publiques, sans répéter ces libellés dans chaque combinaison.\n\nLes deux tables viennent de la SOURCE — `componentPropertyDefinitions` pour le nom d'un axe, `variantProperties` pour la valeur brute — jamais d'une relecture du nom publié : reconstruire le nom depuis la table et le comparer ne suffit pas à valider l'appariement axe ↔ étiquette, qu'une permutation traverse sans être vue.\n\nAbsentes quand le composant n'a pas d'axe, ou quand une seule combinaison ne se reconstruit pas à l'identique : `variants[].figmaName` reprend alors la main, variant par variant."
     },
     "VariantStructure": {
       "type": "object",
@@ -880,7 +880,7 @@
         "flexGrow": {
           "type": "number",
           "const": 1,
-          "description": "Le layer remplit l'axe principal de son parent (`Fill` dans Figma, exposé par `layoutSizing…` ou par l'historique `layoutGrow: 1`). Son absence vaut `Hug` : une dimension fixe est publiée par `size` quand elle est reliée à une variable, et avertie quand elle ne l'est pas."
+          "description": "Le layer remplit l'axe principal de son parent (`Fill` dans Figma, exposé par `layoutSizing…` ou `layoutGrow: 1`). Son absence vaut `Hug` : une dimension fixe est publiée par `size` quand elle est reliée à une variable, et avertie quand elle ne l'est pas."
         },
         "children": {
           "type": "array",
@@ -1216,7 +1216,7 @@
         },
         "nodeSuffix": {
           "type": "string",
-          "description": "Fin d'identifiant commune à toutes les occurrences de cette définition, point-virgule compris (« ;3:429 »).\n\nFigma écrit l'identifiant d'un calque atteint DANS une instance « I<chaîne d'instances>;<id du calque dans le maître> ». Le dernier segment ne dépend donc que de la définition, jamais du variant : le publier une fois ici retire une répétition par variant et par liaison. Les `nodeId` de `variants[].bindings` sont alors écrits SANS cette fin ; les recoller la redonne à l'identique.\n\nAbsente quand la définition ne vise pas un calque d'instance, ou quand ses occurrences ne partagent pas la même fin."
+          "description": "Fin d'identifiant commune à toutes les occurrences de cette définition, point-virgule compris (« ;3:429 »).\n\nFigma écrit l'identifiant d'un calque atteint DANS une instance « I<chaîne d'instances>;<id du calque dans le maître> ». Le dernier segment ne dépend donc que de la définition, jamais du variant. Les `nodeId` de `variants[].bindings` omettent cette fin commune ; la concaténation des deux champs redonne l'identifiant exact.\n\nAbsente quand la définition ne vise pas un calque d'instance, ou quand ses occurrences ne partagent pas la même fin."
         }
       },
       "required": [
@@ -1392,7 +1392,7 @@
         "view"
       ],
       "additionalProperties": false,
-      "description": "Projection de référence du composant : un renvoi, plus ce qui n'appartient qu'au niveau global.\n\n`structure` décrivait le même arbre qu'une vue, recopié. Le renvoi est INCONDITIONNEL : quand la projection ne correspond à aucune structure déjà cataloguée — le cas d'un composant dont l'élection du node de layout saute un wrapper de dimensions — elle en ajoute une au catalogue. Une seule forme, donc un seul chemin de lecture chez le consommateur."
+      "description": "Projection de référence du composant : un renvoi, plus ce qui n'appartient qu'au niveau global.\n\nLe renvoi est inconditionnel. Quand la projection ne correspond à aucune structure déjà cataloguée — notamment lorsque l'élection du node de layout saute un wrapper de dimensions — sa structure possède sa propre entrée. Le consommateur résout toujours un arbre par le même catalogue."
     },
     "SizeDimensions": {
       "type": "object",

@@ -290,10 +290,9 @@ Le raisonnement vit dans la spécification, en lien.
 - Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
   geste à faire. Les trois sont exigés ; un constat qui ne nomme aucun geste
   n’est pas un avertissement.
-- `meta.diagnostics` est l’unique propriétaire des messages de l’export. Le
-  miroir en texte brut qui vivait sous `meta.warnings` disait la même liste, dans
-  le même ordre : qui veut la version lisible lit `message`, sans filtrer sur
-  `severity`.
+- `meta.diagnostics` est l’unique propriétaire des messages publiés dans le
+  contrat. Qui veut la liste lisible lit `diagnostics[].message`, sans filtrer
+  sur `severity`.
 - Le corps de la pull request ne porte QUE les avertissements. Une note n’y
   entre pas : sa conclusion est toujours « rien à faire », et une liste dont on
   apprend qu’elle se survole coûte la lecture de celles qui demandent un geste.
@@ -312,9 +311,8 @@ Le raisonnement vit dans la spécification, en lien.
   une couleur, une dimension, un layout. Une donnée de rendu qui manquerait ici
   manque au contrat NORMATIF, et c’est là qu’il faut la corriger.
 - Tout le non normatif vit sous `samples` et `variants[].sample`, et nulle part
-  ailleurs : les retirer redonne le contrat de la version précédente, `meta` mis
-  à part. C’est ce qui rend vérifiable la promesse « aucun contrôle ne le compare
-  au code », au lieu de la laisser à la bonne volonté des consommateurs.
+  ailleurs. Les retirer laisse un contrat strictement normatif ; aucun contrôle
+  ne compare ce contenu au code.
 - Corollaire : une donnée non normative ne doit jamais pouvoir dégrader une
   structure normative — ni sa taille, ni sa déduplication, ni sa validation. D’où
   un catalogue à part, et non un champ dans `variantViews`, que le contenu ferait
@@ -410,12 +408,11 @@ autres d’avance, et `npm test` redeviendrait rouge pour la seule raison qu’u
 humain n’a pas encore rouvert Figma.
 
 Le corpus `tests/test-exports/` reste petit et représentatif. Il est produit
-depuis Figma, pas édité à la main, et verrouille la version actuelle du
-contrat. `npm run check:fixtures` le constate, et se lance avant une pull
-request plutôt que dans `npm test` : il ne dit rien du code, seulement qu'un
-humain a relancé le plugin depuis le dernier changement de forme. Un agent ne
-peut pas le satisfaire seul, et ne doit pas chercher à le faire — retoucher un
-fichier du corpus détruirait ce qui en fait la valeur.
+depuis Figma et n’est jamais édité à la main. Il contient actuellement quatre
+contrats 10.3 et les tokens associés. `npm run check:fixtures` constate si ses
+contrats portent la version courante ; il reste hors de `npm test` parce qu’un
+agent ne peut pas relancer l’export Figma. Retoucher un fichier du corpus
+détruirait ce qui en fait la valeur.
 
 ## Limites d’environnement
 
