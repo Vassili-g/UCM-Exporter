@@ -404,6 +404,21 @@ en collision avertissent et l'usage ambigu reste absent.
   disposition et ses dimensions propres ; voir ci-dessous ;
 - autre calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
 
+**Un dessin qu'aucune règle ne désigne avertit.** Le contrat n'exporte aucun
+tracé : le seul moyen de dire « dessine ceci » est une règle `@icons`, qui nomme
+l'icône à rendre. Un calque dont le sous-arbre ne porte ni texte, ni dépendance,
+ni icône déclarée, mais bien un tracé, est donc publié avec sa place et ses
+couleurs, et son dessin manque. C'est presque toujours l'icône qu'on a oublié de
+déclarer, et le geste est le même dans les autres cas : la déclarer.
+
+Le déclencheur est le TRACÉ, jamais l'absence de texte : un cadre vide ou une
+surface colorée se décrivent entièrement par leurs tokens. Le message part une
+seule fois par dessin, et nomme le calque le plus profond qui contienne encore
+tout le dessin, celui que le designer déclarerait : « skull », jamais le
+« Vector » que Figma a nommé pour lui ni le cadre qui l'enveloppe. Un composant
+qui EST un dessin de bout en bout ne dit rien : une icône exportée pour
+elle-même n'a aucune règle à se donner.
+
 **La descente ne connaît ni profondeur, ni nature de composant.** Un calque est
 un CONTENEUR dès qu'un de ses descendants porte une information qu'une feuille
 ne sait pas exprimer : un calque texte, une icône, une dépendance composée, ou

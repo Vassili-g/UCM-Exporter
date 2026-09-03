@@ -24,7 +24,7 @@
 import { variableAliases } from '../variables';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
-import { getBinding } from './nodeBindings';
+import { estUnTrace, getBinding } from './nodeBindings';
 import { assignSlots, isIconLayer } from './slotNames';
 import type { SlotAssignment } from './slotNames';
 import { composedSlotDependencies } from './slotRelations';
@@ -152,6 +152,57 @@ export function publishedSlots(
   warnings: string[] = [],
 ): SlotAssignment[] {
   return assignSlots(node, iconNames, warnings, composed);
+}
+
+/**
+ * Vrai si ce calque et tout ce qu'il contient ne sont QUE du dessin.
+ *
+ * Le contrat ne sait pas écrire un tracé : il n'exporte aucun chemin de Bézier,
+ * et le seul moyen de dire « dessine ceci » est une règle `@icons`, qui nomme
+ * l'icône à rendre. Un calque dont le sous-arbre ne porte ni texte, ni
+ * dépendance, ni icône déclarée, mais bien un tracé, est donc un dessin que
+ * personne ne rendra.
+ *
+ * Un tracé est exigé : un cadre vide ou une simple surface colorée se décrit
+ * très bien par ses tokens, et n'a rien à déclarer.
+ */
+export function estUnDessinNonDeclare(
+  node: SceneNode,
+  iconNames: ReadonlySet<string>,
+  composed: ComposedInstances,
+): boolean {
+  if (composed.has(node.id)) return false;
+  const contenu = getAllNodes(node, [], composed);
+  if (contenu.some((n) => n.type === 'TEXT' || isIconLayer(n, iconNames) || composed.has(n.id))) {
+    return false;
+  }
+  return contenu.some(estUnTrace);
+}
+
+/**
+ * Le calque à NOMMER dans le message, quand un dessin n'est déclaré nulle part.
+ *
+ * Le plus profond qui contienne encore tout le dessin : c'est celui que le
+ * designer déclarerait. Un cadre « Badge » qui n'enveloppe qu'une instance
+ * « skull » n'est pas l'icône ; « skull » l'est. La descente s'arrête dès que le
+ * calque range plusieurs branches, ou dès qu'il ne reste que des tracés : un
+ * « Vector » nommé par Figma ne dit rien à personne, et son parent porte le nom
+ * que le designer a choisi.
+ */
+export function calqueDeDessinANommer(
+  node: SceneNode,
+  iconNames: ReadonlySet<string>,
+  composed: ComposedInstances,
+): SceneNode {
+  let courant = node;
+  for (let profondeur = 0; profondeur < MAX_STRUCTURE_DEPTH; profondeur += 1) {
+    const branches = assignSlots(courant, iconNames, [], composed)
+      .map(({ child }) => child)
+      .filter((child) => !estUnTrace(child));
+    if (branches.length !== 1) return courant;
+    [courant] = branches;
+  }
+  return courant;
 }
 
 /**

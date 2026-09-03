@@ -1240,6 +1240,108 @@ test('un calque graphique sans règle @icons garde le nom de son calque', async 
   assert.equal(layout.children[0].slot, 'separateur');
 });
 
+test('un dessin qu’aucune règle @icons ne désigne est signalé, sous le nom que le designer connaît', async () => {
+  // Le contrat n'exporte aucun tracé : sans règle `@icons`, le développeur
+  // recevra la place et les couleurs de ce layer, jamais son dessin. C'est
+  // l'icône qu'on a oublié de déclarer, et le message nomme le layer que le
+  // designer déclarerait : « skull », jamais le « Vector » que Figma a nommé
+  // pour lui, ni le cadre qui l'enveloppe.
+  const trace = { type: 'VECTOR', id: 'trace', name: 'Vector', boundVariables: {} };
+  const skull = {
+    type: 'INSTANCE',
+    id: 'skull',
+    name: 'skull',
+    boundVariables: {},
+    children: [trace],
+    findAll: findAllOn([trace]),
+  };
+  const badge = {
+    type: 'FRAME',
+    id: 'badge',
+    name: 'Badge',
+    boundVariables: {},
+    children: [skull],
+    findAll: findAllOn([skull, trace]),
+  };
+  const titre = { type: 'TEXT', id: 'titre', name: 'Titre', boundVariables: {} };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Card',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [titre, badge],
+    findAll: findAllOn([titre, badge, skull, trace]),
+  } as unknown as ComponentNode;
+
+  const warnings: string[] = [];
+  await extractLayout(racine, resolverFor({}), warnings, new Map(), new Set());
+
+  const dessin = warnings.filter((warning) => warning.includes('règle @icons ne le désigne'));
+  assert.equal(dessin.length, 1);
+  assert.ok(dessin[0].includes('Layer « skull »'));
+  assert.ok(dessin[0].includes('Ajoutez une règle @icons'));
+});
+
+test('une icône déclarée ne réclame plus rien, et un composant qui EST un dessin non plus', async () => {
+  const trace = { type: 'VECTOR', id: 'trace', name: 'Vector', boundVariables: {} };
+  const skull = {
+    type: 'INSTANCE',
+    id: 'skull',
+    name: 'skull',
+    boundVariables: {},
+    children: [trace],
+    findAll: findAllOn([trace]),
+  };
+  const titre = { type: 'TEXT', id: 'titre', name: 'Titre', boundVariables: {} };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Card',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [titre, skull],
+    findAll: findAllOn([titre, skull, trace]),
+  } as unknown as ComponentNode;
+
+  const declare: string[] = [];
+  await extractLayout(racine, resolverFor({}), declare, new Map(), new Set(['skull']));
+  assert.deepEqual(declare.filter((w) => w.includes('règle @icons ne le désigne')), []);
+
+  // Une icône exportée pour elle-même n'a aucune règle à se donner : le dessin
+  // n'est pas un layer égaré dans le composant, il EST le composant.
+  const icone = {
+    type: 'COMPONENT',
+    name: 'IconSkull',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [trace],
+    findAll: findAllOn([trace]),
+  } as unknown as ComponentNode;
+  const seule: string[] = [];
+  await extractLayout(icone, resolverFor({}), seule, new Map(), new Set());
+  assert.deepEqual(seule.filter((w) => w.includes('règle @icons ne le désigne')), []);
+});
+
+test('une surface colorée n’est pas un dessin : rien à déclarer', async () => {
+  // Le déclencheur est le TRACÉ, pas l'absence de texte : un cadre et un
+  // rectangle se décrivent très bien par leurs tokens, et réclamer une règle
+  // `@icons` pour un liseré enverrait le designer déclarer une icône qui
+  // n'existe pas.
+  const liseré = { type: 'RECTANGLE', id: 'liseré', name: 'Divider', boundVariables: {} };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Card',
+    layoutMode: 'HORIZONTAL',
+    boundVariables: {},
+    children: [liseré],
+    findAll: findAllOn([liseré]),
+  } as unknown as ComponentNode;
+
+  const warnings: string[] = [];
+  await extractLayout(racine, resolverFor({}), warnings, new Map(), new Set());
+
+  assert.deepEqual(warnings.filter((w) => w.includes('règle @icons ne le désigne')), []);
+});
+
 test('un slot masquable conserve les visibilités portées plus bas', () => {
   // Deux props distinctes : celle du slot et celle du titre. Promouvoir la
   // seconde élargirait sa portée ; la taire perdrait une prop en silence.
