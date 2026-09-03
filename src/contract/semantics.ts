@@ -10,16 +10,11 @@
  * Règle d'or : le mapping se décide sur les VALEURS ou le RÔLE, jamais sur
  * le nom d'un composant — aucun cas particulier codé en dur.
  */
-import { refPath } from '../variables';
-import { tokenKey } from './colorKeys';
 import type {
   RenderingRole,
   RenderingSemantics,
   StateDescriptor,
   StateModel,
-  StrokeTokens,
-  VariantStrokes,
-  VariantTokens,
 } from './types';
 
 /**
@@ -136,6 +131,17 @@ export function buildStateModel(
 }
 
 /**
+ * Le rôle relevé de chaque clé de couleur, un côté par arbre publié.
+ *
+ * `extractVariantTokens` le remplit, `renderingSemanticsFor` le publie. Les
+ * deux côtés ne se mélangent jamais : une clé n'est unique que dans son arbre.
+ */
+export type DiscoveredRoles = {
+  fills: ReadonlyMap<string, string>;
+  strokes: ReadonlyMap<string, string>;
+};
+
+/**
  * Retourne le vocabulaire de rendu partagé par tous les contrats. Il est exporté
  * dans chaque contrat afin qu'un agent n'ait pas à deviner le CSS d'un rôle.
  */
@@ -174,11 +180,19 @@ function renderableRoles(): Map<string, RenderingRole['kind']> {
 /**
  * Vrai si cette clé nomme un des rôles que `rendering.roles` publie pour tous
  * les composants. Une seule fonction répond à cette question : l'extraction et
- * les avertissements la posent tous les deux, et deux tests équivalents en
+ * la publication la posent toutes les deux, et deux tests équivalents en
  * apparence finiraient par diverger au premier rôle ajouté.
  */
 export function isRenderableRole(key: string): boolean {
   return renderableRoles().has(key);
+}
+
+/**
+ * La nature d'un rôle partagé — `paint` ou `stroke` —, ou `null` si ce nom n'en
+ * désigne aucun.
+ */
+export function roleKind(role: string): RenderingRole['kind'] | null {
+  return renderableRoles().get(role) ?? null;
 }
 
 /**
@@ -204,6 +218,12 @@ export function isRenderableRole(key: string): boolean {
  * de contour se rendent hors du flux. Le contrat n'a donc pas à deviner un
  * `ring` : la donnée structurelle est déjà là, et elle est observée, pas
  * supposée.
+ *
+ * C'est CETTE fonction qui décide de la NATURE du rendu, et elle seule : un
+ * token nommé `…/foreground` posé en contour peint bien un contour. Le nom du
+ * token ne peut que préciser le rôle À L'INTÉRIEUR de cette nature — distinguer
+ * un `ring` d'un `border` —, jamais la contredire. Le moteur n'a pas à avoir un
+ * avis sur le vocabulaire du design system.
  */
 export function paintSiteRole(site: {
   isStroke: boolean;
@@ -216,145 +236,58 @@ export function paintSiteRole(site: {
 }
 
 /**
- * Vocabulaire de rendu d'UN contrat : les rôles partagés, plus une entrée par
- * couleur dont le nom ne déclare aucun rôle.
+ * Vocabulaire de rendu d'UN contrat : les rôles partagés, et le rôle de chaque
+ * clé de couleur qui n'en porte pas le nom.
  *
  * Sans cela, une couleur nommée `…/scale-1` produit un contrat valide que
  * personne ne sait peindre : le consommateur ignore une clé absente de
- * `rendering.roles`, silencieusement. Publier son rendu déduit ferme ce trou
- * sans imposer au design system de renommer ses variables.
+ * `rendering.roles`, silencieusement. Publier le rôle déduit du calque qui la
+ * porte ferme ce trou sans imposer au design system de renommer ses variables.
  *
- * C'est aussi ce qui rend lisible une clé ALLONGÉE : `userinput.border` ne
- * nomme aucun rôle partagé, et le consommateur y trouve le rendu que son
- * dernier segment déclarait.
+ * `roles` reste STRICTEMENT le vocabulaire partagé, identique dans tous les
+ * contrats : un mot y signifie partout la même chose, et c'est ce qui permet de
+ * l'apprendre une fois. La part propre au composant vit à côté, dans
+ * `keyRoles`, qui NOMME un rôle au lieu d'en recopier le rendu — deux tables de
+ * propriétés CSS à tenir en phase valaient déjà mieux qu'une, et une clé qui
+ * s'appelle comme un rôle sans en avoir la nature n'avait aucun endroit où le
+ * dire.
  *
- * `discovered` associe chaque clé au rôle partagé dont elle emprunte le rendu.
- * Les descripteurs sont RECOPIÉS depuis `defaultRenderingSemantics()` : il
- * n'existe pas de seconde table de propriétés CSS à tenir en phase.
+ * Les deux côtés sont séparés parce que les clés le sont (`colorKeys` décide
+ * sur des feuilles distinctes) : la clé `background` d'une peinture et celle
+ * d'un contour peuvent désigner deux tokens différents.
  *
- * Les clés déduites sont triées : deux exports d'un design inchangé doivent
- * produire le même JSON, sinon l'invariant « aucun changement = aucune PR »
- * tombe.
+ * Une clé dont le rôle porte déjà le nom reste absente : `roles[clé]` répond
+ * pour elle. Les entrées sont triées — deux exports d'un design inchangé
+ * doivent produire le même JSON, sinon l'invariant « aucun changement = aucune
+ * PR » tombe.
  */
 export function renderingSemanticsFor(
-  discovered: ReadonlyMap<string, string>,
+  discovered: DiscoveredRoles,
 ): RenderingSemantics {
   const semantics = defaultRenderingSemantics();
-  for (const key of Array.from(discovered.keys()).sort()) {
-    const role = discovered.get(key);
-    const shared = role ? semantics.roles[role] : undefined;
-    // Une clé qui nomme déjà un rôle partagé garde le rendu publié pour tous :
-    // c'est le designer qui l'a déclaré, et l'écraser ferait diverger deux
-    // contrats sur le sens du même mot.
-    if (!shared || isRenderableRole(key)) continue;
-    // Les clés viennent de Figma. `roles[key] = …` laisserait un token nommé
-    // « __proto__ » écrire dans le prototype : l'entrée disparaîtrait du JSON
-    // sans un mot, et le contrat citerait un rendu qu'il ne publie pas.
-    Object.defineProperty(semantics.roles, key, {
-      value: { ...shared }, enumerable: true, writable: true, configurable: true,
-    });
-  }
-  return semantics;
-}
-
-/** Ce qu'on retient d'un rôle rencontré : combien de fois, et un exemple citable. */
-type RoleUsage = { count: number; example: string };
-
-/**
- * Parcourt un arbre de variantes à profondeur quelconque et compte les rôles
- * de ses feuilles. `readReference` dit comment lire une entrée : elle renvoie
- * la référence de token quand l'entrée EST un rôle, ou null quand il s'agit
- * d'un niveau d'axe supplémentaire à traverser. L'arbre n'est ainsi jamais
- * présumé de la profondeur d'un composant particulier.
- */
-function collectRoles(
-  tree: Record<string, unknown>,
-  readReference: (value: unknown) => string | null,
-  usages: Map<string, RoleUsage>,
-): void {
-  for (const value of Object.values(tree)) {
-    const reference = readReference(value);
-    if (reference) {
-      // Le rôle se lit sur le dernier segment du TOKEN, là où le designer le
-      // déclare — jamais sur la clé de l'arbre, qui s'allonge quand deux
-      // couleurs cohabitent : `userinput.border` ne nomme aucun rôle partagé,
-      // et ce garde-fou se tairait pour toutes les couleurs d'un composant à
-      // surfaces multiples.
-      const key = tokenKey(refPath(reference));
-      const usage = usages.get(key);
-      if (usage) usage.count += 1;
-      else usages.set(key, { count: 1, example: reference });
-      continue;
+  const table = (roles: ReadonlyMap<string, string>): Record<string, string> => {
+    const publiees: Record<string, string> = {};
+    for (const key of Array.from(roles.keys()).sort()) {
+      const role = roles.get(key);
+      // Un rôle inconnu n'existe pas : `paintSiteRole` et `colorRole` n'en
+      // rendent que des partagés. La garde vaut pour le lecteur.
+      if (!role || !isRenderableRole(role) || key === role) continue;
+      // Les clés viennent de Figma. `publiees[key] = …` laisserait un token
+      // nommé « __proto__ » écrire dans le prototype : l'entrée disparaîtrait
+      // du JSON sans un mot, et le contrat citerait un rendu qu'il ne publie
+      // pas.
+      Object.defineProperty(publiees, key, {
+        value: role, enumerable: true, writable: true, configurable: true,
+      });
     }
-    if (value && typeof value === 'object') {
-      collectRoles(value as Record<string, unknown>, readReference, usages);
-    }
-  }
-}
-
-/** Une feuille de peinture est une simple référence de token. */
-function paintReference(value: unknown): string | null {
-  return typeof value === 'string' ? value : null;
-}
-
-/** Une feuille de contour est un objet dont `color` porte la référence. */
-function strokeReference(value: unknown): string | null {
-  if (!value || typeof value !== 'object') return null;
-  const color = (value as StrokeTokens).color;
-  return typeof color === 'string' ? color : null;
-}
-
-/**
- * Signale un rôle partagé employé à l'envers : un `…/border` posé en
- * remplissage, un `…/background` posé en contour. Le designer a nommé le rôle
- * explicitement, et le calque qui le porte dit le contraire — l'une des deux
- * intentions est fausse, et le contrat ne peut pas trancher à sa place.
- *
- * Une clé qui ne nomme AUCUN rôle partagé n'est pas une anomalie : son rendu
- * se déduit du site d'application (`paintSiteRole`) et se publie dans
- * `rendering.roles` (`renderingSemanticsFor`). Exiger qu'elle se termine par un
- * rôle imposerait au design system un renommage que rien ne justifie.
- *
- * Le rôle se lit sur le dernier segment du TOKEN, jamais sur la clé de l'arbre :
- * celle-ci s'allonge quand deux couleurs cohabitent, et un `…/border` publié
- * sous `userinput.border` doit rester signalé s'il est posé en fill.
- *
- * On agrège : un seul message par rôle fautif, plutôt qu'un par variante — un
- * Button a 30 variantes qui portent les mêmes calques. Le message cite un token
- * en exemple, car c'est celui à corriger dans Figma.
- */
-export function variantRoleWarnings(
-  variantTokens: VariantTokens,
-  variantStrokes: VariantStrokes,
-): string[] {
-  const roles = renderableRoles();
-  const warnings: string[] = [];
-
-  const review = (tree: Record<string, unknown>, readReference: (value: unknown) => string | null, found: RenderingRole['kind']) => {
-    const usages = new Map<string, RoleUsage>();
-    collectRoles(tree, readReference, usages);
-
-    for (const [role, usage] of usages) {
-      const layers = `sur ${usage.count} layer${usage.count > 1 ? 's' : ''}`;
-      const declared = roles.get(role);
-      // Clé sans rôle déclaré : `rendering.roles` publie son rendu déduit, il
-      // n'y a rien à signaler ni rien à renommer.
-      if (!declared) continue;
-      if (declared !== found) {
-        warnings.push(
-          `Token ${usage.example} : son dernier segment « ${role} » désigne ` +
-            `${declared === 'paint' ? 'un fill' : 'un stroke'}, mais il est appliqué en ` +
-            `${found === 'paint' ? 'fill' : 'stroke'}. Rien ne sera affiché (${layers}). ` +
-            `Appliquez-le du bon côté dans Figma, ou renommez-le.`,
-        );
-      }
-    }
+    return publiees;
   };
 
-  review(variantTokens as Record<string, unknown>, paintReference, 'paint');
-  review(variantStrokes as Record<string, unknown>, strokeReference, 'stroke');
-
-  // Tri : deux exports du même fichier Figma doivent produire le même contrat,
-  // sinon l'invariant « aucun changement = aucune PR » ne tient plus.
-  return warnings.sort();
+  const fills = table(discovered.fills);
+  const strokes = table(discovered.strokes);
+  const keyRoles = {
+    ...(Object.keys(fills).length > 0 ? { fills } : {}),
+    ...(Object.keys(strokes).length > 0 ? { strokes } : {}),
+  };
+  return Object.keys(keyRoles).length > 0 ? { ...semantics, keyRoles } : semantics;
 }

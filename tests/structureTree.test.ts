@@ -222,22 +222,45 @@ test('un calque en position absolue publie ses bords d’accroche au lieu de dis
     boundVariables: { fills: [alias('c')] },
     layoutSizingHorizontal: 'HUG',
     layoutSizingVertical: 'HUG',
+    // Un carré de 32 tourné à 45°, dont l'origine locale est à (100, 10).
+    // Figma tourne autour du coin, CSS autour du centre : seul un calcul qui
+    // passe par le centre place les deux au même endroit.
+    width: 32,
+    height: 32,
+    rotation: 45,
+    relativeTransform: [
+      [Math.SQRT1_2, -Math.SQRT1_2, 100],
+      [Math.SQRT1_2, Math.SQRT1_2, 10],
+    ],
   });
   const racine = node('COMPONENT', 'Avatar', [badge], {
     layoutMode: 'HORIZONTAL',
     primaryAxisAlignItems: 'MIN',
     counterAxisAlignItems: 'MIN',
+    width: 200,
+    height: 100,
   }) as unknown as ComponentNode;
 
   const warnings: string[] = [];
-  const layout = await extractLayout(racine, resolverFor({ c: 'colors.badge' }), warnings);
+  const infos: string[] = [];
+  const layout = await extractLayout(
+    racine, resolverFor({ c: 'colors.badge' }), warnings, undefined, undefined,
+    undefined, undefined, undefined, undefined, undefined, infos,
+  );
 
   const slot = layout.children[0];
   assert.equal(slot.position, 'absolute');
   assert.deepEqual(slot.constraints, { horizontal: 'right', vertical: 'top' });
-  // Ce qui manque reste dit : l'offset n'est liable à aucune variable Figma.
-  assert.ok(warnings.some((warning) =>
-    warning.includes('« Badge »') && warning.includes('Absolute')));
+  // La boîte CSS non tournée a son centre là où Figma le montre : le coin
+  // haut-gauche descend de (32√2 − 32) / 2 ≈ 6,63 px, et le contrat le dit.
+  assert.deepEqual(slot.inset, { top: '16.63px', right: '84px' });
+  // La rotation aussi est publiée, dans la convention de CSS : Figma compte
+  // à l'envers.
+  assert.equal(slot.rotation, '-45deg');
+  // Aucun geste : le designer ne PEUT pas relier une position à une variable,
+  // et la rotation, elle, est désormais écrite par le contrat.
+  assert.deepEqual(warnings.filter((warning) => warning.includes('« Badge »')), []);
+  assert.ok(infos.some((info) => info.includes('« Badge »') && info.includes('Absolute')));
 });
 
 test('la profondeur est bornée, et la coupure est dite quand elle emporte quelque chose', async () => {

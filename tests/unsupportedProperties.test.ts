@@ -13,6 +13,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { rotationDegrees } from '../src/contract/flexLayout';
 import { unsupportedPropertyWarnings } from '../src/contract/unsupportedProperties';
 
 /** Une frame aux valeurs par défaut de Figma, telle qu'un designer la crée. */
@@ -65,22 +66,27 @@ test('« clip content » n’est pas une anomalie : c’est le défaut de Figma'
   assert.deepEqual(unsupportedPropertyWarnings(suspect), []);
 });
 
-test('une rotation est signalée, un résidu de flottant ne l’est pas', () => {
-  // Le silence accordé jadis à la rotation invoquait les tracés importés. Ils ne
-  // passent jamais ici : ce relevé ne voit que les calques PUBLIÉS, et les
-  // entrailles d'une icône n'en sont pas. Restait donc le seul cas réel, un
-  // chevron retourné ou un badge incliné, perdu sans un mot.
-  const incline = frameParDefaut({ rotation: -90 });
-  const avertissements = unsupportedPropertyWarnings(incline);
-  assert.equal(avertissements.length, 1);
-  assert.ok(avertissements[0].includes('Layer « Container », rotation'));
-  assert.ok(avertissements[0].includes('rendu droit'));
+test('une rotation n’est plus une propriété manquante : le contrat l’écrit', () => {
+  // Ce relevé dit ce que le schéma ne SAIT PAS porter. La rotation en est
+  // sortie le jour où `ChildStructure.rotation` l'a portée : la réclamer encore
+  // enverrait le designer redresser un layer que le développeur rend incliné.
+  assert.deepEqual(unsupportedPropertyWarnings(frameParDefaut({ rotation: -90 })), []);
+  assert.deepEqual(unsupportedPropertyWarnings(frameParDefaut({ rotation: 3e-13 })), []);
+});
+
+test('rotationDegrees traduit dans la convention de CSS, et tait le bruit de Figma', () => {
+  // Figma compte les degrés à l'envers de CSS : une valeur recopiée telle
+  // quelle ferait tourner chaque layer dans le mauvais sens.
+  assert.equal(rotationDegrees(frameParDefaut({ rotation: -90 })), '90deg');
+  assert.equal(rotationDegrees(frameParDefaut({ rotation: 45 })), '-45deg');
+  assert.equal(rotationDegrees(frameParDefaut({ rotation: 12.3456 })), '-12.35deg');
 
   // Une transformation successive laisse dans Figma un résidu que personne ne
-  // voit et que personne ne peut remettre à zéro : le signaler enverrait le
-  // designer corriger un layer droit.
-  assert.deepEqual(unsupportedPropertyWarnings(frameParDefaut({ rotation: 3e-13 })), []);
-  assert.deepEqual(unsupportedPropertyWarnings(frameParDefaut({ rotation: -1e-9 })), []);
+  // voit et que personne ne peut remettre à zéro : le publier ferait bouger
+  // l'artefact d'un export à l'autre sans qu'aucun design ait changé.
+  assert.equal(rotationDegrees(frameParDefaut({ rotation: 3e-13 })), null);
+  assert.equal(rotationDegrees(frameParDefaut({ rotation: -1e-9 })), null);
+  assert.equal(rotationDegrees(frameParDefaut({})), null);
 });
 
 test('un mask est signalé : le contrat ne perd pas sa surface, il l’invente', () => {

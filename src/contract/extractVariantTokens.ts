@@ -17,7 +17,6 @@ import type { ComposedInstances } from './exportableNodes';
 import { normalizePropValue } from './parsers';
 import { getSlotTokens } from './extractSlotTokens';
 import type { TokenResolver, VariantColor, VariantStrokeColor } from './extractSlotTokens';
-import { isRenderableRole } from './semantics';
 import { toRef } from '../variables';
 import type { SlotStrokes, SlotTokens, VariantStrokes, VariantTokens } from './types';
 export { getSlotTokens } from './extractSlotTokens';
@@ -137,15 +136,19 @@ export async function extractVariantTokens(
   strokesByComponent: Map<ComponentNode, SlotStrokes>;
   /** Cibles internes de chaque clé, converties en chemins de slots par `extractStructure`. */
   paintNodeIdsByComponent: Map<ComponentNode, VariantPaintNodeIds>;
-  /** Rôle de rendu déduit de chaque clé qui n'en nomme aucun, sur toute la matrice. */
-  discoveredRoles: Map<string, string>;
+  /** Rôle de rendu relevé pour chaque clé, un côté par arbre, sur toute la matrice. */
+  discoveredRoles: { fills: Map<string, string>; strokes: Map<string, string> };
 }> {
   const variantTokens: VariantTokens = {};
   const variantStrokes: VariantStrokes = {};
   const tokensByComponent = new Map<ComponentNode, SlotTokens>();
   const strokesByComponent = new Map<ComponentNode, SlotStrokes>();
   const paintNodeIdsByComponent = new Map<ComponentNode, VariantPaintNodeIds>();
-  const discoveredRoles = new Map<string, string>();
+  // Un côté par arbre publié. `colorKeys` décide sur des feuilles séparées : la
+  // clé courte `background` peut désigner deux TOKENS différents, l'un en
+  // peinture, l'autre en contour. Une table unique en perdrait un, et le
+  // consommateur peindrait le mauvais côté sans un mot.
+  const discoveredRoles = { fills: new Map<string, string>(), strokes: new Map<string, string>() };
   const reportedRoleConflicts = new Set<string>();
   // Un Component Set a toujours au moins un axe, mais on se protège d'une
   // liste vide pour ne jamais perdre un variant en silence.
@@ -215,29 +218,40 @@ export async function extractVariantTokens(
     tokensByComponent.set(entry.component, paintLeaf(leaf.paints, keys));
     strokesByComponent.set(entry.component, strokeLeaf(leaf.strokes, keys));
     paintNodeIdsByComponent.set(entry.component, placementNodeIds(leaf, keys));
-    // Le rôle d'une clé est relevé sur toute la matrice. Une clé qui NOMME un
-    // rôle partagé n'a rien à publier : le consommateur la résout directement.
-    // Le même token posé sur des calques de natures différentes selon le variant
-    // ne peut recevoir qu'un rendu : on garde le premier et on le dit, plutôt
-    // que de laisser l'ordre des promesses trancher en silence.
-    for (const color of [...leaf.paints, ...leaf.strokes]) {
-      const key = keys.get(color.token) ?? color.token;
-      if (isRenderableRole(key)) continue;
-      const known = discoveredRoles.get(key);
-      if (!known) {
-        discoveredRoles.set(key, color.role);
-        continue;
+    // Le rôle d'une clé est relevé sur toute la matrice, de son côté. Une clé
+    // dont le rôle porte déjà le nom n'a rien à publier : le consommateur la
+    // résout dans le vocabulaire partagé.
+    //
+    // Le conflit se juge à l'intérieur d'un côté, et là seulement : un fill et
+    // un stroke ne se contredisent pas, ils vivent dans deux arbres et dans
+    // deux tables. Le même token posé sur des calques de natures différentes
+    // DANS LE MÊME arbre — une surface ici, un texte là — ne peut recevoir
+    // qu'un rendu : on garde le premier et on le dit, plutôt que de laisser
+    // l'ordre des promesses trancher en silence.
+    const relever = (colors: readonly { token: string; role: string }[], cote: 'fills' | 'strokes') => {
+      for (const color of colors) {
+        const key = keys.get(color.token) ?? color.token;
+        if (key === color.role) continue;
+        const table = discoveredRoles[cote];
+        const known = table.get(key);
+        if (!known) {
+          table.set(key, color.role);
+          continue;
+        }
+        // Un seul message par clé : le même calque revient dans chaque variant,
+        // et un Button en a 30.
+        const conflit = `${cote}.${key}`;
+        if (known === color.role || reportedRoleConflicts.has(conflit)) continue;
+        reportedRoleConflicts.add(conflit);
+        warnings.push(
+          `Token ${toRef(color.token)} : il est appliqué à des layers de natures différentes selon ` +
+            `les variants (${known}, ${color.role}). Le contrat ne peut décrire qu'une façon de le ` +
+            `peindre et retient « ${known} ». Utilisez une variable par nature de layer.`,
+        );
       }
-      // Un seul message par clé : le même calque revient dans chaque variant, et
-      // un Button en a 30.
-      if (known === color.role || reportedRoleConflicts.has(key)) continue;
-      reportedRoleConflicts.add(key);
-      warnings.push(
-        `Token ${toRef(color.token)} : il est appliqué à des layers de natures différentes selon ` +
-          `les variants (${known}, ${color.role}). Le contrat ne peut décrire qu'une façon de le ` +
-          `peindre et retient « ${known} ». Utilisez une variable par nature de layer.`,
-      );
-    }
+    };
+    relever(leaf.paints, 'fills');
+    relever(leaf.strokes, 'strokes');
   }
 
   // Les index historiques gardent leur forme : quand deux variants occupent la

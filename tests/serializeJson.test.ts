@@ -1,30 +1,24 @@
 /**
  * L'écriture d'un artefact change de forme, jamais de contenu.
  *
- * C'est le gain le plus important du schéma 11.0 — un tiers des tokens — et
+ * Le gain le plus important de la forme actuelle — un tiers des tokens — et
  * aussi le plus facile à casser sans s'en apercevoir : une virgule oubliée
  * produit un fichier que personne ne relit avant qu'un consommateur ne s'y
  * casse les dents.
+ *
+ * Les cas ci-dessous sont des CLAUSES, une par test, sur la valeur minimale qui
+ * exerce la clause. L'aller-retour sur une valeur riche, lui, se joue sur ce
+ * que le moteur produit vraiment — `verifierLaSerialisation`, appelée à chaque
+ * export de `exportComponent.test.ts`. Une donnée écrite ici pour l'occasion ne
+ * prouverait que l'accord du sérialiseur avec l'imagination de son auteur.
  */
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
 import { PROFONDEUR_DE_DECOUPAGE, serializeJson } from '../src/contract/serializeJson';
-
-const corpus = join(dirname(fileURLToPath(import.meta.url)), 'test-exports');
-
-test('relire ce qui a été écrit redonne exactement la même valeur', () => {
-  for (const nom of readdirSync(corpus).filter((f) => f.endsWith('.json'))) {
-    const valeur = JSON.parse(readFileSync(join(corpus, nom), 'utf8').replace(/^﻿/, ''));
-    assert.deepEqual(JSON.parse(serializeJson(valeur)), valeur, nom);
-  }
-});
 
 test('une entrée de collection de premier niveau tient sur une ligne', () => {
   // C'est la promesse faite à la revue de pull request : un variant ajouté, une
-  // ligne ajoutée. Le corpus est commité, et il se relit.
+  // ligne ajoutée, et un diff qui se relit.
   const ecrit = serializeJson({
     name: 'X',
     variants: [{ nodeId: '1:1', view: 'v1' }, { nodeId: '1:2', view: 'v1' }],

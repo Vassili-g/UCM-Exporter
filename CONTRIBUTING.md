@@ -201,17 +201,18 @@ des objets Figma minimaux et des dépendances injectées.
 `scripts/run-tests.js` découvre automatiquement les fichiers
 `tests/*.test.ts`.
 
-`tests/test-exports/` contient un petit corpus représentatif d’exports Figma
-réels. Son coût ne dépend pas du nombre de composants du catalogue. Ces
-fixtures ne sont rafraîchies que par un véritable réexport Figma ; elles ne
-sont pas retouchées pour faire passer un test.
+Aucun artefact de contrat n’est commité ici : un `.contract.json` appartient au
+repository qui le consomme. Un exemplaire gelé dans ce repository ne bougerait
+qu’au réexport, et un test posé dessus ne prouverait que sa propre immobilité.
 
-`npm run check:fixtures` constate que ce corpus vient bien de la version
-courante du schéma. Il vit hors de `npm test` délibérément : ce qu’il constate
-n’est pas une propriété du code, mais qu’un humain a relancé le plugin dans
-Figma depuis le dernier changement de forme. Personne ne peut le faire depuis
-un poste de développement, donc le laisser échouer à chaque itération locale
-n’apprendrait qu’à le contourner. Il est demandé au moment où il porte.
+Les lois de forme d’un contrat vivent donc dans `tests/lois.ts`, et
+`tests/exportComponent.test.ts` les applique à CHAQUE contrat que le moteur
+fabrique — renvois qui se résolvent, catalogues sans doublon ni entrée
+orpheline, adresses qui désignent un calque de l’arbre qui les porte, aucune
+valeur neutre écrite, accord avec le schéma publié, aller-retour de l’écriture.
+La vérification est posée sur le chemin d’appel, une fois, pour qu’un scénario
+ajouté demain y soit soumis sans que personne y pense. Une loi ajoutée à
+`lois.ts` s’applique du même geste à tous les scénarios existants.
 
 Avant une pull request :
 
@@ -219,7 +220,6 @@ Avant une pull request :
 npm test
 npm run typecheck
 npm run build
-npm run check:fixtures
 ```
 
 ## Documentation

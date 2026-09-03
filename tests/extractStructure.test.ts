@@ -301,7 +301,8 @@ test('extractStructure déduit le rôle d’une clé qui n’en nomme aucun, san
     resolverFor({ bg: 'components.button.colors.primary.default.bg' }),
   );
 
-  assert.deepEqual(discoveredRoles, new Map([['bg', 'background']]));
+  assert.deepEqual(discoveredRoles.fills, new Map([['bg', 'background']]));
+  assert.deepEqual(discoveredRoles.strokes, new Map());
   assert.ok(!warnings.some((w) => w.includes('« bg »')));
 });
 

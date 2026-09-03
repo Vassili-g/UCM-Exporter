@@ -277,7 +277,7 @@ test('extractLayout décrit Auto par justifyContent sans inventer de gap fixe', 
   assert.ok(!warnings.some((warning) => warning.includes('espacement est réglé sur « Auto »')));
 });
 
-test('un layer absolu n’est pas inventé comme item Flex', async () => {
+test('un layer absolu n’est pas inventé comme item Flex, et le moteur le place', async () => {
   const badge = {
     type: 'VECTOR',
     id: 'badge',
@@ -285,6 +285,9 @@ test('un layer absolu n’est pas inventé comme item Flex', async () => {
     layoutPositioning: 'ABSOLUTE',
     layoutAlign: 'STRETCH',
     layoutGrow: 1,
+    width: 24,
+    height: 24,
+    relativeTransform: [[1, 0, 60], [0, 1, 8]],
     boundVariables: {},
   };
   const card = {
@@ -293,17 +296,28 @@ test('un layer absolu n’est pas inventé comme item Flex', async () => {
     layoutMode: 'HORIZONTAL',
     primaryAxisAlignItems: 'MIN',
     counterAxisAlignItems: 'CENTER',
+    width: 100,
+    height: 40,
     boundVariables: {},
     children: [badge],
     findAll: findAllOn([badge]),
   } as unknown as ComponentNode;
   const warnings: string[] = [];
+  const infos: string[] = [];
 
-  const layout = await extractLayout(card, resolverFor({}), warnings);
+  const layout = await extractLayout(
+    card, resolverFor({}), warnings, undefined, undefined, undefined,
+    undefined, undefined, undefined, undefined, infos,
+  );
 
   assert.equal(layout.children[0].alignSelf, undefined);
   assert.equal(layout.children[0].flexGrow, undefined);
-  assert.ok(warnings.some((warning) => warning.includes('position « Absolute »')));
+  // Sans contrainte lisible, l'ancrage est celui de Figma : le début de chaque axe.
+  assert.deepEqual(layout.children[0].inset, { top: '8px', left: '60px' });
+  // Aucun geste n'est demandé : Figma ne PERMET pas de relier une position à
+  // une variable. Le constat est une notice, jamais un avertissement.
+  assert.deepEqual(warnings.filter((warning) => warning.includes('Absolute')), []);
+  assert.ok(infos.some((info) => info.includes('position « Absolute »')));
 });
 
 test('extractLayout nomme le calque texte « label » sans recopier sa typographie', async () => {
@@ -1102,11 +1116,12 @@ test('extractLayout publie la largeur seule sans inventer de taille carrée', as
   );
 
   // La largeur est connue et tokenisée : la taire la ferait passer pour un
-  // hug. La hauteur, elle, reste figée sans variable — donc avertie, jamais
-  // recopiée depuis la largeur.
+  // hug. La hauteur n'est jamais recopiée depuis la largeur — et sur un TRACÉ
+  // elle ne se réclame pas non plus : la boîte d'un VECTOR est celle de son
+  // dessin, et lier la largeur en laissant la hauteur suivre le rapport du
+  // chemin est une façon parfaitement correcte de dimensionner une icône.
   assert.deepEqual(layout.children[0].size, { width: '{components.icons.sizes.base}' });
-  assert.ok(warnings.some((warning) => warning.includes('height')));
-  assert.ok(warnings.some((warning) => warning.includes("La valeur fixe n'est pas exportée")));
+  assert.deepEqual(warnings.filter((warning) => warning.includes('arrow-right-long')), []);
 });
 
 test('extractLayout exclut un slot statiquement masqué mais conserve un slot piloté par une prop', async () => {

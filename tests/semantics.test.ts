@@ -5,7 +5,7 @@ import {
   defaultRenderingSemantics,
   paintSiteRole,
   renderingSemanticsFor,
-  variantRoleWarnings,
+  roleKind,
 } from '../src/contract/semantics';
 
 test('buildStateModel associe les états connus à leurs déclencheurs et à leur priorité', () => {
@@ -47,88 +47,69 @@ test('buildStateModel conserve un état inconnu et avertit sans bloquer', () => 
   ]);
 });
 
-test('variantRoleWarnings reste muet quand tous les rôles sont rendables', () => {
-  const warnings = variantRoleWarnings(
-    {
-      primary: {
-        contained: {
-          default: { background: '{c.primary.contained.default.background}', foreground: '{c.primary.contained.default.foreground}' },
-          hover: { background: '{c.primary.contained.hover.background}' },
-        },
-      },
-    },
-    {
-      primary: {
-        contained: {
-          default: {},
-          focus: { ring: { color: '{c.primary.contained.focus.ring}', width: '{l.stroke.ring}', align: 'outside' } },
-        },
-      },
-    },
-  );
+test('renderingSemanticsFor nomme le rôle de chaque clé qui n’en porte pas le nom', () => {
+  const semantics = renderingSemanticsFor({
+    fills: new Map([
+      ['title', 'foreground'],
+      ['scale-1', 'background'],
+      ['glyph', 'icon'],
+      // Une clé qui s'appelle comme un rôle mais qui peint autre chose se dit
+      // ICI : le vocabulaire partagé, lui, ne bouge dans aucun contrat.
+      ['border', 'background'],
+      // Une clé dont le rôle porte déjà le nom n'a rien à publier.
+      ['background', 'background'],
+    ]),
+    strokes: new Map([['halo', 'ring'], ['foreground', 'border']]),
+  });
 
-  assert.deepEqual(warnings, []);
-});
-
-test('variantRoleWarnings ne réclame plus qu’une clé nomme son rôle', () => {
-  // Ce message demandait de renommer le token pour qu'il se termine par un
-  // rôle, alors que rien ne l'exige : le rendu se déduit du calque et se publie
-  // dans `rendering.roles`.
-  const warnings = variantRoleWarnings(
-    {
-      primary: {
-        default: { bg: '{c.primary.default.bg}', 'scale-1': '{c.primary.default.scale-1}' },
-        hover: { bg: '{c.primary.hover.bg}' },
-      },
-      secondary: {
-        default: { bg: '{c.secondary.default.bg}' },
-      },
-    },
-    {},
-  );
-
-  assert.deepEqual(warnings, []);
-});
-
-test('renderingSemanticsFor publie le rendu des clés sans rôle, après les rôles partagés', () => {
-  const semantics = renderingSemanticsFor(new Map([
-    ['title', 'foreground'],
-    ['scale-1', 'background'],
-    ['glyph', 'icon'],
-    // Une clé qui nomme déjà un rôle partagé garde le rendu publié pour tous :
-    // deux contrats ne doivent pas diverger sur le sens du même mot.
-    ['border', 'background'],
-  ]));
-
-  // Les cinq rôles partagés d'abord, dans leur ordre fixe, puis les clés
-  // déduites triées : deux exports d'un design inchangé donnent le même JSON.
-  assert.deepEqual(Object.keys(semantics.roles), [
-    'background', 'foreground', 'icon', 'border', 'ring',
-    'glyph', 'scale-1', 'title',
+  // Le vocabulaire partagé reste strictement celui de tous les contrats.
+  assert.deepEqual(semantics.roles, defaultRenderingSemantics().roles);
+  // Les clés sont triées : deux exports d'un design inchangé donnent le même
+  // JSON, et les deux côtés ne se mélangent jamais — une même clé courte peut
+  // désigner deux tokens différents, l'un en peinture, l'autre en contour.
+  assert.deepEqual(semantics.keyRoles, {
+    fills: { border: 'background', glyph: 'icon', 'scale-1': 'background', title: 'foreground' },
+    strokes: { foreground: 'border', halo: 'ring' },
+  });
+  assert.deepEqual(Object.keys(semantics.keyRoles?.fills ?? {}), [
+    'border', 'glyph', 'scale-1', 'title',
   ]);
-  assert.deepEqual(semantics.roles['scale-1'], { kind: 'paint', cssProperties: ['background-color'] });
-  assert.deepEqual(semantics.roles.title, { kind: 'paint', cssProperties: ['color', 'fill'] });
-  assert.deepEqual(semantics.roles.border, { kind: 'stroke', cssProperties: ['box-shadow'] });
 });
 
 test('un design system dont chaque couleur nomme son rôle publie le vocabulaire partagé, inchangé', () => {
-  // Garantie de compatibilité : Alert, Button, TileLink et le corpus n'ont que
-  // des clés qui nomment un rôle. Leur `rendering` ne doit pas bouger d'un
-  // octet, sans quoi ce changement imposerait un réexport Figma.
-  assert.deepEqual(renderingSemanticsFor(new Map()), defaultRenderingSemantics());
+  // Garantie de compatibilité : un composant dont toutes les clés nomment leur
+  // rôle ne publie aucun `keyRoles`, et son `rendering` ne bouge pas d'un octet.
+  assert.deepEqual(
+    renderingSemanticsFor({ fills: new Map(), strokes: new Map() }),
+    defaultRenderingSemantics(),
+  );
+  assert.deepEqual(
+    renderingSemanticsFor({ fills: new Map([['background', 'background']]), strokes: new Map() }),
+    defaultRenderingSemantics(),
+  );
 });
 
 test('renderingSemanticsFor range une clé héritée d’Object.prototype comme une autre', () => {
   // Les clés viennent de Figma. Écrite en affectation simple, une variable
   // nommée « __proto__ » fixerait le prototype au lieu d'occuper une clé : le
   // contrat citerait un rendu qu'il ne publie pas.
-  const semantics = renderingSemanticsFor(new Map([['__proto__', 'background']]));
+  const semantics = renderingSemanticsFor({
+    fills: new Map([['__proto__', 'foreground']]),
+    strokes: new Map(),
+  });
+  const fills = semantics.keyRoles?.fills as Record<string, unknown>;
 
-  assert.ok(Object.prototype.hasOwnProperty.call(semantics.roles, '__proto__'));
-  assert.deepEqual(
-    (semantics.roles as Record<string, unknown>).__proto__,
-    { kind: 'paint', cssProperties: ['background-color'] },
-  );
+  assert.ok(Object.prototype.hasOwnProperty.call(fills, '__proto__'));
+  assert.equal(fills.__proto__, 'foreground');
+});
+
+test('roleKind répond la nature d’un rôle partagé, et rien pour un autre nom', () => {
+  // C'est cette fonction qui empêche le moteur d'avoir un avis : un nom ne peut
+  // préciser un rôle que DANS la nature que le calque a déjà tranchée.
+  assert.equal(roleKind('background'), 'paint');
+  assert.equal(roleKind('ring'), 'stroke');
+  assert.equal(roleKind('scale-1'), null);
+  assert.equal(roleKind('constructor'), null);
 });
 
 test('paintSiteRole lit le calque, jamais le nom du token', () => {
@@ -144,34 +125,6 @@ test('paintSiteRole lit le calque, jamais le nom du token', () => {
   assert.equal(role({ isStroke: true }), 'border');
   // Même priorité que `semanticSlotName` : le texte d'abord, l'icône ensuite.
   assert.equal(role({ isText: true, isIconTarget: true }), 'foreground');
-});
-
-test('variantRoleWarnings signale un rôle connu employé sur le mauvais support', () => {
-  const warnings = variantRoleWarnings(
-    // « border » est déclaré « stroke » : posé en remplissage, il ne sera pas rendu.
-    { primary: { default: { border: '{c.primary.default.border}' } } },
-    // « background » est déclaré « paint » : posé en contour, même conséquence.
-    { primary: { default: { background: { color: '{c.primary.default.background}', align: 'inside' } } } },
-  );
-
-  assert.deepEqual(warnings, [
-    'Token {c.primary.default.background} : son dernier segment « background » désigne un fill, mais il est appliqué en stroke. Rien ne sera affiché (sur 1 layer). Appliquez-le du bon côté dans Figma, ou renommez-le.',
-    'Token {c.primary.default.border} : son dernier segment « border » désigne un stroke, mais il est appliqué en fill. Rien ne sera affiché (sur 1 layer). Appliquez-le du bon côté dans Figma, ou renommez-le.',
-  ]);
-});
-
-test('le garde-fou survit à une clé allongée : il lit le token, pas la clé', () => {
-  // `userinput.border` ne nomme aucun rôle partagé. Lu sur la clé de l'arbre,
-  // ce garde-fou se tairait pour toutes les couleurs d'un composant à surfaces
-  // multiples — exactement celles qui en ont le plus besoin.
-  const warnings = variantRoleWarnings(
-    { default: { 'userinput.border': '{c.userinput.colors.border}' } },
-    {},
-  );
-
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /\{c\.userinput\.colors\.border\}/);
-  assert.match(warnings[0], /« border » désigne un stroke/);
 });
 
 test('defaultRenderingSemantics publie le vocabulaire de rendu partagé', () => {

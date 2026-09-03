@@ -46,7 +46,7 @@ import type {
  * La forme courante est décrite par UCM-EXPORTER-SPEC.md et `types.ts` ;
  * ce qui a changé d'une version à l'autre se lit dans Git.
  */
-export const CONTRACT_VERSION = '11.0';
+export const CONTRACT_VERSION = '12.0';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(
@@ -346,7 +346,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
       // icône présente dans le second ne doit pas être inventée dans le premier.
       const active = exactLayer?.variantNodeIds.includes(variant.nodeId) ?? false;
       if (!active) continue;
-      const paths = iconPaths(variant.structure.children, definition.figmaName);
+      const paths = iconPaths(variant.structure.children ?? [], definition.figmaName);
       if (paths.length === 1) {
         variant.icons[key] = { figmaName: definition.figmaName, slotPath: paths[0] };
         continue;

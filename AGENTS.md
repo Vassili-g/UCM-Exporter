@@ -50,15 +50,16 @@ src/
     composedComponents.ts    dépendances entre composants
     nodeBindings.ts          groupes complets de liaisons Figma
     propertyBindings.ts      component properties situées dans chaque variant
+    propertySurface.ts       surface publique élue : owner direct et wrapper
     types.ts                 schéma TypeScript du contrat
   tokens/exportTokens.ts     export DTCG
   variables.ts               index commun, collisions et alias
   utils.ts                   normalisation et identifiant de code
+  base64.ts                  encodage UTF-8/Base64 sans dépendance au sandbox
   config.ts                  configuration GitHub locale
   github.ts                  branche, fichier et pull request
   ui/                        interface du plugin
 tests/
-  test-exports/              petit corpus d’exports réels
 schema/
   ucm-contract.schema.json   forme du contrat, dérivée de types.ts
 ```
@@ -127,10 +128,20 @@ Le raisonnement vit dans la spécification, en lien.
   d’un token est la même dans toutes les feuilles. Borne du coût : sélection
   exacte jusqu’à seize profondeurs candidates, gloutonne et déterministe au-delà.
   → [spec](./UCM-EXPORTER-SPEC.md#2-tokens-de-variantes)
-- Ce qu’une couleur peint se lit sur le calque qui la porte, jamais sur le nom de
-  son token. `rendering.roles` publie le rendu de chaque clé qui ne nomme aucun
-  rôle partagé. Un nom qui EST un rôle partagé l’emporte, et se lit sur le
-  dernier segment du TOKEN, jamais sur la clé publiée.
+- Le SITE tranche la nature de ce qu’une couleur peint, le NOM précise à
+  l’intérieur de cette nature. Un dernier segment qui nomme un rôle partagé
+  l’emporte seulement s’il est de la nature du calque — c’est ce qui distingue
+  un `ring` d’un `border`, et c’est tout ce dont il décide. Un `…/foreground`
+  posé en contour peint un contour, sans un mot : le moteur n’a aucun avis sur
+  le vocabulaire du design system. Le nom se lit sur le dernier segment du
+  TOKEN, jamais sur la clé publiée.
+- Une CLÉ de couleur n’est pas un RÔLE. `rendering.roles` est le vocabulaire
+  partagé, identique dans tous les contrats ; `rendering.keyRoles` porte le rôle
+  de chaque clé observée qui n’en porte pas le nom. Deux tables, une par arbre
+  (`fills`, `strokes`) : `colorKeys` décide sur des feuilles séparées, et la
+  même clé courte peut désigner deux tokens de part et d’autre. Résolution :
+  `roles[keyRoles[côté][clé] ?? clé]`, et `tests/lois.ts` vérifie sur CHAQUE
+  contrat que la réponse existe et qu’elle est de la bonne nature.
 - Un rôle de contour ne cite jamais une propriété CSS qui consomme la boîte :
   un stroke Figma se dessine hors du flux et ne déplace aucun voisin, là où
   une `border` élargit l’élément et décale tout ce qui l’entoure. `border`
@@ -230,8 +241,28 @@ Le raisonnement vit dans la spécification, en lien.
 - Ce qui sépare une taille de maquette d’une décision du design system est la
   liaison, jamais le fait d’être figé : sans variable une largeur fixe vaut
   `stretch`, avec variable elle publie son token. Un nombre brut n’est jamais
-  contractuel, une variable liée l’est toujours.
+  contractuel, une variable liée l’est toujours — SAUF là où Figma ne permet pas
+  de lier, et ces exceptions sont énumérées : les pistes et cellules d’une
+  grille, et la place d’un calque hors du flux. Toutes publient en pixels sous
+  une NOTICE, sans devenir des tokens et sans dégrader la couverture.
   → [spec](./UCM-EXPORTER-SPEC.md#dimensions-et-bornes)
+- Un tracé n’est pas une boîte : sur un `VECTOR`, `BOOLEAN_OPERATION`, `STAR` ou
+  `POLYGON`, la dimension EST le dessin, et le contrat ne lui réclame aucune
+  variable — liée, elle se publie comme partout ailleurs. `RECTANGLE`, `ELLIPSE`
+  et `LINE` en sont exclus : ce sont les formes que la règle « le type du node ne
+  tranche pas » vise nommément.
+- Un calque hors du flux est PLACÉ : `constraints` dit à quels bords il
+  s’accroche, `inset` à quelle distance, en pixels et avec une seule
+  signification par clé — les côtés publiés sont ceux de l’accroche, les deux
+  d’un axe sous `stretch`, `center` et `scale`. Le calcul passe par le CENTRE,
+  seul point où le modèle de Figma (rotation autour du coin) et celui de CSS
+  (autour du centre) se rejoignent. Rien n’est publié quand la géométrie manque.
+  → [spec](./UCM-EXPORTER-SPEC.md#position-absolue)
+- La `rotation` d’un calque publié est écrite, dans l’unité ET la convention de
+  CSS — donc l’opposé du compte de Figma —, origine au centre, absente sous le
+  centième de degré. `flexLayout.rotationDegrees` en est l’unique autorité.
+  Une notice dit le seul écart restant : dans un auto layout, Figma espace ses
+  voisins d’après la boîte tournée, CSS d’après la boîte droite.
 - `bounds` publie les bornes sur le composant et sur chaque slot, indépendamment
   du menu de dimensionnement, à la règle commune. Le geste demandé est de nommer
   la borne, jamais de la retirer. Un calque intermédiaire n’en est pas
@@ -251,11 +282,11 @@ Le raisonnement vit dans la spécification, en lien.
   `flex-row` se signale.
 - Une propriété à effet visuel que le schéma ne sait pas écrire avertit, mais
   seulement sur un calque PUBLIÉ et jamais pour une valeur au défaut de Figma.
-  La première réserve écarte le masque et la rotation d’une icône, dont ce
-  relevé ne voit jamais les tracés ; la seconde écarte `clipsContent`,
-  l’alignement d’un texte en `Hug` et une rotation sous le centième de degré.
-  Aucune réserve ne se lit sur l’usage supposé d’un calque : sur un calque
-  publié, `rotation` et `isMask` avertissent comme le reste.
+  La première réserve écarte le masque d’une icône, dont ce relevé ne voit jamais
+  les tracés ; la seconde écarte `clipsContent` et l’alignement d’un texte en
+  `Hug`. Aucune réserve ne se lit sur l’usage supposé d’un calque : sur un calque
+  publié, `isMask` avertit comme le reste. Une propriété que le contrat ÉCRIT
+  n’y figure jamais — c’est ce qui en a retiré `rotation`.
   → [spec](./UCM-EXPORTER-SPEC.md#propriétés-non-portables)
 
 ### Grilles
@@ -387,32 +418,35 @@ npm run typecheck
 npm run build
 ```
 
-`npm run verifier:migration` prend les contrats 10.3 encore présents dans le
-corpus, leur applique les fonctions du moteur, les remonte dans l'autre sens et
-compare au fichier de départ, clé par clé. Le seul écart toléré est « clé
-absente ↔ valeur neutre ». C'est la preuve qu'un poste de développement peut
-donner qu'une montée de schéma ne perd rien, faute de pouvoir lancer l'export.
-Le même contrôle vit dans `npm test` (`tests/migration11.test.ts`), et s'éteint
-de lui-même une fois le corpus réexporté.
-
 Un nouveau `tests/*.test.ts` est découvert automatiquement. Tout bug corrigé
 reçoit un test de régression.
 
 Un changement dans `src/contract/types.ts` demande `npm run schema` : le schéma
 commité en est dérivé, et `tests/schema.test.ts` refuse la version périmée en
-la régénérant pour la comparer. Ce contrôle vit dans `npm test`, à la
-différence de `check:fixtures`, parce qu’un agent peut le satisfaire seul.
-C’est aussi pourquoi ce test ne confronte au schéma que les contrats du corpus
-qui déclarent la version COURANTE : `contractVersion.const` refuserait les
-autres d’avance, et `npm test` redeviendrait rouge pour la seule raison qu’un
-humain n’a pas encore rouvert Figma.
+la régénérant pour la comparer.
 
-Le corpus `tests/test-exports/` reste petit et représentatif. Il est produit
-depuis Figma et n’est jamais édité à la main. Il contient actuellement quatre
-contrats 10.3 et les tokens associés. `npm run check:fixtures` constate si ses
-contrats portent la version courante ; il reste hors de `npm test` parce qu’un
-agent ne peut pas relancer l’export Figma. Retoucher un fichier du corpus
-détruirait ce qui en fait la valeur.
+**Ce repository ne contient aucun artefact de contrat, et n’en contiendra pas.**
+Un `.contract.json` appartient au repository qui le consomme, à côté du code
+qu’il décrit. Un exemplaire commité ici serait un instantané : il ne bougerait
+qu’au réexport, si bien qu’une régression du moteur ne s’y verrait jamais, et
+un test posé dessus ne prouverait que sa propre immobilité.
+
+`tests/lois.ts` est l’unique autorité sur les lois de forme d’un contrat, et
+`tests/exportComponent.test.ts` les applique à CHAQUE contrat que le moteur
+fabrique : renvois qui se résolvent, catalogues sans doublon ni entrée
+orpheline, adresses — slotPath de typographie, chemins de peintures,
+`icons.*.slot` — qui désignent un calque de l’arbre qui les porte, absence de
+valeur neutre écrite, résolution de chaque clé de couleur vers un rôle de la
+bonne nature, `inset` réservé aux calques hors du flux, accord avec le schéma
+publié, aller-retour de l’écriture.
+
+La vérification est posée sur le CHEMIN D’APPEL, une fois, et non à chaque
+scénario : un cas ajouté demain y est soumis sans que personne y pense, et une
+loi ajoutée à `lois.ts` s’applique du même geste à tous les cas existants.
+C’est aussi là que vit la seule question que le schéma ne peut pas trancher
+seul — accepte-t-il ce que le moteur ÉCRIT, et non ce que `types.ts` déclare ?
+Un champ requis qu’une élision retire passe le compilateur et casse le
+consommateur.
 
 ## Limites d’environnement
 

@@ -16,15 +16,19 @@
  * - **Aucune valeur neutre n'avertit.** Une propriété au défaut de Figma ne
  *   manque à personne. Un `clipsContent`, activé par défaut sur toute frame,
  *   n'est donc pas relevé : un rapport que le designer cesse de lire ne protège
- *   plus rien. Le seuil de `rotation` suit la même règle, en flottant.
+ *   plus rien.
  *
  * Ces deux garde-fous se répondent, et c'est ce qui a longtemps laissé passer
- * `rotation` et `isMask`. Le silence leur avait été accordé au nom du second —
- * une rotation résiduelle de tracé importé, le masque interne d'une icône — mais
- * ces calques-là relèvent du PREMIER : ils ne sont jamais publiés, donc jamais
- * soumis à ce relevé. Le silence ne protégeait aucun design correct, et coûtait
- * un chevron retourné ou un découpage à chaque design qui les employait pour de
- * bon.
+ * `isMask`. Le silence lui avait été accordé au nom du second — le masque
+ * interne d'une icône — mais ces calques-là relèvent du PREMIER : ils ne sont
+ * jamais publiés, donc jamais soumis à ce relevé. Le silence ne protégeait aucun
+ * design correct, et coûtait un découpage à chaque design qui l'employait pour
+ * de bon.
+ *
+ * `rotation` a quitté cette liste : le contrat l'ÉCRIT maintenant, en
+ * vocabulaire CSS (`ChildStructure.rotation`), et une propriété publiée n'a
+ * rien à faire dans un relevé de ce qui manque. `flexLayout.rotationDegrees`
+ * en est l'autorité, seuil compris.
  */
 
 /** `boundVariables` et les propriétés visuelles ne sont pas typées champ par champ. */
@@ -70,16 +74,6 @@ type ProprieteNonPortee = {
 const FUSIONS_NEUTRES: ReadonlySet<unknown> = new Set(['PASS_THROUGH', 'NORMAL']);
 
 /**
- * Rotation en deçà de laquelle un layer est considéré comme droit, en degrés.
- *
- * Figma stocke la rotation en flottant : une transformation successive laisse
- * des résidus de l'ordre de 1e-13, qu'aucun écran ne rend et qu'aucun designer
- * ne peut remettre à zéro. Un centième de degré est très en dessous du premier
- * pixel visible, et très au-dessus de ce bruit.
- */
-const ROTATION_NEUTRE = 0.01;
-
-/**
  * Relève, sur UN calque publié, ce que le schéma ne sait pas porter.
  *
  * Fonction pure : elle ne lit que le node et ne connaît ni la matrice, ni le
@@ -110,17 +104,6 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
       champ: 'opacity',
       manque: 'la transparence de ce layer, qui sera rendu opaque',
       geste: 'Exprimez cette transparence par une couleur reliée à une variable, ou signalez cette limite du schéma',
-    });
-  }
-
-  // Une rotation est une décision de design comme une autre : un chevron
-  // retourné, un badge incliné. Aucun champ ne la porte, et le développeur
-  // rendra le layer droit.
-  if (typeof values.rotation === 'number' && Math.abs(values.rotation) > ROTATION_NEUTRE) {
-    relevees.push({
-      champ: 'rotation',
-      manque: 'la rotation de ce layer, qui sera rendu droit',
-      geste: 'Remettez ce layer droit et faites tourner son dessin si la rotation n’a pas à être contractuelle, ou signalez cette limite du schéma',
     });
   }
 

@@ -661,6 +661,30 @@ export async function resolveField(
 }
 
 /**
+ * Types de nodes dont la boîte EST le dessin : des tracés de Bézier, dont Figma
+ * calcule la largeur et la hauteur sur la géométrie.
+ *
+ * Ce n'est pas une lecture du type contre l'usage — la règle qui interdit de
+ * trancher sur le type vise `RECTANGLE` et `ELLIPSE`, qui sont une surface ou
+ * un tracé selon ce qu'on en fait, et ils restent hors de cette liste avec
+ * `LINE`, que tout séparateur emploie. Un `VECTOR`, lui, n'est jamais une boîte
+ * du design system : c'est le contour d'une icône ou d'un pictogramme, et
+ * réclamer une variable pour sa largeur enverrait le designer relier la
+ * bounding box d'un chemin.
+ */
+const TRACES: ReadonlySet<string> = new Set([
+  'VECTOR',
+  'BOOLEAN_OPERATION',
+  'STAR',
+  'POLYGON',
+]);
+
+/** Vrai si la dimension de ce node est celle de son dessin. */
+function estUnTrace(node: SceneNode): boolean {
+  return TRACES.has(node.type);
+}
+
+/**
  * Dimension figée d'un slot, relevée axe par axe.
  *
  * Le menu de dimensionnement décide de ce qu'on lit : un axe en `Hug` ou en
@@ -682,12 +706,15 @@ export async function resolveSlotSize(
 ): Promise<SlotSize | null> {
   const fixed = fixedDimensions(node);
   const cellule = parent ? gridCellSizedAxes(parent, node) : { width: false, height: false };
+  const trace = estUnTrace(node);
   const axe = (field: 'width' | 'height'): Promise<string | null> | null => {
     if (!fixed[field]) return null;
     // Sur un axe que la cellule décide, une dimension citant une variable reste
     // publiée — c'est une décision que le calque porte malgré la cellule — mais
     // son absence ne se réclame pas : la piste et l'étendue disent déjà la place.
-    if (cellule[field]) return resolveBoundAxis(node, field, resolver, warnings);
+    // Un tracé suit la même règle, pour une raison voisine : sa boîte est celle
+    // de son dessin, pas une décision du design system.
+    if (cellule[field] || trace) return resolveBoundAxis(node, field, resolver, warnings);
     return resolveField(node, BINDING_PATTERNS[field], field, resolver, warnings);
   };
   const [width, height] = await Promise.all([axe('width'), axe('height')]);
