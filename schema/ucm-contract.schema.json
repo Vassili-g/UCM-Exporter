@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-11.0.schema.json",
-  "title": "Contrat de composant UCM 11.0",
+  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-12.0.schema.json",
+  "title": "Contrat de composant UCM 12.0",
   "description": "Ce schéma décrit la FORME d'un contrat, pas sa cohérence interne. Il ne vérifie pas les renvois internes : une entrée de `variants` peut citer une vue absente de `variantViews`, une icône un slot absent de `structure`, un token une référence inexistante. Il ne contraint pas non plus le FORMAT des valeurs : une référence de token `{chemin.du.token}`, une mesure `120px` et une piste `1fr` y sont de simples chaînes, parce que TypeScript les décrit par des types que JSON Schema ne sait pas porter. Un contrat valide au sens de ce schéma reste donc à vérifier par un consommateur.",
-  "x-ucm-contract-version": "11.0",
+  "x-ucm-contract-version": "12.0",
   "$ref": "#/definitions/Contract",
   "definitions": {
     "Contract": {
@@ -155,7 +155,7 @@
         "contractVersion": {
           "type": "string",
           "description": "Version du schéma du contrat — à incrémenter à chaque changement de forme.",
-          "const": "11.0"
+          "const": "12.0"
         },
         "exportedAt": {
           "type": "string",
@@ -536,7 +536,14 @@
     },
     "VariantStructure": {
       "type": "object",
+      "additionalProperties": false,
       "properties": {
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ChildStructure"
+          }
+        },
         "layout": {
           "$ref": "#/definitions/LayoutDirection",
           "description": "Disposition Figma du composant, traduite en vocabulaire CSS."
@@ -584,6 +591,10 @@
           "$ref": "#/definitions/AlignItems",
           "description": "Alignement Figma sur l'axe secondaire, absent hors auto-layout linéaire."
         },
+        "rotation": {
+          "type": "string",
+          "description": "Rotation du calque qui porte le flux du composant, à la règle de `ChildStructure.rotation`. Rare, mais un wrapper de dimensions tourné est une décision de design comme une autre, et rien d'autre ne la porterait."
+        },
         "wrap": {
           "type": "boolean",
           "const": true,
@@ -615,201 +626,13 @@
               "type": "null"
             }
           ]
-        },
-        "children": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/ChildStructure"
-          },
-          "description": "Les slots enfants (icônes, label…), dans l'ordre des calques."
         }
       },
       "required": [
         "layout",
-        "sizing",
-        "children"
+        "sizing"
       ],
-      "additionalProperties": false,
-      "description": "Structure portable d'une combinaison exacte, sans les index globaux de matrice."
-    },
-    "LayoutDirection": {
-      "type": "string",
-      "enum": [
-        "flex-row",
-        "flex-column",
-        "grid"
-      ],
-      "description": "Disposition d'un conteneur, dans le vocabulaire de CSS.\n\n`grid` n'est pas un repli : Figma y expose deux gaps liables à une variable et le nombre de ses pistes, soit exactement ce que le contrat sait porter. Un conteneur sans auto layout reste décrit comme une rangée, faute de mieux, et le dit."
-    },
-    "GridTrack": {
-      "type": "string",
-      "description": "Taille d'UNE piste de grille, dans le vocabulaire de `grid-template-*`.\n\n`1fr` pour une piste qui se partage la place, `fit-content(100%)` pour une piste qui se règle sur son contenu. Exception propre aux grilles, une piste FIXED conserve sa valeur calculée en pixels (`120px`) : elle décrit la structure de la grille sans devenir un token."
-    },
-    "ContainerSizing": {
-      "type": "object",
-      "properties": {
-        "width": {
-          "$ref": "#/definitions/ContainerAxisSizing"
-        },
-        "height": {
-          "$ref": "#/definitions/ContainerAxisSizing"
-        }
-      },
-      "required": [
-        "width",
-        "height"
-      ],
-      "additionalProperties": false,
-      "description": "Dimensionnement propre du composant, publié sur les deux axes.\n\nLes clés sont les propriétés CSS concernées, et non les axes de Figma : la taille d'un composant n'est pas une propriété de flux, elle ne dépend pas d'un conteneur qu'il ne connaît pas. `stretch` reste une intention — « occupe la place donnée » — dont la technique appartient au développeur : `width: stretch`, `width: 100%` ou `flex: 1` selon le contexte d'intégration."
-    },
-    "ContainerAxisSizing": {
-      "anyOf": [
-        {
-          "$ref": "#/definitions/AxisSizing"
-        },
-        {
-          "type": "string"
-        }
-      ],
-      "description": "Un axe du composant : un comportement CSS, ou la référence du token qui fixe cette dimension.\n\nLe troisième terme est une référence `{…}`, et il l'emporte sur les deux autres. Une dimension figée SANS variable reste une commodité de maquette — elle aligne les variants d'un component set — et vaut `stretch` ; une dimension figée qui cite une variable est une décision du design system, que le composant connaît de lui-même quel que soit son futur conteneur. C'est la règle des slots, appliquée au composant : un nombre brut n'est jamais contractuel, une variable liée l'est toujours.\n\nLe type dégénère structurellement en `string`, comme partout où le contrat porte une référence de token ; le nom sépare les deux intentions."
-    },
-    "AxisSizing": {
-      "type": "string",
-      "enum": [
-        "stretch",
-        "fit-content"
-      ],
-      "description": "Comportement d'un composant sur un axe, face à la place qu'on lui donne.\n\nCe sont les mots de CSS, pas ceux de Figma : `Fill` et `Hug` sont les intitulés d'un panneau, `stretch` et `fit-content` sont des valeurs de `width` et `height`. Le contrat traduit partout ailleurs (`flex-start`, `stretch`, `flexGrow`), et il ne garde un terme Figma que là où CSS n'a rien à proposer — l'alignement d'un stroke, par exemple. Ici CSS a le mot exact : le consommateur écrit la valeur, il ne la devine pas."
-    },
-    "SizeBounds": {
-      "type": "object",
-      "properties": {
-        "minWidth": {
-          "type": "string"
-        },
-        "maxWidth": {
-          "type": "string"
-        },
-        "minHeight": {
-          "type": "string"
-        },
-        "maxHeight": {
-          "type": "string"
-        }
-      },
-      "additionalProperties": false,
-      "description": "Bornes de taille, toujours tokenisées.\n\nElles sont SÉPARÉES de `size` et de `sizing` parce qu'elles ne répondent pas à la même question. Le menu de dimensionnement dit quelle place le calque prend ; une borne dit jusqu'où cette place peut aller. Les deux coexistent : le cas le plus courant est un calque en `Fill` qu'un `max width` retient, exactement ce qu'aucune valeur de `size` ne saurait écrire.\n\nLes clés sont celles de CSS, comme partout ailleurs dans le contrat, et le consommateur les écrit telles quelles. Une borne absente ne veut pas dire zéro : elle veut dire que Figma n'en pose aucune sur cet axe."
-    },
-    "JustifyContent": {
-      "type": "string",
-      "enum": [
-        "flex-start",
-        "center",
-        "flex-end",
-        "space-between"
-      ],
-      "description": "Répartition des enfants sur l'axe principal d'un conteneur Flex."
-    },
-    "AlignItems": {
-      "type": "string",
-      "enum": [
-        "flex-start",
-        "center",
-        "flex-end",
-        "baseline"
-      ],
-      "description": "Alignement commun des enfants sur l'axe secondaire d'un conteneur Flex."
-    },
-    "Padding": {
-      "type": "object",
-      "properties": {
-        "x": {
-          "$ref": "#/definitions/PaddingX"
-        },
-        "y": {
-          "$ref": "#/definitions/PaddingY"
-        }
-      },
-      "additionalProperties": false,
-      "description": "Padding d'un conteneur, rangé par axe comme le panneau Figma le présente."
-    },
-    "PaddingX": {
-      "$ref": "#/definitions/SidedRefs%3C(%22left%22%7C%22right%22)%3E",
-      "description": "Padding horizontal : une référence, ou le détail gauche/droite."
-    },
-    "SidedRefs<(\"left\"|\"right\")>": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "left": {
-              "type": "string"
-            },
-            "right": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      ],
-      "description": "Une valeur que Figma laisse régler côté par côté, toujours tokenisée.\n\nC'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une décision par bord : une RÉFÉRENCE quand tous les côtés citent la même variable — la forme de presque tous les composants, inchangée — et le DÉTAIL par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces variables séparément (`padding-left`, `radius-top-left`) : les refuser demandait au designer d'aplatir une décision qui lui appartient.\n\nLe détail peut être partiel lorsque les autres côtés sont au défaut neutre de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les côtés reliés restent néanmoins utilisables par le consommateur."
-    },
-    "PaddingY": {
-      "$ref": "#/definitions/SidedRefs%3C(%22top%22%7C%22bottom%22)%3E",
-      "description": "Padding vertical : une référence, ou le détail haut/bas."
-    },
-    "SidedRefs<(\"top\"|\"bottom\")>": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "top": {
-              "type": "string"
-            },
-            "bottom": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      ],
-      "description": "Une valeur que Figma laisse régler côté par côté, toujours tokenisée.\n\nC'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une décision par bord : une RÉFÉRENCE quand tous les côtés citent la même variable — la forme de presque tous les composants, inchangée — et le DÉTAIL par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces variables séparément (`padding-left`, `radius-top-left`) : les refuser demandait au designer d'aplatir une décision qui lui appartient.\n\nLe détail peut être partiel lorsque les autres côtés sont au défaut neutre de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les côtés reliés restent néanmoins utilisables par le consommateur."
-    },
-    "Radius": {
-      "$ref": "#/definitions/SidedRefs%3C(%22topLeft%22%7C%22topRight%22%7C%22bottomRight%22%7C%22bottomLeft%22)%3E",
-      "description": "Rayon : une référence, ou le détail des quatre coins, dans l'ordre CSS."
-    },
-    "SidedRefs<(\"topLeft\"|\"topRight\"|\"bottomRight\"|\"bottomLeft\")>": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "object",
-          "properties": {
-            "topLeft": {
-              "type": "string"
-            },
-            "topRight": {
-              "type": "string"
-            },
-            "bottomRight": {
-              "type": "string"
-            },
-            "bottomLeft": {
-              "type": "string"
-            }
-          },
-          "additionalProperties": false
-        }
-      ],
-      "description": "Une valeur que Figma laisse régler côté par côté, toujours tokenisée.\n\nC'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une décision par bord : une RÉFÉRENCE quand tous les côtés citent la même variable — la forme de presque tous les composants, inchangée — et le DÉTAIL par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces variables séparément (`padding-left`, `radius-top-left`) : les refuser demandait au designer d'aplatir une décision qui lui appartient.\n\nLe détail peut être partiel lorsque les autres côtés sont au défaut neutre de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les côtés reliés restent néanmoins utilisables par le consommateur."
+      "description": "Structure portable d'une combinaison exacte, sans les index globaux de matrice.\n\n`children` y redevient FACULTATIF, et c'est la seule différence de forme avec l'arbre que le moteur manipule. Avant l'élision, un conteneur porte toujours ses enfants, fût-ce zéro ; une fois publié, un `[]` ne s'écrit pas. Déclarer `children` requis ici ferait refuser par le schéma un contrat que le moteur produit légitimement — le cas d'un composant dont aucun descendant ne porte d'information publiable."
     },
     "ChildStructure": {
       "type": "object",
@@ -856,10 +679,18 @@
         "position": {
           "type": "string",
           "const": "absolute",
-          "description": "Le layer est hors du flux de son parent. `constraints` dit alors à quels bords il s'accroche ; sa distance à ces bords n'est pas contractuelle."
+          "description": "Le layer est hors du flux de son parent. `constraints` dit à quels bords il s'accroche, `inset` à quelle distance de ces bords il se trouve."
         },
         "constraints": {
           "$ref": "#/definitions/LayoutConstraints"
+        },
+        "inset": {
+          "$ref": "#/definitions/LayoutInset",
+          "description": "Distance aux bords d'accroche, publiée avec `position: \"absolute\"`."
+        },
+        "rotation": {
+          "type": "string",
+          "description": "Rotation du layer, dans la convention et l'unité de CSS — donc l'opposé du compte trigonométrique de Figma, et prête pour `transform: rotate(…)`.\n\nL'origine est le CENTRE du layer, le défaut de `transform-origin` : c'est aussi le point sur lequel `inset` est calculé, si bien qu'un layer hors du flux tourné retombe exactement où Figma le montre. Une rotation imbriquée se compose d'elle-même, comme dans Figma.\n\nAbsente sous le centième de degré : Figma stocke des flottants, et une transformation successive laisse des résidus qu'aucun écran ne rend."
         },
         "columnStart": {
           "type": "number",
@@ -1027,6 +858,25 @@
       "additionalProperties": false,
       "description": "Mesure en pixels qu'un enfant de grille donne à sa piste, par axe.\n\nToujours un objet, même pour un carré : la forme courte de `SlotSize` sert à ne pas répéter une RÉFÉRENCE, et rien ici n'en est une. Les pixels sont écrits comme ceux de `columnSizes` / `rowSizes`, le seul autre endroit où le contrat en publie."
     },
+    "SizeBounds": {
+      "type": "object",
+      "properties": {
+        "minWidth": {
+          "type": "string"
+        },
+        "maxWidth": {
+          "type": "string"
+        },
+        "minHeight": {
+          "type": "string"
+        },
+        "maxHeight": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Bornes de taille, toujours tokenisées.\n\nElles sont SÉPARÉES de `size` et de `sizing` parce qu'elles ne répondent pas à la même question. Le menu de dimensionnement dit quelle place le calque prend ; une borne dit jusqu'où cette place peut aller. Les deux coexistent : le cas le plus courant est un calque en `Fill` qu'un `max width` retient, exactement ce qu'aucune valeur de `size` ne saurait écrire.\n\nLes clés sont celles de CSS, comme partout ailleurs dans le contrat, et le consommateur les écrit telles quelles. Une borne absente ne veut pas dire zéro : elle veut dire que Figma n'en pose aucune sur cet axe."
+    },
     "AlignSelf": {
       "type": "string",
       "enum": [
@@ -1066,7 +916,186 @@
         "vertical"
       ],
       "additionalProperties": false,
-      "description": "Bords auxquels un calque hors flux s'accroche.\n\nC'est tout ce que le contrat sait porter d'une position absolue. La distance à ces bords, elle, n'est liable à aucune variable dans Figma : ce serait un nombre de maquette, et le contrat n'en écrit jamais. Les clés sont celles de CSS plutôt que le `MIN`/`MAX` de Figma, comme partout ailleurs."
+      "description": "Bords auxquels un calque hors flux s'accroche.\n\nLes clés sont celles de CSS plutôt que le `MIN`/`MAX` de Figma, comme partout ailleurs. La contrainte dit comment le calque se comporte quand son parent change de taille ; `LayoutInset` dit où il est."
+    },
+    "LayoutInset": {
+      "type": "object",
+      "properties": {
+        "top": {
+          "type": "string"
+        },
+        "right": {
+          "type": "string"
+        },
+        "bottom": {
+          "type": "string"
+        },
+        "left": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Distance, en pixels, entre un bord du parent et le bord correspondant d'un calque hors du flux — les valeurs de `top`, `right`, `bottom` et `left` en CSS, à écrire telles quelles.\n\nCe n'est ni un token ni une décision du designer, et c'est la raison pour laquelle le contrat l'écrivait autrefois nulle part : un offset Figma ne se relie à aucune variable. Mais le geste demandé au designer n'existait pas non plus — Figma ne PERMET pas de lier une position —, et le développeur se retrouvait avec un badge collé au coin. Le moteur le CALCULE donc, comme il calcule déjà les pixels d'une piste de grille, sous une notice et sans dégrader la couverture portable.\n\nUne seule signification par clé, quelle que soit la contrainte : la distance d'un bord à l'autre. Les côtés publiés sont ceux auxquels le calque s'accroche — un seul par axe pour `left`/`right`/`top`/`bottom`, les DEUX pour `stretch`, `center` et `scale`, où le consommateur a besoin des deux pour étirer, centrer ou proportionner.\n\nLa boîte de référence est celle du parent, sans ajustement : aucun rôle de contour ne consomme la boîte dans ce contrat (`border` se rend en `box-shadow`), si bien que la « padding box » de CSS — celle sur laquelle `right` et `bottom` se résolvent — coïncide avec le cadre Figma."
+    },
+    "LayoutDirection": {
+      "type": "string",
+      "enum": [
+        "flex-row",
+        "flex-column",
+        "grid"
+      ],
+      "description": "Disposition d'un conteneur, dans le vocabulaire de CSS.\n\n`grid` n'est pas un repli : Figma y expose deux gaps liables à une variable et le nombre de ses pistes, soit exactement ce que le contrat sait porter. Un conteneur sans auto layout reste décrit comme une rangée, faute de mieux, et le dit."
+    },
+    "GridTrack": {
+      "type": "string",
+      "description": "Taille d'UNE piste de grille, dans le vocabulaire de `grid-template-*`.\n\n`1fr` pour une piste qui se partage la place, `fit-content(100%)` pour une piste qui se règle sur son contenu. Exception propre aux grilles, une piste FIXED conserve sa valeur calculée en pixels (`120px`) : elle décrit la structure de la grille sans devenir un token."
+    },
+    "Padding": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "$ref": "#/definitions/PaddingX"
+        },
+        "y": {
+          "$ref": "#/definitions/PaddingY"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Padding d'un conteneur, rangé par axe comme le panneau Figma le présente."
+    },
+    "PaddingX": {
+      "$ref": "#/definitions/SidedRefs%3C(%22left%22%7C%22right%22)%3E",
+      "description": "Padding horizontal : une référence, ou le détail gauche/droite."
+    },
+    "SidedRefs<(\"left\"|\"right\")>": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "left": {
+              "type": "string"
+            },
+            "right": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Une valeur que Figma laisse régler côté par côté, toujours tokenisée.\n\nC'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une décision par bord : une RÉFÉRENCE quand tous les côtés citent la même variable — la forme de presque tous les composants, inchangée — et le DÉTAIL par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces variables séparément (`padding-left`, `radius-top-left`) : les refuser demandait au designer d'aplatir une décision qui lui appartient.\n\nLe détail peut être partiel lorsque les autres côtés sont au défaut neutre de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les côtés reliés restent néanmoins utilisables par le consommateur."
+    },
+    "PaddingY": {
+      "$ref": "#/definitions/SidedRefs%3C(%22top%22%7C%22bottom%22)%3E",
+      "description": "Padding vertical : une référence, ou le détail haut/bas."
+    },
+    "SidedRefs<(\"top\"|\"bottom\")>": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "top": {
+              "type": "string"
+            },
+            "bottom": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Une valeur que Figma laisse régler côté par côté, toujours tokenisée.\n\nC'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une décision par bord : une RÉFÉRENCE quand tous les côtés citent la même variable — la forme de presque tous les composants, inchangée — et le DÉTAIL par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces variables séparément (`padding-left`, `radius-top-left`) : les refuser demandait au designer d'aplatir une décision qui lui appartient.\n\nLe détail peut être partiel lorsque les autres côtés sont au défaut neutre de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les côtés reliés restent néanmoins utilisables par le consommateur."
+    },
+    "Radius": {
+      "$ref": "#/definitions/SidedRefs%3C(%22topLeft%22%7C%22topRight%22%7C%22bottomRight%22%7C%22bottomLeft%22)%3E",
+      "description": "Rayon : une référence, ou le détail des quatre coins, dans l'ordre CSS."
+    },
+    "SidedRefs<(\"topLeft\"|\"topRight\"|\"bottomRight\"|\"bottomLeft\")>": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "topLeft": {
+              "type": "string"
+            },
+            "topRight": {
+              "type": "string"
+            },
+            "bottomRight": {
+              "type": "string"
+            },
+            "bottomLeft": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Une valeur que Figma laisse régler côté par côté, toujours tokenisée.\n\nC'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une décision par bord : une RÉFÉRENCE quand tous les côtés citent la même variable — la forme de presque tous les composants, inchangée — et le DÉTAIL par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces variables séparément (`padding-left`, `radius-top-left`) : les refuser demandait au designer d'aplatir une décision qui lui appartient.\n\nLe détail peut être partiel lorsque les autres côtés sont au défaut neutre de Figma (zéro). Un côté fixe non neutre avertit et n'est pas publié : les côtés reliés restent néanmoins utilisables par le consommateur."
+    },
+    "JustifyContent": {
+      "type": "string",
+      "enum": [
+        "flex-start",
+        "center",
+        "flex-end",
+        "space-between"
+      ],
+      "description": "Répartition des enfants sur l'axe principal d'un conteneur Flex."
+    },
+    "AlignItems": {
+      "type": "string",
+      "enum": [
+        "flex-start",
+        "center",
+        "flex-end",
+        "baseline"
+      ],
+      "description": "Alignement commun des enfants sur l'axe secondaire d'un conteneur Flex."
+    },
+    "ContainerSizing": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "$ref": "#/definitions/ContainerAxisSizing"
+        },
+        "height": {
+          "$ref": "#/definitions/ContainerAxisSizing"
+        }
+      },
+      "required": [
+        "width",
+        "height"
+      ],
+      "additionalProperties": false,
+      "description": "Dimensionnement propre du composant, publié sur les deux axes.\n\nLes clés sont les propriétés CSS concernées, et non les axes de Figma : la taille d'un composant n'est pas une propriété de flux, elle ne dépend pas d'un conteneur qu'il ne connaît pas. `stretch` reste une intention — « occupe la place donnée » — dont la technique appartient au développeur : `width: stretch`, `width: 100%` ou `flex: 1` selon le contexte d'intégration."
+    },
+    "ContainerAxisSizing": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/AxisSizing"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Un axe du composant : un comportement CSS, ou la référence du token qui fixe cette dimension.\n\nLe troisième terme est une référence `{…}`, et il l'emporte sur les deux autres. Une dimension figée SANS variable reste une commodité de maquette — elle aligne les variants d'un component set — et vaut `stretch` ; une dimension figée qui cite une variable est une décision du design system, que le composant connaît de lui-même quel que soit son futur conteneur. C'est la règle des slots, appliquée au composant : un nombre brut n'est jamais contractuel, une variable liée l'est toujours.\n\nLe type dégénère structurellement en `string`, comme partout où le contrat porte une référence de token ; le nom sépare les deux intentions."
+    },
+    "AxisSizing": {
+      "type": "string",
+      "enum": [
+        "stretch",
+        "fit-content"
+      ],
+      "description": "Comportement d'un composant sur un axe, face à la place qu'on lui donne.\n\nCe sont les mots de CSS, pas ceux de Figma : `Fill` et `Hug` sont les intitulés d'un panneau, `stretch` et `fit-content` sont des valeurs de `width` et `height`. Le contrat traduit partout ailleurs (`flex-start`, `stretch`, `flexGrow`), et il ne garde un terme Figma que là où CSS n'a rien à proposer — l'alignement d'un stroke, par exemple. Ici CSS a le mot exact : le consommateur écrit la valeur, il ne la devine pas."
     },
     "TextStyleUse": {
       "type": "object",
@@ -1471,13 +1500,16 @@
           "additionalProperties": {
             "$ref": "#/definitions/RenderingRole"
           }
+        },
+        "keyRoles": {
+          "$ref": "#/definitions/ColorKeyRoles"
         }
       },
       "required": [
         "roles"
       ],
       "additionalProperties": false,
-      "description": "Correspondance des rôles vers le rendu. Les rôles partagés (`background`, `foreground`, `icon`, `border`, `ring`) sont publiés par tout contrat ; s'y ajoutent les clés de couleur du composant qui n'en nomment aucun, avec le rendu déduit du calque qui les porte. La RÈGLE reste sans logique par composant — seules les clés observées changent d'un contrat à l'autre."
+      "description": "Correspondance des rôles vers le rendu.\n\n`roles` est le vocabulaire PARTAGÉ, identique dans tous les contrats : `background`, `foreground`, `icon`, `border`, `ring`. Un mot y signifie la même chose partout — c'est ce qui permet à un consommateur de le connaître une fois pour toutes.\n\n`keyRoles` est la part propre au composant : le rôle de chaque clé de couleur observée qui n'en porte pas le nom. Un consommateur répond donc à « comment peindre cette clé » en deux accès sans ambiguïté : `roles[keyRoles[côté][clé] ?? clé]`."
     },
     "RenderingRole": {
       "type": "object",
@@ -1508,6 +1540,27 @@
       ],
       "additionalProperties": false,
       "description": "Vocabulaire de rendu des rôles visuels, commun à tous les composants."
+    },
+    "ColorKeyRoles": {
+      "type": "object",
+      "properties": {
+        "fills": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Clés de `variants[].tokens` dont le rôle ne porte pas le nom."
+        },
+        "strokes": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Clés de `variants[].strokes` dont le rôle ne porte pas le nom."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Le rôle de rendu de chaque clé de couleur qui n'en porte pas le nom.\n\nUne CLÉ de couleur et un RÔLE de rendu sont deux choses : la clé identifie une couleur dans la feuille d'un variant, le rôle dit comment la peindre. Les confondre — résoudre la clé directement dans `rendering.roles` — obligeait le moteur à avoir un avis sur les noms du design system, et à crier dès qu'un token nommé `…/foreground` était posé en contour.\n\nLes deux côtés sont séparés parce que les clés le sont : `colorKeys` décide sur des feuilles distinctes pour les peintures et pour les contours, si bien que deux tokens différents finissant par le même segment peuvent porter la MÊME clé courte de part et d'autre. Une seule table les confondrait, et le consommateur peindrait le mauvais côté sans un mot.\n\nUne clé dont le rôle porte déjà le nom reste absente : `roles[clé]` répond pour elle."
     },
     "IconDefinition": {
       "type": "object",

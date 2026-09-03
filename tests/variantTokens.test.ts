@@ -355,7 +355,7 @@ test('extractVariantTokens ajoute la largeur du stroke à tokensUsed', async () 
       fills: {},
       strokes: { ring: [] },
     }]]),
-    discoveredRoles: new Map(),
+    discoveredRoles: { fills: new Map(), strokes: new Map() },
   });
   assert.deepEqual(Array.from(collectTokenReferences(trees)).sort(), [
     '{components.button.colors.primary.focus.ring}',
@@ -651,14 +651,15 @@ test('une clé allongée reçoit dans rendering.roles le rendu que son token dé
   );
   const rendering = renderingSemanticsFor(trees.discoveredRoles);
 
-  // « ring » est une DÉCLARATION du designer : allongée, la clé conserve son
-  // contour extérieur et son repli en box-shadow.
-  assert.deepEqual(rendering.roles['halo.ring'], {
+  // « ring » est une DÉCLARATION du designer, et elle porte sur deux rôles de
+  // même nature : allongée, la clé nomme toujours `ring`, donc le contour
+  // extérieur et son repli en box-shadow.
+  assert.deepEqual(rendering.keyRoles?.strokes, { 'base.ring': 'ring', 'halo.ring': 'ring' });
+  assert.deepEqual(rendering.roles.ring, {
     kind: 'stroke',
     cssProperties: ['outline-color', 'outline-width'],
     fallback: 'box-shadow',
   });
-  assert.deepEqual(rendering.roles['base.ring'], rendering.roles['halo.ring']);
 });
 
 test('un composant dont les clés nomment toutes un rôle partagé ne déduit aucun rendu', async () => {
@@ -675,13 +676,84 @@ test('un composant dont les clés nomment toutes un rôle partagé ne déduit au
     [],
   );
 
-  // La porte reste fermée sur les cinq rôles partagés : `rendering.roles` d'un
+  // La porte reste fermée sur les cinq rôles partagés : le `rendering` d'un
   // composant déjà correct ne gagne aucune entrée.
-  assert.deepEqual(trees.discoveredRoles, new Map());
-  assert.deepEqual(
-    Object.keys(renderingSemanticsFor(trees.discoveredRoles).roles),
-    ['background', 'foreground', 'icon', 'border', 'ring'],
+  assert.deepEqual(trees.discoveredRoles.fills, new Map());
+  assert.deepEqual(trees.discoveredRoles.strokes, new Map());
+  const rendering = renderingSemanticsFor(trees.discoveredRoles);
+  assert.deepEqual(Object.keys(rendering.roles), [
+    'background', 'foreground', 'icon', 'border', 'ring',
+  ]);
+  assert.equal(rendering.keyRoles, undefined);
+});
+
+test('deux tokens qui finissent pareil, l’un en fill l’autre en stroke, gardent chacun son rendu', async () => {
+  // `colorKeys` décide sur des feuilles SÉPARÉES : un fill et un stroke ne se
+  // disputent rien, et ces deux tokens gardent tous les deux la clé courte
+  // « background ». Une table de rôles unique en perdrait un, et le
+  // consommateur peindrait le mauvais côté sans un mot.
+  const liseré = {
+    type: 'FRAME',
+    name: 'Divider',
+    boundVariables: { strokes: [{ type: 'VARIABLE_ALIAS', id: 'trait' } as VariableAlias] },
+    strokeAlign: 'INSIDE',
+  };
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Variant=Default',
+    boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: 'fond' } as VariableAlias] },
+    findAll: () => [liseré],
+  } as unknown as ComponentNode;
+  const resolver = {
+    resolve: async (alias: VariableAlias | null | undefined) => {
+      if (alias?.id === 'fond') return 'components.card.userinput.colors.background';
+      if (alias?.id === 'trait') return 'components.card.divider.colors.background';
+      return null;
+    },
+  };
+
+  const warnings: string[] = [];
+  const trees = await extractVariantTokens(
+    { axes: ['variant'], variants: [{ values: { variant: 'default' }, component: racine }] },
+    resolver,
+    warnings,
   );
+  const rendering = renderingSemanticsFor(trees.discoveredRoles);
+
+  assert.deepEqual(Object.keys(trees.variantTokens.default as object), ['background']);
+  assert.deepEqual(Object.keys(trees.variantStrokes.default as object), ['background']);
+  // La peinture porte déjà le nom de son rôle et n'a rien à publier ; le contour
+  // dit le sien, de son côté. Aucune des deux tables ne parle pour l'autre.
+  assert.deepEqual(rendering.keyRoles, { strokes: { background: 'border' } });
+  // Et aucun conflit n'est inventé : ce sont deux clés, pas une contradiction.
+  assert.deepEqual(warnings.filter((warning) => warning.includes('natures différentes')), []);
+});
+
+test('un token dont le nom déclare un fill peint un contour, sans un mot', async () => {
+  // Le moteur n'a aucun avis sur le vocabulaire du design system : c'est le
+  // CALQUE qui dit ce qu'une couleur peint. Un `…/foreground` posé en stroke
+  // peint un contour, et le contrat le publie tel quel.
+  const racine = {
+    type: 'COMPONENT',
+    name: 'Variant=Default',
+    boundVariables: { strokes: [{ type: 'VARIABLE_ALIAS', id: 'encre' } as VariableAlias] },
+    strokeAlign: 'INSIDE',
+    findAll: () => [],
+  } as unknown as ComponentNode;
+
+  const warnings: string[] = [];
+  const trees = await extractVariantTokens(
+    { axes: ['variant'], variants: [{ values: { variant: 'default' }, component: racine }] },
+    { resolve: async () => 'components.badge.warning.colors.foreground' },
+    warnings,
+  );
+  const rendering = renderingSemanticsFor(trees.discoveredRoles);
+
+  // La clé garde le nom que le designer lui a donné ; c'est `keyRoles` qui dit
+  // comment la peindre, sans jamais redéfinir le mot pour les autres contrats.
+  assert.deepEqual(rendering.keyRoles, { strokes: { foreground: 'border' } });
+  assert.deepEqual(rendering.roles.foreground, { kind: 'paint', cssProperties: ['color', 'fill'] });
+  assert.deepEqual(warnings.filter((warning) => warning.includes('dernier segment')), []);
 });
 
 test('un doublon d’axes garde une clé stable dans les vues exactes et l’index historique', async () => {

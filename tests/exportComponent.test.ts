@@ -8,18 +8,43 @@
  *
  * Ce qu'ils ne prouvent PAS : la fidélité à Figma. Le faux `figma` ci-dessous
  * est un modèle, et un modèle faux rendrait ces tests verts en prouvant que le
- * moteur s'accorde avec lui. C'est `tests/test-exports/` — de vrais exports
- * produits dans Figma — qui tient ce rôle, et lui seul (AGENTS.md, « Limites
- * d'environnement »).
+ * moteur s'accorde avec lui. Aucun test de ce repository ne peut trancher cette
+ * question — l'export ne tourne que dans Figma. Elle se tranche chez le
+ * consommateur, sur de vrais exports (AGENTS.md, « Limites d'environnement »).
+ *
+ * En revanche, tout contrat produit ici passe par `lois.ts` : forme, renvois,
+ * accord avec le schéma publié et aller-retour de l'écriture. C'est le filet de
+ * régression du moteur, et il se pose une fois, sur le chemin d'appel, pour
+ * qu'un scénario ajouté demain y soit soumis sans que personne y pense.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import handleExportComponent, {
+import exporterLeComposant, {
   componentContractFilename,
   mergeWrapperProps,
 } from '../src/contract/exportComponent';
 import { collectTokenReferences } from '../src/variables';
+import { verifierLaSerialisation, verifierLeSchema, verifierLesLois } from './lois';
 import type { ContractProp } from '../src/contract/types';
+
+/**
+ * Chaque contrat que le moteur fabrique ici passe d'abord par les lois de
+ * forme, avant que le test ne regarde ce qui l'intéresse.
+ *
+ * C'est le seul endroit du repository où ces lois portent sur du CODE : le
+ * corpus est gelé et ne bouge qu'au réexport, si bien qu'une régression du
+ * moteur ne s'y verrait jamais. Ici, elle échoue au scénario qui la produit —
+ * et la vérification est posée une fois, pas à chaque appel, pour qu'un
+ * scénario ajouté demain y soit soumis sans que personne y pense.
+ */
+async function handleExportComponent() {
+  const resultat = await exporterLeComposant();
+  const contrat = JSON.parse(resultat.content);
+  verifierLesLois(contrat, 'sortie du moteur');
+  verifierLeSchema(contrat, 'sortie du moteur');
+  verifierLaSerialisation(resultat.content, 'sortie du moteur');
+  return resultat;
+}
 
 let compteur = 0;
 
@@ -513,6 +538,62 @@ test('une piste FIXED de grille est une note, pas un avertissement', async () =>
     );
     // Le miroir complet du contrat, lui, la garde.
     assert.ok(messagesDe(contrat).some(enPixels));
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('un badge hors du flux est placé et incliné par le moteur, sous des notices', async () => {
+  // Deux propriétés que le designer ne PEUT pas rendre contractuelles : Figma ne
+  // relie une position à aucune variable, et une rotation n'en est pas une. Les
+  // réclamer envoyait le designer corriger ce qui n'a pas de correction ; le
+  // moteur les calcule, et ne demande plus rien.
+  const badge = () => node('FRAME', 'Badge', [], {
+    layoutPositioning: 'ABSOLUTE',
+    constraints: { horizontal: 'MAX', vertical: 'MIN' },
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+    width: 16,
+    height: 16,
+    rotation: 45,
+    relativeTransform: [
+      [Math.SQRT1_2, -Math.SQRT1_2, 100],
+      [Math.SQRT1_2, Math.SQRT1_2, 4],
+    ],
+    fills: [],
+  });
+  const figmaFaux = monterFigma({ avecRegles: false, enfantsDuVariant: () => [badge()] });
+  (globalThis as any).figma.currentPage.selection[0].width = 120;
+  (globalThis as any).figma.currentPage.selection[0].height = 40;
+  for (const variante of (globalThis as any).figma.currentPage.selection[0].children) {
+    variante.width = 120;
+    variante.height = 40;
+  }
+  try {
+    const resultat = await handleExportComponent();
+    const contrat = JSON.parse(resultat.content);
+    const slot = structureDe(contrat).children.find((enfant: any) => enfant.figmaLayer === 'Badge');
+    const horsDuFlux = (message: string) => message.includes('position « Absolute »');
+
+    assert.equal(slot.position, 'absolute');
+    assert.deepEqual(slot.constraints, { horizontal: 'right', vertical: 'top' });
+    // Le centre du carré tourné est à (100, 4 + 8√2) : la boîte CSS droite a
+    // son coin haut-gauche en (92 ; 7,31), soit 3,31 px plus bas que l'origine
+    // Figma. Seul le côté auquel le badge s'accroche est publié sur chaque axe.
+    assert.deepEqual(slot.inset, { top: '7.31px', right: '12px' });
+    assert.equal(slot.rotation, '-45deg');
+
+    // Ni l'un ni l'autre ne demande un geste. Le code du diagnostic le prouve :
+    // `UCM_EXPORT_INFO`, jamais `UCM_PORTABLE_PROJECTION_WARNING` — la place du
+    // badge ne retire donc rien à `meta.coverage.portable`, et le corps de la
+    // pull request ne porte rien de tout cela.
+    assert.ok(resultat.infos.some(horsDuFlux));
+    assert.equal(resultat.warnings.some(horsDuFlux), false);
+    assert.equal(
+      contrat.meta.diagnostics.find((diagnostic: any) => horsDuFlux(diagnostic.message))?.code,
+      'UCM_EXPORT_INFO',
+    );
+    assert.equal(messagesDe(contrat).some((message) => message.includes('rendu droit')), false);
   } finally {
     figmaFaux.restaurer();
   }

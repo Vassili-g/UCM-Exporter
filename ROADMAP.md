@@ -31,25 +31,24 @@ sont jamais corrigés à la main.
 
 | Domaine | État |
 |---|---|
-| Contrat 11.0 | L’Exporter publie les vues exactes sous cinq catalogues de parties et un `samples` récursif non normatif. Il élide les valeurs neutres, ne publie ni `tokensUsed` ni `meta.warnings`, et sérialise une entrée par ligne sur deux niveaux. Les `args` d’une dépendance viennent de sa surface publique directe et de son seul wrapper élu ; le contenu positionnel suit la visibilité effective et s’arrête aux `SLOT`. Ces lois sont couvertes par des tests synthétiques sans logique liée au nom d’un composant |
-| Consommation 10.3 (à monter en 11.0) | Le Playground documente une reconstruction récursive relative au propriétaire immédiat, sans recherche globale ni limite de profondeur. `validation-echantillons.mjs` joint TOUTES les adresses d’un échantillon — clés et valeurs d’`args`, `masterPath`, `composes` imbriqué, `slotPath` d’une racine et d’un texte — sur des contrats synthétiques, cas absents, ambigus et profonds compris. Aucun ne regarde QUELLE valeur est placée, et une racine omise reste tolérée |
-| Validation Figma 11.0 | En attente d’un réexport humain, seul moyen de confirmer les valeurs produites par l’API Figma. Les composants du Playground restent des artefacts de validation à préserver, mais ne constituent pas à eux seuls un critère de généralité du moteur |
+| Forme du contrat | L’Exporter publie les vues exactes sous cinq catalogues de parties et un `samples` récursif non normatif. Il élide les valeurs neutres, ne publie ni `tokensUsed` ni `meta.warnings`, et sérialise une entrée par ligne sur deux niveaux. Les `args` d’une dépendance viennent de sa surface publique directe et de son seul wrapper élu ; le contenu positionnel suit la visibilité effective et s’arrête aux `SLOT`. `tests/lois.ts` porte ces lois et `exportComponent.test.ts` les applique à chaque contrat que le moteur fabrique : renvois résolus, catalogues sans doublon ni orphelin, adresses qui désignent un calque réel, aucune valeur neutre écrite, chaque clé de couleur résolue vers un rôle de la bonne nature, accord avec le schéma publié, aller-retour de l’écriture. Aucune ne connaît le nom d’un composant |
+| Consommation | Le Playground lit exactement la version courante : `VERSION_CONTRAT_MINIMALE` et `MAXIMALE` la déclarent, le schéma copié porte le même `const`, `variant-views.mjs` résout les cinq renvois et `references-token.mjs` dérive l’index de tokens du contrat, `samples` et `meta` exclus. Le croisement `nonListes` / `fantomes` de `check-contract.mjs` survit mais ne s’arme plus que si un contrat publie encore un `tokensUsed`. Il documente une reconstruction récursive relative au propriétaire immédiat, sans recherche globale ni limite de profondeur ; `validation-echantillons.mjs` joint TOUTES les adresses d’un échantillon — clés et valeurs d’`args`, `masterPath`, `composes` imbriqué, `slotPath` d’une racine et d’un texte — sur des contrats synthétiques, cas absents, ambigus et profonds compris. Aucun ne regarde QUELLE valeur est placée, et une racine omise reste tolérée |
+| Validation Figma | Les quatre composants du Playground ont été réexportés à la forme courante, puis reconstruits à froid chacun depuis son seul contrat. Ces exports vivent là-bas et nulle part ailleurs. La comparaison du rendu obtenu avec Figma n’est consignée nulle part : elle reste à faire ou à écrire. Ces quatre composants sont des sondes jetables, pas un critère de généralité du moteur |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
-| Structure portable | Flex, wrap, grille, position absolue, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat |
+| Structure portable | Flex, wrap, grille, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat. Un calque hors du flux est PLACÉ — `constraints` et `inset` — et sa `rotation` est écrite en vocabulaire CSS : les deux étaient des avertissements sans geste possible, Figma ne permettant de lier ni une position ni une rotation |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
-| Contrôles du Playground | Forme et version des contrats, graphe, parité statique, références de tokens, tests de rendu co-localisés, génération des types et du CSS |
+| Contrôles du Playground | Forme et version des contrats, graphe de composition, adresses des échantillons, parité statique, références de tokens, génération des types et du CSS. Aucun n’exécute le rendu, et il n’existe aucun test propre à un composant du sandbox |
 | Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
-| Test froid | Le protocole générique est documenté et ses lois d’adressage sont testées. La preuve visuelle dépend d’un export frais et d’une comparaison avec Figma ; un composant existant ne vaut que pour le contrat qu’il accompagne |
-| Corpus de démonstration | Les composants et tests actuels sont des artefacts de validation à ne pas réécrire pour obtenir du vert. La maturité se mesure aussi sur les invariants synthétiques et sur de nouvelles familles Figma choisies sans règle liée à leur nom |
+| Test froid | Le protocole générique est documenté par le skill `consommer-contrat` et ses lois d’adressage sont testées. Les quatre composants du Playground ont été régénérés à froid depuis leur seul contrat. La preuve visuelle, elle, dépend d’une comparaison avec Figma qu’aucun repository ne consigne ; un composant existant ne vaut que pour le contrat qu’il accompagne |
+| Corpus de démonstration | Quatre composants, chez le consommateur, sondes jetables à ne pas réécrire pour obtenir du vert. Aucun ne publie de `SLOT` ni de propriété `INSTANCE_SWAP` native : ces deux chemins du moteur ne sont éprouvés que par des tests synthétiques. La maturité se mesure aussi sur les invariants du moteur et sur de nouvelles familles Figma choisies sans règle liée à leur nom |
 | Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
 | Interopérabilité | Le JSON Schema du contrat est publié dans `schema/`, dérivé de `types.ts` et vendu au Playground pour l’éditeur ; il décrit la forme, jamais la cohérence, et ne bloque aucune fusion. `tokens.json` n’a toujours pas de version propre |
 | Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
 
-Le projet est un **prototype avancé**. L’Exporter écrit la forme 11.0, tandis
-que le corpus Figma et le Playground restent en 10.3. Seul un humain peut
-produire les exports 11.0 nécessaires à l’adaptation du consommateur. Les
-preuves durables portent sur les lois du moteur ; les composants du corpus
-constatent un comportement à une date donnée et restent remplaçables.
+Le projet est un **prototype avancé**. L’Exporter écrit une forme et le
+Playground lit la même. Les preuves durables portent sur les lois du moteur ;
+les composants du Playground constatent un comportement à une date donnée et
+restent remplaçables.
 
 ## Fragilités connues
 
@@ -94,57 +93,57 @@ prévention.
 
 Les références de tokens littérales sont comparables au contrat ; un chemin
 assemblé à l’exécution est refusé. En revanche, une donnée visuelle recopiée
-dans une règle de code peut échapper à l’analyse statique. Quelques tests de
-rendu pilotés par le contrat existent dans le corpus de démonstration, mais ils
-restent ciblés et aucun vérificateur générique n’exerce encore toutes les vues
-exactes d’un composant arbitraire. Les contrôles disponibles et cette limite
-sont détaillés dans
+dans une règle de code peut échapper à l’analyse statique. Aucun contrôle
+n’exerce le rendu : le Playground ne porte plus aucun test par composant, et
+aucun vérificateur générique n’exerce les vues exactes d’un composant
+arbitraire. Les contrôles disponibles et cette limite sont détaillés dans
 [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md).
 
 C’est là, et nulle part ailleurs, que vit la preuve de bout en bout. Les
 jointures d’adresses du Playground constatent que deux contrats se joignent ;
 elles ne constatent à aucun moment qu’une reconstruction a effectivement
-consommé l’échantillon. Le vérificateur générique le ferait — un embryon existe
-déjà, qui rend le TSX et compte les dépendances de chaque composé. Ce qu’il ne
-faut PAS faire en attendant : écrire dans le Playground une fonction de
-reconstruction. Ce serait une seconde implémentation du protocole que porte le
+consommé l’échantillon. Le vérificateur générique le ferait. Ce qui en approche
+le plus aujourd’hui reste statique : `parite.mjs` lit l’API publique par le
+vérificateur de types et compte, dans le JSX, les occurrences de chaque
+dépendance déclarée. Ce qu’il ne faut PAS faire en attendant : écrire dans le
+Playground une fonction de reconstruction. Ce serait une seconde implémentation du protocole que porte le
 skill `consommer-contrat`, deux implémentations divergent, et c’est celle qui
 n’est pas jetable qui deviendrait la vérité — exactement ce que le corpus de
 démonstration est censé ne jamais devenir.
 
 ## Prochaines validations
 
-### 1. Réexporter le corpus en 11.0, puis monter le Playground
+### 1. Fermer la validation de projection
 
-1. Rouvrir Figma et réexporter les quatre composants du corpus. `npm run
-   check:fixtures` le constate ; `npm test` valide alors la forme contre le
-   schéma 11.0, et `tests/migration11.test.ts` s’éteint de lui-même.
-2. Monter le Playground : `VERSION_CONTRAT_MINIMALE` et `MAXIMALE` à 11.0, copie
-   du schéma, résolution des cinq renvois de vue dans `variant-views.mjs`, index
-   de tokens dérivé dans `references-token.mjs`, lecture de `meta.diagnostics`,
-   retrait du croisement `nonListes` / `fantomes` de `check-contract.mjs` —
-   `manquants` reste, c’est lui qui protège le design.
+Le composé le plus large du Playground a été réexporté et reconstruit à froid. Il
+couvre les occurrences multiples, les homonymes — sept d’une même dépendance,
+trois d’une autre —, trois niveaux d’imbrication et un `swaps` avec
+`masterPath`.
 
-### 2. Fermer la validation de projection
+Deux trous restent, et aucun contrat existant ne les touche : aucun ne publie
+de `SLOT`, aucun ne publie de propriété `INSTANCE_SWAP` native. Ces deux
+chemins du moteur n’ont donc jamais vu de donnée Figma réelle, seulement des
+tests synthétiques.
 
-1. Réexporter depuis Figma un composant composé choisi après l’implémentation,
-   avec plusieurs occurrences, des homonymes, un wrapper exposé, un `SLOT` et
-   au moins trois niveaux d’imbrication. Ne corriger aucun JSON à la main.
+1. Réexporter depuis Figma un composé qui exerce réellement un `SLOT`, une
+   `INSTANCE_SWAP` native et un wrapper de dimensions exposé. Ne corriger aucun
+   JSON à la main.
 2. Reconstruire ce composant en contexte froid avec le protocole récursif,
    sans modifier un composant existant et sans ajouter de branche liée à son
-   nom. Comparer ensuite le rendu à Figma.
+   nom. Comparer ensuite le rendu à Figma, et consigner cette comparaison :
+   c’est la seule preuve visuelle du projet, et elle n’est écrite nulle part.
 
 Le coût du relevé de composition sur une grosse matrice n’entre pas dans cette
 clôture : c’est une dette de performance, elle a maintenant une cause nommée, et
 elle est rangée avec les fragilités connues.
 
-### 3. Éprouver d’autres familles de composants
+### 2. Éprouver d’autres familles de composants
 
 Choisir les cas pour leur différence, pas pour leur nombre :
 
 - un composant interactif avec booléens et états ;
 - un composé avec plusieurs types de dépendances ;
-- un composant qui exerce réellement wrap, grille ou position absolue ;
+- un composant qui exerce réellement wrap ou grille ;
 - un composant dont la typographie ou la structure varie entre deux vues ;
 - un composant qui expose un champ à côtés asymétriques.
 
@@ -152,7 +151,7 @@ Une limite ne justifie un nouveau champ que si le contrat ne permet aucune
 décision correcte sur un cas réel. Les options correspondantes restent dans
 [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 
-### 4. Éprouver le workflow d’équipe
+### 3. Éprouver le workflow d’équipe
 
 - rendre les contrôles bloquants après décision sur le plan GitHub ou la
   visibilité des repositories ;
@@ -161,14 +160,14 @@ décision correcte sur un cas réel. Les options correspondantes restent dans
 - vérifier que chaque diagnostic est compréhensible sans ouvrir les logs ;
 - mesurer les faux positifs et le coût quotidien des contrôles.
 
-### 5. Renforcer la parité utile
+### 4. Renforcer la parité utile
 
 Les prochains contrôles candidats sont les valeurs d’enum réellement gérées,
 les valeurs par défaut et les exceptions volontaires documentées. Leur coût et
 leurs faux positifs doivent être mesurés sur plusieurs composants avant de les
 rendre bloquants.
 
-### 6. Stabiliser l’interopérabilité
+### 5. Stabiliser l’interopérabilité
 
 Le JSON Schema est publié, avant la clôture du point 1 et non après. Ce
 décalage est assumé : le schéma est dérivé de `types.ts`, il ne bloque aucune
@@ -177,7 +176,7 @@ cours. Un contrôle bloquant, lui, aurait dû attendre.
 
 Restent ouverts :
 
-- documenter le schéma là où il est muet : 85 de ses 179 propriétés n’ont
+- documenter le schéma là où il est muet : 118 de ses 236 propriétés n’ont
   aucune `description`, dont `ContractDiagnostic`, `ContractCoverage` et toutes
   les formes de `props`. Le texte vient des commentaires de `types.ts`, donc le
   geste est d’écrire là-bas ce qu’un consommateur d’un autre langage n’a nulle

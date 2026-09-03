@@ -151,14 +151,46 @@ export type RenderingRole = {
 };
 
 /**
- * Correspondance des rôles vers le rendu. Les rôles partagés (`background`,
- * `foreground`, `icon`, `border`, `ring`) sont publiés par tout contrat ; s'y
- * ajoutent les clés de couleur du composant qui n'en nomment aucun, avec le
- * rendu déduit du calque qui les porte. La RÈGLE reste sans logique par
- * composant — seules les clés observées changent d'un contrat à l'autre.
+ * Le rôle de rendu de chaque clé de couleur qui n'en porte pas le nom.
+ *
+ * Une CLÉ de couleur et un RÔLE de rendu sont deux choses : la clé identifie une
+ * couleur dans la feuille d'un variant, le rôle dit comment la peindre. Les
+ * confondre — résoudre la clé directement dans `rendering.roles` — obligeait le
+ * moteur à avoir un avis sur les noms du design system, et à crier dès qu'un
+ * token nommé `…/foreground` était posé en contour.
+ *
+ * Les deux côtés sont séparés parce que les clés le sont : `colorKeys` décide
+ * sur des feuilles distinctes pour les peintures et pour les contours, si bien
+ * que deux tokens différents finissant par le même segment peuvent porter la
+ * MÊME clé courte de part et d'autre. Une seule table les confondrait, et le
+ * consommateur peindrait le mauvais côté sans un mot.
+ *
+ * Une clé dont le rôle porte déjà le nom reste absente : `roles[clé]` répond
+ * pour elle.
+ */
+export type ColorKeyRoles = {
+  /** Clés de `variants[].tokens` dont le rôle ne porte pas le nom. */
+  fills?: Record<string, string>;
+  /** Clés de `variants[].strokes` dont le rôle ne porte pas le nom. */
+  strokes?: Record<string, string>;
+};
+
+/**
+ * Correspondance des rôles vers le rendu.
+ *
+ * `roles` est le vocabulaire PARTAGÉ, identique dans tous les contrats :
+ * `background`, `foreground`, `icon`, `border`, `ring`. Un mot y signifie la
+ * même chose partout — c'est ce qui permet à un consommateur de le connaître
+ * une fois pour toutes.
+ *
+ * `keyRoles` est la part propre au composant : le rôle de chaque clé de couleur
+ * observée qui n'en porte pas le nom. Un consommateur répond donc à « comment
+ * peindre cette clé » en deux accès sans ambiguïté :
+ * `roles[keyRoles[côté][clé] ?? clé]`.
  */
 export type RenderingSemantics = {
   roles: Record<string, RenderingRole>;
+  keyRoles?: ColorKeyRoles;
 };
 
 /** Tokens réellement liés aux propriétés d'un text style Figma. */
@@ -227,15 +259,40 @@ export type GridPlacement = {
 /**
  * Bords auxquels un calque hors flux s'accroche.
  *
- * C'est tout ce que le contrat sait porter d'une position absolue. La distance
- * à ces bords, elle, n'est liable à aucune variable dans Figma : ce serait un
- * nombre de maquette, et le contrat n'en écrit jamais. Les clés sont celles de
- * CSS plutôt que le `MIN`/`MAX` de Figma, comme partout ailleurs.
+ * Les clés sont celles de CSS plutôt que le `MIN`/`MAX` de Figma, comme partout
+ * ailleurs. La contrainte dit comment le calque se comporte quand son parent
+ * change de taille ; `LayoutInset` dit où il est.
  */
 export type LayoutConstraints = {
   horizontal: 'left' | 'center' | 'right' | 'stretch' | 'scale';
   vertical: 'top' | 'center' | 'bottom' | 'stretch' | 'scale';
 };
+
+/**
+ * Distance, en pixels, entre un bord du parent et le bord correspondant d'un
+ * calque hors du flux — les valeurs de `top`, `right`, `bottom` et `left` en
+ * CSS, à écrire telles quelles.
+ *
+ * Ce n'est ni un token ni une décision du designer, et c'est la raison pour
+ * laquelle le contrat l'écrivait autrefois nulle part : un offset Figma ne se
+ * relie à aucune variable. Mais le geste demandé au designer n'existait pas non
+ * plus — Figma ne PERMET pas de lier une position —, et le développeur se
+ * retrouvait avec un badge collé au coin. Le moteur le CALCULE donc, comme il
+ * calcule déjà les pixels d'une piste de grille, sous une notice et sans
+ * dégrader la couverture portable.
+ *
+ * Une seule signification par clé, quelle que soit la contrainte : la distance
+ * d'un bord à l'autre. Les côtés publiés sont ceux auxquels le calque
+ * s'accroche — un seul par axe pour `left`/`right`/`top`/`bottom`, les DEUX
+ * pour `stretch`, `center` et `scale`, où le consommateur a besoin des deux
+ * pour étirer, centrer ou proportionner.
+ *
+ * La boîte de référence est celle du parent, sans ajustement : aucun rôle de
+ * contour ne consomme la boîte dans ce contrat (`border` se rend en
+ * `box-shadow`), si bien que la « padding box » de CSS — celle sur laquelle
+ * `right` et `bottom` se résolvent — coïncide avec le cadre Figma.
+ */
+export type LayoutInset = Partial<Record<'top' | 'right' | 'bottom' | 'left', `${number}px`>>;
 
 /**
  * Disposition d'un conteneur, dans le vocabulaire de CSS.
@@ -441,11 +498,26 @@ export type ChildStructure = {
   /** Exception d'alignement de ce layer dans l'auto layout de son parent. */
   alignSelf?: AlignSelf;
   /**
-   * Le layer est hors du flux de son parent. `constraints` dit alors à quels
-   * bords il s'accroche ; sa distance à ces bords n'est pas contractuelle.
+   * Le layer est hors du flux de son parent. `constraints` dit à quels bords il
+   * s'accroche, `inset` à quelle distance de ces bords il se trouve.
    */
   position?: 'absolute';
   constraints?: LayoutConstraints;
+  /** Distance aux bords d'accroche, publiée avec `position: "absolute"`. */
+  inset?: LayoutInset;
+  /**
+   * Rotation du layer, dans la convention et l'unité de CSS — donc l'opposé du
+   * compte trigonométrique de Figma, et prête pour `transform: rotate(…)`.
+   *
+   * L'origine est le CENTRE du layer, le défaut de `transform-origin` : c'est
+   * aussi le point sur lequel `inset` est calculé, si bien qu'un layer hors du
+   * flux tourné retombe exactement où Figma le montre. Une rotation imbriquée
+   * se compose d'elle-même, comme dans Figma.
+   *
+   * Absente sous le centième de degré : Figma stocke des flottants, et une
+   * transformation successive laisse des résidus qu'aucun écran ne rend.
+   */
+  rotation?: `${number}deg`;
   /**
    * Place du layer dans la grille de son parent.
    *
@@ -711,6 +783,12 @@ export type ContractStructure = {
   /** Alignement Figma sur l'axe secondaire, absent hors auto-layout linéaire. */
   alignItems?: AlignItems;
   /**
+   * Rotation du calque qui porte le flux du composant, à la règle de
+   * `ChildStructure.rotation`. Rare, mais un wrapper de dimensions tourné est
+   * une décision de design comme une autre, et rien d'autre ne la porterait.
+   */
+  rotation?: `${number}deg`;
+  /**
    * Le composant passe à la ligne. Ce n'est pas une dimension mais une
    * propriété de flux : elle reste ici même quand `sizes` porte les dimensions.
    */
@@ -742,11 +820,22 @@ export type ContractStructure = {
   variantTypography: VariantTypography;
 };
 
-/** Structure portable d'une combinaison exacte, sans les index globaux de matrice. */
+/**
+ * Structure portable d'une combinaison exacte, sans les index globaux de matrice.
+ *
+ * `children` y redevient FACULTATIF, et c'est la seule différence de forme avec
+ * l'arbre que le moteur manipule. Avant l'élision, un conteneur porte toujours
+ * ses enfants, fût-ce zéro ; une fois publié, un `[]` ne s'écrit pas. Déclarer
+ * `children` requis ici ferait refuser par le schéma un contrat que le moteur
+ * produit légitimement — le cas d'un composant dont aucun descendant ne porte
+ * d'information publiable.
+ */
 export type VariantStructure = Omit<
   ContractStructure,
-  'sizes' | 'variantAxes' | 'variantStrokes' | 'variantTokens' | 'variantTypography'
->;
+  'sizes' | 'variantAxes' | 'variantStrokes' | 'variantTokens' | 'variantTypography' | 'children'
+> & {
+  children?: ChildStructure[];
+};
 
 /** Emplacement d'une icône dans l'arbre exact d'un variant. */
 export type VariantIconPlacement = {

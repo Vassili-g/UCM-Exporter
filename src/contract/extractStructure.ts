@@ -23,7 +23,7 @@ import { extractVariantTokens } from './extractVariantTokens';
 import type { VariantPaintNodeIds } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
 import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNodes';
-import { variantRoleWarnings } from './semantics';
+import type { DiscoveredRoles } from './semantics';
 import type {
   ComposedDependency,
   ContractStructure,
@@ -116,7 +116,7 @@ export async function extractStructure(
   textStyles: Record<string, TextStyleDefinition>;
   iconLayers: IconLayerSummary[];
   /** Rôle de rendu déduit des clés de couleur qui n'en nomment aucun. */
-  discoveredRoles: Map<string, string>;
+  discoveredRoles: DiscoveredRoles;
   /**
    * Dépendances que `structure.children` place réellement, indexées par le slot
    * qui les rend. C'est d'elles que `composes` se dérive, dans l'ordre de
@@ -174,14 +174,6 @@ export async function extractStructure(
     iconTargets,
     notices,
   );
-
-  // Les rôles se relisent sur les arbres terminés, pas pendant l'extraction :
-  // un seul message par rôle fautif au lieu d'un par variante, et la
-  // vérification reste une fonction pure, testable sans runtime Figma.
-  warnings.push(...variantRoleWarnings(
-    Object.fromEntries(Array.from(tokensByComponent, ([component, leaf]) => [component.id, leaf])),
-    Object.fromEntries(Array.from(strokesByComponent, ([component, leaf]) => [component.id, leaf])),
-  ));
 
   // Le node de layout de CHAQUE variant est élu ici, une fois. `findLayoutNode`
   // élit au score, et le score dépend de la racine : relancer l'élection depuis
@@ -382,7 +374,7 @@ export async function extractStructure(
       tokens: tokensByComponent.get(entry.component) ?? {},
       strokes: strokesByComponent.get(entry.component) ?? {},
       typography: exactTypography.typographyByComponent.get(entry.component) ?? [],
-      composes: placedDependenciesFromTree(exactStructure.children, placed),
+      composes: placedDependenciesFromTree(exactStructure.children ?? [], placed),
       icons: {},
       paintPlacements: paintPlacementsFromPaths(
         paintNodeIdsByComponent.get(entry.component),

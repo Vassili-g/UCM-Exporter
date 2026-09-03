@@ -50,8 +50,6 @@ build local.
 | `npm run typecheck` | Vérifie TypeScript |
 | `npm run build` | Vérifie puis construit le plugin complet |
 | `npm run schema` | Régénère le JSON Schema du contrat depuis `types.ts` |
-| `npm run check:fixtures` | Constate que le corpus de référence est à la version courante |
-| `npm run verifier:migration` | Vérifie que la projection 11.0 conserve les données normatives des contrats 10.3 du corpus |
 
 ## Architecture
 
@@ -63,8 +61,6 @@ src/
   code.ts         Routage des commandes
   variables.ts    Index commun des variables et des alias
   github.ts       Dépôt optionnel par pull request
-tests/
-  test-exports/   Petit corpus d’exports Figma réels
 schema/
   ucm-contract.schema.json   Forme du contrat, dérivée de `types.ts`
 ```
@@ -96,15 +92,16 @@ Chaque document a un rôle unique :
 
 ## État
 
-Le moteur écrit le contrat 11.0 publié par `CONTRACT_VERSION`
-(`src/contract/exportComponent.ts`). Il accepte un Component seul ou un
-Component Set. Chaque combinaison exacte porte ses tokens et référence une vue
-composée de cinq renvois indépendants : structure, typographie, icônes,
-dépendances et chemins de peintures. La projection de référence renvoie au même
-catalogue de structures, les valeurs neutres sont élidées et aucun index de
-tokens dérivable n’est publié.
+La version du contrat est celle que publie `CONTRACT_VERSION`
+(`src/contract/exportComponent.ts`), seul endroit où elle est écrite. Le moteur
+accepte un Component seul ou un Component Set. Chaque combinaison exacte porte
+ses tokens et référence une vue composée de cinq renvois indépendants :
+structure, typographie, icônes, dépendances et chemins de peintures. La
+projection de référence renvoie au même catalogue de structures, les valeurs
+neutres sont élidées et aucun index de tokens dérivable n’est publié.
 
-Le Playground de référence accepte encore exactement le contrat 10.3 et ses
-quatre exports Figma actuels. Son adaptation au 11.0 dépend d’un réexport humain
-du corpus ; cette différence de version est suivie dans
-[ROADMAP.md](./ROADMAP.md).
+Ce repository ne contient aucun artefact de contrat : un `.contract.json` vit
+dans le repository qui le consomme, à côté du code qu’il décrit. Les lois de
+forme sont donc vérifiées sur chaque contrat que le moteur fabrique pendant
+`npm test`, jamais sur un exemplaire gelé. La maturité et les limites restantes
+vivent dans [ROADMAP.md](./ROADMAP.md).

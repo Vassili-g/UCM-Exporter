@@ -19,7 +19,7 @@ import {
   SIDE_KEYS,
   toSidedRef,
 } from './nodeBindings';
-import { isRenderableRole, paintSiteRole } from './semantics';
+import { paintSiteRole, roleKind } from './semantics';
 import { isIconLayer } from './slotNames';
 import type { StrokeAlignment, StrokeWidth } from './types';
 export type { TokenResolver } from '../variables';
@@ -105,18 +105,29 @@ function memeLargeur(left: StrokeWidth | null, right: StrokeWidth | null): boole
 /**
  * Rôle de rendu d'une couleur.
  *
- * Un dernier segment qui NOMME un rôle partagé est une déclaration du designer
- * et l'emporte : c'est le seul moyen de distinguer un `ring` d'un `border`, et
+ * **Le site tranche la nature, le nom précise à l'intérieur de cette nature.**
+ * Ce que la couleur peint se lit sur le calque qui la porte : un fill peint un
+ * fill, un stroke peint un contour, et aucun nom de token ne peut dire le
+ * contraire — un `…/foreground` posé en contour peint un contour, et le moteur
+ * n'a pas à décider que le design system s'est trompé de mot.
+ *
+ * Un dernier segment qui NOMME un rôle partagé reste une déclaration du
+ * designer, mais seulement là où elle ajoute quelque chose : entre deux rôles
+ * de MÊME nature. C'est le seul moyen de distinguer un `ring` d'un `border`, et
  * c'est ce qui fait qu'un `…/ring` publié sous une clé allongée conserve son
- * `outline-*` et son `fallback: box-shadow`. Sinon, ce que la couleur peint se
- * lit sur le calque qui la porte.
+ * `outline-*` et son `fallback: box-shadow`.
+ *
+ * Le rôle obtenu se publie ensuite dans `rendering.keyRoles`, du côté de
+ * l'arbre où la clé vit : c'est là, et non dans le vocabulaire partagé, qu'une
+ * clé nommée `foreground` peut annoncer qu'elle se rend en contour.
  */
 function colorRole(
   token: string,
   site: { isStroke: boolean; isText: boolean; isIconTarget: boolean },
 ): string {
   const base = tokenKey(token);
-  return isRenderableRole(base) ? base : paintSiteRole(site);
+  const observe = paintSiteRole(site);
+  return roleKind(base) === roleKind(observe) ? base : observe;
 }
 
 /**

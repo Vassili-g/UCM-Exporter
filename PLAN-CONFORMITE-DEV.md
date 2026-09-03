@@ -47,15 +47,17 @@ n'aurait plus de témoin indépendant.
 ## 3. Ce qui existe aujourd'hui
 
 Forme et version du contrat, existence des tokens, graphe de composition,
-adresses des échantillons, parité, références de tokens du code et tests ciblés
-sont contrôlés par le Playground. `npm run check` les agrège dans le terminal et
-dans `ci-report.md`. [ROADMAP.md](./ROADMAP.md) en tient l'état.
+adresses des échantillons, parité et références de tokens du code sont
+contrôlés par le Playground. Tous sont statiques. `npm run check` les agrège
+dans le terminal et dans `ci-report.md`. [ROADMAP.md](./ROADMAP.md) en tient
+l'état.
 
-**Ce qui manque : la vérification du rendu.** Rien ne prouve, de façon
-générique, que le composant affiche réellement la bonne couleur, la bonne
-dimension et la bonne disposition pour chaque combinaison. Cette vérification
-n'existe que dans des fichiers de test écrits à la main, un par composant, ce
-qui contredit la règle du point 2.
+**Ce qui manque : la vérification du rendu.** Rien ne prouve que le composant
+affiche réellement la bonne couleur, la bonne dimension et la bonne disposition
+pour chaque combinaison. Aucun contrôle n'exécute le rendu, et le Playground ne
+porte plus aucun test propre à un composant : la seule preuve visuelle
+disponible reste l'œil d'un humain qui compare une reconstruction à froid avec
+Figma.
 
 ---
 
@@ -238,9 +240,8 @@ de navigateur simulé.
 3. Écrire le parcours des combinaisons et des options de visibilité.
 4. Éprouver la convention sur un nouveau composant de validation reconstruit à
    froid, explicitement prévu pour cette recherche.
-5. Comparer sa couverture à celle des tests de rendu co-localisés.
-6. Ne retirer un test ciblé que si le vérificateur générique prouve la même
-   clause avec un diagnostic au moins aussi précis.
+5. Comparer sa couverture à ce que la relecture humaine d'une reconstruction à
+   froid constate aujourd'hui, seul point de comparaison disponible.
 
 ### [À DÉCIDER]
 
@@ -458,8 +459,8 @@ contrôles restent des recommandations.
 
 1. Adopte-t-on l'attribut `data-ucm-slot` dans le code des composants ?
 2. Le laisse-t-on en production ?
-3. À quelles conditions un test de rendu ciblé peut-il être remplacé par le
-   vérificateur générique sans perdre de clause ni de diagnostic ?
+3. Quelles clauses le vérificateur générique doit-il prouver pour valoir la
+   relecture humaine d'une reconstruction à froid ?
 4. Le vérificateur bloque-t-il dès sa mise en service ?
 5. Couvre-t-on les états d'interaction, et à quel moment ?
 6. Que fait-on d'un composant impossible à afficher seul ?

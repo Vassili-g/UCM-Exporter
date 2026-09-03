@@ -290,21 +290,50 @@ test('sous le wrap, le gap principal est nommé comme le panneau Figma', async (
   assert.ok(warnings.some((warning) => warning.includes('horizontal gap')));
 });
 
-test('un layer Absolute est signalé même sous un auto layout en grille', () => {
+test('un layer Absolute est placé même sous un auto layout en grille, et sans un geste à faire', () => {
   const flottant = {
     type: 'FRAME',
     id: 'flottant',
     name: 'Badge',
     layoutPositioning: 'ABSOLUTE',
+    constraints: { horizontal: 'MAX', vertical: 'MIN' },
+    width: 20,
+    height: 20,
+    relativeTransform: [[1, 0, 130], [0, 1, 5]],
     boundVariables: {},
   } as unknown as SceneNode;
-  const grille = { type: 'FRAME', name: 'Galerie', layoutMode: 'GRID' } as unknown as SceneNode;
+  const grille = {
+    type: 'FRAME', name: 'Galerie', layoutMode: 'GRID', width: 160, height: 80,
+  } as unknown as SceneNode;
 
   const warnings: string[] = [];
-  flexItemProperties(grille, flottant, warnings);
+  const infos: string[] = [];
+  const item = flexItemProperties(grille, flottant, warnings, infos);
 
-  assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /position « Absolute »/);
+  // Les côtés publiés sont ceux auxquels le layer s'accroche : la contrainte
+  // survit à un parent qui change de taille, le côté opposé non.
+  assert.deepEqual(item.inset, { top: '5px', right: '10px' });
+  assert.equal(warnings.length, 0);
+  assert.equal(infos.length, 1);
+  assert.match(infos[0], /position « Absolute »/);
+});
+
+test('un layer Absolute dont Figma n’expose pas la géométrie ne publie ni inset ni notice', () => {
+  const flottant = {
+    type: 'FRAME', id: 'flottant', name: 'Badge', layoutPositioning: 'ABSOLUTE', boundVariables: {},
+  } as unknown as SceneNode;
+  const parent = { type: 'FRAME', name: 'Carte', layoutMode: 'HORIZONTAL' } as unknown as SceneNode;
+
+  const warnings: string[] = [];
+  const infos: string[] = [];
+  const item = flexItemProperties(parent, flottant, warnings, infos);
+
+  // Mieux vaut une absence qu'un « NaNpx » : un runtime partiel ne doit ni
+  // inventer une place, ni annoncer un calcul qui n'a pas eu lieu.
+  assert.equal(item.position, 'absolute');
+  assert.equal(item.inset, undefined);
+  assert.deepEqual(warnings, []);
+  assert.deepEqual(infos, []);
 });
 
 /**

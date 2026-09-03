@@ -14,6 +14,7 @@ import type {
   GridTrack,
   JustifyContent,
   LayoutConstraints,
+  LayoutInset,
   SizeBounds,
 } from './types';
 
@@ -28,6 +29,7 @@ type FlexItemProperties = {
   flexGrow?: 1;
   position?: 'absolute';
   constraints?: LayoutConstraints;
+  inset?: LayoutInset;
 };
 
 type FigmaPropertyBag = Record<string, unknown>;
@@ -294,6 +296,109 @@ export function isAbsolutePositioned(node: SceneNode): boolean {
   return asPropertyBag(node).layoutPositioning === 'ABSOLUTE';
 }
 
+/**
+ * Rotation en deçà de laquelle un layer est considéré comme droit, en degrés.
+ *
+ * Figma stocke la rotation en flottant : une transformation successive laisse
+ * des résidus de l'ordre de 1e-13, qu'aucun écran ne rend et qu'aucun designer
+ * ne peut remettre à zéro. Un centième de degré est très en dessous du premier
+ * pixel visible, et très au-dessus de ce bruit.
+ */
+const ROTATION_NEUTRE = 0.01;
+
+/** Deux décimales : la règle de tout pixel structurel que le contrat publie. */
+function arrondi(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
+/** Un nombre que Figma expose réellement, et sur lequel on peut calculer. */
+function mesure(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * Rotation d'un calque dans la convention de CSS.
+ *
+ * Figma compte les degrés dans le sens trigonométrique, CSS dans le sens
+ * horaire : la valeur publiée est l'opposée, et s'écrit telle quelle dans
+ * `transform: rotate(…)`. L'origine est le centre, le défaut de CSS — c'est
+ * aussi celle sur laquelle `absoluteInset` calcule sa boîte, si bien que les
+ * deux champs décrivent le même modèle.
+ */
+export function rotationDegrees(node: SceneNode): `${number}deg` | null {
+  const rotation = mesure(asPropertyBag(node).rotation);
+  if (rotation === null || Math.abs(rotation) <= ROTATION_NEUTRE) return null;
+  return `${arrondi(-rotation)}deg`;
+}
+
+/**
+ * Où se trouve un calque hors du flux, en distances aux bords de son parent.
+ *
+ * Le calcul passe par le CENTRE du calque, et c'est ce qui le rend juste pour un
+ * calque tourné : Figma tourne autour du coin haut-gauche, CSS autour du centre.
+ * `relativeTransform` appliqué au centre local (w/2, h/2) donne le centre réel
+ * dans le repère du parent ; la boîte CSS non tournée s'en déduit, et
+ * `transform: rotate(…)` la ramène exactement où Figma la montre.
+ *
+ * Les côtés publiés sont ceux auxquels le calque s'accroche, pour que le
+ * placement survive à un parent qui change de taille. `stretch`, `center` et
+ * `scale` en demandent deux : le premier étire, les deux autres ont besoin des
+ * deux distances pour recentrer ou proportionner.
+ *
+ * Rien n'est publié si Figma n'expose pas tout ce qu'il faut — un node de test,
+ * un runtime partiel : mieux vaut une absence qu'un `NaNpx`.
+ */
+function absoluteInset(parent: SceneNode, child: SceneNode): LayoutInset | null {
+  const boite = asPropertyBag(child);
+  const cadre = asPropertyBag(parent);
+  const width = mesure(boite.width);
+  const height = mesure(boite.height);
+  const parentWidth = mesure(cadre.width);
+  const parentHeight = mesure(cadre.height);
+  const transform = boite.relativeTransform as number[][] | undefined;
+  if (width === null || height === null || parentWidth === null || parentHeight === null) {
+    return null;
+  }
+  if (!Array.isArray(transform) || transform.length < 2) return null;
+
+  const centre = (row: readonly number[] | undefined): number | null => {
+    if (!Array.isArray(row) || row.length < 3) return null;
+    const [a, b, t] = [mesure(row[0]), mesure(row[1]), mesure(row[2])];
+    if (a === null || b === null || t === null) return null;
+    return a * (width / 2) + b * (height / 2) + t;
+  };
+  const centreX = centre(transform[0]);
+  const centreY = centre(transform[1]);
+  if (centreX === null || centreY === null) return null;
+
+  const left = centreX - width / 2;
+  const top = centreY - height / 2;
+  const constraints = layoutConstraints(child);
+  const px = (value: number): `${number}px` => `${arrondi(value)}px`;
+  // Les deux axes suivent la même règle ; l'écrire une fois évite qu'ils
+  // divergent au premier ancrage ajouté.
+  const axe = (
+    ancrage: string | undefined,
+    debut: 'left' | 'top',
+    fin: 'right' | 'bottom',
+    depuisLeDebut: number,
+    depuisLaFin: number,
+  ): LayoutInset => {
+    if (ancrage === fin) return { [fin]: px(depuisLaFin) } as LayoutInset;
+    if (ancrage === 'stretch' || ancrage === 'center' || ancrage === 'scale') {
+      return { [debut]: px(depuisLeDebut), [fin]: px(depuisLaFin) } as LayoutInset;
+    }
+    // Le repli est l'ancrage au début : c'est celui de Figma, et celui d'un
+    // node dont le runtime n'expose aucune contrainte.
+    return { [debut]: px(depuisLeDebut) } as LayoutInset;
+  };
+
+  return {
+    ...axe(constraints?.vertical, 'top', 'bottom', top, parentHeight - top - height),
+    ...axe(constraints?.horizontal, 'left', 'right', left, parentWidth - left - width),
+  };
+}
+
 function asPropertyBag(node: SceneNode): FigmaPropertyBag {
   return node as unknown as FigmaPropertyBag;
 }
@@ -462,22 +567,36 @@ export function flexItemProperties(
   parent: SceneNode,
   child: SceneNode,
   warnings: string[] = [],
+  // La place d'un calque absolu est une NOTICE, pas un avertissement : elle
+  // constate un calcul et ne demande aucun geste. Les deux canaux restent donc
+  // distincts jusqu'ici, faute de quoi le corps de la pull request se remplirait
+  // de constats que personne ne peut corriger.
+  infos: string[] = [],
 ): FlexItemProperties & GridPlacement {
   // Testé avant l'auto layout linéaire : une grille aussi porte des enfants en
-  // position absolue. Le calque sort du flux, mais il n'en disparaît plus pour
-  // autant : ses contraintes disent à quel bord il s'accroche, et c'est tout ce
-  // que le contrat peut porter sans écrire un nombre de maquette — un offset
-  // Figma n'est liable à aucune variable.
+  // position absolue. Le calque sort du flux et le contrat le place : ses
+  // contraintes disent à quels bords il s'accroche, `inset` à quelle distance.
+  // Un offset Figma ne se relie à aucune variable, et le designer ne PEUT pas
+  // le rendre contractuel — lui réclamer un geste impossible n'était pas un
+  // avertissement. Le moteur calcule donc la distance, comme il calcule les
+  // pixels d'une piste de grille, sous une notice qui ne demande rien.
   if (isAbsolutePositioned(child)) {
     const constraints = layoutConstraints(child);
-    warnings.push(
-      `Layer « ${child.name} » : il est en position « Absolute » dans « ${parent.name} ». Le ` +
-        `contrat publie les bords auxquels il s'accroche, jamais sa distance à ces bords. Un ` +
-        `offset Figma ne se relie à aucune variable, et un nombre écrit à la main n'est pas une ` +
-        `décision du design system. Le développeur le placera contre ces bords, sans décalage. ` +
-        `Replacez ce layer dans le flux si sa position exacte doit être contractuelle, puis réexportez.`,
-    );
-    return { position: 'absolute', ...(constraints ? { constraints } : {}) };
+    const inset = absoluteInset(parent, child);
+    if (inset) {
+      infos.push(
+        `Layer « ${child.name} » : il est en position « Absolute » dans « ${parent.name} ». Sa `
+          + `distance aux bords auxquels il s'accroche est publiée en pixels, exception propre `
+          + `aux layers hors du flux — Figma ne permet pas de relier une position à une `
+          + `variable. Ces valeurs décrivent sa place sans devenir des tokens ; aucune `
+          + `modification du design n'est demandée.`,
+      );
+    }
+    return {
+      position: 'absolute',
+      ...(constraints ? { constraints } : {}),
+      ...(inset ? { inset } : {}),
+    };
   }
   if (isGridAutoLayout(parent)) return gridItemProperties(parent, child);
   if (!isLinearAutoLayout(parent)) return {};

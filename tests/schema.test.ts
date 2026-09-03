@@ -1,22 +1,23 @@
 /**
- * Le JSON Schema publié décrit-il vraiment les contrats que le plugin produit ?
+ * Le JSON Schema publié suit-il `types.ts` ?
  *
- * Deux questions distinctes, et les deux comptent : le schéma commité suit-il
- * `types.ts` (sinon il publie une forme périmée), et accepte-t-il les exports
- * réels (sinon il refuserait un contrat parfaitement valide chez un
- * consommateur).
+ * C'est la seule question qui se tranche sans contrat sous la main : le fichier
+ * commité est-il celui que le générateur produit aujourd'hui, et refuse-t-il ce
+ * qu'un schéma doit refuser.
+ *
+ * L'autre moitié — le schéma accepte-t-il ce que le MOTEUR écrit — ne peut pas
+ * se poser ici : y répondre demanderait un contrat, donc soit un artefact
+ * commité qui n'a rien à faire dans ce repository, soit un objet écrit à la
+ * main qui ne prouverait que l'accord du schéma avec l'imagination de son
+ * auteur. Elle est posée sur chaque sortie du moteur dans
+ * `exportComponent.test.ts`, via `verifierLeSchema`.
  */
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
 import Ajv from 'ajv';
 import { CONTRACT_VERSION } from '../src/contract/exportComponent';
 import { CHEMIN_DU_SCHEMA, construireLeSchema } from '../scripts/build-schema';
-
-const racine = join(dirname(fileURLToPath(import.meta.url)), '..');
-const corpus = join(racine, 'tests', 'test-exports');
 
 const schemaCommite = JSON.parse(readFileSync(CHEMIN_DU_SCHEMA, 'utf8')) as Record<string, unknown>;
 
@@ -24,13 +25,6 @@ const schemaCommite = JSON.parse(readFileSync(CHEMIN_DU_SCHEMA, 'utf8')) as Reco
 function valideur(schema: Record<string, unknown>) {
   return new Ajv({ allErrors: true, strict: false }).compile(schema);
 }
-
-/** Un contrat du corpus, tel que le plugin l'a écrit. */
-function contratDuCorpus(nom: string): unknown {
-  return JSON.parse(readFileSync(join(corpus, nom), 'utf8').replace(/^\uFEFF/, ''));
-}
-
-const contrats = readdirSync(corpus).filter((nom) => nom.endsWith('.contract.json'));
 
 test('le schéma commité est celui que produit types.ts aujourd\'hui', () => {
   // La comparaison porte sur le JSON analysé, pas sur les octets. `.gitattributes`
@@ -47,48 +41,7 @@ test('le schéma publie la version de contrat que le moteur écrit', () => {
   assert.equal(schemaCommite['x-ucm-contract-version'], CONTRACT_VERSION);
 });
 
-test('les exports réels du corpus valident le schéma', () => {
-  const valider = valideur(schemaCommite);
-  assert.ok(contrats.length > 0, 'le corpus de référence a disparu');
-  for (const nom of contrats) {
-    const contrat = contratDuCorpus(nom) as { meta?: { contractVersion?: unknown } };
-    // Un contrat d'une AUTRE version n'est pas du ressort de ce schéma : il en
-    // décrit une seule, `contractVersion.const` le dit, et le refus serait donc
-    // acquis d'avance. Sans cette réserve, une montée de `CONTRACT_VERSION`
-    // rendrait `npm test` rouge jusqu'au réexport du corpus depuis Figma — le
-    // seul geste qu'un poste de développement ne peut pas faire, et la raison
-    // même pour laquelle ce constat vit dans « npm run check:fixtures ».
-    if (contrat.meta?.contractVersion !== CONTRACT_VERSION) continue;
-    assert.ok(
-      valider(contrat),
-      `${nom} ne valide pas le schéma : ${JSON.stringify(valider.errors?.slice(0, 3))}`,
-    );
-  }
-});
-
 test('le schéma refuse un contrat vidé de sa substance', () => {
   const valider = valideur(schemaCommite);
   assert.equal(valider({}), false);
-});
-
-test('un objet à forme fixe refuse un champ qu\'il ne déclare pas', () => {
-  // La garantie ne vaut que là : `props`, `icons` ou `variantViews` sont des
-  // dictionnaires dont les clés sont inventées par le composant, et restent
-  // donc libres.
-  const valider = valideur(schemaCommite);
-  const contrat = contratDuCorpus(contrats[0]) as Record<string, unknown>;
-  assert.equal(valider({ ...contrat, champInvente: true }), false);
-  assert.equal(
-    valider({ ...contrat, meta: { ...(contrat.meta as object), champInvente: true } }),
-    false,
-  );
-});
-
-test('le schéma refuse un contrat qui se déclare dans une autre version', () => {
-  // Sans le `const` posé par build-schema.ts, `contractVersion` serait une
-  // chaîne libre : le schéma de la 10.1 accepterait une 9.0 dont la forme colle.
-  const valider = valideur(schemaCommite);
-  const contrat = contratDuCorpus(contrats[0]) as Record<string, unknown>;
-  const meta = { ...(contrat.meta as Record<string, unknown>), contractVersion: '9.0' };
-  assert.equal(valider({ ...contrat, meta }), false);
 });

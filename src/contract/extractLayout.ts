@@ -48,8 +48,10 @@ import {
   flexItemProperties,
   gridTrackCounts,
   gridTrackSizes,
+  isAbsolutePositioned,
   isGridAutoLayout,
   isLinearAutoLayout,
+  rotationDegrees,
   SIZE_BOUND_FIELDS,
   sizeBoundFields,
 } from './flexLayout';
@@ -135,6 +137,41 @@ function layoutDirection(node: SceneNode): LayoutDirection {
  */
 function warnUnsupportedProperties(node: SceneNode, warnings: string[]): void {
   warnings.push(...unsupportedPropertyWarnings(node));
+}
+
+/**
+ * La rotation d'un calque publié, et la seule chose qu'elle ne dise pas.
+ *
+ * Le contrat porte la rotation elle-même : le développeur l'écrit en
+ * `transform: rotate(…)` et retrouve le dessin de Figma, imbrications
+ * comprises. Reste un écart que CSS ne sait pas combler : dans un auto layout,
+ * Figma espace ses enfants d'après la boîte TOURNÉE, là où `transform` ne
+ * change aucune boîte de flux. Une notice le dit — le rendu est juste, la place
+ * des voisins peut différer — et ne demande aucun geste : remettre le calque
+ * droit lui retirerait sa rotation, qui est bien une décision de design.
+ *
+ * Un calque hors du flux n'est pas concerné : il n'espace personne, et `inset`
+ * le place sur le même centre que la rotation.
+ */
+function applyRotation(
+  node: SceneNode,
+  parent: SceneNode | undefined,
+  infos: string[],
+): { rotation?: `${number}deg` } {
+  const rotation = rotationDegrees(node);
+  if (!rotation) return {};
+  const dansUnFlux = parent !== undefined
+    && !isAbsolutePositioned(node)
+    && (isLinearAutoLayout(parent) || isGridAutoLayout(parent));
+  if (dansUnFlux) {
+    infos.push(
+      `Layer « ${node.name} » : sa rotation est publiée, et le développeur la rendra. Figma `
+        + `espace toutefois ses voisins d'après sa boîte tournée, là où le rendu web garde sa `
+        + `boîte droite : la place qu'il prend dans « ${parent.name} » peut différer de quelques `
+        + `pixels. Aucune modification du design n'est demandée.`,
+    );
+  }
+  return { rotation };
 }
 
 /**
@@ -364,7 +401,11 @@ async function describeNode(
   path: readonly string[] = [slot],
   publishedNodePaths: PublishedNodePaths = new Map(),
 ): Promise<ChildStructure> {
-  const entry: ChildStructure = { slot, ...flexItemProperties(parent, child, warnings) };
+  const entry: ChildStructure = {
+    slot,
+    ...flexItemProperties(parent, child, warnings, infos),
+    ...applyRotation(child, parent, infos),
+  };
   publishedNodePaths.set(child.id, [...path]);
   if (slot !== child.name) entry.figmaLayer = child.name;
 
@@ -553,6 +594,10 @@ export function structureSignature(
         ? normalizePropKey(node.componentPropertyReferences.visible)
         : null,
       ...flexItemProperties(parent, node),
+      // La rotation ne passe pas par le flux : elle se compare ici,
+      // explicitement, sans quoi deux variants dont seul un badge est incliné
+      // partageraient une vue qui n'en décrit qu'un.
+      rotation: rotationDegrees(node),
     };
     if (!publishesChildren(node, iconNames, composed, depth)) {
       return { ...common, type: node.type === 'TEXT' ? 'text' : 'leaf' };
@@ -630,6 +675,7 @@ export function flexLayoutSignature(
     children: publishedSlots(layoutNode, iconNames, composed).map(({ child, slot }) => ({
       slot,
       ...flexItemProperties(layoutNode, child),
+      rotation: rotationDegrees(child),
       ...slotSizeSignature(child, iconNames),
     })),
   });
@@ -879,6 +925,7 @@ export async function extractLayout(
     sizing,
     ...(bounds ? { bounds } : {}),
     ...flexContainerProperties(layoutNode, warnings),
+    ...applyRotation(layoutNode, undefined, infos),
     ...(gap ? { gap } : {}),
     ...(rowGap ? { rowGap } : {}),
     ...(columnGap ? { columnGap } : {}),

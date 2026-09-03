@@ -2,9 +2,3 @@
 # Sans cette ligne, une extraction sous Windows le convertirait en CRLF et
 # toute régénération — ou toute recopie — l'afficherait comme modifié.
 schema/*.json text eol=lf
-
-# Les contrats et les tokens sont ÉCRITS par le plugin, qui ne produit que des
-# LF. Sans cette ligne, une extraction sous Windows les convertirait en CRLF :
-# chaque retour chariot se paie en tokens à chaque lecture par un agent — 1,8 %
-# du fichier — et le corpus n'est de toute façon jamais édité à la main.
-tests/test-exports/*.json text eol=lf

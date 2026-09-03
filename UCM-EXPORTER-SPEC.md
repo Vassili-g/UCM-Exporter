@@ -314,6 +314,20 @@ exemple `0` pour un gap, un padding ou un rayon) reste elle aussi absente, mais
 ne produit pas de warning : la demander comme token n'ajouterait aucune
 information au rendu.
 
+**Un tracé n'est pas une boîte.** Sur un `VECTOR`, un `BOOLEAN_OPERATION`, un
+`STAR` ou un `POLYGON`, la largeur et la hauteur sont celles que Figma calcule
+sur la géométrie du chemin : c'est le DESSIN, pas une décision du design
+system. Le contrat ne leur réclame donc aucune variable — la demander
+enverrait le designer relier la bounding box d'un chemin de Bézier — et publie
+la dimension quand une variable est bien liée, comme partout ailleurs. C'est
+le même mécanisme que pour un enfant de grille, pour une raison voisine : la
+dimension est déjà expliquée ailleurs.
+
+La liste s'arrête là, et c'est délibéré : `RECTANGLE`, `ELLIPSE` et `LINE` en
+sont exclus. Ce sont les formes dont le type ne dit rien de l'usage — une
+surface, un liseré, un séparateur dont la hauteur est une vraie décision —, et
+la règle « le type du node ne tranche pas » les vise nommément.
+
 **Applicabilité avant liaison.** Un gap et des paddings n'existent que sous un
 auto-layout, et une liaison de variable survit à sa désactivation. L'exporteur
 tranche donc l'applicabilité **avant** de regarder les liaisons, sans quoi un
@@ -594,13 +608,63 @@ compris sur les calques d'icônes, qu'`icons.*.size` ne couvre que pour la taill
 
 ##### Position absolue
 
-Un layer en position `Absolute` sort du flux, mais n'en disparaît plus : le
-contrat publie `position: "absolute"` et les `constraints` — les bords
-auxquels il s'accroche, en vocabulaire CSS (`left`/`center`/`right`/`stretch`/
-`scale`, `top`/`center`/`bottom`/…). Sa DISTANCE à ces bords reste hors du
-contrat : un offset Figma ne se relie à aucune variable, et un nombre écrit à
-la main n'est jamais contractuel. Un avertissement le dit. La lecture précède
-celle du flux, car une grille aussi porte des enfants en position absolue.
+Un layer en position `Absolute` sort du flux, et le contrat le PLACE. Il publie
+`position: "absolute"`, les `constraints` — les bords auxquels il s'accroche, en
+vocabulaire CSS (`left`/`center`/`right`/`stretch`/`scale`,
+`top`/`center`/`bottom`/…) — et `inset`, sa distance à ces bords. La lecture
+précède celle du flux, car une grille aussi porte des enfants en position
+absolue.
+
+**Pourquoi un nombre, ici.** Un offset Figma ne se relie à aucune variable :
+Figma ne le permet pas. Le geste que réclamait l'ancien avertissement n'existait
+donc pas, et son seul effet était de laisser le développeur coller le layer dans
+un coin. C'est la même exception que pour les pistes d'une grille, et elle a la
+même forme : la valeur est publiée en pixels sous une **notice**, sans devenir
+un token et sans rendre la couverture portable partielle.
+
+`inset` a **une seule signification par clé** : la distance entre un bord du
+parent et le bord correspondant du layer — les valeurs de `top`, `right`,
+`bottom` et `left` en CSS, à écrire telles quelles. Les côtés publiés sont ceux
+auxquels le layer s'accroche : un seul par axe pour `left`, `right`, `top` et
+`bottom`, les DEUX pour `stretch`, `center` et `scale`, où le consommateur a
+besoin des deux pour étirer, recentrer ou proportionner. Sans contrainte
+lisible, l'ancrage est celui de Figma — le début de chaque axe.
+
+Le calcul passe par le **centre** du layer, et c'est ce qui le rend juste pour un
+layer tourné : Figma tourne autour du coin haut-gauche, CSS autour du centre.
+La boîte CSS non tournée se déduit du centre réel (`relativeTransform` appliqué
+à `(w/2, h/2)`), et `rotation` la ramène exactement où Figma la montre. La boîte
+de référence est le cadre du parent, sans ajustement : aucun rôle de contour ne
+consomme la boîte dans ce contrat, si bien que la « padding box » de CSS — celle
+sur laquelle `right` et `bottom` se résolvent — coïncide avec elle. Le
+consommateur pose `position: relative` sur le parent.
+
+Les valeurs sont arrondies à deux décimales, comme celles d'une grille : les
+dix-sept chiffres d'un flottant Figma feraient bouger l'artefact d'un export à
+l'autre. Un runtime qui n'expose ni la géométrie du layer, ni celle de son
+parent, ne publie rien et n'avertit de rien — mieux vaut une absence qu'un
+`NaNpx`.
+
+##### Rotation
+
+Une rotation est une décision de design comme une autre — un badge incliné, un
+chevron retourné —, et le contrat l'écrit : `rotation`, sur le composant comme
+sur chaque layer publié, dans l'unité ET la convention de CSS. Figma compte les
+degrés dans le sens trigonométrique, CSS dans le sens horaire : la valeur
+publiée est l'opposée, prête pour `transform: rotate(…)`. L'origine est le
+centre du layer, le défaut de `transform-origin`, et c'est aussi le point sur
+lequel `inset` est calculé. Une rotation imbriquée se compose d'elle-même, comme
+dans Figma.
+
+Sous le centième de degré, rien n'est publié : Figma stocke des flottants, et
+une transformation successive y laisse des résidus qu'aucun écran ne rend et
+qu'aucun designer ne peut remettre à zéro.
+
+Reste un écart que CSS ne comble pas, et une **notice** le dit : dans un auto
+layout, Figma espace ses enfants d'après la boîte TOURNÉE, là où `transform` ne
+change aucune boîte de flux. Le layer est rendu comme dans Figma, la place de
+ses voisins peut différer de quelques pixels. Aucun geste n'est demandé — le
+redresser lui retirerait sa rotation.
 
 ##### Grilles
 
@@ -682,14 +746,19 @@ rien en silence.
   dit. La grille n'est pas concernée : elle est décrite ;
 - les bornes d'un calque intermédiaire, entre le composant et ses slots, n'ont
   aucun propriétaire dans le contrat ;
-- la distance d'un calque absolu à ses bords d'accroche ;
 - sur **chaque calque publié**, et sur lui seul, les propriétés à effet visuel
   qu'aucun champ ne porte : les **effets** (ombre, flou), l'**opacité**
-  partielle, une **rotation**, un **mask**, une peinture non unie (**dégradé**,
+  partielle, un **mask**, une peinture non unie (**dégradé**,
   image) en `fill` ou en `stroke`, plusieurs peintures « mixed » sur un même
   calque, un **blend mode** non neutre, un **pointillé**, et pour un texte :
   l'**alignement** dans une boîte qui n'est pas en `Hug`, la **casse**, la
   **décoration**, la **troncature**.
+
+La **rotation** et la **distance d'un calque absolu à ses bords** ont quitté
+cette liste : le contrat les ÉCRIT désormais (`rotation`, `inset`). Une
+propriété publiée n'a rien à faire dans un relevé de ce qui manque — la
+réclamer enverrait le designer redresser un layer que le développeur rend
+incliné.
 
 Le `mask` est le seul de cette liste dont le contrat ne perd pas la propriété
 mais en **invente** une : la couleur du calque masquant entre normalement dans
@@ -997,14 +1066,29 @@ Un `@prop` visant une prop/valeur inexistante produit un warning non bloquant.
 #### 8. Rendu sémantique et garde-fous
 
 Le contrat publie aussi le mapping
-générique des rôles vers les propriétés de rendu (`background` →
-`background-color`, `foreground` → `color`/`fill`, `border` → `box-shadow`,
-`ring` → contour extérieur), **plus une entrée par clé de
-couleur qui ne nomme aucun de ces rôles** — clés allongées comprises, dont le
-rendu est celui que leur dernier segment déclare —, avec le rendu déduit de son calque
-(étape 2). La règle reste sans logique par composant ; seules les clés observées
-changent d'un contrat à l'autre, et un consommateur répond toujours à « comment
-peindre cette clé » par un seul accès à `rendering.roles`.
+générique des rôles vers les propriétés de rendu : `rendering.roles`, avec
+`background` → `background-color`, `foreground` → `color`/`fill`, `border` →
+`box-shadow`, `ring` → contour extérieur. Ce vocabulaire est **strictement le
+même dans tous les contrats** : un mot y signifie partout la même chose, et
+c'est ce qui permet de l'apprendre une fois pour toutes.
+
+**Une clé de couleur n'est pas un rôle**, et les confondre obligeait le moteur à
+avoir un avis sur le vocabulaire du design system. `rendering.keyRoles` porte
+donc la part propre au composant : le rôle de chaque clé observée qui n'en porte
+pas le nom — clés allongées comprises, dont le rôle est celui que leur dernier
+segment déclare, et clés qui s'appellent comme un rôle sans en avoir la nature.
+La règle reste sans logique par composant ; seules les clés observées changent
+d'un contrat à l'autre, et un consommateur répond à « comment peindre cette
+clé » en deux accès sans ambiguïté : `roles[keyRoles[côté][clé] ?? clé]`.
+
+Les deux côtés — `keyRoles.fills` pour les clés de `variants[].tokens`,
+`keyRoles.strokes` pour celles de `variants[].strokes` — sont séparés parce que
+les clés le sont : les peintures et les contours vivent dans deux arbres, donc
+dans deux feuilles de `colorKeys`, et deux tokens différents finissant par le
+même segment peuvent porter la même clé courte de part et d'autre. Une table
+unique en perdrait un en silence. Une clé dont le rôle porte déjà le nom reste
+absente : `roles[clé]` répond pour elle, et un composant dont toutes les clés
+nomment leur rôle ne publie aucun `keyRoles`.
 Pour un rôle avec `fallback`,
 les `cssProperties` sont le rendu candidat et le `fallback` le rendu
 **recommandé** dès que la fidélité l'exige : un `ring` aligné `outside` se rend
@@ -1050,7 +1134,7 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 {
   "name": "Button",
   "meta": {
-    "contractVersion": "11.0",
+    "contractVersion": "…",
     "exportedAt": "2026-07-11T14:00:00.000Z",
     "diagnostics": [
       { "code": "UCM_PORTABLE_PROJECTION_WARNING", "severity": "warning",
@@ -1487,3 +1571,10 @@ présente spécification, le schéma, les tests et les consommateurs concernés.
 
 `tokens.json` ne porte pas encore de version de schéma propre. Cette limite est
 suivie dans [ROADMAP.md](./ROADMAP.md).
+
+La **12.0** ajoute trois champs et retire deux avertissements sans geste :
+`ChildStructure.inset` (la place d'un calque hors du flux), `rotation` (sur le
+composant et sur chaque calque publié) et `rendering.keyRoles` (le rôle de
+chaque clé de couleur qui n'en porte pas le nom, un côté par arbre).
+`rendering.roles` y devient strictement le vocabulaire partagé : il ne reçoit
+plus de copie de descripteur par clé observée.
