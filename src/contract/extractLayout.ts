@@ -36,7 +36,9 @@ import { normalizePropKey } from './parsers';
 import { isIconLayer } from './slotNames';
 import { composedSlotDependencies, nestedSlotVisibility } from './slotRelations';
 import {
+  calqueDeDessinANommer,
   depthLimitWarning,
+  estUnDessinNonDeclare,
   publishedSlots,
   publishesChildren,
 } from './structureTree';
@@ -137,6 +139,38 @@ function layoutDirection(node: SceneNode): LayoutDirection {
  */
 function warnUnsupportedProperties(node: SceneNode, warnings: string[]): void {
   warnings.push(...unsupportedPropertyWarnings(node));
+}
+
+/**
+ * Signale un dessin que le contrat ne saura pas faire rendre.
+ *
+ * Le contrat n'exporte aucun tracé : le seul moyen de dire « dessine ceci » est
+ * une règle `@icons`, qui nomme l'icône. Un calque de dessin qu'aucune règle ne
+ * désigne se publie donc avec sa place et ses couleurs, mais le développeur ne
+ * saura pas quoi y dessiner. C'est le cas de l'icône qu'on a oublié de déclarer,
+ * et le geste est le même dans tous les cas : la déclarer.
+ *
+ * Le message part une seule fois par dessin : le calque dont le parent est
+ * lui-même un dessin est déjà couvert par le sien. Un composant qui EST un
+ * dessin de bout en bout ne dit donc rien non plus, et c'est juste : une icône
+ * exportée pour elle-même n'a aucune règle à se donner.
+ */
+function warnUndeclaredDrawing(
+  parent: SceneNode,
+  child: SceneNode,
+  iconNames: ReadonlySet<string>,
+  composed: ComposedInstances,
+  warnings: string[],
+): void {
+  if (!estUnDessinNonDeclare(child, iconNames, composed)) return;
+  if (estUnDessinNonDeclare(parent, iconNames, composed)) return;
+  const cible = calqueDeDessinANommer(child, iconNames, composed);
+  warnings.push(
+    `Layer « ${cible.name} » : il ne contient qu'un dessin, et aucune règle @icons ne le `
+      + `désigne. Le contrat ne décrit pas les tracés : le développeur connaîtra la place `
+      + `et les couleurs de ce layer, jamais son dessin. Ajoutez une règle @icons dont le `
+      + `layer « icon » porte ce nom, puis réexportez.`,
+  );
 }
 
 /**
@@ -413,7 +447,10 @@ async function describeNode(
   const estUneDependance = composed.has(child.id);
   // Un calque qui EST une dépendance porte les propriétés de son propre
   // contrat : c'est à lui de s'en plaindre, pas à celui-ci.
-  if (!estUneDependance) warnUnsupportedProperties(child, warnings);
+  if (!estUneDependance) {
+    warnUnsupportedProperties(child, warnings);
+    warnUndeclaredDrawing(parent, child, iconNames, composed, warnings);
+  }
 
   const describesChildren = publishesChildren(child, iconNames, composed, depth);
   // La borne de profondeur se dit ici, et non dans une branche : un calque coupé

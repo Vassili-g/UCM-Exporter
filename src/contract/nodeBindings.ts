@@ -679,8 +679,14 @@ const TRACES: ReadonlySet<string> = new Set([
   'POLYGON',
 ]);
 
-/** Vrai si la dimension de ce node est celle de son dessin. */
-function estUnTrace(node: SceneNode): boolean {
+/**
+ * Vrai si la dimension de ce node est celle de son dessin.
+ *
+ * Unique définition de « ce node est un tracé » : `structureTree` la consulte
+ * pour reconnaître un calque que le contrat ne saura pas dessiner, et deux
+ * listes de types finiraient par diverger au premier type ajouté.
+ */
+export function estUnTrace(node: SceneNode): boolean {
   return TRACES.has(node.type);
 }
 

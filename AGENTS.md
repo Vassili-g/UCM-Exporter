@@ -215,6 +215,12 @@ Le raisonnement vit dans la spécification, en lien.
 - `icons.*.slot` et `icons.*.size` disent où et à quelle taille placer chaque
   icône. `slotNames.ts` est l’unique autorité sur le nommage : un `icons.*.slot`
   publié désigne toujours un slot réel de `structure.children`.
+- Un dessin qu’aucune règle `@icons` ne désigne avertit : le contrat n’exporte
+  aucun tracé, et le développeur recevra la place et les couleurs du calque,
+  jamais son dessin. Le déclencheur est le TRACÉ — `nodeBindings.estUnTrace`, la
+  même autorité que pour les dimensions —, jamais l’absence de texte. Un seul
+  message par dessin, sur le calque le plus profond qui le contienne encore en
+  entier ; un composant qui EST un dessin ne dit rien.
 - Masquer et remplacer sont deux libertés distinctes : le booléen Figma dit SI
   une icône s’affiche, la prop runtime dit LAQUELLE rendre. Une icône toujours
   visible est modifiable comme une autre, sans booléen et sans signalement.
