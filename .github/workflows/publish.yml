@@ -76,4 +76,10 @@ jobs:
       # Aucun `NODE_AUTH_TOKEN` : npm détecte l'environnement OIDC et s'y
       # authentifie seul. Il en tire aussi une attestation de provenance, qui
       # dit publiquement de quel commit et de quel workflow ce tarball sort.
+      # `provenance: false` est un ESSAI, pas une décision. npm active la
+      # provenance quand il publie par OIDC, et une attestation de provenance
+      # ne peut porter que sur du code public : le registre de transparence
+      # l'est. Ce dépôt étant privé, c'est le premier suspect du refus.
       - run: npm publish --workspace @ucm-kit/core
+        env:
+          NPM_CONFIG_PROVENANCE: false
