@@ -214,7 +214,13 @@ plan existe pour qu'il ne se rejoue jamais à la main.
 
 ## Phase 0 — Arbitrages
 
-- [x] **D1 — Le contrôle « tokens écrits dans le code » sort du périmètre.**
+- [X] **D1 — Le contrôle « tokens écrits dans le code » sort du périmètre.**
+      *Exécuté*, en un seul geste : 364 lignes retirées, deux fichiers
+      supprimés, neuf tests, quatre passages de documentation et le message
+      terminal final. La liste de la v5 était juste, à un détail près — le
+      message final valait bien la peine d'être cité, il affirmait « tokens du
+      code vérifiés contre leur contrat » et serait devenu faux.
+      `sectionTokensManquants` est intact, et c'était le point.
       Il relève d'un linter, projet distinct.
       **Ce que ça emporte, liste complète et vérifiée :** `tokens-du-code.mjs`
       (149 l.) et son test (3,4 Ko) ; `diagnosticReferencesCodeNonDeclarees`
@@ -663,8 +669,16 @@ plan existe pour qu'il ne se rejoue jamais à la main.
 
 ## Phase 5 — Rapport et CI
 
-- [ ] **T5.1 — ⚠ Tests de caractérisation — à exécuter juste après la Phase A,
-      pas ici.** *Corrigé en v5 :* la place de cette tâche dans le document est
+- [X] **T5.1 — ⚠ Tests de caractérisation — à exécuter juste après la Phase A,
+      pas ici.** *Fait, sept scénarios.* Deux constats en sont sortis, utiles
+      aux tâches à venir. Le premier : le titre « 1 contrat invalide » s'écrit
+      **déjà** pour un contrat d'une version non lue, donc parfaitement formé —
+      T2.1b annonçait ce défaut comme une conséquence de l'élagage, il est là
+      avant, et un test le tient. Le second est une contrainte pour T3.3 : le
+      script déduit sa racine de sa propre position et n'accepte aucun argument,
+      si bien que le harnais doit recopier `scripts/` dans un repo jouet — et
+      que ce jouet doit vivre DANS le repository, `parite.mjs` important
+      `typescript` que Node ne résout qu'en remontant vers `node_modules`. *Corrigé en v5 :* la place de cette tâche dans le document est
       thématique, son exécution est bien plus tôt (voir l'ordre en fin de plan).
       `check-contract.mjs` est modifié par T2.4, T2.3, D1, D2 et T2.6 ;
       caractériser en Phase 5 caractériserait un fichier déjà réécrit cinq fois.
