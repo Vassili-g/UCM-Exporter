@@ -1537,6 +1537,15 @@ une phrase : une liste dont la conclusion est toujours « rien à faire » appre
 un geste. La règle et le vocabulaire vivent dans
 [CONTRIBUTING.md](./CONTRIBUTING.md).
 
+**Un avertissement arrive inerte dans la page GitHub.** Le message cite les
+intitulés de Figma tels quels, et GitHub lit dans certains d'entre eux autre
+chose que le designer : `@icons`, nom d'une variante de règle, y devenait le
+profil d'un inconnu — notifié à chaque export — au lieu du mot à taper dans le
+composant, et un calque nommé `#12` renverrait de même à une issue. Ces formes
+sont donc publiées en `code`, seule zone que l'autoliaison de GitHub épargne :
+le message reste celui que le journal du plugin affiche, et le designer y lit
+le nom exact qu'il doit écrire.
+
 Tous les champs de configuration sont validés et les chemins restent
 relatifs. Aucune branche ne survit à un export qui n'a pas ouvert de PR : si
 le commit ou la PR échoue, la branche créée est supprimée avant le repli

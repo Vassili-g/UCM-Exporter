@@ -92,6 +92,28 @@ export function artifactPath(config: GithubConfig, artifact: RepositoryArtifact)
 }
 
 /**
+ * Formes qu'une page GitHub relie d'elle-même : `@nom` vers un compte, `#123`
+ * vers une issue. La borne de gauche est capturée faute de lookbehind dans le
+ * moteur du plugin ; elle exclut l'accent grave, car ce qui est déjà du code
+ * l'est.
+ */
+const FORMES_AUTOLIEES = /(^|[^\w`])(@[A-Za-z0-9][\w-]*|#\d+)/g;
+
+/**
+ * Rend un avertissement inerte dans la page qui l'affiche.
+ *
+ * Un message est écrit pour Figma et en cite les intitulés tels quels : `@icons`
+ * y est le nom d'une variante de règle, que le designer doit taper dans son
+ * composant. GitHub, lui, y lit une mention et ouvre le profil d'un inconnu,
+ * notifié à chaque export. L'autoliaison s'applique au texte rendu et n'épargne
+ * que le code : la forme ambiguë part donc en `code`, où elle se lit exactement
+ * comme elle s'écrit dans Figma.
+ */
+function sansLienAutomatique(warning: string): string {
+  return warning.replace(FORMES_AUTOLIEES, '$1`$2`');
+}
+
+/**
  * Corps de la pull request ouverte pour un export.
  *
  * Les avertissements y figurent parce que c'est la page que le plugin ouvre
@@ -124,7 +146,7 @@ export function pullRequestBody(path: string, warnings: string[]): string {
     '',
     'Les informations suivantes sont absentes de l’artefact exporté :',
     '',
-    ...warnings.map((warning) => `- ${warning}`),
+    ...warnings.map((warning) => `- ${sansLienAutomatique(warning)}`),
     '',
     '### Action',
     '',
