@@ -1,0 +1,53 @@
+{
+  "name":"TileLink",
+  "meta":{
+    "contractVersion":"11.0",
+    "exportedAt":"2026-09-02T12:06:25.370Z",
+    "figma":{"fileName":"DS AI LAB","nodeId":"362:2381","componentKey":"665c5d0a8d88a66cf6003020a573a424ad387c03","url":"https://www.figma.com/design/adkqrNcmyIs16hBus808R7/DS%20AI%20LAB?node-id=362-2381"},
+    "coverage":{"portable":"complete"}
+  },
+  "props":{
+    "variant":{"type":"enum","values":["info","success"],"default":"info","descriptions":{"info":"Lien vers un contenu informatif","success":"Lien vers un contenu informatif  affiché lorsqu’une étape précédente a été validée"}},
+    "chessName":{"type":"icon","policy":"modifiable"}
+  },
+  "figmaVariantLabels":{
+    "axes":{"variant":"Variant","state":"State"},
+    "values":{"variant":{"info":"Info","success":"Success"},"state":{"default":"Default","hover":"Hover"}}
+  },
+  "viewStructures":{
+    "st1":{"layout":"flex-row","sizing":{"width":"{components.tilelink.sizes.width}","height":"{components.tilelink.sizes.height}"},"justifyContent":"center","alignItems":"center","children":[{"slot":"icon","figmaLayer":"chess","optional":true,"size":"{components.tilelink.sizes.icon}"}]}
+  },
+  "viewIcons":{
+    "ic1":{"chess":{"figmaName":"chess","slotPath":["icon"]}}
+  },
+  "viewPaintPlacements":{
+    "pp1":{"fills":{"background":[[]],"foreground":[["icon"]]}}
+  },
+  "variantViews":{
+    "v1":{"structure":"st1","icons":"ic1","paintPlacements":"pp1"}
+  },
+  "variants":[
+    {"nodeId":"362:2380","values":{"variant":"info","state":"default"},"tokens":{"background":"{components.tilelink.colors.info.default.background}","foreground":"{components.tilelink.colors.info.default.foreground}"},"view":"v1"},
+    {"nodeId":"362:2463","values":{"variant":"info","state":"hover"},"tokens":{"background":"{components.tilelink.colors.info.hover.background}","foreground":"{components.tilelink.colors.info.hover.foreground}"},"view":"v1"},
+    {"nodeId":"362:2382","values":{"variant":"success","state":"default"},"tokens":{"background":"{components.tilelink.colors.success.default.background}","foreground":"{components.tilelink.colors.success.default.foreground}"},"view":"v1"},
+    {"nodeId":"362:2465","values":{"variant":"success","state":"hover"},"tokens":{"background":"{components.tilelink.colors.success.hover.background}","foreground":"{components.tilelink.colors.success.hover.foreground}"},"view":"v1"}
+  ],
+  "structure":{
+    "view":"st1",
+    "variantAxes":["variant","state"]
+  },
+  "stateModel":{
+    "axis":"state",
+    "states":{"default":{"description":"Etat par défaut"},"hover":{"selector":":hover","description":"Etat au survol"}},
+    "precedence":["hover","default"]
+  },
+  "rendering":{
+    "roles":{"background":{"kind":"paint","cssProperties":["background-color"]},"foreground":{"kind":"paint","cssProperties":["color","fill"]},"icon":{"kind":"paint","cssProperties":["color","fill"]},"border":{"kind":"stroke","cssProperties":["box-shadow"]},"ring":{"kind":"stroke","cssProperties":["outline-color","outline-width"],"fallback":"box-shadow"}}
+  },
+  "icons":{
+    "chess":{"policy":"modifiable","figmaName":"chess","slot":"icon","size":"{components.tilelink.sizes.icon}","runtimeProp":"chessName"}
+  },
+  "intent":{
+    "usage":"Composant de lien vers une autre page sous la forme d’une tuile carrée"
+  }
+}
