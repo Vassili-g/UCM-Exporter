@@ -57,6 +57,19 @@ jobs:
 
       # `npm ci` construit le kit au passage — son script `prepare` s'en charge
       # pour chaque workspace. On ne publie donc jamais un `dist/` traînant.
+      # L'identité que GitHub présente à npm. Elle est affichée parce qu'un
+      # refus OIDC ne dit jamais QUEL champ ne correspond pas : il rend « OIDC
+      # permission denied » et rien d'autre. Ces valeurs sont exactement ce
+      # qu'attend le formulaire d'éditeur de confiance, et aucune n'est un
+      # secret — le jeton, lui, ne sort pas d'ici.
+      - name: Identité OIDC présentée à npm
+        run: |
+          echo "Organization or user : ${GITHUB_REPOSITORY%%/*}"
+          echo "Repository           : ${GITHUB_REPOSITORY##*/}"
+          echo "Workflow filename    : ${GITHUB_WORKFLOW_REF##*/workflows/}"
+          echo "Environment          : (aucun)"
+          echo "workflow_ref complet : $GITHUB_WORKFLOW_REF"
+
       - run: npm ci
       - run: npm test
 
