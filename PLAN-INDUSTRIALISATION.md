@@ -1115,7 +1115,7 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       purement CI. Le CLI accepte donc un `--base <sha>` ; le calcul du sha
       reste dans le workflow.
 
-- [~] **T3.4 — Fonctionner sans `package.json`.** `npx` l'accepte mais exige
+- [X] **T3.4 — Fonctionner sans `package.json`.** `npx` l'accepte mais exige
       Node sur la machine : en CI c'est `setup-node`, en local un développeur
       iOS n'en a pas forcément. Pin exact obligatoire (D7), `--yes` à
       documenter.
@@ -1158,6 +1158,28 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       **La moitié CI de T3.4 est donc tenue pour de bon, et non plus par
       construction.** Reste le cas LOCAL, où `npx` exige Node sur le poste : à
       documenter, pas à outiller.
+      **Close le 5 septembre 2026 : la moitié locale est écrite.** Le README
+      porte la commande copiable — `npx --yes @ucm-kit/cli@<version exacte>` —,
+      dit ce que `--yes` évite (l'invite de confirmation, qui bloquerait une
+      exécution non interactive) et pourquoi le pin est exact et sans `^` (D7 :
+      une plage laisserait npx choisir une version que personne n'a essayée, et
+      le contrôle changerait d'avis sans qu'un fichier ait bougé).
+      *Le cas local est documenté et NON outillé, et l'arbitrage tient en une
+      phrase.* Distribuer un binaire par plateforme rendrait le contrôle
+      installable sur un poste sans Node — et du même coup **deux fois
+      installé** : la CI et le poste pourraient répondre différemment sur le
+      même contrat, c'est-à-dire exactement la maladie que T4.1, T4.3 et cette
+      tâche-ci ont passé leur temps à refermer. Sans Node sur le poste, la CI
+      reste l'autorité : ouvrir la pull request rend le rapport, qui est de
+      toute façon le seul message que le designer lira.
+      *Un garde-fou est né de la ligne écrite,* parce qu'un numéro de version
+      recopié à la main dérive : `tests/pinDocumente.test.mjs` exige que chaque
+      `@ucm-kit/cli@…` du README porte la version que ce dépôt publie. Sans
+      lui, un lecteur copierait une commande installant une version d'avant,
+      lirait un rapport plausible, et n'aurait aucune raison de douter — le
+      README serait devenu une seconde autorité sur la version du CLI. Éprouvé
+      dans les deux sens : remis à `0.1.2`, il rougit en nommant les deux
+      numéros.
       *Deux choses trouvées en publiant, et aucune n'était la tâche.*
       **(a) Le lockfile n'était plus installable ailleurs que sur ce poste.** La
       régénération faite en T4.1 avait été lue depuis le `node_modules` de la
@@ -1270,7 +1292,63 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       *Note d'exploitation :* `npm install` seul ne suffit pas à défaire cette
       situation — l'entrée reste dans le lockfile. Il faut le régénérer.
 
-- [ ] **T4.2 — Annoncer la version du contrat dans le corps de la PR.**
+- [X] **T4.2 — Annoncer la version du contrat dans le corps de la PR.**
+      **Close le 5 septembre 2026.** L'en-tête porte désormais
+      `Schéma de contrat : 12.0` sous le chemin du fichier.
+      *Pourquoi un numéro sur cette page.* C'est le seul champ qui décide si le
+      fichier ENTIER est lisible par le repository — hors fenêtre, le contrat
+      est refusé en bloc quel que soit son contenu —, et il est enfoui au milieu
+      d'un diff de plusieurs milliers de lignes, où personne ne va le chercher.
+      Sur la couverture, celui qui décide de fusionner voit quel schéma vient
+      d'arriver sans ouvrir le JSON ; et le jour où le repository change de
+      version, les pull requests d'export restées ouvertes disent lesquelles
+      précèdent la bascule.
+      *Le numéro est lu DANS le fichier, jamais dans `CONTRACT_VERSION`, et
+      c'est la seule décision de la tâche qui compte.* L'artefact et la
+      constante du plugin sont deux autorités pour la même chose : annoncer la
+      constante ferait de ce corps de PR un énoncé sur le PLUGIN déguisé en
+      énoncé sur le FICHIER, et le lecteur croirait la couverture plutôt que le
+      contenu. C'est le défaut que T4.1 (le pin), T4.3 (le `dist/`) et T3.4 (le
+      registre) ont chacune trouvé ailleurs. Un test tient la mutation : un
+      contrat en 3.0 s'annonce en 3.0, et le corps ne contient nulle part la
+      version courante du plugin.
+      *Où vit la règle :* `versionDeContrat` dans
+      `packages/kit/src/format/version.ts` — le module qui écrit la version
+      devient celui qui sait où elle se relit. Même argument qu'en T4.1 et T4.3 :
+      « où vit la version d'un contrat » est une règle du FORMAT. Elle a deux
+      lecteurs réels et le déplacement les réunit : le plugin l'annonce,
+      `controle-repository.mjs` la juge, et ils lisent maintenant le même champ
+      par la même porte. La mutation le prouve — déplacer le champ dans
+      `versionDeContrat` rougit dix-huit tests, six du CLI et douze du kit.
+      *Ce qu'elle ne fait pas, délibérément :* elle ne juge pas. Une version
+      informe (`douze`) est annoncée telle quelle, parce que c'est ainsi que le
+      rapport de CI la cite et que les deux doivent pouvoir se rapprocher.
+      Reproduire ici la grammaire `majeure.mineure` créerait la seconde autorité
+      que la fonction existe pour supprimer : `verdictDeVersion` reste seul à
+      connaître la fenêtre.
+      *`tokens.json` n'en reçoit aucune, et ce n'est pas un oubli :* c'est un
+      arbre DTCG, il ne porte aucun schéma UCM. Lui annoncer celui du plugin
+      inventerait une version que le fichier ne contient pas.
+      *Un arbitrage que la tâche a dû trancher pour ne pas contredire la règle
+      d'à côté.* « Le corps de la PR ne porte QUE les avertissements » interdit
+      les notes, dont la conclusion est toujours « rien à faire » : une liste
+      dont on apprend qu'elle se survole coûte la lecture de celles qui
+      demandent un geste. Une ligne de version écrite à chaque export tombe
+      sous ce soupçon. La distinction retenue est celle des DEUX ZONES : une
+      note est un CONSTAT sur le contenu et appartiendrait à la liste ; le
+      schéma est l'IDENTITÉ de ce qui est déposé, au même titre que le chemin du
+      fichier juste au-dessus, et vit dans l'en-tête. La liste des gestes reste
+      intacte, et l'invariant est réécrit dans ce sens
+      (`AGENTS.md`, `UCM-EXPORTER-SPEC.md`).
+      *Un contrat sans version lisible le dit* — « absent du fichier, le
+      contrôle du repository refusera ce contrat ». Le plugin en écrit toujours
+      une : ce cas vient d'un artefact produit ailleurs, et la ligne ne s'écrit
+      donc que dans un cas réellement fautif. Ce n'est pas un cri de loup, c'est
+      la cause d'un refus lue en une ligne au lieu d'être cherchée dans le
+      rapport.
+      *Le kit passe en **0.1.8** et le CLI en **0.1.3** dans le même commit* —
+      la surface publiée de `format` gagne un export, et la règle apprise en
+      T3.4 dit qu'un changement de surface monte le numéro là où il se produit.
 
 - [X] **T4.3 — ⚠ Détecter la collision d'identifiants côté producteur.**
       **Close le 4 septembre 2026.** `codeIdentifier` n'est pas injective —
@@ -1968,6 +2046,15 @@ du kit sans monter son numéro. La leçon se complète donc : **une publication
 n'est pas un événement, c'est un état qu'il faut vérifier depuis dehors.** Tant
 que personne ne lance la commande d'un consommateur depuis un dossier vide, le
 dépôt ne sait rien de ce que le registre porte.
+
+*Exécuté le 5 septembre 2026, suite de l'étape 13 :* T4.2 est close et T3.4
+l'est enfin des deux côtés — la moitié locale était une ligne de documentation,
+et elle a produit un garde-fou (`tests/pinDocumente.test.mjs`) parce qu'un
+numéro de version recopié dans un README dérive comme n'importe quelle seconde
+autorité. Reste **T4.4**, qui n'est pas une tâche d'écriture mais un arbitrage :
+publier le plugin sur la Community rouvre mécaniquement la question de la langue
+du projet (Phase 8), et les noms de symboles d'un paquet publié sont quasi
+irréversibles.
 
 *Exécuté le 5 septembre 2026 :* les étapes 11 et 12 sont faites — T5.2, T5.4,
 T3.3, T3.2, et T3.4 à moitié. Ce qui les bloque encore est une publication :

@@ -397,12 +397,20 @@ Le raisonnement vit dans la spécification, en lien.
 - `meta.diagnostics` est l’unique propriétaire des messages publiés dans le
   contrat. Qui veut la liste lisible lit `diagnostics[].message`, sans filtrer
   sur `severity`.
-- Le corps de la pull request ne porte QUE les avertissements. Une note n’y
-  entre pas : sa conclusion est toujours « rien à faire », et une liste dont on
+- Le corps de la pull request a deux zones. L’en-tête dit l’IDENTITÉ de ce qui
+  est déposé — le chemin, et le schéma de contrat pour un contrat ; la LISTE ne
+  porte que des gestes. Une note n’entre ni dans l’une ni dans l’autre : sa
+  conclusion est toujours « rien à faire », et une liste dont on
   apprend qu’elle se survole coûte la lecture de celles qui demandent un geste.
   Les notes vivent dans `meta.diagnostics` pour un consommateur du contrat, et
   dans le journal du plugin pour le designer qui exporte.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
+- Le schéma annoncé dans l’en-tête est lu DANS le fichier déposé
+  (`versionDeContrat()`, `format/version.ts`), jamais dans `CONTRACT_VERSION`.
+  Sinon la couverture parle du plugin en ayant l’air de parler du fichier, et
+  les deux autorités divergent sans un mot. `tokens.json` n’en reçoit aucun : il
+  ne porte aucun schéma UCM.
+  → [spécification](./UCM-EXPORTER-SPEC.md#partie-3--configuration-et-dépôt-github)
 - Un avertissement entre dans le corps de la pull request en Markdown :
   `sansLienAutomatique()` (`src/github.ts`) publie `@nom` et `#123` en `code`.
   Sinon GitHub relie `@icons`, nom d’une variante de règle, au profil d’un

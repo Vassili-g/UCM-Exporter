@@ -126,6 +126,32 @@ Le paquet expose trois entrées :
 Le schéma décrit la forme d'un contrat. Les renvois internes et le format des
 valeurs tokenisées sont vérifiés par les lecteurs.
 
+#### Contrôler les contrats, sans être un projet Node
+
+`ucm init` écrit un workflow qui n'installe rien et n'exige aucun
+`package.json` : un repo iOS, Android, ou un simple dossier de contrats peut
+faire contrôler ses exports.
+
+```sh
+npx --yes @ucm-kit/cli@0.1.3 init      # écrit ucm.config.json, .gitignore, le workflow
+npx --yes @ucm-kit/cli@0.1.3 check --report ci-report.md
+```
+
+`--yes` évite l'invite de confirmation de `npx`, qui bloquerait une exécution
+non interactive. La version est **exacte, sans `^`** (D7) : une plage laisserait
+npx choisir une version que personne n'a essayée, et le contrôle changerait
+d'avis sans qu'un fichier ait bougé.
+
+**Le seul prérequis est Node, et il se paie à deux endroits différents.** En CI,
+`setup-node` le fournit — c'est ce que le workflow écrit. En LOCAL, `npx` exige
+Node sur le poste, et le développeur d'un repo iOS ou Android n'en a pas
+forcément. Ce cas se documente et ne s'outille pas : distribuer un binaire par
+plateforme rendrait le contrôle installable, et **du même coup deux fois
+installé** — la CI et le poste pourraient alors répondre différemment sur le
+même contrat, ce que ce projet passe son temps à empêcher ailleurs. Sans Node
+sur le poste, la CI reste l'autorité : ouvrir la pull request donne le rapport,
+qui est de toute façon le seul message que le designer lira.
+
 [UCM Playground](https://github.com/Vassili-g/UCM-Playground) est le
 consommateur de référence : arborescence des composants, `tokens.json` DTCG,
 les 6 contrôles branchés, le workflow CI et le rapport publié sur la pull

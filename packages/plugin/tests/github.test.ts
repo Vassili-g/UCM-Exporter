@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import type { GithubConfig } from '../src/config';
 import {
   artifactPath,
@@ -552,18 +553,35 @@ test('les tokens ne passent pas par la détection de collision', async () => {
   assert.equal(calls.filter((url) => url.includes('/pulls?')).length, 0);
 });
 
+/** Un artefact réduit à ce que le corps de la pull request regarde. */
+function artefactPourPr(
+  kind: 'component' | 'tokens',
+  content: string,
+  warnings: string[] = [],
+) {
+  return { kind, filename: kind === 'tokens' ? 'tokens.json' : 'X.contract.json', content, warnings };
+}
+
+/** Un contrat réduit au champ que l'en-tête annonce. */
+function contratEn(version: unknown): string {
+  return JSON.stringify({ name: 'Alert', meta: { contractVersion: version } });
+}
+
 test('le corps de la pull request porte les avertissements de l’export', () => {
   // C'est la page que le plugin ouvre juste après l'export : les constats
   // destinés au designer y arrivent sans qu'il ait à ouvrir le JSON ni le
   // journal du plugin.
-  const sain = pullRequestBody('src/tokens/tokens.json', []);
+  const sain = pullRequestBody('src/tokens/tokens.json', artefactPourPr('tokens', '{}'));
   assert.match(sain, /Fichier : `src\/tokens\/tokens\.json`/);
   assert.match(sain, /Aucun avertissement d'export\./);
 
-  const signale = pullRequestBody('src/components/Alert/Alert.contract.json', [
-    'Icône « triangle-exclamation » : sa taille change selon les variantes.',
-    'Calque « row », espacement : aucune variable Figma n’est reliée.',
-  ]);
+  const signale = pullRequestBody(
+    'src/components/Alert/Alert.contract.json',
+    artefactPourPr('component', contratEn('12.0'), [
+      'Icône « triangle-exclamation » : sa taille change selon les variantes.',
+      'Calque « row », espacement : aucune variable Figma n’est reliée.',
+    ]),
+  );
   assert.match(signale, /## ⚠️ L'export n'a pas pu décrire certaines informations \(2 points\)/);
   assert.match(signale, /- Icône « triangle-exclamation » /);
   assert.match(signale, /- Calque « row », espacement /);
@@ -572,17 +590,82 @@ test('le corps de la pull request porte les avertissements de l’export', () =>
   assert.doesNotMatch(signale, /—|\w+\(s\)/);
 });
 
+test('l’en-tête annonce le schéma que porte le contrat déposé', () => {
+  // T4.2. C'est le seul champ qui décide si le fichier ENTIER est lisible par
+  // le repository, et il est enfoui dans un diff de plusieurs milliers de
+  // lignes. Sur la couverture, celui qui fusionne le voit sans ouvrir le JSON.
+  const corps = pullRequestBody(
+    'src/components/Alert/Alert.contract.json',
+    artefactPourPr('component', contratEn('12.0')),
+  );
+  assert.match(corps, /Schéma de contrat : `12\.0`/);
+  // Il reste un en-tête : la liste des gestes n'a rien gagné.
+  assert.match(corps, /Aucun avertissement d'export\./);
+});
+
+test('le schéma annoncé est celui du FICHIER, pas celui du plugin', () => {
+  // La mutation que ce test attrape : annoncer `CONTRACT_VERSION`. Le corps
+  // deviendrait un énoncé sur le plugin déguisé en énoncé sur le fichier, et
+  // un contrat produit par une autre version — le seul cas où la ligne sert à
+  // quelque chose — serait annoncé faux. Le contenu ci-dessous ne peut pas
+  // être celui du plugin courant : il n'existe aucun schéma 3.0 aujourd'hui.
+  const corps = pullRequestBody(
+    'src/components/Alert/Alert.contract.json',
+    artefactPourPr('component', contratEn('3.0')),
+  );
+  assert.match(corps, /Schéma de contrat : `3\.0`/);
+  assert.equal(corps.includes(CONTRACT_VERSION), false);
+});
+
+test('une version illisible est annoncée telle quelle, une version absente est nommée', () => {
+  // Annoncer la valeur fautive telle qu'elle est écrite est ce qui permet de
+  // la rapprocher du rapport de CI, qui la cite pareil. La corriger ou la
+  // taire ferait de cette ligne un troisième avis sur la version.
+  const informe = pullRequestBody(
+    'src/components/Alert/Alert.contract.json',
+    artefactPourPr('component', contratEn('douze')),
+  );
+  assert.match(informe, /Schéma de contrat : `douze`/);
+
+  // Le plugin en écrit toujours une : ce cas vient d'un artefact produit
+  // ailleurs, et le contrôle du repository le refusera pour champ absent. La
+  // cause se lit ici en une ligne au lieu de se chercher dans le rapport.
+  for (const contenu of [contratEn(undefined), contratEn(12), '{}', 'pas du JSON']) {
+    const corps = pullRequestBody(
+      'src/components/Alert/Alert.contract.json',
+      artefactPourPr('component', contenu),
+    );
+    assert.match(corps, /Schéma de contrat : absent du fichier/);
+    assert.match(corps, /le contrôle du repository refusera ce contrat/);
+  }
+});
+
+test('tokens.json ne reçoit aucun schéma de contrat', () => {
+  // Ce n'est pas un contrat mais un arbre DTCG : il ne porte aucun schéma UCM.
+  // Lui en annoncer un — fût-ce celui du plugin — inventerait une version que
+  // le fichier ne contient pas, et l'absence de ligne n'est donc pas un oubli.
+  const corps = pullRequestBody(
+    'src/tokens/tokens.json',
+    artefactPourPr('tokens', JSON.stringify({ color: { bg: { $value: '#fff' } } })),
+  );
+  assert.equal(corps.includes('Schéma de contrat'), false);
+  assert.match(corps, /Fichier : `src\/tokens\/tokens\.json`/);
+});
+
 test('un avertissement n’ouvre aucun lien depuis le corps de la pull request', () => {
   // Le message cite les intitulés de Figma tels quels ; GitHub, lui, relie
   // `@nom` à un compte et `#123` à une issue. Le nom d'une variante de règle y
   // ouvrait le profil d'un inconnu, notifié à chaque export, au lieu de donner
   // au designer le mot à taper dans son composant. Seul le code échappe à
   // l'autoliaison.
-  const corps = pullRequestBody('src/components/StressTest/StressTest.contract.json', [
-    'Layer « skull » : aucune règle @icons ne le désigne. Ajoutez une règle @icons '
-      + 'dont le layer « icon » porte ce nom, puis réexportez.',
-    'Layer « #12 », espacement : aucune variable Figma n’est reliée.',
-  ]);
+  const corps = pullRequestBody(
+    'src/components/StressTest/StressTest.contract.json',
+    artefactPourPr('component', contratEn('12.0'), [
+      'Layer « skull » : aucune règle @icons ne le désigne. Ajoutez une règle @icons '
+        + 'dont le layer « icon » porte ce nom, puis réexportez.',
+      'Layer « #12 », espacement : aucune variable Figma n’est reliée.',
+    ]),
+  );
   assert.match(corps, /- Layer « skull » : aucune règle `@icons` ne le désigne\./);
   assert.match(corps, /Ajoutez une règle `@icons` dont/);
   assert.match(corps, /Layer « `#12` », espacement/);
@@ -599,7 +682,10 @@ test('une note d’export n’atteint pas le corps de la pull request', () => {
   // journal du plugin.
   const note = 'Layer « TilesGrid » : ses lignes de taille fixe sont publiées en pixels, '
     + "exception propre aux pistes FIXED d'une grille.";
-  const corps = pullRequestBody('src/components/StressTest/StressTest.contract.json', []);
+  const corps = pullRequestBody(
+    'src/components/StressTest/StressTest.contract.json',
+    artefactPourPr('component', contratEn('12.0')),
+  );
   assert.match(corps, /Aucun avertissement d'export\./);
   assert.doesNotMatch(corps, /Notes d’export/);
   assert.equal(corps.includes(note), false);
@@ -609,10 +695,11 @@ test('une note d’export n’atteint pas le corps de la pull request', () => {
   // ce qui nomme un geste, et la consigne finale porte donc sur chaque ligne.
   const signale = pullRequestBody(
     'src/components/StressTest/StressTest.contract.json',
-    ['Calque « row », espacement : aucune variable Figma n’est reliée.'],
+    artefactPourPr('component', contratEn('12.0'), [
+      'Calque « row », espacement : aucune variable Figma n’est reliée.',
+    ]),
   );
   assert.match(signale, /\(1 point\)/);
   assert.match(signale, /Corrigez chaque point/);
   assert.doesNotMatch(signale, /Notes d’export/);
 });
-
