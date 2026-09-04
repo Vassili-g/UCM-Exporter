@@ -76,10 +76,18 @@ jobs:
       # Aucun `NODE_AUTH_TOKEN` : npm détecte l'environnement OIDC et s'y
       # authentifie seul. Il en tire aussi une attestation de provenance, qui
       # dit publiquement de quel commit et de quel workflow ce tarball sort.
-      # `provenance: false` est un ESSAI, pas une décision. npm active la
-      # provenance quand il publie par OIDC, et une attestation de provenance
-      # ne peut porter que sur du code public : le registre de transparence
-      # l'est. Ce dépôt étant privé, c'est le premier suspect du refus.
+      #
+      # ⚠ État au 4 septembre 2026 : ce dernier pas rend « OIDC permission
+      # denied ». npm reconnaît donc l'OIDC et REFUSE l'identité — ce n'est plus
+      # un problème d'authentification mais d'autorisation, et le refus ne dit
+      # jamais quel champ ne correspond pas. Deux causes restent en lice, et la
+      # provenance a été écartée par l'essai (`NPM_CONFIG_PROVENANCE: false`
+      # donne le même refus) :
+      #   1. un champ de l'éditeur de confiance qui diffère de ce que l'étape
+      #      « Identité OIDC » affiche juste au-dessus ;
+      #   2. le dépôt est PRIVÉ, et npm pourrait ne pas accepter le trusted
+      #      publishing depuis un dépôt privé.
+      # Tant que ce n'est pas tranché, la publication se fait à la main avec un
+      # code 2FA. Ce workflow reste ici : il est correct jusqu'à ce pas, et
+      # `npm ci` + `npm test` y valident déjà la publication à venir.
       - run: npm publish --workspace @ucm-kit/core
-        env:
-          NPM_CONFIG_PROVENANCE: false
