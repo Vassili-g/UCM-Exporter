@@ -206,14 +206,32 @@ jobs:
           neuf=$(mktemp -d)
           cd "$neuf"
 
-          # Le registre ne sert pas toujours la nouvelle version dans la
-          # seconde. Une boucle courte distingue « pas encore propagée » de
-          # « cassée », que sans elle on confondrait.
-          for essai in 1 2 3 4 5; do
-            if npm view "$PAQUET@$version" version >/dev/null 2>&1; then break; fi
-            echo "  pas encore visible sur le registre (essai $essai)…"
-            sleep 10
+          # npm le dit lui-même à la fin de `npm publish` : « Your package is
+          # being processed and may take a few minutes to become available. »
+          # La publication est ACCEPTÉE avant d'être servie, et l'épreuve doit
+          # attendre le service, pas l'acceptation. Mesuré : une fenêtre de
+          # cinquante secondes a fait échouer l'épreuve de 0.1.7 sur une version
+          # pourtant bien publiée — le garde-fou avait raison de crier, il
+          # n'était simplement pas assez patient, et un garde-fou qui crie à
+          # tort est celui qu'on apprend le plus vite à ignorer.
+          #
+          # Dix minutes, donc, et l'attente se DIT à chaque tour : un run muet
+          # pendant dix minutes se lit comme un run bloqué.
+          visible=""
+          for essai in $(seq 1 30); do
+            if npm view "$PAQUET@$version" version >/dev/null 2>&1; then
+              visible="oui"
+              echo "  servi par le registre au bout de $((essai * 20))s."
+              break
+            fi
+            echo "  pas encore servi par le registre (essai $essai/30)…"
+            sleep 20
           done
+          if [ -z "$visible" ]; then
+            echo "::error::$PAQUET@$version reste introuvable après dix minutes."
+            echo "La publication a-t-elle réussi ? Le journal de l'étape précédente le dit."
+            exit 1
+          fi
 
           if [ "$PAQUET" = "@ucm-kit/cli" ]; then
             # Exactement ce qu'écrit `ucm init` dans le workflow d'un repo tiers.
