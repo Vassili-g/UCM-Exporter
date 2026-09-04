@@ -36,8 +36,8 @@ export type * from './types.js';
 export { CONTRACT_VERSION, versionDeContrat } from './version.js';
 export { codeIdentifier, normalizeName, tokenCssVariable } from './names.js';
 export { TOKEN_REFERENCE, isTokenReference, refPath, toRef } from './references.js';
-export { comparerIdentiteDeContrat } from './identite.js';
-export type { ArbitreIdentite, VerdictIdentite } from './identite.js';
+export { comparerIdentiteDeContrat, identiteDeContrat } from './identite.js';
+export type { ArbitreIdentite, IdentiteDeContrat, VerdictIdentite } from './identite.js';
 export {
   NOM_CONFIGURATION,
   MOTIF_IMPLEMENTATION_PAR_DEFAUT,

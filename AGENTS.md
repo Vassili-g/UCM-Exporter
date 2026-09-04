@@ -405,6 +405,13 @@ Le raisonnement vit dans la spécification, en lien.
   Les notes vivent dans `meta.diagnostics` pour un consommateur du contrat, et
   dans le journal du plugin pour le designer qui exporte.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
+- `meta.figma.url` est ABSENT des contrats produits aujourd’hui, et c’est normal.
+  Le plugin se distribue par la Community (T4.4), donc sans
+  `enablePrivatePluginApi`, donc sans `figma.fileKey`. Le champ reste optionnel
+  au schéma — un contrat plus ancien le porte encore — et son absence ne produit
+  AUCUN diagnostic : la traçabilité passe par `fileName` et `nodeId`, annoncés
+  dans le corps de la pull request.
+  → [spécification](./UCM-EXPORTER-SPEC.md#partie-1--export-composant-moteur-générique)
 - Le schéma annoncé dans l’en-tête est lu DANS le fichier déposé
   (`versionDeContrat()`, `format/version.ts`), jamais dans `CONTRACT_VERSION`.
   Sinon la couverture parle du plugin en ayant l’air de parler du fichier, et

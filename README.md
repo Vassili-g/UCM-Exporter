@@ -104,6 +104,15 @@ npm run build
 `dist/` contient le code du plugin, son interface et le `manifest.json` à
 importer dans Figma (`Plugins > Development > Import plugin from manifest`).
 
+**Distribution : la Figma Community** (T4.4, arbitrage dans
+`PISTES-EVOLUTION.md §2`). Le manifest ne déclare donc pas
+`enablePrivatePluginApi`, drapeau réservé aux plugins privés d'une organisation
+et que Figma refuserait à la soumission. Conséquence sur les contrats :
+`figma.fileKey` n'est pas accessible, `meta.figma.url` n'est plus écrit, et la
+traçabilité vers le composant source passe par `fileName` et `nodeId` — que le
+corps de la pull request annonce sur sa page de couverture. Aucune information
+de rendu n'est perdue : c'est un raccourci de navigation qui tombe.
+
 Un export est toujours téléchargeable localement. La configuration GitHub est
 optionnelle : renseignée, elle crée la branche et la pull request contenant le
 seul artefact exporté. Le PAT reste dans `figma.clientStorage` et n'apparaît ni
@@ -133,8 +142,8 @@ valeurs tokenisées sont vérifiés par les lecteurs.
 faire contrôler ses exports.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.3 init      # écrit ucm.config.json, .gitignore, le workflow
-npx --yes @ucm-kit/cli@0.1.3 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.4 init      # écrit ucm.config.json, .gitignore, le workflow
+npx --yes @ucm-kit/cli@0.1.4 check --report ci-report.md
 ```
 
 `--yes` évite l'invite de confirmation de `npx`, qui bloquerait une exécution

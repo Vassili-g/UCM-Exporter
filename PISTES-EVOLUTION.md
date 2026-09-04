@@ -95,42 +95,78 @@ pour un consommateur hors Node.
 
 ### Distribution du plugin, et le lien vers Figma qui en dépend
 
-Le manifest déclare `enablePrivatePluginApi`, réservé aux plugins privés d’une
-organisation. Un seul appel en dépend : `figma.fileKey`, qui alimente
+**Tranché le 5 septembre 2026 (T4.4) : le plugin se distribue par la Figma
+Community.** `enablePrivatePluginApi` est retiré du manifest, `figma.fileKey`
+n'arrive donc plus, et `meta.figma.url` n'est plus écrit. Ce qui suit garde les
+termes de l'arbitrage — la décision se relit mieux à côté de ce qu'elle a
+écarté.
+
+Le manifest déclarait `enablePrivatePluginApi`, réservé aux plugins privés d'une
+organisation. Un seul appel en dépendait : `figma.fileKey`, qui alimentait
 `meta.figma.url` — le lien direct vers le composant source
 (`packages/plugin/src/contract/exportComponent.ts`). Une publication publique sur la Community
 suppose de retirer ce drapeau, et le choix de distribution décide donc du
 contenu des contrats.
 
-**Rester plugin privé d’organisation.** Le contrat garde `meta.figma.url`, et
-une revue de pull request ouvre le composant source d’un clic. La distribution
-se limite en revanche aux membres de l’organisation Figma : personne d’autre ne
-peut installer le plugin, donc personne d’autre ne peut produire de contrat.
+**Rester plugin privé d'organisation.** Le contrat garde `meta.figma.url`, et
+une revue de pull request ouvre le composant source d'un clic. La distribution
+se limite en revanche aux membres de l'organisation Figma : personne d'autre ne
+peut installer le plugin, donc personne d'autre ne peut produire de contrat.
 
-**Publier sur la Community.** N’importe qui installe le plugin et produit des
+**Publier sur la Community.** N'importe qui installe le plugin et produit des
 contrats. `figma.fileKey` devient indisponible : `meta.figma.url` disparaît, et
 la traçabilité repose sur `fileName` et `nodeId`, que le contrat conserve.
-L’export n’est pas bloqué et aucune information de rendu n’est perdue — c’est
+L'export n'est pas bloqué et aucune information de rendu n'est perdue — c'est
 un raccourci de navigation qui tombe, pas une donnée du design. Reconstituer le
 lien à la main reste possible pour qui connaît la clé du fichier.
 
-Ce qui n’est pas encore décidé : lequel des deux. Le point de bascule est le
-nombre de personnes hors organisation qui doivent pouvoir exporter. Tant qu’il
-vaut zéro, le plugin privé domine sans contrepartie.
+**Ce que la décision a coûté, et ce qu'elle a rendu.** Le point de bascule
+énoncé ici était « le nombre de personnes hors organisation qui doivent pouvoir
+exporter ». Il a cessé de valoir zéro, et la première option perd alors sa
+gratuité : elle n'est plus « le lien en plus », elle devient « personne d'autre
+ne peut exporter ». Le prix payé est un raccourci de relecture ; il est rendu
+autrement, voir ci-dessous.
 
-Deux conditions à réunir avant d’ouvrir la publication publique :
+Les deux conditions posées avant d'ouvrir la publication, et où elles en sont :
 
-- que l’absence de `meta.figma.url` soit traitée par tous les lecteurs comme un
-  cas normal et non comme un contrat incomplet — la clé absente signifie déjà
-  « rien à publier », mais aucun consommateur ne l’a encore éprouvée ;
-- que la traçabilité par `fileName` et `nodeId` suffise réellement à une revue,
-  ce qui se constate sur une pull request réelle et pas en principe.
+- **que l'absence de `meta.figma.url` soit traitée par tous les lecteurs comme
+  un cas normal** — tenu. Le champ était déjà OPTIONNEL dans `ContractMeta`,
+  aucun lecteur ne le réclame, et rien dans le schéma ne change : la
+  publication ne touche pas à la version du contrat. Ce qui a dû changer est
+  ailleurs, et c'est le point suivant.
+- **que la traçabilité par `fileName` et `nodeId` suffise réellement à une
+  revue, ce qui se constate sur une pull request réelle et pas en principe** —
+  la condition est désormais *observable*, ce qu'elle n'était pas. Le corps de
+  la pull request annonce l'origine sur sa page de couverture :
+  `Composant Figma : « Alert » — fichier « Design System », nœud 12:345`
+  (`lignesDIdentite`, `packages/plugin/src/github.ts`). Le constat se fait sur
+  les revues à venir. Si `fileName` et `nodeId` ne suffisent pas, c'est là qu'on
+  le verra, et la troisième voie ci-dessous devient la réponse.
 
-Une troisième voie existe et n’a pas été évaluée : publier sans le drapeau, et
+**L'avertissement « Lien vers Figma absent » est supprimé, et c'est la moitié la
+plus importante de l'exécution.** Il était écrit quand le cas était l'exception.
+La Community l'inverse : la clé n'arrive plus JAMAIS, donc le message se serait
+imprimé sur chaque export, dans le corps de chaque pull request, pour un constat
+que le designer ne peut pas corriger. Une liste dont on apprend qu'elle se
+survole coûte la lecture de celles qui demandent un geste — la règle du projet,
+appliquée à sa propre décision. Un état normal du format se documente une fois,
+dans le type et dans la spécification, pas par un diagnostic répété à l'infini.
+
+Une troisième voie existe et n'a pas été évaluée : publier sans le drapeau, et
 demander la clé du fichier dans la configuration du plugin pour reconstruire
-l’URL. Elle échange une donnée obtenue automatiquement contre une saisie
-manuelle, donc contre une source d’erreur de plus ; elle ne se justifierait que
-si le lien s’avérait indispensable en revue.
+l'URL. Elle échange une donnée obtenue automatiquement contre une saisie
+manuelle, donc contre une source d'erreur de plus ; elle ne se justifierait que
+si le lien s'avérait indispensable en revue. **Elle reste ouverte, et le code ne
+lui barre pas la route :** le calcul de l'URL est laissé en place dans
+`buildMeta`, et le corps de la pull request rend l'URL en lien dès qu'un contrat
+en porte une.
+
+**Ce que la décision rouvre, et qui n'est pas technique.** Publier sur la
+Community met mécaniquement le projet devant un public non francophone. La
+Phase 8 du plan d'industrialisation a écrit que c'est le SEUL événement qui
+rouvre la question de la langue, et qu'il faut trancher à ce moment-là — les
+noms de symboles d'un paquet npm publié étant quasi irréversibles. La question
+est donc posée, et elle n'est pas tranchée ici.
 
 ### Diff sémantique
 

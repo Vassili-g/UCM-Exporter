@@ -6,7 +6,6 @@
   "ui": "dist/ui.html",
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
-  "enablePrivatePluginApi": true,
   "networkAccess": {
     "allowedDomains": ["https://api.github.com"]
   }

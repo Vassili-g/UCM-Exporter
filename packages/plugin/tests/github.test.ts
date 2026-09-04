@@ -703,3 +703,81 @@ test('une note d’export n’atteint pas le corps de la pull request', () => {
   assert.match(signale, /Corrigez chaque point/);
   assert.doesNotMatch(signale, /Notes d’export/);
 });
+
+test('l’en-tête dit d’où vient le composant, puisque le lien a disparu', () => {
+  // T4.4. La distribution par la Community interdit `enablePrivatePluginApi`,
+  // donc `figma.fileKey`, donc `meta.figma.url` : le raccourci d'un clic vers
+  // le composant source n'existe plus. D6 demandait que la traçabilité par
+  // `fileName` et `nodeId` soit constatée sur une pull request RÉELLE et pas en
+  // principe — elle est donc écrite là où la revue a lieu.
+  const corps = pullRequestBody(
+    'src/components/Alert/Alert.contract.json',
+    artefactPourPr('component', JSON.stringify({
+      name: 'Alert',
+      meta: { contractVersion: '12.0', figma: { fileName: 'Design System', nodeId: '12:345' } },
+    })),
+  );
+  assert.match(corps, /Composant Figma : « Alert » — fichier « Design System », nœud `12:345`/);
+  // Aucun lien inventé : le champ décide, pas la distribution supposée.
+  assert.equal(corps.includes(']('), false);
+});
+
+test('un contrat qui porte encore une URL la rend en lien', () => {
+  // Un export antérieur à T4.4, ou un plugin chargé en développement dans une
+  // organisation. La couverture lit le fichier plutôt que de déduire ce que la
+  // distribution courante devrait produire : c'est la même règle que pour le
+  // schéma, et la déduction se tromperait exactement sur les contrats anciens.
+  const corps = pullRequestBody(
+    'src/components/Alert/Alert.contract.json',
+    artefactPourPr('component', JSON.stringify({
+      name: 'Alert',
+      meta: {
+        contractVersion: '12.0',
+        figma: {
+          fileName: 'Design System',
+          nodeId: '12:345',
+          url: 'https://www.figma.com/design/ABC/Design%20System?node-id=12-345',
+        },
+      },
+    })),
+  );
+  assert.match(corps, /\[« Alert »\]\(https:\/\/www\.figma\.com\/design\/ABC\//);
+});
+
+test('un intitulé Figma reste inerte dans l’en-tête comme dans la liste', () => {
+  // Un composant nommé `@icons` ouvrirait le profil d'un inconnu, notifié à
+  // chaque export. La règle qui protège la liste protège l'en-tête : un second
+  // traitement du même risque aurait fini par diverger de celui-ci.
+  const corps = pullRequestBody(
+    'src/components/Alert/Alert.contract.json',
+    artefactPourPr('component', JSON.stringify({
+      name: '@icons',
+      meta: { contractVersion: '12.0', figma: { fileName: '#12 Design', nodeId: '12:345' } },
+    })),
+  );
+  assert.match(corps, /Composant Figma : « `@icons` »/);
+  assert.match(corps, /fichier « `#12` Design »/);
+  assert.doesNotMatch(corps, /[^`]@icons/);
+});
+
+test('une origine illisible s’omet au lieu de redire le défaut', () => {
+  // Le contrat cassé est déjà nommé une fois par la ligne de schéma. Une
+  // seconde ligne « origine absente » n'apprendrait rien et entraînerait la
+  // page vers ce que la règle des notes interdit.
+  const corps = pullRequestBody(
+    'src/components/Alert/Alert.contract.json',
+    artefactPourPr('component', '{}'),
+  );
+  assert.match(corps, /Schéma de contrat : absent du fichier/);
+  assert.equal(corps.includes('Composant Figma'), false);
+});
+
+test('tokens.json n’est le portrait d’aucun composant', () => {
+  // Ses variables viennent du fichier entier : lui attribuer une origine de
+  // composant serait faux, pas seulement inutile.
+  const corps = pullRequestBody(
+    'src/tokens/tokens.json',
+    artefactPourPr('tokens', JSON.stringify({ color: { bg: { $value: '#fff' } } })),
+  );
+  assert.equal(corps.includes('Composant Figma'), false);
+});

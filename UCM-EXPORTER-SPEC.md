@@ -1413,10 +1413,21 @@ Le champ est absent quand l’export n’a rien à signaler. Une perte portable 
 `coverage.portable` partiel ; une note ou un avertissement sans perte portable
 ne le dégrade pas.
 
-L’URL est construite depuis `figma.fileKey`, accessible grâce à
-`enablePrivatePluginApi` dans le manifest. Quand l’API ne fournit pas cette clé,
-`url` est absent et `nodeId` avec `fileName` restent exploitables pour retrouver
-le composant.
+**`meta.figma.url` est absent des contrats produits aujourd’hui, et c’est un
+état normal du format.** L’URL se construit depuis `figma.fileKey`, que l’API ne
+donne qu’aux plugins déclarant `enablePrivatePluginApi` — un drapeau réservé aux
+plugins privés d’une organisation. Le plugin se distribue par la Figma Community
+(T4.4, arbitrage dans `PISTES-EVOLUTION.md §2`), le drapeau est donc retiré du
+manifest et la clé n’arrive jamais. `url` reste OPTIONNEL dans le schéma, sans
+changement de version : un contrat produit avant cette décision le porte encore,
+et un lecteur doit accepter les deux.
+
+La traçabilité repose donc sur `nodeId` et `fileName`, que le contrat porte
+toujours, et que le corps de la pull request annonce sur sa page de couverture —
+c’est là que se constate si elle suffit à une revue. **L’absence de lien ne
+produit aucun diagnostic** : elle n’est plus l’exception mais la règle, et un
+constat que le designer ne peut pas corriger, répété à chaque export,
+apprendrait à survoler la liste où vivent les gestes à faire.
 
 ---
 

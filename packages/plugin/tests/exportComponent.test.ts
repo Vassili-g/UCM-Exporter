@@ -740,9 +740,12 @@ test('mergeWrapperProps garde la prop du set sélectionné et nomme le conflit',
 
 /**
  * Le lien Figma dépend d'un seul réglage : `enablePrivatePluginApi` dans le
- * manifest. Sans lui, `figma.fileKey` reste indéfini et le contrat perd son
- * lien — c'est ce qui est arrivé, sous un avertissement qui présentait la perte
- * comme une fatalité de l'API.
+ * manifest. **T4.4 l'a retiré** — un plugin publié sur la Community n'a pas le
+ * droit de le porter —, donc `figma.fileKey` reste indéfini et `meta.figma.url`
+ * n'est plus écrit. Le calcul reste en place et ces deux tests le tiennent dans
+ * les deux sens : il fonctionne dès que l'API rend la clé (une organisation qui
+ * charge ce plugin en développement, ou la troisième voie de D6), et son
+ * absence est un état NORMAL qui ne se signale plus.
  */
 test('meta.figma.url est construit dès que l’API fournit la clé du fichier', async () => {
   const figmaFaux = monterFigma({ fileKey: 'ABCdef123456789012345678' });
@@ -766,16 +769,26 @@ test('meta.figma.url est construit dès que l’API fournit la clé du fichier',
   }
 });
 
-test('sans clé de fichier, le contrat le dit sans bloquer l’export', async () => {
+test('sans clé de fichier, le contrat n’a pas de lien et n’en fait pas un sujet', async () => {
+  // **C'est la moitié la plus importante de T4.4.** Le message d'avertissement
+  // était écrit quand ce cas était l'exception. La distribution par la
+  // Community l'inverse : la clé n'arrive plus jamais, donc le message se
+  // serait imprimé sur CHAQUE export et dans le corps de CHAQUE pull request,
+  // pour un constat que le designer ne peut pas corriger. Une liste dont on
+  // apprend qu'elle se survole coûte la lecture de celles qui demandent un
+  // geste — la règle du projet, appliquée à sa propre décision.
   const figmaFaux = monterFigma();
   try {
     const contrat = JSON.parse((await handleExportComponent()).content);
 
     assert.equal(contrat.meta.figma.url, undefined);
+    // Ce qui remplace le lien est là, et c'est ce que la couverture de la pull
+    // request annonce désormais.
     assert.equal(contrat.meta.figma.fileName, 'Design System');
     assert.ok(contrat.meta.figma.nodeId);
-    assert.ok(
-      messagesDe(contrat).some((warning: string) => warning.includes('Lien vers Figma')),
+    assert.equal(
+      messagesDe(contrat).some((message: string) => message.includes('Lien vers Figma')),
+      false,
     );
   } finally {
     figmaFaux.restaurer();
