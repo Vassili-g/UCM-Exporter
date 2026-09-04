@@ -1,156 +1,188 @@
 # Unified Component Exporter
 
-Plugin Figma qui exporte une spécification design versionnée à côté du code
-réel d’un composant.
+Plugin Figma qui exporte un composant sous forme de contrat JSON versionné, et
+outillage qui vérifie que le code du repository reste conforme à ce contrat.
 
-Il produit deux artefacts :
+## UCM en bref
 
-| Commande | Sortie | Contenu |
-|---|---|---|
-| **Exporter le composant** | `<IdentifiantCode>.contract.json` | Projection visuelle portable, variantes exactes, états, structure, tokens, icônes, règles d’usage, et un échantillon de maquette non normatif |
-| **Exporter les tokens** | `tokens.json` | Variables locales au format DTCG, avec leurs alias et leurs modes |
+Un même composant existe à plusieurs endroits : Figma, le code, les tokens, la
+documentation. Ces représentations divergent avec le temps, sans que personne
+le voie.
 
-Ces artefacts mettent en œuvre l’**UCM — Unified Component Model** : Figma porte
-la vérité visuelle, le code porte le comportement, et le repository vérifie
-leur cohérence. Le projet ne génère pas le code de production et le plugin
-n’écrit jamais dans le document Figma.
+L'UCM (Unified Component Model) donne un propriétaire unique à chaque
+information :
+
+| Information | Qui fait foi |
+|---|---|
+| Variantes, états, dimensions, couleurs, icônes, tokens | Figma |
+| Comportement, événements, accessibilité, attributs natifs | Le code |
+| La correspondance entre les deux | La CI du repository |
+
+Figma exporte ce qu'il possède dans un fichier `.contract.json`, posé à côté du
+code du composant :
 
 ```text
-Figma ── Unified Component Exporter ──► contrat + tokens
-                                             │
-                                             ▼
-                              code, contrôles CI et agents
+components/Button/
+  Button.<ext>          le comportement, écrit par un développeur
+  Button.contract.json  le visuel, exporté depuis Figma
 ```
+
+Le code de production ne lit jamais ce JSON à l'exécution. Le développeur écrit
+le composant en s'appuyant sur le contrat, et la CI compare à chaque pull
+request la surface d'API des deux : les props déclarées, leur type, et les
+composants réellement rendus. Le rendu visuel lui-même n'est pas vérifié.
+
+## La boucle
+
+```text
+Figma
+  │   commande « Exporter le composant »
+  ▼
+Button.contract.json
+  │   dépôt GitHub optionnel : branche + pull request automatiques
+  ▼
+CI du repository consommateur
+  │   6 contrôles
+  ▼
+Rapport publié en commentaire de la pull request
+```
+
+Le rapport est écrit pour le designer qui valide l'export. Il liste ce qui
+bloque, ce qui avertit, et l'action attendue de chacun. Aucun log de CI à
+ouvrir.
+
+## Les 6 contrôles
+
+| Contrôle | Question posée | Verdict |
+|---|---|---|
+| Validité | Le contrat est-il lisible et conforme au schéma ? | 🔴 bloque |
+| Version | Le repository sait-il lire cette version de contrat ? | 🔴 bloque |
+| Composition | Chaque composant imbriqué a-t-il son propre contrat, la liste des composants imbriqués correspond-elle aux emplacements décrits, et aucun composant ne se contient-il lui-même, directement ou via une chaîne d'imbrications ? | 🔴 bloque |
+| Typographie | Les tokens typographiques ont-ils le type attendu ? | 🔴 bloque |
+| Tokens | Les références `{chemin.du.token}` citées existent-elles dans `tokens.json` ? | ⚠️ avertit |
+| Parité code | Les props du contrat sont-elles dans l'API publique du composant, typées correctement, et chaque composant déclaré rendu exactement une fois ? | ⚠️ avertit |
+
+La règle de partage entre les deux colonnes est explicite : un contrôle bloque
+la pull request seulement si l'auteur de l'export peut le corriger en
+réexportant. Un écart avec le code attend un développeur, donc il avertit
+et laisse fusionner. Un token supprimé du design system aussi : les
+tokens font foi, un ancien contrat ne retient pas leur évolution.
+
+L'absence d'implémentation est un état d'avancement autorisé. Un contrat peut
+arriver avant le code qui le réalise.
+
+Les cinq premiers contrôles ne lisent que des contrats et des tokens, ils
+fonctionnent donc quelle que soit la technologie du repository. Le sixième doit
+lire le code, il passe par un adaptateur propre à la stack. Le seul adaptateur
+existant à ce jour couvre TypeScript et React ; il s'active sans configuration
+dès qu'une implémentation est présente.
+
+## Ce que le plugin produit
+
+| Commande | Fichier | Contenu |
+|---|---|---|
+| Exporter le composant | `<IdentifiantCode>.contract.json` | Variantes exactes, états, structure, tokens, icônes, règles d'usage, et un échantillon de maquette non normatif |
+| Exporter les tokens | `tokens.json` | Variables locales au format DTCG, avec leurs alias et leurs modes |
+
+Version de contrat courante : **12.0** (`packages/kit/src/format/version.ts`,
+seul endroit où elle est écrite).
+
+Le contrat est autoportant : il contient assez d'information pour qu'un
+développeur ou un agent produise le composant sans consulter une implémentation
+existante. Le plugin ne génère pas de code de production et n'écrit jamais dans
+le document Figma.
 
 ## Utilisation
 
-Une exportation est toujours téléchargeable localement. Une configuration
-GitHub facultative permet aussi de créer une branche et une pull request
-contenant uniquement l’artefact exporté. Le PAT reste dans
-`figma.clientStorage` et n’est ni renvoyé à l’interface ni ajouté aux logs.
+### Construire et charger le plugin
 
 ```sh
 npm install
-npm test
 npm run build
 ```
 
-Le build produit dans `dist/` le code du plugin, son interface autonome et le
-manifest importable dans Figma. Pour le développement, le `manifest.json` à la
-racine pointe également vers les bundles construits.
+`dist/` contient le code du plugin, son interface et le `manifest.json` à
+importer dans Figma (`Plugins > Development > Import plugin from manifest`).
 
-L’identifiant `0000000000000000000` du manifest est un placeholder de
-développement. Il ne doit être remplacé qu’à la préparation d’une publication,
-avec l’identifiant effectivement attribué par Figma ; il reste tel quel pour un
-build local.
+Un export est toujours téléchargeable localement. La configuration GitHub est
+optionnelle : renseignée, elle crée la branche et la pull request contenant le
+seul artefact exporté. Le PAT reste dans `figma.clientStorage` et n'apparaît ni
+dans l'interface ni dans les logs.
 
-Le manifest déclare aussi `enablePrivatePluginApi`, réservé aux plugins privés
-d’une organisation : une publication publique sur la Community suppose de le
-retirer. Le seul appel qui en dépend est `figma.fileKey`, qui alimente le lien
-`meta.figma.url` ; sans lui, le contrat garde `fileName` et `nodeId`, et
-l’export n’est pas bloqué.
-
-| Commande | Rôle |
-|---|---|
-| `npm test` | Exécute les tests de l’exporteur |
-| `npm run typecheck` | Vérifie TypeScript |
-| `npm run build` | Vérifie puis construit le plugin complet |
-| `npm run schema` | Régénère le JSON Schema du contrat depuis `types.ts` (paquet `@ucm-kit/core`) |
-
-## Architecture
-
-```text
-packages/plugin/    Le MOTEUR — extraction Figma. Dépend du kit.
-  src/contract/       Extraction des contrats de composant
-  src/tokens/         Export DTCG
-  src/ui/             Interface du plugin
-  src/code.ts         Routage des commandes
-  src/variables.ts    Index commun des variables et des alias
-  src/github.ts       Dépôt optionnel par pull request
-  manifest.json       Le plugin se charge dans Figma depuis son `dist/`
-
-packages/kit/       Le FORMAT — `@ucm-kit/core`, publié sur npm.
-  src/format/         Types, version et règles de nommage, sans Node ni Figma
-  scripts/            Génération du schéma depuis `types.ts`
-  schema/             Le schéma commité, publié en `@ucm-kit/core/schema`
-  fixtures/           Contrats d'une version que le moteur ne fabrique plus
-```
-
-La coupure passe entre le FORMAT et le MOTEUR, et dans un seul sens : le plugin
-importe le kit, jamais l'inverse. C'est ce qui rend le kit régénérable et
-publiable seul.
-
-À l'intérieur du kit, une seconde coupure sépare ce qui voyage partout de ce
-qui a besoin de Node : le sous-chemin `format` ne dépend de RIEN — il entre
-dans le bundle du plugin Figma, où `node:fs` n'existe pas, comme dans un
-navigateur —, tandis que les `lecteurs` utilisent `ajv` et `node:fs`. Le paquet,
-lui, dépend donc d'`ajv` ; c'est le sous-chemin qui ne dépend de personne, pas
-le paquet, et confondre les deux est ce que cette architecture existe pour
-empêcher.
+### Côté repository consommateur
 
 ```sh
 npm install @ucm-kit/core
 ```
 
-Le schéma est publié pour les consommateurs qui ne lisent pas TypeScript et
-pour les éditeurs. Il décrit la forme d’un contrat, pas sa cohérence : les
-renvois internes et le format des valeurs tokenisées restent à la charge du
-consommateur, et sa propre `description` le dit.
+Le paquet expose trois entrées :
+
+| Entrée | Usage |
+|---|---|
+| `@ucm-kit/core/format` | Types TypeScript, version, règles de nommage. Aucune dépendance, utilisable dans un navigateur ou dans le bundle Figma |
+| `@ucm-kit/core/lecteurs` | Validateurs, collecte de références, verdict de version, rendu du diagnostic. Nécessite Node |
+| `@ucm-kit/core/schema` | JSON Schema, pour les éditeurs et les consommateurs qui ne lisent pas TypeScript |
+
+Le schéma décrit la forme d'un contrat. Les renvois internes et le format des
+valeurs tokenisées sont vérifiés par les lecteurs.
+
+[UCM Playground](https://github.com/Vassili-g/UCM-Playground) est le
+consommateur de référence : arborescence des composants, `tokens.json` DTCG,
+les 6 contrôles branchés, le workflow CI et le rapport publié sur la pull
+request. C'est le point de départ à copier pour brancher un nouveau
+repository.
+
+## Commandes
+
+| Commande | Rôle |
+|---|---|
+| `npm test` | Tests du moteur et du kit |
+| `npm run typecheck` | Vérification TypeScript |
+| `npm run build` | Vérifie puis construit le plugin complet |
+| `npm run schema` | Régénère le JSON Schema depuis `types.ts` |
+
+## Architecture
+
+```text
+packages/plugin/    Le MOTEUR : extraction Figma. Dépend du kit.
+  src/contract/       Extraction des contrats de composant
+  src/tokens/         Export DTCG
+  src/ui/             Interface du plugin
+  src/github.ts       Dépôt optionnel par pull request
+  manifest.json       Chargé dans Figma depuis son dist/
+
+packages/kit/       Le FORMAT : @ucm-kit/core, publié sur npm.
+  src/format/         Types, version, règles de nommage. Aucune dépendance
+  src/lecteurs/       Validateurs et diagnostic. Utilisent ajv et node:fs
+  schema/             Le schéma commité
+  fixtures/           Contrats d'une version que le moteur ne fabrique plus
+```
+
+Le plugin importe le kit, jamais l'inverse. C'est ce qui rend le kit publiable
+seul.
 
 Le moteur ne contient aucune règle propre à `Button` ou à un autre composant.
-Les exemples réels servent uniquement à éprouver sa généricité.
-
-## Documentation
-
-Chaque document a un rôle unique :
-
-- [CONCEPT.md](./CONCEPT.md) — problème résolu, responsabilités et principes ;
-- [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md) — comportement exact du plugin
-  et format actuel des sorties ;
-- [ROADMAP.md](./ROADMAP.md) — maturité, limites et prochaines validations ;
-- [CONTRIBUTING.md](./CONTRIBUTING.md) — règles de développement et de test ;
-- [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) — options non engagées et
-  conditions à réunir avant de les ouvrir ;
-- [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) — recherche proposée pour
-  une vérification générique du rendu lors des prochaines phases ;
-- [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md) — document de
-  travail : rendre les artefacts consommables par n’importe quel repository,
-  quelle que soit sa techno ;
-- [AGENTS.md](./AGENTS.md) — guide opérationnel pour contribuer avec un agent ;
-- [UCM Playground](https://github.com/Vassili-g/UCM-Playground) — consommateur
-  de référence des artefacts.
+Les composants du corpus servent uniquement à éprouver sa généricité.
 
 ## État
 
-La version du contrat est celle que publie `CONTRACT_VERSION`
-(`packages/kit/src/format/version.ts`), seul endroit où elle est écrite. Le moteur
-accepte un Component seul ou un Component Set. Chaque combinaison exacte porte
-ses tokens et référence une vue composée de cinq renvois indépendants :
-structure, typographie, icônes, dépendances et chemins de peintures. La
-projection de référence renvoie au même catalogue de structures, les valeurs
-neutres sont élidées et aucun index de tokens dérivable n’est publié.
+L'outillage consommateur (les 6 contrôles, le rapport, le workflow) vit
+aujourd'hui dans le Playground. Son extraction dans `@ucm-kit/core` et une CLI
+`ucm init` / `ucm check`, pour brancher n'importe quel repository sans écrire
+de script, sont décrites dans
+[PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md).
 
-Une clé de couleur n’est pas un rôle : `rendering.roles` porte le vocabulaire
-partagé, identique dans tous les contrats, et `rendering.keyRoles` le rôle des
-clés qui n’en portent pas le nom. Ce qu’un calque hors du flux ne peut pas
-lier à une variable est publié quand même, en vocabulaire CSS et sous une
-notice : sa place (`constraints`, `inset`) et sa `rotation`. À côté du
-normatif, `samples` et `variants[].sample` portent un échantillon de maquette
-— textes, booléens, valeurs d’enum et noms de composants — que le contrat
-n’exige jamais, qui n’avertit de rien et dont le retrait laisse un contrat
-strictement normatif.
+La maturité et les limites restantes sont dans [ROADMAP.md](./ROADMAP.md).
 
-Le MOTEUR ne se teste sur aucun contrat commité : un `.contract.json` vit dans
-le repository qui le consomme, à côté du code qu’il décrit. Les lois de forme
-sont donc vérifiées sur chaque contrat que le moteur fabrique pendant
-`npm test`, jamais sur un exemplaire gelé — un instantané ne bougeant qu’au
-réexport, une régression ne s’y verrait pas.
+## Documentation
 
-Le kit, lui, pose la question inverse et garde un corpus figé de la version
-**précédente** (`packages/kit/fixtures/`) : il doit prouver qu’il lit une
-version que le moteur ne fabrique plus, et l’immobilité est ici la propriété
-recherchée. Ce corpus n’est jamais comparé à une sortie du moteur, jamais
-rafraîchi, et disparaît avec le code de compatibilité qu’il couvre. La règle
-complète et ses bornes vivent dans [AGENTS.md](./AGENTS.md).
-
-La maturité et les limites restantes vivent dans [ROADMAP.md](./ROADMAP.md).
+| Document | Contenu |
+|---|---|
+| [CONCEPT.md](./CONCEPT.md) | Problème résolu, responsabilités, principes |
+| [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md) | Comportement exact du plugin, format des sorties |
+| [ROADMAP.md](./ROADMAP.md) | Maturité, limites, prochaines validations |
+| [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md) | Rendre les artefacts consommables par n'importe quel repository |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Règles de développement et de test |
+| [AGENTS.md](./AGENTS.md) | Guide opérationnel pour contribuer avec un agent |
+| [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) | Options non engagées |
+| [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) | Recherche sur la vérification générique du rendu |
