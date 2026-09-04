@@ -266,6 +266,24 @@ test('le corps de la pull request porte les avertissements de l’export', () =>
   assert.doesNotMatch(signale, /—|\w+\(s\)/);
 });
 
+test('un avertissement n’ouvre aucun lien depuis le corps de la pull request', () => {
+  // Le message cite les intitulés de Figma tels quels ; GitHub, lui, relie
+  // `@nom` à un compte et `#123` à une issue. Le nom d'une variante de règle y
+  // ouvrait le profil d'un inconnu, notifié à chaque export, au lieu de donner
+  // au designer le mot à taper dans son composant. Seul le code échappe à
+  // l'autoliaison.
+  const corps = pullRequestBody('src/components/StressTest/StressTest.contract.json', [
+    'Layer « skull » : aucune règle @icons ne le désigne. Ajoutez une règle @icons '
+      + 'dont le layer « icon » porte ce nom, puis réexportez.',
+    'Layer « #12 », espacement : aucune variable Figma n’est reliée.',
+  ]);
+  assert.match(corps, /- Layer « skull » : aucune règle `@icons` ne le désigne\./);
+  assert.match(corps, /Ajoutez une règle `@icons` dont/);
+  assert.match(corps, /Layer « `#12` », espacement/);
+  assert.doesNotMatch(corps, /[^`]@icons/);
+  assert.doesNotMatch(corps, /[^`]#12/);
+});
+
 test('une note d’export n’atteint pas le corps de la pull request', () => {
   // La PR est le seul canal que le designer relit à froid, et ce qu'il y lit
   // décide s'il relira la suivante. Une note dit elle-même qu'aucune

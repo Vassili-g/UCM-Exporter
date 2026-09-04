@@ -336,6 +336,11 @@ Le raisonnement vit dans la spécification, en lien.
   Les notes vivent dans `meta.diagnostics` pour un consommateur du contrat, et
   dans le journal du plugin pour le designer qui exporte.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
+- Un avertissement entre dans le corps de la pull request en Markdown :
+  `sansLienAutomatique()` (`src/github.ts`) publie `@nom` et `#123` en `code`.
+  Sinon GitHub relie `@icons`, nom d’une variante de règle, au profil d’un
+  inconnu qu’il notifie à chaque export.
+  → [spécification](./UCM-EXPORTER-SPEC.md#partie-3--configuration-et-dépôt-github)
 
 ### Échantillon de maquette
 
