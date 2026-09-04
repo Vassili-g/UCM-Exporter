@@ -938,8 +938,18 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
 
 ## Phase 3 — Configuration et CLI
 
-- [ ] **T3.1 — `ucm.config.json`.** `components`, `tokens`, `implementation`.
-      Jamais de numéro de version.
+- [X] **T3.1 — `ucm.config.json`.** *Fait le 4 septembre 2026 —
+      `kit/src/lecteurs/configuration.mjs`, publié en 0.1.4.* `components`,
+      `tokens`, `implementation`. Jamais de numéro de version.
+      **Le fichier est facultatif, et c'est le cas nominal**, pas une tolérance :
+      un repo neuf avec un seul dossier `components/` doit marcher sans écrire
+      une ligne (critère n° 1), et les défauts décrivent exactement ce repo-là.
+      L'erreur est un fichier PRÉSENT et mal formé — là quelqu'un a voulu dire
+      quelque chose, et retomber en silence sur les défauts ferait chercher un
+      contrat là où il n'est pas.
+      **Un numéro de version y est refusé, pas ignoré.** L'ignorer serait pire :
+      quelqu'un le mettrait à jour en croyant déplacer la fenêtre de lecture, et
+      rien ne bougerait. Un geste sans effet est pire qu'un geste refusé.
       *Pas de champ `icons`, décision prise :* la résolution d'un nom d'icône
       est une **responsabilité du repo consommateur**, pas du contrat ni du kit.
       Un contrat publie le `figmaName` de l'icône ; ce que ce nom désigne dans
@@ -952,16 +962,41 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       `src/generated/contracts` ; l'association de schéma de l'éditeur doit
       pointer vers le paquet installé, pas vers une copie locale.
 
-- [ ] **T3.2 — `ucm init`.** Écrit la configuration, le workflow, l'association
-      de schéma, et `.gitattributes`.
+- [~] **T3.2 — `ucm init`.** *Trois quarts faits le 4 septembre 2026 —
+      `packages/cli`. Le workflow manque, délibérément : voir T3.3.*
+      Écrit la configuration, l'association de schéma et `.gitattributes`, et
+      **n'écrase jamais un fichier existant** — c'est la seule faute
+      irréversible à sa portée, et il la commettrait au moment où l'utilisateur
+      a le moins de raisons de s'en méfier. L'association de schéma pointe le
+      paquet INSTALLÉ, jamais une copie locale, qui vieillirait sans que rien ne
+      le dise.
       *Justification corrigée :* la v3 disait que le LF servait « à ce que le
       test d'égalité tienne ». Faux — `tests/schema.test.ts:29-37` compare le
       **JSON analysé**, pas les octets, et son commentaire explique pourquoi.
       Le LF sert à la propreté du diff Git.
 
-- [ ] **T3.3 — `ucm check`.** Sort en 0 ou 1, affiche toujours son diagnostic
-      dans le terminal, et écrit le rapport **uniquement sur `--report
-      <chemin>`**.
+- [ ] **T3.3 — `ucm check`. ⚠ Bloquée par T5.2 — trou de l'ordre d'exécution,
+      mesuré le 4 septembre 2026.** L'orchestration du contrôle vit dans
+      `Playground/scripts/check-contract.mjs` et ne rejoint le kit qu'en T5.2 —
+      Phase 5, que l'étape 11 place APRÈS la Phase 3. En écrire une seconde dans
+      le CLI produirait deux rapports qui divergent, et le désaccord serait muet :
+      la maladie exacte que T2.7, T6.0 et T2.6 ont soignée ailleurs.
+      *Conséquence en cascade, assumée :* `ucm init` (T3.2) n'écrit pas de
+      workflow, un workflow appelant une commande inexistante installant une CI
+      rouge dans un repo neuf — au moment exact où son propriétaire n'a aucun
+      moyen de savoir si la faute vient de lui. L'installation est incomplète et
+      le dit.
+      *Le déblocage est T5.2, pas un contournement.* Deux ordres sont possibles
+      et le choix appartient au mainteneur : remonter T5.2 avant T3.3, ou
+      déplacer l'orchestration dans le CLI plutôt que dans le kit — ce qui
+      rouvrirait la question de savoir si le rapport est une affaire de format
+      ou une affaire d'outil.
+      *Le code de sortie 1 est déjà réservé* dans le CLI : il désignera toujours
+      « des contrôles ont échoué » et jamais « je n'ai pas compris », qui sort
+      en 2.
+      *Énoncé d'origine, conservé :* sort en 0 ou 1, affiche toujours son
+      diagnostic dans le terminal, et écrit le rapport **uniquement sur
+      `--report <chemin>`**.
       *Pourquoi ce choix :* aujourd'hui le fichier n'est écrit que si la
       variable `CI` est présente (`check-contract.mjs:463-465`). Écrire toujours
       laisserait un `ci-report.md` non versionné dans la copie de travail après
@@ -984,8 +1019,14 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       iOS n'en a pas forcément. Pin exact obligatoire (D7), `--yes` à
       documenter.
 
-- [ ] **T3.5 — `ucm icons`.** Liste les `figmaName` d'icônes que les contrats du
-      repo réclament.
+- [X] **T3.5 — `ucm icons`.** *Fait le 4 septembre 2026.* Liste les `figmaName`
+      d'icônes que les contrats du repo réclament, **avec les contrats qui les
+      citent** : le nom seul ne suffit pas à agir — pour couvrir une icône, ou
+      pour en parler à un designer, il faut savoir où elle est demandée.
+      *Elle ne juge pas, et c'est délibéré :* elle n'a aucune idée de ce qu'est
+      un jeu d'icônes dans ce repo. Le jour où un champ `icons` existera, elle
+      pourra comparer — pas avant, sinon elle inventerait la règle qu'elle
+      prétend vérifier.
       *Réintégré :* écarté en v3 comme du cérémonial, il reprend sa place avec
       la décision de T3.1. Puisque la résolution des icônes appartient au repo,
       celui-ci a besoin de savoir **ce qu'il doit couvrir** — sinon la
