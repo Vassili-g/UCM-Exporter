@@ -7,7 +7,7 @@ Il produit deux artefacts :
 
 | Commande | Sortie | Contenu |
 |---|---|---|
-| **Exporter le composant** | `<IdentifiantCode>.contract.json` | Projection visuelle portable, variantes exactes, états, structure, tokens, icônes et règles d’usage |
+| **Exporter le composant** | `<IdentifiantCode>.contract.json` | Projection visuelle portable, variantes exactes, états, structure, tokens, icônes, règles d’usage, et un échantillon de maquette non normatif |
 | **Exporter les tokens** | `tokens.json` | Variables locales au format DTCG, avec leurs alias et leurs modes |
 
 Ces artefacts mettent en œuvre l’**UCM — Unified Component Model** : Figma porte
@@ -43,6 +43,12 @@ L’identifiant `0000000000000000000` du manifest est un placeholder de
 développement. Il ne doit être remplacé qu’à la préparation d’une publication,
 avec l’identifiant effectivement attribué par Figma ; il reste tel quel pour un
 build local.
+
+Le manifest déclare aussi `enablePrivatePluginApi`, réservé aux plugins privés
+d’une organisation : une publication publique sur la Community suppose de le
+retirer. Le seul appel qui en dépend est `figma.fileKey`, qui alimente le lien
+`meta.figma.url` ; sans lui, le contrat garde `fileName` et `nodeId`, et
+l’export n’est pas bloqué.
 
 | Commande | Rôle |
 |---|---|
@@ -99,6 +105,16 @@ ses tokens et référence une vue composée de cinq renvois indépendants :
 structure, typographie, icônes, dépendances et chemins de peintures. La
 projection de référence renvoie au même catalogue de structures, les valeurs
 neutres sont élidées et aucun index de tokens dérivable n’est publié.
+
+Une clé de couleur n’est pas un rôle : `rendering.roles` porte le vocabulaire
+partagé, identique dans tous les contrats, et `rendering.keyRoles` le rôle des
+clés qui n’en portent pas le nom. Ce qu’un calque hors du flux ne peut pas
+lier à une variable est publié quand même, en vocabulaire CSS et sous une
+notice : sa place (`constraints`, `inset`) et sa `rotation`. À côté du
+normatif, `samples` et `variants[].sample` portent un échantillon de maquette
+— textes, booléens, valeurs d’enum et noms de composants — que le contrat
+n’exige jamais, qui n’avertit de rien et dont le retrait laisse un contrat
+strictement normatif.
 
 Ce repository ne contient aucun artefact de contrat : un `.contract.json` vit
 dans le repository qui le consomme, à côté du code qu’il décrit. Les lois de
