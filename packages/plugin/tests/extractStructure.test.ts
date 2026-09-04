@@ -6,7 +6,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractStructure } from '../src/contract/extractStructure';
-import { collectTokenReferences } from '../src/variables';
+import { collecterReferences } from '@ucm-kit/core/lecteurs';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
@@ -31,7 +31,7 @@ test('extractStructure survit à un composant sans node de layout', async () => 
   assert.equal(structure.layout, 'flex-row');
   assert.deepEqual(structure.children, []);
   assert.deepEqual(structure.variantTokens, {});
-  assert.deepEqual(Array.from(collectTokenReferences(structure)).sort(), []);
+  assert.deepEqual(Array.from(collecterReferences(structure)).sort(), []);
   assert.ok(warnings.some((w) => w.includes('Aucun auto layout frame trouvé')));
 });
 
@@ -78,7 +78,7 @@ test('extractStructure ne recopie pas la couleur du label hors de variantTokens'
       foreground: '{components.button.colors.primary.contained.default.foreground}',
     },
   });
-  assert.deepEqual(Array.from(collectTokenReferences(structure)).sort(), [
+  assert.deepEqual(Array.from(collecterReferences(structure)).sort(), [
     '{components.button.colors.primary.contained.default.background}',
     '{components.button.colors.primary.contained.default.foreground}',
     '{components.button.sizes.medium.gap}',
