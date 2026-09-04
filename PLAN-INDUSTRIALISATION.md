@@ -1151,9 +1151,33 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       peut pas empêcher la mauvaise version de partir, puisqu'une version part
       pour toujours ; elle transforme un mensonge qui aurait vécu des jours en un
       run rouge dans la minute, quand le correctif ne coûte qu'un numéro de plus.
-      *Corrigé :* kit en **0.1.7**, CLI en **0.1.2** épinglant 0.1.7.
-      Reste le cas LOCAL, où `npx` exige Node sur le poste : à documenter, pas à
-      outiller.
+      *Corrigé et vérifié :* kit en **0.1.7**, CLI en **0.1.2** épinglant 0.1.7,
+      les deux publiés par le workflow. `npx --yes @ucm-kit/cli@0.1.2 --help`
+      rend l'aide et sort en 0 depuis un dossier vide — en CI par l'Épreuve du
+      registre, et depuis un poste, sans `package.json` ni `node_modules`.
+      **La moitié CI de T3.4 est donc tenue pour de bon, et non plus par
+      construction.** Reste le cas LOCAL, où `npx` exige Node sur le poste : à
+      documenter, pas à outiller.
+      *Deux choses trouvées en publiant, et aucune n'était la tâche.*
+      **(a) Le lockfile n'était plus installable ailleurs que sur ce poste.** La
+      régénération faite en T4.1 avait été lue depuis le `node_modules` de la
+      machine plutôt que depuis le registre : npm avait écrit un lockfile à
+      l'image de CELLE-CI — 3 champs `resolved` sur 83, et le seul binaire
+      esbuild de Windows sur les 26 plateformes qu'exige `tsx`. `npm ci`
+      échouait donc partout ailleurs, et le dépôt ne le savait pas, puisqu'ici
+      tout était installé. C'est le symptôme de T4.3 vu de l'autre bout : la
+      vérité n'existait que dehors. Le remède est une installation propre —
+      `node_modules` ET lockfile supprimés —, un `npm install` seul ne défaisant
+      rien : npm relit l'arbre en place et le recopie.
+      **(b) Une publication est acceptée avant d'être servie.** `npm publish`
+      rend `+ @ucm-kit/core@0.1.7` puis avertit : *« Your package is being
+      processed and may take a few minutes to become available. »* L'Épreuve du
+      registre attendait cinquante secondes et a fait échouer un run dont la
+      publication avait parfaitement réussi. Elle attend dix minutes, en le
+      disant à chaque tour. *La leçon est pour tous les garde-fous de ce plan :*
+      un contrôle qui crie à tort est celui qu'on apprend le plus vite à
+      ignorer — et il coûte alors plus cher que son absence, parce qu'il laisse
+      croire que quelqu'un regarde.
       **Et une loi trouvée en essayant, le 5 septembre 2026 :** `publish.yml`
       sait désormais publier le CLI, l'exécution a été lancée, et elle échoue en
       `ENEEDAUTH` après avoir construit le tarball. La cause n'est pas un réglage
