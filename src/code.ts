@@ -4,7 +4,8 @@
  * handler et lui renvoyer le fichier produit ou l'erreur.
  */
 import { extractRules, hasUsableRules } from './contract/extractRules';
-import handleExportComponent, { CONTRACT_VERSION } from './contract/exportComponent';
+import handleExportComponent from './contract/exportComponent';
+import { CONTRACT_VERSION } from './contract/version';
 import handleExportTokens from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
 import type { SettingsInput } from './config';

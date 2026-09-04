@@ -30,6 +30,7 @@ export { mergePropDescriptions } from './mergePropDescriptions';
 import { buildStateModel, renderingSemanticsFor } from './semantics';
 import { indexVariables, VariableNameResolver } from '../variables';
 import { codeIdentifier } from '../utils';
+import { CONTRACT_VERSION } from './version';
 import type {
   ChildStructure,
   ComposedDependency,
@@ -37,16 +38,6 @@ import type {
   ContractMeta,
   ExtractedContractVariant,
 } from './types';
-
-/**
- * Version du schéma de contrat, et unique endroit où elle est écrite.
- *
- * À incrémenter à chaque changement de FORME du JSON, avec la spécification,
- * les fixtures et les consommateurs dans le même changement.
- * La forme courante est décrite par UCM-EXPORTER-SPEC.md et `types.ts` ;
- * ce qui a changé d'une version à l'autre se lit dans Git.
- */
-export const CONTRACT_VERSION = '12.0';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(
