@@ -205,6 +205,8 @@ test('publishArtifact ne crée aucune branche si le fichier est inchangé', asyn
     status: 'unchanged',
     path: 'src/tokens/tokens.json',
     source: 'réglages du plugin',
+    ou: 'branche main',
+    pullRequestUrl: null,
   });
   // Deux appels et pas un de plus : la configuration du repository, puis le
   // fichier lui-même. Aucune branche n'est créée.
@@ -229,6 +231,8 @@ test('publishArtifact fonctionne dans un runtime Figma sans TextEncoder', async 
       status: 'unchanged',
       path: 'src/tokens/tokens.json',
       source: 'réglages du plugin',
+      ou: 'branche main',
+      pullRequestUrl: null,
     });
   } finally {
     (globalThis as any).TextEncoder = previousTextEncoder;
@@ -261,6 +265,8 @@ test('publishArtifact compare aussi un fichier GitHub supérieur à 1 Mo via son
     status: 'unchanged',
     path: 'src/tokens/tokens.json',
     source: 'réglages du plugin',
+    ou: 'branche main',
+    pullRequestUrl: null,
   });
   assert.match(calls[2], /\/git\/blobs\/large-sha$/);
 });
@@ -292,6 +298,8 @@ test('publishArtifact ignore meta.exportedAt pour détecter un contrat inchangé
     status: 'unchanged',
     path: 'src/components/Button/Button.contract.json',
     source: 'réglages du plugin',
+    ou: 'branche main',
+    pullRequestUrl: null,
   });
   assert.equal(calls.length, 2);
 });
@@ -525,21 +533,32 @@ test('un contrat déjà présent sans identité Figma lisible refuse plutôt que
 
 test('les tokens ne passent pas par la détection de collision', async () => {
   // `tokens.json` est unique par repository : son chemin ne se dispute avec
-  // rien, et il ne porte aucune identité Figma à comparer. Lui faire lister les
-  // pull requests ouvertes serait un appel payé pour une question qui ne se
-  // pose pas.
-  const calls: string[] = [];
+  // rien, et il ne porte aucune identité Figma à comparer. Un contrat trouvé
+  // dans cet état — aucune identité lisible — ferait refuser l'export ; des
+  // tokens, non, ils s'écrivent.
+  //
+  // Les pull requests ouvertes SONT interrogées depuis T4.5, parce que le
+  // doublon, lui, ne demande qu'un chemin et deux exports. C'est exactement ce
+  // que ce test sépare : regarder n'est pas refuser.
+  const branche = 'ucm-exporter/export-tokens-20260904-090000';
   const result = await avecMethode(
     (url, method) => {
-      calls.push(url);
       if (method === 'POST') {
         return new Response(JSON.stringify({ html_url: 'https://github.com/acme/ds/pull/8' }), { status: 201 });
       }
       if (method === 'PUT') return new Response(JSON.stringify({ content: { sha: 'x' } }), { status: 201 });
-      return sansConfiguration(url)
-        ?? (url.includes('/git/ref/heads/')
-          ? new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 })
-          : new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }));
+      if (url.includes('/pulls?')) {
+        return new Response(JSON.stringify([{ head: { ref: branche } }]), { status: 200 });
+      }
+      const absente = sansConfiguration(url);
+      if (absente) return absente;
+      // Des tokens PLUS ANCIENS attendent déjà dans une pull request : sans
+      // identité à comparer, il n'y a rien à refuser.
+      if (url.includes(`ref=${encodeURIComponent(branche)}`)) return fichier('{"ancien":true}');
+      if (url.includes('/git/ref/heads/')) {
+        return new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
     },
     () => publishArtifact(config, {
       kind: 'tokens',
@@ -550,7 +569,133 @@ test('les tokens ne passent pas par la détection de collision', async () => {
   );
 
   assert.equal(result.status, 'created');
-  assert.equal(calls.filter((url) => url.includes('/pulls?')).length, 0);
+});
+
+/**
+ * T4.5. Le contrôle d'immobilité ne lisait QUE la branche de base — c'est-à-dire
+ * l'endroit où un export en attente de fusion n'est justement pas encore.
+ * Réexporter sans avoir rien changé ouvrait donc une seconde pull request en
+ * tout point identique à la première, sans un mot : la perte silencieuse que
+ * T4.1 et T4.3 referment ailleurs, ici en double exemplaire.
+ */
+test('un artefact identique déjà déposé en vol ne crée pas un second export', async () => {
+  const branche = 'ucm-exporter/export-component-20260904-090000';
+  const enVol = contratFigma('IconButton', '67:890');
+  // Seul l'horodatage diffère, comme après n'importe quel réexport. La
+  // comparaison en vol est la MÊME que celle de la branche de base — un second
+  // test d'égalité aurait fini par ne plus neutraliser les mêmes champs.
+  const reexporte = enVol.replace('2026-09-04T10:00:00.000Z', '2026-09-05T08:30:00.000Z');
+  const calls: Array<{ url: string; method: string }> = [];
+
+  const result = await avecMethode(
+    (url, method) => {
+      calls.push({ url, method });
+      if (url.includes('/pulls?')) {
+        return new Response(JSON.stringify([
+          { head: { ref: branche }, html_url: 'https://github.com/acme/design-system/pull/12' },
+        ]), { status: 200 });
+      }
+      const absente = sansConfiguration(url);
+      if (absente) return absente;
+      // Le chemin est libre sur la branche de base : le contrat n'existe QUE
+      // dans la pull request ouverte.
+      if (url.includes(`ref=${encodeURIComponent(branche)}`)) return fichier(enVol);
+      return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
+    },
+    () => publishArtifact(config, {
+      kind: 'component',
+      filename: 'IconButton.contract.json',
+      content: reexporte,
+      warnings: [],
+    }),
+  );
+
+  assert.deepEqual(result, {
+    status: 'unchanged',
+    path: 'src/components/IconButton/IconButton.contract.json',
+    source: 'réglages du plugin',
+    // L'ENDROIT fait partie du verdict. « Aucun changement » tout court
+    // enverrait chercher sur la branche de base un fichier qui n'y est pas
+    // encore, et le designer conclurait que son export s'est perdu.
+    ou: `pull request d'export ouverte, branche ${branche}`,
+    // Le geste qui reste est de fusionner : le verdict porte la page où il se
+    // fait.
+    pullRequestUrl: 'https://github.com/acme/design-system/pull/12',
+  });
+  // Quatre lectures, aucune écriture : la configuration, la branche de base,
+  // les pull requests ouvertes, puis le fichier sur celle qui porte l'export.
+  assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'GET', 'GET']);
+});
+
+test('des tokens identiques déjà déposés en vol ne créent pas un second export', async () => {
+  // Le doublon n'est pas une maladie des contrats : il ne demande qu'un chemin
+  // et deux exports. `tokens.json` n'a qu'un chemin, et c'est toujours le même
+  // — le cas est donc plus facile à produire là qu'ailleurs.
+  const branche = 'ucm-exporter/export-tokens-20260904-090000';
+  const result = await avecMethode(
+    (url) => {
+      if (url.includes('/pulls?')) {
+        return new Response(JSON.stringify([{ head: { ref: branche } }]), { status: 200 });
+      }
+      const absente = sansConfiguration(url);
+      if (absente) return absente;
+      if (url.includes(`ref=${encodeURIComponent(branche)}`)) return fichier('{"same":true}\n');
+      return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
+    },
+    () => publishArtifact(config, {
+      kind: 'tokens',
+      filename: 'tokens.json',
+      content: '{"same":true}\n',
+      warnings: [],
+    }),
+  );
+
+  assert.deepEqual(result, {
+    status: 'unchanged',
+    path: 'src/tokens/tokens.json',
+    source: 'réglages du plugin',
+    ou: `pull request d'export ouverte, branche ${branche}`,
+    // La liste des pull requests n'a rendu aucune URL : le verdict le dit au
+    // lieu d'en inventer une.
+    pullRequestUrl: null,
+  });
+});
+
+test('un réexport corrigé pendant qu’une pull request est ouverte n’est pas bloqué', async () => {
+  // Le pendant obligatoire du doublon, et la raison pour laquelle T4.5 n'est
+  // PAS un refus : corriger dans Figma puis réexporter est le geste normal.
+  // Refuser ici demanderait au designer de fermer une pull request pour avoir
+  // le droit d'en proposer une meilleure.
+  const branche = 'ucm-exporter/export-component-20260904-090000';
+  const result = await avecMethode(
+    (url, method) => {
+      if (method === 'POST') {
+        return new Response(JSON.stringify({ html_url: 'https://github.com/acme/ds/pull/13' }), { status: 201 });
+      }
+      if (method === 'PUT') return new Response(JSON.stringify({ content: { sha: 'x' } }), { status: 201 });
+      if (url.includes('/pulls?')) {
+        return new Response(JSON.stringify([{ head: { ref: branche } }]), { status: 200 });
+      }
+      const absente = sansConfiguration(url);
+      if (absente) return absente;
+      if (url.includes(`ref=${encodeURIComponent(branche)}`)) {
+        return fichier(contratFigma('IconButton', '67:890'));
+      }
+      if (url.includes('/git/ref/heads/')) {
+        return new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
+    },
+    () => publishArtifact(config, {
+      kind: 'component',
+      filename: 'IconButton.contract.json',
+      // Le même nœud Figma, renommé depuis : ni un doublon, ni une collision.
+      content: contratFigma('Icon Button', '67:890'),
+      warnings: [],
+    }),
+  );
+
+  assert.equal(result.status, 'created');
 });
 
 /** Un artefact réduit à ce que le corps de la pull request regarde. */

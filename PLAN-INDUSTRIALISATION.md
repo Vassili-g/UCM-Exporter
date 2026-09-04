@@ -1481,6 +1481,106 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       un `id` de développement (`0000000000000000000`) que Figma remplace à la
       première publication.
 
+### Phase 4 rouverte — ce que la relecture de l'interface a trouvé
+
+La Phase 4 était fermée le 5 septembre 2026. Une relecture de l'interface du
+plugin, passée par une revue indépendante, y a trouvé **un bug** et **un
+chantier**. Le premier entre ici parce qu'il est du domaine de cette phase ; le
+second vit dans son propre document, et cette entrée n'existe que pour lui donner
+une place dans l'ordre d'exécution.
+
+- [X] **T4.5 — Le doublon de pull request n'est pas détecté, par construction.**
+      **⚠ Avant la Phase 7**, qui exporte en boucle vers un dépôt neuf et
+      rencontrera donc ce cas.
+      Le contrôle d'immobilité de `publishArtifact` lit le fichier **sur la
+      branche de base seulement** : `getRepositoryFile` prend `config.baseBranch`
+      comme `ref` par défaut, et l'appel se fait sans `ref`. Les branches des
+      pull requests d'export ouvertes ne sont jamais comparées — alors que
+      `contratsEnVol` sait déjà les énumérer et lire le fichier sur chacune, mais
+      ne sert qu'à `refusDeCollision`, qui rend `null` quand l'identité est la
+      même. Conséquence : réexporter un contrat **strictement identique** pendant
+      qu'une pull request d'export du même contenu est ouverte crée un doublon,
+      sans un mot. C'est la maladie que T4.1 et T4.3 referment ailleurs — un
+      export qui atterrit là où personne ne regarde, sans que rien ne rougisse.
+      Geste : étendre la comparaison aux branches en vol, et le dire. **Ce n'est
+      pas un refus** : réexporter après correction est le geste normal, et le
+      message doit informer sans bloquer.
+      *Contrainte d'implémentation :* `tests/github.test.ts` couvre
+      `publishArtifact`, `repositoryLayout`, `contratsEnVol` et
+      `refusDeCollision` en détail. **Étendre la lecture existante, ne pas la
+      dupliquer** — deux chemins de lecture du dépôt divergeraient en silence.
+      *Pourquoi cette tâche n'est pas déléguée à une session parallèle :* elle
+      touche le fichier le plus testé du plugin, et le choix « étendre plutôt que
+      dupliquer » est un jugement, pas une transformation mécanique.
+      **Fait le 5 septembre 2026.** La lecture a été étendue, et elle a changé de
+      nom : `contratsEnVol` devient `exportsEnVol`, parce qu'elle ne sert plus
+      seulement aux contrats. Un seul appel liste les pull requests ouvertes, et
+      il répond maintenant à deux questions qui viennent de la même cécité —
+      « ce chemin est-il déjà pris par un AUTRE composant ? » (T4.3) et « ce
+      contenu est-il déjà déposé ? » (T4.5). Deux lectures auraient divergé ; il
+      n'y en a toujours qu'une.
+      *Ce que l'implémentation a trouvé et que l'énoncé ne disait pas :* le
+      doublon n'est pas une maladie des contrats. La collision, si — `tokens.json`
+      est unique par repository et ne porte aucune identité Figma à comparer —,
+      mais le doublon ne demande qu'un chemin et deux exports, et `tokens.json`
+      a un chemin, toujours le même. Le contrôle vaut donc pour les deux genres
+      d'artefact, quand le refus reste réservé aux contrats. Un test sépare
+      exactement ces deux choses : les tokens listent bien les pull requests
+      ouvertes, et ne sont pas refusés pour autant. Regarder n'est pas refuser.
+      *L'ordre des deux lectures est un choix de coût, pas un hasard :* la
+      branche de base d'abord, les pull requests ouvertes seulement si quelque
+      chose a changé. Le cas courant — rien n'a bougé depuis la dernière fusion —
+      se tranche toujours en deux appels, comme avant.
+      *Ce que le verdict a dû gagner :* `ou`, l'endroit où le contenu identique
+      a été trouvé, et l'URL de la pull request quand c'en est une. « Aucun
+      changement » sans l'endroit enverrait le designer chercher sur la branche
+      de base un fichier qui n'y est pas encore ; il conclurait que son export
+      s'est perdu, alors que son travail attend d'être fusionné. Le lien est
+      donné, mais le navigateur ne s'ouvre pas tout seul : rien n'a été produit à
+      relire, et voler la fenêtre pour une page déjà vue se paierait à chaque
+      réexport.
+      *Ce qui n'a PAS été écrit, et c'est la leçon de T4.4 appliquée avant
+      d'avoir eu à la réapprendre :* aucun message pour un contenu DIFFÉRENT
+      pendant qu'une pull request d'export est ouverte. C'est le réexport après
+      correction, c'est-à-dire le geste que ce projet encourage ; l'avertir à
+      chaque fois imprimerait une ligne de plus sur le cas nominal. Et le silence
+      n'est pas total : deux branches qui modifient le même fichier depuis la
+      même base entrent en conflit à la seconde fusion, et un conflit Git, lui,
+      se voit — ce n'est pas au plugin de redire ce que la forge dit déjà.
+      *Éprouvé :* le contrôle neutralisé, les deux tests du doublon rougissent en
+      nommant le contenu déposé deux fois ; l'invariant voisin, lui, tient
+      toujours — 34 tests dans `github.test.ts`, 708 dans le dépôt.
+      *La même entrée vivait ailleurs :* `refonte-ui.md` la portait en U3.0,
+      première tâche de sa phase U3. Elle est close par ce commit et pointe ici ;
+      une règle, un domicile.
+
+- [ ] **T4.6 — La refonte de l'interface du plugin.** **⚠ Après la Phase 7,
+      avant la Phase 8.** Le plan complet, ses trente tâches et ses dépendances
+      vivent dans [refonte-ui.md](./refonte-ui.md) : une règle, un domicile —
+      cette entrée ne recopie rien, elle ordonne.
+      *Ce qui justifie le chantier :* l'interface est un lanceur — deux boutons
+      et un journal monospace — là où la doctrine fait du designer le relecteur
+      de la vérité visuelle exportée. Ce qui va être exporté, où ça atterrit et
+      ce qui a été perdu arrivent tous après le point de non-retour. Et sa
+      qualité graphique n'a aujourd'hui **aucun critère** : ni hiérarchie écrite,
+      ni inventaire d'états, ni protocole de relecture.
+      *Pourquoi après la Phase 7 :* celle-ci valide le flux ; dessiner les écrans
+      qui montrent un flux avant de l'avoir validé, c'est les redessiner.
+      *Pourquoi avant la Phase 8 :* T4.4 envoie le plugin sur la Figma Community.
+      Son interface cesse d'être un outil interne pour devenir la vitrine du
+      projet, jugée par une revue Figma et par des gens qui n'ont lu aucun de ces
+      documents. L'inventaire des états qu'ouvre ce chantier fournit au passage
+      les captures que la soumission réclame.
+      *Deux dépendances croisées, déjà inscrites là-bas :* l'harmonisation de la
+      langue de l'interface attend l'arbitrage que **T8.11** porte ; et la tâche
+      qui écrit dans la spécification que « sélectionner un calque n'est pas
+      modifier le document » attend **T8.1**, qui scinde cette spécification.
+      *Seule exception à l'ordre :* la phase U0 de ce document — six corrections
+      sans décision, dans `src/ui/` et une ligne de `code.ts` — n'a de dépendance
+      envers rien et peut se faire à tout moment, y compris dans une session
+      isolée : aucun test ne couvre ces fichiers, et aucun autre chantier ne les
+      touche.
+
 ---
 
 ## Phase 5 — Rapport et CI
@@ -2129,8 +2229,22 @@ déjà optionnel) et davantage aux messages : l'avertissement « Lien vers Figma
 absent » devait disparaître, sans quoi la Community l'aurait imprimé sur chaque
 export. **Et elle rouvre une question que ce plan avait mise sous condition :**
 publier met le projet devant un public non francophone, ce que la Phase 8
-désigne comme le seul événement rouvrant la langue du projet. Elle est posée,
-pas résolue.
+désigne comme le seul événement rouvrant la langue du projet. Elle a été posée
+le jour même et tranchée : le français reste, assumé plutôt que subi. La
+décision, ce qui la rend tenable et ce qu'elle coûtera si elle est un jour
+défaite sont écrits au préambule de la Phase 8, là où la condition était
+suspendue.
+
+14. **T4.5, puis le reste de la Phase 7, puis T4.6.** *Ajouté le 5 septembre
+    2026 :* la Phase 4 était fermée, et une relecture de l'interface l'a
+    rouverte sur deux entrées. **T4.5 passe avant la Phase 7** parce que c'est un
+    bug, et parce que la Phase 7 exporte en boucle vers un dépôt neuf : elle
+    rencontrera le doublon qu'elle est censée ne pas produire. **T4.6 passe entre
+    les Phases 7 et 8** : après la Phase 7, qui valide le flux que l'interface
+    montre ; avant la Phase 8, parce que T4.4 fait de cette interface la vitrine
+    publique du projet, et que la Phase 8 est ce qui prépare ce public. L'étape
+    13 disait « puis les Phases 6 et 8 » ; elle devient « puis T4.6, puis les
+    Phases 6 et 8 ».
 
 *Exécuté le 5 septembre 2026 :* les étapes 11 et 12 sont faites — T5.2, T5.4,
 T3.3, T3.2, et T3.4 à moitié. Ce qui les bloque encore est une publication :
@@ -2139,6 +2253,13 @@ appelle une commande qu'il ne peut pas installer. C'est la deuxième fois qu'une
 publication se retrouve sur le chemin critique, et c'est la même leçon qu'à
 l'écart d'ordre plus haut : **une publication est une précondition d'exécution,
 pas une formalité de fin de tâche.**
+
+*Exécuté le 5 septembre 2026, étape 14 :* **T4.5 est close.** Le doublon de pull
+request est détecté, et l'ordre qui la plaçait avant la Phase 7 a servi à
+quelque chose : celle-ci exporte en boucle vers un dépôt neuf, elle aurait donc
+produit le doublon qu'elle est censée ne pas produire, et l'aurait produit sans
+un mot — le contrôle qu'elle exerce n'aurait rien vu, puisque la maladie EST
+l'absence de signal. Reste de l'étape : le reste de la Phase 7, puis T4.6.
 
 ### Écart entre cet ordre et ce qui a été exécuté
 

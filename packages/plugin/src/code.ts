@@ -185,8 +185,23 @@ async function runExport(
         text: `Emplacement : ${publication.path} (d'après ${publication.source}).`,
       });
       if (publication.status === 'unchanged') {
-        const message = `Aucun changement pour ${publication.path} : aucune PR créée.`;
+        // OÙ le contenu identique se trouve déjà fait partie du message (T4.5).
+        // « Aucun changement » tout court envoie chercher sur la branche de
+        // base un fichier qui peut n'être encore que dans une pull request
+        // d'export ouverte — et le designer conclurait que l'export n'a rien
+        // fait, alors que son travail attend d'être fusionné.
+        const message = `Aucun changement pour ${publication.path} (${publication.ou}) : aucune PR créée.`;
         figma.ui.postMessage({ type: 'log', text: message });
+        if (publication.pullRequestUrl) {
+          // Le lien, mais pas l'ouverture automatique : rien n'a été produit à
+          // relire, et voler la fenêtre pour une page déjà vue se paierait à
+          // chaque réexport.
+          figma.ui.postMessage({
+            type: 'pull-request',
+            url: publication.pullRequestUrl,
+            path: publication.path,
+          });
+        }
         postStatus('success', message);
         figma.notify('Aucun changement : aucune PR créée.');
         return;

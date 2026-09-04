@@ -1525,6 +1525,20 @@ comparaison ignore `meta.exportedAt`, régénéré à chaque export — aucune
 branche ni PR n'est créée. Config absente/invalide ou erreur GitHub : repli
 automatique vers le téléchargement local avec message explicite.
 
+**« Identique » se juge à DEUX endroits : la branche de base, et les pull
+requests d'export encore ouvertes.** Un artefact déposé et pas encore fusionné
+n'est justement pas sur la branche de base ; ne regarder qu'elle rouvrait, pour
+un réexport strictement identique, une seconde pull request en tout point
+pareille à la première. Les deux genres d'artefact sont concernés : le doublon
+ne demande qu'un chemin et deux exports. Le journal du plugin dit LEQUEL des
+deux endroits a répondu, et donne le lien de la pull request quand c'est elle —
+sans quoi « aucun changement » enverrait chercher sur la branche de base un
+fichier qui n'y est pas encore, et le designer conclurait que son export s'est
+perdu. Un contenu DIFFÉRENT pendant qu'une pull request d'export est ouverte
+n'est pas bloqué pour autant : réexporter après avoir corrigé dans Figma est le
+geste normal, et c'est Git qui signale le reste — deux branches qui modifient le
+même fichier depuis la même base entrent en conflit à la seconde fusion.
+
 L'API Contents omet le contenu des fichiers supérieurs à 1 Mo : dans ce cas,
 le plugin lit le blob Git correspondant avant de comparer, afin de ne pas
 créer une PR inchangée. Au-delà de la limite GitHub de 100 Mo, il n'essaie pas
