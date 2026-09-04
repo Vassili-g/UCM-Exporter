@@ -53,8 +53,15 @@ export {
   messagesDExport,
 } from "./variant-views.mjs";
 
-/** Les références de token que porte un contrat, et leur forme. */
-export { REFERENCE, sansEchantillon, collecterReferences } from "./references-token.mjs";
+/**
+ * Les références de token que porte un contrat.
+ *
+ * Leur FORME n'est plus ici : `isTokenReference` vit dans
+ * `@ucm-kit/core/format`, atteignable par un consommateur navigateur comme par
+ * un consommateur Node. La republier ici en ferait un second nom pour la même
+ * chose, ce que T2.7 vient précisément de supprimer.
+ */
+export { sansEchantillon, collecterReferences } from "./references-token.mjs";
 export { erreursTypesTypographiques } from "./typography-token-types.mjs";
 
 /** Ce que le fichier de tokens DTCG contient, et donc ce qui existe. */

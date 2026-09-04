@@ -6,7 +6,8 @@
  * autorité, et la décide sur toute la matrice — une clé lue variant par variant
  * changerait d'un état à l'autre.
  */
-import { toRef, variableAliases } from '../variables';
+import { toRef } from '@ucm-kit/core/format';
+import { variableAliases } from '../variables';
 import type { TokenResolver } from '../variables';
 import { tokenKey } from './colorKeys';
 import { getAllNodes } from './exportableNodes';

@@ -12,7 +12,7 @@ import test from 'node:test';
 import { extractStructure } from '../src/contract/extractStructure';
 import { extractVariantTokens } from '../src/contract/extractVariantTokens';
 import { mergeIconRules } from '../src/contract/mergeIconRules';
-import { collectTokenReferences, isTokenReference } from '../src/variables';
+import { collectTokenReferences } from '../src/variables';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
@@ -129,13 +129,4 @@ test('un doublon d’axes garde toutes ses couleurs dans la vue exacte', async (
       .has('{components.button.colors.secondary.background}'),
     true,
   );
-});
-
-test('une référence se reconnaît à la chaîne entière, jamais dans une phrase', () => {
-  assert.equal(isTokenReference('{components.button.sizes.medium.gap}'), true);
-  // Un avertissement cite des tokens : il ne devient pas une référence pour autant.
-  assert.equal(isTokenReference('Icône « star » : taille {a.base} puis {a.lg}.'), false);
-  // Un nom de style de texte reste une chaîne nue, hors de l'index.
-  assert.equal(isTokenReference('heading.large'), false);
-  assert.equal(isTokenReference('{sansPoint}'), false);
 });

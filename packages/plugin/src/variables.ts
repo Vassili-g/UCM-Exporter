@@ -3,7 +3,7 @@
  * commandes du plugin. Principe fondamental : on résout les noms, jamais les
  * valeurs, pour préserver la chaîne d'alias du design system.
  */
-import { normalizeName } from '@ucm-kit/core/format';
+import { isTokenReference, normalizeName } from '@ucm-kit/core/format';
 
 /**
  * Extrait tous les alias de variable d'une liaison, qu'elle soit simple
@@ -28,49 +28,14 @@ export function firstVariableAlias(value: unknown): VariableAlias | null {
   return variableAliases(value)[0] ?? null;
 }
 
-/**
- * Enrobe un nom de token en RÉFÉRENCE de contrat, entre accolades — même
- * convention que les références DTCG de `tokens.json`. Un token cité dans un
- * contrat est toujours un lien vers `tokens.json`, jamais une valeur : les
- * accolades le rendent explicite et le distinguent d'une chaîne littérale.
- * Le chemin lui-même vient de `normalizeName()` — les accolades sont un
- * enrobage, pas un renommage : les deux commandes restent recoupables.
- *
- * @example toRef('components.button.default.background')
- * // → '{components.button.default.background}'
+/*
+ * La forme d'une référence — `toRef`, `isTokenReference`, `refPath` — vivait
+ * ici, et cet en-tête affirmait que `variables.ts` en était « l'unique
+ * autorité ». C'était faux : la même regex était recopiée dans le validateur du
+ * kit et dans le repo consommateur. Elle est passée dans
+ * `@ucm-kit/core/format`, seul sous-chemin que le bundle du plugin, Node et un
+ * navigateur atteignent tous les trois. Les appelants l'importent de là.
  */
-export function toRef(name: string): string {
-  return `{${name}}`;
-}
-
-/** Forme exacte d'une référence, telle que `toRef` la produit. */
-const TOKEN_REFERENCE = /^\{[^{}\s]+\.[^{}\s]+\}$/;
-
-/**
- * Vrai si cette valeur est une référence de token, et rien d'autre.
- *
- * La chaîne ENTIÈRE doit être la référence : une phrase qui en cite une — un
- * avertissement, une règle d'usage écrite par le designer — n'en est pas une.
- */
-export function isTokenReference(value: unknown): value is string {
-  return typeof value === 'string' && TOKEN_REFERENCE.test(value);
-}
-
-/**
- * Chemin nu d'une référence : l'inverse exact de `toRef`. Une chaîne qui n'est
- * pas une référence est rendue telle quelle.
- *
- * Cette fonction vit ici parce que `variables.ts` est l'unique autorité sur la
- * forme d'une référence. Déballer les accolades ailleurs finirait par lire
- * « border} » comme le dernier segment d'un token, et un garde-fou entier se
- * tairait sans un mot.
- *
- * @example refPath('{components.button.default.border}')
- * // → 'components.button.default.border'
- */
-export function refPath(reference: string): string {
-  return isTokenReference(reference) ? reference.slice(1, -1) : reference;
-}
 
 /**
  * Toutes les références de token contenues dans une valeur, à profondeur

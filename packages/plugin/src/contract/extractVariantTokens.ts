@@ -17,7 +17,7 @@ import type { ComposedInstances } from './exportableNodes';
 import { normalizePropValue } from './parsers';
 import { getSlotTokens } from './extractSlotTokens';
 import type { TokenResolver, VariantColor, VariantStrokeColor } from './extractSlotTokens';
-import { toRef } from '../variables';
+import { toRef } from '@ucm-kit/core/format';
 import type { SlotStrokes, SlotTokens, VariantStrokes, VariantTokens } from '@ucm-kit/core/format';
 export { getSlotTokens } from './extractSlotTokens';
 export type { VariantTokenLeaves } from './extractSlotTokens';
