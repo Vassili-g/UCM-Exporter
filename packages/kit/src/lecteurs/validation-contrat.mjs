@@ -1295,10 +1295,25 @@ function nomFigmaDuVariant11(contrat, variant) {
 }
 
 /**
- * Matérialise les renvois 11.0 pour réutiliser les validations sémantiques
- * éprouvées sur les arbres, les peintures, les icônes et les bindings.
+ * La FORME CANONIQUE d'un contrat : ses renvois résolus, ses élisions rendues.
+ *
+ * Elle s'appelait `materialiserContrat11` et écrivait `"10.3"` dans
+ * `meta.contractVersion`. Les deux mentaient, et pas également.
+ *
+ * Le nom d'abord : ce geste n'a rien d'une compatibilité dormante, et rien de
+ * propre à la 11.0. C'est une NORMALISATION — elle rétablit ce que l'élision a
+ * retiré, un groupe de peintures vide, un `children` absent — pour qu'un seul
+ * validateur voie une seule forme. Le suffixe `11` la faisait passer pour un
+ * vestige, c'est-à-dire pour du code qu'on peut couper.
+ *
+ * La version ensuite, et c'était la plus coûteuse : l'objet rendu circulait en
+ * affirmant être un contrat 10.3. N'importe quel lecteur le croyait, et un
+ * élagage conduit « par raisonnement sur les gates » aurait supprimé le chemin
+ * qui valide en réalité tout le 11.0 et le 12.0. La grammaire de lecture est
+ * désormais choisie par `champsInvalidesDuContrat`, en un seul endroit nommé,
+ * et ne voyage plus avec la donnée.
  */
-function materialiserContrat11(contrat) {
+function formeCanonique(contrat) {
   const vueDeReference = contrat?.viewStructures?.[contrat?.structure?.view];
   // Matérialiser, c'est rendre à la forme 10.3 ce que la 11.0 a cessé d'écrire.
   // Un groupe de peintures vide n'est plus publié depuis la 11.0 : le rétablir
@@ -1336,7 +1351,6 @@ function materialiserContrat11(contrat) {
     ...contrat,
     meta: {
       ...contrat?.meta,
-      contractVersion: "10.3",
       warnings: [],
       diagnostics: Array.isArray(contrat?.meta?.diagnostics) ? contrat.meta.diagnostics : [],
     },
@@ -1385,10 +1399,16 @@ const ROTATION = /^-?\d+(?:\.\d+)?deg$/;
  * le navigateur ignore sans erreur ni repli — la perte visuelle muette que
  * `tokenVar` existe déjà pour empêcher ailleurs.
  *
- * Le contrôle vit ici, dans le validateur de la 11.0 et non dans la passe
- * matérialisée, parce que celle-ci réécrit `meta.contractVersion` en « 10.3» :
+ * Le contrôle vit ici, dans le validateur de la forme déclarée et non dans la
+ * passe canonique, parce que celle-ci se lit selon la grammaire pivot 10.3 :
  * une capacité « au moins 12.0 » y serait toujours fausse, et le contrôle
  * toujours muet.
+ *
+ * *La raison n'a pas changé, sa formulation si.* Elle disait que la
+ * matérialisation « réécrit `meta.contractVersion` » — vrai jusqu'à T2.1b,
+ * faux depuis : la substitution ne quitte plus la portée de
+ * `champsInvalidesDuContrat`, et le contrat garde sa version réelle. La
+ * contrainte sur ce contrôle, elle, tient toujours.
  */
 function validerPlacement120(contrat, invalides) {
   const place120 = versionAuMoins(contrat, 12, 0);
@@ -1459,7 +1479,7 @@ function validerKeyRoles120(contrat, invalides) {
   }
 }
 
-function champsInvalidesDuContrat11(contrat) {
+function champsInvalidesDeLaFormeCanonique(contrat) {
   const invalides = [];
   const requis = [
     ["name", estTexte],
@@ -1544,18 +1564,39 @@ function champsInvalidesDuContrat11(contrat) {
 }
 
 /**
+ * La version selon laquelle les contrôles de ce fichier sont ÉCRITS.
+ *
+ * Ce n'est pas la version d'un contrat, c'est une grammaire. Les contrôles
+ * sémantiques — arbres, peintures, icônes, bindings — ont été écrits quand la
+ * 10.3 était la forme courante, et la forme canonique est justement celle
+ * qu'ils savent lire. Le pivot est donc un fait sur le VALIDATEUR ; le laisser
+ * dans `meta.contractVersion` en faisait un fait sur la donnée, et c'est ce
+ * glissement-là qui rendait l'élagage dangereux.
+ */
+const GRAMMAIRE_PIVOT = "10.3";
+
+/**
  * Retourne les champs absents ou mal formés pour la version déclarée.
  *
  * La 4.0 a ajouté des blocs que le code consomme directement. Les accepter
  * implicitement comme `{}` ou `[]` transformerait un export tronqué en faux
  * contrat simple.
+ *
+ * `grammaire` est un détail INTERNE : la fonction s'appelle avec un seul
+ * argument. Une forme canonique se lit selon le pivot, et cette substitution
+ * ne dure que le temps de la lecture — le contrat, lui, garde sa version
+ * réelle, celle qu'un message d'erreur doit pouvoir citer.
  */
-export function champsInvalidesDuContrat(contrat) {
-  const major = versionMajeure(contrat);
-  if (major >= 11) {
+export function champsInvalidesDuContrat(contrat, grammaire = null) {
+  // La substitution est ici, une fois, nommée. Elle ne quitte pas cette portée.
+  const lu = grammaire === null
+    ? contrat
+    : { ...contrat, meta: { ...contrat?.meta, contractVersion: grammaire } };
+  const major = versionMajeure(lu);
+  if (grammaire === null && major >= 11) {
     const invalides = [
-      ...champsInvalidesDuContrat11(contrat),
-      ...champsInvalidesDuContrat(materialiserContrat11(contrat)),
+      ...champsInvalidesDeLaFormeCanonique(contrat),
+      ...champsInvalidesDuContrat(formeCanonique(contrat), GRAMMAIRE_PIVOT),
     ];
     return [...new Set(invalides)];
   }
@@ -1571,7 +1612,7 @@ export function champsInvalidesDuContrat(contrat) {
     ...(major >= 9 && major < 11 ? CHAMPS_VERSION_9_JUSQUA_10_3 : []),
   ];
   const invalides = champs
-    .filter(([chemin, valide]) => !valide(lire(contrat, chemin)))
+    .filter(([chemin, valide]) => !valide(lire(lu, chemin)))
     .map(([chemin]) => chemin);
 
   if (major >= 9) {
@@ -1581,23 +1622,23 @@ export function champsInvalidesDuContrat(contrat) {
       "structure.variantStrokes",
       "structure.variantTypography",
     ]) {
-      if (lire(contrat, legacyPath) !== undefined) invalides.push(legacyPath);
+      if (lire(lu, legacyPath) !== undefined) invalides.push(legacyPath);
     }
   }
 
-  validerProps(contrat?.props, invalides);
-  const capacites = capacitesDuContrat(contrat);
+  validerProps(lu?.props, invalides);
+  const capacites = capacitesDuContrat(lu);
   const formeDuSizing = () => {
-    if (versionAuMoins(contrat, 5, 2)) return SIZING_PAR_VERSION[52];
-    return SIZING_PAR_VERSION[versionAuMoins(contrat, 4, 8) ? 48 : 47];
+    if (versionAuMoins(lu, 5, 2)) return SIZING_PAR_VERSION[52];
+    return SIZING_PAR_VERSION[versionAuMoins(lu, 4, 8) ? 48 : 47];
   };
-  if (versionAuMoins(contrat, 8, 0)) {
-    validerVersion8(contrat, invalides, capacites, formeDuSizing());
+  if (versionAuMoins(lu, 8, 0)) {
+    validerVersion8(lu, invalides, capacites, formeDuSizing());
   }
   // `structure` ne recopie plus l'arbre depuis la 11.0 : elle renvoie au
   // catalogue. La projection résolue est la même valeur qu'avant, et tous les
   // contrôles qui suivent la lisent sans avoir à connaître la version.
-  const projection = projectionDeReference(contrat);
+  const projection = projectionDeReference(lu);
   validerConteneurFlex(projection, "structure", invalides, capacites.flex44);
   validerWrap(projection, "structure", invalides, capacites);
   validerGrille(projection, "structure", invalides, capacites);
@@ -1615,14 +1656,14 @@ export function champsInvalidesDuContrat(contrat) {
   validerBornes(projection, "structure", invalides, capacites.bornes53);
   validerStructure(projection?.children, "structure.children", invalides, capacites);
   if (
-    versionAuMoins(contrat, 4, 5)
-    && !versionAuMoins(contrat, 4, 6)
+    versionAuMoins(lu, 4, 5)
+    && !versionAuMoins(lu, 4, 6)
     && estObjet(projection?.sizes)
   ) {
     validerFontSizesParTaille(projection.children, "structure.children", invalides);
   }
-  if (versionAuMoins(contrat, 4, 6)) {
-    if (!estObjet(contrat?.textStyles)) invalides.push("textStyles");
+  if (versionAuMoins(lu, 4, 6)) {
+    if (!estObjet(lu?.textStyles)) invalides.push("textStyles");
     if (major < 9 && !estObjet(projection?.variantTypography)) {
       invalides.push("structure.variantTypography");
     }
@@ -1645,11 +1686,11 @@ export function champsInvalidesDuContrat(contrat) {
       }
     }
 
-    if (major >= 9 && estObjet(contrat?.textStyles) && estObjet(contrat?.variantViews)) {
-      const styles = validerTextStyles(contrat.textStyles, invalides);
+    if (major >= 9 && estObjet(lu?.textStyles) && estObjet(lu?.variantViews)) {
+      const styles = validerTextStyles(lu.textStyles, invalides);
       const stylesUtilises = new Set();
-      for (const viewId of Object.keys(contrat.variantViews)) {
-        const vue = vueExacteDuVariant(contrat, { view: viewId });
+      for (const viewId of Object.keys(lu.variantViews)) {
+        const vue = vueExacteDuVariant(lu, { view: viewId });
         for (const usage of Array.isArray(vue?.typography) ? vue.typography : []) {
           if (estTexte(usage?.style)) stylesUtilises.add(usage.style);
         }
@@ -1657,8 +1698,8 @@ export function champsInvalidesDuContrat(contrat) {
       for (const style of styles) {
         if (!stylesUtilises.has(style)) invalides.push(`textStyles.${style}`);
       }
-    } else if (estObjet(contrat?.textStyles) && estObjet(projection?.variantTypography)) {
-      const styles = validerTextStyles(contrat.textStyles, invalides);
+    } else if (estObjet(lu?.textStyles) && estObjet(projection?.variantTypography)) {
+      const styles = validerTextStyles(lu.textStyles, invalides);
       const stylesUtilises = new Set();
       validerVariantTypography(
         projection.variantTypography,
@@ -1679,9 +1720,9 @@ export function champsInvalidesDuContrat(contrat) {
   }
   validerVisibilites(projection?.children, "structure.children", invalides);
   validerIcones(
-    contrat?.icons,
-    slotsPubliesDuContrat(contrat, projection),
-    contrat?.props,
+    lu?.icons,
+    slotsPubliesDuContrat(lu, projection),
+    lu?.props,
     invalides,
   );
   return invalides;
