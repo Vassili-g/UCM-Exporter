@@ -752,8 +752,10 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       un contrat complet doit la traverser, sans quoi il ramasserait le texte de
       maquette.
 
-- [ ] **T2.9 — Déclarer les lecteurs à un consommateur TypeScript.** *Créée le
-      4 septembre 2026, pour la version 0.1.1 du paquet.*
+- [X] **T2.9 — Déclarer les lecteurs à un consommateur TypeScript.** *Fait,
+      publié dans la 0.1.1.* `src/lecteurs/index.d.mts` est dans le tarball du
+      registre, et la carte `exports` y porte la condition `types` ;
+      `lecteurs-du-kit.d.ts` a disparu du plugin.
       `exports` publie `./lecteurs` sans condition `types`, et les modules
       partent en JavaScript nu. La décision « le TypeScript n'est imposé à
       personne » reste juste — mais elle ne dit rien de ce qu'un consommateur qui
@@ -774,7 +776,15 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       et le seul consommateur est ici, avec un pin exact (D7). Monter d'une
       version ne coûte rien ; retarder la publication coûtait le Playground.
 
-- [ ] **T2.8 — Migrer le Playground sur le kit.**
+- [X] **T2.8 — Migrer le Playground sur le kit.** *Fait et poussé le
+      4 septembre 2026.* Le code avait migré avant la publication ; ce qui
+      manquait était le lockfile, qui ne pouvait pas se régénérer sur un paquet
+      absent du registre. Le pin est `0.1.1`, exact comme D7 l'exige, et le
+      lockfile perd au passage `ajv` en dépendance de développement de la
+      racine — il l'y gardait depuis que les lecteurs sont partis dans le kit.
+      Vérifié par un `npm ci` dans un dossier neuf, hors de tout `node_modules`
+      existant, et pas seulement par un `npm install` sur un arbre déjà peuplé :
+      c'est la question que la Phase 2 a appris à poser.
       *Rétabli : la v4 avait perdu cette tâche.* Elle n'est pas optionnelle —
       dès que les lecteurs quittent `scripts/`, le Playground cesse de
       fonctionner s'il n'installe pas le paquet. C'est aussi la seule preuve
@@ -997,8 +1007,15 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       `100%` devient `100` — le `%` **disparaît**, donc ce n'est plus une
       bijection : `50%` et `50` produiraient la même variable. Les accents,
       eux, survivent.
-- [ ] **T6.0a — Le test d'accord entre la projection et le CSS réellement
-      généré.** *Créée le 4 septembre 2026. À exécuter tout de suite : elle ne
+- [X] **T6.0a — Le test d'accord entre la projection et le CSS réellement
+      généré.** *Écrite et poussée le 4 septembre 2026 —
+      `Playground/src/tokens-accord.test.ts`. Elle est ROUGE, et c'est l'état
+      voulu :* elle nomme les quatre virgules décimales, et rien d'autre sur
+      721 tokens. La CI du Playground est donc rouge sur `main` jusqu'à T6.0,
+      délibérément — c'est le « il était rouge, il est vert » que cette tâche
+      existe pour rendre possible. **T6.0 devient prioritaire par ce seul
+      fait :** une CI rouge qu'on apprend à ignorer ne dit plus rien.
+      *Créée le 4 septembre 2026. À exécuter tout de suite : elle ne
       dépend d'aucune autre tâche, et elle vit chez le consommateur.*
       Pour chaque chemin de token de `tokens.json`, passer ce chemin dans
       `tokenVar` et exiger que la variable ainsi nommée figure parmi les
@@ -1388,6 +1405,25 @@ vert. Le déblocage est la **publication du paquet**, qui rend le lockfile
 régénérable et laisse commiter T2.8. Elle est donc une précondition d'exécution
 au même titre qu'une tâche, et c'est à ce titre qu'elle est écrite ici plutôt
 que dans une note de bas de page.
+
+**Levé le 4 septembre 2026.** `@ucm-kit/core` est sur le registre en 0.1.0 et
+0.1.1, le lockfile du Playground porte une entrée réelle, `npm ci` y passe
+depuis un dossier neuf, et T2.8 est commité et poussé. L'écart est refermé.
+
+*Ce que la publication a coûté, et ce qu'elle a appris.* Les deux premières
+versions sont parties **à la main**, avec un code 2FA : le workflow
+`publish.yml` rendait « OIDC permission denied ». La cause n'était dans aucun
+des cinq réglages soupçonnés — elle était dans l'**entrée d'éditeur de
+confiance** enregistrée chez npm, que npm ne valide pas au moment où on l'écrit,
+donc qu'aucun message n'aurait pu désigner. La supprimer et la recréer a suffi :
+l'exécution suivante est passée du 403 à un 409 « cette version existe déjà »,
+sans qu'une ligne du dépôt ait changé entre les deux. La publication sans jeton
+fonctionne à partir de là, et le fichier de workflow porte le récit sourcé.
+*Le prix de l'enquête est la leçon :* le journal du workflow avait accumulé
+quatre états successifs de diagnostic, chacun écrit comme un fait. C'est
+exactement la maladie que le préalable T0 traite dans les documents, apparue
+dans un fichier que T0 ne couvre pas. **Un commentaire qui décrit un état
+transitoire porte sa date, ou il ne s'écrit pas.**
 
 ---
 
