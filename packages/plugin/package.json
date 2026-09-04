@@ -1,0 +1,24 @@
+{
+  "name": "ucm-exporter-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Plugin Figma qui extrait un contrat UCM et des tokens DTCG. Il ne modifie jamais le document.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build:code": "esbuild src/code.ts --bundle --outfile=dist/code.js --platform=browser --target=chrome80 --sourcemap",
+    "build:ui:js": "esbuild src/ui/index.js --bundle --outfile=dist/ui.js --format=iife --platform=browser --target=chrome80 --minify",
+    "build:ui": "npm run build:ui:js && node scripts/build-ui.cjs",
+    "build:manifest": "node scripts/build-manifest.cjs",
+    "build": "npm run typecheck && npm run build:code && npm run build:ui && npm run build:manifest",
+    "start": "npm run build",
+    "test": "node scripts/run-tests.cjs"
+  },
+  "dependencies": {
+    "@ucm/kit": "0.1.0"
+  },
+  "devDependencies": {
+    "@figma/plugin-typings": "^1.68.0",
+    "ajv": "^8.20.0",
+    "esbuild": "^0.25.0"
+  }
+}

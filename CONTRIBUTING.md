@@ -188,7 +188,8 @@ jamais rester silencieuse.
 - Un composant imbriqué contracté devient une dépendance de composition ; son
   contenu interne n’est pas réexporté par le parent.
 - Un changement de forme du contrat incrémente `contractVersion`.
-- Le schéma publié dans `schema/` est dérivé de `src/contract/types.ts` par
+- Le schéma publié par `@ucm/kit` est dérivé de
+  `packages/kit/src/format/types.ts` par
   `npm run schema`. Il n’est jamais rédigé à la main : une seconde description
   de la même forme finirait par diverger de la première.
 - Le plugin ne modifie jamais le document Figma.
@@ -205,7 +206,7 @@ Aucun artefact de contrat n’est commité ici : un `.contract.json` appartient 
 repository qui le consomme. Un exemplaire gelé dans ce repository ne bougerait
 qu’au réexport, et un test posé dessus ne prouverait que sa propre immobilité.
 
-Les lois de forme d’un contrat vivent donc dans `tests/lois.ts`, et
+Les lois de forme d’un contrat vivent donc dans `packages/plugin/tests/lois.ts`, et
 `tests/exportComponent.test.ts` les applique à CHAQUE contrat que le moteur
 fabrique — renvois qui se résolvent, catalogues sans doublon ni entrée
 orpheline, adresses qui désignent un calque de l’arbre qui les porte, aucune

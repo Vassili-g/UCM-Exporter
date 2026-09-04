@@ -98,7 +98,7 @@ pour un consommateur hors Node.
 Le manifest déclare `enablePrivatePluginApi`, réservé aux plugins privés d’une
 organisation. Un seul appel en dépend : `figma.fileKey`, qui alimente
 `meta.figma.url` — le lien direct vers le composant source
-(`src/contract/exportComponent.ts`). Une publication publique sur la Community
+(`packages/plugin/src/contract/exportComponent.ts`). Une publication publique sur la Community
 suppose de retirer ce drapeau, et le choix de distribution décide donc du
 contenu des contrats.
 
@@ -231,7 +231,7 @@ d’identifiant et de références de tokens.
 
 > ⚠ **BALISE-PERIMEE** — la première phrase est révisée, la seconde ne tient
 > déjà pas. L'identifiant a **deux** implémentations : `codeIdentifier`
-> (`src/utils.ts:28`) et `identifiantCode` du Playground
+> (`packages/kit/src/format/names.ts`) et `identifiantCode` du Playground
 > (`scripts/identifiant-code.mjs`), dont l'en-tête s'annonce lui-même comme une
 > recopie. La projection d'un nom de token en a **trois** — `tokenVar`
 > (`src/tokens.ts:47` du Playground), `nomVariable`

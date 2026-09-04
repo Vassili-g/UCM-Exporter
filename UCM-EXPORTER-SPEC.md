@@ -1564,7 +1564,7 @@ GitHub API déclarée dans le manifest.
 ## Versions
 
 La version actuelle du contrat est celle que publie `CONTRACT_VERSION`, dans
-`src/contract/exportComponent.ts` — l'unique endroit où elle est écrite.
+`packages/kit/src/format/version.ts` — l'unique endroit où elle est écrite.
 `viewStructures`, `viewTypographies`, `viewIcons`, `viewComposes` et
 `viewPaintPlacements` cataloguent séparément chaque partie exacte. Une entrée de
 `variantViews` porte jusqu’à cinq renvois vers ces catalogues ; chaque entrée de

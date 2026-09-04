@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // Le kit se publie en `exports`, et `Node` — l'ancien réglage — ignore les
+    // cartes `exports` : `tsc` rendait « TS2307: Cannot find module
+    // '@ucm/kit/format' » à qui l'importait. C'est vérifié, pas supposé.
+    "moduleResolution": "Bundler",
+    "noEmit": true
+  },
+  "include": ["src/**/*", "scripts/**/*", "tests/**/*"]
+}

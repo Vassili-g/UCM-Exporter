@@ -1,0 +1,27 @@
+{
+  "name": "@ucm/kit",
+  "version": "0.1.0",
+  "description": "Le format de contrat UCM : ses types, sa version, ses règles de nommage et son schéma.",
+  "type": "module",
+  "files": [
+    "dist",
+    "schema"
+  ],
+  "exports": {
+    "./format": {
+      "types": "./dist/format/index.d.ts",
+      "default": "./dist/format/index.js"
+    },
+    "./schema": "./schema/ucm-contract.schema.json",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "schema": "tsx scripts/build-schema.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node scripts/run-tests.cjs"
+  },
+  "devDependencies": {
+    "ts-json-schema-generator": "^2.9.0"
+  }
+}

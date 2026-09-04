@@ -1,0 +1,14 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // En workspaces, npm hisse les dépendances à la racine : ces chemins
+    // doivent remonter, sinon le global `figma` disparaît et tout le
+    // typecheck s'effondre — la rupture que T1.1 annonçait « à coup sûr ».
+    "typeRoots": ["../../node_modules/@types", "../../node_modules/@figma"],
+    // Nécessaire pour que `@ucm/kit/format` se résolve par la carte `exports`.
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "outDir": "dist"
+  },
+  "include": ["src/**/*", "tests/**/*", "scripts/**/*"]
+}

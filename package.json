@@ -1,24 +1,19 @@
 {
-  "name": "ucm-exporter",
+  "name": "ucm-monorepo",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "build:code": "esbuild src/code.ts --bundle --outfile=dist/code.js --platform=browser --target=chrome80 --sourcemap",
-    "build:ui:js": "esbuild src/ui/index.js --bundle --outfile=dist/ui.js --format=iife --platform=browser --target=chrome80 --minify",
-    "build:ui": "npm run build:ui:js && node scripts/build-ui.js",
-    "build:manifest": "node scripts/build-manifest.js",
-    "build": "npm run typecheck && npm run build:code && npm run build:ui && npm run build:manifest",
-    "start": "npm run build",
-    "test": "node scripts/run-tests.js",
-    "schema": "tsx scripts/build-schema.ts"
+    "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p tsconfig.json",
+    "test": "npm run test --workspaces --if-present && node scripts/run-tests.cjs",
+    "build": "npm run build --workspace @ucm/kit && npm run build --workspace ucm-exporter-plugin",
+    "schema": "npm run schema --workspace @ucm/kit",
+    "start": "npm run build"
   },
   "devDependencies": {
-    "@figma/plugin-typings": "^1.68.0",
     "@types/node": "^22.0.0",
-    "ajv": "^8.20.0",
-    "esbuild": "^0.25.0",
-    "ts-json-schema-generator": "^2.9.0",
     "tsx": "^4.20.0",
     "typescript": "^5.5.3"
   }

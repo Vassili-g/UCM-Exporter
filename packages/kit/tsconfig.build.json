@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "moduleResolution": "Bundler",
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "noEmit": false
+  },
+  // Seul le sous-chemin format se compile : les lecteurs qui le rejoindront en
+  // Phase 2 sont du JavaScript pur et se publieront tels quels.
+  "include": ["src/format/**/*"]
+}
