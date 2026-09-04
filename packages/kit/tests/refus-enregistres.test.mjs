@@ -21,9 +21,9 @@
  * contrôle perdu. Un instantané qui prétendrait juger serait un instantané qui
  * ment sur ce qu'il prouve.
  *
- * **Pourquoi une empreinte et pas les 7 000 verdicts en clair.** Les quatre
- * contrats figés portent 3 674 feuilles, chacune mutée deux fois : le fichier
- * de référence pèserait des méga-octets et personne ne le relirait. Il porte
+ * **Pourquoi une empreinte et pas les verdicts en clair.** Les quatre contrats
+ * figés portent des milliers de chemins, chacun muté deux fois : le fichier de
+ * référence pèserait des méga-octets et personne ne le relirait. Il porte
  * donc trois choses, et chacune répond à une question différente :
  *   - `controlesDeclenches` — les champs qu'une mutation a fait sortir, index de
  *     tableau EFFACÉS (`children[3].slot` devient `children[].slot`). Sans cet
@@ -53,24 +53,30 @@ const dossierFiges = join(ici, "..", "fixtures", "contrats", "11.0");
 const cheminReference = join(ici, "refus-enregistres.json");
 
 /**
- * Tous les chemins de FEUILLE d'un contrat.
+ * Tous les chemins d'un contrat : les feuilles ET les conteneurs.
  *
- * Un objet ou un tableau vide compte pour une feuille : `{}` et `[]` sont des
- * valeurs publiées que le format distingue de l'absence, et les sauter
- * laisserait hors mutation les champs « bloc vide » que la 4.0 a introduits
- * précisément pour ça.
+ * Un objet ou un tableau vide compte : `{}` et `[]` sont des valeurs publiées
+ * que le format distingue de l'absence, et les sauter laisserait hors mutation
+ * les champs « bloc vide » que la 4.0 a introduits précisément pour ça.
+ *
+ * **Les conteneurs ont été ajoutés après coup, et l'oubli valait la peine
+ * d'être trouvé.** Le plan disait « muter chaque feuille » ; à ne muter que
+ * les feuilles, `viewStructures` n'était jamais muté — seulement ses
+ * descendants —, et le contrôle « `viewStructures` est un objet » n'apparaissait
+ * dans aucun inventaire. Or c'est exactement la forme de contrôle qu'un élagage
+ * trop large emporte : celle qui juge le BLOC, pas son contenu. Un harnais qui
+ * ne mesure pas cette classe-là mesure la moitié du risque.
  */
-function feuilles(valeur, prefixe = "") {
+function chemins(valeur, prefixe = "") {
   if (Array.isArray(valeur)) {
-    return valeur.length === 0
-      ? [prefixe]
-      : valeur.flatMap((item, index) => feuilles(item, `${prefixe}[${index}]`));
+    const enfants = valeur.flatMap((item, index) => chemins(item, `${prefixe}[${index}]`));
+    return prefixe === "" ? enfants : [prefixe, ...enfants];
   }
   if (valeur !== null && typeof valeur === "object") {
-    const cles = Object.keys(valeur);
-    return cles.length === 0
-      ? [prefixe]
-      : cles.flatMap((cle) => feuilles(valeur[cle], prefixe ? `${prefixe}.${cle}` : cle));
+    const enfants = Object.keys(valeur).flatMap(
+      (cle) => chemins(valeur[cle], prefixe ? `${prefixe}.${cle}` : cle),
+    );
+    return prefixe === "" ? enfants : [prefixe, ...enfants];
   }
   return [prefixe];
 }
@@ -129,7 +135,7 @@ export function releverLesRefus(contrat) {
   const controles = new Set();
   let refusees = 0;
 
-  for (const chemin of feuilles(contrat)) {
+  for (const chemin of chemins(contrat)) {
     for (const [nom, transformer] of MUTATIONS) {
       const verdict = champsInvalidesDuContrat(muter(contrat, chemin, transformer))
         .slice()
