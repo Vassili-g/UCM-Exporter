@@ -38,7 +38,8 @@
     "prepare": "npm run build",
     "schema": "tsx scripts/build-schema.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "node scripts/run-tests.cjs"
+    "test": "node scripts/run-tests.cjs",
+    "refus": "node scripts/generer-refus.mjs"
   },
   "dependencies": {
     "ajv": "^8.20.0"
