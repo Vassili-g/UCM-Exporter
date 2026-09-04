@@ -70,6 +70,27 @@ jobs:
           echo "Environment          : (aucun)"
           echo "workflow_ref complet : $GITHUB_WORKFLOW_REF"
 
+      # LE point qui manquait, et il est documenté (actions/setup-node#1551).
+      # `registry-url` écrit dans le .npmrc du runner une ligne
+      # `_authToken=${NODE_AUTH_TOKEN}` même sans jeton. npm y voit une
+      # authentification déjà configurée et NE DÉCLENCHE JAMAIS l'échange de
+      # jeton OIDC : il publie avec une identité vide, et le registre refuse.
+      #
+      # C'est ce qui rendait le symptôme incompréhensible : la signature de
+      # provenance, elle, lit directement les variables ACTIONS_ID_TOKEN_REQUEST_*
+      # et réussissait. Le même jeton signait donc l'attestation et se voyait
+      # refuser la publication — parce que la publication ne l'utilisait pas.
+      #
+      # Retirer `registry-url` ne marche pas non plus : sans registre configuré,
+      # npm rend `ENEEDAUTH`. Il faut les deux — le registre, et pas de ligne
+      # d'authentification.
+      - name: Retirer la ligne d'authentification vide
+        run: |
+          npmrc="${NPM_CONFIG_USERCONFIG:-$HOME/.npmrc}"
+          sed -i '/_authToken/d' "$npmrc"
+          echo "--- .npmrc effectif ---"
+          cat "$npmrc"
+
       - run: npm ci
       - run: npm test
 
@@ -78,18 +99,28 @@ jobs:
       # dit publiquement de quel commit et de quel workflow ce tarball sort.
       #
       # ⚠ État au 4 septembre 2026 : ce dernier pas rend « OIDC permission
-      # denied ». npm reconnaît donc l'OIDC et REFUSE l'identité — ce n'est plus
-      # un problème d'authentification mais d'autorisation, et le refus ne dit
-      # jamais quel champ ne correspond pas. Deux causes restent en lice, et la
-      # provenance a été écartée par l'essai (`NPM_CONFIG_PROVENANCE: false`
-      # donne le même refus) :
-      #   1. un champ de l'éditeur de confiance qui diffère de ce que l'étape
-      #      « Identité OIDC » affiche juste au-dessus ;
-      #   2. le dépôt est PRIVÉ, et npm pourrait ne pas accepter le trusted
-      #      publishing depuis un dépôt privé.
+      # denied ». Le jeton OIDC est pourtant VALIDE et accepté — la preuve est
+      # juste au-dessus dans le journal, npm signe l'attestation de provenance
+      # et la publie dans Sigstore avec ce même jeton. Le refus est donc une
+      # décision d'AUTORISATION : npm reconnaît l'identité et ne la trouve pas
+      # dans la liste des publieurs admis pour ce paquet.
+      #
+      # Cinq causes ont été testées et ÉCARTÉES, chacune par une exécution
+      # réelle. Ne pas les refaire :
+      #   1. provenance — désactivée par NPM_CONFIG_PROVENANCE, même refus ;
+      #   2. dépôt privé — passé en public, même refus (la provenance, elle,
+      #      s'est mise à fonctionner : elle exige bien du code public) ;
+      #   3. « Publishing access » du paquet — basculé de « 2FA ou jeton à
+      #      contournement » vers « 2FA et aucun jeton », même refus ;
+      #   4. `--workspace` — remplacé par une publication depuis le dossier du
+      #      paquet, même refus ;
+      #   5. version de npm — 12.0.2 en CI, très au-dessus du seuil OIDC.
+      #
+      # Reste l'entrée d'éditeur de confiance elle-même, que seul le
+      # propriétaire du paquet peut lire. L'étape « Identité OIDC » ci-dessus
+      # affiche exactement ce qu'il faut y retrouver, champ par champ.
+      #
       # Tant que ce n'est pas tranché, la publication se fait à la main avec un
       # code 2FA. Ce workflow reste ici : il est correct jusqu'à ce pas, et
-      # `npm ci` + `npm test` y valident déjà la publication à venir.
-      - name: Publier depuis le dossier du paquet
-        working-directory: packages/kit
-        run: npm publish
+      # `npm ci` + `npm test` y valident déjà ce qui sera publié.
+      - run: npm publish --workspace @ucm-kit/core
