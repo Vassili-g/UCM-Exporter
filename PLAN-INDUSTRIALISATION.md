@@ -476,7 +476,52 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       perdre une règle sans le voir. L'élagage a lieu ensuite, en T2.1b, sur un
       code déjà déplacé et déjà vert.
 
-- [ ] **T2.1b — ⚠ Élaguer la matrice de compatibilité à deux versions (D8).**
+- [X] **T2.1b — ⚠ Élaguer la matrice de compatibilité à deux versions (D8).**
+      *Close le 4 septembre 2026, les trois étapes faites, en quatre commits.*
+      **Ce que l'exécution a rendu, et ce qu'elle a trouvé en plus.**
+      *Étape 2 — le harnais de mutation* (`kit/tests/refus-enregistres.test.mjs`).
+      11 260 mutations sur les quatre contrats 11.0 figés plus deux formes
+      fabriquées ; chaque chemin est supprimé, puis remplacé par une valeur d'un
+      autre type. L'instantané porte trois choses parce qu'elles répondent à
+      trois questions : l'inventaire des contrôles exercés, le partage refusé /
+      muet, et une empreinte SHA‑256 de la totalité des verdicts. Le générateur
+      IMPORTE le harnais du test au lieu d'en recopier le corps — sans quoi les
+      deux finissent par mesurer des choses différentes sans qu'aucun rouge
+      n'apparaisse.
+      *Un angle mort du plan, trouvé en sondant.* « Muter chaque feuille » ne
+      suffit pas : `viewStructures` n'est jamais une feuille, seulement un
+      conteneur, et le contrôle « ce bloc est un objet » n'apparaissait donc
+      dans aucun inventaire. Or c'est exactement la classe qu'un élagage trop
+      large emporte — celle qui juge le BLOC, pas son contenu. Les conteneurs
+      sont mutés aussi.
+      *Étape 3, la coupe.* `CHAMPS_VERSION_11` était **structurellement
+      inatteignable** : la fonction sort plus tôt pour `major >= 11`, et l'appel
+      récursif lit une forme canonique. Vérifié en le remplaçant par un `throw`.
+      Rien n'est perdu, et c'est mesuré : ses deux contrôles sont rendus par
+      l'autre passe sur un contrat 12.0 muté.
+      *Étape 3, le renommage.* `formeCanonique` et
+      `champsInvalidesDeLaFormeCanonique`. La grammaire de lecture est devenue
+      un paramètre interne de `champsInvalidesDuContrat` : la substitution ne
+      quitte plus cette portée, et le contrat garde la version qu'un message
+      d'erreur doit pouvoir citer. Un garde-fou de source empêche le retour de
+      la réécriture — il lit la source et l'assume, la substitution n'étant
+      observable par aucun appelant.
+      *Un commentaire est devenu faux par ce changement* — celui de
+      `validerPlacement120`, qui invoquait la réécriture pour justifier où vit
+      le contrôle. Corrigé dans le même geste : la contrainte tient, sa
+      formulation non.
+      *La correction de comportement, en deux moitiés et non une.* L'ordre
+      inversé fait parvenir le verdict de version au rapport ; le TITRE, lui,
+      comptait encore ce contrat parmi les invalides. Les deux sont faits.
+      **La nuance qui manquait à l'énoncé :** la condition n'est pas « la
+      version est mauvaise » mais « la version est LISIBLE et mauvaise ». Un
+      fichier vidé de sa substance n'a pas une version trop ancienne, il n'en a
+      pas — sans cette nuance, l'inversion remplace une accusation fausse par
+      une autre.
+      *Le défaut était LATENT*, comme le plan l'annonçait : il a fallu écrire un
+      scénario où la version ET les champs échouent pour le rendre visible. Il
+      rougit sans la correction.
+      *Énoncé d'origine, conservé :*
       **Lire ceci en entier avant de couper. La v4 de ce plan décrivait cette
       tâche faux, et sa description aurait conduit à supprimer le chemin de
       validation de la version courante.**
