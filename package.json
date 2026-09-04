@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "typecheck": "npm run typecheck --workspaces --if-present && tsc --noEmit -p tsconfig.json",
-    "test": "npm run test --workspaces --if-present && node scripts/run-tests.cjs",
+    "test": "npm run build --workspace @ucm-kit/core && npm run test --workspaces --if-present && node scripts/run-tests.cjs",
     "build": "npm run build --workspace @ucm-kit/core && npm run build --workspace ucm-exporter-plugin",
     "schema": "npm run schema --workspace @ucm-kit/core",
     "start": "npm run build"

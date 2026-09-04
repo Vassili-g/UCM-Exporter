@@ -172,3 +172,60 @@ jobs:
         env:
           PAQUET: ${{ inputs.paquet }}
         run: npm publish --workspace "$PAQUET"
+
+      # L'ÉPREUVE DU REGISTRE, et elle existe parce que son absence a coûté une
+      # version publiée cassée.
+      #
+      # Ce qui s'est passé le 5 septembre 2026. T4.1 a ajouté
+      # `configurationDepuisJson` à la surface publiée du kit SANS monter son
+      # numéro : le dépôt portait 0.1.6 et le registre portait un autre 0.1.6.
+      # `@ucm-kit/cli@0.1.1` est ensuite parti en épinglant `0.1.6`, donc en
+      # allant chercher l'ancien sur le registre, et `npx @ucm-kit/cli` mourait
+      # à l'import sur un export manquant. **Un numéro de version publié est
+      # immuable : changer ce que le kit publie exige de monter son numéro dans
+      # le MÊME commit.**
+      #
+      # Aucun contrôle du dépôt ne pouvait le voir, et c'est le point. `npm ci`
+      # lie le workspace : tout se construit, se type et se teste contre la
+      # source d'à côté, qui est juste. Le seul endroit où le mensonge existe
+      # est le registre, et le seul moyen de l'y voir est d'y aller.
+      #
+      # L'épreuve est donc faite d'un consommateur réel : un dossier vide, sans
+      # `package.json`, sans `node_modules`, et la commande qu'un repo tiers
+      # lance vraiment. Elle est POSTÉRIEURE à la publication — une version part
+      # pour toujours et rien ne la rattrape —, et c'est déjà tout ce qu'il
+      # faut : elle transforme un mensonge qui aurait vécu des jours en un run
+      # rouge dans la minute, quand le correctif ne coûte qu'un numéro de plus.
+      - name: Épreuve du registre
+        env:
+          PAQUET: ${{ inputs.paquet }}
+        run: |
+          version=$(node -p "require('./packages/${PAQUET#@ucm-kit/}/package.json').version" 2>/dev/null \
+            || node -p "require('./packages/kit/package.json').version")
+          echo "Épreuve de $PAQUET@$version depuis un dossier vierge."
+          neuf=$(mktemp -d)
+          cd "$neuf"
+
+          # Le registre ne sert pas toujours la nouvelle version dans la
+          # seconde. Une boucle courte distingue « pas encore propagée » de
+          # « cassée », que sans elle on confondrait.
+          for essai in 1 2 3 4 5; do
+            if npm view "$PAQUET@$version" version >/dev/null 2>&1; then break; fi
+            echo "  pas encore visible sur le registre (essai $essai)…"
+            sleep 10
+          done
+
+          if [ "$PAQUET" = "@ucm-kit/cli" ]; then
+            # Exactement ce qu'écrit `ucm init` dans le workflow d'un repo tiers.
+            npx --yes "@ucm-kit/cli@$version" --help
+          else
+            # Les deux sous-chemins publiés, importés comme un consommateur le
+            # fait. Un `exports` fautif ou un import relatif sans extension `.js`
+            # échoue ici et nulle part ailleurs.
+            npm install --no-audit --no-fund "$PAQUET@$version"
+            node --input-type=module -e "
+              await import('@ucm-kit/core/format');
+              await import('@ucm-kit/core/lecteurs');
+              console.log('Les deux sous-chemins du kit se chargent.');
+            "
+          fi
