@@ -12,6 +12,14 @@ Lire uniquement ce qui concerne la tâche :
 3. [CONTRIBUTING.md](./CONTRIBUTING.md) pour les règles de code et de test ;
 4. `src/contract/types.ts` et les tests voisins pour la forme concrète.
 
+> ⚠ **Documentation en partie périmée.** Le code a dépassé des règles écrites
+> ici et ailleurs. La table « Contradictions doc ↔ code » de
+> [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md) les recense, et
+> chacune porte une **BALISE-PERIMEE** à l'endroit exact où la règle fausse est
+> écrite. Avant de traiter une règle documentée comme acquise, ouvrir le fichier
+> qu'elle décrit.
+> Ce bloc est lui-même une balise : il disparaît avec la dernière (T8.8).
+
 Les [invariants](#invariants) sont groupés par domaine — portée du contrat,
 tokens, couleurs, composition, arbre des slots, layout, grilles, diagnostics,
 versionnage. Lire le groupe que la tâche touche, pas la section entière.
@@ -441,6 +449,15 @@ Un `.contract.json` appartient au repository qui le consomme, à côté du code
 qu’il décrit. Un exemplaire commité ici serait un instantané : il ne bougerait
 qu’au réexport, si bien qu’une régression du moteur ne s’y verrait jamais, et
 un test posé dessus ne prouverait que sa propre immobilité.
+
+> ⚠ **BALISE-PERIMEE** — la règle vaut toujours pour les tests du moteur, mais
+> elle est trop absolue pour ce que le plan d'industrialisation installe : le
+> kit doit conserver un jeu de contrats de la version **précédente**, que le
+> moteur ne sait plus fabriquer, sans quoi la fenêtre de lecture à deux versions
+> est inobservable. Un instantané figé assumé n'est pas un test de moteur
+> déguisé. Tranché par T7.0 de
+> [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui réécrit cette
+> règle et retire cette balise.
 
 `tests/lois.ts` est l’unique autorité sur les lois de forme d’un contrat, et
 `tests/exportComponent.test.ts` les applique à CHAQUE contrat que le moteur
