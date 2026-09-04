@@ -26,6 +26,6 @@
     "test": "node scripts/run-tests.cjs"
   },
   "dependencies": {
-    "@ucm-kit/core": "0.1.4"
+    "@ucm-kit/core": "0.1.5"
   }
 }

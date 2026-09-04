@@ -1173,9 +1173,40 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       `check-contract.mjs` fait 663 lignes et n'a **aucun test**, ni direct ni
       transitif. C'est le morceau le plus lu par des humains et le plus
       difficile à corriger une fois publié.
-- [ ] **T5.2 — ⚠ Déplacer le rapport dans le kit. Remontée avant T3.3**, qu'elle
+- [~] **T5.2 — ⚠ Déplacer le rapport dans le kit. Remontée avant T3.3**, qu'elle
       débloque, et avant le reste de la Phase 7, qui en dépend par T3.3 (voir la
       décision écrite en T3.3).
+      **Moitié Exporter faite le 5 septembre 2026, en 0.1.5.** Le kit porte
+      `controle-repository.mjs`, `verdict-bilan.mjs`, `perimetre-rapport.mjs`,
+      `diagnostic-tokens.mjs`, `diagnostic-parite.mjs` et `diagnostic-tests.mjs`,
+      avec leurs tests. 221 tests verts, typecheck vert.
+      **La seconde moitié attend la publication de 0.1.5**, et c'est délibéré :
+      le Playground épingle une version exacte (D7), et l'écart d'ordre déjà
+      enregistré plus bas dit ce que coûte un lockfile qui déclare un paquet
+      absent du registre — `npm ci` échoue et la CI du consommateur ne dit plus
+      rien. Deux copies du rapport coexistent donc le temps d'une publication.
+      C'est la seule fenêtre où la maladie des deux rapports est ouverte, et
+      elle est refermée par le fait qu'aucun consommateur n'appelle encore celui
+      du kit.
+      *Reste à faire, moitié Playground :* `check-contract.mjs` devient un pilote
+      court — lire la configuration, monter l'adaptateur TypeScript, appeler
+      `controlerRepository`, imprimer, publier, sortir ; les quatre modules
+      déplacés et leurs tests sont supprimés ; `echecs-de-tests.mjs` garde sa
+      moitié TAP et gagne la projection vers la forme du rapport ;
+      `parite.mjs` cesse d'exporter `pariteEnEcart` ; `registre-portable.test.mjs`
+      met sa liste à jour ; la caractérisation de `scripts/caracterisation/` est
+      retirée, le kit la portant désormais.
+      *Ce que le déplacement a corrigé au passage, non prévu :* `index.d.mts`
+      déclarait `rendreDiagnostic` et `sectionAvertissementsExport` comme rendant
+      une `string`. Les deux rendent un TABLEAU de lignes, que tous les appelants
+      répandent — un `...` sur la chaîne annoncée aurait poussé ses caractères un
+      par un. Une déclaration qui ment est pire que pas de déclaration, et
+      celle-ci était publiée depuis 0.1.0.
+      *Un filet ajouté, parce que le déplacement le rend atteignable :* un
+      dossier de contrats introuvable rendait un ENOENT non capturé. Chez le
+      consommateur d'origine `src/` existait toujours ; ailleurs c'est un
+      `ucm.config.json` qui se trompe de chemin. Il rend désormais un rapport,
+      comme les deux filets de tokens.
       Allégé de D1 et D2, avec les modules qui l'accompagnent :
       `verdict-bilan.mjs`, `perimetre-rapport.mjs`, `diagnostic-tokens.mjs`
       (allégé), `diagnostic-parite.mjs` (scindé par T2.3), et **la moitié** de
