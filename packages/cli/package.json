@@ -1,0 +1,31 @@
+{
+  "name": "@ucm-kit/cli",
+  "version": "0.1.0",
+  "description": "La ligne de commande UCM : initialiser un repository, lister ce qu'il doit couvrir.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vassili-g/UCM-Exporter.git",
+    "directory": "packages/cli"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "ucm": "src/ucm.mjs"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node scripts/run-tests.cjs"
+  },
+  "dependencies": {
+    "@ucm-kit/core": "0.1.4"
+  }
+}
