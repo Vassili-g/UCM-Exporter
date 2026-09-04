@@ -44,6 +44,20 @@ export function identifiantDuContrat(cheminContrat) {
  * trouvée ».
  */
 export function cheminImplementation(cheminContrat, motif = MOTIF_IMPLEMENTATION_PAR_DEFAUT) {
+  // Ce refus a été écrit APRÈS s'être fait prendre : `contrats.map(cheminDuComposant)`
+  // passe l'index de `map` en second argument, donc un motif valant `0`. La
+  // panne était un `motif.replaceAll is not a function` à trois appels de
+  // profondeur, dans le kit, pour une faute commise chez le consommateur. Dire
+  // ce qu'on attendait et ce qu'on a reçu coûte deux lignes et rend le
+  // coupable au premier coup d'œil.
+  if (typeof motif !== "string") {
+    throw new TypeError(
+      `cheminImplementation attend un motif textuel, par exemple `
+        + `"${MOTIF_IMPLEMENTATION_PAR_DEFAUT}", et a reçu ${JSON.stringify(motif)}. `
+        + `Si l'appel vient d'un \`map\`, c'est l'index que vous lui passez : `
+        + `enveloppez la fonction dans une lambda.`,
+    );
+  }
   const remplace = motif
     .replaceAll("{dir}", dirname(cheminContrat))
     .replaceAll("{id}", identifiantDuContrat(cheminContrat));
