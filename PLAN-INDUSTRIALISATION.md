@@ -267,7 +267,7 @@ plan existe pour qu'il ne se rejoue jamais à la main.
 - [x] **D6 — L'arbitrage sur la publication du plugin est documenté.** Fait,
       dans `PISTES-EVOLUTION.md §2`.
 
-- [ ] **D7 — Version du paquet : réduit.** Un pin **exact** (une version
+- [X] **D7 — Version du paquet : réduit.** Un pin **exact** (une version
       figée, sans `^`) suffit jusqu'au deuxième consommateur.
       Les `dist-tag` par version de contrat et l'export `VERSIONS_LUES` sont la
       bonne réponse, mais deux repos trop tôt : les ouvrir quand un deuxième
@@ -286,7 +286,15 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       laisserait passer une perte de données silencieuse, c'est-à-dire
       exactement le défaut qu'on corrige. Exécutant : T4.3.
 
-- [ ] **D10 — Nommage du paquet.** Vérifié sur le registre : le nom non scopé
+- [X] **D10 — Nommage du paquet. Tranché : `@ucm/kit`.**
+      *Vérifié sur le registre au moment de trancher :* `ucm` est pris (2.2.0),
+      `ucm-kit`, `ucm-contract` et `unified-component-model` sont libres,
+      `@ucm/kit` rend 404. Le scope l'emporte parce qu'il réserve tout l'espace
+      `@ucm/*` — preset, adaptateurs, CLI — qu'un nom non scopé laisserait
+      prendre. **Reste à faire avant la première publication :** créer
+      l'organisation npm `ucm`. Si elle est prise, le repli est `ucm-kit`, et
+      c'est un renommage à faire AVANT de publier, pas après.
+      *Ce que la v5 disait, et qui reste vrai :* Vérifié sur le registre : le nom non scopé
       `ucm` est **pris** (version 2.2.0 publiée). `@ucm/kit` renvoie 404, ce qui
       ne prouve pas que le scope soit libre — une organisation npm peut exister
       sans aucun paquet public, et seule sa création le confirmera. Sont libres
@@ -300,8 +308,8 @@ plan existe pour qu'il ne se rejoue jamais à la main.
 
 ## Phase 1 — Monorepo
 
-- [ ] **T1.0 — ⚠ La coupure passe entre le FORMAT et le MOTEUR, pas entre le
-      plugin et le reste.**
+- [X] **T1.0 — ⚠ La coupure passe entre le FORMAT et le MOTEUR, pas entre le
+      plugin et le reste.** *Fait.*
       *Défaut corrigé :* la v3 déplaçait `src/` vers `packages/plugin/` et
       `schema/` vers `packages/kit/`. Cela créait un **cycle** :
       `scripts/build-schema.ts` importe `CONTRACT_VERSION` (`:20`), lit
@@ -322,7 +330,18 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       Playground, via T2.7 et T6.2. Sa carte `exports` doit donc être propre,
       et `moduleResolution` adapté (T1.1).
 
-- [ ] **T1.1 — Passer en workspaces**, avec les ruptures concrètes identifiées :
+- [X] **T1.1 — Passer en workspaces**, avec les ruptures concrètes identifiées.
+      *Fait, et les six se sont produites.* Deux méritent d'être retenues.
+      Le `.gitattributes` s'est désancré **en silence** : seul `git check-attr`
+      l'a montré, une relecture ne l'aurait pas fait — c'est la vérification
+      qui compte, pas l'attention. Et la friction ESM/CJS n'était pas où la v5
+      l'attendait : `buildUi.test.ts` n'a demandé qu'un `.js` → `.cjs`, tandis
+      que le lanceur de tests du kit, lui, a cassé net parce que le paquet est
+      `type: module`. Les cinq scripts CommonJS passent en `.cjs` pour DÉCLARER
+      leur système de modules au lieu d'en hériter.
+      **Une septième rupture, absente de la liste :** `utils.test.ts` couvrait
+      `utils.ts` (qui part au kit) ET `variables.ts` (qui reste au plugin, avec
+      les globals Figma). Il a fallu le scinder. Toute la liste des ruptures :
       - **`typeRoots` relatif casse à coup sûr.** `tsconfig.json:10` porte
         `["./node_modules/@types", "./node_modules/@figma"]`, résolus
         relativement au tsconfig. En workspaces npm hisse les dépendances à la
@@ -366,7 +385,11 @@ plan existe pour qu'il ne se rejoue jamais à la main.
         déclare « LA règle de nommage du projet — un token s'écrit exactement
         pareil dans un contrat et dans `tokens.json` ». C'est l'invariant même
         sur lequel T2.4 repose. Six importeurs à mettre à jour.
-      - **Deux arbitrages de packaging à prendre**, non pris en v4 : le champ
+      - **Deux arbitrages de packaging, tranchés :** le kit est `type: module`
+        et publie un **build** (`dist/` + `.d.ts`), pour n'imposer TypeScript à
+        personne ; l'ordre de build est écrit dans le script `build` de la
+        racine. Le plugin et la racine restent en CommonJS par défaut, et leurs
+        scripts portent `.cjs`. Énoncé d'origine : le champ
         `type` par paquet — la racine n'en a pas et `run-tests.js`,
         `build-ui.js`, `build-manifest.js` sont du CommonJS chargé par
         `createRequire`, tandis que le kit doit être ESM ; et **le kit
@@ -378,7 +401,13 @@ plan existe pour qu'il ne se rejoue jamais à la main.
         autorisé côté plugin » : il faut corriger cette formulation, et
         l'exigence de carte `exports` n'en est que plus forte.
 
-- [ ] **T1.2 — Déplacer le moteur et le format** selon la coupure T1.0.
+- [X] **T1.2 — Déplacer le moteur et le format** selon la coupure T1.0. *Fait,
+      par `git mv` pour que l'historique suive.* `docLinks.test.ts` vit
+      désormais dans un `tests/` de racine : il balaie la documentation du
+      monorepo, qui n'appartient à aucun des deux paquets. Il a trouvé un lien
+      mort dès sa première exécution après le déplacement.
+      **Conséquence visible :** le plugin se charge dans Figma depuis
+      `packages/plugin/dist/` — le chemin du manifest a changé.
 
 ---
 
