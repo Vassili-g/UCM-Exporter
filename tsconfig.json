@@ -1,15 +1,10 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2019",
-    "module": "ESNext",
-    "lib": ["ES2020", "DOM"],
-    "strict": true,
-    "moduleResolution": "Node",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "resolveJsonModule": true,
-    "typeRoots": ["./node_modules/@types", "./node_modules/@figma"],
-    "outDir": "dist"
+    // Le test de liens balaie la documentation du monorepo, qui vit à la
+    // racine : il ne dépend d'aucun paquet, et n'est donc dans aucun des deux.
+    "moduleResolution": "Bundler",
+    "noEmit": true
   },
-  "include": ["src/**/*", "tests/**/*", "scripts/**/*"]
+  "include": ["tests/**/*", "scripts/**/*"]
 }

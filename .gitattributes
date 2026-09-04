@@ -1,9 +1,15 @@
+# Ces motifs portent un « / » : Git les ancre donc au répertoire de CE fichier,
+# et un déplacement de dossier les désancre SANS RIEN DIRE. C'est arrivé au
+# passage en workspaces — les deux règles ci-dessous ne matchaient plus rien,
+# et seule une vérification (`git check-attr`) l'a montré. Après tout
+# déplacement, revérifier plutôt que supposer.
+
 # Le schéma du contrat est écrit par un script, qui ne produit que des LF.
 # Sans cette ligne, une extraction sous Windows le convertirait en CRLF et
 # toute régénération — ou toute recopie — l'afficherait comme modifié.
-schema/*.json text eol=lf
+packages/kit/schema/*.json text eol=lf
 
 # Les contrats N-1 figés sont des octets, pas seulement du JSON : leurs
 # empreintes sont publiées dans le README voisin, et une conversion en CRLF les
 # invaliderait toutes.
-fixtures/contrats/**/*.json text eol=lf
+packages/kit/fixtures/contrats/**/*.json text eol=lf

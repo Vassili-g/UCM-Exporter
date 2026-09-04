@@ -10,7 +10,7 @@ Lire uniquement ce qui concerne la tâche :
 1. [CONCEPT.md](./CONCEPT.md) pour les responsabilités du modèle ;
 2. [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md) pour le comportement touché ;
 3. [CONTRIBUTING.md](./CONTRIBUTING.md) pour les règles de code et de test ;
-4. `src/contract/types.ts` et les tests voisins pour la forme concrète.
+4. `packages/kit/src/format/types.ts` et les tests voisins pour la forme concrète.
 
 > ⚠ **Documentation en partie périmée.** Le code a dépassé des règles écrites
 > ici et ailleurs. La table « Contradictions doc ↔ code » de
@@ -33,43 +33,54 @@ non décidées dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 ## Carte du code
 
 ```text
-src/
-  code.ts                    routage UI → commandes
-  contract/
-    exportComponent.ts       orchestration et métadonnées
-    componentTree.ts         axes, matrice et wrapper de layout
-    compactVariants.ts       catalogue par partie de vue, et liaisons exactes
-    elideNeutrals.ts         ce que le contrat n’écrit pas : null, {} et []
-    serializeJson.ts         une entrée par ligne, sur deux niveaux
-    layoutNodes.ts           élection du node de layout, une fois par variant
-    exportableNodes.ts       parcours de l'arbre, hors dépendances composées
-    parsers.ts               propriétés Figma → API publique
-    merge*.ts                doc et icônes des règles, rangées sur leur axe
-    rulesModel.ts            modèle pur des règles d’usage
-    semantics.ts             vocabulaire sémantique partagé
-    colorKeys.ts             clé d'une couleur dans la feuille d'un variant
-    structureTree.ts         qui est un conteneur, qui est une feuille
-    unsupportedProperties.ts ce qu'un calque publié porte et que le schéma ignore
-    extract*.ts              structure, layout, tailles, tokens et règles
-    flexLayout.ts            propriétés de flux et avertissements non portables
-    extractSamples.ts        ce que la maquette montre, sans rien exiger
-    slotNames.ts             nommage des slots et calques d'icônes
-    slotRelations.ts         composition et visibilité dans un slot
-    composedComponents.ts    dépendances entre composants
-    nodeBindings.ts          groupes complets de liaisons Figma
-    propertyBindings.ts      component properties situées dans chaque variant
-    propertySurface.ts       surface publique élue : owner direct et wrapper
+packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
+  src/
+    code.ts                    routage UI → commandes
+    contract/
+      exportComponent.ts       orchestration et métadonnées
+      componentTree.ts         axes, matrice et wrapper de layout
+      compactVariants.ts       catalogue par partie de vue, et liaisons exactes
+      elideNeutrals.ts         ce que le contrat n’écrit pas : null, {} et []
+      serializeJson.ts         une entrée par ligne, sur deux niveaux
+      layoutNodes.ts           élection du node de layout, une fois par variant
+      exportableNodes.ts       parcours de l'arbre, hors dépendances composées
+      parsers.ts               propriétés Figma → API publique
+      merge*.ts                doc et icônes des règles, rangées sur leur axe
+      rulesModel.ts            modèle pur des règles d’usage
+      semantics.ts             vocabulaire sémantique partagé
+      colorKeys.ts             clé d'une couleur dans la feuille d'un variant
+      structureTree.ts         qui est un conteneur, qui est une feuille
+      unsupportedProperties.ts ce qu'un calque publié porte et que le schéma ignore
+      extract*.ts              structure, layout, tailles, tokens et règles
+      flexLayout.ts            propriétés de flux et avertissements non portables
+      extractSamples.ts        ce que la maquette montre, sans rien exiger
+      slotNames.ts             nommage des slots et calques d'icônes
+      slotRelations.ts         composition et visibilité dans un slot
+      composedComponents.ts    dépendances entre composants
+      nodeBindings.ts          groupes complets de liaisons Figma
+      propertyBindings.ts      component properties situées dans chaque variant
+      propertySurface.ts       surface publique élue : owner direct et wrapper
+    tokens/exportTokens.ts     export DTCG
+    variables.ts               index commun, collisions et alias
+    base64.ts                  encodage UTF-8/Base64 sans dépendance au sandbox
+    config.ts                  configuration GitHub locale
+    github.ts                  branche, fichier et pull request
+    ui/                        interface du plugin
+  tests/
+  manifest.json              chargé dans Figma depuis packages/plugin/dist/
+
+packages/kit/            le FORMAT : @ucm/kit, publié, ne dépend de personne
+  src/format/              sous-chemin SANS dépendance Node ni Figma
     types.ts                 schéma TypeScript du contrat
-  tokens/exportTokens.ts     export DTCG
-  variables.ts               index commun, collisions et alias
-  utils.ts                   normalisation et identifiant de code
-  base64.ts                  encodage UTF-8/Base64 sans dépendance au sandbox
-  config.ts                  configuration GitHub locale
-  github.ts                  branche, fichier et pull request
-  ui/                        interface du plugin
-tests/
-schema/
-  ucm-contract.schema.json   forme du contrat, dérivée de types.ts
+    version.ts               CONTRACT_VERSION, seul endroit où elle est écrite
+    names.ts                 normalizeName et codeIdentifier
+    index.ts                 ce que le sous-chemin publie
+  scripts/build-schema.ts  génère le schéma depuis types.ts
+  schema/                  le schéma commité, publié en `@ucm/kit/schema`
+  fixtures/contrats/11.0/  jeu N-1 figé, que le moteur ne sait plus fabriquer
+  tests/
+
+tests/                   les tests du monorepo lui-même (liens de la doc)
 ```
 
 ## Invariants
@@ -148,7 +159,7 @@ Le raisonnement vit dans la spécification, en lien.
   de chaque clé observée qui n’en porte pas le nom. Deux tables, une par arbre
   (`fills`, `strokes`) : `colorKeys` décide sur des feuilles séparées, et la
   même clé courte peut désigner deux tokens de part et d’autre. Résolution :
-  `roles[keyRoles[côté][clé] ?? clé]`, et `tests/lois.ts` vérifie sur CHAQUE
+  `roles[keyRoles[côté][clé] ?? clé]`, et `packages/plugin/tests/lois.ts` vérifie sur CHAQUE
   contrat que la réponse existe et qu’elle est de la bonne nature.
 - Un rôle de contour ne cite jamais une propriété CSS qui consomme la boîte :
   un stroke Figma se dessine hors du flux et ne déplace aucun voisin, là où
@@ -424,7 +435,7 @@ Le raisonnement vit dans la spécification, en lien.
 
 - Un changement de forme du JSON incrémente `contractVersion` et met à jour la
   spécification et les consommateurs.
-- `schema/ucm-contract.schema.json` est dérivé de `types.ts` par `npm run
+- `packages/kit/schema/ucm-contract.schema.json` est dérivé de `types.ts` par `npm run
   schema`, jamais rédigé. Il décrit la forme, pas la cohérence : il ignore les
   renvois internes et le format des valeurs tokenisées, et ne remplace aucun
   contrôle du consommateur. Sa propre `description` énonce ses limites.
@@ -440,7 +451,7 @@ npm run build
 Un nouveau `tests/*.test.ts` est découvert automatiquement. Tout bug corrigé
 reçoit un test de régression.
 
-Un changement dans `src/contract/types.ts` demande `npm run schema` : le schéma
+Un changement dans `packages/kit/src/format/types.ts` demande `npm run schema` : le schéma
 commité en est dérivé, et `tests/schema.test.ts` refuse la version périmée en
 la régénérant pour la comparer.
 
@@ -459,7 +470,7 @@ un test posé dessus ne prouverait que sa propre immobilité.
 > [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui réécrit cette
 > règle et retire cette balise.
 
-`tests/lois.ts` est l’unique autorité sur les lois de forme d’un contrat, et
+`packages/plugin/tests/lois.ts` est l’unique autorité sur les lois de forme d’un contrat, et
 `tests/exportComponent.test.ts` les applique à CHAQUE contrat que le moteur
 fabrique : renvois qui se résolvent, catalogues sans doublon ni entrée
 orpheline, adresses — slotPath de typographie, chemins de peintures,

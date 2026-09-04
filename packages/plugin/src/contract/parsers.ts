@@ -1,0 +1,274 @@
+/**
+ * Traduction des propriétés Figma en props publiques du contrat.
+ */
+import { normalizeName } from '@ucm/kit/format';
+import { semanticEnumName } from './semantics';
+import type { ContractProp } from '@ucm/kit/format';
+
+/**
+ * Normalise un nom de propriété Figma en clé camelCase.
+ * Étapes : retirer l'identifiant interne (« #12:3 »), marquer les frontières
+ * du camelCase existant pour ne pas l'aplatir (`iconLeft` reste `iconLeft`),
+ * puis recomposer mot à mot.
+ *
+ * @example normalizePropKey('Icon Position#12:3') // → 'iconPosition'
+ */
+export function normalizePropKey(name: string): string {
+  const withoutFigmaId = name.replace(/#.*$/, '');
+  // Insère une frontière avant chaque majuscule interne ('iconLeft' → 'icon Left').
+  const withCamelBoundaries = withoutFigmaId.replace(/([a-z0-9])([A-Z])/g, '$1 $2');
+  const words = normalizeName(withCamelBoundaries)
+    .replace(/\./g, '-')
+    .split('-')
+    .filter(Boolean);
+
+  return words
+    .map((word, index) => (index === 0 ? word : word[0].toUpperCase() + word.slice(1)))
+    .join('');
+}
+
+/** Normalise une valeur de variante (minuscules, espaces → tirets). */
+export function normalizePropValue(value: string): string {
+  return normalizeName(value).replace(/\./g, '-');
+}
+
+/**
+ * Lit une prop par son nom sans jamais atteindre le prototype d'`Object`.
+ *
+ * Les noms interrogés viennent de Figma ou du texte libre d'une règle, et
+ * `props` est un objet littéral : demander « constructor » ou « toString » y
+ * obtiendrait une fonction héritée pour réponse, donc une prop que le composant
+ * n'expose pas. Unique autorité sur cette lecture, pour que la précaution ne
+ * dépende pas de la vigilance de chaque appelant.
+ */
+export function propByName(
+  props: Record<string, ContractProp>,
+  name: string,
+): ContractProp | undefined {
+  return Object.prototype.hasOwnProperty.call(props, name) ? props[name] : undefined;
+}
+
+/**
+ * Écrit une prop sans jamais atteindre le prototype d'`Object`.
+ *
+ * Les clés viennent de Figma — nom d'une component property, nom d'un calque
+ * d'icône — et `props` est un objet littéral : `props[key] = prop` laisserait
+ * une propriété nommée « __proto__ » FIXER le prototype au lieu d'occuper une
+ * clé. La prop quitterait le contrat sans un mot, et `propByName` continuerait
+ * de répondre qu'elle n'existe pas. C'est la contrepartie exacte de
+ * `propByName` en écriture, et la seule autorité : la précaution ne doit pas
+ * dépendre de la vigilance de chaque appelant.
+ */
+export function definePropOn(
+  props: Record<string, ContractProp>,
+  key: string,
+  prop: ContractProp,
+): void {
+  Object.defineProperty(props, key, {
+    value: prop, enumerable: true, writable: true, configurable: true,
+  });
+}
+
+/**
+ * Un axe « état » (hover, focus, disabled…) est design-only : il décrit des
+ * états d'interaction, pas des choix d'API. Il est exclu des props — seule
+ * sa valeur Disable devient une prop booléenne `disabled`. Détecté par le
+ * nom de l'axe, donc valable pour n'importe quel composant.
+ */
+export function isStateProperty(key: string): boolean {
+  return key === 'state' || key === 'status';
+}
+
+/**
+ * Vrai pour la valeur d'axe d'états qui devient la prop publique `disabled`.
+ *
+ * Unique autorité sur cette orthographe : le modèle des props la consulte pour
+ * fabriquer la prop, l'échantillon pour dire qu'une dépendance la porte. Deux
+ * expressions régulières jumelles finiraient par accepter des graphies
+ * différentes, et le contrat annoncerait une prop que l'échantillon ne remplit
+ * jamais.
+ */
+export function isDisabledStateValue(value: unknown): boolean {
+  return /^disabl(?:e|ed)$/i.test(String(value).trim());
+}
+
+/**
+ * Convertit les définitions de propriétés Figma en props publiques :
+ * VARIANT → enum, BOOLEAN → boolean, TEXT → string.
+ * La couche sémantique renomme les axes reconnus (ex. axe de tailles →
+ * `size`) en gardant le nom Figma d'origine dans `figmaName`.
+ *
+ * **Une clé publique, un propriétaire.** Les props du contrat vivent dans un
+ * espace de noms PLAT, alors que deux propriétés Figma parfaitement légales
+ * peuvent y prétendre : soit parce que la normalisation efface leur
+ * différence d'écriture (`Icon Left`, `icon-left` et `iconLeft` donnent tous
+ * `iconLeft`), soit parce que la couche sémantique fabrique une clé
+ * (`size`) qu'une autre propriété porte déjà. Le premier arrivé est conservé
+ * et le conflit est signalé — jamais d'écrasement en silence, conformément à
+ * la règle appliquée partout ailleurs (variants, rôles, règles d'icônes).
+ */
+export type ContractPropertyModel = {
+  props: Record<string, ContractProp>;
+  /** Axe normalisé dans Figma → clé réellement publiée dans le contrat. */
+  publicVariantKeyByRawKey: Map<string, string>;
+  /** Nom technique Figma complet (`Label#12:3`) → prop publique. */
+  publicPropertyKeyByFigmaName: Map<string, string>;
+};
+
+export function extractContractPropertyModel(
+  definitions: ComponentPropertyDefinitions,
+  warnings: string[] = [],
+): ContractPropertyModel {
+  const props: Record<string, ContractProp> = {};
+  const publicVariantKeyByRawKey = new Map<string, string>();
+  const publicPropertyKeyByFigmaName = new Map<string, string>();
+  /** Nom Figma qui détient chaque clé publique, pour nommer les deux camps d'un conflit. */
+  const owners = new Map<string, string>();
+
+  // Première passe : TOUTES les clés brutes revendiquées par le fichier Figma.
+  // Sans elle, un renommage sémantique volerait la clé d'une propriété
+  // simplement déclarée plus loin — le résultat dépendrait de l'ordre.
+  const rawKeys = new Set(Object.keys(definitions).map((name) => normalizePropKey(name)));
+
+  // La convention State/Status possède une priorité sémantique : son variant
+  // Disable décrit l'état interactif du composant. Réserver cette prop avant
+  // de parcourir les BOOLEAN rend la sortie indépendante de leur ordre Figma.
+  const disabledState = Object.entries(definitions).find(([propertyName, definition]) =>
+    isStateProperty(normalizePropKey(propertyName)) &&
+    definition.type === 'VARIANT' &&
+    (definition.variantOptions ?? []).some(isDisabledStateValue),
+  );
+  if (disabledState) {
+    const [propertyName, definition] = disabledState;
+    if (definition.type === 'VARIANT') {
+      const rawFigmaName = propertyName.replace(/#.*$/, '');
+      owners.set('disabled', rawFigmaName);
+      definePropOn(props, 'disabled', {
+        type: 'boolean',
+        default: isDisabledStateValue(definition.defaultValue),
+      });
+    }
+  }
+
+  /** Attribue une clé publique, ou refuse et signale le conflit. */
+  const claim = (key: string, figmaName: string, prop: ContractProp): boolean => {
+    const owner = owners.get(key);
+    if (owner !== undefined) {
+      warnings.push(
+        `Component properties « ${owner} » et « ${figmaName} » : leurs noms deviennent ` +
+          `identiques une fois normalisés (« ${key} »). Seule « ${owner} » est exportée. ` +
+          `Renommez l’une des deux.`,
+      );
+      return false;
+    }
+    owners.set(key, figmaName);
+    definePropOn(props, key, prop);
+    return true;
+  };
+
+  for (const [propertyName, definition] of Object.entries(definitions)) {
+    const key = normalizePropKey(propertyName);
+    const rawFigmaName = propertyName.replace(/#.*$/, '');
+
+    if (isStateProperty(key)) {
+      if (definition.type === 'VARIANT') publicVariantKeyByRawKey.set(key, key);
+      continue;
+    }
+
+    if (definition.type === 'VARIANT') {
+      const values = (definition.variantOptions ?? []).map((value) => normalizePropValue(value));
+      const semantic = semanticEnumName(values);
+      // Le nom sémantique ne s'applique que s'il n'entre en conflit avec
+      // AUCUNE clé brute du fichier, pas seulement avec celles déjà traitées.
+      const taken = Boolean(semantic) && semantic !== key && rawKeys.has(semantic as string);
+      if (taken) {
+        warnings.push(
+          `Variant property « ${rawFigmaName} » : ses valeurs sont des tailles, mais une ` +
+            `autre component property porte déjà le nom « ${semantic} ». Elle reste exportée ` +
+            `sous « ${key} ». Renommez l'une des deux si vous voulez « ${semantic} ».`,
+        );
+      }
+      const publicKey = semantic && !taken ? semantic : key;
+      const claimed = claim(publicKey, rawFigmaName, {
+        type: 'enum',
+        values,
+        default:
+          typeof definition.defaultValue === 'string'
+            ? normalizePropValue(definition.defaultValue)
+            : values[0] ?? null,
+        // figmaName n'apparaît que si la clé publique diffère du nom Figma.
+        ...(publicKey !== key ? { figmaName: rawFigmaName } : {}),
+      });
+      if (claimed) {
+        publicVariantKeyByRawKey.set(key, publicKey);
+        publicPropertyKeyByFigmaName.set(propertyName, publicKey);
+      }
+      continue;
+    }
+
+    if (definition.type === 'BOOLEAN') {
+      if (key === 'disabled' && disabledState) {
+        const [statePropertyName, stateDefinition] = disabledState;
+        const stateFigmaName = statePropertyName.replace(/#.*$/, '');
+        const disabledStateName = stateDefinition.type === 'VARIANT'
+          ? (stateDefinition.variantOptions ?? []).find(isDisabledStateValue) ?? 'Disable'
+          : 'Disable';
+        warnings.push(
+          `Component property « ${rawFigmaName} » : l’axe « ${stateFigmaName} » possède déjà le variant ` +
+            `« ${disabledStateName} », qui devient la prop publique « disabled ». Cette boolean property ` +
+            `n’est pas exportée séparément, donc sa valeur par défaut manquerait au développeur. ` +
+            `Supprimez-la si elle pilote le même état ; sinon renommez-la selon le layer distinct qu’elle pilote, puis réexportez.`,
+        );
+        continue;
+      }
+      if (claim(key, rawFigmaName, { type: 'boolean', default: Boolean(definition.defaultValue) })) {
+        publicPropertyKeyByFigmaName.set(propertyName, key);
+      }
+      continue;
+    }
+
+    if (definition.type === 'TEXT') {
+      if (claim(key, rawFigmaName, {
+        type: 'string',
+        ...(typeof definition.defaultValue === 'string'
+          ? { default: definition.defaultValue }
+          : {}),
+      })) publicPropertyKeyByFigmaName.set(propertyName, key);
+      continue;
+    }
+
+    if (definition.type === 'INSTANCE_SWAP') {
+      if (claim(key, rawFigmaName, {
+        type: 'instance-swap',
+        ...(typeof definition.defaultValue === 'string'
+          ? { default: definition.defaultValue }
+          : {}),
+        preferredValues: [...(definition.preferredValues ?? [])],
+      })) publicPropertyKeyByFigmaName.set(propertyName, key);
+      continue;
+    }
+
+    if (definition.type === 'SLOT') {
+      if (claim(key, rawFigmaName, {
+        type: 'slot',
+        ...(typeof definition.defaultValue === 'string'
+          || typeof definition.defaultValue === 'boolean'
+          ? { default: definition.defaultValue }
+          : {}),
+        preferredValues: [...(definition.preferredValues ?? [])],
+        ...(definition.description ? { description: definition.description } : {}),
+        ...(definition.slotSettings ? { settings: { ...definition.slotSettings } } : {}),
+      })) publicPropertyKeyByFigmaName.set(propertyName, key);
+    }
+  }
+
+  return { props, publicVariantKeyByRawKey, publicPropertyKeyByFigmaName };
+}
+
+/** Raccourci historique pour les appelants qui n'ont besoin que des props. */
+export function extractContractProps(
+  definitions: ComponentPropertyDefinitions,
+  warnings: string[] = [],
+): Record<string, ContractProp> {
+  return extractContractPropertyModel(definitions, warnings).props;
+}

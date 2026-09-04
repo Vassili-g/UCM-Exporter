@@ -55,21 +55,30 @@ l’export n’est pas bloqué.
 | `npm test` | Exécute les tests de l’exporteur |
 | `npm run typecheck` | Vérifie TypeScript |
 | `npm run build` | Vérifie puis construit le plugin complet |
-| `npm run schema` | Régénère le JSON Schema du contrat depuis `types.ts` |
+| `npm run schema` | Régénère le JSON Schema du contrat depuis `types.ts` (paquet `@ucm/kit`) |
 
 ## Architecture
 
 ```text
-src/
-  contract/       Extraction des contrats de composant
-  tokens/         Export DTCG
-  ui/             Interface du plugin
-  code.ts         Routage des commandes
-  variables.ts    Index commun des variables et des alias
-  github.ts       Dépôt optionnel par pull request
-schema/
-  ucm-contract.schema.json   Forme du contrat, dérivée de `types.ts`
+packages/plugin/    Le MOTEUR — extraction Figma. Dépend du kit.
+  src/contract/       Extraction des contrats de composant
+  src/tokens/         Export DTCG
+  src/ui/             Interface du plugin
+  src/code.ts         Routage des commandes
+  src/variables.ts    Index commun des variables et des alias
+  src/github.ts       Dépôt optionnel par pull request
+  manifest.json       Le plugin se charge dans Figma depuis son `dist/`
+
+packages/kit/       Le FORMAT — `@ucm/kit`. Ne dépend de personne.
+  src/format/         Types, version et règles de nommage, sans Node ni Figma
+  scripts/            Génération du schéma depuis `types.ts`
+  schema/             Le schéma commité, publié en `@ucm/kit/schema`
+  fixtures/           Contrats d'une version que le moteur ne fabrique plus
 ```
+
+La coupure passe entre le FORMAT et le MOTEUR, et dans un seul sens : le plugin
+importe le kit, jamais l'inverse. C'est ce qui rend le kit régénérable et
+publiable seul.
 
 Le schéma est publié pour les consommateurs qui ne lisent pas TypeScript et
 pour les éditeurs. Il décrit la forme d’un contrat, pas sa cohérence : les
@@ -102,7 +111,7 @@ Chaque document a un rôle unique :
 ## État
 
 La version du contrat est celle que publie `CONTRACT_VERSION`
-(`src/contract/exportComponent.ts`), seul endroit où elle est écrite. Le moteur
+(`packages/kit/src/format/version.ts`), seul endroit où elle est écrite. Le moteur
 accepte un Component seul ou un Component Set. Chaque combinaison exacte porte
 ses tokens et référence une vue composée de cinq renvois indépendants :
 structure, typographie, icônes, dépendances et chemins de peintures. La
