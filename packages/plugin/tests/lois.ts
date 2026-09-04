@@ -14,6 +14,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import Ajv from 'ajv';
+import { champsInvalidesDuContrat, verdictDeVersion } from '@ucm-kit/core/lecteurs';
 import { serializeJson } from '../src/contract/serializeJson';
 
 /**
@@ -418,5 +419,51 @@ export function verifierLeSchema(contrat: Contrat, ou: string): void {
     }),
     false,
     `${ou} : le schéma accepte un contrat qui se déclare dans une autre version`,
+  );
+}
+
+/**
+ * Le lecteur du kit accepte-t-il ce que le moteur vient d'écrire ?
+ *
+ * Question différente de celle du schéma, et c'est pourquoi les deux se posent.
+ * Le schéma est dérivé de `types.ts` : il décrit une FORME, et ne sait rien des
+ * renvois internes ni de la cohérence entre deux champs. `champsInvalidesDuContrat`
+ * est l'autre autorité — celle que le consommateur exécute vraiment avant de
+ * rendre un composant. Un contrat qui valide le schéma et que ce lecteur refuse
+ * est un contrat que le moteur publie et que personne ne peut lire.
+ *
+ * Ce que cette vérification NE fait pas : le graphe. `validerGrapheDesContrats`
+ * répond sur un ENSEMBLE de contrats co-localisés — « cette dépendance a-t-elle
+ * un contrat voisin ? » —, et le moteur en fabrique un seul par scénario. Le
+ * lancer ici accuserait chaque contrat composé de dépendances manquantes, ce qui
+ * ne dit rien du moteur. Cette question-là se pose chez le consommateur, sur un
+ * dossier réel.
+ *
+ * ⚠ Garde-fou, écrit ici parce que c'est ici qu'il se joue. Quand le moteur
+ * produit une forme que ce lecteur refuse, la correction la plus rapide est
+ * d'assouplir le lecteur — et c'est presque toujours la mauvaise. Un
+ * assouplissement qui accompagne un changement de moteur exige un test de refus
+ * sur l'ancienne forme, sans quoi le contrôle disparaît sans que rien ne rougisse.
+ *
+ * *Portée réelle, mesurée et non supposée.* Ce lecteur contrôle la forme des
+ * références de token — `variants[].tokens`, les strokes, les bornes de taille —
+ * ce que le schéma ne peut pas : il les type `Record<string, string>`. Mais un
+ * seul des scénarios de `exportComponent.test.ts` fabrique un variant portant un
+ * token ; les autres n'ont aucune référence à contrôler. Le filet est posé au
+ * bon endroit, pas encore alimenté : un scénario qui lie des variables profite
+ * du contrôle sans rien ajouter, et c'est la raison pour laquelle la
+ * vérification vit sur le chemin d'appel plutôt que dans un test à part.
+ */
+export function verifierLeLecteur(contrat: Contrat, ou: string): void {
+  const version = (contrat.meta as { contractVersion?: unknown } | undefined)?.contractVersion;
+  assert.equal(
+    verdictDeVersion(version),
+    'ok',
+    `${ou} : le kit ne lit pas la version « ${String(version)} » que le moteur écrit`,
+  );
+  assert.deepEqual(
+    champsInvalidesDuContrat(contrat),
+    [],
+    `${ou} : le lecteur du kit refuse des champs de ce contrat`,
   );
 }
