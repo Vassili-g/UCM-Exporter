@@ -90,4 +90,6 @@ jobs:
       # Tant que ce n'est pas tranché, la publication se fait à la main avec un
       # code 2FA. Ce workflow reste ici : il est correct jusqu'à ce pas, et
       # `npm ci` + `npm test` y valident déjà la publication à venir.
-      - run: npm publish --workspace @ucm-kit/core
+      - name: Publier depuis le dossier du paquet
+        working-directory: packages/kit
+        run: npm publish
