@@ -1244,6 +1244,76 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       explicite l'état actuel, pour qu'un repo tiers ne le découvre pas à
       l'exécution.
 
+### 8.4 — Les deux vitrines
+
+*Ajouté le 4 septembre 2026, à la publication du paquet.* Ces deux documents ne
+sont pas du rangement comme le reste de la Phase 8 : ce sont les seuls écrans
+qu'un inconnu voit. Ils échouent pour deux raisons opposées, et une seule des
+deux tâches attend la Phase 8.
+
+- [ ] **T8.11 — ⚠ Le README du paquet npm** (`packages/kit/README.md`).
+      **À exécuter tout de suite : le paquet est publié, cette page est déjà en
+      ligne.** Elle ne dépend d'aucune autre tâche.
+      *Ce qui ne va pas, vérifié :*
+      - **aucune ligne d'installation.** Zéro occurrence de `npm install` dans
+        le fichier. Un visiteur ne peut rien copier.
+      - **aucun exemple exécutable.** L'unique bloc de code est une liste
+        d'`import` : il montre ce qu'on peut importer, jamais ce qu'on en fait.
+        Le paquet sert à juger un contrat, et la page ne juge aucun contrat.
+      - **l'ordre est inversé.** La première section explique *pourquoi* la
+        frontière `format` / `lecteurs` existe. C'est une connaissance de
+        mainteneur, placée là où arrive un étranger. Le pourquoi est bon — il
+        vient après le comment.
+      - **`verdictDeVersion` est le seul concept développé, et sans code.** La
+        distinction ancien / récent est ce que ce paquet apporte de plus utile ;
+        elle mérite trois lignes qu'on peut exécuter.
+      - **rien ne dit d'où vient un contrat.** La page ne renvoie ni au plugin,
+        ni au dépôt, ni à un exemple de `.contract.json`.
+      - **rien ne dit ce que le paquet NE fait pas**, alors que ce projet est
+        rigoureux là-dessus partout ailleurs.
+      *Ce qui est bon et doit rester :* la définition d'un contrat en un
+      paragraphe, et la raison de la coupure des sous-chemins — déplacée plus
+      bas, pas supprimée.
+      **⚠ Arbitrage que cette tâche force, et que la Phase 8 avait anticipé :
+      la langue.** Le préambule de la Phase 8 dit que le seul événement qui
+      rouvrirait la question est « une publication publique », parce qu'elle met
+      « mécaniquement le projet devant un public non francophone » — et il
+      ajoute que c'est **à ce moment-là, et pas après**, qu'il faut trancher.
+      Cet événement vient d'avoir lieu. La question ne porte pas sur le
+      repository ni sur les noms de symboles, qui restent français par décision
+      ; elle porte sur cette page-ci, et sur elle seule.
+
+- [ ] **T8.12 — Le README GitHub** (`README.md` de la racine).
+      *Reste en Phase 8 :* il dépend de T8.1, qui décide où vit la description
+      du format une fois la spécification scindée.
+      *Ce qui ne va pas, vérifié :*
+      - **il se contredit lui-même, aujourd'hui.** La carte de l'architecture
+        annonce `fixtures/ — Contrats d'une version que le moteur ne fabrique
+        plus` (`:76`), et la section « État » affirme « Ce repository ne contient
+        aucun artefact de contrat » (`:131`). Cinquante-cinq lignes d'écart. La
+        seconde phrase est celle que T7.0 vient de réécrire dans `AGENTS.md` : le
+        README est resté sur l'ancienne règle. **C'est une contradiction créée
+        par le commit de T7.0**, et elle n'a pas de balise parce qu'aucune
+        n'était prévue pour un document que la tâche ne visait pas.
+      - **`packages/kit/` y est décrit « Ne dépend de personne »** (`:72`),
+        alors que le paquet dépend d'`ajv`. C'est le SOUS-CHEMIN `format` qui ne
+        dépend de rien, pas le paquet — et cette nuance est exactement celle que
+        toute l'architecture protège.
+      - **c'est un document de contributeur, pas une vitrine.** Commandes de
+        build, identifiant placeholder du manifest, `enablePrivatePluginApi` :
+        du `CONTRIBUTING.md` dans le premier écran.
+      - **rien à voir.** Un outil qui exporte des composants ne montre aucun
+        extrait de contrat, aucune capture. Le lecteur ne sait pas à quoi
+        ressemble ce qu'il produirait.
+      - **la section « État » est un condensé de spécification** —
+        `rendering.keyRoles`, « cinq renvois indépendants », élision des valeurs
+        neutres. Elle appartient au document de format que T8.1 crée.
+      - **le paquet publié n'est mentionné nulle part** comme étant installable.
+      *Borne :* corriger les deux contradictions ci-dessus ne demande pas
+      d'attendre T8.1 et ne doit pas attendre — une règle fausse dans le premier
+      fichier que lit un visiteur est exactement ce que le préalable T0
+      combattait. Les traiter dès maintenant, le reste avec la Phase 8.
+
 ---
 
 ## Retiré du périmètre
