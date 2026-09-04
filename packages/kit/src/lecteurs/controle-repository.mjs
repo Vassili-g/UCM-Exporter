@@ -121,6 +121,13 @@ function analyser(chemin, contexte, erreursGraphe = []) {
     manquants: [], nonListes: [], fantomes: [], typesTypographiques: [], total: 0,
     graphe: erreursGraphe,
     parite: pariteVide(),
+    // **Un relevé vide n'est pas un relevé vierge**, et les confondre était un
+    // défaut réel, trouvé en passant un repo neuf au contrôle. Chaque sortie
+    // anticipée — fichier illisible, champs absents, version hors fenêtre —
+    // rend `parite` sans l'avoir mesurée, et le terminal y lisait
+    // « code conforme » : la phrase exacte que T2.3 a écrit une classe entière
+    // de code pour ne plus jamais prononcer sans avoir lu.
+    pariteMesuree: false,
   };
 
   let contrat;
@@ -193,6 +200,7 @@ function analyser(chemin, contexte, erreursGraphe = []) {
 
   return {
     ...vide,
+    pariteMesuree: true,
     version: versionIncompatible,
     // Ce que l'export a signalé. Le contrat le porte déjà ; il ne manquait
     // qu'un lecteur du côté de la CI.
@@ -438,15 +446,22 @@ function terminalDesBilans(bilans) {
     const contratValide = tokensValides && bilan.graphe.length === 0 && !bilan.version;
     const aAvertir = bilan.manquants.length > 0 || ecartDeParite;
     const marque = contratValide ? (aAvertir ? "⚠" : "✓") : "✗";
-    const etatDuCode = bilan.parite.implementationAbsente
-      ? "implémentation en attente (autorisé)"
-      // Ne jamais dire « conforme » de ce qu'on n'a pas lu : c'est la moitié du
-      // défaut que T2.3 corrige. Le fichier est là, l'adaptateur n'en a rien tiré.
-      : bilan.parite.implementationNonLue
-        ? `implémentation présente, non lue par l'adaptateur (${bilan.parite.implementationNonLue})`
-        : ecartDeParite
-          ? "code en écart"
-          : "code conforme";
+    const etatDuCode = !bilan.pariteMesuree
+      // L'analyse s'est arrêtée avant la parité : le contrat est illisible, ou
+      // sa version n'est pas lue. Rien n'a été comparé, et le dire est la seule
+      // phrase vraie — « conforme » accuserait le contraire de ce qui s'est
+      // passé, sur la ligne même qui annonce le refus.
+      ? "code non examiné"
+      : bilan.parite.implementationAbsente
+        ? "implémentation en attente (autorisé)"
+        // Ne jamais dire « conforme » de ce qu'on n'a pas lu : c'est la moitié
+        // du défaut que T2.3 corrige. Le fichier est là, l'adaptateur n'en a
+        // rien tiré.
+        : bilan.parite.implementationNonLue
+          ? `implémentation présente, non lue par l'adaptateur (${bilan.parite.implementationNonLue})`
+          : ecartDeParite
+            ? "code en écart"
+            : "code conforme";
     fil.push({
       flux: "log",
       texte: `${marque} ${bilan.fichier} : ${libelleNombre(bilan.total, "référence")} contrôlée${bilan.total === 1 ? "" : "s"}, ${etatDuCode} (${bilan.relatif})`,

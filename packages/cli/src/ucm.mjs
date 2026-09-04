@@ -2,16 +2,17 @@
 /**
  * `ucm` : la ligne de commande du kit.
  *
- * Elle n'a que deux commandes aujourd'hui, et ne prétend pas en avoir trois.
- * `ucm check` (T3.3) attend que l'orchestration du contrôle rejoigne le kit
- * (T5.2) : l'écrire ici en attendant produirait un second rapport qui
- * divergerait du premier, et le désaccord serait muet — la maladie exacte que
+ * Aucune commande n'orchestre quoi que ce soit : `ucm check` appelle le
+ * contrôle du kit (T5.2) et se contente d'imprimer, d'écrire si on le lui
+ * demande et de choisir un code de sortie. En écrire une seconde version ici
+ * produirait deux rapports qui divergeraient en silence — la maladie exacte que
  * T2.7, T6.0 et T2.6 ont soignée ailleurs dans ce projet.
  *
  * Le code de sortie est la seule chose qu'un workflow lise sans ambiguïté : 0
- * quand la commande a fait ce qu'on lui demandait, 2 quand l'invocation
- * elle-même est fautive. Le 1 est réservé à `ucm check`, pour qu'il désigne
- * toujours « des contrôles ont échoué » et jamais « je n'ai pas compris ».
+ * quand la commande a fait ce qu'on lui demandait, 1 quand des contrôles ont
+ * échoué, 2 quand l'invocation ou la configuration est fautive. Le 1 et le 2 ne
+ * se confondent jamais, sinon une faute de frappe dans un drapeau se lirait
+ * comme un export en défaut.
  */
 import { realpathSync } from "node:fs";
 import process from "node:process";
@@ -19,21 +20,26 @@ import { pathToFileURL } from "node:url";
 
 import { lireConfiguration } from "@ucm-kit/core/lecteurs";
 
+import { check } from "./check.mjs";
 import { iconesDuRepository, rendreIcones } from "./icons.mjs";
 import { init, rendreInit } from "./init.mjs";
 
 const AIDE = `ucm — la ligne de commande UCM
 
   ucm init            installe ce qui manque à ce repository, sans rien écraser
+  ucm check           contrôle les contrats et rend le rapport du designer
   ucm icons           liste les icônes que les contrats réclament
   ucm --help          affiche cette aide
 
-Le contrôle des contrats (\`ucm check\`) n'existe pas encore : l'orchestration
-qu'il demande vit toujours chez le repository de démonstration et rejoindra le
-paquet avec la Phase 5 du plan d'industrialisation.`;
+  ucm check [--base <sha>] [--report <chemin>]
+      --base    limite les états informatifs aux contrats modifiés depuis ce sha
+      --report  écrit le rapport markdown à ce chemin, en plus du terminal
+
+Codes de sortie : 0 tout est passé, 1 des contrôles ont échoué, 2 l'invocation
+ou la configuration est fautive.`;
 
 /** Le corps de la commande, séparé du processus pour être testable. */
-export function executer(arguments_, { racine = process.cwd(), ecrire = console.log } = {}) {
+export function executer(arguments_, { racine = process.cwd(), ecrire = console.log, ...sorties } = {}) {
   const [commande] = arguments_;
 
   if (commande === undefined || commande === "--help" || commande === "-h") {
@@ -44,6 +50,13 @@ export function executer(arguments_, { racine = process.cwd(), ecrire = console.
   if (commande === "init") {
     ecrire(rendreInit(init(racine)));
     return 0;
+  }
+
+  if (commande === "check") {
+    // Le contrôle écrit sur trois canaux distincts, et le terminal en dépend :
+    // un écart de parité en ⚠ et un contrat cassé en ✗ ne doivent pas se lire
+    // sur le même flux. Le défaut de `check` les branche sur la console.
+    return check(arguments_.slice(1), { racine, ecrire, ...sorties });
   }
 
   if (commande === "icons") {

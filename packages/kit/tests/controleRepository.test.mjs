@@ -236,6 +236,27 @@ test("version non lue : refus, et la section désigne le développeur", () => {
 });
 
 /**
+ * Défaut trouvé en passant un repo neuf au contrôle, et **préexistant au
+ * déplacement** : la ligne de terminal d'un contrat refusé pour sa version
+ * lisait « code conforme ».
+ *
+ * L'analyse s'arrête avant la parité — rien n'a été lu, rien n'a été comparé —
+ * et le relevé vierge se lisait comme un relevé vide et concluant. C'est la
+ * phrase exacte que T2.3 a écrit une classe entière de code pour ne plus jamais
+ * prononcer sans avoir lu, et elle s'écrivait sur la ligne même qui annonce le
+ * refus.
+ */
+test("un contrat que l'analyse n'a pas mené à bout n'est jamais dit conforme", () => {
+  const futur = contrat();
+  futur.meta.contractVersion = "99.0";
+  const { terminal } = verdict({ composants: { Widget: { contrat: futur, tsx: TSX } } });
+  const fil = terminal.map(({ texte }) => texte).join("\n");
+
+  assert.match(fil, /✗ Widget\.contract\.json : .*code non examiné/);
+  assert.doesNotMatch(fil, /code conforme/);
+});
+
+/**
  * Le défaut que T2.1b annonçait, rendu visible — il était LATENT.
  *
  * L'analyse appelait `champsInvalidesDuContrat` avant `verdictDeVersion` et
