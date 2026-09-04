@@ -17,7 +17,7 @@ import { writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createGenerator } from 'ts-json-schema-generator';
-import { CONTRACT_VERSION } from '../src/contract/exportComponent';
+import { CONTRACT_VERSION } from '../src/contract/version';
 
 const racine = join(dirname(fileURLToPath(import.meta.url)), '..');
 

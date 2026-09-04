@@ -16,7 +16,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import Ajv from 'ajv';
-import { CONTRACT_VERSION } from '../src/contract/exportComponent';
+import { CONTRACT_VERSION } from '../src/contract/version';
 import { CHEMIN_DU_SCHEMA, construireLeSchema } from '../scripts/build-schema';
 
 const schemaCommite = JSON.parse(readFileSync(CHEMIN_DU_SCHEMA, 'utf8')) as Record<string, unknown>;
