@@ -18,7 +18,20 @@ export function createLogPanel(initialText = '') {
 
   const content = document.createElement('div');
   content.className = 'log-panel-inner';
-  content.setAttribute('aria-live', 'polite');
+  /*
+   * Une seule région annoncée (U0.2). La note d'état et ce journal portaient
+   * tous deux `aria-live="polite"`, et un message `status` s'écrit dans les
+   * deux : un lecteur d'écran annonçait donc deux fois le même texte. La note
+   * reste l'unique annonceur.
+   *
+   * `role="log"` garde la sémantique de registre consultable, mais NE SUFFIT
+   * PAS à taire l'annonce : ce rôle porte un `aria-live="polite"` implicite, et
+   * retirer l'attribut le laisserait donc en place. Il faut l'écraser
+   * explicitement — c'est la seule valeur d'`aria-live` qui doive apparaître
+   * dans ce fichier.
+   */
+  content.setAttribute('role', 'log');
+  content.setAttribute('aria-live', 'off');
 
   section.append(title, hint, content);
 

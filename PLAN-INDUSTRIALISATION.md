@@ -1580,6 +1580,15 @@ une place dans l'ordre d'exécution.
       envers rien et peut se faire à tout moment, y compris dans une session
       isolée : aucun test ne couvre ces fichiers, et aucun autre chantier ne les
       touche.
+      **U0 est faite, le 5 septembre 2026**, U0.5 comprise : la décision de
+      langue qu'elle attendait a été prise le même jour. Le reste de T4.6 garde
+      sa place dans l'ordre. Deux choses en sont sorties qui dépassent l'UI : le
+      geste écrit pour U0.2 n'aurait pas corrigé le défaut qu'il visait — un
+      `role="log"` porte un `aria-live` implicite —, et U0.6 a produit
+      `src/messages.ts`, où vivent désormais les DEUX sens de la frontière
+      sandbox ↔ UI, avec une porte d'envoi unique qui rend cette liste
+      contraignante au lieu de documentaire. C'est le même geste que T4.1, T4.2
+      et T4.3 : une seule autorité pour une chose.
 
 ---
 

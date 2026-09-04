@@ -172,7 +172,10 @@ p {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0 12px;
+  /* Le libellé dit l'action entière depuis U0.4 : dans 380 px il peut passer
+     sur deux lignes, et le bouton grandit au lieu de rogner son texte. */
+  padding: 6px 12px;
+  text-align: center;
   border: 1px solid transparent;
   border-radius: 6px;
   font-weight: 600;
@@ -292,6 +295,19 @@ p {
 
 .note[data-state='error'] {
   color: var(--figma-color-text-danger, #dc3412);
+}
+
+/*
+ * Le pied de page porte la version de schéma (U0.1). Il est discret par
+ * construction : c'est une information de garde-fou, consultée quand un export
+ * « sans changement » fait douter du bundle servi par Figma, pas une ligne à
+ * lire à chaque ouverture.
+ */
+.app-footer {
+  color: var(--figma-color-text-secondary, #6b6b6b);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: right;
 }
 
 .log-panel-inner {

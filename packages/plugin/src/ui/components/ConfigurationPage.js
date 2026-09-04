@@ -76,17 +76,26 @@ export function createConfigurationPage(onSave) {
   title.textContent = 'Configuration du repository';
 
   const markDirty = () => { settingsDirty = true; };
-  const repoUrl = createField('repoUrl', 'Repo URL', {
+  /*
+   * Les libellés sont en français (U0.5). Ils étaient les quatre seuls mots
+   * d'anglais d'une interface entièrement française, et le geste attendait
+   * l'arbitrage de langue que la publication sur la Figma Community a rendu
+   * exigible : il est tranché — le français reste. « Personal Access Token »
+   * n'est pas une exception à cette règle, c'est le nom que GitHub donne à la
+   * chose, et le traduire enverrait chercher dans ses réglages un intitulé qui
+   * n'y figure pas.
+   */
+  const repoUrl = createField('repoUrl', 'URL du repository', {
     placeholder: 'https://github.com/mon-org/design-system-v3',
   }, markDirty);
-  const baseBranch = createField('baseBranch', 'Base branch', { placeholder: 'main' }, markDirty);
+  const baseBranch = createField('baseBranch', 'Branche de base', { placeholder: 'main' }, markDirty);
   const componentsPath = createField(
     'componentsPath',
-    'Components path',
+    'Chemin des composants',
     { placeholder: 'src/components' },
     markDirty,
   );
-  const tokensPath = createField('tokensPath', 'Tokens path', { placeholder: 'src/tokens' }, markDirty);
+  const tokensPath = createField('tokensPath', 'Chemin des tokens', { placeholder: 'src/tokens' }, markDirty);
   const githubPat = createField('githubPat', 'Personal Access Token', {
     type: 'password',
     help: 'Utilisez un fine-grained token limité à ce repo avec Contents: Read and write et Pull requests: Read and write.',

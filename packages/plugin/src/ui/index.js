@@ -17,11 +17,31 @@ const configurationPage = createConfigurationPage((settings) => {
 });
 const configPage = configurationPage.element;
 
+/**
+ * Ce que l'en-tête annonce, par page (U0.3).
+ *
+ * Le sous-titre n'était écrit qu'une fois, à la construction de l'en-tête :
+ * « Transformez vos composants Figma en contrats exploitables » restait donc
+ * au-dessus d'un formulaire GitHub. Une page qui change et un titre qui ne
+ * change pas, c'est le titre qui a tort.
+ */
+const PAGES = {
+  export: {
+    title: 'Unified Component Exporter',
+    subtitle: 'Transformez vos composants Figma en contrats exploitables.',
+  },
+  configuration: {
+    title: 'Configuration',
+    subtitle: 'Le dépôt GitHub où les exports sont déposés, et le jeton qui les y autorise.',
+  },
+};
+
 function showConfiguration() {
   exportPage.hidden = true;
   configPage.hidden = false;
   header.settingsButton.hidden = true;
   header.backButton.hidden = false;
+  header.setPage(PAGES.configuration);
 }
 
 function showExports() {
@@ -29,14 +49,10 @@ function showExports() {
   exportPage.hidden = false;
   header.settingsButton.hidden = false;
   header.backButton.hidden = true;
+  header.setPage(PAGES.export);
 }
 
-const header = createHeader(
-  'Unified Component Exporter',
-  'Transformez vos composants Figma en contrats exploitables.',
-  showConfiguration,
-  showExports,
-);
+const header = createHeader(PAGES.export, showConfiguration, showExports);
 
 const actionCard = document.createElement('section');
 actionCard.className = 'card action-panel';
@@ -45,14 +61,22 @@ const actionTitle = document.createElement('div');
 actionTitle.className = 'section-title';
 actionTitle.textContent = 'Actions';
 
+/**
+ * Les libellés disent l'ouverture du navigateur (U0.4).
+ *
+ * Une pull request créée est ouverte aussitôt par le sandbox (`openExternal`) :
+ * trois exports d'affilée ouvrent trois onglets, sans que rien ne l'ait
+ * annoncé. Ce n'est pas une préférence à ajouter — un réglage se règle une fois
+ * et se relit à chaque ouverture —, c'est un libellé exact, qui ne coûte rien.
+ */
 const exportComponentButton = createButton({
-  label: 'Exporter le composant',
+  label: 'Exporter le composant et ouvrir la pull request',
   variant: 'primary',
   onClick: () => requestExport('export-component'),
 });
 
 const exportTokensButton = createButton({
-  label: 'Exporter les tokens',
+  label: 'Exporter les tokens et ouvrir la pull request',
   variant: 'secondary',
   onClick: () => requestExport('export-tokens'),
 });
@@ -92,7 +116,23 @@ function updateConnection(state) {
   configurationPage.updateConnection(state);
 }
 
-app.append(header.element, exportPage, configPage);
+/**
+ * Le pied de page porte la version de schéma que ce bundle produit (U0.1).
+ *
+ * Elle était la première ligne du journal, et `requestExport` vide le journal :
+ * le garde-fou contre un bundle Figma périmé disparaissait donc au PREMIER
+ * clic — exactement le cas qu'il existe pour couvrir, puisqu'un export « sans
+ * changement » devient alors indiscernable d'un plugin obsolète. Ici, rien ne
+ * l'efface.
+ *
+ * Il reste caché tant que le sandbox n'a rien dit : une version inventée par
+ * défaut serait pire que pas de version du tout.
+ */
+const footer = document.createElement('footer');
+footer.className = 'app-footer';
+footer.hidden = true;
+
+app.append(header.element, exportPage, configPage, footer);
 parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
 
 onmessage = (event) => {
@@ -106,7 +146,15 @@ onmessage = (event) => {
   if (message.type === 'settings-validation') configurationPage.renderErrors(message.errors);
   if (message.type === 'settings-save-error') configurationPage.showSaveError();
   if (message.type === 'connection') updateConnection(message.state);
-  if (message.type === 'log') logPanel.append(message.text);
+  // `level` est absent aujourd'hui et le journal retombe alors sur `info` ;
+  // c'est U4.1 qui le renseignera à l'envoi. Le lire ici coûte un argument et
+  // évite que le champ déclaré reste inerte d'un seul côté.
+  if (message.type === 'log') logPanel.append(message.text, message.level);
+
+  if (message.type === 'schema-version') {
+    footer.textContent = `Schéma de contrat ${message.version}`;
+    footer.hidden = false;
+  }
 
   if (message.type === 'status') {
     const isLoading = message.state === 'loading';
