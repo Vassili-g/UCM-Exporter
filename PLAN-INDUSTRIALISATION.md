@@ -577,9 +577,9 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       PARAMÈTRE, pas une configuration. `ucm.config.json` le lira en T3.1 ;
       l'écrire ici aurait fait dépendre la Phase 2 de la Phase 3.
 
-- [~] **T2.3 — ⚠ Scinder la parité : l'existence au noyau, la comparaison à
-      l'adaptateur.** *Côté noyau fait le 4 septembre 2026 ; l'adaptateur est
-      écrit et vert dans le Playground, en attente de la publication de 0.1.3.*
+- [X] **T2.3 — ⚠ Scinder la parité : l'existence au noyau, la comparaison à
+      l'adaptateur.** *Close le 4 septembre 2026, des deux côtés. Le kit publie
+      0.1.3 et le Playground la consomme.*
       Le noyau répond « où » et « est-elle là » ; l'adaptateur garde la seule
       chose qui n'est pas transposable — lire une API publique avec le
       vérificateur de types TypeScript.
@@ -611,8 +611,12 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       exactement la raison pour laquelle elle avait été remontée avant les
       tâches qui réécrivent ce fichier. Le kit refuse désormais un motif non
       textuel en désignant le `map`.
-      *Ce qui reste :* le pin du Playground sur 0.1.3 et son commit, dès que le
-      workflow de publication est déclenché.
+      *Une note d'exploitation, parce qu'elle se répétera :* le workflow de
+      publication n'a toujours pas publié — 0.1.2 et 0.1.3 sont parties à la
+      main, comme 0.1.0 et 0.1.1. L'entrée d'éditeur de confiance a été recréée
+      une fois et a débloqué l'OIDC ; ce qui bloque maintenant est ailleurs, et
+      n'a pas encore été cherché. Tant que ce n'est pas fait, chaque coupure
+      kit ↔ consommateur coûte une publication manuelle.
       `lireApiPublique` rend une Map vide sans TypeScript (`parite.mjs:231`) et
       `cheminDuComposant` cherche un `.tsx` en dur (`:42`), d'où
       `implementationAbsente: true` (`:309`) pour tout contrat d'un repo
@@ -720,15 +724,33 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       contrats réels du corpus restent le seul contact avec de vraies données
       Figma.
 
-- [ ] **T2.6 — Sortir le vocabulaire de stack des messages.**
-      Occurrences : `diagnostic-parite.mjs:10,13,31` et surtout **`:32`, qui est
-      un `summary:`, donc un message lu par le designer et pas un commentaire** ;
-      `diagnostic-tokens.mjs:44,95,109` ; et dans `check-contract.mjs` les
-      lignes `19-24` (en-tête), `242`, `256`, `268`, `270`, `348`, `397`, `500`,
-      `526`, `527`, `579`, `587`, `615`.
-      *Ces listes sont périssables* — `src/github.ts` était modifié dans la
-      copie de travail pendant la rédaction de ce plan, donc les lignes de T4.3
-      ont déjà bougé. Régénérer plutôt qu'énumérer :
+- [X] **T2.6 — Sortir le vocabulaire de stack des messages.** *Fait le
+      4 septembre 2026.* Le moteur promettait une stack au lecteur : un fichier
+      `.tsx` à créer, un composant React à corriger, « le Playground » à
+      adapter. Ce n'est pas maladroit, c'est **faux** — et faux sur la pull
+      request d'export, la seule que le designer ouvre. Ces modules rejoindront
+      le kit en T5.2 et seront alors imprimés par des repos dont aucun n'écrira
+      de `.tsx`.
+      **Ce qui garde le mot, et c'est la même règle que T8.7 :** `parite.mjs`,
+      `run-tests.mjs` et `echecs-de-tests.mjs`. Les trois SONT des adaptateurs
+      de cette stack — le premier lit une API publique avec le vérificateur de
+      types, les deux autres balaient de vrais `*.test.tsx`. Leur interdire le
+      mot juste les ferait mentir dans l'autre sens.
+      **La tâche ne tenait pas sans son filet**, et c'est le vrai livrable :
+      `Playground/scripts/registre-portable.test.mjs`. Renommer des chaînes une
+      fois ne coûte rien ; les laisser renommées coûte une vigilance que
+      personne n'a, et le mot revient au premier message écrit dans l'urgence.
+      Le test refuse aussi de balayer une liste vide — un module renommé sans
+      mise à jour de la liste sortirait sinon du contrôle en silence.
+      *La prédiction du plan s'est vérifiée sur son propre texte :* la liste
+      d'occurrences ci-dessous était périmée. Les trois de
+      `diagnostic-tokens.mjs` n'existaient plus, D1 ayant retiré le contrôle qui
+      les portait, et les lignes de `check-contract.mjs` avaient toutes bougé.
+      *Occurrences telles qu'énumérées à la rédaction, conservées pour mémoire :*
+      `diagnostic-parite.mjs:10,13,31` et surtout `:32`, un `summary:` ;
+      `diagnostic-tokens.mjs:44,95,109` ; `check-contract.mjs:19-24`, `242`,
+      `256`, `268`, `270`, `348`, `397`, `500`, `526`, `527`, `579`, `587`,
+      `615`. **Régénérer plutôt qu'énumérer** reste la bonne consigne :
       `grep -rn "React\|\.tsx\|Playground" scripts/`.
 
 - [X] **T2.7 — Dédupliquer la regex de forme d'une référence.** *Fait pour les
