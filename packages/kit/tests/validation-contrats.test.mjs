@@ -3,6 +3,7 @@
  */
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { champsInvalidesDuContrat } from "../src/lecteurs/validation-contrat.mjs";
 import { validerGrapheDesContrats } from "../src/lecteurs/validation-graphe-contrats.mjs";
 import { contratCourant, contrat120 } from "./contrats-fabriques.mjs";
@@ -1739,4 +1740,37 @@ test("un slot d'icône qui n'existe dans aucune structure reste refusé", () => 
   valeur.icons = { skull: { policy: "strict", figmaName: "skull", slot: "nulle-part" } };
 
   assert.deepEqual(champsInvalidesDuContrat(valeur), ["icons.skull.slot"]);
+});
+
+/**
+ * La forme canonique ne ment plus sur la version, et rien ne doit l'y ramener.
+ *
+ * C'est T2.1b. La normalisation écrivait `"10.3"` dans `meta.contractVersion`,
+ * si bien que l'objet circulait en affirmant être un contrat 10.3 : un élagage
+ * conduit « par raisonnement sur les gates » aurait supprimé le chemin qui
+ * valide en réalité tout le 11.0 et le 12.0. La grammaire de lecture est
+ * désormais choisie en un seul endroit et ne voyage plus avec la donnée.
+ *
+ * Ce test lit la SOURCE, et l'assume. La substitution n'est observable par
+ * aucun appelant — c'est tout l'intérêt —, donc aucun test de comportement ne
+ * peut la surveiller. Un contrôle de source est le seul qui morde ici, et il
+ * mord vraiment : réintroduire l'écriture le fait rougir.
+ */
+test("la normalisation n'écrit aucune version dans le contrat qu'elle rend", () => {
+  const source = readFileSync(
+    new URL("../src/lecteurs/validation-contrat.mjs", import.meta.url),
+    "utf8",
+  );
+  const debut = source.indexOf("function formeCanonique(");
+  assert.ok(debut > 0, "`formeCanonique` a été renommée : ce test ne surveille plus rien");
+  const fin = source.indexOf("\n}", debut);
+  const corps = source.slice(debut, fin);
+
+  assert.doesNotMatch(
+    corps,
+    /contractVersion\s*:/,
+    "la forme canonique réécrit une version. La grammaire de lecture est un "
+      + "paramètre de `champsInvalidesDuContrat` ; l'inscrire dans la donnée "
+      + "rend le mensonge à nouveau voyageur.",
+  );
 });
