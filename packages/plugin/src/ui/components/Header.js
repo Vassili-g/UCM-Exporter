@@ -20,8 +20,14 @@ function createSettingsIcon() {
   return icon;
 }
 
-/** Crée l'en-tête et renvoie ses éléments pilotés par le routeur UI. */
-export function createHeader(title, subtitle, onSettings, onBack) {
+/**
+ * Crée l'en-tête et renvoie ses éléments pilotés par le routeur UI.
+ *
+ * `page` porte `title` et `subtitle` : les deux se relisent à chaque changement
+ * de page par `setPage`, parce qu'un en-tête écrit une fois pour toutes finit
+ * par décrire une autre page que celle qui est affichée (U0.3).
+ */
+export function createHeader(page, onSettings, onBack) {
   const header = document.createElement('div');
   header.className = 'header';
 
@@ -33,11 +39,15 @@ export function createHeader(title, subtitle, onSettings, onBack) {
 
   const titleElement = document.createElement('h1');
   titleElement.className = 'page-title';
-  titleElement.textContent = title;
 
   const subtitleElement = document.createElement('p');
   subtitleElement.className = 'subtitle';
-  subtitleElement.textContent = subtitle;
+
+  const setPage = ({ title, subtitle }) => {
+    titleElement.textContent = title;
+    subtitleElement.textContent = subtitle;
+  };
+  setPage(page);
 
   const tools = document.createElement('div');
   tools.className = 'header-tools';
@@ -68,7 +78,7 @@ export function createHeader(title, subtitle, onSettings, onBack) {
   topLine.appendChild(tools);
   header.append(topLine, titleGroup);
 
-  return { element: header, connection, settingsButton, backButton };
+  return { element: header, connection, settingsButton, backButton, setPage };
 }
 /**
  * En-tête partagé par les vues export et configuration de l'exporteur.

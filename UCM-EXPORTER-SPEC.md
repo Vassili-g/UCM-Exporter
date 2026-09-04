@@ -23,8 +23,10 @@ du ressort du repository consommateur.
 - Deux commandes indépendantes qui partagent le même code Figma :
   **Export composant** (Partie 1) et **Export tokens** (Partie 2).
 - Stack : TypeScript, `@figma/plugin-typings`, build esbuild. L'UI expose le
-  statut GitHub, les deux commandes, la configuration, un journal et un retour
-  en direct sur la sélection.
+  statut GitHub, les deux commandes, la configuration, un journal, un retour
+  en direct sur la sélection, et en pied de page la version de schéma que le
+  bundle chargé produit — Figma peut servir un bundle plus ancien que celui du
+  disque, et rien d'autre ne le dirait.
 - **`normalizeName()` est commune aux deux commandes** :
   `Brand Tokens/Primary/default` → `brand-tokens.primary.default`
   (`/`→`.`, espaces d'un segment → `-`, minuscules). Un token s'écrit donc
@@ -1519,7 +1521,9 @@ et les secondes évitent toute collision quand on exporte le contrat puis les
 tokens dans la même minute), écrit le fichier avec l'API Contents puis
 ouvre une PR vers la branche de base, puis l'ouvre dans le navigateur par
 défaut (`figma.openExternal` : l'iframe de l'UI est isolée et ne peut pas
-naviguer elle-même). Le lien reste dans le journal pour y revenir. Si le
+naviguer elle-même) — le libellé du bouton l'annonce, faute de quoi trois
+exports d'affilée ouvrent trois onglets que rien n'avait laissé prévoir. Le
+lien reste dans le journal pour y revenir. Si le
 contenu est identique — la
 comparaison ignore `meta.exportedAt`, régénéré à chaque export — aucune
 branche ni PR n'est créée. Config absente/invalide ou erreur GitHub : repli

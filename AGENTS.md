@@ -65,6 +65,7 @@ packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
     base64.ts                  encodage UTF-8/Base64 sans dépendance au sandbox
     config.ts                  configuration GitHub locale
     github.ts                  branche, fichier et pull request
+    messages.ts                les DEUX sens de la frontière sandbox ↔ UI
     ui/                        interface du plugin
   tests/
   manifest.json              chargé dans Figma depuis packages/plugin/dist/

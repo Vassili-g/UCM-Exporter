@@ -94,10 +94,18 @@ démarrer du seul plan, c'est le plan qu'il faut corriger.
 
 ## Phase U0 — Ce qui se corrige sans discussion
 
-Six corrections. Cinq ne demandent aucune décision et tiennent dans une
-session ; U0.5 attend une décision qui n'appartient pas à ce plan.
+Six corrections. Cinq ne demandaient aucune décision et tenaient dans une
+session ; U0.5 attendait une décision qui n'appartenait pas à ce plan.
 
-- [ ] **U0.1 — La version de schéma ne doit plus s'effacer.** Le sandbox écrit
+**Faite en entier le 5 septembre 2026**, y compris U0.5 : la décision de langue
+qu'elle attendait a été prise le même jour, hors de ce document — le français
+reste ([PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), préambule de la
+Phase 8). Deux choses sont sorties de l'exécution et valent pour la suite : le
+geste écrit pour U0.2 n'aurait pas corrigé le défaut qu'il visait (voir là-bas),
+et U0.6 a livré un type qui CONTRAINT au lieu de documenter, parce qu'une seule
+porte le fait respecter.
+
+- [X] **U0.1 — La version de schéma ne doit plus s'effacer.** Le sandbox écrit
       `Schéma de contrat 12.0.` comme première ligne du journal (`code.ts`, à la
       réception de `ui-ready`) ; `requestExport` appelle `logPanel.clear()` au
       début de chaque export. Le garde-fou contre un bundle Figma périmé
@@ -105,29 +113,50 @@ session ; U0.5 attend une décision qui n'appartient pas à ce plan.
       couvrir, puisqu'un export « sans changement » devient alors indiscernable
       d'un plugin obsolète. Geste : sortir la version du journal, la poser en
       pied de page fixe.
+      *Fait.* Elle voyage par un message à elle (`schema-version`) plutôt que par
+      une ligne de journal, et le pied de page reste CACHÉ tant que le sandbox
+      n'a rien dit : une version écrite en dur dans l'UI par défaut serait une
+      seconde autorité, et c'est le défaut que ce bloc existe pour révéler.
 
-- [ ] **U0.2 — Une seule région annoncée.** La note (`statusNote` dans
+- [X] **U0.2 — Une seule région annoncée.** La note (`statusNote` dans
       `ui/index.js`) et le journal (`createLogPanel`) portent tous deux
       `aria-live="polite"`, et le message `status` écrit dans les deux : un
       lecteur d'écran annonce deux fois le même texte. Geste : la note reste
       l'unique annonceur, le journal passe en `role="log"` sans `aria-live`. Les
       régions des erreurs de champ (`createField` et le `status` de
       `createConfigurationPage`) sont légitimes : ne pas y toucher.
+      *Fait, et le geste écrit ici était faux :* `role="log"` porte un
+      `aria-live="polite"` **implicite**. Retirer l'attribut, comme demandé,
+      aurait laissé la double annonce en place tout en donnant le sentiment de
+      l'avoir supprimée — le pire des deux états. Il faut l'écraser
+      explicitement : `role="log"` **et** `aria-live="off"`. C'est la seule
+      valeur d'`aria-live` qui doive apparaître dans `LogPanel.js`, et le
+      commentaire du fichier dit pourquoi, pour que personne ne la « nettoie ».
 
-- [ ] **U0.3 — Le sous-titre suit la page affichée.** `showConfiguration` change
+- [X] **U0.3 — Le sous-titre suit la page affichée.** `showConfiguration` change
       la carte mais laisse « Transformez vos composants Figma en contrats
       exploitables » au-dessus d'un formulaire GitHub — le sous-titre n'étant
       écrit qu'une fois, dans `createHeader`. Geste : titre et sous-titre pilotés
       par la page.
+      *Fait.* `createHeader` prend désormais une PAGE (`{ title, subtitle }`) et
+      rend `setPage` ; les deux pages sont déclarées côte à côte dans `index.js`,
+      là où le routage les affiche. Une page ajoutée sans son en-tête se verra :
+      elle n'aura pas d'entrée dans cette table.
 
-- [ ] **U0.4 — Annoncer l'ouverture du navigateur.** `runExport` appelle
+- [X] **U0.4 — Annoncer l'ouverture du navigateur.** `runExport` appelle
       `openExternal` à chaque pull request créée, sans que rien ne l'ait
       annoncé : trois exports d'affilée ouvrent trois onglets. Geste : le bouton
       dit ce qu'il fait — « Publier et ouvrir la pull request ». Pas une
       préférence : un réglage de plus se règle une fois et se relit à chaque
       ouverture, un libellé exact ne coûte rien.
+      *Fait, avec le nom de l'artefact conservé :* « Exporter le composant et
+      ouvrir la pull request », « Exporter les tokens et ouvrir la pull
+      request » — deux commandes qui ne portent pas sur la même chose ne peuvent
+      pas partager un libellé. Le repli en téléchargement local n'est PAS annoncé
+      ici : c'est U2.5, et le dire deux fois donnerait deux endroits à corriger
+      le jour où il change.
 
-- [ ] **U0.5 — Une seule langue, une fois la langue tranchée.** Le constat est
+- [X] **U0.5 — Une seule langue, une fois la langue tranchée.** Le constat est
       net : `Repo URL`, `Base branch`, `Components path`, `Tokens path` (les cinq
       appels à `createField` de `ConfigurationPage.js`) sont en anglais dans une
       interface dont tout le reste est en français. **Mais le geste ne va plus de
@@ -141,8 +170,14 @@ session ; U0.5 attend une décision qui n'appartient pas à ce plan.
       toute l'interface. Ce qui reste vrai dans les deux cas, et se fait sans
       attendre : les libellés ne doivent pas être moitié dans l'une, moitié dans
       l'autre.
+      *Débloquée puis faite le 5 septembre 2026 :* la décision est tombée — le
+      français reste. Les quatre libellés passent en français ; **« Personal
+      Access Token » n'est pas une exception laissée en route**, c'est le nom que
+      GitHub donne à la chose, et le traduire enverrait le designer chercher dans
+      ses réglages un intitulé qui n'y figure pas. La règle appliquée est « une
+      seule langue », pas « aucun mot d'anglais ».
 
-- [ ] **U0.6 — Un seul domicile pour les messages sandbox ↔ UI.** Les demandes
+- [X] **U0.6 — Un seul domicile pour les messages sandbox ↔ UI.** Les demandes
       de l'UI sont typées (`UiRequest`, `code.ts`) ; les messages qui vont dans
       l'autre sens ne le sont nulle part, et l'UI les reconnaît par une suite de
       `if` sur `message.type` dans son `onmessage` : `settings`,
@@ -155,7 +190,15 @@ session ; U0.5 attend une décision qui n'appartient pas à ce plan.
       stylise cette classe. Geste : déclarer les deux sens dans un seul type,
       **avant** d'en ajouter un dixième. L'UI est en JavaScript, donc ce type ne
       la contraint pas ; il vaut comme domicile unique de la liste (voir U6.2).
-
+      *Fait — `src/messages.ts`, `UiRequest` et `PluginMessage`.* Et un type
+      déclaré n'aurait rien contraint du tout : `figma.ui.postMessage` accepte
+      n'importe quoi, donc un dixième type inventé serait parti sans erreur, pour
+      n'être écouté par personne. Le sandbox envoie désormais par une PORTE
+      unique — `versUi(message: PluginMessage)` —, et c'est elle qui rend la
+      liste contraignante côté sandbox. Éprouvé : un type de message inventé fait
+      échouer `tsc`, qui le nomme et propose le bon. `log` porte son champ
+      `level` (déclaré ici, renseigné par U4.1) et l'UI le lit déjà : un champ
+      qu'un seul côté connaît n'est pas un domicile commun.
 ---
 
 ## Phase U1 — La hiérarchie, puis le socle graphique

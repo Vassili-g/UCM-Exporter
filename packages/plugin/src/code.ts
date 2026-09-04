@@ -11,18 +11,25 @@ import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
 import type { SettingsInput } from './config';
 import { publishArtifact, testGithubConnection } from './github';
 import type { ArtifactKind } from './github';
-
-/** Messages que l'UI peut envoyer au plugin. */
-type UiRequest =
-  | { type: 'export-component' | 'export-tokens' | 'ui-ready' }
-  | { type: 'save-settings'; settings: SettingsInput }
-  | { type: 'open-external'; url: string };
+import type { PluginMessage, UiRequest } from './messages';
 
 figma.showUI(__html__, { themeColors: true, width: 380, height: 500 });
 
+/**
+ * La porte unique vers l'UI.
+ *
+ * `figma.ui.postMessage` accepte n'importe quoi : un type de message inventé
+ * ici partirait sans erreur et personne ne l'écouterait de l'autre côté. Faire
+ * passer chaque envoi par cette fonction est ce qui rend la liste de
+ * `messages.ts` contraignante au lieu de décorative (U0.6).
+ */
+function versUi(message: PluginMessage): void {
+  figma.ui.postMessage(message);
+}
+
 /** Envoie un état (chargement / succès / erreur) à l'UI, avec trace dans le journal. */
 function postStatus(state: 'loading' | 'success' | 'error', text: string): void {
-  figma.ui.postMessage({ type: 'status', state, text });
+  versUi({ type: 'status', state, text });
 }
 
 /**
@@ -30,17 +37,17 @@ function postStatus(state: 'loading' | 'success' | 'error', text: string): void 
  * en direct à la sélection. `state` vide = style neutre par défaut.
  */
 function postNote(state: '' | 'warning' | 'success', text: string): void {
-  figma.ui.postMessage({ type: 'note', state, text });
+  versUi({ type: 'note', state, text });
 }
 
 /** Met à jour l'indicateur de connexion toujours visible dans l'en-tête. */
 function postConnection(state: 'checking' | 'connected' | 'disconnected'): void {
-  figma.ui.postMessage({ type: 'connection', state });
+  versUi({ type: 'connection', state });
 }
 
 /** Envoie le fichier généré à l'UI pour déclencher le téléchargement local. */
 function postDownload(filename: string, content: string): void {
-  figma.ui.postMessage({ type: 'download', filename, content });
+  versUi({ type: 'download', filename, content });
 }
 
 /**
@@ -59,7 +66,7 @@ function openExternal(url: string): void {
  */
 async function refreshConfiguration(): Promise<void> {
   const publicSettings = await loadPublicSettings();
-  figma.ui.postMessage({ type: 'settings', settings: publicSettings });
+  versUi({ type: 'settings', settings: publicSettings });
   const validation = await loadGithubConfig();
   if (!validation.valid || !validation.config) {
     postConnection('disconnected');
@@ -146,7 +153,7 @@ async function runExport(
     const result = await handler();
     // On liste chaque avertissement dans le journal (ex. « largeur de stroke non tokenisée »).
     for (const warning of result.warnings ?? []) {
-      figma.ui.postMessage({ type: 'log', text: `⚠︎ ${warning}` });
+      versUi({ type: 'log', text: `⚠︎ ${warning}` });
     }
     // Les notes disent ce que le contrat publie, pas ce qui lui manque : elles
     // portent donc une puce neutre et ne gonflent pas le compte d'avertissements.
@@ -154,7 +161,7 @@ async function runExport(
     // parce qu'une ligne dont la conclusion est toujours « rien à faire » finit
     // par coûter la lecture de celles qui, elles, demandent un geste.
     for (const info of result.infos ?? []) {
-      figma.ui.postMessage({ type: 'log', text: `• ${info}` });
+      versUi({ type: 'log', text: `• ${info}` });
     }
     const warningText = result.warningCount > 0
       ? ` ${result.warningCount} avertissement${result.warningCount === 1 ? '' : 's'}.`
@@ -163,7 +170,7 @@ async function runExport(
     const validation = await loadGithubConfig();
     if (!validation.valid || !validation.config) {
       postDownload(result.filename, result.content);
-      figma.ui.postMessage({ type: 'log', text: 'Configuration GitHub absente ou invalide : téléchargement local.' });
+      versUi({ type: 'log', text: 'Configuration GitHub absente ou invalide : téléchargement local.' });
       postStatus('success', `${successText} Téléchargement local terminé.`);
       figma.notify(successText);
       return;
@@ -180,7 +187,7 @@ async function runExport(
       // atterrit ailleurs qu'attendu est indétectable après coup : la PR
       // s'ouvre, la CI ne trouve aucun contrat nouveau, tout est vert. Cette
       // ligne est le seul endroit où la question se pose encore.
-      figma.ui.postMessage({
+      versUi({
         type: 'log',
         text: `Emplacement : ${publication.path} (d'après ${publication.source}).`,
       });
@@ -191,12 +198,12 @@ async function runExport(
         // d'export ouverte — et le designer conclurait que l'export n'a rien
         // fait, alors que son travail attend d'être fusionné.
         const message = `Aucun changement pour ${publication.path} (${publication.ou}) : aucune PR créée.`;
-        figma.ui.postMessage({ type: 'log', text: message });
+        versUi({ type: 'log', text: message });
         if (publication.pullRequestUrl) {
           // Le lien, mais pas l'ouverture automatique : rien n'a été produit à
           // relire, et voler la fenêtre pour une page déjà vue se paierait à
           // chaque réexport.
-          figma.ui.postMessage({
+          versUi({
             type: 'pull-request',
             url: publication.pullRequestUrl,
             path: publication.path,
@@ -207,7 +214,7 @@ async function runExport(
         return;
       }
 
-      figma.ui.postMessage({
+      versUi({
         type: 'pull-request',
         url: publication.pullRequestUrl,
         path: publication.path,
@@ -222,7 +229,7 @@ async function runExport(
       const message = error instanceof Error ? error.message : 'Erreur GitHub inconnue.';
       // Un échec de publication (conflit de branche, contenu invalide, etc.)
       // ne remet pas en cause le dernier test de connexion réussi.
-      figma.ui.postMessage({ type: 'log', text: `Échec GitHub : ${message}` });
+      versUi({ type: 'log', text: `Échec GitHub : ${message}` });
       postDownload(result.filename, result.content);
       postStatus('error', `Échec GitHub. Le fichier a été téléchargé localement : ${message}`);
       figma.notify('Échec GitHub : fichier téléchargé localement.', { error: true });
@@ -240,7 +247,12 @@ figma.ui.onmessage = async (message: UiRequest) => {
     // Figma peut servir un bundle plus ancien que celui du disque. Sans version
     // affichée, un export « sans changement » est indiscernable d'un plugin
     // périmé : on annonce d'emblée le schéma que ce code produit.
-    figma.ui.postMessage({ type: 'log', text: `Schéma de contrat ${CONTRACT_VERSION}.` });
+    //
+    // Elle ne passe PLUS par le journal (U0.1). Le premier export appelle
+    // `logPanel.clear()`, si bien que ce garde-fou disparaissait au premier
+    // clic — c'est-à-dire avant le cas qu'il existe pour couvrir. L'UI la pose
+    // en pied de page, où elle reste.
+    versUi({ type: 'schema-version', version: CONTRACT_VERSION });
     // L'UI est prête : sélection, champs sauvegardés et test GitHub automatique.
     await Promise.all([reportSelectionState(), refreshConfiguration()]);
     return;
@@ -248,9 +260,9 @@ figma.ui.onmessage = async (message: UiRequest) => {
 
   if (message.type === 'save-settings') {
     const validation = await saveSettings(message.settings);
-    figma.ui.postMessage({ type: 'settings-validation', errors: validation.errors });
+    versUi({ type: 'settings-validation', errors: validation.errors });
     if (!validation.valid) {
-      figma.ui.postMessage({ type: 'settings-save-error' });
+      versUi({ type: 'settings-save-error' });
       return;
     }
     await refreshConfiguration();
