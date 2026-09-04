@@ -57,7 +57,16 @@ plusieurs dans `AGENTS.md`, c'est-à-dire le premier fichier qu'un agent ouvre.
 La règle 1 ci-dessus ne protège que celui qui lit ce plan ; elle ne protège pas
 celui qui ouvre `AGENTS.md` et le croit — donc elle ne protège presque personne.
 
-- [ ] **T0.1 — Baliser chaque règle périmée à sa source.**
+- [X] **T0.1 — Baliser chaque règle périmée à sa source.** *Fait.* Huit balises
+      posées, marquées `BALISE-PERIMEE` pour être greppables. Deux dans le code
+      (`verdict-bilan.mjs`, `check-contract.mjs`), six dans les documents
+      (`Playground/AGENTS.md` ×2, `CHANGELOG-CONTRAT.md`, skill
+      `consommer-contrat`, `Exporter/AGENTS.md`, `PISTES-EVOLUTION.md`).
+      Chacune a été vérifiée dans le code avant d'être écrite, et l'une d'elles
+      a dû être corrigée après vérification : `src/github.ts` n'est pas une
+      troisième autorité sur l'identifiant, seulement un appelant de
+      `codeIdentifier`. Il y en a **deux**, pas trois — et **trois**
+      projections de nom de token, elles bien distinctes.
       Poser, **à l'endroit exact où la règle fausse est écrite**, une marque
       courte qui dit ce que le code fait réellement et renvoie à ce plan. Pas
       une correction — la correction viendra avec la tâche qui traite le fond —
@@ -69,12 +78,17 @@ celui qui ouvre `AGENTS.md` et le croit — donc elle ne protège presque person
       projection de nom de token comme un invariant à propriétaire unique. Elle
       ne se balise pas, elle s'écrit — dans l'invariant que T6.0 crée.
 
-- [ ] **T0.2 — Renvoyer vers ce plan depuis les points d'entrée.**
+- [X] **T0.2 — Renvoyer vers ce plan depuis les points d'entrée.** *Fait*, dans
+      les quatre fichiers. Le renvoi se déclare lui-même balise, pour partir
+      avec la dernière au lieu de survivre en pointant vers une table vide.
       `AGENTS.md` et `CLAUDE.md` des deux repositories mentionnent l'existence
       de ce plan et de sa table de contradictions. Un agent qui suit l'ordre de
       lecture prescrit tombe alors sur l'avertissement avant de lire les règles.
 
-- [ ] **T0.3 — Retirer chaque balise quand sa contradiction est résolue.**
+- [X] **T0.3 — Retirer chaque balise quand sa contradiction est résolue.**
+      *Mécanisme en place, et déjà exercé une fois :* chaque balise nomme la
+      tâche qui la retire, et celle de `CHANGELOG-CONTRAT.md` est partie avec sa
+      cause dans le commit de la Phase A. Reste sept.
       Une balise qui survit à sa cause devient elle-même une information
       périmée. Chaque tâche qui corrige une contradiction retire la balise
       correspondante **dans le même commit**, et T8.8 vérifie qu'il n'en reste
@@ -122,7 +136,7 @@ corpus est en 11.0. Tant que l'écart tient, brancher le lecteur du consommateur
 dans les tests du moteur (T2.5) ferait rougir toute la suite : le moteur
 fabrique du 12.0, le lecteur refuse le 12.0.
 
-- [ ] **A1 — Auditer les quatre changements de la 12.0** dans les lecteurs.
+- [X] **A1 — Auditer les quatre changements de la 12.0** dans les lecteurs.
       La spécification les nomme : `ChildStructure.inset` (la place d'un calque
       hors du flux), `rotation` (sur le composant et sur chaque calque publié),
       `rendering.keyRoles` (le rôle d'une clé de couleur qui n'en porte pas le
@@ -143,17 +157,55 @@ fabrique du 12.0, le lecteur refuse le 12.0.
       réponses possibles et il faut en écrire une : trois validateurs, ou
       « accepté sans contrôle, assumé ». Le silence serait lu comme une
       couverture qui n'existe pas.
-- [ ] **A2 — Réexporter le corpus** des quatre composants en 12.0.
-- [ ] **A3 — Recopier le schéma 12.0**, une dernière fois à la main.
-- [ ] **A4 — Monter les constantes**, en dernier, comme le veut la procédure
-      existante.
-- [ ] **A5 — Vérifier le rendu** des composants reconstruits.
-      *À savoir avant de s'y fier :* il n'existe **aucun** test de rendu.
-      `run-tests.mjs` annonce découvrir des `src/**/*.test.tsx` ; il n'y en a
-      zéro dans le repository, le seul test sous `src/` étant `tokens.test.ts`.
-      A5 est donc un geste **manuel et non reproductible en CI** — une
-      comparaison à l'œil avec Figma — alors qu'il conditionne toute la suite du
-      plan. Le reconnaître ici évite de le prendre pour une garantie.
+
+      **Décision rendue : trois validateurs.** Et une découverte que le plan
+      n'attendait pas.
+
+      *Ce que l'audit a mesuré, sur les quatre contrats 12.0 réels :* trois sont
+      acceptés tels quels, comme prévu. **StressTest est REFUSÉ**, sur
+      `icons.skull.slot`. La cause n'est pas la 12.0 : `validerIcones` cherchait
+      le slot dans la seule projection de référence, alors que ce champ existe
+      pour situer une icône que le variant de référence ne contient PAS — son
+      propre commentaire le disait, son code faisait l'inverse. L'autorité côté
+      producteur (`tests/lois.ts`) balaie `viewStructures` en entier. Défaut
+      latent depuis la 11.0, révélé par le premier contrat à porter une icône
+      confinée à un variant non-référence. Corrigé, avec ses deux tests.
+
+      *Pourquoi contrôler plutôt qu'assumer, champ par champ :*
+      - `inset` rejoint `position` et `constraints`, que le lecteur vérifie
+        **déjà** depuis la 6.0. Un membre de la famille sans contrôle serait un
+        oubli, pas une politique.
+      - `rotation` part telle quelle dans un `transform`. Mal formée, elle
+        produit un CSS que le navigateur ignore sans erreur ni repli — la perte
+        visuelle muette que `tokenVar` existe déjà pour empêcher ailleurs.
+      - `keyRoles` est un **renvoi**, pas une valeur : `roles[keyRoles[côté][clé]
+        ?? clé]` rend `undefined` pour un rôle absent de `roles`, et la couleur
+        disparaît sans un mot. Tous les autres renvois du contrat sont vérifiés
+        par ce fichier.
+      - `rendering.roles` ne demande rien : la 12.0 lui RETIRE des copies de
+        descripteur, et le contrôle « c'est un objet » n'en est pas affecté.
+
+      *Un point de méthode qui servira à T2.1b :* les trois contrôles vivent
+      dans `champsInvalidesDuContrat11`, pas dans la passe matérialisée. Celle-ci
+      réécrit `meta.contractVersion` en « 10.3 », où une capacité « au moins
+      12.0 » serait toujours fausse et le contrôle toujours muet. Un test tient
+      cette raison, et c'est la même que T2.1b devra respecter en élaguant.
+- [X] **A2 — Réexporter le corpus** des quatre composants en 12.0. C'est fait, il faut peut être pull le playground pour voir les derniers contrats de composant. Pas besoin de regénérer les .tsx des composants pour le moment
+- [X] **A3 — Recopier le schéma 12.0**, une dernière fois à la main. *Fait.*
+- [X] **A4 — Monter les constantes**, en dernier, comme le veut la procédure
+      existante. *Fait, dans le même commit que A3* : `schema-contrat.test.mjs`
+      exige que la version décrite par la copie vendue soit
+      `VERSION_CONTRAT_MAXIMALE`, donc séparer les deux laisserait le repository
+      rouge entre les deux commits. La plage reste refermée — D8 l'ouvrira, mais
+      c'est T2.1b qui l'exécute.
+
+**État à la sortie de la Phase A.** Les deux repositories sont sur `main`,
+poussés, tests verts des deux côtés (433 et 198). Une chose reste rouge et c'est
+voulu : `npm run build` du Playground échoue sur `StressTest.tsx`, à qui il
+manque le variant « warning ». Ce variant n'existait pas en 11.0 — il vient de
+Figma, par le réexport A2 —, le composant est une sonde jetable, et A2 a
+explicitement écarté sa régénération. C'est un état d'avancement, pas une
+régression ; il se referme par une reconstruction à froid.
 
 C'est le rituel habituel, joué une dernière fois manuellement. Tout le reste du
 plan existe pour qu'il ne se rejoue jamais à la main.
@@ -373,7 +425,12 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       Les deux sont défendables ; la question ne doit pas rester cachée derrière
       « couper par gate ».
       **Méthode, une fois l'arbitrage pris.** Quatre sous-tâches, pas une :
-      1. **Conserver un jeu N‑1 avant qu'il disparaisse.** Le moteur ne fabrique
+      1. **Conserver un jeu N‑1 avant qu'il disparaisse.** *Fait, avant A2.*
+      Les quatre contrats 11.0 vivent dans `fixtures/contrats/11.0/` de
+      l'Exporter, pris dans l'objet Git du Playground — pas dans sa copie de
+      travail, que Windows aurait convertie en CRLF. Un test les FIGE :
+      empreintes SHA‑256 lues dans le README voisin, absence de CR, version.
+      Ils rejoindront `packages/kit/` en T1.2. Le moteur ne fabrique
          que la version courante (`exportComponent.ts:151`). Le corpus est
          aujourd'hui le seul échantillon 11.0 réel — et **A2 le réexporte en
          12.0**. Figer une copie des quatre contrats 11.0 comme fixtures du kit
