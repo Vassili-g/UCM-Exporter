@@ -93,6 +93,45 @@ consommateur prouve déjà la forme, et une seconde autorité sur la même
 convention finit par accepter ce que la première refuse. Elle ne se rouvrira que
 pour un consommateur hors Node.
 
+### Distribution du plugin, et le lien vers Figma qui en dépend
+
+Le manifest déclare `enablePrivatePluginApi`, réservé aux plugins privés d’une
+organisation. Un seul appel en dépend : `figma.fileKey`, qui alimente
+`meta.figma.url` — le lien direct vers le composant source
+(`src/contract/exportComponent.ts`). Une publication publique sur la Community
+suppose de retirer ce drapeau, et le choix de distribution décide donc du
+contenu des contrats.
+
+**Rester plugin privé d’organisation.** Le contrat garde `meta.figma.url`, et
+une revue de pull request ouvre le composant source d’un clic. La distribution
+se limite en revanche aux membres de l’organisation Figma : personne d’autre ne
+peut installer le plugin, donc personne d’autre ne peut produire de contrat.
+
+**Publier sur la Community.** N’importe qui installe le plugin et produit des
+contrats. `figma.fileKey` devient indisponible : `meta.figma.url` disparaît, et
+la traçabilité repose sur `fileName` et `nodeId`, que le contrat conserve.
+L’export n’est pas bloqué et aucune information de rendu n’est perdue — c’est
+un raccourci de navigation qui tombe, pas une donnée du design. Reconstituer le
+lien à la main reste possible pour qui connaît la clé du fichier.
+
+Ce qui n’est pas encore décidé : lequel des deux. Le point de bascule est le
+nombre de personnes hors organisation qui doivent pouvoir exporter. Tant qu’il
+vaut zéro, le plugin privé domine sans contrepartie.
+
+Deux conditions à réunir avant d’ouvrir la publication publique :
+
+- que l’absence de `meta.figma.url` soit traitée par tous les lecteurs comme un
+  cas normal et non comme un contrat incomplet — la clé absente signifie déjà
+  « rien à publier », mais aucun consommateur ne l’a encore éprouvée ;
+- que la traçabilité par `fileName` et `nodeId` suffise réellement à une revue,
+  ce qui se constate sur une pull request réelle et pas en principe.
+
+Une troisième voie existe et n’a pas été évaluée : publier sans le drapeau, et
+demander la clé du fichier dans la configuration du plugin pour reconstruire
+l’URL. Elle échange une donnée obtenue automatiquement contre une saisie
+manuelle, donc contre une source d’erreur de plus ; elle ne se justifierait que
+si le lien s’avérait indispensable en revue.
+
 ### Diff sémantique
 
 Une revue gagnerait à lire un résumé plutôt qu’un JSON :

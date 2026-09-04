@@ -92,6 +92,9 @@ Chaque document a un rôle unique :
   conditions à réunir avant de les ouvrir ;
 - [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md) — recherche proposée pour
   une vérification générique du rendu lors des prochaines phases ;
+- [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md) — document de
+  travail : rendre les artefacts consommables par n’importe quel repository,
+  quelle que soit sa techno ;
 - [AGENTS.md](./AGENTS.md) — guide opérationnel pour contribuer avec un agent ;
 - [UCM Playground](https://github.com/Vassili-g/UCM-Playground) — consommateur
   de référence des artefacts.
