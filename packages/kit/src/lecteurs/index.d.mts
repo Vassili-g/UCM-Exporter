@@ -75,6 +75,21 @@ declare module "@ucm-kit/core/lecteurs" {
   /** Les chemins des `*.contract.json` d'un dossier, `node_modules` exclu. */
   export function trouverContrats(dossier: string): string[];
 
+  /** Le motif d'implémentation retenu par défaut : `{dir}/{id}.tsx`. */
+  export const MOTIF_IMPLEMENTATION_PAR_DEFAUT: string;
+
+  /** L'identifiant d'artefact que porte un chemin de contrat. */
+  export function identifiantDuContrat(cheminContrat: string): string;
+
+  /** Le chemin où l'implémentation de ce contrat est censée se trouver. */
+  export function cheminImplementation(cheminContrat: string, motif?: string): string;
+
+  /** L'implémentation de ce contrat existe-t-elle ? */
+  export function implementationPresente(
+    cheminContrat: string,
+    options?: { motif?: string; existe?: (chemin: string) => boolean },
+  ): boolean;
+
   // ─── Vue exacte d'un variant ──────────────────────────────────────────────
 
   /**
