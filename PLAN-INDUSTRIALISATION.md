@@ -788,9 +788,16 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       consommateur, dont l'arbre porte déjà T2.8 et T2.4 non commités, et T6.2
       la supprime déjà par son énoncé (« `tokenVar` importe la projection du
       kit »). La déplacer ici l'aurait faite deux fois.
-- [ ] **T2.7b — Le jumeau du collecteur de références.** *Trouvé en exécutant
-      T2.7 ; note corrigée le 4 septembre 2026, elle disait deux choses
-      inexactes.*
+- [X] **T2.7b — Le jumeau du collecteur de références.** *Faite dans le commit
+      `3f06cac`, et la case était restée ouverte — constaté et refermé le
+      4 septembre 2026 en la vérifiant plutôt qu'en la croyant.* Le jumeau a
+      disparu de `plugin/src/variables.ts` ; huit fichiers de test du plugin
+      importent `collecterReferences` du kit ; 420 tests verts.
+      *Ce que cet écart apprend, et il n'est pas isolé* — T2.9 porte le même :
+      une case de plan n'est pas un journal. Vérifier dans le code avant de
+      traiter une tâche comme restante coûte une minute ; la refaire en coûte
+      beaucoup plus.
+      *Note d'origine, conservée :*
       `collectTokenReferences` (`plugin/src/variables.ts`) est le jumeau exact
       de `collecterReferences` du kit : même corps, et depuis T2.7 le même
       `isTokenReference`.
