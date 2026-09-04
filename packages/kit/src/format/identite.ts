@@ -74,10 +74,29 @@ function texteUtile(valeur: unknown): string | null {
   return typeof valeur === 'string' && valeur.trim() !== '' ? valeur : null;
 }
 
-type IdentiteFigma = {
+/**
+ * D'où vient un contrat, tel qu'il le dit lui-même.
+ *
+ * Les deux premiers champs ARBITRENT (voir la cascade ci-dessus). Les trois
+ * autres ne votent jamais et sont là pour être ÉCRITS à un humain : le refus de
+ * collision nomme les deux composants en cause, et le corps de la pull request
+ * annonce d'où vient ce qu'il dépose (T4.2, T4.4). Les mélanger dans un même
+ * type est délibéré — le contrat n'a qu'une origine, et deux lectures de la même
+ * origine finiraient par diverger.
+ */
+export type IdentiteDeContrat = {
+  /** Nom d'affichage Figma. N'arbitre PAS : c'est ce qu'un renommage change. */
   nom: string | null;
   nodeId: string | null;
   componentKey: string | null;
+  /** Fichier Figma d'origine. Porté pour le message, ne vote jamais. */
+  fileName: string | null;
+  /**
+   * Lien direct vers le composant. Absent depuis que le plugin se distribue par
+   * la Community (T4.4) : `figma.fileKey` est réservé au drapeau
+   * `enablePrivatePluginApi`. Un raccourci de navigation, jamais une identité.
+   */
+  url: string | null;
 };
 
 /**
@@ -88,8 +107,10 @@ type IdentiteFigma = {
  * jamais une exception — un garde-fou qui explose sur une entrée douteuse ne
  * garde plus rien.
  */
-function identiteFigma(brut: unknown): IdentiteFigma {
-  const vide: IdentiteFigma = { nom: null, nodeId: null, componentKey: null };
+export function identiteDeContrat(brut: unknown): IdentiteDeContrat {
+  const vide: IdentiteDeContrat = {
+    nom: null, nodeId: null, componentKey: null, fileName: null, url: null,
+  };
   if (brut === null || typeof brut !== 'object' || Array.isArray(brut)) return vide;
 
   const contrat = brut as { name?: unknown; meta?: unknown };
@@ -100,11 +121,15 @@ function identiteFigma(brut: unknown): IdentiteFigma {
   const figma = (meta as { figma?: unknown }).figma;
   if (figma === null || typeof figma !== 'object') return { ...vide, nom };
 
-  const champs = figma as { nodeId?: unknown; componentKey?: unknown };
+  const champs = figma as {
+    nodeId?: unknown; componentKey?: unknown; fileName?: unknown; url?: unknown;
+  };
   return {
     nom,
     nodeId: texteUtile(champs.nodeId),
     componentKey: texteUtile(champs.componentKey),
+    fileName: texteUtile(champs.fileName),
+    url: texteUtile(champs.url),
   };
 }
 
@@ -117,8 +142,8 @@ function identiteFigma(brut: unknown): IdentiteFigma {
  * savoir.
  */
 export function comparerIdentiteDeContrat(existant: unknown, candidat: unknown): VerdictIdentite {
-  const gauche = identiteFigma(existant);
-  const droite = identiteFigma(candidat);
+  const gauche = identiteDeContrat(existant);
+  const droite = identiteDeContrat(candidat);
   const noms = { nomExistant: gauche.nom, nomCandidat: droite.nom };
 
   // La cascade s'arrête au premier champ que LES DEUX portent. Comparer un

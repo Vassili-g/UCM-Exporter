@@ -121,11 +121,26 @@ function getSelectedComponent(): ComponentNode | ComponentSetNode {
 /**
  * Construit les métadonnées de traçabilité vers Figma.
  *
- * `figma.fileKey` est réservé aux plugins qui déclarent `enablePrivatePluginApi`
- * dans leur manifest — ce que fait celui-ci. L'API le referme pour un plugin
- * publié sur la Community : l'URL vaut alors null, et l'export n'est pas bloqué
- * pour autant. Le lien est un confort de relecture ; `nodeId` et `fileName`
- * suffisent à retrouver le composant.
+ * **`meta.figma.url` n'est plus écrit, et c'est une décision, pas une panne
+ * (T4.4).** `figma.fileKey` est réservé aux plugins qui déclarent
+ * `enablePrivatePluginApi`, drapeau que seul un plugin PRIVÉ d'organisation a
+ * le droit de porter. Le plugin se distribue désormais par la Figma Community :
+ * le drapeau est retiré du manifest, donc la clé du fichier n'arrive jamais, et
+ * le champ reste vide sur chaque export.
+ *
+ * Le calcul est laissé en place plutôt que supprimé. Ce n'est pas du code mort
+ * par indécision : `url` reste OPTIONNEL dans le format, une distribution
+ * privée reste possible pour qui charge ce plugin en développement dans une
+ * organisation, et la troisième voie de D6 — demander la clé dans la
+ * configuration — le rebrancherait ici sans rien réécrire. Le jour où le champ
+ * doit vraiment disparaître, c'est le format qui change de version, pas ce
+ * module.
+ *
+ * Ce qui remplace le lien : `fileName` et `nodeId`, que le contrat porte
+ * toujours, et que le corps de la pull request annonce désormais sur sa page de
+ * couverture (T4.2). C'est là que la seconde condition de D6 — « la traçabilité
+ * par `fileName` et `nodeId` suffit-elle à une revue ? » — se constate sur une
+ * pull request réelle, ce qu'aucun raisonnement ne pouvait trancher.
  */
 function buildMeta(
   componentSet: ComponentNode | ComponentSetNode,
@@ -414,19 +429,21 @@ export async function handleExportComponent(): Promise<ComponentExport> {
     exportInfos.push(varianceEchantillon);
   }
 
+  // **Le lien Figma absent ne se signale plus, et son retrait est la moitié la
+  // plus importante de T4.4.** Le message était écrit quand le cas était
+  // l'exception : le manifest portait `enablePrivatePluginApi`, l'URL était la
+  // norme, et le dire une fois de temps en temps ne coûtait rien. La
+  // distribution par la Community inverse exactement cela — la clé du fichier
+  // n'arrive plus JAMAIS, donc le message se serait imprimé sur chaque export,
+  // dans le corps de chaque pull request, pour un constat que le designer ne
+  // peut pas corriger et dont la conclusion est toujours « rien à faire ».
+  //
+  // C'est la règle du projet appliquée à sa propre décision : une liste dont on
+  // apprend qu'elle se survole coûte la lecture de celles qui demandent un
+  // geste. Un état NORMAL du format ne se documente pas par un diagnostic
+  // répété à l'infini ; il se documente une fois, dans le type
+  // (`ContractMeta.figma.url`) et dans la spécification.
   const meta = buildMeta(componentSet);
-  if (!meta.figma.url) {
-    // Le message ne promet rien qu'on ne sache tenir : le manifest déclare
-    // `enablePrivatePluginApi`, donc le cas normal est l'URL. Reste celui où
-    // l'API ne la fournit pas — un plugin publié sur la Community — et le dire
-    // en une phrase vaut mieux qu'un avertissement qui paraît transitoire.
-    // Le designer n'y peut rien : c'est un constat, pas un point à corriger.
-    const lienAbsent = 'Lien vers Figma absent du contrat : l’API n’a pas fourni la clé du '
-      + 'fichier à ce plugin. Le nom du fichier et l’identifiant du composant restent '
-      + 'exportés, et suffisent à le retrouver.';
-    warnings.push(lienAbsent);
-    exportInfos.push(lienAbsent);
-  }
 
   const allWarnings = Array.from(new Set([...warnings, ...extracted.warnings]));
   const portableWarningSet = new Set(projectionWarnings);

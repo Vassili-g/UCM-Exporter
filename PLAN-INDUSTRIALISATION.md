@@ -1416,7 +1416,70 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       le repérer : deux contrats, deux identifiants, la même identité Figma.
 
 
-- [ ] **T4.4 — Trancher la distribution du plugin** (D6, arbitrage documenté).
+- [X] **T4.4 — Trancher la distribution du plugin** (D6, arbitrage documenté).
+      **Tranchée le 5 septembre 2026 : la Figma Community.** L'arbitrage complet
+      est réécrit là où la question était posée, `PISTES-EVOLUTION.md §2` ; ce
+      qui suit est ce que la décision a coûté à exécuter.
+      *Ce que la décision change dans le code, et c'est mécanique :*
+      `enablePrivatePluginApi` est réservé aux plugins PRIVÉS d'une
+      organisation — le garder rendrait la soumission irrecevable. Il quitte le
+      manifest, donc `figma.fileKey` n'arrive plus, donc `meta.figma.url` n'est
+      plus écrit.
+      *Ce qui ne change pas, et c'est ce qui rendait la décision peu coûteuse :*
+      `url` était **déjà optionnel** dans `ContractMeta` et aucun lecteur ne le
+      réclame. La version du contrat ne bouge pas, et un contrat produit avant
+      la décision reste lisible — un lecteur doit accepter les deux états. La
+      première condition posée par D6 était donc tenue avant d'être vérifiée.
+      *La moitié la plus importante de l'exécution n'est pas le drapeau, c'est
+      l'avertissement supprimé.* « Lien vers Figma absent du contrat » avait été
+      écrit quand ce cas était l'EXCEPTION. La Community l'inverse : la clé
+      n'arrive plus jamais, donc le message se serait imprimé sur chaque export
+      et dans le corps de chaque pull request, pour un constat que le designer
+      ne peut pas corriger. C'est exactement la règle que T4.2 venait de
+      réaffirmer, retournée contre une décision du projet lui-même — une liste
+      dont on apprend qu'elle se survole coûte la lecture de celles qui
+      demandent un geste. Un état NORMAL du format se documente une fois, dans
+      le type et dans la spécification, pas par un diagnostic répété à l'infini.
+      *La seconde condition de D6 était invérifiable, elle devient observable.*
+      « La traçabilité par `fileName` et `nodeId` suffit-elle à une revue ? » ne
+      se tranche pas en principe, disait D6, mais sur une pull request réelle.
+      Elle est donc écrite là où la revue a lieu : `Composant Figma : « Alert » —
+      fichier « Design System », nœud 12:345`, dans l'en-tête que T4.2 venait
+      d'ouvrir. La question reste posée ; elle est désormais posée à l'endroit
+      où quelqu'un peut y répondre.
+      *La troisième voie de D6 reste ouverte, et le code ne lui barre pas la
+      route.* Le calcul de l'URL est laissé dans `buildMeta` — ce n'est pas du
+      code mort par indécision : une organisation qui charge ce plugin en
+      développement le rebranche, et la couverture de la PR rend l'URL en lien
+      dès qu'un contrat en porte une. Le champ décide, jamais la distribution
+      supposée, et un test le tient dans les deux sens.
+      *Où vit la lecture de l'origine :* `identiteDeContrat` est exporté par
+      `format/identite.ts`, où la fonction existait déjà en privé pour l'arbitre
+      de collision de T4.3. Le refus nomme les deux composants, la couverture de
+      la PR dit d'où vient celui qu'elle dépose : deux messages, une seule
+      lecture de l'origine. Deux lectures auraient fini par diverger, et c'est le
+      seul défaut que ce plan poursuit depuis le début.
+      *Un garde-fou, parce que ce drapeau est exactement ce qu'on remet « juste
+      pour essayer en local » :* `manifestDistribution.test.ts` refuse
+      `enablePrivatePluginApi` dans le manifest du dépôt **et** dans celui que
+      `build-manifest.cjs` distribue — c'est le second que Figma lit. Éprouvé :
+      remis, il rougit en nommant la conséquence. Il a d'ailleurs servi tout de
+      suite, en attrapant un `git checkout` qui avait défait le retrait.
+      *Kit en 0.1.9 et CLI en 0.1.4* : `identiteDeContrat` entre dans la surface
+      publiée, et la règle de T3.4 monte le numéro dans le même commit.
+      **Ce que la décision rouvre, et qui n'est pas tranché ici.** Publier sur la
+      Community met mécaniquement le projet devant un public non francophone. La
+      Phase 8 a écrit que c'est le SEUL événement qui rouvre la question de la
+      langue, et qu'il faut trancher à ce moment-là parce que les noms de
+      symboles d'un paquet npm publié sont quasi irréversibles. Le moment est
+      venu. La question est posée, elle n'est pas résolue, et la trancher
+      demande de savoir qui installera ce plugin — pas de relire ce document.
+      **Ce que le dépôt ne peut pas faire à la place de quelqu'un.** La
+      soumission elle-même est un geste chez Figma : nom public, description,
+      icône, illustration de couverture, catégorie, puis une revue par Figma. Le
+      dépôt porte le manifest recevable et rien de plus ; `manifest.json` garde
+      un `id` de développement (`0000000000000000000`) que Figma remplace à la
+      première publication.
 
 ---
 
@@ -2051,10 +2114,14 @@ dépôt ne sait rien de ce que le registre porte.
 l'est enfin des deux côtés — la moitié locale était une ligne de documentation,
 et elle a produit un garde-fou (`tests/pinDocumente.test.mjs`) parce qu'un
 numéro de version recopié dans un README dérive comme n'importe quelle seconde
-autorité. Reste **T4.4**, qui n'est pas une tâche d'écriture mais un arbitrage :
-publier le plugin sur la Community rouvre mécaniquement la question de la langue
-du projet (Phase 8), et les noms de symboles d'un paquet publié sont quasi
-irréversibles.
+autorité. T4.4 est tranchée le même jour — **la Figma Community** —, ce qui
+ferme la Phase 4. La décision a coûté moins que prévu au format (`url` était
+déjà optionnel) et davantage aux messages : l'avertissement « Lien vers Figma
+absent » devait disparaître, sans quoi la Community l'aurait imprimé sur chaque
+export. **Et elle rouvre une question que ce plan avait mise sous condition :**
+publier met le projet devant un public non francophone, ce que la Phase 8
+désigne comme le seul événement rouvrant la langue du projet. Elle est posée,
+pas résolue.
 
 *Exécuté le 5 septembre 2026 :* les étapes 11 et 12 sont faites — T5.2, T5.4,
 T3.3, T3.2, et T3.4 à moitié. Ce qui les bloque encore est une publication :

@@ -10,7 +10,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { comparerIdentiteDeContrat } from '../src/format/identite';
+import { comparerIdentiteDeContrat, identiteDeContrat } from '../src/format/identite';
 
 /** Un contrat réduit à ce que la comparaison regarde. */
 function contrat(
@@ -103,4 +103,66 @@ test('une entrée douteuse est jugée, pas levée', () => {
   // remplace un refus lisible par une trace de pile.
   assert.doesNotThrow(() => comparerIdentiteDeContrat(undefined, undefined));
   assert.equal(comparerIdentiteDeContrat(undefined, undefined).verdict, 'indecidable');
+});
+
+/**
+ * L'identité qu'un contrat porte, lue seule.
+ *
+ * Elle est exportée depuis T4.4, et pas par confort : la distribution par la
+ * Community a retiré `meta.figma.url`, donc la traçabilité repose sur
+ * `fileName` et `nodeId`, et le corps de la pull request doit les annoncer.
+ * Deux lectures de la même origine — celle de l'arbitre et celle du message —
+ * auraient fini par diverger sans que rien ne le dise.
+ */
+test('l’identité rend les cinq champs que le contrat porte', () => {
+  const identite = identiteDeContrat({
+    name: 'Alert',
+    meta: {
+      contractVersion: '12.0',
+      figma: {
+        fileName: 'Design System',
+        nodeId: '12:345',
+        componentKey: 'abc123',
+        url: 'https://www.figma.com/design/ABC/DS?node-id=12-345',
+      },
+    },
+  });
+  assert.deepEqual(identite, {
+    nom: 'Alert',
+    nodeId: '12:345',
+    componentKey: 'abc123',
+    fileName: 'Design System',
+    url: 'https://www.figma.com/design/ABC/DS?node-id=12-345',
+  });
+});
+
+test('une identité incomplète est rendue incomplète, pas refusée', () => {
+  // C'est la comparaison — ou le message — qui décide de ce qui manque, pas la
+  // lecture. Un contrat produit depuis T4.4 n'a PLUS d'URL, et c'est un état
+  // normal du format : le rendre `null` sans rien casser est exactement le
+  // comportement dont dépend la page de couverture de la pull request.
+  const identite = identiteDeContrat({
+    name: 'Alert',
+    meta: { contractVersion: '12.0', figma: { fileName: 'Design System', nodeId: '12:345' } },
+  });
+  assert.equal(identite.url, null);
+  assert.equal(identite.componentKey, null);
+  assert.equal(identite.nodeId, '12:345');
+  assert.equal(identite.fileName, 'Design System');
+});
+
+test('une entrée qui n’est pas un contrat rend une identité vide, jamais une exception', () => {
+  // Un garde-fou qui explose sur une entrée douteuse ne garde plus rien : les
+  // appelants lui passent du JSON venu du disque, de l'API GitHub ou d'un test,
+  // et aucun n'a promis sa forme.
+  const vide = { nom: null, nodeId: null, componentKey: null, fileName: null, url: null };
+  for (const brut of [null, undefined, 'contrat', 42, [], {}, { meta: null }, { meta: { figma: 7 } }]) {
+    assert.deepEqual(identiteDeContrat(brut), vide);
+  }
+  // Le nom survit même quand `meta` est inexploitable : c'est lui qui nomme le
+  // composant dans un refus, et un refus qui ne nomme personne ne se corrige pas.
+  assert.equal(identiteDeContrat({ name: 'Alert', meta: null }).nom, 'Alert');
+  // Une chaîne vide ou blanche n'est pas une identité.
+  assert.equal(identiteDeContrat({ name: '  ', meta: { figma: { nodeId: '' } } }).nom, null);
+  assert.equal(identiteDeContrat({ name: 'A', meta: { figma: { nodeId: '' } } }).nodeId, null);
 });

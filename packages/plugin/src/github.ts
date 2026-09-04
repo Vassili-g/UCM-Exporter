@@ -6,6 +6,7 @@ import {
   NOM_CONFIGURATION,
   comparerIdentiteDeContrat,
   configurationDepuisJson,
+  identiteDeContrat,
   versionDeContrat,
 } from '@ucm-kit/core/format';
 
@@ -212,16 +213,16 @@ function sansLienAutomatique(warning: string): string {
 
 /**
  * Ce que le dépôt reçoit, annoncé sur sa page de couverture : le schéma de
- * contrat que porte l'artefact déposé (T4.2).
+ * contrat que porte l'artefact déposé (T4.2), et d'où il vient (T4.4).
  *
- * **À quoi sert un numéro sur cette page.** C'est le seul champ qui décide si
- * le fichier ENTIER est lisible par ce repository : hors de la fenêtre que ses
- * lecteurs supportent, le contrat est refusé en bloc, quel que soit son
- * contenu. Or il est enfoui au milieu d'un diff de plusieurs milliers de
- * lignes, où personne ne va le chercher. Sur la couverture, celui qui décide de
- * fusionner voit quel schéma vient d'arriver sans ouvrir le JSON — et le jour
- * où le repository change de version, les pull requests d'export restées
- * ouvertes disent lesquelles ont été produites avant la bascule.
+ * **À quoi sert un numéro de schéma sur cette page.** C'est le seul champ qui
+ * décide si le fichier ENTIER est lisible par ce repository : hors de la fenêtre
+ * que ses lecteurs supportent, le contrat est refusé en bloc, quel que soit son
+ * contenu. Or il est enfoui au milieu d'un diff de plusieurs milliers de lignes,
+ * où personne ne va le chercher. Sur la couverture, celui qui décide de
+ * fusionner voit quel schéma vient d'arriver sans ouvrir le JSON — et le jour où
+ * le repository change de version, les pull requests d'export restées ouvertes
+ * disent lesquelles ont été produites avant la bascule.
  *
  * **Le numéro est lu DANS le fichier, jamais dans `CONTRACT_VERSION`.**
  * L'artefact et la constante du plugin sont deux autorités pour la même chose ;
@@ -230,44 +231,73 @@ function sansLienAutomatique(warning: string): string {
  * que le contenu. C'est le défaut que T4.1, T4.3 et T3.4 ont chacune trouvé
  * ailleurs — deux autorités pour la même chose, dont le désaccord est muet.
  *
- * **`tokens.json` n'en reçoit aucune, et ce n'est pas un oubli.** C'est un
- * arbre DTCG, pas un contrat : il ne porte aucun schéma UCM. Lui en annoncer un
- * — fût-ce celui du plugin — inventerait une version que le fichier ne contient
- * pas.
+ * **L'origine Figma est là parce que T4.4 lui a retiré son raccourci.** La
+ * distribution par la Community interdit `enablePrivatePluginApi`, donc
+ * `figma.fileKey`, donc `meta.figma.url` : le lien d'un clic vers le composant
+ * source a disparu des contrats. D6 posait la question — « la traçabilité par
+ * `fileName` et `nodeId` suffit-elle réellement à une revue ? » — en précisant
+ * qu'elle se constate sur une pull request réelle et pas en principe. Elle est
+ * donc écrite là où la revue a lieu. Quand un contrat porte encore une URL — un
+ * export antérieur, ou un plugin chargé en développement dans une organisation
+ * —, elle est rendue en lien : le champ décide, pas la distribution supposée.
+ *
+ * **Les intitulés Figma passent par `sansLienAutomatique`**, pour la raison qui
+ * l'a fait naître : un composant nommé `@icons` ouvrirait le profil d'un
+ * inconnu, notifié à chaque export. La règle vaut pour l'en-tête comme pour la
+ * liste, et un second traitement du même risque aurait fini par diverger.
+ *
+ * **`tokens.json` ne reçoit ni l'une ni l'autre, et ce n'est pas un oubli.**
+ * C'est un arbre DTCG, pas un contrat : il ne porte aucun schéma UCM, et il
+ * n'est le portrait d'aucun composant — ses variables viennent du fichier
+ * entier.
  *
  * **Un contrat sans version lisible le dit.** Le plugin en écrit toujours une,
  * donc ce cas ne vient pas de lui ; il vient d'un artefact produit ailleurs, et
  * le contrôle du repository le refusera alors pour champ absent — un verdict
  * dont la cause se lit ici en une ligne au lieu de se chercher dans le rapport.
  * Ce n'est pas un cri de loup : la ligne ne s'écrit que dans un cas réellement
- * fautif.
+ * fautif. L'origine, elle, s'omet quand elle est illisible : le défaut est déjà
+ * nommé une fois au-dessus, et le redire deux fois n'apprend rien.
  *
- * **Pourquoi ceci n'est pas une note au sens de la règle voisine.** Une note
- * est un CONSTAT sur le contenu, dont la conclusion est « rien à faire », et
+ * **Pourquoi ceci n'est pas une note au sens de la règle voisine.** Une note est
+ * un CONSTAT sur le contenu, dont la conclusion est « rien à faire », et
  * l'admettre dans la liste apprendrait au designer que cette liste se survole.
- * Le schéma n'est pas un constat : c'est l'IDENTITÉ de ce qui est déposé, au
- * même titre que le chemin du fichier juste au-dessus. Il vit donc dans
- * l'en-tête, et la liste des gestes à faire reste intacte.
+ * Ni le schéma ni l'origine ne sont des constats : ce sont l'IDENTITÉ de ce qui
+ * est déposé, au même titre que le chemin du fichier juste au-dessus. Ils
+ * vivent donc dans l'en-tête, et la liste des gestes à faire reste intacte.
  */
-function ligneDeSchema(artifact: RepositoryArtifact): string[] {
+function lignesDIdentite(artifact: RepositoryArtifact): string[] {
   if (artifact.kind !== 'component') return [];
 
   let contrat: unknown;
   try {
     contrat = JSON.parse(artifact.content);
   } catch {
-    // Un artefact illisible n'a pas de version : le dire est exactement ce que
-    // la branche ci-dessous écrit, et lever ici ferait échouer un export pour
-    // une ligne de couverture.
+    // Un artefact illisible n'a ni version ni origine : le dire est exactement
+    // ce que les deux branches ci-dessous écrivent, et lever ici ferait échouer
+    // un export pour une ligne de couverture.
     contrat = null;
   }
 
   const version = versionDeContrat(contrat);
-  return [
+  const origine = identiteDeContrat(contrat);
+  const lignes = [
     version === null
       ? 'Schéma de contrat : absent du fichier — le contrôle du repository refusera ce contrat.'
       : `Schéma de contrat : \`${version}\``,
   ];
+
+  // `nodeId` est ce qui retrouve le composant ; sans lui, la ligne ne
+  // tracerait rien et se contenterait d'occuper la page.
+  if (origine.nodeId === null) return lignes;
+
+  const nom = origine.nom === null ? 'Composant' : `« ${sansLienAutomatique(origine.nom)} »`;
+  const designation = origine.url === null ? nom : `[${nom}](${origine.url})`;
+  const fichier = origine.fileName === null
+    ? ''
+    : `fichier « ${sansLienAutomatique(origine.fileName)} », `;
+  lignes.push(`Composant Figma : ${designation} — ${fichier}nœud \`${origine.nodeId}\``);
+  return lignes;
 }
 
 /**
@@ -290,9 +320,9 @@ function ligneDeSchema(artifact: RepositoryArtifact): string[] {
  * les yeux pendant l'export.
  *
  * **Deux zones, et la frontière compte.** L'en-tête dit l'IDENTITÉ de ce qui
- * est déposé — le chemin, et le schéma de contrat quand le fichier en porte
- * un (`ligneDeSchema`, T4.2). La liste qui suit ne porte que des GESTES. Un
- * constat sans geste n'entre ni dans l'une ni dans l'autre.
+ * est déposé — le chemin, le schéma de contrat, et d'où vient le composant
+ * (`lignesDIdentite`, T4.2 et T4.4). La liste qui suit ne porte que des GESTES.
+ * Un constat sans geste n'entre ni dans l'une ni dans l'autre.
  */
 export function pullRequestBody(path: string, artifact: RepositoryArtifact): string {
   const warnings = artifact.warnings;
@@ -300,7 +330,7 @@ export function pullRequestBody(path: string, artifact: RepositoryArtifact): str
     'Export automatique depuis Figma.',
     '',
     `Fichier : \`${path}\``,
-    ...ligneDeSchema(artifact),
+    ...lignesDIdentite(artifact),
   ].join('\n');
   if (warnings.length === 0) {
     return [header, '', `Aucun avertissement d'export.`].join('\n');
