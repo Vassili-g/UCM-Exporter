@@ -2,7 +2,7 @@
  * Client GitHub REST minimal pour déposer un artefact Unified Component Exporter dans une
  * branche dédiée puis ouvrir une PR. Aucun PAT n'est logué ni renvoyé à l'UI.
  */
-import { NOM_CONFIGURATION, configurationDepuisJson } from '@ucm-kit/core/format';
+import { NOM_CONFIGURATION, comparerIdentiteDeContrat, configurationDepuisJson } from '@ucm-kit/core/format';
 
 import type { GithubConfig } from './config';
 import { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
@@ -100,7 +100,21 @@ export function exportBranchName(kind: ArtifactKind, date = new Date()): string 
   const pad = (value: number) => String(value).padStart(2, '0');
   const day = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`;
   const time = `${pad(date.getHours())}${pad(date.getMinutes())}${pad(date.getSeconds())}`;
-  return `ucm-exporter/export-${kind}-${day}-${time}`;
+  return `${prefixeDeBranche(kind)}${day}-${time}`;
+}
+
+/**
+ * Le préfixe que porte TOUTE branche d'export, et la seule chose qui permette
+ * de les reconnaître après coup.
+ *
+ * Il est extrait parce qu'un second lecteur en dépend : la détection de
+ * collision doit retrouver les exports encore en vol (voir
+ * `cheminsOccupesParUnExportEnCours`). Deux écritures du même préfixe
+ * dériveraient, et la dérive serait muette — la recherche ne trouverait
+ * simplement plus rien, ce qui se lit exactement comme « aucune collision ».
+ */
+function prefixeDeBranche(kind: ArtifactKind): string {
+  return `ucm-exporter/export-${kind}-`;
 }
 
 /**
@@ -295,14 +309,18 @@ async function deleteBranch(config: GithubConfig, repository: string, branch: st
   }).catch(() => undefined);
 }
 
-/** Lit un fichier sur la branche de base ; `null` signifie qu'il n'existe pas encore. */
+/**
+ * Lit un fichier sur la branche de base, ou sur la `ref` demandée ; `null`
+ * signifie qu'il n'existe pas là.
+ */
 async function getRepositoryFile(
   config: GithubConfig,
   path: string,
+  ref = config.baseBranch,
 ): Promise<GithubFile | null> {
   const file = await githubRequest<GithubFile>(
     config,
-    `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${encodePath(path)}?ref=${encodeURIComponent(config.baseBranch)}`,
+    `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${encodePath(path)}?ref=${encodeURIComponent(ref)}`,
     {},
     true,
   );
@@ -314,6 +332,112 @@ async function getRepositoryFile(
     if (blob) return { ...file, content: blob.content, encoding: blob.encoding };
   }
   return file;
+}
+
+/**
+ * Le refus de collision, écrit pour le designer qui vient de cliquer.
+ *
+ * **Pourquoi un refus et pas un avertissement (D9).** L'identifiant nomme le
+ * dossier ET le fichier de contrat : deux composants Figma qui se projettent
+ * sur le même identifiant écrivent au même chemin, et le second export écrase
+ * le premier. La CI ne voit ensuite qu'un seul contrat — donc aucun doublon,
+ * donc aucune erreur. Avertir en écrivant quand même laisserait passer
+ * exactement la perte silencieuse que cette détection existe pour supprimer.
+ *
+ * Le message nomme les DEUX composants et le geste : renommer dans Figma. Un
+ * refus qui dit seulement « collision » ne se corrige pas — le designer ne sait
+ * pas quel autre composant est en cause, et ne peut pas aller le chercher.
+ *
+ * `null` quand l'écriture est légitime.
+ */
+function refusDeCollision(
+  existantBrut: string,
+  candidatBrut: string,
+  path: string,
+  ou: string,
+): string | null {
+  let existant: unknown;
+  let candidat: unknown;
+  try {
+    existant = JSON.parse(existantBrut);
+    candidat = JSON.parse(candidatBrut);
+  } catch {
+    // Un contrat illisible ne dit rien de son identité : c'est le cas
+    // indécidable, traité plus bas comme tel plutôt qu'ignoré.
+    existant = null;
+    candidat = null;
+  }
+
+  const verdict = comparerIdentiteDeContrat(existant, candidat);
+  if (verdict.verdict === 'meme') return null;
+
+  const nomCandidat = verdict.nomCandidat ?? 'ce composant';
+  if (verdict.verdict === 'indecidable') {
+    return (
+      `Un contrat occupe déjà \`${path}\` (${ou}), et il ne porte aucune identité Figma `
+      + `lisible : impossible de distinguer un réexport de « ${nomCandidat} » d'une collision `
+      + `avec un autre composant. Un développeur doit vérifier ce fichier avant que l'export `
+      + `puisse l'écrire.`
+    );
+  }
+
+  const nomExistant = verdict.nomExistant ?? 'un autre composant';
+  return (
+    `« ${nomExistant} » et « ${nomCandidat} » produisent le même identifiant : leurs deux `
+    + `contrats s'écrivent dans \`${path}\`, et cet export écraserait celui de `
+    + `« ${nomExistant} » (${ou}). Renommez l'un des deux composants dans Figma, puis `
+    + `relancez l'export.`
+  );
+}
+
+/**
+ * Les exports du même artefact encore EN VOL, c'est-à-dire dans une pull request
+ * ouverte et pas encore fusionnée.
+ *
+ * **Le trou que ceci referme.** `getRepositoryFile` interroge la branche de
+ * base : un contrat qui n'existe que dans une PR d'export ouverte y est
+ * invisible. Deux composants en collision exportés coup sur coup ouvriraient
+ * donc deux pull requests sur le même chemin sans qu'aucun refus n'ait lieu, et
+ * la collision ne se révélerait qu'à la fusion de la seconde — en écrasant la
+ * première, c'est-à-dire précisément le cas qu'on prétend avoir fermé.
+ *
+ * **Le coût est borné et c'est ce qui rend le contrôle acceptable.** Un seul
+ * appel liste les pull requests ouvertes ; seules celles dont la branche porte
+ * le préfixe d'export sont ensuite ouvertes, et il n'y en a normalement aucune.
+ * Le filtre est STRUCTUREL — le préfixe que `exportBranchName` écrit — et non
+ * une comparaison de titres : un titre est du texte, il dérive sans rien casser
+ * de visible, et la recherche cesserait alors de trouver quoi que ce soit.
+ *
+ * Un échec de cet appel n'est pas avalé. Ne pas pouvoir regarder n'est pas la
+ * même chose que ne rien trouver, et confondre les deux redonnerait au
+ * garde-fou l'apparence du vert qu'il existe pour retirer.
+ */
+async function contratsEnVol(
+  config: GithubConfig,
+  repository: string,
+  kind: ArtifactKind,
+  path: string,
+): Promise<{ contenu: string; ou: string }[]> {
+  const ouvertes = await githubRequest<{ head: { ref: string } }[]>(
+    config,
+    `/repos/${repository}/pulls?state=open&base=${encodeURIComponent(config.baseBranch)}&per_page=100`,
+  );
+  if (!ouvertes) return [];
+
+  const prefixe = prefixeDeBranche(kind);
+  const trouves: { contenu: string; ou: string }[] = [];
+  for (const pull of ouvertes) {
+    const branche = pull.head?.ref;
+    if (typeof branche !== 'string' || branche.indexOf(prefixe) !== 0) continue;
+    const fichier = await getRepositoryFile(config, path, branche);
+    if (fichier?.type === 'file' && fichier.content) {
+      trouves.push({
+        contenu: decodeBase64(fichier.content),
+        ou: `pull request d'export ouverte, branche ${branche}`,
+      });
+    }
+  }
+  return trouves;
 }
 
 /**
@@ -339,6 +463,26 @@ export async function publishArtifact(
   const existing = await getRepositoryFile(config, path);
   if (existing?.type === 'file' && existing.content && sameContent(decodeBase64(existing.content), artifact.content)) {
     return { status: 'unchanged', path, source: layout.source };
+  }
+
+  // La collision se cherche APRÈS le contrôle d'immobilité : un contenu
+  // identique est un réexport par construction, et le faire passer par
+  // l'arbitre d'identité ne pourrait que rendre la même réponse plus cher.
+  //
+  // Elle ne concerne que les contrats. `tokens.json` est unique par
+  // repository : son chemin ne se dispute avec rien, et il ne porte aucune
+  // identité Figma à comparer.
+  if (artifact.kind === 'component') {
+    const occupants = [
+      ...(existing?.type === 'file' && existing.content
+        ? [{ contenu: decodeBase64(existing.content), ou: `branche ${config.baseBranch}` }]
+        : []),
+      ...(await contratsEnVol(config, repository, artifact.kind, path)),
+    ];
+    for (const occupant of occupants) {
+      const refus = refusDeCollision(occupant.contenu, artifact.content, path, occupant.ou);
+      if (refus) throw new GithubApiError(refus);
+    }
   }
 
   const branch = exportBranchName(artifact.kind, date);

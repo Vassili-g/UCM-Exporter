@@ -673,10 +673,11 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       et le registre porte 0.1.0 à 0.1.4. *La leçon est celle que le workflow
       porte déjà :* quatre états successifs de diagnostic écrits chacun comme un
       fait avaient rendu le dernier — le bon — illisible.
-      *Ce qui reste ouvert, et c'est une précondition de T3.4 :* `publish.yml`
-      ne publie que `--workspace @ucm-kit/core`. `@ucm-kit/cli` rend 404 sur le
-      registre et épingle `@ucm-kit/core@0.1.4` ; il lui faut sa propre étape de
-      publication avant que `npx @ucm-kit/cli` veuille dire quelque chose.
+      *Levé le 4 septembre 2026 :* `publish.yml` publie les deux paquets, et
+      `@ucm-kit/cli` est sur le registre — sa 0.1.1 partie à la main, comme la
+      règle de la première version l'exige. Ce que la levée a révélé est écrit
+      en T3.4 : cette 0.1.1 était **cassée à l'import**, et aucun contrôle du
+      dépôt ne pouvait le voir.
       `lireApiPublique` rend une Map vide sans TypeScript (`parite.mjs:231`) et
       `cheminDuComposant` cherche un `.tsx` en dur (`:42`), d'où
       `implementationAbsente: true` (`:309`) pour tout contrat d'un repo
@@ -1122,11 +1123,37 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       appelle `npx --yes @ucm-kit/cli@<version exacte>` et n'exécute AUCUN `npm
       ci`. La propriété est donc tenue par construction en CI, et un test la
       verrouille — un `npm ci` réintroduit dans ce workflow le fait rougir.
-      **Ce qui reste bloque tout le reste, et c'est une précondition
-      d'exécution :** `@ucm-kit/cli` rend 404 sur le registre. Le workflow qu'un
-      repo neuf reçoit installe donc une CI qui ne peut pas démarrer, tant que le
-      paquet n'est pas publié. Reste aussi le cas LOCAL, où `npx` exige Node sur
-      le poste : à documenter, pas à outiller.
+      **La publication a eu lieu le 4 septembre 2026, et l'essai qui devait la
+      confirmer a trouvé pire que ce qu'il cherchait.** `npx --yes
+      @ucm-kit/cli@0.1.1 --help`, lancé depuis un dossier vide, meurt à l'import :
+      *« @ucm-kit/core/format does not provide an export named
+      CONFIGURATION_PAR_DEFAUT »*. Le paquet publié la veille était cassé, et
+      personne ne pouvait le savoir.
+      **La cause, et c'est une règle qui manquait au plan.** T4.1 a fait
+      descendre `configurationDepuisJson` et `CONFIGURATION_PAR_DEFAUT` dans la
+      surface publiée du kit **sans monter son numéro de version**. Le dépôt
+      portait 0.1.6 et le registre portait un AUTRE 0.1.6. `@ucm-kit/cli@0.1.1`
+      est parti en épinglant `0.1.6` — donc en allant chercher l'ancien sur le
+      registre. *Un numéro de version publié est immuable : changer ce que le kit
+      publie exige de monter son numéro dans le MÊME commit.*
+      **Pourquoi aucun garde-fou ne l'a vu, et c'est le point.** `npm ci` lie le
+      workspace : tout se construit, se type et se teste contre la source d'à
+      côté, qui est juste. `monorepoCoherent.test.mjs` compare le pin du CLI à la
+      version que le dépôt porte — 0.1.6 contre 0.1.6, vert. Le mensonge
+      n'existait qu'au registre, et le seul moyen de l'y voir était d'y aller.
+      C'est la troisième fois que ce projet rencontre la même maladie : deux
+      autorités pour la même chose, dont le désaccord est muet.
+      *Le garde-fou, et il va chercher là où le mensonge vit :* `publish.yml`
+      porte une étape **« Épreuve du registre »**, postérieure à la publication.
+      Un dossier vide, sans `package.json` ni `node_modules`, et la commande
+      qu'un repo tiers lance vraiment — `npx --yes @ucm-kit/cli@<version>
+      --help` pour le CLI, l'import des deux sous-chemins pour le kit. Elle ne
+      peut pas empêcher la mauvaise version de partir, puisqu'une version part
+      pour toujours ; elle transforme un mensonge qui aurait vécu des jours en un
+      run rouge dans la minute, quand le correctif ne coûte qu'un numéro de plus.
+      *Corrigé :* kit en **0.1.7**, CLI en **0.1.2** épinglant 0.1.7.
+      Reste le cas LOCAL, où `npx` exige Node sur le poste : à documenter, pas à
+      outiller.
       **Et une loi trouvée en essayant, le 5 septembre 2026 :** `publish.yml`
       sait désormais publier le CLI, l'exécution a été lancée, et elle échoue en
       `ENEEDAUTH` après avoir construit le tarball. La cause n'est pas un réglage
@@ -1221,43 +1248,71 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
 
 - [ ] **T4.2 — Annoncer la version du contrat dans le corps de la PR.**
 
-- [ ] **T4.3 — ⚠ Détecter la collision d'identifiants côté producteur.**
-      *Défaut trouvé par la revue, vérifié :* `github.ts:88-92` construit le
-      chemin à partir de `codeIdentifier`, et `exportComponent.ts:163-165` en
-      tire aussi le nom du fichier. Deux noms Figma qui entrent en collision
-      produisent donc **le même dossier et le même fichier** : le second export
-      écrase le premier, et la CI ne voit ensuite qu'un seul contrat — donc
+- [X] **T4.3 — ⚠ Détecter la collision d'identifiants côté producteur.**
+      **Close le 4 septembre 2026.** `codeIdentifier` n'est pas injective —
+      « Icon / Button » et « IconButton » rendent tous deux `IconButton` — et
+      l'identifiant nomme le dossier ET le fichier de contrat. Sans refus, le
+      second export écrase le premier, la CI ne voit ensuite qu'UN contrat, donc
       aucun doublon, donc aucune erreur. Le garde-fou de
-      `validation-graphe-contrats.mjs:70-105` est réel et bloquant, mais
-      **inatteignable** pour la sortie du plugin : il n'est atteint que si
-      quelqu'un place deux contrats à la main dans des dossiers distincts.
-      La détection doit donc exister **avant l'écriture**, côté plugin.
-      **Comportement décidé (D9) : le plugin REFUSE l'export.** Le message nomme
-      les deux composants Figma en cause et l'identifiant qu'ils produisent tous
-      deux ; le geste correctif est un renommage dans Figma. C'est brutal pour
-      le designer, et c'est le prix à payer : avertir en écrivant quand même
-      laisserait passer l'écrasement silencieux d'un contrat, c'est-à-dire le
-      défaut que cette tâche existe pour supprimer.
-      **Trois arbitrages que la v4 cachait derrière « on refuse ».**
-      1. **Que fait le plugin sans configuration GitHub ?** Elle est facultative,
-         et sur le chemin « téléchargement local » il n'y a aucun repo à lire :
-         la collision est alors indétectable. C'est le cas nominal d'un designer
-         qui n'a pas saisi de PAT. Décider : avertissement dans le journal du
-         plugin, ou rien.
-      2. **La lecture ne voit que la branche de base.** `getRepositoryFile`
-         (`github.ts:227`) interroge `?ref=${config.baseBranch}`. Un contrat en
-         collision qui vit dans une PR d'export **encore ouverte** est invisible,
-         et le second export ouvrira une seconde PR sur le même chemin sans
-         qu'aucun refus n'ait lieu. À dire, sinon la tâche sera close en croyant
-         le trou bouché.
-      3. **Quel est l'arbitre de l'identité ?** `publishArtifact` a déjà
-         `existing` sous la main : inutile de lire tout le repo, coûteux et
-         soumis au quota. Mais distinguer une collision d'un réexport légitime
-         ou d'un composant renommé dans Figma demande de choisir entre
-         `contract.name` (nom d'affichage) et `meta.figma.componentKey` /
-         `nodeId` (identité stable — en notant que `componentKey` n'est publié
-         que `if (componentSet.key)`, `exportComponent.ts:156`). Sans ce choix,
-         le refus bloquera des réexports parfaitement légitimes.
+      `validation-graphe-contrats.mjs` est réel et bloquant, et **inatteignable**
+      pour la sortie du plugin. La détection existe donc désormais AVANT
+      l'écriture, et elle REFUSE (D9).
+      *L'arbitre de l'identité, arbitrage 3 tranché :* une **cascade sur le
+      signal le plus fort que les DEUX contrats portent** — `componentKey`, qui
+      survit à un renommage et à une copie du fichier Figma, sinon `nodeId`,
+      toujours présent. `contract.name` n'arbitre PAS : c'est exactement ce
+      qu'un renommage change alors que le composant n'a pas bougé, et en faire
+      l'arbitre ferait refuser des réexports légitimes — le champ qui varie
+      serait celui qui décide. `fileName` est porté pour le message et ne vote
+      jamais : le faire voter protégerait d'une coïncidence demandant deux
+      accidents simultanés, au prix d'un refus sur un geste courant — renommer
+      le fichier Figma. **L'indécidable refuse aussi** : un contrat déjà présent
+      sans identité Figma lisible ne permet pas de distinguer un réexport d'une
+      collision, et passer outre écraserait peut-être le travail de quelqu'un
+      sans un mot.
+      *Où vit la règle :* `packages/kit/src/format/identite.ts`, et pas dans le
+      plugin. Ce que « le même composant » veut dire est une règle du FORMAT,
+      pas de l'outil qui écrit — même raison que `ucm.config.json` en T4.1. Le
+      producteur la pose avant d'écrire ; le lecteur qui voudra un jour repérer
+      un contrat orphelin posera la même question et doit y répondre pareil.
+      *Arbitrage 1, tranché :* **rien.** Sans configuration GitHub il n'y a
+      aucun repo à lire, et une ligne de journal à chaque téléchargement local
+      dirait toujours la même chose : au bout de quelques exports elle ne se
+      lirait plus, et elle userait l'attention que les avertissements réels
+      réclament.
+      *Arbitrage 2, refermé alors qu'il devait rester ouvert, parce que la
+      solution était simple.* La lecture ne voyait que la branche de base : un
+      contrat vivant dans une PR d'export **encore ouverte** était invisible, et
+      deux composants en collision exportés coup sur coup ouvraient deux PR sur
+      le même chemin — la collision ne se révélant qu'à la fusion de la seconde,
+      en écrasant la première. Le déblocage tient à ce que les branches d'export
+      sont **déterministes** : un seul appel liste les PR ouvertes, le préfixe
+      `ucm-exporter/export-component-` les reconnaît, et seules celles-là sont
+      ouvertes — normalement aucune. Le filtre est STRUCTUREL, pas un
+      rapprochement de titres : un titre est du texte, il dérive sans rien
+      casser de visible, et la recherche cesserait alors de trouver quoi que ce
+      soit — ce qui se lit exactement comme « aucune collision ».
+      *Éprouvé dans les deux sens, et c'est la moitié qui compte :* un garde-fou
+      qui refuse tout est aussi inutile qu'un garde-fou qui ne refuse rien. Le
+      réexport du même composant après renommage dans Figma PASSE, et un test le
+      tient. Deux mutations le prouvent : désarmer le refus rougit trois tests
+      du plugin ; faire de `name` l'arbitre rougit le réexport renommé.
+      *Ce que la mutation a montré au passage, et qui valait plus que la
+      tâche :* la seconde mutation, appliquée à la source du kit, n'a d'abord
+      rougi **que les tests du kit**. Les tests du plugin importent
+      `@ucm-kit/core/format`, c'est-à-dire le `dist/` CONSTRUIT : ils lisaient
+      un kit d'avant la mutation et restaient verts. `npm test` à la racine ne
+      construisait pas. La même maladie que le pin du plugin en T4.1, un cran
+      plus bas — deux états du même code, dont le désaccord est muet. Le script
+      `test` de la racine construit désormais le kit d'abord.
+      *Ce que la tâche N'a pas fermé, et qu'il faut dire :* renommer un composant
+      dans Figma change son identifiant, donc son chemin. Aucune collision n'est
+      alors vue — il n'y a personne à l'emplacement neuf — et le contrat de
+      l'ancien nom reste sur place, orphelin. Le graphe n'y voit pas de doublon,
+      puisque les identifiants diffèrent. C'est le pendant exact de cette tâche,
+      côté lecteur, et `comparerIdentiteDeContrat` est déjà ce qu'il faut pour
+      le repérer : deux contrats, deux identifiants, la même identité Figma.
+
 
 - [ ] **T4.4 — Trancher la distribution du plugin** (D6, arbitrage documenté).
 
@@ -1861,6 +1916,16 @@ Elles sont corrigées ici.
     puis T3.4.
 13. **T4.1 et T4.3**, reste de la Phase 7, reste de la Phase 5, puis les
     Phases 6 et 8.
+
+*Exécuté le 4 septembre 2026 :* T4.1 et T4.3 sont closes. **Et l'étape 13 a
+répété la leçon des étapes 11 et 12 sans qu'on l'ait vue venir.** Celles-ci
+avaient enregistré qu'« une publication est une précondition d'exécution, pas
+une formalité de fin de tâche ». La publication du CLI a bien eu lieu — et le
+paquet publié était cassé, parce que la tâche précédente avait changé la surface
+du kit sans monter son numéro. La leçon se complète donc : **une publication
+n'est pas un événement, c'est un état qu'il faut vérifier depuis dehors.** Tant
+que personne ne lance la commande d'un consommateur depuis un dossier vide, le
+dépôt ne sait rien de ce que le registre porte.
 
 *Exécuté le 5 septembre 2026 :* les étapes 11 et 12 sont faites — T5.2, T5.4,
 T3.3, T3.2, et T3.4 à moitié. Ce qui les bloque encore est une publication :

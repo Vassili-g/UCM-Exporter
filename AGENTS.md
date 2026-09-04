@@ -76,6 +76,7 @@ packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
     names.ts                 normalizeName, codeIdentifier, tokenCssVariable
     references.ts            la forme d'une référence de token, et son enveloppe
     configuration.ts         la grammaire de ucm.config.json — la CI ET le plugin
+    identite.ts              « ces deux contrats sont-ils le même composant ? »
     index.ts                 ce que le sous-chemin publie
   src/lecteurs/            ce qui JUGE un contrat écrit — `ajv` et `node:fs`
     validation-contrat.mjs       la forme d'un contrat, champ par champ

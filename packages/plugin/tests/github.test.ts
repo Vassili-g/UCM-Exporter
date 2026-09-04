@@ -34,6 +34,26 @@ async function avecFetch<T>(
   }
 }
 
+/**
+ * Comme `avecFetch`, mais le stub voit aussi la MÉTHODE.
+ *
+ * Un export complet enchaîne des GET, un POST de branche, un PUT de contenu et
+ * un POST de pull request sur des URL qui se ressemblent : répondre à l'URL
+ * seule confondrait la création de la branche et l'ouverture de la PR.
+ */
+async function avecMethode<T>(
+  reponse: (url: string, method: string) => Response,
+  travail: () => Promise<T>,
+): Promise<T> {
+  const precedent = globalThis.fetch;
+  globalThis.fetch = async (input, init) => reponse(String(input), init?.method ?? 'GET');
+  try {
+    return await travail();
+  } finally {
+    globalThis.fetch = precedent;
+  }
+}
+
 /** Une configuration de repository absente : le cas nominal. */
 function sansConfiguration(url: string): Response | null {
   return url.includes('ucm.config.json') ? new Response('{}', { status: 404 }) : null;
@@ -282,6 +302,9 @@ test('publishArtifact supprime la branche quand l’ouverture de la PR échoue',
     // Le repository ne se décrit pas : les réglages du plugin décident (T4.1).
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
+    // Aucun export en vol : la recherche de collision de T4.3 liste les pull
+    // requests ouvertes avant d'écrire, et ne trouve rien à comparer.
+    new Response(JSON.stringify([]), { status: 200 }),
     new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 }),
     new Response(JSON.stringify({ ref: 'created' }), { status: 201 }),
     new Response(JSON.stringify({ content: { sha: 'file-sha' } }), { status: 201 }),
@@ -305,8 +328,11 @@ test('publishArtifact supprime la branche quand l’ouverture de la PR échoue',
       ),
       /GitHub a répondu 422/,
     );
-    assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'GET', 'POST', 'PUT', 'POST', 'DELETE']);
-    assert.match(calls[6].url, /git\/refs\/heads\/ucm-exporter\/export-component-20260717-090500$/);
+    assert.deepEqual(
+      calls.map((call) => call.method),
+      ['GET', 'GET', 'GET', 'GET', 'POST', 'PUT', 'POST', 'DELETE'],
+    );
+    assert.match(calls[7].url, /git\/refs\/heads\/ucm-exporter\/export-component-20260717-090500$/);
   } finally {
     globalThis.fetch = previousFetch;
   }
@@ -319,6 +345,9 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
     // Le repository ne se décrit pas : les réglages du plugin décident (T4.1).
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
+    // Aucun export en vol : la recherche de collision de T4.3 liste les pull
+    // requests ouvertes avant d'écrire, et ne trouve rien à comparer.
+    new Response(JSON.stringify([]), { status: 200 }),
     new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 }),
     new Response(JSON.stringify({ ref: 'created' }), { status: 201 }),
     new Response(JSON.stringify({ content: { sha: 'file-sha' } }), { status: 201 }),
@@ -344,10 +373,183 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
       pullRequestUrl: 'https://github.com/acme/design-system/pull/12',
       source: 'réglages du plugin',
     });
-    assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'GET', 'POST', 'PUT', 'POST']);
+    assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'GET', 'GET', 'POST', 'PUT', 'POST']);
   } finally {
     globalThis.fetch = previousFetch;
   }
+});
+
+/**
+ * T4.3, et il faut le lire avec D9 sous les yeux : le plugin REFUSE.
+ *
+ * `codeIdentifier` n'est pas injective — « Icon / Button » et « IconButton »
+ * rendent tous deux `IconButton` —, et l'identifiant nomme le dossier ET le
+ * fichier de contrat. Sans ce refus, le second export écrase le premier, la CI
+ * ne voit ensuite qu'UN seul contrat, donc aucun doublon, donc aucune erreur.
+ * Le garde-fou de graphe existe et il est bloquant ; il est simplement
+ * inatteignable pour la sortie du plugin.
+ */
+function contratFigma(name: string, nodeId: string, componentKey?: string): string {
+  return JSON.stringify({
+    name,
+    meta: {
+      contractVersion: '3.0',
+      exportedAt: '2026-09-04T10:00:00.000Z',
+      figma: { fileName: 'DS', nodeId, ...(componentKey ? { componentKey } : {}) },
+    },
+  });
+}
+
+/** Aucun export en vol : la liste des pull requests ouvertes est vide. */
+function sansExportEnVol(url: string): Response | null {
+  return url.includes('/pulls?') ? new Response('[]', { status: 200 }) : null;
+}
+
+test('deux composants Figma distincts au même chemin : l’export est refusé, rien n’est écrit', async () => {
+  const calls: Array<{ url: string; method: string }> = [];
+  await assert.rejects(
+    avecMethode(
+      (url, method) => {
+        calls.push({ url, method });
+        return sansConfiguration(url)
+          ?? sansExportEnVol(url)
+          ?? fichier(contratFigma('Icon / Button', '12:345'));
+      },
+      () => publishArtifact(config, {
+        kind: 'component',
+        filename: 'IconButton.contract.json',
+        content: contratFigma('IconButton', '67:890'),
+        warnings: [],
+      }),
+    ),
+    (erreur: Error) => {
+      // Le message doit NOMMER les deux composants et le geste : un refus qui
+      // dit seulement « collision » ne se corrige pas, le designer ne sait pas
+      // quel autre composant est en cause.
+      assert.match(erreur.message, /« Icon \/ Button » et « IconButton »/);
+      assert.match(erreur.message, /IconButton\/IconButton\.contract\.json/);
+      assert.match(erreur.message, /Renommez l'un des deux composants dans Figma/);
+      return true;
+    },
+  );
+
+  // Le refus tombe AVANT toute écriture. Une branche créée puis abandonnée
+  // laisserait une trace que personne n'ira nettoyer.
+  assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'GET']);
+});
+
+test('le même composant réexporté après un renommage dans Figma passe', async () => {
+  // Le pendant obligatoire du test précédent. Un garde-fou qui refuse tout est
+  // aussi inutile qu'un garde-fou qui ne refuse rien — et c'est exactement ce
+  // qu'aurait produit `contract.name` comme arbitre de l'identité.
+  const result = await avecMethode(
+    (url, method) => {
+      if (method === 'POST') {
+        return new Response(JSON.stringify({ html_url: 'https://github.com/acme/ds/pull/7' }), { status: 201 });
+      }
+      if (method === 'PUT') return new Response(JSON.stringify({ content: { sha: 'x' } }), { status: 201 });
+      return sansConfiguration(url)
+        ?? sansExportEnVol(url)
+        ?? (url.includes('/git/ref/heads/')
+          ? new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 })
+          : fichier(contratFigma('Icon / Button', '12:345')));
+    },
+    () => publishArtifact(config, {
+      kind: 'component',
+      filename: 'IconButton.contract.json',
+      content: contratFigma('IconButton', '12:345'),
+      warnings: [],
+    }),
+  );
+
+  assert.equal(result.status, 'created');
+});
+
+test('une collision encore en vol dans une pull request ouverte est vue', async () => {
+  // Le trou que la lecture sur la seule branche de base laissait : un contrat
+  // qui n'existe QUE dans une PR d'export ouverte y est invisible. Deux
+  // composants en collision exportés coup sur coup ouvriraient deux PR sur le
+  // même chemin, et la collision ne se révélerait qu'à la fusion de la
+  // seconde — en écrasant la première.
+  const branche = 'ucm-exporter/export-component-20260904-090000';
+  await assert.rejects(
+    avecMethode(
+      (url) => {
+        if (url.includes('/pulls?')) {
+          return new Response(JSON.stringify([
+            // Une PR humaine ordinaire : elle ne porte pas le préfixe d'export
+            // et n'est jamais ouverte, sinon le coût de l'export suivrait
+            // l'activité du repository.
+            { head: { ref: 'feature/refonte-des-couleurs' } },
+            { head: { ref: branche } },
+          ]), { status: 200 });
+        }
+        const absente = sansConfiguration(url);
+        if (absente) return absente;
+        // Le chemin est libre sur la branche de base ; il est pris en vol.
+        if (url.includes(`ref=${encodeURIComponent(branche)}`)) {
+          return fichier(contratFigma('Icon / Button', '12:345'));
+        }
+        return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
+      },
+      () => publishArtifact(config, {
+        kind: 'component',
+        filename: 'IconButton.contract.json',
+        content: contratFigma('IconButton', '67:890'),
+        warnings: [],
+      }),
+    ),
+    new RegExp(`pull request d'export ouverte, branche ${branche}`),
+  );
+});
+
+test('un contrat déjà présent sans identité Figma lisible refuse plutôt que d’écraser', async () => {
+  // Écrit à la main, ou par un autre outil. Passer outre écraserait peut-être
+  // le travail de quelqu'un sans un mot — le défaut même que T4.3 supprime.
+  await assert.rejects(
+    avecMethode(
+      (url) => sansConfiguration(url)
+        ?? sansExportEnVol(url)
+        ?? fichier(JSON.stringify({ name: 'IconButton', meta: { contractVersion: '3.0' } })),
+      () => publishArtifact(config, {
+        kind: 'component',
+        filename: 'IconButton.contract.json',
+        content: contratFigma('IconButton', '67:890'),
+        warnings: [],
+      }),
+    ),
+    /aucune identité Figma lisible/,
+  );
+});
+
+test('les tokens ne passent pas par la détection de collision', async () => {
+  // `tokens.json` est unique par repository : son chemin ne se dispute avec
+  // rien, et il ne porte aucune identité Figma à comparer. Lui faire lister les
+  // pull requests ouvertes serait un appel payé pour une question qui ne se
+  // pose pas.
+  const calls: string[] = [];
+  const result = await avecMethode(
+    (url, method) => {
+      calls.push(url);
+      if (method === 'POST') {
+        return new Response(JSON.stringify({ html_url: 'https://github.com/acme/ds/pull/8' }), { status: 201 });
+      }
+      if (method === 'PUT') return new Response(JSON.stringify({ content: { sha: 'x' } }), { status: 201 });
+      return sansConfiguration(url)
+        ?? (url.includes('/git/ref/heads/')
+          ? new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 })
+          : new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }));
+    },
+    () => publishArtifact(config, {
+      kind: 'tokens',
+      filename: 'tokens.json',
+      content: '{"nouveau":true}',
+      warnings: [],
+    }),
+  );
+
+  assert.equal(result.status, 'created');
+  assert.equal(calls.filter((url) => url.includes('/pulls?')).length, 0);
 });
 
 test('le corps de la pull request porte les avertissements de l’export', () => {

@@ -19,9 +19,11 @@
  * pour parler du même format : sa forme, sa version, les TROIS règles de
  * nommage qui font qu'un même objet porte le même nom partout — vers le token,
  * vers le code, vers la variable CSS —, la forme d'une référence de token,
- * celle que le moteur pose et que le validateur exige, et la grammaire de
+ * celle que le moteur pose et que le validateur exige, la grammaire de
  * `ucm.config.json`, que la CI ouvre sur un disque et que le plugin lit par
- * l'API GitHub.
+ * l'API GitHub, et la question « ces deux contrats décrivent-ils le même
+ * composant ? », que le producteur pose avant d'écrire et qu'un lecteur pourra
+ * poser après.
  */
 /*
  * Les extensions `.js` sont obligatoires, pas décoratives : `tsc` recopie le
@@ -34,6 +36,8 @@ export type * from './types.js';
 export { CONTRACT_VERSION } from './version.js';
 export { codeIdentifier, normalizeName, tokenCssVariable } from './names.js';
 export { TOKEN_REFERENCE, isTokenReference, refPath, toRef } from './references.js';
+export { comparerIdentiteDeContrat } from './identite.js';
+export type { ArbitreIdentite, VerdictIdentite } from './identite.js';
 export {
   NOM_CONFIGURATION,
   MOTIF_IMPLEMENTATION_PAR_DEFAUT,
