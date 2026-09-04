@@ -17,6 +17,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build",
     "schema": "tsx scripts/build-schema.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "node scripts/run-tests.cjs"

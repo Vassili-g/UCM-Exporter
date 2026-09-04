@@ -25,6 +25,11 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      # `npm ci` construit le kit au passage : son script `prepare` le fait,
+      # et npm l'exécute pour chaque workspace à l'installation. Sans cela,
+      # `npm test` tournerait avant que `dist/` existe et les tests du plugin
+      # échoueraient sur `Cannot find module '@ucm-kit/core/format'` — ce qui
+      # est arrivé, invisible en local où `dist/` traîne d'un build précédent.
       - run: npm ci
       - run: npm test
       - run: npm run build
