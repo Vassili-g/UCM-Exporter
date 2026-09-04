@@ -38,15 +38,14 @@ jobs:
         with:
           persist-credentials: false
 
-      # Volontairement SANS `registry-url`. L'option paraît nécessaire, elle est
-      # nuisible ici : elle fait écrire à `setup-node` une ligne
-      # `_authToken=${NODE_AUTH_TOKEN}` dans le `.npmrc` du runner. Aucun jeton
-      # n'existe, la variable est vide, et npm s'authentifie alors avec une
-      # chaîne vide au lieu de basculer sur l'OIDC — le registre répond 404 sans
-      # jamais dire que l'identité fournie était creuse.
+      # `registry-url` est nécessaire, et l'essai inverse l'a prouvé : sans lui,
+      # `npm publish` rend `ENEEDAUTH` et ne tente pas l'OIDC du tout. Il écrit
+      # pourtant une ligne `_authToken=${NODE_AUTH_TOKEN}` vide dans le `.npmrc`
+      # du runner — inoffensive, npm interroge le registre avant de s'en servir.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          registry-url: https://registry.npmjs.org
           cache: npm
 
       # Le trusted publishing n'existe qu'à partir de npm 11.5.1, et l'image
