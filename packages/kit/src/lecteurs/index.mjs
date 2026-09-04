@@ -31,6 +31,20 @@
 /** Retrouver les contrats d'un dossier. */
 export { trouverContrats } from "./trouver-contrats.mjs";
 
+/**
+ * Où vit l'implémentation d'un contrat, et si elle est là.
+ *
+ * L'EXISTENCE est ici parce qu'elle ne dépend d'aucun langage ; la COMPARAISON
+ * des props reste chez l'adaptateur du consommateur, qui seul possède un
+ * vérificateur de types (T2.3).
+ */
+export {
+  MOTIF_IMPLEMENTATION_PAR_DEFAUT,
+  identifiantDuContrat,
+  cheminImplementation,
+  implementationPresente,
+} from "./implementation.mjs";
+
 /** La version : ce que ce paquet sait lire, et le sens d'un écart. */
 export {
   VERSION_CONTRAT_MINIMALE,
