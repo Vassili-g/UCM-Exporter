@@ -565,13 +565,54 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       **détaillé** d'un contrat hors fenêtre. Il reçoit un verdict de version
       qui nomme le bon geste et le bon responsable, pas la liste de ses champs
       manquants.
-- [ ] **T2.2 — L'identité de l'artefact, et la résolution de l'implémentation.**
-      Motif `implementation` dans la configuration. **Réduit :** `{dir}/{id}` +
-      extension suffit pour les cibles réelles ; les transformations de casse
-      (`{id:snake}`, `{id:kebab}`) s'ajoutent le jour où une cible les demande.
+- [X] **T2.2 — L'identité de l'artefact, et la résolution de l'implémentation.**
+      *Fait le 4 septembre 2026, dans `packages/kit/src/lecteurs/implementation.mjs`.*
+      Deux jetons, `{dir}` et `{id}`, résolus et non interprétés : aucun glob,
+      aucune recherche. Un emplacement CALCULABLE est ce qui permet de dire
+      « absente » sans fouiller le repo, donc de ne jamais confondre « pas
+      écrite » et « pas trouvée ».
+      Les transformations de casse (`{id:snake}`, `{id:kebab}`) restent
+      non écrites, comme prévu.
+      *Ce qui n'y est pas encore, et ce n'est pas un oubli :* le motif est un
+      PARAMÈTRE, pas une configuration. `ucm.config.json` le lira en T3.1 ;
+      l'écrire ici aurait fait dépendre la Phase 2 de la Phase 3.
 
-- [ ] **T2.3 — ⚠ Scinder la parité : l'existence au noyau, la comparaison à
-      l'adaptateur.**
+- [~] **T2.3 — ⚠ Scinder la parité : l'existence au noyau, la comparaison à
+      l'adaptateur.** *Côté noyau fait le 4 septembre 2026 ; l'adaptateur est
+      écrit et vert dans le Playground, en attente de la publication de 0.1.3.*
+      Le noyau répond « où » et « est-elle là » ; l'adaptateur garde la seule
+      chose qui n'est pas transposable — lire une API publique avec le
+      vérificateur de types TypeScript.
+      **Le défaut est corrigé en distinguant deux causes que le code
+      confondait.** « Pas de relevé » avait une cause déclarée et en avait deux :
+      `implementationAbsente` (le fichier n'est pas là, état d'avancement
+      légitime) et `implementationNonLue` (le fichier EST là, l'adaptateur n'en
+      tire rien). Aucune des deux ne bloque, mais pour des raisons opposées, et
+      c'est ce qui rend la seconde nécessaire : là, il n'y a personne à qui
+      adresser un geste correctif — le code est peut-être parfait, c'est
+      l'adaptateur qui ne sait pas le lire. Transformer sa propre limite en
+      reproche serait le pire des deux mondes. Le rapport ne dit donc plus
+      « conforme » de ce qu'il n'a pas lu.
+      **Correction mesurée, qui change la cause annoncée sans annuler le
+      défaut :** ce n'est PAS l'absence de `tsconfig.json` qui vide le relevé.
+      Sans lui, TypeScript applique ses options par défaut et le programme se
+      construit — vérifié en retirant le fichier : le verdict du corpus ne bouge
+      pas. La vraie cause est le filtre d'existence en tête de `lireApiPublique` :
+      un repo non-React n'a aucun `.tsx`, donc aucun fichier à relever. La
+      conséquence est identique, la ligne citée est la bonne, l'explication
+      était fausse.
+      *Éprouvé sur le disque et pas sur un simulacre :* une fixture
+      `CibleNonReact.swift` existe pour de bon, et le test parcourt le chemin
+      entier — motif, présence, relevé vide, verdict.
+      *Un défaut introduit et attrapé, qui vaut d'être écrit :* ouvrir le motif
+      en second paramètre a cassé `contrats.map(cheminDuComposant)`, où `map`
+      passe l'index à cette place. Aucun de mes tests ne l'a vu — seule la
+      caractérisation de `check-contract.mjs` (T5.1) l'a levée, ce qui est
+      exactement la raison pour laquelle elle avait été remontée avant les
+      tâches qui réécrivent ce fichier. Le kit refuse désormais un motif non
+      textuel en désignant le `map`.
+      *Ce qui reste :* le pin du Playground sur 0.1.3 et son commit, dès que le
+      workflow de publication est déclenché.
       `lireApiPublique` rend une Map vide sans TypeScript (`parite.mjs:231`) et
       `cheminDuComposant` cherche un `.tsx` en dur (`:42`), d'où
       `implementationAbsente: true` (`:309`) pour tout contrat d'un repo
