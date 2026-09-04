@@ -149,6 +149,21 @@ Le raisonnement vit dans la spécification, en lien.
   besoin balaie les références du contrat, `samples` et `meta` exclus — un texte
   de maquette peut valoir « {montant.total} » sans nommer un token.
   → [spec](./UCM-EXPORTER-SPEC.md#8-rendu-sémantique-et-garde-fous)
+- Un nom de token se projette de TROIS façons, et chacune a UN propriétaire, tous
+  trois dans `packages/kit/src/format/names.ts` : `normalizeName` va du chemin
+  Figma au token, `codeIdentifier` du nom Figma à l'identifiant de code, et
+  `tokenCssVariable` du token à la propriété personnalisée CSS. Une projection
+  recopiée est le défaut le plus cher du projet, parce qu'il est MUET : deux
+  copies de la troisième ont rendu `var(--layouts-sizing-0,5)`, où la virgule
+  sépare en CSS une variable de son repli — le navigateur lisait
+  `--layouts-sizing-0`, la trouvait, et peignait `0px` pour `2px` sans une
+  erreur. Règle de `tokenCssVariable`, énonçable en une phrase pour qu'une
+  chaîne écrite dans une autre langue la tienne : minuscules, toute suite de
+  caractères qui n'est ni lettre ni chiffre devient un seul tiret, tirets de
+  bord retirés. Elle ne coupe PAS sur les bosses de casse — c'est ce qui la
+  distingue d'un `kebabCase` de bibliothèque, et le choix est délibéré. Elle
+  n'est pas une bijection (`50%` et `50` se rejoignent) : le consommateur
+  refuse la collision, le format ne prétend pas l'empêcher.
 
 ### Couleurs
 

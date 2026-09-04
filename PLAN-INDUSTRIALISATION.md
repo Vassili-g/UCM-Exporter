@@ -966,7 +966,33 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
 
 ## Phase 6 — Couches optionnelles
 
-- [ ] **T6.0 — La projection unique nom-de-token.** *Descendue de la Phase 2.*
+- [~] **T6.0 — La projection unique nom-de-token.** *Côté kit fait le
+      4 septembre 2026 ; reste le rebranchement du consommateur (T6.2).*
+      `tokenCssVariable` vit dans `packages/kit/src/format/names.ts`, à côté des
+      deux autres projections de nom, et le format en publie désormais TROIS.
+      **Où elle vit a été tranché**, le plan se contredisant : T6.1 disait « la
+      projection CSS reste dans le preset », T6.2 « `tokenVar` importe la
+      projection du kit ». C'est le kit, par l'argument exact de T2.7 —
+      `format` est le seul sous-chemin que le bundle du plugin, Node et un
+      navigateur atteignent tous les trois. T6.1 garde le preset, qui
+      ENREGISTRE un transform appelant cette fonction : l'accord devient
+      structurel au lieu d'être relu.
+      **La règle n'est pas celle d'un `kebabCase` de bibliothèque**, et le
+      constat qui a tranché a été mesuré : celui de Style Dictionary coupe aussi
+      sur les bosses de casse — `semiBold` y devient `semi-bold` —, ce qui est
+      un comportement de `change-case` et non du format. La règle retenue tient
+      en une phrase, pour qu'un preset iOS la tienne sans importer une
+      bibliothèque JavaScript : minuscules, toute suite de caractères qui n'est
+      ni lettre ni chiffre devient un seul tiret, tirets de bord retirés.
+      *Vérifié, et c'est ce qui rend le choix gratuit :* sur les 721 chemins du
+      corpus réel, la règle du kit rend **exactement** les mêmes noms que Style
+      Dictionary, et chacun de ces noms est déclaré dans le CSS généré. Zéro
+      écart des deux côtés. Aucune variable n'est renommée ; le choix ne décide
+      que de qui tranchera demain.
+      *La neuvième contradiction est refermée par la même occasion :* l'invariant
+      « une projection de nom, un propriétaire » est écrit dans `AGENTS.md`,
+      là où T0.1 avait constaté qu'aucun document ne le portait.
+      *Descendue de la Phase 2.*
       Elles étaient trois — `tokens.ts:47`, `check-contract.mjs`, le
       `name/kebab` de Style Dictionary — qu'aucun test ne compare, et qui
       divergent sur les données réelles : sur 721 tokens (693 à la rédaction),
@@ -1449,4 +1475,4 @@ transitoire porte sa date, ou il ne s'écrit pas.**
 | `CHANGELOG-CONTRAT.md` | porte l'historique des schémas « et lui seul » | s'arrête à 11.0 |
 | skill `consommer-contrat`, ancrage 6 | une commande de contrôle ciblée sur un composant | n'existe pas |
 | ~~`Exporter/AGENTS.md`~~ | ~~aucun artefact de contrat, jamais~~ | **tranché par T7.0** : la règle nomme désormais le MOTEUR, pas le repository — elle était devenue ambiguë quand T1.2 a mis deux produits dans le même dépôt |
-| — | aucun document ne déclare la projection de nom de token comme invariant | elle était écrite trois fois ; T2.4 en supprime une, les **deux restantes divergent pour de bon** (voir ci-dessous) |
+| ~~—~~ | ~~aucun document ne déclare la projection de nom de token comme invariant~~ | **résolu par T6.0** : `tokenCssVariable` est l'unique autorité, dans `names.ts` avec les deux autres projections, et `AGENTS.md` porte l'invariant |

@@ -37,3 +37,49 @@ export function codeIdentifier(name: string): string {
   const safe = identifier || 'Component';
   return /^[0-9]/.test(safe) ? `Component${safe}` : safe;
 }
+
+/**
+ * Projette un nom de token — son CHEMIN — sur la propriété personnalisée CSS
+ * qui le porte. C'est la troisième et dernière projection de nom du format,
+ * après `normalizeName` (Figma → token) et `codeIdentifier` (Figma → code).
+ *
+ * **Elle est l'unique autorité.** Elle vivait auparavant en trois exemplaires
+ * — `tokenVar` chez le consommateur, le `name/kebab` de Style Dictionary dans
+ * la chaîne de build, et un troisième dans `check-contract.mjs` — qu'aucun test
+ * ne comparait. Elles divergeaient, et le défaut qu'elles produisaient est le
+ * pire de tous : muet. `tokenVar` rendait `var(--layouts-sizing-0,5)`, où la
+ * virgule sépare en CSS une variable de sa valeur de repli ; le navigateur
+ * lisait « variable `--layouts-sizing-0`, repli `5` », trouvait cette variable,
+ * et rendait `0px` là où le contrat demandait `2px`. Pas d'erreur, pas de
+ * repli, une valeur fausse et plausible.
+ *
+ * La règle, en une phrase : **minuscules, et toute suite de caractères qui
+ * n'est ni une lettre ni un chiffre devient un seul tiret**, les tirets de
+ * bord retirés. Les points du chemin y passent comme le reste.
+ *
+ * Ce qu'elle N'EST PAS, et c'est délibéré : le `kebabCase` d'une bibliothèque
+ * de casse. Celui de Style Dictionary coupe aussi sur les bosses de casse —
+ * `semiBold` y devient `semi-bold` — un comportement qui appartient à une
+ * bibliothèque JavaScript, pas au format. Un preset iOS ou une chaîne écrite
+ * dans une autre langue doit pouvoir tenir cette règle sans importer
+ * `change-case` ; c'est pourquoi elle s'énonce en une phrase. Sur le corpus
+ * réel de 721 tokens, les deux rendent aujourd'hui exactement les mêmes noms :
+ * ce choix ne renomme rien, il décide seulement de qui tranchera demain.
+ *
+ * *Borne connue :* la projection n'est pas une bijection. `50%` et `50`
+ * rendent tous deux `50`, et le second l'emporterait en silence. Le format ne
+ * peut pas l'empêcher — un nom CSS n'accepte pas tout —, donc le consommateur
+ * le contrôle : un test d'accord compare les deux sens et refuse deux chemins
+ * distincts qui se rejoignent sur une même variable.
+ *
+ * @example tokenCssVariable('components.button.sizes.medium.gap')
+ * // → '--components-button-sizes-medium-gap'
+ * @example tokenCssVariable('layouts.sizing.0,5') // → '--layouts-sizing-0-5'
+ */
+export function tokenCssVariable(path: string): string {
+  const kebab = path
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, '-')
+    .replace(/^-+|-+$/g, '');
+  return `--${kebab}`;
+}
