@@ -1,18 +1,14 @@
 /**
- * Forme d'une référence de token, et relevé des références d'un contrat.
+ * Relevé des références de token que porte un contrat.
  *
- * Un seul module définit ce qu'est une référence, pour la même raison que
- * l'exporteur n'a qu'un `normalizeName()` : deux définitions finiraient par
- * diverger, et un contrôle accepterait ce qu'un autre refuse.
+ * Ce module DÉFINISSAIT aussi ce qu'est une référence, et son en-tête affirmait
+ * qu'un seul module le faisait. C'était faux : trois autres copies de la même
+ * regex vivaient ailleurs. La définition est passée dans
+ * `@ucm-kit/core/format`, le seul sous-chemin que le bundle du plugin, Node et
+ * un navigateur atteignent tous les trois. Ce module ne garde que ce qu'il est
+ * seul à savoir faire : ce qui, DANS UN CONTRAT, se relève.
  */
-
-/**
- * Référence complète : la chaîne ENTIÈRE est entre accolades et porte au moins
- * un point séparateur, sans espace ni accolade interne. C'est ce qui distingue
- * `{components.button.sizes.medium.gap}` d'une phrase écrite par le designer
- * dans `intent` ou d'une note comme `{à définir}`.
- */
-export const REFERENCE = /^\{[^{}\s]+\.[^{}\s]+\}$/;
+import { isTokenReference } from "@ucm-kit/core/format";
 
 /**
  * Ramasse toute référence présente dans une valeur, à profondeur quelconque.
@@ -41,7 +37,7 @@ export function sansEchantillon(contrat) {
 
 export function collecterReferences(valeur, trouvees = new Set()) {
   if (typeof valeur === "string") {
-    if (REFERENCE.test(valeur)) trouvees.add(valeur);
+    if (isTokenReference(valeur)) trouvees.add(valeur);
   } else if (Array.isArray(valeur)) {
     for (const item of valeur) collecterReferences(item, trouvees);
   } else if (valeur && typeof valeur === "object") {

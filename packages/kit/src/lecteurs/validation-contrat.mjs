@@ -6,6 +6,7 @@
  * pour interpréter sans ambiguïté la version déclarée.
  */
 
+import { isTokenReference } from "@ucm-kit/core/format";
 import {
   messagesDExport,
   nomFigmaDuVariant,
@@ -194,11 +195,6 @@ function validerVisibilites(children, prefixe, invalides) {
 /** Vrai pour une chaîne renseignée. */
 function estTexte(valeur) {
   return typeof valeur === "string" && valeur.trim() !== "";
-}
-
-/** Même enveloppe stricte que les références produites par l'Exporter. */
-function estReferenceToken(valeur) {
-  return typeof valeur === "string" && /^\{[^{}\s]+\.[^{}\s]+\}$/.test(valeur);
 }
 
 /** Une typographie est un text style nommé ou un groupe non vide de références. */
@@ -449,7 +445,7 @@ function validerSizingDuComposant(
     return;
   }
   const { cles, valeurs, tokens } = formeAttendue;
-  const axeValide = (axe) => valeurs.has(axe) || (tokens && estReferenceToken(axe));
+  const axeValide = (axe) => valeurs.has(axe) || (tokens && isTokenReference(axe));
   if (!estObjet(sizing) || !cles.every((cle) => axeValide(sizing[cle]))) {
     invalides.push(`${prefixe}.sizing`);
   }
@@ -463,12 +459,12 @@ function validerSizingDuComposant(
  * donner aucune — l'ambiguïté même que ce champ sert à lever.
  */
 function tailleValide(size, cotesNommes) {
-  if (estReferenceToken(size)) return true;
+  if (isTokenReference(size)) return true;
   if (!cotesNommes || !estObjet(size)) return false;
   const cotes = Object.entries(size);
   return cotes.length > 0
     && cotes.every(([cote, valeur]) =>
-      (cote === "width" || cote === "height") && estReferenceToken(valeur));
+      (cote === "width" || cote === "height") && isTokenReference(valeur));
 }
 
 const CLES_DE_BORNES = new Set(["minWidth", "maxWidth", "minHeight", "maxHeight"]);
@@ -486,7 +482,7 @@ function bornesValides(bounds) {
   if (!estObjet(bounds)) return false;
   const entrees = Object.entries(bounds);
   return entrees.length > 0
-    && entrees.every(([cle, valeur]) => CLES_DE_BORNES.has(cle) && estReferenceToken(valeur));
+    && entrees.every(([cle, valeur]) => CLES_DE_BORNES.has(cle) && isTokenReference(valeur));
 }
 
 /** Avant la 5.3, `bounds` n'existe pas : sa présence est une forme inconnue. */
@@ -580,12 +576,12 @@ const COTES_PADDING_X = new Set(["left", "right"]);
 const COTES_PADDING_Y = new Set(["top", "bottom"]);
 
 function refsLateralesValides(valeur, cotes, partiels) {
-  if (estReferenceToken(valeur)) return true;
+  if (isTokenReference(valeur)) return true;
   if (!estObjet(valeur)) return false;
   const entrees = Object.entries(valeur);
   return entrees.length > 0
     && (partiels || entrees.length === cotes.size)
-    && entrees.every(([cote, ref]) => cotes.has(cote) && estReferenceToken(ref));
+    && entrees.every(([cote, ref]) => cotes.has(cote) && isTokenReference(ref));
 }
 
 /** Valide radius et padding à toute profondeur, y compris leurs formes partielles v10. */
@@ -632,7 +628,7 @@ function validerTextStyles(textStyles, invalides) {
       !estObjet(definition.tokens)
       || Object.keys(definition.tokens).length === 0
       || Object.entries(definition.tokens).some(
-        ([champ, valeur]) => !CHAMPS_TYPOGRAPHIQUES.has(champ) || !estReferenceToken(valeur),
+        ([champ, valeur]) => !CHAMPS_TYPOGRAPHIQUES.has(champ) || !isTokenReference(valeur),
       )
     ) {
       invalides.push(`${prefixe}.tokens`);
@@ -830,18 +826,18 @@ function validerProps(props, invalides) {
 function validerTokensExacts(tokens, prefixe, invalides) {
   if (!estObjet(tokens)) return;
   for (const [cle, valeur] of Object.entries(tokens)) {
-    if (!estTexte(cle) || !estReferenceToken(valeur)) invalides.push(`${prefixe}.${cle}`);
+    if (!estTexte(cle) || !isTokenReference(valeur)) invalides.push(`${prefixe}.${cle}`);
   }
 }
 
 function largeurDeStrokeValide(width, partiels = false) {
-  if (width === null || estReferenceToken(width)) return true;
+  if (width === null || isTokenReference(width)) return true;
   if (!estObjet(width)) return false;
   const cotes = new Set(["top", "right", "bottom", "left"]);
   const entrees = Object.entries(width);
   return entrees.length > 0
     && (partiels || entrees.length === cotes.size)
-    && entrees.every(([cote, valeur]) => cotes.has(cote) && estReferenceToken(valeur));
+    && entrees.every(([cote, valeur]) => cotes.has(cote) && isTokenReference(valeur));
 }
 
 function validerStrokesExacts(strokes, prefixe, invalides, partiels = false) {
@@ -849,7 +845,7 @@ function validerStrokesExacts(strokes, prefixe, invalides, partiels = false) {
   for (const [cle, stroke] of Object.entries(strokes)) {
     if (
       !estObjet(stroke)
-      || !estReferenceToken(stroke.color)
+      || !isTokenReference(stroke.color)
       || !largeurDeStrokeValide(stroke.width, partiels)
       || ![null, "inside", "center", "outside"].includes(stroke.align)
     ) invalides.push(`${prefixe}.${cle}`);

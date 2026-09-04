@@ -662,18 +662,48 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       ont déjà bougé. Régénérer plutôt qu'énumérer :
       `grep -rn "React\|\.tsx\|Playground" scripts/`.
 
-- [ ] **T2.7 — Dédupliquer la regex de forme d'une référence.**
-      `references-token.mjs:15` et `tokens.ts:22`. Mineur : deux copies
-      identiques dont la divergence produirait un refus, pas une perte.
-      **Elles sont TROIS, pas deux — trouvé en exécutant T2.5.**
-      `validation-contrat.mjs:201` en porte une copie anonyme, `estReferenceToken`,
-      et c'est la seule des trois qui décide vraiment : c'est elle qui refuse un
-      contrat, à `:833` et à dix autres sites. Les deux copies que le plan citait
-      sont maintenant dans le même paquet, la troisième aussi — la déduplication
-      n'attend donc plus rien. Ce que la troisième copie change au risque : une
-      divergence entre elle et `REFERENCE` ne produirait pas un refus mais un
-      **désaccord** entre « ce contrat est valide » et « ce token existe-t-il »,
-      et ce désaccord-là est muet.
+- [X] **T2.7 — Dédupliquer la regex de forme d'une référence.** *Fait pour les
+      trois copies de l'Exporter ; la quatrième part avec T6.2.*
+      **Elles étaient QUATRE, pas deux.** Le compte de la v5 —
+      `references-token.mjs:15` et `tokens.ts:22` — en manquait la moitié, et
+      surtout celle qui décide :
+      1. `kit/src/lecteurs/references-token.mjs:15`, `REFERENCE`, la seule qui se
+         donnait pour l'autorité ;
+      2. `kit/src/lecteurs/validation-contrat.mjs:201`, `estReferenceToken`, une
+         copie **anonyme** — c'est elle qui refuse un contrat, à `:833` et à dix
+         autres sites ;
+      3. `plugin/src/variables.ts:47`, `TOKEN_REFERENCE`, dont l'en-tête
+         affirmait que « `variables.ts` est l'unique autorité sur la forme d'une
+         référence » ;
+      4. `Playground/src/tokens.ts:22`, `REFERENCE` — celle de `tokenVar`,
+         c'est-à-dire le site de T6.0.
+      *Ce que la v5 sous-estimait, et c'est la raison de faire la tâche :* la
+      divergence ne produirait pas « un refus, pas une perte ». Entre la copie 2
+      et les autres, elle produirait un **désaccord** — « ce contrat est valide »
+      d'un côté, « ce token n'existe pas » de l'autre — et ce désaccord-là est
+      muet.
+      *Fait :* `packages/kit/src/format/references.ts` porte `TOKEN_REFERENCE`,
+      `isTokenReference`, et avec eux `toRef` et `refPath`, qui posent et
+      enlèvent la même enveloppe. Le format, et pas les lecteurs : c'est le seul
+      sous-chemin que le bundle du plugin, Node et un navigateur atteignent tous
+      les trois — la contrainte même qui avait forcé chaque côté à recopier.
+      Vérifié dans `dist/code.js` : `toRef` y entre par le kit.
+      `REFERENCE` quitte la porte des lecteurs plutôt que d'y être réexporté :
+      un second nom pour la même chose est exactement ce que cette tâche
+      supprime, et le paquet n'est pas encore publié — la fenêtre pour le faire
+      sans casser personne est maintenant.
+      Kit : 144 → 146 tests ; le plugin en perd un, qui a suivi la définition.
+      **La copie 4 reste**, et c'est un choix : elle vit dans le repo
+      consommateur, dont l'arbre porte déjà T2.8 et T2.4 non commités, et T6.2
+      la supprime déjà par son énoncé (« `tokenVar` importe la projection du
+      kit »). La déplacer ici l'aurait faite deux fois.
+      *Trouvé en chemin, non traité :* `collectTokenReferences`
+      (`plugin/src/variables.ts`) est le jumeau exact de `collecterReferences`
+      du kit — et il est **mort** : plus aucun code de production ne l'appelle,
+      seuls ses tests le tiennent en vie. Son commentaire décrit `tokensUsed`,
+      un champ que ni `types.ts` ni aucun des quatre contrats du corpus ne
+      portent encore. Le supprimer est un geste à part, qui demande de vérifier
+      ce que la 12.0 a fait de ce champ.
 
 - [ ] **T2.8 — Migrer le Playground sur le kit.**
       *Rétabli : la v4 avait perdu cette tâche.* Elle n'est pas optionnelle —
@@ -1124,7 +1154,7 @@ Elles sont corrigées ici.
 |---|---|---|
 | ~~`Playground/AGENTS.md`~~ | ~~`tokens.json` fait foi pour l'existence des références~~ | **résolu par T2.4** : le code lit `tokens.json` |
 | ~~`verdict-bilan.mjs:9`~~ | ~~idem, en commentaire~~ | **résolu par T2.4** |
-| `Playground/AGENTS.md` | `references-token.mjs` définit **seul** la référence | `tokens.ts:22` en porte une copie |
+| `Playground/AGENTS.md` | `references-token.mjs` définit **seul** la référence | faux dans les deux sens depuis T2.7 : `references-token.mjs` ne définit plus rien — `@ucm-kit/core/format` le fait —, et `tokens.ts:22` en porte toujours une copie, jusqu'à T6.2 |
 | `check-contract.mjs:42-47` | ce que l'export ne peut corriger avertit sans bloquer | le contrôle des tokens du code bloque (`:658`) — résolu par D1 |
 | `PISTES-EVOLUTION.md`, « Extraction multi-repository » | rien à publier avec un seul consommateur | révisé par D5 |
 | `CHANGELOG-CONTRAT.md` | porte l'historique des schémas « et lui seul » | s'arrête à 11.0 |

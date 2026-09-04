@@ -4,8 +4,8 @@
  * Le nom du style décrit son identité Figma ; ses `boundVariables` fournissent
  * les vraies références DTCG. Aucun lien n'est déduit d'une convention de nom.
  */
-import { normalizeName } from '@ucm-kit/core/format';
-import { firstVariableAlias, toRef } from '../variables';
+import { normalizeName, toRef } from '@ucm-kit/core/format';
+import { firstVariableAlias } from '../variables';
 import type { TokenResolver } from '../variables';
 import type { VariantMatrix } from './componentTree';
 import { textNodes } from './exportableNodes';

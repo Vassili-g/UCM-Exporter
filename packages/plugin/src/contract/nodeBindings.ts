@@ -5,7 +5,8 @@
  * vers un token. Le parcours des nodes rendables vit séparément dans
  * `exportableNodes.ts`.
  */
-import { firstVariableAlias, toRef } from '../variables';
+import { toRef } from '@ucm-kit/core/format';
+import { firstVariableAlias } from '../variables';
 import type { TokenResolver } from '../variables';
 import {
   containerSizing,
