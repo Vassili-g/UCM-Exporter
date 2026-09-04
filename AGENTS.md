@@ -69,16 +69,29 @@ packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
   tests/
   manifest.json              chargé dans Figma depuis packages/plugin/dist/
 
-packages/kit/            le FORMAT : @ucm-kit/core, publié, ne dépend de personne
+packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
   src/format/              sous-chemin SANS dépendance Node ni Figma
     types.ts                 schéma TypeScript du contrat
     version.ts               CONTRACT_VERSION, seul endroit où elle est écrite
     names.ts                 normalizeName et codeIdentifier
     index.ts                 ce que le sous-chemin publie
+  src/lecteurs/            ce qui JUGE un contrat écrit — `ajv` et `node:fs`
+    validation-contrat.mjs       la forme d'un contrat, champ par champ
+    validation-graphe-contrats.mjs  composition, doublons et collisions d'identifiant
+    validation-echantillons.mjs  les adresses que les échantillons visent
+    variant-views.mjs            la vue exacte d'un variant
+    version-contrat.mjs          la plage lue, et le SENS d'un écart de version
+    references-token.mjs         la forme d'une référence, et son relevé
+    typography-token-types.mjs   les types DTCG qu'un style typographique exige
+    schema-contrat.mjs           le schéma publié, chargé pour Ajv
+    avertissements-export.mjs    ce que l'export n'a pas su décrire
+    diagnostic-markdown.mjs      le rendu markdown d'un diagnostic
+    trouver-contrats.mjs         retrouver les contrats d'un dossier
+    index.mjs                    la porte publique `@ucm-kit/core/lecteurs`
   scripts/build-schema.ts  génère le schéma depuis types.ts
   schema/                  le schéma commité, publié en `@ucm-kit/core/schema`
   fixtures/contrats/11.0/  jeu N-1 figé, que le moteur ne sait plus fabriquer
-  tests/
+  tests/                   `.test.ts` pour le format, `.test.mjs` pour les lecteurs
 
 tests/                   les tests du monorepo lui-même (liens de la doc)
 ```
