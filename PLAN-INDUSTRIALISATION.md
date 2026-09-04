@@ -1432,6 +1432,24 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       porter un et laisser l'autre à son propriétaire.
 - [ ] **T5.5 — Action GitHub réutilisable — après la Phase 7.**
 
+- [ ] **T5.6 — Réduire le temps de la CI par du cache.** `ci.yml` enchaîne
+      `npm ci`, `npm test` et `npm run build` sans aucun cache de
+      `node_modules` ni du `dist/` du kit : `cache: npm` sur `setup-node` ne
+      cache que le téléchargement, pas l'installation, et `packages/kit`
+      reconstruit à chaque run via son script `prepare`. Mesuré en local :
+      22 s pour `npm test`, 6 s pour `npm run build` — l'essentiel du temps
+      ressenti sur une PR vient donc probablement de l'installation à froid,
+      pas du nombre de tests.
+      **Nécessite une recherche avant toute implémentation** : quelle clé de
+      cache pour `node_modules` (hash de `package-lock.json`) et pour
+      `packages/kit/dist/` (hash des sources du kit) évite les faux
+      positifs — un cache qui sert un `dist/` périmé romprait exactement
+      l'invariant que `monorepoCoherent.test.mjs` existe pour protéger ;
+      si séparer `npm test` et `npm run build` en jobs parallèles vaut le
+      coût de deux installations au lieu d'une ; et l'effet réel mesuré sur
+      un run GitHub Actions plutôt qu'en local, où le premier run à froid
+      n'est jamais représentatif. Faire recherches internet surles bonnes pratiques.
+
 ---
 
 ## Phase 6 — Couches optionnelles
