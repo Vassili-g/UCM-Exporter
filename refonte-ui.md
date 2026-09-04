@@ -1,0 +1,715 @@
+# Refonte de l'interface du plugin — plan
+
+> Toutes les affirmations factuelles de ce plan ont été vérifiées dans le code.
+> Une revue indépendante l'a relu ; ses conclusions ont elles-mêmes été
+> revérifiées dans le code avant intégration, et huit d'entre elles ont changé le
+> plan — la table « Ce que la revue a corrigé » les recense.
+>
+> **Le code est cité par son symbole, pas par sa ligne.** C'est une entorse
+> assumée à la règle 5 de [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md),
+> et elle a une cause mesurée : pendant la rédaction de ce plan, `github.ts` a
+> été modifié et toutes ses lignes citées ont glissé d'une trentaine de rangs.
+> Un nom de fonction ne glisse pas.
+
+Ce document est **T4.6** de
+[PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui en fixe la place
+dans l'ordre d'exécution ; le bug promu hors de ce chantier y est **T4.5**.
+
+Ce plan ne touche ni le format du contrat, ni le moteur d'extraction — une seule
+tâche s'en approche, U4.3, et elle est écrite pour ne pas franchir la frontière.
+Il traite ce que le designer voit et fait dans la fenêtre du plugin : le
+fonctionnel autant que le graphique, les deux étant ici le même sujet, ce que
+l'interface permet de décider.
+
+## Le constat
+
+L'interface est un **lanceur** : deux boutons, une note d'état, et un journal
+monospace haut de 96 à 144 px (`styles.css`, `.log-panel-inner`).
+
+La doctrine, elle, fait du designer le **relecteur de la vérité visuelle
+exportée** ([CONCEPT.md](./CONCEPT.md), « Le workflow »). Or tout ce dont ce rôle
+a besoin arrive au mauvais moment :
+
+- **ce qui va être exporté** disparaît au clic : la note qui nomme le composant
+  est écrasée par « Traitement en cours… » (`ui/index.js`, `requestExport`) ;
+- **où ça atterrit** n'apparaît qu'après publication, en ligne de journal
+  (`code.ts`, `runExport`, ligne « Emplacement : ») — donc après le point de
+  non-retour ;
+- **ce qui a été perdu** ne se lit qu'une fois la branche et la pull request
+  créées, alors que chaque avertissement nomme un geste à faire dans Figma,
+  c'est-à-dire là où le designer se trouvait une seconde plus tôt.
+
+Le geste central de cette refonte est donc un déplacement dans le temps, pas un
+habillage : passer du lanceur au **pré-vol, puis compte rendu**.
+
+## Ce que l'interface doit devenir
+
+Trois propriétés, dans cet ordre. Elles servent à trancher : une tâche qui n'en
+sert aucune n'entre pas dans ce plan.
+
+**Lisible.** Ce que l'export a produit, ce qu'il a laissé tomber et où il l'a
+écrit se lisent sans défiler et sans ouvrir le JSON. Un avertissement se
+distingue d'un constat par sa place et sa couleur, jamais par un caractère de
+puce.
+
+**Simple à utiliser.** Un composant sélectionné, une action évidente, un résultat
+qui dit l'étape suivante. Aucun réglage que rien n'oblige à régler, et aucun clic
+qui ne décide de rien.
+
+**Conforme aux conventions graphiques de Figma.** Le plugin est une fenêtre dans
+l'outil, pas une application à part : couleurs prises aux variables
+`--figma-color-*`, thème clair et sombre suivis sans intervention, densité et
+tailles de contrôle de l'hôte, aucune couleur de marque propre.
+
+## Règles de travail
+
+**1. Ne jamais modifier le document Figma.** L'invariant du projet
+([AGENTS.md](./AGENTS.md)). La sélection et le viewport sont un cas à trancher
+explicitement, pas à supposer : c'est U4.5.
+
+**2. L'UI reste du DOM natif.** `src/ui/index.js` est bundlé par esbuild puis
+inliné dans un HTML unique (`scripts/build-ui.cjs`, tenu par
+`tests/buildUi.test.ts`). Pas de framework : le choix est déjà écrit dans
+`src/ui/components/Button.js`.
+
+**3. Aucune couleur codée en dur qui décide.** Les replis en dur servent au
+développement hors de Figma ; ils ne doivent jamais être le chemin normal, et
+chacun doit tenir dans les deux thèmes (U1.8).
+
+**4. Tout message visible suit les règles de rédaction.**
+[CONTRIBUTING.md](./CONTRIBUTING.md), section « Messages destinés au designer »,
+et la skill `rediger-diagnostics-ucm`. Un message qui ne demande aucun geste est
+une NOTE, et une note ne se range pas sous un titre qui réclame une correction.
+
+**5. La logique sort du DOM pour être testable.** Aucun test n'exerce aujourd'hui
+`index.js`, `ConfigurationPage.js`, `Header.js` ni `LogPanel.js` : cette refonte
+ajoute de la logique sans filet. La réponse n'est pas un harnais DOM — c'est de
+tenir hors du DOM ce qui décide (tri des messages, état de la cible, traduction
+d'une erreur réseau) et de tester ces fonctions. Voir U4.6.
+
+**6. Une tâche, une session, un résultat écrit.** Si une session ne peut pas
+démarrer du seul plan, c'est le plan qu'il faut corriger.
+
+---
+
+## Phase U0 — Ce qui se corrige sans discussion
+
+Six corrections. Cinq ne demandent aucune décision et tiennent dans une
+session ; U0.5 attend une décision qui n'appartient pas à ce plan.
+
+- [ ] **U0.1 — La version de schéma ne doit plus s'effacer.** Le sandbox écrit
+      `Schéma de contrat 12.0.` comme première ligne du journal (`code.ts`, à la
+      réception de `ui-ready`) ; `requestExport` appelle `logPanel.clear()` au
+      début de chaque export. Le garde-fou contre un bundle Figma périmé
+      disparaît donc **au premier clic** — exactement le cas qu'il existe pour
+      couvrir, puisqu'un export « sans changement » devient alors indiscernable
+      d'un plugin obsolète. Geste : sortir la version du journal, la poser en
+      pied de page fixe.
+
+- [ ] **U0.2 — Une seule région annoncée.** La note (`statusNote` dans
+      `ui/index.js`) et le journal (`createLogPanel`) portent tous deux
+      `aria-live="polite"`, et le message `status` écrit dans les deux : un
+      lecteur d'écran annonce deux fois le même texte. Geste : la note reste
+      l'unique annonceur, le journal passe en `role="log"` sans `aria-live`. Les
+      régions des erreurs de champ (`createField` et le `status` de
+      `createConfigurationPage`) sont légitimes : ne pas y toucher.
+
+- [ ] **U0.3 — Le sous-titre suit la page affichée.** `showConfiguration` change
+      la carte mais laisse « Transformez vos composants Figma en contrats
+      exploitables » au-dessus d'un formulaire GitHub — le sous-titre n'étant
+      écrit qu'une fois, dans `createHeader`. Geste : titre et sous-titre pilotés
+      par la page.
+
+- [ ] **U0.4 — Annoncer l'ouverture du navigateur.** `runExport` appelle
+      `openExternal` à chaque pull request créée, sans que rien ne l'ait
+      annoncé : trois exports d'affilée ouvrent trois onglets. Geste : le bouton
+      dit ce qu'il fait — « Publier et ouvrir la pull request ». Pas une
+      préférence : un réglage de plus se règle une fois et se relit à chaque
+      ouverture, un libellé exact ne coûte rien.
+
+- [ ] **U0.5 — Une seule langue, une fois la langue tranchée.** Le constat est
+      net : `Repo URL`, `Base branch`, `Components path`, `Tokens path` (les cinq
+      appels à `createField` de `ConfigurationPage.js`) sont en anglais dans une
+      interface dont tout le reste est en français. **Mais le geste ne va plus de
+      soi**, et cette tâche est la seule de la phase U0 qui soit bloquée : T4.4 a
+      tranché la distribution en faveur de la **Figma Community**, ce que la
+      Phase 8 de [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md) désigne
+      comme le seul événement rouvrant la langue du projet — et elle exige de
+      trancher **à ce moment-là**, pas après. Traduire ces quatre libellés en
+      français serait donc peut-être un geste à refaire en sens inverse.
+      Geste : attendre la décision de langue, puis appliquer **une** langue à
+      toute l'interface. Ce qui reste vrai dans les deux cas, et se fait sans
+      attendre : les libellés ne doivent pas être moitié dans l'une, moitié dans
+      l'autre.
+
+- [ ] **U0.6 — Un seul domicile pour les messages sandbox ↔ UI.** Les demandes
+      de l'UI sont typées (`UiRequest`, `code.ts`) ; les messages qui vont dans
+      l'autre sens ne le sont nulle part, et l'UI les reconnaît par une suite de
+      `if` sur `message.type` dans son `onmessage` : `settings`,
+      `settings-validation`, `settings-save-error`, `connection`, `log`,
+      `status`, `note`, `download`, `pull-request`. La suite de ce plan en ajoute
+      plusieurs, dont des structures et non plus des phrases — et U4.1 a besoin
+      qu'un message `log` porte enfin son niveau, que `runExport` perd
+      aujourd'hui en route : avertissements `⚠︎` et notes `•` partent sans
+      niveau, arrivent tous en `log-info`, et aucune règle de `styles.css` ne
+      stylise cette classe. Geste : déclarer les deux sens dans un seul type,
+      **avant** d'en ajouter un dixième. L'UI est en JavaScript, donc ce type ne
+      la contraint pas ; il vaut comme domicile unique de la liste (voir U6.2).
+
+---
+
+## Phase U1 — La hiérarchie, puis le socle graphique
+
+Ce que `styles.css` fait déjà juste, et qu'il ne faut pas défaire : toutes les
+couleurs passent par `--figma-color-*` avec un repli ; `themeColors: true` est
+demandé à `figma.showUI` ; `color-scheme: light dark` est posé sur `:root` ;
+`scrollbar-gutter: stable` empêche la barre d'ascenseur de décaler l'interface ;
+les tailles de contrôle sont déjà proches des conventions Figma.
+
+Ce qui manque n'est pas de la mise en forme, c'est une **décision de
+hiérarchie**. Aujourd'hui les trois zones sont la même `.card`, tout le texte est
+en 12 px, et la seule variation de taille est un titre à 16 px : la hiérarchie
+n'est pas mauvaise, elle est absente. Les quatre premières tâches produisent de
+quoi juger ; les six suivantes exécutent.
+
+### U1.0 à U1.3 — De quoi juger la qualité de l'UI
+
+- [ ] **U1.0 — Écrire la hiérarchie de l'information, et la borner.** C'est le
+      livrable contre lequel tout le reste se vérifie ; sans lui, « cet élément
+      ressort-il assez ? » n'a pas de réponse vérifiable. Trois rangs, et le
+      moyen visuel de chacun :
+
+      | Rang | Ce qui en relève | Signalé par |
+      |---|---|---|
+      | 1 — ce qui décide de l'action | la cible (nom du composant), le verdict du résultat (« 3 points à corriger », « prêt à publier », « identique au dépôt ») | la position — en haut, hors de toute carte — et la taille |
+      | 2 — ce sur quoi on agit | l'action principale, chaque avertissement | le poids : bouton plein, bloc à filet de sévérité |
+      | 3 — ce qui informe sans rien demander | destination, constats, version de schéma, journal | la couleur secondaire et la densité, jamais une carte |
+
+      Deux bornes, sans quoi la table ne tient pas :
+      **un élément signale son rang par deux moyens au plus** — position et
+      taille, ou poids et couleur, jamais les quatre, sinon tout crie ensemble ;
+      **la couleur sémantique ne signale que la sévérité, jamais le rang** —
+      autrement un constat vert paraît plus important qu'un avertissement gris,
+      ce qui est exactement l'inverse de la doctrine du projet.
+
+- [ ] **U1.1 — Inventorier les états, les dessiner, les regarder.** C'est
+      l'équivalent UI d'un jeu de fixtures, et c'est le seul moyen de répondre
+      autrement que par une opinion. L'interface en a bien plus que ce que
+      quiconque a énuméré : aucune sélection · sélection non exportable ·
+      composant sans règle d'usage exploitable · composant prêt · analyse en
+      cours, une vue par phase · résultat identique au dépôt · résultat propre ·
+      résultat avec un avertissement · résultat avec vingt · publication en
+      cours · publiée · échec GitHub avec repli local · dépôt non configuré ·
+      connexion en cours · connecté · `ucm.config.json` mal formé · export
+      annulé · une pull request déjà ouverte pour ce composant.
+      Geste : rendre chaque état atteignable, le capturer **dans les deux
+      thèmes**, et confronter chaque capture à la table de U1.0. Un état qui n'a
+      pas été regardé n'est pas conçu. Cet inventaire est aussi la liste de
+      vérification des phases U2, U3 et U4 : chacune en ajoute, et aucune ne les
+      ajoute en silence.
+
+- [ ] **U1.2 — Auditer chaque élément sur sa fonction.** Un seul test, appliqué
+      à tout ce qui est à l'écran : *quelle décision du designer cet élément
+      sert-il, à son cinquantième export ?* Ce qui n'y répond pas sort. Le relevé
+      est déjà fait, et il est sévère :
+      le titre de section « Actions » au-dessus de deux boutons **nomme
+      l'évidence** ; le paragraphe « Les messages de l'outil et les
+      téléchargements apparaissent ici » **explique un journal** à quelqu'un qui
+      en a vu mille ; le sous-titre « Transformez vos composants Figma en
+      contrats exploitables » est de la **plaquette commerciale** dans un outil
+      quotidien, et occupe la place où devrait vivre ce qui change ; la pastille
+      de connexion est posée **au-dessus** du nom du produit (`createHeader`
+      empile `topline` avant `titleGroup`), donc l'état se lit avant le titre, et
+      elle **n'est pas cliquable** alors qu'elle porte la seule information qui
+      demande un geste ; l'engrenage et « Retour » **se remplacent au même
+      emplacement**, donc la navigation change de forme selon la page ; la note
+      réserve 54 px et centre son contenu, donc un message d'une ligne **flotte
+      dans un vide permanent** pour éviter un saut occasionnel — c'est le mauvais
+      arbitrage, la hauteur doit être celle du contenu et la stabilité venir de
+      la place du bloc.
+
+- [ ] **U1.3 — Écrire le protocole de relecture, et le tenir court.** Une
+      vérification qui coûte cher ne se fait qu'une fois. Cinq points, à passer
+      sur les captures de U1.1 : **(a)** côte à côte avec un panneau natif de
+      Figma — densité, taille de texte, épaisseur des bordures, l'écart doit être
+      invisible ; **(b)** les deux thèmes, en vérifiant le contraste du texte de
+      sévérité sur son fond, à 11 px ; **(c)** à la plus petite taille de fenêtre
+      admise ; **(d)** avec le **pire contenu réel** — l'avertissement le plus
+      long que le moteur produise réellement, et vingt avertissements d'un coup ;
+      **(e)** un compte des objets à l'écran : au-delà d'une douzaine, la
+      hiérarchie de U1.0 ne tient plus, quelle que soit la finesse du style.
+      Ce protocole rejoint `CONTRIBUTING.md` une fois écrit ; il n'a de valeur
+      que répété à chaque phase suivante.
+
+### U1.4 à U1.10 — Le socle
+
+- [ ] **U1.4 — Descendre la base typographique à 11 px.** `:root` fixe
+      `font-size: 12px`, là où l'interface de Figma est à 11 px : le plugin
+      paraît plus gros que son hôte. L'incohérence est déjà dans le fichier —
+      `.field-error` et `.log-panel-inner` redescendent localement à 11 px.
+      Geste : 11 px de base, une échelle à trois crans seulement (corps,
+      libellé, titre de page), interlignes multiples de 4.
+
+- [ ] **U1.5 — Une trame de 4 px.** Aujourd'hui cohabitent `gap: 12px`,
+      `padding: 16px`, `gap: 10px`, `padding: 9px 10px`, `min-height: 54px`.
+      Geste : n'employer que 4, 8, 12, 16, et une variable par rôle d'espacement
+      plutôt qu'une valeur par endroit.
+
+- [ ] **U1.6 — Deux hauteurs de contrôle, pas trois.** `.btn` fait 32 px,
+      `.icon-button` 30, `.header-back-button` 30, `.input` 32. Geste : 24 px
+      pour les contrôles secondaires, 32 px pour les actions et les champs de
+      saisie.
+
+- [ ] **U1.7 — Dépenser bordure et fond par rôle.** Actions, journal et
+      configuration sont la même `.card` — bordure, fond secondaire, rayon 8 px
+      —, donc trois zones de poids visuel égal et aucune hiérarchie. Geste : la
+      zone d'action porte le poids ; le compte rendu vit sur le fond de la
+      page ; la configuration est un formulaire, pas une carte.
+
+- [ ] **U1.8 — Relire chaque repli en dur en thème sombre.** Les replis sont
+      écrits pour le thème clair (`#fff`, `#f5f5f5`, `#fff1d6` sous
+      `.note[data-state='warning']`). Si la variable Figma correspondante n'est
+      pas servie par la version de l'hôte, c'est cette valeur claire qui
+      s'applique **en thème sombre**, et le texte devient illisible. Geste :
+      lister les variables employées, vérifier dans Figma que chacune est bien
+      servie, et pour les autres choisir un repli qui tienne dans les deux
+      thèmes. Vérification visuelle dans les deux thèmes, pas sur lecture du
+      code.
+
+- [ ] **U1.9 — Un état de focus partout.** `.btn:focus-visible` existe ;
+      `.input`, `.icon-button`, `.header-back-button` et les liens du journal
+      n'ont rien.
+
+- [ ] **U1.10 — Fenêtre redimensionnable, taille mémorisée.** `figma.showUI` fige
+      380 × 500. Geste : `figma.ui.resize`, et la taille rangée dans
+      `figma.clientStorage`. **À vérifier d'abord :** les bornes que la
+      plateforme impose à une fenêtre de plugin, avant d'annoncer quoi que ce
+      soit. Ce n'est pas un confort isolé — le compte rendu de la phase U4
+      grandit avec le nombre d'avertissements, et une fenêtre fixe le renverrait
+      dans une boîte à défilement.
+
+---
+
+## Phase U2 — L'écran de travail
+
+- [ ] **U2.1 — La cible reste affichée.** Le nom du composant n'existe que dans
+      la note de sélection (`reportSelectionState`), il est écrasé au clic
+      (`requestExport`), et le message de succès ne le renomme pas. Geste : un
+      bloc cible persistant — nom Figma, type (`COMPONENT` ou `COMPONENT_SET`),
+      nombre de variants. `reportSelectionState` tient déjà le node : il lui
+      suffit d'envoyer une structure au lieu d'une phrase. Dépend de U0.6.
+
+- [ ] **U2.2 — La destination reste affichée.** Elle n'apparaît qu'après
+      publication, parce que `repositoryLayout` n'est appelé que depuis
+      `publishArtifact`. Geste : afficher `owner/repo · branche · chemin`, avec
+      la source du chemin — `ucm.config.json` ou réglages du plugin. Dépend de
+      U5.1.
+
+- [ ] **U2.3 — Deux commandes inégales ne se ressemblent pas.** L'export
+      composant exige une sélection (`getSelectedComponent`) ; l'export tokens
+      lit les variables locales du fichier entier et ignore la sélection. Les
+      deux boutons partagent pourtant une carte, une note qui parle de
+      sélection, et le même `setBusy`. **Ce n'est pas un défaut caché** : la
+      précondition lève un message clair, remonté en erreur par `runExport`.
+      C'est un aller-retour évitable, et la valeur de cette tâche est celle-là,
+      pas davantage. Geste : le bouton composant se désactive quand la sélection
+      n'est pas exportable, la raison juste sous lui ; l'export tokens devient
+      une action distincte, avec son propre résumé.
+
+- [ ] **U2.4 — Les tokens disent ce qu'ils vont emporter.** C'est un export de
+      portée *fichier*, et rien à l'écran n'en dit la taille. Geste : au
+      chargement, `getLocalVariableCollectionsAsync` et
+      `getLocalVariablesAsync` — déjà appelés par `exportTokens` — donnent
+      `N collections · N variables · N modes`.
+
+- [ ] **U2.5 — Le premier lancement dit ce qui va se passer.** Sans dépôt
+      configuré, `runExport` retombe sur le téléchargement local : un
+      comportement correct, mais **subi**, découvert à l'arrivée. Geste : un état
+      de premier lancement — « Aucun dépôt connecté : l'export sera téléchargé
+      sur votre poste » — et l'accès à la configuration. Le repli devient un mode
+      choisi.
+
+- [ ] **U2.6 — Des phases pendant l'attente.** L'export charge toutes les pages
+      puis résout trois fois le même maître par dépendance : un coût nommé et
+      **non mesuré** ([ROADMAP.md](./ROADMAP.md), « Fragilités connues »). Un
+      seul « Analyse du composant… » figé pendant plusieurs secondes se lit comme
+      un plantage. Geste : un statut par phase — pages, variantes, composition,
+      écriture. **Nommer les phases par ce que le code fait, jamais par une durée
+      ni un pourcentage** : la mesure n'existe pas, et une barre de progression
+      inventerait une précision qu'on n'a pas. Bénéfice second : cette mesure
+      manquante obtient enfin un endroit où s'observer.
+
+---
+
+## Phase U3 — Le pré-vol
+
+Le cœur fonctionnel. Aujourd'hui, un clic enchaîne calcul, comparaison, création
+de branche, commit, pull request et ouverture du navigateur (`runExport`). Le
+designer lit donc les avertissements après que tout a été écrit ; il corrige dans
+Figma, réexporte, et obtient une seconde pull request tandis que la première
+reste ouverte.
+
+- [X] **U3.0 — La pull request dupliquée n'est pas détectée, par
+      construction.** **Close le 5 septembre 2026, hors de ce document :** le bug
+      a été promu en **T4.5** du
+      [plan d'industrialisation](./PLAN-INDUSTRIALISATION.md), parce qu'il est du
+      domaine de la Phase 4 et qu'il devait passer AVANT la Phase 7. Ce qui a été
+      fait, ce que l'implémentation a trouvé en plus de l'énoncé et ce qui a été
+      délibérément laissé de côté se lisent là-bas ; ce qui suit est l'énoncé
+      d'origine, gardé parce que la suite de cette phase s'y adosse. Pour U3.1 et
+      U3.2, retenir la forme acquise : la lecture des exports en vol s'appelle
+      désormais `exportsEnVol`, elle rend `{ contenu, ou, url }`, elle vaut pour
+      les DEUX genres d'artefact, et le verdict `unchanged` de `publishArtifact`
+      porte maintenant l'endroit (`ou`) et l'URL de la pull request quand c'en
+      est une — le pré-vol a donc déjà de quoi dire « identique » et où.
+      C'est un bug fonctionnel, pas de l'UX, et il précède tout
+      le reste de cette phase. Le contrôle d'immobilité lit le fichier **sur la
+      branche de base seulement** : `getRepositoryFile` prend `config.baseBranch`
+      comme `ref` par défaut, et `publishArtifact` l'appelle sans `ref`. Les
+      branches des pull requests d'export ouvertes ne sont donc jamais comparées
+      — alors que `contratsEnVol` sait déjà les énumérer et lire le fichier sur
+      chacune, mais ne sert qu'à refuser une collision d'identité ; quand
+      l'identité est la même, `refusDeCollision` rend `null`. Conséquence :
+      réexporter un contrat **strictement identique** pendant qu'une pull request
+      d'export du même contenu est ouverte crée une seconde pull request
+      dupliquée, sans un mot. Geste : comparer aussi aux branches en vol, et le
+      dire. Ce n'est **pas** un refus — réexporter après correction est le geste
+      normal, et c'est celui que cette phase encourage — c'est une information que
+      seul le pré-vol peut donner à temps. Risque de régression :
+      `tests/github.test.ts` couvre `publishArtifact`, `repositoryLayout`,
+      `contratsEnVol` et `refusDeCollision` en détail ; étendre la comparaison,
+      ne pas la dupliquer.
+
+- [ ] **U3.1 — Scinder « analyser » et « publier ».** Geste : l'analyse produit
+      le contrat en mémoire et n'écrit rien ; la publication consomme ce
+      résultat. Trois contraintes, chacune répondant à une objection de la
+      revue :
+      **(a) Le cas nominal ne coûte pas un clic pour rien.** L'analyse est le
+      seul bouton de départ, et la publication n'apparaît que dans son résultat,
+      en action principale focalisée. Un clic de plus uniquement quand il y a
+      effectivement quelque chose à publier ; un export sans changement n'atteint
+      jamais la publication. Le gain payé par ce clic est réel : un avertissement
+      corrigé avant publication supprime une pull request orpheline et un tour de
+      revue.
+      **(b) L'analyse n'est pas la source de vérité.** Le dépôt a pu bouger entre
+      les deux étapes — quelqu'un a fusionné, une branche est apparue. La
+      publication **revérifie** immobilité et collision ; l'analyse, elle,
+      informe. Sans cette règle, le pré-vol devient une lecture périmée qui
+      autorise une écriture.
+      **(c) L'analyse doit refaire tout le chemin de lecture**, pas seulement le
+      test d'égalité : `repositoryLayout`, puis `exportsEnVol` — pour les DEUX
+      genres d'artefact depuis U3.0, la collision restant, elle, réservée aux
+      contrats. Un pré-vol qui annoncerait « rien à changer » sans avoir vu une
+      collision d'identifiant mentirait sur le seul point qui, lui, est un vrai
+      refus.
+      Geste d'implémentation : extraire une sous-fonction de lecture partagée par
+      les deux étapes, jamais dupliquer le chemin — deux lectures du layout
+      divergeraient en silence, ce que T4.1 a refermé ailleurs.
+
+- [ ] **U3.2 — Dire « identique » avant d'écrire.** L'immobilité est déjà
+      détectée dans `publishArtifact`, mais à l'intérieur du chemin d'écriture.
+      Geste : la rendre lisible au pré-vol. Dépend de U3.0 et U3.1.
+
+- [ ] **U3.3 — Une publication qui échoue doit être reprenable.** Sur échec
+      GitHub, `runExport` télécharge le fichier localement et `deleteBranch`
+      supprime la branche créée : le travail n'est pas perdu, mais l'état de
+      l'UI l'est, et le résultat d'analyse a disparu. Geste : garder ce résultat
+      et proposer « Réessayer la publication ». Dépend de U3.1.
+
+- [ ] **U3.4 — Pouvoir annuler un export en cours.** Rien n'interrompt un
+      export : `setBusy` désactive les boutons et la promesse en vol continue. Un
+      export parti sur `loadAllPagesAsync` d'un gros fichier ne laisse d'autre
+      recours que fermer le plugin. Geste : une annulation **coopérative**,
+      contrôlée entre deux phases — donc à écrire avec U2.6, et à annoncer pour
+      ce qu'elle est : elle prend effet à la fin de l'étape en cours, elle
+      n'interrompt pas un appel Figma déjà parti. Ne rien publier après une
+      annulation. Dépend de U2.6.
+
+---
+
+## Phase U4 — Le compte rendu actionnable
+
+- [ ] **U4.1 — Trois groupes au lieu d'un flux.** Le journal mêle dans un ordre
+      chronologique la version de schéma, les avertissements `⚠︎`, les notes `•`,
+      l'emplacement, un échec GitHub, un téléchargement et le lien de pull
+      request — en 11 px monospace, sur 96 à 144 px. La distinction qui structure
+      tout le projet — un avertissement demande un geste, une note n'en demande
+      aucun (`exportComponent.ts`, `actionableWarnings` contre `exportedInfos`) —
+      n'est portée que par le caractère de puce : `runExport` envoie les deux
+      sans niveau, tout arrive en `log-info`, et aucune règle de `styles.css` ne
+      stylise cette classe. Geste : « À corriger dans Figma (N) », « Constats
+      (N) », « Publication ».
+      **Statut de cet ordre :** c'est une **adaptation** de la règle de
+      [CONTRIBUTING.md](./CONTRIBUTING.md), pas son application littérale — la
+      règle est écrite pour un rapport agrégé de CI, pas pour le résultat d'un
+      export unique. L'adaptation garde ce qui la motive : le problème avant le
+      détail, le geste séparé du constat. Dépend de U0.6.
+
+- [ ] **U4.2 — Un avertissement se lit sans défiler.** Geste : chaque entrée est
+      un bloc de hauteur libre, pas une ligne monospace tronquée. La police
+      monospace ne sert plus que ce qui est littéral : chemin, nom de calque,
+      référence de token. Le journal brut passe derrière un dépliant « Détails
+      techniques », pour qui débogue.
+
+- [ ] **U4.3 — Écrire la loi de couverture avant de rendre un lien cliquable.**
+      Préalable de U4.4, et la seule tâche de ce plan qui touche au moteur.
+      État du code : `exportComponent.ts` fabrique ses `diagnostics` depuis de
+      simples `string`, le `code` étant déduit par appartenance à un `Set` ;
+      `figma.nodeId`, prévu par le format (`ContractDiagnostic` dans
+      `packages/kit/src/format/types.ts`), n'est jamais renseigné.
+      **Ce que la revue a corrigé ici.** Le plan soutenait d'abord que l'UI
+      pouvait exercer une localisation partielle avant le format, un lien absent
+      étant invisible. L'objection tient : la réserve de
+      [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) ne porte pas sur le support de
+      publication mais sur la fiabilité du signal, et une UI où certains
+      avertissements sont cliquables et d'autres pas enseigne une leçon fausse —
+      que l'absence de lien signifie « rien à localiser », quand elle signifie
+      « cet extracteur n'a pas encore de node ». C'est le mécanisme que
+      [CONTRIBUTING.md](./CONTRIBUTING.md) dénonce pour les notes, transposé au
+      lien.
+      **La réponse n'est pas d'attendre le collecteur complet, c'est de borner la
+      couverture par une loi vérifiable :** *tout avertissement qui nomme un
+      calque dans son texte porte le node de ce calque.* Un avertissement qui ne
+      nomme aucun calque n'a pas de lien, et son absence n'enseigne rien de faux.
+      La loi est testable sur l'ensemble des avertissements produits, comme
+      celles de `packages/plugin/tests/lois.ts`.
+      Geste : écrire cette loi et son test, puis renseigner le node là où la loi
+      l'exige. **Ce que cette tâche ne fait pas :** décider d'écrire
+      `figma.nodeId` dans le contrat publié. Le canal de l'UI et le champ du
+      format restent deux décisions.
+
+- [ ] **U4.4 — Un avertissement mène à son calque.** Un clic sélectionne le
+      calque et l'amène dans le viewport. C'est le pas qui transforme « constat +
+      geste » en geste effectué : les messages nomment le calque en prose —
+      `flexLayout.ts` écrit « Layer « … » : l'alignement du stroke est
+      illisible » — et le designer doit le retrouver à la main dans une matrice de
+      trente variants. Dépend de U4.3 et U4.5.
+
+- [ ] **U4.5 — Trancher, et écrire, que sélectionner n'est pas modifier.**
+      L'invariant est net : le plugin ne modifie **jamais** le document Figma
+      ([AGENTS.md](./AGENTS.md), [CONCEPT.md](./CONCEPT.md)). Poser une sélection
+      et déplacer le viewport ne sont pas du contenu de document — rien n'est
+      écrit, et aucune entrée d'annulation ne devrait être créée. Geste : **le
+      vérifier sur un fichier réel**, puis l'écrire dans la spécification, pour
+      que la prochaine relecture n'ait pas à trancher une deuxième fois. Une
+      tâche de vérification, pas de code.
+
+- [ ] **U4.6 — Tester ce qui décide, pas le DOM.** La logique qui mérite un test
+      est celle qui range un message dans un groupe, dérive l'état de la cible,
+      ou traduit une erreur réseau en cause affichable. Geste : l'extraire en
+      fonctions pures et la tester. C'est la règle de travail 5 appliquée : pas
+      de harnais DOM — `buildUi.test.ts` couvre le seul risque de build réel,
+      l'inlining du bundle — mais rien de neuf ne doit rester enfermé dans un
+      `createElement`.
+
+---
+
+## Phase U5 — La configuration honnête
+
+- [ ] **U5.1 — Dire qui gouverne les chemins.** `componentsPath` et `tokensPath`
+      sont obligatoires et validés (`validateSettings` dans `config.ts`,
+      `localErrors` dans `ConfigurationPage.js`), mais `repositoryLayout` les
+      **ignore** dès qu'un `ucm.config.json` lisible existe sur la branche de
+      base : le designer l'apprend par une ligne de journal, après publication.
+      Cette lecture n'a lieu qu'à la publication, jamais au test de connexion —
+      `testGithubConnection` ne fait qu'un `GET /repos/...`. Geste : au test de
+      connexion, lire `ucm.config.json` et afficher le layout réellement en
+      vigueur ; marquer les deux champs comme repli, et ne plus les exiger quand
+      le dépôt se décrit lui-même. Bénéfice second, plus important que le
+      premier : un `ucm.config.json` mal formé **refuse l'export**
+      (`repositoryLayout` lève au lieu de retomber sur les réglages) ; le lire à
+      la connexion transforme un blocage tardif, après le travail, en information
+      immédiate.
+
+- [ ] **U5.2 — Trois causes, trois messages.** `testGithubConnection` avale
+      l'erreur et rend un booléen : pas de configuration, token invalide (401) et
+      dépôt introuvable ou droits manquants (404) donnent la même pastille rouge,
+      alors que le geste diffère dans les trois cas. L'information existe à la
+      source — `GithubApiError` porte son `status` — et se perd au retour.
+      Geste : rendre la cause et l'afficher ; la pastille devient un bouton vers
+      la configuration.
+
+- [ ] **U5.3 — Dire pourquoi la publication a échoué.** Même perte, l'autre
+      bout : un échec de publication devient « Échec GitHub » suivi du message
+      brut, quel que soit le statut. Un 403 de droits manquants, un 409 de
+      conflit et un 422 de branche existante ne se corrigent pas du même geste.
+      Geste : traduire le `status` en cause et en geste. Dépend de U5.2, qui pose
+      le vocabulaire.
+
+- [ ] **U5.4 — Pouvoir retirer le token.** Un champ vide signifie « conserver le
+      PAT enregistré » et `saveSettings` n'écrit alors rien : aucun geste ne
+      retire un token du poste — ni rotation, ni changement de dépôt, ni départ.
+      Geste : « Supprimer le token enregistré », avec confirmation.
+
+- [ ] **U5.5 — Tester la connexion sans enregistrer.** « Enregistrer » fait
+      aujourd'hui les deux. À ne faire que si U5.1 et U5.2 ne suffisent pas :
+      deux boutons pour un formulaire de cinq champs se justifient mal.
+
+---
+
+## Phase U6 — À décider avant d'être fait
+
+- [ ] **U6.1 — Historique local des exports.** Les derniers exports —
+      composant, date, chemin, pull request — rangés dans `figma.clientStorage`,
+      pour retrouver la pull request d'hier que le journal a perdue à la
+      fermeture du plugin. À arbitrer : c'est de la donnée locale qui **périme**
+      — une pull request fusionnée, une branche supprimée — donc un état de plus
+      à entretenir, et une source d'affirmations fausses. À ne pas ouvrir avant
+      que U3.0 ait montré si le besoin subsiste : savoir qu'une pull request est
+      ouverte pour ce composant est la moitié utile du besoin, et elle se lit
+      dans le dépôt, pas dans une mémoire locale.
+
+- [ ] **U6.2 — Passer l'UI en TypeScript.** `build:ui:js` fait déjà passer
+      `src/ui/index.js` par esbuild : renommer en `.ts` coûte presque rien, et le
+      type unique de U0.6 contraindrait alors les deux côtés au lieu d'un seul.
+      Contre : l'UI est volontairement légère et sans outillage. À décider une
+      fois, pas deux.
+
+### Abandonné — prévenir d'un écart de version de contrat
+
+L'idée : le pré-vol dirait qu'un contrat produit par ce plugin ne sera pas lu par
+ce dépôt, au lieu de le découvrir par la CI après la pull request. Le problème est
+réel — un écart de version refuse le contrat **en bloc**, quel que soit son
+contenu. **Elle est abandonnée, et par une décision déjà prise dans le code, pas
+par prudence.**
+
+Deux vérifications la ferment :
+
+- ce n'est pas une fenêtre, c'est **une** version.
+  `packages/kit/src/lecteurs/version-contrat.mjs` pose
+  `VERSION_CONTRAT_MINIMALE` et `VERSION_CONTRAT_MAXIMALE` égales, et son propre
+  commentaire dit que les changer est un geste manuel et ordonné chez le
+  consommateur. Cette valeur vit dans le **kit installé** chez lui ; une plage
+  semver dans son `package.json` ne dit ni la version exacte installée, ni ce
+  qu'il a verrouillé en local ;
+- le seul fichier que le plugin lit dans le dépôt **refuse** de la porter.
+  `packages/kit/src/format/configuration.ts` l'écrit comme une règle et non un
+  oubli : `contractVersion`, `version` et `schemaVersion` y sont *refusés*, pas
+  ignorés, parce que la fenêtre de versions lues appartient au paquet installé.
+
+Déduire cette version d'ailleurs créerait la **seconde autorité au désaccord
+muet** que T4.1, T4.2 et T4.3 referment chacune ailleurs. Ne pas rouvrir sans
+qu'une décision de format ait d'abord donné à cette information un domicile
+lisible.
+
+### Ce qui n'entre pas dans ce plan
+
+- **Un aperçu du contrat dans le plugin.** Le contrat se relit dans la pull
+  request, où il est diffé et commentable. Une fenêtre de 380 px n'est pas le
+  lieu, et le dupliquer créerait deux endroits pour la même revue.
+- **Le multi-fichiers Figma.** Un plugin s'exécute dans le contexte du fichier
+  ouvert : il n'y a rien à résoudre.
+- **L'export multi-composant en une commande.** Hors périmètre MVP
+  ([UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md), « Hors périmètre MVP »).
+- **Un framework d'interface.** Le bundle est du DOM natif inliné dans un HTML
+  unique ; c'est une contrainte de la sandbox, pas une préférence.
+- **Un thème propre au plugin.** Aucune couleur de marque : l'hôte décide.
+- **Une écriture dans le document Figma.** L'invariant tient ; U4.5 le précise
+  sans l'entamer.
+- **Toute préférence que rien n'oblige à régler.**
+
+---
+
+## Quand exécuter ce plan, par rapport à l'industrialisation
+
+[PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md) est **en cours** : 33 de
+ses 57 tâches sont closes. Sa **Phase 4 — Plugin Figma est fermée** (T4.1 à
+T4.4), donc ce plan-ci n'entre en collision avec elle sur aucun fichier ; ce qui
+reste est la Phase 7 (le test du repo vierge, son critère de réussite), le reste
+de la Phase 5, puis les Phases 6 et 8. La réponse n'est donc **pas** « après tout
+ça » — elle se coupe en trois.
+
+**Avant la Phase 7, tout de suite.** Deux morceaux seulement, pour deux raisons
+distinctes :
+
+- **U3.0**, parce que c'est un bug et qu'un bug ne fait pas la queue derrière un
+  plan. Il a été promu hors de ce document pour cette raison : il est inscrit
+  **T4.5** dans le plan d'industrialisation, et sa description normative vit
+  là-bas. L'entrée U3.0 ci-dessous reste comme contexte du pré-vol, qui en
+  dépend.
+- **U0 sauf U0.5**, une session sans décision. U0.1 en particulier n'est pas
+  cosmétique ici : la Phase 7 consiste à exporter en boucle vers un dépôt neuf,
+  et c'est exactement la situation où un bundle Figma périmé se déguise en
+  « aucun changement ». Le garde-fou doit tenir **avant** que ces exports
+  commencent, pas après.
+
+**Après la Phase 7, avant la Phase 8.** Tout le reste : U1, U2, U4, puis U3.1 à
+U3.4. Deux raisons, et la seconde est la plus forte :
+
+- la Phase 7 valide le **flux** ; dessiner les écrans qui montrent un flux avant
+  de l'avoir validé, c'est les redessiner ;
+- **T4.4 a changé la nature de ce chantier.** Le plugin part sur la Figma
+  Community : son interface cesse d'être un outil interne et devient la vitrine
+  du projet, jugée par une revue Figma et par des gens qui n'ont lu aucun de ces
+  documents. L'état de premier lancement (U2.5) et la hiérarchie (U1.0) sont ce
+  qu'ils verront d'abord. La soumission réclame par ailleurs nom public,
+  description, icône et illustration de couverture : les captures de U1.1 les
+  fournissent, ce qui fait de l'inventaire des états un livrable à double emploi
+  plutôt qu'un coût.
+
+**Deux points d'attention de calendrier.**
+U0.5 attend la décision de langue que T4.4 a rouverte — elle ne dépend pas de
+ce plan. Et **U4.5 doit passer après T8.1**, qui scinde la spécification : écrire
+dans un document que la tâche suivante découpe garantit de réécrire.
+Rien n'attend en revanche T5.5, T5.6, T6.1 ni T6.3 : couches optionnelles et
+finitions de CI, orthogonales à l'interface.
+
+## Ordre d'exécution
+
+1. **U0 sauf U0.5** — une session, aucune décision, et U0.6 conditionne U2.1 et
+   U4.1. **U3.0 dans la même fenêtre**, tant que `github.ts` est frais.
+2. *(Phase 7 de l'industrialisation — le test du repo vierge.)*
+3. **U1.0 à U1.3** — la hiérarchie écrite, les états inventoriés, l'audit de
+   fonction et le protocole de relecture. **Rien de visuel ne se dessine avant.**
+   Ces quatre tâches ne produisent pas une ligne de style : elles produisent de
+   quoi juger celles qui suivent, et sans elles la refonte n'a aucun critère de
+   réussite — seulement des avis.
+4. **U1.4 à U1.10** — le socle, exécuté contre la table de U1.0, avant toute vue
+   nouvelle : sinon les vues de U2 et U4 sont à redessiner deux fois.
+5. **U5.1** et **U5.2** — la destination réelle et la cause d'un échec sont des
+   données que U2.2 affiche.
+6. **U2** — l'écran de travail.
+7. **U4.1**, **U4.2**, **U4.6** — le compte rendu, qui rend U3 lisible.
+8. **U3.1** à **U3.4** — le pré-vol, une fois qu'il a un endroit où rendre son
+   résultat.
+9. **U4.5** — après T8.1 —, puis **U4.3**, puis **U4.4** : la localisation dans
+   cet ordre, l'invariant tranché, la loi écrite, le clic ensuite.
+10. **U5.3**, **U5.4**, puis **U6** si les conditions sont réunies.
+
+Chaque phase qui ajoute un état repasse le protocole de U1.3 et complète
+l'inventaire de U1.1. Une phase livrée sans ses états regardés n'est pas
+livrée.
+
+Dépendances dures : U2.1 → U0.6 · U2.2 → U5.1 · U4.1 → U0.6 · U3.2 → U3.0, U3.1 ·
+U3.3 → U3.1 · U3.4 → U2.6 · U5.3 → U5.2 · U4.4 → U4.3, U4.5.
+
+## Ce que la revue indépendante a corrigé
+
+| Point | Ce que le plan disait | Ce que le code a montré |
+|---|---|---|
+| Localisation des diagnostics | l'UI peut être partielle, le contrat non | la réserve porte sur la fiabilité du signal, pas sur son support : U4.3 borne désormais la couverture par une loi vérifiable au lieu de l'assumer partielle |
+| Pull request dupliquée | « invisible » au designer | **non détectée par construction** : l'immobilité ne se compare qu'à la branche de base. Promue en U3.0, avant le pré-vol |
+| Écart de version de contrat | piste à évaluer, condition à trancher | abandonnée : ce n'est pas une plage, et `ucm.config.json` refuse de porter une version |
+| Pré-vol en deux étapes | un clic de plus quand il y a à publier | insuffisant : il faut aussi revérifier à la publication, le dépôt pouvant bouger, et refaire tout le chemin de lecture, collision comprise — U3.1 (b) et (c) |
+| Sélection invalide | défaut de l'interface | le chemin d'erreur fonctionne déjà : U2.3 ne vaut que l'aller-retour épargné |
+| Ordre du compte rendu | conforme à `CONTRIBUTING.md` | la règle vise un rapport agrégé de CI : U4.1 se déclare adaptation |
+| Absence de test sur l'UI | non mentionnée | devenue règle de travail 5, et U4.6 |
+| Annulation d'un export, cause d'un échec réseau | absentes | U3.4 et U5.3 |
+
+Une neuvième correction ne vient pas de la revue mais du propriétaire du projet,
+et c'est la plus structurante : **le plan ne portait aucun critère de qualité
+UI.** Sa phase U1 nettoyait la mise en forme — 11 px, trame de 4, hauteurs de
+contrôle — sans jamais dire quel élément mérite du poids, ni comment le vérifier.
+Trois manques nommés : aucune hiérarchie écrite, aucun élément audité sur sa
+fonction, aucun moyen de juger. U1.0 à U1.3 sont la réponse, et elles passent
+devant tout le reste du graphique.
+
+## Ce qui reste à trancher
+
+1. **Le pré-vol remplace-t-il l'export direct ?** Recommandation : oui. Deux
+   chemins feraient deux comportements à documenter, à tester et à expliquer, et
+   la contrainte (a) de U3.1 répond déjà à l'objection ergonomique.
+2. **Le journal brut survit-il à U4.1 ?** Recommandation : oui, replié, tant que
+   le plugin n'a pas d'autre canal de débogage.
+3. **La sélection depuis l'UI est-elle acceptable au regard de l'invariant ?**
+   C'est U4.5, et la réponse doit être écrite, pas supposée.

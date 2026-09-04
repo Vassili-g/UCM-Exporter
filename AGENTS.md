@@ -418,6 +418,15 @@ Le raisonnement vit dans la spécification, en lien.
   les deux autorités divergent sans un mot. `tokens.json` n’en reçoit aucun : il
   ne porte aucun schéma UCM.
   → [spécification](./UCM-EXPORTER-SPEC.md#partie-3--configuration-et-dépôt-github)
+- Un export identique n’ouvre JAMAIS une seconde pull request. L’immobilité se
+  juge sur la branche de base **et** sur les pull requests d’export encore
+  ouvertes (`exportsEnVol()`, `src/github.ts`), parce qu’un artefact déposé et
+  pas encore fusionné n’est pas sur la branche de base. Le verdict porte
+  l’endroit où le contenu identique a été trouvé, et le journal le dit : « aucun
+  changement » sans l’endroit envoie chercher un fichier là où il n’est pas
+  encore. Ce n’est pas un refus — un contenu DIFFÉRENT pendant qu’une pull
+  request est ouverte est un réexport après correction, donc le geste normal.
+  → [spécification](./UCM-EXPORTER-SPEC.md#partie-3--configuration-et-dépôt-github)
 - Un avertissement entre dans le corps de la pull request en Markdown :
   `sansLienAutomatique()` (`src/github.ts`) publie `@nom` et `#123` en `code`.
   Sinon GitHub relie `@icons`, nom d’une variante de règle, au profil d’un

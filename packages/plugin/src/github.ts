@@ -27,8 +27,26 @@ export type RepositoryArtifact = {
   warnings: string[];
 };
 
+/**
+ * Ce qu'une publication a fait, et pour un export immobile, OÙ le contenu
+ * identique se trouve déjà.
+ *
+ * **Pourquoi `ou` sur `unchanged` (T4.5).** Jusqu'ici il n'y avait qu'un seul
+ * endroit possible — la branche de base — et le taire ne coûtait rien. Depuis
+ * que les pull requests d'export ouvertes sont comparées elles aussi, « aucun
+ * changement » sans l'endroit enverrait le designer chercher sur la branche de
+ * base un fichier qui n'y est pas encore. `pullRequestUrl` mène alors à la page
+ * où le geste restant se fait — fusionner — et vaut `null` sur la branche de
+ * base, où il n'y a précisément plus rien à faire.
+ */
 export type PublishResult =
-  | { status: 'unchanged'; path: string; source: LayoutSource }
+  | {
+    status: 'unchanged';
+    path: string;
+    source: LayoutSource;
+    ou: string;
+    pullRequestUrl: string | null;
+  }
   | { status: 'created'; path: string; branch: string; pullRequestUrl: string; source: LayoutSource };
 
 /** Qui a décidé où l'artefact s'écrit — le repo, ou les réglages du plugin. */
@@ -497,15 +515,38 @@ function refusDeCollision(
 }
 
 /**
+ * Un artefact trouvé au chemin visé, ailleurs que sur la branche de base.
+ *
+ * `ou` est la phrase que les messages reprennent telle quelle — le refus de
+ * collision comme le journal du plugin. Une seule écriture de l'endroit : deux
+ * en donneraient deux versions, et celle que le designer lit ne serait plus
+ * celle que le code a regardée.
+ */
+type ExportEnVol = { contenu: string; ou: string; url: string | null };
+
+/**
  * Les exports du même artefact encore EN VOL, c'est-à-dire dans une pull request
  * ouverte et pas encore fusionnée.
  *
  * **Le trou que ceci referme.** `getRepositoryFile` interroge la branche de
- * base : un contrat qui n'existe que dans une PR d'export ouverte y est
- * invisible. Deux composants en collision exportés coup sur coup ouvriraient
- * donc deux pull requests sur le même chemin sans qu'aucun refus n'ait lieu, et
- * la collision ne se révélerait qu'à la fusion de la seconde — en écrasant la
- * première, c'est-à-dire précisément le cas qu'on prétend avoir fermé.
+ * base : un artefact qui n'existe que dans une PR d'export ouverte y est
+ * invisible. Cette cécité produit deux défauts, et c'est pour ça qu'il n'y a ici
+ * qu'une seule lecture :
+ *
+ * - *la collision (T4.3)* — deux composants en collision exportés coup sur coup
+ *   ouvriraient deux pull requests sur le même chemin sans qu'aucun refus n'ait
+ *   lieu, et la collision ne se révélerait qu'à la fusion de la seconde, en
+ *   écrasant la première, c'est-à-dire précisément le cas qu'on prétend avoir
+ *   fermé ;
+ * - *le doublon (T4.5)* — réexporter un contenu strictement identique pendant
+ *   que sa pull request est ouverte en ouvrait une seconde, en tout point
+ *   pareille, sans un mot.
+ *
+ * Le second vaut pour les DEUX genres d'artefact, quand le premier ne concerne
+ * que les contrats : `tokens.json` ne se dispute son chemin avec personne, mais
+ * il se réexporte comme n'importe quoi d'autre. C'est pourquoi cette fonction
+ * ne parle plus de contrats et prend le `kind` au sérieux — le préfixe de
+ * branche sépare déjà les deux flux.
  *
  * **Le coût est borné et c'est ce qui rend le contrôle acceptable.** Un seul
  * appel liste les pull requests ouvertes ; seules celles dont la branche porte
@@ -518,20 +559,20 @@ function refusDeCollision(
  * même chose que ne rien trouver, et confondre les deux redonnerait au
  * garde-fou l'apparence du vert qu'il existe pour retirer.
  */
-async function contratsEnVol(
+async function exportsEnVol(
   config: GithubConfig,
   repository: string,
   kind: ArtifactKind,
   path: string,
-): Promise<{ contenu: string; ou: string }[]> {
-  const ouvertes = await githubRequest<{ head: { ref: string } }[]>(
+): Promise<ExportEnVol[]> {
+  const ouvertes = await githubRequest<{ head: { ref: string }; html_url?: unknown }[]>(
     config,
     `/repos/${repository}/pulls?state=open&base=${encodeURIComponent(config.baseBranch)}&per_page=100`,
   );
   if (!ouvertes) return [];
 
   const prefixe = prefixeDeBranche(kind);
-  const trouves: { contenu: string; ou: string }[] = [];
+  const trouves: ExportEnVol[] = [];
   for (const pull of ouvertes) {
     const branche = pull.head?.ref;
     if (typeof branche !== 'string' || branche.indexOf(prefixe) !== 0) continue;
@@ -540,6 +581,10 @@ async function contratsEnVol(
       trouves.push({
         contenu: decodeBase64(fichier.content),
         ou: `pull request d'export ouverte, branche ${branche}`,
+        // L'URL n'est utile qu'au doublon, qui envoie le designer fusionner ce
+        // qui est déjà déposé. Le refus de collision, lui, ne s'en sert pas :
+        // le geste qu'il demande se fait dans Figma, pas sur GitHub.
+        url: typeof pull.html_url === 'string' ? pull.html_url : null,
       });
     }
   }
@@ -548,7 +593,11 @@ async function contratsEnVol(
 
 /**
  * Crée une branche, écrit l'unique artefact de l'export puis ouvre la PR.
- * Le fichier existant est lu avant la branche afin d'éviter toute PR vide.
+ *
+ * Rien n'est écrit avant d'avoir cherché l'artefact aux deux seuls endroits où
+ * il peut déjà être : la branche de base, et les pull requests d'export encore
+ * ouvertes. Une PR vide n'a jamais eu de raison d'exister ; une seconde PR
+ * identique non plus.
  */
 export async function publishArtifact(
   config: GithubConfig,
@@ -566,10 +615,36 @@ export async function publishArtifact(
   // ses contrats vivent, et se tromper d'endroit est indétectable ensuite.
   const layout = await repositoryLayout(config);
   const path = artifactPath(artifact, layout);
+  const surLaBase = `branche ${config.baseBranch}`;
   const existing = await getRepositoryFile(config, path);
   if (existing?.type === 'file' && existing.content && sameContent(decodeBase64(existing.content), artifact.content)) {
-    return { status: 'unchanged', path, source: layout.source };
+    return { status: 'unchanged', path, source: layout.source, ou: surLaBase, pullRequestUrl: null };
   }
+
+  // T4.5. Le contrôle ci-dessus ne regarde que la branche de base, et c'est là
+  // qu'un artefact déjà exporté n'est PAS encore : il attend dans sa pull
+  // request. Réexporter un contenu strictement identique en ouvrait donc une
+  // seconde, en tout point pareille — un doublon que rien ne signalait, alors
+  // que c'est exactement la perte silencieuse que T4.1 et T4.3 referment
+  // ailleurs.
+  //
+  // La lecture est celle de la détection de collision, ÉTENDUE et non
+  // dupliquée : deux chemins de lecture du dépôt divergeraient en silence.
+  // Elle vient après la branche de base et pas avant, parce que le cas courant
+  // — rien n'a changé depuis la dernière fusion — se tranche alors sans lister
+  // aucune pull request.
+  const enVol = await exportsEnVol(config, repository, artifact.kind, path);
+  const jumeau = enVol.find((occupant) => sameContent(occupant.contenu, artifact.content));
+  if (jumeau) {
+    return { status: 'unchanged', path, source: layout.source, ou: jumeau.ou, pullRequestUrl: jumeau.url };
+  }
+
+  // Ce n'est pas un refus, et son pendant n'existe pas : un contenu DIFFÉRENT
+  // pendant qu'une pull request d'export est ouverte, c'est un réexport après
+  // correction dans Figma — le geste normal, que bloquer reviendrait à punir.
+  // Git dit le reste : deux branches qui modifient le même fichier depuis la
+  // même base entrent en conflit à la seconde fusion, et un conflit, lui, se
+  // voit.
 
   // La collision se cherche APRÈS le contrôle d'immobilité : un contenu
   // identique est un réexport par construction, et le faire passer par
@@ -581,9 +656,9 @@ export async function publishArtifact(
   if (artifact.kind === 'component') {
     const occupants = [
       ...(existing?.type === 'file' && existing.content
-        ? [{ contenu: decodeBase64(existing.content), ou: `branche ${config.baseBranch}` }]
+        ? [{ contenu: decodeBase64(existing.content), ou: surLaBase }]
         : []),
-      ...(await contratsEnVol(config, repository, artifact.kind, path)),
+      ...enVol,
     ];
     for (const occupant of occupants) {
       const refus = refusDeCollision(occupant.contenu, artifact.content, path, occupant.ou);
