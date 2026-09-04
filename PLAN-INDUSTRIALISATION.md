@@ -605,7 +605,36 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       absent ou illisible se publie comme le reste »). Il doit être **reporté**
       sur `tokens.json`, pas supprimé.
 
-- [ ] **T2.5 — Faire tourner le lecteur dans les tests du moteur.**
+- [X] **T2.5 — Faire tourner le lecteur dans les tests du moteur.** *Fait.*
+      `verifierLeLecteur` rejoint `tests/lois.ts` et se pose sur le chemin
+      d'appel de `exportComponent.test.ts`, à côté du schéma : chaque contrat
+      que le moteur fabrique passe désormais par `verdictDeVersion` et
+      `champsInvalidesDuContrat` du kit. Les deux assertions vérifiées par
+      mutation. Vert du premier coup — c'est un filet de régression, pas une
+      découverte.
+      *La justification était juste, et elle se mesure :* la forme des
+      références de token est bien contrôlée par le lecteur
+      (`validation-contrat.mjs:833`) et **pas** par le schéma, qui type
+      `SlotTokens` en `Record<string, string>` et ne porte aucun `pattern` —
+      vérifié, zéro occurrence dans les 77 ko du schéma publié. Une mutation
+      d'un token en `layouts.sizing.1`, sans accolades, est refusée avec le
+      chemin exact `variants[0].tokens.background`.
+      *Portée réelle, mesurée :* **un seul des 23 scénarios** fabrique un
+      variant portant un token. Le filet est posé au bon endroit et n'est pas
+      encore alimenté ; un scénario qui lie des variables en profitera sans
+      rien ajouter.
+      *Ce que la tâche NE fait pas, et pourquoi :* `validerGrapheDesContrats`
+      répond sur un ENSEMBLE de contrats co-localisés, et le moteur en fabrique
+      un par scénario. Le lancer ici accuserait chaque contrat composé d'une
+      dépendance sans contrat voisin — un constat sur le montage du test, pas
+      sur le moteur. Cette question reste chez le consommateur.
+      *Coût de forme :* les lecteurs se publient en JavaScript sans
+      déclarations, et `lois.ts` est du TypeScript. Une déclaration locale
+      (`tests/lecteurs-du-kit.d.ts`) décrit les deux fonctions appelées. Elle ne
+      peut pas dériver en silence : ces deux fonctions sont exécutées à chaque
+      `npm test`, donc un renommage côté kit casse l'exécution et pas seulement
+      la compilation.
+      *Énoncé d'origine, conservé :*
       `tests/lois.ts:367-379` valide déjà chaque contrat fabriqué contre le
       schéma via Ajv. Y ajouter la validation complète du kit couvre ce que le
       schéma ne sait pas prouver : les renvois internes et la forme des
@@ -616,7 +645,8 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       *Garde-fou :* quand le moteur produit une forme que le validateur refuse,
       la correction la plus rapide est la mauvaise. **Un assouplissement du
       validateur qui accompagne un changement de moteur exige un test de refus
-      sur l'ancienne forme.**
+      sur l'ancienne forme.** Il est recopié dans l'en-tête de
+      `verifierLeLecteur`, là où il se jouera.
       *Limite :* ces tests n'exercent que des contrats synthétiques. Les quatre
       contrats réels du corpus restent le seul contact avec de vraies données
       Figma.
@@ -635,6 +665,15 @@ plan existe pour qu'il ne se rejoue jamais à la main.
 - [ ] **T2.7 — Dédupliquer la regex de forme d'une référence.**
       `references-token.mjs:15` et `tokens.ts:22`. Mineur : deux copies
       identiques dont la divergence produirait un refus, pas une perte.
+      **Elles sont TROIS, pas deux — trouvé en exécutant T2.5.**
+      `validation-contrat.mjs:201` en porte une copie anonyme, `estReferenceToken`,
+      et c'est la seule des trois qui décide vraiment : c'est elle qui refuse un
+      contrat, à `:833` et à dix autres sites. Les deux copies que le plan citait
+      sont maintenant dans le même paquet, la troisième aussi — la déduplication
+      n'attend donc plus rien. Ce que la troisième copie change au risque : une
+      divergence entre elle et `REFERENCE` ne produirait pas un refus mais un
+      **désaccord** entre « ce contrat est valide » et « ce token existe-t-il »,
+      et ce désaccord-là est muet.
 
 - [ ] **T2.8 — Migrer le Playground sur le kit.**
       *Rétabli : la v4 avait perdu cette tâche.* Elle n'est pas optionnelle —

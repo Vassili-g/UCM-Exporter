@@ -24,7 +24,12 @@ import exporterLeComposant, {
   mergeWrapperProps,
 } from '../src/contract/exportComponent';
 import { collectTokenReferences } from '../src/variables';
-import { verifierLaSerialisation, verifierLeSchema, verifierLesLois } from './lois';
+import {
+  verifierLaSerialisation,
+  verifierLeLecteur,
+  verifierLeSchema,
+  verifierLesLois,
+} from './lois';
 import type { ContractProp } from '@ucm-kit/core/format';
 
 /**
@@ -42,6 +47,7 @@ async function handleExportComponent() {
   const contrat = JSON.parse(resultat.content);
   verifierLesLois(contrat, 'sortie du moteur');
   verifierLeSchema(contrat, 'sortie du moteur');
+  verifierLeLecteur(contrat, 'sortie du moteur');
   verifierLaSerialisation(resultat.content, 'sortie du moteur');
   return resultat;
 }
