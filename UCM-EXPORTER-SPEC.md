@@ -1519,13 +1519,31 @@ le plugin lit le blob Git correspondant avant de comparer, afin de ne pas
 créer une PR inchangée. Au-delà de la limite GitHub de 100 Mo, il n'essaie pas
 de créer une branche et conserve directement le téléchargement local.
 
-**Le corps de la pull request porte les avertissements de l'export, et rien
-d'autre.** C'est la page que le plugin ouvre juste après l'export : le designer
+**Le corps de la pull request a deux zones, et la frontière compte.**
+L'en-tête dit l'IDENTITÉ de ce qui est déposé : le chemin du fichier, et — pour
+un contrat seulement — le schéma qu'il porte. La liste qui suit ne porte que des
+GESTES à faire dans Figma.
+
+C'est la page que le plugin ouvre juste après l'export : le designer
 y lit ce qui n'a pas pu être décrit sans ouvrir le JSON ni le journal du plugin.
 Les deux artefacts sont couverts par le même mécanisme — `tokens.json` n'a aucun
 champ où transporter les siens, là où un contrat les garde aussi dans
 `meta.diagnostics`. Un avertissement ne bloque jamais : seules les préconditions
 arrêtent un export (cf. [CONCEPT.md](./CONCEPT.md)).
+
+**Le schéma annoncé est lu DANS le fichier déposé, jamais dans la constante du
+plugin.** `Schéma de contrat : 12.0` est le seul champ qui décide si le fichier
+entier est lisible par le repository — hors de la fenêtre que ses lecteurs
+supportent, le contrat est refusé en bloc —, et il est enfoui au milieu d'un
+diff de plusieurs milliers de lignes. Sur la couverture, celui qui décide de
+fusionner le voit sans ouvrir le JSON, et les pull requests d'export restées
+ouvertes disent lesquelles précèdent une bascule de version. Annoncer la
+constante du plugin ferait de cette ligne un énoncé sur le PLUGIN déguisé en
+énoncé sur le FICHIER : deux autorités pour la même chose, dont le désaccord
+serait muet. `tokens.json` n'en reçoit aucune — c'est un arbre DTCG, il ne porte
+aucun schéma UCM. Un contrat dont la version est illisible la voit annoncée
+telle quelle, et un contrat qui n'en porte aucune le dit : le contrôle du
+repository le refusera pour champ absent, et la cause se lit ici en une ligne.
 
 Chaque avertissement nomme l'élément Figma concerné avec l'intitulé que Figma
 affiche, dit ce qui manquera au développeur, puis le geste à faire dans Figma.

@@ -49,7 +49,7 @@
 import { basename, join } from "node:path";
 import { readFileSync } from "node:fs";
 
-import { CONFIGURATION_PAR_DEFAUT } from "@ucm-kit/core/format";
+import { CONFIGURATION_PAR_DEFAUT, versionDeContrat } from "@ucm-kit/core/format";
 
 import { avertissementsCorrigeables, resumeTerminalAvertissements, sectionAvertissementsExport } from "./avertissements-export.mjs";
 import { aUnEcartDeParite, resumeTerminalEcartsDeParite, sectionEcartsDeParite } from "./diagnostic-parite.mjs";
@@ -139,7 +139,11 @@ function analyser(chemin, contexte, erreursGraphe = []) {
     return { ...vide, illisible: true };
   }
 
-  const version = contrat?.meta?.contractVersion;
+  // La version se lit par la règle du format, pas par un accès écrit ici : le
+  // champ qui la porte est le même que celui que le producteur annonce dans le
+  // corps de sa pull request (T4.2), et deux idées de « où vit la version »
+  // divergeraient sans que rien ne le dise.
+  const version = versionDeContrat(contrat);
   // On garde le SENS de l'écart, pas seulement son existence : c'est lui qui
   // dit à qui appartient le geste correctif.
   const verdict = verdictDeVersion(version);
@@ -165,7 +169,10 @@ function analyser(chemin, contexte, erreursGraphe = []) {
   // geste et le bon responsable, pas la liste de ses champs manquants — que ce
   // validateur-ci n'a de toute façon pas le droit de dresser pour une grammaire
   // qu'il ne lit pas.
-  if (versionIncompatible && typeof version === "string" && version !== "") {
+  //
+  // `versionDeContrat` rend `null` dans ce cas exact — champ absent, vide, ou
+  // d'un autre type —, ce qui est aussi la condition testée ici.
+  if (versionIncompatible && version !== null) {
     return { ...vide, version: versionIncompatible };
   }
 

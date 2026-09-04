@@ -33,7 +33,7 @@
  * consommateur qui l'exécute avec Node. `paquetPublie.test.mjs` le vérifie.
  */
 export type * from './types.js';
-export { CONTRACT_VERSION } from './version.js';
+export { CONTRACT_VERSION, versionDeContrat } from './version.js';
 export { codeIdentifier, normalizeName, tokenCssVariable } from './names.js';
 export { TOKEN_REFERENCE, isTokenReference, refPath, toRef } from './references.js';
 export { comparerIdentiteDeContrat } from './identite.js';

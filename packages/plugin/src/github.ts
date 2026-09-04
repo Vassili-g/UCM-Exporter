@@ -2,7 +2,12 @@
  * Client GitHub REST minimal pour déposer un artefact Unified Component Exporter dans une
  * branche dédiée puis ouvrir une PR. Aucun PAT n'est logué ni renvoyé à l'UI.
  */
-import { NOM_CONFIGURATION, comparerIdentiteDeContrat, configurationDepuisJson } from '@ucm-kit/core/format';
+import {
+  NOM_CONFIGURATION,
+  comparerIdentiteDeContrat,
+  configurationDepuisJson,
+  versionDeContrat,
+} from '@ucm-kit/core/format';
 
 import type { GithubConfig } from './config';
 import { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
@@ -206,6 +211,66 @@ function sansLienAutomatique(warning: string): string {
 }
 
 /**
+ * Ce que le dépôt reçoit, annoncé sur sa page de couverture : le schéma de
+ * contrat que porte l'artefact déposé (T4.2).
+ *
+ * **À quoi sert un numéro sur cette page.** C'est le seul champ qui décide si
+ * le fichier ENTIER est lisible par ce repository : hors de la fenêtre que ses
+ * lecteurs supportent, le contrat est refusé en bloc, quel que soit son
+ * contenu. Or il est enfoui au milieu d'un diff de plusieurs milliers de
+ * lignes, où personne ne va le chercher. Sur la couverture, celui qui décide de
+ * fusionner voit quel schéma vient d'arriver sans ouvrir le JSON — et le jour
+ * où le repository change de version, les pull requests d'export restées
+ * ouvertes disent lesquelles ont été produites avant la bascule.
+ *
+ * **Le numéro est lu DANS le fichier, jamais dans `CONTRACT_VERSION`.**
+ * L'artefact et la constante du plugin sont deux autorités pour la même chose ;
+ * annoncer la constante ferait de ce corps de PR un énoncé sur le PLUGIN
+ * déguisé en énoncé sur le FICHIER, et le lecteur croirait la couverture plutôt
+ * que le contenu. C'est le défaut que T4.1, T4.3 et T3.4 ont chacune trouvé
+ * ailleurs — deux autorités pour la même chose, dont le désaccord est muet.
+ *
+ * **`tokens.json` n'en reçoit aucune, et ce n'est pas un oubli.** C'est un
+ * arbre DTCG, pas un contrat : il ne porte aucun schéma UCM. Lui en annoncer un
+ * — fût-ce celui du plugin — inventerait une version que le fichier ne contient
+ * pas.
+ *
+ * **Un contrat sans version lisible le dit.** Le plugin en écrit toujours une,
+ * donc ce cas ne vient pas de lui ; il vient d'un artefact produit ailleurs, et
+ * le contrôle du repository le refusera alors pour champ absent — un verdict
+ * dont la cause se lit ici en une ligne au lieu de se chercher dans le rapport.
+ * Ce n'est pas un cri de loup : la ligne ne s'écrit que dans un cas réellement
+ * fautif.
+ *
+ * **Pourquoi ceci n'est pas une note au sens de la règle voisine.** Une note
+ * est un CONSTAT sur le contenu, dont la conclusion est « rien à faire », et
+ * l'admettre dans la liste apprendrait au designer que cette liste se survole.
+ * Le schéma n'est pas un constat : c'est l'IDENTITÉ de ce qui est déposé, au
+ * même titre que le chemin du fichier juste au-dessus. Il vit donc dans
+ * l'en-tête, et la liste des gestes à faire reste intacte.
+ */
+function ligneDeSchema(artifact: RepositoryArtifact): string[] {
+  if (artifact.kind !== 'component') return [];
+
+  let contrat: unknown;
+  try {
+    contrat = JSON.parse(artifact.content);
+  } catch {
+    // Un artefact illisible n'a pas de version : le dire est exactement ce que
+    // la branche ci-dessous écrit, et lever ici ferait échouer un export pour
+    // une ligne de couverture.
+    contrat = null;
+  }
+
+  const version = versionDeContrat(contrat);
+  return [
+    version === null
+      ? 'Schéma de contrat : absent du fichier — le contrôle du repository refusera ce contrat.'
+      : `Schéma de contrat : \`${version}\``,
+  ];
+}
+
+/**
  * Corps de la pull request ouverte pour un export.
  *
  * Les avertissements y figurent parce que c'est la page que le plugin ouvre
@@ -223,9 +288,20 @@ function sansLienAutomatique(warning: string): string {
  * autres non plus. Les notes restent dans `meta.diagnostics`, où un consommateur
  * du contrat les trouve, et dans le journal du plugin, où le designer les a sous
  * les yeux pendant l'export.
+ *
+ * **Deux zones, et la frontière compte.** L'en-tête dit l'IDENTITÉ de ce qui
+ * est déposé — le chemin, et le schéma de contrat quand le fichier en porte
+ * un (`ligneDeSchema`, T4.2). La liste qui suit ne porte que des GESTES. Un
+ * constat sans geste n'entre ni dans l'une ni dans l'autre.
  */
-export function pullRequestBody(path: string, warnings: string[]): string {
-  const header = `Export automatique depuis Figma.\n\nFichier : \`${path}\``;
+export function pullRequestBody(path: string, artifact: RepositoryArtifact): string {
+  const warnings = artifact.warnings;
+  const header = [
+    'Export automatique depuis Figma.',
+    '',
+    `Fichier : \`${path}\``,
+    ...ligneDeSchema(artifact),
+  ].join('\n');
   if (warnings.length === 0) {
     return [header, '', `Aucun avertissement d'export.`].join('\n');
   }
@@ -516,7 +592,7 @@ export async function publishArtifact(
         title: `Unified Component Exporter: export ${artifact.filename}`,
         head: branch,
         base: config.baseBranch,
-        body: pullRequestBody(path, artifact.warnings),
+        body: pullRequestBody(path, artifact),
       }),
     });
   } catch (error) {
