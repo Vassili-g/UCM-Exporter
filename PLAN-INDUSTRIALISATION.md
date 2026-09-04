@@ -1844,11 +1844,20 @@ normalisations d'antislash et quatre retraits de BOM.
 commentaires, les messages du rapport et les noms de symboles des validateurs
 (`champsInvalidesDuContrat`, `verdictDeVersion`, `bilanEstBloquant`) ne sont pas
 traduits. Cette phase est donc un tri, pas une traduction.
-*Le seul événement qui rouvrirait la question* est une publication publique du
-plugin sur la Community (D6, toujours ouverte) : elle mettrait mécaniquement le
-projet devant un public non francophone. Les noms de symboles d'un paquet npm
-publié étant quasi irréversibles, c'est à ce moment-là, et pas après, qu'il
-faudrait trancher.
+*L'événement qui devait rouvrir la question a eu lieu, et la réponse est la
+même.* La v5 écrivait qu'une publication publique du plugin sur la Community
+(D6) mettrait mécaniquement le projet devant un public non francophone, et que
+les noms de symboles d'un paquet npm publié étant quasi irréversibles, c'est à
+ce moment-là — pas après — qu'il faudrait trancher. **T4.4 a publié, et la
+question a été posée le 5 septembre 2026 : le français reste, et le choix est
+assumé plutôt que subi.** Ce qui le rend tenable est que les deux surfaces
+n'ont pas le même public : le paquet npm est lu par le repository consommateur,
+que le projet connaît, tandis que le plugin publié s'adresse de fait à des
+designers francophones. Le jour où un consommateur non francophone existera,
+c'est lui qui rouvrira la question, avec un cas réel plutôt qu'une hypothèse —
+et le coût du renommage aura monté, ce qu'il faut savoir en décidant ceci.
+Cette phase reste donc un tri, et ce paragraphe cesse d'être une condition
+suspendue : c'est une décision datée.
 
 ### 8.1 — Ce qui est mal rangé, vérifié
 

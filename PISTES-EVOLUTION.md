@@ -161,12 +161,17 @@ lui barre pas la route :** le calcul de l'URL est laissé en place dans
 `buildMeta`, et le corps de la pull request rend l'URL en lien dès qu'un contrat
 en porte une.
 
-**Ce que la décision rouvre, et qui n'est pas technique.** Publier sur la
-Community met mécaniquement le projet devant un public non francophone. La
-Phase 8 du plan d'industrialisation a écrit que c'est le SEUL événement qui
-rouvre la question de la langue, et qu'il faut trancher à ce moment-là — les
-noms de symboles d'un paquet npm publié étant quasi irréversibles. La question
-est donc posée, et elle n'est pas tranchée ici.
+**Ce que la décision rouvrait, et qui n'était pas technique — tranché le même
+jour.** Publier sur la Community met le projet devant un public non
+francophone, et la Phase 8 du plan d'industrialisation avait fait de cet
+événement précis le seul qui rouvre la question de la langue, à trancher à ce
+moment-là parce que les noms de symboles d'un paquet npm publié sont quasi
+irréversibles. **Le français reste**, et le choix est assumé plutôt que subi :
+le paquet npm est lu par un repository consommateur que le projet connaît, le
+plugin publié s'adresse de fait à des designers francophones, et les deux
+surfaces n'ont donc pas le même public. Le jour où un consommateur non
+francophone existera, il rouvrira la question avec un cas réel — à un coût de
+renommage plus élevé, ce qui fait partie de ce qui a été accepté ici.
 
 ### Diff sémantique
 
