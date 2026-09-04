@@ -467,7 +467,9 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       seul endroit du plan où D5 (« une seule autorité pour les conventions
       d'identifiant ») se réalise concrètement.
       *Deux franchissements à prévoir :* `run-tests.mjs:27` importe
-      `echecs-de-tests.mjs` (déplacé par T5.2) et `check.mjs:19` importe
+      `echecs-de-tests.mjs` — dont T5.2 ne déplace que la moitié RAPPORT,
+      `echecsDuTap` restant ici avec son appelant (corrigé le 5 septembre
+      2026) — et `check.mjs:19` importe
       `diagnostic-markdown.mjs` (déplacé ici). Le lanceur de tests du repo hôte
       dépendra donc du kit.
       *Volumétrie corrigée :* 2 793 lignes pour les modules listés, et **2 061**
@@ -662,6 +664,19 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       une fois et a débloqué l'OIDC ; ce qui bloque maintenant est ailleurs, et
       n'a pas encore été cherché. Tant que ce n'est pas fait, chaque coupure
       kit ↔ consommateur coûte une publication manuelle.
+      **Corrigé le 5 septembre 2026 : il n'y avait rien à chercher.** Le workflow
+      n'était pas bloqué, et son propre journal le disait — l'exécution qui a
+      suivi la recréation de l'éditeur de confiance est passée de 403 à **409
+      « cette version existe déjà »**. Un 409 signifie que npm a accepté
+      l'identité OIDC et n'a refusé QUE le numéro de version. Il ne manquait donc
+      qu'une montée de version avant le `workflow_dispatch`. 0.1.4 est publiée,
+      et le registre porte 0.1.0 à 0.1.4. *La leçon est celle que le workflow
+      porte déjà :* quatre états successifs de diagnostic écrits chacun comme un
+      fait avaient rendu le dernier — le bon — illisible.
+      *Ce qui reste ouvert, et c'est une précondition de T3.4 :* `publish.yml`
+      ne publie que `--workspace @ucm-kit/core`. `@ucm-kit/cli` rend 404 sur le
+      registre et épingle `@ucm-kit/core@0.1.4` ; il lui faut sa propre étape de
+      publication avant que `npx @ucm-kit/cli` veuille dire quelque chose.
       `lireApiPublique` rend une Map vide sans TypeScript (`parite.mjs:231`) et
       `cheminDuComposant` cherche un `.tsx` en dur (`:42`), d'où
       `implementationAbsente: true` (`:309`) pour tout contrat d'un repo
@@ -976,21 +991,73 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       Le LF sert à la propreté du diff Git.
 
 - [ ] **T3.3 — `ucm check`. ⚠ Bloquée par T5.2 — trou de l'ordre d'exécution,
-      mesuré le 4 septembre 2026.** L'orchestration du contrôle vit dans
-      `Playground/scripts/check-contract.mjs` et ne rejoint le kit qu'en T5.2 —
-      Phase 5, que l'étape 11 place APRÈS la Phase 3. En écrire une seconde dans
-      le CLI produirait deux rapports qui divergent, et le désaccord serait muet :
-      la maladie exacte que T2.7, T6.0 et T2.6 ont soignée ailleurs.
-      *Conséquence en cascade, assumée :* `ucm init` (T3.2) n'écrit pas de
-      workflow, un workflow appelant une commande inexistante installant une CI
-      rouge dans un repo neuf — au moment exact où son propriétaire n'a aucun
-      moyen de savoir si la faute vient de lui. L'installation est incomplète et
-      le dit.
-      *Le déblocage est T5.2, pas un contournement.* Deux ordres sont possibles
-      et le choix appartient au mainteneur : remonter T5.2 avant T3.3, ou
-      déplacer l'orchestration dans le CLI plutôt que dans le kit — ce qui
-      rouvrirait la question de savoir si le rapport est une affaire de format
-      ou une affaire d'outil.
+      mesuré le 4 septembre 2026, TRANCHÉ le 5.** L'orchestration du contrôle
+      vit dans `Playground/scripts/check-contract.mjs` et ne rejoint le kit
+      qu'en T5.2 — Phase 5, que l'étape 11 place APRÈS la Phase 3. En écrire une
+      seconde dans le CLI produirait deux rapports qui divergent, et le désaccord
+      serait muet : la maladie exacte que T2.7, T6.0 et T2.6 ont soignée
+      ailleurs.
+      *Conséquence en cascade, assumée jusqu'au déblocage :* `ucm init` (T3.2)
+      n'écrit pas de workflow, un workflow appelant une commande inexistante
+      installant une CI rouge dans un repo neuf — au moment exact où son
+      propriétaire n'a aucun moyen de savoir si la faute vient de lui.
+      L'installation est incomplète et le dit.
+
+      **Décision : T5.2 est remontée avant T3.3, et l'orchestration va dans le
+      kit.** Les deux sorties n'étaient pas équivalentes, et la mesure le dit.
+      1. **Le réordonnancement ne coûte rien, parce que le blocage n'est pas
+         d'ordre mais de DOMICILE.** Le travail réel est d'extraire
+         l'orchestration du Playground — racine en paramètre au lieu d'être
+         déduite de la position du script, chemins pris dans la configuration au
+         lieu de `join(racine, "src")` en dur, aucune sortie de processus, aucune
+         écriture de fichier. Ce geste est **identique** quelle que soit la
+         destination : le `package.json` d'arrivée est la seule différence entre
+         les deux options. « Remonter T5.2 » n'est donc pas un délai, c'est le
+         nom de la tâche qui débloque T3.3 dans les deux scénarios.
+      2. **La question « le rapport est-il du format ou de l'outil » est déjà
+         tranchée dans le code, et le kit l'a gagnée.** `diagnostic-markdown.mjs`
+         (`rendreDiagnostic`, `libelleNombre` — la grammaire de tout le rapport)
+         et `avertissements-export.mjs` (`sectionAvertissementsExport` ET
+         `resumeTerminalAvertissements` — une section markdown complète avec son
+         résumé terminal) vivent dans `packages/kit/src/lecteurs` et sont partis
+         sur npm dès 0.1.0. Le rapport est déjà à moitié dans le kit. Mettre
+         l'autre moitié dans le CLI ne rouvrirait pas la question : cela
+         SCINDERAIT le rapport entre deux paquets, la grammaire d'un côté et les
+         sections de l'autre.
+      3. **Le CLI forcerait à inventer le chargement d'adaptateur tout de
+         suite.** La couture de T2.3 tient en trois fonctions — `lireApiPublique`,
+         `nomInterfaceAttendue`, `ecartsDeParite` — et `pariteEnEcart` ne juge
+         qu'une FORME, sans un mot de TypeScript. Orchestration dans le kit : le
+         Playground garde un script court qui l'importe et lui PASSE son
+         adaptateur, pendant que `ucm check` appelle la même orchestration sans
+         adaptateur — le noyau utile seul, règle de tri n° 3 littéralement.
+         Orchestration dans le CLI : le Playground doit appeler un BINAIRE, et
+         on n'injecte pas une fonction dans un sous-processus. Il faudrait donc
+         un mécanisme de chargement d'adaptateur (champ de configuration,
+         `import()` dynamique) que T3.1 a explicitement refusé d'ouvrir et que
+         T6.3 doit décider. Sans lui, le Playground perd sa parité le jour de la
+         bascule.
+      4. **Toute la Phase 2 a été exécutée VERS le kit.** T2.6 le dit en
+         justifiant son propre travail : « ces modules rejoindront le kit en
+         T5.2 et seront alors imprimés par des repos dont aucun n'écrira de
+         `.tsx` » — et `registre-portable.test.mjs` existe pour tenir cette
+         promesse-là. T2.3 a coupé la parité sur la ligne kit/adaptateur, T2.7 et
+         T6.0 ont établi que l'autorité unique se met dans le kit. L'autre option
+         rendrait ces quatre tâches partiellement inutiles.
+      5. **L'ordre accidentel a rendu T5.2 MOINS chère qu'à la rédaction.** T3.1
+         est faite : `lireConfiguration` existe dans le kit. Le plan prévoyait
+         T5.2 avant la Phase 3, ce qui aurait déplacé le rapport avec `src/` en
+         dur puis obligé à y revenir. Déplacé maintenant, il lit les chemins de
+         configuration du premier coup. L'écart à l'ordre prévu joue ici en
+         faveur du projet.
+      6. **Ce n'est pas une tâche qui est bloquée, c'est une chaîne.** T7.1 à
+         T7.5 exigent de lancer un contrôle dans un repo tiers, ce qu'aucun code
+         ne sait faire aujourd'hui. **Toute la Phase 7 restante dépend de T3.3,
+         donc de T5.2** — l'étape 11 ne le disait pas, et c'est le critère de
+         réussite du plan qui est derrière.
+      *Le filet est en place et c'est maintenant qu'il sert :* les sept scénarios
+      de T5.1 ont pour raison d'être annoncée « D1, T2.3, T2.4, T2.6 et T5.2 ».
+      Ils ne rajeuniront pas.
       *Le code de sortie 1 est déjà réservé* dans le CLI : il désignera toujours
       « des contrôles ont échoué » et jamais « je n'ai pas compris », qui sort
       en 2.
@@ -1106,10 +1173,53 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       `check-contract.mjs` fait 663 lignes et n'a **aucun test**, ni direct ni
       transitif. C'est le morceau le plus lu par des humains et le plus
       difficile à corriger une fois publié.
-- [ ] **T5.2 — Déplacer le rapport dans le kit**, allégé de D1 et D2, avec les
-      modules qui l'accompagnent : `verdict-bilan.mjs`, `perimetre-rapport.mjs`,
-      `echecs-de-tests.mjs`, `diagnostic-tokens.mjs` (allégé),
-      `diagnostic-parite.mjs` (scindé par T2.3).
+- [ ] **T5.2 — ⚠ Déplacer le rapport dans le kit. Remontée avant T3.3**, qu'elle
+      débloque, et avant le reste de la Phase 7, qui en dépend par T3.3 (voir la
+      décision écrite en T3.3).
+      Allégé de D1 et D2, avec les modules qui l'accompagnent :
+      `verdict-bilan.mjs`, `perimetre-rapport.mjs`, `diagnostic-tokens.mjs`
+      (allégé), `diagnostic-parite.mjs` (scindé par T2.3), et **la moitié** de
+      `echecs-de-tests.mjs` — voir ci-dessous.
+      **C'est un DÉPLACEMENT, pas une réécriture** (règle n° 2). Les sept
+      scénarios de caractérisation de T5.1 sont le filet : un scénario qui change
+      est un changement à assumer dans le même commit, jamais une assertion à
+      affaiblir pour retrouver du vert.
+      **Deux corrections mesurées le 5 septembre 2026, avant exécution.**
+
+      *a) La liste ci-dessus était fausse sur `echecs-de-tests.mjs`, et T2.6
+      avait raison contre elle.* T2.6 l'a classé parmi les trois ADAPTATEURS qui
+      gardent le vocabulaire de stack ; le plan le rangeait quand même parmi les
+      modules à déplacer. Le code donne raison à T2.6 pour une moitié seulement,
+      et la coupure ne passe pas à la frontière du fichier mais **à
+      l'intérieur** — exactement comme T2.3 l'a fait pour la parité :
+
+      | Ce qu'il contient | Où ça va | Pourquoi, vérifié |
+      |---|---|---|
+      | `echecsDuTap` | reste adaptateur | analyse la sortie TAP de `node --test` ; seul appelant `run-tests.mjs` |
+      | `composantTeste`, `repartirEchecs` | reste adaptateur | `/([^/]+)\.test\.tsx$/` en dur (`:91`), tri sur `AssertionError` |
+      | `diagnosticEchecsDeTests`, `resumeTerminalEchecsDeTests` | kit | vocabulaire du rapport, aucune stack |
+
+      Le kit reçoit donc des échecs **déjà catégorisés** et ne sait rien de TAP
+      ni de `.tsx`. Sans cette précision il hériterait d'un analyseur TAP, et la
+      règle « le noyau doit être utile seul » retomberait à l'endroit même où
+      T2.3 l'a relevée.
+
+      *b) `publier()` ne part pas avec le reste — et c'est la réponse exacte à
+      « format ou outil ».* Le kit rend `{ bilans, rapport, bloquant }` et
+      **n'écrit rien** : ni fichier, ni `GITHUB_STEP_SUMMARY`, ni `process.exit`.
+      La destination du rapport appartient à l'outil — `--report <chemin>` dans
+      le CLI (T3.3 l'a déjà décidé en supprimant la variable `CI` magique), le
+      script du Playground pour lui-même. **Le CONTENU du rapport est du
+      format ; sa PUBLICATION est de l'outil.** Cette ligne rend la question
+      décidable au lieu de philosophique, et elle est cohérente avec ce qui est
+      déjà publié dans le kit.
+
+      *c) Ce que le déplacement doit corriger au passage, parce que c'est ce qui
+      le rend appelable :* la racine devient un paramètre au lieu d'être déduite
+      de la position du script, et les chemins viennent de `lireConfiguration`
+      (T3.1) au lieu de `join(racine, "src")` et `src/tokens/tokens.json` en dur.
+      Le harnais de T5.1 recopie `scripts/` dans un repo jouet **uniquement** à
+      cause de cette déduction : il se simplifie avec cette tâche.
 - [ ] **T5.3 — Documenter les variables d'environnement**, sans les figer.
       *Réduit :* geler une interface publique avant qu'une CI tierce ne la lise,
       c'est le défaut que T5.5 diagnostique justement ailleurs.
@@ -1591,7 +1701,16 @@ Elles sont corrigées ici.
     couverture — elle installe une assertion sur le chemin d'appel, et aucun
     outil de couverture n'existe dans ce monorepo. L'étape 2 de T2.1b porte
     désormais la mesure, par mutation.
-11. **Phase 3**, **T4.1 et T4.3**, reste de la Phase 7, **Phase 5**, puis les
+11. **T5.2 puis T5.4**, avant la Phase 3. *Corrigé le 5 septembre 2026 :* la v5
+    plaçait toute la Phase 5 après la Phase 3, alors que T3.3 a besoin de
+    l'orchestration que T5.2 déplace. Le trou était plus large qu'une tâche —
+    T7.1 à T7.5 exigent de lancer un contrôle dans un repo tiers, donc
+    dépendent de T3.3, donc de T5.2. La décision et ses six mesures sont écrites
+    en T3.3.
+12. **Reste de la Phase 3** — T3.3, puis la moitié manquante de T3.2 (le
+    workflow, portant les filets de T5.4, le calcul du sha restant côté CI),
+    puis T3.4.
+13. **T4.1 et T4.3**, reste de la Phase 7, reste de la Phase 5, puis les
     Phases 6 et 8.
 
 ### Écart entre cet ordre et ce qui a été exécuté
