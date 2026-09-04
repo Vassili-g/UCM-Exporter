@@ -1015,6 +1015,16 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       délibérément — c'est le « il était rouge, il est vert » que cette tâche
       existe pour rendre possible. **T6.0 devient prioritaire par ce seul
       fait :** une CI rouge qu'on apprend à ignorer ne dit plus rien.
+      *Un défaut trouvé en la poussant, et il est de la famille des deux de la
+      Phase 2 :* le test était rouge en local sur les quatre virgules, et rouge
+      en CI sur un `ENOENT`. `npm run check` générait `src/generated/tokens.css`
+      APRÈS avoir lancé les tests ; le dossier est ignoré par git, donc présent
+      sur le poste du mainteneur et absent d'un checkout neuf. Un contrôle rouge
+      pour la mauvaise raison ne vaut pas mieux qu'un contrôle absent — il fait
+      lire un défaut d'installation là où il y a un défaut de projection.
+      Corrigé en ordonnant `tokens` avant `test`, comme `predev` et `prebuild`
+      le faisaient déjà. **La leçon se répète une troisième fois :** ce qui est
+      vrai sur le poste du mainteneur ne dit rien de ce qui est vrai ailleurs.
       *Créée le 4 septembre 2026. À exécuter tout de suite : elle ne
       dépend d'aucune autre tâche, et elle vit chez le consommateur.*
       Pour chaque chemin de token de `tokens.json`, passer ce chemin dans
