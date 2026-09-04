@@ -2,7 +2,17 @@
  * Vérifie que les variables reliées aux text styles ont une unité compatible
  * avec leur propriété CSS. Le contrat connaît les références ; ce module lit
  * le type DTCG réel, sans deviner à partir du nom du token.
+ *
+ * Ce qu'est une feuille DTCG, et comment un chemin s'extrait d'une référence,
+ * se lisent dans `tokens-dtcg.mjs` : une seule définition, pour que le contrôle
+ * de type et le contrôle d'existence ne puissent pas juger deux arbres
+ * différents à partir du même fichier.
  */
+
+import {
+  indexerTokensDtcg,
+  cheminDeReference,
+} from "./tokens-dtcg.mjs";
 
 const TYPES_TYPOGRAPHIQUES = {
   fontFamily: ["string"],
@@ -17,28 +27,6 @@ const TYPES_TYPOGRAPHIQUES = {
 
 function estObjet(valeur) {
   return Boolean(valeur) && typeof valeur === "object" && !Array.isArray(valeur);
-}
-
-function estFeuille(valeur) {
-  return estObjet(valeur) && typeof valeur.$type === "string";
-}
-
-function indexerFeuilles(valeur, chemin = [], index = new Map()) {
-  if (!estObjet(valeur)) return index;
-  if (estFeuille(valeur)) {
-    index.set(chemin.join("."), valeur);
-    return index;
-  }
-  for (const [cle, enfant] of Object.entries(valeur)) {
-    indexerFeuilles(enfant, [...chemin, cle], index);
-  }
-  return index;
-}
-
-function cheminDeReference(reference) {
-  return typeof reference === "string" && /^\{[^{}\s]+\}$/.test(reference)
-    ? reference.slice(1, -1)
-    : null;
 }
 
 /** Résout uniquement le TYPE d'une chaîne d'alias, jamais sa valeur. */
@@ -61,7 +49,7 @@ function feuilleRacine(reference, index) {
  * style 4.6 et les types DTCG de leurs références.
  */
 export function erreursTypesTypographiques(contrat, tokens) {
-  const index = indexerFeuilles(tokens);
+  const index = indexerTokensDtcg(tokens);
   const erreurs = [];
   const styles = estObjet(contrat?.textStyles) ? contrat.textStyles : {};
 

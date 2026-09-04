@@ -57,6 +57,13 @@ export {
 export { REFERENCE, sansEchantillon, collecterReferences } from "./references-token.mjs";
 export { erreursTypesTypographiques } from "./typography-token-types.mjs";
 
+/** Ce que le fichier de tokens DTCG contient, et donc ce qui existe. */
+export {
+  indexerTokensDtcg,
+  cheminDeReference,
+  referencesAbsentes,
+} from "./tokens-dtcg.mjs";
+
 /** Ce que l'export n'a pas su décrire, et comment le dire. */
 export {
   avertissementsCorrigeables,
