@@ -69,7 +69,7 @@ packages/plugin/    Le MOTEUR — extraction Figma. Dépend du kit.
   src/github.ts       Dépôt optionnel par pull request
   manifest.json       Le plugin se charge dans Figma depuis son `dist/`
 
-packages/kit/       Le FORMAT — `@ucm-kit/core`. Ne dépend de personne.
+packages/kit/       Le FORMAT — `@ucm-kit/core`, publié sur npm.
   src/format/         Types, version et règles de nommage, sans Node ni Figma
   scripts/            Génération du schéma depuis `types.ts`
   schema/             Le schéma commité, publié en `@ucm-kit/core/schema`
@@ -79,6 +79,18 @@ packages/kit/       Le FORMAT — `@ucm-kit/core`. Ne dépend de personne.
 La coupure passe entre le FORMAT et le MOTEUR, et dans un seul sens : le plugin
 importe le kit, jamais l'inverse. C'est ce qui rend le kit régénérable et
 publiable seul.
+
+À l'intérieur du kit, une seconde coupure sépare ce qui voyage partout de ce
+qui a besoin de Node : le sous-chemin `format` ne dépend de RIEN — il entre
+dans le bundle du plugin Figma, où `node:fs` n'existe pas, comme dans un
+navigateur —, tandis que les `lecteurs` utilisent `ajv` et `node:fs`. Le paquet,
+lui, dépend donc d'`ajv` ; c'est le sous-chemin qui ne dépend de personne, pas
+le paquet, et confondre les deux est ce que cette architecture existe pour
+empêcher.
+
+```sh
+npm install @ucm-kit/core
+```
 
 Le schéma est publié pour les consommateurs qui ne lisent pas TypeScript et
 pour les éditeurs. Il décrit la forme d’un contrat, pas sa cohérence : les
@@ -128,8 +140,17 @@ normatif, `samples` et `variants[].sample` portent un échantillon de maquette
 n’exige jamais, qui n’avertit de rien et dont le retrait laisse un contrat
 strictement normatif.
 
-Ce repository ne contient aucun artefact de contrat : un `.contract.json` vit
-dans le repository qui le consomme, à côté du code qu’il décrit. Les lois de
-forme sont donc vérifiées sur chaque contrat que le moteur fabrique pendant
-`npm test`, jamais sur un exemplaire gelé. La maturité et les limites restantes
-vivent dans [ROADMAP.md](./ROADMAP.md).
+Le MOTEUR ne se teste sur aucun contrat commité : un `.contract.json` vit dans
+le repository qui le consomme, à côté du code qu’il décrit. Les lois de forme
+sont donc vérifiées sur chaque contrat que le moteur fabrique pendant
+`npm test`, jamais sur un exemplaire gelé — un instantané ne bougeant qu’au
+réexport, une régression ne s’y verrait pas.
+
+Le kit, lui, pose la question inverse et garde un corpus figé de la version
+**précédente** (`packages/kit/fixtures/`) : il doit prouver qu’il lit une
+version que le moteur ne fabrique plus, et l’immobilité est ici la propriété
+recherchée. Ce corpus n’est jamais comparé à une sortie du moteur, jamais
+rafraîchi, et disparaît avec le code de compatibilité qu’il couvre. La règle
+complète et ses bornes vivent dans [AGENTS.md](./AGENTS.md).
+
+La maturité et les limites restantes vivent dans [ROADMAP.md](./ROADMAP.md).
