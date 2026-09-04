@@ -152,6 +152,22 @@ jobs:
       # `@ucm-kit/cli` doit publier aussi : sans lui, `npx @ucm-kit/cli` rend
       # 404 et le workflow que `ucm init` écrit installe une CI qui ne peut pas
       # démarrer. C'est une précondition de T3.4, pas un extra.
+      #
+      # ⚠ **La PREMIÈRE version d'un paquet ne part pas d'ici**, et ce n'est pas
+      # un réglage à trouver : l'entrée d'éditeur de confiance se déclare POUR
+      # UN PAQUET, et un paquet qui n'existe pas sur le registre n'en a pas.
+      # Mesuré le 5 septembre 2026 sur `@ucm-kit/cli@0.1.1` : le tarball se
+      # construit, puis `npm publish` rend ENEEDAUTH — npm ne tente aucun
+      # échange OIDC parce qu'il n'a personne à qui l'opposer. C'est exactement
+      # ce qui s'était passé pour `@ucm-kit/core`, dont les 0.1.0 et 0.1.1 sont
+      # parties à la main avec un code 2FA avant que l'OIDC ne prenne le relais.
+      # La marche à suivre, une fois par NOM de paquet :
+      #   1. `npm publish --workspace <paquet>` depuis un poste, avec 2FA ;
+      #   2. déclarer l'éditeur de confiance sur npm — Organization `Vassili-g`,
+      #      Repository `UCM-Exporter`, Workflow `publish.yml`, aucun
+      #      environnement (l'étape « Identité OIDC » ci-dessus affiche ces
+      #      valeurs, champ par champ, telles que le runner les présente) ;
+      #   3. toutes les versions suivantes partent d'ici.
       - name: Publier ${{ inputs.paquet }}
         env:
           PAQUET: ${{ inputs.paquet }}

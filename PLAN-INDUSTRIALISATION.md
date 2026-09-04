@@ -1125,10 +1125,20 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       **Ce qui reste bloque tout le reste, et c'est une précondition
       d'exécution :** `@ucm-kit/cli` rend 404 sur le registre. Le workflow qu'un
       repo neuf reçoit installe donc une CI qui ne peut pas démarrer, tant que le
-      paquet n'est pas publié. `publish.yml` sait maintenant le publier — il
-      prend le paquet en entrée de son `workflow_dispatch` —, il reste à le
-      lancer. Reste aussi le cas LOCAL, où `npx` exige Node sur le poste : à
-      documenter, pas à outiller.
+      paquet n'est pas publié. Reste aussi le cas LOCAL, où `npx` exige Node sur
+      le poste : à documenter, pas à outiller.
+      **Et une loi trouvée en essayant, le 5 septembre 2026 :** `publish.yml`
+      sait désormais publier le CLI, l'exécution a été lancée, et elle échoue en
+      `ENEEDAUTH` après avoir construit le tarball. La cause n'est pas un réglage
+      manquant : **l'entrée d'éditeur de confiance se déclare POUR UN PAQUET, et
+      un paquet absent du registre n'en a pas.** npm ne tente aucun échange OIDC
+      parce qu'il n'a personne à qui l'opposer. C'est exactement ce qui s'était
+      passé pour `@ucm-kit/core`, dont les 0.1.0 et 0.1.1 sont parties à la main
+      avec un code 2FA — le plan l'avait enregistré comme un incident, c'est une
+      **règle** : *la première version d'un NOM de paquet part toujours à la
+      main, l'éditeur de confiance se déclare ensuite, et toutes les suivantes
+      partent du workflow.* Écrite dans `publish.yml`, avec la marche à suivre en
+      trois pas.
 
 - [X] **T3.5 — `ucm icons`.** *Fait le 4 septembre 2026.* Liste les `figmaName`
       d'icônes que les contrats du repo réclament, **avec les contrats qui les
