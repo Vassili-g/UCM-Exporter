@@ -12,7 +12,7 @@ import test from 'node:test';
 import { extractStructure } from '../src/contract/extractStructure';
 import { extractVariantTokens } from '../src/contract/extractVariantTokens';
 import { mergeIconRules } from '../src/contract/mergeIconRules';
-import { collectTokenReferences } from '../src/variables';
+import { collecterReferences } from '@ucm-kit/core/lecteurs';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
@@ -72,7 +72,7 @@ test('une taille d’icône lue sur toute la matrice puis écartée n’entre pa
   // La taille n'est pas uniforme : le contrat n'en publie aucune sur l'icône.
   assert.equal(icons.star.size, undefined);
 
-  const references = collectTokenReferences({ structure, icons });
+  const references = collecterReferences({ structure, icons });
   assert.ok(references.has('{components.icons.sizes.base}'), 'la taille du variant de référence est citée');
   assert.equal(
     references.has('{components.icons.sizes.lg}'),
@@ -115,7 +115,7 @@ test('un doublon d’axes garde toutes ses couleurs dans la vue exacte', async (
   // contractuelles sans demander un renommage au designer.
   assert.deepEqual(warnings, []);
 
-  const references = collectTokenReferences(variantTokens);
+  const references = collecterReferences(variantTokens);
   assert.equal(
     references.has('{components.button.colors.secondary.background}'),
     false,
@@ -125,7 +125,7 @@ test('un doublon d’axes garde toutes ses couleurs dans la vue exacte', async (
     background: '{components.button.colors.secondary.background}',
   });
   assert.equal(
-    collectTokenReferences(Array.from(tokensByComponent.values()))
+    collecterReferences(Array.from(tokensByComponent.values()))
       .has('{components.button.colors.secondary.background}'),
     true,
   );

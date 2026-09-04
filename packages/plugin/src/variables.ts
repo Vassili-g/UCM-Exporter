@@ -3,7 +3,7 @@
  * commandes du plugin. Principe fondamental : on résout les noms, jamais les
  * valeurs, pour préserver la chaîne d'alias du design system.
  */
-import { isTokenReference, normalizeName } from '@ucm-kit/core/format';
+import { normalizeName } from '@ucm-kit/core/format';
 
 /**
  * Extrait tous les alias de variable d'une liaison, qu'elle soit simple
@@ -37,27 +37,16 @@ export function firstVariableAlias(value: unknown): VariableAlias | null {
  * navigateur atteignent tous les trois. Les appelants l'importent de là.
  */
 
-/**
- * Toutes les références de token contenues dans une valeur, à profondeur
- * quelconque.
+/*
+ * Le relevé des références — `collectTokenReferences` — vivait ici, et c'était
+ * le jumeau exact de `collecterReferences` du kit : même corps, et depuis T2.7
+ * la même définition de ce qu'est une référence. Aucun code de production ne
+ * l'appelait ; seuls les tests s'en servaient comme helper d'assertion. Ils
+ * appellent désormais celui du kit, qui reste le seul.
  *
- * Aucune connaissance de la forme du contrat n'est nécessaire : un champ qui
- * porterait demain une référence est couvert sans toucher à cette fonction.
- * C'est ce qui permet à `tokensUsed` d'être l'index du contrat terminé plutôt
- * qu'un relevé tenu pendant l'extraction — un relevé y ferait entrer les tokens
- * lus pour décider, puis écartés.
+ * L'en-tête invoquait `tokensUsed` pour se justifier. Ce champ n'existe plus
+ * depuis la 11.0 : ni `types.ts` ni aucun contrat du corpus ne le portent.
  */
-export function collectTokenReferences(
-  value: unknown,
-  found = new Set<string>(),
-): Set<string> {
-  if (isTokenReference(value)) found.add(value);
-  else if (Array.isArray(value)) for (const item of value) collectTokenReferences(item, found);
-  else if (value && typeof value === 'object') {
-    for (const item of Object.values(value)) collectTokenReferences(item, found);
-  }
-  return found;
-}
 
 /**
  * Assemble le chemin canonique d'un token : collection + variable, chacun

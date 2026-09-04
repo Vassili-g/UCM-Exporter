@@ -5,7 +5,7 @@ import { extractVariantTypography, textSlots } from '../src/contract/extractVari
 import { extractLayout } from '../src/contract/extractLayout';
 import { findLayoutNode } from '../src/contract/layoutNodes';
 import type { ChildStructure } from '@ucm-kit/core/format';
-import { collectTokenReferences } from '../src/variables';
+import { collecterReferences } from '@ucm-kit/core/lecteurs';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
@@ -146,7 +146,7 @@ test('extractVariantTypography lie les styles à leurs tokens sur chaque variant
   });
   assert.equal(loads.filter((id) => id === 'body-small').length, 1);
   assert.ok(
-    collectTokenReferences(result).has('{typography.body.small.letterspacing}'),
+    collecterReferences(result).has('{typography.body.small.letterspacing}'),
   );
   assert.deepEqual(warnings, []);
 });

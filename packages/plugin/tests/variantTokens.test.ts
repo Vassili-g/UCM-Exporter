@@ -6,7 +6,7 @@ import {
   insertVariantLeaf,
 } from '../src/contract/extractVariantTokens';
 import { renderingSemanticsFor } from '../src/contract/semantics';
-import { collectTokenReferences } from '../src/variables';
+import { collecterReferences } from '@ucm-kit/core/lecteurs';
 
 const colorAlias = { type: 'VARIABLE_ALIAS', id: 'color' } as VariableAlias;
 const widthAlias = { type: 'VARIABLE_ALIAS', id: 'width' } as VariableAlias;
@@ -357,7 +357,7 @@ test('extractVariantTokens ajoute la largeur du stroke à tokensUsed', async () 
     }]]),
     discoveredRoles: { fills: new Map(), strokes: new Map() },
   });
-  assert.deepEqual(Array.from(collectTokenReferences(trees)).sort(), [
+  assert.deepEqual(Array.from(collecterReferences(trees)).sort(), [
     '{components.button.colors.primary.focus.ring}',
     '{layouts.stroke.ring}',
   ]);

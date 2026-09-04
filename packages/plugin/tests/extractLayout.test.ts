@@ -9,7 +9,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractLayout } from '../src/contract/extractLayout';
-import { collectTokenReferences } from '../src/variables';
+import { collecterReferences } from '@ucm-kit/core/lecteurs';
 import { nestedSlotVisibility } from '../src/contract/slotRelations';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
@@ -43,7 +43,7 @@ test('extractLayout relève les dimensions d’un composant plat (sans wrapper)'
 
   assert.equal(layout.layout, 'flex-row');
   assert.equal(layout.gap, '{components.button.sizes.medium.gap}');
-  assert.deepEqual(Array.from(collectTokenReferences(layout)), ['{components.button.sizes.medium.gap}']);
+  assert.deepEqual(Array.from(collecterReferences(layout)), ['{components.button.sizes.medium.gap}']);
   // Invariant SPEC : une dimension non liée avertit, elle ne sort jamais en brut.
   // Rien à publier, donc rien de publié : la clé est absente, pas vide.
   assert.equal(layout.padding, undefined);
@@ -426,7 +426,7 @@ test('un slot à deux textes conserve chaque part pour que variantTypography pui
       figmaLayer: 'Description',
     },
   ]);
-  assert.equal(collectTokenReferences(layout).has('{components.alert.sizes.description-size}'), false);
+  assert.equal(collecterReferences(layout).has('{components.alert.sizes.description-size}'), false);
 });
 
 test('un conteneur publie TOUS ses calques, dessins compris', async () => {
@@ -888,7 +888,7 @@ test('une dimension figée du composant reliée à une variable publie son token
   });
   // Le token entre dans `tokensUsed` comme n'importe quelle référence du
   // contrat, puisqu'elle s'en dérive.
-  assert.ok(collectTokenReferences(layout).has('{components.tilelink.sizes.tile}'));
+  assert.ok(collecterReferences(layout).has('{components.tilelink.sizes.tile}'));
 });
 
 test('les deux axes du composant restent indépendants', async () => {

@@ -32,7 +32,7 @@ const BOUND_FIELDS = ['fills', 'strokes'] as const;
  *
  * Aucun `SceneNode` n'en fait partie : seuls ses identifiants internes peuvent
  * franchir la frontière afin d'être convertis ensuite en chemins publics. Cela
- * évite aussi d'exposer à `collectTokenReferences` les cycles
+ * évite aussi d'exposer au relevé des références les cycles
  * `parent` ↔ `children` de l'arbre Figma.
  */
 export type VariantColor = {

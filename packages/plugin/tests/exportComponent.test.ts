@@ -23,7 +23,7 @@ import exporterLeComposant, {
   componentContractFilename,
   mergeWrapperProps,
 } from '../src/contract/exportComponent';
-import { collectTokenReferences } from '../src/variables';
+import { collecterReferences } from '@ucm-kit/core/lecteurs';
 import {
   verifierLaSerialisation,
   verifierLeLecteur,
@@ -264,7 +264,7 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
     // L'index des tokens a disparu lui aussi : il se dérive du contrat terminé,
     // et le contrat cite bien ce qu'il emploie.
     assert.equal('tokensUsed' in contrat, false);
-    assert.deepEqual(Array.from(collectTokenReferences(contrat)), ['{tokens.sizes.gap}']);
+    assert.deepEqual(Array.from(collecterReferences(contrat)), ['{tokens.sizes.gap}']);
 
     // Ce que l'UI compte et ce que la pull request titre « avertissement » n'est
     // que la part qui demande un geste ; les notes voyagent à côté, sans rien

@@ -8,7 +8,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractStructure } from '../src/contract/extractStructure';
-import { collectTokenReferences } from '../src/variables';
+import { collecterReferences } from '@ucm-kit/core/lecteurs';
 import { extractSizeDimensions, findSizeRepresentatives } from '../src/contract/extractSizes';
 import { electSizeVariantLayoutNodes } from '../src/contract/layoutNodes';
 
@@ -86,7 +86,7 @@ test('extractSizeDimensions couvre chaque valeur de l’axe de tailles', async (
     radius: '{components.button.sizes.big.border-radius}',
   });
   // Quatre dimensions géométriques par taille ; la typographie vit dans les text styles.
-  assert.equal(collectTokenReferences(sizes).size, 8);
+  assert.equal(collecterReferences(sizes).size, 8);
 });
 
 test('les textes ne changent pas la carte des dimensions par taille', async () => {

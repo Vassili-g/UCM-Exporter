@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractIconLayers } from '../src/contract/extractIconLayers';
 import { findLayoutNode } from '../src/contract/layoutNodes';
-import { collectTokenReferences } from '../src/variables';
+import { collecterReferences } from '@ucm-kit/core/lecteurs';
 import { mergeIconRules } from '../src/contract/exportComponent';
 import type { ContractProp } from '@ucm-kit/core/format';
 
@@ -338,7 +338,7 @@ test('extractIconLayers relève la taille liée sur le calque', async () => {
   assert.deepEqual(layers[0].sizes, ['{components.icons.sizes.base}']);
   // La taille d'une icône absente du variant de référence est relevée ici : le
   // contrat la publiera dans `icons`, d'où `tokensUsed` la dérivera.
-  assert.deepEqual(Array.from(collectTokenReferences(layers)), ['{components.icons.sizes.base}']);
+  assert.deepEqual(Array.from(collecterReferences(layers)), ['{components.icons.sizes.base}']);
 });
 
 test('une icône en hug ne réclame aucune variable de taille', async () => {
