@@ -86,9 +86,11 @@ celui qui ouvre `AGENTS.md` et le croit — donc elle ne protège presque person
       lecture prescrit tombe alors sur l'avertissement avant de lire les règles.
 
 - [X] **T0.3 — Retirer chaque balise quand sa contradiction est résolue.**
-      *Mécanisme en place, et déjà exercé une fois :* chaque balise nomme la
-      tâche qui la retire, et celle de `CHANGELOG-CONTRAT.md` est partie avec sa
-      cause dans le commit de la Phase A. Reste sept.
+      *Mécanisme en place, et déjà exercé deux fois :* chaque balise nomme la
+      tâche qui la retire. Celle de `CHANGELOG-CONTRAT.md` est partie avec sa
+      cause dans le commit de la Phase A, celle de `check-contract.mjs` avec D1.
+      **Reste six**, plus les quatre renvois des points d'entrée, qui se
+      déclarent balises et partent avec la dernière.
       Une balise qui survit à sa cause devient elle-même une information
       périmée. Chaque tâche qui corrige une contradiction retire la balise
       correspondante **dans le même commit**, et T8.8 vérifie qu'il n'en reste
