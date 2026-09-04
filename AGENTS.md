@@ -468,20 +468,32 @@ Un changement dans `packages/kit/src/format/types.ts` demande `npm run schema` :
 commité en est dérivé, et `tests/schema.test.ts` refuse la version périmée en
 la régénérant pour la comparer.
 
-**Ce repository ne contient aucun artefact de contrat, et n’en contiendra pas.**
-Un `.contract.json` appartient au repository qui le consomme, à côté du code
-qu’il décrit. Un exemplaire commité ici serait un instantané : il ne bougerait
-qu’au réexport, si bien qu’une régression du moteur ne s’y verrait jamais, et
-un test posé dessus ne prouverait que sa propre immobilité.
+**Le MOTEUR ne se teste sur aucun contrat commité.** Un `.contract.json`
+appartient au repository qui le consomme, à côté du code qu’il décrit. Un
+exemplaire commité pour juger le moteur serait un instantané : il ne bougerait
+qu’au réexport, si bien qu’une régression ne s’y verrait jamais, et un test posé
+dessus ne prouverait que sa propre immobilité. Ce que le moteur fabrique se juge
+au moment du test, dans `packages/plugin/tests/`.
 
-> ⚠ **BALISE-PERIMEE** — la règle vaut toujours pour les tests du moteur, mais
-> elle est trop absolue pour ce que le plan d'industrialisation installe : le
-> kit doit conserver un jeu de contrats de la version **précédente**, que le
-> moteur ne sait plus fabriquer, sans quoi la fenêtre de lecture à deux versions
-> est inobservable. Un instantané figé assumé n'est pas un test de moteur
-> déguisé. Tranché par T7.0 de
-> [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui réécrit cette
-> règle et retire cette balise.
+La règle nommait autrefois « ce repository ». Elle a été écrite quand ce dépôt ne
+portait que le plugin ; depuis T1.2 il en porte deux, et le LECTEUR pose la
+question inverse. `packages/kit/fixtures/contrats/` porte donc un corpus de la
+version **précédente** — quatre contrats 11.0 —, et c’est nécessaire : la fenêtre
+de lecture à deux versions n’est observable qu’à partir de contrats que le moteur
+ne sait plus produire. L’immobilité, qui est le défaut de l’instantané côté
+moteur, est ici la propriété recherchée.
+
+Trois bornes le tiennent, et elles ne sont pas décoratives :
+
+- il n’est **jamais** comparé à une sortie du moteur — un tel test serait
+  exactement ce que la règle ci-dessus interdit ;
+- il n’est **jamais** rafraîchi : un réexport le rendrait inutile, puisqu’il
+  cesserait d’être N‑1. Ses empreintes SHA‑256, dans le README voisin, sont ce
+  qui empêche de le croire frais ;
+- il **disparaît** quand la fenêtre de lecture se referme au-dessus de sa
+  version, en même temps que le code de compatibilité qu’il couvre, jamais avant.
+
+Il n’est pas publié : `files` du kit ne l’inclut pas.
 
 `packages/plugin/tests/lois.ts` est l’unique autorité sur les lois de forme d’un contrat, et
 `tests/exportComponent.test.ts` les applique à CHAQUE contrat que le moteur
