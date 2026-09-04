@@ -3,10 +3,23 @@
   "version": "0.1.0",
   "description": "Le format de contrat UCM et ses lecteurs : types, version, règles de nommage, schéma et validateurs.",
   "type": "module",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vassili-g/UCM-Exporter.git",
+    "directory": "packages/kit"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "schema",
-    "src/lecteurs"
+    "src/lecteurs",
+    "README.md"
   ],
   "exports": {
     "./format": {

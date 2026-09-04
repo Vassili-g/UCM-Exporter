@@ -19,6 +19,13 @@
  * pour parler du même format : sa forme, sa version, et les deux règles de
  * nommage qui font qu'un même objet porte le même nom des deux côtés.
  */
-export type * from './types';
-export { CONTRACT_VERSION } from './version';
-export { codeIdentifier, normalizeName } from './names';
+/*
+ * Les extensions `.js` sont obligatoires, pas décoratives : `tsc` recopie le
+ * spécificateur tel quel, et Node en ESM refuse un import relatif sans
+ * extension. Sans elles, le paquet fonctionne chez qui passe par un bundler ou
+ * par `tsx` — donc dans tout ce repository — et casse net chez le premier
+ * consommateur qui l'exécute avec Node. `paquetPublie.test.mjs` le vérifie.
+ */
+export type * from './types.js';
+export { CONTRACT_VERSION } from './version.js';
+export { codeIdentifier, normalizeName } from './names.js';
