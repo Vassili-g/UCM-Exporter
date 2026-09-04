@@ -75,9 +75,6 @@ declare module "@ucm-kit/core/lecteurs" {
   /** Les chemins des `*.contract.json` d'un dossier, `node_modules` exclu. */
   export function trouverContrats(dossier: string): string[];
 
-  /** Le motif d'implémentation retenu par défaut : `{dir}/{id}.tsx`. */
-  export const MOTIF_IMPLEMENTATION_PAR_DEFAUT: string;
-
   /** L'identifiant d'artefact que porte un chemin de contrat. */
   export function identifiantDuContrat(cheminContrat: string): string;
 
@@ -90,18 +87,13 @@ declare module "@ucm-kit/core/lecteurs" {
     options?: { motif?: string; existe?: (chemin: string) => boolean },
   ): boolean;
 
-  /** Le nom du fichier de configuration d'un repository. */
-  export const NOM_CONFIGURATION: string;
-
-  /** Ce qu'un repository vierge décrit sans rien écrire. */
-  export const CONFIGURATION_PAR_DEFAUT: {
-    readonly components: string;
-    readonly tokens: string;
-    readonly implementation: string;
-  };
-
-  /** Les champs absents ou mal formés d'une configuration. */
-  export function champsInvalidesDeLaConfiguration(configuration: unknown): string[];
+  /**
+   * La GRAMMAIRE de `ucm.config.json` n'est pas dans ce sous-chemin :
+   * `NOM_CONFIGURATION`, `CONFIGURATION_PAR_DEFAUT`,
+   * `champsInvalidesDeLaConfiguration`, `configurationDepuisJson` et
+   * `MOTIF_IMPLEMENTATION_PAR_DEFAUT` vivent dans `@ucm-kit/core/format`, que
+   * le plugin Figma atteint aussi (T4.1). Seule l'OUVERTURE du fichier est ici.
+   */
 
   /** Lit la configuration d'un repository ; rend toujours une configuration complète. */
   export function lireConfiguration(racine: string): {

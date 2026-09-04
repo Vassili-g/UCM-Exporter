@@ -2,6 +2,8 @@
  * Client GitHub REST minimal pour déposer un artefact Unified Component Exporter dans une
  * branche dédiée puis ouvrir une PR. Aucun PAT n'est logué ni renvoyé à l'UI.
  */
+import { NOM_CONFIGURATION, configurationDepuisJson } from '@ucm-kit/core/format';
+
 import type { GithubConfig } from './config';
 import { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
 export { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
@@ -20,8 +22,25 @@ export type RepositoryArtifact = {
 };
 
 export type PublishResult =
-  | { status: 'unchanged'; path: string }
-  | { status: 'created'; path: string; branch: string; pullRequestUrl: string };
+  | { status: 'unchanged'; path: string; source: LayoutSource }
+  | { status: 'created'; path: string; branch: string; pullRequestUrl: string; source: LayoutSource };
+
+/** Qui a décidé où l'artefact s'écrit — le repo, ou les réglages du plugin. */
+export type LayoutSource = typeof NOM_CONFIGURATION | 'réglages du plugin';
+
+/**
+ * Où le repository cible range ses fichiers.
+ *
+ * `tokens` est un CHEMIN DE FICHIER, jamais un dossier. Les réglages du plugin,
+ * eux, ont toujours enregistré un dossier auquel ils ajoutaient `/tokens.json` :
+ * les deux conventions ne se distinguaient pas tant que le dossier s'appelait
+ * `tokens`, et c'est l'une des désynchronisations que T4.1 referme.
+ */
+export type RepositoryLayout = {
+  components: string;
+  tokens: string;
+  source: LayoutSource;
+};
 
 type GithubFile = {
   type: string;
@@ -84,11 +103,70 @@ export function exportBranchName(kind: ArtifactKind, date = new Date()): string 
   return `ucm-exporter/export-${kind}-${day}-${time}`;
 }
 
+/**
+ * Ce que les réglages locaux du plugin décrivent, faute de mieux.
+ *
+ * C'est le repli, pas la référence : ces valeurs vivent sur la machine du
+ * designer et ne savent rien du repository. Elles ne servent que lorsque celui-ci
+ * ne se décrit pas lui-même.
+ */
+export function layoutDesReglages(config: GithubConfig): RepositoryLayout {
+  return {
+    components: config.componentsPath,
+    tokens: `${config.tokensPath}/tokens.json`,
+    source: 'réglages du plugin',
+  };
+}
+
+/**
+ * Où ÉCRIRE, demandé au repository lui-même.
+ *
+ * **C'est T4.1, et le défaut qu'elle referme était masqué par une
+ * coïncidence :** les réglages du plugin rendent `src/components` et
+ * `src/tokens`, ce que le repository de démonstration utilise justement. Au
+ * premier repo aux conventions différentes, l'export aurait écrit à un endroit
+ * que la CI ne regarde pas — et personne n'aurait rien vu : la PR s'ouvre, le
+ * contrôle ne trouve aucun contrat nouveau, tout est vert.
+ *
+ * **Un `ucm.config.json` présent et mal formé REFUSE l'export.** Retomber en
+ * silence sur les réglages écrirait le contrat ailleurs que là où son
+ * propriétaire l'a demandé, et le silence est précisément ce qui rend le défaut
+ * incompréhensible. C'est la même doctrine que côté CI : le fichier absent est
+ * le cas nominal, le fichier fautif est une erreur.
+ */
+export async function repositoryLayout(config: GithubConfig): Promise<RepositoryLayout> {
+  const fichier = await getRepositoryFile(config, NOM_CONFIGURATION);
+  if (!fichier || fichier.type !== 'file' || !fichier.content) return layoutDesReglages(config);
+
+  let brut: unknown;
+  try {
+    // Un BOM en tête ferait échouer JSON.parse, et l'éditeur qui l'a écrit ne
+    // le montre pas.
+    brut = JSON.parse(decodeBase64(fichier.content).replace(/^﻿/, ''));
+  } catch {
+    throw new GithubApiError(
+      `${NOM_CONFIGURATION} du repository n'est pas du JSON valide : impossible de savoir où écrire cet export. Un développeur doit corriger ce fichier.`,
+    );
+  }
+
+  const { configuration, erreur } = configurationDepuisJson(brut);
+  if (erreur) throw new GithubApiError(`${erreur} Un développeur doit corriger ce fichier.`);
+
+  return {
+    components: configuration.components,
+    tokens: configuration.tokens,
+    source: NOM_CONFIGURATION,
+  };
+}
+
 /** Déduit le path repo sans demander de saisie par composant. */
-export function artifactPath(config: GithubConfig, artifact: RepositoryArtifact): string {
-  if (artifact.kind === 'tokens') return `${config.tokensPath}/tokens.json`;
+export function artifactPath(
+  artifact: RepositoryArtifact,
+  layout: RepositoryLayout,
+): string {
+  if (artifact.kind === 'tokens') return layout.tokens;
   const componentName = artifact.filename.replace(/\.contract\.json$/i, '');
-  return `${config.componentsPath}/${componentName}/${artifact.filename}`;
+  return `${layout.components}/${componentName}/${artifact.filename}`;
 }
 
 /**
@@ -254,10 +332,13 @@ export async function publishArtifact(
     );
   }
   const repository = `${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
-  const path = artifactPath(config, artifact);
+  // Le repository est interrogé AVANT toute écriture : il est seul à savoir où
+  // ses contrats vivent, et se tromper d'endroit est indétectable ensuite.
+  const layout = await repositoryLayout(config);
+  const path = artifactPath(artifact, layout);
   const existing = await getRepositoryFile(config, path);
   if (existing?.type === 'file' && existing.content && sameContent(decodeBase64(existing.content), artifact.content)) {
-    return { status: 'unchanged', path };
+    return { status: 'unchanged', path, source: layout.source };
   }
 
   const branch = exportBranchName(artifact.kind, date);
@@ -303,5 +384,5 @@ export async function publishArtifact(
   // supprimée sous elle — cela la refermerait aussitôt.
   if (!pullRequest?.html_url) throw new GithubApiError('La PR a été créée sans URL exploitable.');
 
-  return { status: 'created', path, branch, pullRequestUrl: pullRequest.html_url };
+  return { status: 'created', path, branch, pullRequestUrl: pullRequest.html_url, source: layout.source };
 }

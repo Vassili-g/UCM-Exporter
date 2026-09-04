@@ -6,10 +6,46 @@ import {
   decodeBase64,
   encodeBase64,
   exportBranchName,
+  layoutDesReglages,
   publishArtifact,
   pullRequestBody,
+  repositoryLayout,
   utf8ByteLength,
 } from '../src/github';
+
+/**
+ * Remplace `fetch` le temps d'un appel, et le rend toujours.
+ *
+ * Le stub répond PAR URL, et ce n'est pas du confort : depuis T4.1, publier
+ * interroge d'abord `ucm.config.json`. Un stub qui répondrait la même chose à
+ * tout le monde ferait passer le contrat pour une configuration, et le test
+ * mesurerait le stub.
+ */
+async function avecFetch<T>(
+  reponse: (url: string) => Response,
+  travail: () => Promise<T>,
+): Promise<T> {
+  const precedent = globalThis.fetch;
+  globalThis.fetch = async (input) => reponse(String(input));
+  try {
+    return await travail();
+  } finally {
+    globalThis.fetch = precedent;
+  }
+}
+
+/** Une configuration de repository absente : le cas nominal. */
+function sansConfiguration(url: string): Response | null {
+  return url.includes('ucm.config.json') ? new Response('{}', { status: 404 }) : null;
+}
+
+/** Le contenu d'un fichier, tel que l'API GitHub le rend. */
+function fichier(contenu: string, sha = 'existing-sha'): Response {
+  return new Response(
+    JSON.stringify({ type: 'file', sha, content: encodeBase64(contenu), encoding: 'base64' }),
+    { status: 200 },
+  );
+}
 
 const config: GithubConfig = {
   repoUrl: 'https://github.com/acme/design-system',
@@ -22,13 +58,80 @@ const config: GithubConfig = {
 };
 
 test('artifactPath dérive les paths du composant et des tokens', () => {
+  const layout = layoutDesReglages(config);
   assert.equal(
-    artifactPath(config, { kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }),
+    artifactPath({ kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }, layout),
     'src/components/Button/Button.contract.json',
   );
   assert.equal(
-    artifactPath(config, { kind: 'tokens', filename: 'tokens.json', content: '{}', warnings: [] }),
+    artifactPath({ kind: 'tokens', filename: 'tokens.json', content: '{}', warnings: [] }, layout),
     'src/tokens/tokens.json',
+  );
+});
+
+/**
+ * T4.1. Le repository est seul à savoir où ses contrats vivent ; les réglages
+ * du plugin sont locaux à une machine et ne savent rien de lui. Le défaut était
+ * masqué par une coïncidence — les défauts des réglages décrivent justement le
+ * repository de démonstration —, et il se déclenche au premier repo aux
+ * conventions différentes : l'export écrit là où la CI ne regarde pas, la PR
+ * s'ouvre, le contrôle ne trouve rien de nouveau, tout est vert.
+ */
+test('la configuration du repository décide où l’export s’écrit', async () => {
+  const configuration = {
+    components: 'design/contrats',
+    tokens: 'design/tokens/design-tokens.json',
+  };
+  const layout = await avecFetch(
+    () => fichier(JSON.stringify(configuration)),
+    () => repositoryLayout(config),
+  );
+
+  assert.equal(layout.source, 'ucm.config.json');
+  assert.equal(
+    artifactPath({ kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }, layout),
+    'design/contrats/Button/Button.contract.json',
+  );
+  // `tokens` est un CHEMIN DE FICHIER, pas un dossier : les réglages du plugin
+  // ajoutaient `/tokens.json`, et les deux conventions ne se distinguaient pas
+  // tant que le dossier s'appelait `tokens`.
+  assert.equal(
+    artifactPath({ kind: 'tokens', filename: 'tokens.json', content: '{}', warnings: [] }, layout),
+    'design/tokens/design-tokens.json',
+  );
+});
+
+/**
+ * Un repository qui ne se décrit pas est le cas NOMINAL, pas une erreur : c'est
+ * le critère de réussite n° 1. Les réglages prennent alors le relais.
+ */
+test('un repository sans ucm.config.json retombe sur les réglages, sans erreur', async () => {
+  const layout = await avecFetch(
+    () => new Response('{}', { status: 404 }),
+    () => repositoryLayout(config),
+  );
+
+  assert.deepEqual(layout, layoutDesReglages(config));
+});
+
+/**
+ * Présent et mal formé, c'est autre chose : quelqu'un a voulu dire où écrire.
+ * Retomber en silence sur les réglages déposerait le contrat ailleurs que là où
+ * son propriétaire l'a demandé — et le silence est ce qui rend le défaut
+ * incompréhensible ensuite.
+ */
+test('une configuration de repository fautive refuse l’export au lieu de deviner', async () => {
+  await assert.rejects(
+    () => avecFetch(() => fichier('{ pas du json'), () => repositoryLayout(config)),
+    /ucm\.config\.json du repository n'est pas du JSON valide/,
+  );
+
+  await assert.rejects(
+    () => avecFetch(
+      () => fichier(JSON.stringify({ contractVersion: '12.0' })),
+      () => repositoryLayout(config),
+    ),
+    /aucun numéro de version ne s'y écrit/,
   );
 });
 
@@ -63,82 +166,82 @@ test('exportBranchName inclut le type d’artefact et les secondes (anti-collisi
 });
 
 test('publishArtifact ne crée aucune branche si le fichier est inchangé', async () => {
-  const previousFetch = globalThis.fetch;
   const calls: string[] = [];
-  globalThis.fetch = async (input) => {
-    calls.push(String(input));
-    return new Response(JSON.stringify({
-      type: 'file',
-      sha: 'existing-sha',
-      content: encodeBase64('{"same":true}\n'),
-      encoding: 'base64',
-    }), { status: 200 });
-  };
-
-  try {
-    const result = await publishArtifact(config, {
+  const result = await avecFetch(
+    (url) => {
+      calls.push(url);
+      return sansConfiguration(url) ?? fichier('{"same":true}\n');
+    },
+    () => publishArtifact(config, {
       kind: 'tokens',
       filename: 'tokens.json',
       content: '{"same":true}\n',
       warnings: [],
-    });
-    assert.deepEqual(result, { status: 'unchanged', path: 'src/tokens/tokens.json' });
-    assert.equal(calls.length, 1);
-  } finally {
-    globalThis.fetch = previousFetch;
-  }
+    }),
+  );
+
+  assert.deepEqual(result, {
+    status: 'unchanged',
+    path: 'src/tokens/tokens.json',
+    source: 'réglages du plugin',
+  });
+  // Deux appels et pas un de plus : la configuration du repository, puis le
+  // fichier lui-même. Aucune branche n'est créée.
+  assert.equal(calls.length, 2);
 });
 
 test('publishArtifact fonctionne dans un runtime Figma sans TextEncoder', async () => {
-  const previousFetch = globalThis.fetch;
   const previousTextEncoder = (globalThis as any).TextEncoder;
   (globalThis as any).TextEncoder = undefined;
-  globalThis.fetch = async () => new Response(JSON.stringify({
-    type: 'file',
-    sha: 'existing-sha',
-    content: encodeBase64('{"same":true}\n'),
-    encoding: 'base64',
-  }), { status: 200 });
 
   try {
-    const result = await publishArtifact(config, {
-      kind: 'tokens',
-      filename: 'tokens.json',
-      content: '{"same":true}\n',
-      warnings: [],
+    const result = await avecFetch(
+      (url) => sansConfiguration(url) ?? fichier('{"same":true}\n'),
+      () => publishArtifact(config, {
+        kind: 'tokens',
+        filename: 'tokens.json',
+        content: '{"same":true}\n',
+        warnings: [],
+      }),
+    );
+    assert.deepEqual(result, {
+      status: 'unchanged',
+      path: 'src/tokens/tokens.json',
+      source: 'réglages du plugin',
     });
-    assert.deepEqual(result, { status: 'unchanged', path: 'src/tokens/tokens.json' });
   } finally {
-    globalThis.fetch = previousFetch;
     (globalThis as any).TextEncoder = previousTextEncoder;
   }
 });
 
 test('publishArtifact compare aussi un fichier GitHub supérieur à 1 Mo via son blob', async () => {
-  const previousFetch = globalThis.fetch;
   const calls: string[] = [];
   const content = '{"same":true}\n';
-  globalThis.fetch = async (input) => {
-    calls.push(String(input));
-    if (calls.length === 1) {
-      return new Response(JSON.stringify({
-        type: 'file', sha: 'large-sha', content: '', encoding: 'none',
-      }), { status: 200 });
-    }
-    return new Response(JSON.stringify({
-      content: encodeBase64(content), encoding: 'base64',
-    }), { status: 200 });
-  };
+  const result = await avecFetch(
+    (url) => {
+      calls.push(url);
+      const absente = sansConfiguration(url);
+      if (absente) return absente;
+      if (url.includes('/git/blobs/')) {
+        return new Response(
+          JSON.stringify({ content: encodeBase64(content), encoding: 'base64' }),
+          { status: 200 },
+        );
+      }
+      return new Response(
+        JSON.stringify({ type: 'file', sha: 'large-sha', content: '', encoding: 'none' }),
+        { status: 200 },
+      );
+    },
+    () => publishArtifact(config, { kind: 'tokens', filename: 'tokens.json', content, warnings: [] }),
+  );
 
-  try {
-    const result = await publishArtifact(config, {
-      kind: 'tokens', filename: 'tokens.json', content, warnings: [],
-    });
-    assert.deepEqual(result, { status: 'unchanged', path: 'src/tokens/tokens.json' });
-    assert.match(calls[1], /\/git\/blobs\/large-sha$/);
-  } finally {
-    globalThis.fetch = previousFetch;
-  }
+  assert.deepEqual(result, {
+    status: 'unchanged',
+    path: 'src/tokens/tokens.json',
+    source: 'réglages du plugin',
+  });
+  assert.match(calls[2], /\/git\/blobs\/large-sha$/);
 });
 
 test('publishArtifact ignore meta.exportedAt pour détecter un contrat inchangé', async () => {
@@ -149,37 +252,35 @@ test('publishArtifact ignore meta.exportedAt pour détecter un contrat inchangé
   }, null, 2);
   const reExported = contractOnRepo.replace('2026-07-17T16:11:07.100Z', '2026-07-25T10:00:00.000Z');
 
-  const previousFetch = globalThis.fetch;
   const calls: string[] = [];
-  globalThis.fetch = async (input) => {
-    calls.push(String(input));
-    return new Response(JSON.stringify({
-      type: 'file',
-      sha: 'existing-sha',
-      content: encodeBase64(contractOnRepo),
-      encoding: 'base64',
-    }), { status: 200 });
-  };
-
-  try {
-    const result = await publishArtifact(config, {
+  const result = await avecFetch(
+    (url) => {
+      calls.push(url);
+      return sansConfiguration(url) ?? fichier(contractOnRepo);
+    },
+    () => publishArtifact(config, {
       kind: 'component',
       filename: 'Button.contract.json',
       content: reExported,
       warnings: [],
-    });
-    // Seul l'horodatage diffère : aucun changement design, donc aucune PR.
-    assert.deepEqual(result, { status: 'unchanged', path: 'src/components/Button/Button.contract.json' });
-    assert.equal(calls.length, 1);
-  } finally {
-    globalThis.fetch = previousFetch;
-  }
+    }),
+  );
+
+  // Seul l'horodatage diffère : aucun changement design, donc aucune PR.
+  assert.deepEqual(result, {
+    status: 'unchanged',
+    path: 'src/components/Button/Button.contract.json',
+    source: 'réglages du plugin',
+  });
+  assert.equal(calls.length, 2);
 });
 
 test('publishArtifact supprime la branche quand l’ouverture de la PR échoue', async () => {
   const previousFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string }> = [];
   const responses = [
+    // Le repository ne se décrit pas : les réglages du plugin décident (T4.1).
+    new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 }),
     new Response(JSON.stringify({ ref: 'created' }), { status: 201 }),
@@ -204,8 +305,8 @@ test('publishArtifact supprime la branche quand l’ouverture de la PR échoue',
       ),
       /GitHub a répondu 422/,
     );
-    assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'POST', 'PUT', 'POST', 'DELETE']);
-    assert.match(calls[5].url, /git\/refs\/heads\/ucm-exporter\/export-component-20260717-090500$/);
+    assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'GET', 'POST', 'PUT', 'POST', 'DELETE']);
+    assert.match(calls[6].url, /git\/refs\/heads\/ucm-exporter\/export-component-20260717-090500$/);
   } finally {
     globalThis.fetch = previousFetch;
   }
@@ -215,6 +316,8 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
   const previousFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string }> = [];
   const responses = [
+    // Le repository ne se décrit pas : les réglages du plugin décident (T4.1).
+    new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 }),
     new Response(JSON.stringify({ ref: 'created' }), { status: 201 }),
@@ -239,8 +342,9 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
       path: 'src/components/Button/Button.contract.json',
       branch: 'ucm-exporter/export-component-20260717-090500',
       pullRequestUrl: 'https://github.com/acme/design-system/pull/12',
+      source: 'réglages du plugin',
     });
-    assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'POST', 'PUT', 'POST']);
+    assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'GET', 'POST', 'PUT', 'POST']);
   } finally {
     globalThis.fetch = previousFetch;
   }

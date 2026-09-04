@@ -14,11 +14,11 @@ import assert from "node:assert/strict";
 import { sep } from "node:path";
 import test from "node:test";
 import {
-  MOTIF_IMPLEMENTATION_PAR_DEFAUT,
   cheminImplementation,
   identifiantDuContrat,
   implementationPresente,
 } from "@ucm-kit/core/lecteurs";
+import { MOTIF_IMPLEMENTATION_PAR_DEFAUT } from "@ucm-kit/core/format";
 
 /** Un chemin attendu, écrit avec les séparateurs de la plateforme hôte. */
 const chemin = (...segments) => segments.join(sep);

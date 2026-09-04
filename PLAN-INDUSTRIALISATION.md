@@ -1158,10 +1158,66 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
 
 ## Phase 4 — Plugin Figma
 
-- [ ] **T4.1 — Lire `ucm.config.json` dans le repo cible.** La désynchronisation
-      est masquée par des défauts qui coïncident (`config.ts:128-129` rend
-      `src/components` et `src/tokens`) ; elle se déclenche au premier repo aux
-      conventions différentes.
+- [X] **T4.1 — Lire `ucm.config.json` dans le repo cible.** *Faite le
+      5 septembre 2026.* La désynchronisation était masquée par des défauts qui
+      coïncident (`config.ts:128-129` rend `src/components` et `src/tokens`) ;
+      elle se déclenche au premier repo aux conventions différentes — et le
+      défaut serait **indétectable après coup** : l'export écrit là où la CI ne
+      regarde pas, la pull request s'ouvre, le contrôle ne trouve aucun contrat
+      nouveau, tout est vert.
+      **La grammaire de la configuration est descendue dans `format`, et c'est
+      la tâche qui l'a imposé.** Ce fichier a deux lecteurs qui ne partagent
+      aucun runtime : la CI, qui l'ouvre avec `node:fs`, et le plugin, qui le lit
+      par l'API GitHub depuis un sandbox où `node:fs` n'existe pas. Tant que la
+      grammaire vivait du seul côté Node, le plugin en gardait sa propre idée.
+      `lecteurs/configuration.mjs` ne garde que l'OUVERTURE d'un fichier ;
+      `NOM_CONFIGURATION`, `CONFIGURATION_PAR_DEFAUT`,
+      `champsInvalidesDeLaConfiguration`, `configurationDepuisJson` et
+      `MOTIF_IMPLEMENTATION_PAR_DEFAUT` sont dans `@ucm-kit/core/format`. Ils
+      quittent la porte des lecteurs plutôt que d'y être réexportés — c'est
+      l'argument exact de T2.7.
+      *Une ambiguïté levée au passage, et elle avait un coût :* `tokens` est un
+      chemin de FICHIER, alors que les réglages du plugin enregistraient un
+      DOSSIER auquel ils ajoutaient `/tokens.json`. Les deux conventions ne se
+      distinguaient pas tant que le dossier s'appelait `tokens`.
+      *Un `ucm.config.json` présent et mal formé REFUSE l'export*, même doctrine
+      que côté CI : absent est le cas nominal, fautif est une erreur. Et le
+      journal du plugin dit désormais **qui** a décidé de l'emplacement — le repo
+      ou les réglages —, parce que c'est le seul endroit où la question se pose
+      encore.
+      *Une contrainte retrouvée en écrivant :* `Object.hasOwn` ne compile pas
+      dans `format`, qui cible ES2019 pour le sandbox Figma. Une méthode plus
+      récente serait passée à la compilation et aurait manqué à l'exécution,
+      dans le seul environnement où l'erreur n'apparaît qu'après la CI.
+
+      **⚠ Le vrai défaut trouvé par cette tâche n'était pas le sien.** En
+      branchant le plugin sur le kit, la résolution ouvrait
+      `packages/plugin/node_modules/@ucm-kit/core` — une copie **0.1.0
+      téléchargée du registre**, pendant que le dépôt en était à 0.1.6. Cause :
+      `packages/plugin/package.json` épinglait `0.1.0`, un pin exact appliqué là
+      où la règle ne vaut pas. Le kit local ne satisfaisant plus ce pin, npm est
+      allé chercher la version publiée. **Le moteur construisait, typait et
+      testait contre une copie vieille de six versions, et tout était vert.**
+      C'est la maladie que ce projet poursuit partout ailleurs, installée au
+      cœur du monorepo : deux autorités pour la même chose, dont le désaccord
+      est muet.
+      *La règle, et sa borne.* D7 exige un pin exact pour ce qu'un repository
+      **consommateur** installe. Elle ne dit rien d'un frère du même dépôt, qui
+      n'installe pas — il lit la source d'à côté, et doit la lire toujours.
+      `packages/plugin` est privé et ne se publie jamais : `*` y est la bonne
+      réponse. `packages/cli` se publie et garde son pin exact.
+      *Le garde-fou, et il est éprouvé dans les deux sens :*
+      `tests/monorepoCoherent.test.mjs` vérifie la RÉSOLUTION depuis chaque
+      paquet — pas le texte du pin, puisque la question est ce que Node ouvre —
+      et exige qu'un paquet publié épingle la version que le dépôt porte. Remis
+      à `0.1.0`, il rougit en nommant le chemin et la version ; remis à `*`, il
+      passe.
+      *Et il a fallu corriger le lanceur pour qu'il tourne :* `scripts/run-tests.cjs`
+      de la racine n'acceptait que `.test.ts`. Le garde-fou, écrit en `.mjs`,
+      n'était pas exécuté — et un test qu'on n'exécute pas ne peut pas échouer.
+      Le contrôle absent se lisait comme un contrôle vert, une fois de plus.
+      *Note d'exploitation :* `npm install` seul ne suffit pas à défaire cette
+      situation — l'entrée reste dans le lockfile. Il faut le régénérer.
 
 - [ ] **T4.2 — Annoncer la version du contrat dans le corps de la PR.**
 

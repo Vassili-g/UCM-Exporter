@@ -18,8 +18,8 @@ import {
   CONFIGURATION_PAR_DEFAUT,
   NOM_CONFIGURATION,
   champsInvalidesDeLaConfiguration,
-  lireConfiguration,
-} from "@ucm-kit/core/lecteurs";
+} from "@ucm-kit/core/format";
+import { lireConfiguration } from "@ucm-kit/core/lecteurs";
 
 /** Monte un repository jouet portant le contenu donné, ou aucun fichier. */
 function repo(contenu) {
