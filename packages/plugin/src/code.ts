@@ -176,6 +176,14 @@ async function runExport(
         content: result.content,
         warnings: result.warnings ?? [],
       });
+      // QUI a décidé de l'emplacement se dit, toujours (T4.1). Un export qui
+      // atterrit ailleurs qu'attendu est indétectable après coup : la PR
+      // s'ouvre, la CI ne trouve aucun contrat nouveau, tout est vert. Cette
+      // ligne est le seul endroit où la question se pose encore.
+      figma.ui.postMessage({
+        type: 'log',
+        text: `Emplacement : ${publication.path} (d'après ${publication.source}).`,
+      });
       if (publication.status === 'unchanged') {
         const message = `Aucun changement pour ${publication.path} : aucune PR créée.`;
         figma.ui.postMessage({ type: 'log', text: message });

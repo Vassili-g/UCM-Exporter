@@ -37,27 +37,26 @@ export { trouverContrats } from "./trouver-contrats.mjs";
  *
  * L'EXISTENCE est ici parce qu'elle ne dépend d'aucun langage ; la COMPARAISON
  * des props reste chez l'adaptateur du consommateur, qui seul possède un
- * vérificateur de types (T2.3).
+ * vérificateur de types (T2.3). Le MOTIF par défaut, lui, est une valeur du
+ * format : `MOTIF_IMPLEMENTATION_PAR_DEFAUT` vient de `@ucm-kit/core/format`.
  */
 export {
-  MOTIF_IMPLEMENTATION_PAR_DEFAUT,
   identifiantDuContrat,
   cheminImplementation,
   implementationPresente,
 } from "./implementation.mjs";
 
 /**
- * Ce qu'un repository dit de lui-même : où sont ses contrats, ses tokens, ses
- * implémentations. Trois chemins, jamais un numéro de version — la fenêtre de
- * lecture appartient au paquet installé, la republier créerait une seconde
- * autorité qui dériverait en silence.
+ * OUVRIR `ucm.config.json` sur un disque.
+ *
+ * La GRAMMAIRE de ce fichier n'est pas ici : `NOM_CONFIGURATION`,
+ * `CONFIGURATION_PAR_DEFAUT`, `champsInvalidesDeLaConfiguration` et
+ * `configurationDepuisJson` vivent dans `@ucm-kit/core/format`, que le plugin
+ * Figma atteint aussi — il lit ce même fichier par l'API GitHub pour savoir où
+ * écrire (T4.1). Les republier ici en ferait un second nom pour la même chose,
+ * exactement ce que T2.7 a supprimé.
  */
-export {
-  NOM_CONFIGURATION,
-  CONFIGURATION_PAR_DEFAUT,
-  champsInvalidesDeLaConfiguration,
-  lireConfiguration,
-} from "./configuration.mjs";
+export { lireConfiguration } from "./configuration.mjs";
 
 /** La version : ce que ce paquet sait lire, et le sens d'un écart. */
 export {

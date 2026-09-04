@@ -17,7 +17,13 @@ const testsDir = path.join(rootDir, 'tests');
 
 const files = fs
   .readdirSync(testsDir)
-  .filter((name) => name.endsWith('.test.ts'))
+  // Les DEUX extensions, comme chez les paquets. `.mjs` n'était pas accepté, et
+  // un fichier de test ajouté sous ce nom ne tournait pas — sans que rien ne
+  // rougisse, puisqu'un test qu'on n'exécute pas ne peut pas échouer. C'est la
+  // maladie que tout ce dépôt poursuit : un contrôle absent qui se lit comme un
+  // contrôle vert. Trouvé le 5 septembre 2026, sur le garde-fou de cohérence du
+  // monorepo lui-même.
+  .filter((name) => name.endsWith('.test.ts') || name.endsWith('.test.mjs'))
   .sort()
   .map((name) => path.join('tests', name));
 

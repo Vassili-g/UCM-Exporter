@@ -19,16 +19,11 @@
 import { existsSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
-/**
- * Le motif retenu par défaut, parce que le premier consommateur est React et
- * qu'un défaut absent obligerait chaque appelant à réécrire la convention.
- *
- * Il n'y en a que deux, volontairement : `{dir}` le dossier du contrat, `{id}`
- * son identifiant. Les transformations de casse (`{id:snake}`, `{id:kebab}`)
- * s'ajouteront le jour où une cible réelle les demande — les inventer
- * maintenant, ce serait figer une grammaire sur des besoins supposés.
- */
-export const MOTIF_IMPLEMENTATION_PAR_DEFAUT = "{dir}/{id}.tsx";
+// Le motif par défaut est une VALEUR du format, pas une décision de ce module :
+// il est aussi le défaut de `ucm.config.json`, et deux constantes pour la même
+// chaîne dériveraient. Il vit donc dans `@ucm-kit/core/format`, avec le reste
+// de la grammaire de configuration (T4.1).
+import { MOTIF_IMPLEMENTATION_PAR_DEFAUT } from "@ucm-kit/core/format";
 
 /** L'identifiant d'artefact que porte un chemin de contrat : son nom de base. */
 export function identifiantDuContrat(cheminContrat) {

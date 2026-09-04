@@ -18,7 +18,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { CONFIGURATION_PAR_DEFAUT, NOM_CONFIGURATION } from "@ucm-kit/core/lecteurs";
+import { CONFIGURATION_PAR_DEFAUT, NOM_CONFIGURATION } from "@ucm-kit/core/format";
 
 /** La version de `@ucm-kit/cli`, lue dans son propre `package.json`. */
 function versionDuPaquet() {

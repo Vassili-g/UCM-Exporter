@@ -73,7 +73,9 @@ packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
   src/format/              sous-chemin SANS dépendance Node ni Figma
     types.ts                 schéma TypeScript du contrat
     version.ts               CONTRACT_VERSION, seul endroit où elle est écrite
-    names.ts                 normalizeName et codeIdentifier
+    names.ts                 normalizeName, codeIdentifier, tokenCssVariable
+    references.ts            la forme d'une référence de token, et son enveloppe
+    configuration.ts         la grammaire de ucm.config.json — la CI ET le plugin
     index.ts                 ce que le sous-chemin publie
   src/lecteurs/            ce qui JUGE un contrat écrit — `ajv` et `node:fs`
     validation-contrat.mjs       la forme d'un contrat, champ par champ
@@ -85,7 +87,7 @@ packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
     tokens-dtcg.mjs              ce que le fichier de tokens contient, donc ce qui existe
     typography-token-types.mjs   les types DTCG qu'un style typographique exige
     schema-contrat.mjs           le schéma publié, chargé pour Ajv
-    configuration.mjs            ucm.config.json : où un repo range ses fichiers
+    configuration.mjs            OUVRIR ucm.config.json ; sa grammaire est dans format/
     implementation.mjs           OÙ vit une implémentation, et SI elle est là
     trouver-contrats.mjs         retrouver les contrats d'un dossier
     controle-repository.mjs      le contrôle complet et le rapport du designer
@@ -108,7 +110,9 @@ packages/cli/            la ligne de commande : @ucm-kit/cli, pas encore publié
   src/init.mjs             installe ce qui manque, sans jamais écraser
   src/icons.mjs            les icônes que les contrats du repo réclament
 
-tests/                   les tests du monorepo lui-même (liens de la doc)
+tests/                   les tests du monorepo lui-même
+  docLinks.test.ts       les liens de la documentation
+  monorepoCoherent.test.mjs  chaque paquet lit le kit d'à côté, jamais le registre
 ```
 
 ## Invariants

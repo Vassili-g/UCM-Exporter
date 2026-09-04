@@ -49,8 +49,9 @@
 import { basename, join } from "node:path";
 import { readFileSync } from "node:fs";
 
+import { CONFIGURATION_PAR_DEFAUT } from "@ucm-kit/core/format";
+
 import { avertissementsCorrigeables, resumeTerminalAvertissements, sectionAvertissementsExport } from "./avertissements-export.mjs";
-import { CONFIGURATION_PAR_DEFAUT } from "./configuration.mjs";
 import { aUnEcartDeParite, resumeTerminalEcartsDeParite, sectionEcartsDeParite } from "./diagnostic-parite.mjs";
 import { diagnosticEchecsDeTests, resumeTerminalEchecsDeTests } from "./diagnostic-tests.mjs";
 import { libelleNombre, rendreDiagnostic } from "./diagnostic-markdown.mjs";

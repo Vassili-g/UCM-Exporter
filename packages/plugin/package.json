@@ -14,7 +14,7 @@
     "test": "node scripts/run-tests.cjs"
   },
   "dependencies": {
-    "@ucm-kit/core": "0.1.0"
+    "@ucm-kit/core": "*"
   },
   "devDependencies": {
     "@figma/plugin-typings": "^1.68.0",
