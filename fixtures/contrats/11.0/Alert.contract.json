@@ -1,0 +1,94 @@
+{
+  "name":"Alert",
+  "meta":{
+    "contractVersion":"11.0",
+    "exportedAt":"2026-09-02T12:05:25.411Z",
+    "figma":{"fileName":"DS AI LAB","nodeId":"229:496","componentKey":"a352533396f05ca1612a52195f35d303c30e61e1","url":"https://www.figma.com/design/adkqrNcmyIs16hBus808R7/DS%20AI%20LAB?node-id=229-496"},
+    "diagnostics":[{"code":"UCM_EXPORT_INFO","severity":"warning","message":"Contenu de maquette différent sur 6 variantes, ex. « Severity=Success, Variant=Standard », « Severity=Success, Variant=Outlined », « Severity=Warning, Variant=Standard » (+3) : le contrat conserve chaque contenu dans « samples »."}],
+    "coverage":{"portable":"complete"}
+  },
+  "props":{
+    "icon":{"type":"boolean","default":true,"description":"Permet d’afficher ou de masquer l’icone"},
+    "title":{"type":"boolean","default":true,"description":"Permet d’afficher ou de masquer le titre"},
+    "action":{"type":"boolean","default":true,"description":"Permet d’afficher ou de masquer le bouton d’action"},
+    "severity":{"type":"enum","values":["info","success","warning","error"],"default":"info","descriptions":{"info":"Le contenu de l’alerte est uniquement informatif","success":"Le contenu de l’alerte est en lien avec une action positive (validation...)","warning":"Le contenu de l’alerte est en lien avec un point nécessitant une attention particulière mais non bloquant (mise à jour requise, information importante...)","error":"Le contenu de l’alerte est en lien avec une action négative (erreur, point bloquant...)"}},
+    "variant":{"type":"enum","values":["standard","outlined"],"default":"standard","descriptions":{"standard":"Variante avec un background léger, utilisée pour les alertes éphémères en haut d’écran","outlined":"Variante avec un contour léger, utilisée pour les alertes permanentes dans le contenu de la page"}}
+  },
+  "figmaVariantLabels":{
+    "axes":{"severity":"Severity","variant":"Variant"},
+    "values":{"severity":{"info":"Info","success":"Success","warning":"Warning","error":"Error"},"variant":{"standard":"Standard","outlined":"Outlined"}}
+  },
+  "viewStructures":{
+    "st1":{"layout":"flex-row","sizing":{"width":"stretch","height":"fit-content"},"justifyContent":"flex-start","alignItems":"center","gap":"{components.alert.sizes.gap}","padding":{"x":"{components.alert.sizes.padding-x}","y":"{components.alert.sizes.padding-y}"},"radius":"{components.alert.sizes.border-radius}","children":[{"slot":"icon","figmaLayer":"circle-info","visibilityProp":"icon","optional":true,"size":"{components.icons.sizes.base}"},{"slot":"label","flexGrow":1,"figmaLayer":"Text","layout":"flex-column","justifyContent":"center","alignItems":"flex-start","children":[{"slot":"label","figmaLayer":"Titre","visibilityProp":"title","optional":true},{"slot":"label-2","figmaLayer":"Description"}]},{"slot":"action","alignSelf":"stretch","figmaLayer":"Action","visibilityProp":"action","optional":true,"layout":"flex-column","justifyContent":"center","alignItems":"center","children":[{"slot":"button","figmaLayer":"Button","composes":"Button"}]}]},
+    "st2":{"layout":"flex-row","sizing":{"width":"stretch","height":"fit-content"},"justifyContent":"flex-start","alignItems":"center","gap":"{components.alert.sizes.gap}","padding":{"x":"{components.alert.sizes.padding-x}","y":"{components.alert.sizes.padding-y}"},"radius":"{components.alert.sizes.border-radius}","children":[{"slot":"icon","figmaLayer":"circle-check","visibilityProp":"icon","optional":true,"size":"{components.icons.sizes.base}"},{"slot":"label","flexGrow":1,"figmaLayer":"Text","layout":"flex-column","justifyContent":"center","alignItems":"flex-start","children":[{"slot":"label","figmaLayer":"Titre","visibilityProp":"title","optional":true},{"slot":"label-2","figmaLayer":"Description"}]},{"slot":"action","alignSelf":"stretch","figmaLayer":"Action","visibilityProp":"action","optional":true,"layout":"flex-column","justifyContent":"center","alignItems":"center","children":[{"slot":"button","figmaLayer":"Button","composes":"Button"}]}]},
+    "st3":{"layout":"flex-row","sizing":{"width":"stretch","height":"fit-content"},"justifyContent":"flex-start","alignItems":"center","gap":"{components.alert.sizes.gap}","padding":{"x":"{components.alert.sizes.padding-x}","y":"{components.alert.sizes.padding-y}"},"radius":"{components.alert.sizes.border-radius}","children":[{"slot":"icon","figmaLayer":"triangle-exclamation","visibilityProp":"icon","optional":true,"size":"{components.icons.sizes.base}"},{"slot":"label","flexGrow":1,"figmaLayer":"Text","layout":"flex-column","justifyContent":"center","alignItems":"flex-start","children":[{"slot":"label","figmaLayer":"Titre","visibilityProp":"title","optional":true},{"slot":"label-2","figmaLayer":"Description"}]},{"slot":"action","alignSelf":"stretch","figmaLayer":"Action","visibilityProp":"action","optional":true,"layout":"flex-column","justifyContent":"center","alignItems":"center","children":[{"slot":"button","figmaLayer":"Button","composes":"Button"}]}]}
+  },
+  "viewTypographies":{
+    "ty1":[{"slotPath":["label","label"],"style":"body.large"},{"slotPath":["label","label-2"],"style":"body.small"}]
+  },
+  "viewComposes":{
+    "cp1":[{"component":"Button","figmaLayer":"Button","visibilityProp":"action"}]
+  },
+  "viewIcons":{
+    "ic1":{"circleInfo":{"figmaName":"circle-info","slotPath":["icon"]}},
+    "ic2":{"circleCheck":{"figmaName":"circle-check","slotPath":["icon"]}},
+    "ic3":{"triangleExclamation":{"figmaName":"triangle-exclamation","slotPath":["icon"]}}
+  },
+  "viewPaintPlacements":{
+    "pp1":{"fills":{"background":[[]],"icon":[["icon"]],"foreground":[["label","label"],["label","label-2"]]}},
+    "pp2":{"fills":{"icon":[["icon"]],"foreground":[["label","label"],["label","label-2"]]},"strokes":{"border":[[]]}}
+  },
+  "variantViews":{
+    "v1":{"structure":"st1","typography":"ty1","composes":"cp1","icons":"ic1","paintPlacements":"pp1"},
+    "v2":{"structure":"st1","typography":"ty1","composes":"cp1","icons":"ic1","paintPlacements":"pp2"},
+    "v3":{"structure":"st2","typography":"ty1","composes":"cp1","icons":"ic2","paintPlacements":"pp1"},
+    "v4":{"structure":"st2","typography":"ty1","composes":"cp1","icons":"ic2","paintPlacements":"pp2"},
+    "v5":{"structure":"st3","typography":"ty1","composes":"cp1","icons":"ic3","paintPlacements":"pp1"},
+    "v6":{"structure":"st3","typography":"ty1","composes":"cp1","icons":"ic3","paintPlacements":"pp2"}
+  },
+  "propertyBindingDefinitions":{
+    "b1":{"prop":"icon","figmaPropName":"Icon#265:4","target":"visible","figmaPath":["circle-info"]},
+    "b2":{"prop":"title","figmaPropName":"Title#265:13","target":"visible","figmaPath":["Text","Titre"]},
+    "b3":{"prop":"action","figmaPropName":"Action#265:22","target":"visible","figmaPath":["Action","Button"]},
+    "b4":{"prop":"icon","figmaPropName":"Icon#265:4","target":"visible","figmaPath":["circle-check"]},
+    "b5":{"prop":"icon","figmaPropName":"Icon#265:4","target":"visible","figmaPath":["triangle-exclamation"]}
+  },
+  "variants":[
+    {"nodeId":"229:495","values":{"severity":"info","variant":"standard"},"tokens":{"background":"{components.alert.colors.info.standard.background}","icon":"{components.alert.colors.info.standard.icon}","foreground":"{components.alert.colors.info.standard.foreground}"},"view":"v1","bindings":[{"definition":"b1","nodeId":"232:516"},{"definition":"b2","nodeId":"279:637"},{"definition":"b3","nodeId":"233:574"}],"sample":"s1"},
+    {"nodeId":"260:1793","values":{"severity":"info","variant":"outlined"},"tokens":{"icon":"{components.alert.colors.info.outlined.icon}","foreground":"{components.alert.colors.info.outlined.foreground}"},"strokes":{"border":{"color":"{components.alert.colors.info.outlined.border}","width":"{layouts.stroke.outline}","align":"inside"}},"view":"v2","bindings":[{"definition":"b1","nodeId":"260:1794"},{"definition":"b2","nodeId":"281:644"},{"definition":"b3","nodeId":"260:1799"}],"sample":"s1"},
+    {"nodeId":"260:1786","values":{"severity":"success","variant":"standard"},"tokens":{"background":"{components.alert.colors.success.standard.background}","icon":"{components.alert.colors.success.standard.icon}","foreground":"{components.alert.colors.success.standard.foreground}"},"view":"v3","bindings":[{"definition":"b4","nodeId":"260:1787"},{"definition":"b2","nodeId":"281:638"},{"definition":"b3","nodeId":"260:1792"}],"sample":"s2"},
+    {"nodeId":"238:673","values":{"severity":"success","variant":"outlined"},"tokens":{"icon":"{components.alert.colors.success.outlined.icon}","foreground":"{components.alert.colors.success.outlined.foreground}"},"strokes":{"border":{"color":"{components.alert.colors.success.outlined.border}","width":"{layouts.stroke.outline}","align":"inside"}},"view":"v4","bindings":[{"definition":"b4","nodeId":"238:674"},{"definition":"b2","nodeId":"281:646"},{"definition":"b3","nodeId":"238:679"}],"sample":"s2"},
+    {"nodeId":"260:1822","values":{"severity":"warning","variant":"standard"},"tokens":{"background":"{components.alert.colors.warning.standard.background}","icon":"{components.alert.colors.warning.standard.icon}","foreground":"{components.alert.colors.warning.standard.foreground}"},"view":"v5","bindings":[{"definition":"b5","nodeId":"260:1823"},{"definition":"b2","nodeId":"281:640"},{"definition":"b3","nodeId":"260:1828"}],"sample":"s3"},
+    {"nodeId":"260:1810","values":{"severity":"warning","variant":"outlined"},"tokens":{"icon":"{components.alert.colors.warning.outlined.icon}","foreground":"{components.alert.colors.warning.outlined.foreground}"},"strokes":{"border":{"color":"{components.alert.colors.warning.outlined.border}","width":"{layouts.stroke.outline}","align":"inside"}},"view":"v6","bindings":[{"definition":"b5","nodeId":"260:1811"},{"definition":"b2","nodeId":"281:648"},{"definition":"b3","nodeId":"260:1816"}],"sample":"s3"},
+    {"nodeId":"260:1834","values":{"severity":"error","variant":"standard"},"tokens":{"background":"{components.alert.colors.error.standard.background}","icon":"{components.alert.colors.error.standard.icon}","foreground":"{components.alert.colors.error.standard.foreground}"},"view":"v5","bindings":[{"definition":"b5","nodeId":"260:1835"},{"definition":"b2","nodeId":"281:642"},{"definition":"b3","nodeId":"260:1840"}],"sample":"s4"},
+    {"nodeId":"260:1846","values":{"severity":"error","variant":"outlined"},"tokens":{"icon":"{components.alert.colors.error.outlined.icon}","foreground":"{components.alert.colors.error.outlined.foreground}"},"strokes":{"border":{"color":"{components.alert.colors.error.outlined.border}","width":"{layouts.stroke.outline}","align":"inside"}},"view":"v6","bindings":[{"definition":"b5","nodeId":"260:1847"},{"definition":"b2","nodeId":"281:650"},{"definition":"b3","nodeId":"260:1852"}],"sample":"s4"}
+  ],
+  "structure":{
+    "view":"st1",
+    "variantAxes":["severity","variant"]
+  },
+  "rendering":{
+    "roles":{"background":{"kind":"paint","cssProperties":["background-color"]},"foreground":{"kind":"paint","cssProperties":["color","fill"]},"icon":{"kind":"paint","cssProperties":["color","fill"]},"border":{"kind":"stroke","cssProperties":["box-shadow"]},"ring":{"kind":"stroke","cssProperties":["outline-color","outline-width"],"fallback":"box-shadow"}}
+  },
+  "icons":{
+    "circleInfo":{"policy":"strict","figmaName":"circle-info","slot":"icon","size":"{components.icons.sizes.base}","visibilityProp":"icon","variants":[{"severity":"info","variant":"standard"},{"severity":"info","variant":"outlined"}]},
+    "circleCheck":{"policy":"strict","figmaName":"circle-check","slot":"icon","size":"{components.icons.sizes.base}","visibilityProp":"icon","variants":[{"severity":"success","variant":"standard"},{"severity":"success","variant":"outlined"}]},
+    "triangleExclamation":{"policy":"strict","figmaName":"triangle-exclamation","slot":"icon","size":"{components.icons.sizes.base}","visibilityProp":"icon","variants":[{"severity":"warning","variant":"standard"},{"severity":"warning","variant":"outlined"},{"severity":"error","variant":"standard"},{"severity":"error","variant":"outlined"}]}
+  },
+  "textStyles":{
+    "body.large":{"figmaName":"Body/Large","tokens":{"fontFamily":"{primitives.fontfamily.base}","fontSize":"{typography.body.large.fontsize}","fontWeight":"{typography.body.large.fontweight}","lineHeight":"{typography.body.large.lineheight}","letterSpacing":"{typography.body.large.letterspacing}"}},
+    "body.small":{"figmaName":"Body/Small","tokens":{"fontFamily":"{primitives.fontfamily.base}","fontSize":"{typography.body.small.fontsize}","fontWeight":"{typography.body.small.fontweight}","lineHeight":"{typography.body.small.lineheight}","letterSpacing":"{typography.body.small.letterspacing}"}}
+  },
+  "composes":[
+    {"component":"Button","figmaLayer":"Button","visibilityProp":"action"}
+  ],
+  "samples":{
+    "s1":{"args":{"icon":true,"title":true,"action":true},"text":[{"slotPath":["label","label"],"value":"Titre"},{"slotPath":["label","label-2"],"value":"Description"}],"composes":[{"figmaLayer":"Button","component":"Button","args":{"color":"info","variant":"text","state":"default","iconLeft":false,"iconRight":false,"label":true,"size":"small"},"slotPath":["action","button"],"overrides":[{"figmaPath":[".sizeWrapperButton","Suivant"],"text":"Action"}]}]},
+    "s2":{"args":{"icon":true,"title":true,"action":true},"text":[{"slotPath":["label","label"],"value":"Titre"},{"slotPath":["label","label-2"],"value":"Description"}],"composes":[{"figmaLayer":"Button","component":"Button","args":{"color":"success","variant":"text","state":"default","iconLeft":false,"iconRight":false,"label":true,"size":"small"},"slotPath":["action","button"],"overrides":[{"figmaPath":[".sizeWrapperButton","Suivant"],"text":"Action"}]}]},
+    "s3":{"args":{"icon":true,"title":true,"action":true},"text":[{"slotPath":["label","label"],"value":"Titre"},{"slotPath":["label","label-2"],"value":"Description"}],"composes":[{"figmaLayer":"Button","component":"Button","args":{"color":"warning","variant":"text","state":"default","iconLeft":false,"iconRight":false,"label":true,"size":"small"},"slotPath":["action","button"],"overrides":[{"figmaPath":[".sizeWrapperButton","Suivant"],"text":"Action"}]}]},
+    "s4":{"args":{"icon":true,"title":true,"action":true},"text":[{"slotPath":["label","label"],"value":"Titre"},{"slotPath":["label","label-2"],"value":"Description"}],"composes":[{"figmaLayer":"Button","component":"Button","args":{"color":"error","variant":"text","state":"default","iconLeft":false,"iconRight":false,"label":true,"size":"small"},"slotPath":["action","button"],"overrides":[{"figmaPath":[".sizeWrapperButton","Suivant"],"text":"Action"}]}]}
+  },
+  "intent":{
+    "usage":"Message a but informatif affiché de façon brève ou inclue dans le contenu de la page en fonction du contexte"
+  }
+}

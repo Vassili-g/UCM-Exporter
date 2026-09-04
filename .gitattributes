@@ -2,3 +2,8 @@
 # Sans cette ligne, une extraction sous Windows le convertirait en CRLF et
 # toute régénération — ou toute recopie — l'afficherait comme modifié.
 schema/*.json text eol=lf
+
+# Les contrats N-1 figés sont des octets, pas seulement du JSON : leurs
+# empreintes sont publiées dans le README voisin, et une conversion en CRLF les
+# invaliderait toutes.
+fixtures/contrats/**/*.json text eol=lf
