@@ -89,8 +89,10 @@ celui qui ouvre `AGENTS.md` et le croit — donc elle ne protège presque person
       *Mécanisme en place, et déjà exercé deux fois :* chaque balise nomme la
       tâche qui la retire. Celle de `CHANGELOG-CONTRAT.md` est partie avec sa
       cause dans le commit de la Phase A, celle de `check-contract.mjs` avec D1.
-      **Reste six**, plus les quatre renvois des points d'entrée, qui se
-      déclarent balises et partent avec la dernière.
+      **Reste quatre**, plus les quatre renvois des points d'entrée, qui se
+      déclarent balises et partent avec la dernière. T2.4 en a retiré deux d'un
+      coup : `verdict-bilan.mjs` et l'un des deux invariants de
+      `Playground/AGENTS.md`.
       Une balise qui survit à sa cause devient elle-même une information
       périmée. Chaque tâche qui corrige une contradiction retire la balise
       correspondante **dans le même commit**, et T8.8 vérifie qu'il n'en reste
@@ -555,7 +557,30 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       designer lit. Le défaut n'est pas du bruit de fond, c'est une affirmation
       fausse au seul endroit qui compte.
 
-- [ ] **T2.4 — Contrôle d'existence des tokens indépendant du CSS.**
+- [X] **T2.4 — Contrôle d'existence des tokens indépendant du CSS.** *Fait.*
+      Le contrôle interroge `tokens.json` au chemin exact de la référence.
+      `nomVariable` et la lecture de `tokens.css` disparaissent de
+      `check-contract.mjs` ; `tokens-dtcg.mjs` rejoint le kit et porte seul la
+      réponse à « ce token existe-t-il ». `typography-token-types.mjs` l'importe
+      au lieu d'indexer l'arbre pour son compte : une seule définition de ce
+      qu'est une feuille DTCG, sans quoi le contrôle de type et le contrôle
+      d'existence jugeraient deux arbres différents à partir du même fichier.
+      Kit : 131 tests → 144, dont treize sur le nouveau module, vérifiés par
+      mutation. Verdict identique sur le corpus réel — mêmes quatre contrats,
+      mêmes 387 références, même conformité.
+      **La divergence annoncée en théorie existe déjà dans les données.** Figma
+      publie quatre tokens nommés `layouts.sizing.0,5` … `3,5` (virgule
+      décimale). Style Dictionary écrit `--layouts-sizing-0-5` ; la projection
+      `.` → `-` cherchait `layouts-sizing-0,5`. Un contrat citant l'un de ces
+      quatre tokens recevait donc « token absent » alors que le token existe.
+      Aucun contrat du corpus ne les cite encore — c'est pourquoi le défaut
+      était resté invisible. Un test de caractérisation neuf le tient fermé.
+      *Les deux filets sont reportés, pas supprimés,* et ils se séparent :
+      `tokens.json` **absent** accuse la génération, **illisible** accuse le
+      fichier. Les confondre — ce que faisait le message unique — envoyait le
+      designer réparer un JSON qui n'existe pas.
+      *Deux balises retirées dans le même commit* (`verdict-bilan.mjs:9`,
+      `Playground/AGENTS.md`) : leur contradiction n'existe plus.
       Vérifié : `check-contract.mjs:124-140` lit `src/generated/tokens.css` et
       `:230` s'en sert pour le seul contrôle qui protège le design.
       **Correction majeure de la v3 :** cette tâche ne dépend **pas** de T2.0,
@@ -566,6 +591,9 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       Le code qui fait déjà cette résolution existe et est testé
       (`typography-token-types.mjs:38-42`). Après T2.4, le contrôle qui protège
       le design n'utilise plus aucune projection.
+      *Vérifié à l'exécution avant d'écrire une ligne :* 387 références de
+      l'union « citées + `tokensUsed` », 387 résolues par chemin exact, zéro
+      échec ; 721 feuilles indexées.
       **Deux points à ne pas manquer en réutilisant ce code.** `indexerFeuilles`
       n'indexe que les nœuds portant un `$type` **propre** ; cela marche sur le
       corpus actuel — vérifié, les 693 feuilles en portent un et aucun groupe
@@ -791,14 +819,25 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
 ## Phase 6 — Couches optionnelles
 
 - [ ] **T6.0 — La projection unique nom-de-token.** *Descendue de la Phase 2.*
-      Trois implémentations — `tokens.ts:47`, `check-contract.mjs:154-156`, le
+      Elles étaient trois — `tokens.ts:47`, `check-contract.mjs`, le
       `name/kebab` de Style Dictionary — qu'aucun test ne compare, et qui
-      divergent sur les données réelles : sur 693 tokens, quatre portent une
-      virgule décimale (`layouts.sizing.0,5`) que Style Dictionary rend
-      `--layouts-sizing-0-5` et la projection naïve `layouts-sizing-0,5`.
-      Après T2.4, ses seuls clients restants sont `tokenVar` et le preset —
-      d'où son déplacement ici. Elle reste nécessaire : sans elle, `tokenVar`
-      produit un CSS invalide, ignoré sans erreur par le navigateur.
+      divergent sur les données réelles : sur 721 tokens (693 à la rédaction),
+      quatre portent une virgule décimale (`layouts.sizing.0,5`) que Style
+      Dictionary rend `--layouts-sizing-0-5` et la projection naïve
+      `layouts-sizing-0,5`.
+      **T2.4 en a supprimé une**, celle de `check-contract.mjs`, en retirant son
+      besoin plutôt qu'en la corrigeant. Restent `tokenVar` et le preset — d'où
+      le déplacement de cette tâche ici. Elle reste nécessaire, et son enjeu est
+      maintenant constaté et non plus supposé : `tokenVar("{layouts.sizing.0,5}")`
+      rend `var(--layouts-sizing-0,5)`, que le navigateur ignore sans erreur.
+      `tokenVar` lève sur une valeur brute au nom de la « perte visuelle muette »
+      que son en-tête dénonce, et en produit une par le seul chemin qu'elle ne
+      contrôle pas. Aucun composant du corpus ne cite ces quatre tokens : le
+      défaut est latent.
+      *Ce que ce constat ajoute au plan :* aucun test des deux repositories ne
+      rend un composant et ne relit ses styles calculés. Une suite verte ne dit
+      donc rien de ce que le navigateur reçoit — comme les deux défauts de la
+      Phase 2 disaient qu'elle ne dit rien de ce que le consommateur reçoit.
       *Classe de divergence plus large que la virgule, vérifiée :* le
       `kebabCase` de Style Dictionary normalise tout caractère hors `[a-z0-9]`.
       `100%` devient `100` — le `%` **disparaît**, donc ce n'est plus une
@@ -1044,12 +1083,12 @@ Elles sont corrigées ici.
 
 | Document | Ce qu'il affirme | Ce que fait le code |
 |---|---|---|
-| `Playground/AGENTS.md` | `tokens.json` fait foi pour l'existence des références | `check-contract.mjs:124,230` lit `tokens.css` |
-| `verdict-bilan.mjs:9` | idem, en commentaire | idem |
+| ~~`Playground/AGENTS.md`~~ | ~~`tokens.json` fait foi pour l'existence des références~~ | **résolu par T2.4** : le code lit `tokens.json` |
+| ~~`verdict-bilan.mjs:9`~~ | ~~idem, en commentaire~~ | **résolu par T2.4** |
 | `Playground/AGENTS.md` | `references-token.mjs` définit **seul** la référence | `tokens.ts:22` en porte une copie |
 | `check-contract.mjs:42-47` | ce que l'export ne peut corriger avertit sans bloquer | le contrôle des tokens du code bloque (`:658`) — résolu par D1 |
 | `PISTES-EVOLUTION.md`, « Extraction multi-repository » | rien à publier avec un seul consommateur | révisé par D5 |
 | `CHANGELOG-CONTRAT.md` | porte l'historique des schémas « et lui seul » | s'arrête à 11.0 |
 | skill `consommer-contrat`, ancrage 6 | une commande de contrôle ciblée sur un composant | n'existe pas |
 | `Exporter/AGENTS.md` | aucun artefact de contrat, jamais | à préciser pour les fixtures du kit (T7.0) |
-| — | aucun document ne déclare la projection de nom de token comme invariant | elle est écrite trois fois et diverge |
+| — | aucun document ne déclare la projection de nom de token comme invariant | elle était écrite trois fois ; T2.4 en supprime une, les **deux restantes divergent pour de bon** (voir ci-dessous) |
