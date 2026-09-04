@@ -229,6 +229,19 @@ Rien à publier tant qu’un seul repository consomme des contrats. Un découpag
 éventuel doit conserver **une seule autorité** pour les conventions de version,
 d’identifiant et de références de tokens.
 
+> ⚠ **BALISE-PERIMEE** — la première phrase est révisée, la seconde ne tient
+> déjà pas. L'identifiant a **deux** implémentations : `codeIdentifier`
+> (`src/utils.ts:28`) et `identifiantCode` du Playground
+> (`scripts/identifiant-code.mjs`), dont l'en-tête s'annonce lui-même comme une
+> recopie. La projection d'un nom de token en a **trois** — `tokenVar`
+> (`src/tokens.ts:47` du Playground), `nomVariable`
+> (`scripts/check-contract.mjs:154-156`) et le `name/kebab` de Style Dictionary
+> — et elles divergent sur les données réelles. Conserver une autorité unique
+> est donc ce que la publication doit **réaliser**, pas ce qu'elle peut
+> attendre. Révisé par D5 et corrigé au fond par T2.1 et T6.0 de
+> [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui retirent cette
+> balise.
+
 ### Passerelles
 
 Une fois le format stable, des adaptateurs pourraient alimenter Code Connect,
