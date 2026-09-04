@@ -25,7 +25,7 @@ import exporterLeComposant, {
 } from '../src/contract/exportComponent';
 import { collectTokenReferences } from '../src/variables';
 import { verifierLaSerialisation, verifierLeSchema, verifierLesLois } from './lois';
-import type { ContractProp } from '@ucm/kit/format';
+import type { ContractProp } from '@ucm-kit/core/format';
 
 /**
  * Chaque contrat que le moteur fabrique ici passe d'abord par les lois de

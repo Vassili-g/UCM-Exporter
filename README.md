@@ -55,7 +55,7 @@ l’export n’est pas bloqué.
 | `npm test` | Exécute les tests de l’exporteur |
 | `npm run typecheck` | Vérifie TypeScript |
 | `npm run build` | Vérifie puis construit le plugin complet |
-| `npm run schema` | Régénère le JSON Schema du contrat depuis `types.ts` (paquet `@ucm/kit`) |
+| `npm run schema` | Régénère le JSON Schema du contrat depuis `types.ts` (paquet `@ucm-kit/core`) |
 
 ## Architecture
 
@@ -69,10 +69,10 @@ packages/plugin/    Le MOTEUR — extraction Figma. Dépend du kit.
   src/github.ts       Dépôt optionnel par pull request
   manifest.json       Le plugin se charge dans Figma depuis son `dist/`
 
-packages/kit/       Le FORMAT — `@ucm/kit`. Ne dépend de personne.
+packages/kit/       Le FORMAT — `@ucm-kit/core`. Ne dépend de personne.
   src/format/         Types, version et règles de nommage, sans Node ni Figma
   scripts/            Génération du schéma depuis `types.ts`
-  schema/             Le schéma commité, publié en `@ucm/kit/schema`
+  schema/             Le schéma commité, publié en `@ucm-kit/core/schema`
   fixtures/           Contrats d'une version que le moteur ne fabrique plus
 ```
 

@@ -10,7 +10,7 @@
  * toute la matrice. Un second calcul, même équivalent en apparence, finirait par
  * attribuer à une icône un slot que le contrat ne contient pas.
  */
-import { normalizeName } from '@ucm/kit/format';
+import { normalizeName } from '@ucm-kit/core/format';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import { indexedSlotName, semanticSlotName } from './semantics';

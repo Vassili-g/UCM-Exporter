@@ -15,7 +15,7 @@ import type {
 } from '../src/contract/composedComponents';
 import { extractVariantSample } from '../src/contract/extractSamples';
 import { buildContractPropertySurface } from '../src/contract/propertySurface';
-import type { ComposedDependency, SampleInstance } from '@ucm/kit/format';
+import type { ComposedDependency, SampleInstance } from '@ucm-kit/core/format';
 
 type MockNode = SceneNode & {
   children: MockNode[];

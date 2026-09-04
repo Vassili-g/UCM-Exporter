@@ -5,7 +5,7 @@
  * de props et politiques d'icônes, sans dépendre de l'API Figma.
  */
 import { normalizePropKey, normalizePropValue } from './parsers';
-import type { IconPolicy, Intent } from '@ucm/kit/format';
+import type { IconPolicy, Intent } from '@ucm-kit/core/format';
 
 /** Tags reconnus une fois normalisés sans `@`. */
 export type RuleTag = 'usage' | 'prop' | 'boolean' | 'do' | 'dont' | 'pairs' | 'icons';

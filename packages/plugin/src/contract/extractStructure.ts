@@ -31,7 +31,7 @@ import type {
   SizeDimensions,
   TextStyleDefinition,
   VariantPaintPlacements,
-} from '@ucm/kit/format';
+} from '@ucm-kit/core/format';
 
 /**
  * Situe chaque clé de couleur par les chemins de l'arbre publié.

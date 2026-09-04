@@ -6,7 +6,7 @@
 import { definePropOn, normalizePropKey, propByName } from './parsers';
 import type { IconLayerSummary } from './extractIconLayers';
 import type { IconRule } from './rulesModel';
-import type { ContractProp, IconDefinition, IconProp } from '@ucm/kit/format';
+import type { ContractProp, IconDefinition, IconProp } from '@ucm-kit/core/format';
 
 /**
  * Énumère des valeurs relevées sur la matrice pour un message d'avertissement.

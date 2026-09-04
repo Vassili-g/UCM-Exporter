@@ -1,5 +1,5 @@
 {
-  "name": "@ucm/kit",
+  "name": "@ucm-kit/core",
   "version": "0.1.0",
   "description": "Le format de contrat UCM : ses types, sa version, ses règles de nommage et son schéma.",
   "type": "module",

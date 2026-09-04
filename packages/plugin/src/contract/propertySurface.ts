@@ -11,7 +11,7 @@ import {
   extractContractPropertyModel,
 } from './parsers';
 import type { ContractPropertyModel } from './parsers';
-import type { ContractProp } from '@ucm/kit/format';
+import type { ContractProp } from '@ucm-kit/core/format';
 
 /** Modèle direct, éventuel complément du wrapper et projection fusionnée. */
 export type ContractPropertySurface = {

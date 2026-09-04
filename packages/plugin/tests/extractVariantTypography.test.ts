@@ -4,7 +4,7 @@ import test from 'node:test';
 import { extractVariantTypography, textSlots } from '../src/contract/extractVariantTypography';
 import { extractLayout } from '../src/contract/extractLayout';
 import { findLayoutNode } from '../src/contract/layoutNodes';
-import type { ChildStructure } from '@ucm/kit/format';
+import type { ChildStructure } from '@ucm-kit/core/format';
 import { collectTokenReferences } from '../src/variables';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;

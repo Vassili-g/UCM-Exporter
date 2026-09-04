@@ -16,7 +16,7 @@ import type {
   LayoutConstraints,
   LayoutInset,
   SizeBounds,
-} from '@ucm/kit/format';
+} from '@ucm-kit/core/format';
 
 type FlexContainerProperties = {
   justifyContent?: JustifyContent;

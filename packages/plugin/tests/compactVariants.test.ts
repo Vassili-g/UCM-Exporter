@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { compactVariants } from '../src/contract/compactVariants';
-import type { ExtractedContractVariant, ExtractedPropertyBinding } from '@ucm/kit/format';
+import type { ExtractedContractVariant, ExtractedPropertyBinding } from '@ucm-kit/core/format';
 
 const structure = (radius: string | null) => ({
   layout: 'flex-row' as const,

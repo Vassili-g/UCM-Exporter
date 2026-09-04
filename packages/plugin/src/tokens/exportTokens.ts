@@ -4,7 +4,7 @@
  * Dictionary. Principe fondamental : la chaîne d'alias est préservée —
  * un alias devient une référence `"{cible}"`, jamais sa valeur finale.
  */
-import { normalizeName } from '@ucm/kit/format';
+import { normalizeName } from '@ucm-kit/core/format';
 import { collisionWarnings, firstVariableAlias, indexVariables } from '../variables';
 import { serializeJson } from '../contract/serializeJson';
 

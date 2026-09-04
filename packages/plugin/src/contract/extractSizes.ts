@@ -21,7 +21,7 @@ import {
 } from './nodeBindings';
 import { isGridAutoLayout } from './flexLayout';
 import { semanticEnumName } from './semantics';
-import type { SizeDimensions } from '@ucm/kit/format';
+import type { SizeDimensions } from '@ucm-kit/core/format';
 
 /**
  * Repère l'axe « taille » d'un component set : c'est l'axe dont TOUTES les

@@ -8,7 +8,7 @@
  * Il reste pur pour pouvoir vérifier la convention sans l'API Figma.
  */
 import { propByName } from './parsers';
-import type { ContractProp, StateModel } from '@ucm/kit/format';
+import type { ContractProp, StateModel } from '@ucm-kit/core/format';
 
 /**
  * Message unique pour une valeur citée par une règle mais absente de l'axe :

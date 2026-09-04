@@ -69,14 +69,14 @@ packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
   tests/
   manifest.json              chargé dans Figma depuis packages/plugin/dist/
 
-packages/kit/            le FORMAT : @ucm/kit, publié, ne dépend de personne
+packages/kit/            le FORMAT : @ucm-kit/core, publié, ne dépend de personne
   src/format/              sous-chemin SANS dépendance Node ni Figma
     types.ts                 schéma TypeScript du contrat
     version.ts               CONTRACT_VERSION, seul endroit où elle est écrite
     names.ts                 normalizeName et codeIdentifier
     index.ts                 ce que le sous-chemin publie
   scripts/build-schema.ts  génère le schéma depuis types.ts
-  schema/                  le schéma commité, publié en `@ucm/kit/schema`
+  schema/                  le schéma commité, publié en `@ucm-kit/core/schema`
   fixtures/contrats/11.0/  jeu N-1 figé, que le moteur ne sait plus fabriquer
   tests/
 

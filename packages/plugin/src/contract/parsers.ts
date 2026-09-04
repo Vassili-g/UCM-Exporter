@@ -1,9 +1,9 @@
 /**
  * Traduction des propriétés Figma en props publiques du contrat.
  */
-import { normalizeName } from '@ucm/kit/format';
+import { normalizeName } from '@ucm-kit/core/format';
 import { semanticEnumName } from './semantics';
-import type { ContractProp } from '@ucm/kit/format';
+import type { ContractProp } from '@ucm-kit/core/format';
 
 /**
  * Normalise un nom de propriété Figma en clé camelCase.

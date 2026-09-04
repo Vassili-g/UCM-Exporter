@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mergeBooleanDescriptions } from '../src/contract/mergeBooleanDescriptions';
-import type { ContractProp } from '@ucm/kit/format';
+import type { ContractProp } from '@ucm-kit/core/format';
 
 test('mergeBooleanDescriptions documente une prop boolean existante', () => {
   const props: Record<string, ContractProp> = {

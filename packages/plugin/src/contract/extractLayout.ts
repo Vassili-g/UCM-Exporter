@@ -65,7 +65,7 @@ import type {
   PaddingX,
   PaddingY,
   Radius,
-} from '@ucm/kit/format';
+} from '@ucm-kit/core/format';
 
 /**
  * Les dépendances que l'arbre place, indexées par le slot qui les rend.

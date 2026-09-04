@@ -20,7 +20,7 @@ import { findWrapperReference } from '../src/contract/componentTree';
 import { getAllNodes } from '../src/contract/exportableNodes';
 import { extractLayout } from '../src/contract/extractLayout';
 import type { PlacedDependencies } from '../src/contract/extractLayout';
-import type { ChildStructure, ComposedDependency } from '@ucm/kit/format';
+import type { ChildStructure, ComposedDependency } from '@ucm-kit/core/format';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 

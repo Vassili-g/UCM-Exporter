@@ -29,15 +29,15 @@ import { mergePropDescriptions } from './mergePropDescriptions';
 export { mergePropDescriptions } from './mergePropDescriptions';
 import { buildStateModel, renderingSemanticsFor } from './semantics';
 import { indexVariables, VariableNameResolver } from '../variables';
-import { codeIdentifier } from '@ucm/kit/format';
-import { CONTRACT_VERSION } from '@ucm/kit/format';
+import { codeIdentifier } from '@ucm-kit/core/format';
+import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import type {
   ChildStructure,
   ComposedDependency,
   Contract,
   ContractMeta,
   ExtractedContractVariant,
-} from '@ucm/kit/format';
+} from '@ucm-kit/core/format';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(

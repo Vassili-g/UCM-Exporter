@@ -19,7 +19,7 @@ import { getAllNodes, hasAncestorIn } from './exportableNodes';
 import { normalizePropKey } from './parsers';
 import { buildContractPropertySurface } from './propertySurface';
 import type { ContractPropertySurface } from './propertySurface';
-import type { ComposedDependency } from '@ucm/kit/format';
+import type { ComposedDependency } from '@ucm-kit/core/format';
 
 /** Noms compactés des composants qui possèdent leur propre contrat. */
 export type ContractedNames = ReadonlySet<string>;

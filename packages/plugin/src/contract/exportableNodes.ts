@@ -12,7 +12,7 @@
  */
 import { variableAliases } from '../variables';
 import { getBinding } from './nodeBindings';
-import type { ComposedDependency } from '@ucm/kit/format';
+import type { ComposedDependency } from '@ucm-kit/core/format';
 
 /** Vrai si la visibilité peut changer via l'API publique ou un mode de variable. */
 function hasDynamicVisibility(node: SceneNode): boolean {

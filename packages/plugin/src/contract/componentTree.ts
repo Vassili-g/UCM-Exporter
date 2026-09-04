@@ -5,7 +5,7 @@
  * Tout est dynamique : aucun nom d'axe ni de composant n'est codé en dur.
  */
 import { normalizePropKey, normalizePropValue } from './parsers';
-import type { FigmaVariantLabels } from '@ucm/kit/format';
+import type { FigmaVariantLabels } from '@ucm-kit/core/format';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, hasCompleteBinding } from './nodeBindings';

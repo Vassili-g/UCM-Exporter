@@ -48,7 +48,7 @@ import type {
   SampleOverride,
   SampleSwap,
   SampleText,
-} from '@ucm/kit/format';
+} from '@ucm-kit/core/format';
 
 /** Ce que le module a besoin de savoir d'un variant pour l'échantillonner. */
 export type SampleSource = {

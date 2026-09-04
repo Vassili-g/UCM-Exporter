@@ -288,23 +288,26 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       laisserait passer une perte de données silencieuse, c'est-à-dire
       exactement le défaut qu'on corrige. Exécutant : T4.3.
 
-- [X] **D10 — Nommage du paquet. Tranché : `@ucm/kit`.**
-      *Vérifié sur le registre au moment de trancher :* `ucm` est pris (2.2.0),
-      `ucm-kit`, `ucm-contract` et `unified-component-model` sont libres,
-      `@ucm/kit` rend 404. Le scope l'emporte parce qu'il réserve tout l'espace
-      `@ucm/*` — preset, adaptateurs, CLI — qu'un nom non scopé laisserait
-      prendre. **Reste à faire avant la première publication :** créer
-      l'organisation npm `ucm`. Si elle est prise, le repli est `ucm-kit`, et
-      c'est un renommage à faire AVANT de publier, pas après.
-      *Ce que la v5 disait, et qui reste vrai :* Vérifié sur le registre : le nom non scopé
-      `ucm` est **pris** (version 2.2.0 publiée). `@ucm/kit` renvoie 404, ce qui
-      ne prouve pas que le scope soit libre — une organisation npm peut exister
-      sans aucun paquet public, et seule sa création le confirmera. Sont libres
-      aujourd'hui : `ucm-kit`, `ucm-contract`, `unified-component-model`.
-      Reste à trancher entre un nom non scopé libre et un scope
-      (`@ucm/…` si l'organisation est disponible, sinon un scope personnel, qui
-      l'est toujours). À faire avant la première publication : un renommage
-      après coup casse tous les repos consommateurs.
+- [X] **D10 — Nommage du paquet. Tranché et exécuté : `@ucm-kit/core`.**
+      *Résolu :* l'organisation npm créée est **`ucm-kit`**, pas `ucm` — donc le
+      scope disponible est `@ucm-kit/*`. La décision de la v5 (`@ucm/kit`) est
+      devenue inapplicable telle quelle ; elle est retranchée dans le scope
+      réellement obtenu, et le renommage a été fait **avant toute publication**,
+      comme la v5 l'exigeait. 64 occurrences remplacées en un geste mécanique,
+      lockfile régénéré, tests des deux paquets verts.
+      *Vérifié sur le registre au moment de trancher :* `ucm` est pris (2.2.0) ;
+      `@ucm-kit/core`, `@ucm-kit/kit`, `@ucm-kit/format` et le nom non scopé
+      `ucm-kit` rendent tous 404. Le scope l'emporte pour la raison d'origine —
+      il réserve tout l'espace `@ucm-kit/*` : `@ucm-kit/cli`,
+      `@ucm-kit/preset-style-dictionary`, `@ucm-kit/adapter-typescript`, qu'un
+      nom non scopé laisserait prendre un par un.
+      *Pourquoi `core` et pas `kit` :* le scope porte déjà le mot « kit ».
+      `@ucm-kit/kit` se lit deux fois.
+      **Le répertoire reste `packages/kit`, et c'est délibéré.** Le nom npm et le
+      nom de dossier n'ont pas à coïncider ; toute la documentation, ce plan
+      compris, appelle ce paquet « le kit », et renommer le dossier réécrirait
+      des passages qui racontent des tâches déjà faites. Ne pas « corriger »
+      cet écart : il est décidé ici.
 
 ---
 
@@ -371,7 +374,7 @@ plan existe pour qu'il ne se rejoue jamais à la main.
         forme, et le point d'ancrage de T2.5.
       - **`moduleResolution: "Node"` ignore les cartes `exports`** — rupture
         prouvée à l'exécution par la revue : `tsc` rend `TS2307: Cannot find
-        module '@ucm/kit/format'` avec le réglage actuel (`tsconfig.json:7`), et
+        module '@ucm-kit/core/format'` avec le réglage actuel (`tsconfig.json:7`), et
         passe en `Bundler`. Le sous-chemin sans dépendance Node de T1.0 **exige
         donc de changer `moduleResolution`**, ce qui touche toute la résolution
         de modules du plugin. À traiter au même rang que `typeRoots`.
@@ -413,7 +416,7 @@ plan existe pour qu'il ne se rejoue jamais à la main.
 
 ---
 
-## Phase 2 — Le noyau (`@ucm/kit`)
+## Phase 2 — Le noyau (`@ucm-kit/core`)
 
 - [ ] **T2.1 — Déplacer les lecteurs du format, tels quels, avec leurs tests.**
       `validation-contrat.mjs` (1576 l.), `variant-views.mjs`,

@@ -16,7 +16,7 @@ import { extractPropertyBindings } from '../src/contract/propertyBindings';
 import { getAllNodes } from '../src/contract/exportableNodes';
 import { compactVariants } from '../src/contract/compactVariants';
 import { buildContractPropertySurface } from '../src/contract/propertySurface';
-import type { ComposedDependency, ExtractedContractVariant } from '@ucm/kit/format';
+import type { ComposedDependency, ExtractedContractVariant } from '@ucm-kit/core/format';
 
 function node(type: string, id: string, name: string, children: any[] = [], extra: object = {}) {
   const result: any = { type, id, name, children, boundVariables: {}, visible: true, ...extra };

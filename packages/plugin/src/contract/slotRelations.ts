@@ -8,7 +8,7 @@
 import { getAllNodes, hasAncestorIn } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import { normalizePropKey } from './parsers';
-import type { ComposedDependency, VisibilityTarget } from '@ucm/kit/format';
+import type { ComposedDependency, VisibilityTarget } from '@ucm-kit/core/format';
 
 /**
  * Dépendances directes d'un slot, que le slot soit lui-même l'instance ou
