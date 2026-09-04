@@ -418,7 +418,35 @@ plan existe pour qu'il ne se rejoue jamais à la main.
 
 ## Phase 2 — Le noyau (`@ucm-kit/core`)
 
-- [ ] **T2.1 — Déplacer les lecteurs du format, tels quels, avec leurs tests.**
+- [X] **T2.1 — Déplacer les lecteurs du format, tels quels, avec leurs tests.**
+      *Fait.* Onze modules et six fichiers de test rejoignent
+      `packages/kit/src/lecteurs/` et `packages/kit/tests/`. Les octets viennent
+      de l'objet Git du Playground, pas de sa copie de travail : Windows y tient
+      les `.mjs` en CRLF, et une recopie naïve aurait fait entrer 24 CR par
+      fichier dans un paquet publié. Kit : 10 tests → 131.
+      **`identifiant-code.mjs` est supprimé**, et c'est ici que D5 se réalise :
+      `validation-graphe-contrats.mjs` appelle désormais `codeIdentifier` du
+      sous-chemin format. Substitution sûre à cet appel — l'appelant a déjà
+      écarté tout ce qui n'est pas une chaîne non vide —, mais **pas partout** :
+      `identifiantCode` faisait `String(nom ?? "")` et `codeIdentifier` attend
+      une chaîne. `generate-contract-types.mjs`, qui lit un JSON quelconque et
+      porte l'interdiction explicite de lever, garde donc la coercition à son
+      appel. C'est le genre d'écart qu'une substitution « mécanique » perd.
+      *Trois écarts à la liste de la v5, tous vérifiés :*
+      - **`schema-contrat.test.mjs` ne suit pas.** Il lit les contrats réels du
+        repo consommateur, ce que le kit n'a pas ; ses deux autres questions
+        sont déjà tenues par `tests/schema.test.ts`. Il reste chez le
+        consommateur, rebranché sur le kit.
+      - **`ajv` devient une dépendance du kit**, plus une devDependency du
+        plugin ni du Playground.
+      - **La porte publique est un fichier neuf**, `src/lecteurs/index.mjs`, et
+        elle publie ce que les modules publient déjà, sans tri : ce déplacement
+        ne juge rien, et restreindre la surface se décidera en T5.2, quand on
+        saura ce qu'un consommateur appelle vraiment.
+        `tests/surfaceLecteurs.test.mjs` tient l'exhaustivité dans les deux sens
+        (vérifié par mutation), pour qu'un export ajouté à un module ne reste
+        pas enfermé dedans par oubli.
+      *Énoncé d'origine, conservé :*
       `validation-contrat.mjs` (1576 l.), `variant-views.mjs`,
       `validation-graphe-contrats.mjs`, `validation-echantillons.mjs`,
       `references-token.mjs` (allégé par D1), `version-contrat.mjs`,
@@ -589,6 +617,31 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       sandbox jetable**. On le fait marcher avec le kit, on ne l'embellit pas et
       on n'en fait pas encore un exemple documenté. Il garde ses composants
       jetables, son corpus de quatre contrats réels et son test froid.
+
+### Deux défauts trouvés en exécutant la Phase 2
+
+Ni l'un ni l'autre n'était dans le plan, et tous deux étaient **invisibles en
+local** — ce qui est la seule chose qu'ils ont en commun, et elle suffit à les
+faire manquer.
+
+**La CI de l'Exporter était rouge depuis T1.2**, trois exécutions d'affilée, sur
+`Cannot find module '@ucm-kit/core/format'`. Le workflow lance `npm test` avant
+`npm run build`, et les tests du plugin importent le `dist/` du kit — présent sur
+tout poste où un build a déjà tourné, absent d'un checkout neuf. Corrigé par un
+script `prepare` dans le kit, que npm exécute pour chaque workspace à
+l'installation, `npm ci` compris : le paquet est construit dès qu'il est
+installé, en CI comme à la publication.
+
+**Le paquet ne s'importait pas avec Node.** `tsc` recopie les spécificateurs tels
+quels : `dist/format/index.js` portait `from './version'`, sans extension. Un
+bundler et `tsx` l'acceptent — donc tout le repository l'acceptait —, Node en
+ESM le refuse. Trouvé en installant le tarball dans le Playground, pas par la
+suite de tests, qui passe entièrement par `tsx`.
+`tests/paquetPublie.test.mjs` relance un `node` neuf, sans `tsx`, et lui fait
+traverser la carte `exports` comme un consommateur installé.
+*Ce que ces deux défauts disent du plan :* une suite de tests verte sur le poste
+du mainteneur ne dit rien de ce qu'un consommateur reçoit. Les deux tests ajoutés
+ici sont les premiers à poser cette question, et T7 en dépendra.
 
 ---
 
