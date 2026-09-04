@@ -75,11 +75,6 @@ const CHAMPS_VERSION_8 = [
  * vue y renvoient. C'est le seul champ que la 11.0 AJOUTE et qui ne peut pas
  * manquer — sans lui, plus aucun arbre de slots n'est atteignable.
  */
-const CHAMPS_VERSION_11 = [
-  ["viewStructures", estObjet],
-  ["structure.view", (valeur) => typeof valeur === "string" && valeur !== ""],
-];
-
 const CHAMPS_VERSION_8_SEULE = [
   ["propertyBindings", Array.isArray],
 ];
@@ -1574,7 +1569,6 @@ export function champsInvalidesDuContrat(contrat) {
     ...(major === 8 ? CHAMPS_VERSION_8_SEULE : []),
     ...(major >= 9 ? CHAMPS_VERSION_9 : []),
     ...(major >= 9 && major < 11 ? CHAMPS_VERSION_9_JUSQUA_10_3 : []),
-    ...(major >= 11 ? CHAMPS_VERSION_11 : []),
   ];
   const invalides = champs
     .filter(([chemin, valide]) => !valide(lire(contrat, chemin)))
