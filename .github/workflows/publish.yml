@@ -38,18 +38,23 @@ jobs:
         with:
           persist-credentials: false
 
+      # Volontairement SANS `registry-url`. L'option paraît nécessaire, elle est
+      # nuisible ici : elle fait écrire à `setup-node` une ligne
+      # `_authToken=${NODE_AUTH_TOKEN}` dans le `.npmrc` du runner. Aucun jeton
+      # n'existe, la variable est vide, et npm s'authentifie alors avec une
+      # chaîne vide au lieu de basculer sur l'OIDC — le registre répond 404 sans
+      # jamais dire que l'identité fournie était creuse.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          # Nécessaire même sans jeton : c'est ce qui écrit le `.npmrc` du
-          # runner et fixe le registre que la publication vise.
-          registry-url: https://registry.npmjs.org
           cache: npm
 
       # Le trusted publishing n'existe qu'à partir de npm 11.5.1, et l'image
       # GitHub embarque une version plus ancienne. Sans cette montée, `npm
-      # publish` réclame un jeton sans même tenter l'OIDC.
-      - run: npm install -g npm@latest
+      # publish` réclame un jeton sans même tenter l'OIDC. La version est
+      # affichée parce qu'un échec d'OIDC est muet : si elle repassait sous le
+      # seuil, rien d'autre ne le dirait.
+      - run: npm install -g npm@latest && npm -v
 
       # `npm ci` construit le kit au passage — son script `prepare` s'en charge
       # pour chaque workspace. On ne publie donc jamais un `dist/` traînant.
