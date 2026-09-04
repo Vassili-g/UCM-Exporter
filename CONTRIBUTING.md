@@ -188,7 +188,7 @@ jamais rester silencieuse.
 - Un composant imbriqué contracté devient une dépendance de composition ; son
   contenu interne n’est pas réexporté par le parent.
 - Un changement de forme du contrat incrémente `contractVersion`.
-- Le schéma publié par `@ucm/kit` est dérivé de
+- Le schéma publié par `@ucm-kit/core` est dérivé de
   `packages/kit/src/format/types.ts` par
   `npm run schema`. Il n’est jamais rédigé à la main : une seconde description
   de la même forme finirait par diverger de la première.

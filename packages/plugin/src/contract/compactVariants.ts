@@ -19,7 +19,7 @@ import type {
   VariantPaintPlacements,
   VariantPropertyBinding,
   VariantStructure,
-} from '@ucm/kit/format';
+} from '@ucm-kit/core/format';
 
 type CompactedVariants = {
   variants: ContractVariant[];

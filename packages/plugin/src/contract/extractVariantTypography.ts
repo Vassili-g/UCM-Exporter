@@ -4,7 +4,7 @@
  * Le nom du style décrit son identité Figma ; ses `boundVariables` fournissent
  * les vraies références DTCG. Aucun lien n'est déduit d'une convention de nom.
  */
-import { normalizeName } from '@ucm/kit/format';
+import { normalizeName } from '@ucm-kit/core/format';
 import { firstVariableAlias, toRef } from '../variables';
 import type { TokenResolver } from '../variables';
 import type { VariantMatrix } from './componentTree';
@@ -20,7 +20,7 @@ import type {
   TextStyleUse,
   TypographyTokens,
   VariantTypography,
-} from '@ucm/kit/format';
+} from '@ucm-kit/core/format';
 
 type TextStyleLoader = (id: string) => Promise<BaseStyle | null>;
 

@@ -22,7 +22,7 @@ const files = fs
   .map((name) => path.join('tests', name));
 
 if (files.length === 0) {
-  console.error('Aucun fichier de test trouvé dans tests/ (@ucm/kit).');
+  console.error('Aucun fichier de test trouvé dans tests/ (@ucm-kit/core).');
   process.exit(1);
 }
 

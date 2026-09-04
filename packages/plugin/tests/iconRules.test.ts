@@ -4,7 +4,7 @@ import { extractIconLayers } from '../src/contract/extractIconLayers';
 import { findLayoutNode } from '../src/contract/layoutNodes';
 import { collectTokenReferences } from '../src/variables';
 import { mergeIconRules } from '../src/contract/exportComponent';
-import type { ContractProp } from '@ucm/kit/format';
+import type { ContractProp } from '@ucm-kit/core/format';
 
 const layer = (
   figmaLayer: string,

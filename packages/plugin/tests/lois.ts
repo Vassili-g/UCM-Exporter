@@ -23,7 +23,7 @@ import { serializeJson } from '../src/contract/serializeJson';
  * chemin interne rétablirait exactement le couplage que la coupure supprime.
  * Ce que le plugin peut lire du kit est ce que le kit déclare publier.
  */
-const CHEMIN_DU_SCHEMA = createRequire(import.meta.url).resolve('@ucm/kit/schema');
+const CHEMIN_DU_SCHEMA = createRequire(import.meta.url).resolve('@ucm-kit/core/schema');
 
 /** Chaque partie d'une vue, et le catalogue où son renvoi se résout. */
 export type Partie = 'structure' | 'typography' | 'composes' | 'icons' | 'paintPlacements';

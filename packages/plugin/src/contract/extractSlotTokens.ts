@@ -21,7 +21,7 @@ import {
 } from './nodeBindings';
 import { paintSiteRole, roleKind } from './semantics';
 import { isIconLayer } from './slotNames';
-import type { StrokeAlignment, StrokeWidth } from '@ucm/kit/format';
+import type { StrokeAlignment, StrokeWidth } from '@ucm-kit/core/format';
 export type { TokenResolver } from '../variables';
 
 const BOUND_FIELDS = ['fills', 'strokes'] as const;

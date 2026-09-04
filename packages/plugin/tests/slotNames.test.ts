@@ -13,7 +13,7 @@ import test from 'node:test';
 import { extractStructure } from '../src/contract/extractStructure';
 import { mergeIconRules } from '../src/contract/mergeIconRules';
 import type { IconRule } from '../src/contract/rulesModel';
-import type { ContractStructure, IconDefinition } from '@ucm/kit/format';
+import type { ContractStructure, IconDefinition } from '@ucm-kit/core/format';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 

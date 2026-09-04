@@ -3,7 +3,7 @@
  * commandes du plugin. Principe fondamental : on résout les noms, jamais les
  * valeurs, pour préserver la chaîne d'alias du design system.
  */
-import { normalizeName } from '@ucm/kit/format';
+import { normalizeName } from '@ucm-kit/core/format';
 
 /**
  * Extrait tous les alias de variable d'une liaison, qu'elle soit simple

@@ -5,7 +5,7 @@
  */
 import { extractRules, hasUsableRules } from './contract/extractRules';
 import handleExportComponent from './contract/exportComponent';
-import { CONTRACT_VERSION } from '@ucm/kit/format';
+import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
 import type { SettingsInput } from './config';

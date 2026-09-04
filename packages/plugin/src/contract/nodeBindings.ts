@@ -14,7 +14,7 @@ import {
   gridHugAxes,
   sizeBoundFields,
 } from './flexLayout';
-import type { ContainerSizing, GridStructuralSize, SizeBounds, SlotSize } from '@ucm/kit/format';
+import type { ContainerSizing, GridStructuralSize, SizeBounds, SlotSize } from '@ucm-kit/core/format';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
 export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;

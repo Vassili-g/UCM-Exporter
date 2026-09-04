@@ -4,7 +4,7 @@
  * dépendre de l'API Figma.
  */
 import { propByName } from './parsers';
-import type { ContractProp } from '@ucm/kit/format';
+import type { ContractProp } from '@ucm-kit/core/format';
 
 export function mergeBooleanDescriptions(
   props: Record<string, ContractProp>,

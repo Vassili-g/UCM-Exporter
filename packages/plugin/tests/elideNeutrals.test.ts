@@ -75,7 +75,7 @@ test('ENTREES_PROTEGEES couvre tous les dictionnaires du schéma qui peuvent êt
   // test au lieu de faire disparaître une entrée en silence.
   // Le schéma appartient au kit, et se lit par sa carte `exports`.
   const schema = JSON.parse(
-    readFileSync(createRequire(import.meta.url).resolve('@ucm/kit/schema'), 'utf8'),
+    readFileSync(createRequire(import.meta.url).resolve('@ucm-kit/core/schema'), 'utf8'),
   ) as Record<string, any>;
   const deref = (noeud: any): any => {
     let courant = noeud;

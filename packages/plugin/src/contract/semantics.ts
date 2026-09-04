@@ -15,7 +15,7 @@ import type {
   RenderingSemantics,
   StateDescriptor,
   StateModel,
-} from '@ucm/kit/format';
+} from '@ucm-kit/core/format';
 
 /**
  * Déclencheurs web connus pour les valeurs d'un axe d'état.

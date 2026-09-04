@@ -2,7 +2,7 @@
 import type { VariantMatrix } from './componentTree';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
-import type { ExtractedPropertyBinding } from '@ucm/kit/format';
+import type { ExtractedPropertyBinding } from '@ucm-kit/core/format';
 
 /**
  * Valeur appliquée de chaque prop publique, par variant.
