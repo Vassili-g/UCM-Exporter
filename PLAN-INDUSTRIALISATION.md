@@ -966,8 +966,11 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
 
 ## Phase 6 — Couches optionnelles
 
-- [~] **T6.0 — La projection unique nom-de-token.** *Côté kit fait le
-      4 septembre 2026 ; reste le rebranchement du consommateur (T6.2).*
+- [X] **T6.0 — La projection unique nom-de-token.** *Close le 4 septembre 2026,
+      les deux côtés branchés (T6.2). Le kit la publie en 0.1.2 ; le Playground
+      la consomme ; `src/tokens-accord.test.ts` est passé du rouge au vert sur
+      les quatre virgules décimales, et `--layouts-sizing-0-5` vaut désormais
+      `var(--primitives-dimensions-2)` — les 2px du contrat, au lieu de 0px.*
       `tokenCssVariable` vit dans `packages/kit/src/format/names.ts`, à côté des
       deux autres projections de nom, et le format en publie désormais TROIS.
       **Où elle vit a été tranché**, le plan se contredisant : T6.1 disait « la
@@ -1079,7 +1082,17 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       test d'accord de T6.0a. La table « nom de graisse → poids » est une
       connaissance du format et va dans le kit ; la projection CSS reste dans le
       preset, pour qu'un futur preset iOS réutilise la table.
-- [ ] **T6.2 — `tokenVar`** importe la projection du kit.
+- [X] **T6.2 — `tokenVar`** importe la projection du kit. *Fait le 4 septembre
+      2026.* `tokenVar` appelle `tokenCssVariable`, et le transform `name/ucm`
+      de `style-dictionary.config.mjs` l'appelle aussi — il remplace
+      `name/kebab` dans le groupe `css-ds`, deux transforms de type `name`
+      s'écrasant l'un l'autre. L'accord n'est plus « deux formules égales » mais
+      « un seul appelé » : c'est ce qui empêche la redivergence, pas la
+      correction elle-même.
+      *Une copie de plus est tombée au passage :* la quatrième de la regex de
+      référence que T2.7 poursuivait — `isTokenReference` et `refPath` viennent
+      du kit désormais. Le pin du Playground passe à 0.1.2, lockfile régénéré,
+      `npm run check` vert : 73 tests, 4 contrats valides.
 - [ ] **T6.3 — Adaptateur TypeScript** : comparaison des props, génération des
       types. Précondition dure : un `tsconfig.json` à la racine
       (`parite.mjs:233`).
