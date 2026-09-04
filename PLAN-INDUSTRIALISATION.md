@@ -89,10 +89,12 @@ celui qui ouvre `AGENTS.md` et le croit — donc elle ne protège presque person
       *Mécanisme en place, et déjà exercé deux fois :* chaque balise nomme la
       tâche qui la retire. Celle de `CHANGELOG-CONTRAT.md` est partie avec sa
       cause dans le commit de la Phase A, celle de `check-contract.mjs` avec D1.
-      **Reste quatre**, plus les quatre renvois des points d'entrée, qui se
+      **Reste trois**, plus les quatre renvois des points d'entrée, qui se
       déclarent balises et partent avec la dernière. T2.4 en a retiré deux d'un
       coup : `verdict-bilan.mjs` et l'un des deux invariants de
-      `Playground/AGENTS.md`.
+      `Playground/AGENTS.md` ; T7.0 a retiré celle d'`Exporter/AGENTS.md`.
+      Inventaire au 4 septembre 2026, vérifié par `grep` : `PISTES-EVOLUTION.md`,
+      `Playground/AGENTS.md` et l'ancrage 6 du skill `consommer-contrat`.
       Une balise qui survit à sa cause devient elle-même une information
       périmée. Chaque tâche qui corrige une contradiction retire la balise
       correspondante **dans le même commit**, et T8.8 vérifie qu'il n'en reste
@@ -489,12 +491,31 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       toujours faux et `major < 11` toujours vrai. Un élagage conduit « par
       raisonnement sur les gates » supprimerait donc précisément le chemin qui
       valide le 12.0.
-      **Arbitrage préalable, à prendre avant de couper :** garde-t-on la
-      matérialisation — une forme pivot 10.3 gelée dans un paquet publié, dont
-      le nom mentira dès la 13.0 — ou l'aplatit-on en un validateur unique ?
-      Les deux sont défendables ; la question ne doit pas rester cachée derrière
-      « couper par gate ».
-      **Méthode, une fois l'arbitrage pris.** Quatre sous-tâches, pas une :
+      **Arbitrage tranché — on garde la matérialisation et on cesse de la faire
+      mentir.** La question posée était binaire — matérialisation vers un pivot
+      « 10.3 » gelé dans un paquet publié, ou aplatissement en un validateur
+      unique — et il existe une troisième réponse, moins chère que les deux.
+      La matérialisation n'est pas de la compatibilité dormante : c'est une
+      **normalisation**. Elle rétablit ce que l'élision a retiré — un groupe de
+      peintures vide, un `children` absent — pour qu'un seul validateur voie une
+      seule forme. Ce geste est utile et n'a rien à voir avec un numéro de
+      version. Ce qui ment n'est que deux choses : la chaîne `"10.3"` écrite
+      dans `meta.contractVersion` (`:1324`), et le suffixe `11` des noms.
+      *Ce qu'on fait, mécanique et vérifiable :* la matérialisation cesse de
+      réécrire `meta.contractVersion` et signale la forme normalisée par un
+      paramètre, ce qui rend au contrôle sa version réelle ;
+      `materialiserContrat11` devient `formeCanonique`,
+      `champsInvalidesDuContrat11` devient `champsInvalidesDeLaFormeCanonique`.
+      Aucun contrôle n'est touché, aucune passe fusionnée.
+      *Pourquoi pas l'aplatissement :* il demande de refusionner à la main les
+      deux passes d'un validateur de 1576 lignes — un « déplacer et réécrire
+      dans le même geste », que la règle 2 de ce plan interdit. Et A1 a déjà dû
+      placer les trois contrôles 12.0 **hors** de la passe matérialisée, parce
+      que la version y est réécrite : aplatir rouvrirait cet arbitrage pour
+      chaque contrôle du fichier. Une fois la version rendue, cette contrainte
+      disparaît d'elle-même — c'est un bénéfice de la troisième voie, pas une
+      tâche de plus.
+      **Méthode, une fois l'arbitrage pris.** Trois sous-tâches, pas une :
       1. **Conserver un jeu N‑1 avant qu'il disparaisse.** *Fait, avant A2.*
       Les quatre contrats 11.0 vivent dans `fixtures/contrats/11.0/` de
       l'Exporter, pris dans l'objet Git du Playground — pas dans sa copie de
@@ -506,21 +527,28 @@ plan existe pour qu'il ne se rejoue jamais à la main.
          12.0**. Figer une copie des quatre contrats 11.0 comme fixtures du kit
          **avant A2**, sans quoi plus aucune donnée N‑1 n'existe et la fenêtre
          que D8 vient de décider de garder devient inobservable.
-      2. **Mesurer sur les deux versions de la fenêtre.** Couverture de
-         `validation-contrat.mjs` sur les contrats N fabriqués **et** sur le jeu
-         N‑1 figé. Une mesure sur N seul marquerait « jamais atteint » tout ce
-         qui sert N‑1.
-      3. **Enregistrer les refus avant de couper.** Le risque de cette tâche
-         n'est pas de perdre un champ, c'est de perdre un **contrôle**. Une
-         preuve d'équivalence sur des contrats valides est aveugle à ce risque :
-         ils rendent `[]` avant comme après. Il faut donc, pour chaque contrôle,
-         une mutation qui le déclenche, et un instantané du message produit.
-         Mécanisable : muter chaque feuille d'un contrat fabriqué et enregistrer
+      2. **Enregistrer les refus avant de couper — et c'est la mesure.** Le
+         risque de cette tâche n'est pas de perdre un champ, c'est de perdre un
+         **contrôle**. Une preuve d'équivalence sur des contrats valides est
+         aveugle à ce risque : ils rendent `[]` avant comme après. Il faut donc,
+         pour chaque contrôle, une mutation qui le déclenche, et un instantané du
+         message produit. Mécanisable : muter chaque feuille d'un contrat
+         fabriqué **et de chacun des quatre contrats N‑1 figés**, et enregistrer
          le verdict.
-      4. **Couper, puis prouver.** Un gate toujours vrai sur la fenêtre s'inline
+         *Ceci remplace la mesure de couverture que demandaient les v3 à v5,* et
+         ce n'est pas un renoncement : aucun outil de couverture n'existe dans le
+         monorepo — ni `c8`, ni `nyc`, ni `--experimental-test-coverage` —, les
+         deux paquets ont chacun leur lanceur, et mesurer
+         `validation-contrat.mjs` depuis la suite du plugin traverse un
+         workspace. Surtout, une ligne « atteinte » n'est pas un contrôle
+         **jugé** : un contrôle qu'aucune mutation ne déclenche est un contrôle
+         que rien ne couvre, quelle que soit sa couleur dans un rapport. La
+         mutation répond directement à la question posée, la couverture y répond
+         de biais.
+      3. **Couper, puis prouver.** Un gate toujours vrai sur la fenêtre s'inline
          — la condition disparaît, le contrôle reste. Un gate toujours faux part
          avec ses tests. Puis : verdicts identiques, message par message, sur les
-         contrats valides **et** sur les mutations de l'étape 3.
+         contrats valides **et** sur les mutations de l'étape 2.
       **Correction de comportement à inclure dans le même commit.** `analyser`
       (`check-contract.mjs:193-194`) appelle `champsInvalidesDuContrat`
       **avant** `verdictDeVersion` et sort tôt : `if (champsAbsents.length > 0)
@@ -697,13 +725,54 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       consommateur, dont l'arbre porte déjà T2.8 et T2.4 non commités, et T6.2
       la supprime déjà par son énoncé (« `tokenVar` importe la projection du
       kit »). La déplacer ici l'aurait faite deux fois.
-      *Trouvé en chemin, non traité :* `collectTokenReferences`
-      (`plugin/src/variables.ts`) est le jumeau exact de `collecterReferences`
-      du kit — et il est **mort** : plus aucun code de production ne l'appelle,
-      seuls ses tests le tiennent en vie. Son commentaire décrit `tokensUsed`,
-      un champ que ni `types.ts` ni aucun des quatre contrats du corpus ne
-      portent encore. Le supprimer est un geste à part, qui demande de vérifier
-      ce que la 12.0 a fait de ce champ.
+- [ ] **T2.7b — Le jumeau du collecteur de références.** *Trouvé en exécutant
+      T2.7 ; note corrigée le 4 septembre 2026, elle disait deux choses
+      inexactes.*
+      `collectTokenReferences` (`plugin/src/variables.ts`) est le jumeau exact
+      de `collecterReferences` du kit : même corps, et depuis T2.7 le même
+      `isTokenReference`.
+      *Première correction — il n'est pas « mort ».* Aucun code de production ne
+      l'appelle, c'est vrai. Mais **neuf fichiers de test et quatorze
+      assertions** s'en servent comme helper. « Le supprimer » n'est donc pas un
+      petit geste, c'est réécrire quatorze assertions qui marchent.
+      *Seconde correction — la vérification qu'elle réclamait est déjà faite.*
+      La note disait qu'il fallait « vérifier ce que la 12.0 a fait de
+      `tokensUsed` ». C'est vérifié : zéro occurrence dans
+      `packages/kit/src/format/types.ts`, et `check-contract.mjs` déstructure ce
+      champ hors du contrat avec un commentaire disant qu'il n'existe plus depuis
+      la 11.0. La question est close, la note la laissait ouverte.
+      **Le geste est une substitution, pas une suppression :** les tests du
+      plugin importent `collecterReferences` de `@ucm-kit/core/lecteurs` — ils
+      tournent sous Node, le sous-chemin leur est accessible — et la copie du
+      plugin disparaît. Les signatures sont identiques, aucune assertion ne
+      bouge. C'est le geste de T2.7 exactement, un étage plus haut.
+      *Borne :* la version du kit s'accompagne de `sansEchantillon`, que celle du
+      plugin n'a pas. Les tests visés balaient des fragments, pas des contrats
+      entiers, donc l'exclusion ne les concerne pas — mais un test qui passerait
+      un contrat complet doit la traverser, sans quoi il ramasserait le texte de
+      maquette.
+
+- [ ] **T2.9 — Déclarer les lecteurs à un consommateur TypeScript.** *Créée le
+      4 septembre 2026, pour la version 0.1.1 du paquet.*
+      `exports` publie `./lecteurs` sans condition `types`, et les modules
+      partent en JavaScript nu. La décision « le TypeScript n'est imposé à
+      personne » reste juste — mais elle ne dit rien de ce qu'un consommateur qui
+      en fait déjà reçoit, et **la première copie est déjà là** :
+      `packages/plugin/tests/lecteurs-du-kit.d.ts` déclare à la main deux
+      fonctions du kit, depuis un autre paquet. Chaque consommateur écrira la
+      sienne, et elles divergeront — c'est exactement la maladie que T2.7 vient
+      de soigner, un étage au-dessus.
+      *Le geste :* un `src/lecteurs/index.d.mts` écrit à la main dans le kit,
+      réduit à la surface que la porte publie, plus une condition `types` dans
+      la carte `exports`. Puis suppression de `lecteurs-du-kit.d.ts`, qui devient
+      une redite.
+      *Pourquoi écrit à la main plutôt que dérivé de JSDoc :* dériver imposerait
+      une passe `tsc` sur des `.mjs`, donc un build là où la décision de T2.1 est
+      justement de n'en avoir aucun. Une déclaration écrite reste vérifiée par
+      l'exécution — ces fonctions tournent à chaque `npm test`.
+      *Pourquoi 0.1.1 et pas 0.1.0 :* le paquet est publié pour débloquer T2.8,
+      et le seul consommateur est ici, avec un pin exact (D7). Monter d'une
+      version ne coûte rien ; retarder la publication coûtait le Playground.
 
 - [ ] **T2.8 — Migrer le Playground sur le kit.**
       *Rétabli : la v4 avait perdu cette tâche.* Elle n'est pas optionnelle —
@@ -897,23 +966,64 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       **T2.4 en a supprimé une**, celle de `check-contract.mjs`, en retirant son
       besoin plutôt qu'en la corrigeant. Restent `tokenVar` et le preset — d'où
       le déplacement de cette tâche ici. Elle reste nécessaire, et son enjeu est
-      maintenant constaté et non plus supposé : `tokenVar("{layouts.sizing.0,5}")`
-      rend `var(--layouts-sizing-0,5)`, que le navigateur ignore sans erreur.
-      `tokenVar` lève sur une valeur brute au nom de la « perte visuelle muette »
-      que son en-tête dénonce, et en produit une par le seul chemin qu'elle ne
-      contrôle pas. Aucun composant du corpus ne cite ces quatre tokens : le
-      défaut est latent.
+      maintenant constaté et non plus supposé.
+      **Correction du 4 septembre 2026 — le défaut est plus grave que « le
+      navigateur ignore », et dans l'autre sens.** En CSS, la virgule dans
+      `var()` sépare la variable de sa **valeur de repli**. `tokenVar` rendant
+      `var(--layouts-sizing-0,5)`, le navigateur lit « variable
+      `--layouts-sizing-0`, repli `5` » — et `--layouts-sizing-0` **existe**
+      (`tokens.css:183`, valant `0px`). Rien n'est ignoré : une valeur fausse est
+      rendue, plausible et muette. Mesuré sur les quatre :
+
+      | le contrat demande | valeur due | ce que le composant reçoit |
+      |---|---|---|
+      | `layouts.sizing.0,5` | 2px | **0px** |
+      | `layouts.sizing.1,5` | 6px | 4px (`sizing-1`) |
+      | `layouts.sizing.2,5` | 10px | 6px (`sizing-2`) |
+      | `layouts.sizing.3,5` | 14px | 12px (`sizing-3`) |
+
+      Un `gap` s'effondre à zéro, sans erreur et sans repli. `tokenVar` lève sur
+      une valeur brute au nom de la « perte visuelle muette » que son en-tête
+      dénonce, et en produit une par le seul chemin qu'elle ne contrôle pas.
+      Aucun composant du corpus ne cite ces quatre tokens : le défaut est
+      latent, mais il n'est pas bénin, et cette tâche n'est pas de l'hygiène.
       *Ce que ce constat ajoute au plan :* aucun test des deux repositories ne
       rend un composant et ne relit ses styles calculés. Une suite verte ne dit
       donc rien de ce que le navigateur reçoit — comme les deux défauts de la
       Phase 2 disaient qu'elle ne dit rien de ce que le consommateur reçoit.
+      **Ce constat a maintenant une tâche : T6.0a, qui la précède.**
       *Classe de divergence plus large que la virgule, vérifiée :* le
       `kebabCase` de Style Dictionary normalise tout caractère hors `[a-z0-9]`.
       `100%` devient `100` — le `%` **disparaît**, donc ce n'est plus une
       bijection : `50%` et `50` produiraient la même variable. Les accents,
       eux, survivent.
+- [ ] **T6.0a — Le test d'accord entre la projection et le CSS réellement
+      généré.** *Créée le 4 septembre 2026. À exécuter tout de suite : elle ne
+      dépend d'aucune autre tâche, et elle vit chez le consommateur.*
+      Pour chaque chemin de token de `tokens.json`, passer ce chemin dans
+      `tokenVar` et exiger que la variable ainsi nommée figure parmi les
+      propriétés personnalisées réellement écrites dans
+      `src/generated/tokens.css`.
+      *Pourquoi avant T6.0 et pas dedans :* le test passe au **rouge
+      immédiatement**, sur les quatre virgules. C'est ce qui transforme T6.0 et
+      T6.1 en « le test était rouge, il est vert » au lieu de « on a réécrit la
+      projection et on fait confiance ». Un contrôle écrit après sa correction
+      ne prouve que lui-même — c'est la même raison qui a fait remonter T5.1
+      avant les cinq tâches qui réécrivent `check-contract.mjs`.
+      *Pourquoi ce n'est pas un test de rendu :* aucun navigateur, aucun `jsdom`,
+      aucune dépendance nouvelle — une comparaison de chaînes entre deux fichiers
+      déjà présents dans le dépôt. `jsdom` ne résout d'ailleurs pas les `var()`
+      en cascade et n'attraperait pas ce défaut-là : le contrôle utile est en
+      amont du rendu, pas dedans.
+      *Ce qu'elle couvre en plus des virgules :* toute la classe de divergence
+      décrite ci-dessus, `%` compris — donc ce que T7.0b cherchait à fabriquer à
+      la main, sur les données réelles plutôt que sur un jeu inventé.
+      *Borne :* elle juge la **projection**, pas l'usage. Qu'un composant cite un
+      token inexistant reste l'affaire du contrôle d'existence (T2.4). Les deux
+      ensemble ferment la boucle : T2.4 dit que le token existe dans
+      `tokens.json`, T6.0a dit que la variable qu'on en tire existe dans le CSS.
 - [ ] **T6.1 — Preset Style Dictionary**, transforms graisse et famille, plus le
-      test d'accord de T6.0. La table « nom de graisse → poids » est une
+      test d'accord de T6.0a. La table « nom de graisse → poids » est une
       connaissance du format et va dans le kit ; la projection CSS reste dans le
       preset, pour qu'un futur preset iOS réutilise la table.
 - [ ] **T6.2 — `tokenVar`** importe la projection du kit.
@@ -931,22 +1041,63 @@ non-régression permanent de l'expérience d'installation, et non jeté après l
 première recette. Cette phase n'est pas prioritaire : elle mesure, elle ne
 construit pas. Ce qui la conditionne, en revanche, est décidé ici (T7.0).
 
-- [ ] **T7.0 — ⚠ Trancher l'origine des contrats de recette.**
+- [X] **T7.0 — ⚠ Trancher l'origine des contrats de recette.** *Tranché le
+      4 septembre 2026.*
       `AGENTS.md` de l'Exporter porte en gras : « **Ce repository ne contient
       aucun artefact de contrat, et n'en contiendra pas.** » La raison est
       qu'un exemplaire commité est un instantané, où une régression du moteur ne
       se verrait jamais. La v3 demandait des « contrats d'or commités » sans
       voir la contradiction.
-      **Résolution proposée, qui préserve l'invariant :**
-      - les tests du **kit** consomment des contrats **fabriqués par le moteur
-        au moment du test** — le monorepo rend ça trivial, et l'invariant reste
-        intact ;
-      - les variantes pathologiques (version future, contrat cassé) sont
-        obtenues en **mutant** un contrat fabriqué, pas en commitant un fichier ;
-      - le **repo de recette** porte ses propres fixtures : c'est un autre
-        repository, l'invariant ne s'y applique pas.
+      **Ce que la v5 n'avait pas vu : l'invariant est déjà enfreint, et il
+      fallait l'enfreindre.** `packages/kit/fixtures/contrats/11.0/` porte
+      quatre `.contract.json` commités, avec leurs empreintes SHA‑256 —
+      l'étape 1 de T2.1b les a figés avant que A2 les détruise. Ce n'est donc
+      plus un arbitrage à prendre, c'est une règle à rendre exacte.
+      **La règle n'était pas fausse : elle est devenue ambiguë.** Elle a été
+      écrite quand ce dépôt ne contenait **que** le plugin. Depuis T1.2 il
+      contient deux produits, et « ce repository » ne désigne plus rien de
+      précis. Or les deux produits posent la question inverse l'un de l'autre :
+      - le **moteur** ne doit se tester sur aucun contrat commité, et la raison
+        tient toujours — un instantané ne bouge qu'au réexport, une régression
+        ne s'y verrait jamais ;
+      - le **lecteur** doit prouver qu'il lit **deux** versions (D8), et le
+        moteur ne fabrique que la courante. Un contrat N‑1 est donc une chose
+        que plus rien ne sait produire, et l'immobilité — le défaut de
+        l'instantané côté moteur — est ici la propriété recherchée.
+      **Résolution retenue.** La règle d'`AGENTS.md` est réécrite pour nommer le
+      moteur au lieu du repository, et le corpus N‑1 est déclaré pour ce qu'il
+      est. Elle porte trois bornes : il n'est jamais comparé à une sortie du
+      moteur ; il n'est jamais rafraîchi (un réexport le rendrait inutile, il
+      cesserait d'être N‑1) ; il disparaît quand la fenêtre de lecture se
+      referme au-dessus de sa version, jamais avant. Les empreintes SHA‑256 sont
+      ce qui empêche de le croire frais. Il n'est pas publié : `files` du kit ne
+      l'inclut pas, et le tarball n'en porte aucun — vérifié.
+      **Ce qu'on écarte, et pourquoi.** La résolution que proposait la v5 — « les
+      tests du kit consomment des contrats fabriqués par le moteur au moment du
+      test » — fait dépendre le kit du plugin. C'est le cycle que T1.0 a supprimé
+      à grands frais, réinstallé par les tests : le kit cesse d'être testable et
+      reproductible seul, donc publiable de façon reproductible, ce que D5 exige.
+      Les contrats fabriqués au moment du test ont leur place, mais **chez le
+      plugin**, où le moteur vit déjà — et T2.5 les y a mis.
+      Les variantes pathologiques (version future, contrat cassé) restent
+      obtenues en **mutant**, jamais en commitant un fichier de plus.
+      Le **repo de recette** porte ses propres fixtures : c'est un autre
+      repository, la règle ne s'y applique pas.
+      *Limite assumée, à écrire parce qu'elle est réelle :* ces quatre contrats
+      sont les composants jetables du Playground gelés tels quels, pas une
+      fixture pensée. Rien ne dit qu'ils couvrent ce que la 11.0 avait de
+      particulier ; ils étaient simplement les seuls qui existaient. Une fixture
+      minimale écrite à la main serait plus propre et couvrirait moins — elle ne
+      contiendrait que ce que son auteur a pensé à y mettre, et T2.1b élaguerait
+      en croyant couvrir la 11.0. Le contrat réel porte des formes que personne
+      n'aurait écrites, et c'est précisément ce qu'on veut faire passer dans un
+      validateur qu'on coupe.
 - [ ] **T7.0b — Un `tokens.json` minimal**, incluant un token à nom non-kebab
       (`0,5`) **et un token à `%`** pour couvrir la perte d'information de T6.0.
+      *Réduit par T6.0a :* le cas `0,5` est désormais couvert sur les données
+      réelles, chez le consommateur, sans jeu inventé. Ce qui reste ici est le
+      token à `%`, qu'aucune donnée réelle ne porte aujourd'hui — vérifié, zéro
+      occurrence dans le `tokens.json` du Playground.
 - [ ] **T7.0c — Des oracles** : code de sortie attendu, titres présents ou
       absents dans `ci-report.md`.
 
@@ -1141,10 +1292,32 @@ Elles sont corrigées ici.
    propres préconditions. Une alternative plus simple mérite d'être pesée :
    reformuler T7.1 en test du kit, puisque T2.3 se prouve sur un contrat sans
    implémentation, sans repo tiers.
-10. **T2.5**, puis le reste de **T2.1b** — l'élagage a besoin de la mesure de
-    couverture que T2.5 installe, et du jeu N‑1 figé à l'étape 2.
+10. **T2.5**, puis le reste de **T2.1b** — l'élagage a besoin que le lecteur
+    s'exécute sur ce que le moteur fabrique, ce que T2.5 installe, et du jeu
+    N‑1 figé à l'étape 1. *Corrigé :* les v3 à v5 disaient « la mesure de
+    couverture que T2.5 installe ». T2.5 n'installe aucune mesure de
+    couverture — elle installe une assertion sur le chemin d'appel, et aucun
+    outil de couverture n'existe dans ce monorepo. L'étape 2 de T2.1b porte
+    désormais la mesure, par mutation.
 11. **Phase 3**, **T4.1 et T4.3**, reste de la Phase 7, **Phase 5**, puis les
     Phases 6 et 8.
+
+### Écart entre cet ordre et ce qui a été exécuté
+
+*Enregistré le 4 septembre 2026, parce qu'un plan qui décrit un ordre et
+contredit son propre journal Git ne se relit plus.*
+
+L'étape 7 exige « T2.1 **immédiatement** suivi de T2.8 ». L'exécution réelle est
+T2.1 → T2.4 → T2.5 → T2.7, T2.8 restant non commité dans le Playground. La
+conséquence est exactement celle que l'étape 7 annonçait : le Playground déclare
+`@ucm-kit/core` sans entrée de lockfile et sans que le paquet existe sur le
+registre, donc `npm ci` y échoue et sa CI ne peut plus rien dire.
+
+Ce n'est pas rattrapable par un réordonnancement — le travail est fait et il est
+vert. Le déblocage est la **publication du paquet**, qui rend le lockfile
+régénérable et laisse commiter T2.8. Elle est donc une précondition d'exécution
+au même titre qu'une tâche, et c'est à ce titre qu'elle est écrite ici plutôt
+que dans une note de bas de page.
 
 ---
 
@@ -1159,5 +1332,5 @@ Elles sont corrigées ici.
 | `PISTES-EVOLUTION.md`, « Extraction multi-repository » | rien à publier avec un seul consommateur | révisé par D5 |
 | `CHANGELOG-CONTRAT.md` | porte l'historique des schémas « et lui seul » | s'arrête à 11.0 |
 | skill `consommer-contrat`, ancrage 6 | une commande de contrôle ciblée sur un composant | n'existe pas |
-| `Exporter/AGENTS.md` | aucun artefact de contrat, jamais | à préciser pour les fixtures du kit (T7.0) |
+| ~~`Exporter/AGENTS.md`~~ | ~~aucun artefact de contrat, jamais~~ | **tranché par T7.0** : la règle nomme désormais le MOTEUR, pas le repository — elle était devenue ambiguë quand T1.2 a mis deux produits dans le même dépôt |
 | — | aucun document ne déclare la projection de nom de token comme invariant | elle était écrite trois fois ; T2.4 en supprime une, les **deux restantes divergent pour de bon** (voir ci-dessous) |
