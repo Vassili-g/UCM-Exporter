@@ -81,26 +81,130 @@ function fichiers(version) {
       )}\n`,
       pourquoi: "l'éditeur valide un contrat contre le schéma du paquet installé",
     },
+    {
+      chemin: ".gitignore",
+      contenu: [
+        "# Le rapport écrit par `ucm check --report` : il se régénère à chaque",
+        "# exécution et ne décrit que celle-là. Commité, il ferait lire un verdict",
+        "# périmé à qui ouvre le fichier.",
+        "ci-report.md",
+        "",
+      ].join("\n"),
+      pourquoi: "le rapport régénéré à chaque exécution ne se commite pas",
+    },
+    {
+      chemin: ".github/workflows/ucm.yml",
+      contenu: workflow(version),
+      pourquoi: "la CI contrôle les contrats et publie le rapport sur la pull request",
+    },
   ];
 }
 
 /**
- * Le workflow n'est PAS écrit, et l'absence est délibérée.
+ * Le workflow de contrôle, écrit pour un repository quelconque.
  *
- * T3.2 le demande, et il attendra T3.3. Un workflow qui appelle `ucm check`
- * alors que la commande n'existe pas installe une CI rouge dans un repo neuf,
- * au moment exact où son propriétaire n'a aucun moyen de savoir si la faute
- * vient de lui. Une installation incomplète qui le dit vaut mieux qu'une
- * installation complète qui ment.
+ * **Il n'installe rien et n'exige aucun `package.json`** : `npx --yes` avec un
+ * pin EXACT (D7) suffit, et c'est ce qui permet à un repo qui n'est pas un
+ * projet Node — un repo iOS, un dossier de contrats et rien d'autre — de faire
+ * contrôler ses exports. Le seul prérequis est Node sur le runner, que
+ * `setup-node` fournit.
  *
- * *Et l'ordre du plan a un trou, mesuré ici :* `ucm check` (T3.3) a besoin de
- * l'orchestration que porte `check-contract.mjs`, laquelle vit chez le
- * consommateur et ne rejoint le kit qu'en T5.2 — Phase 5, que l'ordre
- * d'exécution place APRÈS la Phase 3. Écrire une seconde orchestration ici
- * créerait deux rapports qui divergent, c'est-à-dire exactement la maladie que
- * T2.7, T6.0 et T2.6 ont soignée ailleurs. Le trou est enregistré dans le plan
- * plutôt que contourné.
+ * **Le sha de base passe par l'environnement, jamais par interpolation dans le
+ * shell.** `${{ }}` écrit sa valeur DANS le script avant qu'il ne s'exécute ;
+ * la règle vaut même quand la valeur vient de GitHub et pas d'un humain,
+ * puisque c'est l'habitude qui protège, pas le cas particulier.
+ *
+ * **Un filet, et un seul, parce que l'autre n'est pas portable (T5.4).** Le
+ * repository de démonstration en porte deux : « la construction a échoué » et
+ * « le rapport manque ». Le premier décrit SA chaîne de construction et n'a
+ * aucun sens ici — un repo Swift ne compile pas du TypeScript. Le second est
+ * universel : une pull request refusée sans un mot laisse le designer sans
+ * recours, et c'est le seul cas où personne ne peut plus rien lui dire.
  */
+function workflow(version) {
+  const commande = `npx --yes @ucm-kit/cli@${version} check --report ci-report.md`;
+  return [
+    "# Contrôle des contrats UCM.",
+    "#",
+    "# Le rapport publié sur la pull request est le SEUL message que reçoit le",
+    "# designer qui valide un export : il n'ouvre pas les logs de la CI. Toute",
+    "# étape qui refuse une fusion doit donc lui laisser un message.",
+    "#",
+    "# Écrit par `ucm init`. Adaptez-le : il ne sera jamais réécrit par-dessus.",
+    "name: ucm",
+    "",
+    "on:",
+    "  push:",
+    "    branches: [main]",
+    "  pull_request:",
+    "",
+    "# Nécessaire pour publier le diagnostic en commentaire de pull request.",
+    "permissions:",
+    "  contents: read",
+    "  pull-requests: write",
+    "",
+    "jobs:",
+    "  contrats:",
+    "    runs-on: ubuntu-latest",
+    "    steps:",
+    "      # Le job exécute le code de la pull request : il n'a aucune raison de",
+    "      # garder un jeton git utilisable. Le commentaire passe par GITHUB_TOKEN.",
+    "      - uses: actions/checkout@v4",
+    "        with:",
+    "          persist-credentials: false",
+    "          # Le diff avec la base délimite les états informatifs du rapport.",
+    "          fetch-depth: 0",
+    "",
+    "      - uses: actions/setup-node@v4",
+    "        with:",
+    "          node-version: 22",
+    "",
+    "      - name: Contrôler les contrats",
+    "        env:",
+    "          BASE_SHA: ${{ github.event.pull_request.base.sha }}",
+    "        run: |",
+    '          if [ -n "$BASE_SHA" ]; then',
+    `            ${commande} --base "$BASE_SHA"`,
+    "          else",
+    `            ${commande}`,
+    "          fi",
+    "",
+    "      # Le rapport dans le résumé du run : lisible sans dérouler un log.",
+    "      - name: Publier le rapport dans le résumé du run",
+    "        if: always() && hashFiles('ci-report.md') != ''",
+    '        run: cat ci-report.md >> "$GITHUB_STEP_SUMMARY"',
+    "",
+    "      # Filet : si le rapport manque, c'est que la CI s'est arrêtée avant le",
+    "      # contrôle (checkout, installation, plantage). Une pull request refusée",
+    "      # sans un mot laisse le designer sans recours ; ce message minimal nomme",
+    "      # au moins l'endroit où regarder.",
+    "      - name: Garantir un diagnostic même sans rapport",
+    "        if: always() && github.event_name == 'pull_request' && hashFiles('ci-report.md') == ''",
+    "        env:",
+    "          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+    "        run: |",
+    "          cat > ci-report.md <<EOF",
+    "          ## ❌ La vérification n'a pas pu rendre son diagnostic",
+    "",
+    "          Les contrôles se sont arrêtés avant d'avoir pu analyser cet export : le rapport habituel n'a pas été produit. **Votre design n'est pas en cause** et ré-exporter depuis Figma n'y changerait rien.",
+    "",
+    "          **Action attendue :** un développeur doit ouvrir [l'exécution de la CI]($RUN_URL) pour en connaître la raison.",
+    "          EOF",
+    "",
+    "      # `always()` car l'essentiel est justement de commenter les échecs.",
+    "      - name: Publier le diagnostic sur la pull request",
+    "        if: always() && github.event_name == 'pull_request' && hashFiles('ci-report.md') != ''",
+    "        env:",
+    "          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
+    "          NUMERO: ${{ github.event.number }}",
+    "        # --edit-last met à jour le commentaire précédent au lieu d'en empiler",
+    "        # un nouveau à chaque push ; s'il n'en existe pas encore, on en crée un.",
+    "        run: |",
+    '          gh pr comment "$NUMERO" --body-file ci-report.md --edit-last \\',
+    '            || gh pr comment "$NUMERO" --body-file ci-report.md',
+    "",
+  ].join("\n");
+}
 
 /**
  * Écrit ce qui manque, et rend le compte rendu de ce qui a été fait.
@@ -138,8 +242,19 @@ export function rendreInit({ ecrits, conserves, version }) {
     ecrits.length === 0
       ? "Rien à faire : ce repository est déjà installé."
       : `Installé avec @ucm-kit/cli ${version}.\n`
-        + "Le workflow de CI n'est pas encore écrit : `ucm check` n'existe pas (T3.3), "
-        + "et un workflow qui l'appellerait installerait une CI rouge.",
+        + "Placez vos contrats sous `components/`, vos tokens dans `tokens.json`, "
+        + "puis lancez `ucm check`.",
   );
+  // Un `.gitignore` existant n'est pas réécrit, et la ligne qui manque doit
+  // quand même être dite : sans elle, un `ucm check --report` local laisse un
+  // rapport versionnable dans la copie de travail, qui se lira plus tard comme
+  // un verdict frais.
+  if (conserves.includes(".gitignore")) {
+    lignes.push("");
+    lignes.push(
+      "· `.gitignore` existait déjà : ajoutez-y `ci-report.md`, le rapport que "
+        + "`ucm check --report` régénère à chaque exécution.",
+    );
+  }
   return lignes.join("\n");
 }

@@ -977,8 +977,19 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       `src/generated/contracts` ; l'association de schéma de l'éditeur doit
       pointer vers le paquet installé, pas vers une copie locale.
 
-- [~] **T3.2 — `ucm init`.** *Trois quarts faits le 4 septembre 2026 —
-      `packages/cli`. Le workflow manque, délibérément : voir T3.3.*
+- [X] **T3.2 — `ucm init`.** *Trois quarts faits le 4 septembre 2026, refermée
+      le 5 avec le workflow que T3.3 débloque.* Cinq fichiers : la
+      configuration, l'association de schéma, `.gitattributes`, `.gitignore`
+      (pour `ci-report.md`, que `ucm check --report` régénère à chaque
+      exécution) et `.github/workflows/ucm.yml`.
+      *Le workflow est écrit pour un repository QUELCONQUE :* `npx --yes` avec
+      un pin exact (D7) et aucun `npm ci`, donc aucun `package.json` exigé d'un
+      repo qui n'est pas un projet Node — c'est T3.4 rendue vraie par
+      construction plutôt que documentée. Le sha de base voyage par
+      l'environnement et jamais par interpolation dans le shell.
+      *Un `.gitignore` existant n'est pas réécrit* — la règle « ne jamais
+      écraser » ne souffre pas d'exception —, et la ligne manquante est alors
+      dite dans le compte rendu.
       Écrit la configuration, l'association de schéma et `.gitattributes`, et
       **n'écrase jamais un fichier existant** — c'est la seule faute
       irréversible à sa portée, et il la commettrait au moment où l'utilisateur
@@ -990,8 +1001,30 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       **JSON analysé**, pas les octets, et son commentaire explique pourquoi.
       Le LF sert à la propreté du diff Git.
 
-- [ ] **T3.3 — `ucm check`. ⚠ Bloquée par T5.2 — trou de l'ordre d'exécution,
-      mesuré le 4 septembre 2026, TRANCHÉ le 5.** L'orchestration du contrôle
+- [X] **T3.3 — `ucm check`. ⚠ Bloquée par T5.2 — trou de l'ordre d'exécution,
+      mesuré le 4 septembre 2026, TRANCHÉ et refermé le 5.**
+      *Faite dans `packages/cli/src/check.mjs`, une fois T5.2 déplacée.* La
+      commande n'orchestre rien : elle lit des arguments, imprime, écrit un
+      fichier sur `--report` et choisit un code de sortie. Éprouvée à froid sur
+      un repo neuf — `ucm init` puis `ucm check` sur un dossier `components/` et
+      un `tokens.json`, sans une ligne écrite à la main : les critères de
+      réussite n° 1, 3, 4 et 6 passent.
+      *Un défaut trouvé par ce passage à froid, et PRÉEXISTANT au déplacement :*
+      un contrat refusé pour sa version lisait « code conforme » sur sa ligne de
+      terminal. L'analyse s'arrête avant la parité, le relevé vierge se lisait
+      comme un relevé vide et concluant — la phrase exacte que T2.3 a écrit une
+      classe entière de code pour ne plus jamais prononcer sans avoir lu, et
+      elle s'écrivait sur la ligne qui annonce le refus. `pariteMesuree` la
+      remplace par « code non examiné », avec son test.
+      *Ce que la commande ne fait pas, et c'est décidé :* une configuration
+      refusée sort en 2 sans écrire de rapport. Formuler ici un diagnostic de
+      designer remettrait du vocabulaire de rapport dans l'outil, ce que T5.2
+      vient d'en sortir ; le filet du workflow couvre exactement ce cas.
+      *Aucun repli silencieux sur le diff :* si `git` échoue, la commande
+      s'arrête en 2 au lieu d'ouvrir le périmètre à tous les contrats — se
+      tromper sans le dire est pire que s'arrêter.
+
+      *Énoncé et arbitrages d'origine, conservés.* L'orchestration du contrôle
       vit dans `Playground/scripts/check-contract.mjs` et ne rejoint le kit
       qu'en T5.2 — Phase 5, que l'étape 11 place APRÈS la Phase 3. En écrire une
       seconde dans le CLI produirait deux rapports qui divergent, et le désaccord
@@ -1081,10 +1114,21 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       purement CI. Le CLI accepte donc un `--base <sha>` ; le calcul du sha
       reste dans le workflow.
 
-- [ ] **T3.4 — Fonctionner sans `package.json`.** `npx` l'accepte mais exige
+- [~] **T3.4 — Fonctionner sans `package.json`.** `npx` l'accepte mais exige
       Node sur la machine : en CI c'est `setup-node`, en local un développeur
       iOS n'en a pas forcément. Pin exact obligatoire (D7), `--yes` à
       documenter.
+      *À moitié faite le 5 septembre 2026 :* le workflow qu'écrit `ucm init`
+      appelle `npx --yes @ucm-kit/cli@<version exacte>` et n'exécute AUCUN `npm
+      ci`. La propriété est donc tenue par construction en CI, et un test la
+      verrouille — un `npm ci` réintroduit dans ce workflow le fait rougir.
+      **Ce qui reste bloque tout le reste, et c'est une précondition
+      d'exécution :** `@ucm-kit/cli` rend 404 sur le registre. Le workflow qu'un
+      repo neuf reçoit installe donc une CI qui ne peut pas démarrer, tant que le
+      paquet n'est pas publié. `publish.yml` sait maintenant le publier — il
+      prend le paquet en entrée de son `workflow_dispatch` —, il reste à le
+      lancer. Reste aussi le cas LOCAL, où `npx` exige Node sur le poste : à
+      documenter, pas à outiller.
 
 - [X] **T3.5 — `ucm icons`.** *Fait le 4 septembre 2026.* Liste les `figmaName`
       d'icônes que les contrats du repo réclament, **avec les contrats qui les
@@ -1254,9 +1298,17 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
 - [ ] **T5.3 — Documenter les variables d'environnement**, sans les figer.
       *Réduit :* geler une interface publique avant qu'une CI tierce ne la lise,
       c'est le défaut que T5.5 diagnostique justement ailleurs.
-- [ ] **T5.4 — Porter les deux filets de sécurité** (`ci.yml:61-68`, `:79-85`) :
+- [X] **T5.4 — Porter les deux filets de sécurité** (`ci.yml:61-68`, `:79-85`) :
       rapport garanti quand la construction échoue et quand la CI s'arrête
       avant. C'est ce qui empêche un refus muet.
+      *Faite le 5 septembre 2026, dans le workflow qu'écrit `ucm init` — et il
+      n'y en a qu'UN de portable, mesuré.* « La construction a échoué » décrit
+      la chaîne de construction du Playground et n'a aucun sens dans un repo qui
+      ne compile pas de TypeScript ; ce filet reste chez lui, où il est juste.
+      « Le rapport manque » est universel : une pull request refusée sans un mot
+      laisse le designer sans recours, et c'est le seul cas où plus personne ne
+      peut rien lui dire. La tâche annonçait deux filets à porter ; il fallait en
+      porter un et laisser l'autre à son propriétaire.
 - [ ] **T5.5 — Action GitHub réutilisable — après la Phase 7.**
 
 ---

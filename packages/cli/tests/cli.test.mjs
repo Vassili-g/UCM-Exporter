@@ -39,7 +39,13 @@ test("init installe ce qui manque dans un repository vierge", () => {
     const { ecrits, conserves } = init(racine);
 
     assert.deepEqual(conserves, []);
-    assert.deepEqual(ecrits.sort(), [".gitattributes", ".vscode/settings.json", "ucm.config.json"]);
+    assert.deepEqual(ecrits.sort(), [
+      ".gitattributes",
+      ".github/workflows/ucm.yml",
+      ".gitignore",
+      ".vscode/settings.json",
+      "ucm.config.json",
+    ]);
     for (const chemin of ecrits) {
       assert.ok(readFileSync(join(racine, chemin), "utf8").length > 0, `${chemin} est vide`);
     }
@@ -104,20 +110,82 @@ test("la configuration écrite ne porte aucun numéro de version", () => {
 });
 
 /**
- * L'installation est incomplète, et elle le DIT. Un workflow appelant une
- * commande qui n'existe pas installerait une CI rouge dans un repo neuf, au
- * moment exact où son propriétaire n'a aucun moyen de savoir si la faute vient
- * de lui.
+ * Le workflow que T3.2 attendait, écrit dès que `ucm check` existe (T3.3).
+ *
+ * Trois propriétés le rendent utilisable dans un repository quelconque, et
+ * chacune répond à une contrainte écrite ailleurs :
+ *
+ * - le paquet est épinglé EXACTEMENT (D7) — une plage laisserait npm choisir
+ *   une version que personne n'a essayée, et la CI d'un designer basculerait
+ *   sans qu'un fichier du repo ait bougé ;
+ * - `npx --yes` et rien d'autre (T3.4) — pas de `npm ci`, donc pas de
+ *   `package.json` exigé d'un repo qui n'est pas un projet Node ;
+ * - le sha de base voyage par l'environnement, jamais par interpolation dans
+ *   le shell.
  */
-test("init n'écrit pas de workflow tant que `ucm check` n'existe pas", () => {
+test("init écrit un workflow qui épingle le paquet et n'exige pas de package.json", () => {
   const racine = repoVierge();
   try {
     const resultat = init(racine);
+    const workflow = readFileSync(join(racine, ".github/workflows/ucm.yml"), "utf8");
 
-    assert.ok(!resultat.ecrits.some((chemin) => chemin.includes("workflows")));
-    assert.match(rendreInit(resultat), /workflow de CI n'est pas encore écrit/);
+    assert.ok(resultat.ecrits.includes(".github/workflows/ucm.yml"));
+    assert.match(workflow, new RegExp(`npx --yes @ucm-kit/cli@${resultat.version}\\b`));
+    assert.doesNotMatch(workflow, /\^|~/, "aucune plage de version");
+    assert.doesNotMatch(workflow, /npm ci|npm install/, "aucun package.json exigé");
+    assert.match(workflow, /--report ci-report\.md/);
+    assert.match(workflow, /BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \}\}/);
+    assert.match(workflow, /--base "\$BASE_SHA"/);
+    assert.match(workflow, /fetch-depth: 0/);
   } finally {
     rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Le filet portable de T5.4 : une pull request refusée sans un mot laisse le
+ * designer sans recours. L'autre filet du repository de démonstration — « la
+ * construction a échoué » — décrit SA chaîne de construction et n'a aucun sens
+ * dans un repo qui ne compile pas de TypeScript.
+ */
+test("le workflow publie un diagnostic même quand le rapport manque", () => {
+  const racine = repoVierge();
+  try {
+    init(racine);
+    const workflow = readFileSync(join(racine, ".github/workflows/ucm.yml"), "utf8");
+
+    assert.match(workflow, /hashFiles\('ci-report\.md'\) == ''/);
+    assert.match(workflow, /La vérification n'a pas pu rendre son diagnostic/);
+    assert.match(workflow, /gh pr comment .* --edit-last/);
+    assert.match(workflow, /if: always\(\)/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Le rapport se régénère à chaque exécution : commité, il ferait lire un
+ * verdict périmé. Un `.gitignore` déjà présent n'est pas réécrit — la seule
+ * faute irréversible de cette commande —, et la ligne manquante est alors dite.
+ */
+test("le rapport est ignoré, et un .gitignore existant reçoit la consigne au lieu d'être écrasé", () => {
+  const vierge = repoVierge();
+  try {
+    init(vierge);
+    assert.match(readFileSync(join(vierge, ".gitignore"), "utf8"), /^ci-report\.md$/m);
+  } finally {
+    rmSync(vierge, { recursive: true, force: true });
+  }
+
+  const habite = repoVierge();
+  try {
+    writeFileSync(join(habite, ".gitignore"), "node_modules/\n", "utf8");
+    const resultat = init(habite);
+
+    assert.equal(readFileSync(join(habite, ".gitignore"), "utf8"), "node_modules/\n");
+    assert.match(rendreInit(resultat), /ajoutez-y `ci-report\.md`/);
+  } finally {
+    rmSync(habite, { recursive: true, force: true });
   }
 });
 
@@ -215,11 +283,20 @@ test("une commande inconnue sort en 2, et 1 reste réservé aux contrôles", () 
   assert.match(sortie.join("\n"), /Commande inconnue : verifie/);
 });
 
-test("l'aide ne promet pas une commande qui n'existe pas", () => {
+/**
+ * L'aide annonce les trois commandes et les trois codes de sortie — c'est le
+ * seul endroit où un workflow apprend que 1 et 2 ne veulent pas dire la même
+ * chose, et les confondre ferait lire « votre export est en défaut » à
+ * quelqu'un dont le seul tort est une faute de frappe.
+ */
+test("l'aide annonce les commandes réelles et le sens des codes de sortie", () => {
   const sortie = [];
   assert.equal(executer([], { racine: tmpdir(), ecrire: (t) => sortie.push(t) }), 0);
   const aide = sortie.join("\n");
   assert.match(aide, /ucm init/);
+  assert.match(aide, /ucm check/);
   assert.match(aide, /ucm icons/);
-  assert.match(aide, /`ucm check`\) n'existe pas encore/);
+  assert.match(aide, /--base/);
+  assert.match(aide, /--report/);
+  assert.match(aide, /0 tout est passé, 1 des contrôles ont échoué, 2/);
 });

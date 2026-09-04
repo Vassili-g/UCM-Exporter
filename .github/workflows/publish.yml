@@ -1,4 +1,4 @@
-# Publication de `@ucm-kit/core` sur npm, SANS jeton.
+# Publication des paquets `@ucm-kit/*` sur npm, SANS jeton.
 #
 # Pourquoi ce workflow existe. npm restreint désormais les jetons capables de
 # publier sans intervention humaine — c'est ce que dit son propre avertissement,
@@ -21,8 +21,25 @@ name: publish
 # Déclenchement manuel, et volontairement pas sur un push. Publier est
 # irréversible : une version part pour toujours, et npm n'en rend le numéro à
 # personne. Le geste doit rester un geste.
+#
+# Le paquet se CHOISIT, et ce n'est pas du confort. Publier les deux à chaque
+# fois ferait échouer le run sur un 409 « cette version existe déjà » dès que
+# l'un des deux n'a pas bougé — et un run rouge dont la cause normale est « il
+# n'y avait rien à publier » est un run qu'on apprend à ignorer. `@ucm-kit/cli`
+# épingle exactement `@ucm-kit/core` : quand les deux montent ensemble, publier
+# le noyau d'abord, sinon `npx @ucm-kit/cli` installerait une dépendance absente
+# du registre.
 on:
   workflow_dispatch:
+    inputs:
+      paquet:
+        description: "Le paquet à publier"
+        required: true
+        type: choice
+        default: "@ucm-kit/core"
+        options:
+          - "@ucm-kit/core"
+          - "@ucm-kit/cli"
 
 jobs:
   publish:
@@ -129,6 +146,13 @@ jobs:
       # symptômes, mais ce n'était pas lui.
       #
       # Conséquence pratique : une version ne se publie qu'UNE fois. Relancer
-      # ce workflow sans avoir monté `packages/kit/package.json` rend 409, et
+      # ce workflow sans avoir monté le `package.json` du paquet choisi rend 409, et
       # c'est le comportement voulu — pas une régression de l'authentification.
-      - run: npm publish --workspace @ucm-kit/core
+      #
+      # `@ucm-kit/cli` doit publier aussi : sans lui, `npx @ucm-kit/cli` rend
+      # 404 et le workflow que `ucm init` écrit installe une CI qui ne peut pas
+      # démarrer. C'est une précondition de T3.4, pas un extra.
+      - name: Publier ${{ inputs.paquet }}
+        env:
+          PAQUET: ${{ inputs.paquet }}
+        run: npm publish --workspace "$PAQUET"
