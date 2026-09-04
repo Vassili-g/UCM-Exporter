@@ -1217,29 +1217,29 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       `check-contract.mjs` fait 663 lignes et n'a **aucun test**, ni direct ni
       transitif. C'est le morceau le plus lu par des humains et le plus
       difficile à corriger une fois publié.
-- [~] **T5.2 — ⚠ Déplacer le rapport dans le kit. Remontée avant T3.3**, qu'elle
+- [X] **T5.2 — ⚠ Déplacer le rapport dans le kit. Remontée avant T3.3**, qu'elle
       débloque, et avant le reste de la Phase 7, qui en dépend par T3.3 (voir la
       décision écrite en T3.3).
-      **Moitié Exporter faite le 5 septembre 2026, en 0.1.5.** Le kit porte
+      **Close le 5 septembre 2026, des deux côtés.** Le kit porte
       `controle-repository.mjs`, `verdict-bilan.mjs`, `perimetre-rapport.mjs`,
       `diagnostic-tokens.mjs`, `diagnostic-parite.mjs` et `diagnostic-tests.mjs`,
-      avec leurs tests. 221 tests verts, typecheck vert.
-      **La seconde moitié attend la publication de 0.1.5**, et c'est délibéré :
-      le Playground épingle une version exacte (D7), et l'écart d'ordre déjà
-      enregistré plus bas dit ce que coûte un lockfile qui déclare un paquet
-      absent du registre — `npm ci` échoue et la CI du consommateur ne dit plus
-      rien. Deux copies du rapport coexistent donc le temps d'une publication.
-      C'est la seule fenêtre où la maladie des deux rapports est ouverte, et
-      elle est refermée par le fait qu'aucun consommateur n'appelle encore celui
-      du kit.
-      *Reste à faire, moitié Playground :* `check-contract.mjs` devient un pilote
-      court — lire la configuration, monter l'adaptateur TypeScript, appeler
-      `controlerRepository`, imprimer, publier, sortir ; les quatre modules
-      déplacés et leurs tests sont supprimés ; `echecs-de-tests.mjs` garde sa
-      moitié TAP et gagne la projection vers la forme du rapport ;
-      `parite.mjs` cesse d'exporter `pariteEnEcart` ; `registre-portable.test.mjs`
-      met sa liste à jour ; la caractérisation de `scripts/caracterisation/` est
-      retirée, le kit la portant désormais.
+      publiés en 0.1.5 ; le Playground les consomme. `check-contract.mjs` y passe
+      de **628 lignes à 105** — l'adaptateur TypeScript, la projection des échecs
+      de tests, la publication du rapport, et rien d'autre. 41 tests verts chez
+      le consommateur, `npm run check` en 0, même rapport qu'avant.
+      *Un `ucm.config.json` est né de la tâche :* le Playground range ses
+      contrats sous `src/` et ses tokens dans `src/tokens/`, ce que le code
+      devinait en dur. Le déplacement l'a forcé à le déclarer — première
+      utilisation réelle de T3.1.
+      **Le point que la tâche n'avait pas prévu, et c'est le plus important :
+      `registre-portable.test.mjs` devait déménager AUSSI.** Le filet de T2.6
+      protège des messages qui viennent de changer de repository. Le laisser
+      derrière eux, c'était le perdre à l'instant exact où ces messages
+      deviennent PUBLIÉS — imprimés par des repos dont aucun n'écrira de `.tsx`.
+      Il vit maintenant dans le kit, balaie tout `src/lecteurs/`, et ne regarde
+      plus que le code : un commentaire qui écrit « en React, en Swift ou en
+      Kotlin » explique la coupure et ne promet rien à personne. **Un filet se
+      déplace avec ce qu'il protège**, et rien dans le plan ne le disait.
       *Ce que le déplacement a corrigé au passage, non prévu :* `index.d.mts`
       déclarait `rendreDiagnostic` et `sectionAvertissementsExport` comme rendant
       une `string`. Les deux rendent un TABLEAU de lignes, que tous les appelants
@@ -1795,6 +1795,14 @@ Elles sont corrigées ici.
     puis T3.4.
 13. **T4.1 et T4.3**, reste de la Phase 7, reste de la Phase 5, puis les
     Phases 6 et 8.
+
+*Exécuté le 5 septembre 2026 :* les étapes 11 et 12 sont faites — T5.2, T5.4,
+T3.3, T3.2, et T3.4 à moitié. Ce qui les bloque encore est une publication :
+`@ucm-kit/cli` rend 404 sur le registre, donc le workflow qu'un repo neuf reçoit
+appelle une commande qu'il ne peut pas installer. C'est la deuxième fois qu'une
+publication se retrouve sur le chemin critique, et c'est la même leçon qu'à
+l'écart d'ordre plus haut : **une publication est une précondition d'exécution,
+pas une formalité de fin de tâche.**
 
 ### Écart entre cet ordre et ce qui a été exécuté
 
