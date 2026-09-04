@@ -90,6 +90,26 @@ declare module "@ucm-kit/core/lecteurs" {
     options?: { motif?: string; existe?: (chemin: string) => boolean },
   ): boolean;
 
+  /** Le nom du fichier de configuration d'un repository. */
+  export const NOM_CONFIGURATION: string;
+
+  /** Ce qu'un repository vierge décrit sans rien écrire. */
+  export const CONFIGURATION_PAR_DEFAUT: {
+    readonly components: string;
+    readonly tokens: string;
+    readonly implementation: string;
+  };
+
+  /** Les champs absents ou mal formés d'une configuration. */
+  export function champsInvalidesDeLaConfiguration(configuration: unknown): string[];
+
+  /** Lit la configuration d'un repository ; rend toujours une configuration complète. */
+  export function lireConfiguration(racine: string): {
+    configuration: { components: string; tokens: string; implementation: string };
+    chemin: string | null;
+    erreur: string | null;
+  };
+
   // ─── Vue exacte d'un variant ──────────────────────────────────────────────
 
   /**

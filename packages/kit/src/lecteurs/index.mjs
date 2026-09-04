@@ -45,6 +45,19 @@ export {
   implementationPresente,
 } from "./implementation.mjs";
 
+/**
+ * Ce qu'un repository dit de lui-même : où sont ses contrats, ses tokens, ses
+ * implémentations. Trois chemins, jamais un numéro de version — la fenêtre de
+ * lecture appartient au paquet installé, la republier créerait une seconde
+ * autorité qui dériverait en silence.
+ */
+export {
+  NOM_CONFIGURATION,
+  CONFIGURATION_PAR_DEFAUT,
+  champsInvalidesDeLaConfiguration,
+  lireConfiguration,
+} from "./configuration.mjs";
+
 /** La version : ce que ce paquet sait lire, et le sens d'un écart. */
 export {
   VERSION_CONTRAT_MINIMALE,
