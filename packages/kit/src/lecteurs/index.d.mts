@@ -198,11 +198,19 @@ declare module "@ucm-kit/core/lecteurs" {
   /** Les avertissements d'un contrat sur lesquels le designer peut agir. */
   export function avertissementsCorrigeables(contrat: unknown): string[];
 
-  /** La section markdown des avertissements d'export, ou `null` s'il n'y en a aucun. */
+  /**
+   * Les lignes markdown des avertissements d'export, vides s'il n'y en a aucun.
+   *
+   * *Corrigé par T5.2 :* cette déclaration annonçait `string | null`. La
+   * fonction rend un TABLEAU de lignes, et tous ses appelants la répandent dans
+   * le rapport — un `...` sur la chaîne annoncée aurait poussé ses caractères
+   * un par un. Une déclaration qui ment est pire que pas de déclaration ; celle
+   * de `rendreDiagnostic`, juste en dessous, portait la même faute.
+   */
   export function sectionAvertissementsExport(
     bilans: ReadonlyArray<unknown>,
     options?: { bloquant?: boolean },
-  ): string | null;
+  ): string[];
 
   /** Le résumé terminal des avertissements. */
   export function resumeTerminalAvertissements(bilans: ReadonlyArray<unknown>): string | null;
@@ -210,7 +218,7 @@ declare module "@ucm-kit/core/lecteurs" {
   /** « 1 contrat » / « 3 contrats » : l'accord, écrit une seule fois. */
   export function libelleNombre(nombre: number, singulier: string, pluriel?: string): string;
 
-  /** Le rendu markdown d'un diagnostic destiné à un humain. */
+  /** Le rendu markdown d'un diagnostic destiné à un humain, ligne par ligne. */
   export function rendreDiagnostic(diagnostic: {
     severity?: string;
     title?: string;
@@ -224,5 +232,161 @@ declare module "@ucm-kit/core/lecteurs" {
     action?: string;
     status?: string;
     level?: number;
-  }): string;
+  }): string[];
+
+  // ─── Le rapport, et le contrôle qui le produit ────────────────────────────
+
+  /**
+   * Ce qu'un adaptateur doit savoir faire pour qu'une stack entre dans le
+   * contrôle. Les trois fonctions sont décrites au niveau où elles sont
+   * stables : le RELEVÉ qui circule entre elles n'appartient qu'à l'adaptateur,
+   * qui le produit et le relit lui-même.
+   */
+  export interface AdaptateurDImplementation {
+    /** Relève d'un coup ce que l'adaptateur sait lire des implémentations citées. */
+    lireApiPublique(implementations: readonly string[], racine: string): Map<string, unknown>;
+    /** Le nom que l'API publique de cette implémentation devrait porter. */
+    nomInterfaceAttendue(implementation: string): string | null;
+    /** Compare un contrat au relevé, et rend un écart de parité. */
+    ecartsDeParite(
+      contrat: unknown,
+      releve: unknown,
+      nomInterface: string | null,
+      options: { presente: boolean; chemin: string },
+    ): EcartsDeParite;
+  }
+
+  /**
+   * Un écart de parité, tel que le rapport le lit.
+   *
+   * `implementationAbsente` et `implementationNonLue` ne sont pas des écarts :
+   * le fichier n'est pas là — état d'avancement légitime —, ou il est là et
+   * personne ne sait le lire. Aucun des deux n'appelle un geste correctif.
+   */
+  export interface EcartsDeParite {
+    implementationAbsente: boolean;
+    implementationNonLue: string | null;
+    interfaceAbsente: string | null;
+    fonctionAbsente: string | null;
+    manquantes: string[];
+    typesIncorrects: Array<{ prop: string; attendu: string; recu: string }>;
+    booleensNonUtilises: string[];
+    compositionsIncorrectes: Array<{ component: string; attendu: number; rendu: number }>;
+  }
+
+  /**
+   * Un test en échec, tel que le rapport le lit.
+   *
+   * `composant` et `assertion` ne se déduisent d'aucun chemin : la convention
+   * qui relie un fichier de test à un composant, et les erreurs qui distinguent
+   * une assertion d'une interruption, appartiennent à un lanceur donc à un
+   * adaptateur.
+   */
+  export interface EchecDeTest {
+    fichier: string | null;
+    composant: string | null;
+    assertion: boolean;
+    test: string;
+    nomErreur?: string;
+    erreur?: string;
+  }
+
+  /** Le verdict d'un contrôle : ce qu'il a vu, ce qu'il en écrit, et s'il refuse. */
+  export interface VerdictDeControle {
+    bilans: unknown[];
+    fautifs: unknown[];
+    rapport: string;
+    terminal: Array<{ flux: "log" | "warn" | "error"; texte: string }>;
+    bloquant: boolean;
+  }
+
+  /**
+   * Contrôle un repository et rend son verdict — sans rien écrire nulle part.
+   *
+   * Il n'ouvre aucun fichier de sortie, ne lit aucune variable d'environnement
+   * et ne sort d'aucun processus : où va le rapport appartient à l'outil qui
+   * appelle.
+   */
+  export function controlerRepository(
+    racine: string,
+    options?: {
+      configuration?: { components: string; tokens: string; implementation: string };
+      adaptateur?: AdaptateurDImplementation;
+      echecsDeTests?: { echoue: boolean; echecs: readonly EchecDeTest[] };
+      contratsModifies?: string;
+      tokensModifies?: boolean;
+    },
+  ): VerdictDeControle;
+
+  /**
+   * Le noyau seul : il dit où une implémentation devrait être et si elle y est,
+   * et ne prétend jamais avoir lu du code.
+   */
+  export const ADAPTATEUR_VIDE: AdaptateurDImplementation;
+
+  /** Ce bilan refuse-t-il la fusion ? Vrai du CONTRAT, jamais du code ni des tests. */
+  export function bilanEstBloquant(bilan: unknown): boolean;
+
+  /** L'en-tête du rapport rouge, et rien d'autre que ce qui est vrai. */
+  export function enteteDuVerdict(
+    fautifs: ReadonlyArray<unknown> | number,
+    avecAvertissements?: boolean,
+  ): string[];
+
+  /**
+   * Limite les états informatifs aux contrats que la pull request modifie.
+   * Sans liste, tous les bilans restent visibles.
+   */
+  export function selectionnerBilansDuRapport<T>(
+    bilans: readonly T[],
+    cheminsModifies?: string,
+  ): T[];
+
+  /** La section des références que la source de tokens ne porte pas. */
+  export function sectionTokensManquants(
+    bilans: ReadonlyArray<unknown>,
+    options: { tokensModifies?: boolean; sourceTokens: string },
+  ): string[];
+
+  /** Le résumé terminal des références absentes. */
+  export function resumeTerminalTokensManquants(
+    bilans: ReadonlyArray<unknown>,
+    sourceTokens: string,
+  ): string | null;
+
+  /** Ce relevé de parité porte-t-il un écart ? */
+  export function pariteEnEcart(ecarts: EcartsDeParite): boolean;
+
+  /** Idem, sur un bilan de contrat. */
+  export function aUnEcartDeParite(bilan: unknown): boolean;
+
+  /** La section des écarts contrat ↔ code, qui avertit sans jamais bloquer. */
+  export function sectionEcartsDeParite(bilans: ReadonlyArray<unknown>): string[];
+
+  /** Le rappel terminal des écarts contrat ↔ code. */
+  export function resumeTerminalEcartsDeParite(bilans: ReadonlyArray<unknown>): string | null;
+
+  /** Sépare ce qui concerne un composant exporté de ce qui concerne l'outillage. */
+  export function repartirEchecs(echecs: readonly EchecDeTest[]): {
+    rendu: EchecDeTest[];
+    testsComposants: EchecDeTest[];
+    gardeFous: EchecDeTest[];
+  };
+
+  /**
+   * La section du rapport pour les tests en échec.
+   *
+   * `avertissements` a TROIS états : une liste vide dit « l'export n'a rien
+   * signalé », `null` dit « on n'a pas pu le vérifier ». Les confondre ferait
+   * disculper Figma sans l'avoir consulté.
+   */
+  export function diagnosticEchecsDeTests(
+    resultat: { echoue: boolean; echecs: readonly EchecDeTest[] },
+    avertissements?: readonly string[] | null,
+  ): string[];
+
+  /** Même constat, pour le terminal du développeur. */
+  export function resumeTerminalEchecsDeTests(
+    resultat: { echoue: boolean; echecs: readonly EchecDeTest[] },
+  ): string[];
 }

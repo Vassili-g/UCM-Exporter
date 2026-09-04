@@ -82,16 +82,31 @@ packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
     variant-views.mjs            la vue exacte d'un variant
     version-contrat.mjs          la plage lue, et le SENS d'un écart de version
     references-token.mjs         la forme d'une référence, et son relevé
+    tokens-dtcg.mjs              ce que le fichier de tokens contient, donc ce qui existe
     typography-token-types.mjs   les types DTCG qu'un style typographique exige
     schema-contrat.mjs           le schéma publié, chargé pour Ajv
-    avertissements-export.mjs    ce que l'export n'a pas su décrire
-    diagnostic-markdown.mjs      le rendu markdown d'un diagnostic
+    configuration.mjs            ucm.config.json : où un repo range ses fichiers
+    implementation.mjs           OÙ vit une implémentation, et SI elle est là
     trouver-contrats.mjs         retrouver les contrats d'un dossier
+    controle-repository.mjs      le contrôle complet et le rapport du designer
+    verdict-bilan.mjs            ce qui refuse une fusion, et le titre de ce refus
+    perimetre-rapport.mjs        les états informatifs limités à la pull request
+    avertissements-export.mjs    ce que l'export n'a pas su décrire
+    diagnostic-tokens.mjs        les références que la source de tokens ne porte pas
+    diagnostic-parite.mjs        l'écart contrat ↔ code : le juger et le dire
+    diagnostic-tests.mjs         ce qu'une suite de tests rouge dit au designer
+    diagnostic-markdown.mjs      le rendu markdown d'un diagnostic
     index.mjs                    la porte publique `@ucm-kit/core/lecteurs`
+    index.d.mts                  ce que cette porte promet à un consommateur TS
   scripts/build-schema.ts  génère le schéma depuis types.ts
   schema/                  le schéma commité, publié en `@ucm-kit/core/schema`
   fixtures/contrats/11.0/  jeu N-1 figé, que le moteur ne sait plus fabriquer
   tests/                   `.test.ts` pour le format, `.test.mjs` pour les lecteurs
+
+packages/cli/            la ligne de commande : @ucm-kit/cli, pas encore publié
+  src/ucm.mjs              l'aiguillage et les codes de sortie
+  src/init.mjs             installe ce qui manque, sans jamais écraser
+  src/icons.mjs            les icônes que les contrats du repo réclament
 
 tests/                   les tests du monorepo lui-même (liens de la doc)
 ```
