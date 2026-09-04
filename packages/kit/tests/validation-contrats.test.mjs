@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { champsInvalidesDuContrat } from "../src/lecteurs/validation-contrat.mjs";
 import { validerGrapheDesContrats } from "../src/lecteurs/validation-graphe-contrats.mjs";
+import { contratCourant, contrat120 } from "./contrats-fabriques.mjs";
 
 function contrat(nom, composes = [], children = []) {
   return {
@@ -1592,25 +1593,6 @@ test("le graphe refuse un texte de sample posé sur un slot inconnu", () => {
  * qui se dérive. Construit ici plutôt que copié d'un export, pour pouvoir
  * exercer un cas qu'aucun composant réel ne produit encore.
  */
-function contratCourant() {
-  return {
-    name: "X",
-    meta: {
-      contractVersion: "11.0",
-      exportedAt: "2026-01-01T00:00:00.000Z",
-      figma: { fileName: "f", nodeId: "1:1" },
-      coverage: { portable: "complete" },
-    },
-    viewStructures: {
-      st1: { layout: "flex-row", sizing: { width: "fit-content", height: "fit-content" } },
-    },
-    variantViews: { v1: { structure: "st1" } },
-    variants: [{ nodeId: "1:2", figmaName: "Default", values: {}, tokens: {}, view: "v1" }],
-    structure: { view: "st1" },
-    rendering: { roles: {} },
-  };
-}
-
 test("une structure sans enfant reste valide : un [] ne s'écrit pas", () => {
   // Un composant dont aucun descendant ne porte d'information publiable n'a pas
   // de `children`. La validation matérialise ce que l'élision retire ; sans ce
@@ -1645,27 +1627,6 @@ test("un renvoi de vue qui ne pointe nulle part est refusé", () => {
 
   assert.ok(champsInvalidesDuContrat(valeur).length > 0);
 });
-
-/**
- * Contrat 12.0 minimal : la forme courante, plus ce que la 12.0 ajoute.
- *
- * Le corpus réel n'exerce qu'une partie de ces champs — un seul composant y
- * porte une icône, aucun n'y porte de rotation. Les monter ici est donc la
- * seule façon d'atteindre les contrôles avant qu'un designer ne les atteigne.
- */
-function contrat120() {
-  const valeur = contratCourant();
-  valeur.meta.contractVersion = "12.0";
-  valeur.viewStructures.st1.children = [
-    { slot: "label" },
-    { slot: "badge", position: "absolute", constraints: { horizontal: "left", vertical: "top" },
-      inset: { top: "4px", left: "8px" }, rotation: "45deg",
-      children: [{ slot: "icon" }] },
-  ];
-  valeur.rendering.roles = { background: { kind: "paint" }, foreground: { kind: "paint" } };
-  valeur.rendering.keyRoles = { fills: { "base.surface": "background" } };
-  return valeur;
-}
 
 test("un contrat 12.0 qui place, incline et nomme des rôles est accepté", () => {
   assert.deepEqual(champsInvalidesDuContrat(contrat120()), []);
