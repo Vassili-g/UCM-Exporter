@@ -14,14 +14,6 @@ Lire uniquement ce qui concerne la tâche :
 3. [CONTRIBUTING.md](./CONTRIBUTING.md) pour les règles de code et de test ;
 4. `packages/kit/src/format/types.ts` et les tests voisins pour la forme concrète.
 
-> ⚠ **Documentation en partie périmée.** Le code a dépassé des règles écrites
-> ici et ailleurs. La table « Contradictions doc ↔ code » de
-> [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md) les recense, et
-> chacune porte une **BALISE-PERIMEE** à l'endroit exact où la règle fausse est
-> écrite. Avant de traiter une règle documentée comme acquise, ouvrir le fichier
-> qu'elle décrit.
-> Ce bloc est lui-même une balise : il disparaît avec la dernière (T8.8).
-
 Les [invariants](#invariants) sont groupés par domaine — portée du contrat,
 tokens, couleurs, composition, arbre des slots, layout, grilles, diagnostics,
 versionnage. Lire le groupe que la tâche touche, pas la section entière.
