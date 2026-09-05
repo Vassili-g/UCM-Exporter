@@ -3402,9 +3402,15 @@ mieux qu'un rang supprimé : il dit qu'on a regardé.
 **Elle a rouvert le soir même, sur deux rangs, et c'est la démonstration de la
 règle de travail 1 plutôt qu'un accident.** La revue indépendante de la Phase 9
 les a trouvés dans des fichiers que T8.8 n'avait pas de raison de rouvrir : un
-commentaire de test et une tâche close de ce plan. Ils sont inscrits non barrés,
-et T9.1 puis T9.4 les emportent. Le compte n'est donc plus « neuf, tous
-résolus » : c'est **onze, dont deux vivants**.
+commentaire de test et une tâche close de ce plan. Le compte n'est donc plus
+« neuf, tous résolus » : c'est **onze**.
+
+**Les deux sont refermés le 5 septembre 2026, par T9.1 et T9.4.** Ce que ce
+second passage apprend, et qui vaut plus que le compte : les deux rangs
+vivaient dans des COMMENTAIRES — un en-tête de test, un paragraphe de tâche
+close — et pas un seul dans un document que quiconque relit. Un commentaire qui
+justifie une décision en citant une AUTRE décision hérite de la péremption des
+deux. Les deux rangs avaient cette forme exacte.
 
 | Document | Ce qu'il affirme | Ce que fait le code |
 |---|---|---|
