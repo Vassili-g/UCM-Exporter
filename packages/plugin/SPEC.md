@@ -429,6 +429,34 @@ local.
 
 ---
 
+### Les variables d'environnement, et pourquoi elles ne sont pas une interface
+
+`ucm check` ne lit **aucune** variable d'environnement : il calcule lui-même ce
+dont il a besoin, à partir de `--base <sha>` et du dépôt Git. C'est délibéré —
+une commande qui dépend de variables posées ailleurs ne se reproduit pas à la
+main, et le diagnostic qu'elle rend cesse d'être explicable.
+
+Celles qui existent appartiennent donc au consommateur de référence, dont le
+script de contrôle est plus ancien que cette commande. Elles sont documentées
+ici parce qu'un repository qui écrit son propre script rencontrera les mêmes
+questions — **pas parce qu'elles sont une surface publique.**
+
+| Variable | Qui l'écrit | Qui la lit | Ce qu'elle porte |
+|---|---|---|---|
+| `UCM_CONTRATS_MODIFIES` | le workflow, depuis `git diff` | le script de contrôle du consommateur | les contrats que la pull request touche, un par ligne ; borne les états informatifs du rapport |
+| `UCM_TOKENS_MODIFIES` | le workflow, depuis `git diff` | idem | `"true"` si `tokens.json` change dans cette pull request |
+| `UCM_ECHECS_DE_TESTS` | l'orchestrateur local, en JSON | idem | les échecs de tests que le rapport doit porter, parce qu'un test rouge doit atteindre le designer |
+
+**Aucune n'est figée, et c'est la décision.** Geler une interface publique avant
+qu'une CI tierce ne la lise, c'est fabriquer une contrainte qu'on devra tenir
+sans savoir pour qui. Les trois peuvent changer de nom, de forme ou disparaître
+le jour où `ucm check` reçoit un adaptateur : ce qui est stable est ce que la
+COMMANDE accepte — ses options —, pas ce que l'environnement d'un dépôt contient.
+
+`CI` et `GITHUB_STEP_SUMMARY` ne sont pas de ce projet : la première est posée
+par tout runner, la seconde par GitHub Actions, et les deux sont lues telles que
+leurs propriétaires les définissent.
+
 ## Hors périmètre MVP
 
 Pas d'écriture dans le document Figma, pas d'auto-merge, pas de

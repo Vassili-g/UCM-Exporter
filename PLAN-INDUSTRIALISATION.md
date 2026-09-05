@@ -1741,9 +1741,23 @@ une place dans l'ordre d'exécution.
       (T3.1) au lieu de `join(racine, "src")` et `src/tokens/tokens.json` en dur.
       Le harnais de T5.1 recopie `scripts/` dans un repo jouet **uniquement** à
       cause de cette déduction : il se simplifie avec cette tâche.
-- [ ] **T5.3 — Documenter les variables d'environnement**, sans les figer.
+- [X] **T5.3 — Documenter les variables d'environnement**, sans les figer.
       *Réduit :* geler une interface publique avant qu'une CI tierce ne la lise,
       c'est le défaut que T5.5 diagnostique justement ailleurs.
+      **Faite le 5 septembre 2026**, dans `packages/plugin/SPEC.md` — ce sont des
+      variables que la CI pose, pas des champs du contrat.
+      *Le relevé a changé la tâche, et il vaut mieux que la table :* **`ucm check`
+      n'en lit AUCUNE.** Il calcule ce dont il a besoin depuis `--base <sha>` et le
+      dépôt Git. Les trois qui existent — `UCM_CONTRATS_MODIFIES`,
+      `UCM_TOKENS_MODIFIES`, `UCM_ECHECS_DE_TESTS` — appartiennent au script du
+      consommateur de référence, plus ancien que la commande. Les documenter
+      revenait donc à documenter ce qu'un repository RENCONTRERA s'il écrit son
+      propre script, pas une surface publique.
+      *La réserve de l'énoncé est donc écrite là où elle protège :* ce qui est
+      stable est ce que la COMMANDE accepte — ses options —, jamais ce que
+      l'environnement d'un dépôt contient. `CI` et `GITHUB_STEP_SUMMARY` sont
+      nommées comme appartenant à leurs propriétaires, pour qu'on ne les croie
+      pas de ce projet.
 - [X] **T5.4 — Porter les deux filets de sécurité** (`ci.yml:61-68`, `:79-85`) :
       rapport garanti quand la construction échoue et quand la CI s'arrête
       avant. C'est ce qui empêche un refus muet.
