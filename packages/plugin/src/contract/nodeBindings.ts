@@ -418,6 +418,7 @@ async function resolveGroup<K extends string>(
         aliases.map((alias, index) =>
           resolver.resolve(alias, {
             nodeName: node.name,
+            nodeId: node.id,
             field: `${label}, ${fieldLabel(fields[index])}`,
           }),
         ),

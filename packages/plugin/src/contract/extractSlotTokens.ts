@@ -288,7 +288,7 @@ export async function getSlotTokens(
         pending.push({
           node,
           field,
-          promise: resolver.resolve(alias, { nodeName: node.name, field: fieldLabel(field) }),
+          promise: resolver.resolve(alias, { nodeName: node.name, nodeId: node.id, field: fieldLabel(field) }),
           stroke,
         });
       }

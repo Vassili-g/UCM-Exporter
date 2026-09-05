@@ -105,6 +105,17 @@ export function sujetSansNode(
 
 const registres = new WeakMap<Canal, Map<string, string>>();
 
+/**
+ * Les messages qui nomment un élément sans pouvoir le localiser, et pourquoi.
+ *
+ * Séparé du registre des cibles, parce que ce n'est pas la même information :
+ * l'un dit « voici où regarder », l'autre dit « il n'y a nulle part où
+ * regarder, et voici pourquoi ». Les confondre — un id vide, un `null` — ferait
+ * lire une absence décidée comme un site oublié, ce que la loi de couverture
+ * existe précisément pour distinguer.
+ */
+const declarations = new WeakMap<Canal, Map<string, RaisonSansNode>>();
+
 const registreDe = (canal: Canal): Map<string, string> => {
   let registre = registres.get(canal);
   if (!registre) {
@@ -182,6 +193,49 @@ export function pousserLocalise(
 }
 
 /**
+ * Pousse un message DÉJÀ FORMÉ dans son canal, et retient où regarder.
+ *
+ * `pousserLocalise` couvre le cas courant — le message commence par son sujet.
+ * Celui-ci couvre les autres, et ils existent : un constat d'agrégat nomme un
+ * variant EXEMPLE au milieu de sa phrase, un message dont le sujet est une
+ * component property nomme dans son corps le calque qui la référence. Dans les
+ * deux cas la phrase montre un node du doigt, et le clic doit y mener.
+ *
+ * Ce n'est pas une porte dérobée à la convention de préfixe : le test de source
+ * refuse toujours qu'un `Layer « … »` s'écrive ailleurs qu'ici. Ce helper sert
+ * les messages qui n'ont PAS cette forme, et qui doivent quand même conduire
+ * quelque part.
+ */
+export function pousserNote(canal: string[], message: string, sujetDuMessage: Sujet): string {
+  canal.push(message);
+  return noter(canal, message, sujetDuMessage);
+}
+
+/**
+ * Déclare qu'un message nomme un élément que rien ne peut localiser.
+ *
+ * À employer quand le message parle bien d'un calque, mais qu'aucun node unique
+ * ne lui correspond : le nom vient d'un type publié, le constat agrège toute la
+ * matrice, ou l'élément nommé n'existe pas. La raison n'est lue par personne à
+ * l'exécution — elle existe pour que la loi de couverture, et la revue qui
+ * l'accompagne, sachent que l'absence de cible est DÉCIDÉE.
+ */
+export function noterSansNode(canal: Canal, message: string, raison: RaisonSansNode): string {
+  let table = declarations.get(canal);
+  if (!table) {
+    table = new Map();
+    declarations.set(canal, table);
+  }
+  if (!table.has(message)) table.set(message, raison);
+  return message;
+}
+
+/** Ce que ce canal déclare ne pas savoir localiser, et pourquoi. */
+export function raisonsSansNode(canal: Canal): Map<string, RaisonSansNode> {
+  return new Map(declarations.get(canal) ?? []);
+}
+
+/**
  * Reporte les localisations d'un canal vers un autre.
  *
  * À appeler partout où un tableau de messages est recopié, concaténé ou
@@ -191,10 +245,24 @@ export function pousserLocalise(
  */
 export function reporterLocalisations(source: Canal, cible: Canal): void {
   const depuis = registres.get(source);
-  if (!depuis || depuis.size === 0) return;
-  const vers = registreDe(cible);
-  for (const [message, nodeId] of depuis) {
-    if (!vers.has(message)) vers.set(message, nodeId);
+  if (depuis && depuis.size > 0) {
+    const vers = registreDe(cible);
+    for (const [message, nodeId] of depuis) {
+      if (!vers.has(message)) vers.set(message, nodeId);
+    }
+  }
+  // Les déclarations voyagent avec les cibles : une exception laissée derrière
+  // se lirait à l'arrivée comme un site qu'on a oublié de convertir, ce qui est
+  // exactement la confusion que ces deux tables existent pour éviter.
+  const raisons = declarations.get(source);
+  if (!raisons || raisons.size === 0) return;
+  let table = declarations.get(cible);
+  if (!table) {
+    table = new Map();
+    declarations.set(cible, table);
+  }
+  for (const [message, raison] of raisons) {
+    if (!table.has(message)) table.set(message, raison);
   }
 }
 

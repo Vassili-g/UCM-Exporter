@@ -246,14 +246,21 @@ async function analyser(
     });
 
     // Chaque avertissement porte sa NATURE (U4.1) : il demande un geste dans
-    // Figma, et le compte rendu le range sous le titre qui le dit.
+    // Figma, et le compte rendu le range sous le titre qui le dit. Il porte
+    // aussi, quand son sujet désigne un node, OÙ regarder (U4.3) — l'absence
+    // est une réponse, pas un trou : voir `localisation.ts`.
+    const ou = (texte: string): { nodeId?: string } => {
+      const nodeId = (result as { localisations?: ReadonlyMap<string, string> })
+        .localisations?.get(texte);
+      return nodeId ? { nodeId } : {};
+    };
     for (const warning of result.warnings ?? []) {
-      versUi({ type: 'diagnostic', nature: 'avertissement', texte: warning });
+      versUi({ type: 'diagnostic', nature: 'avertissement', texte: warning, ...ou(warning) });
     }
     // Les notes disent ce que le contrat publie, pas ce qui lui manque : rien
     // n'y est à corriger, et le compteur les ignore.
     for (const info of result.infos ?? []) {
-      versUi({ type: 'diagnostic', nature: 'constat', texte: info });
+      versUi({ type: 'diagnostic', nature: 'constat', texte: info, ...ou(info) });
     }
 
     analyseGardee = {

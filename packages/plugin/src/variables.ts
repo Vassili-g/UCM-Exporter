@@ -5,6 +5,8 @@
  */
 import { normalizeName } from '@ucm-kit/core/format';
 
+import { noterSansNode, pousserNote, sujet } from './contract/localisation';
+
 /**
  * Extrait tous les alias de variable d'une liaison, qu'elle soit simple
  * (ex. itemSpacing) ou multiple (ex. fills, qui est un tableau).
@@ -82,7 +84,39 @@ export type TokenResolver = Pick<VariableNameResolver, 'resolve'>;
 export type TokenUsage = {
   nodeName: string;
   field: string;
+  /**
+   * Le node du calque nommé, quand il y en a un (U4.3).
+   *
+   * Optionnel, et l'exception a un nom : un style de texte passe aussi par ici,
+   * et un style n'est pas un node. Un message qui cite un calque sans porter
+   * son id est celui que l'interface réafficherait sans lien — d'où la loi qui
+   * compte ces cas à la sortie du moteur.
+   */
+  nodeId?: string;
 };
+
+/**
+ * Pousse un message qui NOMME un calque, et le fait mener à ce calque.
+ *
+ * Les messages de ce module ont pour sujet une VARIABLE, qui n'est pas un node.
+ * Plusieurs nomment ensuite le calque où la variable est reliée, et c'est là
+ * que le designer agit : le clic doit y mener. Quand l'appelant n'a pas de node
+ * — un style de texte passe aussi par ici —, l'absence est déclarée plutôt que
+ * laissée à deviner.
+ */
+function pousserVersLeCalque(
+  message: string,
+  usage: TokenUsage | undefined,
+  warnings: string[] | undefined,
+): void {
+  if (!warnings) return;
+  if (usage?.nodeId) {
+    pousserNote(warnings, message, sujet('Layer', { id: usage.nodeId, name: usage.nodeName }));
+    return;
+  }
+  warnings.push(message);
+  if (usage) noterSansNode(warnings, message, 'nom-publie');
+}
 
 /** Une variable écartée, et celle qui occupe déjà tout ou partie de son chemin. */
 export type AmbiguousVariable = {
@@ -278,10 +312,15 @@ export class VariableNameResolver {
 
     const variable = await figma.variables.getVariableByIdAsync(variableId).catch(() => null);
     if (!variable) {
-      warnings?.push(
+      // Le sujet est la variable, qui n'est pas un node ; mais le message NOMME
+      // le calque où elle est reliée, et c'est là que le designer agit. Le clic
+      // y mène quand l'appelant a passé le node — un style de texte n'en a pas.
+      pousserVersLeCalque(
         `Variable introuvable${location} : elle a sans doute été supprimée, ou vient d'une ` +
           `bibliothèque qui n'est plus publiée. Rien n'est exporté pour cette valeur. ` +
           `Reliez de nouveau une variable existante.`,
+        usage,
+        warnings,
       );
       return null;
     }

@@ -30,6 +30,7 @@ import {
   verifierLeSchema,
   verifierLesLois,
 } from './lois';
+import { verifierLaLocalisationDesDiagnostics } from './loiDeLocalisation.test';
 import type { ContractProp } from '@ucm-kit/core/format';
 
 /**
@@ -42,10 +43,36 @@ import type { ContractProp } from '@ucm-kit/core/format';
  * et la vérification est posée une fois, pas à chaque appel, pour qu'un
  * scénario ajouté demain y soit soumis sans que personne y pense.
  */
+/**
+ * Les noms de calques du composant que le scénario courant a monté.
+ *
+ * Relevés depuis le faux `figma`, donc depuis ce que le moteur a réellement
+ * parcouru : une liste écrite à la main vieillirait avec les scénarios.
+ */
+function nomsDeCalquesDuComposant(): Set<string> {
+  const noms = new Set<string>();
+  const visiter = (node: any): void => {
+    if (!node || typeof node !== 'object') return;
+    if (typeof node.name === 'string') noms.add(node.name);
+    for (const enfant of Array.isArray(node.children) ? node.children : []) visiter(enfant);
+  };
+  for (const selection of (globalThis as any).figma?.currentPage?.selection ?? []) {
+    visiter(selection);
+  }
+  return noms;
+}
+
 async function handleExportComponent() {
   const resultat = await exporterLeComposant();
   const contrat = JSON.parse(resultat.content);
   verifierLesLois(contrat, 'sortie du moteur');
+  verifierLaLocalisationDesDiagnostics(
+    [...resultat.warnings, ...resultat.infos],
+    resultat.localisations,
+    resultat.localisationsDeclarees,
+    nomsDeCalquesDuComposant(),
+    'sortie du moteur',
+  );
   verifierLeSchema(contrat, 'sortie du moteur');
   verifierLeLecteur(contrat, 'sortie du moteur');
   verifierLaSerialisation(resultat.content, 'sortie du moteur');

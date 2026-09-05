@@ -20,7 +20,7 @@ import { normalizePropKey } from './parsers';
 import { buildContractPropertySurface } from './propertySurface';
 import type { ContractPropertySurface } from './propertySurface';
 import type { ComposedDependency } from '@ucm-kit/core/format';
-import { pousserLocalise } from './localisation';
+import { pousserLocalise, pousserNote, sujet } from './localisation';
 
 /** Noms compactés des composants qui possèdent leur propre contrat. */
 export type ContractedNames = ReadonlySet<string>;
@@ -455,16 +455,20 @@ export async function scanComposedMatrix(
     .map((root) => `« ${root.name} »`)
     .join(', ');
   const remaining = divergentVariants.length - 3;
-  const infos = divergentVariants.length > 0
-    ? [
+  const infos: string[] = [];
+  if (divergentVariants.length > 0) {
+    // Le constat porte sur la matrice et NOMME un variant exemple : le clic mène
+    // à celui-là, ce que la phrase montre déjà du doigt.
+    pousserNote(infos,
       `Composition différente sur ${divergentVariants.length} `
       + `variant${divergentVariants.length > 1 ? 's' : ''}, ex. ${examples}` +
         `${remaining > 0 ? ` (+${remaining})` : ''} : le contrat décrit le variant de ` +
         `référence « ${roots[0]?.name ?? 'inconnu'} ». Les arbres exacts de « variants » ` +
         `conservent ces compositions différentes ; le champ global « composes » en publie ` +
         `l'union ordonnée, tandis que « structure » reste la vue historique de référence.`,
-    ]
-    : [];
+      sujet('Variant', divergentVariants[0]),
+    );
+  }
 
   // Une instance orpheline vit dans TOUS les variants du set, et chaque scan la
   // relève avec le même texte. Le message porte le nom du layer, jamais celui
