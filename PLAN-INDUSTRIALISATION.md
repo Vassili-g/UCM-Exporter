@@ -803,8 +803,14 @@ plan existe pour qu'il ne se rejoue jamais à la main.
       **Ce qui garde le mot, et c'est la même règle que T8.7 :** `parite.mjs`,
       `run-tests.mjs` et `echecs-de-tests.mjs`. Les trois SONT des adaptateurs
       de cette stack — le premier lit une API publique avec le vérificateur de
-      types, les deux autres balaient de vrais `*.test.tsx`. Leur interdire le
+      types, les deux autres savent lire un `*.test.tsx`. Leur interdire le
       mot juste les ferait mentir dans l'autre sens.
+      **⚠ Corrigé le 5 septembre 2026 par T9.4 :** « balaient de VRAIS
+      `*.test.tsx` » était faux, et l'est depuis toujours — il n'en existe aucun
+      dans le Playground, par décision écrite. Les deux modules savent en lire
+      un ; ils n'en balaient jamais. La nuance n'est pas cosmétique : elle rend
+      `composant: null` partout et deux des trois sections du rapport de tests
+      inatteignables depuis ce dépôt. T9.4 l'écrit là où on la lira.
       **La tâche ne tenait pas sans son filet**, et c'est le vrai livrable :
       `Playground/scripts/registre-portable.test.mjs`. Renommer des chaînes une
       fois ne coûte rien ; les laisser renommées coûte une vigilance que
@@ -2709,7 +2715,7 @@ close le matin même — ils y sont inscrits, non barrés.
       sur `schema-contrat.mjs` laissé ouvert par T9.1. Une publication pour les
       quatre, pas quatre publications.
 
-- [ ] **T9.4 — Écrire ce qu'`echecs-de-tests.mjs` ne peut plus dire ; ne rien
+- [X] **T9.4 — Écrire ce qu'`echecs-de-tests.mjs` ne peut plus dire ; ne rien
       couper.** *Le brouillon proposait de retirer `composantTeste`. La revue a
       montré que ce serait une faute, et le code lui donne raison :*
       `diagnostic-tests.mjs:15-31` documente `composant` et `assertion` comme la
@@ -2723,6 +2729,17 @@ close le matin même — ils y sont inscrits, non barrés.
       du rapport y sont inatteignables, et que `parite.test.mjs` couvre la
       fonction sur fixtures (`:110-147`) — un lecteur qui la croit morte la
       supprimerait.
+      **Faite le 5 septembre 2026.** Rien n'est coupé. La décision et son coût
+      sont écrits aux trois endroits où un lecteur les cherchera : l'en-tête
+      d'`echecs-de-tests.mjs`, celui de `run-tests.mjs` — qui annonçait « deux
+      familles cohabitent », donc décrivait comme présente une famille absente —
+      et une section d'`AGENTS.md`.
+      **⚠ Une erreur de la revue, trouvée en exécutant, et c'est la règle 4 qui
+      la trouve :** la couverture n'est PAS dans `parite.test.mjs:110-147`, qui
+      teste les écarts de parité. `composantTeste` est atteint par
+      `pourLeRapport`, et couvert par `scripts/echecs-de-tests.test.mjs`, sur
+      les deux tests de la projection. La revue avait raison sur la conclusion —
+      ne rien couper — et faux sur la preuve qu'elle invoquait.
 
 - [ ] **T9.5 — Retirer d'`AGENTS.md` ce qui est prouvablement dit ailleurs.**
       342 lignes, dont 93 d'« Invariants » et 45 de « Ce que les contrôles ne
@@ -3401,4 +3418,4 @@ résolus » : c'est **onze, dont deux vivants**.
 | ~~`Exporter/AGENTS.md`~~ | ~~aucun artefact de contrat, jamais~~ | **tranché par T7.0** : la règle nomme désormais le MOTEUR, pas le repository — elle était devenue ambiguë quand T1.2 a mis deux produits dans le même dépôt |
 | ~~—~~ | ~~aucun document ne déclare la projection de nom de token comme invariant~~ | **résolu par T6.0** : `tokenCssVariable` est l'unique autorité, dans `names.ts` avec les deux autres projections, et `AGENTS.md` porte l'invariant |
 | ~~`skill-diagnostics.test.mjs:8-10`, et T8.5 de ce plan~~ | ~~la copie du schéma du Playground est comparée — « même remède » que celle du skill~~ | **résolu par T9.1** : la copie est supprimée plutôt que comparée. Le renvoi a été vérifié avant, en exécutant `CHEMIN_DU_SCHEMA` depuis le Playground : il rend `node_modules/@ucm-kit/core/schema/…`, jamais le `schema/` local |
-| T2.6 de ce plan | `run-tests.mjs` et `echecs-de-tests.mjs` « balaient de vrais `*.test.tsx` » | **vivant, emporté par T9.4** : il n'en existe aucun, par décision écrite. `composant` vaut `null` partout, et deux des trois sections de `diagnostic-tests.mjs` sont inatteignables depuis ce dépôt |
+| ~~T2.6 de ce plan~~ | ~~`run-tests.mjs` et `echecs-de-tests.mjs` « balaient de vrais `*.test.tsx` »~~ | **résolu par T9.4** : la phrase de T2.6 dit désormais « savent lire », et l'absence est documentée dans les deux en-têtes et dans l'`AGENTS.md` du Playground, avec ce qu'elle rend inatteignable |
