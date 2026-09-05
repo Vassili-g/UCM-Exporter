@@ -2290,16 +2290,17 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       restitution.
       *Deux copies restent, et c'est délibéré :* un skill se charge depuis le
       repository où l'on travaille, et des messages destinés au designer
-      s'écrivent encore des deux côtés. C'est la même réponse que pour
-      `schema/ucm-contract.schema.json`, copié lui aussi — **ce n'est pas la
-      copie qui est dangereuse, c'est la copie que rien ne compare.**
-      **⚠ Corrigé le 5 septembre 2026, par la revue de la Phase 9 : le remède
-      invoqué n'existe pas du côté du schéma.** `schema-contrat.test.mjs` du
-      Playground ne lit jamais la copie locale — il ouvre celle du paquet
-      installé —, donc `schema/ucm-contract.schema.json` est précisément « la
-      copie que rien ne compare ». La comparaison des deux skills, elle, est
-      réelle. L'analogie était fausse dans le sens qui rassure ; elle part avec
-      la copie, en T9.1, ici comme dans `skill-diagnostics.test.mjs:8-10`.
+      s'écrivent encore des deux côtés. La copie est tenable à une condition —
+      **ce n'est pas la copie qui est dangereuse, c'est la copie que rien ne
+      compare** —, et celle-ci est comparée.
+      **⚠ Le brouillon adossait cette phrase à `schema/ucm-contract.schema.json`,
+      copié lui aussi. L'analogie était fausse dans le sens qui rassure : ce
+      remède-là n'existait pas.** `schema-contrat.test.mjs` du Playground ne
+      lisait jamais la copie locale — il ouvrait celle du paquet installé —, donc
+      le schéma copié était précisément « la copie que rien ne compare ».
+      **T9.1 l'a supprimé le 5 septembre 2026**, ici comme dans
+      `skill-diagnostics.test.mjs` : il ne reste qu'une copie assumée dans ce
+      projet, celle du skill, et elle est la seule qui ait son comparateur.
       `scripts/skill-diagnostics.test.mjs` les compare caractère par caractère,
       **aux adresses de lien près** : la charte vit dans l'Exporter, le
       Playground la joint par un chemin plus long, et une adresse n'est pas une
@@ -2594,7 +2595,7 @@ close le matin même — ils y sont inscrits, non barrés.
 
 ### 9.4 — Tâches
 
-- [ ] **T9.1 — Supprimer `schema/`, et refermer la croyance qu'il entretient.**
+- [X] **T9.1 — Supprimer `schema/`, et refermer la croyance qu'il entretient.**
       *Sans dépendance, à prendre en premier.*
       Partent : `schema/ucm-contract.schema.json` (1 838 l.), `schema/README.md`,
       `scripts/schema-contrat.test.mjs` (70 l.), et les renvois d'`AGENTS.md`
@@ -2631,6 +2632,20 @@ close le matin même — ils y sont inscrits, non barrés.
       le même geste — c'est une surface publique de paquet publié, et la retirer
       est une rupture qui se décide, pas un effet de bord. À écrire dans le
       compte rendu, et à trancher avec T9.3, qui monte déjà le numéro.
+      **Faite le 5 septembre 2026.** Les 1 908 lignes sont parties, la suite du
+      Playground passe de 44 à 41 tests et reste verte, et le contrôle de liens
+      n'a laissé aucun renvoi mort. Les trois corrections de la revue ont été
+      exécutées telles quelles — `.vscode/settings.json` vise le paquet installé
+      en gardant `["**/*.contract.json"]`, et `.gitattributes` porte désormais
+      les deux règles d'`ucm init` au lieu d'une règle sans objet.
+      *Le renvoi a été revérifié avant de supprimer, comme la règle 4 l'exige :*
+      `CHEMIN_DU_SCHEMA` exécuté depuis le Playground rend
+      `node_modules/@ucm-kit/core/schema/ucm-contract.schema.json`. La revue
+      avait raison.
+      *Ce qu'elle laisse ouvert, et c'est pour T9.3 :* `CHEMIN_DU_SCHEMA`,
+      `lireLeSchema`, `versionDuSchema` et `valideurDeSchema` n'ont plus aucun
+      consommateur dans les deux dépôts. Vérifié par balayage, pas seulement
+      supposé.
 
 - [ ] **T9.2 — `CHANGELOG-CONTRAT.md` part chez le producteur.** *(= T8.4,
       moitié 1.)* Un historique de schémas décrit ce que le producteur a publié,
@@ -3370,5 +3385,5 @@ résolus » : c'est **onze, dont deux vivants**.
 | ~~skill `consommer-contrat`, ancrage 6~~ | ~~une commande de contrôle ciblée sur un composant~~ | **résolu par T8.6** : l'ancrage dit ce qui existe — un contrôle qui balaie le repository — et pourquoi cela suffit |
 | ~~`Exporter/AGENTS.md`~~ | ~~aucun artefact de contrat, jamais~~ | **tranché par T7.0** : la règle nomme désormais le MOTEUR, pas le repository — elle était devenue ambiguë quand T1.2 a mis deux produits dans le même dépôt |
 | ~~—~~ | ~~aucun document ne déclare la projection de nom de token comme invariant~~ | **résolu par T6.0** : `tokenCssVariable` est l'unique autorité, dans `names.ts` avec les deux autres projections, et `AGENTS.md` porte l'invariant |
-| `skill-diagnostics.test.mjs:8-10`, et T8.5 de ce plan | la copie du schéma du Playground est comparée — « même remède » que celle du skill | **vivant, emporté par T9.1** : `schema-contrat.test.mjs` ouvre le schéma du PAQUET INSTALLÉ (`schema-contrat.mjs:29-32`), jamais la copie locale, qui est donc exactement « la copie que rien ne compare » |
+| ~~`skill-diagnostics.test.mjs:8-10`, et T8.5 de ce plan~~ | ~~la copie du schéma du Playground est comparée — « même remède » que celle du skill~~ | **résolu par T9.1** : la copie est supprimée plutôt que comparée. Le renvoi a été vérifié avant, en exécutant `CHEMIN_DU_SCHEMA` depuis le Playground : il rend `node_modules/@ucm-kit/core/schema/…`, jamais le `schema/` local |
 | T2.6 de ce plan | `run-tests.mjs` et `echecs-de-tests.mjs` « balaient de vrais `*.test.tsx` » | **vivant, emporté par T9.4** : il n'en existe aucun, par décision écrite. `composant` vaut `null` partout, et deux des trois sections de `diagnostic-tests.mjs` sont inatteignables depuis ce dépôt |
