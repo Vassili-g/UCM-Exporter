@@ -23,9 +23,14 @@ Un **composant unifié** réunit dans le même dossier :
 
 ```text
 components/Button/
-  Button.tsx
-  Button.contract.json
+  Button.contract.json    le contrat : son nom est fixé par le format
+  Button.<ext>            le code : son extension est celle du repository
 ```
+
+Ce que le modèle fixe est le contrat et sa co-localisation ; où le code se
+trouve et comment il se nomme est déclaré par le repository, dans
+`ucm.config.json` (défaut `{dir}/{id}.tsx`, que tout dépôt remplace par le
+sien).
 
 - le code réel implémente le comportement applicatif ;
 - le contrat exporté de Figma décrit la partie visuelle ;
