@@ -3268,6 +3268,7 @@ le worktree bougeait sous la mesure.
       `warning` que son contrat réexporté déclare. Le composant a été écrit
       depuis un contrat d'avant, le plugin en a exporté un autre depuis, et rien
       ne les a rapprochés.
+      --> ce n'est plus le cas le 5 septembre 2026, les composants ont été regénérés 
       *Pourquoi c'est plus qu'un composant cassé :* une CI rouge en permanence
       ne dit plus rien, et c'est précisément le repository dont ce plan se sert
       pour prouver que le kit tient. Toutes les vérifications faites « chez le
