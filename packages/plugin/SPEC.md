@@ -873,17 +873,26 @@ exportée, **export non bloqué**.
 Le contrat ne publie **aucun index de ses tokens**. Cette liste se dérive du
 contrat terminé et n’apporte aucune information propre.
 
-### Sortie
+### Ce que l'export écrit
 
-#### Fichier et exemple
+#### Le nom du fichier, et ce qu'il unifie
 
-`<IdentifiantCode>.contract.json` est téléchargé ou déposé par PR. Le champ
-`name` conserve le nom Figma exact ; le fichier emploie son identifiant
-PascalCase ASCII canonique (`Icon / Button` → `IconButton.contract.json`,
-`2e bouton` → `Component2eBouton.contract.json`). Ce même identifiant nomme le
-dossier, le composant React et son interface `<IdentifiantCode>Props`, sans
-faire du nom d'affichage un identifiant TypeScript. Le contrat décrit une **API
-unifiée** (wrapper + set comme un seul composant). Exemple Button :
+Le moteur ne choisit pas librement le nom de ce qu'il dépose : il projette le
+nom Figma par `codeIdentifier`, l'unique autorité du kit sur cette question, et
+n'écrit nulle part une seconde règle de nommage. La forme obtenue et les
+exemples qui l'illustrent sont
+[du format](../../docs/FORMAT.md#fichier-et-exemple) ; ce qui appartient au
+moteur est qu'il conserve le nom Figma **intact** dans `name` à côté de
+l'identifiant projeté. Aucune des deux valeurs ne se déduit de l'autre en
+sécurité, et publier les deux évite au consommateur d'avoir à inverser une
+normalisation qui perd de l'information.
+
+**Ce que l'export unifie avant d'écrire.** Un composant se présente dans Figma
+comme un `COMPONENT_SET`, parfois enveloppé d'un wrapper qui porte ses propres
+component properties. Le moteur en publie UN contrat, pas deux : il élit une
+surface publique unique — owner direct plus wrapper élu — et le contrat décrit
+cette API unifiée. C'est une décision d'extraction, prise dans
+`propertySurface.ts`, et le format n'en garde que le résultat.
 
 Les dimensions géométriques ne figurent qu'à UN endroit : `sizes` les porte
 dès que le composant expose un axe de tailles ; sinon `gap` / `padding` /
