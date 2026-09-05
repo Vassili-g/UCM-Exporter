@@ -492,7 +492,7 @@ rendant les deux chemins facultatifs.
       composées par `etatDuDepot`, avec la phrase de la configuration : une
       seule lecture du dépôt, deux endroits où elle sert.
 
-- [ ] **U2.3 — Deux commandes inégales ne se ressemblent pas.** L'export
+- [X] **U2.3 — Deux commandes inégales ne se ressemblent pas.** L'export
       composant exige une sélection (`getSelectedComponent`) ; l'export tokens
       lit les variables locales du fichier entier et ignore la sélection. Les
       deux boutons partagent pourtant une carte, une note qui parle de
@@ -502,12 +502,22 @@ rendant les deux chemins facultatifs.
       pas davantage. Geste : le bouton composant se désactive quand la sélection
       n'est pas exportable, la raison juste sous lui ; l'export tokens devient
       une action distincte, avec son propre résumé.
+      *Faite le 5 septembre 2026, avec un écart assumé :* la raison n'est pas
+      répétée sous le bouton. Elle est écrite dans le bloc cible de U2.1, juste
+      au-dessus, et deux textes pour un même fait en feraient deux à tenir. Les
+      deux commandes ne partagent plus ni surface ni note : les tokens ont leur
+      section, en bas, séparée par un filet.
 
-- [ ] **U2.4 — Les tokens disent ce qu'ils vont emporter.** C'est un export de
+- [X] **U2.4 — Les tokens disent ce qu'ils vont emporter.** C'est un export de
       portée *fichier*, et rien à l'écran n'en dit la taille. Geste : au
       chargement, `getLocalVariableCollectionsAsync` et
       `getLocalVariablesAsync` — déjà appelés par `exportTokens` — donnent
       `N collections · N variables · N modes`.
+      *Faite le 5 septembre 2026.* Le compte se lit sur les collections seules :
+      elles portent déjà leurs identifiants de variables et leurs modes, donc
+      `getLocalVariablesAsync` n'est pas payé à l'ouverture. Les modes ne sont
+      comptés que s'il y en a plusieurs, un « 1 mode » n'apprenant rien : c'est
+      au-delà de un que le contrat publie `com.ucm.modes`.
 
 - [X] **U2.5 — Le premier lancement dit ce qui va se passer.** Sans dépôt
       configuré, `runExport` retombe sur le téléchargement local : un
@@ -526,7 +536,7 @@ rendant les deux chemins facultatifs.
       qu'un bouton promet doit suivre l'état de la cible, pas seulement le nom de
       l'artefact.
 
-- [ ] **U2.6 — Des phases pendant l'attente.** L'export charge toutes les pages
+- [X] **U2.6 — Des phases pendant l'attente.** L'export charge toutes les pages
       puis résout trois fois le même maître par dépendance : un coût nommé et
       **non mesuré** ([ROADMAP.md](./ROADMAP.md), « Fragilités connues »). Un
       seul « Analyse du composant… » figé pendant plusieurs secondes se lit comme
@@ -535,6 +545,16 @@ rendant les deux chemins facultatifs.
       ni un pourcentage** : la mesure n'existe pas, et une barre de progression
       inventerait une précision qu'on n'a pas. Bénéfice second : cette mesure
       manquante obtient enfin un endroit où s'observer.
+      *Faite le 5 septembre 2026.* Le moteur ANNONCE, il ne décide de rien : les
+      deux orchestrations reçoivent un `annoncer` optionnel et nomment quatre
+      étapes pour un composant, deux pour les tokens ; `code.ts` en fait un
+      message, et lui seul. C'est la seule entorse de cette phase à la frontière
+      du moteur, et elle n'ajoute aucune décision — un handler appelé sans
+      `annoncer` se comporte exactement comme avant.
+      Les étapes vont dans la NOTE et pas dans le journal : quatre lignes de
+      déroulé par export noieraient les avertissements, qui sont la seule chose
+      de ce journal qui demande un geste. L'attente de publication porte enfin
+      un nom à elle, plus rien ne se lisant dans Figma à ce moment.
 
 ---
 
@@ -942,7 +962,7 @@ finitions de CI, orthogonales à l'interface.
    endroit où une couleur se décide.
 5. **U5.1** et **U5.2** — la destination réelle et la cause d'un échec sont des
    données que U2.2 affiche. **Faites le 5 septembre 2026.**
-6. **U2** — l'écran de travail.
+6. **U2** — l'écran de travail. **Faite le 5 septembre 2026.**
 7. **U4.1**, **U4.2**, **U4.6** — le compte rendu, qui rend U3 lisible.
 8. **U3.1** à **U3.4** — le pré-vol, une fois qu'il a un endroit où rendre son
    résultat.
