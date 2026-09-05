@@ -2647,7 +2647,7 @@ close le matin même — ils y sont inscrits, non barrés.
       consommateur dans les deux dépôts. Vérifié par balayage, pas seulement
       supposé.
 
-- [ ] **T9.2 — `CHANGELOG-CONTRAT.md` part chez le producteur.** *(= T8.4,
+- [X] **T9.2 — `CHANGELOG-CONTRAT.md` part chez le producteur.** *(= T8.4,
       moitié 1.)* Un historique de schémas décrit ce que le producteur a publié,
       pas ce que ce repo lit. Destination écrite en 8.2 :
       `docs/CHANGELOG-FORMAT.md`. **Il n'existe pas encore** — la tâche le crée.
@@ -2655,6 +2655,21 @@ close le matin même — ils y sont inscrits, non barrés.
       entre les deux commits :* écrire chez le producteur, ajouter le renvoi à
       `docLinks.test.ts`, PUIS router les quatre renvois du consommateur
       (`AGENTS.md` ×2, `CONTRIBUTING.md`, `README.md`) et supprimer.
+      **Faite le 5 septembre 2026, en deux temps comme la règle 2 l'exige.**
+      Temps 1 : le fichier arrive octet pour octet — comparaison binaire, 26 943
+      octets —, README.md et AGENTS.md du producteur le joignent, puis les quatre
+      renvois du consommateur y pointent et la copie part. Temps 2 : le document
+      cesse de parler comme un consommateur — « ce repository lit un seul schéma »
+      devient « un consommateur lit », l'audit de la 8.0 et le contrôle de la
+      11.0 nomment qui contrôle réellement, et le préambule renvoie à
+      `FORMAT.md` pour la forme courante et à `version.ts` pour le numéro.
+      *Ce que le temps 2 n'a pas pu faire, et le garde-fou l'a montré à la
+      seconde :* le commentaire de `version.ts` dit « ce qui a changé d'une
+      version à l'autre se lit dans Git », ce qui était vrai et l'est resté,
+      mais qui devrait maintenant nommer ce document. Le corriger touche un
+      fichier publiable — `versionSuitLeContenu.test.mjs` est passé au rouge —
+      donc monte le kit, donc le CLI, donc publie. **Cette ligne rejoint le lot
+      de T9.3**, qui porte déjà cette montée.
 
 - [ ] **T9.3 — `CONTRAT-CONSOMME.md` part.** *(= T8.4, moitié 2.)*
       **Son argument est plus fort que celui du brouillon, et c'est la revue qui

@@ -1,22 +1,28 @@
-# Historique des schémas de contrat
+# Historique des versions du contrat
 
-Ce repository lit **un seul** schéma à la fois, sauf pendant une migration où il
-en lit deux — la plage vit dans `version-contrat.mjs` du kit
-(`@ucm-kit/core/lecteurs`), et tout écart hors
-plage est refusé dans les deux sens, parce que le geste correctif n'appartient
-pas à la même personne : un contrat plus ancien se répare par un réexport, un
-contrat plus récent par une adaptation des lecteurs.
+Ce document dit ce que **chaque version du contrat a publié**, et ce que passer
+à la suivante casse. Il s'adresse à qui lit un contrat qu'il n'a pas exporté :
+la forme COURANTE est dans [FORMAT.md](./FORMAT.md), et c'est elle qui fait
+autorité. Ici, on ne trouve que le passé et ce qu'il coûte.
 
-**La plage est refermée sur la 12.0.** Les quatre composants du corpus l'ont
-vue. Une plage ouverte est un choix explicite et TEMPORAIRE, jamais un état par
-défaut : la laisser survivre à sa migration ferait rentrer en silence un schéma
-que plus personne n'adapte.
+Un consommateur lit **un seul** schéma à la fois, sauf pendant une migration où
+il en lit deux — la plage vit dans `version-contrat.mjs`
+(`@ucm-kit/core/lecteurs`), et tout écart hors plage est refusé dans les deux
+sens, parce que le geste correctif n'appartient pas à la même personne : un
+contrat plus ancien se répare par un réexport, un contrat plus récent par une
+adaptation des lecteurs.
 
-Ce fichier n'est pas un garde-fou et ne prouve rien. Les validateurs refusent
-un contrat illisible ; les reconstructions à froid et leur comparaison avec
-Figma éprouvent ce qu’il permet réellement de rendre. Ces notes servent autre
-chose : relire un contrat ancien ou reconstruire un composant jetable en
-sachant ce que sa version publie.
+**La version courante est la 12.0**, et `CONTRACT_VERSION`
+(`packages/kit/src/format/version.ts`) en est le seul endroit où elle s'écrit.
+Une plage ouverte, chez un consommateur, est un choix explicite et TEMPORAIRE,
+jamais un état par défaut : la laisser survivre à sa migration ferait rentrer
+en silence un schéma que plus personne n'adapte.
+
+Ce fichier n'est pas un garde-fou et ne prouve rien. Le schéma et les lecteurs
+refusent un contrat illisible ; les reconstructions à froid et leur comparaison
+avec Figma éprouvent ce qu'une version permet réellement de rendre. Ces notes
+servent autre chose : relire un contrat ancien, ou reconstruire un composant
+depuis son contrat, en sachant ce que sa version publie.
 
 Une entrée se rédige quand la version est adoptée, et décrit ce que le lecteur
 doit en savoir — jamais qu'une relecture a eu lieu.
@@ -213,8 +219,8 @@ courte, et aucun n'emploie de grille. Les deux formes sont donc auditées sans
 combinaison réellement présente, y compris une matrice clairsemée et un
 COMPONENT standalone ; `propertyBindings` situe les component properties
 natives, et `meta.diagnostics` / `meta.coverage` rendent les limites lisibles
-par machine. `INSTANCE_SWAP` et `SLOT` deviennent des types de props. Audit du
-consommateur : les composants jetables peuvent être reconstruits contre ces
+par machine. `INSTANCE_SWAP` et `SLOT` deviennent des types de props. Audit fait chez le
+consommateur de référence : un composant peut être reconstruit contre ces
 champs, tandis que le validateur contrôle la cohérence de ces nouvelles vues
 avant de laisser entrer le contrat. Chaque variante porte aussi ses tokens,
 strokes, usages typographiques, icônes situées et dépendances ; le générateur
@@ -344,7 +350,7 @@ swaps: [{ masterPath: ["chess"], component: "duck" }]
 → <Branch leadingName="duck" />
 ```
 
-**Ce que ce repository contrôle.** La FORME du champ dans
+**Ce que les lecteurs du kit contrôlent.** La FORME du champ dans
 `validation-contrat.mjs`, à toute profondeur de composition — un `masterPath`
 vide ne désigne rien qu'un lecteur puisse joindre. Puis, dans
 `validation-echantillons.mjs`, toutes les ADRESSES de l'échantillon, dont
@@ -461,4 +467,5 @@ Trois champs de plus, et un champ qui cesse de se répéter.
 **Ce qui ne change pas** : tout le reste de la 11.0. Un contrat 12.0 sans calque
 hors du flux, sans rotation et dont chaque clé porte le nom de son rôle est
 identique à son équivalent 11.0, à `meta.contractVersion` près — trois des
-quatre contrats du corpus l'ont vérifié en ne changeant que cette ligne.
+quatre contrats du consommateur de référence l'ont vérifié en ne changeant que
+cette ligne.
