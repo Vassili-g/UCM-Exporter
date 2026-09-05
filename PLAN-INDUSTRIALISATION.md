@@ -1771,7 +1771,7 @@ une place dans l'ordre d'exécution.
       porter un et laisser l'autre à son propriétaire.
 - [ ] **T5.5 — Action GitHub réutilisable — après la Phase 7.**
 
-- [ ] **T5.6 — Réduire le temps de la CI par du cache.** `ci.yml` enchaîne
+- [X] **T5.6 — Réduire le temps de la CI par du cache.** `ci.yml` enchaîne
       `npm ci`, `npm test` et `npm run build` sans aucun cache de
       `node_modules` ni du `dist/` du kit : `cache: npm` sur `setup-node` ne
       cache que le téléchargement, pas l'installation, et `packages/kit`
@@ -1788,6 +1788,38 @@ une place dans l'ordre d'exécution.
       coût de deux installations au lieu d'une ; et l'effet réel mesuré sur
       un run GitHub Actions plutôt qu'en local, où le premier run à froid
       n'est jamais représentatif. Faire recherches internet surles bonnes pratiques.
+
+      **Close le 5 septembre 2026 SANS implémentation, et la mesure est la
+      raison.** La tâche exigeait « l'effet réel mesuré sur un run GitHub
+      Actions plutôt qu'en local ». Il l'est, sur deux dépôts, en relevant les
+      horodatages de chaque étape par l'API :
+
+      | Étape | Exporteur | Consommateur |
+      |---|---|---|
+      | `checkout` + `setup-node` | 4 s | 3 s (clone du voisin compris) |
+      | **`npm ci`** | **3 s** | **6 s** |
+      | tests / contrôles | 27 s | 14 s |
+      | `npm run build` | 4 s | 4 s |
+      | **job entier** | **42 s** | **29 s** |
+
+      **La prémisse de l'énoncé est fausse, et c'est le résultat de la tâche.**
+      Il supposait que « l'essentiel du temps ressenti vient de l'installation à
+      froid, pas du nombre de tests ». Mesuré : l'installation coûte 3 et 6
+      secondes, les tests 27 et 14. Un cache de `node_modules` économiserait donc
+      **au mieux trois secondes sur quarante-deux**, et le ferait au prix exact
+      que la tâche redoutait — un `dist/` servi depuis un cache, contre lequel
+      `monorepoCoherent.test.mjs` existe. On ne prend pas ce risque pour 7 %.
+
+      *Ce que la mesure a montré et qu'on ne cherchait pas :* `cache: npm` de
+      `setup-node` fait déjà l'essentiel. Il ne cache pas l'installation, mais le
+      téléchargement — et c'est le téléchargement qui domine une installation à
+      froid. La mesure ne dit donc pas « le cache est inutile », elle dit **« le
+      cache utile est déjà en place »**.
+
+      *Et une borne pour le jour où ce constat cessera d'être vrai :* la question
+      se rouvre si le job dépasse trois minutes, ou si `npm ci` passe le tiers du
+      temps total. Écrire ce seuil coûte une ligne et évite de reposer la
+      question à l'aveugle — c'est ce que cette tâche a coûté faute de l'avoir.
 
 ---
 
