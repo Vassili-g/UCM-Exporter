@@ -155,11 +155,13 @@ export async function electVariantLayoutNodes(
       ? await matchingWrapperInstance(variant, wrapperOwnerId, composed)
       : null;
     if (wrapperOwnerId && !instance) {
-      pousserLocalise(warnings, 'Variant', variant,
-        ` : il ne contient pas le composant imbriqué qui porte les ` +
-          `dimensions des autres variants. Ses dimensions et ses slots sont lus sur un autre ` +
-          `layer, et peuvent décrire autre chose. Ajoutez-y ce composant, puis réexportez.`,
-      );
+      pousserLocalise(warnings, 'Variant', variant, {
+        manque: `il ne contient pas le composant imbriqué qui porte les dimensions des `
+          + `autres variants.`,
+        impact: `Ses dimensions et ses slots sont lus sur un autre layer, et peuvent décrire `
+          + `autre chose.`,
+        action: `Ajoutez-y ce composant, puis réexportez.`,
+      });
     }
     // Les avertissements de parcours (calques masqués) ne sont relevés que sur
     // la référence : les autres variants les produiront de nouveau pendant

@@ -415,6 +415,17 @@ toujours « rien à faire » apprend à son lecteur qu'elle se survole, et il
 survolera ensuite celles qui demandent un geste. La règle et le vocabulaire
 vivent dans [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
+**Les trois parties voyagent séparées jusqu'à l'interface (U4.8).** Un site
+d'émission écrit un `Constat` — ce qui manque, ce que ça coûte, quel geste le
+corrige — et `localisation.ts` en compose le titre puis la phrase compacte. La
+phrase est ce que publient `meta.diagnostics`, la pull request et le journal ;
+les parties sont ce que l'interface met en page, sous une pastille qui nomme la
+sévérité. Une seule rédaction, deux formes. Sans cette séparation, l'interface
+n'aurait le choix qu'entre afficher un paragraphe — où le geste se lit en
+dernier, après deux phrases de contexte — et découper une `string` dans le DOM,
+c'est-à-dire redéfinir chez elle une grammaire dont le moteur est
+propriétaire.
+
 **Un avertissement arrive inerte dans la page GitHub.** Le message cite les
 intitulés de Figma tels quels, et GitHub lit dans certains d'entre eux autre
 chose que le designer : `@icons`, nom d'une variante de règle, y devenait le

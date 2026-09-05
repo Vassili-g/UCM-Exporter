@@ -68,15 +68,31 @@ const VERSION_CONTRAT = /CONTRACT_VERSION = '([^']+)'/.exec(
  * un texte d'exemple qui tiendrait toujours sur une ligne. Ce sont des
  * échantillons, pas une autorité : si le moteur reformule le sien, la capture
  * perd un peu de réalisme, rien de plus.
+ *
+ * Ils sont écrits EN TROIS PARTIES, comme le moteur les écrit depuis U4.8 : une
+ * carte se regarde avec les longueurs réelles de chacune, pas avec un
+ * paragraphe recoupé pour la capture.
  */
-const AVERTISSEMENT_STROKE = // extractSlotTokens.ts, strokeAlignment
-  "Layer « Border » : l’alignement du stroke est illisible. Le contrat ne dira pas s’il est inside, center ou outside. Vérifiez ce réglage dans Figma, puis réexportez.";
-const AVERTISSEMENT_AUTO_LAYOUT = // extractLayout.ts, warnMissingDirection
-  "Layer « Button / Primary » : il n'utilise pas d'auto layout. Le contrat annonce malgré tout une disposition horizontale, la seule qu'il sache écrire par défaut, et le développeur placera donc ses layers autrement que dans Figma. Appliquez un auto layout à ce layer, puis réexportez.";
-const AVERTISSEMENT_TEXT_STYLE = // extractVariantTypography.ts — nomme un style, pas un node
-  "Text style « Body / Regular », line height : aucune variable Figma n'est reliée. Cette propriété typographique manquera au développeur. Reliez-la à une variable dans le text style, puis réexportez.";
-const AVERTISSEMENT_COMPOSE = // exportComponent.ts, dépendance non placée
-  "Layer « Icon slot » : il porte le composant « Icon », qui a son propre contrat, mais le contrat n'a trouvé aucun emplacement où le situer. La dépendance ne sera ni décrite dans structure.children, ni déclarée dans composes : le développeur ne la rendra pas. Placez ce layer dans l'auto layout frame que le composant décrit, puis réexportez.";
+const AVERTISSEMENT_STROKE = { // extractSlotTokens.ts, strokeAlignment
+  titre: "Layer « Border » : l’alignement du stroke est illisible.",
+  impact: "Le contrat ne dira pas s’il est inside, center ou outside.",
+  action: "Vérifiez ce réglage dans Figma, puis réexportez.",
+};
+const AVERTISSEMENT_AUTO_LAYOUT = { // extractLayout.ts, warnMissingDirection
+  titre: "Layer « Button / Primary » : il n'utilise pas d'auto layout.",
+  impact: "Le contrat annonce malgré tout une disposition horizontale, la seule qu'il sache écrire par défaut, et le développeur placera donc ses layers autrement que dans Figma.",
+  action: "Appliquez un auto layout à ce layer, puis réexportez.",
+};
+const AVERTISSEMENT_TEXT_STYLE = { // extractVariantTypography.ts — nomme un style, pas un node
+  titre: "Text style « Body / Regular », line height : aucune variable Figma n'est reliée.",
+  impact: "Cette propriété typographique manquera au développeur.",
+  action: "Reliez-la à une variable dans le text style, puis réexportez.",
+};
+const AVERTISSEMENT_COMPOSE = { // exportComponent.ts, dépendance non placée
+  titre: "Layer « Icon slot » : il porte le composant « Icon », qui a son propre contrat, mais le contrat n'a trouvé aucun emplacement où le situer.",
+  impact: "La dépendance ne sera ni décrite dans structure.children, ni déclarée dans composes : le développeur ne la rendra pas.",
+  action: "Placez ce layer dans l'auto layout frame que le composant décrit, puis réexportez.",
+};
 
 const COMPOSANT = 'Button / Primary';
 const CHEMIN = 'src/components/Button/Button.contract.json';
@@ -129,17 +145,17 @@ const REGLAGES = {
 };
 
 /**
- * Un point à corriger relevé par l'export, avec le node de son sujet quand il
- * en a un (U4.3/U4.4).
+ * Un point à corriger relevé par l'export : ses TROIS parties (U4.8), et le node
+ * de son sujet quand il en a un (U4.3/U4.4).
  *
  * L'absence de `nodeId` n'est pas un raccourci de la galerie : c'est l'état
  * réel d'un message qui nomme un text style, une variable, ou un calque agrégé
  * sur toute la matrice. Les deux formes doivent se regarder CÔTE À CÔTE, parce
- * que c'est leur voisinage qui dit si l'absence de lien se lit comme une
- * réponse ou comme un oubli.
+ * que c'est leur voisinage qui dit si l'absence du bouton « Afficher dans
+ * Figma » se lit comme une réponse ou comme un oubli.
  */
-const diagnostic = (texte, nodeId) => ({
-  message: { type: 'diagnostic', texte, ...(nodeId ? { nodeId } : {}) },
+const diagnostic = (point, nodeId) => ({
+  message: { type: 'diagnostic', ...point, ...(nodeId ? { nodeId } : {}) },
 });
 
 /** Vingt avertissements réels : le volume que U1.3 (d) exige de regarder. */
@@ -147,8 +163,11 @@ function vingtAvertissements() {
   const modeles = [AVERTISSEMENT_STROKE, AVERTISSEMENT_AUTO_LAYOUT, AVERTISSEMENT_COMPOSE];
   const lignes = [];
   for (let rang = 0; rang < 20; rang += 1) {
-    const modele = modeles[rang % modeles.length].replace('« Border »', `« Border ${rang + 1} »`);
-    lignes.push(diagnostic(modele));
+    const modele = modeles[rang % modeles.length];
+    lignes.push(diagnostic({
+      ...modele,
+      titre: modele.titre.replace('« Border »', `« Border ${rang + 1} »`),
+    }));
   }
   return lignes;
 }

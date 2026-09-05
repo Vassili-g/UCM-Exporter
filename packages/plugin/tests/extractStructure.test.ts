@@ -32,7 +32,7 @@ test('extractStructure survit à un composant sans node de layout', async () => 
   assert.deepEqual(structure.children, []);
   assert.deepEqual(structure.variantTokens, {});
   assert.deepEqual(Array.from(collecterReferences(structure)).sort(), []);
-  assert.ok(warnings.some((w) => w.includes('Aucun auto layout frame trouvé')));
+  assert.ok(warnings.some((w) => w.includes('aucun auto layout frame n’y a été trouvé')));
 });
 
 test('extractStructure ne recopie pas la couleur du label hors de variantTokens', async () => {

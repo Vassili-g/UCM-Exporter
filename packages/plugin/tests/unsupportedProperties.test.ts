@@ -15,6 +15,17 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { rotationDegrees } from '../src/contract/flexLayout';
 import { unsupportedPropertyWarnings } from '../src/contract/unsupportedProperties';
+import { phraseDe } from '../src/contract/localisation';
+
+/**
+ * La phrase compacte de chaque point, dérivée de ses trois parties (U4.8).
+ *
+ * Ces tests portent sur ce qui est DIT au designer, pas sur la mise en page de
+ * la carte : ils lisent donc la phrase, seule forme dont la composition soit
+ * garantie par `phraseDe`.
+ */
+const avertissementsDe = (node: SceneNode): string[] =>
+  unsupportedPropertyWarnings(node).map(phraseDe);
 
 /** Une frame aux valeurs par défaut de Figma, telle qu'un designer la crée. */
 const frameParDefaut = (extra: Record<string, unknown> = {}) => ({
@@ -57,21 +68,21 @@ const texteParDefaut = (extra: Record<string, unknown> = {}) => ({
 }) as unknown as SceneNode;
 
 test('un layer aux valeurs par défaut de Figma ne produit aucun avertissement', () => {
-  assert.deepEqual(unsupportedPropertyWarnings(frameParDefaut()), []);
-  assert.deepEqual(unsupportedPropertyWarnings(texteParDefaut()), []);
+  assert.deepEqual(avertissementsDe(frameParDefaut()), []);
+  assert.deepEqual(avertissementsDe(texteParDefaut()), []);
 });
 
 test('« clip content » n’est pas une anomalie : c’est le défaut de Figma', () => {
   const suspect = frameParDefaut({ clipsContent: true });
-  assert.deepEqual(unsupportedPropertyWarnings(suspect), []);
+  assert.deepEqual(avertissementsDe(suspect), []);
 });
 
 test('une rotation n’est plus une propriété manquante : le contrat l’écrit', () => {
   // Ce relevé dit ce que le schéma ne SAIT PAS porter. La rotation en est
   // sortie le jour où `ChildStructure.rotation` l'a portée : la réclamer encore
   // enverrait le designer redresser un layer que le développeur rend incliné.
-  assert.deepEqual(unsupportedPropertyWarnings(frameParDefaut({ rotation: -90 })), []);
-  assert.deepEqual(unsupportedPropertyWarnings(frameParDefaut({ rotation: 3e-13 })), []);
+  assert.deepEqual(avertissementsDe(frameParDefaut({ rotation: -90 })), []);
+  assert.deepEqual(avertissementsDe(frameParDefaut({ rotation: 3e-13 })), []);
 });
 
 test('rotationDegrees traduit dans la convention de CSS, et tait le bruit de Figma', () => {
@@ -94,7 +105,7 @@ test('un mask est signalé : le contrat ne perd pas sa surface, il l’invente',
   // la couleur du mask entre bien dans `variants[].tokens`, et le développeur la
   // peindrait par-dessus le contenu qu'elle était censée découper.
   const masque = frameParDefaut({ isMask: true });
-  const avertissements = unsupportedPropertyWarnings(masque);
+  const avertissements = avertissementsDe(masque);
   assert.equal(avertissements.length, 1);
   assert.ok(avertissements[0].includes('Layer « Container », mask'));
   assert.ok(avertissements[0].includes('par-dessus les layers qu’il masque'));
@@ -104,7 +115,7 @@ test('une ombre visible est signalée, une ombre masquée ne l’est pas', () =>
   const avecOmbre = frameParDefaut({
     effects: [{ type: 'DROP_SHADOW', visible: true }],
   });
-  const avertissements = unsupportedPropertyWarnings(avecOmbre);
+  const avertissements = avertissementsDe(avecOmbre);
   assert.equal(avertissements.length, 1);
   assert.ok(avertissements[0].includes('Layer « Container », effect'));
   assert.ok(avertissements[0].includes('l’ombre ou le flou'));
@@ -113,11 +124,11 @@ test('une ombre visible est signalée, une ombre masquée ne l’est pas', () =>
   const ombreMasquee = frameParDefaut({
     effects: [{ type: 'DROP_SHADOW', visible: false }],
   });
-  assert.deepEqual(unsupportedPropertyWarnings(ombreMasquee), []);
+  assert.deepEqual(avertissementsDe(ombreMasquee), []);
 });
 
 test('une opacité partielle est signalée — c’est le réglage courant d’un état disabled', () => {
-  const avertissements = unsupportedPropertyWarnings(frameParDefaut({ opacity: 0.4 }));
+  const avertissements = avertissementsDe(frameParDefaut({ opacity: 0.4 }));
   assert.equal(avertissements.length, 1);
   assert.ok(avertissements[0].includes('opacity'));
   assert.ok(avertissements[0].includes('rendu opaque'));
@@ -129,40 +140,40 @@ test('un dégradé est signalé : le relevé des couleurs ne le voit pas', () =>
   const degrade = frameParDefaut({
     fills: [{ type: 'GRADIENT_LINEAR', visible: true }],
   });
-  const avertissements = unsupportedPropertyWarnings(degrade);
+  const avertissements = avertissementsDe(degrade);
   assert.equal(avertissements.length, 1);
   assert.ok(avertissements[0].includes(', fill'));
   assert.ok(avertissements[0].includes('dégradé'));
 
   // Un stroke non uni suit exactement la même règle, sur son propre champ.
   const strokeImage = frameParDefaut({ strokes: [{ type: 'IMAGE', visible: true }] });
-  assert.ok(unsupportedPropertyWarnings(strokeImage)[0].includes(', stroke'));
+  assert.ok(avertissementsDe(strokeImage)[0].includes(', stroke'));
 });
 
 test('des fills « mixed » sont signalés : le contrat n’en décrit qu’un jeu par layer', () => {
   const melange = frameParDefaut({ fills: Symbol('figma.mixed') });
-  const avertissements = unsupportedPropertyWarnings(melange);
+  const avertissements = avertissementsDe(melange);
   assert.equal(avertissements.length, 1);
   assert.ok(avertissements[0].includes(', fill'));
 });
 
 test('un blend mode et un pointillé sont signalés, leurs valeurs neutres non', () => {
-  assert.equal(unsupportedPropertyWarnings(frameParDefaut({ blendMode: 'MULTIPLY' })).length, 1);
-  assert.deepEqual(unsupportedPropertyWarnings(frameParDefaut({ blendMode: 'NORMAL' })), []);
-  assert.equal(unsupportedPropertyWarnings(frameParDefaut({ dashPattern: [4, 4] })).length, 1);
+  assert.equal(avertissementsDe(frameParDefaut({ blendMode: 'MULTIPLY' })).length, 1);
+  assert.deepEqual(avertissementsDe(frameParDefaut({ blendMode: 'NORMAL' })), []);
+  assert.equal(avertissementsDe(frameParDefaut({ dashPattern: [4, 4] })).length, 1);
 });
 
 test('un texte centré en Hug ne dit rien, le même texte en Fill est signalé', () => {
   // Un texte en Hug a une boîte à sa mesure : son alignement n'a aucun effet
   // visuel, et le signaler enverrait le designer corriger un bouton correct.
   const centreEnHug = texteParDefaut({ textAlignHorizontal: 'CENTER' });
-  assert.deepEqual(unsupportedPropertyWarnings(centreEnHug), []);
+  assert.deepEqual(avertissementsDe(centreEnHug), []);
 
   const centreEnFill = texteParDefaut({
     textAlignHorizontal: 'CENTER',
     layoutSizingHorizontal: 'FILL',
   });
-  const avertissements = unsupportedPropertyWarnings(centreEnFill);
+  const avertissements = avertissementsDe(centreEnFill);
   assert.equal(avertissements.length, 1);
   assert.ok(avertissements[0].includes('text align'));
   assert.ok(avertissements[0].includes('horizontal'));
@@ -172,22 +183,22 @@ test('un texte centré en Hug ne dit rien, le même texte en Fill est signalé',
     textAlignVertical: 'BOTTOM',
     layoutSizingVertical: 'FILL',
   });
-  assert.ok(unsupportedPropertyWarnings(basEnFill)[0].includes('vertical'));
+  assert.ok(avertissementsDe(basEnFill)[0].includes('vertical'));
 });
 
 test('casse, décoration et troncature d’un texte sont signalées', () => {
-  assert.equal(unsupportedPropertyWarnings(texteParDefaut({ textCase: 'UPPER' })).length, 1);
+  assert.equal(avertissementsDe(texteParDefaut({ textCase: 'UPPER' })).length, 1);
   assert.equal(
-    unsupportedPropertyWarnings(texteParDefaut({ textDecoration: 'UNDERLINE' })).length,
+    avertissementsDe(texteParDefaut({ textDecoration: 'UNDERLINE' })).length,
     1,
   );
   assert.equal(
-    unsupportedPropertyWarnings(texteParDefaut({ textTruncation: 'ENDING' })).length,
+    avertissementsDe(texteParDefaut({ textTruncation: 'ENDING' })).length,
     1,
   );
-  assert.equal(unsupportedPropertyWarnings(texteParDefaut({ maxLines: 2 })).length, 1);
+  assert.equal(avertissementsDe(texteParDefaut({ maxLines: 2 })).length, 1);
   // `maxLines: null` est l'absence de troncature, pas une troncature à zéro.
-  assert.deepEqual(unsupportedPropertyWarnings(texteParDefaut({ maxLines: null })), []);
+  assert.deepEqual(avertissementsDe(texteParDefaut({ maxLines: null })), []);
 });
 
 test('deux propriétés du même layer donnent deux messages : deux gestes différents', () => {
@@ -195,7 +206,7 @@ test('deux propriétés du même layer donnent deux messages : deux gestes diff�
     opacity: 0.5,
     effects: [{ type: 'LAYER_BLUR', visible: true }],
   });
-  const avertissements = unsupportedPropertyWarnings(cumul);
+  const avertissements = avertissementsDe(cumul);
   assert.equal(avertissements.length, 2);
   assert.ok(avertissements.every((message) => message.startsWith('Layer « Container », ')));
 });
@@ -204,7 +215,7 @@ test('un node qui n’expose aucune de ces propriétés ne fait pas échouer le 
   // Les nodes Figma n'ont pas tous les mêmes champs : un relevé qui les
   // supposerait présents ferait tomber l'export entier sur un calque exotique.
   assert.deepEqual(
-    unsupportedPropertyWarnings({ type: 'SLICE', name: 'Repère' } as unknown as SceneNode),
+    avertissementsDe({ type: 'SLICE', name: 'Repère' } as unknown as SceneNode),
     [],
   );
 });

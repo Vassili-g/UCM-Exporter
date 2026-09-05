@@ -557,14 +557,6 @@ p {
   overflow-wrap: anywhere;
 }
 
-.entree-avertissement {
-  padding: var(--espace-controle);
-  border-left: 2px solid var(--texte-avertissement);
-  border-radius: 0 var(--rayon) var(--rayon) 0;
-  background: var(--fond-avertissement);
-  color: var(--texte-avertissement);
-}
-
 .entree-publication,
 .entree-info {
   color: var(--texte-second);
@@ -583,38 +575,73 @@ p {
 }
 
 /*
- * Un diagnostic qui mène à son calque (U4.4).
+ * La carte d'un point à corriger (U4.8).
  *
- * C'est un <button>, donc il arrive avec la mise en forme d'un contrôle : on la
- * défait pour qu'il reste une ENTRÉE de compte rendu, alignée à gauche et de
- * hauteur libre comme ses voisines. Ce qu'il garde du bouton est ce qui compte —
- * le focus au clavier, et le curseur qui annonce qu'il se clique.
+ * Elle porte quatre choses dans l'ordre où on les lit : la pastille, le titre,
+ * la conséquence, le geste. La grille les espace d'un cran serré — ce sont les
+ * parties d'UNE information, pas quatre entrées voisines.
  *
- * Il ne se distingue pas par une couleur : la couleur dit déjà qu'il y a
- * quelque chose à corriger, et lui en ajouter une deuxième ferait porter deux
- * informations au même signal.
+ * **Un seul signal par information.** Le fond et le liseré disent la sévérité ;
+ * le poids et la position disent la hiérarchie. Le texte, lui, reste dans la
+ * couleur de lecture ordinaire : le peindre en ambre à son tour ferait porter
+ * deux fois le même signal et rendrait le titre moins lisible que le fond qui
+ * le porte. Le rouge n'apparaît nulle part ici — il est réservé à
+ * l'impossibilité d'exporter, qui vit dans le verdict.
  */
-.entree-localisable {
-  width: 100%;
+.carte {
+  display: grid;
+  gap: var(--espace-serre);
+  justify-items: start;
   padding: var(--espace-controle);
-  border: 0;
-  border-left: 2px solid transparent;
-  font: inherit;
-  text-align: left;
-  background: none;
-  color: inherit;
-  cursor: pointer;
+  border-radius: 0 var(--rayon) var(--rayon) 0;
+  overflow-wrap: anywhere;
 }
 
-.entree-avertissement.entree-localisable {
-  border-left-color: var(--texte-avertissement);
-  border-radius: 0 var(--rayon) var(--rayon) 0;
+.carte-avertissement {
+  border-left: 2px solid var(--texte-avertissement);
   background: var(--fond-avertissement);
+  color: var(--texte);
+}
+
+/*
+ * La pastille NOMME la sévérité, elle ne fait pas que la colorer : une puce ou
+ * un fond seuls demandent au lecteur de connaître le code couleur.
+ */
+.pastille {
+  padding: 0 var(--espace-serre);
+  border-radius: var(--espace-serre);
+  font-size: var(--corps);
+  font-weight: 600;
+  line-height: var(--corps-interligne);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pastille-avertissement {
   color: var(--texte-avertissement);
 }
 
-.entree-localisable:hover {
-  text-decoration: underline;
+.carte-titre {
+  font-weight: 600;
+}
+
+/* La conséquence est un CONTEXTE : elle se lit après le titre, pas avant. */
+.carte-impact {
+  color: var(--texte-second);
+}
+
+/*
+ * Le geste est la seule ligne qui demande d'agir : il reste dans la couleur de
+ * lecture, mais garde son rang par la position — dernier, juste avant le bouton
+ * qui y mène.
+ */
+.carte-action {
+  color: var(--texte);
+}
+
+.carte-lien {
+  min-height: var(--hauteur-secondaire);
+  margin-top: var(--espace-serre);
 }
 
 .details-techniques {

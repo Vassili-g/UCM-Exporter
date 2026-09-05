@@ -41,11 +41,14 @@ import type {
 } from '@ucm-kit/core/format';
 import {
   localisationsDe,
+  partiesDe,
   pousserLocalise,
+  pousserSansNode,
   raisonsSansNode,
   reporterLocalisations,
   sujetSansNode,
 } from './localisation';
+import type { PointACorriger } from './localisation';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(
@@ -121,6 +124,15 @@ export type ComponentExport = {
    * — et `sujetSansNode` en porte la raison écrite au site d'émission.
    */
   localisations: ReadonlyMap<string, string>;
+  /**
+   * Les trois parties de chaque message, indexées par sa phrase compacte (U4.8).
+   *
+   * Même clé et même raison que `localisations` : le texte est l'identité d'un
+   * message, parce que le dédoublonnage en vit. L'interface met ces parties en
+   * page ; `meta.diagnostics` et la pull request portent la phrase, qui s'en
+   * dérive. Une loi refuse un message dont les parties manquent.
+   */
+  parties: ReadonlyMap<string, PointACorriger>;
   /**
    * Les messages dont l'absence de cible est DÉCLARÉE, et pourquoi (U4.3).
    *
@@ -225,6 +237,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // une précondition d'export. Leur absence reste visible dans les diagnostics.
   const rules = await extractRules(componentSet);
   const warnings: string[] = [...rules.warnings];
+  reporterLocalisations(rules.warnings, warnings);
   // Sous-ensemble qui mesure réellement la projection UCM. Les avertissements
   // de documentation (règles), de traçabilité (URL) et de compatibilité avec
   // l'ancienne vue de référence ne rendent pas un arbre exact incomplet.
@@ -251,15 +264,14 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     // avertissement, et nomme le geste — sans quoi il ne serait qu'une ligne de
     // plus à survoler dans la pull request.
     const plusieurs = missingVariants.missing > 1;
-    pousserLocalise(warnings, 'Component Set', componentSet,
-      ` : ${missingVariants.missing} `
-        + `combinaison${plusieurs ? 's' : ''} du produit cartésien de ses axes `
-        + `${plusieurs ? "n'existent" : "n'existe"} pas. Le contrat ${CONTRACT_VERSION} publie `
-        + `uniquement les combinaisons exactes présentes dans « variants » ; aucune `
-        + `combinaison interdite n'est inventée. ${plusieurs ? 'Si ces combinaisons doivent '
-          + 'exister, ajoutez-les' : 'Si cette combinaison doit exister, ajoutez-la'} dans Figma, `
-        + `puis réexportez.`,
-    );
+    pousserLocalise(warnings, 'Component Set', componentSet, {
+      manque: `${missingVariants.missing} combinaison${plusieurs ? 's' : ''} du produit `
+        + `cartésien de ses axes ${plusieurs ? "n'existent" : "n'existe"} pas.`,
+      impact: `Le contrat ${CONTRACT_VERSION} publie uniquement les combinaisons exactes `
+        + `présentes dans « variants » ; aucune combinaison interdite n'est inventée.`,
+      action: `${plusieurs ? 'Si ces combinaisons doivent exister, ajoutez-les'
+        : 'Si cette combinaison doit exister, ajoutez-la'} dans Figma, puis réexportez.`,
+    });
   }
   // La liste exacte porte cet écart : il ne manque rien à la projection v8.
   warningCursor = warnings.length;
@@ -338,10 +350,11 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   warningCursor = warnings.length;
 
   if (Object.keys(componentSet.componentPropertyDefinitions).length === 0) {
-    warnings.push(
-      'Le composant sélectionné n’expose aucune component property : le contrat ne ' +
-        'décrira ni variants ni options.',
-    );
+    pousserLocalise(warnings, 'Component Set', componentSet, {
+      manque: 'il n’expose aucune component property.',
+      impact: 'Le contrat ne décrira ni variants ni options.',
+      action: 'Si ce composant doit en avoir, déclarez-les dans Figma, puis réexportez.',
+    });
   }
   // Une API vide est complète pour un composant qui n'expose aucune propriété.
   warningCursor = warnings.length;
@@ -396,22 +409,30 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
         variant.icons[key] = { figmaName: definition.figmaName, slotPath: paths[0] };
         continue;
       }
-      const message = paths.length === 0
-        ? `Icône « ${definition.figmaName} » du variant « ${variant.figmaName} » : aucun slot `
-          + `exact ne la situe. Rendez son layer publiable dans le composant, puis réexportez.`
-        : `Icône « ${definition.figmaName} » du variant « ${variant.figmaName} » : plusieurs `
-          + `slots exacts portent ce nom. Donnez un nom Figma distinct à chaque layer, puis réexportez.`;
-      warnings.push(message);
+      const sujetDeLIcone =
+        `Icône « ${definition.figmaName} » du variant « ${variant.figmaName} »`;
+      const message = pousserSansNode(warnings, sujetDeLIcone, paths.length === 0
+        ? {
+          manque: 'aucun slot exact ne la situe.',
+          impact: 'Le contrat ne dira pas où la placer, et le développeur ne la rendra pas.',
+          action: 'Rendez son layer publiable dans le composant, puis réexportez.',
+        }
+        : {
+          manque: 'plusieurs slots exacts portent ce nom.',
+          impact: 'Le contrat ne peut pas choisir lequel décrit cette icône.',
+          action: 'Donnez un nom Figma distinct à chaque layer, puis réexportez.',
+        });
       projectionWarnings.push(message);
     }
   }
   warningCursor = warnings.length;
   const intent = rules.intent;
   if (!intent) {
-    warnings.push(
-      'Aucune règle @usage, @do, @dont ou @pairs : le contrat dira comment utiliser le ' +
-        'composant, mais pas quand. Ajoutez au moins une règle @usage.',
-    );
+    pousserSansNode(warnings, 'Règles d’usage', {
+      manque: 'aucune règle @usage, @do, @dont ou @pairs n’est déclarée.',
+      impact: 'Le contrat dira comment utiliser le composant, mais pas quand.',
+      action: 'Ajoutez au moins une règle @usage, puis réexportez.',
+    });
   }
   warningCursor = warnings.length;
 
@@ -427,13 +448,18 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   const placees = new Set(composesPlacees);
   for (const dependency of scannedComposes) {
     if (placees.has(dependency)) continue;
-    const message =
-      `${sujetSansNode('Layer', dependency.figmaLayer, 'nom-publie')} : il porte le composant « ${dependency.component} », ` +
-        `qui a son propre contrat, mais le contrat n'a trouvé aucun emplacement où le situer. ` +
-        `La dépendance ne sera ni décrite dans structure.children, ni déclarée dans composes : ` +
-        `le développeur ne la rendra pas. Placez ce layer dans l'auto layout frame que le ` +
-        `composant décrit, puis réexportez.`;
-    warnings.push(message);
+    const message = pousserSansNode(
+      warnings,
+      sujetSansNode('Layer', dependency.figmaLayer, 'nom-publie'),
+      {
+        manque: `il porte le composant « ${dependency.component} », qui a son propre contrat, `
+          + `mais le contrat n'a trouvé aucun emplacement où le situer.`,
+        impact: `La dépendance ne sera ni décrite dans structure.children, ni déclarée dans `
+          + `composes : le développeur ne la rendra pas.`,
+        action: `Placez ce layer dans l'auto layout frame que le composant décrit, puis `
+          + `réexportez.`,
+      },
+    );
     projectionWarnings.push(message);
   }
 
@@ -482,6 +508,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   reporterLocalisations(warnings, allWarnings);
   reporterLocalisations(extracted.warnings, allWarnings);
   const localisations = localisationsDe(allWarnings);
+  const decoupes = partiesDe(allWarnings);
   const localisationsDeclarees = raisonsSansNode(allWarnings);
   const portableWarningSet = new Set(projectionWarnings);
   const hasPortableLoss = portableWarningSet.size > 0;
@@ -564,6 +591,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     warningCount: allWarnings.length,
     warnings: allWarnings,
     localisations,
+    parties: decoupes,
     localisationsDeclarees,
   };
 }

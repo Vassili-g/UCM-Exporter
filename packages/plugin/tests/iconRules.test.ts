@@ -123,7 +123,7 @@ test('mergeIconRules avertit au lieu de deviner un calque graphique', () => {
 
   assert.deepEqual(icons, {});
   assert.deepEqual(warnings, [
-    'Règle @icons « arrow-right-long » : aucun layer de ce nom dans le composant. Vérifiez l’orthographe dans le layer « icon » de la règle.',
+    'Règle @icons « arrow-right-long » : aucun layer de ce nom dans le composant. La règle est ignorée, et cette icône ne sera pas décrite. Vérifiez l’orthographe dans le layer « icon » de la règle, puis réexportez.',
   ]);
 });
 

@@ -25,7 +25,14 @@ export {
   iconPolicyFromVisibility,
   ruleTagFromValue,
 } from './rulesModel';
-import { noter, sujetNomme } from './localisation';
+import {
+  pointDe,
+  pousserNote,
+  pousserSansNode,
+  reporterLocalisations,
+  sujetNomme,
+  sujetSansNode,
+} from './localisation';
 export type { IconRule, RuleEntry, RuleTag, RulesResult } from './rulesModel';
 
 /**
@@ -136,12 +143,20 @@ export async function extractRules(
 
   const container = containers[0];
   if (!container) {
+    const absent: string[] = [];
+    // Le frame nommé n'existe pas : l'absence de cible est DÉCLARÉE, pas subie.
+    pousserSansNode(absent, sujetSansNode('Frame', sectionName, 'inexistant'), {
+      manque: 'aucun frame de ce nom n’existe sur la page.',
+      impact: 'Le contrat dira comment utiliser le composant, mais pas quand : ni intention, '
+        + 'ni documentation de props, ni règle d’icône.',
+      action: `Créez un frame « ${sectionName} » à côté du composant, puis réexportez.`,
+    });
     return {
       intent: null,
       propDescriptions: {},
       booleanDescriptions: {},
       iconRules: [],
-      warnings: [`Aucun conteneur « ${sectionName} » : composant sans règles définies.`],
+      warnings: absent,
       sectionFound: false,
     };
   }
@@ -153,10 +168,11 @@ export async function extractRules(
   const entries: RuleEntry[] = [];
   const warnings: string[] = [];
   if (containers.length > 1) {
-    warnings.push(
-      `${containers.length} frames « ${sectionName} » sur la page : seul le premier est lu, ` +
-        `les règles des autres sont perdues. Regroupez-les dans un seul frame.`,
-    );
+    pousserSansNode(warnings, `${containers.length} frames « ${sectionName} » sur la page`, {
+      manque: 'seul le premier est lu.',
+      impact: 'Les règles des autres sont perdues.',
+      action: 'Regroupez-les dans un seul frame, puis réexportez.',
+    });
   }
 
   for (const instance of instances) {
@@ -167,11 +183,12 @@ export async function extractRules(
       .map(ruleTagFromValue)
       .find((value): value is RuleTag => value !== null);
     if (!tag) {
-      warnings.push(
-        `Une règle du frame « ${sectionName} » n’a pas de variant reconnu ` +
-          `(@usage, @do, @dont, @pairs, @prop, @boolean, @icons) : elle est ignorée. ` +
-          `Choisissez son variant dans Figma.`,
-      );
+      pousserSansNode(warnings, `Une règle du frame « ${sectionName} »`, {
+        manque: 'elle n’a pas de variant reconnu (@usage, @do, @dont, @pairs, @prop, '
+          + '@boolean, @icons).',
+        impact: 'Elle est ignorée, et sa documentation manquera au contrat.',
+        action: 'Choisissez son variant dans Figma, puis réexportez.',
+      });
       continue;
     }
 
@@ -190,21 +207,29 @@ export async function extractRules(
 
   if (entries.length === 0) {
     const sujetDuFrame = sujetNomme('Frame', sectionName, container);
-    warnings.push(noter(
+    pousserNote(
       warnings,
-      `${sujetDuFrame.texte} : il ne contient aucune instance de « ComponentConfiguration » ` +
-        `lisible. Ajoutez-y au moins une règle, puis réexportez.`,
+      pointDe(sujetDuFrame.texte, {
+        manque: 'il ne contient aucune instance de « ComponentConfiguration » lisible.',
+        impact: 'Aucune règle d’usage n’enrichira le contrat.',
+        action: 'Ajoutez-y au moins une règle, puis réexportez.',
+      }),
       sujetDuFrame,
-    ));
+    );
   }
 
   const built = buildRules(entries);
+  // Deux canaux fusionnés, donc deux registres à reporter : sans cela le
+  // message arrive et ses parties restent derrière.
+  const tous = [...warnings, ...built.warnings];
+  reporterLocalisations(warnings, tous);
+  reporterLocalisations(built.warnings, tous);
   return {
     intent: built.intent,
     propDescriptions: built.propDescriptions,
     booleanDescriptions: built.booleanDescriptions,
     iconRules: built.iconRules,
-    warnings: [...warnings, ...built.warnings],
+    warnings: tous,
     sectionFound: true,
   };
 }

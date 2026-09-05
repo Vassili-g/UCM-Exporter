@@ -57,7 +57,7 @@ test('buildRules garde la première @prop d’une valeur et signale le doublon',
   // designer de trancher, jamais à l'export d'écraser en silence.
   assert.deepEqual(propDescriptions, { variant: { contained: 'Première description' } });
   assert.deepEqual(warnings, [
-    'Règle @prop « variant.contained » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.',
+    'Règle @prop « variant.contained » : elle apparaît deux fois. Seule la première est exportée. Supprimez la seconde, puis réexportez.',
   ]);
 });
 
@@ -84,8 +84,8 @@ test('buildRules garde la première @boolean et signale cible absente et doublon
 
   assert.deepEqual(booleanDescriptions, { iconLeft: 'Première description' });
   assert.deepEqual(warnings, [
-    'Règle @boolean « iconLeft » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.',
-    'Règle @boolean : le layer « prop » est vide. Écrivez-y le nom de la boolean property du composant, par exemple « icon-left ».',
+    'Règle @boolean « iconLeft » : elle apparaît deux fois. Seule la première est exportée. Supprimez la seconde, puis réexportez.',
+    'Règle @boolean : le layer « prop » est vide. La règle n’est pas exportée. Écrivez-y le nom de la boolean property du composant, par exemple « icon-left », puis réexportez.',
   ]);
 });
 
@@ -130,7 +130,7 @@ test('buildRules avertit quand une règle @icons n a pas de politique visible', 
 
   assert.deepEqual(result.iconRules, []);
   assert.deepEqual(result.warnings, [
-    'Règle @icons « fa-warning » : aucune politique n’est choisie. Rendez visible exactement un des deux layers « modifiable » ou « strict ».',
+    'Règle @icons « fa-warning » : aucune politique n’est choisie. La règle n’est pas exportée, et l’icône ne sera pas décrite. Rendez visible exactement un des deux layers « modifiable » ou « strict », puis réexportez.',
   ]);
 });
 

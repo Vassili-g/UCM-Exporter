@@ -4,6 +4,7 @@
  * Il transforme les entrées déjà lues dans Figma en intention, documentation
  * de props et politiques d'icônes, sans dépendre de l'API Figma.
  */
+import { pousserSansNode } from './localisation';
 import { normalizePropKey, normalizePropValue } from './parsers';
 import type { IconPolicy, Intent } from '@ucm-kit/core/format';
 
@@ -56,13 +57,23 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
   for (const entry of entries) {
     const content = entry.content.trim();
     if (!content && entry.tag !== 'icons') {
-      warnings.push(`Règle @${entry.tag} : le layer « content » est vide. Écrivez-y le texte de la règle.`);
+      pousserSansNode(warnings, `Règle @${entry.tag}`, {
+        manque: 'le layer « content » est vide.',
+        impact: 'La règle n’est pas exportée.',
+        action: 'Écrivez-y le texte de la règle, puis réexportez.',
+      });
       continue;
     }
 
     if (entry.tag === 'usage') {
       if (usage === null) usage = content;
-      else warnings.push('Plusieurs règles @usage : seule la première est exportée. Ne gardez qu’un seul @usage.');
+      else {
+        pousserSansNode(warnings, 'Plusieurs règles @usage', {
+          manque: 'le composant en déclare plus d’une.',
+          impact: 'Seule la première est exportée.',
+          action: 'Ne gardez qu’un seul @usage, puis réexportez.',
+        });
+      }
     } else if (entry.tag === 'do') {
       doItems.push(content);
     } else if (entry.tag === 'dont') {
@@ -74,24 +85,45 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
     } else if (entry.tag === 'boolean') {
       const propName = normalizePropKey(entry.prop?.trim() ?? '');
       if (!propName) {
-        warnings.push('Règle @boolean : le layer « prop » est vide. Écrivez-y le nom de la boolean property du composant, par exemple « icon-left ».');
+        pousserSansNode(warnings, 'Règle @boolean', {
+          manque: 'le layer « prop » est vide.',
+          impact: 'La règle n’est pas exportée.',
+          action: 'Écrivez-y le nom de la boolean property du composant, par exemple '
+            + '« icon-left », puis réexportez.',
+        });
       } else if (booleanDescriptions.has(propName)) {
-        warnings.push(`Règle @boolean « ${propName} » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.`);
+        pousserSansNode(warnings, `Règle @boolean « ${propName} »`, {
+          manque: 'elle apparaît deux fois.',
+          impact: 'Seule la première est exportée.',
+          action: 'Supprimez la seconde, puis réexportez.',
+        });
       } else {
         booleanDescriptions.set(propName, content);
       }
     } else if (entry.tag === 'icons') {
       const iconName = entry.iconName?.trim() ?? '';
       if (!iconName) {
-        warnings.push('Règle @icons : le layer « icon » est vide. Écrivez-y le nom exact du layer d’icône, tel qu’il apparaît dans le composant.');
+        pousserSansNode(warnings, 'Règle @icons', {
+          manque: 'le layer « icon » est vide.',
+          impact: 'La règle n’est pas exportée, et l’icône ne sera pas décrite.',
+          action: 'Écrivez-y le nom exact du layer d’icône, tel qu’il apparaît dans le '
+            + 'composant, puis réexportez.',
+        });
       } else if (!entry.iconPolicy) {
-        warnings.push(
-          `Règle @icons « ${iconName} » : aucune politique n’est choisie. Rendez visible exactement un des deux layers « modifiable » ou « strict ».`,
-        );
+        pousserSansNode(warnings, `Règle @icons « ${iconName} »`, {
+          manque: 'aucune politique n’est choisie.',
+          impact: 'La règle n’est pas exportée, et l’icône ne sera pas décrite.',
+          action: 'Rendez visible exactement un des deux layers « modifiable » ou « strict », '
+            + 'puis réexportez.',
+        });
       } else if (iconRules.some((rule) => (
         normalizePropKey(rule.iconName) === normalizePropKey(iconName)
       ))) {
-        warnings.push(`Règle @icons « ${iconName} » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.`);
+        pousserSansNode(warnings, `Règle @icons « ${iconName} »`, {
+          manque: 'elle apparaît deux fois.',
+          impact: 'Seule la première est exportée.',
+          action: 'Supprimez la seconde, puis réexportez.',
+        });
       } else {
         iconRules.push({ iconName, policy: entry.iconPolicy });
       }
@@ -99,7 +131,12 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       const key = (entry.prop ?? '').trim();
       const separator = key.indexOf('.');
       if (separator <= 0 || separator === key.length - 1) {
-        warnings.push(`Règle @prop : le layer « prop » contient « ${key || 'rien'} », alors qu’il faut « property.valeur », par exemple « variant.contained ». Corrigez ce layer, puis réexportez.`);
+        pousserSansNode(warnings, 'Règle @prop', {
+          manque: `le layer « prop » contient « ${key || 'rien'} », alors qu’il faut `
+            + `« property.valeur », par exemple « variant.contained ».`,
+          impact: 'La règle n’est pas exportée.',
+          action: 'Corrigez ce layer, puis réexportez.',
+        });
         continue;
       }
       const propName = normalizePropKey(key.slice(0, separator));
@@ -112,7 +149,11 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       // Deux règles décrivant la même valeur se contredisent : c'est au
       // designer de trancher, pas à l'export d'arbitrer en silence.
       if (valueDescriptions.has(value)) {
-        warnings.push(`Règle @prop « ${propName}.${value} » : elle apparaît deux fois. Seule la première est exportée ; supprimez la seconde.`);
+        pousserSansNode(warnings, `Règle @prop « ${propName}.${value} »`, {
+          manque: 'elle apparaît deux fois.',
+          impact: 'Seule la première est exportée.',
+          action: 'Supprimez la seconde, puis réexportez.',
+        });
         continue;
       }
       valueDescriptions.set(value, content);

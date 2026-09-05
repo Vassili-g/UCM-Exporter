@@ -63,7 +63,11 @@ function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment |
   if (raw === 'INSIDE') return 'inside';
   if (raw === 'CENTER') return 'center';
   if (raw === 'OUTSIDE') return 'outside';
-  pousserLocalise(warnings, 'Layer', node, ` : l’alignement du stroke est illisible. Le contrat ne dira pas s’il est inside, center ou outside. Vérifiez ce réglage dans Figma, puis réexportez.`);
+  pousserLocalise(warnings, 'Layer', node, {
+    manque: 'l’alignement du stroke est illisible.',
+    impact: 'Le contrat ne dira pas s’il est inside, center ou outside.',
+    action: 'Vérifiez ce réglage dans Figma, puis réexportez.',
+  });
   return null;
 }
 
@@ -232,12 +236,13 @@ function warnPeinturesLibres(
   const stroke = field === 'strokes';
   const plusieurs = libres > 1;
   const nom = `${stroke ? 'stroke' : 'fill'}${plusieurs ? 's' : ''}`;
-  pousserLocalise(warnings, 'Layer', node,
-    ` : ${plusieurs ? `${libres} ${nom} ne sont reliés` : `son ${nom} n’est relié`} `
-      + `à aucune variable Figma. Le contrat ne publie que les couleurs liées, et le `
-      + `développeur rendra donc ce layer sans ${stroke ? 'ce contour' : 'cette couleur'}. `
-      + `Reliez ${plusieurs ? 'ces' : 'ce'} ${nom} à une variable, puis réexportez.`,
-  );
+  pousserLocalise(warnings, 'Layer', node, {
+    manque: `${plusieurs ? `${libres} ${nom} ne sont reliés` : `son ${nom} n’est relié`} `
+      + `à aucune variable Figma.`,
+    impact: `Le contrat ne publie que les couleurs liées, et le développeur rendra donc ce `
+      + `layer sans ${stroke ? 'ce contour' : 'cette couleur'}.`,
+    action: `Reliez ${plusieurs ? 'ces' : 'ce'} ${nom} à une variable, puis réexportez.`,
+  });
 }
 
 /**
@@ -331,13 +336,14 @@ export async function getSlotTokens(
       posees.set(marker, binding.token);
     } else if (dessous !== binding.token && dessous !== '') {
       posees.set(marker, '');
-      pousserLocalise(warnings, 'Layer', binding.node,
-        ` : deux ${isStroke ? 'strokes' : 'fills'} ` +
-          `y sont reliés à des variables différentes (${toRef(dessous)} et ` +
-          `${toRef(binding.token)}). Les deux couleurs sont exportées, mais le contrat ne peut pas ` +
-          `exprimer laquelle est au-dessus de l'autre. Ne gardez qu'un ` +
-          `${isStroke ? 'stroke' : 'fill'} lié sur ce layer, puis réexportez.`,
-      );
+      pousserLocalise(warnings, 'Layer', binding.node, {
+        manque: `deux ${isStroke ? 'strokes' : 'fills'} y sont reliés à des variables `
+          + `différentes (${toRef(dessous)} et ${toRef(binding.token)}).`,
+        impact: `Les deux couleurs sont exportées, mais le contrat ne peut pas exprimer `
+          + `laquelle est au-dessus de l'autre.`,
+        action: `Ne gardez qu'un ${isStroke ? 'stroke' : 'fill'} lié sur ce layer, `
+          + `puis réexportez.`,
+      });
     }
 
     if (isStroke) {
@@ -356,13 +362,13 @@ export async function getSlotTokens(
         continue;
       }
       if (known.value.role !== value.role) {
-        pousserLocalise(warnings, 'Layer', binding.node,
-          ` : le stroke ${toRef(binding.token)} peint ici le rôle ` +
-            `« ${value.role} », mais le layer « ${known.node.name} » lui donne déjà le rôle ` +
-            `« ${known.value.role} ». Le contrat garde le premier rôle et ne représente pas le ` +
-            `second. Reliez ces usages à deux variables distinctes, ` +
-            `puis réexportez.`,
-        );
+        pousserLocalise(warnings, 'Layer', binding.node, {
+          manque: `le stroke ${toRef(binding.token)} peint ici le rôle « ${value.role} », `
+            + `mais le layer « ${known.node.name} » lui donne déjà le rôle `
+            + `« ${known.value.role} ».`,
+          impact: 'Le contrat garde le premier rôle et ne représente pas le second.',
+          action: 'Reliez ces usages à deux variables distinctes, puis réexportez.',
+        });
       }
       // Même token, géométrie différente : la feuille n'a qu'une entrée par
       // token, ce cas reste réellement irreprésentable.
@@ -372,26 +378,26 @@ export async function getSlotTokens(
         }
         continue;
       }
-      pousserLocalise(warnings, 'Layer', binding.node,
-        ` : son stroke ${toRef(binding.token)} est déjà posé par le ` +
-          `layer « ${known.node.name} », avec une stroke weight ou un alignement différents. Le ` +
-          `contrat n'en garde qu'un par token et exporte celui de « ${known.node.name} » : la ` +
-          `géométrie de ce layer manquera au développeur. Réglez les deux strokes de la même ` +
-          `façon, ou reliez-les à deux variables différentes, puis réexportez.`,
-      );
+      pousserLocalise(warnings, 'Layer', binding.node, {
+        manque: `son stroke ${toRef(binding.token)} est déjà posé par le layer `
+          + `« ${known.node.name} », avec une stroke weight ou un alignement différents.`,
+        impact: `Le contrat n'en garde qu'un par token et exporte celui de `
+          + `« ${known.node.name} » : la géométrie de ce layer manquera au développeur.`,
+        action: `Réglez les deux strokes de la même façon, ou reliez-les à deux variables `
+          + `différentes, puis réexportez.`,
+      });
       continue;
     }
 
     const known = seenPaints.get(binding.token);
     if (known) {
       if (known.role !== role) {
-        pousserLocalise(warnings, 'Layer', binding.node,
-            ` : la couleur ${toRef(binding.token)} peint ici le rôle ` +
-            `« ${role} », mais le layer « ${known.node.name} » lui donne déjà le rôle ` +
-            `« ${known.role} ». Le contrat garde le premier rôle et ne représente pas le second. ` +
-            `Reliez ces usages à deux variables distinctes, puis ` +
-            `réexportez.`,
-        );
+        pousserLocalise(warnings, 'Layer', binding.node, {
+          manque: `la couleur ${toRef(binding.token)} peint ici le rôle « ${role} », mais le `
+            + `layer « ${known.node.name} » lui donne déjà le rôle « ${known.role} ».`,
+          impact: 'Le contrat garde le premier rôle et ne représente pas le second.',
+          action: 'Reliez ces usages à deux variables distinctes, puis réexportez.',
+        });
       }
       if (binding.node.id) {
         const color = paints.find((candidate) => candidate.token === binding.token);

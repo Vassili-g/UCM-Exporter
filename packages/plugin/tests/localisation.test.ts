@@ -11,12 +11,22 @@ import test from 'node:test';
 import {
   localisationsDe,
   noter,
+  partiesDe,
   pousserLocalise,
   reporterLocalisations,
   sujet,
 } from '../src/contract/localisation';
 
 const node = (id: string, name: string) => ({ id, name });
+
+/** Un constat quelconque : ces tests portent sur le mécanisme, pas sur le texte. */
+const constat = {
+  manque: 'son stroke est illisible.',
+  impact: 'Le contrat ne dira pas comment le peindre.',
+  action: 'Reliez-le à une variable, puis réexportez.',
+};
+const PHRASE = 'Layer « Badge » : son stroke est illisible. Le contrat ne dira pas comment le '
+  + 'peindre. Reliez-le à une variable, puis réexportez.';
 
 test('le sujet forme le texte et retient le node, sans se répéter ailleurs', () => {
   assert.deepEqual(sujet('Layer', node('1:2', 'Badge')), {
@@ -28,16 +38,41 @@ test('le sujet forme le texte et retient le node, sans se répéter ailleurs', (
 
 test('un message poussé porte son sujet, et le canal sait où il vit', () => {
   const canal: string[] = [];
-  const message = pousserLocalise(canal, 'Layer', node('1:2', 'Badge'), ' : son stroke est illisible.');
-  assert.deepEqual(canal, ['Layer « Badge » : son stroke est illisible.']);
+  const message = pousserLocalise(canal, 'Layer', node('1:2', 'Badge'), constat);
+  assert.deepEqual(canal, [PHRASE]);
   assert.equal(message, canal[0]);
-  assert.deepEqual([...localisationsDe(canal)], [['Layer « Badge » : son stroke est illisible.', '1:2']]);
+  assert.deepEqual([...localisationsDe(canal)], [[PHRASE, '1:2']]);
 });
 
-test('la suite porte sa propre ponctuation : le sujet ne l’impose pas', () => {
+/**
+ * La phrase compacte se DÉRIVE des trois parties, et les parties voyagent avec
+ * elle (U4.8). Sans ce report, l'interface ne pourrait qu'afficher un
+ * paragraphe où le geste se lit après deux phrases de contexte.
+ */
+test('les trois parties voyagent avec la phrase, et la phrase en dérive', () => {
   const canal: string[] = [];
-  pousserLocalise(canal, 'Layer', node('1:2', 'Tile'), ', padding : les côtés diffèrent.');
-  assert.deepEqual(canal, ['Layer « Tile », padding : les côtés diffèrent.']);
+  pousserLocalise(canal, 'Layer', node('1:2', 'Badge'), constat);
+  const point = partiesDe(canal).get(PHRASE);
+  assert.deepEqual(point, {
+    titre: 'Layer « Badge » : son stroke est illisible.',
+    impact: 'Le contrat ne dira pas comment le peindre.',
+    action: 'Reliez-le à une variable, puis réexportez.',
+  });
+  assert.equal(`${point?.titre} ${point?.impact} ${point?.action}`, PHRASE);
+});
+
+test('le champ visé s’écrit entre le sujet et le manque, quand il y en a un', () => {
+  const canal: string[] = [];
+  pousserLocalise(canal, 'Layer', node('1:2', 'Tile'), {
+    champ: 'padding',
+    manque: 'les côtés diffèrent.',
+    impact: 'Rien n’est exporté pour cette valeur.',
+    action: 'Reliez-les à la même variable.',
+  });
+  assert.deepEqual(canal, [
+    'Layer « Tile », padding : les côtés diffèrent. Rien n’est exporté pour cette valeur. '
+      + 'Reliez-les à la même variable.',
+  ]);
 });
 
 /**
@@ -48,10 +83,11 @@ test('la suite porte sa propre ponctuation : le sujet ne l’impose pas', () => 
  */
 test('deux calques au même message ne laissent qu’une cible, la première', () => {
   const canal: string[] = [];
-  const suite = ' : il n’utilise pas d’auto layout.';
-  pousserLocalise(canal, 'Layer', node('1:2', 'Tile'), suite);
-  pousserLocalise(canal, 'Layer', node('9:9', 'Tile'), suite);
-  assert.equal(localisationsDe(canal).get('Layer « Tile »' + suite), '1:2');
+  pousserLocalise(canal, 'Layer', node('1:2', 'Tile'), constat);
+  pousserLocalise(canal, 'Layer', node('9:9', 'Tile'), constat);
+  assert.equal(localisationsDe(canal).get('Layer « Tile » : son stroke est illisible. '
+    + 'Le contrat ne dira pas comment le peindre. Reliez-le à une variable, puis réexportez.'),
+  '1:2');
 });
 
 test('un canal sans localisation n’en invente aucune', () => {
@@ -62,8 +98,8 @@ test('un canal sans localisation n’en invente aucune', () => {
 test('deux canaux ne se contaminent pas : le registre suit le tableau', () => {
   const gauche: string[] = [];
   const droite: string[] = [];
-  pousserLocalise(gauche, 'Layer', node('1:1', 'A'), ' : rien.');
-  pousserLocalise(droite, 'Layer', node('2:2', 'B'), ' : rien.');
+  pousserLocalise(gauche, 'Layer', node('1:1', 'A'), constat);
+  pousserLocalise(droite, 'Layer', node('2:2', 'B'), constat);
   assert.deepEqual([...localisationsDe(gauche).values()], ['1:1']);
   assert.deepEqual([...localisationsDe(droite).values()], ['2:2']);
 });
@@ -74,23 +110,26 @@ test('deux canaux ne se contaminent pas : le registre suit le tableau', () => {
  */
 test('une recopie de canal emporte les localisations si on les reporte', () => {
   const source: string[] = [];
-  pousserLocalise(source, 'Layer', node('1:2', 'Badge'), ' : rien.');
+  pousserLocalise(source, 'Layer', node('1:2', 'Badge'), constat);
   const cible = [...source];
   assert.equal(localisationsDe(cible).size, 0, 'la recopie seule ne reporte rien');
+  assert.equal(partiesDe(cible).size, 0, 'les parties non plus');
   reporterLocalisations(source, cible);
-  assert.equal(localisationsDe(cible).get('Layer « Badge » : rien.'), '1:2');
+  assert.equal(localisationsDe(cible).get(PHRASE), '1:2');
+  assert.ok(partiesDe(cible).has(PHRASE), 'les parties voyagent par le même chemin');
 });
 
 test('une fusion garde la première cible, jamais celle qui arrive après', () => {
   const premier: string[] = [];
   const second: string[] = [];
-  const suite = ' : rien.';
-  pousserLocalise(premier, 'Layer', node('1:1', 'Tile'), suite);
-  pousserLocalise(second, 'Layer', node('2:2', 'Tile'), suite);
+  pousserLocalise(premier, 'Layer', node('1:1', 'Tile'), constat);
+  pousserLocalise(second, 'Layer', node('2:2', 'Tile'), constat);
   const fusion = [...premier, ...second];
   reporterLocalisations(premier, fusion);
   reporterLocalisations(second, fusion);
-  assert.equal(localisationsDe(fusion).get('Layer « Tile »' + suite), '1:1');
+  assert.equal(localisationsDe(fusion).get('Layer « Tile » : son stroke est illisible. '
+    + 'Le contrat ne dira pas comment le peindre. Reliez-le à une variable, puis réexportez.'),
+  '1:1');
 });
 
 test('noter localise un message qu’un site a formé lui-même', () => {
@@ -102,7 +141,7 @@ test('noter localise un message qu’un site a formé lui-même', () => {
 
 test('le relevé rendu est une copie : le modifier ne déplace aucune cible', () => {
   const canal: string[] = [];
-  pousserLocalise(canal, 'Layer', node('1:2', 'Badge'), ' : rien.');
+  pousserLocalise(canal, 'Layer', node('1:2', 'Badge'), constat);
   localisationsDe(canal).clear();
   assert.equal(localisationsDe(canal).size, 1);
 });

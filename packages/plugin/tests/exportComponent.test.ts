@@ -31,6 +31,7 @@ import {
   verifierLesLois,
 } from './lois';
 import { verifierLaLocalisationDesDiagnostics } from './loiDeLocalisation.test';
+import { verifierLesPartiesDesDiagnostics } from './loiDesParties.test';
 import type { ContractProp } from '@ucm-kit/core/format';
 
 /**
@@ -73,6 +74,7 @@ async function handleExportComponent() {
     nomsDeCalquesDuComposant(),
     'sortie du moteur',
   );
+  verifierLesPartiesDesDiagnostics(resultat.warnings, resultat.parties, 'sortie du moteur');
   verifierLeSchema(contrat, 'sortie du moteur');
   verifierLeLecteur(contrat, 'sortie du moteur');
   verifierLaSerialisation(resultat.content, 'sortie du moteur');
@@ -423,7 +425,9 @@ test('handleExportComponent exporte sans règles et diagnostique la documentatio
 
     assert.equal(contrat.intent, undefined);
     assert.ok(
-      messagesDe(contrat).some((warning: string) => warning.includes('Aucune règle @usage')),
+      messagesDe(contrat).some((warning: string) => warning.includes(
+        'aucune règle @usage, @do, @dont ou @pairs n’est déclarée',
+      )),
     );
   } finally {
     figmaFaux.restaurer();

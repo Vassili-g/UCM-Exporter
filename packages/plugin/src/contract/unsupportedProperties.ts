@@ -30,7 +30,8 @@
  * rien à faire dans un relevé de ce qui manque. `flexLayout.rotationDegrees`
  * en est l'autorité, seuil compris.
  */
-import { sujet } from './localisation';
+import { pointDe, sujet } from './localisation';
+import type { PointACorriger } from './localisation';
 
 /** `boundVariables` et les propriétés visuelles ne sont pas typées champ par champ. */
 type FigmaPropertyBag = Record<string, unknown>;
@@ -242,8 +243,12 @@ function proprietesDeTexteNonPortees(
  * demandent deux gestes différents, et les fondre en une phrase priverait le
  * designer de l'un des deux.
  */
-export function unsupportedPropertyWarnings(node: SceneNode): string[] {
+export function unsupportedPropertyWarnings(node: SceneNode): PointACorriger[] {
   return proprietesNonPortees(node).map(({ champ, manque, geste }) =>
-    `${sujet('Layer', node).texte}, ${champ} : le contrat ne sait pas écrire cette propriété. `
-      + `Le développeur n’aura pas ${manque}. ${geste}, puis réexportez.`);
+    pointDe(sujet('Layer', node).texte, {
+      champ,
+      manque: 'le contrat ne sait pas écrire cette propriété.',
+      impact: `Le développeur n’aura pas ${manque}.`,
+      action: `${geste}, puis réexportez.`,
+    }));
 }

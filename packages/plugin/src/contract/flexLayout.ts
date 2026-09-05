@@ -18,6 +18,7 @@ import type {
   SizeBounds,
 } from '@ucm-kit/core/format';
 import { pousserLocalise } from './localisation';
+import type { Constat } from './localisation';
 
 type FlexContainerProperties = {
   justifyContent?: JustifyContent;
@@ -85,6 +86,21 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
  * à la place d'une taille qu'il n'a pas su lire, et le designer a bien quelque
  * chose à vérifier dans Figma.
  */
+/**
+ * Le constat d'une piste dont Figma ne rend pas la taille, écrit une seule fois.
+ *
+ * Deux branches de `gridTrackSizes` y mènent — la piste n'est pas un objet, ou
+ * son type est inconnu — et elles disent la même chose au designer. Le geste
+ * aussi est le même : regarder ce réglage.
+ */
+function pisteIllisible(nom: string, index: number): Constat {
+  return {
+    manque: `la taille de la ${nom} ${index + 1} de sa grille est illisible.`,
+    impact: 'Le contrat publie « auto » pour conserver la piste.',
+    action: 'Vérifiez ce réglage dans Figma, puis réexportez.',
+  };
+}
+
 export function gridTrackSizes(
   node: SceneNode,
   warnings: string[] = [],
@@ -96,10 +112,7 @@ export function gridTrackSizes(
     if (!Array.isArray(tracks)) return undefined;
     const sizes = (tracks as Array<{ type?: unknown; value?: unknown }>).map((track, index): GridTrack => {
       if (!track || typeof track !== 'object') {
-        pousserLocalise(warnings, 'Layer', node,
-          ` : la taille de la ${nom} ${index + 1} de sa grille est `
-            + `illisible. Le contrat publie « auto » pour conserver la piste ; vérifiez ce `
-            + `réglage dans Figma, puis réexportez.`);
+        pousserLocalise(warnings, 'Layer', node, pisteIllisible(nom, index));
         return 'auto';
       }
       if (track.type === 'FLEX') {
@@ -109,10 +122,7 @@ export function gridTrackSizes(
       if (track.type === 'FIXED' && typeof track.value === 'number' && Number.isFinite(track.value)) {
         return `${track.value}px`;
       }
-      pousserLocalise(warnings, 'Layer', node,
-        ` : la taille de la ${nom} ${index + 1} de sa grille est `
-          + `illisible. Le contrat publie « auto » pour conserver la piste ; vérifiez ce `
-          + `réglage dans Figma, puis réexportez.`);
+      pousserLocalise(warnings, 'Layer', node, pisteIllisible(nom, index));
       return 'auto';
     });
     return sizes;
@@ -534,10 +544,12 @@ export function flexContainerProperties(
   const align = alignItems(counter);
   if (justify && align) return { ...wrap, justifyContent: justify, alignItems: align };
 
-  pousserLocalise(warnings, 'Layer', node,
-    ` : son alignement d'auto layout est illisible. Le contrat ne ` +
-      `publie ni justifyContent ni alignItems, car une valeur CSS devinée déplacerait ses ` +
-      `enfants. Réglez l'alignement principal et secondaire dans Figma, puis réexportez.`);
+  pousserLocalise(warnings, 'Layer', node, {
+    manque: `son alignement d'auto layout est illisible.`,
+    impact: `Le contrat ne publie ni justifyContent ni alignItems, car une valeur CSS devinée `
+      + `déplacerait ses enfants.`,
+    action: `Réglez l'alignement principal et secondaire dans Figma, puis réexportez.`,
+  });
   return wrap;
 }
 
@@ -587,9 +599,11 @@ export function flexItemProperties(
   } else if (rawAlign !== undefined && rawAlign !== 'INHERIT') {
     const mapped = alignSelf(rawAlign);
     if (!mapped) {
-      pousserLocalise(warnings, 'Layer', child,
-        ` : son alignement dans l'auto layout « ${parent.name} » est illisible. ` +
-          `Le contrat ne publie pas alignSelf. Réglez ce layer dans Figma, puis réexportez.`);
+      pousserLocalise(warnings, 'Layer', child, {
+        manque: `son alignement dans l'auto layout « ${parent.name} » est illisible.`,
+        impact: `Le contrat ne publie pas alignSelf.`,
+        action: `Réglez ce layer dans Figma, puis réexportez.`,
+      });
     } else if (mapped !== 'stretch' || sizing.cross !== 'HUG') {
       result.alignSelf = mapped;
     }
@@ -605,8 +619,10 @@ export function flexItemProperties(
   if (rawGrow === undefined || rawGrow === 0) return result;
   if (rawGrow === 1) return { ...result, flexGrow: 1 };
 
-  pousserLocalise(warnings, 'Layer', child,
-    ` : son remplissage de l'auto layout « ${parent.name} » vaut « ${String(rawGrow)} ». ` +
-      `Le contrat sait représenter uniquement 0 ou 1, les valeurs exposées par Figma. Corrigez ce layer, puis réexportez.`);
+  pousserLocalise(warnings, 'Layer', child, {
+    manque: `son remplissage de l'auto layout « ${parent.name} » vaut « ${String(rawGrow)} ».`,
+    impact: `Le contrat sait représenter uniquement 0 ou 1, les valeurs exposées par Figma.`,
+    action: `Corrigez ce layer, puis réexportez.`,
+  });
   return result;
 }

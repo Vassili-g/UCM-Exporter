@@ -103,7 +103,59 @@ export function sujetSansNode(
   return `${genre} « ${nom} »`;
 }
 
+/**
+ * Les trois parties d'un point à corriger, telles que le designer les lit
+ * (U4.8).
+ *
+ * **Pourquoi trois et pas une phrase.** `CONTRIBUTING.md` exige depuis toujours
+ * qu'un avertissement dise OÙ, QUOI et COMMENT. La règle était tenue à la main,
+ * dans une `string` que chaque site concaténait — donc invérifiable, et
+ * indécoupable à l'arrivée : l'interface ne pouvait qu'afficher un paragraphe
+ * où le geste se lisait en dernier, après deux phrases de contexte. Les trois
+ * parties voyagent maintenant séparées du moteur jusqu'à l'UI, qui les met en
+ * page ; et une loi refuse un message dont l'une manque.
+ *
+ * La phrase compacte — celle que `meta.diagnostics` publie et que la pull
+ * request liste — se DÉRIVE de ces parties, elle n'est pas rédigée une seconde
+ * fois. C'est ce qui garantit que les deux disent la même chose.
+ */
+export type PointACorriger = {
+  /** « Layer « Border » : l'alignement du stroke est illisible. » */
+  readonly titre: string;
+  /** Ce que le développeur n'aura pas. Une phrase, finie par un point. */
+  readonly impact: string;
+  /** Le geste exact à faire dans Figma. Une phrase impérative. */
+  readonly action: string;
+};
+
+/** Ce qu'un site d'émission écrit ; le titre s'y compose du sujet et du manque. */
+export type Constat = {
+  /**
+   * Le champ Figma précisé après le sujet, quand le message en vise un :
+   * « Layer « Card », padding : … ». Absent le plus souvent.
+   */
+  readonly champ?: string;
+  /** Ce qui manque, ou ce qui est illisible. Finit par un point. */
+  readonly manque: string;
+  readonly impact: string;
+  readonly action: string;
+};
+
+/** La phrase compacte, DÉRIVÉE des parties. Unique autorité sur cette jonction. */
+export function phraseDe(point: PointACorriger): string {
+  return `${point.titre} ${point.impact} ${point.action}`;
+}
+
 const registres = new WeakMap<Canal, Map<string, string>>();
+
+/**
+ * Les parties de chaque message, indexées par sa phrase compacte.
+ *
+ * Même mécanisme et même raison que le registre des cibles ci-dessus : le TEXTE
+ * reste l'identité d'un message, parce que quatre dédoublonnages en vivent. Un
+ * canal d'objets ne déduplique rien.
+ */
+const parties = new WeakMap<Canal, Map<string, PointACorriger>>();
 
 /**
  * Les messages qui nomment un élément sans pouvoir le localiser, et pourquoi.
@@ -173,6 +225,23 @@ export function noter(canal: Canal, message: string, sujetDuMessage: Sujet): str
   return message;
 }
 
+/** Enregistre les trois parties d'un message déjà formé. Premier inscrit gagne. */
+export function noterLesParties(canal: Canal, point: PointACorriger): string {
+  const message = phraseDe(point);
+  let table = parties.get(canal);
+  if (!table) {
+    table = new Map();
+    parties.set(canal, table);
+  }
+  if (!table.has(message)) table.set(message, point);
+  return message;
+}
+
+/** Ce que ce canal sait découper en parties, message par message. */
+export function partiesDe(canal: Canal): Map<string, PointACorriger> {
+  return new Map(parties.get(canal) ?? []);
+}
+
 /**
  * Forme le message, le pousse dans son canal, et retient où regarder.
  *
@@ -185,11 +254,40 @@ export function pousserLocalise(
   canal: string[],
   genre: SujetLocalisable,
   node: NodeLocalisable,
-  suite: string,
+  constat: Constat,
 ): string {
-  const message = `${sujet(genre, node).texte}${suite}`;
+  const point = pointDe(sujet(genre, node).texte, constat);
+  const message = phraseDe(point);
   canal.push(message);
+  noterLesParties(canal, point);
   return noter(canal, message, sujet(genre, node));
+}
+
+/** Compose le titre d'un point : son sujet, le champ visé s'il y en a un, le manque. */
+export function pointDe(sujetTexte: string, constat: Constat): PointACorriger {
+  return {
+    titre: `${sujetTexte}${constat.champ ? `, ${constat.champ}` : ''} : ${constat.manque}`,
+    impact: constat.impact,
+    action: constat.action,
+  };
+}
+
+/**
+ * Pousse un point dont le sujet ne désigne AUCUN node localisable.
+ *
+ * Un text style, une variable, une component property, une règle : le message
+ * les nomme en toutes lettres, mais aucun clic ne peut y mener. Il porte les
+ * mêmes trois parties que les autres — l'absence de cible ne dispense de rien.
+ */
+export function pousserSansNode(
+  canal: string[],
+  sujetTexte: string,
+  constat: Constat,
+): string {
+  const point = pointDe(sujetTexte, constat);
+  const message = phraseDe(point);
+  canal.push(message);
+  return noterLesParties(canal, point);
 }
 
 /**
@@ -206,8 +304,14 @@ export function pousserLocalise(
  * les messages qui n'ont PAS cette forme, et qui doivent quand même conduire
  * quelque part.
  */
-export function pousserNote(canal: string[], message: string, sujetDuMessage: Sujet): string {
+export function pousserNote(
+  canal: string[],
+  point: PointACorriger,
+  sujetDuMessage: Sujet,
+): string {
+  const message = phraseDe(point);
   canal.push(message);
+  noterLesParties(canal, point);
   return noter(canal, message, sujetDuMessage);
 }
 
@@ -249,6 +353,19 @@ export function reporterLocalisations(source: Canal, cible: Canal): void {
     const vers = registreDe(cible);
     for (const [message, nodeId] of depuis) {
       if (!vers.has(message)) vers.set(message, nodeId);
+    }
+  }
+  // Les parties voyagent par le même chemin, et pour la même raison : un
+  // message qui arrive sans elles se lirait comme un site jamais converti.
+  const decoupes = parties.get(source);
+  if (decoupes && decoupes.size > 0) {
+    let table = parties.get(cible);
+    if (!table) {
+      table = new Map();
+      parties.set(cible, table);
+    }
+    for (const [message, point] of decoupes) {
+      if (!table.has(message)) table.set(message, point);
     }
   }
   // Les déclarations voyagent avec les cibles : une exception laissée derrière

@@ -8,14 +8,20 @@
  * Il reste pur pour pouvoir vérifier la convention sans l'API Figma.
  */
 import { propByName } from './parsers';
+import { noterLesParties, pointDe, pousserSansNode } from './localisation';
+import type { PointACorriger } from './localisation';
 import type { ContractProp, StateModel } from '@ucm-kit/core/format';
 
 /**
  * Message unique pour une valeur citée par une règle mais absente de l'axe :
  * les deux axes publiés parlent au designer du même vocabulaire Figma.
  */
-function unknownValueWarning(propName: string, value: string): string {
-  return `Règle @prop « ${propName}.${value} » : la variant property « ${propName} » n’a pas de valeur « ${value} ». Vérifiez l’orthographe dans le layer « prop ».`;
+function unknownValueWarning(propName: string, value: string): PointACorriger {
+  return pointDe(`Règle @prop « ${propName}.${value} »`, {
+    manque: `la variant property « ${propName} » n’a pas de valeur « ${value} ».`,
+    impact: 'La documentation de cette valeur n’entre pas dans le contrat.',
+    action: 'Vérifiez l’orthographe dans le layer « prop », puis réexportez.',
+  });
 }
 
 /**
@@ -38,7 +44,7 @@ function mergeStateDescriptions(
       ? stateModel.states[value]
       : undefined;
     if (!state) {
-      warnings.push(unknownValueWarning(stateModel.axis, value));
+      warnings.push(noterLesParties(warnings, unknownValueWarning(stateModel.axis, value)));
       continue;
     }
     state.description = description;
@@ -64,12 +70,16 @@ export function mergePropDescriptions(
 
     const prop = propByName(props, propName);
     if (!prop || prop.type !== 'enum') {
-      warnings.push(`Règle @prop « ${propName} » : le composant n’a aucune variant property portant ce nom. Vérifiez l’orthographe dans le layer « prop ».`);
+      pousserSansNode(warnings, `Règle @prop « ${propName} »`, {
+        manque: 'le composant n’a aucune variant property portant ce nom.',
+        impact: 'La documentation de cette règle n’entre pas dans le contrat.',
+        action: 'Vérifiez l’orthographe dans le layer « prop », puis réexportez.',
+      });
       continue;
     }
     for (const [value, description] of Object.entries(valueDescriptions)) {
       if (!prop.values.includes(value)) {
-        warnings.push(unknownValueWarning(propName, value));
+        warnings.push(noterLesParties(warnings, unknownValueWarning(propName, value)));
         continue;
       }
       if (!prop.descriptions) prop.descriptions = {};

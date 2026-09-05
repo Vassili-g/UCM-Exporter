@@ -137,7 +137,7 @@ export type PluginMessage =
   /** Ce que l'export des tokens emporterait s'il partait maintenant (U2.4). */
   | { type: 'tokens'; resume: string }
   /**
-   * Un point à corriger dans Figma, relevé par l'export.
+   * Un point à corriger dans Figma, EN TROIS PARTIES (U4.8).
    *
    * **Le champ `nature` a disparu avec ce qu'il distinguait (U4.7).** Le canal
    * portait aussi des « constats » : ce que le contrat publie sous une forme
@@ -146,19 +146,34 @@ export type PluginMessage =
    * émis nulle part, et un champ qui ne sépare plus rien vaut moins que son
    * absence : il laisse croire à un second cas qui n'existe pas.
    *
-   * Ce qui arrive ici demande donc toujours un geste dans Figma. Ce qui
-   * BLOQUE, lui, ne passe pas par ce message : c'est le verdict de rang 1.
+   * **Le champ `texte` a disparu au profit des trois parties.** Un paragraphe
+   * unique obligeait l'interface à lire le geste en dernier, après deux phrases
+   * de contexte — ou à découper une `string` dans le DOM, ce qui reviendrait à
+   * redéfinir dans l'UI une grammaire dont le moteur est propriétaire. Les
+   * parties voyagent donc telles que le moteur les a écrites, et la phrase
+   * compacte que publient `meta.diagnostics` et la pull request s'en dérive
+   * (`phraseDe`), sans seconde rédaction.
+   *
+   * Ce qui arrive ici demande toujours un geste dans Figma. Ce qui BLOQUE, lui,
+   * ne passe pas par ce message : c'est le verdict de rang 1, et c'est la seule
+   * chose que l'interface écrive en rouge.
    */
   | {
       type: 'diagnostic';
-      texte: string;
+      /** « Layer « Border » : l'alignement du stroke est illisible. » */
+      titre: string;
+      /** Ce que le développeur n'aura pas. Une phrase. */
+      impact: string;
+      /** Le geste exact à faire dans Figma. Une phrase impérative. */
+      action: string;
       /**
        * Le node du SUJET, quand le sujet en désigne un (U4.3).
        *
        * Absent quand le message nomme un text style, une variable, une règle,
        * ou un calque agrégé sur toute la matrice — et cette absence est une
        * réponse, pas un trou : `localisation.ts` en porte les trois raisons.
-       * L'interface ne rend donc cliquable que ce qui mène quelque part.
+       * L'interface n'offre donc « Afficher dans Figma » que sur les cartes qui
+       * mènent quelque part.
        */
       nodeId?: string;
     }

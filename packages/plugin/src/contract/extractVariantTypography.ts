@@ -21,7 +21,7 @@ import type {
   TypographyTokens,
   VariantTypography,
 } from '@ucm-kit/core/format';
-import { pousserLocalise } from './localisation';
+import { pousserLocalise, pousserSansNode } from './localisation';
 
 type TextStyleLoader = (id: string) => Promise<BaseStyle | null>;
 
@@ -104,27 +104,34 @@ async function loadTextStyle(
 ): Promise<LoadedStyle | null> {
   const styleId = textNode.textStyleId;
   if (typeof styleId !== 'string' || !styleId) {
-    pousserLocalise(warnings, 'Layer', textNode,
-      ` : aucun text style unique n'est appliqué. Sa typographie ` +
-        `manquera au développeur. Appliquez un text style au layer entier, puis réexportez.`,
-    );
+    pousserLocalise(warnings, 'Layer', textNode, {
+      manque: `aucun text style unique n'est appliqué.`,
+      impact: `Sa typographie manquera au développeur.`,
+      action: `Appliquez un text style au layer entier, puis réexportez.`,
+    });
     return null;
   }
 
   const style = await loadStyle(styleId).catch(() => null);
   if (!style || style.type !== 'TEXT') {
-    pousserLocalise(warnings, 'Layer', textNode,
-      ` : le text style appliqué est introuvable. Sa typographie ` +
-        `manquera au développeur. Appliquez de nouveau un text style publié, puis réexportez.`,
-    );
+    pousserLocalise(warnings, 'Layer', textNode, {
+      manque: `le text style appliqué est introuvable.`,
+      impact: `Sa typographie manquera au développeur.`,
+      action: `Appliquez de nouveau un text style publié, puis réexportez.`,
+    });
     return null;
   }
 
   const key = normalizeName(style.name);
   if (!key) {
-    warnings.push(
-      `Text style « ${style.name} » sur le layer « ${textNode.name} » : son nom ne produit ` +
-        `aucun identifiant exportable. Renommez le style, puis réexportez.`,
+    pousserSansNode(
+      warnings,
+      `Text style « ${style.name} » sur le layer « ${textNode.name} »`,
+      {
+        manque: `son nom ne produit aucun identifiant exportable.`,
+        impact: `Sa typographie manquera au développeur.`,
+        action: `Renommez le style, puis réexportez.`,
+      },
     );
     return null;
   }
@@ -141,11 +148,12 @@ async function loadTextStyle(
     }
     if (token) tokens[contractField] = toRef(token);
     else {
-      warnings.push(
-        `Text style « ${style.name} », ${label} : aucune variable Figma n'est reliée. ` +
-          `Cette propriété typographique manquera au développeur. Reliez-la à une variable ` +
-          `dans le text style, puis réexportez.`,
-      );
+      pousserSansNode(warnings, `Text style « ${style.name} »`, {
+        champ: label,
+        manque: `aucune variable Figma n'est reliée.`,
+        impact: `Cette propriété typographique manquera au développeur.`,
+        action: `Reliez-la à une variable dans le text style, puis réexportez.`,
+      });
     }
   }
 
@@ -194,11 +202,12 @@ export async function extractVariantTypography(
     const uses: TextStyleUse[] = [];
     for (const { slotPath, textNode } of textSlots(layoutNode, iconNames, composed)) {
       if (allowedSlotPaths && !allowedSlotPaths.has(JSON.stringify(slotPath))) {
-        pousserLocalise(pathNotices, 'Variant', entry.component,
-          `, layer « ${textNode.name} » : son chemin de ` +
-            `slots diffère du variant de référence. Son text style ne peut pas être situé dans ` +
-            `le contrat. Alignez les branches de texte entre variants, puis réexportez.`,
-        );
+        pousserLocalise(pathNotices, 'Variant', entry.component, {
+          champ: `layer « ${textNode.name} »`,
+          manque: `son chemin de slots diffère du variant de référence.`,
+          impact: `Son text style ne peut pas être situé dans le contrat.`,
+          action: `Alignez les branches de texte entre variants, puis réexportez.`,
+        });
         continue;
       }
       const styleId = typeof textNode.textStyleId === 'string' ? textNode.textStyleId : '';
@@ -212,11 +221,12 @@ export async function extractVariantTypography(
 
       const existingId = styleIdByKey.get(loaded.key);
       if (existingId && existingId !== loaded.id) {
-        warnings.push(
-          `Text style « ${loaded.definition.figmaName} » : son nom normalisé « ${loaded.key} » ` +
-            `est déjà utilisé par un autre text style. Son usage sur le layer ` +
-            `« ${textNode.name} » n'est pas exporté. Renommez l'un des deux styles.`,
-        );
+        pousserSansNode(warnings, `Text style « ${loaded.definition.figmaName} »`, {
+          manque: `son nom normalisé « ${loaded.key} » est déjà utilisé par un autre text `
+            + `style.`,
+          impact: `Son usage sur le layer « ${textNode.name} » n'est pas exporté.`,
+          action: `Renommez l'un des deux styles.`,
+        });
         continue;
       }
       styleIdByKey.set(loaded.key, loaded.id);

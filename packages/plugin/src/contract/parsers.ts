@@ -2,6 +2,7 @@
  * Traduction des propriétés Figma en props publiques du contrat.
  */
 import { normalizeName } from '@ucm-kit/core/format';
+import { pousserSansNode } from './localisation';
 import { semanticEnumName } from './semantics';
 import type { ContractProp } from '@ucm-kit/core/format';
 
@@ -154,11 +155,11 @@ export function extractContractPropertyModel(
   const claim = (key: string, figmaName: string, prop: ContractProp): boolean => {
     const owner = owners.get(key);
     if (owner !== undefined) {
-      warnings.push(
-        `Component properties « ${owner} » et « ${figmaName} » : leurs noms deviennent ` +
-          `identiques une fois normalisés (« ${key} »). Seule « ${owner} » est exportée. ` +
-          `Renommez l’une des deux.`,
-      );
+      pousserSansNode(warnings, `Component properties « ${owner} » et « ${figmaName} »`, {
+        manque: `leurs noms deviennent identiques une fois normalisés (« ${key} »).`,
+        impact: `Seule « ${owner} » est exportée.`,
+        action: `Renommez l’une des deux, puis réexportez.`,
+      });
       return false;
     }
     owners.set(key, figmaName);
@@ -182,11 +183,12 @@ export function extractContractPropertyModel(
       // AUCUNE clé brute du fichier, pas seulement avec celles déjà traitées.
       const taken = Boolean(semantic) && semantic !== key && rawKeys.has(semantic as string);
       if (taken) {
-        warnings.push(
-          `Variant property « ${rawFigmaName} » : ses valeurs sont des tailles, mais une ` +
-            `autre component property porte déjà le nom « ${semantic} ». Elle reste exportée ` +
-            `sous « ${key} ». Renommez l'une des deux si vous voulez « ${semantic} ».`,
-        );
+        pousserSansNode(warnings, `Variant property « ${rawFigmaName} »`, {
+          manque: `ses valeurs sont des tailles, mais une autre component property porte `
+            + `déjà le nom « ${semantic} ».`,
+          impact: `Elle reste exportée sous « ${key} ».`,
+          action: `Renommez l'une des deux si vous voulez « ${semantic} », puis réexportez.`,
+        });
       }
       const publicKey = semantic && !taken ? semantic : key;
       const claimed = claim(publicKey, rawFigmaName, {
@@ -213,12 +215,14 @@ export function extractContractPropertyModel(
         const disabledStateName = stateDefinition.type === 'VARIANT'
           ? (stateDefinition.variantOptions ?? []).find(isDisabledStateValue) ?? 'Disable'
           : 'Disable';
-        warnings.push(
-          `Component property « ${rawFigmaName} » : l’axe « ${stateFigmaName} » possède déjà le variant ` +
-            `« ${disabledStateName} », qui devient la prop publique « disabled ». Cette boolean property ` +
-            `n’est pas exportée séparément, donc sa valeur par défaut manquerait au développeur. ` +
-            `Supprimez-la si elle pilote le même état ; sinon renommez-la selon le layer distinct qu’elle pilote, puis réexportez.`,
-        );
+        pousserSansNode(warnings, `Component property « ${rawFigmaName} »`, {
+          manque: `l’axe « ${stateFigmaName} » possède déjà le variant `
+            + `« ${disabledStateName} », qui devient la prop publique « disabled ».`,
+          impact: `Cette boolean property n’est pas exportée séparément, donc sa valeur par `
+            + `défaut manquerait au développeur.`,
+          action: `Supprimez-la si elle pilote le même état ; sinon renommez-la selon le `
+            + `layer distinct qu’elle pilote, puis réexportez.`,
+        });
         continue;
       }
       if (claim(key, rawFigmaName, { type: 'boolean', default: Boolean(definition.defaultValue) })) {

@@ -4,6 +4,7 @@
  * dépendre de l'API Figma.
  */
 import { propByName } from './parsers';
+import { pousserSansNode } from './localisation';
 import type { ContractProp } from '@ucm-kit/core/format';
 
 export function mergeBooleanDescriptions(
@@ -16,7 +17,11 @@ export function mergeBooleanDescriptions(
     // autorité, qui n'atteint jamais le prototype d'`Object`.
     const prop = propByName(props, propName);
     if (!prop || prop.type !== 'boolean') {
-      warnings.push(`Règle @boolean « ${propName} » : le composant n’a aucune boolean property portant ce nom. Vérifiez l’orthographe dans le layer « prop ».`);
+      pousserSansNode(warnings, `Règle @boolean « ${propName} »`, {
+        manque: 'le composant n’a aucune boolean property portant ce nom.',
+        impact: 'La documentation de cette règle n’entre pas dans le contrat.',
+        action: 'Vérifiez l’orthographe dans le layer « prop », puis réexportez.',
+      });
       continue;
     }
     prop.description = description;

@@ -18,6 +18,11 @@
  * de débogage, la trace chronologique reste la seule façon de comprendre un
  * enchaînement. Elle ne coûte plus la lecture de ce qui demande un geste.
  *
+ * **Chaque avertissement est une CARTE (U4.8)**, pas un paragraphe : pastille,
+ * titre, conséquence, geste, et un bouton vers le calque quand il y en a un. Un
+ * export sain ne montre donc aucun groupe de diagnostic — son verdict et sa
+ * publication suffisent.
+ *
  * **Le groupe « Constats » a disparu avec son contenu (U4.7).** Il rendait
  * visibles des transformations que le contrat publie exactement : le designer y
  * relisait le fonctionnement interne de l'exporteur pour s'entendre dire qu'il
@@ -74,37 +79,72 @@ export function createCompteRendu(journal) {
   }
 
   /**
-   * Une entrée est un bloc de hauteur libre, jamais une ligne tronquée (U4.2).
+   * Une CARTE, pas un paragraphe technique (U4.8).
    *
-   * **Elle devient un bouton quand elle mène quelque part (U4.4)**, et reste un
-   * paragraphe sinon. C'est le point de toute la loi de couverture de U4.3 :
-   * une interface où certains messages sont cliquables et d'autres pas
-   * n'enseigne une leçon fausse que si l'absence de lien est arbitraire. Elle
-   * ne l'est pas — un message sans `nodeId` nomme un text style, une variable,
-   * ou un calque agrégé sur toute la matrice, et le moteur a déclaré pourquoi.
+   * Quatre parties, dans l'ordre où on les lit : une pastille qui dit la
+   * sévérité, un titre qui nomme l'élément Figma et le manque, la conséquence
+   * pour le développeur, puis le geste à faire. Les trois dernières viennent du
+   * moteur découpées ; rien n'est redécoupé ici, et rien n'est réécrit.
+   *
+   * **Elle n'empile pas les signaux.** La pastille et le fond discret portent la
+   * sévérité ; le poids et la position portent la hiérarchie. Le rouge n'entre
+   * pas dans cette carte : il est réservé à l'impossibilité d'exporter, qui vit
+   * dans le verdict de rang 1.
+   *
+   * **Le lien vers Figma est un bouton distinct (U4.8).** Rendre toute la carte
+   * cliquable ferait d'un bloc de trois phrases une cible unique, dont rien ne
+   * dit ce que le clic déclenche. Le bouton n'apparaît que si le moteur a passé
+   * un node — un message sans `nodeId` nomme un text style, une variable, ou un
+   * calque agrégé sur toute la matrice, et le moteur a déclaré pourquoi (U4.3).
    *
    * Un bouton, pas un lien : il n'y a pas d'URL, et un `<a href>` factice
    * mentirait au clavier comme au lecteur d'écran.
    */
-  function creerDiagnostic(texte, nodeId) {
-    if (!nodeId) {
-      const entree = document.createElement('p');
-      entree.className = 'entree entree-avertissement';
-      entree.textContent = texte;
-      return entree;
+  function creerDiagnostic(point) {
+    const carte = document.createElement('div');
+    carte.className = 'carte carte-avertissement';
+
+    const pastille = document.createElement('span');
+    pastille.className = 'pastille pastille-avertissement';
+    pastille.textContent = 'À corriger';
+
+    const titre = document.createElement('p');
+    titre.className = 'carte-titre';
+    titre.textContent = point.titre;
+
+    carte.append(pastille, titre);
+
+    if (point.impact) {
+      const impact = document.createElement('p');
+      impact.className = 'carte-impact';
+      impact.textContent = point.impact;
+      carte.appendChild(impact);
     }
 
-    const entree = document.createElement('button');
-    entree.type = 'button';
-    entree.className = 'entree entree-avertissement entree-localisable';
-    entree.textContent = texte;
-    entree.title = 'Montrer ce calque dans Figma';
-    // Seul le sandbox peut poser une sélection : on lui délègue, comme pour
-    // l'ouverture d'un lien externe.
-    entree.addEventListener('click', () => {
-      parent.postMessage({ pluginMessage: { type: 'montrer-le-calque', nodeId } }, '*');
-    });
-    return entree;
+    if (point.action) {
+      const action = document.createElement('p');
+      action.className = 'carte-action';
+      action.textContent = point.action;
+      carte.appendChild(action);
+    }
+
+    if (point.nodeId) {
+      const versLeCalque = document.createElement('button');
+      versLeCalque.type = 'button';
+      versLeCalque.className = 'btn btn-secondary carte-lien';
+      versLeCalque.textContent = 'Afficher dans Figma';
+      // Seul le sandbox peut poser une sélection : on lui délègue, comme pour
+      // l'ouverture d'un lien externe.
+      versLeCalque.addEventListener('click', () => {
+        parent.postMessage(
+          { pluginMessage: { type: 'montrer-le-calque', nodeId: point.nodeId } },
+          '*',
+        );
+      });
+      carte.appendChild(versLeCalque);
+    }
+
+    return carte;
   }
 
   function creerLignePublication(texte, niveau) {
@@ -123,9 +163,16 @@ export function createCompteRendu(journal) {
       details.open = false;
       journal.clear();
     },
-    ajouterDiagnostic(texte, nodeId) {
-      aCorriger.ajouter(creerDiagnostic(texte, nodeId));
-      journal.append(texte);
+    /**
+     * `point` est ce que le moteur a écrit : titre, impact, action, node.
+     *
+     * Le journal, lui, garde la PHRASE — la même que `meta.diagnostics` et la
+     * pull request publient. C'est ce qui permet de comparer une trace à une
+     * pull request sans se demander laquelle des deux a été reformulée.
+     */
+    ajouterDiagnostic(point) {
+      aCorriger.ajouter(creerDiagnostic(point));
+      journal.append([point.titre, point.impact, point.action].filter(Boolean).join(' '));
     },
     ajouterPublication(texte, niveau = 'info') {
       publication.ajouter(creerLignePublication(texte, niveau));
