@@ -2362,7 +2362,7 @@ deux tâches attend la Phase 8.
 
 ## Phase R — Écarts trouvés par la revue du 5 septembre 2026
 
-Six écarts entre ce plan et le code, relevés par une **revue globale rapide** :
+Six écarts entre ce plan et le code, relevés par une **revue globale rapide** — un septième s'y est ajouté en exécutant le deuxième :
 elle a sondé, elle n'a pas audité. Chaque point ci-dessous est une mesure prise
 une fois, pas un fait établi — et la règle de travail 4 enregistre déjà qu'une
 conclusion de revue non revérifiée s'intègre à l'envers.
@@ -2427,12 +2427,25 @@ le worktree bougeait sous la mesure.
       **Ce que R1 laisse ouvert, et c'est R2 :** le Playground épingle toujours
       `0.1.5`, cinq versions derrière ce que le registre sert maintenant.
 
-- [ ] **R2 — Le Playground épingle une version que ce dépôt a dépassée.** Le seul
+- [X] **R2 — Le Playground épingle une version que ce dépôt a dépassée.** Le seul
       consommateur réel du kit ne voit ni la Phase 4 ni la correction de la
       Phase 7. Dépend de R1 : monter le pin vers un numéro dont le contenu publié
       est faux ne corrige rien.
       **Rechercher d'abord :** le pin réel du Playground, et ce que chaque
       version d'écart change pour lui — pas seulement l'écart de numéro.
+      **Faite le 5 septembre 2026, juste après R1.** Le pin réel était `0.1.5`,
+      posé quand le rapport a rejoint le kit (T5.2) : cinq versions, et l'écart
+      n'était pas qu'un numéro — `configurationDepuisJson` et
+      `comparerIdentiteDeContrat` sont entrés dans le format,
+      `controle-repository.mjs` a changé deux fois, et la correction de T7.3 est
+      arrivée. Les 41 tests du Playground passent, `npm run check` passe, et le
+      kit installé porte bien le correctif.
+      **⚠ Ce que R2 a trouvé en chemin, et qui ne lui appartient pas :** la CI
+      du Playground est rouge sur `main` depuis le 4 septembre, et pas à cause du
+      pin. `npm run build` échoue sur `StressTest.tsx`, à qui le contrat
+      RÉEXPORTÉ réclame une variante `warning` que le composant n'implémente pas.
+      Mesuré aux deux pins, `0.1.5` et `0.1.10` : identique. C'est le corpus qui
+      a divergé de son contrat — voir R7.
 
 - [ ] **R3 — Deux des trois balises restantes ont perdu leur cause.** T0.3 exige
       qu'une balise parte dans le commit qui corrige sa contradiction ; celles de
@@ -2465,6 +2478,26 @@ le worktree bougeait sous la mesure.
       tâches encore ouvertes portent des constats déjà exécutés.
       **Rechercher d'abord :** recompter chaque chiffre au moment de prendre la
       tâche. Un chiffre daté dans ce plan est un souvenir, pas une mesure.
+
+- [ ] **R7 — ⚠ La CI du seul consommateur réel est rouge, et elle l'est depuis
+      le 4 septembre 2026.** *Trouvé par R2, le 5 septembre.* `npm run build`
+      du Playground échoue : `StressTest.tsx` n'implémente pas la variante
+      `warning` que son contrat réexporté déclare. Le composant a été écrit
+      depuis un contrat d'avant, le plugin en a exporté un autre depuis, et rien
+      ne les a rapprochés.
+      *Pourquoi c'est plus qu'un composant cassé :* une CI rouge en permanence
+      ne dit plus rien, et c'est précisément le repository dont ce plan se sert
+      pour prouver que le kit tient. Toutes les vérifications faites « chez le
+      consommateur » depuis le 4 septembre l'ont été sur un dépôt dont le signal
+      était déjà éteint.
+      *Ce que cette tâche ne décide pas :* les composants du corpus sont des
+      sondes jetables, reconstruites depuis leur seul contrat par le skill
+      `consommer-contrat`. Régénérer `StressTest` est un geste qui se demande,
+      pas un geste qu'on prend au passage — d'où cette tâche plutôt qu'un
+      commit.
+      **Rechercher d'abord :** si les trois autres composants sont dans le même
+      état, et depuis quel export ; puis si la CI a d'autres causes de rougeur
+      empilées derrière celle-ci.
 
 ---
 
