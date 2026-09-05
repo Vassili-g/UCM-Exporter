@@ -2454,7 +2454,7 @@ deux tâches attend la Phase 8.
 
 ## Phase R — Écarts trouvés par la revue du 5 septembre 2026
 
-Six écarts entre ce plan et le code, relevés par une **revue globale rapide** — un septième s'y est ajouté en exécutant le deuxième :
+Six écarts entre ce plan et le code, relevés par une **revue globale rapide** — un septième s'y est ajouté en exécutant le deuxième, un huitième en exécutant le septième :
 elle a sondé, elle n'a pas audité. Chaque point ci-dessous est une mesure prise
 une fois, pas un fait établi — et la règle de travail 4 enregistre déjà qu'une
 conclusion de revue non revérifiée s'intègre à l'envers.
@@ -2670,6 +2670,56 @@ le worktree bougeait sous la mesure.
       **Rechercher d'abord :** si les trois autres composants sont dans le même
       état, et depuis quel export ; puis si la CI a d'autres causes de rougeur
       empilées derrière celle-ci.
+      **Recherche faite le 5 septembre 2026 ; l'énoncé tient, et il se
+      corrige sur un point qui change le geste.** Les trois autres composants
+      vont bien : `tsc` ne tombe que sur `StressTest`, Alert, Button et TileLink
+      couvrent toutes les variantes de leur contrat. Aucune autre cause de
+      rougeur n'est empilée : `npm run check` est intégralement vert — 44 tests,
+      le contrôle des contrats, la génération des types —, `tsc --noEmit` est la
+      seule cause et `vite build` n'est jamais atteint.
+      *Ce que la recherche corrige :* l'énoncé dit « le composant a été écrit
+      depuis un contrat d'avant, le plugin en a exporté un autre depuis ». C'est
+      vrai, et c'est plus étroit que ça n'en a l'air — **l'écart tient à un seul
+      export**. Le `.tsx` est né le 3 septembre du contrat du 28 août
+      (`b6f777f`), qui ne déclarait que `info` et `success` : la variante
+      `Warning` était absente de Figma ce jour-là. Elle y était le 26 août, elle
+      est revenue le 4 septembre (`3c1764d`). Le composant n'a jamais dérivé —
+      il est né conforme à un contrat qui a bougé le lendemain, et il n'y a rien
+      à rattraper au-delà de cette variante.
+      **Décision de l'utilisateur, 5 septembre 2026 : R7 reste ouverte.** La
+      régénération n'est pas prise dans cette session.
+
+- [ ] **R8 — ⚠ Tâche annexe, de recherche : le contrôle de parité est aveugle à
+      une variante que le code n'implémente pas.** *Trouvé en exécutant la
+      recherche de R7, et ce n'est pas le sujet de R7.*
+      Sur le `StressTest` amputé de sa variante `warning`, `ucm check` écrit
+      `✓ StressTest.contract.json : 82 références contrôlées, code conforme`.
+      Le seul contrôle qui a vu l'écart est le `Record<StressTestVariant, …>`
+      exhaustif du Playground, attrapé par `tsc` — **une convention de ce
+      consommateur-là, pas une garantie du kit.**
+      *La mesure prise une fois, et elle demande à être revérifiée :*
+      `pariteEnEcart` juge six relevés — interface absente, fonction absente,
+      props manquantes, types incorrects, booléens non utilisés, compositions
+      incorrectes. Aucun ne porte sur les VALEURS d'un enum. Et la piste qui
+      semble évidente — « comparer le type déclaré au contrat » — a l'air
+      fermée par construction : le `.tsx` importe `StressTestVariant`, un type
+      **généré depuis le contrat**, qui ne peut donc pas être en désaccord avec
+      lui.
+      *Pourquoi c'est une tâche et pas un commit :* si la mesure tient, un repo
+      tiers sans la convention `Record` exhaustive porte la même dérive **sous
+      un rapport UCM vert**, et c'est exactement ce que le critère de réussite
+      du repo vierge existe pour interdire. Mais la fermer touche l'adaptateur
+      du consommateur ET le noyau publié — donc une montée de version et une
+      republication —, et rien ne dit encore que la bonne réponse soit un
+      septième relevé de parité plutôt qu'une règle écrite dans `docs/FORMAT.md`
+      sur ce qu'un repo doit garantir lui-même.
+      **Ce que cette tâche demande, et c'est sa forme :** une **recherche
+      profonde** menée par un agent — quels écarts contrat ↔ code le relevé de
+      parité peut structurellement voir, lesquels lui échappent, ce que chacun
+      coûte à un repo tiers, et quelles réponses existent — **dont le résultat
+      est présenté à l'utilisateur en clair, simplement, avant qu'une ligne soit
+      écrite.** C'est une décision de périmètre, pas une correction : elle se
+      prend sur un exposé compréhensible, pas sur un diff.
 
 ---
 
