@@ -71,6 +71,8 @@ packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
     config.ts                  configuration GitHub locale
     fenetre.ts                 la taille de la fenêtre, ses bornes et son rangement
     connexion.ts               ce que vaut la connexion au dépôt, et le geste qu'elle demande
+    prevol.ts                  ce que l'analyse conclut avant d'écrire, et l'action qu'elle propose
+    cible.ts                   ce sur quoi l'export porte, et pourquoi il ne porte pas
     github.ts                  branche, fichier et pull request
     messages.ts                les DEUX sens de la frontière sandbox ↔ UI
     ui/                        interface du plugin

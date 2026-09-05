@@ -9,8 +9,10 @@ import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { resumerTokensDuFichier } from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
 import type { GithubConfig, SettingsInput } from './config';
-import { publishArtifact, diagnostiquerConnexion } from './github';
+import { publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './github';
 import type { ArtifactKind, RepositoryLayout } from './github';
+import { verdictDePrevol } from './prevol';
+import type { CodeVerdict } from './prevol';
 import type { Annonce, PluginMessage, UiRequest } from './messages';
 import { etatDeConnexion, etatDuDepot } from './connexion';
 import { etatDeCible, detailDeCible } from './cible';
@@ -165,13 +167,66 @@ figma.on('selectionchange', () => {
 });
 
 /**
- * Exécute un export et pilote toute la communication avec l'UI :
- * statut de chargement, envoi du fichier à télécharger, bilan des
- * avertissements, et affichage d'erreur si le handler échoue.
+ * Ce qu'une analyse a produit, gardé pour la publication qui la consomme.
+ *
+ * L'analyse n'écrit rien : elle fabrique le contrat en mémoire et lit le
+ * repository. La publication reprend ce contenu, et REVÉRIFIE tout (U3.1 b).
+ * Le garder ici est aussi ce qui rend une publication échouée reprenable, au
+ * lieu de perdre le travail avec l'état de l'écran (U3.3).
  */
-async function runExport(
+type AnalyseGardee = {
+  kind: ArtifactKind;
+  filename: string;
+  content: string;
+  warnings: string[];
+  succes: string;
+  avertissements: number;
+};
+
+let analyseGardee: AnalyseGardee | null = null;
+
+/**
+ * L'annulation coopérative (U3.4).
+ *
+ * Rien ne peut interrompre un appel Figma déjà parti. Le drapeau est donc lu
+ * ENTRE deux étapes, là où le moteur annonce la suivante : l'annulation prend
+ * effet à la fin de l'étape en cours, et rien n'est publié après elle.
+ */
+class ExportAnnule extends Error {}
+let annulationDemandee = false;
+
+/** L'artefact tel que le repository le reçoit. */
+function artefactDe(analyse: AnalyseGardee) {
+  return {
+    kind: analyse.kind,
+    filename: analyse.filename,
+    content: analyse.content,
+    warnings: analyse.warnings,
+  };
+}
+
+/** Le verdict, unique autorité sur ce que l'analyse conclut. */
+function postVerdict(code: CodeVerdict, precision: { chemin?: string | null; ou?: string | null } = {}): void {
+  if (!analyseGardee) return;
+  const verdict = verdictDePrevol({
+    code,
+    genre: analyseGardee.kind,
+    avertissements: analyseGardee.avertissements,
+    ...precision,
+  });
+  versUi({ type: 'verdict', ...verdict, etat: analyseGardee.avertissements > 0 ? 'warning' : '' });
+}
+
+/**
+ * PREMIER TEMPS : analyser. Rien n'est écrit ici, ni sur le poste ni sur
+ * GitHub. L'analyse refait tout le chemin de lecture — emplacement, immobilité,
+ * collision — parce qu'un pré-vol qui annoncerait « rien à changer » sans avoir
+ * vu une collision d'identifiant mentirait sur le seul point qui, lui, est un
+ * vrai refus (U3.1 c).
+ */
+async function analyser(
   loadingText: string,
-  successLabel: string,
+  succes: string,
   artifactKind: ArtifactKind,
   handler: (annoncer: Annonce) => Promise<{
     filename: string;
@@ -181,107 +236,139 @@ async function runExport(
     infos?: string[];
   }>,
 ): Promise<void> {
+  annulationDemandee = false;
+  analyseGardee = null;
   postStatus('loading', loadingText);
   try {
-    // Les étapes vont dans la NOTE, pas dans le journal (U2.6) : quatre lignes
-    // de déroulé par export noieraient les avertissements, qui sont la seule
-    // chose de ce journal qui demande un geste.
-    const result = await handler((etape) => versUi({ type: 'phase', texte: etape }));
+    const result = await handler((etape) => {
+      if (annulationDemandee) throw new ExportAnnule();
+      versUi({ type: 'phase', texte: etape });
+    });
+
     // Chaque avertissement porte sa NATURE (U4.1) : il demande un geste dans
-    // Figma, et le compte rendu le range sous le titre qui le dit. Le caractère
-    // de puce ne portait plus cette distinction que par convention typographique,
-    // dans un journal qui la cachait.
+    // Figma, et le compte rendu le range sous le titre qui le dit.
     for (const warning of result.warnings ?? []) {
       versUi({ type: 'diagnostic', nature: 'avertissement', texte: warning });
     }
-    // Les notes disent ce que le contrat publie, pas ce qui lui manque : elles
-    // portent donc une puce neutre et ne gonflent pas le compte d'avertissements.
-    // Ce journal est leur seul canal humain : la pull request ne les reprend pas,
-    // parce qu'une ligne dont la conclusion est toujours « rien à faire » finit
-    // par coûter la lecture de celles qui, elles, demandent un geste.
+    // Les notes disent ce que le contrat publie, pas ce qui lui manque : rien
+    // n'y est à corriger, et le compteur les ignore.
     for (const info of result.infos ?? []) {
       versUi({ type: 'diagnostic', nature: 'constat', texte: info });
     }
-    const warningText = result.warningCount > 0
-      ? ` ${result.warningCount} avertissement${result.warningCount === 1 ? '' : 's'}.`
-      : '';
-    const successText = `${successLabel}.${warningText}`;
+
+    analyseGardee = {
+      kind: artifactKind,
+      filename: result.filename,
+      content: result.content,
+      warnings: result.warnings ?? [],
+      succes,
+      avertissements: result.warningCount,
+    };
+
     const validation = await loadGithubConfig();
     if (!validation.valid || !validation.config) {
-      postDownload(result.filename, result.content);
-      versUi({ type: 'log', text: 'Configuration GitHub absente ou invalide : téléchargement local.' });
-      postStatus('success', `${successText} Téléchargement local terminé.`);
-      figma.notify(successText);
+      postVerdict('sans-depot');
       return;
     }
 
-    try {
-      versUi({ type: 'phase', texte: 'Publication sur GitHub…' });
-      const publication = await publishArtifact(validation.config, {
-        kind: artifactKind,
-        filename: result.filename,
-        content: result.content,
-        warnings: result.warnings ?? [],
-      });
-      // QUI a décidé de l'emplacement se dit, toujours (T4.1). Un export qui
-      // atterrit ailleurs qu'attendu est indétectable après coup : la PR
-      // s'ouvre, la CI ne trouve aucun contrat nouveau, tout est vert. Cette
-      // ligne est le seul endroit où la question se pose encore.
-      versUi({
-        type: 'log',
-        text: `Emplacement : ${publication.path} (d'après ${publication.source}).`,
-      });
-      if (publication.status === 'unchanged') {
-        // OÙ le contenu identique se trouve déjà fait partie du message (T4.5).
-        // « Aucun changement » tout court envoie chercher sur la branche de
-        // base un fichier qui peut n'être encore que dans une pull request
-        // d'export ouverte — et le designer conclurait que l'export n'a rien
-        // fait, alors que son travail attend d'être fusionné.
-        // Le verdict ne s'écrit qu'UNE fois (U4.1) : la note le porte au rang 1,
-        // et le groupe « Publication » porte ce que l'export a fait, pas son
-        // résumé. Les deux disaient le même texte à quinze pixels d'écart.
-        const message = `Aucun changement pour ${publication.path} (${publication.ou}) : aucune PR créée.`;
-        if (publication.pullRequestUrl) {
-          // Le lien, mais pas l'ouverture automatique : rien n'a été produit à
-          // relire, et voler la fenêtre pour une page déjà vue se paierait à
-          // chaque réexport.
-          versUi({
-            type: 'pull-request',
-            url: publication.pullRequestUrl,
-            path: publication.path,
-          });
-        }
-        postStatus('success', message);
-        figma.notify('Aucun changement : aucune PR créée.');
-        return;
-      }
+    versUi({ type: 'phase', texte: 'Lecture du repository…' });
+    const lecture = await lireAvantEcriture(validation.config, artefactDe(analyseGardee));
+    if (annulationDemandee) throw new ExportAnnule();
+    // QUI a décidé de l'emplacement se dit, toujours (T4.1), et maintenant
+    // AVANT l'écriture : un export qui atterrit ailleurs qu'attendu était
+    // indétectable après coup.
+    versUi({
+      type: 'log',
+      text: `Emplacement : ${lecture.path} (d'après ${lecture.layout.source}).`,
+    });
 
-      versUi({
-        type: 'pull-request',
-        url: publication.pullRequestUrl,
-        path: publication.path,
-      });
-      // Une PR d'export est faite pour être relue tout de suite par le designer
-      // qui vient de l'ouvrir : on l'amène dessus sans lui demander un clic.
-      openExternal(publication.pullRequestUrl);
-      postConnection('connecte');
-      postStatus('success', `${successText} Pull request créée.`);
-      figma.notify(`${successText} Pull request créée.`);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'Erreur GitHub inconnue.';
-      // Un échec de publication (conflit de branche, contenu invalide, etc.)
-      // ne remet pas en cause le dernier test de connexion réussi.
-      // La réponse de GitHub est un fait de publication ; le verdict, lui, dit
-      // ce que le designer a entre les mains. Deux choses, deux endroits.
-      versUi({ type: 'log', text: `Échec GitHub : ${message}` });
-      postDownload(result.filename, result.content);
-      postStatus('error', 'Échec GitHub. Le fichier a été téléchargé sur votre poste.');
-      figma.notify('Échec GitHub : fichier téléchargé localement.', { error: true });
+    if (lecture.refus) {
+      postStatus('error', lecture.refus);
+      return;
     }
+    if (lecture.jumeau) {
+      // OÙ le contenu identique se trouve déjà fait partie du message (T4.5).
+      if (lecture.jumeau.url) {
+        versUi({ type: 'pull-request', url: lecture.jumeau.url, path: lecture.path });
+      }
+      postVerdict('identique', { ou: lecture.jumeau.ou });
+      return;
+    }
+
+    // Le verdict EST la conclusion : il occupe la note, au rang 1, et clôt
+    // l'attente. Un « Contrat généré » de plus par-dessus l'écraserait avec un
+    // texte qui ne décide de rien.
+    postVerdict('a-publier', { chemin: lecture.path });
   } catch (error) {
+    if (error instanceof ExportAnnule) {
+      analyseGardee = null;
+      postStatus('error', "Export annulé. Rien n'a été écrit.");
+      return;
+    }
     const message = error instanceof Error ? error.message : 'Erreur inconnue pendant l’export.';
     postStatus('error', message);
     figma.notify(message, { error: true });
+  }
+}
+
+/**
+ * SECOND TEMPS : publier ce que l'analyse a produit.
+ *
+ * `publishArtifact` refait la lecture du repository de son côté : l'analyse
+ * informe, elle ne fait pas autorité. Entre les deux, quelqu'un a pu fusionner
+ * ou ouvrir une branche.
+ */
+async function publier(): Promise<void> {
+  const analyse = analyseGardee;
+  if (!analyse) return;
+
+  const validation = await loadGithubConfig();
+  if (!validation.valid || !validation.config) {
+    postDownload(analyse.filename, analyse.content);
+    versUi({ type: 'log', text: 'Aucun repository connecté : téléchargement sur votre poste.' });
+    postStatus('success', `${analyse.succes}. Téléchargement terminé.`);
+    figma.notify(`${analyse.succes}. Téléchargement terminé.`);
+    return;
+  }
+
+  postStatus('loading', 'Publication sur GitHub…');
+  try {
+    const publication = await publishArtifact(validation.config, artefactDe(analyse));
+    if (publication.status === 'unchanged') {
+      // Le dépôt a bougé entre l'analyse et la publication : c'est exactement le
+      // cas que la revérification existe pour attraper.
+      if (publication.pullRequestUrl) {
+        versUi({ type: 'pull-request', url: publication.pullRequestUrl, path: publication.path });
+      }
+      postVerdict('identique', { ou: publication.ou });
+      postStatus('success', `Aucun changement pour ${publication.path} (${publication.ou}).`);
+      figma.notify('Aucun changement : aucune PR créée.');
+      return;
+    }
+
+    versUi({ type: 'pull-request', url: publication.pullRequestUrl, path: publication.path });
+    // Une PR d'export est faite pour être relue tout de suite par le designer
+    // qui vient de l'ouvrir : on l'amène dessus sans lui demander un clic.
+    openExternal(publication.pullRequestUrl);
+    postConnection('connecte');
+    postStatus('success', `${analyse.succes}. Pull request créée.`);
+    figma.notify(`${analyse.succes}. Pull request créée.`);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Erreur GitHub inconnue.';
+    // La réponse de GitHub est un fait de publication ; le verdict dit ce que le
+    // designer a entre les mains. L'analyse est GARDÉE : la publication se
+    // réessaie sans repasser par Figma (U3.3).
+    versUi({ type: 'log', text: `Échec GitHub : ${message}` });
+    postDownload(analyse.filename, analyse.content);
+    postStatus('error', 'Échec GitHub. Le fichier a été téléchargé sur votre poste.');
+    versUi({
+      type: 'verdict',
+      code: 'a-publier',
+      texte: `Échec de la publication. ${message}`,
+      action: 'Réessayer la publication',
+      etat: 'error',
+    });
+    figma.notify('Échec GitHub : fichier téléchargé localement.', { error: true });
   }
 }
 
@@ -336,12 +423,22 @@ figma.ui.onmessage = async (message: UiRequest) => {
     return;
   }
 
-  if (message.type === 'export-component') {
-    await runExport('Analyse du composant…', 'Contrat généré', 'component', handleExportComponent);
+  if (message.type === 'annuler') {
+    annulationDemandee = true;
     return;
   }
 
-  if (message.type === 'export-tokens') {
-    await runExport('Lecture des variables…', 'Tokens exportés', 'tokens', handleExportTokens);
+  if (message.type === 'publier') {
+    await publier();
+    return;
+  }
+
+  if (message.type === 'analyser-composant') {
+    await analyser('Analyse du composant…', 'Contrat généré', 'component', handleExportComponent);
+    return;
+  }
+
+  if (message.type === 'analyser-tokens') {
+    await analyser('Lecture des variables…', 'Tokens exportés', 'tokens', handleExportTokens);
   }
 };

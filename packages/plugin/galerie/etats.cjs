@@ -42,6 +42,16 @@ function chargerSandbox(nom) {
 const { etatDeConnexion, etatDuDepot } = chargerSandbox('connexion');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
 const { resumeDesTokens } = chargerSandbox('tokens/exportTokens');
+const { verdictDePrevol } = chargerSandbox('prevol');
+
+/** Le verdict du pré-vol, calculé par le sandbox et non recopié ici (U3.1). */
+const verdict = (entree) => ({
+  message: {
+    type: 'verdict',
+    ...verdictDePrevol(entree),
+    etat: entree.avertissements > 0 ? 'warning' : '',
+  },
+});
 
 /**
  * La version de schéma est LUE à sa source. Une capture qui afficherait un
@@ -250,8 +260,7 @@ const ETATS = [
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      { message: { type: 'pull-request', url: URL_PR, path: CHEMIN } },
-      { message: { type: 'status', state: 'success', text: 'Contrat généré. Pull request créée.' } },
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 0 }),
     ],
   },
   {
@@ -270,14 +279,7 @@ const ETATS = [
       diagnostic('avertissement', AVERTISSEMENT_COMPOSE),
       diagnostic('constat', NOTE_ROTATION),
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      { message: { type: 'pull-request', url: URL_PR, path: CHEMIN } },
-      {
-        message: {
-          type: 'status',
-          state: 'success',
-          text: 'Contrat généré. 1 avertissement. Pull request créée.',
-        },
-      },
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 1 }),
     ],
   },
   {
@@ -295,14 +297,7 @@ const ETATS = [
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       ...vingtAvertissements(),
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      { message: { type: 'pull-request', url: URL_PR, path: CHEMIN } },
-      {
-        message: {
-          type: 'status',
-          state: 'success',
-          text: 'Contrat généré. 20 avertissements. Pull request créée.',
-        },
-      },
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 20 }),
     ],
   },
   {
@@ -319,13 +314,7 @@ const ETATS = [
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      {
-        message: {
-          type: 'status',
-          state: 'success',
-          text: `Aucun changement pour ${CHEMIN} (branche main) : aucune PR créée.`,
-        },
-      },
+      verdict({ code: 'identique', genre: 'component', ou: 'branche main', avertissements: 0 }),
     ],
   },
   {
@@ -343,13 +332,12 @@ const ETATS = [
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
       { message: { type: 'pull-request', url: URL_PR, path: CHEMIN } },
-      {
-        message: {
-          type: 'status',
-          state: 'success',
-          text: `Aucun changement pour ${CHEMIN} (pull request d'export ouverte, branche ${BRANCHE_EN_VOL}) : aucune PR créée.`,
-        },
-      },
+      verdict({
+        code: 'identique',
+        genre: 'component',
+        ou: `pull request d'export ouverte, branche ${BRANCHE_EN_VOL}`,
+        avertissements: 0,
+      }),
     ],
   },
   {
@@ -402,6 +390,15 @@ const ETATS = [
           text: 'Échec GitHub. Le fichier a été téléchargé sur votre poste.',
         },
       },
+      {
+        message: {
+          type: 'verdict',
+          code: 'a-publier',
+          texte: 'Échec de la publication. GitHub a répondu 403 sur POST /repos/mon-org/design-system-v3/git/refs.',
+          action: 'Réessayer la publication',
+          etat: 'error',
+        },
+      },
     ],
   },
   {
@@ -429,26 +426,7 @@ const ETATS = [
       SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      {
-        message: {
-          type: 'download',
-          filename: 'Button.contract.json',
-          content: '{"contractVersion":"12.0"}',
-        },
-      },
-      {
-        message: {
-          type: 'log',
-          text: 'Configuration GitHub absente ou invalide : téléchargement local.',
-        },
-      },
-      {
-        message: {
-          type: 'status',
-          state: 'success',
-          text: 'Contrat généré. Téléchargement local terminé.',
-        },
-      },
+      verdict({ code: 'sans-depot', genre: 'component', avertissements: 0 }),
     ],
   },
   {
@@ -523,10 +501,18 @@ const ETATS = [
     id: 'export-annule',
     titre: 'Export annulé',
     quand:
-      "Rien n'interrompt un export : `setBusy` désactive les boutons et la promesse en vol continue.",
-    regarder: null,
-    existe: false,
-    attendu: 'U3.4',
+      "Clic sur « Annuler après cette étape » pendant une analyse. L'annulation est coopérative : elle prend effet à la fin de l'étape en cours.",
+    regarder:
+      "Le message dit que RIEN n'a été écrit. C'est la seule chose que le designer ait besoin de savoir.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_PRETE,
+      { clic: '.action-panel .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      { message: { type: 'phase', texte: 'Lecture des composants imbriqués…' } },
+      { message: { type: 'status', state: 'error', text: "Export annulé. Rien n'a été écrit." } },
+    ],
   },
   {
     id: 'erreur-ui',
