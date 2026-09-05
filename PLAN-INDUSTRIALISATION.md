@@ -2249,8 +2249,17 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       suppression entraîne `schema-contrat.mjs`, son test et
       `.vscode/settings.json`.
 - [ ] **T8.5 — Fusionner les deux `rediger-diagnostics-ucm`.**
-- [ ] **T8.6 — Retirer l'ancrage du skill** qui promet une commande inexistante
+- [X] **T8.6 — Retirer l'ancrage du skill** qui promet une commande inexistante
       (une ligne), plutôt qu'ouvrir un chantier `process.argv`.
+      **Faite le 5 septembre 2026**, en marge de R3 et R4 : c'était la dernière
+      BALISE-PERIMEE du projet, et la laisser aurait fait mentir la vérification
+      de T8.8. L'ancrage ne se contente pas de perdre la promesse — il dit ce qui
+      existe, un contrôle qui balaie le repository, et pourquoi cela suffit : un
+      rapport où le composant en cours se retrouve à son nom. **§2.7 portait la
+      même promesse** et a été corrigée avec ; ne débaliser que l'ancrage aurait
+      laissé la règle fausse deux sections plus haut.
+      *Vérifié plutôt que supposé :* `check-contract.mjs` ne lit aucun
+      `process.argv`, et `ucm check` n'accepte que `--base` et `--report`.
 - [ ] **T8.7 — Passer les documents en registre portable** : « React »,
       « `.tsx` » et « le Playground » ne restent que là où ils décrivent
       effectivement un adaptateur.
@@ -2479,12 +2488,29 @@ le worktree bougeait sous la mesure.
       check` n'a que `--base` et `--report`. C'est T8.6, et elle n'est pas
       périmée.
 
-- [ ] **R4 — La table « Contradictions doc ↔ code » est périmée sur trois
+- [X] **R4 — La table « Contradictions doc ↔ code » est périmée sur trois
       rangs**, dont un qui cite une ligne dans un fichier devenu bien plus court.
       T8.8 promet de vérifier cette table : elle doit être juste ce jour-là.
       **Rechercher d'abord :** rang par rang, rouvrir le fichier cité et vérifier
       l'affirmation ET la tâche censée la résoudre — un rang peut être faux dans
       un sens comme dans l'autre.
+      **Faite le 5 septembre 2026, les neuf rangs rouverts un par un, et le
+      compte tombe juste : trois étaient périmés.** Le premier est celui de
+      `Playground/AGENTS.md`, parti avec R3 — il annonçait une copie de regex
+      « jusqu'à T6.2 » que T6.2 avait emportée la veille. Le deuxième est celui
+      que l'énoncé décrit : `check-contract.mjs` cite `:42-47` et `:658` dans un
+      fichier qui **fait 110 lignes** depuis que T5.2 en a sorti le contrôle et
+      le rapport ; `:658` n'existe plus et `:42-47` est devenu un bloc
+      d'`import`. Le troisième est `CHANGELOG-CONTRAT.md`, donné pour s'arrêter
+      à 11.0 : il porte une entrée `12.0` et sa plage est refermée dessus.
+      *Ce que la vérification a trouvé en plus, et que la table ne pouvait pas
+      dire :* trois documents du Playground situaient encore
+      `version-contrat.mjs` dans leur propre `scripts/`, alors que T2.1 l'a
+      emporté dans le kit — dont `CONTRAT-CONSOMME.md`, qui l'appelait « seul
+      endroit du repository où ce numéro est écrit » quand il n'y est plus écrit
+      du tout. Corrigés dans le même passage.
+      **La table ne porte plus aucun rang vivant** : les neuf sont barrés. C'est
+      la condition que T8.8 vérifie.
 
 - [ ] **R5 — La section « État » du `README.md` contredit le code.** Elle situe
       l'outillage consommateur dans le Playground et annonce son extraction comme
@@ -2755,9 +2781,9 @@ transitoire porte sa date, ou il ne s'écrit pas.**
 | ~~`Playground/AGENTS.md`~~ | ~~`tokens.json` fait foi pour l'existence des références~~ | **résolu par T2.4** : le code lit `tokens.json` |
 | ~~`verdict-bilan.mjs:9`~~ | ~~idem, en commentaire~~ | **résolu par T2.4** |
 | ~~`Playground/AGENTS.md`~~ | ~~`references-token.mjs` définit **seul** la référence~~ | **résolu par R3** : la règle nomme désormais `@ucm-kit/core/format`. Le rang lui-même avait vieilli — il annonçait une copie dans `tokens.ts` « jusqu'à T6.2 », or T6.2 l'a emportée le 4 septembre |
-| `check-contract.mjs:42-47` | ce que l'export ne peut corriger avertit sans bloquer | le contrôle des tokens du code bloque (`:658`) — résolu par D1 |
+| ~~`check-contract.mjs:42-47`~~ | ~~ce que l'export ne peut corriger avertit sans bloquer~~ | **résolu par D1**, et le rang avait vieilli avec : ce fichier fait 110 lignes depuis T5.2, `:658` n'existe plus et `:42-47` est un bloc d'`import`. Vérifié par R4 |
 | ~~`PISTES-EVOLUTION.md`, « Extraction multi-repository »~~ | ~~rien à publier avec un seul consommateur~~ | **résolu par R3** : la section dit que l'extraction est faite, et où vit l'autorité unique que le découpage devait réaliser |
-| `CHANGELOG-CONTRAT.md` | porte l'historique des schémas « et lui seul » | s'arrête à 11.0 |
-| skill `consommer-contrat`, ancrage 6 | une commande de contrôle ciblée sur un composant | n'existe pas |
+| ~~`CHANGELOG-CONTRAT.md`~~ | ~~porte l'historique des schémas « et lui seul »~~ | **résolu** : le fichier porte une entrée `12.0` et sa plage est refermée dessus. Vérifié par R4 |
+| ~~skill `consommer-contrat`, ancrage 6~~ | ~~une commande de contrôle ciblée sur un composant~~ | **résolu par T8.6** : l'ancrage dit ce qui existe — un contrôle qui balaie le repository — et pourquoi cela suffit |
 | ~~`Exporter/AGENTS.md`~~ | ~~aucun artefact de contrat, jamais~~ | **tranché par T7.0** : la règle nomme désormais le MOTEUR, pas le repository — elle était devenue ambiguë quand T1.2 a mis deux produits dans le même dépôt |
 | ~~—~~ | ~~aucun document ne déclare la projection de nom de token comme invariant~~ | **résolu par T6.0** : `tokenCssVariable` est l'unique autorité, dans `names.ts` avec les deux autres projections, et `AGENTS.md` porte l'invariant |
