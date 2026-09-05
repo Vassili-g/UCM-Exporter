@@ -12,6 +12,7 @@ import {
 } from '../src/tokens/exportTokens';
 import type { ExportContext } from '../src/tokens/exportTokens';
 import { collisionWarnings, indexVariables } from '../src/variables';
+import { phraseDe } from '../src/contract/localisation';
 
 test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () => {
   assert.equal(dtcgType('COLOR', 'primitives.terracota.600'), 'color');
@@ -106,9 +107,9 @@ test('indexVariables nomme les deux variables en collision et écarte la seconde
     ownerPath: 'brand.foo-bar',
     kind: 'same-path',
   });
-  assert.deepEqual(collisionWarnings(index), [
+  assert.deepEqual(collisionWarnings(index).map(phraseDe), [
     'Variables « Foo Bar » et « foo-bar » : leurs noms donnent le même token ' +
-      '« brand.foo-bar ». Seule la première est exportée ; renommez la seconde.',
+      '« brand.foo-bar ». Seule la première est exportée. Renommez la seconde.',
   ]);
 });
 
@@ -125,11 +126,11 @@ test('modeCollisionWarnings signale une fois par collection, pas une fois par va
   const warnings = modeCollisionWarnings([
     collection('Brand Tokens', ['Intencial', 'Marque 2', 'marque-2']),
     collection('Sizes', ['Mode 1']),
-  ]);
+  ]).map(phraseDe);
 
   assert.deepEqual(warnings, [
     'Collection « Brand Tokens » : deux de ses modes donnent le même nom ' +
-      "« marque-2 ». Seul le premier est exporté ; renommez l'un des deux.",
+      "« marque-2 ». Seul le premier est exporté. Renommez l'un des deux.",
   ]);
 });
 

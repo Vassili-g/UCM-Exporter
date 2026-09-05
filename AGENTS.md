@@ -420,6 +420,15 @@ Le raisonnement vit dans la spécification, en lien.
 - Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
   geste à faire. Les trois sont exigés ; un constat qui ne nomme aucun geste
   n’est pas un avertissement — et il ne s’écrit nulle part.
+- **Les trois parties voyagent SÉPARÉES**, du site d’émission jusqu’à
+  l’interface : un site écrit un `Constat` (`src/contract/localisation.ts`),
+  jamais une phrase. La phrase compacte que publient `meta.diagnostics`, la
+  pull request et le journal s’en dérive (`phraseDe`), sans seconde rédaction ;
+  l’interface, elle, met les parties en page et ne recoupe rien. Deux lois le
+  tiennent (`tests/loiDesParties.test.ts`) : l’une lit la source et refuse
+  qu’un message s’écrive ailleurs qu’à l’autorité, l’autre lit la sortie du
+  moteur et refuse un message sans ses parties.
+  → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
 - **Un export ne remonte que ce qui demande une décision.** Trois portes : le
   point bloque l’export, il rend le contrat partiel, ou il demande une
   vérification ou une correction dans Figma. Une transformation entièrement

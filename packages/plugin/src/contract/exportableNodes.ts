@@ -13,7 +13,8 @@
 import { variableAliases } from '../variables';
 import { getBinding } from './nodeBindings';
 import type { ComposedDependency } from '@ucm-kit/core/format';
-import { noter, sujet } from './localisation';
+import { phraseDe, pointDe, pousserNote, sujet } from './localisation';
+import type { PointACorriger, Sujet } from './localisation';
 
 /** Vrai si la visibilité peut changer via l'API publique ou un mode de variable. */
 function hasDynamicVisibility(node: SceneNode): boolean {
@@ -58,8 +59,14 @@ function hiddenAncestor(node: SceneNode, root: SceneNode): SceneNode | null {
   return hidden;
 }
 
-function pushOnce(warnings: string[], warning: string): void {
-  if (!warnings.includes(warning)) warnings.push(warning);
+/**
+ * Un point à corriger poussé une seule fois, quel que soit le nombre de calques
+ * qui l'ont produit. La déduplication porte sur la phrase, comme partout
+ * ailleurs dans le moteur.
+ */
+function pousserUneFois(warnings: string[], point: PointACorriger, sujetDuPoint: Sujet): void {
+  if (warnings.includes(phraseDe(point))) return;
+  pousserNote(warnings, point, sujetDuPoint);
 }
 
 /**
@@ -155,15 +162,16 @@ export function getAllNodes(
   for (const [hidden, hasBindings] of ignoredBindings) {
     if (!hasBindings) continue;
     const sujetDuCalque = sujet('Layer', hidden);
-    pushOnce(
+    pousserUneFois(
       warnings,
-      noter(
-        warnings,
-        `${sujetDuCalque.texte} : masqué dans Figma, il est exclu de l'export avec tout ` +
-          `son contenu et les variables qu'il porte. Si le composant doit pouvoir l'afficher, ` +
-          `reliez sa visibilité à une boolean property ou à une variable.`,
-        sujetDuCalque,
-      ),
+      pointDe(sujetDuCalque.texte, {
+        manque: `masqué dans Figma, il est exclu de l'export avec tout son contenu et les `
+          + `variables qu'il porte.`,
+        impact: `Le développeur ne le rendra pas, et ses couleurs ne seront pas exportées.`,
+        action: `Si le composant doit pouvoir l'afficher, reliez sa visibilité à une boolean `
+          + `property ou à une variable.`,
+      }),
+      sujetDuCalque,
     );
   }
 

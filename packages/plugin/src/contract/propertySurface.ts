@@ -11,6 +11,7 @@ import {
   extractContractPropertyModel,
 } from './parsers';
 import type { ContractPropertyModel } from './parsers';
+import { pousserSansNode } from './localisation';
 import type { ContractProp } from '@ucm-kit/core/format';
 
 /** Modèle direct, éventuel complément du wrapper et projection fusionnée. */
@@ -40,11 +41,12 @@ export function mergeWrapperProps(
   const accepted = new Set<string>();
   for (const [key, prop] of Object.entries(wrapperProps)) {
     if (Object.prototype.hasOwnProperty.call(props, key)) {
-      warnings.push(
-        `Component property « ${key} » : le composant imbriqué qui porte les dimensions et `
-          + `le component set sélectionné l’exposent tous les deux. Seule celle du component `
-          + `set sélectionné est exportée. Renommez l’une des deux.`,
-      );
+      pousserSansNode(warnings, `Component property « ${key} »`, {
+        manque: `le composant imbriqué qui porte les dimensions et le component set `
+          + `sélectionné l’exposent tous les deux.`,
+        impact: `Seule celle du component set sélectionné est exportée.`,
+        action: `Renommez l’une des deux, puis réexportez.`,
+      });
       continue;
     }
     definePropOn(props, key, prop);

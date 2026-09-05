@@ -21,6 +21,7 @@ import { extractVariantTokens } from './extractVariantTokens';
 import type { VariantPaintNodeIds } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
 import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNodes';
+import { pousserSansNode } from './localisation';
 import type { DiscoveredRoles } from './semantics';
 import type {
   ComposedDependency,
@@ -235,10 +236,11 @@ export async function extractStructure(
     };
 
   if (!referenceLayout) {
-    warnings.push(
-      'Aucun auto layout frame trouvé dans le composant : ni gap, ni padding, ni corner ' +
-        'radius ne sont exportés.',
-    );
+    pousserSansNode(warnings, 'Composant exporté', {
+      manque: 'aucun auto layout frame n’y a été trouvé.',
+      impact: 'Ni gap, ni padding, ni corner radius ne sont exportés.',
+      action: 'Appliquez un auto layout au composant ou à son cadre, puis réexportez.',
+    });
   }
 
   // Vue fidèle de chaque combinaison : elle part de la vraie racine du variant

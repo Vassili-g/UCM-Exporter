@@ -7,6 +7,7 @@
 import { normalizePropKey, normalizePropValue } from './parsers';
 import type { FigmaVariantLabels } from '@ucm-kit/core/format';
 import { getAllNodes } from './exportableNodes';
+import { pousserSansNode } from './localisation';
 import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, hasCompleteBinding } from './nodeBindings';
 
@@ -155,7 +156,11 @@ export function groupComponentsByVariant(
   }
 
   if (components.length === 0) {
-    warnings.push('Le component set sélectionné ne contient aucun variant.');
+    pousserSansNode(warnings, 'Component Set sélectionné', {
+      manque: 'il ne contient aucun variant.',
+      impact: 'Le contrat ne décrira ni ses axes, ni ses combinaisons.',
+      action: 'Ajoutez au moins un variant dans Figma, puis réexportez.',
+    });
   }
 
   return { matrix: { axes, variants }, warnings };

@@ -119,17 +119,38 @@ seul le premier remonte dans le rapport de CI.
 
 Chacun répond à trois questions, dans cet ordre :
 
-| | Contenu |
-|---|---|
-| **Où** | Le nom exact de l’élément Figma — calque, variante, propriété — tel qu’il s’affiche dans le panneau des calques |
-| **Quoi** | Ce qui n’a pas pu être exporté, donc ce qui manquera au développeur |
-| **Comment** | Le geste à faire dans Figma |
+| | Champ | Contenu |
+|---|---|---|
+| **Où + Quoi** | `titre` | Le nom exact de l’élément Figma — calque, variante, propriété — tel qu’il s’affiche dans le panneau des calques, puis ce qui manque ou ce qui est illisible |
+| **Et alors** | `impact` | Ce que le développeur n’aura pas, en une phrase |
+| **Comment** | `action` | Le geste à faire dans Figma, à l’impératif |
 
-Un avertissement unitaire emploie cette forme :
+**Les trois voyagent SÉPARÉS, du moteur jusqu’à l’interface (U4.8).** Un site
+d’émission n’écrit pas une phrase : il écrit un `Constat`
+(`src/contract/localisation.ts`), et l’autorité en compose le titre puis la
+phrase compacte. Deux lois le tiennent — l’une refuse qu’un message s’écrive
+ailleurs, l’autre refuse qu’un message sorte du moteur sans ses parties.
+
+```ts
+pousserLocalise(warnings, 'Layer', node, {
+  // `champ` est facultatif : « Layer « Card », padding : … ».
+  manque: 'l’alignement du stroke est illisible.',
+  impact: 'Le contrat ne dira pas s’il est inside, center ou outside.',
+  action: 'Vérifiez ce réglage dans Figma, puis réexportez.',
+});
+```
+
+La phrase compacte — celle que le journal, `meta.diagnostics` et la pull request
+publient — s’en DÉRIVE, et ne se rédige jamais une seconde fois :
 
 ```text
-{Élément Figma} : {information non exportée}. {action dans Figma}.
+{Élément Figma}[, {champ}] : {ce qui manque}. {impact}. {action}.
 ```
+
+L’interface, elle, ne recoupe pas cette phrase : elle met les trois parties en
+page, sous une pastille qui nomme la sévérité. C’est pour cela qu’elles voyagent
+séparées — un paragraphe unique fait lire le geste en dernier, après deux
+phrases de contexte.
 
 Un message emploie **les intitulés que Figma affiche**, repris tels quels : le
 designer doit pouvoir chercher dans son écran le mot que le message emploie.

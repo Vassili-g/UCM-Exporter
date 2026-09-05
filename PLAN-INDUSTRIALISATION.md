@@ -3241,7 +3241,7 @@ génériques propres au corpus doivent disparaître de sa branche principale ; l
 composants reconstruits y restent comme sondes visuelles jetables, et les
 artefacts exportés y restent pour éprouver les packages sur des données réelles.
 
-L'inventaire, les destinations, l'ordre et les critères de fin vivent dans
+- [ ] 10.1 - L'inventaire, les destinations, l'ordre et les critères de fin vivent dans
 [PLAN-NEUTRALISATION-PLAYGROUND.md](./PLAN-NEUTRALISATION-PLAYGROUND.md). Les
 Phases 7 et 9 restent ci-dessus comme historique des décisions qui ont permis
 d'extraire l'outillage générique ; elles ne décrivent plus la cible finale du

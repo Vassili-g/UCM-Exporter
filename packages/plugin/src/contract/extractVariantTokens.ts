@@ -19,7 +19,7 @@ import { getSlotTokens } from './extractSlotTokens';
 import type { TokenResolver, VariantColor, VariantStrokeColor } from './extractSlotTokens';
 import { toRef } from '@ucm-kit/core/format';
 import type { SlotStrokes, SlotTokens, VariantStrokes, VariantTokens } from '@ucm-kit/core/format';
-import { pousserLocalise } from './localisation';
+import { pousserLocalise, pousserSansNode } from './localisation';
 export { getSlotTokens } from './extractSlotTokens';
 export type { VariantTokenLeaves } from './extractSlotTokens';
 
@@ -59,12 +59,16 @@ export function insertVariantLeaf<T>(
       // Deux variants aux mêmes valeurs d'axes : on conserve le premier et on
       // le signale — ne jamais perdre d'information en silence.
       if (has(node, key)) {
-        warnings.push(
-          `Variants « ${axes.map((a) => values[a] || 'default').join(' / ')} » : deux ` +
-            `variants portent les mêmes valeurs une fois normalisées (majuscules et ` +
-            `espaces ignorés). Les deux restent dans la liste exacte « variants », mais ` +
-            `l'arbre historique ne peut en indexer qu'un et garde le premier. Renommez ` +
-            `l'un des deux pour rendre aussi cet index non ambigu.`,
+        pousserSansNode(
+          warnings,
+          `Variants « ${axes.map((a) => values[a] || 'default').join(' / ')} »`,
+          {
+            manque: `deux variants portent les mêmes valeurs une fois normalisées `
+              + `(majuscules et espaces ignorés).`,
+            impact: `Les deux restent dans la liste exacte « variants », mais l'arbre `
+              + `historique ne peut en indexer qu'un et garde le premier.`,
+            action: `Renommez l'un des deux pour rendre aussi cet index non ambigu.`,
+          },
         );
         return;
       }
@@ -187,7 +191,11 @@ export async function extractVariantTokens(
   for (const { entry, leaf, variantWarnings } of collected) {
     warnings.push(...variantWarnings);
     if (leaf.paints.length === 0 && leaf.strokes.length === 0) {
-      pousserLocalise(notices, 'Variant', entry.component, ` : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui. Reliez ses fills et ses strokes à des variables Figma, puis réexportez.`);
+      pousserLocalise(notices, 'Variant', entry.component, {
+        manque: 'aucun fill ni stroke n’est relié à une variable.',
+        impact: 'Aucune couleur n’est exportée pour lui.',
+        action: 'Reliez ses fills et ses strokes à des variables Figma, puis réexportez.',
+      });
     }
     // La clé de repli suit la même normalisation que toutes les valeurs
     // d'axes : l'arbre reste homogène même sans axe déclaré.
@@ -244,11 +252,13 @@ export async function extractVariantTokens(
         const conflit = `${cote}.${key}`;
         if (known === color.role || reportedRoleConflicts.has(conflit)) continue;
         reportedRoleConflicts.add(conflit);
-        warnings.push(
-          `Token ${toRef(color.token)} : il est appliqué à des layers de natures différentes selon ` +
-            `les variants (${known}, ${color.role}). Le contrat ne peut décrire qu'une façon de le ` +
-            `peindre et retient « ${known} ». Utilisez une variable par nature de layer.`,
-        );
+        pousserSansNode(warnings, `Token ${toRef(color.token)}`, {
+          manque: `il est appliqué à des layers de natures différentes selon les variants `
+            + `(${known}, ${color.role}).`,
+          impact: `Le contrat ne peut décrire qu'une façon de le peindre et retient `
+            + `« ${known} ».`,
+          action: `Utilisez une variable par nature de layer.`,
+        });
       }
     };
     relever(leaf.paints, 'fills');

@@ -3,6 +3,7 @@
  * La liaison repose uniquement sur les noms Figma exacts et les bindings de
  * visibilité, sans heuristique de position propre à un composant.
  */
+import { pousserSansNode } from './localisation';
 import { definePropOn, normalizePropKey, propByName } from './parsers';
 import type { IconLayerSummary } from './extractIconLayers';
 import type { IconRule } from './rulesModel';
@@ -29,15 +30,19 @@ function iconSlot(layer: IconLayerSummary, warnings: string[]): string | undefin
   const onlySlot = layer.slots.length === 1 ? layer.slots[0] : null;
   if (onlySlot) return onlySlot;
 
-  warnings.push(
-    layer.slots.length === 1
-      ? `Icône « ${layer.figmaLayer} » : le layer n’est pas placé directement dans l’auto ` +
-        `layout frame qui porte le gap et le padding. Le contrat ne peut pas dire où ` +
-        `l’afficher. Déplacez-le dans ce frame.`
-      : `Icône « ${layer.figmaLayer} » : le layer n’occupe pas la même place selon les ` +
-        `variants (${listValues(layer.slots, 'aucune')}). Le contrat ne peut pas dire où ` +
-        `l’afficher. Placez-le au même rang dans tous les variants.`,
-  );
+  pousserSansNode(warnings, `Icône « ${layer.figmaLayer} »`, layer.slots.length === 1
+    ? {
+      manque: `le layer n’est pas placé directement dans l’auto layout frame qui porte le `
+        + `gap et le padding.`,
+      impact: `Le contrat ne peut pas dire où l’afficher.`,
+      action: `Déplacez-le dans ce frame, puis réexportez.`,
+    }
+    : {
+      manque: `le layer n’occupe pas la même place selon les variants `
+        + `(${listValues(layer.slots, 'aucune')}).`,
+      impact: `Le contrat ne peut pas dire où l’afficher.`,
+      action: `Placez-le au même rang dans tous les variants, puis réexportez.`,
+    });
   return undefined;
 }
 
@@ -55,11 +60,12 @@ function iconSize(layer: IconLayerSummary, warnings: string[]): string | undefin
   if (onlySize) return onlySize;
   if (layer.sizes.length <= 1) return undefined;
 
-  warnings.push(
-    `Icône « ${layer.figmaLayer} » : sa taille change selon les variants ` +
-      `(${listValues(layer.sizes, 'aucune')}). Aucune taille n’est exportée. Reliez width et ` +
-      `height à la même variable dans tous les variants où le layer existe.`,
-  );
+  pousserSansNode(warnings, `Icône « ${layer.figmaLayer} »`, {
+    manque: `sa taille change selon les variants (${listValues(layer.sizes, 'aucune')}).`,
+    impact: `Aucune taille n’est exportée.`,
+    action: `Reliez width et height à la même variable dans tous les variants où le layer `
+      + `existe.`,
+  });
   return undefined;
 }
 
@@ -87,19 +93,30 @@ export function mergeIconRules(
     const key = normalizePropKey(rule.iconName);
     const layer = layers.find((candidate) => candidate.figmaLayer === rule.iconName);
     if (!layer) {
-      warnings.push(`Règle @icons « ${rule.iconName} » : aucun layer de ce nom dans le composant. Vérifiez l’orthographe dans le layer « icon » de la règle.`);
+      pousserSansNode(warnings, `Règle @icons « ${rule.iconName} »`, {
+        manque: 'aucun layer de ce nom dans le composant.',
+        impact: 'La règle est ignorée, et cette icône ne sera pas décrite.',
+        action: 'Vérifiez l’orthographe dans le layer « icon » de la règle, puis réexportez.',
+      });
       continue;
     }
     if (layer.maximumOccurrences > 1) {
-      warnings.push(
-        `Règle @icons « ${rule.iconName} » : jusqu’à ${layer.maximumOccurrences} layers ` +
-          `portent ce nom dans un même variant. La règle est ignorée. Donnez-leur des ` +
-          `noms distincts.`,
-      );
+      pousserSansNode(warnings, `Règle @icons « ${rule.iconName} »`, {
+        manque: `jusqu’à ${layer.maximumOccurrences} layers portent ce nom dans un même `
+          + `variant.`,
+        impact: `La règle est ignorée.`,
+        action: `Donnez-leur des noms distincts, puis réexportez.`,
+      });
       continue;
     }
     if (icons.has(key)) {
-      warnings.push(`Règle @icons « ${rule.iconName} » : une autre règle vise déjà un layer au nom équivalent (majuscules et tirets ignorés). Celle-ci est ignorée. Renommez l'un des deux layers ou supprimez la règle en double, puis réexportez.`);
+      pousserSansNode(warnings, `Règle @icons « ${rule.iconName} »`, {
+        manque: `une autre règle vise déjà un layer au nom équivalent (majuscules et tirets `
+          + `ignorés).`,
+        impact: `Celle-ci est ignorée.`,
+        action: `Renommez l'un des deux layers ou supprimez la règle en double, puis `
+          + `réexportez.`,
+      });
       continue;
     }
 
@@ -107,11 +124,11 @@ export function mergeIconRules(
       ? layer.visibilityProps[0] ?? undefined
       : undefined;
     if (layer.visibilityProps.length > 1) {
-      warnings.push(
-        `Icône « ${rule.iconName} » : sa visibilité dépend d’une component property ` +
-          `différente selon les variants. Le contrat n’en publie aucune. Utilisez la même ` +
-          `partout.`,
-      );
+      pousserSansNode(warnings, `Icône « ${rule.iconName} »`, {
+        manque: `sa visibilité dépend d’une component property différente selon les variants.`,
+        impact: `Le contrat n’en publie aucune.`,
+        action: `Utilisez la même partout, puis réexportez.`,
+      });
     }
     const slot = iconSlot(layer, warnings);
     const size = iconSize(layer, warnings);
@@ -130,21 +147,22 @@ export function mergeIconRules(
       ? layer.swapProps[0] ?? undefined
       : undefined;
     if (layer.swapProps.length > 1) {
-      warnings.push(
-        `Icône « ${rule.iconName} » : son remplacement dépend d’une INSTANCE_SWAP différente ` +
-          `selon les variants. Le contrat ne publie aucune prop de remplacement pour elle. ` +
-          `Utilisez la même component property partout.`,
-      );
+      pousserSansNode(warnings, `Icône « ${rule.iconName} »`, {
+        manque: `son remplacement dépend d’une INSTANCE_SWAP différente selon les variants.`,
+        impact: `Le contrat ne publie aucune prop de remplacement pour elle.`,
+        action: `Utilisez la même component property partout, puis réexportez.`,
+      });
       continue;
     }
     if (swapProp) {
       const nativeSwap = propByName(props, swapProp);
       if (nativeSwap?.type !== 'instance-swap') {
-        warnings.push(
-          `Icône « ${rule.iconName} » : le layer référence « ${swapProp} » pour son ` +
-            `remplacement, mais cette INSTANCE_SWAP n’existe pas dans les component properties ` +
-            `publiées. Corrigez sa liaison dans Figma, puis réexportez.`,
-        );
+        pousserSansNode(warnings, `Icône « ${rule.iconName} »`, {
+          manque: `le layer référence « ${swapProp} » pour son remplacement, mais cette `
+            + `INSTANCE_SWAP n’existe pas dans les component properties publiées.`,
+          impact: `Le contrat ne publie aucune prop de remplacement pour elle.`,
+          action: `Corrigez sa liaison dans Figma, puis réexportez.`,
+        });
         continue;
       }
       // Figma expose déjà exactement la liberté demandée par `@icons`. Publier
@@ -155,11 +173,11 @@ export function mergeIconRules(
     }
 
     if (visibilityProp && propByName(props, visibilityProp)?.type !== 'boolean') {
-      warnings.push(
-        `Icône « ${rule.iconName} » déclarée modifiable : « ${visibilityProp} » n'est pas ` +
-          `une boolean property du composant. Le développeur ne pourra pas la remplacer. ` +
-          `Citez une boolean property du composant, puis réexportez.`,
-      );
+      pousserSansNode(warnings, `Icône « ${rule.iconName} » déclarée modifiable`, {
+        manque: `« ${visibilityProp} » n'est pas une boolean property du composant.`,
+        impact: `Le développeur ne pourra pas la remplacer.`,
+        action: `Citez une boolean property du composant, puis réexportez.`,
+      });
       continue;
     }
 
@@ -170,11 +188,11 @@ export function mergeIconRules(
     // sinon du calque lui-même.
     const runtimeProp = `${visibilityProp ?? key}Name`;
     if (propByName(props, runtimeProp)) {
-      warnings.push(
-        `Icône « ${rule.iconName} » déclarée modifiable : le composant expose déjà une ` +
-          `component property « ${runtimeProp} ». Aucune n'est remplacée ; renommez l'une ` +
-          `des deux.`,
-      );
+      pousserSansNode(warnings, `Icône « ${rule.iconName} » déclarée modifiable`, {
+        manque: `le composant expose déjà une component property « ${runtimeProp} ».`,
+        impact: `Aucune n'est remplacée.`,
+        action: `Renommez l'une des deux, puis réexportez.`,
+      });
       continue;
     }
     const iconProp: IconProp = {

@@ -7,6 +7,8 @@
 import { normalizeName } from '@ucm-kit/core/format';
 import { collisionWarnings, firstVariableAlias, indexVariables } from '../variables';
 import { serializeJson } from '../contract/serializeJson';
+import { noterLesParties, partiesDe, pointDe, pousserSansNode } from '../contract/localisation';
+import type { PointACorriger } from '../contract/localisation';
 import type { Annonce } from '../messages';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
@@ -16,6 +18,14 @@ export type TokensExport = {
   warningCount: number;
   /** Liste des avertissements, pour affichage détaillé dans le journal de l'UI. */
   warnings: string[];
+  /**
+   * Les trois parties de chaque message, indexées par sa phrase (U4.8).
+   *
+   * Même forme que du côté du contrat : l'interface met les parties en page, la
+   * phrase reste l'identité du message. `tokens.json` n'a aucun champ où les
+   * transporter, donc elles s'arrêtent à la frontière sandbox ↔ UI.
+   */
+  parties: ReadonlyMap<string, PointACorriger>;
 };
 
 /** Erreur « métier » : son message est affiché tel quel à l'utilisateur. */
@@ -155,13 +165,23 @@ export function buildLeaf(
   const valueForMode = (modeId: string): unknown => {
     const raw = variable.valuesByMode[modeId];
     if (raw === undefined) {
-      warnings.push(`Variable « ${variable.name} » : un de ses modes n’a pas de valeur. Ce mode est exporté vide ; donnez-lui une valeur dans Figma.`);
+      pousserSansNode(warnings, `Variable « ${variable.name} »`, {
+        manque: 'un de ses modes n’a pas de valeur.',
+        impact: 'Ce mode est exporté vide.',
+        action: 'Donnez-lui une valeur dans Figma.',
+      });
       return null;
     }
     const alias = firstVariableAlias(raw);
     if (alias) {
       const target = pathById.get(alias.id);
-      if (!target) warnings.push(`Variable « ${variable.name} » : elle référence une variable introuvable. Aucune référence n’est écrite ; reliez-la de nouveau.`);
+      if (!target) {
+        pousserSansNode(warnings, `Variable « ${variable.name} »`, {
+          manque: 'elle référence une variable introuvable.',
+          impact: 'Aucune référence n’est écrite.',
+          action: 'Reliez-la de nouveau.',
+        });
+      }
       return target ? `{${target}}` : null;
     }
     return formatValue(raw, variable.resolvedType, rootPath, root.scopes);
@@ -215,7 +235,11 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
     const existing = own(node, key);
     // Un groupe ne peut pas traverser une feuille existante.
     if (existing && '$value' in existing) {
-      warnings.push(`Token « ${path} » : un token porte déjà ce nom plus haut dans l’arborescence. Il n’est pas exporté ; renommez ou déplacez l’un des deux.`);
+      pousserSansNode(warnings, `Token « ${path} »`, {
+        manque: 'un token porte déjà ce nom plus haut dans l’arborescence.',
+        impact: 'Il n’est pas exporté.',
+        action: 'Renommez ou déplacez l’un des deux.',
+      });
       return;
     }
     if (!existing) set(node, key, {});
@@ -225,11 +249,18 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
   const lastKey = segments[segments.length - 1];
   const existing = own(node, lastKey);
   if (existing) {
-    warnings.push(
-      '$value' in existing
-        ? `Token « ${path} » : un autre token porte déjà ce nom. Seul le premier est exporté ; renommez le second.`
-        : `Token « ${path} » : un groupe de tokens porte déjà ce nom. Un token ne peut pas être à la fois une valeur et un groupe. Il n’est pas exporté ; renommez ou déplacez l’un des deux.`,
-    );
+    pousserSansNode(warnings, `Token « ${path} »`, '$value' in existing
+      ? {
+        manque: 'un autre token porte déjà ce nom.',
+        impact: 'Seul le premier est exporté.',
+        action: 'Renommez le second.',
+      }
+      : {
+        manque: 'un groupe de tokens porte déjà ce nom.',
+        impact: 'Un token ne peut pas être à la fois une valeur et un groupe. Il n’est pas '
+          + 'exporté.',
+        action: 'Renommez ou déplacez l’un des deux.',
+      });
     return;
   }
   set(node, lastKey, leaf);
@@ -243,25 +274,26 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
  * Contrôlé une fois par collection, jamais dans `buildLeaf` : le même message
  * y serait répété pour chacune des centaines de variables de la collection.
  */
-export function modeCollisionWarnings(collections: VariableCollection[]): string[] {
-  const warnings: string[] = [];
+export function modeCollisionWarnings(collections: VariableCollection[]): PointACorriger[] {
+  const points: PointACorriger[] = [];
 
   for (const collection of collections) {
     const seen = new Set<string>();
     for (const mode of collection.modes) {
       const name = normalizeName(mode.name);
       if (seen.has(name)) {
-        warnings.push(
-          `Collection « ${collection.name} » : deux de ses modes donnent le même nom ` +
-            `« ${name} ». Seul le premier est exporté ; renommez l'un des deux.`,
-        );
+        points.push(pointDe(`Collection « ${collection.name} »`, {
+          manque: `deux de ses modes donnent le même nom « ${name} ».`,
+          impact: 'Seul le premier est exporté.',
+          action: `Renommez l'un des deux.`,
+        }));
         continue;
       }
       seen.add(name);
     }
   }
 
-  return warnings;
+  return points;
 }
 
 /** Point d'entrée de la commande : exporte toutes les variables locales en DTCG. */
@@ -318,7 +350,12 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
   const { pathById, variableByPath } = index;
   // Cette commande exporte TOUTES les variables : elle signale donc toutes les
   // collisions, là où l'export composant ne signale que celles qu'il rencontre.
-  const warnings: string[] = [...modeCollisionWarnings(collections), ...collisionWarnings(index)];
+  // Les collisions arrivent déjà découpées : elles sont poussées par le même
+  // chemin que les autres, pour que leurs parties entrent au registre.
+  const warnings: string[] = [];
+  for (const point of [...modeCollisionWarnings(collections), ...collisionWarnings(index)]) {
+    warnings.push(noterLesParties(warnings, point));
+  }
   const ctx = { collectionById, variableById, pathById };
 
   // Parcourir l'index plutôt que la liste brute : une variable écartée pour
@@ -327,7 +364,12 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
   for (const [path, variable] of variableByPath) {
     const collection = collectionById.get(variable.variableCollectionId);
     if (!collection) {
-      warnings.push(`Variable « ${variable.name} » : sa collection est introuvable, elle n’est pas exportée. Vérifiez que cette variable appartient à une collection du fichier, puis réexportez.`);
+      pousserSansNode(warnings, `Variable « ${variable.name} »`, {
+        manque: 'sa collection est introuvable.',
+        impact: 'Elle n’est pas exportée.',
+        action: 'Vérifiez que cette variable appartient à une collection du fichier, puis '
+          + 'réexportez.',
+      });
       continue;
     }
     insert(tree, path, buildLeaf(variable, collection, ctx, warnings), warnings);
@@ -338,6 +380,7 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
     content: serializeJson(tree),
     warningCount: warnings.length,
     warnings,
+    parties: partiesDe(warnings),
   };
 }
 

@@ -10,6 +10,7 @@
  * Règle d'or : le mapping se décide sur les VALEURS ou le RÔLE, jamais sur
  * le nom d'un composant — aucun cas particulier codé en dur.
  */
+import { pousserSansNode } from './localisation';
 import type {
   RenderingRole,
   RenderingSemantics,
@@ -118,7 +119,12 @@ export function buildStateModel(
     const selector = known ? STATE_SELECTORS[value] : '';
     states.set(value, selector ? { selector } : {});
     if (!known) {
-      warnings.push(`Variant property « ${axis} » : l'état « ${value} » n'est pas reconnu, le contrat ne dira pas quand l'afficher. États reconnus : default, hover, focus, press, disable. Renommez cette valeur avec l'un d'eux, puis réexportez.`);
+      pousserSansNode(warnings, `Variant property « ${axis} »`, {
+        manque: `l'état « ${value} » n'est pas reconnu.`,
+        impact: `Le contrat ne dira pas quand l'afficher. États reconnus : default, hover, `
+          + `focus, press, disable.`,
+        action: `Renommez cette valeur avec l'un d'eux, puis réexportez.`,
+      });
     }
   }
 

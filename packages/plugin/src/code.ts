@@ -245,15 +245,30 @@ async function analyser(
     });
 
     // Un seul canal depuis U4.7 : ce qui remonte ici demande un geste dans
-    // Figma. Chaque message porte, quand son sujet désigne un node, OÙ regarder
-    // (U4.3) — l'absence est une réponse, pas un trou : voir `localisation.ts`.
-    const ou = (texte: string): { nodeId?: string } => {
-      const nodeId = (result as { localisations?: ReadonlyMap<string, string> })
-        .localisations?.get(texte);
-      return nodeId ? { nodeId } : {};
+    // Figma. Chaque point porte ses TROIS parties (U4.8) et, quand son sujet
+    // désigne un node, OÙ regarder (U4.3) — l'absence est une réponse, pas un
+    // trou : voir `localisation.ts`.
+    //
+    // Les deux relevés sont indexés par la PHRASE, parce que c'est elle
+    // l'identité d'un message dans tout le moteur. Le sandbox ne recompose donc
+    // rien : il transmet ce que l'export a déjà écrit.
+    const registre = result as {
+      localisations?: ReadonlyMap<string, string>;
+      parties?: ReadonlyMap<string, { titre: string; impact: string; action: string }>;
     };
     for (const warning of result.warnings ?? []) {
-      versUi({ type: 'diagnostic', texte: warning, ...ou(warning) });
+      const point = registre.parties?.get(warning);
+      // Une loi de `tests/loiDesParties.test.ts` refuse un message sans parties.
+      // Le repli ne les invente pas : il met la phrase entière en titre, où elle
+      // se lit encore, plutôt que de perdre le message.
+      const nodeId = registre.localisations?.get(warning);
+      versUi({
+        type: 'diagnostic',
+        titre: point?.titre ?? warning,
+        impact: point?.impact ?? '',
+        action: point?.action ?? '',
+        ...(nodeId ? { nodeId } : {}),
+      });
     }
 
     analyseGardee = {

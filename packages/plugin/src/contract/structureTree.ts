@@ -28,7 +28,8 @@ import { estUnTrace, getBinding } from './nodeBindings';
 import { assignSlots, isIconLayer } from './slotNames';
 import type { SlotAssignment } from './slotNames';
 import { composedSlotDependencies } from './slotRelations';
-import { sujet } from './localisation';
+import { pointDe, sujet } from './localisation';
+import type { PointACorriger } from './localisation';
 
 /**
  * Profondeur maximale de `structure.children`.
@@ -216,11 +217,14 @@ export function depthLimitWarning(
   iconNames: ReadonlySet<string>,
   composed: ComposedInstances,
   depth: number,
-): string | null {
+): PointACorriger | null {
   if (depth < MAX_STRUCTURE_DEPTH) return null;
   if (informationDescendants(node, iconNames, composed).length === 0) return null;
-  return `${sujet('Layer', node).texte} : il est imbriqué au-delà de ${MAX_STRUCTURE_DEPTH} niveaux, `
-    + `la profondeur maximale que le contrat décrit. Son contenu ne recevra ni slot, ni `
-    + `typographie, ni visibilité, et le développeur ne le rendra pas. Remontez ce layer ou `
-    + `découpez le composant, puis réexportez.`;
+  return pointDe(sujet('Layer', node).texte, {
+    manque: `il est imbriqué au-delà de ${MAX_STRUCTURE_DEPTH} niveaux, la profondeur `
+      + `maximale que le contrat décrit.`,
+    impact: `Son contenu ne recevra ni slot, ni typographie, ni visibilité, et le développeur `
+      + `ne le rendra pas.`,
+    action: `Remontez ce layer ou découpez le composant, puis réexportez.`,
+  });
 }

@@ -1113,7 +1113,7 @@ réparent pas ce défaut de fond.
       verte : 495 tests côté plugin (809 au total), `typecheck` et `build`
       compris.
 
-- [ ] **U4.8 — Faire d'un vrai problème une carte actionnable.** Le groupe
+- [X] **U4.8 — Faire d'un vrai problème une carte actionnable.** Le groupe
       « Constats » disparaît. L'écran n'affiche plus que « À corriger dans
       Figma (N) » lorsque N est supérieur à zéro, puis « Publication ». Un
       export sain ne montre donc aucun groupe de diagnostic : son verdict et sa
@@ -1137,6 +1137,59 @@ réparent pas ce défaut de fond.
       publiée dans `meta.diagnostics` et dans la pull request se dérive du même
       modèle, conformément à `CONTRIBUTING.md` : fait, impact, action, sans
       seconde rédaction.
+
+      *Faite le 6 septembre 2026.* **Le modèle a trois parties, pas quatre :** la
+      pastille n'est pas une donnée, c'est la sévérité rendue lisible, et elle
+      n'a qu'une valeur tant que le rouge vit dans le verdict. Ce qui voyage est
+      donc `{ titre, impact, action }` — plus le node quand le sujet en désigne
+      un.
+
+      **Le geste est un refactor de quatre-vingt-dix sites, et c'était la
+      tâche.** Un site n'écrit plus une phrase : il écrit un `Constat`
+      — `{ champ?, manque, impact, action }` —, et `localisation.ts` en compose
+      le titre puis la phrase compacte. La phrase reste l'identité d'un message
+      partout ailleurs dans le moteur, parce que quatre dédoublonnages en
+      vivent ; les parties suivent donc le même chemin que les cibles de U4.3,
+      dans un registre indexé par le canal, reporté par `reporterLocalisations`.
+      Aucun canal ne change de type, et le dédoublonnage n'est pas touché.
+
+      **Deux lois, et chacune est aveugle là où l'autre regarde.** Celle de
+      SOURCE refuse qu'un message s'écrive ailleurs qu'à l'autorité : elle rougit
+      à la seconde où un littéral part dans un canal, qu'un test l'atteigne ou
+      non — c'est elle qui couvre les quatre-vingt-dix sites. Celle d'EXÉCUTION
+      vérifie que ce qui SORT porte ses parties, et que la phrase en dérive
+      exactement : un site peut passer par l'autorité et perdre son registre
+      dans une recopie de canal, ce que la source ne voit pas. Les deux ont été
+      vues rouges avant d'être crues.
+
+      *Ce que la loi a trouvé, et que personne n'aurait vu autrement :* **six
+      messages ne respectaient pas la doctrine que `CONTRIBUTING.md` écrit depuis
+      le début.** « Le component set ne contient aucun variant », « le composant
+      n'expose aucune component property », « aucun conteneur X-Rules », « aucun
+      auto layout frame trouvé » et deux autres n'avaient ni impact, ni geste, ou
+      les deux fondus dans une seule proposition. La règle était tenue à la main
+      depuis toujours, donc elle ne l'était pas partout. C'est l'argument de
+      fond pour un modèle plutôt qu'une convention de rédaction.
+
+      *Ce qui a changé en chemin, et qu'il faut lire :* une trentaine de messages
+      ont été reformulés — jamais leur sens, seulement leur découpe. Un
+      « ; renommez la seconde » devient « . Renommez la seconde. », parce qu'une
+      action est une phrase et non la fin d'une autre. Les tests qui citaient ces
+      textes ont suivi ; aucun n'a été affaibli.
+
+      *La carte, côté interface :* pastille ambre « À corriger », titre en gras,
+      conséquence en texte secondaire, geste en texte de lecture, puis un bouton
+      secondaire « Afficher dans Figma » quand le node est connu. La phrase
+      entière n'est plus cliquable — un bloc de trois phrases dont rien ne dit ce
+      que le clic déclenche n'est pas une cible. Le fond et le liseré portent la
+      sévérité ; le poids et la position portent la hiérarchie ; le texte reste
+      dans la couleur de lecture, parce que le peindre en ambre à son tour
+      ferait porter deux fois le même signal.
+
+      *Documents :* `CONTRIBUTING.md` (la forme unitaire devient un `Constat`, et
+      la phrase compacte s'en dérive), `AGENTS.md` (un invariant ajouté),
+      `packages/plugin/SPEC.md`. *Suite verte : 498 tests côté plugin (812 au
+      total), `typecheck` et `build` compris.*
 
 - [ ] **U4.9 — Prouver le résultat dans Figma et dans la galerie.** Ajouter
       l'état « Stresstest, transformations normales » : les sept cas ci-dessus
@@ -1272,17 +1325,7 @@ réparent pas ce défaut de fond.
 
 ## Phase U6 — À décider avant d'être fait
 
-- [ ] **U6.1 — Historique local des exports.** Les derniers exports —
-      composant, date, chemin, pull request — rangés dans `figma.clientStorage`,
-      pour retrouver la pull request d'hier que le journal a perdue à la
-      fermeture du plugin. À arbitrer : c'est de la donnée locale qui **périme**
-      — une pull request fusionnée, une branche supprimée — donc un état de plus
-      à entretenir, et une source d'affirmations fausses. À ne pas ouvrir avant
-      que U3.0 ait montré si le besoin subsiste : savoir qu'une pull request est
-      ouverte pour ce composant est la moitié utile du besoin, et elle se lit
-      dans le dépôt, pas dans une mémoire locale.
-
-- [ ] **U6.2 — Passer l'UI en TypeScript.** `build:ui:js` fait déjà passer
+- [ ] **U6.1 — Passer l'UI en TypeScript.** `build:ui:js` fait déjà passer
       `src/ui/index.js` par esbuild : renommer en `.ts` coûte presque rien, et le
       type unique de U0.6 contraindrait alors les deux côtés au lieu d'un seul.
       Contre : l'UI est volontairement légère et sans outillage. À décider une
