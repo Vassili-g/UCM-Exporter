@@ -302,6 +302,13 @@ Le raisonnement vit dans la spécification, en lien.
   une icône s’affiche, la prop runtime dit LAQUELLE rendre. Une icône toujours
   visible est modifiable comme une autre, sans booléen et sans signalement.
   → [spec](./docs/FORMAT.md#7-intention-et-documentation-des-props)
+- Le contrat donne le CARRÉ d’une icône, jamais son dessin ni de quoi le
+  trouver : il ne nomme aucun jeu d’icônes, ne porte aucune correspondance vers
+  l’identifiant d’un tel jeu, et ne dit rien de la taille du glyphe à
+  l’intérieur de ce carré. Ces trois décisions appartiennent au repository
+  consommateur (T3.1), et `ucm icons` est leur contrepartie : elle énumère ce
+  qu’il y a à couvrir, jamais ce qui est couvert.
+  → [spec](./docs/FORMAT.md#ce-que-le-contrat-ne-dit-pas-dune-icône)
 
 ### Layout, dimensions et bornes
 
