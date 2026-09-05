@@ -2107,15 +2107,16 @@ suspendue : c'est une décision datée.
   `docs/FORMAT.md`, le moteur dans `packages/plugin/SPEC.md`. Restent
   `CHANGELOG-CONTRAT.md` (25 Ko) et `CONTRAT-CONSOMME.md`, qui vivent chez le
   consommateur — c'est T8.4 ;
-- `CHANGELOG-CONTRAT.md` s'arrête à la 11.0 : il a cessé d'être tenu au moment
-  où le producteur a avancé ;
-- le skill `rediger-diagnostics-ucm` existe en **deux versions divergentes**,
-  une par repo, même nom et même chemin ; celle de l'Exporter porte une règle
-  absente de l'autre ;
+- ~~`CHANGELOG-CONTRAT.md` s'arrête à la 11.0~~ — **faux depuis, vérifié le
+  5 septembre 2026 (R4)** : il porte une entrée `12.0` et sa plage y est
+  refermée. Ce qui reste vrai de lui est son domicile, et c'est T8.4 ;
+- ~~le skill `rediger-diagnostics-ucm` existe en **deux versions
+  divergentes**~~ — **résolu par T8.5** (5 septembre 2026) : même texte des deux
+  côtés, à l'adresse de la charte près, et un test les compare ;
 - le « document de conventions du projet » que réclame le skill
   `consommer-contrat` n'existe pas ;
-- un ancrage du skill promet une commande de contrôle ciblée sur un composant
-  qui n'existe pas.
+- ~~un ancrage du skill promet une commande de contrôle ciblée sur un composant
+  qui n'existe pas~~ — **résolu par T8.6** (5 septembre 2026).
 
 ### 8.2 — Rangement cible, réduit
 
@@ -2143,7 +2144,10 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       voisine qui explique ce que le moteur refusait de trancher est du moteur.
       La découpe traverse donc les paragraphes.
       **Le risque est de perdre une règle sans le voir**, et une relecture à
-      l'œil des 1 604 lignes du document ne le couvre pas. D'où deux temps, dont seul le
+      l'œil du document ne le couvre pas — il faisait **1 651 lignes** le jour
+      de la scission, et c'est ce chiffre-là qui compte, pas les 1 604 que
+      portait cet énoncé (recompté par R6 : le document avait grossi entre
+      l'écriture de la tâche et son exécution). D'où deux temps, dont seul le
       premier touche au contenu :
       1. **Partition mécanique, sans réécrire un mot.** Chaque ligne de la
          spécification actuelle part dans l'un des deux documents, telle quelle.
@@ -2242,13 +2246,40 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       avec eux — sans quoi elle serait exactement la sorte d'affirmation périmée
       que le préalable T0 balise.
 - [ ] **T8.4 — Traiter les trois orphelins du Playground.**
+      *Chiffres revérifiés le 5 septembre 2026 (R6), et ils tiennent tous les
+      trois* — `CHANGELOG-CONTRAT.md` a bien 4 renvois (`AGENTS.md` ×2,
+      `CONTRIBUTING.md`, `README.md`), `schema/README.md` existe, et le renvoi
+      vers `CONTRAT-CONSOMME.md` est toujours à la ligne 25 : il a suivi
+      `version-contrat.mjs` dans le kit, où il est **publié sur npm**.
+      *Une correction est due et n'a pas été faite ici, faute d'être gratuite :*
+      ce commentaire devrait viser `docs/FORMAT.md`, qui vit dans le même dépôt
+      que le kit. Le corriger change un fichier publiable, donc exige de monter
+      le numéro du paquet et de le republier (`versionSuitLeContenu.test.mjs`
+      l'impose). Cela se fait avec le reste de T8.4, pas pour un commentaire
+      seul.
       `CONTRAT-CONSOMME.md` est cité par **`version-contrat.mjs:25`**, un
       fichier que T2.1 déplace « tel quel » dans le kit : le paquet publié
       porterait un renvoi vers un document supprimé d'un autre repo. Idem pour
       `CHANGELOG-CONTRAT.md` (4 renvois) et `schema/README.md`, dont la
       suppression entraîne `schema-contrat.mjs`, son test et
       `.vscode/settings.json`.
-- [ ] **T8.5 — Fusionner les deux `rediger-diagnostics-ucm`.**
+- [X] **T8.5 — Fusionner les deux `rediger-diagnostics-ucm`.**
+      **Faite le 5 septembre 2026, et la question « laquelle fait autorité »
+      n'avait pas à être tranchée** : les deux versions ne sont pas symétriques.
+      Celle du Playground avait PERDU deux règles — « un message qui ne demande
+      aucun geste est une NOTE, et part dans `infos`, jamais dans `warnings` »,
+      et la forme de l'avertissement unitaire. Rien n'avait décidé de les
+      retirer. Le texte de l'Exporter est donc le texte, et la fusion est une
+      restitution.
+      *Deux copies restent, et c'est délibéré :* un skill se charge depuis le
+      repository où l'on travaille, et des messages destinés au designer
+      s'écrivent encore des deux côtés. C'est la même réponse que pour
+      `schema/ucm-contract.schema.json`, copié lui aussi — **ce n'est pas la
+      copie qui est dangereuse, c'est la copie que rien ne compare.**
+      `scripts/skill-diagnostics.test.mjs` les compare caractère par caractère,
+      **aux adresses de lien près** : la charte vit dans l'Exporter, le
+      Playground la joint par un chemin plus long, et une adresse n'est pas une
+      règle — l'exception que la scission de T8.1 s'était déjà accordée.
 - [X] **T8.6 — Retirer l'ancrage du skill** qui promet une commande inexistante
       (une ligne), plutôt qu'ouvrir un chantier `process.argv`.
       **Faite le 5 septembre 2026**, en marge de R3 et R4 : c'était la dernière
@@ -2267,10 +2298,28 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       unique, corriger au fond les contradictions listées ci-dessous, et
       **vérifier qu'aucune balise de T0.1 ne subsiste** : une balise qui survit
       à sa cause devient à son tour une information périmée.
-- [ ] **T8.9 — Doter le Playground d'un test de liens.** Il n'en a aucun, et ses
+- [X] **T8.9 — Doter le Playground d'un test de liens.** Il n'en a aucun, et ses
       renvois croisés vers l'Exporter (dont un skill qui pointe
       `../../../../UCM-Exporter/CONTRIBUTING.md`) supposent deux clones frères
       sans que rien ne le vérifie.
+      **Faite le 5 septembre 2026**, et la tâche s'est justifiée d'elle-même :
+      la veille, la scission de la spécification avait cassé un renvoi
+      d'`AGENTS.md` du Playground vers `UCM-EXPORTER-SPEC.md`, et personne ne
+      l'avait vu — l'Exporter, lui, a routé ses propres renvois dans le commit
+      de la scission parce qu'un test le forçait.
+      *La décision qui compte est celle du clone frère :* le test **l'exige** au
+      lieu de sauter les liens qu'il ne peut pas suivre. Sauter aurait rendu le
+      contrôle vert exactement dans le cas qu'il existe pour couvrir. La CI du
+      Playground clone donc l'Exporter à côté d'elle, et la supposition « deux
+      clones frères » cesse d'en être une.
+      *Vu rouge avant d'être cru, deux fois :* au premier lancement il a trouvé
+      une ancre morte (`#7-samples--le-contenu-que-la-maquette-montre`, un titre
+      que le skill `consommer-contrat` ne porte plus), et une sonde temporaire a
+      vérifié qu'il attrape aussi bien un fichier absent qu'une ancre absente de
+      l'autre côté de la frontière.
+      *Trois chemins vieillis sont tombés avec :* la spécification scindée,
+      `UCM-Exporter/schema/` devenu `packages/kit/schema/`, et le message
+      d'échec du test de schéma.
 - [ ] **T8.10 — Documenter la responsabilité « icônes » du consommateur (T3.1).**
       Un contrat publie le `figmaName` d'une icône et rien d'autre : ni kit, ni
       correspondance, ni taille de glyphe. Traduire ce nom vers un jeu d'icônes
@@ -2339,33 +2388,38 @@ deux tâches attend la Phase 8.
       5 septembre 2026** : la description du format vit dans `docs/FORMAT.md`, et
       la section « État » du README a désormais un endroit où aller. Les deux
       contradictions bornées de cette tâche avaient déjà été traitées le 4.
-      *Ce qui ne va pas, vérifié :*
-      - **il se contredit lui-même, aujourd'hui.** La carte de l'architecture
-        annonce `fixtures/ — Contrats d'une version que le moteur ne fabrique
-        plus` (`:76`), et la section « État » affirme « Ce repository ne contient
-        aucun artefact de contrat » (`:131`). Cinquante-cinq lignes d'écart. La
-        seconde phrase est celle que T7.0 vient de réécrire dans `AGENTS.md` : le
-        README est resté sur l'ancienne règle. **C'est une contradiction créée
-        par le commit de T7.0**, et elle n'a pas de balise parce qu'aucune
-        n'était prévue pour un document que la tâche ne visait pas.
-      - **`packages/kit/` y est décrit « Ne dépend de personne »** (`:72`),
-        alors que le paquet dépend d'`ajv`. C'est le SOUS-CHEMIN `format` qui ne
-        dépend de rien, pas le paquet — et cette nuance est exactement celle que
-        toute l'architecture protège.
+      *Ce qui ne va pas — **la liste a été rejouée le 5 septembre 2026 (R6), et
+      quatre des six constats étaient déjà faux**. Ils sont barrés plutôt que
+      supprimés : une tâche ouverte qui décrit un fichier d'avant-hier est ce que
+      R6 existe pour attraper, et l'effacer sans trace ne l'empêcherait pas de
+      recommencer.*
+      - ~~**il se contredit lui-même, aujourd'hui.** La carte de l'architecture
+        annonce `fixtures/`, et la section « État » affirme « Ce repository ne
+        contient aucun artefact de contrat ».~~ **Traité le 4 septembre** : la
+        seconde phrase n'est plus dans le README.
+      - ~~**`packages/kit/` y est décrit « Ne dépend de personne »**, alors que
+        le paquet dépend d'`ajv`.~~ **Traité le 4 septembre** : la carte
+        attribue désormais l'absence de dépendance au SOUS-CHEMIN `format`, pas
+        au paquet.
       - **c'est un document de contributeur, pas une vitrine.** Commandes de
-        build, identifiant placeholder du manifest, `enablePrivatePluginApi` :
-        du `CONTRIBUTING.md` dans le premier écran.
+        build et chargement du manifest arrivent avant tout ce qu'un visiteur
+        cherche. *Toujours vrai*, à une nuance près : `enablePrivatePluginApi`
+        n'y est plus une consigne de contributeur mais l'explication d'un choix
+        de distribution (T4.4).
       - **rien à voir.** Un outil qui exporte des composants ne montre aucun
         extrait de contrat, aucune capture. Le lecteur ne sait pas à quoi
-        ressemble ce qu'il produirait.
-      - **la section « État » est un condensé de spécification** —
+        ressemble ce qu'il produirait. *Toujours vrai, et c'est le principal.*
+      - ~~**la section « État » est un condensé de spécification** —
         `rendering.keyRoles`, « cinq renvois indépendants », élision des valeurs
-        neutres. Elle appartient au document de format que T8.1 crée.
-      - **le paquet publié n'est mentionné nulle part** comme étant installable.
-      *Borne :* corriger les deux contradictions ci-dessus ne demande pas
-      d'attendre T8.1 et ne doit pas attendre — une règle fausse dans le premier
-      fichier que lit un visiteur est exactement ce que le préalable T0
-      combattait. Les traiter dès maintenant, le reste avec la Phase 8.
+        neutres.~~ **Aucune de ces trois expressions n'est plus dans le
+        fichier**, et la section a été réécrite par R5.
+      - ~~**le paquet publié n'est mentionné nulle part** comme étant
+        installable.~~ **Faux depuis le 4 septembre** : `npm install
+        @ucm-kit/core` et deux commandes `npx @ucm-kit/cli` y figurent.
+      *Borne :* les deux contradictions bornées sont traitées, et R5 a corrigé la
+      section « État », qui en portait une troisième. **Ce qui reste de T8.12 est
+      la vitrine elle-même** — montrer un contrat, mettre le visiteur avant le
+      contributeur — et cela seul.
 
 ---
 
@@ -2538,11 +2592,35 @@ le worktree bougeait sous la mesure.
       *Trois constats de T8.12 sont tombés en même temps*, et ils étaient déjà
       faux avant cette tâche — voir R6.
 
-- [ ] **R6 — Les chiffres de ce plan ont vieilli.** T8.1 mesure 1 604 lignes une
+- [X] **R6 — Les chiffres de ce plan ont vieilli.** T8.1 mesure 1 604 lignes une
       spécification qui n'en fait plus autant, à un chemin qui a changé ; des
       tâches encore ouvertes portent des constats déjà exécutés.
       **Rechercher d'abord :** recompter chaque chiffre au moment de prendre la
       tâche. Un chiffre daté dans ce plan est un souvenir, pas une mesure.
+      **Faite le 5 septembre 2026, et bornée à ce qui peut encore tromper
+      quelqu'un : les tâches OUVERTES.** Un chiffre dans une tâche close est un
+      compte rendu daté — il dit ce qui a été mesuré ce jour-là, et le rejuger
+      n'apprendrait rien. Un chiffre dans une tâche ouverte est une instruction :
+      celui qui la prend s'en sert pour décider, et s'il est faux il décide mal.
+      *Ce qui a été recompté, et ce que ça a donné :*
+      - **T8.1** annonçait 1 604 lignes ; le document en faisait **1 651** le
+        jour de la scission. Il avait grossi entre l'écriture de la tâche et son
+        exécution.
+      - **T8.4** tient sur ses trois chiffres, vérification faite — et son
+        renvoi `version-contrat.mjs:25` est toujours juste, à ceci près que le
+        fichier vit maintenant dans le kit, **donc dans un paquet publié**.
+      - **T8.12** portait six constats, dont **quatre déjà faux** : deux traités
+        le 4 septembre, un tombé avec R5, un devenu faux à la publication du
+        paquet. Ils sont barrés sur place plutôt qu'effacés.
+      - **L'inventaire 8.1** portait trois constats devenus faux, tombés avec
+        R4, T8.5 et T8.6.
+      *La leçon, et elle n'est pas « recompter » :* aucun de ces chiffres n'était
+      faux quand il a été écrit. Ils ont vieilli parce que **le plan enregistre
+      un état du dépôt dans une tâche qui, par construction, s'exécute plus
+      tard**. La règle 5 dit déjà de ne pas citer de numéro de ligne pour de la
+      prose ; ce qu'R6 ajoute est plus simple — **un constat dans une tâche
+      ouverte se relit avant de s'en servir, et se barre sur place quand il est
+      tombé.**
 
 - [ ] **R7 — ⚠ La CI du seul consommateur réel est rouge, et elle l'est depuis
       le 4 septembre 2026.** *Trouvé par R2, le 5 septembre.* `npm run build`

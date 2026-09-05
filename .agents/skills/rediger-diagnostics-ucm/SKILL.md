@@ -5,8 +5,9 @@ description: Rédiger ou revoir les erreurs, avertissements et rapports CI desti
 
 # Rédiger un diagnostic UCM
 
-Lire la section « Messages destinés au designer » dans
-[`CONTRIBUTING.md`](../../../CONTRIBUTING.md) avant de modifier un message.
+Lire la section « Messages destinés au designer » du [`CONTRIBUTING.md` de
+l’exporteur](../../../CONTRIBUTING.md) avant de modifier un message : c’est l’autorité unique sur la
+forme d’un diagnostic, et ce fichier-ci n’en est qu’une procédure d’application.
 
 Identifier d’abord le fait prouvé, les éléments concernés, la personne qui peut
 corriger, l’action nécessaire et le caractère bloquant. Ne pas déduire une
