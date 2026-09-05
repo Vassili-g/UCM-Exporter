@@ -1,11 +1,23 @@
 /**
  * Les lois qu'un contrat doit tenir, quelle que soit sa provenance.
  *
- * Elles ne vivent pas dans un fichier de test parce qu'elles servent DEUX
- * lecteurs : chaque contrat que le moteur fabrique pendant `npm test`, et les
- * exports réels du corpus. Le premier est le filet de régression — il change
- * dès que le code change. Le second constate que de vraies données Figma les
- * satisfont aussi, ce qu'aucun montage synthétique ne peut prouver.
+ * Elles ne vivent pas dans un fichier de test parce qu'elles étaient prévues
+ * pour DEUX lecteurs : chaque contrat que le moteur fabrique pendant
+ * `npm test`, et les exports réels du corpus.
+ *
+ * **Le second n'existe pas, et ce commentaire l'a affirmé jusqu'au
+ * 5 septembre 2026.** Le seul importateur de ce fichier est
+ * `exportComponent.test.ts` ; `packages/kit/fixtures/contrats/11.0/` n'est lu
+ * par aucune loi. Le filet est donc SIMPLE : il ne porte que des montages
+ * synthétiques, et rien ici ne constate que de vraies données Figma les
+ * satisfont — ce qu'aucun montage synthétique ne peut prouver, et qui reste
+ * donc à prouver.
+ *
+ * La limite est écrite plutôt que corrigée parce que la corriger est une
+ * décision, pas un oubli : brancher le corpus figé sur ces lois demande de
+ * savoir ce qu'on fait d'un jeu N‑1 que le moteur ne sait plus fabriquer. Un
+ * commentaire qui annonce une couverture absente est pire que la couverture
+ * absente : il fait renoncer à la chercher.
  *
  * Aucune loi ici ne connaît le nom d'un composant : elles se lisent sur la
  * forme du contrat, jamais sur ce qu'il décrit.
