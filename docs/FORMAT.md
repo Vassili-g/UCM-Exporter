@@ -10,15 +10,6 @@ produire tout ceci vit dans
 Le vocabulaire est celui du contrat : « le moteur » désigne le plugin qui
 l'écrit, « le consommateur » le repository qui l'implémente.
 
-> ⚠ **Scission en cours (T8.1, temps 1).** Ce document et
-> [SPEC.md](../packages/plugin/SPEC.md) viennent d'une spécification unique,
-> partitionnée **ligne à ligne, sans qu'un mot soit réécrit**. Les paragraphes
-> qui parlaient des deux sujets à la fois sont pour l'instant **dans les deux
-> fichiers** : `tests/scissionSpec.test.mjs` prouve qu'aucune ligne n'a été
-> perdue et compte ce qui reste dupliqué. Le temps 2 résorbe ces doublons un
-> paragraphe à la fois. Tant qu'il dure, une règle lue ici peut avoir sa jumelle
-> là-bas — elles sont identiques au caractère près.
-
 Le moteur conserve la traçabilité Figma tout en exprimant la sémantique
 visuelle dans un vocabulaire stable. Les assets et l’API applicative restent
 du ressort du repository consommateur.
@@ -53,9 +44,7 @@ segments qui les séparent, et aucune couleur n'est perdue.
 
 ---
 
-**Entrée** : exactement un `COMPONENT` ou un `COMPONENT_SET` sélectionné. Les
-règles `<Nom>-Rules` enrichissent l'intention mais ne conditionnent pas la
-fidélité de l'export. Un set clairsemé n'est pas complété artificiellement : le
+Un set clairsemé n'est pas complété artificiellement : le
 champ `variants` publie uniquement les combinaisons réellement présentes et un
 diagnostic nomme l'écart avec le produit cartésien des axes. Un consommateur
 compose les enums avec cette liste exacte ; il ne présume jamais que leur
@@ -331,13 +320,9 @@ froid, en styles inline, reproduit les mêmes états via des événements.
 
 #### 5. Typographie
 
-Chaque calque texte de chaque variant doit porter un text
-style Figma unique. Le moteur lit l'objet `TextStyle`, conserve son nom exact
-dans `textStyles.<clé>.figmaName`, puis résout ses `boundVariables` :
-`fontFamily`, `fontSize`, `fontWeight` (fallback `fontStyle`), `lineHeight` et
-`letterSpacing`. La clé du catalogue est le nom normalisé du style ; aucun lien
-vers les tokens n'est déduit de ce nom. Chaque propriété non liée produit un
-warning et n'est jamais remplacée par une valeur brute.
+Comment un text style est LU dans Figma, et ce dont le moteur avertit quand une
+propriété n'est pas liée, est décrit par
+[5. Typographie](../packages/plugin/SPEC.md#5-typographie).
 
 Chaque `variantViews.*.typography` liste `{ slotPath, style }` pour situer le
 style de chaque texte dans la structure de cette même vue. `slotPath` est une
