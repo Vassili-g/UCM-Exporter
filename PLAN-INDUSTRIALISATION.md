@@ -2447,7 +2447,7 @@ le worktree bougeait sous la mesure.
       Mesuré aux deux pins, `0.1.5` et `0.1.10` : identique. C'est le corpus qui
       a divergé de son contrat — voir R7.
 
-- [ ] **R3 — Deux des trois balises restantes ont perdu leur cause.** T0.3 exige
+- [X] **R3 — Deux des trois balises restantes ont perdu leur cause.** T0.3 exige
       qu'une balise parte dans le commit qui corrige sa contradiction ; celles de
       `PISTES-EVOLUTION.md` et de `Playground/AGENTS.md` citent des fichiers et
       des symboles absents, alors que les tâches qu'elles nomment sont closes. Le
@@ -2455,6 +2455,29 @@ le worktree bougeait sous la mesure.
       **Rechercher d'abord :** greper les balises dans les deux dépôts, puis
       vérifier l'existence de chaque fichier et symbole cité — une balise peut
       mentir aussi sur ce qu'elle décrit, et la règle qu'elle balise avec elle.
+      **Faite le 5 septembre 2026, et l'avertissement du « rechercher d'abord »
+      s'est réalisé mot pour mot.** Le `grep` rend trois balises et quatre
+      renvois de points d'entrée. Les deux visées citaient du code disparu :
+      `scripts/identifiant-code.mjs` n'existe plus (T2.1), `nomVariable` de
+      `check-contract.mjs` non plus, et `src/tokens.ts` n'écrit plus ni regex de
+      référence ni projection de nom — il importe `isTokenReference`, `refPath`
+      et `tokenCssVariable` (T2.7, T6.0, T6.2).
+      *Et la règle balisée mentait avec la balise, dans les deux cas.*
+      `Playground/AGENTS.md` désignait `references-token.mjs` comme l'autorité
+      sur ce qu'est une référence : ce module ne définit plus rien, il relève.
+      La même page, vingt lignes plus bas et sans balise, faisait produire
+      l'identifiant canonique par un fichier supprimé. `PISTES-EVOLUTION.md`
+      annonçait « rien à publier tant qu'un seul repository consomme » alors que
+      deux paquets sont en ligne. Les trois sont réécrites au fond, pas
+      seulement débalisées — sans quoi retirer la balise aurait rendu la règle
+      fausse plus crédible, pas moins.
+      *Deux rangs de la table des contradictions tombent avec elles*, et l'un
+      était périmé lui-même : il annonçait une copie « jusqu'à T6.2 » que T6.2
+      avait emportée la veille. C'est un des trois rangs que R4 doit vérifier.
+      **Reste la troisième balise**, celle du skill `consommer-contrat` : sa
+      cause tient toujours — aucune commande ne cible un seul composant, `ucm
+      check` n'a que `--base` et `--report`. C'est T8.6, et elle n'est pas
+      périmée.
 
 - [ ] **R4 — La table « Contradictions doc ↔ code » est périmée sur trois
       rangs**, dont un qui cite une ligne dans un fichier devenu bien plus court.
@@ -2731,9 +2754,9 @@ transitoire porte sa date, ou il ne s'écrit pas.**
 |---|---|---|
 | ~~`Playground/AGENTS.md`~~ | ~~`tokens.json` fait foi pour l'existence des références~~ | **résolu par T2.4** : le code lit `tokens.json` |
 | ~~`verdict-bilan.mjs:9`~~ | ~~idem, en commentaire~~ | **résolu par T2.4** |
-| `Playground/AGENTS.md` | `references-token.mjs` définit **seul** la référence | faux dans les deux sens depuis T2.7 : `references-token.mjs` ne définit plus rien — `@ucm-kit/core/format` le fait —, et `tokens.ts:22` en porte toujours une copie, jusqu'à T6.2 |
+| ~~`Playground/AGENTS.md`~~ | ~~`references-token.mjs` définit **seul** la référence~~ | **résolu par R3** : la règle nomme désormais `@ucm-kit/core/format`. Le rang lui-même avait vieilli — il annonçait une copie dans `tokens.ts` « jusqu'à T6.2 », or T6.2 l'a emportée le 4 septembre |
 | `check-contract.mjs:42-47` | ce que l'export ne peut corriger avertit sans bloquer | le contrôle des tokens du code bloque (`:658`) — résolu par D1 |
-| `PISTES-EVOLUTION.md`, « Extraction multi-repository » | rien à publier avec un seul consommateur | révisé par D5 |
+| ~~`PISTES-EVOLUTION.md`, « Extraction multi-repository »~~ | ~~rien à publier avec un seul consommateur~~ | **résolu par R3** : la section dit que l'extraction est faite, et où vit l'autorité unique que le découpage devait réaliser |
 | `CHANGELOG-CONTRAT.md` | porte l'historique des schémas « et lui seul » | s'arrête à 11.0 |
 | skill `consommer-contrat`, ancrage 6 | une commande de contrôle ciblée sur un composant | n'existe pas |
 | ~~`Exporter/AGENTS.md`~~ | ~~aucun artefact de contrat, jamais~~ | **tranché par T7.0** : la règle nomme désormais le MOTEUR, pas le repository — elle était devenue ambiguë quand T1.2 a mis deux produits dans le même dépôt |

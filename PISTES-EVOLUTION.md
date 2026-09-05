@@ -265,24 +265,21 @@ runtime et leur prévisualisation restent à concevoir dans le consommateur. Le
 multi-**plateforme** (React Native, iOS, Android via Style Dictionary) est une
 portée, pas le cœur du concept.
 
-### Extraction multi-repository
+### Extraction multi-repository — faite
 
-Rien à publier tant qu’un seul repository consomme des contrats. Un découpage
-éventuel doit conserver **une seule autorité** pour les conventions de version,
-d’identifiant et de références de tokens.
+Ce n’est plus une piste. `@ucm-kit/core` et `@ucm-kit/cli` sont publiés, et
+l’extraction a été décidée sur l’argument inverse de celui qui la retenait :
+un seul consommateur ne justifie pas de publier, mais il ne justifie pas non
+plus de garder l’outillage chez lui, parce qu’un repository qui n’en a pas
+d’autre ne peut jamais prouver que son outillage est portable.
 
-> ⚠ **BALISE-PERIMEE** — la première phrase est révisée, la seconde ne tient
-> déjà pas. L'identifiant a **deux** implémentations : `codeIdentifier`
-> (`packages/kit/src/format/names.ts`) et `identifiantCode` du Playground
-> (`scripts/identifiant-code.mjs`), dont l'en-tête s'annonce lui-même comme une
-> recopie. La projection d'un nom de token en a **trois** — `tokenVar`
-> (`src/tokens.ts:47` du Playground), `nomVariable`
-> (`scripts/check-contract.mjs:154-156`) et le `name/kebab` de Style Dictionary
-> — et elles divergent sur les données réelles. Conserver une autorité unique
-> est donc ce que la publication doit **réaliser**, pas ce qu'elle peut
-> attendre. Révisé par D5 et corrigé au fond par T2.1 et T6.0 de
-> [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui retirent cette
-> balise.
+Ce que le découpage devait **réaliser** — et non préserver — est l’autorité
+unique sur les conventions de version, d’identifiant et de références de
+tokens. Elle vit dans `@ucm-kit/core/format` : `CONTRACT_VERSION`,
+`codeIdentifier`, `isTokenReference` et `tokenCssVariable`, chacune écrite une
+fois. Les copies qui vivaient chez le consommateur sont parties — la dernière
+regex de référence avec T2.7, la dernière projection de nom de token avec T6.0,
+et `identifiant-code.mjs` avec T2.1.
 
 ### Passerelles
 
