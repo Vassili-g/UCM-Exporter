@@ -197,13 +197,14 @@ valeurs tokenisées sont vérifiés par les lecteurs.
 
 #### Contrôler les contrats, sans être un projet Node
 
-`ucm init` écrit un workflow qui n'installe rien et n'exige aucun
-`package.json` : un repo iOS, Android, ou un simple dossier de contrats peut
-faire contrôler ses exports.
+`ucm init` écrit un workflow qui n'exige aucun `package.json` : un repo iOS,
+Android, ou un simple dossier de contrats peut faire contrôler ses exports. Si
+un lockfile npm existe, le workflow exécute `npm ci` afin de rendre les
+adaptateurs optionnels du repository visibles à `ucm check`.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.6 init      # écrit ucm.config.json, .gitignore, le workflow
-npx --yes @ucm-kit/cli@0.1.6 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.7 init      # écrit ucm.config.json, .gitignore, le workflow
+npx --yes @ucm-kit/cli@0.1.7 check --report ci-report.md
 ```
 
 `--yes` évite l'invite de confirmation de `npx`, qui bloquerait une exécution
@@ -225,7 +226,10 @@ qui est de toute façon le seul message que le designer lira.
 consommateur de référence : arborescence des composants, `tokens.json` DTCG,
 les 6 contrôles branchés, le workflow CI et le rapport publié sur la pull
 request. C'est le point de départ à copier pour brancher un nouveau
-repository.
+repository. Un projet TypeScript peut installer
+`@ucm-kit/adapter-typescript@0.1.0` pour ajouter la comparaison statique des
+props et de la composition, ainsi que la génération des types dérivés des
+contrats. Les enums restent hors de la garantie de parité statique.
 
 ### Construire et charger le plugin
 
@@ -280,6 +284,11 @@ packages/cli/       La COMMANDE : @ucm-kit/cli, publiée sur npm. Dépend du kit
   src/init.mjs        Installe ce qui manque à un repository, sans rien écraser
   src/check.mjs       Contrôle les contrats et rend le rapport du designer
   src/icons.mjs       Liste les icônes que les contrats réclament
+
+packages/adapter-typescript/  L'ADAPTATEUR opt-in : @ucm-kit/adapter-typescript.
+  src/parite.mjs       Compare contrats et API TypeScript/TSX
+  src/generation.mjs   Génère les types dérivés des contrats
+  src/cli.mjs          Expose la commande `ucm-typescript`
 ```
 
 Le plugin importe le kit, jamais l'inverse. C'est ce qui rend le kit publiable
@@ -290,9 +299,9 @@ Les composants du corpus servent uniquement à éprouver sa généricité.
 
 ## État
 
-L'outillage consommateur — les 6 contrôles, le rapport, le workflow — est
-**publié** : il vit dans `@ucm-kit/core` et se lance par `@ucm-kit/cli`. Un
-repository quelconque se branche par `ucm init` sans écrire une ligne de script,
+L'outillage consommateur — les contrôles, le rapport, le workflow et
+l'adaptateur TypeScript optionnel — vit dans les paquets `@ucm-kit/*`. Un
+repository quelconque se branche par `ucm init` sans écrire une ligne de script
 et sans être un projet Node. C'était l'objet de
 [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui porte ce qu'il
 reste à faire.

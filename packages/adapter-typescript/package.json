@@ -1,0 +1,40 @@
+{
+  "name": "@ucm-kit/adapter-typescript",
+  "version": "0.1.0",
+  "description": "Adaptateur TypeScript UCM : parité statique des composants et génération des types dérivés des contrats.",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Vassili-g/UCM-Exporter.git",
+    "directory": "packages/adapter-typescript"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "ucm-typescript": "src/cli.mjs"
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./src/index.d.mts",
+      "default": "./src/index.mjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --module NodeNext --moduleResolution NodeNext --target ES2022 src/index.d.mts",
+    "test": "node scripts/run-tests.cjs"
+  },
+  "dependencies": {
+    "@ucm-kit/core": "0.1.11",
+    "typescript": ">=5.5.0 <6"
+  }
+}

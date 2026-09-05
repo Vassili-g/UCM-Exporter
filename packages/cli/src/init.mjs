@@ -103,11 +103,11 @@ function fichiers(version) {
 /**
  * Le workflow de contrôle, écrit pour un repository quelconque.
  *
- * **Il n'installe rien et n'exige aucun `package.json`** : `npx --yes` avec un
- * pin EXACT (D7) suffit, et c'est ce qui permet à un repo qui n'est pas un
- * projet Node — un repo iOS, un dossier de contrats et rien d'autre — de faire
- * contrôler ses exports. Le seul prérequis est Node sur le runner, que
- * `setup-node` fournit.
+ * **Un repo sans `package.json` n'installe rien.** Si un `package-lock.json`
+ * existe, ses dépendances sont installées : c'est ainsi qu'un adaptateur de
+ * stack optionnel devient visible. Le repo iOS qui ne déclare aucun paquet
+ * garde donc le chemin minimal `npx --yes`, et le repo TypeScript reçoit la
+ * parité qu'il a explicitement installée.
  *
  * **Le sha de base passe par l'environnement, jamais par interpolation dans le
  * shell.** `${{ }}` écrit sa valeur DANS le script avant qu'il ne s'exécute ;
@@ -158,6 +158,12 @@ function workflow(version) {
     "      - uses: actions/setup-node@v4",
     "        with:",
     "          node-version: 22",
+    "",
+    "      # Un adaptateur appartient à la stack du repository. Sans lockfile,",
+    "      # cette étape est absente de fait et le noyau portable reste seul.",
+    "      - name: Installer la stack déclarée",
+    "        if: hashFiles('package-lock.json') != ''",
+    "        run: npm ci",
     "",
     "      - name: Contrôler les contrats",
     "        env:",

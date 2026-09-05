@@ -114,10 +114,15 @@ packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
   fixtures/contrats/11.0/  jeu N-1 figé, que le moteur ne sait plus fabriquer
   tests/                   `.test.ts` pour le format, `.test.mjs` pour les lecteurs
 
-packages/cli/            la ligne de commande : @ucm-kit/cli, pas encore publié
+packages/cli/            la ligne de commande : @ucm-kit/cli, publiée
   src/ucm.mjs              l'aiguillage et les codes de sortie
   src/init.mjs             installe ce qui manque, sans jamais écraser
   src/icons.mjs            les icônes que les contrats du repo réclament
+
+packages/adapter-typescript/  l'adaptateur opt-in : parité TS/TSX et types générés
+  src/parite.mjs              lit les props et la composition avec TypeScript
+  src/generation.mjs          dérive les unions depuis les contrats
+  src/cli.mjs                 commande `ucm-typescript`
 
 docs/                    le FORMAT, pour qui consomme un contrat
   FORMAT.md              la forme de chaque champ, et ce que son absence dit

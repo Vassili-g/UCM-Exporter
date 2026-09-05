@@ -33,12 +33,12 @@ sont jamais corrigés à la main.
 | Domaine | État |
 |---|---|
 | Forme du contrat | L’Exporter publie les vues exactes sous cinq catalogues de parties et un `samples` récursif non normatif. Il élide les valeurs neutres, ne publie ni `tokensUsed` ni `meta.warnings`, et sérialise une entrée par ligne sur deux niveaux. Les `args` d’une dépendance viennent de sa surface publique directe et de son seul wrapper élu ; le contenu positionnel suit la visibilité effective et s’arrête aux `SLOT`. `packages/plugin/tests/lois.ts` porte ces lois et `exportComponent.test.ts` les applique à chaque contrat que le moteur fabrique : renvois résolus, catalogues sans doublon ni orphelin, adresses qui désignent un calque réel, aucune valeur neutre écrite, chaque clé de couleur résolue vers un rôle de la bonne nature, accord avec le schéma publié, aller-retour de l’écriture. Aucune ne connaît le nom d’un composant |
-| Consommation | Le Playground lit exactement la version courante : `VERSION_CONTRAT_MINIMALE` et `MAXIMALE` la déclarent, le schéma copié porte le même `const`, `variant-views.mjs` résout les cinq renvois et `references-token.mjs` dérive l’index de tokens du contrat, `samples` et `meta` exclus. Le croisement `nonListes` / `fantomes` de `check-contract.mjs` survit mais ne s’arme plus que si un contrat publie encore un `tokensUsed`. Il documente une reconstruction récursive relative au propriétaire immédiat, sans recherche globale ni limite de profondeur ; `validation-echantillons.mjs` joint TOUTES les adresses d’un échantillon — clés et valeurs d’`args`, `masterPath`, `composes` imbriqué, `slotPath` d’une racine et d’un texte — sur des contrats synthétiques, cas absents, ambigus et profonds compris. Aucun ne regarde QUELLE valeur est placée, et une racine omise reste tolérée |
+| Consommation | `@ucm-kit/core` lit la version courante et la précédente, publie le schéma et porte les contrôles indépendants du langage. `@ucm-kit/cli` exécute ces contrôles et découvre dans le repository l’adaptateur TypeScript optionnel. `@ucm-kit/adapter-typescript` compare les props et la composition TS/TSX puis génère les types dérivés ; sa dépendance de 23 Mo à TypeScript n’est donc payée par aucun consommateur non-TypeScript. Le Playground n’héberge plus ces implémentations génériques : il consomme les paquets publiés et garde seulement un verrou sur son vrai `StressTest` |
 | Validation Figma | Les quatre composants du Playground ont été réexportés à la forme courante, puis reconstruits à froid chacun depuis son seul contrat. Ces exports vivent là-bas et nulle part ailleurs. La comparaison du rendu obtenu avec Figma n’est consignée nulle part : elle reste à faire ou à écrire. Ces quatre composants sont des sondes jetables, pas un critère de généralité du moteur |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
 | Structure portable | Flex, wrap, grille, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat. Un calque hors du flux est PLACÉ — `constraints` et `inset` — et sa `rotation` est écrite en vocabulaire CSS : les deux étaient des avertissements sans geste possible, Figma ne permettant de lier ni une position ni une rotation |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
-| Contrôles du Playground | Forme et version des contrats, graphe de composition, adresses des échantillons, parité statique, références de tokens, génération des types et du CSS. Aucun n’exécute le rendu, et il n’existe aucun test propre à un composant du sandbox |
+| Contrôles du Playground | Forme et version des contrats, graphe de composition, adresses des échantillons, parité statique, références de tokens, génération des types et du CSS. Le contrôle générique vient des paquets `@ucm-kit/*` ; le seul test local de parité vérifie les cardinalités du vrai `StressTest`. Aucun contrôle n’exécute le rendu |
 | Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
 | Test froid | Le protocole générique est documenté par le skill `consommer-contrat` et ses lois d’adressage sont testées. Les quatre composants du Playground ont été régénérés à froid depuis leur seul contrat. La preuve visuelle, elle, dépend d’une comparaison avec Figma qu’aucun repository ne consigne ; un composant existant ne vaut que pour le contrat qu’il accompagne |
 | Corpus de démonstration | Quatre composants, chez le consommateur, sondes jetables à ne pas réécrire pour obtenir du vert. Aucun ne publie de `SLOT` ni de propriété `INSTANCE_SWAP` native : ces deux chemins du moteur ne sont éprouvés que par des tests synthétiques. La maturité se mesure aussi sur les invariants du moteur et sur de nouvelles familles Figma choisies sans règle liée à leur nom |
@@ -101,11 +101,11 @@ arbitraire. Les contrôles disponibles et cette limite sont détaillés dans
 [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md).
 
 C’est là, et nulle part ailleurs, que vit la preuve de bout en bout. Les
-jointures d’adresses du Playground constatent que deux contrats se joignent ;
-elles ne constatent à aucun moment qu’une reconstruction a effectivement
-consommé l’échantillon. Le vérificateur générique le ferait. Ce qui en approche
-le plus aujourd’hui reste statique : `parite.mjs` lit l’API publique par le
-vérificateur de types et compte, dans le JSX, les occurrences de chaque
+jointures d’adresses constatent que deux contrats se joignent ; elles ne
+constatent à aucun moment qu’une reconstruction a effectivement consommé
+l’échantillon. Le vérificateur générique le ferait. Ce qui en approche le plus
+aujourd’hui reste statique : `@ucm-kit/adapter-typescript` lit l’API publique
+avec le vérificateur de types et compte, dans le JSX, les occurrences de chaque
 dépendance déclarée. Ce qu’il ne faut PAS faire en attendant : écrire dans le
 Playground une fonction de reconstruction. Ce serait une seconde implémentation du protocole que porte le
 skill `consommer-contrat`, deux implémentations divergent, et c’est celle qui

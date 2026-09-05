@@ -290,14 +290,38 @@ test("le périmètre tait les états informatifs des contrats que la PR ne touch
   }
 });
 
-test("`ucm check` est atteignable depuis l'aiguillage, avec son code de sortie", () => {
+test("`ucm check` est atteignable depuis l'aiguillage, avec son code de sortie", async () => {
   const racine = repoJouet();
   try {
     const muet = () => {};
     assert.equal(
-      executer(["check"], { racine, ecrire: muet, avertir: muet, alerter: muet }),
+      await executer(["check"], { racine, ecrire: muet, avertir: muet, alerter: muet }),
       0,
     );
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("un verdict de tests transmis par la stack atteint le rapport", async () => {
+  const racine = repoJouet();
+  try {
+    const sortie = [];
+    const code = await executer(["check", "--report", "ci-report.md"], {
+      racine,
+      env: {
+        UCM_ECHECS_DE_TESTS: JSON.stringify({
+          echoue: true,
+          echecs: [{ fichier: "scripts/parite.test.mjs", composant: null, assertion: true, test: "un garde-fou" }],
+        }),
+      },
+      ecrire: (texte) => sortie.push(texte),
+      avertir: (texte) => sortie.push(texte),
+      alerter: (texte) => sortie.push(texte),
+    });
+
+    assert.equal(code, 1);
+    assert.match(readFileSync(join(racine, "ci-report.md"), "utf8"), /Un garde-fou du repository est en échec/);
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }

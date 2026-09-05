@@ -998,10 +998,10 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       (pour `ci-report.md`, que `ucm check --report` régénère à chaque
       exécution) et `.github/workflows/ucm.yml`.
       *Le workflow est écrit pour un repository QUELCONQUE :* `npx --yes` avec
-      un pin exact (D7) et aucun `npm ci`, donc aucun `package.json` exigé d'un
-      repo qui n'est pas un projet Node — c'est T3.4 rendue vraie par
-      construction plutôt que documentée. Le sha de base voyage par
-      l'environnement et jamais par interpolation dans le shell.
+      un pin exact (D7). Il n'exige aucun `package.json` ; lorsqu'un lockfile npm
+      existe, il exécute cependant `npm ci` pour rendre les adaptateurs
+      optionnels du repository visibles à `ucm check`. Le sha de base voyage
+      par l'environnement et jamais par interpolation dans le shell.
       *Un `.gitignore` existant n'est pas réécrit* — la règle « ne jamais
       écraser » ne souffre pas d'exception —, et la ligne manquante est alors
       dite dans le compte rendu.
@@ -1769,7 +1769,27 @@ une place dans l'ordre d'exécution.
       laisse le designer sans recours, et c'est le seul cas où plus personne ne
       peut rien lui dire. La tâche annonçait deux filets à porter ; il fallait en
       porter un et laisser l'autre à son propriétaire.
-- [ ] **T5.5 — Action GitHub réutilisable — après la Phase 7.**
+- [X] **T5.5 — Action GitHub réutilisable — après la Phase 7.**
+      **Close le 5 septembre 2026, sans Action : il n'y a rien à
+      dédupliquer.** La Phase 7 a éprouvé un seul workflow portable, celui
+      qu'`ucm init` écrit. Le Playground n'en est pas une seconde copie : il
+      ajoute les tests et l'adaptateur TypeScript que `ucm check` ne porte pas,
+      et T9.8 verrouille seulement les deux filets qu'ils ont réellement en
+      commun.
+
+      Une Action composite laisserait au repository appelant le checkout, Node,
+      les permissions et la publication du commentaire ; un workflow
+      réutilisable pourrait les absorber, mais deviendrait une NOUVELLE surface
+      publique. Il faudrait l'autoriser dans chaque organisation et l'épingler
+      sur un SHA complet pour qu'elle soit immuable, pendant que la commande
+      qu'elle lancerait reste déjà épinglée sur une version npm exacte et
+      vérifiée depuis un dossier neuf. Remplacer cette autorité par deux pins
+      n'industrialise rien : cela donne deux endroits à mettre à jour.
+
+      **Seuil de réouverture :** un deuxième consommateur réel adapte le
+      workflow généré et fait apparaître une logique commune que `ucm check` ne
+      peut pas posséder. Avant cela, le workflow installé est le produit ; son
+      générateur et ses tests sont son autorité unique.
 
 - [X] **T5.6 — Réduire le temps de la CI par du cache.** `ci.yml` enchaîne
       `npm ci`, `npm test` et `npm run build` sans aucun cache de
@@ -1968,7 +1988,7 @@ une place dans l'ordre d'exécution.
       référence que T2.7 poursuivait — `isTokenReference` et `refPath` viennent
       du kit désormais. Le pin du Playground passe à 0.1.2, lockfile régénéré,
       `npm run check` vert : 73 tests, 4 contrats valides.
-- [ ] **T6.3 — Adaptateur TypeScript** : comparaison des props, génération des
+- [X] **T6.3 — Adaptateur TypeScript** : comparaison des props, génération des
       types. Précondition dure : un `tsconfig.json` à la racine
       (`parite.mjs:233`).
 
@@ -2025,10 +2045,23 @@ une place dans l'ordre d'exécution.
       utile que le script qu'il remplace. La 1 ne coûte que ce que le projet a
       déjà payé deux fois — une publication —, et ce coût est connu.
 
-      **Ce que cette entrée NE fait pas :** décider. Un paquet publié de plus est
-      un engagement de maintenance, et le mécanisme de chargement d'adaptateur
-      rouvre une question que T3.1 avait explicitement fermée. Les deux
-      appartiennent au propriétaire du projet.
+      **Décision prise par le propriétaire le 5 septembre 2026 : option 1.**
+      `@ucm-kit/adapter-typescript` est un workspace publiable séparé ; lui seul
+      dépend de TypeScript. Il porte le relevé des props et de la composition,
+      la comparaison avec le contrat et la génération des unions/matrices de
+      variants. Le `tsconfig.json` racine est une précondition explicite et les
+      enums restent hors de la garantie statique.
+
+      `ucm check` découvre le paquet depuis la racine contrôlée, sans champ de
+      configuration ni dépendance du CLI vers l'adaptateur. Le workflow généré
+      fait un `npm ci` seulement en présence d'un lockfile : un repo TypeScript
+      obtient ainsi la parité, un repo Swift ou Kotlin reste sur le chemin
+      portable historique. Le Playground a supprimé ses implémentations
+      génériques (`parite.mjs`, générateurs et fixtures) ; il ne garde qu'un
+      test d'intégration sur son vrai `StressTest` (`Alert ×1`, `Button ×3`,
+      `TileLink ×7`). Les échecs de ses tests sont transmis au même rapport
+      `ucm check`, ce qui ferme la seconde moitié de T9.8 sans réintroduire un
+      orchestrateur local.
 
 ---
 
@@ -2743,7 +2776,8 @@ un dépôt de test épuré au maximum — supprimer ce qui n'est pas essentiel,
 migrer chez le producteur ce qui l'est, sans créer de redondance.*
 
 **Cette phase absorbe T8.4 en entier** (T9.1, T9.2, T9.3) et prolonge la
-Phase 8 côté consommateur. Elle ne décide rien du corpus : R7 et R8 le font.
+Phase 8 côté consommateur. Elle ne décide rien du corpus : R7 l'a remis en
+état ; R8 en décide le filet de parité.
 
 *Le brouillon de cette phase a été relu par un agent indépendant, et la revue a
 corrigé sept points dont trois inversaient une conclusion. Ses constats ont été
@@ -2774,18 +2808,19 @@ décident ce qu'un dépôt de démonstration a le droit de porter.
 121 Ko, graphe `StressTest → Alert ×1 + Button ×3 + TileLink ×7` et
 `Alert → Button`. Liens : 18 internes, 8 croisés vers `../UCM-Exporter`.
 
-**Ce que le corpus fait pendant que cette phase s'écrit, et il faut le dire :**
-les quatre `.tsx` sont en cours de réécriture dans une session parallèle
-(825 insertions, 1 634 suppressions), les quatre `index.ts` sont supprimés et
-les composants passent à `export default` avec import direct. `npx tsc --noEmit`
-échoue donc sur huit `TS2307` dans `App.tsx`, qui importe encore les barils.
-**Aucune tâche ci-dessous ne touche à `src/components/`.** Le reliquat —
-réaccorder `App.tsx` aux nouveaux exports — appartient à cette session-là.
+**Ce que le corpus a fait pendant que cette phase s'écrivait, et il faut le
+dire :** les quatre `.tsx` ont été régénérés dans une session parallèle
+(825 insertions, 1 634 suppressions). R7 a rétabli leurs quatre façades
+publiques, réaccordé `App.tsx` et levé les trois constantes inutilisées :
+`npm test` (44 tests) et `npm run build` sont verts. Le contrôle de parité ne
+descend toutefois pas encore dans les sous-composants internes de `StressTest`
+et compte donc ses compositions à zéro ; cette limite est maintenant étudiée
+par R8, sans réécrire le corpus pour contourner le garde-fou.
 
 *Le brouillon avait ouvert une tâche « trancher ce qu'est le corpus », avec trois
 options dont « ne garder qu'un composant vivant ». Elle est retirée, pour deux
 raisons que la revue a trouvées et que le code confirme : R7 porte déjà cette
-question et **l'utilisateur l'a datée le 5 septembre — « R7 reste ouverte »** ;
+      question et R7 vient d'en vérifier la reconstruction ;
 et l'option « un seul composant » éteignait précisément ce que R8 vient de
 trouver. TileLink n'a ni `composes` ni prop booléenne : garder lui seul rendait
 `composantsRendus()` et `propsConsommees()` (`parite.mjs:173, 227-252`) muets sur
@@ -3059,16 +3094,10 @@ close le matin même — ils y sont inscrits, non barrés.
       ce qui s'exécute et diffèrent dans les commentaires ; le test neutralise
       les commentaires comme `skill-diagnostics.test.mjs:34-36` neutralise les
       adresses.
-      **Ce qu'on N'EST PAS en train de faire, et la revue a tranché contre le
-      brouillon :** le Playground n'adopte pas le workflow d'`ucm init`. Trois
-      obstacles, tous vérifiés. `check-contract.mjs:29-32` dit pourquoi ce dépôt
-      garde son script — `ucm check` n'a pas d'adaptateur et ne reçoit pas les
-      échecs de tests. Les deux écrivent `ci-report.md` (`check-contract.mjs:106`
-      et `init.mjs:125`), donc le second écrase le premier et **la PR recevrait
-      le rapport sans parité ni tests, plus vert que la réalité** — le défaut que
-      ce dépôt poursuit partout. Et `ucm init` n'écrase jamais et écrit
-      `ucm.yml`, pas `ci.yml` : « adopter » demande un geste que la commande ne
-      fait pas. La bascule a pour précondition T6.3.
+      **La bascule du Playground avait pour précondition T6.3.** Elle est
+      désormais faite : le dépôt conserve sa chaîne locale tokens/tests/build,
+      puis appelle `ucm check` avec l'adaptateur installé et lui transmet les
+      échecs de tests. Il n'existe donc plus deux auteurs de `ci-report.md`.
       **Faite le 5 septembre 2026, les deux moitiés.**
       `Playground/scripts/surface-documentaire.test.mjs` compte les octets des
       `.md` hors `.claude/skills/` : **plafond 42 558**, relevé du jour, qui
@@ -3180,6 +3209,22 @@ et `CONTRIBUTING.md` ; il garde trois documents et deux skills.
 Elle ne touche à aucun contrat ni à aucun `.tsx` — R7 et R8 portent le corpus.
 Elle ne réécrit aucune phrase du rapport : elles vivent dans le kit depuis T5.2.
 Elle ne crée aucun paquet. Elle ne publie qu'une fois, avec T9.3.
+
+---
+
+## Phase 10 — Neutraliser entièrement le Playground
+
+La décision prise après la clôture de la Phase 9 en dépasse la cible : le
+Playground ne doit plus être un consommateur UCM permanent, mais une cible
+neutre sur laquelle la recette est rejouée dans une branche jetable. Le dossier
+`scripts/`, les contrats, tokens, composants reconstruits et tests propres au
+corpus doivent disparaître de sa branche principale.
+
+L'inventaire, les destinations, l'ordre et les critères de fin vivent dans
+[PLAN-NEUTRALISATION-PLAYGROUND.md](./PLAN-NEUTRALISATION-PLAYGROUND.md). Les
+Phases 7 et 9 restent ci-dessus comme historique des décisions qui ont permis
+d'extraire l'outillage générique ; elles ne décrivent plus la cible finale du
+Playground.
 
 ---
 
@@ -3382,13 +3427,21 @@ le worktree bougeait sous la mesure.
       ouverte se relit avant de s'en servir, et se barre sur place quand il est
       tombé.**
 
-- [ ] **R7 — ⚠ La CI du seul consommateur réel est rouge, et elle l'est depuis
+- [X] **R7 — ⚠ La CI du seul consommateur réel est rouge, et elle l'est depuis
       le 4 septembre 2026.** *Trouvé par R2, le 5 septembre.* `npm run build`
       du Playground échoue : `StressTest.tsx` n'implémente pas la variante
       `warning` que son contrat réexporté déclare. Le composant a été écrit
       depuis un contrat d'avant, le plugin en a exporté un autre depuis, et rien
       ne les a rapprochés.
-      --> ce n'est plus le cas le 5 septembre 2026, les composants ont été regénérés 
+      **Faite le 5 septembre 2026.** Les quatre façades
+      `src/components/*/index.ts` sont de nouveau accessibles, `App.tsx` porte
+      les API effectivement régénérées et expose aussi `warning`. Les constantes
+      devenues inutilisées sont retirées. `npm test` est vert (44 tests), et
+      `npm run build` atteint Vite et produit `dist`. Le contrôle de parité voit
+      encore zéro composition dans `StressTest` parce que ses occurrences vivent
+      dans des sous-composants internes ; c'est une limite de l'adaptateur, pas
+      une divergence du corpus, et R8 l'inclut dans son étude avant toute
+      modification du garde-fou.
       *Pourquoi c'est plus qu'un composant cassé :* une CI rouge en permanence
       ne dit plus rien, et c'est précisément le repository dont ce plan se sert
       pour prouver que le kit tient. Toutes les vérifications faites « chez le
@@ -3418,10 +3471,11 @@ le worktree bougeait sous la mesure.
       est revenue le 4 septembre (`3c1764d`). Le composant n'a jamais dérivé —
       il est né conforme à un contrat qui a bougé le lendemain, et il n'y a rien
       à rattraper au-delà de cette variante.
-      **Décision de l'utilisateur, 5 septembre 2026 : R7 reste ouverte.** La
-      régénération n'est pas prise dans cette session.
+      **Clôturée après régénération et vérification complète le 5 septembre
+      2026.** La CI n'est plus rouge ; la décision de périmètre restante est
+      celle de R8.
 
-- [ ] **R8 — ⚠ Tâche annexe, de recherche : le contrôle de parité est aveugle à
+- [X] **R8 — ⚠ Tâche annexe, de recherche : le contrôle de parité est aveugle à
       une variante que le code n'implémente pas.** *Trouvé en exécutant la
       recherche de R7, et ce n'est pas le sujet de R7.*
       Sur le `StressTest` amputé de sa variante `warning`, `ucm check` écrit
@@ -3437,6 +3491,19 @@ le worktree bougeait sous la mesure.
       fermée par construction : le `.tsx` importe `StressTestVariant`, un type
       **généré depuis le contrat**, qui ne peut donc pas être en désaccord avec
       lui.
+      **Recherche refaite le 5 septembre 2026 : la limite tient, et un second
+      aveuglement est apparu.** L'adaptateur ne relève pour une prop que son
+      type (`boolean` ou `autre`), son texte TypeScript et le fait qu'elle soit
+      lue. `ecartsDeParite` ne compare aux valeurs du contrat que les booléens :
+      une union littérale amputée et une union générée entière arrivent toutes
+      deux comme `autre`. Il ne peut donc pas établir qu'un enum est géré.
+      `composantsRendus` ne visite en outre que le corps de la fonction exportée.
+      `StressTest` délègue ses trois vues à des sous-composants locaux, ce qui
+      lui fait annoncer zéro `Alert`, `Button` et `TileLink` alors que les
+      occurrences sont présentes. Descendre naïvement dans tous les helpers les
+      additionnerait, alors que `composes` publie le maximum d'une seule vue :
+      il faut soit analyser les branches, soit adopter une convention de code
+      qui rende cette borne statiquement lisible.
       *Pourquoi c'est une tâche et pas un commit :* si la mesure tient, un repo
       tiers sans la convention `Record` exhaustive porte la même dérive **sous
       un rapport UCM vert**, et c'est exactement ce que le critère de réussite
@@ -3452,6 +3519,24 @@ le worktree bougeait sous la mesure.
       est présenté à l'utilisateur en clair, simplement, avant qu'une ligne soit
       écrite.** C'est une décision de périmètre, pas une correction : elle se
       prend sur un exposé compréhensible, pas sur un diff.
+
+      **Tranchée et close le 5 septembre 2026 : corriger la composition seule.**
+      Le contrat décrit les variantes visuelles que Figma porte ; le code reste
+      propriétaire du comportement qui choisit l'une d'elles. Exiger une
+      convention exhaustive pour les enums ferait donc du contrat une
+      spécification de comportement, imposerait une écriture TypeScript à tous
+      les consommateurs et ferait entrer cette convention dans le kit publié.
+      Ce prix ne corrige pas le défaut observé : il élargit la promesse.
+
+      `parite.mjs` déplie désormais les composants locaux jusqu'aux dépendances
+      importées. Les occurrences sœurs d'une même vue s'additionnent ; deux
+      branches alternatives gardent, composant par composant, leur cardinalité
+      maximale — la même information que le `composes` global. Un test minimal
+      interdit de sommer deux vues, et un test sur le vrai `StressTest` verrouille
+      `Alert ×1`, `Button ×3`, `TileLink ×7`. `npm test` passe avec 46 tests,
+      `npm run check` annonce les quatre contrats conformes et `npm run build`
+      produit le site. La valeur d'un enum effectivement traitée reste une limite
+      documentée du contrôle statique, comme avant R8.
 
 ---
 
@@ -3658,16 +3743,15 @@ Phase 6, avec T7.6 à placer.
       compteur doit exister avant la première tâche qu'il mesure. **T9.5 a T8.7
       pour précondition dure** — passer les documents en registre portable puis
       les réécrire, c'est les réécrire deux fois.
-    - **La moitié « workflow » de T9.8 attend T6.3**, et seulement elle : la
-      bascule du Playground vers `ucm check` demande un mécanisme de chargement
-      d'adaptateur que T3.3 a refusé d'ouvrir. Le test d'accord entre les deux
-      workflows, lui, se pose tout de suite.
+    - **La moitié « workflow » de T9.8 attendait T6.3**, et seulement elle. La
+      création du paquet séparé et sa découverte depuis la racine du repository
+      ont levé cette attente ; le Playground appelle maintenant `ucm check`.
     - **T9.9 en dernier commit**, et rien avant : il écrit dans un `AGENTS.md`
       que T9.5 et T9.6 viennent de refaire.
-    *Ce que la Phase 9 ne décide pas :* le corpus. R7 est datée — « reste
-    ouverte, la régénération n'est pas prise dans cette session » — et R8 en
-    dépend. Une épuration qui trancherait le corpus au passage rouvrirait une
-    décision de l'utilisateur sans le dire.
+    *Ce que la Phase 9 ne décide pas :* le corpus. R7 a rétabli ses sondes,
+    mais R8 doit encore décider quelle parité leur demander. Une épuration qui
+    trancherait ce périmètre au passage rouvrirait une décision de l'utilisateur
+    sans le dire.
 
 ### Écart entre cet ordre et ce qui a été exécuté
 
