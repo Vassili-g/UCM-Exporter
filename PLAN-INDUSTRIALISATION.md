@@ -1568,7 +1568,7 @@ une place dans l'ordre d'exécution.
       première tâche de sa phase U3. Elle est close par ce commit et pointe ici ;
       une règle, un domicile.
 
-- [ ] **T4.6 — La refonte de l'interface du plugin.** **⚠ Après la Phase 7,
+- [X] **T4.6 — La refonte de l'interface du plugin.** **⚠ Après la Phase 7,
       avant la Phase 8.** Le plan complet, ses trente tâches et ses dépendances
       vivent dans [refonte-ui.md](./refonte-ui.md) : une règle, un domicile —
       cette entrée ne recopie rien, elle ordonne.
@@ -1624,6 +1624,22 @@ une place dans l'ordre d'exécution.
       existe, mais rien ne l'appelle à la place du plugin, et son minimum de
       70 × 0 ne protège de rien. La poignée et les bornes du plugin vivent
       désormais dans `src/fenetre.ts`.
+      **Close le 5 septembre 2026.** U4.5, U4.3 et U4.4 sont faites dans cet
+      ordre, et elles ferment la Phase U4 — donc le périmètre que cette entrée
+      ordonnait. Trente-neuf tâches de `refonte-ui.md` sont closes ; les deux qui
+      restent appartiennent à une phase qui s'appelle « À décider avant d'être
+      fait » : elles ne sont pas en attente, elles sont non décidées.
+      *Ce que la fin du chantier a produit et qui dépasse l'interface :* trois
+      lois qu'aucune tâche ne demandait. La couverture de localisation, en deux
+      moitiés — une lue dans la source, une exercée à la sortie du moteur. Le
+      refus d'un champ `figma` dans `meta.diagnostics`, qui rend mécanique un
+      hors-périmètre que seule la prose gardait. Et `loiDuDocumentIntact.test.ts`,
+      qui exerce enfin « le plugin ne modifie jamais le document Figma » — un
+      invariant que trois documents répétaient et qu'aucun contrôle ne tenait.
+      **⚠ Une observation reste due, et elle ne se fait pas depuis ce dépôt :**
+      U4.5 s'appuie sur la documentation de l'API Figma pour affirmer qu'un clic
+      ne marque pas le document comme modifié. Seul un fichier réel ouvert le
+      prouvera, et `SPEC.md` le dit au lieu de le sous-entendre.
 
 ---
 
