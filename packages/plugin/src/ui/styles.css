@@ -340,13 +340,6 @@ p {
   background: var(--fond-bloc);
 }
 
-.section-title {
-  color: var(--texte-second);
-  font-size: var(--corps);
-  font-weight: 600;
-  line-height: var(--corps-interligne);
-}
-
 .btn {
   display: inline-flex;
   min-height: var(--hauteur-action);
@@ -532,9 +525,70 @@ p {
   stroke-width: 1.5;
 }
 
-.log-panel {
+/*
+ * Le compte rendu (U4.1, U4.2). Trois groupes, et une trace repliée.
+ *
+ * Un avertissement est un BLOC de hauteur libre, avec un filet de sévérité : la
+ * ligne monospace tronquée d'un journal ne se lisait pas sans défiler, et la
+ * police à chasse fixe ne sert plus que ce qui est littéral — un chemin, un nom
+ * de calque, une référence de token.
+ */
+.compte-rendu {
   display: grid;
-  gap: var(--espace-serre);
+  gap: var(--espace-bloc);
+}
+
+.groupe {
+  display: grid;
+  gap: var(--espace-controle);
+}
+
+.groupe-titre {
+  color: var(--texte-second);
+  font-weight: 600;
+}
+
+.groupe-liste {
+  display: grid;
+  gap: var(--espace-controle);
+}
+
+.entree {
+  overflow-wrap: anywhere;
+}
+
+.entree-avertissement {
+  padding: var(--espace-controle);
+  border-left: 2px solid var(--texte-avertissement);
+  border-radius: 0 var(--rayon) var(--rayon) 0;
+  background: var(--fond-avertissement);
+  color: var(--texte-avertissement);
+}
+
+.entree-constat,
+.entree-publication,
+.entree-info {
+  color: var(--texte-second);
+}
+
+.entree-error {
+  color: var(--texte-danger);
+}
+
+.entree-success {
+  color: var(--texte-succes);
+}
+
+.entree-lien {
+  color: var(--texte-marque);
+}
+
+.details-techniques {
+  color: var(--texte-second);
+}
+
+.details-techniques summary {
+  cursor: pointer;
 }
 
 .log-panel-inner {

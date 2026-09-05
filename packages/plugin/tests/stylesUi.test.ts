@@ -38,14 +38,28 @@ function sourcesUi(): string {
 const source = sourcesUi();
 const feuille = fs.readFileSync(path.join(dossierUi, 'styles.css'), 'utf8');
 
-/** Les niveaux de journal, lus dans le domicile unique des messages. */
-function niveauxDeJournal(): string[] {
-  const declaration = /export type LogLevel =([^;]+);/.exec(
-    fs.readFileSync(path.join(racine, 'src/messages.ts'), 'utf8'),
-  );
-  assert.ok(declaration, 'LogLevel introuvable dans messages.ts');
+const messages = (): string => fs.readFileSync(path.join(racine, 'src/messages.ts'), 'utf8');
+
+/** Les littéraux d'une déclaration de `messages.ts`, lus à leur domicile unique. */
+function litterauxDe(motif: RegExp, quoi: string): string[] {
+  const declaration = motif.exec(messages());
+  assert.ok(declaration, `${quoi} introuvable dans messages.ts`);
   return [...declaration[1].matchAll(/'([^']+)'/g)].map((trouve) => trouve[1]);
 }
+
+/**
+ * Ce que vaut la variable d'un gabarit de classe, LUE à sa source.
+ *
+ * Une liste écrite ici serait une deuxième déclaration des mêmes valeurs : un
+ * niveau de journal ou une nature de diagnostic ajoutés là-bas réclament leur
+ * règle sans que personne ait à y penser ici.
+ */
+const VALEURS_DE_GABARIT: Record<string, () => string[]> = {
+  level: () => litterauxDe(/export type LogLevel =([^;]+);/, 'LogLevel'),
+  niveau: () => litterauxDe(/export type LogLevel =([^;]+);/, 'LogLevel'),
+  nature: () => litterauxDe(/nature:([^;]+);/, 'la nature d’un diagnostic'),
+  variant: () => variantesDeBouton(),
+};
 
 /** Les variantes de bouton : leur défaut, et chaque valeur passée à `createButton`. */
 function variantesDeBouton(): string[] {
@@ -68,7 +82,7 @@ function classesPosees(): Set<string> {
         posees.add(morceau);
         continue;
       }
-      const valeurs = fabrique[2] === 'level' ? niveauxDeJournal() : variantesDeBouton();
+      const valeurs = VALEURS_DE_GABARIT[fabrique[2]]?.() ?? [];
       assert.ok(valeurs.length > 0, `aucune valeur trouvée pour ${morceau}`);
       for (const valeur of valeurs) posees.add(`${fabrique[1]}-${valeur}`);
     }

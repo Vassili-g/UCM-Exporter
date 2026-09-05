@@ -118,13 +118,16 @@ const REGLAGES = {
   hasPat: true,
 };
 
-/** Vingt avertissements réels, tels que `runExport` les envoie : sans niveau. */
+/** Un constat de l'export, avec la nature que `runExport` lui donne (U4.1). */
+const diagnostic = (nature, texte) => ({ message: { type: 'diagnostic', nature, texte } });
+
+/** Vingt avertissements réels : le volume que U1.3 (d) exige de regarder. */
 function vingtAvertissements() {
   const modeles = [AVERTISSEMENT_STROKE, AVERTISSEMENT_AUTO_LAYOUT, AVERTISSEMENT_COMPOSE];
   const lignes = [];
   for (let rang = 0; rang < 20; rang += 1) {
     const modele = modeles[rang % modeles.length].replace('« Border »', `« Border ${rang + 1} »`);
-    lignes.push({ message: { type: 'log', text: `⚠︎ ${modele}` } });
+    lignes.push(diagnostic('avertissement', modele));
   }
   return lignes;
 }
@@ -243,6 +246,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
+      SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
@@ -260,10 +264,11 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
+      SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      { message: { type: 'log', text: `⚠︎ ${AVERTISSEMENT_COMPOSE}` } },
-      { message: { type: 'log', text: `• ${NOTE_ROTATION}` } },
+      diagnostic('avertissement', AVERTISSEMENT_COMPOSE),
+      diagnostic('constat', NOTE_ROTATION),
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
       { message: { type: 'pull-request', url: URL_PR, path: CHEMIN } },
       {
@@ -285,6 +290,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
+      SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       ...vingtAvertissements(),
@@ -309,15 +315,10 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
+      SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      {
-        message: {
-          type: 'log',
-          text: `Aucun changement pour ${CHEMIN} (branche main) : aucune PR créée.`,
-        },
-      },
       {
         message: {
           type: 'status',
@@ -337,15 +338,10 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
+      SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      {
-        message: {
-          type: 'log',
-          text: `Aucun changement pour ${CHEMIN} (pull request d'export ouverte, branche ${BRANCHE_EN_VOL}) : aucune PR créée.`,
-        },
-      },
       { message: { type: 'pull-request', url: URL_PR, path: CHEMIN } },
       {
         message: {
@@ -382,6 +378,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
+      SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
@@ -402,7 +399,7 @@ const ETATS = [
         message: {
           type: 'status',
           state: 'error',
-          text: 'Échec GitHub. Le fichier a été téléchargé localement : GitHub a répondu 403 sur POST /repos/mon-org/design-system-v3/git/refs.',
+          text: 'Échec GitHub. Le fichier a été téléchargé sur votre poste.',
         },
       },
     ],
@@ -429,6 +426,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('non-configure'),
+      SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       {
@@ -486,6 +484,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
+      SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       {

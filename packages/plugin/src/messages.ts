@@ -112,4 +112,14 @@ export type PluginMessage =
    */
   | { type: 'phase'; texte: string }
   /** Ce que l'export des tokens emporterait s'il partait maintenant (U2.4). */
-  | { type: 'tokens'; resume: string };
+  | { type: 'tokens'; resume: string }
+  /**
+   * Un constat de l'export, avec sa NATURE (U4.1).
+   *
+   * La distinction qui structure tout le projet — un avertissement demande un
+   * geste, une note n'en demande aucun — n'était portée que par le caractère de
+   * puce d'une ligne de journal : `⚠︎` contre `•`, en 11 px monospace, dans une
+   * boîte de 96 px qui défile vers sa fin. Elle voyage maintenant dans le
+   * message, et c'est le compte rendu qui la rend visible.
+   */
+  | { type: 'diagnostic'; nature: 'avertissement' | 'constat'; texte: string };

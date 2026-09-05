@@ -7,6 +7,7 @@ import { createButton } from './components/Button.js';
 import { createConfigurationPage } from './components/ConfigurationPage.js';
 import { createLogPanel } from './components/LogPanel.js';
 import { createCible } from './components/Cible.js';
+import { createCompteRendu } from './components/CompteRendu.js';
 import { createResizeGrip } from './components/ResizeGrip.js';
 
 const app = document.getElementById('app');
@@ -131,7 +132,11 @@ statusNote.setAttribute('role', 'status');
 statusNote.setAttribute('aria-live', 'polite');
 statusNote.hidden = true;
 
-const logPanel = createLogPanel('Prêt. Cliquez sur une action pour démarrer.');
+// Le journal brut ne s'affiche plus de lui-même : il vit derrière le dépliant
+// « Détails techniques » du compte rendu (U4.2), et n'annonce plus rien au
+// repos — « Prêt. Cliquez sur une action pour démarrer » expliquait un bouton.
+const logPanel = createLogPanel();
+const compteRendu = createCompteRendu(logPanel);
 
 /**
  * `occupe` désactive tout ; `cibleExportable` ne concerne que le composant.
@@ -154,7 +159,7 @@ function setBusy(isBusy) {
 
 function requestExport(type) {
   setBusy(true);
-  logPanel.clear();
+  compteRendu.reinitialiser();
   ecrireNote('loading', 'Traitement en cours…');
   parent.postMessage({ pluginMessage: { type } }, '*');
 }
@@ -167,7 +172,20 @@ function ecrireNote(state, text) {
 }
 
 actionCard.append(exportComponentButton);
-exportPage.append(cible.element, actionCard, statusNote, depot, tokensPanel, logPanel.element);
+/*
+ * L'ordre de l'écran est celui de la hiérarchie, et le compte rendu suit
+ * immédiatement l'action qui l'a produit : le laisser sous la commande des
+ * tokens obligeait à passer devant une seconde action pour lire le résultat de
+ * la première. La destination et les tokens ferment l'écran, au rang 3.
+ */
+exportPage.append(
+  cible.element,
+  actionCard,
+  statusNote,
+  compteRendu.element,
+  depot,
+  tokensPanel,
+);
 
 /**
  * L'UI n'invente plus rien de la connexion : elle place ce que le sandbox a
@@ -233,7 +251,9 @@ onmessage = (event) => {
   // `level` est absent aujourd'hui et le journal retombe alors sur `info` ;
   // c'est U4.1 qui le renseignera à l'envoi. Le lire ici coûte un argument et
   // évite que le champ déclaré reste inerte d'un seul côté.
-  if (message.type === 'log') logPanel.append(message.text, message.level);
+  if (message.type === 'log') compteRendu.ajouterPublication(message.text, message.level);
+
+  if (message.type === 'diagnostic') compteRendu.ajouterDiagnostic(message.nature, message.texte);
 
   if (message.type === 'schema-version') {
     footer.textContent = `Schéma de contrat ${message.version}`;
@@ -244,9 +264,10 @@ onmessage = (event) => {
     const isLoading = message.state === 'loading';
     setBusy(isLoading);
     ecrireNote(message.state, message.text);
-    // L'état d'une action et le niveau d'une ligne de journal ne sont pas le
-    // même vocabulaire : `loading` n'est pas un `LogLevel`, et la classe
-    // `log-loading` qu'il produisait n'était stylée nulle part.
+    // Le verdict est déjà en note, au rang 1 : il ne va que dans la trace, pas
+    // dans le groupe « Publication », qui porte ce que l'export a FAIT.
+    // `loading` n'est pas un `LogLevel` : la classe `log-loading` qu'il
+    // produisait n'était stylée nulle part.
     logPanel.append(message.text, isLoading ? 'info' : message.state);
   }
 
@@ -259,11 +280,11 @@ onmessage = (event) => {
     link.click();
     document.body.removeChild(link);
     setTimeout(() => URL.revokeObjectURL(link.href), 0);
-    logPanel.append(`Fichier téléchargé : ${message.filename || 'download.json'}`, 'success');
+    compteRendu.ajouterPublication(`Fichier téléchargé : ${message.filename || 'download.json'}`, 'success');
   }
 
   if (message.type === 'pull-request') {
-    logPanel.appendLink(`Ouvrir la PR : ${message.path}`, message.url);
+    compteRendu.ajouterLien(`Ouvrir la pull request de ${message.path}`, message.url);
   }
 };
 
@@ -271,5 +292,5 @@ window.addEventListener('error', (event) => {
   setBusy(false);
   configurationPage.releaseSaveButton();
   ecrireNote('error', `Erreur UI : ${event.message}`);
-  logPanel.append(statusNote.textContent, 'error');
+  compteRendu.ajouterPublication(statusNote.textContent, 'error');
 });
