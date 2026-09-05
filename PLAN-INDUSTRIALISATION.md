@@ -2828,7 +2828,7 @@ close le matin même — ils y sont inscrits, non barrés.
       les deux tests de la projection. La revue avait raison sur la conclusion —
       ne rien couper — et faux sur la preuve qu'elle invoquait.
 
-- [ ] **T9.5 — Retirer d'`AGENTS.md` ce qui est prouvablement dit ailleurs.**
+- [X] **T9.5 — Retirer d'`AGENTS.md` ce qui est prouvablement dit ailleurs.**
       342 lignes, dont 93 d'« Invariants » et 45 de « Ce que les contrôles ne
       vérifient pas » qui décrivent le FORMAT et ont désormais une autorité à un
       lien de distance (`docs/FORMAT.md`, `AGENTS.md` du producteur). Reste ce
@@ -2843,7 +2843,7 @@ close le matin même — ils y sont inscrits, non barrés.
       la règle 2 interdit. La tâche commence donc par écrire son contrôle —
       voir T9.8.
 
-- [ ] **T9.6 — Fondre `CONTRIBUTING.md` dans `AGENTS.md`, en deux temps.**
+- [X] **T9.6 — Fondre `CONTRIBUTING.md` dans `AGENTS.md`, en deux temps.**
       5,4 Ko dont les trois quarts répètent le producteur ou `AGENTS.md` ; un
       sandbox à un mainteneur n'a pas de contributeurs externes à guider, et la
       charte des messages désigne déjà `../UCM-Exporter/CONTRIBUTING.md`.
@@ -2852,7 +2852,7 @@ close le matin même — ils y sont inscrits, non barrés.
       fichier d'arrivée) et de T9.2/T9.3 commitées — sa table « Documentation »
       (`:94-110`) cite les documents supprimés.
 
-- [ ] **T9.7 — `README.md` redevient une page d'accueil.** 9,4 Ko, dont une
+- [X] **T9.7 — `README.md` redevient une page d'accueil.** 9,4 Ko, dont une
       section « Consommation des artefacts » de 108 lignes qui redit
       `docs/FORMAT.md`. Cible : ce que c'est, comment le lancer, ce qu'il prouve,
       où va le reste. Même critère que T8.12 côté producteur — le visiteur avant
@@ -2909,9 +2909,11 @@ close le matin même — ils y sont inscrits, non barrés.
       un plafond volontairement trop bas, l'accord en changeant une ligne de
       `ci.yml`.
 
-- [ ] **T9.9 — Le reste du ménage, mesuré mais non classé par le brouillon.**
+- [X] **T9.9 — Le reste du ménage, mesuré mais non classé par le brouillon.**
       *Cinq points que la revue a trouvés et que le code confirme. Petits
       séparément, ils font le bruit de fond du dépôt.*
+      --- pour chacun de ces points il faut une décision radicale après une recherche poussée. 
+      Le choix sera celui de l'utilisateur.
       - `src/index.css` : 132 lignes, dont 111 de banc typographique (15 classes
         `.ucm-type-*`) qui ne servent qu'à `TypographySandbox` (`App.tsx:394-444`)
         et ne lisent aucun contrat. À garder ou à retirer, mais à décider.
@@ -2966,7 +2968,35 @@ question.
 - **`liens-documents.test.mjs`** : il a déjà attrapé une ancre morte et un renvoi
   cassé par la scission. Il rétrécit avec les documents, il ne part pas.
 
-### 9.6 — Ce que cette phase ne fait pas
+### 9.6 — Ce que la phase a rendu, mesuré
+
+**Close le 5 septembre 2026, les neuf tâches.** Le compteur que T9.8 s'est
+donné répond à la question que « épuré au maximum » ne pouvait pas trancher :
+**42 558 → 33 802 octets de documentation**, soit un cinquième de moins, et le
+détail de chaque descente est dans le commit qui l'a produite. Le dépôt perd
+`schema/` (1 908 lignes), `CHANGELOG-CONTRAT.md` (464), `CONTRAT-CONSOMME.md`
+et `CONTRIBUTING.md` ; il garde trois documents et deux skills.
+
+**Ce que l'exécution a appris, et qui n'était dans aucune tâche.**
+
+1. **Un compteur se pose à la FIN d'une tâche, pas entre ses gestes.** T9.5 a
+   descendu son plafond après sa première moitié, et sa seconde — la liste « ce
+   qui ne bouge pas » — l'a fait rougir. La tâche est un geste ; le relevé aussi.
+2. **Le compteur devait dire ce qu'il mesure, et il ne le disait pas.** T9.9
+   écrit deux décisions qui manquaient, donc fait remonter le chiffre. Un
+   compteur qui punirait cela apprendrait à taire les décisions : il mesure la
+   DÉRIVE, et la règle est désormais écrite — il ne se touche que dans le commit
+   qui change les documents, jamais pour faire passer un rouge.
+3. **Deux règles sont réellement tombées en fondant deux documents**, et c'est
+   la vérification qui les a rattrapées, pas la relecture — « aucun validateur
+   ne se conditionne au nom d'un composant » et le renvoi vers la charte des
+   messages. C'est l'argument de la règle 2 rendu en une soirée : une réécriture
+   qui suit un déplacement dans le même geste les aurait perdues sans trace.
+4. **Aucun test des deux dépôts ne lance Style Dictionary**, et T6.1 l'a
+   découvert en se cassant : le fichier appelait la fonction du kit sans
+   l'importer, et la suite restait verte. C'est `npm run tokens` qui l'a dit.
+
+### 9.7 — Ce que cette phase ne fait pas
 
 Elle ne touche à aucun contrat ni à aucun `.tsx` — R7 et R8 portent le corpus.
 Elle ne réécrit aucune phrase du rapport : elles vivent dans le kit depuis T5.2.
