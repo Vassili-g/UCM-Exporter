@@ -15,6 +15,22 @@ Ce document est **T4.6** de
 [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui en fixe la place
 dans l'ordre d'exécution ; le bug promu hors de ce chantier y est **T4.5**.
 
+## État opérationnel — 5 septembre 2026
+
+**La refonte n'est pas terminée : 39 tâches sur 44 sont cochées.** Le socle
+U0-U5.5 est réalisé ou arbitré, mais U4.7, U4.8, U4.9, U6.1 et U6.2 restent
+ouvertes. T4.6 reste donc ouverte dans le plan d'industrialisation.
+
+U4.5 est **partiellement validée** : la règle est écrite dans
+`packages/plugin/SPEC.md` et protégée par un test de source, mais l'observation
+sur un fichier Figma réel n'a pas encore été faite. U5.5 est **clôturée par
+décision sans implémentation** : aucun bouton « Tester la connexion » séparé
+n'a été ajouté. Ces deux statuts ne doivent pas être résumés comme « tout est
+livré ».
+
+**Prochaine séquence :** U4.7, puis U4.8, puis U4.9. U6.1 et U6.2 restent des
+décisions à prendre, pas des bugs à corriger automatiquement.
+
 Ce plan ne touche ni le format du contrat, ni le moteur d'extraction — une seule
 tâche s'en approche, U4.3, et elle est écrite pour ne pas franchir la frontière.
 Il traite ce que le designer voit et fait dans la fenêtre du plugin : le
@@ -983,6 +999,85 @@ reste ouverte.
 
 ---
 
+### U4.7 à U4.9 — Ne montrer que ce qui demande une décision
+
+**Réouvert le 5 septembre 2026 après l'export réel de `Stresstest`.** U4.1 et
+U4.2 ont amélioré la présentation d'un mauvais contenu : le groupe « Constats »
+rend visibles des comportements normaux que le contrat sait déjà décrire. Il
+fait donc relire au designer le fonctionnement interne de l'exporteur, puis lui
+dit qu'il n'a rien à faire. Une carte, une couleur ou une phrase plus courte ne
+réparent pas ce défaut de fond.
+
+- [ ] **U4.7 — Retirer les transformations normales du compte rendu.** Un
+      résultat ne remonte au designer que s'il bloque l'export, s'il rend le
+      contrat partiel, ou s'il demande une vérification ou une correction dans
+      Figma. Toute transformation entièrement prise en charge reste silencieuse
+      dans le plugin, dans la pull request et dans `meta.diagnostics` ; sa règle
+      appartient au format et à ses tests, pas à un résultat d'export.
+
+      Le premier passage audite tous les producteurs actuels de `infos` et les
+      classe par cette règle. Les sept messages observés sur `Stresstest` doivent
+      disparaître du canal designer : composition, structure et auto layout
+      propres à un variant ; pistes FIXED ; taille résolue sous une piste HUG ;
+      position Absolute ; rotation dans un flux. Les six premiers sont des
+      formes que le contrat publie exactement. Le dernier est une limite de
+      rendu web connue, déjà portée par la spécification : il ne propose aucun
+      geste au designer et ne doit pas devenir un faux problème. Le même examen
+      couvre les autres notices existantes, notamment la variation d'échantillon
+      entre variants.
+
+      Ne pas simplement cacher `infos` dans `CompteRendu.js`. Supprimer leur
+      émission à la source, puis retirer leur passage par `ComponentExport`,
+      `code.ts` et le message `diagnostic`. Un message conservé doit nommer son
+      lecteur, son impact et son action ; sinon il n'est ni un diagnostic ni un
+      élément de journal. Mettre à jour la doctrine dans `CONTRIBUTING.md` et la
+      skill de rédaction, puis les tests du moteur : un contrat qui représente
+      correctement une grille, une position ou une rotation ne reçoit aucun
+      diagnostic pour ce seul fait.
+
+- [ ] **U4.8 — Faire d'un vrai problème une carte actionnable.** Le groupe
+      « Constats » disparaît. L'écran n'affiche plus que « À corriger dans
+      Figma (N) » lorsque N est supérieur à zéro, puis « Publication ». Un
+      export sain ne montre donc aucun groupe de diagnostic : son verdict et sa
+      publication suffisent.
+
+      Chaque avertissement est une carte, pas un paragraphe technique. Elle
+      contient, dans cet ordre : une pastille de sévérité ambre (« À corriger »),
+      un titre qui nomme l'élément Figma et le manque concret, une conséquence
+      courte pour le développeur, puis l'action exacte à faire dans Figma. Quand
+      le node est connu, le bouton secondaire « Afficher dans Figma » mène au
+      calque ; il ne faut plus compter sur une phrase entière cliquable. Le
+      rouge reste réservé à l'impossibilité d'exporter et vit dans le verdict de
+      rang 1, non parmi les avertissements.
+
+      La carte n'empile pas les signaux : la pastille et le fond discret portent
+      la sévérité, le poids et la position portent la hiérarchie. Les mots du
+      format (`variantViews`, `composes`, « projection de référence », CSS) ne
+      sortent jamais dans son texte principal. Faire voyager les quatre parties
+      du message dans un modèle interne structuré, depuis le moteur jusqu'à
+      l'UI ; ne pas découper une `string` dans le DOM. La phrase compacte
+      publiée dans `meta.diagnostics` et dans la pull request se dérive du même
+      modèle, conformément à `CONTRIBUTING.md` : fait, impact, action, sans
+      seconde rédaction.
+
+- [ ] **U4.9 — Prouver le résultat dans Figma et dans la galerie.** Ajouter
+      l'état « Stresstest, transformations normales » : les sept cas ci-dessus
+      sont présents dans le contrat mais le compte rendu ne contient ni
+      « Constats », ni carte de diagnostic, ni avertissement de pull request.
+      Ajouter à côté un avertissement réellement actionnable et un échec
+      bloquant, pour contrôler les trois issues possibles : publication saine,
+      correction demandée, export impossible.
+
+      Mettre à jour les tests de contrat, de messages et de galerie ; le test
+      doit échouer si une transformation entièrement prise en charge recrée un
+      diagnostic designer ou si une carte ne fournit pas problème, impact et
+      action. Construire `dist`, recharger ce build précis dans Figma et revoir
+      les trois états dans les deux thèmes, à la taille minimale de la fenêtre.
+      Cette dernière vérification distingue une régression de l'UI d'un bundle
+      Figma resté ancien.
+
+---
+
 ## Phase U5 — La configuration honnête
 
 - [X] **U5.1 — Dire qui gouverne les chemins.** `componentsPath` et `tokensPath`
@@ -1231,7 +1326,9 @@ finitions de CI, orthogonales à l'interface.
    données que U2.2 affiche. **Faites le 5 septembre 2026.**
 6. **U2** — l'écran de travail. **Faite le 5 septembre 2026.**
 7. **U4.1**, **U4.2**, **U4.6** — le compte rendu, qui rend U3 lisible.
-   **Faits le 5 septembre 2026.**
+   **Faits le 5 septembre 2026.** Puis **U4.7 à U4.9** : la présentation n'est
+   utile que lorsque le compte rendu ne contient plus les comportements normaux
+   du format.
 8. **U3.1** à **U3.4** — le pré-vol, une fois qu'il a un endroit où rendre son
    résultat. **Fait le 5 septembre 2026.**
 9. **U4.5** — après T8.1 —, puis **U4.3**, puis **U4.4** : la localisation dans
@@ -1248,7 +1345,8 @@ l'inventaire de U1.1. Une phase livrée sans ses états regardés n'est pas
 livrée.
 
 Dépendances dures : U2.1 → U0.6 · U2.2 → U5.1 · U4.1 → U0.6 · U3.2 → U3.0, U3.1 ·
-U3.3 → U3.1 · U3.4 → U2.6 · U5.3 → U5.2 · U4.4 → U4.3, U4.5.
+U3.3 → U3.1 · U3.4 → U2.6 · U5.3 → U5.2 · U4.4 → U4.3, U4.5 · U4.8 → U4.7 ·
+U4.9 → U4.7, U4.8.
 
 ## Ce que la revue indépendante a corrigé
 

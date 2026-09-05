@@ -5,6 +5,26 @@
 > conclusions ont elles-mêmes été revérifiées dans le code avant d'être
 > intégrées — et l'une d'elles s'était trompée.
 
+## État opérationnel — 5 septembre 2026
+
+Ce plan n'est pas un indicateur global de fin de projet. **90 tâches sur 91
+sont cochées ; T4.6 reste ouverte** tant que la refonte UI n'est pas terminée.
+Les cases cochées ne signifient pas toutes « code livré » : certaines ferment
+une décision sans implémentation (T5.5, T5.6, U5.5), et U4.5 reste partiellement
+validée tant que l'observation sur un fichier Figma réel n'a pas eu lieu.
+
+**À faire réellement :** terminer U4.7 à U4.9 dans
+[`refonte-ui.md`](./refonte-ui.md), puis exécuter la recette GitHub/Figma
+prévue par N6 et N7 du
+[`PLAN-NEUTRALISATION-PLAYGROUND.md`](./PLAN-NEUTRALISATION-PLAYGROUND.md).
+La Phase 10 n'est pas incluse dans le ratio 90/91 : elle vise un Playground
+sans outillage UCM local, mais conserve les composants reconstruits comme
+sondes visuelles.
+
+**Convention de lecture :** `[X]` = tâche ou décision clôturée ; `[ ]` = travail
+restant ; une clôture par décision doit être lue dans son paragraphe de statut
+et ne doit pas être présentée comme une implémentation existante.
+
 ## Pour qui exécute ce plan
 
 Cinq règles de travail. Elles ne sont pas des préférences de style : chacune
@@ -1568,7 +1588,7 @@ une place dans l'ordre d'exécution.
       première tâche de sa phase U3. Elle est close par ce commit et pointe ici ;
       une règle, un domicile.
 
-- [X] **T4.6 — La refonte de l'interface du plugin.** **⚠ Après la Phase 7,
+- [ ] **T4.6 — La refonte de l'interface du plugin.** **⚠ Après la Phase 7,
       avant la Phase 8.** Le plan complet, ses trente tâches et ses dépendances
       vivent dans [refonte-ui.md](./refonte-ui.md) : une règle, un domicile —
       cette entrée ne recopie rien, elle ordonne.
@@ -3215,10 +3235,11 @@ Elle ne crée aucun paquet. Elle ne publie qu'une fois, avec T9.3.
 ## Phase 10 — Neutraliser entièrement le Playground
 
 La décision prise après la clôture de la Phase 9 en dépasse la cible : le
-Playground ne doit plus être un consommateur UCM permanent, mais une cible
-neutre sur laquelle la recette est rejouée dans une branche jetable. Le dossier
-`scripts/`, les contrats, tokens, composants reconstruits et tests propres au
-corpus doivent disparaître de sa branche principale.
+Playground reste un consommateur UCM permanent pour ses contrats et ses tokens,
+mais devient neutre quant à l'outillage. Le dossier `scripts/`, les composants
+reconstruits et les tests propres au corpus doivent disparaître de sa branche
+principale ; les artefacts exportés y restent pour éprouver les packages sur des
+données réelles.
 
 L'inventaire, les destinations, l'ordre et les critères de fin vivent dans
 [PLAN-NEUTRALISATION-PLAYGROUND.md](./PLAN-NEUTRALISATION-PLAYGROUND.md). Les
@@ -3752,6 +3773,15 @@ Phase 6, avec T7.6 à placer.
     mais R8 doit encore décider quelle parité leur demander. Une épuration qui
     trancherait ce périmètre au passage rouvrirait une décision de l'utilisateur
     sans le dire.
+
+17. **La Phase 10 — neutraliser l'outillage du Playground.** *Ajoutée le
+    5 septembre 2026 après la décision de ne conserver aucun script, test ou
+    composant reconstruit spécifique dans ce repository, tout en gardant les
+    contrats et tokens exportés.* Exécuter N1 à N7 dans l'ordre défini par
+    [PLAN-NEUTRALISATION-PLAYGROUND.md](./PLAN-NEUTRALISATION-PLAYGROUND.md).
+    Cette phase part des migrations déjà engagées vers
+    `packages/adapter-typescript`, puis retire le rôle de consommateur permanent
+    que la Phase 9 avait encore conservé.
 
 ### Écart entre cet ordre et ce qui a été exécuté
 
