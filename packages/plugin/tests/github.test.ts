@@ -91,6 +91,39 @@ test('artifactPath dérive les paths du composant et des tokens', () => {
 });
 
 /**
+ * U5.1. Les deux chemins des réglages sont devenus un REPLI facultatif : le
+ * repository décide dès qu'il se décrit. Quand personne ne décide, rien ne doit
+ * s'écrire à un endroit inventé — l'export est refusé, et le message nomme les
+ * deux gestes possibles avec leur acteur.
+ */
+test('sans chemin nulle part, l’export est refusé au lieu d’inventer un endroit', () => {
+  const sansChemin = layoutDesReglages({ ...config, componentsPath: null, tokensPath: null });
+  assert.equal(sansChemin.components, null);
+  assert.equal(sansChemin.tokens, null);
+
+  assert.throws(
+    () => artifactPath({ kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }, sansChemin),
+    /ucm\.config\.json/,
+  );
+  assert.throws(
+    () => artifactPath({ kind: 'tokens', filename: 'tokens.json', content: '{}', warnings: [] }, sansChemin),
+    /ucm\.config\.json/,
+  );
+});
+
+test('un seul chemin renseigné ne refuse que l’autre artefact', () => {
+  const partiel = layoutDesReglages({ ...config, tokensPath: null });
+  assert.equal(
+    artifactPath({ kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }, partiel),
+    'src/components/Button/Button.contract.json',
+  );
+  assert.throws(
+    () => artifactPath({ kind: 'tokens', filename: 'tokens.json', content: '{}', warnings: [] }, partiel),
+    /tokens/,
+  );
+});
+
+/**
  * T4.1. Le repository est seul à savoir où ses contrats vivent ; les réglages
  * du plugin sont locaux à une machine et ne savent rien de lui. Le défaut était
  * masqué par une coïncidence — les défauts des réglages décrivent justement le

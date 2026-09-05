@@ -698,7 +698,7 @@ reste ouverte.
 
 ## Phase U5 — La configuration honnête
 
-- [ ] **U5.1 — Dire qui gouverne les chemins.** `componentsPath` et `tokensPath`
+- [X] **U5.1 — Dire qui gouverne les chemins.** `componentsPath` et `tokensPath`
       sont obligatoires et validés (`validateSettings` dans `config.ts`,
       `localErrors` dans `ConfigurationPage.js`), mais `repositoryLayout` les
       **ignore** dès qu'un `ucm.config.json` lisible existe sur la branche de
@@ -719,8 +719,29 @@ reste ouverte.
       `populate` la remplace par `main`, `src/components`, `src/tokens`. Une
       branche de base délibérément vidée se réaffiche donc « main » à la
       réouverture. Une seule écriture doit rester, et c'est celle du sandbox.
+      *Faite le 5 septembre 2026.* Le test de connexion lit désormais
+      `ucm.config.json` et l'interface dit qui gouverne, AVANT la saisie : les
+      deux libellés portent « (repli) » quand le repository décide. Les deux
+      chemins ne sont plus obligatoires, et `loadPublicSettings` n'invente plus
+      `src/components` ni `src/tokens` — un repli inventé écrirait l'export à un
+      endroit que personne n'a demandé, en le faisant croire choisi. La
+      divergence des valeurs par défaut est refermée du même geste : `populate`
+      ne les réécrit plus, les placeholders portent la suggestion et le champ ne
+      porte que ce qui est enregistré.
+      **Un cas neuf est apparu en rendant ces champs facultatifs**, et il fallait
+      le nommer : personne ne décide de l'endroit. `artifactPath` refuse alors
+      l'export au lieu d'écrire ailleurs, et le message donne les deux gestes
+      avec leur acteur — un développeur ajoute `ucm.config.json`, ou le designer
+      renseigne le chemin. La configuration l'annonce avant l'export.
+      **Le bénéfice second est acquis :** un `ucm.config.json` illisible se
+      découvrait après l'analyse complète du composant. Il a maintenant sa cause
+      de connexion, `depot-mal-decrit`, et le message du repository sur son
+      propre fichier est repris tel quel. `ErreurDeDescription` existe pour que
+      ce cas soit RECONNU : sans elle, un fichier fautif et une panne de réseau
+      arrivent tous deux avec un statut nul, et le plugin enverrait vérifier une
+      connexion pendant qu'un développeur doit corriger un fichier.
 
-- [ ] **U5.2 — Trois causes, trois messages.** `testGithubConnection` avale
+- [X] **U5.2 — Trois causes, trois messages.** `testGithubConnection` avale
       l'erreur et rend un booléen : pas de configuration, token invalide (401) et
       dépôt introuvable ou droits manquants (404) donnent la même pastille rouge,
       alors que le geste diffère dans les trois cas. L'information existe à la
@@ -731,6 +752,26 @@ reste ouverte.
       dise si l'enregistrement a réussi — est SOUS la ligne de flottaison, comme
       le bouton « Enregistrer » qui la produit. La cause affichée ici doit
       remonter avec elle.
+      *Faite le 5 septembre 2026.* `testGithubConnection` rendait un booléen ;
+      `diagnostiquerConnexion` rend une cause, et `src/connexion.ts` en est
+      l'unique autorité : la pastille, son état d'affichage et le geste sortent
+      d'un seul appel. Sept causes, sept gestes, et un test refuse qu'une cause
+      d'échec n'en nomme aucun ou en partage un avec une autre.
+      **Ce que l'implémentation a trouvé en plus de l'énoncé.** La pastille
+      écrivait ses trois textes de son côté : une seconde autorité sur un état
+      qu'elle ne connaît pas. Elle ne les écrit plus. Le statut du formulaire
+      affirmait « Configuration enregistrée » à CHAQUE test de connexion, y
+      compris celui de l'ouverture, où personne n'avait rien enregistré ; il ne
+      le dit plus que si un enregistrement a eu lieu, ce que seule l'UI sait.
+      Et il ne se cachait plus quand la page était masquée : le designer qui
+      arrive par la pastille trouvait un formulaire sans raison. C'est cette
+      phrase fausse qui imposait ce silence.
+      **La place a été tranchée, elle ne l'était pas.** Le statut remonte SOUS la
+      pastille, en tête de page. Le formulaire dépasse la fenêtre dès que le
+      repository se décrit : l'un des deux bouts sera toujours à faire défiler,
+      et c'est l'arrivée qu'il faut servir, parce que c'est le moment où l'on ne
+      sait pas quoi faire. Le résultat d'un enregistrement s'écrit au même
+      endroit : deux emplacements pour un même fait en feraient deux faits.
 
 - [ ] **U5.3 — Dire pourquoi la publication a échoué.** Même perte, l'autre
       bout : un échec de publication devient « Échec GitHub » suivi du message
@@ -881,7 +922,7 @@ finitions de CI, orthogonales à l'interface.
    fenêtre, la fenêtre se redimensionne, et `styles.css` a cessé d'être un
    endroit où une couleur se décide.
 5. **U5.1** et **U5.2** — la destination réelle et la cause d'un échec sont des
-   données que U2.2 affiche.
+   données que U2.2 affiche. **Faites le 5 septembre 2026.**
 6. **U2** — l'écran de travail.
 7. **U4.1**, **U4.2**, **U4.6** — le compte rendu, qui rend U3 lisible.
 8. **U3.1** à **U3.4** — le pré-vol, une fois qu'il a un endroit où rendre son

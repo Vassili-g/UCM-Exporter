@@ -190,12 +190,22 @@ p {
   line-height: var(--corps-interligne);
 }
 
+/*
+ * La pastille est un bouton (U5.2). Sa surface se limite à son texte : un
+ * bouton large d'une fenêtre entière se cliquerait par accident, et rien ne
+ * dirait où il commence.
+ */
 .connection-status {
   display: inline-flex;
+  width: fit-content;
   align-items: center;
   gap: var(--espace-serre);
+  padding: 0;
+  border: 0;
+  background: none;
   color: var(--texte-danger);
-  white-space: nowrap;
+  cursor: pointer;
+  text-align: left;
 }
 
 .connection-status::before {
@@ -319,6 +329,7 @@ p {
 .btn:focus-visible,
 .icon-button:focus-visible,
 .header-back-button:focus-visible,
+.connection-status:focus-visible,
 .log-line a:focus-visible {
   outline: 2px solid var(--bordure-marque);
   outline-offset: 2px;
@@ -363,8 +374,8 @@ p {
   color: var(--texte-danger);
 }
 
+/* Aucune hauteur réservée : le bloc est caché tant qu'il n'a rien à dire. */
 .config-status {
-  min-height: var(--corps-interligne);
   color: var(--texte-second);
 }
 

@@ -110,14 +110,15 @@ function requestExport(type) {
 actionCard.append(exportComponentButton, exportTokensButton, statusNote);
 exportPage.append(actionCard, logPanel.element);
 
-function updateConnection(state) {
+/**
+ * L'UI n'invente plus rien de la connexion : elle place ce que le sandbox a
+ * décidé (U5.2). Elle en écrivait auparavant les trois textes de son côté,
+ * c'est-à-dire une seconde autorité sur un état qu'elle ne connaît pas.
+ */
+function updateConnection({ state, pastille, geste }) {
   header.connection.dataset.state = state;
-  header.connection.textContent = state === 'connected'
-    ? 'repository connecté'
-    : state === 'checking'
-      ? 'connexion…'
-      : 'repository non connecté';
-  configurationPage.updateConnection(state);
+  header.connection.textContent = pastille;
+  configurationPage.updateConnection(state, geste);
 }
 
 /**
@@ -147,9 +148,10 @@ onmessage = (event) => {
     configurationPage.acceptRemoteSettings(message.settings);
   }
 
+  if (message.type === 'layout') configurationPage.afficherGouvernance(message);
   if (message.type === 'settings-validation') configurationPage.renderErrors(message.errors);
   if (message.type === 'settings-save-error') configurationPage.showSaveError();
-  if (message.type === 'connection') updateConnection(message.state);
+  if (message.type === 'connection') updateConnection(message);
   // `level` est absent aujourd'hui et le journal retombe alors sur `info` ;
   // c'est U4.1 qui le renseignera à l'envoi. Le lire ici coûte un argument et
   // évite que le champ déclaré reste inerte d'un seul côté.

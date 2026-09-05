@@ -14,8 +14,20 @@ export type RepositorySettings = {
   tokensPath: string;
 };
 
+/**
+ * Ce qu'un chemin de repli vaut une fois validé : un chemin, ou rien.
+ *
+ * Les deux chemins étaient OBLIGATOIRES, alors que `repositoryLayout` les
+ * ignore dès qu'un `ucm.config.json` lisible existe (U5.1). Exiger une valeur
+ * que le dépôt contredit revient à faire saisir une donnée sans effet, puis à
+ * la faire croire vraie.
+ */
+export type CheminDeRepli = string | null;
+
 /** Configuration complète utilisée par le client GitHub. */
-export type GithubConfig = RepositorySettings & {
+export type GithubConfig = Omit<RepositorySettings, 'componentsPath' | 'tokensPath'> & {
+  componentsPath: CheminDeRepli;
+  tokensPath: CheminDeRepli;
   owner: string;
   repo: string;
   githubPat: string;
@@ -76,6 +88,17 @@ export function normalizeRepositoryPath(value: string): string | null {
   return segments.join('/');
 }
 
+/**
+ * Un chemin de repli : sa forme normalisée, `null` quand il est vide, et
+ * `false` quand il est écrit mais inutilisable. Les trois cas se distinguent —
+ * confondre « absent » et « fautif » ferait taire la seule erreur de saisie que
+ * ces champs peuvent encore produire.
+ */
+function cheminDeRepli(valeur: string): CheminDeRepli | false {
+  if (!valeur.trim()) return null;
+  return normalizeRepositoryPath(valeur) ?? false;
+}
+
 /** Valide et normalise les réglages avant tout appel GitHub. */
 export function validateSettings(input: SettingsInput, storedPat = ''): SettingsValidation {
   const errors: SettingsValidation['errors'] = {};
@@ -85,16 +108,26 @@ export function validateSettings(input: SettingsInput, storedPat = ''): Settings
   const baseBranch = input.baseBranch.trim();
   if (!baseBranch) errors.baseBranch = 'La branche de base est obligatoire.';
 
-  const componentsPath = normalizeRepositoryPath(input.componentsPath);
-  if (!componentsPath) errors.componentsPath = 'Le chemin des composants est obligatoire et doit rester relatif.';
+  /*
+   * Les deux chemins sont un REPLI depuis U5.1 : vides, ils laissent le
+   * repository décider par son `ucm.config.json`. Leur forme reste vérifiée —
+   * un chemin qui remonte hors du repository n'est jamais une réponse — mais
+   * leur absence n'est plus une erreur.
+   */
+  const componentsPath = cheminDeRepli(input.componentsPath);
+  if (componentsPath === false) {
+    errors.componentsPath = 'Le chemin des composants doit rester relatif au repository.';
+  }
 
-  const tokensPath = normalizeRepositoryPath(input.tokensPath);
-  if (!tokensPath) errors.tokensPath = 'Le chemin des tokens est obligatoire et doit rester relatif.';
+  const tokensPath = cheminDeRepli(input.tokensPath);
+  if (tokensPath === false) {
+    errors.tokensPath = 'Le chemin des tokens doit rester relatif au repository.';
+  }
 
   const githubPat = input.githubPat?.trim() || storedPat.trim();
   if (!githubPat) errors.githubPat = 'Le Personal Access Token est obligatoire pour créer une PR.';
 
-  if (!repository || !baseBranch || !componentsPath || !tokensPath || !githubPat) {
+  if (!repository || !baseBranch || componentsPath === false || tokensPath === false || !githubPat) {
     return { valid: false, errors, config: null };
   }
 
@@ -125,8 +158,10 @@ export async function loadPublicSettings(): Promise<PublicSettings> {
   return {
     repoUrl: typeof repoUrl === 'string' ? repoUrl : '',
     baseBranch: typeof baseBranch === 'string' ? baseBranch : 'main',
-    componentsPath: typeof componentsPath === 'string' ? componentsPath : 'src/components',
-    tokensPath: typeof tokensPath === 'string' ? tokensPath : 'src/tokens',
+    // Aucun chemin par défaut : un repli inventé écrirait l'export à un endroit
+    // que personne n'a demandé, et le ferait croire choisi (U5.1).
+    componentsPath: typeof componentsPath === 'string' ? componentsPath : '',
+    tokensPath: typeof tokensPath === 'string' ? tokensPath : '',
     hasPat: typeof githubPat === 'string' && githubPat.trim().length > 0,
   };
 }
@@ -150,6 +185,8 @@ export async function saveSettings(input: SettingsInput): Promise<SettingsValida
     baseBranch: input.baseBranch.trim(),
     componentsPath: normalizeRepositoryPath(input.componentsPath) ?? input.componentsPath.trim(),
     tokensPath: normalizeRepositoryPath(input.tokensPath) ?? input.tokensPath.trim(),
+    // (le rangement garde la saisie telle quelle : la validation ci-dessus a
+    // déjà refusé ce qui n'était pas un chemin acceptable)
   };
 
   await Promise.all([

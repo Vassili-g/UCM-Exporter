@@ -54,11 +54,24 @@ export function createHeader(page, onSettings, onBack) {
   };
   setPage(page);
 
-  const connection = document.createElement('span');
+  /*
+   * La pastille porte la seule information de l'en-tête qui demande un geste :
+   * elle est donc un BOUTON, et il mène là où ce geste se fait (U5.2).
+   *
+   * `aria-live` plutôt que `role="status"` : le rôle écraserait celui du
+   * bouton. Ce n'est pas la double annonce que U0.2 a fermée — la note et le
+   * journal disaient le MÊME texte ; celui-ci n'est dit nulle part ailleurs.
+   *
+   * Son texte vient du sandbox et n'est plus écrit ici : `etatDeConnexion` en
+   * est l'unique autorité.
+   */
+  const connection = document.createElement('button');
+  connection.type = 'button';
   connection.className = 'connection-status';
   connection.dataset.state = 'disconnected';
-  connection.textContent = 'non connecté';
-  connection.setAttribute('role', 'status');
+  connection.title = 'Ouvrir la configuration';
+  connection.setAttribute('aria-live', 'polite');
+  connection.addEventListener('click', () => onSettings?.());
 
   const settingsButton = document.createElement('button');
   settingsButton.type = 'button';

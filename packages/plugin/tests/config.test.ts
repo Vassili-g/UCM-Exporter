@@ -59,11 +59,40 @@ test('validateSettings détaille une configuration invalide sans planter', () =>
 
   assert.equal(result.valid, false);
   assert.equal(result.config, null);
+  // `tokensPath` vide n'est PLUS une erreur : c'est un repli absent (U5.1).
   assert.deepEqual(Object.keys(result.errors).sort(), [
     'baseBranch',
     'componentsPath',
     'githubPat',
     'repoUrl',
-    'tokensPath',
   ]);
+});
+
+test('un chemin vide laisse le repository décider, un chemin fautif est refusé', () => {
+  // U5.1 : les deux chemins sont un repli. Leur absence est une réponse, et
+  // `repositoryLayout` la remplace par ce que le repository dit de lui-même.
+  // Leur FORME reste vérifiée : un chemin qui remonte hors du repository
+  // n'écrirait pas là où on croit.
+  const vides = validateSettings({
+    repoUrl: 'https://github.com/acme/design-system',
+    baseBranch: 'main',
+    componentsPath: '',
+    tokensPath: '   ',
+    githubPat: 'github_pat_secret',
+  });
+
+  assert.equal(vides.valid, true);
+  assert.equal(vides.config?.componentsPath, null);
+  assert.equal(vides.config?.tokensPath, null);
+
+  const fautif = validateSettings({
+    repoUrl: 'https://github.com/acme/design-system',
+    baseBranch: 'main',
+    componentsPath: '../ailleurs',
+    tokensPath: '',
+    githubPat: 'github_pat_secret',
+  });
+
+  assert.equal(fautif.valid, false);
+  assert.deepEqual(Object.keys(fautif.errors), ['componentsPath']);
 });
