@@ -331,13 +331,13 @@ designer — appartient à `SPEC.md`. Une règle qui fait les deux se range du c
 de ce qu’un consommateur doit savoir pour lire l’artefact, et l’autre document y
 renvoie : c’est le consommateur qui n’a pas accès au code.
 
-*Réserve datée du 5 septembre 2026, et elle a une fin :* le temps 1 de la
-scission a dupliqué les paragraphes à cheval au lieu de les trancher, pour
-prouver qu’aucune règle n’était perdue. Tant que le temps 2 dure, une règle lue
-dans l’un peut avoir sa jumelle exacte dans l’autre —
-`tests/scissionSpec.test.mjs` en compte les lignes et interdit que ce nombre
-remonte. La table ci-dessus dit où chaque règle ATTERRIRA ; elle décrit déjà ce
-que le temps 2 exécute.
+*La réserve du 5 septembre 2026 est levée le même jour :* le temps 1 avait
+dupliqué les paragraphes à cheval au lieu de les trancher, pour prouver
+qu’aucune règle n’était perdue ; le temps 2 les a tranchés, et le compteur de
+`scissionSpec.test.mjs` est descendu à zéro. Le test et la spécification figée
+sont partis avec lui — un contrôle qui survit à sa cause devient une
+information périmée. La table ci-dessus ne dit plus où une règle atterrira :
+elle dit où elle est.
 
 Ailleurs, un lien. Une mention d’une phrase à une autre altitude — le `README`
 qui résume, la `ROADMAP` qui date une étape — n’est pas une répétition.

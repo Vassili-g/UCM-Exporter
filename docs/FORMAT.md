@@ -1064,8 +1064,9 @@ vraies références.
 `name` conserve le nom Figma exact ; le fichier emploie son identifiant
 PascalCase ASCII canonique (`Icon / Button` → `IconButton.contract.json`,
 `2e bouton` → `Component2eBouton.contract.json`). Ce même identifiant nomme le
-dossier, le composant React et son interface `<IdentifiantCode>Props`, sans
-faire du nom d'affichage un identifiant TypeScript. Le contrat décrit une **API
+dossier, et le symbole que le code lui donne — sans faire du nom d'affichage un
+identifiant de code. Ce que ce symbole EST — une fonction, une classe, une
+struct — appartient au repository ; le contrat ne nomme aucune stack. Le contrat décrit une **API
 unifiée** (wrapper + set comme un seul composant). Exemple Button :
 
 ```json
