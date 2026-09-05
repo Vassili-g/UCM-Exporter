@@ -20,6 +20,7 @@ import { normalizePropKey } from './parsers';
 import { buildContractPropertySurface } from './propertySurface';
 import type { ContractPropertySurface } from './propertySurface';
 import type { ComposedDependency } from '@ucm-kit/core/format';
+import { pousserLocalise } from './localisation';
 
 /** Noms compactés des composants qui possèdent leur propre contrat. */
 export type ContractedNames = ReadonlySet<string>;
@@ -161,8 +162,8 @@ async function contractedOwner(
   // ou nulle part.
   const main = await instance.getMainComponentAsync().catch(() => null);
   if (!main) {
-    warnings.push(
-      `Layer « ${instance.name} » : le composant qu'il instancie est introuvable. `
+    pousserLocalise(warnings, 'Layer', instance,
+      ` : le composant qu'il instancie est introuvable. `
         + `L'export ne peut pas reconnaître une dépendance derrière ce layer. Si ce `
         + `composant a son propre contrat, le contrat en cours publiera ses layers parmi `
         + `ses propres slots et ses couleurs parmi ses propres tokens, sans le déclarer `

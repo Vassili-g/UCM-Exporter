@@ -16,6 +16,7 @@ import {
   sizeBoundFields,
 } from './flexLayout';
 import type { ContainerSizing, GridStructuralSize, SizeBounds, SlotSize } from '@ucm-kit/core/format';
+import { pousserLocalise } from './localisation';
 
 /** Une liste d'alternatives ; tous les champs d'une alternative sont requis. */
 export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;
@@ -370,8 +371,8 @@ async function resolveGroup<K extends string>(
     // Volontairement sans `label` : les trois appels (gap, padding X, padding Y)
     // produisent le même texte et la déduplication n'en garde qu'un. Le geste à
     // faire est le même pour les trois.
-    warnings.push(
-      `Layer « ${node.name} » : ce layer n'utilise pas d'auto layout. Son gap et ses ` +
+    pousserLocalise(warnings, 'Layer', node,
+      ` : ce layer n'utilise pas d'auto layout. Son gap et ses ` +
         `paddings n'existent pas dans Figma et restent absents du contrat. Leur absence ` +
         `ne veut donc pas dire zéro. Appliquez un auto layout au layer si son espacement ` +
         `doit être contractuel, puis réexportez.`,
@@ -394,8 +395,8 @@ async function resolveGroup<K extends string>(
     return null;
   }
   if (inapplicable === 'rows-space-between') {
-    warnings.push(
-      `Layer « ${node.name} » : son vertical gap est réglé sur « Auto », donc Figma répartit ` +
+    pousserLocalise(warnings, 'Layer', node,
+      ` : son vertical gap est réglé sur « Auto », donc Figma répartit ` +
         `lui-même l'espace entre ses lignes. Le contrat ne sait pas décrire cette répartition : ` +
         `aucun gap entre les lignes n'est exporté, et son absence ne veut donc pas dire zéro. ` +
         `Donnez une valeur reliée à une variable au vertical gap si cet espacement doit être ` +
@@ -448,8 +449,8 @@ async function resolveGroup<K extends string>(
         });
         return detail;
       }
-      warnings.push(
-        `Layer « ${node.name} », ${label} : les côtés ne sont pas reliés à la même ` +
+      pousserLocalise(warnings, 'Layer', node,
+        `, ${label} : les côtés ne sont pas reliés à la même ` +
           `variable (${tokensByAlternative[asymmetricIndex].join(', ')}). Rien n'est exporté ` +
           `pour cette valeur. Reliez-les toutes à la même variable, puis réexportez.`,
       );
@@ -458,8 +459,8 @@ async function resolveGroup<K extends string>(
 
     const candidates = Array.from(new Set(tokensByAlternative.flat()));
     if (candidates.length > 1) {
-      warnings.push(
-        `Layer « ${node.name} », ${label} : deux réglages Figma se contredisent ` +
+      pousserLocalise(warnings, 'Layer', node,
+        `, ${label} : deux réglages Figma se contredisent ` +
           `(${candidates.join(', ')}). Rien n'est exporté pour cette valeur. Ne définissez ` +
           `cette valeur que d'une seule façon, puis réexportez.`,
       );
@@ -501,8 +502,8 @@ async function resolveGroup<K extends string>(
           : null,
       ].filter((value): value is string => Boolean(value));
       if (details.length > 0) {
-        warnings.push(
-          `Layer « ${node.name} », ${label} : les côtés tokenisés sont exportés, mais la `
+        pousserLocalise(warnings, 'Layer', node,
+          `, ${label} : les côtés tokenisés sont exportés, mais la `
             + `définition reste partielle (${details.join(' ; ')}). Reliez les valeurs non `
             + `neutres manquantes à des variables, puis réexportez.`,
         );
@@ -514,8 +515,8 @@ async function resolveGroup<K extends string>(
   const withBindings = resolved.filter((entry) => entry.aliases.some(Boolean));
   if (withBindings.length === 0) {
     if (hasImplicitDefaultValue(node, alternatives)) return null;
-    warnings.push(
-      `Layer « ${node.name} », ${label} : aucune variable Figma n'est reliée. La valeur ` +
+    pousserLocalise(warnings, 'Layer', node,
+      `, ${label} : aucune variable Figma n'est reliée. La valeur ` +
         `fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
     );
     return null;
@@ -540,8 +541,8 @@ async function resolveGroup<K extends string>(
       : null,
   ].filter((detail): detail is string => Boolean(detail));
 
-  warnings.push(
-    `Layer « ${node.name} », ${label} : la définition est incomplète ` +
+  pousserLocalise(warnings, 'Layer', node,
+    `, ${label} : la définition est incomplète ` +
       `(${details.join(' ; ')}). Rien n'est exporté pour cette valeur. Reliez les ` +
       `variables manquantes, puis réexportez.`,
   );
@@ -782,8 +783,8 @@ export function gridStructuralSize(
   if (!width && !height) return null;
 
   const axes = [width ? 'colonnes' : null, height ? 'lignes' : null].filter(Boolean).join(' et ');
-  infos.push(
-    `Layer « ${parent.name} » : les enfants de ses ${axes} qui hug publient leur taille en `
+  pousserLocalise(infos, 'Layer', parent,
+    ` : les enfants de ses ${axes} qui hug publient leur taille en `
       + `pixels, exception propre aux grilles. Figma n'expose pas leur remplissage sous une `
       + `piste qui hug et n'en rend que la taille résolue. Ces valeurs décrivent sa structure `
       + `Figma sans devenir des tokens ; aucune modification du design n'est demandée.`,
@@ -819,8 +820,8 @@ export async function resolveSizeBounds(
   const bound = fields.filter((field) => Boolean(firstVariableAlias(getBinding(node, field))));
   const unbound = fields.filter((field) => !bound.includes(field));
   if (unbound.length > 0) {
-    warnings.push(
-      `Layer « ${node.name} » : il fixe ${unbound.map(fieldLabel).join(', ')} sans variable ` +
+    pousserLocalise(warnings, 'Layer', node,
+      ` : il fixe ${unbound.map(fieldLabel).join(', ')} sans variable ` +
         `Figma. Le contrat ne publie que les bornes reliées à une variable. Un nombre écrit à ` +
         `la main est une mesure de maquette, pas une décision du design system. Le ` +
         `développeur rendra donc ce layer sans elles. Reliez ces bornes à une variable, puis ` +

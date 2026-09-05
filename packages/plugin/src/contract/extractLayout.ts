@@ -66,6 +66,7 @@ import type {
   PaddingY,
   Radius,
 } from '@ucm-kit/core/format';
+import { noter, pousserLocalise, sujet } from './localisation';
 
 /**
  * Les dépendances que l'arbre place, indexées par le slot qui les rend.
@@ -138,7 +139,9 @@ function layoutDirection(node: SceneNode): LayoutDirection {
  * dépendance, que ce contrat-ci ne décrit pas.
  */
 function warnUnsupportedProperties(node: SceneNode, warnings: string[]): void {
-  warnings.push(...unsupportedPropertyWarnings(node));
+  for (const message of unsupportedPropertyWarnings(node)) {
+    warnings.push(noter(warnings, message, sujet('Layer', node)));
+  }
 }
 
 /**
@@ -165,8 +168,8 @@ function warnUndeclaredDrawing(
   if (!estUnDessinNonDeclare(child, iconNames, composed)) return;
   if (estUnDessinNonDeclare(parent, iconNames, composed)) return;
   const cible = calqueDeDessinANommer(child, iconNames, composed);
-  warnings.push(
-    `Layer « ${cible.name} » : il ne contient qu'un dessin, et aucune règle @icons ne le `
+  pousserLocalise(warnings, 'Layer', cible,
+    ` : il ne contient qu'un dessin, et aucune règle @icons ne le `
       + `désigne. Le contrat ne décrit pas les tracés : le développeur connaîtra la place `
       + `et les couleurs de ce layer, jamais son dessin. Ajoutez une règle @icons dont le `
       + `layer « icon » porte ce nom, puis réexportez.`,
@@ -198,8 +201,8 @@ function applyRotation(
     && !isAbsolutePositioned(node)
     && (isLinearAutoLayout(parent) || isGridAutoLayout(parent));
   if (dansUnFlux) {
-    infos.push(
-      `Layer « ${node.name} » : sa rotation est publiée, et le développeur la rendra. Figma `
+    pousserLocalise(infos, 'Layer', node,
+      ` : sa rotation est publiée, et le développeur la rendra. Figma `
         + `espace toutefois ses voisins d'après sa boîte tournée, là où le rendu web garde sa `
         + `boîte droite : la place qu'il prend dans « ${parent.name} » peut différer de quelques `
         + `pixels. Aucune modification du design n'est demandée.`,
@@ -271,15 +274,15 @@ async function applyContainerProperties(
     // pas. Un cadre de dépendance fait exception : c'est lui qui place le
     // composant qu'il enveloppe, et sa disposition manque même autour d'un seul.
     if (childCount > 1) {
-      warnings.push(
-        `Layer « ${node.name} » : il range ${childCount} layers mais n'utilise pas d'auto ` +
+      pousserLocalise(warnings, 'Layer', node,
+        ` : il range ${childCount} layers mais n'utilise pas d'auto ` +
           `layout. Le contrat exporte leurs tokens et leurs visibilités, mais pas leur ` +
           `disposition : le développeur les placera autrement que dans Figma. Appliquez un auto ` +
           `layout à ce layer, puis réexportez.`,
       );
     } else if (dependencies.length > 0) {
-      warnings.push(
-        `Layer « ${node.name} » : il enveloppe ${nommerDependances(dependencies)} mais ` +
+      pousserLocalise(warnings, 'Layer', node,
+        ` : il enveloppe ${nommerDependances(dependencies)} mais ` +
           `n'utilise pas d'auto layout. Le contrat publie la dépendance sans la disposition ` +
           `de ce calque, et le développeur la rendra sans ce cadre. Appliquez un auto layout ` +
           `à ce layer, puis réexportez.`,
@@ -458,7 +461,7 @@ async function describeNode(
   // dans les deux cas.
   if (!describesChildren && !estUneDependance) {
     const coupe = depthLimitWarning(child, iconNames, composed, depth);
-    if (coupe) warnings.push(coupe);
+    if (coupe) warnings.push(noter(warnings, coupe, sujet('Layer', child)));
   }
 
   // Une peinture posée SOUS une feuille appartient à cette feuille. Le contrat
@@ -487,8 +490,8 @@ async function describeNode(
     for (const dependency of dependencies) {
       if (!dependency.visibilityProp) continue;
       if (normalizePropKey(directVisibility) === dependency.visibilityProp) continue;
-      warnings.push(
-        `Layer « ${child.name} » : sa visibilité et celle du composant ` +
+      pousserLocalise(warnings, 'Layer', child,
+        ` : sa visibilité et celle du composant ` +
           `« ${dependency.component} » qu'il contient dépendent de deux component ` +
           `properties différentes. Seule celle du layer est exportée. Utilisez la même pour ` +
           `les deux.`,
@@ -538,8 +541,8 @@ async function describeNode(
       placed.set(entry, dependencies[0]);
     }
     const plusieurs = dependencies.length > 1;
-    warnings.push(
-      `Layer « ${child.name} » : il enveloppe ${nommerDependances(dependencies)} mais aucun ` +
+    pousserLocalise(warnings, 'Layer', child,
+      ` : il enveloppe ${nommerDependances(dependencies)} mais aucun ` +
         `de ses calques exportables n'y mène. ${plusieurs
           ? 'Le contrat ne peut placer aucune de ces dépendances. Un slot ne porte qu’un ' +
             'composant, donc le développeur ne les rendra pas. Rendez visibles les calques qui ' +
@@ -809,8 +812,8 @@ export function warnLayersOutsideLayoutNode(
     if (parent && 'children' in parent) {
       for (const sibling of parent.children) {
         if (sibling.id === current.id || !exportable.has(sibling.id)) continue;
-        warnings.push(
-          `Layer « ${sibling.name} » : il est posé à côté de l'auto layout frame qui porte le ` +
+        pousserLocalise(warnings, 'Layer', sibling,
+          ` : il est posé à côté de l'auto layout frame qui porte le ` +
             `gap et le padding, pas dedans. Le contrat ne lui donne ni slot, ni typographie, ni ` +
             `visibilité : le développeur ne le rendra pas. Déplacez-le dans cet auto layout ` +
             `frame, puis réexportez.`,
@@ -838,8 +841,8 @@ function warnIntermediateBounds(
   while (current && current !== component) {
     const bornes = sizeBoundFields(current);
     if (bornes.length > 0) {
-      warnings.push(
-        `Layer « ${current.name} » : il fixe ${bornes.map(fieldLabel).join(', ')}, mais il ` +
+      pousserLocalise(warnings, 'Layer', current,
+        ` : il fixe ${bornes.map(fieldLabel).join(', ')}, mais il ` +
           `s'intercale entre le composant et ses slots. Le contrat publie les bornes du ` +
           `composant et celles de chaque slot, jamais celles d'un layer intermédiaire : le ` +
           `développeur rendra ce layer sans elles. Portez ces bornes sur le composant ou sur le ` +
@@ -859,8 +862,8 @@ function warnIntermediateBounds(
  */
 function warnMissingDirection(layoutNode: SceneNode, warnings: string[]): void {
   if (autoLayoutDirection(layoutNode)) return;
-  warnings.push(
-    `Layer « ${layoutNode.name} » : il n'utilise pas d'auto layout. Le ` +
+  pousserLocalise(warnings, 'Layer', layoutNode,
+    ` : il n'utilise pas d'auto layout. Le ` +
       `contrat annonce malgré tout une disposition horizontale, la seule qu'il sache écrire par ` +
       `défaut, et le développeur placera donc ses layers autrement que dans Figma. Appliquez un ` +
       `auto layout à ce layer, puis réexportez.`,

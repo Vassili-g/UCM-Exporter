@@ -19,6 +19,7 @@ import { getSlotTokens } from './extractSlotTokens';
 import type { TokenResolver, VariantColor, VariantStrokeColor } from './extractSlotTokens';
 import { toRef } from '@ucm-kit/core/format';
 import type { SlotStrokes, SlotTokens, VariantStrokes, VariantTokens } from '@ucm-kit/core/format';
+import { pousserLocalise } from './localisation';
 export { getSlotTokens } from './extractSlotTokens';
 export type { VariantTokenLeaves } from './extractSlotTokens';
 
@@ -186,7 +187,7 @@ export async function extractVariantTokens(
   for (const { entry, leaf, variantWarnings } of collected) {
     warnings.push(...variantWarnings);
     if (leaf.paints.length === 0 && leaf.strokes.length === 0) {
-      notices.push(`Variant « ${entry.component.name} » : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui. Reliez ses fills et ses strokes à des variables Figma, puis réexportez.`);
+      pousserLocalise(notices, 'Variant', entry.component, ` : aucun fill ni stroke n’est relié à une variable. Aucune couleur n’est exportée pour lui. Reliez ses fills et ses strokes à des variables Figma, puis réexportez.`);
     }
     // La clé de repli suit la même normalisation que toutes les valeurs
     // d'axes : l'arbre reste homogène même sans axe déclaré.

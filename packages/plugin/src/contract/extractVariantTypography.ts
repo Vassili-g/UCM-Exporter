@@ -21,6 +21,7 @@ import type {
   TypographyTokens,
   VariantTypography,
 } from '@ucm-kit/core/format';
+import { pousserLocalise } from './localisation';
 
 type TextStyleLoader = (id: string) => Promise<BaseStyle | null>;
 
@@ -103,8 +104,8 @@ async function loadTextStyle(
 ): Promise<LoadedStyle | null> {
   const styleId = textNode.textStyleId;
   if (typeof styleId !== 'string' || !styleId) {
-    warnings.push(
-      `Layer « ${textNode.name} » : aucun text style unique n'est appliqué. Sa typographie ` +
+    pousserLocalise(warnings, 'Layer', textNode,
+      ` : aucun text style unique n'est appliqué. Sa typographie ` +
         `manquera au développeur. Appliquez un text style au layer entier, puis réexportez.`,
     );
     return null;
@@ -112,8 +113,8 @@ async function loadTextStyle(
 
   const style = await loadStyle(styleId).catch(() => null);
   if (!style || style.type !== 'TEXT') {
-    warnings.push(
-      `Layer « ${textNode.name} » : le text style appliqué est introuvable. Sa typographie ` +
+    pousserLocalise(warnings, 'Layer', textNode,
+      ` : le text style appliqué est introuvable. Sa typographie ` +
         `manquera au développeur. Appliquez de nouveau un text style publié, puis réexportez.`,
     );
     return null;
@@ -193,8 +194,8 @@ export async function extractVariantTypography(
     const uses: TextStyleUse[] = [];
     for (const { slotPath, textNode } of textSlots(layoutNode, iconNames, composed)) {
       if (allowedSlotPaths && !allowedSlotPaths.has(JSON.stringify(slotPath))) {
-        pathNotices.push(
-          `Variant « ${entry.component.name} », layer « ${textNode.name} » : son chemin de ` +
+        pousserLocalise(pathNotices, 'Variant', entry.component,
+          `, layer « ${textNode.name} » : son chemin de ` +
             `slots diffère du variant de référence. Son text style ne peut pas être situé dans ` +
             `le contrat. Alignez les branches de texte entre variants, puis réexportez.`,
         );

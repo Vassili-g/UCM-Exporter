@@ -19,6 +19,7 @@ import type { WrapperReference } from './componentTree';
 import { getAllNodes } from './exportableNodes';
 import type { ComposedInstances } from './exportableNodes';
 import { BINDING_PATTERNS, hasCompleteBinding } from './nodeBindings';
+import { pousserLocalise } from './localisation';
 
 /**
  * Trouve le calque qui porte les dimensions. On compte, pour chaque calque
@@ -154,8 +155,8 @@ export async function electVariantLayoutNodes(
       ? await matchingWrapperInstance(variant, wrapperOwnerId, composed)
       : null;
     if (wrapperOwnerId && !instance) {
-      warnings.push(
-        `Variant « ${variant.name} » : il ne contient pas le composant imbriqué qui porte les ` +
+      pousserLocalise(warnings, 'Variant', variant,
+        ` : il ne contient pas le composant imbriqué qui porte les ` +
           `dimensions des autres variants. Ses dimensions et ses slots sont lus sur un autre ` +
           `layer, et peuvent décrire autre chose. Ajoutez-y ce composant, puis réexportez.`,
       );

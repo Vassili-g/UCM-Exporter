@@ -17,6 +17,7 @@ import type {
   LayoutInset,
   SizeBounds,
 } from '@ucm-kit/core/format';
+import { pousserLocalise } from './localisation';
 
 type FlexContainerProperties = {
   justifyContent?: JustifyContent;
@@ -100,11 +101,10 @@ export function gridTrackSizes(
     let fixed = false;
     const sizes = (tracks as Array<{ type?: unknown; value?: unknown }>).map((track, index): GridTrack => {
       if (!track || typeof track !== 'object') {
-        warnings.push(
-          `Layer « ${node.name} » : la taille de la ${nom} ${index + 1} de sa grille est `
+        pousserLocalise(warnings, 'Layer', node,
+          ` : la taille de la ${nom} ${index + 1} de sa grille est `
             + `illisible. Le contrat publie « auto » pour conserver la piste ; vérifiez ce `
-            + `réglage dans Figma, puis réexportez.`,
-        );
+            + `réglage dans Figma, puis réexportez.`);
         return 'auto';
       }
       if (track.type === 'FLEX') {
@@ -115,19 +115,17 @@ export function gridTrackSizes(
         fixed = true;
         return `${track.value}px`;
       }
-      warnings.push(
-        `Layer « ${node.name} » : la taille de la ${nom} ${index + 1} de sa grille est `
+      pousserLocalise(warnings, 'Layer', node,
+        ` : la taille de la ${nom} ${index + 1} de sa grille est `
           + `illisible. Le contrat publie « auto » pour conserver la piste ; vérifiez ce `
-          + `réglage dans Figma, puis réexportez.`,
-      );
+          + `réglage dans Figma, puis réexportez.`);
       return 'auto';
     });
     if (fixed) {
-      infos.push(
-        `Layer « ${node.name} » : ses ${nom}s de taille fixe sont publiées en pixels, `
+      pousserLocalise(infos, 'Layer', node,
+        ` : ses ${nom}s de taille fixe sont publiées en pixels, `
           + `exception propre aux pistes FIXED d'une grille. Ces valeurs décrivent sa structure `
-          + `Figma sans devenir des tokens ; aucune modification du design n'est demandée.`,
-      );
+          + `Figma sans devenir des tokens ; aucune modification du design n'est demandée.`);
     }
     return sizes;
   };
@@ -548,11 +546,10 @@ export function flexContainerProperties(
   const align = alignItems(counter);
   if (justify && align) return { ...wrap, justifyContent: justify, alignItems: align };
 
-  warnings.push(
-    `Layer « ${node.name} » : son alignement d'auto layout est illisible. Le contrat ne ` +
+  pousserLocalise(warnings, 'Layer', node,
+    ` : son alignement d'auto layout est illisible. Le contrat ne ` +
       `publie ni justifyContent ni alignItems, car une valeur CSS devinée déplacerait ses ` +
-      `enfants. Réglez l'alignement principal et secondaire dans Figma, puis réexportez.`,
-  );
+      `enfants. Réglez l'alignement principal et secondaire dans Figma, puis réexportez.`);
   return wrap;
 }
 
@@ -584,13 +581,12 @@ export function flexItemProperties(
     const constraints = layoutConstraints(child);
     const inset = absoluteInset(parent, child);
     if (inset) {
-      infos.push(
-        `Layer « ${child.name} » : il est en position « Absolute » dans « ${parent.name} ». Sa `
+      pousserLocalise(infos, 'Layer', child,
+        ` : il est en position « Absolute » dans « ${parent.name} ». Sa `
           + `distance aux bords auxquels il s'accroche est publiée en pixels, exception propre `
           + `aux layers hors du flux — Figma ne permet pas de relier une position à une `
           + `variable. Ces valeurs décrivent sa place sans devenir des tokens ; aucune `
-          + `modification du design n'est demandée.`,
-      );
+          + `modification du design n'est demandée.`);
     }
     return {
       position: 'absolute',
@@ -617,10 +613,9 @@ export function flexItemProperties(
   } else if (rawAlign !== undefined && rawAlign !== 'INHERIT') {
     const mapped = alignSelf(rawAlign);
     if (!mapped) {
-      warnings.push(
-        `Layer « ${child.name} » : son alignement dans l'auto layout « ${parent.name} » est illisible. ` +
-          `Le contrat ne publie pas alignSelf. Réglez ce layer dans Figma, puis réexportez.`,
-      );
+      pousserLocalise(warnings, 'Layer', child,
+        ` : son alignement dans l'auto layout « ${parent.name} » est illisible. ` +
+          `Le contrat ne publie pas alignSelf. Réglez ce layer dans Figma, puis réexportez.`);
     } else if (mapped !== 'stretch' || sizing.cross !== 'HUG') {
       result.alignSelf = mapped;
     }
@@ -636,9 +631,8 @@ export function flexItemProperties(
   if (rawGrow === undefined || rawGrow === 0) return result;
   if (rawGrow === 1) return { ...result, flexGrow: 1 };
 
-  warnings.push(
-    `Layer « ${child.name} » : son remplissage de l'auto layout « ${parent.name} » vaut « ${String(rawGrow)} ». ` +
-      `Le contrat sait représenter uniquement 0 ou 1, les valeurs exposées par Figma. Corrigez ce layer, puis réexportez.`,
-  );
+  pousserLocalise(warnings, 'Layer', child,
+    ` : son remplissage de l'auto layout « ${parent.name} » vaut « ${String(rawGrow)} ». ` +
+      `Le contrat sait représenter uniquement 0 ou 1, les valeurs exposées par Figma. Corrigez ce layer, puis réexportez.`);
   return result;
 }

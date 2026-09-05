@@ -2271,6 +2271,15 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       `CHANGELOG-CONTRAT.md` (4 renvois) et `schema/README.md`, dont la
       suppression entraîne `schema-contrat.mjs`, son test et
       `.vscode/settings.json`.
+      **⤷ Absorbée par la Phase 9 le 5 septembre 2026, sans être close.** Les
+      trois orphelins sont T9.1, T9.2 et T9.3, et l'énoncé ci-dessus se corrige
+      sur deux points en y passant : la suppression de `schema/README.md`
+      n'entraîne PAS `schema-contrat.mjs` dans le même geste — c'est la surface
+      publique d'un paquet publié, et T9.1 dit pourquoi elle se décide à part ;
+      et le coût de la republication est le triple de celui écrit ici (deux
+      paquets et un README, par `monorepoCoherent` et `pinDocumente`), ce que
+      T9.3 recompte. **Ne pas exécuter cette tâche telle quelle : lire la
+      Phase 9.**
 - [X] **T8.5 — Fusionner les deux `rediger-diagnostics-ucm`.**
       **Faite le 5 septembre 2026, et la question « laquelle fait autorité »
       n'avait pas à être tranchée** : les deux versions ne sont pas symétriques.
@@ -2284,6 +2293,13 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       s'écrivent encore des deux côtés. C'est la même réponse que pour
       `schema/ucm-contract.schema.json`, copié lui aussi — **ce n'est pas la
       copie qui est dangereuse, c'est la copie que rien ne compare.**
+      **⚠ Corrigé le 5 septembre 2026, par la revue de la Phase 9 : le remède
+      invoqué n'existe pas du côté du schéma.** `schema-contrat.test.mjs` du
+      Playground ne lit jamais la copie locale — il ouvre celle du paquet
+      installé —, donc `schema/ucm-contract.schema.json` est précisément « la
+      copie que rien ne compare ». La comparaison des deux skills, elle, est
+      réelle. L'analogie était fausse dans le sens qui rassure ; elle part avec
+      la copie, en T9.1, ici comme dans `skill-diagnostics.test.mjs:8-10`.
       `scripts/skill-diagnostics.test.mjs` les compare caractère par caractère,
       **aux adresses de lien près** : la charte vit dans l'Exporter, le
       Playground la joint par un chemin plus long, et une adresse n'est pas une
@@ -2466,6 +2482,343 @@ deux tâches attend la Phase 8.
       section « État », qui en portait une troisième. **Ce qui reste de T8.12 est
       la vitrine elle-même** — montrer un contrat, mettre le visiteur avant le
       contributeur — et cela seul.
+
+---
+
+## Phase 9 — Épurer le consommateur de référence
+
+*Ouverte le 5 septembre 2026, sur demande de l'utilisateur : faire du Playground
+un dépôt de test épuré au maximum — supprimer ce qui n'est pas essentiel,
+migrer chez le producteur ce qui l'est, sans créer de redondance.*
+
+**Cette phase absorbe T8.4 en entier** (T9.1, T9.2, T9.3) et prolonge la
+Phase 8 côté consommateur. Elle ne décide rien du corpus : R7 et R8 le font.
+
+*Le brouillon de cette phase a été relu par un agent indépendant, et la revue a
+corrigé sept points dont trois inversaient une conclusion. Ses constats ont été
+revérifiés dans le code avant d'être intégrés, comme la règle de travail 4
+l'exige — et cette fois la revue avait raison sur les sept.* Les erreurs
+corrigées sont nommées dans les tâches concernées : elles disent où un lecteur
+pressé se tromperait au même endroit.
+
+### 9.1 — Le principe de tri
+
+R5 a écrit ce qu'est ce dépôt : **le consommateur de référence**, « celui qui
+sert à vérifier que le kit tient hors de son dépôt d'origine ». Trois règles en
+découlent, et elles ne sont pas les trois règles de tri du plan — celles-ci
+répartissent une connaissance entre le format, le repo et la stack ; celles-là
+décident ce qu'un dépôt de démonstration a le droit de porter.
+
+1. **Ce que le kit installé fournit déjà ne se recopie pas ici.**
+2. **Ce qui décrit le FORMAT part chez le producteur**, où vit son autorité.
+3. **Ce qui décrit CE repo reste**, y compris son adaptateur — le déplacer est
+   une décision de la Phase 6, pas de celle-ci.
+
+### 9.2 — État mesuré du dépôt, le 5 septembre 2026
+
+63 fichiers suivis, 7,9 Mo de `.git`. Documentation ≈ 66 Ko : `AGENTS.md`
+19,8 Ko (342 l.), `CHANGELOG-CONTRAT.md` 26,9 Ko (464 l.), `README.md` 9,4 Ko,
+`CONTRIBUTING.md` 5,4 Ko, `CONTRAT-CONSOMME.md` 4,2 Ko, `schema/README.md`.
+`schema/ucm-contract.schema.json` : 1 838 lignes. Corpus : quatre contrats 12.0,
+121 Ko, graphe `StressTest → Alert ×1 + Button ×3 + TileLink ×7` et
+`Alert → Button`. Liens : 18 internes, 8 croisés vers `../UCM-Exporter`.
+
+**Ce que le corpus fait pendant que cette phase s'écrit, et il faut le dire :**
+les quatre `.tsx` sont en cours de réécriture dans une session parallèle
+(825 insertions, 1 634 suppressions), les quatre `index.ts` sont supprimés et
+les composants passent à `export default` avec import direct. `npx tsc --noEmit`
+échoue donc sur huit `TS2307` dans `App.tsx`, qui importe encore les barils.
+**Aucune tâche ci-dessous ne touche à `src/components/`.** Le reliquat —
+réaccorder `App.tsx` aux nouveaux exports — appartient à cette session-là.
+
+*Le brouillon avait ouvert une tâche « trancher ce qu'est le corpus », avec trois
+options dont « ne garder qu'un composant vivant ». Elle est retirée, pour deux
+raisons que la revue a trouvées et que le code confirme : R7 porte déjà cette
+question et **l'utilisateur l'a datée le 5 septembre — « R7 reste ouverte »** ;
+et l'option « un seul composant » éteignait précisément ce que R8 vient de
+trouver. TileLink n'a ni `composes` ni prop booléenne : garder lui seul rendait
+`composantsRendus()` et `propsConsommees()` (`parite.mjs:173, 227-252`) muets sur
+toute donnée réelle, et supprimait le seul contrat qui exerce « deux dépendances
+identiques ne sont pas satisfaites par une occurrence JSX ». Une épuration qui
+retire la seule sonde ayant produit un écart n'est pas une épuration.*
+
+### 9.3 — Trois découvertes qui portent le tri
+
+**1. `schema/` du Playground n'est comparé par rien, et le dépôt croit le
+contraire.** `schema-contrat.test.mjs` importe `valideurDeSchema` et
+`versionDuSchema` de `@ucm-kit/core/lecteurs` ; `schema-contrat.mjs:29-32` du kit
+les résout depuis `<paquet>/schema/`, donc depuis
+`node_modules/@ucm-kit/core/schema/`. Résolution exécutée : le fichier ouvert est
+celui du paquet installé, **jamais le `schema/` local**. Le test dont
+`schema/README.md` dit qu'il est « le seul endroit où sa péremption se voit » ne
+l'ouvre pas, et son message d'échec demande de recopier un fichier qu'il n'a pas
+lu. Les trois copies sont identiques octet pour octet aujourd'hui : la copie ne
+ment pas encore, elle est incontrôlée.
+
+**Et le dépôt s'appuie sur cette croyance ailleurs.**
+`scripts/skill-diagnostics.test.mjs:8-10` justifie la double copie du skill en
+citant celle du schéma, « pour la même raison et **avec le même remède** : ce
+n'est pas la copie qui est dangereuse, c'est la copie que rien ne compare ».
+**Le remède n'existe pas.** T8.5 de ce plan porte la même phrase. C'est une
+contradiction doc ↔ code vivante, dans un commentaire de test, née après que
+T8.8 a déclaré la table close — la démonstration que la règle de travail 1 ne
+s'assouplit pas.
+
+**2. La question utile est déjà posée chez le producteur, sur des données qui
+bougent.** `packages/kit/tests/schema.test.ts:8-13` écrit que l'autre moitié — le
+schéma accepte-t-il ce que le moteur écrit — se pose « sur chaque sortie du
+moteur dans `exportComponent.test.ts`, via `verifierLeSchema` » ; vérifié,
+`lois.ts:389` et `exportComponent.test.ts:49`. Les tests 1 et 3 du Playground
+(`:38-40`, `:66-69`) sont mot pour mot ceux du kit (`schema.test.ts:40-46`), et
+le test 1 compare désormais **deux valeurs du même paquet installé** : il ne peut
+plus rougir.
+*La nuance que la revue ajoute, et qui change la justification sans changer la
+conclusion :* le Playground restait seul à poser la question sur des contrats
+**sortis de Figma pour de vrai**, là où le moteur se teste sur des nœuds
+simulés. Ce n'est donc pas « déjà prouvé à l'identique ». C'est « prouvé sur
+quatre instantanés qui ne bougent qu'au réexport » — l'argument exact de T7.0
+contre les contrats commités côté moteur, retourné contre ce test-ci.
+
+**3. Deux des trois sections du rapport de tests sont structurellement
+inatteignables ici.** `composantTeste()` (`echecs-de-tests.mjs:96`) ne reconnaît
+qu'un `*.test.tsx`, et il n'en existe aucun — c'est une décision écrite
+(`AGENTS.md`, `CONTRIBUTING.md`). `repartirEchecs` (`diagnostic-tests.mjs:46-52`)
+ne lit `assertion` que si `composant != null` : **les deux réponses de
+l'adaptateur sont donc mortes**, pas une seule. Tout tombe dans `gardeFous`, et
+les sections « Le code n'est plus conforme aux contrats » et « Les tests n'ont
+pas pu vérifier la conformité » ne peuvent pas s'écrire depuis ce dépôt.
+*Note :* T2.6 de ce plan affirme que ces modules « balaient de vrais
+`*.test.tsx` ». Il n'y en a aucun. Avec celle du § 1 ci-dessus, cela fait
+**deux rangs vivants de plus** dans la table des contradictions, que T8.8 avait
+close le matin même — ils y sont inscrits, non barrés.
+
+### 9.4 — Tâches
+
+- [ ] **T9.1 — Supprimer `schema/`, et refermer la croyance qu'il entretient.**
+      *Sans dépendance, à prendre en premier.*
+      Partent : `schema/ucm-contract.schema.json` (1 838 l.), `schema/README.md`,
+      `scripts/schema-contrat.test.mjs` (70 l.), et les renvois d'`AGENTS.md`
+      (§ Artefacts dérivés), `CONTRIBUTING.md` (§ Artefacts, § Compatibilité,
+      table) et `README.md` (§ Architecture).
+      **Trois corrections que la revue a dû apporter au brouillon, et qui sont
+      le travail réel de la tâche :**
+      1. `.vscode/settings.json:9` pointe vers `./schema/ucm-contract.schema.json`.
+         C'est ce qu'il faut CHANGER, pas un état acquis — le brouillon l'écrivait
+         au présent. Il vise ensuite
+         `./node_modules/@ucm-kit/core/schema/ucm-contract.schema.json`.
+      2. **Le `fileMatch` ne se recopie PAS d'`ucm init`.** `init.mjs:71` écrit
+         `["*.contract.json"]`, qui ne couvre pas un contrat co-localisé en
+         sous-dossier — c'est-à-dire le rangement de ce dépôt. Il reste
+         `["**/*.contract.json"]`. *Le glob d'`ucm init` mérite d'ailleurs une
+         question à part : il ne couvre pas non plus le rangement qu'il
+         installe lui-même.*
+      3. `.gitattributes` ne porte QUE `schema/*.json text eol=lf`. Le supprimer
+         laisserait trois lignes de commentaire et zéro règle, alors que
+         `init.mjs:52-64` écrit dans tout repo neuf `*.contract.json text eol=lf`
+         et `tokens.json text eol=lf`, **que ce dépôt n'a pas** — et que git
+         convertit déjà en CRLF sur ce poste. La tâche remplace la règle au lieu
+         de la retirer, et le consommateur de référence cesse de diverger du CLI
+         sur un point que le CLI juge central.
+      **Ce qu'elle emporte aussi, et sans quoi elle laisse une balise neuve :**
+      la phrase de `skill-diagnostics.test.mjs:8-10` et celle de T8.5 ci-dessus,
+      qui invoquent un remède inexistant.
+      **Ce qu'elle laisse et pourquoi :** après elle, `CHEMIN_DU_SCHEMA`,
+      `lireLeSchema`, `versionDuSchema` et `valideurDeSchema`
+      (`lecteurs/index.mjs:111-114`) n'ont plus **aucun** consommateur, ici ni
+      ailleurs — le plugin résout `@ucm-kit/core/schema` en direct
+      (`lois.ts:39`), le kit passe par `build-schema.ts`. T8.4 demandait que la
+      suppression « entraîne `schema-contrat.mjs` » ; on ne le retire pas dans
+      le même geste — c'est une surface publique de paquet publié, et la retirer
+      est une rupture qui se décide, pas un effet de bord. À écrire dans le
+      compte rendu, et à trancher avec T9.3, qui monte déjà le numéro.
+
+- [ ] **T9.2 — `CHANGELOG-CONTRAT.md` part chez le producteur.** *(= T8.4,
+      moitié 1.)* Un historique de schémas décrit ce que le producteur a publié,
+      pas ce que ce repo lit. Destination écrite en 8.2 :
+      `docs/CHANGELOG-FORMAT.md`. **Il n'existe pas encore** — la tâche le crée.
+      *Deux dépôts, donc un ordre, sans quoi le contrôle de liens est rouge
+      entre les deux commits :* écrire chez le producteur, ajouter le renvoi à
+      `docLinks.test.ts`, PUIS router les quatre renvois du consommateur
+      (`AGENTS.md` ×2, `CONTRIBUTING.md`, `README.md`) et supprimer.
+
+- [ ] **T9.3 — `CONTRAT-CONSOMME.md` part.** *(= T8.4, moitié 2.)*
+      **Son argument est plus fort que celui du brouillon, et c'est la revue qui
+      l'a trouvé : le document est périmé sur toute une section.** « Lecture par
+      les contrôles » (`:52-67`) situe `references-token.mjs`,
+      `validation-contrat.mjs`, `variant-views.mjs`,
+      `validation-graphe-contrats.mjs`, `validation-echantillons.mjs` et
+      `avertissements-export.mjs` dans ce repository : les six vivent dans le
+      kit depuis T2.1. Il annonce en plus un croisement `nonListes` / `fantomes`
+      « dans `check-contract.mjs` », lequel fait 110 lignes et n'en porte
+      aucune — ils sont dans `controle-repository.mjs:218-221, 351, 360-361,
+      415-418`. R4 disait avoir corrigé « trois documents qui situaient encore
+      `version-contrat.mjs` » ; ceux-là sont restés.
+      *Triage avant suppression, parce que tout n'est pas dupliqué :* « Forme
+      lue » (`:14-50`) est dans `docs/FORMAT.md` ; « Lecture par les contrôles »
+      est fausse et part sans regret ; **« Politique de compatibilité »
+      (`:69-78`) n'est écrite que là** — « les constantes de version changent en
+      dernier » — et rejoint `AGENTS.md`.
+      **Le coût réel, recompté par la revue, et il est le triple de l'annoncé.**
+      `version-contrat.mjs:25` cite ce document dans un paquet publié.
+      `versionSuitLeContenu.test.mjs:93-100` impose alors de monter
+      `@ucm-kit/core` ; `monorepoCoherent.test.mjs:84-99` impose que le CLI
+      épingle exactement la version courante, donc `packages/cli/package.json`
+      change ; `versionSuitLeContenu` impose alors de monter le CLI aussi ; et
+      `pinDocumente.test.mjs:26-44` impose que le README suive. **Trois fichiers,
+      deux paquets, un README.**
+      *Et ce qui force la PUBLICATION n'est pas ce test-là* — il écrit lui-même
+      (`:21-28`) qu'il ne va pas au registre et qu'« un numéro jamais publié
+      qu'on monterait pour rien ne coûte rien ». C'est D7 : `init.mjs:125` écrit
+      `npx --yes @ucm-kit/cli@<version locale>` dans le workflow de chaque repo
+      neuf, et `recette.test.mjs` construit ses dépôts par `ucm init`. Un CLI
+      monté et non publié met un 404 dans chaque workflow généré — la panne que
+      les étapes 11 à 13 ont payée deux fois.
+      **Conséquence d'ordonnancement :** T9.3 s'exécute avec les autres tâches
+      qui touchent un fichier publiable — **T7.6** (`version-contrat.mjs`),
+      **T6.1** (la table graisse → poids qui entre dans le kit) et l'arbitrage
+      sur `schema-contrat.mjs` laissé ouvert par T9.1. Une publication pour les
+      quatre, pas quatre publications.
+
+- [ ] **T9.4 — Écrire ce qu'`echecs-de-tests.mjs` ne peut plus dire ; ne rien
+      couper.** *Le brouillon proposait de retirer `composantTeste`. La revue a
+      montré que ce serait une faute, et le code lui donne raison :*
+      `diagnostic-tests.mjs:15-31` documente `composant` et `assertion` comme la
+      surface qu'un adaptateur DOIT fournir — « seul l'adaptateur peut
+      répondre » —, et cette surface est celle d'un paquet publié qu'un repo
+      tiers avec des tests par composant utilisera. La couper ferait mentir le
+      kit sur ce qu'il attend.
+      Ce qui reste à faire est donc documentaire et vaut d'être écrit : dire
+      dans `echecs-de-tests.mjs` et dans `AGENTS.md` que ce dépôt rend
+      `composant: null` **par décision**, que les deux sections correspondantes
+      du rapport y sont inatteignables, et que `parite.test.mjs` couvre la
+      fonction sur fixtures (`:110-147`) — un lecteur qui la croit morte la
+      supprimerait.
+
+- [ ] **T9.5 — Retirer d'`AGENTS.md` ce qui est prouvablement dit ailleurs.**
+      342 lignes, dont 93 d'« Invariants » et 45 de « Ce que les contrôles ne
+      vérifient pas » qui décrivent le FORMAT et ont désormais une autorité à un
+      lien de distance (`docs/FORMAT.md`, `AGENTS.md` du producteur). Reste ce
+      que ce dépôt est seul à porter : les trois interdits absolus, sa carte, les
+      quatre choses qu'il est seul à répondre, la procédure du test froid.
+      **Précondition non négociable — T8.7 d'abord.** T8.7 passe les documents
+      en registre portable ; T9.5 réécrit exactement ces documents. Les faire
+      séparément, c'est les réécrire deux fois.
+      **Et il manque à cette tâche ce que T8.1 s'était donné :** une preuve
+      mécanique. « Prouvablement dit ailleurs » n'est prouvable par rien
+      aujourd'hui, et une relecture à l'œil de 342 lignes est exactement ce que
+      la règle 2 interdit. La tâche commence donc par écrire son contrôle —
+      voir T9.8.
+
+- [ ] **T9.6 — Fondre `CONTRIBUTING.md` dans `AGENTS.md`, en deux temps.**
+      5,4 Ko dont les trois quarts répètent le producteur ou `AGENTS.md` ; un
+      sandbox à un mainteneur n'a pas de contributeurs externes à guider, et la
+      charte des messages désigne déjà `../UCM-Exporter/CONTRIBUTING.md`.
+      *Deux temps, parce que la règle 2 vaut ici aussi et que le brouillon la
+      violait :* déplacer sans réécrire, puis réécrire. Dépend de T9.5 (même
+      fichier d'arrivée) et de T9.2/T9.3 commitées — sa table « Documentation »
+      (`:94-110`) cite les documents supprimés.
+
+- [ ] **T9.7 — `README.md` redevient une page d'accueil.** 9,4 Ko, dont une
+      section « Consommation des artefacts » de 108 lignes qui redit
+      `docs/FORMAT.md`. Cible : ce que c'est, comment le lancer, ce qu'il prouve,
+      où va le reste. Même critère que T8.12 côté producteur — le visiteur avant
+      le contributeur.
+      *Borne à respecter :* il porte 6 des 18 liens internes du dépôt, et
+      `liens-documents.test.mjs:140` exige `internes.length > 0`. Vider sans
+      compter ferait tomber le plancher d'un contrôle en le laissant vert.
+
+- [ ] **T9.8 — Donner à cette phase un critère de fin mesurable.**
+      *C'est le manque principal que la revue a relevé, et il est structurel :*
+      « épuré au maximum » n'est vérifiable par rien, alors que chaque autre
+      phase de ce plan s'est donné un compteur — la duplication de T8.1, le
+      plancher réécrit de `docLinks`, `versionSuitLeContenu`, les oracles de
+      T7.0c. Sans compteur, la prochaine passe de ménage repose les mêmes
+      questions, et le paragraphe de prose censé l'empêcher périme comme les
+      neuf autres.
+      Écrire dans le Playground un test qui mesure la **surface documentaire** —
+      total d'octets des `.md` hors `.claude/skills/` — et **en interdit la
+      remontée**, comme `scissionSpec.test.mjs` interdit celle du compteur de
+      duplication. Il se pose avant T9.5, il descend avec chaque tâche, et il
+      part le jour où la cible est atteinte.
+      *À écrire en même temps :* l'accord entre `ci.yml` et le workflow
+      qu'`ucm init` génère. Leurs deux derniers blocs — « Garantir un diagnostic
+      même sans rapport », « Publier le diagnostic » — sont identiques dans tout
+      ce qui s'exécute et diffèrent dans les commentaires ; le test neutralise
+      les commentaires comme `skill-diagnostics.test.mjs:34-36` neutralise les
+      adresses.
+      **Ce qu'on N'EST PAS en train de faire, et la revue a tranché contre le
+      brouillon :** le Playground n'adopte pas le workflow d'`ucm init`. Trois
+      obstacles, tous vérifiés. `check-contract.mjs:29-32` dit pourquoi ce dépôt
+      garde son script — `ucm check` n'a pas d'adaptateur et ne reçoit pas les
+      échecs de tests. Les deux écrivent `ci-report.md` (`check-contract.mjs:106`
+      et `init.mjs:125`), donc le second écrase le premier et **la PR recevrait
+      le rapport sans parité ni tests, plus vert que la réalité** — le défaut que
+      ce dépôt poursuit partout. Et `ucm init` n'écrase jamais et écrit
+      `ucm.yml`, pas `ci.yml` : « adopter » demande un geste que la commande ne
+      fait pas. La bascule a pour précondition T6.3.
+
+- [ ] **T9.9 — Le reste du ménage, mesuré mais non classé par le brouillon.**
+      *Cinq points que la revue a trouvés et que le code confirme. Petits
+      séparément, ils font le bruit de fond du dépôt.*
+      - `src/index.css` : 132 lignes, dont 111 de banc typographique (15 classes
+        `.ucm-type-*`) qui ne servent qu'à `TypographySandbox` (`App.tsx:394-444`)
+        et ne lisent aucun contrat. À garder ou à retirer, mais à décider.
+      - `src/tokens.test.ts` : trois tests sur six (`:13-29`) portent sur la
+        projection chemin → variable, qui vient entièrement du kit depuis
+        T6.0/T6.2 et y est testée (`names.test.ts`). Seul le refus d'une valeur
+        brute (`:36-47`) appartient à ce dépôt.
+      - `src/tokens-accord.test.ts` lit `src/generated/tokens.css`, que
+        `.gitignore` exclut. L'ordre `tokens` avant `test` n'est garanti que par
+        `check.mjs:46` : **`npm test` seul, sur un checkout neuf, échoue en
+        ENOENT** — la panne que T6.0a raconte avoir corrigée, et qui ne l'est
+        que dans `npm run check`.
+      - `ContractIcon.tsx:5` : `ICON_GLYPH_RATIO = 0.8`, que son commentaire
+        appelle « convention temporaire ». **T8.10 est close depuis le
+        5 septembre** et a écrit la frontière : le commentaire peut renvoyer à
+        `docs/FORMAT.md` au lieu de s'excuser.
+      - `.agents/skills/` et `.claude/skills/` cohabitent ici, l'Exporter n'a que
+        le premier. Deux conventions, aucun document ne dit pourquoi.
+      *Et une précondition du test froid qui n'est écrite nulle part :* les
+      icônes ne se rendent qu'avec un `VITE_FA_KIT_ID` dans un `.env.local` non
+      versionné (`index.html:19`). L'étape 3 — comparer des variantes à Figma —
+      ne peut pas juger une icône sur un poste neuf.
+
+### 9.5 — Ce qui ne bouge pas, et pourquoi
+
+À écrire dans `AGENTS.md` avec T9.5, sans quoi la prochaine passe repose la
+question.
+
+- **`parite.mjs` reste ici.** *Le brouillon avait la bonne conclusion et la
+  mauvaise raison, deux fois.* Il invoquait « la règle de tri n° 3 du plan » pour
+  « un adaptateur reste chez son consommateur » : cette règle dit tout autre
+  chose — « le noyau doit être utile seul » —, et T3.3 l'applique en sens inverse
+  (« le Playground garde un script court qui l'importe et lui PASSE son
+  adaptateur, pendant que `ucm check` appelle la même orchestration sans
+  adaptateur — le noyau utile seul, règle de tri n° 3 littéralement »). Il
+  chiffrait ensuite le coût en « troisième publication npm », alors qu'un
+  sous-chemin d'export du kit coûte une montée de version, pas un paquet.
+  **L'obstacle réel est ailleurs, et il est solide :** `parite.mjs:34` importe
+  `typescript`. Faire entrer un compilateur dans un paquet dont l'argument de
+  vente est « `format` ne dépend de personne » est le prix à peser, et T6.3 est
+  l'endroit où on le pèse.
+- **`style-dictionary.config.mjs` ne relève PAS du même argument**, contrairement
+  à ce que le brouillon écrivait. T6.1 a déjà décidé sa destination : la table
+  « nom de graisse → poids » est une connaissance du format et entre dans le
+  kit, la projection CSS reste dans le preset. Ce n'est pas un paquet à publier,
+  c'est un objet de 17 entrées (`:31-47`) à déplacer, au prix d'une montée de
+  version — donc avec T9.3. Une tâche ouverte ne se clôt pas en « ne bouge pas ».
+- **`App.tsx`, `index.html`, Vite, Tailwind, `@fontsource`** : l'étape 3 du test
+  froid demande un navigateur.
+- **`.claude/skills/consommer-contrat/SKILL.md`** (439 l.) : un skill se charge
+  depuis le dépôt où l'on travaille, et une reconstruction à froid se fait ici.
+- **`liens-documents.test.mjs`** : il a déjà attrapé une ancre morte et un renvoi
+  cassé par la scission. Il rétrécit avec les documents, il ne part pas.
+
+### 9.6 — Ce que cette phase ne fait pas
+
+Elle ne touche à aucun contrat ni à aucun `.tsx` — R7 et R8 portent le corpus.
+Elle ne réécrit aucune phrase du rapport : elles vivent dans le kit depuis T5.2.
+Elle ne crée aucun paquet. Elle ne publie qu'une fois, avec T9.3.
 
 ---
 
@@ -2926,6 +3279,34 @@ Reste de l'étape 14 : **U4.5, U4.3 puis U4.4**, que T8.1 vient de débloquer.
 Reste de l'étape 15 : **le temps 2 de T8.1**, T8.4 à T8.10, T8.12, puis la
 Phase 6, avec T7.6 à placer.
 
+16. **La Phase 9 — épurer le consommateur de référence.** *Ajoutée le
+    5 septembre 2026.* Elle ne s'exécute pas d'un bloc après l'étape 15 : elle
+    s'y insère, parce que trois de ses tâches SONT des tâches de l'étape 15 et
+    qu'une quatrième dépend de la Phase 6. L'ordre réel, et il tient à quatre
+    contraintes vérifiées :
+    - **T9.1 en premier, isolée.** Elle ne dépend de rien, elle retire
+      1 908 lignes et elle referme une contradiction doc ↔ code née après T8.8.
+    - **T9.2 et T9.3 remplacent T8.4**, et **T9.3 part avec T7.6 et T6.1** :
+      les trois touchent un fichier publiable du kit, et une seule montée de
+      version les porte toutes. Les séparer, c'est trois publications là où une
+      suffit — et publier est une précondition d'exécution, la leçon est payée
+      deux fois.
+    - **T9.4, puis T9.8 (le compteur), puis T9.5 → T9.6 → T9.7**, dans cet ordre
+      strict : les documents se vident du plus dérivé vers le plus lu, et le
+      compteur doit exister avant la première tâche qu'il mesure. **T9.5 a T8.7
+      pour précondition dure** — passer les documents en registre portable puis
+      les réécrire, c'est les réécrire deux fois.
+    - **La moitié « workflow » de T9.8 attend T6.3**, et seulement elle : la
+      bascule du Playground vers `ucm check` demande un mécanisme de chargement
+      d'adaptateur que T3.3 a refusé d'ouvrir. Le test d'accord entre les deux
+      workflows, lui, se pose tout de suite.
+    - **T9.9 en dernier commit**, et rien avant : il écrit dans un `AGENTS.md`
+      que T9.5 et T9.6 viennent de refaire.
+    *Ce que la Phase 9 ne décide pas :* le corpus. R7 est datée — « reste
+    ouverte, la régénération n'est pas prise dans cette session » — et R8 en
+    dépend. Une épuration qui trancherait le corpus au passage rouvrirait une
+    décision de l'utilisateur sans le dire.
+
 ### Écart entre cet ordre et ce qui a été exécuté
 
 *Enregistré le 4 septembre 2026, parce qu'un plan qui décrit un ordre et
@@ -2966,10 +3347,17 @@ transitoire porte sa date, ou il ne s'écrit pas.**
 
 ## Contradictions doc ↔ code, vérifiées
 
-**Close le 5 septembre 2026 (T8.8) : les neuf rangs sont barrés, et aucune
-balise ne subsiste dans les deux dépôts.** Cette table n'avertit plus, elle
-enregistre — quelle règle était fausse, où elle vivait, ce qui l'a corrigée. Un
-rang barré vaut mieux qu'un rang supprimé : il dit qu'on a regardé.
+**Close le 5 septembre 2026 (T8.8) : les neuf rangs étaient barrés, et aucune
+balise ne subsistait dans les deux dépôts.** Cette table enregistre — quelle
+règle était fausse, où elle vivait, ce qui l'a corrigée. Un rang barré vaut
+mieux qu'un rang supprimé : il dit qu'on a regardé.
+
+**Elle a rouvert le soir même, sur deux rangs, et c'est la démonstration de la
+règle de travail 1 plutôt qu'un accident.** La revue indépendante de la Phase 9
+les a trouvés dans des fichiers que T8.8 n'avait pas de raison de rouvrir : un
+commentaire de test et une tâche close de ce plan. Ils sont inscrits non barrés,
+et T9.1 puis T9.4 les emportent. Le compte n'est donc plus « neuf, tous
+résolus » : c'est **onze, dont deux vivants**.
 
 | Document | Ce qu'il affirme | Ce que fait le code |
 |---|---|---|
@@ -2982,3 +3370,5 @@ rang barré vaut mieux qu'un rang supprimé : il dit qu'on a regardé.
 | ~~skill `consommer-contrat`, ancrage 6~~ | ~~une commande de contrôle ciblée sur un composant~~ | **résolu par T8.6** : l'ancrage dit ce qui existe — un contrôle qui balaie le repository — et pourquoi cela suffit |
 | ~~`Exporter/AGENTS.md`~~ | ~~aucun artefact de contrat, jamais~~ | **tranché par T7.0** : la règle nomme désormais le MOTEUR, pas le repository — elle était devenue ambiguë quand T1.2 a mis deux produits dans le même dépôt |
 | ~~—~~ | ~~aucun document ne déclare la projection de nom de token comme invariant~~ | **résolu par T6.0** : `tokenCssVariable` est l'unique autorité, dans `names.ts` avec les deux autres projections, et `AGENTS.md` porte l'invariant |
+| `skill-diagnostics.test.mjs:8-10`, et T8.5 de ce plan | la copie du schéma du Playground est comparée — « même remède » que celle du skill | **vivant, emporté par T9.1** : `schema-contrat.test.mjs` ouvre le schéma du PAQUET INSTALLÉ (`schema-contrat.mjs:29-32`), jamais la copie locale, qui est donc exactement « la copie que rien ne compare » |
+| T2.6 de ce plan | `run-tests.mjs` et `echecs-de-tests.mjs` « balaient de vrais `*.test.tsx` » | **vivant, emporté par T9.4** : il n'en existe aucun, par décision écrite. `composant` vaut `null` partout, et deux des trois sections de `diagnostic-tests.mjs` sont inatteignables depuis ce dépôt |
