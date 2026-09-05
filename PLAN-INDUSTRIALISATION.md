@@ -2187,7 +2187,7 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
 
 ### 8.3 — Tâches
 
-- [ ] **T8.1 — ⚠ Scinder la spécification, en deux temps, avec preuve
+- [X] **T8.1 — ⚠ Scinder la spécification, en deux temps, avec preuve
       d'exhaustivité.**
       **Décidé : on scinde pour de vrai.** Hors `### Sortie` (~290 l.) et
       `## Versions`, format et moteur y sont co-extensifs **par construction**,
@@ -2255,8 +2255,40 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       deux sujets à la fois**. La Partie 3 (configuration et dépôt GitHub) est le
       seul gros bloc qui se sépare proprement, et elle est intégralement du
       moteur.
-      **Reste le temps 2**, paragraphe par paragraphe, chaque commit faisant
-      baisser le plafond de `scissionSpec.test.mjs` d'autant.
+      **Temps 2 fait le 5 septembre 2026 : le compteur est à ZÉRO**, et les deux
+      tests comme la spécification figée sont partis avec lui — un contrôle qui
+      survit à sa cause devient une information périmée. `SPEC.md` passe de
+      1 155 à 442 lignes, `FORMAT.md` en porte 1 451.
+      **Le temps 2 a commencé par corriger sa propre preuve, et c'est le point le
+      plus utile de la tâche.** Le test du temps 1 comparait des LIGNES, ce qui
+      était juste tant qu'on ne faisait que déplacer. Résorber un doublon exige
+      de couper une ligne PHYSIQUE qui porte les deux sujets — 53 % d'entre
+      elles le faisaient —, et la couper la fait disparaître des deux fichiers
+      sans qu'un mot soit perdu. La preuve vise donc la PHRASE, découpée par
+      bloc. Ce n'est pas un relâchement : une phrase supprimée reste détectée.
+      *Un trou trouvé en le sondant :* la première version filtrait les fragments
+      de moins de 40 caractères, et « Le contrat ne publie aucun index de ses
+      tokens. » en fait 37 — la retirer des DEUX fichiers passait au vert. Le
+      filtre est devenu l'UNICITÉ dans le document figé.
+      *Ce que la règle de T8.3 a réellement produit :* neuf sections du moteur
+      deviennent des renvois en gardant ce que lui seul sait dire — l'élection du
+      node de layout, la lecture des peintures, la reconnaissance d'une
+      dépendance, celle des variables et de leurs collisions. **Deux blocs sont
+      partis dans l'AUTRE sens**, ce que le contrôle ligne à ligne interdisait :
+      la lecture d'un `TextStyle` a quitté le format pour le moteur.
+      *Un cas limite est nommé plutôt que forcé :* la section 7 est un renvoi
+      ENTIER. La grammaire des règles `<Nom>-Rules` décrit bien une lecture de
+      Figma, mais chaque règle n'a de sens qu'à côté du champ qu'elle remplit —
+      couper `@icons` en deux la rendrait illisible des deux côtés. Le document
+      le dit, au lieu de laisser croire à un oubli du dédoublonnage.
+      *Le compteur a fini par exclure les TITRES* présents des deux côtés : un
+      titre partagé n'est pas une règle dupliquée, c'est la frontière elle-même
+      et l'ancre que l'autre document vise. Les compter posait un plancher de
+      quinze lignes — la cible qui ment que ce test existait pour éviter.
+      **Et T8.7 est entière du même coup :** sa moitié inscrite — la ligne de
+      `FORMAT.md` qui promettait « le composant React et son interface Props » —
+      n'était gelée que par la fixture. Elle est reformulée, et la liste
+      `INSCRITES` de `registrePortableDocuments.test.ts` est vide.
 - [X] **T8.2 — Prévoir la casse de `docLinks.test.ts`**, mesurée : **24
       occurrences ancrées dans `AGENTS.md`** (19 ancres distinctes, réparties des
       deux côtés de la frontière projetée), plus `CONCEPT.md`, `CONTRIBUTING.md`,
@@ -2298,7 +2330,16 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       ATTERRIRA. La réserve nomme le test qui compte les doublons et disparaît
       avec eux — sans quoi elle serait exactement la sorte d'affirmation périmée
       que le préalable T0 balise.
-- [ ] **T8.4 — Traiter les trois orphelins du Playground.**
+- [X] **T8.4 — Traiter les trois orphelins du Playground.** **Absorbée en
+      entier par la Phase 9** (T9.1, T9.2, T9.3), close le 5 septembre 2026 :
+      `schema/` est supprimé, `CHANGELOG-CONTRAT.md` est devenu
+      `docs/CHANGELOG-FORMAT.md` chez le producteur, et `CONTRAT-CONSOMME.md`
+      est parti après triage — une seule de ses sections n'était écrite que là.
+      *Ce que l'absorption a changé au périmètre :* T8.4 demandait que la
+      suppression de `schema/` « entraîne `schema-contrat.mjs` ». T9.3 a tranché
+      l'inverse, et l'a écrit : ces quatre exports sont la surface publique d'un
+      paquet publié, et « plus personne ici ne s'en sert » n'est pas « personne
+      ne s'en sert ».
       *Chiffres revérifiés le 5 septembre 2026 (R6), et ils tiennent tous les
       trois* — `CHANGELOG-CONTRAT.md` a bien 4 renvois (`AGENTS.md` ×2,
       `CONTRIBUTING.md`, `README.md`), `schema/README.md` existe, et le renvoi

@@ -124,7 +124,6 @@ docs/                    le FORMAT, pour qui consomme un contrat
 
 tests/                   les tests du monorepo lui-même
   docLinks.test.ts       les liens de la documentation
-  scissionSpec.test.mjs  aucune règle perdue en scindant la spécification
   monorepoCoherent.test.mjs  chaque paquet lit le kit d'à côté, jamais le registre
 ```
 

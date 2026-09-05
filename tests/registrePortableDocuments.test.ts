@@ -17,25 +17,25 @@
  * juste les ferait mentir dans l'autre sens — c'est la borne que
  * `registrePortable.test.mjs` s'était déjà donnée.
  *
- * ## L'exemption, et pourquoi elle est une LISTE et non une exception
+ * ## L'inscription, et pourquoi elle est une LISTE et non une exception
  *
- * `docs/FORMAT.md` porte encore une promesse de stack, et elle ne peut pas être
- * corrigée aujourd'hui : `scissionSpec.test.mjs` exige que chaque ligne du
- * document figé avant la scission (T8.1) survive dans l'un des deux documents
- * produits. Reformuler cette ligne la fait disparaître des deux, et le contrôle
- * passe au rouge — mesuré, pas supposé. Le temps 2 de T8.1 dédoublonne, il ne
- * réécrit pas ; il retirera la fixture figée, et cette ligne deviendra
- * corrigeable ce jour-là.
+ * Une promesse de stack qu'on ne peut pas retirer tout de suite s'INSCRIT, avec
+ * ce qui la lèvera. La liste a porté une entrée le 5 septembre 2026 : la ligne
+ * de `docs/FORMAT.md` qui promettait « le composant React et son interface
+ * Props ». Elle était gelée par `scissionSpec.test.mjs`, qui exigeait alors que
+ * chaque ligne du document figé avant la scission survive — la reformuler la
+ * faisait disparaître des deux documents produits, et le contrôle rougissait.
+ * Mesuré en le tentant, pas déduit. Le temps 2 de T8.1 a retiré cette fixture le
+ * jour même, et la ligne a été reformulée dans la foulée.
  *
- * D'ici là, elle est INSCRITE, pas tolérée. La différence tient en deux
- * refus que ce test oppose :
+ * La liste est vide, et deux refus la gardent utile :
  *
- * - une promesse de stack NON inscrite est refusée — l'exemption ne s'étend pas
- *   toute seule au prochain paragraphe qu'on écrira ;
- * - une exemption qui ne correspond plus à rien est refusée AUSSI. Une liste qui
- *   garde une ligne corrigée depuis longtemps est exactement l'information
- *   périmée que ce dépôt poursuit partout — et le jour où elle se vide, elle
- *   dit toute seule que T8.7 est enfin entière.
+ * - une promesse de stack NON inscrite est refusée — l'inscription ne s'étend
+ *   pas toute seule au prochain paragraphe qu'on écrira ;
+ * - une inscription qui ne correspond plus à rien est refusée AUSSI. Une liste
+ *   qui garde une ligne corrigée depuis longtemps est l'information périmée que
+ *   ce dépôt poursuit partout.
+ *
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -73,16 +73,21 @@ function nommeLeMotifParDefaut(ligne: string): boolean {
  * dans son document ne casse donc rien ; une ligne qui change de mots, si — et
  * c'est voulu, puisque changer ses mots est précisément ce qu'on attend d'elle.
  */
-const INSCRITES: { fichier: string; ligne: string; jusqua: string }[] = [
-  {
-    fichier: 'docs/FORMAT.md',
-    ligne: "dossier, le composant React et son interface `<IdentifiantCode>Props`, sans",
-    jusqua:
-      'le temps 2 de T8.1, qui retire la fixture figée de scissionSpec.test.mjs. '
-      + 'Reformuler cette ligne avant le fait disparaître du document figé, et ce '
-      + 'contrôle-là passe au rouge : vérifié le 5 septembre 2026 en le tentant.',
-  },
-];
+/**
+ * **Elle est vide, et c'est le verdict de T8.7.** Elle a porté une entrée : la
+ * ligne de `docs/FORMAT.md` qui promettait « le composant React et son interface
+ * Props » à qui lit la forme publiée. Elle ne pouvait pas être corrigée tant que
+ * `scissionSpec.test.mjs` exigeait que chaque ligne du document figé survive ;
+ * le temps 2 de T8.1 a retiré cette fixture le 5 septembre 2026, et la ligne a
+ * été reformulée le même jour — le contrat nomme un symbole, pas une stack.
+ *
+ * Le second test ci-dessous refuse une entrée qui ne couvrirait plus rien : la
+ * liste ne peut donc pas garder un souvenir. Elle reste ici plutôt que de
+ * disparaître avec son contenu, parce que c'est elle qui dit ce qu'on fait d'une
+ * promesse qu'on ne peut pas retirer tout de suite : on l'inscrit, avec ce qui
+ * la lèvera.
+ */
+const INSCRITES: { fichier: string; ligne: string; jusqua: string }[] = [];
 
 const lignesDe = (relatif: string): string[] =>
   fs.readFileSync(path.join(racine, relatif), 'utf8').split(/\r?\n/);
