@@ -40,6 +40,7 @@ on:
         options:
           - "@ucm-kit/core"
           - "@ucm-kit/cli"
+          - "@ucm-kit/adapter-typescript"
 
 jobs:
   publish:
@@ -222,6 +223,13 @@ jobs:
           epreuve() {
             if [ "$PAQUET" = "@ucm-kit/cli" ]; then
               npx --yes --prefer-online "@ucm-kit/cli@$version" --help
+            elif [ "$PAQUET" = "@ucm-kit/adapter-typescript" ]; then
+              npm install --no-audit --no-fund --prefer-online "$PAQUET@$version" \
+                && node --input-type=module -e "
+                  const module = await import('@ucm-kit/adapter-typescript');
+                  if (!module.adaptateurTypeScript || !module.genererTypes) process.exit(1);
+                  console.log('L’adaptateur TypeScript et son générateur se chargent.');
+                "
             else
               npm install --no-audit --no-fund --prefer-online "$PAQUET@$version"                 && node --input-type=module -e "
                   await import('@ucm-kit/core/format');

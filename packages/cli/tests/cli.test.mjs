@@ -14,6 +14,7 @@ import { join } from "node:path";
 import test from "node:test";
 
 import { iconesDuRepository } from "../src/icons.mjs";
+import { chargerAdaptateur } from "../src/adaptateur.mjs";
 import { init, rendreInit } from "../src/init.mjs";
 import { executer } from "../src/ucm.mjs";
 
@@ -118,12 +119,12 @@ test("la configuration écrite ne porte aucun numéro de version", () => {
  * - le paquet est épinglé EXACTEMENT (D7) — une plage laisserait npm choisir
  *   une version que personne n'a essayée, et la CI d'un designer basculerait
  *   sans qu'un fichier du repo ait bougé ;
- * - `npx --yes` et rien d'autre (T3.4) — pas de `npm ci`, donc pas de
- *   `package.json` exigé d'un repo qui n'est pas un projet Node ;
+ * - `npx --yes` reste suffisant sans lockfile (T3.4) ; un repo Node installe
+ *   sa stack pour rendre son adaptateur visible ;
  * - le sha de base voyage par l'environnement, jamais par interpolation dans
  *   le shell.
  */
-test("init écrit un workflow qui épingle le paquet et n'exige pas de package.json", () => {
+test("init écrit un workflow portable qui installe seulement une stack déclarée", () => {
   const racine = repoVierge();
   try {
     const resultat = init(racine);
@@ -132,7 +133,8 @@ test("init écrit un workflow qui épingle le paquet et n'exige pas de package.j
     assert.ok(resultat.ecrits.includes(".github/workflows/ucm.yml"));
     assert.match(workflow, new RegExp(`npx --yes @ucm-kit/cli@${resultat.version}\\b`));
     assert.doesNotMatch(workflow, /\^|~/, "aucune plage de version");
-    assert.doesNotMatch(workflow, /npm ci|npm install/, "aucun package.json exigé");
+    assert.match(workflow, /if: hashFiles\('package-lock\.json'\) != ''/);
+    assert.match(workflow, /run: npm ci/);
     assert.match(workflow, /--report ci-report\.md/);
     assert.match(workflow, /BASE_SHA: \$\{\{ github\.event\.pull_request\.base\.sha \}\}/);
     assert.match(workflow, /--base "\$BASE_SHA"/);
@@ -299,4 +301,13 @@ test("l'aide annonce les commandes réelles et le sens des codes de sortie", () 
   assert.match(aide, /--base/);
   assert.match(aide, /--report/);
   assert.match(aide, /0 tout est passé, 1 des contrôles ont échoué, 2/);
+});
+
+test("un repository sans paquet TypeScript garde le noyau portable", async () => {
+  const racine = repoVierge();
+  try {
+    assert.equal(await chargerAdaptateur(racine), null);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
 });

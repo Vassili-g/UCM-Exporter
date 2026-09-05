@@ -118,6 +118,8 @@ export function releveDuDiff(racine, base, sourceTokens, executer = execFileSync
  */
 export function check(arguments_, {
   racine = process.cwd(),
+  adaptateur,
+  echecsDeTests,
   ecrire = console.log,
   avertir = console.warn,
   alerter = console.error,
@@ -150,7 +152,12 @@ export function check(arguments_, {
     perimetre = releve;
   }
 
-  const verdict = controlerRepository(racine, { configuration, ...perimetre });
+  const verdict = controlerRepository(racine, {
+    configuration,
+    adaptateur,
+    echecsDeTests,
+    ...perimetre,
+  });
 
   // Le terminal, toujours, quoi qu'il arrive : c'est le seul canal qu'un
   // développeur lise en local, et le rapport ne s'écrit que sur demande.
