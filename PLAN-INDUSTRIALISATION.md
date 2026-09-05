@@ -2774,7 +2774,7 @@ close le matin même — ils y sont inscrits, non barrés.
       `liens-documents.test.mjs:140` exige `internes.length > 0`. Vider sans
       compter ferait tomber le plancher d'un contrôle en le laissant vert.
 
-- [ ] **T9.8 — Donner à cette phase un critère de fin mesurable.**
+- [X] **T9.8 — Donner à cette phase un critère de fin mesurable.**
       *C'est le manque principal que la revue a relevé, et il est structurel :*
       « épuré au maximum » n'est vérifiable par rien, alors que chaque autre
       phase de ce plan s'est donné un compteur — la duplication de T8.1, le
@@ -2803,6 +2803,24 @@ close le matin même — ils y sont inscrits, non barrés.
       ce dépôt poursuit partout. Et `ucm init` n'écrase jamais et écrit
       `ucm.yml`, pas `ci.yml` : « adopter » demande un geste que la commande ne
       fait pas. La bascule a pour précondition T6.3.
+      **Faite le 5 septembre 2026, les deux moitiés.**
+      `Playground/scripts/surface-documentaire.test.mjs` compte les octets des
+      `.md` hors `.claude/skills/` : **plafond 42 558**, relevé du jour, qui
+      n'autorise aucune remontée. Il ne juge rien — découper `AGENTS.md` en
+      trois le laisserait vert — et c'est voulu : il dit une seule chose que
+      personne ne peut discuter.
+      *Un choix qui mérite d'être écrit :* `.agents/skills/` reste COMPTÉ (1 439
+      octets) alors qu'il n'est pas réductible d'ici, puisqu'il est comparé
+      caractère par caractère avec la copie de l'exporteur. Un plancher visible
+      vaut mieux qu'une exclusion qui se justifie — l'exclure aurait demandé
+      d'écrire pourquoi, et cette phrase-là aurait péri.
+      `Playground/scripts/accord-workflows.test.mjs` compare les deux blocs, en
+      relevant le workflow depuis la SOURCE du CLI, bornée à sa fonction. La
+      borne n'est pas une précaution : sans elle, un message de `.gitignore` du
+      reste d'`init.mjs` s'est retrouvé collé à la fin d'un bloc comparé.
+      **Les deux lois ont été vues rouges avant d'être crues** — le compteur sur
+      un plafond volontairement trop bas, l'accord en changeant une ligne de
+      `ci.yml`.
 
 - [ ] **T9.9 — Le reste du ménage, mesuré mais non classé par le brouillon.**
       *Cinq points que la revue a trouvés et que le code confirme. Petits
