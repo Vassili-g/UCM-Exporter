@@ -96,11 +96,28 @@ actionCard.className = 'action-panel';
  * annoncé. Ce n'est pas une préférence à ajouter — un réglage se règle une fois
  * et se relit à chaque ouverture —, c'est un libellé exact, qui ne coûte rien.
  */
+/*
+ * Le seul bouton de départ est l'ANALYSE (U3.1). Elle n'écrit rien : ni sur le
+ * poste, ni sur GitHub. La publication n'apparaît que dans son résultat, et
+ * seulement s'il y a quelque chose à publier.
+ */
 const exportComponentButton = createButton({
-  label: 'Exporter le composant et ouvrir la pull request',
+  label: 'Analyser le composant',
   variant: 'primary',
-  onClick: () => requestExport('export-component'),
+  onClick: () => requestExport('analyser-composant'),
 });
+
+/*
+ * L'annulation est COOPÉRATIVE (U3.4) : elle prend effet à la fin de l'étape en
+ * cours, elle n'interrompt pas un appel Figma déjà parti. Le libellé ne promet
+ * donc pas un arrêt immédiat.
+ */
+const cancelButton = createButton({
+  label: 'Annuler après cette étape',
+  variant: 'secondary',
+  onClick: () => parent.postMessage({ pluginMessage: { type: 'annuler' } }, '*'),
+});
+cancelButton.hidden = true;
 
 /*
  * Deux commandes inégales ne se ressemblent pas (U2.3).
@@ -119,9 +136,9 @@ tokensResume.className = 'tokens-resume';
 tokensResume.textContent = 'Tokens du fichier';
 
 const exportTokensButton = createButton({
-  label: 'Exporter les tokens et ouvrir la pull request',
+  label: 'Analyser les tokens du fichier',
   variant: 'secondary',
-  onClick: () => requestExport('export-tokens'),
+  onClick: () => requestExport('analyser-tokens'),
 });
 
 tokensPanel.append(tokensResume, exportTokensButton);
@@ -149,6 +166,7 @@ let cibleExportable = false;
 function rafraichirBoutons() {
   exportComponentButton.disabled = occupe || !cibleExportable;
   exportTokensButton.disabled = occupe;
+  cancelButton.hidden = !occupe;
   app.setAttribute('aria-busy', String(occupe));
 }
 
@@ -160,9 +178,26 @@ function setBusy(isBusy) {
 function requestExport(type) {
   setBusy(true);
   compteRendu.reinitialiser();
+  publication.hidden = true;
   ecrireNote('loading', 'Traitement en cours…');
   parent.postMessage({ pluginMessage: { type } }, '*');
 }
+
+/*
+ * L'action de publication vit DANS le résultat de l'analyse, et nulle part
+ * ailleurs : elle n'existe que lorsqu'il y a quelque chose à publier. Elle
+ * prend le focus, parce qu'elle est la suite du geste qu'on vient de faire.
+ */
+const publication = createButton({
+  label: 'Publier et ouvrir la pull request',
+  variant: 'primary',
+  onClick: () => {
+    setBusy(true);
+    publication.hidden = true;
+    parent.postMessage({ pluginMessage: { type: 'publier' } }, '*');
+  },
+});
+publication.hidden = true;
 
 /** La note dit l'état de l'action en cours, et disparaît quand il n'y en a pas. */
 function ecrireNote(state, text) {
@@ -171,7 +206,7 @@ function ecrireNote(state, text) {
   statusNote.hidden = !text;
 }
 
-actionCard.append(exportComponentButton);
+actionCard.append(exportComponentButton, cancelButton);
 /*
  * L'ordre de l'écran est celui de la hiérarchie, et le compte rendu suit
  * immédiatement l'action qui l'a produit : le laisser sous la commande des
@@ -182,6 +217,7 @@ exportPage.append(
   cible.element,
   actionCard,
   statusNote,
+  publication,
   compteRendu.element,
   depot,
   tokensPanel,
@@ -236,6 +272,19 @@ onmessage = (event) => {
   if (message.type === 'tokens') tokensResume.textContent = `Tokens du fichier : ${message.resume}`;
 
   if (message.type === 'phase') ecrireNote('loading', message.texte);
+
+  if (message.type === 'verdict') {
+    // Le verdict clôt l'analyse : c'est lui qui rend la main, parce que c'est
+    // lui qui dit ce qu'il reste à faire.
+    setBusy(false);
+    ecrireNote(message.etat, message.texte);
+    logPanel.append(message.texte);
+    publication.hidden = !message.action;
+    if (message.action) {
+      publication.setLabel(message.action);
+      publication.focus();
+    }
+  }
 
   if (message.type === 'depot') {
     configurationPage.afficherGouvernance(message);

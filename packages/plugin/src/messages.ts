@@ -22,6 +22,7 @@
 import type { PublicSettings, SettingsInput } from './config';
 import type { EtatConnexion, EtatDuDepot } from './connexion';
 import type { Cible } from './cible';
+import type { CodeVerdict } from './prevol';
 
 /**
  * Ce qu'un handler d'export dit de son avancement (U2.6).
@@ -37,7 +38,12 @@ export type LogLevel = 'info' | 'success' | 'error';
 
 /** Ce que l'UI demande au sandbox. */
 export type UiRequest =
-  | { type: 'export-component' | 'export-tokens' | 'ui-ready' }
+  /**
+   * Analyser, puis publier : deux demandes, jamais une (U3.1). L'analyse
+   * n'écrit rien ; la publication consomme ce qu'elle a produit, et
+   * `annuler` prend effet entre deux étapes.
+   */
+  | { type: 'analyser-composant' | 'analyser-tokens' | 'publier' | 'annuler' | 'ui-ready' }
   | { type: 'save-settings'; settings: SettingsInput }
   | { type: 'open-external'; url: string }
   /**
@@ -122,4 +128,18 @@ export type PluginMessage =
    * boîte de 96 px qui défile vers sa fin. Elle voyage maintenant dans le
    * message, et c'est le compte rendu qui la rend visible.
    */
-  | { type: 'diagnostic'; nature: 'avertissement' | 'constat'; texte: string };
+  | { type: 'diagnostic'; nature: 'avertissement' | 'constat'; texte: string }
+  /**
+   * Ce que l'analyse conclut, et l'action qu'elle propose (U3.1).
+   *
+   * `action` est le libellé du bouton de publication, et `null` quand il n'y a
+   * rien à publier : c'est ainsi que le clic supplémentaire n'est demandé que
+   * lorsqu'il achète quelque chose.
+   */
+  | {
+      type: 'verdict';
+      code: CodeVerdict;
+      texte: string;
+      action: string | null;
+      etat: '' | 'warning' | 'error';
+    };

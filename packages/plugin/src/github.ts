@@ -668,6 +668,84 @@ async function exportsEnVol(
 }
 
 /**
+ * Ce que le repository apprend AVANT toute écriture.
+ *
+ * **Une seule lecture, deux lecteurs (U3.1 c).** Le pré-vol doit refaire tout
+ * le chemin — l'emplacement, l'immobilité, la collision — et la publication
+ * doit le REVÉRIFIER, parce que le dépôt a pu bouger entre les deux : quelqu'un
+ * a fusionné, une branche est apparue. Deux chemins de lecture divergeraient en
+ * silence, ce que T4.1 a déjà refermé ailleurs ; il n'y en a donc qu'un, appelé
+ * deux fois.
+ */
+export type LectureDuDepot = {
+  layout: RepositoryLayout;
+  path: string;
+  /** Le fichier déjà présent sur la branche de base, s'il y en a un. */
+  surLaBase: { contenu: string; sha: string } | null;
+  /** Le même contenu, déjà déposé quelque part. Rien à publier alors. */
+  jumeau: { ou: string; url: string | null } | null;
+  /** Le refus de collision d'identité, quand il y en a un. */
+  refus: string | null;
+};
+
+export async function lireAvantEcriture(
+  config: GithubConfig,
+  artifact: RepositoryArtifact,
+): Promise<LectureDuDepot> {
+  const repository = `${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
+  // Le repository est interrogé AVANT toute écriture : il est seul à savoir où
+  // ses contrats vivent, et se tromper d'endroit est indétectable ensuite.
+  const layout = await repositoryLayout(config);
+  const path = artifactPath(artifact, layout);
+  const ouLaBase = `branche ${config.baseBranch}`;
+  const existing = await getRepositoryFile(config, path);
+  const surLaBase = existing?.type === 'file' && existing.content
+    ? { contenu: decodeBase64(existing.content), sha: existing.sha }
+    : null;
+
+  if (surLaBase && sameContent(surLaBase.contenu, artifact.content)) {
+    return { layout, path, surLaBase, jumeau: { ou: ouLaBase, url: null }, refus: null };
+  }
+
+  // T4.5. Le contrôle ci-dessus ne regarde que la branche de base, et c'est là
+  // qu'un artefact déjà exporté n'est PAS encore : il attend dans sa pull
+  // request. Réexporter un contenu strictement identique en ouvrait donc une
+  // seconde, en tout point pareille — un doublon que rien ne signalait.
+  //
+  // La lecture est celle de la détection de collision, ÉTENDUE et non
+  // dupliquée. Elle vient après la branche de base et pas avant, parce que le
+  // cas courant — rien n'a changé depuis la dernière fusion — se tranche alors
+  // sans lister aucune pull request.
+  const enVol = await exportsEnVol(config, repository, artifact.kind, path);
+  const jumeau = enVol.find((occupant) => sameContent(occupant.contenu, artifact.content));
+  if (jumeau) return { layout, path, surLaBase, jumeau, refus: null };
+
+  // Ce n'est pas un refus, et son pendant n'existe pas : un contenu DIFFÉRENT
+  // pendant qu'une pull request d'export est ouverte, c'est un réexport après
+  // correction dans Figma — le geste normal, que bloquer reviendrait à punir.
+  // Git dit le reste : deux branches qui modifient le même fichier depuis la
+  // même base entrent en conflit à la seconde fusion, et un conflit, lui, se
+  // voit.
+
+  // La collision se cherche APRÈS le contrôle d'immobilité : un contenu
+  // identique est un réexport par construction, et le faire passer par
+  // l'arbitre d'identité ne pourrait que rendre la même réponse plus cher.
+  //
+  // Elle ne concerne que les contrats. `tokens.json` est unique par
+  // repository : son chemin ne se dispute avec rien, et il ne porte aucune
+  // identité Figma à comparer.
+  if (artifact.kind === 'component') {
+    const occupants = [...(surLaBase ? [{ contenu: surLaBase.contenu, ou: ouLaBase }] : []), ...enVol];
+    for (const occupant of occupants) {
+      const refus = refusDeCollision(occupant.contenu, artifact.content, path, occupant.ou);
+      if (refus) return { layout, path, surLaBase, jumeau: null, refus };
+    }
+  }
+
+  return { layout, path, surLaBase, jumeau: null, refus: null };
+}
+
+/**
  * Crée une branche, écrit l'unique artefact de l'export puis ouvre la PR.
  *
  * Rien n'est écrit avant d'avoir cherché l'artefact aux deux seuls endroits où
@@ -687,60 +765,14 @@ export async function publishArtifact(
     );
   }
   const repository = `${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
-  // Le repository est interrogé AVANT toute écriture : il est seul à savoir où
-  // ses contrats vivent, et se tromper d'endroit est indétectable ensuite.
-  const layout = await repositoryLayout(config);
-  const path = artifactPath(artifact, layout);
-  const surLaBase = `branche ${config.baseBranch}`;
-  const existing = await getRepositoryFile(config, path);
-  if (existing?.type === 'file' && existing.content && sameContent(decodeBase64(existing.content), artifact.content)) {
-    return { status: 'unchanged', path, source: layout.source, ou: surLaBase, pullRequestUrl: null };
-  }
-
-  // T4.5. Le contrôle ci-dessus ne regarde que la branche de base, et c'est là
-  // qu'un artefact déjà exporté n'est PAS encore : il attend dans sa pull
-  // request. Réexporter un contenu strictement identique en ouvrait donc une
-  // seconde, en tout point pareille — un doublon que rien ne signalait, alors
-  // que c'est exactement la perte silencieuse que T4.1 et T4.3 referment
-  // ailleurs.
-  //
-  // La lecture est celle de la détection de collision, ÉTENDUE et non
-  // dupliquée : deux chemins de lecture du dépôt divergeraient en silence.
-  // Elle vient après la branche de base et pas avant, parce que le cas courant
-  // — rien n'a changé depuis la dernière fusion — se tranche alors sans lister
-  // aucune pull request.
-  const enVol = await exportsEnVol(config, repository, artifact.kind, path);
-  const jumeau = enVol.find((occupant) => sameContent(occupant.contenu, artifact.content));
+  // La lecture est REFAITE ici, même quand le pré-vol vient de la faire : entre
+  // les deux, le dépôt a pu bouger (U3.1 b). Une analyse qui autoriserait une
+  // écriture sur la foi d'une lecture périmée serait pire que pas d'analyse.
+  const { layout, path, surLaBase, jumeau, refus } = await lireAvantEcriture(config, artifact);
   if (jumeau) {
     return { status: 'unchanged', path, source: layout.source, ou: jumeau.ou, pullRequestUrl: jumeau.url };
   }
-
-  // Ce n'est pas un refus, et son pendant n'existe pas : un contenu DIFFÉRENT
-  // pendant qu'une pull request d'export est ouverte, c'est un réexport après
-  // correction dans Figma — le geste normal, que bloquer reviendrait à punir.
-  // Git dit le reste : deux branches qui modifient le même fichier depuis la
-  // même base entrent en conflit à la seconde fusion, et un conflit, lui, se
-  // voit.
-
-  // La collision se cherche APRÈS le contrôle d'immobilité : un contenu
-  // identique est un réexport par construction, et le faire passer par
-  // l'arbitre d'identité ne pourrait que rendre la même réponse plus cher.
-  //
-  // Elle ne concerne que les contrats. `tokens.json` est unique par
-  // repository : son chemin ne se dispute avec rien, et il ne porte aucune
-  // identité Figma à comparer.
-  if (artifact.kind === 'component') {
-    const occupants = [
-      ...(existing?.type === 'file' && existing.content
-        ? [{ contenu: decodeBase64(existing.content), ou: surLaBase }]
-        : []),
-      ...enVol,
-    ];
-    for (const occupant of occupants) {
-      const refus = refusDeCollision(occupant.contenu, artifact.content, path, occupant.ou);
-      if (refus) throw new GithubApiError(refus);
-    }
-  }
+  if (refus) throw new GithubApiError(refus);
 
   const branch = exportBranchName(artifact.kind, date);
   const baseRef = await githubRequest<{ object: { sha: string } }>(
@@ -763,7 +795,7 @@ export async function publishArtifact(
         message: `Unified Component Exporter: export ${artifact.filename}`,
         content: encodeBase64(artifact.content),
         branch,
-        ...(existing?.sha ? { sha: existing.sha } : {}),
+        ...(surLaBase ? { sha: surLaBase.sha } : {}),
       }),
     });
 

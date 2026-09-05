@@ -597,7 +597,7 @@ reste ouverte.
       `contratsEnVol` et `refusDeCollision` en détail ; étendre la comparaison,
       ne pas la dupliquer.
 
-- [ ] **U3.1 — Scinder « analyser » et « publier ».** Geste : l'analyse produit
+- [X] **U3.1 — Scinder « analyser » et « publier ».** Geste : l'analyse produit
       le contrat en mémoire et n'écrit rien ; la publication consomme ce
       résultat. Trois contraintes, chacune répondant à une objection de la
       revue :
@@ -622,23 +622,44 @@ reste ouverte.
       Geste d'implémentation : extraire une sous-fonction de lecture partagée par
       les deux étapes, jamais dupliquer le chemin — deux lectures du layout
       divergeraient en silence, ce que T4.1 a refermé ailleurs.
+      *Faite le 5 septembre 2026.* `lireAvantEcriture` est cette sous-fonction :
+      emplacement, immobilité, collision, dans l'ordre exact qu'avait
+      `publishArtifact`, y compris son économie — la branche de base d'abord,
+      les pull requests ouvertes seulement si quelque chose a changé. Les deux
+      étapes l'appellent, la publication comprise, qui ne fait donc pas
+      confiance à l'analyse.
+      Le verdict est l'unique conclusion : il occupe la note au rang 1 et clôt
+      l'attente. Un « Contrat généré » de plus par-dessus l'aurait écrasé avec
+      un texte qui ne décide de rien — c'est ce qui est arrivé à la première
+      version, et la galerie l'a montré.
+      **La question 1 de « Ce qui reste à trancher » est tranchée par là :** le
+      pré-vol REMPLACE l'export direct. Il n'y a plus qu'un chemin, donc un seul
+      comportement à documenter, à tester et à expliquer.
 
-- [ ] **U3.2 — Dire « identique » avant d'écrire.** L'immobilité est déjà
+- [X] **U3.2 — Dire « identique » avant d'écrire.** L'immobilité est déjà
       détectée dans `publishArtifact`, mais à l'intérieur du chemin d'écriture.
       Geste : la rendre lisible au pré-vol. Dépend de U3.0 et U3.1.
+      *Faite le 5 septembre 2026,* et la couleur a suivi : « Identique à ce qui
+      est déjà déposé. Rien à publier. » est neutre, plus verte. Le bouton de
+      publication n'apparaît pas dans ce cas, ce qui est la réponse concrète à
+      l'objection du clic supplémentaire — un export sans changement n'atteint
+      jamais la publication.
       **Ce que U1.1 a ajouté :** aujourd'hui « Aucun changement … : aucune PR
       créée » est peint en VERT DE SUCCÈS. Depuis T4.5, ce verdict annonce aussi
       un travail qui attend d'être fusionné dans une pull request ouverte —
       c'est un état à comprendre, pas une réussite. La couleur ne signale que la
       sévérité : celle-ci est neutre, pas verte.
 
-- [ ] **U3.3 — Une publication qui échoue doit être reprenable.** Sur échec
+- [X] **U3.3 — Une publication qui échoue doit être reprenable.** Sur échec
       GitHub, `runExport` télécharge le fichier localement et `deleteBranch`
       supprime la branche créée : le travail n'est pas perdu, mais l'état de
       l'UI l'est, et le résultat d'analyse a disparu. Geste : garder ce résultat
       et proposer « Réessayer la publication ». Dépend de U3.1.
+      *Faite le 5 septembre 2026.* Le contrat reste en mémoire du sandbox, et
+      l'échec propose de republier sans repasser par Figma. Le téléchargement de
+      secours est conservé : le travail ne dépend pas de la mémoire du plugin.
 
-- [ ] **U3.4 — Pouvoir annuler un export en cours.** Rien n'interrompt un
+- [X] **U3.4 — Pouvoir annuler un export en cours.** Rien n'interrompt un
       export : `setBusy` désactive les boutons et la promesse en vol continue. Un
       export parti sur `loadAllPagesAsync` d'un gros fichier ne laisse d'autre
       recours que fermer le plugin. Geste : une annulation **coopérative**,
@@ -646,6 +667,12 @@ reste ouverte.
       ce qu'elle est : elle prend effet à la fin de l'étape en cours, elle
       n'interrompt pas un appel Figma déjà parti. Ne rien publier après une
       annulation. Dépend de U2.6.
+      *Faite le 5 septembre 2026, et U2.6 lui a donné son point d'appui.* Le
+      drapeau est lu là où le moteur ANNONCE l'étape suivante : aucun sondage,
+      aucune boucle, et l'annulation ne peut pas tomber au milieu d'un appel
+      Figma. Le libellé du bouton dit ce qu'il fait — « Annuler après cette
+      étape » —, et le message final dit la seule chose qui compte : rien n'a
+      été écrit.
 
 ---
 
@@ -996,7 +1023,7 @@ finitions de CI, orthogonales à l'interface.
 7. **U4.1**, **U4.2**, **U4.6** — le compte rendu, qui rend U3 lisible.
    **Faits le 5 septembre 2026.**
 8. **U3.1** à **U3.4** — le pré-vol, une fois qu'il a un endroit où rendre son
-   résultat.
+   résultat. **Fait le 5 septembre 2026.**
 9. **U4.5** — après T8.1 —, puis **U4.3**, puis **U4.4** : la localisation dans
    cet ordre, l'invariant tranché, la loi écrite, le clic ensuite.
 10. **U5.3**, **U5.4**, puis **U6** si les conditions sont réunies.
@@ -1031,10 +1058,14 @@ devant tout le reste du graphique.
 
 ## Ce qui reste à trancher
 
-1. **Le pré-vol remplace-t-il l'export direct ?** Recommandation : oui. Deux
-   chemins feraient deux comportements à documenter, à tester et à expliquer, et
-   la contrainte (a) de U3.1 répond déjà à l'objection ergonomique.
-2. **Le journal brut survit-il à U4.1 ?** Recommandation : oui, replié, tant que
-   le plugin n'a pas d'autre canal de débogage.
+1. **Le pré-vol remplace-t-il l'export direct ?** ~~Recommandation : oui.~~
+   **Tranché le 5 septembre 2026 : oui**, en exécutant U3.1. Il n'y a plus qu'un
+   chemin, donc un seul comportement à documenter, à tester et à expliquer. Le
+   clic supplémentaire n'est demandé que lorsqu'il achète quelque chose : un
+   export identique au dépôt n'atteint jamais la publication, et son verdict ne
+   propose aucune action.
+2. **Le journal brut survit-il à U4.1 ?** ~~Recommandation : oui, replié.~~
+   **Tranché le 5 septembre 2026 : oui**, en exécutant U4.2. Il vit derrière
+   « Détails techniques », et garde la trace chronologique complète.
 3. **La sélection depuis l'UI est-elle acceptable au regard de l'invariant ?**
    C'est U4.5, et la réponse doit être écrite, pas supposée.
