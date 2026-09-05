@@ -651,7 +651,7 @@ reste ouverte.
 
 ## Phase U4 — Le compte rendu actionnable
 
-- [ ] **U4.1 — Trois groupes au lieu d'un flux.** Le journal mêle dans un ordre
+- [X] **U4.1 — Trois groupes au lieu d'un flux.** Le journal mêle dans un ordre
       chronologique la version de schéma, les avertissements `⚠︎`, les notes `•`,
       l'emplacement, un échec GitHub, un téléchargement et le lien de pull
       request — en 11 px monospace, sur 96 à 144 px. La distinction qui structure
@@ -673,14 +673,33 @@ reste ouverte.
       export à un seul, seul le compte change dans la note. Le canal du rang 2
       cache le rang 2 — un groupe « À corriger dans Figma (N) » ne suffira pas
       s'il hérite du même défilement automatique.
+      *Faite le 5 septembre 2026, et l'avertissement ci-dessus était fondé :* le
+      compte rendu n'hérite d'aucun défilement, parce qu'il n'est plus une boîte
+      à hauteur bornée. Un groupe vide reste caché — un titre à zéro entrée ne
+      dit rien —, et le compte est dans le titre : « À corriger dans Figma (20) »
+      cesse d'être indiscernable de « (1) ».
+      La nature voyage désormais dans le MESSAGE (`diagnostic`) et non dans un
+      caractère de puce. Ce qui suit en découle sans effort : ranger une entrée
+      dans son groupe ne demande plus aucune logique, donc plus aucun test — le
+      meilleur sort qu'on puisse réserver à une décision est de ne pas avoir à
+      la prendre.
+      **Un doublon trouvé en exécutant :** le verdict s'écrivait deux fois, en
+      note et en journal, mot pour mot. La note le porte au rang 1 ; le groupe
+      « Publication » porte ce que l'export a FAIT.
 
-- [ ] **U4.2 — Un avertissement se lit sans défiler.** Geste : chaque entrée est
+- [X] **U4.2 — Un avertissement se lit sans défiler.** Geste : chaque entrée est
       un bloc de hauteur libre, pas une ligne monospace tronquée. La police
       monospace ne sert plus que ce qui est littéral : chemin, nom de calque,
       référence de token. Le journal brut passe derrière un dépliant « Détails
       techniques », pour qui débogue. Les marqueurs « Erreur : » et « OK : » que
       `LogPanel` préfixe disparaissent avec lui : la couleur le dit déjà, et sur
       l'erreur d'interface ils produisent « Erreur : Erreur UI : … ».
+      *Faite le 5 septembre 2026.* Chaque avertissement est un bloc à filet de
+      sévérité, de hauteur libre. Le journal brut survit replié, comme
+      l'arbitrage le recommandait : tant que le plugin n'a pas d'autre canal de
+      débogage, la trace chronologique reste la seule façon de comprendre un
+      enchaînement, et elle ne coûte plus la lecture de ce qui demande un geste.
+      Les marqueurs restent DANS cette trace, où ils ne doublent aucun titre.
 
 - [ ] **U4.3 — Écrire la loi de couverture avant de rendre un lien cliquable.**
       Préalable de U4.4, et la seule tâche de ce plan qui touche au moteur.
@@ -725,13 +744,24 @@ reste ouverte.
       que la prochaine relecture n'ait pas à trancher une deuxième fois. Une
       tâche de vérification, pas de code.
 
-- [ ] **U4.6 — Tester ce qui décide, pas le DOM.** La logique qui mérite un test
+- [X] **U4.6 — Tester ce qui décide, pas le DOM.** La logique qui mérite un test
       est celle qui range un message dans un groupe, dérive l'état de la cible,
       ou traduit une erreur réseau en cause affichable. Geste : l'extraire en
       fonctions pures et la tester. C'est la règle de travail 5 appliquée : pas
       de harnais DOM — `buildUi.test.ts` couvre le seul risque de build réel,
       l'inlining du bundle — mais rien de neuf ne doit rester enfermé dans un
       `createElement`.
+      *Faite le 5 septembre 2026, et elle s'est faite en chemin.* Les trois
+      exemples de l'énoncé ont chacun leur module pur et leur test : `cible.ts`
+      dérive l'état de la cible, `connexion.ts` traduit une erreur réseau en
+      cause affichable et dit qui gouverne les chemins, et ranger un message
+      dans un groupe n'existe plus comme décision — la nature voyage dans le
+      message (U4.1). S'y ajoutent `fenetre.ts` pour les bornes de la fenêtre et
+      `resumeDesTokens` pour ce qu'un export emporte.
+      Deux tests de forme complètent le filet, et ils n'étaient pas prévus :
+      `stylesUi.test.ts` interdit qu'une classe posée n'ait pas de règle, ou
+      l'inverse ; `galerie.test.ts` interdit qu'un message déclaré n'ait aucun
+      écran où être regardé. Aucun des deux n'exerce le DOM.
 
 ---
 
@@ -964,6 +994,7 @@ finitions de CI, orthogonales à l'interface.
    données que U2.2 affiche. **Faites le 5 septembre 2026.**
 6. **U2** — l'écran de travail. **Faite le 5 septembre 2026.**
 7. **U4.1**, **U4.2**, **U4.6** — le compte rendu, qui rend U3 lisible.
+   **Faits le 5 septembre 2026.**
 8. **U3.1** à **U3.4** — le pré-vol, une fois qu'il a un endroit où rendre son
    résultat.
 9. **U4.5** — après T8.1 —, puis **U4.3**, puis **U4.4** : la localisation dans
