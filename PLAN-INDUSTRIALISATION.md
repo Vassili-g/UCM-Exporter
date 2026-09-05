@@ -13,11 +13,12 @@ répond à une erreur réellement commise pendant la préparation de ce plan.
 **1. Vérifier dans le code, jamais dans la documentation.**
 Ce projet a une documentation dense, précise et par endroits **périmée** : le
 code a dépassé des règles qui étaient vraies quand elles ont été écrites. Neuf
-contradictions sont recensées en fin de document, dont plusieurs dans des
-fichiers qu'un agent lit d'abord. Un exemple parmi d'autres : `AGENTS.md` du
-Playground affirme que `tokens.json` fait foi pour l'existence des références,
-alors que le contrôle lit la sortie CSS de Style Dictionary. Croire le document
-conduit à bâtir sur une propriété que le code ne tient pas.
+contradictions ont été recensées en fin de document ; **elles sont toutes
+refermées au 5 septembre 2026, et la règle ne s'assouplit pas pour autant.**
+Le jour même où la dernière tombait, la Phase R en trouvait six autres, dont une
+dans le premier fichier qu'un visiteur ouvre et une qui décrivait un paquet
+publié par un contenu qu'il ne portait plus. Ce n'est pas un stock à épuiser :
+c'est ce que produit un dépôt qui avance plus vite que ses documents.
 **Avant de traiter une règle documentée comme acquise, ouvrir le fichier qu'elle
 décrit.**
 
@@ -95,6 +96,13 @@ celui qui ouvre `AGENTS.md` et le croit — donc elle ne protège presque person
       `Playground/AGENTS.md` ; T7.0 a retiré celle d'`Exporter/AGENTS.md`.
       Inventaire au 4 septembre 2026, vérifié par `grep` : `PISTES-EVOLUTION.md`,
       `Playground/AGENTS.md` et l'ancrage 6 du skill `consommer-contrat`.
+      **Toutes parties au 5 septembre 2026** — les deux premières avec R3, la
+      troisième avec T8.6 —, **et les quatre renvois des points d'entrée avec
+      elles, dans le commit de T8.8.** Le mécanisme a tenu jusqu'au bout sauf
+      sur ces deux-là : R3 a dû les retirer après coup, parce que les tâches qui
+      corrigeaient leur cause ne les avaient pas emportées. C'est la seule fois
+      où « dans le même commit » n'a pas été respecté, et cela a suffi à laisser
+      deux avertissements mentir pendant une journée.
       Une balise qui survit à sa cause devient elle-même une information
       périmée. Chaque tâche qui corrige une contradiction retire la balise
       correspondante **dans le même commit**, et T8.8 vérifie qu'il n'en reste
@@ -2294,10 +2302,31 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
 - [ ] **T8.7 — Passer les documents en registre portable** : « React »,
       « `.tsx` » et « le Playground » ne restent que là où ils décrivent
       effectivement un adaptateur.
-- [ ] **T8.8 — Réviser la doctrine** (D5) sans perdre l'exigence d'autorité
+- [X] **T8.8 — Réviser la doctrine** (D5) sans perdre l'exigence d'autorité
       unique, corriger au fond les contradictions listées ci-dessous, et
       **vérifier qu'aucune balise de T0.1 ne subsiste** : une balise qui survit
       à sa cause devient à son tour une information périmée.
+      **Faite le 5 septembre 2026, et ses trois moitiés étaient déjà tombées
+      séparément** — c'est ce qui la rend vérifiable plutôt que déclarative.
+      La doctrine D5 a été révisée par R3 : la section « Extraction
+      multi-repository » de `PISTES-EVOLUTION.md` ne dit plus « rien à publier »,
+      elle dit que l'extraction est faite et **où vit l'autorité unique que le
+      découpage devait réaliser** — `CONTRACT_VERSION`, `codeIdentifier`,
+      `isTokenReference`, `tokenCssVariable`, chacune écrite une fois dans
+      `@ucm-kit/core/format`. L'exigence n'est pas perdue : elle a cessé d'être
+      un vœu.
+      Les neuf contradictions sont refermées au fond, par T2.4, D1, T7.0, T6.0,
+      R3, R4 et T8.6. **La table ne porte plus un seul rang vivant.**
+      *Et la vérification des balises, faite par `grep` dans les deux dépôts,
+      rend zéro.* Les quatre renvois des points d'entrée — `AGENTS.md` et
+      `CLAUDE.md` de chaque repository — se déclaraient balises et partaient
+      avec la dernière : **ils sont partis avec ce commit.** Un avertissement
+      qui survit à ce qu'il annonce enseigne à ignorer les avertissements.
+      *Ce qui NE part pas, et il faut dire pourquoi :* la table elle-même reste,
+      barrée. Elle n'avertit plus, elle enregistre — neuf règles fausses, où
+      elles vivaient, ce qui les a corrigées. La règle de travail 1, elle, est
+      réécrite plutôt que retirée : le jour où la dernière contradiction est
+      tombée, la Phase R en trouvait six autres.
 - [X] **T8.9 — Doter le Playground d'un test de liens.** Il n'en a aucun, et ses
       renvois croisés vers l'Exporter (dont un skill qui pointe
       `../../../../UCM-Exporter/CONTRIBUTING.md`) supposent deux clones frères
@@ -2869,6 +2898,11 @@ transitoire porte sa date, ou il ne s'écrit pas.**
 ---
 
 ## Contradictions doc ↔ code, vérifiées
+
+**Close le 5 septembre 2026 (T8.8) : les neuf rangs sont barrés, et aucune
+balise ne subsiste dans les deux dépôts.** Cette table n'avertit plus, elle
+enregistre — quelle règle était fausse, où elle vivait, ce qui l'a corrigée. Un
+rang barré vaut mieux qu'un rang supprimé : il dit qu'on a regardé.
 
 | Document | Ce qu'il affirme | Ce que fait le code |
 |---|---|---|
