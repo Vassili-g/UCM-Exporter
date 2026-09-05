@@ -191,6 +191,11 @@ packages/kit/       Le FORMAT : @ucm-kit/core, publié sur npm.
   src/lecteurs/       Validateurs et diagnostic. Utilisent ajv et node:fs
   schema/             Le schéma commité
   fixtures/           Contrats d'une version que le moteur ne fabrique plus
+
+packages/cli/       La COMMANDE : @ucm-kit/cli, publiée sur npm. Dépend du kit.
+  src/init.mjs        Installe ce qui manque à un repository, sans rien écraser
+  src/check.mjs       Contrôle les contrats et rend le rapport du designer
+  src/icons.mjs       Liste les icônes que les contrats réclament
 ```
 
 Le plugin importe le kit, jamais l'inverse. C'est ce qui rend le kit publiable
@@ -201,11 +206,16 @@ Les composants du corpus servent uniquement à éprouver sa généricité.
 
 ## État
 
-L'outillage consommateur (les 6 contrôles, le rapport, le workflow) vit
-aujourd'hui dans le Playground. Son extraction dans `@ucm-kit/core` et une CLI
-`ucm init` / `ucm check`, pour brancher n'importe quel repository sans écrire
-de script, sont décrites dans
-[PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md).
+L'outillage consommateur — les 6 contrôles, le rapport, le workflow — est
+**publié** : il vit dans `@ucm-kit/core` et se lance par `@ucm-kit/cli`. Un
+repository quelconque se branche par `ucm init` sans écrire une ligne de script,
+et sans être un projet Node. C'était l'objet de
+[PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui porte ce qu'il
+reste à faire.
+
+Le Playground n'est plus le domicile de cet outillage : il en est le
+consommateur de référence, celui qui sert à vérifier que le kit tient hors de
+son dépôt d'origine.
 
 La maturité et les limites restantes sont dans [ROADMAP.md](./ROADMAP.md).
 
