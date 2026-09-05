@@ -1589,6 +1589,17 @@ une place dans l'ordre d'exécution.
       sandbox ↔ UI, avec une porte d'envoi unique qui rend cette liste
       contraignante au lieu de documentaire. C'est le même geste que T4.1, T4.2
       et T4.3 : une seule autorité pour une chose.
+      **U1.0 à U1.3 sont faites elles aussi, le 5 septembre 2026, la Phase 7
+      étant passée pour l'instant** — décision du propriétaire du projet, prise
+      en connaissance de l'ordre écrit ici. Le risque nommé ci-dessus n'est pas
+      couru par ces quatre tâches : elles ne dessinent aucun écran, elles
+      décrivent ceux qui EXISTENT et donnent de quoi juger les suivants. Il est
+      couru, en revanche, par U1.4 et tout ce qui vient après. Ce que ces quatre
+      tâches ont produit : la hiérarchie de l'information et le protocole de
+      relecture vivent maintenant dans `CONTRIBUTING.md`, et
+      `packages/plugin/galerie/` rend chaque état de l'interface atteignable et
+      photographiable hors de Figma, sous un test qui refuse qu'un message
+      déclaré n'ait aucun écran où être regardé.
 
 ---
 

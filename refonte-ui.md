@@ -217,72 +217,124 @@ quoi juger ; les six suivantes exécutent.
 
 ### U1.0 à U1.3 — De quoi juger la qualité de l'UI
 
-- [ ] **U1.0 — Écrire la hiérarchie de l'information, et la borner.** C'est le
+**Faites en entier le 5 septembre 2026**, dans l'ordre, et sans produire une
+ligne de style. Deux d'entre elles ont changé ce qui suit : la hiérarchie a
+gagné une **troisième borne** que personne n'avait vue en la raisonnant, et
+l'inventaire a trouvé l'interface plus pauvre que la liste qui l'annonçait —
+plusieurs situations distinctes n'y ont qu'un seul écran, et l'une des deux
+tâches qui prétendaient les distinguer n'a rien à distinguer.
+
+- [X] **U1.0 — Écrire la hiérarchie de l'information, et la borner.** C'est le
       livrable contre lequel tout le reste se vérifie ; sans lui, « cet élément
-      ressort-il assez ? » n'a pas de réponse vérifiable. Trois rangs, et le
-      moyen visuel de chacun :
+      ressort-il assez ? » n'a pas de réponse vérifiable. Trois rangs — ce qui
+      décide de l'action, ce sur quoi on agit, ce qui informe sans rien
+      demander — et le moyen visuel de chacun.
+      *Faite, et la table a DÉMÉNAGÉ.* Elle vit désormais dans
+      [CONTRIBUTING.md](./CONTRIBUTING.md#interface-du-plugin), pas ici : une
+      règle en vigueur n'habite pas un plan qui sera coché puis archivé, et la
+      recopier aux deux endroits reviendrait à créer la seconde autorité au
+      désaccord muet que ce projet poursuit partout ailleurs.
+      **La troisième borne vient des captures de U1.1, pas du raisonnement :**
+      *un rang 1 hors de vue n'est pas un rang 1.* La fenêtre fait 500 px et,
+      **au repos, avant tout résultat, l'interface les dépasse déjà**. Le verdict
+      d'un export, le lien de sa pull request et le bouton « Enregistrer » de la
+      configuration sont sous la ligne de flottaison. La position est le signal
+      du rang 1 ; elle ne signale plus rien quand elle est hors du cadre.
 
-      | Rang | Ce qui en relève | Signalé par |
+- [X] **U1.1 — Inventorier les états, les dessiner, les regarder.** C'est
+      l'équivalent UI d'un jeu de fixtures, et le seul moyen de répondre
+      autrement que par une opinion. Geste : rendre chaque état atteignable, le
+      capturer **dans les deux thèmes**, et confronter chaque capture à la table
+      de U1.0. Un état qui n'a pas été regardé n'est pas conçu.
+      *Faite — `packages/plugin/galerie/`, et l'inventaire n'est pas une liste
+      en prose.* Une liste en prose ne rend rien atteignable et vieillit sans
+      rougir. Ici chaque état déclare la **suite exacte de messages** qui le
+      produit, et `build-galerie.cjs` rejoue cette suite dans l'interface RÉELLE
+      que le build vient de fabriquer : rien n'est redessiné, donc rien ne peut
+      diverger de ce que le designer voit. `capturer.cjs` photographie le tout
+      avec le Chrome du poste — aucune dépendance ajoutée —, et
+      `tests/galerie.test.ts` refuse qu'un message déclaré dans `messages.ts`
+      n'ait aucun écran où être regardé : c'est ce qui interdit à une phase
+      suivante d'ajouter un état en silence, comme l'ordre d'exécution l'exige.
+      **25 situations déclarées, 21 ont un écran, 4 n'en ont aucun** — la
+      publication en cours et l'analyse par phase (U2.6), l'annonce du premier
+      lancement (U2.5), l'annulation (U3.4). Cette moitié-là est la plus utile :
+      c'est celle qu'une capture ne peut pas montrer.
+      **Ce que le regard a trouvé, et que le code seul ne disait pas :**
+      **(1)** deux situations que ce plan croyait distinctes ont le **même
+      écran** — « aucune sélection » et « sélection non exportable » reçoivent le
+      message identique de `reportSelectionState`, et « résultat propre » et
+      « publiée » sont le même instant ;
+      **(2)** le journal défile vers sa fin à chaque ligne ajoutée
+      (`content.scrollTop = content.scrollHeight`), si bien que **les
+      avertissements sont exactement ce qu'il cache** : à vingt avertissements,
+      la capture est identique à celle d'un seul — seul le compte, dans la note,
+      change. Le canal du rang 2 escamote le rang 2 ;
+      **(3)** au repos, sans résultat, l'écran porte **onze objets pour zéro
+      décision** et déborde déjà de la fenêtre ;
+      **(4)** les deux boutons promettent « et ouvrir la pull request » **pendant
+      que la pastille dit « repository non connecté »** — le libellé exact de
+      U0.4 devient un libellé faux dans le seul état où il compte (U2.5) ;
+      **(5)** « Aucun changement … : aucune PR créée » est peint en **vert de
+      succès**, alors qu'il annonce, depuis T4.5, un travail qui attend d'être
+      fusionné ailleurs ;
+      **(6)** tout message `status` s'écrit **deux fois** — note et journal, mot
+      pour mot, à quinze pixels d'écart ;
+      **(7)** en thème sombre, la gouttière d'ascenseur reste claire : elle suit
+      `prefers-color-scheme`, que `color-scheme: light dark` délègue au
+      navigateur, et non la classe de thème que Figma pose. **À vérifier dans
+      Figma** avant d'en conclure quoi que ce soit — c'est U1.8.
+
+- [X] **U1.2 — Auditer chaque élément sur sa fonction.** Un seul test, appliqué à
+      tout ce qui est à l'écran : *quelle décision du designer cet élément
+      sert-il, à son cinquantième export ?* Ce qui n'y répond pas sort.
+      *Faite, sur les captures et non sur le code.* Le relevé du plan tenait ;
+      les captures l'ont complété, et une divergence réelle est apparue là où
+      personne ne regardait.
+
+      | Élément | La décision qu'il sert au cinquantième export | Verdict |
       |---|---|---|
-      | 1 — ce qui décide de l'action | la cible (nom du composant), le verdict du résultat (« 3 points à corriger », « prêt à publier », « identique au dépôt ») | la position — en haut, hors de toute carte — et la taille |
-      | 2 — ce sur quoi on agit | l'action principale, chaque avertissement | le poids : bouton plein, bloc à filet de sévérité |
-      | 3 — ce qui informe sans rien demander | destination, constats, version de schéma, journal | la couleur secondaire et la densité, jamais une carte |
+      | Pastille de connexion | savoir si l'export publiera ou téléchargera | garde — mais descend sous le titre, et devient cliquable (U5.2) |
+      | Engrenage / bouton « Retour » | naviguer | garde — un seul emplacement, une seule forme, quelle que soit la page |
+      | Titre « Unified Component Exporter » | aucune | sort, si la fenêtre de Figma porte déjà le nom du plugin — **à vérifier sur une capture réelle** avant de le retirer |
+      | Sous-titre « Transformez vos composants… » | aucune | sort — plaquette commerciale, et il occupe la place du rang 1 |
+      | Titre de section « Actions » | aucune | sort — il nomme l'évidence au-dessus de deux boutons |
+      | Bouton composant | lancer l'action | garde — mais ne promet plus ce que l'état ne peut pas tenir (U2.5) |
+      | Bouton tokens | lancer une action de portée *fichier* | garde — cesse de ressembler au premier (U2.3) |
+      | Note d'état | trois choses à la fois : la cible, le verdict, l'avertissement | **éclate** — rangs 1 et 2 mêlés dans un bloc de rang 3 |
+      | Titre « Journal » | aucune, tant que le journal est le seul canal | suit le sort du journal (U4.2) |
+      | « Les messages de l'outil … apparaissent ici » | aucune | sort — il explique un journal à qui en a vu mille |
+      | Marqueurs « Erreur : » et « OK : » des lignes | aucune | sortent — la couleur le dit déjà, et sur l'erreur d'interface ils produisent « Erreur : Erreur UI : … » |
+      | Pied de page « Schéma de contrat 12.0 » | douter d'un bundle périmé | garde — rang 3, discret, jamais effacé (U0.1) |
+      | Carte « Configuration du repository » | aucune | sort — elle répète le titre de la page qui la porte |
+      | Chemins des composants et des tokens | rien, dès qu'un `ucm.config.json` existe | deviennent des replis explicites (U5.1) |
+      | Bouton « Enregistrer » et son statut | conclure la configuration | gardent — mais **hors de vue aujourd'hui** : il faut défiler pour enregistrer, et pour lire que ça a marché |
 
-      Deux bornes, sans quoi la table ne tient pas :
-      **un élément signale son rang par deux moyens au plus** — position et
-      taille, ou poids et couleur, jamais les quatre, sinon tout crie ensemble ;
-      **la couleur sémantique ne signale que la sévérité, jamais le rang** —
-      autrement un constat vert paraît plus important qu'un avertissement gris,
-      ce qui est exactement l'inverse de la doctrine du projet.
+      **La divergence trouvée en auditant :** les valeurs par défaut des
+      réglages sont écrites DEUX fois — `loadPublicSettings` dans `config.ts` et
+      `populate` dans `ConfigurationPage.js` —, et les deux écritures ne disent
+      déjà pas la même chose : `config.ts` conserve une chaîne vide,
+      `populate` la remplace par `main`, `src/components`, `src/tokens`. Une
+      branche de base délibérément vidée se réaffiche donc « main » à la
+      réouverture. C'est le défaut favori de ce dépôt — deux autorités, un
+      désaccord muet — et son domicile naturel est U5.1, qui traite déjà de qui
+      gouverne ces valeurs.
 
-- [ ] **U1.1 — Inventorier les états, les dessiner, les regarder.** C'est
-      l'équivalent UI d'un jeu de fixtures, et c'est le seul moyen de répondre
-      autrement que par une opinion. L'interface en a bien plus que ce que
-      quiconque a énuméré : aucune sélection · sélection non exportable ·
-      composant sans règle d'usage exploitable · composant prêt · analyse en
-      cours, une vue par phase · résultat identique au dépôt · résultat propre ·
-      résultat avec un avertissement · résultat avec vingt · publication en
-      cours · publiée · échec GitHub avec repli local · dépôt non configuré ·
-      connexion en cours · connecté · `ucm.config.json` mal formé · export
-      annulé · une pull request déjà ouverte pour ce composant.
-      Geste : rendre chaque état atteignable, le capturer **dans les deux
-      thèmes**, et confronter chaque capture à la table de U1.0. Un état qui n'a
-      pas été regardé n'est pas conçu. Cet inventaire est aussi la liste de
-      vérification des phases U2, U3 et U4 : chacune en ajoute, et aucune ne les
-      ajoute en silence.
-
-- [ ] **U1.2 — Auditer chaque élément sur sa fonction.** Un seul test, appliqué
-      à tout ce qui est à l'écran : *quelle décision du designer cet élément
-      sert-il, à son cinquantième export ?* Ce qui n'y répond pas sort. Le relevé
-      est déjà fait, et il est sévère :
-      le titre de section « Actions » au-dessus de deux boutons **nomme
-      l'évidence** ; le paragraphe « Les messages de l'outil et les
-      téléchargements apparaissent ici » **explique un journal** à quelqu'un qui
-      en a vu mille ; le sous-titre « Transformez vos composants Figma en
-      contrats exploitables » est de la **plaquette commerciale** dans un outil
-      quotidien, et occupe la place où devrait vivre ce qui change ; la pastille
-      de connexion est posée **au-dessus** du nom du produit (`createHeader`
-      empile `topline` avant `titleGroup`), donc l'état se lit avant le titre, et
-      elle **n'est pas cliquable** alors qu'elle porte la seule information qui
-      demande un geste ; l'engrenage et « Retour » **se remplacent au même
-      emplacement**, donc la navigation change de forme selon la page ; la note
-      réserve 54 px et centre son contenu, donc un message d'une ligne **flotte
-      dans un vide permanent** pour éviter un saut occasionnel — c'est le mauvais
-      arbitrage, la hauteur doit être celle du contenu et la stabilité venir de
-      la place du bloc.
-
-- [ ] **U1.3 — Écrire le protocole de relecture, et le tenir court.** Une
+- [X] **U1.3 — Écrire le protocole de relecture, et le tenir court.** Une
       vérification qui coûte cher ne se fait qu'une fois. Cinq points, à passer
-      sur les captures de U1.1 : **(a)** côte à côte avec un panneau natif de
-      Figma — densité, taille de texte, épaisseur des bordures, l'écart doit être
-      invisible ; **(b)** les deux thèmes, en vérifiant le contraste du texte de
-      sévérité sur son fond, à 11 px ; **(c)** à la plus petite taille de fenêtre
-      admise ; **(d)** avec le **pire contenu réel** — l'avertissement le plus
-      long que le moteur produise réellement, et vingt avertissements d'un coup ;
-      **(e)** un compte des objets à l'écran : au-delà d'une douzaine, la
-      hiérarchie de U1.0 ne tient plus, quelle que soit la finesse du style.
-      Ce protocole rejoint `CONTRIBUTING.md` une fois écrit ; il n'a de valeur
-      que répété à chaque phase suivante.
+      sur les captures de U1.1.
+      *Fait — il vit dans
+      [CONTRIBUTING.md](./CONTRIBUTING.md#interface-du-plugin), avec la table.*
+      Les cinq points sont ceux de l'énoncé ; un seul a changé de statut. Le
+      **(b)**, le contraste des textes de sévérité dans les deux thèmes, **ne se
+      passe pas sur la galerie** : ses couleurs viennent d'un décalque approché
+      des variables `--figma-color-*`, et conclure sur un contraste à partir
+      d'une approximation reviendrait à vérifier son propre décalque. Il se
+      passe dans Figma, et c'est U1.8. Les quatre autres — la comparaison à un
+      panneau natif, la plus petite fenêtre, le pire contenu réel, le compte des
+      objets — se passent sur les captures, et l'ont déjà été : le compte des
+      objets est **onze au repos** et la douzaine est franchie dès le premier
+      résultat.
 
 ### U1.4 à U1.10 — Le socle
 
@@ -308,6 +360,11 @@ quoi juger ; les six suivantes exécutent.
       —, donc trois zones de poids visuel égal et aucune hiérarchie. Geste : la
       zone d'action porte le poids ; le compte rendu vit sur le fond de la
       page ; la configuration est un formulaire, pas une carte.
+      **Ce que U1.1 a ajouté :** ces trois cartes ne coûtent pas que de la
+      hiérarchie, elles coûtent de la HAUTEUR. Bordures, marges et titres de
+      section suffisent à faire déborder les 500 px de la fenêtre **au repos,
+      avant tout résultat** ; les retirer est ce qui rend la ligne de flottaison
+      au rang 1.
 
 - [ ] **U1.8 — Relire chaque repli en dur en thème sombre.** Les replis sont
       écrits pour le thème clair (`#fff`, `#f5f5f5`, `#fff1d6` sous
@@ -330,6 +387,9 @@ quoi juger ; les six suivantes exécutent.
       soit. Ce n'est pas un confort isolé — le compte rendu de la phase U4
       grandit avec le nombre d'avertissements, et une fenêtre fixe le renverrait
       dans une boîte à défilement.
+      **Et ce n'est pas non plus un confort futur :** les captures de U1.1
+      montrent l'interface actuelle débordant déjà de sa fenêtre sans avoir
+      produit le moindre résultat.
 
 ---
 
@@ -371,6 +431,12 @@ quoi juger ; les six suivantes exécutent.
       de premier lancement — « Aucun dépôt connecté : l'export sera téléchargé
       sur votre poste » — et l'accès à la configuration. Le repli devient un mode
       choisi.
+      **Ce que U1.1 a ajouté, et qui rend la tâche plus urgente :** les deux
+      boutons promettent « et ouvrir la pull request » **pendant que la pastille
+      dit « repository non connecté »**. Le libellé exact gagné par U0.4 devient
+      donc un libellé FAUX dans le seul état où il décide de quelque chose. Ce
+      qu'un bouton promet doit suivre l'état de la cible, pas seulement le nom de
+      l'artefact.
 
 - [ ] **U2.6 — Des phases pendant l'attente.** L'export charge toutes les pages
       puis résout trois fois le même maître par dépendance : un coût nommé et
@@ -452,6 +518,11 @@ reste ouverte.
 - [ ] **U3.2 — Dire « identique » avant d'écrire.** L'immobilité est déjà
       détectée dans `publishArtifact`, mais à l'intérieur du chemin d'écriture.
       Geste : la rendre lisible au pré-vol. Dépend de U3.0 et U3.1.
+      **Ce que U1.1 a ajouté :** aujourd'hui « Aucun changement … : aucune PR
+      créée » est peint en VERT DE SUCCÈS. Depuis T4.5, ce verdict annonce aussi
+      un travail qui attend d'être fusionné dans une pull request ouverte —
+      c'est un état à comprendre, pas une réussite. La couleur ne signale que la
+      sévérité : celle-ci est neutre, pas verte.
 
 - [ ] **U3.3 — Une publication qui échoue doit être reprenable.** Sur échec
       GitHub, `runExport` télécharge le fichier localement et `deleteBranch`
@@ -487,12 +558,21 @@ reste ouverte.
       règle est écrite pour un rapport agrégé de CI, pas pour le résultat d'un
       export unique. L'adaptation garde ce qui la motive : le problème avant le
       détail, le geste séparé du constat. Dépend de U0.6.
+      **Ce que U1.1 a ajouté :** le journal défile vers sa fin à chaque ligne
+      (`content.scrollTop = content.scrollHeight`), et les avertissements
+      arrivent en PREMIER. Ils sont donc exactement ce que le journal escamote :
+      la capture d'un export à vingt avertissements est identique à celle d'un
+      export à un seul, seul le compte change dans la note. Le canal du rang 2
+      cache le rang 2 — un groupe « À corriger dans Figma (N) » ne suffira pas
+      s'il hérite du même défilement automatique.
 
 - [ ] **U4.2 — Un avertissement se lit sans défiler.** Geste : chaque entrée est
       un bloc de hauteur libre, pas une ligne monospace tronquée. La police
       monospace ne sert plus que ce qui est littéral : chemin, nom de calque,
       référence de token. Le journal brut passe derrière un dépliant « Détails
-      techniques », pour qui débogue.
+      techniques », pour qui débogue. Les marqueurs « Erreur : » et « OK : » que
+      `LogPanel` préfixe disparaissent avec lui : la couleur le dit déjà, et sur
+      l'erreur d'interface ils produisent « Erreur : Erreur UI : … ».
 
 - [ ] **U4.3 — Écrire la loi de couverture avant de rendre un lien cliquable.**
       Préalable de U4.4, et la seule tâche de ce plan qui touche au moteur.
@@ -563,6 +643,13 @@ reste ouverte.
       (`repositoryLayout` lève au lieu de retomber sur les réglages) ; le lire à
       la connexion transforme un blocage tardif, après le travail, en information
       immédiate.
+      **Ce que U1.2 a trouvé en auditant, et qui entre ici :** les valeurs par
+      défaut de ces réglages sont écrites DEUX fois — `loadPublicSettings` dans
+      `config.ts`, `populate` dans `ConfigurationPage.js` — et les deux ne disent
+      déjà pas la même chose : `config.ts` conserve une chaîne vide là où
+      `populate` la remplace par `main`, `src/components`, `src/tokens`. Une
+      branche de base délibérément vidée se réaffiche donc « main » à la
+      réouverture. Une seule écriture doit rester, et c'est celle du sandbox.
 
 - [ ] **U5.2 — Trois causes, trois messages.** `testGithubConnection` avale
       l'erreur et rend un booléen : pas de configuration, token invalide (401) et
@@ -571,6 +658,10 @@ reste ouverte.
       source — `GithubApiError` porte son `status` — et se perd au retour.
       Geste : rendre la cause et l'afficher ; la pastille devient un bouton vers
       la configuration.
+      **Ce que U1.1 a ajouté :** la phrase de statut du formulaire — la seule qui
+      dise si l'enregistrement a réussi — est SOUS la ligne de flottaison, comme
+      le bouton « Enregistrer » qui la produit. La cause affichée ici doit
+      remonter avec elle.
 
 - [ ] **U5.3 — Dire pourquoi la publication a échoué.** Même perte, l'autre
       bout : un échec de publication devient « Échec GitHub » suivi du message
@@ -701,12 +792,20 @@ finitions de CI, orthogonales à l'interface.
 
 1. **U0 sauf U0.5** — une session, aucune décision, et U0.6 conditionne U2.1 et
    U4.1. **U3.0 dans la même fenêtre**, tant que `github.ts` est frais.
-2. *(Phase 7 de l'industrialisation — le test du repo vierge.)*
+2. *(Phase 7 de l'industrialisation — le test du repo vierge.)* **Passée pour
+   l'instant**, le 5 septembre 2026, par décision du propriétaire du projet :
+   elle demande un repo de recette créé et tenu hors de ce plan, et des exports
+   lancés depuis Figma.
 3. **U1.0 à U1.3** — la hiérarchie écrite, les états inventoriés, l'audit de
    fonction et le protocole de relecture. **Rien de visuel ne se dessine avant.**
    Ces quatre tâches ne produisent pas une ligne de style : elles produisent de
    quoi juger celles qui suivent, et sans elles la refonte n'a aucun critère de
    réussite — seulement des avis.
+   **Faites le 5 septembre 2026**, la Phase 7 étant passée. Elles ne couraient
+   pas le risque que cet ordre existe pour éviter : elles décrivent les écrans
+   qui EXISTENT, elles n'en dessinent aucun. **L'étape 4 le court**, elle : le
+   socle graphique s'exécute contre une hiérarchie écrite, mais les vues de U2 et
+   U4 qu'il prépare montreront un flux que la Phase 7 n'a pas encore validé.
 4. **U1.4 à U1.10** — le socle, exécuté contre la table de U1.0, avant toute vue
    nouvelle : sinon les vues de U2 et U4 sont à redessiner deux fois.
 5. **U5.1** et **U5.2** — la destination réelle et la cause d'un échec sont des

@@ -156,6 +156,72 @@ propriétés Figma citées dans un message ; les libellés passés à `resolveFi
 suivent la même règle. Aucune couche de remplacement : la traduction se fait à
 la source.
 
+## Interface du plugin
+
+Ce que le designer voit dans la fenêtre du plugin se juge contre deux choses
+écrites : une hiérarchie de l’information et un protocole de relecture. Elles
+existent parce qu’une refonte d’interface sans critère ne produit que des avis —
+c’est le manque que [refonte-ui.md](./refonte-ui.md) a nommé, et U1.0 à U1.3 y
+répondent. Ce qui suit fait autorité ; le plan, lui, raconte ce qui reste à
+faire.
+
+### La hiérarchie de l’information
+
+Trois rangs, et le moyen visuel de chacun.
+
+| Rang | Ce qui en relève | Signalé par |
+|---|---|---|
+| 1 — ce qui décide de l’action | la cible (nom du composant), le verdict du résultat (« 3 points à corriger », « prêt à publier », « identique au dépôt ») | la position — en haut, hors de toute carte — et la taille |
+| 2 — ce sur quoi on agit | l’action principale, chaque avertissement | le poids : bouton plein, bloc à filet de sévérité |
+| 3 — ce qui informe sans rien demander | destination, constats, version de schéma, journal | la couleur secondaire et la densité, jamais une carte |
+
+Trois bornes, sans quoi la table ne tient pas :
+
+- **un élément signale son rang par deux moyens au plus** — position et taille,
+  ou poids et couleur, jamais les quatre, sinon tout crie ensemble ;
+- **la couleur sémantique ne signale que la sévérité, jamais le rang** —
+  autrement un constat vert paraît plus important qu’un avertissement gris, ce
+  qui est l’inverse de la doctrine du projet ;
+- **un rang 1 hors de vue n’est pas un rang 1.** La position est un signal, et
+  la limite de la fenêtre en fait partie : ce qui décide de l’action se lit sans
+  défiler, y compris quand le contenu en dessous grandit. Cette borne est venue
+  des captures, pas de la table : elles ont montré le verdict, le lien de pull
+  request et le bouton « Enregistrer » sous la ligne de flottaison.
+
+### Regarder avant de conclure
+
+`packages/plugin/galerie/` rend chaque état de l’interface atteignable hors de
+Figma : `etats.cjs` déclare, pour chacun, la suite exacte de messages qui le
+produit, et la galerie rejoue cette suite dans l’interface RÉELLE que le build
+vient de produire — rien n’y est redessiné.
+
+```sh
+npm run galerie --workspace ucm-exporter-plugin           # dist/galerie/index.html
+npm run galerie:captures --workspace ucm-exporter-plugin  # les planches, en PNG
+```
+
+Les couleurs viennent d’un décalque des variables `--figma-color-*`, pas de
+l’hôte : la galerie sert à juger une hiérarchie, une densité et une place, et
+jamais à conclure sur un contraste. Un état ajouté sans entrée dans `etats.cjs`
+fait échouer `tests/galerie.test.ts`, qui refuse qu’un message déclaré dans
+`messages.ts` n’ait aucun écran où être regardé.
+
+### Le protocole de relecture
+
+Cinq points, passés sur les captures. Une vérification qui coûte cher ne se fait
+qu’une fois : celle-ci est courte pour être répétée à chaque phase qui ajoute un
+état.
+
+**(a)** Côte à côte avec un panneau natif de Figma — densité, taille de texte,
+épaisseur des bordures : l’écart doit être invisible.
+**(b)** Les deux thèmes, en vérifiant le contraste du texte de sévérité sur son
+fond, à 11 px. Dans Figma, pas sur le décalque.
+**(c)** À la plus petite taille de fenêtre admise.
+**(d)** Avec le pire contenu réel — l’avertissement le plus long que le moteur
+produise, et vingt avertissements d’un coup.
+**(e)** Un compte des objets à l’écran : au-delà d’une douzaine, la hiérarchie
+ci-dessus ne tient plus, quelle que soit la finesse du style.
+
 ## Robustesse
 
 Une donnée facultative, illisible ou non tokenisée produit un avertissement et

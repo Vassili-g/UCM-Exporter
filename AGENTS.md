@@ -27,6 +27,11 @@ versionnage. Lire le groupe que la tâche touche, pas la section entière.
 Pour créer ou modifier un message destiné au designer, charger aussi la skill
 [`rediger-diagnostics-ucm`](./.agents/skills/rediger-diagnostics-ucm/SKILL.md).
 
+Pour toucher à l'interface du plugin, lire d'abord
+[CONTRIBUTING.md](./CONTRIBUTING.md#interface-du-plugin) : la hiérarchie de
+l'information et le protocole de relecture y font autorité, et la galerie des
+états rend chaque écran atteignable hors de Figma.
+
 La maturité et les priorités vivent dans [ROADMAP.md](./ROADMAP.md). Les idées
 non décidées dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 
@@ -67,6 +72,7 @@ packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
     github.ts                  branche, fichier et pull request
     messages.ts                les DEUX sens de la frontière sandbox ↔ UI
     ui/                        interface du plugin
+  galerie/                   les états de l'UI, atteignables hors de Figma
   tests/
   manifest.json              chargé dans Figma depuis packages/plugin/dist/
 
