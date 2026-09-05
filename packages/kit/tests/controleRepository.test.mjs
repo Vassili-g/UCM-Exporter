@@ -31,6 +31,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { controlerRepository } from "../src/lecteurs/controle-repository.mjs";
+import {
+  VERSION_CONTRAT_MAXIMALE,
+  VERSION_CONTRAT_MINIMALE,
+} from "../src/lecteurs/version-contrat.mjs";
 
 /**
  * La configuration du repo jouet — délibérément PAS celle par défaut.
@@ -225,7 +229,19 @@ test("version non lue : refus, et la section désigne le développeur", () => {
 
   assert.equal(bloquant, true);
   assert.match(rapport, /### ❌ La version du contrat n'est pas prise en charge : `Widget\.contract\.json`/);
-  assert.match(rapport, /Le contrat utilise le schéma 99\.0\. Le repository prend en charge les schémas 12\.0\./);
+  // La plage se lit dans les constantes, jamais recopiée : T7.6 l'a élargie à
+  // deux versions, et cette ligne était le seul endroit du dépôt à croire encore
+  // qu'elle en portait une. Un test qui fige la plage la fige des deux côtés.
+  const plage = VERSION_CONTRAT_MINIMALE === VERSION_CONTRAT_MAXIMALE
+    ? VERSION_CONTRAT_MINIMALE
+    : `${VERSION_CONTRAT_MINIMALE} à ${VERSION_CONTRAT_MAXIMALE}`;
+  assert.match(
+    rapport,
+    new RegExp(
+      `Le contrat utilise le schéma 99\\.0\\. `
+        + `Le repository prend en charge les schémas ${plage.replaceAll(".", "\\.")}\\.`,
+    ),
+  );
   assert.match(rapport, /Un développeur doit auditer le nouveau schéma[\s\S]*Réexporter ne corrigera pas ce problème\./);
   assert.match(
     rapport,

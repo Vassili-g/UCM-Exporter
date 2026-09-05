@@ -66,7 +66,7 @@ away from what the code actually does:
 
 ```js
 import { VERSION_CONTRAT_MINIMALE, VERSION_CONTRAT_MAXIMALE } from "@ucm-kit/core/lecteurs";
-// 0.1.0 reads exactly one version — both constants are "12.0".
+// 0.1.11 reads two: "11.0" (previous) through "12.0" (current).
 ```
 
 ## Three entry points, and why they are separate
@@ -110,12 +110,16 @@ component is yours.
 
 **0.x — the public surface is not frozen.** Pin an exact version, without `^`.
 
-**This release reads exactly one contract version, `12.0`.** A contract in any
-other version is refused — with a verdict that names the fix and its owner,
-rather than a list of missing fields. Widening the window to two versions, the
-current one and the previous one, is a decision already taken and not yet
-shipped; until it is, read `VERSION_CONTRAT_MINIMALE` and
-`VERSION_CONTRAT_MAXIMALE` rather than trusting this paragraph.
+**This release reads two contract versions, `11.0` and `12.0`** — the previous
+one and the current one. The window exists so that a consumer is not red between
+the day the kit moves and the day its contracts are re-exported. Anything
+outside it is refused, major or minor alike, with a verdict that names the fix
+and its owner rather than a list of missing fields.
+
+The window is deliberate, not a default: its lower bound tracks the REAL
+previous version and closes by one notch on each release. Read
+`VERSION_CONTRAT_MINIMALE` and `VERSION_CONTRAT_MAXIMALE` rather than trusting
+this paragraph.
 
 ## A note on language
 

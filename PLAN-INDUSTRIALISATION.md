@@ -1875,10 +1875,26 @@ une place dans l'ordre d'exécution.
       token inexistant reste l'affaire du contrôle d'existence (T2.4). Les deux
       ensemble ferment la boucle : T2.4 dit que le token existe dans
       `tokens.json`, T6.0a dit que la variable qu'on en tire existe dans le CSS.
-- [ ] **T6.1 — Preset Style Dictionary**, transforms graisse et famille, plus le
+- [X] **T6.1 — Preset Style Dictionary**, transforms graisse et famille, plus le
       test d'accord de T6.0a. La table « nom de graisse → poids » est une
       connaissance du format et va dans le kit ; la projection CSS reste dans le
       preset, pour qu'un futur preset iOS réutilise la table.
+      **Faite le 5 septembre 2026.** La table vit dans
+      `packages/kit/src/format/typography.ts` et le preset l'APPELLE
+      (`poidsDeGraisse`) au lieu d'en porter une copie. La coupure est celle de
+      T6.0, pour la raison qui avait coûté quatre tokens : deux exemplaires
+      d'une même règle divergent en silence.
+      *Une décision que la tâche a dû prendre et que l'énoncé ne portait pas :*
+      un nom de graisse inconnu rend `null`, jamais un repli sur 400. Replier
+      ferait disparaître l'information — le design system emploie un vocabulaire
+      que la table ne couvre pas — et ferait de la table une seconde autorité
+      sur ce qu'un token a le droit de valoir. Le preset garde alors la valeur
+      telle quelle, comme avant.
+      *Ce qui NE bouge pas :* le transform de famille (`fontFamily/css-quote`)
+      est une projection CSS de bout en bout — guillemets et repli générique —,
+      et il n'a pas de table à partager. Le « preset » reste le fichier de
+      configuration du consommateur ; en faire un paquet publiable est une autre
+      décision, que rien n'oblige à prendre ici.
 - [X] **T6.2 — `tokenVar`** importe la projection du kit. *Fait le 4 septembre
       2026.* `tokenVar` appelle `tokenCssVariable`, et le transform `name/ucm`
       de `style-dictionary.config.mjs` l'appelle aussi — il remplace
@@ -2070,7 +2086,7 @@ en douze tests, le 5 septembre 2026* :
       s'élargira. **L'écart D8 ↔ code est donc ouvert et non traité ici** : le
       refermer demande de faire lire le 11.0 aux validateurs, ce que A1 a jugé
       probable mais jamais exercé, et c'est une tâche à part — voir T7.6.
-- [ ] **T7.6 — Trancher la fenêtre de lecture : une version, ou deux (D8).**
+- [X] **T7.6 — Trancher la fenêtre de lecture : une version, ou deux (D8).**
       *Ouverte le 5 septembre 2026 par la mesure de T7.5.* Deux réponses, et il
       faut en écrire une — le silence se lirait comme une fenêtre de deux
       versions qui n'existe pas.
@@ -2084,6 +2100,29 @@ en douze tests, le 5 septembre 2026* :
       Il faut aussi dire ce qu'un consommateur fait pendant la fenêtre qu'il n'a
       pas : la réponse est probablement « le réexport est immédiat et le rapport
       le dit », ce que T7.3 vient de rendre vrai.
+      **Tranchée le 5 septembre 2026 : DEUX. D8 avait raison, et le prix qu'on
+      lui prêtait n'existe pas.** « Le validateur doit lire réellement le N‑1 »
+      était le coût annoncé ; exercé sur les quatre contrats 11.0 figés — leur
+      seul emploi restant, exactement comme prévu —,
+      `champsInvalidesDuContrat` rend **zéro** champ invalide sur chacun,
+      `validerGrapheDesContrats` ne signale rien, `validerAdressesDEchantillons`
+      ne trouve aucune adresse en défaut, et `vueExacteDuVariant` résout les
+      **104** variants. Le « probablement » d'A1 valait donc « oui », et la
+      raison est structurelle : la 12.0 n'a qu'AJOUTÉ des champs optionnels, et
+      sa résolution des rôles retombe sur la clé quand `keyRoles` est absent —
+      l'état d'un 11.0.
+      *Ce que la tâche a dû écrire en plus, et c'est le vrai livrable :*
+      `packages/kit/tests/fenetre-de-lecture.test.mjs`. Déclarer une borne basse
+      ne coûte rien ; la TENIR est le sujet. `verdictDeVersion` est le premier
+      contrôle, pas le dernier : si un lecteur refusait ensuite un 11.0, la
+      fenêtre accueillerait pour renvoyer trois lignes plus bas, ce qui est pire
+      qu'une fenêtre fermée — le message ne dirait plus quel geste corrige. Le
+      test fait donc passer les fixtures par TOUS les lecteurs, et il refuse un
+      dossier de fixtures vide, qui le rendrait vert sans rien prouver.
+      *Un troisième endroit croyait encore à une seule version, et aucun humain
+      ne l'aurait vu :* `controleRepository.test.mjs` figeait « prend en charge
+      les schémas 12.0 » en dur. Le code, lui, rendait déjà « 11.0 à 12.0 ». Le
+      test lit désormais la plage dans les constantes.
 
 Reportés : le chronométrage, le scénario nominal (couvert par les autres) et la
 matrice Windows × Ubuntu — utiles, mais ils coûtent plus qu'ils ne prouvent

@@ -7,19 +7,24 @@
  * convention finiraient par diverger, et un contrôle accepterait ce qu'un
  * autre refuse.
  *
- * Le schéma sert à deux choses, et à rien d'autre :
+ * Le schéma sert à l'éditeur, qui valide un `.contract.json` ouvert à la main
+ * (cf. le `json.schemas` qu'un repository consommateur déclare), et à un outil
+ * tiers qui voudrait juger un contrat sans dépendre de ces lecteurs-ci.
  *
- * 1. l'éditeur, qui valide un `.contract.json` ouvert à la main
- *    (cf. `.vscode/settings.json`) ;
- * 2. `schema-contrat.test.mjs`, qui constate que la copie vendue ici décrit
- *    encore les contrats du repository. Une copie périmée ou trop stricte
- *    devient ainsi un test rouge chez le développeur, jamais un diagnostic
- *    adressé au designer — il n'y pourrait rien.
+ * `schema/ucm-contract.schema.json` est le schéma du PAQUET, écrit par
+ * `scripts/build-schema.ts` depuis `types.ts`. Il ne se corrige pas à la main —
+ * il se régénère (`npm run schema`), et `tests/schema.test.ts` refuse toute
+ * divergence avec le générateur.
  *
- * `schema/ucm-contract.schema.json` n'est plus une copie vendue : c'est le
- * schéma du paquet, écrit par `scripts/build-schema.ts` depuis `types.ts`.
- * Il ne se corrige toujours pas à la main — il se régénère (`npm run schema`),
- * et `tests/schema.test.ts` refuse toute divergence avec le générateur.
+ * **Ce module n'a aucun consommateur dans ces deux dépôts, et c'est décidé
+ * (T9.1/T9.3).** Le consommateur de référence portait une copie du schéma et un
+ * test censé la comparer ; le test ouvrait en réalité le fichier du paquet
+ * installé, donc ne comparait rien, et la copie est partie. Le plugin résout
+ * `@ucm-kit/core/schema` en direct, et le kit passe par son générateur.
+ * On garde quand même ces quatre exports : ils sont la surface PUBLIQUE d'un
+ * paquet publié, et « plus personne ici ne s'en sert » n'est pas « personne ne
+ * s'en sert ». Les retirer est une rupture qui se décide sur un besoin, pas un
+ * effet de bord d'un ménage.
  */
 import Ajv from "ajv";
 import { readFileSync } from "node:fs";

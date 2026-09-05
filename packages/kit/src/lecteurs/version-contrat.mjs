@@ -10,21 +10,41 @@
  */
 
 /**
- * Version de schéma que ce repository sait lire.
+ * Versions de schéma qu'un consommateur du kit sait lire : la COURANTE et la
+ * PRÉCÉDENTE.
  *
- * Les deux bornes existent parce que `verdictDeVersion` distingue les deux
- * sens de l'écart, pas parce qu'une plage serait ouverte : elles sont égales,
- * et ce repository lit exactement UN schéma. Toute autre version est refusée,
- * majeure comme mineure — l'historique a prouvé qu'une mineure pouvait
- * renommer un champ lu.
+ * **Pourquoi deux, et pourquoi ça se décide plutôt que ça se subit.** Avec une
+ * seule version, il n'existe aucun recouvrement : à l'instant où le kit monte,
+ * tout contrat déjà fusionné devient « trop ancien » et chaque pull request du
+ * consommateur passe au rouge jusqu'au réexport. La fenêtre est le temps qu'on
+ * laisse au designer pour réexporter sans que son dépôt soit rouge entre-temps.
+ *
+ * **Le prix a été mesuré, pas supposé (T7.6).** Il était écrit qu'un validateur
+ * lisant réellement le N‑1 serait le coût de cette fenêtre. Exercé sur les
+ * quatre contrats 11.0 figés — leur seul emploi restant — :
+ * `champsInvalidesDuContrat` rend zéro champ invalide sur chacun,
+ * `validerGrapheDesContrats` ne signale rien, `validerAdressesDEchantillons`
+ * ne trouve aucune adresse en défaut, et `vueExacteDuVariant` résout les 104
+ * variants. La raison tient en une phrase : la 12.0 n'a fait qu'AJOUTER des
+ * champs optionnels — `inset`, `rotation`, `keyRoles` —, et sa règle de
+ * résolution des rôles retombe sur la clé quand `keyRoles` est absent, ce qui
+ * est exactement l'état d'un contrat 11.0.
+ *
+ * **Ce que la fenêtre n'est PAS : un état par défaut.** Elle décrit la version
+ * précédente RÉELLE, et elle se referme d'un cran à chaque montée. Une borne
+ * basse qu'on laisserait vieillir ferait rentrer en silence un schéma que plus
+ * personne n'adapte — c'est le sens qu'avait la fermeture précédente, et il ne
+ * change pas. Hors de la fenêtre, tout est refusé, majeure comme mineure :
+ * l'historique a prouvé qu'une mineure pouvait renommer un champ lu.
  *
  * Les changer est un geste à part, et dans cet ordre : adapter les lecteurs,
  * réexporter les contrats, vérifier que les tests de rendu passent, PUIS
  * toucher ces constantes. Ce qui prouve l'adaptation est la suite de tests,
- * jamais une note écrite à côté du changement. La forme actuellement lue vit
- * dans `CONTRAT-CONSOMME.md`.
+ * jamais une note écrite à côté du changement. La forme courante est décrite
+ * par `docs/FORMAT.md` ; ce que chaque version publie, et ce que la suivante
+ * casse, par `docs/CHANGELOG-FORMAT.md`.
  */
-export const VERSION_CONTRAT_MINIMALE = "12.0";
+export const VERSION_CONTRAT_MINIMALE = "11.0";
 export const VERSION_CONTRAT_MAXIMALE = "12.0";
 
 /** Parse strictement une version de schéma `majeure.mineure`. */
