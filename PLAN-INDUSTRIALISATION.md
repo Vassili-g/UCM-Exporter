@@ -2742,7 +2742,7 @@ close le matin même — ils y sont inscrits, non barrés.
       donc monte le kit, donc le CLI, donc publie. **Cette ligne rejoint le lot
       de T9.3**, qui porte déjà cette montée.
 
-- [ ] **T9.3 — `CONTRAT-CONSOMME.md` part.** *(= T8.4, moitié 2.)*
+- [X] **T9.3 — `CONTRAT-CONSOMME.md` part.** *(= T8.4, moitié 2.)*
       **Son argument est plus fort que celui du brouillon, et c'est la revue qui
       l'a trouvé : le document est périmé sur toute une section.** « Lecture par
       les contrôles » (`:52-67`) situe `references-token.mjs`,
@@ -2779,6 +2779,28 @@ close le matin même — ils y sont inscrits, non barrés.
       **T6.1** (la table graisse → poids qui entre dans le kit) et l'arbitrage
       sur `schema-contrat.mjs` laissé ouvert par T9.1. Une publication pour les
       quatre, pas quatre publications.
+      **Fait le 5 septembre 2026, les quatre en un lot et UNE publication.**
+      `@ucm-kit/core@0.1.11` et `@ucm-kit/cli@0.1.6` sont sur le registre, tous
+      deux passés par l'épreuve du registre du workflow. Le comptage de la revue
+      était juste au fichier près : kit, pin du CLI, CLI, README.
+      *L'arbitrage rendu :* les quatre exports de `schema-contrat.mjs` RESTENT.
+      « Plus personne ici ne s'en sert » n'est pas « personne ne s'en sert », et
+      c'est la surface publique d'un paquet publié — la retirer se décide sur un
+      besoin, pas en effet de bord d'un ménage. Ce qui est corrigé, c'est son
+      en-tête : il citait le test que T9.1 venait de supprimer.
+      *Le triage a trouvé un cinquième cas, non prévu :* le premier paragraphe
+      du document affirmait « le Playground accepte exactement UN schéma ». T7.6,
+      dans le même lot, en accepte deux. Supprimer un document en emportant une
+      affirmation qu'on vient de rendre fausse est le seul cas où supprimer
+      corrige — la phrase qui la remplace dans `AGENTS.md` dit la fenêtre.
+      *Et une leçon d'exécution qui n'est pas neuve mais qui vaut d'être datée :*
+      le geste de T6.1 côté consommateur a été à moitié écrit — le fichier
+      appelait `poidsDeGraisse` sans l'importer et gardait sa copie de la table.
+      **Aucun test des deux dépôts ne l'aurait dit**, parce qu'aucun ne lance
+      Style Dictionary ; c'est `npm run tokens` qui l'a dit à la première
+      exécution. Le CSS a ensuite été comparé octet pour octet avant/après, et
+      le transform est bien exercé — `tokens.json` porte « Regular », « SemiBold »
+      et « Bold » là où le CSS écrit 400, 600 et 700.
 
 - [X] **T9.4 — Écrire ce qu'`echecs-de-tests.mjs` ne peut plus dire ; ne rien
       couper.** *Le brouillon proposait de retirer `composantTeste`. La revue a
