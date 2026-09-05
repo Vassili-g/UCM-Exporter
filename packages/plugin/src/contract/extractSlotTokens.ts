@@ -23,6 +23,7 @@ import {
 import { paintSiteRole, roleKind } from './semantics';
 import { isIconLayer } from './slotNames';
 import type { StrokeAlignment, StrokeWidth } from '@ucm-kit/core/format';
+import { pousserLocalise } from './localisation';
 export type { TokenResolver } from '../variables';
 
 const BOUND_FIELDS = ['fills', 'strokes'] as const;
@@ -62,7 +63,7 @@ function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment |
   if (raw === 'INSIDE') return 'inside';
   if (raw === 'CENTER') return 'center';
   if (raw === 'OUTSIDE') return 'outside';
-  warnings.push(`Layer « ${node.name} » : l’alignement du stroke est illisible. Le contrat ne dira pas s’il est inside, center ou outside. Vérifiez ce réglage dans Figma, puis réexportez.`);
+  pousserLocalise(warnings, 'Layer', node, ` : l’alignement du stroke est illisible. Le contrat ne dira pas s’il est inside, center ou outside. Vérifiez ce réglage dans Figma, puis réexportez.`);
   return null;
 }
 
@@ -231,8 +232,8 @@ function warnPeinturesLibres(
   const stroke = field === 'strokes';
   const plusieurs = libres > 1;
   const nom = `${stroke ? 'stroke' : 'fill'}${plusieurs ? 's' : ''}`;
-  warnings.push(
-    `Layer « ${node.name} » : ${plusieurs ? `${libres} ${nom} ne sont reliés` : `son ${nom} n’est relié`} `
+  pousserLocalise(warnings, 'Layer', node,
+    ` : ${plusieurs ? `${libres} ${nom} ne sont reliés` : `son ${nom} n’est relié`} `
       + `à aucune variable Figma. Le contrat ne publie que les couleurs liées, et le `
       + `développeur rendra donc ce layer sans ${stroke ? 'ce contour' : 'cette couleur'}. `
       + `Reliez ${plusieurs ? 'ces' : 'ce'} ${nom} à une variable, puis réexportez.`,
@@ -330,8 +331,8 @@ export async function getSlotTokens(
       posees.set(marker, binding.token);
     } else if (dessous !== binding.token && dessous !== '') {
       posees.set(marker, '');
-      warnings.push(
-        `Layer « ${binding.node.name} » : deux ${isStroke ? 'strokes' : 'fills'} ` +
+      pousserLocalise(warnings, 'Layer', binding.node,
+        ` : deux ${isStroke ? 'strokes' : 'fills'} ` +
           `y sont reliés à des variables différentes (${toRef(dessous)} et ` +
           `${toRef(binding.token)}). Les deux couleurs sont exportées, mais le contrat ne peut pas ` +
           `exprimer laquelle est au-dessus de l'autre. Ne gardez qu'un ` +
@@ -355,8 +356,8 @@ export async function getSlotTokens(
         continue;
       }
       if (known.value.role !== value.role) {
-        warnings.push(
-          `Layer « ${binding.node.name} » : le stroke ${toRef(binding.token)} peint ici le rôle ` +
+        pousserLocalise(warnings, 'Layer', binding.node,
+          ` : le stroke ${toRef(binding.token)} peint ici le rôle ` +
             `« ${value.role} », mais le layer « ${known.node.name} » lui donne déjà le rôle ` +
             `« ${known.value.role} ». Le contrat garde le premier rôle et ne représente pas le ` +
             `second. Reliez ces usages à deux variables distinctes, ` +
@@ -371,8 +372,8 @@ export async function getSlotTokens(
         }
         continue;
       }
-      warnings.push(
-        `Layer « ${binding.node.name} » : son stroke ${toRef(binding.token)} est déjà posé par le ` +
+      pousserLocalise(warnings, 'Layer', binding.node,
+        ` : son stroke ${toRef(binding.token)} est déjà posé par le ` +
           `layer « ${known.node.name} », avec une stroke weight ou un alignement différents. Le ` +
           `contrat n'en garde qu'un par token et exporte celui de « ${known.node.name} » : la ` +
           `géométrie de ce layer manquera au développeur. Réglez les deux strokes de la même ` +
@@ -384,8 +385,8 @@ export async function getSlotTokens(
     const known = seenPaints.get(binding.token);
     if (known) {
       if (known.role !== role) {
-        warnings.push(
-            `Layer « ${binding.node.name} » : la couleur ${toRef(binding.token)} peint ici le rôle ` +
+        pousserLocalise(warnings, 'Layer', binding.node,
+            ` : la couleur ${toRef(binding.token)} peint ici le rôle ` +
             `« ${role} », mais le layer « ${known.node.name} » lui donne déjà le rôle ` +
             `« ${known.role} ». Le contrat garde le premier rôle et ne représente pas le second. ` +
             `Reliez ces usages à deux variables distinctes, puis ` +

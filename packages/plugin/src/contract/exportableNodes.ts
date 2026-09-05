@@ -13,6 +13,7 @@
 import { variableAliases } from '../variables';
 import { getBinding } from './nodeBindings';
 import type { ComposedDependency } from '@ucm-kit/core/format';
+import { noter, sujet } from './localisation';
 
 /** Vrai si la visibilité peut changer via l'API publique ou un mode de variable. */
 function hasDynamicVisibility(node: SceneNode): boolean {
@@ -153,11 +154,16 @@ export function getAllNodes(
 
   for (const [hidden, hasBindings] of ignoredBindings) {
     if (!hasBindings) continue;
+    const sujetDuCalque = sujet('Layer', hidden);
     pushOnce(
       warnings,
-      `Layer « ${hidden.name} » : masqué dans Figma, il est exclu de l'export avec tout ` +
-        `son contenu et les variables qu'il porte. Si le composant doit pouvoir l'afficher, ` +
-        `reliez sa visibilité à une boolean property ou à une variable.`,
+      noter(
+        warnings,
+        `${sujetDuCalque.texte} : masqué dans Figma, il est exclu de l'export avec tout ` +
+          `son contenu et les variables qu'il porte. Si le composant doit pouvoir l'afficher, ` +
+          `reliez sa visibilité à une boolean property ou à une variable.`,
+        sujetDuCalque,
+      ),
     );
   }
 

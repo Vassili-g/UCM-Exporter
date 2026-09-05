@@ -28,6 +28,7 @@ import { estUnTrace, getBinding } from './nodeBindings';
 import { assignSlots, isIconLayer } from './slotNames';
 import type { SlotAssignment } from './slotNames';
 import { composedSlotDependencies } from './slotRelations';
+import { sujet } from './localisation';
 
 /**
  * Profondeur maximale de `structure.children`.
@@ -218,7 +219,7 @@ export function depthLimitWarning(
 ): string | null {
   if (depth < MAX_STRUCTURE_DEPTH) return null;
   if (informationDescendants(node, iconNames, composed).length === 0) return null;
-  return `Layer « ${node.name} » : il est imbriqué au-delà de ${MAX_STRUCTURE_DEPTH} niveaux, `
+  return `${sujet('Layer', node).texte} : il est imbriqué au-delà de ${MAX_STRUCTURE_DEPTH} niveaux, `
     + `la profondeur maximale que le contrat décrit. Son contenu ne recevra ni slot, ni `
     + `typographie, ni visibilité, et le développeur ne le rendra pas. Remontez ce layer ou `
     + `découpez le composant, puis réexportez.`;

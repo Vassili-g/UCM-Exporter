@@ -30,6 +30,7 @@
  * rien à faire dans un relevé de ce qui manque. `flexLayout.rotationDegrees`
  * en est l'autorité, seuil compris.
  */
+import { sujet } from './localisation';
 
 /** `boundVariables` et les propriétés visuelles ne sont pas typées champ par champ. */
 type FigmaPropertyBag = Record<string, unknown>;
@@ -243,6 +244,6 @@ function proprietesDeTexteNonPortees(
  */
 export function unsupportedPropertyWarnings(node: SceneNode): string[] {
   return proprietesNonPortees(node).map(({ champ, manque, geste }) =>
-    `Layer « ${node.name} », ${champ} : le contrat ne sait pas écrire cette propriété. `
+    `${sujet('Layer', node).texte}, ${champ} : le contrat ne sait pas écrire cette propriété. `
       + `Le développeur n’aura pas ${manque}. ${geste}, puis réexportez.`);
 }

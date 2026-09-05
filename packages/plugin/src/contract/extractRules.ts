@@ -25,6 +25,7 @@ export {
   iconPolicyFromVisibility,
   ruleTagFromValue,
 } from './rulesModel';
+import { noter, sujetNomme } from './localisation';
 export type { IconRule, RuleEntry, RuleTag, RulesResult } from './rulesModel';
 
 /**
@@ -188,10 +189,13 @@ export async function extractRules(
   }
 
   if (entries.length === 0) {
-    warnings.push(
-      `Frame « ${sectionName} » : il ne contient aucune instance de « ComponentConfiguration » ` +
+    const sujetDuFrame = sujetNomme('Frame', sectionName, container);
+    warnings.push(noter(
+      warnings,
+      `${sujetDuFrame.texte} : il ne contient aucune instance de « ComponentConfiguration » ` +
         `lisible. Ajoutez-y au moins une règle, puis réexportez.`,
-    );
+      sujetDuFrame,
+    ));
   }
 
   const built = buildRules(entries);

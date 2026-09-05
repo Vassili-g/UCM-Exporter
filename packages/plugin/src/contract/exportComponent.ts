@@ -39,6 +39,7 @@ import type {
   ContractMeta,
   ExtractedContractVariant,
 } from '@ucm-kit/core/format';
+import { pousserLocalise, sujetSansNode } from './localisation';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(
@@ -223,8 +224,8 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     // avertissement, et nomme le geste — sans quoi il ne serait qu'une ligne de
     // plus à survoler dans la pull request.
     const plusieurs = missingVariants.missing > 1;
-    warnings.push(
-      `Component Set « ${componentSet.name} » : ${missingVariants.missing} `
+    pousserLocalise(warnings, 'Component Set', componentSet,
+      ` : ${missingVariants.missing} `
         + `combinaison${plusieurs ? 's' : ''} du produit cartésien de ses axes `
         + `${plusieurs ? "n'existent" : "n'existe"} pas. Le contrat ${CONTRACT_VERSION} publie `
         + `uniquement les combinaisons exactes présentes dans « variants » ; aucune `
@@ -403,7 +404,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   for (const dependency of scannedComposes) {
     if (placees.has(dependency)) continue;
     const message =
-      `Layer « ${dependency.figmaLayer} » : il porte le composant « ${dependency.component} », ` +
+      `${sujetSansNode('Layer', dependency.figmaLayer, 'nom-publie')} : il porte le composant « ${dependency.component} », ` +
         `qui a son propre contrat, mais le contrat n'a trouvé aucun emplacement où le situer. ` +
         `La dépendance ne sera ni décrite dans structure.children, ni déclarée dans composes : ` +
         `le développeur ne la rendra pas. Placez ce layer dans l'auto layout frame que le ` +
