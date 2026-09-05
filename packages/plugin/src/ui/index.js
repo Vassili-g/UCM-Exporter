@@ -6,6 +6,7 @@ import { createHeader } from './components/Header.js';
 import { createButton } from './components/Button.js';
 import { createConfigurationPage } from './components/ConfigurationPage.js';
 import { createLogPanel } from './components/LogPanel.js';
+import { createCible } from './components/Cible.js';
 import { createResizeGrip } from './components/ResizeGrip.js';
 
 const app = document.getElementById('app');
@@ -13,6 +14,27 @@ app.className = 'container';
 
 const exportPage = document.createElement('div');
 exportPage.className = 'page-stack';
+
+/*
+ * La cible et la destination encadrent l'action : ce sur quoi on travaille, ce
+ * qu'on lance, où ça atterrit (U2.1 et U2.2). Aucune des deux n'existait avant
+ * le clic — la première vivait dans une note que le clic écrase, la seconde
+ * n'apparaissait qu'après publication, c'est-à-dire après le point de
+ * non-retour.
+ */
+const cible = createCible();
+
+const depot = document.createElement('section');
+depot.className = 'depot';
+
+const depotLigne = document.createElement('p');
+depotLigne.className = 'depot-ligne';
+
+const depotChemins = document.createElement('p');
+depotChemins.className = 'depot-chemins';
+
+depot.append(depotLigne, depotChemins);
+depot.hidden = true;
 const configurationPage = createConfigurationPage((settings) => {
   parent.postMessage({ pluginMessage: { type: 'save-settings', settings } }, '*');
 });
@@ -89,7 +111,7 @@ const statusNote = document.createElement('div');
 statusNote.className = 'note';
 statusNote.setAttribute('role', 'status');
 statusNote.setAttribute('aria-live', 'polite');
-statusNote.textContent = 'Sélectionnez un Component ou Component Set dans Figma, puis utilisez les actions ci-dessus.';
+statusNote.hidden = true;
 
 const logPanel = createLogPanel('Prêt. Cliquez sur une action pour démarrer.');
 const actionButtons = [exportComponentButton, exportTokensButton];
@@ -102,13 +124,19 @@ function setBusy(isBusy) {
 function requestExport(type) {
   setBusy(true);
   logPanel.clear();
-  statusNote.dataset.state = 'loading';
-  statusNote.textContent = 'Traitement en cours…';
+  ecrireNote('loading', 'Traitement en cours…');
   parent.postMessage({ pluginMessage: { type } }, '*');
 }
 
+/** La note dit l'état de l'action en cours, et disparaît quand il n'y en a pas. */
+function ecrireNote(state, text) {
+  statusNote.dataset.state = state;
+  statusNote.textContent = text;
+  statusNote.hidden = !text;
+}
+
 actionCard.append(exportComponentButton, exportTokensButton, statusNote);
-exportPage.append(actionCard, logPanel.element);
+exportPage.append(cible.element, actionCard, depot, logPanel.element);
 
 /**
  * L'UI n'invente plus rien de la connexion : elle place ce que le sandbox a
@@ -148,7 +176,16 @@ onmessage = (event) => {
     configurationPage.acceptRemoteSettings(message.settings);
   }
 
-  if (message.type === 'layout') configurationPage.afficherGouvernance(message);
+  if (message.type === 'cible') cible.afficher(message);
+
+  if (message.type === 'depot') {
+    configurationPage.afficherGouvernance(message);
+    depot.dataset.state = message.repli ? 'repli' : '';
+    depotLigne.textContent = message.ligne ?? '';
+    depotChemins.textContent = message.chemins ?? '';
+    depotChemins.hidden = !depotChemins.textContent;
+    depot.hidden = !depotLigne.textContent;
+  }
   if (message.type === 'settings-validation') configurationPage.renderErrors(message.errors);
   if (message.type === 'settings-save-error') configurationPage.showSaveError();
   if (message.type === 'connection') updateConnection(message);
@@ -165,17 +202,11 @@ onmessage = (event) => {
   if (message.type === 'status') {
     const isLoading = message.state === 'loading';
     setBusy(isLoading);
-    statusNote.dataset.state = message.state;
-    statusNote.textContent = message.text;
+    ecrireNote(message.state, message.text);
     // L'état d'une action et le niveau d'une ligne de journal ne sont pas le
     // même vocabulaire : `loading` n'est pas un `LogLevel`, et la classe
     // `log-loading` qu'il produisait n'était stylée nulle part.
     logPanel.append(message.text, isLoading ? 'info' : message.state);
-  }
-
-  if (message.type === 'note') {
-    statusNote.dataset.state = message.state || '';
-    statusNote.textContent = message.text;
   }
 
   if (message.type === 'download') {
@@ -198,7 +229,6 @@ onmessage = (event) => {
 window.addEventListener('error', (event) => {
   setBusy(false);
   configurationPage.releaseSaveButton();
-  statusNote.dataset.state = 'error';
-  statusNote.textContent = `Erreur UI : ${event.message}`;
+  ecrireNote('error', `Erreur UI : ${event.message}`);
   logPanel.append(statusNote.textContent, 'error');
 });

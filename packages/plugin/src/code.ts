@@ -8,11 +8,12 @@ import handleExportComponent from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
-import type { SettingsInput } from './config';
+import type { GithubConfig, SettingsInput } from './config';
 import { publishArtifact, diagnostiquerConnexion } from './github';
 import type { ArtifactKind, RepositoryLayout } from './github';
 import type { PluginMessage, UiRequest } from './messages';
 import { etatDeConnexion, etatDuDepot } from './connexion';
+import { etatDeCible, detailDeCible } from './cible';
 import type { CauseConnexion } from './connexion';
 
 /** Ce qu'`etatDeConnexion` accepte en plus de la cause. */
@@ -50,14 +51,6 @@ function postStatus(state: 'loading' | 'success' | 'error', text: string): void 
 }
 
 /**
- * Met à jour la seule note d'état (sans écrire dans le journal) : sert au retour
- * en direct à la sélection. `state` vide = style neutre par défaut.
- */
-function postNote(state: '' | 'warning' | 'success', text: string): void {
-  versUi({ type: 'note', state, text });
-}
-
-/**
  * Met à jour l'indicateur de connexion toujours visible dans l'en-tête.
  *
  * Il prend une CAUSE, jamais un état d'affichage : `etatDeConnexion` est seul à
@@ -74,8 +67,9 @@ function postConnection(cause: CauseConnexion, precision: PrecisionConnexion = {
  * le designer apprenait alors que les deux chemins saisis dans la configuration
  * n'avaient servi à rien, parce qu'un `ucm.config.json` les remplaçait.
  */
-function postLayout(layout: RepositoryLayout | null): void {
-  versUi({ type: 'layout', ...etatDuDepot(layout) });
+function postDepot(layout: RepositoryLayout | null, config: GithubConfig | null): void {
+  const depot = config ? { owner: config.owner, repo: config.repo, baseBranch: config.baseBranch } : null;
+  versUi({ type: 'depot', ...etatDuDepot(layout, depot) });
 }
 
 /** Envoie le fichier généré à l'UI pour déclencher le téléchargement local. */
@@ -103,13 +97,13 @@ async function refreshConfiguration(): Promise<void> {
   const validation = await loadGithubConfig();
   if (!validation.valid || !validation.config) {
     postConnection('non-configure');
-    postLayout(null);
+    postDepot(null, null);
     return;
   }
   postConnection('verification');
   const diagnostic = await diagnostiquerConnexion(validation.config);
   postConnection(diagnostic.cause, { statut: diagnostic.statut, detail: diagnostic.detail });
-  postLayout(diagnostic.layout);
+  postDepot(diagnostic.layout, validation.config);
 }
 
 /** Jeton anti-course : seule la dernière analyse de sélection met à jour la note. */
@@ -122,30 +116,34 @@ let selectionToken = 0;
 async function reportSelectionState(): Promise<void> {
   const token = (selectionToken += 1);
   const selection = figma.currentPage.selection;
+  const etat = etatDeCible(
+    selection.map((layer) => ({
+      type: layer.type,
+      name: layer.name,
+      variants: layer.type === 'COMPONENT_SET' ? layer.children.length : undefined,
+    })),
+  );
 
-  if (
-    selection.length !== 1
-    || (selection[0].type !== 'COMPONENT_SET' && selection[0].type !== 'COMPONENT')
-  ) {
-    postNote('', 'Sélectionnez un Component ou Component Set dans Figma, puis utilisez les actions ci-dessus.');
-    return;
-  }
+  // La cible part TOUT DE SUITE : son nom, son genre et ses variants sont
+  // connus sans rien lire. L'avertissement, lui, coûte un balayage de page ;
+  // l'attendre pour afficher le nom faisait patienter devant un écran vide.
+  versUi({ type: 'cible', ...etat, detail: detailDeCible(etat.cible), avertissement: null });
+  if (!etat.cible) return;
 
-  const component = selection[0];
+  const component = selection[0] as ComponentNode | ComponentSetNode;
   const rules = await extractRules(component);
   // La sélection a pu changer pendant la lecture asynchrone : on abandonne alors.
   if (token !== selectionToken) return;
+  if (hasUsableRules(rules)) return;
 
-  if (!hasUsableRules(rules)) {
-    postNote(
-      'warning',
-      `« ${component.name} » est exportable, mais aucune règle d’usage exploitable ne documente `
-        + `quand l’utiliser. Les diagnostics diront ce que le contrat sait décrire, et intent `
-        + `vaudra null.`,
-    );
-  } else {
-    postNote('success', `« ${component.name} » prêt à l'export.`);
-  }
+  versUi({
+    type: 'cible',
+    ...etat,
+    detail: detailDeCible(etat.cible),
+    avertissement:
+      `Aucune règle d’usage exploitable ne documente quand l’utiliser. Les diagnostics diront `
+      + `ce que le contrat sait décrire, et intent vaudra null.`,
+  });
 }
 
 /** Immobilité exigée avant d'analyser une sélection. */

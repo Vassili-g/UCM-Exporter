@@ -464,18 +464,33 @@ rendant les deux chemins facultatifs.
 
 ## Phase U2 — L'écran de travail
 
-- [ ] **U2.1 — La cible reste affichée.** Le nom du composant n'existe que dans
+- [X] **U2.1 — La cible reste affichée.** Le nom du composant n'existe que dans
       la note de sélection (`reportSelectionState`), il est écrasé au clic
       (`requestExport`), et le message de succès ne le renomme pas. Geste : un
       bloc cible persistant — nom Figma, type (`COMPONENT` ou `COMPONENT_SET`),
       nombre de variants. `reportSelectionState` tient déjà le node : il lui
       suffit d'envoyer une structure au lieu d'une phrase. Dépend de U0.6.
+      *Faite le 5 septembre 2026 — `src/cible.ts` et le bloc en tête d'écran.*
+      La cible part MAINTENANT, avant le balayage de page : son nom, son genre
+      et ses variants sont connus sans rien lire, et attendre l'avertissement
+      pour les afficher faisait patienter devant un écran vide. Deux
+      conséquences non prévues par l'énoncé. Les trois empêchements — rien de
+      sélectionné, plusieurs layers, un layer qui n'est pas un composant —
+      étaient un seul message ; ils sont trois raisons distinctes, parce que le
+      geste diffère, et c'est la galerie qui l'a montré en produisant deux
+      captures identiques. Et le message `note` a disparu de `messages.ts` :
+      plus personne ne l'émettait, un type déclaré que rien n'envoie est
+      exactement ce que U0.6 existe pour empêcher.
 
-- [ ] **U2.2 — La destination reste affichée.** Elle n'apparaît qu'après
+- [X] **U2.2 — La destination reste affichée.** Elle n'apparaît qu'après
       publication, parce que `repositoryLayout` n'est appelé que depuis
       `publishArtifact`. Geste : afficher `owner/repo · branche · chemin`, avec
       la source du chemin — `ucm.config.json` ou réglages du plugin. Dépend de
       U5.1.
+      *Faite le 5 septembre 2026.* Deux lignes de rang 3 sous la zone d'action :
+      `mon-org/design-system-v3 · main`, puis les deux chemins. Elles sont
+      composées par `etatDuDepot`, avec la phrase de la configuration : une
+      seule lecture du dépôt, deux endroits où elle sert.
 
 - [ ] **U2.3 — Deux commandes inégales ne se ressemblent pas.** L'export
       composant exige une sélection (`getSelectedComponent`) ; l'export tokens
@@ -494,12 +509,16 @@ rendant les deux chemins facultatifs.
       `getLocalVariablesAsync` — déjà appelés par `exportTokens` — donnent
       `N collections · N variables · N modes`.
 
-- [ ] **U2.5 — Le premier lancement dit ce qui va se passer.** Sans dépôt
+- [X] **U2.5 — Le premier lancement dit ce qui va se passer.** Sans dépôt
       configuré, `runExport` retombe sur le téléchargement local : un
       comportement correct, mais **subi**, découvert à l'arrivée. Geste : un état
       de premier lancement — « Aucun dépôt connecté : l'export sera téléchargé
       sur votre poste » — et l'accès à la configuration. Le repli devient un mode
       choisi.
+      *Faite le 5 septembre 2026 :* c'est la même ligne que U2.2, qui dit ce qui
+      VA se passer au lieu de la destination. L'accès à la configuration n'a pas
+      été redoublé — la pastille est un bouton depuis U5.2, et elle est juste
+      au-dessus.
       **Ce que U1.1 a ajouté, et qui rend la tâche plus urgente :** les deux
       boutons promettent « et ouvrir la pull request » **pendant que la pastille
       dit « repository non connecté »**. Le libellé exact gagné par U0.4 devient

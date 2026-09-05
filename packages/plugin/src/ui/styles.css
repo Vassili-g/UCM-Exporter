@@ -258,6 +258,55 @@ p {
 }
 
 /*
+ * Le rang 1 : ce sur quoi on travaille (U2.1). Position en haut, hors de toute
+ * carte, et taille. Deux moyens de signalement, pas quatre.
+ */
+.cible {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+.cible-nom {
+  font-size: var(--titre);
+  font-weight: 600;
+  line-height: var(--titre-interligne);
+  overflow-wrap: anywhere;
+}
+
+.cible[data-state='vide'] .cible-nom {
+  color: var(--texte-second);
+}
+
+.cible-detail {
+  color: var(--texte-second);
+}
+
+/* Rang 2 : un avertissement porte un filet de sévérité, jamais une puce. */
+.cible-avertissement {
+  padding: var(--espace-controle);
+  border-left: 2px solid var(--texte-avertissement);
+  border-radius: 0 var(--rayon) var(--rayon) 0;
+  background: var(--fond-avertissement);
+  color: var(--texte-avertissement);
+}
+
+/* Rang 3 : où l'export atterrit (U2.2). La densité et la couleur, rien de plus. */
+.depot {
+  display: grid;
+  gap: var(--espace-serre);
+  color: var(--texte-second);
+}
+
+.depot[data-state='repli'] .depot-ligne {
+  color: var(--texte-avertissement);
+}
+
+.depot-ligne,
+.depot-chemins {
+  overflow-wrap: anywhere;
+}
+
+/*
  * U1.7 — le fond et la bordure se dépensent par RÔLE, pas partout.
  *
  * Actions, journal et configuration étaient la même `.card` : trois zones de
