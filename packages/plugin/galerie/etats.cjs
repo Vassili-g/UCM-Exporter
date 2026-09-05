@@ -27,10 +27,10 @@ const path = require('path');
  * est déjà une dépendance du paquet : compiler ce seul module coûte quelques
  * millisecondes.
  */
-function chargerConnexion() {
-  const compile = path.resolve(__dirname, '../dist/galerie-connexion.cjs');
+function chargerSandbox(nom) {
+  const compile = path.resolve(__dirname, `../dist/galerie-${nom}.cjs`);
   require('esbuild').buildSync({
-    entryPoints: [path.resolve(__dirname, '../src/connexion.ts')],
+    entryPoints: [path.resolve(__dirname, `../src/${nom}.ts`)],
     outfile: compile,
     bundle: true,
     format: 'cjs',
@@ -39,7 +39,8 @@ function chargerConnexion() {
   return require(compile);
 }
 
-const { etatDeConnexion, etatDuDepot } = chargerConnexion();
+const { etatDeConnexion, etatDuDepot } = chargerSandbox('connexion');
+const { etatDeCible, detailDeCible } = chargerSandbox('cible');
 
 /**
  * La version de schéma est LUE à sa source. Une capture qui afficherait un
@@ -76,11 +77,35 @@ const URL_PR = 'https://github.com/mon-org/design-system-v3/pull/128';
 const ouverture = (cause) => [
   { message: { type: 'schema-version', version: VERSION_CONTRAT } },
   { message: { type: 'connection', ...etatDeConnexion(cause) } },
+  cause === 'non-configure' ? DEPOT_ABSENT : DEPOT_DECRIT,
 ];
 
-/** La note de sélection, seul retour en direct de `reportSelectionState`. */
-const AUCUNE_SELECTION =
-  'Sélectionnez un Component ou Component Set dans Figma, puis utilisez les actions ci-dessus.';
+/** Ce que `reportSelectionState` envoie, calculé par le sandbox lui-même. */
+function cible(selection, avertissement = null) {
+  const etat = etatDeCible(selection);
+  return {
+    message: { type: 'cible', ...etat, detail: detailDeCible(etat.cible), avertissement },
+  };
+}
+
+const SELECTION_VIDE = cible([]);
+const SELECTION_MULTIPLE = cible([
+  { type: 'COMPONENT', name: 'Button / Primary' },
+  { type: 'FRAME', name: 'Card' },
+]);
+const SELECTION_PRETE = cible([{ type: 'COMPONENT_SET', name: COMPOSANT, variants: 12 }]);
+
+/** La destination, telle que le test de connexion l'a apprise. */
+const DEPOT_VISE = { owner: 'mon-org', repo: 'design-system-v3', baseBranch: 'main' };
+const depot = (layout, vise = DEPOT_VISE) => ({
+  message: { type: 'depot', ...etatDuDepot(layout, vise) },
+});
+const DEPOT_DECRIT = depot({
+  components: 'src/components',
+  tokens: 'src/tokens/tokens.json',
+  source: 'ucm.config.json',
+});
+const DEPOT_ABSENT = depot(null, null);
 
 /** Les réglages publics rechargés par `refreshConfiguration`. */
 const REGLAGES = {
@@ -121,20 +146,20 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
-      { message: { type: 'note', state: '', text: AUCUNE_SELECTION } },
+      SELECTION_VIDE,
     ],
   },
   {
     id: 'selection-non-exportable',
     titre: 'Sélection non exportable',
     quand:
-      'Un frame, un texte ou trois calques sélectionnés. `reportSelectionState` envoie alors EXACTEMENT le même message que pour une sélection vide.',
+      'Deux layers sélectionnés, dont un qui n’est pas un composant. C’était le même écran que « aucune sélection » avant U2.1.',
     regarder:
-      "La capture doit être indiscernable de `selection-absente` : c'est le constat, pas un défaut de la galerie.",
+      'La raison nomme ce qui empêche, et elle diffère de celle d’une sélection vide : le geste n’est pas le même.',
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
-      { message: { type: 'note', state: '', text: AUCUNE_SELECTION } },
+      SELECTION_MULTIPLE,
     ],
   },
   {
@@ -146,13 +171,11 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
-      {
-        message: {
-          type: 'note',
-          state: 'warning',
-          text: `« ${COMPOSANT} » est exportable, mais aucune règle d’usage exploitable ne documente quand l’utiliser. Les diagnostics diront ce que le contrat sait décrire, et intent vaudra null.`,
-        },
-      },
+      cible(
+        [{ type: 'COMPONENT_SET', name: COMPOSANT, variants: 12 }],
+        'Aucune règle d’usage exploitable ne documente quand l’utiliser. Les diagnostics diront '
+          + 'ce que le contrat sait décrire, et intent vaudra null.',
+      ),
     ],
   },
   {
@@ -164,7 +187,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
-      { message: { type: 'note', state: 'success', text: `« ${COMPOSANT} » prêt à l'export.` } },
+      SELECTION_PRETE,
     ],
   },
   {
@@ -177,7 +200,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
-      { message: { type: 'note', state: 'success', text: `« ${COMPOSANT} » prêt à l'export.` } },
+      SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
     ],
@@ -368,7 +391,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('non-configure'),
-      { message: { type: 'note', state: 'success', text: `« ${COMPOSANT} » prêt à l'export.` } },
+      SELECTION_PRETE,
     ],
   },
   {
@@ -424,7 +447,7 @@ const ETATS = [
     atteinte: [
       { message: { type: 'schema-version', version: VERSION_CONTRAT } },
       { message: { type: 'connection', ...etatDeConnexion('verification') } },
-      { message: { type: 'note', state: '', text: AUCUNE_SELECTION } },
+      SELECTION_VIDE,
     ],
   },
   {
@@ -458,7 +481,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
-      { message: { type: 'note', state: '', text: AUCUNE_SELECTION } },
+      SELECTION_VIDE,
       { clic: '.action-panel .btn-secondary' },
       { message: { type: 'status', state: 'loading', text: 'Lecture des variables…' } },
       {
@@ -589,7 +612,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('jeton-refuse'),
-      { message: { type: 'note', state: '', text: AUCUNE_SELECTION } },
+      SELECTION_VIDE,
     ],
   },
   {
@@ -603,16 +626,11 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       { message: { type: 'settings', settings: REGLAGES } },
-      {
-        message: {
-          type: 'layout',
-          ...etatDuDepot({
-            components: 'packages/ui/src/components',
-            tokens: 'packages/ui/src/tokens/design-tokens.json',
-            source: 'ucm.config.json',
-          }),
-        },
-      },
+      depot({
+        components: 'packages/ui/src/components',
+        tokens: 'packages/ui/src/tokens/design-tokens.json',
+        source: 'ucm.config.json',
+      }),
       { clic: '.icon-button' },
     ],
   },
@@ -632,12 +650,7 @@ const ETATS = [
           settings: { ...REGLAGES, componentsPath: '', tokensPath: '' },
         },
       },
-      {
-        message: {
-          type: 'layout',
-          ...etatDuDepot({ components: null, tokens: null, source: 'réglages du plugin' }),
-        },
-      },
+      depot({ components: null, tokens: null, source: 'réglages du plugin' }),
       { clic: '.icon-button' },
     ],
   },

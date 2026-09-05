@@ -113,6 +113,30 @@ test('personne ne décide de l’endroit, et cela se dit', () => {
   assert.match(resume ?? '', /refusé/);
 });
 
-test('tant que rien n’est connu, rien n’est affirmé', () => {
-  assert.deepEqual(etatDuDepot(null), { gouverne: null, resume: null });
+test('tant que rien n’est connu, rien n’est affirmé sur les chemins', () => {
+  const sansRien = etatDuDepot(null, null);
+  assert.equal(sansRien.gouverne, null);
+  assert.equal(sansRien.resume, null);
+  assert.equal(sansRien.chemins, null);
+});
+
+test('sans repository, la ligne dit ce qui VA se passer', () => {
+  // U2.5. Le repli en téléchargement local était subi : découvert à l'arrivée,
+  // alors que le bouton avait promis une pull request.
+  const { ligne, repli } = etatDuDepot(null, null);
+  assert.equal(repli, true);
+  assert.match(ligne ?? '', /téléchargé/);
+});
+
+test('la destination nomme le repository, sa branche et les deux chemins', () => {
+  // U2.2. Elle n'apparaissait qu'après publication, en ligne de journal, donc
+  // après le point de non-retour.
+  const { ligne, chemins, repli } = etatDuDepot(
+    { components: 'src/components', tokens: 'src/tokens/tokens.json', source: 'ucm.config.json' },
+    { owner: 'mon-org', repo: 'design-system-v3', baseBranch: 'main' },
+  );
+  assert.equal(repli, false);
+  assert.equal(ligne, 'mon-org/design-system-v3 · main');
+  assert.match(chemins ?? '', /src\/components/);
+  assert.match(chemins ?? '', /src\/tokens\/tokens\.json/);
 });

@@ -140,11 +140,26 @@ export type LayoutConnu = {
   source: string;
 };
 
+/** Le repository visé, tel que les réglages validés le décrivent. */
+export type DepotVise = { owner: string; repo: string; baseBranch: string };
+
 /** Qui décide de l'endroit, et ce que l'interface en dit. */
 export type EtatDuDepot = {
   /** `repository` marque les deux champs de la configuration comme un repli. */
   gouverne: 'repository' | 'reglages' | null;
+  /** La phrase de la configuration : qui gouverne les chemins. */
   resume: string | null;
+  /** Le repository et sa branche, sur l'écran de travail (U2.2). */
+  ligne: string | null;
+  /** Où les deux artefacts atterrissent, quand c'est connu. */
+  chemins: string | null;
+  /**
+   * `true` quand aucun repository n'est connecté : l'export sera téléchargé sur
+   * le poste. C'est un comportement correct, mais il était SUBI (U2.5) —
+   * découvert à l'arrivée, après le travail, alors que le bouton avait promis
+   * une pull request.
+   */
+  repli: boolean;
 };
 
 /**
@@ -154,11 +169,26 @@ export type EtatDuDepot = {
  * ligne de journal : qui a décidé de l'endroit ? Le troisième cas est le plus
  * utile, et il n'existait pas — personne ne décide, et l'export sera refusé.
  */
-export function etatDuDepot(layout: LayoutConnu | null): EtatDuDepot {
-  if (!layout) return { gouverne: null, resume: null };
+export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null = null): EtatDuDepot {
+  /*
+   * Sans repository, la ligne dit ce qui VA se passer (U2.5). Le repli en
+   * téléchargement local est un comportement correct, mais il était subi :
+   * découvert à l'arrivée, alors que le bouton avait promis une pull request.
+   * L'annoncer avant le clic en fait un mode choisi.
+   */
+  const ligne = depot
+    ? `${depot.owner}/${depot.repo} · ${depot.baseBranch}`
+    : 'Aucun repository connecté. L’export sera téléchargé sur votre poste.';
+  const chemins = layout
+    ? `Contrats : ${layout.components ?? 'aucun chemin'}. Tokens : ${layout.tokens ?? 'aucun chemin'}.`
+    : null;
+  const situation = { ligne, chemins, repli: depot === null };
+
+  if (!layout) return { ...situation, gouverne: null, resume: null };
 
   if (layout.source === NOM_CONFIGURATION) {
     return {
+      ...situation,
       gouverne: 'repository',
       resume:
         `Ce repository décrit lui-même où ranger les exports, dans son ${NOM_CONFIGURATION} : `
@@ -170,6 +200,7 @@ export function etatDuDepot(layout: LayoutConnu | null): EtatDuDepot {
 
   if (!layout.components && !layout.tokens) {
     return {
+      ...situation,
       gouverne: 'reglages',
       resume:
         `Ce repository ne dit pas où ranger les exports, et aucun chemin n'est renseigné ici. `
@@ -179,6 +210,7 @@ export function etatDuDepot(layout: LayoutConnu | null): EtatDuDepot {
   }
 
   return {
+    ...situation,
     gouverne: 'reglages',
     resume:
       'Ce repository ne dit pas où ranger les exports : les chemins ci-dessous décident. '
