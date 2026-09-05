@@ -1230,16 +1230,18 @@ unifiée** (wrapper + set comme un seul composant). Exemple Button :
 }
 ```
 
-Les dimensions géométriques ne figurent qu'à UN endroit : `sizes` les porte
-dès que le composant expose un axe de tailles ; sinon `gap` / `padding` /
-`radius` restent au niveau haut de `structure`. Cette question se tranche
-**avant** de relever quoi que ce soit, et les avertissements suivent la même
-réponse : dès qu'un axe de tailles existe, les dimensions du calque de
-référence ne sont ni relevées ni signalées. Les signaler enverrait le designer
-relier une variable sur un calque dont rien ne sera publié — et le message le
-nommerait par un nom de layer commun à tous les variants du set, sans lui dire
-lequel ouvrir. Toute la typographie appartient au catalogue `textStyles` et aux
-usages exacts de chaque `variantViews`.
+**Une dimension géométrique ne se lit qu'à UN endroit, et lequel dépend du
+composant.** Quand il expose un axe de tailles, `sizes` porte l'ensemble de ses
+`gap`, `padding` et `radius` ; sinon ces trois champs restent au niveau haut de
+`structure`. Les deux emplacements ne coexistent JAMAIS : un lecteur qui trouve
+`sizes` n'a pas à consulter le niveau haut, et un lecteur qui ne le trouve pas
+n'a pas à craindre qu'une valeur lui échappe ailleurs. Ce que le moteur en
+déduit pour ses propres avertissements est
+[de son ressort](../packages/plugin/SPEC.md#ce-que-lexport-écrit).
+
+La typographie suit la même discipline d'adresse unique : rien n'en vit dans
+`structure`. Le catalogue `textStyles` porte les styles, et
+`variantViews[].typography` dit lequel s'applique où.
 
 #### Composition et dépendances
 
