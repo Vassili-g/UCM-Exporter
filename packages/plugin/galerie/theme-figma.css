@@ -1,0 +1,55 @@
+/*
+ * Décalque des variables de thème que Figma injecte dans l'iframe du plugin
+ * (`themeColors: true`). Hors de Figma, aucune n'est servie : sans ce fichier,
+ * la galerie ne montrerait que les REPLIS EN DUR de `styles.css`, c'est-à-dire
+ * un thème clair dans les deux modes — et l'on croirait avoir regardé le thème
+ * sombre.
+ *
+ * ⚠ Ce n'est PAS une autorité sur la palette de Figma. Les valeurs sont des
+ * approximations : elles servent à juger une hiérarchie, une densité et une
+ * place, jamais à conclure sur un contraste. La vérification des contrastes et
+ * celle des variables réellement servies par l'hôte sont U1.8, et se font dans
+ * Figma.
+ *
+ * La convention de classe est celle de Figma : `figma-dark` sur la racine.
+ * `tests/galerie.test.ts` vérifie que toute variable demandée par `styles.css`
+ * est définie ici, dans les deux thèmes — sans quoi une capture montrerait un
+ * repli sans que rien ne le dise.
+ */
+:root {
+  --figma-color-bg: #ffffff;
+  --figma-color-bg-hover: #f5f5f5;
+  --figma-color-bg-secondary: #f5f5f5;
+  --figma-color-bg-tertiary: #ebebeb;
+  --figma-color-bg-brand: #0d99ff;
+  --figma-color-bg-brand-hover: #007be5;
+  --figma-color-bg-warning-tertiary: #fff1d6;
+  --figma-color-border: #e6e6e6;
+  --figma-color-border-brand-strong: #0d99ff;
+  --figma-color-text: #1e1e1e;
+  --figma-color-text-secondary: #6b6b6b;
+  --figma-color-text-brand: #007be5;
+  --figma-color-text-danger: #dc3412;
+  --figma-color-text-success: #168b52;
+  --figma-color-text-warning: #a55b00;
+  --figma-color-text-onbrand: #ffffff;
+}
+
+.figma-dark {
+  --figma-color-bg: #2c2c2c;
+  --figma-color-bg-hover: #383838;
+  --figma-color-bg-secondary: #383838;
+  --figma-color-bg-tertiary: #4d4d4d;
+  --figma-color-bg-brand: #0d99ff;
+  --figma-color-bg-brand-hover: #3ab0ff;
+  --figma-color-bg-warning-tertiary: #4a3a10;
+  --figma-color-border: #444444;
+  --figma-color-border-brand-strong: #0d99ff;
+  --figma-color-text: #ffffff;
+  --figma-color-text-secondary: #b3b3b3;
+  --figma-color-text-brand: #7cc4f8;
+  --figma-color-text-danger: #ffafa3;
+  --figma-color-text-success: #85e0a3;
+  --figma-color-text-warning: #ffc470;
+  --figma-color-text-onbrand: #ffffff;
+}

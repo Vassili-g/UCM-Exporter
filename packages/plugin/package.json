@@ -9,6 +9,8 @@
     "build:ui:js": "esbuild src/ui/index.js --bundle --outfile=dist/ui.js --format=iife --platform=browser --target=chrome80 --minify",
     "build:ui": "npm run build:ui:js && node scripts/build-ui.cjs",
     "build:manifest": "node scripts/build-manifest.cjs",
+    "galerie": "npm run build:ui && node galerie/build-galerie.cjs",
+    "galerie:captures": "node galerie/capturer.cjs",
     "build": "npm run typecheck && npm run build:code && npm run build:ui && npm run build:manifest",
     "start": "npm run build",
     "test": "node scripts/run-tests.cjs"
