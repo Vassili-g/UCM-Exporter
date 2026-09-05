@@ -142,8 +142,8 @@ valeurs tokenisées sont vérifiés par les lecteurs.
 faire contrôler ses exports.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.4 init      # écrit ucm.config.json, .gitignore, le workflow
-npx --yes @ucm-kit/cli@0.1.4 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.5 init      # écrit ucm.config.json, .gitignore, le workflow
+npx --yes @ucm-kit/cli@0.1.5 check --report ci-report.md
 ```
 
 `--yes` évite l'invite de confirmation de `npx`, qui bloquerait une exécution

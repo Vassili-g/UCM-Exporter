@@ -51,9 +51,16 @@ jobs:
       id-token: write
       contents: read
     steps:
+      # L'historique COMPLET, et ce n'est pas du confort. `actions/checkout`
+      # ne prend qu'un commit par défaut ; `versionSuitLeContenu.test.mjs`
+      # remonte jusqu'au commit qui a posé le numéro de version de chaque
+      # paquet, et sur un clone superficiel il ne trouverait rien à comparer.
+      # Un garde-fou qui ne peut pas mesurer est pire qu'absent : il se lit
+      # vert.
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       # `registry-url` est nécessaire, et l'essai inverse l'a prouvé : sans lui,
       # `npm publish` rend `ENEEDAUTH` et ne tente pas l'OIDC du tout. Il écrit
