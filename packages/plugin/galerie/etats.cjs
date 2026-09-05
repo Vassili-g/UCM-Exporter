@@ -41,6 +41,7 @@ function chargerSandbox(nom) {
 
 const { etatDeConnexion, etatDuDepot } = chargerSandbox('connexion');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
+const { resumeDesTokens } = chargerSandbox('tokens/exportTokens');
 
 /**
  * La version de schéma est LUE à sa source. Une capture qui afficherait un
@@ -78,6 +79,7 @@ const ouverture = (cause) => [
   { message: { type: 'schema-version', version: VERSION_CONTRAT } },
   { message: { type: 'connection', ...etatDeConnexion(cause) } },
   cause === 'non-configure' ? DEPOT_ABSENT : DEPOT_DECRIT,
+  { message: { type: 'tokens', resume: resumeDesTokens({ collections: 3, variables: 128, modes: 2 }) } },
 ];
 
 /** Ce que `reportSelectionState` envoie, calculé par le sandbox lui-même. */
@@ -163,6 +165,16 @@ const ETATS = [
     ],
   },
   {
+    id: 'commande-composant-desactivee',
+    titre: 'Le bouton composant refuse de partir',
+    quand:
+      "Aucune sélection exportable. Le bouton partait quand même, et la précondition levait un message d'erreur après coup.",
+    regarder:
+      "Un aller-retour épargné, et rien de plus : la raison est déjà écrite au-dessus du bouton, elle n'est pas répétée dessous.",
+    existe: true,
+    atteinte: [...ouverture('connecte'), SELECTION_VIDE],
+  },
+  {
     id: 'regle-usage-absente',
     titre: "Composant sans règle d'usage exploitable",
     quand: 'Un component set sélectionné, sans conteneur de règles lisible.',
@@ -207,12 +219,19 @@ const ETATS = [
   },
   {
     id: 'analyse-par-phase',
-    titre: 'Analyse en cours, une vue par phase',
+    titre: 'Analyse en cours, une phase nommée',
     quand:
-      'Pages chargées, variantes, composition, écriture — les quatre phases que `runExport` traverse sans les nommer.',
-    regarder: null,
-    existe: false,
-    attendu: 'U2.6',
+      "Le balayage des pages, la phase la plus longue et celle qui fige l'écran le plus longtemps.",
+    regarder:
+      "L'étape est nommée par ce que le code FAIT, sans durée ni pourcentage : la mesure n'existe pas.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_PRETE,
+      { clic: '.action-panel .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      { message: { type: 'phase', texte: 'Lecture des composants imbriqués…' } },
+    ],
   },
   {
     id: 'resultat-propre',
@@ -341,10 +360,17 @@ const ETATS = [
     id: 'publication-en-cours',
     titre: 'Publication en cours',
     quand:
-      "Entre la fin de l'analyse et la création de la pull request. Aujourd'hui la note dit toujours « Analyse du composant… » : les deux attentes portent le même texte.",
-    regarder: null,
-    existe: false,
-    attendu: 'U2.6',
+      "Entre la fin de l'analyse et la création de la pull request. Les deux attentes portaient le même texte avant U2.6.",
+    regarder:
+      "L'attente change de nom quand elle change de nature : plus rien ne se lit dans Figma, tout se joue sur GitHub.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_PRETE,
+      { clic: '.action-panel .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      { message: { type: 'phase', texte: 'Publication sur GitHub…' } },
+    ],
   },
   {
     id: 'echec-github-repli-local',

@@ -7,6 +7,7 @@ import {
   insert,
   isUnitless,
   modeCollisionWarnings,
+  resumeDesTokens,
   toHex,
 } from '../src/tokens/exportTokens';
 import type { ExportContext } from '../src/tokens/exportTokens';
@@ -247,4 +248,27 @@ test('un mode homonyme d’Object.prototype reste une marque exportée', () => {
     '{"constructor":"#ff0000","__proto__":"#00ff00","marque-3":"#0000ff"}',
   );
   assert.deepEqual(warnings, []);
+});
+
+/**
+ * U2.4. L'export des tokens est de portée FICHIER : il ignore la sélection et
+ * lit toutes les variables locales. Rien à l'écran n'en disait la taille, si
+ * bien que la commande partait sans que personne sache sur quoi.
+ */
+test('le résumé des tokens compte ce qui part, au singulier comme au pluriel', () => {
+  assert.equal(
+    resumeDesTokens({ collections: 3, variables: 128, modes: 2 }),
+    '3 collections · 128 variables · 2 modes',
+  );
+  assert.equal(
+    resumeDesTokens({ collections: 1, variables: 1, modes: 1 }),
+    '1 collection · 1 variable',
+  );
+});
+
+test('un fichier sans variable locale le dit, au lieu de compter zéro', () => {
+  assert.equal(
+    resumeDesTokens({ collections: 0, variables: 0, modes: 0 }),
+    'Aucune variable locale dans ce fichier.',
+  );
 });

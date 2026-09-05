@@ -290,6 +290,22 @@ p {
   color: var(--texte-avertissement);
 }
 
+/*
+ * L'export des tokens est une commande à part (U2.3) : portée fichier, sans
+ * rapport avec la sélection. Il ne partage donc plus la surface de l'action
+ * principale, et son résumé dit ce qu'il emporte avant de partir (U2.4).
+ */
+.tokens-panel {
+  display: grid;
+  gap: var(--espace-controle);
+  padding-top: var(--espace-controle);
+  border-top: 1px solid var(--bordure);
+}
+
+.tokens-resume {
+  color: var(--texte-second);
+}
+
 /* Rang 3 : où l'export atterrit (U2.2). La densité et la couleur, rien de plus. */
 .depot {
   display: grid;
@@ -366,9 +382,18 @@ p {
   background: var(--fond-survol);
 }
 
+/*
+ * Un bouton désactivé faute de sélection n'attend rien : il refuse. Le curseur
+ * d'attente ne vaut que pendant un export, et `aria-busy` dit lequel des deux
+ * cas on est (U2.3).
+ */
 .btn:disabled {
-  cursor: wait;
+  cursor: not-allowed;
   opacity: 0.5;
+}
+
+[aria-busy='true'] .btn:disabled {
+  cursor: wait;
 }
 
 /*

@@ -31,6 +31,7 @@ import { buildStateModel, renderingSemanticsFor } from './semantics';
 import { indexVariables, VariableNameResolver } from '../variables';
 import { codeIdentifier } from '@ucm-kit/core/format';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
+import type { Annonce } from '../messages';
 import type {
   ChildStructure,
   ComposedDependency,
@@ -170,9 +171,19 @@ export function componentContractFilename(name: string): string {
   return `${codeIdentifier(name)}.contract.json`;
 }
 
-/** Point d'entrée de la commande : crée le contrat du composant sélectionné. */
-export async function handleExportComponent(): Promise<ComponentExport> {
+/**
+ * Point d'entrée de la commande : crée le contrat du composant sélectionné.
+ *
+ * `annoncer` NOMME les étapes traversées, il n'en décide aucune (U2.6). Cet
+ * export charge toutes les pages puis résout trois fois le même maître par
+ * dépendance : un coût réel, non mesuré, pendant lequel un « Analyse du
+ * composant… » figé se lit comme un plantage. Les étapes portent le nom de ce
+ * que le code fait, jamais une durée ni un pourcentage — la mesure n'existe
+ * pas, et une barre de progression inventerait une précision qu'on n'a pas.
+ */
+export async function handleExportComponent(annoncer: Annonce = () => {}): Promise<ComponentExport> {
   const componentSet = getSelectedComponent();
+  annoncer('Lecture des règles d’usage…');
 
   // Les règles enrichissent l'intention et la documentation, mais ne sont plus
   // une précondition d'export. Leur absence reste visible dans les diagnostics.
@@ -224,6 +235,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   }
   // La liste exacte porte cet écart : il ne manque rien à la projection v8.
   warningCursor = warnings.length;
+  annoncer('Lecture des variants…');
   const { matrix, warnings: matrixWarnings } = buildVariantMatrix(
     componentSet,
     propertyModel.publicVariantKeyByRawKey,
@@ -242,6 +254,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   // La composition se relève AVANT toute extraction : un composant unifié
   // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
   // conditionne tout ce qui suit.
+  annoncer('Lecture des composants imbriqués…');
   const {
     composes: scannedComposes,
     composed,
@@ -311,6 +324,7 @@ export async function handleExportComponent(): Promise<ComponentExport> {
   // Le résolveur reçoit l'index des variables locales pour deux raisons : il y
   // lit les chemins sans un aller-retour par variable, et il sait quelles
   // variables partagent un nom — les seules qu'un contrat ne doit jamais citer.
+  annoncer('Écriture du contrat…');
   const [collections, variables] = await Promise.all([
     figma.variables.getLocalVariableCollectionsAsync(),
     figma.variables.getLocalVariablesAsync(),

@@ -101,11 +101,29 @@ const exportComponentButton = createButton({
   onClick: () => requestExport('export-component'),
 });
 
+/*
+ * Deux commandes inégales ne se ressemblent pas (U2.3).
+ *
+ * L'export du composant exige une sélection ; l'export des tokens lit les
+ * variables du fichier entier et ignore la sélection. Les deux partageaient une
+ * carte, une note qui parlait de sélection et le même bouton : la seule façon
+ * d'apprendre la différence était de cliquer et de lire une erreur. Les tokens
+ * ont désormais leur section, avec le résumé de ce qu'ils emportent.
+ */
+const tokensPanel = document.createElement('section');
+tokensPanel.className = 'tokens-panel';
+
+const tokensResume = document.createElement('p');
+tokensResume.className = 'tokens-resume';
+tokensResume.textContent = 'Tokens du fichier';
+
 const exportTokensButton = createButton({
   label: 'Exporter les tokens et ouvrir la pull request',
   variant: 'secondary',
   onClick: () => requestExport('export-tokens'),
 });
+
+tokensPanel.append(tokensResume, exportTokensButton);
 
 const statusNote = document.createElement('div');
 statusNote.className = 'note';
@@ -114,11 +132,24 @@ statusNote.setAttribute('aria-live', 'polite');
 statusNote.hidden = true;
 
 const logPanel = createLogPanel('Prêt. Cliquez sur une action pour démarrer.');
-const actionButtons = [exportComponentButton, exportTokensButton];
+
+/**
+ * `occupe` désactive tout ; `cibleExportable` ne concerne que le composant.
+ * Les deux raisons de désactiver un bouton ne se recouvrent pas, et la seconde
+ * doit survivre à la fin de la première.
+ */
+let occupe = false;
+let cibleExportable = false;
+
+function rafraichirBoutons() {
+  exportComponentButton.disabled = occupe || !cibleExportable;
+  exportTokensButton.disabled = occupe;
+  app.setAttribute('aria-busy', String(occupe));
+}
 
 function setBusy(isBusy) {
-  for (const button of actionButtons) button.disabled = isBusy;
-  app.setAttribute('aria-busy', String(isBusy));
+  occupe = isBusy;
+  rafraichirBoutons();
 }
 
 function requestExport(type) {
@@ -135,8 +166,8 @@ function ecrireNote(state, text) {
   statusNote.hidden = !text;
 }
 
-actionCard.append(exportComponentButton, exportTokensButton, statusNote);
-exportPage.append(cible.element, actionCard, depot, logPanel.element);
+actionCard.append(exportComponentButton);
+exportPage.append(cible.element, actionCard, statusNote, depot, tokensPanel, logPanel.element);
 
 /**
  * L'UI n'invente plus rien de la connexion : elle place ce que le sandbox a
@@ -176,7 +207,17 @@ onmessage = (event) => {
     configurationPage.acceptRemoteSettings(message.settings);
   }
 
-  if (message.type === 'cible') cible.afficher(message);
+  if (message.type === 'cible') {
+    cible.afficher(message);
+    // La raison de l'empêchement est déjà écrite dans le bloc cible, juste
+    // au-dessus du bouton : la répéter sous lui en ferait deux textes à tenir.
+    cibleExportable = Boolean(message.cible);
+    rafraichirBoutons();
+  }
+
+  if (message.type === 'tokens') tokensResume.textContent = `Tokens du fichier : ${message.resume}`;
+
+  if (message.type === 'phase') ecrireNote('loading', message.texte);
 
   if (message.type === 'depot') {
     configurationPage.afficherGouvernance(message);

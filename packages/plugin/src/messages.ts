@@ -23,6 +23,15 @@ import type { PublicSettings, SettingsInput } from './config';
 import type { EtatConnexion, EtatDuDepot } from './connexion';
 import type { Cible } from './cible';
 
+/**
+ * Ce qu'un handler d'export dit de son avancement (U2.6).
+ *
+ * Il ANNONCE, il ne décide de rien : le moteur nomme l'étape qu'il traverse, et
+ * seul `code.ts` sait qu'il faut en faire un message. C'est ce qui permet à
+ * cette annonce de traverser le moteur sans lui donner de dépendance vers l'UI.
+ */
+export type Annonce = (etape: string) => void;
+
 /** Niveau d'une ligne de journal : il décide de sa couleur et de son marqueur. */
 export type LogLevel = 'info' | 'success' | 'error';
 
@@ -95,4 +104,12 @@ export type PluginMessage =
    * plus ancien que celui du disque, et c'est exactement l'information qu'un
    * export « sans changement » rend indispensable (U0.1).
    */
-  | { type: 'schema-version'; version: string };
+  | { type: 'schema-version'; version: string }
+  /**
+   * L'étape en cours. Elle ne va QUE dans la note : un journal de quatre lignes
+   * par export dirait le déroulé d'un traitement que personne ne relit, et
+   * noierait les avertissements qui, eux, demandent un geste.
+   */
+  | { type: 'phase'; texte: string }
+  /** Ce que l'export des tokens emporterait s'il partait maintenant (U2.4). */
+  | { type: 'tokens'; resume: string };
