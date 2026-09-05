@@ -168,7 +168,7 @@ test('la duplication restante est comptée, et elle ne remonte pas', () => {
   // Le plafond est le relevé du jour, pas un objectif. Il n'autorise aucune
   // remontée : chaque commit du temps 2 qui résorbe un paragraphe le descend
   // d'autant. À zéro, ces deux tests et la fixture figée s'en vont.
-  const PLAFOND = 724;
+  const PLAFOND = 695;
   assert.ok(
     partagees.length <= PLAFOND,
     `La duplication est remontée : ${partagees.length} lignes vivent dans les deux ` +
