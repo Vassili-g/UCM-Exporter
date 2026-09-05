@@ -435,6 +435,40 @@ Pas d'écriture dans le document Figma, pas d'auto-merge, pas de
 multi-composant en une commande, pas de scoring. Aucun domaine réseau autre que
 GitHub API déclarée dans le manifest.
 
+### Sélectionner et cadrer ne sont pas modifier
+
+**Tranché le 5 septembre 2026 (U4.5), parce que la question se reposera.** Rendre
+un avertissement cliquable demande de poser une sélection
+(`figma.currentPage.selection = […]`) et de déplacer la vue
+(`figma.viewport.scrollAndZoomIntoView(…)`). Une relecture rapide y voit une
+violation de « le plugin ne modifie jamais le document » ; ce n'en est pas une,
+et voici sur quoi la décision s'appuie plutôt que sur une intuition.
+
+- **Aucun contenu de document n'est écrit.** Une sélection et un cadrage sont un
+  état de l'ÉDITEUR, propre à la personne qui regarde. Rien n'entre dans le
+  fichier, donc rien n'est transmis à un collaborateur ni à l'historique de
+  versions.
+- **Aucune entrée d'annulation n'est créée.** C'est écrit dans les typings que
+  ce dépôt installe : « By default, plugin actions are **not committed to undo
+  history**. Call `figma.commitUndo()` so that triggered undos can revert a
+  subset of plugin actions » (`@figma/plugin-typings`, `commitUndo`). Le plugin
+  n'appelle jamais `commitUndo()`, et un test de source le refuse.
+- **Le cadrage a un équivalent au clavier.** Les mêmes typings décrivent
+  `scrollAndZoomIntoView` comme « the equivalent of pressing Shift-1 » : un
+  geste que le designer fait lui-même dix fois par heure.
+
+**Ce qui reste à vérifier, et qui n'est pas vérifiable depuis ce dépôt :** que
+sur un fichier réel, après un clic, Figma ne marque pas le document comme
+modifié. Les trois points ci-dessus disent que ce ne devrait pas arriver ; seul
+un fichier ouvert le prouve. Tant que cette observation n'est pas faite, la
+décision tient sur la documentation de l'API, ce qui est écrit ici plutôt que
+sous-entendu.
+
+**La frontière que cette décision NE déplace pas.** Créer, renommer, déplacer,
+supprimer un node, écrire une variable ou un style : tout cela reste interdit,
+et `loiDuDocumentIntact.test.ts` le refuse en lisant la source. La différence
+n'est pas une affaire de degré — c'est celle entre regarder et écrire.
+
 ---
 
 ## Versions
