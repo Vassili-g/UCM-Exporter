@@ -976,6 +976,46 @@ Figma**. Les règles sont facultatives : leur absence laisse `intent: null` et
 produit un diagnostic de documentation, sans réduire `meta.coverage.portable`.
 Un `@prop` visant une prop/valeur inexistante produit un warning non bloquant.
 
+##### Ce que le contrat ne dit pas d'une icône
+
+Les trois responsabilités ci-dessus décrivent ce que le contrat **décide**. Une
+quatrième existe, et elle appartient entièrement au repository consommateur :
+**traduire un nom d'icône vers quelque chose qui se dessine.** Elle n'est écrite
+nulle part ailleurs, et un repo qui la découvre à l'exécution la découvre trop
+tard.
+
+**Ce que le contrat garantit.** `icons.<clé>.figmaName` est le nom du calque
+graphique dans Figma, tel quel. Autour de lui, le contrat dit **quand** rendre
+l'icône (`variants`), **où** (`slot`, et `slotPath` par vue exacte), **si** le
+consommateur a le droit de la remplacer (`policy`), par quoi il la remplace
+(`runtimeProp`), et **quel carré elle occupe** (`size`, un renvoi de token comme
+tous les autres).
+
+**Ce qu'il ne garantit pas, et ne garantira pas.** Il ne nomme aucun jeu
+d'icônes ; il ne porte aucune correspondance entre `figmaName` et l'identifiant
+d'un tel jeu ; il ne dit rien de la taille du **glyphe à l'intérieur** du carré
+qu'il donne. Ces trois décisions sont des choix de rendu du repository, au même
+titre que sa police ou son moteur de style — et le contrat n'a aucun moyen de
+les connaître. C'est la décision T3.1, qui a écarté pour cette raison un champ
+`icons` de `ucm.config.json` : une correspondance écrite dans la configuration
+aurait fait porter au format une question à laquelle seul le code répond.
+
+*Ce que cela donne concrètement chez un consommateur*, et c'est l'ordre de
+grandeur du travail attendu : le repository de référence résout ces trois points
+en une vingtaine de lignes — un préfixe de style constant, une concaténation du
+`figmaName` vers le nom du jeu, et un ratio du glyphe dans le carré que le
+contrat fournit. Le ratio est une convention de CE repository, assumée comme
+telle dans son propre commentaire ; rien dans le contrat ne l'impose ni ne la
+contredit.
+
+**La contrepartie de cette responsabilité est `ucm icons`.** Une responsabilité
+qu'on confie sans la rendre visible est une responsabilité aveugle : la commande
+énumère, triés et dédoublonnés, tous les `figmaName` que les contrats du
+repository réclament, avec les contrats qui les citent — le nom seul ne suffit
+pas à agir. **Elle liste ce qu'il y a à couvrir, jamais ce qui est couvert :**
+elle n'a aucune idée de ce qu'est un jeu d'icônes ici, et juger sans le savoir
+reviendrait à inventer la règle qu'elle prétend vérifier.
+
 #### 8. Rendu sémantique et garde-fous
 
 Le contrat publie aussi le mapping

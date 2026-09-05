@@ -2349,7 +2349,7 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       *Trois chemins vieillis sont tombés avec :* la spécification scindée,
       `UCM-Exporter/schema/` devenu `packages/kit/schema/`, et le message
       d'échec du test de schéma.
-- [ ] **T8.10 — Documenter la responsabilité « icônes » du consommateur (T3.1).**
+- [X] **T8.10 — Documenter la responsabilité « icônes » du consommateur (T3.1).**
       Un contrat publie le `figmaName` d'une icône et rien d'autre : ni kit, ni
       correspondance, ni taille de glyphe. Traduire ce nom vers un jeu d'icônes
       appartient au repo, et cette frontière n'est écrite nulle part
@@ -2361,6 +2361,23 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       qui reste non engagée. Cette tâche ne l'ouvre pas ; elle rend seulement
       explicite l'état actuel, pour qu'un repo tiers ne le découvre pas à
       l'exécution.
+      **Faite le 5 septembre 2026, dans `docs/FORMAT.md` sous « Ce que le
+      contrat ne dit pas d'une icône », plus un invariant dans `AGENTS.md`.**
+      Le format était le bon document des deux : la frontière dit ce qu'un
+      CONSOMMATEUR reçoit et doit compléter, pas comment le moteur lit Figma.
+      *Ce que la vérification a précisé, et l'énoncé le disait de travers sans
+      le savoir :* « ni taille de glyphe » avait l'air contredit par
+      `icons.*.size`, qui EST une taille. Les deux coexistent, et c'est la
+      coupure exacte — **le contrat donne le carré, le repo place le glyphe
+      dedans.** `ContractIcon.tsx` le montre en trois constantes : un préfixe de
+      style (`fa-regular`, donc le jeu), une concaténation `fa-${figmaName}`
+      (donc la correspondance), et `0.8` (donc le ratio). Trois décisions, trois
+      lignes, et aucune que le contrat pouvait prendre à sa place.
+      *Et ce que l'écriture a trouvé :* la doctrine existait déjà, complète et
+      juste — dans l'en-tête de `packages/cli/src/icons.mjs`. Elle vivait dans
+      la commande qui l'applique, donc invisible pour qui lit le format avant
+      d'installer le CLI. La tâche n'a rien inventé : elle a déplacé une règle
+      hors du seul fichier où personne ne la cherchait.
 
 ### 8.4 — Les deux vitrines
 
