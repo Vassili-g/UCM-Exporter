@@ -128,8 +128,19 @@ const REGLAGES = {
   hasPat: true,
 };
 
-/** Un constat de l'export, avec la nature que `runExport` lui donne (U4.1). */
-const diagnostic = (nature, texte) => ({ message: { type: 'diagnostic', nature, texte } });
+/**
+ * Un constat de l'export, avec la nature que `runExport` lui donne (U4.1), et
+ * le node de son sujet quand il en a un (U4.3/U4.4).
+ *
+ * L'absence de `nodeId` n'est pas un raccourci de la galerie : c'est l'état
+ * réel d'un message qui nomme un text style, une variable, ou un calque agrégé
+ * sur toute la matrice. Les deux formes doivent se regarder CÔTE À CÔTE, parce
+ * que c'est leur voisinage qui dit si l'absence de lien se lit comme une
+ * réponse ou comme un oubli.
+ */
+const diagnostic = (nature, texte, nodeId) => ({
+  message: { type: 'diagnostic', nature, texte, ...(nodeId ? { nodeId } : {}) },
+});
 
 /** Vingt avertissements réels : le volume que U1.3 (d) exige de regarder. */
 function vingtAvertissements() {
@@ -277,6 +288,25 @@ const ETATS = [
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       diagnostic('avertissement', AVERTISSEMENT_COMPOSE),
+      diagnostic('constat', NOTE_ROTATION),
+      { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 1 }),
+    ],
+  },
+  {
+    id: 'resultat-avertissement-localisable',
+    titre: 'Un avertissement qui mène à son calque',
+    quand:
+      "Un export dont un avertissement nomme un calque du composant, et un autre nomme un style de texte. Le premier porte le node de son sujet (U4.3), le second n'en a aucun.",
+    regarder:
+      "Les deux entrées CÔTE À CÔTE. La première se clique et souligne au survol ; la seconde est un paragraphe. C'est ce voisinage qui décide si l'absence de lien se lit comme une réponse ou comme un oubli — et c'est pour lui que la loi de couverture existe.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_PRETE,
+      { clic: '.action-panel .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      diagnostic('avertissement', AVERTISSEMENT_STROKE, '12:345'),
       diagnostic('constat', NOTE_ROTATION),
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
       verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 1 }),

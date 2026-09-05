@@ -381,6 +381,44 @@ async function publier(): Promise<void> {
 }
 
 // Routeur des demandes de l'UI vers le bon handler.
+/**
+ * Montre le calque dont un avertissement parle : sélection, puis cadrage (U4.4).
+ *
+ * **Rien n'est écrit dans le document.** Une sélection et un cadrage sont un
+ * état de l'ÉDITEUR, et les actions d'un plugin ne rejoignent l'historique
+ * d'annulation que si `commitUndo()` est appelé — ce que ce plugin ne fait
+ * jamais. La décision et ses sources sont dans `SPEC.md`.
+ *
+ * **Un node introuvable ne fait rien, et ne dit rien.** Le designer a pu
+ * supprimer le calque, ou changer de page, entre l'export et le clic. Une
+ * erreur affichée pour un clic qui n'aboutit pas coûterait plus qu'elle
+ * n'apprend : le message d'origine est toujours là, avec le nom du calque.
+ *
+ * **La page doit être la bonne avant de sélectionner.** Un node vit sur une
+ * page, et `currentPage.selection` n'accepte que des nodes de la page courante :
+ * sélectionner sans basculer lèverait, sur un composant exporté depuis une
+ * autre page — le cas normal quand le designer a navigué depuis.
+ */
+async function montrerLeCalque(nodeId: string): Promise<void> {
+  const node = await figma.getNodeByIdAsync(nodeId).catch(() => null);
+  if (!node || node.removed) return;
+
+  const page = pageDe(node);
+  if (!page) return;
+  if (page !== figma.currentPage) await figma.setCurrentPageAsync(page);
+
+  const cible = node as SceneNode;
+  figma.currentPage.selection = [cible];
+  figma.viewport.scrollAndZoomIntoView([cible]);
+}
+
+/** La page qui porte ce node, en remontant ses parents. */
+function pageDe(node: BaseNode): PageNode | null {
+  let courant: BaseNode | null = node;
+  while (courant && courant.type !== 'PAGE') courant = courant.parent;
+  return courant?.type === 'PAGE' ? courant : null;
+}
+
 figma.ui.onmessage = async (message: UiRequest) => {
   if (message.type === 'ui-ready') {
     // Figma peut servir un bundle plus ancien que celui du disque. Sans version
@@ -428,6 +466,11 @@ figma.ui.onmessage = async (message: UiRequest) => {
     const taille = tailleValide({ largeur: message.largeur, hauteur: message.hauteur });
     figma.ui.resize(taille.largeur, taille.hauteur);
     await rangerTaille(taille);
+    return;
+  }
+
+  if (message.type === 'montrer-le-calque') {
+    await montrerLeCalque(message.nodeId);
     return;
   }
 
