@@ -23,6 +23,7 @@ import { extractVariantTokens } from './extractVariantTokens';
 import type { VariantPaintNodeIds } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
 import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNodes';
+import { pousserNote, sujet } from './localisation';
 import type { DiscoveredRoles } from './semantics';
 import type {
   ComposedDependency,
@@ -224,13 +225,17 @@ export async function extractStructure(
         .map(({ component }) => `« ${component.name} »`)
         .join(', ');
       const remaining = divergentVariants.length - 3;
-      infos.push(
-        `Structure différente sur ${divergentVariants.length} `
+      // Le constat porte sur la matrice, mais il NOMME un variant exemple : le
+      // clic mène à celui-là, qui est exactement ce que la phrase montre du
+      // doigt. Sans cette note, le message parlerait d'un calque du composant
+      // sans savoir lequel — ce que la loi de U4.3 refuse.
+      pousserNote(infos, `Structure différente sur ${divergentVariants.length} `
         + `variant${divergentVariants.length > 1 ? 's' : ''}, ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
           `référence « ${referenceLayout.component.name} ». La vue exacte référencée par ` +
           `chaque entrée de « variants » conserve sa propre structure ; seule la projection ` +
           `« structure » reste celle de la référence.`,
+        sujet('Variant', divergentVariants[0].component),
       );
     }
 
@@ -249,13 +254,13 @@ export async function extractStructure(
         .map(({ component }) => `« ${component.name} »`)
         .join(', ');
       const remaining = flexDivergentVariants.length - 3;
-      infos.push(
-        `Auto layout différent sur ${flexDivergentVariants.length} `
+      pousserNote(infos, `Auto layout différent sur ${flexDivergentVariants.length} `
         + `variant${flexDivergentVariants.length > 1 ? 's' : ''}, ex. ${examples}` +
           `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
           `référence « ${referenceLayout.component.name} ». Les vues exactes de « variants » ` +
           `conservent leurs flux respectifs ; seule la projection « structure » reste celle ` +
           `de la référence.`,
+        sujet('Variant', flexDivergentVariants[0].component),
       );
     }
   }

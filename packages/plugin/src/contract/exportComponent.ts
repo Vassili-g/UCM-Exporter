@@ -39,7 +39,14 @@ import type {
   ContractMeta,
   ExtractedContractVariant,
 } from '@ucm-kit/core/format';
-import { pousserLocalise, sujetSansNode } from './localisation';
+import {
+  localisationsDe,
+  noterSansNode,
+  pousserLocalise,
+  raisonsSansNode,
+  reporterLocalisations,
+  sujetSansNode,
+} from './localisation';
 
 /** Union ordonnée des dépendances exactes, avec leur cardinalité maximale. */
 function mergeVariantDependencies(
@@ -94,6 +101,31 @@ export type ComponentExport = {
    * la pull request ne réclame pas une correction qu'elle dit inutile.
    */
   infos: string[];
+  /**
+   * OÙ regarder, pour les messages dont le sujet désigne un node (U4.3).
+   *
+   * Indexé par le TEXTE du message, parce que c'est l'identité qu'emploie déjà
+   * tout le dédoublonnage : deux calques qui produisent le même constat n'en
+   * font qu'un, donc n'ont qu'une cible.
+   *
+   * **Cette carte s'arrête à cette frontière.** Elle sert un clic dans
+   * l'interface ; elle n'entre pas dans le contrat, où `meta.diagnostics` n'a
+   * pas de champ `figma` — une loi de `tests/lois.ts` le refuse, parce que le
+   * schéma, lui, l'accepterait sans un mot.
+   *
+   * Un message absent de la carte n'est pas un oubli : son sujet ne désigne
+   * aucun node unique — un text style, une variable, un agrégat sur la matrice
+   * — et `sujetSansNode` en porte la raison écrite au site d'émission.
+   */
+  localisations: ReadonlyMap<string, string>;
+  /**
+   * Les messages dont l'absence de cible est DÉCLARÉE, et pourquoi (U4.3).
+   *
+   * L'interface n'en fait rien : c'est la loi de couverture qui les lit, pour
+   * distinguer « aucun node n'existe, voici pourquoi » de « ce site n'a pas été
+   * converti ». Sans cette distinction, la loi ne mesurerait qu'un total.
+   */
+  localisationsDeclarees: ReadonlyMap<string, string>;
 };
 
 /** Erreur « métier » : son message est affiché tel quel à l'utilisateur. */
@@ -270,6 +302,12 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     await indexContractedNamesInDocument(),
   );
   warnings.push(...compositionWarnings, ...compositionInfos);
+  // Un message qui change de canal laisse sa cible derrière lui si le registre
+  // ne suit pas. C'est le prix du registre indexé par canal, et le seul endroit
+  // où un oubli serait muet — d'où la loi qui compte, à la sortie, les messages
+  // localisables restés sans node.
+  reporterLocalisations(compositionWarnings, warnings);
+  reporterLocalisations(compositionInfos, warnings);
   // Une instance dont le composant maître est illisible coûte au contrat : ses
   // layers passent pour les nôtres et la dépendance manque à `composes`. C'est
   // une perte de portabilité, et elle se marque comme telle.
@@ -281,6 +319,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // corriger. Son jumeau, « Structure différente sur N variants », vit dans
   // `infos` depuis toujours.
   exportInfos.push(...compositionInfos);
+  reporterLocalisations(compositionInfos, exportInfos);
   warningCursor = warnings.length;
 
   const wrapper = referenceComponent
@@ -345,6 +384,8 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   markProjectionWarningsSince(warningCursor);
   addProjectionWarnings(extracted.warnings);
   warnings.push(...extracted.notices, ...extracted.infos);
+  reporterLocalisations(extracted.notices, warnings);
+  reporterLocalisations(extracted.infos, warnings);
   exportInfos.push(...extracted.infos);
   warningCursor = warnings.length;
 
@@ -442,6 +483,13 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   if (varianceEchantillon) {
     warnings.push(varianceEchantillon);
     exportInfos.push(varianceEchantillon);
+    // Le constat nomme des variants, et aucun clic ne peut y mener : il est
+    // formé à partir de `compacted.variants`, où un variant n'est plus qu'un
+    // nom publié. Remonter jusqu'au node demanderait de refaire la matrice à
+    // l'envers pour un constat qui ne demande aucun geste. L'absence est donc
+    // DÉCLARÉE, pas subie — sans quoi elle se lirait comme un site oublié.
+    noterSansNode(warnings, varianceEchantillon, 'nom-publie');
+    noterSansNode(exportInfos, varianceEchantillon, 'nom-publie');
   }
 
   // **Le lien Figma absent ne se signale plus, et son retrait est la moitié la
@@ -461,6 +509,13 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   const meta = buildMeta(componentSet);
 
   const allWarnings = Array.from(new Set([...warnings, ...extracted.warnings]));
+  // La jonction : les deux canaux se fondent, et leurs registres avec eux. Le
+  // relevé ne va pas plus loin que la frontière sandbox ↔ UI — le contrat, lui,
+  // n'en verra rien, et une loi de `lois.ts` le refuse.
+  reporterLocalisations(warnings, allWarnings);
+  reporterLocalisations(extracted.warnings, allWarnings);
+  const localisations = localisationsDe(allWarnings);
+  const localisationsDeclarees = raisonsSansNode(allWarnings);
   const portableWarningSet = new Set(projectionWarnings);
   const hasPortableLoss = portableWarningSet.size > 0;
   // Une perte de portabilité l'emporte toujours : un même texte relevé des deux
@@ -546,6 +601,8 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     warningCount: actionableWarnings.length,
     warnings: actionableWarnings,
     infos: exportedInfos,
+    localisations,
+    localisationsDeclarees,
   };
 }
 

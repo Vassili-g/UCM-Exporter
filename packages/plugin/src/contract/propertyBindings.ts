@@ -1,6 +1,7 @@
 /** Situe les component properties sur les calques qu'elles contrôlent. */
 import type { VariantMatrix } from './componentTree';
 import { getAllNodes } from './exportableNodes';
+import { pousserNote, sujet } from './localisation';
 import type { ComposedInstances } from './exportableNodes';
 import type { ExtractedPropertyBinding } from '@ucm-kit/core/format';
 
@@ -84,11 +85,15 @@ export function extractPropertyBindings(
           const marker = `${figmaPropName}\u0000${target}`;
           if (!unresolved.has(marker)) {
             unresolved.add(marker);
-            warnings.push(
+            // Le sujet est une component property, qui n'est pas un node ; le
+            // CORPS nomme le calque qui la référence, et c'est le seul endroit
+            // où le designer peut agir. Le clic y mène.
+            pousserNote(warnings,
               `Component property « ${figmaPropName.replace(/#.*$/, '')} » : le layer `
                 + `« ${node.name} » la référence sur « ${target} », mais aucune prop publique `
                 + `ne peut la porter. Cette liaison n'est pas publiée dans le contrat. `
                 + `Renommez les propriétés en collision, puis réexportez.`,
+              sujet('Layer', node),
             );
           }
           continue;

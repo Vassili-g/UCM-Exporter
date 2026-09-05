@@ -136,7 +136,20 @@ export type PluginMessage =
    * boîte de 96 px qui défile vers sa fin. Elle voyage maintenant dans le
    * message, et c'est le compte rendu qui la rend visible.
    */
-  | { type: 'diagnostic'; nature: 'avertissement' | 'constat'; texte: string }
+  | {
+      type: 'diagnostic';
+      nature: 'avertissement' | 'constat';
+      texte: string;
+      /**
+       * Le node du SUJET, quand le sujet en désigne un (U4.3).
+       *
+       * Absent quand le message nomme un text style, une variable, une règle,
+       * ou un calque agrégé sur toute la matrice — et cette absence est une
+       * réponse, pas un trou : `localisation.ts` en porte les trois raisons.
+       * L'interface ne rend donc cliquable que ce qui mène quelque part.
+       */
+      nodeId?: string;
+    }
   /**
    * Ce que l'analyse conclut, et l'action qu'elle propose (U3.1).
    *

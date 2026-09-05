@@ -83,3 +83,70 @@ test('l’autorité produit bien la forme que les messages emploient', () => {
   }
   assert.equal(sujet('Layer', { id: '9:9', name: 'Badge' }).nodeId, '9:9');
 });
+
+/**
+ * La SECONDE moitié de la loi, et c'est elle qui la rend utile.
+ *
+ * *La loi :* **aucun diagnostic ne nomme un calque du composant exporté sans
+ * pouvoir mener à un calque.**
+ *
+ * Sans elle, la première se satisfait d'un déplacement : il suffit de sortir le
+ * nom du calque du préfixe et de l'écrire dans le corps du message pour que le
+ * contrôle de source ne voie plus rien — et U4.4 réafficherait un message qui
+ * parle d'un calque sans savoir lequel. C'est le mécanisme exact que cette
+ * tâche existe pour empêcher : une interface où l'absence de lien enseigne
+ * « rien à localiser » alors qu'elle signifie « ce site-là n'a pas été
+ * converti ».
+ *
+ * *Ce que la loi n'interdit PAS, et il faut le lire avant de la croire plus
+ * stricte qu'elle n'est.* Un message a le droit de nommer un SECOND calque dans
+ * son corps — « … mais le layer « Y » lui donne déjà ce rôle » est un contexte
+ * utile, et U4.4 n'a besoin que d'une cible : celle du sujet. Ce que la loi
+ * exige est qu'un message qui parle d'un calque en ait UNE.
+ *
+ * *Son univers est les calques du COMPOSANT exporté*, pas tous les nodes du
+ * document. Un message qui cite le calque « icon » d'une instance de règle
+ * nomme un calque réel qui n'appartient pas au composant, et aucun clic ne
+ * devrait y mener.
+ *
+ * *Pourquoi ce contrôle-ci s'exécute, quand l'autre lit la source.* Il ne peut
+ * pas se lire : savoir si un texte nomme un calque DU COMPOSANT demande de
+ * connaître les calques de ce composant, donc d'avoir exporté. Il se pose donc
+ * sur la sortie du moteur, avec les autres lois, et il ne prouve que ce que les
+ * scénarios déclenchent — c'est précisément pourquoi la première moitié lit la
+ * source, et pourquoi les deux ensemble valent mieux que chacune seule.
+ */
+export function verifierLaLocalisationDesDiagnostics(
+  messages: readonly string[],
+  localisations: ReadonlyMap<string, string>,
+  declarees: ReadonlyMap<string, string>,
+  nomsDeCalques: ReadonlySet<string>,
+  ou: string,
+): void {
+  const fautifs: string[] = [];
+  for (const message of messages) {
+    if (localisations.has(message)) continue;
+    // Une absence DÉCLARÉE n'est pas une absence oubliée : le site d'émission a
+    // écrit pourquoi aucun node unique n'existe. C'est toute la différence que
+    // cette loi mesure, et la raison pour laquelle les deux tables sont
+    // séparées dans `localisation.ts`.
+    if (declarees.has(message)) continue;
+    // Le sujet est ce qui précède le premier deux-points ; le corps est le
+    // reste. Un message sans deux-points est tout entier son propre sujet.
+    const nomsCites = [...message.matchAll(/«\s*([^»]*?)\s*»/g)].map(([, nom]) => nom);
+    const cites = nomsCites.filter((nom) => nomsDeCalques.has(nom));
+    if (cites.length === 0) continue;
+    fautifs.push(`${message.slice(0, 110)} — nomme ${cites.map((n) => `« ${n} »`).join(', ')}`);
+  }
+
+  assert.deepEqual(
+    fautifs,
+    [],
+    `${ou} : ${fautifs.length} diagnostic(s) nomment un calque du composant sans `
+      + `porter de node. Un tel message est celui qu'U4.4 réafficherait sans lien, `
+      + `enseignant que l'absence de lien signifie « rien à localiser ». Passez son `
+      + `sujet par \`pousserLocalise\`, ou déclarez la raison avec \`sujetSansNode\` `
+      + `si aucun node unique n'existe :\n`
+      + fautifs.map((f) => `  ${f}`).join('\n'),
+  );
+}
