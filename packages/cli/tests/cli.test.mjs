@@ -166,6 +166,112 @@ test("le workflow publie un diagnostic même quand le rapport manque", () => {
 });
 
 /**
+ * Les deux dernières étapes du workflow ne forment un filet que si elles se
+ * relaient : l'une écrit le rapport quand il manque, l'autre le publie. Rien
+ * ici ne vérifiait leur ACCORD — leurs conditions, leur fichier commun et
+ * l'évènement sur lequel elles portent.
+ *
+ * Trois façons de perdre le message du designer sans qu'une seule ligne
+ * paraisse fausse : les deux conditions s'excluent mal et le filet écrase un
+ * vrai rapport ; l'écriture et la publication ne visent pas le même fichier ;
+ * l'évènement n'est pas borné, et un `push` sur `main` fait échouer une étape
+ * qui n'avait aucun commentaire à écrire.
+ */
+/**
+ * Le corps d'une étape nommée du workflow, sans son indentation.
+ *
+ * Il court du `- name:` demandé jusqu'à l'étape suivante. Rien ici ne cherche à
+ * lire du YAML : on compare des lignes écrites par un générateur, pas un
+ * fichier qu'un tiers aurait pu reformater.
+ */
+function etape(workflow, nom) {
+  const lignes = workflow.split(/\r?\n/);
+  const debut = lignes.findIndex((l) => l.trim() === "- name: " + nom);
+  assert.notEqual(debut, -1, "le workflow généré n'écrit plus l'étape « " + nom + " »");
+
+  const corps = [];
+  for (const ligne of lignes.slice(debut + 1)) {
+    if (/^\s*- (name|uses):/.test(ligne)) break;
+    corps.push(ligne.trim());
+  }
+  return corps.join("\n");
+}
+
+/**
+ * Les deux dernières étapes du workflow ne forment un filet que si elles se
+ * relaient : l'une écrit le rapport quand il manque, l'autre publie celui qui
+ * est là. Rien ici ne vérifiait leur ACCORD — leurs conditions, leur fichier
+ * commun et l'évènement sur lequel elles portent.
+ *
+ * Trois façons de perdre le message du designer sans qu'une ligne paraisse
+ * fausse : les deux conditions cessent de s'exclure, et le filet écrase un vrai
+ * rapport ; l'écriture et la publication ne visent plus le même fichier ;
+ * l'évènement n'est plus borné, et un `push` sur `main` fait échouer une étape
+ * qui n'avait aucun fil où écrire.
+ */
+test("les deux filets de fin se relaient sur le même rapport, et seulement sur une pull request", () => {
+  const racine = repoVierge();
+  try {
+    init(racine);
+    const workflow = readFileSync(join(racine, ".github/workflows/ucm.yml"), "utf8");
+    const ecriture = etape(workflow, "Garantir un diagnostic même sans rapport");
+    const publication = etape(workflow, "Publier le diagnostic sur la pull request");
+
+    for (const [quoi, corps] of [["l'écriture", ecriture], ["la publication", publication]]) {
+      assert.match(
+        corps,
+        /if: always\(\) && github\.event_name == 'pull_request'/,
+        "hors pull request, " + quoi + " n'a aucun fil où écrire",
+      );
+    }
+
+    assert.match(ecriture, /hashFiles\('ci-report\.md'\) == ''/);
+    assert.match(
+      publication,
+      /hashFiles\('ci-report\.md'\) != ''/,
+      "les deux conditions s'excluent, sinon le filet écraserait un vrai rapport",
+    );
+    assert.match(ecriture, /cat > ci-report\.md <<EOF/, "le filet écrit le fichier publié");
+    assert.match(publication, /--body-file ci-report\.md/, "la publication lit le fichier écrit");
+    assert.match(ecriture, /\$RUN_URL/, "le message minimal nomme l'endroit où regarder");
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Le message ne part que si le workflow a le droit de l'écrire et un fil où
+ * l'écrire. Le jeton et le numéro passent par l'environnement : interpolés dans
+ * le shell, ils feraient exécuter au runner ce qu'un titre de pull request
+ * contient. Et `--edit-last` échoue quand aucun commentaire n'existe encore —
+ * sans son repli, le tout premier diagnostic d'une pull request serait perdu,
+ * précisément celui que le designer attend.
+ */
+test("le diagnostic est publié avec le droit de l'être, et crée le fil qu'il ne trouve pas", () => {
+  const racine = repoVierge();
+  try {
+    init(racine);
+    const workflow = readFileSync(join(racine, ".github/workflows/ucm.yml"), "utf8");
+
+    assert.match(workflow, /^\s*pull-requests: write$/m);
+    assert.match(workflow, /GITHUB_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/);
+    assert.match(workflow, /NUMERO: \$\{\{ github\.event\.number \}\}/);
+    assert.doesNotMatch(
+      workflow,
+      /gh pr comment "\$\{\{/,
+      "le numéro voyage par l'environnement, jamais par interpolation dans le shell",
+    );
+    assert.match(
+      workflow,
+      /--edit-last[\s\\]*\|\|\s*gh pr comment "\$NUMERO" --body-file ci-report\.md/,
+      "sans repli, le premier commentaire d'une pull request n'est jamais créé",
+    );
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
  * Le rapport se régénère à chaque exécution : commité, il ferait lire un
  * verdict périmé. Un `.gitignore` déjà présent n'est pas réécrit — la seule
  * faute irréversible de cette commande —, et la ligne manquante est alors dite.
