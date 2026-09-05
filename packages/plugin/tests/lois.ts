@@ -351,6 +351,49 @@ function composesEstLUnionMaximale(c: Contrat, ou: string): void {
  * `ou` situe l'échec pour qui lit la sortie du test : un nom de fichier pour un
  * export réel, le scénario pour une sortie du moteur.
  */
+/**
+ * Aucun diagnostic ne publie de donnée d'extraction Figma.
+ *
+ * `ContractDiagnostic.figma` existe dans `types.ts` — donc dans le schéma
+ * dérivé — et n'est renseigné par personne. Cette dissymétrie est un piège :
+ * le jour où un id de calque remonterait jusqu'au `.map()` qui fabrique les
+ * diagnostics, l'artefact publierait des identifiants internes et **le schéma
+ * validerait vert** — mesuré, pas supposé : la fuite a été simulée, et aucune
+ * validation de schéma n'a bronché.
+ *
+ * Ce qui l'attrapait déjà, et il faut le dire pour ne pas se croire plus démuni
+ * qu'on ne l'était : `exportComponent.test.ts` vérifie que les clés d'un
+ * diagnostic valent exactement `code,message,severity`. Cette assertion est
+ * réelle et elle rougit. Mais elle vit dans UN scénario et décrit une forme
+ * attendue, là où cette loi porte sur tout contrat qui passe par
+ * `verifierLesLois` et dit POURQUOI le champ est interdit. La différence n'est
+ * pas la couverture d'aujourd'hui, c'est ce qu'un lecteur comprend en la voyant
+ * rougir.
+ *
+ * D'où cette loi, écrite AVANT le canal qui pourrait la violer (U4.3). Elle ne
+ * défend pas une préférence : elle rend mécanique un hors-périmètre qui n'était
+ * gardé que par de la prose. Le jour où quelqu'un décidera d'écrire
+ * `figma.nodeId` dans le contrat, il devra retirer cette loi — et le retrait
+ * d'une loi se voit en revue, là où l'apparition silencieuse d'un champ ne se
+ * voit pas.
+ *
+ * `meta.figma`, lui, est légitime et n'est pas concerné : il trace le FICHIER
+ * et le composant exporté, ce que le format publie exprès.
+ */
+function aucunDiagnosticNePorteDeNodeFigma(c: Contrat, ou: string): void {
+  const meta = (c.meta ?? {}) as { diagnostics?: Record<string, unknown>[] };
+  const fautifs = (meta.diagnostics ?? [])
+    .map((diagnostic, rang) => ({ rang, diagnostic }))
+    .filter(({ diagnostic }) => porte(diagnostic, 'figma'))
+    .map(({ rang, diagnostic }) => `${rang} (${String(diagnostic.code)})`);
+  assert.deepEqual(
+    fautifs,
+    [],
+    `${ou} : ${fautifs.length} diagnostic(s) publient un champ « figma », `
+      + `qui ferait entrer une donnée d'extraction dans l'artefact : ${fautifs.join(', ')}`,
+  );
+}
+
 export function verifierLesLois(contrat: Contrat, ou: string): void {
   lesRenvoisSeResolvent(contrat, ou);
   lesCataloguesSontNetsEtAtteints(contrat, ou);
@@ -359,6 +402,7 @@ export function verifierLesLois(contrat: Contrat, ou: string): void {
   chaqueCouleurSaitCommentSePeindre(contrat, ou);
   laPlaceNAppartientQuAuxCalquesHorsDuFlux(contrat, ou);
   composesEstLUnionMaximale(contrat, ou);
+  aucunDiagnosticNePorteDeNodeFigma(contrat, ou);
 }
 
 /**
