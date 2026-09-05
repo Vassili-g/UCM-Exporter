@@ -1937,25 +1937,135 @@ construit pas. Ce qui la conditionne, en revanche, est décidé ici (T7.0).
       en croyant couvrir la 11.0. Le contrat réel porte des formes que personne
       n'aurait écrites, et c'est précisément ce qu'on veut faire passer dans un
       validateur qu'on coupe.
-- [ ] **T7.0b — Un `tokens.json` minimal**, incluant un token à nom non-kebab
+**Où la recette vit, et pourquoi elle n'a pas attendu le repo du mainteneur.**
+*Décidé et exécuté le 5 septembre 2026 —* `packages/cli/tests/recette.test.mjs`.
+Le repo de recette réel reste ce qui éprouve le **workflow** : GitHub, une pull
+request, un commentaire. Tout ce qui se passe entre le dossier et le rapport,
+lui, se rejoue à chaque commit, et l'attente d'un dépôt tiers le laissait
+inéprouvé. Les douze scénarios s'exécutent donc ici, avec quatre propriétés qui
+les séparent de `check.test.mjs` — laquelle appelle `check` **en processus**,
+depuis l'intérieur du monorepo :
+
+1. le repository est construit par `ucm init` et par rien d'autre — le critère
+   n° 1 dit « zéro ligne à la main », le seul moyen de le vérifier est de n'en
+   écrire aucune ;
+2. la commande est lancée comme un **processus**, par le fichier que `bin`
+   désigne, depuis ce dossier. C'est la troisième application de la leçon des
+   étapes 11 à 13 : *ce qui n'est pas exercé depuis dehors n'est pas su.* Un
+   appel en processus ne traverse ni la garde de `process.argv[1]`, ni la
+   résolution de `@ucm-kit/core` depuis un autre dossier, ni le code de sortie ;
+3. le dossier est hors du monorepo et **aucun `package.json` ne le couvre**,
+   jusqu'à la racine du disque — le harnais le vérifie au lieu d'y croire (T3.4) ;
+4. les oracles sont ceux de T7.0c, et il n'y en a pas d'autres.
+
+*Ce qu'elle n'installe pas :* `npx --yes @ucm-kit/cli@x` jugerait la version
+publiée et non celle qu'on écrit. Le chemin traversé est le même, à
+l'installation près — laquelle reste au repo du mainteneur.
+
+- [X] **T7.0b — Un `tokens.json` minimal**, incluant un token à nom non-kebab
       (`0,5`) **et un token à `%`** pour couvrir la perte d'information de T6.0.
       *Réduit par T6.0a :* le cas `0,5` est désormais couvert sur les données
       réelles, chez le consommateur, sans jeu inventé. Ce qui reste ici est le
       token à `%`, qu'aucune donnée réelle ne porte aujourd'hui — vérifié, zéro
       occurrence dans le `tokens.json` du Playground.
-- [ ] **T7.0c — Des oracles** : code de sortie attendu, titres présents ou
-      absents dans `ci-report.md`.
+      *Fait le 5 septembre 2026, et l'énoncé s'est précisé en l'écrivant.* Le
+      `tokens.json` de la recette porte deux tokens, dont `opacites.50%`.
+      **Ce qu'il prouve n'est pas la collision — c'est son absence de portée.**
+      Le garde-fou de collision vit chez le consommateur
+      (`tokens-accord.test.ts`) et n'a de sens qu'avec une chaîne CSS ; la
+      recette n'en a aucune. Ce que ce token établit ici est l'autre moitié, et
+      c'est celle qui décide de la portabilité : **le chemin portable ne passe
+      pas par la projection CSS.** Un token dont aucun nom de variable ne saurait
+      porter le nom fidèlement est trouvé quand même, parce que le contrôle
+      d'existence compare des CHEMINS dans le fichier DTCG (T2.4). Le jour où ce
+      contrôle repasserait par un nom CSS, ce token le ferait rougir — c'est
+      exactement ce qu'on lui demande.
+- [X] **T7.0c — Des oracles** : code de sortie attendu, titres présents ou
+      absents dans `ci-report.md`. *Faits, et ce sont les seuls.* Le rapport est
+      le seul message que le designer reçoit ; ce qu'un développeur lirait dans
+      un log n'entre pas dans un oracle, à une exception nommée — la ligne de
+      terminal de T7.1, parce que « code conforme » est une phrase que le
+      rapport n'écrit pas et que T2.3 existe pour ne plus jamais prononcer sans
+      avoir lu.
 
-**Cinq scénarios discriminants** (réduits de onze) :
+**Cinq scénarios discriminants** (réduits de onze) — *les cinq sont exécutés,
+en douze tests, le 5 septembre 2026* :
 
-- [ ] **T7.1** ⚠ **en premier** : contrat sans implémentation, dans un repo dont
+- [X] **T7.1** ⚠ **en premier** : contrat sans implémentation, dans un repo dont
       les implémentations ne sont pas en TypeScript → l'état doit être juste sur
-      la PR d'export elle-même (T2.3).
-- [ ] **T7.2** tokens résolus sans pipeline CSS (T2.4).
-- [ ] **T7.3** version non lue → refus, bon coupable désigné.
-- [ ] **T7.4** contrat cassé → bloque.
-- [ ] **T7.5** montée de version : kit N+1 sur contrats N, fenêtre de migration,
-      réexport, fermeture. Valide D7 et D8.
+      la PR d'export elle-même (T2.3). *Vert des deux côtés :* sans le fichier
+      Swift, « n'a pas encore d'implémentation » et code 0 ; avec lui, l'état
+      d'attente disparaît, aucun écart de parité n'est inventé, et le mot
+      « conforme » ne s'écrit nulle part — le terminal dit « présente, non lue
+      par l'adaptateur ». Le motif d'implémentation est `{dir}/{id}.swift` par
+      DÉFAUT dans le harnais, pour qu'aucun scénario ne retombe par inadvertance
+      sur la stack du premier consommateur.
+- [X] **T7.2** tokens résolus sans pipeline CSS (T2.4). *Vert.* Ni Style
+      Dictionary, ni PostCSS, ni un `.css` : les deux références sont comptées.
+      Le scénario porte ses deux bords — une référence disparue avertit sans
+      refuser la fusion (critère n° 5), un `tokens.json` absent refuse en
+      nommant le préalable plutôt qu'en se taisant.
+- [X] **T7.3** version non lue → refus, bon coupable désigné. **C'est le
+      scénario qui a trouvé un défaut, et il est de la famille la plus coûteuse
+      de ce projet : deux phrases vraies séparément qui se contredisent dans le
+      même rapport.** Pour un contrat trop ANCIEN, l'en-tête écrivait
+      « réexporter n'y changerait rien » trois lignes au-dessus d'une action qui
+      demande précisément de réexporter — et l'en-tête est la première phrase que
+      le designer lit. Le critère de réussite n° 4 tombait : le message ne disait
+      plus qui corrige, il disait les deux.
+      *Cause, vérifiée dans le code :* `seuleLaVersionBloque` répond « oui » sans
+      regarder `verdict`, et le commentaire de T2.1b qui justifiait la phrase —
+      « aucun réexport ne le rendra lisible » — n'était vrai que du sens
+      `recent`. **Aucun test ne l'avait vu parce que tous fabriquaient une
+      version FUTURE (99.0) :** le sens `ancien` n'était éprouvé qu'au niveau de
+      la section, jamais du titre. C'est la maladie que tout ce dépôt poursuit —
+      un contrôle absent qui se lit comme un contrôle vert — et elle a survécu à
+      T2.1b, qui touchait ce fichier même.
+      *Corrigé dans le même geste :* `phraseDuSensDeLEcart` calcule la phrase
+      depuis le sens de l'écart, avec un troisième cas que l'énoncé n'avait pas —
+      les deux sens dans le même rapport, où aucune phrase unique n'est vraie et
+      où l'on renvoie donc au détail. Trois tests unitaires
+      (`verdict-bilan.test.mjs`) et un scénario de recette. **Il était rouge, il
+      est vert :** la correction retirée, la recette échoue sur ce test et sur
+      lui seul — mesuré, pas supposé.
+- [X] **T7.4** contrat cassé → bloque. *Vert, en trois formes.* JSON illisible →
+      « n'est pas un fichier JSON valide », avec le geste qui renvoie à l'export
+      et interdit la retouche à la main. Fichier vidé (`{}`, JSON parfaitement
+      valide) → « incomplet », et surtout **pas** « périmé » : il n'a pas une
+      version trop ancienne, il n'en a pas — c'est la nuance que T2.1b avait dû
+      écrire, et la recette la tient depuis dehors. Un contrat cassé à côté d'un
+      contrat sain → l'accusation reste nominative.
+- [X] **T7.5** montée de version : kit N+1 sur contrats N, fenêtre de migration,
+      réexport, fermeture. Valide D7 et D8. *La séquence est jouée sur un seul
+      dossier* — refus qui nomme le designer et son geste, réexport, fermeture —
+      parce que c'est la sortie de crise qui est le sujet : deux dossiers
+      prouveraient deux états, pas un chemin. D7 est vérifié à part : le workflow
+      épingle exactement, et la configuration ne redéclare jamais la fenêtre.
+      **Ce que le scénario a mesuré et que D8 n'a pas obtenu : la fenêtre ne vaut
+      qu'UNE version.** `VERSION_CONTRAT_MINIMALE` et `VERSION_CONTRAT_MAXIMALE`
+      sont égales, et le fichier l'assume en commentaire. Il n'existe donc aucun
+      recouvrement pendant lequel N‑1 et N seraient lues toutes les deux : un
+      consommateur passe au rouge à l'instant où le kit monte, et y reste jusqu'au
+      réexport. **C'est exactement ce que D8 décidait d'éviter.** La recette ne
+      fige pas cet état — elle éprouve la version *sous* la fenêtre, calculée
+      depuis les constantes du kit, donc elle restera juste le jour où la fenêtre
+      s'élargira. **L'écart D8 ↔ code est donc ouvert et non traité ici** : le
+      refermer demande de faire lire le 11.0 aux validateurs, ce que A1 a jugé
+      probable mais jamais exercé, et c'est une tâche à part — voir T7.6.
+- [ ] **T7.6 — Trancher la fenêtre de lecture : une version, ou deux (D8).**
+      *Ouverte le 5 septembre 2026 par la mesure de T7.5.* Deux réponses, et il
+      faut en écrire une — le silence se lirait comme une fenêtre de deux
+      versions qui n'existe pas.
+      *Élargir à deux :* c'est D8 tel qu'il est décidé, et le prix est un
+      validateur qui lit réellement le N‑1. A1 a mesuré que
+      `champsInvalidesDuContrat` accepterait « probablement » un 11.0 — la marge
+      de ce « probablement » est le vrai coût. Les quatre contrats 11.0 figés
+      (T7.0) sont là pour ça, et c'est leur seul emploi restant.
+      *Assumer une :* alors le commentaire de `version-contrat.mjs` a raison
+      contre D8, et **D8 doit être réécrit**, pas laissé à contredire le code.
+      Il faut aussi dire ce qu'un consommateur fait pendant la fenêtre qu'il n'a
+      pas : la réponse est probablement « le réexport est immédiat et le rapport
+      le dit », ce que T7.3 vient de rendre vrai.
 
 Reportés : le chronométrage, le scénario nominal (couvert par les autres) et la
 matrice Windows × Ubuntu — utiles, mais ils coûtent plus qu'ils ne prouvent
@@ -2286,6 +2396,41 @@ quelque chose : celle-ci exporte en boucle vers un dépôt neuf, elle aurait don
 produit le doublon qu'elle est censée ne pas produire, et l'aurait produit sans
 un mot — le contrôle qu'elle exerce n'aurait rien vu, puisque la maladie EST
 l'absence de signal. Reste de l'étape : le reste de la Phase 7, puis T4.6.
+
+*Exécuté le 5 septembre 2026, suite de l'étape 14 :* **la Phase 7 est close, sauf
+T7.6 qu'elle a ouverte.** T7.0b, T7.0c et les cinq scénarios sont exécutés, en
+douze tests qui lancent `ucm` comme un processus depuis un dossier installé par
+`ucm init`, hors du monorepo et qu'aucun `package.json` ne couvre.
+
+*Ce que la phase a rendu, et c'est ce qu'on lui demandait — elle mesure, elle ne
+construit pas.* **Deux choses qu'aucune suite verte ne disait.**
+
+La première est un défaut, corrigé : pour un contrat trop ANCIEN, l'en-tête du
+rapport écrivait « réexporter n'y changerait rien » trois lignes au-dessus d'une
+action qui demande de réexporter. Le critère de réussite n° 4 tombait sur la
+première phrase que le designer lit. **Il avait survécu à T2.1b, qui touchait ce
+fichier même**, parce que tous les tests fabriquaient une version FUTURE : le
+sens `ancien` n'était éprouvé qu'au niveau de la section. *La leçon n'est pas
+« il manquait un test » mais* **« un seul des deux sens d'une bifurcation était
+exercé, et le rapport le disait quand même en entier »** — la même forme que les
+trois copies de projection de T6.0, qu'aucun test ne comparait.
+
+La seconde est un écart ouvert, non traité : **D8 décide une fenêtre de deux
+versions, le code en lit une**, et le commentaire de `version-contrat.mjs`
+l'assume contre la décision. Il n'y a donc aucun recouvrement où N‑1 et N seraient
+lues toutes les deux — un consommateur passe au rouge à l'instant où le kit monte.
+T7.6 le tranche. **On ne le referme pas ici :** ce serait « déplacer et réécrire
+dans le même geste », que la règle 2 interdit, sur le validateur de 1576 lignes.
+
+*Un troisième point, de procédure, qui n'est pas une tâche :* le kit change de
+comportement (`verdict-bilan.mjs`) et **son numéro n'a pas bougé**. Le monter sans
+publier ferait épingler au CLI une version que le registre rend 404 — la panne
+exacte que les étapes 11 à 13 ont déjà payée deux fois. La montée et la
+publication vont ensemble, et dans cet ordre : elles restent à faire, et le
+Playground ne verra pas cette correction avant.
+
+Reste de l'étape 14 : **T4.6** (en cours dans une autre session), puis les
+Phases 6 et 8, avec T7.6 à placer.
 
 ### Écart entre cet ordre et ce qui a été exécuté
 

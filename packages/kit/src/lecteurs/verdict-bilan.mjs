@@ -21,9 +21,13 @@
  * C'est la moitié de T2.1b que la correction de l'ordre ne réglait pas. Le
  * verdict de version parvient désormais au rapport, mais le TITRE comptait
  * encore ce contrat parmi les invalides — or il est parfaitement formé, et
- * aucun réexport ne le rendra lisible : c'est le repository qui est en retard
- * sur le format, pas l'inverse. Le titre nommait donc le mauvais responsable
- * au moment le plus visible du rapport.
+ * seule sa version le sépare de ce repository. Le titre nommait donc le
+ * mauvais responsable au moment le plus visible du rapport.
+ *
+ * *Ce que cette fonction ne décide PAS, et T7.3 l'a appris à ses dépens :* à
+ * QUI le geste appartient. Elle ne lit pas `verdict`, et ne le doit pas — un
+ * contrat hors fenêtre n'est pas un contrat invalide, quel que soit le sens de
+ * l'écart. C'est `phraseDuSensDeLEcart` qui tranche le responsable.
  *
  * `bilanEstBloquant` ne bouge pas : ces contrats bloquent toujours, et ils le
  * doivent. Ce qui change est ce que le titre en DIT.
@@ -35,6 +39,51 @@ function seuleLaVersionBloque(bilan) {
     && (bilan.graphe?.length ?? 0) === 0
     && (bilan.nonListes?.length ?? 0) + (bilan.fantomes?.length ?? 0) === 0
     && (bilan.typesTypographiques?.length ?? 0) === 0;
+}
+
+/**
+ * La phrase d'en-tête d'un refus qui ne tient qu'à la version, et elle DÉPEND
+ * DU SENS de l'écart.
+ *
+ * **Défaut trouvé par la recette du repo vierge (T7.3), et il est du genre le
+ * plus coûteux : deux phrases vraies séparément qui se contredisent dans le
+ * même rapport.** Le titre écrivait « réexporter n'y changerait rien » pour
+ * TOUT contrat hors fenêtre, y compris un contrat trop ANCIEN dont la section,
+ * trois lignes plus bas, demande précisément de réexporter. Le designer lisait
+ * d'abord qu'il n'y pouvait rien, puis qu'il devait agir.
+ *
+ * La cause est identifiable : `seuleLaVersionBloque` répond « oui » sans
+ * regarder `verdict`, et le commentaire de T2.1b qui justifiait la phrase — «
+ * aucun réexport ne le rendra lisible » — n'était vrai que du sens `recent`.
+ * Aucun test ne l'a vu parce que tous fabriquaient une version FUTURE (99.0) :
+ * le sens `ancien` n'était éprouvé qu'au niveau de la section, jamais du titre.
+ *
+ * Les deux sens ont deux responsables, et c'est tout l'objet du critère de
+ * réussite n° 4 — le message doit dire QUI corrige :
+ * - `recent` : le contrat vient d'un plugin en avance sur ce repository. Le
+ *   geste appartient à un développeur, et réexporter ne ferait rien.
+ * - `ancien` : le contrat vient d'un plugin en retard, ou sa version est
+ *   illisible. Le geste appartient au designer, et c'est un réexport.
+ * - les deux à la fois : aucune phrase unique n'est vraie, donc on n'en écrit
+ *   aucune et on renvoie au détail, qui nomme le geste contrat par contrat.
+ */
+function phraseDuSensDeLEcart(bilans, pluriel) {
+  const sujet = pluriel
+    ? "Ces contrats sont bien formés. "
+    : "Ce contrat est bien formé. ";
+  const sens = new Set(bilans.map((bilan) => bilan.version?.verdict ?? "ancien"));
+
+  if (sens.size > 1) {
+    return sujet
+      + "Ils ne viennent pas tous de la même version : le détail ci-dessous nomme "
+      + "le geste attendu pour chacun.";
+  }
+  return sens.has("recent")
+    ? sujet + "C'est le repository qui doit rattraper le format ; réexporter n'y changerait rien."
+    : sujet
+      + (pluriel
+        ? "Ils viennent d'une version que ce repository ne lit plus : réexportez-les depuis Figma."
+        : "Il vient d'une version que ce repository ne lit plus : réexportez-le depuis Figma.");
 }
 
 /**
@@ -68,8 +117,10 @@ export function enteteDuVerdict(fautifs, avecAvertissements = false) {
     return [
       `## ❌ ${versionsSeules} contrat${pluriel} dans une version que ce repository ne lit pas`,
       "",
-      `Ce${pluriel === "s" ? "s" : ""} contrat${pluriel} ${pluriel === "s" ? "sont bien formés" : "est bien formé"}. `
-        + "C'est le repository qui doit rattraper le format ; réexporter n'y changerait rien.",
+      // Le TITRE est vrai dans les deux sens de l'écart — la version n'est pas
+      // lue, c'est tout ce qu'il dit. La phrase qui suit, elle, désigne un
+      // responsable : elle se calcule.
+      phraseDuSensDeLEcart(bilans.filter(seuleLaVersionBloque), pluriel === "s"),
       "",
     ];
   }
