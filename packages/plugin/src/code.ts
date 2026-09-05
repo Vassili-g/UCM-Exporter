@@ -6,12 +6,12 @@
 import { extractRules, hasUsableRules } from './contract/extractRules';
 import handleExportComponent from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
-import handleExportTokens from './tokens/exportTokens';
+import handleExportTokens, { resumerTokensDuFichier } from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
 import type { GithubConfig, SettingsInput } from './config';
 import { publishArtifact, diagnostiquerConnexion } from './github';
 import type { ArtifactKind, RepositoryLayout } from './github';
-import type { PluginMessage, UiRequest } from './messages';
+import type { Annonce, PluginMessage, UiRequest } from './messages';
 import { etatDeConnexion, etatDuDepot } from './connexion';
 import { etatDeCible, detailDeCible } from './cible';
 import type { CauseConnexion } from './connexion';
@@ -173,7 +173,7 @@ async function runExport(
   loadingText: string,
   successLabel: string,
   artifactKind: ArtifactKind,
-  handler: () => Promise<{
+  handler: (annoncer: Annonce) => Promise<{
     filename: string;
     content: string;
     warningCount: number;
@@ -183,7 +183,10 @@ async function runExport(
 ): Promise<void> {
   postStatus('loading', loadingText);
   try {
-    const result = await handler();
+    // Les étapes vont dans la NOTE, pas dans le journal (U2.6) : quatre lignes
+    // de déroulé par export noieraient les avertissements, qui sont la seule
+    // chose de ce journal qui demande un geste.
+    const result = await handler((etape) => versUi({ type: 'phase', texte: etape }));
     // On liste chaque avertissement dans le journal (ex. « largeur de stroke non tokenisée »).
     for (const warning of result.warnings ?? []) {
       versUi({ type: 'log', text: `⚠︎ ${warning}` });
@@ -210,6 +213,7 @@ async function runExport(
     }
 
     try {
+      versUi({ type: 'phase', texte: 'Publication sur GitHub…' });
       const publication = await publishArtifact(validation.config, {
         kind: artifactKind,
         filename: result.filename,
@@ -286,8 +290,15 @@ figma.ui.onmessage = async (message: UiRequest) => {
     // clic — c'est-à-dire avant le cas qu'il existe pour couvrir. L'UI la pose
     // en pied de page, où elle reste.
     versUi({ type: 'schema-version', version: CONTRACT_VERSION });
-    // L'UI est prête : sélection, champs sauvegardés et test GitHub automatique.
-    await Promise.all([reportSelectionState(), refreshConfiguration()]);
+    // L'UI est prête : sélection, champs sauvegardés, test GitHub automatique,
+    // et ce que l'export des tokens emporterait (U2.4). Cette dernière lecture
+    // est celle qui manquait pour qu'une commande de portée FICHIER annonce sa
+    // taille avant de partir.
+    await Promise.all([
+      reportSelectionState(),
+      refreshConfiguration(),
+      resumerTokensDuFichier().then((resume) => versUi({ type: 'tokens', resume })),
+    ]);
     return;
   }
 

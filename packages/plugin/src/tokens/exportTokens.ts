@@ -7,6 +7,7 @@
 import { normalizeName } from '@ucm-kit/core/format';
 import { collisionWarnings, firstVariableAlias, indexVariables } from '../variables';
 import { serializeJson } from '../contract/serializeJson';
+import type { Annonce } from '../messages';
 
 /** Ce que la commande renvoie à l'UI : le fichier à télécharger + un bilan. */
 export type TokensExport = {
@@ -264,9 +265,48 @@ export function modeCollisionWarnings(collections: VariableCollection[]): string
 }
 
 /** Point d'entrée de la commande : exporte toutes les variables locales en DTCG. */
-export async function handleExportTokens(): Promise<TokensExport> {
+/**
+ * Ce que l'export des tokens va emporter (U2.4).
+ *
+ * C'est un export de portée FICHIER : il ignore la sélection et lit toutes les
+ * variables locales. Rien à l'écran n'en disait la taille, si bien que la
+ * commande partait sans que personne sache sur quoi.
+ *
+ * Les modes ne sont comptés que s'il y en a plusieurs : un « 1 mode » n'apprend
+ * rien, et c'est au-delà de un que le contrat publie `com.ucm.modes`.
+ */
+export function resumeDesTokens(
+  compte: { collections: number; variables: number; modes: number },
+): string {
+  if (compte.collections === 0) return 'Aucune variable locale dans ce fichier.';
+  const parties = [
+    `${compte.collections} collection${compte.collections === 1 ? '' : 's'}`,
+    `${compte.variables} variable${compte.variables === 1 ? '' : 's'}`,
+  ];
+  if (compte.modes > 1) parties.push(`${compte.modes} modes`);
+  return parties.join(' · ');
+}
+
+/**
+ * Compte sans tout charger : les collections portent déjà leurs identifiants de
+ * variables et leurs modes, donc `getLocalVariablesAsync` n'est pas payé ici.
+ */
+export async function resumerTokensDuFichier(): Promise<string> {
+  const collections = await figma.variables.getLocalVariableCollectionsAsync();
+  const modes = new Set<string>();
+  let variables = 0;
+  for (const collection of collections) {
+    variables += collection.variableIds.length;
+    for (const mode of collection.modes) modes.add(mode.name);
+  }
+  return resumeDesTokens({ collections: collections.length, variables, modes: modes.size });
+}
+
+export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<TokensExport> {
+  annoncer('Lecture des variables du fichier…');
   const collections = await figma.variables.getLocalVariableCollectionsAsync();
   const variables = await figma.variables.getLocalVariablesAsync();
+  annoncer('Écriture du fichier de tokens…');
 
   if (variables.length === 0) {
     throw new TokensExportError('Aucune variable locale à exporter.');
