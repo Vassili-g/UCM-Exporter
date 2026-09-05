@@ -737,7 +737,7 @@ export async function resolveSlotSize(
 /**
  * Mesure qu'un enfant donne à une piste de grille qui hug.
  *
- * Règle et bornes : UCM-EXPORTER-SPEC.md, « Grilles ».
+ * Règle et bornes : docs/FORMAT.md, « Grilles ».
  *
  * Le message part dans `infos` et non dans `warnings` parce qu'aucun geste
  * n'est demandé au designer. Il nomme la GRILLE plutôt que chaque enfant :
