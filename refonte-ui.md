@@ -1008,7 +1008,7 @@ fait donc relire au designer le fonctionnement interne de l'exporteur, puis lui
 dit qu'il n'a rien à faire. Une carte, une couleur ou une phrase plus courte ne
 réparent pas ce défaut de fond.
 
-- [ ] **U4.7 — Retirer les transformations normales du compte rendu.** Un
+- [X] **U4.7 — Retirer les transformations normales du compte rendu.** Un
       résultat ne remonte au designer que s'il bloque l'export, s'il rend le
       contrat partiel, ou s'il demande une vérification ou une correction dans
       Figma. Toute transformation entièrement prise en charge reste silencieuse
@@ -1034,6 +1034,84 @@ réparent pas ce défaut de fond.
       skill de rédaction, puis les tests du moteur : un contrat qui représente
       correctement une grille, une position ou une rotation ne reçoit aucun
       diagnostic pour ce seul fait.
+
+      *Faite le 5 septembre 2026.* **L'audit a trouvé huit producteurs, pas
+      sept, et les huit tombent.** Le huitième — la variation d'échantillon
+      entre variants — n'était pas visible sur `Stresstest` parce que ses
+      variants montrent le même contenu ; l'énoncé le prévoyait sous « les
+      autres notices existantes ».
+
+      | Producteur | Ce que le contrat publie à la place | Verdict |
+      |---|---|---|
+      | `composedComponents.ts` — « Composition différente sur N variants » | les vues exactes de `variantViews`, et l'union ordonnée dans `composes` | retiré |
+      | `extractStructure.ts` — « Structure différente sur N variants » | la vue exacte de chaque combinaison | retiré |
+      | `extractStructure.ts` — « Auto layout différent sur N variants » | idem, flux compris | retiré |
+      | `flexLayout.ts` — pistes `FIXED` « publiées en pixels » | `columnSizes` / `rowSizes` | retiré |
+      | `nodeBindings.ts` — enfants d'une piste qui hug | `structuralSize` | retiré |
+      | `flexLayout.ts` — position « Absolute » | `position`, `constraints`, `inset` | retiré |
+      | `extractLayout.ts` — rotation dans un flux | `rotation`, et l'écart de flux écrit dans `docs/FORMAT.md` | retiré |
+      | `extractSamples.ts` — contenu de maquette différent | `samples` et `variants[].sample` | retiré |
+
+      **Aucun cas limite n'a résisté à la règle**, et c'était la question qui
+      justifiait un audit plutôt qu'un `grep`. Les huit ont en commun d'être
+      publiés intégralement ; aucun ne bloque, aucun ne rend le contrat partiel,
+      aucun ne nomme un geste. Le canal `infos` disparaît donc en entier —
+      champ de `ComponentExport`, paramètre traversant `extractLayout`,
+      `describeNode`, `applySizing`, `flexItemProperties`, `gridTrackSizes`,
+      `gridStructuralSize`, code `UCM_EXPORT_INFO`, et le champ `nature` du
+      message `diagnostic`. Un champ qui ne sépare plus rien vaut moins que son
+      absence : il laisse croire à un second cas qui n'existe pas.
+
+      *Deux conséquences que l'énoncé n'annonçait pas, et qui sont l'essentiel
+      du geste.*
+
+      **1. `structureSignature` et `flexLayoutSignature` meurent avec les
+      messages qu'elles servaient.** 185 lignes de `extractLayout.ts` —
+      les deux signatures, `containerDimensionsSignature`,
+      `containerSizingSignature`, `sizeBoundsSignature`, `slotSizeSignature` —
+      n'avaient plus aucun appelant de production : leur seul rôle était de
+      comparer les variants pour décider s'il fallait écrire « différent sur N
+      variants ». Cinq tests les exerçaient encore, et les garder aurait laissé
+      cinq contrôles verts qui ne protégeaient plus rien — exactement la
+      maladie que ce dépôt poursuit. Le contrat, lui, ne perd rien : la
+      divergence entre variants n'est plus DÉDUITE puis annoncée, elle est
+      PUBLIÉE, vue exacte par vue exacte, depuis la 8.0.
+
+      **2. Les tests changent de sujet, pas seulement d'assertion.** Un test
+      qui vérifiait le texte d'une note ne peut pas se contenter de vérifier
+      son absence : il ne prouverait plus rien. Les onze concernés affirment
+      maintenant que la valeur EST dans le contrat *et* que rien n'est dit — les
+      deux moitiés ensemble, sinon la première régression muette serait un
+      moteur qui cesse de publier `inset`, `rotation`, `rowSizes` ou
+      `structuralSize`. Deux ont été réécrits en entier : « deux variants dont
+      la grille diffère » lit désormais les deux grilles dans `viewStructures`,
+      et les trois tests de divergence d'`extractStructure` lisent les deux vues
+      exactes.
+
+      *Ce que ça emporte, vérifié :* 8 sites d'émission ; le canal `infos` de
+      bout en bout ; `sampleVarianceNotice` et son test ; 185 lignes de
+      signatures et leurs 5 tests ; le groupe « Constats » de `CompteRendu.js`
+      et la règle `.entree-constat` ; le gabarit `nature` de
+      `stylesUi.test.ts` ; deux états de la galerie qui jouaient une note.
+      *Ce que ça ne touche pas, vérifié :* le canal `notices`
+      d'`extractStructure`, qui porte des messages ACTIONNABLES malgré son nom —
+      un variant sans aucune couleur reliée, un calque hors du node élu ; et
+      `UCM_EXPORT_NOTICE`, qui distingue toujours une perte de portabilité d'un
+      geste qui n'en coûte pas.
+
+      *Documents mis à jour, tous vérifiés dans le code avant d'être écrits :*
+      `AGENTS.md` (invariants Grilles et Diagnostics — un invariant ajouté, deux
+      corrigés), `CONTRIBUTING.md` (la table « avertissement / note » disparaît
+      avec la note), `docs/FORMAT.md` (cinq passages qui promettaient une
+      notice), `packages/plugin/SPEC.md` (deux passages), et la skill
+      `rediger-diagnostics-ucm`.
+
+      *La loi du silence a été vue rouge avant d'être crue :* la notice de
+      piste `FIXED` remise à sa source fait tomber quatre tests — celui de
+      `gridTrackSizes`, celui de l'export complet, celui des deux grilles
+      divergentes et celui de la mesure de cellule. Mutation retirée, suite
+      verte : 495 tests côté plugin (809 au total), `typecheck` et `build`
+      compris.
 
 - [ ] **U4.8 — Faire d'un vrai problème une carte actionnable.** Le groupe
       « Constats » disparaît. L'écran n'affiche plus que « À corriger dans

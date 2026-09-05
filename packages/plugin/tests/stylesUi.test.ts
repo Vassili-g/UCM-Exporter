@@ -51,13 +51,12 @@ function litterauxDe(motif: RegExp, quoi: string): string[] {
  * Ce que vaut la variable d'un gabarit de classe, LUE à sa source.
  *
  * Une liste écrite ici serait une deuxième déclaration des mêmes valeurs : un
- * niveau de journal ou une nature de diagnostic ajoutés là-bas réclament leur
- * règle sans que personne ait à y penser ici.
+ * niveau de journal ajouté là-bas réclame sa règle sans que personne ait à y
+ * penser ici.
  */
 const VALEURS_DE_GABARIT: Record<string, () => string[]> = {
   level: () => litterauxDe(/export type LogLevel =([^;]+);/, 'LogLevel'),
   niveau: () => litterauxDe(/export type LogLevel =([^;]+);/, 'LogLevel'),
-  nature: () => litterauxDe(/nature:([^;]+);/, 'la nature d’un diagnostic'),
   variant: () => variantesDeBouton(),
 };
 

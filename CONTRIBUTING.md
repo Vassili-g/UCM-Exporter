@@ -86,40 +86,36 @@ Les avertissements d’un export sont adressés au **designer**, et lui parvienn
 par le corps de la pull request que le plugin ouvre. Ils sont donc écrits dans
 son vocabulaire, jamais dans celui du code.
 
-Un export produit deux natures de constats, et elles ne se mélangent pas :
+**Un export ne remonte au designer que ce qui demande une décision (U4.7).**
+Trois portes d’entrée, et rien d’autre : le point bloque l’export, il rend le
+contrat partiel, ou il demande une vérification ou une correction dans Figma.
+Une transformation entièrement prise en charge — une piste FIXED de grille
+publiée en pixels, un calque hors du flux dont la distance aux bords est
+calculée, une rotation publiée, une structure propre à un variant que sa vue
+exacte conserve — reste **silencieuse partout** : dans le plugin, dans la pull
+request et dans `meta.diagnostics`. Sa règle appartient au format et à ses
+tests, pas à un résultat d’export.
 
-| | Un **avertissement** | Une **note** |
-|---|---|---|
-| Ce qu’il dit | Une information manque à l’artefact | Le contrat publie ce point sous une forme inhabituelle |
-| Geste attendu | Oui, nommé dans le message | Aucun |
-| Canal interne | `warnings` | `infos` |
-| Corps de la pull request | « L’export n’a pas pu décrire… », puis « Corrigez chaque point » | Rien : elle n’y apparaît pas |
-| Où la lire | Pull request, journal du plugin, `meta.diagnostics` | Journal du plugin, `meta.diagnostics` |
+Le canal `infos` qui les portait n’existe plus. Il avait été créé pour éviter
+qu’une note paraisse sous « Corrigez chaque point » ; le vrai défaut était en
+amont, dans l’émission. Un compte rendu qui fait relire au designer le
+fonctionnement interne de l’exporteur, pour lui dire qu’il n’a rien à faire,
+lui apprend que ces listes se survolent — et le jour où un avertissement
+demandera un geste, il le survolera aussi.
 
-Écrire une note dans le canal `warnings` produit un texte qui se contredit : le
-titre annonce une information absente, la phrase répond qu’elle est bien là. La
-piste FIXED d’une grille, publiée en pixels, est le cas type d’une note.
+Un constat qui ne nomme aucun geste n’a donc rien à faire dans un export. Soit
+il en nomme un, soit il ne s’écrit pas. La forme unitaire ci-dessous n’est pas
+une recommandation, c’est ce qui distingue les deux.
 
-**Le corps de la pull request ne porte que des avertissements.** C’est la seule
-page que le designer relira à froid, et ce qu’il y trouve décide s’il relira la
-suivante. Une note y aurait toujours la même conclusion, « rien à faire » : la
-publier, c’est lui apprendre que ces listes se survolent, et le jour où un
-avertissement demandera un geste il le survolera aussi. Les notes restent donc
-dans le journal du plugin, sous les yeux de qui exporte, et dans
-`meta.diagnostics`, pour qui consomme le contrat.
-
-Même règle du côté des avertissements : un constat qui ne nomme aucun geste n’a
-rien à faire dans cette liste. Soit il en nomme un, soit c’est une note. La forme
-unitaire ci-dessous n’est pas une recommandation, c’est ce qui distingue les deux.
-
-`meta.diagnostics` est l’unique représentation publiée dans le contrat. Il
-distingue les constats par leur `code` :
+`meta.diagnostics` est l’unique représentation publiée dans le contrat. Son
+`code` répond à une seule question — la projection portable a-t-elle perdu
+quelque chose ? — et à aucune autre :
 `UCM_PORTABLE_PROJECTION_WARNING` pour une perte de portabilité,
-`UCM_EXPORT_INFO` pour une note, `UCM_EXPORT_NOTICE` pour le reste. Attention :
-« sans perte de portabilité » ne veut pas dire « sans geste à faire » — une
-combinaison de variants absente ne coûte rien à l’arbre exact, et le designer
-doit pourtant y retourner. Seul `UCM_EXPORT_INFO` promet qu’il n’y a rien à
-faire.
+`UCM_EXPORT_NOTICE` pour le reste. Attention : « sans perte de portabilité » ne
+veut pas dire « sans geste à faire » — une combinaison de variants absente ne
+coûte rien à l’arbre exact, et le designer doit pourtant y retourner. Les deux
+codes demandent un geste ; seul le premier dégrade `meta.coverage.portable`, et
+seul le premier remonte dans le rapport de CI.
 
 Chacun répond à trois questions, dans cet ordre :
 

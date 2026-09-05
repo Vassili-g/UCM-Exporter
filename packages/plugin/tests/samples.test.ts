@@ -10,7 +10,6 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   extractVariantSample,
-  sampleVarianceNotice,
 } from '../src/contract/extractSamples';
 import { extractPropertyBindings } from '../src/contract/propertyBindings';
 import { getAllNodes } from '../src/contract/exportableNodes';
@@ -469,29 +468,6 @@ test('un échantillon vide ne crée ni entrée ni renvoi', () => {
 
   assert.deepEqual(samples, {});
   assert.equal(variants[0].sample, undefined);
-});
-
-test('plusieurs contenus dans une même matrice se constatent, sans rien réclamer', () => {
-  assert.equal(sampleVarianceNotice([{ figmaName: 'A', sample: 's1' }]), null);
-  assert.equal(
-    sampleVarianceNotice([{ figmaName: 'A', sample: 's1' }, { figmaName: 'B', sample: 's1' }]),
-    null,
-  );
-
-  const notice = sampleVarianceNotice([
-    { figmaName: 'Color=Primary', sample: 's1' },
-    { figmaName: 'Color=Secondary', sample: 's1' },
-    { figmaName: 'Color=Error', sample: 's2' },
-  ]);
-  assert.match(notice ?? '', /Contenu de maquette différent sur 1 variante,/);
-  assert.match(notice ?? '', /« Color=Error »/);
-  assert.match(notice ?? '', /« samples »\.$/);
-
-  // « sans rien réclamer » au pied de la lettre : l'échantillon n'a pas le droit
-  // de demander un geste, et un axe de variantes existe précisément pour montrer
-  // des contenus différents — la phrase impérative tombait donc sur le cas
-  // normal, à chaque export.
-  assert.doesNotMatch(notice ?? '', /réexportez|alignez|Corrigez|dans Figma/);
 });
 
 test('une icône remplacée dans une dépendance est relevée, au chemin du maître', () => {

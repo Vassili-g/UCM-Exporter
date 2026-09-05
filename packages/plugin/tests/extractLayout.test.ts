@@ -303,21 +303,16 @@ test('un layer absolu n’est pas inventé comme item Flex, et le moteur le plac
     findAll: findAllOn([badge]),
   } as unknown as ComponentNode;
   const warnings: string[] = [];
-  const infos: string[] = [];
 
-  const layout = await extractLayout(
-    card, resolverFor({}), warnings, undefined, undefined, undefined,
-    undefined, undefined, undefined, undefined, infos,
-  );
+  const layout = await extractLayout(card, resolverFor({}), warnings);
 
   assert.equal(layout.children[0].alignSelf, undefined);
   assert.equal(layout.children[0].flexGrow, undefined);
   // Sans contrainte lisible, l'ancrage est celui de Figma : le début de chaque axe.
   assert.deepEqual(layout.children[0].inset, { top: '8px', left: '60px' });
-  // Aucun geste n'est demandé : Figma ne PERMET pas de relier une position à
-  // une variable. Le constat est une notice, jamais un avertissement.
+  // Aucun geste n'est demandé : Figma ne PERMET pas de relier une position à une
+  // variable, et la distance est publiée. Le moteur se tait donc (U4.7).
   assert.deepEqual(warnings.filter((warning) => warning.includes('Absolute')), []);
-  assert.ok(infos.some((info) => info.includes('position « Absolute »')));
 });
 
 test('extractLayout nomme le calque texte « label » sans recopier sa typographie', async () => {

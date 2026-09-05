@@ -22,7 +22,7 @@ import { extractPropertyBindings } from './propertyBindings';
 import { compactVariants, intern, signature } from './compactVariants';
 import { CATALOGUES_DE_VUES, elideContract, elideNeutrals } from './elideNeutrals';
 import { serializeJson } from './serializeJson';
-import { extractVariantSample, sampleVarianceNotice } from './extractSamples';
+import { extractVariantSample } from './extractSamples';
 import { mergeIconRules } from './mergeIconRules';
 export { mergeIconRules } from './mergeIconRules';
 import { mergePropDescriptions } from './mergePropDescriptions';
@@ -41,7 +41,6 @@ import type {
 } from '@ucm-kit/core/format';
 import {
   localisationsDe,
-  noterSansNode,
   pousserLocalise,
   raisonsSansNode,
   reporterLocalisations,
@@ -93,14 +92,18 @@ export type ComponentExport = {
   filename: string;
   content: string;
   warningCount: number;
-  /** Ce qui manque au contrat et appelle un geste dans Figma. */
-  warnings: string[];
   /**
-   * Ce que l'export documente sans rien perdre : la valeur est dans le
-   * contrat et le designer n'a rien à corriger. Séparé de `warnings` pour que
-   * la pull request ne réclame pas une correction qu'elle dit inutile.
+   * Ce qui manque au contrat et appelle un geste dans Figma.
+   *
+   * **C'est le seul canal (U4.7).** Le canal jumeau `infos` portait ce que
+   * l'export DOCUMENTE sans rien perdre — une piste de grille en pixels, un
+   * calque hors du flux, une rotation, une structure propre à un variant. Ces
+   * constats n'ont jamais rien demandé au designer, et lui faire relire à
+   * chaque export le fonctionnement interne de l'exporteur coûtait la lecture
+   * des points qui, eux, appellent un geste. Ils ne sont plus émis du tout :
+   * leur règle vit dans la spécification et dans les tests du format.
    */
-  infos: string[];
+  warnings: string[];
   /**
    * OÙ regarder, pour les messages dont le sujet désigne un node (U4.3).
    *
@@ -226,14 +229,6 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // de documentation (règles), de traçabilité (URL) et de compatibilité avec
   // l'ancienne vue de référence ne rendent pas un arbre exact incomplet.
   const projectionWarnings: string[] = [];
-  // Ce que l'export DOCUMENTE, par opposition à ce qu'il n'a pas su décrire.
-  // Rien n'y manque et rien n'y est à corriger : la pull request les range
-  // hors des points à traiter, et le compteur de l'UI les ignore. Deux
-  // sous-ensembles distincts, parce que « sans perte de portabilité » ne veut
-  // pas dire « sans geste à faire » : une combinaison de variants absente ou
-  // une règle d'usage qui cite une prop inconnue ne coûtent rien à l'arbre
-  // exact, mais le designer doit bien y retourner.
-  const exportInfos: string[] = [];
   const addProjectionWarnings = (messages: readonly string[]) => {
     projectionWarnings.push(...messages);
   };
@@ -293,7 +288,6 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     composed,
     mainByInstanceId,
     warnings: compositionWarnings,
-    infos: compositionInfos,
     swapDefaults,
     propertySurfaces,
   } = await scanComposedMatrix(
@@ -301,25 +295,16 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     referenceComponent,
     await indexContractedNamesInDocument(),
   );
-  warnings.push(...compositionWarnings, ...compositionInfos);
+  warnings.push(...compositionWarnings);
   // Un message qui change de canal laisse sa cible derrière lui si le registre
   // ne suit pas. C'est le prix du registre indexé par canal, et le seul endroit
   // où un oubli serait muet — d'où la loi qui compte, à la sortie, les messages
   // localisables restés sans node.
   reporterLocalisations(compositionWarnings, warnings);
-  reporterLocalisations(compositionInfos, warnings);
   // Une instance dont le composant maître est illisible coûte au contrat : ses
   // layers passent pour les nôtres et la dépendance manque à `composes`. C'est
   // une perte de portabilité, et elle se marque comme telle.
   addProjectionWarnings(compositionWarnings);
-  // Les arbres exacts portent la composition propre à chaque variante : la note
-  // le dit elle-même, et ne demande donc aucun geste. La ranger dans le seul
-  // canal `warnings` la faisait compter dans `warningCount` et paraître sous
-  // « Corrigez chaque point », où son propre texte répond qu'il n'y a rien à
-  // corriger. Son jumeau, « Structure différente sur N variants », vit dans
-  // `infos` depuis toujours.
-  exportInfos.push(...compositionInfos);
-  reporterLocalisations(compositionInfos, exportInfos);
   warningCursor = warnings.length;
 
   const wrapper = referenceComponent
@@ -383,10 +368,8 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   );
   markProjectionWarningsSince(warningCursor);
   addProjectionWarnings(extracted.warnings);
-  warnings.push(...extracted.notices, ...extracted.infos);
+  warnings.push(...extracted.notices);
   reporterLocalisations(extracted.notices, warnings);
-  reporterLocalisations(extracted.infos, warnings);
-  exportInfos.push(...extracted.infos);
   warningCursor = warnings.length;
 
   // La documentation issue des règles s'accroche aux props de même nature, et
@@ -475,22 +458,6 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   }
 
   const compacted = compactVariants(extracted.variants, propertyBindings);
-  // Le catalogue sait combien de contenus distincts la matrice montre. Deux là
-  // où le design en attendait un révèlent un libellé retouché dans un seul
-  // variant — rien ne manque, donc rien à corriger, et le constat passe par le
-  // canal qui le dit.
-  const varianceEchantillon = sampleVarianceNotice(compacted.variants);
-  if (varianceEchantillon) {
-    warnings.push(varianceEchantillon);
-    exportInfos.push(varianceEchantillon);
-    // Le constat nomme des variants, et aucun clic ne peut y mener : il est
-    // formé à partir de `compacted.variants`, où un variant n'est plus qu'un
-    // nom publié. Remonter jusqu'au node demanderait de refaire la matrice à
-    // l'envers pour un constat qui ne demande aucun geste. L'absence est donc
-    // DÉCLARÉE, pas subie — sans quoi elle se lirait comme un site oublié.
-    noterSansNode(warnings, varianceEchantillon, 'nom-publie');
-    noterSansNode(exportInfos, varianceEchantillon, 'nom-publie');
-  }
 
   // **Le lien Figma absent ne se signale plus, et son retrait est la moitié la
   // plus importante de T4.4.** Le message était écrit quand le cas était
@@ -518,22 +485,18 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   const localisationsDeclarees = raisonsSansNode(allWarnings);
   const portableWarningSet = new Set(projectionWarnings);
   const hasPortableLoss = portableWarningSet.size > 0;
-  // Une perte de portabilité l'emporte toujours : un même texte relevé des deux
-  // côtés reste un point à corriger.
-  const infoSet = new Set(exportInfos.filter((message) => !portableWarningSet.has(message)));
+  // Deux codes, et une seule question qu'ils tranchent : la projection portable
+  // a-t-elle perdu quelque chose ? Les deux demandent un geste — c'est la
+  // condition d'entrée dans ce canal depuis U4.7 —, mais seul le premier
+  // dégrade `meta.coverage.portable`, et le rapport de CI ne remonte que
+  // celui-là.
   const diagnostics = allWarnings.map((message) => ({
     code: portableWarningSet.has(message)
       ? 'UCM_PORTABLE_PROJECTION_WARNING'
-      : infoSet.has(message)
-        ? 'UCM_EXPORT_INFO'
-        : 'UCM_EXPORT_NOTICE',
+      : 'UCM_EXPORT_NOTICE',
     severity: 'warning' as const,
     message,
   }));
-  // Ce que la pull request et le compteur de l'UI appellent « avertissement »
-  // n'est que la part qui demande un geste ; `meta.diagnostics` porte tout.
-  const actionableWarnings = allWarnings.filter((message) => !infoSet.has(message));
-  const exportedInfos = allWarnings.filter((message) => infoSet.has(message));
   const {
     variantTokens: _variantTokens,
     variantStrokes: _variantStrokes,
@@ -598,9 +561,8 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   return {
     filename: componentContractFilename(contract.name),
     content: serializeJson(contract),
-    warningCount: actionableWarnings.length,
-    warnings: actionableWarnings,
-    infos: exportedInfos,
+    warningCount: allWarnings.length,
+    warnings: allWarnings,
     localisations,
     localisationsDeclarees,
   };

@@ -580,11 +580,12 @@ centre du layer, le défaut de `transform-origin`, et c'est aussi le point sur
 lequel `inset` est calculé. Une rotation imbriquée se compose d'elle-même, comme
 dans Figma.
 
-Reste un écart que CSS ne comble pas, et une **notice** le dit : dans un auto
-layout, Figma espace ses enfants d'après la boîte TOURNÉE, là où `transform` ne
-change aucune boîte de flux. Le layer est rendu comme dans Figma, la place de
-ses voisins peut différer de quelques pixels. Aucun geste n'est demandé — le
-redresser lui retirerait sa rotation.
+Reste un écart que CSS ne comble pas, et c'est ICI qu'il est écrit, pas dans un
+diagnostic d'export : dans un auto layout, Figma espace ses enfants d'après la
+boîte TOURNÉE, là où `transform` ne change aucune boîte de flux. Le layer est
+rendu comme dans Figma, la place de ses voisins peut différer de quelques
+pixels. Aucun geste n'est demandé — le redresser lui retirerait sa rotation —,
+donc l'export n'en dit rien.
 
 ##### Grilles
 
@@ -616,10 +617,12 @@ sans variable, elle avertit.
 vocabulaire de `grid-template-*` : `"1fr"` (piste `FLEX`, avec son facteur),
 `"fit-content(100%)"` (piste `HUG`) et, exception strictement structurelle,
 `"120px"` pour une piste `FIXED`. La valeur fixe décrit la grille Figma sans
-devenir un token ni rendre la couverture portable partielle. Une notice
-explicite la présence de pixels et ne demande aucune modification au designer.
+devenir un token ni rendre la couverture portable partielle. Rien ne manque et
+aucun geste n'existe : l'exception est écrite ici, et l'export n'en dit rien.
 Un runtime Figma qui n'expose pas ces champs ne publie
-rien et n'avertit de rien : une propriété absente n'est pas une valeur.
+rien et n'avertit de rien : une propriété absente n'est pas une valeur. Une
+piste dont la taille est ILLISIBLE, elle, avertit : le contrat publie « auto »
+à sa place, et le designer a bien quelque chose à vérifier.
 
 **Cette exception s'étend de la piste à la cellule, et là seulement.** Une piste
 `HUG` est le seul endroit d'une grille où la cellule ne décide de rien : elle se
@@ -628,7 +631,8 @@ dimensionne sur son contenu, et n'a aucune valeur à publier —
 que sur l'enfant, et sans elle la piste retombe à zéro : le contrat décrirait une
 grille que personne ne peut rendre. Un enfant dont TOUTES les pistes couvertes
 sur un axe sont `HUG` publie donc sa taille résolue en pixels dans
-`structuralSize`, sous la même notice sans geste et sans dégrader la couverture.
+`structuralSize`, sous la même exception écrite ici, sans diagnostic et sans
+dégrader la couverture.
 Une seule piste non `HUG` sous son étendue rend l'axe indécis : la place vient
 d'ailleurs, et rien n'est publié.
 
@@ -645,10 +649,10 @@ sans quoi le contrat publierait en pixels la valeur que son propre
 avertissement, devenu faux, déclarerait absente.
 
 Direction,
-alignements, dimensions figées et propriétés de flux des slots sont comparés sur
-toute la matrice — cadres de dépendance imbriqués compris ; une différence entre
-variants produit une notice de compatibilité au lieu d'être généralisée depuis
-le variant de référence ; les arbres exacts conservent les deux valeurs.
+alignements, dimensions figées et propriétés de flux des slots ne sont jamais
+généralisés depuis le variant de référence : chaque combinaison a sa vue exacte,
+qui porte les siens. `structure` reste la projection de référence, et la
+différence n'a donc rien à signaler — elle est PUBLIÉE.
 
 ##### Propriétés non portables
 
@@ -1313,10 +1317,10 @@ composant qui disparaît ainsi du contrat rendra sa parité rouge tant que le co
 continuera de le rendre : c'est le diagnostic voulu, le contrat ne le demandant
 plus.
 
-Si la composition varie dans la matrice, une notice nomme les variants
-concernés : `structure` reste la projection de référence, les vues cataloguées
-portent les dépendances exactes de chaque combinaison, et le `composes` global
-garantit que le graphe n'oublie aucune cible conditionnelle.
+Si la composition varie dans la matrice, rien n'est signalé et rien n'est perdu :
+`structure` reste la projection de référence, les vues cataloguées portent les
+dépendances exactes de chaque combinaison, et le `composes` global garantit que
+le graphe n'oublie aucune cible conditionnelle.
 
 `figmaLayer` y nomme le calque de **l'instance**, jamais le cadre qui
 l'enveloppe : c'est ce calque qu'on retrouve dans Figma.

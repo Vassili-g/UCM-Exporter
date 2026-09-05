@@ -13,10 +13,12 @@ Identifier d’abord le fait prouvé, les éléments concernés, la personne qui
 corriger, l’action nécessaire et le caractère bloquant. Ne pas déduire une
 cause de la simple coexistence de plusieurs diagnostics.
 
-Trancher ensuite : le message demande-t-il un geste ? Si non, c’est une NOTE, et
-elle part dans le canal `infos`, jamais dans `warnings`. Un message qui écrit
-« aucune modification n’est demandée » sous un titre qui réclame une correction
-se contredit devant son lecteur.
+Trancher ensuite : le message demande-t-il un geste ? **Si non, il ne s’écrit
+pas** (U4.7). Il n’existe plus de canal pour un constat sans action : une
+transformation que le contrat publie entièrement reste silencieuse dans le
+plugin, dans la pull request et dans `meta.diagnostics`, et sa règle vit dans la
+spécification et dans les tests du format. Un message qui écrit « aucune
+modification n’est demandée » n’est pas mal rangé, il est de trop.
 
 Pour un rapport agrégé, présenter dans cet ordre : problème, éléments
 concernés, écarts, action, état de la fusion. Pour un avertissement unitaire,

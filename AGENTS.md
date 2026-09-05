@@ -393,12 +393,15 @@ Le raisonnement vit dans la spécification, en lien.
   publie sa dimension que s’il cite une variable, et son absence ne se réclame
   jamais. Borne : un alignement explicite le détache de sa cellule et la règle
   commune revient.
-- Exception propre aux grilles : une piste `FIXED` publie sa valeur en pixels
-  sous une notice, sans devenir un token ni dégrader la couverture. Un runtime
-  qui n’expose pas les pistes ne publie rien et n’avertit de rien.
+- Exception propre aux grilles : une piste `FIXED` publie sa valeur en pixels,
+  sans devenir un token ni dégrader la couverture, et **sans un mot au
+  designer** — rien ne manque, aucun geste n’existe, l’exception est écrite dans
+  la spécification. Un runtime qui n’expose pas les pistes ne publie rien et
+  n’avertit de rien ; une piste ILLISIBLE, elle, avertit.
 - L’exception s’étend de la piste à la cellule, et là seulement : sous une piste
   `HUG`, `GridTrackSize.value` n’existe pas et la mesure ne vit que sur l’enfant,
-  publiée en pixels dans `structuralSize`. Trois bornes — une variable liée
+  publiée en pixels dans `structuralSize`, elle aussi sans diagnostic. Trois
+  bornes — une variable liée
   l’emporte et se publie dans `size`, qui reste strictement tokenisé ; une seule
   piste non `HUG` sous l’étendue de l’enfant rend l’axe indécis et rien n’est
   publié ; un alignement explicite retire l’exception, sans quoi la valeur
@@ -416,17 +419,23 @@ Le raisonnement vit dans la spécification, en lien.
   signalée.
 - Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
   geste à faire. Les trois sont exigés ; un constat qui ne nomme aucun geste
-  n’est pas un avertissement.
+  n’est pas un avertissement — et il ne s’écrit nulle part.
+- **Un export ne remonte que ce qui demande une décision.** Trois portes : le
+  point bloque l’export, il rend le contrat partiel, ou il demande une
+  vérification ou une correction dans Figma. Une transformation entièrement
+  prise en charge — piste `FIXED` en pixels, `inset` d’un calque hors du flux,
+  `rotation`, structure ou composition propre à un variant — est SILENCIEUSE
+  dans le plugin, dans la pull request et dans `meta.diagnostics` ; sa règle
+  vit dans la spécification et dans les tests du format. Le canal `infos` qui
+  les portait n’existe plus.
+  → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
 - `meta.diagnostics` est l’unique propriétaire des messages publiés dans le
   contrat. Qui veut la liste lisible lit `diagnostics[].message`, sans filtrer
   sur `severity`.
 - Le corps de la pull request a deux zones. L’en-tête dit l’IDENTITÉ de ce qui
   est déposé — le chemin, et le schéma de contrat pour un contrat ; la LISTE ne
-  porte que des gestes. Une note n’entre ni dans l’une ni dans l’autre : sa
-  conclusion est toujours « rien à faire », et une liste dont on
-  apprend qu’elle se survole coûte la lecture de celles qui demandent un geste.
-  Les notes vivent dans `meta.diagnostics` pour un consommateur du contrat, et
-  dans le journal du plugin pour le designer qui exporte.
+  porte que des gestes. Ce que le plugin compte, ce que la pull request liste et
+  ce que `meta.diagnostics` publie sont la MÊME liste.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
 - `meta.figma.url` est ABSENT des contrats produits aujourd’hui, et c’est normal.
   Le plugin se distribue par la Community (T4.4), donc sans

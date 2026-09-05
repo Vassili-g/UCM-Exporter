@@ -741,15 +741,15 @@ export async function resolveSlotSize(
  *
  * Règle et bornes : docs/FORMAT.md, « Grilles ».
  *
- * Le message part dans `infos` et non dans `warnings` parce qu'aucun geste
- * n'est demandé au designer. Il nomme la GRILLE plutôt que chaque enfant :
- * douze tuiles produiraient douze fois le même constat, que le dédoublonnage
- * de l'export ramène à un seul.
+ * **Cette mesure ne se dit plus au designer (U4.7).** Elle est publiée, donc
+ * rien ne manque, et aucun geste ne la corrigerait : Figma n'expose pas le
+ * remplissage d'un enfant sous une piste qui hug, et c'est une propriété de
+ * l'outil, pas du design. La règle et ses trois bornes vivent dans la
+ * spécification, et les tests du format en répondent.
  */
 export function gridStructuralSize(
   node: SceneNode,
   parent: SceneNode | undefined,
-  infos: string[],
 ): GridStructuralSize | null {
   if (!parent) return null;
   // Les deux conditions sont requises : la piste doit hug ET la cellule doit
@@ -783,13 +783,6 @@ export function gridStructuralSize(
   const height = mesure('height');
   if (!width && !height) return null;
 
-  const axes = [width ? 'colonnes' : null, height ? 'lignes' : null].filter(Boolean).join(' et ');
-  pousserLocalise(infos, 'Layer', parent,
-    ` : les enfants de ses ${axes} qui hug publient leur taille en `
-      + `pixels, exception propre aux grilles. Figma n'expose pas leur remplissage sous une `
-      + `piste qui hug et n'en rend que la taille résolue. Ces valeurs décrivent sa structure `
-      + `Figma sans devenir des tokens ; aucune modification du design n'est demandée.`,
-  );
   return {
     ...(width ? { width } : {}),
     ...(height ? { height } : {}),

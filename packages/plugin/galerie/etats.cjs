@@ -73,10 +73,10 @@ const AVERTISSEMENT_STROKE = // extractSlotTokens.ts, strokeAlignment
   "Layer « Border » : l’alignement du stroke est illisible. Le contrat ne dira pas s’il est inside, center ou outside. Vérifiez ce réglage dans Figma, puis réexportez.";
 const AVERTISSEMENT_AUTO_LAYOUT = // extractLayout.ts, warnMissingDirection
   "Layer « Button / Primary » : il n'utilise pas d'auto layout. Le contrat annonce malgré tout une disposition horizontale, la seule qu'il sache écrire par défaut, et le développeur placera donc ses layers autrement que dans Figma. Appliquez un auto layout à ce layer, puis réexportez.";
+const AVERTISSEMENT_TEXT_STYLE = // extractVariantTypography.ts — nomme un style, pas un node
+  "Text style « Body / Regular », line height : aucune variable Figma n'est reliée. Cette propriété typographique manquera au développeur. Reliez-la à une variable dans le text style, puis réexportez.";
 const AVERTISSEMENT_COMPOSE = // exportComponent.ts, dépendance non placée
   "Layer « Icon slot » : il porte le composant « Icon », qui a son propre contrat, mais le contrat n'a trouvé aucun emplacement où le situer. La dépendance ne sera ni décrite dans structure.children, ni déclarée dans composes : le développeur ne la rendra pas. Placez ce layer dans l'auto layout frame que le composant décrit, puis réexportez.";
-const NOTE_ROTATION = // extractLayout.ts, rotation publiée — une NOTE, aucun geste
-  "Layer « Chevron » : sa rotation est publiée, et le développeur la rendra. Figma espace toutefois ses voisins d'après sa boîte tournée, là où le rendu web garde sa boîte droite : la place qu'il prend dans « Row » peut différer de quelques pixels. Aucune modification du design n'est demandée.";
 
 const COMPOSANT = 'Button / Primary';
 const CHEMIN = 'src/components/Button/Button.contract.json';
@@ -129,8 +129,8 @@ const REGLAGES = {
 };
 
 /**
- * Un constat de l'export, avec la nature que `runExport` lui donne (U4.1), et
- * le node de son sujet quand il en a un (U4.3/U4.4).
+ * Un point à corriger relevé par l'export, avec le node de son sujet quand il
+ * en a un (U4.3/U4.4).
  *
  * L'absence de `nodeId` n'est pas un raccourci de la galerie : c'est l'état
  * réel d'un message qui nomme un text style, une variable, ou un calque agrégé
@@ -138,8 +138,8 @@ const REGLAGES = {
  * que c'est leur voisinage qui dit si l'absence de lien se lit comme une
  * réponse ou comme un oubli.
  */
-const diagnostic = (nature, texte, nodeId) => ({
-  message: { type: 'diagnostic', nature, texte, ...(nodeId ? { nodeId } : {}) },
+const diagnostic = (texte, nodeId) => ({
+  message: { type: 'diagnostic', texte, ...(nodeId ? { nodeId } : {}) },
 });
 
 /** Vingt avertissements réels : le volume que U1.3 (d) exige de regarder. */
@@ -148,7 +148,7 @@ function vingtAvertissements() {
   const lignes = [];
   for (let rang = 0; rang < 20; rang += 1) {
     const modele = modeles[rang % modeles.length].replace('« Border »', `« Border ${rang + 1} »`);
-    lignes.push(diagnostic('avertissement', modele));
+    lignes.push(diagnostic(modele));
   }
   return lignes;
 }
@@ -287,8 +287,7 @@ const ETATS = [
       SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      diagnostic('avertissement', AVERTISSEMENT_COMPOSE),
-      diagnostic('constat', NOTE_ROTATION),
+      diagnostic(AVERTISSEMENT_COMPOSE),
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
       verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 1 }),
     ],
@@ -306,10 +305,10 @@ const ETATS = [
       SELECTION_PRETE,
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      diagnostic('avertissement', AVERTISSEMENT_STROKE, '12:345'),
-      diagnostic('constat', NOTE_ROTATION),
+      diagnostic(AVERTISSEMENT_STROKE, '12:345'),
+      diagnostic(AVERTISSEMENT_TEXT_STYLE),
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 1 }),
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 2 }),
     ],
   },
   {

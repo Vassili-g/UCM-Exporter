@@ -464,7 +464,7 @@ test('extractStructure garde les dimensions au niveau haut sans axe de tailles',
   assert.equal('sizes' in structure, false);
 });
 
-test('extractStructure note la divergence de structure entre variants, sans rien réclamer', async () => {
+test('la structure propre à un variant vit dans sa vue exacte, sans un mot', async () => {
   const variant = (name: string, secondText: string) => {
     const titre = { type: 'TEXT', id: `${name}-title`, name: 'Titre', boundVariables: {} };
     const description = { type: 'TEXT', id: `${name}-body`, name: secondText, boundVariables: {} };
@@ -494,7 +494,7 @@ test('extractStructure note la divergence de structure entre variants, sans rien
   const reference = variant('Severity=Info', 'Description');
   const divergent = variant('Severity=Warning', 'Détail');
 
-  const { infos } = await extractStructure(
+  const { warnings, notices, variants } = await extractStructure(
     {
       axes: ['severity'],
       variants: [
@@ -511,14 +511,20 @@ test('extractStructure note la divergence de structure entre variants, sans rien
     }),
   );
 
-  assert.ok(infos.some(
-    (note) => note.includes('Structure différente')
-      && note.includes('Severity=Warning')
-      && note.includes('Severity=Info'),
-  ));
+  // La divergence est PUBLIÉE : chaque variant garde sa propre vue exacte, et
+  // c'est ce qui rend le constat inutile au designer (U4.7).
+  const nomsDeSlot = (vue: any): string[] =>
+    (vue.children ?? []).flatMap((enfant: any) => [enfant.figmaLayer ?? enfant.slot,
+      ...nomsDeSlot(enfant)]);
+  assert.ok(nomsDeSlot(variants[0].structure).includes('Description'));
+  assert.ok(nomsDeSlot(variants[1].structure).includes('Détail'));
+  // Et rien n'est dit : ni un avertissement, ni une notice.
+  for (const canal of [warnings, notices]) {
+    assert.deepEqual(canal.filter((message) => message.includes('Structure différente')), []);
+  }
 });
 
-test('extractStructure note la divergence d’auto layout entre variants, sans rien réclamer', async () => {
+test('l’auto layout propre à un variant vit dans sa vue exacte, sans un mot', async () => {
   const variant = (name: string, counterAxisAlignItems: string) => ({
     type: 'COMPONENT',
     id: name,
@@ -533,7 +539,7 @@ test('extractStructure note la divergence d’auto layout entre variants, sans r
   const reference = variant('Severity=Info', 'CENTER');
   const divergent = variant('Severity=Warning', 'MIN');
 
-  const { structure, infos } = await extractStructure(
+  const { structure, warnings, notices, variants } = await extractStructure(
     {
       axes: ['severity'],
       variants: [
@@ -547,15 +553,17 @@ test('extractStructure note la divergence d’auto layout entre variants, sans r
     resolverFor({}),
   );
 
+  // `structure` reste la projection de référence, et chaque vue exacte porte
+  // son propre flux : rien ne manque, donc rien ne se dit (U4.7).
   assert.equal(structure.alignItems, 'center');
-  assert.ok(infos.some(
-    (note) => note.includes('Auto layout différent')
-      && note.includes('Severity=Warning')
-      && note.includes('Severity=Info'),
-  ));
+  assert.equal(variants[0].structure.alignItems, 'center');
+  assert.equal(variants[1].structure.alignItems, 'flex-start');
+  for (const canal of [warnings, notices]) {
+    assert.deepEqual(canal.filter((message) => message.includes('Auto layout différent')), []);
+  }
 });
 
-test('extractStructure note le remplissage divergent d’un slot entre variants', async () => {
+test('le remplissage propre à un variant vit dans sa vue exacte, sans un mot', async () => {
   const variant = (name: string, layoutGrow: number) => {
     const label = {
       type: 'TEXT',
@@ -580,7 +588,7 @@ test('extractStructure note le remplissage divergent d’un slot entre variants'
   const reference = variant('Severity=Info', 1);
   const divergent = variant('Severity=Warning', 0);
 
-  const { structure, infos } = await extractStructure(
+  const { structure, warnings, notices, variants } = await extractStructure(
     {
       axes: ['severity'],
       variants: [
@@ -595,8 +603,10 @@ test('extractStructure note le remplissage divergent d’un slot entre variants'
   );
 
   assert.equal(structure.children[0].flexGrow, 1);
-  assert.ok(infos.some(
-    (note) => note.includes('Auto layout différent')
-      && note.includes('Severity=Warning'),
-  ));
+  // Le remplissage divergent vit dans la vue exacte du variant concerné.
+  assert.equal(variants[0].structure.children?.[0].flexGrow, 1);
+  assert.equal(variants[1].structure.children?.[0].flexGrow, undefined);
+  for (const canal of [warnings, notices]) {
+    assert.deepEqual(canal.filter((message) => message.includes('Auto layout différent')), []);
+  }
 });

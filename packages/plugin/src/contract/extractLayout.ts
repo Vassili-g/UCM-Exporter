@@ -177,38 +177,24 @@ function warnUndeclaredDrawing(
 }
 
 /**
- * La rotation d'un calque publié, et la seule chose qu'elle ne dise pas.
+ * La rotation d'un calque publié.
  *
  * Le contrat porte la rotation elle-même : le développeur l'écrit en
  * `transform: rotate(…)` et retrouve le dessin de Figma, imbrications
  * comprises. Reste un écart que CSS ne sait pas combler : dans un auto layout,
  * Figma espace ses enfants d'après la boîte TOURNÉE, là où `transform` ne
- * change aucune boîte de flux. Une notice le dit — le rendu est juste, la place
- * des voisins peut différer — et ne demande aucun geste : remettre le calque
- * droit lui retirerait sa rotation, qui est bien une décision de design.
+ * change aucune boîte de flux.
  *
- * Un calque hors du flux n'est pas concerné : il n'espace personne, et `inset`
- * le place sur le même centre que la rotation.
+ * **Cet écart ne se dit plus au designer (U4.7).** Il ne lui propose aucun
+ * geste — remettre le calque droit lui retirerait sa rotation, qui est bien une
+ * décision de design — et un résultat d'export ne porte que ce qui bloque, ce
+ * qui rend le contrat partiel, ou ce qui demande une correction dans Figma. La
+ * limite reste écrite là où elle a un lecteur : la spécification, pour qui
+ * consomme le contrat.
  */
-function applyRotation(
-  node: SceneNode,
-  parent: SceneNode | undefined,
-  infos: string[],
-): { rotation?: `${number}deg` } {
+function applyRotation(node: SceneNode): { rotation?: `${number}deg` } {
   const rotation = rotationDegrees(node);
-  if (!rotation) return {};
-  const dansUnFlux = parent !== undefined
-    && !isAbsolutePositioned(node)
-    && (isLinearAutoLayout(parent) || isGridAutoLayout(parent));
-  if (dansUnFlux) {
-    pousserLocalise(infos, 'Layer', node,
-      ` : sa rotation est publiée, et le développeur la rendra. Figma `
-        + `espace toutefois ses voisins d'après sa boîte tournée, là où le rendu web garde sa `
-        + `boîte droite : la place qu'il prend dans « ${parent.name} » peut différer de quelques `
-        + `pixels. Aucune modification du design n'est demandée.`,
-    );
-  }
-  return { rotation };
+  return rotation ? { rotation } : {};
 }
 
 /**
@@ -227,7 +213,6 @@ async function applySizing(
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
-  infos: string[],
   suppressedSizeNodeIds: ReadonlySet<string>,
 ): Promise<void> {
   const supprimee = suppressedSizeNodeIds.has(node.id);
@@ -240,7 +225,7 @@ async function applySizing(
   // La mesure d'une piste qui hug suit le sort de `size` : ce que `sizes`
   // republiera par taille n'est ni relevé ici, ni signalé.
   if (supprimee) return;
-  const structural = gridStructuralSize(node, parent, infos);
+  const structural = gridStructuralSize(node, parent);
   if (structural) entry.structuralSize = structural;
 }
 
@@ -263,7 +248,6 @@ async function applyContainerProperties(
   node: SceneNode,
   resolver: TokenResolver,
   warnings: string[],
-  infos: string[],
   childCount: number,
   dependencies: readonly ComposedDependency[],
 ): Promise<void> {
@@ -293,7 +277,7 @@ async function applyContainerProperties(
 
   entry.layout = direction;
   if (direction === 'grid') {
-    Object.assign(entry, gridTrackCounts(node), gridTrackSizes(node, warnings, infos));
+    Object.assign(entry, gridTrackCounts(node), gridTrackSizes(node, warnings));
     const [columnGap, rowGap] = await Promise.all([
       resolveField(node, BINDING_PATTERNS.gridColumnGap, 'column gap', resolver, warnings),
       resolveField(node, BINDING_PATTERNS.gridRowGap, 'row gap', resolver, warnings),
@@ -434,14 +418,13 @@ async function describeNode(
   // reste publiée, c'est une seconde condition que le composant doit lire.
   parentVisibilityProp?: string,
   suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
-  infos: string[] = warnings,
   path: readonly string[] = [slot],
   publishedNodePaths: PublishedNodePaths = new Map(),
 ): Promise<ChildStructure> {
   const entry: ChildStructure = {
     slot,
-    ...flexItemProperties(parent, child, warnings, infos),
-    ...applyRotation(child, parent, infos),
+    ...flexItemProperties(parent, child, warnings),
+    ...applyRotation(child),
   };
   publishedNodePaths.set(child.id, [...path]);
   if (slot !== child.name) entry.figmaLayer = child.name;
@@ -551,7 +534,7 @@ async function describeNode(
             'rendra le composant sans son cadre. Rendez visible le calque qui porte l’instance'}, ` +
         `puis réexportez.`,
     );
-    await applySizing(entry, parent, child, resolver, warnings, infos, suppressedSizeNodeIds);
+    await applySizing(entry, parent, child, resolver, warnings, suppressedSizeNodeIds);
     return entry;
   }
 
@@ -563,7 +546,6 @@ async function describeNode(
       child,
       resolver,
       warnings,
-      infos,
       assignments.length,
       dependencies,
     );
@@ -581,7 +563,6 @@ async function describeNode(
           depth + 1,
           entry.visibilityProp,
           suppressedSizeNodeIds,
-          infos,
           [...path, branchSlot],
           publishedNodePaths,
         )),
@@ -596,193 +577,8 @@ async function describeNode(
   // Relevé sur TOUS les slots dont ce contrat possède les dimensions, texte
   // compris : un calque de texte peut être figé comme une icône, et le taire
   // ferait dire à son absence « hug » alors que Figma impose une largeur.
-  await applySizing(entry, parent, child, resolver, warnings, infos, suppressedSizeNodeIds);
+  await applySizing(entry, parent, child, resolver, warnings, suppressedSizeNodeIds);
   return entry;
-}
-
-/**
- * Signature déterministe de l'arbre publié et de son flux.
- *
- * Elle couvre tout ce que le contrat publie, à toute profondeur — même règle
- * de descente que l'arbre, donc même autorité.
- *
- * Elle ne contient aucun token résolu : elle sert uniquement à comparer la
- * structure des variants avant de publier celle du variant de référence.
- * L'arbre descendant partout, elle descend partout aussi — sans quoi deux
- * variants dont seul un cadre intérieur diffère passeraient pour identiques.
- */
-export function structureSignature(
-  layoutNode: SceneNode,
-  iconNames: ReadonlySet<string> = new Set(),
-  composed: ComposedInstances = new Map(),
-): string {
-  const branchSignature = (
-    parent: SceneNode,
-    node: SceneNode,
-    slot: string,
-    depth: number,
-  ): unknown => {
-    const common = {
-      slot,
-      // Une icône reconnue change normalement de calque entre variants. Son
-      // slot stable et la vue exacte portent déjà son identité :
-      // comparer ici `circle-info` à `circle-check` inventerait une divergence
-      // structurelle alors que seul le dessin interchangeable change.
-      ...(iconNames.has(node.name) ? {} : { figmaLayer: node.name }),
-      composes: composed.get(node.id)?.component ?? null,
-      visibilityProp: node.componentPropertyReferences?.visible
-        ? normalizePropKey(node.componentPropertyReferences.visible)
-        : null,
-      ...flexItemProperties(parent, node),
-      // La rotation ne passe pas par le flux : elle se compare ici,
-      // explicitement, sans quoi deux variants dont seul un badge est incliné
-      // partageraient une vue qui n'en décrit qu'un.
-      rotation: rotationDegrees(node),
-    };
-    if (!publishesChildren(node, iconNames, composed, depth)) {
-      return { ...common, type: node.type === 'TEXT' ? 'text' : 'leaf' };
-    }
-    return {
-      ...common,
-      type: 'container',
-      layout: autoLayoutDirection(node),
-      ...gridTrackCounts(node),
-      ...gridTrackSizes(node),
-      ...flexContainerProperties(node),
-      dimensions: containerDimensionsSignature(node),
-      children: publishedSlots(node, iconNames, composed).map(({ child, slot: childSlot }) =>
-        branchSignature(node, child, childSlot, depth + 1)),
-    };
-  };
-
-  return JSON.stringify(
-    publishedSlots(layoutNode, iconNames, composed)
-      .map(({ child, slot }) => branchSignature(layoutNode, child, slot, 1)),
-  );
-}
-
-/**
- * Dimensions d'un conteneur, réduites aux variables citées.
- *
- * La comparaison porte sur l'IDENTIFIANT de la variable, jamais sur le nom
- * résolu : les signatures restent synchrones. Sans elle, un cadre imbriqué dont
- * le padding change d'un variant à l'autre publierait celui de la référence en
- * silence.
- */
-function containerDimensionsSignature(node: SceneNode): object {
-  const variable = (field: string) => firstVariableAlias(getBinding(node, field))?.id ?? null;
-  return {
-    gap: variable('itemSpacing'),
-    rowGap: variable('counterAxisSpacing'),
-    gridRowGap: variable('gridRowGap'),
-    gridColumnGap: variable('gridColumnGap'),
-    paddingLeft: variable('paddingLeft'),
-    paddingRight: variable('paddingRight'),
-    paddingTop: variable('paddingTop'),
-    paddingBottom: variable('paddingBottom'),
-    // Les quatre coins comptent autant que le rayon uniforme : depuis qu'ils
-    // peuvent citer quatre variables, un variant dont un seul coin change
-    // publierait sinon celui de la référence en silence.
-    radius: variable('cornerRadius'),
-    topLeftRadius: variable('topLeftRadius'),
-    topRightRadius: variable('topRightRadius'),
-    bottomRightRadius: variable('bottomRightRadius'),
-    bottomLeftRadius: variable('bottomLeftRadius'),
-  };
-}
-
-/**
- * Signature du flux direct du composant, indépendamment des tokens.
- *
- * `structure.children` ne décrit qu'un variant de référence : tout écart de
- * direction, d'alignement ou de remplissage sur un autre variant doit donc
- * avertir plutôt que d'être transcrit comme s'il était universel.
- */
-export function flexLayoutSignature(
-  layoutNode: SceneNode,
-  iconNames: ReadonlySet<string> = new Set(),
-  composed: ComposedInstances = new Map(),
-  // Le dimensionnement appartient au composant, pas au wrapper qui porte son
-  // auto-layout : c'est le variant qu'on instancie, et lui seul.
-  component: SceneNode = layoutNode,
-): string {
-  return JSON.stringify({
-    layout: autoLayoutDirection(layoutNode),
-    ...gridTrackCounts(layoutNode),
-    ...gridTrackSizes(layoutNode),
-    sizing: containerSizingSignature(component),
-    ...flexContainerProperties(layoutNode),
-    children: publishedSlots(layoutNode, iconNames, composed).map(({ child, slot }) => ({
-      slot,
-      ...flexItemProperties(layoutNode, child),
-      rotation: rotationDegrees(child),
-      ...slotSizeSignature(child, iconNames),
-    })),
-  });
-}
-
-/**
- * Dimensionnement du composant, sous la forme que la signature sait comparer.
- *
- * `structure.sizing` ne décrit que le variant de référence, et publie un token
- * quand un axe figé en cite un. La signature reste synchrone : elle compare
- * l'IDENTIFIANT de la variable, pas le nom résolu.
- */
-function containerSizingSignature(component: SceneNode): object {
-  const menu = containerSizing(component);
-  const fixed = fixedDimensions(component);
-  const axis = (field: 'width' | 'height') => ({
-    css: menu[field],
-    variable: fixed[field]
-      ? firstVariableAlias(getBinding(component, field))?.id ?? null
-      : null,
-  });
-  return {
-    width: axis('width'),
-    height: axis('height'),
-    bounds: sizeBoundsSignature(component),
-  };
-}
-
-/**
- * Bornes d'un node, sous la forme que la signature sait comparer.
- *
- * On compare la PRÉSENCE de la borne autant que la variable citée : un variant
- * qui retire son `max width` publierait sinon celui de la référence.
- */
-function sizeBoundsSignature(node: SceneNode): object {
-  const posees = sizeBoundFields(node);
-  return Object.fromEntries(
-    SIZE_BOUND_FIELDS.map((field) => [
-      field,
-      posees.includes(field)
-        ? firstVariableAlias(getBinding(node, field))?.id ?? 'sans-variable'
-        : null,
-    ]),
-  );
-}
-
-/**
- * Dimensions figées et bornes d'un slot, réduites aux liaisons que Figma porte.
- *
- * Les calques d'icônes sont exclus de la seule `size` : `icons.*.size` compare
- * déjà leur taille sur toute la matrice, et deux messages diraient la même
- * chose. Leurs bornes, elles, restent comparées.
- */
-function slotSizeSignature(node: SceneNode, iconNames: ReadonlySet<string>): object {
-  const bounds = { bounds: sizeBoundsSignature(node) };
-  if (isIconLayer(node, iconNames)) return bounds;
-
-  const fixed = fixedDimensions(node);
-  const boundVariableId = (field: string) =>
-    firstVariableAlias(getBinding(node, field))?.id ?? null;
-  return {
-    ...bounds,
-    size: {
-      width: fixed.width ? boundVariableId('width') : null,
-      height: fixed.height ? boundVariableId('height') : null,
-    },
-  };
 }
 
 /**
@@ -898,11 +694,6 @@ export async function extractLayout(
   placed: PlacedDependencies = new Map(),
   suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
   layoutElectionWarnings: string[] = warnings,
-  // Constats que l'export publie sans rien perdre et sans rien demander : le
-  // designer n'a aucun geste à faire. Par défaut ils rejoignent `warnings` ;
-  // `extractStructure` leur donne leur propre liste, que la pull request
-  // présente à part des points à corriger.
-  infos: string[] = warnings,
   publishedNodePaths: PublishedNodePaths = new Map(),
 ): Promise<LayoutStructure> {
   warnLayersOutsideLayoutNode(component, layoutNode, layoutElectionWarnings, composed);
@@ -952,7 +743,6 @@ export async function extractLayout(
         1,
         undefined,
         suppressedSizeNodeIds,
-        infos,
         [slot],
         publishedNodePaths,
       )),
@@ -961,11 +751,11 @@ export async function extractLayout(
   return {
     layout: layoutDirection(layoutNode),
     ...gridTrackCounts(layoutNode),
-    ...gridTrackSizes(layoutNode, warnings, infos),
+    ...gridTrackSizes(layoutNode, warnings),
     sizing,
     ...(bounds ? { bounds } : {}),
     ...flexContainerProperties(layoutNode, warnings),
-    ...applyRotation(layoutNode, undefined, infos),
+    ...applyRotation(layoutNode),
     ...(gap ? { gap } : {}),
     ...(rowGap ? { rowGap } : {}),
     ...(columnGap ? { columnGap } : {}),

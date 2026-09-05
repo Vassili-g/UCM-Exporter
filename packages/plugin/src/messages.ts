@@ -137,17 +137,20 @@ export type PluginMessage =
   /** Ce que l'export des tokens emporterait s'il partait maintenant (U2.4). */
   | { type: 'tokens'; resume: string }
   /**
-   * Un constat de l'export, avec sa NATURE (U4.1).
+   * Un point à corriger dans Figma, relevé par l'export.
    *
-   * La distinction qui structure tout le projet — un avertissement demande un
-   * geste, une note n'en demande aucun — n'était portée que par le caractère de
-   * puce d'une ligne de journal : `⚠︎` contre `•`, en 11 px monospace, dans une
-   * boîte de 96 px qui défile vers sa fin. Elle voyage maintenant dans le
-   * message, et c'est le compte rendu qui la rend visible.
+   * **Le champ `nature` a disparu avec ce qu'il distinguait (U4.7).** Le canal
+   * portait aussi des « constats » : ce que le contrat publie sous une forme
+   * inhabituelle mais complète — une piste de grille en pixels, un calque hors
+   * du flux, une rotation, une structure propre à un variant. Ils ne sont plus
+   * émis nulle part, et un champ qui ne sépare plus rien vaut moins que son
+   * absence : il laisse croire à un second cas qui n'existe pas.
+   *
+   * Ce qui arrive ici demande donc toujours un geste dans Figma. Ce qui
+   * BLOQUE, lui, ne passe pas par ce message : c'est le verdict de rang 1.
    */
   | {
       type: 'diagnostic';
-      nature: 'avertissement' | 'constat';
       texte: string;
       /**
        * Le node du SUJET, quand le sujet en désigne un (U4.3).

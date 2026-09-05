@@ -71,34 +71,29 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
  * `FIXED`) et sa valeur. Les deux premiers sont des comportements, que CSS
  * écrit `1fr` et `fit-content(100%)`. Exception limitée à cette structure de
  * grille, une piste FIXED est publiée en pixels : ce n'est pas un token, et la
- * valeur figure bien dans le contrat. Rien ne manque et rien n'est à corriger,
- * donc le message part dans `infos` — le canal des constats sans action — et
- * non dans `warnings`, qui n'annonce que ce que l'export a dû laisser tomber.
+ * valeur figure bien dans le contrat.
  *
- * La lecture est défensive : un runtime qui n'expose pas ces champs ne publie
- * rien et n'avertit de rien. Une propriété absente n'est pas une valeur.
+ * **Cette exception ne se dit plus au designer (U4.7).** Elle ne perd rien — la
+ * valeur se lit dans `columnSizes` / `rowSizes` — et ne propose aucun geste :
+ * une transformation entièrement prise en charge n'a rien à faire dans un
+ * résultat d'export. Sa règle et ses bornes vivent dans la spécification, et
+ * les tests du format en répondent.
  *
- * Le message nomme la GRILLE et son axe, jamais l'index des pistes. Cette
- * fonction est appelée une fois par variant, et un même calque de grille n'a pas
- * les mêmes pistes FIXED partout : citer les index produisait deux constats qui
- * se contredisaient sur le même nom de calque — « la ligne 1 » ici, « les lignes
- * 1, 2, 3 » là — sans que rien ne dise de quel variant chacun parlait. Le
- * dédoublonnage de l'export les ramène désormais à un seul, et les valeurs
- * elles-mêmes se lisent dans `rowSizes` / `columnSizes`. C'est le choix déjà
- * fait par `gridStructuralSize`, qui nomme la grille plutôt que chacun de ses
- * enfants.
+ * La lecture reste défensive : un runtime qui n'expose pas ces champs ne publie
+ * rien et n'avertit de rien. Une propriété absente n'est pas une valeur. Un
+ * réglage ILLISIBLE, lui, reste un avertissement : le contrat publie « auto »
+ * à la place d'une taille qu'il n'a pas su lire, et le designer a bien quelque
+ * chose à vérifier dans Figma.
  */
 export function gridTrackSizes(
   node: SceneNode,
   warnings: string[] = [],
-  infos: string[] = warnings,
 ): { columnSizes?: GridTrack[]; rowSizes?: GridTrack[] } {
   if (!isGridAutoLayout(node)) return {};
   const values = asPropertyBag(node);
   const axe = (field: 'gridColumnSizes' | 'gridRowSizes', nom: string): GridTrack[] | undefined => {
     const tracks = values[field];
     if (!Array.isArray(tracks)) return undefined;
-    let fixed = false;
     const sizes = (tracks as Array<{ type?: unknown; value?: unknown }>).map((track, index): GridTrack => {
       if (!track || typeof track !== 'object') {
         pousserLocalise(warnings, 'Layer', node,
@@ -112,7 +107,6 @@ export function gridTrackSizes(
       }
       if (track.type === 'HUG') return 'fit-content(100%)';
       if (track.type === 'FIXED' && typeof track.value === 'number' && Number.isFinite(track.value)) {
-        fixed = true;
         return `${track.value}px`;
       }
       pousserLocalise(warnings, 'Layer', node,
@@ -121,12 +115,6 @@ export function gridTrackSizes(
           + `réglage dans Figma, puis réexportez.`);
       return 'auto';
     });
-    if (fixed) {
-      pousserLocalise(infos, 'Layer', node,
-        ` : ses ${nom}s de taille fixe sont publiées en pixels, `
-          + `exception propre aux pistes FIXED d'une grille. Ces valeurs décrivent sa structure `
-          + `Figma sans devenir des tokens ; aucune modification du design n'est demandée.`);
-    }
     return sizes;
   };
 
@@ -556,38 +544,24 @@ export function flexContainerProperties(
 /**
  * Placement d'un enfant dans le flux de son parent. `INHERIT` et `0` sont les
  * valeurs Figma neutres : elles restent absentes, le parent porte déjà la
- * règle commune. Un enfant absolu sort du flux et demanderait des coordonnées
- * que le contrat ne représente pas encore ; il est donc signalé, jamais forcé
- * dans Flex.
+ * règle commune. Un enfant absolu sort du flux : le contrat le place par ses
+ * contraintes et son `inset`, jamais en le forçant dans Flex.
  */
 export function flexItemProperties(
   parent: SceneNode,
   child: SceneNode,
   warnings: string[] = [],
-  // La place d'un calque absolu est une NOTICE, pas un avertissement : elle
-  // constate un calcul et ne demande aucun geste. Les deux canaux restent donc
-  // distincts jusqu'ici, faute de quoi le corps de la pull request se remplirait
-  // de constats que personne ne peut corriger.
-  infos: string[] = [],
 ): FlexItemProperties & GridPlacement {
   // Testé avant l'auto layout linéaire : une grille aussi porte des enfants en
   // position absolue. Le calque sort du flux et le contrat le place : ses
   // contraintes disent à quels bords il s'accroche, `inset` à quelle distance.
   // Un offset Figma ne se relie à aucune variable, et le designer ne PEUT pas
-  // le rendre contractuel — lui réclamer un geste impossible n'était pas un
-  // avertissement. Le moteur calcule donc la distance, comme il calcule les
-  // pixels d'une piste de grille, sous une notice qui ne demande rien.
+  // le rendre contractuel. Le moteur calcule donc la distance, comme il calcule
+  // les pixels d'une piste de grille, et se tait : rien ne manque au contrat, et
+  // un export ne rapporte que ce qui demande une décision (U4.7).
   if (isAbsolutePositioned(child)) {
     const constraints = layoutConstraints(child);
     const inset = absoluteInset(parent, child);
-    if (inset) {
-      pousserLocalise(infos, 'Layer', child,
-        ` : il est en position « Absolute » dans « ${parent.name} ». Sa `
-          + `distance aux bords auxquels il s'accroche est publiée en pixels, exception propre `
-          + `aux layers hors du flux — Figma ne permet pas de relier une position à une `
-          + `variable. Ces valeurs décrivent sa place sans devenir des tokens ; aucune `
-          + `modification du design n'est demandée.`);
-    }
     return {
       position: 'absolute',
       ...(constraints ? { constraints } : {}),

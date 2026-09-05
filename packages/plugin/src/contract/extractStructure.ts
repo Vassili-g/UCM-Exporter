@@ -11,9 +11,7 @@ import { extractIconLayers } from './extractIconLayers';
 import type { IconLayerSummary } from './extractIconLayers';
 import {
   extractLayout,
-  flexLayoutSignature,
   placedDependenciesFromTree,
-  structureSignature,
   warnLayersOutsideLayoutNode,
 } from './extractLayout';
 import type { PlacedDependencies } from './extractLayout';
@@ -23,7 +21,6 @@ import { extractVariantTokens } from './extractVariantTokens';
 import type { VariantPaintNodeIds } from './extractVariantTokens';
 import { extractVariantTypography, textSlots } from './extractVariantTypography';
 import { electSizeVariantLayoutNodes, electVariantLayoutNodes } from './layoutNodes';
-import { pousserNote, sujet } from './localisation';
 import type { DiscoveredRoles } from './semantics';
 import type {
   ComposedDependency,
@@ -128,12 +125,6 @@ export async function extractStructure(
   warnings: string[];
   /** Compatibilité historique ou documentation, sans perte dans la vue exacte. */
   notices: string[];
-  /**
-   * Constats sans perte ET sans geste à faire dans Figma. Ils décrivent ce que
-   * le contrat publie, jamais ce qu'il a dû laisser tomber : la pull request
-   * les range hors de la liste des points à corriger.
-   */
-  infos: string[];
   /** Une structure portable par combinaison réellement présente. */
   variants: ExtractedContractVariant[];
   /**
@@ -155,7 +146,6 @@ export async function extractStructure(
 }> {
   const warnings = [...matrixWarnings];
   const notices: string[] = [];
-  const infos: string[] = [];
   const placedComposes: PlacedDependencies = new Map();
   // Les règles `@icons` sont relevées avant toute extraction : c'est leur
   // inventaire qui distingue l'encre d'une icône de la surface d'un cadre.
@@ -207,64 +197,6 @@ export async function extractStructure(
   );
   const targetedLayers = new Set(iconLayers.map((layer) => layer.figmaLayer));
 
-  // `structure.children` décrit le variant de référence. Une récursion
-  // textuelle différente ailleurs dans la matrice ne peut donc pas être
-  // fusionnée silencieusement dans cet arbre unique.
-  if (referenceLayout) {
-    const referenceSignature = structureSignature(
-      referenceLayout.layoutNode,
-      targetedLayers,
-      composed,
-    );
-    const divergentVariants = matrix.variants.filter(({ component }) =>
-      structureSignature(layoutNodeOf(component), targetedLayers, composed)
-        !== referenceSignature);
-    if (divergentVariants.length > 0) {
-      const examples = divergentVariants
-        .slice(0, 3)
-        .map(({ component }) => `« ${component.name} »`)
-        .join(', ');
-      const remaining = divergentVariants.length - 3;
-      // Le constat porte sur la matrice, mais il NOMME un variant exemple : le
-      // clic mène à celui-là, qui est exactement ce que la phrase montre du
-      // doigt. Sans cette note, le message parlerait d'un calque du composant
-      // sans savoir lequel — ce que la loi de U4.3 refuse.
-      pousserNote(infos, `Structure différente sur ${divergentVariants.length} `
-        + `variant${divergentVariants.length > 1 ? 's' : ''}, ex. ${examples}` +
-          `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
-          `référence « ${referenceLayout.component.name} ». La vue exacte référencée par ` +
-          `chaque entrée de « variants » conserve sa propre structure ; seule la projection ` +
-          `« structure » reste celle de la référence.`,
-        sujet('Variant', divergentVariants[0].component),
-      );
-    }
-
-    const referenceFlexSignature = flexLayoutSignature(
-      referenceLayout.layoutNode,
-      targetedLayers,
-      composed,
-      referenceLayout.component,
-    );
-    const flexDivergentVariants = matrix.variants.filter(({ component }) =>
-      flexLayoutSignature(layoutNodeOf(component), targetedLayers, composed, component)
-        !== referenceFlexSignature);
-    if (flexDivergentVariants.length > 0) {
-      const examples = flexDivergentVariants
-        .slice(0, 3)
-        .map(({ component }) => `« ${component.name} »`)
-        .join(', ');
-      const remaining = flexDivergentVariants.length - 3;
-      pousserNote(infos, `Auto layout différent sur ${flexDivergentVariants.length} `
-        + `variant${flexDivergentVariants.length > 1 ? 's' : ''}, ex. ${examples}` +
-          `${remaining > 0 ? ` (+${remaining})` : ''} : l'export décrit le variant de ` +
-          `référence « ${referenceLayout.component.name} ». Les vues exactes de « variants » ` +
-          `conservent leurs flux respectifs ; seule la projection « structure » reste celle ` +
-          `de la référence.`,
-        sujet('Variant', flexDivergentVariants[0].component),
-      );
-    }
-  }
-
   // Un calque posé hors du node élu apporte ses couleurs à `variantTokens` dans
   // TOUS les variants, pas seulement dans la référence : le relevé des couleurs
   // couvre la matrice entière. `extractLayout` ne voit que la référence, on
@@ -293,7 +225,6 @@ export async function extractStructure(
       placedComposes,
       new Set(),
       notices,
-      infos,
     )
     // Sans composant à interroger, le contrat retient le comportement par
     // défaut plutôt que d'inventer un hug que rien ne montre.
@@ -334,7 +265,6 @@ export async function extractStructure(
       exactPlaced,
       aUnAxeDeTailles ? new Set([layoutNodeOf(entry.component).id]) : new Set(),
       warnings,
-      infos,
       exactPaths,
     );
     exactLayouts.push({ entry, structure: exactStructure, placed: exactPlaced, paths: exactPaths });
@@ -439,7 +369,6 @@ export async function extractStructure(
     placedComposes,
     warnings,
     notices,
-    infos,
     variants,
     exactPathsByVariant,
     targetedLayers,
