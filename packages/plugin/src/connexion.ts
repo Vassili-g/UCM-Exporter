@@ -133,6 +133,29 @@ export function etatDeConnexion(
       };
   }
 }
+/**
+ * Pourquoi une PUBLICATION a échoué, et le geste (U5.3).
+ *
+ * Même perte que pour la connexion, à l'autre bout : un échec devenait « Échec
+ * GitHub » suivi du message brut, quel que soit le statut. Un 403 de droits
+ * manquants, un 409 de conflit et un 422 de branche existante ne se corrigent
+ * pas du même geste.
+ *
+ * Deux causes seulement sont propres à la publication ; les autres réemploient
+ * le vocabulaire de la connexion, parce que ce sont les mêmes faits vus au même
+ * endroit. Les recopier ici en ferait un second domicile, promis à diverger.
+ */
+export function gesteApresEchecDePublication(statut: number | null): string {
+  if (statut === 409) {
+    return 'Le repository a changé pendant la publication. Relancez l’analyse, puis republiez.';
+  }
+  if (statut === 422) {
+    return 'GitHub a refusé la branche ou la pull request. Une branche du même nom existe '
+      + 'peut-être déjà. Réessayez dans un moment.';
+  }
+  return etatDeConnexion(causeDepuisStatut(statut), { statut }).geste ?? '';
+}
+
 /** Ce que le plugin sait de l'endroit où le repository range ses exports. */
 export type LayoutConnu = {
   components: string | null;

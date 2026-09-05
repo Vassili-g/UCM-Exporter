@@ -7,14 +7,14 @@ import { extractRules, hasUsableRules } from './contract/extractRules';
 import handleExportComponent from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { resumerTokensDuFichier } from './tokens/exportTokens';
-import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
+import { loadGithubConfig, loadPublicSettings, saveSettings, supprimerPat } from './config';
 import type { GithubConfig, SettingsInput } from './config';
-import { publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './github';
+import { GithubApiError, publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './github';
 import type { ArtifactKind, RepositoryLayout } from './github';
 import { verdictDePrevol } from './prevol';
 import type { CodeVerdict } from './prevol';
 import type { Annonce, PluginMessage, UiRequest } from './messages';
-import { etatDeConnexion, etatDuDepot } from './connexion';
+import { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication } from './connexion';
 import { etatDeCible, detailDeCible } from './cible';
 import type { CauseConnexion } from './connexion';
 
@@ -355,6 +355,7 @@ async function publier(): Promise<void> {
     figma.notify(`${analyse.succes}. Pull request créée.`);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur GitHub inconnue.';
+    const statut = error instanceof GithubApiError ? error.status : null;
     // La réponse de GitHub est un fait de publication ; le verdict dit ce que le
     // designer a entre les mains. L'analyse est GARDÉE : la publication se
     // réessaie sans repasser par Figma (U3.3).
@@ -364,7 +365,7 @@ async function publier(): Promise<void> {
     versUi({
       type: 'verdict',
       code: 'a-publier',
-      texte: `Échec de la publication. ${message}`,
+      texte: `Échec de la publication. ${gesteApresEchecDePublication(statut)}`,
       action: 'Réessayer la publication',
       etat: 'error',
     });
@@ -420,6 +421,14 @@ figma.ui.onmessage = async (message: UiRequest) => {
     const taille = tailleValide({ largeur: message.largeur, hauteur: message.hauteur });
     figma.ui.resize(taille.largeur, taille.hauteur);
     await rangerTaille(taille);
+    return;
+  }
+
+  if (message.type === 'supprimer-token') {
+    await supprimerPat();
+    // La configuration est rechargée : sans jeton elle n'est plus valide, et la
+    // pastille le dit du même geste.
+    await refreshConfiguration();
     return;
   }
 

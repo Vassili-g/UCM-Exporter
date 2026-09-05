@@ -43,7 +43,15 @@ export type UiRequest =
    * n'écrit rien ; la publication consomme ce qu'elle a produit, et
    * `annuler` prend effet entre deux étapes.
    */
-  | { type: 'analyser-composant' | 'analyser-tokens' | 'publier' | 'annuler' | 'ui-ready' }
+  | {
+      type:
+        | 'analyser-composant'
+        | 'analyser-tokens'
+        | 'publier'
+        | 'annuler'
+        | 'supprimer-token'
+        | 'ui-ready';
+    }
   | { type: 'save-settings'; settings: SettingsInput }
   | { type: 'open-external'; url: string }
   /**

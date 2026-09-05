@@ -124,6 +124,33 @@ export function createConfigurationPage(onSave) {
   const fields = { repoUrl, baseBranch, componentsPath, tokensPath, githubPat };
 
   /*
+   * Retirer le jeton du poste (U5.4). La confirmation est un second clic sur le
+   * même bouton, et non une boîte de dialogue : la sandbox n'en offre pas, et
+   * un `confirm()` bloquerait l'iframe. Le libellé de confirmation dit ce qui
+   * disparaît, parce que c'est irréversible.
+   */
+  const supprimerToken = createButton({
+    label: 'Supprimer le token enregistré',
+    variant: 'secondary',
+    onClick: () => {
+      if (supprimerToken.dataset.confirme !== 'oui') {
+        supprimerToken.dataset.confirme = 'oui';
+        supprimerToken.setLabel('Confirmer la suppression du token');
+        return;
+      }
+      reinitialiserSuppression();
+      parent.postMessage({ pluginMessage: { type: 'supprimer-token' } }, '*');
+    },
+  });
+  supprimerToken.hidden = true;
+
+  function reinitialiserSuppression() {
+    supprimerToken.dataset.confirme = 'non';
+    supprimerToken.setLabel('Supprimer le token enregistré');
+  }
+  reinitialiserSuppression();
+
+  /*
    * L'état de la configuration se lit EN HAUT, sous la pastille (U5.2).
    *
    * Il vivait sous le bouton « Enregistrer », c'est-à-dire hors de l'écran :
@@ -183,6 +210,7 @@ export function createConfigurationPage(onSave) {
     componentsPath.wrapper,
     tokensPath.wrapper,
     githubPat.wrapper,
+    supprimerToken,
     saveButton,
   );
 
@@ -206,6 +234,9 @@ export function createConfigurationPage(onSave) {
       componentsPath.input.value = settings.componentsPath ?? '';
       tokensPath.input.value = settings.tokensPath ?? '';
       hasStoredPat = Boolean(settings.hasPat);
+      // Le bouton n'existe que s'il y a quelque chose à supprimer.
+      supprimerToken.hidden = !hasStoredPat;
+      reinitialiserSuppression();
       githubPat.input.value = '';
       githubPat.input.placeholder = hasStoredPat
         ? 'Token enregistré. Laissez ce champ vide pour le conserver.'

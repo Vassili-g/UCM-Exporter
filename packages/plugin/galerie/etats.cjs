@@ -39,7 +39,7 @@ function chargerSandbox(nom) {
   return require(compile);
 }
 
-const { etatDeConnexion, etatDuDepot } = chargerSandbox('connexion');
+const { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication } = chargerSandbox('connexion');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
 const { resumeDesTokens } = chargerSandbox('tokens/exportTokens');
 const { verdictDePrevol } = chargerSandbox('prevol');
@@ -394,7 +394,7 @@ const ETATS = [
         message: {
           type: 'verdict',
           code: 'a-publier',
-          texte: 'Échec de la publication. GitHub a répondu 403 sur POST /repos/mon-org/design-system-v3/git/refs.',
+          texte: `Échec de la publication. ${gesteApresEchecDePublication(403)}`,
           action: 'Réessayer la publication',
           etat: 'error',
         },
@@ -556,7 +556,7 @@ const ETATS = [
     titre: 'Configuration enregistrée, token conservé',
     quand: 'Retour dans la configuration après un enregistrement réussi.',
     regarder:
-      "Le placeholder du token porte une règle de comportement, et aucun geste ne retire le token du poste (U5.4).",
+      "Le placeholder du token porte une règle de comportement, et « Supprimer le token enregistré » n'apparaît que s'il y a quelque chose à supprimer (U5.4).",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
