@@ -2371,7 +2371,7 @@ précis, avant d'écrire une ligne ; si elle contredit l'énoncé, c'est l'énon
 a tort.** La revue s'est faite pendant qu'une autre session modifiait le dépôt :
 le worktree bougeait sous la mesure.
 
-- [ ] **R1 — ⚠ La `0.1.9` publiée n'est pas la `0.1.9` de ce dépôt. À traiter en
+- [X] **R1 — ⚠ La `0.1.9` publiée n'est pas la `0.1.9` de ce dépôt. À traiter en
       premier : c'est en ligne.** `verdict-bilan.mjs` a changé après le dernier
       relèvement de numéro sans que le numéro bouge, et le CLI publié épingle
       cette 0.1.9 : un repo qui installe `ucm check` aujourd'hui recevrait le
@@ -2404,8 +2404,28 @@ le worktree bougeait sous la mesure.
       n'y en a pas eu : c'est le silence qui a menti, pas la publication. Les
       deux workflows prennent `fetch-depth: 0` du même coup, sans quoi le clone
       superficiel de `actions/checkout` rendrait ce test vert sans rien mesurer.
-      **Reste le geste, et il n'est pas dans ce commit :** publier
-      `@ucm-kit/core@0.1.10`, puis `@ucm-kit/cli@0.1.5`, dans cet ordre.
+      **Publiés le 5 septembre 2026**, le noyau puis le CLI, et vérifiés
+      depuis dehors comme la leçon des étapes 11 à 13 l'exige : dans un dossier
+      vide, hors du monorepo, `npx @ucm-kit/cli@0.1.5 init` puis `check` sur un
+      contrat 11.0 écrivent « Il vient d'une version que ce repository ne lit
+      plus : réexportez-le depuis Figma » — la phrase que le rapport dément
+      trois lignes plus bas est partie du registre, pas seulement du dépôt.
+      *Deux fois le garde-fou a crié à tort, et les deux fois il avait tort pour
+      une raison qui valait d'être écrite.* La première : `npm ci` pose le bit
+      exécutable sur le `bin` du CLI, que Git suit en `100644`, donc `git diff`
+      voyait un fichier modifié en CI et rien sur le poste Windows où
+      `core.fileMode` vaut déjà `false`. Le mode ne part pas au registre — npm
+      le pose à l'empaquetage —, seul le contenu se compare désormais. La
+      seconde : l'épreuve du registre attendait que `npm view` réponde, puis
+      lançait `npx`, qui a rendu ETARGET sur la MÊME version dans la même
+      seconde — l'API du registre et le packument servi par le CDN ne disent pas
+      la même chose au même moment. La patience enveloppe maintenant l'épreuve
+      elle-même, avec `--prefer-online` ; une sonde posée à côté de ce qu'on
+      mesure ne mesure pas ce qu'on croit. Aucun numéro n'a été brûlé dans les
+      deux cas : le run s'est arrêté avant `npm publish` la première fois, et
+      après une publication réussie la seconde.
+      **Ce que R1 laisse ouvert, et c'est R2 :** le Playground épingle toujours
+      `0.1.5`, cinq versions derrière ce que le registre sert maintenant.
 
 - [ ] **R2 — Le Playground épingle une version que ce dépôt a dépassée.** Le seul
       consommateur réel du kit ne voit ni la Phase 4 ni la correction de la
@@ -2596,6 +2616,11 @@ publier ferait épingler au CLI une version que le registre rend 404 — la pann
 exacte que les étapes 11 à 13 ont déjà payée deux fois. La montée et la
 publication vont ensemble, et dans cet ordre : elles restent à faire, et le
 Playground ne verra pas cette correction avant.
+
+**Fait le 5 septembre 2026, par R1** — `0.1.10` et `@ucm-kit/cli@0.1.5` sont sur
+le registre, et un garde-fou empêche désormais un numéro de mentir sur son
+contenu (`tests/versionSuitLeContenu.test.mjs`). Le Playground, lui, ne l'a
+toujours pas vue : c'est R2.
 
 15. **La Phase 8, en commençant par T8.1.** *Ajouté le 5 septembre 2026.* T4.6
     est arrivée au bout de ce qu'elle pouvait faire seule : U4.3, U4.4 et U4.5
