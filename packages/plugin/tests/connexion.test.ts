@@ -9,7 +9,12 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { causeDepuisStatut, etatDeConnexion, etatDuDepot } from '../src/connexion';
+import {
+  causeDepuisStatut,
+  etatDeConnexion,
+  etatDuDepot,
+  gesteApresEchecDePublication,
+} from '../src/connexion';
 import type { CauseConnexion } from '../src/connexion';
 
 const TOUTES: CauseConnexion[] = [
@@ -139,4 +144,30 @@ test('la destination nomme le repository, sa branche et les deux chemins', () =>
   assert.equal(ligne, 'mon-org/design-system-v3 · main');
   assert.match(chemins ?? '', /src\/components/);
   assert.match(chemins ?? '', /src\/tokens\/tokens\.json/);
+});
+
+/**
+ * U5.3. Un 403 de droits manquants, un 409 de conflit et un 422 de branche
+ * existante ne se corrigent pas du même geste, et arrivaient tous sous « Échec
+ * GitHub » suivi du message brut.
+ */
+test('un échec de publication nomme un geste, et deux statuts n’en partagent pas un', () => {
+  const statuts = [401, 403, 404, 409, 422, 500, null];
+  const gestes = statuts.map((statut) => gesteApresEchecDePublication(statut));
+  for (const [rang, geste] of gestes.entries()) {
+    assert.notEqual(geste, '', `${statuts[rang]} n'a pas de geste`);
+  }
+  assert.equal(new Set(gestes).size, statuts.length, 'deux statuts partagent leur geste');
+});
+
+test('les causes communes gardent le vocabulaire de la connexion', () => {
+  // Les recopier ferait un second domicile, promis à diverger.
+  assert.equal(gesteApresEchecDePublication(401), etatDeConnexion('jeton-refuse').geste);
+  assert.equal(gesteApresEchecDePublication(403), etatDeConnexion('acces-refuse').geste);
+  assert.equal(gesteApresEchecDePublication(null), etatDeConnexion('reseau').geste);
+});
+
+test('les deux causes propres à la publication disent quoi relancer', () => {
+  assert.match(gesteApresEchecDePublication(409), /Relancez l’analyse/);
+  assert.match(gesteApresEchecDePublication(422), /branche/);
 });

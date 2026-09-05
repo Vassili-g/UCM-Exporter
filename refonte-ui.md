@@ -869,21 +869,40 @@ reste ouverte.
       sait pas quoi faire. Le résultat d'un enregistrement s'écrit au même
       endroit : deux emplacements pour un même fait en feraient deux faits.
 
-- [ ] **U5.3 — Dire pourquoi la publication a échoué.** Même perte, l'autre
+- [X] **U5.3 — Dire pourquoi la publication a échoué.** Même perte, l'autre
       bout : un échec de publication devient « Échec GitHub » suivi du message
       brut, quel que soit le statut. Un 403 de droits manquants, un 409 de
       conflit et un 422 de branche existante ne se corrigent pas du même geste.
       Geste : traduire le `status` en cause et en geste. Dépend de U5.2, qui pose
       le vocabulaire.
+      *Faite le 5 septembre 2026, et le vocabulaire a été RÉEMPLOYÉ, pas
+      recopié.* Deux causes seulement sont propres à la publication — le conflit
+      et la branche refusée ; les autres sont les mêmes faits que ceux de la
+      connexion, vus au même endroit, et les réécrire en aurait fait un second
+      domicile promis à diverger. Un test refuse que deux statuts partagent leur
+      geste, et que l'un d'eux n'en nomme aucun.
 
-- [ ] **U5.4 — Pouvoir retirer le token.** Un champ vide signifie « conserver le
+- [X] **U5.4 — Pouvoir retirer le token.** Un champ vide signifie « conserver le
       PAT enregistré » et `saveSettings` n'écrit alors rien : aucun geste ne
       retire un token du poste — ni rotation, ni changement de dépôt, ni départ.
       Geste : « Supprimer le token enregistré », avec confirmation.
+      *Faite le 5 septembre 2026.* La confirmation est un second clic sur le même
+      bouton : la sandbox n'offre pas de boîte de dialogue, et un `confirm()` y
+      bloquerait l'iframe. Le bouton n'apparaît que s'il y a quelque chose à
+      supprimer, et le libellé de confirmation dit ce qui disparaît, parce que
+      c'est irréversible.
 
-- [ ] **U5.5 — Tester la connexion sans enregistrer.** « Enregistrer » fait
+- [X] **U5.5 — Tester la connexion sans enregistrer.** « Enregistrer » fait
       aujourd'hui les deux. À ne faire que si U5.1 et U5.2 ne suffisent pas :
       deux boutons pour un formulaire de cinq champs se justifient mal.
+      **Close sans être faite, le 5 septembre 2026 : la condition n'est pas
+      remplie.** U5.2 nomme la cause d'un échec et le geste qui le corrige, U5.1
+      dit qui gouverne les chemins avant la saisie ; le formulaire répond donc
+      déjà aux deux questions qu'un bouton « Tester » aurait servi à poser. Ce
+      qu'il reste — enregistrer une configuration fausse — coûte un clic sur
+      « Enregistrer », et la cause s'affiche en tête de page. Un second bouton
+      demanderait au designer de choisir entre deux gestes dont l'un est
+      toujours le bon.
 
 ---
 
@@ -1027,6 +1046,8 @@ finitions de CI, orthogonales à l'interface.
 9. **U4.5** — après T8.1 —, puis **U4.3**, puis **U4.4** : la localisation dans
    cet ordre, l'invariant tranché, la loi écrite, le clic ensuite.
 10. **U5.3**, **U5.4**, puis **U6** si les conditions sont réunies.
+    **U5.3 et U5.4 faites le 5 septembre 2026**, et U5.5 close sans être faite :
+    sa condition d'ouverture n'est pas remplie.
 
 Chaque phase qui ajoute un état repasse le protocole de U1.3 et complète
 l'inventaire de U1.1. Une phase livrée sans ses états regardés n'est pas

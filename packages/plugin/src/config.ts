@@ -146,6 +146,17 @@ export function validateSettings(input: SettingsInput, storedPat = ''): Settings
   };
 }
 
+/**
+ * Retire le PAT du poste (U5.4).
+ *
+ * Aucun geste ne le faisait : ni rotation, ni changement de repository, ni
+ * départ. Un champ vide signifie « conserver le jeton enregistré », si bien que
+ * le formulaire ne pouvait que le remplacer, jamais l'effacer.
+ */
+export async function supprimerPat(): Promise<void> {
+  await figma.clientStorage.deleteAsync(STORAGE_KEYS.githubPat);
+}
+
 /** Charge les cinq clés locales et ne renvoie jamais le PAT à l'UI. */
 export async function loadPublicSettings(): Promise<PublicSettings> {
   const [repoUrl, baseBranch, componentsPath, tokensPath, githubPat] = await Promise.all([
