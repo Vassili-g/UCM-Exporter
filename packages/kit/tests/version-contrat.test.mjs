@@ -20,21 +20,24 @@ test("la version du repository est compatible avec elle-même", () => {
   assert.equal(verdictDeVersion(VERSION_CONTRAT_MAXIMALE), "ok");
 });
 
-test("la plage est refermée sur la 12.0, seule version lue", () => {
-  // La migration 11.0 → 12.0 est finie : les quatre composants du corpus ont
-  // vu la 12.0. Une plage ouverte est un choix explicite et TEMPORAIRE, jamais
-  // un état par défaut — la laisser survivre à sa migration ferait rentrer en
-  // silence un schéma que plus personne n'adapte. Les deux bornes sont donc
-  // égales, et la 11.0 est redevenue un contrat à réexporter.
-  assert.equal(VERSION_CONTRAT_MINIMALE, "12.0");
+test("la fenêtre porte la version courante ET la précédente (D8)", () => {
+  // T7.6 tranche l'écart que T7.5 avait mesuré : avec une seule version, il
+  // n'existe aucun recouvrement, et le dépôt d'un consommateur passe au rouge à
+  // l'instant où le kit monte. La fenêtre est le temps du réexport.
+  //
+  // Elle reste un choix explicite : la borne basse décrit la version
+  // PRÉCÉDENTE réelle, et se referme d'un cran à chaque montée. La laisser
+  // vieillir ferait rentrer en silence un schéma que plus personne n'adapte.
+  assert.equal(VERSION_CONTRAT_MINIMALE, "11.0");
   assert.equal(VERSION_CONTRAT_MAXIMALE, "12.0");
   assert.equal(verdictDeVersion("12.0"), "ok");
-  assert.equal(verdictDeVersion("11.0"), "ancien");
+  assert.equal(verdictDeVersion("11.0"), "ok");
+  // Un cran plus bas que la fenêtre reste un réexport à demander.
+  assert.equal(verdictDeVersion("10.0"), "ancien");
 });
 
 test("une version antérieure est un contrat trop ancien", () => {
   // Le seul verdict qu'un réexport corrige.
-  assert.equal(verdictDeVersion("11.0"), "ancien");
   assert.equal(verdictDeVersion("10.3"), "ancien");
   assert.equal(verdictDeVersion("10.2"), "ancien");
   assert.equal(verdictDeVersion("10.1"), "ancien");
