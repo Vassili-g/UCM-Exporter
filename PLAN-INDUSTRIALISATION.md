@@ -2512,7 +2512,7 @@ le worktree bougeait sous la mesure.
       **La table ne porte plus aucun rang vivant** : les neuf sont barrés. C'est
       la condition que T8.8 vérifie.
 
-- [ ] **R5 — La section « État » du `README.md` contredit le code.** Elle situe
+- [X] **R5 — La section « État » du `README.md` contredit le code.** Elle situe
       l'outillage consommateur dans le Playground et annonce son extraction comme
       à venir, alors que le paquet et le CLI sont publiés. Une règle fausse dans
       le premier fichier que lit un visiteur est ce que le préalable T0
@@ -2521,6 +2521,22 @@ le worktree bougeait sous la mesure.
       **Rechercher d'abord :** lire la section entière et l'état publié du paquet
       et du CLI avant de décider ce qui est faux ; la contradiction n'est
       peut-être pas celle que cet énoncé nomme.
+      **Faite le 5 septembre 2026, et la contradiction est pire que l'énoncé ne
+      le disait : le README se contredit LUI-MÊME, à quatre-vingts lignes
+      d'écart.** La section « Côté repository consommateur » montre `npm install
+      @ucm-kit/core` et deux commandes `npx --yes @ucm-kit/cli@0.1.5` ; la
+      section « État », plus bas, annonce l'extraction du kit et la création de
+      la CLI comme un travail à venir. Un visiteur qui lit dans l'ordre trouve
+      la commande d'abord et son démenti ensuite.
+      *Ce qui a été réécrit :* « État » dit que l'outillage est publié, qu'un
+      repository se branche par `ucm init` sans être un projet Node, et que le
+      Playground n'en est plus le domicile mais le consommateur de référence —
+      celui qui sert à vérifier que le kit tient hors de son dépôt d'origine.
+      *Et ce que la lecture a trouvé en plus :* la carte de l'architecture
+      n'avait **aucune ligne pour `packages/cli/`**, alors qu'elle prétend
+      décrire le dépôt et que ce paquet est publié. Elle en a une.
+      *Trois constats de T8.12 sont tombés en même temps*, et ils étaient déjà
+      faux avant cette tâche — voir R6.
 
 - [ ] **R6 — Les chiffres de ce plan ont vieilli.** T8.1 mesure 1 604 lignes une
       spécification qui n'en fait plus autant, à un chemin qui a changé ; des
