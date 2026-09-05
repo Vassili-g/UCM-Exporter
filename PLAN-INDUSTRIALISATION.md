@@ -1972,6 +1972,64 @@ une place dans l'ordre d'exécution.
       types. Précondition dure : un `tsconfig.json` à la racine
       (`parite.mjs:233`).
 
+      **Le prix est mesuré le 5 septembre 2026 ; la décision reste à prendre, et
+      elle appartient au propriétaire du projet.** Ce qui suit remplace les
+      suppositions par des chiffres, pour que l'arbitrage ne se fasse pas à
+      l'aveugle.
+
+      *Ce que l'adaptateur pèse.* `parite.mjs` importe `typescript` et en emploie
+      une vingtaine de prédicats d'AST plus `createProgram` et le vérificateur de
+      types. Ce n'est pas un usage marginal qu'on pourrait réécrire à la main :
+      la valeur de l'adaptateur EST le vérificateur — il résout les types
+      hérités, les alias d'import et les composants emballés dans
+      `memo(forwardRef(…))`, ce qu'aucune analyse syntaxique ne fait.
+
+      *Ce que le paquet pèse aujourd'hui.* `@ucm-kit/core` : **116 kB publiés,
+      400 kB dépaquetés, 42 fichiers**, une dépendance (`ajv`, 1,9 Mo installé).
+      `typescript` pèse **23 Mo installés** — vingt fois `ajv`, soixante fois le
+      paquet dépaqueté. C'est le chiffre qui décide.
+
+      *Ce que l'argument « `format` ne dépend de personne » recouvre vraiment, et
+      c'est plus étroit qu'il n'en a l'air.* Il porte sur le SOUS-CHEMIN
+      `./format`, pas sur le paquet : `./lecteurs` dépend déjà d'`ajv` et de
+      `node:fs`. Un troisième sous-chemin qui dépendrait de `typescript` ne
+      casserait donc AUCUN invariant écrit — le bundle du plugin n'importe que
+      `./format`, et rien ne l'entraînerait.
+
+      *Ce qui coûte réellement, alors, et ce n'est pas l'invariant :* `npm
+      install @ucm-kit/core` ferait descendre 23 Mo à tout repository, y compris
+      celui qui n'a pas une ligne de TypeScript — le repo Swift que ce projet
+      invoque partout comme son consommateur-témoin. Une dépendance qui ne sert
+      qu'un tiers des installations est le genre de coût qu'on ne voit pas et
+      qu'on ne retire jamais.
+
+      **Les trois issues, et ce que chacune achète :**
+      1. **Un paquet à part, `@ucm-kit/adapter-typescript`.** Le scope a été
+         réservé exactement pour cela (D10). Qui a du TypeScript l'installe, les
+         autres ne le voient pas. Prix : une deuxième publication à tenir, et le
+         mécanisme de chargement que T3.1 a refusé d'ouvrir reste à décider —
+         `ucm check` doit pouvoir trouver l'adaptateur sans qu'on lui injecte une
+         fonction dans un sous-processus.
+      2. **Une dépendance OPTIONNELLE de `@ucm-kit/core`** (`peerDependencies`
+         + `optional`), sur un sous-chemin `./adaptateurs`. Prix : un `import()`
+         qui échoue proprement quand `typescript` n'est pas là, donc un chemin
+         d'erreur de plus dans le noyau — et l'habitude prise qu'un sous-chemin
+         puisse ne pas fonctionner.
+      3. **Ne rien déplacer.** L'adaptateur reste chez le consommateur, qui garde
+         son script court. Prix : `ucm check` reste sans parité pour tout le
+         monde, et la moitié « workflow » de T9.8 reste bloquée.
+
+      *Ce que la mesure recommande, sans trancher à la place de qui décide :* la
+      **1**. Le scope existe déjà, la 2 fait payer au noyau une complexité que
+      seul l'adaptateur justifie, et la 3 laisse `ucm check` durablement moins
+      utile que le script qu'il remplace. La 1 ne coûte que ce que le projet a
+      déjà payé deux fois — une publication —, et ce coût est connu.
+
+      **Ce que cette entrée NE fait pas :** décider. Un paquet publié de plus est
+      un engagement de maintenance, et le mécanisme de chargement d'adaptateur
+      rouvre une question que T3.1 avait explicitement fermée. Les deux
+      appartiennent au propriétaire du projet.
+
 ---
 
 ## Phase 7 — Le test du repo vierge
