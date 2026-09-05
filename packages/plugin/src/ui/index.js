@@ -6,6 +6,7 @@ import { createHeader } from './components/Header.js';
 import { createButton } from './components/Button.js';
 import { createConfigurationPage } from './components/ConfigurationPage.js';
 import { createLogPanel } from './components/LogPanel.js';
+import { createResizeGrip } from './components/ResizeGrip.js';
 
 const app = document.getElementById('app');
 app.className = 'container';
@@ -28,7 +29,9 @@ const configPage = configurationPage.element;
 const PAGES = {
   export: {
     title: 'Unified Component Exporter',
-    subtitle: 'Transformez vos composants Figma en contrats exploitables.',
+    // Pas de sous-titre : « Transformez vos composants Figma en contrats
+    // exploitables » est de la plaquette dans un outil quotidien, et il occupait
+    // la place du rang 1 — le nom du composant visé (U1.2).
   },
   configuration: {
     title: 'Configuration',
@@ -54,12 +57,13 @@ function showExports() {
 
 const header = createHeader(PAGES.export, showConfiguration, showExports);
 
+/*
+ * La seule zone qui porte une surface (U1.7) : c'est ici qu'on agit. Son titre
+ * de section est parti — « Actions » au-dessus de deux boutons nomme l'évidence
+ * (U1.2).
+ */
 const actionCard = document.createElement('section');
-actionCard.className = 'card action-panel';
-
-const actionTitle = document.createElement('div');
-actionTitle.className = 'section-title';
-actionTitle.textContent = 'Actions';
+actionCard.className = 'action-panel';
 
 /**
  * Les libellés disent l'ouverture du navigateur (U0.4).
@@ -103,7 +107,7 @@ function requestExport(type) {
   parent.postMessage({ pluginMessage: { type } }, '*');
 }
 
-actionCard.append(actionTitle, exportComponentButton, exportTokensButton, statusNote);
+actionCard.append(exportComponentButton, exportTokensButton, statusNote);
 exportPage.append(actionCard, logPanel.element);
 
 function updateConnection(state) {
@@ -132,7 +136,7 @@ const footer = document.createElement('footer');
 footer.className = 'app-footer';
 footer.hidden = true;
 
-app.append(header.element, exportPage, configPage, footer);
+app.append(header.element, exportPage, configPage, footer, createResizeGrip());
 parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
 
 onmessage = (event) => {
@@ -161,7 +165,10 @@ onmessage = (event) => {
     setBusy(isLoading);
     statusNote.dataset.state = message.state;
     statusNote.textContent = message.text;
-    logPanel.append(message.text, message.state);
+    // L'état d'une action et le niveau d'une ligne de journal ne sont pas le
+    // même vocabulaire : `loading` n'est pas un `LogLevel`, et la classe
+    // `log-loading` qu'il produisait n'était stylée nulle part.
+    logPanel.append(message.text, isLoading ? 'info' : message.state);
   }
 
   if (message.type === 'note') {

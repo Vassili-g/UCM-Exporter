@@ -12,8 +12,20 @@ import type { SettingsInput } from './config';
 import { publishArtifact, testGithubConnection } from './github';
 import type { ArtifactKind } from './github';
 import type { PluginMessage, UiRequest } from './messages';
+import { TAILLE_PAR_DEFAUT, lireTaille, rangerTaille, tailleValide } from './fenetre';
 
-figma.showUI(__html__, { themeColors: true, width: 380, height: 500 });
+/*
+ * La fenêtre s'ouvre à sa taille par défaut, puis reprend celle que le designer
+ * lui a donnée (U1.10). L'ordre est imposé : `showUI` est synchrone et doit
+ * partir tout de suite, tandis que `clientStorage` est asynchrone. Ouvrir petit
+ * puis agrandir se voit ; ne pas ouvrir du tout se voit bien davantage.
+ */
+figma.showUI(__html__, {
+  themeColors: true,
+  width: TAILLE_PAR_DEFAUT.largeur,
+  height: TAILLE_PAR_DEFAUT.hauteur,
+});
+void lireTaille().then((taille) => figma.ui.resize(taille.largeur, taille.hauteur));
 
 /**
  * La porte unique vers l'UI.
@@ -271,6 +283,17 @@ figma.ui.onmessage = async (message: UiRequest) => {
 
   if (message.type === 'open-external') {
     openExternal(message.url);
+    return;
+  }
+
+  if (message.type === 'resize') {
+    // L'UI envoie ce que le pointeur dit, sans rien borner : `tailleValide` est
+    // la seule autorité sur ce qu'est une taille acceptable, et l'appliquer
+    // comme la ranger passent par elle. Une borne recopiée dans l'UI serait la
+    // seconde autorité au désaccord muet que ce dépôt referme partout ailleurs.
+    const taille = tailleValide({ largeur: message.largeur, hauteur: message.hauteur });
+    figma.ui.resize(taille.largeur, taille.hauteur);
+    await rangerTaille(taille);
     return;
   }
 

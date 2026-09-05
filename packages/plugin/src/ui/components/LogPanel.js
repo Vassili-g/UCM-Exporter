@@ -6,15 +6,17 @@
 /** Construit le journal et son API minimale d'ajout et de remise à zéro. */
 export function createLogPanel(initialText = '') {
   const section = document.createElement('section');
-  section.className = 'card log-panel';
+  /*
+   * Plus de carte (U1.7) : le journal est du rang 3 — il informe et ne demande
+   * rien —, il vit donc sur le fond de la page. Sa phrase d'aide est partie avec
+   * elle (U1.2) : « Les messages de l'outil et les téléchargements apparaissent
+   * ici » expliquait un journal à quelqu'un qui en a vu mille.
+   */
+  section.className = 'log-panel';
 
   const title = document.createElement('div');
   title.className = 'section-title';
   title.textContent = 'Journal';
-
-  const hint = document.createElement('p');
-  hint.className = 'description';
-  hint.textContent = 'Les messages de l’outil et les téléchargements apparaissent ici.';
 
   const content = document.createElement('div');
   content.className = 'log-panel-inner';
@@ -33,7 +35,7 @@ export function createLogPanel(initialText = '') {
   content.setAttribute('role', 'log');
   content.setAttribute('aria-live', 'off');
 
-  section.append(title, hint, content);
+  section.append(title, content);
 
   function appendLine(message, level = 'info') {
     const line = document.createElement('div');
