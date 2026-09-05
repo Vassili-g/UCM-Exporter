@@ -162,13 +162,19 @@ test('la duplication restante est comptée, et elle ne remonte pas', () => {
   for (const ligne of avant) occurrences.set(ligne, (occurrences.get(ligne) ?? 0) + 1);
 
   const partagees = [...occurrences]
-    .filter(([ligne, n]) => n === 1 && format.has(ligne) && moteur.has(ligne))
+    // Un TITRE présent des deux côtés n'est pas une règle dupliquée : c'est la
+    // frontière elle-même. Les deux documents traitent les mêmes sujets par deux
+    // faces, et chaque titre est l'ancre que l'autre document vise. Les compter
+    // poserait un plancher de quinze lignes que le temps 2 ne pourrait jamais
+    // atteindre — la cible qui ment que ce test existe pour éviter.
+    .filter(([ligne, n]) => n === 1 && !/^#/.test(ligne))
+    .filter(([ligne]) => format.has(ligne) && moteur.has(ligne))
     .map(([ligne]) => ligne);
 
   // Le plafond est le relevé du jour, pas un objectif. Il n'autorise aucune
   // remontée : chaque commit du temps 2 qui résorbe un paragraphe le descend
   // d'autant. À zéro, ces deux tests et la fixture figée s'en vont.
-  const PLAFOND = 488;
+  const PLAFOND = 0;
   assert.ok(
     partagees.length <= PLAFOND,
     `La duplication est remontée : ${partagees.length} lignes vivent dans les deux ` +

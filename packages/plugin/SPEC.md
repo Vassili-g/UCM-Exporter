@@ -4,14 +4,6 @@ Ce document décrit le MOTEUR : ce que le plugin lit dans Figma, ce qu'il élit,
 ce dont il avertit, et ce qu'il dépose sur GitHub. La forme de ce qu'il produit
 est décrite dans [docs/FORMAT.md](../../docs/FORMAT.md).
 
-> ⚠ **Scission en cours (T8.1, temps 1).** Ce document et
-> [docs/FORMAT.md](../../docs/FORMAT.md) viennent d'une spécification unique,
-> partitionnée **ligne à ligne, sans qu'un mot soit réécrit**. Les paragraphes
-> qui parlaient des deux sujets à la fois sont pour l'instant **dans les deux
-> fichiers** : `tests/scissionSpec.test.mjs` prouve qu'aucune ligne n'a été
-> perdue et compte ce qui reste dupliqué. Le temps 2 résorbe ces doublons un
-> paragraphe à la fois.
-
 ## Objet
 
 Ce document est la référence du comportement actuel du plugin. Le pourquoi et
@@ -50,19 +42,10 @@ soit contraint, ce document-ci ne parle que de la LECTURE de Figma.
 
 ## Hypothèses sur le design system
 
+Ce que le contrat suppose d'un design system — clé de base, allongement, déclaration d'un rôle — est décrit par [Hypothèses sur le design system](../../docs/FORMAT.md#hypothèses-sur-le-design-system).
+
 Les noms de collections et le nombre de niveaux d’alias sont libres. Le moteur
 gère les chaînes profondes et les alias de tous types.
-
-Aucune convention de nommage n'est imposée aux couleurs de variante. Le dernier
-segment du token en est la **clé de base** ; ce qu'il peint se déduit du calque
-qui le porte, et le contrat le publie dans `rendering.roles`. Un design system
-qui nomme ses rôles (`…/background`, `…/foreground`, `…/icon`, `…/border`,
-`…/ring`) voit sa déclaration l'emporter sur la déduction — c'est le seul moyen
-de distinguer un `ring` d'un `border`.
-
-Un design system reste également libre de peindre plusieurs surfaces d'un même
-variant avec des variables dont le nom finit pareil : la clé s'allonge alors des
-segments qui les séparent, et aucune couleur n'est perdue.
 
 Le fichier Figma de référence utilise plusieurs niveaux — primitives, marques,
 tokens sémantiques, composants et dimensions — uniquement pour éprouver cette
@@ -80,106 +63,26 @@ sont auto-détectées (nom d'axe, valeurs, rôle de calque) et centralisées dan
 
 **Entrée** : exactement un `COMPONENT` ou un `COMPONENT_SET` sélectionné. Les
 règles `<Nom>-Rules` enrichissent l'intention mais ne conditionnent pas la
-fidélité de l'export. Un set clairsemé n'est pas complété artificiellement : le
-champ `variants` publie uniquement les combinaisons réellement présentes et un
-diagnostic nomme l'écart avec le produit cartésien des axes. Un consommateur
-compose les enums avec cette liste exacte ; il ne présume jamais que leur
-produit cartésien est valide.
+fidélité de l'export. Ce qu'un set clairsemé produit dans `variants`, et ce
+qu'un consommateur a le droit d'en composer, est décrit par
+[Partie 1](../../docs/FORMAT.md#ce-que-le-contrat-publie-champ-par-champ).
 
 ### Algorithme
 
 #### La règle commune
 
-Plusieurs champs — gap, paddings, rayons, taille d'un slot, bornes, largeur d'un
-stroke — répondent au même silence, cité plus bas sous ce nom :
-
-- une valeur reliée à une variable se publie, comme référence de token ;
-- une valeur figée qu'aucune variable ne nomme avertit et reste absente : un
-  nombre brut n'est jamais contractuel, une variable liée l'est toujours ;
-- une valeur neutre effectivement fournie par Figma — un gap, un padding ou un
-  rayon à zéro — reste absente sans un mot, la publier n'apprenant rien.
+Le silence commun à ces champs — une variable se publie, un nombre brut avertit, une valeur neutre reste absente sans un mot — est décrit par [La règle commune](../../docs/FORMAT.md#la-règle-commune).
 
 Le geste demandé au designer est toujours de NOMMER la valeur, jamais de la
 retirer du design.
 
 #### 1. Props
 
-Traduire chaque propriété : `VARIANT` → enum, `BOOLEAN` →
-boolean, `TEXT` → string, `INSTANCE_SWAP` → `instance-swap`, `SLOT` → `slot`.
-`propertyBindingDefinitions` catalogue le nom technique Figma complet, le
-chemin et la cible native (`visible`, `characters`, `mainComponent`). Chaque
-`variants[].bindings` référence cette définition et conserve le `nodeId` exact
-du calque dans CE variant. Les props propres au wrapper sont fusionnées avant ce
-relevé ; les internes d'une dépendance composée restent dans le contrat de cette
-dépendance.
-Cette fusion conserve sa provenance : la surface publique est celle du
-Component ou Component Set propriétaire, complétée par le seul wrapper de
-dimensions élu. Deux occurrences exposées, ou une instance exposée qui ne vient
-pas de ce wrapper, ne peuvent jamais devenir une source implicite de props.
-Deux règles auto-détectées :
-- *Convention State* : un axe `State`/`Status` décrit des états d'interaction
-  dérivés du runtime (hover, focus…), pas des choix d'API — il est donc **exclu
-  des props** ; seule sa valeur `Disable` (orthographes `Disable` ou `Disabled`
-  acceptées) devient `disabled: boolean`. Exclu des props ne veut pas dire
-  absent du contrat : `stateModel` le publie avec toutes ses valeurs, et il
-  indexe les arbres de variantes. C'est donc là, et non dans `props`, que sa
-  documentation `@prop` est rangée.
-- *Couche sémantique* : les noms Figma peu parlants sont mappés vers le
-  vocabulaire partagé — ex. un enum dont toutes les valeurs sont des tailles
-  (`big/medium/small`, `xs`…`3xl`) → prop `size`. Le nom Figma d'origine est
-  conservé dans `figmaName`. Mapping piloté par les **valeurs**, jamais par le
-  composant. La même table de correspondance renomme les clés de
-  `structure.variantAxes` et des valeurs de chaque variant : `props.size`,
-  `variantAxes` et les arbres de tokens ne peuvent pas diverger.
+Ce que `props` CONTIENT est décrit par [1. Props](../../docs/FORMAT.md#1-props). Ce document garde la lecture des component properties de Figma et l'élection de la surface publique.
 
 #### 2. Tokens de variantes
 
-Parcourir **tous les variants réellement
-présents**, sans fabriquer les cases absentes d'un produit cartésien. Pour
-chacun, relever les tokens liés (`boundVariables.fills` et
-`.strokes` sur tout le sous-arbre), rangés par **clé**, dont la base est le
-dernier segment du token. Un composant unifié imbriqué n'y contribue rien : ni son contenu, ni le
-calque de l'instance elle-même, dont le fond appartient à son propre contrat.
-Le relever ferait entrer dans `variants[].tokens` une couleur
-que ce contrat-ci ne peint pas — et, sur une clé partagée, évincerait la sienne. Un sous-arbre `visible === false` est ignoré, sauf si sa visibilité
-est liée à une prop de composant ou à une variable : il peut alors être rendu
-dans une autre configuration et reste exporté. Un sous-arbre statiquement
-masqué qui portait des variables produit un warning sur sa racine.
-
-Deux variants qui aboutissent aux mêmes valeurs d'axes après normalisation
-restent deux entrées autonomes de `variants`, chacune avec ses propres tokens,
-strokes, liaisons et référence de vue. Aucun index public n'a à trancher entre
-ces coordonnées identiques : aucune feuille n'est écartée et aucun renommage
-compensatoire n'est demandé au designer.
-
-La clé **identifie** la couleur ; elle ne dit pas ce qu'elle peint. Ce que la
-couleur peint se lit sur le **calque qui la porte**, jamais sur son nom : un
-`fill` sur un texte est un `foreground`, sur un calque désigné par une règle
-`@icons` un `icon`, ailleurs un `background` ; un `stroke` est un `border`, et
-c'est son `align` — déjà publié sur la feuille — qui dit **de quel côté** de la
-boîte le dessiner, jamais avec quelle technique : un contour Figma se dessine
-hors du flux et se rend donc en `box-shadow`. Une clé qui ne nomme aucun rôle partagé
-reçoit donc son rendu dans `rendering.roles`, à côté des cinq rôles communs à
-tous les contrats.
-
-Un design system reste libre de nommer ses rôles (`…/background`,
-`…/foreground`, `…/icon`, `…/border`, `…/ring`) : cette **déclaration fait
-autorité** sur la déduction, et c'est le seul moyen de distinguer un `ring` d'un
-`border`. Elle se lit sur le dernier segment du **token**, jamais sur la clé
-publiée. En revanche elle n'est pas exigée : l'exiger imposerait au design
-system un renommage que rien ne justifie.
-Seul subsiste le **warning agrégé** du rôle déclaré puis employé sur le mauvais
-support — un `…/border` posé en remplissage : le nom et le calque se
-contredisent, et le contrat ne peut pas trancher. Un seul message par rôle
-fautif, avec son nombre d'occurrences et un token en exemple.
-Un rôle n'apparaît que s'il est réellement lié — rien n'est forcé ni inventé.
-
-Le contrat ne publie que les couleurs LIÉES. Une peinture unie posée à la main
-sur un calque que l'extraction parcourt produit un avertissement et rend
-`meta.coverage.portable` partiel : sans elle, le développeur rendrait ce calque
-sans encre. Trois cas n'en produisent aucun — un paint masqué ou d'opacité nulle
-et un stroke d'épaisseur zéro ne peignent rien, et une peinture non unie relève
-du relevé des propriétés non portables.
+Ce que `tokens` et `strokes` CONTIENNENT — la clé d'une couleur, son allongement, les rôles, les emplacements de peinture — est décrit par [2. Tokens de variantes](../../docs/FORMAT.md#2-tokens-de-variantes). Ce document garde la façon dont le moteur lit les peintures d'un calque et ce qu'il en dit.
 
 La couleur publiée et l'avertissement sortent de la MÊME lecture, peinture par
 peinture : la variable d'un paint est celle qu'il porte lui-même. Une peinture
@@ -188,60 +91,9 @@ un fill masqué relié ne couvre pas le fill visible posé à la main. Quand cet
 lecture ne peut pas conclure, la liste du node reprend la main sans avertir :
 perdre une couleur coûterait plus qu'un diagnostic manquant.
 
-Le choix des segments est décidé **une seule fois pour tout le composant**. Pour
-au plus seize profondeurs candidates, le moteur retient exactement la sélection
-qui produit **le moins de clés distinctes**. Au-delà, il emploie une sélection
-gloutonne déterministe puis retire les profondeurs inutiles : le coût reste
-borné au lieu d'explorer `2^n` combinaisons. Dans les deux cas, seules les
-couleurs **cohabitant dans une même feuille** doivent être séparées. C'est ce
-qui garde une coordonnée de variant hors de la clé —
-trente couleurs `…<color>.<variant>.<state>.background` qui ne se côtoient jamais
-gardent une seule et même clé, et seule une surface qui les côtoie vraiment s'en
-détache. Une clé allongée contient donc un point, et une clé simple jamais : un
-segment de token n'en contient aucun. La clé d'un token est la même dans toutes
-les feuilles.
-
-Chaque vue exacte situe aussi les couleurs dans
-`paintPlacements.{fills,strokes}`. Une clé y référence tous les chemins de slots
-qui la portent ; `[]` désigne la racine de la vue. Ces chemins sont collectés
-pendant l'unique construction de `structure.children`, jamais recalculés depuis
-un nom de calque. Deux couleurs **empilées sur un même calque** sont publiées
-toutes les deux et reçoivent le même chemin, mais leur ordre reste
-irreprésentable : un warning le signale.
-
-Le chemin publié est celui du calque **publié** qui porte la peinture. Une
-couleur posée **sous une feuille** appartient à cette feuille : le contrat ne
-descend pas dans les tracés d'une icône importée, alors que le fill d'une icône
-vit précisément sur son tracé. Situer cette couleur sur le slot de l'icône est
-la seule lecture qui laisse le consommateur la peindre, et c'est de toute façon
-là que le rendu l'applique — `color` et `fill` cascadent du slot vers le dessin.
-Deux tracés d'une même icône ne produisent donc **qu'une** cible. Aucun
-avertissement n'accompagne ce cas : le moteur refuse par principe de publier ces
-tracés, et aucun geste du designer ne l'en ferait changer.
-Chaque feuille décrit indépendamment l'état visuel complet du variant Figma :
-si un rôle est absent des `tokens` ou `strokes` d'un variant, cela signifie
-toujours **« ne pas rendre ce rôle dans cet
-état »**. Un consommateur ne doit jamais fusionner implicitement cette feuille
-avec celle de l'état `default`.
-Résolution : `VariableAlias.id` → `getVariableByIdAsync(id).name` →
-`normalizeName()` → enrobage en référence `{…}`. Pour un rôle porté par un
-`fill`, la feuille contient la référence du token. Un id de variable ou sa
-collection introuvable produit un warning contextualisé par le premier calque
-concerné et aucune référence n'est écrite. Les strokes sont rangés
-séparément dans `variants[].strokes` :
-
-`color` et `width` sont des **références de token** entre accolades ; `align`
-est une donnée structurelle Figma, pas un token — jamais d'accolades. Une
-largeur est uniforme si `strokeWeight` est lié, ou si ses quatre côtés sont
-liés au même token. Une représentation absente vaut `null`. Une représentation
-par côté peut être partielle : les côtés tokenisés sont publiés, les côtés
-neutres à zéro restent absents, et tout côté fixe non neutre produit un warning.
-Elle n'est jamais remplacée par une valeur brute ni par le premier côté trouvé. Les strokes vivent dans le champ séparé
-`strokes` de chaque variant pour que `tokens` reste une feuille de pures
-références chaînes. `values` porte les coordonnées exactes, sans reconstruire
-un arbre cartésien :
-
 #### 3. Layout
+
+Ce que `layout`, `sizes` et les bornes CONTIENNENT est décrit par [3. Layout](../../docs/FORMAT.md#3-layout). Ce document garde l'élection du node de layout et ce que cette élection écarte.
 
 Le **node de layout** d'un variant est le calque dont les
 enfants directs deviennent ses slots. Il s'élit au score : le calque qui porte
@@ -258,49 +110,6 @@ Ce que l'élection écarte n'est pas oublié : un calque posé **à côté** du 
 ni visibilité, alors que ses couleurs entrent bien dans `variants[].tokens`, relevé
 sur le variant entier. Chaque calque écarté produit donc un avertissement.
 
-Certains design systems construisent leurs variantes de taille
-via un sous-composant partagé, imbriqué dans chaque variant, qui porte seul les
-dimensions : c'est le **wrapper de dimensions**. Le moteur cherche donc une
-instance imbriquée portant des dimensions liées
-(`itemSpacing`/`padding`/`cornerRadius`, ou les quatre rayons de coin). Gap,
-paddings et rayon sont comptés avec les mêmes groupes complets que lors de
-l'extraction : une liaison partielle ne suffit pas à élire un wrapper. Si plusieurs instances en portent,
-celle qui lie le plus de dimensions gagne ; un nom contenant « wrapper » et des
-props exposées servent de départage. S'il en
-existe une (Button : `sizeWrapperButton`), ses props sont **fusionnées** dans l'API
-(étape 1) et ses dimensions relevées ; **sinon**, dimensions lues directement
-sur le composant de référence (`defaultVariant`). → `gap`, `padding.x/y`,
-`radius`. Un composant plat est donc géré sans blocage.
-Une dimension uniforme n'est exportée que si sa représentation commune se
-résout. Pour une dimension réglable côté par côté (`padding`, `radius`, largeur
-de stroke), chaque côté tokenisé se publie indépendamment ; un côté absent et à
-zéro est neutre, tandis qu'un côté fixe non neutre avertit. La taille d'un slot
-reste un groupe indivisible : largeur + hauteur doivent prouver ensemble le
-carré annoncé.
-
-**Les côtés peuvent différer.** Quand tous citent la même variable,
-le champ garde sa forme courte — une référence — et le contrat d'un composant
-déjà correct ne change pas. Quand ils en citent plusieurs, le contrat publie le
-DÉTAIL par côté au lieu de tout perdre : `padding.x` devient
-`{ "left": "{…}", "right": "{…}" }`, `radius` devient
-`{ "topLeft", "topRight", "bottomRight", "bottomLeft" }`, et la largeur d'un
-stroke `{ "top", "right", "bottom", "left" }`. Le design system nomme déjà ces
-variables séparément ; exiger une variable unique lui ferait aplatir une
-décision qui lui appartient. Cet objet peut être clairsemé : deux coins gauches
-tokenisés et deux coins droits à zéro publient
-uniquement `topLeft` et `bottomLeft`. L'élection du node de layout continue de
-ne compter que les groupes complets : une valeur partielle ne choisit jamais le
-wrapper, mais elle reste publiée sur un calque qui l'est déjà.
-
-**Un tracé n'est pas une boîte.** Sur un `VECTOR`, un `BOOLEAN_OPERATION`, un
-`STAR` ou un `POLYGON`, la largeur et la hauteur sont celles que Figma calcule
-sur la géométrie du chemin : c'est le DESSIN, pas une décision du design
-system. Le contrat ne leur réclame donc aucune variable — la demander
-enverrait le designer relier la bounding box d'un chemin de Bézier — et publie
-la dimension quand une variable est bien liée, comme partout ailleurs. C'est
-le même mécanisme que pour un enfant de grille, pour une raison voisine : la
-dimension est déjà expliquée ailleurs.
-
 La liste s'arrête là, et c'est délibéré : `RECTANGLE`, `ELLIPSE` et `LINE` en
 sont exclus. Ce sont les formes dont le type ne dit rien de l'usage — une
 surface, un liseré, un séparateur dont la hauteur est une vraie décision —, et
@@ -313,49 +122,14 @@ tranche donc l'applicabilité **avant** de regarder les liaisons, sans quoi un
 produisent chacun leur propre diagnostic, distinct de « aucune variable
 reliée » :
 
-- **pas d'auto-layout** (`layoutMode: NONE`, ou un node qui n'en a pas) — gap
-  et paddings restent absents et un warning unique par calque dit au designer
-  que leur absence **ne vaut pas zéro** ; c'est ce qui permet à un consommateur
-  de distinguer « neutre » de « la question ne se pose pas » ;
-- **espacement « Auto »** (`primaryAxisAlignItems: SPACE_BETWEEN`) — Figma
-  ignore `itemSpacing` et répartit l'espace disponible. Le `gap` reste donc
-  absent, mais `justifyContent: "space-between"` décrit la répartition ; une
-  liaison conservée sur `itemSpacing` ne produit ni token ni warning ;
-- **auto layout en grille** (`layoutMode: GRID`) — Figma y espace les enfants
-  par `gridColumnGap` et `gridRowGap`, tous deux **liables à une variable**.
-  Le contrat les publie donc comme `columnGap` et `rowGap`, à côté de
-  `columns` et `rows`, et `layout` vaut `grid`. `itemSpacing` reste lisible
-  sans aucun effet : le `gap` reste absent, et rien n'est signalé — il n'y a
-  plus rien qui manque.
-
-La même règle vaut pour l'élection du porteur de layout : une liaison
-inapplicable ne désigne pas un calque comme conteneur de dimensions, sinon le
-calque élu n'exporterait rien.
-**Dimensions par taille** : l'axe de tailles est cherché sur le wrapper de
-dimensions puis, s'il n'en porte pas, sur le Component Set sélectionné — un
-wrapper qui expose ses propres axes ne doit pas faire disparaître les
-dimensions par taille. Détecté par ses valeurs (comme la prop `size`), chaque
-valeur est extraite →
-`structure.sizes.{big,medium,small}` avec gap/padding/radius par taille. La
-typographie n'est pas une dimension du conteneur : elle est décrite pour chaque
-texte dans la vue exacte du variant. Le contrat couvre ainsi toutes
-les tailles, pas seulement celle instanciée par défaut. Hypothèse assumée : les dimensions ne varient que selon
-l'axe de tailles — un représentant par taille suffit ; si un design system
-faisait varier un padding selon un autre axe, le contrat ne le verrait pas.
-
 #### 4. Modèle d'interaction
 
-Lorsqu'un axe `State` ou `Status` est présent,
-le contrat ajoute `stateModel` avec le déclencheur et, si une règle `@prop` la
-déclare, la description de chaque état connu :
-`hover` → `:hover`, `focus` → `:focus-visible`, `press` → `:active`,
-`disable`/`disabled` → `[disabled]`. La priorité générique est
-`disable > press > focus > hover > default`. Un état inconnu reste exporté
-avec un déclencheur `null` et un warning. Les `selector` visent
-l'implémentation CSS de **production** (pseudo-classes) ; l'outil de test
-froid, en styles inline, reproduit les mêmes états via des événements.
+Ce que `stateModel` CONTIENT est décrit par [4. Modèle d'interaction](../../docs/FORMAT.md#4-modèle-dinteraction).
 
 #### 5. Typographie
+
+Ce que `textStyles` et `variantViews.*.typography` CONTIENNENT est décrit par
+[5. Typographie](../../docs/FORMAT.md#5-typographie).
 
 Chaque calque texte de chaque variant doit porter un text
 style Figma unique. Le moteur lit l'objet `TextStyle`, conserve son nom exact
@@ -430,108 +204,7 @@ Sous le wrap, Figma scinde son champ gap en deux. Les messages emploient donc
 
 #### 9. Échantillon de maquette
 
-`args` est une projection fermée de l'API publique, jamais une copie libre de
-`componentProperties`. Une clé n'entre que si le modèle de propriétés l'a
-acceptée ; une collision ou une propriété rejetée ne réapparaît donc pas sous
-son nom brut. Les valeurs portables sont celles de `VARIANT`, `BOOLEAN`, `TEXT`
-et d'un `INSTANCE_SWAP` dont le composant peut être nommé. `SLOT` est omis : son
-contenu libre n'est pas une valeur qu'un développeur peut reconstruire depuis
-ce champ. Pour une dépendance, le moteur lit d'abord les propriétés de son owner,
-puis celles de l'unique occurrence exposée qui appartient au wrapper élu lors
-de l'export autonome. Zéro ou plusieurs occurrences correspondantes rendent ce
-complément indécidable et il est omis, sans choisir la première.
-
-Le **relevé positionnel nu** suit la visibilité **effective** de l'instantané : le
-calque et tous ses parents jusqu'à la racine du composant EXPORTÉ doivent être
-visibles — pas jusqu'à l'instance de dépendance, car un cadre optionnel masqué
-au-dessus d'une dépendance ne montre rien de ce qu'elle contient.
-
-La règle vise `ContractSample.text`, `SampleOverride.text` et `swaps`, et le
-critère n'est pas « c'est du rendu » mais « ce relevé rapporte ce qu'un calque
-porte SANS rapporter la condition qui le masque ». C'est ce qui explique
-l'exception apparente d'`args` : le texte d'une TEXT property et le composant
-d'un INSTANCE_SWAP sont bien affichés, mais le booléen qui les masque voyage
-dans le MÊME `args`, et la reconstruction n'a donc rien à retirer pour être
-juste. Filtrer `args` publierait au contraire `false` pour une prop qui vaut
-`true`. Restent donc publiés sous un calque masqué : une valeur `false`
-d'`args`, un `override.visible`, et l'entrée de la dépendance — ces valeurs
-décrivent précisément l'état masqué que la reconstruction doit conserver.
-
-**La frontière avec la composition.** Le parent ne réexporte pas les internes
-d'une dépendance. Ce que `overrides` publie n'en est pas : `InstanceNode.overrides`
-répond « qu'est-ce que CE parent a changé ici », par opposition à ce que le
-composant fournit. Un texte que le parent a saisi dans une dépendance n'est écrit
-nulle part ailleurs. Deux champs seulement sont retenus, `characters` et
-`visible` ; toute autre surcharge décrit du RENDU et signale plutôt un manque du
-contrat normatif de la dépendance. Une surcharge de peinture y est
-particulièrement trompeuse : remplacer une icône fait rapporter par Figma les
-`fills` des `Vector` du nouveau tracé, et rien ne distingue ce relevé d'une
-couleur posée à la main. C'est `swaps`, et lui seul, qui décrit le remplacement.
-
-**Ce que `overrides` ne peut pas voir : `swaps`.** Figma ne rapporte pas un
-remplacement d'instance — `NodeChangeProperty` ne contient pas `mainComponent` —
-et la prop d'icône que les règles `@icons` fabriquent (`chessName`,
-`iconLeftName`) n'a aucun porteur Figma, donc n'apparaît jamais dans
-`componentProperties` ni dans `args`. `swaps` est l’unique propriétaire de cette
-information et se lit en comparant l'instance à son composant maître,
-**position par position** — la
-structure d'une instance est isomorphe à celle de son maître hors contenu libre
-d'un `SLOT`.
-
-Cinq bornes le tiennent. La comparaison porte sur le composant PROPRIÉTAIRE et
-non sur la variante : choisir une autre variante d'un même component set n'est
-pas un remplacement, et le contrat de la dépendance décrit déjà ce choix. Le
-relevé s'arrête sur une dépendance de la dépendance, dont l'échantillon est
-ailleurs, et sous un calque déjà déclaré remplacé, dont plus aucune position ne
-correspond au maître. Un `SLOT` coupe lui aussi la comparaison : son contenu
-peut différer librement entre le maître et l'instance. Cette borne-là est
-PROPRE au positionnel : la résolution NOMINALE d'une INSTANCE_SWAP — joindre
-`componentPropertyReferences` à une propriété déclarée — traverse un `SLOT`,
-sans quoi la clé quitterait `args` sans que `swaps` reprenne la main. Le relevé s'arrête enfin
-sur un calque dont `args` répond déjà —
-voir « Quand la dépendance expose son remplacement » plus bas. Enfin `masterPath`
-nomme les calques du MAÎTRE, pas ceux
-de l'instance : Figma renomme le calque qu'on remplace d'après son nouveau
-composant, si bien que le chemin lu dans l'instance répéterait `component` et ne
-joindrait plus rien — alors que le nom du maître est celui que le contrat de la
-dépendance publie dans `icons.*.figmaName`. Un champ, une question : c'est le
-nom distinct, et non `figmaPath`, qui empêche le doute qui a coûté `figmaLayer`.
-
-**Quand la dépendance expose son remplacement.** Tout ce qui précède décrit le
-cas où Figma n'offre aucun porteur. Lorsque la dépendance déclare une
-INSTANCE_SWAP sur ce calque, elle en a un, et son contrat en tire une prop :
-`mergeIconRules` pose alors `runtimeProp` sur la prop NATIVE plutôt que d'en
-fabriquer une seconde, « pour ne pas obliger le consommateur à choisir entre deux
-sources de vérité ». `args` répond donc, et `swaps` se tait — un même fait n'a
-jamais deux propriétaires.
-
-Encore faut-il que `args` réponde quelque chose de lisible. Pour une
-INSTANCE_SWAP, `componentProperties` rend l'IDENTIFIANT du node placé (« 1:1 »),
-jamais son nom : publié tel quel, il donnait une clé publique à une valeur que la
-règle 1 interdit. La valeur publiée est donc le NOM du composant propriétaire,
-résolu comme le fait déjà `propertyBindings.appliedValue` pour le composant
-exporté — sans aucun aller-retour, le scan de composition connaissant le maître
-de chaque instance rencontrée. Un remplacement qu'on ne sait pas nommer est
-**omis** d'`args`, et `swaps` redevient alors le seul relevé : la règle 2
-interdit d'inventer, elle n'autorise pas à perdre.
-
-- une prop d'une dépendance portée par son wrapper de dimensions quand Figma
-  n'expose pas exactement une occurrence de ce wrapper — zéro ou plusieurs, la
-  provenance est indécidable et TOUTES les props du wrapper s'omettent, là où
-  `props` continue de les publier : la fusion porte sur les définitions, qui ne
-  dépendent d'aucune occurrence ;
-- une prop d'une dépendance dont l'owner n'a pas été indexé par le relevé de
-  composition : `args` se tait plutôt que de répondre depuis une surface
-  reconstruite à la volée, qui ignorerait le wrapper ;
-- une prop d'icône synthétique (`iconLeftName`), fabriquée par les règles `@icons`
-  sans component property Figma derrière : aucune valeur ne peut entrer dans
-  `args`, et c'est précisément pourquoi `swaps` existe ;
-- un remplacement dont le composant maître est illisible, qui vit sous un
-  calque effectivement masqué, ou dans le contenu libre d'un `SLOT` — la
-  maquette n'en donne aucune comparaison fiable ;
-- une valeur en conflit entre deux calques d'un même variant — la clé est omise ;
-- le second texte d'une feuille qui en porte plusieurs ;
-- une dépendance sous un calque statiquement masqué, déjà absente de `composes`.
+Ce qu'un échantillon CONTIENT, ce qu'il n'a pas le droit de porter et comment ses adresses se résolvent est décrit par [9. Échantillon de maquette](../../docs/FORMAT.md#9-échantillon-de-maquette). Ce document garde ce que le moteur RELÈVE dans Figma, et ce qu'il omet plutôt que de deviner.
 
 **Une notice, jamais un avertissement.** Deux échantillons là où le design en
 attendait un révèlent un libellé retouché dans un seul variant. Le constat suit
@@ -540,83 +213,19 @@ rien ne manque, rien n'est à corriger.
 
 #### 7. Intention et documentation des props
 
-L'intention et la documentation des props sont lues dans un **conteneur
-Figma** — frame,
-section ou groupe — nommé `<Nom>-Rules` (ex. `Button-Rules`), posé **sur la même
-page** que le composant. Le rapprochement du nom ignore la casse et les espaces
-(`button-Rules` et `Icon Button-Rules` conviennent) : une majuscule dans un nom
-de calque n'est pas une intention de design, et ne doit donc bloquer aucun
-export. Chaque règle est
-une instance d'un composant de configuration (`ComponentConfiguration`) dont la
-**variante** porte le tag et le calque `content` le texte :
-- `@usage` (un), `@do`/`@dont` (répétables), `@pairs` (virgules) → `intent`.
-  `@pairs` liste les composants du design system qui s'associent bien à
-  celui-ci (ex. `Icon, Tooltip`) : un agent peut s'en servir pour composer ;
-- `@prop` + calque `prop` (ex. `variant.contained`) → doc par valeur, rangée
-  dans `props.<prop>.descriptions.<valeur>`. Une règle qui vise l'axe
-  `State`/`Status` est rangée dans `stateModel.states.<état>.description` : cet
-  axe est publié par `stateModel` et non par `props`, la documentation suit donc
-  l'axe là où il vit. Un nom ou une valeur introuvable reste un warning.
-- `@boolean` + calque `prop` (ex. `icon-left`) → description de la prop BOOLEAN,
-  rangée dans `props.<prop>.description`. Le nom est normalisé comme les props
-  exportées (`icon-left` → `iconLeft`) ; une cible absente ou non booléenne
-  produit un warning et aucune prop n'est inventée.
-- `@icons` → politique d'icône dans `icons` :
-  - **Déclaration** — la variante de règle contient un calque texte `icon`
-    (nom exact du calque graphique du composant), plus les calques
-    `modifiable`, `OR` et `strict` ;
-  - **Politique** — exactement un des calques `modifiable` / `strict` doit
-    être visible : le premier autorise le remplacement de l'icône par le
-    consommateur, le second impose celle de Figma ;
-  - **Rapprochement** — uniquement par égalité exacte de nom avec un calque
-    graphique de l'un des variants ; aucun rôle de position n'est deviné. Les
-    occurrences répétées d'un même calque à travers la matrice sont résumées,
-    tandis que plusieurs occurrences dans un même variant ou des liaisons de
-    visibilité contradictoires produisent un warning ;
-  - **Variants** — si le calque n'existe que dans une partie de la matrice,
-    `icons.<clé>.variants` liste les combinaisons exactes d'axes où il est
-    présent. Le champ est absent lorsqu'il existe dans tous les variants ;
-  - **Emplacement** — `icons.<clé>.slot` nomme le slot de `structure.children`
-    que l'icône remplit, et `icons.<clé>.size` son token de taille. Ces deux
-    champs rendent une icône **auto-suffisante** : celle qui n'existe pas dans
-    le variant de référence n'apparaît dans aucun slot, et sans eux le contrat
-    dirait quand la rendre sans dire ni où ni à quelle taille. Le slot est celui
-    de l'**enfant direct du node de layout qui contient le calque**, dans le
-    variant concerné — la même attribution que `structure.children`, produite
-    par un calcul unique. Deux icônes rangées dans le même enfant direct
-    partagent donc son slot. Un calque situé hors de ce conteneur n'occupe aucun
-    slot ; un slot ou une taille qui change selon les variants — y compris une
-    taille présente ici et absente ailleurs — produit un warning et aucune
-    valeur déduite ;
-  - **Emplacement exact** — `variantViews[variants[].view].icons.<clé>.slotPath` situe l'icône
-    dans l'arbre de CETTE combinaison, y compris lorsqu'elle est absente de la
-    référence ou imbriquée à plusieurs niveaux. La clé renvoie au catalogue
-    global `icons`, qui garde politique, prop runtime et taille ;
-  - **Prop runtime** — une icône `modifiable` reçoit toujours une prop runtime
-    qui dit QUELLE icône rendre. Si son instance lie nativement `mainComponent`
-    à une `INSTANCE_SWAP`, cette prop fait autorité et aucune seconde prop n'est
-    inventée. Sinon, le nom synthétique suit le BOOLEAN de visibilité quand le
-    calque graphique lie `visible` à l'un d'eux (`iconLeft` → `iconLeftName`, qui
-    se lisent alors en paire) ; sans cette liaison, il vient du calque lui-même
-    (`chess` → `chessName`) et `visibilityProp` est absent. Une icône toujours
-    visible est remplaçable comme une autre : l'absence de booléen n'est donc pas
-    un défaut et ne produit aucun warning. Si le composant expose déjà une
-    component property du même nom, aucune n'est remplacée et un warning demande
-    un renommage. Une liaison `INSTANCE_SWAP` qui varie entre variants produit
-    également un warning au lieu d'une seconde API concurrente.
+**Toute cette section vit dans [7. Intention et documentation des props](../../docs/FORMAT.md#7-intention-et-documentation-des-props), et c'est un cas limite qu'il faut nommer.**
 
-  En résumé, trois responsabilités distinctes — et c'est bien parce qu'elles
-  sont distinctes que la deuxième ne dépend pas de la première :
+La grammaire des règles — un conteneur `<Nom>-Rules` sur la même page, une
+instance par règle, un tag par variante — décrit ce que le moteur LIT dans
+Figma, donc ce document. Mais chaque règle n'a de sens qu'à côté du champ
+qu'elle remplit : `@icons` et sa politique, son slot, sa prop runtime, ses
+variants forment une seule explication, et la couper en deux la rendrait
+illisible des deux côtés.
 
-  | Qui | Contrôle | Défini où |
-  |---|---|---|
-  | Booléen Figma (`iconLeft`…) | **si** le calque s'affiche | liaison native `visible` dans Figma |
-  | `INSTANCE_SWAP` ou prop runtime `<nom>Name` | **quelle** icône afficher | liaison native `mainComponent`, sinon ajoutée par l'exporteur |
-  | `figmaName` | l'icône de **repli** | nom du calque Figma, utilisé quand la prop runtime est vide |
-Convention uniforme (aucune logique par composant), lue **sans jamais écrire dans
-Figma**. Les règles sont facultatives : leur absence laisse `intent: null` et
-produit un diagnostic de documentation, sans réduire `meta.coverage.portable`.
-Un `@prop` visant une prop/valeur inexistante produit un warning non bloquant.
+La frontière de T8.3 tranche ce cas : une règle à cheval va du côté du
+CONSOMMATEUR, et le moteur y renvoie — c'est le moteur qui a le code sous la
+main, pas le repository qui lit l'artefact. Cette section est donc un renvoi,
+volontairement, et non un oubli du dédoublonnage.
 
 #### 8. Rendu sémantique et garde-fous
 
@@ -660,54 +269,7 @@ usages exacts de chaque `variantViews`.
 
 #### Composition et dépendances
 
-`composes` liste les composants unifiés que celui-ci embarque — vide pour un
-composant simple. Une instance ainsi déclarée n'est PAS parcourue : ses
-calques, ses tokens et ses props appartiennent à son propre contrat. Le slot
-correspondant de `children` la nomme par `composes`, sans relever ni sa taille
-ni sa typographie. Tout `COMPONENT_SET` et tout `COMPONENT`
-standalone sélectionné est exportable, même sans règles. Cette capacité ne le
-transforme pas automatiquement en dépendance : le conteneur `<Nom>-Rules`
-déclare qu'un contrat UCM autonome existe pour ce nom. Sans ce marqueur, un set
-imbriqué reste parcouru comme wrapper ou détail d'implémentation du parent. Un
-variant interne d'un set reconnu prend le nom du set. Le moteur charge toutes
-les pages une fois avant le scan des marqueurs.
-
-##### Cadre de dépendance
-
-`gap` décrit l'espace ENTRE des enfants : le cadre le publie dès qu'il en range
-plusieurs. Un cadre à un seul enfant n'espace rien, et réclamer une variable pour
-lui enverrait le designer relier une valeur qui ne se voit pas.
-
-Un cadre dont AUCUNE branche exportable ne mène à une dépendance fait exception :
-ses instances sont rangées sous un calque masqué, le contrat se replie sur le
-seul nom du composant et n'ouvre aucun `children`. Les chemins de la typographie
-des vues suivent cette même réponse, sinon ils viseraient des slots que
-`structure.children` ne contient pas.
-
-Le relevé couvre toute la matrice. Chaque
-`variantViews[variants[].view].composes` se DÉRIVE de SON arbre exact et en
-garde l'ordre et la cardinalité. Le champ global
-`composes` en est l'union ordonnée à cardinalité maximale : une dépendance
-conditionnelle n'est jamais perdue parce qu'elle manque au variant de
-référence. Ces champs se dérivent du contrat terminé. La
-séquence se LIT sur chaque arbre, et non dans l'ordre où l'extraction a rangé
-ses trouvailles : celui-ci
-dépend de l'ordonnancement des lectures asynchrones, et deux cadres frères
-pourraient se doubler sans qu'aucun design ait changé. Le scan dit ce que Figma
-contient ; seul `structure.children` dit où le développeur doit rendre quoi.
-
-Une dépendance qu'aucun arbre exact n'a su situer — par exemple rangée sous un
-calque masqué — sort donc des deux champs à la fois, jamais d'un seul, et un
-warning la nomme. Le consommateur
-comptant les occurrences de `composes` pour vérifier la parité du code, un
-composant qui disparaît ainsi du contrat rendra sa parité rouge tant que le code
-continuera de le rendre : c'est le diagnostic voulu, le contrat ne le demandant
-plus.
-
-Si la composition varie dans la matrice, une notice nomme les variants
-concernés : `structure` reste la projection de référence, les vues cataloguées
-portent les dépendances exactes de chaque combinaison, et le `composes` global
-garantit que le graphe n'oublie aucune cible conditionnelle.
+Ce que `composes` et le cadre de dépendance CONTIENNENT est décrit par [Composition et dépendances](../../docs/FORMAT.md#composition-et-dépendances). Ce document garde la façon dont le moteur reconnaît une dépendance dans l'arbre Figma, et ce qu'il en dit.
 
 #### Métadonnées
 
@@ -750,51 +312,13 @@ apprendrait à survoler la liste où vivent les gestes à faire.
 
 ## Partie 2 — Export tokens
 
-**But** : exporter toutes les variables locales en `tokens.json` DTCG, chaîne
-d'alias préservée sur tous les tiers et tous les types, **modes de Brand Tokens
-inclus**. Entrée de Style Dictionary v4.
+La forme de `tokens.json` est décrite par [Partie 2 — Export tokens](../../docs/FORMAT.md#partie-2--export-tokens). Ce document garde la lecture des variables Figma, leurs collisions et leurs alias.
 
 **1. Lister** —
 ```ts
 const collections = await figma.variables.getLocalVariableCollectionsAsync();
 const variables   = await figma.variables.getLocalVariablesAsync();
 ```
-
-**2. Résolution des alias (tous types)** — `valuesByMode[modeId]` = valeur
-directe **ou** `{ type: "VARIABLE_ALIAS", id }`. Si alias → écrire une
-**référence DTCG** `"{cible}"`, jamais la valeur finale. Vaut pour COLOR comme
-FLOAT : `sizes.fontsize.base` sort `"{sizes.spacing.8}"`, pas `"8px"`. Les
-feuilles (Primitives, Spacing) portent la valeur directe.
-
-**3. Modes = marques** — la collection **Brand Tokens** utilise les modes comme
-axe multi-marque (1 mode = 1 marque) : **non ignorés**. Stratégie actuelle (un
-seul fichier) : `$value` = valeur du mode par défaut, et **tous** les modes portés
-sous `$extensions["com.ucm.modes"]` (`{ nom-de-marque: valeur }`).
-Rien n'est perdu, tout est visible d'un coup d'œil. Collections mono-mode :
-juste `$value`. *(Évolution possible : un fichier DTCG par marque.)*
-
-**4. DTCG** — chaque variable → `{ $value, $type }`, groupes = objets imbriqués.
-Types : `COLOR`→`color` ; `FLOAT`→`dimension` (+`px`) **sauf** groupes sans
-unité (`opacity`, `fontweight` / `font-weight`, `z-index`, `aspect-ratio`) →
-`number` ; `STRING`→`string` ;
-`BOOLEAN`→`boolean`.
-Le scope Figma précis prévaut (`LINE_HEIGHT`, `FONT_SIZE`, `LETTER_SPACING`
-restent des dimensions ; `FONT_WEIGHT` conserve son type Figma, souvent
-`string`, que le transform de plateforme traduit en poids CSS). Lorsqu'une variable
-est disponible dans tous les scopes, le repli compare chaque segment normalisé
-du chemin en ignorant seulement ses tirets : un token `FLOAT` `Font Weight/Bold`
-devient donc un nombre sans unité, tandis que `Font Weighted/Bold` reste une
-dimension.
-**Le type se décide sur la racine de la chaîne d'alias**, pas sur le token
-courant : Figma garde le même `resolvedType` le long d'une chaîne, mais le nom
-change à chaque maillon. Ex. `lineheight` alias `spacing` (des px) → `dimension`,
-et non `number` : sans ça, un token `number` référencerait un token `dimension`
-(incohérence). Exemple, chaîne préservée sur 4 niveaux :
-
-`normalizeName()` et `indexVariables()` sont partagés avec l'export de
-contrat : les deux commandes nomment un token de la même façon. Une collision
-de chemin ou feuille/groupe conserve la première variable, écarte l'autre
-avec un warning, et refuse tout alias vers la cible écartée.
 
 ---
 
@@ -915,5 +439,4 @@ GitHub API déclarée dans le manifest.
 
 ## Versions
 
-Toute modification de forme incrémente `meta.contractVersion` et adapte la
-présente spécification, le schéma, les tests et les consommateurs concernés.
+Ce qu'un numéro de version engage est décrit par [Versions](../../docs/FORMAT.md#versions).
