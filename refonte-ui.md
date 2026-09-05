@@ -15,21 +15,27 @@ Ce document est **T4.6** de
 [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui en fixe la place
 dans l'ordre d'exécution ; le bug promu hors de ce chantier y est **T4.5**.
 
-## État opérationnel — 5 septembre 2026
+## État opérationnel — 6 septembre 2026
 
-**La refonte n'est pas terminée : 39 tâches sur 44 sont cochées.** Le socle
-U0-U5.5 est réalisé ou arbitré, mais U4.7, U4.8, U4.9, U6.1 et U6.2 restent
-ouvertes. T4.6 reste donc ouverte dans le plan d'industrialisation.
+**Tout ce qui se prouve hors de Figma est fait. Deux observations dans Figma ne
+le sont pas, et rien dans ce repository ne peut les remplacer.** U4.7 et U4.8
+sont livrées et vertes. U4.9 est faite pour ses trois lois et ses deux états de
+galerie ; sa dernière moitié — recharger `dist` dans Figma et regarder les trois
+issues dans les deux thèmes — attend le fichier réel. Elle porte donc `[~]`, un
+statut qui n'existe qu'ici et ne doit pas se lire comme un `[X]`.
 
-U4.5 est **partiellement validée** : la règle est écrite dans
-`packages/plugin/SPEC.md` et protégée par un test de source, mais l'observation
-sur un fichier Figma réel n'a pas encore été faite. U5.5 est **clôturée par
-décision sans implémentation** : aucun bouton « Tester la connexion » séparé
-n'a été ajouté. Ces deux statuts ne doivent pas être résumés comme « tout est
+U4.5 est **partiellement validée** pour la même raison : la règle est écrite
+dans `packages/plugin/SPEC.md` et protégée par un test de source, mais
+l'observation sur un fichier Figma réel n'a pas eu lieu. U5.5 est **clôturée par
+décision sans implémentation** : aucun bouton « Tester la connexion » séparé n'a
+été ajouté. Aucun de ces trois statuts ne doit être résumé par « tout est
 livré ».
 
-**Prochaine séquence :** U4.7, puis U4.8, puis U4.9. U6.1 et U6.2 restent des
-décisions à prendre, pas des bugs à corriger automatiquement.
+**Ce qui reste, dans l'ordre.** Deux gestes demandent le fichier Figma :
+recharger le `dist` construit et regarder les trois issues d'un export ; puis
+réexporter le corpus, car les quatre contrats du Playground portent encore les
+huit diagnostics `UCM_EXPORT_INFO` que U4.7 a supprimés. U6.1 reste une décision
+à prendre, pas un bug à corriger automatiquement.
 
 Ce plan ne touche ni le format du contrat, ni le moteur d'extraction — une seule
 tâche s'en approche, U4.3, et elle est écrite pour ne pas franchir la frontière.
@@ -1191,7 +1197,7 @@ réparent pas ce défaut de fond.
       `packages/plugin/SPEC.md`. *Suite verte : 498 tests côté plugin (812 au
       total), `typecheck` et `build` compris.*
 
-- [ ] **U4.9 — Prouver le résultat dans Figma et dans la galerie.** Ajouter
+- [~] **U4.9 — Prouver le résultat dans Figma et dans la galerie.** Ajouter
       l'état « Stresstest, transformations normales » : les sept cas ci-dessus
       sont présents dans le contrat mais le compte rendu ne contient ni
       « Constats », ni carte de diagnostic, ni avertissement de pull request.
@@ -1206,6 +1212,59 @@ réparent pas ce défaut de fond.
       les trois états dans les deux thèmes, à la taille minimale de la fenêtre.
       Cette dernière vérification distingue une régression de l'UI d'un bundle
       Figma resté ancien.
+
+      *Faite le 6 septembre 2026, SAUF sa dernière moitié :* tout ce qui se
+      prouve hors de Figma est fait et vert ; **l'observation dans Figma reste à
+      faire, et elle demande le fichier réel.** Le statut est donc `[~]`, pas
+      `[X]` : voir « Ce qui reste à trancher ».
+
+      **Trois lois nouvelles, dont deux que l'énoncé demandait mot pour mot.**
+
+      1. *Les sept transformations dans un seul export*
+         (`exportComponent.test.ts`). Les tests de U4.7 prennent chaque cas
+         isolément, ce qui dit POURQUOI chacun se tait ; celui-ci répond à la
+         question que `Stresstest` a posée en vrai — quand les sept arrivent
+         ENSEMBLE, le compte rendu reste-t-il vide ? Il vérifie les deux moitiés
+         à la fois, et c'est le point : que le contrat PORTE les sept
+         (`inset`, `rotation`, `120px`, `structuralSize`, deux vues exactes, un
+         calque propre à un variant, deux contenus de maquette) et qu'aucun ne
+         se dise. La première moitié seule laisserait revenir un message ; la
+         seconde seule serait verte sur un moteur qui aurait cessé de publier.
+      2. *Toute carte jouée par la galerie porte ses trois parties*
+         (`galerie.test.ts`). Sa jumelle côté moteur refuse qu'un message
+         incomplet SORTE ; celle-ci refuse qu'on le mette en scène — sans quoi
+         on jugerait la mise en page sur un contenu que le moteur ne produit
+         pas.
+      3. *Les trois issues ont chacune leur état* (`galerie.test.ts`).
+         Publication saine, correction demandée, export impossible. C'est leur
+         voisinage qui dit si le verdict porte bien le rang 1 et si le rouge
+         reste réservé au refus ; un état retiré en silence rendrait la
+         comparaison impossible sans que rien ne rougisse. La loi vérifie aussi
+         que l'export sain ne joue AUCUNE carte — c'est tout son propos.
+
+      *Deux états ajoutés à la galerie*, portant le total à 32 :
+      `resultat-transformations-normales` — l'export de `Stresstest`, sept
+      transformations au contrat et zéro carte à l'écran, l'état même qui a
+      rouvert U4.7 — et `export-impossible`, où le rouge vit seul, dans la note
+      de rang 1.
+
+      *La loi a été vue rouge avant d'être crue :* la notice de rotation remise
+      à sa source fait tomber le test des sept transformations, sur le motif
+      exact `/rotation est publiée/`. Mutation retirée, suite verte : 501 tests
+      côté plugin (815 au total), `typecheck`, `build` et `galerie` compris.
+
+      **Ce qui reste, et pourquoi ce n'est pas fait ici.** Le dernier alinéa de
+      l'énoncé demande de recharger `dist` dans Figma et de revoir les trois
+      états dans les deux thèmes, à la taille minimale. Cette vérification est la
+      seule qui distingue une régression de l'UI d'un bundle Figma resté ancien,
+      et aucun test de ce repository ne peut la remplacer : la galerie décalque
+      les couleurs de Figma, elle ne les reçoit pas. `dist` est construit et
+      prêt. **Deux gestes restent au propriétaire du fichier Figma**, et le
+      second dépasse cette tâche : recharger ce build et regarder les trois
+      états ; puis réexporter le corpus, car les quatre contrats du Playground
+      portent encore les huit `UCM_EXPORT_INFO` que U4.7 a supprimés — vérifié
+      sur `StressTest.contract.json`, qui en compte exactement huit et rien
+      d'autre.
 
 ---
 
@@ -1503,3 +1562,19 @@ devant tout le reste du graphique.
    « Détails techniques », et garde la trace chronologique complète.
 3. **La sélection depuis l'UI est-elle acceptable au regard de l'invariant ?**
    C'est U4.5, et la réponse doit être écrite, pas supposée.
+4. **Le compte rendu tient-il dans Figma, et pas seulement dans la galerie ?**
+   C'est la dernière moitié de U4.9, et elle ne peut pas se trancher ici : la
+   galerie DÉCALQUE les couleurs de Figma (`theme-figma.css`), elle ne les
+   reçoit pas. Trois choses restent à regarder sur le build réel, dans les deux
+   thèmes et à la taille minimale de la fenêtre — un export sain, qui ne doit
+   montrer aucune carte ; une carte de correction, dont la pastille, le titre,
+   la conséquence et le geste doivent se lire dans cet ordre sans défiler ; un
+   export impossible, dont le rouge doit rester seul. Recharger ce build précis
+   est la moitié du contrôle : sans lui, une régression de l'UI et un bundle
+   Figma resté ancien se ressemblent.
+5. **Quand le corpus est-il réexporté ?** Les quatre contrats du Playground
+   portent encore les huit `UCM_EXPORT_INFO` que U4.7 a supprimés — vérifié sur
+   `StressTest.contract.json`, qui en compte exactement huit et aucun autre
+   diagnostic. Tant qu'ils ne sont pas réexportés, le corpus montre l'ancien
+   comportement du moteur ; ce n'est pas une régression, c'est un artefact daté,
+   et il vaut mieux le dire que le laisser lire comme un désaccord.

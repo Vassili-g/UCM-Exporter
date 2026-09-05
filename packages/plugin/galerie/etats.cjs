@@ -96,6 +96,7 @@ const AVERTISSEMENT_COMPOSE = { // exportComponent.ts, dépendance non placée
 
 const COMPOSANT = 'Button / Primary';
 const CHEMIN = 'src/components/Button/Button.contract.json';
+const CHEMIN_STRESSTEST = 'src/components/StressTest/StressTest.contract.json';
 const CHEMIN_TOKENS = 'src/tokens/tokens.json';
 const BRANCHE_EN_VOL = 'ucm-exporter/export-component-2026-09-05-1412';
 const URL_PR = 'https://github.com/mon-org/design-system-v3/pull/128';
@@ -328,6 +329,66 @@ const ETATS = [
       diagnostic(AVERTISSEMENT_TEXT_STYLE),
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
       verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 2 }),
+    ],
+  },
+  /*
+   * Les trois issues d'un export, côte à côte (U4.9).
+   *
+   * `resultat-transformations-normales` est la publication saine, celle qui a
+   * rouvert U4.7 : sept transformations dans le contrat, zéro carte à l'écran.
+   * `resultat-un-avertissement` est la correction demandée. `export-impossible`
+   * est le refus. Les regarder ensemble est la seule façon de juger si le
+   * verdict porte bien le rang 1 et si le rouge reste réservé au troisième.
+   */
+  {
+    id: 'resultat-transformations-normales',
+    titre: 'Stresstest, transformations normales',
+    quand:
+      "L'export réel de « Stresstest » : composition, structure et auto layout propres à un variant, pistes FIXED d'une grille, taille résolue sous une piste qui hug, calque en position Absolute, rotation dans un flux, contenu de maquette différent. Le contrat porte les sept ; le moteur n'en dit aucun (U4.7).",
+    regarder:
+      "Ce qu'on NE voit pas : aucun groupe de diagnostic, aucune carte, aucun compteur. L'écran d'un export sain est son verdict et sa publication, rien d'autre. C'est l'état qui a rouvert U4.7 — avant, il montrait sept constats dont la conclusion était « rien à faire ».",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      cible([{ type: 'COMPONENT_SET', name: 'Stresstest', variants: 6 }]),
+      { clic: '.action-panel .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      { message: { type: 'phase', texte: 'Lecture des composants imbriqués…' } },
+      {
+        message: {
+          type: 'log',
+          text: `Emplacement : ${CHEMIN_STRESSTEST} (d'après ucm.config.json).`,
+        },
+      },
+      verdict({
+        code: 'a-publier',
+        genre: 'component',
+        chemin: CHEMIN_STRESSTEST,
+        avertissements: 0,
+      }),
+    ],
+  },
+  {
+    id: 'export-impossible',
+    titre: 'Export impossible',
+    quand:
+      "Un Component Set sans aucun variant COMPONENT. Le moteur lève avant toute extraction : rien n'est lu, rien n'est écrit.",
+    regarder:
+      "Le ROUGE, et le fait qu'il soit seul. Il vit dans la note de rang 1, jamais dans une carte : une carte ambre demande une correction, ce message-ci dit que l'export n'a pas eu lieu.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      cible([{ type: 'COMPONENT_SET', name: 'Stresstest', variants: 0 }]),
+      { clic: '.action-panel .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      {
+        message: {
+          type: 'status',
+          state: 'error',
+          text: 'Export impossible pour « Stresstest » : ce Component Set ne contient aucun '
+            + 'variant COMPONENT. Ajoutez au moins un variant dans Figma, puis réexportez.',
+        },
+      },
     ],
   },
   {

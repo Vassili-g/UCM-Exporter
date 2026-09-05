@@ -1019,3 +1019,142 @@ test('deux variants dont la grille diffère publient chacun ses pistes, sans un 
     figmaFaux.restaurer();
   }
 });
+
+/**
+ * La preuve d'ensemble de U4.9 : les sept transformations dans un seul export.
+ *
+ * Les tests de U4.7 prennent chaque cas isolément, et c'est ce qu'il faut pour
+ * dire POURQUOI chacun se tait. Celui-ci répond à l'autre question, celle que
+ * `Stresstest` a posée en vrai : quand les sept arrivent ENSEMBLE sur un même
+ * composant, le compte rendu reste-t-il vide ? C'est le cas qui a rouvert U4.7,
+ * et le seul qui puisse le refermer.
+ *
+ * Il vérifie les deux moitiés à la fois, et c'est délibéré : que le contrat
+ * PORTE les sept, et que l'export n'en dise aucun. La première seule laisserait
+ * revenir un message ; la seconde seule serait verte sur un moteur qui aurait
+ * cessé de publier `inset`, `rotation`, `rowSizes` ou `structuralSize`.
+ */
+test('les sept transformations normales cohabitent sans un mot au designer', async () => {
+  let appel = 0;
+  const figmaFaux = monterFigma({
+    avecRegles: false,
+    enfantsDuVariant: () => {
+      appel += 1;
+      const rang = appel;
+      // 6. Un calque hors du flux, 7. incliné dans ce flux.
+      const badge = node('FRAME', 'Badge', [], {
+        layoutPositioning: 'ABSOLUTE',
+        constraints: { horizontal: 'MAX', vertical: 'MIN' },
+        layoutSizingHorizontal: 'HUG',
+        layoutSizingVertical: 'HUG',
+        width: 16,
+        height: 16,
+        relativeTransform: [[1, 0, 100], [0, 1, 4]],
+        fills: [],
+      });
+      const chevron = node('FRAME', 'Chevron', [], {
+        rotation: 45,
+        layoutSizingHorizontal: 'HUG',
+        layoutSizingVertical: 'HUG',
+        relativeTransform: [
+          [Math.SQRT1_2, -Math.SQRT1_2, 40],
+          [Math.SQRT1_2, Math.SQRT1_2, 4],
+        ],
+        fills: [],
+      });
+      // 4. Une piste FIXED publiée en pixels, 5. un enfant qui mesure sa piste
+      //    qui hug.
+      const tuile = node('FRAME', 'Tile', [], {
+        layoutSizingHorizontal: 'FILL',
+        // Sous une grille, Figma ne renvoie pas `FILL` sur cet axe : la piste
+        // qui hug ne l'expose pas, et il ne rend que la taille résolue.
+        layoutSizingVertical: 'FIXED',
+        height: 15,
+        gridColumnAnchorIndex: 0,
+        gridRowAnchorIndex: 1,
+        boundVariables: { fills: [alias('background')] },
+        fills: [{ type: 'SOLID', visible: true, boundVariables: { color: alias('background') } }],
+      });
+      const grille = node('FRAME', 'TilesGrid', [tuile], {
+        layoutMode: 'GRID',
+        gridColumnCount: 1,
+        gridRowCount: rang === 1 ? 2 : 3,
+        gridColumnSizes: [{ type: 'FLEX', value: 1 }],
+        // 3. Un auto layout qui diffère d'un variant à l'autre.
+        gridRowSizes: rang === 1
+          ? [{ type: 'FIXED', value: 120 }, { type: 'HUG' }]
+          : [{ type: 'FIXED', value: 120 }, { type: 'HUG' }, { type: 'HUG' }],
+      });
+      // 8. Un contenu de maquette qui change d'un variant à l'autre.
+      const libelle = node('TEXT', 'Libellé', [], {
+        characters: rang === 1 ? 'Continuer' : 'Terminer',
+      });
+      // 1. et 2. Une composition et une structure propres à un variant : le
+      //    second porte un calque que le premier n'a pas.
+      return rang === 1
+        ? [badge, chevron, grille, libelle]
+        : [badge, chevron, grille, libelle, node('FRAME', 'Extra', [], { fills: [] })];
+    },
+  });
+  const composant = (globalThis as any).figma.currentPage.selection[0];
+  composant.width = 160;
+  composant.height = 80;
+  for (const variante of composant.children) {
+    variante.width = 160;
+    variante.height = 80;
+  }
+  try {
+    const resultat = await handleExportComponent();
+    const contrat = JSON.parse(resultat.content);
+    const vues = Object.values(contrat.viewStructures as Record<string, any>);
+    const enfants = (vue: any): any[] =>
+      (vue.children ?? []).flatMap((enfant: any) => [enfant, ...enfants(enfant)]);
+    const tousLesEnfants = vues.flatMap(enfants);
+    const parCalque = (nom: string) =>
+      tousLesEnfants.filter((enfant: any) => (enfant.figmaLayer ?? enfant.slot) === nom);
+
+    // Les sept sont DANS le contrat. C'est la moitié qui rend le silence honnête.
+    assert.ok(parCalque('Badge').some((badge) => badge.position === 'absolute'), 'position');
+    assert.ok(parCalque('Badge').some((badge) => badge.inset), 'inset');
+    assert.ok(parCalque('Chevron').some((chevron) => chevron.rotation), 'rotation');
+    assert.ok(
+      parCalque('TilesGrid').some((grille) => (grille.rowSizes ?? []).includes('120px')),
+      'piste FIXED en pixels',
+    );
+    assert.ok(parCalque('Tile').some((tuile) => tuile.structuralSize), 'mesure de la cellule');
+    // Structure, auto layout et composition propres à un variant : deux vues
+    // exactes distinctes, et un calque que la seconde seule porte.
+    assert.ok(Object.keys(contrat.variantViews).length > 1, 'vues exactes');
+    assert.ok(parCalque('Extra').length > 0, 'structure propre à un variant');
+    // Contenu de maquette : les deux libellés sont conservés.
+    const contenus = JSON.stringify(contrat.samples ?? {});
+    assert.ok(contenus.includes('Continuer') && contenus.includes('Terminer'), 'samples');
+
+    // Et AUCUN des sept ne se dit. Le compte rendu du designer ne parle donc
+    // jamais de ce que le contrat a su décrire.
+    const interdits = [
+      /position « Absolute »/,
+      /rotation est publiée/,
+      /publiées en pixels/,
+      /qui hug publient/,
+      /Structure différente/,
+      /Auto layout différent/,
+      /Composition différente/,
+      /Contenu de maquette différent/,
+    ];
+    for (const interdit of interdits) {
+      assert.deepEqual(
+        messagesDe(contrat).filter((message) => interdit.test(message)),
+        [],
+        `un diagnostic est revenu pour ${interdit}`,
+      );
+      assert.deepEqual(
+        resultat.warnings.filter((message) => interdit.test(message)),
+        [],
+        `un avertissement est revenu pour ${interdit}`,
+      );
+    }
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
