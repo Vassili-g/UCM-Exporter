@@ -2557,7 +2557,7 @@ deux tâches attend la Phase 8.
       *Ce qui a rattrapé une affirmation fausse :* l'exemple a été exécuté contre
       le paquet réellement publié, depuis un projet neuf hors du monorepo.
 
-- [ ] **T8.12 — Le README GitHub** (`README.md` de la racine).
+- [X] **T8.12 — Le README GitHub** (`README.md` de la racine).
       *Reste en Phase 8 :* il dépend de T8.1, qui décide où vit la description
       du format une fois la spécification scindée. **Cette condition est levée le
       5 septembre 2026** : la description du format vit dans `docs/FORMAT.md`, et
@@ -2595,6 +2595,24 @@ deux tâches attend la Phase 8.
       section « État », qui en portait une troisième. **Ce qui reste de T8.12 est
       la vitrine elle-même** — montrer un contrat, mettre le visiteur avant le
       contributeur — et cela seul.
+      **Faite le 5 septembre 2026, et sur ces deux points seulement.**
+      Le README montre désormais un contrat, et c'est un export RÉEL — le
+      `TileLink` du dépôt de validation, reproduit tel quel à ses tokens
+      raccourcis près. Fabriquer un exemple aurait été plus court et aurait
+      menti sur ce que l'outil produit vraiment.
+      *Ce qui accompagne l'extrait compte autant que l'extrait :* quatre choses
+      à y voir, qui sont les décisions du format et pas ses champs — aucune
+      valeur aplatie, les variantes énumérées et non déduites, ce qui se répète
+      catalogué, et `coverage.portable` qui dit ce que l'export n'a PAS su
+      décrire. Un visiteur qui lit ces quatre lignes sait s'il veut l'outil.
+      *Le visiteur passe avant le contributeur :* « Côté repository
+      consommateur » — `npm install @ucm-kit/core` — précède « Construire et
+      charger le plugin », qui était la première chose qu'on lisait.
+      *Ce que la tâche n'a PAS fait, et l'énoncé le demandait à moitié :* aucune
+      capture d'écran. Une image de l'interface périme au premier changement
+      d'UI et rien dans ce dépôt ne le verrait — c'est exactement la classe de
+      défaut que le préalable T0 traite. L'extrait de contrat, lui, est
+      vérifiable : il vient d'un fichier qui vit à côté.
 
 ---
 
