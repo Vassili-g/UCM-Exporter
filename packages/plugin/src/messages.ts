@@ -20,6 +20,7 @@
  * réciproque ; c'est une décision à prendre une fois, et elle est posée en U6.2.
  */
 import type { PublicSettings, SettingsInput } from './config';
+import type { EtatConnexion, EtatDuDepot } from './connexion';
 
 /** Niveau d'une ligne de journal : il décide de sa couleur et de son marqueur. */
 export type LogLevel = 'info' | 'success' | 'error';
@@ -42,7 +43,24 @@ export type PluginMessage =
   | { type: 'settings'; settings: PublicSettings }
   | { type: 'settings-validation'; errors: Partial<Record<keyof SettingsInput, string>> }
   | { type: 'settings-save-error' }
-  | { type: 'connection'; state: 'checking' | 'connected' | 'disconnected' }
+  /**
+   * L'état de la connexion, et ce que le designer doit en faire (U5.2).
+   *
+   * Les trois champs viennent d'un seul appel à `etatDeConnexion` : `state`
+   * habille la pastille, `pastille` la nomme, `geste` dit quoi corriger et
+   * n'existe que lorsqu'il y a quelque chose à corriger. Ils ne sont pas trois
+   * décisions, mais une seule, rendue sous trois formes.
+   */
+  | { type: 'connection'; state: EtatConnexion['state']; pastille: string; geste: string | null }
+  /**
+   * Où le repository range ses fichiers, tel qu'il le dit lui-même (U5.1).
+   *
+   * Les trois champs valent `null` tant que rien n'est connu — avant le premier
+   * test de connexion, ou quand il échoue. `source` nomme QUI a décidé : le
+   * fichier du repository, ou les réglages du plugin. C'est la question que le
+   * designer se posait après coup, en lisant une ligne de journal.
+   */
+  | { type: 'layout'; gouverne: EtatDuDepot['gouverne']; resume: string | null }
   /**
    * Une ligne de journal. `level` est déclaré ici parce que la distinction qui
    * structure tout le projet — un avertissement demande un geste, une note n'en

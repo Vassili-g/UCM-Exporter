@@ -12,6 +12,8 @@ import {
 
 import type { GithubConfig } from './config';
 import { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
+import { causeDepuisStatut } from './connexion';
+import type { CauseConnexion } from './connexion';
 export { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
 
 const GITHUB_API = 'https://api.github.com';
@@ -61,8 +63,8 @@ export type LayoutSource = typeof NOM_CONFIGURATION | 'réglages du plugin';
  * `tokens`, et c'est l'une des désynchronisations que T4.1 referme.
  */
 export type RepositoryLayout = {
-  components: string;
-  tokens: string;
+  components: string | null;
+  tokens: string | null;
   source: LayoutSource;
 };
 
@@ -83,6 +85,21 @@ export class GithubApiError extends Error {
   constructor(message: string, public readonly status: number | null = null) {
     super(message);
     this.name = 'GithubApiError';
+  }
+}
+
+/**
+ * Le repository répond, mais il se décrit mal.
+ *
+ * Elle existe pour être RECONNUE (U5.1) : sans elle, un `ucm.config.json`
+ * illisible et une panne de réseau arrivent tous deux avec un statut nul, et le
+ * test de connexion enverrait le designer vérifier sa connexion pendant qu'un
+ * développeur doit corriger un fichier.
+ */
+export class ErreurDeDescription extends GithubApiError {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ErreurDeDescription';
   }
 }
 
@@ -151,7 +168,10 @@ function prefixeDeBranche(kind: ArtifactKind): string {
 export function layoutDesReglages(config: GithubConfig): RepositoryLayout {
   return {
     components: config.componentsPath,
-    tokens: `${config.tokensPath}/tokens.json`,
+    // `null` est une réponse : « ces réglages ne disent pas où ranger les
+    // tokens ». Depuis U5.1, les deux chemins sont un repli facultatif, et un
+    // repli absent ne s'invente pas — il se dit.
+    tokens: config.tokensPath ? `${config.tokensPath}/tokens.json` : null,
     source: 'réglages du plugin',
   };
 }
@@ -182,13 +202,13 @@ export async function repositoryLayout(config: GithubConfig): Promise<Repository
     // le montre pas.
     brut = JSON.parse(decodeBase64(fichier.content).replace(/^﻿/, ''));
   } catch {
-    throw new GithubApiError(
+    throw new ErreurDeDescription(
       `${NOM_CONFIGURATION} du repository n'est pas du JSON valide : impossible de savoir où écrire cet export. Un développeur doit corriger ce fichier.`,
     );
   }
 
   const { configuration, erreur } = configurationDepuisJson(brut);
-  if (erreur) throw new GithubApiError(`${erreur} Un développeur doit corriger ce fichier.`);
+  if (erreur) throw new ErreurDeDescription(`${erreur} Un développeur doit corriger ce fichier.`);
 
   return {
     components: configuration.components,
@@ -197,12 +217,32 @@ export async function repositoryLayout(config: GithubConfig): Promise<Repository
   };
 }
 
+/*
+ * Personne ne sait où écrire : ni le repository, qui ne se décrit pas, ni les
+ * réglages, qui ne portent plus de chemin obligatoire depuis U5.1. Le message
+ * nomme les deux gestes possibles et leur acteur, parce qu'ils n'appartiennent
+ * pas à la même personne.
+ */
+const MANQUE_CHEMIN_COMPOSANTS =
+  'Ce repository ne dit pas où ranger les contrats. Un développeur doit y ajouter un '
+  + `${NOM_CONFIGURATION}. Vous pouvez aussi renseigner le chemin des composants dans la `
+  + 'configuration du plugin.';
+
+const MANQUE_CHEMIN_TOKENS =
+  'Ce repository ne dit pas où ranger les tokens. Un développeur doit y ajouter un '
+  + `${NOM_CONFIGURATION}. Vous pouvez aussi renseigner le chemin des tokens dans la `
+  + 'configuration du plugin.';
+
 /** Déduit le path repo sans demander de saisie par composant. */
 export function artifactPath(
   artifact: RepositoryArtifact,
   layout: RepositoryLayout,
 ): string {
-  if (artifact.kind === 'tokens') return layout.tokens;
+  if (artifact.kind === 'tokens') {
+    if (!layout.tokens) throw new GithubApiError(MANQUE_CHEMIN_TOKENS);
+    return layout.tokens;
+  }
+  if (!layout.components) throw new GithubApiError(MANQUE_CHEMIN_COMPOSANTS);
   const componentName = artifact.filename.replace(/\.contract\.json$/i, '');
   return `${layout.components}/${componentName}/${artifact.filename}`;
 }
@@ -411,13 +451,49 @@ async function githubRequest<T>(
   return response.json() as Promise<T>;
 }
 
-/** Test automatique de connexion demandé à l'ouverture et après sauvegarde. */
-export async function testGithubConnection(config: GithubConfig): Promise<boolean> {
+/** Ce qu'un test de connexion apprend : une cause, et ce que le dépôt dit de lui-même. */
+export type DiagnosticConnexion = {
+  cause: CauseConnexion;
+  statut?: number | null;
+  detail?: string;
+  layout: RepositoryLayout | null;
+};
+
+/**
+ * Test automatique de connexion demandé à l'ouverture et après sauvegarde.
+ *
+ * Il rend une CAUSE, pas un booléen (U5.2). L'ancienne version avalait l'erreur
+ * et rendait `false` : le statut HTTP que `GithubApiError` porte déjà se
+ * perdait au retour, si bien qu'un jeton refusé, un droit manquant et une URL
+ * fautive arrivaient à l'identique devant le designer, dont le geste diffère
+ * pourtant dans les trois cas.
+ */
+export async function diagnostiquerConnexion(config: GithubConfig): Promise<DiagnosticConnexion> {
   try {
     await githubRequest(config, `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`);
-    return true;
-  } catch {
-    return false;
+  } catch (error) {
+    // Une erreur qui n'est pas une réponse de GitHub ne dit rien du réseau ni
+    // des droits : la nommer autrement serait attribuer une cause non établie.
+    if (!(error instanceof GithubApiError)) return { cause: 'github-indisponible', layout: null };
+    return { cause: causeDepuisStatut(error.status), statut: error.status, layout: null };
+  }
+
+  /*
+   * Le repository répond ; on lui demande maintenant OÙ il range ses fichiers.
+   * Cette lecture n'avait lieu qu'à la publication (U5.1), c'est-à-dire après
+   * le travail : un `ucm.config.json` fautif refusait alors l'export, et le
+   * designer l'apprenait une fois son composant analysé.
+   */
+  try {
+    return { cause: 'connecte', layout: await repositoryLayout(config) };
+  } catch (error) {
+    if (error instanceof ErreurDeDescription) {
+      return { cause: 'depot-mal-decrit', detail: error.message, layout: null };
+    }
+    if (error instanceof GithubApiError) {
+      return { cause: causeDepuisStatut(error.status), statut: error.status, layout: null };
+    }
+    return { cause: 'github-indisponible', layout: null };
   }
 }
 

@@ -70,6 +70,7 @@ packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
     base64.ts                  encodage UTF-8/Base64 sans dépendance au sandbox
     config.ts                  configuration GitHub locale
     fenetre.ts                 la taille de la fenêtre, ses bornes et son rangement
+    connexion.ts               ce que vaut la connexion au dépôt, et le geste qu'elle demande
     github.ts                  branche, fichier et pull request
     messages.ts                les DEUX sens de la frontière sandbox ↔ UI
     ui/                        interface du plugin

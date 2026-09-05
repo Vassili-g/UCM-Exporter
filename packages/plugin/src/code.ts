@@ -9,9 +9,14 @@ import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings } from './config';
 import type { SettingsInput } from './config';
-import { publishArtifact, testGithubConnection } from './github';
-import type { ArtifactKind } from './github';
+import { publishArtifact, diagnostiquerConnexion } from './github';
+import type { ArtifactKind, RepositoryLayout } from './github';
 import type { PluginMessage, UiRequest } from './messages';
+import { etatDeConnexion, etatDuDepot } from './connexion';
+import type { CauseConnexion } from './connexion';
+
+/** Ce qu'`etatDeConnexion` accepte en plus de la cause. */
+type PrecisionConnexion = { statut?: number | null; detail?: string };
 import { TAILLE_PAR_DEFAUT, lireTaille, rangerTaille, tailleValide } from './fenetre';
 
 /*
@@ -52,9 +57,25 @@ function postNote(state: '' | 'warning' | 'success', text: string): void {
   versUi({ type: 'note', state, text });
 }
 
-/** Met à jour l'indicateur de connexion toujours visible dans l'en-tête. */
-function postConnection(state: 'checking' | 'connected' | 'disconnected'): void {
-  versUi({ type: 'connection', state });
+/**
+ * Met à jour l'indicateur de connexion toujours visible dans l'en-tête.
+ *
+ * Il prend une CAUSE, jamais un état d'affichage : `etatDeConnexion` est seul à
+ * décider ce que la pastille dit et quel geste elle demande (U5.2).
+ */
+function postConnection(cause: CauseConnexion, precision: PrecisionConnexion = {}): void {
+  versUi({ type: 'connection', ...etatDeConnexion(cause, precision) });
+}
+
+/**
+ * Envoie ce que le repository dit de lui-même, ou son silence (U5.1).
+ *
+ * Cette information n'apparaissait qu'après publication, en ligne de journal :
+ * le designer apprenait alors que les deux chemins saisis dans la configuration
+ * n'avaient servi à rien, parce qu'un `ucm.config.json` les remplaçait.
+ */
+function postLayout(layout: RepositoryLayout | null): void {
+  versUi({ type: 'layout', ...etatDuDepot(layout) });
 }
 
 /** Envoie le fichier généré à l'UI pour déclencher le téléchargement local. */
@@ -81,12 +102,14 @@ async function refreshConfiguration(): Promise<void> {
   versUi({ type: 'settings', settings: publicSettings });
   const validation = await loadGithubConfig();
   if (!validation.valid || !validation.config) {
-    postConnection('disconnected');
+    postConnection('non-configure');
+    postLayout(null);
     return;
   }
-  postConnection('checking');
-  const connected = await testGithubConnection(validation.config);
-  postConnection(connected ? 'connected' : 'disconnected');
+  postConnection('verification');
+  const diagnostic = await diagnostiquerConnexion(validation.config);
+  postConnection(diagnostic.cause, { statut: diagnostic.statut, detail: diagnostic.detail });
+  postLayout(diagnostic.layout);
 }
 
 /** Jeton anti-course : seule la dernière analyse de sélection met à jour la note. */
@@ -234,7 +257,7 @@ async function runExport(
       // Une PR d'export est faite pour être relue tout de suite par le designer
       // qui vient de l'ouvrir : on l'amène dessus sans lui demander un clic.
       openExternal(publication.pullRequestUrl);
-      postConnection('connected');
+      postConnection('connecte');
       postStatus('success', `${successText} Pull request créée.`);
       figma.notify(`${successText} Pull request créée.`);
     } catch (error) {

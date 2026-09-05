@@ -19,6 +19,29 @@ const fs = require('fs');
 const path = require('path');
 
 /**
+ * Les textes de connexion sont LUS au sandbox, jamais recopiés ici.
+ *
+ * `etatDeConnexion` est leur unique autorité (U5.2) ; une galerie qui en
+ * garderait une copie montrerait un jour des phrases que le plugin ne dit plus,
+ * et c'est exactement ce qu'une galerie ne doit pas pouvoir faire. `esbuild`
+ * est déjà une dépendance du paquet : compiler ce seul module coûte quelques
+ * millisecondes.
+ */
+function chargerConnexion() {
+  const compile = path.resolve(__dirname, '../dist/galerie-connexion.cjs');
+  require('esbuild').buildSync({
+    entryPoints: [path.resolve(__dirname, '../src/connexion.ts')],
+    outfile: compile,
+    bundle: true,
+    format: 'cjs',
+    platform: 'node',
+  });
+  return require(compile);
+}
+
+const { etatDeConnexion, etatDuDepot } = chargerConnexion();
+
+/**
  * La version de schéma est LUE à sa source. Une capture qui afficherait un
  * numéro que le code ne produit plus enseignerait exactement le contraire de
  * ce que ce pied de page existe pour dire (U0.1).
@@ -50,9 +73,9 @@ const BRANCHE_EN_VOL = 'ucm-exporter/export-component-2026-09-05-1412';
 const URL_PR = 'https://github.com/mon-org/design-system-v3/pull/128';
 
 /** Les deux messages que le sandbox envoie à l'ouverture, avant toute action. */
-const ouverture = (connexion) => [
+const ouverture = (cause) => [
   { message: { type: 'schema-version', version: VERSION_CONTRAT } },
-  { message: { type: 'connection', state: connexion } },
+  { message: { type: 'connection', ...etatDeConnexion(cause) } },
 ];
 
 /** La note de sélection, seul retour en direct de `reportSelectionState`. */
@@ -97,7 +120,7 @@ const ETATS = [
       "Rang 1 de U1.0 — la cible. Il n'y en a pas : la note occupe la place où devrait vivre un nom de composant.",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { message: { type: 'note', state: '', text: AUCUNE_SELECTION } },
     ],
   },
@@ -110,7 +133,7 @@ const ETATS = [
       "La capture doit être indiscernable de `selection-absente` : c'est le constat, pas un défaut de la galerie.",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { message: { type: 'note', state: '', text: AUCUNE_SELECTION } },
     ],
   },
@@ -122,7 +145,7 @@ const ETATS = [
       "Rang 2 : c'est un avertissement, et il est rendu par une note d'information — même bloc, même place, une couleur de plus.",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       {
         message: {
           type: 'note',
@@ -140,7 +163,7 @@ const ETATS = [
       "Rang 1 : le nom du composant. Il n'apparaît qu'ici, dans une phrase, et le premier clic l'efface.",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { message: { type: 'note', state: 'success', text: `« ${COMPOSANT} » prêt à l'export.` } },
     ],
   },
@@ -153,7 +176,7 @@ const ETATS = [
       "Ce que l'écran a PERDU au clic : le nom du composant et l'état de la sélection. Rien ne dit sur quoi porte l'attente.",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { message: { type: 'note', state: 'success', text: `« ${COMPOSANT} » prêt à l'export.` } },
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
@@ -177,7 +200,7 @@ const ETATS = [
       "Rang 1 : le verdict. Il est en fin de phrase, après le libellé de succès, et le journal répète le même texte une ligne plus bas.",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
@@ -194,7 +217,7 @@ const ETATS = [
       "Rang 2 : l'avertissement. Il arrive en 11 px monospace dans un journal de 96 px, sous une puce, sans niveau — `runExport` l'envoie sans `level`.",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `⚠︎ ${AVERTISSEMENT_COMPOSE}` } },
@@ -219,7 +242,7 @@ const ETATS = [
       'Le compte rendu tient-il ? Vingt entrées dans 144 px de haut, et rien ne dit combien il en reste hors de vue.',
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       ...vingtAvertissements(),
@@ -243,7 +266,7 @@ const ETATS = [
       "Le verdict « aucun changement » et son ENDROIT (T4.5), au même rang visuel qu'une pull request créée.",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
@@ -271,7 +294,7 @@ const ETATS = [
       "L'endroit et le lien arrivent ensemble. Le navigateur ne s'ouvre PAS : le lien est la seule sortie, et il est en bas d'un journal.",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
@@ -309,7 +332,7 @@ const ETATS = [
       "Trois causes distinctes arrivent sous le même message brut (U5.3), et le résultat d'analyse a disparu (U3.3).",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
@@ -344,7 +367,7 @@ const ETATS = [
       "Ce que le designer NE sait pas encore : que son export sera téléchargé au lieu d'être publié (U2.5).",
     existe: true,
     atteinte: [
-      ...ouverture('disconnected'),
+      ...ouverture('non-configure'),
       { message: { type: 'note', state: 'success', text: `« ${COMPOSANT} » prêt à l'export.` } },
     ],
   },
@@ -356,7 +379,7 @@ const ETATS = [
       "Le repli est SUBI : il s'apprend à l'arrivée, en ligne de journal, alors que le bouton avait promis une pull request.",
     existe: true,
     atteinte: [
-      ...ouverture('disconnected'),
+      ...ouverture('non-configure'),
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       {
@@ -400,7 +423,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       { message: { type: 'schema-version', version: VERSION_CONTRAT } },
-      { message: { type: 'connection', state: 'checking' } },
+      { message: { type: 'connection', ...etatDeConnexion('verification') } },
       { message: { type: 'note', state: '', text: AUCUNE_SELECTION } },
     ],
   },
@@ -413,7 +436,7 @@ const ETATS = [
       'Un blocage TARDIF : il arrive après une analyse complète, alors que la lecture pourrait se faire au test de connexion (U5.1).',
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { clic: '.action-panel .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       {
@@ -434,7 +457,7 @@ const ETATS = [
       "La note parle encore de sélection au-dessus d'une action qui n'en tient aucun compte (U2.3).",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { message: { type: 'note', state: '', text: AUCUNE_SELECTION } },
       { clic: '.action-panel .btn-secondary' },
       { message: { type: 'status', state: 'loading', text: 'Lecture des variables…' } },
@@ -466,7 +489,7 @@ const ETATS = [
       "Un message destiné au designer qui expose une trace technique et ne nomme aucun geste — la règle de rédaction ne l'a jamais atteint.",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { erreurUi: "Cannot read properties of undefined (reading 'name')" },
     ],
   },
@@ -478,7 +501,7 @@ const ETATS = [
       "Cinq champs obligatoires, dont deux — les chemins — que le dépôt peut contredire sans le dire (U5.1). L'en-tête suit la page depuis U0.3.",
     existe: true,
     atteinte: [
-      ...ouverture('disconnected'),
+      ...ouverture('non-configure'),
       {
         message: {
           type: 'settings',
@@ -502,7 +525,7 @@ const ETATS = [
       "Le placeholder du token porte une règle de comportement, et aucun geste ne retire le token du poste (U5.4).",
     existe: true,
     atteinte: [
-      ...ouverture('connected'),
+      ...ouverture('connecte'),
       { message: { type: 'settings', settings: REGLAGES } },
       { clic: '.icon-button' },
     ],
@@ -515,7 +538,7 @@ const ETATS = [
       "Le rang de l'erreur est porté par la seule couleur, et le formulaire annonce dans six régions à la fois.",
     existe: true,
     atteinte: [
-      ...ouverture('disconnected'),
+      ...ouverture('non-configure'),
       {
         message: {
           type: 'settings',
@@ -551,10 +574,84 @@ const ETATS = [
       "Le même fait est dit deux fois — la pastille de l'en-tête et la phrase de statut — et l'une des deux n'est pas sur l'écran de travail.",
     existe: true,
     atteinte: [
-      ...ouverture('checking'),
+      ...ouverture('verification'),
       { message: { type: 'settings', settings: REGLAGES } },
       { clic: '.icon-button' },
-      { message: { type: 'connection', state: 'connected' } },
+      { message: { type: 'connection', ...etatDeConnexion('connecte') } },
+    ],
+  },
+  {
+    id: 'connexion-jeton-refuse',
+    titre: 'Jeton refusé, sur l’écran de travail',
+    quand: "GitHub répond 401 au test d'ouverture. Deux autres causes existent — droits manquants (403) et repository introuvable (404) — et se corrigent autrement.",
+    regarder:
+      "La pastille NOMME la cause au lieu de dire « non connecté », et c'est un bouton : le geste se fait là où elle mène.",
+    existe: true,
+    atteinte: [
+      ...ouverture('jeton-refuse'),
+      { message: { type: 'note', state: '', text: AUCUNE_SELECTION } },
+    ],
+  },
+  {
+    id: 'configuration-chemins-du-depot',
+    titre: 'Le repository décrit lui-même ses chemins',
+    quand:
+      "Le test de connexion a lu `ucm.config.json` sur la branche de base. Cette lecture n'avait lieu qu'à la publication, et le designer l'apprenait par une ligne de journal.",
+    regarder:
+      "Les deux libellés portent « (repli) » et la phrase dit qui décide. Le champ qui ne sert à rien le dit là où on le lit.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      { message: { type: 'settings', settings: REGLAGES } },
+      {
+        message: {
+          type: 'layout',
+          ...etatDuDepot({
+            components: 'packages/ui/src/components',
+            tokens: 'packages/ui/src/tokens/design-tokens.json',
+            source: 'ucm.config.json',
+          }),
+        },
+      },
+      { clic: '.icon-button' },
+    ],
+  },
+  {
+    id: 'configuration-aucun-chemin',
+    titre: 'Personne ne dit où ranger les exports',
+    quand:
+      "Le cas neuf de U5.1 : les chemins ne sont plus obligatoires, et ce repository ne se décrit pas. L'export sera refusé au lieu d'écrire à un endroit inventé.",
+    regarder:
+      "Le refus est annoncé AVANT l'export, et la phrase nomme les deux gestes possibles avec leur acteur.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      {
+        message: {
+          type: 'settings',
+          settings: { ...REGLAGES, componentsPath: '', tokensPath: '' },
+        },
+      },
+      {
+        message: {
+          type: 'layout',
+          ...etatDuDepot({ components: null, tokens: null, source: 'réglages du plugin' }),
+        },
+      },
+      { clic: '.icon-button' },
+    ],
+  },
+  {
+    id: 'configuration-cause-affichee',
+    titre: 'La cause de l’échec, là où on la corrige',
+    quand: "Arrivée dans la configuration par la pastille, après un 403 : le jeton est reconnu mais n'a pas les droits.",
+    regarder:
+      "Le geste est écrit sous le formulaire, et il y était AVANT l'arrivée : le statut n'attend plus un enregistrement pour dire quelque chose.",
+    existe: true,
+    atteinte: [
+      ...ouverture('acces-refuse'),
+      { message: { type: 'settings', settings: REGLAGES } },
+      { clic: '.icon-button' },
     ],
   },
 ];

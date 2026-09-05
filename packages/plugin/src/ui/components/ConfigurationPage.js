@@ -38,7 +38,7 @@ function createField(name, label, options, onChange) {
     wrapper.appendChild(help);
   }
   wrapper.appendChild(error);
-  return { wrapper, input, error };
+  return { wrapper, input, error, label: labelNode };
 }
 
 /** Valide les erreurs simples avant d'envoyer le secret au sandbox Figma. */
@@ -65,6 +65,14 @@ function localErrors(settings, hasStoredPat) {
 export function createConfigurationPage(onSave) {
   let hasStoredPat = false;
   let settingsDirty = false;
+  /*
+   * « Réglages enregistrés » ne se dit que si un enregistrement a eu lieu.
+   * Le statut l'affirmait à CHAQUE test de connexion, y compris celui de
+   * l'ouverture, où personne n'avait rien enregistré. Seule l'UI sait qu'un
+   * clic vient de partir : le sandbox, lui, teste la connexion pour deux
+   * raisons différentes et n'a pas à les distinguer.
+   */
+  let enregistrementEnCours = false;
   const element = document.createElement('div');
   element.className = 'page-stack';
   element.hidden = true;
@@ -88,6 +96,19 @@ export function createConfigurationPage(onSave) {
   const repoUrl = createField('repoUrl', 'URL du repository', {
     placeholder: 'https://github.com/mon-org/design-system-v3',
   }, markDirty);
+
+  /*
+   * Qui gouverne les chemins, dit AVANT de les saisir (U5.1).
+   *
+   * `repositoryLayout` ignore ces deux champs dès qu'un `ucm.config.json`
+   * lisible existe. Le designer l'apprenait par une ligne de journal, après
+   * publication : il avait donc rempli deux champs sans effet, et rien ne le
+   * lui avait dit. La phrase vient du sandbox, seul à savoir ce que le
+   * repository répond.
+   */
+  const gouvernance = document.createElement('p');
+  gouvernance.className = 'field-help';
+  gouvernance.hidden = true;
   const baseBranch = createField('baseBranch', 'Branche de base', { placeholder: 'main' }, markDirty);
   const componentsPath = createField(
     'componentsPath',
@@ -102,9 +123,28 @@ export function createConfigurationPage(onSave) {
   }, markDirty);
   const fields = { repoUrl, baseBranch, componentsPath, tokensPath, githubPat };
 
+  /*
+   * L'état de la configuration se lit EN HAUT, sous la pastille (U5.2).
+   *
+   * Il vivait sous le bouton « Enregistrer », c'est-à-dire hors de l'écran :
+   * le designer qui arrive par la pastille rouge y trouvait un formulaire et
+   * aucune raison. Le formulaire dépasse la fenêtre dès que le repository se
+   * décrit, donc l'un des deux bouts sera toujours à faire défiler ; c'est
+   * l'arrivée qu'il faut servir, parce que c'est le moment où l'on ne sait pas
+   * quoi faire. Le résultat d'un enregistrement s'écrit au même endroit : deux
+   * emplacements pour un même fait en feraient deux faits.
+   */
   const status = document.createElement('div');
   status.className = 'config-status';
+  status.hidden = true;
   status.setAttribute('aria-live', 'polite');
+
+  /** Écrit l'état de la configuration, ou l'efface s'il n'y a rien à dire. */
+  const ecrireStatut = (etat, texte) => {
+    status.dataset.state = etat;
+    status.textContent = texte;
+    status.hidden = !texte;
+  };
 
   const renderErrors = (errors = {}) => {
     for (const [name, field] of Object.entries(fields)) {
@@ -128,32 +168,43 @@ export function createConfigurationPage(onSave) {
       const errors = localErrors(settings, hasStoredPat);
       renderErrors(errors);
       if (Object.keys(errors).length > 0) return;
+      enregistrementEnCours = true;
       saveButton.disabled = true;
-      status.dataset.state = 'loading';
-      status.textContent = 'Enregistrement et test de connexion…';
+      ecrireStatut('loading', 'Enregistrement et test de connexion…');
       onSave(settings);
     },
   });
 
   element.append(
+    status,
     repoUrl.wrapper,
     baseBranch.wrapper,
+    gouvernance,
     componentsPath.wrapper,
     tokensPath.wrapper,
     githubPat.wrapper,
     saveButton,
-    status,
   );
 
   return {
     element,
     renderErrors,
+    /*
+     * Les valeurs sont celles du sandbox, sans défaut inventé ici (U5.1).
+     *
+     * Ce composant en écrivait trois de son côté — `main`, `src/components`,
+     * `src/tokens` — que `loadPublicSettings` écrit déjà. Deux autorités sur la
+     * même valeur, et leur désaccord était muet : `config.ts` conserve une
+     * chaîne vide, ce `populate` la remplaçait. Une branche de base
+     * délibérément vidée se réaffichait donc « main ». Les placeholders portent
+     * la suggestion ; le champ ne porte que ce qui est enregistré.
+     */
     populate(settings) {
       if (settingsDirty) return;
-      repoUrl.input.value = settings.repoUrl || '';
-      baseBranch.input.value = settings.baseBranch || 'main';
-      componentsPath.input.value = settings.componentsPath || 'src/components';
-      tokensPath.input.value = settings.tokensPath || 'src/tokens';
+      repoUrl.input.value = settings.repoUrl ?? '';
+      baseBranch.input.value = settings.baseBranch ?? '';
+      componentsPath.input.value = settings.componentsPath ?? '';
+      tokensPath.input.value = settings.tokensPath ?? '';
       hasStoredPat = Boolean(settings.hasPat);
       githubPat.input.value = '';
       githubPat.input.placeholder = hasStoredPat
@@ -164,19 +215,42 @@ export function createConfigurationPage(onSave) {
       settingsDirty = false;
       this.populate(settings);
     },
-    updateConnection(state) {
+    /*
+     * Le statut est écrit même quand la page est cachée (U5.2) : ainsi le
+     * designer qui arrive par la pastille trouve la cause déjà là, au lieu d'un
+     * cadre vide. C'est la phrase fausse — « Configuration enregistrée » sans
+     * enregistrement — qui imposait auparavant de ne rien écrire hors de la vue.
+     *
+     * `geste` vient du sandbox, et il nomme quoi corriger. L'UI ne le formule
+     * pas : elle ne connaît ni le statut HTTP ni la validité des réglages.
+     */
+    updateConnection(state, geste) {
       if (state === 'checking') return;
       saveButton.disabled = false;
-      if (element.hidden) return;
-      status.dataset.state = state === 'connected' ? 'success' : 'error';
-      status.textContent = state === 'connected'
-        ? 'Configuration enregistrée. Connexion au dépôt GitHub réussie.'
-        : 'Configuration enregistrée. Connexion au dépôt GitHub impossible.';
+      const prefixe = enregistrementEnCours ? 'Réglages enregistrés. ' : '';
+      enregistrementEnCours = false;
+      if (state === 'connected') {
+        ecrireStatut('success', `${prefixe}La connexion au repository fonctionne.`);
+        return;
+      }
+      ecrireStatut('error', `${prefixe}${geste ?? ''}`.trim());
+    },
+    /**
+     * Marque les deux chemins pour ce qu'ils sont : un repli, ou la décision.
+     * Le libellé le dit, parce qu'un champ dont personne ne se sert doit le
+     * dire là où on le lit, pas dans une note à côté.
+     */
+    afficherGouvernance({ gouverne, resume }) {
+      gouvernance.textContent = resume ?? '';
+      gouvernance.hidden = !resume;
+      const repli = gouverne === 'repository' ? ' (repli)' : '';
+      componentsPath.label.textContent = `Chemin des composants${repli}`;
+      tokensPath.label.textContent = `Chemin des tokens${repli}`;
     },
     showSaveError() {
+      enregistrementEnCours = false;
       saveButton.disabled = false;
-      status.dataset.state = 'error';
-      status.textContent = 'Configuration non enregistrée : corrigez les champs signalés.';
+      ecrireStatut('error', 'Réglages non enregistrés. Corrigez les champs signalés.');
     },
     releaseSaveButton() {
       saveButton.disabled = false;
