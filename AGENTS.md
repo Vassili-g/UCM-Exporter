@@ -10,7 +10,9 @@ Lire uniquement ce qui concerne la tâche :
 1. [CONCEPT.md](./CONCEPT.md) pour les responsabilités du modèle ;
 2. [docs/FORMAT.md](./docs/FORMAT.md) si la tâche touche à la FORME de ce qui
    est publié, [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) si elle
-   touche à la façon dont le plugin lit Figma ;
+   touche à la façon dont le plugin lit Figma. Ce que les versions PRÉCÉDENTES
+   publiaient est dans [docs/CHANGELOG-FORMAT.md](./docs/CHANGELOG-FORMAT.md),
+   à ouvrir dès qu'une tâche touche à la compatibilité ;
 3. [CONTRIBUTING.md](./CONTRIBUTING.md) pour les règles de code et de test ;
 4. `packages/kit/src/format/types.ts` et les tests voisins pour la forme concrète.
 
