@@ -748,12 +748,136 @@ reste ouverte.
       couverture par une loi vérifiable :** *tout avertissement qui nomme un
       calque dans son texte porte le node de ce calque.* Un avertissement qui ne
       nomme aucun calque n'a pas de lien, et son absence n'enseigne rien de faux.
-      La loi est testable sur l'ensemble des avertissements produits, comme
-      celles de `packages/plugin/tests/lois.ts`.
       Geste : écrire cette loi et son test, puis renseigner le node là où la loi
       l'exige. **Ce que cette tâche ne fait pas :** décider d'écrire
       `figma.nodeId` dans le contrat publié. Le canal de l'UI et le champ du
       format restent deux décisions.
+
+      **Revue indépendante du 5 septembre 2026, et ses conclusions revérifiées
+      une à une dans le code (règle 4).** L'énoncé ci-dessus tient sur son
+      intention et se trompe sur presque tous ses moyens. Ce qui suit le
+      remplace ; il est conservé au-dessus parce qu'un énoncé dépassé dit ce
+      qu'on croyait au moment de l'écrire.
+
+      *Le cadrage que la revue a démoli, et il valait mieux qu'il le soit avant
+      d'écrire une ligne :* « chacun des 38 sites qui nomment un calque a déjà le
+      node en portée, seul le canal `string[]` ne sait pas le porter ». **Faux
+      dans les deux sens, vérifié :**
+      - `exportComponent.ts:403-412` écrit `Layer « ${dependency.figmaLayer} »`,
+        où `figmaLayer` est une CHAÎNE du type publié, pas un node ;
+      - `mergeIconRules.ts:34,37,59` écrit `Icône « ${layer.figmaLayer} »` depuis
+        un agrégat sur toute la matrice : le calque vit sous N ids, et le message
+        dit précisément qu'il ne tient pas la même place selon les variants — lui
+        donner un id, ce serait élire un variant en cachette ;
+      - `mergeIconRules.ts:90` nomme un calque qui **n'existe pas** (« aucun
+        layer de ce nom dans le composant »).
+      *Et à l'envers :* au moins sept messages nomment un calque HORS de la
+      convention `Layer « … »` — `extractVariantTypography.ts:125,197,217`,
+      `propertyBindings.ts:88`, `extractSlotTokens.ts:359,375,388` —, tous
+      porteurs d'un geste. Ce sont exactement ceux sur lesquels U4.4
+      n'afficherait pas de lien, donc exactement la leçon fausse que cette tâche
+      existe pour empêcher.
+
+      *Ce qui condamne le refactor évident, et c'est la trouvaille de la revue :*
+      passer le canal de `string[]` à `{message, nodeId}[]` **casserait un
+      dédoublonnage dont le projet dépend**. Le TEXTE d'un message est aujourd'hui
+      son identité, et quatre mécanismes en vivent — le dédoublonnage final
+      (`exportComponent.ts:462`), celui de la composition
+      (`composedComponents.ts:471`), `pushOnce` (`exportableNodes.ts:60`), et les
+      deux classificateurs `portableWarningSet` / `infoSet` qui décident le
+      `code` publié de chaque diagnostic. Le commentaire de
+      `composedComponents.ts:468-470` le dit sans ambiguïté : « une instance
+      orpheline vit dans TOUS les variants du set, et chaque scan la relève avec
+      le même texte ; le dédoublonnage rend donc exactement un constat par
+      layer ». Un `Set` d'objets ne déduplique rien : un set de trente variants
+      imprimerait trente fois le même avertissement dans le corps de la pull
+      request. **La même mesure absout le registre indexé par le texte** — deux
+      calques qui produisent le même message sont DÉJÀ fondus en un, donc il n'y
+      a jamais qu'un id à porter.
+
+      *Le geste retenu, qui n'est aucune des trois options envisagées :* un
+      registre `WeakMap<readonly string[], Map<string, string>>` **indexé par le
+      tableau d'accumulation lui-même**. Les 38 sites reçoivent déjà ce tableau —
+      il n'y a donc aucun paramètre nouveau à faire traverser vingt modules. Pas
+      d'état global, rien qui survive à l'export, aucun rituel « vider au début »
+      dont l'oubli serait muet, et deux exports qui se chevaucheraient ne peuvent
+      pas se contaminer. Son prix est nommé plutôt que découvert : les tableaux
+      sont recopiés et fusionnés en six endroits, et chacun doit reporter son
+      registre — un point d'oubli silencieux, que la loi est précisément là pour
+      rendre bruyant. Deux sites demandent une seconde forme du helper :
+      `structureTree.depthLimitWarning` RETOURNE son message au lieu de le
+      pousser, et trois sites de `flexLayout.ts` ont un canal à défaut `= []`,
+      qui jette le message quand l'appelant n'en passe pas.
+
+      *La loi, en trois corrections :*
+      1. **Le SUJET, pas tous les calques nommés.** Plusieurs messages en nomment
+         deux, le second n'étant qu'un contexte (« déjà posé par le layer « Y » »),
+         et U4.4 a besoin d'une cible unique par clic. Le sujet est ce qui précède
+         le premier deux-points — la forme que `CONTRIBUTING.md` prescrit déjà, et
+         dont `Layer « … »` n'est qu'un cas parmi cinq ou six ; seuls `Layer`,
+         `Variant` et `Component Set` désignent un node.
+      2. **Sa moitié utile est la seconde :** *aucun diagnostic ne nomme un calque
+         du composant exporté ailleurs que dans son sujet.* Sans elle, la loi se
+         satisfait en déplaçant le nom du calque du préfixe vers le corps, et U4.4
+         réaffiche des messages sans lien. Son univers est les calques du
+         COMPOSANT, pas tous les nodes du document — `mergeIconRules.ts:90` cite
+         le layer « icon » d'une instance de règle, qui existe et n'appartient pas
+         au composant.
+      3. **« Avertissement » est trop étroit :** la loi porte sur les trois codes
+         de `meta.diagnostics`. `flexLayout.ts:588` pousse dans `infos`, pas dans
+         `warnings` — vérifié —, et le compte rendu affiche les deux natures
+         depuis U4.1.
+      Les exceptions s'écrivent au lieu de se subir, sinon elles se liront comme
+      des violations tolérées : la famille `Icône « X »` (agrégat de matrice,
+      aucun node unique n'existe), `Règle @icons « X »` (le calque n'existe pas),
+      et le cache de `extractVariantTypography.ts:205-210`, où un text style
+      cassé produit un message pour le PREMIER calque rencontré et rien pour les
+      autres — l'id porté y sera l'un d'eux, ce qui est cohérent avec le
+      dédoublonnage par texte mais doit être écrit.
+
+      *Où le test vit, et une prémisse de cet énoncé qui était fausse :* il
+      disait « testable sur l'ensemble des avertissements produits, comme celles
+      de `lois.ts` », lesquelles « servent DEUX lecteurs ». **Il n'y en a qu'un.**
+      Le seul importateur de `lois.ts` est `exportComponent.test.ts` ; le corpus
+      figé de `packages/kit/fixtures/contrats/11.0/` n'est lu par aucune loi.
+      L'en-tête du fichier l'affirmait, et il a été corrigé le même jour — c'est
+      la maladie du préalable T0, dans un fichier que T0 ne couvre pas. Le filet
+      de U4.3 se pose donc en deux endroits : le crochet unique de
+      `handleExportComponent()` dans `exportComponent.test.ts` pour la
+      vérification dynamique, **et surtout un test de SOURCE** qui relit les
+      modules et refuse qu'un préfixe de sujet s'écrive ailleurs que dans le
+      helper. Le second seul rend la loi vraie par construction : le faux `figma`
+      n'excite qu'une poignée des 38 sites, et une loi verte parce qu'aucun
+      scénario n'a touché les trente autres est du théâtre.
+
+      *La loi que la tâche doit livrer EN PLUS, et c'est la recommandation la
+      plus importante de la revue :* **aucun `meta.diagnostics[]` ne porte de
+      champ `figma`.** `ContractDiagnostic.figma` est déjà dans `types.ts`, donc
+      déjà dans le schéma dérivé : si l'id fuit jusqu'au `.map()` de
+      `exportComponent.ts:468`, l'artefact publie des ids de calques internes,
+      `verifierLeSchema` valide VERT, `npm run schema` ne bronche pas, et
+      l'invariant « aucune donnée d'extraction Figma n'entre dans l'artefact »
+      tombe sans un mot. Le hors-périmètre de cette tâche n'est aujourd'hui gardé
+      par rien d'autre que sa propre prose. Trois lignes le rendent mécanique —
+      et le jour où quelqu'un tranchera d'écrire `figma.nodeId`, il devra retirer
+      une loi, ce qui se voit en revue.
+
+      *Ce qui ne change pas :* la jonction se fait APRÈS le point de divergence
+      (`exportComponent.ts:479-480`), là où l'UI et le contrat se séparent déjà.
+      Un seul type bouge — `ComponentExport` et le `diagnostic` de
+      `messages.ts` —, celui de la frontière sandbox ↔ UI, jamais celui du
+      format. Et la loi se borne à l'export de COMPOSANT : `runExport` est
+      partagé avec l'export de tokens, dont les messages nomment des variables et
+      n'ont aucun node.
+
+      *Une remarque de la revue contre son propre verdict, conservée parce
+      qu'elle vaut pour la suite :* le dépôt porte DÉJÀ le patron du canal typé —
+      `VariantColor.nodeIds` traverse toute l'extraction et se convertit en
+      chemins publics sans jamais être publié (`extractSlotTokens.ts:30-45`).
+      Structurellement, le canal typé est le bon état final. Ce n'est pas U4.3
+      qui doit l'atteindre : elle livre la loi sans toucher au type du canal, et
+      le jour où ce type changera, la loi sera là, verte, pour prouver que le
+      changement n'a rien perdu.
 
 - [ ] **U4.4 — Un avertissement mène à son calque.** Un clic sélectionne le
       calque et l'amène dans le viewport. C'est le pas qui transforme « constat +
