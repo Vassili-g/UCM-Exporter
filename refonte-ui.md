@@ -907,7 +907,7 @@ reste ouverte.
       illisible » — et le designer doit le retrouver à la main dans une matrice de
       trente variants. Dépend de U4.3 et U4.5.
 
-- [ ] **U4.5 — Trancher, et écrire, que sélectionner n'est pas modifier.**
+- [X] **U4.5 — Trancher, et écrire, que sélectionner n'est pas modifier.**
       L'invariant est net : le plugin ne modifie **jamais** le document Figma
       ([AGENTS.md](./AGENTS.md), [CONCEPT.md](./CONCEPT.md)). Poser une sélection
       et déplacer le viewport ne sont pas du contenu de document — rien n'est
@@ -922,6 +922,25 @@ reste ouverte.
       décrit une action du PLUGIN, pas un champ du contrat ; elle n'a rien à
       faire dans `docs/FORMAT.md`. Reste la vérification sur fichier réel, qui
       est tout ce que cette tâche demande encore.
+      **Tranchée et écrite le 5 septembre 2026 ; une moitié reste à observer.**
+      La règle vit dans `packages/plugin/SPEC.md`, sous « Sélectionner et cadrer
+      ne sont pas modifier », et elle s'appuie sur deux phrases des typings que
+      ce dépôt installe plutôt que sur une intuition : « **By default, plugin
+      actions are not committed to undo history** » (`commitUndo`), et
+      `scrollAndZoomIntoView` décrit comme « the equivalent of pressing
+      Shift-1 ». Le plugin n'appelle jamais `commitUndo()`.
+      **Le livrable qui n'était pas demandé, et qui vaut plus que la note :**
+      `loiDuDocumentIntact.test.ts`. L'invariant « le plugin ne modifie jamais le
+      document » n'était gardé par rien — trois documents le répétaient, aucun
+      contrôle ne l'exerçait. Rendre un avertissement cliquable ouvre une porte,
+      et c'est exactement le moment où une règle de prose se met à glisser : le
+      filet lit la source et refuse les portes d'écriture de l'API. Vu rouge en
+      ajoutant un `commitUndo()`.
+      **⚠ Ce que je n'ai pas pu faire, et que la tâche demandait :** ouvrir un
+      fichier réel et constater qu'après un clic, Figma ne marque pas le document
+      comme modifié. Aucun accès à Figma depuis ce poste. La décision tient donc
+      sur la documentation de l'API, et la spécification le DIT au lieu de le
+      sous-entendre — l'observation reste à faire, et elle est nommée.
 
 - [X] **U4.6 — Tester ce qui décide, pas le DOM.** La logique qui mérite un test
       est celle qui range un message dans un groupe, dérive l'état de la cible,
