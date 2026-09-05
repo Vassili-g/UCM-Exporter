@@ -367,14 +367,9 @@ warning et n'est jamais remplacée par une valeur brute.
 
 #### 6. Structure
 
-`children` = enfants directs réels du node de layout :
-- calque **texte** → slot `label` (nom d'origine dans `figmaLayer`) ; son style
-  est situé par la `typography` de sa vue (étape 5) ;
-- calque **graphique désigné par une règle `@icons`** → slot `icon`, `optional:
-  true`, `size` ;
-- **conteneur** → slot décrit par `children`, récursivement, plus sa
-  disposition et ses dimensions propres ; voir ci-dessous ;
-- autre calque **graphique** → nom du calque comme slot, `optional: true`, `size`.
+Ce que `structure` et `children` CONTIENNENT — descente, bornes, flux, dimensions, place hors du flux — est décrit par [6. Structure](../../docs/FORMAT.md#6-structure). Ce document ne garde que ce que le moteur DÉCIDE en lisant Figma : ce dont il avertit, ce qu'il arrondit, et où il relève.
+
+##### Un dessin que rien ne déclare
 
 **Un dessin qu'aucune règle ne désigne avertit.** Le contrat n'exporte aucun
 tracé : le seul moyen de dire « dessine ceci » est une règle `@icons`, qui nomme
@@ -391,129 +386,7 @@ tout le dessin, celui que le designer déclarerait : « skull », jamais le
 qui EST un dessin de bout en bout ne dit rien : une icône exportée pour
 elle-même n'a aucune règle à se donner.
 
-**La descente ne connaît ni profondeur, ni nature de composant.** Un calque est
-un CONTENEUR dès qu'un de ses descendants porte une information qu'une feuille
-ne sait pas exprimer : un calque texte, une icône, une dépendance composée, ou
-n'importe quelle liaison de variable. Une feuille dit son nom, sa taille, ses
-bornes et sa place dans le flux ; elle ne sait dire ni la disposition interne,
-ni les couleurs, ni les tailles de ce qu'elle contient. Un auto layout dans un
-auto layout dans une grille est donc décrit jusqu'au bout, chaque niveau avec
-son `layout`, son `gap`, son `padding`, son `radius`, sa `size` et ses
-`bounds`.
-
-La règle a une borne, et elle compte autant : **un calque dont aucun descendant
-ne porte d'information reste une feuille.** Sans elle, l'export publierait les
-trente tracés d'une icône importée. C'est aussi pourquoi une liaison de
-variable — et non le type du node — est le signal : le contrat décrit ce que le
-design system a nommé, pas ce que Figma contient. `structureTree.ts` en est
-l'unique autorité, partagée par l'extraction, les chemins de
-la typographie des vues et les signatures de comparaison des variants : un second
-calcul finirait par viser un slot que `structure.children` ne contient pas.
-
-Un conteneur publie **tous** ses calques rendables, jamais une sélection : un
-titre, une description, un dessin voisin et un tag sont tous des calques de ce
-contrat-ci. Le taire ferait annoncer au contrat des couleurs qu'aucun calque
-publié ne porte, puisque `variants[].tokens` les relève sur le variant entier.
-
-La profondeur est bornée à **12 niveaux**. Une coupure qui emporte un
-sous-arbre réellement porteur produit un avertissement ; une coupure qui ne
-laisse qu'un dessin ne dit rien.
-
-`layout`, `justifyContent`, `alignItems` et `wrap` sont relevés dès que le
-conteneur est un auto layout linéaire ; `columns`, `rows`, `columnSizes`,
-`rowSizes`, `columnGap` et `rowGap` dès qu'il est une grille. `gap` n'est relevé qu'à partir de deux
-enfants — un conteneur qui n'en range qu'un n'espace rien. `padding` et `radius`
-sont relevés sur chaque conteneur, à la règle commune. Pour un node sans
-disposition, `layout` reste absent et un warning explique que la disposition
-interne manquera — sauf autour d'un enfant unique, où il n'y a rien à décrire.
-
-La projection de référence `structure.children` est comparée sur toute la
-matrice. Une différence de cardinalité, d'ordre ou de disposition avertit en
-nommant les variants ; un changement de nom Figma avertit aussi, sauf pour une
-icône reconnue dont le slot stable et la vue exacte portent déjà l'identité.
-L'écart n'est jamais perdu. `variantViews` catalogue chaque vue distincte, et
-chaque entrée de `variants` la référence par `view`, à côté de ses feuilles
-exactes `tokens` et `strokes`. Une vue n'est pas un bloc mais **cinq renvois** —
-`structure`, `typography`, `composes`, `icons`, `paintPlacements` — vers cinq
-catalogues séparés (`viewStructures`, `viewTypographies`, `viewComposes`,
-`viewIcons`, `viewPaintPlacements`).
-
-##### Flux et alignement
-
-Sur un auto-layout `HORIZONTAL` ou `VERTICAL`, le
-contrat publie toujours les deux alignements du conteneur :
-`primaryAxisAlignItems` devient `justifyContent` (`MIN` → `flex-start`,
-`CENTER` → `center`, `MAX` → `flex-end`, `SPACE_BETWEEN` →
-`space-between`) et `counterAxisAlignItems` devient `alignItems` (`MIN`,
-`CENTER`, `MAX` et `BASELINE`). Ils restent absents pour `NONE`, `GRID` ou une
-propriété illisible : aucune valeur CSS par défaut n'est devinée.
-
-Chaque enfant direct du flux peut porter `alignSelf` quand son `layoutAlign`
-diffère de `INHERIT` (`STRETCH` inclus) et `flexGrow: 1` quand Figma publie
-`layoutGrow: 1`. Les valeurs neutres `INHERIT` et `0` restent absentes.
-
-Le menu de dimensionnement du layer (`layoutSizingHorizontal` /
-`layoutSizingVertical`) prévaut sur ces deux API historiques, **axe par axe**.
-Sur l'axe secondaire : `FILL` donne `alignSelf: stretch`, `HUG` laisse
-`alignSelf` absent même si une instance expose encore un `layoutAlign: STRETCH`
-contradictoire — mais un `MIN`, `CENTER` ou `MAX` reste publié, puisqu'il
-aligne le layer sans rien dire de sa taille. Sur l'axe principal : `FILL` donne
-`flexGrow: 1`, `HUG` l'omet. Les deux axes sont indépendants : une hauteur en
-hug ne retire pas une largeur en fill, sans quoi le contrat perdrait un
-remplissage encore vrai dans Figma.
-
-##### Dimensions et bornes
-
-**Dimensions figées des slots.** Le relevé vise **tous** les slots, texte
-compris, et se fait axe par axe : un axe en `Hug` ou en `Fill` est déjà décrit
-et ne réclame rien, un axe figé doit citer une variable. `size` porte alors la
-référence seule quand les deux côtés sont identiques — le carré des icônes — et
-`{ "width": "…", "height": "…" }` sinon, chaque côté figé nommant le sien. Une
-dimension figée sans variable produit un avertissement et reste absente : c'est
-ce qui autorise à lire une absence comme un `Hug`. Seul le calque qui EST une
-dépendance composée échappe au relevé, sa taille appartenant à son propre
-contrat ; le cadre qui l'enveloppe est un calque de ce contrat-ci et publie la
-sienne.
-
-**Dimensionnement du composant.** `structure.sizing` publie le
-comportement du composant lui-même, en valeurs de `width` et de `height`, et il
-est toujours présent : c'est la première décision de qui l'intègre, et la
-déduire d'une absence reviendrait à la deviner. Le vocabulaire est celui de
-CSS, pas celui du panneau Figma, et chaque axe se lit séparément :
-
-| menu Figma | liaison | valeur publiée |
-| --- | --- | --- |
-| `Hug` | — | `fit-content` |
-| `Fill` | — | `stretch` |
-| `Fixed` | une variable | la référence du token |
-| `Fixed` | aucune | `stretch` |
-
-La dernière ligne est la règle d'origine, devenue le repli : une largeur fixe
-que rien ne nomme sert à aligner les variants d'un component set dans Figma, et
-la publier imposerait une largeur de maquette à toutes les pages qui intègrent
-le composant. **La liaison de variable est ce qui sépare les deux cas**, à la
-règle commune. Une tuile dont le
-design system nomme le côté n'est pas une commodité de maquette, et le token
-l'emporte donc sur `stretch`.
-
-Un axe en `Hug` ou en `Fill` ne lit aucune liaison : une variable y survivrait
-au changement de menu et publierait une taille que le rendu n'a pas. Un axe
-figé sans variable n'avertit pas non plus — le contrat ne perd rien, `stretch`
-est une lecture assumée, et le réclamer avertirait sur presque tous les
-component sets, dont le cadre fixe est la norme. Une variable désignée mais
-introuvable avertit en revanche, comme partout ailleurs.
-
-Le silence suit la règle commune. Une borne appartient au design : c'est au
-contrat de savoir la porter, non au designer de la retirer.
-
-Le contrat n'a que deux propriétaires de bornes, le composant et un slot. Un
-calque intermédiaire — le wrapper de layout, qui prête son flux au composant
-sans jamais paraître comme un node — avertit donc au lieu d'être publié : sa
-borne retient le contenu, et la porter sur le composant retiendrait le cadre.
-Les bornes entrent dans la comparaison des variants comme le reste du flux, y
-compris sur les calques d'icônes, qu'`icons.*.size` ne couvre que pour la taille.
-
-##### Position absolue
+##### Position absolue : pourquoi des pixels
 
 **Pourquoi un nombre, ici.** Un offset Figma ne se relie à aucune variable :
 Figma ne le permet pas. Le geste que réclamait l'ancien avertissement n'existait
@@ -522,107 +395,23 @@ un coin. C'est la même exception que pour les pistes d'une grille, et elle a la
 même forme : la valeur est publiée en pixels sous une **notice**, sans devenir
 un token et sans rendre la couverture portable partielle.
 
-Le calcul passe par le **centre** du layer, et c'est ce qui le rend juste pour un
-layer tourné : Figma tourne autour du coin haut-gauche, CSS autour du centre.
-La boîte CSS non tournée se déduit du centre réel (`relativeTransform` appliqué
-à `(w/2, h/2)`), et `rotation` la ramène exactement où Figma la montre. La boîte
-de référence est le cadre du parent, sans ajustement : aucun rôle de contour ne
-consomme la boîte dans ce contrat, si bien que la « padding box » de CSS — celle
-sur laquelle `right` et `bottom` se résolvent — coïncide avec elle. Le
-consommateur pose `position: relative` sur le parent.
-
 Les valeurs sont arrondies à deux décimales, comme celles d'une grille : les
 dix-sept chiffres d'un flottant Figma feraient bouger l'artefact d'un export à
 l'autre. Un runtime qui n'expose ni la géométrie du layer, ni celle de son
 parent, ne publie rien et n'avertit de rien — mieux vaut une absence qu'un
 `NaNpx`.
 
-##### Rotation
+##### Rotation : le seuil de neutralité
 
 Sous le centième de degré, rien n'est publié : Figma stocke des flottants, et
 une transformation successive y laisse des résidus qu'aucun écran ne rend et
 qu'aucun designer ne peut remettre à zéro.
 
-Reste un écart que CSS ne comble pas, et une **notice** le dit : dans un auto
-layout, Figma espace ses enfants d'après la boîte TOURNÉE, là où `transform` ne
-change aucune boîte de flux. Le layer est rendu comme dans Figma, la place de
-ses voisins peut différer de quelques pixels. Aucun geste n'est demandé — le
-redresser lui retirerait sa rotation.
-
-##### Grilles
-
-**Sous une grille, c'est la cellule qui décide de la boîte.** Remplir sa cellule
-est le DÉFAUT d'un enfant de grille — `stretch` en CSS, « Fill » dans le panneau
-de Figma — et le menu de dimensionnement cesse d'y faire autorité : Figma
-n'expose pas de remplissage dans une piste qui hug, pas plus qu'une piste `FLEX`
-n'est valide sous un conteneur qui hug, et son API rend alors la taille CALCULÉE
-du calque là où le panneau affiche « Fill ». Réclamer une variable dans ce cas
-enverrait le designer vérifier un champ qui lui donne déjà raison.
-
-Un enfant de grille ne publie donc sa dimension que s'il CITE une variable — une
-décision qu'il porte malgré la cellule — et son absence ne se réclame jamais :
-`columnSizes`, `rowSizes` et sa place disent quelle place il occupe. Un enfant
-explicitement aligné fait exception, avec le même mot qu'en CSS : il ne s'étire
-plus, sa dimension redevient la sienne, et la règle commune s'applique — figée
-sans variable, elle avertit.
-
-**Cette exception s'étend de la piste à la cellule, et là seulement.** Une piste
-`HUG` est le seul endroit d'une grille où la cellule ne décide de rien : elle se
-dimensionne sur son contenu, et n'a aucune valeur à publier —
-`GridTrackSize.value` n'existe que sur `FIXED` et `FLEX`. La mesure ne vit alors
-que sur l'enfant, et sans elle la piste retombe à zéro : le contrat décrirait une
-grille que personne ne peut rendre. Un enfant dont TOUTES les pistes couvertes
-sur un axe sont `HUG` publie donc sa taille résolue en pixels dans
-`structuralSize`, sous la même notice sans geste et sans dégrader la couverture.
-Une seule piste non `HUG` sous son étendue rend l'axe indécis : la place vient
-d'ailleurs, et rien n'est publié.
-
 La mesure est arrondie à deux décimales. Elle vient d'un calcul de Figma, dont
 les dix-sept chiffres feraient bouger l'artefact d'un export à l'autre sans
 qu'aucun design ait changé.
 
-C'est aussi ce qui borne l'exception : elle tient à ce que le panneau affiche
-« Fill », et un alignement explicite le retire. L'enfant reprend alors la règle
-commune — sa dimension figée réclame une variable — et `structuralSize` se tait,
-sans quoi le contrat publierait en pixels la valeur que son propre
-avertissement, devenu faux, déclarerait absente.
-
-Direction,
-alignements, dimensions figées et propriétés de flux des slots sont comparés sur
-toute la matrice — cadres de dépendance imbriqués compris ; une différence entre
-variants produit une notice de compatibilité au lieu d'être généralisée depuis
-le variant de référence ; les arbres exacts conservent les deux valeurs.
-
-##### Propriétés non portables
-
-**Ce que Figma porte et que le schéma ne sait pas écrire** avertit plutôt que de
-disparaître, puisque le rendu, lui, en dépend. C'est la contrepartie de tout ce
-qui précède : le contrat ne prétend pas décrire Figma en entier, mais il ne perd
-rien en silence.
-
-- `structure.layout` reste obligatoire, et `flex-row` en est le repli. Un node
-  de layout sans auto layout est donc publié comme une rangée, et le warning le
-  dit. La grille n'est pas concernée : elle est décrite ;
-- les bornes d'un calque intermédiaire, entre le composant et ses slots, n'ont
-  aucun propriétaire dans le contrat ;
-- sur **chaque calque publié**, et sur lui seul, les propriétés à effet visuel
-  qu'aucun champ ne porte : les **effets** (ombre, flou), l'**opacité**
-  partielle, un **mask**, une peinture non unie (**dégradé**,
-  image) en `fill` ou en `stroke`, plusieurs peintures « mixed » sur un même
-  calque, un **blend mode** non neutre, un **pointillé**, et pour un texte :
-  l'**alignement** dans une boîte qui n'est pas en `Hug`, la **casse**, la
-  **décoration**, la **troncature**.
-
-La **rotation** et la **distance d'un calque absolu à ses bords** ont quitté
-cette liste : le contrat les ÉCRIT désormais (`rotation`, `inset`). Une
-propriété publiée n'a rien à faire dans un relevé de ce qui manque — la
-réclamer enverrait le designer redresser un layer que le développeur rend
-incliné.
-
-Le `mask` est le seul de cette liste dont le contrat ne perd pas la propriété
-mais en **invente** une : la couleur du calque masquant entre normalement dans
-`variants[].tokens`, et un développeur qui la peint recouvre le contenu qu'elle
-était censée découper.
+##### Propriétés non portables : la portée du relevé
 
 Ce relevé vit dans l'extraction, jamais dans un balayage à part : on n'avertit
 que sur ce qu'on publie, et les entrailles d'une icône ou les calques d'une
@@ -634,32 +423,10 @@ tracés internes d’une icône restent hors de la portée du relevé. Le seuil 
 neutralité de la rotation est un centième de degré, très en dessous du premier
 pixel visible et très au-dessus du bruit de flottant.
 
-##### Passage à la ligne
-
-Un auto layout en `layoutWrap: WRAP` publie
-`wrap: true`, sur le composant comme sur n'importe quel conteneur de `children`.
-C'est une propriété de flux, pas une dimension : elle reste au niveau haut même
-quand `sizes` porte les dimensions. L'espace entre les LIGNES est un token,
-`rowGap`, et suit la règle commune. Trois silences y répondent chacun à une
-question distincte :
-
-- **pas de wrap** — `counterAxisSpacing` reste lisible sans effet, comme un
-  `itemSpacing` sous une grille. Rien n'est exporté et rien n'est signalé : il
-  n'y a pas de deuxième ligne, donc rien ne manque ;
-- **champ synchronisé** — Figma laisse les deux gaps liés tant que le designer
-  ne les dissocie pas, et son API ne le dit pas : `counterAxisSpacing` ne renvoie
-  jamais `null`, il renvoie la valeur d'`itemSpacing` sans liaison propre.
-  `rowGap` reste donc absent, sans warning, et **son absence vaut `gap`** — la
-  lecture de Figma comme celle de CSS ;
-- **répartition « Auto »** (`counterAxisAlignContent: SPACE_BETWEEN`) — Figma
-  répartit lui-même l'espace entre les lignes. Aucun champ ne sait l'écrire, à la
-  différence de `justifyContent` sur l'axe principal : le warning le dit.
+##### Passage à la ligne : les mots du message
 
 Sous le wrap, Figma scinde son champ gap en deux. Les messages emploient donc
 « horizontal gap » et « vertical gap », les intitulés que le panneau affiche.
-
-Slots dédupliqués (`label`, `label-2`…). Un calque rendable inattendu est inclus
-tel quel, jamais supprimé silencieusement.
 
 #### 9. Échantillon de maquette
 
