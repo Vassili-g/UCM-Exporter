@@ -303,7 +303,7 @@ onmessage = (event) => {
   if (message.type === 'log') compteRendu.ajouterPublication(message.text, message.level);
 
   if (message.type === 'diagnostic') {
-    compteRendu.ajouterDiagnostic(message.nature, message.texte, message.nodeId);
+    compteRendu.ajouterDiagnostic(message.texte, message.nodeId);
   }
 
   if (message.type === 'schema-version') {

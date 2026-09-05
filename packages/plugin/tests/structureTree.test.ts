@@ -242,11 +242,7 @@ test('un calque en position absolue publie ses bords d’accroche au lieu de dis
   }) as unknown as ComponentNode;
 
   const warnings: string[] = [];
-  const infos: string[] = [];
-  const layout = await extractLayout(
-    racine, resolverFor({ c: 'colors.badge' }), warnings, undefined, undefined,
-    undefined, undefined, undefined, undefined, undefined, infos,
-  );
+  const layout = await extractLayout(racine, resolverFor({ c: 'colors.badge' }), warnings);
 
   const slot = layout.children[0];
   assert.equal(slot.position, 'absolute');
@@ -257,10 +253,10 @@ test('un calque en position absolue publie ses bords d’accroche au lieu de dis
   // La rotation aussi est publiée, dans la convention de CSS : Figma compte
   // à l'envers.
   assert.equal(slot.rotation, '-45deg');
-  // Aucun geste : le designer ne PEUT pas relier une position à une variable,
-  // et la rotation, elle, est désormais écrite par le contrat.
+  // Aucun geste, donc aucun message : le designer ne PEUT pas relier une
+  // position à une variable, la rotation est écrite par le contrat, et la place
+  // aussi. Rien ne manque, l'export se tait (U4.7).
   assert.deepEqual(warnings.filter((warning) => warning.includes('« Badge »')), []);
-  assert.ok(infos.some((info) => info.includes('« Badge »') && info.includes('Absolute')));
 });
 
 test('la profondeur est bornée, et la coupure est dite quand elle emporte quelque chose', async () => {

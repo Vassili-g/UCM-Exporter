@@ -280,17 +280,21 @@ composant.** La forme d’une entrée et la règle qui la relie à
 [là-bas](../../docs/FORMAT.md#métadonnées) ; ce qui relève du moteur est ce
 qu’il décide d’émettre.
 
-Cette décision se prend en deux temps, dans `exportComponent.ts`. Le moteur
-accumule d’abord ses constats sous forme de messages, puis les classe au moment
-d’écrire — une perte de projection portable l’emporte toujours sur une simple
-note, de sorte qu’un même texte relevé des deux côtés reste un point à
-corriger. Les messages sont dédoublonnés par leur TEXTE : deux extracteurs qui
-concluent la même chose ne le disent qu’une fois.
+**Ce qui entre dans ce catalogue est borné (U4.7) :** un constat n’y est écrit
+que s’il bloque l’export, s’il rend le contrat partiel, ou s’il demande une
+vérification ou une correction dans Figma. Une transformation entièrement prise
+en charge — une piste `FIXED` publiée en pixels, la distance aux bords d’un
+calque hors du flux, une rotation, la structure propre à un variant que sa vue
+exacte conserve — ne produit AUCUN diagnostic. Elle est décrite ici et dans le
+format ; l’écrire à chaque export ferait relire au designer le fonctionnement
+interne de l’exporteur pour lui dire qu’il n’a rien à faire.
 
-Le compte que le plugin affiche et que la pull request appelle
-« avertissement » n’est pas ce catalogue entier : c’est la part qui demande un
-geste au designer. `meta.diagnostics` porte tout, y compris ce dont il n’a rien
-à faire.
+Le classement se fait au moment d’écrire, dans `exportComponent.ts` : une perte
+de projection portable l’emporte sur le reste, de sorte qu’un même texte relevé
+des deux côtés dégrade bien `coverage.portable`. Les messages sont dédoublonnés
+par leur TEXTE : deux extracteurs qui concluent la même chose ne le disent
+qu’une fois. Le compte que le plugin affiche, ce que la pull request liste et
+ce que `meta.diagnostics` publie sont désormais la MÊME liste.
 
 **`meta.figma.url` est absent des contrats produits aujourd’hui, et c’est un
 état normal du format.** L’URL se construit depuis `figma.fileKey`, que l’API ne
@@ -405,13 +409,11 @@ repository le refusera pour champ absent, et la cause se lit ici en une ligne.
 
 Chaque avertissement nomme l'élément Figma concerné avec l'intitulé que Figma
 affiche, dit ce qui manquera au développeur, puis le geste à faire dans Figma.
-Les trois sont exigés : un constat qui ne nomme aucun geste est une note, et
-une note n'entre pas dans la pull request. Elle reste dans `meta.diagnostics`,
-sous le code `UCM_EXPORT_INFO`, et dans le journal du plugin. La raison tient en
-une phrase : une liste dont la conclusion est toujours « rien à faire » apprend
-à son lecteur qu'elle se survole, et il survolera ensuite celles qui demandent
-un geste. La règle et le vocabulaire vivent dans
-[CONTRIBUTING.md](../../CONTRIBUTING.md).
+Les trois sont exigés : un constat qui ne nomme aucun geste n'est pas émis
+(U4.7). La raison tient en une phrase : une liste dont la conclusion est
+toujours « rien à faire » apprend à son lecteur qu'elle se survole, et il
+survolera ensuite celles qui demandent un geste. La règle et le vocabulaire
+vivent dans [CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 **Un avertissement arrive inerte dans la page GitHub.** Le message cite les
 intitulés de Figma tels quels, et GitHub lit dans certains d'entre eux autre

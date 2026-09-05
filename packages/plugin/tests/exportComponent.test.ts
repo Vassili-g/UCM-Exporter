@@ -67,7 +67,7 @@ async function handleExportComponent() {
   const contrat = JSON.parse(resultat.content);
   verifierLesLois(contrat, 'sortie du moteur');
   verifierLaLocalisationDesDiagnostics(
-    [...resultat.warnings, ...resultat.infos],
+    resultat.warnings,
     resultat.localisations,
     resultat.localisationsDeclarees,
     nomsDeCalquesDuComposant(),
@@ -293,19 +293,17 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
     assert.equal('tokensUsed' in contrat, false);
     assert.deepEqual(Array.from(collecterReferences(contrat)), ['{tokens.sizes.gap}']);
 
-    // Ce que l'UI compte et ce que la pull request titre « avertissement » n'est
-    // que la part qui demande un geste ; les notes voyagent à côté, sans rien
-    // perdre — la réunion des deux redonne exactement `meta.diagnostics`.
+    // Un seul canal depuis U4.7 : ce que l'UI compte, ce que la pull request
+    // titre « avertissement » et ce que `meta.diagnostics` publie sont la même
+    // liste, et chacun de ses messages demande un geste dans Figma.
     assert.equal(resultat.warningCount, resultat.warnings.length);
+    assert.deepEqual(resultat.warnings.slice().sort(), messagesDe(contrat).sort());
     assert.deepEqual(
-      [...resultat.warnings, ...resultat.infos].sort(),
-      messagesDe(contrat).sort(),
-    );
-    assert.deepEqual(
-      resultat.infos,
-      contrat.meta.diagnostics
-        .filter((diagnostic: any) => diagnostic.code === 'UCM_EXPORT_INFO')
-        .map((diagnostic: any) => diagnostic.message),
+      contrat.meta.diagnostics.filter((diagnostic: any) => (
+        diagnostic.code !== 'UCM_PORTABLE_PROJECTION_WARNING'
+          && diagnostic.code !== 'UCM_EXPORT_NOTICE'
+      )),
+      [],
     );
   } finally {
     figmaFaux.restaurer();
@@ -459,19 +457,18 @@ test('une dépendance absente du variant de référence reste dans la variante e
       { component: 'Link', figmaLayer: 'Action secondaire' },
     ]);
     assert.equal(structureDe(contrat).children.some((child: any) => child.composes === 'Link'), false);
-    // Le message dit lui-même que les arbres exacts conservent ces
-    // compositions : rien ne manque, aucun geste n'est demandé. C'est une NOTE.
-    assert.ok(contrat.meta.diagnostics.some((diagnostic: any) => (
-      diagnostic.code === 'UCM_EXPORT_INFO'
-        && diagnostic.message.includes('Composition différente')
-    )));
-    // Et il ne doit donc paraître ni sous « Corrigez chaque point » dans le
-    // corps de la pull request, ni dans le compteur d'avertissements de l'UI.
+    // Les arbres exacts conservent cette composition : rien ne manque, aucun
+    // geste n'est demandé, donc RIEN n'est dit au designer (U4.7). Ni dans le
+    // contrat, ni dans le compteur de l'UI, ni dans la pull request.
+    assert.deepEqual(
+      (contrat.meta.diagnostics ?? []).filter((diagnostic: any) =>
+        diagnostic.message.includes('Composition différente')),
+      [],
+    );
     assert.equal(
       (resultat.warnings ?? []).some((message) => message.includes('Composition différente')),
       false,
     );
-    assert.ok((resultat.infos ?? []).some((message) => message.includes('Composition différente')));
   } finally {
     figmaFaux.restaurer();
   }
@@ -527,12 +524,12 @@ test('les notices de documentation ne rendent pas la projection portable partiel
       JSON.stringify(contrat.meta.warnings),
     );
     assert.ok(contrat.meta.diagnostics.length > 0);
-    // Aucun de ces constats ne retire quoi que ce soit à l'arbre exact : ils
-    // sont soit une notice de documentation, soit une note sans geste à faire.
+    // Aucun de ces constats ne retire quoi que ce soit à l'arbre exact : ce sont
+    // des notices de documentation, qui demandent bien un geste mais ne
+    // dégradent pas la projection portable.
     assert.ok(
       contrat.meta.diagnostics.every(
-        (diagnostic: any) => diagnostic.code === 'UCM_EXPORT_NOTICE'
-          || diagnostic.code === 'UCM_EXPORT_INFO',
+        (diagnostic: any) => diagnostic.code === 'UCM_EXPORT_NOTICE',
       ),
     );
   } finally {
@@ -540,11 +537,11 @@ test('les notices de documentation ne rendent pas la projection portable partiel
   }
 });
 
-test('une piste FIXED de grille est une note, pas un avertissement', async () => {
-  // Le réflexe du designer devant « avertissement » est de retourner dans
-  // Figma. Ici la valeur EST dans le contrat et le message le dit lui-même :
-  // la ranger parmi les points à corriger enverrait chercher une correction
-  // qui n'existe pas.
+test('une piste FIXED de grille est publiée en pixels, sans un mot au designer', async () => {
+  // Le réflexe du designer devant un message est de retourner dans Figma. Ici la
+  // valeur EST dans le contrat et rien n'y manque : le dire enverrait chercher
+  // une correction qui n'existe pas. Depuis U4.7, l'export se tait (la règle
+  // vit dans la spécification, et ce test en répond).
   const figmaFaux = monterFigma({ avecRegles: false });
   const standalone = node('COMPONENT', 'TilesGrid', [], {
     key: 'grid-key',
@@ -563,24 +560,20 @@ test('une piste FIXED de grille est une note, pas un avertissement', async () =>
 
     // Rien ne manque : la piste est publiée telle que Figma la règle.
     assert.deepEqual(structureDe(contrat).rowSizes, ['120px', '1fr']);
-    assert.ok(resultat.infos.some(enPixels));
+    // Et rien n'est dit : ni à l'UI, ni dans la pull request, ni dans le contrat.
     assert.equal(resultat.warnings.some(enPixels), false);
-    assert.equal(
-      contrat.meta.diagnostics.find((diagnostic: any) => enPixels(diagnostic.message))?.code,
-      'UCM_EXPORT_INFO',
-    );
-    // Le miroir complet du contrat, lui, la garde.
-    assert.ok(messagesDe(contrat).some(enPixels));
+    assert.equal(messagesDe(contrat).some(enPixels), false);
   } finally {
     figmaFaux.restaurer();
   }
 });
 
-test('un badge hors du flux est placé et incliné par le moteur, sous des notices', async () => {
+test('un badge hors du flux est placé et incliné par le moteur, en silence', async () => {
   // Deux propriétés que le designer ne PEUT pas rendre contractuelles : Figma ne
   // relie une position à aucune variable, et une rotation n'en est pas une. Les
-  // réclamer envoyait le designer corriger ce qui n'a pas de correction ; le
-  // moteur les calcule, et ne demande plus rien.
+  // réclamer envoyait le designer corriger ce qui n'a pas de correction ; les
+  // constater à chaque export lui faisait relire le fonctionnement interne de
+  // l'exporteur. Le moteur les calcule, les publie, et se tait (U4.7).
   const badge = () => node('FRAME', 'Badge', [], {
     layoutPositioning: 'ABSOLUTE',
     constraints: { horizontal: 'MAX', vertical: 'MIN' },
@@ -616,17 +609,15 @@ test('un badge hors du flux est placé et incliné par le moteur, sous des notic
     assert.deepEqual(slot.inset, { top: '7.31px', right: '12px' });
     assert.equal(slot.rotation, '-45deg');
 
-    // Ni l'un ni l'autre ne demande un geste. Le code du diagnostic le prouve :
-    // `UCM_EXPORT_INFO`, jamais `UCM_PORTABLE_PROJECTION_WARNING` — la place du
-    // badge ne retire donc rien à `meta.coverage.portable`, et le corps de la
-    // pull request ne porte rien de tout cela.
-    assert.ok(resultat.infos.some(horsDuFlux));
+    // Ni l'un ni l'autre ne demande un geste, donc ni l'un ni l'autre ne se dit.
+    // La place du badge ne retire rien à `meta.coverage.portable`, le corps de
+    // la pull request n'en porte rien, et `meta.diagnostics` non plus.
     assert.equal(resultat.warnings.some(horsDuFlux), false);
+    assert.equal(messagesDe(contrat).some(horsDuFlux), false);
     assert.equal(
-      contrat.meta.diagnostics.find((diagnostic: any) => horsDuFlux(diagnostic.message))?.code,
-      'UCM_EXPORT_INFO',
+      messagesDe(contrat).some((message) => message.includes('rotation est publiée')),
+      false,
     );
-    assert.equal(messagesDe(contrat).some((message) => message.includes('rendu droit')), false);
   } finally {
     figmaFaux.restaurer();
   }
@@ -983,11 +974,12 @@ test('une règle @icons sans layer est rangée comme une perte de portabilité',
   }
 });
 
-test('deux variants dont la grille diffère ne produisent qu’une note', async () => {
-  // La note de piste FIXED est écrite une fois par variant, et un même calque
-  // de grille n'a pas les mêmes pistes partout. Quand elle citait les index,
-  // deux constats se contredisaient sur le même nom de calque — « la ligne 1 »
-  // et « les lignes 1, 2, 3 » — sans dire de quel variant chacun parlait.
+test('deux variants dont la grille diffère publient chacun ses pistes, sans un mot', async () => {
+  // Le cas qui a fait naître puis mourir un message. Un même calque de grille
+  // n'a pas les mêmes pistes dans tous les variants : la note de piste FIXED se
+  // contredisait d'un variant à l'autre sur le même nom de calque. La réponse
+  // n'était pas de mieux la rédiger — les vues exactes portent DÉJÀ les deux
+  // grilles, donc rien ne manquait et rien n'était à corriger (U4.7).
   let appel = 0;
   const figmaFaux = monterFigma({
     avecRegles: false,
@@ -1006,12 +998,19 @@ test('deux variants dont la grille diffère ne produisent qu’une note', async 
   });
   try {
     const resultat = await handleExportComponent();
-    const enPixels = resultat.infos.filter((info) => info.includes('publiées en pixels'));
-    assert.equal(enPixels.length, 1);
-    assert.match(enPixels[0], /Layer « TilesGrid » : ses lignes de taille fixe/);
-    // Le constat ne cite aucun index : c'est ce qui le rend identique d'un
-    // variant à l'autre, donc dédoublonnable.
-    assert.doesNotMatch(enPixels[0], /\d/);
+    const contrat = JSON.parse(resultat.content);
+    // Les deux grilles sont dans le contrat, chacune dans sa vue exacte.
+    const pistes = Object.values(contrat.viewStructures as Record<string, any>)
+      .flatMap((vue: any) => (vue.children ?? []))
+      .map((enfant: any) => enfant.rowSizes)
+      .filter(Boolean);
+    assert.deepEqual(pistes.sort(), [
+      ['15px', '20px', 'fit-content(100%)'],
+      ['15px', 'fit-content(100%)'],
+    ].sort());
+    // Et rien n'est dit au designer : ni un message, ni deux qui se contredisent.
+    assert.equal(resultat.warnings.some((m) => m.includes('publiées en pixels')), false);
+    assert.equal(messagesDe(contrat).some((m) => m.includes('publiées en pixels')), false);
   } finally {
     figmaFaux.restaurer();
   }

@@ -8,11 +8,7 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  extractLayout,
-  flexLayoutSignature,
-  structureSignature,
-} from '../src/contract/extractLayout';
+import { extractLayout } from '../src/contract/extractLayout';
 import { flexItemProperties, gridTrackSizes } from '../src/contract/flexLayout';
 import { findLayoutNode } from '../src/contract/layoutNodes';
 
@@ -56,28 +52,6 @@ const alerteAvec = (slotAction: unknown) => ({
   children: [slotAction],
   findAll: findAllOn([slotAction]),
 } as unknown as ComponentNode);
-
-test('la signature structurelle identifie une icône interchangeable par son slot', () => {
-  const avecIcone = (name: string) => {
-    const icon = {
-      type: 'VECTOR', id: name, name, visible: true, boundVariables: {},
-      findAll: findAllOn([]),
-    };
-    const root = alerteAvec(icon);
-    lie(icon, root);
-    return root;
-  };
-  const iconNames = new Set(['circle-info', 'circle-check']);
-
-  assert.equal(
-    structureSignature(avecIcone('circle-info'), iconNames),
-    structureSignature(avecIcone('circle-check'), iconNames),
-  );
-  assert.notEqual(
-    structureSignature(avecIcone('circle-info')),
-    structureSignature(avecIcone('circle-check')),
-  );
-});
 
 test('un slot qui EST une dépendance ne réexporte pas ses visibilités internes', async () => {
   // `arrow-left-long` appartient au contrat du Button : `iconLeft` est SA prop,
@@ -307,15 +281,13 @@ test('un layer Absolute est placé même sous un auto layout en grille, et sans 
   } as unknown as SceneNode;
 
   const warnings: string[] = [];
-  const infos: string[] = [];
-  const item = flexItemProperties(grille, flottant, warnings, infos);
+  const item = flexItemProperties(grille, flottant, warnings);
 
   // Les côtés publiés sont ceux auxquels le layer s'accroche : la contrainte
   // survit à un parent qui change de taille, le côté opposé non.
   assert.deepEqual(item.inset, { top: '5px', right: '10px' });
-  assert.equal(warnings.length, 0);
-  assert.equal(infos.length, 1);
-  assert.match(infos[0], /position « Absolute »/);
+  // La place est publiée, donc rien n'est dit (U4.7).
+  assert.deepEqual(warnings, []);
 });
 
 test('un layer Absolute dont Figma n’expose pas la géométrie ne publie ni inset ni notice', () => {
@@ -325,15 +297,13 @@ test('un layer Absolute dont Figma n’expose pas la géométrie ne publie ni in
   const parent = { type: 'FRAME', name: 'Carte', layoutMode: 'HORIZONTAL' } as unknown as SceneNode;
 
   const warnings: string[] = [];
-  const infos: string[] = [];
-  const item = flexItemProperties(parent, flottant, warnings, infos);
+  const item = flexItemProperties(parent, flottant, warnings);
 
   // Mieux vaut une absence qu'un « NaNpx » : un runtime partiel ne doit ni
   // inventer une place, ni annoncer un calcul qui n'a pas eu lieu.
   assert.equal(item.position, 'absolute');
   assert.equal(item.inset, undefined);
   assert.deepEqual(warnings, []);
-  assert.deepEqual(infos, []);
 });
 
 /**
@@ -477,20 +447,6 @@ test('une borne posée sur un wrapper de layout est signalée, faute de proprié
   assert.ok(borne?.includes('max width'));
 });
 
-test('une borne qui change d’un variant à l’autre change la signature du flux', () => {
-  const signature = (maxWidth: unknown, variable: string | null) =>
-    flexLayoutSignature(pageAvecColonne({
-      maxWidth,
-      boundVariables: variable ? { maxWidth: alias(variable) } : {},
-    }) as unknown as SceneNode);
-
-  // Trois écarts que le contrat publierait sinon depuis le seul variant de
-  // référence : la borne retirée, la borne non tokenisée, la borne renommée.
-  assert.notEqual(signature(640, 'max'), signature(undefined, null));
-  assert.notEqual(signature(640, 'max'), signature(640, null));
-  assert.notEqual(signature(640, 'max'), signature(640, 'autre'));
-});
-
 test('un calque voisin d’une dépendance dans son cadre est décrit comme un slot', async () => {
   const bouton = boutonDependant();
   const mention = {
@@ -535,104 +491,6 @@ test('un calque voisin d’une dépendance dans son cadre est décrit comme un s
   assert.equal(
     warnings.some((warning) => warning.includes('partage le layer')),
     false,
-  );
-});
-
-test('la signature de flux distingue deux dimensions figées différentes', () => {
-  const carteAvecColonne = (variable: string) => {
-    const colonne = {
-      type: 'FRAME',
-      id: 'colonne',
-      name: 'Colonne',
-      layoutSizingHorizontal: 'FIXED',
-      layoutSizingVertical: 'HUG',
-      boundVariables: { width: alias(variable) },
-    };
-    return {
-      type: 'COMPONENT',
-      name: 'Card',
-      layoutMode: 'HORIZONTAL',
-      primaryAxisAlignItems: 'MIN',
-      counterAxisAlignItems: 'MIN',
-      boundVariables: {},
-      children: [colonne],
-      findAll: findAllOn([colonne]),
-    } as unknown as SceneNode;
-  };
-
-  // `structure.children[].size` ne décrit que la référence : une largeur figée
-  // qui change ailleurs n'a nulle part où vivre, et doit donc avertir.
-  assert.notEqual(
-    flexLayoutSignature(carteAvecColonne('large')),
-    flexLayoutSignature(carteAvecColonne('etroit')),
-  );
-  assert.equal(
-    flexLayoutSignature(carteAvecColonne('large')),
-    flexLayoutSignature(carteAvecColonne('large')),
-  );
-});
-
-test('la signature de flux distingue deux tailles de composant tokenisées', () => {
-  const tuile = (variable: string) => ({
-    type: 'COMPONENT',
-    name: 'TileLink',
-    layoutMode: 'HORIZONTAL',
-    primaryAxisAlignItems: 'CENTER',
-    counterAxisAlignItems: 'CENTER',
-    layoutSizingHorizontal: 'FIXED',
-    layoutSizingVertical: 'FIXED',
-    boundVariables: { width: alias(variable), height: alias(variable) },
-    children: [],
-    findAll: findAllOn([]),
-  } as unknown as SceneNode);
-
-  // `structure.sizing` ne décrit que la référence. Deux variants dont seul le
-  // token de taille diffère doivent donc avertir : le contrat n'a nulle part
-  // où loger la seconde taille.
-  assert.notEqual(flexLayoutSignature(tuile('grande')), flexLayoutSignature(tuile('petite')));
-  assert.equal(flexLayoutSignature(tuile('grande')), flexLayoutSignature(tuile('grande')));
-});
-
-test('la signature de flux descend dans les cadres imbriqués d’une dépendance', () => {
-  const actionAlignee = (alignement: string) => {
-    const bouton = boutonDependant();
-    const interne = {
-      type: 'FRAME',
-      id: 'inner',
-      name: 'Inner',
-      layoutMode: 'VERTICAL',
-      primaryAxisAlignItems: alignement,
-      counterAxisAlignItems: 'CENTER',
-      layoutSizingHorizontal: 'HUG',
-      layoutSizingVertical: 'HUG',
-      boundVariables: {},
-      children: [bouton],
-      findAll: findAllOn([bouton]),
-    };
-    const cadre = {
-      type: 'FRAME',
-      id: 'act',
-      name: 'Action',
-      layoutMode: 'HORIZONTAL',
-      primaryAxisAlignItems: 'CENTER',
-      counterAxisAlignItems: 'CENTER',
-      layoutSizingHorizontal: 'HUG',
-      layoutSizingVertical: 'HUG',
-      boundVariables: {},
-      children: [interne],
-      findAll: findAllOn([interne, bouton]),
-    };
-    lie(bouton, interne);
-    lie(interne, cadre);
-    return alerteAvec(cadre);
-  };
-
-  // `flexLayoutSignature` compare le flux DIRECT du composant ; c'est
-  // `structureSignature` qui descend dans l'arbre publié, à toute profondeur.
-  // Les deux tournent sur chaque variant, et l'une des deux doit voir l'écart.
-  assert.notEqual(
-    structureSignature(actionAlignee('CENTER'), new Set(), dependanceDe()),
-    structureSignature(actionAlignee('MAX'), new Set(), dependanceDe()),
   );
 });
 
@@ -722,27 +580,22 @@ test('un enfant de grille publie la dimension qu’il relie à une variable', as
   assert.deepEqual(warnings.filter((warning) => warning.includes('« Tile »')), []);
 });
 
-test('les pistes fixes d’une grille sont publiées en pixels avec une note sans action', () => {
+test('les pistes fixes d’une grille sont publiées en pixels, sans un mot', () => {
   const tuile = tuileDeGrille();
   const warnings: string[] = [];
-  const infos: string[] = [];
 
   const layout = gridTrackSizes(grilleDeTuiles(tuile, {
     gridColumnSizes: [{ type: 'FLEX', value: 1 }, { type: 'FLEX', value: 2 }],
     gridRowSizes: [{ type: 'HUG' }, { type: 'FIXED', value: 120 }, { type: 'FLEX' }],
-  }), warnings, infos);
+  }), warnings);
 
   assert.deepEqual(layout.columnSizes, ['1fr', '2fr']);
   // La piste FIXED est une donnée structurelle non liable de la grille : elle
   // reste en pixels sans devenir un token.
   assert.deepEqual(layout.rowSizes, ['fit-content(100%)', '120px', '1fr']);
+  // Rien ne manque au contrat et aucun geste n'existe : le moteur se tait
+  // (U4.7). L'exception elle-même vit dans la spécification.
   assert.deepEqual(warnings, []);
-  // La note part dans `infos`, jamais dans `warnings` : rien ne manque au
-  // contrat, donc la pull request ne doit réclamer aucun geste.
-  assert.ok(infos.some((info) => (
-    info.includes('« TilesGrid »') && info.includes('piste')
-      && info.includes('pixels') && info.includes('aucune modification')
-  )));
 });
 
 test('une grille dont Figma n’expose pas les pistes ne publie ni n’avertit', async () => {
@@ -777,7 +630,6 @@ const pistesDeTuiles = {
 test('un enfant publie la mesure de sa piste qui hug, en pixels et sans rien réclamer', async () => {
   const tuile = tuileDeGrille({ height: 15 });
   const warnings: string[] = [];
-  const infos: string[] = [];
 
   const layout = await extractLayout(
     grilleDeTuiles(tuile, pistesDeTuiles),
@@ -790,7 +642,6 @@ test('un enfant publie la mesure de sa piste qui hug, en pixels et sans rien ré
     new Map(),
     new Set(),
     warnings,
-    infos,
   );
 
   assert.deepEqual(layout.children[0]?.structuralSize, { height: '15px' });
@@ -798,19 +649,17 @@ test('un enfant publie la mesure de sa piste qui hug, en pixels et sans rien ré
   assert.equal(layout.children[0]?.size, undefined);
   // Sa colonne est en `FLEX` : de ce côté, la cellule décide toujours.
   assert.equal(layout.children[0]?.structuralSize?.width, undefined);
-  // Le constat ne demande aucun geste, il ne rejoint donc pas les points à corriger.
+  // La mesure est publiée et aucun geste ne la corrigerait : rien n'est dit,
+  // ni sur la tuile, ni sur les pistes de la grille (U4.7). Les paddings et le
+  // rayon non tokenisés du conteneur, eux, restent des points à corriger : ce
+  // test ne les couvre pas et ne doit pas les faire taire.
   assert.deepEqual(warnings.filter((warning) => warning.includes('« Tile »')), []);
-  // La note de la piste FIXED partage ce canal : on isole celle des cellules.
-  const notes = infos.filter((info) => info.includes('qui hug publient'));
-  assert.equal(notes.length, 1);
-  assert.match(notes[0], /« TilesGrid »/);
-  assert.match(notes[0], /aucune modification du design n'est demandée/);
+  assert.deepEqual(warnings.filter((warning) => /qui hug publient|pixels/.test(warning)), []);
 });
 
 test('sous une piste qui ne hug pas, la cellule décide encore et rien n’est publié', async () => {
   const tuile = tuileDeGrille({ height: 15 });
   const warnings: string[] = [];
-  const infos: string[] = [];
 
   const layout = await extractLayout(
     grilleDeTuiles(tuile, {
@@ -826,18 +675,16 @@ test('sous une piste qui ne hug pas, la cellule décide encore et rien n’est p
     new Map(),
     new Set(),
     warnings,
-    infos,
   );
 
   assert.equal(layout.children[0]?.structuralSize, undefined);
-  assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
+  assert.deepEqual(warnings.filter((warning) => warning.includes('qui hug publient')), []);
 });
 
 test('une étendue qui déborde d’une piste qui hug ne publie aucune mesure', async () => {
   // La place vient alors d'ailleurs, et la mesure de l'enfant ne la décrit plus.
   const tuile = tuileDeGrille({ height: 40, gridRowAnchorIndex: 1, gridRowSpan: 2 });
   const warnings: string[] = [];
-  const infos: string[] = [];
 
   const layout = await extractLayout(
     grilleDeTuiles(tuile, {
@@ -853,17 +700,15 @@ test('une étendue qui déborde d’une piste qui hug ne publie aucune mesure', 
     new Map(),
     new Set(),
     warnings,
-    infos,
   );
 
   assert.equal(layout.children[0]?.structuralSize, undefined);
-  assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
+  assert.deepEqual(warnings.filter((warning) => warning.includes('qui hug publient')), []);
 });
 
 test('une étendue entièrement dans des pistes qui hug publie sa mesure', async () => {
   const tuile = tuileDeGrille({ height: 40, gridRowAnchorIndex: 1, gridRowSpan: 2 });
   const warnings: string[] = [];
-  const infos: string[] = [];
 
   const layout = await extractLayout(
     grilleDeTuiles(tuile, pistesDeTuiles),
@@ -876,7 +721,6 @@ test('une étendue entièrement dans des pistes qui hug publie sa mesure', async
     new Map(),
     new Set(),
     warnings,
-    infos,
   );
 
   assert.deepEqual(layout.children[0]?.structuralSize, { height: '40px' });
@@ -891,7 +735,6 @@ test('une variable liée l’emporte sur la mesure de la piste', async () => {
     boundVariables: { fills: [alias('couleur')], height: alias('h') },
   });
   const warnings: string[] = [];
-  const infos: string[] = [];
 
   const layout = await extractLayout(
     grilleDeTuiles(tuile, pistesDeTuiles),
@@ -904,12 +747,11 @@ test('une variable liée l’emporte sur la mesure de la piste', async () => {
     new Map(),
     new Set(),
     warnings,
-    infos,
   );
 
   assert.deepEqual(layout.children[0]?.size, { height: '{sizes.tile-height}' });
   assert.equal(layout.children[0]?.structuralSize, undefined);
-  assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
+  assert.deepEqual(warnings.filter((warning) => warning.includes('qui hug publient')), []);
 });
 
 test('un enfant aligné sous une piste qui hug garde la règle commune', async () => {
@@ -920,7 +762,6 @@ test('un enfant aligné sous une piste qui hug garde la règle commune', async (
   // pour mot cet avertissement, sur le même axe du même calque.
   const tuile = tuileDeGrille({ height: 15, gridChildVerticalAlign: 'CENTER' });
   const warnings: string[] = [];
-  const infos: string[] = [];
 
   const layout = await extractLayout(
     grilleDeTuiles(tuile, pistesDeTuiles),
@@ -933,11 +774,10 @@ test('un enfant aligné sous une piste qui hug garde la règle commune', async (
     new Map(),
     new Set(),
     warnings,
-    infos,
   );
 
   assert.equal(layout.children[0]?.structuralSize, undefined);
-  assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
+  assert.deepEqual(warnings.filter((warning) => warning.includes('qui hug publient')), []);
   // L'avertissement, lui, reste : cette hauteur est bien une décision du calque.
   assert.ok(warnings.some((warning) => warning.includes('« Tile », height')));
 });
@@ -945,7 +785,6 @@ test('un enfant aligné sous une piste qui hug garde la règle commune', async (
 test('une grille dont le runtime n’expose pas les pistes ne publie ni ne dit rien', async () => {
   const tuile = tuileDeGrille({ height: 15 });
   const warnings: string[] = [];
-  const infos: string[] = [];
 
   const layout = await extractLayout(
     grilleDeTuiles(tuile),
@@ -958,9 +797,8 @@ test('une grille dont le runtime n’expose pas les pistes ne publie ni ne dit r
     new Map(),
     new Set(),
     warnings,
-    infos,
   );
 
   assert.equal(layout.children[0]?.structuralSize, undefined);
-  assert.deepEqual(infos.filter((info) => info.includes('qui hug publient')), []);
+  assert.deepEqual(warnings.filter((warning) => warning.includes('qui hug publient')), []);
 });

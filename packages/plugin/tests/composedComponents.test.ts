@@ -281,12 +281,10 @@ test('scanComposedMatrix n’invente pas un slot absent du variant de référenc
 
   assert.deepEqual(result.composes, []);
   assert.equal(result.composed.has('btn-success'), true);
-  // Une composition différente est une NOTE : les arbres exacts la conservent,
-  // rien ne manque, et le message ne demande aucun geste.
+  // Une composition différente ne se signale plus (U4.7) : les arbres exacts la
+  // conservent, rien ne manque, et aucun geste n'était demandé. Le silence est
+  // la règle, et c'est lui que ce test tient.
   assert.deepEqual(result.warnings, []);
-  assert.equal(result.infos.length, 1);
-  assert.match(result.infos[0], /Composition différente sur 1 variant/);
-  assert.match(result.infos[0], /décrit le variant de référence/);
 });
 
 test('scanComposedMatrix garde la cardinalité du variant de référence', async () => {
@@ -311,10 +309,10 @@ test('scanComposedMatrix garde la cardinalité du variant de référence', async
     result.composes.map((dependency) => dependency.component),
     ['Button'],
   );
-  assert.equal(result.infos.length, 1);
+  assert.deepEqual(result.warnings, []);
 });
 
-test('scanComposedMatrix signale aussi un ordre de composition différent', async () => {
+test('scanComposedMatrix garde l’ordre de la référence sans rien signaler', async () => {
   const reference = racine(
     'reference',
     'Mode=Reference',
@@ -342,7 +340,7 @@ test('scanComposedMatrix signale aussi un ordre de composition différent', asyn
     result.composes.map((dependency) => dependency.component),
     ['Button', 'Link'],
   );
-  assert.equal(result.infos.length, 1);
+  assert.deepEqual(result.warnings, []);
 });
 
 test('findWrapperReference n’élit jamais un composant unifié imbriqué', async () => {

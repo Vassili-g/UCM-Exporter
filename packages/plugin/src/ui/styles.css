@@ -565,7 +565,6 @@ p {
   color: var(--texte-avertissement);
 }
 
-.entree-constat,
 .entree-publication,
 .entree-info {
   color: var(--texte-second);
@@ -591,8 +590,8 @@ p {
  * hauteur libre comme ses voisines. Ce qu'il garde du bouton est ce qui compte —
  * le focus au clavier, et le curseur qui annonce qu'il se clique.
  *
- * Il ne se distingue pas par une couleur : la couleur dit déjà la NATURE du
- * message (U4.1), et lui en ajouter une deuxième ferait porter deux
+ * Il ne se distingue pas par une couleur : la couleur dit déjà qu'il y a
+ * quelque chose à corriger, et lui en ajouter une deuxième ferait porter deux
  * informations au même signal.
  */
 .entree-localisable {

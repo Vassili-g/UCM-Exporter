@@ -20,7 +20,7 @@ import { normalizePropKey } from './parsers';
 import { buildContractPropertySurface } from './propertySurface';
 import type { ContractPropertySurface } from './propertySurface';
 import type { ComposedDependency } from '@ucm-kit/core/format';
-import { pousserLocalise, pousserNote, sujet } from './localisation';
+import { pousserLocalise } from './localisation';
 
 /** Noms compactés des composants qui possèdent leur propre contrat. */
 export type ContractedNames = ReadonlySet<string>;
@@ -90,16 +90,6 @@ export type ComposedMatrixScan = ComposedInstancesScan & {
   swapDefaults: SwapDefaults;
   /** Même surface publique que lors de l'export autonome de chaque dépendance. */
   propertySurfaces: DependencyPropertySurfaces;
-  /**
-   * Écarts entre variants que le schéma courant ne doit jamais taire.
-   *
-   * Ce sont des NOTES, pas des avertissements : le texte dit lui-même que les
-   * arbres exacts conservent ces compositions et que `composes` en publie
-   * l'union. Rien ne manque, aucun geste n'est demandé, et les ranger dans le
-   * canal des points à corriger produirait un titre que leur propre phrase
-   * dément.
-   */
-  infos: string[];
 };
 
 /**
@@ -443,33 +433,6 @@ export async function scanComposedMatrix(
     contracted,
   );
 
-  const signature = (dependency: ComposedDependency) =>
-    [dependency.component, dependency.figmaLayer, dependency.visibilityProp ?? ''].join('\u0000');
-  const sequences = scans.map((scan) => scan.composes.map(signature));
-  const referenceSequence = JSON.stringify(sequences[0] ?? []);
-  const divergentVariants = roots.filter(
-    (_, index) => JSON.stringify(sequences[index]) !== referenceSequence,
-  );
-  const examples = divergentVariants
-    .slice(0, 3)
-    .map((root) => `« ${root.name} »`)
-    .join(', ');
-  const remaining = divergentVariants.length - 3;
-  const infos: string[] = [];
-  if (divergentVariants.length > 0) {
-    // Le constat porte sur la matrice et NOMME un variant exemple : le clic mène
-    // à celui-là, ce que la phrase montre déjà du doigt.
-    pousserNote(infos,
-      `Composition différente sur ${divergentVariants.length} `
-      + `variant${divergentVariants.length > 1 ? 's' : ''}, ex. ${examples}` +
-        `${remaining > 0 ? ` (+${remaining})` : ''} : le contrat décrit le variant de ` +
-        `référence « ${roots[0]?.name ?? 'inconnu'} ». Les arbres exacts de « variants » ` +
-        `conservent ces compositions différentes ; le champ global « composes » en publie ` +
-        `l'union ordonnée, tandis que « structure » reste la vue historique de référence.`,
-      sujet('Variant', divergentVariants[0]),
-    );
-  }
-
   // Une instance orpheline vit dans TOUS les variants du set, et chaque scan la
   // relève avec le même texte. Le message porte le nom du layer, jamais celui
   // du variant : le dédoublonnage rend donc exactement un constat par layer.
@@ -479,7 +442,6 @@ export async function scanComposedMatrix(
     composes: scans[0]?.composes ?? [],
     composed,
     warnings,
-    infos,
     mainByInstanceId,
     swapDefaults,
     propertySurfaces,

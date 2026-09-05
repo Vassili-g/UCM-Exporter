@@ -3236,10 +3236,10 @@ Elle ne crée aucun paquet. Elle ne publie qu'une fois, avec T9.3.
 
 La décision prise après la clôture de la Phase 9 en dépasse la cible : le
 Playground reste un consommateur UCM permanent pour ses contrats et ses tokens,
-mais devient neutre quant à l'outillage. Le dossier `scripts/`, les composants
-reconstruits et les tests propres au corpus doivent disparaître de sa branche
-principale ; les artefacts exportés y restent pour éprouver les packages sur des
-données réelles.
+mais devient neutre quant à l'outillage. Le dossier `scripts/` et les tests
+génériques propres au corpus doivent disparaître de sa branche principale ; les
+composants reconstruits y restent comme sondes visuelles jetables, et les
+artefacts exportés y restent pour éprouver les packages sur des données réelles.
 
 L'inventaire, les destinations, l'ordre et les critères de fin vivent dans
 [PLAN-NEUTRALISATION-PLAYGROUND.md](./PLAN-NEUTRALISATION-PLAYGROUND.md). Les
@@ -3248,6 +3248,224 @@ d'extraire l'outillage générique ; elles ne décrivent plus la cible finale du
 Playground.
 
 ---
+
+## Phase 11 — Parité utile et interopérabilité durable
+
+Cette phase reprend les validations ouvertes de la Roadmap, mais elle ne doit
+pas être traitée comme une liste de petites améliorations. Elle touche aux
+limites de ce que le contrat garantit, à la responsabilité du code consommateur
+et à la compatibilité entre paquets publiés. Une implémentation prématurée
+créerait facilement une fausse garantie, une seconde autorité ou un contrôle
+qui refuse des repositories légitimes.
+
+**Statut au 5 septembre 2026 : phase non commencée.** Les sujets sont
+intentionnellement ouverts. Aucun agent ne doit cocher une tâche de cette phase
+sur la seule base d'un test ajouté ou d'un commentaire rédigé : chaque tâche
+commence par une recherche documentée, un corpus de cas négatifs et une décision
+de périmètre validée par le propriétaire du projet.
+
+### Règle de méthode obligatoire
+
+Pour chaque tâche ci-dessous, le compte rendu doit contenir, avant le code :
+
+1. la question exacte à trancher et la garantie utilisateur recherchée ;
+2. les fichiers et versions inspectés, les usages externes concernés et les
+      limites des outils envisagés ;
+3. au moins deux solutions réellement comparées, dont une option « ne pas
+      contrôler » ou « ne pas versionner » quand elle est plausible ;
+4. un corpus de cas valides, invalides, ambigus et volontairement exceptionnels ;
+5. les faux positifs, faux négatifs, coûts d'installation, coûts de migration
+      et conséquences de publication ;
+6. une décision de domicile : format, lecteur, adaptateur, repository ou CI ;
+7. un test qui échoue avant la correction et une preuve indépendante après la
+      correction.
+
+Une recherche qui conclut seulement « c'est possible » ne clôt pas la tâche.
+Elle doit dire ce que la solution interdit, ce qu'elle laisse invisible et
+pourquoi son coût est acceptable pour un repository tiers.
+
+- [ ] **11.0 — Cartographier les autorités avant d'ajouter un contrôle.**
+
+Relever, sur le code courant et les paquets réellement publiés, où sont décidés
+les enums, les valeurs par défaut, les exceptions, la forme du schéma, la
+version des tokens et la compatibilité. Comparer `types.ts`, le schéma généré,
+`version.ts`, `CHANGELOG-FORMAT.md`, les lecteurs, l'adaptateur TypeScript, le
+CLI et les workflows produits par `ucm init`.
+
+La sortie doit être une table « question / autorité actuelle / consommateur /
+source de divergence possible / domicile proposé ». Elle doit notamment
+répondre à deux questions qui ne peuvent pas être présumées :
+
+- les valeurs d'un enum décrivent-elles des vues exportées ou des branches de
+  comportement que le code doit toutes exécuter ?
+- une valeur par défaut est-elle une propriété du contrat, une valeur de l'API
+  du composant, une convention de Figma ou une décision du repository ?
+
+**Ne rien implémenter dans 11.0.** Si deux autorités existent déjà, la tâche
+suivante doit d'abord proposer laquelle disparaît ; ajouter un contrôle autour
+des deux ne ferait que solidifier le désaccord.
+
+- [ ] **11.1 — Enums réellement gérés.**
+
+Déterminer si et comment un adaptateur peut établir qu'une valeur d'enum est
+réellement gérée par le composant. La présence d'une union TypeScript générée
+ne suffit pas : elle peut être complète alors que le rendu ne traite qu'une
+partie des valeurs. À l'inverse, une valeur peut être transmise à un composant
+composé ou résolue par une table externe sans apparaître sous la forme attendue
+par une analyse locale.
+
+La recherche doit comparer au minimum :
+
+- analyse des unions et des discriminants TypeScript ;
+- analyse des branches (`switch`, tables exhaustives, objets de mapping) ;
+- convention explicite de couverture dans le code ;
+- preuve par rendu ou par snapshots ciblés ;
+- décision de laisser ce contrôle hors de la garantie statique.
+
+Pour chaque option, mesurer les composants composés, les helpers, les alias,
+les valeurs transmises à une dépendance, les fallbacks et les valeurs ignorées
+volontairement. Tester aussi un composant qui sélectionne une vue par une règle
+applicative que le contrat ne décrit pas. La solution retenue ne doit pas faire
+du contrat une spécification du comportement métier ni imposer TypeScript à un
+consommateur Swift ou Kotlin.
+
+**Sortie obligatoire :** une matrice de couverture enum et une décision écrite
+entre « garanti », « averti », « non vérifiable » et « hors périmètre ». Aucun
+contrôle bloquant ne peut être ajouté avant cette décision.
+
+- [ ] **11.2 — Valeurs par défaut.**
+
+Établir ce que signifie le défaut dans chaque endroit : absence de prop,
+valeur `default` du contrat, valeur par défaut d'une propriété Figma, valeur
+par défaut du composant ou valeur de repli du runtime. Rechercher les cas où
+deux valeurs paraissent identiques mais ne le sont pas lorsque l'axe est absent,
+quand une vue est clairsemée ou lorsqu'une dépendance est composée.
+
+Comparer au moins trois stratégies : exiger que le code expose et consomme
+explicitement le défaut ; dériver le défaut de l'API statique ou d'une table
+déclarative ; ou ne contrôler que la validité du défaut publié et laisser le
+comportement au consommateur.
+
+La recherche doit inclure les défauts absents, les défauts hors des valeurs
+d'enum, les booléens non fournis, les wrappers, les `SLOT` et les composants
+qui ont un défaut applicatif différent de Figma. Elle doit dire qui corrige un
+écart : designer, développeur ou propriétaire du format.
+
+**Interdit :** inventer un défaut à partir du premier variant, de l'ordre JSON,
+du nom du composant ou d'une valeur observée dans un échantillon.
+
+- [ ] **11.3 — Exceptions volontaires documentées.**
+
+Inventorier les écarts légitimes qui seraient sinon signalés comme erreurs :
+enum partiellement rendu par conception, prop passée à une dépendance, slot
+optionnel, valeur non rendue dans une branche inaccessible, fallback
+applicatif, composant non React ou contexte d'exécution requis.
+
+Comparer trois domiciles : contrat, code consommateur et configuration du
+repository. Refuser toute solution fondée sur une liste de noms de composants,
+une annotation que seul l'outil lit ou une exemption globale silencieuse.
+Une exception doit être locale, justifiée, vérifiable et inclure son coût de
+maintenance ainsi que son comportement lors d'un réexport.
+
+**Sortie obligatoire :** une grammaire minimale d'exception, son propriétaire,
+son diagnostic et son effet sur le code de sortie. Une exception ne doit jamais
+transformer un contrat invalide en contrat valide par simple silence.
+
+- [ ] **11.4 — Documenter le JSON Schema sans en faire une seconde spécification.**
+
+Les 118 propriétés sur 236 sans `description` sont un signal, pas une mesure
+automatique de dette. Relever les propriétés réellement exposées à un
+consommateur, celles dont l'absence a une signification et celles dont la
+description actuelle est ambiguë ou fausse. Partir de `types.ts`, puisque le
+schéma est dérivé de ce fichier, et vérifier le résultat dans le schéma généré.
+
+Comparer au moins les descriptions dans les types, celles du schéma généré,
+la documentation narrative dans `docs/FORMAT.md` et la génération depuis des
+commentaires JSDoc. Mesurer l'effet sur les éditeurs, les bindings
+multi-langages et la taille du paquet. Définir les champs qui exigent une
+description avant publication : version, références, valeurs absentes,
+variants, vues, diagnostics, coverage et tokens.
+
+**La documentation ne doit pas réintroduire la règle de cohérence dans le
+schéma.** Le JSON Schema décrit la forme ; les renvois, graphes, collisions et
+compatibilités restent aux lecteurs dédiés.
+
+- [ ] **11.5 — Versionner ou non le format de `tokens.json`.**
+
+Ne pas ajouter un champ `version` par réflexe. Rechercher d'abord la
+spécification DTCG réellement ciblée, les outils qui consomment `tokens.json`,
+les versions de Style Dictionary et les consommateurs non JavaScript. Définir
+si la version doit porter sur la spécification DTCG adoptée, la projection UCM
+des tokens et références, le paquet ou preset qui transforme les tokens, chaque
+fichier exporté, ou une combinaison de ces niveaux.
+
+Comparer un champ de version, un fichier de métadonnées, un versionnement par
+paquet et l'absence de version avec compatibilité documentée. Pour chaque
+option, décrire migration, détection d'un fichier futur, comportement d'un repo
+sans `package.json`, et compatibilité avec les tokens existants. Vérifier si un
+numéro dans `tokens.json` serait réellement lu ou simplement ignoré par les
+outils actuels.
+
+**Critère de décision :** un consommateur doit pouvoir savoir quelle grammaire
+il lit et quel geste corrige un écart, sans créer une seconde autorité muette.
+
+- [ ] **11.6 — Politique de compatibilité.**
+
+Rassembler dans une politique unique les contrats, le JSON Schema, les tokens,
+les paquets et les adaptateurs. La politique doit distinguer au minimum ajout
+optionnel compatible, ajout qui change la résolution d'une vue, suppression ou
+renommage, changement de signification d'une absence, changement de token ou
+d'alias, changement d'adaptateur sans changement de format, version future,
+version ancienne et fichier sans version.
+
+Comparer semver, fenêtre explicite courante/précédente, migrations
+automatiques, refus avec réexport et compatibilité déclarée par consommateur.
+Tester les contrats N-1, N et futurs, les tokens anciens et les packages
+installés hors du monorepo. La politique doit dire qui publie, qui migre et qui
+peut fusionner.
+
+**Sortie obligatoire :** une table de compatibilité normative, un changelog
+relié à cette table et une suite de tests qui vérifie les décisions sans
+reconstruire la règle dans chaque consommateur.
+
+- [ ] **11.7 — Évaluer un diff sémantique pour les revues.**
+
+Avant de coder un diff, produire des exemples de changements JSON qui doivent
+être classés : aucun effet, ajout compatible, changement visuel, changement de
+composition, perte de token, changement de défaut, changement de version,
+diagnostic ajouté ou supprimé, réordonnancement sans effet et réordonnancement
+significatif.
+
+Comparer un diff textuel normalisé, un diff de structure résolue après les cinq
+catalogues de vues, un diff des références de tokens, un diff des diagnostics et
+un diff spécialisé pour `tokens.json`. Mesurer la stabilité face à l'ordre des
+clés, à la sérialisation sur deux niveaux, aux catalogues partagés et aux
+variantes clairsemées. Déterminer si le résultat vise le designer, le
+développeur, la CI ou tous les trois.
+
+Le diff ne doit pas prétendre prouver un rendu visuel ni déduire un rôle absent
+du contrat. Il doit rendre ses limites visibles et relier chaque classe à la
+politique de compatibilité de 11.6.
+
+- [ ] **11.8 — Intégration, publication et seuil de sortie.**
+
+Après les recherches et décisions précédentes seulement : choisir ce qui entre
+dans `@ucm-kit/core`, dans l'adaptateur TypeScript, dans le CLI, dans le plugin
+ou dans la CI. Toute nouvelle surface publiée exige une montée de version, un
+test depuis un dossier vide et une vérification du tarball réellement servi par
+le registre.
+
+La phase ne sera pas close par une suite locale verte. Elle exige un corpus de
+contrats et de tokens réels plus des mutations négatives, des tests de chaque
+classe de compatibilité et de chaque exception, une vérification du schéma
+généré et de ses descriptions, une recette hors du monorepo avec et sans
+adaptateur TypeScript, et un exemple de revue où le diff sémantique et le diff
+texte donnent des résultats volontairement différents, expliqués par la
+politique.
+
+**La décision « ne pas implémenter » est une sortie valide**, mais seulement si
+la recherche montre que le contrôle serait structurellement faux, trop coûteux
+ou prématuré. Elle doit alors préciser le signal qui rouvrira la question.
 
 ## Phase R — Écarts trouvés par la revue du 5 septembre 2026
 
@@ -3775,13 +3993,20 @@ Phase 6, avec T7.6 à placer.
     sans le dire.
 
 17. **La Phase 10 — neutraliser l'outillage du Playground.** *Ajoutée le
-    5 septembre 2026 après la décision de ne conserver aucun script, test ou
-    composant reconstruit spécifique dans ce repository, tout en gardant les
-    contrats et tokens exportés.* Exécuter N1 à N7 dans l'ordre défini par
-    [PLAN-NEUTRALISATION-PLAYGROUND.md](./PLAN-NEUTRALISATION-PLAYGROUND.md).
-    Cette phase part des migrations déjà engagées vers
-    `packages/adapter-typescript`, puis retire le rôle de consommateur permanent
-    que la Phase 9 avait encore conservé.
+      5 septembre 2026.* Exécuter N1 à N7 dans l'ordre défini par
+      [PLAN-NEUTRALISATION-PLAYGROUND.md](./PLAN-NEUTRALISATION-PLAYGROUND.md).
+      Cette phase part des migrations déjà engagées vers
+      `packages/adapter-typescript`, puis retire l'outillage local que la Phase 9
+      avait encore conservé, sans retirer les sondes visuelles du corpus.
+
+18. **La Phase 11 — parité utile et interopérabilité durable.** *Ajoutée le
+      5 septembre 2026.* Elle ne commence qu'après les décisions et preuves de
+      la Phase 10. Son ordre interne est obligatoire : 11.0 cartographie les
+      autorités ; 11.1 à 11.3 tranchent les limites de la parité ; 11.4 à 11.6
+      stabilisent schéma, tokens et compatibilité ; 11.7 évalue le diff
+      sémantique ; 11.8 choisit seulement ensuite les implémentations et leur
+      publication. Une recherche qui ne produit pas de décision falsifiable ne
+      clôt aucune de ces étapes.
 
 ### Écart entre cet ordre et ce qui a été exécuté
 

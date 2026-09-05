@@ -1,5 +1,5 @@
 /**
- * Le compte rendu d'un export : trois groupes au lieu d'un flux (U4.1, U4.2).
+ * Le compte rendu d'un export : deux groupes au lieu d'un flux (U4.1, U4.2).
  *
  * **Ce qu'il remplace.** Un journal chronologique de 96 px, en 11 px monospace,
  * qui mêlait la version de schéma, les avertissements, les notes, l'emplacement,
@@ -17,16 +17,18 @@
  * **Le journal brut survit, replié.** Tant que le plugin n'a pas d'autre canal
  * de débogage, la trace chronologique reste la seule façon de comprendre un
  * enchaînement. Elle ne coûte plus la lecture de ce qui demande un geste.
+ *
+ * **Le groupe « Constats » a disparu avec son contenu (U4.7).** Il rendait
+ * visibles des transformations que le contrat publie exactement : le designer y
+ * relisait le fonctionnement interne de l'exporteur pour s'entendre dire qu'il
+ * n'avait rien à faire. Ce n'était pas un problème de présentation, et aucune
+ * carte ni couleur ne l'aurait réparé — le moteur ne les émet plus.
  */
 export function createCompteRendu(journal) {
   const section = document.createElement('section');
   section.className = 'compte-rendu';
 
-  const groupes = {
-    avertissement: creerGroupe('À corriger dans Figma'),
-    constat: creerGroupe('Constats'),
-  };
-
+  const aCorriger = creerGroupe('À corriger dans Figma');
   const publication = creerGroupe('Publication', { compte: false });
 
   const details = document.createElement('details');
@@ -35,7 +37,7 @@ export function createCompteRendu(journal) {
   resume.textContent = 'Détails techniques';
   details.append(resume, journal.element);
 
-  section.append(groupes.avertissement.element, groupes.constat.element, publication.element, details);
+  section.append(aCorriger.element, publication.element, details);
 
   /** Un groupe se cache tant qu'il est vide : un titre à zéro entrée ne dit rien. */
   function creerGroupe(titre, { compte = true } = {}) {
@@ -84,17 +86,17 @@ export function createCompteRendu(journal) {
    * Un bouton, pas un lien : il n'y a pas d'URL, et un `<a href>` factice
    * mentirait au clavier comme au lecteur d'écran.
    */
-  function creerDiagnostic(texte, nature, nodeId) {
+  function creerDiagnostic(texte, nodeId) {
     if (!nodeId) {
       const entree = document.createElement('p');
-      entree.className = `entree entree-${nature}`;
+      entree.className = 'entree entree-avertissement';
       entree.textContent = texte;
       return entree;
     }
 
     const entree = document.createElement('button');
     entree.type = 'button';
-    entree.className = `entree entree-${nature} entree-localisable`;
+    entree.className = 'entree entree-avertissement entree-localisable';
     entree.textContent = texte;
     entree.title = 'Montrer ce calque dans Figma';
     // Seul le sandbox peut poser une sélection : on lui délègue, comme pour
@@ -116,14 +118,13 @@ export function createCompteRendu(journal) {
     element: section,
     /** Un export qui commence efface le compte rendu du précédent, pas la cible. */
     reinitialiser() {
-      for (const groupe of Object.values(groupes)) groupe.vider();
+      aCorriger.vider();
       publication.vider();
       details.open = false;
       journal.clear();
     },
-    ajouterDiagnostic(nature, texte, nodeId) {
-      const groupe = groupes[nature] ?? groupes.constat;
-      groupe.ajouter(creerDiagnostic(texte, nature, nodeId));
+    ajouterDiagnostic(texte, nodeId) {
+      aCorriger.ajouter(creerDiagnostic(texte, nodeId));
       journal.append(texte);
     },
     ajouterPublication(texte, niveau = 'info') {
