@@ -2322,9 +2322,35 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       laissé la règle fausse deux sections plus haut.
       *Vérifié plutôt que supposé :* `check-contract.mjs` ne lit aucun
       `process.argv`, et `ucm check` n'accepte que `--base` et `--report`.
-- [ ] **T8.7 — Passer les documents en registre portable** : « React »,
+- [X] **T8.7 — Passer les documents en registre portable** : « React »,
       « `.tsx` » et « le Playground » ne restent que là où ils décrivent
       effectivement un adaptateur.
+      **Faite le 5 septembre 2026, et le relevé change la tâche.** Les mots ne
+      sont mal placés que dans DEUX documents — ceux qu'on lit sans être dans ce
+      projet. Partout ailleurs ils sont justes : `README.md` et `ROADMAP.md`
+      nomment un dépôt réel, les documents du Playground décrivent l'adaptateur
+      React, qui EST du React, et le plan raconte l'histoire du projet. Leur
+      interdire le mot juste les ferait mentir dans l'autre sens — la borne que
+      `registrePortable.test.mjs` s'était déjà donnée pour le code.
+      *Ce qui est corrigé :* l'illustration du composant unifié dans
+      `CONCEPT.md` montrait `Button.tsx` sans dire que l'extension est celle du
+      repository. Elle montre `Button.<ext>` et nomme le défaut configurable.
+      **Le filet est le vrai livrable, comme pour T2.6 :**
+      `tests/registrePortableDocuments.test.ts`. Renommer trois mots une fois ne
+      coûte rien ; les laisser renommés coûte une vigilance que personne n'a.
+      **⚠ Et il a trouvé une dépendance que ce plan n'écrivait nulle part.**
+      `docs/FORMAT.md` promet « le composant React et son interface Props » à
+      qui lit la forme publiée, et **cette ligne ne peut pas être corrigée
+      aujourd'hui** : `scissionSpec.test.mjs` exige que chaque ligne du document
+      figé survive dans l'un des deux produits, donc la reformuler le fait
+      rougir. Mesuré en le tentant, pas déduit. Le temps 2 de T8.1 dédoublonne
+      — il ne reformule pas — et c'est lui qui retirera la fixture ; la ligne
+      devient corrigeable ce jour-là. **T8.7 a donc une moitié qui dépend du
+      temps 2 de T8.1**, ce que ni l'une ni l'autre ne disait.
+      La ligne est INSCRITE, pas tolérée : le filet refuse une promesse neuve,
+      et refuse aussi une inscription qui ne couvre plus rien — le jour où la
+      liste se vide, elle dit toute seule que T8.7 est entière. Les deux refus
+      ont été vus rouges avant d'être crus.
 - [X] **T8.8 — Réviser la doctrine** (D5) sans perdre l'exigence d'autorité
       unique, corriger au fond les contradictions listées ci-dessous, et
       **vérifier qu'aucune balise de T0.1 ne subsiste** : une balise qui survit
