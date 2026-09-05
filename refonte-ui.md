@@ -728,7 +728,7 @@ reste ouverte.
       enchaînement, et elle ne coûte plus la lecture de ce qui demande un geste.
       Les marqueurs restent DANS cette trace, où ils ne doublent aucun titre.
 
-- [ ] **U4.3 — Écrire la loi de couverture avant de rendre un lien cliquable.**
+- [X] **U4.3 — Écrire la loi de couverture avant de rendre un lien cliquable.**
       Préalable de U4.4, et la seule tâche de ce plan qui touche au moteur.
       État du code : `exportComponent.ts` fabrique ses `diagnostics` depuis de
       simples `string`, le `code` étant déduit par appartenance à un `Set` ;
@@ -878,6 +878,27 @@ reste ouverte.
       qui doit l'atteindre : elle livre la loi sans toucher au type du canal, et
       le jour où ce type changera, la loi sera là, verte, pour prouver que le
       changement n'a rien perdu.
+
+      **Close le 5 septembre 2026, les deux moitiés de la loi et le branchement.**
+      *La seconde moitié a trouvé six sites au premier essai, et c'est ce qui la
+      justifie :* quatre constats d'agrégat nommaient un variant EXEMPLE au milieu
+      de leur phrase — structure, auto layout, composition, contenu de maquette —,
+      et deux messages dont le sujet n'est pas un node (une component property,
+      une variable) nommaient dans leur corps le calque où le designer agit.
+      Cinq sont converties, une est déclarée.
+      *Une chose que le cadrage n'avait pas vue, et qui était le vrai trou :*
+      `reporterLocalisations` n'était appelé **nulle part** en production. Le
+      registre existait, quarante sites l'alimentaient, et chaque fusion de canal
+      laissait les cibles derrière — exactement le « point d'oubli silencieux »
+      que l'énoncé annonçait, réalisé. Les quatre points de fusion le reportent,
+      et la carte traverse la frontière sandbox ↔ UI.
+      *Deux helpers sont nés du besoin réel, aucun n'était prévu :* `pousserNote`,
+      pour un message qui ne commence pas par son sujet, et `noterSansNode`, pour
+      une absence décidée. Les deux tables sont SÉPARÉES — « voici où regarder »
+      et « il n'y a nulle part où regarder, voici pourquoi » —, parce que les
+      confondre ferait lire une décision comme un oubli, et la loi ne mesurerait
+      plus qu'un total.
+      *U4.4 n'a donc plus qu'à écouter le `nodeId` que chaque diagnostic porte.*
 
 - [ ] **U4.4 — Un avertissement mène à son calque.** Un clic sélectionne le
       calque et l'amène dans le viewport. C'est le pas qui transforme « constat +
