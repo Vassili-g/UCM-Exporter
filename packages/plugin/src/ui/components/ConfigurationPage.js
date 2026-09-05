@@ -69,12 +69,12 @@ export function createConfigurationPage(onSave) {
   element.className = 'page-stack';
   element.hidden = true;
 
-  const card = document.createElement('section');
-  card.className = 'card config-card';
-  const title = document.createElement('div');
-  title.className = 'section-title';
-  title.textContent = 'Configuration du repository';
-
+  /*
+   * Ni carte, ni titre de section (U1.7 et U1.2). La configuration est un
+   * formulaire : lui donner le poids visuel de la zone d'action en faisait une
+   * troisième zone de rang égal. Et « Configuration du repository » répétait le
+   * titre de la page qui le porte, que U0.3 rend déjà exact.
+   */
   const markDirty = () => { settingsDirty = true; };
   /*
    * Les libellés sont en français (U0.5). Ils étaient les quatre seuls mots
@@ -135,8 +135,7 @@ export function createConfigurationPage(onSave) {
     },
   });
 
-  card.append(
-    title,
+  element.append(
     repoUrl.wrapper,
     baseBranch.wrapper,
     componentsPath.wrapper,
@@ -145,7 +144,6 @@ export function createConfigurationPage(onSave) {
     saveButton,
     status,
   );
-  element.appendChild(card);
 
   return {
     element,

@@ -338,58 +338,127 @@ tâches qui prétendaient les distinguer n'a rien à distinguer.
 
 ### U1.4 à U1.10 — Le socle
 
-- [ ] **U1.4 — Descendre la base typographique à 11 px.** `:root` fixe
+**Fait en entier le 5 septembre 2026**, contre la table de U1.0 et en repassant
+le protocole de relecture sur les captures des deux thèmes. Trois choses en sont
+sorties qui dépassent la mise en forme : le socle a rendu la ligne de flottaison
+à l'écran de travail, `styles.css` a cessé d'être un endroit où une couleur se
+décide, et deux tests neufs empêchent désormais la feuille et le DOM de
+diverger. Un fait de plateforme a par ailleurs été vérifié et il change U1.10 :
+**Figma ne redimensionne aucune fenêtre de plugin de lui-même.**
+
+- [X] **U1.4 — Descendre la base typographique à 11 px.** `:root` fixait
       `font-size: 12px`, là où l'interface de Figma est à 11 px : le plugin
-      paraît plus gros que son hôte. L'incohérence est déjà dans le fichier —
-      `.field-error` et `.log-panel-inner` redescendent localement à 11 px.
-      Geste : 11 px de base, une échelle à trois crans seulement (corps,
+      paraissait plus gros que son hôte, et l'incohérence était déjà dans le
+      fichier — `.field-error` et `.log-panel-inner` redescendaient localement à
+      11 px. Geste : 11 px de base, une échelle à trois crans seulement (corps,
       libellé, titre de page), interlignes multiples de 4.
+      *Fait :* 11/16 pour le corps, 12/16 pour un libellé, 15/20 pour le titre
+      de page. Les trois crans sont des variables ; aucune règle ne fixe plus
+      une taille.
 
-- [ ] **U1.5 — Une trame de 4 px.** Aujourd'hui cohabitent `gap: 12px`,
-      `padding: 16px`, `gap: 10px`, `padding: 9px 10px`, `min-height: 54px`.
-      Geste : n'employer que 4, 8, 12, 16, et une variable par rôle d'espacement
-      plutôt qu'une valeur par endroit.
+- [X] **U1.5 — Une trame de 4 px.** Cohabitaient `gap: 12px`, `padding: 16px`,
+      `gap: 10px`, `padding: 9px 10px`, `min-height: 54px`. Geste : n'employer
+      que 4, 8, 12, 16, et une variable par rôle d'espacement plutôt qu'une
+      valeur par endroit.
+      *Fait :* quatre rôles — page, bloc, contrôle, serré — et plus une seule
+      valeur d'espacement écrite dans une règle.
 
-- [ ] **U1.6 — Deux hauteurs de contrôle, pas trois.** `.btn` fait 32 px,
+- [X] **U1.6 — Deux hauteurs de contrôle, pas trois.** `.btn` faisait 32 px,
       `.icon-button` 30, `.header-back-button` 30, `.input` 32. Geste : 24 px
-      pour les contrôles secondaires, 32 px pour les actions et les champs de
-      saisie.
+      pour les contrôles secondaires, 32 px pour les actions et les champs.
+      *Fait,* et les deux contrôles secondaires partagent maintenant une seule
+      règle : ils avaient deux déclarations quasi identiques, donc deux endroits
+      où les faire diverger.
 
-- [ ] **U1.7 — Dépenser bordure et fond par rôle.** Actions, journal et
-      configuration sont la même `.card` — bordure, fond secondaire, rayon 8 px
-      —, donc trois zones de poids visuel égal et aucune hiérarchie. Geste : la
-      zone d'action porte le poids ; le compte rendu vit sur le fond de la
-      page ; la configuration est un formulaire, pas une carte.
-      **Ce que U1.1 a ajouté :** ces trois cartes ne coûtent pas que de la
-      hiérarchie, elles coûtent de la HAUTEUR. Bordures, marges et titres de
-      section suffisent à faire déborder les 500 px de la fenêtre **au repos,
-      avant tout résultat** ; les retirer est ce qui rend la ligne de flottaison
-      au rang 1.
+- [X] **U1.7 — Dépenser bordure et fond par rôle.** Actions, journal et
+      configuration étaient la même `.card` — bordure, fond secondaire, rayon
+      8 px —, donc trois zones de poids visuel égal et aucune hiérarchie.
+      Geste : la zone d'action porte le poids ; le compte rendu vit sur le fond
+      de la page ; la configuration est un formulaire, pas une carte.
+      **Ce que U1.1 avait ajouté :** ces trois cartes ne coûtaient pas que de la
+      hiérarchie, elles coûtaient de la HAUTEUR.
+      *Fait, et le calcul était juste.* Avec les deux cartes de trop, le titre
+      « Actions », la phrase qui explique le journal et le sous-titre de
+      plaquette, l'écran de travail **tient désormais dans les 500 px** — au
+      repos comme après un résultat, avertissement compris. Il en portait onze
+      objets pour zéro décision ; il en porte neuf, et le pied de page est
+      poussé en bas de la fenêtre au lieu de flotter après le dernier bloc : sa
+      place ne dépend plus de la longueur du journal.
 
-- [ ] **U1.8 — Relire chaque repli en dur en thème sombre.** Les replis sont
-      écrits pour le thème clair (`#fff`, `#f5f5f5`, `#fff1d6` sous
-      `.note[data-state='warning']`). Si la variable Figma correspondante n'est
-      pas servie par la version de l'hôte, c'est cette valeur claire qui
-      s'applique **en thème sombre**, et le texte devient illisible. Geste :
-      lister les variables employées, vérifier dans Figma que chacune est bien
-      servie, et pour les autres choisir un repli qui tienne dans les deux
-      thèmes. Vérification visuelle dans les deux thèmes, pas sur lecture du
-      code.
+- [X] **U1.8 — Relire chaque repli en dur en thème sombre.** Les replis étaient
+      écrits pour le thème clair (`#fff`, `#f5f5f5`, `#fff1d6`) et répétés à
+      chaque règle. Si la variable Figma correspondante n'est pas servie par la
+      version de l'hôte, c'est cette valeur claire qui s'applique **en thème
+      sombre**, et le texte devient illisible.
+      *Fait, mais pas par le geste écrit.* Le geste demandait de vérifier dans
+      Figma quelles variables sont servies, puis de choisir pour les autres un
+      repli qui tienne dans les deux thèmes. **Un tel repli n'existe pas** : une
+      couleur de fond ne peut pas être à la fois claire et sombre. La réponse
+      est de donner au repli le même thème qu'à la variable — les seize rôles de
+      couleur sont déclarés une fois dans `:root` avec un repli clair, et
+      redéclarés sous `.figma-dark`, la classe que Figma pose sur `html`, avec
+      un repli sombre. Le défaut est donc clos **par construction**, sans
+      dépendre de la liste des variables servies par telle version de l'hôte ;
+      et si cette classe manquait, le repli clair s'appliquerait comme
+      auparavant — ce socle ne peut pas faire pire que ce qu'il remplace.
+      `prefers-color-scheme` a été écarté : il dit le thème du système, pas
+      celui de Figma, et un éditeur clair sur un système sombre recevrait alors
+      des replis sombres.
+      **Ce qui n'a pas été fait, et où il vit désormais :** regarder le résultat
+      dans Figma. C'est le point (b) du protocole de relecture, une obligation
+      qui revient à chaque phase et qui ne pouvait donc pas être la propriété
+      d'une tâche qu'on coche une fois. Un test la seconde : `styles.css`
+      n'écrit plus aucune couleur hors de son bloc de rôles, et rougit si une
+      règle en réintroduit une.
 
-- [ ] **U1.9 — Un état de focus partout.** `.btn:focus-visible` existe ;
+- [X] **U1.9 — Un état de focus partout.** `.btn:focus-visible` existait ;
       `.input`, `.icon-button`, `.header-back-button` et les liens du journal
-      n'ont rien.
+      n'avaient rien — au clavier, la navigation disparaissait dès qu'elle
+      quittait les deux boutons d'action.
+      *Fait,* par une règle unique qui les nomme tous les cinq.
 
-- [ ] **U1.10 — Fenêtre redimensionnable, taille mémorisée.** `figma.showUI` fige
-      380 × 500. Geste : `figma.ui.resize`, et la taille rangée dans
-      `figma.clientStorage`. **À vérifier d'abord :** les bornes que la
-      plateforme impose à une fenêtre de plugin, avant d'annoncer quoi que ce
-      soit. Ce n'est pas un confort isolé — le compte rendu de la phase U4
-      grandit avec le nombre d'avertissements, et une fenêtre fixe le renverrait
-      dans une boîte à défilement.
-      **Et ce n'est pas non plus un confort futur :** les captures de U1.1
-      montrent l'interface actuelle débordant déjà de sa fenêtre sans avoir
-      produit le moindre résultat.
+- [X] **U1.10 — Fenêtre redimensionnable, taille mémorisée.** `figma.showUI`
+      figeait 380 × 500. **À vérifier d'abord :** les bornes que la plateforme
+      impose, avant d'annoncer quoi que ce soit.
+      *Vérifié, et la vérification a changé la tâche.* La documentation de
+      `figma.ui.resize` donne un minimum de **70 × 0** et ne décrit **aucun
+      redimensionnement natif** : une fenêtre de plugin ne bouge que si le
+      plugin dessine lui-même une poignée. Les deux faits comptent — le premier
+      dit que la plateforme ne protège de rien, le second qu'il fallait ajouter
+      un objet à l'écran.
+      *Fait :* une poignée dans le coin, un message `resize` de plus dans
+      `UiRequest`, et `src/fenetre.ts` qui borne, applique et range la taille
+      dans `figma.clientStorage`. La borne du plugin — 320 × 320, la taille en
+      dessous de laquelle plus un libellé ne tient — est écrite **une seule
+      fois** : la poignée envoie ce que le pointeur dit, sans rien borner, parce
+      qu'une borne recopiée dans l'UI serait la seconde autorité au désaccord
+      muet. `tests/fenetre.test.ts` tient cette responsabilité, puisqu'elle
+      n'est écrite que là.
+      La fenêtre s'ouvre à sa taille par défaut puis reprend celle qui est
+      rangée : `showUI` est synchrone et doit partir tout de suite, quand
+      `clientStorage` ne répond qu'après. Ouvrir petit puis agrandir se voit ;
+      ne pas ouvrir du tout se voit davantage.
+
+**Deux tests neufs, et ce qu'ils ont trouvé en naissant.**
+`tests/stylesUi.test.ts` exige que toute classe posée par l'UI ait une règle et
+que toute règle vise une classe posée. Il a trouvé quatre divergences déjà
+installées : `.config-title-row` stylisait un élément qui n'existe plus,
+`space-y-1` et `log-panel` étaient posées sans qu'aucune règle les suive, et
+surtout **`log-info` n'était stylisée nulle part** — c'est-à-dire la classe
+censée distinguer une note d'un avertissement. Il a aussi révélé que
+`createButton` portait une option `icon` que personne n'a jamais passée et que
+rien n'aurait su rendre : une capacité qui n'existe qu'à moitié se découvre le
+jour où l'on s'en sert, elle est retirée. Enfin, `index.js` passait l'état d'un
+message `status` comme niveau de journal : `loading` n'est pas un `LogLevel`, et
+la classe `log-loading` qui en sortait n'était stylisée nulle part non plus.
+
+**Ce que le socle n'a pas pu régler, et qui appartient à U5.1.** La page de
+configuration dépasse encore les 500 px : cinq champs obligatoires, dont deux
+que le dépôt contredit dès qu'il se décrit lui-même. Retirer la hauteur réservée
+sous chaque champ — la même doctrine que pour la note : la stabilité vient de la
+place du bloc, pas d'un vide permanent — a ramené le bouton « Enregistrer » à la
+limite de l'écran, pas au-dessus. C'est U5.1 qui raccourcira ce formulaire, en
+rendant les deux chemins facultatifs.
 
 ---
 
@@ -808,6 +877,9 @@ finitions de CI, orthogonales à l'interface.
    U4 qu'il prépare montreront un flux que la Phase 7 n'a pas encore validé.
 4. **U1.4 à U1.10** — le socle, exécuté contre la table de U1.0, avant toute vue
    nouvelle : sinon les vues de U2 et U4 sont à redessiner deux fois.
+   **Fait le 5 septembre 2026.** L'écran de travail tient de nouveau dans sa
+   fenêtre, la fenêtre se redimensionne, et `styles.css` a cessé d'être un
+   endroit où une couleur se décide.
 5. **U5.1** et **U5.2** — la destination réelle et la cause d'un échec sont des
    données que U2.2 affiche.
 6. **U2** — l'écran de travail.

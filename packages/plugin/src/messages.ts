@@ -28,7 +28,13 @@ export type LogLevel = 'info' | 'success' | 'error';
 export type UiRequest =
   | { type: 'export-component' | 'export-tokens' | 'ui-ready' }
   | { type: 'save-settings'; settings: SettingsInput }
-  | { type: 'open-external'; url: string };
+  | { type: 'open-external'; url: string }
+  /**
+   * La poignée de redimensionnement. Figma ne redimensionne pas une fenêtre de
+   * plugin tout seul — aucune API ne l'expose et rien ne le fait à sa place —,
+   * donc la demande vient de l'UI, et le sandbox seul peut l'exécuter (U1.10).
+   */
+  | { type: 'resize'; largeur: number; hauteur: number };
 
 /** Ce que le sandbox dit à l'UI. */
 export type PluginMessage =

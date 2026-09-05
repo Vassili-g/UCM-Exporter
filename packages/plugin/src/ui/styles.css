@@ -1,7 +1,105 @@
+/*
+ * Le socle graphique de l'interface (U1.4 à U1.9 de refonte-ui.md).
+ *
+ * Trois choses vivent ici et nulle part ailleurs : l'échelle de texte, la trame
+ * d'espacement, et le rôle de chaque couleur. Une valeur écrite en dur dans une
+ * règle est un quatrième domicile pour une décision déjà prise — c'est ainsi
+ * qu'on se retrouvait avec `gap: 12px`, `gap: 10px`, `padding: 9px 10px` et
+ * quatre hauteurs de contrôle pour trois rôles.
+ *
+ * La hiérarchie que ce socle sert — ce qui décide, ce sur quoi on agit, ce qui
+ * informe — est écrite dans CONTRIBUTING.md, « Interface du plugin ». Elle fait
+ * autorité : une règle d'ici qui la contredit a tort.
+ */
 :root {
   color-scheme: light dark;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
-  font-size: 12px;
+
+  /*
+   * U1.4 — trois crans, et pas un de plus. 11 px est la base de l'interface de
+   * Figma ; le plugin était à 12 px et paraissait plus gros que son hôte, tout
+   * en redescendant localement à 11 px à deux endroits. Les interlignes sont
+   * des multiples de 4, comme la trame.
+   */
+  font-size: 11px;
+  --corps: 11px;
+  --corps-interligne: 16px;
+  --libelle: 12px;
+  --libelle-interligne: 16px;
+  --titre: 15px;
+  --titre-interligne: 20px;
+
+  /*
+   * U1.5 — une variable par RÔLE d'espacement, jamais une valeur par endroit.
+   * Quatre rôles, quatre valeurs, toutes prises dans la trame de 4.
+   */
+  --espace-page: 16px;
+  --espace-bloc: 12px;
+  --espace-controle: 8px;
+  --espace-serre: 4px;
+
+  /* U1.6 — deux hauteurs de contrôle. Une action se clique, un outil s'atteint. */
+  --hauteur-action: 32px;
+  --hauteur-secondaire: 24px;
+
+  --rayon: 6px;
+
+  /*
+   * U1.8 — un seul endroit par rôle de couleur, et le repli avec lui.
+   *
+   * Les replis étaient écrits pour le thème clair et répétés à chaque règle :
+   * `#fff`, `#f5f5f5`, `#fff1d6`. Si l'hôte ne servait pas la variable Figma
+   * correspondante, cette valeur claire s'appliquait EN THÈME SOMBRE, et le
+   * texte devenait illisible — d'autant plus sûrement que personne ne l'aurait
+   * vu : les replis ne servent que hors de Figma, là où justement on ne regarde
+   * pas.
+   *
+   * La correction n'est pas de choisir des couleurs qui tiendraient dans les
+   * deux thèmes — il n'y en a pas —, c'est de donner au repli le même thème
+   * qu'à la variable. `figma-dark` est la classe que Figma pose sur `html`
+   * quand `themeColors: true` est demandé : le bloc ci-dessous redéclare les
+   * mêmes rôles avec un repli SOMBRE. Si cette classe manquait, le repli clair
+   * s'appliquerait comme aujourd'hui : ce socle ne peut donc pas faire pire.
+   *
+   * `prefers-color-scheme` n'est délibérément PAS employé : il dit le thème du
+   * système, pas celui de Figma, et un éditeur clair sur un système sombre
+   * recevrait alors des replis sombres.
+   */
+  --fond: var(--figma-color-bg, #ffffff);
+  --fond-survol: var(--figma-color-bg-hover, #f5f5f5);
+  --fond-bloc: var(--figma-color-bg-secondary, #f5f5f5);
+  --fond-note: var(--figma-color-bg-tertiary, #ebebeb);
+  --fond-marque: var(--figma-color-bg-brand, #0d99ff);
+  --fond-marque-survol: var(--figma-color-bg-brand-hover, #007be5);
+  --fond-avertissement: var(--figma-color-bg-warning-tertiary, #fff1d6);
+  --bordure: var(--figma-color-border, #e6e6e6);
+  --bordure-marque: var(--figma-color-border-brand-strong, #0d99ff);
+  --texte: var(--figma-color-text, #1e1e1e);
+  --texte-second: var(--figma-color-text-secondary, #6b6b6b);
+  --texte-marque: var(--figma-color-text-brand, #007be5);
+  --texte-danger: var(--figma-color-text-danger, #dc3412);
+  --texte-succes: var(--figma-color-text-success, #168b52);
+  --texte-avertissement: var(--figma-color-text-warning, #a55b00);
+  --texte-sur-marque: var(--figma-color-text-onbrand, #ffffff);
+}
+
+.figma-dark {
+  --fond: var(--figma-color-bg, #2c2c2c);
+  --fond-survol: var(--figma-color-bg-hover, #383838);
+  --fond-bloc: var(--figma-color-bg-secondary, #383838);
+  --fond-note: var(--figma-color-bg-tertiary, #4d4d4d);
+  --fond-marque: var(--figma-color-bg-brand, #0d99ff);
+  --fond-marque-survol: var(--figma-color-bg-brand-hover, #3ab0ff);
+  --fond-avertissement: var(--figma-color-bg-warning-tertiary, #4a3a10);
+  --bordure: var(--figma-color-border, #444444);
+  --bordure-marque: var(--figma-color-border-brand-strong, #0d99ff);
+  --texte: var(--figma-color-text, #ffffff);
+  --texte-second: var(--figma-color-text-secondary, #b3b3b3);
+  --texte-marque: var(--figma-color-text-brand, #7cc4f8);
+  --texte-danger: var(--figma-color-text-danger, #ffafa3);
+  --texte-succes: var(--figma-color-text-success, #85e0a3);
+  --texte-avertissement: var(--figma-color-text-warning, #ffc470);
+  --texte-sur-marque: var(--figma-color-text-onbrand, #ffffff);
 }
 
 * {
@@ -12,8 +110,10 @@ html,
 body {
   min-height: 100%;
   margin: 0;
-  background: var(--figma-color-bg, #fff);
-  color: var(--figma-color-text, #1e1e1e);
+  background: var(--fond);
+  color: var(--texte);
+  font-size: var(--corps);
+  line-height: var(--corps-interligne);
 }
 
 /*
@@ -28,7 +128,6 @@ html {
 }
 
 button,
-pre,
 input {
   font: inherit;
 }
@@ -38,172 +137,174 @@ p {
   margin: 0;
 }
 
-.container {
-  display: grid;
-  gap: 12px;
-  padding: 16px;
-}
-
-.page-stack {
-  display: grid;
-  gap: 12px;
-}
-
 [hidden] {
   display: none !important;
 }
 
-.header {
-  display: grid;
-  gap: 4px;
+/*
+ * La stabilité vient de la PLACE des blocs, jamais d'une hauteur réservée à
+ * vide : la fenêtre est haute d'un écran, et le pied de page est poussé en bas
+ * par ce qui reste. Sa position ne dépend donc plus de la longueur du journal.
+ */
+.container {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  gap: var(--espace-bloc);
+  padding: var(--espace-page);
 }
 
-.header-topline,
-.header-tools,
-.config-title-row {
-  display: flex;
-  align-items: center;
+.page-stack {
+  display: grid;
+  gap: var(--espace-bloc);
+}
+
+/*
+ * U1.2 — le titre du produit se lit AVANT l'état de connexion, et l'outil de
+ * navigation garde un seul emplacement quelle que soit la page. La pastille
+ * était empilée au-dessus du titre : l'état se lisait donc en premier, alors
+ * qu'il n'est que le rang 3.
+ */
+.header {
+  display: grid;
+  gap: var(--espace-serre);
 }
 
 .header-topline {
+  display: flex;
   width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
 }
 
-.header-tools {
-  width: 100%;
-  justify-content: space-between;
+.page-title {
+  font-size: var(--titre);
+  font-weight: 600;
+  line-height: var(--titre-interligne);
+}
+
+.subtitle,
+.field-help {
+  color: var(--texte-second);
+  line-height: var(--corps-interligne);
 }
 
 .connection-status {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  color: var(--figma-color-text-danger, #dc3412);
+  gap: var(--espace-serre);
+  color: var(--texte-danger);
   white-space: nowrap;
 }
 
 .connection-status::before {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: currentColor;
   content: '';
 }
 
 .connection-status[data-state='connected'] {
-  color: var(--figma-color-text-success, #168b52);
+  color: var(--texte-succes);
 }
 
 .connection-status[data-state='checking'] {
-  color: var(--figma-color-text-secondary, #6b6b6b);
+  color: var(--texte-second);
+}
+
+/* U1.6 — l'outil de navigation est un contrôle secondaire : 24 px, une seule fois. */
+.icon-button,
+.header-back-button {
+  display: inline-flex;
+  height: var(--hauteur-secondaire);
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+  color: var(--texte);
+  cursor: pointer;
+  font-weight: 600;
 }
 
 .icon-button {
-  display: inline-grid;
-  width: 30px;
-  height: 30px;
+  width: var(--hauteur-secondaire);
   padding: 0;
-  border: 1px solid var(--figma-color-border, #d4d4d4);
-  border-radius: 6px;
-  background: var(--figma-color-bg, #fff);
-  color: var(--figma-color-text, #1e1e1e);
-  cursor: pointer;
-  font-size: 16px;
-  place-items: center;
 }
 
 .icon-button svg {
   display: block;
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   fill: currentColor;
 }
 
-.icon-button:hover {
-  background: var(--figma-color-bg-hover, #f0f0f0);
-}
-
-.header-back-button {
-  min-height: 30px;
-  padding: 0 10px;
-  border: 1px solid var(--figma-color-border, #d4d4d4);
-  border-radius: 6px;
-  background: var(--figma-color-bg, #fff);
-  color: var(--figma-color-text, #1e1e1e);
-  cursor: pointer;
-  font-weight: 600;
-}
-
+.icon-button:hover,
 .header-back-button:hover {
-  background: var(--figma-color-bg-hover, #f0f0f0);
+  background: var(--fond-survol);
 }
 
-.page-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 24px;
-}
-
-.subtitle,
-.description {
-  margin: 0;
-  color: var(--figma-color-text-secondary, #6b6b6b);
-  line-height: 18px;
-}
-
-.card {
+/*
+ * U1.7 — le fond et la bordure se dépensent par RÔLE, pas partout.
+ *
+ * Actions, journal et configuration étaient la même `.card` : trois zones de
+ * poids visuel égal, donc aucune hiérarchie, et trois bordures qui coûtaient
+ * assez de hauteur pour faire déborder la fenêtre au repos. Seule la zone
+ * d'action porte désormais une surface ; le compte rendu vit sur le fond de la
+ * page, et la configuration est un formulaire.
+ */
+.action-panel {
   display: grid;
-  gap: 10px;
-  padding: 12px;
-  border: 1px solid var(--figma-color-border, #e6e6e6);
+  gap: var(--espace-controle);
+  padding: var(--espace-bloc);
+  border: 1px solid var(--bordure);
   border-radius: 8px;
-  background: var(--figma-color-bg-secondary, #f5f5f5);
+  background: var(--fond-bloc);
 }
 
 .section-title {
+  color: var(--texte-second);
+  font-size: var(--corps);
   font-weight: 600;
-  line-height: 18px;
+  line-height: var(--corps-interligne);
 }
 
 .btn {
   display: inline-flex;
-  min-height: 32px;
+  min-height: var(--hauteur-action);
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--espace-controle);
   /* Le libellé dit l'action entière depuis U0.4 : dans 380 px il peut passer
      sur deux lignes, et le bouton grandit au lieu de rogner son texte. */
-  padding: 6px 12px;
-  text-align: center;
+  padding: var(--espace-serre) var(--espace-bloc);
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: var(--rayon);
   font-weight: 600;
+  text-align: center;
   cursor: pointer;
 }
 
 .btn-primary {
-  background: var(--figma-color-bg-brand, #0d99ff);
-  color: var(--figma-color-text-onbrand, #fff);
+  background: var(--fond-marque);
+  color: var(--texte-sur-marque);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--figma-color-bg-brand-hover, #007be5);
+  background: var(--fond-marque-survol);
 }
 
 .btn-secondary {
-  border-color: var(--figma-color-border, #d4d4d4);
-  background: var(--figma-color-bg, #fff);
-  color: var(--figma-color-text, #1e1e1e);
+  border-color: var(--bordure);
+  background: var(--fond);
+  color: var(--texte);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: var(--figma-color-bg-hover, #f0f0f0);
-}
-
-.btn:focus-visible {
-  outline: 2px solid var(--figma-color-border-brand-strong, #0d99ff);
-  outline-offset: 2px;
+  background: var(--fond-survol);
 }
 
 .btn:disabled {
@@ -211,90 +312,102 @@ p {
   opacity: 0.5;
 }
 
-.config-card {
-  gap: 12px;
+/*
+ * U1.9 — un état de focus PARTOUT. Seul `.btn` en avait un : au clavier, la
+ * navigation disparaissait dès qu'elle quittait les deux boutons d'action.
+ */
+.btn:focus-visible,
+.icon-button:focus-visible,
+.header-back-button:focus-visible,
+.log-line a:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
 }
 
 .field {
   display: grid;
-  gap: 4px;
+  gap: var(--espace-serre);
 }
 
 .field-label {
+  font-size: var(--libelle);
   font-weight: 600;
+  line-height: var(--libelle-interligne);
 }
 
 .input {
   width: 100%;
-  height: 32px;
-  padding: 0 8px;
-  border: 1px solid var(--figma-color-border, #d4d4d4);
-  border-radius: 5px;
+  height: var(--hauteur-action);
+  padding: 0 var(--espace-controle);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
   outline: none;
-  background: var(--figma-color-bg, #fff);
-  color: var(--figma-color-text, #1e1e1e);
+  background: var(--fond);
+  color: var(--texte);
 }
 
-.input:focus {
-  border-color: var(--figma-color-border-brand-strong, #0d99ff);
-  box-shadow: 0 0 0 1px var(--figma-color-border-brand-strong, #0d99ff);
+.input:focus-visible {
+  border-color: var(--bordure-marque);
+  box-shadow: 0 0 0 1px var(--bordure-marque);
 }
 
-.field-help {
-  color: var(--figma-color-text-secondary, #6b6b6b);
-  line-height: 16px;
-}
-
+/*
+ * Aucune hauteur réservée ici non plus (même doctrine que la note) : les cinq
+ * champs gardaient chacun une ligne vide pour le cas où une erreur arriverait,
+ * soit 60 px qui repoussaient le bouton « Enregistrer » sous la ligne de
+ * flottaison — en permanence, pour un cas rare. Les erreurs arrivent toutes
+ * ensemble, au clic sur « Enregistrer », jamais sous le curseur pendant la
+ * saisie : le décalage se produit au moment où on l'a demandé.
+ */
 .field-error {
-  min-height: 14px;
-  color: var(--figma-color-text-danger, #dc3412);
-  font-size: 11px;
+  color: var(--texte-danger);
 }
 
 .config-status {
-  min-height: 18px;
-  color: var(--figma-color-text-secondary, #6b6b6b);
+  min-height: var(--corps-interligne);
+  color: var(--texte-second);
 }
 
 .config-status[data-state='success'] {
-  color: var(--figma-color-text-success, #168b52);
+  color: var(--texte-succes);
 }
 
 .config-status[data-state='error'] {
-  color: var(--figma-color-text-danger, #dc3412);
+  color: var(--texte-danger);
 }
 
+/*
+ * La note prend la hauteur de son contenu (U1.2). Elle réservait 54 px et
+ * centrait son texte : un message d'une ligne flottait donc dans un vide
+ * permanent pour éviter un saut occasionnel. La stabilité doit venir de la
+ * place du bloc, jamais d'une hauteur réservée à vide.
+ */
 .note {
-  /* Réserve ~2 lignes : un message court n'écrase pas la hauteur d'un message long. */
-  min-height: 54px;
   max-height: 180px;
-  display: flex;
-  align-items: center;
   overflow: auto;
+  padding: var(--espace-controle);
+  border-radius: var(--rayon);
+  background: var(--fond-note);
+  color: var(--texte-second);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  padding: 9px 10px;
-  border-radius: 6px;
-  background: var(--figma-color-bg-tertiary, #ebebeb);
-  color: var(--figma-color-text-secondary, #6b6b6b);
-  line-height: 18px;
 }
 
 .note[data-state='loading'] {
-  color: var(--figma-color-text-brand, #007be5);
+  color: var(--texte-marque);
 }
 
 .note[data-state='success'] {
-  color: var(--figma-color-text-success, #168b52);
+  color: var(--texte-succes);
 }
 
 .note[data-state='warning'] {
-  color: var(--figma-color-text-warning, #a55b00);
-  background: var(--figma-color-bg-warning-tertiary, #fff1d6);
+  background: var(--fond-avertissement);
+  color: var(--texte-avertissement);
 }
 
 .note[data-state='error'] {
-  color: var(--figma-color-text-danger, #dc3412);
+  color: var(--texte-danger);
 }
 
 /*
@@ -304,34 +417,69 @@ p {
  * lire à chaque ouverture.
  */
 .app-footer {
-  color: var(--figma-color-text-secondary, #6b6b6b);
-  font-size: 11px;
-  line-height: 16px;
+  margin-top: auto;
+  color: var(--texte-second);
   text-align: right;
+}
+
+/*
+ * La poignée de redimensionnement (U1.10). Elle est posée dans le coin, hors du
+ * flux : sa place ne dépend d'aucun contenu, et la marge de la page la sépare
+ * déjà du pied de page.
+ */
+.resize-grip {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--texte-second);
+  cursor: nwse-resize;
+  touch-action: none;
+}
+
+.resize-grip svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+
+.log-panel {
+  display: grid;
+  gap: var(--espace-serre);
 }
 
 .log-panel-inner {
   min-height: 96px;
   max-height: 144px;
-  margin: 0;
   overflow: auto;
+  color: var(--texte-second);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: var(--figma-color-text-secondary, #6b6b6b);
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: 11px;
-  line-height: 16px;
 }
 
 .log-line + .log-line {
-  margin-top: 4px;
+  margin-top: var(--espace-serre);
+}
+
+/*
+ * Les trois niveaux de `LogLevel` ont chacun une règle. `log-info` n'en avait
+ * aucune : une classe posée que rien ne stylise est une distinction qu'on croit
+ * faire et qu'on ne fait pas.
+ */
+.log-info {
+  color: var(--texte-second);
 }
 
 .log-error {
-  color: var(--figma-color-text-danger, #dc3412);
+  color: var(--texte-danger);
 }
 
 .log-success,
 .log-success a {
-  color: var(--figma-color-text-success, #168b52);
+  color: var(--texte-succes);
 }

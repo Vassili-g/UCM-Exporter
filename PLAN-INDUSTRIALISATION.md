@@ -1600,6 +1600,12 @@ une place dans l'ordre d'exécution.
       `packages/plugin/galerie/` rend chaque état de l'interface atteignable et
       photographiable hors de Figma, sous un test qui refuse qu'un message
       déclaré n'ait aucun écran où être regardé.
+      **Le socle graphique suit le même jour (U1.4 à U1.10).** Un fait de
+      plateforme en est sorti, vérifié dans la documentation : Figma ne
+      redimensionne aucune fenêtre de plugin de lui-même — `figma.ui.resize`
+      existe, mais rien ne l'appelle à la place du plugin, et son minimum de
+      70 × 0 ne protège de rien. La poignée et les bornes du plugin vivent
+      désormais dans `src/fenetre.ts`.
 
 ---
 

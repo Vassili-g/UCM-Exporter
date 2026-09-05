@@ -23,9 +23,16 @@ function createSettingsIcon() {
 /**
  * Crée l'en-tête et renvoie ses éléments pilotés par le routeur UI.
  *
- * `page` porte `title` et `subtitle` : les deux se relisent à chaque changement
- * de page par `setPage`, parce qu'un en-tête écrit une fois pour toutes finit
- * par décrire une autre page que celle qui est affichée (U0.3).
+ * `page` porte `title` et un `subtitle` FACULTATIF : les deux se relisent à
+ * chaque changement de page par `setPage`, parce qu'un en-tête écrit une fois
+ * pour toutes finit par décrire une autre page que celle qui est affichée
+ * (U0.3). Une page sans sous-titre n'en affiche pas : l'audit de U1.2 a retiré
+ * celui de l'écran de travail, qui ne servait aucune décision et occupait la
+ * place du rang 1.
+ *
+ * L'ordre des trois éléments est celui de la hiérarchie (CONTRIBUTING.md,
+ * « Interface du plugin ») : le titre de la page, puis ce qui l'explique, puis
+ * l'état de connexion — rang 3, et non l'inverse comme auparavant.
  */
 export function createHeader(page, onSettings, onBack) {
   const header = document.createElement('div');
@@ -33,9 +40,6 @@ export function createHeader(page, onSettings, onBack) {
 
   const topLine = document.createElement('div');
   topLine.className = 'header-topline';
-
-  const titleGroup = document.createElement('div');
-  titleGroup.className = 'space-y-1';
 
   const titleElement = document.createElement('h1');
   titleElement.className = 'page-title';
@@ -45,12 +49,10 @@ export function createHeader(page, onSettings, onBack) {
 
   const setPage = ({ title, subtitle }) => {
     titleElement.textContent = title;
-    subtitleElement.textContent = subtitle;
+    subtitleElement.textContent = subtitle ?? '';
+    subtitleElement.hidden = !subtitle;
   };
   setPage(page);
-
-  const tools = document.createElement('div');
-  tools.className = 'header-tools';
 
   const connection = document.createElement('span');
   connection.className = 'connection-status';
@@ -73,10 +75,8 @@ export function createHeader(page, onSettings, onBack) {
   backButton.hidden = true;
   backButton.addEventListener('click', () => onBack?.());
 
-  titleGroup.append(titleElement, subtitleElement);
-  tools.append(connection, settingsButton, backButton);
-  topLine.appendChild(tools);
-  header.append(topLine, titleGroup);
+  topLine.append(titleElement, settingsButton, backButton);
+  header.append(topLine, subtitleElement, connection);
 
   return { element: header, connection, settingsButton, backButton, setPage };
 }
