@@ -187,9 +187,12 @@ async function runExport(
     // de déroulé par export noieraient les avertissements, qui sont la seule
     // chose de ce journal qui demande un geste.
     const result = await handler((etape) => versUi({ type: 'phase', texte: etape }));
-    // On liste chaque avertissement dans le journal (ex. « largeur de stroke non tokenisée »).
+    // Chaque avertissement porte sa NATURE (U4.1) : il demande un geste dans
+    // Figma, et le compte rendu le range sous le titre qui le dit. Le caractère
+    // de puce ne portait plus cette distinction que par convention typographique,
+    // dans un journal qui la cachait.
     for (const warning of result.warnings ?? []) {
-      versUi({ type: 'log', text: `⚠︎ ${warning}` });
+      versUi({ type: 'diagnostic', nature: 'avertissement', texte: warning });
     }
     // Les notes disent ce que le contrat publie, pas ce qui lui manque : elles
     // portent donc une puce neutre et ne gonflent pas le compte d'avertissements.
@@ -197,7 +200,7 @@ async function runExport(
     // parce qu'une ligne dont la conclusion est toujours « rien à faire » finit
     // par coûter la lecture de celles qui, elles, demandent un geste.
     for (const info of result.infos ?? []) {
-      versUi({ type: 'log', text: `• ${info}` });
+      versUi({ type: 'diagnostic', nature: 'constat', texte: info });
     }
     const warningText = result.warningCount > 0
       ? ` ${result.warningCount} avertissement${result.warningCount === 1 ? '' : 's'}.`
@@ -234,8 +237,10 @@ async function runExport(
         // base un fichier qui peut n'être encore que dans une pull request
         // d'export ouverte — et le designer conclurait que l'export n'a rien
         // fait, alors que son travail attend d'être fusionné.
+        // Le verdict ne s'écrit qu'UNE fois (U4.1) : la note le porte au rang 1,
+        // et le groupe « Publication » porte ce que l'export a fait, pas son
+        // résumé. Les deux disaient le même texte à quinze pixels d'écart.
         const message = `Aucun changement pour ${publication.path} (${publication.ou}) : aucune PR créée.`;
-        versUi({ type: 'log', text: message });
         if (publication.pullRequestUrl) {
           // Le lien, mais pas l'ouverture automatique : rien n'a été produit à
           // relire, et voler la fenêtre pour une page déjà vue se paierait à
@@ -266,9 +271,11 @@ async function runExport(
       const message = error instanceof Error ? error.message : 'Erreur GitHub inconnue.';
       // Un échec de publication (conflit de branche, contenu invalide, etc.)
       // ne remet pas en cause le dernier test de connexion réussi.
+      // La réponse de GitHub est un fait de publication ; le verdict, lui, dit
+      // ce que le designer a entre les mains. Deux choses, deux endroits.
       versUi({ type: 'log', text: `Échec GitHub : ${message}` });
       postDownload(result.filename, result.content);
-      postStatus('error', `Échec GitHub. Le fichier a été téléchargé localement : ${message}`);
+      postStatus('error', 'Échec GitHub. Le fichier a été téléchargé sur votre poste.');
       figma.notify('Échec GitHub : fichier téléchargé localement.', { error: true });
     }
   } catch (error) {
