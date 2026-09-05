@@ -84,39 +84,99 @@ dès qu'une implémentation est présente.
 | Exporter le composant | `<IdentifiantCode>.contract.json` | Variantes exactes, états, structure, tokens, icônes, règles d'usage, et un échantillon de maquette non normatif |
 | Exporter les tokens | `tokens.json` | Variables locales au format DTCG, avec leurs alias et leurs modes |
 
-Version de contrat courante : **12.0** (`packages/kit/src/format/version.ts`,
-seul endroit où elle est écrite).
+## À quoi ressemble un contrat
+
+Voici un export réel, celui d'un composant `TileLink` du dépôt de validation —
+une tuile carrée avec une icône, quatre variantes, deux axes. Il est reproduit
+tel quel, à ses tokens près qui sont raccourcis pour la lisibilité :
+
+```json
+{
+  "name": "TileLink",
+  "meta": {
+    "contractVersion": "12.0",
+    "exportedAt": "2026-09-03T16:55:59.232Z",
+    "figma": { "fileName": "DS AI LAB", "nodeId": "362:2381" },
+    "coverage": { "portable": "complete" }
+  },
+  "props": {
+    "variant": {
+      "type": "enum",
+      "values": ["info", "success"],
+      "default": "info",
+      "descriptions": { "info": "Lien vers un contenu informatif" }
+    },
+    "chessName": { "type": "icon", "policy": "modifiable" }
+  },
+  "viewStructures": {
+    "st1": {
+      "layout": "flex-row",
+      "sizing": { "width": "{…sizes.width}", "height": "{…sizes.height}" },
+      "justifyContent": "center",
+      "alignItems": "center",
+      "children": [
+        { "slot": "icon", "figmaLayer": "chess", "optional": true, "size": "{…sizes.icon}" }
+      ]
+    }
+  },
+  "variantViews": { "v1": { "structure": "st1", "icons": "ic1", "paintPlacements": "pp1" } },
+  "variants": [
+    {
+      "nodeId": "362:2380",
+      "values": { "variant": "info", "state": "default" },
+      "tokens": {
+        "background": "{components.tilelink.colors.info.default.background}",
+        "foreground": "{components.tilelink.colors.info.default.foreground}"
+      },
+      "view": "v1"
+    }
+  ],
+  "icons": {
+    "chess": {
+      "policy": "modifiable",
+      "figmaName": "chess",
+      "slot": "icon",
+      "size": "{…sizes.icon}",
+      "runtimeProp": "chessName"
+    }
+  },
+  "intent": { "usage": "Composant de lien vers une autre page sous la forme d'une tuile carrée" }
+}
+```
+
+**Ce qu'il faut y voir, et qui vaut plus que les champs :**
+
+- **aucune valeur n'est aplatie.** Une couleur est une RÉFÉRENCE
+  (`{components.tilelink.colors.info.default.background}`), jamais `#0B5FFF` :
+  le token reste le propriétaire de sa valeur, et un changement de thème n'a
+  pas à repasser par un réexport ;
+- **les quatre variantes sont énumérées, pas déduites.** `variants` liste les
+  combinaisons qui existent RÉELLEMENT dans Figma — une matrice clairsemée
+  reste clairsemée, et un consommateur ne présume jamais que le produit
+  cartésien des axes est valide ;
+- **ce qui se répète est catalogué.** Les quatre variantes partagent la même
+  structure et les mêmes emplacements de peinture : elles citent `v1`, qui
+  renvoie à `st1`, `ic1` et `pp1`. Un composant à quatre-vingt-dix variantes ne
+  publie donc pas quatre-vingt-dix arbres.
+- **`coverage.portable` dit ce que l'export n'a PAS su décrire.** Ici
+  `complete` : rien n'a été perdu à la traduction. Un `partial` s'accompagne
+  toujours d'un diagnostic qui nomme le calque et la propriété.
 
 Le contrat est autoportant : il contient assez d'information pour qu'un
 développeur ou un agent produise le composant sans consulter une implémentation
 existante. Le plugin ne génère pas de code de production et n'écrit jamais dans
 le document Figma.
 
+La forme de chaque champ, et ce que son absence signifie, sont décrits dans
+[docs/FORMAT.md](./docs/FORMAT.md) ; ce que chaque version a publié, et ce que
+la suivante casse, dans
+[docs/CHANGELOG-FORMAT.md](./docs/CHANGELOG-FORMAT.md).
+
+Version de contrat courante : **12.0** (`packages/kit/src/format/version.ts`,
+seul endroit où elle est écrite). Un consommateur en lit DEUX — la courante et
+la précédente —, le temps qu'un réexport arrive.
+
 ## Utilisation
-
-### Construire et charger le plugin
-
-```sh
-npm install
-npm run build
-```
-
-`dist/` contient le code du plugin, son interface et le `manifest.json` à
-importer dans Figma (`Plugins > Development > Import plugin from manifest`).
-
-**Distribution : la Figma Community** (T4.4, arbitrage dans
-`PISTES-EVOLUTION.md §2`). Le manifest ne déclare donc pas
-`enablePrivatePluginApi`, drapeau réservé aux plugins privés d'une organisation
-et que Figma refuserait à la soumission. Conséquence sur les contrats :
-`figma.fileKey` n'est pas accessible, `meta.figma.url` n'est plus écrit, et la
-traçabilité vers le composant source passe par `fileName` et `nodeId` — que le
-corps de la pull request annonce sur sa page de couverture. Aucune information
-de rendu n'est perdue : c'est un raccourci de navigation qui tombe.
-
-Un export est toujours téléchargeable localement. La configuration GitHub est
-optionnelle : renseignée, elle crée la branche et la pull request contenant le
-seul artefact exporté. Le PAT reste dans `figma.clientStorage` et n'apparaît ni
-dans l'interface ni dans les logs.
 
 ### Côté repository consommateur
 
@@ -166,6 +226,30 @@ consommateur de référence : arborescence des composants, `tokens.json` DTCG,
 les 6 contrôles branchés, le workflow CI et le rapport publié sur la pull
 request. C'est le point de départ à copier pour brancher un nouveau
 repository.
+
+### Construire et charger le plugin
+
+```sh
+npm install
+npm run build
+```
+
+`dist/` contient le code du plugin, son interface et le `manifest.json` à
+importer dans Figma (`Plugins > Development > Import plugin from manifest`).
+
+**Distribution : la Figma Community** (T4.4, arbitrage dans
+`PISTES-EVOLUTION.md §2`). Le manifest ne déclare donc pas
+`enablePrivatePluginApi`, drapeau réservé aux plugins privés d'une organisation
+et que Figma refuserait à la soumission. Conséquence sur les contrats :
+`figma.fileKey` n'est pas accessible, `meta.figma.url` n'est plus écrit, et la
+traçabilité vers le composant source passe par `fileName` et `nodeId` — que le
+corps de la pull request annonce sur sa page de couverture. Aucune information
+de rendu n'est perdue : c'est un raccourci de navigation qui tombe.
+
+Un export est toujours téléchargeable localement. La configuration GitHub est
+optionnelle : renseignée, elle crée la branche et la pull request contenant le
+seul artefact exporté. Le PAT reste dans `figma.clientStorage` et n'apparaît ni
+dans l'interface ni dans les logs.
 
 ## Commandes
 
