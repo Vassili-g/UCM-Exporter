@@ -18,7 +18,11 @@ import path from 'node:path';
 import test from 'node:test';
 import { createRequire } from 'node:module';
 
-type Etape = { message?: { type: string }; clic?: string; erreurUi?: string };
+type Etape = {
+  message?: { type: string; titre?: string; impact?: string; action?: string };
+  clic?: string;
+  erreurUi?: string;
+};
 type Etat = {
   id: string;
   titre: string;
@@ -131,6 +135,59 @@ test('tout message que le sandbox peut envoyer a un état où le regarder', () =
 
   const inventes = [...joues].filter((type) => !declares.has(type));
   assert.deepEqual(inventes, [], `États jouant un message absent de messages.ts : ${inventes.join(', ')}`);
+});
+
+/**
+ * Une carte incomplète est pire qu'un paragraphe : elle promet une structure
+ * qu'elle ne tient pas (U4.8/U4.9).
+ *
+ * La galerie est le seul endroit où l'on REGARDE ces cartes ; un état qui en
+ * joue une sans son impact ou sans son geste ferait juger la mise en page sur
+ * un contenu que le moteur ne produit pas. La loi jumelle, côté moteur, refuse
+ * qu'un tel message sorte (`loiDesParties.test.ts`) : celle-ci refuse qu'on le
+ * mette en scène.
+ */
+test('toute carte jouée par la galerie porte son problème, son impact et son geste', () => {
+  const manquants: string[] = [];
+  for (const etat of ETATS) {
+    for (const etape of etat.atteinte ?? []) {
+      if (etape.message?.type !== 'diagnostic') continue;
+      const vides = (['titre', 'impact', 'action'] as const)
+        .filter((partie) => !(etape.message?.[partie] ?? '').trim());
+      if (vides.length > 0) manquants.push(`${etat.id} — ${vides.join(', ')}`);
+    }
+  }
+  assert.deepEqual(
+    manquants,
+    [],
+    `Cartes jouées sans toutes leurs parties : ${manquants.join(' ; ')}`,
+  );
+});
+
+/**
+ * Les trois issues d'un export doivent rester REGARDABLES ensemble (U4.9).
+ *
+ * Publication saine, correction demandée, export impossible : c'est leur
+ * voisinage qui dit si le verdict porte bien le rang 1, et si le rouge reste
+ * réservé au refus. Un état retiré en silence rendrait cette comparaison
+ * impossible sans que rien ne rougisse.
+ */
+test('les trois issues d’un export ont chacune leur état', () => {
+  const parId = new Map(ETATS.map((etat) => [etat.id, etat]));
+  for (const id of [
+    'resultat-transformations-normales',
+    'resultat-un-avertissement',
+    'export-impossible',
+  ]) {
+    assert.ok(parId.get(id)?.existe, `l'issue « ${id} » n'a plus d'état atteignable`);
+  }
+  // La publication saine ne montre AUCUNE carte : c'est tout son propos.
+  const saine = parId.get('resultat-transformations-normales');
+  assert.deepEqual(
+    (saine?.atteinte ?? []).filter((etape) => etape.message?.type === 'diagnostic'),
+    [],
+    'l’export sain joue un diagnostic : ce n’est plus un export sain',
+  );
 });
 
 test('le décalque sert toutes les variables de thème que styles.css demande', () => {
