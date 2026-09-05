@@ -41,6 +41,38 @@ test("les vues locales s'additionnent dans une vue et gardent le maximum entre v
   assert.equal(composants.has("VueDetaillee"), false);
 });
 
+/**
+ * Le dépliage ne s'arrête pas au premier cran, et une vue partagée compte
+ * autant de fois qu'elle est rendue.
+ *
+ * Un composant réel délègue en cascade — une vue appelle une grille, la grille
+ * appelle les dépendances. Un relevé qui ne descendrait que d'un cran
+ * annoncerait zéro dépendance là où le contrat en publie sept, et le rapport
+ * resterait vert. C'est l'écart que R8 a mesuré ; seul le corpus du
+ * consommateur le verrouillait jusqu'ici.
+ */
+test("le dépliage traverse deux crans de vues locales, et additionne la vue partagée", () => {
+  const imbrique = join(racinePaquet, "tests", "fixtures", "VuesImbriqueesFixture.tsx");
+  const { composants } = lireApiPublique([imbrique], racinePaquet).get(imbrique);
+
+  // La brève : Alert + une grille de 3. La longue : Button + deux grilles, donc 6.
+  assert.deepEqual(Object.fromEntries(composants), { Alert: 1, Button: 1, TileLink: 6 });
+  assert.equal(composants.has("Grille"), false, "une vue locale n'est pas une dépendance");
+});
+
+/**
+ * Une vue locale qui se rend elle-même — un arbre, une liste imbriquée — est
+ * une écriture ordinaire. Le relevé doit en sortir avec une cardinalité finie ;
+ * sans borne, ce n'est pas un chiffre faux qui sort, c'est `ucm check` qui
+ * meurt sur un débordement de pile, et le designer ne reçoit aucun rapport.
+ */
+test("une vue locale qui se rend elle-même rend une cardinalité finie", () => {
+  const recursive = join(racinePaquet, "tests", "fixtures", "VueRecursiveFixture.tsx");
+  const { composants } = lireApiPublique([recursive], racinePaquet).get(recursive);
+
+  assert.deepEqual(Object.fromEntries(composants), { TileLink: 1 });
+});
+
 test("la comparaison relève props, types, utilisation et cardinalité", () => {
   const releve = lireApiPublique([fixture], racinePaquet).get(fixture);
   const ecarts = ecartsDeParite({
