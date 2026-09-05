@@ -8,7 +8,9 @@ modifie jamais le document Figma.
 Lire uniquement ce qui concerne la tâche :
 
 1. [CONCEPT.md](./CONCEPT.md) pour les responsabilités du modèle ;
-2. [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md) pour le comportement touché ;
+2. [docs/FORMAT.md](./docs/FORMAT.md) si la tâche touche à la FORME de ce qui
+   est publié, [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) si elle
+   touche à la façon dont le plugin lit Figma ;
 3. [CONTRIBUTING.md](./CONTRIBUTING.md) pour les règles de code et de test ;
 4. `packages/kit/src/format/types.ts` et les tests voisins pour la forme concrète.
 
@@ -78,6 +80,7 @@ packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
     ui/                        interface du plugin
   galerie/                   les états de l'UI, atteignables hors de Figma
   tests/
+  SPEC.md                    le MOTEUR : ce que le plugin lit, élit et signale
   manifest.json              chargé dans Figma depuis packages/plugin/dist/
 
 packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
@@ -122,8 +125,12 @@ packages/cli/            la ligne de commande : @ucm-kit/cli, pas encore publié
   src/init.mjs             installe ce qui manque, sans jamais écraser
   src/icons.mjs            les icônes que les contrats du repo réclament
 
+docs/                    le FORMAT, pour qui consomme un contrat
+  FORMAT.md              la forme de chaque champ, et ce que son absence dit
+
 tests/                   les tests du monorepo lui-même
   docLinks.test.ts       les liens de la documentation
+  scissionSpec.test.mjs  aucune règle perdue en scindant la spécification
   monorepoCoherent.test.mjs  chaque paquet lit le kit d'à côté, jamais le registre
 ```
 
@@ -147,7 +154,7 @@ Le raisonnement vit dans la spécification, en lien.
   héritage, ni défaut : résoudre les cinq renvois redonne la vue exacte.
   `structure` est la projection du variant de référence, publiée elle aussi par
   renvoi, INCONDITIONNELLEMENT : elle rejoint le catalogue des structures quand
-  elle n’y correspond à aucune. → [spec](./UCM-EXPORTER-SPEC.md#sortie)
+  elle n’y correspond à aucune. → [spec](./docs/FORMAT.md#sortie)
 - Le contrat n’écrit aucune valeur neutre : une clé qui vaudrait `null`, `{}` ou
   `[]` est absente. Borne, et elle porte tout : UN seul passage, jamais de point
   fixe. Une valeur qui EST vide ne s’écrit pas ; une valeur qui CONTIENT du vide
@@ -160,13 +167,13 @@ Le raisonnement vit dans la spécification, en lien.
 - Une propriété native garde son type (`INSTANCE_SWAP`, `SLOT`) et ses liaisons
   `visible`, `characters`, `mainComponent` : définition dans
   `propertyBindingDefinitions`, `nodeId` dans `variants[].bindings`, aucun
-  rapprochement par nom de calque. → [spec](./UCM-EXPORTER-SPEC.md#1-props)
+  rapprochement par nom de calque. → [spec](./docs/FORMAT.md#1-props)
 - Un enum renommé porte la même clé dans `props`, `variantAxes` et les arbres de
-  variantes. → [spec](./UCM-EXPORTER-SPEC.md#1-props)
+  variantes. → [spec](./docs/FORMAT.md#1-props)
 - Les axes d’API vivent dans `props`, l’axe d’états dans `stateModel` ; une règle
   `@prop` suit cette répartition. N’est une faute de frappe que ce que le contrat
   ne publie nulle part.
-  → [spec](./UCM-EXPORTER-SPEC.md#7-intention-et-documentation-des-props)
+  → [spec](./docs/FORMAT.md#7-intention-et-documentation-des-props)
 
 ### Tokens et variables
 
@@ -174,12 +181,12 @@ Le raisonnement vit dans la spécification, en lien.
 - `normalizeName()` et `indexVariables()` sont communs aux deux commandes.
 - Une collision feuille/groupe ou deux chemins identiques sont tranchés avant la
   construction de l’arbre ; aucun alias ne pointe vers une variable rejetée.
-  → [spec](./UCM-EXPORTER-SPEC.md#partie-2--export-tokens)
+  → [spec](./docs/FORMAT.md#partie-2--export-tokens)
 - Le contrat ne publie AUCUN index de ses tokens. `tokensUsed` se dérivait du
   contrat terminé ; ce qui se dérive ne se publie pas. Un consommateur qui en a
   besoin balaie les références du contrat, `samples` et `meta` exclus — un texte
   de maquette peut valoir « {montant.total} » sans nommer un token.
-  → [spec](./UCM-EXPORTER-SPEC.md#8-rendu-sémantique-et-garde-fous)
+  → [spec](./docs/FORMAT.md#8-rendu-sémantique-et-garde-fous)
 - Un nom de token se projette de TROIS façons, et chacune a UN propriétaire, tous
   trois dans `packages/kit/src/format/names.ts` : `normalizeName` va du chemin
   Figma au token, `codeIdentifier` du nom Figma à l'identifiant de code, et
@@ -205,7 +212,7 @@ Le raisonnement vit dans la spécification, en lien.
 - `colorKeys.ts` en est l’unique autorité et décide sur toute la matrice : la clé
   d’un token est la même dans toutes les feuilles. Borne du coût : sélection
   exacte jusqu’à seize profondeurs candidates, gloutonne et déterministe au-delà.
-  → [spec](./UCM-EXPORTER-SPEC.md#2-tokens-de-variantes)
+  → [spec](./docs/FORMAT.md#2-tokens-de-variantes)
 - Le SITE tranche la nature de ce qu’une couleur peint, le NOM précise à
   l’intérieur de cette nature. Un dernier segment qui nomme un rôle partagé
   l’emporte seulement s’il est de la nature du calque — c’est ce qui distingue
@@ -227,7 +234,7 @@ Le raisonnement vit dans la spécification, en lien.
   bordure ; `align` donne la forme de l'ombre — `inside` inset, `outside`
   outset, `center` moitié de chaque côté.
   `defaultRenderingSemantics()` en est l’unique autorité.
-  → [spec](./UCM-EXPORTER-SPEC.md#8-rendu-sémantique-et-garde-fous)
+  → [spec](./docs/FORMAT.md#8-rendu-sémantique-et-garde-fous)
 - Le contrat ne publie que les couleurs liées. `lirePeintures` est l’unique
   lecture : ce qui est retenu et ce dont on avertit en sortent ensemble, la liste
   du node servant de repli. Une peinture posée à la main sur un calque parcouru
@@ -239,7 +246,7 @@ Le raisonnement vit dans la spécification, en lien.
   PUBLIÉ qui porte la peinture : une couleur sous une feuille appartient à cette
   feuille, et deux tracés d’une même icône ne donnent qu’une cible. Les deux
   relevés ne parcourent pas le même arbre ; leur égalité n’est pas exigée.
-  → [spec](./UCM-EXPORTER-SPEC.md#2-tokens-de-variantes)
+  → [spec](./docs/FORMAT.md#2-tokens-de-variantes)
 
 ### Composition
 
@@ -262,7 +269,7 @@ Le raisonnement vit dans la spécification, en lien.
   l’enveloppe appartient au contrat parent : il publie son flux et range la
   dépendance dans `children`. Trois liens donnent trois enfants, et le cadre ne
   reprend une `visibilityProp` que lorsqu’une seule dépendance l’occupe.
-  → [spec](./UCM-EXPORTER-SPEC.md#cadre-de-dépendance)
+  → [spec](./docs/FORMAT.md#cadre-de-dépendance)
 - Ce cadre publie TOUS ses calques, pas seulement les branches de dépendance.
   `structureTree.publishesChildren` tranche l’unique exception : un cadre dont
   aucune branche ne mène à une dépendance ne publie rien. Chemins de typographie
@@ -270,7 +277,7 @@ Le raisonnement vit dans la spécification, en lien.
 - Chaque `variantViews[variants[].view].composes` se dérive de SON arbre publié,
   dans son ordre ; le `composes` global en est l’union ordonnée à cardinalité
   maximale. Une dépendance non située sort des deux champs à la fois, sous
-  avertissement. → [spec](./UCM-EXPORTER-SPEC.md#composition-et-dépendances)
+  avertissement. → [spec](./docs/FORMAT.md#composition-et-dépendances)
 
 ### Arbre des slots
 
@@ -280,7 +287,7 @@ Le raisonnement vit dans la spécification, en lien.
   d’information reste une feuille. `structureTree.ts` en est l’unique autorité ;
   extraction, `textSlots` et signatures la consultent sans la recalculer.
   Profondeur bornée à 12 niveaux, coupure dite dès qu’elle emporte autre chose
-  qu’un dessin. → [spec](./UCM-EXPORTER-SPEC.md#6-structure)
+  qu’un dessin. → [spec](./docs/FORMAT.md#6-structure)
 - Un conteneur publie TOUS ses calques rendables, à quelque profondeur qu’ils
   vivent — jamais une sélection. `variants[].tokens` relève les couleurs du
   variant entier.
@@ -289,7 +296,7 @@ Le raisonnement vit dans la spécification, en lien.
   chemin de slots. Un slot à plusieurs textes décrit ses parts dans `children` :
   les nodes représentés y portent leur visibilité, les cibles graphiques non
   représentées restent dans `visibilityTargets`.
-  → [spec](./UCM-EXPORTER-SPEC.md#5-typographie)
+  → [spec](./docs/FORMAT.md#5-typographie)
 - `icons.*.slot` et `icons.*.size` disent où et à quelle taille placer chaque
   icône. `slotNames.ts` est l’unique autorité sur le nommage : un `icons.*.slot`
   publié désigne toujours un slot réel de `structure.children`.
@@ -302,21 +309,21 @@ Le raisonnement vit dans la spécification, en lien.
 - Masquer et remplacer sont deux libertés distinctes : le booléen Figma dit SI
   une icône s’affiche, la prop runtime dit LAQUELLE rendre. Une icône toujours
   visible est modifiable comme une autre, sans booléen et sans signalement.
-  → [spec](./UCM-EXPORTER-SPEC.md#7-intention-et-documentation-des-props)
+  → [spec](./docs/FORMAT.md#7-intention-et-documentation-des-props)
 
 ### Layout, dimensions et bornes
 
 - Le node de layout d’un variant s’élit au score, donc en fonction de la racine
   d’où part la recherche. `layoutNodes.ts` en est l’unique autorité. Aucune
   extraction ne choisit le calque qu’elle décrit : toutes reçoivent l’élection,
-  `sizes` comprise. → [spec](./UCM-EXPORTER-SPEC.md#3-layout)
+  `sizes` comprise. → [spec](./docs/FORMAT.md#3-layout)
 - Ce que l’élection écarte est dit. Un calque hors du node élu, ou à côté d’une
   dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni visibilité,
   alors que ses couleurs entrent dans `variants[].tokens` : il avertit.
 - Un auto-layout linéaire publie ses alignements (`justifyContent`,
   `alignItems`) ; ses slots ne publient que leurs exceptions (`alignSelf`,
   `flexGrow`). Une absence signifie hors flux ou non applicable, jamais
-  `flex-start` deviné. → [spec](./UCM-EXPORTER-SPEC.md#flux-et-alignement)
+  `flex-start` deviné. → [spec](./docs/FORMAT.md#flux-et-alignement)
 - Le menu de dimensionnement Figma fait autorité, axe par axe ; un axe ne décide
   jamais de l’autre. Pour un slot : `Fill` se publie, `Fixed` cite une variable
   dans `size`, l’absence vaut `Hug`, une dimension figée sans variable avertit.
@@ -329,7 +336,7 @@ Le raisonnement vit dans la spécification, en lien.
   de lier, et ces exceptions sont énumérées : les pistes et cellules d’une
   grille, et la place d’un calque hors du flux. Toutes publient en pixels sous
   une NOTICE, sans devenir des tokens et sans dégrader la couverture.
-  → [spec](./UCM-EXPORTER-SPEC.md#dimensions-et-bornes)
+  → [spec](./docs/FORMAT.md#dimensions-et-bornes)
 - Un tracé n’est pas une boîte : sur un `VECTOR`, `BOOLEAN_OPERATION`, `STAR` ou
   `POLYGON`, la dimension EST le dessin, et le contrat ne lui réclame aucune
   variable — liée, elle se publie comme partout ailleurs. `RECTANGLE`, `ELLIPSE`
@@ -341,7 +348,7 @@ Le raisonnement vit dans la spécification, en lien.
   d’un axe sous `stretch`, `center` et `scale`. Le calcul passe par le CENTRE,
   seul point où le modèle de Figma (rotation autour du coin) et celui de CSS
   (autour du centre) se rejoignent. Rien n’est publié quand la géométrie manque.
-  → [spec](./UCM-EXPORTER-SPEC.md#position-absolue)
+  → [spec](./docs/FORMAT.md#position-absolue)
 - La `rotation` d’un calque publié est écrite, dans l’unité ET la convention de
   CSS — donc l’opposé du compte de Figma —, origine au centre, absente sous le
   centième de degré. `flexLayout.rotationDegrees` en est l’unique autorité.
@@ -350,7 +357,7 @@ Le raisonnement vit dans la spécification, en lien.
 - `bounds` publie les bornes sur le composant et sur chaque slot, indépendamment
   du menu de dimensionnement, à la règle commune. Le geste demandé est de nommer
   la borne, jamais de la retirer. Un calque intermédiaire n’en est pas
-  propriétaire et avertit. → [spec](./UCM-EXPORTER-SPEC.md#dimensions-et-bornes)
+  propriétaire et avertit. → [spec](./docs/FORMAT.md#dimensions-et-bornes)
 - Une valeur uniforme n’est valide que si tout le groupe requis est lié. Les
   côtés d’un même champ peuvent citer des variables différentes : le contrat
   publie alors le détail (`padding.x`, `padding.y`, `radius`, largeur d’un
@@ -360,7 +367,7 @@ Le raisonnement vit dans la spécification, en lien.
   L’élection du node de layout ne compte que `hasCompleteBinding`.
 - `wrap` est une propriété de flux et reste au niveau haut même sous `sizes`.
   `rowGap` est un token à la règle commune ; son absence sous `wrap` vaut `gap`.
-  → [spec](./UCM-EXPORTER-SPEC.md#passage-à-la-ligne)
+  → [spec](./docs/FORMAT.md#passage-à-la-ligne)
 - Une propriété Figma que le schéma ne sait pas porter avertit au lieu de
   disparaître. `layout` reste publié parce que sa forme l’exige, et son repli
   `flex-row` se signale.
@@ -371,7 +378,7 @@ Le raisonnement vit dans la spécification, en lien.
   `Hug`. Aucune réserve ne se lit sur l’usage supposé d’un calque : sur un calque
   publié, `isMask` avertit comme le reste. Une propriété que le contrat ÉCRIT
   n’y figure jamais — c’est ce qui en a retiré `rotation`.
-  → [spec](./UCM-EXPORTER-SPEC.md#propriétés-non-portables)
+  → [spec](./docs/FORMAT.md#propriétés-non-portables)
 
 ### Grilles
 
@@ -391,7 +398,7 @@ Le raisonnement vit dans la spécification, en lien.
   piste non `HUG` sous l’étendue de l’enfant rend l’axe indécis et rien n’est
   publié ; un alignement explicite retire l’exception, sans quoi la valeur
   contredirait l’avertissement de `resolveSlotSize` sur le même axe.
-  → [spec](./UCM-EXPORTER-SPEC.md#grilles)
+  → [spec](./docs/FORMAT.md#grilles)
 
 ### Diagnostics
 
@@ -422,13 +429,13 @@ Le raisonnement vit dans la spécification, en lien.
   au schéma — un contrat plus ancien le porte encore — et son absence ne produit
   AUCUN diagnostic : la traçabilité passe par `fileName` et `nodeId`, annoncés
   dans le corps de la pull request.
-  → [spécification](./UCM-EXPORTER-SPEC.md#partie-1--export-composant-moteur-générique)
+  → [spécification](./docs/FORMAT.md#métadonnées)
 - Le schéma annoncé dans l’en-tête est lu DANS le fichier déposé
   (`versionDeContrat()`, `format/version.ts`), jamais dans `CONTRACT_VERSION`.
   Sinon la couverture parle du plugin en ayant l’air de parler du fichier, et
   les deux autorités divergent sans un mot. `tokens.json` n’en reçoit aucun : il
   ne porte aucun schéma UCM.
-  → [spécification](./UCM-EXPORTER-SPEC.md#partie-3--configuration-et-dépôt-github)
+  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 - Un export identique n’ouvre JAMAIS une seconde pull request. L’immobilité se
   juge sur la branche de base **et** sur les pull requests d’export encore
   ouvertes (`exportsEnVol()`, `src/github.ts`), parce qu’un artefact déposé et
@@ -437,12 +444,12 @@ Le raisonnement vit dans la spécification, en lien.
   changement » sans l’endroit envoie chercher un fichier là où il n’est pas
   encore. Ce n’est pas un refus — un contenu DIFFÉRENT pendant qu’une pull
   request est ouverte est un réexport après correction, donc le geste normal.
-  → [spécification](./UCM-EXPORTER-SPEC.md#partie-3--configuration-et-dépôt-github)
+  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 - Un avertissement entre dans le corps de la pull request en Markdown :
   `sansLienAutomatique()` (`src/github.ts`) publie `@nom` et `#123` en `code`.
   Sinon GitHub relie `@icons`, nom d’une variante de règle, au profil d’un
   inconnu qu’il notifie à chaque export.
-  → [spécification](./UCM-EXPORTER-SPEC.md#partie-3--configuration-et-dépôt-github)
+  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 
 ### Échantillon de maquette
 
@@ -503,7 +510,7 @@ Le raisonnement vit dans la spécification, en lien.
   dépendance publie. Bornes : on compare le composant PROPRIÉTAIRE et non la
   variante, et le relevé s’arrête sur une dépendance de la dépendance, un
   `SLOT`, ou un calque déjà déclaré remplacé.
-  → [spec](./UCM-EXPORTER-SPEC.md#9-échantillon-de-maquette)
+  → [spec](./docs/FORMAT.md#9-échantillon-de-maquette)
 - `swaps` ne rapporte que ce qu’`args` ne sait pas dire. Une INSTANCE_SWAP native
   a déjà sa prop dans le contrat de la dépendance — `mergeIconRules` y pose
   `runtimeProp` plutôt qu’une prop de synthèse — et la republier rouvrirait le

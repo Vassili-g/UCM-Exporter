@@ -3,7 +3,8 @@
 Ce document rassemble ce qui n’est **pas** décidé : le positionnement du modèle
 dans son écosystème, les options ouvertes, les risques qui les motivent, et un
 point de vue sur la direction générale. Il ne décrit ni le comportement actuel,
-défini dans [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md), ni les priorités
+défini dans [docs/FORMAT.md](./docs/FORMAT.md) et
+[packages/plugin/SPEC.md](./packages/plugin/SPEC.md), ni les priorités
 engagées, suivies dans [ROADMAP.md](./ROADMAP.md), ni les principes du modèle,
 posés dans [CONCEPT.md](./CONCEPT.md).
 

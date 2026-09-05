@@ -214,7 +214,8 @@ La maturité et les limites restantes sont dans [ROADMAP.md](./ROADMAP.md).
 | Document | Contenu |
 |---|---|
 | [CONCEPT.md](./CONCEPT.md) | Problème résolu, responsabilités, principes |
-| [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md) | Comportement exact du plugin, format des sorties |
+| [docs/FORMAT.md](./docs/FORMAT.md) | Forme du contrat et de `tokens.json`, pour qui les consomme |
+| [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) | Comportement exact du plugin : ce qu'il lit dans Figma |
 | [ROADMAP.md](./ROADMAP.md) | Maturité, limites, prochaines validations |
 | [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md) | Rendre les artefacts consommables par n'importe quel repository |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Règles de développement et de test |

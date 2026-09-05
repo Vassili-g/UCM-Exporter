@@ -1,8 +1,10 @@
 # Contribuer à Unified Component Exporter
 
 Le code doit rester générique, lisible et prudent face aux données Figma
-incomplètes. Avant une modification, lire la spécification concernée dans
-[UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md).
+incomplètes. Avant une modification, lire la spécification concernée :
+[docs/FORMAT.md](./docs/FORMAT.md) pour la forme de ce qui est publié,
+[packages/plugin/SPEC.md](./packages/plugin/SPEC.md) pour ce que le plugin lit
+dans Figma.
 
 ## Code
 
@@ -296,7 +298,8 @@ Chaque document a une autorité limitée :
 | Document | Rôle |
 |---|---|
 | `CONCEPT.md` | Principes et responsabilités |
-| `UCM-EXPORTER-SPEC.md` | Comportement actuel du plugin |
+| `docs/FORMAT.md` | Forme du contrat et de `tokens.json`, pour qui les consomme |
+| `packages/plugin/SPEC.md` | Comportement actuel du plugin |
 | `ROADMAP.md` | État et prochaines validations |
 | `PISTES-EVOLUTION.md` | Options non engagées |
 | `PLAN-CONFORMITE-DEV.md` | Recherche proposée pour les prochaines phases de conformité du rendu |
@@ -314,15 +317,32 @@ porte donc une altitude différente, et une seule fait autorité :
 
 | Endroit | Ce qu’il porte |
 |---|---|
-| `UCM-EXPORTER-SPEC.md` | La règle et son pourquoi — l’autorité |
+| `docs/FORMAT.md` | La règle et son pourquoi, quand elle porte sur ce qui est PUBLIÉ — l’autorité |
+| `packages/plugin/SPEC.md` | La règle et son pourquoi, quand elle porte sur ce que le plugin LIT — l’autorité |
 | `AGENTS.md` | La règle, sa borne, le fichier qui la porte, un lien vers la spécification |
 | Commentaire de code | Ce qui ne vaut qu’à cet endroit du code |
 | Nom de test | La clause vérifiable, une par test |
 
+**Deux autorités, et la frontière entre elles.** Une règle qui décrit un CHAMP —
+sa forme, ce que son absence signifie, ce qu’un consommateur peut en conclure —
+appartient à `FORMAT.md`. Une règle qui décrit une LECTURE — ce que le plugin
+élit dans l’arbre Figma, ce qu’il refuse de deviner, ce dont il avertit le
+designer — appartient à `SPEC.md`. Une règle qui fait les deux se range du côté
+de ce qu’un consommateur doit savoir pour lire l’artefact, et l’autre document y
+renvoie : c’est le consommateur qui n’a pas accès au code.
+
+*Réserve datée du 5 septembre 2026, et elle a une fin :* le temps 1 de la
+scission a dupliqué les paragraphes à cheval au lieu de les trancher, pour
+prouver qu’aucune règle n’était perdue. Tant que le temps 2 dure, une règle lue
+dans l’un peut avoir sa jumelle exacte dans l’autre —
+`tests/scissionSpec.test.mjs` en compte les lignes et interdit que ce nombre
+remonte. La table ci-dessus dit où chaque règle ATTERRIRA ; elle décrit déjà ce
+que le temps 2 exécute.
+
 Ailleurs, un lien. Une mention d’une phrase à une autre altitude — le `README`
 qui résume, la `ROADMAP` qui date une étape — n’est pas une répétition.
 
-Écrire dans la spécification demande une ancre : ses titres sont les cibles des
+Écrire dans une spécification demande une ancre : ses titres sont les cibles des
 liens d’`AGENTS.md`, et `npm test` échoue sur un lien mort.
 
 ## API Figma et build

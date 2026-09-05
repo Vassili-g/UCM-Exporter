@@ -1,8 +1,9 @@
 # Concept — UCM (Unified Component Model)
 
 Ce document définit le problème, les responsabilités et les principes du
-modèle. Le comportement du plugin est spécifié dans
-[UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md) et son avancement dans
+modèle. La forme de ce qui est publié est spécifiée dans
+[docs/FORMAT.md](./docs/FORMAT.md), le comportement du plugin dans
+[packages/plugin/SPEC.md](./packages/plugin/SPEC.md), et l’avancement dans
 [ROADMAP.md](./ROADMAP.md).
 
 ## 1. Le problème
@@ -108,7 +109,7 @@ une autre représentation.
 Chaque combinaison réelle est décrite de façon autonome, sans héritage ni merge
 implicite entre elles : deux combinaisons ne partagent une description que si
 elle leur est strictement identique. La forme exacte de cette projection vit
-dans [UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md).
+dans [docs/FORMAT.md](./docs/FORMAT.md).
 
 ## 5. Le workflow
 

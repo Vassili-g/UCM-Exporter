@@ -1,8 +1,9 @@
 # Roadmap — UCM
 
 Ce document suit la maturité du projet et les validations restantes. Les
-principes sont dans [CONCEPT.md](./CONCEPT.md), le comportement actuel dans
-[UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md), et les options non engagées dans
+principes sont dans [CONCEPT.md](./CONCEPT.md), la forme publiée dans
+[docs/FORMAT.md](./docs/FORMAT.md), le comportement actuel dans
+[packages/plugin/SPEC.md](./packages/plugin/SPEC.md), et les options non engagées dans
 [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
 
 ## Objectif du MVP

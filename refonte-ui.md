@@ -770,6 +770,13 @@ reste ouverte.
       vérifier sur un fichier réel**, puis l'écrire dans la spécification, pour
       que la prochaine relecture n'ait pas à trancher une deuxième fois. Une
       tâche de vérification, pas de code.
+      **Débloquée le 5 septembre 2026 :** T8.1 a scindé la spécification, et la
+      question « dans lequel des deux ? » a sa réponse — c'est
+      [packages/plugin/SPEC.md](./packages/plugin/SPEC.md), qui porte déjà « Pas
+      d'écriture dans le document Figma » sous « Hors périmètre MVP ». La règle
+      décrit une action du PLUGIN, pas un champ du contrat ; elle n'a rien à
+      faire dans `docs/FORMAT.md`. Reste la vérification sur fichier réel, qui
+      est tout ce que cette tâche demande encore.
 
 - [X] **U4.6 — Tester ce qui décide, pas le DOM.** La logique qui mérite un test
       est celle qui range un message dans un groupe, dérive l'état de la cible,
@@ -959,7 +966,7 @@ lisible.
 - **Le multi-fichiers Figma.** Un plugin s'exécute dans le contexte du fichier
   ouvert : il n'y a rien à résoudre.
 - **L'export multi-composant en une commande.** Hors périmètre MVP
-  ([UCM-EXPORTER-SPEC.md](./UCM-EXPORTER-SPEC.md), « Hors périmètre MVP »).
+  ([packages/plugin/SPEC.md](./packages/plugin/SPEC.md), « Hors périmètre MVP »).
 - **Un framework d'interface.** Le bundle est du DOM natif inliné dans un HTML
   unique ; c'est une contrainte de la sandbox, pas une préférence.
 - **Un thème propre au plugin.** Aucune couleur de marque : l'hôte décide.
@@ -1045,6 +1052,9 @@ finitions de CI, orthogonales à l'interface.
    résultat. **Fait le 5 septembre 2026.**
 9. **U4.5** — après T8.1 —, puis **U4.3**, puis **U4.4** : la localisation dans
    cet ordre, l'invariant tranché, la loi écrite, le clic ensuite.
+   **T8.1 est passée le 5 septembre 2026** (son temps 1), et U4.5 sait
+   maintenant où écrire : `packages/plugin/SPEC.md`. Ces trois tâches sont les
+   seules que ce plan garde ouvertes, U6 mis à part.
 10. **U5.3**, **U5.4**, puis **U6** si les conditions sont réunies.
     **U5.3 et U5.4 faites le 5 septembre 2026**, et U5.5 close sans être faite :
     sa condition d'ouverture n'est pas remplie.

@@ -1575,6 +1575,10 @@ une place dans l'ordre d'exécution.
       langue de l'interface attend l'arbitrage que **T8.11** porte ; et la tâche
       qui écrit dans la spécification que « sélectionner un calque n'est pas
       modifier le document » attend **T8.1**, qui scinde cette spécification.
+      **Les deux sont tombées :** T8.11 le 4 septembre 2026 — le français reste,
+      l'anglais ne va que sur le README du paquet npm —, et le temps 1 de T8.1 le
+      5, qui donne à U4.5 son domicile (`packages/plugin/SPEC.md`). Il ne reste
+      donc de T4.6 que U4.5, U4.3 et U4.4, dans cet ordre, plus U6 non décidée.
       *Seule exception à l'ordre :* la phase U0 de ce document — six corrections
       sans décision, dans `src/ui/` et une ligne de `code.ts` — n'a de dépendance
       envers rien et peut se faire à tout moment, y compris dans une session
@@ -2097,9 +2101,12 @@ suspendue : c'est une décision datée.
 
 ### 8.1 — Ce qui est mal rangé, vérifié
 
-- la documentation du format est éclatée sur deux repos : la spécification
-  (94 Ko) décrit le format **et** le moteur, tandis que `CHANGELOG-CONTRAT.md`
-  (25 Ko) et `CONTRAT-CONSOMME.md` vivent chez le consommateur ;
+- ~~la documentation du format est éclatée sur deux repos : la spécification
+  (94 Ko) décrit le format **et** le moteur~~ — **la moitié productrice est
+  traitée par le temps 1 de T8.1** (5 septembre 2026) : le format vit dans
+  `docs/FORMAT.md`, le moteur dans `packages/plugin/SPEC.md`. Restent
+  `CHANGELOG-CONTRAT.md` (25 Ko) et `CONTRAT-CONSOMME.md`, qui vivent chez le
+  consommateur — c'est T8.4 ;
 - `CHANGELOG-CONTRAT.md` s'arrête à la 11.0 : il a cessé d'être tenu au moment
   où le producteur a avancé ;
 - le skill `rediger-diagnostics-ucm` existe en **deux versions divergentes**,
@@ -2163,17 +2170,77 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       impose déjà au validateur — ne pas déplacer et réécrire dans le même
       geste. Le temps 1 est prouvable et sans jugement ; le temps 2 est du
       jugement, mais sur des morceaux assez petits pour qu'une erreur se voie.
-- [ ] **T8.2 — Prévoir la casse de `docLinks.test.ts`**, mesurée : **24
+      **Temps 1 fait le 5 septembre 2026 ; il reste le temps 2, et c'est
+      pourquoi cette case n'est pas cochée.** Les 1 651 lignes sont parties dans
+      [docs/FORMAT.md](./docs/FORMAT.md) et
+      [packages/plugin/SPEC.md](./packages/plugin/SPEC.md), telles quelles, par
+      une partition de ses 212 blocs — 467 lignes au format seul, 204 au moteur
+      seul, 771 dans les deux. L'original est figé en
+      `tests/fixtures/spec-avant-scission.md`, et il n'a aucun autre emploi.
+      *La preuve tient en deux tests* (`tests/scissionSpec.test.mjs`), et **les
+      deux ont été vus rouges avant d'être crus** : retirer des deux fichiers une
+      règle du contrat la fait nommer, et republier une ligne du format dans le
+      moteur fait refuser la remontée du compteur.
+      *Le compteur de duplication vaut 756, et ce n'est pas 771 :* les quinze
+      lignes d'écart se répétaient DÉJÀ dans le document d'origine — un `---`,
+      une clôture de bloc de code, un séparateur de tableau. Les compter poserait
+      un plancher que le temps 2 ne pourrait jamais atteindre, donc une cible qui
+      ment. Le test ne mesure que les lignes uniques dans le figé, et **il en
+      interdit la remontée** : à zéro, ces deux tests et la fixture disparaissent
+      avec la tâche.
+      *Une seule chose a été réécrite, et il faut le dire :* la PROFONDEUR des
+      liens relatifs (`./CONCEPT.md` devient `../../CONCEPT.md` depuis
+      `packages/plugin/`). Une adresse n'est pas une règle, et la comparaison du
+      test la neutralise explicitement plutôt que de la laisser passer pour du
+      texte intact.
+      *Ce que la partition a montré et que l'énoncé supposait :* « co-extensifs
+      par construction » est mesuré — **53 % des lignes porteuses parlent des
+      deux sujets à la fois**. La Partie 3 (configuration et dépôt GitHub) est le
+      seul gros bloc qui se sépare proprement, et elle est intégralement du
+      moteur.
+      **Reste le temps 2**, paragraphe par paragraphe, chaque commit faisant
+      baisser le plafond de `scissionSpec.test.mjs` d'autant.
+- [X] **T8.2 — Prévoir la casse de `docLinks.test.ts`**, mesurée : **24
       occurrences ancrées dans `AGENTS.md`** (19 ancres distinctes, réparties des
       deux côtés de la frontière projetée), plus `CONCEPT.md`, `CONTRIBUTING.md`,
       `PISTES-EVOLUTION.md`, `README.md`, `ROADMAP.md` — **6 documents** — et
       deux fichiers de code (`exportComponent.ts:46`, `nodeBindings.ts:739`).
       Le second test (`:119-127`) code en dur le nom du fichier, une regex et
       `assert.ok(vises.length >= 10)` : il doit être **réécrit**, pas mis à jour.
-- [ ] **T8.3 — Réviser la table « Une règle, un domicile »** de
+      **Faite le 5 septembre 2026, avec le temps 1 de T8.1** — les séparer aurait
+      laissé le dépôt rouge entre les deux commits.
+      Les 24 renvois d'`AGENTS.md` sont routés : trois vers le moteur (la
+      Partie 3), le reste vers le format, parce qu'un invariant y décrit presque
+      toujours un CHAMP. `version.ts` et `nodeBindings.ts` suivent ; le renvoi
+      d'`exportComponent.ts:46` n'existe plus, la mesure ayant vieilli.
+      *Le second test est réécrit, et sa mesure a changé de nature.* Il codait un
+      fichier et un plancher de dix ancres — **il serait passé au vert sur un
+      document devenu la moitié de lui-même**, ce qui est exactement le défaut
+      que la Phase 7 a nommé : un contrôle qui se lit vert sans rien mesurer. Il
+      exige désormais que les DEUX spécifications reçoivent des renvois, qu'aucun
+      ne vise une ancre absente, et que le total tienne.
+      *Une ancre était déjà fausse avant la scission, et elle est corrigée :*
+      l'invariant `meta.figma.url` visait la Partie 1 entière, alors que sa règle
+      vit dans « Métadonnées ». Il vise maintenant `docs/FORMAT.md#métadonnées`.
+      *Et un test a dû apprendre à ne pas juger une fixture :* `docLinks` balaie
+      tous les `.md` du dépôt, donc aussi la spécification figée, dont les liens
+      relatifs valaient depuis la racine. Il saute `tests/fixtures/` — un document
+      gelé n'a pas d'adresses à tenir.
+- [X] **T8.3 — Réviser la table « Une règle, un domicile »** de
       `CONTRIBUTING.md`, qui désigne la spécification comme l'autorité unique.
       Scinder crée deux autorités sur des règles qui ne se séparent pas
       proprement : il faut statuer sur celles à cheval.
+      **Faite le 5 septembre 2026.** La table porte deux autorités au lieu d'une,
+      et la frontière est écrite : une règle qui décrit un CHAMP appartient à
+      `FORMAT.md`, une règle qui décrit une LECTURE de Figma à `SPEC.md`.
+      *Le statut des règles à cheval est tranché, et ce n'est pas « les deux » :*
+      **elles vont du côté du consommateur**, et le moteur y renvoie — c'est lui
+      qui a le code sous la main, pas le repository qui lit l'artefact.
+      *Ce qui n'est PAS écrit comme une règle, mais comme une réserve datée :* le
+      temps 1 les a dupliquées, donc la table décrit aujourd'hui où chaque règle
+      ATTERRIRA. La réserve nomme le test qui compte les doublons et disparaît
+      avec eux — sans quoi elle serait exactement la sorte d'affirmation périmée
+      que le préalable T0 balise.
 - [ ] **T8.4 — Traiter les trois orphelins du Playground.**
       `CONTRAT-CONSOMME.md` est cité par **`version-contrat.mjs:25`**, un
       fichier que T2.1 déplace « tel quel » dans le kit : le paquet publié
@@ -2215,7 +2282,7 @@ sont pas du rangement comme le reste de la Phase 8 : ce sont les seuls écrans
 qu'un inconnu voit. Ils échouent pour deux raisons opposées, et une seule des
 deux tâches attend la Phase 8.
 
-- [ ] **T8.11 — ⚠ Le README du paquet npm** (`packages/kit/README.md`).
+- [X] **T8.11 — ⚠ Le README du paquet npm** (`packages/kit/README.md`).
       **À exécuter tout de suite : le paquet est publié, cette page est déjà en
       ligne.** Elle ne dépend d'aucune autre tâche.
       *Ce qui ne va pas, vérifié :*
@@ -2246,10 +2313,23 @@ deux tâches attend la Phase 8.
       Cet événement vient d'avoir lieu. La question ne porte pas sur le
       repository ni sur les noms de symboles, qui restent français par décision
       ; elle porte sur cette page-ci, et sur elle seule.
+      **Faite le 4 septembre 2026** (commit `bdc6cb7`), et **cochée seulement le
+      5** : le geste avait eu lieu, la case était restée vide. Un plan qui
+      contredit son propre journal Git cesse d'être relu — c'est le constat que
+      la section « Écart entre cet ordre et ce qui a été exécuté » existe pour
+      enregistrer, et il vient de se reproduire sur une case.
+      *La langue est tranchée : cette page-là passe en anglais, et elle seule.*
+      Elle le dit franchement en pied de page, plutôt que de laisser la surprise
+      au premier `import` de `champsInvalidesDuContrat`.
+      *Ce qui a rattrapé une affirmation fausse :* l'exemple a été exécuté contre
+      le paquet réellement publié, depuis un projet neuf hors du monorepo.
 
 - [ ] **T8.12 — Le README GitHub** (`README.md` de la racine).
       *Reste en Phase 8 :* il dépend de T8.1, qui décide où vit la description
-      du format une fois la spécification scindée.
+      du format une fois la spécification scindée. **Cette condition est levée le
+      5 septembre 2026** : la description du format vit dans `docs/FORMAT.md`, et
+      la section « État » du README a désormais un endroit où aller. Les deux
+      contradictions bornées de cette tâche avaient déjà été traitées le 4.
       *Ce qui ne va pas, vérifié :*
       - **il se contredit lui-même, aujourd'hui.** La carte de l'architecture
         annonce `fixtures/ — Contrats d'une version que le moteur ne fabrique
@@ -2429,8 +2509,37 @@ exacte que les étapes 11 à 13 ont déjà payée deux fois. La montée et la
 publication vont ensemble, et dans cet ordre : elles restent à faire, et le
 Playground ne verra pas cette correction avant.
 
-Reste de l'étape 14 : **T4.6** (en cours dans une autre session), puis les
-Phases 6 et 8, avec T7.6 à placer.
+15. **La Phase 8, en commençant par T8.1.** *Ajouté le 5 septembre 2026.* T4.6
+    est arrivée au bout de ce qu'elle pouvait faire seule : U4.3, U4.4 et U4.5
+    sont les trois seules tâches ouvertes de `refonte-ui.md`, et **U4.5 attend
+    T8.1** — écrire que « sélectionner n'est pas modifier » demande de savoir
+    dans lequel des deux documents cette phrase atterrit. T8.1 est donc à la
+    fois la première tâche de la Phase 8 et la dernière dépendance de la
+    Phase 4.
+
+*Exécuté le 5 septembre 2026, étape 15 :* **le temps 1 de T8.1 est fait, et T8.2
+et T8.3 avec lui.** La spécification est partitionnée en `docs/FORMAT.md` et
+`packages/plugin/SPEC.md`, sans qu'un mot soit réécrit, sous deux tests qui
+prouvent qu'aucune ligne n'est perdue et qui comptent ce qui vit encore dans les
+deux fichiers.
+
+*Ce que la partition a mesuré, et l'énoncé ne faisait que le supposer :* **53 %
+des lignes porteuses parlent du format ET du moteur.** « Co-extensifs par
+construction » cesse d'être une intuition. Le seul gros bloc qui se sépare
+proprement est la Partie 3 — configuration et dépôt GitHub —, entièrement du
+moteur ; tout le reste de la Partie 1 est mixte paragraphe par paragraphe.
+
+*Et une leçon de procédure, qui n'est pas neuve mais qui vient de se répéter :*
+**T8.11 était faite depuis le 4 septembre, la case était restée vide.** Le geste
+avait eu lieu, le commit le disait, le plan disait le contraire. C'est la
+maladie que la section ci-dessous existe pour enregistrer, et elle ne se soigne
+pas en la constatant une fois de plus : elle se soigne en cochant dans le même
+commit que le geste. Les deux vitrines ont donc leur case, et T8.12 voit sa
+condition d'attente levée par la scission.
+
+Reste de l'étape 14 : **U4.5, U4.3 puis U4.4**, que T8.1 vient de débloquer.
+Reste de l'étape 15 : **le temps 2 de T8.1**, T8.4 à T8.10, T8.12, puis la
+Phase 6, avec T7.6 à placer.
 
 ### Écart entre cet ordre et ce qui a été exécuté
 
