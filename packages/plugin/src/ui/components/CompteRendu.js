@@ -71,11 +71,37 @@ export function createCompteRendu(journal) {
     };
   }
 
-  /** Une entrée est un bloc de hauteur libre, jamais une ligne tronquée (U4.2). */
-  function creerDiagnostic(texte, nature) {
-    const entree = document.createElement('p');
-    entree.className = `entree entree-${nature}`;
+  /**
+   * Une entrée est un bloc de hauteur libre, jamais une ligne tronquée (U4.2).
+   *
+   * **Elle devient un bouton quand elle mène quelque part (U4.4)**, et reste un
+   * paragraphe sinon. C'est le point de toute la loi de couverture de U4.3 :
+   * une interface où certains messages sont cliquables et d'autres pas
+   * n'enseigne une leçon fausse que si l'absence de lien est arbitraire. Elle
+   * ne l'est pas — un message sans `nodeId` nomme un text style, une variable,
+   * ou un calque agrégé sur toute la matrice, et le moteur a déclaré pourquoi.
+   *
+   * Un bouton, pas un lien : il n'y a pas d'URL, et un `<a href>` factice
+   * mentirait au clavier comme au lecteur d'écran.
+   */
+  function creerDiagnostic(texte, nature, nodeId) {
+    if (!nodeId) {
+      const entree = document.createElement('p');
+      entree.className = `entree entree-${nature}`;
+      entree.textContent = texte;
+      return entree;
+    }
+
+    const entree = document.createElement('button');
+    entree.type = 'button';
+    entree.className = `entree entree-${nature} entree-localisable`;
     entree.textContent = texte;
+    entree.title = 'Montrer ce calque dans Figma';
+    // Seul le sandbox peut poser une sélection : on lui délègue, comme pour
+    // l'ouverture d'un lien externe.
+    entree.addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'montrer-le-calque', nodeId } }, '*');
+    });
     return entree;
   }
 
@@ -95,9 +121,9 @@ export function createCompteRendu(journal) {
       details.open = false;
       journal.clear();
     },
-    ajouterDiagnostic(nature, texte) {
+    ajouterDiagnostic(nature, texte, nodeId) {
       const groupe = groupes[nature] ?? groupes.constat;
-      groupe.ajouter(creerDiagnostic(texte, nature));
+      groupe.ajouter(creerDiagnostic(texte, nature, nodeId));
       journal.append(texte);
     },
     ajouterPublication(texte, niveau = 'info') {

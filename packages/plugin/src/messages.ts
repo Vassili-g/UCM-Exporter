@@ -59,7 +59,16 @@ export type UiRequest =
    * plugin tout seul — aucune API ne l'expose et rien ne le fait à sa place —,
    * donc la demande vient de l'UI, et le sandbox seul peut l'exécuter (U1.10).
    */
-  | { type: 'resize'; largeur: number; hauteur: number };
+  | { type: 'resize'; largeur: number; hauteur: number }
+  /**
+   * Montrer le calque dont un avertissement parle (U4.4).
+   *
+   * Le sandbox seul peut poser une sélection et déplacer la vue. Ce n'est pas
+   * une modification du document — voir « Sélectionner et cadrer ne sont pas
+   * modifier » dans `SPEC.md` —, et le plugin n'appelle jamais `commitUndo()`,
+   * ce qu'un test de source refuse.
+   */
+  | { type: 'montrer-le-calque'; nodeId: string };
 
 /** Ce que le sandbox dit à l'UI. */
 export type PluginMessage =

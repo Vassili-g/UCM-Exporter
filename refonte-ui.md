@@ -900,12 +900,32 @@ reste ouverte.
       plus qu'un total.
       *U4.4 n'a donc plus qu'à écouter le `nodeId` que chaque diagnostic porte.*
 
-- [ ] **U4.4 — Un avertissement mène à son calque.** Un clic sélectionne le
+- [X] **U4.4 — Un avertissement mène à son calque.** Un clic sélectionne le
       calque et l'amène dans le viewport. C'est le pas qui transforme « constat +
       geste » en geste effectué : les messages nomment le calque en prose —
       `flexLayout.ts` écrit « Layer « … » : l'alignement du stroke est
       illisible » — et le designer doit le retrouver à la main dans une matrice de
       trente variants. Dépend de U4.3 et U4.5.
+      **Faite le 5 septembre 2026**, une fois U4.3 et U4.5 closes le même jour.
+      Une entrée de compte rendu devient un `<button>` quand elle porte un
+      `nodeId`, et reste un paragraphe sinon. Un bouton, pas un lien : il n'y a
+      pas d'URL, et un `<a href>` factice mentirait au clavier comme au lecteur
+      d'écran. Elle ne se distingue par aucune couleur — la couleur dit déjà la
+      NATURE du message (U4.1), et lui en donner une seconde ferait porter deux
+      informations au même signal.
+      *Le sandbox fait trois choses, et la troisième n'était pas prévue :*
+      retrouver le node, **basculer sur sa page**, sélectionner et cadrer.
+      `currentPage.selection` n'accepte que des nodes de la page courante : sans
+      la bascule, un clic lèverait dès que le designer a navigué ailleurs depuis
+      l'export — c'est-à-dire le cas normal.
+      *Un node introuvable ne fait rien et ne dit rien.* Le calque a pu être
+      supprimé entre l'export et le clic ; une erreur affichée pour un clic qui
+      n'aboutit pas coûterait plus qu'elle n'apprend, et le message d'origine
+      porte toujours le nom du calque.
+      *La galerie reçoit son état, et il montre les DEUX formes côte à côte* —
+      un avertissement qui mène à son calque, une note qui n'y mène pas. C'est
+      leur voisinage qui décide si l'absence de lien se lit comme une réponse ou
+      comme un oubli, et c'est pour lui que la loi de couverture existe.
 
 - [X] **U4.5 — Trancher, et écrire, que sélectionner n'est pas modifier.**
       L'invariant est net : le plugin ne modifie **jamais** le document Figma

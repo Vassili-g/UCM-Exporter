@@ -302,7 +302,9 @@ onmessage = (event) => {
   // évite que le champ déclaré reste inerte d'un seul côté.
   if (message.type === 'log') compteRendu.ajouterPublication(message.text, message.level);
 
-  if (message.type === 'diagnostic') compteRendu.ajouterDiagnostic(message.nature, message.texte);
+  if (message.type === 'diagnostic') {
+    compteRendu.ajouterDiagnostic(message.nature, message.texte, message.nodeId);
+  }
 
   if (message.type === 'schema-version') {
     footer.textContent = `Schéma de contrat ${message.version}`;

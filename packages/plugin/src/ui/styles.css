@@ -583,6 +583,41 @@ p {
   color: var(--texte-marque);
 }
 
+/*
+ * Un diagnostic qui mène à son calque (U4.4).
+ *
+ * C'est un <button>, donc il arrive avec la mise en forme d'un contrôle : on la
+ * défait pour qu'il reste une ENTRÉE de compte rendu, alignée à gauche et de
+ * hauteur libre comme ses voisines. Ce qu'il garde du bouton est ce qui compte —
+ * le focus au clavier, et le curseur qui annonce qu'il se clique.
+ *
+ * Il ne se distingue pas par une couleur : la couleur dit déjà la NATURE du
+ * message (U4.1), et lui en ajouter une deuxième ferait porter deux
+ * informations au même signal.
+ */
+.entree-localisable {
+  width: 100%;
+  padding: var(--espace-controle);
+  border: 0;
+  border-left: 2px solid transparent;
+  font: inherit;
+  text-align: left;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.entree-avertissement.entree-localisable {
+  border-left-color: var(--texte-avertissement);
+  border-radius: 0 var(--rayon) var(--rayon) 0;
+  background: var(--fond-avertissement);
+  color: var(--texte-avertissement);
+}
+
+.entree-localisable:hover {
+  text-decoration: underline;
+}
+
 .details-techniques {
   color: var(--texte-second);
 }
