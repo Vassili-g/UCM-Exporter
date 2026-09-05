@@ -22,9 +22,9 @@ Le plugin produit :
 - un contrat JSON décrivant la partie visuelle d’un composant ;
 - un export DTCG des variables locales, avec leurs alias et leurs modes.
 
-Le moteur conserve la traçabilité Figma tout en exprimant la sémantique
-visuelle dans un vocabulaire stable. Les assets et l’API applicative restent
-du ressort du repository consommateur.
+Ce que ces deux artefacts contiennent, et ce que leur silence dit, est décrit
+par [docs/FORMAT.md](../../docs/FORMAT.md) — jusqu'à ce que le moteur y
+soit contraint, ce document-ci ne parle que de la LECTURE de Figma.
 
 ## Contexte technique
 
@@ -40,18 +40,13 @@ du ressort du repository consommateur.
   bundle chargé produit — Figma peut servir un bundle plus ancien que celui du
   disque, et rien d'autre ne le dirait.
 
-- **`normalizeName()` est commune aux deux commandes** :
-  `Brand Tokens/Primary/default` → `brand-tokens.primary.default`
-  (`/`→`.`, espaces d'un segment → `-`, minuscules). Un token s'écrit donc
-  pareil dans `tokens.json` et dans un contrat — les références de la Partie 1
-  recoupent la Partie 2.
-- **Références de tokens entre accolades** : dans un contrat, un token est cité
-  comme RÉFÉRENCE `"{chemin.du.token}"`, jamais comme chemin nu ni valeur
-  aplatie — même syntaxe que les références DTCG de `tokens.json`. Les accolades
-  sont un simple enrobage autour du nom produit par `normalizeName()` ; un
-  consommateur retire `{…}` avant de résoudre. Un nom de **text style** n'est
-  pas un token ; en revanche, les variables liées au style sont exportées comme
-  références dans `textStyles.*.tokens`, et comptent comme telles.
+- **Les deux commandes projettent un nom de la même façon**, et citent un token
+  sous la même forme. La règle est celle du format —
+  [Nommer et citer un token](../../docs/FORMAT.md#nommer-et-citer-un-token) —,
+  et `normalizeName()` en est l'implémentation partagée. Ce qui appartient à ce
+  document est le fait qu'une SEULE implémentation serve les deux commandes :
+  deux projections du même nom divergeraient, et un contrat citerait alors un
+  token que `tokens.json` n'écrit pas sous ce nom.
 
 ## Hypothèses sur le design system
 
@@ -858,20 +853,11 @@ Un `@prop` visant une prop/valeur inexistante produit un warning non bloquant.
 
 #### 8. Rendu sémantique et garde-fous
 
-**Aucun rôle de contour ne cite une propriété qui consomme la boîte.** Dans
-Figma un `stroke` ne prend aucune place : il ne pousse ni son contenu ni ses
-voisins, quel que soit son alignement. Une `border` CSS, elle, élargit
-l'élément et décale tout ce qui l'entoure. Le rôle `border` se rend donc avec
-`box-shadow`, et `align` en donne la forme —
-`inside` → `inset 0 0 0 <width> <color>`, `outside` → `0 0 0 <width> <color>`,
-`center` → la moitié de la largeur de chaque côté. Une largeur détaillée par
-bord se rend en autant d'ombres. Quand plusieurs rôles visent `box-shadow` sur
-un même calque — un `border` et un `ring` en focus — ils se composent en **une**
-déclaration, séparés par des virgules, les `inset` d'abord. Toute propriété
-pertinente sans variable liée → warning précis (calque + propriété), non
-exportée, **export non bloqué**.
-Le contrat ne publie **aucun index de ses tokens**. Cette liste se dérive du
-contrat terminé et n’apporte aucune information propre.
+Toute propriété pertinente sans variable liée → warning précis (calque + propriété), non
+exportée, **export non bloqué**. C'est la seule décision de ce document dans
+cette section : comment un rôle se REND — et pourquoi aucun rôle de contour ne
+cite une propriété qui consomme la boîte — appartient au format,
+[8. Rendu sémantique et garde-fous](../../docs/FORMAT.md#8-rendu-sémantique-et-garde-fous).
 
 ### Ce que l'export écrit
 
