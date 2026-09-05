@@ -2360,6 +2360,94 @@ deux tâches attend la Phase 8.
 
 ---
 
+## Phase R — Écarts trouvés par la revue du 5 septembre 2026
+
+Six écarts entre ce plan et le code, relevés par une **revue globale rapide** :
+elle a sondé, elle n'a pas audité. Chaque point ci-dessous est une mesure prise
+une fois, pas un fait établi — et la règle de travail 4 enregistre déjà qu'une
+conclusion de revue non revérifiée s'intègre à l'envers.
+**L'agent qui prend un de ces points refait lui-même la recherche, sur ce sujet
+précis, avant d'écrire une ligne ; si elle contredit l'énoncé, c'est l'énoncé qui
+a tort.** La revue s'est faite pendant qu'une autre session modifiait le dépôt :
+le worktree bougeait sous la mesure.
+
+- [ ] **R1 — ⚠ La `0.1.9` publiée n'est pas la `0.1.9` de ce dépôt. À traiter en
+      premier : c'est en ligne.** `verdict-bilan.mjs` a changé après le dernier
+      relèvement de numéro sans que le numéro bouge, et le CLI publié épingle
+      cette 0.1.9 : un repo qui installe `ucm check` aujourd'hui recevrait le
+      défaut que la Phase 7 a corrigé — le critère de réussite n° 4, sur la
+      première phrase que le designer lit. `pinDocumente.test.mjs` reste vert
+      parce qu'il compare des numéros, pas des contenus.
+      **Rechercher d'abord :** date de publication de chaque version, dernier
+      commit touchant `packages/kit/package.json`, diff du kit depuis ce commit,
+      et le contenu **réellement publié** — pas le dépôt local.
+      **Recherche refaite le 5 septembre 2026, et l'énoncé tient sur les
+      quatre points.** `0.1.9` est partie du registre le 4 septembre à 21:32
+      UTC, quatre minutes après `195eb09`, le commit qui a posé ce numéro :
+      c'est donc bien celui-là qui est en ligne. Deux commits ont touché des
+      fichiers publiables depuis — `57cc083`, le correctif de T7.3 dans
+      `verdict-bilan.mjs`, et `ea46acb`, une adresse de renvoi dans
+      `version.ts`. Le tarball téléchargé du registre le confirme au lieu de le
+      supposer : `phraseDuSensDeLEcart` n'y est pas, zéro occurrence. Et le
+      chemin est bien celui d'un consommateur — `controle-repository.mjs`, ce
+      que `ucm check` exécute, importe `enteteDuVerdict`.
+      *Ce que la recherche ajoute à l'énoncé :* le CLI doit repartir lui aussi.
+      `@ucm-kit/cli@0.1.4`, seule version servie, épingle EXACTEMENT `0.1.9` —
+      c'est D7, et c'est le CLI qui décide ce qu'un repo tiers installe. Monter
+      le kit seul ne changerait rien pour personne.
+      **Le dépôt porte désormais 0.1.10 et 0.1.5, et un garde-fou l'a exigé.**
+      `tests/versionSuitLeContenu.test.mjs` compare le contenu publiable de
+      chaque paquet au commit qui a POSÉ son numéro, et **il a été vu rouge
+      avant d'être cru** : il a nommé `195eb09` et les deux fichiers sans qu'on
+      lui dise lesquels chercher. Il ne va pas au registre — l'épreuve de
+      `publish.yml` y va déjà, mais seulement APRÈS une publication, or ici il
+      n'y en a pas eu : c'est le silence qui a menti, pas la publication. Les
+      deux workflows prennent `fetch-depth: 0` du même coup, sans quoi le clone
+      superficiel de `actions/checkout` rendrait ce test vert sans rien mesurer.
+      **Reste le geste, et il n'est pas dans ce commit :** publier
+      `@ucm-kit/core@0.1.10`, puis `@ucm-kit/cli@0.1.5`, dans cet ordre.
+
+- [ ] **R2 — Le Playground épingle une version que ce dépôt a dépassée.** Le seul
+      consommateur réel du kit ne voit ni la Phase 4 ni la correction de la
+      Phase 7. Dépend de R1 : monter le pin vers un numéro dont le contenu publié
+      est faux ne corrige rien.
+      **Rechercher d'abord :** le pin réel du Playground, et ce que chaque
+      version d'écart change pour lui — pas seulement l'écart de numéro.
+
+- [ ] **R3 — Deux des trois balises restantes ont perdu leur cause.** T0.3 exige
+      qu'une balise parte dans le commit qui corrige sa contradiction ; celles de
+      `PISTES-EVOLUTION.md` et de `Playground/AGENTS.md` citent des fichiers et
+      des symboles absents, alors que les tâches qu'elles nomment sont closes. Le
+      mécanisme du préalable a échoué là où il se prouvait.
+      **Rechercher d'abord :** greper les balises dans les deux dépôts, puis
+      vérifier l'existence de chaque fichier et symbole cité — une balise peut
+      mentir aussi sur ce qu'elle décrit, et la règle qu'elle balise avec elle.
+
+- [ ] **R4 — La table « Contradictions doc ↔ code » est périmée sur trois
+      rangs**, dont un qui cite une ligne dans un fichier devenu bien plus court.
+      T8.8 promet de vérifier cette table : elle doit être juste ce jour-là.
+      **Rechercher d'abord :** rang par rang, rouvrir le fichier cité et vérifier
+      l'affirmation ET la tâche censée la résoudre — un rang peut être faux dans
+      un sens comme dans l'autre.
+
+- [ ] **R5 — La section « État » du `README.md` contredit le code.** Elle situe
+      l'outillage consommateur dans le Playground et annonce son extraction comme
+      à venir, alors que le paquet et le CLI sont publiés. Une règle fausse dans
+      le premier fichier que lit un visiteur est ce que le préalable T0
+      combattait, et celle-ci n'a pas de balise. Le reste de T8.12 attend
+      toujours T8.1.
+      **Rechercher d'abord :** lire la section entière et l'état publié du paquet
+      et du CLI avant de décider ce qui est faux ; la contradiction n'est
+      peut-être pas celle que cet énoncé nomme.
+
+- [ ] **R6 — Les chiffres de ce plan ont vieilli.** T8.1 mesure 1 604 lignes une
+      spécification qui n'en fait plus autant, à un chemin qui a changé ; des
+      tâches encore ouvertes portent des constats déjà exécutés.
+      **Rechercher d'abord :** recompter chaque chiffre au moment de prendre la
+      tâche. Un chiffre daté dans ce plan est un souvenir, pas une mesure.
+
+---
+
 ## Retiré du périmètre
 
 Le contrôle des tokens écrits dans le code (D1, relève d'un linter) ; les
