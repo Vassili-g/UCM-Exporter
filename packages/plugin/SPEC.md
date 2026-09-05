@@ -949,11 +949,24 @@ garantit que le graphe n'oublie aucune cible conditionnelle.
 
 #### Métadonnées
 
-`diagnostics` documente l’export, pas le composant. Chaque entrée porte un
-`code`, la sévérité `warning` et un message en français adressé au designer.
-Le champ est absent quand l’export n’a rien à signaler. Une perte portable rend
-`coverage.portable` partiel ; une note ou un avertissement sans perte portable
-ne le dégrade pas.
+Le moteur écrit dans `meta.diagnostics` tout ce qu’il a eu à signaler en
+lisant Figma, et rien d’autre : **un diagnostic parle de l’EXPORT, jamais du
+composant.** La forme d’une entrée et la règle qui la relie à
+`coverage.portable` appartiennent au format et sont décrites
+[là-bas](../../docs/FORMAT.md#métadonnées) ; ce qui relève du moteur est ce
+qu’il décide d’émettre.
+
+Cette décision se prend en deux temps, dans `exportComponent.ts`. Le moteur
+accumule d’abord ses constats sous forme de messages, puis les classe au moment
+d’écrire — une perte de projection portable l’emporte toujours sur une simple
+note, de sorte qu’un même texte relevé des deux côtés reste un point à
+corriger. Les messages sont dédoublonnés par leur TEXTE : deux extracteurs qui
+concluent la même chose ne le disent qu’une fois.
+
+Le compte que le plugin affiche et que la pull request appelle
+« avertissement » n’est pas ce catalogue entier : c’est la part qui demande un
+geste au designer. `meta.diagnostics` porte tout, y compris ce dont il n’a rien
+à faire.
 
 **`meta.figma.url` est absent des contrats produits aujourd’hui, et c’est un
 état normal du format.** L’URL se construit depuis `figma.fileKey`, que l’API ne

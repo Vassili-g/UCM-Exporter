@@ -1351,14 +1351,19 @@ Le champ est absent quand l’export n’a rien à signaler. Une perte portable 
 `coverage.portable` partiel ; une note ou un avertissement sans perte portable
 ne le dégrade pas.
 
-**`meta.figma.url` est absent des contrats produits aujourd’hui, et c’est un
-état normal du format.** L’URL se construit depuis `figma.fileKey`, que l’API ne
-donne qu’aux plugins déclarant `enablePrivatePluginApi` — un drapeau réservé aux
-plugins privés d’une organisation. Le plugin se distribue par la Figma Community
-(T4.4, arbitrage dans `PISTES-EVOLUTION.md §2`), le drapeau est donc retiré du
-manifest et la clé n’arrive jamais. `url` reste OPTIONNEL dans le schéma, sans
-changement de version : un contrat produit avant cette décision le porte encore,
-et un lecteur doit accepter les deux.
+**`meta.figma.url` est OPTIONNEL, et son absence est un état normal.** Les
+contrats produits aujourd’hui ne le portent pas — la raison tient au mode de
+distribution du plugin et vit
+[dans la spécification du moteur](../packages/plugin/SPEC.md#métadonnées).
+Ce qu’un lecteur doit en retenir tient en une règle : **accepter les deux
+formes.** Des contrats antérieurs portent l’URL, les contrats courants ne la
+portent pas, et cet écart n’a JAMAIS incrémenté `contractVersion` : un champ qui
+passe de « presque toujours là » à « jamais là » sans changer de type ne change
+pas la forme du contrat. Un lecteur qui traiterait l’absence d’`url` comme une
+anomalie refuserait tout export récent.
+
+La traçabilité repose donc sur `meta.figma.nodeId` et `meta.figma.fileName`, que
+le contrat porte toujours.
 
 ---
 
