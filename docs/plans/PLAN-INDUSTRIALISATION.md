@@ -20,20 +20,43 @@ sémantique est différé jusqu'à un vrai cycle avant/après (11.7) ; et
 `@default` remplace la position du variant comme source du défaut d'un axe
 (11.9).
 
-**Ce qui reste, dans l'ordre :**
+**Ce qui reste, dans l'ordre.** Le déroulé complet, geste par geste, est dans
+[GUIDE-RECETTE-REPO-VIERGE.md](./GUIDE-RECETTE-REPO-VIERGE.md). Le Playground a
+été vidé le 6 septembre 2026 pour le recevoir : plus aucun contrat, plus de
+`tokens.json`, plus aucun des cinq fichiers d'`ucm init`.
 
 1. charger le `dist` courant dans Figma et faire les observations U4.5 et U4.9 ;
-2. après cette observation, passer l'UI en TypeScript (U6.1), reconstruire le
-   bundle et le regarder une seconde fois ;
-3. jouer N6 : réexporter les tokens et au moins un composant vers une vraie
-   pull request du Playground, reconstruire la sonde et comparer son rendu ;
-4. publier `@ucm-kit/core@0.1.12`, `@ucm-kit/cli@0.1.8` et
-   `@ucm-kit/adapter-typescript@0.1.1`, puis laisser l'épreuve du registre de
-   11.8 les installer depuis un dossier vide.
+2. rejouer l'installation depuis zéro dans le Playground, avec le CLI
+   **déjà publié**, `@ucm-kit/cli@0.1.7` : `ucm init`, export des tokens, export
+   d'un composant, reconstruction de la sonde, et les trois échecs volontaires
+   des critères 4, 5 et 7. Ce passage est la recette N6 ;
+3. seulement ensuite, publier `@ucm-kit/core@0.1.12`, `@ucm-kit/cli@0.1.8` et
+   `@ucm-kit/adapter-typescript@0.1.1`, en déclarant N6 rejouée, puis laisser
+   l'épreuve du registre de 11.8 les installer depuis un dossier vide ;
+4. repointer le workflow du Playground sur `0.1.8` et son adaptateur sur
+   `0.1.1`, et vérifier une dernière fois que le rapport reste vert.
+
+*Pourquoi la recette avant la publication.* `publish.yml` refuse de publier tant
+que N6 n'est pas déclarée rejouée, et sept fichiers déclencheurs ont bougé depuis
+la version publiée. Six n'ont changé que dans leurs commentaires, le septième est
+le schéma qui gagne cinq `description` ; rien de tout cela ne touche le chemin
+Figma vers pull request. La déclaration reste néanmoins une réponse humaine, et
+la jouer avant de la donner évite de la donner à l'aveugle.
+
+U6.1, le passage de l'UI en TypeScript, n'est pas dans cette liste : c'est une
+décision non prise, pas un travail en attente.
 
 La suite locale, le typecheck, le build du plugin et l'inspection des trois
 tarballs passent le 6 septembre 2026. Ils prouvent le code et la forme des
 paquets ; ils ne remplacent ni Figma, ni GitHub, ni le registre npm.
+
+**Un défaut trouvé en préparant la recette, et non corrigé.** `ucm check` sur un
+repository qui vient d'exécuter `ucm init`, avant tout export, rend
+`✗ tokens.json introuvable` et sort en 1. La CI qu'`ucm init` installe est donc
+rouge dès le premier push, sur un repository où rien n'est encore anormal. Le
+comportement est identique en 0.1.7 et en 0.1.8. Il n'est pas traité ici : il
+demande de trancher si l'absence de tokens est une erreur ou un état
+d'avancement, comme l'est déjà l'absence d'implémentation.
 
 **Convention de lecture :** `[X]` = tâche ou décision clôturée ; `[ ]` = travail
 restant ; une clôture par décision doit être lue dans son paragraphe de statut
