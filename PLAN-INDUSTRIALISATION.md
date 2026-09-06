@@ -3385,7 +3385,7 @@ leur que si Figma en donne un — et l'absence signifie « aucun défaut », jam
 | Ce que le schéma NE prouve PAS | la `description` injectée par `scripts/build-schema.ts` | un consommateur non-JavaScript, qui n'a que ce fichier | une limite qui vieillit dans le schéma sans que rien ne la relise | 11.4 : décider quels champs exigent une description avant publication |
 | La version du contrat | `CONTRACT_VERSION` dans `version.ts` — unique écriture ; `versionDeContrat` — unique lecture | le plugin, le CLI, le corps de la pull request | aucune connue : les deux moitiés de la règle vivent dans le même module | inchangé |
 | La fenêtre de lecture | `VERSION_CONTRAT_MINIMALE` / `MAXIMALE` dans `version-contrat.mjs` | `ucm check`, le rapport designer | `docs/CHANGELOG-FORMAT.md` rédigé après coup, donc en retard | 11.6 : relier la table de compatibilité au changelog |
-| **La version de `tokens.json`** | **aucune** : le fichier ne porte ni version, ni métadonnée | Style Dictionary, `tokens-dtcg.mjs`, un preset, un consommateur non-JS | un fichier d'une grammaire future est lu comme s'il était courant, en silence | 11.5 : trancher entre version, métadonnée, versionnement par paquet, ou absence documentée |
+| **La version de `tokens.json`** | **aucune** : le fichier ne porte ni version, ni métadonnée, et aucun lecteur n'en cherche | Style Dictionary, `indexerTokensDtcg`, un preset, un consommateur non-JS | un fichier d'une grammaire future est lu comme s'il était courant, en silence | 11.5 l'a mesuré : la forme est tranchée (`$extensions`, `com.ucm.*`), le moment reste à décider |
 | **Les exceptions volontaires** | **aucune** : il n'existe aucun mécanisme d'exception | un repo dont un écart est légitime | l'écart est signalé à chaque exécution, ou l'on affaiblit le contrôle pour tous | 11.3 : une grammaire locale, jamais une liste de noms |
 | **Le nom d'une variable CSS** | `tokenCssVariable` pour qui installe le kit ; **rien** pour qui ne l'installe pas | le consommateur neutre, qui écrit sa propre projection | deux formules égales aujourd'hui divergent demain, et la perte est muette | `docs/FORMAT.md` peut décrire la projection SANS l'imposer ; à trancher en 11.4 |
 | La parité contrat ↔ code | `ecartsDeParite` — six relevés, aucun sur les valeurs d'enum | `ucm check`, quand l'adaptateur est installé | un rapport vert sur un enum partiellement rendu (R8) | 11.1 : « garanti », « averti », « non vérifiable » ou « hors périmètre » |
@@ -3672,6 +3672,89 @@ outils actuels.
 
 **Critère de décision :** un consommateur doit pouvoir savoir quelle grammaire
 il lit et quel geste corrige un écart, sans créer une seconde autorité muette.
+
+**Recherche menée le 6 septembre 2026, sur les deux lecteurs qui consomment
+réellement `tokens.json` et sur l'historique de sa projection. Rien n'a été
+implémenté, et aucun champ n'a été ajouté ; la case reste ouverte.**
+
+#### Ce que le fichier contient, et qui le lit
+
+`tokens.json` du corpus porte sept groupes de premier niveau et **aucune
+métadonnée** : ni version, ni date, ni producteur. Deux lecteurs le consomment
+dans ce projet, et un seul est publié :
+
+- **Style Dictionary 4**, en mode DTCG (`usesDtcg: true`), chez le
+  consommateur — il produit les 721 variables CSS ;
+- **`indexerTokensDtcg`** (`@ucm-kit/core/lecteurs`), qui répond à une seule
+  question : « ce chemin de token existe-t-il ? ». C'est lui qu'`ucm check`
+  emploie pour juger les références d'un contrat.
+
+**Aucun des deux ne lit de version, et rien dans le kit ni dans le CLI n'en
+cherche une.** Un numéro écrit dans ce fichier aujourd'hui ne serait donc lu
+par personne : ce serait une promesse sans lecteur.
+
+#### Trois formes essayées, mesurées sur le corpus réel
+
+| Forme ajoutée à la racine | Style Dictionary | `indexerTokensDtcg` | Verdict |
+|---|---|---|---|
+| `"version": "1.0"` | 721 variables, aucune `--version`, aucun avertissement | 721 tokens, aucun chemin parasite | inerte, mais occupe un NOM de groupe |
+| `"$version": "1.0"` | 721 variables, aucun avertissement | 721 tokens | inerte ; DTCG réserve le préfixe `$` à sa propre spécification |
+| `"$extensions": { "com.ucm.format": { "version": "1.0" } }` | 721 variables, aucun avertissement | 721 tokens | inerte, et **c'est la forme que DTCG prévoit** |
+
+Le coût d'écriture est donc nul dans les trois cas : rien ne casse, rien
+n'avertit. Ce qui les sépare est la grammaire, pas la compatibilité.
+
+**La troisième forme n'est pas une invention** : le fichier emploie DÉJÀ
+`$extensions` — `com.ucm.modes` porte, sur une feuille multi-mode, la valeur de
+chaque mode. Le namespace existe, sa convention de nommage aussi.
+
+**La première pollue.** Sans `$`, `version` est un nom de groupe de tokens : le
+jour où un design system publierait un groupe `version`, les deux se
+confondraient. La deuxième prend un mot que DTCG s'est réservé.
+
+#### Ce que la grammaire a réellement fait dans le temps
+
+La projection UCM des tokens a changé de forme au moins deux fois, et aucune de
+ces fois n'a pu être annoncée : les valeurs FLOAT ont cessé d'être suffixées en
+`px` pour certains groupes (`3bbc4a4`, 12 août 2026), et les collections
+multi-modes ont reçu `$extensions["com.ucm.modes"]`. Un consommateur qui tient
+un ancien `tokens.json` ne peut pas savoir laquelle des deux grammaires il lit.
+
+**Mais les deux changements précèdent la première publication d'un paquet.**
+Depuis que `@ucm-kit/core` est sur le registre, la grammaire de `tokens.json`
+n'a pas bougé — la dernière modification de `exportTokens.ts` ne touche que les
+messages destinés au designer, qui ne voyagent pas dans le fichier.
+
+#### Les quatre options, et ce que chacune coûte
+
+| Option | Ce qu'elle permet | Ce qu'elle coûte | Ce qui reste invisible |
+|---|---|---|---|
+| un champ de version dans `tokens.json` (sous `$extensions`) | un lecteur peut refuser une grammaire future, et le dire | il faut ÉCRIRE ce lecteur, sinon le champ ment par omission ; les fichiers déjà fusionnés n'en ont pas, donc « absent » doit vouloir dire « grammaire d'origine » | ce que le producteur a changé entre deux numéros, s'il n'y a pas de changelog en face |
+| un fichier de métadonnées à côté | ne touche pas au format DTCG | un second fichier à exporter, à fusionner et à ne pas perdre ; un repo sans lui redevient muet | la même chose, plus le risque de désynchronisation entre les deux fichiers |
+| versionner par le PAQUET qui lit | zéro champ nouveau ; la fenêtre de lecture existe déjà pour les contrats | ne dit rien d'un `tokens.json` isolé, hors d'un repo Node — le cas nominal de la recette n'a même pas de `package.json` | tout, pour un consommateur Swift ou Kotlin |
+| aucune version, compatibilité documentée | c'est l'état actuel, et il n'a rien cassé | un consommateur ne peut pas distinguer un fichier futur d'un fichier courant : il lit ce qu'il comprend et ignore le reste, en silence | exactement le silence que le projet poursuit ailleurs |
+
+#### Critère de décision, et ce que la mesure en dit
+
+Le critère posé par la tâche est qu'« un consommateur doit pouvoir savoir
+quelle grammaire il lit et quel geste corrige un écart, sans créer une seconde
+autorité muette ». Deux faits mesurés cadrent la réponse :
+
+1. **écrire un numéro sans écrire son lecteur ne satisfait pas le critère** — il
+   ne crée pas une autorité, il crée un champ décoratif ;
+2. **un lecteur de version pour les tokens n'a pas d'écart à juger aujourd'hui**,
+   puisque la grammaire n'a pas bougé depuis la première publication.
+
+La décision porte donc sur le MOMENT, pas seulement sur la forme : poser
+`$extensions["com.ucm.format"].version` maintenant coûte peu, mais son lecteur
+est ce qui la rend vraie, et ce lecteur n'a rien à refuser tant que la grammaire
+ne change pas. **La proposition, à valider : ne rien écrire tant que la
+grammaire ne bouge pas, et faire de la première évolution de la projection le
+signal qui rouvre la question** — avec la forme déjà tranchée par cette mesure,
+`$extensions` et le namespace `com.ucm.*`, pour que le geste soit alors
+mécanique. C'est la sortie « ne pas implémenter » que 11.8 autorise
+explicitement, à condition de nommer son signal de réouverture ; il est nommé.
+
 
 - [ ] **11.6 — Politique de compatibilité.**
 
