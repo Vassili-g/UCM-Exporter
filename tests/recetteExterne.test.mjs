@@ -1,16 +1,6 @@
 /**
- * Le garde-fou de publication de N7 : ce qui oblige à rejouer la recette
- * externe, et ce qui ne l'oblige pas.
- *
- * Ce test porte sur le TRI, jamais sur l'historique Git : une assertion posée
- * sur le dépôt réel changerait de verdict à chaque commit, et ne dirait plus
- * rien du jour où elle deviendrait fausse. Les quatre déclencheurs, eux, sont
- * une décision — ils viennent de N7 — et c'est cette décision qui se vérifie.
- *
- * Le quatrième cas est le seul qui compte vraiment : un fichier VOISIN d'un
- * déclencheur ne déclenche rien. Un tri trop large finirait par exiger la
- * recette à chaque publication, et une exigence qui se déclenche toujours est
- * une exigence qu'on apprend à déclarer sans la faire.
+ * Le garde-fou de publication de N7 : ce qui oblige à rejouer la recette externe, et
+ * ce qui ne l'oblige pas.
  */
 import assert from "node:assert/strict";
 import test from "node:test";

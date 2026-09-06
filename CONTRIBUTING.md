@@ -86,33 +86,31 @@ Les avertissements d’un export sont adressés au **designer**, et lui parvienn
 par le corps de la pull request que le plugin ouvre. Ils sont donc écrits dans
 son vocabulaire, jamais dans celui du code.
 
-**Un export ne remonte au designer que ce qui demande une décision (U4.7).**
-Trois portes d’entrée, et rien d’autre : le point bloque l’export, il rend le
-contrat partiel, ou il demande une vérification ou une correction dans Figma.
-Une transformation entièrement prise en charge — une piste FIXED de grille
-publiée en pixels, un calque hors du flux dont la distance aux bords est
-calculée, une rotation publiée, une structure propre à un variant que sa vue
-exacte conserve — reste **silencieuse partout** : dans le plugin, dans la pull
-request et dans `meta.diagnostics`. Sa règle appartient au format et à ses
-tests, pas à un résultat d’export.
+**Un export ne remonte au designer que ce qui demande une décision.** Trois
+portes d’entrée, et rien d’autre : le point bloque l’export, il rend le contrat
+partiel, ou il demande une vérification ou une correction dans Figma.
 
-Le canal `infos` qui les portait n’existe plus. Il avait été créé pour éviter
-qu’une note paraisse sous « Corrigez chaque point » ; le vrai défaut était en
-amont, dans l’émission. Un compte rendu qui fait relire au designer le
-fonctionnement interne de l’exporteur, pour lui dire qu’il n’a rien à faire,
-lui apprend que ces listes se survolent — et le jour où un avertissement
-demandera un geste, il le survolera aussi.
+Une transformation entièrement prise en charge reste **silencieuse partout** :
+dans le plugin, dans la pull request et dans `meta.diagnostics`. C’est le cas
+d’une piste FIXED de grille publiée en pixels, d’un calque hors du flux dont la
+distance aux bords est calculée, d’une rotation publiée, ou d’une structure
+propre à un variant que sa vue exacte conserve. Leur règle appartient au format
+et à ses tests, pas à un résultat d’export.
 
-Un constat qui ne nomme aucun geste n’a donc rien à faire dans un export. Soit
-il en nomme un, soit il ne s’écrit pas. La forme unitaire ci-dessous n’est pas
-une recommandation, c’est ce qui distingue les deux.
+Il n’existe aucun canal pour un constat sans geste. Un compte rendu qui fait
+relire au designer le fonctionnement interne de l’exporteur, pour lui dire
+qu’il n’a rien à faire, lui apprend que ces listes se survolent. Le jour où un
+avertissement demandera un geste, il le survolera aussi.
+
+Un constat qui ne nomme aucun geste ne s’écrit donc pas. La forme unitaire
+ci-dessous est ce qui distingue les deux.
 
 `meta.diagnostics` est l’unique représentation publiée dans le contrat. Son
-`code` répond à une seule question — la projection portable a-t-elle perdu
-quelque chose ? — et à aucune autre :
+`code` répond à une seule question, celle de savoir si la projection portable a
+perdu quelque chose :
 `UCM_PORTABLE_PROJECTION_WARNING` pour une perte de portabilité,
 `UCM_EXPORT_NOTICE` pour le reste. Attention : « sans perte de portabilité » ne
-veut pas dire « sans geste à faire » — une combinaison de variants absente ne
+veut pas dire « sans geste à faire » : une combinaison de variants absente ne
 coûte rien à l’arbre exact, et le designer doit pourtant y retourner. Les deux
 codes demandent un geste ; seul le premier dégrade `meta.coverage.portable`, et
 seul le premier remonte dans le rapport de CI.
@@ -125,10 +123,10 @@ Chacun répond à trois questions, dans cet ordre :
 | **Et alors** | `impact` | Ce que le développeur n’aura pas, en une phrase |
 | **Comment** | `action` | Le geste à faire dans Figma, à l’impératif |
 
-**Les trois voyagent SÉPARÉS, du moteur jusqu’à l’interface (U4.8).** Un site
+**Les trois voyagent séparées, du moteur jusqu’à l’interface.** Un site
 d’émission n’écrit pas une phrase : il écrit un `Constat`
 (`src/contract/localisation.ts`), et l’autorité en compose le titre puis la
-phrase compacte. Deux lois le tiennent — l’une refuse qu’un message s’écrive
+phrase compacte. Deux lois le tiennent. L’une refuse qu’un message s’écrive
 ailleurs, l’autre refuse qu’un message sorte du moteur sans ses parties.
 
 ```ts
@@ -140,8 +138,8 @@ pousserLocalise(warnings, 'Layer', node, {
 });
 ```
 
-La phrase compacte — celle que le journal, `meta.diagnostics` et la pull request
-publient — s’en DÉRIVE, et ne se rédige jamais une seconde fois :
+La phrase compacte, celle que le journal, `meta.diagnostics` et la pull request
+publient, s’en dérive et ne se rédige jamais une seconde fois :
 
 ```text
 {Élément Figma}[, {champ}] : {ce qui manque}. {impact}. {action}.
@@ -149,13 +147,13 @@ publient — s’en DÉRIVE, et ne se rédige jamais une seconde fois :
 
 L’interface, elle, ne recoupe pas cette phrase : elle met les trois parties en
 page, sous une pastille qui nomme la sévérité. C’est pour cela qu’elles voyagent
-séparées — un paragraphe unique fait lire le geste en dernier, après deux
+séparées : un paragraphe unique fait lire le geste en dernier, après deux
 phrases de contexte.
 
 Un message emploie **les intitulés que Figma affiche**, repris tels quels : le
 designer doit pouvoir chercher dans son écran le mot que le message emploie.
 La phrase reste en français ; seul le nom de l’élément Figma est repris à
-l’identique. Ne traduisez jamais un libellé de panneau — `padding` ne devient
+l’identique. Ne traduisez jamais un libellé de panneau : `padding` ne devient
 pas « marges intérieures ».
 
 | Terme du code | Terme employé | | Terme du code | Terme employé |
@@ -179,10 +177,9 @@ la source.
 
 Ce que le designer voit dans la fenêtre du plugin se juge contre deux choses
 écrites : une hiérarchie de l’information et un protocole de relecture. Elles
-existent parce qu’une refonte d’interface sans critère ne produit que des avis —
-c’est le manque que [refonte-ui.md](./refonte-ui.md) a nommé, et U1.0 à U1.3 y
-répondent. Ce qui suit fait autorité ; le plan, lui, raconte ce qui reste à
-faire.
+existent parce qu’une refonte d’interface sans critère ne produit que des avis.
+Ce qui suit fait autorité ; [refonte-ui.md](./docs/plans/refonte-ui.md) raconte
+ce qui reste à faire.
 
 ### La hiérarchie de l’information
 
@@ -190,29 +187,59 @@ Trois rangs, et le moyen visuel de chacun.
 
 | Rang | Ce qui en relève | Signalé par |
 |---|---|---|
-| 1 — ce qui décide de l’action | la cible (nom du composant), le verdict du résultat (« 3 points à corriger », « prêt à publier », « identique au dépôt ») | la position — en haut, hors de toute carte — et la taille |
+| 1 — ce qui décide de l’action | la cible (nom du composant), le verdict du résultat (« 3 points à corriger », « prêt à publier », « identique au dépôt ») | la position — en tête, sans rien défiler — et la taille |
 | 2 — ce sur quoi on agit | l’action principale, chaque avertissement | le poids : bouton plein, bloc à filet de sévérité |
-| 3 — ce qui informe sans rien demander | destination, constats, version de schéma, journal | la couleur secondaire et la densité, jamais une carte |
+| 3 — ce qui informe sans rien demander | constats, version de schéma, surtitre d’une carte | la couleur secondaire et la densité |
 
-Trois bornes, sans quoi la table ne tient pas :
+Quatre bornes, sans quoi la table ne tient pas :
 
-- **un élément signale son rang par deux moyens au plus** — position et taille,
+- **un élément signale son rang par deux moyens au plus** : position et taille,
   ou poids et couleur, jamais les quatre, sinon tout crie ensemble ;
-- **la couleur sémantique ne signale que la sévérité, jamais le rang** —
+- **la couleur sémantique ne signale que la sévérité, jamais le rang.**
   autrement un constat vert paraît plus important qu’un avertissement gris, ce
   qui est l’inverse de la doctrine du projet ;
 - **un rang 1 hors de vue n’est pas un rang 1.** La position est un signal, et
   la limite de la fenêtre en fait partie : ce qui décide de l’action se lit sans
   défiler, y compris quand le contenu en dessous grandit. Cette borne est venue
   des captures, pas de la table : elles ont montré le verdict, le lien de pull
-  request et le bouton « Enregistrer » sous la ligne de flottaison.
+  request et le bouton « Enregistrer » sous la ligne de flottaison ;
+- **une carte est une commande, et il n’y en a que deux.** Une carte regroupe un
+  sujet, son état, le geste qui porte dessus et tout ce que ce geste produit :
+  verdict, publication, points à corriger, lien de pull request. Rien de ce qui
+  concerne l’autre commande n’y entre, et rien ne porte de surface en dehors
+  d’elles : un troisième objet à surface remettrait trois zones de poids égal à
+  l’écran, c’est-à-dire aucune hiérarchie. Ce qui vaut pour les deux, l’alerte
+  de repli local, vit entre elles et sans surface ;
+- **un résultat ne survit pas à son sujet.** Le verdict et la publication
+  disparaissent quand la sélection qui les a produits n’est plus là : un
+  « prêt à publier » sous « aucun composant sélectionné » nomme un composant que
+  l’écran ne montre plus. C’est l’identité du sujet qui décide, jamais l’arrivée
+  d’un message, car le sandbox en envoie deux par sélection et le second peut
+  retomber pendant une analyse.
+
+L’avant-dernière borne a remplacé une interdiction plus large, qui disait « hors
+de toute carte » pour le rang 1 et « jamais une carte » pour le rang 3. Elle
+datait du moment où toutes les surfaces étaient identiques, si bien que la carte
+ne distinguait rien. Le défaut qu’elle laissait ouvert : la cible et son bouton
+vivaient dans deux blocs voisins dont un seul portait une surface, rien ne
+disait que le bouton portait sur le nom écrit au-dessus, et l’écran se lisait
+comme une liste de quatre choses de même rang. L’intention ne change pas : le
+rang 1 se lit en tête et sans défiler, il a seulement cessé de flotter au-dessus
+du geste qu’il commande.
+
+Un second passage a montré que la moitié du défaut restait : les cartes ne
+portaient que le départ d’une commande, et son résultat s’écrivait dans une zone
+commune, entre les deux. Analyser les tokens sans sélection y plaçait donc
+« Prêt à publier dans src/tokens/tokens.json » juste sous « Aucun composant
+sélectionné », deux informations sans rapport dont la seconde semblait
+expliquer la première. C’est ce passage qui a ajouté la dernière borne.
 
 ### Regarder avant de conclure
 
 `packages/plugin/galerie/` rend chaque état de l’interface atteignable hors de
 Figma : `etats.cjs` déclare, pour chacun, la suite exacte de messages qui le
-produit, et la galerie rejoue cette suite dans l’interface RÉELLE que le build
-vient de produire — rien n’y est redessiné.
+produit, et la galerie rejoue cette suite dans l’interface réelle que le build
+vient de produire. Rien n’y est redessiné.
 
 ```sh
 npm run galerie --workspace ucm-exporter-plugin           # dist/galerie/index.html
@@ -231,15 +258,19 @@ Cinq points, passés sur les captures. Une vérification qui coûte cher ne se f
 qu’une fois : celle-ci est courte pour être répétée à chaque phase qui ajoute un
 état.
 
-**(a)** Côte à côte avec un panneau natif de Figma — densité, taille de texte,
+**(a)** Côte à côte avec un panneau natif de Figma. Densité, taille de texte,
 épaisseur des bordures : l’écart doit être invisible.
 **(b)** Les deux thèmes, en vérifiant le contraste du texte de sévérité sur son
 fond, à 11 px. Dans Figma, pas sur le décalque.
 **(c)** À la plus petite taille de fenêtre admise.
-**(d)** Avec le pire contenu réel — l’avertissement le plus long que le moteur
+**(d)** Avec le pire contenu réel : l’avertissement le plus long que le moteur
 produise, et vingt avertissements d’un coup.
 **(e)** Un compte des objets à l’écran : au-delà d’une douzaine, la hiérarchie
-ci-dessus ne tient plus, quelle que soit la finesse du style.
+ci-dessus ne tient plus, quelle que soit la finesse du style. C’est ce compte
+qui a fait retirer le journal replié, le dépôt visé et ses deux chemins, la ligne
+d’emplacement et le titre « Publication » de l’écran de travail : chacun coûtait
+un objet permanent et ne servait aucune décision qui se prenne là, ou redisait ce
+que la ligne d’à côté disait déjà.
 
 ## Robustesse
 
@@ -284,18 +315,19 @@ jamais rester silencieuse.
 Tout bug corrigé doit être reproduit par un test. La logique pure se teste avec
 des objets Figma minimaux et des dépendances injectées.
 
-`scripts/run-tests.js` découvre automatiquement les fichiers
-`tests/*.test.ts`.
+Chaque paquet a son `scripts/run-tests.cjs`, qui découvre les fichiers
+`tests/*.test.ts` et `tests/*.test.mjs` de son dossier.
 
 Aucun artefact de contrat n’est commité ici : un `.contract.json` appartient au
 repository qui le consomme. Un exemplaire gelé dans ce repository ne bougerait
 qu’au réexport, et un test posé dessus ne prouverait que sa propre immobilité.
 
 Les lois de forme d’un contrat vivent donc dans `packages/plugin/tests/lois.ts`, et
-`tests/exportComponent.test.ts` les applique à CHAQUE contrat que le moteur
-fabrique — renvois qui se résolvent, catalogues sans doublon ni entrée
-orpheline, adresses qui désignent un calque de l’arbre qui les porte, aucune
-valeur neutre écrite, accord avec le schéma publié, aller-retour de l’écriture.
+`packages/plugin/tests/exportComponent.test.ts` les applique à chaque contrat
+que le moteur fabrique : renvois qui se résolvent, catalogues sans doublon ni
+entrée orpheline, adresses qui désignent un calque de l’arbre qui les porte,
+aucune valeur neutre écrite, accord avec le schéma publié, aller-retour de
+l’écriture.
 La vérification est posée sur le chemin d’appel, une fois, pour qu’un scénario
 ajouté demain y soit soumis sans que personne y pense. Une loi ajoutée à
 `lois.ts` s’applique du même geste à tous les scénarios existants.
@@ -316,16 +348,53 @@ Chaque document a une autorité limitée :
 |---|---|
 | `CONCEPT.md` | Principes et responsabilités |
 | `docs/FORMAT.md` | Forme du contrat et de `tokens.json`, pour qui les consomme |
+| `docs/COMPATIBILITE.md` | Classes de changement, fenêtre de lecture et responsabilités de migration |
 | `packages/plugin/SPEC.md` | Comportement actuel du plugin |
 | `ROADMAP.md` | État et prochaines validations |
-| `PISTES-EVOLUTION.md` | Options non engagées |
-| `PLAN-CONFORMITE-DEV.md` | Recherche proposée pour les prochaines phases de conformité du rendu |
+| `docs/notes/PISTES-EVOLUTION.md` | Options non engagées |
+| `docs/plans/PLAN-CONFORMITE-DEV.md` | Recherche proposée pour les prochaines phases de conformité du rendu |
 | `README.md` | Entrée dans le projet |
 | `AGENTS.md` | Instructions opérationnelles |
 
 Une modification se termine par une revue des documents concernés. Décrire
 l’état actuel, supprimer les formulations périmées et préférer un lien à une
 répétition. L’historique appartient à Git.
+
+### Rédiger un document
+
+Ces règles portent sur les documents du dépôt. Les textes du produit, lus par un
+designer dans le plugin ou dans une pull request, relèvent de
+[Messages destinés au designer](#messages-destinés-au-designer), qui reste leur
+autorité.
+
+Elles existent parce que la documentation avait pris les tics d’écriture des
+modèles de langage, mesurables et reconnaissables : la densité de tiret cadratin
+atteignait cinquante fois celle d’un texte humain.
+`tests/styleDocumentaire.test.ts` tient les deux premières.
+
+**Ponctuation.** Le tiret cadratin ne sert pas d’incise. Employer un point, un
+point-virgule, une virgule, deux points ou une parenthèse. Il reste admis dans
+un titre et dans une table de correspondance. Pas d’emphase par capitales : le
+gras suffit, et avec parcimonie. Pas de flèche ni de symbole décoratif dans la
+prose ; ils restent admis dans un tableau ou un schéma.
+
+**Tournures à éviter.** La construction en deux temps « ce n’est pas X, c’est
+Y » et ses variantes. La triade rhétorique, trois éléments listés pour la
+cadence. La personnification d’un document, d’une règle ou d’un fichier : écrire
+« le module `names.ts` porte la règle » plutôt que « la règle vit dans
+`names.ts` ». L’aphorisme et la formule frappante : écrire la règle.
+
+**Histoire.** Un document de référence décrit l’état actuel. Il ne raconte pas
+ce qui s’est passé, ne date pas une décision et ne cite aucun identifiant de
+tâche. L’historique appartient à Git et aux plans de `docs/plans/`, qui ont le
+droit de raconter. Une justification est admise quand elle change une décision
+du lecteur ; elle tient en une ou deux phrases.
+
+**Structure.** Une page ne mélange pas les quatre genres de
+[Diátaxis](https://diataxis.fr/) : le tutoriel enseigne, le guide pratique
+résout un problème, la référence énonce, l’explication justifie. Phrases
+courtes, voix active, une idée par phrase. Un exemple concret vaut mieux qu’une
+définition abstraite.
 
 ### Une règle, un domicile
 
@@ -334,30 +403,25 @@ porte donc une altitude différente, et une seule fait autorité :
 
 | Endroit | Ce qu’il porte |
 |---|---|
-| `docs/FORMAT.md` | La règle et son pourquoi, quand elle porte sur ce qui est PUBLIÉ — l’autorité |
-| `packages/plugin/SPEC.md` | La règle et son pourquoi, quand elle porte sur ce que le plugin LIT — l’autorité |
+| `docs/FORMAT.md` | L’autorité sur la règle et son pourquoi, quand elle porte sur ce qui est publié |
+| `packages/plugin/SPEC.md` | L’autorité sur la règle et son pourquoi, quand elle porte sur ce que le plugin lit |
 | `AGENTS.md` | La règle, sa borne, le fichier qui la porte, un lien vers la spécification |
 | Commentaire de code | Ce qui ne vaut qu’à cet endroit du code |
 | Nom de test | La clause vérifiable, une par test |
 
-**Deux autorités, et la frontière entre elles.** Une règle qui décrit un CHAMP —
-sa forme, ce que son absence signifie, ce qu’un consommateur peut en conclure —
-appartient à `FORMAT.md`. Une règle qui décrit une LECTURE — ce que le plugin
-élit dans l’arbre Figma, ce qu’il refuse de deviner, ce dont il avertit le
-designer — appartient à `SPEC.md`. Une règle qui fait les deux se range du côté
+**Deux autorités, et la frontière entre elles.** Une règle qui décrit un champ,
+sa forme, ce que son absence signifie et ce qu’un consommateur peut en conclure,
+appartient à `FORMAT.md`. Une règle qui décrit une lecture, ce que le plugin
+élit dans l’arbre Figma, ce qu’il refuse de deviner et ce dont il avertit le
+designer, appartient à `SPEC.md`. Une règle qui fait les deux se range du côté
 de ce qu’un consommateur doit savoir pour lire l’artefact, et l’autre document y
 renvoie : c’est le consommateur qui n’a pas accès au code.
 
-*La réserve du 5 septembre 2026 est levée le même jour :* le temps 1 avait
-dupliqué les paragraphes à cheval au lieu de les trancher, pour prouver
-qu’aucune règle n’était perdue ; le temps 2 les a tranchés, et le compteur de
-`scissionSpec.test.mjs` est descendu à zéro. Le test et la spécification figée
-sont partis avec lui — un contrôle qui survit à sa cause devient une
-information périmée. La table ci-dessus ne dit plus où une règle atterrira :
-elle dit où elle est.
+La table ci-dessus ne dit pas où une règle atterrira : elle dit où elle est.
 
-Ailleurs, un lien. Une mention d’une phrase à une autre altitude — le `README`
-qui résume, la `ROADMAP` qui date une étape — n’est pas une répétition.
+Ailleurs, un lien. Une mention d’une phrase à une autre altitude, comme le
+`README` qui résume ou la `ROADMAP` qui date une étape, n’est pas une
+répétition.
 
 Écrire dans une spécification demande une ancre : ses titres sont les cibles des
 liens d’`AGENTS.md`, et `npm test` échoue sur un lien mort.

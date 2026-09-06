@@ -1,21 +1,6 @@
+
 /**
  * Ce qui, dans une publication, ne peut pas être prouvé sans Figma ni GitHub.
- *
- * **Le trou que ce garde-fou couvre.** `npm test` prouve le moteur, les
- * lecteurs, le CLI et l'adaptateur ; `packages/cli/tests/recette.test.mjs`
- * prouve l'installation dans des repositories temporaires. Aucun des deux
- * n'ouvre Figma, n'écrit dans un dépôt GitHub, ni ne fait commenter une pull
- * request. Ces trois-là ne se rejouent que dans un vrai consommateur — c'est la
- * recette N6 de `PLAN-NEUTRALISATION-PLAYGROUND.md`.
- *
- * **Ce que ce script fait, et ce qu'il ne fait pas.** Il ne prouve rien : il
- * pose la question au seul moment où elle a une réponse utile, juste avant de
- * publier, et il la pose avec la LISTE des fichiers qui l'obligent. Personne ne
- * peut vérifier automatiquement qu'un humain a ouvert Figma ; ce qu'on peut
- * empêcher, c'est de publier sans s'être demandé s'il le fallait.
- *
- * Les quatre déclencheurs viennent de N7, et chacun désigne un chemin de bout
- * en bout qu'aucun test local ne parcourt en entier.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -26,11 +11,6 @@ const racine = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
  * Les quatre déclencheurs de N7, et les fichiers qui les portent.
- *
- * Un préfixe, jamais un motif : un fichier ajouté demain dans un de ces
- * dossiers déclenche la question sans que personne ait à y penser. Trop large
- * coûte une question de plus ; trop étroit laisse publier un chemin que rien
- * n'a parcouru.
  */
 export const DECLENCHEURS = [
   {
@@ -172,12 +152,12 @@ function principal(arguments_) {
   console.error(
     "\nCes chemins ne sont parcourus de bout en bout par aucun test : ils passent"
       + "\npar Figma, par GitHub et par une vraie pull request. Rejouer la recette N6 de"
-      + "\nPLAN-NEUTRALISATION-PLAYGROUND.md, consigner son résultat dans le journal de"
-      + "\nrecette, puis relancer la publication en le déclarant.",
+      + "\ndocs/plans/PLAN-NEUTRALISATION-PLAYGROUND.md, consigner son résultat dans le"
+      + "\njournal de recette, puis relancer la publication en le déclarant.",
   );
   return 1;
 }
 
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("recette-externe.mjs")) {
+if (import.meta.url === `file: //${process.argv[1]}` || process.argv[1]?.endsWith("recette-externe.mjs")) {
   process.exit(principal(process.argv.slice(2)));
 }
