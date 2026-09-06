@@ -1,4 +1,4 @@
-# Concept — UCM (Unified Component Model)
+# Le concept UCM
 
 Ce document définit le problème, les responsabilités et les principes du
 modèle. La forme de ce qui est publié est spécifiée dans
@@ -8,10 +8,15 @@ modèle. La forme de ce qui est publié est spécifiée dans
 
 ## 1. Le problème
 
-Un composant existe généralement à plusieurs endroits : Figma, code,
-documentation, tokens et exemples. Ces représentations peuvent diverger sans
-que l’équipe le voie immédiatement. Cette ambiguïté pénalise les humains et les
-agents IA : ils ne savent plus quelle variante existe, quel token employer ni
+Un designer ajoute une variante `danger` à son bouton. Trois mois plus tard,
+personne ne sait si le code la rend, si le token de sa couleur existe encore, ni
+laquelle des deux versions fait foi. Rien n'a signalé l'écart parce que rien ne
+le regardait.
+
+Un composant existe à plusieurs endroits : la maquette, le code, la
+documentation, les tokens et les exemples. Ces représentations peuvent diverger
+sans que l’équipe s'en aperçoive. L'ambiguïté pénalise les humains comme les
+agents : ils ne savent plus quelle variante existe, quel token employer ni
 quelle source croire.
 
 L’UCM rapproche ces informations sans prétendre les fusionner en une seule
@@ -53,11 +58,12 @@ déclare ces dépendances sans recopier leurs détails internes.
 
 La dernière ligne se lit autrement que les autres. Tout ce qui précède est
 **normatif** : le contrat l'affirme, et un contrôle peut l'opposer au code. Le
-contenu de maquette est **indicatif** : il dit ce que Figma montrait au moment de
-l'export, pour qu'un humain ou un agent retrouve l'esthétique voulue sans avoir à
-la deviner. Aucun contrôle ne le compare au code, et il ne contient jamais de
-donnée de rendu — une couleur ou une dimension qui manquerait là est un trou du
-contrat normatif, pas de l'échantillon.
+contenu de maquette est **indicatif** : il dit ce que Figma montrait au moment
+de l'export, pour qu'un humain ou un agent retrouve l'esthétique voulue sans
+avoir à la deviner. Aucun contrôle ne le compare au code.
+
+L'échantillon ne contient jamais de donnée de rendu. Une couleur ou une
+dimension qui manquerait là est un trou du contrat normatif, à corriger là-bas.
 
 Cette répartition évite deux erreurs :
 

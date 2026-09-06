@@ -14,7 +14,7 @@ corriger, l’action nécessaire et le caractère bloquant. Ne pas déduire une
 cause de la simple coexistence de plusieurs diagnostics.
 
 Trancher ensuite : le message demande-t-il un geste ? **Si non, il ne s’écrit
-pas** (U4.7). Il n’existe plus de canal pour un constat sans action : une
+pas**. Il n’existe aucun canal pour un constat sans action : une
 transformation que le contrat publie entièrement reste silencieuse dans le
 plugin, dans la pull request et dans `meta.diagnostics`, et sa règle vit dans la
 spécification et dans les tests du format. Un message qui écrit « aucune

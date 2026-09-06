@@ -15,7 +15,7 @@ visuelle éventuelle vient après la reconstruction, jamais avant.
 
 Le contrat décrit la partie visuelle : `props`, `variants`, `variantViews`,
 `structure`, `stateModel`, `rendering`, `icons`, `textStyles`, `intent`. Ne
-compléter que l'API applicative — événements, accessibilité, attributs natifs.
+compléter que l'API applicative : événements, accessibilité, attributs natifs.
 
 **Sources autorisées**
 
@@ -36,7 +36,7 @@ doit ni charger le contrat ni l'interpréter à l'exécution.
 
 Un contrat ne recopie rien. Tout le reste du skill en découle.
 
-**Loi 1 — Une vue est un jeu de RENVOIS.**
+**Loi 1, Une vue est un jeu de RENVOIS.**
 `variantViews[variant.view].structure` est une CHAÎNE : la clé d'une entrée de
 `viewStructures`, jamais l'arbre lui-même. Idem `typography` →
 `viewTypographies`, `composes` → `viewComposes`, `icons` → `viewIcons`,
@@ -44,14 +44,14 @@ Un contrat ne recopie rien. Tout le reste du skill en découle.
 catalogue de structures. Ces renvois se résolvent par l'outil que le projet
 fournit (§6), jamais à la main.
 
-**Loi 2 — Une valeur vide n'est pas écrite.**
+**Loi 2, Une valeur vide n'est pas écrite.**
 Une clé absente ne veut pas dire « inconnu » : elle veut dire « rien à
 publier ». `strokes` absent = aucun contour lié ; `padding` absent = aucun
 padding tokenisé ; `props` absent = aucune prop. Seule exception : sous un
-DICTIONNAIRE, la clé est une donnée — `stateModel.states.default` vaut `{}` et
+DICTIONNAIRE, la clé est une donnée, `stateModel.states.default` vaut `{}` et
 existe bel et bien.
 
-**Loi 3 — Ce qui se dérive n'est pas publié.**
+**Loi 3, Ce qui se dérive n'est pas publié.**
 Le contrat ne porte ni index de ses tokens, ni miroir en texte brut de ses
 diagnostics. Les références de tokens se relèvent dans le contrat, `samples` et
 `meta` exclus ; les messages de l'export se lisent dans `meta.diagnostics`, sans
@@ -82,7 +82,7 @@ Ce que l'extraction doit ramener :
 6. la liste des contrats cités dans les `composes` des vues utilisées.
 
 Les contrats des dépendances se lisent ensuite, un par un, ciblés sur leur API
-publique et leur échantillon — jamais par une commande qui en affiche plusieurs
+publique et leur échantillon, jamais par une commande qui en affiche plusieurs
 à la fois.
 
 `meta.figma`, `variants[].nodeId` et `variants[].figmaName` ne servent qu'au
@@ -97,7 +97,9 @@ inventer pour le masquer.
 
 ### 2.2 Construire la surface publique
 
-- Exposer chaque entrée de `props` et appliquer son `default`.
+- Exposer chaque entrée de `props`. Un `default` publié est une décision du
+  designer : l'appliquer tel quel. Son absence n'est pas un oubli, elle laisse
+  le choix au développeur, qui peut ne poser aucun défaut.
 - Importer les unions d'`enum` depuis les types générés. Employer le type des
   combinaisons exactes pour typer les tables internes quand il existe.
 - Garder un booléen en booléen, et **le lire effectivement** : un booléen
@@ -113,7 +115,7 @@ inventer pour le masquer.
 
 Le contrat possède ses noms de props. En cas de collision avec un attribut natif
 de la plateforme, **la prop contractuelle conserve son nom et son type**, et la
-collision se soustrait mécaniquement (§6.2) — jamais par une liste tenue à la
+collision se soustrait mécaniquement (§6.2), jamais par une liste tenue à la
 main.
 
 Pour une liaison native, partir de `variants[].bindings`, ouvrir sa définition,
@@ -178,8 +180,8 @@ Relire d'abord le composant contre le contrat :
 - les dépendances répétées gardent leur cardinalité ;
 - les contenus applicatifs remplacent les valeurs de sample.
 
-Puis exécuter **seulement** le contrôle de contrat — qui balaie le repository,
-faute de commande ciblée — et le contrôle de type de la cible (§6.6). **Ne pas lancer la suite globale du
+Puis exécuter **seulement** le contrôle de contrat (qui balaie le repository,
+faute de commande ciblée) et le contrôle de type de la cible (§6.6). **Ne pas lancer la suite globale du
 projet** : elle porte sur le moteur, pas sur ce composant, elle ne peut rien
 apprendre sur le travail en cours, et sa sortie encombre le contexte jusqu'à la
 fin de la session. L'orchestrateur la lancera une fois, à la fin.
@@ -263,14 +265,14 @@ dépendance : leurs flux et dimensionnements appartiennent à deux contrats.
 ### 4.2 Peintures et contours
 
 Les clés d'une feuille sont celles du design system. Certaines sont partagées
-par tous les contrats — `background`, `foreground`, `icon`, `border`, `ring` —
+par tous les contrats (`background`, `foreground`, `icon`, `border`, `ring`)
 mais **ne pas présumer qu'il n'y en a que celles-là** : un composant qui peint
 plusieurs surfaces expose ses propres clés. Une clé peut contenir des points et
 ne nomme pas forcément un rôle partagé.
 
 Pour chaque clé de `variant.tokens`, lire `view.paintPlacements.fills[clé]`,
 résoudre tous ses chemins, appliquer la référence aux cibles. **Les propriétés à
-écrire sont celles que publie `rendering.roles[clé]` — jamais une propriété
+écrire sont celles que publie `rendering.roles[clé]`, jamais une propriété
 déduite du nom du token, du nom de la clé, ni d'une table mémorisée.** Ce qui
 compte est la couleur peinte et le token employé.
 
@@ -416,24 +418,24 @@ compenser dans le code un manque du contrat. Un manque se rapporte (§2.8).
 
 Le contrat et les règles ci-dessus sont indépendants de la technologie cible.
 Seuls les sept points suivants en dépendent. Leur forme concrète se lit dans le
-document de conventions du projet — pas dans le source d'un composant.
+document de conventions du projet, pas dans le source d'un composant.
 
-1. **Identifiants publics** — comment se nomment le point d'entrée du composant
+1. **Identifiants publics**, comment se nomment le point d'entrée du composant
    et sa surface de propriétés, et ce que le contrôle statique attend d'eux.
-2. **Attributs natifs** — le moyen de soustraire mécaniquement les collisions
+2. **Attributs natifs**, le moyen de soustraire mécaniquement les collisions
    entre les noms de props contractuels et ceux de la plateforme, sans liste
    maintenue à la main.
-3. **Résolution d'une référence de token** — le helper qui transforme
+3. **Résolution d'une référence de token**, le helper qui transforme
    `{chemin.du.token}` en valeur utilisable par la cible.
-4. **Point d'intégration d'icône** — ce qui reçoit un nom et une taille et rend
+4. **Point d'intégration d'icône**, ce qui reçoit un nom et une taille et rend
    l'icône.
-5. **Focus clavier** — le moyen de le distinguer d'un clic, pour §4.2 et §4.5.
-6. **Contrôles** — la commande de contrôle de contrat, et le contrôle de
+5. **Focus clavier** (le moyen de le distinguer d'un clic, pour §4.2 et §4.5.
+6. **Contrôles**) la commande de contrôle de contrat, et le contrôle de
    type/syntaxe de la cible. Ce sont les deux seules à lancer depuis ce skill
    (§2.7). **Aucune ne cible un composant**, et il ne faut pas en chercher une :
    le contrôle de contrat balaie tout le repository et rend un rapport où le
    composant en cours se retrouve à son nom. Un contrôle qui balaie coûte
    quelques secondes de plus ; un contrôle qu'on croit ciblé et qui ne l'est pas
    ferait lire un verdict portant sur autre chose.
-7. **Comptage statique des dépendances** — la forme que doit prendre une
+7. **Comptage statique des dépendances**, la forme que doit prendre une
    occurrence dans le source pour que le contrôle de parité la compte (§5).

@@ -31,8 +31,19 @@ décision sans implémentation** : aucun bouton « Tester la connexion » sépar
 été ajouté. Aucun de ces trois statuts ne doit être résumé par « tout est
 livré ».
 
+**Les phases U7 et U8 sont venues APRÈS.** Elles ne sont pas issues d'un audit
+mais de deux relectures de l'interface livrée, par le designer qui s'en sert.
+U7 — sept points — retire et regroupe : le compte des objets à l'écran baisse de
+trois. U8 — quatre points — range : tout ce qu'une commande produit entre dans
+sa carte. Les deux sont livrées et vertes le 6 septembre 2026. Elles révisent
+trois décisions écrites ici : la carte, qu'U1.0 interdisait au rang 1 ; le
+journal replié, qu'U4.2 avait gardé ; et la survie du résultat à une perte de
+sélection, qu'U7 avait tranchée dans l'autre sens. Chaque révision porte sa
+raison, dans U7.2, U7.6 et U8.2.
+
 **Ce qui reste, dans l'ordre.** Deux gestes demandent le fichier Figma :
-recharger le `dist` construit et regarder les trois issues d'un export ; puis
+recharger le `dist` construit et regarder les trois issues d'un export — la
+phase U7 ajoute à ce regard les deux cartes et l'écran sans sélection ; puis
 réexporter le corpus, car les quatre contrats du Playground portent encore les
 huit diagnostics `UCM_EXPORT_INFO` que U4.7 a supprimés. U6.1 reste une décision
 à prendre, pas un bug à corriger automatiquement.
@@ -49,7 +60,7 @@ L'interface est un **lanceur** : deux boutons, une note d'état, et un journal
 monospace haut de 96 à 144 px (`styles.css`, `.log-panel-inner`).
 
 La doctrine, elle, fait du designer le **relecteur de la vérité visuelle
-exportée** ([CONCEPT.md](./CONCEPT.md), « Le workflow »). Or tout ce dont ce rôle
+exportée** ([CONCEPT.md](../../CONCEPT.md), « Le workflow »). Or tout ce dont ce rôle
 a besoin arrive au mauvais moment :
 
 - **ce qui va être exporté** disparaît au clic : la note qui nomme le composant
@@ -86,7 +97,7 @@ tailles de contrôle de l'hôte, aucune couleur de marque propre.
 ## Règles de travail
 
 **1. Ne jamais modifier le document Figma.** L'invariant du projet
-([AGENTS.md](./AGENTS.md)). La sélection et le viewport sont un cas à trancher
+([AGENTS.md](../../AGENTS.md)). La sélection et le viewport sont un cas à trancher
 explicitement, pas à supposer : c'est U4.5.
 
 **2. L'UI reste du DOM natif.** `src/ui/index.js` est bundlé par esbuild puis
@@ -99,7 +110,7 @@ développement hors de Figma ; ils ne doivent jamais être le chemin normal, et
 chacun doit tenir dans les deux thèmes (U1.8).
 
 **4. Tout message visible suit les règles de rédaction.**
-[CONTRIBUTING.md](./CONTRIBUTING.md), section « Messages destinés au designer »,
+[CONTRIBUTING.md](../../CONTRIBUTING.md), section « Messages destinés au designer »,
 et la skill `rediger-diagnostics-ucm`. Un message qui ne demande aucun geste est
 une NOTE, et une note ne se range pas sous un titre qui réclame une correction.
 
@@ -252,7 +263,7 @@ tâches qui prétendaient les distinguer n'a rien à distinguer.
       décide de l'action, ce sur quoi on agit, ce qui informe sans rien
       demander — et le moyen visuel de chacun.
       *Faite, et la table a DÉMÉNAGÉ.* Elle vit désormais dans
-      [CONTRIBUTING.md](./CONTRIBUTING.md#interface-du-plugin), pas ici : une
+      [CONTRIBUTING.md](../../CONTRIBUTING.md#interface-du-plugin), pas ici : une
       règle en vigueur n'habite pas un plan qui sera coché puis archivé, et la
       recopier aux deux endroits reviendrait à créer la seconde autorité au
       désaccord muet que ce projet poursuit partout ailleurs.
@@ -346,7 +357,7 @@ tâches qui prétendaient les distinguer n'a rien à distinguer.
       vérification qui coûte cher ne se fait qu'une fois. Cinq points, à passer
       sur les captures de U1.1.
       *Fait — il vit dans
-      [CONTRIBUTING.md](./CONTRIBUTING.md#interface-du-plugin), avec la table.*
+      [CONTRIBUTING.md](../../CONTRIBUTING.md#interface-du-plugin), avec la table.*
       Les cinq points sont ceux de l'énoncé ; un seul a changé de statut. Le
       **(b)**, le contraste des textes de sévérité dans les deux thèmes, **ne se
       passe pas sur la galerie** : ses couleurs viennent d'un décalque approché
@@ -560,7 +571,7 @@ rendant les deux chemins facultatifs.
 
 - [X] **U2.6 — Des phases pendant l'attente.** L'export charge toutes les pages
       puis résout trois fois le même maître par dépendance : un coût nommé et
-      **non mesuré** ([ROADMAP.md](./ROADMAP.md), « Fragilités connues »). Un
+      **non mesuré** ([ROADMAP.md](../../ROADMAP.md), « Fragilités connues »). Un
       seul « Analyse du composant… » figé pendant plusieurs secondes se lit comme
       un plantage. Geste : un statut par phase — pages, variantes, composition,
       écriture. **Nommer les phases par ce que le code fait, jamais par une durée
@@ -711,7 +722,7 @@ reste ouverte.
       stylise cette classe. Geste : « À corriger dans Figma (N) », « Constats
       (N) », « Publication ».
       **Statut de cet ordre :** c'est une **adaptation** de la règle de
-      [CONTRIBUTING.md](./CONTRIBUTING.md), pas son application littérale — la
+      [CONTRIBUTING.md](../../CONTRIBUTING.md), pas son application littérale — la
       règle est écrite pour un rapport agrégé de CI, pas pour le résultat d'un
       export unique. L'adaptation garde ce qui la motive : le problème avant le
       détail, le geste séparé du constat. Dépend de U0.6.
@@ -759,12 +770,12 @@ reste ouverte.
       **Ce que la revue a corrigé ici.** Le plan soutenait d'abord que l'UI
       pouvait exercer une localisation partielle avant le format, un lien absent
       étant invisible. L'objection tient : la réserve de
-      [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md) ne porte pas sur le support de
+      [PISTES-EVOLUTION.md](../notes/PISTES-EVOLUTION.md) ne porte pas sur le support de
       publication mais sur la fiabilité du signal, et une UI où certains
       avertissements sont cliquables et d'autres pas enseigne une leçon fausse —
       que l'absence de lien signifie « rien à localiser », quand elle signifie
       « cet extracteur n'a pas encore de node ». C'est le mécanisme que
-      [CONTRIBUTING.md](./CONTRIBUTING.md) dénonce pour les notes, transposé au
+      [CONTRIBUTING.md](../../CONTRIBUTING.md) dénonce pour les notes, transposé au
       lien.
       **La réponse n'est pas d'attendre le collecteur complet, c'est de borner la
       couverture par une loi vérifiable :** *tout avertissement qui nomme un
@@ -951,7 +962,7 @@ reste ouverte.
 
 - [X] **U4.5 — Trancher, et écrire, que sélectionner n'est pas modifier.**
       L'invariant est net : le plugin ne modifie **jamais** le document Figma
-      ([AGENTS.md](./AGENTS.md), [CONCEPT.md](./CONCEPT.md)). Poser une sélection
+      ([AGENTS.md](../../AGENTS.md), [CONCEPT.md](../../CONCEPT.md)). Poser une sélection
       et déplacer le viewport ne sont pas du contenu de document — rien n'est
       écrit, et aucune entrée d'annulation ne devrait être créée. Geste : **le
       vérifier sur un fichier réel**, puis l'écrire dans la spécification, pour
@@ -959,7 +970,7 @@ reste ouverte.
       tâche de vérification, pas de code.
       **Débloquée le 5 septembre 2026 :** T8.1 a scindé la spécification, et la
       question « dans lequel des deux ? » a sa réponse — c'est
-      [packages/plugin/SPEC.md](./packages/plugin/SPEC.md), qui porte déjà « Pas
+      [packages/plugin/SPEC.md](../../packages/plugin/SPEC.md), qui porte déjà « Pas
       d'écriture dans le document Figma » sous « Hors périmètre MVP ». La règle
       décrit une action du PLUGIN, pas un champ du contrat ; elle n'a rien à
       faire dans `docs/FORMAT.md`. Reste la vérification sur fichier réel, qui
@@ -1390,6 +1401,24 @@ réparent pas ce défaut de fond.
       Contre : l'UI est volontairement légère et sans outillage. À décider une
       fois, pas deux.
 
+      **Tranché le 6 septembre 2026 : oui.** La décision est prise, le travail
+      ne l'est pas — d'où la case encore ouverte. Ce qui l'emporte est ce que
+      `messages.ts` écrit déjà de lui-même : le type contraint le côté sandbox,
+      et pour l'UI il « vaut comme liste de référence », rien de plus. Le jour
+      où le moteur renomme un champ, l'UI continue de lire l'ancien nom, aucune
+      construction n'échoue, et le symptôme est un panneau vide dans Figma —
+      c'est-à-dire le plus cher à diagnostiquer, puisqu'il ressemble à un cas
+      qui ne s'est pas produit. Les erreurs de type qui apparaîtront au
+      renommage SONT le bénéfice ; s'il n'en apparaît aucune, la tâche n'aura
+      rien coûté.
+
+      **À faire après l'observation dans Figma** (U4.9, dernière moitié) : le
+      `dist` construit doit être regardé avant d'être remué, sans quoi une
+      régression de l'UI et un bundle resté ancien redeviennent indiscernables.
+
+      **Une entorse à corriger dans le même geste :** `packages/plugin/src/messages.ts`
+      renvoie à « U6.2 » pour cette décision, qui porte le numéro U6.1 ici.
+
 ### Abandonné — prévenir d'un écart de version de contrat
 
 L'idée : le pré-vol dirait qu'un contrat produit par ce plugin ne sera pas lu par
@@ -1425,13 +1454,172 @@ lisible.
 - **Le multi-fichiers Figma.** Un plugin s'exécute dans le contexte du fichier
   ouvert : il n'y a rien à résoudre.
 - **L'export multi-composant en une commande.** Hors périmètre MVP
-  ([packages/plugin/SPEC.md](./packages/plugin/SPEC.md), « Hors périmètre MVP »).
+  ([packages/plugin/SPEC.md](../../packages/plugin/SPEC.md), « Hors périmètre MVP »).
 - **Un framework d'interface.** Le bundle est du DOM natif inliné dans un HTML
   unique ; c'est une contrainte de la sandbox, pas une préférence.
 - **Un thème propre au plugin.** Aucune couleur de marque : l'hôte décide.
 - **Une écriture dans le document Figma.** L'invariant tient ; U4.5 le précise
   sans l'entamer.
 - **Toute préférence que rien n'oblige à régler.**
+
+---
+
+## Phase U7 — Ce que le regard du designer a corrigé après coup
+
+Cette phase n'est pas venue d'un audit : elle vient d'une relecture de
+l'interface livrée, par le designer qui s'en sert. Les phases U0 à U5 avaient
+tiré l'écran de l'état de « lanceur » ; ce qu'elles n'avaient pas vu, c'est que
+l'écran restait une LISTE — un nom, un bouton, une note, un dépliant, deux
+lignes de destination, un second bouton — dont rien ne disait quel élément
+portait sur quel autre.
+
+Chaque point ci-dessous retire quelque chose ou regroupe quelque chose. Aucun
+n'ajoute d'information : le compte des objets à l'écran (U1.3 e) baisse de trois.
+
+- [X] **U7.1 — Sans cible, il n'y a pas de geste.** Le bouton « Analyser le
+      composant » était affiché puis désactivé sur l'écran d'accueil : une action
+      grisée en permanence, qu'il fallait survoler pour comprendre, au-dessus
+      d'une raison qui, elle, se lisait. La carte n'affiche plus le bouton quand
+      `cible` est `null` — c'est son apparition qui dit qu'une cible est là, et
+      non son passage du gris au bleu. La borne « un aller-retour épargné »
+      d'U2.3 tient toujours : il n'y a plus de clic possible avant l'heure.
+- [X] **U7.2 — La cible et son geste sont UN objet.** Ils vivaient dans deux
+      blocs voisins dont un seul portait une surface (`.cible`, puis
+      `.action-panel`). Ils forment maintenant une carte : surtitre, nom, genre
+      et variants, avertissement de règle d'usage, puis le geste. Le rang 1 garde
+      ses deux moyens de signalement — la position, en tête et sans défiler, et
+      la taille. La table de CONTRIBUTING.md disait « hors de toute carte » : la
+      borne a été réécrite, avec la raison du changement, parce qu'elle avait été
+      posée quand TOUT était carte.
+- [X] **U7.3 — Les tokens ont leur carte, jumelle de la première.** U2.3 les
+      avait séparés par un filet ; un filet dit « ce n'est pas la même chose »,
+      il ne dit pas « c'est une commande de même nature sur une autre portée ».
+      Deux cartes identiques dans leur forme et différentes dans leur sujet le
+      disent sans un mot. Le bouton « Annuler après cette étape » a quitté la
+      carte du composant du même geste : il annule le traitement en cours, qui
+      peut venir de l'une ou l'autre, et il vit désormais avec la note qui décrit
+      ce traitement.
+- [X] **U7.4 — La publication nomme ce qu'elle publie.** « Publier et ouvrir la
+      pull request » était le geste vu depuis GitHub, et le MÊME libellé pour les
+      deux commandes. C'est devenu « Publier le composant » et « Publier les
+      tokens », décidés par `verdictDePrevol` — l'unique autorité sur ce que
+      l'analyse conclut. L'ouverture du navigateur n'a pas disparu ; elle a cessé
+      d'occuper le libellé, parce qu'elle se constate une fois et se sait ensuite.
+      C'est une révision partielle d'U0.4, dont la règle — « le libellé dit
+      l'action entière » — valait contre un libellé qui MENTAIT, et non contre un
+      libellé qui nomme son objet.
+- [X] **U7.5 — Un fichier sans variable n'offre pas la commande.** Le bouton des
+      tokens partait quand même, et `handleExportTokens` levait « Aucune variable
+      locale à exporter » : une erreur rouge, découverte après le clic, pour un
+      fichier parfaitement normal. Le message `tokens` porte désormais `presents`
+      à côté de son résumé — une décision du sandbox, pas une phrase que l'UI
+      relirait —, et la carte dit l'absence à la place du bouton. Ce sont les
+      VARIABLES qui décident, pas les collections : trois collections vides
+      annonceraient du contenu que l'export refuse ensuite.
+- [X] **U7.6 — « Détails techniques » et son journal sont retirés.** U4.2 avait
+      replié la trace chronologique derrière un dépliant, en pariant qu'elle
+      restait le seul moyen de comprendre un enchaînement. Le pari ne tient plus
+      depuis U4.1 et U4.8 : le groupe « Publication » porte les mêmes phrases,
+      dans le même ordre, et le groupe « À corriger dans Figma » porte les
+      autres. Il restait un dépliant permanent au bas de chaque écran, qu'il
+      fallait ouvrir pour découvrir qu'il ne contenait rien de neuf.
+      `LogPanel.js` est supprimé. Le canal de débogage qu'il servait est à rouvrir
+      sciemment le jour où il manque, avec sa règle — pas à garder ouvert par
+      précaution ; la question est portée dans « Ce qui reste à trancher ».
+- [X] **U7.7 — La destination quitte l'écran de travail, sauf son alerte.** Le
+      bloc portait « owner/repo · branche » et « Contrats : … Tokens : … » sur
+      chaque écran : deux lignes qui répètent ce que la page de configuration dit
+      déjà, et qui ne servent aucune décision qui se prenne ici. Elles sont
+      parties. L'annonce du repli local — « Aucun repository connecté. L'export
+      sera téléchargé sur votre poste. » — RESTE : c'est la seule chose que ce
+      bloc disait avant le clic et que rien d'autre ne dit, et c'est exactement
+      ce qu'U2.5 avait ajouté. L'état de galerie `premier-lancement-annonce`,
+      qui attendait U2.5, est donc clos ; `fichier-sans-tokens` prend sa place
+      dans l'inventaire.
+
+**Ce que cette phase n'a pas touché.** Le verdict, la publication et le compte
+rendu survivent à une perte de sélection. Cliquer « Afficher dans Figma » sur un
+avertissement sélectionne le calque fautif — donc plus un composant : effacer le
+résultat à ce moment-là ferait perdre une analyse entière pour avoir suivi le
+geste que la carte demandait, et contredirait U3.3, qui garde le travail pour
+qu'une publication échouée se réessaie sans repasser par Figma.
+
+**Ce qui reste à faire dans Figma.** Les points (a), (b) et (d) du protocole de
+relecture — la comparaison à un panneau natif, le contraste des textes de
+sévérité à 11 px, et le pire contenu réel — n'ont été passés que sur la galerie.
+Les captures des deux thèmes et la taille minimale (320 × 320) sont vertes ; le
+fichier réel, lui, n'a pas été rouvert.
+
+---
+
+## Phase U8 — Une carte porte tout ce qui la concerne
+
+Seconde relecture par le designer, sur le plugin rechargé dans Figma après U7.
+Les deux cartes étaient jugées meilleures, et elles ont rendu visible le défaut
+suivant : elles ne portaient que le DÉPART d'une commande. Tout ce qu'une
+commande produit — la note de verdict, le bouton de publication, les cartes à
+corriger, le lien de pull request — vivait dans une zone commune coincée entre
+les deux.
+
+Le symptôme le plus net : analyser les tokens sans rien sélectionner écrivait le
+verdict « Prêt à publier dans src/tokens/tokens.json » juste sous « Aucun
+composant sélectionné ». Deux informations sans rapport, à trois pixels l'une de
+l'autre, dont la seconde semblait expliquer la première.
+
+- [X] **U8.1 — Le résultat entre dans la carte de sa commande.** La note, la
+      publication, les points à corriger et le lien de pull request sont
+      désormais des enfants de la carte. `CarteCommande.js` est le squelette
+      commun : surtitre, sujet, analyse, annulation, publication, note, compte
+      rendu — et les deux cartes concrètes ne fournissent que leur sujet. Une
+      seule fabrique, parce que deux suites de gestes recopiées divergent
+      d'abord d'un espacement, puis d'un comportement : c'est ce qui était
+      arrivé au bouton d'annulation, resté dans la carte du composant alors
+      qu'il annulait aussi l'autre commande.
+      *Ce que l'interface a dû apprendre :* de quelle commande vient un message.
+      Le sandbox ne le dit pas — il n'en mène qu'une à la fois. C'est l'UI qui
+      l'a lancée, donc elle retient la carte au départ (`active`). Le déduire du
+      contenu d'un message reviendrait à relire des phrases pour retrouver une
+      information qu'on avait déjà.
+- [X] **U8.2 — Un résultat ne survit pas à son sujet.** Sans sélection, la carte
+      du composant ne montre plus ni verdict ni bouton de publication : un
+      « Prêt à publier » sous « Aucun composant sélectionné » nomme un composant
+      que l'écran ne montre plus. Le résultat part aussi quand la sélection
+      change pour un AUTRE composant — il appartenait au précédent.
+      *La borne qui rend ceci sûr :* c'est l'IDENTITÉ de la cible qui décide,
+      pas l'arrivée d'un message. `reportSelectionState` envoie deux messages
+      `cible` pour une même sélection, le second après un balayage de page qui
+      peut durer des secondes ; traité comme un changement, il effacerait un
+      résultat en cours d'écriture.
+      *Ce que cela révise :* U7 avait tranché l'inverse — le résultat survivait,
+      pour qu'un clic sur « Afficher dans Figma » ne le fasse pas perdre. Le
+      designer a demandé l'autre arbitrage après usage. Le coût est réel et il
+      est nommé ici : sélectionner le calque fautif depuis une carte à corriger
+      emporte le compte rendu qui l'a proposé. Ce que le sandbox garde
+      (`analyseGardee`, U3.3) n'est pas perdu pour autant — c'est l'affichage
+      qui repart, pas le travail.
+- [X] **U8.3 — Une analyse faite désarme son propre bouton.** Relancer la même
+      analyse sur la même sélection refait le même travail pour le même
+      résultat, et efface au passage le compte rendu qu'on était en train de
+      lire. Le bouton redevient cliquable quand la sélection change. Les deux
+      raisons de le désactiver — traitement en cours, analyse déjà faite — sont
+      distinctes et se cumulent : la seconde doit survivre à la fin de la
+      première, puisque c'est justement là qu'elle prend effet.
+- [X] **U8.4 — La ligne « Emplacement » et le titre « Publication » sont
+      retirés.** La ligne disait `Emplacement : <chemin> (d'après <source>)`
+      deux lignes sous un verdict qui disait déjà « Prêt à publier dans
+      <chemin> » : le chemin était écrit deux fois, et seule la SOURCE était
+      neuve. Elle est entrée dans le verdict, entre parenthèses — la règle de
+      T4.1, « qui a décidé de l'endroit se dit, toujours, et avant l'écriture »,
+      tient donc en une ligne au lieu de deux. Le titre « Publication », lui, ne
+      répond plus à aucune question depuis que le compte rendu vit dans la carte
+      de sa commande : ses entrées restent, en liste nue. Le compte des points à
+      corriger garde son titre — c'est un nombre qui décide de ce qu'on fait
+      ensuite.
+
+**Ce que cette phase n'a pas changé.** Les deux commandes restent les seules
+choses à porter une surface, et le compte des objets à l'écran ne monte pas :
+ce qui a bougé a changé de parent, pas de nombre — sauf la ligne d'emplacement
+et le titre « Publication », qui sont deux de moins.
 
 ---
 
@@ -1558,8 +1746,12 @@ devant tout le reste du graphique.
    export identique au dépôt n'atteint jamais la publication, et son verdict ne
    propose aucune action.
 2. **Le journal brut survit-il à U4.1 ?** ~~Recommandation : oui, replié.~~
-   **Tranché le 5 septembre 2026 : oui**, en exécutant U4.2. Il vit derrière
-   « Détails techniques », et garde la trace chronologique complète.
+   ~~**Tranché le 5 septembre 2026 : oui**, en exécutant U4.2.~~ **Retranché le
+   6 septembre 2026 : non**, en exécutant U7.6. Le pari d'U4.2 — la trace reste
+   le seul moyen de comprendre un enchaînement — ne tenait plus une fois U4.1 et
+   U4.8 livrées : les deux groupes du compte rendu portent les mêmes phrases,
+   dans le même ordre. Restait un dépliant permanent qu'il fallait ouvrir pour
+   découvrir qu'il ne contenait rien de neuf.
 3. **La sélection depuis l'UI est-elle acceptable au regard de l'invariant ?**
    C'est U4.5, et la réponse doit être écrite, pas supposée.
 4. **Le compte rendu tient-il dans Figma, et pas seulement dans la galerie ?**
@@ -1578,3 +1770,10 @@ devant tout le reste du graphique.
    diagnostic. Tant qu'ils ne sont pas réexportés, le corpus montre l'ancien
    comportement du moteur ; ce n'est pas une régression, c'est un artefact daté,
    et il vaut mieux le dire que le laisser lire comme un désaccord.
+6. **Par quoi rouvrir un canal de débogage, le jour où il manque ?** La question
+   naît de U7.6, et elle n'a pas de réponse par défaut : le journal supprimé
+   n'en était pas un — il redisait le compte rendu. Ce qui manquerait vraiment
+   est ce que le compte rendu NE dit pas : l'ordre exact des appels Figma, leur
+   durée, ce qu'une étape a lu. Cela ne se remet pas dans une fenêtre de 380 px
+   par précaution ; cela se décide avec sa règle, quand un défaut réel aura
+   montré ce qu'il fallait voir pour le comprendre.

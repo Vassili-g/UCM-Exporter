@@ -1,12 +1,12 @@
-# Pistes d’évolution — UCM
+# Pistes d’évolution
 
 Ce document rassemble ce qui n’est **pas** décidé : le positionnement du modèle
 dans son écosystème, les options ouvertes, les risques qui les motivent, et un
 point de vue sur la direction générale. Il ne décrit ni le comportement actuel,
-défini dans [docs/FORMAT.md](./docs/FORMAT.md) et
-[packages/plugin/SPEC.md](./packages/plugin/SPEC.md), ni les priorités
-engagées, suivies dans [ROADMAP.md](./ROADMAP.md), ni les principes du modèle,
-posés dans [CONCEPT.md](./CONCEPT.md).
+défini dans [docs/FORMAT.md](../FORMAT.md) et
+[packages/plugin/SPEC.md](../../packages/plugin/SPEC.md), ni les priorités
+engagées, suivies dans [ROADMAP.md](../../ROADMAP.md), ni les principes du
+modèle, posés dans [CONCEPT.md](../../CONCEPT.md).
 
 Règle d’admission, valable pour tout ce qui suit : une option n’entre dans la
 spécification qu’après **un besoin observé sur un composant réel**, **un
@@ -27,7 +27,7 @@ couvrent chacune qu’une part.
 | [Storybook](https://storybook.js.org/docs/8/writing-docs/autodocs) | Documente les composants depuis le code, les stories et les métadonnées de props | La source y est le code ; Storybook n’extrait ni la vérité visuelle ni les règles Figma |
 | [UXPin Merge](https://www.uxpin.com/docs/merge/merge-design-system-documentation/) | Fait concevoir avec les composants codés réels | Approche code-first ; l’UCM maintient deux responsabilités distinctes et reliées |
 | [Backlight](https://backlight.dev/docs/make-your-first-design-system) | Réunit source, stories, tests, doc et ressources design | La co-localisation est proche, sans contrat structuré exporté depuis Figma ni conçu pour des agents |
-| [DTCG](https://tr.designtokens.org/format/) | Standardise l’échange des tokens entre outils | Couvre les tokens, pas la spécification d’un composant — l’UCM l’utilise plutôt qu’il ne le concurrence |
+| [DTCG](https://tr.designtokens.org/format/) | Standardise l’échange des tokens entre outils | Couvre les tokens, pas la spécification d’un composant ; l’UCM l’utilise plutôt qu’il ne le concurrence |
 
 Aucun de ces ingrédients n’est neuf isolément. La différenciation tient à leur
 combinaison : extraction déterministe depuis Figma, contrat générique par
@@ -51,7 +51,7 @@ composants codés servent directement à concevoir.
 
 ---
 
-## 2. Options ouvertes — le contrat portable
+## 2. Options ouvertes : le contrat portable
 
 ### Manifeste d’icônes
 
@@ -96,18 +96,17 @@ pour un consommateur hors Node.
 
 ### Distribution du plugin, et le lien vers Figma qui en dépend
 
-**Tranché le 5 septembre 2026 (T4.4) : le plugin se distribue par la Figma
+**Tranché : le plugin se distribue par la Figma
 Community.** `enablePrivatePluginApi` est retiré du manifest, `figma.fileKey`
 n'arrive donc plus, et `meta.figma.url` n'est plus écrit. Ce qui suit garde les
-termes de l'arbitrage — la décision se relit mieux à côté de ce qu'elle a
-écarté.
+termes de l'arbitrage, la décision se relit mieux à côté de ce qu'elle a écarté.
 
 Le manifest déclarait `enablePrivatePluginApi`, réservé aux plugins privés d'une
 organisation. Un seul appel en dépendait : `figma.fileKey`, qui alimentait
-`meta.figma.url` — le lien direct vers le composant source
-(`packages/plugin/src/contract/exportComponent.ts`). Une publication publique sur la Community
-suppose de retirer ce drapeau, et le choix de distribution décide donc du
-contenu des contrats.
+`meta.figma.url`, le lien direct vers le composant source
+(`packages/plugin/src/contract/exportComponent.ts`). Une publication publique
+sur la Community suppose de retirer ce drapeau, et le choix de distribution
+décide donc du contenu des contrats.
 
 **Rester plugin privé d'organisation.** Le contrat garde `meta.figma.url`, et
 une revue de pull request ouvre le composant source d'un clic. La distribution
@@ -117,8 +116,8 @@ peut installer le plugin, donc personne d'autre ne peut produire de contrat.
 **Publier sur la Community.** N'importe qui installe le plugin et produit des
 contrats. `figma.fileKey` devient indisponible : `meta.figma.url` disparaît, et
 la traçabilité repose sur `fileName` et `nodeId`, que le contrat conserve.
-L'export n'est pas bloqué et aucune information de rendu n'est perdue — c'est
-un raccourci de navigation qui tombe, pas une donnée du design. Reconstituer le
+L'export n'est pas bloqué et aucune information de rendu n'est perdue, c'est un
+raccourci de navigation qui tombe, pas une donnée du design. Reconstituer le
 lien à la main reste possible pour qui connaît la clé du fichier.
 
 **Ce que la décision a coûté, et ce qu'elle a rendu.** Le point de bascule
@@ -131,25 +130,25 @@ autrement, voir ci-dessous.
 Les deux conditions posées avant d'ouvrir la publication, et où elles en sont :
 
 - **que l'absence de `meta.figma.url` soit traitée par tous les lecteurs comme
-  un cas normal** — tenu. Le champ était déjà OPTIONNEL dans `ContractMeta`,
+  un cas normal**, tenu. Le champ était déjà optionnel dans `ContractMeta`,
   aucun lecteur ne le réclame, et rien dans le schéma ne change : la
   publication ne touche pas à la version du contrat. Ce qui a dû changer est
   ailleurs, et c'est le point suivant.
 - **que la traçabilité par `fileName` et `nodeId` suffise réellement à une
-  revue, ce qui se constate sur une pull request réelle et pas en principe** —
-  la condition est désormais *observable*, ce qu'elle n'était pas. Le corps de
+  revue, ce qui se constate sur une pull request réelle et pas en principe**.
+  La condition est désormais *observable*, ce qu'elle n'était pas. Le corps de
   la pull request annonce l'origine sur sa page de couverture :
-  `Composant Figma : « Alert » — fichier « Design System », nœud 12:345`
+  `Composant Figma : « Alert » : fichier « Design System », nœud 12:345`
   (`lignesDIdentite`, `packages/plugin/src/github.ts`). Le constat se fait sur
   les revues à venir. Si `fileName` et `nodeId` ne suffisent pas, c'est là qu'on
   le verra, et la troisième voie ci-dessous devient la réponse.
 
 **L'avertissement « Lien vers Figma absent » est supprimé, et c'est la moitié la
 plus importante de l'exécution.** Il était écrit quand le cas était l'exception.
-La Community l'inverse : la clé n'arrive plus JAMAIS, donc le message se serait
+La Community l'inverse : la clé n'arrive plus jamais, donc le message se serait
 imprimé sur chaque export, dans le corps de chaque pull request, pour un constat
 que le designer ne peut pas corriger. Une liste dont on apprend qu'elle se
-survole coûte la lecture de celles qui demandent un geste — la règle du projet,
+survole coûte la lecture de celles qui demandent un geste, la règle du projet,
 appliquée à sa propre décision. Un état normal du format se documente une fois,
 dans le type et dans la spécification, pas par un diagnostic répété à l'infini.
 
@@ -162,17 +161,17 @@ lui barre pas la route :** le calcul de l'URL est laissé en place dans
 `buildMeta`, et le corps de la pull request rend l'URL en lien dès qu'un contrat
 en porte une.
 
-**Ce que la décision rouvrait, et qui n'était pas technique — tranché le même
-jour.** Publier sur la Community met le projet devant un public non
-francophone, et la Phase 8 du plan d'industrialisation avait fait de cet
-événement précis le seul qui rouvre la question de la langue, à trancher à ce
-moment-là parce que les noms de symboles d'un paquet npm publié sont quasi
-irréversibles. **Le français reste**, et le choix est assumé plutôt que subi :
-le paquet npm est lu par un repository consommateur que le projet connaît, le
-plugin publié s'adresse de fait à des designers francophones, et les deux
-surfaces n'ont donc pas le même public. Le jour où un consommateur non
-francophone existera, il rouvrira la question avec un cas réel — à un coût de
-renommage plus élevé, ce qui fait partie de ce qui a été accepté ici.
+**Ce que la décision rouvrait, et qui n'était pas technique, tranché le même
+jour.** Publier sur la Community met le projet devant un public non francophone,
+et la Phase 8 du plan d'industrialisation avait fait de cet événement précis le
+seul qui rouvre la question de la langue, à trancher à ce moment-là parce que
+les noms de symboles d'un paquet npm publié sont quasi irréversibles. **Le
+français reste**, et le choix est assumé plutôt que subi : le paquet npm est lu
+par un repository consommateur que le projet connaît, le plugin publié s'adresse
+de fait à des designers francophones, et les deux surfaces n'ont donc pas le
+même public. Le jour où un consommateur non francophone existera, il rouvrira la
+question avec un cas réel, à un coût de renommage plus élevé, ce qui fait partie
+de ce qui a été accepté ici.
 
 ### Diff sémantique
 
@@ -195,28 +194,28 @@ Tokens
 
 Le diff reste **entièrement dérivé** des deux JSON comparés : commentaire de
 pull request ou rapport CI, jamais une nouvelle vérité. Il conditionne tout
-niveau de confiance différencié en revue — documentation auto-approuvée, token
+niveau de confiance différencié en revue : documentation auto-approuvée, token
 relu par un designer.
 
 ---
 
-## 3. Options ouvertes — le repository consommateur
+## 3. Options ouvertes : le repository consommateur
 
 ### Vérification générique du rendu
 
-Détaillée dans [PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md). Elle reste
-une proposition de recherche, sans décision.
+Détaillée dans [PLAN-CONFORMITE-DEV.md](../plans/PLAN-CONFORMITE-DEV.md). Elle
+reste une proposition de recherche, sans décision.
 
 Ce qui lui manque n’est pas une première preuve : les reconstructions à froid
 ont été faites et comparées à Figma de nombreuses fois, à l’œil, et elles
-tiennent. Ce qui manque est leur **répétabilité** — une comparaison qui se
-rejoue à chaque réexport, sur une matrice entière, sans mobiliser un humain.
-Tant qu’un composant se compare en quelques minutes, l’œil suffit ; le calcul
-change avec le nombre de combinaisons et la fréquence des changements.
+tiennent. Ce qui manque est leur **répétabilité**, une comparaison qui se rejoue
+à chaque réexport, sur une matrice entière, sans mobiliser un humain. Tant qu’un
+composant se compare en quelques minutes, l’œil suffit ; le calcul change avec
+le nombre de combinaisons et la fréquence des changements.
 
 Deux garde-fous à ne pas perdre en l’ouvrant : elle ne doit connaître le nom
 d’aucun composant, et elle ne doit pas devenir une seconde implémentation du
-protocole de reconstruction porté par le skill `consommer-contrat` — deux
+protocole de reconstruction porté par le skill `consommer-contrat`, deux
 implémentations divergent, et c’est la non-jetable qui deviendrait la vérité.
 
 ### Parité au-delà de l’existence
@@ -224,8 +223,8 @@ implémentations divergent, et c’est la non-jetable qui deviendrait la vérit�
 La parité statique compare aujourd’hui l’API publique déclarée et les
 dépendances comptées dans le JSX. Restent candidats : valeurs d’enum réellement
 gérées, valeurs par défaut vérifiables, et surtout **exceptions volontaires
-déclarées**. Sans divergence annotable, une parité devient une prison qu’on finit
-par contourner — et une CI contournée ne protège plus rien.
+déclarées**. Sans divergence annotable, une parité devient une prison qu’on
+finit par contourner, et une CI contournée ne protège plus rien.
 
 ### Liaison explicite avec l’implémentation
 
@@ -246,10 +245,10 @@ mapping Code Connect sans double saisie.
 ### Nom des props : accord amont, mapping en échappatoire
 
 Le nom est fixé **en amont**, à la co-construction du composant Figma
-([CONCEPT.md](./CONCEPT.md) §3) : il voyage intact jusqu’au code, donc aucun
-mapping à maintenir. Une table de correspondance
-(`contrat.iconLeft ↔ code.iconStart`) n’a d’intérêt que le jour où un renommage
-devient inévitable. L’ajouter avant, c’est outiller un problème qu’on n’a pas.
+([CONCEPT.md](../../CONCEPT.md) §3) : il voyage intact jusqu’au code, donc aucun
+mapping à maintenir. Une table de correspondance (`contrat.iconLeft ↔
+code.iconStart`) n’a d’intérêt que le jour où un renommage devient inévitable.
+L’ajouter avant, c’est outiller un problème qu’on n’a pas.
 
 ### Retour dans l’éditeur
 
@@ -265,21 +264,21 @@ runtime et leur prévisualisation restent à concevoir dans le consommateur. Le
 multi-**plateforme** (React Native, iOS, Android via Style Dictionary) est une
 portée, pas le cœur du concept.
 
-### Extraction multi-repository — faite
+### Extraction multi-repository, faite
 
 Ce n’est plus une piste. `@ucm-kit/core` et `@ucm-kit/cli` sont publiés, et
-l’extraction a été décidée sur l’argument inverse de celui qui la retenait :
-un seul consommateur ne justifie pas de publier, mais il ne justifie pas non
-plus de garder l’outillage chez lui, parce qu’un repository qui n’en a pas
-d’autre ne peut jamais prouver que son outillage est portable.
+l’extraction a été décidée sur l’argument inverse de celui qui la retenait : un
+seul consommateur ne justifie pas de publier, mais il ne justifie pas non plus
+de garder l’outillage chez lui, parce qu’un repository qui n’en a pas d’autre ne
+peut jamais prouver que son outillage est portable.
 
-Ce que le découpage devait **réaliser** — et non préserver — est l’autorité
-unique sur les conventions de version, d’identifiant et de références de
-tokens. Elle vit dans `@ucm-kit/core/format` : `CONTRACT_VERSION`,
-`codeIdentifier`, `isTokenReference` et `tokenCssVariable`, chacune écrite une
-fois. Les copies qui vivaient chez le consommateur sont parties — la dernière
-regex de référence avec T2.7, la dernière projection de nom de token avec T6.0,
-et `identifiant-code.mjs` avec T2.1.
+Ce que le découpage devait **réaliser**, et non préserver, est l’autorité unique
+sur les conventions de version, d’identifiant et de références de tokens. Elle
+vit dans `@ucm-kit/core/format` : `CONTRACT_VERSION`, `codeIdentifier`,
+`isTokenReference` et `tokenCssVariable`, chacune écrite une fois. Les copies
+qui vivaient chez le consommateur sont parties, la dernière regex de référence
+puis la dernière projection de nom de token, puis le module d'identifiant de
+code.
 
 ### Passerelles
 
@@ -305,7 +304,7 @@ côté design.
 **Contrat → code : la divergence silencieuse.** La co-localisation rapproche
 sans garantir. La CI sait détecter une forme invalide, une référence de token
 cassée, une prop absente ; elle ne sait pas prouver un rendu. Annoncer une
-parité de rendu serait une fausse promesse — chaque contrôle doit dire ce qu’il
+parité de rendu serait une fausse promesse, chaque contrôle doit dire ce qu’il
 vérifie **et** ce qu’il ne vérifie pas.
 
 **Code → runtime : les conventions cachées.** Ce que le contrat ne porte pas se
@@ -314,28 +313,28 @@ convention de rendu implicite. Chaque convention de ce type est une mini-source
 de vérité parallèle, à résorber par tokenisation ou à assumer dans un adaptateur
 documenté.
 
-**Deux risques transverses.** Un contrat trop large — événements, `aria-*`,
-règles de formulaire, détails React — perdrait sa portabilité et dupliquerait
-une autre vérité. Une CI sujette aux faux positifs finit par être contournée :
-le coût quotidien des contrôles fait partie de leur conception.
+**Deux risques transverses.** Un contrat trop large (événements, `aria-*`,
+règles de formulaire, détails React) perdrait sa portabilité et dupliquerait une
+autre vérité. Une CI sujette aux faux positifs finit par être contournée : le
+coût quotidien des contrôles fait partie de leur conception.
 
 ---
 
-## 5. Point de vue — prouver la chaîne, pas les maillons
+## 5. Point de vue : prouver la chaîne, pas les maillons
 
 *Lecture macro, à réévaluer à chaque validation réelle. Rien ici n’engage la
 roadmap.*
 
 **Ce qui est acquis.** L’effort a porté sur l’amont : forme du contrat, vues
 exactes par catalogues, élision des neutres, composition récursive, schéma
-publié. Cette moitié du problème est à un optimum local — le contrat dit
-beaucoup, en peu de tokens, sans règle liée à un nom. Le maillon
-`Figma → contrat → composant` a été parcouru et vérifié à l’œil de nombreuses
-fois : il tient. **Ajouter des champs maintenant serait la manière la plus
-confortable de ne pas affronter ce qui reste.**
+publié. Cette moitié du problème est à un optimum local, le contrat dit
+beaucoup, en peu de tokens, sans règle liée à un nom. Le maillon `Figma →
+contrat → composant` a été parcouru et vérifié à l’œil de nombreuses fois : il
+tient. **Ajouter des champs maintenant serait la manière la plus confortable de
+ne pas affronter ce qui reste.**
 
 **Ce qui reste est d’un autre ordre.** Ce n’est pas un maillon de plus : c’est
-la chaîne. Le concept ne promet pas qu’un composant se reconstruit — il promet
+la chaîne. Le concept ne promet pas qu’un composant se reconstruit, il promet
 qu’une intention de design devient une interface juste, et le reste, pendant que
 tout bouge. Cette chaîne-là n’a jamais été parcourue en entier une seule fois.
 
@@ -367,14 +366,14 @@ se traduisent en quatre chantiers, dans cet ordre.
 C’est le pas le plus grand pour le coût le plus faible, parce qu’il repose sur
 une hypothèse que le modèle porte déjà sans l’avoir testée : **un écran est un
 composé de composés**. Si elle tient, la chaîne monte d’un cran sans un seul
-champ nouveau — `composes`, les slots et les catalogues de vues décrivent une
+champ nouveau : `composes`, les slots et les catalogues de vues décrivent une
 page comme ils décrivent un bouton.
 
 Si elle casse, elle cassera à des endroits précis et instructifs : le layout de
 page et ses grilles, le responsive, les données réelles, et tout ce qui dans une
 maquette n’est pas un composant. C’est **la meilleure question ouverte du
-projet** — le contrat s’arrête-t-il au composant, ou décrit-il aussi un
-assemblage ? — et elle se tranche par un export réel, pas par un débat.
+projet** (le contrat s’arrête-t-il au composant, ou décrit-il aussi un
+assemblage ?) et elle se tranche par un export réel, pas par un débat.
 
 Le geste : exporter un écran depuis Figma, le reconstruire à froid, comparer. Ce
 que l’exercice révèle vaut plus que son résultat.
@@ -391,7 +390,7 @@ chacun, la même question : que voit le réexport, que dit le diff, que voit la
 revue, que doit faire l’agent, que doit trancher l’humain, et qu’est-ce qui
 casse silencieusement.
 
-C’est là — et seulement là — que le diff sémantique, la parité étendue et les
+C’est là, et seulement là, que le diff sémantique, la parité étendue et les
 exceptions déclarées trouvent leur spécification. Construits sans ce scénario,
 ils devinent la leur. La robustesse ne se prouve pas en montrant qu’un système
 naît juste, mais qu’**il vieillit sans diverger**.
@@ -401,7 +400,7 @@ naît juste, mais qu’**il vieillit sans diverger**.
 La preuve du concept est comparative, pas absolue. Même tâche, même agent, deux
 conditions : avec contrat, sans contrat. Se mesurent le nombre d’allers-retours
 jusqu’à un rendu accepté, les props, valeurs et tokens inventés, les écarts au
-design constatés, et le coût réel — qui se compte en contexte multiplié par
+design constatés, et le coût réel, qui se compte en contexte multiplié par
 tours, pas en lignes produites.
 
 Le test froid est déjà l’instrument ; il lui manque un témoin et un cahier. Sans
@@ -414,7 +413,7 @@ aucune raison de croire sur parole.
 Le seul des trois risques qu’aucun outillage n’effleure, et le seul qui se
 manifeste sans jamais produire de rouge. Deux détections symétriques : un
 contrat en retard sur Figma, une maquette en retard sur le code. Aucune écriture
-dans le document, jamais — la détection bidirectionnelle est légitime, la
+dans le document, jamais : la détection bidirectionnelle est légitime, la
 synchronisation ne l’est pas.
 
 ### Ce qui attend, volontairement
@@ -422,9 +421,9 @@ synchronisation ne l’est pas.
 **Rendre la CI bloquante.** Une protection de branche sur un repository à un
 contributeur prouverait qu’on sait configurer GitHub, pas que le modèle tient.
 Le consommateur actuel est un banc d’essai, pas une production : la question
-revient — avec `CODEOWNERS` encodant l’arbitrage designer/développeur — le jour
-où une équipe réelle entre dans la boucle, et elle est déjà rangée dans
-[ROADMAP.md](./ROADMAP.md).
+revient, avec `CODEOWNERS` encodant l’arbitrage designer/développeur, le jour où
+une équipe réelle entre dans la boucle, et elle est déjà rangée dans
+[ROADMAP.md](../../ROADMAP.md).
 
 **Les multiplicateurs.** Documentation et stories dérivées du contrat, niveaux
 de confiance en revue, prévisualisation d’un changement de token : ils
@@ -443,15 +442,15 @@ les commander.
 
 Si la chaîne tient de bout en bout, ce que le projet a produit n’est pas un
 plugin : c’est un **format et un protocole**. Le plugin est une implémentation
-d’extraction parmi d’autres possibles — un autre outil de design, un catalogue
+d’extraction parmi d’autres possibles : un autre outil de design, un catalogue
 de tokens, un design system déjà codé pourraient produire le même contrat ; un
 autre framework, une autre plateforme, un autre agent pourraient le consommer.
 La valeur défendable est là : dans un artefact que personne ne possède et que
 tout le monde peut lire.
 
 Il serait prématuré de le formuler comme un objectif, et ce document ne le fait
-pas. Mais construire d’une manière qui l’interdirait serait une erreur nette —
-et c’est pourquoi « le contrat ne connaît ni framework, ni nom de composant, ni
+pas. Mais construire d’une manière qui l’interdirait serait une erreur nette, et
+c’est pourquoi « le contrat ne connaît ni framework, ni nom de composant, ni
 représentation Figma » est un invariant, pas un goût.
 
 Reste, derrière tout cela, une question que rien n’a tranchée : **qui possède le
@@ -465,7 +464,7 @@ structurante le jour où le premier consommateur externe apparaîtra.
 ## 6. Ce qui ne doit pas être construit
 
 - écriture automatique du code vers Figma, et plus largement toute
-  synchronisation bidirectionnelle — la **détection** qu’une maquette est en
+  synchronisation bidirectionnelle, la **détection** qu’une maquette est en
   retard reste légitime, l’écriture dans le document jamais ;
 - interprétation du contrat par le code de production au runtime ;
 - enrichissement du contrat au-delà du design : snippets, documentation
@@ -478,7 +477,7 @@ structurante le jour où le premier consommateur externe apparaîtra.
 ## 7. Questions ouvertes
 
 - **Le contrat s’arrête-t-il au composant ?** Un écran est-il un composé comme
-  un autre, ou demande-t-il un vocabulaire que le modèle n’a pas — grille de
+  un autre, ou demande-t-il un vocabulaire que le modèle n’a pas, grille de
   page, responsive, données ? C’est la question qui décide de la portée réelle
   du projet ; elle se tranche par un export (§5.A).
 - **Ce que le contrat contrôle**, à geler explicitement : props, valeurs, états,

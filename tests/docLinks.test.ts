@@ -1,3 +1,4 @@
+
 /**
  * Les liens entre documents remplacent des règles sinon recopiées. Un lien
  * mort rend donc une règle introuvable au lieu de la répéter : ce test tient la
@@ -20,9 +21,10 @@ const racine = path.resolve(__dirname, '..');
  */
 function fichiersMarkdown(dossier: string): string[] {
   const trouves: string[] = [];
+  const dansTests = path.basename(dossier) === 'tests';
   for (const entree of fs.readdirSync(dossier, { withFileTypes: true })) {
     if (entree.name === 'node_modules' || entree.name === '.git') continue;
-    if (entree.name === 'fixtures') continue;
+    if (entree.name === 'fixtures' && dansTests) continue;
     const complet = path.join(dossier, entree.name);
     if (entree.isDirectory()) trouves.push(...fichiersMarkdown(complet));
     else if (entree.name.endsWith('.md')) trouves.push(complet);

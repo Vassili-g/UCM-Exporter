@@ -7,31 +7,33 @@
 
 ## État opérationnel — 6 septembre 2026
 
-Ce plan n'est pas un indicateur global de fin de projet. **90 tâches sur 91
-sont cochées ; T4.6 reste ouverte** tant que la refonte UI n'est pas terminée.
-Les cases cochées ne signifient pas toutes « code livré » : certaines ferment
-une décision sans implémentation (T5.5, T5.6, U5.5), et U4.5 reste partiellement
-validée tant que l'observation sur un fichier Figma réel n'a pas eu lieu.
+Ce plan est terminé pour tout ce qui se prouve dans le dépôt. Deux entrées
+restent ouvertes, car elles dépendent d'une observation dans Figma et d'une
+publication réelle : **T4.6** et **11.8**.
 
-**À faire réellement :** terminer U4.7 à U4.9 dans
-[`refonte-ui.md`](./refonte-ui.md), puis exécuter la recette GitHub/Figma
-prévue par N6 et N7 du
-[`PLAN-NEUTRALISATION-PLAYGROUND.md`](./PLAN-NEUTRALISATION-PLAYGROUND.md).
-La Phase 10 n'est pas incluse dans le ratio 90/91 : **ses étapes N1 à N5 sont
-exécutées depuis le 6 septembre 2026**, et le Playground est un consommateur
-sans outillage UCM local qui garde ses contrats, ses tokens et ses sondes
-reconstruites. Ne restent que N6 et N7, qui demandent Figma et GitHub.
-La Phase 11 est ouverte. **Six recherches sont rendues et mesurées dans le
-code — 11.0 à 11.5 — et aucune case n'est cochée** : chacune se termine par une
-proposition, et une proposition n'est pas une décision. Ce qu'elles ont
-trouvé, en une ligne chacune : trois questions n'ont aucune autorité (11.0) ;
-un seul écart d'enum sur onze cas est réellement visible (11.1) ; le contrôle
-de validité des défauts existe déjà, avec deux trous (11.2) ; une convention
-d'écriture tient lieu d'exception, publiée là où un consommateur ne la lit pas
-(11.3) ; le chiffre de dette du schéma était inversé (11.4) ; et trois formes
-de version dans `tokens.json` sont ignorées par les deux seuls lecteurs qui
-existent (11.5). **11.6, 11.7 et 11.8 restent à ouvrir** : elles dépendent des
-décisions que les six précédentes demandent au propriétaire.
+Les travaux locaux de la Phase 11 sont clos. L'adaptateur avertit sur les deux
+écarts d'enum qu'il peut établir (11.1) ; les limites des défauts et des
+exceptions sont écrites (11.2 et 11.3) ; le schéma porte les cinq descriptions
+retenues (11.4) ; `tokens.json` reste sans version jusqu'à un changement de
+grammaire (11.5) ; la politique de compatibilité est publiée (11.6) ; le diff
+sémantique est différé jusqu'à un vrai cycle avant/après (11.7) ; et
+`@default` remplace la position du variant comme source du défaut d'un axe
+(11.9).
+
+**Ce qui reste, dans l'ordre :**
+
+1. charger le `dist` courant dans Figma et faire les observations U4.5 et U4.9 ;
+2. après cette observation, passer l'UI en TypeScript (U6.1), reconstruire le
+   bundle et le regarder une seconde fois ;
+3. jouer N6 : réexporter les tokens et au moins un composant vers une vraie
+   pull request du Playground, reconstruire la sonde et comparer son rendu ;
+4. publier `@ucm-kit/core@0.1.12`, `@ucm-kit/cli@0.1.8` et
+   `@ucm-kit/adapter-typescript@0.1.1`, puis laisser l'épreuve du registre de
+   11.8 les installer depuis un dossier vide.
+
+La suite locale, le typecheck, le build du plugin et l'inspection des trois
+tarballs passent le 6 septembre 2026. Ils prouvent le code et la forme des
+paquets ; ils ne remplacent ni Figma, ni GitHub, ni le registre npm.
 
 **Convention de lecture :** `[X]` = tâche ou décision clôturée ; `[ ]` = travail
 restant ; une clôture par décision doit être lue dans son paragraphe de statut
@@ -2414,8 +2416,8 @@ ses composants et son corpus. Perd `CHANGELOG-CONTRAT.md`,
       jugement, mais sur des morceaux assez petits pour qu'une erreur se voie.
       **Temps 1 fait le 5 septembre 2026 ; il reste le temps 2, et c'est
       pourquoi cette case n'est pas cochée.** Les 1 651 lignes sont parties dans
-      [docs/FORMAT.md](./docs/FORMAT.md) et
-      [packages/plugin/SPEC.md](./packages/plugin/SPEC.md), telles quelles, par
+      [docs/FORMAT.md](../FORMAT.md) et
+      [packages/plugin/SPEC.md](../../packages/plugin/SPEC.md), telles quelles, par
       une partition de ses 212 blocs — 467 lignes au format seul, 204 au moteur
       seul, 771 dans les deux. L'original est figé en
       `tests/fixtures/spec-avant-scission.md`, et il n'a aucun autre emploi.
@@ -3298,7 +3300,80 @@ Une recherche qui conclut seulement « c'est possible » ne clôt pas la tâche.
 Elle doit dire ce que la solution interdit, ce qu'elle laisse invisible et
 pourquoi son coût est acceptable pour un repository tiers.
 
-- [ ] **11.0 — Cartographier les autorités avant d'ajouter un contrôle.**
+### Décisions du propriétaire — 6 septembre 2026
+
+Les six recherches se terminaient chacune par une proposition. **Cette section
+porte les réponses, et elle prime sur les propositions écrites dans chaque
+tâche** : là où l'une et l'autre divergent, c'est ici qui fait foi. Trois
+décisions s'écartent de ce que la recherche proposait, et le paragraphe le dit
+à chaque fois.
+
+| Question | Décision | Ce qu'elle ouvre |
+|---|---|---|
+| 11.1 — écarts d'enum | **Averti** pour les deux cas visibles, hors périmètre et non vérifiable pour le reste, jamais bloquant | réécriture des messages de parité (11.1) |
+| 11.2 a — repli `values[0]` | **Supprimé** : aucun défaut plutôt qu'un défaut inventé | absorbé par 11.9 |
+| 11.2 b — trou du catalogue de tailles | **Requalifié** : le contrôle proposé est une tautologie sur toute sortie du moteur courant ; la vraie question était la SOURCE du défaut | 11.9 |
+| 11.2 c — défaut du contrat ≠ défaut du code | **Hors périmètre** de la garantie statique, et écrit comme tel | 11.2 |
+| 11.3 — exceptions volontaires | **Les deux gestes**, aucun mécanisme : publier la convention chez l'adaptateur, et faire dire au diagnostic son angle mort | 11.3 |
+| 11.4 — descriptions du schéma | **Cinq champs**, règle qualitative, pas de compteur | 11.4 |
+| 11.5 — version de `tokens.json` | **Ne rien écrire** tant que la grammaire ne bouge pas ; forme déjà tranchée | rien — 11.5 est close |
+| 11.6 / 11.7 | **Attendre**, mais `@default` en devient le premier cas travaillé | 11.6 |
+| Source du défaut d'un enum | **Étiquette `@default`** dans les règles Figma : déclaré ou rien | 11.9 |
+
+#### Ce que le propriétaire a corrigé dans la recherche
+
+**11.2 b n'était pas le trou annoncé.** La recherche présentait « vérifier que
+`props.size.default` désigne une entrée de `structure.sizes` » comme le seul
+contrôle de validité qui manque réellement. Mesuré depuis : `validation-contrat.mjs`
+refuse déjà un défaut absent des `values` de sa prop, et
+`extractSizes.ts:findSizeAxis` construit les clés de `structure.sizes` et les
+valeurs de la prop **depuis le même axe Figma, par la même fonction**. Les deux
+ensembles sont donc égaux par construction, et le contrôle proposé ne peut rien
+attraper sur un contrat que ce moteur produit. Il garde une valeur de filet pour
+un contrat édité à la main ou produit par un tiers — c'est à ce titre, et à ce
+titre seulement, qu'il peut être ajouté.
+
+**La vraie question était ailleurs, et le corpus en porte la preuve.**
+`Button.contract.json` publie `props.color.default = "primary"`, tandis que la
+description que le designer a écrite sur `color.secondary` dit « Couleur neutre
+de la marque — valeur par défaut. » La reconstruction a suivi le champ :
+`components/Button/Button.tsx` écrit `color = "primary"`. Un défaut que personne
+n'avait décidé a donc voyagé jusque dans le code, contre une intention écrite à
+trois centimètres de là, sans qu'aucun contrôle le voie.
+
+**La cause est confirmée par le propriétaire, et elle ferme la question :** dans
+Figma, le variant par défaut d'un component set est celui qui occupe la première
+position. Ce n'est pas une fonctionnalité, rien dans l'éditeur ne l'affiche, et
+l'ordre du set est choisi pour la lisibilité — pas pour désigner un défaut.
+`props[].default` recopiait donc un effet de bord de mise en page. **Le contrat
+ne publie pas un accident comme un fait** : d'où 11.9.
+
+#### Les messages de parité, décidés mot pour mot
+
+La recherche 11.1 concluait qu'un seul écart d'enum est visible. Le propriétaire
+l'a accepté ET a refusé les formulations proposées, deux fois, pour la même
+raison : elles employaient le vocabulaire du code — « prop », « enum », « lue par
+le composant » — devant un lecteur qui est designer. Les deux messages retenus
+emploient le mot que Figma affiche dans son propre panneau, `propriété`, et
+nomment la conséquence observable plutôt que le mécanisme :
+
+- valeur absente de l'union déclarée :
+  **« La variante `warning` n'est pas implémentée dans le code. »**
+- propriété déclarée et jamais lue :
+  **« La propriété `ton` de Figma n'a aucun effet dans le code : `info`,
+  `success` et `warning` s'affichent de la même façon. »**
+
+Ces lignes vivent DANS le bloc de `sectionEcartsDeParite`, qui porte déjà le
+titre, l'action attendue et « votre design n'est pas en cause ». Une ligne de
+détail n'a donc ni à désigner un responsable ni à rassurer : elle dit ce qui
+diverge, et ce que ça donne à l'écran.
+
+- [X] **11.0 — Cartographier les autorités avant d'ajouter un contrôle.**
+      *Close par décision, sans implémentation :* la table ci-dessous est une
+      mesure, et les domiciles qu'elle proposait ont reçu leur arbitrage le
+      6 septembre 2026. Deux lignes de cette table sont désormais périmées par
+      cette décision — celle du défaut d'enum, dont la source devient `@default`
+      (11.9), et celle de `tokens.json`, dont le moment est tranché (11.5).
 
 Relever, sur le code courant et les paquets réellement publiés, où sont décidés
 les enums, les valeurs par défaut, les exceptions, la forme du schéma, la
@@ -3401,8 +3476,17 @@ Aucune ligne de code n'a été écrite, et aucune des trois absences d'autorité
 n'a été comblée : les combler est le travail de 11.2 à 11.6, et chacune demande
 une décision de périmètre qui n'appartient pas à un agent.
 
+**Décision du 6 septembre 2026.** Les trois absences ont reçu leur réponse : la
+version de `tokens.json` reste absente jusqu'au premier changement de grammaire
+(11.5) ; les exceptions volontaires n'obtiennent aucun mécanisme, mais une
+adresse publique et un diagnostic qui dit sa limite (11.3) ; le nom d'une
+variable CSS reste décrit sans être imposé (11.4). Une quatrième absence a été
+trouvée en tranchant, et elle n'était pas dans la table : **le défaut d'un enum
+n'avait aucune source déclarée**, seulement la position d'un variant dans un set
+Figma. C'est 11.9.
 
-- [ ] **11.1 — Enums réellement gérés.**
+
+- [X] **11.1 — Enums réellement gérés.**
 
 Déterminer si et comment un adaptateur peut établir qu'une valeur d'enum est
 réellement gérée par le composant. La présence d'une union TypeScript générée
@@ -3504,8 +3588,41 @@ du FORMAT n'est nécessaire, et la limite documentée dans le README de
 l'adaptateur — « les valeurs d'enum réellement traitées restent hors de la
 garantie statique » — devient plus précise au lieu de disparaître.
 
+#### Décidé le 6 septembre 2026, et écrit le même jour
 
-- [ ] **11.2 — Valeurs par défaut.**
+**Le classement est retenu tel quel.** Les quatre gestes ci-dessous ont été
+écrits le 6 septembre 2026, tous dans l'adaptateur TypeScript et dans le rendu
+du diagnostic, aucun dans le noyau portable :
+
+1. **Relever l'union résolue d'une prop enum** dans `parite.mjs`, et rapporter
+   la valeur du contrat qu'elle n'offre pas. La sonde de recherche a montré que
+   le vérificateur de types la rend déjà, y compris dérivée d'un `as const`, et
+   rend `aucune` sur un type élargi — donc silence, jamais faux positif.
+2. **Rapporter `utilisee: false` pour les enums**, comme il l'est déjà pour les
+   booléens. Aucune analyse nouvelle : le relevé porte déjà l'information.
+3. **Écrire les deux messages**, mot pour mot, dans `diagnostic-parite.mjs` :
+   - « La variante `warning` n'est pas implémentée dans le code. »
+   - « La propriété `ton` de Figma n'a aucun effet dans le code : `info`,
+     `success` et `warning` s'affichent de la même façon. »
+4. **Aligner les trois messages voisins sur le même registre.** Le bloc en
+   compte cinq ; en corriger deux ferait parler deux langues au même rapport.
+   `prop` devient `propriété` — le mot que Figma affiche —, et chaque ligne
+   nomme la conséquence observable plutôt que le mécanisme. C'est de la
+   réécriture : aucun verdict, aucun code de sortie, aucun seuil ne change.
+
+**Ce que la loi doit refuser.** Un test qui échoue avant la correction : une
+union amputée qui ne produit aucun écart, et un enum déclaré jamais lu qui reste
+muet quand son jumeau booléen parle. Et une loi de registre, puisque c'est la
+faute qui s'est produite deux fois pendant l'arbitrage : **aucun message destiné
+au designer ne contient `prop`, `enum`, `boolean` ni « lue par le composant »**.
+
+**Ce que cela n'autorise pas.** Aucun de ces deux signaux ne devient bloquant, et
+aucun ne remonte dans le noyau : un consommateur sans adaptateur n'a rien
+d'équivalent, donc l'absence de ces messages ne veut rien dire. Le README de
+l'adaptateur doit le dire, et c'est le même README que 11.3 modifie.
+
+
+- [X] **11.2 — Valeurs par défaut.**
 
 Établir ce que signifie le défaut dans chaque endroit : absence de prop,
 valeur `default` du contrat, valeur par défaut d'une propriété Figma, valeur
@@ -3620,8 +3737,41 @@ code » **hors périmètre de la garantie statique** — la mesure montre qu'il 
 serait visible que pour une écriture sur trois, et un contrôle qui se tait deux
 fois sur trois se lit comme une garantie qu'il n'offre pas.
 
+#### Décidé le 6 septembre 2026 — et la proposition ci-dessus est en partie fausse
 
-- [ ] **11.3 — Exceptions volontaires documentées.**
+**Le trou 1 est confirmé : le repli `values[0]` disparaît.** Le champ n'est pas
+écrit, et l'absence dit « aucun défaut », ce que le format sait déjà exprimer.
+
+**Le trou 2 est requalifié, et ce paragraphe se corrige lui-même.** Il annonçait
+« le seul contrôle de validité qui manque réellement ». C'est faux, et deux
+mesures le montrent : `validation-contrat.mjs` refuse déjà un défaut absent des
+`values` de sa prop, et `findSizeAxis` (`extractSizes.ts`) construit les clés de
+`structure.sizes` ET les valeurs de la prop depuis le même axe Figma, par la
+même fonction. Les deux ensembles sont égaux par construction. Le contrôle
+proposé est donc une **tautologie sur toute sortie du moteur courant** ; il ne
+garde d'utilité que comme filet pour un contrat édité à la main ou produit par
+un tiers, et c'est à ce titre qu'il peut être ajouté — pas comme le trou majeur.
+
+**L'écart « défaut du contrat ≠ défaut du code » est classé hors périmètre**, et
+la documentation doit le dire : le designer corrige un défaut Figma périmé, le
+développeur un défaut de composant qui contredit le contrat, et l'outillage ne
+prétend pas arbitrer entre les deux.
+
+**Ce que la recherche avait manqué, et qui devient 11.9.** Elle a établi que
+`props[].default` recopie le `defaultValue` de Figma, et qualifié cela de
+« convention Figma ». La mesure suivante montre que c'est moins que ça :
+`Button.color` liste ses valeurs dans l'ordre `secondary, primary, …` et publie
+`default: "primary"` — donc le défaut n'est pas le premier de la liste, mais le
+variant de première POSITION dans le component set. Le propriétaire a confirmé
+que cette position n'est pas une fonctionnalité de Figma, que rien ne l'affiche,
+et que l'ordre d'un set est choisi pour sa lisibilité. Le contrat publiait donc
+un effet de bord de mise en page comme s'il s'agissait d'une décision. La preuve
+est dans le corpus : la description écrite par le designer sur `color.secondary`
+dit « valeur par défaut », et `Button.tsx` a été reconstruit avec
+`color = "primary"`. **La source du défaut change : voir 11.9.**
+
+
+- [X] **11.3 — Exceptions volontaires documentées.**
 
 Inventorier les écarts légitimes qui seraient sinon signalés comme erreurs :
 enum partiellement rendu par conception, prop passée à une dépendance, slot
@@ -3729,8 +3879,28 @@ de sortie :** aucun — ces écarts n'entrent déjà pas dans le verdict.
 aucune de ces trois clauses ne touche la validation du contrat, qui reste
 bloquante et sans exception.
 
+#### Décidé le 6 septembre 2026, et écrit le même jour
 
-- [ ] **11.4 — Documenter le JSON Schema sans en faire une seconde spécification.**
+**Les trois gestes sont retenus tels quels.** Ils ont été écrits le 6 septembre
+2026 :
+
+1. **Publier la convention dans le README de `@ucm-kit/adapter-typescript`** —
+   le comptage des occurrences est statique ; une dépendance rendue par une
+   boucle n'est pas comptée ; conserver chaque occurrence explicitement dans le
+   source, et neutraliser sur place celle qui est absente de la vue courante.
+   C'est le même README que 11.1 modifie : un seul passage.
+2. **Ajouter au message de cardinalité la phrase qui dit son angle mort**, dans
+   `diagnostic-parite.mjs` : « le comptage est statique ; si les occurrences
+   viennent d'une boucle, cet écart est attendu ». Elle est validée telle quelle.
+3. **Ne rien ajouter pour le relais `{...reste}`**, et l'écrire une fois pour
+   que la question ne se rouvre pas : le suivre exigerait de connaître le
+   contrat de l'enfant, et l'avertissement ne bloque déjà rien.
+
+**Le message porte le même registre que 11.1** : il est lu par un designer, donc
+il ne contient ni `prop`, ni `enum`, ni « lue par le composant ».
+
+
+- [X] **11.4 — Documenter le JSON Schema sans en faire une seconde spécification.**
 
 Les 118 propriétés sur 236 sans `description` sont un signal, pas une mesure
 automatique de dette. *Le chiffre lui-même était faux, et la recherche
@@ -3840,8 +4010,31 @@ phrases pour le satisfaire.
 d'identifiants, la fenêtre de compatibilité et la résolution des vues. Le schéma
 le dit déjà lui-même, et `tests/schema.test.ts` le vérifie sur le corpus.
 
+#### Décidé le 6 septembre 2026, et écrit le même jour
 
-- [ ] **11.5 — Versionner ou non le format de `tokens.json`.**
+**Cinq champs, la règle qualitative, et pas de compteur.** Les gestes ci-dessous
+ont été écrits le 6 septembre 2026 :
+
+1. **Écrire le JSDoc de cinq membres dans `types.ts`** — `meta`,
+   `meta.coverage`, `meta.figma`, `ContractDiagnostic.code` et
+   `ContractDiagnostic.message` —, puis régénérer le schéma. Le générateur
+   recopie le commentaire dans la `description` : `types.ts` est le seul endroit
+   à toucher.
+2. **Écrire la règle dans `docs/FORMAT.md`**, qualitative et vérifiable par
+   relecture : *un champ dont l'ABSENCE a une signification, ou dont la valeur
+   oriente une décision du consommateur, porte une description.* Et écrire
+   explicitement qu'une couverture complète n'est PAS visée, avec sa raison
+   mesurée — la documentation pèse déjà 54 % du schéma publié.
+3. **Ne pas poser de compteur en CI**, et le dire dans la règle : un seuil ferait
+   écrire des phrases pour le satisfaire.
+4. **Décrire la projection `tokenCssVariable` dans `docs/FORMAT.md` sans
+   l'imposer** — c'était la ligne restée ouverte de la table de 11.0, pour le
+   consommateur qui n'installe pas le kit et écrit sa propre projection.
+
+
+- [X] **11.5 — Versionner ou non le format de `tokens.json`.**
+      *Close par décision, sans implémentation, le 6 septembre 2026 :* rien
+      n'est écrit dans le fichier, et le signal de réouverture est nommé.
 
 Ne pas ajouter un champ `version` par réflexe. Rechercher d'abord la
 spécification DTCG réellement ciblée, les outils qui consomment `tokens.json`,
@@ -3943,7 +4136,7 @@ mécanique. C'est la sortie « ne pas implémenter » que 11.8 autorise
 explicitement, à condition de nommer son signal de réouverture ; il est nommé.
 
 
-- [ ] **11.6 — Politique de compatibilité.**
+- [X] **11.6 — Politique de compatibilité.**
 
 Rassembler dans une politique unique les contrats, le JSON Schema, les tokens,
 les paquets et les adaptateurs. La politique doit distinguer au minimum ajout
@@ -3962,7 +4155,7 @@ peut fusionner.
 relié à cette table et une suite de tests qui vérifie les décisions sans
 reconstruire la règle dans chaque consommateur.
 
-- [ ] **11.7 — Évaluer un diff sémantique pour les revues.**
+- [X] **11.7 — Évaluer un diff sémantique pour les revues.**
 
 Avant de coder un diff, produire des exemples de changements JSON qui doivent
 être classés : aucun effet, ajout compatible, changement visuel, changement de
@@ -4000,6 +4193,93 @@ politique.
 **La décision « ne pas implémenter » est une sortie valide**, mais seulement si
 la recherche montre que le contrôle serait structurellement faux, trop coûteux
 ou prématuré. Elle doit alors préciser le signal qui rouvrira la question.
+
+
+- [X] **11.9 — L'étiquette `@default` : le défaut d'un enum devient déclaré, ou
+      n'existe pas.**
+
+**Tâche créée le 6 septembre 2026 par la décision du propriétaire.** Elle
+n'était pas dans le plan : 11.2 cherchait à VALIDER le défaut publié, et la
+mesure a montré que le problème était sa SOURCE. Elle absorbe les deux trous de
+11.2 et rend sans objet la ligne « le défaut d'un enum » de la table de 11.0.
+
+#### Ce qui est établi, et n'a pas à être re-mesuré
+
+- `props[].default` recopie le `defaultValue` de Figma, qui pour une propriété
+  VARIANT vaut le variant de **première position** dans le component set ;
+- cette position n'est pas une fonctionnalité de Figma : rien ne l'affiche, et
+  l'ordre d'un set est choisi pour la lisibilité — confirmé par le propriétaire,
+  qui est le designer du corpus ;
+- le corpus porte le dégât : `Button` publie `props.color.default = "primary"`
+  quand la description écrite sur `color.secondary` dit « valeur par défaut », et
+  la reconstruction a suivi le champ (`Button.tsx`, `color = "primary"`) ;
+- `props[].default` n'a qu'un seul consommateur déclaré, le skill
+  `consommer-contrat` : « Exposer chaque entrée de `props` et appliquer son
+  `default` ». C'est par là que l'accident voyage jusqu'au code ;
+- les règles d'usage ont déjà une grammaire d'étiquettes lue par
+  `ruleTagFromValue` — `usage`, `prop`, `boolean`, `do`, `dont`, `pairs`,
+  `icons` — et `@prop` prend déjà un contenu de la forme `nomDeProp.valeur`.
+
+#### La décision
+
+**Le défaut d'un enum est déclaré par le designer, ou il n'existe pas.** Une
+huitième étiquette, `@default`, dont le contenu prend la forme que `@prop`
+emploie déjà :
+
+```text
+@default    color.secondary
+```
+
+La position dans le component set **cesse d'être lue**. L'absence de `@default`
+signifie « aucun défaut publié » — exactement ce que 11.2 a vient d'acter pour
+le repli `values[0]`, et ce que le format sait déjà exprimer par l'élision.
+
+#### Ce que la tâche doit produire
+
+1. `@default` reconnu par `ruleTagFromValue` et traité dans `buildRules`, avec
+   les avertissements que les autres étiquettes ont déjà : contenu vide, prop
+   inconnue, valeur absente des `values`, et **deux `@default` sur la même
+   prop** — la faute que `@usage` couvre déjà pour son cas.
+2. `parsers.ts` cesse de lire `definition.defaultValue` pour les propriétés
+   VARIANT, et le repli `values[0]` disparaît avec (trou 1 de 11.2).
+3. `validation-contrat.mjs` inchangé sur l'essentiel : un défaut publié doit
+   rester dans ses `values`, et la combinaison des défauts d'axes doit rester
+   publiée — mais ces deux règles ne s'appliquent QUE lorsqu'un défaut existe.
+4. Le contrôle de 11.2 trou 2 peut être ajouté ici, **classé pour ce qu'il est**
+   — un filet pour un contrat que ce moteur n'a pas produit, pas le trou majeur
+   que la recherche annonçait.
+5. Le skill `consommer-contrat` cesse d'écrire « appliquer son `default` » sans
+   nuance : un défaut publié est une décision du designer, une absence laisse le
+   choix au développeur.
+6. `docs/FORMAT.md` dit d'où vient le défaut et ce que son absence signifie —
+   c'est le même passage que 11.4 touche.
+
+#### Ce que la loi doit refuser
+
+Un test rouge avant la correction, sur chacun des trois : un component set dont
+le premier variant n'est pas celui de `@default` **ne doit plus** produire le
+premier ; un set sans `@default` **ne doit publier aucun** `default` d'enum ; et
+`@default` visant une valeur absente des `values` **doit** produire un
+diagnostic destiné au designer, dans le registre de 11.1 — sans `prop`, sans
+`enum`.
+
+#### Migration, et pourquoi elle ne casse rien
+
+Au prochain réexport, les contrats du corpus **perdent** leur défaut d'enum tant
+qu'aucun `@default` n'est écrit. Rien ne casse : les composants gardent le leur,
+qui est du code. Ce qui change est que le contrat cesse de le confirmer — et
+c'est le but. Les quatre contrats sont de toute façon à réexporter (cf.
+`refonte-ui.md`, « quand le corpus est-il réexporté »), donc la migration se
+joue dans le même geste que la recette N6.
+
+#### Le lien avec 11.6, décidé lui aussi
+
+`@default` ne change pas la FORME du contrat — le champ existe déjà — mais il
+change **ce que le champ veut dire**. C'est exactement une des classes que 11.6
+doit nommer : « changement de signification d'une absence ». Le propriétaire a
+tranché qu'on traiterait ce cas à la main d'abord, et qu'il servirait de premier
+exemple à la politique — un cas réel écrit mieux une politique qu'une politique
+n'anticipe un cas. **11.6 doit donc citer 11.9**, pas l'inverse.
 
 ## Phase R — Écarts trouvés par la revue du 5 septembre 2026
 

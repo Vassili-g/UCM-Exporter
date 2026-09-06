@@ -1,4 +1,4 @@
-# Unified Component Exporter — guide agent
+# Guide agent
 
 Plugin Figma qui exporte des contrats de composant et des tokens DTCG. Il ne
 modifie jamais le document Figma.
@@ -8,25 +8,25 @@ modifie jamais le document Figma.
 Lire uniquement ce qui concerne la tâche :
 
 1. [CONCEPT.md](./CONCEPT.md) pour les responsabilités du modèle ;
-2. [docs/FORMAT.md](./docs/FORMAT.md) si la tâche touche à la FORME de ce qui
+2. [docs/FORMAT.md](./docs/FORMAT.md) si la tâche touche à la forme de ce qui
    est publié, [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) si elle
-   touche à la façon dont le plugin lit Figma. Ce que les versions PRÉCÉDENTES
+   touche à la façon dont le plugin lit Figma. Ce que les versions précédentes
    publiaient est dans [docs/CHANGELOG-FORMAT.md](./docs/CHANGELOG-FORMAT.md),
    à ouvrir dès qu'une tâche touche à la compatibilité ;
 3. [CONTRIBUTING.md](./CONTRIBUTING.md) pour les règles de code et de test ;
 4. `packages/kit/src/format/types.ts` et les tests voisins pour la forme concrète.
 
-Les [invariants](#invariants) sont groupés par domaine — portée du contrat,
+Les [invariants](#invariants) sont groupés par domaine : portée du contrat,
 tokens, couleurs, composition, arbre des slots, layout, grilles, diagnostics,
 versionnage. Lire le groupe que la tâche touche, pas la section entière.
 
 Pour créer ou modifier un message destiné au designer, charger aussi la skill
 [`rediger-diagnostics-ucm`](./.agents/skills/rediger-diagnostics-ucm/SKILL.md).
 
-Pour reconstruire à froid un composant depuis son contrat — le geste de la
-recette, dans le repository consommateur —, charger la skill
+Pour reconstruire à froid un composant depuis son contrat, ce qui est le geste
+de la recette dans le repository consommateur, charger la skill
 [`consommer-contrat`](./.agents/skills/consommer-contrat/SKILL.md). Elle vit
-ici parce que c'est un savoir du FORMAT : le repository de recette, lui, ne doit
+ici parce que c'est un savoir du format : le repository de recette, lui, ne doit
 rien apprendre du produit.
 
 Pour toucher à l'interface du plugin, lire d'abord
@@ -35,7 +35,7 @@ l'information et le protocole de relecture y font autorité, et la galerie des
 états rend chaque écran atteignable hors de Figma.
 
 La maturité et les priorités vivent dans [ROADMAP.md](./ROADMAP.md). Les idées
-non décidées dans [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
+non décidées dans [PISTES-EVOLUTION.md](./docs/notes/PISTES-EVOLUTION.md).
 
 ## Carte du code
 
@@ -58,6 +58,7 @@ packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
       colorKeys.ts             clé d'une couleur dans la feuille d'un variant
       structureTree.ts         qui est un conteneur, qui est une feuille
       unsupportedProperties.ts ce qu'un calque publié porte et que le schéma ignore
+      localisation.ts          le Constat : où, quoi, impact et action, séparés
       extract*.ts              structure, layout, tailles, tokens et règles
       flexLayout.ts            propriétés de flux et avertissements non portables
       extractSamples.ts        ce que la maquette montre, sans rien exiger
@@ -89,10 +90,11 @@ packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
     version.ts               CONTRACT_VERSION, seul endroit où elle est écrite
     names.ts                 normalizeName, codeIdentifier, tokenCssVariable
     references.ts            la forme d'une référence de token, et son enveloppe
-    configuration.ts         la grammaire de ucm.config.json — la CI ET le plugin
+    configuration.ts         la grammaire de ucm.config.json, pour la CI et le plugin
     identite.ts              « ces deux contrats sont-ils le même composant ? »
+    typography.ts            les graisses et styles DTCG qu'un text style emploie
     index.ts                 ce que le sous-chemin publie
-  src/lecteurs/            ce qui JUGE un contrat écrit — `ajv` et `node:fs`
+  src/lecteurs/            ce qui juge un contrat écrit ; `ajv` et `node:fs`
     validation-contrat.mjs       la forme d'un contrat, champ par champ
     validation-graphe-contrats.mjs  composition, doublons et collisions d'identifiant
     validation-echantillons.mjs  les adresses que les échantillons visent
@@ -116,6 +118,7 @@ packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
     index.mjs                    la porte publique `@ucm-kit/core/lecteurs`
     index.d.mts                  ce que cette porte promet à un consommateur TS
   scripts/build-schema.ts  génère le schéma depuis types.ts
+  scripts/generer-refus.mjs  les refus de version, rendus pour la relecture
   schema/                  le schéma commité, publié en `@ucm-kit/core/schema`
   fixtures/contrats/11.0/  jeu N-1 figé, que le moteur ne sait plus fabriquer
   tests/                   `.test.ts` pour le format, `.test.mjs` pour les lecteurs
@@ -123,18 +126,40 @@ packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
 packages/cli/            la ligne de commande : @ucm-kit/cli, publiée
   src/ucm.mjs              l'aiguillage et les codes de sortie
   src/init.mjs             installe ce qui manque, sans jamais écraser
+  src/check.mjs            lance le contrôle du kit, imprime, écrit le rapport
+  src/adaptateur.mjs       découvre l'adaptateur de stack installé dans le repo
   src/icons.mjs            les icônes que les contrats du repo réclament
+  tests/                   dont recette.test.mjs, sur des repositories temporaires
 
 packages/adapter-typescript/  l'adaptateur opt-in : parité TS/TSX et types générés
   src/parite.mjs              lit les props et la composition avec TypeScript
   src/generation.mjs          dérive les unions depuis les contrats
+  src/types-variants.mjs      la forme des unions produites
   src/cli.mjs                 commande `ucm-typescript`
+  src/index.mjs               ce que `ucm check` charge quand il le découvre
+  src/index.d.mts             ce que cette porte promet à un consommateur TS
 
 docs/                    le FORMAT, pour qui consomme un contrat
   FORMAT.md              la forme de chaque champ, et ce que son absence dit
+  CHANGELOG-FORMAT.md    ce que chaque version a publié, et ce qu'elle casse
+  POUR-LES-DESIGNERS.md  le guide du designer, et le vocabulaire du projet
+  plans/                 les plans de travail : ils datent et ils racontent
+  notes/                 les options non engagées
+
+.agents/skills/          les procédures qu'un agent charge à la demande
+  consommer-contrat/       reconstruire un composant depuis son seul contrat
+  rediger-diagnostics-ucm/ écrire un message que le designer peut suivre
+
+scripts/                 recette-externe.mjs, et le découvreur de tests
+.github/workflows/       ci.yml, et publish.yml qui publie sans jeton
 
 tests/                   les tests du monorepo lui-même
-  docLinks.test.ts       les liens de la documentation
+  docLinks.test.ts       les liens et les ancres de la documentation
+  styleDocumentaire.test.ts  les tics de rédaction, plafonnés et à cliquet
+  pinDocumente.test.mjs  les versions montrées par une commande copiable
+  registrePortableDocuments.test.ts  aucun document portable ne promet une stack
+  versionSuitLeContenu.test.mjs  un numéro publié annonce bien ce qu'il publie
+  recetteExterne.test.mjs  ce qui oblige à rejouer la recette, et ce qui non
   monorepoCoherent.test.mjs  chaque paquet lit le kit d'à côté, jamais le registre
 ```
 
@@ -150,19 +175,19 @@ Le raisonnement vit dans la spécification, en lien.
   `meta.coverage.portable` partiel.
 - Aucune logique liée au nom d’un composant.
 - Figma reste traçable après normalisation (`figmaName`, `figmaLayer`).
-- `variants` décrit chaque combinaison réellement présente — `COMPONENT` sans axe
-  et matrice clairsemée comprises — et référence une vue de `variantViews`. Une
+- `variants` décrit chaque combinaison réellement présente, `COMPONENT` sans axe
+  et matrice clairsemée comprises, et référence une vue de `variantViews`. Une
   vue est cinq renvois : `structure`, `typography`, `composes`, `icons`,
-  `paintPlacements`, chacun catalogué à part. Chaque PARTIE se partage par
-  égalité stricte de son bloc JSON, à l’ordre des clés près — ni merge, ni
+  `paintPlacements`, chacun catalogué à part. Chaque partie se partage par
+  égalité stricte de son bloc JSON, à l’ordre des clés près. Ni merge, ni
   héritage, ni défaut : résoudre les cinq renvois redonne la vue exacte.
   `structure` est la projection du variant de référence, publiée elle aussi par
-  renvoi, INCONDITIONNELLEMENT : elle rejoint le catalogue des structures quand
+  renvoi, inconditionnellement : elle rejoint le catalogue des structures quand
   elle n’y correspond à aucune. → [spec](./docs/FORMAT.md#sortie)
 - Le contrat n’écrit aucune valeur neutre : une clé qui vaudrait `null`, `{}` ou
-  `[]` est absente. Borne, et elle porte tout : UN seul passage, jamais de point
-  fixe. Une valeur qui EST vide ne s’écrit pas ; une valeur qui CONTIENT du vide
-  s’écrit sans lui et reste — sous un dictionnaire, la clé est une donnée, et
+  `[]` est absente. Borne, et elle porte tout : un seul passage, jamais de point
+  fixe. Une valeur qui est vide ne s’écrit pas ; une valeur qui contient du vide
+  s’écrit sans lui et reste : sous un dictionnaire, la clé est une donnée, et
   `stateModel.states.default` vaut `{}`. `elideNeutrals.ts` en est l’unique
   autorité, et chaque sous-arbre n’y passe qu’une fois.
 - L’artefact s’écrit une entrée par ligne sur deux niveaux (`serializeJson.ts`),
@@ -186,26 +211,26 @@ Le raisonnement vit dans la spécification, en lien.
 - Une collision feuille/groupe ou deux chemins identiques sont tranchés avant la
   construction de l’arbre ; aucun alias ne pointe vers une variable rejetée.
   → [spec](./docs/FORMAT.md#partie-2--export-tokens)
-- Le contrat ne publie AUCUN index de ses tokens. `tokensUsed` se dérivait du
+- Le contrat ne publie aucun index de ses tokens. `tokensUsed` se dérivait du
   contrat terminé ; ce qui se dérive ne se publie pas. Un consommateur qui en a
-  besoin balaie les références du contrat, `samples` et `meta` exclus — un texte
+  besoin balaie les références du contrat, `samples` et `meta` exclus. Un texte
   de maquette peut valoir « {montant.total} » sans nommer un token.
   → [spec](./docs/FORMAT.md#8-rendu-sémantique-et-garde-fous)
-- Un nom de token se projette de TROIS façons, et chacune a UN propriétaire, tous
+- Un nom de token se projette de trois façons, et chacune a un propriétaire, tous
   trois dans `packages/kit/src/format/names.ts` : `normalizeName` va du chemin
   Figma au token, `codeIdentifier` du nom Figma à l'identifiant de code, et
   `tokenCssVariable` du token à la propriété personnalisée CSS. Une projection
-  recopiée est le défaut le plus cher du projet, parce qu'il est MUET : deux
+  recopiée est le défaut le plus cher du projet, parce qu'il est muet : deux
   copies de la troisième ont rendu `var(--layouts-sizing-0,5)`, où la virgule
-  sépare en CSS une variable de son repli — le navigateur lisait
+  sépare en CSS une variable de son repli. Le navigateur lisait
   `--layouts-sizing-0`, la trouvait, et peignait `0px` pour `2px` sans une
-  erreur. Règle de `tokenCssVariable`, énonçable en une phrase pour qu'une
-  chaîne écrite dans une autre langue la tienne : minuscules, toute suite de
-  caractères qui n'est ni lettre ni chiffre devient un seul tiret, tirets de
-  bord retirés. Elle ne coupe PAS sur les bosses de casse — c'est ce qui la
-  distingue d'un `kebabCase` de bibliothèque, et le choix est délibéré. Elle
-  n'est pas une bijection (`50%` et `50` se rejoignent) : le consommateur
-  refuse la collision, le format ne prétend pas l'empêcher.
+  erreur. La règle de `tokenCssVariable` tient en une phrase, pour qu'une chaîne
+  écrite dans une autre langue la tienne : minuscules, toute suite de caractères
+  qui n'est ni lettre ni chiffre devient un seul tiret, tirets de bord retirés.
+  Elle ne coupe pas sur les bosses de casse, ce qui la distingue d'un
+  `kebabCase` de bibliothèque, et ce choix est délibéré. Elle n'est pas une
+  bijection (`50%` et `50` se rejoignent) : le consommateur refuse la collision,
+  le format ne prétend pas l'empêcher.
 
 ### Couleurs
 
@@ -217,25 +242,25 @@ Le raisonnement vit dans la spécification, en lien.
   d’un token est la même dans toutes les feuilles. Borne du coût : sélection
   exacte jusqu’à seize profondeurs candidates, gloutonne et déterministe au-delà.
   → [spec](./docs/FORMAT.md#2-tokens-de-variantes)
-- Le SITE tranche la nature de ce qu’une couleur peint, le NOM précise à
+- Le site tranche la nature de ce qu’une couleur peint, le nom précise à
   l’intérieur de cette nature. Un dernier segment qui nomme un rôle partagé
-  l’emporte seulement s’il est de la nature du calque — c’est ce qui distingue
-  un `ring` d’un `border`, et c’est tout ce dont il décide. Un `…/foreground`
+  l’emporte seulement s’il est de la nature du calque, ce qui distingue un
+  `ring` d’un `border`, et c’est tout ce dont il décide. Un `…/foreground`
   posé en contour peint un contour, sans un mot : le moteur n’a aucun avis sur
   le vocabulaire du design system. Le nom se lit sur le dernier segment du
-  TOKEN, jamais sur la clé publiée.
-- Une CLÉ de couleur n’est pas un RÔLE. `rendering.roles` est le vocabulaire
+  token, jamais sur la clé publiée.
+- Une clé de couleur n’est pas un RÔLE. `rendering.roles` est le vocabulaire
   partagé, identique dans tous les contrats ; `rendering.keyRoles` porte le rôle
   de chaque clé observée qui n’en porte pas le nom. Deux tables, une par arbre
   (`fills`, `strokes`) : `colorKeys` décide sur des feuilles séparées, et la
   même clé courte peut désigner deux tokens de part et d’autre. Résolution :
-  `roles[keyRoles[côté][clé] ?? clé]`, et `packages/plugin/tests/lois.ts` vérifie sur CHAQUE
+  `roles[keyRoles[côté][clé] ?? clé]`, et `packages/plugin/tests/lois.ts` vérifie sur chaque
   contrat que la réponse existe et qu’elle est de la bonne nature.
 - Un rôle de contour ne cite jamais une propriété CSS qui consomme la boîte :
   un stroke Figma se dessine hors du flux et ne déplace aucun voisin, là où
   une `border` élargit l’élément et décale tout ce qui l’entoure. `border`
   se rend donc en `box-shadow` et `ring` en `outline`, jamais l'un ni l'autre en
-  bordure ; `align` donne la forme de l'ombre — `inside` inset, `outside`
+  bordure ; `align` donne la forme de l'ombre : `inside` inset, `outside`
   outset, `center` moitié de chaque côté.
   `defaultRenderingSemantics()` en est l’unique autorité.
   → [spec](./docs/FORMAT.md#8-rendu-sémantique-et-garde-fous)
@@ -247,7 +272,7 @@ Le raisonnement vit dans la spécification, en lien.
 - `variantViews.*.paintPlacements` situe fills et strokes par les chemins de
   l’arbre publié ; `[]` cible la racine, et les chemins sont collectés pendant
   l’unique extraction de `structure.children`. Le chemin est celui du calque
-  PUBLIÉ qui porte la peinture : une couleur sous une feuille appartient à cette
+  publié qui porte la peinture : une couleur sous une feuille appartient à cette
   feuille, et deux tracés d’une même icône ne donnent qu’une cible. Les deux
   relevés ne parcourent pas le même arbre ; leur égalité n’est pas exigée.
   → [spec](./docs/FORMAT.md#2-tokens-de-variantes)
@@ -259,26 +284,26 @@ Le raisonnement vit dans la spécification, en lien.
   toutes les pages. Les règles documentent sans autoriser : tout `COMPONENT` ou
   `COMPONENT_SET` sélectionné est exportable, et le parent ne réexporte pas les
   internes d’une dépendance reconnue. Une seule chose en remonte, et elle n’est
-  pas normative : ce que CE parent a CHANGÉ par rapport au maître — les surcharges
-  de `InstanceNode.overrides`, et le remplacement d’une instance, que ce relevé
-  ne rapporte pas et qui se lit en comparant l’instance à son maître, position par
-  position. Ce que la dépendance fournit reste à son contrat ; ce que le parent
+  pas normative : ce que ce parent a changé par rapport au maître. Ce sont les
+  surcharges de `InstanceNode.overrides`, et le remplacement d’une instance, que
+  ce relevé ne rapporte pas et qui se lit en comparant l’instance à son maître,
+  position par position. Ce que la dépendance fournit reste à son contrat ; ce que le parent
   y a écrit n’est écrit nulle part ailleurs.
   → [échantillon](#échantillon-de-maquette)
 - Le parcours conserve le calque de l’instance pour le décrire comme un slot ;
   ce qu’il porte reste hors du contrat parent. Ses couleurs appartiennent à son
   contrat (`getSlotTokens`), ses dimensions ne le font pas élire node de layout
   (`findLayoutNode`).
-- `composes` ne désigne que le calque qui EST l’instance. Un calque qui
+- `composes` ne désigne que le calque qui est l’instance. Un calque qui
   l’enveloppe appartient au contrat parent : il publie son flux et range la
   dépendance dans `children`. Trois liens donnent trois enfants, et le cadre ne
   reprend une `visibilityProp` que lorsqu’une seule dépendance l’occupe.
   → [spec](./docs/FORMAT.md#cadre-de-dépendance)
-- Ce cadre publie TOUS ses calques, pas seulement les branches de dépendance.
+- Ce cadre publie tous ses calques, pas seulement les branches de dépendance.
   `structureTree.publishesChildren` tranche l’unique exception : un cadre dont
   aucune branche ne mène à une dépendance ne publie rien. Chemins de typographie
   et signatures suivent cette réponse.
-- Chaque `variantViews[variants[].view].composes` se dérive de SON arbre publié,
+- Chaque `variantViews[variants[].view].composes` se dérive de son arbre publié,
   dans son ordre ; le `composes` global en est l’union ordonnée à cardinalité
   maximale. Une dépendance non située sort des deux champs à la fois, sous
   avertissement. → [spec](./docs/FORMAT.md#composition-et-dépendances)
@@ -286,16 +311,16 @@ Le raisonnement vit dans la spécification, en lien.
 ### Arbre des slots
 
 - `structure.children` descend dès qu’un descendant porte une information qu’une
-  feuille ne sait pas exprimer — texte, icône, dépendance, liaison de variable —
+  feuille ne sait pas exprimer (texte, icône, dépendance, liaison de variable),
   à n’importe quelle profondeur. Borne : un calque dont aucun descendant ne porte
   d’information reste une feuille. `structureTree.ts` en est l’unique autorité ;
   extraction, `textSlots` et signatures la consultent sans la recalculer.
   Profondeur bornée à 12 niveaux, coupure dite dès qu’elle emporte autre chose
   qu’un dessin. → [spec](./docs/FORMAT.md#6-structure)
-- Un conteneur publie TOUS ses calques rendables, à quelque profondeur qu’ils
-  vivent — jamais une sélection. `variants[].tokens` relève les couleurs du
+- Un conteneur publie tous ses calques rendables, à quelque profondeur qu’ils
+  vivent, jamais une sélection. `variants[].tokens` relève les couleurs du
   variant entier.
-- Une typographie appartient à UN calque texte et vient de son text style.
+- Une typographie appartient à un calque texte et vient de son text style.
   `textStyles` lie le style à ses variables, la vue exacte situe son usage par un
   chemin de slots. Un slot à plusieurs textes décrit ses parts dans `children` :
   les nodes représentés y portent leur visibilité, les cibles graphiques non
@@ -306,19 +331,19 @@ Le raisonnement vit dans la spécification, en lien.
   publié désigne toujours un slot réel de `structure.children`.
 - Un dessin qu’aucune règle `@icons` ne désigne avertit : le contrat n’exporte
   aucun tracé, et le développeur recevra la place et les couleurs du calque,
-  jamais son dessin. Le déclencheur est le TRACÉ — `nodeBindings.estUnTrace`, la
-  même autorité que pour les dimensions —, jamais l’absence de texte. Un seul
+  jamais son dessin. Le déclencheur est le tracé (`nodeBindings.estUnTrace`, la
+  même autorité que pour les dimensions), jamais l’absence de texte. Un seul
   message par dessin, sur le calque le plus profond qui le contienne encore en
-  entier ; un composant qui EST un dessin ne dit rien.
-- Masquer et remplacer sont deux libertés distinctes : le booléen Figma dit SI
-  une icône s’affiche, la prop runtime dit LAQUELLE rendre. Une icône toujours
+  entier ; un composant qui est un dessin ne dit rien.
+- Masquer et remplacer sont deux libertés distinctes : le booléen Figma dit si
+  une icône s’affiche, la prop runtime dit laquelle rendre. Une icône toujours
   visible est modifiable comme une autre, sans booléen et sans signalement.
   → [spec](./docs/FORMAT.md#7-intention-et-documentation-des-props)
-- Le contrat donne le CARRÉ d’une icône, jamais son dessin ni de quoi le
+- Le contrat donne le carré d’une icône, jamais son dessin ni de quoi le
   trouver : il ne nomme aucun jeu d’icônes, ne porte aucune correspondance vers
   l’identifiant d’un tel jeu, et ne dit rien de la taille du glyphe à
   l’intérieur de ce carré. Ces trois décisions appartiennent au repository
-  consommateur (T3.1), et `ucm icons` est leur contrepartie : elle énumère ce
+  consommateur, et `ucm icons` est leur contrepartie : elle énumère ce
   qu’il y a à couvrir, jamais ce qui est couvert.
   → [spec](./docs/FORMAT.md#ce-que-le-contrat-ne-dit-pas-dune-icône)
 
@@ -343,25 +368,25 @@ Le raisonnement vit dans la spécification, en lien.
 - Ce qui sépare une taille de maquette d’une décision du design system est la
   liaison, jamais le fait d’être figé : sans variable une largeur fixe vaut
   `stretch`, avec variable elle publie son token. Un nombre brut n’est jamais
-  contractuel, une variable liée l’est toujours — SAUF là où Figma ne permet pas
-  de lier, et ces exceptions sont énumérées : les pistes et cellules d’une
+  contractuel, une variable liée l’est toujours, sauf là où Figma ne permet pas
+  de lier. Ces exceptions sont énumérées : les pistes et cellules d’une
   grille, et la place d’un calque hors du flux. Toutes publient en pixels sous
-  une NOTICE, sans devenir des tokens et sans dégrader la couverture.
+  une notice, sans devenir des tokens et sans dégrader la couverture.
   → [spec](./docs/FORMAT.md#dimensions-et-bornes)
 - Un tracé n’est pas une boîte : sur un `VECTOR`, `BOOLEAN_OPERATION`, `STAR` ou
-  `POLYGON`, la dimension EST le dessin, et le contrat ne lui réclame aucune
-  variable — liée, elle se publie comme partout ailleurs. `RECTANGLE`, `ELLIPSE`
+  `POLYGON`, la dimension est le dessin, et le contrat ne lui réclame aucune
+  variable ; liée, elle se publie comme partout ailleurs. `RECTANGLE`, `ELLIPSE`
   et `LINE` en sont exclus : ce sont les formes que la règle « le type du node ne
   tranche pas » vise nommément.
-- Un calque hors du flux est PLACÉ : `constraints` dit à quels bords il
+- Un calque hors du flux est placé : `constraints` dit à quels bords il
   s’accroche, `inset` à quelle distance, en pixels et avec une seule
-  signification par clé — les côtés publiés sont ceux de l’accroche, les deux
-  d’un axe sous `stretch`, `center` et `scale`. Le calcul passe par le CENTRE,
+  signification par clé : les côtés publiés sont ceux de l’accroche, les deux
+  d’un axe sous `stretch`, `center` et `scale`. Le calcul passe par le centre,
   seul point où le modèle de Figma (rotation autour du coin) et celui de CSS
   (autour du centre) se rejoignent. Rien n’est publié quand la géométrie manque.
   → [spec](./docs/FORMAT.md#position-absolue)
-- La `rotation` d’un calque publié est écrite, dans l’unité ET la convention de
-  CSS — donc l’opposé du compte de Figma —, origine au centre, absente sous le
+- La `rotation` d’un calque publié est écrite, dans l’unité et la convention de
+  CSS, donc l’opposé du compte de Figma, origine au centre, absente sous le
   centième de degré. `flexLayout.rotationDegrees` en est l’unique autorité.
   Une notice dit le seul écart restant : dans un auto layout, Figma espace ses
   voisins d’après la boîte tournée, CSS d’après la boîte droite.
@@ -383,12 +408,12 @@ Le raisonnement vit dans la spécification, en lien.
   disparaître. `layout` reste publié parce que sa forme l’exige, et son repli
   `flex-row` se signale.
 - Une propriété à effet visuel que le schéma ne sait pas écrire avertit, mais
-  seulement sur un calque PUBLIÉ et jamais pour une valeur au défaut de Figma.
+  seulement sur un calque publié et jamais pour une valeur au défaut de Figma.
   La première réserve écarte le masque d’une icône, dont ce relevé ne voit jamais
   les tracés ; la seconde écarte `clipsContent` et l’alignement d’un texte en
   `Hug`. Aucune réserve ne se lit sur l’usage supposé d’un calque : sur un calque
-  publié, `isMask` avertit comme le reste. Une propriété que le contrat ÉCRIT
-  n’y figure jamais — c’est ce qui en a retiré `rotation`.
+  publié, `isMask` avertit comme le reste. Une propriété que le contrat écrit
+  n’y figure jamais, ce qui en a retiré `rotation`.
   → [spec](./docs/FORMAT.md#propriétés-non-portables)
 
 ### Grilles
@@ -401,13 +426,13 @@ Le raisonnement vit dans la spécification, en lien.
   commune revient.
 - Exception propre aux grilles : une piste `FIXED` publie sa valeur en pixels,
   sans devenir un token ni dégrader la couverture, et **sans un mot au
-  designer** — rien ne manque, aucun geste n’existe, l’exception est écrite dans
-  la spécification. Un runtime qui n’expose pas les pistes ne publie rien et
-  n’avertit de rien ; une piste ILLISIBLE, elle, avertit.
+  designer** : rien ne manque, aucun geste n’existe, et l’exception est écrite
+  dans la spécification. Un runtime qui n’expose pas les pistes ne publie rien et
+  n’avertit de rien ; une piste illisible, elle, avertit.
 - L’exception s’étend de la piste à la cellule, et là seulement : sous une piste
   `HUG`, `GridTrackSize.value` n’existe pas et la mesure ne vit que sur l’enfant,
   publiée en pixels dans `structuralSize`, elle aussi sans diagnostic. Trois
-  bornes — une variable liée
+  bornes. Une variable liée
   l’emporte et se publie dans `size`, qui reste strictement tokenisé ; une seule
   piste non `HUG` sous l’étendue de l’enfant rend l’axe indécis et rien n’est
   publié ; un alignement explicite retire l’exception, sans quoi la valeur
@@ -420,13 +445,13 @@ Le raisonnement vit dans la spécification, en lien.
   définies dans la spécification bloquent. Unique exception, motivée plus bas :
   l’échantillon de maquette ne réclame jamais rien.
   → [échantillon](#échantillon-de-maquette)
-- On n’avertit que sur ce qu’on publie. Une valeur que le contrat va jeter — les
-  dimensions du calque de référence quand `sizes` existe — n’est ni relevée ni
-  signalée.
+- On n’avertit que sur ce qu’on publie. Une valeur que le contrat va jeter,
+  comme les dimensions du calque de référence quand `sizes` existe, n’est ni
+  relevée ni signalée.
 - Un avertissement s’adresse au designer : nom Figma exact, ce qui manquera,
   geste à faire. Les trois sont exigés ; un constat qui ne nomme aucun geste
-  n’est pas un avertissement — et il ne s’écrit nulle part.
-- **Les trois parties voyagent SÉPARÉES**, du site d’émission jusqu’à
+  n’est pas un avertissement, et il ne s’écrit nulle part.
+- **Les trois parties voyagent séparées**, du site d’émission jusqu’à
   l’interface : un site écrit un `Constat` (`src/contract/localisation.ts`),
   jamais une phrase. La phrase compacte que publient `meta.diagnostics`, la
   pull request et le journal s’en dérive (`phraseDe`), sans seconde rédaction ;
@@ -438,8 +463,8 @@ Le raisonnement vit dans la spécification, en lien.
 - **Un export ne remonte que ce qui demande une décision.** Trois portes : le
   point bloque l’export, il rend le contrat partiel, ou il demande une
   vérification ou une correction dans Figma. Une transformation entièrement
-  prise en charge — piste `FIXED` en pixels, `inset` d’un calque hors du flux,
-  `rotation`, structure ou composition propre à un variant — est SILENCIEUSE
+  prise en charge (piste `FIXED` en pixels, `inset` d’un calque hors du flux,
+  `rotation`, structure ou composition propre à un variant) est silencieuse
   dans le plugin, dans la pull request et dans `meta.diagnostics` ; sa règle
   vit dans la spécification et dans les tests du format. Le canal `infos` qui
   les portait n’existe plus.
@@ -447,32 +472,32 @@ Le raisonnement vit dans la spécification, en lien.
 - `meta.diagnostics` est l’unique propriétaire des messages publiés dans le
   contrat. Qui veut la liste lisible lit `diagnostics[].message`, sans filtrer
   sur `severity`.
-- Le corps de la pull request a deux zones. L’en-tête dit l’IDENTITÉ de ce qui
-  est déposé — le chemin, et le schéma de contrat pour un contrat ; la LISTE ne
+- Le corps de la pull request a deux zones. L’en-tête dit l’identité de ce qui
+  est déposé : le chemin, et le schéma de contrat pour un contrat. La liste ne
   porte que des gestes. Ce que le plugin compte, ce que la pull request liste et
-  ce que `meta.diagnostics` publie sont la MÊME liste.
+  ce que `meta.diagnostics` publie sont la même liste.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
-- `meta.figma.url` est ABSENT des contrats produits aujourd’hui, et c’est normal.
-  Le plugin se distribue par la Community (T4.4), donc sans
+- `meta.figma.url` est absent des contrats produits aujourd’hui, et c’est normal.
+  Le plugin se distribue par la Community, donc sans
   `enablePrivatePluginApi`, donc sans `figma.fileKey`. Le champ reste optionnel
-  au schéma — un contrat plus ancien le porte encore — et son absence ne produit
-  AUCUN diagnostic : la traçabilité passe par `fileName` et `nodeId`, annoncés
+  au schéma, puisqu’un contrat plus ancien le porte encore, et son absence ne
+  produit aucun diagnostic : la traçabilité passe par `fileName` et `nodeId`, annoncés
   dans le corps de la pull request.
   → [spécification](./docs/FORMAT.md#métadonnées)
-- Le schéma annoncé dans l’en-tête est lu DANS le fichier déposé
+- Le schéma annoncé dans l’en-tête est lu dans le fichier déposé
   (`versionDeContrat()`, `format/version.ts`), jamais dans `CONTRACT_VERSION`.
   Sinon la couverture parle du plugin en ayant l’air de parler du fichier, et
   les deux autorités divergent sans un mot. `tokens.json` n’en reçoit aucun : il
   ne porte aucun schéma UCM.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
-- Un export identique n’ouvre JAMAIS une seconde pull request. L’immobilité se
+- Un export identique n’ouvre jamais une seconde pull request. L’immobilité se
   juge sur la branche de base **et** sur les pull requests d’export encore
   ouvertes (`exportsEnVol()`, `src/github.ts`), parce qu’un artefact déposé et
   pas encore fusionné n’est pas sur la branche de base. Le verdict porte
   l’endroit où le contenu identique a été trouvé, et le journal le dit : « aucun
   changement » sans l’endroit envoie chercher un fichier là où il n’est pas
-  encore. Ce n’est pas un refus — un contenu DIFFÉRENT pendant qu’une pull
-  request est ouverte est un réexport après correction, donc le geste normal.
+  encore. Un contenu différent pendant qu’une pull request est ouverte est un
+  réexport après correction, donc le geste normal, et il n’est pas refusé.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 - Un avertissement entre dans le corps de la pull request en Markdown :
   `sansLienAutomatique()` (`src/github.ts`) publie `@nom` et `#123` en `code`.
@@ -487,14 +512,14 @@ Le raisonnement vit dans la spécification, en lien.
   le champ répondait tantôt « quel calque », tantôt « quel texte », sans qu’on
   puisse distinguer les deux. Le contenu se lit dans `samples`, ou nulle part.
 - L’échantillon ne contient que des valeurs qu’un développeur pourrait écrire
-  lui-même — texte, booléen, valeur d’enum, nom de composant. Jamais un token,
+  lui-même : texte, booléen, valeur d’enum, nom de composant. Jamais un token,
   une couleur, une dimension, un layout. Une donnée de rendu qui manquerait ici
-  manque au contrat NORMATIF, et c’est là qu’il faut la corriger.
+  manque au contrat normatif, et c’est là qu’il faut la corriger.
 - Tout le non normatif vit sous `samples` et `variants[].sample`, et nulle part
   ailleurs. Les retirer laisse un contrat strictement normatif ; aucun contrôle
   ne compare ce contenu au code.
 - Corollaire : une donnée non normative ne doit jamais pouvoir dégrader une
-  structure normative — ni sa taille, ni sa déduplication, ni sa validation. D’où
+  structure normative, ni sa taille, ni sa déduplication, ni sa validation. D’où
   un catalogue à part, et non un champ dans `variantViews`, que le contenu ferait
   éclater dès que deux variants au rendu identique n’affichent pas le même texte.
 - L’échantillon n’avertit de rien et ne dégrade jamais `meta.coverage.portable` :
@@ -506,45 +531,45 @@ Le raisonnement vit dans la spécification, en lien.
   owner direct, puis unique wrapper de dimensions élu et exposé. Aucun repli
   sur une clé brute, aucune autre instance exposée, aucun `SLOT`. Une collision
   ou une provenance ambiguë s’omet au lieu de choisir une première occurrence.
-- Ce que la visibilité effective filtre est le relevé POSITIONNEL NU — `text`,
-  `override.text`, `swaps` — celui qui rapporte ce qu’un calque porte sans
+- Ce que la visibilité effective filtre est le relevé positionnel nu (`text`,
+  `override.text`, `swaps`), celui qui rapporte ce qu’un calque porte sans
   rapporter la condition qui le masque. Une valeur d’`args` n’en est jamais :
-  le booléen qui la masque voyage dans le MÊME `args`, et le filtrer publierait
+  le booléen qui la masque voyage dans le même `args`, et le filtrer publierait
   `false` pour une prop qui vaut `true`. D’où ce qui reste publié sous un calque
   masqué : une valeur `false` d’`args`, un `override.visible`, et l’entrée d’une
-  dépendance. La frontière de la remontée est la racine du composant EXPORTÉ,
+  dépendance. La frontière de la remontée est la racine du composant exporté,
   jamais l’instance de dépendance : un cadre optionnel masqué au-dessus d’une
   dépendance ne montre rien de ce qu’elle contient. `isVisibleInSample` en est
   l’unique autorité. Perte assumée, et lisible dans l’autre sens : le variant
   qui affiche ce cadre publie, lui, ce que le relevé y trouve.
-- Un `SLOT` ne borne QUE les comparaisons positionnelles, qui supposent
-  l’instance isomorphe à son maître. Une lecture NOMINALE — joindre
-  `componentPropertyReferences` à une propriété déclarée — le traverse : couper
+- Un `SLOT` ne borne que les comparaisons positionnelles, qui supposent
+  l’instance isomorphe à son maître. Une lecture nominale, qui joint
+  `componentPropertyReferences` à une propriété déclarée, le traverse : couper
   là retirerait la clé d’`args` sans que `swaps` reprenne la main, et le fait
   n’aurait plus aucun propriétaire.
 - `propertySurfaces` est l’unique autorité sur la surface publique d’une
   dépendance, parce que c’est elle qui a élu son wrapper, du même geste que
   l’export autonome de cette dépendance. Un owner absent de l’index laisse la
-  dépendance SANS `args` : une surface fabriquée en dernier recours répondrait
+  dépendance sans `args` : une surface fabriquée en dernier recours répondrait
   sans wrapper, faute de pouvoir l’élire sans aller-retour, et donnerait une
   seconde réponse à une question qui n’en admet qu’une.
-- On adresse par slot ce que CE contrat décrit, et par nom de calque Figma ce
-  qu’il ne décrit pas — le nom de calque est la seule identité que deux contrats
+- On adresse par slot ce que ce contrat décrit, et par nom de calque Figma ce
+  qu’il ne décrit pas. Le nom de calque est la seule identité que deux contrats
   partagent. D’où l’asymétrie : `text` chez soi, `overrides` chez autrui.
 - Un remplacement d’instance dans une dépendance se publie dans `swaps`, jamais
-  dans `overrides` : les deux relevés n’ont ni la même source — Figma ne
-  rapporte pas `mainComponent` — ni la même adresse. `masterPath` nomme les
-  calques du MAÎTRE, parce que Figma renomme le calque remplacé d’après son
+  dans `overrides` : les deux relevés n’ont ni la même source, Figma ne
+  rapportant pas `mainComponent`, ni la même adresse. `masterPath` nomme les
+  calques du maître, parce que Figma renomme le calque remplacé d’après son
   nouveau composant et que le nom du maître est le seul que le contrat de la
-  dépendance publie. Bornes : on compare le composant PROPRIÉTAIRE et non la
+  dépendance publie. Bornes : on compare le composant propriétaire et non la
   variante, et le relevé s’arrête sur une dépendance de la dépendance, un
   `SLOT`, ou un calque déjà déclaré remplacé.
   → [spec](./docs/FORMAT.md#9-échantillon-de-maquette)
 - `swaps` ne rapporte que ce qu’`args` ne sait pas dire. Une INSTANCE_SWAP native
-  a déjà sa prop dans le contrat de la dépendance — `mergeIconRules` y pose
-  `runtimeProp` plutôt qu’une prop de synthèse — et la republier rouvrirait le
+  a déjà sa prop dans le contrat de la dépendance, `mergeIconRules` y posant
+  `runtimeProp` plutôt qu’une prop de synthèse, et la republier rouvrirait le
   choix entre deux sources de vérité que cette décision-là a fermé.
-- Une valeur d’INSTANCE_SWAP se publie par le NOM du composant propriétaire,
+- Une valeur d’INSTANCE_SWAP se publie par le nom du composant propriétaire,
   jamais par l’identifiant de node que rend `componentProperties`.
   `propertyBindings.appliedValue` porte cette règle pour le composant exporté,
   `argumentsOf` pour ses dépendances ; ni l’un ni l’autre n’ajoute d’aller-retour.
@@ -567,31 +592,31 @@ npm run typecheck
 npm run build
 ```
 
-Un nouveau `tests/*.test.ts` est découvert automatiquement. Tout bug corrigé
+Chaque paquet a son `scripts/run-tests.cjs`, qui découvre les fichiers
+`tests/*.test.ts` et `tests/*.test.mjs` de son dossier. Tout bug corrigé
 reçoit un test de régression.
 
-Un changement dans `packages/kit/src/format/types.ts` demande `npm run schema` : le schéma
-commité en est dérivé, et `tests/schema.test.ts` refuse la version périmée en
-la régénérant pour la comparer.
+Un changement dans `packages/kit/src/format/types.ts` demande `npm run schema` :
+le schéma commité en est dérivé, et `packages/kit/tests/schema.test.ts` refuse
+une version périmée en la régénérant pour la comparer.
 
-**Le MOTEUR ne se teste sur aucun contrat commité.** Un `.contract.json`
+**Le moteur ne se teste sur aucun contrat commité.** Un `.contract.json`
 appartient au repository qui le consomme, à côté du code qu’il décrit. Un
 exemplaire commité pour juger le moteur serait un instantané : il ne bougerait
 qu’au réexport, si bien qu’une régression ne s’y verrait jamais, et un test posé
 dessus ne prouverait que sa propre immobilité. Ce que le moteur fabrique se juge
 au moment du test, dans `packages/plugin/tests/`.
 
-La règle nommait autrefois « ce repository ». Elle a été écrite quand ce dépôt ne
-portait que le plugin ; depuis T1.2 il en porte deux, et le LECTEUR pose la
-question inverse. `packages/kit/fixtures/contrats/` porte donc un corpus de la
-version **précédente** — quatre contrats 11.0 —, et c’est nécessaire : la fenêtre
-de lecture à deux versions n’est observable qu’à partir de contrats que le moteur
-ne sait plus produire. L’immobilité, qui est le défaut de l’instantané côté
-moteur, est ici la propriété recherchée.
+**Le lecteur, lui, pose la question inverse.**
+`packages/kit/fixtures/contrats/` porte un corpus de la version **précédente**,
+quatre contrats 11.0, et c’est nécessaire : la fenêtre de lecture à deux
+versions n’est observable qu’à partir de contrats que le moteur ne sait plus
+produire. L’immobilité, qui est le défaut de l’instantané côté moteur, est ici
+la propriété recherchée.
 
-Trois bornes le tiennent, et elles ne sont pas décoratives :
+Trois bornes le tiennent :
 
-- il n’est **jamais** comparé à une sortie du moteur — un tel test serait
+- il n’est **jamais** comparé à une sortie du moteur ; un tel test serait
   exactement ce que la règle ci-dessus interdit ;
 - il n’est **jamais** rafraîchi : un réexport le rendrait inutile, puisqu’il
   cesserait d’être N‑1. Ses empreintes SHA‑256, dans le README voisin, sont ce
@@ -601,41 +626,41 @@ Trois bornes le tiennent, et elles ne sont pas décoratives :
 
 Il n’est pas publié : `files` du kit ne l’inclut pas.
 
-`packages/plugin/tests/lois.ts` est l’unique autorité sur les lois de forme d’un contrat, et
-`tests/exportComponent.test.ts` les applique à CHAQUE contrat que le moteur
-fabrique : renvois qui se résolvent, catalogues sans doublon ni entrée
-orpheline, adresses — slotPath de typographie, chemins de peintures,
-`icons.*.slot` — qui désignent un calque de l’arbre qui les porte, absence de
+`packages/plugin/tests/lois.ts` est l’unique autorité sur les lois de forme d’un
+contrat, et `packages/plugin/tests/exportComponent.test.ts` les applique à chaque
+contrat que le moteur fabrique : renvois qui se résolvent, catalogues sans doublon ni entrée
+orpheline, adresses (slotPath de typographie, chemins de peintures,
+`icons.*.slot`) qui désignent un calque de l’arbre qui les porte, absence de
 valeur neutre écrite, résolution de chaque clé de couleur vers un rôle de la
 bonne nature, `inset` réservé aux calques hors du flux, accord avec le schéma
 publié, aller-retour de l’écriture.
 
-La vérification est posée sur le CHEMIN D’APPEL, une fois, et non à chaque
+La vérification est posée sur le chemin d’appel, une fois, et non à chaque
 scénario : un cas ajouté demain y est soumis sans que personne y pense, et une
 loi ajoutée à `lois.ts` s’applique du même geste à tous les cas existants.
 C’est aussi là que vit la seule question que le schéma ne peut pas trancher
-seul — accepte-t-il ce que le moteur ÉCRIT, et non ce que `types.ts` déclare ?
+seul : accepte-t-il ce que le moteur écrit, et non ce que `types.ts` déclare ?
 Un champ requis qu’une élision retire passe le compilateur et casse le
 consommateur.
 
 ### La frontière de recette
 
-Tout ce qui précède se prouve ICI, hors de Figma et hors de GitHub. `npm test`
+Tout ce qui précède se prouve ici, hors de Figma et hors de GitHub. `npm test`
 couvre le moteur sur ses propres sorties, les lecteurs sur des contrats
 fabriqués, le CLI et l’adaptateur sur des fixtures, et `packages/cli/tests/`
-`recette.test.mjs` sur des repositories temporaires — dont le cas nominal n’a
+`recette.test.mjs` sur des repositories temporaires, dont le cas nominal n’a
 même pas de `package.json`. Aucun de ces tests n’ouvre un clone voisin.
 
 Ce qui ne se prouve pas ici : **Figma, GitHub et une vraie pull request**. Ces
 trois-là se rejouent dans
 [UCM-Playground](https://github.com/Vassili-g/UCM-Playground), qui n’est plus
-qu’une application React et un corpus réel — contrats exportés, `tokens.json`,
+qu’une application React et un corpus réel : contrats exportés, `tokens.json`,
 et les sondes reconstruites depuis ces seuls contrats. Il ne porte aucun
 outillage UCM local : son empreinte du produit se limite aux cinq fichiers
 qu’`ucm init` écrit, ce qui est précisément ce qui rend la recette probante.
-Un contrôle qui manque là-bas se referme ICI, jamais par un script rendu au
+Un contrôle qui manque là-bas se referme ici, jamais par un script rendu au
 consommateur. La procédure, ses critères de fin et son journal vivent dans
-[PLAN-NEUTRALISATION-PLAYGROUND.md](./PLAN-NEUTRALISATION-PLAYGROUND.md).
+[PLAN-NEUTRALISATION-PLAYGROUND.md](./docs/plans/PLAN-NEUTRALISATION-PLAYGROUND.md).
 
 ## Limites d’environnement
 

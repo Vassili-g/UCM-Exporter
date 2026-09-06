@@ -1,42 +1,4 @@
-/**
- * Les documents qu'un consommateur QUELCONQUE lit promettent-ils une stack ?
- *
- * **C'est le filet de T2.6 appliqué aux documents, et il manquait.**
- * `packages/kit/tests/registrePortable.test.mjs` interdit « React », « `.tsx` »
- * et « Playground » dans ce que les lecteurs du kit AFFICHENT. La même promesse
- * faite dans un document est aussi fausse et vit plus longtemps : un dépôt Swift
- * qui ouvre `docs/FORMAT.md` pour savoir ce qu'il reçoit y lisait « le composant
- * React et son interface Props ».
- *
- * **Ce que ce test couvre, et pourquoi si peu de fichiers.** Seulement les
- * documents que quelqu'un lit SANS être dans ce projet : le concept, la forme
- * publiée, l'historique des versions. `README.md` et `ROADMAP.md` nomment le
- * Playground parce qu'ils parlent d'un dépôt réel qui existe ; les documents du
- * Playground décrivent l'adaptateur React, qui EST du React ; le plan et les
- * documents de travail racontent l'histoire du projet. Leur interdire le mot
- * juste les ferait mentir dans l'autre sens — c'est la borne que
- * `registrePortable.test.mjs` s'était déjà donnée.
- *
- * ## L'inscription, et pourquoi elle est une LISTE et non une exception
- *
- * Une promesse de stack qu'on ne peut pas retirer tout de suite s'INSCRIT, avec
- * ce qui la lèvera. La liste a porté une entrée le 5 septembre 2026 : la ligne
- * de `docs/FORMAT.md` qui promettait « le composant React et son interface
- * Props ». Elle était gelée par `scissionSpec.test.mjs`, qui exigeait alors que
- * chaque ligne du document figé avant la scission survive — la reformuler la
- * faisait disparaître des deux documents produits, et le contrôle rougissait.
- * Mesuré en le tentant, pas déduit. Le temps 2 de T8.1 a retiré cette fixture le
- * jour même, et la ligne a été reformulée dans la foulée.
- *
- * La liste est vide, et deux refus la gardent utile :
- *
- * - une promesse de stack NON inscrite est refusée — l'inscription ne s'étend
- *   pas toute seule au prochain paragraphe qu'on écrira ;
- * - une inscription qui ne correspond plus à rien est refusée AUSSI. Une liste
- *   qui garde une ligne corrigée depuis longtemps est l'information périmée que
- *   ce dépôt poursuit partout.
- *
- */
+/** Refuse toute dépendance à une stack dans les documents portables. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -74,18 +36,12 @@ function nommeLeMotifParDefaut(ligne: string): boolean {
  * c'est voulu, puisque changer ses mots est précisément ce qu'on attend d'elle.
  */
 /**
- * **Elle est vide, et c'est le verdict de T8.7.** Elle a porté une entrée : la
- * ligne de `docs/FORMAT.md` qui promettait « le composant React et son interface
- * Props » à qui lit la forme publiée. Elle ne pouvait pas être corrigée tant que
- * `scissionSpec.test.mjs` exigeait que chaque ligne du document figé survive ;
- * le temps 2 de T8.1 a retiré cette fixture le 5 septembre 2026, et la ligne a
- * été reformulée le même jour — le contrat nomme un symbole, pas une stack.
- *
- * Le second test ci-dessous refuse une entrée qui ne couvrirait plus rien : la
- * liste ne peut donc pas garder un souvenir. Elle reste ici plutôt que de
- * disparaître avec son contenu, parce que c'est elle qui dit ce qu'on fait d'une
- * promesse qu'on ne peut pas retirer tout de suite : on l'inscrit, avec ce qui
- * la lèvera.
+ * **Elle est vide, et c'est le verdict de T8.7.** Elle a porté une entrée : la ligne
+ * de `docs/FORMAT.md` qui promettait « le composant React et son interface Props » à
+ * qui lit la forme publiée. Elle ne pouvait pas être corrigée tant que
+ * `scissionSpec.test.mjs` exigeait que chaque ligne du document figé survive ; le
+ * temps 2 de T8.1 a retiré cette fixture le 5 septembre 2026, et la ligne a été
+ * reformulée le même jour — le contrat nomme un symbole, pas une stack.
  */
 const INSCRITES: { fichier: string; ligne: string; jusqua: string }[] = [];
 

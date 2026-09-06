@@ -1,0 +1,126 @@
+# Politique de compatibilité
+
+Cinq choses se publient et peuvent casser un consommateur : le **contrat**, le
+**JSON Schema**, `tokens.json`, les **paquets npm** et les **adaptateurs**. Elles
+ne se versionnent pas de la même façon. Cette politique sépare leurs numéros et
+les responsabilités de migration.
+
+Ce que la forme publiée vaut aujourd'hui est dans [FORMAT.md](./FORMAT.md) ; ce
+que chaque version a publié est dans [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md).
+Ce document classe les changements, nomme qui les publie et qui les migre, puis
+dit ce qui peut fusionner.
+
+## Les cinq numéros, et ce que chacun couvre
+
+| Ce qui est publié | Numéro | Écrit où | Ce qu'il ne dit pas |
+|---|---|---|---|
+| le contrat | `meta.contractVersion`, `majeure.mineure` | `CONTRACT_VERSION`, `packages/kit/src/format/version.ts` | rien du paquet qui l'a produit |
+| le JSON Schema | aucun : il est dérivé du contrat | `packages/kit/schema/`, régénéré depuis `types.ts` | il décrit la forme, jamais la cohérence |
+| `tokens.json` | aucun, délibérément | — | quelle grammaire de projection il porte |
+| les paquets npm | semver, un par paquet | chaque `package.json` | quelle version de contrat ils lisent |
+| un adaptateur | semver, comme tout paquet | son `package.json` | rien du format : ce qu'il mesure est une capacité, pas une garantie |
+
+**Le numéro du contrat et celui d'un paquet ne se suivent pas.** Un paquet peut
+monter sans que le format bouge, et le format peut bouger en n'obligeant qu'un
+seul paquet. Le seul lien mécanique est la fenêtre de lecture ci-dessous.
+
+## La fenêtre de lecture
+
+`VERSION_CONTRAT_MINIMALE` et `VERSION_CONTRAT_MAXIMALE`
+(`packages/kit/src/lecteurs/version-contrat.mjs`) portent la plage que les
+lecteurs acceptent : la version courante et la précédente. Tout ce qui en sort
+est refusé **dans les deux sens**, parce que le geste correctif n'appartient pas
+à la même personne.
+
+| Cas | Verdict | Qui corrige | Comment |
+|---|---|---|---|
+| version dans la plage | `ok` | personne | — |
+| version plus ancienne que la borne basse | `ancien` | le designer | réexporter depuis Figma |
+| version plus récente que la borne haute | `recent` | le mainteneur du repository | mettre à jour les paquets UCM |
+| version illisible ou absente | `ancien` | le designer | réexporter, seul geste qui puisse la produire |
+
+Une mineure ne se présume jamais compatible : la 4.2 a renommé des slots
+d'icônes et cassé un lecteur, et c'est de là que vient la plage explicite.
+
+Une plage élargie chez un consommateur est un choix temporaire d'une migration,
+jamais un état par défaut.
+
+## Les neuf classes de changement
+
+Chaque entrée de [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md) appartient à une
+de ces classes, et la nomme.
+
+| Classe | Effet sur `contractVersion` | Un contrat déjà fusionné | Qui migre |
+|---|---|---|---|
+| **1. Ajout d'un champ optionnel** | mineure | reste valide, sans le champ | personne ; le champ arrive au réexport |
+| **2. Ajout qui change la résolution d'une vue** | majeure | reste valide, mais un lecteur qui ignore le nouveau renvoi rend autre chose | le développeur, avant de monter la borne |
+| **3. Suppression ou renommage d'un champ** | majeure | devient illisible dès que la borne basse passe au-dessus | le designer réexporte, le développeur adapte |
+| **4. Changement de signification d'une absence** | majeure après diffusion ; même version admise pendant le prototype si tout le corpus est réexporté avant publication | reste valide **de forme**, mais son ancienne lecture devient fausse | le designer, puis le développeur |
+| **5. Changement d'un nom de token ou d'un alias** | aucun : ce n'est pas le contrat | les références du contrat ne résolvent plus | le designer, dans Figma |
+| **6. Changement d'un adaptateur sans changement de format** | aucun | inchangé | personne ; c'est du semver de paquet |
+| **7. Contrat d'une version future** | — | refusé, verdict `recent` | le mainteneur du repository |
+| **8. Contrat d'une version trop ancienne** | — | refusé, verdict `ancien` | le designer, par un réexport |
+| **9. Fichier sans version lisible** | — | traité comme ancien | le designer, par un réexport |
+
+**La classe 4 est la seule qu'aucun contrôle ne peut attraper**, et c'est ce qui
+la rend coûteuse : la forme ne bouge pas, donc le schéma accepte, les lecteurs
+acceptent, et le sens a changé. Elle se traite à la main, entrée par entrée du
+changelog.
+
+### Application de la classe 4 à `@default`
+
+Le défaut d'un axe de variantes ne vient plus de la position d'un variant dans
+son component set, mais d'une règle `@default` que le designer écrit. Le champ
+`props.<axe>.default` ne change ni de nom, ni de type, ni de place ; ce qui
+change est que son **absence** signifie désormais « aucun défaut publié » au lieu
+de « le premier variant ».
+
+La migration suit ces règles :
+
+- **rien ne casse mécaniquement.** Un contrat déjà fusionné garde son `default`,
+  et le composant garde le sien, qui est du code ;
+- **ce qui change est ce que le contrat confirme.** Au prochain réexport, un axe
+  sans `@default` cesse de publier un défaut, et le développeur reprend la main ;
+- **la règle de validité suit le sens, pas la forme.** Un défaut publié doit
+  rester dans ses `values` et sa combinaison doit exister ; ces deux règles ne
+  portent que sur les axes qui déclarent un défaut, sans quoi l'absence
+  deviendrait une faute ;
+- **la migration se joue au réexport**, donc dans le geste du designer, jamais
+  dans un script rendu au consommateur.
+
+Cette évolution intervient pendant le prototype, avant la publication des
+paquets qui la documentent. Elle garde donc la 12.0 à condition que la recette
+externe réexporte tout le corpus concerné avant publication. Une évolution de
+même nature après cette diffusion monterait la version majeure du contrat : un
+lecteur doit pouvoir distinguer les deux sens.
+
+## `tokens.json` n'a pas de version, et c'est une décision
+
+Aucun lecteur n'en cherche une : ni Style Dictionary en mode DTCG, ni
+`indexerTokensDtcg`, qui répond seulement « ce chemin existe-t-il ». Un numéro
+écrit aujourd'hui serait un champ décoratif, et un champ décoratif se lit comme
+une garantie.
+
+Le signal qui rouvre la question est la première évolution de la projection des
+tokens. La forme est tranchée d'avance pour que le geste soit alors mécanique :
+`$extensions`, namespace `com.ucm.*`, comme `com.ucm.modes` que le fichier
+emploie déjà. Un fichier sans ce champ voudra dire « grammaire d'origine ».
+
+## Qui publie, qui migre, qui peut fusionner
+
+- **publie** : le mainteneur du format monte `CONTRACT_VERSION`, écrit l'entrée
+  de changelog avec sa classe, régénère le schéma et déplace la fenêtre de
+  lecture ; les paquets montent leur semver dans le même commit ;
+- **migre** : le designer, quand le geste est un réexport (classes 3, 5, 8, 9) ;
+  le développeur, quand le geste est une adaptation de code (classes 2, 3, 7) ;
+  les deux, dans cet ordre, pour la classe 4 ;
+- **peut fusionner** : un contrat hors de la fenêtre de lecture bloque, et rien
+  d'autre ici ne bloque. Un écart entre le contrat et le code avertit sans
+  refuser la fusion, parce qu'il accuse le code et non l'artefact déposé.
+
+## Ce que cette politique ne fait pas
+
+Elle ne prescrit ni migration automatique, ni compatibilité déclarée par
+consommateur. Les deux ont été écartées pour la même raison : elles supposent de
+connaître, chez le producteur, ce qu'un repository tiers fait de son contrat.
+Un réexport et une fenêtre explicite disent la même chose sans le supposer.

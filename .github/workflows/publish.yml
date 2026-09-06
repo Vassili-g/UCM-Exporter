@@ -1,3 +1,5 @@
+
+
 # Publication des paquets `@ucm-kit/*` sur npm, SANS jeton.
 #
 # Pourquoi ce workflow existe. npm restreint désormais les jetons capables de
@@ -41,6 +43,7 @@ on:
           - "@ucm-kit/core"
           - "@ucm-kit/cli"
           - "@ucm-kit/adapter-typescript"
+
       # N7 : trois chemins du produit ne sont parcourus de bout en bout par
       # aucun test — Figma, GitHub, et une pull request qui reçoit son
       # commentaire. Quand la publication les touche, la seule preuve possible
@@ -51,7 +54,7 @@ on:
       # réponse est « aucun déclencheur » alors qu'un déclencheur a bougé, et
       # elle nomme les fichiers en cause.
       recette:
-        description: "Recette externe N6 (voir PLAN-NEUTRALISATION-PLAYGROUND.md)"
+        description: "Recette externe N6 (voir docs/plans/PLAN-NEUTRALISATION-PLAYGROUND.md)"
         required: true
         type: choice
         default: "aucun déclencheur n'a bougé"
@@ -63,12 +66,14 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
+
       # `id-token: write` est ce qui autorise GitHub à fabriquer le jeton OIDC
       # que npm vérifie. Sans lui, la publication échoue en réclamant un jeton
       # classique — l'impasse que ce workflow existe pour sortir.
       id-token: write
       contents: read
     steps:
+
       # L'historique COMPLET, et ce n'est pas du confort. `actions/checkout`
       # ne prend qu'un commit par défaut ; `versionSuitLeContenu.test.mjs`
       # remonte jusqu'au commit qui a posé le numéro de version de chaque
@@ -144,6 +149,7 @@ jobs:
           PAQUET: ${{ inputs.paquet }}
           RECETTE: ${{ inputs.recette }}
         run: |
+
           # `core` est publié depuis `packages/kit` : le nom du paquet et celui
           # du dossier ne coïncident que pour les deux autres.
           dossier="${PAQUET#@ucm-kit/}"

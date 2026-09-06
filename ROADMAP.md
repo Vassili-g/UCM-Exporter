@@ -1,144 +1,131 @@
-# Roadmap — UCM
+# Roadmap
 
-Ce document suit la maturité du projet et les validations restantes. Les
-principes sont dans [CONCEPT.md](./CONCEPT.md), la forme publiée dans
-[docs/FORMAT.md](./docs/FORMAT.md), le comportement actuel dans
-[packages/plugin/SPEC.md](./packages/plugin/SPEC.md), et les options non engagées dans
-[PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
+L'état du projet et ce qu'il reste à valider. Les principes vivent dans
+[CONCEPT.md](./CONCEPT.md), la forme publiée dans
+[docs/FORMAT.md](./docs/FORMAT.md), le comportement du plugin dans
+[packages/plugin/SPEC.md](./packages/plugin/SPEC.md), et les options non
+engagées dans [docs/notes/PISTES-EVOLUTION.md](./docs/notes/PISTES-EVOLUTION.md).
 
-## Objectif du MVP
+Le projet est un **prototype avancé**. Les preuves durables portent sur les lois
+du moteur, vérifiées à chaque test. Les composants du corpus constatent un
+comportement à une date donnée et restent remplaçables.
 
-Le MVP doit éprouver un flux complet :
+## L'objectif du MVP
+
+Éprouver un flux complet :
 
 ```text
 Figma → contrat et tokens → code → contrôles CI → utilisation par un agent
 ```
 
-Il doit établir deux résultats :
+Deux résultats à établir :
 
-- **robustesse** : les divergences couvertes sont détectées avant fusion et
+- **robustesse** : les divergences couvertes sont détectées avant la fusion et
   reçoivent un diagnostic actionnable ;
-- **confiance** : le contrat suffit pour utiliser correctement l’API visuelle
-  de plusieurs familles de composants.
+- **confiance** : le contrat suffit pour utiliser correctement l'API visuelle de
+  plusieurs familles de composants.
 
-Le but n’est pas de couvrir tout un catalogue, mais de tenir sans règle liée au
-nom d’un composant, dont au moins un composant composé.
+Le but n'est pas de couvrir un catalogue entier, mais de tenir sans aucune règle
+liée au nom d'un composant, sur au moins un composant composé.
 
-## État actuel
-
-Ce tableau décrit la branche courante des deux repositories. Une capacité qui
-dépend de Figma n’est validée qu’après un export réel ; les JSON de référence ne
-sont jamais corrigés à la main.
+## Ce qui fonctionne
 
 | Domaine | État |
 |---|---|
-| Forme du contrat | L’Exporter publie les vues exactes sous cinq catalogues de parties et un `samples` récursif non normatif. Il élide les valeurs neutres, ne publie ni `tokensUsed` ni `meta.warnings`, et sérialise une entrée par ligne sur deux niveaux. Les `args` d’une dépendance viennent de sa surface publique directe et de son seul wrapper élu ; le contenu positionnel suit la visibilité effective et s’arrête aux `SLOT`. `packages/plugin/tests/lois.ts` porte ces lois et `exportComponent.test.ts` les applique à chaque contrat que le moteur fabrique : renvois résolus, catalogues sans doublon ni orphelin, adresses qui désignent un calque réel, aucune valeur neutre écrite, chaque clé de couleur résolue vers un rôle de la bonne nature, accord avec le schéma publié, aller-retour de l’écriture. Aucune ne connaît le nom d’un composant |
-| Consommation | `@ucm-kit/core` lit la version courante et la précédente, publie le schéma et porte les contrôles indépendants du langage. `@ucm-kit/cli` exécute ces contrôles et découvre dans le repository l’adaptateur TypeScript optionnel. `@ucm-kit/adapter-typescript` compare les props et la composition TS/TSX puis génère les types dérivés ; sa dépendance de 23 Mo à TypeScript n’est donc payée par aucun consommateur non-TypeScript. Le Playground n’héberge plus aucune de ces implémentations, ni le moindre contrôle local : il installe les paquets publiés le temps de sa CI, et son verrou de parité sur le vrai `StressTest` a rejoint les fixtures de l’adaptateur |
-| Validation Figma | Les quatre composants du Playground ont été réexportés à la forme courante, puis reconstruits à froid chacun depuis son seul contrat. Ces exports vivent là-bas et nulle part ailleurs, sur `main`, aux côtés des sondes qu’ils ont servi à reconstruire. La comparaison du rendu obtenu avec Figma n’est consignée nulle part : c’est l’objet de la recette N6 du [plan de neutralisation](./PLAN-NEUTRALISATION-PLAYGROUND.md). Ces quatre composants sont des sondes jetables, pas un critère de généralité du moteur |
-| Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
-| Structure portable | Flex, wrap, grille, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat. Un calque hors du flux est PLACÉ — `constraints` et `inset` — et sa `rotation` est écrite en vocabulaire CSS : les deux étaient des avertissements sans geste possible, Figma ne permettant de lier ni une position ni une rotation |
-| Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
-| Contrôles chez le consommateur | Forme et version des contrats, graphe de composition, adresses des échantillons, références de tokens, et la parité statique quand l’adaptateur TypeScript est installé. Tout vient du workflow qu’`ucm init` écrit et du paquet publié qu’il appelle : le repository n’a plus ni script, ni test générique, ni dépendance `@ucm-kit`. Aucun contrôle n’exécute le rendu |
-| Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
-| Test froid | Le protocole générique est documenté par le skill `consommer-contrat` et ses lois d’adressage sont testées. Les quatre composants du Playground ont été régénérés à froid depuis leur seul contrat. La preuve visuelle, elle, dépend d’une comparaison avec Figma qu’aucun repository ne consigne ; un composant existant ne vaut que pour le contrat qu’il accompagne |
-| Corpus de démonstration | Quatre composants, chez le consommateur, sondes jetables à ne pas réécrire pour obtenir du vert. Aucun ne publie de `SLOT` ni de propriété `INSTANCE_SWAP` native : ces deux chemins du moteur ne sont éprouvés que par des tests synthétiques. La maturité se mesure aussi sur les invariants du moteur et sur de nouvelles familles Figma choisies sans règle liée à leur nom |
-| Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
-| Interopérabilité | Le JSON Schema du contrat est publié dans `schema/` et dérivé de `types.ts` ; `ucm init` écrit l’association qui le donne à l’éditeur, dans le paquet installé. Il décrit la forme, jamais la cohérence, et ne bloque aucune fusion. `tokens.json` n’a toujours pas de version propre |
-| Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
+| Forme du contrat | Vues exactes publiées sous cinq catalogues de parties, plus un `samples` récursif non normatif. Valeurs neutres élidées, une entrée par ligne sur deux niveaux |
+| Lois du moteur | `packages/plugin/tests/lois.ts` les porte, `exportComponent.test.ts` les applique à chaque contrat fabriqué. Aucune ne connaît le nom d'un composant |
+| Export DTCG | Variables locales, alias et modes exportés. Collisions et cycles diagnostiqués |
+| Structure portable | Flex, wrap, grille, arbres récursifs, tailles, bornes, typographie, icônes et composition, tous couverts par le vocabulaire du contrat |
+| Position et rotation | Un calque hors du flux est placé par `constraints` et `inset`, sa `rotation` écrite en vocabulaire CSS |
+| Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlées |
+| Consommation | `@ucm-kit/core` lit deux versions et porte les contrôles indépendants du langage. `@ucm-kit/cli` les exécute et découvre l'adaptateur optionnel. `@ucm-kit/adapter-typescript` compare props et composition, puis génère les types dérivés |
+| Contrôles chez le consommateur | Forme, version, graphe de composition, adresses des échantillons, références de tokens, et parité statique quand l'adaptateur est installé. Tout vient du workflow qu'`ucm init` écrit |
+| Rapport CI | Constats et avertissements agrégés dans le terminal, le résumé CI et le commentaire de pull request |
+| Interopérabilité | JSON Schema publié dans `schema/`, dérivé de `types.ts`. Il décrit la forme, jamais la cohérence, et ne bloque aucune fusion |
+| Validation Figma | Les quatre composants du Playground ont été réexportés à la forme courante, puis reconstruits à froid depuis leur seul contrat |
 
-Le projet est un **prototype avancé**. L’Exporter écrit une forme, et le
-Playground la relit avec les seuls paquets publiés. Les preuves durables
-portent sur les lois du moteur ; les composants du Playground constatent un
-comportement à une date donnée et restent remplaçables.
+Aucun contrôle n'exécute le rendu.
+
+## Ce qui n'est pas prouvé
+
+| Limite | Ce qu'elle empêche de dire |
+|---|---|
+| La comparaison du rendu avec Figma n'est consignée nulle part | Le projet n'a aucune preuve visuelle écrite. C'est l'objet de la recette externe du [plan de neutralisation](./docs/plans/PLAN-NEUTRALISATION-PLAYGROUND.md) |
+| Aucun contrat existant ne publie de `SLOT` ni de propriété `INSTANCE_SWAP` native | Ces deux chemins du moteur ne sont éprouvés que par des tests synthétiques |
+| Le corpus compte quatre composants | La généralité du moteur se mesure sur ses invariants, pas sur ce corpus |
+| Les protections de branche sont indisponibles sur le plan GitHub actuel | La CI détecte, elle n'empêche pas. Une pull request rouge reste fusionnable |
+| `tokens.json` n'a pas de version propre | Un consommateur ne peut pas refuser un fichier de tokens d'une forme qu'il ne lit pas |
+| La projection CSS des modes n'est pas implémentée | Le multi-marque au runtime n'existe pas |
 
 ## Fragilités connues
 
-### Une instance détachée n’est plus identifiable
+### Une instance détachée n'est plus identifiable
 
-Une instance détachée redevient un `FRAME`. L’Exporter ne peut plus savoir
-qu’elle provenait d’un composant unifié : ses calques entrent dans le contrat du
-parent au lieu d’apparaître dans `composes`, sans diagnostic spécifique.
+Une instance détachée redevient un `FRAME`. Le moteur ne peut plus savoir
+qu'elle provenait d'un composant unifié : ses calques entrent dans le contrat du
+parent au lieu d'apparaître dans `composes`, sans diagnostic spécifique.
 
 ### Le scan des dépendances charge toutes les pages
 
-L’Exporter appelle `figma.loadAllPagesAsync()` puis indexe les conteneurs de
-règles une seule fois. Cette lecture reconnaît correctement une dépendance
-placée sur une autre page, mais son coût reste à mesurer sur un très gros fichier
-Figma.
+Le moteur appelle `figma.loadAllPagesAsync()` puis indexe les conteneurs de
+règles une seule fois. Cette lecture reconnaît une dépendance placée sur une
+autre page, mais son coût reste à mesurer sur un très gros fichier Figma.
 
 ### Le relevé de composition résout trois fois le même maître
 
 `scanComposedMatrix` parcourt le sous-arbre de chaque dépendance distincte trois
-fois, avec un `getMainComponentAsync` par instance à chaque passe :
-`indexMasterInstances` pour les positions du maître, puis
-`indexDependencyPropertySurfaces` qui enchaîne `scanComposedInstances` et
-`findWrapperReference`. Le coût est linéaire dans les occurrences et se paie une
-fois par owner, jamais par variant — trente variants qui embarquent le même
-composant n'en font pas trente. Il reste que le runtime du plugin est
-mono-thread, et que ces allers-retours s'additionnent.
+fois, avec un `getMainComponentAsync` par instance à chaque passe. Le coût est
+linéaire dans les occurrences et se paie une fois par composant propriétaire,
+jamais par variant. Le runtime du plugin étant mono-thread, ces allers-retours
+s'additionnent.
 
-La correction connue est une mémoïsation de `getMainComponentAsync` par id de
-node, partagée entre les trois passes. Elle traverse quatre signatures et n'a
-aucun effet sur le contrat produit : elle attend d'être justifiée par une mesure
-plutôt que par une intuition. C'est cette mesure, et non la mémoïsation, qui
-manque.
-
-### La CI détecte sans empêcher la fusion
-
-Les repositories privés n’ont pas accès aux protections de branche avec le plan
-GitHub actuel. Sans protection de `main` ni `CODEOWNERS`, les contrôles restent
-consultatifs. La documentation doit donc parler de détection, jamais de
-prévention.
+La correction connue est une mémoïsation de `getMainComponentAsync` par
+identifiant de node, partagée entre les trois passes. Elle traverse quatre
+signatures et n'a aucun effet sur le contrat produit. C'est la mesure qui
+manque, pas la correction.
 
 ### La preuve du rendu reste ciblée
 
-Les références de tokens littérales sont comparables au contrat ; un chemin
-assemblé à l’exécution est refusé. En revanche, une donnée visuelle recopiée
-dans une règle de code peut échapper à l’analyse statique. Aucun contrôle
-n’exerce le rendu : le Playground ne porte plus aucun test par composant, et
-aucun vérificateur générique n’exerce les vues exactes d’un composant
-arbitraire. Les contrôles disponibles et cette limite sont détaillés dans
-[PLAN-CONFORMITE-DEV.md](./PLAN-CONFORMITE-DEV.md).
+Une référence de token littérale est comparable au contrat, et un chemin
+assemblé à l'exécution est refusé. Une donnée visuelle recopiée dans une règle
+de code peut en revanche échapper à l'analyse statique.
 
-C’est là, et nulle part ailleurs, que vit la preuve de bout en bout. Les
-jointures d’adresses constatent que deux contrats se joignent ; elles ne
-constatent à aucun moment qu’une reconstruction a effectivement consommé
-l’échantillon. Le vérificateur générique le ferait. Ce qui en approche le plus
-aujourd’hui reste statique : `@ucm-kit/adapter-typescript` lit l’API publique
-avec le vérificateur de types et compte, dans le JSX, les occurrences de chaque
-dépendance déclarée. Ce qu’il ne faut PAS faire en attendant : écrire chez le
-consommateur une fonction de reconstruction. Ce serait une seconde
-implémentation du protocole que porte le skill `consommer-contrat`, deux implémentations divergent, et c’est celle qui
-n’est pas jetable qui deviendrait la vérité — exactement ce que le corpus de
-démonstration est censé ne jamais devenir.
+Aucun contrôle n'exerce le rendu. Le Playground ne porte aucun test par
+composant, et aucun vérificateur générique n'exerce les vues exactes d'un
+composant arbitraire. Les contrôles disponibles et cette limite sont détaillés
+dans [PLAN-CONFORMITE-DEV.md](./docs/plans/PLAN-CONFORMITE-DEV.md).
+
+Ce qui en approche le plus reste statique : `@ucm-kit/adapter-typescript` lit
+l'API publique avec le vérificateur de types et compte, dans le JSX, les
+occurrences de chaque dépendance déclarée.
+
+**Ce qu'il ne faut pas faire en attendant :** écrire chez le consommateur une
+fonction de reconstruction. Ce serait une seconde implémentation du protocole
+que porte la skill `consommer-contrat`, et c'est celle qui n'est pas jetable qui
+deviendrait la vérité.
 
 ## Prochaines validations
 
 ### 1. Fermer la validation de projection
 
-Le composé le plus large du Playground a été réexporté et reconstruit à froid. Il
-couvre les occurrences multiples, les homonymes — sept d’une même dépendance,
-trois d’une autre —, trois niveaux d’imbrication et un `swaps` avec
-`masterPath`.
+Le composé le plus large du Playground a été réexporté et reconstruit à froid.
+Il couvre les occurrences multiples, les homonymes, trois niveaux d'imbrication
+et un `swaps` avec `masterPath`.
 
-Deux trous restent, et aucun contrat existant ne les touche : aucun ne publie
-de `SLOT`, aucun ne publie de propriété `INSTANCE_SWAP` native. Ces deux
-chemins du moteur n’ont donc jamais vu de donnée Figma réelle, seulement des
-tests synthétiques.
+Deux trous restent, et aucun contrat existant ne les touche.
 
 1. Réexporter depuis Figma un composé qui exerce réellement un `SLOT`, une
    `INSTANCE_SWAP` native et un wrapper de dimensions exposé. Ne corriger aucun
    JSON à la main.
-2. Reconstruire ce composant en contexte froid avec le protocole récursif,
-   sans modifier un composant existant et sans ajouter de branche liée à son
-   nom. Comparer ensuite le rendu à Figma, et consigner cette comparaison :
-   c’est la seule preuve visuelle du projet, et elle n’est écrite nulle part.
+2. Reconstruire ce composant en contexte froid avec le protocole récursif, sans
+   modifier un composant existant et sans ajouter de branche liée à son nom.
+   Comparer ensuite le rendu à Figma, et consigner cette comparaison. C'est la
+   seule preuve visuelle du projet, et elle n'est écrite nulle part.
 
-Le coût du relevé de composition sur une grosse matrice n’entre pas dans cette
-clôture : c’est une dette de performance, elle a maintenant une cause nommée, et
-elle est rangée avec les fragilités connues.
+Le coût du relevé de composition sur une grosse matrice n'entre pas dans cette
+clôture : c'est une dette de performance, rangée avec les fragilités connues.
 
-### 2. Éprouver d’autres familles de composants
+### 2. Éprouver d'autres familles de composants
 
 Choisir les cas pour leur différence, pas pour leur nombre :
 
@@ -149,42 +136,50 @@ Choisir les cas pour leur différence, pas pour leur nombre :
 - un composant qui expose un champ à côtés asymétriques.
 
 Une limite ne justifie un nouveau champ que si le contrat ne permet aucune
-décision correcte sur un cas réel. Les options correspondantes restent dans
-[PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md).
+décision correcte sur un cas réel.
 
-### 3. Éprouver le workflow d’équipe
+### 3. Éprouver le workflow d'équipe
 
 - rendre les contrôles bloquants après décision sur le plan GitHub ou la
   visibilité des repositories ;
-- faire relire de vraies pull requests d’export par un designer et un
+- faire relire de vraies pull requests d'export par un designer et un
   développeur ;
 - vérifier que chaque diagnostic est compréhensible sans ouvrir les logs ;
 - mesurer les faux positifs et le coût quotidien des contrôles.
 
 ### 4. Renforcer la parité utile
 
-Les prochains contrôles candidats sont les valeurs d’enum réellement gérées,
-les valeurs par défaut et les exceptions volontaires documentées. Leur coût et
-leurs faux positifs doivent être mesurés sur plusieurs composants avant de les
-rendre bloquants.
+L'adaptateur TypeScript avertit lorsqu'une union omet une valeur publiée ou
+lorsqu'un enum déclaré n'a aucun effet dans le composant. Il ne prétend pas
+analyser les branches, les tables, les valeurs transmises ni les règles métier.
+Ces écarts restent non bloquants.
 
-### 5. Stabiliser l’interopérabilité
+Le défaut d'un axe vient uniquement d'une règle Figma `@default`. Son absence
+laisse le choix au développeur. La parité statique ne compare pas ce défaut à
+celui du code, car elle ne saurait le faire pour toutes les écritures sans
+présenter son silence comme une garantie.
 
-Le JSON Schema est publié, avant la clôture du point 1 et non après. Ce
-décalage est assumé : le schéma est dérivé de `types.ts`, il ne bloque aucune
-fusion et il ne prétend rien prouver, donc il ne dépend d’aucune validation en
-cours. Un contrôle bloquant, lui, aurait dû attendre.
+### 5. Stabiliser l'interopérabilité
 
-Restent ouverts :
+Le schéma dérive de `types.ts` et documente les champs dont l'absence ou la
+valeur oriente une décision. La
+[politique de compatibilité](./docs/COMPATIBILITE.md) relie le contrat, le
+schéma, les tokens, les paquets et les adaptateurs.
 
-- documenter le schéma là où il est muet : 118 de ses 236 propriétés n’ont
-  aucune `description`, dont `ContractDiagnostic`, `ContractCoverage` et toutes
-  les formes de `props`. Le texte vient des commentaires de `types.ts`, donc le
-  geste est d’écrire là-bas ce qu’un consommateur d’un autre langage n’a nulle
-  part ailleurs ;
-- versionner le format de `tokens.json` ;
-- documenter la politique de compatibilité ;
-- évaluer un diff sémantique pour les revues.
+`tokens.json` reste sans version tant que sa grammaire ne bouge pas. Le premier
+changement de projection rouvrira cette décision avec un lecteur réel à écrire.
+Le diff sémantique reste différé jusqu'au premier cycle de changement réel : il
+sera spécifié sur deux artefacts successifs et leur revue, pas sur un corpus
+inventé.
+
+### 6. Passer la recette externe
+
+La prochaine validation est N6 du
+[plan de neutralisation](./docs/plans/PLAN-NEUTRALISATION-PLAYGROUND.md). Elle
+charge le bundle dans Figma, réexporte les tokens et au moins un composant vers
+une vraie pull request du Playground, compare la sonde reconstruite à Figma et
+laisse le workflow publier son rapport. Cette recette précède la publication
+des versions de paquets déjà préparées dans le dépôt.
 
 ## Critères de sortie du MVP
 
@@ -192,12 +187,15 @@ Le MVP est validé lorsque :
 
 - plusieurs familles de composants passent sans règle liée à leur nom ;
 - un composé réutilise réellement plusieurs dépendances et passe la parité ;
-- les références de tokens cassées et les écarts d’API couverts empêchent la
-  fusion avec un diagnostic actionnable ;
+- les contrats invalides, les versions incompatibles et les tests rouges
+  empêchent la fusion avec un diagnostic actionnable ;
+- les écarts de parité statique couverts avertissent sans accuser le contrat ni
+  bloquer la fusion ;
 - un contrat peut précéder son code sans désactiver les contrôles futurs ;
-- un agent en contexte froid n’invente ni prop, ni variante, ni token ;
+- un agent en contexte froid n'invente ni prop, ni variante, ni token ;
 - les limites non vérifiables sont documentées sans être présentées comme des
   garanties.
 
-À ce stade, le projet pourra être proposé à une expérimentation sur un
-catalogue plus large.
+La recette externe N6 et l'observation de l'interface dans Figma restent les
+deux preuves nécessaires avant de proposer le projet à une expérimentation sur
+un catalogue plus large.
