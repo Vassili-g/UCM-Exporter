@@ -3386,7 +3386,7 @@ leur que si Figma en donne un — et l'absence signifie « aucun défaut », jam
 | La version du contrat | `CONTRACT_VERSION` dans `version.ts` — unique écriture ; `versionDeContrat` — unique lecture | le plugin, le CLI, le corps de la pull request | aucune connue : les deux moitiés de la règle vivent dans le même module | inchangé |
 | La fenêtre de lecture | `VERSION_CONTRAT_MINIMALE` / `MAXIMALE` dans `version-contrat.mjs` | `ucm check`, le rapport designer | `docs/CHANGELOG-FORMAT.md` rédigé après coup, donc en retard | 11.6 : relier la table de compatibilité au changelog |
 | **La version de `tokens.json`** | **aucune** : le fichier ne porte ni version, ni métadonnée, et aucun lecteur n'en cherche | Style Dictionary, `indexerTokensDtcg`, un preset, un consommateur non-JS | un fichier d'une grammaire future est lu comme s'il était courant, en silence | 11.5 l'a mesuré : la forme est tranchée (`$extensions`, `com.ucm.*`), le moment reste à décider |
-| **Les exceptions volontaires** | **aucune** : il n'existe aucun mécanisme d'exception | un repo dont un écart est légitime | l'écart est signalé à chaque exécution, ou l'on affaiblit le contrôle pour tous | 11.3 : une grammaire locale, jamais une liste de noms |
+| **Les exceptions volontaires** | **aucun mécanisme**, mais une convention d'écriture en vigueur, publiée dans le seul skill `consommer-contrat` | un repo dont un écart est légitime, qui n'a pas ce fichier | l'écart est signalé à chaque exécution — en avertissement, jamais en blocage | 11.3 l'a mesuré : publier la convention chez l'adaptateur, et faire dire au diagnostic son angle mort |
 | **Le nom d'une variable CSS** | `tokenCssVariable` pour qui installe le kit ; **rien** pour qui ne l'installe pas | le consommateur neutre, qui écrit sa propre projection | deux formules égales aujourd'hui divergent demain, et la perte est muette | `docs/FORMAT.md` peut décrire la projection SANS l'imposer ; à trancher en 11.4 |
 | La parité contrat ↔ code | `ecartsDeParite` — six relevés, aucun sur les valeurs d'enum | `ucm check`, quand l'adaptateur est installé | un rapport vert sur un enum partiellement rendu (R8) | 11.1 : « garanti », « averti », « non vérifiable » ou « hors périmètre » |
 | Où sont les artefacts d'un repo | grammaire dans `configuration.ts`, valeurs dans `ucm.config.json` | le CLI et le plugin, tous deux | aucune connue : les deux lisent le même module | inchangé |
@@ -3634,6 +3634,98 @@ maintenance ainsi que son comportement lors d'un réexport.
 **Sortie obligatoire :** une grammaire minimale d'exception, son propriétaire,
 son diagnostic et son effet sur le code de sortie. Une exception ne doit jamais
 transformer un contrat invalide en contrat valide par simple silence.
+
+**Recherche menée le 6 septembre 2026 sur dix écritures d'essai passées aux
+contrôles réels. Rien n'a été implémenté ; la case reste ouverte.**
+
+#### D'abord, ce qu'une exception coûterait de ne pas avoir
+
+La tâche suppose des « écarts légitimes qui seraient sinon signalés comme
+erreurs ». Mesuré dans `diagnostic-parite.mjs` : **aucun écart contrat ↔ code
+ne bloque quoi que ce soit.** Ils sortent en `severity: "warning"`, hors du
+compte des contrats fautifs, et le résumé terminal l'écrit — « la fusion n'est
+pas bloquée ». Le prix d'un faux positif n'est donc pas une pull request
+refusée : c'est un message répété que le lecteur apprend à ignorer, ce qui reste
+un coût réel mais d'une autre nature.
+
+#### L'inventaire, mesuré plutôt que supposé
+
+Dix écritures légitimes ont été soumises aux six relevés de parité :
+
+| Écriture | Signalée ? | Lecture |
+|---|---|---|
+| `React.forwardRef(function X…)` | non | le relevé déplie les emballages |
+| `React.memo(function X…)` | non | idem |
+| booléen lu puis passé à une dépendance (`String(props.actif)`) | non | lire la prop suffit |
+| booléen relayé par `{...reste}` sans être lu | **oui** — « n'est jamais lue » | **faux positif** : la prop est bien transmise |
+| booléen jamais lu du tout | oui | vrai positif — le contrôle sert |
+| enum partiellement rendu, table partielle, valeur transmise, règle applicative | non | invisible, mesuré en 11.1 |
+| dépendance rendue par `.map()` sur trois éléments | **oui** — « déclare 3 occurrences, en rend 1 » | **faux positif**, et c'est le cas central |
+
+Deux faux positifs sur dix, et un seul qui porte : la cardinalité comptée
+statiquement.
+
+#### L'exception existe déjà, et elle n'est pas là où on la chercherait
+
+Le projet a DÉJÀ tranché ce cas — mais la règle vit dans le skill
+`consommer-contrat` : « conserver chaque occurrence explicitement dans le
+source ; une occurrence absente de la vue courante se neutralise sur place, elle
+ne se retire pas ». Autrement dit, **une convention d'écriture imposée au
+consommateur, pour que le comptage statique tombe juste.**
+
+Trois choses la rendent problématique, et aucune n'est son contenu :
+
+1. elle est écrite dans un fichier qu'un repository tiers n'a pas — le skill
+   vient d'être rapatrié chez le producteur, ce qui le rend lisible par un agent
+   du producteur, pas par un développeur du consommateur ;
+2. `docs/FORMAT.md` et le README de l'adaptateur ne la mentionnent pas, alors
+   que c'est précisément un consommateur qui la paie ;
+3. elle interdit une écriture React ordinaire — une liste rendue par `.map()` —
+   sans que rien ne le dise à qui l'écrit.
+
+#### Les trois domiciles, et pourquoi deux tombent
+
+**Dans le contrat.** Refusé, et pour une raison vérifiable plutôt que
+doctrinale : le plugin réécrit le fichier entier à chaque export. Une exception
+posée dans le contrat disparaîtrait au réexport suivant, sans un mot — c'est
+exactement le comportement qu'une exception ne doit pas avoir.
+
+**Dans une liste de la configuration du repository.** Refusé par l'énoncé, et la
+mesure lui donne raison : une entrée `{"composant": "X", "controle": "…"}` est
+une liste de noms. Elle ne dit pas POURQUOI, ne se vérifie pas, et survit à la
+disparition de sa cause — le projet a déjà payé ce défaut ailleurs, et l'a
+refermé en supprimant l'exemption plutôt qu'en la documentant (`aucune exemption
+ne survit à la ligne qu'elle couvrait`, dans les tests de ce dépôt).
+
+**Dans le code du consommateur.** C'est le seul domicile qui reste, et c'est
+celui qui est déjà en vigueur. Sa forme actuelle n'est pas une annotation que
+seul l'outil lit : c'est le code lui-même, rendu littéral. Elle est locale,
+vérifiable — le comptage la vérifie —, et sa maintenance est celle du composant.
+
+#### Ce qui manque réellement, et la grammaire minimale proposée
+
+La mesure ne montre pas une exception manquante : elle montre **une règle sans
+adresse publique et un contrôle qui ne dit pas ce qu'il suppose**. La grammaire
+minimale proposée tient donc en trois gestes, aucun n'ajoutant de mécanisme :
+
+1. **publier la convention là où le consommateur la lit** — le README de
+   `@ucm-kit/adapter-typescript`, qui est le seul paquet concerné : le comptage
+   est statique, une occurrence rendue par une boucle n'est pas comptée ;
+2. **faire dire au diagnostic ce qu'il suppose**, dans son texte : « le
+   comptage est statique ; si les occurrences viennent d'une boucle, cet écart
+   est attendu » — un avertissement qui explique son propre angle mort cesse
+   d'être un faux positif et devient une information ;
+3. **ne rien ajouter pour le relais `{...reste}`** : le corriger demanderait de
+   suivre un spread jusqu'à la dépendance, donc de connaître le contrat de
+   l'enfant, et l'avertissement est déjà non bloquant.
+
+**Propriétaire :** l'adaptateur TypeScript, pour les trois. **Effet sur le code
+de sortie :** aucun — ces écarts n'entrent déjà pas dans le verdict.
+**Comportement au réexport :** aucun, puisque rien n'est écrit dans l'artefact.
+**Ce que cela n'autorise pas :** rendre un contrat invalide valide par silence —
+aucune de ces trois clauses ne touche la validation du contrat, qui reste
+bloquante et sans exception.
+
 
 - [ ] **11.4 — Documenter le JSON Schema sans en faire une seconde spécification.**
 
