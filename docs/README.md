@@ -73,4 +73,5 @@ sur rien.
 | [plans/refonte-ui.md](./plans/refonte-ui.md) | La refonte de l'interface du plugin |
 | [plans/PLAN-CONFORMITE-DEV.md](./plans/PLAN-CONFORMITE-DEV.md) | Recherche sur la vérification générique du rendu |
 | [plans/PLAN-DOCUMENTATION.md](./plans/PLAN-DOCUMENTATION.md) | La mise à jour de cette documentation |
+| [plans/GUIDE-RECETTE-REPO-VIERGE.md](./plans/GUIDE-RECETTE-REPO-VIERGE.md) | La marche à suivre pour rejouer la boucle complète depuis un dépôt vide |
 | [notes/PISTES-EVOLUTION.md](./notes/PISTES-EVOLUTION.md) | Les options ouvertes, non engagées |

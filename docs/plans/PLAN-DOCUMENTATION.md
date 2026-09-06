@@ -426,6 +426,13 @@ Ce lot est indivisible. Chaque tâche change le contenu publiable d'un paquet, e
       reproductible.
       **aucun identifiant de tâche** dans un document de référence, par un motif
       restreint aux formes réellement employées.
+      *Écrit à deux contrôles, pas trois.* Le troisième a été abandonné à
+      l'écriture : la seule occurrence restante est `N6` dans `ROADMAP.md`, où
+      elle nomme la recette externe que l'entrée de `publish.yml` appelle du
+      même nom, avec le lien vers le plan qui la décrit. Un motif qui la
+      refuserait ferait perdre le renvoi sans rien gagner. La passe de style a
+      retiré tous les autres identifiants, et le test qui protège ce résultat
+      n'existe pas.
 - [x] **8.2** Les plans de `docs/plans/` sont exemptés, et `.agents/skills/` ne
       l'est pas : un protocole exécutable de 22 Kio relève de la référence. Une
       exemption qui ne couvre plus aucun fichier fait échouer le test, sur le
@@ -482,8 +489,10 @@ cents avant la passe.
 
 ### Identifiants de tâche
 
-Zéro dans un document de référence. Les plans de `docs/plans/` en gardent, et
-c'est leur rôle.
+Deux occurrences de `N6` dans `ROADMAP.md`, où le sigle nomme la recette
+externe et renvoie au plan qui la décrit. Aucune ailleurs. Les plans de
+`docs/plans/` en gardent, et c'est leur rôle. Ce résultat n'est protégé par
+aucun test : voir la tâche 8.1.
 
 ### Racine du dépôt
 
@@ -502,7 +511,7 @@ Douze fichiers `.md` avant, six après : `README.md`, `CONCEPT.md`, `AGENTS.md`,
 
 ### Vérification
 
-`npm test` (825 cas), `npm run typecheck` et `npm run build` verts sur
+`npm test` (846 cas), `npm run typecheck` et `npm run build` verts sur
 `UCM-Exporter`. `npm run build` vert sur `UCM-Playground`.
 
 ## 6. Ce que ce plan ne fait pas
