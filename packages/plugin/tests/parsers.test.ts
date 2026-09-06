@@ -40,12 +40,8 @@ test('extractContractProps exclut State et expose disabled', () => {
   } as ComponentPropertyDefinitions;
 
   assert.deepEqual(extractContractProps(definitions), {
-    color: { type: 'enum', values: ['primary', 'secondary'], default: 'primary' },
-    variant: {
-      type: 'enum',
-      values: ['contained', 'outlined', 'text'],
-      default: 'contained',
-    },
+    color: { type: 'enum', values: ['primary', 'secondary'] },
+    variant: { type: 'enum', values: ['contained', 'outlined', 'text'] },
     disabled: { type: 'boolean', default: false },
   });
 });
@@ -65,7 +61,6 @@ test('extractContractProps expose iconLeft/iconRight comme booléens indépendan
     size: {
       type: 'enum',
       values: ['big', 'medium', 'small'],
-      default: 'medium',
       figmaName: 'Button-Construc-Type',
     },
     iconLeft: { type: 'boolean', default: true },
@@ -86,7 +81,6 @@ test('extractContractProps mappe un axe de tailles vers "size" et garde le nom F
     size: {
       type: 'enum',
       values: ['big', 'medium', 'small'],
-      default: 'medium',
       figmaName: 'Button-Construc-Type',
     },
   });
@@ -102,7 +96,7 @@ test('extractContractProps ne laisse pas le nom sémantique voler la clé d’un
   const warnings: string[] = [];
 
   assert.deepEqual(extractContractProps(definitions, warnings), {
-    taille: { type: 'enum', values: ['big', 'medium', 'small'], default: 'medium' },
+    taille: { type: 'enum', values: ['big', 'medium', 'small'] },
     size: { type: 'string', default: 'texte libre' },
   });
   assert.deepEqual(warnings, [
@@ -167,7 +161,7 @@ test('extractContractProps laisse un enum non-taille sous son nom, sans figmaNam
   } as ComponentPropertyDefinitions;
 
   assert.deepEqual(extractContractProps(definitions), {
-    variant: { type: 'enum', values: ['contained', 'outlined', 'text'], default: 'contained' },
+    variant: { type: 'enum', values: ['contained', 'outlined', 'text'] },
   });
 });
 

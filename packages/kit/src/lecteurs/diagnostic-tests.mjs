@@ -1,34 +1,10 @@
 /**
  * Ce que le designer doit lire d'une suite de tests en échec.
  *
- * **Ce module ne lance rien et n'analyse aucune sortie de lanceur.** C'est la
- * moitié RAPPORT de ce qui vivait chez le consommateur ; l'autre moitié — lire
- * du TAP, reconnaître un `*.test.tsx`, distinguer une `AssertionError` d'une
- * erreur d'exécution — est un ADAPTATEUR et reste là-bas. La coupure est
- * exactement celle que T2.3 a faite pour la parité, et pour la même raison :
- * un repo Swift a des tests, ils échouent de la même façon aux yeux du
- * designer, et rien de ce qui suit ne dépend du langage.
- *
- * Les tests pilotés par le contrat sont un garde-fou au même titre que les
- * contrôles de contrat. Une assertion rouge peut signaler une donnée du contrat
- * figée dans le code ; une erreur d'exécution dit seulement que le test n'a pas
- * pu rendre ce verdict. Les deux doivent atteindre le **même** lecteur, avec
- * des formulations distinctes.
- *
- * ## Ce que l'adaptateur doit fournir
- *
- * Un échec est `{ fichier, composant, assertion, test, nomErreur, erreur }` :
- *
- * - `fichier` — chemin d'affichage, jamais interprété ici ;
- * - `composant` — le composant exporté que ce test met en cause, ou `null` si
- *   l'échec concerne l'outillage du repository. **Seul l'adaptateur peut
- *   répondre** : la convention qui relie un fichier de test à un composant est
- *   celle d'une stack ;
- * - `assertion` — `true` si le test a rendu un verdict (le code s'écarte du
- *   contrat), `false` s'il s'est interrompu avant de pouvoir le rendre. **Seul
- *   l'adaptateur peut répondre** : reconnaître une assertion demande de
- *   connaître les erreurs de son lanceur ;
- * - `test`, `nomErreur`, `erreur` — le détail, affiché tel quel.
+ * Ce module ne lance ni n'analyse le lanceur. L'adaptateur fournit
+ * `{ fichier, composant, assertion, test, nomErreur, erreur }` : lui seul sait
+ * relier un test à un composant et distinguer une assertion d'une panne. Le
+ * noyau sépare ensuite écart de rendu, test interrompu et garde-fou du repo.
  */
 import { TITRE_AVERTISSEMENTS } from "./avertissements-export.mjs";
 import { libelleNombre, rendreDiagnostic } from "./diagnostic-markdown.mjs";

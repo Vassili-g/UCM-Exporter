@@ -1,16 +1,6 @@
 /**
- * L'écart contrat ↔ code : le JUGER et le DIRE, sans savoir le mesurer.
- *
- * La coupure est celle de T2.3, poursuivie d'un cran. Mesurer un écart demande
- * un vérificateur de types propre à une cible, et reste chez l'adaptateur.
- * Décider si le relevé qu'il rend porte un écart, et l'écrire pour le rapport,
- * ne demande que la FORME de ce relevé — aucune ligne de code, aucun langage.
- * C'est donc du noyau, et `pariteEnEcart` descend ici avec les deux fonctions
- * qui s'en servent.
- *
- * Ce que cela permet : un repo sans adaptateur reçoit les mêmes verdicts, à
- * ceci près qu'ils portent tous sur ce que le noyau sait seul — le fichier est
- * là, ou il n'est pas là.
+ * Juge et rédige l'écart contrat ↔ code sans le mesurer. La mesure dépend de la
+ * stack et reste dans l'adaptateur ; le noyau ne connaît que la forme du relevé.
  */
 import { libelleNombre, rendreDiagnostic } from "./diagnostic-markdown.mjs";
 
@@ -36,7 +26,9 @@ export function pariteEnEcart(ecarts) {
     || Boolean(ecarts.fonctionAbsente)
     || ecarts.manquantes.length > 0
     || ecarts.typesIncorrects.length > 0
+    || (ecarts.valeursNonImplementees ?? []).length > 0
     || ecarts.booleensNonUtilises.length > 0
+    || (ecarts.enumsSansEffet ?? []).length > 0
     || ecarts.compositionsIncorrectes.length > 0;
 }
 
@@ -94,19 +86,49 @@ function detailsDeLEcart(parite) {
     return [`La fonction \`${parite.fonctionAbsente}\` est introuvable.`];
   }
   return [
-    ...parite.manquantes.map((prop) => `La prop \`${prop}\` du contrat n'existe pas dans le composant.`),
+    ...parite.manquantes.map(
+      (nom) => `La propriété \`${nom}\` de Figma n'existe pas dans le code : le composant ne peut pas la recevoir.`,
+    ),
     ...parite.typesIncorrects.map(
-      ({ prop, attendu, recu }) =>
-        `La prop \`${prop}\` doit être \`${attendu}\`, mais le composant expose \`${recu}\`.`,
+      ({ prop, recu }) =>
+        `La propriété \`${prop}\` vaut oui ou non dans Figma, et le code attend \`${recu}\`.`,
     ),
+    ...(parite.valeursNonImplementees ?? []).flatMap(({ valeurs }) => valeurs.map(
+      (valeur) => `La variante \`${valeur}\` n'est pas implémentée dans le code.`,
+    )),
     ...parite.booleensNonUtilises.map(
-      (prop) => `La prop BOOLEAN \`${prop}\` existe mais n'est jamais lue par le composant.`,
+      (nom) => `La propriété \`${nom}\` de Figma n'a aucun effet dans le code : l'activer ou non ne change rien à l'affichage.`,
     ),
+    ...(parite.enumsSansEffet ?? []).map(({ prop, valeurs }) => (
+      `La propriété \`${prop}\` de Figma n'a aucun effet dans le code : ${consequenceSansEffet(valeurs)}.`
+    )),
+    // Le comptage ne suit pas une boucle. Dire cette limite dans le message
+    // même évite qu'un écart attendu se lise comme une faute, et évite surtout
+    // le mécanisme d'exception qu'il aurait fallu pour le taire.
     ...parite.compositionsIncorrectes.map(
       ({ component, attendu, rendu }) =>
-        `Le contrat déclare ${libelleNombre(attendu, "occurrence")} de \`${component}\`, mais le composant en rend ${rendu}.`,
+        `Le contrat déclare ${libelleNombre(attendu, "occurrence")} de \`${component}\`, mais le composant en rend ${rendu}. `
+        + `Le comptage est statique ; si les occurrences viennent d'une boucle, cet écart est attendu.`,
     ),
   ];
+}
+
+/** Énumère en français : « `a`, `b` et `c` ». */
+function listeDeValeurs(valeurs) {
+  const citees = valeurs.map((valeur) => `\`${valeur}\``);
+  return citees.length < 2
+    ? citees.join("")
+    : `${citees.slice(0, -1).join(", ")} et ${citees[citees.length - 1]}`;
+}
+
+/**
+ * Ce que le designer verra, plutôt que le mécanisme. Un axe à une seule valeur
+ * n'a rien à comparer : la phrase change au lieu de boiter.
+ */
+function consequenceSansEffet(valeurs) {
+  return valeurs.length < 2
+    ? "sa valeur ne change rien à l'affichage"
+    : `${listeDeValeurs(valeurs)} s'affichent de la même façon`;
 }
 
 /**

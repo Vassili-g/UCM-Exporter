@@ -1,40 +1,8 @@
 /**
- * `ucm.config.json` : ce qu'un repository dit de LUI-MÊME.
- *
- * C'est la deuxième des trois règles de tri du plan — « ce qui décrit le REPO
- * reste dans le repo, en configuration ». Trois chemins, et rien d'autre : où
- * vivent les contrats, où vit le fichier de tokens, où vit l'implémentation
- * d'un contrat.
- *
- * **Pourquoi dans `format` et non dans `lecteurs`, et c'est T4.1 qui l'a
- * imposé.** Ce fichier a deux lecteurs qui ne partagent aucun runtime : la CI
- * du repository, qui l'ouvre avec `node:fs`, et **le plugin Figma**, qui doit
- * savoir où ÉCRIRE et le lit par l'API GitHub depuis un sandbox sans `node:fs`.
- * Tant que la grammaire vivait du seul côté Node, le plugin en gardait sa
- * propre idée — `src/components` et `src/tokens` en dur — et les deux ne
- * coïncidaient que par accident. Le premier repo aux conventions différentes
- * aurait fait écrire l'export à un endroit que la CI ne regarde pas, sans qu'un
- * mot le dise.
- *
- * Ce module ne LIT donc aucun fichier : il dit ce qu'est une configuration et
- * juge celle qu'on lui présente. `lireConfiguration` (dans `lecteurs`) ouvre le
- * fichier sur un disque, le plugin le récupère par l'API ; les deux passent
- * ensuite par ici.
- *
- * **Aucun numéro de version ne s'écrit dans ce fichier, et c'est une règle, pas
- * un oubli.** La fenêtre de versions lues appartient au kit installé (D7, D8) :
- * la republier dans le repo créerait une seconde autorité, qui dériverait au
- * premier `npm update` — et le désaccord serait muet, chacun des deux se
- * croyant le bon. Un repo dit OÙ sont ses fichiers ; il ne dit pas ce que le
- * format est.
- *
- * **Le fichier est facultatif.** Un repo neuf avec un seul dossier
- * `components/` doit fonctionner sans écrire une ligne — c'est le critère de
- * réussite n° 1. L'absence de configuration n'est donc pas une erreur : c'est
- * le cas nominal, et les valeurs par défaut décrivent exactement ce repo-là.
- * Ce qui est une erreur, c'est un fichier PRÉSENT et mal formé : là, quelqu'un
- * a voulu dire quelque chose, et le taire en retombant sur les défauts ferait
- * chercher un contrat là où il n'est pas, sans rien signaler.
+ * Grammaire portable de `ucm.config.json`, partagée par le plugin et la CI.
+ * Ce module valide un objet sans lire de fichier. La configuration facultative
+ * décrit trois chemins, jamais la version du format ; un fichier présent mais
+ * invalide est une erreur, tandis que son absence applique les valeurs par défaut.
  */
 
 /** Le nom du fichier, écrit une fois. */

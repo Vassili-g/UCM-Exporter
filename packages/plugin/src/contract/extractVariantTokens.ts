@@ -24,17 +24,10 @@ export { getSlotTokens } from './extractSlotTokens';
 export type { VariantTokenLeaves } from './extractSlotTokens';
 
 /**
- * Insère une feuille dans l'arbre en suivant l'ordre des axes.
- * Un axe sans valeur retombe sur la clé « default ».
- *
- * Renvoie `false` quand un variant occupe déjà ces valeurs d'axes. L'arbre
- * historique ne peut représenter ce doublon, mais la liste exacte `variants`
- * conserve chacune des occurrences et leurs feuilles propres.
- *
- * Les clés viennent de Figma : elles sont testées et écrites en propriétés
- * PROPRES. `constructor` ou `toString` passeraient sinon pour un doublon
- * inexistant, et `__proto__` écrirait dans le prototype — la branche
- * disparaîtrait du JSON sans un mot. Même précaution que `buildStateModel`.
+ * Insère une feuille dans l'ordre des axes ; une valeur absente devient
+ * `default`. Rend `false` si la case est déjà occupée, sans perdre l'occurrence
+ * conservée dans `variants`. Les clés Figma sont testées en propriétés propres
+ * pour que `constructor`, `toString` et `__proto__` ne touchent pas le prototype.
  */
 export function insertVariantLeaf<T>(
   tree: Record<string, unknown>,

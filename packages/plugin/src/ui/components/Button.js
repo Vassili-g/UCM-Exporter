@@ -5,11 +5,6 @@
 
 /**
  * Crée un bouton accessible avec libellé, variante et action optionnelle.
- *
- * Il a porté une option `icon` que personne n'a jamais passée et que rien ne
- * stylisait : une capacité qui n'existe qu'à moitié se découvre le jour où on
- * s'en sert. Elle est retirée (U1.2) ; la rétablir sera un geste entier, avec
- * sa règle.
  */
 export function createButton({ label, variant = 'primary', onClick, disabled = false }) {
   const button = document.createElement('button');

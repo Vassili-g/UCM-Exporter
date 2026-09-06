@@ -1,11 +1,5 @@
 /**
- * Les bornes de la fenêtre du plugin (U1.10).
- *
- * `figma.ui.resize` accepte tout au-dessus de 70 × 0 : la plateforme ne protège
- * donc pas d'une fenêtre où plus aucun libellé ne tient. La seule protection
- * est `tailleValide`, et elle est la SEULE — la poignée de l'UI envoie ce que
- * le pointeur dit, sans rien borner. Ce test tient cette responsabilité,
- * puisqu'elle n'est écrite qu'ici.
+ * Les bornes de la fenêtre du plugin.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';

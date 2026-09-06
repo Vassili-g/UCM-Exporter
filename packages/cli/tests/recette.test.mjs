@@ -1,47 +1,4 @@
-/**
- * La recette du repo vierge — Phase 7 du plan d'industrialisation.
- *
- * ## Ce qu'elle mesure, et pourquoi elle n'est pas un test de plus
- *
- * `cli.test.mjs` et `check.test.mjs` appellent `init` et `check` **en
- * processus**, depuis l'intérieur du monorepo, et lisent la valeur que les
- * fonctions rendent. C'est le bon point de vue pour juger la COUCHE OUTIL, et
- * c'est le leur.
- *
- * Ce fichier-ci est au point de vue inverse, le seul qui reste : celui du
- * repository qui reçoit des contrats. Il en découle quatre différences, et
- * chacune répond à une leçon écrite dans le plan.
- *
- * 1. **Le repository est construit par `ucm init`, et par rien d'autre.** Pas
- *    un dossier fabriqué à la main qui ressemblerait au résultat — le résultat
- *    lui-même. Le critère de réussite n° 1 dit « zéro ligne à la main » ; le
- *    seul moyen de le vérifier est de n'en écrire aucune.
- * 2. **La commande est lancée comme un PROCESSUS**, depuis ce dossier, par le
- *    fichier que `bin` désigne. Le plan a enregistré deux fois la même leçon —
- *    « une publication n'est pas un événement, c'est un état qu'il faut
- *    vérifier depuis dehors » —, et la seconde fois le paquet publié était
- *    cassé alors que toute la suite était verte. Un appel en processus ne
- *    traverse ni la garde de `process.argv[1]`, ni la résolution de
- *    `@ucm-kit/core` depuis un autre dossier, ni le code de sortie réel.
- * 3. **Le dossier est hors du monorepo et ne porte aucun `package.json`**, ni
- *    lui ni aucun de ses parents — le harnais le vérifie plutôt que d'y
- *    croire. C'est T3.4 : un repo iOS, un dossier de contrats et rien d'autre.
- * 4. **Les oracles sont ceux de T7.0c**, et il n'y en a pas d'autres : le code
- *    de sortie du processus, et les titres présents ou absents dans
- *    `ci-report.md`. Le rapport est le seul message que le designer reçoit ;
- *    ce qu'un développeur lirait dans un log n'est pas ce qui est jugé ici.
- *
- * ## Ce qu'elle ne fait pas
- *
- * Elle n'ouvre aucune pull request et ne parle à aucun GitHub. Le repo de
- * recette réel — créé et tenu par le mainteneur, hors du plan — reste ce qui
- * éprouve le workflow lui-même. Ce fichier tient la part qui se rejoue à chaque
- * commit, c'est-à-dire tout ce qui se passe entre le dossier et le rapport.
- *
- * Elle n'installe rien depuis le registre non plus : `npx --yes @ucm-kit/cli@x`
- * jugerait la version publiée, pas celle qu'on est en train d'écrire. Le
- * chemin traversé est le même, à l'installation près.
- */
+/** Exerce la CLI dans des repositories temporaires, sans dépendre du monorepo. */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -57,18 +14,6 @@ const BINAIRE = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "ucm.
 
 /**
  * Le `tokens.json` minimal de la recette — T7.0b.
- *
- * Deux tokens, et le second est là pour une raison précise. `%` est la classe
- * de divergence que T6.0 a mesurée : la projection CSS le supprime, donc `50%`
- * et `50` rendraient la même variable. Aucun token du corpus réel n'en porte —
- * vérifié —, et le garde-fou du consommateur ne peut donc pas s'exercer.
- *
- * Ce qu'il prouve ICI est l'autre moitié, et c'est celle qui compte pour la
- * portabilité : le chemin portable ne passe PAS par la projection CSS. Un token
- * qu'aucun nom de variable ne saurait porter fidèlement est trouvé quand même,
- * parce que le contrôle d'existence compare des CHEMINS dans le fichier DTCG
- * (T2.4) et non des noms dans une feuille de style. Le jour où ce contrôle
- * repasserait par un nom CSS, ce token le ferait rougir.
  */
 const TOKENS = {
   couleurs: { texte: { principal: { $type: "color", $value: "#111111" } } },

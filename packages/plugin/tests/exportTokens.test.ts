@@ -7,7 +7,7 @@ import {
   insert,
   isUnitless,
   modeCollisionWarnings,
-  resumeDesTokens,
+  etatDesTokens,
   toHex,
 } from '../src/tokens/exportTokens';
 import type { ExportContext } from '../src/tokens/exportTokens';
@@ -64,6 +64,7 @@ test('insert niche les feuilles et refuse les collisions feuille/groupe dans les
 
   // Une feuille ne peut pas écraser un groupe existant…
   insert(tree, 'a.b', leaf('#222222'), warnings);
+
   // …ni un groupe traverser une feuille existante.
   insert(tree, 'a.b.c.d', leaf('#333333'), warnings);
 
@@ -88,8 +89,7 @@ test('indexVariables nomme les deux variables en collision et écarte la seconde
   const collection = { id: 'brand', name: 'Brand' } as unknown as VariableCollection;
   const variable = (id: string, name: string) =>
     ({ id, name, variableCollectionId: 'brand' }) as unknown as Variable;
-  // « Foo Bar » et « foo-bar » sont deux variables distinctes dans Figma, mais
-  // un seul et même token une fois normalisées.
+
   const first = variable('v1', 'Foo Bar');
   const second = variable('v2', 'foo-bar');
 
@@ -97,8 +97,7 @@ test('indexVariables nomme les deux variables en collision et écarte la seconde
 
   assert.deepEqual([...index.variableByPath.keys()], ['brand.foo-bar']);
   assert.equal(index.variableByPath.get('brand.foo-bar'), first);
-  // La seconde reste hors de l'index des chemins : les DEUX commandes savent
-  // ainsi qu'aucune référence ne doit la désigner.
+
   assert.equal(index.pathById.get('v2'), undefined);
   assert.deepEqual(index.ambiguous.get('v2'), {
     name: 'foo-bar',
@@ -257,19 +256,33 @@ test('un mode homonyme d’Object.prototype reste une marque exportée', () => {
  * bien que la commande partait sans que personne sache sur quoi.
  */
 test('le résumé des tokens compte ce qui part, au singulier comme au pluriel', () => {
-  assert.equal(
-    resumeDesTokens({ collections: 3, variables: 128, modes: 2 }),
-    '3 collections · 128 variables · 2 modes',
-  );
-  assert.equal(
-    resumeDesTokens({ collections: 1, variables: 1, modes: 1 }),
-    '1 collection · 1 variable',
-  );
+  assert.deepEqual(etatDesTokens({ collections: 3, variables: 128, modes: 2 }), {
+    resume: '3 collections · 128 variables · 2 modes',
+    presents: true,
+  });
+  assert.deepEqual(etatDesTokens({ collections: 1, variables: 1, modes: 1 }), {
+    resume: '1 collection · 1 variable',
+    presents: true,
+  });
 });
 
 test('un fichier sans variable locale le dit, au lieu de compter zéro', () => {
-  assert.equal(
-    resumeDesTokens({ collections: 0, variables: 0, modes: 0 }),
-    'Aucune variable locale dans ce fichier.',
-  );
+  assert.deepEqual(etatDesTokens({ collections: 0, variables: 0, modes: 0 }), {
+    resume: 'Ce fichier ne contient aucune variable locale.',
+    presents: false,
+  });
+});
+
+/**
+ * U7.5. L'interface n'offre la commande que si elle a quelque chose à emporter.
+ * Ce sont donc les VARIABLES qui décident, et non les collections : trois
+ * collections vides annonceraient du contenu que `handleExportTokens` refuse
+ * ensuite d'exporter, et le designer découvrirait une erreur rouge après le
+ * clic pour un fichier parfaitement normal.
+ */
+test('des collections vides ne comptent pas comme des tokens présents', () => {
+  assert.deepEqual(etatDesTokens({ collections: 3, variables: 0, modes: 2 }), {
+    resume: 'Ce fichier ne contient aucune variable locale.',
+    presents: false,
+  });
 });

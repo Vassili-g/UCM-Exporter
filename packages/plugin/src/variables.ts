@@ -39,26 +39,6 @@ export function firstVariableAlias(value: unknown): VariableAlias | null {
   return variableAliases(value)[0] ?? null;
 }
 
-/*
- * La forme d'une référence — `toRef`, `isTokenReference`, `refPath` — vivait
- * ici, et cet en-tête affirmait que `variables.ts` en était « l'unique
- * autorité ». C'était faux : la même regex était recopiée dans le validateur du
- * kit et dans le repo consommateur. Elle est passée dans
- * `@ucm-kit/core/format`, seul sous-chemin que le bundle du plugin, Node et un
- * navigateur atteignent tous les trois. Les appelants l'importent de là.
- */
-
-/*
- * Le relevé des références — `collectTokenReferences` — vivait ici, et c'était
- * le jumeau exact de `collecterReferences` du kit : même corps, et depuis T2.7
- * la même définition de ce qu'est une référence. Aucun code de production ne
- * l'appelait ; seuls les tests s'en servaient comme helper d'assertion. Ils
- * appellent désormais celui du kit, qui reste le seul.
- *
- * L'en-tête invoquait `tokensUsed` pour se justifier. Ce champ n'existe plus
- * depuis la 11.0 : ni `types.ts` ni aucun contrat du corpus ne le portent.
- */
-
 /**
  * Assemble le chemin canonique d'un token : collection + variable, chacun
  * normalisé. Évite les doublons si la variable répète déjà la collection.

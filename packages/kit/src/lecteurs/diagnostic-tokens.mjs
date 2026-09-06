@@ -31,6 +31,7 @@ export function sectionTokensManquants(bilans, { tokensModifies, sourceTokens })
   });
 }
 
+/** Résume les références absentes sans transformer l'avertissement en blocage. */
 export function resumeTerminalTokensManquants(bilans, sourceTokens) {
   const total = bilans.reduce((somme, bilan) => somme + bilan.manquants.length, 0);
   return total === 0

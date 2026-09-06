@@ -1,11 +1,5 @@
 /**
  * Ce qu'une suite de tests rouge dit au designer.
- *
- * Ces cas viennent du consommateur, moins ceux qui portaient sur le TAP : lire
- * la sortie d'un lanceur est un travail d'adaptateur, et il reste chez lui
- * (T5.2). Ce qui est vérifié ici n'a plus besoin d'aucun langage — les échecs
- * arrivent déjà catégorisés, avec un `composant` et un `assertion` que seul
- * l'adaptateur pouvait renseigner.
  */
 import test from "node:test";
 import assert from "node:assert/strict";

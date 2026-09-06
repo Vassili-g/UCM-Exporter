@@ -242,30 +242,10 @@ export function paintSiteRole(site: {
 }
 
 /**
- * Vocabulaire de rendu d'UN contrat : les rôles partagés, et le rôle de chaque
- * clé de couleur qui n'en porte pas le nom.
- *
- * Sans cela, une couleur nommée `…/scale-1` produit un contrat valide que
- * personne ne sait peindre : le consommateur ignore une clé absente de
- * `rendering.roles`, silencieusement. Publier le rôle déduit du calque qui la
- * porte ferme ce trou sans imposer au design system de renommer ses variables.
- *
- * `roles` reste STRICTEMENT le vocabulaire partagé, identique dans tous les
- * contrats : un mot y signifie partout la même chose, et c'est ce qui permet de
- * l'apprendre une fois. La part propre au composant vit à côté, dans
- * `keyRoles`, qui NOMME un rôle au lieu d'en recopier le rendu — deux tables de
- * propriétés CSS à tenir en phase valaient déjà mieux qu'une, et une clé qui
- * s'appelle comme un rôle sans en avoir la nature n'avait aucun endroit où le
- * dire.
- *
- * Les deux côtés sont séparés parce que les clés le sont (`colorKeys` décide
- * sur des feuilles distinctes) : la clé `background` d'une peinture et celle
- * d'un contour peuvent désigner deux tokens différents.
- *
- * Une clé dont le rôle porte déjà le nom reste absente : `roles[clé]` répond
- * pour elle. Les entrées sont triées — deux exports d'un design inchangé
- * doivent produire le même JSON, sinon l'invariant « aucun changement = aucune
- * PR » tombe.
+ * Produit le vocabulaire partagé et la correspondance propre au contrat.
+ * `roles` garde une signification identique partout ; `keyRoles` relie une clé
+ * opaque au rôle déduit de son calque, séparément pour fills et strokes. Une clé
+ * déjà homonyme de son rôle est omise. Les entrées sont triées pour stabiliser le JSON.
  */
 export function renderingSemanticsFor(
   discovered: DiscoveredRoles,

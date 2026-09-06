@@ -22,17 +22,6 @@ function createSettingsIcon() {
 
 /**
  * Crée l'en-tête et renvoie ses éléments pilotés par le routeur UI.
- *
- * `page` porte `title` et un `subtitle` FACULTATIF : les deux se relisent à
- * chaque changement de page par `setPage`, parce qu'un en-tête écrit une fois
- * pour toutes finit par décrire une autre page que celle qui est affichée
- * (U0.3). Une page sans sous-titre n'en affiche pas : l'audit de U1.2 a retiré
- * celui de l'écran de travail, qui ne servait aucune décision et occupait la
- * place du rang 1.
- *
- * L'ordre des trois éléments est celui de la hiérarchie (CONTRIBUTING.md,
- * « Interface du plugin ») : le titre de la page, puis ce qui l'explique, puis
- * l'état de connexion — rang 3, et non l'inverse comme auparavant.
  */
 export function createHeader(page, onSettings, onBack) {
   const header = document.createElement('div');
@@ -55,16 +44,9 @@ export function createHeader(page, onSettings, onBack) {
   setPage(page);
 
   /*
-   * La pastille porte la seule information de l'en-tête qui demande un geste :
-   * elle est donc un BOUTON, et il mène là où ce geste se fait (U5.2).
-   *
-   * `aria-live` plutôt que `role="status"` : le rôle écraserait celui du
-   * bouton. Ce n'est pas la double annonce que U0.2 a fermée — la note et le
-   * journal disaient le MÊME texte ; celui-ci n'est dit nulle part ailleurs.
-   *
-   * Son texte vient du sandbox et n'est plus écrit ici : `etatDeConnexion` en
-   * est l'unique autorité.
-   */
+ * La pastille porte la seule information de l'en-tête qui demande un geste : elle
+ * est donc un BOUTON, et il mène là où ce geste se fait.
+ */
   const connection = document.createElement('button');
   connection.type = 'button';
   connection.className = 'connection-status';

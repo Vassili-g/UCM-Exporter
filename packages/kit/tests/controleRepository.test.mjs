@@ -1,28 +1,6 @@
+
 /**
  * Ce que le contrôle d'un repository produit, verrouillé de bout en bout.
- *
- * **Ces scénarios viennent du consommateur, et c'est ce qui fait leur valeur.**
- * Ils ont été écrits par T5.1 sur `check-contract.mjs` AVANT que cinq tâches le
- * réécrivent — D1, T2.3, T2.4, T2.6 et T5.2 —, précisément pour que chacune
- * voie ce qu'elle déplaçait. T5.2 est la dernière des cinq : elle les amène ici
- * avec le code qu'ils tiennent.
- *
- * Ils ne disent pas ce que le rapport DEVRAIT écrire. Ils enregistrent ce qu'il
- * écrit. Un échec ne signale donc pas forcément une régression : il signale un
- * CHANGEMENT. La question à se poser est « est-ce celui que je voulais », et la
- * réponse s'écrit en mettant l'attendu à jour dans le même commit que le
- * changement — jamais en affaiblissant l'assertion pour retrouver du vert.
- *
- * *Ce que le déplacement a rendu au harnais.* Chez le consommateur, il fallait
- * recopier tout `scripts/` dans un repo jouet vivant DANS le repository : le
- * script déduisait sa racine de sa propre position et n'acceptait aucun
- * argument, et l'adaptateur TypeScript exigeait un `node_modules` atteignable.
- * `controlerRepository` prend une racine et une configuration ; il ne reste
- * qu'un dossier temporaire et un appel de fonction.
- *
- * Le corpus est SYNTHÉTIQUE, jamais celui d'un repository réel : des contrats
- * réels changent à chaque réexport, et un test de caractérisation assis dessus
- * mesurerait Figma au lieu de mesurer ce module.
  */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -437,7 +415,9 @@ test("un adaptateur branché est appelé, et son écart avertit sans bloquer", (
       fonctionAbsente: null,
       manquantes: ["label"],
       typesIncorrects: [],
+      valeursNonImplementees: [],
       booleensNonUtilises: [],
+      enumsSansEffet: [],
       compositionsIncorrectes: [],
     }),
   };
@@ -453,7 +433,7 @@ test("un adaptateur branché est appelé, et son écart avertit sans bloquer", (
     assert.equal(bloquant, false, "un code en retard n'a jamais refusé la pull request d'un designer");
     assert.match(rapport, /^## ✅ Aucun blocage détecté$/m);
     assert.match(rapport, /### ⚠️ Le code est en retard sur le contrat : `Widget\.contract\.json`/);
-    assert.match(rapport, /La prop `label` du contrat n'existe pas dans le composant\./);
+    assert.match(rapport, /La propriété `label` de Figma n'existe pas dans le code/);
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }

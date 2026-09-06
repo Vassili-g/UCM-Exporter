@@ -1191,11 +1191,39 @@ function validerVersion8(contrat, invalides, capacites, formeDuSizing) {
       }
     }
   }
-  if (enumProps.length > 0) {
-    const defaults = Object.fromEntries(enumProps.map(([name, prop]) => [name, prop.default]));
+  // La règle ne porte que sur les axes qui DÉCLARENT un défaut. Un axe sans
+  // défaut n'est pas incomplet : le contrat n'en publie un que si le designer
+  // l'a écrit, et l'exiger de tous ferait de l'absence une faute.
+  const avecDefaut = enumProps.filter(([, prop]) => prop.default !== undefined);
+  if (avecDefaut.length > 0) {
+    const defaults = Object.fromEntries(avecDefaut.map(([name, prop]) => [name, prop.default]));
     const hasDefaultCombination = variants.some((variant) =>
       Object.entries(defaults).every(([name, value]) => variant?.values?.[name] === value));
     if (!hasDefaultCombination) invalides.push("variants.defaults");
+  }
+
+  // Filet, pas garantie. Le moteur construit les clés de `structure.sizes` et
+  // les valeurs de la prop depuis le même axe Figma : les deux ensembles y sont
+  // égaux, et ce contrôle ne peut rien y attraper. Il ne mord que sur un
+  // contrat écrit à la main ou produit par un tiers. La prop qui sélectionne le
+  // catalogue se retrouve comme le format le décrit, par ses valeurs ; zéro ou
+  // plusieurs candidates ne donnent aucun verdict, parce que l'ambiguïté se
+  // signale au consommateur et ne se tranche pas ici.
+  const tailles = estObjet(contrat?.structure?.sizes) ? Object.keys(contrat.structure.sizes) : [];
+  if (tailles.length > 0) {
+    const candidates = Object.entries(estObjet(contrat?.props) ? contrat.props : {})
+      .filter(([, prop]) => (
+        estObjet(prop)
+        && prop.type === "enum"
+        && Array.isArray(prop.values)
+        && tailles.every((cle) => prop.values.includes(cle))
+      ));
+    if (candidates.length === 1) {
+      const [nom, prop] = candidates[0];
+      if (prop.default !== undefined && !tailles.includes(prop.default)) {
+        invalides.push(`props.${nom}.default`);
+      }
+    }
   }
 
   if (version9) {

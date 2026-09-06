@@ -1,20 +1,6 @@
 /**
- * `ucm icons` : ce que ce repository doit savoir dessiner.
- *
- * Un contrat publie le `figmaName` d'une icône, et **rien d'autre** : ni kit, ni
- * correspondance, ni taille de glyphe. Traduire ce nom vers un jeu d'icônes
- * appartient au repo consommateur — c'est la décision de T3.1, qui a écarté un
- * champ `icons` de la configuration pour cette raison.
- *
- * Mais une responsabilité qu'on confie sans la rendre visible est une
- * responsabilité aveugle. Cette commande est la contrepartie de cette décision :
- * elle dit au repo ce qu'il a à couvrir, sans rien décider pour lui.
- *
- * *Elle ne juge pas, et c'est délibéré.* Qu'un nom soit ou non résolu par le
- * repo, cette commande l'ignore : elle n'a aucune idée de ce qu'est un jeu
- * d'icônes ici. Elle liste. Un jour où un `icons` existera dans la
- * configuration, elle pourra comparer — pas avant, sinon elle inventerait la
- * règle qu'elle prétend vérifier.
+ * Liste les icônes réclamées par les contrats, sans choisir de bibliothèque ni
+ * juger leur couverture : cette correspondance appartient au consommateur.
  */
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";

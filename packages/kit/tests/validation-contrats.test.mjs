@@ -1139,6 +1139,73 @@ test("les valeurs par défaut des enums doivent former une variante réellement 
   assert.deepEqual(champsInvalidesDuContrat(casse), ["variants.defaults"]);
 });
 
+/**
+ * Un axe sans défaut n'est pas un axe fautif : le contrat ne publie un défaut
+ * que si le designer l'a déclaré, et son absence signifie « aucun défaut ».
+ * La règle de combinaison ne porte donc que sur les axes qui en ont un.
+ */
+test("un contrat sans aucun défaut d’axe reste valide", () => {
+  const valide = contratV8();
+  valide.props.variant = { type: "enum", values: ["contained", "outlined"] };
+  valide.props.size = { type: "enum", values: ["small", "large"] };
+  valide.structure.variantAxes = ["variant", "size"];
+  valide.structure.variantTypography = {
+    contained: { small: [] },
+    outlined: { large: [] },
+  };
+  valide.variants = [
+    { ...valide.variants[0], values: { variant: "contained", size: "small" } },
+    { ...valide.variants[0], nodeId: "10:2", figmaName: "Outlined", values: { variant: "outlined", size: "large" } },
+  ];
+  valide.propertyBindings[0].variant = { variant: "contained", size: "small" };
+
+  assert.deepEqual(champsInvalidesDuContrat(valide), []);
+});
+
+/**
+ * Filet, et rien de plus : ce moteur construit les clés du catalogue et les
+ * valeurs de la prop depuis le même axe Figma, donc les deux ensembles y sont
+ * égaux. Le contrôle ne mord que sur un contrat écrit à la main ou produit par
+ * un tiers, dont la prop offre une taille que le catalogue ne porte pas.
+ */
+test("un défaut de taille hors du catalogue est refusé", () => {
+  const casse = contratV8();
+  casse.props.size = { type: "enum", values: ["small", "large", "huge"], default: "huge" };
+  casse.structure.sizes = {
+    small: { gap: "{sizes.spacing.2}" },
+    large: { gap: "{sizes.spacing.4}" },
+  };
+
+  assert.deepEqual(champsInvalidesDuContrat(casse), ["props.size.default"]);
+});
+
+test("un défaut de taille présent au catalogue passe", () => {
+  const valide = contratV8();
+  valide.props.size = { type: "enum", values: ["small", "large", "huge"], default: "large" };
+  valide.structure.sizes = {
+    small: { gap: "{sizes.spacing.2}" },
+    large: { gap: "{sizes.spacing.4}" },
+  };
+
+  assert.deepEqual(champsInvalidesDuContrat(valide), []);
+});
+
+test("un seul axe qui déclare son défaut suffit à exiger sa combinaison", () => {
+  const casse = contratV8();
+  casse.props.variant = { type: "enum", values: ["contained", "outlined"], default: "outlined" };
+  casse.props.size = { type: "enum", values: ["small", "large"] };
+  casse.structure.variantAxes = ["variant", "size"];
+  casse.structure.variantTypography = {
+    contained: { small: [] },
+  };
+  casse.variants = [
+    { ...casse.variants[0], values: { variant: "contained", size: "small" } },
+  ];
+  casse.propertyBindings[0].variant = { variant: "contained", size: "small" };
+
+  assert.deepEqual(champsInvalidesDuContrat(casse), ["variants.defaults"]);
+});
+
 test("un layer hors flux publie ses bords d’accroche, et seulement des bords connus", () => {
   const valide = contratVersionne("6.0", {
     children: [{

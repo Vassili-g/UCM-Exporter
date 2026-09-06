@@ -18,7 +18,9 @@ export function ecartsDeParite(
   fonctionAbsente: string | null;
   manquantes: string[];
   typesIncorrects: Array<{ prop: string; attendu: string; recu: string }>;
+  valeursNonImplementees: Array<{ prop: string; valeurs: string[] }>;
   booleensNonUtilises: string[];
+  enumsSansEffet: Array<{ prop: string; valeurs: string[] }>;
   compositionsIncorrectes: Array<{ component: string; attendu: number; rendu: number }>;
 };
 export function typesDuContrat(contrat: unknown): null | {

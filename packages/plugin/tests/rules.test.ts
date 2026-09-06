@@ -188,3 +188,36 @@ test('une règle @prop homonyme d’Object.prototype n’écrit pas sur le runti
   assert.deepEqual(propDescriptions.constructor, { contained: 'Bouton plein' });
   assert.deepEqual(warnings, []);
 });
+
+test('ruleTagFromValue reconnaît @default', () => {
+  assert.equal(ruleTagFromValue('@default'), 'default');
+  assert.equal(ruleTagFromValue('DEFAULT'), 'default');
+});
+
+test('buildRules range @default par prop, sans exiger de content', () => {
+  const { enumDefaults, warnings } = buildRules([
+    { tag: 'default', prop: 'Color.Secondary', content: '' },
+  ]);
+
+  assert.deepEqual(enumDefaults, { color: 'secondary' });
+  assert.deepEqual(warnings, []);
+});
+
+test('buildRules garde le premier @default d’une prop et signale le doublon', () => {
+  const { enumDefaults, warnings } = buildRules([
+    { tag: 'default', prop: 'color.secondary', content: '' },
+    { tag: 'default', prop: 'color.primary', content: '' },
+  ]);
+
+  assert.deepEqual(enumDefaults, { color: 'secondary' });
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /deux fois/);
+});
+
+test('un @default sans cible lisible nomme la forme attendue', () => {
+  const { enumDefaults, warnings } = buildRules([{ tag: 'default', prop: 'color', content: '' }]);
+
+  assert.deepEqual(enumDefaults, {});
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /propriété.valeur/);
+});

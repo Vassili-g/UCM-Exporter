@@ -67,24 +67,9 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
 
 /**
  * Taille de chaque piste d'une grille, dans le vocabulaire de `grid-template-*`.
- *
- * Figma expose `gridRowSizes` / `gridColumnSizes` : un type (`FLEX`, `HUG`,
- * `FIXED`) et sa valeur. Les deux premiers sont des comportements, que CSS
- * écrit `1fr` et `fit-content(100%)`. Exception limitée à cette structure de
- * grille, une piste FIXED est publiée en pixels : ce n'est pas un token, et la
- * valeur figure bien dans le contrat.
- *
- * **Cette exception ne se dit plus au designer (U4.7).** Elle ne perd rien — la
- * valeur se lit dans `columnSizes` / `rowSizes` — et ne propose aucun geste :
- * une transformation entièrement prise en charge n'a rien à faire dans un
- * résultat d'export. Sa règle et ses bornes vivent dans la spécification, et
- * les tests du format en répondent.
- *
- * La lecture reste défensive : un runtime qui n'expose pas ces champs ne publie
- * rien et n'avertit de rien. Une propriété absente n'est pas une valeur. Un
- * réglage ILLISIBLE, lui, reste un avertissement : le contrat publie « auto »
- * à la place d'une taille qu'il n'a pas su lire, et le designer a bien quelque
- * chose à vérifier dans Figma.
+ * `FLEX` devient `1fr`, `HUG` `fit-content(100%)` et `FIXED` des pixels. Un
+ * runtime sans ces champs ne publie rien ; une piste présente mais illisible
+ * avertit. Une valeur fixe entièrement publiée ne demande aucun diagnostic.
  */
 /**
  * Le constat d'une piste dont Figma ne rend pas la taille, écrit une seule fois.

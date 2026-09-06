@@ -285,9 +285,18 @@ export function lireApiPublique(fichiers, racine) {
         const estBoolean = significatifs.length > 0 && significatifs.every(
           (item) => Boolean(item.flags & (ts.TypeFlags.Boolean | ts.TypeFlags.BooleanLiteral)),
         );
+        // Le texte écrit dans le source ne dit rien d'un alias : `Ton | undefined`
+        // masque autant une union complète qu'une union amputée. La résolution,
+        // elle, rend les littéraux même dérivés d'un `as const`, et ne rend rien
+        // d'un type élargi — donc silence plutôt que faux positif.
+        const valeurs = significatifs.length > 0
+          && significatifs.every((item) => item.isStringLiteral())
+          ? significatifs.map((item) => item.value)
+          : null;
         return [membre.getName(), {
           type: estBoolean ? "boolean" : "autre",
           typescript: verificateur.typeToString(typeMembre),
+          valeurs,
           utilisee: consommees.has(membre.getName()),
         }];
       }));
@@ -312,7 +321,9 @@ export function ecartsDeParite(contrat, releve, nomInterface, options = {}) {
     fonctionAbsente: null,
     manquantes: [],
     typesIncorrects: [],
+    valeursNonImplementees: [],
     booleensNonUtilises: [],
+    enumsSansEffet: [],
     compositionsIncorrectes: [],
   };
   if (!releve) {
@@ -360,8 +371,35 @@ export function ecartsDeParite(contrat, releve, nomInterface, options = {}) {
     ))
     .map(([nom]) => nom)
     .sort();
+  const enums = declarees.filter(([nom, prop]) => (
+    nom in props && prop?.type === "enum" && Array.isArray(prop.values)
+  ));
+  // Une union plus LARGE que le contrat ne se rapporte pas : accepter plus ne
+  // contredit rien, et le dire ferait du contrat un plafond.
+  const valeursNonImplementees = enums
+    .filter(([nom]) => Array.isArray(props[nom].valeurs))
+    .map(([nom, prop]) => ({
+      prop: nom,
+      valeurs: prop.values.filter((valeur) => !props[nom].valeurs.includes(valeur)),
+    }))
+    .filter(({ valeurs }) => valeurs.length > 0)
+    .sort((gauche, droite) => gauche.prop.localeCompare(droite.prop));
+  // Le même signal que `booleensNonUtilises`, sur le même relevé : le taire ici
+  // quand on le dit là serait une incohérence, pas une décision.
+  const enumsSansEffet = enums
+    .filter(([nom]) => props[nom].utilisee !== true)
+    .map(([nom, prop]) => ({ prop: nom, valeurs: [...prop.values] }))
+    .sort((gauche, droite) => gauche.prop.localeCompare(droite.prop));
 
-  return { ...vide, manquantes, typesIncorrects, booleensNonUtilises, compositionsIncorrectes };
+  return {
+    ...vide,
+    manquantes,
+    typesIncorrects,
+    valeursNonImplementees,
+    booleensNonUtilises,
+    enumsSansEffet,
+    compositionsIncorrectes,
+  };
 }
 
 /** Surface que `@ucm-kit/core/lecteurs` attend d'un adaptateur. */

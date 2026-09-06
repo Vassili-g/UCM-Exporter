@@ -16,11 +16,7 @@ export type RepositorySettings = {
 
 /**
  * Ce qu'un chemin de repli vaut une fois validé : un chemin, ou rien.
- *
- * Les deux chemins étaient OBLIGATOIRES, alors que `repositoryLayout` les
- * ignore dès qu'un `ucm.config.json` lisible existe (U5.1). Exiger une valeur
- * que le dépôt contredit revient à faire saisir une donnée sans effet, puis à
- * la faire croire vraie.
+ * Il reste facultatif car un `ucm.config.json` lisible le remplace entièrement.
  */
 export type CheminDeRepli = string | null;
 

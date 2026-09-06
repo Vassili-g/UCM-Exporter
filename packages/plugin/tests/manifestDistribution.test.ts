@@ -1,29 +1,4 @@
-/**
- * Le manifest décide de la distribution du plugin, et la distribution décide du
- * contenu des contrats.
- *
- * **Ce que T4.4 a tranché.** Le plugin se distribue par la Figma Community :
- * n'importe qui l'installe et produit des contrats. `enablePrivatePluginApi` est
- * réservé aux plugins PRIVÉS d'une organisation — le déclarer rendrait le
- * plugin non publiable, et Figma le refuserait à la soumission.
- *
- * **Pourquoi un test plutôt qu'une ligne de documentation.** Le drapeau ouvre
- * `figma.fileKey`, donc `meta.figma.url`, donc un lien d'un clic vers le
- * composant source en revue de pull request. C'est un confort qu'on regrette, et
- * qu'on remet « juste pour essayer en local » ; il reviendrait alors dans le
- * manifest distribué sans que rien ne le dise, et le plugin publié cesserait
- * d'être publiable. Le coût de la rechute est une soumission refusée, découverte
- * chez Figma et pas ici.
- *
- * **Ce qui remplace le lien perdu :** `fileName` et `nodeId`, que le contrat
- * porte toujours et que le corps de la pull request annonce désormais sur sa
- * page de couverture (`lignesDIdentite`, `src/github.ts`). C'est là que la
- * seconde condition de D6 se constate sur une revue réelle.
- *
- * Le manifest DISTRIBUÉ est vérifié en même temps que celui du dépôt : c'est
- * lui que Figma lit, et `build-manifest.cjs` le recopie champ par champ — un
- * drapeau ajouté à la copie passerait autrement inaperçu.
- */
+/** Vérifie que le manifest reste compatible avec la distribution Community. */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

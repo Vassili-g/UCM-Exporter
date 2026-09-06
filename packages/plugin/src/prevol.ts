@@ -1,26 +1,15 @@
 /**
- * Le verdict du pré-vol : ce que l'analyse a trouvé, et ce qu'il reste à faire.
- *
- * **Pourquoi une étape de plus (U3.1).** Un clic enchaînait calcul, comparaison,
- * création de branche, commit, pull request et ouverture du navigateur. Le
- * designer lisait donc les avertissements APRÈS que tout avait été écrit ; il
- * corrigeait dans Figma, réexportait, et obtenait une seconde pull request
- * pendant que la première restait ouverte.
- *
- * **Le clic supplémentaire n'est pas payé pour rien.** Il n'apparaît que
- * lorsqu'il y a effectivement quelque chose à publier : un export identique au
- * dépôt n'atteint jamais la publication. Ce qu'il achète est réel — un
- * avertissement corrigé avant publication, c'est une pull request orpheline et
- * un tour de revue en moins.
+ * Décrit l'analyse préalable sans publier. Elle évite d'ouvrir une pull request
+ * avant la lecture des avertissements et n'offre l'action que si le contenu change.
  */
-
-/** Ce que l'analyse a conclu, et rien d'autre : elle n'écrit jamais. */
 export type CodeVerdict = 'a-publier' | 'identique' | 'sans-depot';
 
 export type Verdict = {
   code: CodeVerdict;
+
   /** Le rang 1 du compte rendu : ce qui décide de l'action suivante. */
   texte: string;
+
   /** Le libellé de l'action, ou `null` quand il n'y a rien à faire. */
   action: string | null;
 };
@@ -28,22 +17,23 @@ export type Verdict = {
 export type EntreeDeVerdict = {
   code: CodeVerdict;
   genre: 'component' | 'tokens';
+
   /** Où l'artefact irait, quand c'est connu. */
   chemin?: string | null;
-  /** Où le contenu identique se trouve déjà. */
+
+  source?: string | null;
+
   ou?: string | null;
   avertissements: number;
 };
 
 const NOM = { component: 'le contrat', tokens: 'les tokens' } as const;
 
+const PUBLIER = { component: 'Publier le composant', tokens: 'Publier les tokens' } as const;
+
 /**
- * Compose le verdict.
- *
- * Le compte des points à corriger passe EN PREMIER quand il y en a : c'est lui
- * qui décide si l'on publie maintenant ou si l'on retourne dans Figma. Il ne
- * bloque rien — un avertissement n'est pas un refus —, il change seulement
- * l'ordre de lecture.
+ * Choisit le constat et l'action. Les points à corriger passent en premier mais
+ * n'interdisent pas la publication : un avertissement n'est pas un refus.
  */
 export function verdictDePrevol(entree: EntreeDeVerdict): Verdict {
   const points = entree.avertissements > 0
@@ -69,10 +59,12 @@ export function verdictDePrevol(entree: EntreeDeVerdict): Verdict {
     };
   }
 
+  const ou = entree.chemin ?? 'le repository';
+  const decide = entree.source ? ` (d’après ${entree.source})` : '';
   return {
     code: 'a-publier',
-    texte: joindre(points, `Prêt à publier dans ${entree.chemin ?? 'le repository'}.`),
-    action: 'Publier et ouvrir la pull request',
+    texte: joindre(points, `Prêt à publier dans ${ou}${decide}.`),
+    action: PUBLIER[entree.genre],
   };
 }
 

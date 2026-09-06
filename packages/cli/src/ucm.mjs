@@ -1,18 +1,8 @@
 #!/usr/bin/env node
 /**
- * `ucm` : la ligne de commande du kit.
- *
- * Aucune commande n'orchestre quoi que ce soit : `ucm check` appelle le
- * contrôle du kit (T5.2) et se contente d'imprimer, d'écrire si on le lui
- * demande et de choisir un code de sortie. En écrire une seconde version ici
- * produirait deux rapports qui divergeraient en silence — la maladie exacte que
- * T2.7, T6.0 et T2.6 ont soignée ailleurs dans ce projet.
- *
- * Le code de sortie est la seule chose qu'un workflow lise sans ambiguïté : 0
- * quand la commande a fait ce qu'on lui demandait, 1 quand des contrôles ont
- * échoué, 2 quand l'invocation ou la configuration est fautive. Le 1 et le 2 ne
- * se confondent jamais, sinon une faute de frappe dans un drapeau se lirait
- * comme un export en défaut.
+ * Aiguille la ligne de commande vers le kit et ses adaptateurs. Les commandes
+ * publient les décisions du noyau sans dupliquer son orchestration.
+ * Codes : 0 succès, 1 contrôles rouges, 2 invocation ou configuration fautive.
  */
 import { realpathSync } from "node:fs";
 import process from "node:process";

@@ -1,21 +1,5 @@
 /**
- * Fabrique la galerie d'états de l'interface (U1.1) à partir de `dist/ui.html`.
- *
- * **Le principe : ne rien réimplémenter.** Chaque page de la galerie EST
- * l'interface du plugin, telle que le build vient de la produire, à laquelle on
- * ajoute deux choses : le décalque des variables de thème, et un pilote qui
- * rejoue la suite de messages déclarée par l'état. Aucune vue n'est redessinée
- * ici — une galerie qui recopierait l'UI finirait par montrer autre chose
- * qu'elle, et le jour où elle mentirait serait invisible.
- *
- * Le pilote parle le protocole réel : `window.postMessage({ pluginMessage })`,
- * exactement ce que le sandbox envoie. Les gestes qui ne passent pas par un
- * message — ouvrir la configuration, déclencher une erreur d'interface — sont
- * des clics et des événements, pas des raccourcis dans l'état interne.
- *
- * Sortie : `dist/galerie/<mode>/<id>.html` (une fenêtre de plugin, 380 × 500),
- * `dist/galerie/<mode>/planche-N.html` (quatre états côte à côte, pour la
- * capture et pour l'œil) et `dist/galerie/index.html`.
+ * Fabrique la galerie d'états de l'interface à partir de `dist/ui.html`.
  */
 const fs = require('fs');
 const path = require('path');
@@ -28,11 +12,6 @@ const PAR_PLANCHE = 4;
 
 /**
  * Les trois manières de servir les couleurs à l'interface.
- *
- * `replis` n'est pas un thème de Figma : c'est le cas où l'hôte ne sert AUCUNE
- * des variables demandées et où les valeurs de repli de `styles.css`
- * s'appliquent seules. Il existe pour U1.8, qui doit regarder ce que devient
- * un repli écrit pour le thème clair quand l'éditeur est sombre.
  */
 const MODES = {
   clair: { titre: 'Thème clair', classe: '', variables: true },

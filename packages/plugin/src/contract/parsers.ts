@@ -191,13 +191,14 @@ export function extractContractPropertyModel(
         });
       }
       const publicKey = semantic && !taken ? semantic : key;
+      // Aucun `default` ici, et c'est la règle : le `defaultValue` d'une
+      // VARIANT property est le variant de PREMIÈRE POSITION du component set,
+      // donc un effet de bord de la mise en page. Le défaut d'un axe se déclare
+      // par une règle `@default`, et `mergeEnumDefaults` le pose ; son absence
+      // signifie « aucun défaut publié », ce que l'élision sait déjà écrire.
       const claimed = claim(publicKey, rawFigmaName, {
         type: 'enum',
         values,
-        default:
-          typeof definition.defaultValue === 'string'
-            ? normalizePropValue(definition.defaultValue)
-            : values[0] ?? null,
         // figmaName n'apparaît que si la clé publique diffère du nom Figma.
         ...(publicKey !== key ? { figmaName: rawFigmaName } : {}),
       });

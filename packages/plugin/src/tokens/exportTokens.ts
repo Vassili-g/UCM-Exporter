@@ -1,3 +1,4 @@
+
 /**
  * Commande « Export tokens » : exporte TOUTES les variables locales du
  * fichier Figma en un arbre DTCG (`tokens.json`), consommable par Style
@@ -16,14 +17,13 @@ export type TokensExport = {
   filename: string;
   content: string;
   warningCount: number;
+
   /** Liste des avertissements, pour affichage détaillé dans le journal de l'UI. */
   warnings: string[];
+
   /**
-   * Les trois parties de chaque message, indexées par sa phrase (U4.8).
-   *
-   * Même forme que du côté du contrat : l'interface met les parties en page, la
-   * phrase reste l'identité du message. `tokens.json` n'a aucun champ où les
-   * transporter, donc elles s'arrêtent à la frontière sandbox ↔ UI.
+   * Parties indexées par leur phrase. Elles atteignent l'UI mais pas
+   * `tokens.json`, dont le format DTCG ne prévoit aucun diagnostic UCM.
    */
   parties: ReadonlyMap<string, PointACorriger>;
 };
@@ -38,6 +38,7 @@ export class TokensExportError extends Error {
 
 /** Un token DTCG : sa valeur, son type, et d'éventuelles extensions. */
 type DtcgLeaf = { $value: unknown; $type: string; $extensions?: Record<string, unknown> };
+
 /** L'arbre DTCG : des groupes imbriqués dont les feuilles sont des tokens. */
 type DtcgTree = { [key: string]: DtcgTree | DtcgLeaf };
 
@@ -65,8 +66,7 @@ const DIMENSION_SCOPES = new Set<VariableScope>([
 
 /** Vrai si le token est un ratio ou nombre CSS sans unité. */
 export function isUnitless(path: string, scopes: readonly VariableScope[] = []): boolean {
-  // Le scope Figma est l'autorité quand il est précis. `ALL_SCOPES` ne dit
-  // rien sur l'unité ; le nom normalisé reste alors le repli compatible.
+  // Un scope précis fait foi ; `ALL_SCOPES` retombe sur le nom normalisé.
   if (scopes.some((scope) => DIMENSION_SCOPES.has(scope))) return false;
   if (scopes.includes('FONT_WEIGHT') || scopes.includes('OPACITY')) return true;
   return path.split('.').some((segment) => UNITLESS_GROUPS.has(segment.replace(/-/g, '')));
@@ -143,6 +143,7 @@ function resolveRoot(variable: Variable, ctx: ExportContext): Variable {
   return current;
 }
 
+/** Point d'entrée de la commande : exporte toutes les variables locales en DTCG. */
 /**
  * Construit UN token DTCG :
  * - valeur directe → littérale (hex, px, nombre…) ;
@@ -296,34 +297,34 @@ export function modeCollisionWarnings(collections: VariableCollection[]): PointA
   return points;
 }
 
-/** Point d'entrée de la commande : exporte toutes les variables locales en DTCG. */
-/**
- * Ce que l'export des tokens va emporter (U2.4).
- *
- * C'est un export de portée FICHIER : il ignore la sélection et lit toutes les
- * variables locales. Rien à l'écran n'en disait la taille, si bien que la
- * commande partait sans que personne sache sur quoi.
- *
- * Les modes ne sont comptés que s'il y en a plusieurs : un « 1 mode » n'apprend
- * rien, et c'est au-delà de un que le contrat publie `com.ucm.modes`.
- */
-export function resumeDesTokens(
+/** Résumé de portée fichier : la sélection Figma n'intervient pas. */
+export type EtatDesTokens = {
+
+  resume: string;
+
+  presents: boolean;
+};
+
+/** Forme le résumé affiché et indique si une analyse peut commencer. */
+export function etatDesTokens(
   compte: { collections: number; variables: number; modes: number },
-): string {
-  if (compte.collections === 0) return 'Aucune variable locale dans ce fichier.';
+): EtatDesTokens {
+  if (compte.variables === 0) {
+    return { resume: 'Ce fichier ne contient aucune variable locale.', presents: false };
+  }
   const parties = [
     `${compte.collections} collection${compte.collections === 1 ? '' : 's'}`,
     `${compte.variables} variable${compte.variables === 1 ? '' : 's'}`,
   ];
   if (compte.modes > 1) parties.push(`${compte.modes} modes`);
-  return parties.join(' · ');
+  return { resume: parties.join(' · '), presents: true };
 }
 
 /**
  * Compte sans tout charger : les collections portent déjà leurs identifiants de
  * variables et leurs modes, donc `getLocalVariablesAsync` n'est pas payé ici.
  */
-export async function resumerTokensDuFichier(): Promise<string> {
+export async function etatDesTokensDuFichier(): Promise<EtatDesTokens> {
   const collections = await figma.variables.getLocalVariableCollectionsAsync();
   const modes = new Set<string>();
   let variables = 0;
@@ -331,9 +332,10 @@ export async function resumerTokensDuFichier(): Promise<string> {
     variables += collection.variableIds.length;
     for (const mode of collection.modes) modes.add(mode.name);
   }
-  return resumeDesTokens({ collections: collections.length, variables, modes: modes.size });
+  return etatDesTokens({ collections: collections.length, variables, modes: modes.size });
 }
 
+/** Exporte toutes les variables locales en DTCG sans aplatir leurs alias. */
 export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<TokensExport> {
   annoncer('Lecture des variables du fichier…');
   const collections = await figma.variables.getLocalVariableCollectionsAsync();

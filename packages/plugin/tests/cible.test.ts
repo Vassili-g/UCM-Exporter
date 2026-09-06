@@ -1,11 +1,5 @@
 /**
- * Ce sur quoi l'export porte, et pourquoi il ne porte pas (U2.1).
- *
- * La galerie a montré que trois situations distinctes produisaient un écran
- * identique : rien de sélectionné, plusieurs layers, un layer qui n'est pas un
- * composant. `reportSelectionState` envoyait le même message dans les trois
- * cas. Ces tests tiennent la distinction, puisque c'est elle qui décide du
- * geste à faire dans Figma.
+ * Ce sur quoi l'export porte, et pourquoi il ne porte pas.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';

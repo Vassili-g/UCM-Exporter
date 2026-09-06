@@ -22,12 +22,6 @@ export const TOKEN_REFERENCE = /^\{[^{}\s]+\.[^{}\s]+\}$/;
 
 /**
  * Vrai si cette valeur est une référence de token, et rien d'autre.
- *
- * C'est l'unique autorité du projet sur cette question. Elle l'est vraiment
- * depuis T2.7 : trois copies de la regex ci-dessus vivaient dans trois paquets,
- * et une divergence entre elles n'aurait pas produit un refus mais un DÉSACCORD
- * — « ce contrat est valide » d'un côté, « ce token n'existe pas » de l'autre —,
- * et ce désaccord-là est muet.
  */
 export function isTokenReference(value: unknown): value is string {
   return typeof value === 'string' && TOKEN_REFERENCE.test(value);

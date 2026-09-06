@@ -1,3 +1,4 @@
+
 /*
  * Le socle graphique de l'interface (U1.4 à U1.9 de refonte-ui.md).
  *
@@ -257,11 +258,16 @@ p {
   background: var(--fond-survol);
 }
 
-/*
- * Le rang 1 : ce sur quoi on travaille (U2.1). Position en haut, hors de toute
- * carte, et taille. Deux moyens de signalement, pas quatre.
- */
-.cible {
+.carte-commande {
+  display: grid;
+  gap: var(--espace-controle);
+  padding: var(--espace-bloc);
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--fond-bloc);
+}
+
+.carte-sujet {
   display: grid;
   gap: var(--espace-serre);
 }
@@ -273,12 +279,17 @@ p {
   overflow-wrap: anywhere;
 }
 
-.cible[data-state='vide'] .cible-nom {
+.carte-composant[data-state='vide'] .cible-nom {
   color: var(--texte-second);
 }
 
 .cible-detail {
   color: var(--texte-second);
+}
+
+.carte-tokens .tokens-resume {
+  color: var(--texte-second);
+  overflow-wrap: anywhere;
 }
 
 /* Rang 2 : un avertissement porte un filet de sévérité, jamais une puce. */
@@ -290,54 +301,9 @@ p {
   color: var(--texte-avertissement);
 }
 
-/*
- * L'export des tokens est une commande à part (U2.3) : portée fichier, sans
- * rapport avec la sélection. Il ne partage donc plus la surface de l'action
- * principale, et son résumé dit ce qu'il emporte avant de partir (U2.4).
- */
-.tokens-panel {
-  display: grid;
-  gap: var(--espace-controle);
-  padding-top: var(--espace-controle);
-  border-top: 1px solid var(--bordure);
-}
-
-.tokens-resume {
-  color: var(--texte-second);
-}
-
-/* Rang 3 : où l'export atterrit (U2.2). La densité et la couleur, rien de plus. */
-.depot {
-  display: grid;
-  gap: var(--espace-serre);
-  color: var(--texte-second);
-}
-
-.depot[data-state='repli'] .depot-ligne {
+.depot-repli {
   color: var(--texte-avertissement);
-}
-
-.depot-ligne,
-.depot-chemins {
   overflow-wrap: anywhere;
-}
-
-/*
- * U1.7 — le fond et la bordure se dépensent par RÔLE, pas partout.
- *
- * Actions, journal et configuration étaient la même `.card` : trois zones de
- * poids visuel égal, donc aucune hiérarchie, et trois bordures qui coûtaient
- * assez de hauteur pour faire déborder la fenêtre au repos. Seule la zone
- * d'action porte désormais une surface ; le compte rendu vit sur le fond de la
- * page, et la configuration est un formulaire.
- */
-.action-panel {
-  display: grid;
-  gap: var(--espace-controle);
-  padding: var(--espace-bloc);
-  border: 1px solid var(--bordure);
-  border-radius: 8px;
-  background: var(--fond-bloc);
 }
 
 .btn {
@@ -346,6 +312,7 @@ p {
   align-items: center;
   justify-content: center;
   gap: var(--espace-controle);
+
   /* Le libellé dit l'action entière depuis U0.4 : dans 380 px il peut passer
      sur deux lignes, et le bouton grandit au lieu de rogner son texte. */
   padding: var(--espace-serre) var(--espace-bloc);
@@ -397,7 +364,7 @@ p {
 .icon-button:focus-visible,
 .header-back-button:focus-visible,
 .connection-status:focus-visible,
-.log-line a:focus-visible {
+.entree-lien:focus-visible {
   outline: 2px solid var(--bordure-marque);
   outline-offset: 2px;
 }
@@ -465,6 +432,7 @@ p {
   overflow: auto;
   padding: var(--espace-controle);
   border-radius: var(--rayon);
+
   background: var(--fond-note);
   color: var(--texte-second);
   white-space: pre-wrap;
@@ -535,7 +503,7 @@ p {
  */
 .compte-rendu {
   display: grid;
-  gap: var(--espace-bloc);
+  gap: var(--espace-controle);
 }
 
 .groupe {
@@ -543,7 +511,8 @@ p {
   gap: var(--espace-controle);
 }
 
-.groupe-titre {
+.groupe-titre,
+.carte-surtitre {
   color: var(--texte-second);
   font-weight: 600;
 }
@@ -644,42 +613,3 @@ p {
   margin-top: var(--espace-serre);
 }
 
-.details-techniques {
-  color: var(--texte-second);
-}
-
-.details-techniques summary {
-  cursor: pointer;
-}
-
-.log-panel-inner {
-  min-height: 96px;
-  max-height: 144px;
-  overflow: auto;
-  color: var(--texte-second);
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.log-line + .log-line {
-  margin-top: var(--espace-serre);
-}
-
-/*
- * Les trois niveaux de `LogLevel` ont chacun une règle. `log-info` n'en avait
- * aucune : une classe posée que rien ne stylise est une distinction qu'on croit
- * faire et qu'on ne fait pas.
- */
-.log-info {
-  color: var(--texte-second);
-}
-
-.log-error {
-  color: var(--texte-danger);
-}
-
-.log-success,
-.log-success a {
-  color: var(--texte-succes);
-}

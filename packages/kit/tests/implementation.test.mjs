@@ -1,14 +1,5 @@
 /**
  * L'existence d'une implémentation, sans rien savoir du langage.
- *
- * Ce qui est éprouvé ici est la coupure de T2.3 : le noyau répond « présente ou
- * absente » pour n'importe quelle cible, et le défaut qu'il corrige est un
- * MENSONGE — un repo Swift dont le composant est écrit s'entendait dire
- * « implémentation en attente » sur la pull request d'export elle-même.
- *
- * `existe` est injecté partout : ces tests ne touchent pas au disque, donc ils
- * ne peuvent pas passer au vert grâce à un fichier du repo qui se trouverait là
- * par hasard.
  */
 import assert from "node:assert/strict";
 import { sep } from "node:path";

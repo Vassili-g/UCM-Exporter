@@ -177,20 +177,9 @@ function warnUndeclaredDrawing(
 }
 
 /**
- * La rotation d'un calque publié.
- *
- * Le contrat porte la rotation elle-même : le développeur l'écrit en
- * `transform: rotate(…)` et retrouve le dessin de Figma, imbrications
- * comprises. Reste un écart que CSS ne sait pas combler : dans un auto layout,
- * Figma espace ses enfants d'après la boîte TOURNÉE, là où `transform` ne
- * change aucune boîte de flux.
- *
- * **Cet écart ne se dit plus au designer (U4.7).** Il ne lui propose aucun
- * geste — remettre le calque droit lui retirerait sa rotation, qui est bien une
- * décision de design — et un résultat d'export ne porte que ce qui bloque, ce
- * qui rend le contrat partiel, ou ce qui demande une correction dans Figma. La
- * limite reste écrite là où elle a un lecteur : la spécification, pour qui
- * consomme le contrat.
+ * Publie la rotation en `transform`. Sous auto layout, CSS espace toutefois les
+ * voisins d'après la boîte non tournée, contrairement à Figma. Cette limite ne
+ * produit pas de diagnostic : aucun geste ne la corrige sans changer le design.
  */
 function applyRotation(node: SceneNode): { rotation?: `${number}deg` } {
   const rotation = rotationDegrees(node);

@@ -1,10 +1,5 @@
 /**
- * Le registre qui dit OÙ regarder, et ce qu'il refuse de promettre (U4.3).
- *
- * Ces tests portent sur le mécanisme, pas sur les messages : aucun ne cite un
- * texte d'export réel. Ce qui compte ici est que la localisation survive au
- * dédoublonnage et aux fusions de canaux — les deux endroits où elle peut se
- * perdre sans que rien ne rougisse.
+ * Le registre qui dit OÙ regarder, et ce qu'il refuse de promettre.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';

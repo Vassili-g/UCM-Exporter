@@ -1,18 +1,5 @@
 /**
- * La poignée de redimensionnement de la fenêtre (U1.10).
- *
- * **Pourquoi elle existe :** la documentation de l'API ne décrit aucun
- * redimensionnement natif d'une fenêtre de plugin. `figma.ui.resize` existe,
- * mais rien ne l'appelle à la place du plugin — sans cette poignée, la fenêtre
- * reste figée à la taille que `showUI` a demandée.
- *
- * **Ce qu'elle n'a pas le droit de faire :** décider ce qu'est une taille
- * acceptable. Elle envoie ce que le pointeur dit ; le sandbox borne, applique
- * et range (`fenetre.ts`). Une borne recopiée ici serait une seconde autorité,
- * et son désaccord avec la première serait muet.
- *
- * Elle est invisible aux technologies d'assistance : c'est un confort de
- * fenêtre, et rien de ce que l'interface montre n'en dépend — la page défile.
+ * La poignée de redimensionnement de la fenêtre.
  */
 export function createResizeGrip() {
   const grip = document.createElement('div');

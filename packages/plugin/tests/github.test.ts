@@ -16,11 +16,6 @@ import {
 
 /**
  * Remplace `fetch` le temps d'un appel, et le rend toujours.
- *
- * Le stub répond PAR URL, et ce n'est pas du confort : depuis T4.1, publier
- * interroge d'abord `ucm.config.json`. Un stub qui répondrait la même chose à
- * tout le monde ferait passer le contrat pour une configuration, et le test
- * mesurerait le stub.
  */
 async function avecFetch<T>(
   reponse: (url: string) => Response,
@@ -124,12 +119,12 @@ test('un seul chemin renseigné ne refuse que l’autre artefact', () => {
 });
 
 /**
- * T4.1. Le repository est seul à savoir où ses contrats vivent ; les réglages
- * du plugin sont locaux à une machine et ne savent rien de lui. Le défaut était
- * masqué par une coïncidence — les défauts des réglages décrivent justement le
- * repository de démonstration —, et il se déclenche au premier repo aux
- * conventions différentes : l'export écrit là où la CI ne regarde pas, la PR
- * s'ouvre, le contrôle ne trouve rien de nouveau, tout est vert.
+ * T4.1. Le repository est seul à savoir où ses contrats vivent ; les réglages du
+ * plugin sont locaux à une machine et ne savent rien de lui. Le défaut était masqué
+ * par une coïncidence — les défauts des réglages décrivent justement le repository
+ * de démonstration —, et il se déclenche au premier repo aux conventions différentes
+ * : l'export écrit là où la CI ne regarde pas, la PR s'ouvre, le contrôle ne trouve
+ * rien de nouveau, tout est vert.
  */
 test('la configuration du repository décide où l’export s’écrit', async () => {
   const configuration = {
@@ -423,13 +418,6 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
 
 /**
  * T4.3, et il faut le lire avec D9 sous les yeux : le plugin REFUSE.
- *
- * `codeIdentifier` n'est pas injective — « Icon / Button » et « IconButton »
- * rendent tous deux `IconButton` —, et l'identifiant nomme le dossier ET le
- * fichier de contrat. Sans ce refus, le second export écrase le premier, la CI
- * ne voit ensuite qu'UN seul contrat, donc aucun doublon, donc aucune erreur.
- * Le garde-fou de graphe existe et il est bloquant ; il est simplement
- * inatteignable pour la sortie du plugin.
  */
 function contratFigma(name: string, nodeId: string, componentKey?: string): string {
   return JSON.stringify({

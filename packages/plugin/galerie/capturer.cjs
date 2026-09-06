@@ -1,18 +1,6 @@
+
 /**
  * Capture la galerie avec le Chrome installé sur le poste.
- *
- * U1.1 exige de REGARDER chaque état, dans les deux thèmes, et de recommencer à
- * chaque phase qui en ajoute un. Une capture faite à la main une fois ne
- * survivrait pas à la deuxième fois : ce script est ce qui rend la vérification
- * répétable. Il ne remplace pas le regard, il lui fournit ses images.
- *
- * Chrome est cherché aux emplacements habituels ; `UCM_CHROME` force le chemin.
- * Aucune dépendance n'est ajoutée au dépôt pour cela : un navigateur headless
- * installé par npm pèserait plus lourd que tout le plugin.
- *
- *   node galerie/capturer.cjs              → les planches des trois modes
- *   node galerie/capturer.cjs sombre       → les planches d'un mode
- *   node galerie/capturer.cjs sombre --etats → une image par état
  */
 const fs = require('fs');
 const os = require('os');
@@ -45,19 +33,11 @@ function trouverChrome() {
 }
 
 function urlFichier(chemin) {
-  return `file:///${chemin.replace(/\\/g, '/').replace(/^\//, '')}`;
+  return `file:///${chemin.replace(/\\/g, '/').replace(/^\ //, '')}`;
 }
 
 /**
  * Une capture, un profil, une limite de temps.
- *
- * Les deux précautions ont la même cause, trouvée en exécutant U1.1 : l'état
- * `echec-github-repli-local` déclenche un vrai téléchargement (`download` crée
- * un blob et clique un lien), et ce Chrome-là ne rend jamais la main. Avec un
- * profil partagé, le suivant restait bloqué sur le verrou du profil et la
- * campagne s'arrêtait sans un mot, onze captures sur vingt et une. L'image, elle,
- * est écrite AVANT ce blocage : un profil par capture et un `timeout` suffisent
- * donc à la récolter puis à passer au suivant.
  */
 function capturer(chrome, racineProfils, page, image, largeur, hauteur) {
   const profil = fs.mkdtempSync(path.join(racineProfils, 'profil-'));
