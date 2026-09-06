@@ -18,6 +18,7 @@ import { extractContractPropertyModel } from './parsers';
 import { buildContractPropertySurface } from './propertySurface';
 export { mergeWrapperProps } from './propertySurface';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
+import { mergeEnumDefaults } from './mergeEnumDefaults';
 import { extractPropertyBindings } from './propertyBindings';
 import { compactVariants, intern, signature } from './compactVariants';
 import { CATALOGUES_DE_VUES, elideContract, elideNeutrals } from './elideNeutrals';
@@ -96,49 +97,22 @@ export type ComponentExport = {
   content: string;
   warningCount: number;
   /**
-   * Ce qui manque au contrat et appelle un geste dans Figma.
-   *
-   * **C'est le seul canal (U4.7).** Le canal jumeau `infos` portait ce que
-   * l'export DOCUMENTE sans rien perdre — une piste de grille en pixels, un
-   * calque hors du flux, une rotation, une structure propre à un variant. Ces
-   * constats n'ont jamais rien demandé au designer, et lui faire relire à
-   * chaque export le fonctionnement interne de l'exporteur coûtait la lecture
-   * des points qui, eux, appellent un geste. Ils ne sont plus émis du tout :
-   * leur règle vit dans la spécification et dans les tests du format.
+   * Seul canal des données manquantes qui demandent un geste dans Figma. Les
+   * transformations complètes restent silencieuses et documentées par le format.
    */
   warnings: string[];
   /**
-   * OÙ regarder, pour les messages dont le sujet désigne un node (U4.3).
-   *
-   * Indexé par le TEXTE du message, parce que c'est l'identité qu'emploie déjà
-   * tout le dédoublonnage : deux calques qui produisent le même constat n'en
-   * font qu'un, donc n'ont qu'une cible.
-   *
-   * **Cette carte s'arrête à cette frontière.** Elle sert un clic dans
-   * l'interface ; elle n'entre pas dans le contrat, où `meta.diagnostics` n'a
-   * pas de champ `figma` — une loi de `tests/lois.ts` le refuse, parce que le
-   * schéma, lui, l'accepterait sans un mot.
-   *
-   * Un message absent de la carte n'est pas un oubli : son sujet ne désigne
-   * aucun node unique — un text style, une variable, un agrégat sur la matrice
-   * — et `sujetSansNode` en porte la raison écrite au site d'émission.
+   * Node du sujet, indexé par la phrase qui sert aussi au dédoublonnage. Cette
+   * aide d'interface n'entre jamais dans le contrat ; son absence peut être voulue.
    */
   localisations: ReadonlyMap<string, string>;
   /**
-   * Les trois parties de chaque message, indexées par sa phrase compacte (U4.8).
-   *
-   * Même clé et même raison que `localisations` : le texte est l'identité d'un
-   * message, parce que le dédoublonnage en vit. L'interface met ces parties en
-   * page ; `meta.diagnostics` et la pull request portent la phrase, qui s'en
-   * dérive. Une loi refuse un message dont les parties manquent.
+   * Parties du message indexées par sa phrase. L'UI les met en page ; le contrat
+   * et la pull request publient la phrase dérivée par `phraseDe`.
    */
   parties: ReadonlyMap<string, PointACorriger>;
   /**
-   * Les messages dont l'absence de cible est DÉCLARÉE, et pourquoi (U4.3).
-   *
-   * L'interface n'en fait rien : c'est la loi de couverture qui les lit, pour
-   * distinguer « aucun node n'existe, voici pourquoi » de « ce site n'a pas été
-   * converti ». Sans cette distinction, la loi ne mesurerait qu'un total.
+   * Justification explicite des messages sans node, utilisée par la loi de couverture.
    */
   localisationsDeclarees: ReadonlyMap<string, string>;
 };
@@ -169,27 +143,10 @@ function getSelectedComponent(): ComponentNode | ComponentSetNode {
 
 /**
  * Construit les métadonnées de traçabilité vers Figma.
- *
- * **`meta.figma.url` n'est plus écrit, et c'est une décision, pas une panne
- * (T4.4).** `figma.fileKey` est réservé aux plugins qui déclarent
- * `enablePrivatePluginApi`, drapeau que seul un plugin PRIVÉ d'organisation a
- * le droit de porter. Le plugin se distribue désormais par la Figma Community :
- * le drapeau est retiré du manifest, donc la clé du fichier n'arrive jamais, et
- * le champ reste vide sur chaque export.
- *
- * Le calcul est laissé en place plutôt que supprimé. Ce n'est pas du code mort
- * par indécision : `url` reste OPTIONNEL dans le format, une distribution
- * privée reste possible pour qui charge ce plugin en développement dans une
- * organisation, et la troisième voie de D6 — demander la clé dans la
- * configuration — le rebrancherait ici sans rien réécrire. Le jour où le champ
- * doit vraiment disparaître, c'est le format qui change de version, pas ce
- * module.
- *
- * Ce qui remplace le lien : `fileName` et `nodeId`, que le contrat porte
- * toujours, et que le corps de la pull request annonce désormais sur sa page de
- * couverture (T4.2). C'est là que la seconde condition de D6 — « la traçabilité
- * par `fileName` et `nodeId` suffit-elle à une revue ? » — se constate sur une
- * pull request réelle, ce qu'aucun raisonnement ne pouvait trancher.
+ * `url` reste optionnelle : la distribution Community n'expose généralement
+ * pas `figma.fileKey`, réservé à `enablePrivatePluginApi`. `fileName` et
+ * `nodeId` assurent alors la traçabilité ; une distribution privée peut encore
+ * fournir le lien sans changer le format.
  */
 function buildMeta(
   componentSet: ComponentNode | ComponentSetNode,
@@ -389,6 +346,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // aux états pour l'axe que `stateModel` publie à la place des props.
   mergePropDescriptions(props, stateModel, rules.propDescriptions, warnings);
   mergeBooleanDescriptions(props, rules.booleanDescriptions, warnings);
+  mergeEnumDefaults(props, rules.enumDefaults, warnings);
   // Ces deux fusions ne portent que la documentation des règles.
   warningCursor = warnings.length;
   const icons = mergeIconRules(props, extracted.iconLayers, rules.iconRules, warnings);

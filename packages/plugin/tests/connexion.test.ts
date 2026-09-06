@@ -1,11 +1,5 @@
 /**
- * Une cause de connexion, un geste (U5.2).
- *
- * Le défaut d'origine n'était pas un texte manquant : c'était un booléen. Trois
- * situations qui se corrigent de trois façons arrivaient sous la même pastille
- * rouge. Ces tests tiennent la seule chose qui empêche la fusion de revenir —
- * que chaque cause d'échec nomme un geste, et que deux causes distinctes ne
- * disent pas la même chose.
+ * Une cause de connexion, un geste.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';

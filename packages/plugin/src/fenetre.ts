@@ -1,20 +1,7 @@
 /**
  * La taille de la fenêtre du plugin : ses bornes, sa lecture, son rangement.
- *
- * **Ce que la plateforme impose, vérifié avant d'écrire quoi que ce soit
- * (U1.10).** `figma.ui.resize` accepte tout au-dessus de **70 × 0**, et la
- * documentation ne décrit **aucun redimensionnement natif** : une fenêtre de
- * plugin ne se redimensionne que si le plugin dessine lui-même une poignée. Les
- * deux faits comptent — le premier dit que la plateforme ne protège pas d'une
- * fenêtre inutilisable, le second qu'il faut en ajouter une à l'écran.
- *
- * **Les bornes de CE plugin sont donc les siennes.** 70 px de large ne montre
- * aucun de ses libellés ; le minimum ci-dessous est celui à partir duquel
- * l'interface reste lisible, et c'est la taille que le point (c) du protocole
- * de relecture (CONTRIBUTING.md) demande de regarder.
- *
- * La taille est rangée dans `figma.clientStorage` : elle vit sur la machine du
- * designer, jamais dans le document.
+ * Les minima garantissent la lisibilité, Figma n'imposant qu'une borne technique
+ * insuffisante. La taille reste dans `clientStorage`, jamais dans le document.
  */
 
 /** La taille d'ouverture, tant que rien n'a été rangé. */

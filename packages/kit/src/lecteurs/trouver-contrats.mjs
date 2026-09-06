@@ -1,3 +1,4 @@
+
 /**
  * Parcours partagé des contrats co-localisés (`*.contract.json`).
  *

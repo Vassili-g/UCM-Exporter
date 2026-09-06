@@ -78,34 +78,27 @@ export function createConfigurationPage(onSave) {
   element.hidden = true;
 
   /*
-   * Ni carte, ni titre de section (U1.7 et U1.2). La configuration est un
-   * formulaire : lui donner le poids visuel de la zone d'action en faisait une
-   * troisième zone de rang égal. Et « Configuration du repository » répétait le
-   * titre de la page qui le porte, que U0.3 rend déjà exact.
-   */
+ * Ni carte, ni titre de section. La configuration est un formulaire : lui donner le
+ * poids visuel de la zone d'action en faisait une troisième zone de rang égal. Et «
+ * Configuration du repository » répétait le titre de la page qui le porte, que U0.3
+ * rend déjà exact.
+ */
   const markDirty = () => { settingsDirty = true; };
   /*
-   * Les libellés sont en français (U0.5). Ils étaient les quatre seuls mots
-   * d'anglais d'une interface entièrement française, et le geste attendait
-   * l'arbitrage de langue que la publication sur la Figma Community a rendu
-   * exigible : il est tranché — le français reste. « Personal Access Token »
-   * n'est pas une exception à cette règle, c'est le nom que GitHub donne à la
-   * chose, et le traduire enverrait chercher dans ses réglages un intitulé qui
-   * n'y figure pas.
-   */
+ * Les libellés sont en français. Ils étaient les quatre seuls mots d'anglais d'une
+ * interface entièrement française, et le geste attendait l'arbitrage de langue que
+ * la publication sur la Figma Community a rendu exigible : il est tranché — le
+ * français reste. « Personal Access Token » n'est pas une exception à cette règle,
+ * c'est le nom que GitHub donne à la chose, et le traduire enverrait chercher dans
+ * ses réglages un intitulé qui n'y figure pas.
+ */
   const repoUrl = createField('repoUrl', 'URL du repository', {
     placeholder: 'https://github.com/mon-org/design-system-v3',
   }, markDirty);
 
   /*
-   * Qui gouverne les chemins, dit AVANT de les saisir (U5.1).
-   *
-   * `repositoryLayout` ignore ces deux champs dès qu'un `ucm.config.json`
-   * lisible existe. Le designer l'apprenait par une ligne de journal, après
-   * publication : il avait donc rempli deux champs sans effet, et rien ne le
-   * lui avait dit. La phrase vient du sandbox, seul à savoir ce que le
-   * repository répond.
-   */
+ * Qui gouverne les chemins, dit AVANT de les saisir.
+ */
   const gouvernance = document.createElement('p');
   gouvernance.className = 'field-help';
   gouvernance.hidden = true;
@@ -151,16 +144,8 @@ export function createConfigurationPage(onSave) {
   reinitialiserSuppression();
 
   /*
-   * L'état de la configuration se lit EN HAUT, sous la pastille (U5.2).
-   *
-   * Il vivait sous le bouton « Enregistrer », c'est-à-dire hors de l'écran :
-   * le designer qui arrive par la pastille rouge y trouvait un formulaire et
-   * aucune raison. Le formulaire dépasse la fenêtre dès que le repository se
-   * décrit, donc l'un des deux bouts sera toujours à faire défiler ; c'est
-   * l'arrivée qu'il faut servir, parce que c'est le moment où l'on ne sait pas
-   * quoi faire. Le résultat d'un enregistrement s'écrit au même endroit : deux
-   * emplacements pour un même fait en feraient deux faits.
-   */
+ * L'état de la configuration se lit EN HAUT, sous la pastille.
+ */
   const status = document.createElement('div');
   status.className = 'config-status';
   status.hidden = true;
@@ -218,15 +203,8 @@ export function createConfigurationPage(onSave) {
     element,
     renderErrors,
     /*
-     * Les valeurs sont celles du sandbox, sans défaut inventé ici (U5.1).
-     *
-     * Ce composant en écrivait trois de son côté — `main`, `src/components`,
-     * `src/tokens` — que `loadPublicSettings` écrit déjà. Deux autorités sur la
-     * même valeur, et leur désaccord était muet : `config.ts` conserve une
-     * chaîne vide, ce `populate` la remplaçait. Une branche de base
-     * délibérément vidée se réaffichait donc « main ». Les placeholders portent
-     * la suggestion ; le champ ne porte que ce qui est enregistré.
-     */
+ * Les valeurs sont celles du sandbox, sans défaut inventé ici.
+ */
     populate(settings) {
       if (settingsDirty) return;
       repoUrl.input.value = settings.repoUrl ?? '';
@@ -247,14 +225,11 @@ export function createConfigurationPage(onSave) {
       this.populate(settings);
     },
     /*
-     * Le statut est écrit même quand la page est cachée (U5.2) : ainsi le
-     * designer qui arrive par la pastille trouve la cause déjà là, au lieu d'un
-     * cadre vide. C'est la phrase fausse — « Configuration enregistrée » sans
-     * enregistrement — qui imposait auparavant de ne rien écrire hors de la vue.
-     *
-     * `geste` vient du sandbox, et il nomme quoi corriger. L'UI ne le formule
-     * pas : elle ne connaît ni le statut HTTP ni la validité des réglages.
-     */
+ * Le statut est écrit même quand la page est cachée : ainsi le designer qui arrive
+ * par la pastille trouve la cause déjà là, au lieu d'un cadre vide. C'est la phrase
+ * fausse — « Configuration enregistrée » sans enregistrement — qui imposait
+ * auparavant de ne rien écrire hors de la vue.
+ */
     updateConnection(state, geste) {
       if (state === 'checking') return;
       saveButton.disabled = false;

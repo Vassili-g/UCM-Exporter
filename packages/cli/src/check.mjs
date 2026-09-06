@@ -1,39 +1,8 @@
 /**
- * `ucm check` : contrôler les contrats d'un repository, et le dire.
- *
- * **Cette commande n'orchestre rien.** Tout le contrôle et tout le rapport
- * vivent dans `@ucm-kit/core/lecteurs` (T5.2) ; ce fichier lit des arguments,
- * imprime, écrit un fichier si on le lui demande et choisit un code de sortie.
- * C'était l'arbitrage de T3.3 : en écrire une seconde version ici produirait
- * deux rapports qui divergeraient en silence — la maladie exacte que T2.7, T6.0
- * et T2.6 ont soignée trois fois ailleurs dans ce projet. Le CONTENU du rapport
- * est du format, sa PUBLICATION est de l'outil, et cette ligne-là est la seule
- * que ce fichier a le droit de franchir.
- *
- * ## Les trois codes de sortie
- *
- * `0` tout est passé · `1` des contrôles ont échoué · `2` l'invocation ou la
- * configuration est fautive. Le 1 et le 2 ne se confondent jamais : un workflow
- * qui les mélangerait ferait lire « votre export est en défaut » à quelqu'un
- * dont le seul tort est une faute de frappe dans un drapeau.
- *
- * ## Pourquoi `--report` et pas une variable d'environnement
- *
- * Le rapport ne s'écrivait que si `CI` était présente. Écrire toujours
- * laisserait un fichier non versionné dans la copie de travail après chaque
- * exécution — le risque n'est pas de le commiter mais de faire croire à un
- * rapport frais. Ne l'écrire que sous `CI` empêche un développeur de
- * prévisualiser ce que le designer lira, ce qui est précisément ce qu'on veut
- * faire quand on modifie ces messages. Un drapeau explicite règle les deux, et
- * supprime une variable d'environnement magique.
- *
- * ## Pourquoi `--base <sha>` et pas un calcul de CI
- *
- * Le périmètre des états informatifs se limite aux contrats que la pull request
- * modifie, sans quoi un export de tokens reparle indéfiniment d'un composant
- * qu'il ne touche pas. Savoir QUEL sha est la base demande de connaître un
- * système de CI (`pull_request.base.sha`, `fetch-depth: 0`) ; faire le diff, non.
- * Le workflow trouve le sha, cette commande fait le diff.
+ * Publie le contrôle défini par `@ucm-kit/core/lecteurs` : cette commande ne
+ * redéfinit ni le contrôle ni le rapport. `--report` commande explicitement
+ * l'écriture ; `--base` reçoit de la CI le SHA qui borne la pull request.
+ * Codes : 0 succès, 1 contrôles rouges, 2 invocation ou configuration fautive.
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";

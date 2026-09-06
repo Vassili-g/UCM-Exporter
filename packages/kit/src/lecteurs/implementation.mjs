@@ -1,20 +1,7 @@
 /**
  * OÙ vit l'implémentation d'un contrat, et SI elle est là.
- *
- * Ces deux questions sont universelles : un contrat exporté depuis Figma peut
- * être implémenté en React, en Swift ou en Kotlin, et dans les trois cas la
- * réponse à « ce composant est-il écrit ? » est la même — un fichier existe, ou
- * il n'existe pas. C'est pour cela que ce module est dans le noyau.
- *
- * Ce qu'il ne fait PAS, et c'est la coupure de T2.3 : il ne lit pas le fichier,
- * ne connaît aucun langage, et ne compare rien au contrat. Comparer une API
- * publique à des props demande un vérificateur de types propre à une cible ;
- * c'est le travail d'un ADAPTATEUR, qui vit chez le consommateur.
- *
- * Sans cette coupure, le moteur répondait « implémentation en attente » à tout
- * repo non-TypeScript, y compris quand le composant était écrit — et il le
- * répondait sur la pull request d'export elle-même, celle que le designer lit.
- * Une affirmation fausse au seul endroit qui compte.
+ * Le noyau résout un chemin et teste son existence sans lire le langage ni
+ * comparer l'API ; cette mesure propre à la stack appartient à l'adaptateur.
  */
 import { existsSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
@@ -22,7 +9,7 @@ import { basename, dirname, join } from "node:path";
 // Le motif par défaut est une VALEUR du format, pas une décision de ce module :
 // il est aussi le défaut de `ucm.config.json`, et deux constantes pour la même
 // chaîne dériveraient. Il vit donc dans `@ucm-kit/core/format`, avec le reste
-// de la grammaire de configuration (T4.1).
+// de la grammaire de configuration.
 import { MOTIF_IMPLEMENTATION_PAR_DEFAUT } from "@ucm-kit/core/format";
 
 /** L'identifiant d'artefact que porte un chemin de contrat : son nom de base. */

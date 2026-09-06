@@ -30,16 +30,8 @@ export type RepositoryArtifact = {
 };
 
 /**
- * Ce qu'une publication a fait, et pour un export immobile, OÙ le contenu
- * identique se trouve déjà.
- *
- * **Pourquoi `ou` sur `unchanged` (T4.5).** Jusqu'ici il n'y avait qu'un seul
- * endroit possible — la branche de base — et le taire ne coûtait rien. Depuis
- * que les pull requests d'export ouvertes sont comparées elles aussi, « aucun
- * changement » sans l'endroit enverrait le designer chercher sur la branche de
- * base un fichier qui n'y est pas encore. `pullRequestUrl` mène alors à la page
- * où le geste restant se fait — fusionner — et vaut `null` sur la branche de
- * base, où il n'y a précisément plus rien à faire.
+ * Résultat d'une publication. Pour un contenu inchangé, `ou` distingue la
+ * branche de base d'une PR ouverte et `pullRequestUrl` mène à cette PR.
  */
 export type PublishResult =
   | {
@@ -54,14 +46,7 @@ export type PublishResult =
 /** Qui a décidé où l'artefact s'écrit — le repo, ou les réglages du plugin. */
 export type LayoutSource = typeof NOM_CONFIGURATION | 'réglages du plugin';
 
-/**
- * Où le repository cible range ses fichiers.
- *
- * `tokens` est un CHEMIN DE FICHIER, jamais un dossier. Les réglages du plugin,
- * eux, ont toujours enregistré un dossier auquel ils ajoutaient `/tokens.json` :
- * les deux conventions ne se distinguaient pas tant que le dossier s'appelait
- * `tokens`, et c'est l'une des désynchronisations que T4.1 referme.
- */
+/** Emplacements effectifs ; `tokens` est un chemin de fichier, jamais un dossier. */
 export type RepositoryLayout = {
   components: string | null;
   tokens: string | null;
@@ -80,7 +65,10 @@ type GithubBlob = {
   encoding: string;
 };
 
-/** Erreur réseau nettoyée : elle contient un statut et un message, jamais les headers. */
+/**
+ * Erreur réseau nettoyée : statut et message, jamais les headers. Le statut
+ * distingue notamment une panne réseau d'une configuration du dépôt invalide.
+ */
 export class GithubApiError extends Error {
   constructor(message: string, public readonly status: number | null = null) {
     super(message);
@@ -90,11 +78,6 @@ export class GithubApiError extends Error {
 
 /**
  * Le repository répond, mais il se décrit mal.
- *
- * Elle existe pour être RECONNUE (U5.1) : sans elle, un `ucm.config.json`
- * illisible et une panne de réseau arrivent tous deux avec un statut nul, et le
- * test de connexion enverrait le designer vérifier sa connexion pendant qu'un
- * développeur doit corriger un fichier.
  */
 export class ErreurDeDescription extends GithubApiError {
   constructor(message: string) {
@@ -270,59 +253,10 @@ function sansLienAutomatique(warning: string): string {
 }
 
 /**
- * Ce que le dépôt reçoit, annoncé sur sa page de couverture : le schéma de
- * contrat que porte l'artefact déposé (T4.2), et d'où il vient (T4.4).
- *
- * **À quoi sert un numéro de schéma sur cette page.** C'est le seul champ qui
- * décide si le fichier ENTIER est lisible par ce repository : hors de la fenêtre
- * que ses lecteurs supportent, le contrat est refusé en bloc, quel que soit son
- * contenu. Or il est enfoui au milieu d'un diff de plusieurs milliers de lignes,
- * où personne ne va le chercher. Sur la couverture, celui qui décide de
- * fusionner voit quel schéma vient d'arriver sans ouvrir le JSON — et le jour où
- * le repository change de version, les pull requests d'export restées ouvertes
- * disent lesquelles ont été produites avant la bascule.
- *
- * **Le numéro est lu DANS le fichier, jamais dans `CONTRACT_VERSION`.**
- * L'artefact et la constante du plugin sont deux autorités pour la même chose ;
- * annoncer la constante ferait de ce corps de PR un énoncé sur le PLUGIN
- * déguisé en énoncé sur le FICHIER, et le lecteur croirait la couverture plutôt
- * que le contenu. C'est le défaut que T4.1, T4.3 et T3.4 ont chacune trouvé
- * ailleurs — deux autorités pour la même chose, dont le désaccord est muet.
- *
- * **L'origine Figma est là parce que T4.4 lui a retiré son raccourci.** La
- * distribution par la Community interdit `enablePrivatePluginApi`, donc
- * `figma.fileKey`, donc `meta.figma.url` : le lien d'un clic vers le composant
- * source a disparu des contrats. D6 posait la question — « la traçabilité par
- * `fileName` et `nodeId` suffit-elle réellement à une revue ? » — en précisant
- * qu'elle se constate sur une pull request réelle et pas en principe. Elle est
- * donc écrite là où la revue a lieu. Quand un contrat porte encore une URL — un
- * export antérieur, ou un plugin chargé en développement dans une organisation
- * —, elle est rendue en lien : le champ décide, pas la distribution supposée.
- *
- * **Les intitulés Figma passent par `sansLienAutomatique`**, pour la raison qui
- * l'a fait naître : un composant nommé `@icons` ouvrirait le profil d'un
- * inconnu, notifié à chaque export. La règle vaut pour l'en-tête comme pour la
- * liste, et un second traitement du même risque aurait fini par diverger.
- *
- * **`tokens.json` ne reçoit ni l'une ni l'autre, et ce n'est pas un oubli.**
- * C'est un arbre DTCG, pas un contrat : il ne porte aucun schéma UCM, et il
- * n'est le portrait d'aucun composant — ses variables viennent du fichier
- * entier.
- *
- * **Un contrat sans version lisible le dit.** Le plugin en écrit toujours une,
- * donc ce cas ne vient pas de lui ; il vient d'un artefact produit ailleurs, et
- * le contrôle du repository le refusera alors pour champ absent — un verdict
- * dont la cause se lit ici en une ligne au lieu de se chercher dans le rapport.
- * Ce n'est pas un cri de loup : la ligne ne s'écrit que dans un cas réellement
- * fautif. L'origine, elle, s'omet quand elle est illisible : le défaut est déjà
- * nommé une fois au-dessus, et le redire deux fois n'apprend rien.
- *
- * **Pourquoi ceci n'est pas une note au sens de la règle voisine.** Une note est
- * un CONSTAT sur le contenu, dont la conclusion est « rien à faire », et
- * l'admettre dans la liste apprendrait au designer que cette liste se survole.
- * Ni le schéma ni l'origine ne sont des constats : ce sont l'IDENTITÉ de ce qui
- * est déposé, au même titre que le chemin du fichier juste au-dessus. Ils
- * vivent donc dans l'en-tête, et la liste des gestes à faire reste intacte.
+ * Identité annoncée en tête de PR. La version est lue dans l'artefact, jamais
+ * dans la constante du plugin ; l'origine emploie l'URL disponible ou, à défaut,
+ * `fileName` et `nodeId`. Les intitulés passent par `sansLienAutomatique`.
+ * `tokens.json`, qui n'est ni un contrat ni un composant, n'a pas ces lignes.
  */
 function lignesDIdentite(artifact: RepositoryArtifact): string[] {
   if (artifact.kind !== 'component') return [];
@@ -360,27 +294,8 @@ function lignesDIdentite(artifact: RepositoryArtifact): string[] {
 
 /**
  * Corps de la pull request ouverte pour un export.
- *
- * Les avertissements y figurent parce que c'est la page que le plugin ouvre
- * juste après l'export : celui qui produit le constat l'écrit là où son
- * destinataire arrive. Un contrat n'a donc pas à être ouvert pour être relu, et
- * `tokens.json`, qui n'a aucun champ où les transporter, est couvert de la même
- * façon que les contrats.
- *
- * Une seule liste, et une règle qui la borne : n'arrive ici que ce qui nomme un
- * geste à faire dans Figma. Le canal `infos` n'y entre pas. Une note dit ce que
- * le contrat publie sous une forme inhabituelle — la valeur y est, rien ne
- * manque, rien n'est à corriger — et la publier ici reviendrait à demander au
- * designer de relire, à chaque export, des lignes dont la conclusion est
- * toujours « rien à faire ». Au bout de quelques PR il ne lirait plus les
- * autres non plus. Les notes restent dans `meta.diagnostics`, où un consommateur
- * du contrat les trouve, et dans le journal du plugin, où le designer les a sous
- * les yeux pendant l'export.
- *
- * **Deux zones, et la frontière compte.** L'en-tête dit l'IDENTITÉ de ce qui
- * est déposé — le chemin, le schéma de contrat, et d'où vient le composant
- * (`lignesDIdentite`, T4.2 et T4.4). La liste qui suit ne porte que des GESTES.
- * Un constat sans geste n'entre ni dans l'une ni dans l'autre.
+ * L'en-tête porte l'identité de l'artefact ; la liste ne contient que les
+ * diagnostics qui demandent un geste dans Figma.
  */
 export function pullRequestBody(path: string, artifact: RepositoryArtifact): string {
   const warnings = artifact.warnings;
@@ -603,37 +518,9 @@ type ExportEnVol = { contenu: string; ou: string; url: string | null };
 /**
  * Les exports du même artefact encore EN VOL, c'est-à-dire dans une pull request
  * ouverte et pas encore fusionnée.
- *
- * **Le trou que ceci referme.** `getRepositoryFile` interroge la branche de
- * base : un artefact qui n'existe que dans une PR d'export ouverte y est
- * invisible. Cette cécité produit deux défauts, et c'est pour ça qu'il n'y a ici
- * qu'une seule lecture :
- *
- * - *la collision (T4.3)* — deux composants en collision exportés coup sur coup
- *   ouvriraient deux pull requests sur le même chemin sans qu'aucun refus n'ait
- *   lieu, et la collision ne se révélerait qu'à la fusion de la seconde, en
- *   écrasant la première, c'est-à-dire précisément le cas qu'on prétend avoir
- *   fermé ;
- * - *le doublon (T4.5)* — réexporter un contenu strictement identique pendant
- *   que sa pull request est ouverte en ouvrait une seconde, en tout point
- *   pareille, sans un mot.
- *
- * Le second vaut pour les DEUX genres d'artefact, quand le premier ne concerne
- * que les contrats : `tokens.json` ne se dispute son chemin avec personne, mais
- * il se réexporte comme n'importe quoi d'autre. C'est pourquoi cette fonction
- * ne parle plus de contrats et prend le `kind` au sérieux — le préfixe de
- * branche sépare déjà les deux flux.
- *
- * **Le coût est borné et c'est ce qui rend le contrôle acceptable.** Un seul
- * appel liste les pull requests ouvertes ; seules celles dont la branche porte
- * le préfixe d'export sont ensuite ouvertes, et il n'y en a normalement aucune.
- * Le filtre est STRUCTUREL — le préfixe que `exportBranchName` écrit — et non
- * une comparaison de titres : un titre est du texte, il dérive sans rien casser
- * de visible, et la recherche cesserait alors de trouver quoi que ce soit.
- *
- * Un échec de cet appel n'est pas avalé. Ne pas pouvoir regarder n'est pas la
- * même chose que ne rien trouver, et confondre les deux redonnerait au
- * garde-fou l'apparence du vert qu'il existe pour retirer.
+ * Ils ferment les collisions de contrats et les doublons avant fusion. Un seul
+ * appel liste les PR, puis seules les branches au préfixe d'export sont lues ;
+ * un échec de lecture n'est jamais assimilé à une liste vide.
  */
 async function exportsEnVol(
   config: GithubConfig,
@@ -669,13 +556,8 @@ async function exportsEnVol(
 
 /**
  * Ce que le repository apprend AVANT toute écriture.
- *
- * **Une seule lecture, deux lecteurs (U3.1 c).** Le pré-vol doit refaire tout
- * le chemin — l'emplacement, l'immobilité, la collision — et la publication
- * doit le REVÉRIFIER, parce que le dépôt a pu bouger entre les deux : quelqu'un
- * a fusionné, une branche est apparue. Deux chemins de lecture divergeraient en
- * silence, ce que T4.1 a déjà refermé ailleurs ; il n'y en a donc qu'un, appelé
- * deux fois.
+ * La même lecture est rejouée à la publication, car branche et PR peuvent avoir
+ * changé depuis le pré-vol ; deux implémentations de ce contrôle divergeraient.
  */
 export type LectureDuDepot = {
   layout: RepositoryLayout;

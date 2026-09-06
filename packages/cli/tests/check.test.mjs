@@ -1,11 +1,5 @@
 /**
  * `ucm check` : ce que la commande ajoute au contrôle, et rien de plus.
- *
- * Ce qui est vérifié ici est la COUCHE OUTIL — arguments, périmètre, écriture
- * du rapport, code de sortie. Le contenu du rapport ne l'est pas : il appartient
- * au kit, et `packages/kit/tests/controleRepository.test.mjs` le tient. Le
- * dédoubler ici recréerait deux autorités sur les mêmes messages, ce que T5.2
- * vient de supprimer.
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";

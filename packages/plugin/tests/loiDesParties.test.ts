@@ -1,22 +1,5 @@
 /**
- * La loi des trois parties (U4.8), et pourquoi elle se mesure DEUX fois.
- *
- * *La loi :* **tout point à corriger dit OÙ, ce qui MANQUE, ce que ça COÛTE et
- * quel GESTE le corrige — et il le dit en parties séparées, pas en une phrase.**
- *
- * `CONTRIBUTING.md` exige les trois depuis toujours. La règle était tenue à la
- * main, dans une `string` que chaque site concaténait : personne ne pouvait la
- * vérifier, et l'interface ne pouvait qu'afficher un paragraphe où le geste se
- * lisait en dernier, après deux phrases de contexte. C'est ce paragraphe que
- * U4.8 remplace par une carte — et une carte ne se découpe pas dans le DOM.
- *
- * *Pourquoi la source ET l'exécution.* Le contrôle de source rougit à la
- * seconde où un site pousse une phrase entière dans un canal de diagnostics,
- * qu'un test l'atteigne ou non : c'est lui qui couvre les quatre-vingt-dix
- * sites d'émission. Le contrôle d'exécution, lui, vérifie que ce qui SORT
- * réellement du moteur porte ses parties — un site peut passer par l'autorité
- * et perdre son registre dans une recopie de canal, ce que la source ne voit
- * pas. Chacun est aveugle là où l'autre regarde.
+ * La loi des trois parties, et pourquoi elle se mesure DEUX fois.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

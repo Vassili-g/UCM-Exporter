@@ -1,17 +1,7 @@
 /**
  * Ce que vaut la connexion au repository, et ce que le designer doit en faire.
- *
- * **Le défaut que ce fichier referme (U5.2).** `testGithubConnection` rendait un
- * booléen : pas de configuration, jeton refusé et repository introuvable
- * donnaient la même pastille rouge, alors que le geste diffère dans les trois
- * cas. L'information existait à la source — `GithubApiError` porte son statut
- * HTTP — et se perdait au retour.
- *
- * **Pourquoi les textes sont ici et pas dans l'UI.** Le sandbox envoie déjà des
- * phrases entières à l'interface (`status`, `note`, `log`) ; l'UI, elle, est en
- * JavaScript et aucun test ne l'atteint. Écrire ces textes ici les rend
- * vérifiables, et surtout les rend UNIQUES : la pastille inventait les siens de
- * son côté, ce qui faisait deux autorités sur la même chose.
+ * Le statut HTTP distingue configuration absente, jeton refusé et dépôt
+ * introuvable. Les textes vivent ici pour rester uniques et testables.
  */
 import { NOM_CONFIGURATION } from '@ucm-kit/core/format';
 

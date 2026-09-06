@@ -1,23 +1,5 @@
 /**
  * La loi de couverture de U4.3, et pourquoi elle se lit dans la SOURCE.
- *
- * *La loi :* **tout diagnostic dont le sujet désigne un node porte ce node.**
- * Elle existe pour U4.4, qui rendra ces messages cliquables — et une interface
- * où certains avertissements mènent à leur calque et d'autres pas enseignerait
- * une leçon fausse : que l'absence de lien signifie « rien à localiser », quand
- * elle signifierait « ce site-là n'a pas été converti ».
- *
- * *Pourquoi la source et pas seulement l'exécution.* Le faux `figma` des tests
- * n'excite qu'une poignée des quarante sites d'émission. Une loi qui ne
- * s'exercerait que sur ce qui a été déclenché serait verte parce que personne
- * n'a écrit le scénario qui la mettrait en défaut — du théâtre. Le contrôle
- * ci-dessous ne dépend d'aucun scénario : il rougit à la SECONDE où un site
- * recopie la convention de préfixe à la main, qu'un test l'atteigne ou non.
- *
- * C'est le même raisonnement que `monorepoCoherent.test.mjs` et
- * `docLinks.test.ts`, qui lisent des fichiers plutôt que d'exécuter du code :
- * certaines règles portent sur ce qui est ÉCRIT, et les vérifier à l'exécution
- * revient à espérer que l'exécution passe par là.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

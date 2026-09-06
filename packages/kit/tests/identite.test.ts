@@ -107,12 +107,6 @@ test('une entrée douteuse est jugée, pas levée', () => {
 
 /**
  * L'identité qu'un contrat porte, lue seule.
- *
- * Elle est exportée depuis T4.4, et pas par confort : la distribution par la
- * Community a retiré `meta.figma.url`, donc la traçabilité repose sur
- * `fileName` et `nodeId`, et le corps de la pull request doit les annoncer.
- * Deux lectures de la même origine — celle de l'arbitre et celle du message —
- * auraient fini par diverger sans que rien ne le dise.
  */
 test('l’identité rend les cinq champs que le contrat porte', () => {
   const identite = identiteDeContrat({

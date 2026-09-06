@@ -1,17 +1,7 @@
 /**
- * Ce sur quoi l'export va porter, et pourquoi il ne peut pas porter (U2.1).
- *
- * **Le défaut refermé ici.** Le nom du composant n'existait que dans une
- * PHRASE, envoyée à la note d'état : le premier clic l'écrasait par
- * « Traitement en cours… », et le message de succès ne le renommait pas. Le
- * designer perdait donc de vue ce qu'il exportait au moment précis où il
- * l'exportait. Une structure survit à un changement de texte ; une phrase, non.
- *
- * **Et deux situations que l'interface confondait.** Rien de sélectionné,
- * plusieurs layers, un layer qui n'est pas un composant : `reportSelectionState`
- * envoyait le même message dans les trois cas, alors que le geste diffère. La
- * galerie l'a montré en produisant deux captures identiques pour deux états
- * déclarés distincts.
+ * Décrit la cible séparément du texte d'état afin qu'elle survive aux phases de
+ * traitement. Distingue absence de sélection, sélection multiple et mauvais
+ * type de calque, car chacun demande un geste différent.
  */
 
 /** Un layer de la sélection, réduit à ce qui décide. */

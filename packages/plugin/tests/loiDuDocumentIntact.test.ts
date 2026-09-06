@@ -1,27 +1,4 @@
-/**
- * « Le plugin ne modifie JAMAIS le document Figma » — cette phrase est un
- * invariant du projet, et jusqu'ici rien ne l'empêchait de devenir fausse.
- *
- * **Pourquoi ce filet naît maintenant (U4.5).** Rendre un avertissement
- * cliquable ouvre une porte : le moteur va poser une sélection et déplacer la
- * vue. Ce ne sont pas des écritures — l'un et l'autre sont un état de
- * l'éditeur, et les typings de Figma disent que les actions d'un plugin ne
- * rejoignent l'historique d'annulation que si `commitUndo()` est appelé. Mais
- * une fois la porte ouverte, « toucher à Figma » cesse d'être impensable, et
- * c'est exactement le moment où une règle de prose se met à glisser.
- *
- * **Ce qu'il refuse.** Les appels qui ÉCRIVENT : créer un node, le renommer, le
- * déplacer, le supprimer, écrire une variable ou un style, valider une entrée
- * d'annulation. Il lit la source plutôt que d'exécuter, pour la même raison que
- * la loi de localisation : un test dynamique ne prouverait que ce que les
- * scénarios déclenchent, et une écriture ajoutée dans une branche jamais
- * exercée passerait au vert.
- *
- * **Ce qu'il autorise, et c'est la décision de U4.5 :** lire, sélectionner,
- * cadrer. La différence n'est pas une affaire de degré — c'est celle entre
- * regarder et écrire, et la spécification l'écrit sous « Sélectionner et cadrer
- * ne sont pas modifier ».
- */
+/** Refuse dans le moteur toute écriture ou création de nœud Figma. */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';

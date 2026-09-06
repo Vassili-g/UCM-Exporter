@@ -88,11 +88,8 @@ declare module "@ucm-kit/core/lecteurs" {
   ): boolean;
 
   /**
-   * La GRAMMAIRE de `ucm.config.json` n'est pas dans ce sous-chemin :
-   * `NOM_CONFIGURATION`, `CONFIGURATION_PAR_DEFAUT`,
-   * `champsInvalidesDeLaConfiguration`, `configurationDepuisJson` et
-   * `MOTIF_IMPLEMENTATION_PAR_DEFAUT` vivent dans `@ucm-kit/core/format`, que
-   * le plugin Figma atteint aussi (T4.1). Seule l'OUVERTURE du fichier est ici.
+   * Ouvre `ucm.config.json`. Sa grammaire vit dans `@ucm-kit/core/format`,
+   * également accessible au plugin Figma.
    */
 
   /** Lit la configuration d'un repository ; rend toujours une configuration complète. */
@@ -190,15 +187,7 @@ declare module "@ucm-kit/core/lecteurs" {
   /** Les avertissements d'un contrat sur lesquels le designer peut agir. */
   export function avertissementsCorrigeables(contrat: unknown): string[];
 
-  /**
-   * Les lignes markdown des avertissements d'export, vides s'il n'y en a aucun.
-   *
-   * *Corrigé par T5.2 :* cette déclaration annonçait `string | null`. La
-   * fonction rend un TABLEAU de lignes, et tous ses appelants la répandent dans
-   * le rapport — un `...` sur la chaîne annoncée aurait poussé ses caractères
-   * un par un. Une déclaration qui ment est pire que pas de déclaration ; celle
-   * de `rendreDiagnostic`, juste en dessous, portait la même faute.
-   */
+  /** Lignes markdown des avertissements d'export, ou tableau vide. */
   export function sectionAvertissementsExport(
     bilans: ReadonlyArray<unknown>,
     options?: { bloquant?: boolean },
@@ -262,7 +251,14 @@ declare module "@ucm-kit/core/lecteurs" {
     fonctionAbsente: string | null;
     manquantes: string[];
     typesIncorrects: Array<{ prop: string; attendu: string; recu: string }>;
+    /**
+     * Valeurs qu'un contrat publie et que l'union déclarée par le code n'offre
+     * pas. Vide quand le type est élargi : sans littéral, aucun verdict.
+     */
+    valeursNonImplementees: Array<{ prop: string; valeurs: string[] }>;
     booleensNonUtilises: string[];
+    /** Props enum déclarées et jamais lues ; `valeurs` sert au message. */
+    enumsSansEffet: Array<{ prop: string; valeurs: string[] }>;
     compositionsIncorrectes: Array<{ component: string; attendu: number; rendu: number }>;
   }
 

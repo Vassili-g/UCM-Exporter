@@ -81,12 +81,6 @@ test("le titre distingue un contrat cassé d'une version que le repo ne lit pas"
 
 /**
  * T7.3 — le titre et la section ne doivent pas nommer deux responsables.
- *
- * Le défaut a survécu parce que tous les tests de ce fichier fabriquaient une
- * version FUTURE : le sens `ancien` n'était éprouvé qu'au niveau de la section.
- * L'en-tête écrivait alors « réexporter n'y changerait rien » trois lignes
- * au-dessus d'une action qui demande de réexporter, et c'est la première phrase
- * que le designer lit.
  */
 test("le sens de l'écart de version décide du responsable annoncé", () => {
   const ancien = enteteDuVerdict([bilan({ version: { valeur: "11.0", verdict: "ancien" } })]);

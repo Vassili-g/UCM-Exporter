@@ -1,44 +1,15 @@
 /**
- * Les LECTEURS du format : ce qui juge un contrat déjà écrit.
- *
- * Ce sous-chemin est le pendant de `@ucm-kit/core/format`, et la frontière
- * entre les deux est une contrainte d'exécution, pas un rangement : le format
- * ne dépend de rien et voyage dans le bundle du plugin Figma comme dans un
- * navigateur ; les lecteurs, eux, utilisent `ajv` et `node:fs`. Les mélanger
- * casserait le bundle, et l'erreur n'apparaîtrait qu'au chargement du plugin.
- *
- * Ces modules se publient tels quels, en JavaScript : les compiler n'ajouterait
- * rien qu'un consommateur puisse utiliser, et le TypeScript n'est imposé à
- * personne.
- *
- * Pourquoi une seule porte plutôt qu'un sous-chemin par module : un sous-chemin
- * par fichier ferait de chaque nom de fichier une promesse, et interdirait de
- * réorganiser le dossier sans casser un consommateur. Une porte unique laisse
- * l'organisation interne libre.
- *
- * Ce qu'elle publie est exactement ce que les modules publient déjà, sans tri :
- * ce déplacement ne juge rien. Restreindre la surface est un autre geste, et il
- * se prendra quand le rapport aura rejoint le paquet (T5.2) — à ce moment-là on
- * saura ce qu'un consommateur appelle vraiment. `tests/surfaceLecteurs.test.mjs`
- * tient l'exhaustivité pour qu'un export ajouté à un module ne reste pas
- * enfermé dedans par oubli.
- *
- * Depuis T5.2, il contient AUSSI le rapport lu par le designer. Ce qu'il ne
- * contiendra jamais, en revanche, c'est la publication de ce rapport : où il
- * s'écrit — un fichier, le résumé d'un run de CI, un terminal — appartient à
- * l'outil qui appelle. Le contenu est du format, la publication est de l'outil.
+ * Porte publique unique des lecteurs Node (`ajv`, `node:fs`). Le sous-chemin
+ * `format`, sans dépendance de runtime, reste importable dans Figma et le
+ * navigateur. Cette porte expose le contenu du rapport, jamais sa publication.
  */
 
 /** Retrouver les contrats d'un dossier. */
 export { trouverContrats } from "./trouver-contrats.mjs";
 
 /**
- * Où vit l'implémentation d'un contrat, et si elle est là.
- *
- * L'EXISTENCE est ici parce qu'elle ne dépend d'aucun langage ; la COMPARAISON
- * des props reste chez l'adaptateur du consommateur, qui seul possède un
- * vérificateur de types (T2.3). Le MOTIF par défaut, lui, est une valeur du
- * format : `MOTIF_IMPLEMENTATION_PAR_DEFAUT` vient de `@ucm-kit/core/format`.
+ * Où vit l'implémentation et si elle existe. La comparaison dépend de la stack
+ * et reste dans l'adaptateur ; le motif par défaut appartient au format.
  */
 export {
   identifiantDuContrat,
@@ -47,14 +18,8 @@ export {
 } from "./implementation.mjs";
 
 /**
- * OUVRIR `ucm.config.json` sur un disque.
- *
- * La GRAMMAIRE de ce fichier n'est pas ici : `NOM_CONFIGURATION`,
- * `CONFIGURATION_PAR_DEFAUT`, `champsInvalidesDeLaConfiguration` et
- * `configurationDepuisJson` vivent dans `@ucm-kit/core/format`, que le plugin
- * Figma atteint aussi — il lit ce même fichier par l'API GitHub pour savoir où
- * écrire (T4.1). Les republier ici en ferait un second nom pour la même chose,
- * exactement ce que T2.7 a supprimé.
+ * Ouvre `ucm.config.json` sur disque ; sa grammaire reste dans `format` afin
+ * que le plugin Figma utilise la même autorité.
  */
 export { lireConfiguration } from "./configuration.mjs";
 
@@ -81,12 +46,8 @@ export {
 } from "./variant-views.mjs";
 
 /**
- * Les références de token que porte un contrat.
- *
- * Leur FORME n'est plus ici : `isTokenReference` vit dans
- * `@ucm-kit/core/format`, atteignable par un consommateur navigateur comme par
- * un consommateur Node. La republier ici en ferait un second nom pour la même
- * chose, ce que T2.7 vient précisément de supprimer.
+ * Relève les références d'un contrat. Leur syntaxe reste définie dans
+ * `@ucm-kit/core/format`, sans second export concurrent ici.
  */
 export { sansEchantillon, collecterReferences } from "./references-token.mjs";
 export { erreursTypesTypographiques } from "./typography-token-types.mjs";

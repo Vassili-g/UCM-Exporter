@@ -1146,6 +1146,10 @@ export type ContractSample = {
 };
 
 export type ContractDiagnostic = {
+  /**
+   * Identifiant stable du constat, pour le filtrer ou le compter. Il ne se
+   * traduit pas et ne s'affiche pas : la phrase lisible est `message`.
+   */
   code: string;
   /**
    * Une seule valeur aujourd'hui : l'export n'émet que des avertissements.
@@ -1153,6 +1157,11 @@ export type ContractDiagnostic = {
    * doit faire d'une erreur — et ce que devient alors la couverture.
    */
   severity: 'warning';
+  /**
+   * Le constat en français, adressé au designer : ce qui manque, ce que ça
+   * coûte au contrat, et le geste à faire dans Figma. C'est le seul champ à
+   * afficher tel quel.
+   */
   message: string;
   figma?: {
     nodeId?: string;
@@ -1186,7 +1195,14 @@ export type ContractMeta = {
    * Absent quand l'export n'a rien à signaler.
    */
   diagnostics?: ContractDiagnostic[];
+  /**
+   * Ce que l'export a su traduire. `partial` signifie qu'une information du
+   * composant Figma n'a pas de projection portable et manque donc au contrat :
+   * ce qui manque est nommé dans `diagnostics`. Un consommateur qui reconstruit
+   * le composant lit ce champ avant tout autre.
+   */
   coverage: ContractCoverage;
+  /** Traçabilité vers le composant d'origine, pour le retrouver dans Figma. */
   figma: {
     /** Nom du fichier Figma d'origine. */
     fileName: string;
@@ -1206,6 +1222,11 @@ export type ContractMeta = {
 export type Contract = {
   /** Nom Figma exact, lisible ; le nom de fichier porte l'identifiant de code canonique. */
   name: string;
+  /**
+   * Ce qui décrit l'EXPORT plutôt que le composant : version du schéma, date,
+   * couverture de la traduction, constats destinés au designer et traçabilité
+   * Figma. Rien ici n'est nécessaire pour rendre le composant.
+   */
   meta: ContractMeta;
   /** Absent pour un composant qui n'expose aucune prop. */
   props?: Record<string, ContractProp>;

@@ -106,3 +106,47 @@ test("un tsconfig racine manque comme précondition explicite", () => {
     /exige un tsconfig\.json à la racine/,
   );
 });
+
+const enums = join(racinePaquet, "tests", "fixtures", "EnumsFixture.tsx");
+
+const contratDesEnums = {
+  name: "EnumsFixture",
+  props: {
+    ton: { type: "enum", values: ["info", "success", "warning"] },
+    muet: { type: "enum", values: ["info", "success", "warning"] },
+    large: { type: "enum", values: ["info", "success", "warning"] },
+    surensemble: { type: "enum", values: ["info", "success", "warning"] },
+  },
+};
+
+test("le relevé rend l'union résolue d'un enum, et rien sur un type élargi", () => {
+  const releve = lireApiPublique([enums], racinePaquet).get(enums);
+
+  assert.deepEqual(releve.props.ton.valeurs, ["info", "success"]);
+  assert.deepEqual(releve.props.muet.valeurs, ["info", "success", "warning"]);
+  assert.equal(releve.props.large.valeurs, null);
+  assert.deepEqual(releve.props.surensemble.valeurs, [
+    "info",
+    "success",
+    "warning",
+    "danger",
+  ]);
+});
+
+test("une union amputée est le seul écart de valeurs rapporté", () => {
+  const releve = lireApiPublique([enums], racinePaquet).get(enums);
+  const ecarts = ecartsDeParite(contratDesEnums, releve, "EnumsFixtureProps");
+
+  assert.deepEqual(ecarts.valeursNonImplementees, [
+    { prop: "ton", valeurs: ["warning"] },
+  ]);
+});
+
+test("un enum déclaré jamais lu parle comme son jumeau booléen", () => {
+  const releve = lireApiPublique([enums], racinePaquet).get(enums);
+  const ecarts = ecartsDeParite(contratDesEnums, releve, "EnumsFixtureProps");
+
+  assert.deepEqual(ecarts.enumsSansEffet, [
+    { prop: "muet", valeurs: ["info", "success", "warning"] },
+  ]);
+});

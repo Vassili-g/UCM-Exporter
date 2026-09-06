@@ -1,13 +1,12 @@
+
 /**
  * Point d'entrée de l'interface Unified Component Exporter.
  * Il assemble les vues et route les messages entre le DOM et le sandbox Figma.
  */
 import { createHeader } from './components/Header.js';
-import { createButton } from './components/Button.js';
 import { createConfigurationPage } from './components/ConfigurationPage.js';
-import { createLogPanel } from './components/LogPanel.js';
-import { createCible } from './components/Cible.js';
-import { createCompteRendu } from './components/CompteRendu.js';
+import { createCarteComposant } from './components/CarteComposant.js';
+import { createCarteTokens } from './components/CarteTokens.js';
 import { createResizeGrip } from './components/ResizeGrip.js';
 
 const app = document.getElementById('app');
@@ -16,45 +15,34 @@ app.className = 'container';
 const exportPage = document.createElement('div');
 exportPage.className = 'page-stack';
 
-/*
- * La cible et la destination encadrent l'action : ce sur quoi on travaille, ce
- * qu'on lance, où ça atterrit (U2.1 et U2.2). Aucune des deux n'existait avant
- * le clic — la première vivait dans une note que le clic écrase, la seconde
- * n'apparaissait qu'après publication, c'est-à-dire après le point de
- * non-retour.
- */
-const cible = createCible();
+const composant = createCarteComposant({
+  onAnalyser: () => demanderAnalyse(composant, 'analyser-composant'),
+  onPublier: () => demanderPublication(composant),
+  onAnnuler: annuler,
+});
 
-const depot = document.createElement('section');
-depot.className = 'depot';
+const tokens = createCarteTokens({
+  onAnalyser: () => demanderAnalyse(tokens, 'analyser-tokens'),
+  onPublier: () => demanderPublication(tokens),
+  onAnnuler: annuler,
+});
 
-const depotLigne = document.createElement('p');
-depotLigne.className = 'depot-ligne';
+const depotRepli = document.createElement('p');
+depotRepli.className = 'depot-repli';
+depotRepli.hidden = true;
 
-const depotChemins = document.createElement('p');
-depotChemins.className = 'depot-chemins';
-
-depot.append(depotLigne, depotChemins);
-depot.hidden = true;
 const configurationPage = createConfigurationPage((settings) => {
   parent.postMessage({ pluginMessage: { type: 'save-settings', settings } }, '*');
 });
 const configPage = configurationPage.element;
 
 /**
- * Ce que l'en-tête annonce, par page (U0.3).
- *
- * Le sous-titre n'était écrit qu'une fois, à la construction de l'en-tête :
- * « Transformez vos composants Figma en contrats exploitables » restait donc
- * au-dessus d'un formulaire GitHub. Une page qui change et un titre qui ne
- * change pas, c'est le titre qui a tort.
+ * Ce que l'en-tête annonce, par page.
  */
 const PAGES = {
   export: {
     title: 'Unified Component Exporter',
-    // Pas de sous-titre : « Transformez vos composants Figma en contrats
-    // exploitables » est de la plaquette dans un outil quotidien, et il occupait
-    // la place du rang 1 — le nom du composant visé (U1.2).
+
   },
   configuration: {
     title: 'Configuration',
@@ -80,154 +68,33 @@ function showExports() {
 
 const header = createHeader(PAGES.export, showConfiguration, showExports);
 
-/*
- * La seule zone qui porte une surface (U1.7) : c'est ici qu'on agit. Son titre
- * de section est parti — « Actions » au-dessus de deux boutons nomme l'évidence
- * (U1.2).
- */
-const actionCard = document.createElement('section');
-actionCard.className = 'action-panel';
+let active = composant;
 
-/**
- * Les libellés disent l'ouverture du navigateur (U0.4).
- *
- * Une pull request créée est ouverte aussitôt par le sandbox (`openExternal`) :
- * trois exports d'affilée ouvrent trois onglets, sans que rien ne l'ait
- * annoncé. Ce n'est pas une préférence à ajouter — un réglage se règle une fois
- * et se relit à chaque ouverture —, c'est un libellé exact, qui ne coûte rien.
- */
-/*
- * Le seul bouton de départ est l'ANALYSE (U3.1). Elle n'écrit rien : ni sur le
- * poste, ni sur GitHub. La publication n'apparaît que dans son résultat, et
- * seulement s'il y a quelque chose à publier.
- */
-const exportComponentButton = createButton({
-  label: 'Analyser le composant',
-  variant: 'primary',
-  onClick: () => requestExport('analyser-composant'),
-});
-
-/*
- * L'annulation est COOPÉRATIVE (U3.4) : elle prend effet à la fin de l'étape en
- * cours, elle n'interrompt pas un appel Figma déjà parti. Le libellé ne promet
- * donc pas un arrêt immédiat.
- */
-const cancelButton = createButton({
-  label: 'Annuler après cette étape',
-  variant: 'secondary',
-  onClick: () => parent.postMessage({ pluginMessage: { type: 'annuler' } }, '*'),
-});
-cancelButton.hidden = true;
-
-/*
- * Deux commandes inégales ne se ressemblent pas (U2.3).
- *
- * L'export du composant exige une sélection ; l'export des tokens lit les
- * variables du fichier entier et ignore la sélection. Les deux partageaient une
- * carte, une note qui parlait de sélection et le même bouton : la seule façon
- * d'apprendre la différence était de cliquer et de lire une erreur. Les tokens
- * ont désormais leur section, avec le résumé de ce qu'ils emportent.
- */
-const tokensPanel = document.createElement('section');
-tokensPanel.className = 'tokens-panel';
-
-const tokensResume = document.createElement('p');
-tokensResume.className = 'tokens-resume';
-tokensResume.textContent = 'Tokens du fichier';
-
-const exportTokensButton = createButton({
-  label: 'Analyser les tokens du fichier',
-  variant: 'secondary',
-  onClick: () => requestExport('analyser-tokens'),
-});
-
-tokensPanel.append(tokensResume, exportTokensButton);
-
-const statusNote = document.createElement('div');
-statusNote.className = 'note';
-statusNote.setAttribute('role', 'status');
-statusNote.setAttribute('aria-live', 'polite');
-statusNote.hidden = true;
-
-// Le journal brut ne s'affiche plus de lui-même : il vit derrière le dépliant
-// « Détails techniques » du compte rendu (U4.2), et n'annonce plus rien au
-// repos — « Prêt. Cliquez sur une action pour démarrer » expliquait un bouton.
-const logPanel = createLogPanel();
-const compteRendu = createCompteRendu(logPanel);
-
-/**
- * `occupe` désactive tout ; `cibleExportable` ne concerne que le composant.
- * Les deux raisons de désactiver un bouton ne se recouvrent pas, et la seconde
- * doit survivre à la fin de la première.
- */
-let occupe = false;
-let cibleExportable = false;
-
-function rafraichirBoutons() {
-  exportComponentButton.disabled = occupe || !cibleExportable;
-  exportTokensButton.disabled = occupe;
-  cancelButton.hidden = !occupe;
-  app.setAttribute('aria-busy', String(occupe));
+function occuper(valeur) {
+  active.marquerOccupee(valeur);
+  app.setAttribute('aria-busy', String(valeur));
 }
 
-function setBusy(isBusy) {
-  occupe = isBusy;
-  rafraichirBoutons();
-}
-
-function requestExport(type) {
-  setBusy(true);
-  compteRendu.reinitialiser();
-  publication.hidden = true;
-  ecrireNote('loading', 'Traitement en cours…');
+function demanderAnalyse(carte, type) {
+  active = carte;
+  carte.reinitialiser();
+  occuper(true);
+  carte.ecrireNote('loading', 'Traitement en cours…');
   parent.postMessage({ pluginMessage: { type } }, '*');
 }
 
-/*
- * L'action de publication vit DANS le résultat de l'analyse, et nulle part
- * ailleurs : elle n'existe que lorsqu'il y a quelque chose à publier. Elle
- * prend le focus, parce qu'elle est la suite du geste qu'on vient de faire.
- */
-const publication = createButton({
-  label: 'Publier et ouvrir la pull request',
-  variant: 'primary',
-  onClick: () => {
-    setBusy(true);
-    publication.hidden = true;
-    parent.postMessage({ pluginMessage: { type: 'publier' } }, '*');
-  },
-});
-publication.hidden = true;
-
-/** La note dit l'état de l'action en cours, et disparaît quand il n'y en a pas. */
-function ecrireNote(state, text) {
-  statusNote.dataset.state = state;
-  statusNote.textContent = text;
-  statusNote.hidden = !text;
+function demanderPublication(carte) {
+  active = carte;
+  occuper(true);
+  parent.postMessage({ pluginMessage: { type: 'publier' } }, '*');
 }
 
-actionCard.append(exportComponentButton, cancelButton);
-/*
- * L'ordre de l'écran est celui de la hiérarchie, et le compte rendu suit
- * immédiatement l'action qui l'a produit : le laisser sous la commande des
- * tokens obligeait à passer devant une seconde action pour lire le résultat de
- * la première. La destination et les tokens ferment l'écran, au rang 3.
- */
-exportPage.append(
-  cible.element,
-  actionCard,
-  statusNote,
-  publication,
-  compteRendu.element,
-  depot,
-  tokensPanel,
-);
+function annuler() {
+  parent.postMessage({ pluginMessage: { type: 'annuler' } }, '*');
+}
 
-/**
- * L'UI n'invente plus rien de la connexion : elle place ce que le sandbox a
- * décidé (U5.2). Elle en écrivait auparavant les trois textes de son côté,
- * c'est-à-dire une seconde autorité sur un état qu'elle ne connaît pas.
- */
+exportPage.append(composant.element, depotRepli, tokens.element);
+
 function updateConnection({ state, pastille, geste }) {
   header.connection.dataset.state = state;
   header.connection.textContent = pastille;
@@ -235,16 +102,7 @@ function updateConnection({ state, pastille, geste }) {
 }
 
 /**
- * Le pied de page porte la version de schéma que ce bundle produit (U0.1).
- *
- * Elle était la première ligne du journal, et `requestExport` vide le journal :
- * le garde-fou contre un bundle Figma périmé disparaissait donc au PREMIER
- * clic — exactement le cas qu'il existe pour couvrir, puisqu'un export « sans
- * changement » devient alors indiscernable d'un plugin obsolète. Ici, rien ne
- * l'efface.
- *
- * Il reste caché tant que le sandbox n'a rien dit : une version inventée par
- * défaut serait pire que pas de version du tout.
+ * Le pied de page porte la version de schéma que ce bundle produit.
  */
 const footer = document.createElement('footer');
 footer.className = 'app-footer';
@@ -262,48 +120,38 @@ onmessage = (event) => {
   }
 
   if (message.type === 'cible') {
-    cible.afficher(message);
-    // La raison de l'empêchement est déjà écrite dans le bloc cible, juste
-    // au-dessus du bouton : la répéter sous lui en ferait deux textes à tenir.
-    cibleExportable = Boolean(message.cible);
-    rafraichirBoutons();
+
+    composant.afficher(message);
   }
 
-  if (message.type === 'tokens') tokensResume.textContent = `Tokens du fichier : ${message.resume}`;
+  if (message.type === 'tokens') tokens.afficher(message);
 
-  if (message.type === 'phase') ecrireNote('loading', message.texte);
+  if (message.type === 'phase') active.ecrireNote('loading', message.texte);
 
   if (message.type === 'verdict') {
-    // Le verdict clôt l'analyse : c'est lui qui rend la main, parce que c'est
-    // lui qui dit ce qu'il reste à faire.
-    setBusy(false);
-    ecrireNote(message.etat, message.texte);
-    logPanel.append(message.texte);
-    publication.hidden = !message.action;
-    if (message.action) {
-      publication.setLabel(message.action);
-      publication.focus();
-    }
+
+    occuper(false);
+    active.ecrireNote(message.etat, message.texte);
+    const publier = active.proposerPublication(message.action);
+    if (message.action) publier.focus();
+
+    active.marquerAnalysee?.();
   }
 
   if (message.type === 'depot') {
     configurationPage.afficherGouvernance(message);
-    depot.dataset.state = message.repli ? 'repli' : '';
-    depotLigne.textContent = message.ligne ?? '';
-    depotChemins.textContent = message.chemins ?? '';
-    depotChemins.hidden = !depotChemins.textContent;
-    depot.hidden = !depotLigne.textContent;
+
+    depotRepli.textContent = message.repli ? message.ligne ?? '' : '';
+    depotRepli.hidden = !depotRepli.textContent;
   }
   if (message.type === 'settings-validation') configurationPage.renderErrors(message.errors);
   if (message.type === 'settings-save-error') configurationPage.showSaveError();
   if (message.type === 'connection') updateConnection(message);
-  // `level` est absent aujourd'hui et le journal retombe alors sur `info` ;
-  // c'est U4.1 qui le renseignera à l'envoi. Le lire ici coûte un argument et
-  // évite que le champ déclaré reste inerte d'un seul côté.
-  if (message.type === 'log') compteRendu.ajouterPublication(message.text, message.level);
+
+  if (message.type === 'log') active.compteRendu.ajouterPublication(message.text, message.level);
 
   if (message.type === 'diagnostic') {
-    compteRendu.ajouterDiagnostic(message);
+    active.compteRendu.ajouterDiagnostic(message);
   }
 
   if (message.type === 'schema-version') {
@@ -312,14 +160,8 @@ onmessage = (event) => {
   }
 
   if (message.type === 'status') {
-    const isLoading = message.state === 'loading';
-    setBusy(isLoading);
-    ecrireNote(message.state, message.text);
-    // Le verdict est déjà en note, au rang 1 : il ne va que dans la trace, pas
-    // dans le groupe « Publication », qui porte ce que l'export a FAIT.
-    // `loading` n'est pas un `LogLevel` : la classe `log-loading` qu'il
-    // produisait n'était stylée nulle part.
-    logPanel.append(message.text, isLoading ? 'info' : message.state);
+    occuper(message.state === 'loading');
+    active.ecrireNote(message.state, message.text);
   }
 
   if (message.type === 'download') {
@@ -331,17 +173,20 @@ onmessage = (event) => {
     link.click();
     document.body.removeChild(link);
     setTimeout(() => URL.revokeObjectURL(link.href), 0);
-    compteRendu.ajouterPublication(`Fichier téléchargé : ${message.filename || 'download.json'}`, 'success');
+    active.compteRendu.ajouterPublication(
+      `Fichier téléchargé : ${message.filename || 'download.json'}`,
+      'success',
+    );
   }
 
   if (message.type === 'pull-request') {
-    compteRendu.ajouterLien(`Ouvrir la pull request de ${message.path}`, message.url);
+    active.compteRendu.ajouterLien(`Ouvrir la pull request de ${message.path}`, message.url);
   }
 };
 
 window.addEventListener('error', (event) => {
-  setBusy(false);
+  occuper(false);
   configurationPage.releaseSaveButton();
-  ecrireNote('error', `Erreur UI : ${event.message}`);
-  compteRendu.ajouterPublication(statusNote.textContent, 'error');
+  active.ecrireNote('error', `Erreur UI : ${event.message}`);
+  active.compteRendu.ajouterPublication(`Erreur UI : ${event.message}`, 'error');
 });

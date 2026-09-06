@@ -1,10 +1,6 @@
+
 /**
- * Le verdict du pré-vol (U3.1).
- *
- * Ce que ces tests tiennent : que le clic supplémentaire ne soit demandé que
- * lorsqu'il achète quelque chose. Un export identique au dépôt n'atteint jamais
- * la publication, et son verdict ne propose donc aucune action — c'est la
- * réponse à la seule objection sérieuse contre le pré-vol.
+ * Le verdict du pré-vol.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -29,7 +25,7 @@ test('un contenu à publier propose la publication, et dit où', () => {
     chemin: 'src/components/Button/Button.contract.json',
     avertissements: 0,
   });
-  assert.equal(verdict.action, 'Publier et ouvrir la pull request');
+  assert.equal(verdict.action, 'Publier le composant');
   assert.match(verdict.texte, /src\/components\/Button\/Button\.contract\.json/);
 });
 
@@ -41,9 +37,17 @@ test('les points à corriger passent en premier, sans rien bloquer', () => {
     avertissements: 3,
   });
   assert.match(verdict.texte, /^3 points à corriger dans Figma\./);
-  // Un avertissement n'est pas un refus : il change l'ordre de lecture, pas le
-  // droit de publier.
-  assert.equal(verdict.action, 'Publier et ouvrir la pull request');
+
+  assert.equal(verdict.action, 'Publier le composant');
+});
+
+test('la publication nomme ce qu’elle publie, et distingue les deux commandes', () => {
+  const contrat = verdictDePrevol({ code: 'a-publier', genre: 'component', chemin: 'x', avertissements: 0 });
+  const tokens = verdictDePrevol({ code: 'a-publier', genre: 'tokens', chemin: 'y', avertissements: 0 });
+
+  assert.equal(contrat.action, 'Publier le composant');
+  assert.equal(tokens.action, 'Publier les tokens');
+  assert.notEqual(contrat.action, tokens.action);
 });
 
 test('un seul point ne se dit pas au pluriel', () => {

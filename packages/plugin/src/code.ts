@@ -1,3 +1,4 @@
+
 /**
  * Point d'entrée du plugin (côté « sandbox » Figma).
  * Rôle : afficher l'UI, écouter ses demandes d'export, lancer le bon
@@ -6,7 +7,7 @@
 import { extractRules, hasUsableRules } from './contract/extractRules';
 import handleExportComponent from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
-import handleExportTokens, { resumerTokensDuFichier } from './tokens/exportTokens';
+import handleExportTokens, { etatDesTokensDuFichier } from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings, supprimerPat } from './config';
 import type { GithubConfig, SettingsInput } from './config';
 import { GithubApiError, publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './github';
@@ -23,10 +24,10 @@ type PrecisionConnexion = { statut?: number | null; detail?: string };
 import { TAILLE_PAR_DEFAUT, lireTaille, rangerTaille, tailleValide } from './fenetre';
 
 /*
- * La fenêtre s'ouvre à sa taille par défaut, puis reprend celle que le designer
- * lui a donnée (U1.10). L'ordre est imposé : `showUI` est synchrone et doit
- * partir tout de suite, tandis que `clientStorage` est asynchrone. Ouvrir petit
- * puis agrandir se voit ; ne pas ouvrir du tout se voit bien davantage.
+ * La fenêtre s'ouvre à sa taille par défaut, puis reprend celle que le designer lui
+ * a donnée. L'ordre est imposé : `showUI` est synchrone et doit partir tout de
+ * suite, tandis que `clientStorage` est asynchrone. Ouvrir petit puis agrandir se
+ * voit ; ne pas ouvrir du tout se voit bien davantage.
  */
 figma.showUI(__html__, {
   themeColors: true,
@@ -35,14 +36,7 @@ figma.showUI(__html__, {
 });
 void lireTaille().then((taille) => figma.ui.resize(taille.largeur, taille.hauteur));
 
-/**
- * La porte unique vers l'UI.
- *
- * `figma.ui.postMessage` accepte n'importe quoi : un type de message inventé
- * ici partirait sans erreur et personne ne l'écouterait de l'autre côté. Faire
- * passer chaque envoi par cette fonction est ce qui rend la liste de
- * `messages.ts` contraignante au lieu de décorative (U0.6).
- */
+/** Porte typée unique vers l'UI ; aucun message sandbox ne la contourne. */
 function versUi(message: PluginMessage): void {
   figma.ui.postMessage(message);
 }
@@ -63,11 +57,8 @@ function postConnection(cause: CauseConnexion, precision: PrecisionConnexion = {
 }
 
 /**
- * Envoie ce que le repository dit de lui-même, ou son silence (U5.1).
- *
- * Cette information n'apparaissait qu'après publication, en ligne de journal :
- * le designer apprenait alors que les deux chemins saisis dans la configuration
- * n'avaient servi à rien, parce qu'un `ucm.config.json` les remplaçait.
+ * Envoie les chemins effectifs et leur autorité : configuration du dépôt ou
+ * réglages de repli du plugin.
  */
 function postDepot(layout: RepositoryLayout | null, config: GithubConfig | null): void {
   const depot = config ? { owner: config.owner, repo: config.repo, baseBranch: config.baseBranch } : null;
@@ -126,14 +117,12 @@ async function reportSelectionState(): Promise<void> {
     })),
   );
 
-  // La cible part TOUT DE SUITE : son nom, son genre et ses variants sont
-  // connus sans rien lire. L'avertissement, lui, coûte un balayage de page ;
-  // l'attendre pour afficher le nom faisait patienter devant un écran vide.
   versUi({ type: 'cible', ...etat, detail: detailDeCible(etat.cible), avertissement: null });
   if (!etat.cible) return;
 
   const component = selection[0] as ComponentNode | ComponentSetNode;
   const rules = await extractRules(component);
+
   // La sélection a pu changer pendant la lecture asynchrone : on abandonne alors.
   if (token !== selectionToken) return;
   if (hasUsableRules(rules)) return;
@@ -152,12 +141,6 @@ async function reportSelectionState(): Promise<void> {
 const SELECTION_DEBOUNCE_MS = 200;
 let selectionTimer: number | null = null;
 
-// Retour en direct : à chaque changement de sélection dans Figma — mais pas
-// avant que la sélection se stabilise. Une analyse balaye TOUTE la page (pour
-// trouver le conteneur de règles) puis interroge Figma une fois par instance
-// trouvée. Parcourir ses variantes aux flèches lancerait autant de balayages
-// concurrents, dont un seul servira : le jeton anti-course jette bien les
-// résultats périmés, mais après que le travail a été payé.
 figma.on('selectionchange', () => {
   if (selectionTimer !== null) clearTimeout(selectionTimer);
   selectionTimer = setTimeout(() => {
@@ -168,11 +151,8 @@ figma.on('selectionchange', () => {
 
 /**
  * Ce qu'une analyse a produit, gardé pour la publication qui la consomme.
- *
- * L'analyse n'écrit rien : elle fabrique le contrat en mémoire et lit le
- * repository. La publication reprend ce contenu, et REVÉRIFIE tout (U3.1 b).
- * Le garder ici est aussi ce qui rend une publication échouée reprenable, au
- * lieu de perdre le travail avec l'état de l'écran (U3.3).
+ * La publication réutilise ce contenu mais revérifie le dépôt, qui a pu changer.
+ * Le conserver rend aussi une publication échouée reprenable.
  */
 type AnalyseGardee = {
   kind: ArtifactKind;
@@ -205,8 +185,10 @@ function artefactDe(analyse: AnalyseGardee) {
   };
 }
 
-/** Le verdict, unique autorité sur ce que l'analyse conclut. */
-function postVerdict(code: CodeVerdict, precision: { chemin?: string | null; ou?: string | null } = {}): void {
+function postVerdict(
+  code: CodeVerdict,
+  precision: { chemin?: string | null; source?: string | null; ou?: string | null } = {},
+): void {
   if (!analyseGardee) return;
   const verdict = verdictDePrevol({
     code,
@@ -218,11 +200,10 @@ function postVerdict(code: CodeVerdict, precision: { chemin?: string | null; ou?
 }
 
 /**
- * PREMIER TEMPS : analyser. Rien n'est écrit ici, ni sur le poste ni sur
- * GitHub. L'analyse refait tout le chemin de lecture — emplacement, immobilité,
- * collision — parce qu'un pré-vol qui annoncerait « rien à changer » sans avoir
- * vu une collision d'identifiant mentirait sur le seul point qui, lui, est un
- * vrai refus (U3.1 c).
+ * PREMIER TEMPS : analyser. Rien n'est écrit ici, ni sur le poste ni sur GitHub.
+ * L'analyse refait tout le chemin de lecture — emplacement, immobilité, collision —
+ * parce qu'un pré-vol qui annoncerait « rien à changer » sans avoir vu une collision
+ * d'identifiant mentirait sur le seul point qui, lui, est un vrai refus.
  */
 async function analyser(
   loadingText: string,
@@ -244,23 +225,13 @@ async function analyser(
       versUi({ type: 'phase', texte: etape });
     });
 
-    // Un seul canal depuis U4.7 : ce qui remonte ici demande un geste dans
-    // Figma. Chaque point porte ses TROIS parties (U4.8) et, quand son sujet
-    // désigne un node, OÙ regarder (U4.3) — l'absence est une réponse, pas un
-    // trou : voir `localisation.ts`.
-    //
-    // Les deux relevés sont indexés par la PHRASE, parce que c'est elle
-    // l'identité d'un message dans tout le moteur. Le sandbox ne recompose donc
-    // rien : il transmet ce que l'export a déjà écrit.
     const registre = result as {
       localisations?: ReadonlyMap<string, string>;
       parties?: ReadonlyMap<string, { titre: string; impact: string; action: string }>;
     };
     for (const warning of result.warnings ?? []) {
       const point = registre.parties?.get(warning);
-      // Une loi de `tests/loiDesParties.test.ts` refuse un message sans parties.
-      // Le repli ne les invente pas : il met la phrase entière en titre, où elle
-      // se lit encore, plutôt que de perdre le message.
+      // Une loi impose les parties ; ce repli garde néanmoins le message lisible.
       const nodeId = registre.localisations?.get(warning);
       versUi({
         type: 'diagnostic',
@@ -289,20 +260,13 @@ async function analyser(
     versUi({ type: 'phase', texte: 'Lecture du repository…' });
     const lecture = await lireAvantEcriture(validation.config, artefactDe(analyseGardee));
     if (annulationDemandee) throw new ExportAnnule();
-    // QUI a décidé de l'emplacement se dit, toujours (T4.1), et maintenant
-    // AVANT l'écriture : un export qui atterrit ailleurs qu'attendu était
-    // indétectable après coup.
-    versUi({
-      type: 'log',
-      text: `Emplacement : ${lecture.path} (d'après ${lecture.layout.source}).`,
-    });
 
     if (lecture.refus) {
       postStatus('error', lecture.refus);
       return;
     }
     if (lecture.jumeau) {
-      // OÙ le contenu identique se trouve déjà fait partie du message (T4.5).
+      // Le message indique où le contenu identique se trouve déjà.
       if (lecture.jumeau.url) {
         versUi({ type: 'pull-request', url: lecture.jumeau.url, path: lecture.path });
       }
@@ -310,10 +274,7 @@ async function analyser(
       return;
     }
 
-    // Le verdict EST la conclusion : il occupe la note, au rang 1, et clôt
-    // l'attente. Un « Contrat généré » de plus par-dessus l'écraserait avec un
-    // texte qui ne décide de rien.
-    postVerdict('a-publier', { chemin: lecture.path });
+    postVerdict('a-publier', { chemin: lecture.path, source: lecture.layout.source });
   } catch (error) {
     if (error instanceof ExportAnnule) {
       analyseGardee = null;
@@ -445,7 +406,7 @@ figma.ui.onmessage = async (message: UiRequest) => {
     await Promise.all([
       reportSelectionState(),
       refreshConfiguration(),
-      resumerTokensDuFichier().then((resume) => versUi({ type: 'tokens', resume })),
+      etatDesTokensDuFichier().then((tokens) => versUi({ type: 'tokens', ...tokens })),
     ]);
     return;
   }

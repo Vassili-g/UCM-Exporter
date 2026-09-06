@@ -1,8 +1,8 @@
 {
   "11.0/Alert.contract.json": {
     "mutations": 1562,
-    "refusees": 915,
-    "muettes": 647,
+    "refusees": 913,
+    "muettes": 649,
     "controlesDeclenches": [
       "composes",
       "figmaVariantLabels",
@@ -286,12 +286,12 @@
       "viewStructures.st3",
       "viewTypographies.ty1"
     ],
-    "empreinte": "d630769e94f21a2c4f76d643e892573f295b81329774828f8ec0ed3d46b4ceef"
+    "empreinte": "d8fd0f24334bb31be9c8d29822d28cb0ce082197e88884fd84a8f21feb74d580"
   },
   "11.0/Button.contract.json": {
     "mutations": 5344,
-    "refusees": 4783,
-    "muettes": 561,
+    "refusees": 4782,
+    "muettes": 562,
     "controlesDeclenches": [
       "composes",
       "figmaVariantLabels",
@@ -589,12 +589,12 @@
       "viewStructures.st3",
       "viewTypographies.ty1"
     ],
-    "empreinte": "3044e6efc29f4b7734a8f3e58e9aca3bb303ce2e9e9cc247dc254b2086ba3b08"
+    "empreinte": "578591dc4437397a6ab8012f47a7d97330ea0914f79edb465b52605f15fa6c3f"
   },
   "11.0/StressTest.contract.json": {
     "mutations": 3880,
-    "refusees": 1898,
-    "muettes": 1982,
+    "refusees": 1897,
+    "muettes": 1983,
     "controlesDeclenches": [
       "composes",
       "figmaVariantLabels",
@@ -830,12 +830,12 @@
       "viewTypographies.ty1",
       "viewTypographies.ty2"
     ],
-    "empreinte": "5e0024859ed64537eb2169d69881d4676e5a764a5d048035874bf3c0864a5594"
+    "empreinte": "ff74a2868654b37185e26314364db84e6027754426029912f53d6836b906b8d4"
   },
   "11.0/TileLink.contract.json": {
     "mutations": 312,
-    "refusees": 200,
-    "muettes": 112,
+    "refusees": 199,
+    "muettes": 113,
     "controlesDeclenches": [
       "composes",
       "figmaVariantLabels",
@@ -900,7 +900,7 @@
       "viewPaintPlacements.pp1",
       "viewStructures"
     ],
-    "empreinte": "ef14773082ad0208bcbcd13440239d43d8a3675295e5c3a3ebef1194d6baaa38"
+    "empreinte": "1b09281e36f11e97eb978298c487ead38e7bdab18b56a64ad830dacd968ebf48"
   },
   "fabrique/courant": {
     "mutations": 58,

@@ -1,43 +1,4 @@
-/**
- * Ce que le validateur REFUSE, enregistré avant qu'on y touche.
- *
- * C'est l'étape 2 de T2.1b, et elle existe parce que le risque de cette tâche
- * n'est pas de perdre un champ : c'est de perdre un CONTRÔLE. Une preuve
- * d'équivalence sur des contrats valides est aveugle à ce risque — ils rendent
- * `[]` avant l'élagage comme après, et une passe supprimée ne se voit nulle
- * part. Il faut donc, pour chaque contrôle, une mutation qui le déclenche.
- *
- * *Pourquoi la mutation et pas la couverture,* et ce n'est pas un renoncement :
- * aucun outil de couverture n'existe dans ce monorepo — ni `c8`, ni `nyc`, ni
- * `--experimental-test-coverage` —, et les deux paquets ont chacun leur
- * lanceur. Surtout, une ligne « atteinte » n'est pas un contrôle JUGÉ : un
- * contrôle qu'aucune mutation ne déclenche est un contrôle que rien ne couvre,
- * quelle que soit sa couleur dans un rapport. La mutation répond à la question
- * posée ; la couverture y répond de biais.
- *
- * **Ce que ce fichier n'est pas.** Il ne dit pas qu'un verdict est BON. Il dit
- * qu'il est le MÊME qu'avant. C'est tout ce qu'on lui demande, et c'est
- * exactement ce dont l'élagage a besoin : un écart, après la coupe, désigne le
- * contrôle perdu. Un instantané qui prétendrait juger serait un instantané qui
- * ment sur ce qu'il prouve.
- *
- * **Pourquoi une empreinte et pas les verdicts en clair.** Les quatre contrats
- * figés portent des milliers de chemins, chacun muté deux fois : le fichier de
- * référence pèserait des méga-octets et personne ne le relirait. Il porte
- * donc trois choses, et chacune répond à une question différente :
- *   - `controlesDeclenches` — les champs qu'une mutation a fait sortir, index de
- *     tableau EFFACÉS (`children[3].slot` devient `children[].slot`). Sans cet
- *     effacement la liste comptait 1 394 entrées pour Button et n'était plus
- *     une liste de contrôles mais une liste de positions ; avec, c'est
- *     réellement l'inventaire de ce que le validateur juge, et il se lit à
- *     l'œil. C'est lui qu'un élagage trop large raccourcit ;
- *   - les deux comptes, refusé / muet, qui bougent au moindre déplacement ;
- *   - `empreinte`, un SHA-256 de la totalité des verdicts, qui attrape ce que
- *     les deux premiers laisseraient passer — un même contrôle déclenché par
- *     une autre feuille.
- * Quand l'empreinte seule bouge, `npm run refus:diff` (à écrire le jour où ça
- * arrive) régénère les verdicts en clair et les compare localement.
- */
+/** Déclenche chaque contrôle par mutation et fige l'empreinte de ses refus. */
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";

@@ -1,31 +1,12 @@
+
 /**
- * L'inventaire des états de l'interface (U1.1), sous une forme ATTEIGNABLE.
- *
- * **Pourquoi c'est un fichier de données et pas un paragraphe.** U1.1 demande
- * trois choses d'un état : qu'il soit atteignable, qu'il soit regardé dans les
- * deux thèmes, et qu'il serve de liste de vérification aux phases suivantes.
- * Une liste en prose ne tient que la troisième, et encore : elle vieillit sans
- * rougir. Ici l'inventaire EST le scénario — chaque état porte la suite exacte
- * de messages qui le produit, `build-galerie.cjs` en fabrique une page, et
- * `tests/galerie.test.ts` refuse qu'un message déclaré dans `messages.ts` n'ait
- * aucun état où être regardé. Un état ajouté en silence devient impossible.
- *
- * **Ce que la galerie n'est pas.** Elle ne remplace pas Figma : les couleurs y
- * viennent d'un décalque (`theme-figma.css`), pas de l'hôte. Elle sert à juger
- * la hiérarchie, la densité et la place des choses — pas à conclure sur un
- * contraste. U1.8 reste une vérification dans Figma.
+ * L'inventaire des états de l'interface, sous une forme ATTEIGNABLE.
  */
 const fs = require('fs');
 const path = require('path');
 
 /**
  * Les textes de connexion sont LUS au sandbox, jamais recopiés ici.
- *
- * `etatDeConnexion` est leur unique autorité (U5.2) ; une galerie qui en
- * garderait une copie montrerait un jour des phrases que le plugin ne dit plus,
- * et c'est exactement ce qu'une galerie ne doit pas pouvoir faire. `esbuild`
- * est déjà une dépendance du paquet : compiler ce seul module coûte quelques
- * millisecondes.
  */
 function chargerSandbox(nom) {
   const compile = path.resolve(__dirname, `../dist/galerie-${nom}.cjs`);
@@ -41,7 +22,7 @@ function chargerSandbox(nom) {
 
 const { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication } = chargerSandbox('connexion');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
-const { resumeDesTokens } = chargerSandbox('tokens/exportTokens');
+const { etatDesTokens } = chargerSandbox('tokens/exportTokens');
 const { verdictDePrevol } = chargerSandbox('prevol');
 
 /** Le verdict du pré-vol, calculé par le sandbox et non recopié ici (U3.1). */
@@ -98,16 +79,29 @@ const COMPOSANT = 'Button / Primary';
 const CHEMIN = 'src/components/Button/Button.contract.json';
 const CHEMIN_STRESSTEST = 'src/components/StressTest/StressTest.contract.json';
 const CHEMIN_TOKENS = 'src/tokens/tokens.json';
+/** QUI a décidé de l'emplacement : le verdict le dit depuis U8.4. */
+const SOURCE_CONFIG = 'ucm.config.json';
 const BRANCHE_EN_VOL = 'ucm-exporter/export-component-2026-09-05-1412';
 const URL_PR = 'https://github.com/mon-org/design-system-v3/pull/128';
 
 /** Les deux messages que le sandbox envoie à l'ouverture, avant toute action. */
-const ouverture = (cause) => [
+const ouverture = (cause, tokens = TOKENS_PRESENTS) => [
   { message: { type: 'schema-version', version: VERSION_CONTRAT } },
   { message: { type: 'connection', ...etatDeConnexion(cause) } },
   cause === 'non-configure' ? DEPOT_ABSENT : DEPOT_DECRIT,
-  { message: { type: 'tokens', resume: resumeDesTokens({ collections: 3, variables: 128, modes: 2 }) } },
+  tokens,
 ];
+
+/**
+ * Ce que le fichier porte en variables, calculé par le sandbox (U2.4, U7.5).
+ *
+ * Les deux cas doivent se regarder CÔTE À CÔTE : c'est leur voisinage qui dit
+ * si l'absence de bouton se lit comme une réponse — « ce fichier n'a pas de
+ * tokens » — ou comme une commande qui aurait disparu.
+ */
+const tokensDuFichier = (compte) => ({ message: { type: 'tokens', ...etatDesTokens(compte) } });
+const TOKENS_PRESENTS = tokensDuFichier({ collections: 3, variables: 128, modes: 2 });
+const TOKENS_ABSENTS = tokensDuFichier({ collections: 0, variables: 0, modes: 0 });
 
 /** Ce que `reportSelectionState` envoie, calculé par le sandbox lui-même. */
 function cible(selection, avertissement = null) {
@@ -188,7 +182,7 @@ const ETATS = [
     quand:
       "À l'ouverture, rien de sélectionné dans Figma. Couvre aussi « connecté » : la pastille verte n'a pas d'autre écran.",
     regarder:
-      "Rang 1 de U1.0 — la cible. Il n'y en a pas : la note occupe la place où devrait vivre un nom de composant.",
+      "L'écran au repos : deux cartes, et AUCUN geste sur la première (U7.1). Le bouton d'analyse n'est plus affiché puis grisé — la raison écrite à la place du nom se suffit.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -214,7 +208,7 @@ const ETATS = [
     quand:
       "Aucune sélection exportable. Le bouton partait quand même, et la précondition levait un message d'erreur après coup.",
     regarder:
-      "Un aller-retour épargné, et rien de plus : la raison est déjà écrite au-dessus du bouton, elle n'est pas répétée dessous.",
+      "Il n'y a plus de bouton du tout (U7.1). Comparer avec « composant prêt » : c'est l'apparition du geste qui dit qu'une cible est là, pas son passage du gris au bleu.",
     existe: true,
     atteinte: [...ouverture('connecte'), SELECTION_VIDE],
   },
@@ -239,7 +233,7 @@ const ETATS = [
     titre: 'Composant prêt',
     quand: 'Un component ou component set sélectionné, règles lisibles.',
     regarder:
-      "Rang 1 : le nom du composant. Il n'apparaît qu'ici, dans une phrase, et le premier clic l'efface.",
+      "Les deux cartes au repos (U7.2, U7.3) : surtitre, sujet, geste. Aucune des deux ne porte de résultat tant que rien n'a tourné, et le geste de publication n'existe nulle part.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -257,7 +251,7 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
     ],
   },
@@ -272,7 +266,7 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'phase', texte: 'Lecture des composants imbriqués…' } },
     ],
@@ -283,15 +277,14 @@ const ETATS = [
     quand:
       'Export sans avertissement, publication réussie. Couvre « publiée » : le succès et la publication sont le même écran.',
     regarder:
-      "Rang 1 : le verdict. Il est en fin de phrase, après le libellé de succès, et le journal répète le même texte une ligne plus bas.",
+      "Le verdict DANS la carte du composant (U8.1), sous le geste qui l'a produit, et il nomme lui-même qui a décidé de l'emplacement (U8.4). Le bouton d'analyse est désarmé : cette cible-là est analysée (U8.3).",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 0 }),
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 0 }),
     ],
   },
   {
@@ -300,16 +293,15 @@ const ETATS = [
     quand:
       "Un export qui publie et laisse un geste à faire dans Figma. L'avertissement employé est parmi les plus longs que le moteur produise (U1.3 d).",
     regarder:
-      "Rang 2 : l'avertissement. Il arrive en 11 px monospace dans un journal de 96 px, sous une puce, sans niveau — `runExport` l'envoie sans `level`.",
+      "L'ordre de lecture d'une carte de commande : le geste, la publication, le verdict, puis le point à corriger. Tout est dans la carte du composant, et la carte des tokens reste intacte en dessous.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       diagnostic(AVERTISSEMENT_COMPOSE),
-      { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 1 }),
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 1 }),
     ],
   },
   {
@@ -323,12 +315,11 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       diagnostic(AVERTISSEMENT_STROKE, '12:345'),
       diagnostic(AVERTISSEMENT_TEXT_STYLE),
-      { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 2 }),
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 2 }),
     ],
   },
   /*
@@ -351,19 +342,14 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       cible([{ type: 'COMPONENT_SET', name: 'Stresstest', variants: 6 }]),
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'phase', texte: 'Lecture des composants imbriqués…' } },
-      {
-        message: {
-          type: 'log',
-          text: `Emplacement : ${CHEMIN_STRESSTEST} (d'après ucm.config.json).`,
-        },
-      },
       verdict({
         code: 'a-publier',
         genre: 'component',
         chemin: CHEMIN_STRESSTEST,
+        source: SOURCE_CONFIG,
         avertissements: 0,
       }),
     ],
@@ -379,7 +365,7 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       cible([{ type: 'COMPONENT_SET', name: 'Stresstest', variants: 0 }]),
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       {
         message: {
@@ -397,16 +383,15 @@ const ETATS = [
     quand:
       "Une matrice de variants dont le layout n'est pas tokenisé. C'est le volume que U1.3 (d) exige de regarder.",
     regarder:
-      'Le compte rendu tient-il ? Vingt entrées dans 144 px de haut, et rien ne dit combien il en reste hors de vue.',
+      "Le compte rendu tient-il ? Vingt cartes ambre DANS la carte du composant, le compte dans le titre du groupe, et la carte des tokens repoussée très loin sous elles.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       ...vingtAvertissements(),
-      { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
-      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, avertissements: 20 }),
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 20 }),
     ],
   },
   {
@@ -420,9 +405,8 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
       verdict({ code: 'identique', genre: 'component', ou: 'branche main', avertissements: 0 }),
     ],
   },
@@ -432,14 +416,13 @@ const ETATS = [
     quand:
       "Réexport d'un contenu identique pendant qu'une pull request d'export l'attend. C'est le cas que T4.5 a rendu visible.",
     regarder:
-      "L'endroit et le lien arrivent ensemble. Le navigateur ne s'ouvre PAS : le lien est la seule sortie, et il est en bas d'un journal.",
+      "L'endroit et le lien arrivent ensemble. Le navigateur ne s'ouvre PAS : le lien est la seule sortie, et il vit sous le verdict, sans titre de groupe pour le coiffer (U8.4).",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
       { message: { type: 'pull-request', url: URL_PR, path: CHEMIN } },
       verdict({
         code: 'identique',
@@ -460,7 +443,7 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'phase', texte: 'Publication sur GitHub…' } },
     ],
@@ -476,9 +459,8 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      { message: { type: 'log', text: `Emplacement : ${CHEMIN} (d'après ucm.config.json).` } },
       {
         message: {
           type: 'log',
@@ -516,7 +498,7 @@ const ETATS = [
     quand:
       "Premier lancement : aucun réglage GitHub. Rien d'autre que la pastille rouge ne l'annonce.",
     regarder:
-      "Ce que le designer NE sait pas encore : que son export sera téléchargé au lieu d'être publié (U2.5).",
+      "La ligne ambre « Aucun repository connecté » : le seul reste du bloc destination (U7.7), et la seule chose qu'il disait que rien d'autre ne dit avant le clic.",
     existe: true,
     atteinte: [
       ...ouverture('non-configure'),
@@ -528,24 +510,28 @@ const ETATS = [
     titre: 'Export sans dépôt : téléchargement local',
     quand: 'Le même export, mené à son terme sans configuration GitHub valide.',
     regarder:
-      "Le repli est SUBI : il s'apprend à l'arrivée, en ligne de journal, alors que le bouton avait promis une pull request.",
+      "Le repli a été ANNONCÉ avant le clic, en ambre sous le compte rendu (U2.5, U7.7), et le verdict le confirme ensuite au lieu de l'apprendre.",
     existe: true,
     atteinte: [
       ...ouverture('non-configure'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       verdict({ code: 'sans-depot', genre: 'component', avertissements: 0 }),
     ],
   },
   {
-    id: 'premier-lancement-annonce',
-    titre: 'Premier lancement, ce qui va se passer',
+    id: 'fichier-sans-tokens',
+    titre: 'Fichier sans aucune variable',
     quand:
-      "Un état qui dirait « Aucun dépôt connecté : l'export sera téléchargé sur votre poste » AVANT le clic.",
-    regarder: null,
-    existe: false,
-    attendu: 'U2.5',
+      "Un fichier Figma qui ne définit aucune variable locale. Le bouton partait quand même, et `handleExportTokens` levait « Aucune variable locale à exporter » APRÈS le clic.",
+    regarder:
+      "La carte des tokens sans son geste (U7.5) : une phrase à la place du bouton, en couleur de constat et non d'erreur — ce fichier n'a rien de fautif, il n'a simplement rien à exporter.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte', TOKENS_ABSENTS),
+      SELECTION_PRETE,
+    ],
   },
   {
     id: 'connexion-en-cours',
@@ -572,7 +558,7 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       {
         message: {
@@ -589,19 +575,13 @@ const ETATS = [
     quand:
       'La seconde commande. Elle ignore la sélection et lit les variables du fichier entier, ce que rien à l’écran ne dit (U2.4).',
     regarder:
-      "La note parle encore de sélection au-dessus d'une action qui n'en tient aucun compte (U2.3).",
+      "Une commande de portée FICHIER menée à son terme SANS sélection : la carte du composant reste vide et sans geste, et le libellé de publication a nommé les tokens (U7.4).",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_VIDE,
-      { clic: '.action-panel .btn-secondary' },
+      { clic: '.carte-tokens .btn-secondary' },
       { message: { type: 'status', state: 'loading', text: 'Lecture des variables…' } },
-      {
-        message: {
-          type: 'log',
-          text: `Emplacement : ${CHEMIN_TOKENS} (d'après réglages du plugin).`,
-        },
-      },
       { message: { type: 'pull-request', url: URL_PR, path: CHEMIN_TOKENS } },
       { message: { type: 'status', state: 'success', text: 'Tokens exportés. Pull request créée.' } },
     ],
@@ -617,7 +597,7 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
-      { clic: '.action-panel .btn-primary' },
+      { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'phase', texte: 'Lecture des composants imbriqués…' } },
       { message: { type: 'status', state: 'error', text: "Export annulé. Rien n'a été écrit." } },

@@ -1,16 +1,5 @@
 /**
  * L'inventaire des états ne doit pas pouvoir vieillir en silence.
- *
- * U1.1 fait de la galerie la liste de vérification des phases suivantes : « une
- * phase livrée sans ses états regardés n'est pas livrée ». Une liste tenue à la
- * main ne tient pas cette promesse — elle reste verte quand un message apparaît
- * sans écran où le regarder, et c'est précisément la maladie que tout ce dépôt
- * poursuit : un contrôle absent qui se lit comme un contrôle vert.
- *
- * Les lois ci-dessous rendent l'oubli bruyant : un type de message déclaré dans
- * `messages.ts` sans état qui le joue échoue ici, et une variable de thème
- * demandée par `styles.css` mais absente du décalque échoue aussi — sans quoi
- * une capture montrerait un repli en dur en se faisant passer pour Figma.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

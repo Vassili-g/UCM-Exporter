@@ -1,4 +1,4 @@
-# Corpus 11.0 figé — jeu N-1
+# Corpus 11.0 figé, le jeu N-1
 
 Ces quatre contrats sont un **instantané assumé**, et c'est la seule chose qui
 les rend utiles.
@@ -6,20 +6,20 @@ les rend utiles.
 ## Pourquoi ils existent
 
 Le moteur ne fabrique que la version courante
-(`src/contract/exportComponent.ts`). Une fenêtre de lecture à deux versions —
-la courante et la précédente, décidée par D8 de
-[PLAN-INDUSTRIALISATION.md](../../../../../PLAN-INDUSTRIALISATION.md) — n'est donc
-observable qu'à partir de contrats que plus rien ne sait produire. Sans ce jeu,
-l'élagage de T2.1b mesurerait sa couverture sur la seule version courante et
-marquerait « jamais atteint » tout ce qui sert la précédente : il supprimerait
-exactement les chemins que D8 vient de décider de garder.
+(`src/contract/exportComponent.ts`). Une fenêtre de lecture à deux versions, la
+courante et la précédente, décidée par
+[PLAN-INDUSTRIALISATION.md](../../../../../docs/plans/PLAN-INDUSTRIALISATION.md),
+n'est donc observable qu'à partir de contrats que plus rien ne sait produire.
+Sans ce jeu, l'élagage des validateurs mesurerait sa couverture sur la seule version
+courante et marquerait « jamais atteint » tout ce qui sert la précédente : il
+supprimerait exactement les chemins que cette décision garde.
 
 ## Ce qu'ils ne sont pas
 
 Ils ne testent pas le moteur. `AGENTS.md` interdit qu'un contrat commité serve à
 ça, et la raison tient toujours : un instantané ne bouge qu'au réexport, si bien
 qu'une régression du moteur ne s'y verrait jamais. Ces fichiers ne sont lus que
-par les **lecteurs** — validateurs de version et de champs —, pour lesquels
+par les **lecteurs**, validateurs de version et de champs, pour lesquels
 l'immobilité est précisément la propriété recherchée. Un test qui les compare à
 une sortie du moteur est une faute.
 
@@ -43,8 +43,8 @@ travail : le moteur écrit des LF (`src/contract/serializeJson.ts`), qu'une
 extraction Windows convertirait. `.gitattributes` les y maintient, sans quoi ces
 empreintes ne vaudraient plus rien.
 
-Empreintes SHA-256, pour constater qu'ils n'ont pas été retouchés
-(`sha256sum *.contract.json`) :
+Empreintes SHA-256, pour constater qu'ils n'ont pas été retouchés (`sha256sum
+*.contract.json`) :
 
 ```text
 3b05112b1eef5d5d946ad89f9025a88b141fe6722443115324b89f59d52c8be3  Alert.contract.json
@@ -55,6 +55,6 @@ cf909b421642731d279fee233cf3740b959e0b9f42ebadeb8cc02669e7482f9f  TileLink.contr
 
 ## Cycle de vie
 
-Ce dossier a rejoint `packages/kit/` avec la Phase 1 (T1.2). Il vit tant que la
+Ce dossier vit tant que la
 fenêtre de lecture inclut la 11.0, et disparaît quand elle se referme au-dessus
-— au même moment que le code de compatibilité qu'il couvre, jamais avant.
+ : au même moment que le code de compatibilité qu'il couvre, jamais avant.

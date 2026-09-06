@@ -155,6 +155,7 @@ export async function extractRules(
       intent: null,
       propDescriptions: {},
       booleanDescriptions: {},
+      enumDefaults: {},
       iconRules: [],
       warnings: absent,
       sectionFound: false,
@@ -185,7 +186,7 @@ export async function extractRules(
     if (!tag) {
       pousserSansNode(warnings, `Une règle du frame « ${sectionName} »`, {
         manque: 'elle n’a pas de variant reconnu (@usage, @do, @dont, @pairs, @prop, '
-          + '@boolean, @icons).',
+          + '@boolean, @icons, @default).',
         impact: 'Elle est ignorée, et sa documentation manquera au contrat.',
         action: 'Choisissez son variant dans Figma, puis réexportez.',
       });
@@ -198,7 +199,7 @@ export async function extractRules(
         : {
             tag,
             content: textOfLayer(instance, 'content'),
-            prop: tag === 'prop' || tag === 'boolean'
+            prop: tag === 'prop' || tag === 'boolean' || tag === 'default'
               ? textOfLayer(instance, 'prop')
               : undefined,
           },
@@ -228,6 +229,7 @@ export async function extractRules(
     intent: built.intent,
     propDescriptions: built.propDescriptions,
     booleanDescriptions: built.booleanDescriptions,
+    enumDefaults: built.enumDefaults,
     iconRules: built.iconRules,
     warnings: tous,
     sectionFound: true,

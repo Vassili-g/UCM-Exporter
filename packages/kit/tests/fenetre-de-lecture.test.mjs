@@ -1,32 +1,4 @@
-/**
- * La fenêtre de lecture est-elle réelle, ou seulement déclarée ?
- *
- * **Ce test existe parce que la fenêtre a menti une fois.** D8 décidait « la
- * courante et la précédente » ; le code lisait une seule version, et le
- * commentaire de `version-contrat.mjs` l'assumait contre la décision. T7.5 l'a
- * mesuré, T7.6 l'a tranché en donnant raison à D8 — et une décision qu'aucun
- * contrôle n'éprouve redeviendra fausse de la même façon.
- *
- * **Déclarer une borne basse ne coûte rien ; la TENIR est le sujet.** Dire
- * `VERSION_CONTRAT_MINIMALE = "11.0"` fait passer `verdictDeVersion`, et ne
- * prouve rien du reste : le verdict de version est le premier contrôle, pas le
- * dernier. Si `champsInvalidesDuContrat` refuse ensuite un 11.0, le
- * consommateur a une fenêtre qui l'accueille pour le renvoyer trois lignes plus
- * bas — c'est pire qu'une fenêtre fermée, parce que le message ne dit plus quoi
- * faire.
- *
- * Ce test fait donc passer les quatre contrats 11.0 figés (T7.0/T2.1b) par
- * TOUS les lecteurs, pas seulement par le verdict de version. C'est leur seul
- * emploi restant, et c'est celui-là.
- *
- * **Ce qu'il ne prouve pas.** Que le rendu d'un 11.0 soit correct : aucun test
- * ne le dit, seule une reconstruction à froid comparée à Figma le dirait. Il
- * dit que les lecteurs ne REFUSENT pas ce que la fenêtre annonce accepter.
- *
- * **Durée de vie.** Il vit tant que la fenêtre en porte deux. Le jour où la
- * borne basse monte, les fixtures figées doivent monter avec elle, sinon ce
- * test devient le seul endroit du dépôt à croire encore à la 11.0.
- */
+/** Vérifie que chaque lecteur respecte la fenêtre de versions annoncée. */
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";

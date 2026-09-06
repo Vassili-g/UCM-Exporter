@@ -1,47 +1,11 @@
 /**
- * OÙ, dans Figma, se trouve ce dont un diagnostic parle.
+ * Associe un diagnostic à son sujet Figma et conserve séparément son titre,
+ * son impact et son action jusqu'à l'interface.
  *
- * Un message d'export nomme son sujet en toutes lettres — « Layer « Badge » :
- * … » — et le designer doit ensuite le retrouver à la main dans une matrice de
- * trente variants. Ce module porte de quoi le lui montrer : le node du SUJET,
- * joint au message qui le nomme.
- *
- * **Ce qu'il ne fait pas, et c'est une frontière du format (U4.3).** L'id
- * relevé ici ne rejoint JAMAIS le contrat publié : `meta.diagnostics` n'a pas
- * de champ `figma`, et une loi de `tests/lois.ts` le refuse. La localisation ne
- * traverse que la frontière sandbox ↔ UI, où elle sert un clic, pas un
- * artefact.
- *
- * ## Pourquoi un registre plutôt qu'un canal typé
- *
- * L'évidence serait de faire porter l'id par le message lui-même — un
- * `{ message, nodeId }` au lieu d'une `string`. Elle est fausse ici, et la
- * raison est mesurable : **le TEXTE d'un message est déjà son identité.**
- * Quatre mécanismes en vivent — le dédoublonnage final d'`exportComponent`,
- * celui de `composedComponents`, le `pushOnce` d'`exportableNodes`, et les deux
- * classificateurs qui décident le `code` publié de chaque diagnostic. Un `Set`
- * d'objets ne déduplique rien : un composant de trente variants imprimerait
- * trente fois le même avertissement dans le corps de la pull request, ce que le
- * commentaire de `composedComponents` explique avoir voulu éviter.
- *
- * La même mesure absout ce registre. Deux calques qui produisent le même texte
- * sont DÉJÀ fondus en un seul constat : il n'y a donc jamais qu'un id à porter
- * pour un message donné, et « le premier qui a écrit ce texte » est exactement
- * la réponse que le dédoublonnage donne déjà.
- *
- * ## Pourquoi indexé par le canal, et non par module
- *
- * Un registre au niveau du module serait de l'état mutable sans propriétaire,
- * qu'il faudrait vider au début de chaque export — un rituel dont l'oubli
- * serait muet. Celui-ci est indexé par le TABLEAU d'accumulation lui-même, que
- * les sites d'émission reçoivent déjà : aucun paramètre nouveau ne traverse
- * vingt modules, rien ne survit à l'export, et deux exports concurrents ne
- * peuvent pas se contaminer.
- *
- * Son prix est réel et vaut d'être écrit : les canaux sont recopiés et
- * fusionnés en plusieurs endroits, et chaque recopie doit reporter son
- * registre par `reporterLocalisations`. Un oubli y est silencieux — d'où la loi
- * qui l'accompagne, dont c'est tout l'objet.
+ * La phrase reste l'identité du dédoublonnage : les registres sont indexés par
+ * texte et par tableau d'accumulation, sans état global entre exports. Les ids
+ * ne sont jamais publiés dans le contrat. Toute copie d'un canal doit appeler
+ * `reporterLocalisations`, obligation tenue par une loi de source.
  */
 
 /** Un canal d'accumulation de messages. L'identité du tableau est la clé. */

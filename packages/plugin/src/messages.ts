@@ -1,23 +1,7 @@
 /**
  * Le domicile unique des messages qui traversent la frontière sandbox ↔ UI.
- *
- * **Pourquoi ce fichier existe (U0.6).** Les demandes de l'UI étaient typées
- * dans `code.ts` ; les messages qui partent dans l'autre sens ne l'étaient
- * NULLE PART. L'UI les reconnaissait par une suite de `if` sur `message.type`,
- * et le sandbox les fabriquait à la main, littéral par littéral, à neuf endroits
- * différents. Deux listes qui ne se croisent jamais : ajouter un type d'un côté
- * sans l'autre ne casse rien de visible — le message part, personne ne l'écoute,
- * et le silence a l'air d'un cas qui ne s'est pas produit. La refonte de
- * l'interface en ajoute plusieurs, dont des structures et non plus des phrases ;
- * c'est avant le dixième qu'il fallait un endroit.
- *
- * **Ce que ce type contraint, et ce qu'il ne contraint pas.** L'UI est écrite en
- * JavaScript : rien ne l'oblige à respecter cette liste, et ce fichier ne le
- * prétend pas. Il contraint le CÔTÉ SANDBOX — chaque envoi passe par une porte
- * typée (`versUi` dans `code.ts`), donc aucun message ne peut plus partir sans
- * figurer ici. Pour l'UI, il vaut comme liste de référence : l'endroit où lire
- * ce qu'elle peut recevoir. Passer l'UI en TypeScript rendrait la contrainte
- * réciproque ; c'est une décision à prendre une fois, et elle est posée en U6.2.
+ * Le type contraint les envois du sandbox via `versUi`. L'UI JavaScript le
+ * consulte comme référence, sans vérification statique réciproque.
  */
 import type { PublicSettings, SettingsInput } from './config';
 import type { EtatConnexion, EtatDuDepot } from './connexion';
@@ -25,11 +9,7 @@ import type { Cible } from './cible';
 import type { CodeVerdict } from './prevol';
 
 /**
- * Ce qu'un handler d'export dit de son avancement (U2.6).
- *
- * Il ANNONCE, il ne décide de rien : le moteur nomme l'étape qu'il traverse, et
- * seul `code.ts` sait qu'il faut en faire un message. C'est ce qui permet à
- * cette annonce de traverser le moteur sans lui donner de dépendance vers l'UI.
+ * Annonce une étape sans donner au moteur de dépendance vers l'UI.
  */
 export type Annonce = (etape: string) => void;
 
@@ -61,12 +41,7 @@ export type UiRequest =
    */
   | { type: 'resize'; largeur: number; hauteur: number }
   /**
-   * Montrer le calque dont un avertissement parle (U4.4).
-   *
-   * Le sandbox seul peut poser une sélection et déplacer la vue. Ce n'est pas
-   * une modification du document — voir « Sélectionner et cadrer ne sont pas
-   * modifier » dans `SPEC.md` —, et le plugin n'appelle jamais `commitUndo()`,
-   * ce qu'un test de source refuse.
+   * Sélectionne et cadre le calque cité, sans modifier le document Figma.
    */
   | { type: 'montrer-le-calque'; nodeId: string };
 
@@ -77,21 +52,12 @@ export type PluginMessage =
   | { type: 'settings-validation'; errors: Partial<Record<keyof SettingsInput, string>> }
   | { type: 'settings-save-error' }
   /**
-   * L'état de la connexion, et ce que le designer doit en faire (U5.2).
-   *
-   * Les trois champs viennent d'un seul appel à `etatDeConnexion` : `state`
-   * habille la pastille, `pastille` la nomme, `geste` dit quoi corriger et
-   * n'existe que lorsqu'il y a quelque chose à corriger. Ils ne sont pas trois
-   * décisions, mais une seule, rendue sous trois formes.
+   * Décision unique rendue en état visuel, libellé et geste éventuel.
    */
   | { type: 'connection'; state: EtatConnexion['state']; pastille: string; geste: string | null }
   /**
-   * Où le repository range ses fichiers, tel qu'il le dit lui-même (U5.1).
-   *
-   * Les trois champs valent `null` tant que rien n'est connu — avant le premier
-   * test de connexion, ou quand il échoue. `source` nomme QUI a décidé : le
-   * fichier du repository, ou les réglages du plugin. C'est la question que le
-   * designer se posait après coup, en lisant une ligne de journal.
+   * Chemins effectifs ; `source` indique si le dépôt ou le plugin les décide.
+   * Les champs valent `null` tant que la réponse est inconnue.
    */
   | ({ type: 'depot' } & EtatDuDepot)
   /**
@@ -110,11 +76,8 @@ export type PluginMessage =
       avertissement: string | null;
     }
   /**
-   * Une ligne de journal. `level` est déclaré ici parce que la distinction qui
-   * structure tout le projet — un avertissement demande un geste, une note n'en
-   * demande aucun — n'est aujourd'hui portée que par le caractère de puce, et se
-   * perd donc en route. Lui donner un champ est le préalable ; l'utiliser est
-   * U4.1.
+   * Ligne de journal. `level` conserve la distinction : un avertissement demande
+   * un geste, une note n'en demande aucun.
    */
   | { type: 'log'; text: string; level?: LogLevel }
   /** L'état de l'action en cours, annoncé ET tracé dans le journal. */
@@ -134,30 +97,11 @@ export type PluginMessage =
    * noierait les avertissements qui, eux, demandent un geste.
    */
   | { type: 'phase'; texte: string }
-  /** Ce que l'export des tokens emporterait s'il partait maintenant (U2.4). */
-  | { type: 'tokens'; resume: string }
-  /**
-   * Un point à corriger dans Figma, EN TROIS PARTIES (U4.8).
-   *
-   * **Le champ `nature` a disparu avec ce qu'il distinguait (U4.7).** Le canal
-   * portait aussi des « constats » : ce que le contrat publie sous une forme
-   * inhabituelle mais complète — une piste de grille en pixels, un calque hors
-   * du flux, une rotation, une structure propre à un variant. Ils ne sont plus
-   * émis nulle part, et un champ qui ne sépare plus rien vaut moins que son
-   * absence : il laisse croire à un second cas qui n'existe pas.
-   *
-   * **Le champ `texte` a disparu au profit des trois parties.** Un paragraphe
-   * unique obligeait l'interface à lire le geste en dernier, après deux phrases
-   * de contexte — ou à découper une `string` dans le DOM, ce qui reviendrait à
-   * redéfinir dans l'UI une grammaire dont le moteur est propriétaire. Les
-   * parties voyagent donc telles que le moteur les a écrites, et la phrase
-   * compacte que publient `meta.diagnostics` et la pull request s'en dérive
-   * (`phraseDe`), sans seconde rédaction.
-   *
-   * Ce qui arrive ici demande toujours un geste dans Figma. Ce qui BLOQUE, lui,
-   * ne passe pas par ce message : c'est le verdict de rang 1, et c'est la seule
-   * chose que l'interface écrive en rouge.
-   */
+
+  /** Résumé des variables locales qui détermine si l'analyse est disponible. */
+  | { type: 'tokens'; resume: string; presents: boolean }
+
+  /** Point exigeant un geste dans Figma, conservé dans ses trois parties. */
   | {
       type: 'diagnostic';
       /** « Layer « Border » : l'alignement du stroke est illisible. » */
@@ -167,13 +111,8 @@ export type PluginMessage =
       /** Le geste exact à faire dans Figma. Une phrase impérative. */
       action: string;
       /**
-       * Le node du SUJET, quand le sujet en désigne un (U4.3).
-       *
-       * Absent quand le message nomme un text style, une variable, une règle,
-       * ou un calque agrégé sur toute la matrice — et cette absence est une
-       * réponse, pas un trou : `localisation.ts` en porte les trois raisons.
-       * L'interface n'offre donc « Afficher dans Figma » que sur les cartes qui
-       * mènent quelque part.
+       * Node du sujet. Absent pour un style, une variable ou un agrégat ; l'UI
+       * ne propose alors aucune navigation.
        */
       nodeId?: string;
     }

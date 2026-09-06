@@ -9,11 +9,19 @@ import { normalizePropKey, normalizePropValue } from './parsers';
 import type { IconPolicy, Intent } from '@ucm-kit/core/format';
 
 /** Tags reconnus une fois normalisés sans `@`. */
-export type RuleTag = 'usage' | 'prop' | 'boolean' | 'do' | 'dont' | 'pairs' | 'icons';
+export type RuleTag =
+  | 'usage'
+  | 'prop'
+  | 'boolean'
+  | 'do'
+  | 'dont'
+  | 'pairs'
+  | 'icons'
+  | 'default';
 
 /** Reconnaît un tag porté par une valeur de variante Figma. */
 export function ruleTagFromValue(value: string): RuleTag | null {
-  const match = /^@?(usage|prop|boolean|do|dont|pairs|icons)$/i.exec(value);
+  const match = /^@?(usage|prop|boolean|do|dont|pairs|icons|default)$/i.exec(value);
   return match ? match[1].toLowerCase() as RuleTag : null;
 }
 
@@ -34,6 +42,12 @@ export type RulesResult = {
   intent: Intent | null;
   propDescriptions: Record<string, Record<string, string>>;
   booleanDescriptions: Record<string, string>;
+  /**
+   * La valeur par défaut de chaque axe, DÉCLARÉE par une règle `@default`.
+   * Un axe absent d'ici n'a aucun défaut : la position d'un variant dans un
+   * component set est un choix de mise en page, jamais une décision.
+   */
+  enumDefaults: Record<string, string>;
   iconRules: IconRule[];
   warnings: string[];
 };
@@ -52,11 +66,14 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
   // écrivait sa description SUR la fonction `Object` globale du runtime.
   const propDescriptions = new Map<string, Map<string, string>>();
   const booleanDescriptions = new Map<string, string>();
+  const enumDefaults = new Map<string, string>();
   const iconRules: IconRule[] = [];
 
   for (const entry of entries) {
     const content = entry.content.trim();
-    if (!content && entry.tag !== 'icons') {
+    // `@icons` porte sa cible ailleurs, `@default` n'a rien à décrire : sa
+    // cible EST son contenu utile, et exiger un texte le rendrait bavard.
+    if (!content && entry.tag !== 'icons' && entry.tag !== 'default') {
       pousserSansNode(warnings, `Règle @${entry.tag}`, {
         manque: 'le layer « content » est vide.',
         impact: 'La règle n’est pas exportée.',
@@ -100,6 +117,32 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       } else {
         booleanDescriptions.set(propName, content);
       }
+    } else if (entry.tag === 'default') {
+      const cible = (entry.prop ?? '').trim();
+      const separator = cible.indexOf('.');
+      if (separator <= 0 || separator === cible.length - 1) {
+        pousserSansNode(warnings, 'Règle @default', {
+          manque: `elle vise « ${cible || 'rien'} », alors qu’il faut `
+            + `« propriété.valeur », par exemple « color.secondary ».`,
+          impact: 'Aucune valeur par défaut n’entre dans le contrat pour cette propriété.',
+          action: 'Corrigez cette règle, puis réexportez.',
+        });
+        continue;
+      }
+      const propName = normalizePropKey(cible.slice(0, separator));
+      const value = normalizePropValue(cible.slice(separator + 1));
+      // Deux défauts pour une même propriété se contredisent. Choisir en
+      // silence rendrait au contrat un défaut que personne n'a décidé, ce
+      // qui est exactement le défaut que cette règle existe pour fermer.
+      if (enumDefaults.has(propName)) {
+        pousserSansNode(warnings, `Règle @default « ${propName} »`, {
+          manque: 'elle apparaît deux fois.',
+          impact: 'Seule la première est exportée.',
+          action: 'Supprimez la seconde, puis réexportez.',
+        });
+        continue;
+      }
+      enumDefaults.set(propName, value);
     } else if (entry.tag === 'icons') {
       const iconName = entry.iconName?.trim() ?? '';
       if (!iconName) {
@@ -176,6 +219,7 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
         [propName, Object.fromEntries(valueDescriptions)] as const),
     ),
     booleanDescriptions: Object.fromEntries(booleanDescriptions),
+    enumDefaults: Object.fromEntries(enumDefaults),
     iconRules,
     warnings,
   };
@@ -186,6 +230,7 @@ export function hasUsableRules(result: RulesResult): boolean {
   return result.intent !== null
     || Object.keys(result.propDescriptions).length > 0
     || Object.keys(result.booleanDescriptions).length > 0
+    || Object.keys(result.enumDefaults).length > 0
     || result.iconRules.length > 0;
 }
 

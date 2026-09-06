@@ -1,20 +1,5 @@
 /**
  * Les contrats FABRIQUÉS que plusieurs suites partagent.
- *
- * Ils vivaient dans `validation-contrats.test.mjs`, seul consommateur jusqu'à
- * ce que le harnais de mutation de T2.1b en ait besoin lui aussi. Les recopier
- * aurait créé deux formes « courantes » qui dérivent — exactement la maladie
- * que T2.7 et T6.0 ont soignée ailleurs, et ici elle serait pire : deux
- * harnais mesureraient alors deux moteurs différents en croyant mesurer le
- * même.
- *
- * Ce ne sont PAS des instantanés du moteur. Le moteur ne fabrique que la
- * version courante ; ces objets sont écrits à la main pour atteindre des
- * champs que le corpus réel n'exerce pas — une icône, une rotation, un layer
- * hors du flux. Les comparer à une sortie du moteur rouvrirait le défaut que
- * `AGENTS.md` interdit.
- *
- * Le jeu N‑1 réel, lui, est ailleurs et figé : `fixtures/contrats/11.0/`.
  */
 
 export function contratCourant() {

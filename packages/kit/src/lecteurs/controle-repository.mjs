@@ -1,50 +1,7 @@
 /**
- * Le contrôle d'un repository entier, et le rapport qu'un designer en lit.
- *
- * Vérifie trois propriétés d'un contrat, sans jamais le croire sur parole :
- *
- * 1. **Existence** — toute référence `{chemin.du.token}` citée par le contrat
- *    est cherchée dans le fichier de tokens, à son chemin exact. Une absence
- *    est signalée au designer sans bloquer : les tokens sont la source de
- *    vérité et un ancien contrat ne retient pas leur évolution. Les références
- *    sont RELEVÉES DANS LE CONTRAT, `samples` et `meta` exclus — un texte de
- *    maquette peut valoir « {montant.total} » sans nommer aucun token, et une
- *    phrase d'avertissement peut en citer un.
- * 2. **Parité** — dès qu'une implémentation existe, le contrat et elle sont
- *    confrontés. Ce contrôle AVERTIT sans bloquer : il accuse le code, pas le
- *    contrat, et son geste correctif appartient à un développeur. L'absence
- *    d'implémentation reste autorisée. **La MESURE appartient à un adaptateur**
- *    (T2.3) ; sans lui, ce module dit seulement où l'implémentation devrait
- *    être et si elle y est.
- * 3. **Composition** — chaque cible possède un contrat local, les slots et
- *    `composes` décrivent la même séquence et le graphe est acyclique. Cette
- *    part-là est bloquante : elle se lit dans les contrats seuls.
- *
- * Le même diagnostic est écrit pour deux lecteurs très différents : le
- * terminal pour un développeur, et un rapport markdown pour le **designer**,
- * qui valide les pull requests d'export sans jamais ouvrir un log de CI.
- *
- * Ce rapport est le SEUL message que reçoit le designer : tout ce qui refuse
- * une pull request y figure, y compris ce qui se constate ailleurs — d'où
- * `echecsDeTests`, que l'appelant transmet. Aucune sortie anticipée ne reste
- * muette non plus : un fichier de tokens absent ou illisible se publie comme le
- * reste.
- *
- * La réciproque ne vaut pas : ce qui figure au rapport ne refuse pas forcément
- * la pull request. Un constat que l'export ne peut ni causer ni corriger
- * s'écrit en ⚠ et laisse fusionner — sans quoi le rapport arrêterait la seule
- * personne incapable d'y répondre. Chaque titre dit littéralement ce qu'il a
- * trouvé : « N contrats invalides » n'est écrit que si N contrats le sont
- * (cf. `enteteDuVerdict`).
- *
- * ## Ce que ce module ne fait PAS, et c'est la coupure de T5.2
- *
- * Il **n'écrit aucun fichier, ne lit aucune variable d'environnement et ne sort
- * jamais du processus.** Il rend son verdict ; où celui-ci va — un fichier de
- * rapport, le résumé d'un run de CI, le terminal — appartient à l'outil qui
- * l'appelle. Le CONTENU du rapport est du format, sa PUBLICATION est de
- * l'outil : c'est cette ligne qui permet à `ucm check` et au script d'un repo
- * de rendre le même rapport sans en écrire deux.
+ * Orchestre une seule fois les lecteurs et le rapport destiné au designer.
+ * Les adaptateurs mesurent les écarts propres à leur stack ; le noyau décide
+ * des verdicts et de leur rédaction. La publication du rapport reste au CLI.
  */
 import { basename, join } from "node:path";
 import { readFileSync } from "node:fs";
@@ -80,7 +37,9 @@ function pariteVide() {
     fonctionAbsente: null,
     manquantes: [],
     typesIncorrects: [],
+    valeursNonImplementees: [],
     booleensNonUtilises: [],
+    enumsSansEffet: [],
     compositionsIncorrectes: [],
   };
 }
@@ -438,6 +397,12 @@ function terminalDesBilans(bilans) {
     }
     for (const { prop, attendu, recu } of bilan.parite.typesIncorrects) {
       fil.push({ flux: "warn", texte: `⚠ ${bilan.fichier} : type de prop incompatible → ${prop} doit être ${attendu}, reçu ${recu}` });
+    }
+    for (const { prop, valeurs } of bilan.parite.valeursNonImplementees ?? []) {
+      fil.push({ flux: "warn", texte: `⚠ ${bilan.fichier} : valeurs du contrat absentes de l'union du code → ${prop} : ${valeurs.join(", ")}` });
+    }
+    for (const { prop } of bilan.parite.enumsSansEffet ?? []) {
+      fil.push({ flux: "warn", texte: `⚠ ${bilan.fichier} : prop enum déclarée mais non utilisée par le composant → ${prop}` });
     }
     for (const prop of bilan.parite.booleensNonUtilises) {
       fil.push({ flux: "warn", texte: `⚠ ${bilan.fichier} : prop BOOLEAN déclarée mais non utilisée par le composant → ${prop}` });

@@ -748,15 +748,9 @@ export async function resolveSlotSize(
 }
 
 /**
- * Mesure qu'un enfant donne à une piste de grille qui hug.
- *
- * Règle et bornes : docs/FORMAT.md, « Grilles ».
- *
- * **Cette mesure ne se dit plus au designer (U4.7).** Elle est publiée, donc
- * rien ne manque, et aucun geste ne la corrigerait : Figma n'expose pas le
- * remplissage d'un enfant sous une piste qui hug, et c'est une propriété de
- * l'outil, pas du design. La règle et ses trois bornes vivent dans la
- * spécification, et les tests du format en répondent.
+ * Mesure en pixels qu'un enfant donne à une piste `HUG`, seulement tant que la
+ * cellule décide de l'axe. Un alignement explicite rend l'axe au calque et
+ * réactive la règle tokenisée de `resolveSlotSize`.
  */
 export function gridStructuralSize(
   node: SceneNode,

@@ -20,7 +20,9 @@ function bilan(parite = {}, fichier = "StressTest.contract.json") {
       fonctionAbsente: null,
       manquantes: [],
       typesIncorrects: [],
+      valeursNonImplementees: [],
       booleensNonUtilises: [],
+      enumsSansEffet: [],
       compositionsIncorrectes: [],
       ...parite,
     },
@@ -68,6 +70,21 @@ test("chaque cardinalité en écart est détaillée telle qu'elle a été mesur�
 
   assert.match(section, /déclare 1 occurrence de `Alert`, mais le composant en rend 2/);
   assert.match(section, /déclare 7 occurrences de `TileLink`, mais le composant en rend 14/);
+});
+
+/**
+ * Une dépendance rendue par une boucle n'est pas comptée. L'avertissement qui
+ * dit son propre angle mort cesse d'être un faux positif : il informe.
+ */
+test("la cardinalité dit ce que son comptage ne voit pas", () => {
+  const section = sectionEcartsDeParite([enSurplus]).join("\n");
+
+  assert.equal(
+    section.match(
+      /Le comptage est statique ; si les occurrences viennent d'une boucle, cet écart est attendu\./g,
+    ).length,
+    2,
+  );
 });
 
 /**
@@ -119,4 +136,50 @@ test("le rappel terminal compte les composants et dit qu'il ne bloque pas", () =
 test("aUnEcartDeParite ignore une implémentation encore absente", () => {
   assert.equal(aUnEcartDeParite(bilan({ implementationAbsente: true })), false);
   assert.equal(aUnEcartDeParite(enSurplus), true);
+});
+
+const tousLesEcarts = bilan({
+  manquantes: ["libelle"],
+  typesIncorrects: [{ prop: "actif", attendu: "boolean", recu: "string" }],
+  valeursNonImplementees: [{ prop: "ton", valeurs: ["warning"] }],
+  booleensNonUtilises: ["ouvert"],
+  enumsSansEffet: [{ prop: "ton", valeurs: ["info", "success", "warning"] }],
+  compositionsIncorrectes: [{ component: "Alert", attendu: 3, rendu: 1 }],
+});
+
+test("une valeur que le code n'offre pas se dit par sa variante", () => {
+  const section = sectionEcartsDeParite([
+    bilan({ valeursNonImplementees: [{ prop: "ton", valeurs: ["warning"] }] }),
+  ]).join("\n");
+
+  assert.match(section, /La variante `warning` n'est pas implémentée dans le code\./);
+});
+
+test("une propriété sans effet nomme ce que le designer verra", () => {
+  const section = sectionEcartsDeParite([
+    bilan({ enumsSansEffet: [{ prop: "ton", valeurs: ["info", "success", "warning"] }] }),
+  ]).join("\n");
+
+  assert.match(
+    section,
+    /La propriété `ton` de Figma n'a aucun effet dans le code : `info`, `success` et `warning` s'affichent de la même façon\./,
+  );
+});
+
+/**
+ * Le rapport est lu par un designer. Le vocabulaire du code y a été introduit
+ * deux fois pendant l'arbitrage de cette section : la loi le refuse au lieu de
+ * compter sur une relecture.
+ */
+test("aucune ligne du rapport n'emploie le vocabulaire du code", () => {
+  const section = [
+    ...sectionEcartsDeParite([tousLesEcarts]),
+    ...sectionEcartsDeParite([bilan({ interfaceAbsente: "ButtonProps" })]),
+    ...sectionEcartsDeParite([bilan({ fonctionAbsente: "Button" })]),
+  ].join("\n");
+
+  assert.doesNotMatch(section, /\bprops?\b/i);
+  assert.doesNotMatch(section, /\benums?\b/i);
+  assert.doesNotMatch(section, /\bboole?an\b/i);
+  assert.doesNotMatch(section, /lue? par le composant/i);
 });

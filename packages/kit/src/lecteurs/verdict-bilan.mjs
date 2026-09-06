@@ -1,36 +1,6 @@
 /**
- * Décide si le bilan d'un contrat doit refuser la pull request.
- *
- * Ce que cette fonction rend est vrai au sens propre : le CONTRAT est
- * inexploitable, incompatible ou incohérent. Deux écarts en sont donc absents,
- * pour la même raison — ils ne disent rien du contrat et personne ne les
- * corrige en réexportant :
- *
- * - les références absentes de `tokens.json`, la source DTCG faisant foi
- *   (publiées par `diagnostic-tokens.mjs`) ;
- * - l'écart de parité contrat ↔ code, qui accuse l'implémentation et attend un
- *   développeur (publié par `check-contract.mjs`, cf. `pariteEnEcart`).
- *
- * Les deux sont des avertissements. Un verdict qui les inclurait refuserait la
- * pull request d'un designer pour l'état du repository, sous un titre qui
- * mentirait sur son contrat.
- */
-/**
- * Un contrat que SEULE sa version bloque n'est pas un contrat invalide.
- *
- * C'est la moitié de T2.1b que la correction de l'ordre ne réglait pas. Le
- * verdict de version parvient désormais au rapport, mais le TITRE comptait
- * encore ce contrat parmi les invalides — or il est parfaitement formé, et
- * seule sa version le sépare de ce repository. Le titre nommait donc le
- * mauvais responsable au moment le plus visible du rapport.
- *
- * *Ce que cette fonction ne décide PAS, et T7.3 l'a appris à ses dépens :* à
- * QUI le geste appartient. Elle ne lit pas `verdict`, et ne le doit pas — un
- * contrat hors fenêtre n'est pas un contrat invalide, quel que soit le sens de
- * l'écart. C'est `phraseDuSensDeLEcart` qui tranche le responsable.
- *
- * `bilanEstBloquant` ne bouge pas : ces contrats bloquent toujours, et ils le
- * doivent. Ce qui change est ce que le titre en DIT.
+ * Vrai si seule la version bloque. Les tokens absents et la parité avertissent
+ * sans bloquer, car ils accusent le dépôt ou le code, pas le contrat exporté.
  */
 function seuleLaVersionBloque(bilan) {
   return Boolean(bilan?.version)
@@ -42,30 +12,9 @@ function seuleLaVersionBloque(bilan) {
 }
 
 /**
- * La phrase d'en-tête d'un refus qui ne tient qu'à la version, et elle DÉPEND
- * DU SENS de l'écart.
- *
- * **Défaut trouvé par la recette du repo vierge (T7.3), et il est du genre le
- * plus coûteux : deux phrases vraies séparément qui se contredisent dans le
- * même rapport.** Le titre écrivait « réexporter n'y changerait rien » pour
- * TOUT contrat hors fenêtre, y compris un contrat trop ANCIEN dont la section,
- * trois lignes plus bas, demande précisément de réexporter. Le designer lisait
- * d'abord qu'il n'y pouvait rien, puis qu'il devait agir.
- *
- * La cause est identifiable : `seuleLaVersionBloque` répond « oui » sans
- * regarder `verdict`, et le commentaire de T2.1b qui justifiait la phrase — «
- * aucun réexport ne le rendra lisible » — n'était vrai que du sens `recent`.
- * Aucun test ne l'a vu parce que tous fabriquaient une version FUTURE (99.0) :
- * le sens `ancien` n'était éprouvé qu'au niveau de la section, jamais du titre.
- *
- * Les deux sens ont deux responsables, et c'est tout l'objet du critère de
- * réussite n° 4 — le message doit dire QUI corrige :
- * - `recent` : le contrat vient d'un plugin en avance sur ce repository. Le
- *   geste appartient à un développeur, et réexporter ne ferait rien.
- * - `ancien` : le contrat vient d'un plugin en retard, ou sa version est
- *   illisible. Le geste appartient au designer, et c'est un réexport.
- * - les deux à la fois : aucune phrase unique n'est vraie, donc on n'en écrit
- *   aucune et on renvoie au détail, qui nomme le geste contrat par contrat.
+ * Forme l'en-tête d'un refus dû uniquement à la version. Un contrat récent
+ * demande une mise à jour du repo ; un ancien demande un réexport. Si les deux
+ * sens coexistent, aucun résumé unique n'est écrit et le détail fait foi.
  */
 function phraseDuSensDeLEcart(bilans, pluriel) {
   const sujet = pluriel
@@ -108,10 +57,6 @@ export function enteteDuVerdict(fautifs, avecAvertissements = false) {
   const contratsFautifs = Array.isArray(fautifs) ? fautifs.length : fautifs;
   const versionsSeules = bilans.filter(seuleLaVersionBloque).length;
 
-  // Le titre « version non lue » ne s'écrit que si TOUS les contrats bloquants
-  // le sont pour cette seule raison. Dès qu'un contrat est réellement cassé, le
-  // rapport doit le dire en premier : c'est le seul des deux qu'un réexport
-  // corrige, donc le seul qui appelle un geste immédiat.
   if (contratsFautifs > 0 && versionsSeules === contratsFautifs) {
     const pluriel = versionsSeules === 1 ? "" : "s";
     return [
@@ -143,6 +88,7 @@ export function enteteDuVerdict(fautifs, avecAvertissements = false) {
   ];
 }
 
+/** Centralise les états d'un bilan qui refusent la fusion. */
 export function bilanEstBloquant(bilan) {
   return bilan.illisible
     || bilan.champsAbsents.length > 0

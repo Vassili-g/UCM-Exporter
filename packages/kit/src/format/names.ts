@@ -1,13 +1,5 @@
-/**
- * Convertit un chemin Figma (collection/variable) en nom de token canonique.
- * C'est LA règle de nommage du projet, partagée par les deux commandes :
- * un token s'écrit exactement pareil dans un contrat et dans tokens.json.
- *
- * Règles : « / » → « . », espaces d'un segment → « - », tout en minuscules.
- *
- * @example normalizeName('Brand Tokens/Primary/default')
- * // → 'brand-tokens.primary.default'
- */
+
+/** Normalise un chemin Figma en token : `/` → `.`, espaces → `-`, minuscules. */
 export function normalizeName(name: string): string {
   return name
     .split('/')
@@ -17,14 +9,7 @@ export function normalizeName(name: string): string {
     .replace(/\.{2,}/g, '.');
 }
 
-/**
- * Transforme un nom Figma libre en identifiant de composant TypeScript stable.
- * Le nom affiché reste intact dans `contract.name` ; cet identifiant sert au
- * fichier, au dossier, à la fonction React et à l'interface `<Nom>Props`.
- *
- * @example codeIdentifier('Icon / Button') // → 'IconButton'
- * @example codeIdentifier('2e bouton') // → 'Component2eBouton'
- */
+/** Produit l'identifiant TypeScript stable d'un nom Figma libre. */
 export function codeIdentifier(name: string): string {
   const ascii = name
     .normalize('NFKD')
@@ -43,11 +28,11 @@ export function codeIdentifier(name: string): string {
  * qui le porte. C'est la troisième et dernière projection de nom du format,
  * après `normalizeName` (Figma → token) et `codeIdentifier` (Figma → code).
  *
- * **Elle est l'unique autorité.** Elle vivait auparavant en trois exemplaires
- * — `tokenVar` chez le consommateur, le `name/kebab` de Style Dictionary dans
- * la chaîne de build, et un troisième dans `check-contract.mjs` — qu'aucun test
- * ne comparait. Elles divergeaient, et le défaut qu'elles produisaient est le
- * pire de tous : muet. `tokenVar` rendait `var(--layouts-sizing-0,5)`, où la
+ * **Elle est l'unique autorité.** Elle a vécu en trois exemplaires qu'aucun
+ * test ne comparait : `tokenVar` chez le consommateur, le `name/kebab` de Style
+ * Dictionary dans la chaîne de build, et une copie dans le script de contrôle
+ * du consommateur. Elles divergeaient, et le défaut qu'elles produisaient était
+ * muet. `tokenVar` rendait `var(--layouts-sizing-0,5)`, où la
  * virgule sépare en CSS une variable de sa valeur de repli ; le navigateur
  * lisait « variable `--layouts-sizing-0`, repli `5` », trouvait cette variable,
  * et rendait `0px` là où le contrat demandait `2px`. Pas d'erreur, pas de

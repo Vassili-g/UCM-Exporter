@@ -1,50 +1,25 @@
-/**
- * Le compte rendu d'un export : deux groupes au lieu d'un flux (U4.1, U4.2).
- *
- * **Ce qu'il remplace.** Un journal chronologique de 96 px, en 11 px monospace,
- * qui mêlait la version de schéma, les avertissements, les notes, l'emplacement,
- * un échec GitHub, un téléchargement et le lien de pull request. Il défilait
- * vers sa fin à chaque ligne ajoutée, si bien que les avertissements — les
- * premiers arrivés, et les seuls qui demandent un geste — étaient exactement ce
- * qu'il cachait : à vingt avertissements, l'écran était identique à un export
- * qui n'en avait qu'un.
- *
- * **Les trois groupes, dans cet ordre.** Le problème avant le détail, le geste
- * séparé du constat. C'est une ADAPTATION de la règle de CONTRIBUTING.md, qui
- * est écrite pour un rapport agrégé de CI et non pour le résultat d'un export
- * unique ; ce qui la motive est gardé.
- *
- * **Le journal brut survit, replié.** Tant que le plugin n'a pas d'autre canal
- * de débogage, la trace chronologique reste la seule façon de comprendre un
- * enchaînement. Elle ne coûte plus la lecture de ce qui demande un geste.
- *
- * **Chaque avertissement est une CARTE (U4.8)**, pas un paragraphe : pastille,
- * titre, conséquence, geste, et un bouton vers le calque quand il y en a un. Un
- * export sain ne montre donc aucun groupe de diagnostic — son verdict et sa
- * publication suffisent.
- *
- * **Le groupe « Constats » a disparu avec son contenu (U4.7).** Il rendait
- * visibles des transformations que le contrat publie exactement : le designer y
- * relisait le fonctionnement interne de l'exporteur pour s'entendre dire qu'il
- * n'avait rien à faire. Ce n'était pas un problème de présentation, et aucune
- * carte ni couleur ne l'aurait réparé — le moteur ne les émet plus.
- */
-export function createCompteRendu(journal) {
+
+/** Rend séparément les corrections Figma et le résultat de publication. */
+export function createCompteRendu() {
   const section = document.createElement('section');
   section.className = 'compte-rendu';
 
+  section.hidden = true;
+
   const aCorriger = creerGroupe('À corriger dans Figma');
-  const publication = creerGroupe('Publication', { compte: false });
 
-  const details = document.createElement('details');
-  details.className = 'details-techniques';
-  const resume = document.createElement('summary');
-  resume.textContent = 'Détails techniques';
-  details.append(resume, journal.element);
+  const publication = document.createElement('div');
+  publication.className = 'groupe-liste';
+  publication.hidden = true;
 
-  section.append(aCorriger.element, publication.element, details);
+  section.append(aCorriger.element, publication);
 
-  /** Un groupe se cache tant qu'il est vide : un titre à zéro entrée ne dit rien. */
+  function ajouterEntree(noeud) {
+    section.hidden = false;
+    publication.hidden = false;
+    publication.appendChild(noeud);
+  }
+
   function creerGroupe(titre, { compte = true } = {}) {
     const element = document.createElement('div');
     element.className = 'groupe';
@@ -66,6 +41,7 @@ export function createCompteRendu(journal) {
       ajouter(noeud) {
         total += 1;
         entete.textContent = compte ? `${titre} (${total})` : titre;
+        section.hidden = false;
         element.hidden = false;
         liste.appendChild(noeud);
       },
@@ -159,24 +135,16 @@ export function createCompteRendu(journal) {
     /** Un export qui commence efface le compte rendu du précédent, pas la cible. */
     reinitialiser() {
       aCorriger.vider();
-      publication.vider();
-      details.open = false;
-      journal.clear();
+      publication.hidden = true;
+      publication.replaceChildren();
+      section.hidden = true;
     },
-    /**
-     * `point` est ce que le moteur a écrit : titre, impact, action, node.
-     *
-     * Le journal, lui, garde la PHRASE — la même que `meta.diagnostics` et la
-     * pull request publient. C'est ce qui permet de comparer une trace à une
-     * pull request sans se demander laquelle des deux a été reformulée.
-     */
+    /** `point` est ce que le moteur a écrit : titre, impact, action, node. */
     ajouterDiagnostic(point) {
       aCorriger.ajouter(creerDiagnostic(point));
-      journal.append([point.titre, point.impact, point.action].filter(Boolean).join(' '));
     },
     ajouterPublication(texte, niveau = 'info') {
-      publication.ajouter(creerLignePublication(texte, niveau));
-      journal.append(texte, niveau);
+      ajouterEntree(creerLignePublication(texte, niveau));
     },
     /** Le lien de pull request est une SORTIE, pas une ligne de texte. */
     ajouterLien(libelle, url) {
@@ -189,8 +157,7 @@ export function createCompteRendu(journal) {
         evenement.preventDefault();
         parent.postMessage({ pluginMessage: { type: 'open-external', url } }, '*');
       });
-      publication.ajouter(lien);
-      journal.appendLink(libelle, url);
+      ajouterEntree(lien);
     },
   };
 }

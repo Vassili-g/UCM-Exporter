@@ -1,15 +1,6 @@
 /**
- * OUVRIR `ucm.config.json` sur un disque, et rien de plus.
- *
- * **La grammaire n'est plus ici, et c'est T4.1 qui l'a déplacée.** Ce que ce
- * fichier CONTIENT, ce qui y est refusé et ce qu'un repo vierge décrit sans
- * rien écrire vivent dans `@ucm-kit/core/format` — le seul sous-chemin que le
- * plugin Figma atteint, lui qui doit savoir où ÉCRIRE et lit ce fichier par
- * l'API GitHub, sans `node:fs`.
- *
- * Tant que la grammaire vivait du seul côté Node, le plugin en gardait sa
- * propre idée — `src/components` et `src/tokens` en dur — et les deux ne
- * coïncidaient que par accident. Il ne reste ici que ce qui touche un disque.
+ * Ouvre `ucm.config.json` sur disque. Sa grammaire et ses défauts vivent dans
+ * `@ucm-kit/core/format`, également accessible au plugin sans `node:fs`.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";

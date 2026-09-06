@@ -1,6 +1,6 @@
 {
   "name": "@ucm-kit/cli",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "La ligne de commande UCM : initialiser un repository, lister ce qu'il doit couvrir.",
   "type": "module",
   "license": "MIT",
@@ -20,12 +20,13 @@
   },
   "files": [
     "src",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "test": "node scripts/run-tests.cjs"
   },
   "dependencies": {
-    "@ucm-kit/core": "0.1.11"
+    "@ucm-kit/core": "0.1.12"
   }
 }
