@@ -23,6 +23,12 @@ versionnage. Lire le groupe que la tâche touche, pas la section entière.
 Pour créer ou modifier un message destiné au designer, charger aussi la skill
 [`rediger-diagnostics-ucm`](./.agents/skills/rediger-diagnostics-ucm/SKILL.md).
 
+Pour reconstruire à froid un composant depuis son contrat — le geste de la
+recette, dans le repository consommateur —, charger la skill
+[`consommer-contrat`](./.agents/skills/consommer-contrat/SKILL.md). Elle vit
+ici parce que c'est un savoir du FORMAT : le repository de recette, lui, ne doit
+rien apprendre du produit.
+
 Pour toucher à l'interface du plugin, lire d'abord
 [CONTRIBUTING.md](./CONTRIBUTING.md#interface-du-plugin) : la hiérarchie de
 l'information et le protocole de relecture y font autorité, et la galerie des
