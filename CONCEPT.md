@@ -135,9 +135,11 @@ Le designer relit la vérité visuelle exportée. Le développeur implémente ou
 adapte le code. La CI vérifie ce qu’elle sait prouver et signale explicitement
 ce qu’elle ne peut pas vérifier.
 
-Le playground complète ce workflow par un **test froid** : un agent reconstruit
-un composant de validation à partir du seul contrat. Ce test mesure la qualité
-du contrat ; son résultat n’est pas le code de production.
+Ce workflow se complète par un **test froid** : sur une branche de recette du
+repository consommateur, un agent reconstruit un composant à partir du seul
+contrat suivi, sans ouvrir l’implémentation précédente. Ce test mesure la
+qualité du contrat ; son résultat n’est pas du code de production, et le
+composant obtenu est une sonde jetable.
 
 ## 6. Ce que le modèle cherche à prouver
 

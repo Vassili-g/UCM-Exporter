@@ -223,10 +223,11 @@ sur le poste, la CI reste l'autorité : ouvrir la pull request donne le rapport,
 qui est de toute façon le seul message que le designer lira.
 
 [UCM Playground](https://github.com/Vassili-g/UCM-Playground) est le
-consommateur de référence : arborescence des composants, `tokens.json` DTCG,
-les 6 contrôles branchés, le workflow CI et le rapport publié sur la pull
-request. C'est le point de départ à copier pour brancher un nouveau
-repository. Un projet TypeScript peut installer
+consommateur de recette : une application React banale, les contrats exportés,
+`tokens.json` DTCG, et les composants reconstruits depuis ces seuls contrats.
+Il n'y a **rien à y copier** : son outillage UCM se limite aux cinq fichiers
+qu'`ucm init` écrit, et c'est cette absence qui le rend probant — ce qui y
+fonctionne fonctionne chez n'importe qui. Un projet TypeScript peut installer
 `@ucm-kit/adapter-typescript@0.1.0` pour ajouter la comparaison statique des
 props et de la composition, ainsi que la génération des types dérivés des
 contrats. Les enums restent hors de la garantie de parité statique.
@@ -306,9 +307,10 @@ et sans être un projet Node. C'était l'objet de
 [PLAN-INDUSTRIALISATION.md](./PLAN-INDUSTRIALISATION.md), qui porte ce qu'il
 reste à faire.
 
-Le Playground n'est plus le domicile de cet outillage : il en est le
-consommateur de référence, celui qui sert à vérifier que le kit tient hors de
-son dépôt d'origine.
+Le Playground n'est plus le domicile de cet outillage, et n'en garde plus une
+ligne : il héberge un corpus réel — contrats, tokens, sondes reconstruites — et
+sert à vérifier que les paquets tiennent dans un repository qui ne sait rien
+d'eux.
 
 La maturité et les limites restantes sont dans [ROADMAP.md](./ROADMAP.md).
 

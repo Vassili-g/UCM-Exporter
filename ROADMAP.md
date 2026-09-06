@@ -33,23 +33,23 @@ sont jamais corrigés à la main.
 | Domaine | État |
 |---|---|
 | Forme du contrat | L’Exporter publie les vues exactes sous cinq catalogues de parties et un `samples` récursif non normatif. Il élide les valeurs neutres, ne publie ni `tokensUsed` ni `meta.warnings`, et sérialise une entrée par ligne sur deux niveaux. Les `args` d’une dépendance viennent de sa surface publique directe et de son seul wrapper élu ; le contenu positionnel suit la visibilité effective et s’arrête aux `SLOT`. `packages/plugin/tests/lois.ts` porte ces lois et `exportComponent.test.ts` les applique à chaque contrat que le moteur fabrique : renvois résolus, catalogues sans doublon ni orphelin, adresses qui désignent un calque réel, aucune valeur neutre écrite, chaque clé de couleur résolue vers un rôle de la bonne nature, accord avec le schéma publié, aller-retour de l’écriture. Aucune ne connaît le nom d’un composant |
-| Consommation | `@ucm-kit/core` lit la version courante et la précédente, publie le schéma et porte les contrôles indépendants du langage. `@ucm-kit/cli` exécute ces contrôles et découvre dans le repository l’adaptateur TypeScript optionnel. `@ucm-kit/adapter-typescript` compare les props et la composition TS/TSX puis génère les types dérivés ; sa dépendance de 23 Mo à TypeScript n’est donc payée par aucun consommateur non-TypeScript. Le Playground n’héberge plus ces implémentations génériques : il consomme les paquets publiés et garde seulement un verrou sur son vrai `StressTest` |
-| Validation Figma | Les quatre composants du Playground ont été réexportés à la forme courante, puis reconstruits à froid chacun depuis son seul contrat. Ces exports vivent là-bas et nulle part ailleurs. La comparaison du rendu obtenu avec Figma n’est consignée nulle part : elle reste à faire ou à écrire. Ces quatre composants sont des sondes jetables, pas un critère de généralité du moteur |
+| Consommation | `@ucm-kit/core` lit la version courante et la précédente, publie le schéma et porte les contrôles indépendants du langage. `@ucm-kit/cli` exécute ces contrôles et découvre dans le repository l’adaptateur TypeScript optionnel. `@ucm-kit/adapter-typescript` compare les props et la composition TS/TSX puis génère les types dérivés ; sa dépendance de 23 Mo à TypeScript n’est donc payée par aucun consommateur non-TypeScript. Le Playground n’héberge plus aucune de ces implémentations, ni le moindre contrôle local : il installe les paquets publiés le temps de sa CI, et son verrou de parité sur le vrai `StressTest` a rejoint les fixtures de l’adaptateur |
+| Validation Figma | Les quatre composants du Playground ont été réexportés à la forme courante, puis reconstruits à froid chacun depuis son seul contrat. Ces exports vivent là-bas et nulle part ailleurs, sur `main`, aux côtés des sondes qu’ils ont servi à reconstruire. La comparaison du rendu obtenu avec Figma n’est consignée nulle part : c’est l’objet de la recette N6 du [plan de neutralisation](./PLAN-NEUTRALISATION-PLAYGROUND.md). Ces quatre composants sont des sondes jetables, pas un critère de généralité du moteur |
 | Export DTCG | Variables locales, alias et modes exportés ; collisions et cycles diagnostiqués |
 | Structure portable | Flex, wrap, grille, arbres récursifs, tailles, bornes, typographie, icônes et composition couverts dans le vocabulaire du contrat. Un calque hors du flux est PLACÉ — `constraints` et `inset` — et sa `rotation` est écrite en vocabulaire CSS : les deux étaient des avertissements sans geste possible, Figma ne permettant de lier ni une position ni une rotation |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlés |
-| Contrôles du Playground | Forme et version des contrats, graphe de composition, adresses des échantillons, parité statique, références de tokens, génération des types et du CSS. Le contrôle générique vient des paquets `@ucm-kit/*` ; le seul test local de parité vérifie les cardinalités du vrai `StressTest`. Aucun contrôle n’exécute le rendu |
+| Contrôles chez le consommateur | Forme et version des contrats, graphe de composition, adresses des échantillons, références de tokens, et la parité statique quand l’adaptateur TypeScript est installé. Tout vient du workflow qu’`ucm init` écrit et du paquet publié qu’il appelle : le repository n’a plus ni script, ni test générique, ni dépendance `@ucm-kit`. Aucun contrôle n’exécute le rendu |
 | Rapport CI | Les constats et avertissements de l’export sont agrégés dans le terminal, le résumé CI et le commentaire de pull request |
 | Test froid | Le protocole générique est documenté par le skill `consommer-contrat` et ses lois d’adressage sont testées. Les quatre composants du Playground ont été régénérés à froid depuis leur seul contrat. La preuve visuelle, elle, dépend d’une comparaison avec Figma qu’aucun repository ne consigne ; un composant existant ne vaut que pour le contrat qu’il accompagne |
 | Corpus de démonstration | Quatre composants, chez le consommateur, sondes jetables à ne pas réécrire pour obtenir du vert. Aucun ne publie de `SLOT` ni de propriété `INSTANCE_SWAP` native : ces deux chemins du moteur ne sont éprouvés que par des tests synthétiques. La maturité se mesure aussi sur les invariants du moteur et sur de nouvelles familles Figma choisies sans règle liée à leur nom |
 | Protection de fusion | Non disponible sur le plan GitHub actuel : la CI détecte, mais une pull request rouge reste fusionnable |
-| Interopérabilité | Le JSON Schema du contrat est publié dans `schema/`, dérivé de `types.ts` et vendu au Playground pour l’éditeur ; il décrit la forme, jamais la cohérence, et ne bloque aucune fusion. `tokens.json` n’a toujours pas de version propre |
+| Interopérabilité | Le JSON Schema du contrat est publié dans `schema/` et dérivé de `types.ts` ; `ucm init` écrit l’association qui le donne à l’éditeur, dans le paquet installé. Il décrit la forme, jamais la cohérence, et ne bloque aucune fusion. `tokens.json` n’a toujours pas de version propre |
 | Multi-marque au runtime | Les modes sont exportés, mais leur projection CSS et leur sélection ne sont pas implémentées |
 
-Le projet est un **prototype avancé**. L’Exporter écrit une forme et le
-Playground lit la même. Les preuves durables portent sur les lois du moteur ;
-les composants du Playground constatent un comportement à une date donnée et
-restent remplaçables.
+Le projet est un **prototype avancé**. L’Exporter écrit une forme, et le
+Playground la relit avec les seuls paquets publiés. Les preuves durables
+portent sur les lois du moteur ; les composants du Playground constatent un
+comportement à une date donnée et restent remplaçables.
 
 ## Fragilités connues
 
@@ -106,9 +106,9 @@ constatent à aucun moment qu’une reconstruction a effectivement consommé
 l’échantillon. Le vérificateur générique le ferait. Ce qui en approche le plus
 aujourd’hui reste statique : `@ucm-kit/adapter-typescript` lit l’API publique
 avec le vérificateur de types et compte, dans le JSX, les occurrences de chaque
-dépendance déclarée. Ce qu’il ne faut PAS faire en attendant : écrire dans le
-Playground une fonction de reconstruction. Ce serait une seconde implémentation du protocole que porte le
-skill `consommer-contrat`, deux implémentations divergent, et c’est celle qui
+dépendance déclarée. Ce qu’il ne faut PAS faire en attendant : écrire chez le
+consommateur une fonction de reconstruction. Ce serait une seconde
+implémentation du protocole que porte le skill `consommer-contrat`, deux implémentations divergent, et c’est celle qui
 n’est pas jetable qui deviendrait la vérité — exactement ce que le corpus de
 démonstration est censé ne jamais devenir.
 

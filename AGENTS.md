@@ -618,6 +618,25 @@ seul — accepte-t-il ce que le moteur ÉCRIT, et non ce que `types.ts` déclare
 Un champ requis qu’une élision retire passe le compilateur et casse le
 consommateur.
 
+### La frontière de recette
+
+Tout ce qui précède se prouve ICI, hors de Figma et hors de GitHub. `npm test`
+couvre le moteur sur ses propres sorties, les lecteurs sur des contrats
+fabriqués, le CLI et l’adaptateur sur des fixtures, et `packages/cli/tests/`
+`recette.test.mjs` sur des repositories temporaires — dont le cas nominal n’a
+même pas de `package.json`. Aucun de ces tests n’ouvre un clone voisin.
+
+Ce qui ne se prouve pas ici : **Figma, GitHub et une vraie pull request**. Ces
+trois-là se rejouent dans
+[UCM-Playground](https://github.com/Vassili-g/UCM-Playground), qui n’est plus
+qu’une application React et un corpus réel — contrats exportés, `tokens.json`,
+et les sondes reconstruites depuis ces seuls contrats. Il ne porte aucun
+outillage UCM local : son empreinte du produit se limite aux cinq fichiers
+qu’`ucm init` écrit, ce qui est précisément ce qui rend la recette probante.
+Un contrôle qui manque là-bas se referme ICI, jamais par un script rendu au
+consommateur. La procédure, ses critères de fin et son journal vivent dans
+[PLAN-NEUTRALISATION-PLAYGROUND.md](./PLAN-NEUTRALISATION-PLAYGROUND.md).
+
 ## Limites d’environnement
 
 - L’agent ne peut pas exécuter l’export dans Figma. Une validation runtime
