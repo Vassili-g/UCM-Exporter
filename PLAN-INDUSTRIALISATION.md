@@ -21,14 +21,17 @@ La Phase 10 n'est pas incluse dans le ratio 90/91 : **ses étapes N1 à N5 sont
 exécutées depuis le 6 septembre 2026**, et le Playground est un consommateur
 sans outillage UCM local qui garde ses contrats, ses tokens et ses sondes
 reconstruites. Ne restent que N6 et N7, qui demandent Figma et GitHub.
-La Phase 11 est ouverte : **11.0 a rendu son relevé d'autorités et 11.1 sa
-matrice de couverture enum**, tous deux mesurés dans le code et tous deux
-à valider. Le premier désigne trois questions sans autorité aujourd'hui — la
-version de `tokens.json`, les exceptions volontaires et la projection des
-variables CSS chez un consommateur sans le kit ; le second montre qu'un seul
-écart d'enum sur onze cas est réellement visible. Les tâches 11.2 à 11.8, et
-la clause du classement de 11.1, demandent une décision de périmètre du
-propriétaire.
+La Phase 11 est ouverte. **Six recherches sont rendues et mesurées dans le
+code — 11.0 à 11.5 — et aucune case n'est cochée** : chacune se termine par une
+proposition, et une proposition n'est pas une décision. Ce qu'elles ont
+trouvé, en une ligne chacune : trois questions n'ont aucune autorité (11.0) ;
+un seul écart d'enum sur onze cas est réellement visible (11.1) ; le contrôle
+de validité des défauts existe déjà, avec deux trous (11.2) ; une convention
+d'écriture tient lieu d'exception, publiée là où un consommateur ne la lit pas
+(11.3) ; le chiffre de dette du schéma était inversé (11.4) ; et trois formes
+de version dans `tokens.json` sont ignorées par les deux seuls lecteurs qui
+existent (11.5). **11.6, 11.7 et 11.8 restent à ouvrir** : elles dépendent des
+décisions que les six précédentes demandent au propriétaire.
 
 **Convention de lecture :** `[X]` = tâche ou décision clôturée ; `[ ]` = travail
 restant ; une clôture par décision doit être lue dans son paragraphe de statut
