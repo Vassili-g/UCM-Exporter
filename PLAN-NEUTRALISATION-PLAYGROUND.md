@@ -37,6 +37,14 @@ journal ci-dessous dit ce qui a été mesuré, et par quelle commande.
 | N5 | Clone neuf de `fc11037` : 27 fichiers suivis, aucun `scripts/`, aucun `*.test.*`, aucun `@ucm-kit` dans `package.json` ni dans le lockfile. `npm ci` puis `npm run build` passent. `npx --yes @ucm-kit/cli@0.1.7 check --report ci-report.md` — la commande exacte du workflow généré — sort en 0 : quatre contrats, 387 références contrôlées, implémentations présentes mais non lues faute d'adaptateur. Avec `@ucm-kit/adapter-typescript` installé dans le clone et aucun script local, les quatre passent à « code conforme » |
 | N7 | `publish.yml` demande la réponse à chaque publication, et `scripts/recette-externe.mjs` la refuse quand un des quatre déclencheurs a bougé sans recette. Cinq tests couvrent le tri, dont le voisin d'un déclencheur qui n'en est pas un — il était rouge au premier essai, `init.mjs.bak` déclenchait |
 
+**Le workflow généré a tourné pour de vrai.** Poussé sur `main`, il est vert en
+22 secondes (run `34016555027`) : il installe la stack déclarée, appelle
+`npx --yes @ucm-kit/cli@0.1.7 check` et contrôle les quatre contrats depuis le
+registre. Le workflow local précédent, lui, était rouge sur le dernier état
+poussé — une erreur de type dans une sonde, corrigée depuis dans un commit qui
+n'avait jamais été poussé. Il reste à N6 ce que ce run ne montre pas : un
+export Figma, une pull request, et le rapport commenté dessus.
+
 État des artefacts à la fin de N5, à comparer après la recette suivante :
 `Alert`, `Button`, `StressTest` et `TileLink` en `contractVersion` 12.0,
 exportés les 3 et 4 septembre 2026 ; `tokens.json` produit 721 variables CSS.
