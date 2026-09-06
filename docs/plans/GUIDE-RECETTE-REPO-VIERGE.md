@@ -128,14 +128,23 @@ fichier et ajoutez ces deux lignes à la fin :
 ci-report.md
 ```
 
-Puis vérifiez que le contrôle tourne sur un dépôt encore vide :
+Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 
 ```sh
 npx --yes @ucm-kit/cli@0.1.7 check
 ```
 
-Attendu : la commande ne trouve aucun contrat et le dit sans se plaindre. Notez
-le message exact.
+Attendu, mesuré le 6 septembre 2026 :
+
+```text
+✗ <chemin du dépôt>/tokens.json introuvable. Régénérez les tokens du repository.
+```
+
+Le code de sortie est 1. **Un dépôt fraîchement installé est donc rouge tant
+qu'aucun export n'a eu lieu**, et la CI le sera aussi au premier push. Ce n'est
+pas une panne de votre installation : le contrôle réclame les tokens, qui
+arrivent à l'étape suivante. Notez ce comportement, il est discutable et sera
+peut-être revu.
 
 Enfin, commitez et poussez :
 
