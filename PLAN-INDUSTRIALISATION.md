@@ -3378,7 +3378,7 @@ leur que si Figma en donne un — et l'absence signifie « aucun défaut », jam
 |---|---|---|---|---|
 | Quelles valeurs un enum peut-il prendre ? | `variantOptions` de Figma, transcrits par `parsers.ts` dans `props[].values` | le contrat ; les unions générées par `adapter-typescript` ; le code du repo | le code ne traite qu'une partie des valeurs, sous un rapport vert | inchangé : le contrat publie les valeurs, jamais le comportement |
 | Quelles COMBINAISONS existent réellement ? | `variants[]` du contrat, écrit depuis la matrice Figma | `typeVariantesExactes` (`<Nom>VariantProps`), le code | un cartésien reconstruit à la main réintroduit des combinaisons absentes | inchangé : la matrice est la seule énumération |
-| Le défaut d'un enum | Figma `defaultValue`, **avec repli sur `values[0]`** dans `parsers.ts` | `props[].default`, appliqué par le code | le repli invente un défaut que Figma n'a pas déclaré | 11.2 : supprimer le repli, ou prouver qu'il est inatteignable |
+| Le défaut d'un enum | Figma `defaultValue`, **avec repli sur `values[0]`** dans `parsers.ts` ; sa VALIDITÉ est contrôlée par `validation-contrat.mjs` — valeur dans `values`, et combinaison par défaut publiée | `props[].default`, appliqué par le code | le repli invente un défaut que Figma n'a pas déclaré | 11.2 : supprimer le repli, ou prouver qu'il est inatteignable |
 | Le défaut d'un booléen | `Boolean(definition.defaultValue)`, toujours écrit | le code | aucune connue : le champ est obligatoire et non élidé | inchangé |
 | Le défaut d'un texte, d'une icône, d'un `instance-swap`, d'un `slot` | Figma, écrit seulement s'il existe | le code | l'absence lue comme « inconnu » au lieu de « aucun défaut » | `docs/FORMAT.md`, qui porte déjà la règle des absences |
 | La forme d'un contrat | `packages/kit/src/format/types.ts` | le schéma dérivé, les lecteurs, un binding d'un autre langage | un schéma plus vieux que `types.ts` — fermé par `tests/schema.test.ts` | inchangé : `types.ts` est la source, le schéma un artefact |
@@ -3522,6 +3522,101 @@ qui ont un défaut applicatif différent de Figma. Elle doit dire qui corrige un
 
 **Interdit :** inventer un défaut à partir du premier variant, de l'ordre JSON,
 du nom du composant ou d'une valeur observée dans un échantillon.
+
+**Recherche menée le 6 septembre 2026 sur le code, sur les huit contrats réels
+du corpus — quatre en 12.0, quatre en 11.0 figés — et sur treize composants
+d'essai. Rien n'a été implémenté ; la case reste ouverte.**
+
+#### Les cinq endroits où un « défaut » existe, mesurés
+
+| Endroit | Ce qu'il vaut réellement | Qui le décide |
+|---|---|---|
+| absence de la prop chez l'appelant | rien en soi : la valeur appliquée est celle d'un des quatre autres endroits | personne |
+| `props[].default` du contrat | le `defaultValue` de la component property Figma, transcrit par `parsers.ts` | le designer, dans Figma |
+| défaut de la propriété Figma | ce que Figma applique quand on pose une instance | le designer |
+| défaut du composant | l'initialiseur du paramètre, ou un `??` dans le corps | le développeur |
+| repli du runtime | ce que le code fait d'une valeur qu'il ne traite pas | le développeur |
+
+Les deux premiers ne font qu'un : **le contrat n'a pas de défaut à lui**, il
+recopie celui de Figma. Les trois règles de forme sont mesurées dans le code :
+un booléen porte toujours son défaut (`elideNeutrals` protège nommément
+`default: false`) ; un enum, un texte, une icône, un `instance-swap` ou un
+`slot` ne l'écrivent que si Figma en donne un ; et l'absence signifie « aucun
+défaut », jamais « inconnu » — c'est écrit dans `types.ts`, sur `EnumProp`.
+
+#### Ce qui est DÉJÀ contrôlé, et le plan ne le disait pas
+
+La troisième stratégie que la tâche demande de comparer — « ne contrôler que la
+validité du défaut publié et laisser le comportement au consommateur » — est
+**celle qui est en place**. `validation-contrat.mjs` refuse un contrat quand :
+
+- le défaut d'un enum n'est pas dans ses propres `values` (`props.<nom>.default`) ;
+- la combinaison formée par les défauts des axes n'est pas publiée dans
+  `variants` (`variants.defaults`).
+
+Mesuré sur les huit contrats du corpus : les défauts par axe désignent
+**exactement une** combinaison publiée, à chaque fois, dans les deux versions.
+La question ouverte n'est donc pas « faut-il contrôler la validité » — elle
+l'est déjà — mais les deux trous ci-dessous.
+
+#### Trou 1 — un défaut inventé, dans un chemin que rien n'exerce
+
+`parsers.ts` écrit le défaut d'un enum ainsi : `defaultValue` s'il est du texte,
+`values[0]` sinon. Le typage Figma explique le garde : `defaultValue` y est
+déclaré `string | boolean` pour TOUS les types de propriété, VARIANT compris
+(`@figma/plugin-typings`, `ComponentPropertyDefinitions`). Le repli n'est donc
+atteint que si Figma rendait un booléen pour un axe de variantes — ce qu'aucun
+export du corpus ne montre et qu'aucun test n'exerce.
+
+**Il reste que ce repli fabrique un défaut que le designer n'a pas déclaré**, et
+que 11.2 l'interdit nommément. Deux issues, et elles ne coûtent pas la même
+chose : écrire `null` à la place — le champ est alors élidé, et l'absence dit
+« aucun défaut », ce que le format sait déjà exprimer —, ou prouver le chemin
+inatteignable et le remplacer par un diagnostic. La première est un changement
+de comportement sans effet mesurable sur le corpus ; la seconde ajoute un
+message que personne ne verra jamais.
+
+#### Trou 2 — un défaut qui désigne un catalogue, sans lien publié
+
+Un enum ne désigne pas toujours un axe. `Button` publie une prop `size`
+(défaut `medium`) qui n'est PAS dans `structure.variantAxes` : elle sélectionne
+une entrée de `structure.sizes`, dont les clés sont `medium`, `big`, `small`.
+
+**Le lien entre cette prop et ce catalogue n'est publié nulle part.** Le moteur
+détecte l'axe de tailles « par ses valeurs » (`docs/FORMAT.md`), et le skill
+`consommer-contrat` demande au consommateur de retrouver « l'unique prop enum
+dont les valeurs correspondent aux clés du catalogue », puis de signaler
+l'ambiguïté s'il y en a plusieurs. Les deux côtés rejoignent donc la même
+information par une coïncidence de valeurs.
+
+Conséquence mesurée : `variants.defaults` ne couvre que les AXES ; rien ne
+vérifie que `props.size.default` désigne une entrée existante de
+`structure.sizes`. Sur le corpus, les clés coïncident — mais c'est un constat,
+pas une garantie. C'est le seul contrôle de validité qui manque réellement, et
+il ne demande aucune décision de comportement : il compare deux champs déjà
+publiés.
+
+#### Les trois stratégies, avec leur prix mesuré
+
+| Stratégie | Ce qu'elle verrait | Ce qu'elle laisse invisible | Prix |
+|---|---|---|---|
+| exiger que le code expose et consomme explicitement le défaut | rien de plus qu'aujourd'hui sans une convention d'écriture imposée | tout ce que 11.1 a mesuré : un défaut appliqué ailleurs qu'à la signature | impose une écriture TypeScript à tous, y compris à qui n'a pas d'adaptateur |
+| dériver le défaut de l'API statique | **mesuré : oui, quand il est écrit dans la déstructuration** — un composant qui déclare `ton = "success"` là où le contrat dit `info` est visible | **mesuré : non, quand il est appliqué dans le corps** (`props.ton ?? "info"`), et l'absence de défaut à la signature ne se distingue pas d'un défaut posé ailleurs | un avertissement fiable dans un sens, muet dans l'autre — donc un vert qui ne prouve rien |
+| ne contrôler que la validité du défaut publié | ce qui est déjà contrôlé, plus le trou 2 | tout écart entre le défaut du contrat et celui du code | nul : les deux champs sont publiés, la comparaison est locale au contrat |
+
+#### Ce qu'il reste à trancher, et par qui
+
+**Le designer** corrige un défaut Figma qui ne correspond plus à l'usage ; **le
+développeur** corrige un défaut de composant qui contredit le contrat ; **le
+propriétaire du format** ne tranche qu'une chose ici, le repli de `values[0]`.
+
+Proposition, à valider : fermer le trou 1 en écrivant `null` plutôt que
+`values[0]`, fermer le trou 2 par un contrôle de validité dans
+`validation-contrat.mjs`, et classer l'écart « défaut du contrat ≠ défaut du
+code » **hors périmètre de la garantie statique** — la mesure montre qu'il ne
+serait visible que pour une écriture sur trois, et un contrôle qui se tait deux
+fois sur trois se lit comme une garantie qu'il n'offre pas.
+
 
 - [ ] **11.3 — Exceptions volontaires documentées.**
 
