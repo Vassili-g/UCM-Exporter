@@ -21,7 +21,11 @@ La Phase 10 n'est pas incluse dans le ratio 90/91 : **ses étapes N1 à N5 sont
 exécutées depuis le 6 septembre 2026**, et le Playground est un consommateur
 sans outillage UCM local qui garde ses contrats, ses tokens et ses sondes
 reconstruites. Ne restent que N6 et N7, qui demandent Figma et GitHub.
-La Phase 11, elle, n'est pas commencée.
+La Phase 11 est ouverte : **11.0 a rendu son relève d'autorités**, qui reste
+à valider, et il désigne trois questions sans autorité aujourd'hui — la version
+de `tokens.json`, les exceptions volontaires et la projection des variables
+CSS chez un consommateur sans le kit. Les tâches 11.1 à 11.8 demandent chacune
+une décision de périmètre du propriétaire.
 
 **Convention de lecture :** `[X]` = tâche ou décision clôturée ; `[ ]` = travail
 restant ; une clôture par décision doit être lue dans son paragraphe de statut
@@ -3308,6 +3312,89 @@ répondre à deux questions qui ne peuvent pas être présumées :
 **Ne rien implémenter dans 11.0.** Si deux autorités existent déjà, la tâche
 suivante doit d'abord proposer laquelle disparaît ; ajouter un contrôle autour
 des deux ne ferait que solidifier le désaccord.
+
+**Relevé produit le 6 septembre 2026, vérifié dans le code et non dans la
+documentation. La case reste ouverte : la table est une mesure, pas une
+décision, et les domiciles proposés attendent l'arbitrage du propriétaire.**
+
+#### Ce que la mesure a trouvé, avant la table
+
+**Trois questions n'ont AUCUNE autorité aujourd'hui**, et c'est la conclusion
+la plus utile de ce relevé : la version de `tokens.json`, les exceptions
+volontaires, et le nom d'une variable CSS chez un consommateur qui n'installe
+pas le kit. Une absence d'autorité n'est pas un défaut en soi — elle le devient
+quand un consommateur doit deviner. Les trois sont dans la table.
+
+**Une autorité existe en double, et le code fait ce que le plan interdit.**
+`packages/plugin/src/contract/parsers.ts` écrit le défaut d'un enum ainsi :
+
+```ts
+default:
+  typeof definition.defaultValue === 'string'
+    ? normalizePropValue(definition.defaultValue)
+    : values[0] ?? null,
+```
+
+Le repli sur `values[0]` est exactement ce que 11.2 interdit — « inventer un
+défaut à partir du premier variant ». Il n'est atteint que si Figma ne donne
+aucun `defaultValue` de type texte pour une propriété VARIANT ; aucun test ne
+l'exerce, et aucun contrat du corpus ne montre le cas. **C'est donc soit du
+code mort, soit une invention silencieuse** — et les deux se corrigent
+différemment. 11.2 tranchera ; 11.0 ne fait que le relever.
+
+#### Les deux questions que le plan interdit de présumer
+
+**Un enum décrit-il des vues exportées ou des branches de comportement ?**
+Des **vues**, et la mesure est nette. `variants[]` énumère les combinaisons qui
+EXISTENT dans Figma, chacune avec ses tokens, ses contours et sa vue ;
+`variantViews[id]` porte l'arbre exact de cette combinaison. Rien dans le
+format ne demande au code d'exécuter une branche par valeur — c'est
+`stateModel` qui décrit les états runtime, et par leurs SÉLECTEURS. R8 a déjà
+tranché dans ce sens le 5 septembre 2026 : le contrat décrit les variantes
+visuelles, le code reste propriétaire du comportement qui en choisit une.
+**Conséquence pour 11.1 :** un contrôle statique peut au mieux dire « cette
+valeur a une vue publiée qu'aucun chemin de code ne rend » ; il ne pourra
+jamais dire « ce composant gère cette valeur ».
+
+**Un défaut est-il une propriété du contrat, de l'API du composant, une
+convention Figma ou une décision du repository ?** Une **convention Figma**,
+transcrite dans un champ du contrat. `props[].default` recopie le
+`defaultValue` de la component property Figma — c'est-à-dire ce que Figma
+affiche quand on pose une instance. Ce n'est ni le défaut du paramètre React,
+ni une décision du repository. Les trois peuvent différer sans qu'aucun
+garde-fou ne le voie, et c'est précisément le sujet de 11.2. Deux règles de
+forme s'y ajoutent, mesurées dans le code : un booléen porte TOUJOURS son
+défaut (`default: false` n'est pas élidé, `elideNeutrals` le protège
+nommément), tandis qu'un enum, un texte, une icône ou un `slot` n'écrivent le
+leur que si Figma en donne un — et l'absence signifie « aucun défaut », jamais
+« inconnu ».
+
+#### La table
+
+| Question | Autorité actuelle | Consommateur | Divergence possible | Domicile proposé |
+|---|---|---|---|---|
+| Quelles valeurs un enum peut-il prendre ? | `variantOptions` de Figma, transcrits par `parsers.ts` dans `props[].values` | le contrat ; les unions générées par `adapter-typescript` ; le code du repo | le code ne traite qu'une partie des valeurs, sous un rapport vert | inchangé : le contrat publie les valeurs, jamais le comportement |
+| Quelles COMBINAISONS existent réellement ? | `variants[]` du contrat, écrit depuis la matrice Figma | `typeVariantesExactes` (`<Nom>VariantProps`), le code | un cartésien reconstruit à la main réintroduit des combinaisons absentes | inchangé : la matrice est la seule énumération |
+| Le défaut d'un enum | Figma `defaultValue`, **avec repli sur `values[0]`** dans `parsers.ts` | `props[].default`, appliqué par le code | le repli invente un défaut que Figma n'a pas déclaré | 11.2 : supprimer le repli, ou prouver qu'il est inatteignable |
+| Le défaut d'un booléen | `Boolean(definition.defaultValue)`, toujours écrit | le code | aucune connue : le champ est obligatoire et non élidé | inchangé |
+| Le défaut d'un texte, d'une icône, d'un `instance-swap`, d'un `slot` | Figma, écrit seulement s'il existe | le code | l'absence lue comme « inconnu » au lieu de « aucun défaut » | `docs/FORMAT.md`, qui porte déjà la règle des absences |
+| La forme d'un contrat | `packages/kit/src/format/types.ts` | le schéma dérivé, les lecteurs, un binding d'un autre langage | un schéma plus vieux que `types.ts` — fermé par `tests/schema.test.ts` | inchangé : `types.ts` est la source, le schéma un artefact |
+| Ce que le schéma NE prouve PAS | la `description` injectée par `scripts/build-schema.ts` | un consommateur non-JavaScript, qui n'a que ce fichier | une limite qui vieillit dans le schéma sans que rien ne la relise | 11.4 : décider quels champs exigent une description avant publication |
+| La version du contrat | `CONTRACT_VERSION` dans `version.ts` — unique écriture ; `versionDeContrat` — unique lecture | le plugin, le CLI, le corps de la pull request | aucune connue : les deux moitiés de la règle vivent dans le même module | inchangé |
+| La fenêtre de lecture | `VERSION_CONTRAT_MINIMALE` / `MAXIMALE` dans `version-contrat.mjs` | `ucm check`, le rapport designer | `docs/CHANGELOG-FORMAT.md` rédigé après coup, donc en retard | 11.6 : relier la table de compatibilité au changelog |
+| **La version de `tokens.json`** | **aucune** : le fichier ne porte ni version, ni métadonnée | Style Dictionary, `tokens-dtcg.mjs`, un preset, un consommateur non-JS | un fichier d'une grammaire future est lu comme s'il était courant, en silence | 11.5 : trancher entre version, métadonnée, versionnement par paquet, ou absence documentée |
+| **Les exceptions volontaires** | **aucune** : il n'existe aucun mécanisme d'exception | un repo dont un écart est légitime | l'écart est signalé à chaque exécution, ou l'on affaiblit le contrôle pour tous | 11.3 : une grammaire locale, jamais une liste de noms |
+| **Le nom d'une variable CSS** | `tokenCssVariable` pour qui installe le kit ; **rien** pour qui ne l'installe pas | le consommateur neutre, qui écrit sa propre projection | deux formules égales aujourd'hui divergent demain, et la perte est muette | `docs/FORMAT.md` peut décrire la projection SANS l'imposer ; à trancher en 11.4 |
+| La parité contrat ↔ code | `ecartsDeParite` — six relevés, aucun sur les valeurs d'enum | `ucm check`, quand l'adaptateur est installé | un rapport vert sur un enum partiellement rendu (R8) | 11.1 : « garanti », « averti », « non vérifiable » ou « hors périmètre » |
+| Où sont les artefacts d'un repo | grammaire dans `configuration.ts`, valeurs dans `ucm.config.json` | le CLI et le plugin, tous deux | aucune connue : les deux lisent le même module | inchangé |
+| La version de l'outil qu'un repo installe | `ucm init`, qui épingle exactement | le workflow du repo tiers | un repo qui édite le workflow à la main sort de la fenêtre sans le dire | inchangé : `ucm init` ne réécrit jamais un fichier adapté |
+
+#### Ce que 11.0 ne fait pas
+
+Aucune ligne de code n'a été écrite, et aucune des trois absences d'autorité
+n'a été comblée : les combler est le travail de 11.2 à 11.6, et chacune demande
+une décision de périmètre qui n'appartient pas à un agent.
+
 
 - [ ] **11.1 — Enums réellement gérés.**
 
