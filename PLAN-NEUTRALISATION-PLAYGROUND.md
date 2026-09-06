@@ -13,8 +13,9 @@ production ni une seconde autorité du format.
 
 ## État opérationnel — 6 septembre 2026
 
-**N1 à N5 sont exécutés. N6 et N7 restent à faire**, et N6 demande Figma,
-GitHub et une vraie pull request : il ne peut pas être joué depuis un agent.
+**N1 à N5 et N7 sont exécutés. N6 reste à faire**, et il demande Figma, GitHub
+et une vraie pull request : il ne peut pas être joué depuis un agent. Le garde-
+fou de N7 le réclame déjà : aucune des trois publications ne passera sans lui.
 
 Le Playground n'a plus ni `scripts/`, ni test générique local, ni dépendance
 `@ucm-kit`, ni skill, ni instruction d'agent. Il porte une application React
@@ -34,6 +35,7 @@ journal ci-dessous dit ce qui a été mesuré, et par quelle commande.
 | N3 | Trois commits chez le consommateur : `ccfe1a9` le corpus au rangement d'`ucm init`, `63308b0` le retrait de l'outillage, `fc11037` l'application minimale et le lockfile reconstruit |
 | N4 | `b51796a` — README, CONCEPT, ROADMAP et AGENTS.md décrivent le consommateur réel ; AGENTS.md reçoit la frontière de recette |
 | N5 | Clone neuf de `fc11037` : 27 fichiers suivis, aucun `scripts/`, aucun `*.test.*`, aucun `@ucm-kit` dans `package.json` ni dans le lockfile. `npm ci` puis `npm run build` passent. `npx --yes @ucm-kit/cli@0.1.7 check --report ci-report.md` — la commande exacte du workflow généré — sort en 0 : quatre contrats, 387 références contrôlées, implémentations présentes mais non lues faute d'adaptateur. Avec `@ucm-kit/adapter-typescript` installé dans le clone et aucun script local, les quatre passent à « code conforme » |
+| N7 | `publish.yml` demande la réponse à chaque publication, et `scripts/recette-externe.mjs` la refuse quand un des quatre déclencheurs a bougé sans recette. Cinq tests couvrent le tri, dont le voisin d'un déclencheur qui n'en est pas un — il était rouge au premier essai, `init.mjs.bak` déclenchait |
 
 État des artefacts à la fin de N5, à comparer après la recette suivante :
 `Alert`, `Button`, `StressTest` et `TileLink` en `contractVersion` 12.0,
@@ -279,6 +281,9 @@ outillage, tout en avançant avec les contrats et tokens fusionnés.
 
 ### N7 — Ajouter le garde-fou de release qui manque réellement
 
+**Fait le 6 septembre 2026 — le garde-fou existe ; la recette N6 qu'il exige,
+elle, reste à jouer.**
+
 La Phase 7 couvre déjà le cœur et le CLI dans des dossiers temporaires. La seule
 preuve non automatisée restante est GitHub + plugin Figma + PR. Le corpus
 permanent sert de donnée réelle, pas d'oracle figé du moteur. Ajouter à la
@@ -288,6 +293,18 @@ procédure de release une recette externe N6 lorsque changent :
 - `ucm init` ou le workflow généré ;
 - le routage GitHub du plugin ;
 - la découverte d'un adaptateur.
+
+Ce n'est plus une consigne écrite quelque part : `publish.yml` demande la
+réponse au moment de publier, et `scripts/recette-externe.mjs` refuse la
+publication quand elle vaut « aucun déclencheur n'a bougé » alors qu'un
+déclencheur a bougé depuis la version publiée précédente — en nommant les
+fichiers en cause. Il ne prouve pas que la recette a eu lieu : personne ne peut
+vérifier depuis une CI qu'un humain a ouvert Figma. Ce qu'il empêche est plus
+petit et suffisant : publier sans s'être posé la question.
+
+À la date de son écriture, il répond déjà rouge pour les trois paquets : la
+fenêtre de lecture, `ucm init` et la découverte de l'adaptateur ont toutes
+bougé depuis leur dernière publication.
 
 ## Critères de fin
 
