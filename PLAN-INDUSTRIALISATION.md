@@ -3730,7 +3730,8 @@ bloquante et sans exception.
 - [ ] **11.4 — Documenter le JSON Schema sans en faire une seconde spécification.**
 
 Les 118 propriétés sur 236 sans `description` sont un signal, pas une mesure
-automatique de dette. Relever les propriétés réellement exposées à un
+automatique de dette. *Le chiffre lui-même était faux, et la recherche
+ci-dessous le corrige : 118 est le nombre de propriétés DÉCRITES.* Relever les propriétés réellement exposées à un
 consommateur, celles dont l'absence a une signification et celles dont la
 description actuelle est ambiguë ou fausse. Partir de `types.ts`, puisque le
 schéma est dérivé de ce fichier, et vérifier le résultat dans le schéma généré.
@@ -3745,6 +3746,97 @@ variants, vues, diagnostics, coverage et tokens.
 **La documentation ne doit pas réintroduire la règle de cohérence dans le
 schéma.** Le JSON Schema décrit la forme ; les renvois, graphes, collisions et
 compatibilités restent aux lecteurs dédiés.
+
+**Recherche menée le 6 septembre 2026 sur le schéma commité et sur `types.ts`.
+Rien n'a été implémenté ; la case reste ouverte.**
+
+#### Le chiffre de l'énoncé est faux, et dans le bon sens
+
+Compté sur le schéma courant : **219 propriétés au niveau des définitions, dont
+118 PORTENT une description et 101 n'en ont pas.** En comptant récursivement
+tout ce que le fichier déclare — y compris sous `items` et `additionalProperties`
+—, 246 propriétés, 122 décrites, 124 non décrites.
+
+L'énoncé lisait « 118 propriétés sur 236 sans description » : le 118 est le
+nombre de propriétés DÉCRITES. C'est exactement le genre de chiffre que la règle
+de méthode de ce plan demande de revérifier, et il change la conclusion :
+le schéma est documenté à moitié, pas au quart.
+
+#### Où sont les descriptions, et où elles manquent
+
+**Les champs qu'un consommateur ouvre en premier sont couverts** : 19 des 20
+champs de premier niveau du contrat portent une description — `props`,
+`variants`, `variantViews`, les cinq catalogues de vues, `structure`,
+`stateModel`, `rendering`, `icons`, `textStyles`, `composes`, `samples`,
+`intent`. Le seul qui n'en a pas est `meta`.
+
+**Les absences se concentrent ailleurs, et trois d'entre elles comptent :**
+
+| Champ sans description | Pourquoi il compte |
+|---|---|
+| `meta` | le seul champ de premier niveau non décrit ; c'est aussi celui qui porte la version |
+| `meta.coverage` | dit si l'export est complet ou partiel — l'information la plus lourde de conséquences pour qui reconstruit |
+| `ContractDiagnostic.code` et `.message` | le seul canal vers le designer ; `severity`, lui, est décrit |
+
+Le reste des 101 est structurel : discriminants (`type: 'enum'`), `values`,
+`figmaName`, `default`, bornes de layout. Une description y répéterait le nom.
+
+#### Le mécanisme est unique, pas quadruple
+
+L'énoncé demande de comparer « les descriptions dans les types, celles du schéma
+généré, la documentation narrative dans `docs/FORMAT.md` et la génération depuis
+des commentaires JSDoc ». **Les trois premières options n'en font que deux, et la
+quatrième est la première :** le schéma est produit par `ts-json-schema-generator`
+à partir de `types.ts`, et il recopie le JSDoc d'un membre dans sa `description`.
+Vérifié champ par champ : `meta.coverage` n'a pas de commentaire dans `types.ts`,
+et pas de description dans le schéma ; `meta.diagnostics` en a un, et sa
+description en est le texte.
+
+Il n'existe donc que deux endroits réels, et ils ne sont pas concurrents :
+
+- **`types.ts`** — la phrase qu'un consommateur lit dans son éditeur, dans le
+  schéma généré et dans un binding d'un autre langage. C'est la seule qui voyage.
+- **`docs/FORMAT.md`** — le POURQUOI, les renvois entre champs, ce qu'une
+  absence signifie, ce que le contrat refuse de garantir. C'est le seul endroit
+  qui peut porter une règle qui traverse plusieurs champs.
+
+La frontière que la tâche exige — « la documentation ne doit pas réintroduire la
+règle de cohérence dans le schéma » — se lit donc simplement : une phrase qui
+décrit UN champ va dans `types.ts` ; une phrase qui relie DEUX champs reste dans
+`FORMAT.md`, et le schéma dit déjà, dans sa propre `description`, qu'il ne
+vérifie aucun renvoi.
+
+#### Ce que la documentation coûte, mesuré
+
+Le schéma commité pèse **74,7 Ko**. Sans aucune description, il tomberait à
+**34,2 Ko** : la documentation en représente **54 %**. C'est le prix à connaître
+avant de décider d'en ajouter, et il est déjà payé — le fichier est publié dans
+le paquet et téléchargé par tout consommateur, y compris ceux qui ne l'ouvrent
+jamais.
+
+Deux conséquences pour la décision : décrire les 124 propriétés restantes
+doublerait à peu près ce coût pour une valeur décroissante ; ne rien décrire du
+tout n'est plus une option, puisque la moitié du travail est faite et sert.
+
+#### Proposition, à trancher
+
+**Exiger une description avant publication pour cinq champs seulement** :
+`meta`, `meta.coverage`, `meta.figma`, `ContractDiagnostic.code` et
+`ContractDiagnostic.message`. Ce sont ceux que la tâche nomme et qui manquent
+réellement ; les autres qu'elle nomme — version, variants, vues, diagnostics,
+tokens — sont déjà couverts.
+
+**Ne pas viser une couverture complète**, et l'écrire : un discriminant décrit
+par son propre nom ajoute du poids sans ajouter de sens. La règle proposée est
+qualitative — *un champ dont l'ABSENCE a une signification, ou dont la valeur
+oriente une décision du consommateur, porte une description* — et elle se
+vérifie par relecture, pas par un compteur. Un compteur ferait écrire des
+phrases pour le satisfaire.
+
+**Ce qui reste hors du schéma :** les renvois entre catalogues, les collisions
+d'identifiants, la fenêtre de compatibilité et la résolution des vues. Le schéma
+le dit déjà lui-même, et `tests/schema.test.ts` le vérifie sur le corpus.
+
 
 - [ ] **11.5 — Versionner ou non le format de `tokens.json`.**
 
