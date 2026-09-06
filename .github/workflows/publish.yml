@@ -41,6 +41,23 @@ on:
           - "@ucm-kit/core"
           - "@ucm-kit/cli"
           - "@ucm-kit/adapter-typescript"
+      # N7 : trois chemins du produit ne sont parcourus de bout en bout par
+      # aucun test — Figma, GitHub, et une pull request qui reçoit son
+      # commentaire. Quand la publication les touche, la seule preuve possible
+      # est la recette N6, jouée à la main dans un vrai consommateur.
+      #
+      # Cette entrée ne prouve rien, et c'est assumé : elle oblige à RÉPONDRE.
+      # L'étape « Recette externe » ci-dessous refuse la publication quand la
+      # réponse est « aucun déclencheur » alors qu'un déclencheur a bougé, et
+      # elle nomme les fichiers en cause.
+      recette:
+        description: "Recette externe N6 (voir PLAN-NEUTRALISATION-PLAYGROUND.md)"
+        required: true
+        type: choice
+        default: "aucun déclencheur n'a bougé"
+        options:
+          - "aucun déclencheur n'a bougé"
+          - "recette N6 rejouée et consignée"
 
 jobs:
   publish:
@@ -118,6 +135,24 @@ jobs:
 
       - run: npm ci
       - run: npm test
+
+      # Le garde-fou de N7, posé APRÈS les tests et AVANT la publication : il ne
+      # sert à rien de poser la question si la suite est rouge, et il est trop
+      # tard pour la poser une fois le numéro parti.
+      - name: Recette externe
+        env:
+          PAQUET: ${{ inputs.paquet }}
+          RECETTE: ${{ inputs.recette }}
+        run: |
+          # `core` est publié depuis `packages/kit` : le nom du paquet et celui
+          # du dossier ne coïncident que pour les deux autres.
+          dossier="${PAQUET#@ucm-kit/}"
+          if [ "$dossier" = "core" ]; then dossier="kit"; fi
+          if [ "$RECETTE" = "recette N6 rejouée et consignée" ]; then
+            node scripts/recette-externe.mjs "$dossier" --faite
+          else
+            node scripts/recette-externe.mjs "$dossier"
+          fi
 
       # Aucun `NODE_AUTH_TOKEN` : npm détecte l'environnement OIDC et s'y
       # authentifie seul. Il en tire aussi une attestation de provenance, qui
