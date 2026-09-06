@@ -11,22 +11,33 @@ sondes visuelles jetables : ils prouvent qu'un contrat réel suffit à
 reconstruire le composant, et ne constituent ni une implémentation de
 production ni une seconde autorité du format.
 
-## État opérationnel — 5 septembre 2026
+## État opérationnel — 6 septembre 2026
 
-La migration de la parité TypeScript vers
-`@ucm-kit/adapter-typescript` est réalisée : l'Exporter et le Playground
-passent leurs contrôles actuels, et la reconstruction de `StressTest` est
-rebranchée sur l'adaptateur. **La neutralisation elle-même n'est pas exécutée.**
+**N1 à N5 sont exécutés. N6 et N7 restent à faire**, et N6 demande Figma,
+GitHub et une vraie pull request : il ne peut pas être joué depuis un agent.
 
-N1 et N2 sont les préconditions en cours de consolidation. N3 à N7 restent à
-faire : aucun ménage du Playground ne doit commencer avant que les preuves
-génériques de l'Exporter soient vertes et que le corpus de contrats et de
-tokens soit figé. La cible est un repository sans outillage UCM local, mais
-avec les composants reconstruits conservés comme sondes visuelles.
+Le Playground n'a plus ni `scripts/`, ni test générique local, ni dépendance
+`@ucm-kit`, ni skill, ni instruction d'agent. Il porte une application React
+banale, les quatre contrats 12.0, `tokens.json`, les quatre sondes
+reconstruites, et les cinq fichiers qu'`ucm init` écrit.
 
 **Convention de lecture :** ce plan ne coche pas les étapes par anticipation.
-Une étape est terminée seulement quand sa sortie est produite et vérifiée ; la
-présence de l'adaptateur ne vaut donc pas neutralisation du Playground.
+Une étape est terminée seulement quand sa sortie est produite et vérifiée ; le
+journal ci-dessous dit ce qui a été mesuré, et par quelle commande.
+
+### Journal de recette
+
+| Étape | Sortie mesurée |
+|---|---|
+| N1 | Dernier commit du corpus reconstruit avant le ménage : `0c7491b` sur `main` du Playground. `npm test` de l'Exporter vert sans le voisin — aucun test n'ouvre le clone frère |
+| N2 | Deux garde-fous fermés chez le producteur : l'accord des deux filets de fin de CI (`918f004`, six mutations rouges) et le dépliage des vues locales sur deux crans (`30fc75d`, deux mutations rouges). L'injection d'échecs de tests était déjà couverte sur données synthétiques dans le kit et le CLI ; le parseur TAP n'a pas été déplacé. Le skill `consommer-contrat` a rejoint l'Exporter (`933062f`) |
+| N3 | Trois commits chez le consommateur : `ccfe1a9` le corpus au rangement d'`ucm init`, `63308b0` le retrait de l'outillage, `fc11037` l'application minimale et le lockfile reconstruit |
+| N4 | `b51796a` — README, CONCEPT, ROADMAP et AGENTS.md décrivent le consommateur réel ; AGENTS.md reçoit la frontière de recette |
+| N5 | Clone neuf de `fc11037` : 27 fichiers suivis, aucun `scripts/`, aucun `*.test.*`, aucun `@ucm-kit` dans `package.json` ni dans le lockfile. `npm ci` puis `npm run build` passent. `npx --yes @ucm-kit/cli@0.1.7 check --report ci-report.md` — la commande exacte du workflow généré — sort en 0 : quatre contrats, 387 références contrôlées, implémentations présentes mais non lues faute d'adaptateur. Avec `@ucm-kit/adapter-typescript` installé dans le clone et aucun script local, les quatre passent à « code conforme » |
+
+État des artefacts à la fin de N5, à comparer après la recette suivante :
+`Alert`, `Button`, `StressTest` et `TileLink` en `contractVersion` 12.0,
+exportés les 3 et 4 septembre 2026 ; `tokens.json` produit 721 variables CSS.
 
 ## Décision
 
@@ -153,6 +164,8 @@ artefacts et de cette galerie.
 
 ### N1 — Figer les deux états de départ
 
+**Fait le 6 septembre 2026 ; la sortie mesurée est au journal de recette.**
+
 - terminer ou isoler la migration en cours de l'adaptateur TypeScript ;
 - obtenir les tests verts de l'Exporter sans utiliser le Playground ;
 - relever le commit de `main` du Playground qui contient le dernier corpus
@@ -164,6 +177,8 @@ dans l'Exporter. Aucun fichier supprimé du Playground n'est encore son unique
 autorité.
 
 ### N2 — Fermer les preuves manquantes chez le producteur
+
+**Fait le 6 septembre 2026 ; la sortie mesurée est au journal de recette.**
 
 - comparer `accord-workflows.test.mjs` aux tests de `packages/cli/src/init.mjs` ;
   ajouter chez le CLI uniquement l'assertion manquante sur le workflow généré,
@@ -180,6 +195,8 @@ autorité.
 retrait complet du voisin.
 
 ### N3 — Réduire le Playground à l'application minimale
+
+**Fait le 6 septembre 2026 ; la sortie mesurée est au journal de recette.**
 
 Faire trois commits séparés pour garder le changement contrôlable :
 
@@ -202,6 +219,8 @@ présents et valides.
 
 ### N4 — Réviser les autorités documentaires de l'Exporter
 
+**Fait le 6 septembre 2026 ; la sortie mesurée est au journal de recette.**
+
 Les affirmations actuelles sur le « consommateur de référence » et son corpus
 deviennent fausses. Réviser ensemble :
 
@@ -220,6 +239,8 @@ reconstruites dans le Playground, mais aucun script ou contrôle UCM local ne
 porte l'autorité du format.
 
 ### N5 — Prouver la neutralité de l'intégration
+
+**Fait le 6 septembre 2026 ; la sortie mesurée est au journal de recette.**
 
 Sur un clone neuf de `main` du Playground :
 
@@ -270,7 +291,9 @@ procédure de release une recette externe N6 lorsque changent :
 
 ## Critères de fin
 
-Le travail est terminé lorsque les huit propositions suivantes sont vraies :
+Le travail est terminé lorsque les huit propositions suivantes sont vraies. **Au
+6 septembre 2026, sept le sont ; la septième — la recette N6 — ne l'est pas, et
+la huitième ne sera définitivement acquise qu'après elle.**
 
 1. `UCM-Playground/scripts/` n'existe plus ;
 2. aucun fichier `*.test.*` spécifique à un composant n'existe ; les contrats `*.contract.json`, `tokens.json` et les composants reconstruits, eux, sont présents et valides ;

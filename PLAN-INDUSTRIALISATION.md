@@ -5,7 +5,7 @@
 > conclusions ont elles-mêmes été revérifiées dans le code avant d'être
 > intégrées — et l'une d'elles s'était trompée.
 
-## État opérationnel — 5 septembre 2026
+## État opérationnel — 6 septembre 2026
 
 Ce plan n'est pas un indicateur global de fin de projet. **90 tâches sur 91
 sont cochées ; T4.6 reste ouverte** tant que la refonte UI n'est pas terminée.
@@ -17,9 +17,11 @@ validée tant que l'observation sur un fichier Figma réel n'a pas eu lieu.
 [`refonte-ui.md`](./refonte-ui.md), puis exécuter la recette GitHub/Figma
 prévue par N6 et N7 du
 [`PLAN-NEUTRALISATION-PLAYGROUND.md`](./PLAN-NEUTRALISATION-PLAYGROUND.md).
-La Phase 10 n'est pas incluse dans le ratio 90/91 : elle vise un Playground
-sans outillage UCM local, mais conserve les composants reconstruits comme
-sondes visuelles.
+La Phase 10 n'est pas incluse dans le ratio 90/91 : **ses étapes N1 à N5 sont
+exécutées depuis le 6 septembre 2026**, et le Playground est un consommateur
+sans outillage UCM local qui garde ses contrats, ses tokens et ses sondes
+reconstruites. Ne restent que N6 et N7, qui demandent Figma et GitHub.
+La Phase 11, elle, n'est pas commencée.
 
 **Convention de lecture :** `[X]` = tâche ou décision clôturée ; `[ ]` = travail
 restant ; une clôture par décision doit être lue dans son paragraphe de statut
@@ -3241,11 +3243,13 @@ génériques propres au corpus doivent disparaître de sa branche principale ; l
 composants reconstruits y restent comme sondes visuelles jetables, et les
 artefacts exportés y restent pour éprouver les packages sur des données réelles.
 
-- [ ] 10.1 - L'inventaire, les destinations, l'ordre et les critères de fin vivent dans
+- [X] 10.1 - L'inventaire, les destinations, l'ordre et les critères de fin vivent dans
 [PLAN-NEUTRALISATION-PLAYGROUND.md](./PLAN-NEUTRALISATION-PLAYGROUND.md). Les
 Phases 7 et 9 restent ci-dessus comme historique des décisions qui ont permis
 d'extraire l'outillage générique ; elles ne décrivent plus la cible finale du
-Playground.
+Playground, et ce plan-ci les dépasse. La case est cochée parce que le
+renvoi est établi et suivi : N1 à N5 y sont exécutés et journalisés, N6 et N7
+y restent ouverts.
 
 ---
 
