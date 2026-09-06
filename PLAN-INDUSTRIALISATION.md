@@ -21,11 +21,14 @@ La Phase 10 n'est pas incluse dans le ratio 90/91 : **ses étapes N1 à N5 sont
 exécutées depuis le 6 septembre 2026**, et le Playground est un consommateur
 sans outillage UCM local qui garde ses contrats, ses tokens et ses sondes
 reconstruites. Ne restent que N6 et N7, qui demandent Figma et GitHub.
-La Phase 11 est ouverte : **11.0 a rendu son relève d'autorités**, qui reste
-à valider, et il désigne trois questions sans autorité aujourd'hui — la version
-de `tokens.json`, les exceptions volontaires et la projection des variables
-CSS chez un consommateur sans le kit. Les tâches 11.1 à 11.8 demandent chacune
-une décision de périmètre du propriétaire.
+La Phase 11 est ouverte : **11.0 a rendu son relevé d'autorités et 11.1 sa
+matrice de couverture enum**, tous deux mesurés dans le code et tous deux
+à valider. Le premier désigne trois questions sans autorité aujourd'hui — la
+version de `tokens.json`, les exceptions volontaires et la projection des
+variables CSS chez un consommateur sans le kit ; le second montre qu'un seul
+écart d'enum sur onze cas est réellement visible. Les tâches 11.2 à 11.8, et
+la clause du classement de 11.1, demandent une décision de périmètre du
+propriétaire.
 
 **Convention de lecture :** `[X]` = tâche ou décision clôturée ; `[ ]` = travail
 restant ; une clôture par décision doit être lue dans son paragraphe de statut
@@ -3423,6 +3426,81 @@ consommateur Swift ou Kotlin.
 **Sortie obligatoire :** une matrice de couverture enum et une décision écrite
 entre « garanti », « averti », « non vérifiable » et « hors périmètre ». Aucun
 contrôle bloquant ne peut être ajouté avant cette décision.
+
+**Recherche menée le 6 septembre 2026 sur un corpus de onze cas. Rien n'a été
+implémenté, et la case reste ouverte : la décision entre « garanti », « averti »,
+« non vérifiable » et « hors périmètre » appartient au propriétaire.**
+
+#### Ce qui a été mesuré, et comment
+
+Onze composants ont été écrits hors du dépôt, chacun prétendant implémenter le
+même contrat — une prop `ton` de valeurs `info`, `success`, `warning`, et un
+booléen `actif`. Deux mesures ont été faites sur chacun : ce que
+`ecartsDeParite` rapporte aujourd'hui, et ce que le vérificateur de types
+TypeScript peut RÉSOUDRE de l'union déclarée. La seconde est une sonde de
+recherche d'une quinzaine de lignes, jetée après mesure : elle n'ajoute aucune
+dépendance à l'adaptateur, qui construit déjà ce programme.
+
+**Résultat brut : les onze cas rendent zéro écart.** Y compris celui dont
+l'union déclare deux valeurs quand le contrat en publie trois. La cause est
+directe : le relevé n'expose d'une prop que son texte TypeScript tel qu'il est
+ÉCRIT — ici `Ton | undefined` pour les dix cas qui passent par un alias —, et
+`ecartsDeParite` ne compare aux valeurs du contrat que les booléens.
+
+#### La matrice de couverture
+
+| Cas | Ce que le code fait de la valeur | Vu aujourd'hui | Union résolue par le vérificateur | Ce qu'un contrôle pourrait dire |
+|---|---|---|---|---|
+| `SwitchExhaustif` | un `switch` traite les trois | rien | `info, success, warning` | rien à dire : conforme |
+| `SwitchAmpute` | un `switch` traite deux valeurs, la troisième tombe dans `default` | rien | `info, success, warning` | **rien** : un `default` est une écriture légitime, et rien ne distingue « replié » de « oublié » |
+| `TableAmputee` | `Partial<Record<Ton, …>>` sans l'entrée `warning` | rien | `info, success, warning` | **rien** sans analyser les branches, et une table partielle est parfois voulue |
+| `TransmiseADependance` | la valeur part telle quelle dans un composant enfant | rien | `info, success, warning` | **rien** : la couverture appartient au contrat de l'enfant |
+| `TableExterneImportee` | la valeur indexe une table d'un autre fichier | rien | `info, success, warning` | **rien** : il faudrait suivre la table, et elle peut être calculée |
+| `RegleApplicative` | une règle métier substitue `warning` selon un booléen hors contrat | rien | `info, success, warning` | **rien**, et c'est le cas qui interdit de faire du contrat une spécification de comportement |
+| `IgnoreVolontairement` | la prop n'est jamais lue | rien — mais le relevé porte déjà `utilisee: false` | `info, success, warning` | **« déclarée, jamais lue »** — le signal existe déjà pour les booléens et n'est pas rapporté pour les enums |
+| `UnionAmputee` | l'union déclare `info, success` | rien | **`info, success`** | **« le code n'offre pas `warning`, que le contrat publie »** — le seul écart contrat ↔ code réellement visible |
+| `UnionSurensemble` | l'union déclare une valeur de plus | rien | `info, success, warning, danger` | rien à dire : accepter plus n'est pas contredire le contrat |
+| `UnionGenerique` | l'union vient d'un `as const` | rien | `info, success, warning` | conforme — la dérivation ne gêne pas la résolution |
+| `TypeElargi` | la prop est typée `string` | rien | **aucune** | **rien**, et sans faux positif : pas de littéral, pas de verdict |
+
+#### Ce que la mesure établit
+
+**Un seul écart est réellement visible, et deux signaux existent déjà.** La
+résolution de l'union sépare proprement les cas : elle rend les littéraux quand
+ils existent, y compris dérivés, et rend `aucune` sur un type élargi — donc
+silence plutôt que faux positif. Le second signal, `utilisee: false`, est déjà
+relevé et déjà rapporté pour les booléens ; l'étendre aux enums ne demande
+aucune analyse nouvelle.
+
+**Tout le reste est structurellement invisible**, et pas par manque d'outil :
+un `switch` avec `default`, une table partielle, une valeur transmise, une table
+externe et une règle applicative sont des écritures LÉGITIMES. Les distinguer
+d'un oubli demanderait au contrat de décrire le comportement, ce que R8 a
+refusé le 5 septembre 2026 — et ce refus tient : il imposerait une convention
+d'écriture TypeScript à tous les consommateurs, y compris Swift et Kotlin, qui
+n'ont pas d'adaptateur.
+
+**La question du domicile se pose alors seule.** Ce contrôle ne peut vivre que
+dans l'adaptateur TypeScript : le noyau publié ne connaît aucun langage, et un
+consommateur sans adaptateur n'aurait rien d'équivalent. Il ne peut donc pas
+devenir une garantie du FORMAT — au mieux une capacité d'un adaptateur, dont
+l'absence ne veut rien dire.
+
+#### Classement proposé, à trancher
+
+| Écart | Proposition | Pourquoi |
+|---|---|---|
+| union déclarée plus petite que les valeurs du contrat | **averti**, jamais bloquant | visible sans ambiguïté, sans faux positif mesuré, mais un repli applicatif volontaire reste concevable |
+| prop enum déclarée et jamais lue | **averti** | le signal existe déjà ; le taire pour les enums quand on le dit pour les booléens est une incohérence, pas une décision |
+| union plus large que le contrat | **hors périmètre** | accepter plus ne contredit rien ; le dire ferait du contrat un plafond |
+| valeur non traitée par une branche, une table ou une dépendance | **non vérifiable** | légitime dans cinq écritures distinctes ; le prouver exigerait d'exécuter le rendu |
+| valeur choisie par une règle applicative | **hors périmètre** | le contrat décrit les vues, pas la logique qui en choisit une |
+
+Deux conséquences de ce classement, s'il est retenu : aucune montée de version
+du FORMAT n'est nécessaire, et la limite documentée dans le README de
+l'adaptateur — « les valeurs d'enum réellement traitées restent hors de la
+garantie statique » — devient plus précise au lieu de disparaître.
+
 
 - [ ] **11.2 — Valeurs par défaut.**
 
