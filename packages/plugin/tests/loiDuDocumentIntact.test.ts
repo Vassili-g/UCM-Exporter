@@ -23,7 +23,7 @@ const HORS_SANDBOX = path.join(SOURCE, 'ui');
  *
  * La liste est nommément courte : elle vise les portes d'écriture de l'API, pas
  * tout ce qui ressemble à une mutation. `figma.currentPage.selection = …` n'y
- * est pas, et son absence est la décision de U4.5, pas un oubli.
+ * est pas, et son absence est une décision écrite, pas un oubli.
  */
 const ECRITURES: { motif: RegExp; quoi: string }[] = [
   { motif: /figma\.create[A-Z]\w*\s*\(/, quoi: 'création de node' },

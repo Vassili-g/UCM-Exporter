@@ -7,7 +7,6 @@ function seuleLaVersionBloque(bilan) {
     && !bilan.illisible
     && (bilan.champsAbsents?.length ?? 0) === 0
     && (bilan.graphe?.length ?? 0) === 0
-    && (bilan.nonListes?.length ?? 0) + (bilan.fantomes?.length ?? 0) === 0
     && (bilan.typesTypographiques?.length ?? 0) === 0;
 }
 
@@ -94,6 +93,5 @@ export function bilanEstBloquant(bilan) {
     || bilan.champsAbsents.length > 0
     || Boolean(bilan.version)
     || bilan.graphe.length > 0
-    || bilan.nonListes.length + bilan.fantomes.length > 0
     || bilan.typesTypographiques.length > 0;
 }

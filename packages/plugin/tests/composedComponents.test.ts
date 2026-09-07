@@ -281,7 +281,7 @@ test('scanComposedMatrix n’invente pas un slot absent du variant de référenc
 
   assert.deepEqual(result.composes, []);
   assert.equal(result.composed.has('btn-success'), true);
-  // Une composition différente ne se signale plus (U4.7) : les arbres exacts la
+  // Une composition différente ne se signale plus : les arbres exacts la
   // conservent, rien ne manque, et aucun geste n'était demandé. Le silence est
   // la règle, et c'est lui que ce test tient.
   assert.deepEqual(result.warnings, []);

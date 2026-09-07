@@ -86,7 +86,7 @@ test('artifactPath dérive les paths du composant et des tokens', () => {
 });
 
 /**
- * U5.1. Les deux chemins des réglages sont devenus un REPLI facultatif : le
+ * Les deux chemins des réglages sont un repli facultatif : le
  * repository décide dès qu'il se décrit. Quand personne ne décide, rien ne doit
  * s'écrire à un endroit inventé — l'export est refusé, et le message nomme les
  * deux gestes possibles avec leur acteur.
@@ -119,11 +119,11 @@ test('un seul chemin renseigné ne refuse que l’autre artefact', () => {
 });
 
 /**
- * T4.1. Le repository est seul à savoir où ses contrats vivent ; les réglages du
+ * Le repository est seul à savoir où ses contrats vivent ; les réglages du
  * plugin sont locaux à une machine et ne savent rien de lui. Le défaut était masqué
  * par une coïncidence — les défauts des réglages décrivent justement le repository
- * de démonstration —, et il se déclenche au premier repo aux conventions différentes
- * : l'export écrit là où la CI ne regarde pas, la PR s'ouvre, le contrôle ne trouve
+ * de démonstration, et il se déclenche au premier repo aux conventions différentes :
+ * l'export écrit là où la CI ne regarde pas, la PR s'ouvre, le contrôle ne trouve
  * rien de nouveau, tout est vert.
  */
 test('la configuration du repository décide où l’export s’écrit', async () => {
@@ -336,10 +336,10 @@ test('publishArtifact supprime la branche quand l’ouverture de la PR échoue',
   const previousFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string }> = [];
   const responses = [
-    // Le repository ne se décrit pas : les réglages du plugin décident (T4.1).
+    // Le repository ne se décrit pas : les réglages du plugin décident.
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
-    // Aucun export en vol : la recherche de collision de T4.3 liste les pull
+    // Aucun export en vol : la recherche de collision liste les pull
     // requests ouvertes avant d'écrire, et ne trouve rien à comparer.
     new Response(JSON.stringify([]), { status: 200 }),
     new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 }),
@@ -379,10 +379,10 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
   const previousFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string }> = [];
   const responses = [
-    // Le repository ne se décrit pas : les réglages du plugin décident (T4.1).
+    // Le repository ne se décrit pas : les réglages du plugin décident.
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
-    // Aucun export en vol : la recherche de collision de T4.3 liste les pull
+    // Aucun export en vol : la recherche de collision liste les pull
     // requests ouvertes avant d'écrire, et ne trouve rien à comparer.
     new Response(JSON.stringify([]), { status: 200 }),
     new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 }),
@@ -417,7 +417,7 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
 });
 
 /**
- * T4.3, et il faut le lire avec D9 sous les yeux : le plugin REFUSE.
+ * Le plugin refuse un contrat dont la version sort de la fenêtre de lecture.
  */
 function contratFigma(name: string, nodeId: string, componentKey?: string): string {
   return JSON.stringify({
@@ -535,7 +535,7 @@ test('une collision encore en vol dans une pull request ouverte est vue', async 
 
 test('un contrat déjà présent sans identité Figma lisible refuse plutôt que d’écraser', async () => {
   // Écrit à la main, ou par un autre outil. Passer outre écraserait peut-être
-  // le travail de quelqu'un sans un mot — le défaut même que T4.3 supprime.
+  // le travail de quelqu'un sans un mot, le défaut même que la collision supprime.
   await assert.rejects(
     avecMethode(
       (url) => sansConfiguration(url)
@@ -558,7 +558,7 @@ test('les tokens ne passent pas par la détection de collision', async () => {
   // dans cet état — aucune identité lisible — ferait refuser l'export ; des
   // tokens, non, ils s'écrivent.
   //
-  // Les pull requests ouvertes SONT interrogées depuis T4.5, parce que le
+  // Les pull requests ouvertes sont interrogées, parce que le
   // doublon, lui, ne demande qu'un chemin et deux exports. C'est exactement ce
   // que ce test sépare : regarder n'est pas refuser.
   const branche = 'ucm-exporter/export-tokens-20260904-090000';
@@ -593,11 +593,11 @@ test('les tokens ne passent pas par la détection de collision', async () => {
 });
 
 /**
- * T4.5. Le contrôle d'immobilité ne lisait QUE la branche de base — c'est-à-dire
+ * Le contrôle d'immobilité ne lisait autrefois que la branche de base, c'est-à-dire
  * l'endroit où un export en attente de fusion n'est justement pas encore.
  * Réexporter sans avoir rien changé ouvrait donc une seconde pull request en
  * tout point identique à la première, sans un mot : la perte silencieuse que
- * T4.1 et T4.3 referment ailleurs, ici en double exemplaire.
+ * les deux contrôles voisins referment ailleurs, ici en double exemplaire.
  */
 test('un artefact identique déjà déposé en vol ne crée pas un second export', async () => {
   const branche = 'ucm-exporter/export-component-20260904-090000';
@@ -683,7 +683,7 @@ test('des tokens identiques déjà déposés en vol ne créent pas un second exp
 });
 
 test('un réexport corrigé pendant qu’une pull request est ouverte n’est pas bloqué', async () => {
-  // Le pendant obligatoire du doublon, et la raison pour laquelle T4.5 n'est
+  // Le pendant obligatoire du doublon, et la raison pour laquelle le contrôle n'est
   // PAS un refus : corriger dans Figma puis réexporter est le geste normal.
   // Refuser ici demanderait au designer de fermer une pull request pour avoir
   // le droit d'en proposer une meilleure.
@@ -757,7 +757,7 @@ test('le corps de la pull request porte les avertissements de l’export', () =>
 });
 
 test('l’en-tête annonce le schéma que porte le contrat déposé', () => {
-  // T4.2. C'est le seul champ qui décide si le fichier ENTIER est lisible par
+  // C'est le seul champ qui décide si le fichier entier est lisible par
   // le repository, et il est enfoui dans un diff de plusieurs milliers de
   // lignes. Sur la couverture, celui qui fusionne le voit sans ouvrir le JSON.
   const corps = pullRequestBody(
@@ -871,9 +871,9 @@ test('une note d’export n’atteint pas le corps de la pull request', () => {
 });
 
 test('l’en-tête dit d’où vient le composant, puisque le lien a disparu', () => {
-  // T4.4. La distribution par la Community interdit `enablePrivatePluginApi`,
+  // La distribution par la Community interdit `enablePrivatePluginApi`,
   // donc `figma.fileKey`, donc `meta.figma.url` : le raccourci d'un clic vers
-  // le composant source n'existe plus. D6 demandait que la traçabilité par
+  // le composant source n'existe plus. La décision demandait que la traçabilité par
   // `fileName` et `nodeId` soit constatée sur une pull request RÉELLE et pas en
   // principe — elle est donc écrite là où la revue a lieu.
   const corps = pullRequestBody(
@@ -889,7 +889,7 @@ test('l’en-tête dit d’où vient le composant, puisque le lien a disparu', (
 });
 
 test('un contrat qui porte encore une URL la rend en lien', () => {
-  // Un export antérieur à T4.4, ou un plugin chargé en développement dans une
+  // Un export antérieur au passage à la Community, ou un plugin chargé en développement dans une
   // organisation. La couverture lit le fichier plutôt que de déduire ce que la
   // distribution courante devrait produire : c'est la même règle que pour le
   // schéma, et la déduction se tromperait exactement sur les contrats anciens.

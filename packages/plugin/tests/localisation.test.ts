@@ -41,7 +41,7 @@ test('un message poussé porte son sujet, et le canal sait où il vit', () => {
 
 /**
  * La phrase compacte se DÉRIVE des trois parties, et les parties voyagent avec
- * elle (U4.8). Sans ce report, l'interface ne pourrait qu'afficher un
+ * elle. Sans ce report, l'interface ne pourrait qu'afficher un
  * paragraphe où le geste se lit après deux phrases de contexte.
  */
 test('les trois parties voyagent avec la phrase, et la phrase en dérive', () => {

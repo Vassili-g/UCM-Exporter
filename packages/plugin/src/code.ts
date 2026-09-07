@@ -50,7 +50,7 @@ function postStatus(state: 'loading' | 'success' | 'error', text: string): void 
  * Met à jour l'indicateur de connexion toujours visible dans l'en-tête.
  *
  * Il prend une CAUSE, jamais un état d'affichage : `etatDeConnexion` est seul à
- * décider ce que la pastille dit et quel geste elle demande (U5.2).
+ * décider ce que la pastille dit et quel geste elle demande.
  */
 function postConnection(cause: CauseConnexion, precision: PrecisionConnexion = {}): void {
   versUi({ type: 'connection', ...etatDeConnexion(cause, precision) });
@@ -166,7 +166,7 @@ type AnalyseGardee = {
 let analyseGardee: AnalyseGardee | null = null;
 
 /**
- * L'annulation coopérative (U3.4).
+ * L'annulation coopérative.
  *
  * Rien ne peut interrompre un appel Figma déjà parti. Le drapeau est donc lu
  * ENTRE deux étapes, là où le moteur annonce la suivante : l'annulation prend
@@ -334,7 +334,7 @@ async function publier(): Promise<void> {
     const statut = error instanceof GithubApiError ? error.status : null;
     // La réponse de GitHub est un fait de publication ; le verdict dit ce que le
     // designer a entre les mains. L'analyse est GARDÉE : la publication se
-    // réessaie sans repasser par Figma (U3.3).
+    // réessaie sans repasser par Figma.
     versUi({ type: 'log', text: `Échec GitHub : ${message}` });
     postDownload(analyse.filename, analyse.content);
     postStatus('error', 'Échec GitHub. Le fichier a été téléchargé sur votre poste.');
@@ -351,7 +351,7 @@ async function publier(): Promise<void> {
 
 // Routeur des demandes de l'UI vers le bon handler.
 /**
- * Montre le calque dont un avertissement parle : sélection, puis cadrage (U4.4).
+ * Montre le calque dont un avertissement parle : sélection, puis cadrage.
  *
  * **Rien n'est écrit dans le document.** Une sélection et un cadrage sont un
  * état de l'ÉDITEUR, et les actions d'un plugin ne rejoignent l'historique
@@ -394,13 +394,13 @@ figma.ui.onmessage = async (message: UiRequest) => {
     // affichée, un export « sans changement » est indiscernable d'un plugin
     // périmé : on annonce d'emblée le schéma que ce code produit.
     //
-    // Elle ne passe PLUS par le journal (U0.1). Le premier export appelle
-    // `logPanel.clear()`, si bien que ce garde-fou disparaissait au premier
-    // clic — c'est-à-dire avant le cas qu'il existe pour couvrir. L'UI la pose
-    // en pied de page, où elle reste.
+    // Elle ne passe par aucun message de compte rendu : celui-ci se vide à
+    // chaque export, si bien que le garde-fou disparaîtrait au premier clic,
+    // avant le cas qu'il existe pour couvrir. L'UI la pose en pied de page, où
+    // elle reste.
     versUi({ type: 'schema-version', version: CONTRACT_VERSION });
     // L'UI est prête : sélection, champs sauvegardés, test GitHub automatique,
-    // et ce que l'export des tokens emporterait (U2.4). Cette dernière lecture
+    // et ce que l'export des tokens emporterait. Cette dernière lecture
     // est celle qui manquait pour qu'une commande de portée FICHIER annonce sa
     // taille avant de partir.
     await Promise.all([

@@ -3,7 +3,7 @@
  *
  * **Ce test existe parce que la réponse a été « non » pendant six versions, sans
  * que rien ne le dise.** `packages/plugin` épinglait `@ucm-kit/core` à `0.1.0`
- * — un pin exact, la règle D7 appliquée là où elle ne vaut pas. Le kit local
+ * un pin exact, la règle du consommateur appliquée là où elle ne vaut pas. Le kit local
  * étant passé à 0.1.6, npm ne pouvait plus satisfaire ce pin avec le workspace :
  * il a téléchargé **0.1.0 depuis le registre** dans
  * `packages/plugin/node_modules/`, et le plugin a construit, typé et testé
@@ -13,8 +13,8 @@
  * chose, dont le désaccord est muet. Le moteur produisait des contrats avec une
  * idée du format, et le lecteur les jugeait avec une autre.
  *
- * **La règle, et sa borne.** D7 exige un pin EXACT pour ce qu'un repository
- * CONSOMMATEUR installe : une plage y laisserait npm choisir une version que
+ * **La règle, et sa borne.** Un pin exact est exigé pour ce qu'un repository
+ * consommateur installe : une plage y laisserait npm choisir une version que
  * personne n'a essayée. Elle ne dit rien d'un frère dans le même dépôt, qui
  * n'installe pas — il lit la source d'à côté, et doit la lire toujours.
  * `packages/plugin` est privé et ne se publie jamais : `*` y est la bonne
@@ -94,7 +94,7 @@ test("un paquet publié épingle la version du kit que ce dépôt porte", () => 
       pin,
       versionDuKit,
       `packages/${nom} épingle @ucm-kit/core ${pin}, et ce dépôt porte ${versionDuKit}. `
-        + `Un paquet publié garde un pin exact (D7) ; il doit donc monter avec le kit.`,
+        + `Un paquet publié garde un pin exact ; il doit donc monter avec le kit.`,
     );
   }
 });

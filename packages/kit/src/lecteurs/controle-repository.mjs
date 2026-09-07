@@ -48,7 +48,7 @@ function pariteVide() {
  * L'adaptateur de celui qui n'en a pas — et il n'est pas un bouchon.
  *
  * Un repo sans adaptateur n'est pas un repo sans réponse : le noyau sait dire
- * où une implémentation devrait être et si elle y est (T2.3), et c'est
+ * où une implémentation devrait être et si elle y est, et c'est
  * exactement ce que cet objet répond. Ce qu'il ne fait jamais, c'est conclure
  * « conforme » de ce qu'il n'a pas lu — un fichier présent devient
  * `implementationNonLue`, la seule phrase vraie quand personne n'a de
@@ -78,14 +78,14 @@ function analyser(chemin, contexte, erreursGraphe = []) {
   const vide = {
     fichier, relatif, illisible: false, champsAbsents: [], version: null,
     avertissements: [],
-    manquants: [], nonListes: [], fantomes: [], typesTypographiques: [], total: 0,
+    manquants: [], typesTypographiques: [], total: 0,
     graphe: erreursGraphe,
     parite: pariteVide(),
     // **Un relevé vide n'est pas un relevé vierge**, et les confondre était un
     // défaut réel, trouvé en passant un repo neuf au contrôle. Chaque sortie
     // anticipée — fichier illisible, champs absents, version hors fenêtre —
     // rend `parite` sans l'avoir mesurée, et le terminal y lisait
-    // « code conforme » : la phrase exacte que T2.3 a écrit une classe entière
+    // « code conforme » : la phrase exacte qu'une classe entière
     // de code pour ne plus jamais prononcer sans avoir lu.
     pariteMesuree: false,
   };
@@ -100,7 +100,7 @@ function analyser(chemin, contexte, erreursGraphe = []) {
 
   // La version se lit par la règle du format, pas par un accès écrit ici : le
   // champ qui la porte est le même que celui que le producteur annonce dans le
-  // corps de sa pull request (T4.2), et deux idées de « où vit la version »
+  // corps de sa pull request, et deux idées de « où vit la version »
   // divergeraient sans que rien ne le dise.
   const version = versionDeContrat(contrat);
   // On garde le SENS de l'écart, pas seulement son existence : c'est lui qui
@@ -151,19 +151,10 @@ function analyser(chemin, contexte, erreursGraphe = []) {
     { presente: implementationPresente(chemin, { motif }), chemin: basename(implementation) },
   );
 
-  // L'index qu'on audite ne se parcourt pas, sinon la comparaison se
-  // vérifierait elle-même. Depuis la 11.0 il n'existe plus : le relevé du
-  // contrat est alors la seule et unique source.
-  const { tokensUsed: index, ...corps } = contrat;
-  const citees = collecterReferences(sansEchantillon(corps));
-  const indexees = new Set(
-    Array.isArray(index) ? index.filter((ref) => typeof ref === "string") : [],
-  );
-
-  // L'existence se contrôle sur la RÉUNION des deux ensembles : tant qu'un
-  // index existe, ni une référence qu'il oublie ni une entrée citée nulle part
-  // ne doit échapper au contrôle.
-  const toutes = new Set([...citees, ...indexees]);
+  // Le contrat ne publie aucun index de ses tokens depuis la 11.0, et
+  // `champsInvalidesDuContrat` refuse celui qui en porterait un. Le relevé du
+  // contrat est donc la seule source de ce qui est cité.
+  const citees = collecterReferences(sansEchantillon(contrat));
 
   return {
     ...vide,
@@ -173,15 +164,9 @@ function analyser(chemin, contexte, erreursGraphe = []) {
     // qu'un lecteur du côté de la CI.
     avertissements: avertissementsCorrigeables(contrat),
     parite,
-    manquants: referencesAbsentes(toutes, tokensExistants),
-    nonListes: Array.isArray(index)
-      ? [...citees].filter((ref) => !indexees.has(ref)).sort()
-      : [],
-    fantomes: Array.isArray(index)
-      ? [...indexees].filter((ref) => !citees.has(ref)).sort()
-      : [],
+    manquants: referencesAbsentes(citees, tokensExistants),
     typesTypographiques: erreursTypesTypographiques(contrat, tokensDtcg),
-    total: toutes.size,
+    total: citees.size,
   };
 }
 
@@ -193,9 +178,7 @@ function implementationsEnAttente(bilans) {
       && !bilan.illisible
       && bilan.champsAbsents.length === 0
       && !bilan.version
-      && bilan.graphe.length === 0
-      && bilan.nonListes.length === 0
-      && bilan.fantomes.length === 0,
+      && bilan.graphe.length === 0,
   );
 }
 
@@ -307,22 +290,6 @@ function rapportMarkdown(bilans, fautifs, bilansDuRapport, contexte) {
         status: "La fusion reste bloquée.",
       }));
     }
-    const ecarts = bilan.nonListes.length + bilan.fantomes.length;
-    if (ecarts > 0) {
-      lignes.push(...rendreDiagnostic({
-        severity: "error",
-        title: `L'index des tokens du contrat est incohérent : \`${bilan.fichier}\``,
-        count: ecarts,
-        itemSingular: "écart",
-        detailsTitle: "Écarts détectés",
-        details: [
-          ...bilan.nonListes.map((token) => `\`${token}\` est utilisé mais absent de \`tokensUsed\`.`),
-          ...bilan.fantomes.map((token) => `\`${token}\` est listé dans \`tokensUsed\` mais n'est pas utilisé.`),
-        ],
-        action: "Signalez ce défaut à un développeur du plugin. Réexporter sans corriger l'exporteur ne suffira pas.",
-        status: "La fusion reste bloquée.",
-      }));
-    }
     if (bilan.typesTypographiques.length > 0) {
       lignes.push(...rendreDiagnostic({
         severity: "error",
@@ -371,12 +338,6 @@ function terminalDesBilans(bilans) {
     for (const token of bilan.manquants) {
       fil.push({ flux: "warn", texte: `⚠ ${bilan.fichier} : référence absente de la source de tokens → ${token}` });
     }
-    for (const token of bilan.nonListes) {
-      fil.push({ flux: "error", texte: `✗ ${bilan.fichier} : utilisé par le contrat mais absent de tokensUsed → ${token}` });
-    }
-    for (const token of bilan.fantomes) {
-      fil.push({ flux: "error", texte: `✗ ${bilan.fichier} : listé dans tokensUsed mais utilisé nulle part → ${token}` });
-    }
     for (const { chemin, reference, attendu, recu } of bilan.typesTypographiques) {
       fil.push({ flux: "error", texte: `✗ ${bilan.fichier} : type typographique incompatible → ${chemin}, ${reference} est ${recu}, attendu ${attendu}` });
     }
@@ -412,11 +373,11 @@ function terminalDesBilans(bilans) {
     }
 
     const ecartDeParite = aUnEcartDeParite(bilan);
-    const tokensValides = bilan.nonListes.length + bilan.fantomes.length === 0
-      && bilan.typesTypographiques.length === 0;
-    // La validité porte sur le CONTRAT. Un code en retard n'invalide pas le
+    // La validité porte sur le contrat. Un code en retard n'invalide pas le
     // fichier qu'il devrait suivre : il se lit dans `etatDuCode`, juste après.
-    const contratValide = tokensValides && bilan.graphe.length === 0 && !bilan.version;
+    const contratValide = bilan.typesTypographiques.length === 0
+      && bilan.graphe.length === 0
+      && !bilan.version;
     const aAvertir = bilan.manquants.length > 0 || ecartDeParite;
     const marque = contratValide ? (aAvertir ? "⚠" : "✓") : "✗";
     const etatDuCode = !bilan.pariteMesuree
@@ -428,7 +389,7 @@ function terminalDesBilans(bilans) {
       : bilan.parite.implementationAbsente
         ? "implémentation en attente (autorisé)"
         // Ne jamais dire « conforme » de ce qu'on n'a pas lu : c'est la moitié
-        // du défaut que T2.3 corrige. Le fichier est là, l'adaptateur n'en a
+        // de ce défaut. Le fichier est là, l'adaptateur n'en a
         // rien tiré.
         : bilan.parite.implementationNonLue
           ? `implémentation présente, non lue par l'adaptateur (${bilan.parite.implementationNonLue})`
@@ -449,9 +410,6 @@ function terminalDesFautifs(fautifs) {
   const fil = [{ flux: "error", texte: `\n✗ ${libelleNombre(fautifs.length, "contrat")} en défaut.` }];
   if (fautifs.some((bilan) => bilan.illisible || bilan.champsAbsents.length > 0)) {
     fil.push({ flux: "error", texte: '  JSON illisible ou incomplet : ré-exportez le composant depuis Figma.' });
-  }
-  if (fautifs.some((bilan) => bilan.nonListes.length + bilan.fantomes.length > 0)) {
-    fil.push({ flux: "error", texte: "  Écart avec tokensUsed : signalez ce défaut de l'exporteur à un développeur du plugin." });
   }
   if (fautifs.some((bilan) => bilan.typesTypographiques.length > 0)) {
     fil.push({ flux: "error", texte: "  Types typographiques incompatibles : corrigez l’exporteur, puis réexportez les tokens depuis Figma ; ne retouchez pas les contrats ni le code." });
@@ -641,7 +599,7 @@ export function controlerRepository(racine, {
   // L'API publique de tous les composants est relevée d'un coup, avant
   // l'analyse : l'adaptateur peut ainsi ne construire qu'un seul programme.
   // La lambda n'est pas décorative : `map` passe l'index en second argument, et
-  // `cheminImplementation` accepte un motif à cette place (T2.3). Le raccourci
+  // `cheminImplementation` accepte un motif à cette place. Le raccourci
   // `map(cheminImplementation)` ferait donc résoudre un motif valant `0`.
   const implementations = contrats.map((chemin) => cheminImplementation(chemin, motif));
   const apiPublique = adaptateur.lireApiPublique(implementations, racine);

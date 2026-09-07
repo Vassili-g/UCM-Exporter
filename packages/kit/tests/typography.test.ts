@@ -1,5 +1,5 @@
 /**
- * La table « nom de graisse → poids » est une autorité unique (T6.1) : ce test
+ * La table « nom de graisse → poids » est une autorité unique : ce test
  * la tient, et il tient surtout ce qu'elle refuse de faire.
  */
 import assert from 'node:assert/strict';

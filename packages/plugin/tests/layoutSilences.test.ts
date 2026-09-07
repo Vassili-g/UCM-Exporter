@@ -286,7 +286,7 @@ test('un layer Absolute est placé même sous un auto layout en grille, et sans 
   // Les côtés publiés sont ceux auxquels le layer s'accroche : la contrainte
   // survit à un parent qui change de taille, le côté opposé non.
   assert.deepEqual(item.inset, { top: '5px', right: '10px' });
-  // La place est publiée, donc rien n'est dit (U4.7).
+  // La place est publiée, donc rien n'est dit.
   assert.deepEqual(warnings, []);
 });
 
@@ -593,8 +593,8 @@ test('les pistes fixes d’une grille sont publiées en pixels, sans un mot', ()
   // La piste FIXED est une donnée structurelle non liable de la grille : elle
   // reste en pixels sans devenir un token.
   assert.deepEqual(layout.rowSizes, ['fit-content(100%)', '120px', '1fr']);
-  // Rien ne manque au contrat et aucun geste n'existe : le moteur se tait
-  // (U4.7). L'exception elle-même vit dans la spécification.
+  // Rien ne manque au contrat et aucun geste n'existe : le moteur se tait.
+  // L'exception elle-même vit dans la spécification.
   assert.deepEqual(warnings, []);
 });
 
@@ -650,7 +650,7 @@ test('un enfant publie la mesure de sa piste qui hug, en pixels et sans rien ré
   // Sa colonne est en `FLEX` : de ce côté, la cellule décide toujours.
   assert.equal(layout.children[0]?.structuralSize?.width, undefined);
   // La mesure est publiée et aucun geste ne la corrigerait : rien n'est dit,
-  // ni sur la tuile, ni sur les pistes de la grille (U4.7). Les paddings et le
+  // ni sur la tuile, ni sur les pistes de la grille. Les paddings et le
   // rayon non tokenisés du conteneur, eux, restent des points à corriger : ce
   // test ne les couvre pas et ne doit pas les faire taire.
   assert.deepEqual(warnings.filter((warning) => warning.includes('« Tile »')), []);

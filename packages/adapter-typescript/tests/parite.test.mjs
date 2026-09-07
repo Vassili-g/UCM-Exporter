@@ -48,7 +48,7 @@ test("les vues locales s'additionnent dans une vue et gardent le maximum entre v
  * Un composant réel délègue en cascade — une vue appelle une grille, la grille
  * appelle les dépendances. Un relevé qui ne descendrait que d'un cran
  * annoncerait zéro dépendance là où le contrat en publie sept, et le rapport
- * resterait vert. C'est l'écart que R8 a mesuré ; seul le corpus du
+ * resterait vert. Seul le corpus du
  * consommateur le verrouillait jusqu'ici.
  */
 test("le dépliage traverse deux crans de vues locales, et additionne la vue partagée", () => {

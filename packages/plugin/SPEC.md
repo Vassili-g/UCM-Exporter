@@ -1,6 +1,6 @@
 # Unified Component Exporter — spécification
 
-Ce document décrit le MOTEUR : ce que le plugin lit dans Figma, ce qu'il élit,
+Ce document décrit le **moteur** : ce que le plugin lit dans Figma, ce qu'il élit,
 ce dont il avertit, et ce qu'il dépose sur GitHub. La forme de ce qu'il produit
 est décrite dans [docs/FORMAT.md](../../docs/FORMAT.md).
 
@@ -16,7 +16,7 @@ Le plugin produit :
 
 Ce que ces deux artefacts contiennent, et ce que leur silence dit, est décrit
 par [docs/FORMAT.md](../../docs/FORMAT.md), jusqu'à ce que le moteur y soit
-contraint, ce document-ci ne parle que de la LECTURE de Figma.
+contraint, ce document-ci ne parle que de la lecture de Figma.
 
 ## Contexte technique
 
@@ -27,7 +27,7 @@ contraint, ce document-ci ne parle que de la LECTURE de Figma.
 - Deux commandes indépendantes qui partagent le même code Figma :
   **Export composant** (Partie 1) et **Export tokens** (Partie 2).
 - Stack : TypeScript, `@figma/plugin-typings`, build esbuild. L'UI expose le
-  statut GitHub, les deux commandes, la configuration, un journal, un retour
+  statut GitHub, les deux commandes, la configuration, un compte rendu, un retour
   en direct sur la sélection, et en pied de page la version de schéma que le
   bundle chargé produit, Figma peut servir un bundle plus ancien que celui du
   disque, et rien d'autre ne le dirait.
@@ -76,7 +76,7 @@ Le silence commun à ces champs (une variable se publie, un nombre brut avertit,
 une valeur neutre reste absente sans un mot) est décrit par [La règle
 commune](../../docs/FORMAT.md#la-règle-commune).
 
-Le geste demandé au designer est toujours de NOMMER la valeur, jamais de la
+Le geste demandé au designer est toujours de **nommer** la valeur, jamais de la
 retirer du design.
 
 #### 1. Props
@@ -155,7 +155,7 @@ warning et n'est jamais remplacée par une valeur brute.
 Ce que `structure` et `children` contiennent (descente, bornes, flux,
 dimensions, place hors du flux) est décrit par [6.
 Structure](../../docs/FORMAT.md#6-structure). Ce document ne garde que ce que le
-moteur DÉCIDE en lisant Figma : ce dont il avertit, ce qu'il arrondit, et où il
+moteur décide en lisant Figma : ce dont il avertit, ce qu'il arrondit, et où il
 relève.
 
 ##### Un dessin que rien ne déclare
@@ -167,7 +167,7 @@ ni icône déclarée, mais bien un tracé, est donc publié avec sa place et ses
 couleurs, et son dessin manque. C'est presque toujours l'icône qu'on a oublié de
 déclarer, et le geste est le même dans les autres cas : la déclarer.
 
-Le déclencheur est le TRACÉ, jamais l'absence de texte : un cadre vide ou une
+Le déclencheur est le **tracé**, jamais l'absence de texte : un cadre vide ou une
 surface colorée se décrivent entièrement par leurs tokens. Le message part une
 seule fois par dessin, et nomme le calque le plus profond qui contienne encore
 tout le dessin, celui que le designer déclarerait : « skull », jamais le «
@@ -222,7 +222,7 @@ horizontal gap » et « vertical gap », les intitulés que le panneau affiche.
 Ce qu'un échantillon contient, ce qu'il n'a pas le droit de porter et comment
 ses adresses se résolvent est décrit par [9. Échantillon de
 maquette](../../docs/FORMAT.md#9-échantillon-de-maquette). Ce document garde ce
-que le moteur RELÈVE dans Figma, et ce qu'il omet plutôt que de deviner.
+que le moteur relève dans Figma, et ce qu'il omet plutôt que de deviner.
 
 **Une notice, jamais un avertissement.** Deux échantillons là où le design en
 attendait un révèlent un libellé retouché dans un seul variant. Le constat suit
@@ -243,7 +243,7 @@ forment une seule explication, et la couper en deux la rendrait illisible des
 deux côtés.
 
 La frontière entre les deux documents tranche ce cas : une règle à cheval va du côté du
-CONSOMMATEUR, et le moteur y renvoie, c'est le moteur qui a le code sous la
+consommateur, et le moteur y renvoie, c'est le moteur qui a le code sous la
 main, pas le repository qui lit l'artefact. Cette section est donc un renvoi,
 volontairement, et non un oubli du dédoublonnage.
 
@@ -251,7 +251,7 @@ volontairement, et non un oubli du dédoublonnage.
 
 Toute propriété pertinente sans variable liée → warning précis (calque +
 propriété), non exportée, **export non bloqué**. C'est la seule décision de ce
-document dans cette section : comment un rôle se REND, et pourquoi aucun rôle de
+document dans cette section : comment un rôle se rend, et pourquoi aucun rôle de
 contour ne cite une propriété qui consomme la boîte, appartient au format, [8.
 Rendu sémantique et
 garde-fous](../../docs/FORMAT.md#8-rendu-sémantique-et-garde-fous).
@@ -298,7 +298,7 @@ Figma, et ce qu'il en dit.
 #### Métadonnées
 
 Le moteur écrit dans `meta.diagnostics` tout ce qu’il a eu à signaler en lisant
-Figma, et rien d’autre : **un diagnostic parle de l’EXPORT, jamais du
+Figma, et rien d’autre : **un diagnostic parle de l’export, jamais du
 composant.** La forme d’une entrée et la règle qui la relie à
 `coverage.portable` appartiennent au format et sont décrites
 [là-bas](../../docs/FORMAT.md#métadonnées) ; ce qui relève du moteur est ce
@@ -316,7 +316,7 @@ interne de l’exporteur pour lui dire qu’il n’a rien à faire.
 Le classement se fait au moment d’écrire, dans `exportComponent.ts` : une perte
 de projection portable l’emporte sur le reste, de sorte qu’un même texte relevé
 des deux côtés dégrade bien `coverage.portable`. Les messages sont dédoublonnés
-par leur TEXTE : deux extracteurs qui concluent la même chose ne le disent
+par leur texte : deux extracteurs qui concluent la même chose ne le disent
 qu’une fois. Le compte que le plugin affiche, ce que la pull request liste et ce
 que `meta.diagnostics` publie sont désormais la même liste.
 
@@ -381,7 +381,7 @@ PR vers la branche de base, puis l'ouvre dans le navigateur par défaut
 (`figma.openExternal` : l'iframe de l'UI est isolée et ne peut pas naviguer
 elle-même) : le libellé du bouton l'annonce, faute de quoi trois exports
 d'affilée ouvrent trois onglets que rien n'avait laissé prévoir. Le lien reste
-dans le journal pour y revenir. Si le contenu est identique (la comparaison
+dans le compte rendu pour y revenir. Si le contenu est identique (la comparaison
 ignore `meta.exportedAt`, régénéré à chaque export) aucune branche ni PR n'est
 créée. Config absente/invalide ou erreur GitHub : repli automatique vers le
 téléchargement local avec message explicite.
@@ -391,7 +391,7 @@ requests d'export encore ouvertes.** Un artefact déposé et pas encore fusionn�
 n'est justement pas sur la branche de base ; ne regarder qu'elle rouvrait, pour
 un réexport strictement identique, une seconde pull request en tout point
 pareille à la première. Les deux genres d'artefact sont concernés : le doublon
-ne demande qu'un chemin et deux exports. Le journal du plugin dit LEQUEL des
+ne demande qu'un chemin et deux exports. Le compte rendu du plugin dit lequel des
 deux endroits a répondu, et donne le lien de la pull request quand c'est elle,
 sans quoi « aucun changement » enverrait chercher sur la branche de base un
 fichier qui n'y est pas encore, et le designer conclurait que son export s'est
@@ -406,8 +406,8 @@ PR inchangée. Au-delà de la limite GitHub de 100 Mo, il n'essaie pas de créer
 une branche et conserve directement le téléchargement local.
 
 **Le corps de la pull request a deux zones, et la frontière compte.** L'en-tête
-dit l'IDENTITÉ de ce qui est déposé : le chemin du fichier, et, pour un contrat
-seulement, le schéma qu'il porte. La liste qui suit ne porte que des GESTES à
+dit l'identité de ce qui est déposé : le chemin du fichier, et, pour un contrat
+seulement, le schéma qu'il porte. La liste qui suit ne porte que des gestes à
 faire dans Figma.
 
 C'est la page que le plugin ouvre juste après l'export : le designer y lit ce
@@ -425,7 +425,7 @@ de plusieurs milliers de lignes. Sur la couverture, celui qui décide de
 fusionner le voit sans ouvrir le JSON, et les pull requests d'export restées
 ouvertes disent lesquelles précèdent une bascule de version. Annoncer la
 constante du plugin ferait de cette ligne un énoncé sur le PLUGIN déguisé en
-énoncé sur le FICHIER : deux autorités pour la même chose, dont le désaccord
+énoncé sur le fichier : deux autorités pour la même chose, dont le désaccord
 serait muet. `tokens.json` n'en reçoit aucune : c'est un arbre DTCG, il ne porte
 aucun schéma UCM. Un contrat dont la version est illisible la voit annoncée
 telle quelle, et un contrat qui n'en porte aucune le dit : le contrôle du
@@ -442,7 +442,7 @@ vivent dans [CONTRIBUTING.md](../../CONTRIBUTING.md).
 **Les trois parties voyagent séparées jusqu'à l'interface.** Un site
 d'émission écrit un `Constat` (ce qui manque, ce que ça coûte, quel geste le
 corrige) et `localisation.ts` en compose le titre puis la phrase compacte. La
-phrase est ce que publient `meta.diagnostics`, la pull request et le journal ;
+phrase est ce que publient `meta.diagnostics`, la pull request et le compte rendu ;
 les parties sont ce que l'interface met en page, sous une pastille qui nomme la
 sévérité. Une seule rédaction, deux formes. Sans cette séparation, l'interface
 n'aurait le choix qu'entre afficher un paragraphe (où le geste se lit en
@@ -455,7 +455,7 @@ chose que le designer : `@icons`, nom d'une variante de règle, y devenait le
 profil d'un inconnu, notifié à chaque export, au lieu du mot à taper dans le
 composant, et un calque nommé `#12` renverrait de même à une issue. Ces formes
 sont donc publiées en `code`, seule zone que l'autoliaison de GitHub épargne :
-le message reste celui que le journal du plugin affiche, et le designer y lit le
+le message reste celui que le compte rendu du plugin affiche, et le designer y lit le
 nom exact qu'il doit écrire.
 
 Tous les champs de configuration sont validés et les chemins restent relatifs.
@@ -486,7 +486,7 @@ questions, **pas parce qu'elles sont une surface publique.**
 qu'une CI tierce ne la lise, c'est fabriquer une contrainte qu'on devra tenir
 sans savoir pour qui. Les trois peuvent changer de nom, de forme ou disparaître
 le jour où `ucm check` reçoit un adaptateur : ce qui est stable est ce que la
-COMMANDE accepte, ses options, pas ce que l'environnement d'un dépôt contient.
+commande accepte, ses options, pas ce que l'environnement d'un dépôt contient.
 
 `CI` et `GITHUB_STEP_SUMMARY` ne sont pas de ce projet : la première est posée
 par tout runner, la seconde par GitHub Actions, et les deux sont lues telles que
@@ -508,7 +508,7 @@ violation de « le plugin ne modifie jamais le document » ; ce n'en est pas une
 et voici sur quoi la décision s'appuie plutôt que sur une intuition.
 
 - **Aucun contenu de document n'est écrit.** Une sélection et un cadrage sont un
-  état de l'ÉDITEUR, propre à la personne qui regarde. Rien n'entre dans le
+  état de l'éditeur, propre à la personne qui regarde. Rien n'entre dans le
   fichier, donc rien n'est transmis à un collaborateur ni à l'historique de
   versions.
 - **Aucune entrée d'annulation n'est créée.** C'est écrit dans les typings que
@@ -527,7 +527,7 @@ un fichier ouvert le prouve. Tant que cette observation n'est pas faite, la
 décision tient sur la documentation de l'API, ce qui est écrit ici plutôt que
 sous-entendu.
 
-**La frontière que cette décision NE déplace pas.** Créer, renommer, déplacer,
+**La frontière que cette décision ne déplace pas.** Créer, renommer, déplacer,
 supprimer un node, écrire une variable ou un style : tout cela reste interdit,
 et `loiDuDocumentIntact.test.ts` le refuse en lisant la source. La différence
 n'est pas une affaire de degré, c'est celle entre regarder et écrire.

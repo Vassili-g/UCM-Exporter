@@ -132,7 +132,7 @@ test('l’identité rend les cinq champs que le contrat porte', () => {
 
 test('une identité incomplète est rendue incomplète, pas refusée', () => {
   // C'est la comparaison — ou le message — qui décide de ce qui manque, pas la
-  // lecture. Un contrat produit depuis T4.4 n'a PLUS d'URL, et c'est un état
+  // lecture. Depuis que le plugin se distribue par la Community, un contrat n'a plus d'URL, et c'est un état
   // normal du format : le rendre `null` sans rien casser est exactement le
   // comportement dont dépend la page de couverture de la pull request.
   const identite = identiteDeContrat({

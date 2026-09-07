@@ -105,7 +105,7 @@ export function check(arguments_, {
   if (erreurConfiguration) {
     // Pas de rapport écrit ici, et c'est délibéré : formuler un diagnostic de
     // designer dans le CLI remettrait du vocabulaire de rapport dans l'outil,
-    // ce que T5.2 vient d'en sortir. Le filet du workflow (T5.4) publie déjà un
+    // ce que la scission en a sorti. Le filet du workflow publie déjà un
     // message quand le rapport manque — c'est exactement le cas qu'il couvre.
     alerter(erreurConfiguration);
     return 2;

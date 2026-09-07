@@ -60,18 +60,17 @@ autorité, et les autres y renvoient.
 | [../AGENTS.md](../AGENTS.md) | Les invariants, avec leur borne et leur fichier autorité |
 | [../ROADMAP.md](../ROADMAP.md) | L'état du projet et ses limites |
 | [POUR-LES-DESIGNERS.md](./POUR-LES-DESIGNERS.md) | Le geste du designer. Il définit le vocabulaire par renvoi, jamais par une seconde définition |
+| [RECETTE.md](./RECETTE.md) | La marche à suivre de la recette externe, qui se rejoue à chaque publication |
 
-## Travail en cours
+## Ce qui n'est pas décidé
 
-Ces documents datent, racontent et citent leurs tâches. Ils ne font autorité
-sur rien.
+Ces deux notes tiennent des options ouvertes. Elles ne font autorité sur rien,
+et rien du produit ne dépend d'elles.
 
 | Document | Contenu |
 |---|---|
-| [plans/PLAN-INDUSTRIALISATION.md](./plans/PLAN-INDUSTRIALISATION.md) | Rendre les artefacts consommables par n'importe quel repository |
-| [plans/PLAN-NEUTRALISATION-PLAYGROUND.md](./plans/PLAN-NEUTRALISATION-PLAYGROUND.md) | Retirer tout outillage UCM du consommateur de recette |
-| [plans/refonte-ui.md](./plans/refonte-ui.md) | La refonte de l'interface du plugin |
-| [plans/PLAN-CONFORMITE-DEV.md](./plans/PLAN-CONFORMITE-DEV.md) | Recherche sur la vérification générique du rendu |
-| [plans/PLAN-DOCUMENTATION.md](./plans/PLAN-DOCUMENTATION.md) | La mise à jour de cette documentation |
-| [plans/GUIDE-RECETTE-REPO-VIERGE.md](./plans/GUIDE-RECETTE-REPO-VIERGE.md) | La marche à suivre pour rejouer la boucle complète depuis un dépôt vide |
-| [notes/PISTES-EVOLUTION.md](./notes/PISTES-EVOLUTION.md) | Les options ouvertes, non engagées |
+| [notes/PISTES-EVOLUTION.md](./notes/PISTES-EVOLUTION.md) | Le positionnement, les options ouvertes et les risques |
+| [notes/PLAN-CONFORMITE-RENDU.md](./notes/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
+
+Les plans de travail terminés ont été retirés. Leur contenu vit dans Git, dans
+l'historique des commits qui les ont exécutés.

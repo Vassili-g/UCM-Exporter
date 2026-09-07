@@ -1812,7 +1812,7 @@ test("un slot d'icône qui n'existe dans aucune structure reste refusé", () => 
 /**
  * La forme canonique ne ment plus sur la version, et rien ne doit l'y ramener.
  *
- * C'est T2.1b. La normalisation écrivait `"10.3"` dans `meta.contractVersion`,
+ * La normalisation écrivait autrefois `"10.3"` dans `meta.contractVersion`,
  * si bien que l'objet circulait en affirmant être un contrat 10.3 : un élagage
  * conduit « par raisonnement sur les gates » aurait supprimé le chemin qui
  * valide en réalité tout le 11.0 et le 12.0. La grammaire de lecture est

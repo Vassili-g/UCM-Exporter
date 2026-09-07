@@ -10,7 +10,7 @@ import { fileURLToPath } from "node:url";
 const racine = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
- * Les quatre déclencheurs de N7, et les fichiers qui les portent.
+ * Les quatre déclencheurs de la recette externe, et les fichiers qui les portent.
  */
 export const DECLENCHEURS = [
   {
@@ -137,7 +137,7 @@ function principal(arguments_) {
 
   console.log(
     `Depuis ${depuis.slice(0, 7)}, borne de la version publiée précédente, le dépôt a `
-      + "changé dans des chemins que seule la recette N6 parcourt de bout en bout :",
+      + "changé dans des chemins que seule la recette externe parcourt de bout en bout :",
   );
   for (const { nom, fichiers: causes } of touches) {
     console.log(`  • ${nom}`);
@@ -145,19 +145,18 @@ function principal(arguments_) {
   }
 
   if (faite) {
-    console.log("\nRecette N6 déclarée rejouée et consignée. Publication autorisée.");
+    console.log("\nRecette externe déclarée rejouée et consignée. Publication autorisée.");
     return 0;
   }
 
   console.error(
     "\nCes chemins ne sont parcourus de bout en bout par aucun test : ils passent"
-      + "\npar Figma, par GitHub et par une vraie pull request. Rejouer la recette N6 de"
-      + "\ndocs/plans/PLAN-NEUTRALISATION-PLAYGROUND.md, consigner son résultat dans le"
-      + "\njournal de recette, puis relancer la publication en le déclarant.",
+      + "\npar Figma, par GitHub et par une vraie pull request. Rejouer la recette en"
+      + "\nsuivant docs/RECETTE.md, puis relancer la publication en la déclarant.",
   );
   return 1;
 }
 
-if (import.meta.url === `file: //${process.argv[1]}` || process.argv[1]?.endsWith("recette-externe.mjs")) {
+if (process.argv[1]?.endsWith("recette-externe.mjs")) {
   process.exit(principal(process.argv.slice(2)));
 }

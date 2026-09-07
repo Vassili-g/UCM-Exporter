@@ -152,7 +152,7 @@ export function layoutDesReglages(config: GithubConfig): RepositoryLayout {
   return {
     components: config.componentsPath,
     // `null` est une réponse : « ces réglages ne disent pas où ranger les
-    // tokens ». Depuis U5.1, les deux chemins sont un repli facultatif, et un
+    // tokens ». Les deux chemins sont un repli facultatif, et un
     // repli absent ne s'invente pas — il se dit.
     tokens: config.tokensPath ? `${config.tokensPath}/tokens.json` : null,
     source: 'réglages du plugin',
@@ -162,7 +162,7 @@ export function layoutDesReglages(config: GithubConfig): RepositoryLayout {
 /**
  * Où ÉCRIRE, demandé au repository lui-même.
  *
- * **C'est T4.1, et le défaut qu'elle referme était masqué par une
+ * **Le défaut refermé ici était masqué par une
  * coïncidence :** les réglages du plugin rendent `src/components` et
  * `src/tokens`, ce que le repository de démonstration utilise justement. Au
  * premier repo aux conventions différentes, l'export aurait écrit à un endroit
@@ -202,7 +202,7 @@ export async function repositoryLayout(config: GithubConfig): Promise<Repository
 
 /*
  * Personne ne sait où écrire : ni le repository, qui ne se décrit pas, ni les
- * réglages, qui ne portent plus de chemin obligatoire depuis U5.1. Le message
+ * réglages, qui ne portent aucun chemin obligatoire. Le message
  * nomme les deux gestes possibles et leur acteur, parce qu'ils n'appartiennent
  * pas à la même personne.
  */
@@ -377,7 +377,7 @@ export type DiagnosticConnexion = {
 /**
  * Test automatique de connexion demandé à l'ouverture et après sauvegarde.
  *
- * Il rend une CAUSE, pas un booléen (U5.2). L'ancienne version avalait l'erreur
+ * Il rend une CAUSE, pas un booléen. L'ancienne version avalait l'erreur
  * et rendait `false` : le statut HTTP que `GithubApiError` porte déjà se
  * perdait au retour, si bien qu'un jeton refusé, un droit manquant et une URL
  * fautive arrivaient à l'identique devant le designer, dont le geste diffère
@@ -395,7 +395,7 @@ export async function diagnostiquerConnexion(config: GithubConfig): Promise<Diag
 
   /*
    * Le repository répond ; on lui demande maintenant OÙ il range ses fichiers.
-   * Cette lecture n'avait lieu qu'à la publication (U5.1), c'est-à-dire après
+   * Cette lecture n'avait lieu qu'à la publication, c'est-à-dire après
    * le travail : un `ucm.config.json` fautif refusait alors l'export, et le
    * designer l'apprenait une fois son composant analysé.
    */
@@ -452,7 +452,7 @@ async function getRepositoryFile(
 /**
  * Le refus de collision, écrit pour le designer qui vient de cliquer.
  *
- * **Pourquoi un refus et pas un avertissement (D9).** L'identifiant nomme le
+ * **Pourquoi un refus et pas un avertissement.** L'identifiant nomme le
  * dossier ET le fichier de contrat : deux composants Figma qui se projettent
  * sur le même identifiant écrivent au même chemin, et le second export écrase
  * le premier. La CI ne voit ensuite qu'un seul contrat — donc aucun doublon,
@@ -589,7 +589,7 @@ export async function lireAvantEcriture(
     return { layout, path, surLaBase, jumeau: { ou: ouLaBase, url: null }, refus: null };
   }
 
-  // T4.5. Le contrôle ci-dessus ne regarde que la branche de base, et c'est là
+  // Le contrôle ci-dessus ne regarde que la branche de base, et c'est là
   // qu'un artefact déjà exporté n'est PAS encore : il attend dans sa pull
   // request. Réexporter un contenu strictement identique en ouvrait donc une
   // seconde, en tout point pareille — un doublon que rien ne signalait.
@@ -648,7 +648,7 @@ export async function publishArtifact(
   }
   const repository = `${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
   // La lecture est REFAITE ici, même quand le pré-vol vient de la faire : entre
-  // les deux, le dépôt a pu bouger (U3.1 b). Une analyse qui autoriserait une
+  // les deux, le dépôt a pu bouger. Une analyse qui autoriserait une
   // écriture sur la foi d'une lecture périmée serait pire que pas d'analyse.
   const { layout, path, surLaBase, jumeau, refus } = await lireAvantEcriture(config, artifact);
   if (jumeau) {

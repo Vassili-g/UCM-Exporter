@@ -92,7 +92,7 @@ test("init relancé sur un repository installé ne fait rien et le dit", () => {
 });
 
 /**
- * D7 : le pin est exact, sans plage. Ce test regarde la configuration écrite —
+ * Le pin est exact, sans plage. Ce test regarde la configuration écrite,
  * elle ne doit porter AUCUN numéro de version, pas même celui du CLI. La
  * fenêtre de lecture appartient au paquet installé, et un chiffre écrit dans le
  * repo créerait la seconde autorité que `configuration.mjs` refuse.
@@ -111,15 +111,15 @@ test("la configuration écrite ne porte aucun numéro de version", () => {
 });
 
 /**
- * Le workflow que T3.2 attendait, écrit dès que `ucm check` existe (T3.3).
+ * Le workflow, écrit dès que `ucm check` existe.
  *
  * Trois propriétés le rendent utilisable dans un repository quelconque, et
  * chacune répond à une contrainte écrite ailleurs :
  *
- * - le paquet est épinglé EXACTEMENT (D7) — une plage laisserait npm choisir
+ * - le paquet est épinglé EXACTEMENT — une plage laisserait npm choisir
  *   une version que personne n'a essayée, et la CI d'un designer basculerait
  *   sans qu'un fichier du repo ait bougé ;
- * - `npx --yes` reste suffisant sans lockfile (T3.4) ; un repo Node installe
+ * - `npx --yes` reste suffisant sans lockfile ; un repo Node installe
  *   sa stack pour rendre son adaptateur visible ;
  * - le sha de base voyage par l'environnement, jamais par interpolation dans
  *   le shell.
@@ -145,7 +145,7 @@ test("init écrit un workflow portable qui installe seulement une stack déclar�
 });
 
 /**
- * Le filet portable de T5.4 : une pull request refusée sans un mot laisse le
+ * Le filet portable : une pull request refusée sans un mot laisse le
  * designer sans recours. L'autre filet du repository de démonstration — « la
  * construction a échoué » — décrit SA chaîne de construction et n'a aucun sens
  * dans un repo qui ne compile pas de TypeScript.

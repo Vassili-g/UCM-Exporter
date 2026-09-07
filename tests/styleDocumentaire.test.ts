@@ -9,9 +9,11 @@ const racine = path.resolve(__dirname, '..');
 
 const TIRET_CADRATIN = '—';
 
-/** Les plans peuvent raconter un chantier ; la documentation de référence ne le peut pas. */
-const RACONTENT = 'docs/plans/';
-
+/**
+ * Aucun document n'est exempté : les plans de travail, qui l'étaient parce
+ * qu'ils racontaient un chantier, ont été retirés du dépôt. Leur histoire vit
+ * dans Git, qui n'a pas de règle de style.
+ */
 const EMPHASE = [
   'CE', 'EST', 'SON', 'ET', 'TOUTES', 'SANS', 'MÊME', 'UN', 'UNE', 'CONTIENT',
   'CONTIENNENT', 'DEUX', 'TROIS', 'JAMAIS', 'PAS', 'TOUS', 'TOUT', 'SEUL',
@@ -19,6 +21,15 @@ const EMPHASE = [
   'AVANT', 'APRÈS', 'NOM', 'CLÉ', 'FORME', 'LISTE', 'DÉFAUT', 'POURQUOI',
   'LU', 'LIT', 'ÉCRIT', 'PUBLIÉ', 'ABSENT', 'IDENTIQUE', 'DIFFÉRENT',
   'PROPRE', 'RÉELLE', 'RÉELLEMENT', 'NORMATIF', 'MUET',
+  // Ajoutées après un relevé qui a montré que la liste laissait passer une
+  // cinquantaine d'emphases, surtout dans le changelog et la spécification.
+  'COURANTE', 'TEMPORAIRE', 'RUPTURE', 'CONSOMMATEUR', 'LECTURE', 'IDENTITÉ',
+  'MOTEUR', 'DICTIONNAIRE', 'ENVELOPPE', 'PRÉSOMPTION', 'PRÉSOMPTIONS',
+  'RETIRER', 'POINTS', 'OU', 'CELLULE', 'MONTRE', 'ADRESSES', 'IMMÉDIAT',
+  'SES', 'SA', 'ÊTRE', 'NOMBRE', 'ENTRE', 'CÔTÉ', 'DÉRIVE', 'NOMMER',
+  'DÉCIDE', 'TRACÉ', 'RELÈVE', 'REND', 'EXPORT', 'TEXTE', 'LEQUEL', 'GESTES',
+  'FICHIER', 'ÉDITEUR', 'NE', 'CHAÎNE', 'COMMANDE', 'ADAPTATEUR', 'LECTEURS',
+  'SENS', 'OUVRIR', 'OÙ', 'PERDU', 'PIRE', 'RÉEL',
 ];
 
 /** Recense les documents portables sans parcourir les dépendances ni les fixtures. */
@@ -59,9 +70,7 @@ function lignesDeProse(contenu: string): { numero: number; texte: string }[] {
 
 /** Les documents soumis à ces règles, une seule fois pour les deux tests. */
 function documentsSoumis(): { chemin: string; contenu: string }[] {
-  const tous = documents(racine)
-    .map((complet) => ({ chemin: relatif(complet), complet }))
-    .filter(({ chemin }) => !chemin.startsWith(RACONTENT));
+  const tous = documents(racine).map((complet) => ({ chemin: relatif(complet), complet }));
 
   // Zéro document passerait sans rien contrôler : un dossier renommé, et le
   // garde-fou disparaîtrait en silence. C'est la faute qu'il empêche.

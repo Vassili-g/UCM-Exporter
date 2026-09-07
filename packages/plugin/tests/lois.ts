@@ -370,7 +370,7 @@ function composesEstLUnionMaximale(c: Contrat, ou: string): void {
  * pas la couverture d'aujourd'hui, c'est ce qu'un lecteur comprend en la voyant
  * rougir.
  *
- * D'où cette loi, écrite AVANT le canal qui pourrait la violer (U4.3). Elle ne
+ * D'où cette loi, écrite AVANT le canal qui pourrait la violer. Elle ne
  * défend pas une préférence : elle rend mécanique un hors-périmètre qui n'était
  * gardé que par de la prose. Le jour où quelqu'un décidera d'écrire
  * `figma.nodeId` dans le contrat, il devra retirer cette loi — et le retrait

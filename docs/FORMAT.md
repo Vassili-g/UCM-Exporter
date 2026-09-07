@@ -1285,7 +1285,7 @@ avant le scan des marqueurs.
 
 ##### Cadre de dépendance
 
-**Un cadre qui enveloppe une ou plusieurs dépendances.** Le slot peut ÊTRE
+**Un cadre qui enveloppe une ou plusieurs dépendances.** Le slot peut être
 l'instance, ou l'envelopper : une Alert range son bouton dans un calque « Action
 » dont l'auto-layout le centre et remplit la hauteur. Ce cadre appartient à ce
 contrat-ci, pas au Button, et se décrit donc comme n'importe quel conteneur :
@@ -1293,7 +1293,7 @@ son `layout`, son `justifyContent`, son `alignItems`, sa dimension figée, puis
 la dépendance dans `children`. Seul le calque qui est l'instance porte
 `composes`.
 
-Leur NOMBRE ne change pas la règle : un cadre qui range trois liens publie trois
+Leur nombre ne change pas la règle : un cadre qui range trois liens publie trois
 enfants, chacun avec son emplacement et son `composes`. Le contrat ne saurait
 sinon ni où ils vont, ni combien il en faut.
 
@@ -1303,7 +1303,7 @@ publie déjà son propre `structure.sizing`, où une taille explicite neutralise
 l'étirement. Le cadre disparaîtrait avec son alignement. Un cadre sans
 auto-layout linéaire avertit au lieu de laisser deviner sa disposition.
 
-`gap` décrit l'espace ENTRE des enfants : le cadre le publie dès qu'il en range
+`gap` décrit l'espace **entre** des enfants : le cadre le publie dès qu'il en range
 plusieurs. Un cadre à un seul enfant n'espace rien, et réclamer une variable
 pour lui enverrait le designer relier une valeur qui ne se voit pas.
 
@@ -1320,7 +1320,7 @@ alors aucune, et chaque branche publie la sienne.
   ] }
 ```
 
-Ce que le cadre range À CÔTÉ de ses dépendances lui appartient tout autant : un
+Ce que le cadre range à côté de ses dépendances lui appartient tout autant : un
 tag, un texte, un dessin y sont des calques de ce contrat-ci, décrits par la
 règle commune, avec leur slot, leur typographie et leur visibilité. Ne publier
 que les branches de dépendance les ferait disparaître alors que leurs couleurs
@@ -1334,7 +1334,7 @@ des vues suivent cette même réponse, sinon ils viseraient des slots que
 `structure.children` ne contient pas.
 
 Le relevé couvre toute la matrice. Chaque
-`variantViews[variants[].view].composes` se DÉRIVE de son arbre exact et en
+`variantViews[variants[].view].composes` se dérive de son arbre exact et en
 garde l'ordre et la cardinalité. Le champ global `composes` en est l'union
 ordonnée à cardinalité maximale : une dépendance conditionnelle n'est jamais
 perdue parce qu'elle manque au variant de référence. Ces champs se dérivent du

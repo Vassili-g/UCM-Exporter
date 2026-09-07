@@ -20,10 +20,10 @@ test("la version du repository est compatible avec elle-même", () => {
   assert.equal(verdictDeVersion(VERSION_CONTRAT_MAXIMALE), "ok");
 });
 
-test("la fenêtre porte la version courante ET la précédente (D8)", () => {
-  // T7.6 tranche l'écart que T7.5 avait mesuré : avec une seule version, il
-  // n'existe aucun recouvrement, et le dépôt d'un consommateur passe au rouge à
-  // l'instant où le kit monte. La fenêtre est le temps du réexport.
+test("la fenêtre porte la version courante et la précédente", () => {
+  // Avec une seule version, il n'existe aucun recouvrement, et le dépôt d'un
+  // consommateur passe au rouge à l'instant où le kit monte. La fenêtre est le
+  // temps du réexport.
   //
   // Elle reste un choix explicite : la borne basse décrit la version
   // PRÉCÉDENTE réelle, et se referme d'un cran à chaque montée. La laisser

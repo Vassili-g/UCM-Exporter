@@ -37,7 +37,7 @@ doit ni charger le contrat ni l'interpréter à l'exécution.
 Un contrat ne recopie rien. Tout le reste du skill en découle.
 
 **Loi 1, Une vue est un jeu de RENVOIS.**
-`variantViews[variant.view].structure` est une CHAÎNE : la clé d'une entrée de
+`variantViews[variant.view].structure` est une **chaîne** : la clé d'une entrée de
 `viewStructures`, jamais l'arbre lui-même. Idem `typography` →
 `viewTypographies`, `composes` → `viewComposes`, `icons` → `viewIcons`,
 `paintPlacements` → `viewPaintPlacements`. `structure.view` renvoie au même
@@ -48,7 +48,7 @@ fournit (§6), jamais à la main.
 Une clé absente ne veut pas dire « inconnu » : elle veut dire « rien à
 publier ». `strokes` absent = aucun contour lié ; `padding` absent = aucun
 padding tokenisé ; `props` absent = aucune prop. Seule exception : sous un
-DICTIONNAIRE, la clé est une donnée, `stateModel.states.default` vaut `{}` et
+**dictionnaire**, la clé est une donnée, `stateModel.states.default` vaut `{}` et
 existe bel et bien.
 
 **Loi 3, Ce qui se dérive n'est pas publié.**

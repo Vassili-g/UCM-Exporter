@@ -24,7 +24,7 @@ test('le manifest ne déclare aucun droit réservé à un plugin privé', () => 
       'enablePrivatePluginApi' in manifest,
       false,
       `${relatif} déclare enablePrivatePluginApi. Ce drapeau est réservé aux plugins privés `
-        + `d'une organisation : Figma refuserait la soumission à la Community, décidée en T4.4. `
+        + `d'une organisation : Figma refuserait la soumission à la Community. `
         + `Il ouvre figma.fileKey, donc meta.figma.url — la traçabilité passe désormais par `
         + `fileName et nodeId, annoncés dans le corps de la pull request.`,
     );

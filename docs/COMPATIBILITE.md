@@ -112,7 +112,7 @@ La classe 6 couvre le cas où le format ne bouge pas, où aucun contrat déjà
 fusionné ne change de sens, et où le verdict rendu à un consommateur change
 malgré tout. Elle se traite en semver de paquet.
 
-`@ucm-kit/core@0.1.13` en donne un exemple. Un repository sans aucun contrat
+`@ucm-kit/core@0.1.14` en donne un exemple. Un repository sans aucun contrat
 recevait un refus, `tokens.json est introuvable` ; il reçoit un rapport vert qui
 nomme le geste suivant. La mise à jour fait donc passer une CI du rouge au vert
 sur un dépôt où rien n'était anormal.

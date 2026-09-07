@@ -1,6 +1,6 @@
 
 /*
- * Le socle graphique de l'interface (U1.4 à U1.9 de refonte-ui.md).
+ * Le socle graphique de l'interface du plugin.
  *
  * Trois choses vivent ici et nulle part ailleurs : l'échelle de texte, la trame
  * d'espacement, et le rôle de chaque couleur. Une valeur écrite en dur dans une
@@ -17,7 +17,7 @@
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 
   /*
-   * U1.4 — trois crans, et pas un de plus. 11 px est la base de l'interface de
+   * Trois crans de texte, et pas un de plus. 11 px est la base de l'interface de
    * Figma ; le plugin était à 12 px et paraissait plus gros que son hôte, tout
    * en redescendant localement à 11 px à deux endroits. Les interlignes sont
    * des multiples de 4, comme la trame.
@@ -31,7 +31,7 @@
   --titre-interligne: 20px;
 
   /*
-   * U1.5 — une variable par RÔLE d'espacement, jamais une valeur par endroit.
+   * Une variable par rôle d'espacement, jamais une valeur par endroit.
    * Quatre rôles, quatre valeurs, toutes prises dans la trame de 4.
    */
   --espace-page: 16px;
@@ -39,14 +39,14 @@
   --espace-controle: 8px;
   --espace-serre: 4px;
 
-  /* U1.6 — deux hauteurs de contrôle. Une action se clique, un outil s'atteint. */
+  /* Deux hauteurs de contrôle. Une action se clique, un outil s'atteint. */
   --hauteur-action: 32px;
   --hauteur-secondaire: 24px;
 
   --rayon: 6px;
 
   /*
-   * U1.8 — un seul endroit par rôle de couleur, et le repli avec lui.
+   * Un seul endroit par rôle de couleur, et le repli avec lui.
    *
    * Les replis étaient écrits pour le thème clair et répétés à chaque règle :
    * `#fff`, `#f5f5f5`, `#fff1d6`. Si l'hôte ne servait pas la variable Figma
@@ -161,7 +161,7 @@ p {
 }
 
 /*
- * U1.2 — le titre du produit se lit AVANT l'état de connexion, et l'outil de
+ * Le titre du produit se lit avant l'état de connexion, et l'outil de
  * navigation garde un seul emplacement quelle que soit la page. La pastille
  * était empilée au-dessus du titre : l'état se lisait donc en premier, alors
  * qu'il n'est que le rang 3.
@@ -192,7 +192,7 @@ p {
 }
 
 /*
- * La pastille est un bouton (U5.2). Sa surface se limite à son texte : un
+ * La pastille est un bouton. Sa surface se limite à son texte : un
  * bouton large d'une fenêtre entière se cliquerait par accident, et rien ne
  * dirait où il commence.
  */
@@ -225,7 +225,7 @@ p {
   color: var(--texte-second);
 }
 
-/* U1.6 — l'outil de navigation est un contrôle secondaire : 24 px, une seule fois. */
+/* L'outil de navigation est un contrôle secondaire : 24 px, une seule fois. */
 .icon-button,
 .header-back-button {
   display: inline-flex;
@@ -313,7 +313,7 @@ p {
   justify-content: center;
   gap: var(--espace-controle);
 
-  /* Le libellé dit l'action entière depuis U0.4 : dans 380 px il peut passer
+  /* Le libellé dit l'action entière : dans 380 px il peut passer
      sur deux lignes, et le bouton grandit au lieu de rogner son texte. */
   padding: var(--espace-serre) var(--espace-bloc);
   border: 1px solid transparent;
@@ -345,7 +345,7 @@ p {
 /*
  * Un bouton désactivé faute de sélection n'attend rien : il refuse. Le curseur
  * d'attente ne vaut que pendant un export, et `aria-busy` dit lequel des deux
- * cas on est (U2.3).
+ * cas on est.
  */
 .btn:disabled {
   cursor: not-allowed;
@@ -357,7 +357,7 @@ p {
 }
 
 /*
- * U1.9 — un état de focus PARTOUT. Seul `.btn` en avait un : au clavier, la
+ * Un état de focus partout. Seul `.btn` en avait un : au clavier, la
  * navigation disparaissait dès qu'elle quittait les deux boutons d'action.
  */
 .btn:focus-visible,
@@ -422,7 +422,7 @@ p {
 }
 
 /*
- * La note prend la hauteur de son contenu (U1.2). Elle réservait 54 px et
+ * La note prend la hauteur de son contenu. Elle réservait 54 px et
  * centrait son texte : un message d'une ligne flottait donc dans un vide
  * permanent pour éviter un saut occasionnel. La stabilité doit venir de la
  * place du bloc, jamais d'une hauteur réservée à vide.
@@ -457,7 +457,7 @@ p {
 }
 
 /*
- * Le pied de page porte la version de schéma (U0.1). Il est discret par
+ * Le pied de page porte la version de schéma. Il est discret par
  * construction : c'est une information de garde-fou, consultée quand un export
  * « sans changement » fait douter du bundle servi par Figma, pas une ligne à
  * lire à chaque ouverture.
@@ -469,7 +469,7 @@ p {
 }
 
 /*
- * La poignée de redimensionnement (U1.10). Elle est posée dans le coin, hors du
+ * La poignée de redimensionnement. Elle est posée dans le coin, hors du
  * flux : sa place ne dépend d'aucun contenu, et la marge de la page la sépare
  * déjà du pied de page.
  */
@@ -494,7 +494,7 @@ p {
 }
 
 /*
- * Le compte rendu (U4.1, U4.2). Trois groupes, et une trace repliée.
+ * Le compte rendu. Trois groupes, et une trace repliée.
  *
  * Un avertissement est un BLOC de hauteur libre, avec un filet de sévérité : la
  * ligne monospace tronquée d'un journal ne se lisait pas sans défiler, et la
@@ -544,7 +544,7 @@ p {
 }
 
 /*
- * La carte d'un point à corriger (U4.8).
+ * La carte d'un point à corriger.
  *
  * Elle porte quatre choses dans l'ordre où on les lit : la pastille, le titre,
  * la conséquence, le geste. La grille les espace d'un cran serré — ce sont les

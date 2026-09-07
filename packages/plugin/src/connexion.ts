@@ -24,8 +24,8 @@ export type CauseConnexion =
   /**
    * Le repository répond, mais son `ucm.config.json` est illisible et
    * `repositoryLayout` refuse alors l'export. Le lire au test de connexion
-   * transforme un blocage découvert APRÈS le travail en information immédiate
-   * (U5.1) : c'est tout l'objet de cette cause.
+   * transforme un blocage découvert après le travail en information immédiate :
+   * c'est tout l'objet de cette cause.
    */
   | 'depot-mal-decrit'
   | 'github-indisponible'
@@ -124,7 +124,7 @@ export function etatDeConnexion(
   }
 }
 /**
- * Pourquoi une PUBLICATION a échoué, et le geste (U5.3).
+ * Pourquoi une PUBLICATION a échoué, et le geste.
  *
  * Même perte que pour la connexion, à l'autre bout : un échec devenait « Échec
  * GitHub » suivi du message brut, quel que soit le statut. Un 403 de droits
@@ -162,13 +162,13 @@ export type EtatDuDepot = {
   gouverne: 'repository' | 'reglages' | null;
   /** La phrase de la configuration : qui gouverne les chemins. */
   resume: string | null;
-  /** Le repository et sa branche, sur l'écran de travail (U2.2). */
+  /** Le repository et sa branche, sur l'écran de travail. */
   ligne: string | null;
   /** Où les deux artefacts atterrissent, quand c'est connu. */
   chemins: string | null;
   /**
    * `true` quand aucun repository n'est connecté : l'export sera téléchargé sur
-   * le poste. C'est un comportement correct, mais il était SUBI (U2.5) —
+   * le poste. C'est un comportement correct, mais il était SUBI —
    * découvert à l'arrivée, après le travail, alors que le bouton avait promis
    * une pull request.
    */
@@ -176,7 +176,7 @@ export type EtatDuDepot = {
 };
 
 /**
- * La phrase que la configuration affiche au-dessus des deux chemins (U5.1).
+ * La phrase que la configuration affiche au-dessus des deux chemins.
  *
  * Elle répond à la question que le designer se posait APRÈS coup, en lisant une
  * ligne de journal : qui a décidé de l'endroit ? Le troisième cas est le plus
@@ -184,7 +184,7 @@ export type EtatDuDepot = {
  */
 export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null = null): EtatDuDepot {
   /*
-   * Sans repository, la ligne dit ce qui VA se passer (U2.5). Le repli en
+   * Sans repository, la ligne dit ce qui VA se passer. Le repli en
    * téléchargement local est un comportement correct, mais il était subi :
    * découvert à l'arrivée, alors que le bouton avait promis une pull request.
    * L'annoncer avant le clic en fait un mode choisi.

@@ -64,8 +64,8 @@ ouvrir.
 Deux commandes, et aucun script à écrire.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.9 init                       # écrit les cinq fichiers manquants
-npx --yes @ucm-kit/cli@0.1.9 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.10 init                       # écrit les cinq fichiers manquants
+npx --yes @ucm-kit/cli@0.1.10 check --report ci-report.md
 ```
 
 `--yes` évite l'invite de confirmation de `npx`, qui bloquerait une exécution
@@ -199,7 +199,7 @@ npm install @ucm-kit/core
 | `@ucm-kit/core/schema` | JSON Schema, pour les éditeurs et les consommateurs qui ne lisent pas TypeScript |
 
 Un projet TypeScript peut installer
-`@ucm-kit/adapter-typescript@0.1.2` pour ajouter la comparaison statique des
+`@ucm-kit/adapter-typescript@0.1.3` pour ajouter la comparaison statique des
 props et de la composition, ainsi que la génération des types dérivés des
 contrats.
 
@@ -255,10 +255,11 @@ paquets `@ucm-kit/*`, et un repository quelconque s'y branche par `ucm init`
 sans écrire une ligne de script ni être un projet Node.
 
 [UCM Playground](https://github.com/Vassili-g/UCM-Playground) est le
-consommateur de recette : une application React banale, les contrats exportés,
-`tokens.json`, et les composants reconstruits depuis ces seuls contrats. Il n'y
-a rien à y copier, et c'est cette absence qui le rend probant : son outillage
-UCM se limite aux cinq fichiers qu'`ucm init` écrit.
+consommateur de recette : une application React banale, qui ne porte aucun
+outillage UCM local. Il n'y a rien à y copier, et c'est cette absence qui le
+rend probant : son empreinte du produit se limite aux cinq fichiers qu'`ucm
+init` écrit. La boucle complète s'y rejoue depuis un dépôt vide, en suivant
+[docs/RECETTE.md](./docs/RECETTE.md).
 
 La maturité, les limites connues et les prochaines validations vivent dans
 [ROADMAP.md](./ROADMAP.md).

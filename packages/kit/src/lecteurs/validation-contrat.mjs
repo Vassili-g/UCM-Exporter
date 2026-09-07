@@ -1433,7 +1433,7 @@ const ROTATION = /^-?\d+(?:\.\d+)?deg$/;
  * toujours muet.
  *
  * *La raison n'a pas changé, sa formulation si.* Elle disait que la
- * matérialisation « réécrit `meta.contractVersion` » — vrai jusqu'à T2.1b,
+ * matérialisation « réécrit `meta.contractVersion` », vrai autrefois,
  * faux depuis : la substitution ne quitte plus la portée de
  * `champsInvalidesDuContrat`, et le contrat garde sa version réelle. La
  * contrainte sur ce contrôle, elle, tient toujours.

@@ -1,5 +1,5 @@
 /**
- * La loi de couverture de U4.3, et pourquoi elle se lit dans la SOURCE.
+ * La loi de couverture des localisations, et pourquoi elle se lit dans la source.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -74,16 +74,16 @@ test('l’autorité produit bien la forme que les messages emploient', () => {
  *
  * Sans elle, la première se satisfait d'un déplacement : il suffit de sortir le
  * nom du calque du préfixe et de l'écrire dans le corps du message pour que le
- * contrôle de source ne voie plus rien — et U4.4 réafficherait un message qui
- * parle d'un calque sans savoir lequel. C'est le mécanisme exact que cette
- * tâche existe pour empêcher : une interface où l'absence de lien enseigne
+ * contrôle de source ne voie plus rien, et l'interface réafficherait un message
+ * qui parle d'un calque sans savoir lequel. C'est le mécanisme exact que cette
+ * loi existe pour empêcher : une interface où l'absence de lien enseigne
  * « rien à localiser » alors qu'elle signifie « ce site-là n'a pas été
  * converti ».
  *
  * *Ce que la loi n'interdit PAS, et il faut le lire avant de la croire plus
  * stricte qu'elle n'est.* Un message a le droit de nommer un SECOND calque dans
  * son corps — « … mais le layer « Y » lui donne déjà ce rôle » est un contexte
- * utile, et U4.4 n'a besoin que d'une cible : celle du sujet. Ce que la loi
+ * utile, et l'interface n'a besoin que d'une cible : celle du sujet. Ce que la loi
  * exige est qu'un message qui parle d'un calque en ait UNE.
  *
  * *Son univers est les calques du COMPOSANT exporté*, pas tous les nodes du
@@ -125,7 +125,7 @@ export function verifierLaLocalisationDesDiagnostics(
     fautifs,
     [],
     `${ou} : ${fautifs.length} diagnostic(s) nomment un calque du composant sans `
-      + `porter de node. Un tel message est celui qu'U4.4 réafficherait sans lien, `
+      + `porter de node. Un tel message est celui que l'interface réafficherait sans lien, `
       + `enseignant que l'absence de lien signifie « rien à localiser ». Passez son `
       + `sujet par \`pousserLocalise\`, ou déclarez la raison avec \`sujetSansNode\` `
       + `si aucun node unique n'existe :\n`

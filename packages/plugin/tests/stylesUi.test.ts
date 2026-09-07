@@ -22,7 +22,7 @@ import test from 'node:test';
 const racine = path.resolve(__dirname, '..');
 const dossierUi = path.join(racine, 'src/ui');
 
-/** `figma-dark` est posée par l'hôte sur `html`, jamais par ce code (U1.8). */
+/** `figma-dark` est posée par l'hôte sur `html`, jamais par ce code. */
 const POSEES_PAR_FIGMA = new Set(['figma-dark']);
 
 function sourcesUi(): string {
@@ -117,7 +117,7 @@ test('toute classe stylisée est posée quelque part par l’interface', () => {
 
 test('la feuille n’écrit aucune couleur en dur hors de ses rôles', () => {
   // Les replis vivent dans le bloc de rôles, en tête de fichier, et NULLE PART
-  // ailleurs (U1.8) : une couleur écrite dans une règle est un repli que
+  // ailleurs : une couleur écrite dans une règle est un repli que
   // personne ne relira au moment de vérifier les deux thèmes.
   const apresLesRoles = feuille.slice(feuille.indexOf('* {'));
   const couleurs = [...apresLesRoles.matchAll(/#[0-9a-f]{3,8}\b/gi)].map((trouve) => trouve[0]);

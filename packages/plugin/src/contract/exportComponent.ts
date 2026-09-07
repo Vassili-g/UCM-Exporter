@@ -179,7 +179,7 @@ export function componentContractFilename(name: string): string {
 /**
  * Point d'entrée de la commande : crée le contrat du composant sélectionné.
  *
- * `annoncer` NOMME les étapes traversées, il n'en décide aucune (U2.6). Cet
+ * `annoncer` NOMME les étapes traversées, il n'en décide aucune. Cet
  * export charge toutes les pages puis résout trois fois le même maître par
  * dépendance : un coût réel, non mesuré, pendant lequel un « Analyse du
  * composant… » figé se lit comme un plantage. Les étapes portent le nom de ce
@@ -444,7 +444,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   const compacted = compactVariants(extracted.variants, propertyBindings);
 
   // **Le lien Figma absent ne se signale plus, et son retrait est la moitié la
-  // plus importante de T4.4.** Le message était écrit quand le cas était
+  // plus importante du passage à la Community.** Le message était écrit quand le cas était
   // l'exception : le manifest portait `enablePrivatePluginApi`, l'URL était la
   // norme, et le dire une fois de temps en temps ne coûtait rien. La
   // distribution par la Community inverse exactement cela — la clé du fichier
@@ -472,7 +472,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   const hasPortableLoss = portableWarningSet.size > 0;
   // Deux codes, et une seule question qu'ils tranchent : la projection portable
   // a-t-elle perdu quelque chose ? Les deux demandent un geste — c'est la
-  // condition d'entrée dans ce canal depuis U4.7 —, mais seul le premier
+  // condition d'entrée dans ce canal —, mais seul le premier
   // dégrade `meta.coverage.portable`, et le rapport de CI ne remonte que
   // celui-là.
   const diagnostics = allWarnings.map((message) => ({
