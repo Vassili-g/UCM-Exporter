@@ -38,8 +38,17 @@ plugin vient de la Community, le CLI vient du registre npm, et les deux peuvent
 être en retard sur ce dépôt. C'est voulu : ce qu'un utilisateur reçoit est la
 seule chose que cette recette puisse prouver, et une version que personne ne sert
 encore ne prouve rien. Les commandes ci-dessous épinglent donc la version
-publiée du CLI, et la publication des versions préparées vient à la fin, une fois
-que tout est vert.
+publiée, et l'étape 8 publie ce que le dépôt porte de plus récent, une fois que
+tout est vert.
+
+Vérifiez ce que le registre sert avant de commencer, plutôt que de croire les
+numéros écrits ici :
+
+```sh
+npm view @ucm-kit/core version
+npm view @ucm-kit/cli version
+npm view @ucm-kit/adapter-typescript version
+```
 
 ---
 
@@ -82,7 +91,7 @@ de commande et l'écran sans sélection.
 Dans un second terminal, à la racine d'`UCM-Playground` :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.7 init
+npx --yes @ucm-kit/cli@0.1.10 init
 ```
 
 Attendu, à peu de choses près :
@@ -94,7 +103,7 @@ Attendu, à peu de choses près :
 ✓ .github/workflows/ucm.yml
 · .gitignore existait déjà, laissé tel quel
 
-Installé avec @ucm-kit/cli 0.1.7.
+Installé avec @ucm-kit/cli 0.1.10.
 Placez vos contrats sous `components/`, vos tokens dans `tokens.json`,
 puis lancez `ucm check`.
 
@@ -117,32 +126,28 @@ ci-report.md
 Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.7 check
+npx --yes @ucm-kit/cli@0.1.10 check
 ```
 
-Attendu **en 0.1.7**, mesuré le 6 septembre 2026 :
-
-```text
-✗ <chemin du dépôt>/tokens.json introuvable. Régénérez les tokens du repository.
-```
-
-Le code de sortie est 1. **Un dépôt fraîchement installé est donc rouge tant
-qu'aucun export n'a eu lieu**, et la CI le sera aussi au premier push. Votre
-installation n'est pas en cause : la version publiée à l'étape 8 corrige ce
-défaut.
-
-**Ce que la version du dépôt rend, et que vous vérifierez à l'étape 9.**
-L'absence d'export est un état d'avancement, au même titre que l'absence
-d'implémentation. À partir de `@ucm-kit/core@0.1.14`, un dépôt sans aucun
-contrat sort en 0 et rend un rapport vert qui nomme le geste suivant :
+Attendu :
 
 ```text
 ✓ Aucun contrat dans components : ce repository n'a pas encore reçu d'export. Rien à contrôler.
 ```
 
+Le code de sortie est 0. **L'absence d'export est un état d'avancement**, au même
+titre que l'absence d'implémentation : un dépôt qui vient d'être installé n'a
+rien à contrôler, et sa CI est verte dès le premier push.
+
 Le discriminant est le nombre de contrats. Dès qu'un contrat existe, un
-`tokens.json` absent bloque de nouveau la fusion, puisque ce contrat cite des
-tokens que plus personne ne peut résoudre.
+`tokens.json` absent bloque la fusion, puisque ce contrat cite des tokens que
+plus personne ne peut résoudre. Un `tokens.json` illisible bloque à tout stade.
+
+**Si vous lisez ici `✗ tokens.json introuvable` et un code de sortie 1**, le
+registre vous a servi une version antérieure à `@ucm-kit/core@0.1.14`. Vérifiez
+le numéro installé avant de conclure à une régression : ce refus était le
+comportement jusqu'à cette version, et il rendait rouge la CI qu'`ucm init`
+venait d'écrire.
 
 Enfin, commitez et poussez :
 
@@ -183,13 +188,10 @@ Attendu :
 **Lisez ce commentaire.** C'est le troisième critère du test : un rapport
 lisible par un designer, sans ouvrir un seul journal de CI.
 
-**Ce commentaire sera rouge, pour le même défaut qu'à l'étape 3, un cran plus
-loin.** En 0.1.7, un dépôt qui a reçu ses tokens mais pas encore son premier
-composant n'a pas de dossier `components`, et le contrôle refuse la fusion en
-disant `components est introuvable`. Jugez le troisième critère sur la forme du
-rapport plutôt que sur sa couleur : titre, cause, geste attendu, état de la
-fusion. À partir de `@ucm-kit/core@0.1.14`, ce cas rend le rapport vert de
-démarrage montré à l'étape 3, que l'étape 9 vérifie.
+Attendu : le rapport est vert, et il porte le même état de démarrage qu'à
+l'étape 3. Un dépôt qui a reçu ses tokens mais pas encore son premier composant
+n'a toujours aucun contrat à contrôler. Jugez le troisième critère sur la forme
+du rapport, pas sur sa couleur : titre, cause, geste attendu, état de la fusion.
 
 Fusionnez la pull request.
 
@@ -264,7 +266,8 @@ Pour lui donner à lire :
 npm install --save-dev @ucm-kit/adapter-typescript@0.1.0
 ```
 
-Attention à la version : `0.1.3`, que porte le dépôt, n'est pas encore publiée.
+Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
+version`, et non celle du dépôt : c'est l'étape 8 qui publie la seconde.
 Poussez, et regardez le rapport changer.
 
 ---
@@ -276,12 +279,12 @@ par une, en relisant ce que vous avez observé.
 
 | Critère | Où vous l'avez vu |
 |---|---|
-| 1. Une commande d'initialisation, moins de quinze minutes, zéro ligne à la main | Étape 4 |
-| 2. Un export depuis Figma ouvre une pull request | Étapes 5 et 6 |
-| 3. La CI publie un rapport lisible par un designer | Étape 5 |
+| 1. Une commande d'initialisation, moins de quinze minutes, zéro ligne à la main | Étape 3 |
+| 2. Un export depuis Figma ouvre une pull request | Étapes 4 et 5 |
+| 3. La CI publie un rapport lisible par un designer | Étape 4 |
 | 4. Un contrat d'une version non lue est refusé, avec un message qui dit qui corrige | à provoquer, voir ci-dessous |
 | 5. Une référence de token disparue avertit sans bloquer | à provoquer, voir ci-dessous |
-| 6. L'absence d'implémentation est un état d'avancement, pas une erreur | Étape 6 |
+| 6. L'absence d'implémentation est un état d'avancement, pas une erreur | Étape 5 |
 | 7. Un contrat réellement cassé bloque | à provoquer, voir ci-dessous |
 
 Les critères 4, 5 et 7 demandent de casser volontairement quelque chose. Faites
@@ -317,60 +320,68 @@ git branch -D recette/echecs-attendus
 
 ## Étape 8 : publier les paquets
 
-Cette étape ne se fait que si les huit précédentes sont vertes.
+Cette étape ne se fait que si les sept précédentes sont vertes, et seulement
+pour les paquets dont le dépôt porte un numéro que le registre ne sert pas
+encore. Comparez avant de lancer quoi que ce soit :
 
-Le dépôt porte trois versions prêtes et non publiées : `@ucm-kit/core@0.1.14`,
-`@ucm-kit/cli@0.1.10` et `@ucm-kit/adapter-typescript@0.1.3`. La publication
-passe par un workflow GitHub, jamais par un jeton posé sur votre poste.
+```sh
+npm view @ucm-kit/core version
+npm view @ucm-kit/cli version
+npm view @ucm-kit/adapter-typescript version
+```
 
-Pour chacun des trois, **dans cet ordre** :
+La publication passe par un workflow GitHub, jamais par un jeton posé sur votre
+poste. Pour chaque paquet à publier :
 
 1. ouvrez l'onglet **Actions** d'`UCM-Exporter`, workflow **publish** ;
 2. cliquez **Run workflow** ;
-3. choisissez le paquet : d'abord `@ucm-kit/core`, puis `@ucm-kit/cli`, puis
-   `@ucm-kit/adapter-typescript` ;
+3. choisissez le paquet ;
 4. au second champ, choisissez **recette externe rejouée et consignée**. C'est
    exactement ce que vous venez de faire aux étapes 4 à 6 ;
 5. lancez, et attendez la fin. Le workflow rejoue les tests, publie, puis
    réinstalle le paquet depuis un dossier vide pour vérifier que le registre le
    sert vraiment.
 
-L'ordre compte : `@ucm-kit/cli` épingle exactement `@ucm-kit/core@0.1.14`. Si le
-noyau n'est pas publié en premier, `npx @ucm-kit/cli` installerait une
-dépendance absente du registre. `@ucm-kit/adapter-typescript` épingle le même
-noyau, pour la même raison.
+**L'ordre compte : le noyau d'abord.** `@ucm-kit/cli` et
+`@ucm-kit/adapter-typescript` épinglent exactement une version de
+`@ucm-kit/core`. Publiés avant lui, ils installeraient une dépendance absente du
+registre.
 
 Une version publiée ne se reprend pas. Relancer le workflow sans monter un
 numéro rend une erreur 409, et c'est le comportement voulu.
 
+**Si la publication échoue en `ENEEDAUTH`**, la cause n'est pas dans ce dépôt :
+c'est l'entrée d'éditeur de confiance du paquet, chez npm, qui manque ou qui est
+périmée. npm ne la valide pas au moment où on l'écrit, donc aucun message ne peut
+la désigner. La supprimer et la recréer sur la page du paquet, en visant
+`Vassili-g/UCM-Exporter` et le workflow `publish.yml`, a déjà suffi une fois.
+
 ---
 
-## Étape 9 : repointer le Playground sur la version publiée
+## Étape 9 : vérifier ce que le registre sert vraiment
 
-Une fois les trois paquets en ligne, dans `UCM-Playground` :
-
-1. dans `.github/workflows/ucm.yml`, remplacez les deux `@ucm-kit/cli@0.1.7`
-   par `@ucm-kit/cli@0.1.10` ;
-2. dans `package.json`, passez `@ucm-kit/adapter-typescript` de `0.1.0` à
-   `0.1.3`, puis relancez `npm install` ;
-3. ouvrez une dernière pull request et vérifiez que le rapport est toujours
-   vert.
-
-C'est ce dernier passage qui prouve que ce qui a été publié fonctionne chez un
-consommateur, et pas seulement dans le monorepo qui l'a produit.
-
-**Une dernière vérification, qui ferme les deux refus des étapes 3 et 4.**
-Dans un dossier temporaire, hors de tout dépôt :
+Le workflow le fait déjà après chaque publication, et le refaire à la main coûte
+une minute. Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
 npx --yes @ucm-kit/cli@0.1.10 init
 npx --yes @ucm-kit/cli@0.1.10 check
 ```
 
-Attendu : la seconde commande sort en 0 et dit que ce repository n'a pas encore
-reçu d'export. Si elle rend encore `✗ tokens.json introuvable`, c'est que le
-registre sert une version antérieure : vérifiez le numéro installé avant de
-conclure à une régression.
+Attendu : `init` écrit ses cinq fichiers, et `check` sort en 0 en disant que ce
+repository n'a pas encore reçu d'export.
+
+Puis, dans `UCM-Playground`, alignez ce que le consommateur installe sur ce qui
+vient d'être publié :
+
+1. dans `.github/workflows/ucm.yml`, le pin de `@ucm-kit/cli` ;
+2. dans `package.json`, celui de `@ucm-kit/adapter-typescript`, puis relancez
+   `npm install` ;
+3. ouvrez une dernière pull request et vérifiez que le rapport est toujours
+   vert.
+
+C'est ce dernier passage qui prouve que ce qui a été publié fonctionne chez un
+consommateur, et pas seulement dans le monorepo qui l'a produit.
 
 ---
 
