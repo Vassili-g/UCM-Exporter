@@ -1,0 +1,287 @@
+{
+  "markdown": {
+    "fichiers": 23,
+    "caracteres": 358480,
+    "titre": 9492,
+    "tableau": 33327,
+    "code": 24144,
+    "prose": 287066,
+    "vide": 1321
+  },
+  "sources": {
+    "fichiers": 207,
+    "caracteres": 1771740,
+    "commentaires": 513515,
+    "blocs": 2365
+  },
+  "distribution": [
+    {
+      "borne": 1200,
+      "blocs": 18,
+      "caracteres": 28091
+    },
+    {
+      "borne": 600,
+      "blocs": 110,
+      "caracteres": 87164
+    },
+    {
+      "borne": 300,
+      "blocs": 405,
+      "caracteres": 163011
+    },
+    {
+      "borne": 150,
+      "blocs": 589,
+      "caracteres": 128065
+    },
+    {
+      "borne": 0,
+      "blocs": 1243,
+      "caracteres": 107184
+    }
+  ],
+  "proseTotale": 843400,
+  "parFichier": [
+    {
+      "chemin": "packages/kit/src/format/types.ts",
+      "caracteres": 52254,
+      "commentaires": 41299,
+      "blocs": 211
+    },
+    {
+      "chemin": "packages/kit/src/lecteurs/validation-contrat.mjs",
+      "caracteres": 70147,
+      "commentaires": 19356,
+      "blocs": 78
+    },
+    {
+      "chemin": "packages/plugin/src/contract/nodeBindings.ts",
+      "caracteres": 35891,
+      "commentaires": 15765,
+      "blocs": 58
+    },
+    {
+      "chemin": "packages/plugin/src/contract/extractSamples.ts",
+      "caracteres": 26887,
+      "commentaires": 12855,
+      "blocs": 34
+    },
+    {
+      "chemin": "packages/plugin/src/contract/extractLayout.ts",
+      "caracteres": 30611,
+      "commentaires": 11572,
+      "blocs": 48
+    },
+    {
+      "chemin": "packages/plugin/tests/exportComponent.test.ts",
+      "caracteres": 46353,
+      "commentaires": 11288,
+      "blocs": 62
+    },
+    {
+      "chemin": "packages/plugin/src/contract/flexLayout.ts",
+      "caracteres": 25467,
+      "commentaires": 11189,
+      "blocs": 31
+    },
+    {
+      "chemin": "packages/kit/src/lecteurs/controle-repository.mjs",
+      "caracteres": 31295,
+      "commentaires": 10852,
+      "blocs": 41
+    },
+    {
+      "chemin": "packages/plugin/src/github.ts",
+      "caracteres": 27662,
+      "commentaires": 10201,
+      "blocs": 47
+    },
+    {
+      "chemin": "packages/plugin/src/contract/composedComponents.ts",
+      "caracteres": 19272,
+      "commentaires": 9130,
+      "blocs": 35
+    },
+    {
+      "chemin": "packages/plugin/tests/github.test.ts",
+      "caracteres": 38919,
+      "commentaires": 9040,
+      "blocs": 53
+    },
+    {
+      "chemin": "packages/plugin/tests/lois.ts",
+      "caracteres": 22308,
+      "commentaires": 8880,
+      "blocs": 27
+    },
+    {
+      "chemin": "packages/plugin/src/contract/localisation.ts",
+      "caracteres": 13667,
+      "commentaires": 8811,
+      "blocs": 35
+    },
+    {
+      "chemin": "packages/kit/tests/validation-contrats.test.mjs",
+      "caracteres": 64664,
+      "commentaires": 8267,
+      "blocs": 47
+    },
+    {
+      "chemin": "packages/plugin/src/contract/exportComponent.ts",
+      "caracteres": 23708,
+      "commentaires": 7255,
+      "blocs": 34
+    },
+    {
+      "chemin": "packages/plugin/src/contract/extractSlotTokens.ts",
+      "caracteres": 17704,
+      "commentaires": 6850,
+      "blocs": 24
+    },
+    {
+      "chemin": "packages/plugin/src/contract/semantics.ts",
+      "caracteres": 11534,
+      "commentaires": 6819,
+      "blocs": 20
+    },
+    {
+      "chemin": "packages/plugin/tests/extractLayout.test.ts",
+      "caracteres": 53200,
+      "commentaires": 6748,
+      "blocs": 43
+    },
+    {
+      "chemin": "packages/plugin/src/code.ts",
+      "caracteres": 18227,
+      "commentaires": 5947,
+      "blocs": 31
+    },
+    {
+      "chemin": "packages/kit/src/lecteurs/validation-echantillons.mjs",
+      "caracteres": 15740,
+      "commentaires": 5933,
+      "blocs": 13
+    },
+    {
+      "chemin": "packages/plugin/tests/variantTokens.test.ts",
+      "caracteres": 38651,
+      "commentaires": 5903,
+      "blocs": 33
+    },
+    {
+      "chemin": "packages/plugin/src/contract/extractStructure.ts",
+      "caracteres": 14677,
+      "commentaires": 5808,
+      "blocs": 25
+    },
+    {
+      "chemin": "packages/plugin/tests/layoutSilences.test.ts",
+      "caracteres": 28520,
+      "commentaires": 5699,
+      "blocs": 37
+    },
+    {
+      "chemin": "packages/plugin/src/variables.ts",
+      "caracteres": 13979,
+      "commentaires": 5636,
+      "blocs": 33
+    },
+    {
+      "chemin": "packages/plugin/src/contract/componentTree.ts",
+      "caracteres": 16918,
+      "commentaires": 5362,
+      "blocs": 26
+    },
+    {
+      "chemin": "packages/plugin/src/contract/layoutNodes.ts",
+      "caracteres": 9032,
+      "commentaires": 5162,
+      "blocs": 13
+    },
+    {
+      "chemin": "packages/cli/tests/cli.test.mjs",
+      "caracteres": 18652,
+      "commentaires": 4754,
+      "blocs": 18
+    },
+    {
+      "chemin": "packages/plugin/src/tokens/exportTokens.ts",
+      "caracteres": 15292,
+      "commentaires": 4702,
+      "blocs": 30
+    },
+    {
+      "chemin": "packages/plugin/src/contract/structureTree.ts",
+      "caracteres": 8773,
+      "commentaires": 4657,
+      "blocs": 10
+    },
+    {
+      "chemin": "packages/plugin/src/contract/unsupportedProperties.ts",
+      "caracteres": 11008,
+      "commentaires": 4632,
+      "blocs": 17
+    },
+    {
+      "chemin": "packages/plugin/src/contract/parsers.ts",
+      "caracteres": 12061,
+      "commentaires": 4539,
+      "blocs": 19
+    },
+    {
+      "chemin": "packages/plugin/src/contract/extractVariantTokens.ts",
+      "caracteres": 12183,
+      "commentaires": 4322,
+      "blocs": 22
+    },
+    {
+      "chemin": "packages/plugin/tests/samples.test.ts",
+      "caracteres": 29053,
+      "commentaires": 4313,
+      "blocs": 26
+    },
+    {
+      "chemin": "packages/plugin/src/contract/exportableNodes.ts",
+      "caracteres": 7918,
+      "commentaires": 4046,
+      "blocs": 13
+    },
+    {
+      "chemin": "packages/cli/tests/recette.test.mjs",
+      "caracteres": 17626,
+      "commentaires": 3997,
+      "blocs": 24
+    },
+    {
+      "chemin": "packages/plugin/src/contract/colorKeys.ts",
+      "caracteres": 9748,
+      "commentaires": 3965,
+      "blocs": 11
+    },
+    {
+      "chemin": "packages/cli/src/init.mjs",
+      "caracteres": 12831,
+      "commentaires": 3946,
+      "blocs": 7
+    },
+    {
+      "chemin": "packages/plugin/tests/composedComponents.test.ts",
+      "caracteres": 24279,
+      "commentaires": 3932,
+      "blocs": 28
+    },
+    {
+      "chemin": "packages/plugin/src/contract/elideNeutrals.ts",
+      "caracteres": 6119,
+      "commentaires": 3886,
+      "blocs": 11
+    },
+    {
+      "chemin": "packages/kit/tests/controleRepository.test.mjs",
+      "caracteres": 23551,
+      "commentaires": 3884,
+      "blocs": 14
+    }
+  ]
+}
