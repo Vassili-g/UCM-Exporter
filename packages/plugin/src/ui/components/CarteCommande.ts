@@ -1,7 +1,43 @@
 
 /** Coquille commune d'une commande : sujet, actions, note et compte rendu. */
-import { createButton } from './Button.js';
-import { createCompteRendu } from './CompteRendu.js';
+import type { BoutonUi, VarianteBouton } from './Button';
+import { createButton } from './Button';
+import type { CompteRenduUi } from './CompteRendu';
+import { createCompteRendu } from './CompteRendu';
+
+/** État visuel d'une note. La chaîne vide efface la note et la masque. */
+export type EtatNote = '' | 'loading' | 'warning' | 'error' | 'success';
+
+export interface OptionsCarteCommande {
+  surtitre: string;
+  libelleAnalyse: string;
+  varianteAnalyse?: VarianteBouton;
+  onAnalyser: () => void;
+  onPublier: () => void;
+  onAnnuler: () => void;
+}
+
+/** La coquille commune que les deux cartes concrètes étendent. */
+export interface CarteCommandeUi {
+  element: HTMLElement;
+  sujet: HTMLDivElement;
+  analyser: BoutonUi;
+  compteRendu: CompteRenduUi;
+  ecrireNote(etat: EtatNote, texte: string | null): void;
+  proposerPublication(action: string | null): BoutonUi;
+  marquerOccupee(occupee: boolean): void;
+  reinitialiser(): void;
+}
+
+/**
+ * Les trois gestes qu'une carte concrète reçoit. Son surtitre et son libellé
+ * d'analyse sont déclarés par la carte elle-même.
+ */
+export interface OptionsCarteConcrete {
+  onAnalyser: () => void;
+  onPublier: () => void;
+  onAnnuler: () => void;
+}
 
 /** Construit une carte dont l'appelant fournit le sujet et les opérations. */
 export function createCarteCommande({
@@ -11,7 +47,7 @@ export function createCarteCommande({
   onAnalyser,
   onPublier,
   onAnnuler,
-}) {
+}: OptionsCarteCommande): CarteCommandeUi {
 
   const section = document.createElement('section');
   section.className = 'carte-commande';
@@ -54,7 +90,7 @@ export function createCarteCommande({
 
   section.append(titre, sujet, analyser, annuler, publier, note, compteRendu.element);
 
-  function ecrireNote(etat, texte) {
+  function ecrireNote(etat: EtatNote, texte: string | null) {
     note.dataset.state = etat;
     note.textContent = texte ?? '';
     note.hidden = !note.textContent;
@@ -67,13 +103,13 @@ export function createCarteCommande({
     compteRendu,
     ecrireNote,
 
-    proposerPublication(action) {
+    proposerPublication(action: string | null) {
       publier.hidden = !action;
       if (action) publier.setLabel(action);
       return publier;
     },
 
-    marquerOccupee(occupee) {
+    marquerOccupee(occupee: boolean) {
       analyser.disabled = occupee;
       annuler.hidden = !occupee;
       if (occupee) publier.hidden = true;

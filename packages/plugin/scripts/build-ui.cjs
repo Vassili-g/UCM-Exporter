@@ -5,8 +5,17 @@
 const fs = require('fs');
 const path = require('path');
 
+/**
+ * Les deux balises que ce script remplace dans le gabarit.
+ *
+ * Leurs chemins sont écrits comme depuis `dist/`, alors que le gabarit se trouve
+ * dans `src/ui/` : ils servent de repères de remplacement et ne se suivent pas.
+ * `tests/buildUi.test.ts` vérifie que le gabarit les contient encore, parce
+ * qu'un repère introuvable laisse la balise en place au lieu de lever, et que le
+ * plugin s'ouvre alors vide dans Figma sans qu'aucun contrôle échoue.
+ */
 const STYLE_MARKER = '<link rel="stylesheet" href="./ui/styles.css" />';
-const SCRIPT_MARKER = '<script type="module" src="./ui/index.js"></script>';
+const SCRIPT_MARKER = '<script type="module" src="./ui/index.ts"></script>';
 
 /**
  * Remplace les deux balises du gabarit par leur contenu inline.

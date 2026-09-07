@@ -9,6 +9,16 @@ const racine = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SOURCE = path.join(racine, 'src');
 
 /**
+ * Le balayage exclut `src/ui`. L'interface s'exécute dans une iframe où le
+ * global `figma` est absent, donc aucune des portes listées ci-dessous n'y est
+ * atteignable, et ses `appendChild` construisent le panneau du plugin.
+ *
+ * Ses demandes au sandbox passent toutes par `UiRequest`, dont aucun membre
+ * n'écrit dans le document. `messages.ts` porte cette liste.
+ */
+const HORS_SANDBOX = path.join(SOURCE, 'ui');
+
+/**
  * Les appels qui écrivent dans le document, et eux seuls.
  *
  * La liste est nommément courte : elle vise les portes d'écriture de l'API, pas
@@ -30,6 +40,7 @@ const ECRITURES: { motif: RegExp; quoi: string }[] = [
 function fichiersSource(dossier: string): string[] {
   return fs.readdirSync(dossier, { withFileTypes: true }).flatMap((entree) => {
     const chemin = path.join(dossier, entree.name);
+    if (chemin === HORS_SANDBOX) return [];
     if (entree.isDirectory()) return fichiersSource(chemin);
     return entree.isFile() && chemin.endsWith('.ts') ? [chemin] : [];
   });
@@ -40,6 +51,14 @@ test('le moteur n’écrit jamais dans le document Figma', () => {
   // Une liste vide passerait ce test sans rien contrôler : un dossier renommé
   // désarmerait le filet en silence.
   assert.ok(fichiers.length > 20, `seulement ${fichiers.length} fichiers balayés`);
+  // Renommer `src/ui` sans toucher à ce test rend le balayage rouge, ce qui se
+  // voit. La faute inverse, un dossier de sandbox qui passerait sous
+  // l'exclusion, ne se verrait pas ; ces deux assertions la refusent.
+  assert.ok(fs.existsSync(HORS_SANDBOX), `${HORS_SANDBOX} n'existe plus : l'exclusion vise le vide`);
+  assert.ok(
+    fichiers.every((fichier) => !fichier.startsWith(HORS_SANDBOX + path.sep)),
+    'un fichier de l’interface a été balayé',
+  );
 
   const fautifs: string[] = [];
   for (const fichier of fichiers) {

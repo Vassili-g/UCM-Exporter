@@ -4,10 +4,51 @@
  * Ce module possède le formulaire, sa validation locale et ses états visuels.
  * Le point d'entrée de l'UI ne conserve que le routage des messages Figma.
  */
-import { createButton } from './Button.js';
+import type { PublicSettings, SettingsInput } from '../../config';
+import type { EtatConnexion, EtatDuDepot } from '../../connexion';
+import type { PluginMessage } from '../../messages';
+import { createButton } from './Button';
+import { versSandbox } from '../pont';
+
+/** Le nom d'un champ du formulaire : exactement les clés que le sandbox lit. */
+type NomDeChamp = keyof SettingsInput;
+
+/** Les erreurs de saisie, par champ. */
+export type ErreursDeChamp = Partial<Record<NomDeChamp, string>>;
+
+/** Un champ monté : son enveloppe, sa saisie, son erreur et son libellé. */
+interface ChampUi {
+  wrapper: HTMLLabelElement;
+  input: HTMLInputElement;
+  error: HTMLSpanElement;
+  label: HTMLSpanElement;
+}
+
+interface OptionsChamp {
+  type?: string;
+  placeholder?: string;
+  help?: string;
+}
+
+/** Ce que le routeur UI pilote sur la page de configuration. */
+export interface PageConfigurationUi {
+  element: HTMLDivElement;
+  renderErrors(errors?: ErreursDeChamp): void;
+  populate(settings: PublicSettings): void;
+  acceptRemoteSettings(settings: PublicSettings): void;
+  updateConnection(state: EtatConnexion['state'], geste: string | null): void;
+  afficherGouvernance(depot: Extract<PluginMessage, { type: 'depot' }>): void;
+  showSaveError(): void;
+  releaseSaveButton(): void;
+}
 
 /** Crée un champ avec son aide et une zone d'erreur de hauteur stable. */
-function createField(name, label, options, onChange) {
+function createField(
+  name: NomDeChamp,
+  label: string,
+  options: OptionsChamp,
+  onChange: () => void,
+): ChampUi {
   const wrapper = document.createElement('label');
   wrapper.className = 'field';
 
@@ -42,8 +83,8 @@ function createField(name, label, options, onChange) {
 }
 
 /** Valide les erreurs simples avant d'envoyer le secret au sandbox Figma. */
-function localErrors(settings, hasStoredPat) {
-  const errors = {};
+function localErrors(settings: SettingsInput, hasStoredPat: boolean): ErreursDeChamp {
+  const errors: ErreursDeChamp = {};
   const markdownLink = settings.repoUrl.trim().match(/^\[[^\]]+\]\((https:\/\/github\.com\/[^)\s]+)\)$/i);
   const repositoryUrl = markdownLink?.[1] ?? settings.repoUrl.trim();
   if (!/^https:\/\/github\.com\/[^/?#\s]+\/[^/?#\s]+\/?(?:[?#].*)?$/i.test(repositoryUrl)) {
@@ -52,7 +93,10 @@ function localErrors(settings, hasStoredPat) {
   if (!settings.baseBranch.trim()) errors.baseBranch = 'La branche de base est obligatoire.';
   if (!settings.componentsPath.trim()) errors.componentsPath = 'Le chemin des composants est obligatoire.';
   if (!settings.tokensPath.trim()) errors.tokensPath = 'Le chemin des tokens est obligatoire.';
-  if (!settings.githubPat.trim() && !hasStoredPat) {
+  // `githubPat` est optionnel dans `SettingsInput`. Le formulaire en fournit
+  // toujours un, fût-il vide, mais un appel construit ailleurs peut l'omettre :
+  // sans l'accès optionnel, la validation lève au lieu de refuser la saisie.
+  if (!settings.githubPat?.trim() && !hasStoredPat) {
     errors.githubPat = 'Le Personal Access Token est obligatoire.';
   }
   return errors;
@@ -62,7 +106,9 @@ function localErrors(settings, hasStoredPat) {
  * Construit la page de configuration et expose uniquement les opérations que
  * le routeur UI doit déclencher à la réception des messages du plugin.
  */
-export function createConfigurationPage(onSave) {
+export function createConfigurationPage(
+  onSave: (settings: SettingsInput) => void,
+): PageConfigurationUi {
   let hasStoredPat = false;
   let settingsDirty = false;
   /*
@@ -132,7 +178,7 @@ export function createConfigurationPage(onSave) {
         return;
       }
       reinitialiserSuppression();
-      parent.postMessage({ pluginMessage: { type: 'supprimer-token' } }, '*');
+      versSandbox({ type: 'supprimer-token' });
     },
   });
   supprimerToken.hidden = true;
@@ -152,15 +198,15 @@ export function createConfigurationPage(onSave) {
   status.setAttribute('aria-live', 'polite');
 
   /** Écrit l'état de la configuration, ou l'efface s'il n'y a rien à dire. */
-  const ecrireStatut = (etat, texte) => {
+  const ecrireStatut = (etat: string, texte: string) => {
     status.dataset.state = etat;
     status.textContent = texte;
     status.hidden = !texte;
   };
 
-  const renderErrors = (errors = {}) => {
-    for (const [name, field] of Object.entries(fields)) {
-      field.error.textContent = errors[name] || '';
+  const renderErrors = (errors: ErreursDeChamp = {}) => {
+    for (const [name, field] of Object.entries(fields) as [NomDeChamp, ChampUi][]) {
+      field.error.textContent = errors[name] ?? '';
     }
   };
 
@@ -205,7 +251,7 @@ export function createConfigurationPage(onSave) {
     /*
  * Les valeurs sont celles du sandbox, sans défaut inventé ici.
  */
-    populate(settings) {
+    populate(settings: PublicSettings) {
       if (settingsDirty) return;
       repoUrl.input.value = settings.repoUrl ?? '';
       baseBranch.input.value = settings.baseBranch ?? '';
@@ -220,7 +266,7 @@ export function createConfigurationPage(onSave) {
         ? 'Token enregistré. Laissez ce champ vide pour le conserver.'
         : '';
     },
-    acceptRemoteSettings(settings) {
+    acceptRemoteSettings(settings: PublicSettings) {
       settingsDirty = false;
       this.populate(settings);
     },
@@ -230,7 +276,7 @@ export function createConfigurationPage(onSave) {
  * fausse — « Configuration enregistrée » sans enregistrement — qui imposait
  * auparavant de ne rien écrire hors de la vue.
  */
-    updateConnection(state, geste) {
+    updateConnection(state: EtatConnexion['state'], geste: string | null) {
       if (state === 'checking') return;
       saveButton.disabled = false;
       const prefixe = enregistrementEnCours ? 'Réglages enregistrés. ' : '';
@@ -246,7 +292,7 @@ export function createConfigurationPage(onSave) {
      * Le libellé le dit, parce qu'un champ dont personne ne se sert doit le
      * dire là où on le lit, pas dans une note à côté.
      */
-    afficherGouvernance({ gouverne, resume }) {
+    afficherGouvernance({ gouverne, resume }: EtatDuDepot) {
       gouvernance.textContent = resume ?? '';
       gouvernance.hidden = !resume;
       const repli = gouverne === 'repository' ? ' (repli)' : '';

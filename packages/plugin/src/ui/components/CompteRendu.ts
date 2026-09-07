@@ -1,6 +1,29 @@
 
+import type { LogLevel, PluginMessage } from '../../messages';
+import { versSandbox } from '../pont';
+
+/** Le point à corriger écrit par le moteur, sans son enveloppe de message. */
+export type PointACorriger = Omit<Extract<PluginMessage, { type: 'diagnostic' }>, 'type'>;
+
+/** Un groupe titré du compte rendu ; son titre affiche le nombre d'entrées. */
+interface GroupeUi {
+  element: HTMLDivElement;
+  liste: HTMLDivElement;
+  ajouter(noeud: Node): void;
+  vider(): void;
+}
+
+/** Ce que le routeur UI peut demander à un compte rendu. */
+export interface CompteRenduUi {
+  element: HTMLElement;
+  reinitialiser(): void;
+  ajouterDiagnostic(point: PointACorriger): void;
+  ajouterPublication(texte: string, niveau?: LogLevel): void;
+  ajouterLien(libelle: string, url: string): void;
+}
+
 /** Rend séparément les corrections Figma et le résultat de publication. */
-export function createCompteRendu() {
+export function createCompteRendu(): CompteRenduUi {
   const section = document.createElement('section');
   section.className = 'compte-rendu';
 
@@ -14,13 +37,13 @@ export function createCompteRendu() {
 
   section.append(aCorriger.element, publication);
 
-  function ajouterEntree(noeud) {
+  function ajouterEntree(noeud: Node) {
     section.hidden = false;
     publication.hidden = false;
     publication.appendChild(noeud);
   }
 
-  function creerGroupe(titre, { compte = true } = {}) {
+  function creerGroupe(titre: string, { compte = true }: { compte?: boolean } = {}): GroupeUi {
     const element = document.createElement('div');
     element.className = 'groupe';
     element.hidden = true;
@@ -38,7 +61,7 @@ export function createCompteRendu() {
     return {
       element,
       liste,
-      ajouter(noeud) {
+      ajouter(noeud: Node) {
         total += 1;
         entete.textContent = compte ? `${titre} (${total})` : titre;
         section.hidden = false;
@@ -76,7 +99,7 @@ export function createCompteRendu() {
    * Un bouton, pas un lien : il n'y a pas d'URL, et un `<a href>` factice
    * mentirait au clavier comme au lecteur d'écran.
    */
-  function creerDiagnostic(point) {
+  function creerDiagnostic(point: PointACorriger): HTMLDivElement {
     const carte = document.createElement('div');
     carte.className = 'carte carte-avertissement';
 
@@ -111,11 +134,9 @@ export function createCompteRendu() {
       versLeCalque.textContent = 'Afficher dans Figma';
       // Seul le sandbox peut poser une sélection : on lui délègue, comme pour
       // l'ouverture d'un lien externe.
+      const nodeId = point.nodeId;
       versLeCalque.addEventListener('click', () => {
-        parent.postMessage(
-          { pluginMessage: { type: 'montrer-le-calque', nodeId: point.nodeId } },
-          '*',
-        );
+        versSandbox({ type: 'montrer-le-calque', nodeId });
       });
       carte.appendChild(versLeCalque);
     }
@@ -123,7 +144,7 @@ export function createCompteRendu() {
     return carte;
   }
 
-  function creerLignePublication(texte, niveau) {
+  function creerLignePublication(texte: string, niveau: LogLevel): HTMLParagraphElement {
     const entree = document.createElement('p');
     entree.className = `entree entree-publication entree-${niveau}`;
     entree.textContent = texte;
@@ -140,14 +161,14 @@ export function createCompteRendu() {
       section.hidden = true;
     },
     /** `point` est ce que le moteur a écrit : titre, impact, action, node. */
-    ajouterDiagnostic(point) {
+    ajouterDiagnostic(point: PointACorriger) {
       aCorriger.ajouter(creerDiagnostic(point));
     },
-    ajouterPublication(texte, niveau = 'info') {
+    ajouterPublication(texte: string, niveau: LogLevel = 'info') {
       ajouterEntree(creerLignePublication(texte, niveau));
     },
     /** Le lien de pull request est une SORTIE, pas une ligne de texte. */
-    ajouterLien(libelle, url) {
+    ajouterLien(libelle: string, url: string) {
       const lien = document.createElement('a');
       lien.className = 'entree entree-lien';
       lien.href = url;

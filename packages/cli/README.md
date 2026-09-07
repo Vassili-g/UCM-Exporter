@@ -10,8 +10,8 @@ Figma plugin and committed next to the component's code. This command reads
 those files and says whether they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.8 init
-npx --yes @ucm-kit/cli@0.1.8 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.9 init
+npx --yes @ucm-kit/cli@0.1.9 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx pick a build nobody
@@ -114,6 +114,12 @@ and an older contract does not hold back their evolution.
 
 A contract may land before the code that implements it. A missing implementation
 is an allowed state, not an error.
+
+**So is a repository with no contract at all.** Right after `ucm init` nothing
+has been exported: there is no token file, and usually no contract folder. From
+`0.1.9` on, `ucm check` returns 0 there and reports what to do next. The number
+of contracts decides: with one or more, a missing token file blocks the merge
+again, because those contracts cite tokens nobody can resolve.
 
 The report also relays two things it does not measure itself: the warnings the
 export wrote into the contract, and the verdict of the repository's own tests

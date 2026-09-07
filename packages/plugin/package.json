@@ -6,7 +6,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build:code": "esbuild src/code.ts --bundle --outfile=dist/code.js --platform=browser --target=chrome80 --sourcemap",
-    "build:ui:js": "esbuild src/ui/index.js --bundle --outfile=dist/ui.js --format=iife --platform=browser --target=chrome80 --minify",
+    "build:ui:js": "esbuild src/ui/index.ts --bundle --outfile=dist/ui.js --format=iife --platform=browser --target=chrome80 --minify",
     "build:ui": "npm run build:ui:js && node scripts/build-ui.cjs",
     "build:manifest": "node scripts/build-manifest.cjs",
     "galerie": "npm run build:ui && node galerie/build-galerie.cjs",

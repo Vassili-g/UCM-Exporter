@@ -7,34 +7,39 @@
 
 ## État opérationnel — 6 septembre 2026
 
-Ce plan est terminé pour tout ce qui se prouve dans le dépôt. Deux entrées
-restent ouvertes, car elles dépendent d'une observation dans Figma et d'une
-publication réelle : **T4.6** et **11.8**.
+Ce plan est terminé pour tout ce qui se prouve dans le dépôt. **T4.6 est close**,
+ses deux observations dans Figma faites. **11.8 porte ses décisions et reste
+ouverte** sur ce qui ne s'exécute pas d'ici : publier les paquets, puis vérifier
+ce que le registre sert.
+
+**Le plugin est publié sur la Figma Community**, la distribution tranchée par
+T4.4. `manifest.json` porte l'`id` attribué par Figma, `1678431364325816914`, à
+la place du zéro de développement.
 
 Les travaux locaux de la Phase 11 sont clos. L'adaptateur avertit sur les deux
 écarts d'enum qu'il peut établir (11.1) ; les limites des défauts et des
 exceptions sont écrites (11.2 et 11.3) ; le schéma porte les cinq descriptions
 retenues (11.4) ; `tokens.json` reste sans version jusqu'à un changement de
 grammaire (11.5) ; la politique de compatibilité est publiée (11.6) ; le diff
-sémantique est différé jusqu'à un vrai cycle avant/après (11.7) ; et
-`@default` remplace la position du variant comme source du défaut d'un axe
-(11.9).
+sémantique n'est pas implémenté, et 11.8 nomme le signal qui rouvrira la
+question (11.7) ; et `@default` remplace la position du variant comme source du
+défaut d'un axe (11.9).
 
 **Ce qui reste, dans l'ordre.** Le déroulé complet, geste par geste, est dans
 [GUIDE-RECETTE-REPO-VIERGE.md](./GUIDE-RECETTE-REPO-VIERGE.md). Le Playground a
 été vidé le 6 septembre 2026 pour le recevoir : plus aucun contrat, plus de
 `tokens.json`, plus aucun des cinq fichiers d'`ucm init`.
 
-1. charger le `dist` courant dans Figma et faire les observations U4.5 et U4.9 ;
-2. rejouer l'installation depuis zéro dans le Playground, avec le CLI
+1. rejouer l'installation depuis zéro dans le Playground, avec le CLI
    **déjà publié**, `@ucm-kit/cli@0.1.7` : `ucm init`, export des tokens, export
    d'un composant, reconstruction de la sonde, et les trois échecs volontaires
    des critères 4, 5 et 7. Ce passage est la recette N6 ;
-3. seulement ensuite, publier `@ucm-kit/core@0.1.12`, `@ucm-kit/cli@0.1.8` et
-   `@ucm-kit/adapter-typescript@0.1.1`, en déclarant N6 rejouée, puis laisser
+2. seulement ensuite, publier `@ucm-kit/core@0.1.13`, `@ucm-kit/cli@0.1.9` et
+   `@ucm-kit/adapter-typescript@0.1.2`, en déclarant N6 rejouée, puis laisser
    l'épreuve du registre de 11.8 les installer depuis un dossier vide ;
-4. repointer le workflow du Playground sur `0.1.8` et son adaptateur sur
-   `0.1.1`, et vérifier une dernière fois que le rapport reste vert.
+3. repointer le workflow du Playground sur `0.1.9` et son adaptateur sur
+   `0.1.2`, puis vérifier que le rapport reste vert et que l'état de démarrage
+   décrit ci-dessous s'affiche sur un dépôt sans export.
 
 *Pourquoi la recette avant la publication.* `publish.yml` refuse de publier tant
 que N6 n'est pas déclarée rejouée, et sept fichiers déclencheurs ont bougé depuis
@@ -43,20 +48,28 @@ le schéma qui gagne cinq `description` ; rien de tout cela ne touche le chemin
 Figma vers pull request. La déclaration reste néanmoins une réponse humaine, et
 la jouer avant de la donner évite de la donner à l'aveugle.
 
-U6.1, le passage de l'UI en TypeScript, n'est pas dans cette liste : c'est une
-décision non prise, pas un travail en attente.
-
 La suite locale, le typecheck, le build du plugin et l'inspection des trois
-tarballs passent le 6 septembre 2026. Ils prouvent le code et la forme des
-paquets ; ils ne remplacent ni Figma, ni GitHub, ni le registre npm.
+tarballs passent le 6 septembre 2026, sur 851 cas. Ils couvrent le code et la
+forme des paquets, et ne remplacent ni Figma, ni GitHub, ni le registre npm.
 
-**Un défaut trouvé en préparant la recette, et non corrigé.** `ucm check` sur un
-repository qui vient d'exécuter `ucm init`, avant tout export, rend
-`✗ tokens.json introuvable` et sort en 1. La CI qu'`ucm init` installe est donc
-rouge dès le premier push, sur un repository où rien n'est encore anormal. Le
-comportement est identique en 0.1.7 et en 0.1.8. Il n'est pas traité ici : il
-demande de trancher si l'absence de tokens est une erreur ou un état
-d'avancement, comme l'est déjà l'absence d'implémentation.
+**Le défaut trouvé en préparant la recette est corrigé.** `ucm check` sur un
+repository qui venait d'exécuter `ucm init` rendait `✗ tokens.json introuvable`
+et sortait en 1, ce qui rendait rouge la CI installée par `ucm init` dès le
+premier push. Le propriétaire a tranché le 6 septembre 2026 : **l'absence
+d'export est un état d'avancement**, au même titre que l'absence
+d'implémentation.
+
+Le discriminant retenu est le nombre de contrats. Sans contrat, aucune référence
+de token n'existe, il n'y a rien à contrôler, et le rapport rend un vert qui
+nomme le geste suivant. Avec un contrat, l'absence de tokens redevient un refus.
+La correction couvre le second refus du même trajet, mesuré en l'écrivant :
+entre l'export des tokens et le premier composant, le dossier de contrats
+n'existe pas encore et la fusion était refusée pour la même raison.
+
+Le correctif est dans `controle-repository.mjs`, donc dans
+`@ucm-kit/core@0.1.13`. La version `0.1.7`, avec laquelle la recette se joue, ne
+le porte pas : le refus de l'étape 4 du guide est attendu, et l'étape 10 vérifie
+sa disparition.
 
 **Convention de lecture :** `[X]` = tâche ou décision clôturée ; `[ ]` = travail
 restant ; une clôture par décision doit être lue dans son paragraphe de statut
@@ -1548,9 +1561,13 @@ ici sont les premiers à poser cette question, et T7 en dépendra.
       **Ce que le dépôt ne peut pas faire à la place de quelqu'un.** La
       soumission elle-même est un geste chez Figma : nom public, description,
       icône, illustration de couverture, catégorie, puis une revue par Figma. Le
-      dépôt porte le manifest recevable et rien de plus ; `manifest.json` garde
-      un `id` de développement (`0000000000000000000`) que Figma remplace à la
-      première publication.
+      dépôt porte le manifest recevable et rien de plus.
+      **La soumission a eu lieu, et le plugin est publié sur la Figma
+      Community.** `manifest.json` portait un `id` de développement,
+      `0000000000000000000`, que Figma remplace à la première publication ; il
+      porte `1678431364325816914` depuis le commit `3b24683`. Le manifest de
+      développement doit conserver cet identifiant, qui rattache une mise à jour
+      à la fiche déjà en ligne au lieu d'en créer une seconde.
 
 ### Phase 4 rouverte — ce que la relecture de l'interface a trouvé
 
@@ -1625,7 +1642,7 @@ une place dans l'ordre d'exécution.
       première tâche de sa phase U3. Elle est close par ce commit et pointe ici ;
       une règle, un domicile.
 
-- [ ] **T4.6 — La refonte de l'interface du plugin.** **⚠ Après la Phase 7,
+- [X] **T4.6 — La refonte de l'interface du plugin.** **⚠ Après la Phase 7,
       avant la Phase 8.** Le plan complet, ses trente tâches et ses dépendances
       vivent dans [refonte-ui.md](./refonte-ui.md) : une règle, un domicile —
       cette entrée ne recopie rien, elle ordonne.
@@ -1681,11 +1698,11 @@ une place dans l'ordre d'exécution.
       existe, mais rien ne l'appelle à la place du plugin, et son minimum de
       70 × 0 ne protège de rien. La poignée et les bornes du plugin vivent
       désormais dans `src/fenetre.ts`.
-      **Close le 5 septembre 2026.** U4.5, U4.3 et U4.4 sont faites dans cet
-      ordre, et elles ferment la Phase U4 — donc le périmètre que cette entrée
-      ordonnait. Trente-neuf tâches de `refonte-ui.md` sont closes ; les deux qui
-      restent appartiennent à une phase qui s'appelle « À décider avant d'être
-      fait » : elles ne sont pas en attente, elles sont non décidées.
+      **Le périmètre ordonné par cette entrée est clos le 5 septembre 2026.**
+      U4.5, U4.3 et U4.4 sont faites dans cet ordre, et elles ferment la
+      Phase U4. Trente-neuf tâches de `refonte-ui.md` étaient alors closes ; la
+      seule qui restait sans dépendre de Figma appartenait à une phase qui
+      s'appelle « À décider avant d'être fait ». C'est U6.1, tranchée depuis.
       *Ce que la fin du chantier a produit et qui dépasse l'interface :* trois
       lois qu'aucune tâche ne demandait. La couverture de localisation, en deux
       moitiés — une lue dans la source, une exercée à la sortie du moteur. Le
@@ -1693,10 +1710,18 @@ une place dans l'ordre d'exécution.
       hors-périmètre que seule la prose gardait. Et `loiDuDocumentIntact.test.ts`,
       qui exerce enfin « le plugin ne modifie jamais le document Figma » — un
       invariant que trois documents répétaient et qu'aucun contrôle ne tenait.
-      **⚠ Une observation reste due, et elle ne se fait pas depuis ce dépôt :**
-      U4.5 s'appuie sur la documentation de l'API Figma pour affirmer qu'un clic
-      ne marque pas le document comme modifié. Seul un fichier réel ouvert le
-      prouvera, et `SPEC.md` le dit au lieu de le sous-entendre.
+      **Les deux observations sont faites le 6 septembre 2026, et cette entrée
+      est close.** Le propriétaire du projet a rechargé le `dist` construit dans
+      un fichier Figma réel et constaté les deux points restants : un clic depuis
+      le plugin ne marque pas le document comme modifié (U4.5), et les trois
+      issues d'un export se lisent dans les deux thèmes à la taille minimale de
+      la fenêtre, cartes de commande et écran sans sélection compris (U4.9). Ces
+      constats sont rapportés ; aucun contrôle de ce dépôt ne peut les rejouer,
+      ce qui est la raison pour laquelle ils restaient dus.
+      **U6.1 est tranchée et exécutée ensuite**, dans cet ordre : regarder le
+      `dist` construit avant de le remuer, faute de quoi une régression de l'UI
+      et un bundle Figma resté ancien deviennent indiscernables.
+      `refonte-ui.md` porte ce que la conversion a rendu visible.
 
 ---
 
@@ -4216,6 +4241,59 @@ politique.
 **La décision « ne pas implémenter » est une sortie valide**, mais seulement si
 la recherche montre que le contrôle serait structurellement faux, trop coûteux
 ou prématuré. Elle doit alors préciser le signal qui rouvrira la question.
+
+#### Les décisions du propriétaire — 6 septembre 2026
+
+Quatre questions restaient posées. Elles sont tranchées, et le code qu'elles
+demandaient est écrit et vert. La case reste ouverte parce que ce qui subsiste
+s'exécute hors de ce dépôt.
+
+**1. Le domicile de chaque contrôle reste le noyau.** Aucune tâche de la
+Phase 11 n'a demandé de surface nouvelle dans le CLI, dans le plugin ou dans la
+CI. `diagnostic-parite.mjs` porte les messages de parité de 11.1, le schéma
+généré porte les descriptions de 11.4, la documentation du format porte la
+politique de 11.6, et les règles lues par le moteur portent l'étiquette
+`@default` de 11.9. L'état de démarrage entre dans `controle-repository.mjs`
+pour la même raison : le noyau décide des verdicts et le CLI les imprime, ce que
+la règle de tri n° 3 impose.
+
+**2. Le diff sémantique n'est pas implémenté.** La sortie autorisée ci-dessus
+est prise pour sa troisième raison, prématuré. La recherche de 11.7 a produit la
+table des classes à distinguer. Faute de cycles réels avant et après, elle n'a
+pas pu montrer qu'un classement automatique se tromperait moins souvent qu'un
+diff JSON relu par la personne qui vient d'exporter. Avec quatre composants et
+un seul relecteur, le diff brut se vérifie à la lecture.
+
+Deux signaux rouvrent la question, et chacun s'observe : **une revue de contrat
+qui laisse passer un changement que son relecteur n'avait pas vu**, ou une revue
+qui demande plus de dix minutes de lecture. Le passage à plusieurs relecteurs le
+rouvre également, puisque la lisibilité du diff brut tient à ce que son relecteur
+en soit l'auteur.
+
+**3. Le filet de 11.2 b n'est pas ajouté.** Le contrôle proposé vérifie que
+`props.size.default` désigne une entrée de `structure.sizes`. C'est une
+tautologie sur toute sortie de ce moteur, où les deux ensembles sont construits
+depuis le même axe Figma par la même fonction. Il ne couvrirait qu'un contrat
+édité à la main ou produit par un tiers, et aucun tiers ne produit de contrat.
+La question se rouvre le jour où un second producteur de contrats existe.
+
+**4. L'absence d'export est un état d'avancement.** La décision et son
+discriminant sont écrits en tête de ce plan. 11.8 lui donne son domicile et son
+numéro de version : le noyau passe en `0.1.13`, le CLI en `0.1.9` et
+l'adaptateur en `0.1.2`. Les deux derniers ne changent que par leur épingle, et
+la règle de T3.4 monte leur numéro dans le même commit.
+
+#### Ce qui reste, et qui ne se prouve pas ici
+
+Publier les trois paquets, puis les installer depuis un dossier vide pour
+contrôler ce que le registre sert. `publish.yml` porte déjà cette épreuve et
+l'exécute après chaque publication. Elle existe parce que son absence a coûté une
+version publiée cassée, et aucun contrôle de ce dépôt ne peut la remplacer.
+
+Le critère de clôture qui demandait « un exemple de revue où le diff sémantique
+et le diff texte donnent des résultats volontairement différents » tombe avec la
+décision 2, puisqu'il suppose un diff qui n'existera pas. Les autres critères
+tiennent, et la recette N6 les couvre.
 
 
 - [X] **11.9 — L'étiquette `@default` : le défaut d'un enum devient déclaré, ou

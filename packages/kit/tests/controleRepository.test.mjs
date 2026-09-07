@@ -337,22 +337,109 @@ test("tokens illisibles ou absents : le refus porte quand même un message", () 
 });
 
 /**
- * Le troisième filet, ajouté par T5.2 parce que le déplacement le rend
- * atteignable : chez le consommateur d'origine, le dossier des contrats
- * existait toujours. Ailleurs, c'est un `ucm.config.json` qui se trompe de
- * chemin, ou un repo qui n'a pas encore reçu son premier export — et un ENOENT
- * remonté rendrait une stack trace Node là où ce module s'interdit partout
- * ailleurs d'exploser plutôt que de diagnostiquer.
+ * L'état de démarrage : un repository sans contrat ne refuse aucune fusion.
+ *
+ * Un repository qui vient d'exécuter `ucm init` n'a ni tokens ni contrats. Le
+ * contrôle y répondait `✗ tokens.json introuvable` et sortait en 1, ce qui
+ * rendait rouge la CI installée par `ucm init` dès le premier push. Le même
+ * repository, une fois ses tokens reçus et avant son premier composant, était
+ * refusé pour son dossier de contrats.
+ *
+ * Le projet traite déjà une implémentation absente comme un état d'avancement.
+ * Un export absent reçoit le même traitement.
+ *
+ * Le discriminant est le nombre de contrats. Sans contrat, aucune référence de
+ * token n'existe et l'absence du fichier de tokens ne prive aucun contrôle de
+ * sa matière. Avec un contrat, elle redevient un refus, ce que verrouille le
+ * test « tokens illisibles ou absents » ci-dessus, qui monte un Widget.
  */
-test("dossier de contrats introuvable : un diagnostic, pas une stack trace", () => {
+test("repository fraîchement installé : rien à contrôler n'est pas une faute", () => {
+  const racine = mkdtempSync(join(tmpdir(), "ucm-demarrage-"));
+  try {
+    const { bloquant, rapport, terminal } = controlerRepository(racine, {
+      configuration: CONFIGURATION,
+    });
+    assert.equal(bloquant, false, "un repository sans export ne refuse aucune fusion");
+    assert.match(rapport, /^## ✅ Ce repository n'a pas encore reçu d'export$/m);
+    assert.match(rapport, /`src\/tokens\/tokens\.json` n'a pas encore été exporté/);
+    assert.match(rapport, /\*\*Exporter les tokens\*\*/);
+    assert.ok(
+      terminal.every(({ flux }) => flux !== "error"),
+      "aucune ligne d'erreur dans le terminal d'un repository qui démarre",
+    );
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("tokens reçus, aucun composant encore : toujours l'état de démarrage", () => {
   const racine = preparerRepo({ tokens: TOKENS });
   try {
     const { bloquant, rapport } = controlerRepository(racine, {
       configuration: { ...CONFIGURATION, components: "composants-ailleurs" },
     });
+    assert.equal(bloquant, false);
+    assert.match(rapport, /^## ✅ Ce repository n'a pas encore reçu d'export$/m);
+    assert.doesNotMatch(rapport, /n'a pas encore été exporté/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Le rapport nomme le chemin cherché, ce qui laisse repérer une faute de frappe
+ * dans `ucm.config.json`. Un chemin qui vise un dossier inexistant produit le
+ * même relevé qu'un repository neuf, zéro contrat, et aucune mesure ne les
+ * sépare. Nommer l'endroit cherché est donc tout ce que ce module peut faire
+ * sans supposer laquelle des deux situations il rencontre.
+ */
+test("l'état de démarrage nomme le dossier où il a cherché", () => {
+  const racine = preparerRepo({ tokens: TOKENS });
+  try {
+    const { rapport } = controlerRepository(racine, {
+      configuration: { ...CONFIGURATION, components: "composants-ailleurs" },
+    });
+    assert.match(rapport, /^## ✅ /m, "le chemin se nomme SANS refuser la fusion");
+    assert.match(rapport, /`composants-ailleurs`/);
+    assert.match(rapport, /`ucm\.config\.json`/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * L'état de démarrage ne couvre que l'absence du fichier de tokens. Un fichier
+ * tronqué appelle le même geste à tout moment, cesser de l'éditer à la main,
+ * y compris dans un repository sans aucun contrat.
+ */
+test("tokens illisibles : une faute même sans un seul contrat", () => {
+  const racine = mkdtempSync(join(tmpdir(), "ucm-demarrage-"));
+  try {
+    mkdirSync(join(racine, "src", "tokens"), { recursive: true });
+    writeFileSync(join(racine, CONFIGURATION.tokens), "{ pas du json");
+    const { bloquant, rapport } = controlerRepository(racine, { configuration: CONFIGURATION });
     assert.equal(bloquant, true);
-    assert.match(rapport, /^## ❌ `composants-ailleurs` est introuvable$/m);
-    assert.match(rapport, /corriger le chemin déclaré dans `ucm\.config\.json`/);
+    assert.match(rapport, /^## ❌ `src\/tokens\/tokens\.json` est illisible$/m);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Le verdict de démarrage porte sur les contrats et les tokens, pas sur les
+ * tests du repository. Une suite rouge refuse la fusion d'un repository neuf
+ * comme de tout autre ; un rapport vert masquerait alors un contrôle en échec.
+ */
+test("l'état de démarrage ne couvre pas une suite de tests rouge", () => {
+  const racine = mkdtempSync(join(tmpdir(), "ucm-demarrage-"));
+  try {
+    const { bloquant, rapport } = controlerRepository(racine, {
+      configuration: CONFIGURATION,
+      echecsDeTests: { echoue: true, echecs: [] },
+    });
+    assert.equal(bloquant, true);
+    assert.doesNotMatch(rapport, /^## ✅/m);
+    assert.match(rapport, /Les tests n'ont pas terminé/);
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }

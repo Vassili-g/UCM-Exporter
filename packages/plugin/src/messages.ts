@@ -1,7 +1,9 @@
 /**
  * Le domicile unique des messages qui traversent la frontière sandbox ↔ UI.
- * Le type contraint les envois du sandbox via `versUi`. L'UI JavaScript le
- * consulte comme référence, sans vérification statique réciproque.
+ *
+ * Le type contraint les deux sens : les envois du sandbox par `versUi` dans
+ * `code.ts`, ceux de l'interface par `versSandbox` dans `ui/pont.ts`. Un champ
+ * renommé ici fait donc échouer la construction des deux côtés.
  */
 import type { PublicSettings, SettingsInput } from './config';
 import type { EtatConnexion, EtatDuDepot } from './connexion';

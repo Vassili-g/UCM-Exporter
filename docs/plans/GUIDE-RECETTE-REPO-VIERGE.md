@@ -15,45 +15,7 @@ Les deux dépôts concernés :
 Une convention pour tout le guide : `A:\...\Projet UCM\` désigne le dossier qui
 contient les deux dépôts.
 
----
-
-## Avant de commencer
-
-Il vous faut :
-
-1. **Node 22 ou plus**, vérifiable par `node -v` ;
-2. **l'application de bureau Figma**, avec le fichier du design system ouvert ;
-3. **un Personal Access Token GitHub** ayant le droit d'écrire sur
-   `Vassili-g/UCM-Playground`.
-
-Une chose à savoir avant de lire quoi que ce soit : **le CLI publié aujourd'hui
-est la version 0.1.7.** Le dépôt en porte une 0.1.8, qui n'est pas encore sur
-npm. Ce guide se joue donc en 0.1.7, et la publication vient à la toute fin,
-une fois que tout est vert.
-
----
-
-## Étape 1 : construire le plugin
-
-Dans un terminal, à la racine d'`UCM-Exporter` :
-
-```sh
-npm install
-npm test
-npm run build
-```
-
-Attendu :
-
-- `npm test` affiche 846 cas et aucun échec ;
-- `npm run build` écrit `packages/plugin/dist/`, qui contient `code.js`,
-  `ui.html` et `manifest.json`.
-
-Si `npm test` est rouge, arrêtez-vous là : rien de ce qui suit n'aurait de
-valeur.
-
----
-
+-
 ## Étape 2 : charger le plugin dans Figma
 
 1. Dans l'application de bureau Figma, ouvrez le fichier du design system.
@@ -71,23 +33,25 @@ Si vous l'aviez déjà importé, il suffit de le relancer : Figma relit le `dist
 
 ## Étape 3 : regarder l'interface, avant de s'en servir
 
-Deux observations sont dues, et elles ne peuvent se faire que dans un vrai
-fichier Figma. Faites-les maintenant, pendant que le plugin est neuf à vos yeux.
+Les deux observations que cette étape réclamait ont été faites le 6 septembre
+2026, et elles ont fermé le plan de refonte de l'interface. Elles restent écrites
+ici parce que ce guide se rejoue et qu'aucun test ne les couvre : elles ne se
+constatent qu'à l'œil, dans un vrai fichier Figma.
 
 **Observation A.** Sélectionnez un calque depuis le plugin, par le bouton
 « Afficher dans Figma » d'un point à corriger. Regardez ensuite si Figma marque
 le fichier comme modifié, c'est-à-dire s'il propose d'enregistrer une nouvelle
-version. La documentation de l'API dit que non ; personne ne l'a encore vérifié
-sur un fichier réel. Notez ce que vous voyez.
+version. Attendu, et constaté le 6 septembre 2026 : non.
 
 **Observation B.** Faites un export, puis regardez les points à corriger du
 compte rendu, en thème clair puis en thème sombre. Vérifiez qu'ils restent
 lisibles et que rien ne déborde de la fenêtre. Regardez aussi les deux cartes
 de commande et l'écran sans sélection.
 
-Ces deux observations sont les dernières cases ouvertes du plan de refonte de
-l'interface. Notez ce que vous constatez ; leur correction, si elle est
-nécessaire, viendra après.
+**Une chose a changé depuis ces observations.** L'interface est passée en
+TypeScript (U6.1). Le même esbuild produit le bundle à partir des mêmes sources,
+dont il retire les types, donc l'écran doit être identique. Vérifiez-le une
+fois : aucun contrôle de ce dépôt ne compare le rendu du plugin dans Figma.
 
 ---
 
@@ -134,17 +98,29 @@ Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 npx --yes @ucm-kit/cli@0.1.7 check
 ```
 
-Attendu, mesuré le 6 septembre 2026 :
+Attendu **en 0.1.7**, mesuré le 6 septembre 2026 :
 
 ```text
 ✗ <chemin du dépôt>/tokens.json introuvable. Régénérez les tokens du repository.
 ```
 
 Le code de sortie est 1. **Un dépôt fraîchement installé est donc rouge tant
-qu'aucun export n'a eu lieu**, et la CI le sera aussi au premier push. Ce n'est
-pas une panne de votre installation : le contrôle réclame les tokens, qui
-arrivent à l'étape suivante. Notez ce comportement, il est discutable et sera
-peut-être revu.
+qu'aucun export n'a eu lieu**, et la CI le sera aussi au premier push. Votre
+installation n'est pas en cause : la version publiée à l'étape 9 corrige ce
+défaut.
+
+**Ce que la version du dépôt rend, et que vous vérifierez à l'étape 10.**
+L'absence d'export est un état d'avancement, au même titre que l'absence
+d'implémentation. À partir de `@ucm-kit/core@0.1.13`, un dépôt sans aucun
+contrat sort en 0 et rend un rapport vert qui nomme le geste suivant :
+
+```text
+✓ Aucun contrat dans components : ce repository n'a pas encore reçu d'export. Rien à contrôler.
+```
+
+Le discriminant est le nombre de contrats. Dès qu'un contrat existe, un
+`tokens.json` absent bloque de nouveau la fusion, puisque ce contrat cite des
+tokens que plus personne ne peut résoudre.
 
 Enfin, commitez et poussez :
 
@@ -184,6 +160,14 @@ Attendu :
 
 **Lisez ce commentaire.** C'est le troisième critère du test : un rapport
 lisible par un designer, sans ouvrir un seul journal de CI.
+
+**Ce commentaire sera rouge, pour le même défaut qu'à l'étape 4, un cran plus
+loin.** En 0.1.7, un dépôt qui a reçu ses tokens mais pas encore son premier
+composant n'a pas de dossier `components`, et le contrôle refuse la fusion en
+disant `components est introuvable`. Jugez le troisième critère sur la forme du
+rapport plutôt que sur sa couleur : titre, cause, geste attendu, état de la
+fusion. À partir de `@ucm-kit/core@0.1.13`, ce cas rend le rapport vert de
+démarrage montré à l'étape 4, que l'étape 10 vérifie.
 
 Fusionnez la pull request.
 
@@ -258,8 +242,8 @@ Pour lui donner à lire :
 npm install --save-dev @ucm-kit/adapter-typescript@0.1.0
 ```
 
-Attention à la version : `0.1.1` n'est pas encore publiée. Poussez, et regardez
-le rapport changer.
+Attention à la version : `0.1.2`, que porte le dépôt, n'est pas encore publiée.
+Poussez, et regardez le rapport changer.
 
 ---
 
@@ -313,8 +297,8 @@ git branch -D recette/echecs-attendus
 
 Cette étape ne se fait que si les huit précédentes sont vertes.
 
-Le dépôt porte trois versions prêtes et non publiées : `@ucm-kit/core@0.1.12`,
-`@ucm-kit/cli@0.1.8` et `@ucm-kit/adapter-typescript@0.1.1`. La publication
+Le dépôt porte trois versions prêtes et non publiées : `@ucm-kit/core@0.1.13`,
+`@ucm-kit/cli@0.1.9` et `@ucm-kit/adapter-typescript@0.1.2`. La publication
 passe par un workflow GitHub, jamais par un jeton posé sur votre poste.
 
 Pour chacun des trois, **dans cet ordre** :
@@ -329,9 +313,10 @@ Pour chacun des trois, **dans cet ordre** :
    réinstalle le paquet depuis un dossier vide pour vérifier que le registre le
    sert vraiment.
 
-L'ordre compte : `@ucm-kit/cli` épingle exactement `@ucm-kit/core@0.1.12`. Si le
+L'ordre compte : `@ucm-kit/cli` épingle exactement `@ucm-kit/core@0.1.13`. Si le
 noyau n'est pas publié en premier, `npx @ucm-kit/cli` installerait une
-dépendance absente du registre.
+dépendance absente du registre. `@ucm-kit/adapter-typescript` épingle le même
+noyau, pour la même raison.
 
 Une version publiée ne se reprend pas. Relancer le workflow sans monter un
 numéro rend une erreur 409, et c'est le comportement voulu.
@@ -343,14 +328,27 @@ numéro rend une erreur 409, et c'est le comportement voulu.
 Une fois les trois paquets en ligne, dans `UCM-Playground` :
 
 1. dans `.github/workflows/ucm.yml`, remplacez les deux `@ucm-kit/cli@0.1.7`
-   par `@ucm-kit/cli@0.1.8` ;
+   par `@ucm-kit/cli@0.1.9` ;
 2. dans `package.json`, passez `@ucm-kit/adapter-typescript` de `0.1.0` à
-   `0.1.1`, puis relancez `npm install` ;
+   `0.1.2`, puis relancez `npm install` ;
 3. ouvrez une dernière pull request et vérifiez que le rapport est toujours
    vert.
 
 C'est ce dernier passage qui prouve que ce qui a été publié fonctionne chez un
 consommateur, et pas seulement dans le monorepo qui l'a produit.
+
+**Une dernière vérification, qui ferme les deux refus des étapes 4 et 5.**
+Dans un dossier temporaire, hors de tout dépôt :
+
+```sh
+npx --yes @ucm-kit/cli@0.1.9 init
+npx --yes @ucm-kit/cli@0.1.9 check
+```
+
+Attendu : la seconde commande sort en 0 et dit que ce repository n'a pas encore
+reçu d'export. Si elle rend encore `✗ tokens.json introuvable`, c'est que le
+registre sert une version antérieure : vérifiez le numéro installé avant de
+conclure à une régression.
 
 ---
 
@@ -358,7 +356,8 @@ consommateur, et pas seulement dans le monorepo qui l'a produit.
 
 - Le **rendu visuel** d'un composant n'est comparé que par votre œil. Aucun
   contrôle automatique ne le mesure.
-- La **soumission à la Figma Community** n'est pas couverte : le plugin reste
-  chargé en développement.
+- La **soumission à la Figma Community** n'est pas couverte par ce guide. Elle a
+  eu lieu et le plugin y est publié ; ce guide charge néanmoins le plugin en
+  développement, puisque le `dist` du dépôt est ce qu'il faut éprouver.
 - Les paquets sont en `0.x`. La surface publique n'est pas gelée, et c'est
   pourquoi chaque version s'épingle à l'exact, sans `^`.

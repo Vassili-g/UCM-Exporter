@@ -1,14 +1,30 @@
 
 /** Carte de la commande composant et de son résultat. */
-import { createCarteCommande } from './CarteCommande.js';
+import type { Cible } from '../../cible';
+import type { PluginMessage } from '../../messages';
+import type { CarteCommandeUi, OptionsCarteConcrete } from './CarteCommande';
+import { createCarteCommande } from './CarteCommande';
 
-function memeCible(avant, apres) {
+/** Le message de cible, dépouillé de son enveloppe. */
+type MessageCible = Extract<PluginMessage, { type: 'cible' }>;
+
+/** Ce que le routeur UI pilote sur la carte du composant. */
+export interface CarteComposantUi extends CarteCommandeUi {
+  afficher(message: MessageCible): void;
+  marquerAnalysee(): void;
+}
+
+function memeCible(avant: Cible | null, apres: Cible | null): boolean {
   if (!avant || !apres) return avant === apres;
   return avant.nom === apres.nom && avant.genre === apres.genre && avant.variants === apres.variants;
 }
 
 /** Réinitialise tout résultat dès que l'identité de la sélection change. */
-export function createCarteComposant({ onAnalyser, onPublier, onAnnuler }) {
+export function createCarteComposant({
+  onAnalyser,
+  onPublier,
+  onAnnuler,
+}: OptionsCarteConcrete): CarteComposantUi {
   const carte = createCarteCommande({
     surtitre: 'Composant',
     libelleAnalyse: 'Analyser le composant',
@@ -31,7 +47,7 @@ export function createCarteComposant({ onAnalyser, onPublier, onAnnuler }) {
 
   carte.sujet.append(nom, detail, avertissement);
 
-  let cibleAffichee = null;
+  let cibleAffichee: Cible | null = null;
 
   let analysee = false;
   let occupee = false;
@@ -42,20 +58,20 @@ export function createCarteComposant({ onAnalyser, onPublier, onAnnuler }) {
 
   return {
     ...carte,
-    marquerOccupee(valeur) {
+    marquerOccupee(valeur: boolean) {
       occupee = valeur;
       carte.marquerOccupee(valeur);
       rafraichirGeste();
     },
 
-    afficher(message) {
+    afficher(message: MessageCible) {
       const { cible, raison, avertissement: texte } = message;
       const change = !memeCible(cibleAffichee, cible);
       cibleAffichee = cible;
 
       carte.element.dataset.state = cible ? 'prete' : 'vide';
       nom.textContent = cible ? cible.nom : 'Aucun composant sélectionné';
-      detail.textContent = cible ? message.detail : raison ?? '';
+      detail.textContent = cible ? message.detail ?? '' : raison ?? '';
       avertissement.textContent = texte ?? '';
       avertissement.hidden = !texte;
       carte.analyser.hidden = !cible;
