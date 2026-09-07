@@ -263,12 +263,12 @@ l'implémentation n'a pas été lue, jamais qu'elle est conforme.
 Pour lui donner à lire :
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.0
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.3
 ```
 
 Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
-version`, et non celle du dépôt : c'est l'étape 8 qui publie la seconde.
-Poussez, et regardez le rapport changer.
+version`, et non celle du dépôt : quand les deux diffèrent, c'est l'étape 8 qui
+publie la seconde. Poussez, et regardez le rapport changer.
 
 ---
 
@@ -389,8 +389,12 @@ consommateur, et pas seulement dans le monorepo qui l'a produit.
 
 - Le **rendu visuel** d'un composant n'est comparé que par votre œil. Aucun
   contrôle automatique ne le mesure.
-- La **soumission à la Figma Community** n'est pas couverte par ce guide. Elle a
-  eu lieu et le plugin y est publié ; ce guide charge néanmoins le plugin en
-  développement, puisque le `dist` du dépôt est ce qu'il faut éprouver.
+- La **soumission à la Figma Community** n'est pas couverte par cette page. Le
+  plugin y est publié, et c'est ce bundle que la recette éprouve ; ce qui reste
+  hors champ est le geste de soumettre une version plus récente, qui passe par
+  une revue de Figma.
+- **Le code du plugin qui vit dans ce dépôt** n'est pas éprouvé ici, sauf s'il
+  est déjà celui que la Community sert. La version de schéma lue à l'étape 1
+  est ce qui permet de le savoir.
 - Les paquets sont en `0.x`. La surface publique n'est pas gelée, et c'est
   pourquoi chaque version s'épingle à l'exact, sans `^`.

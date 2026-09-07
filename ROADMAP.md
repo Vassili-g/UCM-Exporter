@@ -181,12 +181,11 @@ reconstruit la sonde et laisse le workflow publier son rapport. C'est la seule
 preuve du projet qui traverse Figma, GitHub et npm dans le même geste, et aucun
 test de ce dépôt ne peut la remplacer.
 
-Ce qui est servi aujourd'hui : `@ucm-kit/core@0.1.14` et `@ucm-kit/cli@0.1.10`,
-tous deux réinstallés depuis un dossier vide par l'épreuve de registre de
-`publish.yml`. `@ucm-kit/adapter-typescript` reste en `0.1.0` sur le registre :
-sa publication échoue en `ENEEDAUTH`, faute d'entrée d'éditeur de confiance
-valide chez npm, et le geste correctif appartient au compte npm, pas à ce dépôt.
-La recette en tient la marche à suivre.
+Les trois paquets que le dépôt porte sont servis par le registre, et chacun a
+été réinstallé depuis un dossier vide par l'épreuve de registre de
+`publish.yml`. Ce que la recette ajoute et qu'aucune de ces épreuves ne couvre :
+Figma, une vraie pull request, et la comparaison d'une sonde reconstruite avec
+sa maquette.
 
 ## Critères de sortie du MVP
 
