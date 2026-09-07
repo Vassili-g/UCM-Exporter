@@ -488,6 +488,60 @@ function abandon(titre, explication, terminal, echecsDeTests) {
 }
 
 /**
+ * Rend le verdict d'un repository sans aucun contrat : rien à contrôler, donc
+ * aucun refus de fusion.
+ *
+ * Le projet traite déjà une implémentation absente comme un état d'avancement.
+ * Un export absent reçoit ici le même traitement. Sans ce verdict, la CI
+ * installée par `ucm init` refuse la fusion dès le premier push, avant que le
+ * moindre export ait pu avoir lieu.
+ *
+ * Le rapport demande un geste, exporter, ce qui est la condition à laquelle un
+ * message destiné au designer s'écrit.
+ *
+ * Le dossier cherché est nommé dans le rapport. Un `ucm.config.json` qui vise un
+ * dossier inexistant produit le même relevé qu'un repository neuf, et aucune
+ * mesure ne les sépare ; nommer l'endroit cherché laisse un développeur repérer
+ * un chemin fautif sans que ce module ait à le supposer.
+ */
+function demarrage({ dossierDeclare, dossierAbsent, sourceTokens, tokensAbsents, echecsDeTests }) {
+  const lignes = echecsDeTests.echoue
+    ? enteteDuVerdict([], false)
+    : [
+      "## ✅ Ce repository n'a pas encore reçu d'export",
+      "",
+      `Aucun contrat n'a été trouvé dans \`${dossierDeclare}\`, il n'y a donc rien à contrôler. Un repository où UCM vient d'être installé se trouve dans cet état jusqu'à son premier export.`,
+      "",
+    ];
+
+  const etat = [];
+  if (tokensAbsents) etat.push(`\`${sourceTokens}\` n'a pas encore été exporté.`);
+  if (dossierAbsent) {
+    etat.push(`Le dossier \`${dossierDeclare}\`, déclaré par \`ucm.config.json\`, n'existe pas encore. Si des contrats devaient déjà s'y trouver, un développeur doit corriger ce chemin.`);
+  }
+  if (etat.length > 0) lignes.push(...etat, "");
+
+  lignes.push(
+    "#### Action",
+    "",
+    "Un designer ouvre le plugin dans Figma, lance **Exporter les tokens**, puis exporte un premier composant. Ce rapport contrôlera alors chaque contrat déposé.",
+    "",
+  );
+  lignes.push(...diagnosticEchecsDeTests(echecsDeTests));
+
+  return {
+    bilans: [],
+    fautifs: [],
+    bloquant: echecsDeTests.echoue,
+    rapport: lignes.join("\n"),
+    terminal: [{
+      flux: "log",
+      texte: `✓ Aucun contrat dans ${dossierDeclare} : ce repository n'a pas encore reçu d'export. Rien à contrôler.`,
+    }],
+  };
+}
+
+/**
  * Contrôle un repository et rend son verdict — sans rien écrire nulle part.
  *
  * `adaptateur` est la seule porte par laquelle une connaissance de stack entre
@@ -505,6 +559,27 @@ export function controlerRepository(racine, {
   const sourceTokens = configuration.tokens;
   const motif = configuration.implementation;
 
+  // Les contrats se cherchent avant que les tokens soient jugés, parce que leur
+  // nombre décide de ce qu'un fichier de tokens absent signifie. Un contrat cite
+  // des références qu'il faut résoudre ; sans contrat, aucune référence n'existe
+  // et l'absence du fichier ne prive aucun contrôle de sa matière. L'ordre
+  // inverse refusait la fusion avant d'avoir compté.
+  //
+  // Un dossier absent compte pour zéro contrat. Il manque tant que le premier
+  // export n'a pas eu lieu, ce qui est le cas de tout repository neuf.
+  const dossierContrats = join(racine, configuration.components);
+  let contrats;
+  let dossierAbsent = false;
+  try {
+    contrats = trouverContrats(dossierContrats);
+  } catch (erreur) {
+    // Seule l'absence vaut état d'avancement. Un ENOTDIR ou un EACCES signalent
+    // une panne, et les avaler ici rendrait un verdict vert pour une panne.
+    if (erreur?.code !== "ENOENT") throw erreur;
+    contrats = [];
+    dossierAbsent = true;
+  }
+
   // Lire les tokens EUX-MÊMES, et non la sortie CSS qu'ils produisent. Le nom
   // d'un token est son chemin, écrit à l'identique dans le contrat et dans le
   // fichier DTCG : les comparer ne demande aucune traduction. Passer par une
@@ -513,46 +588,45 @@ export function controlerRepository(racine, {
   // chaîne d'outillage entre les tokens et lui.
   const cheminTokens = join(racine, sourceTokens);
   let tokensDtcg;
+  let tokensAbsents = false;
   try {
     tokensDtcg = JSON.parse(readFileSync(cheminTokens, "utf8").replace(/^﻿/, ""));
   } catch (erreur) {
     // Absent et illisible ne se corrigent pas du même geste : le premier accuse
     // la génération, le second le fichier. Les confondre enverrait le designer
     // réparer un JSON qui n'existe pas.
+    //
+    // Seule l'absence dépend du compte des contrats. Un fichier tronqué appelle
+    // le même geste à tout moment, cesser de l'éditer à la main, y compris dans
+    // un repository qui n'a encore rien exporté.
     const absent = erreur?.code === "ENOENT";
-    return abandon(
-      absent ? `\`${sourceTokens}\` est introuvable` : `\`${sourceTokens}\` est illisible`,
-      absent
-        ? `Le fichier de tokens est absent du repository : aucune référence n'a pu être vérifiée. Si cette pull request modifie les tokens, relancez **Exporter les tokens** depuis Figma ; sinon, signalez-le à un développeur.`
-        : "Le fichier de tokens n'est pas du JSON valide : il a sans doute été tronqué ou modifié à la main. Relancez **Exporter les tokens** depuis Figma plutôt que de le corriger.",
-      [{
-        flux: "error",
-        texte: absent
-          ? `✗ ${cheminTokens} introuvable. Régénérez les tokens du repository.`
-          : `✗ ${cheminTokens} est illisible. Relancez l’export de tokens depuis Figma.`,
-      }],
-      echecsDeTests,
-    );
+    if (!absent || contrats.length > 0) {
+      return abandon(
+        absent ? `\`${sourceTokens}\` est introuvable` : `\`${sourceTokens}\` est illisible`,
+        absent
+          ? `Le fichier de tokens est absent du repository : aucune référence n'a pu être vérifiée. Si cette pull request modifie les tokens, relancez **Exporter les tokens** depuis Figma ; sinon, signalez-le à un développeur.`
+          : "Le fichier de tokens n'est pas du JSON valide : il a sans doute été tronqué ou modifié à la main. Relancez **Exporter les tokens** depuis Figma plutôt que de le corriger.",
+        [{
+          flux: "error",
+          texte: absent
+            ? `✗ ${cheminTokens} introuvable. Régénérez les tokens du repository.`
+            : `✗ ${cheminTokens} est illisible. Relancez l’export de tokens depuis Figma.`,
+        }],
+        echecsDeTests,
+      );
+    }
+    tokensAbsents = true;
+    tokensDtcg = {};
   }
 
-  // Troisième filet, ajouté par T5.2 : le dossier des contrats peut ne pas
-  // exister. Chez le consommateur d'origine il existait toujours et le cas ne
-  // s'était jamais posé ; ailleurs, c'est un `ucm.config.json` qui se trompe de
-  // chemin, ou un repo qui n'a pas encore reçu son premier export. Laisser
-  // remonter l'ENOENT rendrait une stack trace Node là où ce module s'interdit
-  // partout ailleurs d'exploser plutôt que de diagnostiquer.
-  const dossierContrats = join(racine, configuration.components);
-  let contrats;
-  try {
-    contrats = trouverContrats(dossierContrats);
-  } catch (erreur) {
-    if (erreur?.code !== "ENOENT") throw erreur;
-    return abandon(
-      `\`${configuration.components}\` est introuvable`,
-      "Le dossier qui doit contenir les contrats n'existe pas dans le repository : aucun contrat n'a pu être contrôlé. Un développeur doit créer ce dossier ou corriger le chemin déclaré dans `ucm.config.json`.",
-      [{ flux: "error", texte: `✗ ${dossierContrats} introuvable : aucun contrat n'a pu être cherché.` }],
+  if (contrats.length === 0) {
+    return demarrage({
+      dossierDeclare: configuration.components,
+      dossierAbsent,
+      sourceTokens,
+      tokensAbsents,
       echecsDeTests,
-    );
+    });
   }
 
   const documents = contrats.flatMap((chemin) => {

@@ -64,8 +64,8 @@ ouvrir.
 Deux commandes, et aucun script à écrire.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.8 init                       # écrit les cinq fichiers manquants
-npx --yes @ucm-kit/cli@0.1.8 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.9 init                       # écrit les cinq fichiers manquants
+npx --yes @ucm-kit/cli@0.1.9 check --report ci-report.md
 ```
 
 `--yes` évite l'invite de confirmation de `npx`, qui bloquerait une exécution
@@ -199,7 +199,7 @@ npm install @ucm-kit/core
 | `@ucm-kit/core/schema` | JSON Schema, pour les éditeurs et les consommateurs qui ne lisent pas TypeScript |
 
 Un projet TypeScript peut installer
-`@ucm-kit/adapter-typescript@0.1.1` pour ajouter la comparaison statique des
+`@ucm-kit/adapter-typescript@0.1.2` pour ajouter la comparaison statique des
 props et de la composition, ainsi que la génération des types dérivés des
 contrats.
 

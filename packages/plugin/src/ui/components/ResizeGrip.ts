@@ -1,7 +1,9 @@
+import { versSandbox } from '../pont';
+
 /**
  * La poignée de redimensionnement de la fenêtre.
  */
-export function createResizeGrip() {
+export function createResizeGrip(): HTMLDivElement {
   const grip = document.createElement('div');
   grip.className = 'resize-grip';
   grip.setAttribute('aria-hidden', 'true');
@@ -21,17 +23,12 @@ export function createResizeGrip() {
     // Le pointeur est en coordonnées de la fenêtre : sa position EST la taille
     // demandée, à la marge de la poignée près. Aucun delta à accumuler, donc
     // aucune dérive après plusieurs glissés.
-    const suivre = (mouvement) => {
-      parent.postMessage(
-        {
-          pluginMessage: {
-            type: 'resize',
-            largeur: Math.ceil(mouvement.clientX + 4),
-            hauteur: Math.ceil(mouvement.clientY + 4),
-          },
-        },
-        '*',
-      );
+    const suivre = (mouvement: PointerEvent) => {
+      versSandbox({
+        type: 'resize',
+        largeur: Math.ceil(mouvement.clientX + 4),
+        hauteur: Math.ceil(mouvement.clientY + 4),
+      });
     };
 
     const relacher = () => {

@@ -3,7 +3,7 @@
  * Le SVG embarqué reste fiable dans la sandbox Figma, où le kit distant ne
  * peut pas toujours remplacer les éléments <i>.
  */
-function createSettingsIcon() {
+function createSettingsIcon(): SVGSVGElement {
   const namespace = 'http://www.w3.org/2000/svg';
   const icon = document.createElementNS(namespace, 'svg');
   icon.setAttribute('viewBox', '0 0 512 512');
@@ -20,10 +20,29 @@ function createSettingsIcon() {
   return icon;
 }
 
+/** Ce qu'une page affiche dans l'en-tête : un titre, et un sous-titre optionnel. */
+export interface PageEnTete {
+  title: string;
+  subtitle?: string;
+}
+
+/** Les éléments de l'en-tête que le routeur UI pilote après coup. */
+export interface EnTeteUi {
+  element: HTMLDivElement;
+  connection: HTMLButtonElement;
+  settingsButton: HTMLButtonElement;
+  backButton: HTMLButtonElement;
+  setPage(page: PageEnTete): void;
+}
+
 /**
  * Crée l'en-tête et renvoie ses éléments pilotés par le routeur UI.
  */
-export function createHeader(page, onSettings, onBack) {
+export function createHeader(
+  page: PageEnTete,
+  onSettings: () => void,
+  onBack: () => void,
+): EnTeteUi {
   const header = document.createElement('div');
   header.className = 'header';
 
@@ -36,7 +55,7 @@ export function createHeader(page, onSettings, onBack) {
   const subtitleElement = document.createElement('p');
   subtitleElement.className = 'subtitle';
 
-  const setPage = ({ title, subtitle }) => {
+  const setPage = ({ title, subtitle }: PageEnTete) => {
     titleElement.textContent = title;
     subtitleElement.textContent = subtitle ?? '';
     subtitleElement.hidden = !subtitle;

@@ -110,6 +110,21 @@ anything. It never rewrites a contract; every reader takes a contract and
 returns a verdict. Producing contracts is the plugin's job, and implementing the
 component is yours.
 
+## What changed in 0.1.13
+
+**A repository with no contract at all no longer blocks a merge.** Earlier
+releases refused a repository whose tokens file was missing, and refused one
+whose contract folder did not exist. Both describe a repository where UCM has
+just been installed, so the first push after `ucm init` was red.
+
+The number of contracts decides. With none, nothing cites a token and there is
+nothing to check, so `controlerRepository` returns a green verdict whose report
+names the next step. With one contract or more, a missing tokens file blocks the
+merge as it did before, because that contract cites tokens nobody can resolve.
+
+A tokens file that exists but does not parse blocks at any stage. Missing and
+unreadable call for different fixes, and this release keeps them apart.
+
 ## Status
 
 **0.x, the public surface is not frozen.** Pin an exact version, without `^`.

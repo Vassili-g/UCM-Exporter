@@ -106,6 +106,29 @@ tokens. La forme est tranchée d'avance pour que le geste soit alors mécanique 
 `$extensions`, namespace `com.ucm.*`, comme `com.ucm.modes` que le fichier
 emploie déjà. Un fichier sans ce champ voudra dire « grammaire d'origine ».
 
+## Un verdict qui change relève de la classe 6
+
+La classe 6 couvre le cas où le format ne bouge pas, où aucun contrat déjà
+fusionné ne change de sens, et où le verdict rendu à un consommateur change
+malgré tout. Elle se traite en semver de paquet.
+
+`@ucm-kit/core@0.1.13` en donne un exemple. Un repository sans aucun contrat
+recevait un refus, `tokens.json est introuvable` ; il reçoit un rapport vert qui
+nomme le geste suivant. La mise à jour fait donc passer une CI du rouge au vert
+sur un dépôt où rien n'était anormal.
+
+Trois vérifications séparent ce cas d'un changement de format :
+
+- aucun contrat n'est lu autrement, le discriminant étant leur nombre ;
+- dès qu'un contrat existe, le verdict précédent s'applique à l'identique ;
+- la fenêtre de lecture et `CONTRACT_VERSION` ne bougent pas.
+
+Un verdict qui se relâche se publie comme une nouveauté. Le README du paquet
+l'annonce, puisqu'il part sur le registre avec lui et que son consommateur le
+lit ; sans cette mention, la date à laquelle un contrôle a cessé de refuser reste
+introuvable. La section « What changed in 0.1.13 » de `packages/kit/README.md`
+applique cette règle.
+
 ## Qui publie, qui migre, qui peut fusionner
 
 - **publie** : le mainteneur du format monte `CONTRACT_VERSION`, écrit l'entrée

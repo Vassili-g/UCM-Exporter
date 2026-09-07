@@ -17,19 +17,22 @@ dans l'ordre d'exécution ; le bug promu hors de ce chantier y est **T4.5**.
 
 ## État opérationnel — 6 septembre 2026
 
-**Tout ce qui se prouve hors de Figma est fait. Deux observations dans Figma ne
-le sont pas, et rien dans ce repository ne peut les remplacer.** U4.7 et U4.8
-sont livrées et vertes. U4.9 est faite pour ses trois lois et ses deux états de
-galerie ; sa dernière moitié — recharger `dist` dans Figma et regarder les trois
-issues dans les deux thèmes — attend le fichier réel. Elle porte donc `[~]`, un
-statut qui n'existe qu'ici et ne doit pas se lire comme un `[X]`.
+**Ce plan est clos.** Les deux observations qui manquaient ont été faites dans
+un fichier Figma réel, et U6.1, la dernière décision en suspens, est tranchée et
+exécutée.
 
-U4.5 est **partiellement validée** pour la même raison : la règle est écrite
-dans `packages/plugin/SPEC.md` et protégée par un test de source, mais
-l'observation sur un fichier Figma réel n'a pas eu lieu. U5.5 est **clôturée par
-décision sans implémentation** : aucun bouton « Tester la connexion » séparé n'a
-été ajouté. Aucun de ces trois statuts ne doit être résumé par « tout est
-livré ».
+U4.7 et U4.8 étaient livrées et vertes. U4.9 l'est désormais entièrement : ses
+trois lois, ses deux états de galerie, et la dernière moitié qui demandait de
+recharger `dist` dans Figma pour regarder les trois issues dans les deux thèmes.
+U4.5 également : la règle était écrite dans `packages/plugin/SPEC.md` et
+protégée par un test de source, l'observation sur fichier réel l'a confirmée.
+U5.5 reste **clôturée par décision sans implémentation** ; aucun bouton
+« Tester la connexion » séparé n'a été ajouté.
+
+**La portée de ces deux clôtures.** Le propriétaire du projet rapporte ces
+constats, et aucun contrôle de ce dépôt ne peut les rejouer, ce qui est la
+raison pour laquelle ils restaient dus. Une régression de l'un ou l'autre ne se
+verra donc que dans Figma, à l'œil.
 
 **Les phases U7 et U8 sont venues APRÈS.** Elles ne sont pas issues d'un audit
 mais de deux relectures de l'interface livrée, par le designer qui s'en sert.
@@ -41,12 +44,11 @@ journal replié, qu'U4.2 avait gardé ; et la survie du résultat à une perte d
 sélection, qu'U7 avait tranchée dans l'autre sens. Chaque révision porte sa
 raison, dans U7.2, U7.6 et U8.2.
 
-**Ce qui reste, dans l'ordre.** Deux gestes demandent le fichier Figma :
-recharger le `dist` construit et regarder les trois issues d'un export — la
-phase U7 ajoute à ce regard les deux cartes et l'écran sans sélection ; puis
-réexporter le corpus, car les quatre contrats du Playground portent encore les
-huit diagnostics `UCM_EXPORT_INFO` que U4.7 a supprimés. U6.1 reste une décision
-à prendre, pas un bug à corriger automatiquement.
+**Ce qui reste, et qui n'appartient plus à ce plan.** Le corpus du Playground
+doit être réexporté, ses quatre contrats portant encore les huit diagnostics
+`UCM_EXPORT_INFO` que U4.7 a supprimés. Le Playground a été vidé depuis, si bien
+que ce réexport se fait à l'étape 6 de la recette N6, décrite dans
+[GUIDE-RECETTE-REPO-VIERGE.md](./GUIDE-RECETTE-REPO-VIERGE.md).
 
 Ce plan ne touche ni le format du contrat, ni le moteur d'extraction — une seule
 tâche s'en approche, U4.3, et elle est écrite pour ne pas franchir la frontière.
@@ -100,10 +102,11 @@ tailles de contrôle de l'hôte, aucune couleur de marque propre.
 ([AGENTS.md](../../AGENTS.md)). La sélection et le viewport sont un cas à trancher
 explicitement, pas à supposer : c'est U4.5.
 
-**2. L'UI reste du DOM natif.** `src/ui/index.js` est bundlé par esbuild puis
+**2. L'UI reste du DOM natif.** `src/ui/index.ts` est bundlé par esbuild puis
 inliné dans un HTML unique (`scripts/build-ui.cjs`, tenu par
 `tests/buildUi.test.ts`). Pas de framework : le choix est déjà écrit dans
-`src/ui/components/Button.js`.
+`src/ui/components/Button.ts`. U6.1 l'a passée en TypeScript sans toucher au
+bundle : esbuild retire les types au moment de construire.
 
 **3. Aucune couleur codée en dur qui décide.** Les replis en dur servent au
 développement hors de Figma ; ils ne doivent jamais être le chemin normal, et
@@ -222,7 +225,9 @@ porte le fait respecter.
       niveau, arrivent tous en `log-info`, et aucune règle de `styles.css` ne
       stylise cette classe. Geste : déclarer les deux sens dans un seul type,
       **avant** d'en ajouter un dixième. L'UI est en JavaScript, donc ce type ne
-      la contraint pas ; il vaut comme domicile unique de la liste (voir U6.2).
+      la contraint pas ; il vaut comme domicile unique de la liste. U6.1 a levé
+      cette réserve : l'interface est passée en TypeScript, et le type contraint
+      désormais les deux sens.
       *Fait — `src/messages.ts`, `UiRequest` et `PluginMessage`.* Et un type
       déclaré n'aurait rien contraint du tout : `figma.ui.postMessage` accepte
       n'importe quoi, donc un dixième type inventé serait parti sans erreur, pour
@@ -989,11 +994,12 @@ reste ouverte.
       et c'est exactement le moment où une règle de prose se met à glisser : le
       filet lit la source et refuse les portes d'écriture de l'API. Vu rouge en
       ajoutant un `commitUndo()`.
-      **⚠ Ce que je n'ai pas pu faire, et que la tâche demandait :** ouvrir un
-      fichier réel et constater qu'après un clic, Figma ne marque pas le document
-      comme modifié. Aucun accès à Figma depuis ce poste. La décision tient donc
-      sur la documentation de l'API, et la spécification le DIT au lieu de le
-      sous-entendre — l'observation reste à faire, et elle est nommée.
+      **L'observation manquante a eu lieu le 6 septembre 2026.** Le poste qui a
+      écrit la règle n'avait pas accès à Figma ; la décision tenait donc sur la
+      documentation de l'API, et la spécification l'écrivait au lieu de le
+      sous-entendre. Un fichier réel a depuis été ouvert, et le constat rejoint
+      ce que l'API annonçait : après un clic depuis le plugin, Figma ne marque
+      pas le document comme modifié. La tâche est complète.
 
 - [X] **U4.6 — Tester ce qui décide, pas le DOM.** La logique qui mérite un test
       est celle qui range un message dans un groupe, dérive l'état de la cible,
@@ -1208,7 +1214,7 @@ réparent pas ce défaut de fond.
       `packages/plugin/SPEC.md`. *Suite verte : 498 tests côté plugin (812 au
       total), `typecheck` et `build` compris.*
 
-- [~] **U4.9 — Prouver le résultat dans Figma et dans la galerie.** Ajouter
+- [X] **U4.9 — Prouver le résultat dans Figma et dans la galerie.** Ajouter
       l'état « Stresstest, transformations normales » : les sept cas ci-dessus
       sont présents dans le contrat mais le compte rendu ne contient ni
       « Constats », ni carte de diagnostic, ni avertissement de pull request.
@@ -1224,10 +1230,13 @@ réparent pas ce défaut de fond.
       Cette dernière vérification distingue une régression de l'UI d'un bundle
       Figma resté ancien.
 
-      *Faite le 6 septembre 2026, SAUF sa dernière moitié :* tout ce qui se
-      prouve hors de Figma est fait et vert ; **l'observation dans Figma reste à
-      faire, et elle demande le fichier réel.** Le statut est donc `[~]`, pas
-      `[X]` : voir « Ce qui reste à trancher ».
+      *Faite le 6 septembre 2026, ses deux moitiés comprises.* Tout ce qui se
+      prouve hors de Figma est fait et vert. **L'observation dans Figma a eu lieu
+      le même jour** : le `dist` construit a été rechargé dans un fichier réel,
+      et les trois issues revues dans les deux thèmes à la taille minimale de la
+      fenêtre, avec les deux cartes de commande et l'écran sans sélection ajoutés
+      par la phase U7. Le statut `[~]` disparaît donc. Aucun contrôle de ce dépôt
+      ne tient ce constat ; l'état opérationnel en tête de document le rappelle.
 
       **Trois lois nouvelles, dont deux que l'énoncé demandait mot pour mot.**
 
@@ -1395,14 +1404,14 @@ réparent pas ce défaut de fond.
 
 ## Phase U6 — À décider avant d'être fait
 
-- [ ] **U6.1 — Passer l'UI en TypeScript.** `build:ui:js` fait déjà passer
+- [X] **U6.1 — Passer l'UI en TypeScript.** `build:ui:js` fait déjà passer
       `src/ui/index.js` par esbuild : renommer en `.ts` coûte presque rien, et le
       type unique de U0.6 contraindrait alors les deux côtés au lieu d'un seul.
       Contre : l'UI est volontairement légère et sans outillage. À décider une
       fois, pas deux.
 
-      **Tranché le 6 septembre 2026 : oui.** La décision est prise, le travail
-      ne l'est pas — d'où la case encore ouverte. Ce qui l'emporte est ce que
+      **Tranché le 6 septembre 2026 : oui**, et fait le même jour. Ce qui
+      l'emporte est ce que
       `messages.ts` écrit déjà de lui-même : le type contraint le côté sandbox,
       et pour l'UI il « vaut comme liste de référence », rien de plus. Le jour
       où le moteur renomme un champ, l'UI continue de lire l'ancien nom, aucune
@@ -1412,12 +1421,39 @@ réparent pas ce défaut de fond.
       renommage SONT le bénéfice ; s'il n'en apparaît aucune, la tâche n'aura
       rien coûté.
 
-      **À faire après l'observation dans Figma** (U4.9, dernière moitié) : le
-      `dist` construit doit être regardé avant d'être remué, sans quoi une
-      régression de l'UI et un bundle resté ancien redeviennent indiscernables.
+      **L'ordre annoncé a été tenu :** l'observation dans Figma (U4.9, dernière
+      moitié) d'abord, la conversion ensuite. Regarder le `dist` construit avant
+      de le remuer garde discernables une régression de l'UI et un bundle Figma
+      resté ancien.
 
-      **Une entorse à corriger dans le même geste :** `packages/plugin/src/messages.ts`
-      renvoie à « U6.2 » pour cette décision, qui porte le numéro U6.1 ici.
+      **Ce que la conversion a produit.** Neuf fichiers renommés et un dixième
+      créé, `src/ui/pont.ts`, qui porte `versSandbox`. Cette fonction est la
+      porte d'envoi de l'interface vers le sandbox, symétrique de `versUi` dans
+      `code.ts`, et elle rend `UiRequest` contraignant : cinq
+      `parent.postMessage` dispersés laissaient la liste documentaire. Le
+      typecheck complet passe.
+
+      **Une faute trouvée.** `githubPat` est optionnel dans `SettingsInput`, et
+      la validation locale de l'interface écrivait `settings.githubPat.trim()`.
+      Le formulaire en fournit toujours un, fût-il vide, ce qui masquait le
+      défaut ; un appel construit ailleurs aurait fait lever l'interface au lieu
+      de refuser la saisie.
+
+      **Un effet sur une loi voisine.** `loiDuDocumentIntact.test.ts` balaie les
+      sources `.ts` du plugin à la recherche des portes d'écriture de l'API
+      Figma, `appendChild` compris. Il ne voyait pas l'interface tant qu'elle
+      était en JavaScript ; la conversion lui a fait signaler treize
+      `appendChild` de DOM, qui ne touchent aucun document Figma puisque
+      l'interface s'exécute dans une iframe sans le global `figma`. Le balayage
+      exclut donc `src/ui`, et deux assertions gardent cette exclusion exacte :
+      le dossier exclu doit exister, et aucun fichier d'interface ne doit passer
+      le filtre. Le resserrement a été éprouvé : un `figma.commitUndo()` posé
+      dans `code.ts` fait toujours échouer la loi, et le retirer la rétablit.
+
+      **L'entorse annoncée n'existait pas.** Cette entrée indiquait que
+      `packages/plugin/src/messages.ts` renvoyait à « U6.2 ». Ce fichier ne cite
+      aucun numéro de tâche ; le renvoi fautif était en U0.6 de ce document, où
+      il est corrigé.
 
 ### Abandonné — prévenir d'un écart de version de contrat
 
@@ -1753,9 +1789,14 @@ devant tout le reste du graphique.
    dans le même ordre. Restait un dépliant permanent qu'il fallait ouvrir pour
    découvrir qu'il ne contenait rien de neuf.
 3. **La sélection depuis l'UI est-elle acceptable au regard de l'invariant ?**
-   C'est U4.5, et la réponse doit être écrite, pas supposée.
+   ~~C'est U4.5, et la réponse doit être écrite, pas supposée.~~ **Tranché le
+   5 septembre 2026 : oui**, et écrit dans `packages/plugin/SPEC.md`. Le constat
+   sur un fichier Figma réel a suivi le 6 septembre : un clic depuis le plugin
+   ne marque pas le document comme modifié.
 4. **Le compte rendu tient-il dans Figma, et pas seulement dans la galerie ?**
-   C'est la dernière moitié de U4.9, et elle ne peut pas se trancher ici : la
+   **Tranché le 6 septembre 2026 : oui**, par l'observation elle-même. L'énoncé
+   qui suit est conservé parce qu'il nomme ce qu'il fallait regarder. C'était la
+   dernière moitié de U4.9, et elle ne pouvait pas se trancher ici : la
    galerie DÉCALQUE les couleurs de Figma (`theme-figma.css`), elle ne les
    reçoit pas. Trois choses restent à regarder sur le build réel, dans les deux
    thèmes et à la taille minimale de la fenêtre — un export sain, qui ne doit
@@ -1764,12 +1805,12 @@ devant tout le reste du graphique.
    export impossible, dont le rouge doit rester seul. Recharger ce build précis
    est la moitié du contrôle : sans lui, une régression de l'UI et un bundle
    Figma resté ancien se ressemblent.
-5. **Quand le corpus est-il réexporté ?** Les quatre contrats du Playground
-   portent encore les huit `UCM_EXPORT_INFO` que U4.7 a supprimés — vérifié sur
-   `StressTest.contract.json`, qui en compte exactement huit et aucun autre
-   diagnostic. Tant qu'ils ne sont pas réexportés, le corpus montre l'ancien
-   comportement du moteur ; ce n'est pas une régression, c'est un artefact daté,
-   et il vaut mieux le dire que le laisser lire comme un désaccord.
+5. **Quand le corpus est-il réexporté ?** ~~Les quatre contrats du Playground
+   portent encore les huit `UCM_EXPORT_INFO` que U4.7 a supprimés.~~ **Répondu
+   le 6 septembre 2026 : à la recette N6.** Le Playground a été vidé de ses
+   quatre contrats pour recevoir la recette, si bien que l'artefact daté n'existe
+   plus et que le réexport n'est plus une correction à programmer : c'est
+   l'étape 6 de [GUIDE-RECETTE-REPO-VIERGE.md](./GUIDE-RECETTE-REPO-VIERGE.md).
 6. **Par quoi rouvrir un canal de débogage, le jour où il manque ?** La question
    naît de U7.6, et elle n'a pas de réponse par défaut : le journal supprimé
    n'en était pas un — il redisait le compte rendu. Ce qui manquerait vraiment

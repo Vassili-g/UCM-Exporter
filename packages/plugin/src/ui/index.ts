@@ -3,13 +3,22 @@
  * Point d'entrée de l'interface Unified Component Exporter.
  * Il assemble les vues et route les messages entre le DOM et le sandbox Figma.
  */
-import { createHeader } from './components/Header.js';
-import { createConfigurationPage } from './components/ConfigurationPage.js';
-import { createCarteComposant } from './components/CarteComposant.js';
-import { createCarteTokens } from './components/CarteTokens.js';
-import { createResizeGrip } from './components/ResizeGrip.js';
+import type { PluginMessage } from '../messages';
+import type { CarteCommandeUi } from './components/CarteCommande';
+import type { PageEnTete } from './components/Header';
+import { createHeader } from './components/Header';
+import { createConfigurationPage } from './components/ConfigurationPage';
+import { createCarteComposant } from './components/CarteComposant';
+import { createCarteTokens } from './components/CarteTokens';
+import { createResizeGrip } from './components/ResizeGrip';
+import { versSandbox } from './pont';
 
-const app = document.getElementById('app');
+/**
+ * `index.html` déclare ce conteneur, et ce bundle n'est chargé dans aucun autre
+ * document. Son absence signalerait un gabarit cassé, que le build refuse déjà
+ * (`tests/buildUi.test.ts`).
+ */
+const app = document.getElementById('app') as HTMLElement;
 app.className = 'container';
 
 const exportPage = document.createElement('div');
@@ -32,14 +41,14 @@ depotRepli.className = 'depot-repli';
 depotRepli.hidden = true;
 
 const configurationPage = createConfigurationPage((settings) => {
-  parent.postMessage({ pluginMessage: { type: 'save-settings', settings } }, '*');
+  versSandbox({ type: 'save-settings', settings });
 });
 const configPage = configurationPage.element;
 
 /**
  * Ce que l'en-tête annonce, par page.
  */
-const PAGES = {
+const PAGES: Record<'export' | 'configuration', PageEnTete> = {
   export: {
     title: 'Unified Component Exporter',
 
@@ -68,34 +77,41 @@ function showExports() {
 
 const header = createHeader(PAGES.export, showConfiguration, showExports);
 
-let active = composant;
+let active: CarteCommandeUi = composant;
 
-function occuper(valeur) {
+function occuper(valeur: boolean) {
   active.marquerOccupee(valeur);
   app.setAttribute('aria-busy', String(valeur));
 }
 
-function demanderAnalyse(carte, type) {
+function demanderAnalyse(
+  carte: CarteCommandeUi,
+  type: 'analyser-composant' | 'analyser-tokens',
+) {
   active = carte;
   carte.reinitialiser();
   occuper(true);
   carte.ecrireNote('loading', 'Traitement en cours…');
-  parent.postMessage({ pluginMessage: { type } }, '*');
+  versSandbox({ type });
 }
 
-function demanderPublication(carte) {
+function demanderPublication(carte: CarteCommandeUi) {
   active = carte;
   occuper(true);
-  parent.postMessage({ pluginMessage: { type: 'publier' } }, '*');
+  versSandbox({ type: 'publier' });
 }
 
 function annuler() {
-  parent.postMessage({ pluginMessage: { type: 'annuler' } }, '*');
+  versSandbox({ type: 'annuler' });
 }
 
 exportPage.append(composant.element, depotRepli, tokens.element);
 
-function updateConnection({ state, pastille, geste }) {
+function updateConnection({
+  state,
+  pastille,
+  geste,
+}: Extract<PluginMessage, { type: 'connection' }>) {
   header.connection.dataset.state = state;
   header.connection.textContent = pastille;
   configurationPage.updateConnection(state, geste);
@@ -109,9 +125,9 @@ footer.className = 'app-footer';
 footer.hidden = true;
 
 app.append(header.element, exportPage, configPage, footer, createResizeGrip());
-parent.postMessage({ pluginMessage: { type: 'ui-ready' } }, '*');
+versSandbox({ type: 'ui-ready' });
 
-onmessage = (event) => {
+onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   const message = event.data.pluginMessage;
   if (!message) return;
 
@@ -135,7 +151,7 @@ onmessage = (event) => {
     const publier = active.proposerPublication(message.action);
     if (message.action) publier.focus();
 
-    active.marquerAnalysee?.();
+    if ('marquerAnalysee' in active) (active as { marquerAnalysee(): void }).marquerAnalysee();
   }
 
   if (message.type === 'depot') {
@@ -184,7 +200,7 @@ onmessage = (event) => {
   }
 };
 
-window.addEventListener('error', (event) => {
+window.addEventListener('error', (event: ErrorEvent) => {
   occuper(false);
   configurationPage.releaseSaveButton();
   active.ecrireNote('error', `Erreur UI : ${event.message}`);

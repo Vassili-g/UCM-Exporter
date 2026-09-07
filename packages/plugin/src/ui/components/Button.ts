@@ -3,11 +3,31 @@
  * Le composant reste volontairement DOM natif pour garder l'UI légère.
  */
 
+/** Les deux poids visuels d'un bouton. */
+export type VarianteBouton = 'primary' | 'secondary';
+
+/** Un `<button>` de cette interface, augmenté de `setLabel`. */
+export interface BoutonUi extends HTMLButtonElement {
+  setLabel(texte: string): void;
+}
+
+export interface OptionsBouton {
+  label: string;
+  variant?: VarianteBouton;
+  onClick?: (event: MouseEvent) => void;
+  disabled?: boolean;
+}
+
 /**
  * Crée un bouton accessible avec libellé, variante et action optionnelle.
  */
-export function createButton({ label, variant = 'primary', onClick, disabled = false }) {
-  const button = document.createElement('button');
+export function createButton({
+  label,
+  variant = 'primary',
+  onClick,
+  disabled = false,
+}: OptionsBouton): BoutonUi {
+  const button = document.createElement('button') as BoutonUi;
   button.type = 'button';
   button.className = `btn btn-${variant}`;
   button.disabled = disabled;
@@ -22,7 +42,7 @@ export function createButton({ label, variant = 'primary', onClick, disabled = f
    * depuis l'extérieur marcherait aujourd'hui et casserait le jour où il en
    * gagne un second.
    */
-  button.setLabel = (texte) => {
+  button.setLabel = (texte: string) => {
     labelNode.textContent = texte;
   };
 

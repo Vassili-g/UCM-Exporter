@@ -27,7 +27,7 @@ const POSEES_PAR_FIGMA = new Set(['figma-dark']);
 
 function sourcesUi(): string {
   const fichiers = [
-    path.join(dossierUi, 'index.js'),
+    path.join(dossierUi, 'index.ts'),
     ...fs
       .readdirSync(path.join(dossierUi, 'components'))
       .map((nom) => path.join(dossierUi, 'components', nom)),
