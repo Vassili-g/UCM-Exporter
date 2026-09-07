@@ -105,7 +105,7 @@ export function validateSettings(input: SettingsInput, storedPat = ''): Settings
   if (!baseBranch) errors.baseBranch = 'La branche de base est obligatoire.';
 
   /*
-   * Les deux chemins sont un REPLI depuis U5.1 : vides, ils laissent le
+   * Les deux chemins sont un repli : vides, ils laissent le
    * repository décider par son `ucm.config.json`. Leur forme reste vérifiée —
    * un chemin qui remonte hors du repository n'est jamais une réponse — mais
    * leur absence n'est plus une erreur.
@@ -143,7 +143,7 @@ export function validateSettings(input: SettingsInput, storedPat = ''): Settings
 }
 
 /**
- * Retire le PAT du poste (U5.4).
+ * Retire le PAT du poste.
  *
  * Aucun geste ne le faisait : ni rotation, ni changement de repository, ni
  * départ. Un champ vide signifie « conserver le jeton enregistré », si bien que
@@ -166,7 +166,7 @@ export async function loadPublicSettings(): Promise<PublicSettings> {
     repoUrl: typeof repoUrl === 'string' ? repoUrl : '',
     baseBranch: typeof baseBranch === 'string' ? baseBranch : 'main',
     // Aucun chemin par défaut : un repli inventé écrirait l'export à un endroit
-    // que personne n'a demandé, et le ferait croire choisi (U5.1).
+    // que personne n'a demandé, et le ferait croire choisi.
     componentsPath: typeof componentsPath === 'string' ? componentsPath : '',
     tokensPath: typeof tokensPath === 'string' ? tokensPath : '',
     hasPat: typeof githubPat === 'string' && githubPat.trim().length > 0,

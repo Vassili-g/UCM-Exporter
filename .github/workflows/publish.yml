@@ -17,7 +17,7 @@
 #
 # Effet de bord précieux pour ce projet : la publication devient reproductible.
 # Le paquet cesse de dépendre de l'état du poste de qui publie — c'est la même
-# exigence que D5 pose au kit, appliquée à la façon dont il sort.
+# exigence posée au kit, appliquée à la façon dont il sort.
 name: publish
 
 # Déclenchement manuel, et volontairement pas sur un push. Publier est
@@ -44,23 +44,23 @@ on:
           - "@ucm-kit/cli"
           - "@ucm-kit/adapter-typescript"
 
-      # N7 : trois chemins du produit ne sont parcourus de bout en bout par
+      # Trois chemins du produit ne sont parcourus de bout en bout par
       # aucun test — Figma, GitHub, et une pull request qui reçoit son
       # commentaire. Quand la publication les touche, la seule preuve possible
-      # est la recette N6, jouée à la main dans un vrai consommateur.
+      # est la recette externe, jouée à la main dans un vrai consommateur.
       #
       # Cette entrée ne prouve rien, et c'est assumé : elle oblige à RÉPONDRE.
       # L'étape « Recette externe » ci-dessous refuse la publication quand la
       # réponse est « aucun déclencheur » alors qu'un déclencheur a bougé, et
       # elle nomme les fichiers en cause.
       recette:
-        description: "Recette externe N6 (voir docs/plans/PLAN-NEUTRALISATION-PLAYGROUND.md)"
+        description: "Recette externe (voir docs/RECETTE.md)"
         required: true
         type: choice
         default: "aucun déclencheur n'a bougé"
         options:
           - "aucun déclencheur n'a bougé"
-          - "recette N6 rejouée et consignée"
+          - "recette externe rejouée et consignée"
 
 jobs:
   publish:
@@ -141,7 +141,7 @@ jobs:
       - run: npm ci
       - run: npm test
 
-      # Le garde-fou de N7, posé APRÈS les tests et AVANT la publication : il ne
+      # Le garde-fou, posé après les tests et avant la publication : il ne
       # sert à rien de poser la question si la suite est rouge, et il est trop
       # tard pour la poser une fois le numéro parti.
       - name: Recette externe
@@ -154,7 +154,7 @@ jobs:
           # du dossier ne coïncident que pour les deux autres.
           dossier="${PAQUET#@ucm-kit/}"
           if [ "$dossier" = "core" ]; then dossier="kit"; fi
-          if [ "$RECETTE" = "recette N6 rejouée et consignée" ]; then
+          if [ "$RECETTE" = "recette externe rejouée et consignée" ]; then
             node scripts/recette-externe.mjs "$dossier" --faite
           else
             node scripts/recette-externe.mjs "$dossier"
@@ -200,7 +200,7 @@ jobs:
       #
       # `@ucm-kit/cli` doit publier aussi : sans lui, `npx @ucm-kit/cli` rend
       # 404 et le workflow que `ucm init` écrit installe une CI qui ne peut pas
-      # démarrer. C'est une précondition de T3.4, pas un extra.
+      # démarrer. C'est une précondition, pas un extra.
       #
       # ⚠ **La PREMIÈRE version d'un paquet ne part pas d'ici**, et ce n'est pas
       # un réglage à trouver : l'entrée d'éditeur de confiance se déclare POUR
@@ -225,7 +225,7 @@ jobs:
       # L'ÉPREUVE DU REGISTRE, et elle existe parce que son absence a coûté une
       # version publiée cassée.
       #
-      # Ce qui s'est passé le 5 septembre 2026. T4.1 a ajouté
+      # Ce qui s'est passé le 5 septembre 2026. Une tâche a ajouté
       # `configurationDepuisJson` à la surface publiée du kit SANS monter son
       # numéro : le dépôt portait 0.1.6 et le registre portait un autre 0.1.6.
       # `@ucm-kit/cli@0.1.1` est ensuite parti en épinglant `0.1.6`, donc en

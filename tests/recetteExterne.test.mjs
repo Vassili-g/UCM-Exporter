@@ -1,5 +1,5 @@
 /**
- * Le garde-fou de publication de N7 : ce qui oblige à rejouer la recette externe, et
+ * Le garde-fou de publication : ce qui oblige à rejouer la recette externe, et
  * ce qui ne l'oblige pas.
  */
 import assert from "node:assert/strict";
@@ -7,7 +7,7 @@ import test from "node:test";
 
 import { DECLENCHEURS, declencheursTouches } from "../scripts/recette-externe.mjs";
 
-test("les quatre déclencheurs de N7 sont ceux que le plan nomme", () => {
+test("les quatre déclencheurs sont ceux que la recette nomme", () => {
   assert.deepEqual(
     DECLENCHEURS.map(({ nom }) => nom),
     [

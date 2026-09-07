@@ -311,7 +311,7 @@ test('un layer absolu n’est pas inventé comme item Flex, et le moteur le plac
   // Sans contrainte lisible, l'ancrage est celui de Figma : le début de chaque axe.
   assert.deepEqual(layout.children[0].inset, { top: '8px', left: '60px' });
   // Aucun geste n'est demandé : Figma ne PERMET pas de relier une position à une
-  // variable, et la distance est publiée. Le moteur se tait donc (U4.7).
+  // variable, et la distance est publiée. Le moteur se tait donc.
   assert.deepEqual(warnings.filter((warning) => warning.includes('Absolute')), []);
 });
 

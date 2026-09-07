@@ -74,7 +74,7 @@ export type TokenUsage = {
   nodeName: string;
   field: string;
   /**
-   * Le node du calque nommé, quand il y en a un (U4.3).
+   * Le node du calque nommé, quand il y en a un.
    *
    * Optionnel, et l'exception a un nom : un style de texte passe aussi par ici,
    * et un style n'est pas un node. Un message qui cite un calque sans porter

@@ -18,7 +18,7 @@ import { unsupportedPropertyWarnings } from '../src/contract/unsupportedProperti
 import { phraseDe } from '../src/contract/localisation';
 
 /**
- * La phrase compacte de chaque point, dérivée de ses trois parties (U4.8).
+ * La phrase compacte de chaque point, dérivée de ses trois parties.
  *
  * Ces tests portent sur ce qui est DIT au designer, pas sur la mise en page de
  * la carte : ils lisent donc la phrase, seule forme dont la composition soit

@@ -27,7 +27,7 @@ function versionDuPaquet() {
 }
 
 /**
- * Le pin est EXACT, sans `^` ni `~`, et c'est D7.
+ * Le pin est exact, sans `^` ni `~`.
  *
  * Une plage laisserait npm choisir une version que personne n'a essayée, et le
  * jour où elle changerait de verdict, la CI d'un designer basculerait sans
@@ -114,7 +114,7 @@ function fichiers(version) {
  * la règle vaut même quand la valeur vient de GitHub et pas d'un humain,
  * puisque c'est l'habitude qui protège, pas le cas particulier.
  *
- * **Un filet, et un seul, parce que l'autre n'est pas portable (T5.4).** Le
+ * **Un filet, et un seul, parce que l'autre n'est pas portable.** Le
  * repository de démonstration en porte deux : « la construction a échoué » et
  * « le rapport manque ». Le premier décrit SA chaîne de construction et n'a
  * aucun sens ici — un repo Swift ne compile pas du TypeScript. Le second est

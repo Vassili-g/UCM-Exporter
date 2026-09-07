@@ -4,7 +4,7 @@
  */
 import assert from "node:assert/strict";
 import { readFileSync, readdirSync } from "node:fs";
-import { basename, dirname, join, relative, sep } from "node:path";
+import { dirname, join, relative, sep } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -12,10 +12,15 @@ const racine = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const PAQUETS = ["@ucm-kit/cli", "@ucm-kit/adapter-typescript"];
 
-function estUnPlan(relatif) {
-  const nom = basename(relatif);
-  return relatif.includes("plans/") || nom.startsWith("PLAN-") || nom === "refonte-ui.md";
-}
+/**
+ * Le seul document qui montre délibérément une autre version que celle du dépôt.
+ *
+ * La recette externe se joue avec ce que le REGISTRE sert, jamais avec ce que le
+ * dépôt porte : elle précède la publication, et jouer une recette contre un
+ * paquet que npm ne sert pas encore ne prouve rien. Ses commandes épinglent donc
+ * la version publiée, et elles ont raison contre ce garde-fou.
+ */
+const RECETTE = "docs/RECETTE.md";
 
 function documents(dossier = racine) {
   const trouves = [];
@@ -38,11 +43,18 @@ test("chaque pin montré par la documentation est celui que ce dépôt porte", (
 
   const fautes = [];
   let montres = 0;
+  let exemptes = 0;
 
   for (const chemin of documents()) {
     const relatif = relative(racine, chemin).split(sep).join("/");
-    if (estUnPlan(relatif)) continue;
     const contenu = readFileSync(chemin, "utf8");
+    if (relatif === RECETTE) {
+      for (const paquet of PAQUETS) {
+        const motif = new RegExp(`${paquet.replace("/", "\\/")}@([\\w.-]+)`, "g");
+        exemptes += [...contenu.matchAll(motif)].length;
+      }
+      continue;
+    }
 
     for (const [paquet, attendue] of attendues) {
       const motif = new RegExp(`${paquet.replace("/", "\\/")}@([\\w.-]+)`, "g");
@@ -61,5 +73,11 @@ test("chaque pin montré par la documentation est celui que ce dépôt porte", (
   // Zéro occurrence passerait sans rien contrôler : une section supprimée, et le
   // garde-fou disparaîtrait en silence. C'est la faute qu'il empêche.
   assert.ok(montres > 0, "la documentation ne montre plus aucune commande épinglée");
+
+  // Une exemption qui ne couvre plus rien ment sur ce qu'elle protège : soit la
+  // recette a perdu ses commandes, soit elle a été renommée sans que le garde-fou
+  // suive.
+  assert.ok(exemptes > 0, `${RECETTE} ne montre plus aucune commande épinglée`);
+
   assert.deepEqual(fautes, [], fautes.join("\n"));
 });

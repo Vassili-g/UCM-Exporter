@@ -512,7 +512,7 @@ test('la structure propre à un variant vit dans sa vue exacte, sans un mot', as
   );
 
   // La divergence est PUBLIÉE : chaque variant garde sa propre vue exacte, et
-  // c'est ce qui rend le constat inutile au designer (U4.7).
+  // c'est ce qui rend le constat inutile au designer.
   const nomsDeSlot = (vue: any): string[] =>
     (vue.children ?? []).flatMap((enfant: any) => [enfant.figmaLayer ?? enfant.slot,
       ...nomsDeSlot(enfant)]);
@@ -554,7 +554,7 @@ test('l’auto layout propre à un variant vit dans sa vue exacte, sans un mot',
   );
 
   // `structure` reste la projection de référence, et chaque vue exacte porte
-  // son propre flux : rien ne manque, donc rien ne se dit (U4.7).
+  // son propre flux : rien ne manque, donc rien ne se dit.
   assert.equal(structure.alignItems, 'center');
   assert.equal(variants[0].structure.alignItems, 'center');
   assert.equal(variants[1].structure.alignItems, 'flex-start');

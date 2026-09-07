@@ -109,7 +109,7 @@ test("tout valide : rien ne bloque, et un rapport qui ne réclame rien", () => {
 });
 
 /**
- * Le seul contrôle qui protège le design. Depuis T2.4 il interroge la source
+ * Le seul contrôle qui protège le design. Il interroge la source
  * DTCG, et non plus les variables CSS qu'elle produit : le scénario donne donc
  * un fichier de tokens VIDE, où la référence n'existe réellement pas.
  */
@@ -124,7 +124,7 @@ test("référence absente des tokens : avertissement, et la fusion reste ouverte
 });
 
 /**
- * Ce que T2.4 a fait cesser, et qu'aucun test ne surveillait : Figma nomme des
+ * Ce qui a été fait cesser, et qu'aucun test ne surveillait : Figma nomme des
  * tokens `layouts.sizing.0,5`, une projection CSS en fait
  * `--layouts-sizing-0-5`, et la traduction `.` → `-` cherchait
  * `layouts-sizing-0,5`. Le token existait, le rapport le déclarait absent.
@@ -146,7 +146,7 @@ test("un nom que la projection CSS perdait est reconnu", () => {
 });
 
 /**
- * D1 a retiré ce contrôle en entier : il relève d'un linter, projet distinct.
+ * Ce contrôle a été retiré en entier : il relève d'un linter, projet distinct.
  *
  * Ce test ne teste plus le contrôle — il teste son ABSENCE, ce qui n'est pas la
  * même chose : sans lui, rien ne dirait qu'un autre contrôle n'a pas repris le
@@ -175,10 +175,10 @@ export function Widget(_props: WidgetProps) {
 });
 
 /**
- * T2.3 a scindé ce constat : l'existence au noyau, la comparaison à
+ * Ce constat a été scindé : l'existence au noyau, la comparaison à
  * l'adaptateur. Le message promettait un `.tsx`, ce qui est faux dans un repo
  * Swift — et faux sur la pull request d'export elle-même, la seule que le
- * designer lise. T2.6 a retiré le mot ; l'attente ci-dessous est la nouvelle
+ * designer lise. Le mot a été retiré ; l'attente ci-dessous est la nouvelle
  * formulation, et c'est elle qui rend la correction visible ici.
  */
 test("implémentation absente : état d'avancement, pas erreur", () => {
@@ -194,7 +194,7 @@ test("implémentation absente : état d'avancement, pas erreur", () => {
  * Critère de réussite n° 4 du plan : un contrat d'une version non lue est
  * refusé par un message qui dit QUI corrige.
  *
- * *L'écart que ce test tenait ouvert est refermé (T2.1b).* La section le disait
+ * *L'écart que ce test tenait ouvert est refermé.* La section le disait
  * correctement, mais le TITRE écrivait « contrat invalide » et accusait le
  * designer pour un contrat parfaitement formé dont seule la version n'est pas
  * lue. Le titre nomme désormais le repository, à l'endroit le plus visible du
@@ -207,7 +207,7 @@ test("version non lue : refus, et la section désigne le développeur", () => {
 
   assert.equal(bloquant, true);
   assert.match(rapport, /### ❌ La version du contrat n'est pas prise en charge : `Widget\.contract\.json`/);
-  // La plage se lit dans les constantes, jamais recopiée : T7.6 l'a élargie à
+  // La plage se lit dans les constantes, jamais recopiée : elle porte
   // deux versions, et cette ligne était le seul endroit du dépôt à croire encore
   // qu'elle en portait une. Un test qui fige la plage la fige des deux côtés.
   const plage = VERSION_CONTRAT_MINIMALE === VERSION_CONTRAT_MAXIMALE
@@ -236,7 +236,7 @@ test("version non lue : refus, et la section désigne le développeur", () => {
  *
  * L'analyse s'arrête avant la parité — rien n'a été lu, rien n'a été comparé —
  * et le relevé vierge se lisait comme un relevé vide et concluant. C'est la
- * phrase exacte que T2.3 a écrit une classe entière de code pour ne plus jamais
+ * phrase exacte qu'une classe entière de code existe pour ne plus jamais
  * prononcer sans avoir lu, et elle s'écrivait sur la ligne même qui annonce le
  * refus.
  */
@@ -251,7 +251,7 @@ test("un contrat que l'analyse n'a pas mené à bout n'est jamais dit conforme",
 });
 
 /**
- * Le défaut que T2.1b annonçait, rendu visible — il était LATENT.
+ * Le défaut latent, rendu visible.
  *
  * L'analyse appelait `champsInvalidesDuContrat` avant `verdictDeVersion` et
  * sortait tôt. Il suffit d'un contrat hors fenêtre dont les champs, EUX, ne
@@ -313,7 +313,7 @@ test("contrat réellement cassé : refus, et le geste correctif est le réexport
 });
 
 /**
- * Les filets, REPORTÉS par T2.4 sur la source DTCG au lieu de disparaître avec
+ * Les filets, reportés sur la source DTCG au lieu de disparaître avec
  * la lecture du CSS : un fichier de tokens absent ou illisible se publie comme
  * le reste, sinon le refus serait muet.
  *

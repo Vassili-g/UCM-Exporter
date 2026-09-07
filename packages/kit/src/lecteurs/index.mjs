@@ -103,7 +103,7 @@ export {
 /**
  * L'écart contrat ↔ code : le juger et le dire.
  *
- * Le MESURER reste chez l'adaptateur (T2.3) ; décider si le relevé qu'il rend
+ * Le MESURER reste chez l'adaptateur ; décider si le relevé qu'il rend
  * porte un écart ne demande que la forme de ce relevé.
  */
 export {

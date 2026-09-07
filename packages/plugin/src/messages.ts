@@ -15,13 +15,13 @@ import type { CodeVerdict } from './prevol';
  */
 export type Annonce = (etape: string) => void;
 
-/** Niveau d'une ligne de journal : il décide de sa couleur et de son marqueur. */
+/** Niveau d'une ligne de compte rendu : il décide de sa couleur et de son marqueur. */
 export type LogLevel = 'info' | 'success' | 'error';
 
 /** Ce que l'UI demande au sandbox. */
 export type UiRequest =
   /**
-   * Analyser, puis publier : deux demandes, jamais une (U3.1). L'analyse
+   * Analyser, puis publier : deux demandes, jamais une. L'analyse
    * n'écrit rien ; la publication consomme ce qu'elle a produit, et
    * `annuler` prend effet entre deux étapes.
    */
@@ -39,7 +39,7 @@ export type UiRequest =
   /**
    * La poignée de redimensionnement. Figma ne redimensionne pas une fenêtre de
    * plugin tout seul — aucune API ne l'expose et rien ne le fait à sa place —,
-   * donc la demande vient de l'UI, et le sandbox seul peut l'exécuter (U1.10).
+   * donc la demande vient de l'UI, et le sandbox seul peut l'exécuter.
    */
   | { type: 'resize'; largeur: number; hauteur: number }
   /**
@@ -63,7 +63,7 @@ export type PluginMessage =
    */
   | ({ type: 'depot' } & EtatDuDepot)
   /**
-   * Ce sur quoi l'export va porter (U2.1).
+   * Ce sur quoi l'export va porter.
    *
    * Une STRUCTURE, pas une phrase : le nom du composant n'existait que dans la
    * note d'état, que le premier clic écrase. Ce que l'interface doit garder
@@ -78,11 +78,11 @@ export type PluginMessage =
       avertissement: string | null;
     }
   /**
-   * Ligne de journal. `level` conserve la distinction : un avertissement demande
+   * Ligne de compte rendu. `level` conserve la distinction : un avertissement demande
    * un geste, une note n'en demande aucun.
    */
   | { type: 'log'; text: string; level?: LogLevel }
-  /** L'état de l'action en cours, annoncé ET tracé dans le journal. */
+  /** L'état de l'action en cours, annoncé et repris dans le compte rendu. */
   | { type: 'status'; state: 'loading' | 'success' | 'error'; text: string }
   | { type: 'download'; filename: string; content: string }
   | { type: 'pull-request'; url: string; path: string }
@@ -90,11 +90,11 @@ export type PluginMessage =
    * La version de schéma que ce bundle produit. Elle arrive une fois, à
    * l'ouverture, et l'UI la pose en pied de page : Figma peut servir un bundle
    * plus ancien que celui du disque, et c'est exactement l'information qu'un
-   * export « sans changement » rend indispensable (U0.1).
+   * export « sans changement » rend indispensable.
    */
   | { type: 'schema-version'; version: string }
   /**
-   * L'étape en cours. Elle ne va QUE dans la note : un journal de quatre lignes
+   * L'étape en cours. Elle ne va que dans la note : quatre lignes de compte rendu
    * par export dirait le déroulé d'un traitement que personne ne relit, et
    * noierait les avertissements qui, eux, demandent un geste.
    */
@@ -119,7 +119,7 @@ export type PluginMessage =
       nodeId?: string;
     }
   /**
-   * Ce que l'analyse conclut, et l'action qu'elle propose (U3.1).
+   * Ce que l'analyse conclut, et l'action qu'elle propose.
    *
    * `action` est le libellé du bouton de publication, et `null` quand il n'y a
    * rien à publier : c'est ainsi que le clic supplémentaire n'est demandé que

@@ -68,8 +68,7 @@ export function sujetSansNode(
 }
 
 /**
- * Les trois parties d'un point à corriger, telles que le designer les lit
- * (U4.8).
+ * Les trois parties d'un point à corriger, telles que le designer les lit.
  *
  * **Pourquoi trois et pas une phrase.** `CONTRIBUTING.md` exige depuis toujours
  * qu'un avertissement dise OÙ, QUOI et COMMENT. La règle était tenue à la main,

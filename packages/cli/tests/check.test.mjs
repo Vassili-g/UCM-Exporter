@@ -141,7 +141,7 @@ test("--report crée le dossier du chemin demandé", () => {
  * un repository qu'on n'a pas regardé.
  *
  * *Aucun rapport n'est écrit, et c'est voulu :* formuler ici un diagnostic de
- * designer remettrait du vocabulaire de rapport dans l'outil, ce que T5.2 vient
+ * designer remettrait du vocabulaire de rapport dans l'outil, ce que la scission vient
  * d'en sortir. Le filet du workflow couvre exactement ce cas — rapport absent,
  * message minimal publié.
  */

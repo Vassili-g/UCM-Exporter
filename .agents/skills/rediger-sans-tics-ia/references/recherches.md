@@ -40,10 +40,12 @@ une référence, et `docs/POUR-LES-DESIGNERS.md`, qui est un guide pratique.
 Chaque règle du dépôt vient d'une erreur réelle, et la première rédaction faisait
 suivre presque chaque règle du récit de son erreur. Le récit aide une fois et
 coûte à chaque relecture. La règle retenue garde la justification quand elle
-change une décision du lecteur, une à deux phrases, et laisse le reste à Git et
-aux plans de `docs/plans/`.
+change une décision du lecteur, une à deux phrases, et laisse le reste à Git,
+message de commit compris.
 
 ## Mesure
 
-La mesure d'origine, document par document, avec l'état avant et après, est dans
-[`docs/plans/PLAN-DOCUMENTATION.md`](../../../../docs/plans/PLAN-DOCUMENTATION.md).
+La passe de réécriture de septembre 2026 a ramené les documents de référence de
+439 tirets cadratins à 14, tous en titre ou en cellule de tableau, et d'environ
+deux cents emphases par capitales à zéro. Le détail, document par document, est
+dans le commit qui l'a faite.

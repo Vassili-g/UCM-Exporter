@@ -127,7 +127,7 @@ test('aucun lien entre documents ne pointe vers un fichier ou une ancre absente'
 });
 
 /**
- * Les deux documents de spécification, depuis la scission (T8.1) : la forme de
+ * Les deux documents de spécification, depuis la scission : la forme de
  * ce qui est publié, et ce que le plugin lit pour le produire.
  */
 const SPECIFICATIONS = ['docs/FORMAT.md', 'packages/plugin/SPEC.md'];

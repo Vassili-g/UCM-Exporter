@@ -13,7 +13,7 @@ import { VERSION_CONTRAT_MAXIMALE, VERSION_CONTRAT_MINIMALE } from "@ucm-kit/cor
 const BINAIRE = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "ucm.mjs");
 
 /**
- * Le `tokens.json` minimal de la recette — T7.0b.
+ * Le `tokens.json` minimal de la recette.
  */
 const TOKENS = {
   couleurs: { texte: { principal: { $type: "color", $value: "#111111" } } },
@@ -53,8 +53,8 @@ function contrat(nom, version = VERSION_CONTRAT_MAXIMALE) {
 /**
  * La version immédiatement sous la fenêtre de lecture, calculée depuis le kit.
  *
- * Elle n'est pas écrite en dur : le jour où D8 élargit la fenêtre à deux
- * versions, « une version de retard » deviendra une version LUE et ce fichier
+ * Elle n'est pas écrite en dur : le jour où la fenêtre de lecture change de
+ * largeur, « une version de retard » deviendrait une version lue et ce fichier
  * jugerait le contraire de ce que le kit fait. Ce qui est hors fenêtre par
  * construction, c'est la majeure d'en dessous.
  */
@@ -62,7 +62,7 @@ function versionSousLaFenetre() {
   return `${Number(VERSION_CONTRAT_MINIMALE.split(".")[0]) - 1}.0`;
 }
 
-/** Aucun `package.json` de la racine du repo jusqu'à celle du disque (T3.4). */
+/** Aucun `package.json` de la racine du repo jusqu'à celle du disque. */
 function aucunProjetNodeAuDessus(racine) {
   const sommet = parse(racine).root;
   for (let dossier = racine; ; dossier = dirname(dossier)) {
@@ -95,7 +95,7 @@ function controler(racine) {
  * Un repository neuf, installé par la commande, puis rempli — dans cet ordre.
  *
  * `implementation` par défaut décrit un repo dont les composants ne sont PAS en
- * TypeScript : c'est la condition de T7.1, et la mettre par défaut évite qu'un
+ * TypeScript, ce qu'exige le scénario ci-dessous, et la mettre par défaut évite qu'un
  * scénario retombe par inadvertance sur la stack du premier consommateur.
  */
 function repoDeRecette({ composants = {}, tokens = TOKENS, implementation = "{dir}/{id}.swift" } = {}) {
@@ -152,17 +152,18 @@ function surLeRepo(options, scenario) {
 }
 
 /* ------------------------------------------------------------------------ */
-/* T7.1 — un contrat sans implémentation, dans un repo qui n'est pas en TS.   */
+/* critère 6 — un contrat sans implémentation, dans un repo qui n'est pas en TS.   */
 /* ------------------------------------------------------------------------ */
 
 /**
  * L'état d'avancement est un état, pas une erreur (critère de réussite n° 6),
  * et il doit être JUSTE sur la pull request d'export elle-même — celle que le
- * designer lit. C'est la coupure de T2.3 : avant elle, le moteur répondait
+ * designer lit. Le contrôle a longtemps répondu
  * « implémentation en attente » à tout repo non-TypeScript, y compris quand le
- * composant était écrit.
+ * composant était écrit ; savoir OÙ une implémentation devrait être et savoir
+ * SI elle y est sont deux questions distinctes.
  */
-test("T7.1 — un contrat sans implémentation ne bloque pas, et le rapport le dit", () => {
+test("critère 6 — un contrat sans implémentation ne bloque pas, et le rapport le dit", () => {
   surLeRepo({ composants: { Badge: contrat("Badge") } }, (racine) => {
     const { code, rapport } = controler(racine);
 
@@ -179,9 +180,9 @@ test("T7.1 — un contrat sans implémentation ne bloque pas, et le rapport le d
  * Deux affirmations sont attendues et une troisième est interdite : l'état
  * d'attente disparaît, aucun écart de parité n'est inventé, et le mot
  * « conforme » ne s'écrit nulle part. Conclure « conforme » d'un fichier qu'on
- * n'a pas lu est exactement la moitié du défaut que T2.3 corrige.
+ * n'a pas lu est exactement la moitié de ce défaut.
  */
-test("T7.1 — une implémentation que rien ne sait lire n'est ni en attente ni conforme", () => {
+test("critère 6 — une implémentation que rien ne sait lire n'est ni en attente ni conforme", () => {
   surLeRepo({ composants: { Badge: contrat("Badge") } }, (racine) => {
     writeFileSync(join(racine, "components", "Badge", "Badge.swift"), "struct Badge {}\n", "utf8");
     const { code, rapport, terminal } = controler(racine);
@@ -196,19 +197,19 @@ test("T7.1 — une implémentation que rien ne sait lire n'est ni en attente ni 
 });
 
 /* ------------------------------------------------------------------------ */
-/* T7.2 — les tokens sont résolus sans aucune chaîne CSS.                     */
+/* critère 5 — les tokens sont résolus sans aucune chaîne CSS.                     */
 /* ------------------------------------------------------------------------ */
 
 /**
- * Le verrou de la portabilité (T2.4) : le contrôle d'existence lit le fichier
+ * Le verrou de la portabilité : le contrôle d'existence lit le fichier
  * DTCG, jamais la feuille CSS qu'il produirait. Ce repo n'a ni Style
  * Dictionary, ni PostCSS, ni un seul `.css` — et les deux références du contrat
  * sont comptées.
  *
- * `opacites.50%` est le token de T7.0b : son nom ne survit pas à la projection
+ * `opacites.50%` est le token piège du jeu ci-dessus : son nom ne survit pas à la projection
  * CSS, et il est trouvé quand même.
  */
-test("T7.2 — les références sont résolues sans la moindre chaîne CSS", () => {
+test("critère 5 — les références sont résolues sans la moindre chaîne CSS", () => {
   surLeRepo({ composants: { Badge: contrat("Badge") } }, (racine) => {
     const { code, rapport } = controler(racine);
 
@@ -224,7 +225,7 @@ test("T7.2 — les références sont résolues sans la moindre chaîne CSS", () 
  * leur évolution : refuser la fusion arrêterait le designer pour un fichier
  * qu'il n'a pas touché.
  */
-test("T7.2 — une référence absente de la source avertit sans refuser la fusion", () => {
+test("critère 5 — une référence absente de la source avertit sans refuser la fusion", () => {
   const disparu = { couleurs: { texte: { principal: { $type: "color", $value: "#111111" } } } };
   surLeRepo({ composants: { Badge: contrat("Badge") }, tokens: disparu }, (racine) => {
     const { code, rapport } = controler(racine);
@@ -241,7 +242,7 @@ test("T7.2 — une référence absente de la source avertit sans refuser la fusi
  * sans un mot laisse le designer sans recours — et « aucun token » se lirait
  * comme « rien à signaler » si le rapport se taisait.
  */
-test("T7.2 — un fichier de tokens absent est refusé en nommant le préalable", () => {
+test("critère 5 — un fichier de tokens absent est refusé en nommant le préalable", () => {
   surLeRepo({ composants: { Badge: contrat("Badge") }, tokens: null }, (racine) => {
     const { code, rapport } = controler(racine);
 
@@ -251,7 +252,7 @@ test("T7.2 — un fichier de tokens absent est refusé en nommant le préalable"
 });
 
 /* ------------------------------------------------------------------------ */
-/* T7.3 — une version non lue : refus, et le BON coupable désigné.            */
+/* critère 4 — une version non lue : refus, et le BON coupable désigné.            */
 /* ------------------------------------------------------------------------ */
 
 /**
@@ -259,7 +260,7 @@ test("T7.2 — un fichier de tokens absent est refusé en nommant le préalable"
  * vient d'un plugin que ce repository n'a pas rattrapé ; le geste appartient à
  * un développeur, et réexporter ne ferait rien.
  */
-test("T7.3 — un contrat en avance accuse le repository, du titre à l'action", () => {
+test("critère 4 — un contrat en avance accuse le repository, du titre à l'action", () => {
   const futur = contrat("Badge", "99.0");
   surLeRepo({ composants: { Badge: futur } }, (racine) => {
     const { code, rapport } = controler(racine);
@@ -281,7 +282,7 @@ test("T7.3 — un contrat en avance accuse le repository, du titre à l'action",
  * designer lit. Aucun test ne l'avait vu parce que tous fabriquaient une
  * version FUTURE : le sens `ancien` n'était éprouvé qu'au niveau de la section.
  */
-test("T7.3 — un contrat en retard demande un réexport, et le titre ne le dément pas", () => {
+test("critère 4 — un contrat en retard demande un réexport, et le titre ne le dément pas", () => {
   const perime = contrat("Badge", versionSousLaFenetre());
   surLeRepo({ composants: { Badge: perime } }, (racine) => {
     const { code, rapport } = controler(racine);
@@ -299,7 +300,7 @@ test("T7.3 — un contrat en retard demande un réexport, et le titre ne le dém
 });
 
 /* ------------------------------------------------------------------------ */
-/* T7.4 — un contrat réellement cassé bloque.                                 */
+/* critère 7 — un contrat réellement cassé bloque.                                 */
 /* ------------------------------------------------------------------------ */
 
 /**
@@ -307,7 +308,7 @@ test("T7.3 — un contrat en retard demande un réexport, et le titre ne le dém
  * retouche du JSON : un fichier produit par une machine et corrigé à la main
  * redevient faux au prochain export, sans que personne le sache.
  */
-test("T7.4 — un contrat illisible bloque et renvoie vers l'export", () => {
+test("critère 7 — un contrat illisible bloque et renvoie vers l'export", () => {
   surLeRepo({ composants: { Badge: "{ ceci n'est pas du json" } }, (racine) => {
     const { code, rapport } = controler(racine);
 
@@ -325,7 +326,7 @@ test("T7.4 — un contrat illisible bloque et renvoie vers l'export", () => {
  * Il n'a pas non plus une version « trop ancienne » : il n'en a pas du tout.
  * Le rapport doit dire « incomplet », pas « périmé ».
  */
-test("T7.4 — un contrat vidé de sa substance est incomplet, pas périmé", () => {
+test("critère 7 — un contrat vidé de sa substance est incomplet, pas périmé", () => {
   surLeRepo({ composants: { Badge: {} } }, (racine) => {
     const { code, rapport } = controler(racine);
 
@@ -340,7 +341,7 @@ test("T7.4 — un contrat vidé de sa substance est incomplet, pas périmé", ()
  * global, mais l'accusation reste nominative. Le rapport doit nommer le fichier
  * en cause et ne pas ranger l'autre parmi les fautifs.
  */
-test("T7.4 — un contrat cassé ne salit pas ses voisins", () => {
+test("critère 7 — un contrat cassé ne salit pas ses voisins", () => {
   surLeRepo({
     composants: { Badge: contrat("Badge"), Casse: "{" },
   }, (racine) => {
@@ -354,7 +355,7 @@ test("T7.4 — un contrat cassé ne salit pas ses voisins", () => {
 });
 
 /* ------------------------------------------------------------------------ */
-/* T7.5 — la montée de version, du refus au réexport.                         */
+/* montée de version — la montée de version, du refus au réexport.                         */
 /* ------------------------------------------------------------------------ */
 
 /**
@@ -366,16 +367,11 @@ test("T7.4 — un contrat cassé ne salit pas ses voisins", () => {
  * réexport, fermeture. Un test qui vérifierait les deux extrémités sur deux
  * dossiers prouverait deux états, pas une sortie de crise.
  *
- * *Ce que ce scénario a mesuré, et que le plan enregistre :* la fenêtre de
- * lecture ne vaut aujourd'hui qu'UNE version — `VERSION_CONTRAT_MINIMALE` et
- * `VERSION_CONTRAT_MAXIMALE` sont égales. Il n'existe donc aucun recouvrement
- * pendant lequel l'ancienne et la nouvelle version seraient lues toutes les
- * deux : le repository passe au rouge à l'instant où le kit monte, et y reste
- * jusqu'au réexport. C'est ce que D8 voulait éviter, et ce n'est pas tenu. Ce
- * fichier ne le fige pas — il éprouve la version sous la fenêtre, quelle que
- * soit sa largeur.
+ * La largeur de la fenêtre de lecture n'est pas figée ici : ce fichier éprouve
+ * la version immédiatement SOUS `VERSION_CONTRAT_MINIMALE`, quelle que soit la
+ * distance entre les deux bornes.
  */
-test("T7.5 — un contrat d'une version révolue est refusé, puis le réexport referme", () => {
+test("montée de version — un contrat d'une version révolue est refusé, puis le réexport referme", () => {
   surLeRepo({ composants: { Badge: contrat("Badge", versionSousLaFenetre()) } }, (racine) => {
     const refus = controler(racine);
     assert.equal(refus.code, 1);
@@ -393,7 +389,7 @@ test("T7.5 — un contrat d'une version révolue est refusé, puis le réexport 
 });
 
 /**
- * D7 : ce que le repository installe est épinglé EXACTEMENT, et la fenêtre de
+ * Ce que le repository installe est épinglé exactement, et la fenêtre de
  * lecture n'est écrite nulle part dans le repository.
  *
  * Les deux règles n'en font qu'une : le repo dit OÙ sont ses fichiers, le
@@ -401,7 +397,7 @@ test("T7.5 — un contrat d'une version révolue est refusé, puis le réexport 
  * créerait une seconde autorité, que quelqu'un mettrait à jour en croyant
  * déplacer la fenêtre — un geste sans effet, pire qu'un geste refusé.
  */
-test("T7.5 — le repository épingle son outil et ne redéclare jamais le format", () => {
+test("montée de version — le repository épingle son outil et ne redéclare jamais le format", () => {
   surLeRepo({}, (racine) => {
     const workflow = readFileSync(join(racine, ".github", "workflows", "ucm.yml"), "utf8");
     const configuration = readFileSync(join(racine, "ucm.config.json"), "utf8");

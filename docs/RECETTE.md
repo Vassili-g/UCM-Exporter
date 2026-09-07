@@ -1,8 +1,14 @@
-# Guide : vérifier UCM depuis un dépôt vide
+# La recette externe : vérifier UCM depuis un dépôt vide
 
-Ce guide fait tourner la boucle complète du produit, du plugin Figma jusqu'au
-rapport publié sur une pull request, dans un dépôt qui ne contient plus rien
-d'UCM. Il se suit dans l'ordre, du début à la fin. Comptez une heure et demie.
+Cette recette fait tourner la boucle complète du produit, du plugin Figma
+jusqu'au rapport publié sur une pull request, dans un dépôt qui ne contient rien
+d'UCM. Elle se suit dans l'ordre, du début à la fin. Comptez une heure et demie.
+
+Elle se rejoue **avant chaque publication de paquet** dont l'un des quatre
+déclencheurs de `scripts/recette-externe.mjs` a bougé : ces chemins passent par
+Figma, par GitHub et par une vraie pull request, qu'aucun test de ce dépôt ne
+parcourt. `publish.yml` refuse la publication tant que la réponse n'est pas
+donnée.
 
 Les deux dépôts concernés :
 
@@ -12,10 +18,51 @@ Les deux dépôts concernés :
   contrat, plus de `tokens.json`, plus aucun des cinq fichiers qu'écrit
   `ucm init`.
 
-Une convention pour tout le guide : `A:\...\Projet UCM\` désigne le dossier qui
+Une convention pour toute la page : `A:\...\Projet UCM\` désigne le dossier qui
 contient les deux dépôts.
 
--
+---
+
+## Avant de commencer
+
+Il vous faut :
+
+1. **Node 22 ou plus**, vérifiable par `node -v` ;
+2. **l'application de bureau Figma**, avec le fichier du design system ouvert ;
+3. **un Personal Access Token GitHub** ayant le droit d'écrire sur
+   `Vassili-g/UCM-Playground`.
+
+Une chose à savoir avant de lire quoi que ce soit : **le CLI publié est en
+retard sur le dépôt.** Le registre sert `@ucm-kit/cli@0.1.7` ; le dépôt porte une
+version plus récente, préparée et non publiée. La recette se joue donc avec ce
+que le registre sert, et la publication vient à la toute fin, une fois que tout
+est vert. Les commandes ci-dessous épinglent la version publiée pour cette
+raison.
+
+---
+
+## Étape 1 : construire le plugin
+
+Dans un terminal, à la racine d'`UCM-Exporter` :
+
+```sh
+npm install
+npm test
+npm run typecheck
+npm run build
+```
+
+Attendu :
+
+- `npm test` ne rapporte aucun échec ;
+- `npm run build` écrit `packages/plugin/dist/`, qui contient `code.js`,
+  `ui.html` et `manifest.json`.
+
+Si `npm test` est rouge, arrêtez-vous là : rien de ce qui suit n'aurait de
+valeur.
+
+---
+
 ## Étape 2 : charger le plugin dans Figma
 
 1. Dans l'application de bureau Figma, ouvrez le fichier du design system.
@@ -111,7 +158,7 @@ défaut.
 
 **Ce que la version du dépôt rend, et que vous vérifierez à l'étape 10.**
 L'absence d'export est un état d'avancement, au même titre que l'absence
-d'implémentation. À partir de `@ucm-kit/core@0.1.13`, un dépôt sans aucun
+d'implémentation. À partir de `@ucm-kit/core@0.1.14`, un dépôt sans aucun
 contrat sort en 0 et rend un rapport vert qui nomme le geste suivant :
 
 ```text
@@ -166,7 +213,7 @@ loin.** En 0.1.7, un dépôt qui a reçu ses tokens mais pas encore son premier
 composant n'a pas de dossier `components`, et le contrôle refuse la fusion en
 disant `components est introuvable`. Jugez le troisième critère sur la forme du
 rapport plutôt que sur sa couleur : titre, cause, geste attendu, état de la
-fusion. À partir de `@ucm-kit/core@0.1.13`, ce cas rend le rapport vert de
+fusion. À partir de `@ucm-kit/core@0.1.14`, ce cas rend le rapport vert de
 démarrage montré à l'étape 4, que l'étape 10 vérifie.
 
 Fusionnez la pull request.
@@ -242,7 +289,7 @@ Pour lui donner à lire :
 npm install --save-dev @ucm-kit/adapter-typescript@0.1.0
 ```
 
-Attention à la version : `0.1.2`, que porte le dépôt, n'est pas encore publiée.
+Attention à la version : `0.1.3`, que porte le dépôt, n'est pas encore publiée.
 Poussez, et regardez le rapport changer.
 
 ---
@@ -297,8 +344,8 @@ git branch -D recette/echecs-attendus
 
 Cette étape ne se fait que si les huit précédentes sont vertes.
 
-Le dépôt porte trois versions prêtes et non publiées : `@ucm-kit/core@0.1.13`,
-`@ucm-kit/cli@0.1.9` et `@ucm-kit/adapter-typescript@0.1.2`. La publication
+Le dépôt porte trois versions prêtes et non publiées : `@ucm-kit/core@0.1.14`,
+`@ucm-kit/cli@0.1.10` et `@ucm-kit/adapter-typescript@0.1.3`. La publication
 passe par un workflow GitHub, jamais par un jeton posé sur votre poste.
 
 Pour chacun des trois, **dans cet ordre** :
@@ -307,13 +354,13 @@ Pour chacun des trois, **dans cet ordre** :
 2. cliquez **Run workflow** ;
 3. choisissez le paquet : d'abord `@ucm-kit/core`, puis `@ucm-kit/cli`, puis
    `@ucm-kit/adapter-typescript` ;
-4. au second champ, choisissez **recette N6 rejouée et consignée**. C'est
+4. au second champ, choisissez **recette externe rejouée et consignée**. C'est
    exactement ce que vous venez de faire aux étapes 5 à 7 ;
 5. lancez, et attendez la fin. Le workflow rejoue les tests, publie, puis
    réinstalle le paquet depuis un dossier vide pour vérifier que le registre le
    sert vraiment.
 
-L'ordre compte : `@ucm-kit/cli` épingle exactement `@ucm-kit/core@0.1.13`. Si le
+L'ordre compte : `@ucm-kit/cli` épingle exactement `@ucm-kit/core@0.1.14`. Si le
 noyau n'est pas publié en premier, `npx @ucm-kit/cli` installerait une
 dépendance absente du registre. `@ucm-kit/adapter-typescript` épingle le même
 noyau, pour la même raison.
@@ -328,9 +375,9 @@ numéro rend une erreur 409, et c'est le comportement voulu.
 Une fois les trois paquets en ligne, dans `UCM-Playground` :
 
 1. dans `.github/workflows/ucm.yml`, remplacez les deux `@ucm-kit/cli@0.1.7`
-   par `@ucm-kit/cli@0.1.9` ;
+   par `@ucm-kit/cli@0.1.10` ;
 2. dans `package.json`, passez `@ucm-kit/adapter-typescript` de `0.1.0` à
-   `0.1.2`, puis relancez `npm install` ;
+   `0.1.3`, puis relancez `npm install` ;
 3. ouvrez une dernière pull request et vérifiez que le rapport est toujours
    vert.
 
@@ -341,8 +388,8 @@ consommateur, et pas seulement dans le monorepo qui l'a produit.
 Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.9 init
-npx --yes @ucm-kit/cli@0.1.9 check
+npx --yes @ucm-kit/cli@0.1.10 init
+npx --yes @ucm-kit/cli@0.1.10 check
 ```
 
 Attendu : la seconde commande sort en 0 et dit que ce repository n'a pas encore

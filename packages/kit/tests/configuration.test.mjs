@@ -109,7 +109,7 @@ test("un champ absent n'est pas un champ invalide", () => {
 /**
  * La règle qui justifie ce fichier autant que ses trois champs.
  *
- * La fenêtre de versions lues appartient au paquet installé (D7, D8). La
+ * La fenêtre de versions lues appartient au paquet installé. La
  * republier dans le repo créerait une seconde autorité, qui dériverait au
  * premier `npm update` — et le désaccord serait MUET, chacun des deux se
  * croyant le bon. On refuse donc, au lieu d'ignorer : ignorer laisserait croire

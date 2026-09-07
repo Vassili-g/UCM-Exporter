@@ -42,7 +42,7 @@ liée au nom d'un composant, sur au moins un composant composé.
 | Contrôles chez le consommateur | Forme, version, graphe de composition, adresses des échantillons, références de tokens, et parité statique quand l'adaptateur est installé. Tout vient du workflow qu'`ucm init` écrit |
 | Rapport CI | Constats et avertissements agrégés dans le terminal, le résumé CI et le commentaire de pull request |
 | Interopérabilité | JSON Schema publié dans `schema/`, dérivé de `types.ts`. Il décrit la forme, jamais la cohérence, et ne bloque aucune fusion |
-| Validation Figma | Les quatre composants du Playground ont été réexportés à la forme courante, puis reconstruits à froid depuis leur seul contrat |
+| Validation Figma | Quatre composants ont été exportés à la forme courante, puis reconstruits à froid depuis leur seul contrat. Le corpus qui le montrait a été retiré du Playground pour rejouer la recette depuis un dépôt vide |
 
 Aucun contrôle n'exécute le rendu.
 
@@ -50,9 +50,9 @@ Aucun contrôle n'exécute le rendu.
 
 | Limite | Ce qu'elle empêche de dire |
 |---|---|
-| La comparaison du rendu avec Figma n'est consignée nulle part | Le projet n'a aucune preuve visuelle écrite. C'est l'objet de la recette externe du [plan de neutralisation](./docs/plans/PLAN-NEUTRALISATION-PLAYGROUND.md) |
+| La comparaison du rendu avec Figma n'est consignée nulle part | Le projet n'a aucune preuve visuelle écrite. C'est l'objet de la [recette externe](./docs/RECETTE.md) |
 | Aucun contrat existant ne publie de `SLOT` ni de propriété `INSTANCE_SWAP` native | Ces deux chemins du moteur ne sont éprouvés que par des tests synthétiques |
-| Le corpus compte quatre composants | La généralité du moteur se mesure sur ses invariants, pas sur ce corpus |
+| Le corpus tient à quatre composants | La généralité du moteur se mesure sur ses invariants, pas sur ce corpus |
 | Les protections de branche sont indisponibles sur le plan GitHub actuel | La CI détecte, elle n'empêche pas. Une pull request rouge reste fusionnable |
 | `tokens.json` n'a pas de version propre | Un consommateur ne peut pas refuser un fichier de tokens d'une forme qu'il ne lit pas |
 | La projection CSS des modes n'est pas implémentée | Le multi-marque au runtime n'existe pas |
@@ -93,7 +93,7 @@ de code peut en revanche échapper à l'analyse statique.
 Aucun contrôle n'exerce le rendu. Le Playground ne porte aucun test par
 composant, et aucun vérificateur générique n'exerce les vues exactes d'un
 composant arbitraire. Les contrôles disponibles et cette limite sont détaillés
-dans [PLAN-CONFORMITE-DEV.md](./docs/plans/PLAN-CONFORMITE-DEV.md).
+dans [PLAN-CONFORMITE-RENDU.md](./docs/notes/PLAN-CONFORMITE-RENDU.md).
 
 Ce qui en approche le plus reste statique : `@ucm-kit/adapter-typescript` lit
 l'API publique avec le vérificateur de types et compte, dans le JSX, les
@@ -174,12 +174,12 @@ inventé.
 
 ### 6. Passer la recette externe
 
-La prochaine validation est N6 du
-[plan de neutralisation](./docs/plans/PLAN-NEUTRALISATION-PLAYGROUND.md). Elle
-charge le bundle dans Figma, réexporte les tokens et au moins un composant vers
-une vraie pull request du Playground, compare la sonde reconstruite à Figma et
-laisse le workflow publier son rapport. Cette recette précède la publication
-des versions de paquets déjà préparées dans le dépôt.
+La prochaine validation est la [recette externe](./docs/RECETTE.md). Elle part
+d'un dépôt vidé de tout UCM, installe le CLI publié, charge le bundle dans
+Figma, exporte les tokens puis un composant vers une vraie pull request,
+reconstruit la sonde et laisse le workflow publier son rapport. Elle précède la
+publication des versions de paquets déjà préparées dans le dépôt, que
+`publish.yml` refuse tant qu'elle n'est pas déclarée rejouée.
 
 ## Critères de sortie du MVP
 
@@ -196,6 +196,6 @@ Le MVP est validé lorsque :
 - les limites non vérifiables sont documentées sans être présentées comme des
   garanties.
 
-La recette externe N6 et l'observation de l'interface dans Figma restent les
-deux preuves nécessaires avant de proposer le projet à une expérimentation sur
-un catalogue plus large.
+L'interface a été regardée dans un fichier Figma réel, dans les deux thèmes.
+La [recette externe](./docs/RECETTE.md) reste la preuve manquante avant de
+proposer le projet à une expérimentation sur un catalogue plus large.

@@ -1,10 +1,18 @@
 # Contribuer à Unified Component Exporter
 
+Ce document dit **comment travailler** sur ce dépôt : écrire du code, un
+message, un test, un document, et vérifier avant de proposer un changement.
+
+Il ne dit pas ce que le produit garantit. Les règles que le code doit tenir
+sont les invariants d'[AGENTS.md](./AGENTS.md#invariants), qui donnent pour
+chacune sa borne et son fichier autorité. Leur raisonnement vit dans les deux
+spécifications : [docs/FORMAT.md](./docs/FORMAT.md) pour la forme de ce qui est
+publié, [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) pour ce que le
+plugin lit dans Figma. Lire la spécification concernée avant de modifier, et
+l'invariant avant de croire qu'une règle n'existe pas.
+
 Le code doit rester générique, lisible et prudent face aux données Figma
-incomplètes. Avant une modification, lire la spécification concernée :
-[docs/FORMAT.md](./docs/FORMAT.md) pour la forme de ce qui est publié,
-[packages/plugin/SPEC.md](./packages/plugin/SPEC.md) pour ce que le plugin lit
-dans Figma.
+incomplètes.
 
 ## Code
 
@@ -178,8 +186,7 @@ la source.
 Ce que le designer voit dans la fenêtre du plugin se juge contre deux choses
 écrites : une hiérarchie de l’information et un protocole de relecture. Elles
 existent parce qu’une refonte d’interface sans critère ne produit que des avis.
-Ce qui suit fait autorité ; [refonte-ui.md](./docs/plans/refonte-ui.md) raconte
-ce qui reste à faire.
+Ce qui suit fait autorité.
 
 ### La hiérarchie de l’information
 
@@ -200,9 +207,7 @@ Quatre bornes, sans quoi la table ne tient pas :
   qui est l’inverse de la doctrine du projet ;
 - **un rang 1 hors de vue n’est pas un rang 1.** La position est un signal, et
   la limite de la fenêtre en fait partie : ce qui décide de l’action se lit sans
-  défiler, y compris quand le contenu en dessous grandit. Cette borne est venue
-  des captures, pas de la table : elles ont montré le verdict, le lien de pull
-  request et le bouton « Enregistrer » sous la ligne de flottaison ;
+  défiler, y compris quand le contenu en dessous grandit ;
 - **une carte est une commande, et il n’y en a que deux.** Une carte regroupe un
   sujet, son état, le geste qui porte dessus et tout ce que ce geste produit :
   verdict, publication, points à corriger, lien de pull request. Rien de ce qui
@@ -216,23 +221,6 @@ Quatre bornes, sans quoi la table ne tient pas :
   l’écran ne montre plus. C’est l’identité du sujet qui décide, jamais l’arrivée
   d’un message, car le sandbox en envoie deux par sélection et le second peut
   retomber pendant une analyse.
-
-L’avant-dernière borne a remplacé une interdiction plus large, qui disait « hors
-de toute carte » pour le rang 1 et « jamais une carte » pour le rang 3. Elle
-datait du moment où toutes les surfaces étaient identiques, si bien que la carte
-ne distinguait rien. Le défaut qu’elle laissait ouvert : la cible et son bouton
-vivaient dans deux blocs voisins dont un seul portait une surface, rien ne
-disait que le bouton portait sur le nom écrit au-dessus, et l’écran se lisait
-comme une liste de quatre choses de même rang. L’intention ne change pas : le
-rang 1 se lit en tête et sans défiler, il a seulement cessé de flotter au-dessus
-du geste qu’il commande.
-
-Un second passage a montré que la moitié du défaut restait : les cartes ne
-portaient que le départ d’une commande, et son résultat s’écrivait dans une zone
-commune, entre les deux. Analyser les tokens sans sélection y plaçait donc
-« Prêt à publier dans src/tokens/tokens.json » juste sous « Aucun composant
-sélectionné », deux informations sans rapport dont la seconde semblait
-expliquer la première. C’est ce passage qui a ajouté la dernière borne.
 
 ### Regarder avant de conclure
 
@@ -272,43 +260,17 @@ d’emplacement et le titre « Publication » de l’écran de travail : chacun 
 un objet permanent et ne servait aucune décision qui se prenne là, ou redisait ce
 que la ligne d’à côté disait déjà.
 
-## Robustesse
-
-Une donnée facultative, illisible ou non tokenisée produit un avertissement et
-reste absente de l’export. Elle n’est jamais remplacée par une valeur brute ou
-une supposition.
-
-Les préconditions définies par la spécification restent bloquantes :
-
-- sélection invalide ;
-- composant ou component set sans aucun variant exportable.
-
-L'absence de règles et une matrice clairsemée sont des diagnostics, pas des
-blocages : la liste exacte `variants` produit un contrat cohérent dans les deux
-cas.
+## Écrire du code prudent
 
 Tout accès Figma susceptible d’échouer doit être protégé. Les chaînes d’alias
 doivent détecter les cycles. Une collision ou une perte d’information ne doit
 jamais rester silencieuse.
 
-## Invariants communs
-
-- Les alias sont préservés, jamais aplatis.
-- `normalizeName()` est l’unique règle de nommage des tokens.
-- `indexVariables()` tranche les collisions pour les contrats et les tokens.
-- Une référence de token utilise la forme `{chemin.du.token}`. `variables.ts`
-  la produit (`toRef`) et la reconnaît (`isTokenReference`) : une seule autorité
-  sur sa forme.
-- Le contrat ne publie aucun `tokensUsed`. Un consommateur qui a besoin de cet
-  index le dérive du contrat terminé, `samples` et `meta` exclus.
-- Un composant imbriqué contracté devient une dépendance de composition ; son
-  contenu interne n’est pas réexporté par le parent.
-- Un changement de forme du contrat incrémente `contractVersion`.
-- Le schéma publié par `@ucm-kit/core` est dérivé de
-  `packages/kit/src/format/types.ts` par
-  `npm run schema`. Il n’est jamais rédigé à la main : une seconde description
-  de la même forme finirait par diverger de la première.
-- Le plugin ne modifie jamais le document Figma.
+Une donnée facultative, illisible ou non tokenisée produit un avertissement et
+reste absente de l’export ; elle n’est jamais remplacée par une valeur brute ou
+une supposition. Ce que le produit bloque et ce dont il se contente d’avertir
+est une règle du format, pas un choix d’implémentation :
+[AGENTS.md](./AGENTS.md#diagnostics) en tient la liste.
 
 ## Tests
 
@@ -318,19 +280,11 @@ des objets Figma minimaux et des dépendances injectées.
 Chaque paquet a son `scripts/run-tests.cjs`, qui découvre les fichiers
 `tests/*.test.ts` et `tests/*.test.mjs` de son dossier.
 
-Aucun artefact de contrat n’est commité ici : un `.contract.json` appartient au
-repository qui le consomme. Un exemplaire gelé dans ce repository ne bougerait
-qu’au réexport, et un test posé dessus ne prouverait que sa propre immobilité.
-
-Les lois de forme d’un contrat vivent donc dans `packages/plugin/tests/lois.ts`, et
-`packages/plugin/tests/exportComponent.test.ts` les applique à chaque contrat
-que le moteur fabrique : renvois qui se résolvent, catalogues sans doublon ni
-entrée orpheline, adresses qui désignent un calque de l’arbre qui les porte,
-aucune valeur neutre écrite, accord avec le schéma publié, aller-retour de
-l’écriture.
-La vérification est posée sur le chemin d’appel, une fois, pour qu’un scénario
-ajouté demain y soit soumis sans que personne y pense. Une loi ajoutée à
-`lois.ts` s’applique du même geste à tous les scénarios existants.
+Une loi de forme d’un contrat s’écrit dans `packages/plugin/tests/lois.ts` et
+nulle part ailleurs : elle s’applique alors du même geste à tous les scénarios
+existants. La raison de ce point unique, et celle qui interdit de commiter un
+`.contract.json` ici, sont dans
+[AGENTS.md](./AGENTS.md#vérification).
 
 Avant une pull request :
 
@@ -342,19 +296,14 @@ npm run build
 
 ## Documentation
 
-Chaque document a une autorité limitée :
+Chaque document a une autorité limitée, et
+[docs/README.md](./docs/README.md#où-vit-quelle-règle) en tient la table. Deux
+seulement concernent qui contribue :
 
 | Document | Rôle |
 |---|---|
-| `CONCEPT.md` | Principes et responsabilités |
-| `docs/FORMAT.md` | Forme du contrat et de `tokens.json`, pour qui les consomme |
-| `docs/COMPATIBILITE.md` | Classes de changement, fenêtre de lecture et responsabilités de migration |
-| `packages/plugin/SPEC.md` | Comportement actuel du plugin |
-| `ROADMAP.md` | État et prochaines validations |
-| `docs/notes/PISTES-EVOLUTION.md` | Options non engagées |
-| `docs/plans/PLAN-CONFORMITE-DEV.md` | Recherche proposée pour les prochaines phases de conformité du rendu |
-| `README.md` | Entrée dans le projet |
-| `AGENTS.md` | Instructions opérationnelles |
+| `AGENTS.md` | Ce que le produit garantit : la carte du code, les invariants, leur borne et leur fichier autorité |
+| `CONTRIBUTING.md` | Comment travailler : code, message, test, document, vérification |
 
 Une modification se termine par une revue des documents concernés. Décrire
 l’état actuel, supprimer les formulations périmées et préférer un lien à une
@@ -384,11 +333,12 @@ cadence. La personnification d’un document, d’une règle ou d’un fichier :
 « le module `names.ts` porte la règle » plutôt que « la règle vit dans
 `names.ts` ». L’aphorisme et la formule frappante : écrire la règle.
 
-**Histoire.** Un document de référence décrit l’état actuel. Il ne raconte pas
-ce qui s’est passé, ne date pas une décision et ne cite aucun identifiant de
-tâche. L’historique appartient à Git et aux plans de `docs/plans/`, qui ont le
-droit de raconter. Une justification est admise quand elle change une décision
-du lecteur ; elle tient en une ou deux phrases.
+**Histoire.** Un document décrit l’état actuel. Il ne raconte pas ce qui s’est
+passé, ne date pas une décision et ne cite aucun identifiant de tâche.
+L’historique appartient à Git, message de commit compris : c’est le seul endroit
+qui ne périme pas, parce qu’il est daté par construction. Cette règle vaut aussi
+pour les commentaires de code. Une justification est admise quand elle change
+une décision du lecteur ; elle tient en une ou deux phrases.
 
 **Structure.** Une page ne mélange pas les quatre genres de
 [Diátaxis](https://diataxis.fr/) : le tutoriel enseigne, le guide pratique

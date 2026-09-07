@@ -25,7 +25,7 @@ const { etatDeCible, detailDeCible } = chargerSandbox('cible');
 const { etatDesTokens } = chargerSandbox('tokens/exportTokens');
 const { verdictDePrevol } = chargerSandbox('prevol');
 
-/** Le verdict du pré-vol, calculé par le sandbox et non recopié ici (U3.1). */
+/** Le verdict du pré-vol, calculé par le sandbox et non recopié ici. */
 const verdict = (entree) => ({
   message: {
     type: 'verdict',
@@ -37,7 +37,7 @@ const verdict = (entree) => ({
 /**
  * La version de schéma est LUE à sa source. Une capture qui afficherait un
  * numéro que le code ne produit plus enseignerait exactement le contraire de
- * ce que ce pied de page existe pour dire (U0.1).
+ * ce que ce pied de page existe pour dire.
  */
 const VERSION_CONTRAT = /CONTRACT_VERSION = '([^']+)'/.exec(
   fs.readFileSync(path.resolve(__dirname, '../../kit/src/format/version.ts'), 'utf8'),
@@ -45,12 +45,13 @@ const VERSION_CONTRAT = /CONTRACT_VERSION = '([^']+)'/.exec(
 
 /*
  * Les avertissements ci-dessous sont copiés du moteur, verbatim, parce que
- * U1.3 (d) exige de regarder l'interface sous le PIRE CONTENU RÉEL et non sous
+ * le protocole de relecture exige de regarder l'interface sous le pire contenu
+ * réel et non sous
  * un texte d'exemple qui tiendrait toujours sur une ligne. Ce sont des
  * échantillons, pas une autorité : si le moteur reformule le sien, la capture
  * perd un peu de réalisme, rien de plus.
  *
- * Ils sont écrits EN TROIS PARTIES, comme le moteur les écrit depuis U4.8 : une
+ * Ils sont écrits en trois parties, comme le moteur les écrit : une
  * carte se regarde avec les longueurs réelles de chacune, pas avec un
  * paragraphe recoupé pour la capture.
  */
@@ -79,7 +80,7 @@ const COMPOSANT = 'Button / Primary';
 const CHEMIN = 'src/components/Button/Button.contract.json';
 const CHEMIN_STRESSTEST = 'src/components/StressTest/StressTest.contract.json';
 const CHEMIN_TOKENS = 'src/tokens/tokens.json';
-/** QUI a décidé de l'emplacement : le verdict le dit depuis U8.4. */
+/** Qui a décidé de l'emplacement : le verdict le dit. */
 const SOURCE_CONFIG = 'ucm.config.json';
 const BRANCHE_EN_VOL = 'ucm-exporter/export-component-2026-09-05-1412';
 const URL_PR = 'https://github.com/mon-org/design-system-v3/pull/128';
@@ -93,7 +94,7 @@ const ouverture = (cause, tokens = TOKENS_PRESENTS) => [
 ];
 
 /**
- * Ce que le fichier porte en variables, calculé par le sandbox (U2.4, U7.5).
+ * Ce que le fichier porte en variables, calculé par le sandbox.
  *
  * Les deux cas doivent se regarder CÔTE À CÔTE : c'est leur voisinage qui dit
  * si l'absence de bouton se lit comme une réponse — « ce fichier n'a pas de
@@ -140,8 +141,8 @@ const REGLAGES = {
 };
 
 /**
- * Un point à corriger relevé par l'export : ses TROIS parties (U4.8), et le node
- * de son sujet quand il en a un (U4.3/U4.4).
+ * Un point à corriger relevé par l'export : ses TROIS parties, et le node
+ * de son sujet quand il en a un.
  *
  * L'absence de `nodeId` n'est pas un raccourci de la galerie : c'est l'état
  * réel d'un message qui nomme un text style, une variable, ou un calque agrégé
@@ -153,7 +154,7 @@ const diagnostic = (point, nodeId) => ({
   message: { type: 'diagnostic', ...point, ...(nodeId ? { nodeId } : {}) },
 });
 
-/** Vingt avertissements réels : le volume que U1.3 (d) exige de regarder. */
+/** Vingt avertissements réels : le volume que le protocole de relecture exige. */
 function vingtAvertissements() {
   const modeles = [AVERTISSEMENT_STROKE, AVERTISSEMENT_AUTO_LAYOUT, AVERTISSEMENT_COMPOSE];
   const lignes = [];
@@ -182,7 +183,7 @@ const ETATS = [
     quand:
       "À l'ouverture, rien de sélectionné dans Figma. Couvre aussi « connecté » : la pastille verte n'a pas d'autre écran.",
     regarder:
-      "L'écran au repos : deux cartes, et AUCUN geste sur la première (U7.1). Le bouton d'analyse n'est plus affiché puis grisé — la raison écrite à la place du nom se suffit.",
+      "L'écran au repos : deux cartes, et AUCUN geste sur la première. Le bouton d'analyse n'est plus affiché puis grisé — la raison écrite à la place du nom se suffit.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -193,7 +194,7 @@ const ETATS = [
     id: 'selection-non-exportable',
     titre: 'Sélection non exportable',
     quand:
-      'Deux layers sélectionnés, dont un qui n’est pas un composant. C’était le même écran que « aucune sélection » avant U2.1.',
+      'Deux layers sélectionnés, dont un qui n’est pas un composant. L’écran distingue ce cas de « aucune sélection ».',
     regarder:
       'La raison nomme ce qui empêche, et elle diffère de celle d’une sélection vide : le geste n’est pas le même.',
     existe: true,
@@ -208,7 +209,7 @@ const ETATS = [
     quand:
       "Aucune sélection exportable. Le bouton partait quand même, et la précondition levait un message d'erreur après coup.",
     regarder:
-      "Il n'y a plus de bouton du tout (U7.1). Comparer avec « composant prêt » : c'est l'apparition du geste qui dit qu'une cible est là, pas son passage du gris au bleu.",
+      "Il n'y a plus de bouton du tout. Comparer avec « composant prêt » : c'est l'apparition du geste qui dit qu'une cible est là, pas son passage du gris au bleu.",
     existe: true,
     atteinte: [...ouverture('connecte'), SELECTION_VIDE],
   },
@@ -233,7 +234,7 @@ const ETATS = [
     titre: 'Composant prêt',
     quand: 'Un component ou component set sélectionné, règles lisibles.',
     regarder:
-      "Les deux cartes au repos (U7.2, U7.3) : surtitre, sujet, geste. Aucune des deux ne porte de résultat tant que rien n'a tourné, et le geste de publication n'existe nulle part.",
+      "Les deux cartes au repos : surtitre, sujet, geste. Aucune des deux ne porte de résultat tant que rien n'a tourné, et le geste de publication n'existe nulle part.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -244,9 +245,9 @@ const ETATS = [
     id: 'analyse-en-cours',
     titre: 'Analyse en cours',
     quand:
-      "Après le clic sur « Exporter le composant ». Le journal est vidé, la note dit « Traitement en cours… », puis le sandbox écrit « Analyse du composant… ».",
+      "Après le clic sur « Exporter le composant ». La carte se vide de son résultat précédent, la note dit « Traitement en cours… », puis le sandbox écrit « Analyse du composant… ».",
     regarder:
-      "Ce que l'écran a PERDU au clic : le nom du composant et l'état de la sélection. Rien ne dit sur quoi porte l'attente.",
+      "Ce que l'écran perd au clic : le nom du composant et l'état de la sélection. Rien ne dit sur quoi porte l'attente.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -277,7 +278,7 @@ const ETATS = [
     quand:
       'Export sans avertissement, publication réussie. Couvre « publiée » : le succès et la publication sont le même écran.',
     regarder:
-      "Le verdict DANS la carte du composant (U8.1), sous le geste qui l'a produit, et il nomme lui-même qui a décidé de l'emplacement (U8.4). Le bouton d'analyse est désarmé : cette cible-là est analysée (U8.3).",
+      "Le verdict DANS la carte du composant, sous le geste qui l'a produit, et il nomme lui-même qui a décidé de l'emplacement. Le bouton d'analyse est désarmé : cette cible-là est analysée.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -291,7 +292,7 @@ const ETATS = [
     id: 'resultat-un-avertissement',
     titre: 'Résultat avec un avertissement',
     quand:
-      "Un export qui publie et laisse un geste à faire dans Figma. L'avertissement employé est parmi les plus longs que le moteur produise (U1.3 d).",
+      "Un export qui publie et laisse un geste à faire dans Figma. L'avertissement employé est parmi les plus longs que le moteur produise.",
     regarder:
       "L'ordre de lecture d'une carte de commande : le geste, la publication, le verdict, puis le point à corriger. Tout est dans la carte du composant, et la carte des tokens reste intacte en dessous.",
     existe: true,
@@ -308,7 +309,7 @@ const ETATS = [
     id: 'resultat-avertissement-localisable',
     titre: 'Un avertissement qui mène à son calque',
     quand:
-      "Un export dont un avertissement nomme un calque du composant, et un autre nomme un style de texte. Le premier porte le node de son sujet (U4.3), le second n'en a aucun.",
+      "Un export dont un avertissement nomme un calque du composant, et un autre nomme un style de texte. Le premier porte le node de son sujet, le second n'en a aucun.",
     regarder:
       "Les deux entrées CÔTE À CÔTE. La première se clique et souligne au survol ; la seconde est un paragraphe. C'est ce voisinage qui décide si l'absence de lien se lit comme une réponse ou comme un oubli — et c'est pour lui que la loi de couverture existe.",
     existe: true,
@@ -323,10 +324,11 @@ const ETATS = [
     ],
   },
   /*
-   * Les trois issues d'un export, côte à côte (U4.9).
+   * Les trois issues d'un export, côte à côte.
    *
    * `resultat-transformations-normales` est la publication saine, celle qui a
-   * rouvert U4.7 : sept transformations dans le contrat, zéro carte à l'écran.
+   * fait retirer le canal des constats : sept transformations dans le contrat,
+   * zéro carte à l'écran.
    * `resultat-un-avertissement` est la correction demandée. `export-impossible`
    * est le refus. Les regarder ensemble est la seule façon de juger si le
    * verdict porte bien le rang 1 et si le rouge reste réservé au troisième.
@@ -335,9 +337,9 @@ const ETATS = [
     id: 'resultat-transformations-normales',
     titre: 'Stresstest, transformations normales',
     quand:
-      "L'export réel de « Stresstest » : composition, structure et auto layout propres à un variant, pistes FIXED d'une grille, taille résolue sous une piste qui hug, calque en position Absolute, rotation dans un flux, contenu de maquette différent. Le contrat porte les sept ; le moteur n'en dit aucun (U4.7).",
+      "L'export réel de « Stresstest » : composition, structure et auto layout propres à un variant, pistes FIXED d'une grille, taille résolue sous une piste qui hug, calque en position Absolute, rotation dans un flux, contenu de maquette différent. Le contrat porte les sept ; le moteur n'en dit aucun.",
     regarder:
-      "Ce qu'on NE voit pas : aucun groupe de diagnostic, aucune carte, aucun compteur. L'écran d'un export sain est son verdict et sa publication, rien d'autre. C'est l'état qui a rouvert U4.7 — avant, il montrait sept constats dont la conclusion était « rien à faire ».",
+      "Ce qu'on NE voit pas : aucun groupe de diagnostic, aucune carte, aucun compteur. L'écran d'un export sain est son verdict et sa publication, rien d'autre. C'est l'état qui a fait retirer le canal des constats : avant, il montrait sept constats dont la conclusion était « rien à faire ».",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -381,7 +383,7 @@ const ETATS = [
     id: 'resultat-vingt-avertissements',
     titre: 'Résultat avec vingt avertissements',
     quand:
-      "Une matrice de variants dont le layout n'est pas tokenisé. C'est le volume que U1.3 (d) exige de regarder.",
+      "Une matrice de variants dont le layout n'est pas tokenisé. C'est le volume que le protocole de relecture exige de regarder.",
     regarder:
       "Le compte rendu tient-il ? Vingt cartes ambre DANS la carte du composant, le compte dans le titre du groupe, et la carte des tokens repoussée très loin sous elles.",
     existe: true,
@@ -400,7 +402,7 @@ const ETATS = [
     quand:
       "Le contrat est déjà sur la branche de base, mot pour mot. `publishArtifact` rend `unchanged` et n'écrit rien.",
     regarder:
-      "Le verdict « aucun changement » et son ENDROIT (T4.5), au même rang visuel qu'une pull request créée.",
+      "Le verdict « aucun changement » et son ENDROIT, au même rang visuel qu'une pull request créée.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -414,9 +416,9 @@ const ETATS = [
     id: 'doublon-pull-request',
     titre: 'Une pull request est déjà ouverte pour ce composant',
     quand:
-      "Réexport d'un contenu identique pendant qu'une pull request d'export l'attend. C'est le cas que T4.5 a rendu visible.",
+      "Réexport d'un contenu identique pendant qu'une pull request d'export l'attend. C'est le cas du doublon de pull request.",
     regarder:
-      "L'endroit et le lien arrivent ensemble. Le navigateur ne s'ouvre PAS : le lien est la seule sortie, et il vit sous le verdict, sans titre de groupe pour le coiffer (U8.4).",
+      "L'endroit et le lien arrivent ensemble. Le navigateur ne s'ouvre PAS : le lien est la seule sortie, et il vit sous le verdict, sans titre de groupe pour le coiffer.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -436,7 +438,7 @@ const ETATS = [
     id: 'publication-en-cours',
     titre: 'Publication en cours',
     quand:
-      "Entre la fin de l'analyse et la création de la pull request. Les deux attentes portaient le même texte avant U2.6.",
+      "Entre la fin de l'analyse et la création de la pull request. Les deux attentes portent des textes distincts.",
     regarder:
       "L'attente change de nom quand elle change de nature : plus rien ne se lit dans Figma, tout se joue sur GitHub.",
     existe: true,
@@ -454,7 +456,7 @@ const ETATS = [
     quand:
       'La publication échoue (droits, conflit, branche existante). Le fichier est téléchargé, la branche créée est supprimée.',
     regarder:
-      "Trois causes distinctes arrivent sous le même message brut (U5.3), et le résultat d'analyse a disparu (U3.3).",
+      "Trois causes distinctes arrivent sous le même message brut, et le résultat d'analyse a disparu.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -498,7 +500,7 @@ const ETATS = [
     quand:
       "Premier lancement : aucun réglage GitHub. Rien d'autre que la pastille rouge ne l'annonce.",
     regarder:
-      "La ligne ambre « Aucun repository connecté » : le seul reste du bloc destination (U7.7), et la seule chose qu'il disait que rien d'autre ne dit avant le clic.",
+      "La ligne ambre « Aucun repository connecté » : le seul reste du bloc destination, et la seule chose qu'il disait que rien d'autre ne dit avant le clic.",
     existe: true,
     atteinte: [
       ...ouverture('non-configure'),
@@ -510,7 +512,7 @@ const ETATS = [
     titre: 'Export sans dépôt : téléchargement local',
     quand: 'Le même export, mené à son terme sans configuration GitHub valide.',
     regarder:
-      "Le repli a été ANNONCÉ avant le clic, en ambre sous le compte rendu (U2.5, U7.7), et le verdict le confirme ensuite au lieu de l'apprendre.",
+      "Le repli a été ANNONCÉ avant le clic, en ambre sous le compte rendu, et le verdict le confirme ensuite au lieu de l'apprendre.",
     existe: true,
     atteinte: [
       ...ouverture('non-configure'),
@@ -526,7 +528,7 @@ const ETATS = [
     quand:
       "Un fichier Figma qui ne définit aucune variable locale. Le bouton partait quand même, et `handleExportTokens` levait « Aucune variable locale à exporter » APRÈS le clic.",
     regarder:
-      "La carte des tokens sans son geste (U7.5) : une phrase à la place du bouton, en couleur de constat et non d'erreur — ce fichier n'a rien de fautif, il n'a simplement rien à exporter.",
+      "La carte des tokens sans son geste : une phrase à la place du bouton, en couleur de constat et non d'erreur — ce fichier n'a rien de fautif, il n'a simplement rien à exporter.",
     existe: true,
     atteinte: [
       ...ouverture('connecte', TOKENS_ABSENTS),
@@ -553,7 +555,7 @@ const ETATS = [
     quand:
       "Le dépôt se décrit lui-même, mais son fichier n'est pas du JSON valide. `repositoryLayout` lève, et l'export est refusé.",
     regarder:
-      'Un blocage TARDIF : il arrive après une analyse complète, alors que la lecture pourrait se faire au test de connexion (U5.1).',
+      'Un blocage TARDIF : il arrive après une analyse complète, alors que la lecture pourrait se faire au test de connexion.',
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -573,9 +575,9 @@ const ETATS = [
     id: 'export-tokens-reussi',
     titre: 'Export des tokens publié',
     quand:
-      'La seconde commande. Elle ignore la sélection et lit les variables du fichier entier, ce que rien à l’écran ne dit (U2.4).',
+      'La seconde commande. Elle ignore la sélection et lit les variables du fichier entier, ce que rien à l’écran ne dit.',
     regarder:
-      "Une commande de portée FICHIER menée à son terme SANS sélection : la carte du composant reste vide et sans geste, et le libellé de publication a nommé les tokens (U7.4).",
+      "Une commande de portée FICHIER menée à son terme SANS sélection : la carte du composant reste vide et sans geste, et le libellé de publication a nommé les tokens.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -621,7 +623,7 @@ const ETATS = [
     titre: 'Configuration, aucun réglage enregistré',
     quand: "Clic sur l'engrenage au premier lancement.",
     regarder:
-      "Cinq champs obligatoires, dont deux — les chemins — que le dépôt peut contredire sans le dire (U5.1). L'en-tête suit la page depuis U0.3.",
+      "Cinq champs obligatoires, dont deux — les chemins — que le dépôt peut contredire sans le dire. L'en-tête suit la page.",
     existe: true,
     atteinte: [
       ...ouverture('non-configure'),
@@ -645,7 +647,7 @@ const ETATS = [
     titre: 'Configuration enregistrée, token conservé',
     quand: 'Retour dans la configuration après un enregistrement réussi.',
     regarder:
-      "Le placeholder du token porte une règle de comportement, et « Supprimer le token enregistré » n'apparaît que s'il y a quelque chose à supprimer (U5.4).",
+      "Le placeholder du token porte une règle de comportement, et « Supprimer le token enregistré » n'apparaît que s'il y a quelque chose à supprimer.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -719,7 +721,7 @@ const ETATS = [
     id: 'configuration-chemins-du-depot',
     titre: 'Le repository décrit lui-même ses chemins',
     quand:
-      "Le test de connexion a lu `ucm.config.json` sur la branche de base. Cette lecture n'avait lieu qu'à la publication, et le designer l'apprenait par une ligne de journal.",
+      "Le test de connexion a lu `ucm.config.json` sur la branche de base. Cette lecture n'avait lieu qu'à la publication, et le designer l'apprenait après coup.",
     regarder:
       "Les deux libellés portent « (repli) » et la phrase dit qui décide. Le champ qui ne sert à rien le dit là où on le lit.",
     existe: true,
@@ -738,7 +740,7 @@ const ETATS = [
     id: 'configuration-aucun-chemin',
     titre: 'Personne ne dit où ranger les exports',
     quand:
-      "Le cas neuf de U5.1 : les chemins ne sont plus obligatoires, et ce repository ne se décrit pas. L'export sera refusé au lieu d'écrire à un endroit inventé.",
+      "Le cas neuf : les chemins ne sont plus obligatoires, et ce repository ne se décrit pas. L'export sera refusé au lieu d'écrire à un endroit inventé.",
     regarder:
       "Le refus est annoncé AVANT l'export, et la phrase nomme les deux gestes possibles avec leur acteur.",
     existe: true,

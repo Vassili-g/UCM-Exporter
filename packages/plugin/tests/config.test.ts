@@ -59,7 +59,7 @@ test('validateSettings détaille une configuration invalide sans planter', () =>
 
   assert.equal(result.valid, false);
   assert.equal(result.config, null);
-  // `tokensPath` vide n'est PLUS une erreur : c'est un repli absent (U5.1).
+  // `tokensPath` vide n'est PLUS une erreur : c'est un repli absent.
   assert.deepEqual(Object.keys(result.errors).sort(), [
     'baseBranch',
     'componentsPath',
@@ -69,7 +69,7 @@ test('validateSettings détaille une configuration invalide sans planter', () =>
 });
 
 test('un chemin vide laisse le repository décider, un chemin fautif est refusé', () => {
-  // U5.1 : les deux chemins sont un repli. Leur absence est une réponse, et
+  // Les deux chemins sont un repli. Leur absence est une réponse, et
   // `repositoryLayout` la remplace par ce que le repository dit de lui-même.
   // Leur FORME reste vérifiée : un chemin qui remonte hors du repository
   // n'écrirait pas là où on croit.

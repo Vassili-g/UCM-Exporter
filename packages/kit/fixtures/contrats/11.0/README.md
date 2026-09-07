@@ -6,10 +6,10 @@ les rend utiles.
 ## Pourquoi ils existent
 
 Le moteur ne fabrique que la version courante
-(`src/contract/exportComponent.ts`). Une fenêtre de lecture à deux versions, la
-courante et la précédente, décidée par
-[PLAN-INDUSTRIALISATION.md](../../../../../docs/plans/PLAN-INDUSTRIALISATION.md),
-n'est donc observable qu'à partir de contrats que plus rien ne sait produire.
+(`src/contract/exportComponent.ts`). La fenêtre de lecture porte deux versions,
+la courante et la précédente
+([COMPATIBILITE.md](../../../../../docs/COMPATIBILITE.md)) ; elle n'est donc
+observable qu'à partir de contrats que plus rien ne sait produire.
 Sans ce jeu, l'élagage des validateurs mesurerait sa couverture sur la seule version
 courante et marquerait « jamais atteint » tout ce qui sert la précédente : il
 supprimerait exactement les chemins que cette décision garde.

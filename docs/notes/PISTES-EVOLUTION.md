@@ -83,11 +83,25 @@ le diagnostic qui l’explique.
 *Condition* : un collecteur typé partagé par tous les extracteurs. Quelques
 localisations isolées donneraient une carte trompeuse.
 
+### Un canal de débogage dans le plugin
+
+Le plugin n’a plus de journal. Celui qui existait redisait le compte rendu, ligne
+pour ligne, et coûtait un dépliant permanent qu’il fallait ouvrir pour découvrir
+qu’il ne contenait rien de neuf.
+
+Ce qui manquerait vraiment est ce que le compte rendu ne dit pas : l’ordre exact
+des appels Figma, leur durée, ce qu’une étape a lu. Cela ne se remet pas dans une
+fenêtre de 380 px par précaution.
+
+*À ouvrir quand* un défaut réel aura montré ce qu’il fallait voir pour le
+comprendre. Le canal se décide alors avec sa règle, et la règle vient du défaut.
+
 ### Compatibilité et interopérabilité
 
-Le JSON Schema est publié et dérivé de `types.ts` ; ce qu’il laisse ouvert le
-reste : `tokens.json` n’a pas de version propre, et la politique de
-compatibilité n’est écrite nulle part.
+Le JSON Schema est publié et dérivé de `types.ts`, et la politique de
+compatibilité l’accompagne dans [COMPATIBILITE.md](../COMPATIBILITE.md). Ce
+qu’elle laisse ouvert : `tokens.json` n’a pas de version propre, et n’en
+recevra une qu’au premier changement de sa grammaire de projection.
 
 Une porte de CI fondée sur ce schéma a été examinée puis écartée : le
 consommateur prouve déjà la forme, et une seconde autorité sur la même
@@ -192,10 +206,20 @@ Tokens
 - primary.contained.hover.background remplacé
 ```
 
-Le diff reste **entièrement dérivé** des deux JSON comparés : commentaire de
+Le diff resterait **entièrement dérivé** des deux JSON comparés : commentaire de
 pull request ou rapport CI, jamais une nouvelle vérité. Il conditionne tout
 niveau de confiance différencié en revue : documentation auto-approuvée, token
 relu par un designer.
+
+**Différé, pas abandonné.** Avec quatre composants et un seul relecteur, un diff
+JSON brut se vérifie à la lecture, et rien ne montre qu’un classement
+automatique se tromperait moins souvent. Deux signaux rouvrent la question, et
+chacun s’observe : une revue de contrat qui laisse passer un changement que son
+relecteur n’avait pas vu, ou une revue qui demande plus de dix minutes de
+lecture. Le passage à plusieurs relecteurs la rouvre également, la lisibilité du
+diff brut tenant à ce que son relecteur en soit l’auteur. Le classement des
+changements qu’un tel diff devrait distinguer vit dans
+[COMPATIBILITE.md](../COMPATIBILITE.md).
 
 ---
 
@@ -203,7 +227,7 @@ relu par un designer.
 
 ### Vérification générique du rendu
 
-Détaillée dans [PLAN-CONFORMITE-DEV.md](../plans/PLAN-CONFORMITE-DEV.md). Elle
+Détaillée dans [PLAN-CONFORMITE-RENDU.md](./PLAN-CONFORMITE-RENDU.md). Elle
 reste une proposition de recherche, sans décision.
 
 Ce qui lui manque n’est pas une première preuve : les reconstructions à froid

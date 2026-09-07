@@ -555,7 +555,7 @@ export function flexItemProperties(
   // Un offset Figma ne se relie à aucune variable, et le designer ne PEUT pas
   // le rendre contractuel. Le moteur calcule donc la distance, comme il calcule
   // les pixels d'une piste de grille, et se tait : rien ne manque au contrat, et
-  // un export ne rapporte que ce qui demande une décision (U4.7).
+  // un export ne rapporte que ce qui demande une décision.
   if (isAbsolutePositioned(child)) {
     const constraints = layoutConstraints(child);
     const inset = absoluteInset(parent, child);

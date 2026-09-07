@@ -126,7 +126,7 @@ export function createConfigurationPage(
   /*
  * Ni carte, ni titre de section. La configuration est un formulaire : lui donner le
  * poids visuel de la zone d'action en faisait une troisième zone de rang égal. Et «
- * Configuration du repository » répétait le titre de la page qui le porte, que U0.3
+ * Configuration du repository » répétait le titre de la page qui le porte, que
  * rend déjà exact.
  */
   const markDirty = () => { settingsDirty = true; };
@@ -163,7 +163,7 @@ export function createConfigurationPage(
   const fields = { repoUrl, baseBranch, componentsPath, tokensPath, githubPat };
 
   /*
-   * Retirer le jeton du poste (U5.4). La confirmation est un second clic sur le
+   * Retirer le jeton du poste. La confirmation est un second clic sur le
    * même bouton, et non une boîte de dialogue : la sandbox n'en offre pas, et
    * un `confirm()` bloquerait l'iframe. Le libellé de confirmation dit ce qui
    * disparaît, parce que c'est irréversible.

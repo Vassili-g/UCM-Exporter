@@ -295,7 +295,7 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
     assert.equal('tokensUsed' in contrat, false);
     assert.deepEqual(Array.from(collecterReferences(contrat)), ['{tokens.sizes.gap}']);
 
-    // Un seul canal depuis U4.7 : ce que l'UI compte, ce que la pull request
+    // Un seul canal : ce que l'UI compte, ce que la pull request
     // titre « avertissement » et ce que `meta.diagnostics` publie sont la même
     // liste, et chacun de ses messages demande un geste dans Figma.
     assert.equal(resultat.warningCount, resultat.warnings.length);
@@ -462,7 +462,7 @@ test('une dépendance absente du variant de référence reste dans la variante e
     ]);
     assert.equal(structureDe(contrat).children.some((child: any) => child.composes === 'Link'), false);
     // Les arbres exacts conservent cette composition : rien ne manque, aucun
-    // geste n'est demandé, donc RIEN n'est dit au designer (U4.7). Ni dans le
+    // geste n'est demandé, donc RIEN n'est dit au designer. Ni dans le
     // contrat, ni dans le compteur de l'UI, ni dans la pull request.
     assert.deepEqual(
       (contrat.meta.diagnostics ?? []).filter((diagnostic: any) =>
@@ -544,7 +544,7 @@ test('les notices de documentation ne rendent pas la projection portable partiel
 test('une piste FIXED de grille est publiée en pixels, sans un mot au designer', async () => {
   // Le réflexe du designer devant un message est de retourner dans Figma. Ici la
   // valeur EST dans le contrat et rien n'y manque : le dire enverrait chercher
-  // une correction qui n'existe pas. Depuis U4.7, l'export se tait (la règle
+  // une correction qui n'existe pas. L'export se tait (la règle
   // vit dans la spécification, et ce test en répond).
   const figmaFaux = monterFigma({ avecRegles: false });
   const standalone = node('COMPONENT', 'TilesGrid', [], {
@@ -577,7 +577,7 @@ test('un badge hors du flux est placé et incliné par le moteur, en silence', a
   // relie une position à aucune variable, et une rotation n'en est pas une. Les
   // réclamer envoyait le designer corriger ce qui n'a pas de correction ; les
   // constater à chaque export lui faisait relire le fonctionnement interne de
-  // l'exporteur. Le moteur les calcule, les publie, et se tait (U4.7).
+  // l'exporteur. Le moteur les calcule, les publie, et se tait.
   const badge = () => node('FRAME', 'Badge', [], {
     layoutPositioning: 'ABSOLUTE',
     constraints: { horizontal: 'MAX', vertical: 'MIN' },
@@ -762,11 +762,11 @@ test('mergeWrapperProps garde la prop du set sélectionné et nomme le conflit',
 
 /**
  * Le lien Figma dépend d'un seul réglage : `enablePrivatePluginApi` dans le
- * manifest. **T4.4 l'a retiré** — un plugin publié sur la Community n'a pas le
+ * manifest. **Il a été retiré** : un plugin publié sur la Community n'a pas le
  * droit de le porter —, donc `figma.fileKey` reste indéfini et `meta.figma.url`
  * n'est plus écrit. Le calcul reste en place et ces deux tests le tiennent dans
  * les deux sens : il fonctionne dès que l'API rend la clé (une organisation qui
- * charge ce plugin en développement, ou la troisième voie de D6), et son
+ * charge ce plugin en développement), et son
  * absence est un état NORMAL qui ne se signale plus.
  */
 test('meta.figma.url est construit dès que l’API fournit la clé du fichier', async () => {
@@ -792,7 +792,7 @@ test('meta.figma.url est construit dès que l’API fournit la clé du fichier',
 });
 
 test('sans clé de fichier, le contrat n’a pas de lien et n’en fait pas un sujet', async () => {
-  // **C'est la moitié la plus importante de T4.4.** Le message d'avertissement
+  // **C'est la moitié la plus importante du passage à la Community.** Le message d'avertissement
   // était écrit quand ce cas était l'exception. La distribution par la
   // Community l'inverse : la clé n'arrive plus jamais, donc le message se
   // serait imprimé sur CHAQUE export et dans le corps de CHAQUE pull request,
@@ -983,7 +983,7 @@ test('deux variants dont la grille diffère publient chacun ses pistes, sans un 
   // n'a pas les mêmes pistes dans tous les variants : la note de piste FIXED se
   // contredisait d'un variant à l'autre sur le même nom de calque. La réponse
   // n'était pas de mieux la rédiger — les vues exactes portent DÉJÀ les deux
-  // grilles, donc rien ne manquait et rien n'était à corriger (U4.7).
+  // grilles, donc rien ne manquait et rien n'était à corriger.
   let appel = 0;
   const figmaFaux = monterFigma({
     avecRegles: false,
@@ -1021,12 +1021,13 @@ test('deux variants dont la grille diffère publient chacun ses pistes, sans un 
 });
 
 /**
- * La preuve d'ensemble de U4.9 : les sept transformations dans un seul export.
+ * La preuve d'ensemble : les sept transformations dans un seul export.
  *
- * Les tests de U4.7 prennent chaque cas isolément, et c'est ce qu'il faut pour
+ * Les tests voisins prennent chaque cas isolément, et c'est ce qu'il faut pour
  * dire POURQUOI chacun se tait. Celui-ci répond à l'autre question, celle que
  * `Stresstest` a posée en vrai : quand les sept arrivent ENSEMBLE sur un même
- * composant, le compte rendu reste-t-il vide ? C'est le cas qui a rouvert U4.7,
+ * composant, le compte rendu reste-t-il vide ? C'est le cas qui a fait retirer
+ * le canal des constats,
  * et le seul qui puisse le refermer.
  *
  * Il vérifie les deux moitiés à la fois, et c'est délibéré : que le contrat

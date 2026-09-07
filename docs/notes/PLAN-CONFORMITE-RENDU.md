@@ -1,11 +1,11 @@
-# Plan de travail — vérification de conformité côté développeur
+# Vérification générique du rendu, côté développeur
 
 **Statut : recherche proposée pour une prochaine phase.** Aucun vérificateur
 générique de rendu n’est implémenté et aucune décision de réalisation n’est
 prise. Les points marqués **[À DÉCIDER]** sont ouverts.
 
-Ce document conserve le détail de la piste. Il distingue les garde-fous déjà
-disponibles dans le Playground des blocs qui restent à concevoir ; il ne sert ni
+Cette note conserve le détail de la piste. Elle distingue les contrôles déjà
+disponibles des blocs qui restent à concevoir ; elle ne sert ni
 de changelog, ni de description normative du contrat.
 
 ---
@@ -48,14 +48,14 @@ n'aurait plus de témoin indépendant.
 
 Forme et version du contrat, existence des tokens, graphe de composition,
 adresses des échantillons, parité et références de tokens du code sont
-contrôlés par le Playground. Tous sont statiques. `npm run check` les agrège
+contrôlés par le noyau. Tous sont statiques. `ucm check` les agrège
 dans le terminal et dans `ci-report.md`. [ROADMAP.md](../../ROADMAP.md) en tient
 l'état.
 
 **Ce qui manque : la vérification du rendu.** Rien ne prouve que le composant
 affiche réellement la bonne couleur, la bonne dimension et la bonne disposition
 pour chaque combinaison. Aucun contrôle n'exécute le rendu, et le Playground ne
-porte plus aucun test propre à un composant : la seule preuve visuelle
+porte aucun test propre à un composant : la seule preuve visuelle
 disponible reste l'œil d'un humain qui compare une reconstruction à froid avec
 Figma.
 
@@ -64,7 +64,7 @@ Figma.
 ## 4. Où ça intervient dans le workflow
 
 Le workflow est décrit par [CONCEPT.md](../../CONCEPT.md). Ce qui compte ici : les
-contrôles tournent en local pendant l'écriture ET en CI au push, avec le même
+contrôles tournent en local pendant l'écriture et en CI au push, avec le même
 rapport et les mêmes mots, et un réexport ultérieur fait apparaître l'écart
 quand le design a changé sans que le code suive.
 
@@ -221,7 +221,7 @@ sur chaque pull request.
 
 Ce bloc contient la seule partie liée à la technologie utilisée : environ
 trente lignes qui savent importer un composant React et produire son HTML.
-Tout le reste — la logique de comparaison du bloc B — n'en dépend pas.
+Tout le reste, la logique de comparaison du bloc B, n'en dépend pas.
 
 Changer de technologie plus tard revient à réécrire ces trente lignes, jamais
 les vérifications.
@@ -275,7 +275,7 @@ entrer dans ce message, et pas dans une sortie séparée.
 
 Le code actuel attribue un échec à un composant en lisant le nom du fichier de
 test qui a échoué. Si le vérificateur vit ailleurs, ses échecs seront présentés
-comme une panne de l'outillage — donc avec le mauvais responsable et le mauvais
+comme une panne de l'outillage, donc avec le mauvais responsable et le mauvais
 message. Il faut soit qu'il produise un nom rattachable au composant, soit
 adapter cette attribution.
 

@@ -79,7 +79,7 @@ test('aucun message ne parle au designer avec un tiret cadratin', () => {
 });
 
 test('qui gouverne les chemins se lit avant de les saisir', () => {
-  // U5.1. `repositoryLayout` ignore les réglages dès qu'un ucm.config.json
+  // `repositoryLayout` ignore les réglages dès qu'un ucm.config.json
   // lisible existe : le dire APRÈS coup, en ligne de journal, revient à faire
   // remplir deux champs sans effet.
   const parLeDepot = etatDuDepot({
@@ -100,7 +100,7 @@ test('qui gouverne les chemins se lit avant de les saisir', () => {
 });
 
 test('personne ne décide de l’endroit, et cela se dit', () => {
-  // Le cas neuf que U5.1 introduit : les chemins ne sont plus obligatoires, un
+  // Le cas neuf : les chemins ne sont plus obligatoires, un
   // repository qui ne se décrit pas et des réglages vides ne désignent donc
   // plus rien. L'export sera refusé, et le designer doit l'apprendre ici.
   const { gouverne, resume } = etatDuDepot({
@@ -120,7 +120,7 @@ test('tant que rien n’est connu, rien n’est affirmé sur les chemins', () =>
 });
 
 test('sans repository, la ligne dit ce qui VA se passer', () => {
-  // U2.5. Le repli en téléchargement local était subi : découvert à l'arrivée,
+  // Le repli en téléchargement local était subi : découvert à l'arrivée,
   // alors que le bouton avait promis une pull request.
   const { ligne, repli } = etatDuDepot(null, null);
   assert.equal(repli, true);
@@ -128,7 +128,7 @@ test('sans repository, la ligne dit ce qui VA se passer', () => {
 });
 
 test('la destination nomme le repository, sa branche et les deux chemins', () => {
-  // U2.2. Elle n'apparaissait qu'après publication, en ligne de journal, donc
+  // Elle n'apparaissait qu'après publication, donc
   // après le point de non-retour.
   const { ligne, chemins, repli } = etatDuDepot(
     { components: 'src/components', tokens: 'src/tokens/tokens.json', source: 'ucm.config.json' },
@@ -141,7 +141,7 @@ test('la destination nomme le repository, sa branche et les deux chemins', () =>
 });
 
 /**
- * U5.3. Un 403 de droits manquants, un 409 de conflit et un 422 de branche
+ * Un 403 de droits manquants, un 409 de conflit et un 422 de branche
  * existante ne se corrigent pas du même geste, et arrivaient tous sous « Échec
  * GitHub » suivi du message brut.
  */

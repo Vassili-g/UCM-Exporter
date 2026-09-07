@@ -36,12 +36,12 @@ function nommeLeMotifParDefaut(ligne: string): boolean {
  * c'est voulu, puisque changer ses mots est précisément ce qu'on attend d'elle.
  */
 /**
- * **Elle est vide, et c'est le verdict de T8.7.** Elle a porté une entrée : la ligne
+ * **Elle est vide, et c'est le résultat recherché.** Elle a porté une entrée : la ligne
  * de `docs/FORMAT.md` qui promettait « le composant React et son interface Props » à
  * qui lit la forme publiée. Elle ne pouvait pas être corrigée tant que
- * `scissionSpec.test.mjs` exigeait que chaque ligne du document figé survive ; le
- * temps 2 de T8.1 a retiré cette fixture le 5 septembre 2026, et la ligne a été
- * reformulée le même jour — le contrat nomme un symbole, pas une stack.
+ * la scission de la spécification exigeait que chaque ligne du document figé
+ * survive ; cette contrainte est tombée avec la fixture, et la ligne a été
+ * reformulée : le contrat nomme un symbole, pas une stack.
  */
 const INSCRITES: { fichier: string; ligne: string; jusqua: string }[] = [];
 
@@ -83,7 +83,7 @@ test('aucune exemption ne survit à la ligne qu’elle couvrait', () => {
     [],
     'Ces exemptions ne couvrent plus aucune ligne : la ligne a été corrigée ou '
       + `déplacée, et l'inscription ment depuis.\n${perimees.join('\n')}\n`
-      + 'Retirer l’entrée. Si INSCRITES se vide, T8.7 est entière et ce second '
+      + 'Retirer l’entrée. Si INSCRITES se vide, la règle porte seule et ce second '
       + 'test peut partir avec la liste.',
   );
 });

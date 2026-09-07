@@ -128,7 +128,7 @@ test('tout message que le sandbox peut envoyer a un état où le regarder', () =
 
 /**
  * Une carte incomplète est pire qu'un paragraphe : elle promet une structure
- * qu'elle ne tient pas (U4.8/U4.9).
+ * qu'elle ne tient pas.
  *
  * La galerie est le seul endroit où l'on REGARDE ces cartes ; un état qui en
  * joue une sans son impact ou sans son geste ferait juger la mise en page sur
@@ -154,7 +154,7 @@ test('toute carte jouée par la galerie porte son problème, son impact et son g
 });
 
 /**
- * Les trois issues d'un export doivent rester REGARDABLES ensemble (U4.9).
+ * Les trois issues d'un export doivent rester REGARDABLES ensemble.
  *
  * Publication saine, correction demandée, export impossible : c'est leur
  * voisinage qui dit si le verdict porte bien le rang 1, et si le rouge reste

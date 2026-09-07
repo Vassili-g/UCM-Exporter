@@ -255,7 +255,7 @@ test('un calque en position absolue publie ses bords d’accroche au lieu de dis
   assert.equal(slot.rotation, '-45deg');
   // Aucun geste, donc aucun message : le designer ne PEUT pas relier une
   // position à une variable, la rotation est écrite par le contrat, et la place
-  // aussi. Rien ne manque, l'export se tait (U4.7).
+  // aussi. Rien ne manque, l'export se tait.
   assert.deepEqual(warnings.filter((warning) => warning.includes('« Badge »')), []);
 });
 

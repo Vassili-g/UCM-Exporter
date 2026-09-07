@@ -9,8 +9,6 @@ function bilan(overrides = {}) {
     version: null,
     graphe: [],
     manquants: [],
-    nonListes: [],
-    fantomes: [],
     typesTypographiques: [],
     ...overrides,
   };
@@ -21,7 +19,7 @@ test("une référence absente des tokens ne bloque pas le contrat", () => {
 });
 
 test("les incohérences internes du contrat restent bloquantes", () => {
-  assert.equal(bilanEstBloquant(bilan({ nonListes: ["{token.non.indexe}"] })), true);
+  assert.equal(bilanEstBloquant(bilan({ typesTypographiques: [{ chemin: "textStyles.corps" }] })), true);
   assert.equal(bilanEstBloquant(bilan({ champsAbsents: ["props"] })), true);
   assert.equal(bilanEstBloquant(bilan({ version: { valeur: "99.0" } })), true);
 });
@@ -67,7 +65,7 @@ test("les avertissements d'export sont annoncés comme non bloquants à eux seul
 /**
  * Un contrat que seule sa version bloque n'est pas un contrat invalide.
  *
- * T2.1b. Il est parfaitement formé, et aucun réexport ne le rendra lisible :
+ * Il est parfaitement formé, et aucun réexport ne le rendra lisible :
  * c'est le repository qui est en retard sur le format. Le titre le dit
  * désormais, à l'endroit le plus visible du rapport.
  */
@@ -80,7 +78,7 @@ test("le titre distingue un contrat cassé d'une version que le repo ne lit pas"
 });
 
 /**
- * T7.3 — le titre et la section ne doivent pas nommer deux responsables.
+ * Le titre et la section ne doivent pas nommer deux responsables.
  */
 test("le sens de l'écart de version décide du responsable annoncé", () => {
   const ancien = enteteDuVerdict([bilan({ version: { valeur: "11.0", verdict: "ancien" } })]);

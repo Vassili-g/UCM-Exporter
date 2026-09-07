@@ -251,7 +251,7 @@ test('un mode homonyme d’Object.prototype reste une marque exportée', () => {
 });
 
 /**
- * U2.4. L'export des tokens est de portée FICHIER : il ignore la sélection et
+ * L'export des tokens est de portée fichier : il ignore la sélection et
  * lit toutes les variables locales. Rien à l'écran n'en disait la taille, si
  * bien que la commande partait sans que personne sache sur quoi.
  */
@@ -274,7 +274,7 @@ test('un fichier sans variable locale le dit, au lieu de compter zéro', () => {
 });
 
 /**
- * U7.5. L'interface n'offre la commande que si elle a quelque chose à emporter.
+ * L'interface n'offre la commande que si elle a quelque chose à emporter.
  * Ce sont donc les VARIABLES qui décident, et non les collections : trois
  * collections vides annonceraient du contenu que `handleExportTokens` refuse
  * ensuite d'exporter, et le designer découvrirait une erreur rouge après le

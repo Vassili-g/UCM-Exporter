@@ -3,6 +3,12 @@
 Plugin Figma qui exporte des contrats de composant et des tokens DTCG. Il ne
 modifie jamais le document Figma.
 
+Ce document dit **ce que le projet garantit** : où vit chaque chose, et quelles
+règles le code tient. [CONTRIBUTING.md](./CONTRIBUTING.md) dit **comment
+travailler** : écrire du code, un message, un test, un document, et vérifier
+avant de proposer un changement. Une règle du produit s'écrit ici ; une règle de
+travail s'écrit là-bas.
+
 ## Avant de modifier
 
 Lire uniquement ce qui concerne la tâche :
@@ -140,11 +146,13 @@ packages/adapter-typescript/  l'adaptateur opt-in : parité TS/TSX et types gén
   src/index.d.mts             ce que cette porte promet à un consommateur TS
 
 docs/                    le FORMAT, pour qui consomme un contrat
+  README.md              le sommaire par profil de lecteur, et la table des autorités
   FORMAT.md              la forme de chaque champ, et ce que son absence dit
   CHANGELOG-FORMAT.md    ce que chaque version a publié, et ce qu'elle casse
+  COMPATIBILITE.md       les classes de changement, et qui migre pour chacune
   POUR-LES-DESIGNERS.md  le guide du designer, et le vocabulaire du projet
-  plans/                 les plans de travail : ils datent et ils racontent
-  notes/                 les options non engagées
+  RECETTE.md             la recette externe, à rejouer avant chaque publication
+  notes/                 les options non engagées, et rien dont le produit dépende
 
 .agents/skills/          les procédures qu'un agent charge à la demande
   consommer-contrat/       reconstruire un composant depuis son seul contrat
@@ -220,17 +228,13 @@ Le raisonnement vit dans la spécification, en lien.
   trois dans `packages/kit/src/format/names.ts` : `normalizeName` va du chemin
   Figma au token, `codeIdentifier` du nom Figma à l'identifiant de code, et
   `tokenCssVariable` du token à la propriété personnalisée CSS. Une projection
-  recopiée est le défaut le plus cher du projet, parce qu'il est muet : deux
-  copies de la troisième ont rendu `var(--layouts-sizing-0,5)`, où la virgule
-  sépare en CSS une variable de son repli. Le navigateur lisait
-  `--layouts-sizing-0`, la trouvait, et peignait `0px` pour `2px` sans une
-  erreur. La règle de `tokenCssVariable` tient en une phrase, pour qu'une chaîne
-  écrite dans une autre langue la tienne : minuscules, toute suite de caractères
-  qui n'est ni lettre ni chiffre devient un seul tiret, tirets de bord retirés.
-  Elle ne coupe pas sur les bosses de casse, ce qui la distingue d'un
-  `kebabCase` de bibliothèque, et ce choix est délibéré. Elle n'est pas une
-  bijection (`50%` et `50` se rejoignent) : le consommateur refuse la collision,
-  le format ne prétend pas l'empêcher.
+  recopiée ailleurs est une faute : elle diverge sans produire d'erreur. La
+  règle de `tokenCssVariable` tient en une phrase, pour qu'une chaîne écrite
+  dans une autre langue la tienne : minuscules, toute suite de caractères qui
+  n'est ni lettre ni chiffre devient un seul tiret, tirets de bord retirés. Elle
+  ne coupe pas sur les bosses de casse, ce qui la distingue d'un `kebabCase` de
+  bibliothèque. Elle n'est pas une bijection (`50%` et `50` se rejoignent) : le
+  consommateur refuse la collision, le format ne prétend pas l'empêcher.
 
 ### Couleurs
 
@@ -653,14 +657,16 @@ même pas de `package.json`. Aucun de ces tests n’ouvre un clone voisin.
 
 Ce qui ne se prouve pas ici : **Figma, GitHub et une vraie pull request**. Ces
 trois-là se rejouent dans
-[UCM-Playground](https://github.com/Vassili-g/UCM-Playground), qui n’est plus
-qu’une application React et un corpus réel : contrats exportés, `tokens.json`,
-et les sondes reconstruites depuis ces seuls contrats. Il ne porte aucun
-outillage UCM local : son empreinte du produit se limite aux cinq fichiers
-qu’`ucm init` écrit, ce qui est précisément ce qui rend la recette probante.
-Un contrôle qui manque là-bas se referme ici, jamais par un script rendu au
-consommateur. La procédure, ses critères de fin et son journal vivent dans
-[PLAN-NEUTRALISATION-PLAYGROUND.md](./docs/plans/PLAN-NEUTRALISATION-PLAYGROUND.md).
+[UCM-Playground](https://github.com/Vassili-g/UCM-Playground), une application
+React qui ne porte aucun outillage UCM local. Son empreinte du produit se limite
+aux cinq fichiers qu’`ucm init` écrit, et c’est ce qui rend la recette probante :
+un contrôle qui manque là-bas se referme ici, jamais par un script rendu au
+consommateur. La marche à suivre, ses critères de fin et le geste de publication
+qui la suit vivent dans [docs/RECETTE.md](./docs/RECETTE.md).
+
+`scripts/recette-externe.mjs` nomme les quatre déclencheurs qui obligent à la
+rejouer, et `publish.yml` refuse la publication tant que la réponse n’est pas
+donnée.
 
 ## Limites d’environnement
 
