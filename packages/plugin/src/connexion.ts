@@ -124,7 +124,7 @@ export function etatDeConnexion(
   }
 }
 /**
- * Pourquoi une PUBLICATION a échoué, et le geste.
+ * Pourquoi une publication a échoué, et le geste.
  *
  * Même perte que pour la connexion, à l'autre bout : un échec devenait « Échec
  * GitHub » suivi du message brut, quel que soit le statut. Un 403 de droits
@@ -168,7 +168,7 @@ export type EtatDuDepot = {
   chemins: string | null;
   /**
    * `true` quand aucun repository n'est connecté : l'export sera téléchargé sur
-   * le poste. C'est un comportement correct, mais il était SUBI —
+   * le poste. C'est un comportement correct, mais il était subi :
    * découvert à l'arrivée, après le travail, alors que le bouton avait promis
    * une pull request.
    */
@@ -178,13 +178,13 @@ export type EtatDuDepot = {
 /**
  * La phrase que la configuration affiche au-dessus des deux chemins.
  *
- * Elle répond à la question que le designer se posait APRÈS coup, en lisant une
+ * Elle répond à la question que le designer se posait après coup, en lisant une
  * ligne de journal : qui a décidé de l'endroit ? Le troisième cas est le plus
- * utile, et il n'existait pas — personne ne décide, et l'export sera refusé.
+ * utile, et il n'existait pas : personne ne décide, et l'export sera refusé.
  */
 export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null = null): EtatDuDepot {
   /*
-   * Sans repository, la ligne dit ce qui VA se passer. Le repli en
+   * Sans repository, la ligne dit ce qui va se passer. Le repli en
    * téléchargement local est un comportement correct, mais il était subi :
    * découvert à l'arrivée, alors que le bouton avait promis une pull request.
    * L'annoncer avant le clic en fait un mode choisi.

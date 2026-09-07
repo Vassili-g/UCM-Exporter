@@ -356,9 +356,9 @@ test('la composition conserve profondeur, ordre et occurrences homonymes', () =>
 
 test('un cadre optionnel masqué au-dessus d’une dépendance emporte son contenu rendu', () => {
   // La frontière de visibilité est la racine du composant exporté, jamais
-  // l'instance de dépendance : un cadre que CE variant masque ne montre rien de
+  // l'instance de dépendance : un cadre que ce variant masque ne montre rien de
   // ce qu'il contient, si profond que ce soit. Le cadre est masqué par une
-  // liaison de visibilité — sans elle, il serait élagué bien avant l'échantillon.
+  // liaison de visibilité, sans elle, il serait élagué bien avant l'échantillon.
   const definitions = {
     'Enabled#1:1': { type: 'BOOLEAN', defaultValue: true },
   } as ComponentPropertyDefinitions;
@@ -398,7 +398,7 @@ test('un cadre optionnel masqué au-dessus d’une dépendance emporte son conte
   assert.deepEqual(affiche?.swaps, [{ masterPath: ['GlyphA'], component: 'GlyphB' }]);
   assert.deepEqual(affiche?.overrides, [{ figmaPath: ['Copy'], text: 'Texte saisi' }]);
 
-  // Cadre masqué : ils disparaissent tous les deux, et RIEN d'autre ne bouge —
+  // Cadre masqué : ils disparaissent tous les deux, et rien d'autre ne bouge,
   // l'entrée de la dépendance et sa valeur `false` décrivent l'état masqué.
   const masque = construire(false).composes;
   assert.deepEqual(masque, [{
@@ -410,7 +410,7 @@ test('un cadre optionnel masqué au-dessus d’une dépendance emporte son conte
 });
 
 test('un SLOT ne coupe pas la résolution NOMINALE d’un remplacement natif', () => {
-  // La borne du SLOT appartient aux comparaisons POSITIONNELLES, qui supposent
+  // La borne du slot appartient aux comparaisons positionnelles, qui supposent
   // l'instance isomorphe à son maître. Joindre `componentPropertyReferences` à
   // une propriété déclarée n'en est pas une : couper ici retirerait la clé
   // d'`args` sans que `swaps` reprenne la main, et le fait n'aurait plus aucun

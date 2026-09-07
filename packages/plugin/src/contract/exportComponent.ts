@@ -126,7 +126,7 @@ export class ComponentExportError extends Error {
 }
 
 /** Message bloquant, formulé comme une action Figma plutôt que comme un concept mathématique. */
-/** Vérifie que la sélection est bien UN composant exportable, sinon erreur claire. */
+/** Vérifie que la sélection est bien un composant exportable, sinon erreur claire. */
 function getSelectedComponent(): ComponentNode | ComponentSetNode {
   const selection = figma.currentPage.selection;
   if (selection.length !== 1) {
@@ -171,7 +171,7 @@ function buildMeta(
   };
 }
 
-/** Le nom de fichier EST l'identifiant de code canonique du composant. */
+/** Le nom de fichier est l'identifiant de code canonique du composant. */
 export function componentContractFilename(name: string): string {
   return `${codeIdentifier(name)}.contract.json`;
 }
@@ -179,11 +179,11 @@ export function componentContractFilename(name: string): string {
 /**
  * Point d'entrée de la commande : crée le contrat du composant sélectionné.
  *
- * `annoncer` NOMME les étapes traversées, il n'en décide aucune. Cet
+ * `annoncer` nomme les étapes traversées, il n'en décide aucune. Cet
  * export charge toutes les pages puis résout trois fois le même maître par
  * dépendance : un coût réel, non mesuré, pendant lequel un « Analyse du
  * composant… » figé se lit comme un plantage. Les étapes portent le nom de ce
- * que le code fait, jamais une durée ni un pourcentage — la mesure n'existe
+ * que le code fait, jamais une durée ni un pourcentage : la mesure n'existe
  * pas, et une barre de progression inventerait une précision qu'on n'a pas.
  */
 export async function handleExportComponent(annoncer: Annonce = () => {}): Promise<ComponentExport> {
@@ -218,7 +218,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   if (missingVariants) {
     // Une matrice clairsemée est parfois voulue, parfois oubliée : le contrat ne
     // peut pas trancher, mais le designer si. Le constat reste donc un
-    // avertissement, et nomme le geste — sans quoi il ne serait qu'une ligne de
+    // avertissement, et nomme le geste, sans quoi il ne serait qu'une ligne de
     // plus à survoler dans la pull request.
     const plusieurs = missingVariants.missing > 1;
     pousserLocalise(warnings, 'Component Set', componentSet, {
@@ -248,7 +248,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     ? componentSet.defaultVariant ?? matrix.variants[0]?.component ?? null
     : componentSet;
 
-  // La composition se relève AVANT toute extraction : un composant unifié
+  // La composition se relève avant toute extraction : un composant unifié
   // imbriqué n'est ni un wrapper, ni un slot à parcourir, et cette décision
   // conditionne tout ce qui suit.
   annoncer('Lecture des composants imbriqués…');
@@ -267,7 +267,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   warnings.push(...compositionWarnings);
   // Un message qui change de canal laisse sa cible derrière lui si le registre
   // ne suit pas. C'est le prix du registre indexé par canal, et le seul endroit
-  // où un oubli serait muet — d'où la loi qui compte, à la sortie, les messages
+  // où un oubli serait muet : d'où la loi qui compte, à la sortie, les messages
   // localisables restés sans node.
   reporterLocalisations(compositionWarnings, warnings);
   // Une instance dont le composant maître est illisible coûte au contrat : ses
@@ -318,7 +318,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
 
   // Le résolveur reçoit l'index des variables locales pour deux raisons : il y
   // lit les chemins sans un aller-retour par variable, et il sait quelles
-  // variables partagent un nom — les seules qu'un contrat ne doit jamais citer.
+  // variables partagent un nom, les seules qu'un contrat ne doit jamais citer.
   annoncer('Écriture du contrat…');
   const [collections, variables] = await Promise.all([
     figma.variables.getLocalVariableCollectionsAsync(),
@@ -394,12 +394,12 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   }
   warningCursor = warnings.length;
 
-  // Chaque composition de vue se DÉRIVE de son arbre exact, comme
+  // Chaque composition de vue se dérive de son arbre exact, comme
   // `tokensUsed` se dérive du contrat terminé. Le champ global en est l'union
   // ordonnée à cardinalité maximale : une dépendance conditionnelle ne disparaît
   // donc pas seulement parce qu'elle manque au variant de référence.
   //
-  // Chaque séquence se lit sur SON ARBRE, pas sur l'ordre où l'extraction a rangé ses
+  // Chaque séquence se lit sur son arbre, pas sur l'ordre où l'extraction a rangé ses
   // trouvailles : celui-ci dépend de l'ordonnancement des `await`, et deux
   // cadres frères pourraient se doubler sans qu'aucun design ait changé.
   const composesPlacees = mergeVariantDependencies(extracted.variants);
@@ -447,21 +447,21 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   // plus importante du passage à la Community.** Le message était écrit quand le cas était
   // l'exception : le manifest portait `enablePrivatePluginApi`, l'URL était la
   // norme, et le dire une fois de temps en temps ne coûtait rien. La
-  // distribution par la Community inverse exactement cela — la clé du fichier
-  // n'arrive plus JAMAIS, donc le message se serait imprimé sur chaque export,
+  // distribution par la Community inverse exactement cela : la clé du fichier
+  // n'arrive plus jamais, donc le message se serait imprimé sur chaque export,
   // dans le corps de chaque pull request, pour un constat que le designer ne
   // peut pas corriger et dont la conclusion est toujours « rien à faire ».
   //
   // C'est la règle du projet appliquée à sa propre décision : une liste dont on
   // apprend qu'elle se survole coûte la lecture de celles qui demandent un
-  // geste. Un état NORMAL du format ne se documente pas par un diagnostic
+  // geste. Un état normal du format ne se documente pas par un diagnostic
   // répété à l'infini ; il se documente une fois, dans le type
   // (`ContractMeta.figma.url`) et dans la spécification.
   const meta = buildMeta(componentSet);
 
   const allWarnings = Array.from(new Set([...warnings, ...extracted.warnings]));
   // La jonction : les deux canaux se fondent, et leurs registres avec eux. Le
-  // relevé ne va pas plus loin que la frontière sandbox ↔ UI — le contrat, lui,
+  // relevé ne va pas plus loin que la frontière sandbox ↔ UI : le contrat, lui,
   // n'en verra rien, et une loi de `lois.ts` le refuse.
   reporterLocalisations(warnings, allWarnings);
   reporterLocalisations(extracted.warnings, allWarnings);
@@ -471,8 +471,8 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   const portableWarningSet = new Set(projectionWarnings);
   const hasPortableLoss = portableWarningSet.size > 0;
   // Deux codes, et une seule question qu'ils tranchent : la projection portable
-  // a-t-elle perdu quelque chose ? Les deux demandent un geste — c'est la
-  // condition d'entrée dans ce canal —, mais seul le premier
+  // a-t-elle perdu quelque chose ? Les deux demandent un geste (c'est la
+  // condition d'entrée dans ce canal), mais seul le premier
   // dégrade `meta.coverage.portable`, et le rapport de CI ne remonte que
   // celui-là.
   const diagnostics = allWarnings.map((message) => ({
@@ -491,9 +491,9 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     ...projectionDeReference
   } = extracted.structure;
   // La projection de référence rejoint le catalogue des structures au lieu d'en
-  // recopier une. Le renvoi est INCONDITIONNEL : quand l'élection du node de
-  // layout la fait différer de toutes les vues — un wrapper de dimensions
-  // sauté —, elle ajoute son entrée. Une seule forme, donc un seul chemin de
+  // recopier une. Le renvoi est inconditionnel : quand l'élection du node de
+  // layout la fait différer de toutes les vues (un wrapper de dimensions
+  // sauté), elle ajoute son entrée. Une seule forme, donc un seul chemin de
   // lecture chez le consommateur.
   const viewStructures = compacted.viewStructures;
   const structureIds = new Map(
@@ -501,7 +501,7 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   );
   const projectionPropre = elideNeutrals(projectionDeReference, 'viewStructures.*');
   const structureView = intern(projectionPropre, 'st', structureIds, viewStructures);
-  // Les étiquettes Figma des axes viennent de la SOURCE, jamais d'une relecture
+  // Les étiquettes Figma des axes viennent de la source, jamais d'une relecture
   // des noms publiés : reconstruire un nom depuis la table et le comparer ne
   // valide pas l'appariement axe ↔ étiquette, qu'une permutation traverse sans
   // être vue.

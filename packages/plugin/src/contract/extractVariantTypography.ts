@@ -29,10 +29,10 @@ type TextSlot = {
   slotPath: string[];
   textNode: TextNode;
   /**
-   * Le calque PUBLIÉ qui occupe ce slot.
+   * Le calque publié qui occupe ce slot.
    *
    * Il n'est pas toujours `textNode` : un cadre dont la seule information est un
-   * unique texte reste ce texte, et c'est alors le CADRE que l'arbre publie sous
+   * unique texte reste ce texte, et c'est alors le cadre que l'arbre publie sous
    * ce slot. Qui veut nommer le calque d'un slot doit donc lire celui-ci, sous
    * peine de contredire le `figmaLayer` que la vue publie au même chemin.
    */
@@ -165,9 +165,9 @@ async function loadTextStyle(
  * Extrait le catalogue et son usage exact sur toutes les combinaisons d'axes.
  *
  * `layoutNodes` porte le node de layout déjà élu pour chaque variant
- * (`layoutNodes.ts`). Élire de nouveau ici désignerait parfois un autre node —
- * y compris pour le variant de référence, que le contrat accuserait alors de
- * diverger de lui-même — et toute la typographie disparaîtrait.
+ * (`layoutNodes.ts`). Élire de nouveau ici désignerait parfois un autre node
+ * (y compris pour le variant de référence, que le contrat accuserait alors de
+ * diverger de lui-même) et toute la typographie disparaîtrait.
  */
 export async function extractVariantTypography(
   matrix: VariantMatrix,

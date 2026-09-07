@@ -1,12 +1,12 @@
 /**
- * OÙ vit l'implémentation d'un contrat, et SI elle est là.
+ * Où vit l'implémentation d'un contrat, et si elle est là.
  * Le noyau résout un chemin et teste son existence sans lire le langage ni
  * comparer l'API ; cette mesure propre à la stack appartient à l'adaptateur.
  */
 import { existsSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 
-// Le motif par défaut est une VALEUR du format, pas une décision de ce module :
+// Le motif par défaut est une valeur du format, pas une décision de ce module :
 // il est aussi le défaut de `ucm.config.json`, et deux constantes pour la même
 // chaîne dériveraient. Il vit donc dans `@ucm-kit/core/format`, avec le reste
 // de la grammaire de configuration.
@@ -26,7 +26,7 @@ export function identifiantDuContrat(cheminContrat) {
  * trouvée ».
  */
 export function cheminImplementation(cheminContrat, motif = MOTIF_IMPLEMENTATION_PAR_DEFAUT) {
-  // Ce refus a été écrit APRÈS s'être fait prendre : `contrats.map(cheminDuComposant)`
+  // Ce refus a été écrit après s'être fait prendre : `contrats.map(cheminDuComposant)`
   // passe l'index de `map` en second argument, donc un motif valant `0`. La
   // panne était un `motif.replaceAll is not a function` à trois appels de
   // profondeur, dans le kit, pour une faute commise chez le consommateur. Dire
@@ -51,7 +51,7 @@ export function cheminImplementation(cheminContrat, motif = MOTIF_IMPLEMENTATION
 /**
  * L'implémentation de ce contrat existe-t-elle ?
  *
- * `existe` est injectable pour que la question se pose sans toucher au disque —
+ * `existe` est injectable pour que la question se pose sans toucher au disque :
  * un test, ou un jour un lecteur d'archive. Le défaut reste `existsSync` : le
  * cas courant ne doit pas coûter une configuration.
  */

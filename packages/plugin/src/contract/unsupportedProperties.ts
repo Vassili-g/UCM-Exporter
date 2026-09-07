@@ -2,8 +2,8 @@
  * Ce qu'un calque publié porte dans Figma et que le schéma ne sait pas écrire.
  *
  * Le contrat ne prétend pas décrire tout Figma. Mais une propriété qui change
- * le rendu et qu'aucun champ ne porte doit être DITE, jamais oubliée : c'est la
- * règle du projet — une ombre absente du contrat est une ombre absente de
+ * le rendu et qu'aucun champ ne porte doit être dite, jamais oubliée : c'est la
+ * règle du projet, une ombre absente du contrat est une ombre absente de
  * l'écran, et le développeur ne peut pas deviner ce qu'on ne lui dit pas.
  *
  * Deux garde-fous encadrent ce module, et ils comptent autant que la liste
@@ -19,13 +19,13 @@
  *   plus rien.
  *
  * Ces deux garde-fous se répondent, et c'est ce qui a longtemps laissé passer
- * `isMask`. Le silence lui avait été accordé au nom du second — le masque
- * interne d'une icône — mais ces calques-là relèvent du PREMIER : ils ne sont
+ * `isMask`. Le silence lui avait été accordé au nom du second (le masque
+ * interne d'une icône) mais ces calques-là relèvent du premier : ils ne sont
  * jamais publiés, donc jamais soumis à ce relevé. Le silence ne protégeait aucun
  * design correct, et coûtait un découpage à chaque design qui l'employait pour
  * de bon.
  *
- * `rotation` a quitté cette liste : le contrat l'ÉCRIT maintenant, en
+ * `rotation` a quitté cette liste : le contrat l'écrit maintenant, en
  * vocabulaire CSS (`ChildStructure.rotation`), et une propriété publiée n'a
  * rien à faire dans un relevé de ce qui manque. `flexLayout.rotationDegrees`
  * en est l'autorité, seuil compris.
@@ -41,7 +41,7 @@ function asPropertyBag(node: SceneNode): FigmaPropertyBag {
 }
 
 /**
- * Vrai si Figma rend cette valeur « mixed » — plusieurs valeurs dans un même
+ * Vrai si Figma rend cette valeur « mixed » : plusieurs valeurs dans un même
  * calque. Le symbole n'est pas exposé hors du runtime du plugin : on le
  * reconnaît à ce qu'il n'est ni un tableau, ni une valeur primitive attendue.
  */
@@ -76,7 +76,7 @@ type ProprieteNonPortee = {
 const FUSIONS_NEUTRES: ReadonlySet<unknown> = new Set(['PASS_THROUGH', 'NORMAL']);
 
 /**
- * Relève, sur UN calque publié, ce que le schéma ne sait pas porter.
+ * Relève, sur un calque publié, ce que le schéma ne sait pas porter.
  *
  * Fonction pure : elle ne lit que le node et ne connaît ni la matrice, ni le
  * contrat en cours. C'est ce qui la rend vérifiable sans le runtime Figma.
@@ -85,8 +85,8 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
   const values = asPropertyBag(node);
   const relevees: ProprieteNonPortee[] = [];
 
-  // Un effet est une décision de design à part entière — une ombre porte la
-  // hiérarchie d'une carte, un flou son arrière-plan — et aucun champ du
+  // Un effet est une décision de design à part entière (une ombre porte la
+  // hiérarchie d'une carte, un flou son arrière-plan) et aucun champ du
   // contrat ne la porte.
   const effets = Array.isArray(values.effects)
     ? (values.effects as Effect[]).filter((effet) => effet && effet.visible !== false)
@@ -143,7 +143,7 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
   // Un mask ne peint pas : il découpe. Le contrat, lui, ne connaît que des
   // surfaces, et publie la sienne dans `variants[].tokens`. Sans ce message, le
   // développeur peindrait par-dessus le contenu la couleur qui était censée le
-  // révéler — le seul cas où le contrat ne perd pas une propriété mais en
+  // révéler : le seul cas où le contrat ne perd pas une propriété mais en
   // invente une.
   if (values.isMask === true) {
     relevees.push({
@@ -169,8 +169,8 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
  * Les réglages de texte que `textStyles` ne porte pas.
  *
  * Le catalogue des text styles décrit une police, une taille, une graisse, une
- * interligne et un interlettrage — rien de ce qui suit. Un alignement n'est en
- * revanche relevé que s'il a un EFFET : un texte en `Hug` a une boîte à sa
+ * interligne et un interlettrage : rien de ce qui suit. Un alignement n'est en
+ * revanche relevé que s'il a un effet : un texte en `Hug` a une boîte à sa
  * mesure, et le centrer n'y change rien. Sans cette réserve, tout label centré
  * d'un bouton produirait un avertissement sans geste possible.
  */
@@ -238,7 +238,7 @@ function proprietesDeTexteNonPortees(
 /**
  * Avertissements d'un calque publié, dans le vocabulaire du designer.
  *
- * Appelée par l'extraction sur chaque calque qui reçoit un slot — et sur lui
+ * Appelée par l'extraction sur chaque calque qui reçoit un slot, et sur lui
  * seul. Un message par calque et par propriété : deux propriétés du même calque
  * demandent deux gestes différents, et les fondre en une phrase priverait le
  * designer de l'un des deux.

@@ -78,7 +78,7 @@ export function createCompteRendu(): CompteRenduUi {
   }
 
   /**
-   * Une CARTE, pas un paragraphe technique.
+   * Une carte, pas un paragraphe technique.
    *
    * Quatre parties, dans l'ordre où on les lit : une pastille qui dit la
    * sévérité, un titre qui nomme l'élément Figma et le manque, la conséquence
@@ -93,7 +93,7 @@ export function createCompteRendu(): CompteRenduUi {
    * **Le lien vers Figma est un bouton distinct.** Rendre toute la carte
    * cliquable ferait d'un bloc de trois phrases une cible unique, dont rien ne
    * dit ce que le clic déclenche. Le bouton n'apparaît que si le moteur a passé
-   * un node — un message sans `nodeId` nomme un text style, une variable, ou un
+   * un node : un message sans `nodeId` nomme un text style, une variable, ou un
    * calque agrégé sur toute la matrice, et le moteur a déclaré pourquoi.
    *
    * Un bouton, pas un lien : il n'y a pas d'URL, et un `<a href>` factice
@@ -167,7 +167,7 @@ export function createCompteRendu(): CompteRenduUi {
     ajouterPublication(texte: string, niveau: LogLevel = 'info') {
       ajouterEntree(creerLignePublication(texte, niveau));
     },
-    /** Le lien de pull request est une SORTIE, pas une ligne de texte. */
+    /** Le lien de pull request est une sortie, pas une ligne de texte. */
     ajouterLien(libelle: string, url: string) {
       const lien = document.createElement('a');
       lien.className = 'entree entree-lien';

@@ -1,5 +1,5 @@
 /**
- * La loi des trois parties, et pourquoi elle se mesure DEUX fois.
+ * La loi des trois parties, et pourquoi elle se mesure deux fois.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -53,10 +53,10 @@ test('un message ne s’écrit jamais directement dans un canal de diagnostics',
     lignes.forEach((ligne, rang) => {
       const trouve = motif.exec(ligne);
       if (!trouve) return;
-      // Ce qui est interdit est d'ÉCRIRE un message ici. Pousser une valeur
+      // Ce qui est interdit est d'écrire un message ici. Pousser une valeur
       // déjà formée reste le geste normal : une recopie de canal (`...autres`),
       // un message que l'autorité vient de rendre, un texte rangé dans une
-      // seconde liste pour être classé. Le repère est donc le littéral — c'est
+      // seconde liste pour être classé. Le repère est donc le littéral : c'est
       // lui, et lui seul, qui dit qu'une phrase est rédigée à cet endroit.
       const reste = ligne.slice(trouve.index + trouve[0].length).trimStart();
       const debut = reste.length > 0

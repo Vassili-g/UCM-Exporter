@@ -38,9 +38,9 @@ function contrat(nom) {
 const TOKENS = { couleurs: { texte: { principal: { $type: "color", $value: "#111111" } } } };
 
 /**
- * Un repository jouet aux emplacements PAR DÉFAUT : `components/` et
+ * Un repository jouet aux emplacements par défaut : `components/` et
  * `tokens.json`, sans `ucm.config.json`. C'est le repo du critère de réussite
- * n° 1 — un dossier de contrats et rien d'autre —, donc celui qu'il faut
+ * n° 1 (un dossier de contrats et rien d'autre), donc celui qu'il faut
  * éprouver en premier.
  */
 function repoJouet({ composants = { Widget: contrat("Widget") }, tokens = TOKENS } = {}) {
@@ -106,8 +106,7 @@ test("un drapeau suivi d'un autre drapeau est une valeur oubliée, pas une valeu
 /**
  * Le terminal, toujours ; le fichier, seulement sur demande. Écrire toujours
  * laisserait un rapport non versionné dans la copie de travail après chaque
- * exécution — le risque n'est pas de le commiter, mais de faire croire à un
- * rapport frais.
+ * exécution, qui ferait croire à un rapport frais.
  */
 test("le rapport ne s'écrit que sur --report, et le terminal parle quand même", () => {
   const racine = repoJouet();
@@ -142,7 +141,7 @@ test("--report crée le dossier du chemin demandé", () => {
  *
  * *Aucun rapport n'est écrit, et c'est voulu :* formuler ici un diagnostic de
  * designer remettrait du vocabulaire de rapport dans l'outil, ce que la scission vient
- * d'en sortir. Le filet du workflow couvre exactement ce cas — rapport absent,
+ * d'en sortir. Le filet du workflow couvre exactement ce cas : rapport absent,
  * message minimal publié.
  */
 test("une configuration refusée sort en 2 sans écrire de rapport", () => {
@@ -187,7 +186,7 @@ test("une configuration qui déplace les contrats est suivie", () => {
 /**
  * **Aucun repli silencieux quand `git` échoue.** Sans relevé, le périmètre
  * s'ouvrirait à tous les contrats et le rapport parlerait de composants que la
- * pull request ne touche pas — le défaut même que le périmètre supprime.
+ * pull request ne touche pas : le défaut même que le périmètre supprime.
  */
 test("un diff impossible arrête la commande au lieu d'élargir le périmètre", () => {
   const racine = repoJouet();
@@ -273,7 +272,7 @@ test("le périmètre tait les états informatifs des contrats que la PR ne touch
     assert.equal(lancer(racine, ["--base", base, "--report", "ci-report.md"]).code, 0);
     const rapport = readFileSync(join(racine, "ci-report.md"), "utf8");
 
-    // Les deux contrats sont contrôlés — la validation reste globale — mais
+    // Les deux contrats sont contrôlés (la validation reste globale) mais
     // seul celui que la PR modifie a le droit de parler dans les états
     // informatifs. Ici : l'implémentation absente.
     assert.match(rapport, /2 contrats et 2 références de token contrôlés/);

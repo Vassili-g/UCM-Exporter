@@ -3,7 +3,7 @@
  * dire.
  *
  * Ces tests protègent une frontière plus qu'une fonction : `versionDeContrat`
- * dit OÙ le champ se lit et rend ce qu'il y trouve, `verdictDeVersion` dit si
+ * dit où le champ se lit et rend ce qu'il y trouve, `verdictDeVersion` dit si
  * cette valeur est lisible et supportée. Le jour où la première se mettrait à
  * juger, ce repository aurait deux idées de ce qu'est une version valide, et
  * leur désaccord serait muet.
@@ -22,7 +22,7 @@ test('la version se lit dans meta.contractVersion', () => {
 test('une version illisible est rendue telle quelle, pas corrigée ni rejetée', () => {
   // C'est `verdictDeVersion` qui connaît la fenêtre de ce repository et la
   // grammaire `majeure.mineure`. Reproduire ce jugement ici créerait la
-  // seconde autorité que cette fonction existe pour supprimer — et le rapport
+  // seconde autorité que cette fonction existe pour supprimer, et le rapport
   // qui nomme la version fautive au designer ne pourrait plus la citer.
   assert.equal(versionDeContrat({ meta: { contractVersion: 'douze' } }), 'douze');
   assert.equal(versionDeContrat({ meta: { contractVersion: '99.9' } }), '99.9');
@@ -31,7 +31,7 @@ test('une version illisible est rendue telle quelle, pas corrigée ni rejetée',
 test('l’absence de version se distingue d’une version, quelle que soit sa forme', () => {
   // `null` ne dit qu'une chose : le champ est absent ou n'est pas du texte
   // utilisable. Un contrat vidé de sa substance n'a pas une version périmée,
-  // il n'en a pas — et les deux appellent des messages opposés côté rapport.
+  // il n'en a pas, et les deux appellent des messages opposés côté rapport.
   assert.equal(versionDeContrat({}), null);
   assert.equal(versionDeContrat({ meta: {} }), null);
   assert.equal(versionDeContrat({ meta: { contractVersion: '' } }), null);

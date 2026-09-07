@@ -33,7 +33,7 @@ test('les deux conventions de nom d’une même graisse tombent au même endroit
 test('un nom inconnu rend null, et ne se replie jamais sur « normal »', () => {
   // Replier sur 400 ferait disparaître l'information : le design system emploie
   // un vocabulaire que cette table ne couvre pas, et c'est à l'appelant d'en
-  // décider — le preset garde la valeur telle quelle, un autre avertira.
+  // décider, le preset garde la valeur telle quelle, un autre avertira.
   assert.equal(poidsDeGraisse('Chunky'), null);
   assert.equal(poidsDeGraisse(''), null);
   assert.equal(poidsDeGraisse(undefined), null);

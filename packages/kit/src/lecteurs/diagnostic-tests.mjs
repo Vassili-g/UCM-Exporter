@@ -46,14 +46,14 @@ function detailErreurTest({ composant, test, nomErreur, erreur }) {
  * request.
  *
  * Ce verdict affirmait « votre export est valide, ré-exporter n'y changera
- * rien ». C'est vrai tant que l'export a tout décrit — et faux sinon : une
+ * rien ». C'est vrai tant que l'export a tout décrit, et faux sinon : une
  * propriété qu'il n'a pas pu décrire disparaît du contrat, les tests qui la
  * relisent échouent, et c'est bien un ré-export qui débloquera. Disculper
  * Figma est un constat que ce module ne peut pas produire seul ; il lui faut
  * `avertissements`, que l'export a écrits.
  *
  * Trois états, pas deux : une liste vide dit « l'export n'a rien signalé »,
- * et `null` dit « on n'a pas pu le vérifier » — c'est le cas des sorties
+ * et `null` dit « on n'a pas pu le vérifier », c'est le cas des sorties
  * anticipées, qui publient avant d'avoir lu le moindre contrat. Les confondre
  * ferait disculper Figma sans l'avoir consulté.
  */

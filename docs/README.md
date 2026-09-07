@@ -16,7 +16,8 @@ Vous n'avez besoin d'aucun autre document.
 
 ### Vous branchez UCM sur un repository
 
-1. [../README.md](../README.md), section « Utilisation ».
+1. [../README.md](../README.md#brancher-un-repository) : les trois commandes
+   et ce qu’elles attendent du repository.
 2. [FORMAT.md](./FORMAT.md) : la forme de chaque champ d'un contrat et de
    `tokens.json`. C'est l'autorité sur ce que vous recevez.
 3. [../packages/cli/README.md](../packages/cli/README.md) : les commandes, ce
@@ -71,6 +72,3 @@ et rien du produit ne dépend d'elles.
 |---|---|
 | [notes/PISTES-EVOLUTION.md](./notes/PISTES-EVOLUTION.md) | Le positionnement, les options ouvertes et les risques |
 | [notes/PLAN-CONFORMITE-RENDU.md](./notes/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
-
-Les plans de travail terminés ont été retirés. Leur contenu vit dans Git, dans
-l'historique des commits qui les ont exécutés.

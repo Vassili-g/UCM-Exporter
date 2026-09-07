@@ -4,13 +4,13 @@
  * **Ce test existe parce que les deux avaient déjà divergé, dans les deux
  * sens.** `styles.css` portait une règle `.config-title-row` qu'aucun élément
  * ne recevait plus ; à l'inverse, l'UI posait `space-y-1`, `log-panel`,
- * `btn-icon` et surtout `log-info` — cette dernière étant la classe censée
+ * `btn-icon` et surtout `log-info` : cette dernière étant la classe censée
  * distinguer une note d'un avertissement, que rien ne stylisait. Une
  * distinction qu'on croit faire et qu'on ne fait pas est pire qu'une
  * distinction absente : elle se lit comme faite.
  *
- * Les deux sens sont vérifiés. Les classes fabriquées par gabarit — `btn-` et
- * `log-` — ne sont pas énumérées ici : leurs valeurs sont LUES à leur source,
+ * Les deux sens sont vérifiés. Les classes fabriquées par gabarit (`btn-` et
+ * `log-`) ne sont pas énumérées ici : leurs valeurs sont lues à leur source,
  * pour qu'un niveau de journal ajouté à `LogLevel` réclame sa règle du même
  * geste.
  */
@@ -116,7 +116,7 @@ test('toute classe stylisée est posée quelque part par l’interface', () => {
 });
 
 test('la feuille n’écrit aucune couleur en dur hors de ses rôles', () => {
-  // Les replis vivent dans le bloc de rôles, en tête de fichier, et NULLE PART
+  // Les replis vivent dans le bloc de rôles, en tête de fichier, et nulle part
   // ailleurs : une couleur écrite dans une règle est un repli que
   // personne ne relira au moment de vérifier les deux thèmes.
   const apresLesRoles = feuille.slice(feuille.indexOf('* {'));

@@ -231,7 +231,7 @@ test('deux variantes aux mêmes coordonnées gardent leurs usages typographiques
 });
 
 test('le chemin d’une part descend jusqu’au calque texte, pas jusqu’à son frame', () => {
-  // `extractTextBranch` publie une part pour le frame ET pour le texte qu'il
+  // `extractTextBranch` publie une part pour le frame et pour le texte qu'il
   // contient. Un chemin qui s'arrêtait au frame désignait un slot porteur de
   // `children`, où le consommateur ne trouvait aucune typographie à appliquer.
   const description = node('TEXT', 'description', 'Description', [], {
@@ -255,8 +255,8 @@ test('le chemin d’une part descend jusqu’au calque texte, pas jusqu’à son
 
 test('textSlots situe les textes qu’un cadre de dépendances range à côté d’elles', async () => {
   // Le cas que StressTest a fait tomber : un cadre qui contient deux boutons et
-  // un tag. Le tag est un calque de CE contrat, et sa typographie doit viser un
-  // chemin que `structure.children` publie réellement — sans quoi le
+  // un tag. Le tag est un calque de ce contrat, et sa typographie doit viser un
+  // chemin que `structure.children` publie réellement, sans quoi le
   // consommateur refuse le contrat pour un chemin de slots inconnu.
   const bouton = node('INSTANCE', 'btn', 'Button');
   const texteDuTag = node('TEXT', 'tag-txt', 'Nouveau', [], { characters: 'Nouveau' });

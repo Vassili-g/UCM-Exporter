@@ -1,5 +1,5 @@
 /**
- * Les contrats FABRIQUÉS que plusieurs suites partagent.
+ * Les contrats fabriqués que plusieurs suites partagent.
  */
 
 export function contratCourant() {
@@ -24,7 +24,7 @@ export function contratCourant() {
 /**
  * Contrat 12.0 minimal : la forme courante, plus ce que la 12.0 ajoute.
  *
- * Le corpus réel n'exerce qu'une partie de ces champs — un seul composant y
+ * Le corpus réel n'exerce qu'une partie de ces champs : un seul composant y
  * porte une icône, aucun n'y porte de rotation. Les monter ici est donc la
  * seule façon d'atteindre les contrôles avant qu'un designer ne les atteigne.
  */

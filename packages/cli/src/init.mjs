@@ -5,8 +5,8 @@
  * Cette commande est ce qui rend ce zéro possible, et sa seule difficulté est
  * de savoir ce qu'elle a le droit d'écrire.
  *
- * **Elle n'écrase JAMAIS un fichier existant.** Un `init` lancé deux fois, ou
- * lancé dans un repo déjà installé, doit être sans effet et le dire — pas
+ * **Elle n'écrase jamais un fichier existant.** Un `init` lancé deux fois, ou
+ * lancé dans un repo déjà installé, doit être sans effet et le dire : pas
  * remplacer un workflow que quelqu'un a adapté. Écraser serait la seule faute
  * irréversible que cette commande puisse commettre, et elle la commettrait au
  * moment où l'utilisateur a le moins de raisons de s'en méfier.
@@ -33,6 +33,18 @@ function versionDuPaquet() {
  * jour où elle changerait de verdict, la CI d'un designer basculerait sans
  * qu'aucun fichier du repo n'ait bougé. Un chiffre qu'on lit dans le dépôt est
  * ce qui rend un rapport explicable.
+ *
+ * `rappel` porte la ligne à ajouter à la main quand le fichier existe déjà.
+ * Trois des cinq fichiers se partagent avec ce que le repository y met déjà :
+ * les laisser tels quels sans un mot, c'est laisser survenir en silence la
+ * panne que le fichier écrit existe pour empêcher. Les deux autres n'ont rien à
+ * rappeler, puisqu'un repository qui les porte déjà a déjà répondu à la
+ * question qu'ils posent.
+ *
+ * `marqueurs` dit à quoi se reconnaît un fichier qui porte déjà la règle. Tous
+ * présents, le rappel se tait : sans cette lecture, un `init` relancé
+ * réclamerait ce qu'il a lui-même écrit, et trois lignes réclamées pour rien
+ * sont trois lignes qu'on apprend à sauter.
  */
 function fichiers(version) {
   return [
@@ -46,7 +58,6 @@ function fichiers(version) {
         null,
         2,
       )}\n`,
-      pourquoi: "où sont les contrats, les tokens et les implémentations",
     },
     {
       chemin: ".gitattributes",
@@ -60,7 +71,8 @@ function fichiers(version) {
         "tokens.json text eol=lf",
         "",
       ].join("\n"),
-      pourquoi: "un diff lisible quand l'export vient d'une machine Windows",
+      marqueurs: ["*.contract.json", "tokens.json", "eol=lf"],
+      rappel: "ajoutez-y `*.contract.json text eol=lf` et `tokens.json text eol=lf`. Sans ces deux lignes, un export depuis une machine Windows rend un diff entier à chaque fois et la revue devient impossible à faire.",
     },
     {
       chemin: ".vscode/settings.json",
@@ -79,7 +91,8 @@ function fichiers(version) {
         null,
         2,
       )}\n`,
-      pourquoi: "l'éditeur valide un contrat contre le schéma du paquet installé",
+      marqueurs: ["ucm-contract.schema.json"],
+      rappel: "ajoutez-y l'association de `*.contract.json` vers `./node_modules/@ucm-kit/core/schema/ucm-contract.schema.json`. Sans elle, l'éditeur ne valide aucun contrat et une faute de forme n'apparaît qu'en CI.",
     },
     {
       chemin: ".gitignore",
@@ -90,12 +103,12 @@ function fichiers(version) {
         "ci-report.md",
         "",
       ].join("\n"),
-      pourquoi: "le rapport régénéré à chaque exécution ne se commite pas",
+      marqueurs: ["ci-report.md"],
+      rappel: "ajoutez-y `ci-report.md`, le rapport que `ucm check --report` régénère à chaque exécution. Commité, il ferait lire un verdict périmé à qui ouvre le fichier.",
     },
     {
       chemin: ".github/workflows/ucm.yml",
       contenu: workflow(version),
-      pourquoi: "la CI contrôle les contrats et publie le rapport sur la pull request",
     },
   ];
 }
@@ -110,14 +123,14 @@ function fichiers(version) {
  * parité qu'il a explicitement installée.
  *
  * **Le sha de base passe par l'environnement, jamais par interpolation dans le
- * shell.** `${{ }}` écrit sa valeur DANS le script avant qu'il ne s'exécute ;
+ * shell.** `${{ }}` écrit sa valeur dans le script avant qu'il ne s'exécute ;
  * la règle vaut même quand la valeur vient de GitHub et pas d'un humain,
  * puisque c'est l'habitude qui protège, pas le cas particulier.
  *
  * **Un filet, et un seul, parce que l'autre n'est pas portable.** Le
  * repository de démonstration en porte deux : « la construction a échoué » et
- * « le rapport manque ». Le premier décrit SA chaîne de construction et n'a
- * aucun sens ici — un repo Swift ne compile pas du TypeScript. Le second est
+ * « le rapport manque ». Le premier décrit sa chaîne de construction et n'a
+ * aucun sens ici : un repo Swift ne compile pas du TypeScript. Le second est
  * universel : une pull request refusée sans un mot laisse le designer sans
  * recours, et c'est le seul cas où personne ne peut plus rien lui dire.
  */
@@ -226,7 +239,7 @@ export function init(racine, { ecrire = writeFileSync } = {}) {
 
   for (const fichier of fichiers(version)) {
     const cible = join(racine, fichier.chemin);
-    if (existsSync(cible)) deja.push(fichier);
+    if (existsSync(cible)) deja.push({ ...fichier, cible });
     else aEcrire.push({ ...fichier, cible });
   }
 
@@ -235,11 +248,40 @@ export function init(racine, { ecrire = writeFileSync } = {}) {
     ecrire(fichier.cible, fichier.contenu, "utf8");
   }
 
-  return { ecrits: aEcrire.map((f) => f.chemin), conserves: deja.map((f) => f.chemin), version };
+  return {
+    ecrits: aEcrire.map((f) => f.chemin),
+    conserves: deja.map((f) => f.chemin),
+    rappels: deja.filter((f) => f.rappel && !porteLaRegle(f)).map((f) => ({
+      chemin: f.chemin,
+      rappel: f.rappel,
+    })),
+    version,
+  };
 }
 
-/** Le compte rendu terminal, qui dit toujours ce qu'il n'a PAS touché. */
-export function rendreInit({ ecrits, conserves, version }) {
+/**
+ * Un fichier conservé porte-t-il déjà la règle que son rappel réclame ?
+ *
+ * Un fichier illisible répond non : mieux vaut une ligne réclamée en trop qu'un
+ * silence sur la seule chose que cette commande ne sait pas installer.
+ */
+function porteLaRegle(fichier) {
+  try {
+    const contenu = readFileSync(fichier.cible, "utf8");
+    return fichier.marqueurs.every((marqueur) => contenu.includes(marqueur));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Le compte rendu terminal, qui dit toujours ce qu'il n'a pas touché.
+ *
+ * Un fichier conservé qui porte un `rappel` reçoit sa ligne, et « laissé tel
+ * quel » ne suffit pas à la remplacer : cette mention se lit comme « rien à
+ * faire », alors que la moitié de l'installation manque précisément là.
+ */
+export function rendreInit({ ecrits, conserves, rappels = [], version }) {
   const lignes = [];
   for (const chemin of ecrits) lignes.push(`✓ ${chemin}`);
   for (const chemin of conserves) lignes.push(`· ${chemin} existait déjà, laissé tel quel`);
@@ -251,16 +293,10 @@ export function rendreInit({ ecrits, conserves, version }) {
         + "Placez vos contrats sous `components/`, vos tokens dans `tokens.json`, "
         + "puis lancez `ucm check`.",
   );
-  // Un `.gitignore` existant n'est pas réécrit, et la ligne qui manque doit
-  // quand même être dite : sans elle, un `ucm check --report` local laisse un
-  // rapport versionnable dans la copie de travail, qui se lira plus tard comme
-  // un verdict frais.
-  if (conserves.includes(".gitignore")) {
+
+  for (const { chemin, rappel } of rappels) {
     lignes.push("");
-    lignes.push(
-      "· `.gitignore` existait déjà : ajoutez-y `ci-report.md`, le rapport que "
-        + "`ucm check --report` régénère à chaque exécution.",
-    );
+    lignes.push(`· \`${chemin}\` existait déjà : ${rappel}`);
   }
   return lignes.join("\n");
 }

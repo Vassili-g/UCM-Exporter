@@ -4,10 +4,10 @@
  * Tous les autres tests passent par `tsx`, qui tolère un import relatif sans
  * extension. Node en ESM ne le tolère pas : un `dist/` compilé avec des
  * spécificateurs nus s'importe donc parfaitement ici et casse net chez le
- * premier consommateur qui l'exécute — ce qui est arrivé, découvert en
+ * premier consommateur qui l'exécute, ce qui est arrivé, découvert en
  * installant le tarball dans le Playground, pas par la suite de tests.
  *
- * Ce test relance donc un `node` NEUF, sans `tsx`, et lui demande de traverser
+ * Ce test relance donc un `node` neuf, sans `tsx`, et lui demande de traverser
  * la carte `exports` comme un consommateur installé le ferait.
  */
 import assert from "node:assert/strict";

@@ -1,5 +1,5 @@
 /**
- * Qui est un conteneur du contrat, et qui est une feuille — unique autorité.
+ * Qui est un conteneur du contrat, et qui est une feuille : unique autorité.
  *
  * La règle est unique et ne connaît ni profondeur, ni nature de
  * composant : **on descend dans un calque dès qu'un de ses descendants porte
@@ -36,8 +36,8 @@ import type { PointACorriger } from './localisation';
  *
  * Un arbre sans borne suit Figma jusqu'au bout, y compris dans les entrailles
  * d'un dessin importé que personne ne rendra calque par calque. La borne est
- * large — aucun composant de design system raisonnable ne l'atteint — et son
- * dépassement est DIT : le contrat ne perd jamais un calque en silence.
+ * large (aucun composant de design system raisonnable ne l'atteint) et son
+ * dépassement est dit : le contrat ne perd jamais un calque en silence.
  */
 export const MAX_STRUCTURE_DEPTH = 12;
 
@@ -73,8 +73,8 @@ const CONTRACTUAL_BINDINGS = [
  *
  * Un texte, une icône désignée par une règle, un composant unifié, ou n'importe
  * quelle liaison de variable : ce sont les quatre façons dont un calque cesse
- * d'être un simple dessin. Le reste — un tracé décoratif, un repère, un cadre
- * vide — n'apporte rien qu'un slot supplémentaire ferait connaître.
+ * d'être un simple dessin. Le reste (un tracé décoratif, un repère, un cadre
+ * vide) n'apporte rien qu'un slot supplémentaire ferait connaître.
  */
 export function carriesContractInformation(
   node: SceneNode,
@@ -87,7 +87,7 @@ export function carriesContractInformation(
   return CONTRACTUAL_BINDINGS.some((field) => variableAliases(getBinding(node, field)).length > 0);
 }
 
-/** Les descendants STRICTS et rendables qui portent une information contractuelle. */
+/** Les descendants stricts et rendables qui portent une information contractuelle. */
 function informationDescendants(
   node: SceneNode,
   iconNames: ReadonlySet<string>,
@@ -108,8 +108,8 @@ function informationDescendants(
  * on ne publie pas les tracés.
  *
  * Vient ensuite la règle des cadres de dépendances, inchangée depuis la 5.4 :
- * ils publient TOUS leurs calques, ou aucun quand aucune branche rendable ne
- * mène à une dépendance — leurs instances sont alors rangées sous un calque
+ * ils publient tous leurs calques, ou aucun quand aucune branche rendable ne
+ * mène à une dépendance, leurs instances sont alors rangées sous un calque
  * masqué, et le contrat se replie sur le seul nom du composant.
  *
  * Pour tout le reste, on descend dès qu'un descendant porte une information.
@@ -138,10 +138,10 @@ export function publishesChildren(
 }
 
 /**
- * Les enfants qu'un conteneur publie : TOUS ses calques rendables.
+ * Les enfants qu'un conteneur publie : tous ses calques rendables.
  *
- * C'est la règle que la 5.4 avait déjà tranchée pour un cadre de dépendances —
- * « ce qu'il range à côté de ses dépendances lui appartient tout autant » — et
+ * C'est la règle que la 5.4 avait déjà tranchée pour un cadre de dépendances
+ * (« ce qu'il range à côté de ses dépendances lui appartient tout autant ») et
  * elle vaut pour n'importe quel conteneur : un tag, un texte, un dessin sont
  * des calques de ce contrat-ci. N'en publier qu'une partie les ferait
  * disparaître avec leur slot, leur typographie et leur visibilité, alors que
@@ -157,7 +157,7 @@ export function publishedSlots(
 }
 
 /**
- * Vrai si ce calque et tout ce qu'il contient ne sont QUE du dessin.
+ * Vrai si ce calque et tout ce qu'il contient ne sont que du dessin.
  *
  * Le contrat ne sait pas écrire un tracé : il n'exporte aucun chemin de Bézier,
  * et le seul moyen de dire « dessine ceci » est une règle `@icons`, qui nomme
@@ -182,7 +182,7 @@ export function estUnDessinNonDeclare(
 }
 
 /**
- * Le calque à NOMMER dans le message, quand un dessin n'est déclaré nulle part.
+ * Le calque à nommer dans le message, quand un dessin n'est déclaré nulle part.
  *
  * Le plus profond qui contienne encore tout le dessin : c'est celui que le
  * designer déclarerait. Un cadre « Badge » qui n'enveloppe qu'une instance

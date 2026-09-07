@@ -5,7 +5,7 @@
  * commité est-il celui que le générateur produit aujourd'hui, et refuse-t-il ce
  * qu'un schéma doit refuser.
  *
- * L'autre moitié — le schéma accepte-t-il ce que le MOTEUR écrit — ne peut pas
+ * L'autre moitié (le schéma accepte-t-il ce que le moteur écrit) ne peut pas
  * se poser ici : y répondre demanderait un contrat, donc soit un artefact
  * commité qui n'a rien à faire dans ce repository, soit un objet écrit à la
  * main qui ne prouverait que l'accord du schéma avec l'imagination de son

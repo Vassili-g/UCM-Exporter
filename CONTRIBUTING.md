@@ -31,7 +31,9 @@ incomplètes.
 Les commentaires sont en français. Ils expliquent une décision, une
 particularité de l’API Figma ou une limite ; ils ne paraphrasent pas le code.
 Chaque fichier décrit brièvement son rôle, et chaque fonction exportée non
-triviale précise son contrat.
+triviale précise son contrat. Les règles de
+[Rédiger un document](#rédiger-un-document) valent pour eux, et le même contrôle
+les lit.
 
 ## Messages destinés au designer
 
@@ -319,7 +321,17 @@ autorité.
 Elles existent parce que la documentation avait pris les tics d’écriture des
 modèles de langage, mesurables et reconnaissables : la densité de tiret cadratin
 atteignait cinquante fois celle d’un texte humain.
-`tests/styleDocumentaire.test.ts` tient les deux premières.
+
+`tests/styleDocumentaire.test.ts` en tient cinq, sur les documents et sur les
+commentaires de code : tiret cadratin en incise, capitales d’emphase,
+opposition en deux temps, qualificatif que rien n’établit, date posée sur une
+décision. Un sixième contrôle refuse qu’un document d’autorité recopie d’un
+autre un passage de vingt-cinq mots. Les règles vivent dans
+`scripts/controle-style.mjs`, que le hook `PostToolUse` de
+`.claude/settings.json` rejoue au moment où un agent écrit un fichier : le hook
+donne le retour immédiat, le test est la barrière que rien ne franchit. Un mot
+en capitales qui est un sigle, un type de l’API Figma ou un nom de document
+s’ajoute à `ACRONYMES`, dans le même commit.
 
 **Ponctuation.** Le tiret cadratin ne sert pas d’incise. Employer un point, un
 point-virgule, une virgule, deux points ou une parenthèse. Il reste admis dans
@@ -375,6 +387,14 @@ répétition.
 
 Écrire dans une spécification demande une ancre : ses titres sont les cibles des
 liens d’`AGENTS.md`, et `npm test` échoue sur un lien mort.
+
+**Déplacer une information entre deux altitudes.** Le message de commit nomme
+l’altitude d’arrivée et l’emplacement exact ; sans cette phrase, le retrait ne
+se fait pas. Et deux altitudes ne se touchent jamais dans le même commit : un
+document et le code qu’il décrit se raccourcissent à des moments séparés, sans
+quoi chacun se vide en supposant que l’autre garde. Une borne ne se retire
+jamais au motif qu’elle vit ailleurs, sauf à l’avoir lue à l’endroit où elle
+vivrait.
 
 ## API Figma et build
 

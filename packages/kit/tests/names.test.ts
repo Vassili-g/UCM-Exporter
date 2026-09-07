@@ -2,7 +2,7 @@
  * Les trois règles de nommage du format.
  *
  * Elles étaient testées avec `variables.ts`, qui a besoin des globals Figma :
- * la coupure format/moteur les sépare, et c'est bien ce qu'elle doit faire —
+ * la coupure format/moteur les sépare, et c'est bien ce qu'elle doit faire,
  * ces deux fonctions ne connaissent ni Figma ni Node, et c'est la propriété
  * qui leur permet de voyager dans le bundle du plugin comme dans un navigateur.
  */
@@ -56,7 +56,7 @@ test('tokenCssVariable rend un nom utilisable quoi qu’on lui donne', () => {
   // accepte, et les retirer perdrait un segment entier d'un design system
   // francophone.
   assert.equal(tokenCssVariable('couleurs.été'), '--couleurs-été');
-  // Suites collapsées, tirets de bord retirés — sans quoi `--a-b-` et un nom
+  // Suites collapsées, tirets de bord retirés, sans quoi `--a-b-` et un nom
   // vide se glisseraient dans la feuille.
   assert.equal(tokenCssVariable('a...b'), '--a-b');
   assert.equal(tokenCssVariable('.a.'), '--a');

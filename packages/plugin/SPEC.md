@@ -424,7 +424,7 @@ supportent, le contrat est refusé en bloc) et il est enfoui au milieu d'un diff
 de plusieurs milliers de lignes. Sur la couverture, celui qui décide de
 fusionner le voit sans ouvrir le JSON, et les pull requests d'export restées
 ouvertes disent lesquelles précèdent une bascule de version. Annoncer la
-constante du plugin ferait de cette ligne un énoncé sur le PLUGIN déguisé en
+constante du plugin ferait de cette ligne un énoncé sur le plugin déguisé en
 énoncé sur le fichier : deux autorités pour la même chose, dont le désaccord
 serait muet. `tokens.json` n'en reçoit aucune : c'est un arbre DTCG, il ne porte
 aucun schéma UCM. Un contrat dont la version est illisible la voit annoncée
@@ -530,7 +530,7 @@ sous-entendu.
 **La frontière que cette décision ne déplace pas.** Créer, renommer, déplacer,
 supprimer un node, écrire une variable ou un style : tout cela reste interdit,
 et `loiDuDocumentIntact.test.ts` le refuse en lisant la source. La différence
-n'est pas une affaire de degré, c'est celle entre regarder et écrire.
+est celle entre regarder et écrire, non une affaire de degré.
 
 ---
 

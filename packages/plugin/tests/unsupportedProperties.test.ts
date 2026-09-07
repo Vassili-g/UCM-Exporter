@@ -3,8 +3,8 @@
  *
  * Deux invariants s'y jouent, et le second est le plus fragile :
  *
- * 1. une propriété à effet visuel que le contrat ne porte pas est DITE ;
- * 2. une propriété au défaut de Figma ne dit RIEN. Le corps de la pull request
+ * 1. une propriété à effet visuel que le contrat ne porte pas est dite ;
+ * 2. une propriété au défaut de Figma ne dit rien. Le corps de la pull request
  *    est la seule page que le designer lit ; un rapport qui crie sur chaque
  *    frame correcte cesse d'être lu, et ne protège alors plus rien.
  *
@@ -20,7 +20,7 @@ import { phraseDe } from '../src/contract/localisation';
 /**
  * La phrase compacte de chaque point, dérivée de ses trois parties.
  *
- * Ces tests portent sur ce qui est DIT au designer, pas sur la mise en page de
+ * Ces tests portent sur ce qui est dit au designer, pas sur la mise en page de
  * la carte : ils lisent donc la phrase, seule forme dont la composition soit
  * garantie par `phraseDe`.
  */
@@ -31,7 +31,7 @@ const avertissementsDe = (node: SceneNode): string[] =>
 const frameParDefaut = (extra: Record<string, unknown> = {}) => ({
   type: 'FRAME',
   name: 'Container',
-  // `clipsContent` est ACTIVÉ par défaut sur toute frame Figma, `isMask` et
+  // `clipsContent` est activé par défaut sur toute frame Figma, `isMask` et
   // `rotation` sont les valeurs neutres d'un calque ordinaire : aucun des trois
   // ne doit produire le moindre message.
   clipsContent: true,
@@ -78,7 +78,7 @@ test('« clip content » n’est pas une anomalie : c’est le défaut de Figma'
 });
 
 test('une rotation n’est plus une propriété manquante : le contrat l’écrit', () => {
-  // Ce relevé dit ce que le schéma ne SAIT PAS porter. La rotation en est
+  // Ce relevé dit ce que le schéma ne sait pas porter. La rotation en est
   // sortie le jour où `ChildStructure.rotation` l'a portée : la réclamer encore
   // enverrait le designer redresser un layer que le développeur rend incliné.
   assert.deepEqual(avertissementsDe(frameParDefaut({ rotation: -90 })), []);

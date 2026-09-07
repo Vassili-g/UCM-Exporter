@@ -83,7 +83,7 @@ export { libelleNombre, rendreDiagnostic } from "./diagnostic-markdown.mjs";
  *
  * `controlerRepository` n'écrit rien et ne sort d'aucun processus : il rend
  * `{ bilans, fautifs, rapport, terminal, bloquant }`. `ADAPTATEUR_VIDE` est le
- * noyau seul — il dit où une implémentation devrait être et si elle y est, et
+ * noyau seul : il dit où une implémentation devrait être et si elle y est, et
  * ne prétend jamais avoir lu du code.
  */
 export { ADAPTATEUR_VIDE, controlerRepository } from "./controle-repository.mjs";
@@ -103,7 +103,7 @@ export {
 /**
  * L'écart contrat ↔ code : le juger et le dire.
  *
- * Le MESURER reste chez l'adaptateur ; décider si le relevé qu'il rend
+ * Le mesurer reste chez l'adaptateur ; décider si le relevé qu'il rend
  * porte un écart ne demande que la forme de ce relevé.
  */
 export {

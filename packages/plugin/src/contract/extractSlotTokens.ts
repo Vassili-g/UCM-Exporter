@@ -1,9 +1,9 @@
 /**
  * Relevé des peintures et contours liés dans le sous-arbre d'un variant.
  *
- * Ce module dit QUELLES couleurs un variant porte et COMMENT chacune se peint.
+ * Ce module dit quelles couleurs un variant porte et comment chacune se peint.
  * Il ne décide pas de leur clé dans la feuille : `colorKeys.ts` en est l'unique
- * autorité, et la décide sur toute la matrice — une clé lue variant par variant
+ * autorité, et la décide sur toute la matrice, une clé lue variant par variant
  * changerait d'un état à l'autre.
  */
 import { toRef } from '@ucm-kit/core/format';
@@ -37,7 +37,7 @@ const BOUND_FIELDS = ['fills', 'strokes'] as const;
  * `parent` ↔ `children` de l'arbre Figma.
  */
 export type VariantColor = {
-  /** Nom NU du token, sans accolades : la clé s'en déduit. */
+  /** Nom nu du token, sans accolades : la clé s'en déduit. */
   token: string;
   /** Rôle de rendu : déclaré par le dernier segment, sinon déduit du calque. */
   role: string;
@@ -73,7 +73,7 @@ function strokeAlignment(node: SceneNode, warnings: string[]): StrokeAlignment |
 
 /**
  * Résout l'épaisseur d'un contour : une valeur quand les quatre bords partagent
- * leur variable, le détail par bord sinon. Les tokens sont NUS ici ; l'enrobage
+ * leur variable, le détail par bord sinon. Les tokens sont nus ici ; l'enrobage
  * en référence a lieu au moment de publier la feuille.
  */
 async function strokeWidth(
@@ -96,7 +96,7 @@ async function strokeWidth(
  *
  * Une comparaison d'identité suffit pour une largeur en chaîne. Détaillée par
  * bord, elle produit un objet neuf à chaque lecture : deux calques réglés
- * exactement pareil déclencheraient un avertissement qu'AUCUN geste du designer
+ * exactement pareil déclencheraient un avertissement qu'aucun geste du designer
  * ne ferait disparaître.
  */
 function memeLargeur(left: StrokeWidth | null, right: StrokeWidth | null): boolean {
@@ -114,12 +114,12 @@ function memeLargeur(left: StrokeWidth | null, right: StrokeWidth | null): boole
  * **Le site tranche la nature, le nom précise à l'intérieur de cette nature.**
  * Ce que la couleur peint se lit sur le calque qui la porte : un fill peint un
  * fill, un stroke peint un contour, et aucun nom de token ne peut dire le
- * contraire — un `…/foreground` posé en contour peint un contour, et le moteur
+ * contraire, un `…/foreground` posé en contour peint un contour, et le moteur
  * n'a pas à décider que le design system s'est trompé de mot.
  *
- * Un dernier segment qui NOMME un rôle partagé reste une déclaration du
+ * Un dernier segment qui nomme un rôle partagé reste une déclaration du
  * designer, mais seulement là où elle ajoute quelque chose : entre deux rôles
- * de MÊME nature. C'est le seul moyen de distinguer un `ring` d'un `border`, et
+ * de même nature. C'est le seul moyen de distinguer un `ring` d'un `border`, et
  * c'est ce qui fait qu'un `…/ring` publié sous une clé allongée conserve son
  * `outline-*` et son `fallback: box-shadow`.
  *
@@ -140,10 +140,10 @@ function colorRole(
  * Vrai si cette peinture met réellement de l'encre sur le calque.
  *
  * Les réserves sont ce qui distingue un diagnostic d'un rapport qu'on cesse de
- * lire, et elles valent dans les DEUX sens : un paint masqué ou d'opacité nulle
+ * lire, et elles valent dans les deux sens : un paint masqué ou d'opacité nulle
  * ne réclame aucune variable, et la couleur qu'il porterait n'appartient à aucun
  * calque du contrat. Une peinture non SOLID n'est de toute façon liable à
- * aucune variable de couleur — `unsupportedProperties` la signale ailleurs, et
+ * aucune variable de couleur : `unsupportedProperties` la signale ailleurs, et
  * le geste demandé ici n'existerait pas.
  */
 function peint(paint: unknown): paint is SolidPaint {
@@ -166,24 +166,24 @@ function aliasDuPaint(paint: unknown): VariableAlias | null {
  * Ce qu'un champ de peintures apporte au contrat : les variables à relever, et
  * le nombre de peintures qu'aucune ne tient.
  *
- * Les deux réponses sortent de la MÊME lecture, et c'est tout l'objet de cette
+ * Les deux réponses sortent de la même lecture, et c'est tout l'objet de cette
  * fonction. Un relevé qui lirait `node.boundVariables` pendant que
  * l'avertissement compte les paints laisserait un calque porter un fill visible
- * posé à la main ET un fill masqué relié : les deux comptes s'équilibreraient,
+ * posé à la main et un fill masqué relié : les deux comptes s'équilibreraient,
  * rien ne serait dit, et le contrat publierait la couleur de la peinture
- * MASQUÉE comme si elle peignait le calque. Deux lectures d'une même chose
+ * masquée comme si elle peignait le calque. Deux lectures d'une même chose
  * finissent toujours par se contredire.
  *
  * La lecture exacte est celle de la peinture : chacune porte sa propre liaison
  * (`SolidPaint.boundVariables.color`), seule à associer une variable à un paint
  * précis. `node.boundVariables[field]` reste une liste que Figma n'aligne pas
- * sur `fills` — sa documentation ne le promet que pour `inferredVariables` — et
+ * sur `fills` (sa documentation ne le promet que pour `inferredVariables`) et
  * un index supposé accuserait le mauvais paint.
  *
  * Le repli rend exactement le comportement d'avant quand cette lecture ne peut
  * rien conclure : champ « mixed » ou absent, et surtout liste du node plus
  * riche que ce que les peintures déclarent. Ne perdre aucune couleur passe
- * avant gagner un diagnostic — c'est la seule chose qu'on ne s'autorise pas.
+ * avant gagner un diagnostic : c'est la seule chose qu'on ne s'autorise pas.
  */
 function lirePeintures(
   node: SceneNode,
@@ -194,7 +194,7 @@ function lirePeintures(
   const liste = values[field];
   // `figma.mixed` ou champ absent : rien de lisible, donc rien à réclamer.
   if (!Array.isArray(liste)) return { aliases: duNode, libres: 0 };
-  // Un contour d'épaisseur nulle ne trace rien. Ce qu'il PUBLIE ne change pas
+  // Un contour d'épaisseur nulle ne trace rien. Ce qu'il publie ne change pas
   // pour autant : la réserve porte sur le geste demandé, pas sur le relevé.
   if (field === 'strokes' && values.strokeWeight === 0) return { aliases: duNode, libres: 0 };
   // Le node connaît une liaison qu'aucune peinture ne déclare : la lecture
@@ -217,10 +217,10 @@ function lirePeintures(
 /**
  * Signale les peintures qu'un calque porte à la main.
  *
- * Le contrat ne publie que les couleurs LIÉES : une couleur écrite en dur
+ * Le contrat ne publie que les couleurs liées : une couleur écrite en dur
  * disparaissait donc sans un mot, et `coverage.portable` continuait d'annoncer
  * `complete`. Le consommateur, à qui l'on interdit de déduire une cible du nom
- * d'une clé, laissait alors le calque sans encre — un seul variant sur quatre-
+ * d'une clé, laissait alors le calque sans encre : un seul variant sur quatre-
  * vingt-dix suffit à le rendre invisible en relecture.
  *
  * Le message part dans `warnings` : il demande un geste, et la couleur manque
@@ -276,7 +276,7 @@ export async function getSlotTokens(
     // structure puisse la décrire comme un slot. Ses couleurs, elles, ne sont
     // pas les nôtres : elles appartiennent à son propre contrat, et les relever
     // ici les ferait entrer dans `variantTokens` et dans `tokensUsed` du parent
-    // — le contrat annoncerait une couleur qu'aucun de ses calques ne peint.
+    //, le contrat annoncerait une couleur qu'aucun de ses calques ne peint.
     if (composed.has(node.id)) continue;
     for (const field of BOUND_FIELDS) {
       const { aliases, libres } = lirePeintures(node, field);
@@ -303,7 +303,7 @@ export async function getSlotTokens(
   const paints: VariantColor[] = [];
   const strokes: VariantStrokeColor[] = [];
   // Une feuille n'a qu'une entrée par token : deux calques qui portent la même
-  // couleur ne la publient qu'une fois, en silence — c'est la même couleur.
+  // couleur ne la publient qu'une fois, en silence, c'est la même couleur.
   const seenPaints = new Map<string, { node: SceneNode; role: string }>();
   const seenStrokes = new Map<string, { node: SceneNode; value: VariantStrokeColor }>();
   // Ce qu'un calque a déjà posé, par champ : toute paire de variables
@@ -326,7 +326,7 @@ export async function getSlotTokens(
     });
 
     // Deux couleurs différentes empilées sur le même calque : le contrat les
-    // publie toutes les deux — rien n'est perdu — mais il ne sait pas dire
+    // publie toutes les deux (rien n'est perdu) mais il ne sait pas dire
     // laquelle est au-dessus. Un seul message par calque et par champ.
     const marker = binding.field;
     const posees = stacked.get(binding.node) ?? new Map<string, string>();

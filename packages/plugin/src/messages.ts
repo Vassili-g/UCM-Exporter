@@ -38,7 +38,7 @@ export type UiRequest =
   | { type: 'open-external'; url: string }
   /**
    * La poignée de redimensionnement. Figma ne redimensionne pas une fenêtre de
-   * plugin tout seul — aucune API ne l'expose et rien ne le fait à sa place —,
+   * plugin tout seul (aucune API ne l'expose et rien ne le fait à sa place),
    * donc la demande vient de l'UI, et le sandbox seul peut l'exécuter.
    */
   | { type: 'resize'; largeur: number; hauteur: number }
@@ -65,7 +65,7 @@ export type PluginMessage =
   /**
    * Ce sur quoi l'export va porter.
    *
-   * Une STRUCTURE, pas une phrase : le nom du composant n'existait que dans la
+   * Une structure, pas une phrase : le nom du composant n'existait que dans la
    * note d'état, que le premier clic écrase. Ce que l'interface doit garder
    * affiché ne peut pas voyager dans un texte qu'un autre texte remplace.
    */

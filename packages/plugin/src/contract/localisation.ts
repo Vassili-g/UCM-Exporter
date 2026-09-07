@@ -15,11 +15,11 @@ type Canal = readonly string[];
 type NodeLocalisable = { readonly id: string; readonly name: string };
 
 /**
- * Les sujets qui désignent un node, et EUX SEULS.
+ * Les sujets qui désignent un node, et eux seuls.
  *
  * `CONTRIBUTING.md` prescrit la forme « {Élément Figma} : {constat}. {action}. »
  * pour tout message destiné au designer. L'élément peut être un calque, mais
- * aussi un text style, une component property, une variable ou une règle — et
+ * aussi un text style, une component property, une variable ou une règle, et
  * ceux-là ne désignent aucun node unique du composant exporté. Les quatre
  * ci-dessous sont les seuls qui en désignent un, donc les seuls qu'un clic peut
  * suivre.
@@ -38,7 +38,7 @@ export type Sujet = { readonly texte: string; readonly nodeId: string };
  */
 export type RaisonSansNode =
   /**
-   * Le message ne tient qu'un NOM, pas un node — la valeur vient d'un type
+   * Le message ne tient qu'un nom, pas un node : la valeur vient d'un type
    * publié, où l'identité d'un calque est son nom. Le node existe dans le
    * document, mais seule une recherche inverse le retrouverait.
    */
@@ -49,7 +49,7 @@ export type RaisonSansNode =
    * variants. Élire un id serait choisir un variant en cachette.
    */
   | 'agrege-sur-la-matrice'
-  /** Le sujet nommé n'existe pas dans le composant — c'est ce que le message dit. */
+  /** Le sujet nommé n'existe pas dans le composant : c'est ce que le message dit. */
   | 'inexistant';
 
 /**
@@ -71,15 +71,15 @@ export function sujetSansNode(
  * Les trois parties d'un point à corriger, telles que le designer les lit.
  *
  * **Pourquoi trois et pas une phrase.** `CONTRIBUTING.md` exige depuis toujours
- * qu'un avertissement dise OÙ, QUOI et COMMENT. La règle était tenue à la main,
- * dans une `string` que chaque site concaténait — donc invérifiable, et
+ * qu'un avertissement dise où, quoi et comment. La règle était tenue à la main,
+ * dans une `string` que chaque site concaténait, donc invérifiable, et
  * indécoupable à l'arrivée : l'interface ne pouvait qu'afficher un paragraphe
  * où le geste se lisait en dernier, après deux phrases de contexte. Les trois
  * parties voyagent maintenant séparées du moteur jusqu'à l'UI, qui les met en
  * page ; et une loi refuse un message dont l'une manque.
  *
- * La phrase compacte — celle que `meta.diagnostics` publie et que la pull
- * request liste — se DÉRIVE de ces parties, elle n'est pas rédigée une seconde
+ * La phrase compacte (celle que `meta.diagnostics` publie et que la pull
+ * request liste) se dérive de ces parties, elle n'est pas rédigée une seconde
  * fois. C'est ce qui garantit que les deux disent la même chose.
  */
 export type PointACorriger = {
@@ -104,7 +104,7 @@ export type Constat = {
   readonly action: string;
 };
 
-/** La phrase compacte, DÉRIVÉE des parties. Unique autorité sur cette jonction. */
+/** La phrase compacte, dérivée des parties. Unique autorité sur cette jonction. */
 export function phraseDe(point: PointACorriger): string {
   return `${point.titre} ${point.impact} ${point.action}`;
 }
@@ -114,7 +114,7 @@ const registres = new WeakMap<Canal, Map<string, string>>();
 /**
  * Les parties de chaque message, indexées par sa phrase compacte.
  *
- * Même mécanisme et même raison que le registre des cibles ci-dessus : le TEXTE
+ * Même mécanisme et même raison que le registre des cibles ci-dessus : le texte
  * reste l'identité d'un message, parce que quatre dédoublonnages en vivent. Un
  * canal d'objets ne déduplique rien.
  */
@@ -125,7 +125,7 @@ const parties = new WeakMap<Canal, Map<string, PointACorriger>>();
  *
  * Séparé du registre des cibles, parce que ce n'est pas la même information :
  * l'un dit « voici où regarder », l'autre dit « il n'y a nulle part où
- * regarder, et voici pourquoi ». Les confondre — un id vide, un `null` — ferait
+ * regarder, et voici pourquoi ». Les confondre (un id vide, un `null`) ferait
  * lire une absence décidée comme un site oublié, ce que la loi de couverture
  * existe précisément pour distinguer.
  */
@@ -145,7 +145,7 @@ const registreDe = (canal: Canal): Map<string, string> => {
  *
  * C'est ici, et nulle part ailleurs, que s'écrit `Layer « … »` : un test de
  * source refuse ce littéral partout ailleurs. Sans cela la convention se
- * recopie à la main, et un site recopié est un site sans localisation — la
+ * recopie à la main, et un site recopié est un site sans localisation : la
  * loi serait vraie sur les sites qu'on a pensé à convertir, ce qui ne prouve
  * rien.
  */
@@ -154,7 +154,7 @@ export function sujet(genre: SujetLocalisable, node: NodeLocalisable): Sujet {
 }
 
 /**
- * Un sujet dont le nom AFFICHÉ n'est pas celui du node.
+ * Un sujet dont le nom affiché n'est pas celui du node.
  *
  * Le cas existe et n'est pas une bizarrerie : la reconnaissance d'un conteneur
  * de règles tolère la casse et les espaces, si bien que le frame trouvé peut
@@ -179,7 +179,7 @@ export function sujetNomme(
  *
  * Le premier inscrit gagne : deux calques qui produisent le même texte ne
  * donnent qu'un constat, donc qu'une cible. Choisir le premier plutôt que le
- * dernier n'a rien d'arbitraire — c'est l'ordre que le dédoublonnage retient
+ * dernier n'a rien d'arbitraire : c'est l'ordre que le dédoublonnage retient
  * déjà.
  */
 export function noter(canal: Canal, message: string, sujetDuMessage: Sujet): string {
@@ -236,11 +236,11 @@ export function pointDe(sujetTexte: string, constat: Constat): PointACorriger {
 }
 
 /**
- * Pousse un point dont le sujet ne désigne AUCUN node localisable.
+ * Pousse un point dont le sujet ne désigne aucun node localisable.
  *
  * Un text style, une variable, une component property, une règle : le message
  * les nomme en toutes lettres, mais aucun clic ne peut y mener. Il porte les
- * mêmes trois parties que les autres — l'absence de cible ne dispense de rien.
+ * mêmes trois parties que les autres : l'absence de cible ne dispense de rien.
  */
 export function pousserSansNode(
   canal: string[],
@@ -254,17 +254,17 @@ export function pousserSansNode(
 }
 
 /**
- * Pousse un message DÉJÀ FORMÉ dans son canal, et retient où regarder.
+ * Pousse un message déjà formé dans son canal, et retient où regarder.
  *
- * `pousserLocalise` couvre le cas courant — le message commence par son sujet.
+ * `pousserLocalise` couvre le cas courant : le message commence par son sujet.
  * Celui-ci couvre les autres, et ils existent : un constat d'agrégat nomme un
- * variant EXEMPLE au milieu de sa phrase, un message dont le sujet est une
+ * variant exemple au milieu de sa phrase, un message dont le sujet est une
  * component property nomme dans son corps le calque qui la référence. Dans les
  * deux cas la phrase montre un node du doigt, et le clic doit y mener.
  *
  * Ce n'est pas une porte dérobée à la convention de préfixe : le test de source
  * refuse toujours qu'un `Layer « … »` s'écrive ailleurs qu'ici. Ce helper sert
- * les messages qui n'ont PAS cette forme, et qui doivent quand même conduire
+ * les messages qui n'ont pas cette forme, et qui doivent quand même conduire
  * quelque part.
  */
 export function pousserNote(
@@ -284,8 +284,8 @@ export function pousserNote(
  * À employer quand le message parle bien d'un calque, mais qu'aucun node unique
  * ne lui correspond : le nom vient d'un type publié, le constat agrège toute la
  * matrice, ou l'élément nommé n'existe pas. La raison n'est lue par personne à
- * l'exécution — elle existe pour que la loi de couverture, et la revue qui
- * l'accompagne, sachent que l'absence de cible est DÉCIDÉE.
+ * l'exécution : elle existe pour que la loi de couverture, et la revue qui
+ * l'accompagne, sachent que l'absence de cible est décidée.
  */
 export function noterSansNode(canal: Canal, message: string, raison: RaisonSansNode): string {
   let table = declarations.get(canal);

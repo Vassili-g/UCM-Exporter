@@ -80,7 +80,7 @@ test('aucun message ne parle au designer avec un tiret cadratin', () => {
 
 test('qui gouverne les chemins se lit avant de les saisir', () => {
   // `repositoryLayout` ignore les réglages dès qu'un ucm.config.json
-  // lisible existe : le dire APRÈS coup, en ligne de journal, revient à faire
+  // lisible existe : le dire après coup, en ligne de journal, revient à faire
   // remplir deux champs sans effet.
   const parLeDepot = etatDuDepot({
     components: 'packages/ui/src',

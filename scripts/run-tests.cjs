@@ -1,5 +1,5 @@
 /**
- * Lance TOUS les fichiers `*.test.ts` du dossier `tests/`.
+ * Lance tous les fichiers `*.test.ts` du dossier `tests/`.
  *
  * Pourquoi ce script plutôt qu'une liste dans package.json : une liste écrite
  * à la main laisse un nouveau fichier de test hors du lot, silencieusement et
@@ -17,12 +17,12 @@ const testsDir = path.join(rootDir, 'tests');
 
 const files = fs
   .readdirSync(testsDir)
-  // Les DEUX extensions, comme chez les paquets. `.mjs` n'était pas accepté, et
-  // un fichier de test ajouté sous ce nom ne tournait pas — sans que rien ne
+  // Les deux extensions, comme chez les paquets. `.mjs` n'était pas accepté, et
+  // un fichier de test ajouté sous ce nom ne tournait pas, sans que rien ne
   // rougisse, puisqu'un test qu'on n'exécute pas ne peut pas échouer. C'est la
   // maladie que tout ce dépôt poursuit : un contrôle absent qui se lit comme un
-  // contrôle vert. Trouvé le 5 septembre 2026, sur le garde-fou de cohérence du
-  // monorepo lui-même.
+  // contrôle vert, et c'est le garde-fou de cohérence du monorepo qui en a
+  // souffert.
   .filter((name) => name.endsWith('.test.ts') || name.endsWith('.test.mjs'))
   .sort()
   .map((name) => path.join('tests', name));

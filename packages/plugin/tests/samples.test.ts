@@ -1,9 +1,9 @@
 /**
- * L'échantillon de maquette : ce que Figma MONTRE, sans que rien ne l'exige.
+ * L'échantillon de maquette : ce que Figma montre, sans que rien ne l'exige.
  *
  * Le cas de référence est celui du corpus réel : un StressTest qui embarque une
  * Alert, laquelle embarque un Button. Chacun porte des textes que ses props
- * n'atteignent pas — ce design system n'expose aucune component property TEXT —
+ * n'atteignent pas (ce design system n'expose aucune component property TEXT)
  * et c'est précisément ce que ces tests protègent.
  */
 import assert from 'node:assert/strict';
@@ -67,9 +67,9 @@ function maitreIcone(name: string) {
 /**
  * L'index des surfaces publiques, tel que `scanComposedMatrix` le construit.
  *
- * Les tests le DÉCLARENT au lieu de le laisser fabriquer : `extractVariantSample`
+ * Les tests le déclarent au lieu de le laisser fabriquer : `extractVariantSample`
  * n'a plus de repli, et c'est voulu. La surface d'une dépendance vient de
- * l'élection faite pour SON export ; une reconstruction locale répondrait sans
+ * l'élection faite pour son export ; une reconstruction locale répondrait sans
  * wrapper, faute de pouvoir l'élire sans aller-retour, et donnerait donc une
  * seconde réponse à une question qui n'en admet qu'une.
  */
@@ -103,8 +103,8 @@ const DEFINITIONS_BUTTON = {
 };
 
 test('le texte d’un slot est capturé même quand le calque a été renommé', () => {
-  // Le cas exact du corpus : « Titre » est un calque renommé — son nom ne dit
-  // plus rien du contenu — tandis que la description n'a jamais été nommée.
+  // Le cas exact du corpus : « Titre » est un calque renommé (son nom ne dit
+  // plus rien du contenu) tandis que la description n'a jamais été nommée.
   const titre = node('TEXT', 't1', 'Titre', [], { characters: 'Bien préparer votre dossier' });
   const desc = node('TEXT', 't2', 'Description de l’élément', [], {
     characters: 'Description de l’élément',
@@ -189,7 +189,7 @@ test('la visibilité réelle et le texte d’un variant entrent dans args', () =
   );
 
   // C'est l'information que le contrat ne portait nulle part : `optional` disait
-  // qu'un slot PEUT être masqué, jamais qu'il l'EST dans cette combinaison.
+  // qu'un slot peut être masqué, jamais qu'il l'est dans cette combinaison.
   assert.deepEqual(applied.get('c1'), { iconLeft: false, label: 'Compléter' });
 });
 
@@ -472,7 +472,7 @@ test('un échantillon vide ne crée ni entrée ni renvoi', () => {
 
 test('une icône remplacée dans une dépendance est relevée, au chemin du maître', () => {
   // Le cas exact du corpus : sept TileLink montrant sept icônes différentes.
-  // Figma renomme le calque d'après le composant qu'on y place — le chemin lu
+  // Figma renomme le calque d'après le composant qu'on y place : le chemin lu
   // dans l'instance dirait donc « star », et ne joindrait plus rien avec le
   // contrat de TileLink, qui ne connaît que « chess ».
   const icone = node('INSTANCE', 'i1', 'star', [], {
@@ -517,7 +517,7 @@ test('choisir une autre variante d’un même set n’est pas un remplacement', 
     new Map([['b1', { component: 'Button', figmaLayer: 'Button' }]]),
     new Map<string, ComponentNode>([
       ['b1', maitre('Button', DEFINITIONS_BUTTON)],
-      // Une AUTRE variante du même set : le propriétaire ne bouge pas.
+      // Une autre variante du même set : le propriétaire ne bouge pas.
       ['w1', maitre('sizeWrapperButton', {})],
     ]),
     new Map([[
@@ -570,7 +570,7 @@ test('le relevé des remplacements s’arrête sur une dépendance de la dépend
   ]);
 });
 
-/** Les définitions d'une dépendance qui expose NATIVEMENT le remplacement de son icône. */
+/** Les définitions d'une dépendance qui expose nativement le remplacement de son icône. */
 const DEFINITIONS_TILELINK_SWAP = {
   Variant: { type: 'VARIANT', variantOptions: ['Info', 'Success'], defaultValue: 'Info' },
   'ChessIcon#7:1': { type: 'INSTANCE_SWAP', defaultValue: '1:1' },
@@ -595,7 +595,7 @@ function tuileALiaisonNative(nomDuCalque: string) {
 
 test('une INSTANCE_SWAP de dépendance publie le NOM du composant, jamais son identifiant', () => {
   // `componentProperties` rend « 9:9 », l'identifiant du node placé. Publié tel
-  // quel, `args.chessIcon` valait un identifiant Figma sous une clé publique —
+  // quel, `args.chessIcon` valait un identifiant Figma sous une clé publique :
   // exactement ce que la règle 1 interdit, et illisible pour le consommateur.
   // `propertyBindings.appliedValue` résolvait déjà le nom pour le composant
   // exporté ; la dépendance n'en héritait pas.
@@ -621,7 +621,7 @@ test('une INSTANCE_SWAP de dépendance publie le NOM du composant, jamais son id
 });
 
 test('un remplacement que sa prop publie n’est pas republié dans swaps', () => {
-  // `mergeIconRules` pose `runtimeProp` sur la prop NATIVE plutôt que d'inventer
+  // `mergeIconRules` pose `runtimeProp` sur la prop native plutôt que d'inventer
   // une prop de synthèse, « pour ne pas obliger le consommateur à choisir entre
   // deux sources de vérité ». Un `swaps` en plus rouvrirait ce choix.
   const { tuile } = tuileALiaisonNative('star');
@@ -647,7 +647,7 @@ test('un remplacement que sa prop publie n’est pas republié dans swaps', () =
 
 test('un remplacement natif qu’on ne sait pas nommer est omis, et swaps reste seul', () => {
   // Règle 2 : l'échantillon n'invente rien et ne dégrade rien. Sans maître
-  // lisible pour l'icône, `args` se tait — mais le geste du designer ne doit pas
+  // lisible pour l'icône, `args` se tait, mais le geste du designer ne doit pas
   // disparaître avec lui, et la comparaison au maître le rapporte encore.
   const { tuile } = tuileALiaisonNative('star');
   const component = node('COMPONENT', 'c1', 'StressTest', [tuile], {

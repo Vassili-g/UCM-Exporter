@@ -61,7 +61,7 @@ test("un fichier voisin d'un déclencheur n'en est pas un", () => {
       "packages/kit/src/format/names.ts",
       "packages/cli/src/icons.mjs",
       "packages/plugin/src/fenetre.ts",
-      // Et le piège du préfixe : un nom qui COMMENCE comme un déclencheur.
+      // Et le piège du préfixe : un nom qui commence comme un déclencheur.
       "packages/cli/src/init.mjs.bak",
     ]),
     [],

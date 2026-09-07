@@ -15,7 +15,7 @@ const PAQUETS = ["@ucm-kit/cli", "@ucm-kit/adapter-typescript"];
 /**
  * Le seul document qui montre délibérément une autre version que celle du dépôt.
  *
- * La recette externe se joue avec ce que le REGISTRE sert, jamais avec ce que le
+ * La recette externe se joue avec ce que le registre sert, jamais avec ce que le
  * dépôt porte : elle précède la publication, et jouer une recette contre un
  * paquet que npm ne sert pas encore ne prouve rien. Ses commandes épinglent donc
  * la version publiée, et elles ont raison contre ce garde-fou.

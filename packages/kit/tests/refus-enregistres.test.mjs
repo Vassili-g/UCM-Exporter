@@ -14,7 +14,7 @@ const dossierFiges = join(ici, "..", "fixtures", "contrats", "11.0");
 const cheminReference = join(ici, "refus-enregistres.json");
 
 /**
- * Tous les chemins d'un contrat : les feuilles ET les conteneurs.
+ * Tous les chemins d'un contrat : les feuilles et les conteneurs.
  *
  * Un objet ou un tableau vide compte : `{}` et `[]` sont des valeurs publiées
  * que le format distingue de l'absence, et les sauter laisserait hors mutation
@@ -22,10 +22,10 @@ const cheminReference = join(ici, "refus-enregistres.json");
  *
  * **Les conteneurs ont été ajoutés après coup, et l'oubli valait la peine
  * d'être trouvé.** Le plan disait « muter chaque feuille » ; à ne muter que
- * les feuilles, `viewStructures` n'était jamais muté — seulement ses
- * descendants —, et le contrôle « `viewStructures` est un objet » n'apparaissait
+ * les feuilles, `viewStructures` n'était jamais muté (seulement ses
+ * descendants), et le contrôle « `viewStructures` est un objet » n'apparaissait
  * dans aucun inventaire. Or c'est exactement la forme de contrôle qu'un élagage
- * trop large emporte : celle qui juge le BLOC, pas son contenu. Un harnais qui
+ * trop large emporte : celle qui juge le bloc, pas son contenu. Un harnais qui
  * ne mesure pas cette classe-là mesure la moitié du risque.
  */
 function chemins(valeur, prefixe = "") {
@@ -67,8 +67,8 @@ function muter(contrat, chemin, transformer) {
 /**
  * Les deux mutations, et pourquoi exactement celles-là.
  *
- * SUPPRIMER répond à « ce champ est-il exigé ? ». REMPLACER par une valeur d'un
- * autre type répond à « sa FORME est-elle contrôlée ? » — un champ présent mais
+ * Supprimer répond à « ce champ est-il exigé ? ». Remplacer par une valeur d'un
+ * autre type répond à « sa forme est-elle contrôlée ? » : un champ présent mais
  * absurde est le cas que le format rencontre vraiment, et celui qu'un contrôle
  * mal élagué cesse de voir en premier.
  */
@@ -82,7 +82,7 @@ const MUTATIONS = [
  *
  * `children[3].slot` et `children[7].slot` ne sont pas deux contrôles : c'est
  * le même, atteint deux fois. Les distinguer gonflait l'inventaire de Button à
- * 1 394 entrées et le rendait illisible, donc inutile — un artefact qu'on ne
+ * 1 394 entrées et le rendait illisible, donc inutile : un artefact qu'on ne
  * relit pas ne prouve rien. L'index n'est pas perdu pour autant : l'empreinte,
  * elle, porte les chemins entiers.
  */
@@ -136,7 +136,7 @@ export function corpusDeMesure() {
 }
 
 /**
- * Le corpus est mesuré UNE fois pour les deux tests.
+ * Le corpus est mesuré une fois pour les deux tests.
  *
  * 7 452 mutations, chacune revalidant un contrat entier : le relever deux fois
  * doublait la durée de toute la suite du kit pour ne rien prouver de plus.

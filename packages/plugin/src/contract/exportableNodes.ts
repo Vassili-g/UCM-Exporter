@@ -6,7 +6,7 @@
  * toute extraction pour qu'il ne fournisse ni tokens, ni slots, ni wrapper.
  *
  * Deuxième motif d'élagage : les composants unifiés imbriqués. Leurs calques
- * appartiennent à LEUR contrat, pas à celui du composé qui les embarque
+ * appartiennent à leur contrat, pas à celui du composé qui les embarque
  * (cf. `composedComponents.ts`) ; l'instance elle-même reste visible, car le
  * composé doit pouvoir la décrire comme un de ses slots.
  */
@@ -26,8 +26,8 @@ function hasDynamicVisibility(node: SceneNode): boolean {
  * Un node masqué sans liaison de visibilité ne peut être rendu dans cet état.
  *
  * Exporté pour rester l'unique autorité : l'échantillon compare une instance à
- * son maître par POSITION, donc sans passer par `getAllNodes`, et doit taire
- * les mêmes calques que lui — sans quoi la maquette « montrerait » un calque
+ * son maître par position, donc sans passer par `getAllNodes`, et doit taire
+ * les mêmes calques que lui, sans quoi la maquette « montrerait » un calque
  * que le contrat déclare invisible.
  */
 export function isStaticallyHidden(node: SceneNode): boolean {
@@ -71,13 +71,13 @@ function pousserUneFois(warnings: string[], point: PointACorriger, sujetDuPoint:
 
 /**
  * Les composants unifiés imbriqués d'un sous-arbre : id de l'instance →
- * dépendance complète. Une seule structure sert les deux besoins — élaguer le
+ * dépendance complète. Une seule structure sert les deux besoins : élaguer le
  * parcours (`has`) et décrire fidèlement le slot (`get`), visibilité comprise.
  */
 export type ComposedInstances = ReadonlyMap<string, ComposedDependency>;
 
 /**
- * Vrai si un ancêtre STRICT du node, sous la racine, est une instance composée.
+ * Vrai si un ancêtre strict du node, sous la racine, est une instance composée.
  *
  * La remontée d'ancêtres vit ici, avec les autres règles de parcours, pour
  * n'exister qu'une fois : `getAllNodes` s'en sert pour élaguer, et
@@ -92,14 +92,14 @@ export function hasAncestorIn(
 }
 
 /**
- * Le PLUS PROCHE ancêtre strict du node qui est une instance composée, ou null.
+ * Le plus proche ancêtre strict du node qui est une instance composée, ou null.
  *
  * Même remontée que `hasAncestorIn`, dont elle est devenue l'implémentation :
  * répondre « lequel » plutôt que « y en a-t-il un » suffit à rattacher chaque
  * dépendance imbriquée à celle qui la contient, sans qu'une seconde remontée
  * d'ancêtres existe ailleurs.
  *
- * Strictement ANCÊTRE, comme son aînée : inclure le node lui-même ferait
+ * Strictement ancêtre, comme son aînée : inclure le node lui-même ferait
  * élaguer l'instance de dépendance par `getAllNodes`, et le composé perdrait le
  * slot qui la rend.
  */
@@ -129,7 +129,7 @@ export function nearestAncestorIn(
  * travail masqué est ignoré sans bruit.
  *
  * `composed` élague de la même façon les composants unifiés imbriqués, mais
- * SANS avertir : leurs calques ne sont pas perdus, ils sont décrits par leur
+ * sans avertir : leurs calques ne sont pas perdus, ils sont décrits par leur
  * propre contrat et l'instance reste listée dans `composes`.
  */
 export function getAllNodes(
@@ -137,9 +137,9 @@ export function getAllNodes(
   warnings: string[] = [],
   composed: ComposedInstances = new Map(),
 ): SceneNode[] {
-  // La racine elle-même peut ÊTRE un composant unifié : c'est la forme d'un
+  // La racine elle-même peut être un composant unifié : c'est la forme d'un
   // slot qui rend directement sa dépendance. `hasAncestorIn` ne teste que les
-  // ancêtres STRICTS et ne la couvre donc pas ; sans cette ligne, le parent
+  // ancêtres stricts et ne la couvre donc pas ; sans cette ligne, le parent
   // décrirait les calques, les visibilités et les icônes d'un contrat voisin.
   if (composed.has(root.id)) return [root];
 
@@ -179,7 +179,7 @@ export function getAllNodes(
 }
 
 /**
- * Renvoie TOUS les calques TEXTE d'un sous-arbre, dans l'ordre du document.
+ * Renvoie tous les calques texte d'un sous-arbre, dans l'ordre du document.
  * Le libellé d'un composant embarqué n'en est pas un : sans l'élagage, une
  * Alert emprunterait la typographie du bouton qu'elle contient.
  *

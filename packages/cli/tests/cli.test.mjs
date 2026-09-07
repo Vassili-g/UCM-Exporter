@@ -3,7 +3,7 @@
  *
  * Ces tests écrivent dans un dossier temporaire plutôt que de simuler le
  * système de fichiers : `ucm init` a exactement une faute irréversible à sa
- * portée — écraser un fichier que quelqu'un a adapté —, et un faux système de
+ * portée (écraser un fichier que quelqu'un a adapté), et un faux système de
  * fichiers prouverait qu'on a bien écrit le simulacre, pas qu'on a épargné le
  * fichier.
  */
@@ -93,7 +93,7 @@ test("init relancé sur un repository installé ne fait rien et le dit", () => {
 
 /**
  * Le pin est exact, sans plage. Ce test regarde la configuration écrite,
- * elle ne doit porter AUCUN numéro de version, pas même celui du CLI. La
+ * elle ne doit porter aucun numéro de version, pas même celui du CLI. La
  * fenêtre de lecture appartient au paquet installé, et un chiffre écrit dans le
  * repo créerait la seconde autorité que `configuration.mjs` refuse.
  */
@@ -116,7 +116,7 @@ test("la configuration écrite ne porte aucun numéro de version", () => {
  * Trois propriétés le rendent utilisable dans un repository quelconque, et
  * chacune répond à une contrainte écrite ailleurs :
  *
- * - le paquet est épinglé EXACTEMENT — une plage laisserait npm choisir
+ * - le paquet est épinglé exactement, une plage laisserait npm choisir
  *   une version que personne n'a essayée, et la CI d'un designer basculerait
  *   sans qu'un fichier du repo ait bougé ;
  * - `npx --yes` reste suffisant sans lockfile ; un repo Node installe
@@ -146,8 +146,8 @@ test("init écrit un workflow portable qui installe seulement une stack déclar�
 
 /**
  * Le filet portable : une pull request refusée sans un mot laisse le
- * designer sans recours. L'autre filet du repository de démonstration — « la
- * construction a échoué » — décrit SA chaîne de construction et n'a aucun sens
+ * designer sans recours. L'autre filet du repository de démonstration (« la
+ * construction a échoué ») décrit sa chaîne de construction et n'a aucun sens
  * dans un repo qui ne compile pas de TypeScript.
  */
 test("le workflow publie un diagnostic même quand le rapport manque", () => {
@@ -200,7 +200,7 @@ function etape(workflow, nom) {
 /**
  * Les deux dernières étapes du workflow ne forment un filet que si elles se
  * relaient : l'une écrit le rapport quand il manque, l'autre publie celui qui
- * est là. Rien ici ne vérifiait leur ACCORD — leurs conditions, leur fichier
+ * est là. Rien ici ne vérifiait leur accord : leurs conditions, leur fichier
  * commun et l'évènement sur lequel elles portent.
  *
  * Trois façons de perdre le message du designer sans qu'une ligne paraisse
@@ -243,7 +243,7 @@ test("les deux filets de fin se relaient sur le même rapport, et seulement sur 
  * Le message ne part que si le workflow a le droit de l'écrire et un fil où
  * l'écrire. Le jeton et le numéro passent par l'environnement : interpolés dans
  * le shell, ils feraient exécuter au runner ce qu'un titre de pull request
- * contient. Et `--edit-last` échoue quand aucun commentaire n'existe encore —
+ * contient. Et `--edit-last` échoue quand aucun commentaire n'existe encore :
  * sans son repli, le tout premier diagnostic d'une pull request serait perdu,
  * précisément celui que le designer attend.
  */
@@ -294,6 +294,64 @@ test("le rapport est ignoré, et un .gitignore existant reçoit la consigne au l
     assert.match(rendreInit(resultat), /ajoutez-y `ci-report\.md`/);
   } finally {
     rmSync(habite, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Trois des cinq fichiers se partagent avec ce qu'un repository met déjà dedans,
+ * et ce sont ceux qu'un repository réel porte déjà. Les conserver sans un mot
+ * laisserait survenir en silence la panne que chacun existe pour empêcher : un
+ * diff illisible à chaque export depuis Windows, un éditeur qui ne valide plus
+ * aucun contrat, un rapport périmé commité. La mention « laissé tel quel » se
+ * lit comme « rien à faire », ce qui est exactement l'inverse.
+ */
+test("chaque fichier partagé conservé reçoit la ligne à ajouter à la main", () => {
+  const habite = repoVierge();
+  try {
+    mkdirSync(join(habite, ".vscode"), { recursive: true });
+    const avant = {
+      ".gitattributes": "* text=auto\n",
+      ".gitignore": "node_modules/\n",
+      ".vscode/settings.json": '{ "editor.formatOnSave": true }\n',
+    };
+    for (const [chemin, contenu] of Object.entries(avant)) {
+      writeFileSync(join(habite, chemin), contenu, "utf8");
+    }
+
+    const resultat = init(habite);
+    const compte_rendu = rendreInit(resultat);
+
+    for (const [chemin, contenu] of Object.entries(avant)) {
+      assert.equal(readFileSync(join(habite, chemin), "utf8"), contenu, chemin);
+      assert.ok(resultat.conserves.includes(chemin), chemin);
+    }
+
+    // Le geste, pas seulement le constat : chaque rappel nomme ce qu'il faut
+    // écrire dans le fichier qu'`init` n'a pas touché.
+    assert.match(compte_rendu, /`\.gitattributes` existait déjà : ajoutez-y `\*\.contract\.json text eol=lf`/);
+    assert.match(compte_rendu, /`\.vscode\/settings\.json` existait déjà : ajoutez-y l'association/);
+    assert.match(compte_rendu, /`\.gitignore` existait déjà : ajoutez-y `ci-report\.md`/);
+  } finally {
+    rmSync(habite, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Les deux fichiers restants n'ont rien à rappeler : un repository qui porte
+ * déjà sa configuration ou son workflow a déjà répondu à la question qu'ils
+ * posent. Un rappel inventé pour eux ferait du compte rendu une liste qu'on
+ * apprend à sauter, et les trois vrais rappels partiraient avec.
+ */
+test("un repository déjà installé ne reçoit aucun rappel", () => {
+  const racine = repoVierge();
+  try {
+    init(racine);
+    const compte_rendu = rendreInit(init(racine));
+
+    assert.match(compte_rendu, /Rien à faire/);
+    assert.doesNotMatch(compte_rendu, /ajoutez-y/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
   }
 });
 
@@ -392,7 +450,7 @@ test("une commande inconnue sort en 2, et 1 reste réservé aux contrôles", () 
 });
 
 /**
- * L'aide annonce les trois commandes et les trois codes de sortie — c'est le
+ * L'aide annonce les trois commandes et les trois codes de sortie : c'est le
  * seul endroit où un workflow apprend que 1 et 2 ne veulent pas dire la même
  * chose, et les confondre ferait lire « votre export est en défaut » à
  * quelqu'un dont le seul tort est une faute de frappe.

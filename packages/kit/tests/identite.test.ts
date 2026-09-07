@@ -3,8 +3,8 @@
  *
  * Ce que ces tests protègent tient en une asymétrie : refuser à tort bloque un
  * designer, qui voit le message et renomme ; accepter à tort écrase un contrat
- * sans un mot. Les cas ci-dessous sont donc écrits dans les deux sens — ce qui
- * DOIT passer autant que ce qui doit être refusé —, parce qu'un garde-fou qui
+ * sans un mot. Les cas ci-dessous sont donc écrits dans les deux sens (ce qui
+ * doit passer autant que ce qui doit être refusé), parce qu'un garde-fou qui
  * ne refuserait rien et un garde-fou qui refuserait tout sont aussi inutiles
  * l'un que l'autre.
  */
@@ -29,7 +29,7 @@ test('deux composants Figma différents au même chemin sont une collision', () 
   );
   assert.equal(verdict.verdict, 'distinct');
   assert.equal(verdict.arbitre, 'nodeId');
-  // Le refus doit pouvoir NOMMER les deux composants : un message qui dit
+  // Le refus doit pouvoir nommer les deux composants : un message qui dit
   // seulement « collision » ne se corrige pas.
   assert.equal(verdict.nomExistant, 'Icon / Button');
   assert.equal(verdict.nomCandidat, 'IconButton');
@@ -70,7 +70,7 @@ test('la cascade redescend au nœud dès qu’un seul côté porte la clé', () 
 
 test('le nom du fichier Figma ne vote pas', () => {
   // Renommer le fichier Figma est un geste courant. Le laisser décider ferait
-  // refuser tous les réexports suivants — un coût certain contre une
+  // refuser tous les réexports suivants : un coût certain contre une
   // coïncidence qui demanderait deux accidents simultanés.
   const verdict = comparerIdentiteDeContrat(
     contrat('Button', { nodeId: '12:345', fileName: 'Design System' }),
@@ -81,7 +81,7 @@ test('le nom du fichier Figma ne vote pas', () => {
 
 test('un contrat sans identité Figma lisible est indécidable, jamais « le même »', () => {
   // Écrit à la main, ou par un autre outil. Répondre « le même » ici
-  // écraserait le travail de quelqu'un en silence — le défaut que ce module
+  // écraserait le travail de quelqu'un en silence : le défaut que ce module
   // existe pour supprimer.
   for (const existant of [
     { name: 'Button' },
@@ -131,7 +131,7 @@ test('l’identité rend les cinq champs que le contrat porte', () => {
 });
 
 test('une identité incomplète est rendue incomplète, pas refusée', () => {
-  // C'est la comparaison — ou le message — qui décide de ce qui manque, pas la
+  // C'est la comparaison (ou le message) qui décide de ce qui manque, pas la
   // lecture. Depuis que le plugin se distribue par la Community, un contrat n'a plus d'URL, et c'est un état
   // normal du format : le rendre `null` sans rien casser est exactement le
   // comportement dont dépend la page de couverture de la pull request.

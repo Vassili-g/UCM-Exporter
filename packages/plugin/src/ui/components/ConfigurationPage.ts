@@ -113,7 +113,7 @@ export function createConfigurationPage(
   let settingsDirty = false;
   /*
    * « Réglages enregistrés » ne se dit que si un enregistrement a eu lieu.
-   * Le statut l'affirmait à CHAQUE test de connexion, y compris celui de
+   * Le statut l'affirmait à chaque test de connexion, y compris celui de
    * l'ouverture, où personne n'avait rien enregistré. Seule l'UI sait qu'un
    * clic vient de partir : le sandbox, lui, teste la connexion pour deux
    * raisons différentes et n'a pas à les distinguer.
@@ -133,17 +133,17 @@ export function createConfigurationPage(
   /*
  * Les libellés sont en français. Ils étaient les quatre seuls mots d'anglais d'une
  * interface entièrement française, et le geste attendait l'arbitrage de langue que
- * la publication sur la Figma Community a rendu exigible : il est tranché — le
- * français reste. « Personal Access Token » n'est pas une exception à cette règle,
- * c'est le nom que GitHub donne à la chose, et le traduire enverrait chercher dans
- * ses réglages un intitulé qui n'y figure pas.
+ * la publication sur la Figma Community a rendu exigible : il est tranché, le
+ * français reste. « Personal Access Token » garde son nom parce que c'est celui
+ * que GitHub donne à la chose : le traduire enverrait chercher dans ses réglages
+ * un intitulé qui n'y figure pas.
  */
   const repoUrl = createField('repoUrl', 'URL du repository', {
     placeholder: 'https://github.com/mon-org/design-system-v3',
   }, markDirty);
 
   /*
- * Qui gouverne les chemins, dit AVANT de les saisir.
+ * Qui gouverne les chemins, dit avant de les saisir.
  */
   const gouvernance = document.createElement('p');
   gouvernance.className = 'field-help';
@@ -190,7 +190,7 @@ export function createConfigurationPage(
   reinitialiserSuppression();
 
   /*
- * L'état de la configuration se lit EN HAUT, sous la pastille.
+ * L'état de la configuration se lit en haut, sous la pastille.
  */
   const status = document.createElement('div');
   status.className = 'config-status';
@@ -273,7 +273,7 @@ export function createConfigurationPage(
     /*
  * Le statut est écrit même quand la page est cachée : ainsi le designer qui arrive
  * par la pastille trouve la cause déjà là, au lieu d'un cadre vide. C'est la phrase
- * fausse — « Configuration enregistrée » sans enregistrement — qui imposait
+ * fausse (« Configuration enregistrée » sans enregistrement) qui imposait
  * auparavant de ne rien écrire hors de la vue.
  */
     updateConnection(state: EtatConnexion['state'], geste: string | null) {

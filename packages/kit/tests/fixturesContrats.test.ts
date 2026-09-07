@@ -4,16 +4,16 @@
  * Le moteur ne fabrique que la version courante : ces contrats sont donc la
  * seule donnée réelle d'une version que plus rien ne produit, et leur valeur
  * tient entièrement à leur immobilité. Un réexport, une reformulation ou une
- * conversion de fin de ligne les rendrait inutiles sans rien casser d'autre —
+ * conversion de fin de ligne les rendrait inutiles sans rien casser d'autre :
  * l'échec ne se verrait qu'au moment où quelqu'un croirait mesurer la
  * compatibilité N-1 sur des contrats devenus N.
  *
  * Ce n'est pas un test du moteur, et il ne doit jamais le devenir : comparer
  * ces fichiers à une sortie du moteur rouvrirait exactement le défaut que
- * `AGENTS.md` interdit — un instantané qui ne bouge qu'au réexport ne prouve
+ * `AGENTS.md` interdit, un instantané qui ne bouge qu'au réexport ne prouve
  * que sa propre immobilité.
  *
- * Les empreintes ne sont pas recopiées ici : elles sont LUES dans le README
+ * Les empreintes ne sont pas recopiées ici : elles sont lues dans le README
  * voisin, qui reste leur unique domicile. Une empreinte corrigée d'un seul
  * côté ne peut donc pas passer.
  */

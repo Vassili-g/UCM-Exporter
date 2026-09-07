@@ -2,9 +2,9 @@
  * `tokensUsed` ne cite que des tokens que le contrat emploie réellement.
  *
  * L'index se dérive du contrat terminé. Le relever pendant l'extraction y
- * faisait entrer les tokens que le moteur lit pour DÉCIDER puis écarte : le
+ * faisait entrer les tokens que le moteur lit pour décider puis écarte : le
  * consommateur les voyait alors comme des références citées nulle part, et
- * refusait la fusion en désignant un défaut de l'exporteur — alors que le geste
+ * refusait la fusion en désignant un défaut de l'exporteur, alors que le geste
  * correctif appartient au designer et que l'export l'avait déjà signalé.
  */
 import assert from 'node:assert/strict';

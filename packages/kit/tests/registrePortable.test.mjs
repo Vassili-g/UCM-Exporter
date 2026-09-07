@@ -12,7 +12,7 @@ const lecteurs = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "lec
  *
  * `TypeScript` n'y est pas : un module a le droit de dire qu'il délègue à un
  * adaptateur TypeScript, puisque c'est exactement ce qu'il fait. Ce qu'on
- * refuse, c'est de PROMETTRE une stack au lecteur — un fichier `.tsx` à créer,
+ * refuse, c'est de promettre une stack au lecteur : un fichier `.tsx` à créer,
  * un composant React à corriger, un Playground à adapter.
  */
 const MOTS_BANNIS = [/\bReact\b/, /\.tsx\b/, /\bTSX\b/, /\bPlayground\b/];

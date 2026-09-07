@@ -188,7 +188,7 @@ test('findWrapperReference reconnaît un wrapper dont le radius est lié coin pa
 
 test('une instance dont le composant maître est illisible n’est pas un wrapper', async () => {
   // Un wrapper n'est élu qu'une fois, sur la référence ; les autres variants
-  // retrouvent ensuite LEUR instance du même maître, par son id. Une instance
+  // retrouvent ensuite leur instance du même maître, par son id. Une instance
   // orpheline n'a pas cet id : l'élire faisait décrire à la référence un arbre
   // que plus aucun autre variant ne décrivait, et la garde d'appariement, qui
   // tombe avec l'id, restait muette. Elle porte pourtant de vraies dimensions

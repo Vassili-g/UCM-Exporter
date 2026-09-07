@@ -10,8 +10,8 @@ Figma plugin and committed next to the component's code. This command reads
 those files and says whether they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.10 init
-npx --yes @ucm-kit/cli@0.1.10 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.11 init
+npx --yes @ucm-kit/cli@0.1.11 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx pick a build nobody

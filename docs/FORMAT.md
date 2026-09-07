@@ -175,7 +175,7 @@ trancher. Un seul message par rôle fautif, avec son nombre d'occurrences et un
 token en exemple. Un rôle n'apparaît que s'il est réellement lié, rien n'est
 forcé ni inventé.
 
-Le contrat ne publie que les couleurs LIÉES. Une peinture unie posée à la main
+Le contrat ne publie que les couleurs **liées**. Une peinture unie posée à la main
 sur un calque que l'extraction parcourt produit un avertissement et rend
 `meta.coverage.portable` partiel : sans elle, le développeur rendrait ce calque
 sans encre. Trois cas n'en produisent aucun, un paint masqué ou d'opacité nulle
@@ -576,7 +576,7 @@ taille.
 
 #### Position absolue
 
-Un layer en position `Absolute` sort du flux, et le contrat le PLACE. Il publie
+Un layer en position `Absolute` sort du flux, et le contrat le place. Il publie
 `position: "absolute"`, les `constraints` : les bords auxquels il s'accroche, en
 vocabulaire CSS (`left`/`center`/`right`/`stretch`/`scale`,
 `top`/`center`/`bottom`/…), et `inset`, sa distance à ces bords. La lecture
@@ -681,7 +681,7 @@ avertissement, devenu faux, déclarerait absente.
 Direction, alignements, dimensions figées et propriétés de flux des slots ne
 sont jamais généralisés depuis le variant de référence : chaque combinaison a sa
 vue exacte, qui porte les siens. `structure` reste la projection de référence,
-et la différence n'a donc rien à signaler, elle est PUBLIÉE.
+et la différence n'a donc rien à signaler, elle est publiée.
 
 #### Propriétés non portables
 

@@ -40,7 +40,7 @@ test("un contrat 4.0 complet accepte les blocs vides et les valeurs null prévue
 });
 
 /**
- * La forme de CHAQUE prop est validée, pas seulement celle du bloc `props`.
+ * La forme de chaque prop est validée, pas seulement celle du bloc `props`.
  * Sans cela, un enum sans valeurs passait au vert ici puis faisait lever le
  * générateur de types : un plantage de script au lieu d'un diagnostic.
  */
@@ -405,7 +405,7 @@ test("la 5.2 accepte un axe du composant dimensionné par un token", () => {
   valeur.structure.sizing = { width: "stretch", height: "fit-content" };
   assert.deepEqual(champsInvalidesDuContrat(valeur), []);
 
-  // Une dimension brute reste refusée — c'est tout l'objet de la règle.
+  // Une dimension brute reste refusée : c'est tout l'objet de la règle.
   valeur.structure.sizing = { width: "96px", height: "fit-content" };
   assert.deepEqual(champsInvalidesDuContrat(valeur), ["structure.sizing"]);
 });
@@ -425,7 +425,7 @@ test("un contrat 5.1 ne peut pas annoncer un dimensionnement tokenisé", () => {
 
 /**
  * Une borne n'est pas une taille : elle s'applique quel que soit le menu de
- * dimensionnement, et le cas courant est celui qu'aucun `size` ne sait écrire —
+ * dimensionnement, et le cas courant est celui qu'aucun `size` ne sait écrire,
  * un layer qui remplit son axe sans dépasser une largeur.
  */
 test("la 5.3 publie les bornes du composant et celles d’un slot", () => {
@@ -671,7 +671,7 @@ test("le graphe détecte un cycle de composition", () => {
  * Le passage à la ligne, introduit par la 5.4.
  *
  * `wrap` n'a qu'une valeur légale : le contrat ne publie que les exceptions, et
- * une absence dit déjà « une seule ligne ». `rowGap` n'existe que sous `wrap` —
+ * une absence dit déjà « une seule ligne ». `rowGap` n'existe que sous `wrap` :
  * et son absence y vaut le `gap`, la lecture de Figma comme celle de CSS.
  */
 test("la 5.4 publie le wrap du composant et celui d’un slot conteneur", () => {
@@ -744,8 +744,8 @@ function contratVersionne(version, structure) {
 /**
  * La grille de la 6.0 et ses pistes de la 7.0.
  *
- * Un conteneur de grille porte des LIGNES sans passer à la ligne : exiger `wrap`
- * à côté de son `rowGap` refusait toute grille correctement tokenisée — c'est ce
+ * Un conteneur de grille porte des lignes sans passer à la ligne : exiger `wrap`
+ * à côté de son `rowGap` refusait toute grille correctement tokenisée, c'est ce
  * qui a bloqué le premier export 7.0.
  */
 test("une grille complète de la 7.0 est acceptée", () => {
@@ -1239,9 +1239,9 @@ function dependanceAIcone(nom, figmaName, runtimeProp) {
 /**
  * Un composé dont l'échantillon place `swaps` à la profondeur voulue.
  *
- * `composes` et les slots restent en miroir — c'est un invariant du graphe, et
+ * `composes` et les slots restent en miroir : c'est un invariant du graphe, et
  * le violer ferait passer un second diagnostic pour une trouvaille de ce test.
- * Seules les dépendances DIRECTES y figurent : une dépendance imbriquée relève
+ * Seules les dépendances directes y figurent : une dépendance imbriquée relève
  * du contrat de celle qui la porte.
  */
 function composeAvecRemplacement(instances) {
@@ -1328,7 +1328,7 @@ test("le graphe voit un remplacement à n’importe quelle profondeur de composi
 
   const erreurs = validerGrapheDesContrats([
     document("Root.json", root),
-    // « Branch » doit DÉCLARER la dépendance que le sample situe sous elle :
+    // « Branch » doit déclarer la dépendance que le sample situe sous elle :
     // sans ce couple, le lecteur n'a aucune position où poser le remplacement,
     // et c'est un autre contrôle qui parle en premier.
     document("Branch.json", contrat("Branch", [{ component: "Leaf", figmaLayer: "Leaf" }])),
@@ -1389,7 +1389,7 @@ const UNE_DEPENDANCE = [{ component: "Branch", figmaLayer: "Branch" }];
 
 test("le graphe refuse un args que la dépendance ne publie pas", () => {
   // La preuve que les deux contrats ne décrivent plus le même composant : `args`
-  // est une projection FERMÉE de la surface publique, une clé qui ne joint rien
+  // est une projection fermée de la surface publique, une clé qui ne joint rien
   // ne peut donc pas être une tolérance.
   const root = composeVersionne(UNE_DEPENDANCE, {
     composes: [{
@@ -1438,7 +1438,7 @@ test("le graphe refuse une valeur d’enum que la dépendance n’admet pas", ()
 });
 
 test("l’axe d’états est une clé d’args légitime, et un slot n’en est jamais une", () => {
-  // `args` porte l'axe d'états sous SA clé pour que le lecteur retrouve le
+  // `args` porte l'axe d'états sous sa clé pour que le lecteur retrouve le
   // variant, alors que cet axe n'est pas une prop et vit dans `stateModel`.
   // Refuser cette clé-là serait le faux positif le plus facile à écrire.
   const root = composeVersionne(UNE_DEPENDANCE, {
@@ -1473,7 +1473,7 @@ test("l’axe d’états est une clé d’args légitime, et un slot n’en est 
 });
 
 test("le graphe refuse une dépendance imbriquée que son propriétaire ne déclare pas", () => {
-  // L'adressage est relatif au propriétaire IMMÉDIAT. Sans ce couple chez lui,
+  // L'adressage est relatif au propriétaire immédiat. Sans ce couple chez lui,
   // le lecteur n'a aucune position où poser ce que l'enfant porte, et la seule
   // issue serait la recherche globale par nom que le protocole interdit.
   const root = composeVersionne(UNE_DEPENDANCE, {
@@ -1526,7 +1526,7 @@ test("le graphe refuse plus d’occurrences imbriquées que la dépendance n’e
 });
 
 test("deux occurrences homonymes déclarées restent deux positions valides", () => {
-  // Le pendant du test précédent : la cardinalité MAXIMALE que la dépendance
+  // Le pendant du test précédent : la cardinalité maximale que la dépendance
   // publie est la borne, et deux calques homonymes ne se fondent jamais en un.
   const root = composeVersionne(UNE_DEPENDANCE, {
     composes: [{
@@ -1643,7 +1643,7 @@ test("une racine omise est tolérée, une racine désordonnée ne l’est pas", 
 test("le graphe refuse un texte de sample posé sur un slot inconnu", () => {
   // Le canal le plus volumineux d'un composé, et le seul qui porte le contenu
   // réellement affiché : un chemin qui ne joint aucun slot rend ce texte
-  // inatteignable — on le voit, on ne sait pas où l'écrire.
+  // inatteignable, on le voit, on ne sait pas où l'écrire.
   const root = composeVersionne([], {
     text: [{ slotPath: ["absent"], figmaLayer: "Titre", value: "Bonjour" }],
   }, [{ slot: "present" }]);
@@ -1664,7 +1664,7 @@ test("le graphe refuse un texte de sample posé sur un slot inconnu", () => {
 test("une structure sans enfant reste valide : un [] ne s'écrit pas", () => {
   // Un composant dont aucun descendant ne porte d'information publiable n'a pas
   // de `children`. La validation matérialise ce que l'élision retire ; sans ce
-  // rétablissement elle réclamait le champ à la vue exacte ET à la projection de
+  // rétablissement elle réclamait le champ à la vue exacte et à la projection de
   // référence, et refusait un contrat que l'exporteur produit légitimement.
   // Aucun composant du sandbox ne l'exerce, d'où ce montage.
   assert.deepEqual(champsInvalidesDuContrat(contratCourant()), []);
@@ -1701,7 +1701,7 @@ test("un contrat 12.0 qui place, incline et nomme des rôles est accepté", () =
 });
 
 /**
- * `inset` rejoint une famille — `position`, `constraints` — que ce fichier
+ * `inset` rejoint une famille (`position`, `constraints`) que ce fichier
  * vérifie depuis la 6.0. Un membre non contrôlé serait un oubli, pas un choix.
  */
 test("une distance d'accroche mal formée est refusée, côté par côté", () => {
@@ -1746,7 +1746,7 @@ test("la rotation du calque de flux est contrôlée comme celle d'un enfant", ()
 });
 
 /**
- * `keyRoles` est un RENVOI : la résolution du format est
+ * `keyRoles` est un renvoi : la résolution du format est
  * `roles[keyRoles[côté][clé] ?? clé]`. Un rôle absent de `roles` rend
  * `undefined`, et la couleur disparaît sans un mot.
  */
@@ -1768,9 +1768,9 @@ test("un côté que le format ne connaît pas est refusé", () => {
 /**
  * Le contrôle vit dans le validateur de la 11.0 et non dans la passe
  * matérialisée, qui réécrit la version en « 10.3 » : une capacité « au moins
- * 12.0 » y serait toujours fausse. Ce test tient cette raison — un contrat qui
+ * 12.0 » y serait toujours fausse. Ce test tient cette raison : un contrat qui
  * publie du 12.0 sous une version antérieure doit être refusé, ce qui n'arrive
- * que si le contrôle voit la version RÉELLE.
+ * que si le contrôle voit la version réelle.
  */
 test("un champ de la 12.0 publié sous une version antérieure est refusé", () => {
   const casse = contrat120();
@@ -1783,7 +1783,7 @@ test("un champ de la 12.0 publié sous une version antérieure est refusé", () 
 });
 
 /**
- * `icons.<clé>.slot` situe une icône que le variant de référence NE contient
+ * `icons.<clé>.slot` situe une icône que le variant de référence ne contient
  * pas : la chercher dans la seule projection de référence refusait exactement
  * le cas que ce champ existe pour décrire. Le premier contrat réel à en porter
  * une l'a prouvé, et aucun test ne l'avait vu avant lui.
@@ -1818,8 +1818,8 @@ test("un slot d'icône qui n'existe dans aucune structure reste refusé", () => 
  * valide en réalité tout le 11.0 et le 12.0. La grammaire de lecture est
  * désormais choisie en un seul endroit et ne voyage plus avec la donnée.
  *
- * Ce test lit la SOURCE, et l'assume. La substitution n'est observable par
- * aucun appelant — c'est tout l'intérêt —, donc aucun test de comportement ne
+ * Ce test lit la source, et l'assume. La substitution n'est observable par
+ * aucun appelant (c'est tout l'intérêt), donc aucun test de comportement ne
  * peut la surveiller. Un contrôle de source est le seul qui morde ici, et il
  * mord vraiment : réintroduire l'écriture le fait rougir.
  */

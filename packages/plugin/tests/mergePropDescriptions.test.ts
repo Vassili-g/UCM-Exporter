@@ -29,7 +29,7 @@ test('mergePropDescriptions documente les valeurs d’une prop enum', () => {
 
 /**
  * Le cœur du correctif : l'axe d'états est exclu des props, mais le contrat le
- * PUBLIE dans `stateModel` et les arbres de variantes en sont indexés. Le
+ * publie dans `stateModel` et les arbres de variantes en sont indexés. Le
  * refuser à la documentation reviendrait à traiter en faute de frappe un axe
  * que l'export décrit lui-même.
  */

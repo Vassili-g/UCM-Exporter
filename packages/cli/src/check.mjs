@@ -14,7 +14,7 @@ import { controlerRepository, lireConfiguration } from "@ucm-kit/core/lecteurs";
  * Lit les arguments de `ucm check`.
  *
  * Rend `{ erreur }` plutôt que de lever : une invocation fautive est un
- * diagnostic à afficher, pas une stack trace — la même règle que les lecteurs
+ * diagnostic à afficher, pas une stack trace, la même règle que les lecteurs
  * s'appliquent à un contrat malformé.
  */
 export function lireArguments(arguments_) {
@@ -45,7 +45,7 @@ export function lireArguments(arguments_) {
  *
  * **Un échec de `git` n'entraîne aucun repli silencieux.** Sans relevé, le
  * périmètre s'ouvrirait à tous les contrats et le rapport parlerait de
- * composants que cette pull request ne touche pas — exactement le défaut que le
+ * composants que cette pull request ne touche pas : exactement le défaut que le
  * périmètre existe pour supprimer. Se tromper sans le dire est pire que
  * s'arrêter.
  */
@@ -66,7 +66,7 @@ export function releveDuDiff(racine, base, sourceTokens, executer = execFileSync
     };
   }
 
-  // `git diff --quiet` sort en 1 quand il y a une différence : l'exception EST
+  // `git diff --quiet` sort en 1 quand il y a une différence : l'exception est
   // la réponse, et l'absence d'exception veut dire « rien n'a bougé ».
   let tokensModifies = true;
   try {
@@ -106,7 +106,7 @@ export function check(arguments_, {
     // Pas de rapport écrit ici, et c'est délibéré : formuler un diagnostic de
     // designer dans le CLI remettrait du vocabulaire de rapport dans l'outil,
     // ce que la scission en a sorti. Le filet du workflow publie déjà un
-    // message quand le rapport manque — c'est exactement le cas qu'il couvre.
+    // message quand le rapport manque : c'est exactement le cas qu'il couvre.
     alerter(erreurConfiguration);
     return 2;
   }

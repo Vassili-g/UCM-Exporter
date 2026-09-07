@@ -14,7 +14,7 @@ const racine = path.resolve(__dirname, '..');
 /**
  * Fichiers markdown du dépôt, hors dépendances installées et hors fixtures.
  *
- * `tests/fixtures/` porte des documents FIGÉS, cités par un test et par lui
+ * `tests/fixtures/` porte des documents figés, cités par un test et par lui
  * seul : leurs liens relatifs valaient depuis l'endroit d'où on les a gelés, et
  * les rejuger ici ferait rougir un contrôle sur une adresse que plus personne
  * ne suit.

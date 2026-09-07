@@ -13,15 +13,15 @@ const PORTABLES = ['CONCEPT.md', 'docs/FORMAT.md', 'docs/CHANGELOG-FORMAT.md'];
  * Les mots refusés, repris de `registrePortable.test.mjs` sans les élargir.
  *
  * `TypeScript` n'y est pas : un document a le droit de dire qu'un adaptateur
- * TypeScript existe. Ce qu'on refuse est de promettre AU LECTEUR que son code
+ * TypeScript existe. Ce qu'on refuse est de promettre au lecteur que son code
  * est du React, dans un fichier `.tsx`, ou qu'il ressemble au Playground.
  */
 const MOTS_BANNIS = [/\bReact\b/, /\.tsx\b/, /\bTSX\b/, /\bPlayground\b/];
 
 /**
  * La seule exemption de forme, et c'est celle du filet du code : une ligne qui
- * nomme le motif PAR DÉFAUT de `ucm.config.json` décrit une VALEUR qu'un
- * repository remplace par la sienne. Elle n'affirme rien à son lecteur — elle
+ * nomme le motif par défaut de `ucm.config.json` décrit une valeur qu'un
+ * repository remplace par la sienne. Elle n'affirme rien à son lecteur : elle
  * lui dit au contraire où changer ce qu'il n'a pas.
  */
 function nommeLeMotifParDefaut(ligne: string): boolean {
@@ -32,7 +32,7 @@ function nommeLeMotifParDefaut(ligne: string): boolean {
  * Les lignes inscrites, avec la raison qui les tient et ce qui les lèvera.
  *
  * Le texte est celui de la ligne, sans ses espaces de bord. Une ligne qui bouge
- * dans son document ne casse donc rien ; une ligne qui change de mots, si — et
+ * dans son document ne casse donc rien ; une ligne qui change de mots, si, et
  * c'est voulu, puisque changer ses mots est précisément ce qu'on attend d'elle.
  */
 /**

@@ -1,14 +1,14 @@
 /**
- * Clé d'une couleur dans la feuille d'un variant — unique autorité.
+ * Clé d'une couleur dans la feuille d'un variant : unique autorité.
  *
  * La clé est le dernier segment du nom de la variable Figma. C'est une
- * IDENTITÉ, pas un rôle : ce que la couleur peint se lit sur le calque qui la
+ * identité, pas un rôle : ce que la couleur peint se lit sur le calque qui la
  * porte (`paintSiteRole`), jamais sur ce nom.
  *
- * Quand des couleurs qui COHABITENT dans la feuille d'un même variant portent
+ * Quand des couleurs qui cohabitent dans la feuille d'un même variant portent
  * le même dernier segment, la clé s'allonge de segments du chemin. Le design
- * system les nomme déjà distinctement — `…userinput.colors.background` et
- * `…divider.colors.background` — et tronquer au dernier segment faisait perdre
+ * system les nomme déjà distinctement (`…userinput.colors.background` et
+ * `…divider.colors.background`) et tronquer au dernier segment faisait perdre
  * une couleur pour de bon.
  */
 
@@ -25,7 +25,7 @@ function segmentAt(segments: readonly string[], depth: number): string | null {
 
 /**
  * Clé induite par une sélection de profondeurs : les segments retenus, du plus
- * profond au moins profond — donc dans l'ordre du chemin — puis le dernier.
+ * profond au moins profond (donc dans l'ordre du chemin) puis le dernier.
  *
  * Un chemin trop court pour une profondeur retenue n'y contribue rien. Sa clé
  * peut alors rester celle de base ; elle reste distincte des autres, ce qui
@@ -64,7 +64,7 @@ function separatesAll(
  * À chaque tour on choisit la profondeur qui sépare le plus de conflits encore
  * ouverts, puis celle qui fabrique le moins de clés. Une passe finale retire
  * toute profondeur redevenue inutile. La stratégie est déterministe et son
- * coût est borné par candidats × conflits × tokens — aucun `2^n` caché.
+ * coût est borné par candidats × conflits × tokens : aucun `2^n` caché.
  */
 function greedyDepths(
   tokens: readonly string[],
@@ -114,8 +114,8 @@ function greedyDepths(
  * Allonge la clé d'un groupe de tokens jusqu'à séparer ceux qui cohabitent.
  *
  * `cohabitations` liste les paires de tokens présents dans une même feuille.
- * Une sélection de profondeurs est VALIDE si elle sépare les deux extrémités de
- * chaque paire ; on retient celle qui produit LE MOINS DE CLÉS DISTINCTES.
+ * Une sélection de profondeurs est valide si elle sépare les deux extrémités de
+ * chaque paire ; on retient celle qui produit le moins de clés distinctes.
  *
  * Ce dernier critère est ce qui garde une coordonnée de variant hors de la clé.
  * Un Button dont trente tokens `…<color>.<variant>.<state>.background` ne
@@ -125,7 +125,7 @@ function greedyDepths(
  * « jusqu'à ce que tous les tokens soient uniques » aurait publié une clé
  * différente par variant, et plus rien n'aurait été indexable.
  *
- * Une solution existe toujours : la sélection de TOUTES les profondeurs
+ * Une solution existe toujours : la sélection de toutes les profondeurs
  * candidates distingue les tokens deux à deux, deux chemins distincts différant
  * forcément quelque part.
  */
@@ -136,11 +136,11 @@ function distinguish(
   const paths = new Map(tokens.map((token) => [token, token.split('.')]));
   const longest = Math.max(...tokens.map((token) => paths.get(token)!.length));
 
-  // Seule une profondeur qui SÉPARE une paire cohabitante peut servir. Les
+  // Seule une profondeur qui sépare une paire cohabitante peut servir. Les
   // autres ne font que raffiner : ajouter une profondeur à une sélection ne peut
   // que scinder des clés, jamais en fondre deux, si bien qu'une profondeur qui
   // ne sépare rien reste retirable d'une sélection valide sans rien lui coûter.
-  // La restriction préserve donc EXACTEMENT l'optimum — et elle borne le coût,
+  // La restriction préserve donc exactement l'optimum, et elle borne le coût,
   // exponentiel dans le nombre de candidates : trente tokens
   // `…<color>.<variant>.<state>.background` diffèrent à trois profondeurs, mais
   // s'ils ne se disputent leur base qu'avec une seule surface partagée, une
@@ -181,11 +181,11 @@ function distinguish(
 }
 
 /**
- * Décide la clé de chaque couleur du composant, sur TOUTE la matrice.
+ * Décide la clé de chaque couleur du composant, sur toute la matrice.
  *
  * `sheets` porte une entrée par (variant publié × champ) : la liste des tokens
- * DISTINCTS qui s'y côtoient. Les peintures et les contours vivent dans deux
- * arbres séparés, donc dans deux feuilles séparées — un fill et un stroke ne se
+ * distincts qui s'y côtoient. Les peintures et les contours vivent dans deux
+ * arbres séparés, donc dans deux feuilles séparées : un fill et un stroke ne se
  * disputent jamais rien.
  *
  * La table est calculée une seule fois pour le composant : la clé d'un token

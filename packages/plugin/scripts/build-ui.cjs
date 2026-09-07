@@ -20,10 +20,10 @@ const SCRIPT_MARKER = '<script type="module" src="./ui/index.ts"></script>';
 /**
  * Remplace les deux balises du gabarit par leur contenu inline.
  *
- * Les remplacements passent par une FONCTION, jamais par une chaîne : dans une
+ * Les remplacements passent par une fonction, jamais par une chaîne : dans une
  * chaîne de remplacement, `String.replace` interprète `$&`, `` $` ``, `$'`,
  * `$$` et `$1`. Or esbuild nomme ses variables minifiées `$` une fois son
- * réservoir de noms courts épuisé, et produit alors des suites comme `$&&x` —
+ * réservoir de noms courts épuisé, et produit alors des suites comme `$&&x` :
  * le bundle serait tronqué et remplacé par la balise elle-même. Le build
  * resterait vert, les tests aussi, et le plugin ne se lancerait plus dans
  * Figma.

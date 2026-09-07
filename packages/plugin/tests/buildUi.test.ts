@@ -4,7 +4,7 @@
  * `String.replace` interprète `$&`, `` $` ``, `$'`, `$$` et `$n` dans une
  * chaîne de remplacement. esbuild nomme `$` une de ses variables minifiées
  * lorsque son réservoir de noms courts est épuisé, si bien qu'un `$&&x` suffit
- * à tronquer le bundle — sans que le build ni les tests ne rougissent.
+ * à tronquer le bundle, sans que le build ni les tests ne rougissent.
  */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';

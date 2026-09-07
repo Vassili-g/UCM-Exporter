@@ -53,7 +53,7 @@ test('un préfixe de sujet ne s’écrit qu’à un seul endroit du moteur', () 
 
 /**
  * Le contrôle ci-dessus interdit d'écrire le préfixe ailleurs. Celui-ci vérifie
- * que l'endroit autorisé l'écrit bien — sans quoi renommer la convention dans le
+ * que l'endroit autorisé l'écrit bien, sans quoi renommer la convention dans le
  * module rendrait l'autre test vert sur un moteur qui ne dit plus « Layer ».
  */
 test('l’autorité produit bien la forme que les messages emploient', () => {
@@ -67,7 +67,7 @@ test('l’autorité produit bien la forme que les messages emploient', () => {
 });
 
 /**
- * La SECONDE moitié de la loi, et c'est elle qui la rend utile.
+ * La seconde moitié de la loi, et c'est elle qui la rend utile.
  *
  * *La loi :* **aucun diagnostic ne nomme un calque du composant exporté sans
  * pouvoir mener à un calque.**
@@ -80,22 +80,22 @@ test('l’autorité produit bien la forme que les messages emploient', () => {
  * « rien à localiser » alors qu'elle signifie « ce site-là n'a pas été
  * converti ».
  *
- * *Ce que la loi n'interdit PAS, et il faut le lire avant de la croire plus
- * stricte qu'elle n'est.* Un message a le droit de nommer un SECOND calque dans
- * son corps — « … mais le layer « Y » lui donne déjà ce rôle » est un contexte
+ * *Ce que la loi n'interdit pas, et il faut le lire avant de la croire plus
+ * stricte qu'elle n'est.* Un message a le droit de nommer un second calque dans
+ * son corps, « … mais le layer « Y » lui donne déjà ce rôle » est un contexte
  * utile, et l'interface n'a besoin que d'une cible : celle du sujet. Ce que la loi
- * exige est qu'un message qui parle d'un calque en ait UNE.
+ * exige est qu'un message qui parle d'un calque en ait une.
  *
- * *Son univers est les calques du COMPOSANT exporté*, pas tous les nodes du
+ * *Son univers est les calques du composant exporté*, pas tous les nodes du
  * document. Un message qui cite le calque « icon » d'une instance de règle
  * nomme un calque réel qui n'appartient pas au composant, et aucun clic ne
  * devrait y mener.
  *
  * *Pourquoi ce contrôle-ci s'exécute, quand l'autre lit la source.* Il ne peut
- * pas se lire : savoir si un texte nomme un calque DU COMPOSANT demande de
+ * pas se lire : savoir si un texte nomme un calque du composant demande de
  * connaître les calques de ce composant, donc d'avoir exporté. Il se pose donc
  * sur la sortie du moteur, avec les autres lois, et il ne prouve que ce que les
- * scénarios déclenchent — c'est précisément pourquoi la première moitié lit la
+ * scénarios déclenchent : c'est précisément pourquoi la première moitié lit la
  * source, et pourquoi les deux ensemble valent mieux que chacune seule.
  */
 export function verifierLaLocalisationDesDiagnostics(
@@ -108,7 +108,7 @@ export function verifierLaLocalisationDesDiagnostics(
   const fautifs: string[] = [];
   for (const message of messages) {
     if (localisations.has(message)) continue;
-    // Une absence DÉCLARÉE n'est pas une absence oubliée : le site d'émission a
+    // Une absence déclarée n'est pas une absence oubliée : le site d'émission a
     // écrit pourquoi aucun node unique n'existe. C'est toute la différence que
     // cette loi mesure, et la raison pour laquelle les deux tables sont
     // séparées dans `localisation.ts`.

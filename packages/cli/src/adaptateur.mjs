@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 export const NOM_ADAPTATEUR_TYPESCRIPT = "@ucm-kit/adapter-typescript";
 
 /**
- * Charge l'adaptateur TypeScript s'il est installé PAR le repository.
+ * Charge l'adaptateur TypeScript s'il est installé par le repository.
  *
  * La résolution part de la racine contrôlée, jamais du CLI lancé par `npx` :
  * autrement un adaptateur présent dans le projet resterait invisible tandis

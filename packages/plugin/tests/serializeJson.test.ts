@@ -1,14 +1,14 @@
 /**
  * L'écriture d'un artefact change de forme, jamais de contenu.
  *
- * Le gain le plus important de la forme actuelle — un tiers des tokens — et
+ * Le gain le plus important de la forme actuelle (un tiers des tokens) et
  * aussi le plus facile à casser sans s'en apercevoir : une virgule oubliée
  * produit un fichier que personne ne relit avant qu'un consommateur ne s'y
  * casse les dents.
  *
- * Les cas ci-dessous sont des CLAUSES, une par test, sur la valeur minimale qui
+ * Les cas ci-dessous sont des clauses, une par test, sur la valeur minimale qui
  * exerce la clause. L'aller-retour sur une valeur riche, lui, se joue sur ce
- * que le moteur produit vraiment — `verifierLaSerialisation`, appelée à chaque
+ * que le moteur produit vraiment : `verifierLaSerialisation`, appelée à chaque
  * export de `exportComponent.test.ts`. Une donnée écrite ici pour l'occasion ne
  * prouverait que l'accord du sérialiseur avec l'imagination de son auteur.
  */

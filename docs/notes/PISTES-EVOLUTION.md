@@ -130,8 +130,8 @@ peut installer le plugin, donc personne d'autre ne peut produire de contrat.
 **Publier sur la Community.** N'importe qui installe le plugin et produit des
 contrats. `figma.fileKey` devient indisponible : `meta.figma.url` disparaît, et
 la traçabilité repose sur `fileName` et `nodeId`, que le contrat conserve.
-L'export n'est pas bloqué et aucune information de rendu n'est perdue, c'est un
-raccourci de navigation qui tombe, pas une donnée du design. Reconstituer le
+L'export n'est pas bloqué et aucune information de rendu n'est perdue : ce qui
+tombe est un raccourci de navigation, pas une donnée du design. Reconstituer le
 lien à la main reste possible pour qui connaît la clé du fichier.
 
 **Ce que la décision a coûté, et ce qu'elle a rendu.** Le point de bascule
@@ -252,8 +252,9 @@ finit par contourner, et une CI contournée ne protège plus rien.
 
 ### Liaison explicite avec l’implémentation
 
-La co-localisation suffit au prototype. À l’échelle, un manifeste du repository
-pourrait associer contrat, source et export public :
+La co-localisation suffit au prototype. Sur un repository à plusieurs dizaines
+de composants, un manifeste pourrait associer contrat, source et export
+public :
 
 ```json
 {
@@ -404,7 +405,7 @@ que l’exercice révèle vaut plus que son résultat.
 
 ### B. Le cycle du changement, joué en entier
 
-Le cas dominant en vie réelle n’est pas la création, c’est la modification. Tout
+Le cas dominant en vie réelle est la modification. Tout
 le modèle est aujourd’hui raisonné à l’endroit de la naissance d’un composant.
 
 Un scénario canonique à rejouer de bout en bout, quatre changements qui couvrent

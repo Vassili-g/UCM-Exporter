@@ -275,7 +275,7 @@ test('un fichier sans variable locale le dit, au lieu de compter zéro', () => {
 
 /**
  * L'interface n'offre la commande que si elle a quelque chose à emporter.
- * Ce sont donc les VARIABLES qui décident, et non les collections : trois
+ * Ce sont donc les variables qui décident, et non les collections : trois
  * collections vides annonceraient du contenu que `handleExportTokens` refuse
  * ensuite d'exporter, et le designer découvrirait une erreur rouge après le
  * clic pour un fichier parfaitement normal.

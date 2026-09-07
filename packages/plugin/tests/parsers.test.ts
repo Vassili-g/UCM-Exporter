@@ -213,7 +213,7 @@ test('extractContractPropertyModel conserve INSTANCE_SWAP, SLOT et leurs noms te
 
 test('une component property nommée « __proto__ » ne disparaît pas dans le prototype', () => {
   // Le seul canal par lequel un nom Figma arrive jusqu'à une écriture d'objet.
-  // `props[key] = prop` aurait FIXÉ le prototype au lieu d'occuper une clé : la
+  // `props[key] = prop` aurait fixé le prototype au lieu d'occuper une clé : la
   // prop quittait le contrat sans un mot, et `propByName` continuait de répondre
   // qu'elle n'existait pas. Tout le reste du moteur se protège déjà ainsi.
   // Le littéral `{ __proto__: … }` fixerait le prototype au lieu de créer une

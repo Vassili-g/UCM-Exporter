@@ -36,7 +36,7 @@ doit ni charger le contrat ni l'interpréter à l'exécution.
 
 Un contrat ne recopie rien. Tout le reste du skill en découle.
 
-**Loi 1, Une vue est un jeu de RENVOIS.**
+**Loi 1, Une vue est un jeu de renvois.**
 `variantViews[variant.view].structure` est une **chaîne** : la clé d'une entrée de
 `viewStructures`, jamais l'arbre lui-même. Idem `typography` →
 `viewTypographies`, `composes` → `viewComposes`, `icons` → `viewIcons`,

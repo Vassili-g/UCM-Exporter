@@ -38,8 +38,8 @@ function cleDeGraisse(nom: string): string {
  * Le poids CSS d'un nom de graisse Figma, ou `null` s'il est inconnu.
  *
  * Rend `null` plutôt que de lever ou de replier sur 400 : un nom inconnu est
- * une information — le design system emploie un vocabulaire que cette table ne
- * couvre pas —, et la traiter comme « normal » la ferait disparaître.
+ * une information (le design system emploie un vocabulaire que cette table ne
+ * couvre pas), et la traiter comme « normal » la ferait disparaître.
  */
 export function poidsDeGraisse(nom: unknown): number | null {
   if (typeof nom !== 'string') return null;

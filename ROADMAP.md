@@ -25,8 +25,8 @@ Deux résultats à établir :
 - **confiance** : le contrat suffit pour utiliser correctement l'API visuelle de
   plusieurs familles de composants.
 
-Le but n'est pas de couvrir un catalogue entier, mais de tenir sans aucune règle
-liée au nom d'un composant, sur au moins un composant composé.
+Le but est de tenir sans aucune règle liée au nom d'un composant, sur au moins
+un composant composé, et non de couvrir un catalogue entier.
 
 ## Ce qui fonctionne
 

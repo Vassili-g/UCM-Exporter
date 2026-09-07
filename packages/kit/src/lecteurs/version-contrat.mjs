@@ -2,10 +2,10 @@
  * Compatibilité entre la version de schéma d'un contrat et celle que ce repo
  * sait consommer.
  *
- * Un écart de version a DEUX sens opposés, et les confondre envoie le lecteur
+ * Un écart de version a deux sens opposés, et les confondre envoie le lecteur
  * dans le mur : un contrat trop ancien tait des informations dont le code
  * dépend, et un ré-export le corrige ; un contrat trop récent vient d'un
- * plugin en avance sur ce repo, et aucun ré-export n'y changera rien — c'est
+ * plugin en avance sur ce repo, et aucun ré-export n'y changera rien, c'est
  * le repo qui doit rattraper. Le verdict distingue donc les deux.
  */
 

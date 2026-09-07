@@ -35,15 +35,15 @@ import type {
 /**
  * Situe chaque clé de couleur par les chemins de l'arbre publié.
  *
- * Le chemin d'une peinture est celui du calque PUBLIÉ qui la porte : une couleur
+ * Le chemin d'une peinture est celui du calque publié qui la porte : une couleur
  * posée sous une feuille appartient à cette feuille. C'est ce que le rendu
  * applique de toute façon, `color` et `fill` cascadant du slot vers le dessin.
  *
  * Aucun avertissement n'est produit ici, et il n'y a rien à y remettre : la vue
- * exacte part de la VRAIE racine du variant, la même que celle où `getSlotTokens`
+ * exacte part de la vraie racine du variant, la même que celle où `getSlotTokens`
  * relève les couleurs. Tout calque peint reçoit donc un chemin. Réclamer au
  * designer de « rendre publiable » un tracé d'icône lui demandait un geste que le
- * moteur refuse par principe d'honorer — le genre d'avertissement qu'on cesse de
+ * moteur refuse par principe d'honorer : le genre d'avertissement qu'on cesse de
  * lire, et qui laissait `paintPlacements` sans aucune cible pour cette clé.
  */
 function paintPlacementsFromPaths(
@@ -81,7 +81,7 @@ function paintPlacementsFromPaths(
  * L'axe vit d'ordinaire sur le wrapper de dimensions, mais rien ne l'y oblige :
  * il peut rester sur le set sélectionné pendant que le wrapper porte ses
  * propres axes. On retient donc les deux propriétaires possibles et on garde le
- * premier qui rend des dimensions. Élire le propriétaire sur le TYPE du node
+ * premier qui rend des dimensions. Élire le propriétaire sur le type du node
  * ferait disparaître `sizes` en silence dès que le wrapper n'a pas d'axe de
  * tailles, alors que `props.size` continuerait d'annoncer ses valeurs au
  * consommateur.
@@ -137,9 +137,9 @@ export async function extractStructure(
    */
   exactPathsByVariant: Map<ComponentNode, PublishedNodePaths>;
   /**
-   * Les calques que les règles `@icons` désignent RÉELLEMENT dans la matrice.
+   * Les calques que les règles `@icons` désignent réellement dans la matrice.
    *
-   * C'est cet ensemble — et non l'inventaire brut des règles — que suivent
+   * C'est cet ensemble (et non l'inventaire brut des règles) que suivent
    * l'extraction, les signatures et la typographie. Un lecteur qui voudrait
    * retrouver les mêmes slots doit partir de là.
    */
@@ -167,9 +167,9 @@ export async function extractStructure(
     notices,
   );
 
-  // Le node de layout de CHAQUE variant est élu ici, une fois. `findLayoutNode`
+  // Le node de layout de chaque variant est élu ici, une fois. `findLayoutNode`
   // élit au score, et le score dépend de la racine : relancer l'élection depuis
-  // une autre racine — le variant plutôt que son wrapper — désigne parfois un
+  // une autre racine (le variant plutôt que son wrapper) désigne parfois un
   // autre node, et les slots des icônes comme les chemins de la typographie
   // cesseraient alors de décrire ceux du contrat.
   const layoutNodes = await electVariantLayoutNodes(
@@ -185,7 +185,7 @@ export async function extractStructure(
     ? { component: referenceComponent, layoutNode: layoutNodeOf(referenceComponent) }
     : null;
 
-  // L'inventaire des icônes précède les slots : il couvre TOUTE la matrice,
+  // L'inventaire des icônes précède les slots : il couvre toute la matrice,
   // là où le layout ne décrit que le variant de référence. C'est lui qui relève
   // les icônes que ce variant ne contient pas, et qui nomme leur slot.
   const iconLayers = await extractIconLayers(
@@ -199,7 +199,7 @@ export async function extractStructure(
   const targetedLayers = new Set(iconLayers.map((layer) => layer.figmaLayer));
 
   // Un calque posé hors du node élu apporte ses couleurs à `variantTokens` dans
-  // TOUS les variants, pas seulement dans la référence : le relevé des couleurs
+  // tous les variants, pas seulement dans la référence : le relevé des couleurs
   // couvre la matrice entière. `extractLayout` ne voit que la référence, on
   // complète donc ici. Les messages identiques se dédupliquent à l'export.
   for (const { component } of matrix.variants) {
@@ -207,10 +207,10 @@ export async function extractStructure(
     warnLayersOutsideLayoutNode(component, layoutNodeOf(component), notices, composed);
   }
 
-  // « Où vivent les dimensions » se décide AVANT de les relever, et une seule
+  // « Où vivent les dimensions » se décide avant de les relever, et une seule
   // fois : c'est cette réponse que suivent à la fois l'extraction du layout de
   // référence et le choix final de `dimensions`. La décider après coup ferait
-  // relever — donc avertir sur — des valeurs aussitôt jetées.
+  // relever (donc avertir sur) des valeurs aussitôt jetées.
   const sizeAxisOwners = proprietairesDAxeDeTailles(wrapper, referenceComponent);
   const aUnAxeDeTailles = sizeAxisOwners.some((owner) => findSizeRepresentatives(owner) !== null);
 
@@ -340,7 +340,7 @@ export async function extractStructure(
     if (sizes) break;
   }
 
-  // Les dimensions géométriques ne vivent qu'à UN endroit : `sizes` les porte
+  // Les dimensions géométriques ne vivent qu'à un endroit : `sizes` les porte
   // toutes dès qu'un axe de tailles existe, sinon elles restent au niveau haut.
   // La typographie a son propre catalogue et son arbre complet de variants.
   const { gap, rowGap, columnGap, padding, radius, ...slots } = layout;

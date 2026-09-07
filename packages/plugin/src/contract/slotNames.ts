@@ -40,7 +40,7 @@ export function isIconLayer(node: SceneNode, iconNames: ReadonlySet<string>): bo
  * Un enfant qui porte une ou plusieurs dépendances unifiées garde le nom de son
  * calque, sans jamais devenir un `label` : ce cadre est un conteneur de ce
  * contrat-ci, et son rôle n'est pas celui d'un texte. Ses propres calques, eux,
- * sont bien décrits — par ses enfants, chacun nommé par cette même règle. C'est
+ * sont bien décrits, par ses enfants, chacun nommé par cette même règle. C'est
  * le test que `extractLayout`, `extractVariantTypography` et les signatures
  * appliquent tous : le déplacer ferait bouger tous les chemins de slots.
  */
@@ -51,7 +51,7 @@ function baseSlotName(
 ): string {
   const isDependency = composedSlotDependencies(child, composed).length > 0;
   // `getAllNodes` renvoie le calque lui-même en plus de ses descendants : un
-  // slot qui EST un texte est donc reconnu comme un slot qui en contient un.
+  // slot qui est un texte est donc reconnu comme un slot qui en contient un.
   const contents = isDependency ? [] : getAllNodes(child, [], composed);
   const hasText = contents.some((node) => node.type === 'TEXT');
   const hasIcon = contents.some((node) => isIconLayer(node, iconNames));

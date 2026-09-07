@@ -1,128 +1,122 @@
-
-/** Contrôle les deux tics documentaires mesurés par le dépôt. */
+/**
+ * Les tics de rédaction, refusés partout où le dépôt écrit du français.
+ *
+ * Le contrôle vit dans `scripts/controle-style.mjs` et non ici, parce que le
+ * hook `PostToolUse` de `.claude/settings.json` le rejoue au moment où un agent
+ * écrit un fichier. Deux implémentations jugeraient différemment le jour où
+ * l'une des deux évoluerait seule.
+ *
+ * Ce test est la barrière, le hook est le retour immédiat. Un agent d'un autre
+ * outillage, un éditeur humain, une correction faite en ligne sur la forge : le
+ * hook ne voit rien de tout cela, ce test si.
+ */
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 
-const racine = path.resolve(__dirname, '..');
+import {
+  AUTORITES,
+  MOTS_RECOPIES,
+  fautesDuFichier,
+  fichiersSuivis,
+  horsPerimetre,
+  messageDeLaRegle,
+  passagesRecopies,
+  racine,
+} from '../scripts/controle-style.mjs';
 
-const TIRET_CADRATIN = '—';
+type Faute = { regle: string; ou: string; extrait: string };
 
 /**
- * Aucun document n'est exempté : les plans de travail, qui l'étaient parce
- * qu'ils racontaient un chantier, ont été retirés du dépôt. Leur histoire vit
- * dans Git, qui n'a pas de règle de style.
+ * Les fichiers soumis aux règles.
+ *
+ * Aucun n'est exempté : les plans de travail, qui l'étaient parce qu'ils
+ * racontaient un chantier, ont été retirés du dépôt. Leur histoire vit dans
+ * Git, qui n'a pas de règle de style. Restent hors périmètre les dépendances,
+ * les artefacts de build et les fixtures figées, dont le texte a été gelé pour
+ * un autre contrôle.
  */
-const EMPHASE = [
-  'CE', 'EST', 'SON', 'ET', 'TOUTES', 'SANS', 'MÊME', 'UN', 'UNE', 'CONTIENT',
-  'CONTIENNENT', 'DEUX', 'TROIS', 'JAMAIS', 'PAS', 'TOUS', 'TOUT', 'SEUL',
-  'SEULE', 'AUCUN', 'AUCUNE', 'CHAQUE', 'ICI', 'DANS', 'QUE', 'SI', 'SUR',
-  'AVANT', 'APRÈS', 'NOM', 'CLÉ', 'FORME', 'LISTE', 'DÉFAUT', 'POURQUOI',
-  'LU', 'LIT', 'ÉCRIT', 'PUBLIÉ', 'ABSENT', 'IDENTIQUE', 'DIFFÉRENT',
-  'PROPRE', 'RÉELLE', 'RÉELLEMENT', 'NORMATIF', 'MUET',
-  // Ajoutées après un relevé qui a montré que la liste laissait passer une
-  // cinquantaine d'emphases, surtout dans le changelog et la spécification.
-  'COURANTE', 'TEMPORAIRE', 'RUPTURE', 'CONSOMMATEUR', 'LECTURE', 'IDENTITÉ',
-  'MOTEUR', 'DICTIONNAIRE', 'ENVELOPPE', 'PRÉSOMPTION', 'PRÉSOMPTIONS',
-  'RETIRER', 'POINTS', 'OU', 'CELLULE', 'MONTRE', 'ADRESSES', 'IMMÉDIAT',
-  'SES', 'SA', 'ÊTRE', 'NOMBRE', 'ENTRE', 'CÔTÉ', 'DÉRIVE', 'NOMMER',
-  'DÉCIDE', 'TRACÉ', 'RELÈVE', 'REND', 'EXPORT', 'TEXTE', 'LEQUEL', 'GESTES',
-  'FICHIER', 'ÉDITEUR', 'NE', 'CHAÎNE', 'COMMANDE', 'ADAPTATEUR', 'LECTEURS',
-  'SENS', 'OUVRIR', 'OÙ', 'PERDU', 'PIRE', 'RÉEL',
-];
+function fichiersSoumis(): { chemin: string; contenu: string }[] {
+  const tous = fichiersSuivis()
+    .filter((chemin: string) => !horsPerimetre(chemin))
+    .filter((chemin: string) => /\.(md|ts|tsx|mjs|cjs)$/.test(chemin));
 
-/** Recense les documents portables sans parcourir les dépendances ni les fixtures. */
-function documents(dossier: string): string[] {
-  const trouves: string[] = [];
-  const dansTests = path.basename(dossier) === 'tests';
-  for (const entree of fs.readdirSync(dossier, { withFileTypes: true })) {
-    const nom = entree.name;
-    if (nom === 'node_modules' || nom === '.git' || nom === 'dist') continue;
-    if (nom === 'fixtures' && dansTests) continue;
-    if (nom.startsWith('_')) continue;
-    const complet = path.join(dossier, nom);
-    if (entree.isDirectory()) trouves.push(...documents(complet));
-    else if (nom.endsWith('.md')) trouves.push(complet);
-  }
-  return trouves;
-}
-
-const relatif = (complet: string): string =>
-  path.relative(racine, complet).split(path.sep).join('/');
-
-/** Écarte titres, tableaux, code et fragments placés entre accents graves. */
-function lignesDeProse(contenu: string): { numero: number; texte: string }[] {
-  const gardees: { numero: number; texte: string }[] = [];
-  let dansUnBloc = false;
-  contenu.split(/\r?\n/).forEach((ligne, index) => {
-    if (ligne.trimStart().startsWith('```')) {
-      dansUnBloc = !dansUnBloc;
-      return;
-    }
-    if (dansUnBloc) return;
-    if (ligne.startsWith('#') || ligne.startsWith('|')) return;
-
-    gardees.push({ numero: index + 1, texte: ligne.replace(/`[^`\n]*`/g, '') });
-  });
-  return gardees;
-}
-
-/** Les documents soumis à ces règles, une seule fois pour les deux tests. */
-function documentsSoumis(): { chemin: string; contenu: string }[] {
-  const tous = documents(racine).map((complet) => ({ chemin: relatif(complet), complet }));
-
-  // Zéro document passerait sans rien contrôler : un dossier renommé, et le
+  // Zéro fichier passerait sans rien contrôler : un dossier renommé, et le
   // garde-fou disparaîtrait en silence. C'est la faute qu'il empêche.
-  assert.ok(tous.length >= 15, `seuls ${tous.length} documents trouvés`);
+  assert.ok(tous.length >= 150, `seuls ${tous.length} fichiers trouvés`);
 
-  return tous.map(({ chemin, complet }) => ({
+  return tous.map((chemin: string) => ({
     chemin,
-    contenu: fs.readFileSync(complet, 'utf8'),
+    contenu: fs.readFileSync(path.join(racine, chemin), 'utf8'),
   }));
 }
 
-test('aucun tiret cadratin ne sert d’incise dans la documentation', () => {
-  const fautes: string[] = [];
+const toutesLesFautes = (): Faute[] => fichiersSoumis()
+  .flatMap(({ chemin, contenu }) => fautesDuFichier(chemin, contenu) as Faute[]);
 
-  for (const { chemin, contenu } of documentsSoumis()) {
-    for (const { numero, texte } of lignesDeProse(contenu)) {
-      if (texte.includes(TIRET_CADRATIN)) fautes.push(`${chemin}:${numero} ${texte.trim()}`);
-    }
-  }
+/** Rend les fautes d'une règle, sous une forme lisible dans le rapport d'échec. */
+function fautesDe(regle: string): string[] {
+  return toutesLesFautes()
+    .filter((faute) => faute.regle === regle)
+    .map((faute) => `${faute.ou} ${faute.extrait}`);
+}
 
-  assert.deepEqual(
-    fautes,
-    [],
-    'Ces lignes emploient un tiret cadratin comme incise :\n'
-      + `${fautes.join('\n')}\n`
-      + 'Employer un point, un point-virgule, une virgule, deux points ou une '
-      + 'parenthèse. Il reste admis dans un titre et dans une cellule de tableau.',
-  );
+const echec = (regle: string): string => `${messageDeLaRegle(regle)}\n`;
+
+test('aucun tiret cadratin ne sert d’incise, document ou commentaire', () => {
+  const fautes = fautesDe('tiret-cadratin');
+  assert.deepEqual(fautes, [], `${echec('tiret-cadratin')}${fautes.join('\n')}`);
 });
 
-test('aucun mot français n’est mis en capitales pour insister', () => {
-  const motif = new RegExp(
-    `(?<![A-Za-zÀ-ÿ0-9_/.\\-])(${EMPHASE.join('|')})(?![A-Za-zÀ-ÿ0-9_/.\\-])`,
-    'g',
+test('aucun mot n’est mis en capitales pour insister', () => {
+  const fautes = fautesDe('emphase');
+  assert.deepEqual(fautes, [], `${echec('emphase')}${fautes.join('\n')}`);
+});
+
+test('aucune règle ne s’annonce par ce qu’elle n’est pas', () => {
+  const fautes = fautesDe('opposition');
+  assert.deepEqual(fautes, [], `${echec('opposition')}${fautes.join('\n')}`);
+});
+
+test('aucun qualificatif ne remplace le mécanisme ou la mesure', () => {
+  const fautes = fautesDe('intensificateur');
+  assert.deepEqual(fautes, [], `${echec('intensificateur')}${fautes.join('\n')}`);
+});
+
+test('aucun texte ne date une décision, puisque Git la date', () => {
+  const fautes = fautesDe('datation');
+  assert.deepEqual(fautes, [], `${echec('datation')}${fautes.join('\n')}`);
+});
+
+/**
+ * La re-narration est la cause première de l'inflation, et le seul contrôle du
+ * dépôt qui la voie.
+ *
+ * Les autres garde-fous protègent contre la perte : `inventaireInvariants` voit
+ * une règle disparue, `docLinks` un renvoi mort. Aucun ne s'oppose à ce qu'un
+ * document redise ce qu'un autre porte déjà, ce qui est la façon dont la
+ * documentation a grossi.
+ */
+test('aucun document d’autorité ne recopie un passage d’un autre', () => {
+  const documents = Object.fromEntries(
+    AUTORITES.map((chemin: string) => [
+      chemin,
+      fs.readFileSync(path.join(racine, chemin), 'utf8'),
+    ]),
   );
 
-  const fautes: string[] = [];
-  for (const { chemin, contenu } of documentsSoumis()) {
-    for (const { numero, texte } of lignesDeProse(contenu)) {
-      for (const trouve of texte.matchAll(motif)) {
-        fautes.push(`${chemin}:${numero} « ${trouve[1]} » dans : ${texte.trim()}`);
-      }
-    }
-  }
+  const recopies = (passagesRecopies(documents) as {
+    places: { chemin: string; numero: number }[];
+    passage: string;
+  }[]).map((trouve) => `${trouve.places.map((p) => `${p.chemin}:${p.numero}`).join(' et ')}`
+    + `\n  « ${trouve.passage} »`);
 
   assert.deepEqual(
-    fautes,
+    recopies,
     [],
-    'Ces mots sont mis en capitales pour insister :\n'
-      + `${fautes.join('\n')}\n`
-      + 'Le gras fait le même travail. Ajouter un mot à EMPHASE plutôt que '
-      + 'd’élargir le motif ; la liste ne contient que des mots français, ce qui '
-      + 'est ce qui la rend reproductible.',
+    `${messageDeLaRegle('renarration')}\n`
+      + `Seuil : ${MOTS_RECOPIES} mots consécutifs identiques.\n`
+      + `${recopies.join('\n')}`,
   );
 });

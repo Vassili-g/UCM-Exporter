@@ -1,12 +1,12 @@
 /**
- * Élection du node de layout de chaque variant — une fois, pour tout l'export.
+ * Élection du node de layout de chaque variant : une fois, pour tout l'export.
  *
  * Le node de layout est celui dont les enfants directs deviennent les slots du
  * contrat. Il s'élit au score (`findLayoutNode`), et ce score dépend de la
- * RACINE d'où part la recherche : partir du composant ou de son wrapper de
+ * racine d'où part la recherche : partir du composant ou de son wrapper de
  * dimensions peut désigner deux nodes différents dès que le variant porte
  * autant de dimensions liées que le wrapper. Le contrat aurait alors trois
- * lectures d'un même arbre — `structure.children` d'un côté, les slots des
+ * lectures d'un même arbre : `structure.children` d'un côté, les slots des
  * icônes et les chemins de `variantTypography` de l'autre.
  *
  * L'élection a donc lieu ici, une seule fois par variant, et les extractions
@@ -66,8 +66,8 @@ export function findLayoutNode(
 /**
  * Node de layout retenu pour chaque variant, indexé par le composant lui-même.
  *
- * La clé est le node, et non son id : un composant absent de la matrice — les
- * variants d'un wrapper, par exemple — doit rendre `undefined` et élire le sien,
+ * La clé est le node, et non son id : un composant absent de la matrice (les
+ * variants d'un wrapper, par exemple) doit rendre `undefined` et élire le sien,
  * ce qu'un id manquant ou répété ferait échouer en silence.
  */
 export type VariantLayoutNodes = ReadonlyMap<ComponentNode, SceneNode>;
@@ -110,14 +110,14 @@ async function matchingWrapperInstance(
 }
 
 /**
- * Élit le node de layout de chaque variant avec la MÊME règle : depuis le
+ * Élit le node de layout de chaque variant avec la même règle : depuis le
  * wrapper de dimensions quand le composant en possède un, sinon depuis le
  * variant lui-même.
  *
  * Le wrapper n'est cherché qu'une fois, sur la référence ; les autres variants
  * retrouvent leur propre instance du même composant. Rescorer un wrapper par
  * variant coûterait un parcours complet du sous-arbre pour chaque instance, et
- * pourrait élire deux wrappers différents — la divergence deviendrait
+ * pourrait élire deux wrappers différents : la divergence deviendrait
  * invisible là où les signatures existent justement pour la montrer.
  *
  * Un variant sans cette instance n'est pas rattrapé en silence : sa structure
@@ -139,7 +139,7 @@ export async function electVariantLayoutNodes(
   // comparer : les autres variants éliraient depuis eux-mêmes pendant que la
   // référence élirait depuis le wrapper, et l'avertissement plus bas resterait
   // muet, sa garde tombant avec l'id. La référence décrirait alors un arbre que
-  // plus aucun variant ne décrit — la divergence même que ce module existe pour
+  // plus aucun variant ne décrit : la divergence même que ce module existe pour
   // empêcher. `scoreWrapper` écarte déjà ce candidat à la source ; ceci tient la
   // propriété pour un appelant qui construirait la référence autrement.
   const racineDeLaReference = wrapperOwnerId ? wrapperInstance : null;
@@ -174,11 +174,11 @@ export async function electVariantLayoutNodes(
 
 /**
  * Complète une élection pour des variants qui n'appartiennent pas à la matrice
- * — ceux du wrapper de dimensions, quand c'est lui qui porte l'axe de tailles.
+ * : ceux du wrapper de dimensions, quand c'est lui qui porte l'axe de tailles.
  *
  * Ces variants-là vivent dans un autre arbre : aucun wrapper ne s'intercale, ils
- * élisent depuis eux-mêmes. Ceux qui figurent DÉJÀ dans `elected` gardent en
- * revanche l'élection de la matrice — c'est le cas quand l'axe de tailles vit
+ * élisent depuis eux-mêmes. Ceux qui figurent déjà dans `elected` gardent en
+ * revanche l'élection de la matrice : c'est le cas quand l'axe de tailles vit
  * sur le set sélectionné, et les réélire ferait décrire à `sizes` un arbre que
  * `structure.children` ne décrit pas.
  *

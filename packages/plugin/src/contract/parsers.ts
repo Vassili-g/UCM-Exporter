@@ -52,9 +52,9 @@ export function propByName(
 /**
  * Écrit une prop sans jamais atteindre le prototype d'`Object`.
  *
- * Les clés viennent de Figma — nom d'une component property, nom d'un calque
- * d'icône — et `props` est un objet littéral : `props[key] = prop` laisserait
- * une propriété nommée « __proto__ » FIXER le prototype au lieu d'occuper une
+ * Les clés viennent de Figma (nom d'une component property, nom d'un calque
+ * d'icône) et `props` est un objet littéral : `props[key] = prop` laisserait
+ * une propriété nommée « __proto__ » fixer le prototype au lieu d'occuper une
  * clé. La prop quitterait le contrat sans un mot, et `propByName` continuerait
  * de répondre qu'elle n'existe pas. C'est la contrepartie exacte de
  * `propByName` en écriture, et la seule autorité : la précaution ne doit pas
@@ -72,7 +72,7 @@ export function definePropOn(
 
 /**
  * Un axe « état » (hover, focus, disabled…) est design-only : il décrit des
- * états d'interaction, pas des choix d'API. Il est exclu des props — seule
+ * états d'interaction, pas des choix d'API. Il est exclu des props : seule
  * sa valeur Disable devient une prop booléenne `disabled`. Détecté par le
  * nom de l'axe, donc valable pour n'importe quel composant.
  */
@@ -95,17 +95,17 @@ export function isDisabledStateValue(value: unknown): boolean {
 
 /**
  * Convertit les définitions de propriétés Figma en props publiques :
- * VARIANT → enum, BOOLEAN → boolean, TEXT → string.
+ * variant → enum, BOOLEAN → boolean, TEXT → string.
  * La couche sémantique renomme les axes reconnus (ex. axe de tailles →
  * `size`) en gardant le nom Figma d'origine dans `figmaName`.
  *
  * **Une clé publique, un propriétaire.** Les props du contrat vivent dans un
- * espace de noms PLAT, alors que deux propriétés Figma parfaitement légales
+ * espace de noms plat, alors que deux propriétés Figma parfaitement légales
  * peuvent y prétendre : soit parce que la normalisation efface leur
  * différence d'écriture (`Icon Left`, `icon-left` et `iconLeft` donnent tous
  * `iconLeft`), soit parce que la couche sémantique fabrique une clé
  * (`size`) qu'une autre propriété porte déjà. Le premier arrivé est conservé
- * et le conflit est signalé — jamais d'écrasement en silence, conformément à
+ * et le conflit est signalé : jamais d'écrasement en silence, conformément à
  * la règle appliquée partout ailleurs (variants, rôles, règles d'icônes).
  */
 export type ContractPropertyModel = {
@@ -126,9 +126,9 @@ export function extractContractPropertyModel(
   /** Nom Figma qui détient chaque clé publique, pour nommer les deux camps d'un conflit. */
   const owners = new Map<string, string>();
 
-  // Première passe : TOUTES les clés brutes revendiquées par le fichier Figma.
+  // Première passe : toutes les clés brutes revendiquées par le fichier Figma.
   // Sans elle, un renommage sémantique volerait la clé d'une propriété
-  // simplement déclarée plus loin — le résultat dépendrait de l'ordre.
+  // simplement déclarée plus loin : le résultat dépendrait de l'ordre.
   const rawKeys = new Set(Object.keys(definitions).map((name) => normalizePropKey(name)));
 
   // La convention State/Status possède une priorité sémantique : son variant
@@ -180,7 +180,7 @@ export function extractContractPropertyModel(
       const values = (definition.variantOptions ?? []).map((value) => normalizePropValue(value));
       const semantic = semanticEnumName(values);
       // Le nom sémantique ne s'applique que s'il n'entre en conflit avec
-      // AUCUNE clé brute du fichier, pas seulement avec celles déjà traitées.
+      // aucune clé brute du fichier, pas seulement avec celles déjà traitées.
       const taken = Boolean(semantic) && semantic !== key && rawKeys.has(semantic as string);
       if (taken) {
         pousserSansNode(warnings, `Variant property « ${rawFigmaName} »`, {
@@ -192,7 +192,7 @@ export function extractContractPropertyModel(
       }
       const publicKey = semantic && !taken ? semantic : key;
       // Aucun `default` ici, et c'est la règle : le `defaultValue` d'une
-      // VARIANT property est le variant de PREMIÈRE POSITION du component set,
+      // variant property est le variant de première position du component set,
       // donc un effet de bord de la mise en page. Le défaut d'un axe se déclare
       // par une règle `@default`, et `mergeEnumDefaults` le pose ; son absence
       // signifie « aucun défaut publié », ce que l'élision sait déjà écrire.

@@ -2,16 +2,16 @@
  * La forme d'une référence de token, et les deux gestes qui la posent et
  * l'enlèvent.
  *
- * Elle vit dans le FORMAT et non chez les lecteurs, parce que les deux côtés en
+ * Elle vit dans le format et non chez les lecteurs, parce que les deux côtés en
  * ont besoin et que seul le format voyage partout : le moteur la produit dans
  * le bundle du plugin Figma, le validateur la refuse dans Node, et le repo
  * consommateur la déballe dans un navigateur. Une définition qui ne serait
- * atteignable que par les lecteurs obligerait les deux autres à la recopier —
+ * atteignable que par les lecteurs obligerait les deux autres à la recopier :
  * ce qu'ils faisaient.
  */
 
 /**
- * Référence complète : la chaîne ENTIÈRE est entre accolades et porte au moins
+ * Référence complète : la chaîne entière est entre accolades et porte au moins
  * un point séparateur, sans espace ni accolade interne.
  *
  * C'est cet ancrage qui distingue `{components.button.sizes.medium.gap}` d'une
@@ -28,11 +28,11 @@ export function isTokenReference(value: unknown): value is string {
 }
 
 /**
- * Enrobe un nom de token en RÉFÉRENCE de contrat, entre accolades — même
+ * Enrobe un nom de token en référence de contrat, entre accolades, même
  * convention que les références DTCG de `tokens.json`. Un token cité dans un
  * contrat est toujours un lien vers `tokens.json`, jamais une valeur : les
  * accolades le rendent explicite et le distinguent d'une chaîne littérale.
- * Le chemin lui-même vient de `normalizeName()` — les accolades sont un
+ * Le chemin lui-même vient de `normalizeName()`, les accolades sont un
  * enrobage, pas un renommage : les deux commandes restent recoupables.
  *
  * @example toRef('components.button.default.background')

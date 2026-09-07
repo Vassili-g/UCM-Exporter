@@ -24,7 +24,7 @@ export function codeIdentifier(name: string): string {
 }
 
 /**
- * Projette un nom de token — son CHEMIN — sur la propriété personnalisée CSS
+ * Projette un nom de token (son chemin) sur la propriété personnalisée CSS
  * qui le porte. C'est la troisième et dernière projection de nom du format,
  * après `normalizeName` (Figma → token) et `codeIdentifier` (Figma → code).
  *
@@ -42,9 +42,9 @@ export function codeIdentifier(name: string): string {
  * n'est ni une lettre ni un chiffre devient un seul tiret**, les tirets de
  * bord retirés. Les points du chemin y passent comme le reste.
  *
- * Ce qu'elle N'EST PAS, et c'est délibéré : le `kebabCase` d'une bibliothèque
- * de casse. Celui de Style Dictionary coupe aussi sur les bosses de casse —
- * `semiBold` y devient `semi-bold` — un comportement qui appartient à une
+ * Ce qu'elle N'est pas, et c'est délibéré : le `kebabCase` d'une bibliothèque
+ * de casse. Celui de Style Dictionary coupe aussi sur les bosses de casse (
+ * `semiBold` y devient `semi-bold`) un comportement qui appartient à une
  * bibliothèque JavaScript, pas au format. Un preset iOS ou une chaîne écrite
  * dans une autre langue doit pouvoir tenir cette règle sans importer
  * `change-case` ; c'est pourquoi elle s'énonce en une phrase. Sur le corpus
@@ -53,7 +53,7 @@ export function codeIdentifier(name: string): string {
  *
  * *Borne connue :* la projection n'est pas une bijection. `50%` et `50`
  * rendent tous deux `50`, et le second l'emporterait en silence. Le format ne
- * peut pas l'empêcher — un nom CSS n'accepte pas tout —, donc le consommateur
+ * peut pas l'empêcher (un nom CSS n'accepte pas tout), donc le consommateur
  * le contrôle : un test d'accord compare les deux sens et refuse deux chemins
  * distincts qui se rejoignent sur une même variable.
  *

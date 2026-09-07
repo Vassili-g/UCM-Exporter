@@ -2,15 +2,14 @@
  * Les lois qu'un contrat doit tenir, quelle que soit sa provenance.
  *
  * Elles ne vivent pas dans un fichier de test parce qu'elles étaient prévues
- * pour DEUX lecteurs : chaque contrat que le moteur fabrique pendant
+ * pour deux lecteurs : chaque contrat que le moteur fabrique pendant
  * `npm test`, et les exports réels du corpus.
  *
- * **Le second n'existe pas, et ce commentaire l'a affirmé jusqu'au
- * 5 septembre 2026.** Le seul importateur de ce fichier est
+ * **Le second n'existe pas.** Le seul importateur de ce fichier est
  * `exportComponent.test.ts` ; `packages/kit/fixtures/contrats/11.0/` n'est lu
- * par aucune loi. Le filet est donc SIMPLE : il ne porte que des montages
+ * par aucune loi. Le filet est donc simple : il ne porte que des montages
  * synthétiques, et rien ici ne constate que de vraies données Figma les
- * satisfont — ce qu'aucun montage synthétique ne peut prouver, et qui reste
+ * satisfont, ce qu'aucun montage synthétique ne peut prouver, et qui reste
  * donc à prouver.
  *
  * La limite est écrite plutôt que corrigée parce que la corriger est une
@@ -119,7 +118,7 @@ function lesRenvoisSeResolvent(c: Contrat, ou: string): void {
       );
     }
   }
-  // Le renvoi de la projection de référence est INCONDITIONNEL : elle ne se
+  // Le renvoi de la projection de référence est inconditionnel : elle ne se
   // recopie jamais, même quand elle ne correspond à la structure d'aucun variant.
   assert.equal(typeof c.structure?.view, 'string', `${ou} : structure.view manque`);
   assert.ok(
@@ -206,10 +205,10 @@ function lesAdressesDesignentUnCalqueReel(c: Contrat, ou: string): void {
   }
 }
 
-/** Aucune valeur neutre écrite, aux deux exceptions près où le vide EST la donnée. */
+/** Aucune valeur neutre écrite, aux deux exceptions près où le vide est la donnée. */
 function aucuneValeurNeutre(c: Contrat, ou: string): void {
-  // Sous un DICTIONNAIRE, la clé parle et l'entrée survit à vide. Sous une
-  // PEINTURE, le chemin vide désigne la racine.
+  // Sous un dictionnaire, la clé parle et l'entrée survit à vide. Sous une
+  // peinture, le chemin vide désigne la racine.
   const DICTIONNAIRE = new Set([
     'states', 'roles', 'props', 'icons', 'textStyles', 'variantViews', 'samples',
     'fills', 'strokes', 'tokens', 'args', 'overrides', 'propertyBindingDefinitions',
@@ -245,11 +244,11 @@ function aucuneValeurNeutre(c: Contrat, ou: string): void {
 }
 
 /**
- * Toute clé de couleur se résout en un rôle de la BONNE nature.
+ * Toute clé de couleur se résout en un rôle de la bonne nature.
  *
  * C'est la loi qui remplace un ancien avertissement, et elle vaut mieux : le
- * moteur n'a plus d'avis sur le nom qu'un design system donne à ses tokens —
- * un `…/foreground` posé en contour peint un contour —, mais le contrat doit
+ * moteur n'a plus d'avis sur le nom qu'un design system donne à ses tokens
+ * (un `…/foreground` posé en contour peint un contour), mais le contrat doit
  * toujours dire au consommateur, sans ambiguïté et d'un seul geste, comment
  * peindre chaque clé qu'il publie.
  *
@@ -354,30 +353,30 @@ function composesEstLUnionMaximale(c: Contrat, ou: string): void {
 /**
  * Aucun diagnostic ne publie de donnée d'extraction Figma.
  *
- * `ContractDiagnostic.figma` existe dans `types.ts` — donc dans le schéma
- * dérivé — et n'est renseigné par personne. Cette dissymétrie est un piège :
+ * `ContractDiagnostic.figma` existe dans `types.ts` (donc dans le schéma
+ * dérivé) et n'est renseigné par personne. Cette dissymétrie est un piège :
  * le jour où un id de calque remonterait jusqu'au `.map()` qui fabrique les
  * diagnostics, l'artefact publierait des identifiants internes et **le schéma
- * validerait vert** — mesuré, pas supposé : la fuite a été simulée, et aucune
+ * validerait vert**, mesuré, pas supposé : la fuite a été simulée, et aucune
  * validation de schéma n'a bronché.
  *
  * Ce qui l'attrapait déjà, et il faut le dire pour ne pas se croire plus démuni
  * qu'on ne l'était : `exportComponent.test.ts` vérifie que les clés d'un
  * diagnostic valent exactement `code,message,severity`. Cette assertion est
- * réelle et elle rougit. Mais elle vit dans UN scénario et décrit une forme
+ * réelle et elle rougit. Mais elle vit dans un scénario et décrit une forme
  * attendue, là où cette loi porte sur tout contrat qui passe par
- * `verifierLesLois` et dit POURQUOI le champ est interdit. La différence n'est
+ * `verifierLesLois` et dit pourquoi le champ est interdit. La différence n'est
  * pas la couverture d'aujourd'hui, c'est ce qu'un lecteur comprend en la voyant
  * rougir.
  *
- * D'où cette loi, écrite AVANT le canal qui pourrait la violer. Elle ne
+ * D'où cette loi, écrite avant le canal qui pourrait la violer. Elle ne
  * défend pas une préférence : elle rend mécanique un hors-périmètre qui n'était
  * gardé que par de la prose. Le jour où quelqu'un décidera d'écrire
- * `figma.nodeId` dans le contrat, il devra retirer cette loi — et le retrait
+ * `figma.nodeId` dans le contrat, il devra retirer cette loi, et le retrait
  * d'une loi se voit en revue, là où l'apparition silencieuse d'un champ ne se
  * voit pas.
  *
- * `meta.figma`, lui, est légitime et n'est pas concerné : il trace le FICHIER
+ * `meta.figma`, lui, est légitime et n'est pas concerné : il trace le fichier
  * et le composant exporté, ce que le format publie exprès.
  */
 function aucunDiagnosticNePorteDeNodeFigma(c: Contrat, ou: string): void {
@@ -438,8 +437,8 @@ const validerLeSchema = new Ajv({ allErrors: true, strict: false }).compile(
  * Le schéma publié accepte-t-il ce que le moteur vient d'écrire ?
  *
  * La question ne se pose qu'ici. Le schéma est dérivé de `types.ts`, donc il
- * suit la forme DÉCLARÉE ; rien ne garantit que le moteur écrive ce que ses
- * types annoncent — un champ requis qu'une élision retire passe le compilateur
+ * suit la forme déclarée ; rien ne garantit que le moteur écrive ce que ses
+ * types annoncent : un champ requis qu'une élision retire passe le compilateur
  * et casse le consommateur.
  */
 export function verifierLeSchema(contrat: Contrat, ou: string): void {
@@ -447,11 +446,11 @@ export function verifierLeSchema(contrat: Contrat, ou: string): void {
     validerLeSchema(contrat),
     `${ou} : le contrat ne valide pas le schéma publié — ${JSON.stringify(validerLeSchema.errors?.slice(0, 3))}`,
   );
-  // Ce qui suit demande un contrat VALIDE : sur un objet déjà invalide pour une
+  // Ce qui suit demande un contrat valide : sur un objet déjà invalide pour une
   // autre raison, un refus ne prouverait rien. D'où leur place ici, et non dans
   // `schema.test.ts` qui n'a aucun contrat sous la main.
 
-  // Les objets à FORME FIXE sont fermés. La garantie ne vaut que là : `props`,
+  // Les objets à forme fixe sont fermés. La garantie ne vaut que là : `props`,
   // `icons` ou `variantViews` sont des dictionnaires dont les clés sont
   // inventées par le composant, et restent libres.
   assert.equal(
@@ -482,27 +481,27 @@ export function verifierLeSchema(contrat: Contrat, ou: string): void {
  * Le lecteur du kit accepte-t-il ce que le moteur vient d'écrire ?
  *
  * Question différente de celle du schéma, et c'est pourquoi les deux se posent.
- * Le schéma est dérivé de `types.ts` : il décrit une FORME, et ne sait rien des
+ * Le schéma est dérivé de `types.ts` : il décrit une forme, et ne sait rien des
  * renvois internes ni de la cohérence entre deux champs. `champsInvalidesDuContrat`
- * est l'autre autorité — celle que le consommateur exécute vraiment avant de
+ * est l'autre autorité : celle que le consommateur exécute vraiment avant de
  * rendre un composant. Un contrat qui valide le schéma et que ce lecteur refuse
  * est un contrat que le moteur publie et que personne ne peut lire.
  *
- * Ce que cette vérification NE fait pas : le graphe. `validerGrapheDesContrats`
- * répond sur un ENSEMBLE de contrats co-localisés — « cette dépendance a-t-elle
- * un contrat voisin ? » —, et le moteur en fabrique un seul par scénario. Le
+ * Ce que cette vérification ne fait pas : le graphe. `validerGrapheDesContrats`
+ * répond sur un ensemble de contrats co-localisés : « cette dépendance a-t-elle
+ * un contrat voisin ? » :, et le moteur en fabrique un seul par scénario. Le
  * lancer ici accuserait chaque contrat composé de dépendances manquantes, ce qui
  * ne dit rien du moteur. Cette question-là se pose chez le consommateur, sur un
  * dossier réel.
  *
  * ⚠ Garde-fou, écrit ici parce que c'est ici qu'il se joue. Quand le moteur
  * produit une forme que ce lecteur refuse, la correction la plus rapide est
- * d'assouplir le lecteur — et c'est presque toujours la mauvaise. Un
+ * d'assouplir le lecteur, et c'est presque toujours la mauvaise. Un
  * assouplissement qui accompagne un changement de moteur exige un test de refus
  * sur l'ancienne forme, sans quoi le contrôle disparaît sans que rien ne rougisse.
  *
  * *Portée réelle, mesurée et non supposée.* Ce lecteur contrôle la forme des
- * références de token — `variants[].tokens`, les strokes, les bornes de taille —
+ * références de token (`variants[].tokens`, les strokes, les bornes de taille)
  * ce que le schéma ne peut pas : il les type `Record<string, string>`. Mais un
  * seul des scénarios de `exportComponent.test.ts` fabrique un variant portant un
  * token ; les autres n'ont aucune référence à contrôler. Le filet est posé au

@@ -2,8 +2,8 @@
  * Ce qu'un repository dit de lui-même, et ce qu'on refuse de le laisser dire.
  *
  * Deux bornes structurent tout ce fichier, et elles tirent en sens inverse :
- * l'ABSENCE de configuration est le cas nominal — un repo neuf doit marcher
- * sans écrire une ligne —, tandis qu'une configuration PRÉSENTE et mal formée
+ * l'absence de configuration est le cas nominal (un repo neuf doit marcher
+ * sans écrire une ligne), tandis qu'une configuration présente et mal formée
  * est un refus. Là, quelqu'un a voulu dire quelque chose ; retomber
  * silencieusement sur les défauts ferait chercher un contrat là où il n'est
  * pas, sans que rien ne le signale.
@@ -49,7 +49,7 @@ test("un repository sans configuration reçoit les défauts, sans erreur", () =>
 test("les défauts décrivent le repo du critère de réussite : un dossier components", () => {
   // `components` et non `src/components` : le critère décrit « un repo GitHub
   // neuf, un dossier `components/`, rien d'autre ». Un repo qui range autrement
-  // le dit — c'est exactement à quoi ce fichier sert.
+  // le dit : c'est exactement à quoi ce fichier sert.
   assert.equal(CONFIGURATION_PAR_DEFAUT.components, "components");
   assert.equal(CONFIGURATION_PAR_DEFAUT.tokens, "tokens.json");
   assert.equal(CONFIGURATION_PAR_DEFAUT.implementation, "{dir}/{id}.tsx");
@@ -111,7 +111,7 @@ test("un champ absent n'est pas un champ invalide", () => {
  *
  * La fenêtre de versions lues appartient au paquet installé. La
  * republier dans le repo créerait une seconde autorité, qui dériverait au
- * premier `npm update` — et le désaccord serait MUET, chacun des deux se
+ * premier `npm update`, et le désaccord serait muet, chacun des deux se
  * croyant le bon. On refuse donc, au lieu d'ignorer : ignorer laisserait croire
  * que le champ compte, quelqu'un le mettrait à jour en pensant déplacer la
  * fenêtre, et rien ne bougerait. Un geste sans effet est pire qu'un geste

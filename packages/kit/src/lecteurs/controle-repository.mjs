@@ -45,12 +45,12 @@ function pariteVide() {
 }
 
 /**
- * L'adaptateur de celui qui n'en a pas — et il n'est pas un bouchon.
+ * L'adaptateur de celui qui n'en a pas, et il n'est pas un bouchon.
  *
  * Un repo sans adaptateur n'est pas un repo sans réponse : le noyau sait dire
  * où une implémentation devrait être et si elle y est, et c'est
  * exactement ce que cet objet répond. Ce qu'il ne fait jamais, c'est conclure
- * « conforme » de ce qu'il n'a pas lu — un fichier présent devient
+ * « conforme » de ce qu'il n'a pas lu : un fichier présent devient
  * `implementationNonLue`, la seule phrase vraie quand personne n'a de
  * vérificateur pour ce langage.
  *
@@ -83,7 +83,7 @@ function analyser(chemin, contexte, erreursGraphe = []) {
     parite: pariteVide(),
     // **Un relevé vide n'est pas un relevé vierge**, et les confondre était un
     // défaut réel, trouvé en passant un repo neuf au contrôle. Chaque sortie
-    // anticipée — fichier illisible, champs absents, version hors fenêtre —
+    // anticipée (fichier illisible, champs absents, version hors fenêtre)
     // rend `parite` sans l'avoir mesurée, et le terminal y lisait
     // « code conforme » : la phrase exacte qu'une classe entière
     // de code pour ne plus jamais prononcer sans avoir lu.
@@ -103,34 +103,34 @@ function analyser(chemin, contexte, erreursGraphe = []) {
   // corps de sa pull request, et deux idées de « où vit la version »
   // divergeraient sans que rien ne le dise.
   const version = versionDeContrat(contrat);
-  // On garde le SENS de l'écart, pas seulement son existence : c'est lui qui
+  // On garde le sens de l'écart, pas seulement son existence : c'est lui qui
   // dit à qui appartient le geste correctif.
   const verdict = verdictDeVersion(version);
   const versionIncompatible = verdict === "ok" ? null : { valeur: version, verdict };
 
-  // **La version se juge AVANT les champs, et l'ordre inverse était un défaut.**
+  // **La version se juge avant les champs, et l'ordre inverse était un défaut.**
   //
   // `champsInvalidesDuContrat` refuserait un contrat hors fenêtre pour ses
   // champs, `analyser` sortirait tôt, et le verdict de version serait perdu.
-  // `enteteDuVerdict` écrirait alors « contrats invalides » — un titre qui
+  // `enteteDuVerdict` écrirait alors « contrats invalides » : un titre qui
   // accuse le designer pour un contrat parfaitement formé dont seule la version
   // n'est pas lue. C'est le critère de réussite n° 4 du plan qui tombe : le
-  // message doit dire QUI corrige.
+  // message doit dire qui corrige.
   //
   // La condition n'est pas « la version est mauvaise » mais « la version est
-  // LISIBLE et mauvaise ». Un fichier vidé de sa substance (`{}`, JSON
+  // lisible et mauvaise ». Un fichier vidé de sa substance (`{}`, JSON
   // parfaitement valide) n'a pas une version trop ancienne : il n'en a pas, et
   // c'est un contrat cassé, pas un contrat périmé. Sans cette nuance, l'ordre
   // inversé remplacerait une accusation fausse par une autre.
   //
-  // *Ce qu'on accepte de perdre, et le plan l'assume :* le diagnostic DÉTAILLÉ
+  // *Ce qu'on accepte de perdre, et le plan l'assume :* le diagnostic détaillé
   // d'un contrat hors fenêtre. Il reçoit un verdict de version qui nomme le bon
-  // geste et le bon responsable, pas la liste de ses champs manquants — que ce
+  // geste et le bon responsable, pas la liste de ses champs manquants : que ce
   // validateur-ci n'a de toute façon pas le droit de dresser pour une grammaire
   // qu'il ne lit pas.
   //
-  // `versionDeContrat` rend `null` dans ce cas exact — champ absent, vide, ou
-  // d'un autre type —, ce qui est aussi la condition testée ici.
+  // `versionDeContrat` rend `null` dans ce cas exact (champ absent, vide, ou
+  // d'un autre type), ce qui est aussi la condition testée ici.
   if (versionIncompatible && version !== null) {
     return { ...vide, version: versionIncompatible };
   }
@@ -229,8 +229,8 @@ function rapportMarkdown(bilans, fautifs, bilansDuRapport, contexte) {
   }
 
   // Le titre sépare les erreurs internes du contrat des échecs du repository,
-  // et il ne dit que ce qui est LITTÉRALEMENT vrai : un contrat invalide est un
-  // contrat illisible, incomplet, incompatible ou incohérent — jamais un code
+  // et il ne dit que ce qui est littéralement vrai : un contrat invalide est un
+  // contrat illisible, incomplet, incompatible ou incohérent, jamais un code
   // en retard, jamais un test rouge ailleurs. `bilanEstBloquant` tient cette
   // définition et rien d'autre n'entre dans `fautifs` ; `enteteDuVerdict` en
   // tire le titre. Une référence absente des tokens et un écart de parité
@@ -383,7 +383,7 @@ function terminalDesBilans(bilans) {
     const etatDuCode = !bilan.pariteMesuree
       // L'analyse s'est arrêtée avant la parité : le contrat est illisible, ou
       // sa version n'est pas lue. Rien n'a été comparé, et le dire est la seule
-      // phrase vraie — « conforme » accuserait le contraire de ce qui s'est
+      // phrase vraie : « conforme » accuserait le contraire de ce qui s'est
       // passé, sur la ligne même qui annonce le refus.
       ? "code non examiné"
       : bilan.parite.implementationAbsente
@@ -500,7 +500,7 @@ function demarrage({ dossierDeclare, dossierAbsent, sourceTokens, tokensAbsents,
 }
 
 /**
- * Contrôle un repository et rend son verdict — sans rien écrire nulle part.
+ * Contrôle un repository et rend son verdict, sans rien écrire nulle part.
  *
  * `adaptateur` est la seule porte par laquelle une connaissance de stack entre
  * ici. Son défaut, `ADAPTATEUR_VIDE`, n'est pas un mode dégradé : c'est le

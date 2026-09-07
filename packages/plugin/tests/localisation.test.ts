@@ -1,5 +1,5 @@
 /**
- * Le registre qui dit OÙ regarder, et ce qu'il refuse de promettre.
+ * Le registre qui dit où regarder, et ce qu'il refuse de promettre.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -40,7 +40,7 @@ test('un message poussé porte son sujet, et le canal sait où il vit', () => {
 });
 
 /**
- * La phrase compacte se DÉRIVE des trois parties, et les parties voyagent avec
+ * La phrase compacte se dérive des trois parties, et les parties voyagent avec
  * elle. Sans ce report, l'interface ne pourrait qu'afficher un
  * paragraphe où le geste se lit après deux phrases de contexte.
  */
@@ -72,7 +72,7 @@ test('le champ visé s’écrit entre le sujet et le manque, quand il y en a un'
 
 /**
  * Le point qui justifie tout le module. Deux calques qui produisent le même
- * texte ne donnent qu'UN constat — c'est le dédoublonnage existant —, donc une
+ * texte ne donnent qu'un constat (c'est le dédoublonnage existant), donc une
  * seule cible. Retenir le second effacerait celle que le message dédoublonné
  * désigne réellement.
  */

@@ -17,7 +17,7 @@ type PropMeta = { figmaName?: string };
 export type EnumProp = PropMeta & {
   type: 'enum';
   values: string[];
-  /** Absent quand Figma n'en déclare aucun ; l'absence EST « aucun défaut ». */
+  /** Absent quand Figma n'en déclare aucun ; l'absence est « aucun défaut ». */
   default?: string;
   /**
    * Documentation par valeur, alimentée par les règles `@prop <prop>.<valeur>`
@@ -45,7 +45,7 @@ export type StringProp = PropMeta & {
 };
 
 /**
- * Prop runtime qui porte le nom d'une icône modifiable — QUELLE icône rendre.
+ * Prop runtime qui porte le nom d'une icône modifiable : quelle icône rendre.
  *
  * Elle est indépendante de la visibilité du calque : une icône toujours
  * affichée reste parfaitement remplaçable. `visibilityProp` n'apparaît donc
@@ -101,7 +101,7 @@ export type ContractProp =
 /**
  * Intention d'usage du composant, lue depuis la description Figma taguée
  * (`@usage`, `@do`, `@dont`, `@pairs`). Cette partie du contrat dit à un
- * humain ou à un agent IA QUAND utiliser le composant, pas seulement COMMENT.
+ * humain ou à un agent IA quand utiliser le composant, pas seulement comment.
  */
 export type Intent = {
   usage?: string;
@@ -112,11 +112,11 @@ export type Intent = {
 
 /** Déclencheur d'un état d'interaction dans le contrat consommé par le code. */
 export type StateDescriptor = {
-  /** Sélecteur attendu par l'adaptateur de rendu ; ABSENT pour l'état par défaut. */
+  /** Sélecteur attendu par l'adaptateur de rendu ; absent pour l'état par défaut. */
   selector?: string;
   /**
    * Doc de l'état, déclarée par une règle `@prop <axe>.<état>`. L'axe d'états
-   * n'étant pas une prop, sa documentation vit ici — au même endroit que le
+   * n'étant pas une prop, sa documentation vit ici, au même endroit que le
    * reste de ce que le contrat en dit.
    */
   description?: string;
@@ -143,7 +143,7 @@ export type RenderingRole = {
    * contour se dessine hors du flux et ne déplace aucun voisin, alors qu'une
    * `border` CSS élargit l'élément et décale tout ce qui l'entoure. Plusieurs
    * rôles peuvent donc viser `box-shadow` sur un même calque : ils se composent
-   * en UNE déclaration, séparés par des virgules, les `inset` d'abord.
+   * en une déclaration, séparés par des virgules, les `inset` d'abord.
    */
   cssProperties: string[];
   /** Stratégie de rendu complémentaire quand une propriété seule ne suffit pas. */
@@ -153,16 +153,16 @@ export type RenderingRole = {
 /**
  * Le rôle de rendu de chaque clé de couleur qui n'en porte pas le nom.
  *
- * Une CLÉ de couleur et un RÔLE de rendu sont deux choses : la clé identifie une
+ * Une clé de couleur et un rôle de rendu sont deux choses : la clé identifie une
  * couleur dans la feuille d'un variant, le rôle dit comment la peindre. Les
- * confondre — résoudre la clé directement dans `rendering.roles` — obligeait le
+ * confondre (résoudre la clé directement dans `rendering.roles`) obligeait le
  * moteur à avoir un avis sur les noms du design system, et à crier dès qu'un
  * token nommé `…/foreground` était posé en contour.
  *
  * Les deux côtés sont séparés parce que les clés le sont : `colorKeys` décide
  * sur des feuilles distinctes pour les peintures et pour les contours, si bien
  * que deux tokens différents finissant par le même segment peuvent porter la
- * MÊME clé courte de part et d'autre. Une seule table les confondrait, et le
+ * même clé courte de part et d'autre. Une seule table les confondrait, et le
  * consommateur peindrait le mauvais côté sans un mot.
  *
  * Une clé dont le rôle porte déjà le nom reste absente : `roles[clé]` répond
@@ -178,9 +178,9 @@ export type ColorKeyRoles = {
 /**
  * Correspondance des rôles vers le rendu.
  *
- * `roles` est le vocabulaire PARTAGÉ, identique dans tous les contrats :
+ * `roles` est le vocabulaire partagé, identique dans tous les contrats :
  * `background`, `foreground`, `icon`, `border`, `ring`. Un mot y signifie la
- * même chose partout — c'est ce qui permet à un consommateur de le connaître
+ * même chose partout : c'est ce qui permet à un consommateur de le connaître
  * une fois pour toutes.
  *
  * `keyRoles` est la part propre au composant : le rôle de chaque clé de couleur
@@ -229,7 +229,7 @@ export type AlignSelf = 'flex-start' | 'center' | 'flex-end' | 'stretch';
  * Mesure en pixels qu'un enfant de grille donne à sa piste, par axe.
  *
  * Toujours un objet, même pour un carré : la forme courte de `SlotSize` sert à
- * ne pas répéter une RÉFÉRENCE, et rien ici n'en est une. Les pixels sont écrits
+ * ne pas répéter une référence, et rien ici n'en est une. Les pixels sont écrits
  * comme ceux de `columnSizes` / `rowSizes`, le seul autre endroit où le contrat
  * en publie.
  */
@@ -241,13 +241,13 @@ export type GridStructuralSize = {
 /**
  * Place d'un enfant dans la grille de son parent.
  *
- * Les étendues valent 1 par défaut — la cellule elle-même — et restent alors
+ * Les étendues valent 1 par défaut (la cellule elle-même) et restent alors
  * absentes, comme toute valeur neutre du contrat. Les deux alignements suivent
  * le vocabulaire de `AlignSelf` : une grille aligne ses enfants dans leur
  * cellule exactement comme un flex les aligne sur son axe secondaire.
  */
 export type GridPlacement = {
-  /** Place de la cellule d'ancrage, en valeurs CSS — comptées à partir de 1. */
+  /** Place de la cellule d'ancrage, en valeurs CSS : comptées à partir de 1. */
   columnStart?: number;
   rowStart?: number;
   columnSpan?: number;
@@ -270,27 +270,27 @@ export type LayoutConstraints = {
 
 /**
  * Distance, en pixels, entre un bord du parent et le bord correspondant d'un
- * calque hors du flux — les valeurs de `top`, `right`, `bottom` et `left` en
+ * calque hors du flux : les valeurs de `top`, `right`, `bottom` et `left` en
  * CSS, à écrire telles quelles.
  *
  * Ce n'est ni un token ni une décision du designer, et c'est la raison pour
  * laquelle le contrat l'écrivait autrefois nulle part : un offset Figma ne se
  * relie à aucune variable. Mais le geste demandé au designer n'existait pas non
- * plus — Figma ne PERMET pas de lier une position —, et le développeur se
- * retrouvait avec un badge collé au coin. Le moteur le CALCULE donc, comme il
+ * plus (Figma ne permet pas de lier une position), et le développeur se
+ * retrouvait avec un badge collé au coin. Le moteur le calcule donc, comme il
  * calcule déjà les pixels d'une piste de grille, sous une notice et sans
  * dégrader la couverture portable.
  *
  * Une seule signification par clé, quelle que soit la contrainte : la distance
  * d'un bord à l'autre. Les côtés publiés sont ceux auxquels le calque
- * s'accroche — un seul par axe pour `left`/`right`/`top`/`bottom`, les DEUX
+ * s'accroche : un seul par axe pour `left`/`right`/`top`/`bottom`, les deux
  * pour `stretch`, `center` et `scale`, où le consommateur a besoin des deux
  * pour étirer, centrer ou proportionner.
  *
  * La boîte de référence est celle du parent, sans ajustement : aucun rôle de
  * contour ne consomme la boîte dans ce contrat (`border` se rend en
- * `box-shadow`), si bien que la « padding box » de CSS — celle sur laquelle
- * `right` et `bottom` se résolvent — coïncide avec le cadre Figma.
+ * `box-shadow`), si bien que la « padding box » de CSS (celle sur laquelle
+ * `right` et `bottom` se résolvent) coïncide avec le cadre Figma.
  */
 export type LayoutInset = Partial<Record<'top' | 'right' | 'bottom' | 'left', `${number}px`>>;
 
@@ -311,7 +311,7 @@ export type LayoutDirection = 'flex-row' | 'flex-column' | 'grid';
  * intitulés d'un panneau, `stretch` et `fit-content` sont des valeurs de
  * `width` et `height`. Le contrat traduit partout ailleurs (`flex-start`,
  * `stretch`, `flexGrow`), et il ne garde un terme Figma que là où CSS n'a
- * rien à proposer — l'alignement d'un stroke, par exemple. Ici CSS a le mot
+ * rien à proposer : l'alignement d'un stroke, par exemple. Ici CSS a le mot
  * exact : le consommateur écrit la valeur, il ne la devine pas.
  */
 export type AxisSizing = 'stretch' | 'fit-content';
@@ -321,8 +321,8 @@ export type AxisSizing = 'stretch' | 'fit-content';
  * cette dimension.
  *
  * Le troisième terme est une référence `{…}`, et il l'emporte sur les deux
- * autres. Une dimension figée SANS variable reste une commodité de maquette —
- * elle aligne les variants d'un component set — et vaut `stretch` ; une
+ * autres. Une dimension figée sans variable reste une commodité de maquette
+ * (elle aligne les variants d'un component set) et vaut `stretch` ; une
  * dimension figée qui cite une variable est une décision du design system, que
  * le composant connaît de lui-même quel que soit son futur conteneur. C'est la
  * règle des slots, appliquée au composant : un nombre brut n'est jamais
@@ -338,8 +338,8 @@ export type ContainerAxisSizing = AxisSizing | string;
  *
  * Les clés sont les propriétés CSS concernées, et non les axes de Figma : la
  * taille d'un composant n'est pas une propriété de flux, elle ne dépend pas
- * d'un conteneur qu'il ne connaît pas. `stretch` reste une intention —
- * « occupe la place donnée » — dont la technique appartient au développeur :
+ * d'un conteneur qu'il ne connaît pas. `stretch` reste une intention
+ * (« occupe la place donnée ») dont la technique appartient au développeur :
  * `width: stretch`, `width: 100%` ou `flex: 1` selon le contexte d'intégration.
  */
 export type ContainerSizing = {
@@ -350,7 +350,7 @@ export type ContainerSizing = {
 /**
  * Dimension figée d'un slot, toujours tokenisée.
  *
- * Un carré garde la forme courte — c'est le cas de presque toutes les icônes,
+ * Un carré garde la forme courte : c'est le cas de presque toutes les icônes,
  * et l'objet n'y apprendrait rien. Dès que les deux axes diffèrent, ou qu'un
  * seul est figé, chacun est nommé : réduire les deux à une valeur ferait
  * affirmer au contrat une dimension que Figma n'a pas.
@@ -361,8 +361,8 @@ export type SlotSize = string | { width?: string; height?: string };
  * Une valeur que Figma laisse régler côté par côté, toujours tokenisée.
  *
  * C'est l'idiome de `SlotSize`, appliqué aux quatre champs qui portent une
- * décision par bord : une RÉFÉRENCE quand tous les côtés citent la même
- * variable — la forme de presque tous les composants, inchangée — et le DÉTAIL
+ * décision par bord : une référence quand tous les côtés citent la même
+ * variable (la forme de presque tous les composants, inchangée) et le détail
  * par côté dès qu'ils en citent plusieurs. Le design system nomme déjà ces
  * variables séparément (`padding-left`, `radius-top-left`) : les refuser
  * demandait au designer d'aplatir une décision qui lui appartient.
@@ -389,7 +389,7 @@ export type Radius = SidedRefs<'topLeft' | 'topRight' | 'bottomRight' | 'bottomL
 export type StrokeWidth = SidedRefs<'top' | 'right' | 'bottom' | 'left'>;
 
 /**
- * Taille d'UNE piste de grille, dans le vocabulaire de `grid-template-*`.
+ * Taille d'une piste de grille, dans le vocabulaire de `grid-template-*`.
  *
  * `1fr` pour une piste qui se partage la place, `fit-content(100%)` pour une
  * piste qui se règle sur son contenu. Exception propre aux grilles, une piste
@@ -402,8 +402,8 @@ export type GridTrack = `${number}fr` | 'fit-content(100%)' | `${number}px` | 'a
  * Emplacements exacts des peintures et contours d'une vue, par clé de feuille.
  *
  * Un groupe vide n'est pas écrit : un composant qui ne peint aucun contour n'a
- * pas de `strokes`, et l'absence le dit aussi bien que `{}`. Les CLÉS d'un
- * groupe, elles, sont des données — elles nomment les couleurs — et une clé sans
+ * pas de `strokes`, et l'absence le dit aussi bien que `{}`. Les clés d'un
+ * groupe, elles, sont des données (elles nomment les couleurs) et une clé sans
  * cible survivrait donc à l'élision.
  */
 export type VariantPaintPlacements = {
@@ -414,7 +414,7 @@ export type VariantPaintPlacements = {
 /**
  * Bornes de taille, toujours tokenisées.
  *
- * Elles sont SÉPARÉES de `size` et de `sizing` parce qu'elles ne répondent pas
+ * Elles sont séparées de `size` et de `sizing` parce qu'elles ne répondent pas
  * à la même question. Le menu de dimensionnement dit quelle place le calque
  * prend ; une borne dit jusqu'où cette place peut aller. Les deux coexistent :
  * le cas le plus courant est un calque en `Fill` qu'un `max width` retient,
@@ -445,7 +445,7 @@ export type ChildStructure = {
   slot: string;
   /**
    * Nom Figma d'origine, toujours conservé pour tracer labels et placeholders
-   * graphiques. Il décrit le VARIANT DE RÉFÉRENCE : quand plusieurs icônes se
+   * graphiques. Il décrit le variant de référence : quand plusieurs icônes se
    * relaient sur un même slot, `Contract.icons` fait foi sur celle à rendre
    * dans chaque combinaison d'axes.
    */
@@ -465,7 +465,7 @@ export type ChildStructure = {
    * il est déjà décrit par l'absence, ou par `flexGrow` / `alignSelf`.
    *
    * Sous un parent `layout: grid`, l'absence se lit autrement : remplir sa
-   * cellule est le DÉFAUT d'un enfant de grille — `stretch` en CSS — et c'est
+   * cellule est le défaut d'un enfant de grille (`stretch` en CSS) et c'est
    * donc la cellule qui décide, décrite par `columnSizes` / `rowSizes` et par la
    * place du layer. Un layer explicitement aligné dans sa cellule ne s'étire
    * plus : sa dimension redevient la sienne, et l'absence reprend son sens
@@ -477,14 +477,14 @@ export type ChildStructure = {
    *
    * C'est l'exception propre aux grilles, étendue de la piste à la cellule. Une
    * piste `FIXED` publie déjà sa valeur structurelle en pixels ; une piste `HUG`
-   * n'en a aucune à publier — `GridTrackSize.value` n'existe que sur `FIXED` et
-   * `FLEX` — et la mesure ne vit alors que sur l'enfant. Sans elle, une piste qui
+   * n'en a aucune à publier (`GridTrackSize.value` n'existe que sur `FIXED` et
+   * `FLEX`) et la mesure ne vit alors que sur l'enfant. Sans elle, une piste qui
    * hug des enfants sans dimension retombe à zéro : le contrat décrirait une
    * grille que personne ne peut rendre.
    *
    * Ce n'est ni un token ni une décision du designer : dans Figma ces enfants
-   * sont en `Fill`, et Figma n'expose pas ce remplissage sous une piste qui hug —
-   * son API rend la taille RÉSOLUE. Aucun geste n'est donc demandé, la couverture
+   * sont en `Fill`, et Figma n'expose pas ce remplissage sous une piste qui hug,
+   * son API rend la taille résolue. Aucun geste n'est donc demandé, la couverture
    * n'est pas dégradée, et `size` reste strictement tokenisé : une variable liée
    * l'emporte toujours et se publie là-bas, jamais ici.
    */
@@ -506,10 +506,10 @@ export type ChildStructure = {
   /** Distance aux bords d'accroche, publiée avec `position: "absolute"`. */
   inset?: LayoutInset;
   /**
-   * Rotation du layer, dans la convention et l'unité de CSS — donc l'opposé du
+   * Rotation du layer, dans la convention et l'unité de CSS, donc l'opposé du
    * compte trigonométrique de Figma, et prête pour `transform: rotate(…)`.
    *
-   * L'origine est le CENTRE du layer, le défaut de `transform-origin` : c'est
+   * L'origine est le centre du layer, le défaut de `transform-origin` : c'est
    * aussi le point sur lequel `inset` est calculé, si bien qu'un layer hors du
    * flux tourné retombe exactement où Figma le montre. Une rotation imbriquée
    * se compose d'elle-même, comme dans Figma.
@@ -522,8 +522,8 @@ export type ChildStructure = {
    * Place du layer dans la grille de son parent.
    *
    * `columnStart` et `rowStart` sont les valeurs de `grid-column-start` et
-   * `grid-row-start` — donc comptées à partir de 1, là où Figma indexe à partir
-   * de 0. Elles sont publiées sur tout enfant de grille EN FLUX : Figma pose une
+   * `grid-row-start`, donc comptées à partir de 1, là où Figma indexe à partir
+   * de 0. Elles sont publiées sur tout enfant de grille en flux : Figma pose une
    * ancre sur chacun, et la redéduire supposerait de réimplémenter son placement
    * automatique. Un enfant en position absolue n'en a pas : il est hors de la
    * grille, et `constraints` dit à quels bords il s'accroche.
@@ -561,7 +561,7 @@ export type ChildStructure = {
   columns?: number;
   rows?: number;
   /**
-   * Taille de chaque piste, dans l'ordre du panneau Figma — colonnes de gauche
+   * Taille de chaque piste, dans l'ordre du panneau Figma : colonnes de gauche
    * à droite, lignes de haut en bas. Publiées avec `layout: grid`, et seulement
    * quand Figma les expose.
    */
@@ -589,20 +589,20 @@ export type ChildStructure = {
    */
   wrap?: true;
   /**
-   * Espace entre les LIGNES : celles d'un conteneur en `wrap`, ou celles d'une
-   * grille. Absent sous `wrap`, il vaut `gap` — Figma synchronise les deux tant
+   * Espace entre les lignes : celles d'un conteneur en `wrap`, ou celles d'une
+   * grille. Absent sous `wrap`, il vaut `gap` : Figma synchronise les deux tant
    * que le designer ne les dissocie pas, et CSS fait de même avec une valeur de
    * `gap` unique.
    */
   rowGap?: string | null;
-  /** Espace entre les COLONNES d'une grille. */
+  /** Espace entre les colonnes d'une grille. */
   columnGap?: string | null;
   /**
    * Nom du composant unifié rendu à cet emplacement. Le slot est alors une
-   * DÉPENDANCE : ni ses tokens ni ses calques n'appartiennent à ce contrat,
+   * dépendance : ni ses tokens ni ses calques n'appartiennent à ce contrat,
    * ils vivent dans le sien (cf. `Contract.composes`).
    *
-   * Ce champ ne décrit QUE le calque qui est l'instance. Un calque qui
+   * Ce champ ne décrit que le calque qui est l'instance. Un calque qui
    * l'enveloppe est un conteneur de ce contrat-ci : il publie son flux et range
    * la dépendance dans `children`. Sans cette distinction, l'alignement du
    * cadre atterrit sur le composant, dont le `structure.sizing` le neutralise.
@@ -656,10 +656,10 @@ export type IconDefinition = {
 /**
  * Alignement d'un stroke Figma, conservé comme donnée structurelle.
  *
- * Il dit de quel côté de la boîte le contour se dessine, JAMAIS avec quelle
+ * Il dit de quel côté de la boîte le contour se dessine, jamais avec quelle
  * technique CSS : un stroke Figma ne consomme pas la boîte et ne déplace aucun
  * voisin, quel que soit son alignement. Il se rend donc en `box-shadow`, et
- * `align` en choisit la forme — `inside` → `inset 0 0 0 <width> <color>`,
+ * `align` en choisit la forme : `inside` → `inset 0 0 0 <width> <color>`,
  * `outside` → `0 0 0 <width> <color>`, `center` → la moitié de chaque côté.
  */
 export type StrokeAlignment = 'inside' | 'center' | 'outside';
@@ -682,22 +682,22 @@ export type StrokeTokens = {
 };
 
 /**
- * Tokens de peinture liés sur UN variant, rangés par clé. La clé est le dernier
+ * Tokens de peinture liés sur un variant, rangés par clé. La clé est le dernier
  * segment du nom du token : `…default.background` → `background`,
- * `…colors.scale-1` → `scale-1`. Elle IDENTIFIE la couleur ; ce qu'elle peint
+ * `…colors.scale-1` → `scale-1`. Elle identifie la couleur ; ce qu'elle peint
  * se lit dans `rendering.roles`.
  *
  * Quand deux couleurs d'un même variant portent le même dernier segment, la clé
  * s'allonge des segments qui les séparent : `…userinput.colors.background` et
  * `…divider.colors.background` deviennent `userinput.background` et
  * `divider.background`. Une clé allongée contient donc un point, jamais une clé
- * simple — un segment de token n'en contient aucun. `colorKeys.ts` en est
+ * simple : un segment de token n'en contient aucun. `colorKeys.ts` en est
  * l'unique autorité et la décide sur toute la matrice, si bien que la clé d'un
  * token est la même dans toutes les feuilles.
  */
 export type SlotTokens = Record<string, string>;
 
-/** Strokes liés sur UN variant, séparés des peintures pour garder `variantTokens` stable. */
+/** Strokes liés sur un variant, séparés des peintures pour garder `variantTokens` stable. */
 export type SlotStrokes = Record<string, StrokeTokens>;
 
 /**
@@ -727,7 +727,7 @@ export interface VariantTypography {
 }
 
 /**
- * Dimensions d'UNE taille du composant (une valeur de la prop `size`).
+ * Dimensions d'une taille du composant (une valeur de la prop `size`).
  * Tout est exprimé en noms de tokens.
  */
 export type SizeDimensions = {
@@ -743,9 +743,9 @@ export type SizeDimensions = {
 /**
  * La structure visuelle et dimensionnelle du composant.
  *
- * Les dimensions vivent à UN seul endroit : `sizes` quand le composant expose
+ * Les dimensions vivent à un seul endroit : `sizes` quand le composant expose
  * un axe de tailles, sinon `gap` / `padding` / `radius` au niveau haut. Les
- * deux ne coexistent jamais — quand `sizes` existe, le niveau haut n'en serait
+ * deux ne coexistent jamais : quand `sizes` existe, le niveau haut n'en serait
  * que la recopie de la taille de référence, et deux copies finissent toujours
  * par diverger.
  */
@@ -758,12 +758,12 @@ export type ContractStructure = {
   /**
    * Taille de chaque piste, dans l'ordre du panneau Figma. Elles disent, avec
    * `columns` / `rows` et la place de chaque enfant, la boîte que la grille
-   * donne à ses calques — ce qu'aucune dimension de calque ne décrit sous une
+   * donne à ses calques : ce qu'aucune dimension de calque ne décrit sous une
    * grille.
    */
   columnSizes?: GridTrack[];
   rowSizes?: GridTrack[];
-  /** Espace entre les COLONNES d'une grille. */
+  /** Espace entre les colonnes d'une grille. */
   columnGap?: string | null;
   /**
    * Comportement du composant face à la place qu'on lui donne. Toujours
@@ -793,14 +793,14 @@ export type ContractStructure = {
    * propriété de flux : elle reste ici même quand `sizes` porte les dimensions.
    */
   wrap?: true;
-  /** Dimensions du composant, uniquement s'il n'a PAS d'axe de tailles. */
+  /** Dimensions du composant, uniquement s'il n'a pas d'axe de tailles. */
   gap?: string | null;
   /** Espace entre les lignes, aux mêmes conditions que `gap`. */
   rowGap?: string | null;
   padding?: Padding;
   radius?: Radius | null;
   /**
-   * Dimensions PAR taille quand le composant expose un axe de tailles
+   * Dimensions par taille quand le composant expose un axe de tailles
    * (clés = valeurs de la prop `size` : big, medium, small…).
    * Absent pour un composant sans axe de tailles.
    */
@@ -808,7 +808,7 @@ export type ContractStructure = {
   /** Les slots enfants (icônes, label…), dans l'ordre des calques. */
   children: ChildStructure[];
   /**
-   * Clés PUBLIQUES des axes de variantes, dans l'ordre d'imbrication de
+   * Clés publiques des axes de variantes, dans l'ordre d'imbrication de
    * variantTokens. Un axe sémantiquement renommé utilise ici la même clé que
    * dans `props` (`size`, jamais son ancien nom normalisé).
    */
@@ -823,11 +823,11 @@ export type ContractStructure = {
 /**
  * Structure portable d'une combinaison exacte, sans les index globaux de matrice.
  *
- * `children` y redevient FACULTATIF, et c'est la seule différence de forme avec
+ * `children` y redevient facultatif, et c'est la seule différence de forme avec
  * l'arbre que le moteur manipule. Avant l'élision, un conteneur porte toujours
  * ses enfants, fût-ce zéro ; une fois publié, un `[]` ne s'écrit pas. Déclarer
  * `children` requis ici ferait refuser par le schéma un contrat que le moteur
- * produit légitimement — le cas d'un composant dont aucun descendant ne porte
+ * produit légitimement : le cas d'un composant dont aucun descendant ne porte
  * d'information publiable.
  */
 export type VariantStructure = Omit<
@@ -847,7 +847,7 @@ export type VariantIconPlacement = {
  * Vue développée : ce qu'un variant rend exactement, avant catalogage.
  *
  * Elle n'est jamais publiée telle quelle. `compactVariants.ts` catalogue chaque
- * PARTIE séparément et publie une `ContractVariantView` de renvois.
+ * partie séparément et publie une `ContractVariantView` de renvois.
  */
 export type ExpandedVariantView = {
   structure: VariantStructure;
@@ -863,9 +863,9 @@ export type ExpandedVariantView = {
 /**
  * Vue publiée : cinq renvois vers les catalogues de parties.
  *
- * Chaque partie est partagée par ÉGALITÉ STRICTE de son bloc JSON — aucun
+ * Chaque partie est partagée par égalité stricte de son bloc JSON, aucun
  * merge, aucun défaut, aucun héritage : résoudre les cinq renvois redonne la
- * vue exacte, au bit près. Seule la GRANULARITÉ du partage change : deux vues
+ * vue exacte, au bit près. Seule la granularité du partage change : deux vues
  * qui ne diffèrent que par leurs peintures cessent de republier tout leur arbre
  * de slots, et leur divergence reste lisible sur le renvoi qui diffère.
  *
@@ -890,17 +890,17 @@ export type ContractVariantView = {
  * qu'au niveau global.
  *
  * Le renvoi est inconditionnel. Quand la projection ne correspond à aucune
- * structure déjà cataloguée — notamment lorsque l'élection du node de layout
- * saute un wrapper de dimensions — sa structure possède sa propre entrée. Le
+ * structure déjà cataloguée (notamment lorsque l'élection du node de layout
+ * saute un wrapper de dimensions) sa structure possède sa propre entrée. Le
  * consommateur résout toujours un arbre par le même catalogue.
  */
 export type ContractReferenceStructure = {
   /** Clé d'une entrée de `Contract.viewStructures`. */
   view: string;
-  /** Dimensions PAR taille, quand le composant expose un axe de tailles. */
+  /** Dimensions par taille, quand le composant expose un axe de tailles. */
   sizes?: Record<string, SizeDimensions>;
   /**
-   * Clés PUBLIQUES des axes de variantes, dans l'ordre de la matrice. Absentes
+   * Clés publiques des axes de variantes, dans l'ordre de la matrice. Absentes
    * pour un `COMPONENT` sans axe.
    */
   variantAxes?: string[];
@@ -909,12 +909,12 @@ export type ContractReferenceStructure = {
 /**
  * Étiquettes Figma des axes et de leurs valeurs.
  *
- * Elles permettent de reconstruire le nom Figma d'un variant —
- * « Color=Primary, State=Hover » — à partir des clés et valeurs publiques, sans
+ * Elles permettent de reconstruire le nom Figma d'un variant
+ * (« Color=Primary, State=Hover ») à partir des clés et valeurs publiques, sans
  * répéter ces libellés dans chaque combinaison.
  *
- * Les deux tables viennent de la SOURCE — `componentPropertyDefinitions` pour
- * le nom d'un axe, `variantProperties` pour la valeur brute — jamais d'une
+ * Les deux tables viennent de la source (`componentPropertyDefinitions` pour
+ * le nom d'un axe, `variantProperties` pour la valeur brute) jamais d'une
  * relecture du nom publié : reconstruire le nom depuis la table et le comparer
  * ne suffit pas à valider l'appariement axe ↔ étiquette, qu'une permutation
  * traverse sans être vue.
@@ -949,7 +949,7 @@ export type ExtractedContractVariant = ExpandedVariantView & {
    * Il vit ici et non sur `ContractVariantView` : la vue se déduplique par
    * égalité stricte de son bloc JSON, et deux variants au rendu identique mais
    * au contenu différent cesseraient de la partager. Le contenu est volatil et
-   * minuscule, la structure stable et volumineuse — les mêler ferait hériter la
+   * minuscule, la structure stable et volumineuse : les mêler ferait hériter la
    * seconde de la volatilité du premier. C'est déjà la raison pour laquelle
    * `tokens` et `strokes` vivent par variant.
    */
@@ -966,7 +966,7 @@ export type PropertyBindingDefinition = {
    * Fin d'identifiant commune à toutes les occurrences de cette définition,
    * point-virgule compris (« ;3:429 »).
    *
-   * Figma écrit l'identifiant d'un calque atteint DANS une instance
+   * Figma écrit l'identifiant d'un calque atteint dans une instance
    * « I<chaîne d'instances>;<id du calque dans le maître> ». Le dernier segment
    * ne dépend donc que de la définition, jamais du variant. Les `nodeId` de
    * `variants[].bindings` omettent cette fin commune ; la concaténation des deux
@@ -996,7 +996,7 @@ export type ContractVariant = {
   nodeId: string;
   /**
    * Nom Figma exact de la combinaison. Absent quand
-   * `Contract.figmaVariantLabels` le reconstruit pour TOUS les variants ; il
+   * `Contract.figmaVariantLabels` le reconstruit pour tous les variants ; il
    * reprend la main, sur tous, dès qu'une seule combinaison y échappe.
    */
   figmaName?: string;
@@ -1020,14 +1020,14 @@ export type ContractVariant = {
 };
 
 /**
- * Un texte de la maquette, dans un slot de CE contrat.
+ * Un texte de la maquette, dans un slot de ce contrat.
  *
  * Porte les deux adresses, comme `VariantIconPlacement` (`figmaName` +
  * `slotPath`) et `IconDefinition` (`figmaName` + `slot`) : un chemin de slots
- * est POSITIONNEL — `label-2`, `icon-2` — et un calque ajouté le décale, là où
+ * est positionnel (`label-2`, `icon-2`) et un calque ajouté le décale, là où
  * le nom Figma reste stable.
  *
- * `figmaLayer` est celui de la FEUILLE publiée, pas celui du calque texte
+ * `figmaLayer` est celui de la feuille publiée, pas celui du calque texte
  * qu'elle enveloppe : c'est la seule façon qu'il s'accorde toujours avec le
  * `figmaLayer` que la vue publie au même `slotPath`.
  */
@@ -1035,22 +1035,22 @@ export type SampleText = {
   /** Chemin de slots jusqu'au texte, dans la structure de la vue du variant. */
   slotPath: string[];
   /**
-   * Nom du calque, ABSENT quand il vaut `value`.
+   * Nom du calque, absent quand il vaut `value`.
    *
    * Figma nomme un calque texte d'après ce qu'il dit tant que personne ne l'a
    * renommé : le cas ordinaire écrivait donc le même contenu deux fois. Son
-   * absence porte le même signal — « jamais renommé » — sans le répéter.
+   * absence porte le même signal (« jamais renommé ») sans le répéter.
    */
   figmaLayer?: string;
   value: string;
 };
 
 /**
- * Ce que CE parent a surchargé dans une instance de dépendance.
+ * Ce que ce parent a surchargé dans une instance de dépendance.
  *
  * La frontière n'est pas une convention mais une lecture : `InstanceNode.overrides`
  * dit ce que cette instance-ci a changé, par opposition à ce que son composant
- * fournit — qui appartient au contrat de la dépendance. Les deux champs retenus
+ * fournit, qui appartient au contrat de la dépendance. Les deux champs retenus
  * sont le texte effectivement visible et la valeur de visibilité elle-même ;
  * une surcharge de couleur ou de dimension est écartée, et signale plutôt un
  * manque du contrat normatif de la dépendance.
@@ -1063,24 +1063,24 @@ export type SampleOverride = {
 };
 
 /**
- * Un calque d'une dépendance dont CE parent a remplacé le composant.
+ * Un calque d'une dépendance dont ce parent a remplacé le composant.
  *
  * Séparé de `SampleOverride` parce que les deux relevés n'ont ni la même
  * source ni la même adresse. Figma ne rapporte pas un remplacement dans
- * `InstanceNode.overrides` — `NodeChangeProperty` ne contient pas
- * `mainComponent` —, il se lit donc en comparant l'instance au composant
+ * `InstanceNode.overrides` (`NodeChangeProperty` ne contient pas
+ * `mainComponent`), il se lit donc en comparant l'instance au composant
  * maître de la dépendance, calque par calque.
  *
  * De là `masterPath` plutôt que `figmaPath` : Figma renomme le calque qu'on
  * remplace d'après son nouveau composant, si bien que le chemin lu dans
  * l'instance nommerait déjà `component` et ne joindrait plus rien. Le chemin
- * publié est celui du MAÎTRE — le seul vocabulaire que le contrat de la
+ * publié est celui du maître : le seul vocabulaire que le contrat de la
  * dépendance publie, et donc la seule clé de jointure avec ses
  * `icons.*.figmaName`. Un champ, une question : le doute qui a coûté
  * `figmaLayer` ne doit pas renaître ici.
  */
 export type SampleSwap = {
-  /** Chemin de calques dans le COMPOSANT MAÎTRE de la dépendance, cible comprise. */
+  /** Chemin de calques dans le composant maître de la dépendance, cible comprise. */
   masterPath: string[];
   /** Nom du composant réellement placé, ou de son component set. */
   component: string;
@@ -1089,20 +1089,20 @@ export type SampleSwap = {
 /**
  * L'usage exact d'une dépendance dans la maquette.
  *
- * `args` emploie les clés PUBLIQUES du contrat de la dépendance et vaut pour un
+ * `args` emploie les clés publiques du contrat de la dépendance et vaut pour un
  * SOUS-ENSEMBLE : une clé absente ne signifie pas que la maquette ne la pose
  * pas. Sa surface est fermée : owner direct, puis unique wrapper élu et exposé,
- * sans repli sur une clé brute ni valeur de `SLOT`. Il porte aussi la valeur de
+ * sans repli sur une clé brute ni valeur de `slot`. Il porte aussi la valeur de
  * l'axe d'états, sous la clé de cet axe, pour
  * qu'il puisse se rapprocher des `variants[].values` de ce contrat-là.
  */
 export type SampleInstance = {
   /**
-   * Chemin de slots du calque qui EST l'instance. Absent pour une dépendance
+   * Chemin de slots du calque qui est l'instance. Absent pour une dépendance
    * imbriquée dans une autre : elle vit hors de l'arbre publié de ce contrat.
    *
-   * Sous un cadre qui ne publie pas ses enfants — le cas déjà signalé d'une
-   * branche masquée menant à une dépendance — le chemin est celui du cadre.
+   * Sous un cadre qui ne publie pas ses enfants (le cas déjà signalé d'une
+   * branche masquée menant à une dépendance) le chemin est celui du cadre.
    */
   slotPath?: string[];
   /** Nom du calque : identité, et seule ancre d'une dépendance imbriquée. */
@@ -1123,16 +1123,16 @@ export type SampleInstance = {
 };
 
 /**
- * Ce qu'un variant montre réellement dans Figma — jamais normatif.
+ * Ce qu'un variant montre réellement dans Figma : jamais normatif.
  *
  * Aucun contrôle du consommateur ne le compare au code : il donne le contexte
  * qui permet de retrouver la maquette, sans en faire une obligation. Il ne
- * contient que des valeurs qu'un développeur pourrait écrire lui-même — du
- * texte, un booléen, une valeur d'enum — jamais un token, une dimension ou un
+ * contient que des valeurs qu'un développeur pourrait écrire lui-même (du
+ * texte, un booléen, une valeur d'enum) jamais un token, une dimension ou un
  * layout ; une donnée de rendu qui manquerait ici manque au contrat normatif,
  * et c'est là qu'il faut la corriger.
  *
- * `args` porte les valeurs appliquées des props de CE composant dans CE
+ * `args` porte les valeurs appliquées des props de ce composant dans ce
  * variant : la visibilité réelle d'un slot optionnel, le texte d'une TEXT
  * property, le composant d'un INSTANCE_SWAP. Le texte et les remplacements
  * suivent la visibilité effective du calque et de tous ses ancêtres ; les
@@ -1154,7 +1154,7 @@ export type ContractDiagnostic = {
   /**
    * Une seule valeur aujourd'hui : l'export n'émet que des avertissements.
    * L'élargir demanderait de dire, dans la spécification, ce qu'un consommateur
-   * doit faire d'une erreur — et ce que devient alors la couverture.
+   * doit faire d'une erreur, et ce que devient alors la couverture.
    */
   severity: 'warning';
   /**
@@ -1182,13 +1182,13 @@ export type ContractCoverage = {
  * et traçabilité vers le composant Figma d'origine (id, clé, lien URL).
  */
 export type ContractMeta = {
-  /** Version du schéma du contrat — à incrémenter à chaque changement de forme. */
+  /** Version du schéma du contrat, à incrémenter à chaque changement de forme. */
   contractVersion: string;
   /** Date/heure de l'export, au format ISO 8601. */
   exportedAt: string;
   /**
    * Constats de l'export, en français et adressés au designer. Rangés sous
-   * `meta` parce qu'ils documentent l'EXPORT, pas le composant : un consommateur
+   * `meta` parce qu'ils documentent l'export, pas le composant : un consommateur
    * n'a jamais à les lire pour rendre un composant. Qui veut la liste lisible
    * lit `diagnostics[].message`, sans filtrer sur `severity`.
    *
@@ -1218,12 +1218,12 @@ export type ContractMeta = {
   };
 };
 
-/** Le contrat de composant complet — sortie de la commande « Export composant ». */
+/** Le contrat de composant complet : sortie de la commande « Export composant ». */
 export type Contract = {
   /** Nom Figma exact, lisible ; le nom de fichier porte l'identifiant de code canonique. */
   name: string;
   /**
-   * Ce qui décrit l'EXPORT plutôt que le composant : version du schéma, date,
+   * Ce qui décrit l'export plutôt que le composant : version du schéma, date,
    * couverture de la traduction, constats destinés au designer et traçabilité
    * Figma. Rien ici n'est nécessaire pour rendre le composant.
    */
