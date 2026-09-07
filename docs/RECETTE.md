@@ -29,61 +29,41 @@ Il vous faut :
 
 1. **Node 22 ou plus**, vérifiable par `node -v` ;
 2. **l'application de bureau Figma**, avec le fichier du design system ouvert ;
-3. **un Personal Access Token GitHub** ayant le droit d'écrire sur
+3. **le plugin Unified Component Exporter**, installé depuis la Figma Community ;
+4. **un Personal Access Token GitHub** ayant le droit d'écrire sur
    `Vassili-g/UCM-Playground`.
 
-Une chose à savoir avant de lire quoi que ce soit : **le CLI publié est en
-retard sur le dépôt.** Le registre sert `@ucm-kit/cli@0.1.7` ; le dépôt porte une
-version plus récente, préparée et non publiée. La recette se joue donc avec ce
-que le registre sert, et la publication vient à la toute fin, une fois que tout
-est vert. Les commandes ci-dessous épinglent la version publiée pour cette
-raison.
+**La recette se joue sur ce qui est publié, jamais sur la copie de travail.** Le
+plugin vient de la Community, le CLI vient du registre npm, et les deux peuvent
+être en retard sur ce dépôt. C'est voulu : ce qu'un utilisateur reçoit est la
+seule chose que cette recette puisse prouver, et une version que personne ne sert
+encore ne prouve rien. Les commandes ci-dessous épinglent donc la version
+publiée du CLI, et la publication des versions préparées vient à la fin, une fois
+que tout est vert.
 
 ---
 
-## Étape 1 : construire le plugin
-
-Dans un terminal, à la racine d'`UCM-Exporter` :
-
-```sh
-npm install
-npm test
-npm run typecheck
-npm run build
-```
-
-Attendu :
-
-- `npm test` ne rapporte aucun échec ;
-- `npm run build` écrit `packages/plugin/dist/`, qui contient `code.js`,
-  `ui.html` et `manifest.json`.
-
-Si `npm test` est rouge, arrêtez-vous là : rien de ce qui suit n'aurait de
-valeur.
-
----
-
-## Étape 2 : charger le plugin dans Figma
+## Étape 1 : ouvrir le plugin dans Figma
 
 1. Dans l'application de bureau Figma, ouvrez le fichier du design system.
-2. Menu **Plugins**, puis **Development**, puis **Import plugin from
-   manifest…**.
-3. Choisissez le fichier
-   `A:\...\Projet UCM\UCM-Exporter\packages\plugin\dist\manifest.json`.
-4. Le plugin apparaît sous **Plugins**, **Development**, sous le nom
-   **Unified Component Exporter**. Lancez-le.
+2. Menu **Plugins**, puis **Unified Component Exporter**. Lancez-le.
 
-Si vous l'aviez déjà importé, il suffit de le relancer : Figma relit le `dist`
-à chaque ouverture, vous n'avez rien à réimporter.
+Le plugin est publié sur la Figma Community : il n'y a ni build local à faire, ni
+manifeste à importer. Si vous ne le voyez pas dans la liste, installez-le une
+fois depuis la Community, il y restera.
+
+**Le pied de page de la fenêtre porte la version de schéma que ce bundle
+produit.** Notez-la : c'est la seule chose qui distingue le plugin servi par la
+Community du code de ce dépôt, et un export « sans changement » ne se comprend
+pas sans elle.
 
 ---
 
-## Étape 3 : regarder l'interface, avant de s'en servir
+## Étape 2 : regarder l'interface, avant de s'en servir
 
-Les deux observations que cette étape réclamait ont été faites le 6 septembre
-2026, et elles ont fermé le plan de refonte de l'interface. Elles restent écrites
-ici parce que ce guide se rejoue et qu'aucun test ne les couvre : elles ne se
-constatent qu'à l'œil, dans un vrai fichier Figma.
+Deux observations, qu'aucun test de ce dépôt ne couvre : elles ne se constatent
+qu'à l'œil, dans un vrai fichier Figma. Elles ont été faites le 6 septembre 2026
+et sont conservées parce que cette page se rejoue.
 
 **Observation A.** Sélectionnez un calque depuis le plugin, par le bouton
 « Afficher dans Figma » d'un point à corriger. Regardez ensuite si Figma marque
@@ -95,14 +75,9 @@ compte rendu, en thème clair puis en thème sombre. Vérifiez qu'ils restent
 lisibles et que rien ne déborde de la fenêtre. Regardez aussi les deux cartes
 de commande et l'écran sans sélection.
 
-**Une chose a changé depuis ces observations.** L'interface est passée en
-TypeScript (U6.1). Le même esbuild produit le bundle à partir des mêmes sources,
-dont il retire les types, donc l'écran doit être identique. Vérifiez-le une
-fois : aucun contrôle de ce dépôt ne compare le rendu du plugin dans Figma.
-
 ---
 
-## Étape 4 : installer UCM dans le dépôt vide
+## Étape 3 : installer UCM dans le dépôt vide
 
 Dans un second terminal, à la racine d'`UCM-Playground` :
 
@@ -153,10 +128,10 @@ Attendu **en 0.1.7**, mesuré le 6 septembre 2026 :
 
 Le code de sortie est 1. **Un dépôt fraîchement installé est donc rouge tant
 qu'aucun export n'a eu lieu**, et la CI le sera aussi au premier push. Votre
-installation n'est pas en cause : la version publiée à l'étape 9 corrige ce
+installation n'est pas en cause : la version publiée à l'étape 8 corrige ce
 défaut.
 
-**Ce que la version du dépôt rend, et que vous vérifierez à l'étape 10.**
+**Ce que la version du dépôt rend, et que vous vérifierez à l'étape 9.**
 L'absence d'export est un état d'avancement, au même titre que l'absence
 d'implémentation. À partir de `@ucm-kit/core@0.1.14`, un dépôt sans aucun
 contrat sort en 0 et rend un rapport vert qui nomme le geste suivant :
@@ -179,7 +154,7 @@ git push
 
 ---
 
-## Étape 5 : exporter les tokens depuis Figma
+## Étape 4 : exporter les tokens depuis Figma
 
 Dans le plugin, ouvrez d'abord la page de configuration et renseignez :
 
@@ -208,19 +183,19 @@ Attendu :
 **Lisez ce commentaire.** C'est le troisième critère du test : un rapport
 lisible par un designer, sans ouvrir un seul journal de CI.
 
-**Ce commentaire sera rouge, pour le même défaut qu'à l'étape 4, un cran plus
+**Ce commentaire sera rouge, pour le même défaut qu'à l'étape 3, un cran plus
 loin.** En 0.1.7, un dépôt qui a reçu ses tokens mais pas encore son premier
 composant n'a pas de dossier `components`, et le contrôle refuse la fusion en
 disant `components est introuvable`. Jugez le troisième critère sur la forme du
 rapport plutôt que sur sa couleur : titre, cause, geste attendu, état de la
 fusion. À partir de `@ucm-kit/core@0.1.14`, ce cas rend le rapport vert de
-démarrage montré à l'étape 4, que l'étape 10 vérifie.
+démarrage montré à l'étape 3, que l'étape 9 vérifie.
 
 Fusionnez la pull request.
 
 ---
 
-## Étape 6 : exporter un composant
+## Étape 5 : exporter un composant
 
 De retour dans Figma, sélectionnez un component set, par exemple `Button`, puis
 lancez **Analyser le composant** et publiez.
@@ -255,7 +230,7 @@ Fusionnez la pull request.
 
 ---
 
-## Étape 7 : reconstruire la sonde
+## Étape 6 : reconstruire la sonde
 
 Le contrat est arrivé, le code n'existe pas encore. Reconstruisez le composant à
 partir du seul contrat, sans regarder une implémentation antérieure. Le
@@ -294,7 +269,7 @@ Poussez, et regardez le rapport changer.
 
 ---
 
-## Étape 8 : vérifier les sept critères
+## Étape 7 : vérifier les sept critères
 
 Le test est réussi si les sept lignes suivantes sont vraies. Reprenez-les une
 par une, en relisant ce que vous avez observé.
@@ -340,7 +315,7 @@ git branch -D recette/echecs-attendus
 
 ---
 
-## Étape 9 : publier les paquets
+## Étape 8 : publier les paquets
 
 Cette étape ne se fait que si les huit précédentes sont vertes.
 
@@ -355,7 +330,7 @@ Pour chacun des trois, **dans cet ordre** :
 3. choisissez le paquet : d'abord `@ucm-kit/core`, puis `@ucm-kit/cli`, puis
    `@ucm-kit/adapter-typescript` ;
 4. au second champ, choisissez **recette externe rejouée et consignée**. C'est
-   exactement ce que vous venez de faire aux étapes 5 à 7 ;
+   exactement ce que vous venez de faire aux étapes 4 à 6 ;
 5. lancez, et attendez la fin. Le workflow rejoue les tests, publie, puis
    réinstalle le paquet depuis un dossier vide pour vérifier que le registre le
    sert vraiment.
@@ -370,7 +345,7 @@ numéro rend une erreur 409, et c'est le comportement voulu.
 
 ---
 
-## Étape 10 : repointer le Playground sur la version publiée
+## Étape 9 : repointer le Playground sur la version publiée
 
 Une fois les trois paquets en ligne, dans `UCM-Playground` :
 
@@ -384,7 +359,7 @@ Une fois les trois paquets en ligne, dans `UCM-Playground` :
 C'est ce dernier passage qui prouve que ce qui a été publié fonctionne chez un
 consommateur, et pas seulement dans le monorepo qui l'a produit.
 
-**Une dernière vérification, qui ferme les deux refus des étapes 4 et 5.**
+**Une dernière vérification, qui ferme les deux refus des étapes 3 et 4.**
 Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
