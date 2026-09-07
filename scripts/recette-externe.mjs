@@ -41,7 +41,7 @@ export const DECLENCHEURS = [
 ];
 
 /**
- * Un chemin déclaré désigne un DOSSIER quand il finit par `/`, et un fichier
+ * Un chemin déclaré désigne un dossier quand il finit par `/`, et un fichier
  * sinon. La nuance a coûté un faux positif dès le premier test :
  * `init.mjs.bak` commence par `init.mjs`, et un tri au seul `startsWith`
  * réclamait la recette pour un fichier de sauvegarde. Un garde-fou qui se
@@ -77,7 +77,7 @@ function versionAuCommit(commit, chemin) {
 }
 
 /**
- * Le commit qui a POSÉ le numéro courant d'un paquet — la même règle que
+ * Le commit qui a posé le numéro courant d'un paquet, la même règle que
  * `tests/versionSuitLeContenu.test.mjs`, et pour la même raison : c'est lui qui
  * date le contenu publié, pas le dernier commit qui a touché le manifeste.
  */
@@ -93,9 +93,9 @@ export function commitDuNumero(chemin, versionCourante) {
 /**
  * Ce qui a changé depuis la publication précédente du paquet visé.
  *
- * La borne est le PARENT du commit qui a posé le numéro : ce commit contient
+ * La borne est le parent du commit qui a posé le numéro : ce commit contient
  * lui-même le changement, puisque monter le numéro et changer le contenu se
- * font dans le même commit. Sans parent — le tout premier commit du dépôt —, on
+ * font dans le même commit. Sans parent (le tout premier commit du dépôt), on
  * repart de l'arbre vide, et tout compte.
  */
 function fichiersDeLaVersion(paquet) {
@@ -117,7 +117,7 @@ function fichiersDeLaVersion(paquet) {
 }
 
 /**
- * La version que le REGISTRE sert, ou `null` s'il ne répond pas.
+ * La version que le registre sert, ou `null` s'il ne répond pas.
  *
  * Sans elle, ce script déduisait de Git seul un état qui vit sur npm : il
  * comparait « depuis le commit qui a posé le numéro courant », ce qui ne

@@ -178,7 +178,7 @@ test('une règle @prop homonyme d’Object.prototype n’écrit pas sur le runti
 
   // Le layer « prop » est le seul canal de texte libre de tout l'export.
   // `descriptions[nom][valeur] = …` lisait `Object` pour ce nom, le trouvait
-  // déjà rempli, puis écrivait la description SUR la fonction Object globale.
+  // déjà rempli, puis écrivait la description sur la fonction Object globale.
   assert.equal(
     (Object as unknown as Record<string, unknown>).contained,
     undefined,

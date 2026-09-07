@@ -43,7 +43,7 @@ export type RulesResult = {
   propDescriptions: Record<string, Record<string, string>>;
   booleanDescriptions: Record<string, string>;
   /**
-   * La valeur par défaut de chaque axe, DÉCLARÉE par une règle `@default`.
+   * La valeur par défaut de chaque axe, déclarée par une règle `@default`.
    * Un axe absent d'ici n'a aucun défaut : la position d'un variant dans un
    * component set est un choix de mise en page, jamais une décision.
    */
@@ -60,10 +60,10 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
   const dontItems: string[] = [];
   const pairs: string[] = [];
   // Les noms de props et les valeurs viennent du texte libre que le designer
-  // écrit dans le layer « prop » — le seul canal réellement ouvert de tout
+  // écrit dans le layer « prop » : le seul canal réellement ouvert de tout
   // l'export. Une `Map` n'a aucune clé héritée : avec un objet littéral, une
   // règle « constructor.foo » lisait `Object`, le trouvait déjà rempli, puis
-  // écrivait sa description SUR la fonction `Object` globale du runtime.
+  // écrivait sa description sur la fonction `Object` globale du runtime.
   const propDescriptions = new Map<string, Map<string, string>>();
   const booleanDescriptions = new Map<string, string>();
   const enumDefaults = new Map<string, string>();
@@ -72,7 +72,7 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
   for (const entry of entries) {
     const content = entry.content.trim();
     // `@icons` porte sa cible ailleurs, `@default` n'a rien à décrire : sa
-    // cible EST son contenu utile, et exiger un texte le rendrait bavard.
+    // cible est son contenu utile, et exiger un texte le rendrait bavard.
     if (!content && entry.tag !== 'icons' && entry.tag !== 'default') {
       pousserSansNode(warnings, `Règle @${entry.tag}`, {
         manque: 'le layer « content » est vide.',

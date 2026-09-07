@@ -1,5 +1,5 @@
 /**
- * Ce que la maquette Figma MONTRE — l'échantillon, unique autorité.
+ * Ce que la maquette Figma montre : l'échantillon, unique autorité.
  *
  * Le contrat décrit ce qu'un composant peut rendre ; il ne disait pas ce que le
  * designer y a réellement écrit. Cette information existait déjà, mais par
@@ -11,15 +11,15 @@
  * Trois règles le tiennent, et elles valent pour tout ce qui suit :
  *
  * 1. **Rien que des valeurs de props.** Du texte, un booléen, une valeur d'enum,
- *    un nom de composant — jamais un token, une couleur, une dimension. Une
+ *    un nom de composant : jamais un token, une couleur, une dimension. Une
  *    donnée de rendu qui manquerait ici manque au contrat normatif, et c'est là
  *    qu'il faut la corriger.
  * 2. **Aucun geste demandé.** L'échantillon n'avertit de rien et ne dégrade
  *    jamais la couverture : ce qu'il ne sait pas lire, il l'omet. Il donne du
  *    contexte, il n'engage personne.
- * 3. **On lit ce qu'une instance EXPOSE, jamais ce qu'elle contient.** Les
+ * 3. **On lit ce qu'une instance expose, jamais ce qu'elle contient.** Les
  *    calques d'une dépendance appartiennent à son contrat. Seules ses props et
- *    ce que CE parent y a CHANGÉ remontent ici : les surcharges que
+ *    ce que ce parent y a changé remontent ici : les surcharges que
  *    `InstanceNode.overrides` rapporte, et les remplacements d'instance qu'il ne
  *    rapporte pas, lus en comparant l'instance à son maître.
  */
@@ -73,17 +73,17 @@ function componentPropertiesOf(instance: InstanceNode): ComponentProperties {
  * pas `false` en « potentiellement visible » : l'échantillon décrit ce que la
  * maquette affiche maintenant.
  *
- * Ce que cette lecture filtre n'est PAS « tout ce qui est rendu » : c'est le
- * relevé POSITIONNEL NU — `text`, `override.text`, `swaps` —, celui qui rapporte
+ * Ce que cette lecture filtre n'est pas « tout ce qui est rendu » : c'est le
+ * relevé positionnel nu (`text`, `override.text`, `swaps`), celui qui rapporte
  * ce qu'un calque porte sans rapporter la condition qui le masque. Une valeur
- * d'`args` n'en est jamais : le booléen qui la masque voyage dans le MÊME
+ * d'`args` n'en est jamais : le booléen qui la masque voyage dans le même
  * `args`, et la reconstruction n'a donc besoin de rien retirer pour être juste.
  * Filtrer `args` publierait au contraire `false` pour une prop qui vaut `true`.
  *
  * La frontière est toujours la racine du composant exporté, jamais l'instance
  * de dépendance : un cadre optionnel masqué AU-DESSUS d'une dépendance ne montre
- * rien de ce qu'elle contient. Elle se compose — `node` visible jusqu'à son
- * instance, puis l'instance visible jusqu'à la racine — pour que la remontée
+ * rien de ce qu'elle contient. Elle se compose (`node` visible jusqu'à son
+ * instance, puis l'instance visible jusqu'à la racine) pour que la remontée
  * garde au passage sa garde de confinement.
  */
 export function isVisibleInSample(node: SceneNode, owner: SceneNode): boolean {
@@ -100,14 +100,14 @@ export function isVisibleInSample(node: SceneNode, owner: SceneNode): boolean {
  * Le calque que chaque liaison `mainComponent` de cette instance désigne.
  *
  * Le relevé s'arrête sur une dépendance de la dépendance : ses calques sont
- * liés à SES propriétés, et un nom technique homonyme y volerait la réponse.
- * Il ne descend pas non plus sous un calque déjà lié — une INSTANCE_SWAP place
+ * liés à ses propriétés, et un nom technique homonyme y volerait la réponse.
+ * Il ne descend pas non plus sous un calque déjà lié : une INSTANCE_SWAP place
  * un composant entier, dont les liaisons internes appartiennent à celui-ci.
  *
- * Un `SLOT`, en revanche, ne coupe RIEN ici. Cette borne-là appartient aux
- * comparaisons POSITIONNELLES, qui supposent l'instance isomorphe à son maître ;
- * cette lecture-ci est NOMINALE — elle joint `componentPropertyReferences` à une
- * propriété déclarée. Couper sur un `SLOT` retirerait la clé d'`args` ET la
+ * Un `slot`, en revanche, ne coupe rien ici. Cette borne-là appartient aux
+ * comparaisons positionnelles, qui supposent l'instance isomorphe à son maître ;
+ * cette lecture-ci est nominale : elle joint `componentPropertyReferences` à une
+ * propriété déclarée. Couper sur un `slot` retirerait la clé d'`args` et la
  * cible de `viaProps`, sans que `swaps` reprenne la main : le fait n'aurait plus
  * aucun propriétaire.
  */
@@ -151,14 +151,14 @@ function swapReferenceOf(node: SceneNode): string | undefined {
  * Traduit les propriétés appliquées d'une instance dans les clés publiques du
  * contrat de son composant.
  *
- * Le modèle vient de `extractContractPropertyModel`, la fonction PURE qui
+ * Le modèle vient de `extractContractPropertyModel`, la fonction pure qui
  * produit précisément ces clés lors de l'export de la dépendance : les noms
  * publiés ici sont donc les siens, renommage sémantique compris. Ses
- * avertissements sont jetés — ils appartiennent à cet export-là, pas à
+ * avertissements sont jetés : ils appartiennent à cet export-là, pas à
  * celui-ci.
  *
  * `resolveSwap` existe parce que `componentProperties` rend, pour une
- * INSTANCE_SWAP, l'IDENTIFIANT du node placé — « 1:1 » — et jamais son nom.
+ * INSTANCE_SWAP, l'identifiant du node placé (« 1:1 ») et jamais son nom.
  * Publier cette valeur brute donnerait à `args` une clé publique et une valeur
  * illisible, là où la règle 1 n'admet que ce qu'un développeur pourrait écrire
  * lui-même. `propertyBindings.appliedValue` avait déjà tranché la question pour
@@ -175,7 +175,7 @@ function argumentsOf(
 ): void {
   for (const [figmaName, property] of Object.entries(properties)) {
     const brute = normalizePropKey(figmaName);
-    // Une VARIANT property est indexée sans son « #id », les autres avec.
+    // Une variant property est indexée sans son « #id », les autres avec.
     const key = model.publicPropertyKeyByFigmaName.get(figmaName)
       ?? model.publicVariantKeyByRawKey.get(brute);
     // Une propriété rejetée du modèle public ne doit jamais réapparaître sous
@@ -193,12 +193,12 @@ function argumentsOf(
     } else if (property.type === 'INSTANCE_SWAP') {
       cible = resolveSwap(figmaName);
       const main = cible ? mainByInstanceId.get(cible.id) : undefined;
-      // Un remplacement qu'on ne sait pas nommer est OMIS, jamais deviné : la
+      // Un remplacement qu'on ne sait pas nommer est omis, jamais deviné : la
       // règle 2 interdit de dégrader, et `swaps` reste alors le seul relevé.
       value = main ? ownerComponentName(main) : undefined;
     }
 
-    // L'axe d'états n'est pas une prop — le contrat de la dépendance le publie
+    // L'axe d'états n'est pas une prop : le contrat de la dépendance le publie
     // dans `stateModel`. Sa valeur reste néanmoins publiée sous la clé de
     // l'axe : c'est elle qui permet de rapprocher cet échantillon d'un
     // `variants[].values` de ce contrat-là. Sa valeur « Disable » porte en plus
@@ -237,7 +237,7 @@ type InstanceArguments = {
  * L'ordre suit la règle de fusion de l'export : les clés du composant lui-même
  * l'emportent, celles du wrapper élu ne comblent que les trous.
  *
- * Le relevé des cibles d'INSTANCE_SWAP est PARESSEUX : un composé dont aucune
+ * Le relevé des cibles d'INSTANCE_SWAP est paresseux : un composé dont aucune
  * dépendance n'expose de remplacement natif ne parcourt aucun sous-arbre de
  * plus qu'avant.
  */
@@ -290,11 +290,11 @@ function instanceArguments(
 }
 
 /**
- * Ce que CE parent a changé dans une instance, indexé par le node touché.
+ * Ce que ce parent a changé dans une instance, indexé par le node touché.
  *
- * `instance.overrides` ne rend que les surcharges DIRECTES : ce que le composant
+ * `instance.overrides` ne rend que les surcharges directes : ce que le composant
  * de la dépendance fournit lui-même n'y figure pas, et c'est exactement la
- * frontière recherchée. La lecture est défensive de bout en bout — un
+ * frontière recherchée. La lecture est défensive de bout en bout, un
  * identifiant qu'on ne sait pas résoudre, un champ hors des deux retenus, un
  * runtime qui n'expose pas le tableau : rien de tout cela ne doit interrompre un
  * export dont ce champ n'est qu'un complément.
@@ -315,7 +315,7 @@ function overridesOf(
   }
 
   // Deux champs seulement. `NodeChangeProperty` en compte des dizaines, mais
-  // toutes les autres décrivent du RENDU — remplissage, rayon, dimension — que
+  // toutes les autres décrivent du rendu (remplissage, rayon, dimension) que
   // la règle 1 écarte. `mainComponent` n'y figure pas du tout : Figma ne
   // l'expose pas dans ce relevé, et une icône substituée sans propriété reste
   // donc hors de portée. Le geste attendu est d'exposer un INSTANCE_SWAP, et le
@@ -374,9 +374,9 @@ export function extractVariantSample(
   for (const { slotPath, textNode, leaf } of textSlots(source.component, iconNames, composed)) {
     if (textNode.componentPropertyReferences?.characters) continue;
     if (!isVisibleInSample(textNode, source.component)) continue;
-    // `figmaLayer` qui vaut le texte lui-même est le cas ORDINAIRE : Figma nomme
+    // `figmaLayer` qui vaut le texte lui-même est le cas ordinaire : Figma nomme
     // un calque texte d'après ce qu'il dit tant que personne ne l'a renommé. Le
-    // signal reste entier sans être écrit deux fois — son absence dit « jamais
+    // signal reste entier sans être écrit deux fois : son absence dit « jamais
     // renommé », exactement ce que la redondance disait.
     texts.push({
       slotPath,
@@ -399,35 +399,35 @@ export function extractVariantSample(
 }
 
 /**
- * Les instances que CE parent a remplacées dans une dépendance.
+ * Les instances que ce parent a remplacées dans une dépendance.
  *
  * Figma ne rapporte pas un remplacement : `NodeChangeProperty` ne contient pas
  * `mainComponent`, et `InstanceNode.overrides` reste donc muet. Il se lit par
- * comparaison avec le composant maître, position par position — la structure
+ * comparaison avec le composant maître, position par position : la structure
  * d'une instance est isomorphe à celle de son maître hors contenu libre d'un
  * SLOT.
  *
  * Deux bornes, qui sont la frontière de composition elle-même :
  *
  * 1. On ne descend pas dans une dépendance de la dépendance : ce qu'elle
- *    contient appartient à SON contrat, et elle a son propre échantillon.
- * 2. On ne descend ni dans le contenu libre d'un SLOT, ni sous un calque déjà
+ *    contient appartient à son contrat, et elle a son propre échantillon.
+ * 2. On ne descend ni dans le contenu libre d'un slot, ni sous un calque déjà
  *    déclaré remplacé : son contenu vient d'un autre composant, et plus aucune
  *    position n'y correspond au maître.
  *
  * Le relevé suit la visibilité effective, racine du composant exportée comprise.
  * La perte est assumée et se lit dans l'autre sens : un remplacement posé sous
- * un cadre que CE variant masque n'est pas publié, parce que l'échantillon dit
- * ce que la maquette montre, variant par variant — le variant qui affiche ce
+ * un cadre que ce variant masque n'est pas publié, parce que l'échantillon dit
+ * ce que la maquette montre, variant par variant, le variant qui affiche ce
  * cadre publie, lui, le remplacement.
  *
- * La comparaison porte sur le composant PROPRIÉTAIRE, jamais sur la variante :
+ * La comparaison porte sur le composant propriétaire, jamais sur la variante :
  * choisir une autre variante d'un même component set n'est pas un
  * remplacement, et le contrat de la dépendance décrit déjà ce choix.
  *
  * Troisième borne, et elle vient d'ailleurs : ce qu'`args` a déjà nommé n'est
  * pas republié. Quand la dépendance expose une INSTANCE_SWAP sur ce calque,
- * son contrat en tire une prop — `mergeIconRules` y pose `runtimeProp` plutôt
+ * son contrat en tire une prop : `mergeIconRules` y pose `runtimeProp` plutôt
  * qu'une prop de synthèse, précisément « pour ne pas obliger le consommateur à
  * choisir entre deux sources de vérité ». Ce relevé-ci ne doit pas rouvrir le
  * choix que celui-là a fermé : un même fait n'a jamais deux propriétaires.
@@ -456,7 +456,7 @@ function swapsOf(
 
     if (current.node !== instance && current.node.type === 'INSTANCE') {
       // `args` répond déjà pour ce calque : le contenu vient d'ailleurs, et
-      // plus aucune position n'y correspond au maître — comme après un swap.
+      // plus aucune position n'y correspond au maître, comme après un swap.
       if (viaProps.has(current.node.id)) continue;
       const defaut = defaults.get(current.indexes.join('.'));
       const main = mainByInstanceId.get(current.node.id);
@@ -489,7 +489,7 @@ function swapsOf(
  * Les dépendances d'un variant, dans l'ordre du document et rangées comme
  * l'arbre les imbrique.
  *
- * Le relevé de composition a déjà reconnu TOUTES les instances contractées, y
+ * Le relevé de composition a déjà reconnu toutes les instances contractées, y
  * compris celles imbriquées dans une autre : la récursion ne coûte donc aucune
  * reconnaissance supplémentaire, seulement de rattacher chacune à son plus
  * proche ancêtre contracté.
@@ -504,11 +504,11 @@ function dependencySamples(
   const index = indexSampleDependencies(source.component, composed);
   if (index.entries.length === 0) return [];
 
-  // `propertySurfaces` est l'UNIQUE autorité sur la surface publique d'une
+  // `propertySurfaces` est l'unique autorité sur la surface publique d'une
   // dépendance : c'est elle qui a élu le wrapper, du même geste que l'export
   // autonome de cette dépendance. En fabriquer une ici en dernier recours
-  // donnerait une seconde réponse — sans wrapper, faute de pouvoir l'élire
-  // sans aller-retour — à une question qui n'en admet qu'une. Un owner absent
+  // donnerait une seconde réponse (sans wrapper, faute de pouvoir l'élire
+  // sans aller-retour) à une question qui n'en admet qu'une. Un owner absent
   // de l'index laisse donc la dépendance sans `args`, jamais avec des `args`
   // que l'export de cette dépendance contredirait.
   const surfaceOf = (instance: InstanceNode): DependencyPropertySurface | null => {
@@ -603,7 +603,7 @@ function indexSampleDependencies(
     if (!current) break;
     const { node, owner } = current;
     nodesById.set(node.id, node);
-    // Le node qui EST une dépendance appartient encore à son parent ; ses
+    // Le node qui est une dépendance appartient encore à son parent ; ses
     // descendants, eux, lui appartiennent. C'est la sémantique exacte de
     // `nearestAncestorIn`, sans une remontée par trouvaille.
     if (owner) ownerByNodeId.set(node.id, owner);
@@ -626,7 +626,7 @@ function indexSampleDependencies(
 /**
  * Range chaque surcharge sous la dépendance qui la contient au plus près.
  *
- * Le relevé est fait sur TOUTES les instances, et chaque trouvaille est routée
+ * Le relevé est fait sur toutes les instances, et chaque trouvaille est routée
  * vers son propriétaire réel plutôt que rattachée à l'instance qui l'a
  * rapportée. Figma documente `overrides` comme « directes, héritées exclues »
  * sans dire à quel niveau apparaît la surcharge d'une instance imbriquée ;

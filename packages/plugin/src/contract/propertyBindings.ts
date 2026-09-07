@@ -8,8 +8,8 @@ import type { ExtractedPropertyBinding } from '@ucm-kit/core/format';
 /**
  * Valeur appliquée de chaque prop publique, par variant.
  *
- * Le relevé se fait ici parce que c'est ici qu'on sait déjà QUEL calque porte
- * QUELLE prop dans CE variant ; le refaire ailleurs demanderait de redécider ce
+ * Le relevé se fait ici parce que c'est ici qu'on sait déjà quel calque porte
+ * quelle prop dans ce variant ; le refaire ailleurs demanderait de redécider ce
  * rapprochement, que ce module possède seul. Elle reste hors de
  * `ExtractedPropertyBinding` : la définition d'une liaison se déduplique par
  * égalité de son bloc, et une valeur propre à un variant l'en empêcherait.
@@ -25,7 +25,7 @@ export type PropertyBindingScan = {
 /**
  * Ce que la maquette montre pour une cible native, ou `undefined`.
  *
- * `mainComponent` ne se lit pas sur le node : sa valeur utile est le NOM du
+ * `mainComponent` ne se lit pas sur le node : sa valeur utile est le nom du
  * composant placé, que le scan de composition a déjà rapporté pour toutes les
  * instances. Le résoudre autrement coûterait un aller-retour par swap.
  */
@@ -86,7 +86,7 @@ export function extractPropertyBindings(
           if (!unresolved.has(marker)) {
             unresolved.add(marker);
             // Le sujet est une component property, qui n'est pas un node ; le
-            // CORPS nomme le calque qui la référence, et c'est le seul endroit
+            // corps nomme le calque qui la référence, et c'est le seul endroit
             // où le designer peut agir. Le clic y mène.
             pousserNote(
               warnings,

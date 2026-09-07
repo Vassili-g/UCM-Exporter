@@ -1,7 +1,7 @@
 /**
  * Tests de l'orchestrateur de structure : assemblage layout + tailles +
  * arbres de variantes, et les cas limites qui ne se voient pas à l'œil sur un
- * JSON — le composant sans layout, et l'unicité des dimensions.
+ * JSON, le composant sans layout, et l'unicité des dimensions.
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -142,7 +142,7 @@ test('chaque couleur et contour est situé sur son chemin exact dans la vue', as
 });
 
 test('la couleur des tracés d’une icône est située sur le slot de l’icône', async () => {
-  // Le contrat ne publie pas les tracés d'une icône importée — c'est la règle,
+  // Le contrat ne publie pas les tracés d'une icône importée : c'est la règle,
   // et aucun geste du designer ne la changera. Leur fill entre pourtant dans
   // `variants[].tokens` : le situer sur le calque publié qui les porte est la
   // seule lecture qui laisse le consommateur peindre l'icône. Deux tracés d'une
@@ -208,7 +208,7 @@ test('la couleur des tracés d’une icône est située sur le slot de l’icôn
 });
 
 test('un calque écarté de la projection garde sa place dans la vue exacte', async () => {
-  // La vue exacte part de la VRAIE racine du variant, pas du node de layout élu :
+  // La vue exacte part de la vraie racine du variant, pas du node de layout élu :
   // un calque posé à côté de ce node y est publié, et sa peinture y est située.
   // C'est la projection `structure` qui l'écarte, et elle a déjà son message et
   // son geste. Un second message sur la même peinture réclamerait autre chose au
@@ -267,7 +267,7 @@ test('un calque écarté de la projection garde sa place dans la vue exacte', as
 
   // La projection l'écarte : elle ne décrit que les enfants du node élu.
   assert.deepEqual(structure.children.map((child) => child.slot), ['label']);
-  // La vue exacte, elle, le situe — c'est elle que le consommateur lit.
+  // La vue exacte, elle, le situe : c'est elle que le consommateur lit.
   assert.deepEqual(variants[0]?.paintPlacements.fills?.stray, [['repère']]);
   // Son déplacement est demandé une seule fois, par la note dédiée à la
   // projection ; la peinture, elle, ne réclame rien.
@@ -379,7 +379,7 @@ test('extractStructure n’ajoute pas de bloc sizes quand aucun axe n’est un a
     findAll: findAllOn([]),
   } as unknown as ComponentNode;
   // Le set existe et est atteignable, mais son seul axe porte des couleurs :
-  // c'est bien l'absence d'axe de TAILLES qui doit décider, pas celle d'un wrapper.
+  // c'est bien l'absence d'axe de tailles qui doit décider, pas celle d'un wrapper.
   (reference as unknown as { parent: unknown }).parent = {
     type: 'COMPONENT_SET',
     name: 'Badge',
@@ -511,7 +511,7 @@ test('la structure propre à un variant vit dans sa vue exacte, sans un mot', as
     }),
   );
 
-  // La divergence est PUBLIÉE : chaque variant garde sa propre vue exacte, et
+  // La divergence est publiée : chaque variant garde sa propre vue exacte, et
   // c'est ce qui rend le constat inutile au designer.
   const nomsDeSlot = (vue: any): string[] =>
     (vue.children ?? []).flatMap((enfant: any) => [enfant.figmaLayer ?? enfant.slot,

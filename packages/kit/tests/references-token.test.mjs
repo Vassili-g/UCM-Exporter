@@ -15,7 +15,7 @@ test("un texte de maquette en forme de référence n'est pas une référence", (
     samples: {
       s1: {
         text: [
-          // `REFERENCE` est ancrée : seul un texte qui EST une référence compte.
+          // `REFERENCE` est ancrée : seul un texte qui est une référence compte.
           { slotPath: ["a"], figmaLayer: "Gabarit", value: "{montant.total}" },
           { slotPath: ["b"], figmaLayer: "Phrase", value: "Total : {montant.total}" },
         ],

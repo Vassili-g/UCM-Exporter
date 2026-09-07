@@ -24,7 +24,7 @@ const dist = path.join(racine, 'dist');
 const sortie = path.join(dist, 'galerie');
 
 /**
- * Toutes les substitutions passent par une FONCTION, jamais par une chaîne.
+ * Toutes les substitutions passent par une fonction, jamais par une chaîne.
  * C'est la leçon de `build-ui.cjs` : dans une chaîne de remplacement,
  * `String.replace` interprète `$&`, `` $` ``, `$'`, `$$` et `$1`. Le bundle
  * minifié, le CSS et le JSON des scénarios en contiennent.

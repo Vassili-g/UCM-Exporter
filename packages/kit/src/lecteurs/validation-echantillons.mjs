@@ -1,13 +1,13 @@
 /**
- * L'échantillon est-il JOIGNABLE ?
+ * L'échantillon est-il joignable ?
  *
  * `samples` n'est pas normatif : aucun contrôle ne le compare au code, et ce
- * module n'en change rien. Il ne demande jamais si une valeur est JUSTE — la
+ * module n'en change rien. Il ne demande jamais si une valeur est juste : la
  * maquette du jour de l'export n'engage personne. Il demande si un lecteur peut
- * l'ATTEINDRE : une clé qui ne désigne aucune prop, un calque qui ne désigne
+ * l'atteindre : une clé qui ne désigne aucune prop, un calque qui ne désigne
  * aucun slot, une dépendance imbriquée que son propriétaire ne déclare pas sont
  * des adresses mortes. Le consommateur ne peut alors ni les appliquer ni les
- * signaler, et l'écart ne se voit qu'à l'écran — c'est exactement ainsi que des
+ * signaler, et l'écart ne se voit qu'à l'écran : c'est exactement ainsi que des
  * sous-composants se sont retrouvés mal configurés sans qu'aucun contrôle ne
  * bronche.
  *
@@ -59,7 +59,7 @@ function surfacePublique(contrat) {
  * Le slot que désigne un chemin, ou la raison pour laquelle il n'en désigne pas
  * exactement un.
  *
- * Deux frères peuvent porter le même nom de slot : l'exiger UNIQUE est le fond
+ * Deux frères peuvent porter le même nom de slot : l'exiger unique est le fond
  * du contrôle, pas un détail d'implémentation. Un chemin qui joint deux slots ne
  * dit pas où poser ce qu'il porte.
  */
@@ -94,14 +94,14 @@ function cardinalites(dependances) {
 /**
  * Chaque clé d'`args` désigne-t-elle une prop que la dépendance publie ?
  *
- * `args` est une projection FERMÉE de la surface publique : l'Exporter n'y laisse
+ * `args` est une projection fermée de la surface publique : l'Exporter n'y laisse
  * entrer que ce que le modèle de propriétés a accepté. Une clé qui ne joint rien
  * n'est donc pas une tolérance, c'est la preuve que les deux contrats ne
  * décrivent plus le même composant.
  *
- * Le contrôle est une INCLUSION, jamais une couverture : `args` est publié comme
+ * Le contrôle est une inclusion, jamais une couverture : `args` est publié comme
  * un sous-ensemble, et plusieurs types de props n'y entrent structurellement
- * jamais — un `slot`, dont le contenu libre n'est pas une valeur, et une prop
+ * jamais, un `slot`, dont le contenu libre n'est pas une valeur, et une prop
  * d'icône runtime, que les règles `@icons` fabriquent sans porteur Figma.
  */
 function validerArgs(instance, dependance, ajouter) {
@@ -157,14 +157,14 @@ function validerArgs(instance, dependance, ajouter) {
 /**
  * Chaque `masterPath` joint-il exactement une icône de sa dépendance ?
  *
- * C'est LE contrôle que seul un lecteur du graphe peut faire, et celui dont
+ * C'est le contrôle que seul un lecteur du graphe peut faire, et celui dont
  * l'absence a coûté le plus cher : `swaps` publie un chemin de calques du maître
  * de la dépendance, et le consommateur doit en joindre le dernier segment à
- * `icons.<clé>.figmaName` du contrat de CETTE dépendance pour trouver la prop à
+ * `icons.<clé>.figmaName` du contrat de cette dépendance pour trouver la prop à
  * renseigner. Zéro ou plusieurs réponses rendent cette prop indécidable sans
  * casser la compilation.
  *
- * Ce que ce contrôle NE dit pas : quelle icône est la bonne.
+ * Ce que ce contrôle ne dit pas : quelle icône est la bonne.
  */
 function validerRemplacements(instance, dependance, ajouter) {
   for (const swap of Array.isArray(instance.swaps) ? instance.swaps : []) {
@@ -186,7 +186,7 @@ function validerRemplacements(instance, dependance, ajouter) {
 }
 
 /**
- * Une dépendance imbriquée est-elle une dépendance de son propriétaire IMMÉDIAT ?
+ * Une dépendance imbriquée est-elle une dépendance de son propriétaire immédiat ?
  *
  * C'est la contrepartie contrôlable de la règle d'adressage : les `composes`
  * d'une `SampleInstance` se rapprochent des dépendances directes de son
@@ -195,8 +195,8 @@ function validerRemplacements(instance, dependance, ajouter) {
  * poser ce qu'il porte, et la seule issue serait la recherche globale par nom
  * que le protocole interdit.
  *
- * La cardinalité se compare au `composes` global de la dépendance — l'union
- * ordonnée à cardinalité MAXIMALE. On ne sait pas quel variant de la dépendance
+ * La cardinalité se compare au `composes` global de la dépendance : l'union
+ * ordonnée à cardinalité maximale. On ne sait pas quel variant de la dépendance
  * le parent a instancié ; exiger moins serait faux, exiger un variant précis
  * serait invérifiable.
  */
@@ -231,7 +231,7 @@ function validerImbrications(instance, dependance, ajouter) {
  *
  * Deux jointures, toutes deux internes au contrat. La séquence d'abord : les
  * racines suivent, dans l'ordre, les dépendances exactes du variant. On exige
- * une SOUS-SÉQUENCE, pas une égalité — une dépendance que l'arbre publié ne
+ * une SOUS-SÉQUENCE, pas une égalité, une dépendance que l'arbre publié ne
  * situe pas est retirée de l'échantillon sous un simple avertissement de
  * l'Exporter, et transformer cette dégradation douce en erreur dure violerait la
  * seule promesse que `samples` ait jamais faite : ne jamais rien dégrader. Le
@@ -289,7 +289,7 @@ function validerRacines(contrat, variant, cle, echantillon, ajouter) {
  *
  * C'est le canal qui porte le contenu réellement affiché, et le plus volumineux
  * d'un composé. Un chemin qui ne joint aucun slot rend ce contenu inatteignable
- * — le lecteur voit le texte, mais ne sait pas où l'écrire.
+ * : le lecteur voit le texte, mais ne sait pas où l'écrire.
  */
 function validerTextes(contrat, variant, cle, echantillon, ajouter) {
   const vue = vueExacteDuVariant(contrat, variant);
@@ -311,7 +311,7 @@ function validerTextes(contrat, variant, cle, echantillon, ajouter) {
  *
  * `parNom` vient du graphe : un composant absent ou ambigu y est déjà signalé, et
  * en reparler ici doublerait le message sans rien apprendre. `ajouter` est celui
- * du graphe aussi, qui dédoublonne par contrat — un même échantillon partagé par
+ * du graphe aussi, qui dédoublonne par contrat : un même échantillon partagé par
  * plusieurs variants ne produit donc qu'un constat.
  */
 export function validerAdressesDEchantillons(documents, parNom, ajouter) {

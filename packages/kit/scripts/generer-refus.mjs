@@ -1,12 +1,12 @@
 /**
  * Régénère l'instantané des refus lu par `tests/refus-enregistres.test.mjs`.
  *
- * Il IMPORTE le harnais du test au lieu d'en recopier le corps. C'est la seule
+ * Il importe le harnais du test au lieu d'en recopier le corps. C'est la seule
  * forme acceptable : un générateur qui recalculerait les verdicts à sa façon
  * finirait par mesurer autre chose que ce que le test compare, et l'instantané
  * cesserait de prouver quoi que ce soit sans qu'aucun rouge n'apparaisse.
  *
- * À lancer UNIQUEMENT quand un changement de verdict est voulu et compris. La
+ * À lancer uniquement quand un changement de verdict est voulu et compris. La
  * régénération est le geste qui efface la preuve : elle se justifie dans le
  * message de commit, jamais après coup.
  */

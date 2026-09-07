@@ -86,7 +86,7 @@ export function normalizeRepositoryPath(value: string): string | null {
 
 /**
  * Un chemin de repli : sa forme normalisée, `null` quand il est vide, et
- * `false` quand il est écrit mais inutilisable. Les trois cas se distinguent —
+ * `false` quand il est écrit mais inutilisable. Les trois cas se distinguent :
  * confondre « absent » et « fautif » ferait taire la seule erreur de saisie que
  * ces champs peuvent encore produire.
  */
@@ -106,8 +106,8 @@ export function validateSettings(input: SettingsInput, storedPat = ''): Settings
 
   /*
    * Les deux chemins sont un repli : vides, ils laissent le
-   * repository décider par son `ucm.config.json`. Leur forme reste vérifiée —
-   * un chemin qui remonte hors du repository n'est jamais une réponse — mais
+   * repository décider par son `ucm.config.json`. Leur forme reste vérifiée
+   * (un chemin qui remonte hors du repository n'est jamais une réponse) mais
    * leur absence n'est plus une erreur.
    */
   const componentsPath = cheminDeRepli(input.componentsPath);

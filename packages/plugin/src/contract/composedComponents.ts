@@ -1,10 +1,10 @@
 /**
- * Reconnaissance des composants unifiés imbriqués — le socle de la composition.
+ * Reconnaissance des composants unifiés imbriqués : le socle de la composition.
  *
- * Un composé (une Alert et son bouton d'action) embarque des INSTANCES de
+ * Un composé (une Alert et son bouton d'action) embarque des instances de
  * composants qui possèdent déjà leur propre contrat. Descendre dans leurs
  * calques ferait décrire au composé les internes d'un autre : ses slots, ses
- * dimensions, jusqu'à ses props. Un composé ne liste donc que SES tokens, et
+ * dimensions, jusqu'à ses props. Un composé ne liste donc que ses tokens, et
  * déclare les autres comme dépendances.
  *
  * Tout COMPONENT ou COMPONENT_SET peut être exporté depuis la 8.0, mais cela
@@ -30,7 +30,7 @@ type ComposedInstancesScan = {
   /** Les dépendances directes, dans l'ordre des calques. */
   composes: ComposedDependency[];
   /**
-   * TOUTES les instances contractées rencontrées, y compris imbriquées les
+   * Toutes les instances contractées rencontrées, y compris imbriquées les
    * unes dans les autres : c'est ce relevé qui sert à élaguer le parcours.
   */
   composed: Map<string, ComposedDependency>;
@@ -41,7 +41,7 @@ type ComposedInstancesScan = {
    */
   warnings: string[];
   /**
-   * Composant maître de CHAQUE instance rencontrée, contractée ou non.
+   * Composant maître de chaque instance rencontrée, contractée ou non.
    *
    * `contractedOwner` interroge déjà `getMainComponentAsync` sur toutes les
    * instances du sous-arbre ; jeter le node pour n'en garder qu'un nom
@@ -57,9 +57,9 @@ type ComposedInstancesScan = {
  * chemin d'index (« 0.2.1 ») → nom du calque dans le maître et composant qui
  * s'y trouve par défaut.
  *
- * Le chemin d'INDEX est la clé, jamais le nom : Figma interdit d'ajouter, de
+ * Le chemin d'index est la clé, jamais le nom : Figma interdit d'ajouter, de
  * retirer ou de réordonner un calque dans une instance, si bien que la position
- * y est isomorphe à celle du maître — alors que le nom, lui, suit le composant
+ * y est isomorphe à celle du maître, alors que le nom, lui, suit le composant
  * dès qu'on remplace une instance, c'est-à-dire exactement dans le cas qu'on
  * cherche à reconnaître.
  */
@@ -84,7 +84,7 @@ export type DependencyPropertySurfaces = ReadonlyMap<string, DependencyPropertyS
 export type ComposedMatrixScan = ComposedInstancesScan & {
   /**
    * Ce que chaque composant maître de dépendance contient par défaut, pour que
-   * l'échantillon reconnaisse un remplacement SANS refaire d'aller-retour
+   * l'échantillon reconnaisse un remplacement sans refaire d'aller-retour
    * asynchrone. Cf. `MasterInstanceDefaults`.
    */
   swapDefaults: SwapDefaults;
@@ -93,7 +93,7 @@ export type ComposedMatrixScan = ComposedInstancesScan & {
 };
 
 /**
- * Relève en UNE fois les composants unifiés déclarés sur la page.
+ * Relève en une fois les composants unifiés déclarés sur la page.
  *
  * `extractRules` balaye la page entière pour un seul nom ; refaire ce balayage
  * à chaque instance imbriquée serait quadratique. L'index est donc construit
@@ -146,7 +146,7 @@ async function contractedOwner(
   // doit pas faire échouer l'export entier. Il ne doit pas non plus disparaître.
   // Sans ce nom, l'instance n'entre pas dans `composed` ; `getAllNodes` cesse
   // alors de l'élaguer, et le contrat publie les internes du voisin comme les
-  // siens — ses calques en slots, ses couleurs dans ses tokens — pendant que la
+  // siens (ses calques en slots, ses couleurs dans ses tokens) pendant que la
   // dépendance manque à `composes`. Le relevé ne l'ayant jamais trouvée, même
   // l'avertissement « dépendance non située » ne peut pas partir : c'est ici,
   // ou nulle part.
@@ -176,11 +176,11 @@ export function ownerComponentName(main: ComponentNode): string {
 type MasterInstance = { indexPath: string; masterPath: string[]; instance: InstanceNode };
 
 /**
- * Toutes les instances d'un sous-arbre, avec leur chemin d'index ET leur chemin
+ * Toutes les instances d'un sous-arbre, avec leur chemin d'index et leur chemin
  * de noms, dans l'ordre du document.
  *
  * Le parcours descend par `children` plutôt que par `findAll` parce que c'est
- * la POSITION qui l'intéresse : `findAll` aplatit l'arbre et perdrait l'indice
+ * la position qui l'intéresse : `findAll` aplatit l'arbre et perdrait l'indice
  * de chaque enfant, seule clé qu'une instance et son maître partagent.
  */
 function masterInstances(root: SceneNode): MasterInstance[] {
@@ -200,7 +200,7 @@ function masterInstances(root: SceneNode): MasterInstance[] {
         instance: current.node,
       });
     }
-    // Le contenu d'un SLOT est libre : il n'est pas isomorphe au maître et ne
+    // Le contenu d'un slot est libre : il n'est pas isomorphe au maître et ne
     // peut donc participer à aucune comparaison positionnelle fiable.
     if (current.node.type === 'SLOT') continue;
     const children = 'children' in current.node ? current.node.children : [];
@@ -266,7 +266,7 @@ async function indexDependencyPropertySurfaces(
  *
  * Le relevé s'arrête sur une instance contractée, exactement comme
  * `getAllNodes` élague le parcours du contrat : ce qu'une dépendance de la
- * dépendance contient appartient à SON contrat, et le comparer ici rangerait
+ * dépendance contient appartient à son contrat, et le comparer ici rangerait
  * une trouvaille sous un propriétaire qui ne la porte pas.
  */
 export async function indexMasterInstances(
@@ -306,7 +306,7 @@ export async function indexMasterInstances(
  * Sépare, dans un variant, ce qui lui appartient de ce qui appartient aux
  * composants qu'il embarque.
  *
- * Chaque instance donne SA propre entrée, sans regroupement par nom de
+ * Chaque instance donne sa propre entrée, sans regroupement par nom de
  * composant : deux boutons d'un même Card ont des calques et des props de
  * visibilité distincts, et les fondre en une ligne en perdrait un.
  *
@@ -319,7 +319,7 @@ export async function scanComposedInstances(
 ): Promise<ComposedInstancesScan> {
   // Le parcours passe par `getAllNodes` comme toutes les autres extractions :
   // un sous-arbre statiquement masqué ne fournit ni tokens, ni slots, ni
-  // wrapper — il ne fournit pas non plus de dépendance. Ses avertissements
+  // wrapper, il ne fournit pas non plus de dépendance. Ses avertissements
   // sont jetés ici, car les extractions suivantes les produiront sur le même
   // arbre ; les collecter deux fois ne ferait que des doublons.
   // `getAllNodes` renvoie aussi la racine : un composant ne se déclare pas
@@ -332,10 +332,10 @@ export async function scanComposedInstances(
   // de connaître d'abord toutes les dépendances du sous-arbre.
   // `getMainComponentAsync` est un aller-retour par instance. Les enchaîner en
   // série coûtait, sur un set de trente variants portant chacun ses instances,
-  // autant d'allers-retours consécutifs — et l'UI du plugin est mono-thread.
-  // Les lancer ensemble ne change RIEN au résultat : l'ordre de `composes`
+  // autant d'allers-retours consécutifs, et l'UI du plugin est mono-thread.
+  // Les lancer ensemble ne change rien au résultat : l'ordre de `composes`
   // vient de `instances`, qui reste l'ordre du document.
-  // Chaque lecture écrit dans SA propre liste : `Promise.all` ne garantit aucun
+  // Chaque lecture écrit dans sa propre liste : `Promise.all` ne garantit aucun
   // ordre d'exécution, et un tableau partagé rendrait l'ordre des messages
   // dépendant de la latence du réseau. Les listes sont ensuite concaténées dans
   // l'ordre de `instances`, qui est celui du document.
@@ -381,7 +381,7 @@ export async function scanComposedInstances(
 }
 
 /**
- * Étend le relevé à TOUS les variants du Component Set.
+ * Étend le relevé à tous les variants du Component Set.
  *
  * Chaque variant porte ses propres instances, avec leurs propres ids : élaguer
  * d'après le seul variant de référence ne protégerait que celui-là, et les
@@ -413,7 +413,7 @@ export async function scanComposedMatrix(
 
   // Les maîtres se relèvent une fois pour toute la matrice, et une seule fois
   // par maître : trente variants qui embarquent le même Button ne coûtent qu'un
-  // parcours. C'est aussi ce qui garde `extractSamples` synchrone — un module
+  // parcours. C'est aussi ce qui garde `extractSamples` synchrone : un module
   // pur qui n'attend rien ne peut pas ordonner ses trouvailles au hasard des
   // allers-retours.
   const maitres = new Map<string, ComponentNode>();
@@ -433,7 +433,7 @@ export async function scanComposedMatrix(
     contracted,
   );
 
-  // Une instance orpheline vit dans TOUS les variants du set, et chaque scan la
+  // Une instance orpheline vit dans tous les variants du set, et chaque scan la
   // relève avec le même texte. Le message porte le nom du layer, jamais celui
   // du variant : le dédoublonnage rend donc exactement un constat par layer.
   const warnings = Array.from(new Set(scans.flatMap((scan) => scan.warnings)));

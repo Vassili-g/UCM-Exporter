@@ -16,8 +16,8 @@ export type ArbitreIdentite = 'componentKey' | 'nodeId';
  */
 export type VerdictIdentite = {
   /**
-   * `meme` : le même composant Figma, donc un réexport — l'écriture est légitime.
-   * `distinct` : deux composants différents au même chemin — c'est la collision.
+   * `meme` : le même composant Figma, donc un réexport, l'écriture est légitime.
+   * `distinct` : deux composants différents au même chemin, c'est la collision.
    * `indecidable` : aucun signal commun ; personne ne peut trancher ici.
    */
   verdict: 'meme' | 'distinct' | 'indecidable';
@@ -33,7 +33,7 @@ function texteUtile(valeur: unknown): string | null {
 
 /** Origine d'un contrat : deux arbitres d'identité et trois champs d'affichage. */
 export type IdentiteDeContrat = {
-  /** Nom d'affichage Figma. N'arbitre PAS : c'est ce qu'un renommage change. */
+  /** Nom d'affichage Figma. N'arbitre pas : c'est ce qu'un renommage change. */
   nom: string | null;
   nodeId: string | null;
   componentKey: string | null;
@@ -51,7 +51,7 @@ export type IdentiteDeContrat = {
  *
  * Rendue même incomplète : c'est la comparaison qui décide de ce qui manque,
  * pas la lecture. Un objet qui n'est pas un contrat rend une identité vide,
- * jamais une exception — un garde-fou qui explose sur une entrée douteuse ne
+ * jamais une exception : un garde-fou qui explose sur une entrée douteuse ne
  * garde plus rien.
  */
 export function identiteDeContrat(brut: unknown): IdentiteDeContrat {
@@ -84,8 +84,8 @@ export function identiteDeContrat(brut: unknown): IdentiteDeContrat {
  * Le contrat présent et celui qu'on s'apprête à écrire décrivent-ils le même
  * composant Figma ?
  *
- * Les deux arguments sont du JSON DÉJÀ analysé : ce module ne sait pas d'où
- * viennent ces objets — un disque, l'API GitHub, un test — et n'a pas à le
+ * Les deux arguments sont du JSON déjà analysé : ce module ne sait pas d'où
+ * viennent ces objets (un disque, l'API GitHub, un test) et n'a pas à le
  * savoir.
  */
 export function comparerIdentiteDeContrat(existant: unknown, candidat: unknown): VerdictIdentite {
@@ -93,7 +93,7 @@ export function comparerIdentiteDeContrat(existant: unknown, candidat: unknown):
   const droite = identiteDeContrat(candidat);
   const noms = { nomExistant: gauche.nom, nomCandidat: droite.nom };
 
-  // La cascade s'arrête au premier champ que LES DEUX portent. Comparer un
+  // La cascade s'arrête au premier champ que les deux portent. Comparer un
   // champ présent d'un côté seulement ne dirait rien : un composant dépublié
   // de sa bibliothèque perd sa clé sans cesser d'être lui-même.
   if (gauche.componentKey !== null && droite.componentKey !== null) {

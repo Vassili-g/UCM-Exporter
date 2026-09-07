@@ -31,7 +31,7 @@ async function avecFetch<T>(
 }
 
 /**
- * Comme `avecFetch`, mais le stub voit aussi la MÉTHODE.
+ * Comme `avecFetch`, mais le stub voit aussi la méthode.
  *
  * Un export complet enchaîne des GET, un POST de branche, un PUT de contenu et
  * un POST de pull request sur des URL qui se ressemblent : répondre à l'URL
@@ -88,7 +88,7 @@ test('artifactPath dérive les paths du composant et des tokens', () => {
 /**
  * Les deux chemins des réglages sont un repli facultatif : le
  * repository décide dès qu'il se décrit. Quand personne ne décide, rien ne doit
- * s'écrire à un endroit inventé — l'export est refusé, et le message nomme les
+ * s'écrire à un endroit inventé : l'export est refusé, et le message nomme les
  * deux gestes possibles avec leur acteur.
  */
 test('sans chemin nulle part, l’export est refusé au lieu d’inventer un endroit', () => {
@@ -121,7 +121,7 @@ test('un seul chemin renseigné ne refuse que l’autre artefact', () => {
 /**
  * Le repository est seul à savoir où ses contrats vivent ; les réglages du
  * plugin sont locaux à une machine et ne savent rien de lui. Le défaut était masqué
- * par une coïncidence — les défauts des réglages décrivent justement le repository
+ * par une coïncidence, les défauts des réglages décrivent justement le repository
  * de démonstration, et il se déclenche au premier repo aux conventions différentes :
  * l'export écrit là où la CI ne regarde pas, la PR s'ouvre, le contrôle ne trouve
  * rien de nouveau, tout est vert.
@@ -141,7 +141,7 @@ test('la configuration du repository décide où l’export s’écrit', async (
     artifactPath({ kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }, layout),
     'design/contrats/Button/Button.contract.json',
   );
-  // `tokens` est un CHEMIN DE FICHIER, pas un dossier : les réglages du plugin
+  // `tokens` est un chemin de fichier, pas un dossier : les réglages du plugin
   // ajoutaient `/tokens.json`, et les deux conventions ne se distinguaient pas
   // tant que le dossier s'appelait `tokens`.
   assert.equal(
@@ -151,7 +151,7 @@ test('la configuration du repository décide où l’export s’écrit', async (
 });
 
 /**
- * Un repository qui ne se décrit pas est le cas NOMINAL, pas une erreur : c'est
+ * Un repository qui ne se décrit pas est le cas nominal, pas une erreur : c'est
  * le critère de réussite n° 1. Les réglages prennent alors le relais.
  */
 test('un repository sans ucm.config.json retombe sur les réglages, sans erreur', async () => {
@@ -166,7 +166,7 @@ test('un repository sans ucm.config.json retombe sur les réglages, sans erreur'
 /**
  * Présent et mal formé, c'est autre chose : quelqu'un a voulu dire où écrire.
  * Retomber en silence sur les réglages déposerait le contrat ailleurs que là où
- * son propriétaire l'a demandé — et le silence est ce qui rend le défaut
+ * son propriétaire l'a demandé, et le silence est ce qui rend le défaut
  * incompréhensible ensuite.
  */
 test('une configuration de repository fautive refuse l’export au lieu de deviner', async () => {
@@ -202,7 +202,7 @@ test('decodeBase64 accepte les retours à la ligne GitHub et refuse une Base64 i
 });
 
 test('exportBranchName inclut le type d’artefact et les secondes (anti-collision)', () => {
-  // Exporter le contrat PUIS les tokens dans la même minute est le flux
+  // Exporter le contrat puis les tokens dans la même minute est le flux
   // courant : les deux branches doivent différer.
   assert.equal(
     exportBranchName('tokens', new Date(2026, 6, 17, 9, 5, 42)),
@@ -453,7 +453,7 @@ test('deux composants Figma distincts au même chemin : l’export est refusé, 
       }),
     ),
     (erreur: Error) => {
-      // Le message doit NOMMER les deux composants et le geste : un refus qui
+      // Le message doit nommer les deux composants et le geste : un refus qui
       // dit seulement « collision » ne se corrige pas, le designer ne sait pas
       // quel autre composant est en cause.
       assert.match(erreur.message, /« Icon \/ Button » et « IconButton »/);
@@ -470,7 +470,7 @@ test('deux composants Figma distincts au même chemin : l’export est refusé, 
 
 test('le même composant réexporté après un renommage dans Figma passe', async () => {
   // Le pendant obligatoire du test précédent. Un garde-fou qui refuse tout est
-  // aussi inutile qu'un garde-fou qui ne refuse rien — et c'est exactement ce
+  // aussi inutile qu'un garde-fou qui ne refuse rien, et c'est exactement ce
   // qu'aurait produit `contract.name` comme arbitre de l'identité.
   const result = await avecMethode(
     (url, method) => {
@@ -497,10 +497,10 @@ test('le même composant réexporté après un renommage dans Figma passe', asyn
 
 test('une collision encore en vol dans une pull request ouverte est vue', async () => {
   // Le trou que la lecture sur la seule branche de base laissait : un contrat
-  // qui n'existe QUE dans une PR d'export ouverte y est invisible. Deux
+  // qui n'existe que dans une PR d'export ouverte y est invisible. Deux
   // composants en collision exportés coup sur coup ouvriraient deux PR sur le
   // même chemin, et la collision ne se révélerait qu'à la fusion de la
-  // seconde — en écrasant la première.
+  // seconde, en écrasant la première.
   const branche = 'ucm-exporter/export-component-20260904-090000';
   await assert.rejects(
     avecMethode(
@@ -555,7 +555,7 @@ test('un contrat déjà présent sans identité Figma lisible refuse plutôt que
 test('les tokens ne passent pas par la détection de collision', async () => {
   // `tokens.json` est unique par repository : son chemin ne se dispute avec
   // rien, et il ne porte aucune identité Figma à comparer. Un contrat trouvé
-  // dans cet état — aucune identité lisible — ferait refuser l'export ; des
+  // dans cet état (aucune identité lisible) ferait refuser l'export ; des
   // tokens, non, ils s'écrivent.
   //
   // Les pull requests ouvertes sont interrogées, parce que le
@@ -573,7 +573,7 @@ test('les tokens ne passent pas par la détection de collision', async () => {
       }
       const absente = sansConfiguration(url);
       if (absente) return absente;
-      // Des tokens PLUS ANCIENS attendent déjà dans une pull request : sans
+      // Des tokens plus anciens attendent déjà dans une pull request : sans
       // identité à comparer, il n'y a rien à refuser.
       if (url.includes(`ref=${encodeURIComponent(branche)}`)) return fichier('{"ancien":true}');
       if (url.includes('/git/ref/heads/')) {
@@ -603,7 +603,7 @@ test('un artefact identique déjà déposé en vol ne crée pas un second export
   const branche = 'ucm-exporter/export-component-20260904-090000';
   const enVol = contratFigma('IconButton', '67:890');
   // Seul l'horodatage diffère, comme après n'importe quel réexport. La
-  // comparaison en vol est la MÊME que celle de la branche de base — un second
+  // comparaison en vol est la même que celle de la branche de base : un second
   // test d'égalité aurait fini par ne plus neutraliser les mêmes champs.
   const reexporte = enVol.replace('2026-09-04T10:00:00.000Z', '2026-09-05T08:30:00.000Z');
   const calls: Array<{ url: string; method: string }> = [];
@@ -618,7 +618,7 @@ test('un artefact identique déjà déposé en vol ne crée pas un second export
       }
       const absente = sansConfiguration(url);
       if (absente) return absente;
-      // Le chemin est libre sur la branche de base : le contrat n'existe QUE
+      // Le chemin est libre sur la branche de base : le contrat n'existe que
       // dans la pull request ouverte.
       if (url.includes(`ref=${encodeURIComponent(branche)}`)) return fichier(enVol);
       return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
@@ -635,7 +635,7 @@ test('un artefact identique déjà déposé en vol ne crée pas un second export
     status: 'unchanged',
     path: 'src/components/IconButton/IconButton.contract.json',
     source: 'réglages du plugin',
-    // L'ENDROIT fait partie du verdict. « Aucun changement » tout court
+    // L'endroit fait partie du verdict. « Aucun changement » tout court
     // enverrait chercher sur la branche de base un fichier qui n'y est pas
     // encore, et le designer conclurait que son export s'est perdu.
     ou: `pull request d'export ouverte, branche ${branche}`,
@@ -651,7 +651,7 @@ test('un artefact identique déjà déposé en vol ne crée pas un second export
 test('des tokens identiques déjà déposés en vol ne créent pas un second export', async () => {
   // Le doublon n'est pas une maladie des contrats : il ne demande qu'un chemin
   // et deux exports. `tokens.json` n'a qu'un chemin, et c'est toujours le même
-  // — le cas est donc plus facile à produire là qu'ailleurs.
+  // : le cas est donc plus facile à produire là qu'ailleurs.
   const branche = 'ucm-exporter/export-tokens-20260904-090000';
   const result = await avecMethode(
     (url) => {
@@ -684,7 +684,7 @@ test('des tokens identiques déjà déposés en vol ne créent pas un second exp
 
 test('un réexport corrigé pendant qu’une pull request est ouverte n’est pas bloqué', async () => {
   // Le pendant obligatoire du doublon, et la raison pour laquelle le contrôle n'est
-  // PAS un refus : corriger dans Figma puis réexporter est le geste normal.
+  // pas un refus : corriger dans Figma puis réexporter est le geste normal.
   // Refuser ici demanderait au designer de fermer une pull request pour avoir
   // le droit d'en proposer une meilleure.
   const branche = 'ucm-exporter/export-component-20260904-090000';
@@ -808,7 +808,7 @@ test('une version illisible est annoncée telle quelle, une version absente est 
 
 test('tokens.json ne reçoit aucun schéma de contrat', () => {
   // Ce n'est pas un contrat mais un arbre DTCG : il ne porte aucun schéma UCM.
-  // Lui en annoncer un — fût-ce celui du plugin — inventerait une version que
+  // Lui en annoncer un (fût-ce celui du plugin) inventerait une version que
   // le fichier ne contient pas, et l'absence de ligne n'est donc pas un oubli.
   const corps = pullRequestBody(
     'src/tokens/tokens.json',
@@ -874,8 +874,8 @@ test('l’en-tête dit d’où vient le composant, puisque le lien a disparu', (
   // La distribution par la Community interdit `enablePrivatePluginApi`,
   // donc `figma.fileKey`, donc `meta.figma.url` : le raccourci d'un clic vers
   // le composant source n'existe plus. La décision demandait que la traçabilité par
-  // `fileName` et `nodeId` soit constatée sur une pull request RÉELLE et pas en
-  // principe — elle est donc écrite là où la revue a lieu.
+  // `fileName` et `nodeId` soit constatée sur une pull request réelle et pas en
+  // principe : elle est donc écrite là où la revue a lieu.
   const corps = pullRequestBody(
     'src/components/Alert/Alert.contract.json',
     artefactPourPr('component', JSON.stringify({

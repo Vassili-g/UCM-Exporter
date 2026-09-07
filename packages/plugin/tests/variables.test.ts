@@ -3,8 +3,8 @@
  *
  * L'enjeu central est ici : `normalizeName()` a plusieurs entrées pour une
  * sortie, donc deux variables Figma peuvent se disputer un nom de token. Si
- * les deux commandes ne tranchent pas de la MÊME façon, un contrat cite un
- * token dont la valeur appartient à une autre variable — une couleur fausse
+ * les deux commandes ne tranchent pas de la même façon, un contrat cite un
+ * token dont la valeur appartient à une autre variable : une couleur fausse
  * qui traverse tous les garde-fous, puisque le token existe bel et bien.
  */
 import assert from 'node:assert/strict';
@@ -47,7 +47,7 @@ function stubFigma(variables: Variable[], collections: VariableCollection[]) {
 
 test('indexVariables départage deux collections qui donnent le même nom normalisé', () => {
   // Cas non évident : la collision ne vient pas des variables mais des
-  // COLLECTIONS, « Brand Tokens » et « brand-tokens » donnant le même préfixe.
+  // collections, « Brand Tokens » et « brand-tokens » donnant le même préfixe.
   const premiere = variable('v1', 'primary', 'c1');
   const seconde = variable('v2', 'primary', 'c2');
 
@@ -129,7 +129,7 @@ test('le résolveur refuse d’écrire une référence pour une variable ambigu�
 
     // La gagnante garde son nom : c'est bien elle que porte `tokens.json`.
     assert.equal(surLaGagnante, 'brand.foo-bar');
-    // La perdante n'en obtient AUCUN : écrire « brand.foo-bar » ici peindrait
+    // La perdante n'en obtient aucun : écrire « brand.foo-bar » ici peindrait
     // le calque avec la valeur de sa rivale.
     assert.equal(surLaPerdante, null);
     assert.equal(warnings.length, 1);
@@ -178,7 +178,7 @@ test('le résolveur sert l’index sans appeler l’API, et garde l’API pour l
     assert.equal(figmaStub.appels(), 0);
 
     // Variable d'une bibliothèque partagée : absente de l'index, donc résolue
-    // par l'API — ce chemin ne doit surtout pas disparaître.
+    // par l'API, ce chemin ne doit surtout pas disparaître.
     await resolver.resolve({ type: 'VARIABLE_ALIAS', id: 'distante' } as VariableAlias);
     assert.equal(figmaStub.appels(), 1);
   } finally {

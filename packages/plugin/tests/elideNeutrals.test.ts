@@ -27,7 +27,7 @@ test('false, zéro et la chaîne vide sont des valeurs, pas des silences', () =>
 });
 
 test('un élément vide d’un tableau reste : c’est une donnée', () => {
-  // Sous `paintPlacements`, un chemin vide désigne la RACINE du composant.
+  // Sous `paintPlacements`, un chemin vide désigne la racine du composant.
   assert.deepEqual(
     elideNeutrals({ fills: { background: [[]] } }),
     { fills: { background: [[]] } },
@@ -44,7 +44,7 @@ test('un objet devenu vide reste écrit : jamais de point fixe', () => {
 test('sous un dictionnaire, une entrée vide survit : sa clé EST la donnée', () => {
   // Le cas qui a coûté un export. L'état par défaut n'a aucun sélecteur : son
   // descripteur vaut `{}` dès la sortie de `buildStateModel`. Le retirer ne
-  // retire pas un silence, il retire l'ÉTAT — que `precedence` cite encore, et
+  // retire pas un silence, il retire l'état : que `precedence` cite encore, et
   // qu'un consommateur refuserait alors comme valeur d'axe inconnue.
   const modele = { states: { default: {}, hover: { selector: ':hover' } }, precedence: ['default'] };
   assert.deepEqual(
@@ -138,8 +138,8 @@ test('la descente traverse tableaux et objets imbriqués', () => {
 
 test('elideContract ne repasse pas sur un catalogue déjà élidé', () => {
   // `compactVariants` a dû élider chaque partie pour décider s'il avait quelque
-  // chose à ranger. Repasser dessus retirerait un objet devenu vide au PREMIER
-  // passage — c'est le point fixe, par la bande.
+  // chose à ranger. Repasser dessus retirerait un objet devenu vide au premier
+  // passage : c'est le point fixe, par la bande.
   const contrat = {
     viewStructures: { st1: { layout: 'flex-row', padding: {} } },
     variantViews: { v1: { structure: 'st1' } },

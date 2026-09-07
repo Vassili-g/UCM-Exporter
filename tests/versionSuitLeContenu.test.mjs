@@ -12,11 +12,11 @@ const racine = join(dirname(fileURLToPath(import.meta.url)), "..");
  * `core.fileMode=false` n'est pas un confort, et la CI l'a prouvé au premier
  * essai : `npm ci` pose le bit exécutable sur `packages/cli/src/ucm.mjs`, qui
  * est le `bin` du CLI et que Git suit en `100644`. Sur Linux, `git diff` compte
- * ce changement de MODE comme un fichier modifié ; sur le poste Windows où ce
+ * ce changement de mode comme un fichier modifié ; sur le poste Windows où ce
  * test est né, `core.fileMode` vaut déjà `false` et il ne le voyait pas. Le
  * garde-fou a donc crié à tort, sur un fichier que personne n'avait touché.
- * Le mode ne part pas au registre — npm pose ce bit à l'empaquetage quoi qu'il
- * arrive —, donc seul le CONTENU se compare ici. Et un garde-fou qui crie à
+ * Le mode ne part pas au registre (npm pose ce bit à l'empaquetage quoi qu'il
+ * arrive), donc seul le contenu se compare ici. Et un garde-fou qui crie à
  * tort est celui qu'on apprend le plus vite à ignorer.
  */
 function git(...arguments_) {
@@ -36,7 +36,7 @@ function versionAuCommit(commit, chemin) {
 }
 
 /**
- * Le commit qui a POSÉ le numéro courant — pas le dernier qui a touché le
+ * Le commit qui a posé le numéro courant : pas le dernier qui a touché le
  * manifeste. Les deux diffèrent dès qu'on corrige une description ou une
  * dépendance sans publier, et c'est le premier qui date le contenu publié.
  *

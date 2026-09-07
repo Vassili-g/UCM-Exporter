@@ -1,9 +1,9 @@
 /**
- * Lance TOUS les fichiers de test du dossier `tests/`.
+ * Lance tous les fichiers de test du dossier `tests/`.
  *
  * Deux extensions cohabitent, et c'est la coupure du paquet qui l'impose : le
- * FORMAT est du TypeScript compilé vers `dist/`, ses tests sont en `.test.ts` ;
- * les LECTEURS se publient en JavaScript tel quel, leurs tests sont en
+ * format est du TypeScript compilé vers `dist/`, ses tests sont en `.test.ts` ;
+ * les lecteurs se publient en JavaScript tel quel, leurs tests sont en
  * `.test.mjs`. `tsx` exécute les deux.
  *
  * Pourquoi ce script plutôt qu'une liste dans package.json : une liste écrite

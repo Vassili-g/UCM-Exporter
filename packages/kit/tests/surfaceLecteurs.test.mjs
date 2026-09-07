@@ -3,7 +3,7 @@
  *
  * `src/lecteurs/index.mjs` est écrit à la main, et un export ajouté à un module
  * y serait oublié sans que rien ne rougisse : le module continue de marcher
- * pour ses voisins du paquet, et seul le consommateur découvre l'absence — à
+ * pour ses voisins du paquet, et seul le consommateur découvre l'absence, à
  * l'exécution, chez lui. Ce test compare les deux listes mécaniquement.
  *
  * Il passe par `@ucm-kit/core/lecteurs`, pas par un chemin relatif : ce qui est

@@ -73,8 +73,8 @@ function iconSize(layer: IconLayerSummary, warnings: string[]): string | undefin
  * Ajoute les métadonnées d'icônes et les props runtime des règles modifiables,
  * tout en conservant les booléens Figma comme contrôles de visibilité.
  *
- * Les deux responsabilités restent séparées : le booléen dit SI le calque
- * s'affiche, la prop runtime dit QUELLE icône y rendre. Une icône modifiable
+ * Les deux responsabilités restent séparées : le booléen dit si le calque
+ * s'affiche, la prop runtime dit quelle icône y rendre. Une icône modifiable
  * sans booléen est donc normale, pas une anomalie à signaler.
  */
 export function mergeIconRules(
@@ -181,10 +181,10 @@ export function mergeIconRules(
       continue;
     }
 
-    // « Modifiable » dit QUELLE icône rendre, jamais SI on la rend : une icône
+    // « Modifiable » dit quelle icône rendre, jamais si on la rend : une icône
     // toujours affichée est remplaçable comme une autre. Le nom de la prop
-    // runtime suit donc le booléen de visibilité seulement quand il existe —
-    // pour que « iconLeft » et « iconLeftName » se lisent en paire — et vient
+    // runtime suit donc le booléen de visibilité seulement quand il existe
+    // (pour que « iconLeft » et « iconLeftName » se lisent en paire) et vient
     // sinon du calque lui-même.
     const runtimeProp = `${visibilityProp ?? key}Name`;
     if (propByName(props, runtimeProp)) {

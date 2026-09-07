@@ -3,12 +3,12 @@
  *
  * S'arrêter au premier calque qui n'est ni un texte ni une dépendance
  * réduirait un Toggle, une Progress ou trois cadres bordés emboîtés à un slot
- * opaque — alors que leurs couleurs entrent dans `variantTokens`, si bien que
+ * opaque, alors que leurs couleurs entrent dans `variantTokens`, si bien que
  * le contrat annoncerait des peintures qu'aucun calque publié ne porte.
  *
- * Ces tests figent la règle de descente, et surtout ses BORNES :
+ * Ces tests figent la règle de descente, et surtout ses bornes :
  * on descend là où il y a une information, et nulle part ailleurs. Un moteur qui
- * recopierait l'arbre Figma entier serait tout aussi faux — il publierait les
+ * recopierait l'arbre Figma entier serait tout aussi faux : il publierait les
  * trente tracés d'une icône importée.
  */
 import assert from 'node:assert/strict';
@@ -253,7 +253,7 @@ test('un calque en position absolue publie ses bords d’accroche au lieu de dis
   // La rotation aussi est publiée, dans la convention de CSS : Figma compte
   // à l'envers.
   assert.equal(slot.rotation, '-45deg');
-  // Aucun geste, donc aucun message : le designer ne PEUT pas relier une
+  // Aucun geste, donc aucun message : le designer ne peut pas relier une
   // position à une variable, la rotation est écrite par le contrat, et la place
   // aussi. Rien ne manque, l'export se tait.
   assert.deepEqual(warnings.filter((warning) => warning.includes('« Badge »')), []);

@@ -54,7 +54,7 @@ test('renderingSemanticsFor nomme le rôle de chaque clé qui n’en porte pas l
       ['scale-1', 'background'],
       ['glyph', 'icon'],
       // Une clé qui s'appelle comme un rôle mais qui peint autre chose se dit
-      // ICI : le vocabulaire partagé, lui, ne bouge dans aucun contrat.
+      // ici : le vocabulaire partagé, lui, ne bouge dans aucun contrat.
       ['border', 'background'],
       // Une clé dont le rôle porte déjà le nom n'a rien à publier.
       ['background', 'background'],
@@ -65,7 +65,7 @@ test('renderingSemanticsFor nomme le rôle de chaque clé qui n’en porte pas l
   // Le vocabulaire partagé reste strictement celui de tous les contrats.
   assert.deepEqual(semantics.roles, defaultRenderingSemantics().roles);
   // Les clés sont triées : deux exports d'un design inchangé donnent le même
-  // JSON, et les deux côtés ne se mélangent jamais — une même clé courte peut
+  // JSON, et les deux côtés ne se mélangent jamais, une même clé courte peut
   // désigner deux tokens différents, l'un en peinture, l'autre en contour.
   assert.deepEqual(semantics.keyRoles, {
     fills: { border: 'background', glyph: 'icon', 'scale-1': 'background', title: 'foreground' },
@@ -105,7 +105,7 @@ test('renderingSemanticsFor range une clé héritée d’Object.prototype comme 
 
 test('roleKind répond la nature d’un rôle partagé, et rien pour un autre nom', () => {
   // C'est cette fonction qui empêche le moteur d'avoir un avis : un nom ne peut
-  // préciser un rôle que DANS la nature que le calque a déjà tranchée.
+  // préciser un rôle que dans la nature que le calque a déjà tranchée.
   assert.equal(roleKind('background'), 'paint');
   assert.equal(roleKind('ring'), 'stroke');
   assert.equal(roleKind('scale-1'), null);

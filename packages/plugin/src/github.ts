@@ -43,7 +43,7 @@ export type PublishResult =
   }
   | { status: 'created'; path: string; branch: string; pullRequestUrl: string; source: LayoutSource };
 
-/** Qui a décidé où l'artefact s'écrit — le repo, ou les réglages du plugin. */
+/** Qui a décidé où l'artefact s'écrit : le repo, ou les réglages du plugin. */
 export type LayoutSource = typeof NOM_CONFIGURATION | 'réglages du plugin';
 
 /** Emplacements effectifs ; `tokens` est un chemin de fichier, jamais un dossier. */
@@ -128,13 +128,13 @@ export function exportBranchName(kind: ArtifactKind, date = new Date()): string 
 }
 
 /**
- * Le préfixe que porte TOUTE branche d'export, et la seule chose qui permette
+ * Le préfixe que porte toute branche d'export, et la seule chose qui permette
  * de les reconnaître après coup.
  *
  * Il est extrait parce qu'un second lecteur en dépend : la détection de
  * collision doit retrouver les exports encore en vol (voir
  * `cheminsOccupesParUnExportEnCours`). Deux écritures du même préfixe
- * dériveraient, et la dérive serait muette — la recherche ne trouverait
+ * dériveraient, et la dérive serait muette : la recherche ne trouverait
  * simplement plus rien, ce qui se lit exactement comme « aucune collision ».
  */
 function prefixeDeBranche(kind: ArtifactKind): string {
@@ -153,23 +153,23 @@ export function layoutDesReglages(config: GithubConfig): RepositoryLayout {
     components: config.componentsPath,
     // `null` est une réponse : « ces réglages ne disent pas où ranger les
     // tokens ». Les deux chemins sont un repli facultatif, et un
-    // repli absent ne s'invente pas — il se dit.
+    // repli absent ne s'invente pas : il se dit.
     tokens: config.tokensPath ? `${config.tokensPath}/tokens.json` : null,
     source: 'réglages du plugin',
   };
 }
 
 /**
- * Où ÉCRIRE, demandé au repository lui-même.
+ * Où écrire, demandé au repository lui-même.
  *
  * **Le défaut refermé ici était masqué par une
  * coïncidence :** les réglages du plugin rendent `src/components` et
  * `src/tokens`, ce que le repository de démonstration utilise justement. Au
  * premier repo aux conventions différentes, l'export aurait écrit à un endroit
- * que la CI ne regarde pas — et personne n'aurait rien vu : la PR s'ouvre, le
+ * que la CI ne regarde pas, et personne n'aurait rien vu : la PR s'ouvre, le
  * contrôle ne trouve aucun contrat nouveau, tout est vert.
  *
- * **Un `ucm.config.json` présent et mal formé REFUSE l'export.** Retomber en
+ * **Un `ucm.config.json` présent et mal formé refuse l'export.** Retomber en
  * silence sur les réglages écrirait le contrat ailleurs que là où son
  * propriétaire l'a demandé, et le silence est précisément ce qui rend le défaut
  * incompréhensible. C'est la même doctrine que côté CI : le fichier absent est
@@ -377,7 +377,7 @@ export type DiagnosticConnexion = {
 /**
  * Test automatique de connexion demandé à l'ouverture et après sauvegarde.
  *
- * Il rend une CAUSE, pas un booléen. L'ancienne version avalait l'erreur
+ * Il rend une cause, pas un booléen. L'ancienne version avalait l'erreur
  * et rendait `false` : le statut HTTP que `GithubApiError` porte déjà se
  * perdait au retour, si bien qu'un jeton refusé, un droit manquant et une URL
  * fautive arrivaient à l'identique devant le designer, dont le geste diffère
@@ -394,7 +394,7 @@ export async function diagnostiquerConnexion(config: GithubConfig): Promise<Diag
   }
 
   /*
-   * Le repository répond ; on lui demande maintenant OÙ il range ses fichiers.
+   * Le repository répond ; on lui demande maintenant où il range ses fichiers.
    * Cette lecture n'avait lieu qu'à la publication, c'est-à-dire après
    * le travail : un `ucm.config.json` fautif refusait alors l'export, et le
    * designer l'apprenait une fois son composant analysé.
@@ -415,7 +415,7 @@ export async function diagnostiquerConnexion(config: GithubConfig): Promise<Diag
 /**
  * Retire une branche d'export qui n'a pas abouti à une PR : l'UI retombe alors
  * sur le téléchargement local, et personne n'ira jamais voir cette branche.
- * Son propre échec est ignoré — c'est l'erreur d'origine qui doit remonter à
+ * Son propre échec est ignoré : c'est l'erreur d'origine qui doit remonter à
  * l'utilisateur, pas celle du ménage qui la suit.
  */
 async function deleteBranch(config: GithubConfig, repository: string, branch: string): Promise<void> {
@@ -453,14 +453,14 @@ async function getRepositoryFile(
  * Le refus de collision, écrit pour le designer qui vient de cliquer.
  *
  * **Pourquoi un refus et pas un avertissement.** L'identifiant nomme le
- * dossier ET le fichier de contrat : deux composants Figma qui se projettent
+ * dossier et le fichier de contrat : deux composants Figma qui se projettent
  * sur le même identifiant écrivent au même chemin, et le second export écrase
- * le premier. La CI ne voit ensuite qu'un seul contrat — donc aucun doublon,
+ * le premier. La CI ne voit ensuite qu'un seul contrat, donc aucun doublon,
  * donc aucune erreur. Avertir en écrivant quand même laisserait passer
  * exactement la perte silencieuse que cette détection existe pour supprimer.
  *
- * Le message nomme les DEUX composants et le geste : renommer dans Figma. Un
- * refus qui dit seulement « collision » ne se corrige pas — le designer ne sait
+ * Le message nomme les deux composants et le geste : renommer dans Figma. Un
+ * refus qui dit seulement « collision » ne se corrige pas : le designer ne sait
  * pas quel autre composant est en cause, et ne peut pas aller le chercher.
  *
  * `null` quand l'écriture est légitime.
@@ -508,7 +508,7 @@ function refusDeCollision(
 /**
  * Un artefact trouvé au chemin visé, ailleurs que sur la branche de base.
  *
- * `ou` est la phrase que les messages reprennent telle quelle — le refus de
+ * `ou` est la phrase que les messages reprennent telle quelle : le refus de
  * collision comme le journal du plugin. Une seule écriture de l'endroit : deux
  * en donneraient deux versions, et celle que le designer lit ne serait plus
  * celle que le code a regardée.
@@ -516,7 +516,7 @@ function refusDeCollision(
 type ExportEnVol = { contenu: string; ou: string; url: string | null };
 
 /**
- * Les exports du même artefact encore EN VOL, c'est-à-dire dans une pull request
+ * Les exports du même artefact encore en vol, c'est-à-dire dans une pull request
  * ouverte et pas encore fusionnée.
  * Ils ferment les collisions de contrats et les doublons avant fusion. Un seul
  * appel liste les PR, puis seules les branches au préfixe d'export sont lues ;
@@ -555,7 +555,7 @@ async function exportsEnVol(
 }
 
 /**
- * Ce que le repository apprend AVANT toute écriture.
+ * Ce que le repository apprend avant toute écriture.
  * La même lecture est rejouée à la publication, car branche et PR peuvent avoir
  * changé depuis le pré-vol ; deux implémentations de ce contrôle divergeraient.
  */
@@ -575,7 +575,7 @@ export async function lireAvantEcriture(
   artifact: RepositoryArtifact,
 ): Promise<LectureDuDepot> {
   const repository = `${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
-  // Le repository est interrogé AVANT toute écriture : il est seul à savoir où
+  // Le repository est interrogé avant toute écriture : il est seul à savoir où
   // ses contrats vivent, et se tromper d'endroit est indétectable ensuite.
   const layout = await repositoryLayout(config);
   const path = artifactPath(artifact, layout);
@@ -590,26 +590,26 @@ export async function lireAvantEcriture(
   }
 
   // Le contrôle ci-dessus ne regarde que la branche de base, et c'est là
-  // qu'un artefact déjà exporté n'est PAS encore : il attend dans sa pull
+  // qu'un artefact déjà exporté n'est pas encore : il attend dans sa pull
   // request. Réexporter un contenu strictement identique en ouvrait donc une
-  // seconde, en tout point pareille — un doublon que rien ne signalait.
+  // seconde, en tout point pareille : un doublon que rien ne signalait.
   //
-  // La lecture est celle de la détection de collision, ÉTENDUE et non
+  // La lecture est celle de la détection de collision, étendue et non
   // dupliquée. Elle vient après la branche de base et pas avant, parce que le
-  // cas courant — rien n'a changé depuis la dernière fusion — se tranche alors
+  // cas courant (rien n'a changé depuis la dernière fusion) se tranche alors
   // sans lister aucune pull request.
   const enVol = await exportsEnVol(config, repository, artifact.kind, path);
   const jumeau = enVol.find((occupant) => sameContent(occupant.contenu, artifact.content));
   if (jumeau) return { layout, path, surLaBase, jumeau, refus: null };
 
-  // Ce n'est pas un refus, et son pendant n'existe pas : un contenu DIFFÉRENT
+  // Ce n'est pas un refus, et son pendant n'existe pas : un contenu différent
   // pendant qu'une pull request d'export est ouverte, c'est un réexport après
-  // correction dans Figma — le geste normal, que bloquer reviendrait à punir.
+  // correction dans Figma, le geste normal, que bloquer reviendrait à punir.
   // Git dit le reste : deux branches qui modifient le même fichier depuis la
   // même base entrent en conflit à la seconde fusion, et un conflit, lui, se
   // voit.
 
-  // La collision se cherche APRÈS le contrôle d'immobilité : un contenu
+  // La collision se cherche après le contrôle d'immobilité : un contenu
   // identique est un réexport par construction, et le faire passer par
   // l'arbitre d'identité ne pourrait que rendre la même réponse plus cher.
   //
@@ -647,7 +647,7 @@ export async function publishArtifact(
     );
   }
   const repository = `${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
-  // La lecture est REFAITE ici, même quand le pré-vol vient de la faire : entre
+  // La lecture est refaite ici, même quand le pré-vol vient de la faire : entre
   // les deux, le dépôt a pu bouger. Une analyse qui autoriserait une
   // écriture sur la foi d'une lecture périmée serait pire que pas d'analyse.
   const { layout, path, surLaBase, jumeau, refus } = await lireAvantEcriture(config, artifact);
@@ -696,7 +696,7 @@ export async function publishArtifact(
   }
 
   // Hors du try : une PR bel et bien créée ne doit pas voir sa branche
-  // supprimée sous elle — cela la refermerait aussitôt.
+  // supprimée sous elle, cela la refermerait aussitôt.
   if (!pullRequest?.html_url) throw new GithubApiError('La PR a été créée sans URL exploitable.');
 
   return { status: 'created', path, branch, pullRequestUrl: pullRequest.html_url, source: layout.source };

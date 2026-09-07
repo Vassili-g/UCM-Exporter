@@ -1,7 +1,7 @@
 /**
  * Génère le JSON Schema du contrat depuis `src/format/types.ts`.
  *
- * Le schéma est un artefact DÉRIVÉ, jamais écrit à la main : le rédiger
+ * Le schéma est un artefact dérivé, jamais écrit à la main : le rédiger
  * séparément créerait une seconde description de la même forme, et deux
  * descriptions finissent toujours par diverger. `types.ts` reste la source.
  *
@@ -27,7 +27,7 @@ export const CHEMIN_DU_SCHEMA = join(racine, 'schema', 'ucm-contract.schema.json
 /**
  * Ce que le schéma ne prouve pas.
  *
- * Cette liste voyage DANS le schéma, pas seulement dans un document : un
+ * Cette liste voyage dans le schéma, pas seulement dans un document : un
  * consommateur d'un autre langage n'aura que ce fichier sous les yeux, et un
  * schéma silencieux sur ses limites se lit comme une garantie complète.
  */

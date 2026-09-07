@@ -1,5 +1,5 @@
 /**
- * Chaque paquet de ce dépôt voit-il le kit de CE dépôt, ou une copie du registre ?
+ * Chaque paquet de ce dépôt voit-il le kit de ce dépôt, ou une copie du registre ?
  *
  * **Ce test existe parce que la réponse a été « non » pendant six versions, sans
  * que rien ne le dise.** `packages/plugin` épinglait `@ucm-kit/core` à `0.1.0`
@@ -16,11 +16,11 @@
  * **La règle, et sa borne.** Un pin exact est exigé pour ce qu'un repository
  * consommateur installe : une plage y laisserait npm choisir une version que
  * personne n'a essayée. Elle ne dit rien d'un frère dans le même dépôt, qui
- * n'installe pas — il lit la source d'à côté, et doit la lire toujours.
+ * n'installe pas : il lit la source d'à côté, et doit la lire toujours.
  * `packages/plugin` est privé et ne se publie jamais : `*` y est la bonne
- * réponse. `packages/cli`, lui, se publie et garde son pin exact — c'est
- * pourquoi ce test vérifie la RÉSOLUTION plutôt que le texte du pin : la
- * question n'est pas ce qui est écrit, c'est ce que Node ouvre.
+ * réponse. `packages/cli`, lui, se publie et garde son pin exact, c'est
+ * pourquoi ce test vérifie la résolution plutôt que le texte du pin : la
+ * question porte sur ce que Node ouvre, non sur ce qui est écrit.
  */
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
@@ -52,7 +52,7 @@ test("chaque paquet qui déclare le kit résout la source de ce dépôt", () => 
     if (!("@ucm-kit/core" in dependances)) continue;
     if (manifeste.name === "@ucm-kit/core") continue;
 
-    // La résolution se demande DEPUIS le paquet, comme Node la ferait pour son
+    // La résolution se demande depuis le paquet, comme Node la ferait pour son
     // code : c'est le seul point de vue qui dise la vérité.
     const depuis = createRequire(resolve(racine, "packages", nom, "package.json"));
     const resolu = realpathSync(dirname(depuis.resolve("@ucm-kit/core/package.json")));
@@ -73,11 +73,11 @@ test("chaque paquet qui déclare le kit résout la source de ce dépôt", () => 
 });
 
 /**
- * Le pin d'un paquet PUBLIÉ doit suivre la version réelle du kit.
+ * Le pin d'un paquet publié doit suivre la version réelle du kit.
  *
  * Le test ci-dessus attrape la rechute une fois qu'elle est installée ; celui-ci
  * l'attrape à l'écriture. Sans lui, monter le kit sans monter le pin du CLI
- * laisse un paquet publié qui réclame une version que le dépôt n'a plus — et le
+ * laisse un paquet publié qui réclame une version que le dépôt n'a plus, et le
  * jour où npm ne peut plus lier le workspace, on retombe exactement dans le
  * défaut du plugin.
  */

@@ -28,7 +28,7 @@ const racine = path.resolve(__dirname, '..');
 const lire = (relatif: string): string => fs.readFileSync(path.join(racine, relatif), 'utf8');
 
 /**
- * Les commentaires sont retirés AVANT toute lecture de structure. Ceux de
+ * Les commentaires sont retirés avant toute lecture de structure. Ceux de
  * `messages.ts` sont longs et écrits en français : le point-virgule d'une
  * phrase y ferme sinon une union quatre membres trop tôt, et la loi ci-dessous
  * passe alors au vert en n'ayant regardé que la moitié de la liste.
@@ -154,7 +154,7 @@ test('toute carte jouée par la galerie porte son problème, son impact et son g
 });
 
 /**
- * Les trois issues d'un export doivent rester REGARDABLES ensemble.
+ * Les trois issues d'un export doivent rester regardables ensemble.
  *
  * Publication saine, correction demandée, export impossible : c'est leur
  * voisinage qui dit si le verdict porte bien le rang 1, et si le rouge reste
@@ -170,7 +170,7 @@ test('les trois issues d’un export ont chacune leur état', () => {
   ]) {
     assert.ok(parId.get(id)?.existe, `l'issue « ${id} » n'a plus d'état atteignable`);
   }
-  // La publication saine ne montre AUCUNE carte : c'est tout son propos.
+  // La publication saine ne montre aucune carte : c'est tout son propos.
   const saine = parId.get('resultat-transformations-normales');
   assert.deepEqual(
     (saine?.atteinte ?? []).filter((etape) => etape.message?.type === 'diagnostic'),

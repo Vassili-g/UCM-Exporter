@@ -204,7 +204,7 @@ test('deux variants aux mêmes axes gardent leurs feuilles sans diagnostic d’i
     boundVariables: { fills: [{ type: 'VARIABLE_ALIAS', id: tokenId } as VariableAlias] },
     findAll: () => [],
   }) as unknown as ComponentNode;
-  // Le premier variant de la matrice est aussi le plus LENT à résoudre : sans
+  // Le premier variant de la matrice est aussi le plus lent à résoudre : sans
   // insertion ordonnée, c'est le second qui gagnerait le conflit.
   const resolver = {
     resolve: async (alias: VariableAlias | null | undefined) => {
@@ -253,7 +253,7 @@ test('extractVariantTokens suit l’ordre de la matrice, pas l’ordre de résol
   }) as unknown as ComponentNode;
   // Latences décroissantes : le premier variant de la matrice se règle en
   // dernier. Sans insertion ordonnée, deux exports d'un design inchangé
-  // produiraient des JSON différents — donc une pull request pour rien.
+  // produiraient des JSON différents, donc une pull request pour rien.
   const ticksById: Record<string, number> = { a: 3, b: 1, c: 0 };
   const resolver = {
     resolve: async (alias: VariableAlias | null | undefined) => {
@@ -371,8 +371,8 @@ test('une valeur d’axe héritée d’Object.prototype reste une clé comme une
   insertVariantLeaf(arbre, ['variant'], { variant: 'constructor' }, { background: '{a.b}' }, warnings);
   insertVariantLeaf(arbre, ['tone', 'state'], { tone: '__proto__', state: 'default' }, { background: '{c.d}' }, warnings);
 
-  // Lus et écrits en propriétés PROPRES : sans cela « constructor » passait pour
-  // un doublon et « __proto__ » écrivait dans le prototype — l'arbre sortait
+  // Lus et écrits en propriétés propres : sans cela « constructor » passait pour
+  // un doublon et « __proto__ » écrivait dans le prototype, l'arbre sortait
   // amputé, sans un mot. La comparaison passe par le JSON produit : un objet
   // littéral `{ __proto__: … }` fixerait lui aussi un prototype au lieu d'une clé.
   assert.deepEqual(Object.keys(arbre), ['constructor', '__proto__']);
@@ -475,8 +475,8 @@ test('deux calques dont les variables finissent pareil gardent chacun leur coule
   const racine = composeAvecDependance();
   const warnings: string[] = [];
 
-  // Sans élagage — deux calques de ce contrat-ci — les deux couleurs portent le
-  // même dernier segment. Elles sont RELEVÉES toutes les deux : c'est
+  // Sans élagage (deux calques de ce contrat-ci) les deux couleurs portent le
+  // même dernier segment. Elles sont relevées toutes les deux : c'est
   // `resolveColorKeys` qui leur donnera deux clés, pas le designer qui doit
   // renommer une variable.
   const tokens = await getSlotTokens(racine, resolveurDeFonds, warnings);
@@ -504,7 +504,7 @@ test('deux fills du MÊME calque sont publiés, mais leur empilement est signal�
 
   const tokens = await getSlotTokens(calque, resolveurDeFonds, warnings);
 
-  // Les deux couleurs sortent — rien n'est perdu — mais un seul calque ne peut
+  // Les deux couleurs sortent (rien n'est perdu) mais un seul calque ne peut
   // porter qu'un fond : le contrat ne sait pas dire lequel est au-dessus.
   assert.equal(tokens.paints.length, 2);
   assert.equal(warnings.length, 1);
@@ -651,7 +651,7 @@ test('une clé allongée reçoit dans rendering.roles le rendu que son token dé
   );
   const rendering = renderingSemanticsFor(trees.discoveredRoles);
 
-  // « ring » est une DÉCLARATION du designer, et elle porte sur deux rôles de
+  // « ring » est une déclaration du designer, et elle porte sur deux rôles de
   // même nature : allongée, la clé nomme toujours `ring`, donc le contour
   // extérieur et son repli en box-shadow.
   assert.deepEqual(rendering.keyRoles?.strokes, { 'base.ring': 'ring', 'halo.ring': 'ring' });
@@ -688,7 +688,7 @@ test('un composant dont les clés nomment toutes un rôle partagé ne déduit au
 });
 
 test('deux tokens qui finissent pareil, l’un en fill l’autre en stroke, gardent chacun son rendu', async () => {
-  // `colorKeys` décide sur des feuilles SÉPARÉES : un fill et un stroke ne se
+  // `colorKeys` décide sur des feuilles séparées : un fill et un stroke ne se
   // disputent rien, et ces deux tokens gardent tous les deux la clé courte
   // « background ». Une table de rôles unique en perdrait un, et le
   // consommateur peindrait le mauvais côté sans un mot.
@@ -731,7 +731,7 @@ test('deux tokens qui finissent pareil, l’un en fill l’autre en stroke, gard
 
 test('un token dont le nom déclare un fill peint un contour, sans un mot', async () => {
   // Le moteur n'a aucun avis sur le vocabulaire du design system : c'est le
-  // CALQUE qui dit ce qu'une couleur peint. Un `…/foreground` posé en stroke
+  // calque qui dit ce qu'une couleur peint. Un `…/foreground` posé en stroke
   // peint un contour, et le contrat le publie tel quel.
   const racine = {
     type: 'COMPONENT',
@@ -851,7 +851,7 @@ test('getSlotTokens publie une largeur de stroke détaillée par bord', async ()
 /**
  * Une couleur écrite à la main ne doit pas disparaître en silence.
  *
- * Le cas type est un variant sur quatre-vingt-dix — l'icône de droite d'un
+ * Le cas type est un variant sur quatre-vingt-dix : l'icône de droite d'un
  * bouton dont le fill a perdu sa variable. Sans avertissement, la vue exacte
  * cesse de citer ce calque dans `paintPlacements`, le rendu le laisse sans
  * encre, et `meta.warnings` reste vide : rien ne ramène le designer sur le
@@ -954,8 +954,8 @@ test('un fill entièrement lié ne produit aucun avertissement', async () => {
 });
 test('un fill masqué relié ne couvre pas le fill visible posé à la main', async () => {
   // Compter sur la liste du node équilibrerait les comptes : une peinture
-  // visible libre, une liaison au node, donc aucun avertissement — et le
-  // contrat publierait la couleur de la peinture MASQUÉE comme si elle peignait
+  // visible libre, une liaison au node, donc aucun avertissement, et le
+  // contrat publierait la couleur de la peinture masquée comme si elle peignait
   // le calque. La liaison portée par chaque peinture tranche ce que la liste du
   // node ne sait pas dire.
   const surface = {
@@ -988,8 +988,8 @@ test('un fill masqué relié ne couvre pas le fill visible posé à la main', as
 });
 
 test('la liaison portée par chaque peinture désigne la couleur qui peint', async () => {
-  // Deux peintures, une seule visible, et c'est bien SA variable que le contrat
-  // publie — pas celle de l'autre, ni les deux.
+  // Deux peintures, une seule visible, et c'est bien sa variable que le contrat
+  // publie : pas celle de l'autre, ni les deux.
   const surface = {
     type: 'RECTANGLE',
     name: 'Surface',

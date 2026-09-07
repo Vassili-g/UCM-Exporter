@@ -26,6 +26,12 @@ Les [invariants](#invariants) sont groupés par domaine : portée du contrat,
 tokens, couleurs, composition, arbre des slots, layout, grilles, diagnostics,
 versionnage. Lire le groupe que la tâche touche, pas la section entière.
 
+**Avant d'écrire une phrase, dans un document ou dans un commentaire, charger la
+skill [`rediger-sans-tics-ia`](./.agents/skills/rediger-sans-tics-ia/SKILL.md).**
+Un commentaire ne se justifie que par un fait absent du code : une décision, une
+précondition, une conséquence, une limite. Six contrôles refusent le reste, et
+[CONTRIBUTING.md](./CONTRIBUTING.md#rédiger-un-document) les énumère.
+
 Pour créer ou modifier un message destiné au designer, charger aussi la skill
 [`rediger-diagnostics-ucm`](./.agents/skills/rediger-diagnostics-ucm/SKILL.md).
 
@@ -157,13 +163,22 @@ docs/                    le FORMAT, pour qui consomme un contrat
 .agents/skills/          les procédures qu'un agent charge à la demande
   consommer-contrat/       reconstruire un composant depuis son seul contrat
   rediger-diagnostics-ucm/ écrire un message que le designer peut suivre
+  rediger-sans-tics-ia/    le standard d'écriture, documents et commentaires
 
-scripts/                 recette-externe.mjs, et le découvreur de tests
+scripts/
+  controle-style.mjs     les règles de style, pour le test et pour le hook
+  hook-style.mjs         le même contrôle, au moment où un agent écrit
+  mesurer-prose.mjs      le volume de la prose, document et commentaire
+  recette-externe.mjs    ce qui oblige à rejouer la recette
+  pins-servis.mjs        les versions que le registre sert
+  run-tests.cjs          le découvreur de tests
+.claude/settings.json    le hook d'écriture, branché sur Write et Edit
 .github/workflows/       ci.yml, et publish.yml qui publie sans jeton
 
 tests/                   les tests du monorepo lui-même
   docLinks.test.ts       les liens et les ancres de la documentation
-  styleDocumentaire.test.ts  les tics de rédaction, plafonnés et à cliquet
+  inventaireInvariants.test.ts  l'accord d'AGENTS.md avec le code, dans les deux sens
+  styleDocumentaire.test.ts  les tics de rédaction, interdits sans exemption
   pinDocumente.test.mjs  les versions montrées par une commande copiable
   registrePortableDocuments.test.ts  aucun document portable ne promet une stack
   versionSuitLeContenu.test.mjs  un numéro publié annonce bien ce qu'il publie
@@ -229,12 +244,11 @@ Le raisonnement vit dans la spécification, en lien.
   Figma au token, `codeIdentifier` du nom Figma à l'identifiant de code, et
   `tokenCssVariable` du token à la propriété personnalisée CSS. Une projection
   recopiée ailleurs est une faute : elle diverge sans produire d'erreur. La
-  règle de `tokenCssVariable` tient en une phrase, pour qu'une chaîne écrite
-  dans une autre langue la tienne : minuscules, toute suite de caractères qui
-  n'est ni lettre ni chiffre devient un seul tiret, tirets de bord retirés. Elle
-  ne coupe pas sur les bosses de casse, ce qui la distingue d'un `kebabCase` de
-  bibliothèque. Elle n'est pas une bijection (`50%` et `50` se rejoignent) : le
-  consommateur refuse la collision, le format ne prétend pas l'empêcher.
+  règle de `tokenCssVariable` s'écrit en une phrase, pour qu'une chaîne écrite
+  dans une autre langue la tienne. Elle ne coupe pas sur les bosses de casse, ce
+  qui la distingue d'un `kebabCase` de bibliothèque, et elle n'est pas une
+  bijection : c'est au consommateur de refuser la collision.
+  → [spec](./docs/FORMAT.md#nommer-et-citer-un-token)
 
 ### Couleurs
 
@@ -253,7 +267,7 @@ Le raisonnement vit dans la spécification, en lien.
   posé en contour peint un contour, sans un mot : le moteur n’a aucun avis sur
   le vocabulaire du design system. Le nom se lit sur le dernier segment du
   token, jamais sur la clé publiée.
-- Une clé de couleur n’est pas un RÔLE. `rendering.roles` est le vocabulaire
+- Une clé de couleur ne porte pas un rôle. `rendering.roles` est le vocabulaire
   partagé, identique dans tous les contrats ; `rendering.keyRoles` porte le rôle
   de chaque clé observée qui n’en porte pas le nom. Deux tables, une par arbre
   (`fills`, `strokes`) : `colorKeys` décide sur des feuilles séparées, et la
@@ -464,14 +478,11 @@ Le raisonnement vit dans la spécification, en lien.
   qu’un message s’écrive ailleurs qu’à l’autorité, l’autre lit la sortie du
   moteur et refuse un message sans ses parties.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
-- **Un export ne remonte que ce qui demande une décision.** Trois portes : le
-  point bloque l’export, il rend le contrat partiel, ou il demande une
-  vérification ou une correction dans Figma. Une transformation entièrement
-  prise en charge (piste `FIXED` en pixels, `inset` d’un calque hors du flux,
-  `rotation`, structure ou composition propre à un variant) est silencieuse
-  dans le plugin, dans la pull request et dans `meta.diagnostics` ; sa règle
-  vit dans la spécification et dans les tests du format. Le canal `infos` qui
-  les portait n’existe plus.
+- **Un export ne remonte que ce qui demande une décision.** Trois portes, et
+  rien d’autre. Une transformation entièrement prise en charge est silencieuse
+  dans le plugin, dans la pull request et dans `meta.diagnostics` ; sa règle vit
+  dans la spécification et dans les tests du format. Le canal `infos` qui les
+  portait n’existe plus.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
 - `meta.diagnostics` est l’unique propriétaire des messages publiés dans le
   contrat. Qui veut la liste lisible lit `diagnostics[].message`, sans filtrer
@@ -557,9 +568,11 @@ Le raisonnement vit dans la spécification, en lien.
   dépendance sans `args` : une surface fabriquée en dernier recours répondrait
   sans wrapper, faute de pouvoir l’élire sans aller-retour, et donnerait une
   seconde réponse à une question qui n’en admet qu’une.
-- On adresse par slot ce que ce contrat décrit, et par nom de calque Figma ce
-  qu’il ne décrit pas. Le nom de calque est la seule identité que deux contrats
-  partagent. D’où l’asymétrie : `text` chez soi, `overrides` chez autrui.
+- L’adressage est asymétrique, et le nom de calque Figma en est la charnière :
+  seule identité que deux contrats partagent, il adresse ce que ce contrat ne
+  décrit pas, là où un slot adresse ce qu’il décrit. D’où `text` chez soi et
+  `overrides` chez autrui.
+  → [spec](./docs/FORMAT.md#9-échantillon-de-maquette)
 - Un remplacement d’instance dans une dépendance se publie dans `swaps`, jamais
   dans `overrides` : les deux relevés n’ont ni la même source, Figma ne
   rapportant pas `mainComponent`, ni la même adresse. `masterPath` nomme les

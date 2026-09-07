@@ -7,7 +7,7 @@
 /** La taille d'ouverture, tant que rien n'a été rangé. */
 export const TAILLE_PAR_DEFAUT = { largeur: 380, hauteur: 500 } as const;
 
-/** En dessous, l'interface cesse d'être lisible — bien avant le 70 × 0 de Figma. */
+/** En dessous, l'interface cesse d'être lisible : bien avant le 70 × 0 de Figma. */
 export const TAILLE_MINIMALE = { largeur: 320, hauteur: 320 } as const;
 
 export type TailleFenetre = { largeur: number; hauteur: number };
@@ -17,8 +17,8 @@ const CLE_TAILLE = 'tailleFenetre';
 /**
  * Ramène une demande de taille dans les bornes.
  *
- * Elle est PURE et exportée pour être testée : le reste de ce fichier ne peut
- * l'être qu'avec un `figma` en vie, et c'est ici que vit la seule décision —
+ * Elle est pure et exportée pour être testée : le reste de ce fichier ne peut
+ * l'être qu'avec un `figma` en vie, et c'est ici que vit la seule décision,
  * ce qui sort des bornes, et ce qu'on fait d'une valeur qui n'est pas un
  * nombre. Une taille non finie rendrait `figma.ui.resize` incapable de lever
  * une erreur utile : elle retombe sur le défaut.

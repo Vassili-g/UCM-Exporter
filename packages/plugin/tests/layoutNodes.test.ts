@@ -26,7 +26,7 @@ const wrapperMain = { id: 'wrapper-main', name: 'sizeWrapper', parent: null };
 
 /**
  * Un variant qui délègue sa mise en page à un wrapper imbriqué, tout en portant
- * lui-même AUTANT de dimensions liées que le frame interne de ce wrapper.
+ * lui-même autant de dimensions liées que le frame interne de ce wrapper.
  * C'est l'égalité de score qui faisait diverger les deux élections.
  */
 function variantAvecWrapper(nom: string) {
@@ -76,7 +76,7 @@ function variantAvecWrapper(nom: string) {
 test('un seul node de layout sert les slots, la typographie et les icônes', async (t) => {
   // Restauré en sortie : les tests d'un même fichier s'exécutent dans le même
   // processus, et un faux `figma` laissé en place serait hérité par les
-  // suivants — qui passeraient alors sur un fichier Figma qu'ils ne décrivent
+  // suivants, qui passeraient alors sur un fichier Figma qu'ils ne décrivent
   // pas.
   const precedent = (globalThis as { figma?: unknown }).figma;
   t.after(() => {
@@ -251,7 +251,7 @@ test('findLayoutNode retombe sur la racine quand aucune dimension n’est liée'
 });
 
 test('une dépendance ne gagne pas l’élection du node de layout de son parent', () => {
-  // Une Alert embarquée porte évidemment ses propres gap, paddings et radius —
+  // Une Alert embarquée porte évidemment ses propres gap, paddings et radius :
   // plus que le cadre qui la range. La laisser concourir la faisait élire, et
   // le parcours d'une dépendance s'arrêtant à elle, `structure.children`
   // devenait vide sans un mot.

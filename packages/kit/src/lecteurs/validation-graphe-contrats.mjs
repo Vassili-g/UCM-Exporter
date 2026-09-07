@@ -57,7 +57,7 @@ function ajouter(erreurs, chemin, message) {
   erreurs.set(chemin, liste);
 }
 
-/** Représentation déterministe d'un cycle, indépendante du point de départ du DFS. */
+/** Représentation déterministe d'un cycle, indépendante du point de départ du dfs. */
 function cycleCanonique(cycle) {
   const sansRetour = cycle.slice(0, -1);
   const rotations = sansRetour.map((_, index) => [
@@ -231,8 +231,8 @@ function validerCycles(parNom, erreurs) {
  * Invariants : un nom possède un seul contrat, chaque cible existe, les slots
  * et `composes` annoncent la même séquence, et le graphe reste acyclique.
  *
- * L'adressabilité des échantillons est une question distincte — « ce que la
- * maquette montre est-il ATTEIGNABLE ? » plutôt que « le graphe est-il sain ? » —
+ * L'adressabilité des échantillons est une question distincte : « ce que la
+ * maquette montre est-il atteignable ? » plutôt que « le graphe est-il sain ? » :
  * et vit dans `validation-echantillons.mjs`. Elle a besoin du même index par nom,
  * et le reçoit d'ici plutôt que de le reconstruire.
  */

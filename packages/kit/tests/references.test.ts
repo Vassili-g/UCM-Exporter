@@ -3,8 +3,8 @@
  *
  * Ces cas vivaient dans `tokensUsed.test.ts` du plugin, à côté de la copie de
  * la regex qui s'y trouvait. Ils suivent la définition : elle est maintenant
- * unique, et son test avec elle. Les deux autres copies — le validateur du kit,
- * le `tokenVar` du repo consommateur — se contentaient de la même forme sans
+ * unique, et son test avec elle. Les deux autres copies (le validateur du kit,
+ * le `tokenVar` du repo consommateur) se contentaient de la même forme sans
  * qu'aucun test ne le vérifie ; c'est cette absence de test d'accord qui rendait
  * la divergence possible sans qu'elle se voie.
  */

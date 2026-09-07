@@ -1,20 +1,20 @@
 /**
  * Lecture des règles d'usage d'un composant depuis la section « <Nom>-Rules ».
  *
- * Chaque composant décrit ses règles dans un conteneur Figma — frame, section
- * ou groupe — nommé `${nomDuSet}-Rules` (ex. « Button-Rules »), posé sur la
+ * Chaque composant décrit ses règles dans un conteneur Figma (frame, section
+ * ou groupe) nommé `${nomDuSet}-Rules` (ex. « Button-Rules »), posé sur la
  * même page que le composant. On y
  * range des instances d'un composant de configuration (`ComponentConfiguration`)
- * dont la VARIANTE porte le tag (`@usage`, `@prop`, `@boolean`, `@do`, `@dont`,
+ * dont la variante porte le tag (`@usage`, `@prop`, `@boolean`, `@do`, `@dont`,
  * `@pairs`, `@icons`) et
  * dont le calque « content » porte le texte de la règle (plus un calque « prop »
  * pour `@prop` et `@boolean`, ex. « variant.contained » ou « icon-left »).
  *
  * Aucune logique spécifique à un composant : la section, le composant de config
- * et les tags sont des CONVENTIONS uniformes, valables pour n'importe quel
- * composant — comme les tags `@` l'étaient dans la description.
+ * et les tags sont des conventions uniformes, valables pour n'importe quel
+ * composant, comme les tags `@` l'étaient dans la description.
  *
- * Le plugin n'écrit JAMAIS dans Figma : cette section reste la source de vérité,
+ * Le plugin n'écrit jamais dans Figma : cette section reste la source de vérité,
  * lue telle quelle et reversée dans le contrat.
  */
 import { buildRules, iconPolicyFromVisibility, ruleTagFromValue } from './rulesModel';
@@ -78,7 +78,7 @@ export function rulesContainerOwner(node: { type: string; name: string }): strin
   return compacted.slice(0, -COMPACT_RULES_SUFFIX.length) || null;
 }
 
-/** Texte du premier calque TEXTE d'un nom donné dans une instance (vide si absent). */
+/** Texte du premier calque texte d'un nom donné dans une instance (vide si absent). */
 function textOfLayer(instance: InstanceNode, layerName: string): string {
   const target = layerName.trim().toLowerCase();
   const node = instance.findOne(
@@ -131,11 +131,11 @@ async function isRuleInstance(instance: InstanceNode): Promise<boolean> {
 export async function extractRules(
   componentSet: ComponentNode | ComponentSetNode,
 ): Promise<ExtractedRules> {
-  // Le nom canonique sert aux messages ; la RECONNAISSANCE, elle, passe par
+  // Le nom canonique sert aux messages ; la reconnaissance, elle, passe par
   // `rulesContainerOwner`, qui tolère la casse et les espaces.
   const sectionName = `${componentSet.name}${RULES_SECTION_SUFFIX}`;
   const owner = compactName(componentSet.name);
-  // On les cherche TOUS : n'en lire qu'un alors que la page en porte plusieurs
+  // On les cherche tous : n'en lire qu'un alors que la page en porte plusieurs
   // ferait disparaître des règles sans que rien ne le dise.
   const containers = figma.currentPage.findAll(
     (node) => rulesContainerOwner(node) === owner,
@@ -144,7 +144,7 @@ export async function extractRules(
   const container = containers[0];
   if (!container) {
     const absent: string[] = [];
-    // Le frame nommé n'existe pas : l'absence de cible est DÉCLARÉE, pas subie.
+    // Le frame nommé n'existe pas : l'absence de cible est déclarée, pas subie.
     pousserSansNode(absent, sujetSansNode('Frame', sectionName, 'inexistant'), {
       manque: 'aucun frame de ce nom n’existe sur la page.',
       impact: 'Le contrat dira comment utiliser le composant, mais pas quand : ni intention, '
@@ -179,7 +179,7 @@ export async function extractRules(
   for (const instance of instances) {
     if (!(await isRuleInstance(instance))) continue;
 
-    // Le tag est la VALEUR de la variante (peu importe le nom de l'axe).
+    // Le tag est la valeur de la variante (peu importe le nom de l'axe).
     const tag = Object.values(instance.variantProperties ?? {})
       .map(ruleTagFromValue)
       .find((value): value is RuleTag => value !== null);

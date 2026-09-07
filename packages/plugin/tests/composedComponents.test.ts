@@ -1,10 +1,10 @@
 /**
- * Tests de la composition : un composant unifié imbriqué est une DÉPENDANCE,
+ * Tests de la composition : un composant unifié imbriqué est une dépendance,
  * jamais un calque à parcourir ni un wrapper de dimensions.
  *
  * Le cas reproduit est réel : une Alert qui embarque un bouton d'action. Ce
  * bouton porte gap, paddings et radius liés, ce qui suffisait à le faire élire
- * « wrapper de dimensions » — l'Alert héritait alors des slots, des tailles et
+ * « wrapper de dimensions » : l'Alert héritait alors des slots, des tailles et
  * des props du Button.
  */
 import assert from 'node:assert/strict';
@@ -165,7 +165,7 @@ test('scanComposedInstances déclare une instance contractée comme dépendance'
   assert.deepEqual(composes, [
     { component: 'Button', figmaLayer: 'action', visibilityProp: 'action' },
   ]);
-  // Le relevé sert ensuite à élaguer : il porte l'id ET le nom du composant.
+  // Le relevé sert ensuite à élaguer : il porte l'id et le nom du composant.
   assert.deepEqual(composed.get('btn'), {
     component: 'Button',
     figmaLayer: 'action',
@@ -213,7 +213,7 @@ test('getAllNodes garde l’instance composée mais n’entre pas dedans', () =>
     new Map([['btn', { component: 'Button', figmaLayer: 'action' }]]),
   ).map((node) => node.name);
 
-  // Le slot reste visible — le composé doit pouvoir dire QUOI rendre là —
+  // Le slot reste visible (le composé doit pouvoir dire quoi rendre là)
   // mais le libellé du bouton n'appartient pas à l'Alert.
   assert.deepEqual(noms, ['Severity=Info', 'action']);
 });
@@ -221,7 +221,7 @@ test('getAllNodes garde l’instance composée mais n’entre pas dedans', () =>
 test('un slot qui enveloppe une dépendance reprend aussi sa visibilité', async () => {
   // Cas réel de l'Alert : le bouton n'est pas un enfant direct du layout, il
   // est rangé dans un calque « Action ». Le slot doit malgré tout dire quoi
-  // rendre — sinon il paraît vide, et son absence de texte le fait passer
+  // rendre, sinon il paraît vide, et son absence de texte le fait passer
   // pour un placeholder d'icône dont on cherche la taille en vain.
   const bouton = instance('btn', 'Button', 'Button', {
     componentPropertyReferences: { visible: 'action#9:1' },
@@ -256,7 +256,7 @@ test('un slot qui enveloppe une dépendance reprend aussi sa visibilité', async
   assert.equal(slot?.figmaLayer, 'Action');
   assert.equal(slot?.visibilityProp, 'action');
   assert.equal(slot?.optional, true);
-  // Le cadre est un conteneur de CE contrat : la dépendance est en dessous, et
+  // Le cadre est un conteneur de ce contrat : la dépendance est en dessous, et
   // la visibilité reste sur le slot, seule condition d'affichage.
   assert.equal(slot?.composes, undefined);
   assert.deepEqual(slot?.children, [
@@ -430,7 +430,7 @@ test('un cadre qui range plusieurs dépendances les publie toutes, chacune à sa
     placed,
   );
 
-  // Le cadre appartient à CE contrat : il publie son flux, y compris l'espace
+  // Le cadre appartient à ce contrat : il publie son flux, y compris l'espace
   // entre deux dépendances que le contrat porte toutes les deux.
   const slot = layout.children[0];
   assert.equal(slot.slot, 'actions');
@@ -440,7 +440,7 @@ test('un cadre qui range plusieurs dépendances les publie toutes, chacune à sa
   assert.equal(slot.gap, '{components.card.sizes.gap-actions}');
   assert.equal(slot.composes, undefined);
 
-  // Chaque dépendance a son emplacement ET sa propre condition d'affichage :
+  // Chaque dépendance a son emplacement et sa propre condition d'affichage :
   // le cadre n'en a repris aucune, il les masquerait toutes ensemble.
   assert.deepEqual(slot.children, [
     {
@@ -542,7 +542,7 @@ test('une instance dont le maître est illisible avertit au lieu de disparaître
 });
 
 test('le même layer orphelin ne se signale qu’une fois pour toute la matrice', async () => {
-  // Une instance orpheline vit dans TOUS les variants du set, et chaque scan la
+  // Une instance orpheline vit dans tous les variants du set, et chaque scan la
   // relève avec le même texte. Le message porte le nom du layer, jamais celui
   // du variant : un constat par layer, pas un par variant.
   const orphelin = (id: string) => instance(id, 'action', 'Button', {

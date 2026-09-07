@@ -1,5 +1,5 @@
 /**
- * Lance TOUS les fichiers `*.test.ts` du dossier `tests/`.
+ * Lance tous les fichiers `*.test.ts` du dossier `tests/`.
  *
  * Pourquoi ce script plutôt qu'une liste dans package.json : une liste écrite
  * à la main laisse un nouveau fichier de test hors du lot, silencieusement et

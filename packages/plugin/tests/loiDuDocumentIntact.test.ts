@@ -64,7 +64,7 @@ test('le moteur n’écrit jamais dans le document Figma', () => {
   for (const fichier of fichiers) {
     fs.readFileSync(fichier, 'utf8').split('\n').forEach((ligne, rang) => {
       const nu = ligne.trim();
-      // Un commentaire a le droit de NOMMER ce qu'on s'interdit : c'est même
+      // Un commentaire a le droit de nommer ce qu'on s'interdit : c'est même
       // souvent là qu'on explique pourquoi.
       if (nu.startsWith('*') || nu.startsWith('//') || nu.startsWith('/*')) return;
       for (const { motif, quoi } of ECRITURES) {

@@ -465,7 +465,7 @@ test('mergeIconRules refuse une visibilité incohérente entre variants', () => 
   );
 
   // La visibilité diverge : le contrat n'en publie aucune et le dit. L'icône
-  // reste remplaçable pour autant — c'est une liberté indépendante — et sa
+  // reste remplaçable pour autant (c'est une liberté indépendante) et sa
   // prop runtime prend le nom du calque, faute d'un booléen pour la nommer.
   assert.deepEqual(icons, {
     statusIcon: {

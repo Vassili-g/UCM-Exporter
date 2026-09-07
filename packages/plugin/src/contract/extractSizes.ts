@@ -1,5 +1,5 @@
 /**
- * Extraction des dimensions PAR taille (big / medium / small…).
+ * Extraction des dimensions par taille (big / medium / small…).
  *
  * Le contrat ne doit pas décrire une seule taille : si le composant expose un
  * axe de tailles (souvent porté par le wrapper de dimensions), chaque valeur
@@ -24,9 +24,9 @@ import { semanticEnumName } from './semantics';
 import type { SizeDimensions } from '@ucm-kit/core/format';
 
 /**
- * Repère l'axe « taille » d'un component set : c'est l'axe dont TOUTES les
+ * Repère l'axe « taille » d'un component set : c'est l'axe dont toutes les
  * valeurs appartiennent au vocabulaire des tailles (big, medium, sm, xl…).
- * On réutilise la même détection que pour la prop `size` — aucune règle
+ * On réutilise la même détection que pour la prop `size` : aucune règle
  * spécifique à un composant. Renvoie null si aucun axe ne correspond.
  */
 function findSizeAxis(componentSet: ComponentSetNode, components: ComponentNode[]): string | null {
@@ -41,7 +41,7 @@ function findSizeAxis(componentSet: ComponentSetNode, components: ComponentNode[
   return null;
 }
 
-/** Relève les dimensions d'UN variant de taille (mêmes règles que le layout de référence). */
+/** Relève les dimensions d'un variant de taille (mêmes règles que le layout de référence). */
 async function extractDimensions(
   component: ComponentNode,
   sizeValue: string,
@@ -118,7 +118,7 @@ async function extractDimensions(
  * (iconLeft/iconRight ne changent pas le padding).
  *
  * Exporté parce que l'élection du node de layout appartient à `layoutNodes.ts`,
- * qui doit savoir POUR QUI élire — et seulement pour eux : élire au-delà ferait
+ * qui doit savoir pour qui élire, et seulement pour eux : élire au-delà ferait
  * remonter des avertissements sur des variants que le contrat n'ouvre jamais.
  */
 export function findSizeRepresentatives(
@@ -141,7 +141,7 @@ export function findSizeRepresentatives(
 /**
  * Point d'entrée : construit la carte `{ taille → dimensions }` à partir du
  * component set qui porte l'axe de tailles. Renvoie null si cet axe n'existe
- * pas (composant à taille unique) — dans ce cas le contrat garde seulement
+ * pas (composant à taille unique), dans ce cas le contrat garde seulement
  * les dimensions de référence.
  */
 export async function extractSizeDimensions(

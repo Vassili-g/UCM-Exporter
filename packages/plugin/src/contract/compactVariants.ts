@@ -36,14 +36,14 @@ type CompactedVariants = {
 /**
  * Signature d'égalité d'un bloc : son JSON, clés triées à toute profondeur.
  *
- * L'ordre des clés n'est pas une donnée — deux objets qui portent les mêmes
- * paires disent la même chose — et deux extractions du même arbre peuvent le
+ * L'ordre des clés n'est pas une donnée (deux objets qui portent les mêmes
+ * paires disent la même chose) et deux extractions du même arbre peuvent le
  * produire dans un ordre différent : la projection de référence range ses
  * dimensions après ses slots, une vue exacte les range où l'auto layout les a
  * lues. Comparer le texte brut ferait cataloguer deux fois un bloc identique.
  *
  * La règle de partage ne s'en trouve pas relâchée : deux blocs qui diffèrent
- * par une valeur, une clé ou un ordre de TABLEAU gardent des signatures
+ * par une valeur, une clé ou un ordre de tableau gardent des signatures
  * distinctes. Seul l'ordre des clés cesse de compter.
  */
 export function signature(value: unknown): string {
@@ -97,7 +97,7 @@ function catalogue<T>(prefix: string, chemin: string): Catalogue<T> {
  *
  * La valeur est d'abord débarrassée de ses neutres : la passe finale qui
  * nettoie le contrat entier ne doit jamais pouvoir vider une entrée déjà
- * référencée. Une partie qui n'est QUE du vide n'est pas cataloguée du tout —
+ * référencée. Une partie qui n'est que du vide n'est pas cataloguée du tout :
  * son renvoi reste absent, à la règle commune.
  */
 function ranger<T>(cat: Catalogue<T>, value: T | undefined): string | undefined {
@@ -108,12 +108,12 @@ function ranger<T>(cat: Catalogue<T>, value: T | undefined): string | undefined 
 }
 
 /**
- * Fin d'identifiant qui appartient à la DÉFINITION et non au variant.
+ * Fin d'identifiant qui appartient à la définition et non au variant.
  *
  * Figma écrit l'identifiant d'un calque atteint dans une instance
  * « I<chaîne d'instances>;<id du calque dans le maître> ». Seul le segment qui
- * suit le DERNIER point-virgule est l'id dans le maître : il ne dépend que de
- * la définition. Deux bornes le prouvent avant de le hisser — au moins deux
+ * suit le dernier point-virgule est l'id dans le maître : il ne dépend que de
+ * la définition. Deux bornes le prouvent avant de le hisser, au moins deux
  * occurrences, et la même fin sur toutes. Une définition qui ne vise pas un
  * calque d'instance n'en a pas, et ses `nodeId` restent écrits en entier.
  */
@@ -131,10 +131,10 @@ function finCommune(nodeIds: readonly string[]): string | undefined {
 }
 
 /**
- * Déduplique chaque PARTIE de vue séparément.
+ * Déduplique chaque partie de vue séparément.
  *
- * La règle de partage ne change pas — égalité stricte du bloc JSON, aucun
- * merge, aucun défaut, aucun héritage — seule sa granularité change. Résoudre
+ * La règle de partage ne change pas (égalité stricte du bloc JSON, aucun
+ * merge, aucun défaut, aucun héritage) seule sa granularité change. Résoudre
  * les cinq renvois d'une vue redonne la vue exacte, au bit près ; deux vues qui
  * ne diffèrent que par leurs peintures cessent simplement de republier tout leur
  * arbre de slots, et leur divergence se lit sur le renvoi qui diffère.
@@ -154,7 +154,7 @@ export function compactVariants(
   const samples: Record<string, ContractSample> = {};
   const viewIds = new Map<string, string>();
   const bindingIds = new Map<string, string>();
-  // Chaque catalogue a SA table de signatures : `intern` numérote sur la taille
+  // Chaque catalogue a sa table de signatures : `intern` numérote sur la taille
   // de celle qu'on lui passe, et une table commune donnerait des identifiants
   // troués (« s3 » sans « s1 ») selon l'ordre des appels.
   const sampleIds = new Map<string, string>();
@@ -177,8 +177,8 @@ export function compactVariants(
     nodeIdsByDefinition.set(definitionId, seen);
   }
 
-  // La part du maître, hissée. La forme reste un TABLEAU : `extractPropertyBindings`
-  // pousse une liaison par NODE et `figmaPath` se construit sur les NOMS de
+  // La part du maître, hissée. La forme reste un tableau : `extractPropertyBindings`
+  // pousse une liaison par NODE et `figmaPath` se construit sur les noms de
   // calques, si bien que deux calques homonymes liés à la même prop partagent
   // leur définition dans un même variant. Un dictionnaire indexé par définition
   // n'en garderait qu'une, et le calque perdu resterait visible.
@@ -212,7 +212,7 @@ export function compactVariants(
     vue.composes = ranger(composes, parts.composes);
     vue.icons = ranger(icons, parts.icons);
     vue.paintPlacements = ranger(paintPlacements, parts.paintPlacements);
-    // La VUE reste dédupliquée elle aussi : deux variants qui rendent la même
+    // La vue reste dédupliquée elle aussi : deux variants qui rendent la même
     // chose partagent un jeu de renvois identique, donc une seule entrée.
     const view = intern(elideNeutrals(vue), 'v', viewIds, variantViews);
     // `sample` est déstructuré à part et catalogué à part : le laisser dans la

@@ -17,7 +17,7 @@ export type Cible = {
   nom: string;
   /** Le mot que Figma emploie dans son panneau : « Component », « Component set ». */
   genre: string;
-  /** `null` pour un component seul : il n'a pas de variants, il en EST un. */
+  /** `null` pour un component seul : il n'a pas de variants, il en est un. */
   variants: number | null;
 };
 

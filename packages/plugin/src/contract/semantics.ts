@@ -1,5 +1,5 @@
 /**
- * Couche sémantique du contrat — conventions de nommage et correspondances
+ * Couche sémantique du contrat : conventions de nommage et correspondances
  * vers le vocabulaire partagé décrit dans CONCEPT.md.
  *
  * Les noms Figma accidentels (axe « Button-Construc-Type », calque
@@ -7,8 +7,8 @@
  * humain ou un agent IA sans interprétation externe. L'appelant conserve
  * toujours le nom Figma d'origine (figmaName / figmaLayer) : zéro perte.
  *
- * Règle d'or : le mapping se décide sur les VALEURS ou le RÔLE, jamais sur
- * le nom d'un composant — aucun cas particulier codé en dur.
+ * Règle d'or : le mapping se décide sur les valeurs ou le rôle, jamais sur
+ * le nom d'un composant, aucun cas particulier codé en dur.
  */
 import { pousserSansNode } from './localisation';
 import type {
@@ -38,7 +38,7 @@ const STATE_SELECTORS: Record<string, string> = {
 const STATE_PRECEDENCE = ['disable', 'disabled', 'press', 'focus', 'hover', 'default'];
 
 /**
- * Échelles de tailles connues. Un enum dont TOUTES les valeurs figurent ici
+ * Échelles de tailles connues. Un enum dont toutes les valeurs figurent ici
  * est un axe de tailles, quel que soit son nom Figma.
  */
 const SIZE_VALUES = new Set([
@@ -63,10 +63,10 @@ export function semanticEnumName(values: string[]): string | null {
  * importe son nom Figma (souvent le texte d'exemple, ex. « Suivant »). Un
  * calque graphique désigné par une règle `@icons` est toujours l'`icon`.
  *
- * Nommer l'icône par son rôle est ce qui rend son slot STABLE sur toute la
+ * Nommer l'icône par son rôle est ce qui rend son slot stable sur toute la
  * matrice. Un composant dont l'icône change avec le variant (une Alert :
  * `circle-info` en info, `circle-check` en success) garde ainsi un seul slot,
- * là où le nom du calque en aurait inventé un par variant — et le contrat
+ * là où le nom du calque en aurait inventé un par variant, et le contrat
  * n'aurait décrit que celui du variant de référence. Le déclencheur est la
  * règle du designer, jamais la position ni le nom du calque.
  */
@@ -78,7 +78,7 @@ export function semanticSlotName(isText: boolean, isIconTarget = false): string 
 /**
  * Nom d'un slot homonyme : le premier garde le nom de base, les suivants sont
  * numérotés à partir de 2. Règle unique, partagée par la déduplication des
- * slots et par le rapprochement des icônes — deux formulations du même
+ * slots et par le rapprochement des icônes : deux formulations du même
  * suffixe finiraient par diverger.
  *
  * @example indexedSlotName('icon', 0) // → 'icon'
@@ -157,7 +157,7 @@ export function defaultRenderingSemantics(): RenderingSemantics {
       background: { kind: 'paint', cssProperties: ['background-color'] },
       foreground: { kind: 'paint', cssProperties: ['color', 'fill'] },
       icon: { kind: 'paint', cssProperties: ['color', 'fill'] },
-      // Un stroke Figma se dessine HORS du flux : il n'élargit pas la boîte et
+      // Un stroke Figma se dessine hors du flux : il n'élargit pas la boîte et
       // ne déplace aucun voisin. `border-color` / `border-width` disaient le
       // contraire au consommateur, qui rendait une bordure CSS et décalait tout
       // le contenu du composant. `align` dit de quel côté la dessiner
@@ -173,7 +173,7 @@ export function defaultRenderingSemantics(): RenderingSemantics {
 }
 
 /**
- * Rôles réellement rendables, avec leur nature. DÉRIVÉ de
+ * Rôles réellement rendables, avec leur nature. Dérivé de
  * `defaultRenderingSemantics()` : il n'existe volontairement pas de seconde
  * liste de rôles à maintenir en phase avec la première.
  */
@@ -194,7 +194,7 @@ export function isRenderableRole(key: string): boolean {
 }
 
 /**
- * La nature d'un rôle partagé — `paint` ou `stroke` —, ou `null` si ce nom n'en
+ * La nature d'un rôle partagé (`paint` ou `stroke`), ou `null` si ce nom n'en
  * désigne aucun.
  */
 export function roleKind(role: string): RenderingRole['kind'] | null {
@@ -202,33 +202,33 @@ export function roleKind(role: string): RenderingRole['kind'] | null {
 }
 
 /**
- * Rôle de rendu déduit du SITE d'application, c'est-à-dire de ce que Figma
- * peint réellement — jamais du nom du token.
+ * Rôle de rendu déduit du site d'application, c'est-à-dire de ce que Figma
+ * peint réellement : jamais du nom du token.
  *
  * C'est la contrepartie de la règle d'or en haut de ce fichier : un token
  * nommé `…/scale-1` ne dit rien de ce qu'il peint, mais le calque qui le porte
- * le dit entièrement. Le nom reste l'IDENTITÉ de la couleur dans la feuille de
+ * le dit entièrement. Le nom reste l'identité de la couleur dans la feuille de
  * variante ; il ne décide pas de son rendu.
  *
- * Même ordre que `semanticSlotName` — le texte d'abord, l'icône ensuite — pour
+ * Même ordre que `semanticSlotName` (le texte d'abord, l'icône ensuite) pour
  * que les deux se lisent comme une seule règle. Le défaut est la surface :
  * seuls deux signaux explicites (être un texte, être désigné par une règle
- * `@icons`) en font de l'encre. Le type du node ne tranche pas — un
- * `RECTANGLE` est une surface ou un tracé d'icône selon l'usage — et le
+ * `@icons`) en font de l'encre. Le type du node ne tranche pas (un
+ * `RECTANGLE` est une surface ou un tracé d'icône selon l'usage) et le
  * promouvoir en signal remplacerait une convention de nommage visible par une
  * convention de typage invisible.
  *
  * Pour un contour, `border` couvre le rendu ; c'est `align`, déjà publié sur
  * chaque feuille de `variantStrokes`, qui dit au consommateur de quel côté de
- * la boîte le dessiner — jamais avec quelle technique, puisque les deux rôles
+ * la boîte le dessiner : jamais avec quelle technique, puisque les deux rôles
  * de contour se rendent hors du flux. Le contrat n'a donc pas à deviner un
  * `ring` : la donnée structurelle est déjà là, et elle est observée, pas
  * supposée.
  *
- * C'est CETTE fonction qui décide de la NATURE du rendu, et elle seule : un
+ * C'est cette fonction qui décide de la nature du rendu, et elle seule : un
  * token nommé `…/foreground` posé en contour peint bien un contour. Le nom du
- * token ne peut que préciser le rôle À L'INTÉRIEUR de cette nature — distinguer
- * un `ring` d'un `border` —, jamais la contredire. Le moteur n'a pas à avoir un
+ * token ne peut que préciser le rôle À L'intérieur de cette nature (distinguer
+ * un `ring` d'un `border`), jamais la contredire. Le moteur n'a pas à avoir un
  * avis sur le vocabulaire du design system.
  */
 export function paintSiteRole(site: {

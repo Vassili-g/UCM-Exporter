@@ -25,7 +25,7 @@ test("les incohérences internes du contrat restent bloquantes", () => {
 });
 
 /**
- * Le titre du rapport annonce des CONTRATS invalides. Un `.tsx` qui s'écarte de
+ * Le titre du rapport annonce des contrats invalides. Un `.tsx` qui s'écarte de
  * son contrat n'en rend aucun invalide : le verdict l'ignore, faute de quoi le
  * titre mentirait et la pull request d'un designer serait refusée pour un geste
  * qui ne lui appartient pas.
@@ -121,7 +121,7 @@ test("deux sens d'écart dans le même rapport ne désignent aucun responsable u
 
 test("un seul contrat réellement cassé ramène le titre à « invalide »", () => {
   // La règle est « tous », pas « au moins un » : dès qu'un contrat est cassé, le
-  // rapport doit le dire en premier — c'est le seul des deux qu'un réexport
+  // rapport doit le dire en premier : c'est le seul des deux qu'un réexport
   // corrige, donc le seul qui appelle un geste immédiat.
   const entete = enteteDuVerdict([
     bilan({ version: { valeur: "99.0", verdict: "recent" } }),

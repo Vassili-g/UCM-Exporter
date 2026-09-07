@@ -37,8 +37,8 @@ export function createButton({
   button.appendChild(labelNode);
 
   /*
-   * Un bouton dont le libellé change en cours de route — « Publier », puis
-   * « Réessayer la publication » — le change par ici. Fouiller ses enfants
+   * Un bouton dont le libellé change en cours de route (« Publier », puis
+   * « Réessayer la publication ») le change par ici. Fouiller ses enfants
    * depuis l'extérieur marcherait aujourd'hui et casserait le jour où il en
    * gagne un second.
    */

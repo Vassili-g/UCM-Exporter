@@ -16,7 +16,7 @@ test('une clé que personne ne conteste reste le dernier segment', () => {
 });
 
 /**
- * Le cas StressTest : deux surfaces du MÊME variant, deux variables que le
+ * Le cas StressTest : deux surfaces du même variant, deux variables que le
  * design system nomme déjà distinctement. Tronquer au dernier segment perdrait
  * une couleur pour de bon.
  */
@@ -62,7 +62,7 @@ test('une seule collision n’allonge pas la clé avec la coordonnée du variant
 
   const keys = resolveColorKeys(feuilles);
 
-  // Les six tokens d'état gardent UNE seule clé, la même partout ; seule la
+  // Les six tokens d'état gardent une seule clé, la même partout ; seule la
   // surface partagée s'en détache.
   const parEtat = new Set(
     couleurs.flatMap((couleur) =>
@@ -147,10 +147,10 @@ test('deux exports du même design produisent les mêmes clés', () => {
 });
 
 test('seule une profondeur qui sépare une paire cohabitante entre dans la clé', () => {
-  // Le cas du Button : trente couleurs qui ne se côtoient JAMAIS, plus deux
+  // Le cas du Button : trente couleurs qui ne se côtoient jamais, plus deux
   // surfaces qui se disputent réellement la base « background » dans la même
   // feuille. L'exploration ne doit retenir que la profondeur qui sépare ces
-  // deux-là — sinon la clé emporterait une coordonnée de variant, et chaque
+  // deux-là, sinon la clé emporterait une coordonnée de variant, et chaque
   // variant publierait la sienne.
   const feuilles = [
     ['c.primary.contained.default.background', 'c.userinput.colors.background'],
@@ -159,7 +159,7 @@ test('seule une profondeur qui sépare une paire cohabitante entre dans la clé'
   ];
   const cles = resolveColorKeys(feuilles);
 
-  // L'invariant : les couleurs qui ne se côtoient jamais gardent TOUTES la même
+  // L'invariant : les couleurs qui ne se côtoient jamais gardent toutes la même
   // clé, quel que soit leur variant. C'est ce qui garde une coordonnée de
   // variant hors de la clé et laisse la feuille indexable.
   const parVariant = [
@@ -177,7 +177,7 @@ test('seule une profondeur qui sépare une paire cohabitante entre dans la clé'
 
 test('deux chemins profonds qui se disputent une base n’explosent pas le calcul', () => {
   // Le nombre de sélections explorées est exponentiel dans le nombre de
-  // profondeurs CANDIDATES : les restreindre à celles qui séparent réellement
+  // profondeurs candidates : les restreindre à celles qui séparent réellement
   // une paire est ce qui garde ce calcul instantané sur des noms très profonds.
   const profond = (queue: string) => `a.b.c.d.e.f.g.h.i.j.${queue}.background`;
   const debut = Date.now();

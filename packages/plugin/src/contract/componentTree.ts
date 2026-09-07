@@ -84,7 +84,7 @@ export function getVariantValues(component: ComponentNode): Record<string, strin
   return variants;
 }
 
-/** Les axes VARIANT du set (clés normalisées), dans l'ordre de déclaration. */
+/** Les axes variant du set (clés normalisées), dans l'ordre de déclaration. */
 export function getVariantAxes(componentSet: ComponentSetNode): string[] {
   return Object.entries(componentSet.componentPropertyDefinitions)
     .filter(([, definition]) => definition.type === 'VARIANT')
@@ -111,7 +111,7 @@ function remapVariantValues(
 /**
  * Construit la matrice complète : chaque variant du set avec ses valeurs
  * d'axes. La table optionnelle applique les mêmes renommages sémantiques que
- * les props. Aucune hypothèse sur les noms d'axes — un Button a
+ * les props. Aucune hypothèse sur les noms d'axes : un Button a
  * Color/Variant/State, un autre composant aura les siens.
  */
 export function groupComponentsByVariant(componentSet: ComponentSetNode): {
@@ -313,17 +313,17 @@ function hasComponentProperties(instance: InstanceNode): boolean {
 
 /**
  * Note une instance candidate au rôle de wrapper de dimensions.
- * Le critère principal est le NOMBRE de tokens de layout qu'elle porte
+ * Le critère principal est le nombre de tokens de layout qu'elle porte
  * (c'est ce qui définit un wrapper), le nom n'est qu'un léger bonus.
  * Score nul si elle ne porte aucune dimension liée.
  *
  * Score nul, aussi, si son composant maître est illisible. Un wrapper n'est
  * élu qu'une fois, sur la référence ; les autres variants retrouvent ensuite
- * LEUR instance du même maître, par son id. Une instance orpheline ne peut donc
+ * leur instance du même maître, par son id. Une instance orpheline ne peut donc
  * par construction être appariée nulle part : l'élire ferait décrire à la
  * référence un arbre que plus aucun autre variant ne décrit, sans qu'aucun id
  * ne reste à comparer pour s'en apercevoir. C'est la
- * garde qu'applique déjà `!composed.has(node.id)`, pour la même raison — un
+ * garde qu'applique déjà `!composed.has(node.id)`, pour la même raison : un
  * candidat qu'on ne saura pas suivre n'est pas un candidat.
  */
 async function scoreWrapper(
@@ -353,10 +353,10 @@ async function scoreWrapper(
  * un composant « plat » (sans instance de layout imbriquée) renvoie null
  * et ses dimensions seront lues directement sur lui.
  *
- * Un composant unifié imbriqué n'est JAMAIS candidat, quel que soit son score :
+ * Un composant unifié imbriqué n'est jamais candidat, quel que soit son score :
  * un wrapper est une coquille de mise en page interne, alors qu'une dépendance
  * est un composant à part entière. Les confondre revient à décrire les
- * dimensions du voisin — et, par ricochet, ses slots et ses props.
+ * dimensions du voisin, et, par ricochet, ses slots et ses props.
  */
 export async function findWrapperReference(
   root: ComponentNode,
@@ -380,9 +380,9 @@ export async function findWrapperReference(
 
 
 /**
- * Étiquettes Figma des axes et de leurs valeurs, lues à la SOURCE.
+ * Étiquettes Figma des axes et de leurs valeurs, lues à la source.
  *
- * Le nom Figma d'un variant — « Color=Primary, State=Hover » — redit ses
+ * Le nom Figma d'un variant (« Color=Primary, State=Hover ») redit ses
  * `values` avec les majuscules de Figma. Sur une matrice à quatre-vingt-dix
  * combinaisons, c'est quatre-vingt-dix fois la même information ; une table par
  * axe et par valeur la dit une fois.
@@ -393,7 +393,7 @@ export async function findWrapperReference(
  * lui-même et les comparer ne prouverait rien : l'appariement axe ↔ étiquette
  * peut être permuté sans qu'aucun nom reconstruit ne change.
  *
- * Rend `null` — et chaque variant garde alors son `figmaName` — dès qu'une
+ * Rend `null` (et chaque variant garde alors son `figmaName`) dès qu'une
  * seule chose ne se vérifie pas : aucun axe, une valeur normalisée qui
  * correspondrait à deux valeurs Figma, ou un seul nom qui ne se reconstruit pas
  * à l'identique. Tout ou rien : une table partielle obligerait le consommateur
@@ -441,7 +441,7 @@ export function buildFigmaVariantLabels(
   }
 
   // Dernier contrôle, celui qui porte : la table doit rendre chaque nom Figma
-  // à l'identique, sur TOUS les variants.
+  // à l'identique, sur tous les variants.
   for (const entry of matrix.variants) {
     const rebuilt = matrix.axes
       .map((axis) => `${axes[axis]}=${values[axis]?.[entry.values[axis]]}`)

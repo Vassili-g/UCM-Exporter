@@ -11,8 +11,8 @@ d'écriture générée sur un grand corpus. Le tiret cadratin y apparaît 2 fois
 [PagesHub](https://www.pageshub.fr/le-tiret-cadratin-lempreinte-revelatrice-de-chatgpt-et-les-strategies-devitement/)
 reprend la mesure en français.
 
-Ce dépôt était à 9,8 pour mille avant la passe de réécriture de septembre 2026,
-soit 439 tirets sur les documents de référence. Il est à 0,3 après, et les
+Ce dépôt était à 9,8 pour mille avant la passe de réécriture qui a posé ces
+règles, soit 439 tirets sur les documents de référence. Il est à 0,3 après, et les
 quatorze restants vivent en titre ou en cellule de tableau, où le tiret sépare
 deux colonnes au lieu de couper une phrase.
 
@@ -45,7 +45,7 @@ message de commit compris.
 
 ## Mesure
 
-La passe de réécriture de septembre 2026 a ramené les documents de référence de
+La passe de réécriture qui a posé ces règles a ramené les documents de référence de
 439 tirets cadratins à 14, tous en titre ou en cellule de tableau, et d'environ
 deux cents emphases par capitales à zéro. Le détail, document par document, est
 dans le commit qui l'a faite.

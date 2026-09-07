@@ -20,7 +20,7 @@ export function createResizeGrip(): HTMLDivElement {
     depart.preventDefault();
     grip.setPointerCapture(depart.pointerId);
 
-    // Le pointeur est en coordonnées de la fenêtre : sa position EST la taille
+    // Le pointeur est en coordonnées de la fenêtre : sa position est la taille
     // demandée, à la marge de la poignée près. Aucun delta à accumuler, donc
     // aucune dérive après plusieurs glissés.
     const suivre = (mouvement: PointerEvent) => {

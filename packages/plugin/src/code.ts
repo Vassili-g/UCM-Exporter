@@ -49,7 +49,7 @@ function postStatus(state: 'loading' | 'success' | 'error', text: string): void 
 /**
  * Met à jour l'indicateur de connexion toujours visible dans l'en-tête.
  *
- * Il prend une CAUSE, jamais un état d'affichage : `etatDeConnexion` est seul à
+ * Il prend une cause, jamais un état d'affichage : `etatDeConnexion` est seul à
  * décider ce que la pastille dit et quel geste elle demande.
  */
 function postConnection(cause: CauseConnexion, precision: PrecisionConnexion = {}): void {
@@ -73,7 +73,7 @@ function postDownload(filename: string, content: string): void {
 /**
  * Ouvre une URL dans le navigateur par défaut. Seul le sandbox peut le faire :
  * l'iframe de l'UI est isolée, un `target="_blank"` n'y aboutit nulle part.
- * On n'ouvre que du `https://` — le sandbox ne relaie pas aveuglément ce que
+ * On n'ouvre que du `https://`, le sandbox ne relaie pas aveuglément ce que
  * l'iframe lui demande.
  */
 function openExternal(url: string): void {
@@ -103,7 +103,7 @@ async function refreshConfiguration(): Promise<void> {
 let selectionToken = 0;
 
 /**
- * Analyse la sélection courante et prévient l'utilisateur AVANT toute action.
+ * Analyse la sélection courante et prévient l'utilisateur avant toute action.
  * Les règles enrichissent la documentation ; elles ne conditionnent pas la capture.
  */
 async function reportSelectionState(): Promise<void> {
@@ -169,7 +169,7 @@ let analyseGardee: AnalyseGardee | null = null;
  * L'annulation coopérative.
  *
  * Rien ne peut interrompre un appel Figma déjà parti. Le drapeau est donc lu
- * ENTRE deux étapes, là où le moteur annonce la suivante : l'annulation prend
+ * entre deux étapes, là où le moteur annonce la suivante : l'annulation prend
  * effet à la fin de l'étape en cours, et rien n'est publié après elle.
  */
 class ExportAnnule extends Error {}
@@ -200,8 +200,8 @@ function postVerdict(
 }
 
 /**
- * PREMIER TEMPS : analyser. Rien n'est écrit ici, ni sur le poste ni sur GitHub.
- * L'analyse refait tout le chemin de lecture — emplacement, immobilité, collision —
+ * Premier temps : analyser. Rien n'est écrit ici, ni sur le poste ni sur GitHub.
+ * L'analyse refait tout le chemin de lecture (emplacement, immobilité, collision)
  * parce qu'un pré-vol qui annoncerait « rien à changer » sans avoir vu une collision
  * d'identifiant mentirait sur le seul point qui, lui, est un vrai refus.
  */
@@ -288,7 +288,7 @@ async function analyser(
 }
 
 /**
- * SECOND TEMPS : publier ce que l'analyse a produit.
+ * Second temps : publier ce que l'analyse a produit.
  *
  * `publishArtifact` refait la lecture du repository de son côté : l'analyse
  * informe, elle ne fait pas autorité. Entre les deux, quelqu'un a pu fusionner
@@ -333,7 +333,7 @@ async function publier(): Promise<void> {
     const message = error instanceof Error ? error.message : 'Erreur GitHub inconnue.';
     const statut = error instanceof GithubApiError ? error.status : null;
     // La réponse de GitHub est un fait de publication ; le verdict dit ce que le
-    // designer a entre les mains. L'analyse est GARDÉE : la publication se
+    // designer a entre les mains. L'analyse est gardée : la publication se
     // réessaie sans repasser par Figma.
     versUi({ type: 'log', text: `Échec GitHub : ${message}` });
     postDownload(analyse.filename, analyse.content);
@@ -354,8 +354,8 @@ async function publier(): Promise<void> {
  * Montre le calque dont un avertissement parle : sélection, puis cadrage.
  *
  * **Rien n'est écrit dans le document.** Une sélection et un cadrage sont un
- * état de l'ÉDITEUR, et les actions d'un plugin ne rejoignent l'historique
- * d'annulation que si `commitUndo()` est appelé — ce que ce plugin ne fait
+ * état de l'éditeur, et les actions d'un plugin ne rejoignent l'historique
+ * d'annulation que si `commitUndo()` est appelé : ce que ce plugin ne fait
  * jamais. La décision et ses sources sont dans `SPEC.md`.
  *
  * **Un node introuvable ne fait rien, et ne dit rien.** Le designer a pu
@@ -366,7 +366,7 @@ async function publier(): Promise<void> {
  * **La page doit être la bonne avant de sélectionner.** Un node vit sur une
  * page, et `currentPage.selection` n'accepte que des nodes de la page courante :
  * sélectionner sans basculer lèverait, sur un composant exporté depuis une
- * autre page — le cas normal quand le designer a navigué depuis.
+ * autre page, le cas normal quand le designer a navigué depuis.
  */
 async function montrerLeCalque(nodeId: string): Promise<void> {
   const node = await figma.getNodeByIdAsync(nodeId).catch(() => null);
@@ -401,7 +401,7 @@ figma.ui.onmessage = async (message: UiRequest) => {
     versUi({ type: 'schema-version', version: CONTRACT_VERSION });
     // L'UI est prête : sélection, champs sauvegardés, test GitHub automatique,
     // et ce que l'export des tokens emporterait. Cette dernière lecture
-    // est celle qui manquait pour qu'une commande de portée FICHIER annonce sa
+    // est celle qui manquait pour qu'une commande de portée fichier annonce sa
     // taille avant de partir.
     await Promise.all([
       reportSelectionState(),

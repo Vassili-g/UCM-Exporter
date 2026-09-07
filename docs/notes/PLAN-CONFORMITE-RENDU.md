@@ -2,7 +2,7 @@
 
 **Statut : recherche proposée pour une prochaine phase.** Aucun vérificateur
 générique de rendu n’est implémenté et aucune décision de réalisation n’est
-prise. Les points marqués **[À DÉCIDER]** sont ouverts.
+prise. Les points marqués **[À décider]** sont ouverts.
 
 Cette note conserve le détail de la piste. Elle distingue les contrôles déjà
 disponibles des blocs qui restent à concevoir ; elle ne sert ni
@@ -125,7 +125,7 @@ Cet attribut ne change rien à l'affichage : la page est identique avec ou sans
 lui. Il ne fait entrer aucune donnée de design dans le code. Il sert uniquement
 à rendre le composant observable.
 
-### [À DÉCIDER]
+### [À décider]
 
 - Adopte-t-on cet attribut ? C'est le point qui conditionne tout le reste. Sans
   lui, retrouver un slot demande du code écrit pour chaque composant, ce qui
@@ -296,7 +296,7 @@ de navigateur simulé.
 5. Comparer sa couverture à ce que la relecture humaine d'une reconstruction à
    froid constate aujourd'hui, seul point de comparaison disponible.
 
-### [À DÉCIDER]
+### [À décider]
 
 - Couvre-t-on les états d'interaction ? Cela suppose un environnement de
   navigateur simulé, donc une dépendance supplémentaire et un temps
@@ -369,7 +369,7 @@ Pendant l'écriture du code.
    token construit morceau par morceau, une référence absente du contrat, et
    une couleur écrite en dur.
 
-### [À DÉCIDER]
+### [À décider]
 
 - Fait-on les règles d'éditeur ? Elles supposent d'installer et configurer
   ESLint, qui n'est pas présent aujourd'hui.
@@ -402,10 +402,10 @@ Au moment de la fusion.
 
 ### Pourquoi c'est important
 
-Sans ce bloc, tous les autres restent consultatifs. Ce n'est pas un
-développement, c'est un arbitrage.
+Sans ce bloc, tous les autres restent consultatifs. Ce point demande un
+arbitrage, non un développement.
 
-### [À DÉCIDER]
+### [À décider]
 
 Qui porte cette décision, et sous quel délai ?
 
@@ -481,7 +481,7 @@ différemment des couleurs ? La proposition dit non : dès lors que l'écart est
 constaté sur un affichage réel, la nature de la donnée ne change rien. Un
 contrôle constaté mais non bloquant ne sera jamais corrigé.
 
-### [À DÉCIDER]
+### [À décider]
 
 Le vérificateur bloque-t-il dès sa mise en service, ou avertit-il pendant une
 période d'observation ?

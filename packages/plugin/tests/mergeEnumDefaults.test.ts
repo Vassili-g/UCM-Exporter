@@ -4,7 +4,7 @@ import { mergeEnumDefaults } from '../src/contract/mergeEnumDefaults';
 import { extractContractProps } from '../src/contract/parsers';
 import type { ContractProp } from '@ucm-kit/core/format';
 
-/** Un axe dont le premier variant du set n'est PAS celui que le designer veut. */
+/** Un axe dont le premier variant du set n'est pas celui que le designer veut. */
 function axeDeCouleur() {
   return {
     Color: {
@@ -22,7 +22,7 @@ test('sans @default, aucun axe ne publie de valeur par défaut', () => {
 });
 
 /**
- * Le défaut suivait la POSITION du variant dans le component set, que rien
+ * Le défaut suivait la position du variant dans le component set, que rien
  * n'affiche dans Figma et que l'ordre du set choisit pour la lisibilité. Le
  * contrat publiait donc un effet de bord de mise en page comme une décision.
  */

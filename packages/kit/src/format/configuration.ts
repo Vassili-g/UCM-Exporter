@@ -14,7 +14,7 @@ export const NOM_CONFIGURATION = 'ucm.config.json';
  *
  * Il n'y a que deux jetons, volontairement : `{dir}` le dossier du contrat,
  * `{id}` son identifiant. Les transformations de casse (`{id:snake}`,
- * `{id:kebab}`) s'ajouteront le jour où une cible réelle les demande — les
+ * `{id:kebab}`) s'ajouteront le jour où une cible réelle les demande, les
  * inventer maintenant, ce serait figer une grammaire sur des besoins supposés.
  */
 export const MOTIF_IMPLEMENTATION_PAR_DEFAUT = '{dir}/{id}.tsx';
@@ -23,7 +23,7 @@ export const MOTIF_IMPLEMENTATION_PAR_DEFAUT = '{dir}/{id}.tsx';
 export type ConfigurationRepository = {
   /** Dossier sous lequel les contrats sont cherchés, récursivement. */
   components: string;
-  /** Chemin du FICHIER de tokens DTCG — un fichier, pas un dossier. */
+  /** Chemin du fichier de tokens DTCG : un fichier, pas un dossier. */
   tokens: string;
   /** Motif qui résout le chemin d'une implémentation depuis celui du contrat. */
   implementation: string;
@@ -36,10 +36,10 @@ export type ConfigurationRepository = {
  * décrit « un repo GitHub neuf, un dossier `components/`, rien d'autre ». Un
  * repo qui range autrement le dit, et c'est précisément à quoi sert ce fichier.
  *
- * `tokens` est un FICHIER, et l'ambiguïté a coûté un défaut : le plugin
- * enregistrait un DOSSIER (`src/tokens`) auquel il ajoutait `/tokens.json`. Les
+ * `tokens` est un fichier, et l'ambiguïté a coûté un défaut : le plugin
+ * enregistrait un dossier (`src/tokens`) auquel il ajoutait `/tokens.json`. Les
  * deux conventions ne se distinguaient pas tant que le dossier s'appelait
- * `tokens` — le nom du fichier ressemblait au nom du dossier. Ici, le champ
+ * `tokens` : le nom du fichier ressemblait au nom du dossier. Ici, le champ
  * porte le nom du fichier, toujours.
  */
 export const CONFIGURATION_PAR_DEFAUT: Readonly<ConfigurationRepository> = Object.freeze({
@@ -64,9 +64,9 @@ const declare = (objet: Record<string, unknown>, cle: string): boolean =>
 /**
  * Les champs absents ou mal formés d'une configuration.
  *
- * Même forme de réponse que `champsInvalidesDuContrat` — une liste de chemins,
- * vide quand tout va bien — pour que l'appelant traite les deux refus de la
- * même façon. Un champ ABSENT n'est pas invalide : il prend son défaut. Seul
+ * Même forme de réponse que `champsInvalidesDuContrat` (une liste de chemins,
+ * vide quand tout va bien) pour que l'appelant traite les deux refus de la
+ * même façon. Un champ absent n'est pas invalide : il prend son défaut. Seul
  * un champ écrit et inutilisable l'est.
  */
 export function champsInvalidesDeLaConfiguration(configuration: unknown): string[] {
@@ -80,7 +80,7 @@ export function champsInvalidesDeLaConfiguration(configuration: unknown): string
   }
   // Un numéro de version écrit ici est refusé, pas ignoré. L'ignorer laisserait
   // croire qu'il compte : quelqu'un le mettrait à jour en pensant déplacer la
-  // fenêtre de lecture, et rien ne bougerait — un geste sans effet est pire
+  // fenêtre de lecture, et rien ne bougerait, un geste sans effet est pire
   // qu'un geste refusé.
   for (const cle of ['contractVersion', 'version', 'schemaVersion']) {
     if (declare(objet, cle)) invalides.push(cle);
@@ -91,9 +91,9 @@ export function champsInvalidesDeLaConfiguration(configuration: unknown): string
 /**
  * La configuration que porte un JSON déjà analysé, ou l'erreur qui l'en empêche.
  *
- * Rend toujours une configuration COMPLÈTE : l'appelant qui choisit de passer
+ * Rend toujours une configuration complète : l'appelant qui choisit de passer
  * outre une erreur travaille sur les défauts, jamais sur `undefined`. Ce module
- * ne lève pas, pour la même raison que le validateur de contrats ne lève pas —
+ * ne lève pas, pour la même raison que le validateur de contrats ne lève pas :
  * un garde-fou doit diagnostiquer là où il serait tentant d'exploser.
  */
 export function configurationDepuisJson(

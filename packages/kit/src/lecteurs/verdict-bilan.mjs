@@ -42,13 +42,13 @@ function phraseDuSensDeLEcart(bilans, pluriel) {
  * réellement, au sens de `bilanEstBloquant`, et il annonce alors le compte
  * exact plutôt qu'un « des contrats » suivi d'un « (1 contrat) » qui le
  * dément. Dès qu'aucun contrat n'est en
- * cause, le rapport bascule sur un titre qui nomme le repository — même quand
+ * cause, le rapport bascule sur un titre qui nomme le repository, même quand
  * une pull request est refusée par ailleurs. Un rapport peut ainsi refuser une
  * fusion sans jamais désigner le mauvais coupable.
  *
  * `fautifs` accepte les bilans eux-mêmes, et plus seulement leur nombre : c'est
  * ce qui permet de distinguer un contrat cassé d'un contrat que seule sa
- * version rend illisible ici. Un nombre reste accepté — les tests qui ne
+ * version rend illisible ici. Un nombre reste accepté : les tests qui ne
  * s'intéressent qu'au compte n'ont pas à monter un bilan complet.
  */
 export function enteteDuVerdict(fautifs, avecAvertissements = false) {
@@ -61,7 +61,7 @@ export function enteteDuVerdict(fautifs, avecAvertissements = false) {
     return [
       `## ❌ ${versionsSeules} contrat${pluriel} dans une version que ce repository ne lit pas`,
       "",
-      // Le TITRE est vrai dans les deux sens de l'écart — la version n'est pas
+      // Le titre est vrai dans les deux sens de l'écart : la version n'est pas
       // lue, c'est tout ce qu'il dit. La phrase qui suit, elle, désigne un
       // responsable : elle se calcule.
       phraseDuSensDeLEcart(bilans.filter(seuleLaVersionBloque), pluriel === "s"),

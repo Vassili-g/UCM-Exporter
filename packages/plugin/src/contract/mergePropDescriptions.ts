@@ -1,9 +1,9 @@
 /**
  * Accroche la documentation par valeur (règles `@prop`) à l'axe qu'elle décrit.
  *
- * Un axe de variantes est publié à DEUX endroits selon sa nature : les axes
+ * Un axe de variantes est publié à deux endroits selon sa nature : les axes
  * d'API dans `props`, l'axe d'états dans `stateModel`. Ce module suit cette
- * répartition plutôt que de la contredire — sans quoi une règle visant un axe
+ * répartition plutôt que de la contredire, sans quoi une règle visant un axe
  * réellement publié serait refusée au designer comme une faute de frappe.
  * Il reste pur pour pouvoir vérifier la convention sans l'API Figma.
  */
@@ -27,8 +27,8 @@ function unknownValueWarning(propName: string, value: string): PointACorriger {
 /**
  * Documente les états d'interaction, là où le contrat les publie déjà.
  *
- * L'axe `State`/`Status` est exclu des props — le développeur ne choisit pas
- * `hover` — mais `stateModel` le publie avec toutes ses valeurs, et les arbres
+ * L'axe `State`/`Status` est exclu des props (le développeur ne choisit pas
+ * `hover`) mais `stateModel` le publie avec toutes ses valeurs, et les arbres
  * de variantes en sont indexés. Sa documentation a donc un propriétaire.
  */
 function mergeStateDescriptions(

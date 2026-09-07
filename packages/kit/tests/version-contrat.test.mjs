@@ -3,8 +3,8 @@
  *
  * Ce test n'énumère plus les versions acceptées : le repository en lit une
  * seule, et une liste écrite à la main se contenterait de recopier la
- * constante. Il vérifie ce qui peut réellement casser — le SENS de l'écart,
- * qui décide à qui appartient le geste correctif — et la comparaison
+ * constante. Il vérifie ce qui peut réellement casser (le sens de l'écart,
+ * qui décide à qui appartient le geste correctif) et la comparaison
  * numérique, qui a déjà de quoi se tromper sur une mineure à deux chiffres.
  */
 import test from "node:test";
@@ -26,7 +26,7 @@ test("la fenêtre porte la version courante et la précédente", () => {
   // temps du réexport.
   //
   // Elle reste un choix explicite : la borne basse décrit la version
-  // PRÉCÉDENTE réelle, et se referme d'un cran à chaque montée. La laisser
+  // précédente réelle, et se referme d'un cran à chaque montée. La laisser
   // vieillir ferait rentrer en silence un schéma que plus personne n'adapte.
   assert.equal(VERSION_CONTRAT_MINIMALE, "11.0");
   assert.equal(VERSION_CONTRAT_MAXIMALE, "12.0");

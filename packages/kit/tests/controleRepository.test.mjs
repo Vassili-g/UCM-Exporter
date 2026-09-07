@@ -15,7 +15,7 @@ import {
 } from "../src/lecteurs/version-contrat.mjs";
 
 /**
- * La configuration du repo jouet — délibérément PAS celle par défaut.
+ * La configuration du repo jouet : délibérément pas celle par défaut.
  *
  * Les scénarios viennent d'un repository qui range ses contrats sous `src/` :
  * les garder tels quels transporte les attentes mot pour mot, et fait au
@@ -81,7 +81,7 @@ function preparerRepo({ composants = {}, tokens = {} }) {
 
 /**
  * Monte un repository jouet, le passe au contrôle, rend son verdict, et le
- * démonte — même quand l'assertion échoue, sinon un test rouge laisserait un
+ * démonte, même quand l'assertion échoue, sinon un test rouge laisserait un
  * dossier derrière lui à chaque exécution.
  */
 function verdict({ composants, tokens = TOKENS, casser } = {}) {
@@ -111,7 +111,7 @@ test("tout valide : rien ne bloque, et un rapport qui ne réclame rien", () => {
 /**
  * Le seul contrôle qui protège le design. Il interroge la source
  * DTCG, et non plus les variables CSS qu'elle produit : le scénario donne donc
- * un fichier de tokens VIDE, où la référence n'existe réellement pas.
+ * un fichier de tokens vide, où la référence n'existe réellement pas.
  */
 test("référence absente des tokens : avertissement, et la fusion reste ouverte", () => {
   const { bloquant, rapport } = verdict({ tokens: {} });
@@ -148,7 +148,7 @@ test("un nom que la projection CSS perdait est reconnu", () => {
 /**
  * Ce contrôle a été retiré en entier : il relève d'un linter, projet distinct.
  *
- * Ce test ne teste plus le contrôle — il teste son ABSENCE, ce qui n'est pas la
+ * Ce test ne teste plus le contrôle, il teste son absence, ce qui n'est pas la
  * même chose : sans lui, rien ne dirait qu'un autre contrôle n'a pas repris le
  * blocage au passage. Le contrôle ne lit plus le code du tout ; une
  * implémentation qui cite n'importe quoi ne le regarde plus.
@@ -234,7 +234,7 @@ test("version non lue : refus, et la section désigne le développeur", () => {
  * déplacement** : la ligne de terminal d'un contrat refusé pour sa version
  * lisait « code conforme ».
  *
- * L'analyse s'arrête avant la parité — rien n'a été lu, rien n'a été comparé —
+ * L'analyse s'arrête avant la parité (rien n'a été lu, rien n'a été comparé)
  * et le relevé vierge se lisait comme un relevé vide et concluant. C'est la
  * phrase exacte qu'une classe entière de code existe pour ne plus jamais
  * prononcer sans avoir lu, et elle s'écrivait sur la ligne même qui annonce le
@@ -254,16 +254,16 @@ test("un contrat que l'analyse n'a pas mené à bout n'est jamais dit conforme",
  * Le défaut latent, rendu visible.
  *
  * L'analyse appelait `champsInvalidesDuContrat` avant `verdictDeVersion` et
- * sortait tôt. Il suffit d'un contrat hors fenêtre dont les champs, EUX, ne
+ * sortait tôt. Il suffit d'un contrat hors fenêtre dont les champs, eux, ne
  * passent pas, pour que le verdict de version soit perdu et que le rapport
- * écrive « contrat invalide » — un titre qui accuse le designer, et un geste
+ * écrive « contrat invalide », un titre qui accuse le designer, et un geste
  * correctif qui n'existe pas : réexporter ne rend pas lisible un schéma que le
  * repo ne lit pas.
  */
 test("version non lue ET champs invalides : c'est la version qui parle", () => {
   const futur = contrat();
   futur.meta.contractVersion = "99.0";
-  // Ce qui manque est réellement exigé — le témoin plus bas le prouve sur un
+  // Ce qui manque est réellement exigé : le témoin plus bas le prouve sur un
   // contrat dont la version, elle, est lue.
   delete futur.rendering;
   const { bloquant, rapport } = verdict({ composants: { Widget: { contrat: futur, tsx: TSX } } });
@@ -446,11 +446,11 @@ test("l'état de démarrage ne couvre pas une suite de tests rouge", () => {
 });
 
 /**
- * Ce que le noyau répond SANS adaptateur, et c'est la règle de tri n° 3 mise à
+ * Ce que le noyau répond sans adaptateur, et c'est la règle de tri n° 3 mise à
  * l'épreuve : il ne dit jamais « conforme » de ce qu'il n'a pas lu.
  *
  * Les deux verdicts sont opposés et aucun ne bloque : le fichier n'est pas là,
- * état d'avancement légitime — ou il est là, et personne n'a de vérificateur
+ * état d'avancement légitime, ou il est là, et personne n'a de vérificateur
  * pour ce langage. Le second n'accuse personne, parce qu'il n'y a personne à
  * qui adresser un geste correctif.
  */
@@ -531,7 +531,7 @@ test("un adaptateur branché est appelé, et son écart avertit sans bloquer", (
  *
  * Un rapport vert alors que la pull request est refusée est pire que pas de
  * rapport du tout : le designer chercherait la panne ailleurs. Le contrôle
- * couvre donc aussi ce qu'il n'a pas exécuté — et le titre, lui, ne parle pas
+ * couvre donc aussi ce qu'il n'a pas exécuté, et le titre, lui, ne parle pas
  * des contrats, qui sont valides.
  */
 test("des tests rouges bloquent, sous un titre qui n'accuse aucun contrat", () => {

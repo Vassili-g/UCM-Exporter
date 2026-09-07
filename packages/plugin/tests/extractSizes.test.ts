@@ -1,7 +1,7 @@
 /**
- * Tests des dimensions PAR taille.
+ * Tests des dimensions par taille.
  *
- * L'enjeu est la détection de l'axe de tailles : elle repose sur les VALEURS
+ * L'enjeu est la détection de l'axe de tailles : elle repose sur les valeurs
  * de l'axe, jamais sur son nom, et c'est exactement l'heuristique que l'étape 5
  * de la ROADMAP (Alert, Checkbox, TextField) va mettre à l'épreuve.
  */
@@ -138,7 +138,7 @@ test('extractSizeDimensions ne relève qu’un représentant par taille', async 
   // Deux variants « Big » (un par état) : les dimensions ne dépendent pas des
   // autres axes, on ne doit pas relever deux fois la même taille.
   const premierBig = variantDeTaille(AXE, 'Big', 'big');
-  // Le doublon pointe volontairement vers d'AUTRES tokens : si le second
+  // Le doublon pointe volontairement vers d'autres tokens : si le second
   // écrasait le premier, l'assertion sur `gap` le verrait.
   const secondBig = { ...variantDeTaille(AXE, 'Big', 'small'), name: `${AXE}=Big, State=Hover` };
   const componentSet = {
@@ -151,7 +151,7 @@ test('extractSizeDimensions ne relève qu’un représentant par taille', async 
   const sizes = await extractSizeDimensions(componentSet, resolverFor(TOKENS), [], nodesDeTailles(componentSet));
 
   assert.deepEqual(Object.keys(sizes ?? {}), ['big', 'small']);
-  // C'est bien le PREMIER variant rencontré qui fait référence.
+  // C'est bien le premier variant rencontré qui fait référence.
   assert.equal(sizes?.big.gap, '{components.button.sizes.big.gap}');
 });
 
@@ -243,7 +243,7 @@ test('l’axe de tailles est lu sur le set sélectionné quand le wrapper n’en
 test('le node de référence n’avertit pas sur des dimensions que `sizes` va porter', async () => {
   // Le cas réel : l'axe de tailles vit sur le set du wrapper, qui porte des gaps
   // liés, tandis que le calque élu du variant de référence n'en a aucun. Comme
-  // `sizes` gagne, ce gap de haut niveau est jeté — l'annoncer au designer
+  // `sizes` gagne, ce gap de haut niveau est jeté : l'annoncer au designer
   // l'enverrait relier une variable sans qu'aucune ligne du contrat ne change,
   // sur un nom de calque commun à tous les variants du set.
   const noeud = (type: string, nom: string, enfants: any[] = [], extra: any = {}): any => {
@@ -262,7 +262,7 @@ test('le node de référence n’avertit pas sur des dimensions que `sizes` va p
     return self;
   };
 
-  // Les variants du wrapper portent l'axe de tailles ET des gaps liés.
+  // Les variants du wrapper portent l'axe de tailles et des gaps liés.
   const variantDuWrapper = (valeur: string, gapId: string) =>
     noeud('COMPONENT', `Size=${valeur}`, [noeud('TEXT', 'Label')], {
       layoutMode: 'HORIZONTAL',

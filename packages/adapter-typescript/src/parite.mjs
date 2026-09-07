@@ -288,7 +288,7 @@ export function lireApiPublique(fichiers, racine) {
         // Le texte écrit dans le source ne dit rien d'un alias : `Ton | undefined`
         // masque autant une union complète qu'une union amputée. La résolution,
         // elle, rend les littéraux même dérivés d'un `as const`, et ne rend rien
-        // d'un type élargi — donc silence plutôt que faux positif.
+        // d'un type élargi, donc silence plutôt que faux positif.
         const valeurs = significatifs.length > 0
           && significatifs.every((item) => item.isStringLiteral())
           ? significatifs.map((item) => item.value)
@@ -374,7 +374,7 @@ export function ecartsDeParite(contrat, releve, nomInterface, options = {}) {
   const enums = declarees.filter(([nom, prop]) => (
     nom in props && prop?.type === "enum" && Array.isArray(prop.values)
   ));
-  // Une union plus LARGE que le contrat ne se rapporte pas : accepter plus ne
+  // Une union plus large que le contrat ne se rapporte pas : accepter plus ne
   // contredit rien, et le dire ferait du contrat un plafond.
   const valeursNonImplementees = enums
     .filter(([nom]) => Array.isArray(props[nom].valeurs))

@@ -5,7 +5,7 @@
  * publie déjà dans le corps de la pull request. Mais le rapport de CI, lui, se
  * taisait : un composant dont une propriété n'a pas pu être décrite pouvait
  * finir en « ✅ Contrats et tokens cohérents » sans que rien ne le nuance. Le
- * verdict était exact — toutes les références citées existent — et pourtant il
+ * verdict était exact (toutes les références citées existent) et pourtant il
  * se lisait comme un feu vert sur le design, parce qu'une propriété absente du
  * contrat n'est citée par personne et n'a donc aucun écart à produire.
  *

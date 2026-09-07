@@ -28,7 +28,7 @@ export type FieldAlternatives = ReadonlyArray<ReadonlyArray<string>>;
  */
 export const BINDING_PATTERNS = {
   gap: [['itemSpacing']],
-  // L'espace entre les LIGNES d'un conteneur qui passe à la ligne. Figma scinde
+  // L'espace entre les lignes d'un conteneur qui passe à la ligne. Figma scinde
   // alors son champ gap en deux, et n'applique celui-ci que sous `WRAP`.
   rowGap: [['counterAxisSpacing']],
   // Les deux gaps d'une grille. Figma les expose séparément d'`itemSpacing`,
@@ -42,11 +42,11 @@ export const BINDING_PATTERNS = {
     ['cornerRadius'],
     ['topLeftRadius', 'topRightRadius', 'bottomLeftRadius', 'bottomRightRadius'],
   ],
-  // Un carré, pour une icône : les deux côtés doivent citer la MÊME variable.
+  // Un carré, pour une icône : les deux côtés doivent citer la même variable.
   slotSize: [['width', 'height']],
   // Les deux côtés lus séparément : une largeur figée et une hauteur qui hug
   // est un réglage courant, qu'un groupe conjoint refuserait. Ils servent aux
-  // slots comme au composant lui-même — la dimension d'un axe se lit de la même
+  // slots comme au composant lui-même : la dimension d'un axe se lit de la même
   // façon quel que soit le calque qui la porte.
   width: [['width']],
   height: [['height']],
@@ -131,7 +131,7 @@ const IMPLICIT_DEFAULTS: Readonly<Record<string, number>> = {
 };
 
 /**
- * Champs qui n'existent QUE sous un auto-layout. Sans lui, Figma ne les
+ * Champs qui n'existent que sous un auto-layout. Sans lui, Figma ne les
  * applique pas : leur absence du contrat ne vaut pas zéro, elle veut dire que
  * la question ne se pose pas. Les distinguer des valeurs neutres ci-dessus est
  * ce qui permet à un consommateur d'interpréter une absence.
@@ -178,7 +178,7 @@ function wrapsChildren(node: SceneNode): boolean {
 }
 
 /**
- * Vrai si Figma répartit les LIGNES lui-même. Le champ « vertical gap » affiche
+ * Vrai si Figma répartit les lignes lui-même. Le champ « vertical gap » affiche
  * alors « Auto » : `counterAxisSpacing` reste lisible sans aucun effet, comme
  * `itemSpacing` sous un espacement « Auto » de l'axe principal.
  */
@@ -231,10 +231,10 @@ function inapplicableReason(
  * Vrai si Figma expose au moins un des champs de cette dimension sur ce node.
  *
  * Trois états, et non deux : la valeur neutre (`IMPLICIT_DEFAULTS`), la valeur
- * écrite à la main qui réclame sa variable, et la propriété qui N'EXISTE PAS
+ * écrite à la main qui réclame sa variable, et la propriété qui N'existe pas
  * sur ce type de layer. Depuis que le contrat décrit les conteneurs à toute
- * profondeur, il rencontre le troisième cas — un GROUP n'a ni coins ni
- * padding — et lui réclamer une variable enverrait le designer chercher un
+ * profondeur, il rencontre le troisième cas (un GROUP n'a ni coins ni
+ * padding) et lui réclamer une variable enverrait le designer chercher un
  * champ que son panneau ne montre pas.
  */
 export function exposesAnyField(node: SceneNode, alternatives: FieldAlternatives): boolean {
@@ -247,7 +247,7 @@ export function exposesAnyField(node: SceneNode, alternatives: FieldAlternatives
 /**
  * Vrai si Figma expose un corner radius sur ce node.
  *
- * Un GROUP, une LINE ou un SLICE n'en ont pas : la propriété n'existe pas, elle
+ * Un GROUP, une LINE ou un slice n'en ont pas : la propriété n'existe pas, elle
  * n'est donc ni absente ni écrite à la main. Depuis que le contrat décrit les
  * conteneurs à toute profondeur, il en rencontre ; leur réclamer une variable
  * enverrait le designer chercher un champ que son panneau ne montre pas.
@@ -305,10 +305,10 @@ export function hasCompleteBinding(
 /**
  * Correspondance entre le champ Figma d'un côté et la clé que le contrat publie.
  *
- * Elle n'existe que pour les groupes dont chaque côté peut porter SA décision :
+ * Elle n'existe que pour les groupes dont chaque côté peut porter sa décision :
  * les deux paddings, les quatre coins, les quatre bords d'un contour. Les autres
- * groupes composés — `slotSize` en particulier, où les deux côtés d'un carré
- * doivent citer la même variable — n'en ont pas, et gardent l'exigence d'une
+ * groupes composés (`slotSize` en particulier, où les deux côtés d'un carré
+ * doivent citer la même variable) n'en ont pas, et gardent l'exigence d'une
  * variable unique.
  *
  * Les clés publiées sont celles de CSS, dans l'ordre de CSS : un consommateur
@@ -343,15 +343,15 @@ type AlternativeResolution = {
 /**
  * Résout une valeur Figma qui peut avoir plusieurs représentations.
  *
- * Le tableau extérieur décrit des alternatives (`cornerRadius` OU quatre
- * coins) ; chaque tableau intérieur est une conjonction (gauche ET droite).
+ * Le tableau extérieur décrit des alternatives (`cornerRadius` ou quatre
+ * coins) ; chaque tableau intérieur est une conjonction (gauche et droite).
  * Une représentation partielle sans sémantique de côtés vaut `null`. Pour un
  * groupe latéral, seuls les côtés réellement résolus peuvent être publiés :
  * conserver le premier token pour les autres ferait
  * affirmer au contrat une valeur que Figma ne prouve pas.
  *
  * Des côtés complets mais reliés à des variables différentes valent `null` eux
- * aussi, SAUF pour les groupes qui savent les publier séparément — `sides` les
+ * aussi, sauf pour les groupes qui savent les publier séparément : `sides` les
  * désigne. C'est la seule dérogation, et elle ne concerne pas les groupes dont
  * les champs ne sont pas des côtés.
  */
@@ -439,10 +439,10 @@ async function resolveGroup<K extends string>(
     const asymmetricIndex = tokensByAlternative.findIndex((tokens) => tokens.length > 1);
     if (asymmetricIndex !== -1) {
       const entry = complete[asymmetricIndex];
-      // Chaque côté cite SA variable. Le design system les nomme déjà
+      // Chaque côté cite sa variable. Le design system les nomme déjà
       // séparément : le contrat publie le détail au lieu de tout perdre.
-      // Deux représentations complètes à la fois restent une contradiction —
-      // `cornerRadius` ET quatre coins ne se départagent pas.
+      // Deux représentations complètes à la fois restent une contradiction :
+      // `cornerRadius` et quatre coins ne se départagent pas.
       const publiable = sides && complete.length === 1
         && entry.fields.every((field) => sides[field] !== undefined);
       if (publiable) {
@@ -562,7 +562,7 @@ async function resolveGroup<K extends string>(
 }
 
 /**
- * Résout un groupe dont TOUS les côtés doivent citer la même variable.
+ * Résout un groupe dont tous les côtés doivent citer la même variable.
  *
  * C'est le cas de `slotSize` : un carré dont les deux axes citeraient deux
  * variables n'est plus un carré, et le contrat le dit plutôt que d'inventer.
@@ -578,7 +578,7 @@ export async function resolveTokenName(
 }
 
 /**
- * Résout un groupe dont chaque côté peut porter SA décision : une valeur unique
+ * Résout un groupe dont chaque côté peut porter sa décision : une valeur unique
  * quand tous citent la même variable, le détail par côté sinon.
  *
  * Un groupe par côté peut être clairsemé : les côtés liés sont publiés, les
@@ -628,7 +628,7 @@ export async function resolveSidedField<K extends string>(
 /**
  * Intitulé du gap principal, tel que le panneau Figma l'affiche.
  *
- * Sous le wrap, Figma scinde son champ gap en deux — « horizontal gap » et
+ * Sous le wrap, Figma scinde son champ gap en deux : « horizontal gap » et
  * « vertical gap ». Un message qui dirait « gap » enverrait alors le designer
  * chercher un champ que son écran ne montre plus.
  */
@@ -637,16 +637,16 @@ export function gapLabel(node: SceneNode): string {
 }
 
 /**
- * Gap entre les LIGNES d'un conteneur qui passe à la ligne.
+ * Gap entre les lignes d'un conteneur qui passe à la ligne.
  *
  * Figma laisse ce champ synchronisé sur le gap principal, et son API ne dit pas
  * qu'il l'est : `counterAxisSpacing` ne renvoie jamais `null`, il renvoie la
  * valeur d'`itemSpacing` sans porter de liaison propre. Réclamer une variable
- * dans ce cas avertirait TOUS les conteneurs correctement tokenisés, dont le
- * gap unique décrit déjà les deux axes — et c'est aussi ce que dit le contrat :
+ * dans ce cas avertirait tous les conteneurs correctement tokenisés, dont le
+ * gap unique décrit déjà les deux axes, et c'est aussi ce que dit le contrat :
  * sous `wrap`, un `rowGap` absent vaut le `gap`.
  *
- * Le contrat ne publie donc ce champ que sur une liaison PROPRE, et n'avertit
+ * Le contrat ne publie donc ce champ que sur une liaison propre, et n'avertit
  * que lorsque la valeur diffère du gap principal : là, le designer a bien
  * dissocié ses deux espacements, et l'un des deux est écrit à la main.
  */
@@ -675,10 +675,10 @@ export async function resolveField(
 }
 
 /**
- * Types de nodes dont la boîte EST le dessin : des tracés de Bézier, dont Figma
+ * Types de nodes dont la boîte est le dessin : des tracés de Bézier, dont Figma
  * calcule la largeur et la hauteur sur la géométrie.
  *
- * Ce n'est pas une lecture du type contre l'usage — la règle qui interdit de
+ * Ce n'est pas une lecture du type contre l'usage : la règle qui interdit de
  * trancher sur le type vise `RECTANGLE` et `ELLIPSE`, qui sont une surface ou
  * un tracé selon ce qu'on en fait, et ils restent hors de cette liste avec
  * `LINE`, que tout séparateur emploie. Un `VECTOR`, lui, n'est jamais une boîte
@@ -708,7 +708,7 @@ export function estUnTrace(node: SceneNode): boolean {
  * Dimension figée d'un slot, relevée axe par axe.
  *
  * Le menu de dimensionnement décide de ce qu'on lit : un axe en `Hug` ou en
- * `Fill` est déjà décrit ailleurs et ne demande aucune variable — le lui
+ * `Fill` est déjà décrit ailleurs et ne demande aucune variable, le lui
  * réclamer produirait un avertissement pour une valeur que le contrat n'a pas
  * à porter. Un axe figé, en revanche, doit citer une variable : sans elle, la
  * dimension disparaîtrait en silence et l'absence ne voudrait plus rien dire.
@@ -730,7 +730,7 @@ export async function resolveSlotSize(
   const axe = (field: 'width' | 'height'): Promise<string | null> | null => {
     if (!fixed[field]) return null;
     // Sur un axe que la cellule décide, une dimension citant une variable reste
-    // publiée — c'est une décision que le calque porte malgré la cellule — mais
+    // publiée (c'est une décision que le calque porte malgré la cellule) mais
     // son absence ne se réclame pas : la piste et l'étendue disent déjà la place.
     // Un tracé suit la même règle, pour une raison voisine : sa boîte est celle
     // de son dessin, pas une décision du design system.
@@ -757,9 +757,9 @@ export function gridStructuralSize(
   parent: SceneNode | undefined,
 ): GridStructuralSize | null {
   if (!parent) return null;
-  // Les deux conditions sont requises : la piste doit hug ET la cellule doit
+  // Les deux conditions sont requises : la piste doit hug et la cellule doit
   // décider de l'axe. Un alignement explicite rend l'axe au calque, et
-  // `resolveSlotSize` en réclame alors la variable — publier ici la même valeur
+  // `resolveSlotSize` en réclame alors la variable : publier ici la même valeur
   // en pixels démentirait l'avertissement qu'il vient d'écrire sur cet axe.
   const cellule = gridCellSizedAxes(parent, node);
   const pistes = gridHugAxes(parent, node);
@@ -804,7 +804,7 @@ export function gridStructuralSize(
  *
  * Le silence, en revanche, suit la même règle que partout : une borne écrite à
  * la main est une mesure de maquette, une borne reliée à une variable est une
- * décision du design system. La première avertit — le geste demandé est de
+ * décision du design system. La première avertit, le geste demandé est de
  * relier la variable, non de retirer la borne : elle appartient au design, et
  * c'est au contrat de savoir la porter.
  */
@@ -868,7 +868,7 @@ async function resolveBoundAxis(
  *
  * `containerSizing` lit le menu seul et ramène toute dimension figée à
  * `stretch`, faute de pouvoir distinguer une taille de maquette d'une décision
- * de design. La liaison de variable est ce qui les sépare — le même signal que
+ * de design. La liaison de variable est ce qui les sépare, le même signal que
  * pour un gap, un padding ou la taille d'un slot : un nombre brut n'est jamais
  * contractuel, une variable liée l'est toujours. Un axe figé qui cite une
  * variable publie donc sa référence, et le composant porte enfin la taille que

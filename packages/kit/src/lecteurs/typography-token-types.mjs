@@ -29,7 +29,7 @@ function estObjet(valeur) {
   return Boolean(valeur) && typeof valeur === "object" && !Array.isArray(valeur);
 }
 
-/** Résout uniquement le TYPE d'une chaîne d'alias, jamais sa valeur. */
+/** Résout uniquement le type d'une chaîne d'alias, jamais sa valeur. */
 function feuilleRacine(reference, index) {
   let chemin = cheminDeReference(reference);
   const vus = new Set();

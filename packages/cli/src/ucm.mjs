@@ -113,12 +113,12 @@ export function executer(arguments_, {
   return 2;
 }
 
-// Le module s'exporte ET s'exécute : les tests appellent `executer`, le binaire
+// Le module s'exporte et s'exécute : les tests appellent `executer`, le binaire
 // passe par ici. Sans cette garde, importer le module lancerait la commande.
 //
 // La comparaison passe par `realpathSync` parce que npm installe le binaire
 // comme un lien : sans résolution, le chemin lancé et celui du module diffèrent,
-// et `ucm` se contenterait de ne rien faire — en sortant 0.
+// et `ucm` se contenterait de ne rien faire, en sortant 0.
 if (process.argv[1] && import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href) {
   process.exit(await executer(process.argv.slice(2)));
 }

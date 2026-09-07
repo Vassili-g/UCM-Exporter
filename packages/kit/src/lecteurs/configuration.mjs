@@ -12,7 +12,7 @@ import { CONFIGURATION_PAR_DEFAUT, NOM_CONFIGURATION, configurationDepuisJson } 
  * complète.
  *
  * `erreur` porte ce qui n'a pas pu être lu : fichier illisible, JSON cassé,
- * champs invalides. L'appelant décide s'il refuse — ce module ne lève pas, pour
+ * champs invalides. L'appelant décide s'il refuse, ce module ne lève pas, pour
  * la même raison que le validateur de contrats ne lève pas : un garde-fou doit
  * diagnostiquer là où il serait tentant d'exploser.
  */

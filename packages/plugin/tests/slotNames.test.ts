@@ -5,7 +5,7 @@
  * Ces tests montent l'extraction complète parce que l'invariant ne se vérifie ni
  * dans `extractLayout` ni dans `extractIconLayers` pris isolément : il vit dans
  * leur accord. Deux structures Figma le mettent en défaut dès que le nommage des
- * slots se dédouble — un enfant direct portant plusieurs icônes, et une icône
+ * slots se dédouble : un enfant direct portant plusieurs icônes, et une icône
  * posée hors du conteneur de dimensions.
  */
 import assert from 'node:assert/strict';
@@ -134,7 +134,7 @@ test('une icône hors du conteneur de dimensions n’obtient aucun slot', async 
 
 test('deux icônes dans un même enfant direct partagent son slot', async () => {
   // Motif Figma courant : un groupe « icons » porte les deux calques. Le groupe
-  // est UN enfant direct, donc UN slot, que les deux icônes remplissent.
+  // est un enfant direct, donc un slot, que les deux icônes remplissent.
   const groupe = node('FRAME', 'icons', [
     node('VECTOR', 'circle-info'),
     node('VECTOR', 'circle-check'),
@@ -160,7 +160,7 @@ test('deux icônes dans un même enfant direct partagent son slot', async () => 
 test('les slots viennent du node de layout retenu, pas d’une seconde élection', async () => {
   // Le composant délègue sa mise en page à un wrapper, mais porte lui-même
   // assez de dimensions liées pour gagner une élection lancée depuis sa racine.
-  // Les deux extractions doivent malgré tout décrire le MÊME node.
+  // Les deux extractions doivent malgré tout décrire le même node.
   const row = node(
     'FRAME',
     'row',

@@ -1,15 +1,15 @@
 /**
- * Tests de l'ASSEMBLAGE du contrat — le seul fichier qui enchaîne toute la
+ * Tests de l'assemblage du contrat : le seul fichier qui enchaîne toute la
  * commande, et le seul qu'aucun test n'exécutait.
  *
  * Ce que ces tests prouvent : le câblage. Que le pré-vol bloque avant toute
  * extraction, que les étapes se transmettent bien leurs résultats, et que le
  * contrat sort avec la forme annoncée.
  *
- * Ce qu'ils ne prouvent PAS : la fidélité à Figma. Le faux `figma` ci-dessous
+ * Ce qu'ils ne prouvent pas : la fidélité à Figma. Le faux `figma` ci-dessous
  * est un modèle, et un modèle faux rendrait ces tests verts en prouvant que le
  * moteur s'accorde avec lui. Aucun test de ce repository ne peut trancher cette
- * question — l'export ne tourne que dans Figma. Elle se tranche chez le
+ * question : l'export ne tourne que dans Figma. Elle se tranche chez le
  * consommateur, sur de vrais exports (AGENTS.md, « Limites d'environnement »).
  *
  * En revanche, tout contrat produit ici passe par `lois.ts` : forme, renvois,
@@ -38,9 +38,9 @@ import type { ContractProp } from '@ucm-kit/core/format';
  * Chaque contrat que le moteur fabrique ici passe d'abord par les lois de
  * forme, avant que le test ne regarde ce qui l'intéresse.
  *
- * C'est le seul endroit du repository où ces lois portent sur du CODE : le
+ * C'est le seul endroit du repository où ces lois portent sur du code : le
  * corpus est gelé et ne bouge qu'au réexport, si bien qu'une régression du
- * moteur ne s'y verrait jamais. Ici, elle échoue au scénario qui la produit —
+ * moteur ne s'y verrait jamais. Ici, elle échoue au scénario qui la produit :
  * et la vérification est posée une fois, pas à chaque appel, pour qu'un
  * scénario ajouté demain y soit soumis sans que personne y pense.
  */
@@ -114,7 +114,7 @@ const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id });
 
 /**
  * Une règle `@usage` telle que Figma la porte : une instance de
- * `ComponentConfiguration` dont la VARIANTE est le tag et dont le calque
+ * `ComponentConfiguration` dont la variante est le tag et dont le calque
  * « content » porte le texte.
  */
 function regleUsage(texte: string) {
@@ -145,7 +145,7 @@ function variant(nom: string, enfantsEnPlus: any[] = []) {
 function monterFigma(options: {
   selection?: unknown[];
   avecRegles?: boolean;
-  /** Calques ajoutés à CHAQUE variant. Une fabrique : les ids doivent différer. */
+  /** Calques ajoutés à chaque variant. Une fabrique : les ids doivent différer. */
   enfantsDuVariant?: () => any[];
   /** Composants que la page reconnaît comme unifiés, par leur conteneur de règles. */
   dependancesContractees?: string[];
@@ -250,7 +250,7 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
     const resultat = await handleExportComponent();
     const contrat = JSON.parse(resultat.content);
 
-    // Le nom de fichier EST l'identifiant de code canonique.
+    // Le nom de fichier est l'identifiant de code canonique.
     assert.equal(resultat.filename, componentContractFilename('Button'));
     assert.equal(contrat.name, 'Button');
     assert.equal(contrat.meta.figma.nodeId, figmaFaux.componentSet.id);
@@ -313,7 +313,7 @@ test('handleExportComponent assemble un contrat complet à partir du Component S
 });
 
 test('l’échantillon reste hors du contrat normatif : ni token, ni couverture, ni avertissement', async () => {
-  // Un texte de maquette peut ressembler à une référence de token — un montant,
+  // Un texte de maquette peut ressembler à une référence de token : un montant,
   // un gabarit de message. `tokensUsed` se dérive d'une liste blanche de champs
   // dont `samples` est absent : le contrat ne doit pas citer un token que rien
   // ne peint, ni envoyer le designer chercher une variable qui n'existe pas.
@@ -337,12 +337,12 @@ test('l’échantillon reste hors du contrat normatif : ni token, ni couverture,
       ['Suivant', '{components.piege.background}'],
     );
     // Le contenu de la maquette est identique sur les deux variants : un seul
-    // échantillon, deux renvois — c'est la dédup qui tient la légèreté.
+    // échantillon, deux renvois, c'est la dédup qui tient la légèreté.
     assert.equal(Object.keys(contrat.samples).length, 1);
     assert.equal(contrat.variants[0].sample, contrat.variants[1].sample);
 
     // Rien n'est réclamé au designer : les avertissements de ce montage portent
-    // TOUS sur le text style absent, un manque du contrat NORMATIF qui existait
+    // tous sur le text style absent, un manque du contrat normatif qui existait
     // avant l'échantillon. Aucun ne vient de lui, et la couverture ne bouge donc
     // pas de ce qu'elle valait sans lui.
     const perteDePortabilite = contrat.meta.diagnostics.filter(
@@ -462,7 +462,7 @@ test('une dépendance absente du variant de référence reste dans la variante e
     ]);
     assert.equal(structureDe(contrat).children.some((child: any) => child.composes === 'Link'), false);
     // Les arbres exacts conservent cette composition : rien ne manque, aucun
-    // geste n'est demandé, donc RIEN n'est dit au designer. Ni dans le
+    // geste n'est demandé, donc rien n'est dit au designer. Ni dans le
     // contrat, ni dans le compteur de l'UI, ni dans la pull request.
     assert.deepEqual(
       (contrat.meta.diagnostics ?? []).filter((diagnostic: any) =>
@@ -543,7 +543,7 @@ test('les notices de documentation ne rendent pas la projection portable partiel
 
 test('une piste FIXED de grille est publiée en pixels, sans un mot au designer', async () => {
   // Le réflexe du designer devant un message est de retourner dans Figma. Ici la
-  // valeur EST dans le contrat et rien n'y manque : le dire enverrait chercher
+  // valeur est dans le contrat et rien n'y manque : le dire enverrait chercher
   // une correction qui n'existe pas. L'export se tait (la règle
   // vit dans la spécification, et ce test en répond).
   const figmaFaux = monterFigma({ avecRegles: false });
@@ -573,7 +573,7 @@ test('une piste FIXED de grille est publiée en pixels, sans un mot au designer'
 });
 
 test('un badge hors du flux est placé et incliné par le moteur, en silence', async () => {
-  // Deux propriétés que le designer ne PEUT pas rendre contractuelles : Figma ne
+  // Deux propriétés que le designer ne peut pas rendre contractuelles : Figma ne
   // relie une position à aucune variable, et une rotation n'en est pas une. Les
   // réclamer envoyait le designer corriger ce qui n'a pas de correction ; les
   // constater à chaque export lui faisait relire le fonctionnement interne de
@@ -763,11 +763,11 @@ test('mergeWrapperProps garde la prop du set sélectionné et nomme le conflit',
 /**
  * Le lien Figma dépend d'un seul réglage : `enablePrivatePluginApi` dans le
  * manifest. **Il a été retiré** : un plugin publié sur la Community n'a pas le
- * droit de le porter —, donc `figma.fileKey` reste indéfini et `meta.figma.url`
+ * droit de le porter, donc `figma.fileKey` reste indéfini et `meta.figma.url`
  * n'est plus écrit. Le calcul reste en place et ces deux tests le tiennent dans
  * les deux sens : il fonctionne dès que l'API rend la clé (une organisation qui
  * charge ce plugin en développement), et son
- * absence est un état NORMAL qui ne se signale plus.
+ * absence est un état normal qui ne se signale plus.
  */
 test('meta.figma.url est construit dès que l’API fournit la clé du fichier', async () => {
   const figmaFaux = monterFigma({ fileKey: 'ABCdef123456789012345678' });
@@ -795,10 +795,10 @@ test('sans clé de fichier, le contrat n’a pas de lien et n’en fait pas un s
   // **C'est la moitié la plus importante du passage à la Community.** Le message d'avertissement
   // était écrit quand ce cas était l'exception. La distribution par la
   // Community l'inverse : la clé n'arrive plus jamais, donc le message se
-  // serait imprimé sur CHAQUE export et dans le corps de CHAQUE pull request,
+  // serait imprimé sur chaque export et dans le corps de chaque pull request,
   // pour un constat que le designer ne peut pas corriger. Une liste dont on
   // apprend qu'elle se survole coûte la lecture de celles qui demandent un
-  // geste — la règle du projet, appliquée à sa propre décision.
+  // geste : la règle du projet, appliquée à sa propre décision.
   const figmaFaux = monterFigma();
   try {
     const contrat = JSON.parse((await handleExportComponent()).content);
@@ -826,11 +826,11 @@ test('sans clé de fichier, le contrat n’a pas de lien et n’en fait pas un s
  * étape et refermée après : tout ce que l'étape a poussé entre les deux est
  * une perte de portabilité.
  *
- * Rien ne le vérifiait. Les assertions existantes portent sur le RÉSULTAT
+ * Rien ne le vérifiait. Les assertions existantes portent sur le résultat
  * (« la couverture est partielle », « un diagnostic de perte existe ») dans des
  * scénarios où plusieurs étapes produisent une perte : supprimer n'importe
  * laquelle des cinq fermetures laissait la suite entièrement verte. Ces tests
- * portent donc sur le code du message de CHAQUE étape, un par fenêtre — la
+ * portent donc sur le code du message de chaque étape, un par fenêtre : la
  * seule forme d'assertion qu'un oubli de rangement fasse échouer.
  */
 
@@ -950,7 +950,7 @@ test('une règle @icons sans layer est rangée comme une perte de portabilité',
   // La fusion des règles d'icônes a sa propre fenêtre, la dernière des cinq.
   const figmaFaux = monterFigma();
   const setDeConfiguration = { type: 'COMPONENT_SET', name: 'ComponentConfiguration' };
-  // La politique se lit sur la visibilité EXCLUSIVE de deux layers : les deux
+  // La politique se lit sur la visibilité exclusive de deux layers : les deux
   // doivent exister, un seul être visible.
   const regleIcones = node('INSTANCE', 'Règle', [
     node('TEXT', 'icon', [], { characters: 'fantome' }),
@@ -982,7 +982,7 @@ test('deux variants dont la grille diffère publient chacun ses pistes, sans un 
   // Le cas qui a fait naître puis mourir un message. Un même calque de grille
   // n'a pas les mêmes pistes dans tous les variants : la note de piste FIXED se
   // contredisait d'un variant à l'autre sur le même nom de calque. La réponse
-  // n'était pas de mieux la rédiger — les vues exactes portent DÉJÀ les deux
+  // n'était pas de mieux la rédiger : les vues exactes portent déjà les deux
   // grilles, donc rien ne manquait et rien n'était à corriger.
   let appel = 0;
   const figmaFaux = monterFigma({
@@ -1024,14 +1024,14 @@ test('deux variants dont la grille diffère publient chacun ses pistes, sans un 
  * La preuve d'ensemble : les sept transformations dans un seul export.
  *
  * Les tests voisins prennent chaque cas isolément, et c'est ce qu'il faut pour
- * dire POURQUOI chacun se tait. Celui-ci répond à l'autre question, celle que
- * `Stresstest` a posée en vrai : quand les sept arrivent ENSEMBLE sur un même
+ * dire pourquoi chacun se tait. Celui-ci répond à l'autre question, celle que
+ * `Stresstest` a posée en vrai : quand les sept arrivent ensemble sur un même
  * composant, le compte rendu reste-t-il vide ? C'est le cas qui a fait retirer
  * le canal des constats,
  * et le seul qui puisse le refermer.
  *
  * Il vérifie les deux moitiés à la fois, et c'est délibéré : que le contrat
- * PORTE les sept, et que l'export n'en dise aucun. La première seule laisserait
+ * porte les sept, et que l'export n'en dise aucun. La première seule laisserait
  * revenir un message ; la seconde seule serait verte sur un moteur qui aurait
  * cessé de publier `inset`, `rotation`, `rowSizes` ou `structuralSize`.
  */
@@ -1114,7 +1114,7 @@ test('les sept transformations normales cohabitent sans un mot au designer', asy
     const parCalque = (nom: string) =>
       tousLesEnfants.filter((enfant: any) => (enfant.figmaLayer ?? enfant.slot) === nom);
 
-    // Les sept sont DANS le contrat. C'est la moitié qui rend le silence honnête.
+    // Les sept sont dans le contrat. C'est la moitié qui rend le silence honnête.
     assert.ok(parCalque('Badge').some((badge) => badge.position === 'absolute'), 'position');
     assert.ok(parCalque('Badge').some((badge) => badge.inset), 'inset');
     assert.ok(parCalque('Chevron').some((chevron) => chevron.rotation), 'rotation');
@@ -1131,7 +1131,7 @@ test('les sept transformations normales cohabitent sans un mot au designer', asy
     const contenus = JSON.stringify(contrat.samples ?? {});
     assert.ok(contenus.includes('Continuer') && contenus.includes('Terminer'), 'samples');
 
-    // Et AUCUN des sept ne se dit. Le compte rendu du designer ne parle donc
+    // Et aucun des sept ne se dit. Le compte rendu du designer ne parle donc
     // jamais de ce que le contrat a su décrire.
     const interdits = [
       /position « Absolute »/,

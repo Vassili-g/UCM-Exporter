@@ -1,12 +1,12 @@
 /**
  * Relevé des références de token que porte un contrat.
  *
- * Ce module DÉFINISSAIT aussi ce qu'est une référence, et son en-tête affirmait
+ * Ce module définissait aussi ce qu'est une référence, et son en-tête affirmait
  * qu'un seul module le faisait. C'était faux : trois autres copies de la même
  * regex vivaient ailleurs. La définition est passée dans
  * `@ucm-kit/core/format`, le seul sous-chemin que le bundle du plugin, Node et
  * un navigateur atteignent tous les trois. Ce module ne garde que ce qu'il est
- * seul à savoir faire : ce qui, DANS UN CONTRAT, se relève.
+ * seul à savoir faire : ce qui, dans un contrat, se relève.
  */
 import { isTokenReference } from "@ucm-kit/core/format";
 
@@ -19,9 +19,9 @@ import { isTokenReference } from "@ucm-kit/core/format";
  * Le contrat privé de ce qui n'est pas normatif.
  *
  * `collecterReferences` ne connaît volontairement aucun schéma : elle ramasse
- * toute chaîne en forme de référence, à profondeur quelconque. C'est ce qui la
- * rend robuste aux champs ajoutés plus tard — sauf pour celui-ci, qui porte du
- * TEXTE écrit par un designer. « Montant : {montant.total} » dans une maquette
+ * toute chaîne en forme de référence, à profondeur quelconque. Un champ ajouté
+ * plus tard est donc couvert sans la toucher, sauf celui-ci, qui porte du texte
+ * écrit par un designer. « Montant : {montant.total} » dans une maquette
  * n'est pas une référence de token, et la traiter comme telle enverrait au
  * designer un diagnostic sur une variable que personne n'a jamais voulu créer.
  *

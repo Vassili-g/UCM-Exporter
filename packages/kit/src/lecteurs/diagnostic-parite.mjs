@@ -7,7 +7,7 @@ import { libelleNombre, rendreDiagnostic } from "./diagnostic-markdown.mjs";
 /**
  * Ce relevé de parité porte-t-il un écart ?
  *
- * L'écart accuse le CODE, pas le contrat. Il ne BLOQUE rien : le geste
+ * L'écart accuse le code, pas le contrat. Il ne bloque rien : le geste
  * correctif appartient à un développeur, jamais à l'export ni au designer qui
  * l'a produit, et refuser sa pull request arrêterait la seule personne
  * incapable de la débloquer.
@@ -17,7 +17,7 @@ import { libelleNombre, rendreDiagnostic } from "./diagnostic-markdown.mjs";
  *
  * `implementationNonLue` non plus, et pour une raison différente qui mérite
  * d'être écrite : là, il n'y a personne à qui adresser un geste correctif. Le
- * code est peut-être parfait — c'est l'adaptateur qui ne sait pas le lire, ou
+ * code est peut-être parfait : c'est l'adaptateur qui ne sait pas le lire, ou
  * il n'y en a aucun. Transformer sa propre limite en reproche serait le pire
  * des deux mondes.
  */
@@ -41,11 +41,11 @@ export function aUnEcartDeParite(bilan) {
  * Avertit qu'une implémentation s'écarte du contrat qu'elle devrait suivre.
  *
  * **Avertissement, jamais blocage.** Cet écart n'accuse ni le contrat ni
- * l'export : il dit que le CODE est en retard sur ce que le contrat décrit.
+ * l'export : il dit que le code est en retard sur ce que le contrat décrit.
  * Le seul geste correctif appartient à un développeur, et réexporter depuis
  * Figma n'y changerait rien. Refuser la pull request reviendrait donc à
  * arrêter la personne qui ne peut pas la débloquer, pour l'état d'un fichier
- * qu'elle ne touche pas — et une implémentation régénérée à froid EST attendue
+ * qu'elle ne touche pas, et une implémentation régénérée à froid est attendue
  * en écart tant que la mesure n'a pas été refaite.
  *
  * Le périmètre suit la même règle que les autres états informatifs : sur une

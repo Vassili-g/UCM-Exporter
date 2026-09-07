@@ -2,14 +2,14 @@
  * Ce qu'un lecteur obtiendrait en copiant une commande de la documentation.
  *
  * `tests/pinDocumente.test.mjs` vérifie qu'un pin montré par la documentation
- * est celui que ce dépôt PORTE. C'est une comparaison du dépôt avec lui-même :
+ * est celui que ce dépôt porte. C'est une comparaison du dépôt avec lui-même :
  * elle attrape une dérive entre deux fichiers d'ici, jamais un numéro que
  * personne ne sert. Les deux contrôles sont complémentaires et aucun ne
  * remplace l'autre.
  *
  * L'angle mort a coûté une commande morte en ligne : les README ont annoncé
  * l'adaptateur en 0.1.3 pendant que le registre servait la 0.1.0, parce que sa
- * publication échouait. Le garde-fou des pins EXIGEAIT cette écriture, et
+ * publication échouait. Le garde-fou des pins exigeait cette écriture, et
  * l'aurait refusée corrigée : il imposait l'état cassé.
  *
  * Le dépôt connaît déjà l'autre moitié du problème. L'« Épreuve du registre »
@@ -19,7 +19,7 @@
  * dans les deux cas : le seul endroit où le mensonge existe est le registre, et
  * le seul moyen de l'y voir est d'y aller.
  *
- * Ce contrôle n'entre PAS dans `npm test`. Le réseau y deviendrait une
+ * Ce contrôle n'entre pas dans `npm test`. Le réseau y deviendrait une
  * dépendance cachée, et la suite passerait au rouge hors ligne sans qu'une
  * ligne du dépôt ait bougé. Sa place est dans `publish.yml`, après l'épreuve
  * du registre : à ce moment la version qui vient de partir est servie, donc les

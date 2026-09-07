@@ -71,13 +71,13 @@ pas sans elle.
 ## Étape 2 : regarder l'interface, avant de s'en servir
 
 Deux observations, qu'aucun test de ce dépôt ne couvre : elles ne se constatent
-qu'à l'œil, dans un vrai fichier Figma. Elles ont été faites le 6 septembre 2026
-et sont conservées parce que cette page se rejoue.
+qu'à l'œil, dans un vrai fichier Figma. Elles se refont à chaque passage de
+cette page.
 
 **Observation A.** Sélectionnez un calque depuis le plugin, par le bouton
 « Afficher dans Figma » d'un point à corriger. Regardez ensuite si Figma marque
 le fichier comme modifié, c'est-à-dire s'il propose d'enregistrer une nouvelle
-version. Attendu, et constaté le 6 septembre 2026 : non.
+version. Attendu : non.
 
 **Observation B.** Faites un export, puis regardez les points à corriger du
 compte rendu, en thème clair puis en thème sombre. Vérifiez qu'ils restent
@@ -210,7 +210,7 @@ Attendu :
 3. la CI publie son rapport en commentaire.
 
 **Ce que le rapport doit dire, et qui compte :** l'implémentation est absente,
-et ce n'est pas une erreur, c'est un état d'avancement. La pull request doit
+et cette absence est un état d'avancement, pas une erreur. La pull request doit
 pouvoir être fusionnée. C'est le sixième critère du test.
 
 **Un point à surveiller de près, propre à cette version.** Le défaut d'un axe de

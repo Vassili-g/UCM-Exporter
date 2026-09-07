@@ -1,5 +1,5 @@
 /**
- * Résolution des variables Figma en NOMS de tokens — module commun aux deux
+ * Résolution des variables Figma en noms de tokens : module commun aux deux
  * commandes du plugin. Principe fondamental : on résout les noms, jamais les
  * valeurs, pour préserver la chaîne d'alias du design system.
  */
@@ -59,9 +59,9 @@ export function joinTokenPath(collectionName: string, variableName: string): str
 }
 
 /**
- * Interface MINIMALE dont dépendent les modules d'extraction : résoudre un
+ * Interface minimale dont dépendent les modules d'extraction : résoudre un
  * alias en nom de token, rien d'autre. Les modules la demandent plutôt que la
- * classe concrète, si bien qu'un test peut fournir un résolveur littéral —
+ * classe concrète, si bien qu'un test peut fournir un résolveur littéral :
  * c'est ce qui rend l'extraction vérifiable hors du runtime Figma.
  */
 export type TokenResolver = Pick<VariableNameResolver, 'resolve'>;
@@ -78,19 +78,19 @@ export type TokenUsage = {
    *
    * Optionnel, et l'exception a un nom : un style de texte passe aussi par ici,
    * et un style n'est pas un node. Un message qui cite un calque sans porter
-   * son id est celui que l'interface réafficherait sans lien — d'où la loi qui
+   * son id est celui que l'interface réafficherait sans lien : d'où la loi qui
    * compte ces cas à la sortie du moteur.
    */
   nodeId?: string;
 };
 
 /**
- * Pousse un message qui NOMME un calque, et le fait mener à ce calque.
+ * Pousse un message qui nomme un calque, et le fait mener à ce calque.
  *
- * Les messages de ce module ont pour sujet une VARIABLE, qui n'est pas un node.
+ * Les messages de ce module ont pour sujet une variable, qui n'est pas un node.
  * Plusieurs nomment ensuite le calque où la variable est reliée, et c'est là
  * que le designer agit : le clic doit y mener. Quand l'appelant n'a pas de node
- * — un style de texte passe aussi par ici —, l'absence est déclarée plutôt que
+ * (un style de texte passe aussi par ici), l'absence est déclarée plutôt que
  * laissée à deviner.
  */
 function pousserVersLeCalque(
@@ -121,11 +121,11 @@ export type AmbiguousVariable = {
 };
 
 /**
- * Index canonique des variables LOCALES, partagé par les deux commandes.
+ * Index canonique des variables locales, partagé par les deux commandes.
  *
  * `normalizeName()` est volontairement à plusieurs entrées pour une sortie :
  * « Foo Bar », « foo-bar » et « Foo  Bar » donnent le même token. Deux
- * variables Figma distinctes peuvent donc se disputer un nom — y compris
+ * variables Figma distinctes peuvent donc se disputer un nom, y compris
  * depuis deux collections différentes (« Brand Tokens » et « brand-tokens »).
  * Une seule peut occuper le chemin ; les autres sont `ambiguous`.
  */
@@ -166,8 +166,8 @@ export function indexVariables(
   const variableByPath = new Map<string, Variable>();
   const ambiguous = new Map<string, AmbiguousVariable>();
   /**
-   * Chemins déjà occupés par un GROUPE : chaque ancêtre d'une variable insérée,
-   * associé au chemin complet de la première variable qui l'a créé — celle que
+   * Chemins déjà occupés par un groupe : chaque ancêtre d'une variable insérée,
+   * associé au chemin complet de la première variable qui l'a créé, celle que
    * le diagnostic doit citer.
    *
    * L'index existe pour le coût. Sans lui, reconnaître un groupe suppose de
@@ -251,8 +251,8 @@ export type ResolverOptions = {
  * Le cache évite de rappeler l'API Figma pour un même id (un composant lie
  * souvent la même variable des dizaines de fois).
  *
- * Avec un `index`, le résolveur sert les variables locales de mémoire — plus
- * rapide qu'un aller-retour par id — et surtout REFUSE celles dont le nom
+ * Avec un `index`, le résolveur sert les variables locales de mémoire (plus
+ * rapide qu'un aller-retour par id) et surtout refuse celles dont le nom
  * appartient déjà à une autre : écrire `{brand.foo-bar}` pour un calque lié à
  * la variable écartée désignerait la valeur de sa rivale. Une couleur fausse
  * traverserait alors tous les garde-fous, puisque le token, lui, existe bien.
@@ -317,9 +317,9 @@ export class VariableNameResolver {
 
     const variable = await figma.variables.getVariableByIdAsync(variableId).catch(() => null);
     if (!variable) {
-      // Le sujet est la variable, qui n'est pas un node ; mais le message NOMME
+      // Le sujet est la variable, qui n'est pas un node ; mais le message nomme
       // le calque où elle est reliée, et c'est là que le designer agit. Le clic
-      // y mène quand l'appelant a passé le node — un style de texte n'en a pas.
+      // y mène quand l'appelant a passé le node : un style de texte n'en a pas.
       pousserVersLeCalque(
         pointDe(`Variable introuvable${location}`, {
           manque: `elle a sans doute été supprimée, ou vient d'une bibliothèque qui n'est `

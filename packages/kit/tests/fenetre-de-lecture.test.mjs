@@ -15,7 +15,7 @@ import {
 
 const racine = dirname(fileURLToPath(import.meta.url));
 
-/** Les contrats figés de la version PRÉCÉDENTE, tels qu'ils ont été fusionnés. */
+/** Les contrats figés de la version précédente, tels qu'ils ont été fusionnés. */
 function contratsPrecedents() {
   const dossier = join(racine, "..", "fixtures", "contrats", VERSION_CONTRAT_MINIMALE);
   return readdirSync(dossier)

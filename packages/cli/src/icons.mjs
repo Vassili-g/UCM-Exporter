@@ -11,7 +11,7 @@ import { trouverContrats } from "@ucm-kit/core/lecteurs";
  * Les icônes réclamées par les contrats d'un repository.
  *
  * Rendues triées et dédoublonnées, avec les contrats qui les citent : le nom
- * seul ne suffit pas à agir — pour couvrir une icône ou pour discuter d'elle
+ * seul ne suffit pas à agir, pour couvrir une icône ou pour discuter d'elle
  * avec un designer, il faut savoir où elle est demandée.
  */
 export function iconesDuRepository(racine, dossierComponents) {

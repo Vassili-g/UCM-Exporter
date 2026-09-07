@@ -45,7 +45,7 @@ test("les vues locales s'additionnent dans une vue et gardent le maximum entre v
  * Le dépliage ne s'arrête pas au premier cran, et une vue partagée compte
  * autant de fois qu'elle est rendue.
  *
- * Un composant réel délègue en cascade — une vue appelle une grille, la grille
+ * Un composant réel délègue en cascade : une vue appelle une grille, la grille
  * appelle les dépendances. Un relevé qui ne descendrait que d'un cran
  * annoncerait zéro dépendance là où le contrat en publie sept, et le rapport
  * resterait vert. Seul le corpus du
@@ -61,10 +61,10 @@ test("le dépliage traverse deux crans de vues locales, et additionne la vue par
 });
 
 /**
- * Une vue locale qui se rend elle-même — un arbre, une liste imbriquée — est
+ * Une vue locale qui se rend elle-même (un arbre, une liste imbriquée) est
  * une écriture ordinaire. Le relevé doit en sortir avec une cardinalité finie ;
- * sans borne, ce n'est pas un chiffre faux qui sort, c'est `ucm check` qui
- * meurt sur un débordement de pile, et le designer ne reçoit aucun rapport.
+ * sans borne, `ucm check` meurt sur un débordement de pile et le designer ne
+ * reçoit aucun rapport, ce qui est pire qu'un chiffre faux.
  */
 test("une vue locale qui se rend elle-même rend une cardinalité finie", () => {
   const recursive = join(racinePaquet, "tests", "fixtures", "VueRecursiveFixture.tsx");

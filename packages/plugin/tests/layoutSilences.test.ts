@@ -54,7 +54,7 @@ const alerteAvec = (slotAction: unknown) => ({
 } as unknown as ComponentNode);
 
 test('un slot qui EST une dépendance ne réexporte pas ses visibilités internes', async () => {
-  // `arrow-left-long` appartient au contrat du Button : `iconLeft` est SA prop,
+  // `arrow-left-long` appartient au contrat du Button : `iconLeft` est sa prop,
   // pas celle de l'Alert qui l'embarque.
   const interne = {
     type: 'VECTOR',
@@ -78,7 +78,7 @@ test('un slot qui EST une dépendance ne réexporte pas ses visibilités interne
 
 test('un calque posé hors du node de layout élu est signalé, pas oublié', async () => {
   // Motif d'un layout complexe : le frame paddé gagne l'élection, et le badge
-  // posé à côté quitte le contrat — alors que ses couleurs y entrent, elles,
+  // posé à côté quitte le contrat, alors que ses couleurs y entrent, elles,
   // par le relevé du variant entier.
   const texte = { type: 'TEXT', id: 'txt', name: 'Suivant', boundVariables: {} };
   const contenu = {
@@ -158,9 +158,9 @@ test('une grille est décrite comme une grille, pas repliée en rangée', async 
   assert.equal(layout.rowGap, '{l.row-gap}');
   // L'`itemSpacing` resté lié n'exporte rien : il n'a aucun effet sous GRID.
   assert.equal(layout.gap, undefined);
-  // Plus rien à reprocher au designer SUR SA GRILLE : elle est entièrement
+  // Plus rien à reprocher au designer sur sa grille : elle est entièrement
   // décrite. Le padding et le rayon du composant restent réclamés comme
-  // partout ailleurs — c'est la règle commune, pas une lacune de la grille.
+  // partout ailleurs : c'est la règle commune, pas une lacune de la grille.
   assert.equal(warnings.some((warning) => warning.includes('grille')), false);
   assert.equal(warnings.some((warning) => warning.includes('auto layout')), false);
 });
@@ -310,7 +310,7 @@ test('un layer Absolute dont Figma n’expose pas la géométrie ne publie ni in
  * Une page dont l'unique slot « Colonne » porte les bornes qu'on lui donne.
  *
  * Le slot remplit sa largeur : c'est le cas qui rend les bornes indispensables
- * — aucune valeur de `size` ne sait dire « prends la place, sans dépasser ».
+ *, aucune valeur de `size` ne sait dire « prends la place, sans dépasser ».
  */
 const pageAvecColonne = (bornes: Record<string, unknown>) => {
   const colonne = {
@@ -403,7 +403,7 @@ test('les bornes du composant lui-même sont publiées à côté de son sizing',
 
 test('une borne posée sur un wrapper de layout est signalée, faute de propriétaire', async () => {
   // Le wrapper prête son flux au composant sans jamais paraître dans le
-  // contrat : sa borne retient le CONTENU, et la publier sur le composant
+  // contrat : sa borne retient le contenu, et la publier sur le composant
   // dirait autre chose que la maquette.
   const texte = { type: 'TEXT', id: 'txt', name: 'Label', boundVariables: {} };
   const wrapper = {
@@ -481,7 +481,7 @@ test('un calque voisin d’une dépendance dans son cadre est décrit comme un s
     dependanceDe(),
   );
 
-  // Le cadre appartient à CE contrat : ce qu'il range à côté de sa dépendance
+  // Le cadre appartient à ce contrat : ce qu'il range à côté de sa dépendance
   // aussi. Le voisin reçoit donc son slot au lieu de disparaître sous un
   // avertissement, et sa typographie a un chemin où vivre.
   assert.deepEqual(layout.children[0].children, [
@@ -529,7 +529,7 @@ const grilleDeTuiles = (tuile: unknown, pistes: Record<string, unknown> = {}) =>
 };
 
 test('un enfant de grille ne se voit pas réclamer ce que sa cellule décide', async () => {
-  // Remplir sa cellule est le DÉFAUT d'un enfant de grille, en CSS comme dans
+  // Remplir sa cellule est le défaut d'un enfant de grille, en CSS comme dans
   // Figma. L'API, elle, ne sait pas l'exposer dans une piste qui hug : elle rend
   // la taille calculée là où le panneau affiche « Fill ». Le geste demandé au
   // designer n'aurait donc rien à corriger.
@@ -619,7 +619,7 @@ test('une grille dont Figma n’expose pas les pistes ne publie ni n’avertit',
  * Une piste qui hug est le seul endroit d'une grille où la cellule ne décide de
  * rien : c'est l'enfant qui la mesure. Figma n'y expose aucun remplissage et ne
  * rend que la taille résolue, et `GridTrackSize.value` n'existe pas sur ce type
- * — la mesure ne vit donc que sur l'enfant. Sans elle, la piste retomberait à
+ * : la mesure ne vit donc que sur l'enfant. Sans elle, la piste retomberait à
  * zéro et le contrat décrirait une grille impossible à rendre.
  */
 const pistesDeTuiles = {
@@ -757,7 +757,7 @@ test('une variable liée l’emporte sur la mesure de la piste', async () => {
 test('un enfant aligné sous une piste qui hug garde la règle commune', async () => {
   // L'exception pixel n'existe que parce que le panneau Figma affiche « Fill ».
   // Un alignement explicite le lui retire : la dimension redevient celle du
-  // calque, `resolveSlotSize` en réclame la variable — et publier la même
+  // calque, `resolveSlotSize` en réclame la variable, et publier la même
   // valeur en pixels sous une note « aucun geste demandé » contredirait mot
   // pour mot cet avertissement, sur le même axe du même calque.
   const tuile = tuileDeGrille({ height: 15, gridChildVerticalAlign: 'CENTER' });

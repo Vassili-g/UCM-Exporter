@@ -37,7 +37,7 @@ const CHAMPS_COMMUNS = [
  * omettre.
  *
  * `tokensUsed` était l'index des références du contrat, `meta.warnings` le
- * miroir mot pour mot de `meta.diagnostics` : deux champs qui se DÉRIVENT du
+ * miroir mot pour mot de `meta.diagnostics` : deux champs qui se dérivent du
  * contrat terminé, et que la 11.0 ne recopie plus. `props`, `icons`, `composes`
  * et `structure.children` cessent d'être écrits quand ils sont vides, à la règle
  * commune des valeurs neutres.
@@ -72,8 +72,8 @@ const CHAMPS_VERSION_8 = [
 
 /**
  * Le catalogue des structures, qui n'existe qu'en 11.0 : `structure` et chaque
- * vue y renvoient. C'est le seul champ que la 11.0 AJOUTE et qui ne peut pas
- * manquer — sans lui, plus aucun arbre de slots n'est atteignable.
+ * vue y renvoient. C'est le seul champ que la 11.0 ajoute et qui ne peut pas
+ * manquer, sans lui, plus aucun arbre de slots n'est atteignable.
  */
 const CHAMPS_VERSION_8_SEULE = [
   ["propertyBindings", Array.isArray],
@@ -140,16 +140,16 @@ function capacitesDuContrat(contrat) {
     // piste qui hug n'a aucune valeur à publier, la mesure ne vit que sur
     // l'enfant.
     celluleQuiHug101: versionAuMoins(contrat, 10, 1),
-    // La 10.2 publie ce que la maquette montre. La FORME seule est validée :
+    // La 10.2 publie ce que la maquette montre. La forme seule est validée :
     // que le catalogue existe et que chaque renvoi désigne une entrée réelle.
-    // Rien de son contenu n'est confronté au code — c'est la promesse même du
+    // Rien de son contenu n'est confronté au code : c'est la promesse même du
     // champ, et la contrôler ici en ferait une obligation déguisée.
     echantillons102: versionAuMoins(contrat, 10, 2),
     // La 10.3 ouvre le seul canal qu'une icône substituée dans une dépendance
-    // ait jamais eu : `swaps`. Même réserve que ci-dessus — on contrôle qu'un
-    // remplacement est ADRESSABLE, jamais ce qu'il montre. Que `masterPath`
+    // ait jamais eu : `swaps`. Même réserve que ci-dessus : on contrôle qu'un
+    // remplacement est adressable, jamais ce qu'il montre. Que `masterPath`
     // désigne une icône réelle du contrat de la dépendance est une question
-    // entre DEUX contrats, et vit donc dans `validation-graphe-contrats.mjs`.
+    // entre deux contrats, et vit donc dans `validation-graphe-contrats.mjs`.
     remplacements103: versionAuMoins(contrat, 10, 3),
     // La 11.0 ne recopie plus rien : une vue est cinq renvois vers cinq
     // catalogues de parties, `structure` renvoie au catalogue des structures, le
@@ -239,7 +239,7 @@ function validerConteneurFlex(container, prefixe, invalides, flex44) {
  *
  * `wrap` ne vaut que `true` : le contrat ne publie que les exceptions, et une
  * absence dit déjà « une seule ligne ». `rowGap` n'a de sens que sous `wrap`, et
- * son absence y vaut le `gap` — comme dans Figma, comme en CSS.
+ * son absence y vaut le `gap`, comme dans Figma, comme en CSS.
  */
 function validerWrap(container, prefixe, invalides, capacites) {
   const aWrap = container?.wrap !== undefined;
@@ -251,7 +251,7 @@ function validerWrap(container, prefixe, invalides, capacites) {
   }
   if (aWrap && container.wrap !== true) invalides.push(`${prefixe}.wrap`);
   if (aRowGap && !estTexte(container.rowGap)) invalides.push(`${prefixe}.rowGap`);
-  // Une grille a des LIGNES sans passer à la ligne : son `rowGap` les espace, et
+  // Une grille a des lignes sans passer à la ligne : son `rowGap` les espace, et
   // exiger `wrap` à côté refuserait toute grille correctement tokenisée.
   if (aRowGap && !aWrap && !estGrille(container, capacites)) {
     invalides.push(`${prefixe}.rowGap`);
@@ -286,15 +286,15 @@ function pisteValide(piste, pistesFixes10) {
  * La grille de la 6.0, complétée par ses pistes en 7.0.
  *
  * Les champs de grille sont refusés hors d'une grille : ils y décriraient une
- * disposition que `layout` contredit. `columns` et `rows` restent facultatifs —
- * Figma ne les expose pas toujours — mais un tableau de pistes qui ne compte pas
+ * disposition que `layout` contredit. `columns` et `rows` restent facultatifs
+ * (Figma ne les expose pas toujours) mais un tableau de pistes qui ne compte pas
  * autant d'entrées que de pistes annoncées décrirait une autre grille.
  */
 function validerGrille(container, prefixe, invalides, capacites) {
   const CHAMPS = ["columns", "rows", "columnGap", "columnSizes", "rowSizes"];
   if (!estGrille(container, capacites)) {
-    // `null` n'affirme rien — c'est la convention du contrat partout ailleurs,
-    // et `rowGap` est déjà lu ainsi. Seule une VALEUR décrirait ici une grille
+    // `null` n'affirme rien : c'est la convention du contrat partout ailleurs,
+    // et `rowGap` est déjà lu ainsi. Seule une valeur décrirait ici une grille
     // que `layout` contredit.
     for (const champ of CHAMPS) {
       const valeur = container?.[champ];
@@ -332,10 +332,10 @@ function validerGrille(container, prefixe, invalides, capacites) {
 /**
  * Mesure structurelle qu'un enfant donne à une piste de grille qui hug (10.1).
  *
- * Ce n'est PAS `size`, et les confondre ferait passer `"15px"` pour un token à
+ * Ce n'est pas `size`, et les confondre ferait passer `"15px"` pour un token à
  * résoudre : ce champ ne porte jamais de référence, seulement des pixels, et
  * seulement sur les axes où la piste se dimensionne sur son contenu. La forme est
- * toujours un objet, y compris pour un carré — la forme courte de `size` sert à
+ * toujours un objet, y compris pour un carré : la forme courte de `size` sert à
  * ne pas répéter une référence, et il n'y en a aucune ici.
  */
 function mesureStructurelleValide(valeur) {
@@ -425,7 +425,7 @@ const SIZING_PAR_VERSION = {
  *
  * Ce champ est ce qui rend une absence lisible ailleurs : sans lui, un slot
  * sans `flexGrow` couvre aussi bien un contenu qui se suffit qu'une largeur
- * imposée. Les deux propriétés sont donc requises ensemble — une seule
+ * imposée. Les deux propriétés sont donc requises ensemble : une seule
  * laisserait l'autre à deviner.
  */
 function validerSizingDuComposant(
@@ -451,7 +451,7 @@ function validerSizingDuComposant(
  * côté figé est nommé.
  *
  * Un objet vide décrirait un slot qui prétend porter une dimension sans en
- * donner aucune — l'ambiguïté même que ce champ sert à lever.
+ * donner aucune : l'ambiguïté même que ce champ sert à lever.
  */
 function tailleValide(size, cotesNommes) {
   if (isTokenReference(size)) return true;
@@ -469,7 +469,7 @@ const CLES_DE_BORNES = new Set(["minWidth", "maxWidth", "minHeight", "maxHeight"
  *
  * Elles ne se confondent pas avec `size` : une borne s'applique quel que soit le
  * menu de dimensionnement, et le cas courant est un layer qui remplit son axe
- * sans dépasser une largeur. Chaque côté est nommé et tokenisé — un objet vide
+ * sans dépasser une largeur. Chaque côté est nommé et tokenisé : un objet vide
  * annoncerait des bornes sans en donner aucune, alors que le contrat omet
  * simplement le champ quand il n'en publie pas.
  */
@@ -714,11 +714,11 @@ function validerFontSizesParTaille(children, prefixe, invalides) {
 }
 
 /**
- * Slots publiés par le contrat, TOUTES structures confondues et à toute
+ * Slots publiés par le contrat, toutes structures confondues et à toute
  * profondeur.
  *
  * Une icône peut n'exister que dans un variant que la projection de référence
- * ne montre pas — c'est la raison d'être même de `icons.<clé>.slot`. La
+ * ne montre pas : c'est la raison d'être même de `icons.<clé>.slot`. La
  * chercher dans la seule projection de référence refuse donc exactement le cas
  * que ce champ existe pour décrire, et le premier contrat à en porter une l'a
  * prouvé. L'autorité côté producteur balaie `viewStructures` en entier
@@ -746,9 +746,9 @@ function slotsPubliesDuContrat(contrat, projection) {
 /**
  * Valide les champs optionnels des icônes.
  *
- * `slot` est vérifié CONTRE les slots réels : c'est lui qui situe une icône que
+ * `slot` est vérifié contre les slots réels : c'est lui qui situe une icône que
  * le variant de référence ne contient pas, donc absente de `children`. Un slot
- * qui n'existe nulle part la rendrait impossible à placer — exactement le
+ * qui n'existe nulle part la rendrait impossible à placer : exactement le
  * silence que ce champ existe pour supprimer.
  */
 function validerIcones(icons, slots, props, invalides) {
@@ -789,7 +789,7 @@ function validerIcones(icons, slots, props, invalides) {
  * Valide la forme de chaque prop, et pas seulement celle du bloc `props`.
  *
  * Sans ce contrôle, une prop `enum` sans `values` traversait le garde-fou au
- * vert, puis faisait lever une `TypeError` au générateur de types — un plantage
+ * vert, puis faisait lever une `TypeError` au générateur de types : un plantage
  * de script au lieu d'un diagnostic, alors que l'ordre voulu est justement
  * « diagnostiquer avant de produire ». Le défaut appartient à l'export : c'est
  * ici qu'il doit être nommé.
@@ -1010,15 +1010,15 @@ function validerVueExacte(contrat, vue, prefixe, invalides, capacites, formeDuSi
  * existe, aucune entrée n'est orpheline, et depuis la 10.3 la forme d'un
  * remplacement est contrôlée à toute profondeur. C'est exactement ce qu'on
  * contrôle pour `variantViews`, et c'est tout ce que ce module-ci contrôlera
- * jamais : le CONTENU d'un échantillon n'engage personne.
+ * jamais : le contenu d'un échantillon n'engage personne.
  *
  * « Ce module-ci » n'est pas une clause de style. Une question voisine se pose
  * ailleurs, dans `validation-echantillons.mjs` : ce contenu qui n'engage
- * personne est-il seulement ATTEIGNABLE ? Une clé d'`args` qui ne désigne
+ * personne est-il seulement atteignable ? Une clé d'`args` qui ne désigne
  * aucune prop, un `slotPath` qui ne désigne aucun slot sont des adresses
  * mortes, et un lecteur ne peut ni les appliquer ni les signaler. Vérifier
  * qu'une adresse joint quelque chose ne revient jamais à exiger ce qu'elle
- * porte — c'est la seule raison pour laquelle ces contrôles-là peuvent exister
+ * porte : c'est la seule raison pour laquelle ces contrôles-là peuvent exister
  * sans rendre l'échantillon normatif.
  */
 function validerEchantillons(contrat, invalides, capacites) {
@@ -1046,15 +1046,15 @@ function validerEchantillons(contrat, invalides, capacites) {
 }
 
 /**
- * Forme des remplacements d'instance, à TOUTE profondeur de composition.
+ * Forme des remplacements d'instance, à toute profondeur de composition.
  *
  * La récursion n'est pas un luxe : une dépendance imbriquée porte ses propres
  * `swaps`, et l'icône du bouton d'une alerte est exactement ce cas. S'arrêter
  * au premier niveau laisserait passer sans contrôle la moitié des composés.
  *
- * `masterPath` doit être non vide : c'est un chemin de calques du MAÎTRE de la
+ * `masterPath` doit être non vide : c'est un chemin de calques du maître de la
  * dépendance, cible comprise, et un chemin vide ne désigne rien qu'un
- * consommateur puisse joindre. Ce qu'il désigne RÉELLEMENT se vérifie contre le
+ * consommateur puisse joindre. Ce qu'il désigne réellement se vérifie contre le
  * contrat de la dépendance, donc ailleurs.
  */
 function validerRemplacements(composes, prefixe, invalides) {
@@ -1094,7 +1094,7 @@ function validerVersion8(contrat, invalides, capacites, formeDuSizing) {
 
   if (version9 && estObjet(contrat?.variantViews)) {
     for (const viewId of Object.keys(contrat.variantViews)) {
-      // La vue est résolue AVANT d'être validée : depuis la 11.0 elle n'est
+      // La vue est résolue avant d'être validée : depuis la 11.0 elle n'est
       // qu'un jeu de renvois, et c'est l'arbre au bout du renvoi qui se contrôle.
       const vue = vueExacteDuVariant(contrat, { view: viewId });
       if (!estObjet(vue) || !estObjet(vue.structure)) {
@@ -1113,7 +1113,7 @@ function validerVersion8(contrat, invalides, capacites, formeDuSizing) {
     }
     if (!estTexte(variant.nodeId)) invalides.push(`${prefixe}.nodeId`);
     // Depuis la 11.0 le nom Figma peut vivre dans `figmaVariantLabels` plutôt
-    // que sur le variant. Ce qui compte est qu'il soit ATTEIGNABLE.
+    // que sur le variant. Ce qui compte est qu'il soit atteignable.
     if (!estTexte(nomFigmaDuVariant(contrat, variant))) invalides.push(`${prefixe}.figmaName`);
     const valeurs = capacites.catalogues110 && variant.values === undefined && axes.length === 0
       ? {}
@@ -1151,7 +1151,7 @@ function validerVersion8(contrat, invalides, capacites, formeDuSizing) {
     // l'absence disent la même chose, et l'absence ne coûte rien à lire.
     const feuilleAbsenteAdmise = capacites.catalogues110;
     if (variant.tokens === undefined && feuilleAbsenteAdmise) {
-      // rien à valider : le variant ne lie aucune couleur.
+      // Rien à valider : le variant ne lie aucune couleur.
     } else if (!estObjet(variant.tokens)) invalides.push(`${prefixe}.tokens`);
     else validerTokensExacts(variant.tokens, `${prefixe}.tokens`, invalides);
     if (variant.strokes === undefined && feuilleAbsenteAdmise) {
@@ -1191,7 +1191,7 @@ function validerVersion8(contrat, invalides, capacites, formeDuSizing) {
       }
     }
   }
-  // La règle ne porte que sur les axes qui DÉCLARENT un défaut. Un axe sans
+  // La règle ne porte que sur les axes qui déclarent un défaut. Un axe sans
   // défaut n'est pas incomplet : le contrat n'en publie un que si le designer
   // l'a écrit, et l'exiger de tous ferait de l'absence une faute.
   const avecDefaut = enumProps.filter(([, prop]) => prop.default !== undefined);
@@ -1323,14 +1323,14 @@ function nomFigmaDuVariant11(contrat, variant) {
 }
 
 /**
- * La FORME CANONIQUE d'un contrat : ses renvois résolus, ses élisions rendues.
+ * La forme canonique d'un contrat : ses renvois résolus, ses élisions rendues.
  *
  * Elle s'appelait `materialiserContrat11` et écrivait `"10.3"` dans
  * `meta.contractVersion`. Les deux mentaient, et pas également.
  *
  * Le nom d'abord : ce geste n'a rien d'une compatibilité dormante, et rien de
- * propre à la 11.0. C'est une NORMALISATION — elle rétablit ce que l'élision a
- * retiré, un groupe de peintures vide, un `children` absent — pour qu'un seul
+ * propre à la 11.0. C'est une normalisation (elle rétablit ce que l'élision a
+ * retiré, un groupe de peintures vide, un `children` absent) pour qu'un seul
  * validateur voie une seule forme. Le suffixe `11` la faisait passer pour un
  * vestige, c'est-à-dire pour du code qu'on peut couper.
  *
@@ -1345,8 +1345,8 @@ function formeCanonique(contrat) {
   const vueDeReference = contrat?.viewStructures?.[contrat?.structure?.view];
   // Matérialiser, c'est rendre à la forme 10.3 ce que la 11.0 a cessé d'écrire.
   // Un groupe de peintures vide n'est plus publié depuis la 11.0 : le rétablir
-  // ici évite que le validateur 10.3 — qui a le droit d'exiger les deux groupes
-  // — lise une élision comme une absence.
+  // ici évite que le validateur 10.3 (qui a le droit d'exiger les deux groupes
+  //) lise une élision comme une absence.
   const auxDeuxGroupes = (vue) => (estObjet(vue) ? {
     ...vue,
     paintPlacements: {
@@ -1358,8 +1358,8 @@ function formeCanonique(contrat) {
   } : vue);
 
   // Même geste pour l'arbre : un conteneur dont aucun descendant ne porte
-  // d'information publiable n'a PAS de `children`, un `[]` ne s'écrivant pas.
-  // Sans ce rétablissement, le validateur 10.3 — qui a le droit de l'exiger —
+  // d'information publiable n'a pas de `children`, un `[]` ne s'écrivant pas.
+  // Sans ce rétablissement, le validateur 10.3 (qui a le droit de l'exiger)
   // refuserait un contrat parfaitement valide, et le refus porterait sur un
   // composant qu'aucun contrat existant n'a encore produit.
   const auxEnfants = (structure) => (estObjet(structure)
@@ -1420,11 +1420,11 @@ const ROTATION = /^-?\d+(?:\.\d+)?deg$/;
  * Valide le placement hors du flux et la rotation, introduits par la 12.0.
  *
  * Pourquoi ces deux-là sont contrôlés alors que le validateur ne double jamais
- * le schéma : `inset` complète une famille — `position` et `constraints` — que
- * ce fichier vérifie DÉJÀ depuis la 6.0, et laisser le troisième membre sans
+ * le schéma : `inset` complète une famille (`position` et `constraints`) que
+ * ce fichier vérifie déjà depuis la 6.0, et laisser le troisième membre sans
  * contrôle serait un oubli, pas une politique. Quant à `rotation`, sa valeur
  * part telle quelle dans un `transform` : mal formée, elle produit un CSS que
- * le navigateur ignore sans erreur ni repli — la perte visuelle muette que
+ * le navigateur ignore sans erreur ni repli, la perte visuelle muette que
  * `tokenVar` existe déjà pour empêcher ailleurs.
  *
  * Le contrôle vit ici, dans le validateur de la forme déclarée et non dans la
@@ -1480,9 +1480,9 @@ function validerPlacement120(contrat, invalides) {
 /**
  * Valide `rendering.keyRoles`, introduit par la 12.0.
  *
- * C'est un RENVOI, pas une valeur : la résolution publiée par le format est
+ * C'est un renvoi, pas une valeur : la résolution publiée par le format est
  * `roles[keyRoles[côté][clé] ?? clé]`. Un rôle nommé là et absent de `roles`
- * rend donc `undefined`, et le rendu de cette couleur disparaît sans un mot —
+ * rend donc `undefined`, et le rendu de cette couleur disparaît sans un mot :
  * le contrat valide un défaut au lieu de le nommer. Tous les autres renvois de
  * ce contrat sont vérifiés ici ; celui-ci n'a aucune raison d'y échapper.
  */
@@ -1592,12 +1592,12 @@ function champsInvalidesDeLaFormeCanonique(contrat) {
 }
 
 /**
- * La version selon laquelle les contrôles de ce fichier sont ÉCRITS.
+ * La version selon laquelle les contrôles de ce fichier sont écrits.
  *
- * Ce n'est pas la version d'un contrat, c'est une grammaire. Les contrôles
- * sémantiques — arbres, peintures, icônes, bindings — ont été écrits quand la
+ * Ce pivot est une grammaire, non la version d'un contrat. Les contrôles
+ * sémantiques (arbres, peintures, icônes, bindings) ont été écrits quand la
  * 10.3 était la forme courante, et la forme canonique est justement celle
- * qu'ils savent lire. Le pivot est donc un fait sur le VALIDATEUR ; le laisser
+ * qu'ils savent lire. Le pivot est donc un fait sur le validateur ; le laisser
  * dans `meta.contractVersion` en faisait un fait sur la donnée, et c'est ce
  * glissement-là qui rendait l'élagage dangereux.
  */
@@ -1610,9 +1610,9 @@ const GRAMMAIRE_PIVOT = "10.3";
  * implicitement comme `{}` ou `[]` transformerait un export tronqué en faux
  * contrat simple.
  *
- * `grammaire` est un détail INTERNE : la fonction s'appelle avec un seul
+ * `grammaire` est un détail interne : la fonction s'appelle avec un seul
  * argument. Une forme canonique se lit selon le pivot, et cette substitution
- * ne dure que le temps de la lecture — le contrat, lui, garde sa version
+ * ne dure que le temps de la lecture : le contrat, lui, garde sa version
  * réelle, celle qu'un message d'erreur doit pouvoir citer.
  */
 export function champsInvalidesDuContrat(contrat, grammaire = null) {

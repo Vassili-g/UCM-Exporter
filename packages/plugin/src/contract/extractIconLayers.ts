@@ -5,8 +5,8 @@
  * `circle-info` en severity=info et `circle-check` en severity=success, au même
  * emplacement. Le variant de référence n'en contient donc qu'une, et décrire
  * les icônes depuis lui seul en perdrait la moitié. L'inventaire parcourt toute
- * la matrice et résume chaque nom exact — sa visibilité, sa taille et le rang
- * du slot qu'il occupe — sans recopier une entrée par variant.
+ * la matrice et résume chaque nom exact (sa visibilité, sa taille et le rang
+ * du slot qu'il occupe) sans recopier une entrée par variant.
  *
  * Les sous-arbres des composants composés restent élagués : leurs icônes
  * appartiennent à leur propre contrat.
@@ -124,8 +124,8 @@ export async function extractIconLayers(
       //
       // Le menu de dimensionnement décide de ce qu'on lit, comme pour les slots
       // (`resolveSlotSize`) : une icône en `Hug` ou en `Fill` n'a pas de
-      // dimension figée à citer, et `slotSize` exige les DEUX côtés sur la même
-      // variable — un seul axe figé ne pourrait donc que produire un
+      // dimension figée à citer, et `slotSize` exige les deux côtés sur la même
+      // variable, un seul axe figé ne pourrait donc que produire un
       // avertissement, pour une valeur que le contrat n'a pas à porter.
       const fixed = fixedDimensions(node);
       summary.sizes.add(

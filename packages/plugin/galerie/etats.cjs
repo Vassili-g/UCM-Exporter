@@ -1,12 +1,12 @@
 
 /**
- * L'inventaire des états de l'interface, sous une forme ATTEIGNABLE.
+ * L'inventaire des états de l'interface, sous une forme atteignable.
  */
 const fs = require('fs');
 const path = require('path');
 
 /**
- * Les textes de connexion sont LUS au sandbox, jamais recopiés ici.
+ * Les textes de connexion sont lus au sandbox, jamais recopiés ici.
  */
 function chargerSandbox(nom) {
   const compile = path.resolve(__dirname, `../dist/galerie-${nom}.cjs`);
@@ -35,7 +35,7 @@ const verdict = (entree) => ({
 });
 
 /**
- * La version de schéma est LUE à sa source. Une capture qui afficherait un
+ * La version de schéma est lue à sa source. Une capture qui afficherait un
  * numéro que le code ne produit plus enseignerait exactement le contraire de
  * ce que ce pied de page existe pour dire.
  */
@@ -96,9 +96,9 @@ const ouverture = (cause, tokens = TOKENS_PRESENTS) => [
 /**
  * Ce que le fichier porte en variables, calculé par le sandbox.
  *
- * Les deux cas doivent se regarder CÔTE À CÔTE : c'est leur voisinage qui dit
- * si l'absence de bouton se lit comme une réponse — « ce fichier n'a pas de
- * tokens » — ou comme une commande qui aurait disparu.
+ * Les deux cas doivent se regarder côte À côte : c'est leur voisinage qui dit
+ * si l'absence de bouton se lit comme une réponse (« ce fichier n'a pas de
+ * tokens ») ou comme une commande qui aurait disparu.
  */
 const tokensDuFichier = (compte) => ({ message: { type: 'tokens', ...etatDesTokens(compte) } });
 const TOKENS_PRESENTS = tokensDuFichier({ collections: 3, variables: 128, modes: 2 });
@@ -141,12 +141,12 @@ const REGLAGES = {
 };
 
 /**
- * Un point à corriger relevé par l'export : ses TROIS parties, et le node
+ * Un point à corriger relevé par l'export : ses trois parties, et le node
  * de son sujet quand il en a un.
  *
  * L'absence de `nodeId` n'est pas un raccourci de la galerie : c'est l'état
  * réel d'un message qui nomme un text style, une variable, ou un calque agrégé
- * sur toute la matrice. Les deux formes doivent se regarder CÔTE À CÔTE, parce
+ * sur toute la matrice. Les deux formes doivent se regarder côte À côte, parce
  * que c'est leur voisinage qui dit si l'absence du bouton « Afficher dans
  * Figma » se lit comme une réponse ou comme un oubli.
  */
@@ -172,7 +172,7 @@ function vingtAvertissements() {
  * Un état : son identité, la situation réelle qui l'amène, la suite exacte qui
  * le reproduit, et ce qu'on regarde dessus.
  *
- * `existe: false` marque une situation que l'interface ne sait PAS montrer
+ * `existe: false` marque une situation que l'interface ne sait pas montrer
  * aujourd'hui. Elle reste dans l'inventaire, avec la tâche qui la créera :
  * c'est la moitié la plus utile de la liste, celle qu'on oublie sinon.
  */

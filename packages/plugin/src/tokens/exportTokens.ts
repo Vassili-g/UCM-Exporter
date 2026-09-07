@@ -1,8 +1,8 @@
 
 /**
- * Commande « Export tokens » : exporte TOUTES les variables locales du
+ * Commande « Export tokens » : exporte toutes les variables locales du
  * fichier Figma en un arbre DTCG (`tokens.json`), consommable par Style
- * Dictionary. Principe fondamental : la chaîne d'alias est préservée —
+ * Dictionary. Principe fondamental : la chaîne d'alias est préservée,
  * un alias devient une référence `"{cible}"`, jamais sa valeur finale.
  */
 import { normalizeName } from '@ucm-kit/core/format';
@@ -123,7 +123,7 @@ export type ExportContext = {
 /**
  * Remonte la chaîne d'alias jusqu'au token racine (via le mode par défaut de
  * chaque collection). Figma garde le même `resolvedType` le long d'une
- * chaîne, mais le NOM change à chaque maillon : la décision d'unité
+ * chaîne, mais le nom change à chaque maillon : la décision d'unité
  * (dimension vs number) doit donc se prendre sur le groupe de la racine.
  * Ex. `lineheight` alias `spacing` (des px) → dimension, pas number.
  * Le Set `seen` protège d'une boucle d'alias accidentelle.
@@ -145,7 +145,7 @@ function resolveRoot(variable: Variable, ctx: ExportContext): Variable {
 
 /** Point d'entrée de la commande : exporte toutes les variables locales en DTCG. */
 /**
- * Construit UN token DTCG :
+ * Construit un token DTCG :
  * - valeur directe → littérale (hex, px, nombre…) ;
  * - alias → référence `"{chemin.cible}"`, jamais la valeur résolue ;
  * - collection multi-mode (ex. Brand Tokens, 1 mode = 1 marque) → tous les
@@ -210,12 +210,12 @@ export function buildLeaf(
 
 /**
  * Insère une feuille dans l'arbre en suivant son chemin pointé.
- * Un emplacement déjà occupé est TOUJOURS conservé, qu'il porte un groupe ou
+ * Un emplacement déjà occupé est toujours conservé, qu'il porte un groupe ou
  * une autre feuille : écraser reviendrait à perdre une variable en silence.
  *
  * Les segments viennent des noms Figma : ils sont lus et écrits en propriétés
- * PROPRES. Un groupe nommé `constructor` passerait sinon pour un emplacement
- * occupé, et `__proto__` écrirait dans le prototype — le token quitterait le
+ * propres. Un groupe nommé `constructor` passerait sinon pour un emplacement
+ * occupé, et `__proto__` écrirait dans le prototype : le token quitterait le
  * fichier sans un mot.
  */
 export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: string[]): void {
@@ -350,7 +350,7 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
   const variableById = new Map(variables.map((variable) => [variable.id, variable]));
   const index = indexVariables(variables, collectionById);
   const { pathById, variableByPath } = index;
-  // Cette commande exporte TOUTES les variables : elle signale donc toutes les
+  // Cette commande exporte toutes les variables : elle signale donc toutes les
   // collisions, là où l'export composant ne signale que celles qu'il rencontre.
   // Les collisions arrivent déjà découpées : elles sont poussées par le même
   // chemin que les autres, pour que leurs parties entrent au registre.

@@ -74,8 +74,8 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
 /**
  * Le constat d'une piste dont Figma ne rend pas la taille, écrit une seule fois.
  *
- * Deux branches de `gridTrackSizes` y mènent — la piste n'est pas un objet, ou
- * son type est inconnu — et elles disent la même chose au designer. Le geste
+ * Deux branches de `gridTrackSizes` y mènent (la piste n'est pas un objet, ou
+ * son type est inconnu) et elles disent la même chose au designer. Le geste
  * aussi est le même : regarder ce réglage.
  */
 function pisteIllisible(nom: string, index: number): Constat {
@@ -122,16 +122,16 @@ export function gridTrackSizes(
 }
 
 /**
- * Axes dont la CELLULE décide, pour un enfant de grille resté dans le flux.
+ * Axes dont la cellule décide, pour un enfant de grille resté dans le flux.
  *
- * Remplir sa cellule est le DÉFAUT d'un enfant de grille — `stretch` en CSS,
- * « Fill » dans le panneau de Figma — et son alignement vaut alors `AUTO`. Sa
+ * Remplir sa cellule est le défaut d'un enfant de grille (`stretch` en CSS,
+ * « Fill » dans le panneau de Figma) et son alignement vaut alors `AUTO`. Sa
  * boîte est celle de la cellule, que les pistes et son étendue décrivent déjà.
  *
  * Ce que l'API rend sur cet axe ne peut pas servir à en juger : Figma n'expose
  * pas de remplissage dans une piste qui hug, exactement comme une piste `FLEX`
  * est un état invalide sous un conteneur qui hug. Il rend alors la taille
- * CALCULÉE du calque là où le panneau affiche « Fill ». Lui réclamer une
+ * calculée du calque là où le panneau affiche « Fill ». Lui réclamer une
  * variable envoie le designer vérifier un champ qui lui donne déjà raison.
  *
  * Un alignement explicite est la seule exception, et c'est le même mot en CSS :
@@ -153,20 +153,20 @@ export function gridCellSizedAxes(
 }
 
 /**
- * Axes sur lesquels TOUTES les pistes qu'un enfant couvre se dimensionnent sur
+ * Axes sur lesquels toutes les pistes qu'un enfant couvre se dimensionnent sur
  * lui (`HUG`).
  *
  * Une piste qui hug ne peut pas étirer son contenu : c'est lui qui la mesure.
- * Figma n'y expose donc aucun remplissage et rend la taille RÉSOLUE de l'enfant
- * — la seule mesure qui existe, `GridTrackSize.value` n'étant applicable qu'aux
+ * Figma n'y expose donc aucun remplissage et rend la taille résolue de l'enfant
+ * : la seule mesure qui existe, `GridTrackSize.value` n'étant applicable qu'aux
  * pistes `FIXED` et `FLEX`.
  *
  * Une seule piste non `HUG` sous l'étendue suffit à rendre l'axe indécis : la
  * place vient alors d'ailleurs, et la mesure de l'enfant ne la décrit plus.
  *
- * Fait de PISTES, et rien de plus : cette réponse ne dit pas si le contrat doit
+ * Fait de pistes, et rien de plus : cette réponse ne dit pas si le contrat doit
  * publier la mesure. Un enfant explicitement aligné hug la même piste sans
- * remplir sa cellule, et `gridCellSizedAxes` est seul à en juger — c'est
+ * remplir sa cellule, et `gridCellSizedAxes` est seul à en juger : c'est
  * `gridStructuralSize` qui croise les deux.
  *
  * La lecture reste défensive, comme dans `gridTrackSizes` : un runtime qui
@@ -216,7 +216,7 @@ function gridSelfAlignment(value: unknown): AlignSelf | null {
  * Place d'un enfant dans la grille de son parent : son étendue et son
  * alignement dans sa cellule.
  *
- * Une étendue de 1 est la valeur neutre — c'est la cellule elle-même — et reste
+ * Une étendue de 1 est la valeur neutre (c'est la cellule elle-même) et reste
  * absente, comme `INHERIT` et `0` du côté Flex. `AUTO` en est l'équivalent pour
  * les alignements : l'enfant suit alors la règle de la grille.
  */
@@ -253,7 +253,7 @@ export function gridItemProperties(parent: SceneNode, child: SceneNode): GridPla
  * Ce sont les seules données de placement que le contrat sache porter sans
  * écrire un nombre de maquette : les offsets, eux, ne sont liables à aucune
  * variable dans Figma, et un `x` brut n'est jamais contractuel. Une contrainte
- * dit au moins à quel bord le calque s'accroche — sans elle, un badge posé en
+ * dit au moins à quel bord le calque s'accroche, sans elle, un badge posé en
  * haut à droite se retrouvait en haut à gauche sans que rien ne le dise.
  */
 export function layoutConstraints(node: SceneNode): LayoutConstraints | null {
@@ -302,7 +302,7 @@ function mesure(value: unknown): number | null {
  *
  * Figma compte les degrés dans le sens trigonométrique, CSS dans le sens
  * horaire : la valeur publiée est l'opposée, et s'écrit telle quelle dans
- * `transform: rotate(…)`. L'origine est le centre, le défaut de CSS — c'est
+ * `transform: rotate(…)`. L'origine est le centre, le défaut de CSS : c'est
  * aussi celle sur laquelle `absoluteInset` calcule sa boîte, si bien que les
  * deux champs décrivent le même modèle.
  */
@@ -315,7 +315,7 @@ export function rotationDegrees(node: SceneNode): `${number}deg` | null {
 /**
  * Où se trouve un calque hors du flux, en distances aux bords de son parent.
  *
- * Le calcul passe par le CENTRE du calque, et c'est ce qui le rend juste pour un
+ * Le calcul passe par le centre du calque, et c'est ce qui le rend juste pour un
  * calque tourné : Figma tourne autour du coin haut-gauche, CSS autour du centre.
  * `relativeTransform` appliqué au centre local (w/2, h/2) donne le centre réel
  * dans le repère du parent ; la boîte CSS non tournée s'en déduit, et
@@ -326,7 +326,7 @@ export function rotationDegrees(node: SceneNode): `${number}deg` | null {
  * `scale` en demandent deux : le premier étire, les deux autres ont besoin des
  * deux distances pour recentrer ou proportionner.
  *
- * Rien n'est publié si Figma n'expose pas tout ce qu'il faut — un node de test,
+ * Rien n'est publié si Figma n'expose pas tout ce qu'il faut, un node de test,
  * un runtime partiel : mieux vaut une absence qu'un `NaNpx`.
  */
 function absoluteInset(parent: SceneNode, child: SceneNode): LayoutInset | null {
@@ -430,12 +430,12 @@ function childSizing(parent: SceneNode, child: SceneNode): { main: unknown; cros
 }
 
 /**
- * Dimensionnement du composant lu sur le SEUL menu de Figma, traduit en valeurs
+ * Dimensionnement du composant lu sur le seul menu de Figma, traduit en valeurs
  * de `width` et `height`.
  *
  * Seul `Hug` est une intention de comportement : il dit que le composant se
  * limite à son contenu, ce que CSS écrit `fit-content`. Une largeur fixe posée
- * sur un variant ne l'est pas — c'est le plus souvent une commodité de mise en
+ * sur un variant ne l'est pas : c'est le plus souvent une commodité de mise en
  * page dans Figma, pour aligner les variants d'un component set entre eux. La
  * publier reviendrait à figer dans le contrat une décision de présentation, et
  * à imposer cette largeur à toutes les pages qui intègrent le composant. Le
@@ -461,8 +461,8 @@ export function containerSizing(node: SceneNode): ContainerSizing {
 /**
  * Axes dont la dimension est figée, et qui doivent donc être publiés.
  *
- * `Hug` et `Fill` sont déjà décrits — par l'absence pour le premier, par
- * `flexGrow` / `alignSelf` pour le second — et ne demandent aucune variable.
+ * `Hug` et `Fill` sont déjà décrits (par l'absence pour le premier, par
+ * `flexGrow` / `alignSelf` pour le second) et ne demandent aucune variable.
  * Tout le reste est traité comme figé : un menu que l'API n'expose pas laisse
  * le doute, et mieux vaut réclamer une variable en trop que taire une
  * dimension que le contrat ne saurait pas reconstituer.
@@ -489,7 +489,7 @@ export const SIZE_BOUND_FIELDS = [
  *
  * Une borne est indépendante du menu de dimensionnement : un calque en `Fill`
  * qu'un `max width` retient est le cas le plus courant, et l'axe figé n'est pas
- * une condition. Chaque champ est donc lu seul, sur sa seule présence — Figma
+ * une condition. Chaque champ est donc lu seul, sur sa seule présence : Figma
  * renvoie `null` quand rien n'est posé, jamais la dimension courante.
  *
  * Ce module lit le panneau, il ne résout aucune liaison : le token de chaque
@@ -552,7 +552,7 @@ export function flexItemProperties(
   // Testé avant l'auto layout linéaire : une grille aussi porte des enfants en
   // position absolue. Le calque sort du flux et le contrat le place : ses
   // contraintes disent à quels bords il s'accroche, `inset` à quelle distance.
-  // Un offset Figma ne se relie à aucune variable, et le designer ne PEUT pas
+  // Un offset Figma ne se relie à aucune variable, et le designer ne peut pas
   // le rendre contractuel. Le moteur calcule donc la distance, comme il calcule
   // les pixels d'une piste de grille, et se tait : rien ne manque au contrat, et
   // un export ne rapporte que ce qui demande une décision.

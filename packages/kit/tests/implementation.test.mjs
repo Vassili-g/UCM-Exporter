@@ -91,7 +91,7 @@ test("un motif qui n’est pas du texte est refusé, en nommant le coupable", ()
   // Le cas réel, et il n'est pas théorique : `contrats.map(cheminDuComposant)`
   // passe l'index de `map` en second argument. Sans ce refus, la panne était un
   // `replaceAll is not a function` levé dans le kit pour une faute commise chez
-  // le consommateur — le pire endroit où lire un message d'erreur.
+  // le consommateur : le pire endroit où lire un message d'erreur.
   assert.throws(
     () => cheminImplementation("src/Button.contract.json", 0),
     (erreur) => erreur instanceof TypeError && /map/.test(erreur.message),

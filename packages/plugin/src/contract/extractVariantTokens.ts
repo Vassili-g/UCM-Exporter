@@ -1,5 +1,5 @@
 /**
- * Extraction des tokens de couleur/contour de CHAQUE variant du composant.
+ * Extraction des tokens de couleur/contour de chaque variant du composant.
  *
  * Résultat : l'arbre `variantTokens`, imbriqué selon les axes du set
  * (ex. couleur → variante → état), avec pour feuilles les couleurs rangées par
@@ -7,7 +7,7 @@
  * consommateurs historiques de `variantTokens` gardent partout des références
  * de tokens sous forme de chaînes.
  *
- * Les clés se décident ici, une seule fois, sur TOUTE la matrice
+ * Les clés se décident ici, une seule fois, sur toute la matrice
  * (`colorKeys.ts`) : lues variant par variant, elles changeraient d'un état à
  * l'autre et plus rien ne serait indexable.
  */
@@ -50,7 +50,7 @@ export function insertVariantLeaf<T>(
     const key = values[axis] || 'default';
     if (index === axes.length - 1) {
       // Deux variants aux mêmes valeurs d'axes : on conserve le premier et on
-      // le signale — ne jamais perdre d'information en silence.
+      // le signale, ne jamais perdre d'information en silence.
       if (has(node, key)) {
         pousserSansNode(
           warnings,
@@ -143,7 +143,7 @@ export async function extractVariantTokens(
   const strokesByComponent = new Map<ComponentNode, SlotStrokes>();
   const paintNodeIdsByComponent = new Map<ComponentNode, VariantPaintNodeIds>();
   // Un côté par arbre publié. `colorKeys` décide sur des feuilles séparées : la
-  // clé courte `background` peut désigner deux TOKENS différents, l'un en
+  // clé courte `background` peut désigner deux tokens différents, l'un en
   // peinture, l'autre en contour. Une table unique en perdrait un, et le
   // consommateur peindrait le mauvais côté sans un mot.
   const discoveredRoles = { fills: new Map<string, string>(), strokes: new Map<string, string>() };
@@ -152,7 +152,7 @@ export async function extractVariantTokens(
   // liste vide pour ne jamais perdre un variant en silence.
   const axes = matrix.axes.length > 0 ? matrix.axes : ['variant'];
 
-  // Les appels à l'API Figma restent parallèles, mais RIEN n'est écrit ici —
+  // Les appels à l'API Figma restent parallèles, mais rien n'est écrit ici :
   // chaque variant collecte même ses propres avertissements. L'ordre où les
   // promesses se règlent ne doit décider ni de l'ordre des clés, ni de quel
   // variant gagne un conflit : sinon deux exports d'un design inchangé
@@ -203,7 +203,7 @@ export async function extractVariantTokens(
     if (insertVariantLeaf(reserved, axes, values, true, [])) retained.push(exactEntry);
   }
 
-  // Deuxième passe : les clés se décident sur TOUTES les feuilles exactes. Un
+  // Deuxième passe : les clés se décident sur toutes les feuilles exactes. Un
   // doublon de coordonnées reste un variant publié ; ses couleurs doivent donc
   // participer à la clé stable de toute la matrice.
   const keys = resolveColorKeys(
@@ -227,7 +227,7 @@ export async function extractVariantTokens(
     // Le conflit se juge à l'intérieur d'un côté, et là seulement : un fill et
     // un stroke ne se contredisent pas, ils vivent dans deux arbres et dans
     // deux tables. Le même token posé sur des calques de natures différentes
-    // DANS LE MÊME arbre — une surface ici, un texte là — ne peut recevoir
+    // dans le même arbre (une surface ici, un texte là) ne peut recevoir
     // qu'un rendu : on garde le premier et on le dit, plutôt que de laisser
     // l'ordre des promesses trancher en silence.
     const relever = (colors: readonly { token: string; role: string }[], cote: 'fills' | 'strokes') => {

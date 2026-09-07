@@ -6,7 +6,7 @@
  * border-radius et tailles d'icônes. La typographie est extraite séparément
  * sur toute la matrice par `extractVariantTypography`.
  *
- * La descente est UNE seule fonction récursive, `describeNode`, qui ne connaît
+ * La descente est une seule fonction récursive, `describeNode`, qui ne connaît
  * ni profondeur ni nature de composant : un auto layout dans une grille dans un
  * cadre de dépendances se décrit avec la même règle à chaque étage.
  * `structureTree.ts` décide qui est un conteneur et qui est une feuille ; ce
@@ -71,9 +71,9 @@ import { pousserLocalise, pousserNote, sujet } from './localisation';
 /**
  * Les dépendances que l'arbre place, indexées par le slot qui les rend.
  *
- * `composes` s'en dérive en parcourant `structure.children` dans l'ordre — donc
+ * `composes` s'en dérive en parcourant `structure.children` dans l'ordre, donc
  * dans l'ordre des calques Figma, celui-là même que le consommateur recompte
- * pour vérifier la parité du code. Un relevé tenu dans l'ordre d'INSERTION
+ * pour vérifier la parité du code. Un relevé tenu dans l'ordre d'insertion
  * dépendrait de l'ordonnancement des `await` de l'extraction : deux cadres
  * frères pourraient se doubler, et le contrat serait refusé sans qu'aucun
  * design n'ait changé.
@@ -131,7 +131,7 @@ function layoutDirection(node: SceneNode): LayoutDirection {
 }
 
 /**
- * Signale ce qu'un calque PUBLIÉ porte et que le schéma ne sait pas écrire.
+ * Signale ce qu'un calque publié porte et que le schéma ne sait pas écrire.
  *
  * L'appel vit dans l'extraction, et non dans un balayage à part, parce que la
  * règle du projet est « on n'avertit que sur ce qu'on publie » : un second
@@ -154,7 +154,7 @@ function warnUnsupportedProperties(node: SceneNode, warnings: string[]): void {
  * et le geste est le même dans tous les cas : la déclarer.
  *
  * Le message part une seule fois par dessin : le calque dont le parent est
- * lui-même un dessin est déjà couvert par le sien. Un composant qui EST un
+ * lui-même un dessin est déjà couvert par le sien. Un composant qui est un
  * dessin de bout en bout ne dit donc rien non plus, et c'est juste : une icône
  * exportée pour elle-même n'a aucune règle à se donner.
  */
@@ -190,8 +190,8 @@ function applyRotation(node: SceneNode): { rotation?: `${number}deg` } {
  * Écrit sur un slot tout ce que Figma dit de sa taille : sa dimension figée et
  * ses bornes.
  *
- * Les deux vont ensemble partout où un calque occupe une place dans le flux —
- * slot direct, part interne, cadre de dépendance — et répondent à deux
+ * Les deux vont ensemble partout où un calque occupe une place dans le flux
+ * (slot direct, part interne, cadre de dépendance) et répondent à deux
  * questions distinctes : quelle place il prend, jusqu'où cette place peut
  * aller. Les séparer en appels recopiés laisserait un jour l'un d'eux sans
  * bornes.
@@ -225,7 +225,7 @@ async function applySizing(
  * un auto layout imbriqué a son gap, ses paddings et son rayon exactement comme
  * le composant. Les taire ferait perdre la moitié d'un design à trois étages.
  * Sonder le padding n'avertit pas pour autant sur tout design correct : une
- * valeur neutre effectivement fournie par Figma reste absente SANS
+ * valeur neutre effectivement fournie par Figma reste absente sans
  * avertissement (`IMPLICIT_DEFAULTS`).
  *
  * Le padding et le gap ne sont sondés que sous un auto layout, où Figma les
@@ -243,7 +243,7 @@ async function applyContainerProperties(
   const direction = autoLayoutDirection(node);
   if (!direction) {
     // Un conteneur à un seul enfant n'a d'ordinaire aucune disposition à
-    // décrire — le réclamer enverrait le designer régler ce qui ne se voit
+    // décrire : le réclamer enverrait le designer régler ce qui ne se voit
     // pas. Un cadre de dépendance fait exception : c'est lui qui place le
     // composant qu'il enveloppe, et sa disposition manque même autour d'un seul.
     if (childCount > 1) {
@@ -276,7 +276,7 @@ async function applyContainerProperties(
     if (rowGap) entry.rowGap = rowGap;
   } else {
     Object.assign(entry, flexContainerProperties(node, warnings));
-    // `gap` décrit l'espace ENTRE des enfants : un conteneur qui n'en range
+    // `gap` décrit l'espace entre des enfants : un conteneur qui n'en range
     // qu'un n'espace rien, et réclamer une variable pour lui enverrait le
     // designer relier une valeur qui ne se voit pas.
     if (childCount > 1) {
@@ -379,7 +379,7 @@ function delegatedTargetIds(
 }
 
 /**
- * Décrit UN calque publié, à quelque profondeur qu'il vive.
+ * Décrit un calque publié, à quelque profondeur qu'il vive.
  *
  * Fonction unique et récursive : un slot de premier niveau, une part textuelle,
  * un cadre de dépendances et un auto layout imbriqué sont le même cas, traité
@@ -396,7 +396,7 @@ async function describeNode(
   resolver: TokenResolver,
   warnings: string[],
   composed: ComposedInstances,
-  // Nécessaire pour nommer les parts internes avec la MÊME règle que les slots
+  // Nécessaire pour nommer les parts internes avec la même règle que les slots
   // de premier niveau ; sans lui, une icône imbriquée perdrait son rôle.
   iconNames: ReadonlySet<string>,
   // Les dépendances que l'arbre place réellement. `composes` s'en dérive : les
@@ -404,7 +404,7 @@ async function describeNode(
   placed: PlacedDependencies,
   depth: number,
   // Visibilité déjà publiée par le slot qui contient celui-ci. La republier à
-  // l'identique donnerait deux propriétaires au même fait ; une prop DIFFÉRENTE
+  // l'identique donnerait deux propriétaires au même fait ; une prop différente
   // reste publiée, c'est une seconde condition que le composant doit lire.
   parentVisibilityProp?: string,
   suppressedSizeNodeIds: ReadonlySet<string> = new Set(),
@@ -421,7 +421,7 @@ async function describeNode(
 
   const dependencies = composedSlotDependencies(child, composed);
   const estUneDependance = composed.has(child.id);
-  // Un calque qui EST une dépendance porte les propriétés de son propre
+  // Un calque qui est une dépendance porte les propriétés de son propre
   // contrat : c'est à lui de s'en plaindre, pas à celui-ci.
   if (!estUneDependance) {
     warnUnsupportedProperties(child, warnings);
@@ -437,12 +437,12 @@ async function describeNode(
     if (coupe) pousserNote(warnings, coupe, sujet('Layer', child));
   }
 
-  // Une peinture posée SOUS une feuille appartient à cette feuille. Le contrat
+  // Une peinture posée sous une feuille appartient à cette feuille. Le contrat
   // ne descend volontairement pas dans les tracés d'une icône, mais leur couleur
   // entre bien dans `variants[].tokens` : sans chemin, `paintPlacements`
   // publierait une clé sans aucune cible et le consommateur, à qui l'on interdit
   // de déduire la cible du nom de la clé, ne peindrait plus aucune icône. Le
-  // calque publié qui les porte est leur chemin — c'est de toute façon là que le
+  // calque publié qui les porte est leur chemin : c'est de toute façon là que le
   // rendu applique la couleur, `color` et `fill` cascadant du slot vers le
   // dessin. Vaut pour toute feuille, y compris celle qu'a coupée la borne de
   // profondeur.
@@ -566,7 +566,7 @@ async function describeNode(
     entry.optional = true;
   }
 
-  // Relevé sur TOUS les slots dont ce contrat possède les dimensions, texte
+  // Relevé sur tous les slots dont ce contrat possède les dimensions, texte
   // compris : un calque de texte peut être figé comme une icône, et le taire
   // ferait dire à son absence « hug » alors que Figma impose une largeur.
   await applySizing(entry, parent, child, resolver, warnings, suppressedSizeNodeIds);
@@ -577,11 +577,11 @@ async function describeNode(
  * Calques que l'élection du node de layout laisse hors du contrat.
  *
  * `structure.children` ne décrit que les enfants directs du node élu. Ce qui
- * vit à côté du chemin qui y mène — un badge, un liseré, un second bloc — n'a
+ * vit à côté du chemin qui y mène (un badge, un liseré, un second bloc) n'a
  * donc ni slot, ni typographie, ni visibilité, alors que ses couleurs entrent
  * bien dans `variantTokens`, relevé sur le variant entier.
  *
- * Exporté parce que ce relevé couvre TOUTE la matrice, là où
+ * Exporté parce que ce relevé couvre toute la matrice, là où
  * `structure.children` ne décrit que la référence : un calque écarté dans un
  * autre variant apporte ses couleurs exactement de la même façon.
  */
@@ -617,8 +617,8 @@ export function warnLayersOutsideLayoutNode(
  * Bornes posées sur un calque intermédiaire, entre le composant et ses slots.
  *
  * Le contrat n'a que deux propriétaires de bornes : le composant et un slot.
- * Un wrapper de layout n'est ni l'un ni l'autre — il prête son flux au
- * composant sans jamais apparaître comme un node — et le `max width` qu'il
+ * Un wrapper de layout n'est ni l'un ni l'autre (il prête son flux au
+ * composant sans jamais apparaître comme un node) et le `max width` qu'il
  * porte n'a donc aucun endroit où vivre.
  */
 function warnIntermediateBounds(
@@ -715,8 +715,8 @@ export async function extractLayout(
   const [paddingX, paddingY] = paddings;
 
   // Lus sur le composant même quand `sizes` porte les dimensions : la taille du
-  // composant n'est pas une dimension parmi d'autres, c'est la première
-  // décision de qui l'intègre, et `structure.sizing` est toujours publié.
+  // composant est la première décision de qui l'intègre, et `structure.sizing`
+  // est toujours publié.
   const [sizing, bounds] = await Promise.all([
     resolveContainerSizing(component, resolver, warnings),
     resolveSizeBounds(component, resolver, warnings),

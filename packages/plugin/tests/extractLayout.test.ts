@@ -1,5 +1,5 @@
 /**
- * Tests du relevé de layout — dimensions et slots enfants.
+ * Tests du relevé de layout : dimensions et slots enfants.
  *
  * Ce module produit la plus grosse part de `structure`, et personne ne peut
  * lancer un export hors de Figma : sans ces tests, une régression ici n'est
@@ -310,7 +310,7 @@ test('un layer absolu n’est pas inventé comme item Flex, et le moteur le plac
   assert.equal(layout.children[0].flexGrow, undefined);
   // Sans contrainte lisible, l'ancrage est celui de Figma : le début de chaque axe.
   assert.deepEqual(layout.children[0].inset, { top: '8px', left: '60px' });
-  // Aucun geste n'est demandé : Figma ne PERMET pas de relier une position à une
+  // Aucun geste n'est demandé : Figma ne permet pas de relier une position à une
   // variable, et la distance est publiée. Le moteur se tait donc.
   assert.deepEqual(warnings.filter((warning) => warning.includes('Absolute')), []);
 });
@@ -648,7 +648,7 @@ test('un conteneur de textes sans auto-layout n’invente pas flex-row', async (
 
 test('extractLayout relie un label masquable à la prop qui le cache', async () => {
   // Cas réel : un bouton à icône seule. Le calque texte porte une prop BOOLEAN
-  // Figma sur sa visibilité — sans cette liaison dans le contrat, la prop
+  // Figma sur sa visibilité, sans cette liaison dans le contrat, la prop
   // publique existe sans que rien ne dise ce qu'elle montre ou cache.
   const texte = {
     type: 'TEXT',
@@ -750,7 +750,7 @@ test('extractLayout cible un descendant sans masquer tout son slot', async () =>
   assert.equal(slot.visibilityProp, undefined);
   assert.equal(slot.optional, undefined);
   // Le slot porte deux textes : chaque part la déclare à sa place exacte, et
-  // `visibilityTargets` disparaît — sinon deux propriétaires pour un même fait.
+  // `visibilityTargets` disparaît, sinon deux propriétaires pour un même fait.
   assert.equal(slot.visibilityTargets, undefined);
   assert.deepEqual(slot.children?.map((part) => ({
     slot: part.slot,
@@ -831,7 +831,7 @@ test('extractLayout décrit un calque graphique en slot optionnel avec sa visibi
 });
 
 test('le composant publie stretch par défaut, et fit-content sur un Hug', async () => {
-  // Une largeur fixe SANS variable sur un variant sert à aligner le component
+  // Une largeur fixe sans variable sur un variant sert à aligner le component
   // set dans Figma. La publier imposerait cette largeur à toutes les pages qui
   // intègrent le composant : le contrat retient donc `stretch`.
   const fixe = {
@@ -856,9 +856,9 @@ test('le composant publie stretch par défaut, et fit-content sur un Hug', async
 });
 
 test('une dimension figée du composant reliée à une variable publie son token', async () => {
-  // Une tuile carrée dont le design system nomme le côté : ce n'est pas une
-  // commodité de maquette, c'est une décision que le composant connaît de
-  // lui-même, quel que soit le conteneur qui l'accueillera.
+  // Une tuile carrée dont le design system nomme le côté : le composant connaît
+  // cette dimension de lui-même, quel que soit le conteneur qui l'accueillera, là
+  // où une commodité de maquette dépendrait du contexte.
   const tuile = {
     type: 'COMPONENT',
     name: 'TileLink',
@@ -1111,7 +1111,7 @@ test('extractLayout publie la largeur seule sans inventer de taille carrée', as
   );
 
   // La largeur est connue et tokenisée : la taire la ferait passer pour un
-  // hug. La hauteur n'est jamais recopiée depuis la largeur — et sur un TRACÉ
+  // hug. La hauteur n'est jamais recopiée depuis la largeur, et sur un tracé
   // elle ne se réclame pas non plus : la boîte d'un VECTOR est celle de son
   // dessin, et lier la largeur en laissant la hauteur suivre le rapport du
   // chemin est une façon parfaitement correcte de dimensionner une icône.
@@ -1302,7 +1302,7 @@ test('une icône déclarée ne réclame plus rien, et un composant qui EST un de
   assert.deepEqual(declare.filter((w) => w.includes('règle @icons ne le désigne')), []);
 
   // Une icône exportée pour elle-même n'a aucune règle à se donner : le dessin
-  // n'est pas un layer égaré dans le composant, il EST le composant.
+  // n'est pas un layer égaré dans le composant, il est le composant.
   const icone = {
     type: 'COMPONENT',
     name: 'IconSkull',
@@ -1317,7 +1317,7 @@ test('une icône déclarée ne réclame plus rien, et un composant qui EST un de
 });
 
 test('une surface colorée n’est pas un dessin : rien à déclarer', async () => {
-  // Le déclencheur est le TRACÉ, pas l'absence de texte : un cadre et un
+  // Le déclencheur est le tracé, pas l'absence de texte : un cadre et un
   // rectangle se décrivent très bien par leurs tokens, et réclamer une règle
   // `@icons` pour un liseré enverrait le designer déclarer une icône qui
   // n'existe pas.
@@ -1373,7 +1373,7 @@ test('un slot masquable conserve les visibilités portées plus bas', () => {
  *
  * Une Alert range son bouton dans un calque « Action » : ce calque appartient à
  * l'Alert, pas au Button. Sans son flux, `alignSelf` atterrit sur le composant,
- * dont le `structure.sizing` neutralise l'étirement — le cadre disparaît.
+ * dont le `structure.sizing` neutralise l'étirement : le cadre disparaît.
  */
 const boutonDependant = (extra: Record<string, unknown> = {}) => ({
   type: 'INSTANCE',
@@ -1459,7 +1459,7 @@ test('un slot qui EST la dépendance garde sa forme : composes, sans conteneur',
   assert.equal(slot.composes, 'Button');
   assert.equal(slot.children, undefined);
   assert.equal(slot.layout, undefined);
-  // Le dimensionnement de l'instance appartient à SON contrat : rien n'est
+  // Le dimensionnement de l'instance appartient à son contrat : rien n'est
   // réclamé ici, même sur un axe rempli.
   assert.equal(slot.size, undefined);
   assert.equal(warnings.some((warning) => warning.includes('« Button »')), false);
@@ -1581,7 +1581,7 @@ test('un axe de tailles fait taire les dimensions de haut niveau au lieu de les 
   // du niveau haut. Les relever quand même ferait avertir le designer sur une
   // valeur que le contrat ne publiera jamais : il relierait une variable sans
   // que rien ne change, et le nom de calque cité désigne le même layer dans
-  // TOUS les variants du set — il ne saurait même pas lequel ouvrir.
+  // tous les variants du set, il ne saurait même pas lequel ouvrir.
   const wrapper = {
     type: 'COMPONENT',
     name: 'sizeWrapperButton',

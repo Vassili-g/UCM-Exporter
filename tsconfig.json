@@ -4,6 +4,10 @@
     // Le test de liens balaie la documentation du monorepo, qui vit à la
     // racine : il ne dépend d'aucun paquet, et n'est donc dans aucun des deux.
     "moduleResolution": "Bundler",
+    // Les tests importent `scripts/controle-style.mjs` : le contrôle de style
+    // vit dans un module que le hook d'écriture exécute aussi, donc en
+    // JavaScript exécutable par Node sans étape de build.
+    "allowJs": true,
     "noEmit": true
   },
   "include": ["tests/**/*", "scripts/**/*"]

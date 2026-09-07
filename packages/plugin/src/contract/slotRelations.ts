@@ -62,15 +62,15 @@ export function figmaPath(node: SceneNode, root: SceneNode): string[] {
  * Une cible unique qui contrôle tout le contenu rend le slot optionnel. Dès
  * qu'un autre élément rendable subsiste, chaque cible garde son chemin propre.
  *
- * `slotIsOptional` dit que le slot porte DÉJÀ sa propre visibilité. Aucune
- * cible ne peut alors être promue — la prop du slot resterait prioritaire et la
+ * `slotIsOptional` dit que le slot porte déjà sa propre visibilité. Aucune
+ * cible ne peut alors être promue : la prop du slot resterait prioritaire et la
  * promotion ne ferait que masquer la seconde. Les cibles sont malgré tout
  * décrites : un slot masquable qui contient une sous-partie masquable expose
  * bien deux props, et n'en taire aucune est la règle.
  *
  * `representedTargets` contient les nodes qu'un enfant publié décrit déjà. Ils
- * sont retirés de `visibilityTargets` — un même fait n'a jamais deux
- * propriétaires — mais PAS du test de promotion : une cible unique qui
+ * sont retirés de `visibilityTargets` (un même fait n'a jamais deux
+ * propriétaires) mais pas du test de promotion : une cible unique qui
  * contrôle tout le contenu rend bien le slot entier optionnel, et l'oublier
  * ferait rendre un cadre vide autour d'un enfant masqué. C'est l'enfant qui se
  * tait alors, par le `parentVisibilityProp` que l'extraction lui passe.

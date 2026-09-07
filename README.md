@@ -6,17 +6,9 @@ contrat.
 
 ## Le problème
 
-Un même composant existe à plusieurs endroits : Figma, le code, les tokens, la
-documentation. Rien ne garantit qu'ils disent la même chose, et un écart peut
-vivre longtemps sans que personne le remarque.
-
-UCM donne un propriétaire unique à chaque information.
-
-| Information | Qui fait foi |
-|---|---|
-| Variantes, états, dimensions, couleurs, icônes, tokens | Figma |
-| Comportement, événements, accessibilité, attributs natifs | Le code |
-| La correspondance entre les deux | La CI du repository |
+Un même composant existe à plusieurs endroits, et rien ne garantit qu'ils disent
+la même chose. UCM donne un propriétaire unique à chaque information ;
+[CONCEPT.md](./CONCEPT.md) énonce le partage et ce qui l'a motivé.
 
 Figma exporte ce qu'il possède dans un fichier `.contract.json`, posé à côté du
 code du composant.
@@ -64,8 +56,8 @@ ouvrir.
 Deux commandes, et aucun script à écrire.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.10 init                       # écrit les cinq fichiers manquants
-npx --yes @ucm-kit/cli@0.1.10 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.11 init                       # écrit les cinq fichiers manquants
+npx --yes @ucm-kit/cli@0.1.11 check --report ci-report.md
 ```
 
 `--yes` évite l'invite de confirmation de `npx`, qui bloquerait une exécution
@@ -101,17 +93,13 @@ Les détails vivent dans [packages/cli/README.md](./packages/cli/README.md).
 | Parité code | Les props du contrat sont-elles dans l'API publique du composant, typées correctement, et chaque composant déclaré rendu exactement une fois ? | ⚠️ avertit |
 
 La règle de partage est explicite : **un contrôle bloque la pull request
-seulement si l'auteur de l'export peut le corriger en réexportant.** Un écart
-avec le code attend un développeur, donc il avertit et laisse fusionner. Un
-token supprimé du design system aussi : les tokens font foi, et un ancien
-contrat ne retient pas leur évolution.
+seulement si l'auteur de l'export peut le corriger en réexportant.** Les deux
+verdicts « avertit » en découlent, et
+[docs/POUR-LES-DESIGNERS.md](./docs/POUR-LES-DESIGNERS.md#6-ce-qui-bloque-la-fusion-et-ce-qui-nen-bloque-pas)
+les détaille pour le designer, l'absence d'implémentation comprise.
 
-L'absence d'implémentation est un état d'avancement autorisé. Un contrat peut
-arriver avant le code qui le réalise.
-
-Le rapport relaie en plus deux choses qu'il ne mesure pas : les avertissements
-que l'export a écrits dans le contrat, et le verdict des tests du repository
-quand un orchestrateur le transmet.
+Le rapport porte aussi deux verdicts qui ne viennent pas de ces contrôles :
+ceux de l'export et ceux des tests du repository.
 
 Les cinq premiers contrôles ne lisent que des contrats et des tokens, ils
 fonctionnent donc quelle que soit la technologie du repository. Le sixième doit
@@ -199,7 +187,7 @@ npm install @ucm-kit/core
 | `@ucm-kit/core/schema` | JSON Schema, pour les éditeurs et les consommateurs qui ne lisent pas TypeScript |
 
 Un projet TypeScript peut installer
-`@ucm-kit/adapter-typescript@0.1.3` pour ajouter la comparaison statique des
+`@ucm-kit/adapter-typescript@0.1.4` pour ajouter la comparaison statique des
 props et de la composition, ainsi que la génération des types dérivés des
 contrats.
 

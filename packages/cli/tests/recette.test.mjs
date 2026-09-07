@@ -92,9 +92,9 @@ function controler(racine) {
 }
 
 /**
- * Un repository neuf, installé par la commande, puis rempli — dans cet ordre.
+ * Un repository neuf, installé par la commande, puis rempli, dans cet ordre.
  *
- * `implementation` par défaut décrit un repo dont les composants ne sont PAS en
+ * `implementation` par défaut décrit un repo dont les composants ne sont pas en
  * TypeScript, ce qu'exige le scénario ci-dessous, et la mettre par défaut évite qu'un
  * scénario retombe par inadvertance sur la stack du premier consommateur.
  */
@@ -112,7 +112,7 @@ function repoDeRecette({ composants = {}, tokens = TOKENS, implementation = "{di
   assert.ok(existsSync(join(racine, "ucm.config.json")), "init n'a pas écrit la configuration");
 
   // La seule ligne écrite à la main dans ce repository, et elle est le sujet du
-  // scénario : ce repo dit où vivent SES implémentations. Le critère de
+  // scénario : ce repo dit où vivent ses implémentations. Le critère de
   // réussite n° 1 parle d'un repo qui n'a rien à déclarer ; celui-ci en a une.
   const configuration = JSON.parse(readFileSync(join(racine, "ucm.config.json"), "utf8"));
   writeFileSync(
@@ -152,16 +152,16 @@ function surLeRepo(options, scenario) {
 }
 
 /* ------------------------------------------------------------------------ */
-/* critère 6 — un contrat sans implémentation, dans un repo qui n'est pas en TS.   */
+/* critère 6 : un contrat sans implémentation, dans un repo qui n'est pas en TS.   */
 /* ------------------------------------------------------------------------ */
 
 /**
  * L'état d'avancement est un état, pas une erreur (critère de réussite n° 6),
- * et il doit être JUSTE sur la pull request d'export elle-même — celle que le
+ * et il doit être juste sur la pull request d'export elle-même : celle que le
  * designer lit. Le contrôle a longtemps répondu
  * « implémentation en attente » à tout repo non-TypeScript, y compris quand le
- * composant était écrit ; savoir OÙ une implémentation devrait être et savoir
- * SI elle y est sont deux questions distinctes.
+ * composant était écrit ; savoir où une implémentation devrait être et savoir
+ * si elle y est sont deux questions distinctes.
  */
 test("critère 6 — un contrat sans implémentation ne bloque pas, et le rapport le dit", () => {
   surLeRepo({ composants: { Badge: contrat("Badge") } }, (racine) => {
@@ -175,7 +175,7 @@ test("critère 6 — un contrat sans implémentation ne bloque pas, et le rappor
 });
 
 /**
- * Le même repo, l'implémentation posée — en Swift, que rien ici ne sait lire.
+ * Le même repo, l'implémentation posée, en Swift, que rien ici ne sait lire.
  *
  * Deux affirmations sont attendues et une troisième est interdite : l'état
  * d'attente disparaît, aucun écart de parité n'est inventé, et le mot
@@ -239,7 +239,7 @@ test("critère 5 — une référence absente de la source avertit sans refuser l
 
 /**
  * Le préalable manquant se dit, il ne se devine pas. Une pull request refusée
- * sans un mot laisse le designer sans recours — et « aucun token » se lirait
+ * sans un mot laisse le designer sans recours, et « aucun token » se lirait
  * comme « rien à signaler » si le rapport se taisait.
  */
 test("critère 5 — un fichier de tokens absent est refusé en nommant le préalable", () => {
@@ -252,11 +252,11 @@ test("critère 5 — un fichier de tokens absent est refusé en nommant le préa
 });
 
 /* ------------------------------------------------------------------------ */
-/* critère 4 — une version non lue : refus, et le BON coupable désigné.            */
+/* critère 4, une version non lue : refus, et le bon coupable désigné.            */
 /* ------------------------------------------------------------------------ */
 
 /**
- * Critère de réussite n° 4 : le message dit QUI corrige. Un contrat en avance
+ * Critère de réussite n° 4 : le message dit qui corrige. Un contrat en avance
  * vient d'un plugin que ce repository n'a pas rattrapé ; le geste appartient à
  * un développeur, et réexporter ne ferait rien.
  */
@@ -392,10 +392,10 @@ test("montée de version — un contrat d'une version révolue est refusé, puis
  * Ce que le repository installe est épinglé exactement, et la fenêtre de
  * lecture n'est écrite nulle part dans le repository.
  *
- * Les deux règles n'en font qu'une : le repo dit OÙ sont ses fichiers, le
- * paquet dit ce que le format EST. Un numéro recopié dans la configuration
+ * Les deux règles n'en font qu'une : le repo dit où sont ses fichiers, le
+ * paquet dit ce que le format est. Un numéro recopié dans la configuration
  * créerait une seconde autorité, que quelqu'un mettrait à jour en croyant
- * déplacer la fenêtre — un geste sans effet, pire qu'un geste refusé.
+ * déplacer la fenêtre : un geste sans effet, pire qu'un geste refusé.
  */
 test("montée de version — le repository épingle son outil et ne redéclare jamais le format", () => {
   surLeRepo({}, (racine) => {

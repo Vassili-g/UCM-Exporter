@@ -4,10 +4,10 @@
  * Depuis la 11.0, un contrat ne recopie plus rien : une vue est cinq renvois
  * vers cinq catalogues de parties, `structure` renvoie au catalogue des
  * structures, le nom Figma d'un variant se rebâtit depuis une table
- * d'étiquettes, et deux champs qui se dérivaient — l'index des tokens, le
- * miroir des avertissements — ne sont plus publiés du tout.
+ * d'étiquettes, et deux champs qui se dérivaient (l'index des tokens, le
+ * miroir des avertissements) ne sont plus publiés du tout.
  *
- * Tout cela se résout ICI, et nulle part ailleurs. Un second résolveur, même
+ * Tout cela se résout ici, et nulle part ailleurs. Un second résolveur, même
  * équivalent en apparence, finirait par lire une vue que le contrat ne contient
  * pas.
  */
@@ -72,7 +72,7 @@ export function projectionDeReference(contrat) {
  * Le nom Figma d'un variant.
  *
  * Il vit sur le variant jusqu'à la 10.3. Depuis la 11.0, il se rebâtit depuis
- * `figmaVariantLabels` — une étiquette par axe et par valeur, au lieu du même
+ * `figmaVariantLabels` : une étiquette par axe et par valeur, au lieu du même
  * nom recopié sur chaque combinaison. Le variant garde son `figmaName` dès
  * qu'une seule combinaison ne se reconstruit pas à l'identique, et la table est
  * alors absente : les deux chemins ne coexistent jamais.
@@ -96,9 +96,9 @@ export function nomFigmaDuVariant(contrat, variant) {
 /**
  * L'identifiant du calque visé par une liaison native.
  *
- * Depuis la 11.0, la fin commune à toutes les occurrences d'une définition —
- * l'id du calque dans le composant maître, que Figma écrit après le dernier
- * point-virgule — est hissée dans la définition. La recoller redonne l'id exact.
+ * Depuis la 11.0, la fin commune à toutes les occurrences d'une définition
+ * (l'id du calque dans le composant maître, que Figma écrit après le dernier
+ * point-virgule) est hissée dans la définition. La recoller redonne l'id exact.
  */
 export function nodeIdDeLiaison(contrat, placement) {
   const suffixe = contrat?.propertyBindingDefinitions?.[placement?.definition]?.nodeSuffix;
