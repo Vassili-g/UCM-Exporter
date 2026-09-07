@@ -100,7 +100,16 @@ jobs:
       # publish` réclame un jeton sans même tenter l'OIDC. La version est
       # affichée parce qu'un échec d'OIDC est muet : si elle repassait sous le
       # seuil, rien d'autre ne le dirait.
-      - run: npm install -g npm@latest && npm -v
+      #
+      # La version est EXACTE, et c'était le dernier endroit du projet à ne pas
+      # l'être. `npm@latest` faisait dépendre la publication de ce que le
+      # registre servait ce jour-là : le jour où une version de npm casse la
+      # publication, elle la casse sans qu'une ligne d'ici ait bougé, et le
+      # journal ne distingue plus une régression du produit d'une régression de
+      # l'outil. La 12.0.2 est celle sur laquelle les publications réussies ont
+      # été mesurées. La monter est un geste volontaire, comme tout épinglage
+      # de ce dépôt.
+      - run: npm install -g npm@12.0.2 && npm -v
 
       # `npm ci` construit le kit au passage — son script `prepare` s'en charge
       # pour chaque workspace. On ne publie donc jamais un `dist/` traînant.
@@ -322,3 +331,21 @@ jobs:
             echo "rattrape pas — un numéro part pour toujours ; elle se corrige au numéro suivant."
             exit 1
           fi
+
+      # L'AUTRE MOITIÉ de l'épreuve ci-dessus, et elle regarde dans l'autre
+      # sens. L'épreuve du registre attrape un paquet publié qui ne s'installe
+      # pas ; celle-ci attrape une documentation qui promet une version que
+      # personne ne sert.
+      #
+      # Son absence a coûté une commande morte en ligne : les README ont
+      # annoncé l'adaptateur en 0.1.3 pendant que le registre servait la 0.1.0,
+      # parce que sa publication échouait chez npm. Aucun contrôle ne pouvait le
+      # voir, et le garde-fou qui existait EXIGEAIT même cette écriture :
+      # `pinDocumente` compare la documentation au numéro que ce dépôt porte,
+      # donc le dépôt à lui-même. Les deux contrôles sont complémentaires.
+      #
+      # Elle est POSTÉRIEURE à la publication, et c'est ce qui la rend juste :
+      # avant, la version qui part n'est pas encore servie et tout document qui
+      # l'épingle serait déclaré faux. Après, la question a un sens.
+      - name: Les pins de la documentation sont servis
+        run: node scripts/pins-servis.mjs
