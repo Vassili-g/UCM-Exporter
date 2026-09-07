@@ -102,17 +102,44 @@ function fichiersDeLaVersion(paquet) {
   const chemin = `packages/${paquet}/package.json`;
   const manifeste = JSON.parse(readFileSync(join(racine, chemin), "utf8"));
   const commit = commitDuNumero(chemin, manifeste.version);
+  const commun = { nom: manifeste.name, version: manifeste.version };
   // Numéro monté dans la copie de travail : la comparaison n'a pas de borne
   // fiable, et tout ce que le dépôt porte de non commité compte déjà.
-  if (commit === null) return { version: manifeste.version, depuis: "HEAD", fichiers: [] };
+  if (commit === null) return { ...commun, depuis: "HEAD", fichiers: [] };
 
   const parent = git("rev-list", "--parents", "-n", "1", commit).trim().split(" ")[1];
   const depuis = parent ?? git("hash-object", "-t", "tree", "/dev/null").trim();
   return {
-    version: manifeste.version,
+    ...commun,
     depuis,
     fichiers: git("diff", "--name-only", depuis, "HEAD").split("\n").filter(Boolean),
   };
+}
+
+/**
+ * La version que le REGISTRE sert, ou `null` s'il ne répond pas.
+ *
+ * Sans elle, ce script déduisait de Git seul un état qui vit sur npm : il
+ * comparait « depuis le commit qui a posé le numéro courant », ce qui ne
+ * désigne la publication précédente que si le numéro courant n'est pas encore
+ * publié. Sur un dépôt à jour, il réclamait donc la recette pour des paquets
+ * que le registre servait déjà, et un garde-fou qui crie à tort est celui
+ * qu'on apprend le plus vite à ignorer.
+ *
+ * L'absence de réponse ne vaut jamais autorisation : hors ligne, on retombe
+ * sur la lecture de Git, qui est prudente puisqu'elle réclame la recette
+ * plutôt que de l'omettre.
+ */
+function versionServie(nom) {
+  try {
+    return execFileSync("npm", ["view", nom, "version"], {
+      encoding: "utf8",
+      shell: true,
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim() || null;
+  } catch {
+    return null;
+  }
 }
 
 /** `node scripts/recette-externe.mjs <dossier de paquet> [--faite]` */
@@ -124,7 +151,17 @@ function principal(arguments_) {
     return 2;
   }
 
-  const { version, depuis, fichiers } = fichiersDeLaVersion(paquet);
+  const { nom, version, depuis, fichiers } = fichiersDeLaVersion(paquet);
+
+  // Rien à publier, donc rien à recetter. La recette précède une publication ;
+  // l'exiger pour un numéro que le registre sert déjà ferait porter à ce
+  // garde-fou une question sans objet, à laquelle `npm publish` répondrait de
+  // toute façon par un 409.
+  if (versionServie(nom) === version) {
+    console.log(`${nom}@${version} est déjà servi par le registre : rien à publier, donc rien à recetter.`);
+    return 0;
+  }
+
   const touches = declencheursTouches(fichiers);
 
   if (touches.length === 0) {

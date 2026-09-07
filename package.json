@@ -11,6 +11,7 @@
     "test": "npm run build --workspace @ucm-kit/core && npm run test --workspaces --if-present && node scripts/run-tests.cjs",
     "build": "npm run build --workspace @ucm-kit/core && npm run build --workspace ucm-exporter-plugin",
     "schema": "npm run schema --workspace @ucm-kit/core",
+    "pins": "node scripts/pins-servis.mjs",
     "start": "npm run build"
   },
   "devDependencies": {

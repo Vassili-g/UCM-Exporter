@@ -140,11 +140,47 @@ lui. Il ne fait entrer aucune donnée de design dans le code. Il sert uniquement
 ### À quoi ça sert
 
 C'est le cœur de la proposition : **une fonction qui reçoit un contrat, une
-combinaison et le HTML produit, et rend la liste des écarts.** Elle ne dépend
-d'aucun framework, ne connaît aucun composant, et n'affiche rien elle-même.
+combinaison et une observation normalisée du composant affiché, et rend la
+liste des écarts.** Elle ne dépend d'aucun framework, ne connaît aucun
+composant, et n'affiche rien elle-même.
 
 C'est aussi la partie réutilisable dans n'importe quel repository, quelle que
 soit la technologie utilisée pour afficher les composants.
+
+### Pourquoi une observation, et pas le HTML produit
+
+Une première rédaction faisait recevoir au comparateur le HTML produit. Quatre
+des dix familles ci-dessous ne s'y lisent pas : les dimensions, la disposition,
+l'occupation de la place et l'absence de valeurs écrites en dur. Du balisage ne
+porte ni styles calculés, ni géométrie, ni le résultat de la cascade, des
+raccourcis et des `calc()`. Le comparateur aurait promis dix familles et n'en
+aurait prouvé que six.
+
+L'entrée est donc une **observation normalisée**, produite par la couche
+d'affichage du bloc C depuis un navigateur réel : la racine, les chemins de
+slots, les styles calculés, la géométrie, l'état d'interaction en cours, et les
+limites de l'observation elle-même. Le comparateur reste indépendant de React ;
+il ne peut pas rester indépendant d'un protocole d'observation.
+
+Ce découpage garde la promesse d'origine : ce qui change avec la technologie
+reste dans la couche qui observe, et les dix familles de comparaison n'en
+dépendent pas.
+
+### Deux limites que ce format doit porter
+
+**Un token ne se lit pas dans une valeur calculée.** `getComputedStyle` rend la
+valeur résolue, jamais la variable qui l'a produite : deux tokens de même valeur
+deviennent indiscernables, et une valeur écrite en dur qui coïncide avec un
+token passe pour conforme. Prouver l'identité d'un token demande autre chose que
+le rendu de production, par exemple des valeurs sentinelles propres à chaque
+variable CSS, ou une lecture statique en complément. Tant que ce point n'est pas
+tranché, la famille « valeurs écrites en dur » ne conclut pas.
+
+**L'axe des états ne se transmet pas, il se déclenche.** Une valeur d'axe
+ordinaire se passe comme option au composant. Le survol, le focus et l'appui
+n'existent pas dans la liste des options : ils demandent une action sur
+l'élément. L'observation doit donc dire quel état elle a obtenu, et le
+comparateur ne juger que celui-là.
 
 ### Quand ça intervient
 
@@ -180,14 +216,19 @@ deviendrait une source de vérité concurrente du contrat.
 
 ### Étapes
 
-1. Définir le format d'un écart : composant, combinaison, slot, attendu, obtenu.
-2. Écrire les dix familles de comparaison ci-dessus.
-3. Les tester sur des fragments de HTML écrits à la main, sans afficher aucun
+1. Définir le format de l'observation normalisée, avant tout le reste : c'est
+   lui qui décide ce que les dix familles peuvent prouver, et une famille dont
+   l'observation ne porte pas la donnée ne s'écrit pas.
+2. Définir le format d'un écart : composant, combinaison, slot, attendu, obtenu.
+3. Écrire les dix familles de comparaison ci-dessus.
+4. Les tester sur des observations écrites à la main, sans afficher aucun
    composant réel. Cette partie doit pouvoir être validée seule.
 
 ### Effort indicatif
 
-3 à 4 jours.
+3 à 4 jours, le format de l'observation non compris. Il conditionne les blocs B
+et C sans appartenir tout à fait à l'un ni à l'autre, et l'estimation de ce
+document ne l'a jamais chiffré.
 
 ---
 
@@ -219,12 +260,24 @@ sur chaque pull request.
 
 ### Découpage important
 
-Ce bloc contient la seule partie liée à la technologie utilisée : environ
-trente lignes qui savent importer un composant React et produire son HTML.
-Tout le reste, la logique de comparaison du bloc B, n'en dépend pas.
+Ce bloc contient la seule partie liée à la technologie utilisée : celle qui sait
+importer un composant, l'afficher, et rendre l'observation normalisée que le
+bloc B attend. Tout le reste, la logique de comparaison, n'en dépend pas.
 
-Changer de technologie plus tard revient à réécrire ces trente lignes, jamais
-les vérifications.
+Changer de technologie plus tard revient à réécrire cette couche, jamais les
+vérifications.
+
+**Elle est plus grosse qu'une première estimation ne le disait.** Importer un
+composant React tient en quelques lignes ; en monter un arbitraire n'y tient
+pas. Providers, props applicatives obligatoires, portals et racines multiples
+sont le cas courant d'un vrai repository, et ce sont eux qui décident si un
+composant est observable. C'est aussi ce qui rend la question « que fait-on d'un
+composant qui ne peut pas être affiché seul ? » plus centrale qu'un détail de
+bord.
+
+L'observation demande en outre un navigateur réel. Un DOM simulé sans moteur de
+disposition ni cascade CSS ne rendrait ni géométrie ni styles calculés fiables,
+c'est-à-dire précisément ce que le bloc B est venu chercher.
 
 ### Ce que ça ne fait pas
 
@@ -457,13 +510,17 @@ contrôles restent des recommandations.
 
 ## 9. Questions à trancher, récapitulatif
 
-1. Adopte-t-on l'attribut `data-ucm-slot` dans le code des composants ?
-2. Le laisse-t-on en production ?
-3. Quelles clauses le vérificateur générique doit-il prouver pour valoir la
+1. Quel est le format de l'observation normalisée, et quelles familles de
+   comparaison peut-il porter ? C'est la question qui précède toutes les autres :
+   elle décide de ce que le bloc B peut prouver.
+2. Comment prouve-t-on l'identité d'un token, qu'une valeur calculée ne dit pas ?
+3. Adopte-t-on l'attribut `data-ucm-slot` dans le code des composants ?
+4. Le laisse-t-on en production ?
+5. Quelles clauses le vérificateur générique doit-il prouver pour valoir la
    relecture humaine d'une reconstruction à froid ?
-4. Le vérificateur bloque-t-il dès sa mise en service ?
-5. Couvre-t-on les états d'interaction, et à quel moment ?
-6. Que fait-on d'un composant impossible à afficher seul ?
-7. Installe-t-on les règles d'éditeur ?
-8. Qui porte la décision sur le plan GitHub, et sous quel délai ?
-9. À quel moment extrait-on les paquets réutilisables ?
+6. Le vérificateur bloque-t-il dès sa mise en service ?
+7. Couvre-t-on les états d'interaction, et à quel moment ?
+8. Que fait-on d'un composant impossible à afficher seul ?
+9. Installe-t-on les règles d'éditeur ?
+10. Qui porte la décision sur le plan GitHub, et sous quel délai ?
+11. À quel moment extrait-on les paquets réutilisables ?
