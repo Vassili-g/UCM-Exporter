@@ -9,12 +9,11 @@ déclencheurs de `scripts/recette-externe.mjs` a bougé : ces chemins passent pa
 Figma, par GitHub et par une vraie pull request, qu'aucun test de ce dépôt ne
 parcourt.
 
-`publish.yml` nomme ces déclencheurs au journal et publie quand même. Il ne pose
-plus la question : elle se répondait sans être vérifiable, et elle arrêtait un
-agent à qui la publication est confiée. Ce qui garde le numéro est ce qui prouve
-quelque chose, `npm test` puis l'épreuve du registre et le contrôle des pins
-servis. Décider de rejouer la recette est donc un geste que vous posez, pas une
-case que le workflow réclame.
+`publish.yml` nomme ces déclencheurs au journal, puis publie. Il ne demande
+aucune confirmation : une réponse déclarative ne se vérifie pas, et la
+publication est confiée à un agent. Le numéro est gardé par `npm test`, par
+l'épreuve du registre et par le contrôle des pins servis. Rejouer la recette est
+donc une décision du mainteneur.
 
 Les deux dépôts concernés :
 

@@ -1,10 +1,9 @@
 /**
- * La notice de publication : ce que la recette externe seule couvre, et ce
- * qu'elle ne couvre pas.
+ * Le relevé de publication : ce que la recette externe seule couvre.
  *
- * Elle informe et ne refuse plus. Ce qui la rend utile est donc son silence sur
- * ce qui ne la concerne pas : une notice qui se lève sur une passe de style est
- * une notice qu'on apprend à ignorer, et le relevé cesserait de servir.
+ * Le relevé nomme des chemins sans refuser la publication, donc sa valeur tient
+ * à sa précision. Ces tests tiennent ses deux frontières : les fichiers qui
+ * déclenchent, et les lignes qui comptent dans leur diff.
  */
 import assert from "node:assert/strict";
 import test from "node:test";
@@ -84,8 +83,6 @@ test("une ligne de code compte, y compris quand elle porte un commentaire de fin
 test("dans le schéma, une description est de la prose et le reste est du code", () => {
   const schema = "packages/kit/schema/ucm-contract.schema.json";
 
-  // Les `description` du schéma sont le JSDoc de `types.ts` régénéré : les
-  // compter ferait revenir par le schéma la prose écartée de sa source.
   assert.equal(ligneEstDuCode('"description": "Le rôle de rendu.",', schema), false);
   assert.equal(ligneEstDuCode('"contractVersion": { "const": "12.0" },', schema), true);
   assert.equal(ligneEstDuCode('"required": ["name", "meta"],', schema), true);

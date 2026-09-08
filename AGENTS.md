@@ -645,12 +645,11 @@ un contrôle qui manque là-bas se referme ici, jamais par un script rendu au
 consommateur. La marche à suivre, ses critères de fin et le geste de publication
 qui la suit vivent dans [docs/RECETTE.md](./docs/RECETTE.md).
 
-`scripts/recette-externe.mjs` nomme les quatre déclencheurs qui la valent, au
-journal de `publish.yml`, et ne refuse rien : la publication est confiée à un
-agent, et une question posée à un opérateur l’arrêtait. Le relevé ne compte que
-les lignes de code, les `description` du schéma comprises, sans quoi une passe
-de style lèverait les quatre déclencheurs. Sa borne est la version que le
-registre sert, jamais le numéro que le dépôt porte.
+`scripts/recette-externe.mjs` nomme au journal de `publish.yml` les quatre
+déclencheurs touchés, et la publication continue. Deux bornes tiennent le
+relevé : seules les lignes de code comptent, les `description` du schéma étant
+de la prose régénérée, et la comparaison part de la version que le registre
+sert.
 
 ## Limites d’environnement
 
