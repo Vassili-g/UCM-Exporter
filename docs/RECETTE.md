@@ -90,7 +90,7 @@ de commande et l'écran sans sélection.
 Dans un second terminal, à la racine d'`UCM-Playground` :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.15 init
+npx --yes @ucm-kit/cli@0.1.16 init
 ```
 
 Le Playground range ses contrats sous `components/` et ses tokens dans
@@ -98,22 +98,27 @@ Le Playground range ses contrats sous `components/` et ses tokens dans
 autrement le dit ici, en une fois :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.15 init --components src/components --tokens src/tokens/tokens.json
+npx --yes @ucm-kit/cli@0.1.16 init --components src/components --tokens src/tokens
 ```
 
-| Option | Ce qu'elle écrit |
+| Option | Le dossier qu'elle reçoit |
 |---|---|
-| `--components <dossier>` | Le dossier sous lequel les contrats sont rangés |
-| `--tokens <fichier>` | Le chemin du fichier de tokens, et non son dossier |
+| `--components <dossier>` | Celui sous lequel les contrats sont rangés |
+| `--tokens <dossier>` | Celui qui reçoit `tokens.json` |
 
-Les deux valeurs partent dans `ucm.config.json`, qui décide seul de l'endroit :
-le plugin le lit avant de publier, `ucm check` le lit avant de chercher les
+Les deux attendent un dossier relatif au repository, sans `..`, et toute autre
+valeur sort en 2. `--tokens src/tokens` écrit donc `src/tokens/tokens.json` dans
+`ucm.config.json` : le champ y reste un chemin de fichier, que les lecteurs
+traitent comme tel. Pour donner un autre nom à ce fichier, un développeur
+modifie la configuration à la main.
+
+Ces valeurs partent dans `ucm.config.json`, qui décide seul de l'endroit : le
+plugin le lit avant de publier, `ucm check` le lit avant de chercher les
 contrats. Aucun chemin ne se saisit ailleurs.
 
-Elles attendent un chemin relatif au repository, sans `..`, et toute autre
-valeur sort en 2. Elles n'agissent qu'à la première installation : `ucm init`
-n'écrase jamais un `ucm.config.json` existant, et le dit quand on lui passe des
-chemins malgré tout. Pour en changer ensuite, un développeur modifie le fichier.
+Les options n'agissent qu'à la première installation : `ucm init` n'écrase
+jamais un `ucm.config.json` existant, et le dit quand on lui passe des chemins
+malgré tout.
 
 Attendu, à peu de choses près :
 
@@ -124,7 +129,7 @@ Attendu, à peu de choses près :
 ✓ .github/workflows/ucm.yml
 · .gitignore existait déjà, laissé tel quel
 
-Installé avec @ucm-kit/cli 0.1.15.
+Installé avec @ucm-kit/cli 0.1.16.
 Placez vos contrats sous `components/`, vos tokens dans `tokens.json`,
 puis lancez `ucm check`.
 
@@ -150,7 +155,7 @@ ci-report.md
 Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.15 check
+npx --yes @ucm-kit/cli@0.1.16 check
 ```
 
 Attendu :
@@ -286,7 +291,7 @@ l'implémentation n'a pas été lue, jamais qu'elle est conforme.
 Pour lui donner à lire :
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.8
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.9
 ```
 
 Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
@@ -397,8 +402,8 @@ Le workflow le fait déjà après chaque publication, et le refaire à la main c
 une minute. Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.15 init
-npx --yes @ucm-kit/cli@0.1.15 check
+npx --yes @ucm-kit/cli@0.1.16 init
+npx --yes @ucm-kit/cli@0.1.16 check
 ```
 
 Attendu : `init` écrit ses cinq fichiers, et `check` sort en 0 en disant que ce

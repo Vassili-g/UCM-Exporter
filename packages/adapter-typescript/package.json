@@ -1,6 +1,6 @@
 {
   "name": "@ucm-kit/adapter-typescript",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Adaptateur TypeScript UCM : parité statique des composants et génération des types dérivés des contrats.",
   "type": "module",
   "license": "MIT",

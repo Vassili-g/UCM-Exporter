@@ -486,7 +486,7 @@ test("un repository sans paquet TypeScript garde le noyau portable", async () =>
 test("init écrit les chemins demandés dans la configuration", () => {
   const racine = repoVierge();
   try {
-    executer(["init", "--components", "src/components", "--tokens", "src/tokens/tokens.json"], {
+    executer(["init", "--components", "src/components", "--tokens", "src/tokens"], {
       racine,
       ecrire: () => {},
     });
@@ -499,6 +499,20 @@ test("init écrit les chemins demandés dans la configuration", () => {
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
+});
+
+/**
+ * Les deux options attendent un dossier, parce que c'est ce qu'un repository
+ * range. Le champ `tokens` reste un chemin de fichier : le kit le lit ainsi, et
+ * changer sa nature ferait pointer toute configuration déjà écrite vers
+ * `tokens.json/tokens.json`, sans un mot.
+ */
+test("`--tokens` reçoit un dossier et écrit un chemin de fichier", () => {
+  assert.deepEqual(lireArgumentsInit(["--tokens", "design"]).chemins, {
+    tokens: "design/tokens.json",
+  });
+  // À la racine, le dossier est vide et le défaut reste le fichier nu.
+  assert.equal(lireArgumentsInit([]).chemins.tokens, undefined);
 });
 
 test("sans option, la configuration écrite reste celle des défauts", () => {
@@ -562,8 +576,8 @@ test("init refuse un argument inconnu, une valeur manquante et un chemin qui rem
   assert.match(lireArgumentsInit(["--composants", "src"]).erreur, /Argument inconnu/);
   assert.match(lireArgumentsInit(["--components"]).erreur, /attend une valeur/);
   assert.match(lireArgumentsInit(["--components", "--tokens"]).erreur, /attend une valeur/);
-  assert.match(lireArgumentsInit(["--components", "../ailleurs"]).erreur, /chemin relatif/);
-  assert.match(lireArgumentsInit(["--tokens", "  "]).erreur, /chemin relatif/);
+  assert.match(lireArgumentsInit(["--components", "../ailleurs"]).erreur, /dossier relatif/);
+  assert.match(lireArgumentsInit(["--tokens", "  "]).erreur, /dossier relatif/);
 
   const racine = repoVierge();
   const alertes = [];

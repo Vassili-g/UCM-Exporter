@@ -40,9 +40,9 @@ const AIDE = `ucm — la ligne de commande UCM
   ucm icons           liste les icônes que les contrats réclament
   ucm --help          affiche cette aide
 
-  ucm init [--components <dossier>] [--tokens <fichier>]
+  ucm init [--components <dossier>] [--tokens <dossier>]
       --components  dossier sous lequel les contrats sont rangés
-      --tokens      chemin du fichier de tokens DTCG
+      --tokens      dossier qui reçoit tokens.json
       Les deux n'agissent qu'à la première installation : ucm init n'écrase
       jamais un ucm.config.json existant.
 
@@ -71,7 +71,7 @@ export function executer(arguments_, {
     const { chemins, erreur } = lireArgumentsInit(arguments_.slice(1));
     if (erreur) {
       const alerter = sorties.alerter ?? console.error;
-      alerter(`${erreur}\n\nucm init [--components <dossier>] [--tokens <fichier>]`);
+      alerter(`${erreur}\n\nucm init [--components <dossier>] [--tokens <dossier>]`);
       return 2;
     }
     ecrire(rendreInit(init(racine, { chemins })));

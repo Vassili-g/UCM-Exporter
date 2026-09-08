@@ -29,6 +29,16 @@ import { CONFIGURATION_PAR_DEFAUT, NOM_CONFIGURATION } from "@ucm-kit/core/forma
 const OPTIONS_DE_CHEMIN = { "--components": "components", "--tokens": "tokens" };
 
 /**
+ * Le nom du fichier de tokens, lu dans le défaut du kit plutôt que réécrit ici.
+ *
+ * Les deux options attendent un dossier, parce que c'est ce qu'un repository
+ * range. Le champ `tokens` de la configuration, lui, reste un chemin de
+ * fichier : le kit le lit ainsi, et changer sa nature ferait pointer toute
+ * configuration déjà écrite vers `tokens.json/tokens.json`, sans un mot.
+ */
+const NOM_FICHIER_TOKENS = CONFIGURATION_PAR_DEFAUT.tokens.split("/").pop();
+
+/**
  * Un chemin acceptable dans la configuration : relatif, en `/`, sans segment
  * qui remonte. La garde est ici et pas dans la grammaire du kit : celle-ci
  * décrit ce qu'un `ucm.config.json` déjà écrit a le droit de contenir, et la
@@ -45,6 +55,9 @@ function cheminAcceptable(valeur) {
 
 /**
  * Lit les arguments d'`ucm init`.
+ *
+ * Les deux options attendent un dossier. `--tokens` y ajoute le nom du fichier
+ * avant de l'écrire dans la configuration, qui garde un chemin de fichier.
  *
  * Même forme que `lireArguments` de `check.mjs`, y compris le refus d'une
  * valeur qui commence par `--` : sans lui, `--components --tokens x` prendrait
@@ -66,13 +79,13 @@ export function lireArgumentsInit(arguments_) {
       return { erreur: `${argument} attend une valeur.` };
     }
 
-    const chemin = cheminAcceptable(valeur);
-    if (!chemin) {
+    const dossier = cheminAcceptable(valeur);
+    if (!dossier) {
       return {
-        erreur: `${argument} attend un chemin relatif au repository, sans « .. » : ${valeur} n'en est pas un.`,
+        erreur: `${argument} attend un dossier relatif au repository, sans « .. » : ${valeur} n'en est pas un.`,
       };
     }
-    chemins[cle] = chemin;
+    chemins[cle] = cle === "tokens" ? `${dossier}/${NOM_FICHIER_TOKENS}` : dossier;
     i += 1;
   }
 
