@@ -353,11 +353,21 @@ const variables   = await figma.variables.getLocalVariablesAsync();
 ## Partie 3 — Configuration et dépôt GitHub
 
 La configuration est optionnelle et locale à la machine via
-`figma.clientStorage`. Elle contient l'URL du repository, la branche de base,
-les chemins des composants et des tokens, ainsi qu'un PAT fine-grained. Le PAT
-n'est jamais écrit dans le document Figma, renvoyé à l'UI après sauvegarde, ni
-logué. Il doit donner au repository cible les permissions **Contents:
-read/write** et **Pull requests: read/write**.
+`figma.clientStorage`. Elle contient l'URL du repository, la branche de base et
+un PAT fine-grained. Le PAT n'est jamais écrit dans le document Figma, renvoyé à
+l'UI après sauvegarde, ni logué. Il doit donner au repository cible les
+permissions **Contents: read/write** et **Pull requests: read/write**.
+
+Elle ne contient aucun chemin. **L'endroit où un export atterrit appartient au
+repository visé**, qui le déclare dans son `ucm.config.json` ou laisse
+s'appliquer les défauts du kit ; la grammaire de ce fichier et ses valeurs par
+défaut vivent dans `packages/kit/src/format/configuration.ts`,
+`CONFIGURATION_PAR_DEFAUT`. Un chemin rangé sur le poste du designer ne pourrait
+décider que face à un repository qui ne se décrit pas, c'est-à-dire au moment
+précis où `ucm check` applique ces mêmes défauts : il ne pourrait donc que
+déposer l'export hors de vue du contrôle. Le plugin lit ce fichier au test de
+connexion, et non à la publication, pour qu'un fichier fautif se sache avant le
+travail plutôt qu'après.
 
 L'en-tête expose en permanence l'état `connecté` / `non connecté` et un accès à
 la page de configuration via une icône `gear` Font Awesome Free embarquée. Le
@@ -367,9 +377,11 @@ sauvegarde. Le manifest n'autorise que `https://api.github.com` pour GitHub.
 Chaque commande conserve son périmètre :
 
 - **Exporter le composant** → PR contenant uniquement
-  `{componentsPath}/{IdentifiantCode}/{IdentifiantCode}.contract.json` ;
-- **Exporter les tokens** → PR contenant uniquement
-  `{tokensPath}/tokens.json`.
+  `{components}/{IdentifiantCode}/{IdentifiantCode}.contract.json` ;
+- **Exporter les tokens** → PR contenant uniquement `{tokens}`, qui est un
+  chemin de fichier et jamais un dossier.
+
+`{components}` et `{tokens}` sont les deux champs de `ucm.config.json`.
 
 Pour un artefact modifié, le plugin lit la ref de base, crée la branche
 `ucm-exporter/export-{component|tokens}-{YYYYMMDD-HHmmss}` (le type d'artefact
