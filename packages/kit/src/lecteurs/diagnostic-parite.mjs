@@ -40,13 +40,9 @@ export function aUnEcartDeParite(bilan) {
 /**
  * Avertit qu'une implémentation s'écarte du contrat qu'elle devrait suivre.
  *
- * **Avertissement, jamais blocage.** Cet écart n'accuse ni le contrat ni
- * l'export : il dit que le code est en retard sur ce que le contrat décrit.
- * Le seul geste correctif appartient à un développeur, et réexporter depuis
- * Figma n'y changerait rien. Refuser la pull request reviendrait donc à
- * arrêter la personne qui ne peut pas la débloquer, pour l'état d'un fichier
- * qu'elle ne touche pas, et une implémentation régénérée à froid est attendue
- * en écart tant que la mesure n'a pas été refaite.
+ * **Avertissement, jamais blocage**, à la règle écrite plus haut : réexporter
+ * depuis Figma n'y changerait rien, et une implémentation régénérée à froid est
+ * attendue en écart tant que la mesure n'a pas été refaite.
  *
  * Le périmètre suit la même règle que les autres états informatifs : sur une
  * pull request, seuls les contrats qu'elle modifie parlent (cf.

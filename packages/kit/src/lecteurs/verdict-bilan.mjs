@@ -46,10 +46,10 @@ function phraseDuSensDeLEcart(bilans, pluriel) {
  * une pull request est refusée par ailleurs. Un rapport peut ainsi refuser une
  * fusion sans jamais désigner le mauvais coupable.
  *
- * `fautifs` accepte les bilans eux-mêmes, et plus seulement leur nombre : c'est
- * ce qui permet de distinguer un contrat cassé d'un contrat que seule sa
- * version rend illisible ici. Un nombre reste accepté : les tests qui ne
- * s'intéressent qu'au compte n'ont pas à monter un bilan complet.
+ * `fautifs` accepte les bilans eux-mêmes, ce qui distingue un contrat cassé
+ * d'un contrat que seule sa version rend illisible ici. Un nombre reste
+ * accepté : un test qui ne s'intéresse qu'au compte n'a pas à monter un bilan
+ * complet.
  */
 export function enteteDuVerdict(fautifs, avecAvertissements = false) {
   const bilans = Array.isArray(fautifs) ? fautifs : [];
@@ -61,9 +61,9 @@ export function enteteDuVerdict(fautifs, avecAvertissements = false) {
     return [
       `## ❌ ${versionsSeules} contrat${pluriel} dans une version que ce repository ne lit pas`,
       "",
-      // Le titre est vrai dans les deux sens de l'écart : la version n'est pas
-      // lue, c'est tout ce qu'il dit. La phrase qui suit, elle, désigne un
-      // responsable : elle se calcule.
+      // Le titre se borne à dire que la version n'est pas lue, ce qui est vrai
+      // dans les deux sens de l'écart. La phrase qui suit désigne un
+      // responsable, et elle se calcule.
       phraseDuSensDeLEcart(bilans.filter(seuleLaVersionBloque), pluriel === "s"),
       "",
     ];

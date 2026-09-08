@@ -9,12 +9,12 @@
  * se lisait comme un feu vert sur le design, parce qu'une propriété absente du
  * contrat n'est citée par personne et n'a donc aucun écart à produire.
  *
- * Depuis la v8, `meta.diagnostics` distingue une perte portable
+ * `meta.diagnostics` distingue une perte portable
  * (`UCM_PORTABLE_PROJECTION_WARNING`) d'une explication
- * (`UCM_EXPORT_NOTICE`). Seule la première demande une correction Figma. La
- * 11.0 a retiré `meta.warnings`, qui n'en était que le miroir en texte brut :
- * le filtre textuel du lien Figma reste le repli des contrats historiques, et
- * un contrat 11.0 sans rien à signaler n'écrit aucun des deux champs.
+ * (`UCM_EXPORT_NOTICE`), et seule la première demande une correction Figma. Le
+ * filtre textuel du lien Figma reste le repli des contrats historiques, qui
+ * portaient `meta.warnings` ; un contrat courant sans rien à signaler n'écrit
+ * aucun des deux champs.
  */
 const AVERTISSEMENTS_STRUCTURELS = [/^Lien vers Figma absent du contrat/];
 

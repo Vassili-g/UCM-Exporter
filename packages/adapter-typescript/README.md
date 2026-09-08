@@ -6,7 +6,7 @@ depend on the TypeScript compiler, a 23 MB dependency no other consumer should
 pay for.
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.4 @ucm-kit/cli@0.1.11
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.5 @ucm-kit/cli@0.1.12
 npx ucm-typescript
 npx --no-install ucm check
 ```

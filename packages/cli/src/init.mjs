@@ -1,15 +1,13 @@
 /**
  * `ucm init` : ce qu'un repository doit avoir pour recevoir des contrats.
  *
- * Le critère de réussite n° 1 dit « moins de 15 minutes, zéro ligne à la main ».
- * Cette commande est ce qui rend ce zéro possible, et sa seule difficulté est
- * de savoir ce qu'elle a le droit d'écrire.
+ * Elle existe pour qu'un repository n'ait aucune ligne à écrire à la main, et
+ * sa seule difficulté est de savoir ce qu'elle a le droit d'écrire.
  *
  * **Elle n'écrase jamais un fichier existant.** Un `init` lancé deux fois, ou
- * lancé dans un repo déjà installé, doit être sans effet et le dire : pas
- * remplacer un workflow que quelqu'un a adapté. Écraser serait la seule faute
- * irréversible que cette commande puisse commettre, et elle la commettrait au
- * moment où l'utilisateur a le moins de raisons de s'en méfier.
+ * lancé dans un repo déjà installé, est sans effet et le dit : écraser un
+ * workflow que quelqu'un a adapté serait la seule faute irréversible que cette
+ * commande puisse commettre.
  *
  * **Elle n'écrit aucun numéro de version**, nulle part : ni dans la
  * configuration (voir `configuration.mjs` du kit), ni dans le workflow, qui
@@ -29,22 +27,19 @@ function versionDuPaquet() {
 /**
  * Le pin est exact, sans `^` ni `~`.
  *
- * Une plage laisserait npm choisir une version que personne n'a essayée, et le
- * jour où elle changerait de verdict, la CI d'un designer basculerait sans
- * qu'aucun fichier du repo n'ait bougé. Un chiffre qu'on lit dans le dépôt est
- * ce qui rend un rapport explicable.
+ * Une plage laisserait npm choisir une version que personne n'a essayée, et la
+ * CI d'un designer basculerait sans qu'aucun fichier du repo n'ait bougé. Un
+ * chiffre qu'on lit dans le dépôt est ce qui rend un rapport explicable.
  *
  * `rappel` porte la ligne à ajouter à la main quand le fichier existe déjà.
- * Trois des cinq fichiers se partagent avec ce que le repository y met déjà :
- * les laisser tels quels sans un mot, c'est laisser survenir en silence la
- * panne que le fichier écrit existe pour empêcher. Les deux autres n'ont rien à
- * rappeler, puisqu'un repository qui les porte déjà a déjà répondu à la
- * question qu'ils posent.
+ * Trois des cinq fichiers se partagent avec ce que le repository y met déjà, et
+ * les laisser tels quels sans un mot laisserait survenir en silence la panne
+ * que le fichier écrit existe pour empêcher. Les deux autres n'ont rien à
+ * rappeler.
  *
  * `marqueurs` dit à quoi se reconnaît un fichier qui porte déjà la règle. Tous
- * présents, le rappel se tait : sans cette lecture, un `init` relancé
- * réclamerait ce qu'il a lui-même écrit, et trois lignes réclamées pour rien
- * sont trois lignes qu'on apprend à sauter.
+ * présents, le rappel se tait : trois lignes réclamées pour rien sont trois
+ * lignes qu'on apprend à sauter.
  */
 function fichiers(version) {
   return [
@@ -128,11 +123,10 @@ function fichiers(version) {
  * puisque c'est l'habitude qui protège, pas le cas particulier.
  *
  * **Un filet, et un seul, parce que l'autre n'est pas portable.** Le
- * repository de démonstration en porte deux : « la construction a échoué » et
- * « le rapport manque ». Le premier décrit sa chaîne de construction et n'a
- * aucun sens ici : un repo Swift ne compile pas du TypeScript. Le second est
- * universel : une pull request refusée sans un mot laisse le designer sans
- * recours, et c'est le seul cas où personne ne peut plus rien lui dire.
+ * repository de démonstration en porte deux, « la construction a échoué » et
+ * « le rapport manque ». Le premier décrit sa chaîne de construction, qu'un
+ * repo Swift n'a pas. Le second est universel : une pull request refusée sans
+ * un mot laisse le designer sans recours.
  */
 function workflow(version) {
   const commande = `npx --yes @ucm-kit/cli@${version} check --report ci-report.md`;
