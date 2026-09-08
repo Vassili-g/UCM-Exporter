@@ -12,9 +12,8 @@
  * publication échouait. Le garde-fou des pins exigeait cette écriture, et
  * l'aurait refusée corrigée : il imposait l'état cassé.
  *
- * Le dépôt connaît déjà l'autre moitié du problème. L'« Épreuve du registre »
- * de `publish.yml` attrape un paquet publié qui ne s'installe pas, et elle
- * existe parce que son absence a coûté le 0.1.6. Celle-ci attrape une
+ * L'« Épreuve du registre » de `publish.yml` est l'autre moitié du problème :
+ * elle attrape un paquet publié qui ne s'installe pas, celle-ci une
  * documentation qui promet une version que personne ne sert. Même diagnostic
  * dans les deux cas : le seul endroit où le mensonge existe est le registre, et
  * le seul moyen de l'y voir est d'y aller.

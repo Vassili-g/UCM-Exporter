@@ -48,8 +48,7 @@ test("les vues locales s'additionnent dans une vue et gardent le maximum entre v
  * Un composant réel délègue en cascade : une vue appelle une grille, la grille
  * appelle les dépendances. Un relevé qui ne descendrait que d'un cran
  * annoncerait zéro dépendance là où le contrat en publie sept, et le rapport
- * resterait vert. Seul le corpus du
- * consommateur le verrouillait jusqu'ici.
+ * resterait vert.
  */
 test("le dépliage traverse deux crans de vues locales, et additionne la vue partagée", () => {
   const imbrique = join(racinePaquet, "tests", "fixtures", "VuesImbriqueesFixture.tsx");

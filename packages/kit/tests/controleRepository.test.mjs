@@ -191,14 +191,12 @@ test("implémentation absente : état d'avancement, pas erreur", () => {
 });
 
 /**
- * Critère de réussite n° 4 du plan : un contrat d'une version non lue est
- * refusé par un message qui dit QUI corrige.
+ * Un contrat d'une version non lue est refusé par un message qui dit qui
+ * corrige, titre compris.
  *
- * *L'écart que ce test tenait ouvert est refermé.* La section le disait
- * correctement, mais le TITRE écrivait « contrat invalide » et accusait le
- * designer pour un contrat parfaitement formé dont seule la version n'est pas
- * lue. Le titre nomme désormais le repository, à l'endroit le plus visible du
- * rapport.
+ * Le titre est l'endroit le plus visible du rapport : « contrat invalide » y
+ * accuserait le designer pour un contrat parfaitement formé dont seule la
+ * version n'est pas lue. Il nomme donc le repository.
  */
 test("version non lue : refus, et la section désigne le développeur", () => {
   const futur = contrat();
@@ -230,15 +228,13 @@ test("version non lue : refus, et la section désigne le développeur", () => {
 });
 
 /**
- * Défaut trouvé en passant un repo neuf au contrôle, et **préexistant au
- * déplacement** : la ligne de terminal d'un contrat refusé pour sa version
- * lisait « code conforme ».
+ * La ligne de terminal d'un contrat refusé pour sa version ne conclut pas sur
+ * le code.
  *
- * L'analyse s'arrête avant la parité (rien n'a été lu, rien n'a été comparé)
- * et le relevé vierge se lisait comme un relevé vide et concluant. C'est la
- * phrase exacte qu'une classe entière de code existe pour ne plus jamais
- * prononcer sans avoir lu, et elle s'écrivait sur la ligne même qui annonce le
- * refus.
+ * L'analyse s'arrête avant la parité, rien n'ayant été lu ni comparé, et un
+ * relevé vierge se lirait comme un relevé vide et concluant. « Code conforme »
+ * est la phrase qu'une classe entière de code existe pour ne jamais prononcer
+ * sans avoir lu, et elle s'écrirait sur la ligne même qui annonce le refus.
  */
 test("un contrat que l'analyse n'a pas mené à bout n'est jamais dit conforme", () => {
   const futur = contrat();

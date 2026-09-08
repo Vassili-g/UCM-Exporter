@@ -1812,11 +1812,11 @@ test("un slot d'icône qui n'existe dans aucune structure reste refusé", () => 
 /**
  * La forme canonique ne ment plus sur la version, et rien ne doit l'y ramener.
  *
- * La normalisation écrivait autrefois `"10.3"` dans `meta.contractVersion`,
- * si bien que l'objet circulait en affirmant être un contrat 10.3 : un élagage
- * conduit « par raisonnement sur les gates » aurait supprimé le chemin qui
- * valide en réalité tout le 11.0 et le 12.0. La grammaire de lecture est
- * désormais choisie en un seul endroit et ne voyage plus avec la donnée.
+ * Une normalisation qui écrirait une version dans `meta.contractVersion` ferait
+ * circuler un objet affirmant être un contrat qu'il n'est pas, et un élagage
+ * conduit « par raisonnement sur les gates » supprimerait le chemin qui valide
+ * en réalité tout le reste. La grammaire de lecture est choisie en un seul
+ * endroit et ne voyage pas avec la donnée.
  *
  * Ce test lit la source, et l'assume. La substitution n'est observable par
  * aucun appelant (c'est tout l'intérêt), donc aucun test de comportement ne
