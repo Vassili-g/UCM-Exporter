@@ -52,7 +52,7 @@ non décidées dans [PISTES-EVOLUTION.md](./docs/notes/PISTES-EVOLUTION.md).
 ## Carte du code
 
 ```text
-packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
+packages/plugin/         le moteur : extraction Figma, dépend du kit
   src/
     code.ts                    routage UI → commandes
     contract/
@@ -93,10 +93,10 @@ packages/plugin/         le MOTEUR : extraction Figma, dépend du kit
     ui/                        interface du plugin
   galerie/                   les états de l'UI, atteignables hors de Figma
   tests/
-  SPEC.md                    le MOTEUR : ce que le plugin lit, élit et signale
+  SPEC.md                    le moteur : ce que le plugin lit, élit et signale
   manifest.json              chargé dans Figma depuis packages/plugin/dist/
 
-packages/kit/            le FORMAT et ses LECTEURS : @ucm-kit/core, publié
+packages/kit/            le format et ses lecteurs : @ucm-kit/core, publié
   src/format/              sous-chemin SANS dépendance Node ni Figma
     types.ts                 schéma TypeScript du contrat
     version.ts               CONTRACT_VERSION, seul endroit où elle est écrite
@@ -151,7 +151,7 @@ packages/adapter-typescript/  l'adaptateur opt-in : parité TS/TSX et types gén
   src/index.mjs               ce que `ucm check` charge quand il le découvre
   src/index.d.mts             ce que cette porte promet à un consommateur TS
 
-docs/                    le FORMAT, pour qui consomme un contrat
+docs/                    le format, pour qui consomme un contrat
   README.md              le sommaire par profil de lecteur, et la table des autorités
   FORMAT.md              la forme de chaque champ, et ce que son absence dit
   CHANGELOG-FORMAT.md    ce que chaque version a publié, et ce qu'elle casse

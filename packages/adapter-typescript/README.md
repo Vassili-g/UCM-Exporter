@@ -6,7 +6,7 @@ depend on the TypeScript compiler, a 23 MB dependency no other consumer should
 pay for.
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.10 @ucm-kit/cli@0.1.17
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.11 @ucm-kit/cli@0.1.18
 npx ucm-typescript
 npx --no-install ucm check
 ```
@@ -20,17 +20,17 @@ reported:
 | Gap | What it means |
 |---|---|
 | Missing prop | The contract declares a prop the component's public API does not expose |
-| Incompatible type | The prop exists, with a type the contract does not allow |
+| Incompatible type | A `boolean` prop of the contract is typed as something else |
 | Value the code does not offer | The contract publishes an enum value the declared union leaves out |
-| Unused boolean | A `BOOLEAN` prop is declared but never read by the component |
+| Unused boolean | A `boolean` prop is declared but never read by the component |
 | Unused enum | An enum prop is declared but never read by the component |
 | Wrong composition cardinality | A declared dependency is rendered a different number of times than the contract says |
 
 Parity requires a `tsconfig.json` at the root. Props are read with the
 TypeScript type checker; compositions are counted by their occurrences in JSX.
 
-Every one of these **warns without blocking**. They accuse the code, not the
-contract, and fixing them is a developer's job, not a re-export.
+Every one of these **warns without blocking**. The gap is in the code, and a
+developer closes it; a re-export changes nothing.
 
 ## The convention composition counting assumes
 
@@ -39,11 +39,15 @@ every occurrence explicit in the source, and neutralise in place the one a
 given view does not show, rather than removing it. Without that, a list built
 with `.map()` reports a cardinality gap the contract did not intend.
 
-This is a convention, not a mechanism: there is no exception list, no
-annotation, and no per-component opt-out. The warning itself says what it does
-not see, and it blocks nothing.
+Nothing enforces it: there is no exception list, no annotation, and no
+per-component opt-out. The warning itself says what it does not see, and it
+blocks nothing.
 
 ## What it does not measure
+
+Type comparison covers `boolean` props only. An enum is judged on its declared
+union, below; `string`, `icon`, `instance-swap` and `slot` props are checked for
+presence and never for type.
 
 Enum values are compared by the **declared union only**. A union smaller than
 the contract is reported; a union that accepts more is not, because accepting
@@ -61,7 +65,7 @@ A prop relayed through `{...rest}` without being read is reported as unused.
 Following a spread would mean knowing the child's contract, and the warning
 blocks nothing.
 
-Nothing here executes a render. Parity is a comparison of surfaces.
+Nothing here executes a render.
 
 None of this exists for a repository without this adapter, so the **absence of
 these messages means nothing**: it is a capability of one adapter, never a
