@@ -101,6 +101,20 @@ autrement le dit ici, en une fois :
 npx --yes @ucm-kit/cli@0.1.15 init --components src/components --tokens src/tokens/tokens.json
 ```
 
+| Option | Ce qu'elle écrit |
+|---|---|
+| `--components <dossier>` | Le dossier sous lequel les contrats sont rangés |
+| `--tokens <fichier>` | Le chemin du fichier de tokens, et non son dossier |
+
+Les deux valeurs partent dans `ucm.config.json`, qui décide seul de l'endroit :
+le plugin le lit avant de publier, `ucm check` le lit avant de chercher les
+contrats. Aucun chemin ne se saisit ailleurs.
+
+Elles attendent un chemin relatif au repository, sans `..`, et toute autre
+valeur sort en 2. Elles n'agissent qu'à la première installation : `ucm init`
+n'écrase jamais un `ucm.config.json` existant, et le dit quand on lui passe des
+chemins malgré tout. Pour en changer ensuite, un développeur modifie le fichier.
+
 Attendu, à peu de choses près :
 
 ```text
