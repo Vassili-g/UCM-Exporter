@@ -6,17 +6,15 @@ est décrite dans [docs/FORMAT.md](../../docs/FORMAT.md).
 
 ## Objet
 
-Ce document est la référence du comportement actuel du plugin. Le pourquoi et la
-répartition des responsabilités vivent dans [CONCEPT.md](../../CONCEPT.md).
-
-Le plugin produit :
+Le pourquoi et la répartition des responsabilités vivent dans
+[CONCEPT.md](../../CONCEPT.md). Le plugin produit :
 
 - un contrat JSON décrivant la partie visuelle d’un composant ;
 - un export DTCG des variables locales, avec leurs alias et leurs modes.
 
-Ce que ces deux artefacts contiennent, et ce que leur silence dit, est décrit
-par [docs/FORMAT.md](../../docs/FORMAT.md), jusqu'à ce que le moteur y soit
-contraint, ce document-ci ne parle que de la lecture de Figma.
+Ce que ces deux artefacts contiennent, et ce que leur silence dit, appartient à
+[docs/FORMAT.md](../../docs/FORMAT.md) : ce document-ci ne parle que de la
+lecture de Figma.
 
 ## Contexte technique
 
@@ -388,17 +386,15 @@ téléchargement local avec message explicite.
 
 **« Identique » se juge à deux endroits : la branche de base, et les pull
 requests d'export encore ouvertes.** Un artefact déposé et pas encore fusionné
-n'est justement pas sur la branche de base ; ne regarder qu'elle rouvrait, pour
-un réexport strictement identique, une seconde pull request en tout point
-pareille à la première. Les deux genres d'artefact sont concernés : le doublon
-ne demande qu'un chemin et deux exports. Le compte rendu du plugin dit lequel des
-deux endroits a répondu, et donne le lien de la pull request quand c'est elle,
-sans quoi « aucun changement » enverrait chercher sur la branche de base un
-fichier qui n'y est pas encore, et le designer conclurait que son export s'est
-perdu. Un contenu différent pendant qu'une pull request d'export est ouverte
-n'est pas bloqué pour autant : réexporter après avoir corrigé dans Figma est le
-geste normal, et c'est Git qui signale le reste, deux branches qui modifient le
-même fichier depuis la même base entrent en conflit à la seconde fusion.
+n'est pas sur la branche de base, et ne regarder qu'elle rouvrait une seconde
+pull request en tout point pareille à la première. Le compte rendu du plugin dit
+lequel des deux endroits a répondu, et donne le lien de la pull request quand
+c'est elle : « aucun changement » sans l'endroit enverrait le designer chercher
+sur la branche de base un fichier qui n'y est pas encore. Un contenu différent
+pendant qu'une pull request d'export est ouverte n'est pas bloqué pour autant,
+réexporter après correction étant le geste normal, et c'est Git qui signale le
+reste : deux branches qui modifient le même fichier depuis la même base entrent
+en conflit à la seconde fusion.
 
 L'API Contents omet le contenu des fichiers supérieurs à 1 Mo : dans ce cas, le
 plugin lit le blob Git correspondant avant de comparer, afin de ne pas créer une
@@ -419,25 +415,22 @@ Un avertissement ne bloque jamais : seules les préconditions arrêtent un expor
 
 **Le schéma annoncé est lu dans le fichier déposé, jamais dans la constante du
 plugin.** `Schéma de contrat : 12.0` est le seul champ qui décide si le fichier
-entier est lisible par le repository (hors de la fenêtre que ses lecteurs
-supportent, le contrat est refusé en bloc) et il est enfoui au milieu d'un diff
+entier est lisible par le repository, hors de la fenêtre que ses lecteurs
+supportent le contrat étant refusé en bloc, et il est enfoui au milieu d'un diff
 de plusieurs milliers de lignes. Sur la couverture, celui qui décide de
-fusionner le voit sans ouvrir le JSON, et les pull requests d'export restées
-ouvertes disent lesquelles précèdent une bascule de version. Annoncer la
-constante du plugin ferait de cette ligne un énoncé sur le plugin déguisé en
-énoncé sur le fichier : deux autorités pour la même chose, dont le désaccord
-serait muet. `tokens.json` n'en reçoit aucune : c'est un arbre DTCG, il ne porte
-aucun schéma UCM. Un contrat dont la version est illisible la voit annoncée
-telle quelle, et un contrat qui n'en porte aucune le dit : le contrôle du
-repository le refusera pour champ absent, et la cause se lit ici en une ligne.
+fusionner le voit sans ouvrir le JSON. Annoncer la constante du plugin ferait de
+cette ligne un énoncé sur le plugin déguisé en énoncé sur le fichier : deux
+autorités pour la même chose, dont le désaccord serait muet. `tokens.json` n'en
+reçoit aucune, c'est un arbre DTCG. Un contrat dont la version est illisible la
+voit annoncée telle quelle, et un contrat qui n'en porte aucune le dit.
 
 Chaque avertissement nomme l'élément Figma concerné avec l'intitulé que Figma
 affiche, dit ce qui manquera au développeur, puis le geste à faire dans Figma.
-Les trois sont exigés : un constat qui ne nomme aucun geste n'est pas émis
-. La raison tient en une phrase : une liste dont la conclusion est
-toujours « rien à faire » apprend à son lecteur qu'elle se survole, et il
-survolera ensuite celles qui demandent un geste. La règle et le vocabulaire
-vivent dans [CONTRIBUTING.md](../../CONTRIBUTING.md).
+Les trois sont exigés, un constat qui ne nomme aucun geste n'étant pas émis :
+une liste dont la conclusion est toujours « rien à faire » apprend à son lecteur
+qu'elle se survole, et il survolera ensuite celles qui demandent un geste. La
+règle et le vocabulaire vivent dans
+[CONTRIBUTING.md](../../CONTRIBUTING.md).
 
 **Les trois parties voyagent séparées jusqu'à l'interface.** Un site
 d'émission écrit un `Constat` (ce qui manque, ce que ça coûte, quel geste le
