@@ -301,6 +301,29 @@ p {
   color: var(--texte-avertissement);
 }
 
+/*
+ * L'endroit où les exports vont. En avertissement, il porte le filet de
+ * sévérité des blocs de rang 2 : le repository n'a pas choisi cet endroit, et
+ * le designer doit l'apprendre avant de publier, pas après.
+ */
+.destination-info,
+.destination-avertissement {
+  line-height: var(--corps-interligne);
+  overflow-wrap: anywhere;
+}
+
+.destination-info {
+  color: var(--texte-second);
+}
+
+.destination-avertissement {
+  padding: var(--espace-controle);
+  border-left: 2px solid var(--texte-avertissement);
+  border-radius: 0 var(--rayon) var(--rayon) 0;
+  background: var(--fond-avertissement);
+  color: var(--texte-avertissement);
+}
+
 .depot-repli {
   color: var(--texte-avertissement);
   overflow-wrap: anywhere;

@@ -79,30 +79,37 @@ test('aucun message ne parle au designer avec un tiret cadratin', () => {
 });
 
 /**
- * D'où viennent les chemins, dit là où le designer configure le repository.
- * Deux réponses et deux seulement : le repository l'a écrit, ou les défauts
- * s'appliquent. Il n'y a plus de troisième autorité à départager.
+ * Un repository qui déclare l'endroit le dit, et la phrase nomme les deux
+ * chemins : c'est la seule chose qu'un designer cherche là.
  */
-test('la destination nomme les chemins et celui qui les a décidés', () => {
-  const parLeDepot = etatDuDepot({
+test('un repository qui se décrit nomme ses deux chemins', () => {
+  const { resume } = etatDuDepot({
     components: 'packages/ui/src',
     tokens: 'packages/ui/tokens.json',
     source: 'ucm.config.json',
   });
-  assert.match(parLeDepot.resume ?? '', /ucm\.config\.json/);
-  assert.match(parLeDepot.resume ?? '', /packages\/ui\/src/);
-  assert.match(parLeDepot.resume ?? '', /packages\/ui\/tokens\.json/);
 
-  const parDefaut = etatDuDepot({
+  assert.equal(resume?.ton, 'info');
+  assert.match(resume?.titre ?? '', /packages\/ui\/src/);
+  assert.match(resume?.titre ?? '', /packages\/ui\/tokens\.json/);
+  assert.match(resume?.detail ?? '', /ucm\.config\.json/);
+});
+
+/**
+ * Sans `ucm.config.json`, personne n'a choisi cet endroit : les défauts
+ * s'appliquent. L'avertissement le dit avant l'export, et nomme le fichier
+ * qu'un développeur doit écrire pour en décider.
+ */
+test('un repository sans ucm.config.json reçoit un avertissement, pas un constat', () => {
+  const { resume } = etatDuDepot({
     components: 'components',
     tokens: 'tokens.json',
     source: 'les valeurs par défaut',
   });
-  assert.match(parDefaut.resume ?? '', /Contrats dans components/);
-  assert.match(parDefaut.resume ?? '', /tokens dans tokens\.json/);
-  // Le geste qui change l'endroit, nommé avec son acteur.
-  assert.match(parDefaut.resume ?? '', /développeur/);
-  assert.match(parDefaut.resume ?? '', /ucm\.config\.json/);
+
+  assert.equal(resume?.ton, 'avertissement');
+  assert.match(resume?.titre ?? '', /ucm\.config\.json/);
+  assert.match(resume?.detail ?? '', /ucm\.config\.json/);
 });
 
 test('tant que rien n’est connu, rien n’est affirmé sur les chemins', () => {

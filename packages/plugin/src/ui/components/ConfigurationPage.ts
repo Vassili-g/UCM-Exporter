@@ -4,6 +4,8 @@
  * Ce module possède le formulaire, sa validation locale et ses états visuels.
  * Le point d'entrée de l'UI ne conserve que le routage des messages Figma.
  */
+import { NOM_CONFIGURATION } from '@ucm-kit/core/format';
+
 import type { PublicSettings, SettingsInput } from '../../config';
 import type { EtatConnexion, EtatDuDepot } from '../../connexion';
 import type { PluginMessage } from '../../messages';
@@ -40,6 +42,21 @@ export interface PageConfigurationUi {
   afficherDestination(depot: Extract<PluginMessage, { type: 'depot' }>): void;
   showSaveError(): void;
   releaseSaveButton(): void;
+}
+
+/**
+ * Découpe un texte autour d'un terme, rendu en gras.
+ *
+ * `textContent` ne sait pas mettre un mot en valeur, et une chaîne HTML
+ * injectée ferait passer un texte par un chemin qui accepterait du balisage.
+ */
+function enGras(texte: string, terme: string): Node[] {
+  return texte.split(terme).flatMap((part, index) => {
+    if (index === 0) return [document.createTextNode(part)];
+    const fort = document.createElement('strong');
+    fort.textContent = terme;
+    return [fort, document.createTextNode(part)];
+  });
 }
 
 /** Crée un champ avec son aide et une zone d'erreur de hauteur stable. */
@@ -142,10 +159,13 @@ export function createConfigurationPage(
 
   /*
  * Où les exports vont atterrir, et qui l'a décidé. Le formulaire ne porte
- * aucun chemin : cette phrase est la seule chose à en dire ici.
+ * aucun chemin : ce bloc est la seule chose à en dire ici. Il porte un filet de
+ * sévérité quand le repository n'a pas choisi cet endroit.
  */
-  const destination = document.createElement('p');
-  destination.className = 'field-help';
+  const destination = document.createElement('div');
+  const destinationTitre = document.createElement('p');
+  const destinationDetail = document.createElement('p');
+  destination.append(destinationTitre, destinationDetail);
   destination.hidden = true;
   const baseBranch = createField('baseBranch', 'Branche de base', { placeholder: 'main' }, markDirty);
   const githubPat = createField('githubPat', 'Personal Access Token', {
@@ -279,8 +299,14 @@ export function createConfigurationPage(
      * décide.
      */
     afficherDestination({ resume }: EtatDuDepot) {
-      destination.textContent = resume ?? '';
       destination.hidden = !resume;
+      if (!resume) return;
+      const { ton, titre, detail } = resume;
+      destination.className = `destination-${ton}`;
+      destinationTitre.textContent = titre;
+      // Le nom du fichier est le sujet de la phrase, et c'est lui qu'un
+      // développeur devra chercher dans le repository.
+      destinationDetail.replaceChildren(...enGras(detail, NOM_CONFIGURATION));
     },
     showSaveError() {
       enregistrementEnCours = false;

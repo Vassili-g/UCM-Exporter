@@ -724,11 +724,11 @@ const ETATS = [
   },
   {
     id: 'configuration-chemins-par-defaut',
-    titre: 'Le repository ne se décrit pas, les défauts s’appliquent',
+    titre: 'Le repository n’a pas de configuration, et le plugin le signale',
     quand:
       "Le repository n'a pas de `ucm.config.json`. C'est le cas nominal d'un dépôt neuf, et les défauts qui s'appliquent ici sont ceux que `ucm check` applique de son côté.",
     regarder:
-      "L'endroit est annoncé AVANT l'export, et la phrase nomme le geste qui en changerait, avec son acteur.",
+      "Le bloc porte un filet de sévérité, et il le porte AVANT l'export. Le nom du fichier à écrire est en gras dans la phrase qui le demande.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),

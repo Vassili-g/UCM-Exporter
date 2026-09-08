@@ -156,10 +156,23 @@ export type LayoutConnu = {
 /** Le repository visé, tel que les réglages validés le décrivent. */
 export type DepotVise = { owner: string; repo: string; baseBranch: string };
 
+/**
+ * Ce que la configuration dit de l'endroit où les exports vont.
+ *
+ * `ton` porte la sévérité, jamais le rang : un repository sans
+ * `ucm.config.json` n'a pas choisi cet endroit, et l'avertissement le dit avant
+ * l'export plutôt qu'après.
+ */
+export type ResumeDepot = {
+  ton: 'info' | 'avertissement';
+  titre: string;
+  detail: string;
+};
+
 /** Qui décide de l'endroit, et ce que l'interface en dit. */
 export type EtatDuDepot = {
-  /** La phrase de la configuration : d'où viennent les chemins, et lesquels. */
-  resume: string | null;
+  /** Ce que la configuration affiche sur l'endroit. `null` tant qu'il est inconnu. */
+  resume: ResumeDepot | null;
   /** Le repository et sa branche, sur l'écran de travail. */
   ligne: string | null;
   /**
@@ -193,12 +206,24 @@ export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null 
 
   if (!layout) return { ...situation, resume: null };
 
-  const ou = `Contrats dans ${layout.components}, tokens dans ${layout.tokens}.`;
+  if (layout.source !== NOM_CONFIGURATION) {
+    return {
+      ...situation,
+      resume: {
+        ton: 'avertissement',
+        titre: `Attention, le ${NOM_CONFIGURATION} de ce repository n'est pas configuré.`,
+        detail: `Le fichier de configuration ${NOM_CONFIGURATION} permet de définir l'endroit où `
+          + 'seront poussés les composants et les tokens.',
+      },
+    };
+  }
+
   return {
     ...situation,
-    resume: layout.source === NOM_CONFIGURATION
-      ? `${ou} Ce repository le déclare dans son ${NOM_CONFIGURATION}.`
-      : `${ou} Ce repository n'a pas de ${NOM_CONFIGURATION} : un développeur peut en ajouter un `
-        + 'pour choisir un autre endroit.',
+    resume: {
+      ton: 'info',
+      titre: `Contrats dans ${layout.components}, tokens dans ${layout.tokens}.`,
+      detail: `Ce repository le déclare dans son ${NOM_CONFIGURATION}.`,
+    },
   };
 }
