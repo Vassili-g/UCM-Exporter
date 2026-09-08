@@ -358,6 +358,14 @@ résout un problème, la référence énonce, l’explication justifie. Phrases
 courtes, voix active, une idée par phrase. Un exemple concret vaut mieux qu’une
 définition abstraite.
 
+**Volume.** Une passe de réduction menée sur tout le dépôt a rendu 20 710
+caractères, soit 2,4 % de sa prose, et le gain vient d’un seul geste : rendre à
+`types.ts` ou à une spécification ce qu’elle portait déjà. Ce qui reste porte
+une règle, sa borne ou son pourquoi, et en retirer une phrase retire une clause.
+Une nouvelle passe visant un volume plutôt qu’une redite coûterait donc de
+l’information. `scripts/mesurer-prose.mjs` mesure l’état courant et
+`docs/notes/baseline-prose.json` en garde un relevé de départ.
+
 ### Une règle, un domicile
 
 Une même règle écrite à deux endroits finit par diverger. Chaque endroit en
