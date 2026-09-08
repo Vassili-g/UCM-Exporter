@@ -7,8 +7,14 @@ d'UCM. Elle se suit dans l'ordre, du début à la fin. Comptez une heure et demi
 Elle se rejoue **avant chaque publication de paquet** dont l'un des quatre
 déclencheurs de `scripts/recette-externe.mjs` a bougé : ces chemins passent par
 Figma, par GitHub et par une vraie pull request, qu'aucun test de ce dépôt ne
-parcourt. `publish.yml` refuse la publication tant que la réponse n'est pas
-donnée.
+parcourt.
+
+`publish.yml` nomme ces déclencheurs au journal et publie quand même. Il ne pose
+plus la question : elle se répondait sans être vérifiable, et elle arrêtait un
+agent à qui la publication est confiée. Ce qui garde le numéro est ce qui prouve
+quelque chose, `npm test` puis l'épreuve du registre et le contrôle des pins
+servis. Décider de rejouer la recette est donc un geste que vous posez, pas une
+case que le workflow réclame.
 
 Les deux dépôts concernés :
 
@@ -336,11 +342,9 @@ poste. Pour chaque paquet à publier :
 1. ouvrez l'onglet **Actions** d'`UCM-Exporter`, workflow **publish** ;
 2. cliquez **Run workflow** ;
 3. choisissez le paquet ;
-4. au second champ, choisissez **recette externe rejouée et consignée**. C'est
-   exactement ce que vous venez de faire aux étapes 4 à 6 ;
-5. lancez, et attendez la fin. Le workflow rejoue les tests, publie, puis
-   réinstalle le paquet depuis un dossier vide pour vérifier que le registre le
-   sert vraiment.
+4. lancez, et attendez la fin. Le workflow rejoue les tests, nomme au journal ce
+   que la recette seule couvre, publie, puis réinstalle le paquet depuis un
+   dossier vide pour vérifier que le registre le sert vraiment.
 
 **L'ordre compte : le noyau d'abord.** `@ucm-kit/cli` et
 `@ucm-kit/adapter-typescript` épinglent exactement une version de

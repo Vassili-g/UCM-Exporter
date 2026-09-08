@@ -169,7 +169,7 @@ scripts/
   controle-style.mjs     les règles de style, pour le test et pour le hook
   hook-style.mjs         le même contrôle, au moment où un agent écrit
   mesurer-prose.mjs      le volume de la prose, document et commentaire
-  recette-externe.mjs    ce qui oblige à rejouer la recette
+  recette-externe.mjs    ce que la recette seule couvre, nommé sans refuser
   pins-servis.mjs        les versions que le registre sert
   run-tests.cjs          le découvreur de tests
 .claude/settings.json    le hook d'écriture, branché sur Write et Edit
@@ -645,9 +645,12 @@ un contrôle qui manque là-bas se referme ici, jamais par un script rendu au
 consommateur. La marche à suivre, ses critères de fin et le geste de publication
 qui la suit vivent dans [docs/RECETTE.md](./docs/RECETTE.md).
 
-`scripts/recette-externe.mjs` nomme les quatre déclencheurs qui obligent à la
-rejouer, et `publish.yml` refuse la publication tant que la réponse n’est pas
-donnée.
+`scripts/recette-externe.mjs` nomme les quatre déclencheurs qui la valent, au
+journal de `publish.yml`, et ne refuse rien : la publication est confiée à un
+agent, et une question posée à un opérateur l’arrêtait. Le relevé ne compte que
+les lignes de code, les `description` du schéma comprises, sans quoi une passe
+de style lèverait les quatre déclencheurs. Sa borne est la version que le
+registre sert, jamais le numéro que le dépôt porte.
 
 ## Limites d’environnement
 
