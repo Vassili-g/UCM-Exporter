@@ -108,29 +108,21 @@ function analyser(chemin, contexte, erreursGraphe = []) {
   const verdict = verdictDeVersion(version);
   const versionIncompatible = verdict === "ok" ? null : { valeur: version, verdict };
 
-  // **La version se juge avant les champs, et l'ordre inverse était un défaut.**
-  //
+  // **La version se juge avant les champs.** Dans l'autre ordre,
   // `champsInvalidesDuContrat` refuserait un contrat hors fenêtre pour ses
-  // champs, `analyser` sortirait tôt, et le verdict de version serait perdu.
-  // `enteteDuVerdict` écrirait alors « contrats invalides » : un titre qui
+  // champs, et `enteteDuVerdict` écrirait « contrats invalides » : un titre qui
   // accuse le designer pour un contrat parfaitement formé dont seule la version
-  // n'est pas lue. C'est le critère de réussite n° 4 du plan qui tombe : le
-  // message doit dire qui corrige.
+  // n'est pas lue. Le message doit dire qui corrige.
   //
   // La condition n'est pas « la version est mauvaise » mais « la version est
   // lisible et mauvaise ». Un fichier vidé de sa substance (`{}`, JSON
   // parfaitement valide) n'a pas une version trop ancienne : il n'en a pas, et
-  // c'est un contrat cassé, pas un contrat périmé. Sans cette nuance, l'ordre
-  // inversé remplacerait une accusation fausse par une autre.
+  // c'est un contrat cassé, pas un contrat périmé. `versionDeContrat` rend
+  // `null` dans ce cas exact, champ absent, vide ou d'un autre type.
   //
-  // *Ce qu'on accepte de perdre, et le plan l'assume :* le diagnostic détaillé
-  // d'un contrat hors fenêtre. Il reçoit un verdict de version qui nomme le bon
-  // geste et le bon responsable, pas la liste de ses champs manquants : que ce
-  // validateur-ci n'a de toute façon pas le droit de dresser pour une grammaire
-  // qu'il ne lit pas.
-  //
-  // `versionDeContrat` rend `null` dans ce cas exact (champ absent, vide, ou
-  // d'un autre type), ce qui est aussi la condition testée ici.
+  // Ce qu'on accepte de perdre : le diagnostic détaillé d'un contrat hors
+  // fenêtre, que ce validateur n'a de toute façon pas le droit de dresser pour
+  // une grammaire qu'il ne lit pas.
   if (versionIncompatible && version !== null) {
     return { ...vide, version: versionIncompatible };
   }

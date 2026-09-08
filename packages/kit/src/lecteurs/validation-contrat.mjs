@@ -1007,10 +1007,10 @@ function validerVueExacte(contrat, vue, prefixe, invalides, capacites, formeDuSi
  * Forme du catalogue d'échantillons et intégrité de ses renvois.
  *
  * Le catalogue est un objet, chaque `variants[].sample` désigne une entrée qui
- * existe, aucune entrée n'est orpheline, et depuis la 10.3 la forme d'un
- * remplacement est contrôlée à toute profondeur. C'est exactement ce qu'on
- * contrôle pour `variantViews`, et c'est tout ce que ce module-ci contrôlera
- * jamais : le contenu d'un échantillon n'engage personne.
+ * existe, aucune entrée n'est orpheline, et la forme d'un remplacement est
+ * contrôlée à toute profondeur. C'est exactement ce qu'on contrôle pour
+ * `variantViews`, et c'est tout ce que ce module-ci contrôlera jamais : le
+ * contenu d'un échantillon n'engage personne.
  *
  * « Ce module-ci » n'est pas une clause de style. Une question voisine se pose
  * ailleurs, dans `validation-echantillons.mjs` : ce contenu qui n'engage
@@ -1325,21 +1325,16 @@ function nomFigmaDuVariant11(contrat, variant) {
 /**
  * La forme canonique d'un contrat : ses renvois résolus, ses élisions rendues.
  *
- * Elle s'appelait `materialiserContrat11` et écrivait `"10.3"` dans
- * `meta.contractVersion`. Les deux mentaient, et pas également.
+ * Ce geste n'est pas une compatibilité dormante, et n'est propre à aucune
+ * version : c'est une normalisation, qui rétablit ce que l'élision a retiré (un
+ * groupe de peintures vide, un `children` absent) pour qu'un seul validateur
+ * voie une seule forme.
  *
- * Le nom d'abord : ce geste n'a rien d'une compatibilité dormante, et rien de
- * propre à la 11.0. C'est une normalisation (elle rétablit ce que l'élision a
- * retiré, un groupe de peintures vide, un `children` absent) pour qu'un seul
- * validateur voie une seule forme. Le suffixe `11` la faisait passer pour un
- * vestige, c'est-à-dire pour du code qu'on peut couper.
- *
- * La version ensuite, et c'était la plus coûteuse : l'objet rendu circulait en
- * affirmant être un contrat 10.3. N'importe quel lecteur le croyait, et un
- * élagage conduit « par raisonnement sur les gates » aurait supprimé le chemin
- * qui valide en réalité tout le 11.0 et le 12.0. La grammaire de lecture est
- * désormais choisie par `champsInvalidesDuContrat`, en un seul endroit nommé,
- * et ne voyage plus avec la donnée.
+ * L'objet rendu ne réécrit pas `meta.contractVersion` : un contrat qui
+ * circulerait en affirmant une version qui n'est pas la sienne ferait supprimer
+ * par un élagage « au raisonnement sur les gates » le chemin qui valide tout le
+ * reste. La grammaire de lecture est choisie par `champsInvalidesDuContrat`, en
+ * un seul endroit nommé, et ne voyage pas avec la donnée.
  */
 function formeCanonique(contrat) {
   const vueDeReference = contrat?.viewStructures?.[contrat?.structure?.view];
@@ -1431,12 +1426,6 @@ const ROTATION = /^-?\d+(?:\.\d+)?deg$/;
  * passe canonique, parce que celle-ci se lit selon la grammaire pivot 10.3 :
  * une capacité « au moins 12.0 » y serait toujours fausse, et le contrôle
  * toujours muet.
- *
- * *La raison n'a pas changé, sa formulation si.* Elle disait que la
- * matérialisation « réécrit `meta.contractVersion` », vrai autrefois,
- * faux depuis : la substitution ne quitte plus la portée de
- * `champsInvalidesDuContrat`, et le contrat garde sa version réelle. La
- * contrainte sur ce contrôle, elle, tient toujours.
  */
 function validerPlacement120(contrat, invalides) {
   const place120 = versionAuMoins(contrat, 12, 0);
