@@ -318,13 +318,11 @@ function hasComponentProperties(instance: InstanceNode): boolean {
  * Score nul si elle ne porte aucune dimension liée.
  *
  * Score nul, aussi, si son composant maître est illisible. Un wrapper n'est
- * élu qu'une fois, sur la référence ; les autres variants retrouvent ensuite
- * leur instance du même maître, par son id. Une instance orpheline ne peut donc
- * par construction être appariée nulle part : l'élire ferait décrire à la
- * référence un arbre que plus aucun autre variant ne décrit, sans qu'aucun id
- * ne reste à comparer pour s'en apercevoir. C'est la
- * garde qu'applique déjà `!composed.has(node.id)`, pour la même raison : un
- * candidat qu'on ne saura pas suivre n'est pas un candidat.
+ * élu qu'une fois, sur la référence, et les autres variants retrouvent leur
+ * instance du même maître par son id : une instance orpheline n'est appariable
+ * nulle part, et l'élire ferait décrire à la référence un arbre que plus aucun
+ * variant ne décrit. C'est la garde qu'applique déjà `!composed.has(node.id)` :
+ * un candidat qu'on ne saura pas suivre n'est pas un candidat.
  */
 async function scoreWrapper(
   instance: InstanceNode,
@@ -383,15 +381,14 @@ export async function findWrapperReference(
  * Étiquettes Figma des axes et de leurs valeurs, lues à la source.
  *
  * Le nom Figma d'un variant (« Color=Primary, State=Hover ») redit ses
- * `values` avec les majuscules de Figma. Sur une matrice à quatre-vingt-dix
- * combinaisons, c'est quatre-vingt-dix fois la même information ; une table par
- * axe et par valeur la dit une fois.
+ * `values` avec les majuscules de Figma, autant de fois qu'il y a de
+ * combinaisons ; une table par axe et par valeur le dit une fois.
  *
  * Les deux moitiés viennent de l'API, pas d'une relecture du nom publié :
  * `componentPropertyDefinitions` donne le nom d'un axe, `variantProperties`
- * donne la valeur brute. Reconstruire les noms depuis une table déduite du nom
- * lui-même et les comparer ne prouverait rien : l'appariement axe ↔ étiquette
- * peut être permuté sans qu'aucun nom reconstruit ne change.
+ * donne la valeur brute. Une table déduite du nom lui-même ne prouverait rien,
+ * l'appariement axe ↔ étiquette pouvant être permuté sans qu'aucun nom
+ * reconstruit ne change.
  *
  * Rend `null` (et chaque variant garde alors son `figmaName`) dès qu'une
  * seule chose ne se vérifie pas : aucun axe, une valeur normalisée qui

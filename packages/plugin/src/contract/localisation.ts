@@ -70,17 +70,14 @@ export function sujetSansNode(
 /**
  * Les trois parties d'un point à corriger, telles que le designer les lit.
  *
- * **Pourquoi trois et pas une phrase.** `CONTRIBUTING.md` exige depuis toujours
- * qu'un avertissement dise où, quoi et comment. La règle était tenue à la main,
- * dans une `string` que chaque site concaténait, donc invérifiable, et
- * indécoupable à l'arrivée : l'interface ne pouvait qu'afficher un paragraphe
- * où le geste se lisait en dernier, après deux phrases de contexte. Les trois
- * parties voyagent maintenant séparées du moteur jusqu'à l'UI, qui les met en
- * page ; et une loi refuse un message dont l'une manque.
+ * **Pourquoi trois et pas une phrase.** `CONTRIBUTING.md` exige qu'un
+ * avertissement dise où, quoi et comment. Tenue dans une `string` que chaque
+ * site concaténait, la règle était invérifiable et indécoupable à l'arrivée.
+ * Les trois parties voyagent donc séparées du moteur jusqu'à l'UI, qui les met
+ * en page, et une loi refuse un message dont l'une manque.
  *
- * La phrase compacte (celle que `meta.diagnostics` publie et que la pull
- * request liste) se dérive de ces parties, elle n'est pas rédigée une seconde
- * fois. C'est ce qui garantit que les deux disent la même chose.
+ * La phrase compacte que `meta.diagnostics` publie se dérive de ces parties,
+ * elle n'est pas rédigée une seconde fois.
  */
 export type PointACorriger = {
   /** « Layer « Border » : l'alignement du stroke est illisible. » */
@@ -256,16 +253,14 @@ export function pousserSansNode(
 /**
  * Pousse un message déjà formé dans son canal, et retient où regarder.
  *
- * `pousserLocalise` couvre le cas courant : le message commence par son sujet.
- * Celui-ci couvre les autres, et ils existent : un constat d'agrégat nomme un
- * variant exemple au milieu de sa phrase, un message dont le sujet est une
- * component property nomme dans son corps le calque qui la référence. Dans les
- * deux cas la phrase montre un node du doigt, et le clic doit y mener.
+ * `pousserLocalise` couvre le cas courant, où le message commence par son
+ * sujet. Celui-ci couvre les autres : un constat d'agrégat nomme un variant
+ * exemple au milieu de sa phrase, un message dont le sujet est une component
+ * property nomme dans son corps le calque qui la référence. Dans les deux cas
+ * la phrase montre un node du doigt, et le clic doit y mener.
  *
  * Ce n'est pas une porte dérobée à la convention de préfixe : le test de source
- * refuse toujours qu'un `Layer « … »` s'écrive ailleurs qu'ici. Ce helper sert
- * les messages qui n'ont pas cette forme, et qui doivent quand même conduire
- * quelque part.
+ * refuse toujours qu'un `Layer « … »` s'écrive ailleurs qu'ici.
  */
 export function pousserNote(
   canal: string[],

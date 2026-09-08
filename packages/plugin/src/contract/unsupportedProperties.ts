@@ -1,10 +1,9 @@
 /**
  * Ce qu'un calque publié porte dans Figma et que le schéma ne sait pas écrire.
  *
- * Le contrat ne prétend pas décrire tout Figma. Mais une propriété qui change
- * le rendu et qu'aucun champ ne porte doit être dite, jamais oubliée : c'est la
- * règle du projet, une ombre absente du contrat est une ombre absente de
- * l'écran, et le développeur ne peut pas deviner ce qu'on ne lui dit pas.
+ * Le contrat ne prétend pas décrire tout Figma, mais une propriété qui change
+ * le rendu et qu'aucun champ ne porte doit être dite : une ombre absente du
+ * contrat est une ombre absente de l'écran.
  *
  * Deux garde-fous encadrent ce module, et ils comptent autant que la liste
  * elle-même :
@@ -25,10 +24,8 @@
  * design correct, et coûtait un découpage à chaque design qui l'employait pour
  * de bon.
  *
- * `rotation` a quitté cette liste : le contrat l'écrit maintenant, en
- * vocabulaire CSS (`ChildStructure.rotation`), et une propriété publiée n'a
- * rien à faire dans un relevé de ce qui manque. `flexLayout.rotationDegrees`
- * en est l'autorité, seuil compris.
+ * Une propriété que le contrat écrit n'entre pas dans ce relevé, `rotation`
+ * comprise : `flexLayout.rotationDegrees` en est l'autorité, seuil compris.
  */
 import { pointDe, sujet } from './localisation';
 import type { PointACorriger } from './localisation';

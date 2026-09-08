@@ -231,11 +231,10 @@ function inapplicableReason(
  * Vrai si Figma expose au moins un des champs de cette dimension sur ce node.
  *
  * Trois états, et non deux : la valeur neutre (`IMPLICIT_DEFAULTS`), la valeur
- * écrite à la main qui réclame sa variable, et la propriété qui N'existe pas
- * sur ce type de layer. Depuis que le contrat décrit les conteneurs à toute
- * profondeur, il rencontre le troisième cas (un GROUP n'a ni coins ni
- * padding) et lui réclamer une variable enverrait le designer chercher un
- * champ que son panneau ne montre pas.
+ * écrite à la main qui réclame sa variable, et la propriété qui n'existe pas
+ * sur ce type de layer, un GROUP n'ayant ni coins ni padding. Réclamer une
+ * variable dans ce troisième cas enverrait le designer chercher un champ que
+ * son panneau ne montre pas.
  */
 export function exposesAnyField(node: SceneNode, alternatives: FieldAlternatives): boolean {
   const values = node as unknown as Record<string, unknown>;
@@ -248,9 +247,8 @@ export function exposesAnyField(node: SceneNode, alternatives: FieldAlternatives
  * Vrai si Figma expose un corner radius sur ce node.
  *
  * Un GROUP, une LINE ou un slice n'en ont pas : la propriété n'existe pas, elle
- * n'est donc ni absente ni écrite à la main. Depuis que le contrat décrit les
- * conteneurs à toute profondeur, il en rencontre ; leur réclamer une variable
- * enverrait le designer chercher un champ que son panneau ne montre pas.
+ * n'est donc ni absente ni écrite à la main, et c'est le troisième état
+ * ci-dessus.
  */
 export function hasCornerRadiusProperty(node: SceneNode): boolean {
   return exposesAnyField(node, BINDING_PATTERNS.radius);
@@ -583,9 +581,9 @@ export async function resolveTokenName(
  *
  * Un groupe par côté peut être clairsemé : les côtés liés sont publiés, les
  * côtés à zéro restent absents, et les valeurs fixes non neutres avertissent.
- * `hasCompleteBinding` demeure volontairement plus strict pour l'élection du
- * node de layout : une valeur partielle se décrit sur un calque déjà publié,
- * mais ne suffit pas à en faire le wrapper de dimensions.
+ * `hasCompleteBinding` reste plus strict pour l'élection du node de layout :
+ * une valeur partielle se décrit sur un calque déjà publié, mais n'en fait pas
+ * le wrapper de dimensions.
  */
 export async function resolveSidedTokenNames<K extends string>(
   node: SceneNode,
@@ -708,13 +706,9 @@ export function estUnTrace(node: SceneNode): boolean {
  * Dimension figée d'un slot, relevée axe par axe.
  *
  * Le menu de dimensionnement décide de ce qu'on lit : un axe en `Hug` ou en
- * `Fill` est déjà décrit ailleurs et ne demande aucune variable, le lui
- * réclamer produirait un avertissement pour une valeur que le contrat n'a pas
- * à porter. Un axe figé, en revanche, doit citer une variable : sans elle, la
- * dimension disparaîtrait en silence et l'absence ne voudrait plus rien dire.
- *
- * Un carré garde la forme courte : c'est la même valeur, et l'objet
- * n'apprendrait rien de plus au consommateur.
+ * `Fill` est déjà décrit ailleurs et ne demande aucune variable. Un axe figé
+ * doit citer une variable, sans quoi l'absence cesserait de vouloir dire
+ * `Hug`. Un carré garde la forme courte, c'est la même valeur.
  */
 export async function resolveSlotSize(
   node: SceneNode,
@@ -800,13 +794,8 @@ export function gridStructuralSize(
  * Une borne n'est pas une taille : elle survit au menu de dimensionnement et
  * s'applique aussi bien à un axe en `Fill` qu'à un axe figé. Elle est donc lue
  * inconditionnellement, là où `resolveSlotSize` ne lit que ce que le menu tient
- * en `Fixed`.
- *
- * Le silence, en revanche, suit la même règle que partout : une borne écrite à
- * la main est une mesure de maquette, une borne reliée à une variable est une
- * décision du design system. La première avertit, le geste demandé est de
- * relier la variable, non de retirer la borne : elle appartient au design, et
- * c'est au contrat de savoir la porter.
+ * en `Fixed`. Le silence suit la règle commune, et le geste demandé est de
+ * relier la variable, jamais de retirer la borne.
  */
 export async function resolveSizeBounds(
   node: SceneNode,
@@ -843,12 +832,11 @@ export async function resolveSizeBounds(
 /**
  * Token d'un axe dont la dimension figée est déjà expliquée par ailleurs.
  *
- * Deux calques sont dans ce cas, pour la même raison. Le composant : un axe figé
- * sans variable est une taille de maquette assumée, décrite par le `stretch` de
- * `containerSizing`, et réclamer une variable avertirait sur presque tous les
- * component sets. Un enfant de grille : sa boîte est celle de sa cellule, que
- * les pistes et son étendue décrivent déjà. Dans les deux cas, le geste demandé
- * ne changerait rien au rendu.
+ * Deux calques sont dans ce cas, et dans les deux le geste demandé ne
+ * changerait rien au rendu. Le composant : un axe figé sans variable est une
+ * taille de maquette assumée, décrite par le `stretch` de `containerSizing`. Un
+ * enfant de grille : sa boîte est celle de sa cellule, que les pistes et son
+ * étendue décrivent déjà.
  *
  * Une liaison présente mais irrésolue avertit en revanche par `resolveField` :
  * le designer a bien désigné une variable, et le contrat n'a pas su la nommer.
@@ -868,11 +856,8 @@ async function resolveBoundAxis(
  *
  * `containerSizing` lit le menu seul et ramène toute dimension figée à
  * `stretch`, faute de pouvoir distinguer une taille de maquette d'une décision
- * de design. La liaison de variable est ce qui les sépare, le même signal que
- * pour un gap, un padding ou la taille d'un slot : un nombre brut n'est jamais
- * contractuel, une variable liée l'est toujours. Un axe figé qui cite une
- * variable publie donc sa référence, et le composant porte enfin la taille que
- * le design system lui donne, quel que soit le conteneur qui l'accueillera.
+ * de design. La liaison de variable est ce qui les sépare, à la règle commune :
+ * un axe figé qui cite une variable publie sa référence.
  */
 export async function resolveContainerSizing(
   node: SceneNode,

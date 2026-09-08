@@ -207,29 +207,23 @@ export function roleKind(role: string): RenderingRole['kind'] | null {
  *
  * C'est la contrepartie de la règle d'or en haut de ce fichier : un token
  * nommé `…/scale-1` ne dit rien de ce qu'il peint, mais le calque qui le porte
- * le dit entièrement. Le nom reste l'identité de la couleur dans la feuille de
- * variante ; il ne décide pas de son rendu.
+ * le dit entièrement.
  *
  * Même ordre que `semanticSlotName` (le texte d'abord, l'icône ensuite) pour
  * que les deux se lisent comme une seule règle. Le défaut est la surface :
  * seuls deux signaux explicites (être un texte, être désigné par une règle
- * `@icons`) en font de l'encre. Le type du node ne tranche pas (un
- * `RECTANGLE` est une surface ou un tracé d'icône selon l'usage) et le
- * promouvoir en signal remplacerait une convention de nommage visible par une
- * convention de typage invisible.
+ * `@icons`) en font de l'encre. Le type du node ne tranche pas, un `RECTANGLE`
+ * étant une surface ou un tracé d'icône selon l'usage, et le promouvoir en
+ * signal remplacerait une convention de nommage visible par une convention de
+ * typage invisible.
  *
- * Pour un contour, `border` couvre le rendu ; c'est `align`, déjà publié sur
- * chaque feuille de `variantStrokes`, qui dit au consommateur de quel côté de
- * la boîte le dessiner : jamais avec quelle technique, puisque les deux rôles
- * de contour se rendent hors du flux. Le contrat n'a donc pas à deviner un
- * `ring` : la donnée structurelle est déjà là, et elle est observée, pas
- * supposée.
+ * Pour un contour, `border` couvre le rendu, et c'est `align`, déjà publié sur
+ * chaque feuille de `variantStrokes`, qui dit de quel côté de la boîte le
+ * dessiner : une donnée structurelle observée, jamais un `ring` deviné.
  *
- * C'est cette fonction qui décide de la nature du rendu, et elle seule : un
- * token nommé `…/foreground` posé en contour peint bien un contour. Le nom du
- * token ne peut que préciser le rôle À L'intérieur de cette nature (distinguer
- * un `ring` d'un `border`), jamais la contredire. Le moteur n'a pas à avoir un
- * avis sur le vocabulaire du design system.
+ * C'est cette fonction qui décide de la nature du rendu, et elle seule. Le nom
+ * du token ne peut que préciser le rôle à l'intérieur de cette nature, jamais
+ * la contredire.
  */
 export function paintSiteRole(site: {
   isStroke: boolean;

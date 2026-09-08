@@ -155,8 +155,8 @@ function warnUnsupportedProperties(node: SceneNode, warnings: string[]): void {
  *
  * Le message part une seule fois par dessin : le calque dont le parent est
  * lui-même un dessin est déjà couvert par le sien. Un composant qui est un
- * dessin de bout en bout ne dit donc rien non plus, et c'est juste : une icône
- * exportée pour elle-même n'a aucune règle à se donner.
+ * dessin de bout en bout ne dit donc rien, une icône exportée pour elle-même
+ * n'ayant aucune règle à se donner.
  */
 function warnUndeclaredDrawing(
   parent: SceneNode,
@@ -223,10 +223,9 @@ async function applySizing(
  *
  * C'est le même relevé qu'à la racine, appliqué à n'importe quelle profondeur :
  * un auto layout imbriqué a son gap, ses paddings et son rayon exactement comme
- * le composant. Les taire ferait perdre la moitié d'un design à trois étages.
- * Sonder le padding n'avertit pas pour autant sur tout design correct : une
- * valeur neutre effectivement fournie par Figma reste absente sans
- * avertissement (`IMPLICIT_DEFAULTS`).
+ * le composant. Sonder le padding n'avertit pas pour autant sur tout design
+ * correct : une valeur neutre effectivement fournie par Figma reste absente
+ * sans avertissement (`IMPLICIT_DEFAULTS`).
  *
  * Le padding et le gap ne sont sondés que sous un auto layout, où Figma les
  * applique réellement ; le rayon l'est partout, car un frame sans auto layout a
@@ -438,14 +437,12 @@ async function describeNode(
   }
 
   // Une peinture posée sous une feuille appartient à cette feuille. Le contrat
-  // ne descend volontairement pas dans les tracés d'une icône, mais leur couleur
-  // entre bien dans `variants[].tokens` : sans chemin, `paintPlacements`
-  // publierait une clé sans aucune cible et le consommateur, à qui l'on interdit
-  // de déduire la cible du nom de la clé, ne peindrait plus aucune icône. Le
-  // calque publié qui les porte est leur chemin : c'est de toute façon là que le
-  // rendu applique la couleur, `color` et `fill` cascadant du slot vers le
-  // dessin. Vaut pour toute feuille, y compris celle qu'a coupée la borne de
-  // profondeur.
+  // ne descend pas dans les tracés d'une icône, mais leur couleur entre bien
+  // dans `variants[].tokens`, et sans chemin `paintPlacements` publierait une
+  // clé sans cible. Le calque publié qui les porte est leur chemin : c'est de
+  // toute façon là que le rendu applique la couleur, `color` et `fill`
+  // cascadant du slot vers le dessin. Vaut pour toute feuille, y compris celle
+  // qu'a coupée la borne de profondeur.
   if (!describesChildren) {
     for (const descendant of getAllNodes(child, [], composed)) {
       publishedNodePaths.set(descendant.id, [...path]);

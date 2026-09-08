@@ -3,23 +3,16 @@
  *
  * La règle est unique et ne connaît ni profondeur, ni nature de
  * composant : **on descend dans un calque dès qu'un de ses descendants porte
- * une information que la forme feuille ne sait pas exprimer.** Une feuille dit
- * son nom, sa taille, ses bornes et sa place dans le flux ; elle ne sait pas
- * dire la disposition interne, ni les couleurs, ni les tailles de ce qu'elle
- * contient.
- *
- * La règle n'a pas d'exception, et c'est ce qui la rend tenable : un cadre qui
- * n'enveloppe qu'un libellé est décrit comme un cadre, avec son padding, sa
- * taille et son alignement, puis le libellé dedans. L'étage supplémentaire
- * n'est pas du bruit : sans lui, le slot serait opaque alors que ses couleurs
- * entrent dans `variantTokens`, et le contrat annoncerait des peintures
- * qu'aucun calque publié ne porte.
+ * une information que la forme feuille ne sait pas exprimer.** Elle n'a pas
+ * d'exception, et c'est ce qui la rend tenable : un cadre qui n'enveloppe qu'un
+ * libellé est décrit comme un cadre, avec son padding, sa taille et son
+ * alignement, puis le libellé dedans. Le pourquoi vit dans `docs/FORMAT.md`,
+ * section « 6. Structure ».
  *
  * Cette décision vit ici et nulle part ailleurs. `extractLayout` la suit pour
  * publier, `textSlots` pour situer les typographies, les signatures pour
  * comparer les variants : un second calcul finirait par désigner des chemins de
- * slots que `structure.children` ne contient pas, et le consommateur refuse un
- * contrat dont la typographie vise un slot absent.
+ * slots que `structure.children` ne contient pas.
  */
 import { variableAliases } from '../variables';
 import { getAllNodes } from './exportableNodes';
