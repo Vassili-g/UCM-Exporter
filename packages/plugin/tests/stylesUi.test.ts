@@ -38,12 +38,11 @@ function sourcesUi(): string {
 const source = sourcesUi();
 const feuille = fs.readFileSync(path.join(dossierUi, 'styles.css'), 'utf8');
 
-const messages = (): string => fs.readFileSync(path.join(racine, 'src/messages.ts'), 'utf8');
-
-/** Les littéraux d'une déclaration de `messages.ts`, lus à leur domicile unique. */
-function litterauxDe(motif: RegExp, quoi: string): string[] {
-  const declaration = motif.exec(messages());
-  assert.ok(declaration, `${quoi} introuvable dans messages.ts`);
+/** Les littéraux d'une déclaration, lus au fichier qui la porte. */
+function litterauxDe(motif: RegExp, quoi: string, fichier = 'src/messages.ts'): string[] {
+  const source = fs.readFileSync(path.join(racine, fichier), 'utf8');
+  const declaration = motif.exec(source);
+  assert.ok(declaration, `${quoi} introuvable dans ${fichier}`);
   return [...declaration[1].matchAll(/'([^']+)'/g)].map((trouve) => trouve[1]);
 }
 
@@ -58,6 +57,7 @@ const VALEURS_DE_GABARIT: Record<string, () => string[]> = {
   level: () => litterauxDe(/export type LogLevel =([^;]+);/, 'LogLevel'),
   niveau: () => litterauxDe(/export type LogLevel =([^;]+);/, 'LogLevel'),
   variant: () => variantesDeBouton(),
+  ton: () => litterauxDe(/ {2}ton:([^;]+);/, 'ResumeDepot.ton', 'src/connexion.ts'),
 };
 
 /** Les variantes de bouton : leur défaut, et chaque valeur passée à `createButton`. */
