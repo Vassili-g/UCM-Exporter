@@ -193,12 +193,12 @@ export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null 
 
   if (!layout) return { ...situation, resume: null };
 
-  const ou = `${layout.components} pour les contrats, ${layout.tokens} pour les tokens.`;
+  const ou = `Contrats dans ${layout.components}, tokens dans ${layout.tokens}.`;
   return {
     ...situation,
     resume: layout.source === NOM_CONFIGURATION
-      ? `Ce repository décrit lui-même où ranger les exports, dans son ${NOM_CONFIGURATION} : ${ou}`
-      : `Ce repository ne dit pas où ranger les exports : les valeurs par défaut s'appliquent, `
-        + `${ou} Un développeur peut en décider autrement en ajoutant un ${NOM_CONFIGURATION}.`,
+      ? `${ou} Ce repository le déclare dans son ${NOM_CONFIGURATION}.`
+      : `${ou} Ce repository n'a pas de ${NOM_CONFIGURATION} : un développeur peut en ajouter un `
+        + 'pour choisir un autre endroit.',
   };
 }

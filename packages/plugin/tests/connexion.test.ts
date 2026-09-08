@@ -98,9 +98,10 @@ test('la destination nomme les chemins et celui qui les a décidés', () => {
     tokens: 'tokens.json',
     source: 'les valeurs par défaut',
   });
-  assert.match(parDefaut.resume ?? '', /valeurs par défaut/);
-  assert.match(parDefaut.resume ?? '', /components/);
+  assert.match(parDefaut.resume ?? '', /Contrats dans components/);
+  assert.match(parDefaut.resume ?? '', /tokens dans tokens\.json/);
   // Le geste qui change l'endroit, nommé avec son acteur.
+  assert.match(parDefaut.resume ?? '', /développeur/);
   assert.match(parDefaut.resume ?? '', /ucm\.config\.json/);
 });
 
