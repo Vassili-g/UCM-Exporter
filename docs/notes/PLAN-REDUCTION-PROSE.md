@@ -337,10 +337,10 @@ part. Le critère est le fait apporté, pas la longueur.
 Ces items peuvent ajouter des caractères. Ils servent le troisième objectif, que
 la réduction ne produit pas toute seule.
 
-- [ ] Auditer la conformité à la règle de description du schéma : un champ dont
+- [x] Auditer la conformité à la règle de description du schéma : un champ dont
       l'absence a une signification, ou dont la valeur oriente une décision du
       consommateur, porte une description. Combler les manques trouvés.
-- [ ] Ajouter deux ou trois exemples courts aux sections les plus abstraites de
+- [x] Ajouter deux ou trois exemples courts aux sections les plus abstraites de
       `FORMAT.md`, à commencer par les cinq renvois d'une vue. Un exemple
       concret permet d'en retirer davantage en prose.
 - [ ] Relire chaque chemin de lecture de `docs/README.md` par profil, et

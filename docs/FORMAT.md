@@ -417,6 +417,20 @@ l'ordre des clés d'un objet ne compte pas dans la signature (deux extractions d
 même arbre peuvent le produire dans un ordre différent), et une partie vide
 n'est pas cataloguée : son renvoi est simplement absent.
 
+Deux variants qui rendent le même arbre avec des couleurs différentes partagent
+donc leur structure et séparent leurs peintures. Ici, `v1` et `v2` renvoient à
+la même `st1`, et aucun n'a de typographie à cataloguer :
+
+```json
+"variantViews": {
+  "v1": { "structure": "st1", "paintPlacements": "pp1" },
+  "v2": { "structure": "st1", "paintPlacements": "pp2" }
+}
+```
+
+Un consommateur qui veut l'arbre exact du second lit
+`viewStructures[variantViews[variants[i].view].structure]`.
+
 `structure` suit la même mécanique : elle publie un renvoi vers
 `viewStructures`, **inconditionnellement**. Quand l'élection du node de layout
 la fait différer de toute vue, un wrapper de dimensions sauté, elle ajoute son
@@ -807,6 +821,18 @@ déclare, et clés qui s'appellent comme un rôle sans en avoir la nature. La r�
 reste sans logique par composant, seules les clés observées changent d'un
 contrat à l'autre, et un composant dont toutes les clés nomment leur rôle ne
 publie aucun `keyRoles`.
+
+Peindre une clé demande donc deux accès, le second seulement quand la clé ne
+nomme pas son rôle :
+
+```json
+"tokens":   { "background": "{…}", "divider.background": "{…}" },
+"rendering": { "keyRoles": { "fills": { "divider.background": "background" } } }
+```
+
+`background` se résout dans `roles` directement ; `divider.background` passe
+d'abord par `keyRoles.fills`, qui rend `background`. Les deux se peignent avec
+`background-color`.
 
 Pour un rôle avec `fallback`, les `cssProperties` sont le rendu candidat et le
 `fallback` le rendu **recommandé** dès que la fidélité l'exige : un `ring`
