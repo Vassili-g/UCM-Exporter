@@ -90,7 +90,7 @@ de commande et l'écran sans sélection.
 Dans un second terminal, à la racine d'`UCM-Playground` :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.16 init
+npx --yes @ucm-kit/cli@0.1.17 init
 ```
 
 Le Playground range ses contrats sous `components/` et ses tokens dans
@@ -98,19 +98,27 @@ Le Playground range ses contrats sous `components/` et ses tokens dans
 autrement le dit ici, en une fois :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.16 init --components src/components --tokens src/tokens
+npx --yes @ucm-kit/cli@0.1.17 init --components src/components --tokens src/tokens
 ```
 
-| Option | Le dossier qu'elle reçoit |
+| Option | Ce qu'elle reçoit |
 |---|---|
-| `--components <dossier>` | Celui sous lequel les contrats sont rangés |
-| `--tokens <dossier>` | Celui qui reçoit `tokens.json` |
+| `--components <dossier>` | Le dossier sous lequel les contrats sont rangés |
+| `--tokens <dossier>` | Le dossier qui reçoit `tokens.json` |
+| `--implementation <motif>` | Où vit l'implémentation d'un contrat |
 
-Les deux attendent un dossier relatif au repository, sans `..`, et toute autre
-valeur sort en 2. `--tokens src/tokens` écrit donc `src/tokens/tokens.json` dans
+Les deux premières attendent un dossier relatif au repository, sans `..`, et
+toute autre valeur sort en 2. `--tokens src/tokens` écrit donc `src/tokens/tokens.json` dans
 `ucm.config.json` : le champ y reste un chemin de fichier, que les lecteurs
 traitent comme tel. Pour donner un autre nom à ce fichier, un développeur
 modifie la configuration à la main.
+
+`--implementation` reçoit un motif, où `{dir}` vaut le dossier du contrat et
+`{id}` son identifiant. Le défaut, `{dir}/{id}.tsx`, vise React parce que c'est
+le premier consommateur ; un repository Swift écrit `{dir}/{id}.swift` et cesse
+de porter une extension fausse. Le motif doit contenir `{id}` : sans lui, tous
+les contrats désigneraient le même fichier, et le rapport dirait « en attente
+d'implémentation » pour tous sauf un.
 
 Ces valeurs partent dans `ucm.config.json`, qui décide seul de l'endroit : le
 plugin le lit avant de publier, `ucm check` le lit avant de chercher les
@@ -129,7 +137,7 @@ Attendu, à peu de choses près :
 ✓ .github/workflows/ucm.yml
 · .gitignore existait déjà, laissé tel quel
 
-Installé avec @ucm-kit/cli 0.1.16.
+Installé avec @ucm-kit/cli 0.1.17.
 Placez vos contrats sous `components/`, vos tokens dans `tokens.json`,
 puis lancez `ucm check`.
 
@@ -155,7 +163,7 @@ ci-report.md
 Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.16 check
+npx --yes @ucm-kit/cli@0.1.17 check
 ```
 
 Attendu :
@@ -291,7 +299,7 @@ l'implémentation n'a pas été lue, jamais qu'elle est conforme.
 Pour lui donner à lire :
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.9
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.10
 ```
 
 Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
@@ -402,8 +410,8 @@ Le workflow le fait déjà après chaque publication, et le refaire à la main c
 une minute. Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.16 init
-npx --yes @ucm-kit/cli@0.1.16 check
+npx --yes @ucm-kit/cli@0.1.17 init
+npx --yes @ucm-kit/cli@0.1.17 check
 ```
 
 Attendu : `init` écrit ses cinq fichiers, et `check` sort en 0 en disant que ce

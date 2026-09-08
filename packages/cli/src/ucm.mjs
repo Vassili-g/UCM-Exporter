@@ -40,10 +40,12 @@ const AIDE = `ucm — la ligne de commande UCM
   ucm icons           liste les icônes que les contrats réclament
   ucm --help          affiche cette aide
 
-  ucm init [--components <dossier>] [--tokens <dossier>]
-      --components  dossier sous lequel les contrats sont rangés
-      --tokens      dossier qui reçoit tokens.json
-      Les deux n'agissent qu'à la première installation : ucm init n'écrase
+  ucm init [--components <dossier>] [--tokens <dossier>] [--implementation <motif>]
+      --components      dossier sous lequel les contrats sont rangés
+      --tokens          dossier qui reçoit tokens.json
+      --implementation  où vit l'implémentation d'un contrat, {dir} et {id}
+                        pour son dossier et son identifiant
+      Les trois n'agissent qu'à la première installation : ucm init n'écrase
       jamais un ucm.config.json existant.
 
   ucm check [--base <sha>] [--report <chemin>]

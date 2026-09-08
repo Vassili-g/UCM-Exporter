@@ -568,6 +568,44 @@ test("des chemins demandés à un repository déjà configuré ne changent rien,
 });
 
 /**
+ * Un repository qui n'écrit pas de React nomme ses fichiers d'implémentation.
+ *
+ * Le défaut vaut `{dir}/{id}.tsx`, et `ucm init` l'écrivait dans tout dépôt.
+ * Sur un dépôt Swift, le contrôle cherchait alors un `.tsx` qui n'existera
+ * jamais, et rapportait « en attente d'implémentation » pour chaque contrat,
+ * dans le commentaire de pull request que lit le designer.
+ */
+test("init écrit le motif d'implémentation demandé", () => {
+  const racine = repoVierge();
+  try {
+    executer(["init", "--components", "Sources/DS", "--implementation", "{dir}/{id}.swift"], {
+      racine,
+      ecrire: () => {},
+    });
+    const configuration = JSON.parse(readFileSync(join(racine, "ucm.config.json"), "utf8"));
+
+    assert.equal(configuration.implementation, "{dir}/{id}.swift");
+    assert.equal(configuration.components, "Sources/DS");
+    // `--implementation` reçoit un motif, jamais un dossier : rien ne lui est ajouté.
+    assert.equal(configuration.tokens, "tokens.json");
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Un motif sans `{id}` désignerait le même fichier pour tous les contrats, et
+ * le rapport dirait « implémentation absente » pour tous sauf un.
+ */
+test("un motif d'implémentation sans `{id}` est refusé", () => {
+  assert.match(lireArgumentsInit(["--implementation", "Button.swift"]).erreur, /contenant \{id\}/);
+  assert.match(
+    lireArgumentsInit(["--implementation", "../{id}.swift"]).erreur,
+    /motif relatif/,
+  );
+});
+
+/**
  * Un argument mal formé sort en 2, comme pour `check` : 1 reste réservé aux
  * contrôles rouges, et confondre les deux ferait lire « vos contrats sont en
  * défaut » à qui a fait une faute de frappe.

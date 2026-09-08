@@ -10,8 +10,8 @@ Figma plugin and committed next to the component's code. This command reads
 those files and says whether they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.16 init
-npx --yes @ucm-kit/cli@0.1.16 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.17 init
+npx --yes @ucm-kit/cli@0.1.17 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx pick a build nobody
@@ -36,20 +36,30 @@ that any optional stack adapter the repository installed becomes visible to
 | `ucm icons` | Lists the icons the contracts ask this repository to draw |
 | `ucm --help` | Prints the above |
 
-`ucm init` takes two options:
+`ucm init` takes three options:
 
 | Option | Effect |
 |---|---|
 | `--components <dir>` | The folder the contracts are stored under |
 | `--tokens <dir>` | The folder that holds `tokens.json` |
+| `--implementation <pattern>` | Where a contract's implementation lives |
 
-Both take a folder, because a folder is what a repository arranges. `--tokens`
-appends the file name before writing it, so the `tokens` field of
+The first two take a folder, because a folder is what a repository arranges.
+`--tokens` appends the file name before writing it, so the `tokens` field of
 `ucm.config.json` stays a file path: the readers treat it as one, and turning it
 into a folder would silently point every configuration already written at
 `tokens.json/tokens.json`.
 
-Both act only on a first install: `ucm init` never overwrites an existing
+`--implementation` takes a pattern, not a folder. It must contain `{id}`;
+without it every contract would resolve to the same file. A repository that does
+not write React states its own extension here, rather than carrying a `.tsx`
+that was wrong the day it was installed:
+
+```sh
+npx --yes @ucm-kit/cli@0.1.17 init   --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+```
+
+All three act only on a first install: `ucm init` never overwrites an existing
 configuration, and says so when options were passed to a repository that already
 has one.
 
