@@ -162,12 +162,11 @@ export function layoutDesReglages(config: GithubConfig): RepositoryLayout {
 /**
  * Où écrire, demandé au repository lui-même.
  *
- * **Le défaut refermé ici était masqué par une
- * coïncidence :** les réglages du plugin rendent `src/components` et
- * `src/tokens`, ce que le repository de démonstration utilise justement. Au
- * premier repo aux conventions différentes, l'export aurait écrit à un endroit
- * que la CI ne regarde pas, et personne n'aurait rien vu : la PR s'ouvre, le
- * contrôle ne trouve aucun contrat nouveau, tout est vert.
+ * **Les chemins viennent du repository, jamais des réglages du plugin.** Ceux-ci
+ * rendent `src/components` et `src/tokens` : sur un repo aux conventions
+ * différentes, l'export écrirait à un endroit que la CI ne regarde pas, et
+ * personne ne verrait rien, la pull request s'ouvrant sur un contrôle qui ne
+ * trouve aucun contrat nouveau.
  *
  * **Un `ucm.config.json` présent et mal formé refuse l'export.** Retomber en
  * silence sur les réglages écrirait le contrat ailleurs que là où son

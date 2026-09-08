@@ -252,12 +252,11 @@ export type ResolverOptions = {
  * souvent la même variable des dizaines de fois).
  *
  * Avec un `index`, le résolveur sert les variables locales de mémoire (plus
- * rapide qu'un aller-retour par id) et surtout refuse celles dont le nom
- * appartient déjà à une autre : écrire `{brand.foo-bar}` pour un calque lié à
- * la variable écartée désignerait la valeur de sa rivale. Une couleur fausse
- * traverserait alors tous les garde-fous, puisque le token, lui, existe bien.
- * Les variables d'une bibliothèque partagée ne sont pas dans l'index : elles
- * restent résolues par l'API, comme avant.
+ * rapide qu'un aller-retour par id) et refuse celles dont le nom appartient
+ * déjà à une autre : écrire `{brand.foo-bar}` pour un calque lié à la variable
+ * écartée désignerait la valeur de sa rivale, et la couleur fausse traverserait
+ * tous les garde-fous, le token existant bien. Les variables d'une bibliothèque
+ * partagée ne sont pas dans l'index et restent résolues par l'API.
  */
 export class VariableNameResolver {
   private readonly namesByVariableId = new Map<string, Promise<string | null>>();

@@ -359,9 +359,8 @@ async function publier(): Promise<void> {
  * jamais. La décision et ses sources sont dans `SPEC.md`.
  *
  * **Un node introuvable ne fait rien, et ne dit rien.** Le designer a pu
- * supprimer le calque, ou changer de page, entre l'export et le clic. Une
- * erreur affichée pour un clic qui n'aboutit pas coûterait plus qu'elle
- * n'apprend : le message d'origine est toujours là, avec le nom du calque.
+ * supprimer le calque, ou changer de page, entre l'export et le clic, et le
+ * message d'origine est toujours là, avec le nom du calque.
  *
  * **La page doit être la bonne avant de sélectionner.** Un node vit sur une
  * page, et `currentPage.selection` n'accepte que des nodes de la page courante :
