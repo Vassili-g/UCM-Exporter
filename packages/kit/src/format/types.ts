@@ -80,6 +80,17 @@ export type SlotProp = PropMeta & {
   default?: string | boolean;
   preferredValues?: PreferredComponentValue[];
   description?: string;
+  /**
+   * Réglages Figma du slot, quand le composant en déclare.
+   *
+   * Ils orientent ce qu'un consommateur autorise dans le slot :
+   * `minChildren` et `maxChildren` bornent le nombre d'enfants (`null` pour
+   * une borne absente), `allowPreferredValuesOnly` restreint l'insertion à
+   * `preferredValues`, `stretchChildOnInsert` étire l'enfant inséré, et
+   * `displayEmptyByDefault` montre le slot vide. Le contrat les rapporte sans
+   * les imposer : ce sont les réglages de la maquette, pas une contrainte de
+   * rendu.
+   */
   settings?: {
     stretchChildOnInsert?: boolean;
     displayEmptyByDefault?: boolean;
@@ -107,6 +118,11 @@ export type Intent = {
   usage?: string;
   do?: string[];
   dont?: string[];
+  /**
+   * Composants du design system qui s'associent bien à celui-ci, par leur nom
+   * (`Icon`, `Tooltip`). Un agent qui compose un écran s'en sert pour choisir
+   * un voisin ; le champ ne dit rien de la façon de les assembler.
+   */
   pairs?: string[];
 };
 
@@ -1009,6 +1025,11 @@ export type ContractVariant = {
   view: string;
   /** Feuilles sémantiques directement adressables, sans axe synthétique. */
   tokens?: SlotTokens;
+  /**
+   * Contours liés sur ce variant, rangés par clé. Son absence signifie que ce
+   * variant ne peint aucun contour, et jamais qu'il reprend ceux d'un autre
+   * état.
+   */
   strokes?: SlotStrokes;
   /** Cibles natives propres à ce node Figma. Absentes quand il n'en porte aucune. */
   bindings?: VariantPropertyBinding[];
@@ -1163,12 +1184,21 @@ export type ContractDiagnostic = {
    * afficher tel quel.
    */
   message: string;
+  /**
+   * Où le constat a été relevé dans Figma, quand un node précis le porte.
+   * Absent pour un constat qui vise le composant entier : un consommateur qui
+   * fabrique un lien vers la maquette n'a alors que `meta.figma`.
+   */
   figma?: {
     nodeId?: string;
     nodeName?: string;
     variantName?: string;
     property?: string;
   };
+  /**
+   * Champ du contrat que le constat vise, quand il en désigne un. Absent pour
+   * un constat qui porte sur l'export plutôt que sur une valeur publiée.
+   */
   contractPath?: string;
 };
 
