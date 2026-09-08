@@ -3,6 +3,7 @@
  * branche dédiée puis ouvrir une PR. Aucun PAT n'est logué ni renvoyé à l'UI.
  */
 import {
+  CONFIGURATION_PAR_DEFAUT,
   NOM_CONFIGURATION,
   comparerIdentiteDeContrat,
   configurationDepuisJson,
@@ -43,13 +44,19 @@ export type PublishResult =
   }
   | { status: 'created'; path: string; branch: string; pullRequestUrl: string; source: LayoutSource };
 
-/** Qui a décidé où l'artefact s'écrit : le repo, ou les réglages du plugin. */
-export type LayoutSource = typeof NOM_CONFIGURATION | 'réglages du plugin';
+/** Qui a décidé où l'artefact s'écrit : le repository, ou les défauts du kit. */
+export type LayoutSource = typeof NOM_CONFIGURATION | 'les valeurs par défaut';
 
-/** Emplacements effectifs ; `tokens` est un chemin de fichier, jamais un dossier. */
+/**
+ * Emplacements effectifs ; `tokens` est un chemin de fichier, jamais un dossier.
+ *
+ * Les deux sont toujours renseignés : un champ absent de la configuration
+ * prend son défaut, et un champ écrit mais vide fait refuser le fichier
+ * entier. Aucun export ne peut donc plus être sans destination.
+ */
 export type RepositoryLayout = {
-  components: string | null;
-  tokens: string | null;
+  components: string;
+  tokens: string;
   source: LayoutSource;
 };
 
@@ -142,41 +149,31 @@ function prefixeDeBranche(kind: ArtifactKind): string {
 }
 
 /**
- * Ce que les réglages locaux du plugin décrivent, faute de mieux.
- *
- * C'est le repli, pas la référence : ces valeurs vivent sur la machine du
- * designer et ne savent rien du repository. Elles ne servent que lorsque celui-ci
- * ne se décrit pas lui-même.
- */
-export function layoutDesReglages(config: GithubConfig): RepositoryLayout {
-  return {
-    components: config.componentsPath,
-    // `null` est une réponse : « ces réglages ne disent pas où ranger les
-    // tokens ». Les deux chemins sont un repli facultatif, et un
-    // repli absent ne s'invente pas : il se dit.
-    tokens: config.tokensPath ? `${config.tokensPath}/tokens.json` : null,
-    source: 'réglages du plugin',
-  };
-}
-
-/**
  * Où écrire, demandé au repository lui-même.
  *
- * **Les chemins viennent du repository, jamais des réglages du plugin.** Ceux-ci
- * rendent `src/components` et `src/tokens` : sur un repo aux conventions
- * différentes, l'export écrirait à un endroit que la CI ne regarde pas, et
- * personne ne verrait rien, la pull request s'ouvrant sur un contrôle qui ne
- * trouve aucun contrat nouveau.
+ * **L'endroit vient du repository, ou des défauts que la CI applique aussi.**
+ * Le plugin portait deux chemins de repli, rangés sur le poste du designer.
+ * Ils ne servaient que face à un repository sans `ucm.config.json`, et c'est
+ * exactement là que `ucm check` applique `CONFIGURATION_PAR_DEFAUT` : ils ne
+ * pouvaient donc que déposer l'export à un endroit que le contrôle ne regarde
+ * pas, la pull request s'ouvrant sur un rapport qui ne trouve aucun contrat
+ * nouveau.
  *
  * **Un `ucm.config.json` présent et mal formé refuse l'export.** Retomber en
- * silence sur les réglages écrirait le contrat ailleurs que là où son
+ * silence sur les défauts écrirait le contrat ailleurs que là où son
  * propriétaire l'a demandé, et le silence est précisément ce qui rend le défaut
  * incompréhensible. C'est la même doctrine que côté CI : le fichier absent est
  * le cas nominal, le fichier fautif est une erreur.
  */
 export async function repositoryLayout(config: GithubConfig): Promise<RepositoryLayout> {
   const fichier = await getRepositoryFile(config, NOM_CONFIGURATION);
-  if (!fichier || fichier.type !== 'file' || !fichier.content) return layoutDesReglages(config);
+  if (!fichier || fichier.type !== 'file' || !fichier.content) {
+    return {
+      components: CONFIGURATION_PAR_DEFAUT.components,
+      tokens: CONFIGURATION_PAR_DEFAUT.tokens,
+      source: 'les valeurs par défaut',
+    };
+  }
 
   let brut: unknown;
   try {
@@ -199,32 +196,12 @@ export async function repositoryLayout(config: GithubConfig): Promise<Repository
   };
 }
 
-/*
- * Personne ne sait où écrire : ni le repository, qui ne se décrit pas, ni les
- * réglages, qui ne portent aucun chemin obligatoire. Le message
- * nomme les deux gestes possibles et leur acteur, parce qu'ils n'appartiennent
- * pas à la même personne.
- */
-const MANQUE_CHEMIN_COMPOSANTS =
-  'Ce repository ne dit pas où ranger les contrats. Un développeur doit y ajouter un '
-  + `${NOM_CONFIGURATION}. Vous pouvez aussi renseigner le chemin des composants dans la `
-  + 'configuration du plugin.';
-
-const MANQUE_CHEMIN_TOKENS =
-  'Ce repository ne dit pas où ranger les tokens. Un développeur doit y ajouter un '
-  + `${NOM_CONFIGURATION}. Vous pouvez aussi renseigner le chemin des tokens dans la `
-  + 'configuration du plugin.';
-
 /** Déduit le path repo sans demander de saisie par composant. */
 export function artifactPath(
   artifact: RepositoryArtifact,
   layout: RepositoryLayout,
 ): string {
-  if (artifact.kind === 'tokens') {
-    if (!layout.tokens) throw new GithubApiError(MANQUE_CHEMIN_TOKENS);
-    return layout.tokens;
-  }
-  if (!layout.components) throw new GithubApiError(MANQUE_CHEMIN_COMPOSANTS);
+  if (artifact.kind === 'tokens') return layout.tokens;
   const componentName = artifact.filename.replace(/\.contract\.json$/i, '');
   return `${layout.components}/${componentName}/${artifact.filename}`;
 }

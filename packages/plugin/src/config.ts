@@ -1,29 +1,32 @@
 /**
- * Configuration optionnelle du dépôt GitHub.
+ * Configuration optionnelle du dépôt GitHub : à qui publier, et avec quel jeton.
  *
  * Les champs sont stockés un par un dans `figma.clientStorage`, donc localement
  * sur la machine de l'utilisateur et jamais dans le document Figma. Le PAT ne
  * quitte le sandbox que lorsqu'il est saisi par l'UI au moment de la sauvegarde.
+ *
+ * Ce qui est rangé ici décrit une machine, pas un repository : l'endroit où un
+ * export atterrit n'en fait donc pas partie, et vit dans `github.ts`, qui le
+ * demande au repository lui-même.
  */
 
-/** Champs visibles et éditables dans la page de configuration. */
+/**
+ * Champs visibles et éditables dans la page de configuration.
+ *
+ * Aucun chemin ici : l'endroit où un export atterrit appartient au repository,
+ * qui le déclare dans son `ucm.config.json` ou laisse s'appliquer les défauts
+ * du kit. Un chemin rangé sur le poste du designer ne pouvait décider que
+ * lorsque le repository ne se décrivait pas, c'est-à-dire au moment précis où
+ * la CI applique ces mêmes défauts : il ne pouvait donc que faire écrire
+ * l'export là où le contrôle ne regarde pas.
+ */
 export type RepositorySettings = {
   repoUrl: string;
   baseBranch: string;
-  componentsPath: string;
-  tokensPath: string;
 };
 
-/**
- * Ce qu'un chemin de repli vaut une fois validé : un chemin, ou rien.
- * Il reste facultatif car un `ucm.config.json` lisible le remplace entièrement.
- */
-export type CheminDeRepli = string | null;
-
 /** Configuration complète utilisée par le client GitHub. */
-export type GithubConfig = Omit<RepositorySettings, 'componentsPath' | 'tokensPath'> & {
-  componentsPath: CheminDeRepli;
-  tokensPath: CheminDeRepli;
+export type GithubConfig = RepositorySettings & {
   owner: string;
   repo: string;
   githubPat: string;
@@ -41,8 +44,6 @@ export type PublicSettings = RepositorySettings & { hasPat: boolean };
 const STORAGE_KEYS = {
   repoUrl: 'repoUrl',
   baseBranch: 'baseBranch',
-  componentsPath: 'componentsPath',
-  tokensPath: 'tokensPath',
   githubPat: 'github_pat',
 } as const;
 
@@ -72,29 +73,6 @@ export function parseGithubRepository(repoUrl: string): { owner: string; repo: s
   return owner && repo ? { owner, repo } : null;
 }
 
-/**
- * Normalise un dossier de repo : séparateurs `/`, sans slash de bord.
- * Les segments `.` et `..` sont refusés pour éviter de sortir du path prévu.
- */
-export function normalizeRepositoryPath(value: string): string | null {
-  const normalized = value.trim().replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
-  if (!normalized) return null;
-  const segments = normalized.split('/');
-  if (segments.some((segment) => !segment || segment === '.' || segment === '..')) return null;
-  return segments.join('/');
-}
-
-/**
- * Un chemin de repli : sa forme normalisée, `null` quand il est vide, et
- * `false` quand il est écrit mais inutilisable. Les trois cas se distinguent :
- * confondre « absent » et « fautif » ferait taire la seule erreur de saisie que
- * ces champs peuvent encore produire.
- */
-function cheminDeRepli(valeur: string): CheminDeRepli | false {
-  if (!valeur.trim()) return null;
-  return normalizeRepositoryPath(valeur) ?? false;
-}
-
 /** Valide et normalise les réglages avant tout appel GitHub. */
 export function validateSettings(input: SettingsInput, storedPat = ''): SettingsValidation {
   const errors: SettingsValidation['errors'] = {};
@@ -104,28 +82,10 @@ export function validateSettings(input: SettingsInput, storedPat = ''): Settings
   const baseBranch = input.baseBranch.trim();
   if (!baseBranch) errors.baseBranch = 'La branche de base est obligatoire.';
 
-  /*
-   * Les deux chemins sont un repli : vides, ils laissent le
-   * repository décider par son `ucm.config.json`. Leur forme reste vérifiée
-   * (un chemin qui remonte hors du repository n'est jamais une réponse) mais
-   * leur absence n'est plus une erreur.
-   */
-  const componentsPath = cheminDeRepli(input.componentsPath);
-  if (componentsPath === false) {
-    errors.componentsPath = 'Le chemin des composants doit rester relatif au repository.';
-  }
-
-  const tokensPath = cheminDeRepli(input.tokensPath);
-  if (tokensPath === false) {
-    errors.tokensPath = 'Le chemin des tokens doit rester relatif au repository.';
-  }
-
   const githubPat = input.githubPat?.trim() || storedPat.trim();
   if (!githubPat) errors.githubPat = 'Le Personal Access Token est obligatoire pour créer une PR.';
 
-  if (!repository || !baseBranch || componentsPath === false || tokensPath === false || !githubPat) {
-    return { valid: false, errors, config: null };
-  }
+  if (!repository || !baseBranch || !githubPat) return { valid: false, errors, config: null };
 
   return {
     valid: true,
@@ -133,8 +93,6 @@ export function validateSettings(input: SettingsInput, storedPat = ''): Settings
     config: {
       repoUrl: input.repoUrl.trim(),
       baseBranch,
-      componentsPath,
-      tokensPath,
       owner: repository.owner,
       repo: repository.repo,
       githubPat,
@@ -153,22 +111,16 @@ export async function supprimerPat(): Promise<void> {
   await figma.clientStorage.deleteAsync(STORAGE_KEYS.githubPat);
 }
 
-/** Charge les cinq clés locales et ne renvoie jamais le PAT à l'UI. */
+/** Charge les trois clés locales et ne renvoie jamais le PAT à l'UI. */
 export async function loadPublicSettings(): Promise<PublicSettings> {
-  const [repoUrl, baseBranch, componentsPath, tokensPath, githubPat] = await Promise.all([
+  const [repoUrl, baseBranch, githubPat] = await Promise.all([
     figma.clientStorage.getAsync(STORAGE_KEYS.repoUrl),
     figma.clientStorage.getAsync(STORAGE_KEYS.baseBranch),
-    figma.clientStorage.getAsync(STORAGE_KEYS.componentsPath),
-    figma.clientStorage.getAsync(STORAGE_KEYS.tokensPath),
     figma.clientStorage.getAsync(STORAGE_KEYS.githubPat),
   ]);
   return {
     repoUrl: typeof repoUrl === 'string' ? repoUrl : '',
     baseBranch: typeof baseBranch === 'string' ? baseBranch : 'main',
-    // Aucun chemin par défaut : un repli inventé écrirait l'export à un endroit
-    // que personne n'a demandé, et le ferait croire choisi.
-    componentsPath: typeof componentsPath === 'string' ? componentsPath : '',
-    tokensPath: typeof tokensPath === 'string' ? tokensPath : '',
     hasPat: typeof githubPat === 'string' && githubPat.trim().length > 0,
   };
 }
@@ -187,20 +139,9 @@ export async function saveSettings(input: SettingsInput): Promise<SettingsValida
   // Une erreur de saisie ne doit jamais écraser une configuration déjà valable.
   if (!validation.valid) return validation;
 
-  const settingsToStore: RepositorySettings = {
-    repoUrl: input.repoUrl.trim(),
-    baseBranch: input.baseBranch.trim(),
-    componentsPath: normalizeRepositoryPath(input.componentsPath) ?? input.componentsPath.trim(),
-    tokensPath: normalizeRepositoryPath(input.tokensPath) ?? input.tokensPath.trim(),
-    // (le rangement garde la saisie telle quelle : la validation ci-dessus a
-    // déjà refusé ce qui n'était pas un chemin acceptable)
-  };
-
   await Promise.all([
-    figma.clientStorage.setAsync(STORAGE_KEYS.repoUrl, settingsToStore.repoUrl),
-    figma.clientStorage.setAsync(STORAGE_KEYS.baseBranch, settingsToStore.baseBranch),
-    figma.clientStorage.setAsync(STORAGE_KEYS.componentsPath, settingsToStore.componentsPath),
-    figma.clientStorage.setAsync(STORAGE_KEYS.tokensPath, settingsToStore.tokensPath),
+    figma.clientStorage.setAsync(STORAGE_KEYS.repoUrl, input.repoUrl.trim()),
+    figma.clientStorage.setAsync(STORAGE_KEYS.baseBranch, input.baseBranch.trim()),
     input.githubPat?.trim()
       ? figma.clientStorage.setAsync(STORAGE_KEYS.githubPat, input.githubPat.trim())
       : Promise.resolve(),

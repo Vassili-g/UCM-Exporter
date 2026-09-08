@@ -57,8 +57,8 @@ function postConnection(cause: CauseConnexion, precision: PrecisionConnexion = {
 }
 
 /**
- * Envoie les chemins effectifs et leur autorité : configuration du dépôt ou
- * réglages de repli du plugin.
+ * Envoie les chemins effectifs et leur autorité : le `ucm.config.json` du
+ * repository, ou les défauts du kit quand il n'en a pas.
  */
 function postDepot(layout: RepositoryLayout | null, config: GithubConfig | null): void {
   const depot = config ? { owner: config.owner, repo: config.repo, baseBranch: config.baseBranch } : null;

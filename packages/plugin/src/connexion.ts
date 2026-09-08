@@ -148,8 +148,8 @@ export function gesteApresEchecDePublication(statut: number | null): string {
 
 /** Ce que le plugin sait de l'endroit où le repository range ses exports. */
 export type LayoutConnu = {
-  components: string | null;
-  tokens: string | null;
+  components: string;
+  tokens: string;
   source: string;
 };
 
@@ -158,14 +158,10 @@ export type DepotVise = { owner: string; repo: string; baseBranch: string };
 
 /** Qui décide de l'endroit, et ce que l'interface en dit. */
 export type EtatDuDepot = {
-  /** `repository` marque les deux champs de la configuration comme un repli. */
-  gouverne: 'repository' | 'reglages' | null;
-  /** La phrase de la configuration : qui gouverne les chemins. */
+  /** La phrase de la configuration : d'où viennent les chemins, et lesquels. */
   resume: string | null;
   /** Le repository et sa branche, sur l'écran de travail. */
   ligne: string | null;
-  /** Où les deux artefacts atterrissent, quand c'est connu. */
-  chemins: string | null;
   /**
    * `true` quand aucun repository n'est connecté : l'export sera téléchargé sur
    * le poste. C'est un comportement correct, mais il était subi :
@@ -176,11 +172,12 @@ export type EtatDuDepot = {
 };
 
 /**
- * La phrase que la configuration affiche au-dessus des deux chemins.
+ * La phrase que la configuration affiche sur l'endroit où les exports vont.
  *
  * Elle répond à la question que le designer se posait après coup, en lisant une
- * ligne de journal : qui a décidé de l'endroit ? Le troisième cas est le plus
- * utile, et il n'existait pas : personne ne décide, et l'export sera refusé.
+ * ligne de journal : qui a décidé de l'endroit ? Deux réponses, et deux
+ * seulement, parce qu'il n'y a plus qu'une autorité : le repository l'a écrit,
+ * ou il laisse s'appliquer les défauts que le contrôle applique aussi.
  */
 export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null = null): EtatDuDepot {
   /*
@@ -192,41 +189,16 @@ export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null 
   const ligne = depot
     ? `${depot.owner}/${depot.repo} · ${depot.baseBranch}`
     : 'Aucun repository connecté. L’export sera téléchargé sur votre poste.';
-  const chemins = layout
-    ? `Contrats : ${layout.components ?? 'aucun chemin'}. Tokens : ${layout.tokens ?? 'aucun chemin'}.`
-    : null;
-  const situation = { ligne, chemins, repli: depot === null };
+  const situation = { ligne, repli: depot === null };
 
-  if (!layout) return { ...situation, gouverne: null, resume: null };
+  if (!layout) return { ...situation, resume: null };
 
-  if (layout.source === NOM_CONFIGURATION) {
-    return {
-      ...situation,
-      gouverne: 'repository',
-      resume:
-        `Ce repository décrit lui-même où ranger les exports, dans son ${NOM_CONFIGURATION} : `
-        + `${layout.components ?? 'aucun chemin'} pour les contrats, `
-        + `${layout.tokens ?? 'aucun chemin'} pour les tokens. `
-        + 'Les deux chemins ci-dessous ne servent que si ce fichier disparaît.',
-    };
-  }
-
-  if (!layout.components && !layout.tokens) {
-    return {
-      ...situation,
-      gouverne: 'reglages',
-      resume:
-        `Ce repository ne dit pas où ranger les exports, et aucun chemin n'est renseigné ici. `
-        + `Un développeur doit ajouter un ${NOM_CONFIGURATION} au repository, ou renseignez `
-        + 'les chemins ci-dessous. Sans l’un des deux, un export est refusé.',
-    };
-  }
-
+  const ou = `${layout.components} pour les contrats, ${layout.tokens} pour les tokens.`;
   return {
     ...situation,
-    gouverne: 'reglages',
-    resume:
-      'Ce repository ne dit pas où ranger les exports : les chemins ci-dessous décident. '
-      + `Un développeur peut les remplacer en ajoutant un ${NOM_CONFIGURATION} au repository.`,
+    resume: layout.source === NOM_CONFIGURATION
+      ? `Ce repository décrit lui-même où ranger les exports, dans son ${NOM_CONFIGURATION} : ${ou}`
+      : `Ce repository ne dit pas où ranger les exports : les valeurs par défaut s'appliquent, `
+        + `${ou} Un développeur peut en décider autrement en ajoutant un ${NOM_CONFIGURATION}.`,
   };
 }

@@ -78,45 +78,35 @@ test('aucun message ne parle au designer avec un tiret cadratin', () => {
   }
 });
 
-test('qui gouverne les chemins se lit avant de les saisir', () => {
-  // `repositoryLayout` ignore les réglages dès qu'un ucm.config.json
-  // lisible existe : le dire après coup, en ligne de journal, revient à faire
-  // remplir deux champs sans effet.
+/**
+ * D'où viennent les chemins, dit là où le designer configure le repository.
+ * Deux réponses et deux seulement : le repository l'a écrit, ou les défauts
+ * s'appliquent. Il n'y a plus de troisième autorité à départager.
+ */
+test('la destination nomme les chemins et celui qui les a décidés', () => {
   const parLeDepot = etatDuDepot({
     components: 'packages/ui/src',
     tokens: 'packages/ui/tokens.json',
     source: 'ucm.config.json',
   });
-  assert.equal(parLeDepot.gouverne, 'repository');
+  assert.match(parLeDepot.resume ?? '', /ucm\.config\.json/);
   assert.match(parLeDepot.resume ?? '', /packages\/ui\/src/);
   assert.match(parLeDepot.resume ?? '', /packages\/ui\/tokens\.json/);
 
-  const parLesReglages = etatDuDepot({
-    components: 'src/components',
-    tokens: 'src/tokens/tokens.json',
-    source: 'réglages du plugin',
+  const parDefaut = etatDuDepot({
+    components: 'components',
+    tokens: 'tokens.json',
+    source: 'les valeurs par défaut',
   });
-  assert.equal(parLesReglages.gouverne, 'reglages');
-});
-
-test('personne ne décide de l’endroit, et cela se dit', () => {
-  // Le cas neuf : les chemins ne sont plus obligatoires, un
-  // repository qui ne se décrit pas et des réglages vides ne désignent donc
-  // plus rien. L'export sera refusé, et le designer doit l'apprendre ici.
-  const { gouverne, resume } = etatDuDepot({
-    components: null,
-    tokens: null,
-    source: 'réglages du plugin',
-  });
-  assert.equal(gouverne, 'reglages');
-  assert.match(resume ?? '', /refusé/);
+  assert.match(parDefaut.resume ?? '', /valeurs par défaut/);
+  assert.match(parDefaut.resume ?? '', /components/);
+  // Le geste qui change l'endroit, nommé avec son acteur.
+  assert.match(parDefaut.resume ?? '', /ucm\.config\.json/);
 });
 
 test('tant que rien n’est connu, rien n’est affirmé sur les chemins', () => {
   const sansRien = etatDuDepot(null, null);
-  assert.equal(sansRien.gouverne, null);
   assert.equal(sansRien.resume, null);
-  assert.equal(sansRien.chemins, null);
 });
 
 test('sans repository, la ligne dit ce qui VA se passer', () => {
@@ -127,17 +117,15 @@ test('sans repository, la ligne dit ce qui VA se passer', () => {
   assert.match(ligne ?? '', /téléchargé/);
 });
 
-test('la destination nomme le repository, sa branche et les deux chemins', () => {
+test('la ligne nomme le repository et sa branche', () => {
   // Elle n'apparaissait qu'après publication, donc
   // après le point de non-retour.
-  const { ligne, chemins, repli } = etatDuDepot(
+  const { ligne, repli } = etatDuDepot(
     { components: 'src/components', tokens: 'src/tokens/tokens.json', source: 'ucm.config.json' },
     { owner: 'mon-org', repo: 'design-system-v3', baseBranch: 'main' },
   );
   assert.equal(repli, false);
   assert.equal(ligne, 'mon-org/design-system-v3 · main');
-  assert.match(chemins ?? '', /src\/components/);
-  assert.match(chemins ?? '', /src\/tokens\/tokens\.json/);
 });
 
 /**

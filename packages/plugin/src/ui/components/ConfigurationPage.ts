@@ -37,7 +37,7 @@ export interface PageConfigurationUi {
   populate(settings: PublicSettings): void;
   acceptRemoteSettings(settings: PublicSettings): void;
   updateConnection(state: EtatConnexion['state'], geste: string | null): void;
-  afficherGouvernance(depot: Extract<PluginMessage, { type: 'depot' }>): void;
+  afficherDestination(depot: Extract<PluginMessage, { type: 'depot' }>): void;
   showSaveError(): void;
   releaseSaveButton(): void;
 }
@@ -91,8 +91,6 @@ function localErrors(settings: SettingsInput, hasStoredPat: boolean): ErreursDeC
     errors.repoUrl = 'Utilisez une URL https://github.com/owner/repo valide.';
   }
   if (!settings.baseBranch.trim()) errors.baseBranch = 'La branche de base est obligatoire.';
-  if (!settings.componentsPath.trim()) errors.componentsPath = 'Le chemin des composants est obligatoire.';
-  if (!settings.tokensPath.trim()) errors.tokensPath = 'Le chemin des tokens est obligatoire.';
   // `githubPat` est optionnel dans `SettingsInput`. Le formulaire en fournit
   // toujours un, fût-il vide, mais un appel construit ailleurs peut l'omettre :
   // sans l'accès optionnel, la validation lève au lieu de refuser la saisie.
@@ -143,24 +141,18 @@ export function createConfigurationPage(
   }, markDirty);
 
   /*
- * Qui gouverne les chemins, dit avant de les saisir.
+ * Où les exports vont atterrir, et qui l'a décidé. Le formulaire ne porte
+ * aucun chemin : cette phrase est la seule chose à en dire ici.
  */
-  const gouvernance = document.createElement('p');
-  gouvernance.className = 'field-help';
-  gouvernance.hidden = true;
+  const destination = document.createElement('p');
+  destination.className = 'field-help';
+  destination.hidden = true;
   const baseBranch = createField('baseBranch', 'Branche de base', { placeholder: 'main' }, markDirty);
-  const componentsPath = createField(
-    'componentsPath',
-    'Chemin des composants',
-    { placeholder: 'src/components' },
-    markDirty,
-  );
-  const tokensPath = createField('tokensPath', 'Chemin des tokens', { placeholder: 'src/tokens' }, markDirty);
   const githubPat = createField('githubPat', 'Personal Access Token', {
     type: 'password',
     help: 'Utilisez un fine-grained token limité à ce repo avec Contents: Read and write et Pull requests: Read and write.',
   }, markDirty);
-  const fields = { repoUrl, baseBranch, componentsPath, tokensPath, githubPat };
+  const fields = { repoUrl, baseBranch, githubPat };
 
   /*
    * Retirer le jeton du poste. La confirmation est un second clic sur le
@@ -213,8 +205,6 @@ export function createConfigurationPage(
   const settingsPayload = () => ({
     repoUrl: repoUrl.input.value,
     baseBranch: baseBranch.input.value,
-    componentsPath: componentsPath.input.value,
-    tokensPath: tokensPath.input.value,
     githubPat: githubPat.input.value,
   });
 
@@ -237,9 +227,7 @@ export function createConfigurationPage(
     status,
     repoUrl.wrapper,
     baseBranch.wrapper,
-    gouvernance,
-    componentsPath.wrapper,
-    tokensPath.wrapper,
+    destination,
     githubPat.wrapper,
     supprimerToken,
     saveButton,
@@ -255,8 +243,6 @@ export function createConfigurationPage(
       if (settingsDirty) return;
       repoUrl.input.value = settings.repoUrl ?? '';
       baseBranch.input.value = settings.baseBranch ?? '';
-      componentsPath.input.value = settings.componentsPath ?? '';
-      tokensPath.input.value = settings.tokensPath ?? '';
       hasStoredPat = Boolean(settings.hasPat);
       // Le bouton n'existe que s'il y a quelque chose à supprimer.
       supprimerToken.hidden = !hasStoredPat;
@@ -288,16 +274,13 @@ export function createConfigurationPage(
       ecrireStatut('error', `${prefixe}${geste ?? ''}`.trim());
     },
     /**
-     * Marque les deux chemins pour ce qu'ils sont : un repli, ou la décision.
-     * Le libellé le dit, parce qu'un champ dont personne ne se sert doit le
-     * dire là où on le lit, pas dans une note à côté.
+     * L'endroit où l'export ira, dit là où le designer configure le repository.
+     * Il ne se saisit pas ici : il se lit, parce que c'est le repository qui en
+     * décide.
      */
-    afficherGouvernance({ gouverne, resume }: EtatDuDepot) {
-      gouvernance.textContent = resume ?? '';
-      gouvernance.hidden = !resume;
-      const repli = gouverne === 'repository' ? ' (repli)' : '';
-      componentsPath.label.textContent = `Chemin des composants${repli}`;
-      tokensPath.label.textContent = `Chemin des tokens${repli}`;
+    afficherDestination({ resume }: EtatDuDepot) {
+      destination.textContent = resume ?? '';
+      destination.hidden = !resume;
     },
     showSaveError() {
       enregistrementEnCours = false;

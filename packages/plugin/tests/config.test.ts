@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { normalizeRepositoryPath, parseGithubRepository, validateSettings } from '../src/config';
+import { parseGithubRepository, validateSettings } from '../src/config';
 
 test('parseGithubRepository extrait owner/repo depuis une URL GitHub HTTPS', () => {
   assert.deepEqual(parseGithubRepository('https://github.com/acme/design-system.git'), {
@@ -22,18 +22,10 @@ test('parseGithubRepository accepte l’URL exacte du playground et un lien Mark
   );
 });
 
-test('normalizeRepositoryPath retire les slashes de bord et refuse la traversée', () => {
-  assert.equal(normalizeRepositoryPath('/src\\components/'), 'src/components');
-  assert.equal(normalizeRepositoryPath('../components'), null);
-  assert.equal(normalizeRepositoryPath(''), null);
-});
-
 test('validateSettings utilise le PAT stocké quand le champ UI reste vide', () => {
   const result = validateSettings({
     repoUrl: 'https://github.com/acme/design-system',
     baseBranch: 'main',
-    componentsPath: 'src/components/',
-    tokensPath: 'src/tokens/',
     githubPat: '',
   }, 'github_pat_secret');
 
@@ -41,8 +33,6 @@ test('validateSettings utilise le PAT stocké quand le champ UI reste vide', () 
   assert.deepEqual(result.config, {
     repoUrl: 'https://github.com/acme/design-system',
     baseBranch: 'main',
-    componentsPath: 'src/components',
-    tokensPath: 'src/tokens',
     owner: 'acme',
     repo: 'design-system',
     githubPat: 'github_pat_secret',
@@ -50,49 +40,31 @@ test('validateSettings utilise le PAT stocké quand le champ UI reste vide', () 
 });
 
 test('validateSettings détaille une configuration invalide sans planter', () => {
-  const result = validateSettings({
-    repoUrl: 'invalid',
-    baseBranch: '',
-    componentsPath: '../components',
-    tokensPath: '',
-  });
+  const result = validateSettings({ repoUrl: 'invalid', baseBranch: '' });
 
   assert.equal(result.valid, false);
   assert.equal(result.config, null);
-  // `tokensPath` vide n'est plus une erreur : c'est un repli absent.
-  assert.deepEqual(Object.keys(result.errors).sort(), [
-    'baseBranch',
-    'componentsPath',
-    'githubPat',
-    'repoUrl',
-  ]);
+  assert.deepEqual(Object.keys(result.errors).sort(), ['baseBranch', 'githubPat', 'repoUrl']);
 });
 
-test('un chemin vide laisse le repository décider, un chemin fautif est refusé', () => {
-  // Les deux chemins sont un repli. Leur absence est une réponse, et
-  // `repositoryLayout` la remplace par ce que le repository dit de lui-même.
-  // Leur forme reste vérifiée : un chemin qui remonte hors du repository
-  // n'écrirait pas là où on croit.
-  const vides = validateSettings({
+/**
+ * Trois champs, et aucun chemin. Un chemin rangé ici ne pouvait décider que
+ * face à un repository sans `ucm.config.json`, c'est-à-dire au moment précis
+ * où `ucm check` applique ses défauts : il n'aurait pu que déposer l'export
+ * hors de vue du contrôle.
+ */
+test('les réglages ne portent aucun chemin', () => {
+  const result = validateSettings({
     repoUrl: 'https://github.com/acme/design-system',
     baseBranch: 'main',
-    componentsPath: '',
-    tokensPath: '   ',
     githubPat: 'github_pat_secret',
   });
 
-  assert.equal(vides.valid, true);
-  assert.equal(vides.config?.componentsPath, null);
-  assert.equal(vides.config?.tokensPath, null);
-
-  const fautif = validateSettings({
-    repoUrl: 'https://github.com/acme/design-system',
-    baseBranch: 'main',
-    componentsPath: '../ailleurs',
-    tokensPath: '',
-    githubPat: 'github_pat_secret',
-  });
-
-  assert.equal(fautif.valid, false);
-  assert.deepEqual(Object.keys(fautif.errors), ['componentsPath']);
+  assert.deepEqual(Object.keys(result.config ?? {}).sort(), [
+    'baseBranch',
+    'githubPat',
+    'owner',
+    'repo',
+    'repoUrl',
+  ]);
 });

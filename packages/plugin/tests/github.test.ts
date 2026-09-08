@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { CONTRACT_VERSION } from '@ucm-kit/core/format';
+import { CONFIGURATION_PAR_DEFAUT, CONTRACT_VERSION } from '@ucm-kit/core/format';
 import type { GithubConfig } from '../src/config';
 import {
   artifactPath,
   decodeBase64,
   encodeBase64,
   exportBranchName,
-  layoutDesReglages,
   publishArtifact,
   pullRequestBody,
   repositoryLayout,
@@ -68,53 +67,24 @@ const config: GithubConfig = {
   owner: 'acme',
   repo: 'design-system',
   baseBranch: 'main',
-  componentsPath: 'src/components',
-  tokensPath: 'src/tokens',
   githubPat: 'secret-never-logged',
 };
 
+const LAYOUT_DECRIT = {
+  components: 'src/components',
+  tokens: 'src/tokens/tokens.json',
+  source: 'ucm.config.json',
+} as const;
+
 test('artifactPath dérive les paths du composant et des tokens', () => {
-  const layout = layoutDesReglages(config);
   assert.equal(
-    artifactPath({ kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }, layout),
+    artifactPath({ kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }, LAYOUT_DECRIT),
     'src/components/Button/Button.contract.json',
   );
+  // `tokens` est un chemin de fichier, jamais un dossier auquel on ajoute un nom.
   assert.equal(
-    artifactPath({ kind: 'tokens', filename: 'tokens.json', content: '{}', warnings: [] }, layout),
+    artifactPath({ kind: 'tokens', filename: 'tokens.json', content: '{}', warnings: [] }, LAYOUT_DECRIT),
     'src/tokens/tokens.json',
-  );
-});
-
-/**
- * Les deux chemins des réglages sont un repli facultatif : le
- * repository décide dès qu'il se décrit. Quand personne ne décide, rien ne doit
- * s'écrire à un endroit inventé : l'export est refusé, et le message nomme les
- * deux gestes possibles avec leur acteur.
- */
-test('sans chemin nulle part, l’export est refusé au lieu d’inventer un endroit', () => {
-  const sansChemin = layoutDesReglages({ ...config, componentsPath: null, tokensPath: null });
-  assert.equal(sansChemin.components, null);
-  assert.equal(sansChemin.tokens, null);
-
-  assert.throws(
-    () => artifactPath({ kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }, sansChemin),
-    /ucm\.config\.json/,
-  );
-  assert.throws(
-    () => artifactPath({ kind: 'tokens', filename: 'tokens.json', content: '{}', warnings: [] }, sansChemin),
-    /ucm\.config\.json/,
-  );
-});
-
-test('un seul chemin renseigné ne refuse que l’autre artefact', () => {
-  const partiel = layoutDesReglages({ ...config, tokensPath: null });
-  assert.equal(
-    artifactPath({ kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }, partiel),
-    'src/components/Button/Button.contract.json',
-  );
-  assert.throws(
-    () => artifactPath({ kind: 'tokens', filename: 'tokens.json', content: '{}', warnings: [] }, partiel),
-    /tokens/,
   );
 });
 
@@ -141,7 +111,7 @@ test('la configuration du repository décide où l’export s’écrit', async (
     artifactPath({ kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] }, layout),
     'design/contrats/Button/Button.contract.json',
   );
-  // `tokens` est un chemin de fichier, pas un dossier : les réglages du plugin
+  // `tokens` est un chemin de fichier, pas un dossier : le repli du plugin
   // ajoutaient `/tokens.json`, et les deux conventions ne se distinguaient pas
   // tant que le dossier s'appelait `tokens`.
   assert.equal(
@@ -152,15 +122,23 @@ test('la configuration du repository décide où l’export s’écrit', async (
 
 /**
  * Un repository qui ne se décrit pas est le cas nominal, pas une erreur : c'est
- * le critère de réussite n° 1. Les réglages prennent alors le relais.
+ * le critère de réussite n° 1. Ce sont alors les défauts du kit qui décident,
+ * et ce sont exactement ceux que `ucm check` applique de son côté. Le plugin
+ * portait ici deux chemins de repli, rangés sur le poste du designer : ils ne
+ * servaient que dans ce cas précis, et ne pouvaient donc que déposer l'export
+ * hors de vue du contrôle.
  */
-test('un repository sans ucm.config.json retombe sur les réglages, sans erreur', async () => {
+test('un repository sans ucm.config.json prend les défauts que le contrôle applique aussi', async () => {
   const layout = await avecFetch(
     () => new Response('{}', { status: 404 }),
     () => repositoryLayout(config),
   );
 
-  assert.deepEqual(layout, layoutDesReglages(config));
+  assert.deepEqual(layout, {
+    components: CONFIGURATION_PAR_DEFAUT.components,
+    tokens: CONFIGURATION_PAR_DEFAUT.tokens,
+    source: 'les valeurs par défaut',
+  });
 });
 
 /**
@@ -231,8 +209,8 @@ test('publishArtifact ne crée aucune branche si le fichier est inchangé', asyn
 
   assert.deepEqual(result, {
     status: 'unchanged',
-    path: 'src/tokens/tokens.json',
-    source: 'réglages du plugin',
+    path: 'tokens.json',
+    source: 'les valeurs par défaut',
     ou: 'branche main',
     pullRequestUrl: null,
   });
@@ -257,8 +235,8 @@ test('publishArtifact fonctionne dans un runtime Figma sans TextEncoder', async 
     );
     assert.deepEqual(result, {
       status: 'unchanged',
-      path: 'src/tokens/tokens.json',
-      source: 'réglages du plugin',
+      path: 'tokens.json',
+      source: 'les valeurs par défaut',
       ou: 'branche main',
       pullRequestUrl: null,
     });
@@ -291,8 +269,8 @@ test('publishArtifact compare aussi un fichier GitHub supérieur à 1 Mo via son
 
   assert.deepEqual(result, {
     status: 'unchanged',
-    path: 'src/tokens/tokens.json',
-    source: 'réglages du plugin',
+    path: 'tokens.json',
+    source: 'les valeurs par défaut',
     ou: 'branche main',
     pullRequestUrl: null,
   });
@@ -324,8 +302,8 @@ test('publishArtifact ignore meta.exportedAt pour détecter un contrat inchangé
   // Seul l'horodatage diffère : aucun changement design, donc aucune PR.
   assert.deepEqual(result, {
     status: 'unchanged',
-    path: 'src/components/Button/Button.contract.json',
-    source: 'réglages du plugin',
+    path: 'components/Button/Button.contract.json',
+    source: 'les valeurs par défaut',
     ou: 'branche main',
     pullRequestUrl: null,
   });
@@ -336,7 +314,7 @@ test('publishArtifact supprime la branche quand l’ouverture de la PR échoue',
   const previousFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string }> = [];
   const responses = [
-    // Le repository ne se décrit pas : les réglages du plugin décident.
+    // Le repository ne se décrit pas : les défauts du kit décident.
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     // Aucun export en vol : la recherche de collision liste les pull
@@ -379,7 +357,7 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
   const previousFetch = globalThis.fetch;
   const calls: Array<{ url: string; method: string }> = [];
   const responses = [
-    // Le repository ne se décrit pas : les réglages du plugin décident.
+    // Le repository ne se décrit pas : les défauts du kit décident.
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
     // Aucun export en vol : la recherche de collision liste les pull
@@ -405,10 +383,10 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
     );
     assert.deepEqual(result, {
       status: 'created',
-      path: 'src/components/Button/Button.contract.json',
+      path: 'components/Button/Button.contract.json',
       branch: 'ucm-exporter/export-component-20260717-090500',
       pullRequestUrl: 'https://github.com/acme/design-system/pull/12',
-      source: 'réglages du plugin',
+      source: 'les valeurs par défaut',
     });
     assert.deepEqual(calls.map((call) => call.method), ['GET', 'GET', 'GET', 'GET', 'POST', 'PUT', 'POST']);
   } finally {
@@ -633,8 +611,8 @@ test('un artefact identique déjà déposé en vol ne crée pas un second export
 
   assert.deepEqual(result, {
     status: 'unchanged',
-    path: 'src/components/IconButton/IconButton.contract.json',
-    source: 'réglages du plugin',
+    path: 'components/IconButton/IconButton.contract.json',
+    source: 'les valeurs par défaut',
     // L'endroit fait partie du verdict. « Aucun changement » tout court
     // enverrait chercher sur la branche de base un fichier qui n'y est pas
     // encore, et le designer conclurait que son export s'est perdu.
@@ -673,8 +651,8 @@ test('des tokens identiques déjà déposés en vol ne créent pas un second exp
 
   assert.deepEqual(result, {
     status: 'unchanged',
-    path: 'src/tokens/tokens.json',
-    source: 'réglages du plugin',
+    path: 'tokens.json',
+    source: 'les valeurs par défaut',
     ou: `pull request d'export ouverte, branche ${branche}`,
     // La liste des pull requests n'a rendu aucune URL : le verdict le dit au
     // lieu d'en inventer une.
