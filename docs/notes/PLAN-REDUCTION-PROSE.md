@@ -208,10 +208,23 @@ schéma se régénérerait plus petit et resterait valide.
       (`FORMAT.md` et `AGENTS.md`), les trois portes d'un avertissement
       (`CONTRIBUTING.md` et `AGENTS.md`), le partage des verdicts
       (`POUR-LES-DESIGNERS.md` et `README.md`).
-- [ ] Classer les 220 lignes de prose de `FORMAT.md` qui citent un des 70
-      champs déjà décrits au schéma : redescription d'un champ seul, ou
-      relation entre deux champs. Seules les premières sont retirables, et
-      elles le sont vers `types.ts` s'il ne les porte pas déjà.
+- [x] Classer les lignes de prose de `FORMAT.md` qui citent un champ déjà
+      décrit au schéma : redescription d'un champ seul, ou relation entre deux
+      champs. Seules les premières sont retirables, et elles le sont vers
+      `types.ts` s'il ne les porte pas déjà.
+
+      Le grain est le paragraphe et non la ligne : un paragraphe qui relie deux
+      champs les cite souvent sur deux lignes. Le schéma décrit 92 champs, et
+      101 paragraphes en citent au moins un, 49 un seul et 52 deux ou plus. Les
+      52 décrivent une relation et restent.
+
+      Sur les 49, cinq redisaient le JSDoc mot pour mot et sont retirés : la
+      signification par clé d'`inset` et sa boîte de référence, le détail par
+      côté de `padding`, `radius` et de la largeur d'un stroke, l'intention que
+      porte `stretch`, la traduction d'une piste de grille, et la condition de
+      publication d'un `gap`. Les autres portent une borne ou un fait de l'API
+      Figma qui ne vit nulle part ailleurs, le calcul par le centre d'un calque
+      tourné compris.
 
 ### 2. Poser le filet là où il manque
 
