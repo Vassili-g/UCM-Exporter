@@ -19,8 +19,8 @@ cibles chiffrées de ce plan supposaient un gras que la mesure ne trouve pas.
 `docs/FORMAT.md` a rendu 5 843 caractères sur 89 674, soit 6,5 % et non les
 17 % visés ; `AGENTS.md` 2 455 sur 45 364, soit 5,4 % et non 25 %. Dans les deux
 cas le gain vient d'un seul geste, rendre à l'autre altitude ce qu'elle portait
-déjà, et il s'épuise avec lui. Ce qui reste tient en une règle, sa borne et son
-pourquoi, et la phrase suivante retirée est une clause perdue.
+déjà, et ce geste ne se répète pas. Les phrases restantes portent une règle, sa
+borne ou son pourquoi : en retirer une retire une clause.
 
 Trois relevés le confirment sur le code, avant d'y toucher :
 
@@ -61,12 +61,11 @@ interdisent qu'un document et le code qu'il décrit bougent ensemble. Les étape
 une passe.
 
 **Les deux notes sans autorité restent.** Le tableau des cibles les compte pour
-49 087 caractères libres. Elles ne le sont pas : `PISTES-EVOLUTION.md` tient le
-registre des options non décidées avec sa règle d'admission, et
-`PLAN-CONFORMITE-RENDU.md` une piste dont les points ouverts sont marqués
-« à décider ». Quatre documents y renvoient, dont `ROADMAP.md`. Les retirer
-n'est pas un geste de rédaction mais une décision de produit, et elle n'est pas
-prise ici.
+49 087 caractères libres. `PISTES-EVOLUTION.md` tient le registre des options
+non décidées avec sa règle d'admission, `PLAN-CONFORMITE-RENDU.md` une piste
+dont les points ouverts portent la marque « à décider », et quatre documents y
+renvoient, dont `ROADMAP.md`. Leur retrait engage le produit, et cette décision
+appartient au mainteneur.
 
 Ce que les étapes faites ont appris, et qui vaut pour la suite :
 
@@ -394,8 +393,8 @@ ne vaut que posé aux deux endroits, avec le même code.
 ## Bilan mesuré
 
 Entre le dernier commit d'avant le chantier de rédaction et l'état courant, la
-prose totale passe de 847 370 à 859 352 caractères, soit **+11 982**. Le signe
-est celui-là, et il se lit en quatre masses :
+prose totale passe de 847 370 à 859 352 caractères, soit **+11 982**. Quatre
+masses composent cet écart :
 
 | Masse | Écart | Ce que c'est |
 |---|---|---|
@@ -404,11 +403,11 @@ est celui-là, et il se lit en quatre masses :
 | Outillage ajouté | +11 103 | les trois scripts de contrôle (+9 629) et ce que `CONTRIBUTING.md` et `docs/RECETTE.md` en disent |
 | La présente note | +22 604 | temporaire, elle se retire au dernier item |
 
-Ce qui existait avant le chantier a donc rendu **20 710 caractères**, soit 2,4 %.
-Le reste est du neuf : un outillage qui n'existait pas, et une note qui partira.
-Sans elle, le dépôt est à −10 622 par rapport à son point de départ.
+La prose qui existait avant le chantier a donc rendu **20 710 caractères**, soit
+2,4 %. Les deux autres masses sont un outillage absent jusque-là et la présente
+note ; sans elle, le dépôt est à −10 622 de son point de départ.
 
-Ce que le chantier a réellement produit ne se lit pas dans ce tableau : 899
-manquements au standard d'écriture corrigés, six contrôles qui les refusent
-désormais aux deux moments, et deux listes d'autorités qui empêchent une
-spécification de s'appauvrir sans qu'un test rougisse.
+Le tableau ne compte pas les acquis qui ne sont pas des caractères : 899
+manquements au standard d'écriture corrigés, six contrôles qui les refusent à
+l'écriture comme au test, et deux listes d'autorités qui font échouer la suite
+quand une spécification perd une règle.

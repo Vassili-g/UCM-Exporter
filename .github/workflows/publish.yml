@@ -132,11 +132,10 @@ jobs:
       - run: npm ci
       - run: npm test
 
-      # Ce que la publication ne peut pas prouver, nommé au journal avant de
-      # publier. L'étape informe et ne refuse pas : la publication est confiée à
-      # un agent, et une question posée à un opérateur l'arrêtait. Ce qui garde
-      # vraiment le numéro est ailleurs, et prouve quelque chose : `npm test`
-      # ci-dessus, puis l'épreuve du registre et les pins servis ci-dessous.
+      # Les déclencheurs de recette externe touchés, nommés au journal avant que
+      # le numéro parte. L'étape rend toujours 0 : ce qui garde le numéro est
+      # `npm test` ci-dessus, puis l'épreuve du registre et les pins servis
+      # ci-dessous. `docs/RECETTE.md` dit quoi rejouer et quand.
       - name: Ce que la recette externe seule couvre
         env:
           PAQUET: ${{ inputs.paquet }}

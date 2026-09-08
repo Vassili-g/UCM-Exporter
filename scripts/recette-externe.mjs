@@ -2,11 +2,10 @@
 /**
  * Ce qui, dans une publication, ne peut pas être prouvé sans Figma ni GitHub.
  *
- * Ce script informe, il ne refuse pas. La publication est gardée par ce qui
- * prouve quelque chose : `npm test`, l'épreuve du registre qui installe la
- * version publiée depuis un dossier vierge, et le contrôle des pins servis. La
- * question posée à l'opérateur, elle, ne prouvait rien, se répondait sans être
- * vérifiable, et arrêtait un agent à qui la publication est confiée.
+ * Le relevé nomme les déclencheurs touchés et rend toujours 0. La publication
+ * est gardée par `npm test`, par l'épreuve du registre qui réinstalle la
+ * version publiée depuis un dossier vierge, et par le contrôle des pins
+ * servis. `docs/RECETTE.md` dit quoi rejouer et quand.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -59,21 +58,19 @@ function touche(fichier, prefixe) {
 }
 
 /**
- * Vrai si une ligne changée porte du code, et non de la prose.
+ * Vrai si une ligne changée porte du code, et non un commentaire ou du vide.
  *
- * Un déclencheur qui compte les lignes sans les lire réclamait la recette pour
- * une passe de style : 208 lignes de `types.ts` réécrites sans qu'un seul
- * caractère de code bouge levaient les quatre déclencheurs comme une refonte.
+ * Une passe de style sur les commentaires d'un fichier déclencheur pèse dans un
+ * diff autant qu'une refonte. Seules les lignes de code décident donc du
+ * relevé.
  *
- * La classification est une heuristique, et elle se trompe dans un sens choisi :
- * une ligne de gabarit qui commence par `//` (une URL) passe pour un
- * commentaire, donc le relevé se tait alors qu'il aurait pu parler. Rien ne
- * dépendant plus de sa réponse, une notice manquante coûte moins qu'une notice
- * qui crie sur de la prose et qu'on apprend à ignorer.
+ * La classification est une heuristique, dont le sens d'erreur est choisi : une
+ * ligne de gabarit commençant par `//`, une URL, passe pour un commentaire, et
+ * le déclencheur reste silencieux. Aucune publication ne dépend de sa réponse.
  *
- * Le schéma est un cas à part : JSON n'a pas de commentaires, mais ses
- * `description` sont le JSDoc de `types.ts` régénéré. Les compter ferait
- * revenir par le schéma la prose que l'on vient d'écarter de sa source.
+ * Les `description` du schéma comptent pour de la prose bien que JSON n'ait pas
+ * de commentaires : elles sont le JSDoc de `types.ts` régénéré, et les compter
+ * ferait rentrer par le schéma ce que la règle écarte de sa source.
  */
 export function ligneEstDuCode(ligne, chemin = "") {
   const nue = ligne.trim();
@@ -123,10 +120,9 @@ export function commitDuNumero(chemin, versionCourante) {
 /**
  * Le commit le plus récent où le manifeste portait ce numéro, ou `null`.
  *
- * `commitDuNumero` ne sait chercher que le numéro courant : il s'arrête au
- * premier commit qui en diffère, donc immédiatement dès que le dépôt a monté sa
- * version depuis la publication. Retrouver un numéro quelconque demande de
- * parcourir jusqu'à lui.
+ * `commitDuNumero` ne répond que pour le numéro courant : il s'arrête au
+ * premier commit qui en diffère. Retrouver un numéro quelconque demande de
+ * parcourir l'historique jusqu'à lui.
  */
 function commitDeLaVersion(chemin, version) {
   const commits = git("log", "--format=%H", "--", chemin).split("\n").filter(Boolean);
@@ -136,17 +132,15 @@ function commitDeLaVersion(chemin, version) {
 /**
  * Le commit à partir duquel comparer, ou `null` quand aucun ne convient.
  *
- * La borne se lit sur le registre quand il répond : le dépôt peut monter son
- * numéro plusieurs fois entre deux publications, et prendre le commit du numéro
- * courant fait passer sous la borne un changement qui n'est encore parti nulle
- * part. C'est ce qui a rendu muet le relevé d'`init.mjs` : sa 0.1.11 n'a jamais
- * été publiée, et la 0.1.12 posée par-dessus l'a effacée de la comparaison.
- * Le commit qui a posé la version servie porte lui-même son contenu, donc la
- * comparaison part de lui et non de son parent.
+ * La borne est la version que le registre sert. Un dépôt monte parfois son
+ * numéro plusieurs fois entre deux publications, et le commit du numéro courant
+ * laisse alors hors comparaison un changement jamais publié. Le commit qui a
+ * posé la version servie porte le contenu servi, donc la comparaison part de
+ * lui.
  *
- * Sans réponse du registre, on retombe sur Git et sur le parent du commit qui a
- * posé le numéro courant, ce commit contenant lui-même son changement. La
- * lecture est alors trop large plutôt que trop étroite.
+ * Sans réponse du registre, la borne devient le parent du commit qui a posé le
+ * numéro courant, ce commit portant lui-même son changement. Le relevé nomme
+ * alors des chemins qu'une publication précédente couvrait peut-être déjà.
  */
 function borneDeComparaison(chemin, courante, servie) {
   if (servie && servie !== courante) {
@@ -263,9 +257,9 @@ function principal(arguments_) {
   }
 
   console.log(
-    "\nCes chemins passent par Figma, par GitHub et par une vraie pull request, et"
-      + "\naucun test ne les parcourt. La publication continue : docs/RECETTE.md dit"
-      + "\nquoi rejouer si le doute porte sur l'un d'eux.",
+    "\nCes chemins passent par Figma, par GitHub et par une pull request, qu'aucun"
+      + "\ntest ne parcourt. La publication continue ; docs/RECETTE.md dit quoi"
+      + "\nrejouer.",
   );
   return 0;
 }
