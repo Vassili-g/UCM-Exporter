@@ -9,21 +9,48 @@ ensemble ou le plan échoue.
 
 ## Où en est le chantier
 
-Les étapes 1 à 4 et 8 sont faites, ainsi que la dernière puce de l'étape 5 et
-la dernière de l'étape 7. Le dépôt tient donc son standard d'écriture par
-contrôle, aux deux moments, et plus par bonne volonté.
+Les étapes 1 à 4 et 8 sont faites, ainsi que les deux premières puces de
+l'étape 5 et la dernière de l'étape 7. Le dépôt tient son standard d'écriture
+par contrôle, aux deux moments, et plus par bonne volonté.
 
-Restent la réduction proprement dite, étapes 5 et 6, et les trois premières
-puces de l'étape 7. Elles n'ont pas commencé, et la mesure le dit : la prose
-totale est à 845 945 caractères contre 843 400 au départ, l'écart venant du
-contrôle ajouté et de sa documentation. L'étape 4 était annoncée à information
-constante, et elle l'a été.
+**Ce que la reprise des étapes 5 et 6 a mesuré, et qui change la suite.** Les
+cibles chiffrées de ce plan supposaient un gras que la mesure ne trouve pas.
+`docs/FORMAT.md` a rendu 5 843 caractères sur 89 674, soit 6,5 % et non les
+17 % visés ; `AGENTS.md` 1 240 sur 45 364, soit 2,7 % et non 25 %. Dans les deux
+cas le gain vient d'un seul geste, rendre à l'autre altitude ce qu'elle portait
+déjà, et il s'épuise avec lui. Ce qui reste tient en une règle, sa borne et son
+pourquoi, et la phrase suivante retirée est une clause perdue.
+
+Trois relevés le confirment sur le code, avant d'y toucher :
+
+- neuf blocs de commentaire seulement portent trois marqueurs de contre-factuel
+  ou plus, et aucun n'est un récit développé : la dernière puce de l'étape 4
+  vaut moins de deux mille caractères sur tout le dépôt ;
+- sur vingt-deux blocs courts tirés au hasard de
+  `packages/plugin/src/contract`, deux paraphrasent le code ; les vingt autres
+  portent un fait absent de lui, presque toujours une contrainte de l'API Figma
+  ou une borne ;
+- les blocs que l'étape 7 demandait de relire (`colorKeys.ts`,
+  `LIMITES` de `build-schema.ts`) sont intacts et denses.
+
+Conséquence pour l'étape 6 : le taux de 27 % n'est pas atteignable à
+information constante, et le chiffre ne doit pas commander la passe. Le critère
+reste celui que l'étape 6 énonce déjà, le fait apporté, et le résultat attendu
+est de l'ordre de quelques pour cent, bloc par bloc.
 
 La granularité commande la suite. Les règles de conduite demandent un commit
 par document et un par paquet, pour qu'un retrait se révise seul, et elles
 interdisent qu'un document et le code qu'il décrit bougent ensemble. Les étapes
 5 et 6 se reprennent donc document par document et paquet par paquet, pas en
 une passe.
+
+**Les deux notes sans autorité restent.** Le tableau des cibles les compte pour
+49 087 caractères libres. Elles ne le sont pas : `PISTES-EVOLUTION.md` tient le
+registre des options non décidées avec sa règle d'admission, et
+`PLAN-CONFORMITE-RENDU.md` une piste dont les points ouverts sont marqués
+« à décider ». Quatre documents y renvoient, dont `ROADMAP.md`. Les retirer
+n'est pas un geste de rédaction mais une décision de produit, et elle n'est pas
+prise ici.
 
 Ce que les étapes faites ont appris, et qui vaut pour la suite :
 
@@ -108,16 +135,19 @@ Une réduction de 45 % et l'absence de perte sont incompatibles sur ce dépôt :
 densité normative de `FORMAT.md` est d'environ une clause toutes les deux
 phrases, et un retrait de cette ampleur retirerait des règles.
 
-| Cible | Départ | Arrivée | Écart |
+La colonne « mesuré » porte ce que la passe a réellement rendu, à information
+constante. Les arrivées qu'elle contredit sont des hypothèses de départ, et
+« Où en est le chantier » dit ce qui les a démenties.
+
+| Cible | Départ | Arrivée visée | Mesuré |
 |---|---|---|---|
-| Notes sans autorité | 49 087 | 0 dans le dépôt | retirées |
-| `docs/FORMAT.md` | 89 670 | 74 000 | −17 % |
-| `AGENTS.md` | 45 422 | 34 000 | −25 % |
-| `packages/plugin/SPEC.md` | 30 274 | 26 000 | −14 % |
-| Commentaires de code hors `types.ts` | 480 000 | 350 000 | −27 % |
+| Notes sans autorité | 49 087 | 0 dans le dépôt | conservées, décision de produit |
+| `docs/FORMAT.md` | 89 674 | 74 000 | 83 831, −6,5 % |
+| `AGENTS.md` | 45 364 | 34 000 | 44 124, −2,7 % |
+| `packages/plugin/SPEC.md` | 30 274 | 26 000 | passe de style seule |
+| Commentaires de code hors `types.ts` | 480 000 | 350 000 | non atteignable sans perte |
 | `packages/kit/src/format/types.ts` | 41 299 | non réduit | qualité seule |
-| Manquements de style en commentaire | 899 | 0 | −100 % |
-| Prose totale | environ 809 000 | environ 600 000 | −26 % |
+| Manquements de style en commentaire | 899 | 0 | 0 |
 
 `types.ts` sort du périmètre de réduction. Son JSDoc est le schéma publié, que
 tout consommateur d'un autre langage télécharge et ouvre souvent seul. Le
@@ -225,12 +255,12 @@ qualité ne coûte aucun arbitrage.
 Un document par commit. Les cibles du tableau sont des repères, pas des seuils :
 un document qui s'arrête plus haut avec toutes ses règles est un succès.
 
-- [ ] `docs/FORMAT.md`. Convertir en tableau ce qui est déjà un espace produit,
+- [x] `docs/FORMAT.md`. Convertir en tableau ce qui est déjà un espace produit,
       sur le modèle du tableau « D'où vient une valeur par défaut ». Ne pas
       convertir la prose normative : une cellule porte la règle et perd sa
       borne et son contre-factuel. Garder le pourquoi dans le document, que
       `CONTRIBUTING.md` lui attribue. Ne pas renommer un titre cité par un lien.
-- [ ] `AGENTS.md`. Chaque entrée garde ses trois éléments : la règle, sa borne,
+- [x] `AGENTS.md`. Chaque entrée garde ses trois éléments : la règle, sa borne,
       l'autorité qui la porte. Les 130 termes d'autorité restent présents dans
       le bloc des invariants. Le gain vient de la rédaction, pas du contenu.
 - [ ] `packages/plugin/SPEC.md`. Passe de style seule. Le dédoublonnage vers
@@ -271,7 +301,7 @@ la réduction ne produit pas toute seule.
 - [ ] Relire chaque chemin de lecture de `docs/README.md` par profil, et
       vérifier qu'il se suffit. Le chemin « je branche UCM sur un repository »
       en premier.
-- [ ] Relire les blocs les plus denses en information par caractère pour
+- [x] Relire les blocs les plus denses en information par caractère pour
       vérifier qu'aucune passe ne les a rabotés : en-tête de `colorKeys.ts`,
       `LIMITES` de `build-schema.ts`, en-têtes de `inventaireInvariants.test.ts`.
 
@@ -321,7 +351,7 @@ ne vaut que posé aux deux endroits, avec le même code.
 
 - [ ] Rejouer `scripts/mesurer-prose.mjs` et comparer à la baseline.
 - [ ] Vérifier que `npm test` passe, filet étendu compris.
-- [ ] Ajouter à `CONTRIBUTING.md` la règle de conduite qui manque : une
+- [x] Ajouter à `CONTRIBUTING.md` la règle de conduite qui manque : une
       information ne se retire d'une altitude qu'en nommant son altitude
       d'arrivée, et deux altitudes ne se touchent pas dans le même commit.
 - [ ] Retirer la présente note du dépôt.
