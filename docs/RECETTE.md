@@ -342,12 +342,24 @@ npm view @ucm-kit/adapter-typescript version
 La publication passe par un workflow GitHub, jamais par un jeton posé sur votre
 poste. Pour chaque paquet à publier :
 
-1. ouvrez l'onglet **Actions** d'`UCM-Exporter`, workflow **publish** ;
-2. cliquez **Run workflow** ;
-3. choisissez le paquet ;
-4. lancez, et attendez la fin. Le workflow rejoue les tests, nomme au journal ce
-   que la recette seule couvre, publie, puis réinstalle le paquet depuis un
-   dossier vide pour vérifier que le registre le sert vraiment.
+```sh
+gh workflow run publish.yml -f paquet=@ucm-kit/core
+gh run watch "$(gh run list --workflow=publish.yml --limit 1 --json databaseId -q '.[0].databaseId')"
+```
+
+Ou par l'interface : onglet **Actions** d'`UCM-Exporter`, workflow **publish**,
+**Run workflow**, puis le paquet.
+
+Le workflow rejoue les tests, nomme au journal ce que la recette seule couvre,
+publie, puis réinstalle le paquet depuis un dossier vide pour vérifier que le
+registre le sert vraiment.
+
+**Les deux premières publications finissent rouges quand les trois paquets
+montent ensemble.** La dernière étape exige que chaque version citée par la
+documentation soit servie par le registre ; elle ne peut donc passer qu'une fois
+le dernier paquet publié. Lisez l'étape qui a échoué avant de conclure : si
+c'est « Publier », rien n'est parti ; si c'est « Les pins de la documentation
+sont servis », le paquet est publié.
 
 **L'ordre compte : le noyau d'abord.** `@ucm-kit/cli` et
 `@ucm-kit/adapter-typescript` épinglent exactement une version de
