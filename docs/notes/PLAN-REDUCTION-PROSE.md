@@ -9,9 +9,10 @@ ensemble ou le plan échoue.
 
 ## Où en est le chantier
 
-Les étapes 1 à 4 et 8 sont faites, ainsi que les trois premières puces de
-l'étape 5 et la dernière de l'étape 7. Le dépôt tient son standard d'écriture
-par contrôle, aux deux moments, et plus par bonne volonté.
+Les étapes 2 à 6 et 8 sont faites, ainsi que la dernière puce de l'étape 7 et
+la troisième de l'étape 9. Le dépôt tient son standard d'écriture par contrôle,
+aux deux moments, et plus par bonne volonté. Restent la dernière puce de
+l'étape 1, les trois premières de l'étape 7, et la fermeture.
 
 **Ce que la reprise des étapes 5 et 6 a mesuré, et qui change la suite.** Les
 cibles chiffrées de ce plan supposaient un gras que la mesure ne trouve pas.
@@ -37,6 +38,21 @@ Conséquence pour l'étape 6 : le taux de 27 % n'est pas atteignable à
 information constante, et le chiffre ne doit pas commander la passe. Le critère
 reste celui que l'étape 6 énonce déjà, le fait apporté, et le résultat attendu
 est de l'ordre de quelques pour cent, bloc par bloc.
+
+**Ce que l'étape 6 a effectivement rendu.** Environ 10 500 caractères de
+commentaire sur les six paquets, soit 2 %. Le total du dépôt ne le montre pas :
+la baseline est antérieure aux trois scripts de contrôle, qui portent à eux
+seuls autant de commentaire que la passe en a retiré. Trois gestes ont produit
+la totalité du gain, et aucun n'était une coupe de longueur : le contre-factuel
+réduit à sa conséquence, la re-narration d'une règle du format renvoyée au
+document qui la porte, et l'archéologie non datée que Git porte déjà. Le reste
+des blocs relus est resté intact, ce que les vingt-deux tirages du relevé
+ci-dessus annonçaient.
+
+Un effet de bord à connaître avant la prochaine passe : toucher un commentaire
+d'un `.mjs` publié change ce que le registre sert, donc oblige à monter le
+numéro dans le même commit, et une montée du kit entraîne les deux paquets qui
+l'épinglent. La règle de conduite « un commit par paquet » cède devant celle-là.
 
 La granularité commande la suite. Les règles de conduite demandent un commit
 par document et un par paquet, pour qu'un retrait se révise seul, et elles
@@ -243,9 +259,12 @@ qualité ne coûte aucun arbitrage.
 - [x] Retirer les formes que la skill proscrit. Quatorze oppositions en deux
       temps réécrites, dont trois que seul le contrôle par paragraphe voyait,
       la ligne les coupant en deux. Trois qualificatifs que rien n'établit.
-- [ ] Réduire les contre-factuels développés à leur conséquence. Le fait que la
-      garde empêche une action précise reste écrit ; le récit de ce qui
-      arriverait sinon tient en une phrase.
+- [x] Réduire les contre-factuels développés à leur conséquence. Fait pendant
+      l'étape 6, paquet par paquet : le geste ne se sépare pas de la relecture
+      d'un bloc, et le faire seul aurait rouvert les mêmes fichiers deux fois.
+      « Réclamer une variable enverrait le designer chercher un champ que son
+      panneau ne montre pas » reste écrit une fois, et cesse d'être redéveloppé
+      au bloc suivant.
 - [x] Retirer l'archéologie datée. Six dates posées sur une décision retirées,
       et un contrôle refuse désormais qu'une autre s'écrive. Ce qui reste de
       l'archéologie non datée relève de l'étape 6.
@@ -280,12 +299,26 @@ Un paquet par commit, et jamais dans le même commit qu'un document de l'étape 
 Aucun plafond de caractères : un bloc long et dense reste, un bloc court et creux
 part. Le critère est le fait apporté, pas la longueur.
 
-- [ ] `packages/plugin/src/contract`
-- [ ] `packages/plugin/src` hors `contract`
-- [ ] `packages/kit/src/lecteurs`
-- [ ] `packages/cli/src` et `packages/adapter-typescript/src`
-- [ ] `scripts` et `tests` à la racine
-- [ ] Tests des paquets, au taux réduit prévu par les règles de conduite
+- [x] `packages/plugin/src/contract`. Treize modules, 136 464 caractères de
+      commentaire avant. Trois gestes : le contre-factuel réduit à sa
+      conséquence, la re-narration d'une règle du format renvoyée au document
+      qui la porte, l'archéologie non datée retirée. `colorKeys.ts` n'est pas
+      touché, l'étape 7 le range parmi les blocs les plus denses.
+- [x] `packages/plugin/src` hors `contract`. Trois blocs sur trois modules. Le
+      paquet du plugin n'est pas publié, aucun numéro à monter.
+- [x] `packages/kit/src/lecteurs`
+- [x] `packages/cli/src` et `packages/adapter-typescript/src`. Réuni au commit
+      précédent, et le garde-fou l'exige : un commentaire d'un `.mjs` publié
+      part au registre, donc `versionSuitLeContenu` demande le numéro dans le
+      même commit, et une montée du kit entraîne les deux paquets qui
+      l'épinglent. Les séparer aurait dépensé deux numéros pour un seul geste.
+      `@ucm-kit/core` 0.1.16, `@ucm-kit/cli` 0.1.12,
+      `@ucm-kit/adapter-typescript` 0.1.5.
+- [x] `scripts` et `tests` à la racine
+- [x] Tests des paquets, au taux réduit prévu par les règles de conduite. Ce
+      qui est parti n'est pas de la longueur : deux commentaires citaient « le
+      critère de réussite n° 4 » d'un plan que le dépôt ne porte plus, et trois
+      autres conjuguaient au passé ce que la garde empêche au présent.
 
 ### 7. Traiter la qualité pour elle-même
 
