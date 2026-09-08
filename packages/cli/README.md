@@ -10,8 +10,8 @@ Figma plugin and committed next to the component's code. This command reads
 those files and says whether they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.17 init
-npx --yes @ucm-kit/cli@0.1.17 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.18 init
+npx --yes @ucm-kit/cli@0.1.18 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx pick a build nobody
@@ -56,7 +56,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.17 init   --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.18 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -115,8 +115,8 @@ file that exists but is malformed is refused on both sides.
 ```
 
 `implementation` is a pattern with two tokens, `{dir}` for the contract's folder
-and `{id}` for its identifier. The default shown here is a default, not an
-assumption: replace it with your own.
+and `{id}` for its identifier. Replace it with the pattern your repository
+uses.
 
 No version number goes in this file. Which contract versions can be read belongs
 to the installed package, and repeating it here would create a second authority
@@ -139,7 +139,7 @@ fix it.**
 | Composition: every nested component has its own contract, the lists agree, no cycles | Blocks |
 | Typography tokens have the expected type | Blocks |
 | Every `{token.path}` cited exists in the token file | Warns |
-| The code exposes the props the contract declares | Warns |
+| The code exposes the props the contract declares, with a stack adapter installed | Warns |
 
 A gap with the code needs a developer, so it warns and lets the merge through. A
 token removed from the design system does too: tokens are the source of truth,
@@ -150,7 +150,7 @@ is an allowed state, not an error.
 
 **So is a repository with no contract at all.** Right after `ucm init` nothing
 has been exported: there is no token file, and usually no contract folder. From
-`0.1.9` on, `ucm check` returns 0 there and reports what to do next. The number
+`0.1.10` on, `ucm check` returns 0 there and reports what to do next. The number
 of contracts decides: with one or more, a missing token file blocks the merge
 again, because those contracts cite tokens nobody can resolve.
 
@@ -160,8 +160,8 @@ when an orchestrator passes it in through `UCM_ECHECS_DE_TESTS`.
 
 ## Optional stack adapters
 
-The six checks above read contracts and tokens only, so they work whatever the
-repository is written in. Comparing a contract to real code needs to read that
+The first five checks above read contracts and tokens only, so they work
+whatever the repository is written in. Comparing a contract to real code needs to read that
 code, which is a stack adapter's job.
 
 `ucm check` discovers an adapter installed **by the repository**, resolving from

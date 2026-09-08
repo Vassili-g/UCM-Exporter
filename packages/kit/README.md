@@ -9,7 +9,7 @@ Figma plugin, and read by the repository that implements the component. This
 package is what both sides must share in order to talk about the same format.
 
 ```sh
-npm install @ucm-kit/core
+npm install @ucm-kit/core@0.1.19
 ```
 
 Most repositories never call this package directly. They run
@@ -47,10 +47,20 @@ for (const path of trouverContrats("./src/components")) {
 `champsInvalidesDuContrat` returns the paths of the fields that are missing or
 malformed; an empty array means the contract holds. Neither throws.
 
-## A version gap has a direction, and it names who fixes it
+## A repository with no contract at all
 
-This is the part worth reading twice, because getting it backwards sends the
-reader to the wrong person.
+Right after `ucm init` nothing has been exported: there is no token file, and
+usually no contract folder. `controlerRepository`, the whole-repository entry
+point that `@ucm-kit/cli` calls, returns a green verdict there and reports the
+next step. Earlier releases refused it; `@ucm-kit/core@0.1.14` is the first that
+does not.
+
+The number of contracts decides. With one contract or more, a missing tokens
+file blocks the merge, because that contract cites tokens nobody can resolve. A
+tokens file that exists but does not parse blocks at any stage, whatever the
+number of contracts.
+
+## A version gap has a direction, and it names who fixes it
 
 `verdictDeVersion` returns `"ok"`, `"ancien"` (too old) or `"recent"` (too new):
 
@@ -70,7 +80,7 @@ away from what the code actually does:
 
 ```js
 import { VERSION_CONTRAT_MINIMALE, VERSION_CONTRAT_MAXIMALE } from "@ucm-kit/core/lecteurs";
-// 0.1.18 reads two: "11.0" (previous) through "12.0" (current).
+// The two versions this release reads, named in Status below.
 ```
 
 ## Three entry points, and why they are separate
@@ -83,9 +93,8 @@ import { lireLeSchema, CHEMIN_DU_SCHEMA } from "@ucm-kit/core/lecteurs";
 
 **`@ucm-kit/core/format`** gives the shape of a contract, its version, the two
 naming rules, and the shape of a token reference. **This subpath depends on
-nothing**: not Node, not Figma, not a third-party package. That is a runtime
-constraint rather than an aesthetic one. It travels inside a Figma plugin
-bundle, where `node:fs` does not exist, and inside a browser.
+nothing**: not Node, not Figma, not a third-party package. It travels inside a
+Figma plugin bundle, where `node:fs` does not exist, and inside a browser.
 
 **`@ucm-kit/core/lecteurs`** holds everything that *judges* a contract already
 written: its shape, its composition graph, its token references, the meaning of
@@ -109,21 +118,6 @@ It does not read Figma, does not generate component code, and does not render
 anything. It never rewrites a contract; every reader takes a contract and
 returns a verdict. Producing contracts is the plugin's job, and implementing the
 component is yours.
-
-## What changed in 0.1.13
-
-**A repository with no contract at all no longer blocks a merge.** Earlier
-releases refused a repository whose tokens file was missing, and refused one
-whose contract folder did not exist. Both describe a repository where UCM has
-just been installed, so the first push after `ucm init` was red.
-
-The number of contracts decides. With none, nothing cites a token and there is
-nothing to check, so `controlerRepository` returns a green verdict whose report
-names the next step. With one contract or more, a missing tokens file blocks the
-merge as it did before, because that contract cites tokens nobody can resolve.
-
-A tokens file that exists but does not parse blocks at any stage. Missing and
-unreadable call for different fixes, and this release keeps them apart.
 
 ## Status
 

@@ -126,8 +126,8 @@ Trois vérifications séparent ce cas d'un changement de format :
 Un verdict qui se relâche se publie comme une nouveauté. Le README du paquet
 l'annonce, puisqu'il part sur le registre avec lui et que son consommateur le
 lit ; sans cette mention, la date à laquelle un contrôle a cessé de refuser reste
-introuvable. La section « What changed in 0.1.13 » de `packages/kit/README.md`
-applique cette règle.
+introuvable. La section « A repository with no contract at all » de
+`packages/kit/README.md` applique cette règle.
 
 ## Qui publie, qui migre, qui peut fusionner
 

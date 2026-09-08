@@ -16,8 +16,8 @@ Vous n'avez besoin d'aucun autre document.
 
 ### Vous branchez UCM sur un repository
 
-1. [../README.md](../README.md#brancher-un-repository) : les trois commandes
-   et ce qu’elles attendent du repository.
+1. [../README.md](../README.md#brancher-un-repository) : les commandes qui
+   branchent un repository, et ce qu’elles attendent de lui.
 2. [FORMAT.md](./FORMAT.md) : la forme de chaque champ d'un contrat et de
    `tokens.json`. C'est l'autorité sur ce que vous recevez.
 3. [FORMAT.md, « Ce que le contrat ne dit pas d'une
