@@ -135,8 +135,6 @@ const DEPOT_ABSENT = depot(null, null);
 const REGLAGES = {
   repoUrl: 'https://github.com/mon-org/design-system-v3',
   baseBranch: 'main',
-  componentsPath: 'src/components',
-  tokensPath: 'src/tokens',
   hasPat: true,
 };
 
@@ -623,20 +621,14 @@ const ETATS = [
     titre: 'Configuration, aucun réglage enregistré',
     quand: "Clic sur l'engrenage au premier lancement.",
     regarder:
-      "Cinq champs obligatoires, dont deux — les chemins — que le dépôt peut contredire sans le dire. L'en-tête suit la page.",
+      "Trois champs, et aucun chemin : l'endroit appartient au repository. L'en-tête suit la page.",
     existe: true,
     atteinte: [
       ...ouverture('non-configure'),
       {
         message: {
           type: 'settings',
-          settings: {
-            repoUrl: '',
-            baseBranch: 'main',
-            componentsPath: 'src/components',
-            tokensPath: 'src/tokens',
-            hasPat: false,
-          },
+          settings: { repoUrl: '', baseBranch: 'main', hasPat: false },
         },
       },
       { clic: '.icon-button' },
@@ -667,13 +659,7 @@ const ETATS = [
       {
         message: {
           type: 'settings',
-          settings: {
-            repoUrl: 'https://gitlab.com/mon-org/ds',
-            baseBranch: '',
-            componentsPath: 'src/components',
-            tokensPath: 'src/tokens',
-            hasPat: false,
-          },
+          settings: { repoUrl: 'https://gitlab.com/mon-org/ds', baseBranch: '', hasPat: false },
         },
       },
       { clic: '.icon-button' },
@@ -723,7 +709,7 @@ const ETATS = [
     quand:
       "Le test de connexion a lu `ucm.config.json` sur la branche de base. Cette lecture n'avait lieu qu'à la publication, et le designer l'apprenait après coup.",
     regarder:
-      "Les deux libellés portent « (repli) » et la phrase dit qui décide. Le champ qui ne sert à rien le dit là où on le lit.",
+      "La phrase nomme les deux chemins et le fichier qui les porte. Elle se lit, elle ne se saisit pas.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -737,22 +723,17 @@ const ETATS = [
     ],
   },
   {
-    id: 'configuration-aucun-chemin',
-    titre: 'Personne ne dit où ranger les exports',
+    id: 'configuration-chemins-par-defaut',
+    titre: 'Le repository ne se décrit pas, les défauts s’appliquent',
     quand:
-      "Le cas neuf : les chemins ne sont plus obligatoires, et ce repository ne se décrit pas. L'export sera refusé au lieu d'écrire à un endroit inventé.",
+      "Le repository n'a pas de `ucm.config.json`. C'est le cas nominal d'un dépôt neuf, et les défauts qui s'appliquent ici sont ceux que `ucm check` applique de son côté.",
     regarder:
-      "Le refus est annoncé AVANT l'export, et la phrase nomme les deux gestes possibles avec leur acteur.",
+      "L'endroit est annoncé AVANT l'export, et la phrase nomme le geste qui en changerait, avec son acteur.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
-      {
-        message: {
-          type: 'settings',
-          settings: { ...REGLAGES, componentsPath: '', tokensPath: '' },
-        },
-      },
-      depot({ components: null, tokens: null, source: 'réglages du plugin' }),
+      { message: { type: 'settings', settings: REGLAGES } },
+      depot({ components: 'components', tokens: 'tokens.json', source: 'les valeurs par défaut' }),
       { clic: '.icon-button' },
     ],
   },

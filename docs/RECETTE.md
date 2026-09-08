@@ -177,13 +177,12 @@ Dans le plugin, ouvrez d'abord la page de configuration et renseignez :
 |---|---|
 | URL du repository | `https://github.com/Vassili-g/UCM-Playground` |
 | Branche de base | `main` |
-| Chemin des composants | `components` |
-| Chemin des tokens | `tokens.json` |
 | Personal Access Token | le vôtre |
 
-Les deux chemins doivent correspondre à ce que `ucm.config.json` déclare dans le
-Playground. Si l'un diffère, l'export déposera le fichier là où le contrôle ne
-le cherchera pas.
+Aucun chemin ne se saisit ici. Le plugin lit le `ucm.config.json` du Playground
+et affiche, sous la branche de base, où l'export ira atterrir. Vérifiez que
+cette phrase nomme bien `components` et `tokens.json` : c'est le même fichier
+que `ucm check` lit pour savoir où chercher.
 
 Revenez à l'écran principal, lancez **Analyser les tokens**, puis publiez.
 

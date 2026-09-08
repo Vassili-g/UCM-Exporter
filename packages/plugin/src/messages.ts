@@ -58,8 +58,9 @@ export type PluginMessage =
    */
   | { type: 'connection'; state: EtatConnexion['state']; pastille: string; geste: string | null }
   /**
-   * Chemins effectifs ; `source` indique si le dépôt ou le plugin les décide.
-   * Les champs valent `null` tant que la réponse est inconnue.
+   * Le repository visé et l'endroit où l'export ira. `resume` vaut `null` tant
+   * que la réponse est inconnue, jamais quand elle est incomplète : depuis que
+   * le repository décide seul, un endroit à moitié connu n'existe plus.
    */
   | ({ type: 'depot' } & EtatDuDepot)
   /**

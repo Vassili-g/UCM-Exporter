@@ -155,7 +155,7 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   }
 
   if (message.type === 'depot') {
-    configurationPage.afficherGouvernance(message);
+    configurationPage.afficherDestination(message);
 
     depotRepli.textContent = message.repli ? message.ligne ?? '' : '';
     depotRepli.hidden = !depotRepli.textContent;
