@@ -12,11 +12,72 @@
  * **Elle n'écrit aucun numéro de version**, nulle part : ni dans la
  * configuration (voir `configuration.mjs` du kit), ni dans le workflow, qui
  * épingle le paquet et laisse le paquet dire ce qu'il lit.
+ *
+ * **`--components` et `--tokens` décident de l'endroit une seule fois.** Le
+ * `ucm.config.json` écrit ici est la seule autorité sur l'endroit où les
+ * exports atterrissent : le plugin Figma le lit, et `ucm check` le lit. Un
+ * repository qui range ailleurs que sous `components/` le dit donc à
+ * l'installation, au lieu de le corriger après un premier export déposé où
+ * personne ne le cherche.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import { CONFIGURATION_PAR_DEFAUT, NOM_CONFIGURATION } from "@ucm-kit/core/format";
+
+/** Les deux options d'`init`, et la clé de configuration que chacune décide. */
+const OPTIONS_DE_CHEMIN = { "--components": "components", "--tokens": "tokens" };
+
+/**
+ * Un chemin acceptable dans la configuration : relatif, en `/`, sans segment
+ * qui remonte. La garde est ici et pas dans la grammaire du kit : celle-ci
+ * décrit ce qu'un `ucm.config.json` déjà écrit a le droit de contenir, et la
+ * durcir changerait le format. Ce qu'une commande accepte de taper au clavier
+ * est une autre question, et c'est celle-là qui se pose ici.
+ */
+function cheminAcceptable(valeur) {
+  const normalise = valeur.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+  if (!normalise) return null;
+  const segments = normalise.split("/");
+  if (segments.some((segment) => !segment || segment === "." || segment === "..")) return null;
+  return segments.join("/");
+}
+
+/**
+ * Lit les arguments d'`ucm init`.
+ *
+ * Même forme que `lireArguments` de `check.mjs`, y compris le refus d'une
+ * valeur qui commence par `--` : sans lui, `--components --tokens x` prendrait
+ * « --tokens » pour un dossier et écrirait une configuration que personne n'a
+ * demandée. Un argument inconnu est refusé au lieu d'être ignoré, faute de quoi
+ * `ucm init --composants src` sortirait en 0 sans avoir rien fait de ce qui
+ * était demandé.
+ */
+export function lireArgumentsInit(arguments_) {
+  const chemins = {};
+
+  for (let i = 0; i < arguments_.length; i += 1) {
+    const argument = arguments_[i];
+    const cle = OPTIONS_DE_CHEMIN[argument];
+    if (!cle) return { erreur: `Argument inconnu : ${argument}` };
+
+    const valeur = arguments_[i + 1];
+    if (valeur === undefined || valeur.startsWith("--")) {
+      return { erreur: `${argument} attend une valeur.` };
+    }
+
+    const chemin = cheminAcceptable(valeur);
+    if (!chemin) {
+      return {
+        erreur: `${argument} attend un chemin relatif au repository, sans « .. » : ${valeur} n'en est pas un.`,
+      };
+    }
+    chemins[cle] = chemin;
+    i += 1;
+  }
+
+  return { chemins };
+}
 
 /** La version de `@ucm-kit/cli`, lue dans son propre `package.json`. */
 function versionDuPaquet() {
@@ -41,7 +102,7 @@ function versionDuPaquet() {
  * présents, le rappel se tait : trois lignes réclamées pour rien sont trois
  * lignes qu'on apprend à sauter.
  */
-function fichiers(version) {
+function fichiers(version, chemins) {
   return [
     {
       chemin: NOM_CONFIGURATION,
@@ -49,7 +110,7 @@ function fichiers(version) {
         // Pas de `$schema` : aucun schéma de configuration n'est publié
         // aujourd'hui, et pointer vers une URL qui rend 404 apprendrait à
         // l'éditeur — et à qui lit le fichier — à ignorer cette ligne.
-        { ...CONFIGURATION_PAR_DEFAUT },
+        { ...CONFIGURATION_PAR_DEFAUT, ...chemins },
         null,
         2,
       )}\n`,
@@ -226,12 +287,12 @@ function workflow(version) {
  * mi-chemin laisserait un repo à moitié installé, état que rien ne sait
  * diagnostiquer ensuite.
  */
-export function init(racine, { ecrire = writeFileSync } = {}) {
+export function init(racine, { ecrire = writeFileSync, chemins = {} } = {}) {
   const version = versionDuPaquet();
   const aEcrire = [];
   const deja = [];
 
-  for (const fichier of fichiers(version)) {
+  for (const fichier of fichiers(version, chemins)) {
     const cible = join(racine, fichier.chemin);
     if (existsSync(cible)) deja.push({ ...fichier, cible });
     else aEcrire.push({ ...fichier, cible });
@@ -242,6 +303,7 @@ export function init(racine, { ecrire = writeFileSync } = {}) {
     ecrire(fichier.cible, fichier.contenu, "utf8");
   }
 
+  const optionsDemandees = Object.keys(chemins).length > 0;
   return {
     ecrits: aEcrire.map((f) => f.chemin),
     conserves: deja.map((f) => f.chemin),
@@ -249,6 +311,24 @@ export function init(racine, { ecrire = writeFileSync } = {}) {
       chemin: f.chemin,
       rappel: f.rappel,
     })),
+    /*
+     * Des chemins demandés à une commande qui n'écrase rien, sur un repository
+     * qui a déjà sa configuration. Le silence se lirait comme « c'est fait »,
+     * et le premier export irait ailleurs que là où on croit l'avoir envoyé.
+     * Ce n'est pas un `rappel` : les trois rappels nomment une ligne à ajouter
+     * à un fichier partagé, et les mélanger ferait de la liste entière quelque
+     * chose qu'on apprend à sauter.
+     */
+    optionsIgnorees: optionsDemandees && deja.some((f) => f.chemin === NOM_CONFIGURATION),
+    /*
+     * Les chemins écrits, et `null` quand la configuration a été conservée :
+     * ce sont alors ceux du fichier déjà là, qu'`init` n'a pas lu. Les
+     * afficher quand même reviendrait à annoncer un endroit sur la foi d'un
+     * défaut, devant un fichier qui dit peut-être autre chose.
+     */
+    chemins: aEcrire.some((f) => f.chemin === NOM_CONFIGURATION)
+      ? { ...CONFIGURATION_PAR_DEFAUT, ...chemins }
+      : null,
     version,
   };
 }
@@ -260,6 +340,10 @@ export function init(racine, { ecrire = writeFileSync } = {}) {
  * silence sur la seule chose que cette commande ne sait pas installer.
  */
 function porteLaRegle(fichier) {
+  // Un fichier sans marqueur n'a rien à reconnaître. Sans cette ligne, la
+  // réponse serait juste par accident : `undefined.every` lève, et c'est le
+  // `catch` écrit pour un fichier illisible qui rendrait `false`.
+  if (!fichier.marqueurs) return false;
   try {
     const contenu = readFileSync(fichier.cible, "utf8");
     return fichier.marqueurs.every((marqueur) => contenu.includes(marqueur));
@@ -275,18 +359,39 @@ function porteLaRegle(fichier) {
  * quel » ne suffit pas à la remplacer : cette mention se lit comme « rien à
  * faire », alors que la moitié de l'installation manque précisément là.
  */
-export function rendreInit({ ecrits, conserves, rappels = [], version }) {
+export function rendreInit({
+  ecrits,
+  conserves,
+  rappels = [],
+  optionsIgnorees = false,
+  chemins = null,
+  version,
+}) {
   const lignes = [];
   for (const chemin of ecrits) lignes.push(`✓ ${chemin}`);
   for (const chemin of conserves) lignes.push(`· ${chemin} existait déjà, laissé tel quel`);
   lignes.push("");
+  // L'endroit vient de la configuration écrite, jamais d'une convention
+  // recopiée ici : les deux dériveraient dès qu'un drapeau en décide autrement.
+  const ou = chemins
+    ? `Placez vos contrats sous \`${chemins.components}/\`, vos tokens dans `
+      + `\`${chemins.tokens}\`, puis lancez \`ucm check\`.`
+    : `Les chemins restent ceux que ce repository déclare dans son ${NOM_CONFIGURATION}. `
+      + "Lancez `ucm check`.";
   lignes.push(
     ecrits.length === 0
       ? "Rien à faire : ce repository est déjà installé."
-      : `Installé avec @ucm-kit/cli ${version}.\n`
-        + "Placez vos contrats sous `components/`, vos tokens dans `tokens.json`, "
-        + "puis lancez `ucm check`.",
+      : `Installé avec @ucm-kit/cli ${version}.\n${ou}`,
   );
+
+  if (optionsIgnorees) {
+    lignes.push("");
+    lignes.push(
+      `· \`${NOM_CONFIGURATION}\` existait déjà : les chemins passés en option n'ont pas été `
+      + "écrits. Ce fichier décide seul de l'endroit où les exports atterrissent ; modifiez-le "
+      + "à la main pour en changer.",
+    );
+  }
 
   for (const { chemin, rappel } of rappels) {
     lignes.push("");

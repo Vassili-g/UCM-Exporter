@@ -15,7 +15,7 @@ import test from "node:test";
 
 import { iconesDuRepository } from "../src/icons.mjs";
 import { chargerAdaptateur } from "../src/adaptateur.mjs";
-import { init, rendreInit } from "../src/init.mjs";
+import { init, lireArgumentsInit, rendreInit } from "../src/init.mjs";
 import { executer } from "../src/ucm.mjs";
 
 /** Un repository jouet, vide, dans le dossier temporaire du système. */
@@ -474,4 +474,117 @@ test("un repository sans paquet TypeScript garde le noyau portable", async () =>
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
+});
+
+/**
+ * Un repository qui range ses contrats ailleurs le dit à l'installation.
+ *
+ * Sans ces deux options, il fallait installer puis corriger le fichier à la
+ * main, et l'oubli ne se voyait qu'au premier export déposé là où `ucm check`
+ * ne regarde pas.
+ */
+test("init écrit les chemins demandés dans la configuration", () => {
+  const racine = repoVierge();
+  try {
+    executer(["init", "--components", "src/components", "--tokens", "src/tokens/tokens.json"], {
+      racine,
+      ecrire: () => {},
+    });
+    const configuration = JSON.parse(readFileSync(join(racine, "ucm.config.json"), "utf8"));
+
+    assert.equal(configuration.components, "src/components");
+    assert.equal(configuration.tokens, "src/tokens/tokens.json");
+    // Ce que les options ne touchent pas garde son défaut.
+    assert.equal(configuration.implementation, "{dir}/{id}.tsx");
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("sans option, la configuration écrite reste celle des défauts", () => {
+  const racine = repoVierge();
+  try {
+    init(racine);
+    const configuration = JSON.parse(readFileSync(join(racine, "ucm.config.json"), "utf8"));
+
+    assert.equal(configuration.components, "components");
+    assert.equal(configuration.tokens, "tokens.json");
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Le compte rendu annonce l'endroit réellement écrit. Une convention recopiée
+ * dans la phrase dériverait de la configuration dès le premier drapeau, et
+ * c'est cette phrase que lit celui qui vient d'installer.
+ */
+test("le compte rendu nomme les chemins écrits, pas une convention", () => {
+  const racine = repoVierge();
+  try {
+    const compte_rendu = rendreInit(init(racine, {
+      chemins: { components: "packages/ui/src", tokens: "design/tokens.json" },
+    }));
+
+    assert.match(compte_rendu, /`packages\/ui\/src\/`/);
+    assert.match(compte_rendu, /`design\/tokens\.json`/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * `init` n'écrase jamais un fichier existant, et des chemins demandés ne sont
+ * pas une raison de faire exception. Le taire ferait croire l'endroit changé
+ * alors que le fichier décide toujours seul.
+ */
+test("des chemins demandés à un repository déjà configuré ne changent rien, et le compte rendu le dit", () => {
+  const racine = repoVierge();
+  try {
+    init(racine);
+    const avant = readFileSync(join(racine, "ucm.config.json"), "utf8");
+
+    const compte_rendu = rendreInit(init(racine, { chemins: { components: "ailleurs" } }));
+
+    assert.equal(readFileSync(join(racine, "ucm.config.json"), "utf8"), avant);
+    assert.match(compte_rendu, /les chemins passés en option n'ont pas été/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Un argument mal formé sort en 2, comme pour `check` : 1 reste réservé aux
+ * contrôles rouges, et confondre les deux ferait lire « vos contrats sont en
+ * défaut » à qui a fait une faute de frappe.
+ */
+test("init refuse un argument inconnu, une valeur manquante et un chemin qui remonte", () => {
+  assert.match(lireArgumentsInit(["--composants", "src"]).erreur, /Argument inconnu/);
+  assert.match(lireArgumentsInit(["--components"]).erreur, /attend une valeur/);
+  assert.match(lireArgumentsInit(["--components", "--tokens"]).erreur, /attend une valeur/);
+  assert.match(lireArgumentsInit(["--components", "../ailleurs"]).erreur, /chemin relatif/);
+  assert.match(lireArgumentsInit(["--tokens", "  "]).erreur, /chemin relatif/);
+
+  const racine = repoVierge();
+  const alertes = [];
+  try {
+    assert.equal(
+      executer(["init", "--composants", "src"], {
+        racine,
+        ecrire: () => {},
+        alerter: (t) => alertes.push(t),
+      }),
+      2,
+    );
+    assert.match(alertes.join("\n"), /ucm init \[--components/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("un chemin donné en séparateurs Windows est rangé en séparateurs de repository", () => {
+  assert.deepEqual(
+    lireArgumentsInit(["--components", "src\\components\\"]).chemins,
+    { components: "src/components" },
+  );
 });
