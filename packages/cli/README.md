@@ -10,8 +10,8 @@ Figma plugin and committed next to the component's code. This command reads
 those files and says whether they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.15 init
-npx --yes @ucm-kit/cli@0.1.15 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.16 init
+npx --yes @ucm-kit/cli@0.1.16 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx pick a build nobody
@@ -41,11 +41,17 @@ that any optional stack adapter the repository installed becomes visible to
 | Option | Effect |
 |---|---|
 | `--components <dir>` | The folder the contracts are stored under |
-| `--tokens <file>` | The path of the DTCG token file |
+| `--tokens <dir>` | The folder that holds `tokens.json` |
 
-Both write into `ucm.config.json`, and both act only on a first install: `ucm
-init` never overwrites an existing configuration, and says so when options were
-passed to a repository that already has one.
+Both take a folder, because a folder is what a repository arranges. `--tokens`
+appends the file name before writing it, so the `tokens` field of
+`ucm.config.json` stays a file path: the readers treat it as one, and turning it
+into a folder would silently point every configuration already written at
+`tokens.json/tokens.json`.
+
+Both act only on a first install: `ucm init` never overwrites an existing
+configuration, and says so when options were passed to a repository that already
+has one.
 
 `ucm check` takes two options:
 
