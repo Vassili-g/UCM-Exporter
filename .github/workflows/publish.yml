@@ -132,21 +132,6 @@ jobs:
       - run: npm ci
       - run: npm test
 
-      # Les déclencheurs de recette externe touchés, nommés au journal avant que
-      # le numéro parte. L'étape rend toujours 0 : ce qui garde le numéro est
-      # `npm test` ci-dessus, puis l'épreuve du registre et les pins servis
-      # ci-dessous. `docs/RECETTE.md` dit quoi rejouer et quand.
-      - name: Ce que la recette externe seule couvre
-        env:
-          PAQUET: ${{ inputs.paquet }}
-        run: |
-
-          # `core` est publié depuis `packages/kit` : le nom du paquet et celui
-          # du dossier ne coïncident que pour les deux autres.
-          dossier="${PAQUET#@ucm-kit/}"
-          if [ "$dossier" = "core" ]; then dossier="kit"; fi
-          node scripts/recette-externe.mjs "$dossier"
-
       # Aucun `NODE_AUTH_TOKEN` : npm détecte l'environnement OIDC et s'y
       # authentifie seul. Il en tire aussi une attestation de provenance, qui
       # dit publiquement de quel commit et de quel workflow ce tarball sort.

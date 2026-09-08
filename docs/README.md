@@ -20,13 +20,20 @@ Vous n'avez besoin d'aucun autre document.
    et ce qu’elles attendent du repository.
 2. [FORMAT.md](./FORMAT.md) : la forme de chaque champ d'un contrat et de
    `tokens.json`. C'est l'autorité sur ce que vous recevez.
-3. [../packages/cli/README.md](../packages/cli/README.md) : les commandes, ce
+3. [FORMAT.md, « Ce que le contrat ne dit pas d'une
+   icône »](./FORMAT.md#ce-que-le-contrat-ne-dit-pas-dune-icône) : la seule
+   responsabilité que le contrat vous laisse entière, à trancher avant d'écrire
+   le premier composant.
+4. [../packages/cli/README.md](../packages/cli/README.md) : les commandes, ce
    qu'`ucm init` installe, les codes de sortie.
-4. [../packages/kit/README.md](../packages/kit/README.md) si vous appelez les
+5. [../packages/adapter-typescript/README.md](../packages/adapter-typescript/README.md)
+   si le repository est en TypeScript : c'est ce qui ajoute la parité avec le
+   code et les types dérivés des contrats.
+6. [../packages/kit/README.md](../packages/kit/README.md) si vous appelez les
    lecteurs depuis votre propre code.
-5. [COMPATIBILITE.md](./COMPATIBILITE.md) pour savoir ce qui peut fusionner et
+7. [COMPATIBILITE.md](./COMPATIBILITE.md) pour savoir ce qui peut fusionner et
    qui doit migrer lors d'un changement.
-6. [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md) le jour où une version de
+8. [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md) le jour où une version de
    contrat change.
 
 ### Vous modifiez le moteur ou les paquets
@@ -61,7 +68,7 @@ autorité, et les autres y renvoient.
 | [../AGENTS.md](../AGENTS.md) | Les invariants, avec leur borne et leur fichier autorité |
 | [../ROADMAP.md](../ROADMAP.md) | L'état du projet et ses limites |
 | [POUR-LES-DESIGNERS.md](./POUR-LES-DESIGNERS.md) | Le geste du designer. Il définit le vocabulaire par renvoi, jamais par une seconde définition |
-| [RECETTE.md](./RECETTE.md) | La marche à suivre de la recette externe, qui se rejoue à chaque publication |
+| [RECETTE.md](./RECETTE.md) | Comment éprouver le produit à la main, de Figma à la pull request |
 
 ## Ce qui n'est pas décidé
 

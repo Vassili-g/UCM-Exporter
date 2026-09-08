@@ -4,16 +4,10 @@ Cette recette fait tourner la boucle complète du produit, du plugin Figma
 jusqu'au rapport publié sur une pull request, dans un dépôt qui ne contient rien
 d'UCM. Elle se suit dans l'ordre, du début à la fin. Comptez une heure et demie.
 
-Elle se rejoue **avant chaque publication de paquet** dont l'un des quatre
-déclencheurs de `scripts/recette-externe.mjs` a bougé : ces chemins passent par
-Figma, par GitHub et par une vraie pull request, qu'aucun test de ce dépôt ne
-parcourt.
-
-`publish.yml` nomme ces déclencheurs au journal, puis publie. Il ne demande
-aucune confirmation : une réponse déclarative ne se vérifie pas, et la
-publication est confiée à un agent. Le numéro est gardé par `npm test`, par
-l'épreuve du registre et par le contrôle des pins servis. Rejouer la recette est
-donc une décision du mainteneur.
+C'est un guide, et rien ne l'exige. Elle couvre les trois chemins qu'aucun test
+du dépôt ne parcourt, Figma, GitHub et une vraie pull request ; le reste est
+déjà tenu par `npm test`, par l'épreuve du registre et par le contrôle des pins
+servis. La jouer, et quand, est une décision du mainteneur.
 
 Les deux dépôts concernés :
 
