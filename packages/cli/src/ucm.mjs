@@ -13,7 +13,7 @@ import { lireConfiguration } from "@ucm-kit/core/lecteurs";
 import { chargerAdaptateur, NOM_ADAPTATEUR_TYPESCRIPT } from "./adaptateur.mjs";
 import { check } from "./check.mjs";
 import { iconesDuRepository, rendreIcones } from "./icons.mjs";
-import { init, rendreInit } from "./init.mjs";
+import { init, lireArgumentsInit, rendreInit } from "./init.mjs";
 
 /** Le verdict de tests qu'un orchestrateur de stack peut transmettre au CLI. */
 function echecsDeTestsDepuis(env) {
@@ -40,6 +40,12 @@ const AIDE = `ucm — la ligne de commande UCM
   ucm icons           liste les icônes que les contrats réclament
   ucm --help          affiche cette aide
 
+  ucm init [--components <dossier>] [--tokens <fichier>]
+      --components  dossier sous lequel les contrats sont rangés
+      --tokens      chemin du fichier de tokens DTCG
+      Les deux n'agissent qu'à la première installation : ucm init n'écrase
+      jamais un ucm.config.json existant.
+
   ucm check [--base <sha>] [--report <chemin>]
       --base    limite les états informatifs aux contrats modifiés depuis ce sha
       --report  écrit le rapport markdown à ce chemin, en plus du terminal
@@ -62,7 +68,13 @@ export function executer(arguments_, {
   }
 
   if (commande === "init") {
-    ecrire(rendreInit(init(racine)));
+    const { chemins, erreur } = lireArgumentsInit(arguments_.slice(1));
+    if (erreur) {
+      const alerter = sorties.alerter ?? console.error;
+      alerter(`${erreur}\n\nucm init [--components <dossier>] [--tokens <fichier>]`);
+      return 2;
+    }
+    ecrire(rendreInit(init(racine, { chemins })));
     return 0;
   }
 

@@ -90,7 +90,15 @@ de commande et l'écran sans sélection.
 Dans un second terminal, à la racine d'`UCM-Playground` :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.14 init
+npx --yes @ucm-kit/cli@0.1.15 init
+```
+
+Le Playground range ses contrats sous `components/` et ses tokens dans
+`tokens.json`, ce que la commande écrit par défaut. Un repository qui range
+autrement le dit ici, en une fois :
+
+```sh
+npx --yes @ucm-kit/cli@0.1.15 init --components src/components --tokens src/tokens/tokens.json
 ```
 
 Attendu, à peu de choses près :
@@ -102,7 +110,7 @@ Attendu, à peu de choses près :
 ✓ .github/workflows/ucm.yml
 · .gitignore existait déjà, laissé tel quel
 
-Installé avec @ucm-kit/cli 0.1.14.
+Installé avec @ucm-kit/cli 0.1.15.
 Placez vos contrats sous `components/`, vos tokens dans `tokens.json`,
 puis lancez `ucm check`.
 
@@ -128,7 +136,7 @@ ci-report.md
 Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.14 check
+npx --yes @ucm-kit/cli@0.1.15 check
 ```
 
 Attendu :
@@ -265,7 +273,7 @@ l'implémentation n'a pas été lue, jamais qu'elle est conforme.
 Pour lui donner à lire :
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.7
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.8
 ```
 
 Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
@@ -364,8 +372,8 @@ Le workflow le fait déjà après chaque publication, et le refaire à la main c
 une minute. Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.14 init
-npx --yes @ucm-kit/cli@0.1.14 check
+npx --yes @ucm-kit/cli@0.1.15 init
+npx --yes @ucm-kit/cli@0.1.15 check
 ```
 
 Attendu : `init` écrit ses cinq fichiers, et `check` sort en 0 en disant que ce

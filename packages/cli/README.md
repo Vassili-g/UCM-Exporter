@@ -10,8 +10,8 @@ Figma plugin and committed next to the component's code. This command reads
 those files and says whether they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.14 init
-npx --yes @ucm-kit/cli@0.1.14 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.15 init
+npx --yes @ucm-kit/cli@0.1.15 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx pick a build nobody
@@ -35,6 +35,17 @@ that any optional stack adapter the repository installed becomes visible to
 | `ucm check` | Checks every contract and renders the report |
 | `ucm icons` | Lists the icons the contracts ask this repository to draw |
 | `ucm --help` | Prints the above |
+
+`ucm init` takes two options:
+
+| Option | Effect |
+|---|---|
+| `--components <dir>` | The folder the contracts are stored under |
+| `--tokens <file>` | The path of the DTCG token file |
+
+Both write into `ucm.config.json`, and both act only on a first install: `ucm
+init` never overwrites an existing configuration, and says so when options were
+passed to a repository that already has one.
 
 `ucm check` takes two options:
 
@@ -70,8 +81,14 @@ The workflow is yours once written. It will never be overwritten.
 
 ### `ucm.config.json`
 
-Three paths, and nothing else. The file is optional: a repository with a single
-`components/` folder works without writing a line.
+Three paths, and nothing else. **This file is the only authority on where an
+export lands.** The Figma plugin reads it before publishing, and `ucm check`
+reads it before looking for contracts. A repository that arranges things
+differently says so here, once, and both sides follow.
+
+Its absence is the nominal case, not an error: the defaults below apply, and a
+repository with a single `components/` folder works without writing a line. A
+file that exists but is malformed is refused on both sides.
 
 ```json
 {
