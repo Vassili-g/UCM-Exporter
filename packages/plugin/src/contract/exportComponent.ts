@@ -443,20 +443,12 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
 
   const compacted = compactVariants(extracted.variants, propertyBindings);
 
-  // **Le lien Figma absent ne se signale plus, et son retrait est la moitié la
-  // plus importante du passage à la Community.** Le message était écrit quand le cas était
-  // l'exception : le manifest portait `enablePrivatePluginApi`, l'URL était la
-  // norme, et le dire une fois de temps en temps ne coûtait rien. La
-  // distribution par la Community inverse exactement cela : la clé du fichier
-  // n'arrive plus jamais, donc le message se serait imprimé sur chaque export,
-  // dans le corps de chaque pull request, pour un constat que le designer ne
-  // peut pas corriger et dont la conclusion est toujours « rien à faire ».
-  //
-  // C'est la règle du projet appliquée à sa propre décision : une liste dont on
-  // apprend qu'elle se survole coûte la lecture de celles qui demandent un
-  // geste. Un état normal du format ne se documente pas par un diagnostic
-  // répété à l'infini ; il se documente une fois, dans le type
-  // (`ContractMeta.figma.url`) et dans la spécification.
+  // Le lien Figma absent ne se signale pas. Distribué par la Community, le
+  // plugin n'a pas `enablePrivatePluginApi`, donc jamais la clé du fichier : le
+  // message s'imprimerait sur chaque export, pour un constat que le designer ne
+  // peut pas corriger. Un état normal du format se documente dans le type
+  // (`ContractMeta.figma.url`) et dans la spécification, pas dans un diagnostic
+  // répété à l'infini.
   const meta = buildMeta(componentSet);
 
   const allWarnings = Array.from(new Set([...warnings, ...extracted.warnings]));

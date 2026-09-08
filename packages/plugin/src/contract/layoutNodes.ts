@@ -116,9 +116,8 @@ async function matchingWrapperInstance(
  *
  * Le wrapper n'est cherché qu'une fois, sur la référence ; les autres variants
  * retrouvent leur propre instance du même composant. Rescorer un wrapper par
- * variant coûterait un parcours complet du sous-arbre pour chaque instance, et
- * pourrait élire deux wrappers différents : la divergence deviendrait
- * invisible là où les signatures existent justement pour la montrer.
+ * variant coûterait un parcours complet du sous-arbre par instance, et pourrait
+ * élire deux wrappers différents.
  *
  * Un variant sans cette instance n'est pas rattrapé en silence : sa structure
  * diffère réellement de la référence, et le designer doit l'apprendre.
@@ -135,12 +134,9 @@ export async function electVariantLayoutNodes(
     ? reference?.wrapper?.componentSet?.id ?? (await instanceOwnerId(wrapperInstance))
     : null;
   // Un wrapper qu'on ne saura pas retrouver ailleurs ne peut pas non plus servir
-  // de racine à la référence. Sans cet id, `matchingWrapperInstance` n'a rien à
-  // comparer : les autres variants éliraient depuis eux-mêmes pendant que la
-  // référence élirait depuis le wrapper, et l'avertissement plus bas resterait
-  // muet, sa garde tombant avec l'id. La référence décrirait alors un arbre que
-  // plus aucun variant ne décrit : la divergence même que ce module existe pour
-  // empêcher. `scoreWrapper` écarte déjà ce candidat à la source ; ceci tient la
+  // de racine à la référence : sans cet id, `matchingWrapperInstance` n'a rien
+  // à comparer, et la référence décrirait un arbre que plus aucun variant ne
+  // décrit. `scoreWrapper` écarte déjà ce candidat à la source ; ceci tient la
   // propriété pour un appelant qui construirait la référence autrement.
   const racineDeLaReference = wrapperOwnerId ? wrapperInstance : null;
 

@@ -112,20 +112,15 @@ function memeLargeur(left: StrokeWidth | null, right: StrokeWidth | null): boole
  * Rôle de rendu d'une couleur.
  *
  * **Le site tranche la nature, le nom précise à l'intérieur de cette nature.**
- * Ce que la couleur peint se lit sur le calque qui la porte : un fill peint un
- * fill, un stroke peint un contour, et aucun nom de token ne peut dire le
- * contraire, un `…/foreground` posé en contour peint un contour, et le moteur
- * n'a pas à décider que le design system s'est trompé de mot.
- *
- * Un dernier segment qui nomme un rôle partagé reste une déclaration du
- * designer, mais seulement là où elle ajoute quelque chose : entre deux rôles
- * de même nature. C'est le seul moyen de distinguer un `ring` d'un `border`, et
- * c'est ce qui fait qu'un `…/ring` publié sous une clé allongée conserve son
+ * Un fill peint un fill, un stroke peint un contour, et aucun nom de token ne
+ * dit le contraire. Un dernier segment qui nomme un rôle partagé reste une
+ * déclaration du designer là où elle ajoute quelque chose, entre deux rôles de
+ * même nature : c'est le seul moyen de distinguer un `ring` d'un `border`, et
+ * ce qui fait qu'un `…/ring` publié sous une clé allongée conserve son
  * `outline-*` et son `fallback: box-shadow`.
  *
- * Le rôle obtenu se publie ensuite dans `rendering.keyRoles`, du côté de
- * l'arbre où la clé vit : c'est là, et non dans le vocabulaire partagé, qu'une
- * clé nommée `foreground` peut annoncer qu'elle se rend en contour.
+ * Le rôle obtenu se publie dans `rendering.keyRoles`, du côté de l'arbre où la
+ * clé vit.
  */
 function colorRole(
   token: string,
@@ -170,9 +165,7 @@ function aliasDuPaint(paint: unknown): VariableAlias | null {
  * fonction. Un relevé qui lirait `node.boundVariables` pendant que
  * l'avertissement compte les paints laisserait un calque porter un fill visible
  * posé à la main et un fill masqué relié : les deux comptes s'équilibreraient,
- * rien ne serait dit, et le contrat publierait la couleur de la peinture
- * masquée comme si elle peignait le calque. Deux lectures d'une même chose
- * finissent toujours par se contredire.
+ * et le contrat publierait la couleur de la peinture masquée.
  *
  * La lecture exacte est celle de la peinture : chacune porte sa propre liaison
  * (`SolidPaint.boundVariables.color`), seule à associer une variable à un paint

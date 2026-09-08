@@ -73,18 +73,12 @@ function componentPropertiesOf(instance: InstanceNode): ComponentProperties {
  * pas `false` en « potentiellement visible » : l'échantillon décrit ce que la
  * maquette affiche maintenant.
  *
- * Ce que cette lecture filtre n'est pas « tout ce qui est rendu » : c'est le
- * relevé positionnel nu (`text`, `override.text`, `swaps`), celui qui rapporte
- * ce qu'un calque porte sans rapporter la condition qui le masque. Une valeur
- * d'`args` n'en est jamais : le booléen qui la masque voyage dans le même
- * `args`, et la reconstruction n'a donc besoin de rien retirer pour être juste.
- * Filtrer `args` publierait au contraire `false` pour une prop qui vaut `true`.
- *
- * La frontière est toujours la racine du composant exporté, jamais l'instance
- * de dépendance : un cadre optionnel masqué AU-DESSUS d'une dépendance ne montre
- * rien de ce qu'elle contient. Elle se compose (`node` visible jusqu'à son
- * instance, puis l'instance visible jusqu'à la racine) pour que la remontée
- * garde au passage sa garde de confinement.
+ * Ce que cette lecture filtre est le relevé positionnel nu, et jamais `args` ;
+ * la frontière est la racine du composant exporté, jamais l'instance de
+ * dépendance. La règle et son pourquoi vivent dans `docs/FORMAT.md`, section
+ * « 9. Échantillon de maquette ». La composition (`node` visible jusqu'à son
+ * instance, puis l'instance visible jusqu'à la racine) garde au passage la
+ * garde de confinement de la remontée.
  */
 export function isVisibleInSample(node: SceneNode, owner: SceneNode): boolean {
   let current: BaseNode | null | undefined = node;
@@ -104,12 +98,11 @@ export function isVisibleInSample(node: SceneNode, owner: SceneNode): boolean {
  * Il ne descend pas non plus sous un calque déjà lié : une INSTANCE_SWAP place
  * un composant entier, dont les liaisons internes appartiennent à celui-ci.
  *
- * Un `slot`, en revanche, ne coupe rien ici. Cette borne-là appartient aux
- * comparaisons positionnelles, qui supposent l'instance isomorphe à son maître ;
- * cette lecture-ci est nominale : elle joint `componentPropertyReferences` à une
- * propriété déclarée. Couper sur un `slot` retirerait la clé d'`args` et la
- * cible de `viaProps`, sans que `swaps` reprenne la main : le fait n'aurait plus
- * aucun propriétaire.
+ * Un `slot`, en revanche, ne coupe rien ici : cette borne appartient aux
+ * comparaisons positionnelles, quand cette lecture-ci est nominale et joint
+ * `componentPropertyReferences` à une propriété déclarée. Couper sur un `slot`
+ * retirerait la clé d'`args` et la cible de `viaProps` sans que `swaps`
+ * reprenne la main.
  */
 function swapTargets(
   scope: InstanceNode,
@@ -158,11 +151,9 @@ function swapReferenceOf(node: SceneNode): string | undefined {
  * celui-ci.
  *
  * `resolveSwap` existe parce que `componentProperties` rend, pour une
- * INSTANCE_SWAP, l'identifiant du node placé (« 1:1 ») et jamais son nom.
- * Publier cette valeur brute donnerait à `args` une clé publique et une valeur
- * illisible, là où la règle 1 n'admet que ce qu'un développeur pourrait écrire
- * lui-même. `propertyBindings.appliedValue` avait déjà tranché la question pour
- * le composant exporté ; l'échantillon d'une dépendance n'en avait pas hérité.
+ * INSTANCE_SWAP, l'identifiant du node placé (« 1:1 ») et jamais son nom, que
+ * la règle 1 refuse. `propertyBindings.appliedValue` porte la même règle pour
+ * le composant exporté.
  */
 function argumentsOf(
   properties: ComponentProperties,
@@ -415,22 +406,14 @@ export function extractVariantSample(
  *    déclaré remplacé : son contenu vient d'un autre composant, et plus aucune
  *    position n'y correspond au maître.
  *
- * Le relevé suit la visibilité effective, racine du composant exportée comprise.
- * La perte est assumée et se lit dans l'autre sens : un remplacement posé sous
- * un cadre que ce variant masque n'est pas publié, parce que l'échantillon dit
- * ce que la maquette montre, variant par variant, le variant qui affiche ce
- * cadre publie, lui, le remplacement.
- *
- * La comparaison porte sur le composant propriétaire, jamais sur la variante :
- * choisir une autre variante d'un même component set n'est pas un
- * remplacement, et le contrat de la dépendance décrit déjà ce choix.
+ * Le relevé suit la visibilité effective, racine du composant exportée
+ * comprise, et la comparaison porte sur le composant propriétaire, jamais sur
+ * la variante.
  *
  * Troisième borne, et elle vient d'ailleurs : ce qu'`args` a déjà nommé n'est
  * pas republié. Quand la dépendance expose une INSTANCE_SWAP sur ce calque,
- * son contrat en tire une prop : `mergeIconRules` y pose `runtimeProp` plutôt
- * qu'une prop de synthèse, précisément « pour ne pas obliger le consommateur à
- * choisir entre deux sources de vérité ». Ce relevé-ci ne doit pas rouvrir le
- * choix que celui-là a fermé : un même fait n'a jamais deux propriétaires.
+ * `mergeIconRules` y pose `runtimeProp` plutôt qu'une prop de synthèse, et ce
+ * relevé-ci ne rouvre pas le choix que celui-là a fermé.
  */
 function swapsOf(
   instance: InstanceNode,
@@ -506,11 +489,8 @@ function dependencySamples(
 
   // `propertySurfaces` est l'unique autorité sur la surface publique d'une
   // dépendance : c'est elle qui a élu le wrapper, du même geste que l'export
-  // autonome de cette dépendance. En fabriquer une ici en dernier recours
-  // donnerait une seconde réponse (sans wrapper, faute de pouvoir l'élire
-  // sans aller-retour) à une question qui n'en admet qu'une. Un owner absent
-  // de l'index laisse donc la dépendance sans `args`, jamais avec des `args`
-  // que l'export de cette dépendance contredirait.
+  // autonome de cette dépendance. Un owner absent de l'index laisse donc la
+  // dépendance sans `args`, plutôt qu'une surface fabriquée ici sans wrapper.
   const surfaceOf = (instance: InstanceNode): DependencyPropertySurface | null => {
     const main = mainByInstanceId.get(instance.id);
     if (!main) return null;
@@ -632,10 +612,6 @@ function indexSampleDependencies(
  * sans dire à quel niveau apparaît la surcharge d'une instance imbriquée ;
  * router plutôt que présumer rend la lecture juste dans les deux cas, et le
  * dédoublonnage par node absorbe une éventuelle double déclaration.
- *
- * Le contenu d'une dépendance imbriquée lui appartient, pas à son parent : sans
- * ce routage, un composé publierait sous une dépendance des valeurs qui en
- * concernent une autre.
  */
 function attribuerSurcharges(
   instances: readonly InstanceNode[],

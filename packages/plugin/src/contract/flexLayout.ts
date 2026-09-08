@@ -130,9 +130,8 @@ export function gridTrackSizes(
  *
  * Ce que l'API rend sur cet axe ne peut pas servir à en juger : Figma n'expose
  * pas de remplissage dans une piste qui hug, exactement comme une piste `FLEX`
- * est un état invalide sous un conteneur qui hug. Il rend alors la taille
- * calculée du calque là où le panneau affiche « Fill ». Lui réclamer une
- * variable envoie le designer vérifier un champ qui lui donne déjà raison.
+ * est un état invalide sous un conteneur qui hug, et il rend alors la taille
+ * calculée du calque là où le panneau affiche « Fill ».
  *
  * Un alignement explicite est la seule exception, et c'est le même mot en CSS :
  * un enfant en `center` ou en `flex-start` ne s'étire plus, sa dimension
@@ -157,12 +156,10 @@ export function gridCellSizedAxes(
  * lui (`HUG`).
  *
  * Une piste qui hug ne peut pas étirer son contenu : c'est lui qui la mesure.
- * Figma n'y expose donc aucun remplissage et rend la taille résolue de l'enfant
- * : la seule mesure qui existe, `GridTrackSize.value` n'étant applicable qu'aux
- * pistes `FIXED` et `FLEX`.
- *
- * Une seule piste non `HUG` sous l'étendue suffit à rendre l'axe indécis : la
- * place vient alors d'ailleurs, et la mesure de l'enfant ne la décrit plus.
+ * Figma n'y expose donc aucun remplissage et rend la taille résolue de
+ * l'enfant, seule mesure qui existe, `GridTrackSize.value` n'étant applicable
+ * qu'aux pistes `FIXED` et `FLEX`. Une seule piste non `HUG` sous l'étendue
+ * rend l'axe indécis : la place vient d'ailleurs.
  *
  * Fait de pistes, et rien de plus : cette réponse ne dit pas si le contrat doit
  * publier la mesure. Un enfant explicitement aligné hug la même piste sans
@@ -251,10 +248,10 @@ export function gridItemProperties(parent: SceneNode, child: SceneNode): GridPla
  * Contraintes d'un calque en position absolue, traduites en côtés CSS.
  *
  * Ce sont les seules données de placement que le contrat sache porter sans
- * écrire un nombre de maquette : les offsets, eux, ne sont liables à aucune
- * variable dans Figma, et un `x` brut n'est jamais contractuel. Une contrainte
- * dit au moins à quel bord le calque s'accroche, sans elle, un badge posé en
- * haut à droite se retrouvait en haut à gauche sans que rien ne le dise.
+ * écrire un nombre de maquette : les offsets ne sont liables à aucune variable
+ * dans Figma, et un `x` brut n'est jamais contractuel. Une contrainte dit au
+ * moins à quel bord le calque s'accroche, et sans elle un badge posé en haut à
+ * droite se rend en haut à gauche.
  */
 export function layoutConstraints(node: SceneNode): LayoutConstraints | null {
   const constraints = asPropertyBag(node).constraints as
@@ -435,18 +432,14 @@ function childSizing(parent: SceneNode, child: SceneNode): { main: unknown; cros
  *
  * Seul `Hug` est une intention de comportement : il dit que le composant se
  * limite à son contenu, ce que CSS écrit `fit-content`. Une largeur fixe posée
- * sur un variant ne l'est pas : c'est le plus souvent une commodité de mise en
- * page dans Figma, pour aligner les variants d'un component set entre eux. La
- * publier reviendrait à figer dans le contrat une décision de présentation, et
- * à imposer cette largeur à toutes les pages qui intègrent le composant. Le
- * défaut est donc `stretch` : le composant occupe la place que son intégration
- * lui donne.
+ * sur un variant est le plus souvent une commodité de mise en page, pour
+ * aligner les variants d'un component set entre eux, et la publier imposerait
+ * cette largeur à toutes les pages qui intègrent le composant. Le défaut est
+ * donc `stretch`.
  *
- * Ce n'est que la moitié de la règle : une dimension figée qui cite une
- * variable est au contraire une décision du design system, et le token
- * l'emporte sur ce `stretch`. Cette arbitrage demande de résoudre une liaison,
- * et vit donc dans `nodeBindings.resolveContainerSizing`, avec celui des slots.
- * Ce module reste l'autorité sur le vocabulaire CSS, et fournit ici le repli.
+ * L'autre moitié de la règle, le token qui l'emporte sur ce `stretch`, demande
+ * de résoudre une liaison et vit dans `nodeBindings.resolveContainerSizing`. Ce
+ * module reste l'autorité sur le vocabulaire CSS, et fournit ici le repli.
  */
 export function containerSizing(node: SceneNode): ContainerSizing {
   const values = asPropertyBag(node);
@@ -487,10 +480,9 @@ export const SIZE_BOUND_FIELDS = [
 /**
  * Bornes que Figma pose réellement sur ce node.
  *
- * Une borne est indépendante du menu de dimensionnement : un calque en `Fill`
- * qu'un `max width` retient est le cas le plus courant, et l'axe figé n'est pas
- * une condition. Chaque champ est donc lu seul, sur sa seule présence : Figma
- * renvoie `null` quand rien n'est posé, jamais la dimension courante.
+ * Une borne est indépendante du menu de dimensionnement, et chaque champ est
+ * lu seul, sur sa seule présence : Figma renvoie `null` quand rien n'est posé,
+ * jamais la dimension courante.
  *
  * Ce module lit le panneau, il ne résout aucune liaison : le token de chaque
  * borne est l'affaire de `nodeBindings.resolveSizeBounds`, exactement comme
@@ -550,12 +542,9 @@ export function flexItemProperties(
   warnings: string[] = [],
 ): FlexItemProperties & GridPlacement {
   // Testé avant l'auto layout linéaire : une grille aussi porte des enfants en
-  // position absolue. Le calque sort du flux et le contrat le place : ses
-  // contraintes disent à quels bords il s'accroche, `inset` à quelle distance.
-  // Un offset Figma ne se relie à aucune variable, et le designer ne peut pas
-  // le rendre contractuel. Le moteur calcule donc la distance, comme il calcule
-  // les pixels d'une piste de grille, et se tait : rien ne manque au contrat, et
-  // un export ne rapporte que ce qui demande une décision.
+  // position absolue. Un offset Figma ne se relie à aucune variable, et le
+  // designer ne peut pas le rendre contractuel : le moteur calcule donc la
+  // distance, comme il calcule les pixels d'une piste de grille, et se tait.
   if (isAbsolutePositioned(child)) {
     const constraints = layoutConstraints(child);
     const inset = absoluteInset(parent, child);

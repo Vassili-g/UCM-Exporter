@@ -143,10 +143,9 @@ async function contractedOwner(
   warnings: string[],
 ): Promise<{ name: string | null; main: ComponentNode | null }> {
   // `getMainComponentAsync` lève sur une instance orpheline : un node cassé ne
-  // doit pas faire échouer l'export entier. Il ne doit pas non plus disparaître.
-  // Sans ce nom, l'instance n'entre pas dans `composed` ; `getAllNodes` cesse
-  // alors de l'élaguer, et le contrat publie les internes du voisin comme les
-  // siens (ses calques en slots, ses couleurs dans ses tokens) pendant que la
+  // doit ni faire échouer l'export entier, ni disparaître. Sans ce nom,
+  // l'instance n'entre pas dans `composed`, `getAllNodes` cesse de l'élaguer,
+  // et le contrat publie les internes du voisin comme les siens pendant que la
   // dépendance manque à `composes`. Le relevé ne l'ayant jamais trouvée, même
   // l'avertissement « dépendance non située » ne peut pas partir : c'est ici,
   // ou nulle part.
@@ -330,15 +329,12 @@ export async function scanComposedInstances(
 
   // Deux passes : savoir si une instance est imbriquée dans une autre suppose
   // de connaître d'abord toutes les dépendances du sous-arbre.
-  // `getMainComponentAsync` est un aller-retour par instance. Les enchaîner en
-  // série coûtait, sur un set de trente variants portant chacun ses instances,
-  // autant d'allers-retours consécutifs, et l'UI du plugin est mono-thread.
-  // Les lancer ensemble ne change rien au résultat : l'ordre de `composes`
-  // vient de `instances`, qui reste l'ordre du document.
+  // `getMainComponentAsync` est un aller-retour par instance, et l'UI du plugin
+  // est mono-thread : les lancer ensemble ne change rien au résultat, l'ordre
+  // de `composes` venant de `instances`, qui est celui du document.
   // Chaque lecture écrit dans sa propre liste : `Promise.all` ne garantit aucun
   // ordre d'exécution, et un tableau partagé rendrait l'ordre des messages
-  // dépendant de la latence du réseau. Les listes sont ensuite concaténées dans
-  // l'ordre de `instances`, qui est celui du document.
+  // dépendant de la latence du réseau.
   const lectures = await Promise.all(
     instances.map(async (instance) => {
       const warnings: string[] = [];
@@ -384,13 +380,13 @@ export async function scanComposedInstances(
  * Étend le relevé à tous les variants du Component Set.
  *
  * Chaque variant porte ses propres instances, avec leurs propres ids : élaguer
- * d'après le seul variant de référence ne protégerait que celui-là, et les
- * autres continueraient d'aspirer les couleurs du composant embarqué.
+ * d'après le seul variant de référence laisserait les autres aspirer les
+ * couleurs du composant embarqué.
  *
  * `structure.children` décrit le variant de référence ; chaque entrée de
- * `variants` porte son arbre et ses dépendances exactes.
- * Une composition différente produit donc une notice de compatibilité ; le
- * champ global `composes` sera ensuite agrégé depuis ces vues exactes.
+ * `variants` porte son arbre et ses dépendances exactes. Une composition
+ * différente produit une notice de compatibilité, et le champ global `composes`
+ * est ensuite agrégé depuis ces vues exactes.
  */
 export async function scanComposedMatrix(
   variants: readonly SceneNode[],
