@@ -157,7 +157,7 @@ docs/                    le FORMAT, pour qui consomme un contrat
   CHANGELOG-FORMAT.md    ce que chaque version a publié, et ce qu'elle casse
   COMPATIBILITE.md       les classes de changement, et qui migre pour chacune
   POUR-LES-DESIGNERS.md  le guide du designer, et le vocabulaire du projet
-  RECETTE.md             la recette externe, à rejouer avant chaque publication
+  RECETTE.md             comment éprouver le produit à la main, hors des tests
   notes/                 les options non engagées, et rien dont le produit dépende
 
 .agents/skills/          les procédures qu'un agent charge à la demande
@@ -169,7 +169,6 @@ scripts/
   controle-style.mjs     les règles de style, pour le test et pour le hook
   hook-style.mjs         le même contrôle, au moment où un agent écrit
   mesurer-prose.mjs      le volume de la prose, document et commentaire
-  recette-externe.mjs    ce que la recette seule couvre, nommé sans refuser
   pins-servis.mjs        les versions que le registre sert
   run-tests.cjs          le découvreur de tests
 .claude/settings.json    le hook d'écriture, branché sur Write et Edit
@@ -182,7 +181,6 @@ tests/                   les tests du monorepo lui-même
   pinDocumente.test.mjs  les versions montrées par une commande copiable
   registrePortableDocuments.test.ts  aucun document portable ne promet une stack
   versionSuitLeContenu.test.mjs  un numéro publié annonce bien ce qu'il publie
-  recetteExterne.test.mjs  ce qui oblige à rejouer la recette, et ce qui non
   monorepoCoherent.test.mjs  chaque paquet lit le kit d'à côté, jamais le registre
 ```
 
@@ -645,11 +643,9 @@ un contrôle qui manque là-bas se referme ici, jamais par un script rendu au
 consommateur. La marche à suivre, ses critères de fin et le geste de publication
 qui la suit vivent dans [docs/RECETTE.md](./docs/RECETTE.md).
 
-`scripts/recette-externe.mjs` nomme au journal de `publish.yml` les quatre
-déclencheurs touchés, et la publication continue. Deux bornes tiennent le
-relevé : seules les lignes de code comptent, les `description` du schéma étant
-de la prose régénérée, et la comparaison part de la version que le registre
-sert.
+Aucun contrôle ne la réclame et `publish.yml` ne la mentionne pas : le numéro
+publié est gardé par `npm test`, par l'épreuve du registre et par le contrôle
+des pins servis. La rejouer est une décision du mainteneur.
 
 ## Limites d’environnement
 
