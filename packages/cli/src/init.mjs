@@ -13,20 +13,26 @@
  * configuration (voir `configuration.mjs` du kit), ni dans le workflow, qui
  * épingle le paquet et laisse le paquet dire ce qu'il lit.
  *
- * **`--components` et `--tokens` décident de l'endroit une seule fois.** Le
+ * **`--components`, `--tokens` et `--implementation` décident une seule fois.** Le
  * `ucm.config.json` écrit ici est la seule autorité sur l'endroit où les
  * exports atterrissent : le plugin Figma le lit, et `ucm check` le lit. Un
  * repository qui range ailleurs que sous `components/` le dit donc à
  * l'installation, au lieu de le corriger après un premier export déposé où
- * personne ne le cherche.
+ * personne ne le cherche. Un repository qui n'écrit pas de React dit de même
+ * comment nommer ses fichiers d'implémentation, au lieu de porter un `.tsx`
+ * faux dès le jour de son installation.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
-import { CONFIGURATION_PAR_DEFAUT, NOM_CONFIGURATION } from "@ucm-kit/core/format";
+import {
+  CONFIGURATION_PAR_DEFAUT,
+  MOTIF_IMPLEMENTATION_PAR_DEFAUT,
+  NOM_CONFIGURATION,
+} from "@ucm-kit/core/format";
 
-/** Les deux options d'`init`, et la clé de configuration que chacune décide. */
-const OPTIONS_DE_CHEMIN = { "--components": "components", "--tokens": "tokens" };
+/** Les options qui reçoivent un dossier, et la clé que chacune décide. */
+const OPTIONS_DE_DOSSIER = { "--components": "components", "--tokens": "tokens" };
 
 /**
  * Le nom du fichier de tokens, lu dans le défaut du kit plutôt que réécrit ici.
@@ -56,8 +62,9 @@ function cheminAcceptable(valeur) {
 /**
  * Lit les arguments d'`ucm init`.
  *
- * Les deux options attendent un dossier. `--tokens` y ajoute le nom du fichier
- * avant de l'écrire dans la configuration, qui garde un chemin de fichier.
+ * `--components` et `--tokens` attendent un dossier ; `--tokens` y ajoute le nom
+ * du fichier avant de l'écrire, la configuration gardant un chemin de fichier.
+ * `--implementation` reçoit un motif, et non un dossier.
  *
  * Même forme que `lireArguments` de `check.mjs`, y compris le refus d'une
  * valeur qui commence par `--` : sans lui, `--components --tokens x` prendrait
@@ -71,22 +78,39 @@ export function lireArgumentsInit(arguments_) {
 
   for (let i = 0; i < arguments_.length; i += 1) {
     const argument = arguments_[i];
-    const cle = OPTIONS_DE_CHEMIN[argument];
-    if (!cle) return { erreur: `Argument inconnu : ${argument}` };
+    const cle = OPTIONS_DE_DOSSIER[argument];
+    if (!cle && argument !== "--implementation") {
+      return { erreur: `Argument inconnu : ${argument}` };
+    }
 
     const valeur = arguments_[i + 1];
     if (valeur === undefined || valeur.startsWith("--")) {
       return { erreur: `${argument} attend une valeur.` };
     }
+    i += 1;
 
-    const dossier = cheminAcceptable(valeur);
-    if (!dossier) {
+    const resolu = cheminAcceptable(valeur);
+    if (!resolu) {
+      const attendu = cle ? "un dossier relatif" : "un motif relatif";
       return {
-        erreur: `${argument} attend un dossier relatif au repository, sans « .. » : ${valeur} n'en est pas un.`,
+        erreur: `${argument} attend ${attendu} au repository, sans « .. » : ${valeur} n'en est pas un.`,
       };
     }
-    chemins[cle] = cle === "tokens" ? `${dossier}/${NOM_FICHIER_TOKENS}` : dossier;
-    i += 1;
+
+    if (!cle) {
+      // Sans `{id}`, tous les contrats désigneraient le même fichier, et le
+      // rapport dirait « implémentation absente » pour tous sauf un.
+      if (!resolu.includes("{id}")) {
+        return {
+          erreur: `--implementation attend un motif contenant {id}, par exemple `
+            + `"${MOTIF_IMPLEMENTATION_PAR_DEFAUT}" : ${valeur} n'en est pas un.`,
+        };
+      }
+      chemins.implementation = resolu;
+      continue;
+    }
+
+    chemins[cle] = cle === "tokens" ? `${resolu}/${NOM_FICHIER_TOKENS}` : resolu;
   }
 
   return { chemins };
