@@ -382,9 +382,33 @@ ne vaut que posé aux deux endroits, avec le même code.
 
 ### 9. Refermer
 
-- [ ] Rejouer `scripts/mesurer-prose.mjs` et comparer à la baseline.
-- [ ] Vérifier que `npm test` passe, filet étendu compris.
+- [x] Rejouer `scripts/mesurer-prose.mjs` et comparer à la baseline. Le bilan
+      est ci-dessous.
+- [x] Vérifier que `npm test` passe, filet étendu compris. 866 tests, aucun
+      échec, les six contrôles de style et les deux listes d'autorités compris.
 - [x] Ajouter à `CONTRIBUTING.md` la règle de conduite qui manque : une
       information ne se retire d'une altitude qu'en nommant son altitude
       d'arrivée, et deux altitudes ne se touchent pas dans le même commit.
 - [ ] Retirer la présente note du dépôt.
+
+## Bilan mesuré
+
+Entre le dernier commit d'avant le chantier de rédaction et l'état courant, la
+prose totale passe de 847 370 à 859 352 caractères, soit **+11 982**. Le signe
+est celui-là, et il se lit en quatre masses :
+
+| Masse | Écart | Ce que c'est |
+|---|---|---|
+| Documents réduits | −8 366 | `FORMAT.md` −5 839, `AGENTS.md` −1 441, `SPEC.md` −572, `README.md` −444, `docs/README.md` −71 |
+| Commentaires du code existant | −12 344 | les passes par paquet de l'étape 6 |
+| Outillage ajouté | +11 103 | les trois scripts de contrôle (+9 629) et ce que `CONTRIBUTING.md` et `docs/RECETTE.md` en disent |
+| La présente note | +22 604 | temporaire, elle se retire au dernier item |
+
+Ce qui existait avant le chantier a donc rendu **20 710 caractères**, soit 2,4 %.
+Le reste est du neuf : un outillage qui n'existait pas, et une note qui partira.
+Sans elle, le dépôt est à −10 622 par rapport à son point de départ.
+
+Ce que le chantier a réellement produit ne se lit pas dans ce tableau : 899
+manquements au standard d'écriture corrigés, six contrôles qui les refusent
+désormais aux deux moments, et deux listes d'autorités qui empêchent une
+spécification de s'appauvrir sans qu'un test rougisse.
