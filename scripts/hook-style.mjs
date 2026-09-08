@@ -7,13 +7,9 @@
  * verbeux d'un modèle recouvre ; un hook est de la configuration, et il
  * s'exécute.
  *
- * Le contrôle lui-même vit dans `controle-style.mjs`, que le test de la suite
- * appelle aussi. Le hook ne juge rien de son côté : il ne fait que choisir le
- * moment.
- *
- * Ce que le hook ne couvre pas : un agent d'un autre outillage, un éditeur
- * humain, une correction faite en ligne sur la forge. C'est pourquoi le même
- * contrôle est aussi un test de `npm test`, qui est la barrière.
+ * Le contrôle lui-même vit dans `controle-style.mjs`, qui dit le partage des
+ * rôles entre les deux moments. Le hook ne juge rien de son côté : il ne fait
+ * que choisir le moment.
  *
  * Le fichier reste écrit. Sortie 2, qui rend le texte de l'erreur à l'agent
  * pour qu'il corrige, plutôt que sortie 1, qui n'irait qu'au journal.
