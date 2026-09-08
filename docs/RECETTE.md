@@ -28,7 +28,7 @@ Il vous faut :
 
 1. **Node 22 ou plus**, vérifiable par `node -v` ;
 2. **l'application de bureau Figma**, avec le fichier du design system ouvert ;
-3. **le plugin Unified Component Exporter**, installé depuis la Figma Community ;
+3. **le plugin UCM Contract Exporter**, installé depuis la Figma Community ;
 4. **un Personal Access Token GitHub** ayant le droit d'écrire sur
    `Vassili-g/UCM-Playground`.
 
@@ -54,7 +54,7 @@ npm view @ucm-kit/adapter-typescript version
 ## Étape 1 : ouvrir le plugin dans Figma
 
 1. Dans l'application de bureau Figma, ouvrez le fichier du design system.
-2. Menu **Plugins**, puis **Unified Component Exporter**. Lancez-le.
+2. Menu **Plugins**, puis **UCM Contract Exporter**. Lancez-le.
 
 Le plugin est publié sur la Figma Community : il n'y a ni build local à faire, ni
 manifeste à importer. Si vous ne le voyez pas dans la liste, installez-le une
@@ -90,7 +90,7 @@ de commande et l'écran sans sélection.
 Dans un second terminal, à la racine d'`UCM-Playground` :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.10 init
+npx --yes @ucm-kit/cli@0.1.14 init
 ```
 
 Attendu, à peu de choses près :
@@ -102,12 +102,13 @@ Attendu, à peu de choses près :
 ✓ .github/workflows/ucm.yml
 · .gitignore existait déjà, laissé tel quel
 
-Installé avec @ucm-kit/cli 0.1.10.
+Installé avec @ucm-kit/cli 0.1.14.
 Placez vos contrats sous `components/`, vos tokens dans `tokens.json`,
 puis lancez `ucm check`.
 
-· `.gitignore` existait déjà : ajoutez-y `ci-report.md`, le rapport que
-  `ucm check --report` régénère à chaque exécution.
+· `.gitignore` existait déjà : ajoutez-y `ci-report.md`. `ucm check --report` le
+  réécrit à chaque exécution ; commité, il montrerait le verdict d'un contrôle
+  passé, pas celui du code en cours.
 ```
 
 **Ce qu'il faut vérifier ici :** quatre fichiers écrits, un conservé, et la
@@ -115,17 +116,19 @@ commande dit elle-même ce qu'elle n'a pas pu faire. C'est le premier critère d
 test : moins de quinze minutes, zéro ligne à écrire à la main.
 
 Faites ce qu'elle demande, en ajoutant `ci-report.md` au `.gitignore`. Ouvrez le
-fichier et ajoutez ces deux lignes à la fin :
+fichier et ajoutez ces quatre lignes à la fin :
 
 ```text
-# Le rapport de `ucm check --report`, régénéré à chaque exécution.
+# Le rapport de `ucm check --report`, réécrit à chaque exécution.
+# Commité, il montrerait le verdict d'un contrôle passé, pas celui du
+# code en cours.
 ci-report.md
 ```
 
 Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.10 check
+npx --yes @ucm-kit/cli@0.1.14 check
 ```
 
 Attendu :
@@ -262,7 +265,7 @@ l'implémentation n'a pas été lue, jamais qu'elle est conforme.
 Pour lui donner à lire :
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.3
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.7
 ```
 
 Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
@@ -361,8 +364,8 @@ Le workflow le fait déjà après chaque publication, et le refaire à la main c
 une minute. Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.10 init
-npx --yes @ucm-kit/cli@0.1.10 check
+npx --yes @ucm-kit/cli@0.1.14 init
+npx --yes @ucm-kit/cli@0.1.14 check
 ```
 
 Attendu : `init` écrit ses cinq fichiers, et `check` sort en 0 en disant que ce

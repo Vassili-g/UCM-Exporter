@@ -1,6 +1,6 @@
 
 /**
- * Point d'entrée de l'interface Unified Component Exporter.
+ * Point d'entrée de l'interface UCM Contract Exporter.
  * Il assemble les vues et route les messages entre le DOM et le sandbox Figma.
  */
 import type { PluginMessage } from '../messages';
@@ -50,7 +50,7 @@ const configPage = configurationPage.element;
  */
 const PAGES: Record<'export' | 'configuration', PageEnTete> = {
   export: {
-    title: 'Unified Component Exporter',
+    title: 'UCM Contract Exporter',
 
   },
   configuration: {

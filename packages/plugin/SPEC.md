@@ -1,4 +1,4 @@
-# Unified Component Exporter — spécification
+# UCM Contract Exporter — spécification
 
 Ce document décrit le **moteur** : ce que le plugin lit dans Figma, ce qu'il élit,
 ce dont il avertit, et ce qu'il dépose sur GitHub. La forme de ce qu'il produit
