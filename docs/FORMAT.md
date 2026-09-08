@@ -41,18 +41,11 @@ au consommateur de refuser la collision, le format ne prétend pas l'empêcher.
 
 ## Hypothèses sur le design system
 
-Aucune convention de nommage n'est imposée aux couleurs de variante. Le dernier
-segment du token en est la **clé de base** ; ce qu'il peint se déduit du calque
-qui le porte, et le contrat le publie dans `rendering.roles`. Un design system
-qui nomme ses rôles (`…/background`, `…/foreground`, `…/icon`, `…/border`,
-`…/ring`) voit sa déclaration l'emporter sur la déduction, c'est le seul moyen
-de distinguer un `ring` d'un `border`.
-
-Un design system reste également libre de peindre plusieurs surfaces d'un même
-variant avec des variables dont le nom finit pareil : la clé s'allonge alors des
-segments qui les séparent, et aucune couleur n'est perdue.
-
----
+Aucune convention de nommage n'est imposée aux couleurs de variante, et aucun
+renommage n'est demandé au designer : le dernier segment du token est la **clé
+de base**, ce que la couleur peint se déduit du calque qui la porte, et deux
+surfaces dont les variables finissent pareil gardent chacune la sienne. La règle
+et son pourquoi vivent en [2. Tokens de variantes](#2-tokens-de-variantes).
 
 Un set clairsemé n'est pas complété artificiellement : le champ `variants`
 publie uniquement les combinaisons réellement présentes et un diagnostic nomme
@@ -160,8 +153,7 @@ couleur peint se lit sur le **calque qui la porte**, jamais sur son nom : un
 c'est son `align`, déjà publié sur la feuille, qui dit **de quel côté** de la
 boîte le dessiner, jamais avec quelle technique : un contour Figma se dessine
 hors du flux et se rend donc en `box-shadow`. Une clé qui ne nomme aucun rôle
-partagé reçoit donc son rendu dans `rendering.roles`, à côté des cinq rôles
-communs à tous les contrats.
+partagé reçoit le sien dans `rendering.keyRoles`.
 
 Un design system reste libre de nommer ses rôles (`…/background`,
 `…/foreground`, `…/icon`, `…/border`, `…/ring`) : cette **déclaration fait
@@ -191,7 +183,10 @@ clé garde ce segment comme base et lui ajoute les segments du chemin qui
 dehors. Le design system nomme déjà ces surfaces distinctement ; aucun renommage
 n'est demandé au designer.
 
-Le choix des segments est décidé **une seule fois pour tout le composant**. Pour
+Le choix des segments est décidé **une seule fois pour tout le composant**, et
+`colorKeys` en est l'unique autorité : il décide sur des feuilles séparées pour
+les peintures et pour les contours, si bien que deux tokens différents finissant
+par le même segment peuvent porter la même clé courte de part et d'autre. Pour
 au plus seize profondeurs candidates, le moteur retient exactement la sélection
 qui produit **le moins de clés distinctes**. Au-delà, il emploie une sélection
 gloutonne déterministe puis retire les profondeurs inutiles : le coût reste
@@ -274,12 +269,9 @@ existe une (Button : `sizeWrapperButton`), ses props sont **fusionnées** dans
 l'API (étape 1) et ses dimensions relevées ; **sinon**, dimensions lues
 directement sur le composant de référence (`defaultVariant`). → `gap`,
 `padding.x/y`, `radius`. Un composant plat est donc géré sans blocage. Une
-dimension uniforme n'est exportée que si sa représentation commune se résout.
-Pour une dimension réglable côté par côté (`padding`, `radius`, largeur de
-stroke), chaque côté tokenisé se publie indépendamment ; un côté absent et à
-zéro est neutre, tandis qu'un côté fixe non neutre avertit. La taille d'un slot
-reste un groupe indivisible : largeur + hauteur doivent prouver ensemble le
-carré annoncé.
+dimension uniforme n'est exportée que si sa représentation commune se résout, et
+la taille d'un slot reste un groupe indivisible : largeur + hauteur doivent
+prouver ensemble le carré annoncé.
 
 **Les côtés peuvent différer.** Quand tous citent la même variable, le champ
 garde sa forme courte, une référence, et le contrat d'un composant déjà correct
@@ -296,11 +288,8 @@ mais elle reste publiée sur un calque qui l'est déjà.
 
 La taille d'un slot n'entre pas dans cette liste : ses deux axes ne sont pas
 deux côtés d'un même champ, et deux variables y décrivent une dimension que le
-contrat ne saurait pas écrire. Elle garde donc l'exigence d'une variable unique.
-Une valeur neutre par défaut effectivement fournie par Figma (par exemple `0`
-pour un gap, un padding ou un rayon) reste elle aussi absente, mais ne produit
-pas de warning : la demander comme token n'ajouterait aucune information au
-rendu.
+contrat ne saurait pas écrire. Elle garde donc l'exigence d'une variable unique,
+et le reste suit la règle commune.
 
 **Un tracé n'est pas une boîte.** Sur un `VECTOR`, un `BOOLEAN_OPERATION`, un
 `STAR` ou un `POLYGON`, la largeur et la hauteur sont celles que Figma calcule
@@ -402,12 +391,6 @@ La profondeur est bornée à **12 niveaux**. Une coupure qui emporte un sous-arb
 réellement porteur produit un avertissement ; une coupure qui ne laisse qu'un
 dessin ne dit rien.
 
-Les visibilités portées par les nodes publiés descendent à leur place exacte ;
-une cible que l'arbre ne publie pas reste dans `visibilityTargets`, sans perte
-silencieuse. Une cible unique qui contrôle tout le contenu du slot le rend
-optionnel comme avant : c'est l'enfant qui se tait alors, pour qu'un même fait
-n'ait jamais deux propriétaires.
-
 `layout`, `justifyContent`, `alignItems` et `wrap` sont relevés dès que le
 conteneur est un auto layout linéaire ; `columns`, `rows`, `columnSizes`,
 `rowSizes`, `columnGap` et `rowGap` dès qu'il est une grille. `gap` n'est relevé
@@ -447,16 +430,12 @@ la fait différer de toute vue, un wrapper de dimensions sauté, elle ajoute son
 entrée au catalogue plutôt que de recopier un arbre. Une seule forme, donc un
 seul chemin de lecture.
 
-`icons.<clé>.slot` continue de nommer un slot de **premier niveau**, y compris
-pour une icône imbriquée dans un slot à parts.
-
-Nommer le slot d'icône par son rôle le rend **stable sur toute la matrice** :
-des icônes qui s'excluent entre variants (`circle-info` en info, `circle-check`
-en success) partagent un seul slot, là où leurs noms de calques en auraient
-inventé un par variant. `children` décrivant le variant de référence, seul le
-premier y apparaît. Le nom Figma reste dans `figmaLayer`, `icons` fait foi sur
-l'icône à rendre, et `variantViews[variants[].view].icons` la situe dans son
-arbre exact par `slotPath`.
+`icons.<clé>.slot` nomme un slot de **premier niveau**, y compris pour une icône
+imbriquée dans un slot à parts. Le nommer par son rôle le rend **stable sur
+toute la matrice** : des icônes qui s'excluent entre variants (`circle-info` en
+info, `circle-check` en success) partagent un seul slot, là où leurs noms de
+calques en auraient inventé un par variant, et `children` décrivant le variant
+de référence, seul le premier y apparaît.
 
 Une prop BOOLEAN Figma liée à la visibilité d'un calque donne `visibilityProp`
 + `optional` sur son slot, **quel que soit le type de calque**. Un label
@@ -464,9 +443,10 @@ masquable (bouton à icône seule) est donc décrit comme tel : sans cela le
 contrat exposerait une prop booléenne sans dire ce qu'elle montre ou cache. La
 liaison peut être portée par un descendant : elle est remontée sur le slot
 uniquement si ce descendant contrôle tout son contenu rendable **et** que le
-slot n'est pas déjà masquable. Sinon `visibilityTargets` conserve la prop et le
-chemin Figma relatif de chaque cible, sans marquer à tort le slot entier comme
-optionnel ni taire une prop que le composant doit lire. Dans un slot décrit par
+slot n'est pas déjà masquable, l'enfant se taisant alors pour qu'un même fait
+n'ait jamais deux propriétaires. Sinon `visibilityTargets` conserve la prop et
+le chemin Figma relatif de chaque cible, sans taire une prop que le composant
+doit lire. Dans un slot décrit par
 ses parts, les cibles représentées dans l'arbre portent leur visibilité à leur
 place exacte. Les cibles non textuelles restent dans `visibilityTargets` : les
 retirer ferait perdre une prop que l'arbre textuel n'a nulle part où publier.
@@ -556,15 +536,11 @@ quoi deux variants de tailles différentes passeraient pour identiques.
 
 **Bornes de taille.** `bounds` publie `minWidth`, `maxWidth`, `minHeight` et
 `maxHeight`, sur le composant à côté de `sizing` et sur chaque slot à côté de
-`size`. Une borne ne se confond avec aucun des deux : le menu de dimensionnement
-dit quelle place le layer prend, la borne dit jusqu'où cette place peut aller.
-Elles coexistent, et le cas le plus courant est justement celui qu'aucune valeur
-de `size` ne saurait écrire, un layer en `Fill` qu'un `max width` retient. Le
-champ est donc indépendant du menu, lu sur la seule présence de la borne, et
-chaque côté se lit seul : Figma laisse poser un `max width` sans `min width`.
-
-Le silence suit la règle commune. Une borne appartient au design : c'est au
-contrat de savoir la porter, non au designer de la retirer.
+`size`. Le champ est indépendant du menu de dimensionnement, lu sur la seule
+présence de la borne, et chaque côté se lit seul : Figma laisse poser un `max
+width` sans `min width`. Le silence suit la règle commune, car une borne
+appartient au design : c'est au contrat de savoir la porter, non au designer de
+la retirer.
 
 Le contrat n'a que deux propriétaires de bornes, le composant et un slot. Un
 calque intermédiaire (le wrapper de layout, qui prête son flux au composant sans
@@ -603,13 +579,8 @@ consommateur pose `position: relative` sur le parent.
 #### Rotation
 
 Une rotation est une décision de design comme une autre (un badge incliné, un
-chevron retourné) et le contrat l'écrit : `rotation`, sur le composant comme sur
-chaque layer publié, dans l'unité et la convention de CSS. Figma compte les
-degrés dans le sens trigonométrique, CSS dans le sens horaire : la valeur
-publiée est l'opposée, prête pour `transform: rotate(…)`. L'origine est le
-centre du layer, le défaut de `transform-origin`, et c'est aussi le point sur
-lequel `inset` est calculé. Une rotation imbriquée se compose d'elle-même, comme
-dans Figma.
+chevron retourné) et le contrat l'écrit, `rotation`, sur le composant comme sur
+chaque layer publié, dans l'unité et la convention de CSS.
 
 Reste un écart que CSS ne comble pas, et c'est ici qu'il est écrit, pas dans un
 diagnostic d'export : dans un auto layout, Figma espace ses enfants d'après la
@@ -620,14 +591,9 @@ l'export n'en dit rien.
 
 #### Grilles
 
-Un enfant de **grille** publie sa place dans sa cellule : `columnStart` et
-`rowStart` (les valeurs de `grid-column-start` et `grid-row-start`, donc
-comptées à partir de 1 là où Figma indexe à partir de 0), `columnSpan` et
-`rowSpan` (absents quand ils valent 1, la valeur neutre), `justifySelf` et
-`alignSelf` (absents sur `AUTO`). Les ancres sont publiées sur tout enfant resté
-dans le flux : Figma en pose une sur chacun, et les redéduire supposerait de
-réimplémenter son placement automatique. Un enfant absolu n'en a pas, il est
-hors de la grille.
+Un enfant de **grille** publie sa place dans sa cellule : `columnStart`,
+`rowStart`, `columnSpan`, `rowSpan`, puis `justifySelf` et `alignSelf`, absents
+sur `AUTO` comme toute valeur neutre.
 
 **Sous une grille, c'est la cellule qui décide de la boîte.** Remplir sa cellule
 est le défaut d'un enfant de grille (`stretch` en CSS, « Fill » dans le panneau
@@ -656,27 +622,20 @@ illisible, elle, avertit : le contrat publie « auto » à sa place, et le desig
 a bien quelque chose à vérifier.
 
 **Cette exception s'étend de la piste à la cellule, et là seulement.** Une piste
-`HUG` est le seul endroit d'une grille où la cellule ne décide de rien : elle se
-dimensionne sur son contenu, et n'a aucune valeur à publier :
-`GridTrackSize.value` n'existe que sur `FIXED` et `FLEX`. La mesure ne vit alors
-que sur l'enfant, et sans elle la piste retombe à zéro : le contrat décrirait
-une grille que personne ne peut rendre. Un enfant dont toutes les pistes
-couvertes sur un axe sont `HUG` publie donc sa taille résolue en pixels dans
-`structuralSize`, sous la même exception écrite ici, sans diagnostic et sans
-dégrader la couverture. Une seule piste non `HUG` sous son étendue rend l'axe
-indécis : la place vient d'ailleurs, et rien n'est publié.
+`HUG` est le seul endroit d'une grille où la cellule ne décide de rien :
+`GridTrackSize.value` n'existe que sur `FIXED` et `FLEX`, et la mesure ne vit
+plus que sur l'enfant. Un enfant dont toutes les pistes couvertes sur un axe
+sont `HUG` publie donc sa taille résolue en pixels dans `structuralSize` ; une
+seule piste non `HUG` sous son étendue rend l'axe indécis, la place vient
+d'ailleurs et rien n'est publié.
 
-`size` reste strictement tokenisé : une variable liée décrit le design system et
-l'emporte toujours, `structuralSize` se tait alors. Publier les deux ferait
-porter deux vérités au même axe. Aucun geste n'est demandé au designer, ces
-enfants sont en `Fill` dans le panneau, et c'est Figma qui n'expose pas ce
-remplissage sous une piste qui hug.
-
-C'est aussi ce qui borne l'exception : elle tient à ce que le panneau affiche «
-Fill », et un alignement explicite le retire. L'enfant reprend alors la règle
-commune, sa dimension figée réclame une variable, et `structuralSize` se tait,
-sans quoi le contrat publierait en pixels la valeur que son propre
-avertissement, devenu faux, déclarerait absente.
+Deux bornes la tiennent. `size` reste strictement tokenisé, et `structuralSize`
+se tait dès qu'une variable est liée : publier les deux ferait porter deux
+vérités au même axe. Et l'exception tient à ce que le panneau affiche « Fill »,
+qu'un alignement explicite retire : l'enfant reprend alors la règle commune, sa
+dimension figée réclame une variable, et `structuralSize` se tait, sans quoi le
+contrat publierait en pixels la valeur que son propre avertissement, devenu
+faux, déclarerait absente.
 
 Direction, alignements, dimensions figées et propriétés de flux des slots ne
 sont jamais généralisés depuis le variant de référence : chaque combinaison a sa
@@ -703,10 +662,9 @@ rien en silence.
   l'**alignement** dans une boîte qui n'est pas en `Hug`, la **casse**, la
   **décoration**, la **troncature**.
 
-La **rotation** et la **distance d'un calque absolu à ses bords** ont quitté
-cette liste : le contrat les écrit désormais (`rotation`, `inset`). Une
-propriété publiée n'a rien à faire dans un relevé de ce qui manque, la réclamer
-enverrait le designer redresser un layer que le développeur rend incliné.
+Une propriété que le contrat écrit n'entre pas dans ce relevé de ce qui manque,
+`rotation` et `inset` compris : la réclamer enverrait le designer redresser un
+layer que le développeur rend incliné.
 
 Le `mask` est le seul de cette liste dont le contrat ne perd pas la propriété
 mais en **invente** une : la couleur du calque masquant entre normalement dans
@@ -716,19 +674,16 @@ mais en **invente** une : la couleur du calque masquant entre normalement dans
 #### Passage à la ligne
 
 Un auto layout en `layoutWrap: WRAP` publie `wrap: true`, sur le composant comme
-sur n'importe quel conteneur de `children`. C'est une propriété de flux, pas une
-dimension : elle reste au niveau haut même quand `sizes` porte les dimensions.
-L'espace entre les lignes est un token, `rowGap`, et suit la règle commune.
-Trois silences y répondent chacun à une question distincte :
+sur n'importe quel conteneur de `children`. L'espace entre les lignes est un
+token, `rowGap`, et suit la règle commune. Trois silences y répondent chacun à
+une question distincte :
 
 - **pas de wrap** : `counterAxisSpacing` reste lisible sans effet, comme un
   `itemSpacing` sous une grille. Rien n'est exporté et rien n'est signalé : il
   n'y a pas de deuxième ligne, donc rien ne manque ;
-- **champ synchronisé**, Figma laisse les deux gaps liés tant que le designer
-  ne les dissocie pas, et son API ne le dit pas : `counterAxisSpacing` ne renvoie
-  jamais `null`, il renvoie la valeur d'`itemSpacing` sans liaison propre.
-  `rowGap` reste donc absent, sans warning, et **son absence vaut `gap`**, la
-  lecture de Figma comme celle de CSS ;
+- **champ synchronisé** : `counterAxisSpacing` ne renvoie jamais `null`, il
+  renvoie la valeur d'`itemSpacing` sans liaison propre, et `rowGap` reste donc
+  absent, sans warning ;
 - **répartition « Auto »** (`counterAxisAlignContent: SPACE_BETWEEN`), Figma
   répartit lui-même l'espace entre les lignes. Aucun champ ne sait l'écrire, à la
   différence de `justifyContent` sur l'axe principal : le warning le dit.
@@ -869,43 +824,26 @@ reviendrait à inventer la règle qu'elle prétend vérifier.
 
 Le contrat publie aussi le mapping générique des rôles vers les propriétés de
 rendu : `rendering.roles`, avec `background` → `background-color`, `foreground`
-→ `color`/`fill`, `border` → `box-shadow`, `ring` → contour extérieur. Ce
-vocabulaire est **strictement le même dans tous les contrats** : un mot y
-signifie partout la même chose, et c'est ce qui permet de l'apprendre une fois
-pour toutes.
+→ `color`/`fill`, `border` → `box-shadow`, `ring` → contour extérieur.
 
-**Une clé de couleur n'est pas un rôle**, et les confondre obligeait le moteur à
-avoir un avis sur le vocabulaire du design system. `rendering.keyRoles` porte
-donc la part propre au composant : le rôle de chaque clé observée qui n'en porte
-pas le nom : clés allongées comprises, dont le rôle est celui que leur dernier
-segment déclare, et clés qui s'appellent comme un rôle sans en avoir la nature.
-La règle reste sans logique par composant ; seules les clés observées changent
-d'un contrat à l'autre, et un consommateur répond à « comment peindre cette clé
-» en deux accès sans ambiguïté : `roles[keyRoles[côté][clé] ?? clé]`.
+**Une clé de couleur n'est pas un rôle**, et `rendering.keyRoles` porte la part
+propre au composant : le rôle de chaque clé observée qui n'en porte pas le nom,
+clés allongées comprises, dont le rôle est celui que leur dernier segment
+déclare, et clés qui s'appellent comme un rôle sans en avoir la nature. La règle
+reste sans logique par composant, seules les clés observées changent d'un
+contrat à l'autre, et un composant dont toutes les clés nomment leur rôle ne
+publie aucun `keyRoles`.
 
-Les deux côtés (`keyRoles.fills` pour les clés de `variants[].tokens`,
-`keyRoles.strokes` pour celles de `variants[].strokes`) sont séparés parce que
-les clés le sont : les peintures et les contours vivent dans deux arbres, donc
-dans deux feuilles de `colorKeys`, et deux tokens différents finissant par le
-même segment peuvent porter la même clé courte de part et d'autre. Une table
-unique en perdrait un en silence. Une clé dont le rôle porte déjà le nom reste
-absente : `roles[clé]` répond pour elle, et un composant dont toutes les clés
-nomment leur rôle ne publie aucun `keyRoles`. Pour un rôle avec `fallback`, les
-`cssProperties` sont le rendu candidat et le `fallback` le rendu **recommandé**
-dès que la fidélité l'exige : un `ring` aligné `outside` se rend en `box-shadow`
-(`0 0 0 <width> <color>`), qui épouse le `border-radius` et se dessine hors du
-flux, il ne déplace jamais les éléments voisins.
+Pour un rôle avec `fallback`, les `cssProperties` sont le rendu candidat et le
+`fallback` le rendu **recommandé** dès que la fidélité l'exige : un `ring`
+aligné `outside` se rend en `box-shadow` (`0 0 0 <width> <color>`), qui épouse
+le `border-radius` et se dessine hors du flux, il ne déplace jamais les éléments
+voisins.
 
-**Aucun rôle de contour ne cite une propriété qui consomme la boîte.** Dans
-Figma un `stroke` ne prend aucune place : il ne pousse ni son contenu ni ses
-voisins, quel que soit son alignement. Une `border` CSS, elle, élargit l'élément
-et décale tout ce qui l'entoure. Le rôle `border` se rend donc avec
-`box-shadow`, et `align` en donne la forme, `inside` → `inset 0 0 0 <width>
-<color>`, `outside` → `0 0 0 <width> <color>`, `center` → la moitié de la
-largeur de chaque côté. Une largeur détaillée par bord se rend en autant
-d'ombres. Quand plusieurs rôles visent `box-shadow` sur un même calque, un
-`border` et un `ring` en focus, ils se composent en **une** déclaration, séparés
-par des virgules, les `inset` d'abord. Toute propriété pertinente sans variable
+**Aucun rôle de contour ne cite une propriété qui consomme la boîte.** Le rôle
+`border` se rend donc avec `box-shadow`, et `align` en donne la forme, `inside`
+→ `inset 0 0 0 <width> <color>`, `outside` → `0 0 0 <width> <color>`, `center` →
+la moitié de la largeur de chaque côté. Toute propriété pertinente sans variable
 liée → warning précis (calque + propriété), non exportée, **export non bloqué**.
 Le contrat ne publie **aucun index de ses tokens**. Cette liste se dérive du
 contrat terminé et n’apporte aucune information propre.
@@ -934,7 +872,7 @@ nulle part.
 
 **Ce que l'échantillon porte.** `args` donne les valeurs appliquées dans ce
 variant : la visibilité réelle d'un slot optionnel (que `optional` ne disait
-pas, il annonçait seulement qu'un slot peut être masqué) le texte d'une TEXT
+pas, il annonçait seulement qu'un slot peut être masqué), le texte d'une TEXT
 property, le composant d'un INSTANCE_SWAP. `text` donne le contenu des slots
 qu'aucune prop ne porte, situé par son chemin de slots et par le nom de son
 calque. `composes` donne l'usage de chaque dépendance : ses `args` aux clés
@@ -942,31 +880,31 @@ publiques de son contrat, `overrides` pour ce que ce parent a écrit dedans, et
 `swaps` pour les calques dont il y a remplacé le composant.
 
 `args` est une projection fermée de l'API publique, jamais une copie libre de
-`componentProperties`. Une clé n'entre que si le modèle de propriétés l'a
-acceptée ; une collision ou une propriété rejetée ne réapparaît donc pas sous
-son nom brut. Les valeurs portables sont celles de `VARIANT`, `BOOLEAN`, `TEXT`
-et d'un `INSTANCE_SWAP` dont le composant peut être nommé. `SLOT` est omis : son
+`componentProperties` : une clé n'entre que si le modèle de propriétés l'a
+acceptée, et une collision ou une propriété rejetée ne réapparaît pas sous son
+nom brut. Les valeurs portables sont celles de `VARIANT`, `BOOLEAN`, `TEXT` et
+d'un `INSTANCE_SWAP` dont le composant peut être nommé. `SLOT` est omis : son
 contenu libre n'est pas une valeur qu'un développeur peut reconstruire depuis ce
 champ. Pour une dépendance, le moteur lit d'abord les propriétés de son owner,
 puis celles de l'unique occurrence exposée qui appartient au wrapper élu lors de
-l'export autonome. Zéro ou plusieurs occurrences correspondantes rendent ce
-complément indécidable et il est omis, sans choisir la première.
+l'export autonome ; zéro ou plusieurs occurrences rendent ce complément
+indécidable et il est omis, sans choisir la première.
 
 Le **relevé positionnel nu** suit la visibilité **effective** de l'instantané :
 le calque et tous ses parents jusqu'à la racine du composant exporté doivent
-être visibles : pas jusqu'à l'instance de dépendance, car un cadre optionnel
-masqué au-dessus d'une dépendance ne montre rien de ce qu'elle contient.
+être visibles, et non jusqu'à l'instance de dépendance, car un cadre optionnel
+masqué au-dessus d'une dépendance ne montre rien de ce qu'elle contient. La
+règle vise `ContractSample.text`, `SampleOverride.text` et `swaps`, et son
+critère est « ce relevé rapporte ce qu'un calque porte sans rapporter la
+condition qui le masque ».
 
-La règle vise `ContractSample.text`, `SampleOverride.text` et `swaps`, et le
-critère n'est pas « c'est du rendu » mais « ce relevé rapporte ce qu'un calque
-porte sans rapporter la condition qui le masque ». C'est ce qui explique
-l'exception apparente d'`args` : le texte d'une TEXT property et le composant
-d'un INSTANCE_SWAP sont bien affichés, mais le booléen qui les masque voyage
-dans le même `args`, et la reconstruction n'a donc rien à retirer pour être
-juste. Filtrer `args` publierait au contraire `false` pour une prop qui vaut
-`true`. Restent donc publiés sous un calque masqué : une valeur `false`
-d'`args`, un `override.visible`, et l'entrée de la dépendance, ces valeurs
-décrivent précisément l'état masqué que la reconstruction doit conserver.
+C'est ce qui explique l'exception apparente d'`args` : le texte d'une TEXT
+property et le composant d'un INSTANCE_SWAP sont bien affichés, mais le booléen
+qui les masque voyage dans le même `args`, et la reconstruction n'a donc rien à
+retirer pour être juste. Filtrer `args` publierait `false` pour une prop qui
+vaut `true`. Restent donc publiés sous un calque masqué une valeur `false`
+d'`args`, un `override.visible` et l'entrée de la dépendance : ces valeurs
+décrivent l'état masqué que la reconstruction doit conserver.
 
 La perte est assumée et se lit dans l'autre sens : un remplacement posé sous un
 cadre que ce variant masque n'est pas publié par ce variant, et le variant qui
@@ -981,9 +919,9 @@ l'asymétrie, `ContractSample` n'a pas d'`overrides`, `SampleInstance` n'a pas d
 `text` : on n'a de slots que chez soi, on ne surcharge que chez autrui.
 
 **La frontière avec la composition.** Le parent ne réexporte pas les internes
-d'une dépendance. Ce que `overrides` publie n'en est pas :
+d'une dépendance, et ce que `overrides` publie n'en est pas :
 `InstanceNode.overrides` répond « qu'est-ce que ce parent a changé ici », par
-opposition à ce que le composant fournit. Un texte que le parent a saisi dans
+opposition à ce que le composant fournit, et un texte que le parent a saisi dans
 une dépendance n'est écrit nulle part ailleurs. Deux champs seulement sont
 retenus, `characters` et `visible` ; toute autre surcharge décrit du rendu et
 signale plutôt un manque du contrat normatif de la dépendance. Une surcharge de
@@ -998,27 +936,32 @@ et la prop d'icône que les règles `@icons` fabriquent (`chessName`,
 `iconLeftName`) n'a aucun porteur Figma, donc n'apparaît jamais dans
 `componentProperties` ni dans `args`. `swaps` est l’unique propriétaire de cette
 information et se lit en comparant l'instance à son composant maître, **position
-par position**, la structure d'une instance est isomorphe à celle de son maître
-hors contenu libre d'un `SLOT`.
+par position**, la structure d'une instance étant isomorphe à celle de son
+maître hors contenu libre d'un `SLOT`.
 
-Cinq bornes le tiennent. La comparaison porte sur le composant propriétaire et
-non sur la variante : choisir une autre variante d'un même component set n'est
-pas un remplacement, et le contrat de la dépendance décrit déjà ce choix. Le
-relevé s'arrête sur une dépendance de la dépendance, dont l'échantillon est
-ailleurs, et sous un calque déjà déclaré remplacé, dont plus aucune position ne
-correspond au maître. Un `SLOT` coupe lui aussi la comparaison : son contenu
-peut différer librement entre le maître et l'instance. Cette borne-là est propre
-au positionnel : la résolution nominale d'une INSTANCE_SWAP, joindre
-`componentPropertyReferences` à une propriété déclarée, traverse un `SLOT`, sans
-quoi la clé quitterait `args` sans que `swaps` reprenne la main. Le relevé
-s'arrête enfin sur un calque dont `args` répond déjà, voir « Quand la dépendance
-expose son remplacement » plus bas. Enfin `masterPath` nomme les calques du
-maître, pas ceux de l'instance : Figma renomme le calque qu'on remplace d'après
-son nouveau composant, si bien que le chemin lu dans l'instance répéterait
-`component` et ne joindrait plus rien, alors que le nom du maître est celui que
-le contrat de la dépendance publie dans `icons.*.figmaName`. Un champ, une
-question : c'est le nom distinct, et non `figmaPath`, qui empêche le doute qui a
-coûté `figmaLayer`.
+Cinq bornes le tiennent :
+
+- la comparaison porte sur le composant **propriétaire**, non sur la variante :
+  choisir une autre variante d'un même component set n'est pas un remplacement,
+  et le contrat de la dépendance décrit déjà ce choix ;
+- elle s'arrête sur une dépendance de la dépendance, dont l'échantillon est
+  ailleurs ;
+- elle s'arrête sous un calque déjà déclaré remplacé, dont plus aucune position
+  ne correspond au maître ;
+- un `SLOT` la coupe, son contenu pouvant différer librement entre le maître et
+  l'instance. Cette borne est propre au positionnel : la résolution nominale
+  d'une INSTANCE_SWAP, joindre `componentPropertyReferences` à une propriété
+  déclarée, traverse un `SLOT`, sans quoi la clé quitterait `args` sans que
+  `swaps` reprenne la main ;
+- elle s'arrête sur un calque dont `args` répond déjà, voir « Quand la
+  dépendance expose son remplacement » ci-dessous.
+
+`masterPath` nomme les calques du maître, pas ceux de l'instance : Figma renomme
+le calque qu'on remplace d'après son nouveau composant, si bien que le chemin lu
+dans l'instance répéterait `component` et ne joindrait plus rien, alors que le
+nom du maître est celui que le contrat de la dépendance publie dans
+`icons.*.figmaName`. C'est ce nom distinct, et non `figmaPath`, qui empêche le
+doute qui a coûté `figmaLayer`.
 
 **Quand la dépendance expose son remplacement.** Tout ce qui précède décrit le
 cas où Figma n'offre aucun porteur. Lorsque la dépendance déclare une
@@ -1028,12 +971,12 @@ fabriquer une seconde, « pour ne pas obliger le consommateur à choisir entre
 deux sources de vérité ». `args` répond donc, et `swaps` se tait, un même fait
 n'a jamais deux propriétaires.
 
-Encore faut-il que `args` réponde quelque chose de lisible. Pour une
+Encore faut-il qu'`args` réponde quelque chose de lisible. Pour une
 INSTANCE_SWAP, `componentProperties` rend l'identifiant du node placé (« 1:1 »),
 jamais son nom : publié tel quel, il donnait une clé publique à une valeur que
 la règle 1 interdit. La valeur publiée est donc le nom du composant
 propriétaire, résolu comme le fait déjà `propertyBindings.appliedValue` pour le
-composant exporté : sans aucun aller-retour, le scan de composition connaissant
+composant exporté, sans aucun aller-retour, le scan de composition connaissant
 le maître de chaque instance rencontrée. Un remplacement qu'on ne sait pas
 nommer est **omis** d'`args`, et `swaps` redevient alors le seul relevé : la
 règle 2 interdit d'inventer, elle n'autorise pas à perdre.
@@ -1047,7 +990,7 @@ et voici ce qu'il ne sait structurellement pas porter :
 - une prop d'une dépendance portée par son wrapper de dimensions quand Figma
   n'expose pas exactement une occurrence de ce wrapper : zéro ou plusieurs, la
   provenance est indécidable et toutes les props du wrapper s'omettent, là où
-  `props` continue de les publier : la fusion porte sur les définitions, qui ne
+  `props` continue de les publier, la fusion portant sur les définitions, qui ne
   dépendent d'aucune occurrence ;
 - une prop d'une dépendance dont l'owner n'a pas été indexé par le relevé de
   composition : `args` se tait plutôt que de répondre depuis une surface
@@ -1072,28 +1015,27 @@ surcharges, et elle évite de recopier le contenu d'une dépendance dans chaque
 contrat qui l'emploie.
 
 **La reconstruction est un zipper récursif, pas une recherche globale.** Pour
-chaque variant, le consommateur résout d'abord sa vue et son `sample`. Il
-applique `args` et `text` à ce composant, puis rapproche chaque dépendance
-racine du slot exact donné par `slotPath`. Dans une `SampleInstance`, les
-enfants de `composes` se rapprochent des dépendances directes de leur
-propriétaire immédiat, dans l'ordre, avec le couple `component` + `figmaLayer` ;
-deux occurrences homonymes restent donc deux positions de la séquence. Le
-consommateur ouvre alors le contrat de cette dépendance, choisit son variant
-depuis les valeurs connues de `args`, applique son propre échantillon, puis
-superpose les `args`, `overrides` et `swaps` du parent. Une valeur `false` est
-explicite ; une clé absente hérite du défaut de la dépendance. La même opération
-continue jusqu'aux feuilles, sans limite de profondeur arbitraire. Une adresse
-absente ou ambiguë fait omettre l'atome indicatif concerné ; elle n'autorise ni
-une recherche par nom dans tout l'arbre, ni la dégradation d'une donnée
-normative.
+chaque variant, le consommateur résout d'abord sa vue et son `sample`, applique
+`args` et `text` à ce composant, puis rapproche chaque dépendance racine du slot
+exact donné par `slotPath`. Dans une `SampleInstance`, les enfants de `composes`
+se rapprochent des dépendances directes de leur propriétaire immédiat, dans
+l'ordre, avec le couple `component` + `figmaLayer` ; deux occurrences homonymes
+restent donc deux positions de la séquence. Le consommateur ouvre alors le
+contrat de cette dépendance, choisit son variant depuis les valeurs connues de
+`args`, applique son propre échantillon, puis superpose les `args`, `overrides`
+et `swaps` du parent. Une valeur `false` est explicite ; une clé absente hérite
+du défaut de la dépendance. La même opération continue jusqu'aux feuilles, sans
+limite de profondeur arbitraire. Une adresse absente ou ambiguë fait omettre
+l'atome indicatif concerné ; elle n'autorise ni une recherche par nom dans tout
+l'arbre, ni la dégradation d'une donnée normative.
 
 **Ce qu'il ne publie pas, faute d'apporter quoi que ce soit.** Les icônes du
 composant exporté sont déjà dans `variantViews[].icons`, par vue exacte : leur
 emplacement comme leur nom de calque. Celles d'une dépendance non plus, tant que
-la maquette laisse celles que son contrat fournit, c'est son échantillon qui les
-décrit, et une seconde copie pourrait contredire la première. `swaps` ne publie
-donc que l'écart : le calque du maître, et le composant que ce parent y a mis à
-la place.
+la maquette laisse celles que son contrat fournit : c'est son échantillon qui
+les décrit, et une seconde copie pourrait contredire la première. `swaps` ne
+publie donc que l'écart, le calque du maître et le composant que ce parent y a
+mis à la place.
 
 ### Sortie
 
@@ -1297,11 +1239,8 @@ Leur nombre ne change pas la règle : un cadre qui range trois liens publie troi
 enfants, chacun avec son emplacement et son `composes`. Le contrat ne saurait
 sinon ni où ils vont, ni combien il en faut.
 
-La distinction n'est pas cosmétique : porter `composes` sur le cadre le ferait
-passer pour le composant, et son `alignSelf` atterrirait sur un composant qui
-publie déjà son propre `structure.sizing`, où une taille explicite neutralise
-l'étirement. Le cadre disparaîtrait avec son alignement. Un cadre sans
-auto-layout linéaire avertit au lieu de laisser deviner sa disposition.
+Un cadre sans auto-layout linéaire avertit au lieu de laisser deviner sa
+disposition.
 
 `gap` décrit l'espace **entre** des enfants : le cadre le publie dès qu'il en range
 plusieurs. Un cadre à un seul enfant n'espace rien, et réclamer une variable
@@ -1449,27 +1388,17 @@ refuse tout alias vers la cible écartée.
 
 La version actuelle du contrat est celle que publie `CONTRACT_VERSION`, dans
 `packages/kit/src/format/version.ts`, l'unique endroit où elle est écrite.
-`viewStructures`, `viewTypographies`, `viewIcons`, `viewComposes` et
-`viewPaintPlacements` cataloguent séparément chaque partie exacte. Une entrée de
-`variantViews` porte jusqu’à cinq renvois vers ces catalogues ; chaque entrée de
-`variants` référence la vue correspondante par `view`, à côté de ses `tokens`,
-`strokes` et placements de bindings. Deux parties ne partagent une clé que si
-leur JSON est strictement identique, à l’ordre des clés près. Il n’existe ni
-merge, ni héritage, ni valeur par défaut entre vues.
-
-`propertyBindingDefinitions` porte la partie stable d’une liaison ;
-`variants[].bindings` conserve sa cible exacte dans chaque COMPONENT.
-
-`samples` catalogue à part ce que la maquette montre (textes, valeurs de props,
-surcharges et remplacements d’instance dans les dépendances) et chaque entrée de
-`variants` le référence par `sample`. Il est le seul champ non normatif du
-contrat. Il vit hors de `variantViews` pour que le contenu, volatil, ne fasse
-pas éclater la déduplication des vues normatives.
 
 Toute information exacte se lit dans une entrée de `variants`, la vue qu’elle
-référence et ses placements de bindings. La projection de référence `structure`
-reste disponible pour l’entrée générale du composant et les dimensions par
-taille ; elle ne remplace jamais la vue exacte d’une variante.
+référence et ses placements de bindings ; le partage des cinq catalogues de vues
+est réglé en [6. Structure](#6-structure), et `propertyBindingDefinitions` en
+[1. Props](#1-props). La projection de référence `structure` reste disponible
+pour l’entrée générale du composant et les dimensions par taille ; elle ne
+remplace jamais la vue exacte d’une variante.
+
+`samples` est le seul champ non normatif du contrat, et il vit hors de
+`variantViews` pour que le contenu, volatil, ne fasse pas éclater la
+déduplication des vues normatives.
 
 Un consommateur ne doit jamais présumer qu’une version mineure est compatible :
 il accepte uniquement les versions qu’il a explicitement auditées.
@@ -1504,10 +1433,3 @@ pèse plus de la moitié du schéma publié, que tout consommateur télécharge,
 compris celui qui ne l'ouvre jamais. Un discriminant décrit par son propre nom
 ajouterait ce poids sans ajouter de sens. Aucun compteur ne garde cette règle en
 CI, et c'est délibéré : un seuil ferait écrire des phrases pour le satisfaire.
-
-La **12.0** ajoute trois champs et retire deux avertissements sans geste :
-`ChildStructure.inset` (la place d'un calque hors du flux), `rotation` (sur le
-composant et sur chaque calque publié) et `rendering.keyRoles` (le rôle de
-chaque clé de couleur qui n'en porte pas le nom, un côté par arbre).
-`rendering.roles` y devient strictement le vocabulaire partagé : il ne reçoit
-plus de copie de descripteur par clé observée.
