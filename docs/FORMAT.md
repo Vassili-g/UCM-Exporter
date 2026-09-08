@@ -273,18 +273,11 @@ dimension uniforme n'est exportée que si sa représentation commune se résout,
 la taille d'un slot reste un groupe indivisible : largeur + hauteur doivent
 prouver ensemble le carré annoncé.
 
-**Les côtés peuvent différer.** Quand tous citent la même variable, le champ
-garde sa forme courte, une référence, et le contrat d'un composant déjà correct
-ne change pas. Quand ils en citent plusieurs, le contrat publie le détail par
-côté au lieu de tout perdre : `padding.x` devient `{ "left": "{…}", "right":
-"{…}" }`, `radius` devient `{ "topLeft", "topRight", "bottomRight", "bottomLeft"
-}`, et la largeur d'un stroke `{ "top", "right", "bottom", "left" }`. Le design
-system nomme déjà ces variables séparément ; exiger une variable unique lui
-ferait aplatir une décision qui lui appartient. Cet objet peut être clairsemé :
-deux coins gauches tokenisés et deux coins droits à zéro publient uniquement
-`topLeft` et `bottomLeft`. L'élection du node de layout continue de ne compter
-que les groupes complets : une valeur partielle ne choisit jamais le wrapper,
-mais elle reste publiée sur un calque qui l'est déjà.
+**Les côtés peuvent différer.** `padding.x`, `padding.y`, `radius` et la largeur
+d'un stroke publient le détail par côté dès que leurs côtés citent plusieurs
+variables. L'élection du node de layout continue de ne compter que les groupes
+complets : une valeur partielle ne choisit jamais le wrapper, mais elle reste
+publiée sur un calque qui l'est déjà.
 
 La taille d'un slot n'entre pas dans cette liste : ses deux axes ne sont pas
 deux côtés d'un même champ, et deux variables y décrivent une dimension que le
@@ -511,12 +504,8 @@ panneau Figma, et chaque axe se lit séparément :
 | `Fixed` | une variable | la référence du token |
 | `Fixed` | aucune | `stretch` |
 
-La dernière ligne est la règle d'origine, devenue le repli : une largeur fixe
-que rien ne nomme sert à aligner les variants d'un component set dans Figma, et
-la publier imposerait une largeur de maquette à toutes les pages qui intègrent
-le composant. **La liaison de variable est ce qui sépare les deux cas**, à la
-règle commune. Une tuile dont le design system nomme le côté n'est pas une
-commodité de maquette, et le token l'emporte donc sur `stretch`.
+**La liaison de variable est ce qui sépare les deux dernières lignes**, à la
+règle commune.
 
 Un axe en `Hug` ou en `Fill` ne lit aucune liaison : une variable y survivrait
 au changement de menu et publierait une taille que le rendu n'a pas. Un axe figé
@@ -525,14 +514,10 @@ une lecture assumée, et le réclamer avertirait sur presque tous les component
 sets, dont le cadre fixe est la norme. Une variable désignée mais introuvable
 avertit en revanche, comme partout ailleurs.
 
-`stretch` nomme une intention, « occupe la place donnée » ; la technique
-appartient au développeur, qui écrit `width: stretch`, `width: 100%` ou `flex:
-1` selon le contexte d'intégration. La clé est la propriété CSS et non l'axe
-Figma, parce que la taille d'un composant n'est pas une propriété de flux : il
-ne connaît pas le conteneur qui l'accueillera. Le dimensionnement est lu sur le
-variant, jamais sur le wrapper de layout, et comparé sur toute la matrice comme
-le reste du flux, la comparaison porte sur l'identifiant de la variable, sans
-quoi deux variants de tailles différentes passeraient pour identiques.
+Le dimensionnement est lu sur le variant, jamais sur le wrapper de layout, et
+comparé sur toute la matrice comme le reste du flux. La comparaison porte sur
+l'identifiant de la variable, sans quoi deux variants de tailles différentes
+passeraient pour identiques.
 
 **Bornes de taille.** `bounds` publie `minWidth`, `maxWidth`, `minHeight` et
 `maxHeight`, sur le composant à côté de `sizing` et sur chaque slot à côté de
@@ -559,21 +544,12 @@ vocabulaire CSS (`left`/`center`/`right`/`stretch`/`scale`,
 précède celle du flux, car une grille aussi porte des enfants en position
 absolue.
 
-`inset` a **une seule signification par clé** : la distance entre un bord du
-parent et le bord correspondant du layer, les valeurs de `top`, `right`,
-`bottom` et `left` en CSS, à écrire telles quelles. Les côtés publiés sont ceux
-auxquels le layer s'accroche : un seul par axe pour `left`, `right`, `top` et
-`bottom`, les deux pour `stretch`, `center` et `scale`, où le consommateur a
-besoin des deux pour étirer, recentrer ou proportionner. Sans contrainte
-lisible, l'ancrage est celui de Figma, le début de chaque axe.
+Sans contrainte lisible, l'ancrage est celui de Figma, le début de chaque axe.
 
 Le calcul passe par le **centre** du layer, et c'est ce qui le rend juste pour
 un layer tourné : Figma tourne autour du coin haut-gauche, CSS autour du centre.
 La boîte CSS non tournée se déduit du centre réel (`relativeTransform` appliqué
-à `(w/2, h/2)`), et `rotation` la ramène exactement où Figma la montre. La boîte
-de référence est le cadre du parent, sans ajustement : aucun rôle de contour ne
-consomme la boîte dans ce contrat, si bien que la « padding box » de CSS, celle
-sur laquelle `right` et `bottom` se résolvent, coïncide avec elle. Le
+à `(w/2, h/2)`), et `rotation` la ramène exactement où Figma la montre. Le
 consommateur pose `position: relative` sur le parent.
 
 #### Rotation
@@ -610,11 +586,9 @@ explicitement aligné fait exception, avec le même mot qu'en CSS : il ne s'éti
 plus, sa dimension redevient la sienne, et la règle commune s'applique, figée
 sans variable, elle avertit.
 
-`columnSizes` et `rowSizes` portent la taille de chaque piste dans le
-vocabulaire de `grid-template-*` : `"1fr"` (piste `FLEX`, avec son facteur),
-`"fit-content(100%)"` (piste `HUG`) et, exception strictement structurelle,
-`"120px"` pour une piste `FIXED`. La valeur fixe décrit la grille Figma sans
-devenir un token ni rendre la couverture portable partielle. Rien ne manque et
+`columnSizes` et `rowSizes` traduisent chaque piste Figma : `FLEX` en `"1fr"`
+avec son facteur, `HUG` en `"fit-content(100%)"`, `FIXED` en `"120px"`. La
+valeur fixe ne rend pas la couverture portable partielle. Rien ne manque et
 aucun geste n'existe : l'exception est écrite ici, et l'export n'en dit rien. Un
 runtime Figma qui n'expose pas ces champs ne publie rien et n'avertit de rien :
 une propriété absente n'est pas une valeur. Une piste dont la taille est
@@ -1242,9 +1216,9 @@ sinon ni où ils vont, ni combien il en faut.
 Un cadre sans auto-layout linéaire avertit au lieu de laisser deviner sa
 disposition.
 
-`gap` décrit l'espace **entre** des enfants : le cadre le publie dès qu'il en range
-plusieurs. Un cadre à un seul enfant n'espace rien, et réclamer une variable
-pour lui enverrait le designer relier une valeur qui ne se voit pas.
+Un cadre à un seul enfant ne publie pas de `gap` : il n'espace rien, et réclamer
+une variable pour lui enverrait le designer relier une valeur qui ne se voit
+pas.
 
 Une seule dépendance peut prêter sa `visibilityProp` au slot du cadre. À
 plusieurs, la retenir masquerait les autres avec elle : le cadre n'en prend
