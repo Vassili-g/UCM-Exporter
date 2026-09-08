@@ -231,10 +231,9 @@ Le raisonnement vit dans la spécification, en lien.
 - Une collision feuille/groupe ou deux chemins identiques sont tranchés avant la
   construction de l’arbre ; aucun alias ne pointe vers une variable rejetée.
   → [spec](./docs/FORMAT.md#partie-2--export-tokens)
-- Le contrat ne publie aucun index de ses tokens. `tokensUsed` se dérivait du
-  contrat terminé ; ce qui se dérive ne se publie pas. Un consommateur qui en a
-  besoin balaie les références du contrat, `samples` et `meta` exclus. Un texte
-  de maquette peut valoir « {montant.total} » sans nommer un token.
+- Le contrat ne publie aucun index de ses tokens : `tokensUsed` se dérivait du
+  contrat terminé, et ce qui se dérive ne se publie pas. Un consommateur qui en
+  a besoin balaie les références du contrat, `samples` et `meta` exclus.
   → [spec](./docs/FORMAT.md#8-rendu-sémantique-et-garde-fous)
 - Un nom de token se projette de trois façons, et chacune a un propriétaire, tous
   trois dans `packages/kit/src/format/names.ts` : `normalizeName` va du chemin
@@ -258,15 +257,13 @@ Le raisonnement vit dans la spécification, en lien.
 - Le site tranche la nature de ce qu’une couleur peint, le nom précise à
   l’intérieur de cette nature. Un dernier segment qui nomme un rôle partagé
   l’emporte seulement s’il est de la nature du calque, ce qui distingue un
-  `ring` d’un `border`, et c’est tout ce dont il décide. Un `…/foreground`
-  posé en contour peint un contour, sans un mot : le moteur n’a aucun avis sur
-  le vocabulaire du design system. Le nom se lit sur le dernier segment du
-  token, jamais sur la clé publiée.
+  `ring` d’un `border`, et c’est tout ce dont il décide. Un `…/foreground` posé
+  en contour peint un contour, sans un mot. Le nom se lit sur le dernier segment
+  du token, jamais sur la clé publiée.
 - Une clé de couleur ne porte pas un rôle. `rendering.roles` est le vocabulaire
   partagé, identique dans tous les contrats ; `rendering.keyRoles` porte le rôle
-  de chaque clé observée qui n’en porte pas le nom. Deux tables, une par arbre
-  (`fills`, `strokes`) : `colorKeys` décide sur des feuilles séparées, et la
-  même clé courte peut désigner deux tokens de part et d’autre. Résolution :
+  de chaque clé observée qui n’en porte pas le nom, en deux tables que `colorKeys`
+  sépare comme il sépare ses feuilles (`fills`, `strokes`). Résolution :
   `roles[keyRoles[côté][clé] ?? clé]`, et `packages/plugin/tests/lois.ts` vérifie sur chaque
   contrat que la réponse existe et qu’elle est de la bonne nature.
 - Un rôle de contour ne cite jamais une propriété CSS qui consomme la boîte :
@@ -419,7 +416,7 @@ Le raisonnement vit dans la spécification, en lien.
   les tracés ; la seconde écarte `clipsContent` et l’alignement d’un texte en
   `Hug`. Aucune réserve ne se lit sur l’usage supposé d’un calque : sur un calque
   publié, `isMask` avertit comme le reste. Une propriété que le contrat écrit
-  n’y figure jamais, ce qui en a retiré `rotation`.
+  n’y figure jamais, `rotation` comprise.
   → [spec](./docs/FORMAT.md#propriétés-non-portables)
 
 ### Grilles
@@ -468,8 +465,7 @@ Le raisonnement vit dans la spécification, en lien.
 - **Un export ne remonte que ce qui demande une décision.** Trois portes, et
   rien d’autre. Une transformation entièrement prise en charge est silencieuse
   dans le plugin, dans la pull request et dans `meta.diagnostics` ; sa règle vit
-  dans la spécification et dans les tests du format. Le canal `infos` qui les
-  portait n’existe plus.
+  dans la spécification et dans les tests du format.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
 - `meta.diagnostics` est l’unique propriétaire des messages publiés dans le
   contrat. Qui veut la liste lisible lit `diagnostics[].message`, sans filtrer
@@ -488,23 +484,17 @@ Le raisonnement vit dans la spécification, en lien.
   → [spécification](./docs/FORMAT.md#métadonnées)
 - Le schéma annoncé dans l’en-tête est lu dans le fichier déposé
   (`versionDeContrat()`, `format/version.ts`), jamais dans `CONTRACT_VERSION`.
-  Sinon la couverture parle du plugin en ayant l’air de parler du fichier, et
-  les deux autorités divergent sans un mot. `tokens.json` n’en reçoit aucun : il
-  ne porte aucun schéma UCM.
+  `tokens.json` n’en reçoit aucun : il ne porte aucun schéma UCM.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 - Un export identique n’ouvre jamais une seconde pull request. L’immobilité se
   juge sur la branche de base **et** sur les pull requests d’export encore
-  ouvertes (`exportsEnVol()`, `src/github.ts`), parce qu’un artefact déposé et
-  pas encore fusionné n’est pas sur la branche de base. Le verdict porte
-  l’endroit où le contenu identique a été trouvé, et le journal le dit : « aucun
-  changement » sans l’endroit envoie chercher un fichier là où il n’est pas
-  encore. Un contenu différent pendant qu’une pull request est ouverte est un
-  réexport après correction, donc le geste normal, et il n’est pas refusé.
+  ouvertes (`exportsEnVol()`, `src/github.ts`). Le verdict porte l’endroit où le
+  contenu identique a été trouvé, et le journal le dit. Un contenu différent
+  pendant qu’une pull request est ouverte est un réexport après correction, donc
+  le geste normal, et il n’est pas refusé.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 - Un avertissement entre dans le corps de la pull request en Markdown :
   `sansLienAutomatique()` (`src/github.ts`) publie `@nom` et `#123` en `code`.
-  Sinon GitHub relie `@icons`, nom d’une variante de règle, au profil d’un
-  inconnu qu’il notifie à chaque export.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 
 ### Échantillon de maquette
@@ -521,8 +511,7 @@ Le raisonnement vit dans la spécification, en lien.
   ne compare ce contenu au code.
 - Corollaire : une donnée non normative ne doit jamais pouvoir dégrader une
   structure normative, ni sa taille, ni sa déduplication, ni sa validation. D’où
-  un catalogue à part, et non un champ dans `variantViews`, que le contenu ferait
-  éclater dès que deux variants au rendu identique n’affichent pas le même texte.
+  un catalogue à part, et non un champ dans `variantViews`.
 - L’échantillon n’avertit de rien et ne dégrade jamais `meta.coverage.portable` :
   ce qu’il ne sait pas lire, il l’omet. En contrepartie, la spécification énumère
   ce qu’il ne sait structurellement pas porter, et `args` est publié comme un
@@ -543,15 +532,11 @@ Le raisonnement vit dans la spécification, en lien.
   lui, ce que le relevé y trouve.
 - Un `SLOT` ne borne que les comparaisons positionnelles, qui supposent
   l’instance isomorphe à son maître. Une lecture nominale, qui joint
-  `componentPropertyReferences` à une propriété déclarée, le traverse : couper
-  là retirerait la clé d’`args` sans que `swaps` reprenne la main, et le fait
-  n’aurait plus aucun propriétaire.
+  `componentPropertyReferences` à une propriété déclarée, le traverse.
 - `propertySurfaces` est l’unique autorité sur la surface publique d’une
   dépendance, parce que c’est elle qui a élu son wrapper, du même geste que
   l’export autonome de cette dépendance. Un owner absent de l’index laisse la
-  dépendance sans `args` : une surface fabriquée en dernier recours répondrait
-  sans wrapper, faute de pouvoir l’élire sans aller-retour, et donnerait une
-  seconde réponse à une question qui n’en admet qu’une.
+  dépendance sans `args`, plutôt qu’une surface fabriquée en dernier recours.
 - L’adressage est asymétrique, et le nom de calque Figma en est la charnière :
   seule identité que deux contrats partagent, il adresse ce que ce contrat ne
   décrit pas, là où un slot adresse ce qu’il décrit. D’où `text` chez soi et
@@ -568,8 +553,7 @@ Le raisonnement vit dans la spécification, en lien.
   → [spec](./docs/FORMAT.md#9-échantillon-de-maquette)
 - `swaps` ne rapporte que ce qu’`args` ne sait pas dire. Une INSTANCE_SWAP native
   a déjà sa prop dans le contrat de la dépendance, `mergeIconRules` y posant
-  `runtimeProp` plutôt qu’une prop de synthèse, et la republier rouvrirait le
-  choix entre deux sources de vérité que cette décision-là a fermé.
+  `runtimeProp` plutôt qu’une prop de synthèse.
 - Une valeur d’INSTANCE_SWAP se publie par le nom du composant propriétaire,
   jamais par l’identifiant de node que rend `componentProperties`.
   `propertyBindings.appliedValue` porte cette règle pour le composant exporté,
