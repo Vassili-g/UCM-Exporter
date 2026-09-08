@@ -201,12 +201,10 @@ Le raisonnement vit dans la spécification, en lien.
 - `variants` décrit chaque combinaison réellement présente, `COMPONENT` sans axe
   et matrice clairsemée comprises, et référence une vue de `variantViews`. Une
   vue est cinq renvois : `structure`, `typography`, `composes`, `icons`,
-  `paintPlacements`, chacun catalogué à part. Chaque partie se partage par
-  égalité stricte de son bloc JSON, à l’ordre des clés près. Ni merge, ni
-  héritage, ni défaut : résoudre les cinq renvois redonne la vue exacte.
+  `paintPlacements`, chacun catalogué à part et partagé par égalité stricte de
+  son bloc JSON, à l’ordre des clés près. Ni merge, ni héritage, ni défaut.
   `structure` est la projection du variant de référence, publiée elle aussi par
-  renvoi, inconditionnellement : elle rejoint le catalogue des structures quand
-  elle n’y correspond à aucune. → [spec](./docs/FORMAT.md#sortie)
+  renvoi, inconditionnellement. → [spec](./docs/FORMAT.md#sortie)
 - Le contrat n’écrit aucune valeur neutre : une clé qui vaudrait `null`, `{}` ou
   `[]` est absente. Borne, et elle porte tout : un seul passage, jamais de point
   fixe. Une valeur qui est vide ne s’écrit pas ; une valeur qui contient du vide
@@ -214,8 +212,7 @@ Le raisonnement vit dans la spécification, en lien.
   `stateModel.states.default` vaut `{}`. `elideNeutrals.ts` en est l’unique
   autorité, et chaque sous-arbre n’y passe qu’une fois.
 - L’artefact s’écrit une entrée par ligne sur deux niveaux (`serializeJson.ts`),
-  sans seuil : la forme du fichier ne dépend jamais du nombre de variants, sans
-  quoi un variant ajouté reformaterait tout.
+  sans seuil : la forme du fichier ne dépend jamais du nombre de variants.
 - Une propriété native garde son type (`INSTANCE_SWAP`, `SLOT`) et ses liaisons
   `visible`, `characters`, `mainComponent` : définition dans
   `propertyBindingDefinitions`, `nodeId` dans `variants[].bindings`, aucun
@@ -243,11 +240,9 @@ Le raisonnement vit dans la spécification, en lien.
   trois dans `packages/kit/src/format/names.ts` : `normalizeName` va du chemin
   Figma au token, `codeIdentifier` du nom Figma à l'identifiant de code, et
   `tokenCssVariable` du token à la propriété personnalisée CSS. Une projection
-  recopiée ailleurs est une faute : elle diverge sans produire d'erreur. La
-  règle de `tokenCssVariable` s'écrit en une phrase, pour qu'une chaîne écrite
-  dans une autre langue la tienne. Elle ne coupe pas sur les bosses de casse, ce
-  qui la distingue d'un `kebabCase` de bibliothèque, et elle n'est pas une
-  bijection : c'est au consommateur de refuser la collision.
+  recopiée ailleurs est une faute : elle diverge sans produire d'erreur. Borne
+  de `tokenCssVariable` : elle ne coupe pas sur les bosses de casse, ce qui la
+  distingue d'un `kebabCase` de bibliothèque, et elle n'est pas une bijection.
   → [spec](./docs/FORMAT.md#nommer-et-citer-un-token)
 
 ### Couleurs
@@ -275,11 +270,8 @@ Le raisonnement vit dans la spécification, en lien.
   `roles[keyRoles[côté][clé] ?? clé]`, et `packages/plugin/tests/lois.ts` vérifie sur chaque
   contrat que la réponse existe et qu’elle est de la bonne nature.
 - Un rôle de contour ne cite jamais une propriété CSS qui consomme la boîte :
-  un stroke Figma se dessine hors du flux et ne déplace aucun voisin, là où
-  une `border` élargit l’élément et décale tout ce qui l’entoure. `border`
-  se rend donc en `box-shadow` et `ring` en `outline`, jamais l'un ni l'autre en
-  bordure ; `align` donne la forme de l'ombre : `inside` inset, `outside`
-  outset, `center` moitié de chaque côté.
+  `border` se rend en `box-shadow` et `ring` en `outline`, jamais l'un ni
+  l'autre en bordure, et `align` donne la forme de l'ombre.
   `defaultRenderingSemantics()` en est l’unique autorité.
   → [spec](./docs/FORMAT.md#8-rendu-sémantique-et-garde-fous)
 - Le contrat ne publie que les couleurs liées. `lirePeintures` est l’unique
@@ -302,12 +294,10 @@ Le raisonnement vit dans la spécification, en lien.
   toutes les pages. Les règles documentent sans autoriser : tout `COMPONENT` ou
   `COMPONENT_SET` sélectionné est exportable, et le parent ne réexporte pas les
   internes d’une dépendance reconnue. Une seule chose en remonte, et elle n’est
-  pas normative : ce que ce parent a changé par rapport au maître. Ce sont les
-  surcharges de `InstanceNode.overrides`, et le remplacement d’une instance, que
-  ce relevé ne rapporte pas et qui se lit en comparant l’instance à son maître,
-  position par position. Ce que la dépendance fournit reste à son contrat ; ce que le parent
-  y a écrit n’est écrit nulle part ailleurs.
-  → [échantillon](#échantillon-de-maquette)
+  pas normative : ce que ce parent a changé par rapport au maître, soit les
+  surcharges de `InstanceNode.overrides`, soit le remplacement d’une instance,
+  que ce relevé ne rapporte pas et qui se lit en comparant l’instance à son
+  maître, position par position. → [échantillon](#échantillon-de-maquette)
 - Le parcours conserve le calque de l’instance pour le décrire comme un slot ;
   ce qu’il porte reste hors du contrat parent. Ses couleurs appartiennent à son
   contrat (`getSlotTokens`), ses dimensions ne le font pas élire node de layout
@@ -399,13 +389,11 @@ Le raisonnement vit dans la spécification, en lien.
 - Un calque hors du flux est placé : `constraints` dit à quels bords il
   s’accroche, `inset` à quelle distance, en pixels et avec une seule
   signification par clé : les côtés publiés sont ceux de l’accroche, les deux
-  d’un axe sous `stretch`, `center` et `scale`. Le calcul passe par le centre,
-  seul point où le modèle de Figma (rotation autour du coin) et celui de CSS
-  (autour du centre) se rejoignent. Rien n’est publié quand la géométrie manque.
+  d’un axe sous `stretch`, `center` et `scale`. Le calcul passe par le centre.
+  Rien n’est publié quand la géométrie manque.
   → [spec](./docs/FORMAT.md#position-absolue)
-- La `rotation` d’un calque publié est écrite, dans l’unité et la convention de
-  CSS, donc l’opposé du compte de Figma, origine au centre, absente sous le
-  centième de degré. `flexLayout.rotationDegrees` en est l’unique autorité.
+- La `rotation` d’un calque publié est écrite, en convention CSS, absente sous
+  le centième de degré. `flexLayout.rotationDegrees` en est l’unique autorité.
   Une notice dit le seul écart restant : dans un auto layout, Figma espace ses
   voisins d’après la boîte tournée, CSS d’après la boîte droite.
 - `bounds` publie les bornes sur le composant et sur chaque slot, indépendamment
@@ -450,12 +438,11 @@ Le raisonnement vit dans la spécification, en lien.
 - L’exception s’étend de la piste à la cellule, et là seulement : sous une piste
   `HUG`, `GridTrackSize.value` n’existe pas et la mesure ne vit que sur l’enfant,
   publiée en pixels dans `structuralSize`, elle aussi sans diagnostic. Trois
-  bornes. Une variable liée
-  l’emporte et se publie dans `size`, qui reste strictement tokenisé ; une seule
-  piste non `HUG` sous l’étendue de l’enfant rend l’axe indécis et rien n’est
-  publié ; un alignement explicite retire l’exception, sans quoi la valeur
-  contredirait l’avertissement de `resolveSlotSize` sur le même axe.
-  → [spec](./docs/FORMAT.md#grilles)
+  bornes : une variable liée l’emporte et se publie dans `size`, qui reste
+  strictement tokenisé ; une seule piste non `HUG` sous l’étendue de l’enfant
+  rend l’axe indécis et rien n’est publié ; un alignement explicite retire
+  l’exception, sans quoi la valeur contredirait l’avertissement de
+  `resolveSlotSize` sur le même axe. → [spec](./docs/FORMAT.md#grilles)
 
 ### Diagnostics
 
@@ -522,10 +509,9 @@ Le raisonnement vit dans la spécification, en lien.
 
 ### Échantillon de maquette
 
-- `figmaLayer` est une **identité** Figma, jamais un contenu. Figma nomme un
-  calque texte d’après ce qu’il dit tant que personne ne l’a renommé, si bien que
-  le champ répondait tantôt « quel calque », tantôt « quel texte », sans qu’on
-  puisse distinguer les deux. Le contenu se lit dans `samples`, ou nulle part.
+- `figmaLayer` est une **identité** Figma, jamais un contenu, que Figma nomme ou
+  non un calque texte d’après ce qu’il dit. Le contenu se lit dans `samples`, ou
+  nulle part.
 - L’échantillon ne contient que des valeurs qu’un développeur pourrait écrire
   lui-même : texte, booléen, valeur d’enum, nom de composant. Jamais un token,
   une couleur, une dimension, un layout. Une donnée de rendu qui manquerait ici
@@ -548,15 +534,13 @@ Le raisonnement vit dans la spécification, en lien.
   ou une provenance ambiguë s’omet au lieu de choisir une première occurrence.
 - Ce que la visibilité effective filtre est le relevé positionnel nu (`text`,
   `override.text`, `swaps`), celui qui rapporte ce qu’un calque porte sans
-  rapporter la condition qui le masque. Une valeur d’`args` n’en est jamais :
-  le booléen qui la masque voyage dans le même `args`, et le filtrer publierait
-  `false` pour une prop qui vaut `true`. D’où ce qui reste publié sous un calque
-  masqué : une valeur `false` d’`args`, un `override.visible`, et l’entrée d’une
-  dépendance. La frontière de la remontée est la racine du composant exporté,
-  jamais l’instance de dépendance : un cadre optionnel masqué au-dessus d’une
-  dépendance ne montre rien de ce qu’elle contient. `isVisibleInSample` en est
-  l’unique autorité. Perte assumée, et lisible dans l’autre sens : le variant
-  qui affiche ce cadre publie, lui, ce que le relevé y trouve.
+  rapporter la condition qui le masque. Une valeur d’`args` n’en est jamais, le
+  booléen qui la masque voyageant dans le même `args` : restent donc publiés
+  sous un calque masqué une valeur `false` d’`args`, un `override.visible` et
+  l’entrée d’une dépendance. La frontière de la remontée est la racine du
+  composant exporté, jamais l’instance de dépendance, et `isVisibleInSample` en
+  est l’unique autorité. Perte assumée : le variant qui affiche ce cadre publie,
+  lui, ce que le relevé y trouve.
 - Un `SLOT` ne borne que les comparaisons positionnelles, qui supposent
   l’instance isomorphe à son maître. Une lecture nominale, qui joint
   `componentPropertyReferences` à une propriété déclarée, le traverse : couper
