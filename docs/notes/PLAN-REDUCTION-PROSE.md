@@ -9,14 +9,14 @@ ensemble ou le plan échoue.
 
 ## Où en est le chantier
 
-Les étapes 1 à 4 et 8 sont faites, ainsi que les deux premières puces de
+Les étapes 1 à 4 et 8 sont faites, ainsi que les trois premières puces de
 l'étape 5 et la dernière de l'étape 7. Le dépôt tient son standard d'écriture
 par contrôle, aux deux moments, et plus par bonne volonté.
 
 **Ce que la reprise des étapes 5 et 6 a mesuré, et qui change la suite.** Les
 cibles chiffrées de ce plan supposaient un gras que la mesure ne trouve pas.
 `docs/FORMAT.md` a rendu 5 843 caractères sur 89 674, soit 6,5 % et non les
-17 % visés ; `AGENTS.md` 1 240 sur 45 364, soit 2,7 % et non 25 %. Dans les deux
+17 % visés ; `AGENTS.md` 2 455 sur 45 364, soit 5,4 % et non 25 %. Dans les deux
 cas le gain vient d'un seul geste, rendre à l'autre altitude ce qu'elle portait
 déjà, et il s'épuise avec lui. Ce qui reste tient en une règle, sa borne et son
 pourquoi, et la phrase suivante retirée est une clause perdue.
@@ -143,8 +143,8 @@ constante. Les arrivées qu'elle contredit sont des hypothèses de départ, et
 |---|---|---|---|
 | Notes sans autorité | 49 087 | 0 dans le dépôt | conservées, décision de produit |
 | `docs/FORMAT.md` | 89 674 | 74 000 | 83 831, −6,5 % |
-| `AGENTS.md` | 45 364 | 34 000 | 44 124, −2,7 % |
-| `packages/plugin/SPEC.md` | 30 274 | 26 000 | passe de style seule |
+| `AGENTS.md` | 45 364 | 34 000 | 42 909, −5,4 % |
+| `packages/plugin/SPEC.md` | 30 274 | 26 000 | 29 162, −3,7 % |
 | Commentaires de code hors `types.ts` | 480 000 | 350 000 | non atteignable sans perte |
 | `packages/kit/src/format/types.ts` | 41 299 | non réduit | qualité seule |
 | Manquements de style en commentaire | 899 | 0 | 0 |
@@ -263,7 +263,7 @@ un document qui s'arrête plus haut avec toutes ses règles est un succès.
 - [x] `AGENTS.md`. Chaque entrée garde ses trois éléments : la règle, sa borne,
       l'autorité qui la porte. Les 130 termes d'autorité restent présents dans
       le bloc des invariants. Le gain vient de la rédaction, pas du contenu.
-- [ ] `packages/plugin/SPEC.md`. Passe de style seule. Le dédoublonnage vers
+- [x] `packages/plugin/SPEC.md`. Passe de style seule. Le dédoublonnage vers
       `FORMAT.md` est déjà fait, et ce qui reste est l'algorithme.
 - [x] Reprendre les règles listées à l'étape 1 comme re-narrées, et n'en garder
       qu'une narration complète, à l'altitude que la table d'autorité désigne.
