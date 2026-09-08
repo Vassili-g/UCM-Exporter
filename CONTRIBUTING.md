@@ -1,4 +1,4 @@
-# Contribuer à Unified Component Exporter
+# Contribuer à UCM Contract Exporter
 
 Ce document dit **comment travailler** sur ce dépôt : écrire du code, un
 message, un test, un document, et vérifier avant de proposer un changement.

@@ -92,14 +92,14 @@ function fichiers(version) {
     {
       chemin: ".gitignore",
       contenu: [
-        "# Le rapport écrit par `ucm check --report` : il se régénère à chaque",
-        "# exécution et ne décrit que celle-là. Commité, il ferait lire un verdict",
-        "# périmé à qui ouvre le fichier.",
+        "# Le rapport de `ucm check --report`, réécrit à chaque exécution.",
+        "# Commité, il montrerait le verdict d'un contrôle passé, pas celui du",
+        "# code en cours.",
         "ci-report.md",
         "",
       ].join("\n"),
       marqueurs: ["ci-report.md"],
-      rappel: "ajoutez-y `ci-report.md`, le rapport que `ucm check --report` régénère à chaque exécution. Commité, il ferait lire un verdict périmé à qui ouvre le fichier.",
+      rappel: "ajoutez-y `ci-report.md`. `ucm check --report` le réécrit à chaque exécution ; commité, il montrerait le verdict d'un contrôle passé, pas celui du code en cours.",
     },
     {
       chemin: ".github/workflows/ucm.yml",

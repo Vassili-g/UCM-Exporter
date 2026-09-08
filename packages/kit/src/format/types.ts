@@ -1,5 +1,5 @@
 /**
- * Types du contrat de composant produit par Unified Component Exporter.
+ * Types du contrat de composant produit par UCM Contract Exporter.
  *
  * Ce fichier décrit la forme exacte du JSON produit par « Export composant ».
  * Aucune logique ici : uniquement des types TypeScript, pour que chaque module

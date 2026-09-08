@@ -4,7 +4,7 @@ The UCM contract format, and the readers that judge a contract.
 
 A **UCM contract** is a JSON file describing a UI component exactly as it exists
 in Figma: its variants, its structure, its design tokens, its usage rules. It is
-written by the [Unified Component Exporter](https://github.com/Vassili-g/UCM-Exporter)
+written by the [UCM Contract Exporter](https://github.com/Vassili-g/UCM-Exporter)
 Figma plugin, and read by the repository that implements the component. This
 package is what both sides must share in order to talk about the same format.
 
@@ -70,7 +70,7 @@ away from what the code actually does:
 
 ```js
 import { VERSION_CONTRAT_MINIMALE, VERSION_CONTRAT_MAXIMALE } from "@ucm-kit/core/lecteurs";
-// 0.1.17 reads two: "11.0" (previous) through "12.0" (current).
+// 0.1.18 reads two: "11.0" (previous) through "12.0" (current).
 ```
 
 ## Three entry points, and why they are separate

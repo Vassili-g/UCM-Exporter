@@ -1,5 +1,5 @@
 /**
- * Client GitHub REST minimal pour déposer un artefact Unified Component Exporter dans une
+ * Client GitHub REST minimal pour déposer un artefact UCM Contract Exporter dans une
  * branche dédiée puis ouvrir une PR. Aucun PAT n'est logué ni renvoyé à l'UI.
  */
 import {
@@ -673,7 +673,7 @@ export async function publishArtifact(
     await githubRequest(config, `/repos/${repository}/contents/${encodePath(path)}`, {
       method: 'PUT',
       body: JSON.stringify({
-        message: `Unified Component Exporter: export ${artifact.filename}`,
+        message: `UCM Contract Exporter: export ${artifact.filename}`,
         content: encodeBase64(artifact.content),
         branch,
         ...(surLaBase ? { sha: surLaBase.sha } : {}),
@@ -683,7 +683,7 @@ export async function publishArtifact(
     pullRequest = await githubRequest<{ html_url: string }>(config, `/repos/${repository}/pulls`, {
       method: 'POST',
       body: JSON.stringify({
-        title: `Unified Component Exporter: export ${artifact.filename}`,
+        title: `UCM Contract Exporter: export ${artifact.filename}`,
         head: branch,
         base: config.baseBranch,
         body: pullRequestBody(path, artifact),

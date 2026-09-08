@@ -1,5 +1,5 @@
 {
-  "name": "Unified Component Exporter",
+  "name": "UCM Contract Exporter",
   "id": "1678431364325816914",
   "api": "1.0.0",
   "main": "dist/code.js",

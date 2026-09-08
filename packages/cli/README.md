@@ -5,13 +5,13 @@ exported them.
 
 A **UCM contract** is a JSON file describing a UI component exactly as it exists
 in Figma: its variants, its structure, its design tokens, its usage rules. It is
-written by the [Unified Component Exporter](https://github.com/Vassili-g/UCM-Exporter)
+written by the [UCM Contract Exporter](https://github.com/Vassili-g/UCM-Exporter)
 Figma plugin and committed next to the component's code. This command reads
 those files and says whether they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.13 init
-npx --yes @ucm-kit/cli@0.1.13 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.14 init
+npx --yes @ucm-kit/cli@0.1.14 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx pick a build nobody

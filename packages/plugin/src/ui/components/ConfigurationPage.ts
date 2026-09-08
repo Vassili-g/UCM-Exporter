@@ -1,5 +1,5 @@
 /**
- * Page de configuration GitHub de l'UI Unified Component Exporter.
+ * Page de configuration GitHub de l'UI UCM Contract Exporter.
  *
  * Ce module possède le formulaire, sa validation locale et ses états visuels.
  * Le point d'entrée de l'UI ne conserve que le routage des messages Figma.

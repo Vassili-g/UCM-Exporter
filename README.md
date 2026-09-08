@@ -1,4 +1,4 @@
-# Unified Component Exporter
+# UCM Contract Exporter
 
 Un plugin Figma qui exporte un composant sous forme de contrat JSON versionné,
 et l'outillage qui vérifie que le code du repository reste conforme à ce
@@ -56,8 +56,8 @@ ouvrir.
 Deux commandes, et aucun script à écrire.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.13 init                       # écrit les cinq fichiers manquants
-npx --yes @ucm-kit/cli@0.1.13 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.14 init                       # écrit les cinq fichiers manquants
+npx --yes @ucm-kit/cli@0.1.14 check --report ci-report.md
 ```
 
 `--yes` évite l'invite de confirmation de `npx`, qui bloquerait une exécution
@@ -187,7 +187,7 @@ npm install @ucm-kit/core
 | `@ucm-kit/core/schema` | JSON Schema, pour les éditeurs et les consommateurs qui ne lisent pas TypeScript |
 
 Un projet TypeScript peut installer
-`@ucm-kit/adapter-typescript@0.1.6` pour ajouter la comparaison statique des
+`@ucm-kit/adapter-typescript@0.1.7` pour ajouter la comparaison statique des
 props et de la composition, ainsi que la génération des types dérivés des
 contrats.
 
