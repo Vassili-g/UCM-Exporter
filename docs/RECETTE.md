@@ -13,9 +13,9 @@ Les deux dépôts concernés :
 
 - **UCM-Exporter**, le produit. C'est ici que vivent le plugin et le code des
   paquets npm.
-- **UCM-Playground**, le consommateur de recette. Il a été vidé : plus aucun
-  contrat, plus de `tokens.json`, plus aucun des cinq fichiers qu'écrit
-  `ucm init`.
+- **UCM-Playground**, le consommateur de recette. Il porte quatre contrats,
+  leurs composants et son `tokens.json`. Cette page part d'un dépôt qui ne
+  contient rien d'UCM, donc la jouer commence par le vider.
 
 Une convention pour toute la page : `A:\...\Projet UCM\` désigne le dossier qui
 contient les deux dépôts.
@@ -48,6 +48,18 @@ npm view @ucm-kit/core version
 npm view @ucm-kit/cli version
 npm view @ucm-kit/adapter-typescript version
 ```
+
+### Vider le Playground
+
+Sur une branche dédiée d'`UCM-Playground`, retirez `src/components`,
+`src/tokens`, et quatre des cinq fichiers qu'`ucm init` écrit :
+`ucm.config.json`, `.gitattributes`, `.vscode/settings.json` et
+`.github/workflows/ucm.yml`. Gardez `.gitignore`, que l'étape 3 emploie pour
+montrer ce que la commande dit d'un fichier déjà présent.
+
+Retirez ensuite de `src/App.tsx` les composants qu'il importe, et commentez la
+première ligne de `src/index.css` : Style Dictionary n'a plus de tokens à lire,
+donc `src/generated/tokens.css` ne sera plus écrit et l'import échouerait.
 
 ---
 
@@ -90,15 +102,16 @@ de commande et l'écran sans sélection.
 Dans un second terminal, à la racine d'`UCM-Playground` :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.17 init
+npx --yes @ucm-kit/cli@0.1.19 init
 ```
 
-Le Playground range ses contrats sous `components/` et ses tokens dans
-`tokens.json`, ce que la commande écrit par défaut. Un repository qui range
-autrement le dit ici, en une fois :
+Sans option, la commande écrit ses défauts : les contrats sous `components/`,
+les tokens dans `tokens.json`. Le Playground range les siens sous
+`src/components` et `src/tokens`, et le dit ici, en une fois. C'est cette forme
+que la recette emploie :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.17 init --components src/components --tokens src/tokens
+npx --yes @ucm-kit/cli@0.1.19 init --components src/components --tokens src/tokens
 ```
 
 | Option | Ce qu'elle reçoit |
@@ -137,9 +150,8 @@ Attendu, à peu de choses près :
 ✓ .github/workflows/ucm.yml
 · .gitignore existait déjà, laissé tel quel
 
-Installé avec @ucm-kit/cli 0.1.17.
-Placez vos contrats sous `components/`, vos tokens dans `tokens.json`,
-puis lancez `ucm check`.
+Installé avec @ucm-kit/cli 0.1.19.
+Placez vos contrats sous `src/components/`, vos tokens dans `src/tokens/tokens.json`, puis lancez `ucm check`.
 
 · `.gitignore` existait déjà : ajoutez-y `ci-report.md`. `ucm check --report` le
   réécrit à chaque exécution ; commité, il montrerait le verdict d'un contrôle
@@ -163,13 +175,13 @@ ci-report.md
 Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.17 check
+npx --yes @ucm-kit/cli@0.1.19 check
 ```
 
 Attendu :
 
 ```text
-✓ Aucun contrat dans components : ce repository n'a pas encore reçu d'export. Rien à contrôler.
+✓ Aucun contrat dans src/components : ce repository n'a pas encore reçu d'export. Rien à contrôler.
 ```
 
 Le code de sortie est 0. **L'absence d'export est un état d'avancement**, au même
@@ -268,13 +280,13 @@ Fusionnez la pull request.
 
 ---
 
-## Étape 6 : reconstruire la sonde
+## Étape 6 : reconstruire le composant
 
 Le contrat est arrivé, le code n'existe pas encore. Reconstruisez le composant à
 partir du seul contrat, sans regarder une implémentation antérieure. Le
 protocole est dans la skill `consommer-contrat` d'`UCM-Exporter`.
 
-Une fois `components/Button/Button.tsx` et son `index.ts` écrits, remettez dans
+Une fois `src/components/Button/Button.tsx` écrit, remettez dans
 `src/index.css` la ligne que la préparation avait commentée :
 
 ```css
@@ -288,10 +300,10 @@ npm run build
 npm run dev
 ```
 
-Ajoutez la sonde à `src/App.tsx` pour la voir à l'écran, et comparez son rendu à
-la maquette Figma, variante par variante.
+Ajoutez le composant à `src/App.tsx` pour le voir à l'écran, et comparez son
+rendu à la maquette Figma, variante par variante.
 
-Ouvrez enfin une pull request avec la sonde. Le rapport de CI doit maintenant
+Ouvrez enfin une pull request avec le composant. Le rapport de CI doit maintenant
 parler de la parité entre le contrat et le code. Tant que
 `@ucm-kit/adapter-typescript` n'est pas installé dans le Playground, il dira que
 l'implémentation n'a pas été lue, jamais qu'elle est conforme.
@@ -299,7 +311,7 @@ l'implémentation n'a pas été lue, jamais qu'elle est conforme.
 Pour lui donner à lire :
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.10
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.12
 ```
 
 Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
@@ -410,8 +422,8 @@ Le workflow le fait déjà après chaque publication, et le refaire à la main c
 une minute. Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.17 init
-npx --yes @ucm-kit/cli@0.1.17 check
+npx --yes @ucm-kit/cli@0.1.19 init
+npx --yes @ucm-kit/cli@0.1.19 check
 ```
 
 Attendu : `init` écrit ses cinq fichiers, et `check` sort en 0 en disant que ce

@@ -42,7 +42,7 @@ un composant composé, et non de couvrir un catalogue entier.
 | Contrôles chez le consommateur | Forme, version, graphe de composition, adresses des échantillons, références de tokens, et parité statique quand l'adaptateur est installé. Tout vient du workflow qu'`ucm init` écrit |
 | Rapport CI | Constats et avertissements agrégés dans le terminal, le résumé CI et le commentaire de pull request |
 | Interopérabilité | JSON Schema publié dans `schema/`, dérivé de `types.ts`. Il décrit la forme, jamais la cohérence, et ne bloque aucune fusion |
-| Validation Figma | Quatre composants ont été exportés à la forme courante, puis reconstruits à froid depuis leur seul contrat. Le corpus qui le montrait a été retiré du Playground pour rejouer la recette depuis un dépôt vide |
+| Validation Figma | Quatre composants exportés à la forme courante, puis reconstruits à froid depuis leur seul contrat. Le Playground porte ce corpus, et son contrôle est vert |
 
 Aucun contrôle n'exécute le rendu.
 
@@ -177,14 +177,14 @@ inventé.
 La prochaine validation est la [recette externe](./docs/RECETTE.md). Elle part
 d'un dépôt vidé de tout UCM, ouvre le plugin depuis la Figma Community, installe
 le CLI publié, exporte les tokens puis un composant vers une vraie pull request,
-reconstruit la sonde et laisse le workflow publier son rapport. C'est la seule
+reconstruit le composant et laisse le workflow publier son rapport. C'est la seule
 preuve du projet qui traverse Figma, GitHub et npm dans le même geste, et aucun
 test de ce dépôt ne peut la remplacer.
 
 Les trois paquets que le dépôt porte sont servis par le registre, et chacun a
 été réinstallé depuis un dossier vide par l'épreuve de registre de
 `publish.yml`. Ce que la recette ajoute et qu'aucune de ces épreuves ne couvre :
-Figma, une vraie pull request, et la comparaison d'une sonde reconstruite avec
+Figma, une vraie pull request, et la comparaison d'un composant reconstruit avec
 sa maquette.
 
 ## Critères de sortie du MVP
