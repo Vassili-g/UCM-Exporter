@@ -65,6 +65,22 @@ non interactive. La version est exacte, sans `^` : une plage laisserait npx
 choisir une version que personne n'a essayée, et le contrôle changerait d'avis
 sans qu'un fichier ait bougé.
 
+**Sans option, `init` écrit les chemins par défaut** : les contrats sous
+`components/`, les tokens dans `tokens.json`, l'implémentation d'un contrat en
+`{dir}/{id}.tsx`. Un repository qui range autrement le dit à cet instant.
+
+```sh
+npx --yes @ucm-kit/cli@0.1.19 init \
+  --components src/components \
+  --tokens src/tokens \
+  --implementation '{dir}/{id}.vue'
+```
+
+Ces trois options n'agissent qu'à la première installation. `init` n'écrase
+jamais un `ucm.config.json` déjà présent, et ce fichier décide seul de l'endroit
+où un export atterrit, puisque le plugin Figma le lit avant de publier. Un
+chemin choisi trop tard se corrige donc à la main, dans le fichier.
+
 **Votre repository n'a pas besoin d'être un projet Node.** Le workflow
 qu'`ucm init` écrit n'exige aucun `package.json` : un repo iOS, Android, ou un
 simple dossier de contrats peut faire contrôler ses exports. Si un lockfile npm
