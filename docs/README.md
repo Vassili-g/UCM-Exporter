@@ -7,10 +7,12 @@ quel ordre, et ce qu'il faut arrêter de chercher ailleurs.
 
 ### Vous êtes designer et vous travaillez dans Figma
 
-1. [POUR-LES-DESIGNERS.md](./POUR-LES-DESIGNERS.md) : ce que le plugin attend
+1. [../packages/plugin/README.md](../packages/plugin/README.md) : où obtenir le
+   plugin sur la Figma Community, et ce que chacune de ses deux commandes écrit.
+2. [POUR-LES-DESIGNERS.md](./POUR-LES-DESIGNERS.md) : ce que le plugin attend
    d'un composant, comment exporter, comment relire la pull request, et le
    vocabulaire du projet.
-2. [../README.md](../README.md) si vous voulez la vue d'ensemble du projet.
+3. [../README.md](../README.md) si vous voulez la vue d'ensemble du projet.
 
 Vous n'avez besoin d'aucun autre document.
 
@@ -61,6 +63,7 @@ autorité, et les autres y renvoient.
 |---|---|
 | [../CONCEPT.md](../CONCEPT.md) | Le problème résolu, et qui possède quelle information |
 | [FORMAT.md](./FORMAT.md) | La forme de ce qui est publié, et ce que l'absence d'un champ signifie |
+| [../packages/plugin/README.md](../packages/plugin/README.md) | Où obtenir le plugin, ce que ses commandes écrivent, et ce qu'il ne fait pas |
 | [../packages/plugin/SPEC.md](../packages/plugin/SPEC.md) | Ce que le plugin lit dans Figma, ce qu'il élit, ce dont il avertit |
 | [COMPATIBILITE.md](./COMPATIBILITE.md) | Les classes de changement, la fenêtre de lecture et les responsabilités de migration |
 | [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md) | Ce que chaque version du contrat a publié |

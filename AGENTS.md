@@ -93,6 +93,7 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
     ui/                        interface du plugin
   galerie/                   les états de l'UI, atteignables hors de Figma
   tests/
+  README.md                  ouvrir le plugin, ses deux commandes, ses limites
   SPEC.md                    le moteur : ce que le plugin lit, élit et signale
   manifest.json              chargé dans Figma depuis packages/plugin/dist/
 
