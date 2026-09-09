@@ -1355,8 +1355,8 @@ les justifiera avant cette étape.
 
 Les lots ci-dessous donnent un ordre d'expérimentation. Leur adoption dans la
 [roadmap](../../ROADMAP.md) demanderait une décision distincte. Les défauts
-connus du moteur restent suivis dans leur
-[plan de corrections](./PLAN-CORRECTIONS-INVARIANTS.md).
+connus du moteur restent suivis dans ses
+[fragilités connues](../../ROADMAP.md#fragilités-connues).
 
 | Lot | Travail | Résultat qui justifierait le lot suivant |
 |---|---|---|
