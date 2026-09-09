@@ -1159,3 +1159,174 @@ test('les sept transformations normales cohabitent sans un mot au designer', asy
     figmaFaux.restaurer();
   }
 });
+
+test('des calques homonymes reçoivent chacun une adresse, et les peintures la suivent', async () => {
+  // Trois cadres nommés « box », « box » et « box-2 » : le nommage par compte
+  // donnait deux « box-2 », et le chemin de peinture du troisième désignait le
+  // deuxième. Chaque cadre porte la même couleur, si bien que la clé unique
+  // relève les trois adresses et qu'un doublon se verrait dans la liste.
+  const cadre = (nom: string) => node('FRAME', nom, [], {
+    layoutSizingHorizontal: 'HUG',
+    layoutSizingVertical: 'HUG',
+    fills: [{ type: 'SOLID', visible: true, color: { r: 1, g: 1, b: 1 } }],
+    boundVariables: { fills: [alias('background')] },
+  });
+  const figmaFaux = monterFigma({
+    enfantsDuVariant: () => [cadre('box'), cadre('box'), cadre('box-2')],
+  });
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    const slots = structureDe(contrat).children.map((child: any) => child.slot);
+    assert.deepEqual(slots, ['label', 'box', 'box-2', 'box-2-2']);
+    assert.equal(new Set(slots).size, slots.length);
+
+    // Le troisième cadre garde son nom Figma, que son slot ne dit plus.
+    const renomme = structureDe(contrat).children.find((child: any) => child.slot === 'box-2-2');
+    assert.equal(renomme.figmaLayer, 'box-2');
+
+    // Les trois cadres sont peints, chacun à son adresse.
+    const peintures = vueDe(contrat, contrat.variants[0]).paintPlacements;
+    const chemins = Object.values(peintures.fills ?? {}).flat() as string[][];
+    for (const attendu of [['box'], ['box-2'], ['box-2-2']]) {
+      assert.ok(
+        chemins.some((chemin) => JSON.stringify(chemin) === JSON.stringify(attendu)),
+        `aucune peinture ne vise [${attendu}] parmi ${JSON.stringify(chemins)}`,
+      );
+    }
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('deux axes dont les noms se confondent refusent l’export', async () => {
+  // Les props gardaient `kind: ["a"]`, les axes devenaient `["kind", "kind"]` et
+  // le variant publiait `kind: "b"` : le lecteur refusait l'artefact produit, et
+  // le diagnostic annonçait pourtant la conservation du premier axe.
+  const figmaFaux = monterFigma();
+  const [contained, outlined] = figmaFaux.componentSet.children;
+  figmaFaux.componentSet.componentPropertyDefinitions = {
+    Kind: { type: 'VARIANT', variantOptions: ['A'], defaultValue: 'A' },
+    kind: { type: 'VARIANT', variantOptions: ['B'], defaultValue: 'B' },
+  };
+  contained.name = 'Kind=A, kind=B';
+  contained.variantProperties = { Kind: 'A', kind: 'B' };
+  outlined.name = 'Kind=A, kind=B';
+  outlined.variantProperties = { Kind: 'A', kind: 'B' };
+  try {
+    await assert.rejects(
+      handleExportComponent(),
+      (erreur: Error) => {
+        assert.match(erreur.message, /Variant properties « Kind » et « kind »/);
+        assert.match(erreur.message, /aucun fichier n’est écrit/);
+        assert.match(erreur.message, /Renommez l’une des deux dans Figma/);
+        return true;
+      },
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('deux tailles sans dimension liée restent publiées, chacune à vide', async () => {
+  // `structure.sizes.*` est une entrée protégée : c'est la clé qui porte
+  // l'information, et retirer l'entrée retirerait la taille de la liste de
+  // celles que le composant expose. La loi d'élision refusait cette forme.
+  const figmaFaux = monterFigma();
+  const [contained, outlined] = figmaFaux.componentSet.children;
+  figmaFaux.componentSet.componentPropertyDefinitions = {
+    Size: { type: 'VARIANT', variantOptions: ['Small', 'Large'], defaultValue: 'Small' },
+  };
+  for (const [variantNode, taille] of [[contained, 'Small'], [outlined, 'Large']] as const) {
+    variantNode.name = `Size=${taille}`;
+    variantNode.variantProperties = { Size: taille };
+    // Aucune dimension liée : espacements et rayons restent à zéro, et Figma ne
+    // cite aucune variable qui les décrirait.
+    variantNode.boundVariables = {};
+  }
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.deepEqual(contrat.structure.sizes, { small: {}, large: {} });
+    // La prop qui sélectionne le catalogue expose bien les deux tailles.
+    assert.deepEqual(contrat.props.size.values, ['small', 'large']);
+    // Et elles survivent à l'écriture du fichier, où rien ne les élide.
+    const texte = (await handleExportComponent()).content;
+    assert.match(texte, /"sizes":\{"small":\{\},"large":\{\}\}/);
+    assert.deepEqual(JSON.parse(texte).structure.sizes, { small: {}, large: {} });
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('la loi de l’union des dépendances refuse un agrégat muté', async () => {
+  // La loi ne comparait qu'une somme de cardinalités : elle acceptait le
+  // remplacement d'une dépendance par une autre et la disparition de l'agrégat,
+  // que le contrôle du graphe refuse chez le consommateur.
+  const lien = (nom: string) =>
+    node('INSTANCE', nom, [], {
+      componentProperties: {},
+      layoutSizingHorizontal: 'HUG',
+      layoutSizingVertical: 'HUG',
+      getMainComponentAsync: async () => ({
+        name: 'Link',
+        parent: { type: 'COMPONENT_SET', name: 'Link' },
+      }),
+    });
+  const figmaFaux = monterFigma({
+    dependancesContractees: ['Link'],
+    enfantsDuVariant: () => [
+      node('FRAME', 'Liens', [lien('Lien 1'), lien('Lien 2')], {
+        layoutMode: 'HORIZONTAL',
+        primaryAxisAlignItems: 'MIN',
+        counterAxisAlignItems: 'CENTER',
+        layoutSizingHorizontal: 'HUG',
+        layoutSizingVertical: 'HUG',
+      }),
+    ],
+  });
+  try {
+    // `handleExportComponent` passe déjà toutes les lois : le contrat de départ
+    // est accepté, et deux occurrences y portent le même composant.
+    const contrat = JSON.parse((await handleExportComponent()).content);
+    assert.deepEqual(contrat.composes, [
+      { component: 'Link', figmaLayer: 'Lien 1' },
+      { component: 'Link', figmaLayer: 'Lien 2' },
+    ]);
+
+    const mute = (changer: (c: any) => void) => {
+      const copie = JSON.parse(JSON.stringify(contrat));
+      changer(copie);
+      return copie;
+    };
+    const refuse = (quoi: string, changer: (c: any) => void) => {
+      assert.throws(
+        () => verifierLesLois(mute(changer), 'agrégat muté'),
+        /union ordonnée des dépendances des variants/,
+        `la loi accepte ${quoi}`,
+      );
+    };
+
+    refuse('une dépendance remplacée', (c) => { c.composes[0].component = 'Other'; });
+    refuse('un calque remplacé', (c) => { c.composes[0].figmaLayer = 'Ailleurs'; });
+    refuse('une occurrence manquante', (c) => { c.composes.pop(); });
+    refuse('une occurrence supplémentaire', (c) => { c.composes.push({ ...c.composes[0] }); });
+    refuse('une séquence permutée', (c) => { c.composes.reverse(); });
+    refuse('une visibilité inventée', (c) => { c.composes[0].visibilityProp = 'afficherLien'; });
+    refuse('un agrégat absent', (c) => { delete c.composes; });
+
+    // Et l'inverse : un agrégat que plus aucune vue ne justifie.
+    assert.throws(
+      () => verifierLesLois(
+        mute((c) => {
+          for (const vue of Object.values(c.variantViews) as any[]) delete vue.composes;
+          delete c.viewComposes;
+        }),
+        'agrégat sans vue',
+      ),
+      /composes est publié alors qu’aucune vue ne place de dépendance|composes est publié alors qu'aucune vue ne place de dépendance/,
+    );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});

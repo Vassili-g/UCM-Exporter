@@ -218,6 +218,14 @@ Le raisonnement vit dans la spécification, en lien.
   rapprochement par nom de calque. → [spec](./docs/FORMAT.md#1-props)
 - Un enum renommé porte la même clé dans `props`, `variantAxes` et les arbres de
   variantes. → [spec](./docs/FORMAT.md#1-props)
+- Un axe possède sa clé publique : `parsers.ts` la lui réserve avant les autres
+  propriétés, si bien que l'ordre des déclarations Figma ne décide de rien. Deux
+  axes que la normalisation confond refusent l'export, aucun artefact ne sort et
+  le designer en renomme un.
+  → [spec](./packages/plugin/SPEC.md#1-props)
+- La convention `State`/`Status` porte sur un axe, donc sur le seul type
+  `VARIANT`. Une propriété d'un autre type qui porte ce nom reste une prop.
+  → [spec](./docs/FORMAT.md#1-props)
 - Les axes d’API vivent dans `props`, l’axe d’états dans `stateModel` ; une règle
   `@prop` suit cette répartition. N’est une faute de frappe que ce que le contrat
   ne publie nulle part.
@@ -333,6 +341,11 @@ Le raisonnement vit dans la spécification, en lien.
 - `icons.*.slot` et `icons.*.size` disent où et à quelle taille placer chaque
   icône. `slotNames.ts` est l’unique autorité sur le nommage : un `icons.*.slot`
   publié désigne toujours un slot réel de `structure.children`.
+- Deux enfants d’un même parent ne portent jamais le même slot : `slotNames.ts`
+  numérote parmi les slots déjà réservés sous ce parent, et les lecteurs refusent
+  un arbre qui les confond. Deux parents distincts les nomment librement de la
+  même façon, une adresse étant un chemin.
+  → [spec](./docs/FORMAT.md#6-structure)
 - Un dessin qu’aucune règle `@icons` ne désigne avertit : le contrat n’exporte
   aucun tracé, et le développeur recevra la place et les couleurs du calque,
   jamais son dessin. Le déclencheur est le tracé (`nodeBindings.estUnTrace`, la

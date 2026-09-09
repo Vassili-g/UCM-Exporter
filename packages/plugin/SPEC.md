@@ -83,6 +83,28 @@ Ce que `props` contient est décrit par [1. Props](../../docs/FORMAT.md#1-props)
 Ce document garde la lecture des component properties de Figma et l'élection de
 la surface publique.
 
+Les props du contrat vivent dans un espace de noms plat, là où deux component
+properties parfaitement légales peuvent prétendre à la même clé : la
+normalisation efface leur différence d'écriture (`Icon Left`, `icon-left` et
+`iconLeft` donnent tous `iconLeft`). Deux règles tranchent, et la seconde est
+une **précondition d'export**.
+
+- **Les axes réservent leur clé avant les autres propriétés.** Sans cette
+  priorité, une `BOOLEAN` déclarée plus haut dans le fichier prenait la clé de
+  l'axe : `structure.variantAxes` citait alors un nom que `props` décrivait
+  comme un booléen, et les valeurs des variants n'avaient plus d'enum où se
+  lire. Le résultat cessait aussi de dépendre du seul fichier Figma pour
+  dépendre de l'ordre de ses déclarations. L'axe d'états réserve sa clé comme
+  les autres, sans devenir une prop.
+- **Deux axes qui se confondent refusent l'export.** Ailleurs, le premier arrivé
+  garde la clé et le second produit un avertissement ; ici, aucune des deux
+  propriétés ne peut être servie sans l'autre, puisque leurs valeurs sont les
+  coordonnées des variants. `structure.variantAxes` citerait deux fois le même
+  nom et chaque variant ne publierait qu'une des deux coordonnées, ce que les
+  lecteurs refusent. `collidingVariantAxes` (`parsers.ts`) nomme la paire,
+  `handleExportComponent` lève avant toute extraction, et **aucun artefact ne
+  sort**. Le geste appartient au designer : renommer l'une des deux dans Figma.
+
 #### 2. Tokens de variantes
 
 Ce que `tokens` et `strokes` contiennent (la clé d'une couleur, son allongement,

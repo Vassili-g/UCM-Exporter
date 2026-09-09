@@ -67,14 +67,25 @@ export function isNeutral(value: unknown): boolean {
     && Object.keys(value as object).length === 0;
 }
 
+/** Les motifs découpés une fois, puisqu'ils ne changent pas d'un appel à l'autre. */
+const MOTIFS_PROTEGES = ENTREES_PROTEGEES.map((motif) => motif.split('.'));
+
+/**
+ * Découpe un chemin écrit en toutes lettres. Réservé aux chemins que ce module
+ * écrit lui-même : une clé venue de Figma se passe déjà découpée.
+ */
+function segmentsDe(path: string | readonly string[]): string[] {
+  if (typeof path !== 'string') return [...path];
+  return path === '' ? [] : path.split('.');
+}
+
 /** Vrai si ce chemin désigne une entrée de dictionnaire à protéger. */
-export function estProtege(path: string): boolean {
-  const segments = path.split('.');
-  return ENTREES_PROTEGEES.some((motif) => {
-    const attendus = motif.split('.');
-    if (attendus.length !== segments.length) return false;
-    return attendus.every((attendu, index) => attendu === '*' || attendu === segments[index]);
-  });
+export function estProtege(path: string | readonly string[]): boolean {
+  const segments = segmentsDe(path);
+  return MOTIFS_PROTEGES.some((attendus) => (
+    attendus.length === segments.length
+    && attendus.every((attendu, index) => attendu === '*' || attendu === segments[index])
+  ));
 }
 
 /**
@@ -87,16 +98,26 @@ export function estProtege(path: string): boolean {
  * `path` situe la valeur dans le contrat. Les index de tableau n'y entrent pas :
  * un élément de tableau n'est jamais retiré, seul son contenu est élidé, et les
  * motifs protégés n'en citent aucun.
+ *
+ * Le chemin se transporte en segments, et une clé rencontrée en descendant en
+ * occupe exactement un. Une clé de couleur porte un point dès que deux couleurs
+ * se disputent leur dernier segment (`colorKeys.ts`) : recomposer le chemin en
+ * une chaîne rendrait `base.border` indistinct de deux niveaux, et son
+ * placement vide sortirait du motif qui le protège.
  */
-export function elideNeutrals<T>(value: T, path = ''): T {
-  if (Array.isArray(value)) return value.map((item) => elideNeutrals(item, path)) as unknown as T;
+export function elideNeutrals<T>(value: T, path: string | readonly string[] = ''): T {
+  return elider(value, segmentsDe(path));
+}
+
+function elider<T>(value: T, segments: readonly string[]): T {
+  if (Array.isArray(value)) return value.map((item) => elider(item, segments)) as unknown as T;
   if (value === null || typeof value !== 'object') return value;
   const result: Record<string, unknown> = {};
   for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
-    const chemin = path ? `${path}.${key}` : key;
+    const chemin = [...segments, key];
     if (isNeutral(item) && !estProtege(chemin)) continue;
     Object.defineProperty(result, key, {
-      value: elideNeutrals(item, chemin),
+      value: elider(item, chemin),
       enumerable: true,
       writable: true,
       configurable: true,

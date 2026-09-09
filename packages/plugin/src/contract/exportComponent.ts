@@ -14,7 +14,7 @@ import {
 import { indexContractedNamesInDocument, scanComposedMatrix } from './composedComponents';
 import { extractRules } from './extractRules';
 import { extractStructure } from './extractStructure';
-import { extractContractPropertyModel } from './parsers';
+import { collidingVariantAxes, extractContractPropertyModel } from './parsers';
 import { buildContractPropertySurface } from './propertySurface';
 export { mergeWrapperProps } from './propertySurface';
 import { mergeBooleanDescriptions } from './mergeBooleanDescriptions';
@@ -206,6 +206,19 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     addProjectionWarnings(warnings.slice(index));
   };
   let warningCursor = warnings.length;
+  // Deux axes qui se confondent sont la seule collision de noms que l'export ne
+  // sait pas trancher. Ailleurs, le premier arrivé garde la clé et le second est
+  // signalé ; ici, le second emporte les coordonnées des variants avec lui, et
+  // aucune des deux propriétés ne peut être servie sans l'autre.
+  const axesConfondus = collidingVariantAxes(componentSet.componentPropertyDefinitions);
+  if (axesConfondus) {
+    const [premier, second] = axesConfondus;
+    throw new ComponentExportError(
+      `Variant properties « ${premier} » et « ${second} » : leurs noms deviennent identiques `
+      + `une fois normalisés. Le contrat ne dirait plus de quel axe vient chaque variant, et `
+      + `aucun fichier n’est écrit. Renommez l’une des deux dans Figma, puis relancez l’export.`,
+    );
+  }
   const propertyModel = extractContractPropertyModel(
     componentSet.componentPropertyDefinitions,
     warnings,

@@ -75,9 +75,39 @@ export function definePropOn(
  * états d'interaction, pas des choix d'API. Il est exclu des props : seule
  * sa valeur Disable devient une prop booléenne `disabled`. Détecté par le
  * nom de l'axe, donc valable pour n'importe quel composant.
+ *
+ * La convention porte sur un axe, donc sur le seul type `VARIANT`. Une BOOLEAN
+ * ou une TEXT nommée « State » est une propriété comme une autre : `stateModel`
+ * ne la décrit pas, et l'exclure des props la ferait disparaître du contrat sans
+ * qu'aucun message ne la nomme.
  */
 export function isStateProperty(key: string): boolean {
   return key === 'state' || key === 'status';
+}
+
+/**
+ * Les deux component properties de type `VARIANT` dont les noms se confondent
+ * une fois normalisés, ou `null` si chaque axe garde une clé publique à lui.
+ *
+ * Un axe ne se replie pas comme les autres propriétés. Ses valeurs sont les
+ * coordonnées des variants, et deux axes réduits à une seule clé les
+ * mélangeraient : `structure.variantAxes` citerait deux fois le même nom, et
+ * chaque variant ne publierait qu'une des deux coordonnées.
+ * `handleExportComponent` en fait une précondition d'export.
+ */
+export function collidingVariantAxes(
+  definitions: ComponentPropertyDefinitions,
+): [string, string] | null {
+  const figmaNameByKey = new Map<string, string>();
+  for (const [propertyName, definition] of Object.entries(definitions)) {
+    if (definition.type !== 'VARIANT') continue;
+    const key = normalizePropKey(propertyName);
+    const rawFigmaName = propertyName.replace(/#.*$/, '');
+    const first = figmaNameByKey.get(key);
+    if (first !== undefined) return [first, rawFigmaName];
+    figmaNameByKey.set(key, rawFigmaName);
+  }
+  return null;
 }
 
 /**
@@ -167,12 +197,25 @@ export function extractContractPropertyModel(
     return true;
   };
 
-  for (const [propertyName, definition] of Object.entries(definitions)) {
+  // Les axes réservent leur clé publique avant les autres propriétés. Sans cette
+  // priorité, une BOOLEAN déclarée plus haut dans le fichier prendrait la clé de
+  // l'axe : `structure.variantAxes` citerait un nom que `props` décrirait comme
+  // un booléen, et les valeurs des variants n'auraient plus d'enum où se lire.
+  const parPriorite = [
+    ...Object.entries(definitions).filter(([, definition]) => definition.type === 'VARIANT'),
+    ...Object.entries(definitions).filter(([, definition]) => definition.type !== 'VARIANT'),
+  ];
+
+  for (const [propertyName, definition] of parPriorite) {
     const key = normalizePropKey(propertyName);
     const rawFigmaName = propertyName.replace(/#.*$/, '');
 
-    if (isStateProperty(key)) {
-      if (definition.type === 'VARIANT') publicVariantKeyByRawKey.set(key, key);
+    if (isStateProperty(key) && definition.type === 'VARIANT') {
+      publicVariantKeyByRawKey.set(key, key);
+      // L'axe d'états ne devient pas une prop, et il détient malgré tout sa clé
+      // publique : une BOOLEAN homonyme qui la prendrait publierait sous ce nom
+      // une prop que `stateModel` décrit déjà comme un axe.
+      owners.set(key, rawFigmaName);
       continue;
     }
 

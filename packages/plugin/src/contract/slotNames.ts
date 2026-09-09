@@ -63,6 +63,13 @@ function baseSlotName(
 /**
  * Slot de chaque enfant direct du node de layout, dans l'ordre du document.
  * Les homonymes sont numérotés par `indexedSlotName` (`icon`, `icon-2`…).
+ *
+ * Le numéro se cherche parmi les slots déjà attribués sous ce parent, et non
+ * sur le compte des homonymes : des calques `box`, `box` et `box-2` donnent
+ * sinon deux `box-2`, et une adresse de typographie, de peinture ou d'icône
+ * désigne alors le premier des deux, sans que rien ne le dise. L'unicité ne
+ * vaut qu'entre enfants d'un même parent ; deux parents distincts nomment
+ * librement leurs slots de la même façon, puisqu'une adresse est un chemin.
  */
 export function assignSlots(
   layoutNode: SceneNode,
@@ -75,12 +82,14 @@ export function assignSlots(
     ? layoutNode.children.filter((child) => exportable.has(child))
     : [];
 
-  const countByBaseName = new Map<string, number>();
+  const reserves = new Set<string>();
   return children.map((child) => {
     const baseName = baseSlotName(child, iconNames, composed);
-    const alreadySeen = countByBaseName.get(baseName) ?? 0;
-    countByBaseName.set(baseName, alreadySeen + 1);
-    return { child, slot: indexedSlotName(baseName, alreadySeen) };
+    let index = 0;
+    while (reserves.has(indexedSlotName(baseName, index))) index += 1;
+    const slot = indexedSlotName(baseName, index);
+    reserves.add(slot);
+    return { child, slot };
   });
 }
 

@@ -150,3 +150,37 @@ ne reprend plus le variant placé en premier dans le component set : le designer
 déclare désormais le défaut avec `@default`, ou le champ reste absent. Les
 contrats 12.0 déjà exportés gardent leur forme, mais doivent être réexportés lors
 de la recette de migration pour recevoir ce sens.
+
+
+### Adresses de slots et clés de props
+
+Quatre corrections changent ce que la 12.0 publie, sans changer sa forme. Aucune
+ne touche le schéma, et `meta.contractVersion` ne bouge pas : chacune ne modifie
+un contrat que là où il était déjà contradictoire ou incomplet. Un contrat 12.0
+déjà exporté reste valide de forme ; les trois premiers points demandent un
+réexport pour recevoir leur sens.
+
+1. **Deux enfants d'un même parent ne portent plus le même slot.** Des calques
+   `box`, `box` et `box-2` recevaient `box`, `box-2` et `box-2-2`, le numéro
+   étant désormais cherché parmi les slots déjà réservés sous ce parent.
+   L'ancien compte des homonymes en donnait deux au même nom, et une adresse de
+   typographie, de peinture ou d'icône désignait alors le premier des deux.
+   Seul un composant dont un parent portait des homonymes voit ses slots
+   changer, et son contrat était jusque-là ambigu ; les lecteurs le refusent
+   maintenant, ce qui relève de la **classe 3** pour ce composant-là : le
+   designer réexporte, le développeur adapte les adresses qu'il citait.
+2. **Une propriété `State` ou `Status` qui n'est pas un axe devient une prop.**
+   La convention porte sur le type `VARIANT` ; une `BOOLEAN`, une `TEXT`, un
+   `INSTANCE_SWAP` ou un `SLOT` de ce nom disparaissait du contrat sans qu'aucun
+   message ne le dise. **Classe 1** : `props` gagne une entrée que le fichier
+   Figma déclarait déjà.
+3. **Un placement de peinture vide survit à une clé de couleur qui porte un
+   point.** Depuis la 5.5 une clé s'allonge des segments qui séparent deux
+   couleurs homonymes ; son chemin comptait alors un segment de trop et
+   l'élision retirait l'entrée, dont la clé nommait pourtant la couleur.
+   **Classe 1**.
+4. **Deux axes que la normalisation confond refusent l'export.** Le contrat
+   produit citait deux fois le même axe et ne publiait qu'une des deux
+   coordonnées de chaque variant ; les lecteurs le refusaient déjà. Aucun
+   artefact de cette forme n'existe donc chez un consommateur, et rien n'est à
+   migrer : le geste appartient au designer, dans Figma.

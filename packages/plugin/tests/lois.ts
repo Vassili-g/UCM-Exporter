@@ -26,6 +26,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import Ajv from 'ajv';
 import { champsInvalidesDuContrat, verdictDeVersion } from '@ucm-kit/core/lecteurs';
+import { estProtege } from '../src/contract/elideNeutrals';
 import { serializeJson } from '../src/contract/serializeJson';
 
 /**
@@ -54,7 +55,7 @@ type Noeud = {
   inset?: Record<string, unknown>;
   rotation?: unknown;
 };
-type Dependance = { component?: string; figmaLayer?: string };
+type Dependance = { component?: string; figmaLayer?: string; visibilityProp?: string };
 type Rendu = { kind?: string };
 export type Contrat = {
   variants?: {
@@ -205,42 +206,33 @@ function lesAdressesDesignentUnCalqueReel(c: Contrat, ou: string): void {
   }
 }
 
-/** Aucune valeur neutre écrite, aux deux exceptions près où le vide est la donnée. */
+/**
+ * Aucune valeur neutre écrite, hors des entrées que l'élision protège.
+ *
+ * La liste des exceptions ne se recopie pas ici : `ENTREES_PROTEGEES` en est
+ * l'unique autorité, et la loi interroge `estProtege` sur le chemin du moment.
+ * Un ensemble de noms de clés, tenu à côté, autorisait le vide partout où l'un
+ * de ces noms apparaissait, y compris là où l'élision, elle, le retire.
+ *
+ * Le chemin se transporte en segments, pour la raison qui vaut dans
+ * `elideNeutrals` : une clé de couleur porte un point. Les index de tableau ne
+ * situent que l'échec, et n'entrent pas dans le chemin interrogé, aucun motif
+ * protégé n'en citant.
+ */
 function aucuneValeurNeutre(c: Contrat, ou: string): void {
-  // Sous un dictionnaire, la clé parle et l'entrée survit à vide. Sous une
-  // peinture, le chemin vide désigne la racine.
-  const DICTIONNAIRE = new Set([
-    'states', 'roles', 'props', 'icons', 'textStyles', 'variantViews', 'samples',
-    'fills', 'strokes', 'tokens', 'args', 'overrides', 'propertyBindingDefinitions',
-    ...Object.values(CATALOGUE),
-  ]);
-  (function parcourir(
-    valeur: unknown,
-    chemin: string,
-    estUnDictionnaire: boolean,
-    entreeDeDictionnaire: boolean,
-    sousUnePeinture: boolean,
-  ) {
-    assert.notEqual(valeur, null, `${ou} : null publié à ${chemin}`);
+  (function parcourir(valeur: unknown, segments: readonly string[], ou0: string) {
+    assert.notEqual(valeur, null, `${ou} : null publié à ${ou0}`);
     if (Array.isArray(valeur)) {
-      assert.ok(valeur.length > 0 || sousUnePeinture, `${ou} : [] publié à ${chemin}`);
-      valeur.forEach((enfant, i) => {
-        parcourir(enfant, `${chemin}[${i}]`, false, false, sousUnePeinture);
-      });
+      assert.ok(valeur.length > 0 || estProtege(segments), `${ou} : [] publié à ${ou0}`);
+      valeur.forEach((enfant, i) => parcourir(enfant, segments, `${ou0}[${i}]`));
     } else if (valeur && typeof valeur === 'object') {
       const entrees = Object.entries(valeur);
-      assert.ok(entrees.length > 0 || entreeDeDictionnaire, `${ou} : {} publié à ${chemin}`);
+      assert.ok(entrees.length > 0 || estProtege(segments), `${ou} : {} publié à ${ou0}`);
       for (const [cle, enfant] of entrees) {
-        parcourir(
-          enfant,
-          `${chemin}.${cle}`,
-          DICTIONNAIRE.has(cle),
-          estUnDictionnaire,
-          sousUnePeinture || cle === 'fills' || cle === 'strokes',
-        );
+        parcourir(enfant, [...segments, cle], `${ou0}.${cle}`);
       }
     }
-  })(c, '', false, false, false);
+  })(c, [], '');
 }
 
 /**
@@ -324,24 +316,87 @@ function laPlaceNAppartientQuAuxCalquesHorsDuFlux(c: Contrat, ou: string): void 
   }
 }
 
-/** Le `composes` global est l'union ordonnée à cardinalité maximale des vues. */
+/**
+ * Le `composes` global est l'union ordonnée à cardinalité maximale des vues.
+ *
+ * L'attendu se reconstruit ici, à partir des seules `variants` du contrat, et
+ * n'emprunte pas `mergeVariantDependencies` au moteur : une loi qui appelle la
+ * fonction qu'elle contrôle constate qu'elle est égale à elle-même. Comparer une
+ * somme de cardinalités, comme le faisait cette loi, laissait passer une
+ * dépendance remplacée par une autre et un agrégat absent, tous deux refusés par
+ * le contrôle du graphe chez le consommateur.
+ *
+ * L'ordre se lit sur `variants`, jamais sur `variantViews` : deux variants
+ * partagent une vue, et c'est la matrice qui décide du rang de chaque
+ * dépendance. La visibilité entre dans l'identité comparée, deux occurrences du
+ * même composant dans le même calque pouvant dépendre de deux props.
+ */
 function composesEstLUnionMaximale(c: Contrat, ou: string): void {
-  if (!c.composes) return;
-  const signature = (d: Dependance) => `${d.component} ${d.figmaLayer ?? ''}`;
+  const signature = (d: Dependance) => JSON.stringify([
+    d.component,
+    d.figmaLayer,
+    d.visibilityProp ?? null,
+  ]);
+  const attendu: Dependance[] = [];
   const maximum = new Map<string, number>();
-  for (const renvois of Object.values(c.variantViews ?? {})) {
-    const compte = new Map<string, number>();
+  for (const variant of c.variants ?? []) {
+    const renvois = c.variantViews?.[variant.view ?? ''] ?? {};
     const liste = renvois.composes === undefined ? [] : c.viewComposes?.[renvois.composes] ?? [];
+    const occurrences = new Map<string, number>();
     for (const dependance of liste) {
-      compte.set(signature(dependance), (compte.get(signature(dependance)) ?? 0) + 1);
+      const cle = signature(dependance);
+      const occurrence = (occurrences.get(cle) ?? 0) + 1;
+      occurrences.set(cle, occurrence);
+      if (occurrence > (maximum.get(cle) ?? 0)) {
+        maximum.set(cle, occurrence);
+        attendu.push(dependance);
+      }
     }
-    for (const [cle, n] of compte) if (n > (maximum.get(cle) ?? 0)) maximum.set(cle, n);
   }
-  assert.equal(
-    c.composes.length,
-    [...maximum.values()].reduce((a, b) => a + b, 0),
-    `${ou} : le composes global ne totalise pas la cardinalité maximale relevée sur les vues`,
+  // Aucune vue ne place de dépendance : le champ ne s'écrit pas, à la règle
+  // commune de l'élision.
+  if (attendu.length === 0) {
+    assert.equal(
+      c.composes,
+      undefined,
+      `${ou} : composes est publié alors qu'aucune vue ne place de dépendance`,
+    );
+    return;
+  }
+  assert.deepEqual(
+    (c.composes ?? []).map(signature),
+    attendu.map(signature),
+    `${ou} : le composes global n'est pas l'union ordonnée des dépendances des variants`,
   );
+}
+
+/**
+ * Deux enfants d'un même parent ne portent jamais le même slot.
+ *
+ * Un slot est une adresse, et `descendre` retient le premier enfant qui la
+ * porte : deux homonymes sous un même parent rendraient l'adresse d'une
+ * typographie, d'une peinture ou d'une icône silencieusement ambiguë, et la loi
+ * des adresses continuerait de passer en désignant le mauvais calque. L'unicité
+ * ne vaut qu'entre enfants d'un même parent, un chemin distinguant deux slots
+ * homonymes vivant sous deux parents distincts.
+ */
+function lesSlotsDUnMemeParentSontUniques(c: Contrat, ou: string): void {
+  for (const [vue, arbre] of Object.entries(c.viewStructures ?? {})) {
+    (function relever(noeud: Noeud, chemin: string) {
+      const vus = new Set<string>();
+      for (const enfant of noeud.children ?? []) {
+        const place = `${chemin}.${enfant.slot ?? '?'}`;
+        if (enfant.slot !== undefined) {
+          assert.ok(
+            !vus.has(enfant.slot),
+            `${ou} : ${vue}${chemin} porte deux enfants au slot « ${enfant.slot} »`,
+          );
+          vus.add(enfant.slot);
+        }
+        relever(enfant, place);
+      }
+    })(arbre, '');
+  }
 }
 
 /**
@@ -396,6 +451,7 @@ function aucunDiagnosticNePorteDeNodeFigma(c: Contrat, ou: string): void {
 export function verifierLesLois(contrat: Contrat, ou: string): void {
   lesRenvoisSeResolvent(contrat, ou);
   lesCataloguesSontNetsEtAtteints(contrat, ou);
+  lesSlotsDUnMemeParentSontUniques(contrat, ou);
   lesAdressesDesignentUnCalqueReel(contrat, ou);
   aucuneValeurNeutre(contrat, ou);
   chaqueCouleurSaitCommentSePeindre(contrat, ou);

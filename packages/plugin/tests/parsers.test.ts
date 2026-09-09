@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  collidingVariantAxes,
   extractContractPropertyModel,
   extractContractProps,
   normalizePropKey,
@@ -227,4 +228,124 @@ test('une component property nommée « __proto__ » ne disparaît pas dans le p
   assert.deepEqual(Object.keys(props), ['__proto__']);
   assert.deepEqual(propByName(props, '__proto__'), { type: 'boolean', default: true });
   assert.equal(Object.getPrototypeOf(props), Object.prototype);
+});
+
+test('collidingVariantAxes nomme les deux axes dont les noms se confondent', () => {
+  const axe = (options: string[]) => ({ type: 'VARIANT', defaultValue: options[0], variantOptions: options });
+  const kindA = axe(['A']);
+  const kindB = axe(['B']);
+
+  assert.deepEqual(
+    collidingVariantAxes({ Kind: kindA, kind: kindB } as unknown as ComponentPropertyDefinitions),
+    ['Kind', 'kind'],
+  );
+  // L'ordre de déclaration ne change que l'ordre des deux noms cités.
+  assert.deepEqual(
+    collidingVariantAxes({ kind: kindB, Kind: kindA } as unknown as ComponentPropertyDefinitions),
+    ['kind', 'Kind'],
+  );
+  // Un espace ne distingue pas deux clés : `normalizePropKey` le mange. Le nom
+  // cité au designer garde cet espace, seul indice qui distingue les deux
+  // propriétés dans le panneau de Figma.
+  assert.deepEqual(
+    collidingVariantAxes({ 'Kind ': kindA, Kind: kindB } as unknown as ComponentPropertyDefinitions),
+    ['Kind ', 'Kind'],
+  );
+  // L'identifiant interne ne distingue pas deux clés non plus.
+  assert.deepEqual(
+    collidingVariantAxes({ 'Kind#1:1': kindA, 'Kind#2:2': kindB } as unknown as ComponentPropertyDefinitions),
+    ['Kind', 'Kind'],
+  );
+});
+
+test('collidingVariantAxes ignore une collision qui ne met pas deux axes en cause', () => {
+  const axe = { type: 'VARIANT', defaultValue: 'A', variantOptions: ['A'] };
+  const booleen = { type: 'BOOLEAN', defaultValue: true };
+  const texte = { type: 'TEXT', defaultValue: 'libre' };
+
+  // Un axe et une propriété non-axe se tranchent par la priorité des axes.
+  assert.equal(
+    collidingVariantAxes({ Kind: axe, kind: booleen } as unknown as ComponentPropertyDefinitions),
+    null,
+  );
+  // Deux propriétés non-axes gardent le traitement du premier arrivé.
+  assert.equal(
+    collidingVariantAxes({ Kind: booleen, kind: texte } as unknown as ComponentPropertyDefinitions),
+    null,
+  );
+  // Un axe renommé en `size` ne prend pas la clé d'un autre axe : `taken` le retient.
+  assert.equal(
+    collidingVariantAxes({
+      Echelle: { type: 'VARIANT', defaultValue: 'Small', variantOptions: ['Small', 'Large'] },
+      size: { type: 'VARIANT', defaultValue: 'A', variantOptions: ['A'] },
+    } as unknown as ComponentPropertyDefinitions),
+    null,
+  );
+});
+
+test('un axe garde sa clé publique face à une propriété déclarée avant lui', () => {
+  // Le fichier Figma déclare la BOOLEAN d'abord. Sans la priorité des axes, elle
+  // prenait la clé `kind` : `structure.variantAxes` citait alors un nom que
+  // `props` décrivait comme un booléen, et les valeurs des variants n'avaient
+  // plus d'enum où se lire.
+  const definitions = {
+    kind: { type: 'BOOLEAN', defaultValue: true },
+    Kind: { type: 'VARIANT', defaultValue: 'A', variantOptions: ['A', 'B'] },
+  } as unknown as ComponentPropertyDefinitions;
+  const warnings: string[] = [];
+
+  const modele = extractContractPropertyModel(definitions, warnings);
+
+  assert.deepEqual(modele.props, { kind: { type: 'enum', values: ['a', 'b'] } });
+  assert.equal(modele.publicVariantKeyByRawKey.get('kind'), 'kind');
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /« Kind » et « kind »/);
+});
+
+test('State et Status hors variant restent des props, avec leur type', () => {
+  // Une BOOLEAN ou une TEXT nommée « State » n'est pas un axe d'états : rien ne la
+  // décrit dans `stateModel`, et l'exclure des props la faisait disparaître du
+  // contrat sans qu'aucun message ne la nomme.
+  const definitions = {
+    'State#1:1': { type: 'BOOLEAN', defaultValue: true },
+    'Status#1:2': { type: 'TEXT', defaultValue: 'brouillon' },
+    'State Icon#1:3': { type: 'INSTANCE_SWAP', defaultValue: 'cle-icone', preferredValues: [] },
+    'Status Slot#1:4': { type: 'SLOT', defaultValue: true, preferredValues: [] },
+  } as unknown as ComponentPropertyDefinitions;
+  const warnings: string[] = [];
+
+  const modele = extractContractPropertyModel(definitions, warnings);
+
+  assert.deepEqual(modele.props, {
+    state: { type: 'boolean', default: true },
+    status: { type: 'string', default: 'brouillon' },
+    stateIcon: { type: 'instance-swap', default: 'cle-icone', preferredValues: [] },
+    statusSlot: { type: 'slot', default: true, preferredValues: [] },
+  });
+  // Aucun de ces types n'est un axe : la table des axes reste vide.
+  assert.equal(modele.publicVariantKeyByRawKey.size, 0);
+  assert.deepEqual(modele.publicPropertyKeyByFigmaName.get('State#1:1'), 'state');
+  assert.deepEqual(modele.publicPropertyKeyByFigmaName.get('Status#1:2'), 'status');
+  assert.deepEqual(warnings, []);
+});
+
+test('un axe State garde sa clé contre une BOOLEAN homonyme', () => {
+  // L'axe reste hors des props, et il détient malgré tout sa clé : la BOOLEAN
+  // publierait sous ce nom une prop que `stateModel` décrit déjà comme un axe.
+  const definitions = {
+    'State#1:1': {
+      type: 'VARIANT',
+      defaultValue: 'Default',
+      variantOptions: ['Default', 'Hover'],
+    },
+    'State#2:2': { type: 'BOOLEAN', defaultValue: true },
+  } as unknown as ComponentPropertyDefinitions;
+  const warnings: string[] = [];
+
+  const modele = extractContractPropertyModel(definitions, warnings);
+
+  assert.deepEqual(modele.props, {});
+  assert.equal(modele.publicVariantKeyByRawKey.get('state'), 'state');
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /leurs noms deviennent identiques une fois normalisés/);
 });

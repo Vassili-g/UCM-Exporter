@@ -10,8 +10,8 @@ Figma plugin and committed next to the component's code. This command reads
 those files and says whether they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.19 init
-npx --yes @ucm-kit/cli@0.1.19 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.20 init
+npx --yes @ucm-kit/cli@0.1.20 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx pick a build nobody
@@ -56,7 +56,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.19 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.20 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing

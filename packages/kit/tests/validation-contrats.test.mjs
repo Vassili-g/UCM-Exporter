@@ -1841,3 +1841,42 @@ test("la normalisation n'écrit aucune version dans le contrat qu'elle rend", ()
       + "rend le mensonge à nouveau voyageur.",
   );
 });
+
+test("deux enfants d'un même parent au même slot sont refusés", () => {
+  // Un slot est une adresse relative à son parent : qui descend un `slotPath`,
+  // un chemin de peinture ou un `icons.*.slot` retient le premier des deux
+  // homonymes et rend le mauvais calque, sans qu'aucun autre contrôle ne le dise.
+  const valeur = contrat120();
+  valeur.viewStructures.st1.children = [{ slot: "box" }, { slot: "box" }];
+
+  // L'arbre est atteint deux fois : comme vue exacte du variant, puis comme
+  // projection de référence.
+  assert.deepEqual(champsInvalidesDuContrat(valeur), [
+    "variantViews.v1.structure.children[1].slot",
+    "structure.children[1].slot",
+  ]);
+});
+
+test("le refus des slots homonymes porte aussi sur un niveau imbriqué", () => {
+  const valeur = contrat120();
+  valeur.viewStructures.st1.children = [
+    { slot: "row", children: [{ slot: "label" }, { slot: "label" }] },
+  ];
+
+  assert.deepEqual(champsInvalidesDuContrat(valeur), [
+    "variantViews.v1.structure.children[0].children[1].slot",
+    "structure.children[0].children[1].slot",
+  ]);
+});
+
+test("deux parents distincts portent librement un slot du même nom", () => {
+  // L'unicité ne vaut qu'entre enfants d'un même parent : le chemin distingue
+  // « gauche.label » de « droite.label », et rien ne les confond.
+  const valeur = contrat120();
+  valeur.viewStructures.st1.children = [
+    { slot: "gauche", children: [{ slot: "label" }] },
+    { slot: "droite", children: [{ slot: "label" }] },
+  ];
+
+  assert.deepEqual(champsInvalidesDuContrat(valeur), []);
+});

@@ -495,6 +495,13 @@ function validerBornes(porteur, chemin, invalides, bornes53) {
  * de ses feuilles.
  */
 function validerStructure(children, prefixe, invalides, capacites) {
+  // Un slot est une adresse relative à son parent. Deux enfants homonymes la
+  // rendent ambiguë : qui descend un `slotPath`, un chemin de peinture ou un
+  // `icons.*.slot` retient le premier des deux, et rend le mauvais calque sans
+  // qu'aucun contrôle ne l'en avertisse. L'unicité ne se demande qu'entre
+  // enfants d'un même parent, un chemin distinguant deux homonymes de niveaux
+  // différents.
+  const slotsDuNiveau = new Set();
   for (const [index, child] of (Array.isArray(children) ? children : []).entries()) {
     const chemin = `${prefixe}[${index}]`;
     if (!estObjet(child)) {
@@ -502,6 +509,8 @@ function validerStructure(children, prefixe, invalides, capacites) {
       continue;
     }
     if (!estTexte(child.slot)) invalides.push(`${chemin}.slot`);
+    else if (slotsDuNiveau.has(child.slot)) invalides.push(`${chemin}.slot`);
+    else slotsDuNiveau.add(child.slot);
     validerItemFlex(child, chemin, invalides, capacites.flex44);
     validerPlacement(child, chemin, invalides, capacites);
     if (child.size !== undefined && !tailleValide(child.size, capacites.dimensionnement)) {
