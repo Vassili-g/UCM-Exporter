@@ -49,7 +49,10 @@ Voir [7. Intention et documentation des props](./FORMAT.md#7-intention-et-docume
 
 ## 3. Exporter
 
-Le plugin propose deux commandes.
+Ajoutez-le depuis la Figma Community :
+<https://www.figma.com/community/plugin/1678431364325816914>
+
+Il apparaît ensuite dans votre menu `Plugins`, et propose deux commandes.
 
 | Commande | Ce qu'elle produit |
 |---|---|
@@ -106,8 +109,11 @@ vous ayez besoin de lire ; vous n'avez jamais à ouvrir les journaux de la CI.
 
 ## 6. Ce qui bloque la fusion, et ce qui n'en bloque pas
 
-La règle de partage tient en une phrase : **un contrôle bloque seulement si
-vous pouvez le corriger en réexportant.**
+Presque tous les blocages se lèvent par un réexport, et le rapport vous dit
+lequel. Un seul fait exception : un contrat produit par une version du plugin
+que le repository ne sait pas encore lire. Le message s'adresse alors à un
+développeur, qui doit mettre l'outillage à jour ; réexporter n'y changerait
+rien.
 
 | Contrôle | Ce qu'il vérifie | Verdict |
 |---|---|---|
@@ -115,7 +121,7 @@ vous pouvez le corriger en réexportant.**
 | Version | Le repository sait lire cette version de contrat | Bloque |
 | Composition | Chaque composant imbriqué a son propre contrat, les listes concordent, aucun cycle | Bloque |
 | Typographie | Les tokens typographiques ont le type attendu | Bloque |
-| Tokens | Les tokens cités existent dans `tokens.json` | Avertit |
+| Tokens | Les tokens cités existent dans `tokens.json` | Avertit, sauf si le fichier de tokens manque ou ne se lit pas |
 | Parité code | Le code expose bien les props du contrat | Avertit |
 
 Un écart avec le code attend un développeur, donc il avertit et laisse
@@ -171,6 +177,8 @@ complètes vivent là-bas, jamais ici.
 
 ## 9. Où aller ensuite
 
+- [../packages/plugin/README.md](../packages/plugin/README.md) : où obtenir le
+  plugin, et ce qu'il ne fait pas.
 - [../README.md](../README.md) : la vue d'ensemble du projet.
 - [FORMAT.md](./FORMAT.md) : la forme exacte de chaque champ, si vous voulez
   lire un contrat en détail.

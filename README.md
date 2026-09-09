@@ -89,14 +89,19 @@ Les détails vivent dans [packages/cli/README.md](./packages/cli/README.md).
 | Version | Le repository sait-il lire cette version de contrat ? | 🔴 bloque |
 | Composition | Chaque composant imbriqué a-t-il son contrat, les listes concordent-elles, et aucun cycle n'existe-t-il ? | 🔴 bloque |
 | Typographie | Les tokens typographiques ont-ils le type attendu ? | 🔴 bloque |
-| Tokens | Les références `{chemin.du.token}` citées existent-elles dans `tokens.json` ? | ⚠️ avertit |
+| Tokens | Les références `{chemin.du.token}` citées existent-elles dans `tokens.json` ? | ⚠️ avertit, mais un fichier de tokens absent ou illisible bloque |
 | Parité code | Les props du contrat sont-elles dans l'API publique du composant, typées correctement, et chaque composant déclaré rendu autant de fois que le contrat le déclare ? | ⚠️ avertit |
 
-La règle de partage est explicite : **un contrôle bloque la pull request
-seulement si l'auteur de l'export peut le corriger en réexportant.** Les deux
-verdicts « avertit » en découlent, et
-[docs/POUR-LES-DESIGNERS.md](./docs/POUR-LES-DESIGNERS.md#6-ce-qui-bloque-la-fusion-et-ce-qui-nen-bloque-pas)
-les détaille pour le designer, l'absence d'implémentation comprise.
+Un contrôle bloque quand le fichier déposé ne peut pas être lu tel quel :
+contrat illisible, incomplet, dans une version hors de la fenêtre de lecture, ou
+dont la composition ne se résout pas. Il avertit quand la lecture aboutit et que
+l'écart vise le code ou le fichier de tokens.
+
+Qui répare dépend du sens de l'écart, et non de la personne qui a ouvert la pull
+request, que la CI ne connaît pas. Un contrat trop ancien se réexporte ; un
+contrat trop récent demande une mise à jour du repository, et aucun réexport n'y
+changerait rien. [packages/kit/README.md](./packages/kit/README.md) nomme les
+deux sens.
 
 Le rapport porte aussi deux verdicts qui ne viennent pas de ces contrôles :
 ceux de l'export et ceux des tests du repository.
@@ -114,61 +119,19 @@ l'installe lui-même, et un `tsconfig.json` à sa racine.
 | Exporter le composant | `<IdentifiantCode>.contract.json` | Variantes exactes, états, structure, tokens, icônes, règles d'usage, et un échantillon de maquette non normatif |
 | Exporter les tokens | `tokens.json` | Variables locales au format DTCG, avec leurs alias et leurs modes |
 
-### À quoi ressemble un contrat
+### Ce que le contrat garantit
 
-Un extrait d'export réel, raccourci. `TileLink` est une tuile carrée avec une
-icône, quatre variantes et deux axes.
+Le contrat est autoportant : un développeur ou un agent produit le composant
+sans consulter une implémentation existante. Aucune couleur n'y est écrite en
+dur, ce qui laisse un changement de thème se faire sans réexport. Les variantes
+qui existent y sont énumérées une à une, si bien qu'un consommateur ne présume
+jamais qu'une combinaison absente serait valide. Ce qui se répète d'une variante
+à l'autre est catalogué : un composant à quatre-vingt-dix variantes ne publie
+pas quatre-vingt-dix arbres.
 
-```json
-{
-  "name": "TileLink",
-  "meta": {
-    "contractVersion": "12.0",
-    "figma": { "fileName": "DS AI LAB", "nodeId": "362:2381" },
-    "coverage": { "portable": "complete" }
-  },
-  "props": {
-    "variant": { "type": "enum", "values": ["info", "success"], "default": "info" },
-    "chessName": { "type": "icon", "policy": "modifiable" }
-  },
-  "viewStructures": {
-    "st1": {
-      "layout": "flex-row",
-      "sizing": { "width": "{…sizes.width}", "height": "{…sizes.height}" },
-      "children": [{ "slot": "icon", "figmaLayer": "chess", "optional": true }]
-    }
-  },
-  "variantViews": { "v1": { "structure": "st1", "icons": "ic1" } },
-  "variants": [
-    {
-      "values": { "variant": "info", "state": "default" },
-      "tokens": { "background": "{components.tilelink.colors.info.default.background}" },
-      "view": "v1"
-    }
-  ]
-}
-```
-
-Quatre propriétés valent plus que la liste des champs.
-
-- **Aucune valeur n'est aplatie.** Une couleur est une référence, jamais
-  `#0B5FFF`. Le token reste propriétaire de sa valeur, et un changement de thème
-  n'oblige pas à réexporter.
-- **Les variantes sont énumérées, pas déduites.** `variants` liste les
-  combinaisons qui existent dans Figma. Une matrice clairsemée reste clairsemée,
-  et un consommateur ne présume jamais que le produit cartésien des axes est
-  valide.
-- **Ce qui se répète est catalogué.** Les quatre variantes citent la même vue
-  `v1`, qui renvoie à `st1` et `ic1`. Un composant à quatre-vingt-dix variantes
-  ne publie pas quatre-vingt-dix arbres.
-- **`coverage.portable` dit ce que l'export n'a pas su décrire.** Ici
-  `complete`. Un `partial` s'accompagne toujours d'un diagnostic qui nomme le
-  calque et la propriété.
-
-Le contrat est autoportant : il contient assez d'information pour qu'un
-développeur ou un agent produise le composant sans consulter une implémentation
-existante. Le plugin ne génère aucun code de production et n'écrit jamais dans
-le document Figma.
+Chaque champ, ce que son absence signifie et ce qu'un consommateur a le droit
+d'en conclure sont décrits par
+[docs/FORMAT.md](./docs/FORMAT.md#ce-que-le-contrat-publie-champ-par-champ).
 
 Version de contrat courante : **12.0**, écrite dans
 `packages/kit/src/format/version.ts` et nulle part ailleurs. Un consommateur en
@@ -196,21 +159,15 @@ la génération des types dérivés des contrats.
 
 ## Ouvrir le plugin
 
-Le plugin est publié sur la **Figma Community**, sous le nom « UCM Contract
-Exporter ». Installez-le une fois, puis lancez-le depuis le menu `Plugins` de
-l'application de bureau : il n'y a ni build à faire ni manifeste à importer.
+Le plugin est publié sur la Figma Community, sous le nom « UCM Contract
+Exporter » :
 
-Publié sur la Community, son manifest ne déclare pas `enablePrivatePluginApi`,
-drapeau réservé aux plugins privés d'une organisation et que Figma refuserait à
-la soumission. Conséquence sur les contrats : `figma.fileKey` n'est pas
-accessible, `meta.figma.url` n'est plus écrit, et la traçabilité vers le
-composant source passe par `fileName` et `nodeId`, que le corps de la pull
-request annonce. Aucune information de rendu n'est perdue.
+**<https://www.figma.com/community/plugin/1678431364325816914>**
 
-Un export est toujours téléchargeable localement. La configuration GitHub est
-optionnelle : renseignée, elle crée la branche et la pull request contenant le
-seul artefact exporté. Le jeton reste dans `figma.clientStorage` et n'apparaît
-ni dans l'interface ni dans les logs.
+Installez-le une fois, puis lancez-le depuis le menu `Plugins` de l'application
+de bureau. Ses deux commandes, sa configuration GitHub optionnelle et ses
+limites sont décrites dans
+[packages/plugin/README.md](./packages/plugin/README.md).
 
 ## Construire le plugin depuis ce dépôt
 
@@ -270,6 +227,7 @@ Le sommaire complet, avec un chemin de lecture par profil, vit dans
 
 | Document | Pour qui |
 |---|---|
+| [packages/plugin/README.md](./packages/plugin/README.md) | Qui ouvre le plugin dans Figma |
 | [docs/POUR-LES-DESIGNERS.md](./docs/POUR-LES-DESIGNERS.md) | Le designer qui exporte et relit |
 | [CONCEPT.md](./CONCEPT.md) | Qui veut comprendre le problème et les responsabilités |
 | [docs/FORMAT.md](./docs/FORMAT.md) | Qui consomme un contrat ou `tokens.json` |
