@@ -10,8 +10,8 @@ Figma plugin and committed next to the component's code. This command reads
 those files and says whether they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.18 init
-npx --yes @ucm-kit/cli@0.1.18 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.19 init
+npx --yes @ucm-kit/cli@0.1.19 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx pick a build nobody
@@ -56,7 +56,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.18 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.19 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -128,9 +128,15 @@ The report is written for the **designer** who validates the export, not for the
 developer who reads CI logs. Every reason a pull request is refused appears in
 it.
 
-Six checks run on each contract. Four of them block a merge, two only warn, and
-the split follows one rule: **a check blocks only if re-exporting from Figma can
-fix it.**
+Six checks run on each contract. Four block a merge, two only warn: **a check
+blocks when the file on disk cannot be read as it stands**, and warns when the
+read succeeds and the gap points at the code or at the token file.
+
+Who fixes it depends on the direction of the gap, never on who opened the pull
+request, which the CI does not know. A contract that is too old is re-exported;
+a contract that is too new needs this package upgraded, and no re-export helps.
+[`@ucm-kit/core`](https://www.npmjs.com/package/@ucm-kit/core) names both
+directions.
 
 | Check | Verdict |
 |---|---|
@@ -138,12 +144,14 @@ fix it.**
 | This repository can read that contract version | Blocks |
 | Composition: every nested component has its own contract, the lists agree, no cycles | Blocks |
 | Typography tokens have the expected type | Blocks |
-| Every `{token.path}` cited exists in the token file | Warns |
+| Every `{token.path}` cited exists in the token file | Warns, but a missing or unreadable token file blocks |
 | The code exposes the props the contract declares, with a stack adapter installed | Warns |
 
 A gap with the code needs a developer, so it warns and lets the merge through. A
 token removed from the design system does too: tokens are the source of truth,
-and an older contract does not hold back their evolution.
+and an older contract does not hold back their evolution. A token file that is
+absent or unreadable is another matter: no reference can be resolved at all, so
+the check gives up rather than reporting every path as missing.
 
 A contract may land before the code that implements it. A missing implementation
 is an allowed state, not an error.
