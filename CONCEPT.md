@@ -145,7 +145,7 @@ Ce workflow se complète par un **test froid** : sur une branche de recette du
 repository consommateur, un agent reconstruit un composant à partir du seul
 contrat suivi, sans ouvrir l’implémentation précédente. Ce test mesure la
 qualité du contrat ; son résultat n’est pas du code de production, et le
-composant obtenu est une sonde jetable.
+composant obtenu est jetable.
 
 ## 6. Ce que le modèle cherche à prouver
 

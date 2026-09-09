@@ -173,7 +173,7 @@ complètes vivent là-bas, jamais ici.
 | **Diagnostic** | Un message adressé à vous, avec son constat, son impact et son geste. [8. Rendu sémantique et garde-fous](./FORMAT.md#8-rendu-sémantique-et-garde-fous) |
 | **Échantillon de maquette** | Ce que Figma affichait au moment de l'export : textes, valeurs. Il aide à retrouver l'esthétique voulue, et aucun contrôle ne le compare au code. [9. Échantillon de maquette](./FORMAT.md#9-échantillon-de-maquette) |
 | **Adaptateur** | Un paquet optionnel qui apprend à la CI à lire le code d'une technologie donnée. Sans lui, les contrôles indépendants du langage fonctionnent quand même. [README du CLI](../packages/cli/README.md) |
-| **Sonde** | Un composant reconstruit depuis son seul contrat, pour vérifier que ce contrat suffit. Une sonde se jette et se refait ; elle n'est jamais une bibliothèque |
+| **Composant jetable** | Un composant reconstruit depuis son seul contrat, pour vérifier que ce contrat suffit. Il se jette et se refait, et ne forme jamais une bibliothèque |
 
 ## 9. Où aller ensuite
 

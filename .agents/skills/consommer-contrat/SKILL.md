@@ -186,7 +186,7 @@ projet** : elle porte sur le moteur, pas sur ce composant, elle ne peut rien
 apprendre sur le travail en cours, et sa sortie encombre le contexte jusqu'à la
 fin de la session. L'orchestrateur la lancera une fois, à la fin.
 
-Ne créer aucun test pour ce composant. Ces composants sont des sondes jetables :
+Ne créer aucun test pour ce composant. Ces composants sont jetables :
 leur reconstruction évalue la robustesse du contrat, pas la pérennité de leur
 implémentation.
 
