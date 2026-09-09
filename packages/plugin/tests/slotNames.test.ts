@@ -11,6 +11,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { extractStructure } from '../src/contract/extractStructure';
+import { assignSlots } from '../src/contract/slotNames';
 import { mergeIconRules } from '../src/contract/mergeIconRules';
 import type { IconRule } from '../src/contract/rulesModel';
 import type { ContractStructure, IconDefinition } from '@ucm-kit/core/format';
@@ -209,4 +210,98 @@ test('les slots viennent du node de layout retenu, pas d’une seconde élection
   assert.equal(icons.arrowLeftLong.slot, 'icon');
   assert.equal(icons.badgeIcon.slot, undefined);
   assertSlotsExist(structure, icons);
+});
+
+/**
+ * Les slots attribués sous un parent, dans l'ordre du document.
+ *
+ * `assignSlots` se lit ici sans l'extraction complète : la règle porte sur les
+ * seuls enfants directs d'un node de layout, et c'est la même fonction que
+ * `publishedSlots` rappelle à chaque niveau de `structure.children`.
+ */
+function slotsDe(enfants: any[], iconNames: string[] = []): string[] {
+  const layout = node('FRAME', 'row', enfants, { layoutMode: 'HORIZONTAL' });
+  return assignSlots(layout, new Set(iconNames)).map(({ slot }) => slot);
+}
+
+test('un suffixe porté par un calque ne fabrique pas deux slots identiques', () => {
+  // Compter les homonymes donnait à ces trois calques les slots `box`, `box-2` et
+  // `box-2`. Les deux derniers partageaient une adresse, et `descendre` retenait
+  // le premier : une typographie, une peinture ou une icöne désignée par
+  // « box-2 » visait le mauvais calque sans qu'aucun contröle ne le dise.
+  const slots = slotsDe([
+    node('FRAME', 'box'),
+    node('FRAME', 'box'),
+    node('FRAME', 'box-2'),
+  ]);
+
+  assert.deepEqual(slots, ['box', 'box-2', 'box-2-2']);
+  assert.equal(new Set(slots).size, slots.length);
+});
+
+test('deux écritures d’un même nom de calque reçoivent deux slots', () => {
+  // `normalizeName` efface la casse : les trois calques revendiquent « box ».
+  assert.deepEqual(
+    slotsDe([node('FRAME', 'Box'), node('FRAME', 'box'), node('FRAME', 'BOX')]),
+    ['box', 'box-2', 'box-3'],
+  );
+});
+
+test('un calque nommé comme un slot sémantique ne prend pas sa place', () => {
+  // Le texte est le `label` et le dessin désigné par une règle est l'`icon` : un
+  // calque que le designer a nommé ainsi passe après, sous un slot numéroté.
+  assert.deepEqual(
+    slotsDe([node('TEXT', 'Suivant'), node('FRAME', 'label')]),
+    ['label', 'label-2'],
+  );
+  assert.deepEqual(
+    slotsDe([node('VECTOR', 'arrow-left-long'), node('FRAME', 'icon')], ['arrow-left-long']),
+    ['icon', 'icon-2'],
+  );
+});
+
+test('un calque nommé comme un slot sémantique numéroté ne prend pas sa place', () => {
+  // Deux textes occupent `label` et `label-2` ; le calque que le designer a
+  // nommé « label-2 » réclamait la seconde adresse et la partageait avec le texte.
+  const slots = slotsDe([
+    node('TEXT', 'Premier'),
+    node('TEXT', 'Second'),
+    node('FRAME', 'label-2'),
+  ]);
+
+  assert.deepEqual(slots, ['label', 'label-2', 'label-2-2']);
+  assert.equal(new Set(slots).size, slots.length);
+
+  // Même conflit sur l'icöne, dont le slot vient de la règle du designer.
+  const icones = slotsDe(
+    [node('VECTOR', 'chevron'), node('VECTOR', 'croix'), node('FRAME', 'icon-2')],
+    ['chevron', 'croix'],
+  );
+
+  assert.deepEqual(icones, ['icon', 'icon-2', 'icon-2-2']);
+});
+
+test('deux parents distincts nomment librement leurs slots de la même façon', async () => {
+  // L'unicité ne vaut qu'entre enfants d'un même parent : un chemin de slots
+  // distingue les deux « label » du second niveau, et exiger l'unicité dans tout
+  // l'arbre renommerait des slots que rien ne confond.
+  const cadre = (nom: string) => node('FRAME', nom, [node('TEXT', 'Texte')], {
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { itemSpacing: alias('gap') },
+  });
+  const reference = node('COMPONENT', 'Color=Primary', [cadre('gauche'), cadre('droite')], {
+    layoutMode: 'HORIZONTAL',
+    boundVariables: { itemSpacing: alias('gap') },
+  });
+
+  const { structure } = await contractFor(reference, [], []);
+
+  // Chaque cadre porte un texte, donc chacun est un `label` ; le second est
+  // numéroté parce qu'ils partagent un parent.
+  assert.deepEqual(structure.children.map((child) => child.slot), ['label', 'label-2']);
+  // Leurs textes, eux, vivent sous deux parents distincts et gardent le même nom.
+  assert.deepEqual(
+    structure.children.map((child) => (child.children ?? []).map((part) => part.slot)),
+    [['label'], ['label']],
+  );
 });

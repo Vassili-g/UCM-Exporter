@@ -102,7 +102,7 @@ de commande et l'écran sans sélection.
 Dans un second terminal, à la racine d'`UCM-Playground` :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.19 init
+npx --yes @ucm-kit/cli@0.1.20 init
 ```
 
 Sans option, la commande écrit ses défauts : les contrats sous `components/`,
@@ -111,7 +111,7 @@ les tokens dans `tokens.json`. Le Playground range les siens sous
 que la recette emploie :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.19 init --components src/components --tokens src/tokens
+npx --yes @ucm-kit/cli@0.1.20 init --components src/components --tokens src/tokens
 ```
 
 | Option | Ce qu'elle reçoit |
@@ -150,7 +150,7 @@ Attendu, à peu de choses près :
 ✓ .github/workflows/ucm.yml
 · .gitignore existait déjà, laissé tel quel
 
-Installé avec @ucm-kit/cli 0.1.19.
+Installé avec @ucm-kit/cli 0.1.20.
 Placez vos contrats sous `src/components/`, vos tokens dans `src/tokens/tokens.json`, puis lancez `ucm check`.
 
 · `.gitignore` existait déjà : ajoutez-y `ci-report.md`. `ucm check --report` le
@@ -175,7 +175,7 @@ ci-report.md
 Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.19 check
+npx --yes @ucm-kit/cli@0.1.20 check
 ```
 
 Attendu :
@@ -311,7 +311,7 @@ l'implémentation n'a pas été lue, jamais qu'elle est conforme.
 Pour lui donner à lire :
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.12
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.13
 ```
 
 Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
@@ -422,8 +422,8 @@ Le workflow le fait déjà après chaque publication, et le refaire à la main c
 une minute. Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.19 init
-npx --yes @ucm-kit/cli@0.1.19 check
+npx --yes @ucm-kit/cli@0.1.20 init
+npx --yes @ucm-kit/cli@0.1.20 check
 ```
 
 Attendu : `init` écrit ses cinq fichiers, et `check` sort en 0 en disant que ce

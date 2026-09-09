@@ -86,7 +86,10 @@ règles auto-détectées :
   acceptées) devient `disabled: boolean`. Exclu des props ne veut pas dire
   absent du contrat : `stateModel` le publie avec toutes ses valeurs, et il
   indexe les arbres de variantes. C'est donc là, et non dans `props`, que sa
-  documentation `@prop` est rangée.
+  documentation `@prop` est rangée. La convention porte sur un **axe**, donc sur
+  le seul type `VARIANT` : une `BOOLEAN`, une `TEXT`, un `INSTANCE_SWAP` ou un
+  `SLOT` que le designer a nommé `State` ou `Status` reste une prop de son type,
+  puisque `stateModel` ne la décrit pas.
 - *Couche sémantique* : les noms Figma peu parlants sont mappés vers le
   vocabulaire partagé, ex. un enum dont toutes les valeurs sont des tailles
   (`big/medium/small`, `xs`…`3xl`) → prop `size`. Le nom Figma d'origine est
@@ -396,6 +399,17 @@ rien à décrire.
 Les parts sont nommées par la règle qui nomme déjà les slots (`label`,
 `label-2`…) : aucune heuristique sur le nom du calque, et `figmaLayer` conserve
 « Titre » ou « Description » pour les distinguer.
+
+**Deux enfants d'un même parent ne portent jamais le même slot.** Le numéro se
+cherche parmi les slots déjà attribués sous ce parent, et non sur le compte des
+homonymes : des calques `box`, `box` et `box-2` reçoivent `box`, `box-2` et
+`box-2-2`, là où un simple compte donnait deux `box-2`. Un slot est une adresse
+relative à son parent, et qui descend un `slotPath`, un chemin de peinture ou un
+`icons.*.slot` retient le premier enfant qui la porte : deux homonymes lui
+feraient rendre le mauvais calque. Le nom Figma d'un calque renommé reste dans
+`figmaLayer`. L'unicité ne vaut qu'entre enfants d'un même parent : deux slots
+homonymes sous deux parents distincts sont séparés par leur chemin, et les
+lecteurs refusent le premier cas sans toucher au second.
 
 La projection de référence `structure.children` est comparée sur toute la
 matrice. Une différence de cardinalité, d'ordre ou de disposition avertit en

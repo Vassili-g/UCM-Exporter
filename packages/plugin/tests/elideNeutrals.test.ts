@@ -172,3 +172,26 @@ test('une clé héritée d’Object.prototype ne pollue pas le résultat', () =>
   assert.equal(({} as Record<string, unknown>).pollue, undefined);
   assert.equal(elide.garde, 'oui');
 });
+
+test('une clé de couleur qui porte un point reste un seul segment de chemin', () => {
+  // Depuis la 5.5, une clé s'allonge des segments qui séparent deux couleurs
+  // homonymes : `base.border` est une clé, pas deux niveaux. Recomposé en une
+  // chaîne, son chemin comptait quatre segments là où le motif en attend trois
+  // après `viewPaintPlacements`, et son placement vide sortait de la protection.
+  assert.equal(estProtege(['viewPaintPlacements', 'pp1', 'strokes', 'base.border']), true);
+  assert.equal(estProtege(['viewPaintPlacements', 'pp1', 'fills', 'userinput.background']), true);
+
+  const placements = {
+    fills: { background: [], 'userinput.background': [] },
+    strokes: { 'base.border': [] },
+  };
+
+  assert.deepEqual(elideNeutrals(placements, 'viewPaintPlacements.pp1'), placements);
+});
+
+test('estProtege lit un chemin écrit en toutes lettres comme une suite de segments', () => {
+  // Les deux écritures se rejoignent tant qu'aucune clé ne porte de point : c'est
+  // ce qui permet aux motifs de rester lisibles dans `ENTREES_PROTEGEES`.
+  assert.equal(estProtege('structure.sizes.small'), estProtege(['structure', 'sizes', 'small']));
+  assert.equal(estProtege('stateModel.states'), estProtege(['stateModel', 'states']));
+});

@@ -56,8 +56,8 @@ ouvrir.
 Deux commandes, et aucun script à écrire.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.19 init                       # écrit les cinq fichiers manquants
-npx --yes @ucm-kit/cli@0.1.19 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.20 init                       # écrit les cinq fichiers manquants
+npx --yes @ucm-kit/cli@0.1.20 check --report ci-report.md
 ```
 
 `--yes` évite l'invite de confirmation de `npx`, qui bloquerait une exécution
@@ -70,7 +70,7 @@ sans qu'un fichier ait bougé.
 `{dir}/{id}.tsx`. Un repository qui range autrement le dit à cet instant.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.19 init \
+npx --yes @ucm-kit/cli@0.1.20 init \
   --components src/components \
   --tokens src/tokens \
   --implementation '{dir}/{id}.vue'
@@ -156,7 +156,7 @@ lit deux, la courante et la précédente, le temps qu'un réexport arrive.
 ## Utiliser le kit depuis votre code
 
 ```sh
-npm install @ucm-kit/core@0.1.20
+npm install @ucm-kit/core@0.1.21
 ```
 
 | Entrée | Usage |
@@ -169,7 +169,7 @@ Chaque entrée est détaillée dans
 [packages/kit/README.md](./packages/kit/README.md).
 
 Un projet TypeScript peut installer
-[`@ucm-kit/adapter-typescript@0.1.12`](./packages/adapter-typescript/README.md)
+[`@ucm-kit/adapter-typescript@0.1.13`](./packages/adapter-typescript/README.md)
 pour ajouter la comparaison statique des props et de la composition, ainsi que
 la génération des types dérivés des contrats.
 
