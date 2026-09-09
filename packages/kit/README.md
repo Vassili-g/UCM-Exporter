@@ -9,7 +9,7 @@ Figma plugin, and read by the repository that implements the component. This
 package is what both sides must share in order to talk about the same format.
 
 ```sh
-npm install @ucm-kit/core@0.1.19
+npm install @ucm-kit/core@0.1.20
 ```
 
 Most repositories never call this package directly. They run
