@@ -243,9 +243,9 @@ test('un conteneur au calque vide ne documente personne, et le constat le situe'
 });
 
 test('un @default est lu alors que Figma a rangé son variant sous « Type8 »', async (t) => {
-  // Le cas est dans le fichier de référence : ajouter un variant l'auto-nomme
-  // « TypeN » sans toucher au tag qu'il affiche. Le calque affiché tranche, et
-  // un témoin muet ne contredit rien : aucun avertissement ne part.
+  // Ajouter un variant à un component set l'auto-nomme « TypeN » sans toucher
+  // au tag qu'il affiche. Le calque affiché tranche, et un témoin muet ne
+  // contredit rien : aucun avertissement ne part.
   monterPage(t, [conteneur('Button', [
     regle('@default', [noeud('TEXT', 'prop', [], { characters: 'color.secondary' })], 'Type8'),
   ])]);
@@ -270,6 +270,28 @@ test('deux témoins qui nomment chacun un tag se contredisent, et le calque l’
     + 'Le tag affiché est exporté, et la règle ne remplira pas le champ que son variant '
     + 'annonce. Choisissez le variant qui porte le tag affiché, puis réexportez.',
   ]);
+});
+
+test('une règle qui n’écrit rien est un séparateur, et rien ne se dit', async (t) => {
+  // Le catalogue de règles porte des variants de mise en page, `divider` par
+  // exemple, sans texte ni cible. Les signaler réclamerait au designer un geste
+  // qu'il a déjà fait, et lui apprendrait que ces listes se survolent.
+  const separateur = noeud('INSTANCE', 'Règle', [], {
+    variantProperties: { Type: 'divider' },
+    getMainComponentAsync: async () => ({
+      name: 'Type=divider',
+      parent: { type: 'COMPONENT_SET', name: '.rulesItems' },
+    }),
+  });
+  monterPage(t, [conteneur('Button', [
+    regle('@usage', [noeud('TEXT', 'content', [], { characters: 'Action principale' })]),
+    separateur,
+  ])]);
+
+  const rules = await extractRules({ name: 'Button' } as ComponentSetNode);
+
+  assert.equal(rules.intent?.usage, 'Action principale');
+  assert.deepEqual(rules.warnings, []);
 });
 
 test('le calque « prop » n’est pas lu comme le tag @prop', async (t) => {

@@ -68,6 +68,10 @@ Un `@default` n'a pas de texte : sa cible est tout son contenu. Sans lui, aucune
 valeur par défaut n'entre dans le contrat pour cette variant property. La
 position d'un variant dans un set ne décide de rien.
 
+Les variants de `.rulesItems` qui n'écrivent ni texte ni cible, `divider` par
+exemple, mettent en page sans rien documenter. Le plugin les ignore sans rien
+vous demander.
+
 Le plugin ne modifie jamais ces règles. Quand il ne sait pas en lire une, il
 vous dit laquelle et quel geste la répare. Ce que chaque champ devient est
 décrit par [7. Intention et documentation des
