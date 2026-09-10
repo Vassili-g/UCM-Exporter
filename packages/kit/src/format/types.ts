@@ -21,7 +21,7 @@ export type EnumProp = PropMeta & {
   default?: string;
   /**
    * Documentation par valeur, alimentée par les règles `@prop <prop>.<valeur>`
-   * (section `<Nom>-Rules`). Clé = valeur de l'enum, texte = quand l'utiliser.
+   * (de `.componentRules`). Clé = valeur de l'enum, texte = quand l'utiliser.
    * Absent si aucune règle `@prop` ne cible cette prop.
    */
   descriptions?: Record<string, string>;
@@ -33,7 +33,7 @@ export type BooleanProp = PropMeta & {
   default: boolean;
   /**
    * Rôle de la prop, alimenté par la règle `@boolean <prop>` du conteneur
-   * `<Nom>-Rules`. Absent si cette prop n'est pas documentée explicitement.
+   * `.componentRules`. Absent si cette prop n'est pas documentée explicitement.
    */
   description?: string;
 };

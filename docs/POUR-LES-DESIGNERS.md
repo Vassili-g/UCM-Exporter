@@ -42,9 +42,13 @@ messages que vous recevrez.
 **Sélectionnez un seul composant.** Le plugin attend exactement un composant ou
 un set de variantes. Une autre sélection arrête l'export.
 
-**Documentez votre intention.** Un conteneur nommé `<Nom>-Rules`, posé sur la
-même page, permet de décrire l'usage du composant, les combinaisons recommandées
-et la politique de ses icônes. Voir [7. Intention et documentation des
+**Documentez votre intention.** Une instance de `.componentRules`, posée sur la
+même page, décrit l'usage du composant, les combinaisons recommandées et la
+politique de ses icônes. Écrivez le nom du composant dans son calque
+`component-name` : c'est ce texte qui relie les règles au composant. Le geste
+complet est dans [Documenter les règles
+d'usage](../packages/plugin/README.md#documenter-les-règles-dusage), et ce que
+chaque règle devient dans [7. Intention et documentation des
 props](./FORMAT.md#7-intention-et-documentation-des-props).
 
 ## 3. Exporter

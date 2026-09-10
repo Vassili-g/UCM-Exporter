@@ -105,7 +105,7 @@ même signification : **aucun défaut publié**, jamais « inconnu ».
 
 | Prop | Source du `default` | Absence possible |
 |---|---|---|
-| enum | la règle `@default` du frame `<Nom>-Rules`, et elle seule | oui, cas courant |
+| enum | la règle `@default` de `.componentRules`, et elle seule | oui, cas courant |
 | boolean | le `defaultValue` de la boolean property Figma | non, le champ est toujours écrit |
 | string, icon, instance-swap, slot | le `defaultValue` Figma, s'il existe | oui |
 
@@ -694,14 +694,27 @@ tel quel, jamais supprimé silencieusement.
 
 ### 7. Intention et documentation des props
 
-L'intention et la documentation des props sont lues dans un **conteneur Figma**
-(frame, section ou groupe) nommé `<Nom>-Rules` (ex. `Button-Rules`), posé **sur
-la même page** que le composant. Le rapprochement du nom ignore la casse et les
-espaces (`button-Rules` et `Icon Button-Rules` conviennent) : une majuscule dans
-un nom de calque n'est pas une intention de design, et ne doit donc bloquer
-aucun export. Chaque règle est une instance d'un composant de configuration
-(`ComponentConfiguration`) dont la **variante** porte le tag et le calque
-`content` le texte :
+L'intention et la documentation des props sont lues dans une **instance de
+`.componentRules`**, posée **sur la même page** que le composant. Le lien entre
+les deux passe par le calque texte `component-name` du conteneur, qui écrit le
+nom du composant documenté. Le rapprochement ignore la casse et les espaces
+(`button` et `Icon Button` conviennent) : une majuscule écrite à la main n'est
+pas une intention de design, et ne doit donc bloquer aucun export. Le nom de
+l'instance elle-même n'entre dans aucune lecture.
+
+Chaque règle est une instance de `.rulesItems` dont un calque nommé `@usage`,
+`@prop`, `@boolean`, `@do`, `@dont`, `@pairs`, `@icons` ou `@default` porte le
+tag, et dont le calque `content` porte le texte. Le tag se lit sur ce calque
+parce qu'il est le seul des deux témoins à s'afficher : Figma auto-nomme un
+variant ajouté `TypeN` sans toucher à ce que la règle montre. La valeur de
+variante reste lue quand aucun calque ne nomme de tag, et deux témoins qui
+nomment chacun un tag différent produisent un warning.
+
+Les sections `.rulesSection` qui regroupent les règles servent la lecture dans
+Figma. Aucune n'entre dans le contrat, et le tag d'une règle ne dépend pas de la
+section où elle est rangée.
+
+Chaque tag remplit un champ :
 - `@usage` (un), `@do`/`@dont` (répétables), `@pairs` (virgules) → `intent`.
   `@pairs` liste les composants du design system qui s'associent bien à
   celui-ci (ex. `Icon, Tooltip`) : un agent peut s'en servir pour composer ;
@@ -1233,8 +1246,8 @@ ses tokens et ses props appartiennent à son propre contrat. Le slot
 correspondant de `children` la nomme par `composes`, sans relever ni sa taille
 ni sa typographie. Tout `COMPONENT_SET` et tout `COMPONENT` standalone
 sélectionné est exportable, même sans règles. Cette capacité ne le transforme
-pas automatiquement en dépendance : le conteneur `<Nom>-Rules` déclare qu'un
-contrat UCM autonome existe pour ce nom. Sans ce marqueur, un set imbriqué reste
+pas automatiquement en dépendance : une instance de `.componentRules` qui écrit
+ce nom déclare qu'un contrat UCM autonome existe pour lui. Sans ce marqueur, un set imbriqué reste
 parcouru comme wrapper ou détail d'implémentation du parent. Un variant interne
 d'un set reconnu prend le nom du set. Le moteur charge toutes les pages une fois
 avant le scan des marqueurs.

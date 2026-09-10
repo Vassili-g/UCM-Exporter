@@ -153,11 +153,11 @@ export function sujet(genre: SujetLocalisable, node: NodeLocalisable): Sujet {
 /**
  * Un sujet dont le nom affiché n'est pas celui du node.
  *
- * Le cas existe et n'est pas une bizarrerie : la reconnaissance d'un conteneur
- * de règles tolère la casse et les espaces, si bien que le frame trouvé peut
- * s'appeler « button-rules » quand le message doit nommer « Button-Rules », la
- * forme canonique que le designer doit écrire. Afficher `node.name` dirait au
- * designer que son nom est déjà bon.
+ * Le cas existe et n'est pas une bizarrerie : un conteneur de règles se
+ * reconnaît à un calque et non à son nom, si bien que l'instance trouvée peut
+ * s'appeler « Règles du bouton » quand le message doit nommer
+ * « .componentRules », le composant que le designer doit chercher dans son
+ * écran. Afficher `node.name` lui ferait chercher un nom qu'il a choisi.
  *
  * Séparé de `sujet` pour que ce découplage soit un choix visible à chaque
  * appel : partout ailleurs, afficher autre chose que le nom du node serait un

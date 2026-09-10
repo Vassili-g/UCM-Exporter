@@ -61,8 +61,8 @@ structure Figma. **Rien n'est codé en dur sur un composant précis** : les règ
 centralisées dans `semantics.ts`. Button sert d'exemple de référence.
 
 **Entrée** : exactement un `COMPONENT` ou un `COMPONENT_SET` sélectionné. Les
-règles `<Nom>-Rules` enrichissent l'intention mais ne conditionnent pas la
-fidélité de l'export. Ce qu'un set clairsemé produit dans `variants`, et ce
+règles de `.componentRules` enrichissent l'intention mais ne conditionnent pas
+la fidélité de l'export. Ce qu'un set clairsemé produit dans `variants`, et ce
 qu'un consommateur a le droit d'en composer, est décrit par [Partie
 1](../../docs/FORMAT.md#ce-que-le-contrat-publie-champ-par-champ).
 
@@ -255,9 +255,13 @@ ne manque, rien n'est à corriger.
 props](../../docs/FORMAT.md#7-intention-et-documentation-des-props) porte toute
 cette section, et ce cas limite demande d'être nommé.**
 
-La grammaire des règles (un conteneur `<Nom>-Rules` sur la même page, une
-instance par règle, un tag par variante) décrit ce que le moteur lit dans Figma,
-donc ce document. Mais chaque règle n'a de sens qu'à côté du champ qu'elle
+La grammaire des règles décrit ce que le moteur lit dans Figma, donc ce
+document. Une instance de `.componentRules` sur la même page, dont le calque
+`component-name` écrit le nom du composant documenté ; une instance de
+`.rulesItems` par règle, dont un calque nomme le tag. La lecture porte sur la
+page courante, alors que le relevé des dépendances couvre tout le document :
+un jeu de règles rangé sur une autre page déclare la dépendance sans documenter
+le composant. Mais chaque règle n'a de sens qu'à côté du champ qu'elle
 remplit : `@icons` et sa politique, son slot, sa prop runtime, ses variants
 forment une seule explication, et la couper en deux la rendrait illisible des
 deux côtés.

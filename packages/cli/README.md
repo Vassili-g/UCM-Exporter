@@ -11,8 +11,8 @@ next to the component's code. This command reads those files and says whether
 they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.21 init
-npx --yes @ucm-kit/cli@0.1.21 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.22 init
+npx --yes @ucm-kit/cli@0.1.22 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx install a build this
@@ -58,7 +58,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.21 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.22 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing

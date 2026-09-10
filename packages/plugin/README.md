@@ -32,6 +32,47 @@ Une seule implémentation projette les noms pour les deux commandes. Avec deux
 projections, un contrat citerait un token que `tokens.json` écrit sous un autre
 nom.
 
+## Documenter les règles d'usage
+
+Le contrat décrit comment le composant se rend. Les règles d'usage ajoutent
+quand l'employer. Elles sont facultatives : sans elles, l'export aboutit et le
+contrat ne porte ni intention, ni documentation de props, ni politique d'icône.
+
+Posez une instance de `.componentRules` à côté du composant, sur la même page.
+Écrivez le nom du composant dans son calque `component-name`. Ce texte relie les
+règles au composant, et rien d'autre ne les relie : la casse et les espaces sont
+ignorés, et vous pouvez renommer l'instance comme vous voulez.
+
+Chaque règle est une instance de `.rulesItems`. Choisissez son variant : il
+affiche le tag qui dit ce que la règle remplit. Les sections qui les regroupent,
+`GÉNÉRAL`, `PROPRIÉTÉS`, `OPTIONS`, `ICONES` et `DOCUMENTATION`, servent la
+lecture. Le plugin lit le tag, jamais la section.
+
+| Tag | Ce que vous écrivez | Ce que le contrat reçoit |
+|---|---|---|
+| `@usage` | le texte dans `content` | à quoi sert le composant, en une phrase |
+| `@do` | le texte dans `content` | un usage recommandé, répétable |
+| `@dont` | le texte dans `content` | un usage à éviter, répétable |
+| `@pairs` | les composants dans `content`, séparés par des virgules | ceux qui s'associent bien à celui-ci |
+| `@prop` | `variant.contained` dans `prop`, le texte dans `content` | quand choisir cette valeur de variante |
+| `@boolean` | `icon-left` dans `prop`, le texte dans `content` | à quoi sert cette boolean property |
+| `@default` | `color.secondary` dans `prop` | la valeur par défaut de cette variant property |
+| `@icons` | le nom du calque d'icône dans `icon` | la politique de cette icône |
+
+Une règle `@icons` demande un geste de plus : rendez visible exactement un des
+deux calques `modifiable` ou `strict`. Le premier autorise le développeur à
+remplacer l'icône, le second impose celle de la maquette. Le nom écrit dans
+`icon` doit être celui du calque d'icône, à l'identique.
+
+Un `@default` n'a pas de texte : sa cible est tout son contenu. Sans lui, aucune
+valeur par défaut n'entre dans le contrat pour cette variant property. La
+position d'un variant dans un set ne décide de rien.
+
+Le plugin ne modifie jamais ces règles. Quand il ne sait pas en lire une, il
+vous dit laquelle et quel geste la répare. Ce que chaque champ devient est
+décrit par [7. Intention et documentation des
+props](../../docs/FORMAT.md#7-intention-et-documentation-des-props).
+
 ## Où l'export atterrit
 
 Un export est toujours téléchargeable. La configuration GitHub est optionnelle ;

@@ -1,32 +1,42 @@
 /**
- * Lecture des règles d'usage d'un composant depuis la section « <Nom>-Rules ».
+ * Lecture des règles d'usage d'un composant depuis son « .componentRules ».
  *
- * Chaque composant décrit ses règles dans un conteneur Figma (frame, section
- * ou groupe) nommé `${nomDuSet}-Rules` (ex. « Button-Rules »), posé sur la
- * même page que le composant. On y
- * range des instances d'un composant de configuration (`ComponentConfiguration`)
- * dont la variante porte le tag (`@usage`, `@prop`, `@boolean`, `@do`, `@dont`,
- * `@pairs`, `@icons`) et
- * dont le calque « content » porte le texte de la règle (plus un calque « prop »
- * pour `@prop` et `@boolean`, ex. « variant.contained » ou « icon-left »).
+ * Chaque composant décrit ses règles dans une instance du composant Figma
+ * `.componentRules`, posée sur la même page que lui. Le lien entre les deux ne
+ * passe plus par un nom de calque mais par un texte affiché : le calque
+ * « component-name » du conteneur porte le nom du composant documenté.
  *
- * Aucune logique spécifique à un composant : la section, le composant de config
- * et les tags sont des conventions uniformes, valables pour n'importe quel
- * composant, comme les tags `@` l'étaient dans la description.
+ * Le conteneur range des instances de `.rulesItems`, une par règle, dont le
+ * calque nommé `@usage`, `@prop`, `@boolean`, `@do`, `@dont`, `@pairs`,
+ * `@icons` ou `@default` porte le tag, et dont le calque « content » porte le
+ * texte (plus un calque « prop » pour `@prop`, `@boolean` et `@default`, ex.
+ * « variant.contained » ou « icon-left », un calque « icon » pour `@icons`).
  *
- * Le plugin n'écrit jamais dans Figma : cette section reste la source de vérité,
- * lue telle quelle et reversée dans le contrat.
+ * Aucune logique spécifique à un composant : le conteneur, le composant de
+ * règle et les tags sont des conventions uniformes, valables pour n'importe
+ * quel composant.
+ *
+ * Le plugin n'écrit jamais dans Figma : ce conteneur reste la source de vérité,
+ * lu tel quel et reversé dans le contrat.
  */
-import { buildRules, iconPolicyFromVisibility, ruleTagFromValue } from './rulesModel';
+import {
+  buildRules,
+  iconPolicyFromVisibility,
+  ruleTagFromLayerName,
+  ruleTagFromValue,
+} from './rulesModel';
 import type { RuleEntry, RuleTag, RulesResult } from './rulesModel';
 export {
   buildRules,
   hasUsableRules,
   iconPolicyFromVisibility,
+  ruleTagFromLayerName,
   ruleTagFromValue,
 } from './rulesModel';
 import {
+  noterSansNode,
   pointDe,
+  pousserLocalise,
   pousserNote,
   pousserSansNode,
   reporterLocalisations,
@@ -36,17 +46,17 @@ import {
 export type { IconRule, RuleEntry, RuleTag, RulesResult } from './rulesModel';
 
 /**
- * Suffixe du conteneur qui porte les règles d'un composant. Exporté parce
- * qu'il ne sert pas qu'à lire les règles : posséder un tel conteneur est ce
- * qui déclare un composant comme dépendance UCM, plutôt que comme détail
- * interne à parcourir (cf. `composedComponents.ts`). Il ne conditionne plus
- * l'export du composant lui-même depuis la 8.0.
+ * Nom canonique du composant qui porte un jeu de règles, tel qu'un message le
+ * nomme. Exporté parce qu'il ne sert pas qu'à lire les règles : posséder un tel
+ * conteneur est ce qui déclare un composant comme dépendance UCM, plutôt que
+ * comme détail interne à parcourir (cf. `composedComponents.ts`). Il ne
+ * conditionne plus l'export du composant lui-même depuis la 8.0.
  */
-export const RULES_SECTION_SUFFIX = '-Rules';
-/** Types de conteneur acceptés pour ce bloc (on ne lit que ses enfants). */
-export const RULES_CONTAINER_TYPES: readonly string[] = ['SECTION', 'FRAME', 'GROUP'];
+export const RULES_CONTAINER_NAME = '.componentRules';
+/** Calque du conteneur qui porte le nom du composant documenté. */
+export const COMPONENT_NAME_LAYER = 'component-name';
 /** Nom (compacté) du composant qui matérialise une règle. */
-const RULES_COMPONENT_NAME = 'componentconfiguration';
+const RULES_COMPONENT_NAME = '.rulesitems';
 /** Compacte un nom (sans espaces, en minuscules) pour comparer un nom de composant. */
 export function compactName(name: string): string {
   return name.replace(/\s+/g, '').toLowerCase();
@@ -55,8 +65,50 @@ export function compactName(name: string): string {
 /** Résultat de lecture enrichi pour distinguer l'absence du conteneur de son contenu invalide. */
 export type ExtractedRules = RulesResult & { sectionFound: boolean };
 
-/** Suffixe compacté : toute comparaison de conteneur passe par des noms compactés. */
-const COMPACT_RULES_SUFFIX = compactName(RULES_SECTION_SUFFIX);
+/**
+ * Ce qu'un node doit offrir pour qu'on cherche un calque dans sa descendance.
+ *
+ * `findOne` est facultatif parce que le prédicat d'un `findAll` de page reçoit
+ * tous les types de node, feuilles comprises : un `TextNode` n'a pas de
+ * descendance, et exiger la méthode ferait de ce fait un cast.
+ */
+type NodeFouillable = {
+  type: string;
+  findOne?: (predicat: (child: SceneNode) => boolean) => SceneNode | null;
+};
+
+/** Texte du premier calque texte d'un nom donné dans un node (vide si absent). */
+function textOfLayer(node: NodeFouillable, layerName: string): string {
+  const found = layerOfName(node, layerName.trim().toLowerCase());
+  return found ? found.characters : '';
+}
+
+/** Premier calque texte d'un nom donné, ou null : `textOfLayer` confond les deux. */
+function layerOfName(node: NodeFouillable, target: string): TextNode | null {
+  const found = node.findOne?.(
+    (child) => child.type === 'TEXT' && child.name.trim().toLowerCase() === target,
+  );
+  return (found ?? null) as TextNode | null;
+}
+
+/**
+ * Nom écrit dans le calque « component-name » d'un node, ou null si le node
+ * n'en porte pas.
+ *
+ * La chaîne vide et l'absence ne disent pas la même chose, et c'est pourquoi
+ * elles ne se confondent pas ici : un conteneur au calque vide documente
+ * personne et peut se signaler, tandis qu'un node ordinaire n'a rien à dire.
+ *
+ * Le type `INSTANCE` est exigé pour une raison mesurée : le composant maître
+ * `.componentRules` porte lui aussi ce calque, pré-rempli avec le nom du
+ * composant qui a servi de modèle. Sans cette borne, ce maître revendiquerait
+ * les règles d'un composant qu'il ne documente pas.
+ */
+function nomDeComposantEcrit(node: NodeFouillable): string | null {
+  if (node.type !== 'INSTANCE') return null;
+  const calque = layerOfName(node, COMPONENT_NAME_LAYER);
+  return calque ? calque.characters : null;
+}
 
 /**
  * Nom compacté du composant dont ce node porte les règles, ou null si ce n'en
@@ -68,23 +120,23 @@ const COMPACT_RULES_SUFFIX = compactName(RULES_SECTION_SUFFIX);
  * composant sélectionné, mais elle empêche ses parents de supposer qu'un
  * contrat autonome existe déjà pour lui.
  *
- * La comparaison ignore la casse et les espaces : dans un nom de calque Figma,
+ * Le critère est le calque, jamais le composant maître : une instance de
+ * `.componentRules` que le designer renomme reste un conteneur, et résoudre son
+ * maître demanderait un aller-retour asynchrone sur chaque instance de chaque
+ * page, sur le chemin que le designer sent passer à chaque sélection.
+ *
+ * La comparaison ignore la casse et les espaces : dans un nom écrit à la main,
  * ils ne portent aucune intention de design et ne doivent bloquer aucun export.
  */
-export function rulesContainerOwner(node: { type: string; name: string }): string | null {
-  if (!RULES_CONTAINER_TYPES.includes(node.type)) return null;
-  const compacted = compactName(node.name);
-  if (!compacted.endsWith(COMPACT_RULES_SUFFIX)) return null;
-  return compacted.slice(0, -COMPACT_RULES_SUFFIX.length) || null;
+export function rulesContainerOwner(node: NodeFouillable): string | null {
+  const nom = nomDeComposantEcrit(node);
+  return nom === null ? null : compactName(nom) || null;
 }
 
-/** Texte du premier calque texte d'un nom donné dans une instance (vide si absent). */
-function textOfLayer(instance: InstanceNode, layerName: string): string {
-  const target = layerName.trim().toLowerCase();
-  const node = instance.findOne(
-    (child) => child.type === 'TEXT' && child.name.trim().toLowerCase() === target,
-  ) as TextNode | null;
-  return node ? node.characters : '';
+/** Vrai d'un conteneur dont le calque de nom existe mais ne nomme personne. */
+function estUnConteneurSansNom(node: NodeFouillable): boolean {
+  const nom = nomDeComposantEcrit(node);
+  return nom !== null && compactName(nom) === '';
 }
 
 /**
@@ -114,8 +166,11 @@ function iconRuleEntry(instance: InstanceNode): RuleEntry {
 }
 
 /**
- * Vrai si une instance est bien un `ComponentConfiguration` : on remonte à son
- * composant maître, puis à son component set (les variantes portent les tags).
+ * Vrai si une instance est bien un `.rulesItems` : on remonte à son composant
+ * maître, puis à son component set, qui porte le nom du composant de règle.
+ *
+ * Le coût asynchrone est borné au sous-arbre du conteneur déjà trouvé, et non
+ * à la page : c'est ce qui permet à `rulesContainerOwner` de rester synchrone.
  */
 async function isRuleInstance(instance: InstanceNode): Promise<boolean> {
   const main = await instance.getMainComponentAsync().catch(() => null);
@@ -124,16 +179,52 @@ async function isRuleInstance(instance: InstanceNode): Promise<boolean> {
 }
 
 /**
- * Point d'entrée : lit la section « <Nom>-Rules » du composant sélectionné et en
- * tire l'intention + la doc par valeur. `sectionFound` distingue « pas de section »
- * (composant sans règles) de « section présente mais vide », pour un warning précis.
+ * Le tag d'une règle, lu sur deux témoins : le calque `@…` que le designer voit
+ * et la valeur de variante que Figma range.
+ *
+ * Le calque tranche, parce qu'il est le seul des deux à s'afficher, et parce
+ * que Figma auto-nomme un variant ajouté « TypeN » sans toucher à ce qu'il
+ * montre : c'est l'état du variant `@default` de `.rulesItems`, dont la valeur
+ * est « Type8 ». Une valeur de variante qui ne nomme aucun tag n'est donc pas
+ * une contradiction mais un témoin muet, et rien ne se dit puisque rien n'est
+ * perdu. Deux témoins qui nomment chacun un tag différent se contredisent, et
+ * c'est au designer de trancher.
+ */
+function ruleTagOf(instance: InstanceNode, warnings: string[]): RuleTag | null {
+  const calque = instance.findOne(
+    (child) => child.type === 'TEXT' && ruleTagFromLayerName(child.name) !== null,
+  );
+  const affiche = calque ? ruleTagFromLayerName(calque.name) : null;
+  const range = Object.values(instance.variantProperties ?? {})
+    .map(ruleTagFromValue)
+    .find((value): value is RuleTag => value !== null) ?? null;
+
+  if (affiche !== null && range !== null && affiche !== range) {
+    pousserLocalise(warnings, 'Layer', instance, {
+      manque: `elle affiche « @${affiche} » alors que son variant la range en « @${range} ».`,
+      impact: `Le tag affiché est exporté, et la règle ne remplira pas le champ que son `
+        + `variant annonce.`,
+      action: 'Choisissez le variant qui porte le tag affiché, puis réexportez.',
+    });
+  }
+  return affiche ?? range;
+}
+
+/**
+ * Point d'entrée : lit le `.componentRules` du composant sélectionné et en tire
+ * l'intention + la doc par valeur. `sectionFound` distingue « pas de conteneur »
+ * (composant sans règles) de « conteneur présent mais vide », pour un warning
+ * précis.
+ *
+ * La lecture porte sur la page courante, alors que l'index des dépendances
+ * couvre tout le document. Le conteneur étant désormais une instance d'un même
+ * maître, rien n'empêche plus de regrouper les règles sur une page de
+ * documentation ; l'étendre ici demanderait un `loadAllPagesAsync` à chaque
+ * changement de sélection, et le premier constat dit donc « de cette page ».
  */
 export async function extractRules(
   componentSet: ComponentNode | ComponentSetNode,
 ): Promise<ExtractedRules> {
-  // Le nom canonique sert aux messages ; la reconnaissance, elle, passe par
-  // `rulesContainerOwner`, qui tolère la casse et les espaces.
-  const sectionName = `${componentSet.name}${RULES_SECTION_SUFFIX}`;
   const owner = compactName(componentSet.name);
   // On les cherche tous : n'en lire qu'un alors que la page en porte plusieurs
   // ferait disparaître des règles sans que rien ne le dise.
@@ -144,13 +235,38 @@ export async function extractRules(
   const container = containers[0];
   if (!container) {
     const absent: string[] = [];
-    // Le frame nommé n'existe pas : l'absence de cible est déclarée, pas subie.
-    pousserSansNode(absent, sujetSansNode('Frame', sectionName, 'inexistant'), {
-      manque: 'aucun frame de ce nom n’existe sur la page.',
-      impact: 'Le contrat dira comment utiliser le composant, mais pas quand : ni intention, '
-        + 'ni documentation de props, ni règle d’icône.',
-      action: `Créez un frame « ${sectionName} » à côté du composant, puis réexportez.`,
-    });
+    // Un conteneur au calque vide ne documente personne, et son travail est
+    // perdu en silence. Il ne mérite pas son propre message, qui partirait dans
+    // l'export de composants qui n'y sont pour rien : il devient l'action de
+    // celui-ci, seul message que son absence de règles concerne vraiment.
+    const orphelin = figma.currentPage.findOne(estUnConteneurSansNom);
+    if (orphelin) {
+      pousserLocalise(absent, 'Layer', orphelin, {
+        manque: `son calque « ${COMPONENT_NAME_LAYER} » est vide, donc il ne documente `
+          + 'aucun composant.',
+        impact: 'Le contrat dira comment utiliser le composant, mais pas quand : ni intention, '
+          + 'ni documentation de props, ni règle d’icône.',
+        action: `Écrivez « ${componentSet.name} » dans ce calque, puis réexportez.`,
+      });
+    } else {
+      // La cible n'existe pas : son absence est déclarée, pas subie. Le message
+      // nomme aussi le composant, qui est un calque : sans cette déclaration, la
+      // loi de localisation le lirait comme un site qu'on a oublié de convertir.
+      const message = pousserSansNode(
+        absent,
+        sujetSansNode('Layer', RULES_CONTAINER_NAME, 'inexistant'),
+        {
+          manque: `aucune instance de cette page n’écrit « ${componentSet.name} » dans son `
+            + `calque « ${COMPONENT_NAME_LAYER} ».`,
+          impact: 'Le contrat dira comment utiliser le composant, mais pas quand : ni intention, '
+            + 'ni documentation de props, ni règle d’icône.',
+          action: `Posez une instance de « ${RULES_CONTAINER_NAME} » à côté du composant, `
+            + `écrivez « ${componentSet.name} » dans son calque « ${COMPONENT_NAME_LAYER} », `
+            + 'puis réexportez.',
+        },
+      );
+      noterSansNode(absent, message, 'inexistant');
+    }
     return {
       intent: null,
       propDescriptions: {},
@@ -169,23 +285,30 @@ export async function extractRules(
   const entries: RuleEntry[] = [];
   const warnings: string[] = [];
   if (containers.length > 1) {
-    pousserSansNode(warnings, `${containers.length} frames « ${sectionName} » sur la page`, {
-      manque: 'seul le premier est lu.',
-      impact: 'Les règles des autres sont perdues.',
-      action: 'Regroupez-les dans un seul frame, puis réexportez.',
-    });
+    // La cause n'est pas un rangement à refaire : le maître `.componentRules`
+    // est livré avec un `component-name` pré-rempli, et toute instance fraîche
+    // revendique donc ce nom-là jusqu'à sa première édition.
+    const sujetDuDoublon = sujetNomme('Layer', RULES_CONTAINER_NAME, container);
+    pousserNote(
+      warnings,
+      pointDe(sujetDuDoublon.texte, {
+        manque: `${containers.length} instances de ce composant écrivent le même nom dans `
+          + `leur calque « ${COMPONENT_NAME_LAYER} », et seule celle-ci est lue.`,
+        impact: 'Les règles des autres sont perdues.',
+        action: `Vérifiez le calque « ${COMPONENT_NAME_LAYER} » de chacune : deux jeux de `
+          + 'règles ne documentent pas le même composant. Puis réexportez.',
+      }),
+      sujetDuDoublon,
+    );
   }
 
   for (const instance of instances) {
     if (!(await isRuleInstance(instance))) continue;
 
-    // Le tag est la valeur de la variante (peu importe le nom de l'axe).
-    const tag = Object.values(instance.variantProperties ?? {})
-      .map(ruleTagFromValue)
-      .find((value): value is RuleTag => value !== null);
+    const tag = ruleTagOf(instance, warnings);
     if (!tag) {
-      pousserSansNode(warnings, `Une règle du frame « ${sectionName} »`, {
-        manque: 'elle n’a pas de variant reconnu (@usage, @do, @dont, @pairs, @prop, '
+      pousserSansNode(warnings, `Une règle de « ${RULES_CONTAINER_NAME} »`, {
+        manque: 'aucun de ses calques ne porte de tag (@usage, @do, @dont, @pairs, @prop, '
           + '@boolean, @icons, @default).',
         impact: 'Elle est ignorée, et sa documentation manquera au contrat.',
         action: 'Choisissez son variant dans Figma, puis réexportez.',
@@ -207,15 +330,15 @@ export async function extractRules(
   }
 
   if (entries.length === 0) {
-    const sujetDuFrame = sujetNomme('Frame', sectionName, container);
+    const sujetDuConteneur = sujetNomme('Layer', RULES_CONTAINER_NAME, container);
     pousserNote(
       warnings,
-      pointDe(sujetDuFrame.texte, {
-        manque: 'il ne contient aucune instance de « ComponentConfiguration » lisible.',
+      pointDe(sujetDuConteneur.texte, {
+        manque: 'il ne contient aucune instance de « .rulesItems » lisible.',
         impact: 'Aucune règle d’usage n’enrichira le contrat.',
         action: 'Ajoutez-y au moins une règle, puis réexportez.',
       }),
-      sujetDuFrame,
+      sujetDuConteneur,
     );
   }
 

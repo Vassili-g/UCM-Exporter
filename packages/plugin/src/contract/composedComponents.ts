@@ -8,10 +8,10 @@
  * déclare les autres comme dépendances.
  *
  * Tout COMPONENT ou COMPONENT_SET peut être exporté depuis la 8.0, mais cela
- * ne suffit pas à en faire une dépendance UCM. Le conteneur `<Nom>-Rules` reste
- * le marqueur documentaire qui dit qu'un contrat autonome existe : sans lui,
- * un component set peut n'être qu'un wrapper ou un détail d'implémentation du
- * composant parent.
+ * ne suffit pas à en faire une dépendance UCM. Une instance de
+ * `.componentRules` qui écrit son nom reste le marqueur documentaire qui dit
+ * qu'un contrat autonome existe : sans elle, un component set peut n'être qu'un
+ * wrapper ou un détail d'implémentation du composant parent.
  */
 import { compactName, rulesContainerOwner } from './extractRules';
 import { findWrapperReference } from './componentTree';
@@ -99,7 +99,7 @@ export type ComposedMatrixScan = ComposedInstancesScan & {
  * à chaque instance imbriquée serait quadratique. L'index est donc construit
  * une fois, et l'appartenance se teste ensuite en temps constant.
  *
- * @example indexContractedNames(page) // page portant « Button-Rules »
+ * @example indexContractedNames(page) // page où un `.componentRules` dit « Button »
  * // → Set { 'button' }
  */
 export function indexContractedNames(page: PageNode): Set<string> {
