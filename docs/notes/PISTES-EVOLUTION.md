@@ -14,7 +14,7 @@ repository consommateur. Les extensions du contrat relèvent du
 |---|---|
 | Code du dépôt et interfaces publiques | Points d’extension existants, limites des lecteurs et de la configuration |
 | Sources officielles consultées le 2026-09-10 | Capacités documentées, restrictions et statut des solutions |
-| Expérimentations proposées | Intégrations, coûts et bénéfices à mesurer ; aucun essai de service ni benchmark de modèle n’est présenté comme réalisé |
+| Expérimentations proposées | Intégrations, coûts et bénéfices restant à mesurer dans un projet |
 
 - [Étendre le contrat et l’export](#1-étendre-le-contrat-et-lexport)
 - [Exploiter les contrats dans l’application](#2-exploiter-les-contrats-dans-lapplication)
@@ -71,9 +71,9 @@ ajouter aurait un effet vérifiable : un texte en capitales ou souligné pourrai
 
 **Solutions à comparer.** Une première extension pourrait décrire une valeur
 uniforme par calque texte. Une seconde pourrait décrire des segments de texte
-ayant des propriétés différentes. Figma permet de lire les propriétés par
-plage et d’obtenir les segments stylés ; une valeur `figma.mixed` ne constitue
-donc pas une valeur uniforme exploitable.
+ayant des propriétés différentes. Un calque dont les caractères diffèrent rend
+`figma.mixed`, qui ne porte aucune valeur ; Figma lit alors les propriétés par
+plage et rend les segments stylés.
 [Lecture des textes dans Figma](https://developers.figma.com/docs/plugins/working-with-text/).
 
 **Direction proposée.** Commencer par les valeurs uniformes sur un composant
@@ -110,7 +110,9 @@ transmission de ces adresses aux consommateurs.
 modifications, mais son indexation par phrase ne distingue pas deux cibles qui
 produisent le même texte. Un collecteur d’objets typés pourrait conserver
 l’identité du constat, ses occurrences et ses adresses jusqu’à la publication.
-Cette seconde voie demanderait de revoir le dédoublonnage et ses lois.
+Cette seconde voie demanderait de revoir les quatre dédoublonnages qui vivent de
+l’identité par phrase (`localisation.ts`) et les deux lois de
+`packages/plugin/tests/loiDesParties.test.ts`.
 
 **Direction proposée.** Spécifier d’abord ce que représente une occurrence :
 un calque, plusieurs variants, un champ absent du contrat ou un problème sans
@@ -146,8 +148,8 @@ de l’association. Une URL connue permet de naviguer ; elle ne prouve pas que
 le contrat décrit l’état courant de la maquette.
 
 **Module et validation.** Un adaptateur de liens fonctionnerait avec le seul
-rapport. Sa désactivation retirerait les liens enrichis. L’essai comparerait le
-temps de navigation sur plusieurs contrats, dont deux fichiers de même nom.
+rapport. L’essai comparerait le temps de navigation sur plusieurs contrats,
+dont deux fichiers de même nom.
 Si la saisie ou les liens erronés coûtent plus que la recherche manuelle,
 l’intégration n’aurait pas de bénéfice établi.
 
@@ -173,8 +175,8 @@ donnent pas, à elles seules, le seuil ni la règle de transition entre les deux
 La navigation, les données et les événements resteraient applicatifs.
 
 **Module et validation.** Un banc d’essai d’assemblage importerait les
-composants existants et un montage fourni par le projet. Il pourrait être
-activé sans contrôle visuel automatique. L’essai consignerait ce qui se décrit
+composants existants et un montage fourni par le projet.
+L’essai consignerait ce qui se décrit
 avec le format courant, les informations manquantes et le coût de montage.
 Un nouveau format ne serait étudié que pour les manques observés.
 
@@ -195,8 +197,8 @@ dans l’orchestration. Conserver seulement les durées, étapes et données uti
 à sa reproduction. Les diagnostics du designer continueraient à suivre leur
 protocole existant.
 
-**Module et validation.** Le collecteur serait activé pour une session de
-diagnostic. Il n’alimenterait pas `meta.diagnostics`. Le même export, avec et
+**Module et validation.** Le collecteur n’alimenterait pas `meta.diagnostics`.
+Le même export, avec et
 sans instrumentation, devrait produire le même contrat hors date d’export.
 Le temps ajouté et l’utilité de la trace pour reproduire le défaut décideraient
 du maintien de ce module.
@@ -250,8 +252,8 @@ Le comportement accessible d’une icône resterait défini par son usage dans
 l’application.
 
 **Module et validation.** Un contrôle de couverture consommerait la liste et
-l’adaptateur d’icônes. Sa désactivation laisserait `ucm icons` utilisable. Deux
-projets pourraient satisfaire le même nom avec des jeux différents. L’essai
+l’adaptateur d’icônes. Deux projets pourraient satisfaire le même nom avec des
+jeux différents. L’essai
 couvrirait une icône fixe, une icône remplaçable, un export disparu et un glyphe
 dont l’occupation visuelle diffère malgré un carré identique.
 
@@ -264,11 +266,13 @@ par défaut dans `$value` et les modes nommés dans `com.ucm.modes`.
 feuilles et leurs types ; il ne compose pas des thèmes et ne valide pas tous
 les alias dans tous les contextes.
 
-| Solution | Capacité documentée | Travail propre à UCM |
+**Solutions à comparer.**
+
+| Solution | Capacité annoncée par son éditeur | Travail propre à UCM |
 |---|---|---|
 | Style Dictionary | Transformations et sorties configurables ; références conservables dans les variables CSS | Lire `com.ucm.modes`, sélectionner un contexte et imposer le nommage du kit |
 | Terrazzo | Lecture de documents de résolution DTCG et génération par permutations | Convertir la projection UCM et vérifier les formats de valeurs acceptés |
-| Projection CSS dédiée | Périmètre limité aux types réellement exportés | Maintenir les conversions, alias et validations que les outils précédents fournissent en partie |
+| Projection CSS dédiée | Aucun éditeur : tout le code reste à écrire | Maintenir les conversions, alias et validations que les outils précédents fournissent en partie |
 
 Style Dictionary documente la conservation des références avec
 `outputReferences`. Certains filtres peuvent toutefois remplacer des références
@@ -278,11 +282,19 @@ par leurs valeurs. Son support de DTCG `2025.10` est annoncé comme incomplet.
 Terrazzo documente les résolveurs et la sélection de thèmes.
 [Résolveurs et thèmes](https://terrazzo.app/docs/guides/resolvers/).
 
-**Direction proposée.** Comparer les deux outils avec le fichier réellement
-exporté. Ses couleurs hexadécimales, dimensions textuelles et tokens booléens
-demandent une vérification face à la grammaire DTCG visée. Une prise en charge
-du standard ne suffit pas à prouver celle de cette projection.
-[Types et valeurs DTCG](https://www.designtokens.org/tr/2025.10/format/).
+**Direction proposée.** Convertir la projection avant de comparer les outils.
+En DTCG `2025.10`, une couleur est un objet portant `colorSpace` et
+`components`, une dimension un objet portant `value` et `unit`, et ni `boolean`
+ni `string` n’est un type. L’export écrit `#C1440E`, `8px` et
+`$type: "boolean"` : il vise la grammaire que lit Style Dictionary v4, décrite
+dans [FORMAT.md](../FORMAT.md#partie-2--export-tokens). Cet essai est donc la
+première évolution de la projection des tokens, dont
+[COMPATIBILITE.md](../COMPATIBILITE.md#pourquoi-tokensjson-na-pas-de-version)
+fixe déjà la forme : `$extensions`, namespace `com.ucm.*`, et un fichier sans ce
+champ vaut grammaire d’origine. La projection dédiée ne devient une option que
+si les deux outils refusent cette conversion.
+[Types et valeurs DTCG](https://www.designtokens.org/tr/2025.10/format/),
+[couleurs](https://www.designtokens.org/tr/2025.10/color/).
 
 Le module aurait une lecture UCM, une sélection de contexte et des adaptateurs
 de sortie. Il utiliserait
@@ -292,18 +304,19 @@ La sélection conserverait tous les alias nécessaires, même lorsque leurs
 cibles sont extérieures au groupe demandé.
 
 **Module et validation.** La projection accepterait un fichier de tokens sans
-contrat de composant. Elle serait utilisable sans Storybook, linter ou agent.
-L’essai comparerait les valeurs, noms et alias produits par les deux outils,
-avec une chaîne d’alias, une virgule dans un nom, une graisse typographique et
-un mode incomplet. Le coût mesuré inclurait la configuration, le build et les
+contrat de composant. L’essai comparerait les valeurs, noms et alias produits
+par les deux outils, avec une chaîne d’alias, le nom `layouts.sizing.0,5` que
+Style Dictionary écrit `--layouts-sizing-0-5`, une graisse typographique et un
+mode incomplet. Le coût mesuré inclurait la configuration, le build et les
 transformations à maintenir.
 
 ### 2.4. Consommer les modes Figma : marques et clair/sombre
 
 **Besoin et appui dans le code.** Clair et sombre sont des modes configurés
-sur les tokens dans Figma. `buildLeaf` parcourt déjà tous les modes de chaque
-collection, sans condition sur leur nom, et conserve leurs valeurs et alias
-sous `com.ucm.modes`. Cette lecture générique couvre donc le principe de
+sur les tokens dans Figma. `buildLeaf` parcourt déjà tous les modes d’une
+collection qui en compte plusieurs, sans condition sur leur nom, et conserve
+leurs valeurs et alias sous `com.ucm.modes` ; une collection mono-mode ne
+publie que `$value`. Cette lecture générique couvre donc le principe de
 clair/sombre. Les
 [tests d’export](../../packages/plugin/tests/exportTokens.test.ts) éprouvent
 notamment la conservation et les collisions de noms de modes.
@@ -319,11 +332,17 @@ Si plusieurs collections doivent être sélectionnées ensemble, la configuratio
 du consommateur préciserait cette association.
 
 Un document DTCG de résolution constitue une autre sortie possible pour les
-outils qui le lisent. Le module `2025.10` est stable et destiné à
+outils qui le lisent. Le module de résolution `2025.10` est stable et destiné à
 l’implémentation ; il décrit la sélection et la combinaison de sources selon
 des contextes. Cette conversion pourrait rester dérivée au build, sans changer
 l’export Figma.
 [Résolution DTCG](https://www.designtokens.org/tr/2025.10/resolver/).
+
+**Direction proposée.** Produire un fichier par mode sur la collection qui
+porte clair et sombre, avant d’étudier les sélecteurs CSS ou le document de
+résolution. Une variable sans valeur dans un mode sort à `null` sous un
+avertissement d’export : la ressource produite ne peut pas supposer chaque mode
+complet.
 
 **Module et validation.** Cette capacité serait une option du module de
 tokens. Un projet utilisant seulement le mode par défaut garderait `$value`.
@@ -358,8 +377,7 @@ inspectable et publication séparée. L’association à Figma utiliserait une
 source explicite, conformément à la piste 1.3. Les noms de props convenus dans
 Figma resteraient la première correspondance.
 
-**Module et validation.** Les adaptateurs CSS, natifs et Code Connect seraient
-activés indépendamment. Chaque essai couvrirait un composant réel et un
+**Module et validation.** Chaque essai couvrirait un composant réel et un
 changement de prop ou de token. Une démonstration sur le web ne vaudrait pas
 validation native. Le coût comprendrait le maintien des adaptateurs, les
 versions prises en charge et les éventuels sièges Figma.
@@ -469,9 +487,8 @@ un candidat à vérifier, sans présumer qu’il doit être réécrit. Les usage
 applicatifs demanderaient une analyse de code supplémentaire.
 
 **Module et validation.** Une bibliothèque et une commande locale rendraient
-un relevé structuré, avec un adaptateur de rapport facultatif. Le module
-fonctionnerait sans code, sans agent et sans service GitHub. L’essai utiliserait
-deux exports réels et les cas du tableau. Le temps de revue et les changements
+un relevé structuré, avec un adaptateur de rapport facultatif. L’essai
+utiliserait deux exports réels et les cas du tableau. Le temps de revue et les changements
 manqués seraient comparés au diff brut avant d’adopter sa présentation.
 
 ### 3.4. Dériver des cas exécutables et des stories
@@ -506,8 +523,8 @@ n’autoriserait pas toutes les combinaisons de contrôles indépendants. Le
 survol et le focus demanderaient des actions effectivement obtenues dans le
 navigateur ; `stateModel` ne fournit pas nécessairement une prop à passer.
 
-**Module et validation.** Le catalogue pourrait être utilisé sans Storybook.
-L’adaptateur Storybook pourrait utiliser les ressources de tokens déjà produites
+**Module et validation.** L’adaptateur Storybook pourrait utiliser les
+ressources de tokens déjà produites
 par le projet. Les stories métier seraient maintenues séparément des fichiers
 régénérables. Un composant impossible à monter resterait dans le relevé des cas
 non exécutés.
@@ -532,8 +549,9 @@ l’observation et la comparaison au contrat.
 | Comparateur UCM | Écart entre une obligation et une observation mesurable | Protocole d’observation, correspondance des slots et comparaisons à développer |
 
 Chromatic documente les modes de test et la sélection des cas affectés par le
-build. Les contrats et tokens lus pendant une génération doivent être pris
-en compte dans cette sélection.
+build. Cette sélection suit le graphe du bundler : un contrat ou un fichier de
+tokens lu en dehors de ce graphe se déclare par `--externals`, sans quoi son
+changement ne relance aucune capture.
 [Modes Chromatic](https://www.chromatic.com/docs/modes/),
 [TurboSnap](https://www.chromatic.com/docs/turbosnap/setup/).
 Playwright fournit des assertions de captures et recommande de stabiliser
@@ -545,16 +563,12 @@ réels. La référence initiale serait relue avec Figma. Un rendu inchangé apr�
 modification du contrat peut rester incorrect : le comparateur UCM constitue
 une recherche séparée.
 
-Ce comparateur recevrait une vue résolue et une observation normalisée. Un
-adaptateur de navigateur identifierait les chemins de slots, les styles
-calculés, la géométrie et l’état obtenu. Des attributs de test sont une option
-à éprouver avec imbrication, plusieurs racines et portals. Une référence de
-token ne se déduit pas de sa couleur calculée ; cette identité demanderait un
-contrôle statique ou une autre expérience d’observation.
+Ce comparateur, l’observation normalisée qu’il recevrait et les deux limites
+qu’elle doit porter sont décrits dans
+[PLAN-CONFORMITE-RENDU.md](./PLAN-CONFORMITE-RENDU.md#bloc-b--comparateur).
 
 **Module et validation.** La capture serait utilisable sur les stories
-existantes ou sur des pages de test. Le comparateur pourrait recevoir une
-observation sans Chromatic. Les contrôles d’interaction et d’accessibilité
+existantes ou sur des pages de test. Les contrôles d’interaction et d’accessibilité
 resteraient activables séparément selon le comportement défini par le code.
 
 L’essai distinguerait un changement voulu, une régression, une capture absente
@@ -576,16 +590,22 @@ de modification du fichier ; ou un réexport permettant une comparaison
 sémantique. Les deux premières options fournissent un signal de revue. Seule
 la dernière permettrait de comparer les obligations effectivement publiées.
 
-Les webhooks Figma peuvent notifier des changements de fichier. `FILE_UPDATE`
-est déclenché dans les trente minutes suivant l’inactivité d’édition ; il ne
-constitue pas un événement détaillé par composant. Leur installation dépend
-des droits, du contexte et du plan.
+Les webhooks Figma notifient les changements d’un fichier. `FILE_UPDATE` est
+déclenché dans les trente minutes suivant l’inactivité d’édition, sans détail
+par composant. `LIBRARY_PUBLISH` porte ce détail : il liste les composants
+créés, modifiés et supprimés, chacun avec sa clé. `DEV_MODE_STATUS_UPDATE`
+signale le changement de statut d’un calque. Leur installation dépend des
+droits, du contexte et du plan.
 [Webhooks](https://developers.figma.com/docs/rest-api/webhooks/),
 [événements](https://developers.figma.com/docs/rest-api/webhooks-events/).
 
-**Direction proposée.** Commencer par une association explicite des contrats
-aux fichiers suivis. Un webhook marquerait les sources à réexaminer. Un
-réexport relu pourrait ensuite établir les différences. Reproduire
+**Direction proposée.** Joindre `LIBRARY_PUBLISH` aux contrats par
+`meta.figma.componentKey`, que `buildMeta` publie pour un composant publié.
+Cette clé est l’arbitre d’identité du format
+([identite.ts](../../packages/kit/src/format/identite.ts)), stable au
+renommage, là où un nom de fichier peut être dupliqué. Un composant sans clé
+retombe sur un suivi par fichier, déclaré dans le repository. Un réexport relu
+établirait ensuite les différences. Reproduire
 l’extracteur avec l’API REST demanderait une étude distincte, car les lectures
 du plugin ne sont pas automatiquement transposables.
 
@@ -607,8 +627,10 @@ nombre de demandes de revue inutiles déterminerait l’intérêt du signal.
 [lecteurs publics](../../packages/kit/src/lecteurs/index.mjs) savent valider un
 contrat, résoudre une vue et relever les références de tokens. Un module
 pourrait réunir ces résultats avec les dépendances et les conventions du
-repository. Le calcul des alias transitifs resterait à ajouter à partir de
-l’index des tokens.
+repository. Le calcul des alias transitifs partirait de `feuilleRacine`
+(`packages/kit/src/lecteurs/typography-token-types.mjs`), qui suit déjà une
+chaîne d’alias jusqu’à sa racine, mais n’en rend que le type et reste privée à
+son module.
 
 **Solutions à comparer.** Fournir les fichiers et une méthode de lecture ;
 produire un dossier de contexte ciblé ; ou compléter ce dossier par les
@@ -629,8 +651,8 @@ séparément. Une dépendance introuvable ou une limite de contexte serait visib
 dans le résultat.
 
 **Module et validation.** Le module accepterait un chemin de contrat et une
-racine de projet. Il rendrait des données lisibles par un humain ou un agent,
-sans imposer de modèle, de serveur ni de catalogue Storybook. Les données
+racine de projet. Il rendrait des données lisibles par un humain ou un agent.
+Les données
 locales non commitées seraient identifiées par leurs empreintes en complément
 de la révision Git.
 
@@ -683,8 +705,7 @@ Générer des instructions depuis le projet demanderait de définir leur source
 et leur mise à jour, sans produire une nouvelle spécification du format.
 
 **Module et validation.** La skill serait distribuable seule. L’adaptateur MCP
-appellerait le module de contexte et les lecteurs publics ; sa désactivation
-laisserait les fichiers et commandes utilisables. L’essai utiliserait deux
+appellerait le module de contexte et les lecteurs publics. L’essai utiliserait deux
 clients réellement employés par l’équipe, puis un réexport entre deux lectures.
 Comparer les erreurs de sélection, les révisions confondues et le temps passé
 à fournir le contexte avant de décider de maintenir un serveur.
@@ -723,13 +744,11 @@ effectifs des contrôles. Le résumé de l’agent ne remplacerait pas ces résu
 
 Une adaptation conserverait les événements et le comportement applicatif
 existants. Une création laisserait explicites les décisions que le contrat ne
-porte pas. Le contrôle vérifierait aussi que l’agent n’a pas affaibli les
-obligations ou supprimé des tests de référence pour faire accepter sa proposition.
+porte pas. Le contrôle comparerait aussi les fichiers de contrôle et les tests
+de référence avant et après le patch, hors du périmètre que l’agent modifie.
 
-**Module et validation.** L’assistant fonctionnerait sur demande sans
-déclenchement automatique, sans MCP et sans publication GitHub obligatoire.
-Il utiliserait les contrôles configurés dans le projet et préciserait les
-vérifications non exécutées. Un adaptateur de forge pourrait ensuite présenter
+**Module et validation.** L’assistant utiliserait les contrôles configurés dans
+le projet et préciserait les vérifications non exécutées. Un adaptateur de forge pourrait ensuite présenter
 le résultat dans une pull request en brouillon.
 
 Le banc d’essai comparerait les créations et adaptations avec les sources
@@ -774,9 +793,8 @@ l’accessibilité et les explications humaines seraient conservées à part des
 blocs régénérables. `samples` resterait un exemple de maquette.
 
 **Module et validation.** Le générateur Markdown fonctionnerait avec un contrat
-sans implémentation. Les adaptateurs Storybook et zeroheight seraient
-facultatifs. La publication recevrait les liens d’exemples correspondant à la
-livraison documentée.
+sans implémentation. La publication recevrait les liens d’exemples
+correspondant à la livraison documentée.
 
 L’essai réexporterait un variant puis régénérerait sa fiche. Vérifier la
 conservation des explications humaines, les liens, les tableaux et le cas d’un
@@ -805,11 +823,11 @@ provenance, afin de respecter la co-localisation définie par le concept.
 
 Lire directement les contrats dans une dépendance externe constituerait une
 autre direction. Elle demanderait de revoir cette règle du concept et la
-résolution des implémentations avant d’être adoptée. Aucun manifeste ne
-permettrait de prétendre que le CLI actuel traite déjà ce cas.
+résolution des implémentations avant d’être adoptée. Le CLI ne traite pas ce
+cas : `trouverContrats` saute `node_modules`, et un contrat rangé dans une
+dépendance reste invisible.
 
-**Module et validation.** La distribution serait facultative pour les projets
-recevant leurs exports directement. Elle ne fixerait pas les modules de
+**Module et validation.** La distribution ne fixerait pas les modules de
 contrôle installés par chaque consommateur. L’essai utiliserait deux
 repositories sur deux livraisons, puis une mise à jour et un retour à la
 version précédente. Vérifier que contrats et tokens restent associés et que
@@ -900,6 +918,8 @@ service. Avant d’ajouter des adaptateurs de publication ou de contexte, une
 L’évaluation porterait sur des fonctions précises : tokens, documentation,
 exemples, contexte agent et revue.
 
+**Solutions à comparer.**
+
 | Solution | Capacité documentée par l’éditeur | Question à éprouver avec UCM |
 |---|---|---|
 | Supernova | Exportateurs configurables, automatisation et accès aux données depuis ses outils de développement | Quelle donnée peut être exportée et consommée localement, avec quelle identité de version ? |
@@ -946,17 +966,22 @@ combinaisons possibles.
 
 | Module proposé | Entrée minimale | Utilisable sans | Effet de la désactivation |
 |---|---|---|---|
-| Projection de tokens | Fichier de tokens et configuration de sortie | Contrats de composants, navigateur, agent | Le projet fournit ses ressources existantes |
-| Liaison au code et aux icônes | Contrats et associations du projet | Storybook, plateforme documentaire | La validation du format reste possible |
+| Rapport de diagnostics localisés | Contrats portant les adresses de leurs constats | Figma, éditeur | La liste des messages publiés reste lisible |
+| Liens vers la source Figma | Rapport et association déclarée d’une source | Plugin, export enrichi | Le rapport garde ses constats sans lien |
+| Banc d’essai d’assemblage | Contrats des composants et un montage d’écran | Contrôle visuel automatique | L’assemblage se juge à la main |
+| Collecteur de traces d’export | Session de diagnostic ouverte dans le plugin | Service de collecte | L’export garde son comportement et ses messages |
+| Projection de tokens | Fichier de tokens et configuration de sortie | Contrats de composants, navigateur, Storybook, linter, agent | Le projet fournit ses ressources existantes |
+| Liaison au code et aux icônes | Contrats et associations du projet | Storybook, plateforme documentaire | `ucm icons` et la validation du format restent utilisables |
+| Adaptateurs de sortie et Code Connect | Contrats et cible de plateforme | Autres adaptateurs, siège Figma | Les sorties déjà produites restent en place |
 | Parité et lint | Sources, contrats et adaptateur de langage | Captures, assistant | Le rapport ne conclut pas sur les contrôles retirés |
-| Diff | Deux révisions lisibles de contrats ou de tokens | Implémentation, Figma, modèle | La revue utilise le diff de fichiers |
-| Cas dérivés | Contrats ; montage pour les exécuter | Service de capture | Le projet peut conserver ses cas écrits à la main |
+| Diff | Deux révisions lisibles de contrats ou de tokens | Implémentation, Figma, modèle, service GitHub | La revue utilise le diff de fichiers |
+| Cas dérivés | Contrats ; montage pour les exécuter | Service de capture, Storybook | Le projet peut conserver ses cas écrits à la main |
 | Capture et revue | Cas exécutables et références | Générateur UCM, MCP | Aucune conclusion sur la régression visuelle |
 | Conformité du rendu | Vue exacte et observation | Chromatic, générateur de stories | Les autres contrôles gardent leur périmètre |
-| Contexte | Contrat, dépendances et conventions du projet | Agent, MCP, accès Figma | Lecture directe des fichiers |
+| Contexte | Contrat, dépendances et conventions du projet | Agent, MCP, accès Figma, catalogue Storybook | Lecture directe des fichiers |
 | MCP | Lecteurs et données du projet | Assistant UCM, publication | Fichiers et commandes toujours utilisables |
-| Assistant | Demande, contexte et exécuteur | MCP, orchestration automatique | Implémentation par les moyens habituels du projet |
-| Documentation | Contrats ; code et stories facultatifs | zeroheight, assistant | Documentation humaine conservée |
+| Assistant | Demande, contexte et exécuteur | MCP, orchestration automatique, publication GitHub | Implémentation par les moyens habituels du projet |
+| Documentation | Contrats ; code et stories facultatifs | zeroheight, Storybook, assistant | Documentation humaine conservée |
 | Suivi des sources Figma | Association aux fichiers et accès autorisé | Génération de code | Aucune conclusion sur la fraîcheur de la maquette |
 | Distribution | Ensemble identifié de contrats et tokens | Tous les modules applicatifs | Exports directs dans chaque repository |
 | Orchestration | Modules explicitement activés et leurs entrées | Fournisseur IA ou documentation particulier | Exécution indépendante des commandes |
@@ -978,6 +1003,7 @@ le protocole de validation du produit existant.
 | Les valeurs des modes restent inutilisées | Export clair/sombre réel, puis ressources par mode ; marques si utilisées | Correction éventuelle de l’export ou travail limité à la projection |
 | Une propriété visuelle manque au rendu | Extension uniforme sur un composant réel | Ajouter le champ, ou conserver un diagnostic si la traduction reste ambiguë |
 | La revue d’un export manque des changements | Diff sémantique comparé au diff brut | Délimiter les changements qui méritent un rapport spécifique |
+| Un écart de props ou de tokens échappe aux contrôles | Contrôle de parité choisi sur un défaut réel, puis règle de lint sur les références littérales | Étendre l’analyse statique, ou renvoyer le cas au navigateur |
 | Les variants sont mal couverts par les exemples | Stories manuelles comparées aux cas dérivés | Choisir la génération, le contrôle de couverture ou les deux |
 | Des régressions visuelles passent en revue | Captures Playwright ou Chromatic sur les mêmes cas | Choisir l’hébergement et la procédure d’acceptation |
 | Le code reste incorrect malgré des captures stables | Comparateur ciblé sur une propriété observable | Déterminer si le protocole d’observation apporte une preuve utile |
