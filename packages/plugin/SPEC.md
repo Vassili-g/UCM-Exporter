@@ -344,7 +344,7 @@ que `meta.diagnostics` publie sont désormais la même liste.
 état normal du format.** L’URL se construit depuis `figma.fileKey`, que l’API ne
 donne qu’aux plugins déclarant `enablePrivatePluginApi`, un drapeau réservé aux
 plugins privés d’une organisation. Le plugin se distribue par la Figma Community
-(arbitrage dans `docs/notes/PISTES-EVOLUTION.md §2`), le drapeau est donc retiré
+(arbitrage dans `docs/notes/PISTES-EVOLUTION.md §1.3`), le drapeau est donc retiré
 du manifest et la clé n’arrive jamais. `url` reste optionnel dans le schéma,
 sans changement de version : un contrat produit avant cette décision le porte
 encore, et un lecteur doit accepter les deux.

@@ -1,6 +1,7 @@
 # Le concept UCM
 
-Ce document définit le problème, les responsabilités et les principes du modèle.
+Ce document définit le problème, les responsabilités et les principes du modèle,
+puis situe UCM parmi les outils de design system.
 La forme de ce qui est publié est spécifiée dans
 [docs/FORMAT.md](./docs/FORMAT.md), le comportement du plugin dans
 [packages/plugin/SPEC.md](./packages/plugin/SPEC.md), et l’avancement dans
@@ -155,3 +156,27 @@ composant obtenu est jetable.
 
 Le modèle vaut par ces deux promesses tenues sur des composants réels et variés.
 Le nombre de champs exportés ne le mesure pas.
+
+## 7. UCM parmi les outils de design system
+
+UCM décrit les décisions visuelles de Figma dans un contrat versionné à côté du
+code. Le tableau compare cette responsabilité à celles des outils et du
+standard ci-dessous, à partir de leurs documentations.
+
+| Solution ou standard | Ce qu’il apporte | Place de l’UCM |
+|---|---|---|
+| [Figma Code Connect](https://developers.figma.com/docs/code-connect/) | Associe les composants Figma à leurs implémentations et enrichit le contexte fourni aux agents par Figma | Le contrat UCM décrit les obligations visuelles dans un fichier lisible et contrôlable sans accès à Figma. Une correspondance Code Connect peut relier ce composant à son code |
+| [Storybook](https://storybook.js.org/docs/writing-docs/autodocs) | Documente les composants depuis le code, les stories et les métadonnées de props | UCM fournit les obligations issues de Figma ; les stories montrent le comportement de l’implémentation. Leur comparaison permet d’étudier les écarts |
+| [UXPin Merge](https://www.uxpin.com/docs/merge/merge-design-system-documentation/) | Intègre une bibliothèque de composants codés dans l’outil de conception et en dérive la documentation | UCM conserve une source visuelle dans Figma, distincte du code applicatif, et contrôle leur relation |
+| [Backlight](https://backlight.dev/docs/make-your-first-design-system) | Regroupe le code, les stories, les tests, la documentation et les ressources design par composant, avec une intégration Git | UCM ajoute à cette organisation un contrat visuel exporté de Figma. Ce fichier peut être lu par les outils du repository |
+| [DTCG](https://www.designtokens.org/tr/2025.10/format/) | Définit un format d’échange pour les tokens et leurs références | UCM s’appuie sur DTCG pour les tokens partagés et décrit, dans le contrat de composant, les variantes, états, placements et règles d’usage qui les emploient |
+
+L’apport recherché est de rendre ces obligations visuelles accessibles à un
+développeur, une CI ou un agent depuis le repository. La reconstruction à froid
+éprouve si le contrat contient assez d’informations pour implémenter le rendu.
+
+Cette approche vise les équipes qui maintiennent à la fois une source Figma et
+une bibliothèque de composants codés. Son intérêt dépend des écarts qu’elles
+ont besoin de détecter et du coût de leur suivi. Lorsqu’une équipe conçoit
+directement avec ses composants codés, le besoin d’un contrat visuel séparé
+reste à établir.
