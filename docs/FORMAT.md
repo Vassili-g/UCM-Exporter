@@ -1352,6 +1352,25 @@ le contrat porte toujours.
 d'alias préservée sur tous les tiers et tous les types, **modes de Brand Tokens
 inclus**. Entrée de Style Dictionary v4.
 
+**La grammaire visée est celle que lit Style Dictionary v4**, et le module de
+format DTCG `2025.10` en demande une autre. Trois écarts les séparent, tous dans
+la forme des valeurs :
+
+| Ce que l'export écrit | Ce que le module `2025.10` demande |
+|---|---|
+| `"$value": "#C1440E"` | un objet portant `colorSpace` et `components`, où `hex` n'est qu'un repli |
+| `"$value": "8px"` | un objet portant `value` et `unit` |
+| `"$type": "boolean"`, `"$type": "string"` | ces deux types n'y sont pas définis |
+
+Les modes rangés sous `$extensions["com.ucm.modes"]` ne comptent pas parmi ces
+écarts : `$extensions` est un membre prévu par le module et le namespace
+appartient au projet. Le module de résolution `2025.10` décrit une autre façon
+d'exprimer un contexte, qui reste une évolution possible.
+
+Un consommateur qui vise `2025.10` convertit donc ces trois formes à la lecture.
+Quand cette projection change et ce qui marquerait alors le fichier sont dans
+[COMPATIBILITE.md](./COMPATIBILITE.md#pourquoi-tokensjson-na-pas-de-version).
+
 **2. Résolution des alias (tous types)**, `valuesByMode[modeId]` = valeur
 directe **ou** `{ type: "VARIABLE_ALIAS", id }`. Si alias → écrire une
 **référence DTCG** `"{cible}"`, jamais la valeur finale. Vaut pour COLOR comme

@@ -100,7 +100,8 @@ lecteur doit pouvoir distinguer les deux sens.
 Aucun lecteur n'en cherche une : ni Style Dictionary en mode DTCG, ni
 `indexerTokensDtcg`, qui répond seulement « ce chemin existe-t-il ». Un numéro
 écrit aujourd'hui serait décoratif. Un consommateur le lirait pourtant comme une
-garantie.
+garantie. La grammaire que ce fichier suit est une autre question, déclarée
+dans [FORMAT.md](./FORMAT.md#partie-2--export-tokens) avec ses écarts connus.
 
 Le signal qui rouvre la question est la première évolution de la projection des
 tokens. La forme est tranchée d'avance pour que le geste soit alors mécanique :
