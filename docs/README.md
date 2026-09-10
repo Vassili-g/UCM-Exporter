@@ -61,7 +61,7 @@ autorité. Les autres y renvoient.
 
 | Document | Ce dont il fait autorité |
 |---|---|
-| [../CONCEPT.md](../CONCEPT.md) | Le problème résolu, et qui possède quelle information |
+| [../CONCEPT.md](../CONCEPT.md) | Le problème résolu, les responsabilités et le [positionnement parmi les outils de design system](../CONCEPT.md#7-ucm-parmi-les-outils-de-design-system) |
 | [FORMAT.md](./FORMAT.md) | La forme de ce qui est publié, et ce que l'absence d'un champ signifie |
 | [../packages/plugin/README.md](../packages/plugin/README.md) | Où obtenir le plugin, ce que ses commandes écrivent, et ce qu'il ne fait pas |
 | [../packages/plugin/SPEC.md](../packages/plugin/SPEC.md) | Ce que le plugin lit dans Figma, ce qu'il élit, ce dont il avertit |
@@ -80,5 +80,5 @@ Aucune partie du produit n'en dépend.
 
 | Document | Contenu |
 |---|---|
-| [notes/PISTES-EVOLUTION.md](./notes/PISTES-EVOLUTION.md) | Le positionnement, les options ouvertes et les risques |
+| [notes/PISTES-EVOLUTION.md](./notes/PISTES-EVOLUTION.md) | Les modules d'évolution à étudier, leurs conditions et leurs essais |
 | [notes/PLAN-CONFORMITE-RENDU.md](./notes/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
