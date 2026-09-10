@@ -1,6 +1,9 @@
 ---
-name: consommer-contrat
-description: Reconstruire à froid un composant jetable dans le sandbox depuis son contrat UCM, uniquement quand cette reconstruction est explicitement demandée. Utiliser le contrat comme seule source du rendu, sans consulter une ancienne implémentation ni générer un moteur de contrat au runtime.
+name: consommer-contrat description: Reconstruire à froid un composant jetable
+dans le sandbox depuis son contrat UCM, uniquement quand cette reconstruction
+est explicitement demandée. Utiliser le contrat comme seule source du rendu,
+sans consulter une ancienne implémentation ni générer un moteur de contrat au
+runtime.
 ---
 
 # Reconstruire un composant depuis son contrat
@@ -36,27 +39,25 @@ doit ni charger le contrat ni l'interpréter à l'exécution.
 
 Un contrat ne recopie rien. Tout le reste du skill en découle.
 
-**Loi 1, Une vue est un jeu de renvois.**
-`variantViews[variant.view].structure` est une **chaîne** : la clé d'une entrée de
-`viewStructures`, jamais l'arbre lui-même. Idem `typography` →
-`viewTypographies`, `composes` → `viewComposes`, `icons` → `viewIcons`,
-`paintPlacements` → `viewPaintPlacements`. `structure.view` renvoie au même
-catalogue de structures. Ces renvois se résolvent par l'outil que le projet
-fournit (§6), jamais à la main.
+**Loi 1, Une vue est un jeu de renvois.** `variantViews[variant.view].structure`
+est une **chaîne** : la clé d'une entrée de `viewStructures`, jamais l'arbre
+lui-même. Idem `typography` → `viewTypographies`, `composes` → `viewComposes`,
+`icons` → `viewIcons`, `paintPlacements` → `viewPaintPlacements`.
+`structure.view` renvoie au même catalogue de structures. Ces renvois se
+résolvent par l'outil que le projet fournit (§6), jamais à la main.
 
-**Loi 2, Une valeur vide n'est pas écrite.**
-Une clé absente ne veut pas dire « inconnu » : elle veut dire « rien à
-publier ». `strokes` absent = aucun contour lié ; `padding` absent = aucun
-padding tokenisé ; `props` absent = aucune prop. Seule exception : sous un
-**dictionnaire**, la clé est une donnée, `stateModel.states.default` vaut `{}` et
-existe bel et bien.
+**Loi 2, Une valeur vide n'est pas écrite.** Une clé absente ne veut pas dire «
+inconnu » : elle veut dire « rien à publier ». `strokes` absent = aucun contour
+lié ; `padding` absent = aucun padding tokenisé ; `props` absent = aucune prop.
+Seule exception : sous un **dictionnaire**, la clé est une donnée,
+`stateModel.states.default` vaut `{}` et existe bel et bien.
 
-**Loi 3, Ce qui se dérive n'est pas publié.**
-Le contrat ne porte ni index de ses tokens, ni miroir en texte brut de ses
-diagnostics. Les références de tokens se relèvent dans le contrat, `samples` et
-`meta` exclus ; les messages de l'export se lisent dans `meta.diagnostics`, sans
-filtrer sur `severity` ; le nom Figma d'un variant vient de `figmaVariantLabels`
-quand `variants[].figmaName` est absent.
+**Loi 3, Ce qui se dérive n'est pas publié.** Le contrat ne porte ni index de
+ses tokens, ni miroir en texte brut de ses diagnostics. Les références de tokens
+se relèvent dans le contrat, `samples` et `meta` exclus ; les messages de
+l'export se lisent dans `meta.diagnostics`, sans filtrer sur `severity` ; le nom
+Figma d'un variant vient de `figmaVariantLabels` quand `variants[].figmaName`
+est absent.
 
 ---
 
@@ -82,11 +83,11 @@ Ce que l'extraction doit ramener :
 6. la liste des contrats cités dans les `composes` des vues utilisées.
 
 Les contrats des dépendances se lisent ensuite, un par un, ciblés sur leur API
-publique et leur échantillon, jamais par une commande qui en affiche plusieurs
-à la fois.
+publique et leur échantillon, jamais par une commande qui en affiche plusieurs à
+la fois.
 
 `meta.figma`, `variants[].nodeId` et `variants[].figmaName` ne servent qu'au
-diagnostic : ils tracent Figma, ils ne décident pas du rendu. À l'inverse,
+diagnostic : ils tracent Figma et ne servent pas au rendu. À l'inverse,
 `figmaLayer`/`figmaPath` situent certaines jointures, et `icons.*.figmaName`
 peut être le nom d'icône à rendre. `tokensUsed` est un inventaire de contrôle,
 jamais une source de style ou de localisation.
@@ -125,8 +126,8 @@ ne jamais remplacer cette adresse par un rapprochement au nom d'une prop.
 
 ### 2.3 Transcrire la matrice
 
-`variants` énumère les faits. Construire une table littérale
-`values → { tokens, strokes, view, sample }` avec ses seules entrées :
+`variants` énumère les faits. Construire une table littérale `values → { tokens,
+strokes, view, sample }` avec ses seules entrées :
 
 - respecter l'ordre de `structure.variantAxes` pour former une clé stable ;
 - conserver chaque référence `{chemin.du.token}` en toutes lettres ;
@@ -181,13 +182,14 @@ Relire d'abord le composant contre le contrat :
 - les contenus applicatifs remplacent les valeurs de sample.
 
 Puis exécuter **seulement** le contrôle de contrat (qui balaie le repository,
-faute de commande ciblée) et le contrôle de type de la cible (§6.6). **Ne pas lancer la suite globale du
-projet** : elle porte sur le moteur, pas sur ce composant, elle ne peut rien
-apprendre sur le travail en cours, et sa sortie encombre le contexte jusqu'à la
-fin de la session. L'orchestrateur la lancera une fois, à la fin.
+faute de commande ciblée) et le contrôle de type de la cible (§6.6). **Ne pas
+lancer la suite globale du projet** : elle porte sur le moteur, pas sur ce
+composant. Elle n'apprend rien sur le travail en cours, et sa sortie encombre le
+contexte jusqu'à la fin de la session. L'orchestrateur la lancera une fois, à la
+fin.
 
-Ne créer aucun test pour ce composant. Ces composants sont jetables :
-leur reconstruction évalue la robustesse du contrat, pas la pérennité de leur
+Ne créer aucun test pour ce composant. Ces composants sont jetables : leur
+reconstruction évalue la robustesse du contrat, pas la pérennité de leur
 implémentation.
 
 ### 2.8 Rapporter
@@ -321,9 +323,9 @@ est nécessaire, la recopier littéralement.
 
 ### 4.5 États
 
-`stateModel.states` associe chaque état à son sélecteur ; `stateModel.precedence`
-les classe du plus fort au plus faible. Sélectionner l'entrée de `variants` dont
-`values[stateModel.axis]` égale l'état effectif.
+`stateModel.states` associe chaque état à son sélecteur ;
+`stateModel.precedence` les classe du plus fort au plus faible. Sélectionner
+l'entrée de `variants` dont `values[stateModel.axis]` égale l'état effectif.
 
 Reproduire les sélecteurs avec les événements de pointage et de clavier de la
 cible. L'état désactivé vient du booléen applicatif correspondant. Le focus
@@ -340,9 +342,9 @@ et le nombre maximal d'occurrences, pas la liste à rendre dans chaque vue.
 
 Pour chaque slot portant `composes`, importer le composant local correspondant
 et le rendre à cet emplacement. **Conserver chaque occurrence explicitement dans
-le source** : le contrôle de parité les compte statiquement (§5, §6.7). Une
-occurrence absente de la vue courante se neutralise sur place, elle ne se retire
-pas du source. Respecter `visibilityProp` sur l'instance ou son cadre.
+le source** : le contrôle de parité les compte statiquement (§5, §6.7).
+Neutraliser sur place une occurrence absente de la vue courante, sans la retirer
+du source. Respecter `visibilityProp` sur l'instance ou son cadre.
 
 Lire le contrat enfant pour son API, sa taille propre et son échantillon. Ne
 recopier aucun de ses calques, tokens ou styles dans le parent.
@@ -366,10 +368,10 @@ Résoudre `variants[].sample`, puis :
 5. superposer les `args`, `overrides`, `swaps` et `composes` du parent, puis
    recommencer récursivement sans limite arbitraire.
 
-Pour un échantillon d'instance imbriqué, rester relatif au propriétaire
-immédiat : parcourir sa séquence de dépendances directes dans l'ordre, puis
-rapprocher `component` et `figmaLayer`. Deux occurrences homonymes sont deux
-positions, jamais une map par nom.
+Pour un échantillon d'instance imbriqué, rester relatif au propriétaire immédiat
+: parcourir sa séquence de dépendances directes dans l'ordre, puis rapprocher
+`component` et `figmaLayer`. Deux occurrences homonymes sont deux positions,
+jamais une map par nom.
 
 Une valeur `false` est explicite ; une clé absente laisse le défaut enfant.
 `overrides` ne change que le texte ou la visibilité du `figmaPath` visé. Pour
@@ -435,7 +437,7 @@ document de conventions du projet, pas dans le source d'un composant.
    (§2.7). **Aucune ne cible un composant**, et il ne faut pas en chercher une :
    le contrôle de contrat balaie tout le repository et rend un rapport où le
    composant en cours se retrouve à son nom. Un contrôle qui balaie coûte
-   quelques secondes de plus ; un contrôle qu'on croit ciblé et qui ne l'est pas
-   ferait lire un verdict portant sur autre chose.
+   quelques secondes de plus ; un contrôle pris pour ciblé sans l'être ferait lire
+   un verdict portant sur autre chose.
 7. **Comptage statique des dépendances**, la forme que doit prendre une
    occurrence dans le source pour que le contrôle de parité la compte (§5).

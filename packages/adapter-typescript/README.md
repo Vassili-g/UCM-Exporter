@@ -1,12 +1,12 @@
 # @ucm-kit/adapter-typescript
 
 Optional adapter for TypeScript repositories that consume UCM contracts. It adds
-two capabilities without making [`@ucm-kit/core`](https://www.npmjs.com/package/@ucm-kit/core)
-depend on the TypeScript compiler, a 23 MB dependency no other consumer should
-pay for.
+two capabilities without making
+[`@ucm-kit/core`](https://www.npmjs.com/package/@ucm-kit/core) depend on the
+TypeScript compiler, a 23 MB dependency no other consumer should pay for.
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.13 @ucm-kit/cli@0.1.20
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.14 @ucm-kit/cli@0.1.21
 npx ucm-typescript
 npx --no-install ucm check
 ```
@@ -29,19 +29,18 @@ reported:
 Parity requires a `tsconfig.json` at the root. Props are read with the
 TypeScript type checker; compositions are counted by their occurrences in JSX.
 
-Every one of these **warns without blocking**. The gap is in the code, and a
-developer closes it; a re-export changes nothing.
+Every one of these **warns without blocking**. The gap is in the code, so a
+developer closes it. No re-export helps.
 
 ## The convention composition counting assumes
 
 **Counting is static: a dependency rendered by a loop is not counted.** Keep
-every occurrence explicit in the source, and neutralise in place the one a
-given view does not show, rather than removing it. Without that, a list built
-with `.map()` reports a cardinality gap the contract did not intend.
+every occurrence explicit in the source, and neutralise in place the one a given
+view does not show, rather than removing it. Without that, a list built with
+`.map()` reports a cardinality gap the contract did not intend.
 
-Nothing enforces it: there is no exception list, no annotation, and no
-per-component opt-out. The warning itself says what it does not see, and it
-blocks nothing.
+Nothing enforces the convention. No opt-out exists for a single component. A
+warning names what the count did not see, without blocking anything.
 
 ## What it does not measure
 
@@ -57,9 +56,9 @@ resolved and nothing is reported.
 What the component does with a value stays outside the static guarantee. A
 `switch` with a `default`, a partial mapping table, a value forwarded to a
 child, a table held in another file and a business rule that substitutes one
-value for another are all legitimate; telling them apart from an oversight
-would require the contract to describe behaviour. A contract describes the
-views that exist; it says nothing about the logic that picks one.
+value for another are all legitimate; telling them apart from an oversight would
+require the contract to describe behaviour. A contract describes the views that
+exist. The logic that picks one stays outside it.
 
 A prop relayed through `{...rest}` without being read is reported as unused.
 Following a spread would mean knowing the child's contract, and the warning
@@ -68,8 +67,8 @@ blocks nothing.
 Nothing here executes a render.
 
 None of this exists for a repository without this adapter, so the **absence of
-these messages means nothing**: it is a capability of one adapter, never a
-guarantee of the format.
+these messages means nothing**. It is a capability of one adapter. The format
+guarantees none of it.
 
 ## Generated types
 

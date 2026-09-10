@@ -4,12 +4,13 @@ The UCM contract format, and the readers that judge a contract.
 
 A **UCM contract** is a JSON file describing a UI component exactly as it exists
 in Figma: its variants, its structure, its design tokens, its usage rules. It is
-written by the [UCM Contract Exporter](https://github.com/Vassili-g/UCM-Exporter)
-Figma plugin, and read by the repository that implements the component. This
-package is what both sides must share in order to talk about the same format.
+written by the [UCM Contract
+Exporter](https://github.com/Vassili-g/UCM-Exporter) Figma plugin, and read by
+the repository that implements the component. This package is what both sides
+must share in order to talk about the same format.
 
 ```sh
-npm install @ucm-kit/core@0.1.21
+npm install @ucm-kit/core@0.1.22
 ```
 
 Most repositories never call this package directly. They run
@@ -18,8 +19,8 @@ them. Install it when you want to run the checks from your own code.
 
 ## Validate a contract
 
-The package exists to answer one question in CI: **can this contract be read,
-and does it hold together?**
+The package exists to answer one question in CI: **whether this contract can be
+read, and whether it holds together.**
 
 ```js
 import { readFileSync } from "node:fs";
@@ -56,24 +57,24 @@ next step. Earlier releases refused it; `@ucm-kit/core@0.1.14` is the first that
 does not.
 
 The number of contracts decides. With one contract or more, a missing tokens
-file blocks the merge, because that contract cites tokens nobody can resolve. A
-tokens file that exists but does not parse blocks at any stage, whatever the
-number of contracts.
+file blocks the merge, because that contract cites tokens that cannot be
+resolved. A tokens file that exists but does not parse blocks at any stage,
+whatever the number of contracts.
 
-## A version gap has a direction, and it names who fixes it
+## A version gap has a direction, which names who fixes it
 
 `verdictDeVersion` returns `"ok"`, `"ancien"` (too old) or `"recent"` (too new):
 
 - **too old.** The contract predates fields the code now depends on, and is
-  silent about things it never knew. A re-export from Figma fixes it, and the
-  designer owns that gesture.
+  silent about things it never knew. A re-export from Figma fixes it. That gesture
+  belongs to the designer.
 - **too new.** The contract comes from a plugin ahead of this repository. No
   re-export will help. The repository has to catch up, by upgrading this
   package.
 
-A validator that only says "invalid" cannot tell these apart, and will blame the
-designer for a gap the developer owns. That distinction is why this function
-exists rather than a boolean.
+A validator that only says "invalid" cannot tell these apart. It hands the
+designer a gap the developer owns. That distinction is why this function exists
+rather than a boolean.
 
 The accepted range is exposed rather than documented, so that it cannot drift
 away from what the code actually does:
@@ -83,7 +84,7 @@ import { VERSION_CONTRAT_MINIMALE, VERSION_CONTRAT_MAXIMALE } from "@ucm-kit/cor
 // The two versions this release reads, named in Status below.
 ```
 
-## Three entry points, and why they are separate
+## Why the three entry points are separate
 
 ```js
 import { CONTRACT_VERSION, codeIdentifier, normalizeName } from "@ucm-kit/core/format";
@@ -107,17 +108,17 @@ consumer share one definition instead of each copying it.
 returns it parsed and `CHEMIN_DU_SCHEMA` gives its resolved path, which avoids
 depending on the JSON import syntax your Node version happens to support.
 
-The schema describes the *shape* of a contract, never its coherence. Internal
-cross-references and tokenized value formats are not its job, and its own
-`description` says so. It does not replace the readers: it is derived from the
-same types they enforce.
+The schema describes the *shape* of a contract. Its coherence, its internal
+cross-references and its tokenized value formats stay outside it, as its own
+`description` says. It derives from the same types the readers enforce, so it
+replaces none of them.
 
 ## What this package does not do
 
 It does not read Figma, does not generate component code, and does not render
 anything. It never rewrites a contract; every reader takes a contract and
-returns a verdict. Producing contracts is the plugin's job, and implementing the
-component is yours.
+returns a verdict. The plugin produces contracts. Implementing the component is
+yours.
 
 ## Status
 

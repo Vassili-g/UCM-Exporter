@@ -3,10 +3,10 @@
 Ce document dit **comment travailler** sur ce dépôt : écrire du code, un
 message, un test, un document, et vérifier avant de proposer un changement.
 
-Il ne dit pas ce que le produit garantit. Les règles que le code doit tenir
-sont les invariants d'[AGENTS.md](./AGENTS.md#invariants), qui donnent pour
-chacune sa borne et son fichier autorité. Leur raisonnement vit dans les deux
-spécifications : [docs/FORMAT.md](./docs/FORMAT.md) pour la forme de ce qui est
+Il ne dit pas ce que le produit garantit. Les règles que le code doit tenir sont
+les invariants d'[AGENTS.md](./AGENTS.md#invariants), qui donnent pour chacune
+sa borne et son fichier autorité. Les deux spécifications portent leur
+raisonnement : [docs/FORMAT.md](./docs/FORMAT.md) pour la forme de ce qui est
 publié, [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) pour ce que le
 plugin lit dans Figma. Lire la spécification concernée avant de modifier, et
 l'invariant avant de croire qu'une règle n'existe pas.
@@ -31,9 +31,8 @@ incomplètes.
 Les commentaires sont en français. Ils expliquent une décision, une
 particularité de l’API Figma ou une limite ; ils ne paraphrasent pas le code.
 Chaque fichier décrit brièvement son rôle, et chaque fonction exportée non
-triviale précise son contrat. Les règles de
-[Rédiger un document](#rédiger-un-document) valent pour eux, et le même contrôle
-les lit.
+triviale précise son contrat. Les règles de [Rédiger un
+document](#rédiger-un-document) valent pour eux, et le même contrôle les lit.
 
 ## Messages destinés au designer
 
@@ -96,8 +95,8 @@ Les avertissements d’un export sont adressés au **designer**, et lui parvienn
 par le corps de la pull request que le plugin ouvre. Ils sont donc écrits dans
 son vocabulaire, jamais dans celui du code.
 
-**Un export ne remonte au designer que ce qui demande une décision.** Trois
-portes d’entrée, et rien d’autre : le point bloque l’export, il rend le contrat
+**Un export ne remonte au designer que ce qui demande une décision.** L’export
+n’a que trois portes d’entrée : le point bloque l’export, il rend le contrat
 partiel, ou il demande une vérification ou une correction dans Figma.
 
 Une transformation entièrement prise en charge reste **silencieuse partout** :
@@ -108,8 +107,8 @@ propre à un variant que sa vue exacte conserve. Leur règle appartient au forma
 et à ses tests, pas à un résultat d’export.
 
 Il n’existe aucun canal pour un constat sans geste. Un compte rendu qui fait
-relire au designer le fonctionnement interne de l’exporteur, pour lui dire
-qu’il n’a rien à faire, lui apprend que ces listes se survolent. Le jour où un
+relire au designer le fonctionnement interne de l’exporteur, pour lui dire qu’il
+n’a rien à faire, lui apprend que ces listes se survolent. Le jour où un
 avertissement demandera un geste, il le survolera aussi.
 
 Un constat qui ne nomme aucun geste ne s’écrit donc pas. La forme unitaire
@@ -117,13 +116,12 @@ ci-dessous est ce qui distingue les deux.
 
 `meta.diagnostics` est l’unique représentation publiée dans le contrat. Son
 `code` répond à une seule question, celle de savoir si la projection portable a
-perdu quelque chose :
-`UCM_PORTABLE_PROJECTION_WARNING` pour une perte de portabilité,
-`UCM_EXPORT_NOTICE` pour le reste. Attention : « sans perte de portabilité » ne
-veut pas dire « sans geste à faire » : une combinaison de variants absente ne
-coûte rien à l’arbre exact, et le designer doit pourtant y retourner. Les deux
-codes demandent un geste ; seul le premier dégrade `meta.coverage.portable`, et
-seul le premier remonte dans le rapport de CI.
+perdu quelque chose : `UCM_PORTABLE_PROJECTION_WARNING` pour une perte de
+portabilité, `UCM_EXPORT_NOTICE` pour le reste. Attention : « sans perte de
+portabilité » ne veut pas dire « sans geste à faire » : une combinaison de
+variants absente ne coûte rien à l’arbre exact, et le designer doit pourtant y
+retourner. Les deux codes demandent un geste ; seul le premier dégrade
+`meta.coverage.portable`, et seul le premier remonte dans le rapport de CI.
 
 Chacun répond à trois questions, dans cet ordre :
 
@@ -161,8 +159,8 @@ séparées : un paragraphe unique fait lire le geste en dernier, après deux
 phrases de contexte.
 
 Un message emploie **les intitulés que Figma affiche**, repris tels quels : le
-designer doit pouvoir chercher dans son écran le mot que le message emploie.
-La phrase reste en français ; seul le nom de l’élément Figma est repris à
+designer doit pouvoir chercher dans son écran le mot que le message emploie. La
+phrase reste en français ; seul le nom de l’élément Figma est repris à
 l’identique. Ne traduisez jamais un libellé de panneau : `padding` ne devient
 pas « marges intérieures ».
 
@@ -203,7 +201,7 @@ Trois rangs, et le moyen visuel de chacun.
 Quatre bornes, sans quoi la table ne tient pas :
 
 - **un élément signale son rang par deux moyens au plus** : position et taille,
-  ou poids et couleur, jamais les quatre, sinon tout crie ensemble ;
+  ou poids et couleur, jamais les quatre, sans quoi aucun rang ne ressort ;
 - **la couleur sémantique ne signale que la sévérité, jamais le rang.**
   autrement un constat vert paraît plus important qu’un avertissement gris, ce
   qui est l’inverse de la doctrine du projet ;
@@ -213,10 +211,10 @@ Quatre bornes, sans quoi la table ne tient pas :
 - **une carte est une commande, et il n’y en a que deux.** Une carte regroupe un
   sujet, son état, le geste qui porte dessus et tout ce que ce geste produit :
   verdict, publication, points à corriger, lien de pull request. Rien de ce qui
-  concerne l’autre commande n’y entre, et rien ne porte de surface en dehors
-  d’elles : un troisième objet à surface remettrait trois zones de poids égal à
-  l’écran, c’est-à-dire aucune hiérarchie. Ce qui vaut pour les deux, l’alerte
-  de repli local, vit entre elles et sans surface ;
+  concerne l’autre commande n’y entre. Aucun autre objet ne porte de surface :
+  un troisième objet à surface remettrait trois zones de poids égal à l’écran,
+  c’est-à-dire aucune hiérarchie. Ce qui vaut pour les deux, l’alerte de repli
+  local, se place entre elles et sans surface ;
 - **un résultat ne survit pas à son sujet.** Le verdict et la publication
   disparaissent quand la sélection qui les a produits n’est plus là : un
   « prêt à publier » sous « aucun composant sélectionné » nomme un composant que
@@ -249,18 +247,16 @@ qu’une fois : celle-ci est courte pour être répétée à chaque phase qui aj
 état.
 
 **(a)** Côte à côte avec un panneau natif de Figma. Densité, taille de texte,
-épaisseur des bordures : l’écart doit être invisible.
-**(b)** Les deux thèmes, en vérifiant le contraste du texte de sévérité sur son
-fond, à 11 px. Dans Figma, pas sur le décalque.
-**(c)** À la plus petite taille de fenêtre admise.
+épaisseur des bordures : l’écart doit être invisible. **(b)** Les deux thèmes,
+en vérifiant le contraste du texte de sévérité sur son fond, à 11 px. Dans
+Figma, pas sur le décalque. **(c)** À la plus petite taille de fenêtre admise.
 **(d)** Avec le pire contenu réel : l’avertissement le plus long que le moteur
-produise, et vingt avertissements d’un coup.
-**(e)** Un compte des objets à l’écran : au-delà d’une douzaine, la hiérarchie
-ci-dessus ne tient plus, quelle que soit la finesse du style. C’est ce compte
-qui a fait retirer le journal replié, le dépôt visé et ses deux chemins, la ligne
-d’emplacement et le titre « Publication » de l’écran de travail : chacun coûtait
-un objet permanent et ne servait aucune décision qui se prenne là, ou redisait ce
-que la ligne d’à côté disait déjà.
+produise, et vingt avertissements d’un coup. **(e)** Un compte des objets à
+l’écran : au-delà d’une douzaine, la hiérarchie ci-dessus ne tient plus, quelle
+que soit la finesse du style. Ce compte a fait retirer le journal replié, le
+dépôt visé et ses deux chemins, la ligne d’emplacement et le titre « Publication
+» de l’écran de travail : chacun coûtait un objet permanent et ne servait aucune
+décision qui se prenne là, ou redisait ce que la ligne d’à côté disait déjà.
 
 ## Écrire du code prudent
 
@@ -285,8 +281,7 @@ Chaque paquet a son `scripts/run-tests.cjs`, qui découvre les fichiers
 Une loi de forme d’un contrat s’écrit dans `packages/plugin/tests/lois.ts` et
 nulle part ailleurs : elle s’applique alors du même geste à tous les scénarios
 existants. La raison de ce point unique, et celle qui interdit de commiter un
-`.contract.json` ici, sont dans
-[AGENTS.md](./AGENTS.md#vérification).
+`.contract.json` ici, sont dans [AGENTS.md](./AGENTS.md#vérification).
 
 Avant une pull request :
 
@@ -299,8 +294,8 @@ npm run build
 ## Documentation
 
 Chaque document a une autorité limitée, et
-[docs/README.md](./docs/README.md#où-vit-quelle-règle) en tient la table. Deux
-seulement concernent qui contribue :
+[docs/README.md](./docs/README.md#quel-document-porte-quelle-règle) en tient la
+table. Deux seulement concernent qui contribue :
 
 | Document | Rôle |
 |---|---|
@@ -314,24 +309,22 @@ répétition. L’historique appartient à Git.
 ### Rédiger un document
 
 Ces règles portent sur les documents du dépôt. Les textes du produit, lus par un
-designer dans le plugin ou dans une pull request, relèvent de
-[Messages destinés au designer](#messages-destinés-au-designer), qui reste leur
-autorité.
+designer dans le plugin ou dans une pull request, relèvent de [Messages destinés
+au designer](#messages-destinés-au-designer), qui reste leur autorité.
 
 Elles existent parce que la documentation avait pris les tics d’écriture des
 modèles de langage, mesurables et reconnaissables : la densité de tiret cadratin
 atteignait cinquante fois celle d’un texte humain.
 
 `tests/styleDocumentaire.test.ts` en tient cinq, sur les documents et sur les
-commentaires de code : tiret cadratin en incise, capitales d’emphase,
-opposition en deux temps, qualificatif que rien n’établit, date posée sur une
-décision. Un sixième contrôle refuse qu’un document d’autorité recopie d’un
-autre un passage de vingt-cinq mots. Les règles vivent dans
-`scripts/controle-style.mjs`, que le hook `PostToolUse` de
-`.claude/settings.json` rejoue au moment où un agent écrit un fichier : le hook
-donne le retour immédiat, le test est la barrière que rien ne franchit. Un mot
-en capitales qui est un sigle, un type de l’API Figma ou un nom de document
-s’ajoute à `ACRONYMES`, dans le même commit.
+commentaires de code : tiret cadratin en incise, capitales d’emphase, opposition
+en deux temps, qualificatif que rien n’établit, date posée sur une décision. Un
+sixième contrôle refuse qu’un document d’autorité recopie d’un autre un passage
+de vingt-cinq mots. `scripts/controle-style.mjs` porte ces règles, et le hook
+`PostToolUse` de `.claude/settings.json` le rejoue au moment où un agent écrit
+un fichier : le hook donne le retour immédiat, le test est la barrière que rien
+ne franchit. Un mot en capitales qui est un sigle, un type de l’API Figma ou un
+nom de document s’ajoute à `ACRONYMES`, dans le même commit.
 
 **Ponctuation.** Le tiret cadratin ne sert pas d’incise. Employer un point, un
 point-virgule, une virgule, deux points ou une parenthèse. Il reste admis dans
@@ -339,11 +332,11 @@ un titre et dans une table de correspondance. Pas d’emphase par capitales : le
 gras suffit, et avec parcimonie. Pas de flèche ni de symbole décoratif dans la
 prose ; ils restent admis dans un tableau ou un schéma.
 
-**Tournures à éviter.** La construction en deux temps « ce n’est pas X, c’est
-Y » et ses variantes. La triade rhétorique, trois éléments listés pour la
-cadence. La personnification d’un document, d’une règle ou d’un fichier : écrire
-« le module `names.ts` porte la règle » plutôt que « la règle vit dans
-`names.ts` ». L’aphorisme et la formule frappante : écrire la règle.
+**Tournures à éviter.** La construction en deux temps « ce n’est pas X, c’est Y
+» et ses variantes. La triade rhétorique, trois éléments listés pour la cadence.
+La personnification d’un document, d’une règle ou d’un fichier : écrire « le
+module `names.ts` porte la règle » plutôt que « la règle vit dans `names.ts` ».
+L’aphorisme et la formule frappante : écrire la règle.
 
 **Histoire.** Un document décrit l’état actuel. Il ne raconte pas ce qui s’est
 passé, ne date pas une décision et ne cite aucun identifiant de tâche.
@@ -379,8 +372,8 @@ porte donc une altitude différente, et une seule fait autorité :
 | Commentaire de code | Ce qui ne vaut qu’à cet endroit du code |
 | Nom de test | La clause vérifiable, une par test |
 
-**Deux autorités, et la frontière entre elles.** Une règle qui décrit un champ,
-sa forme, ce que son absence signifie et ce qu’un consommateur peut en conclure,
+**Les deux autorités et leur frontière.** Une règle qui décrit un champ, sa
+forme, ce que son absence signifie et ce qu’un consommateur peut en conclure,
 appartient à `FORMAT.md`. Une règle qui décrit une lecture, ce que le plugin
 élit dans l’arbre Figma, ce qu’il refuse de deviner et ce dont il avertit le
 designer, appartient à `SPEC.md`. Une règle qui fait les deux se range du côté
@@ -401,15 +394,15 @@ l’altitude d’arrivée et l’emplacement exact ; sans cette phrase, le retra
 se fait pas. Et deux altitudes ne se touchent jamais dans le même commit : un
 document et le code qu’il décrit se raccourcissent à des moments séparés, sans
 quoi chacun se vide en supposant que l’autre garde. Une borne ne se retire
-jamais au motif qu’elle vit ailleurs, sauf à l’avoir lue à l’endroit où elle
-vivrait.
+jamais au motif qu’elle serait écrite ailleurs, sauf à l’avoir lue à cet
+endroit.
 
 ## API Figma et build
 
 - Préférer les variantes asynchrones de l’API, compatibles avec
   `documentAccess: dynamic-page`.
 - Garder les commandes Figma isolées et testables.
-- Les sources de l’interface vivent dans `src/ui/`; le build produit
+- `src/ui/` porte les sources de l’interface ; le build produit
   `dist/ui.html`.
 - Si un changement dépend d’une évolution récente de l’API Figma, vérifier sa
   documentation officielle avant de modifier les types ou l’architecture.

@@ -1,16 +1,17 @@
 # Politique de compatibilité
 
 Cinq choses se publient et peuvent casser un consommateur : le **contrat**, le
-**JSON Schema**, `tokens.json`, les **paquets npm** et les **adaptateurs**. Elles
-ne se versionnent pas de la même façon. Cette politique sépare leurs numéros et
-les responsabilités de migration.
+**JSON Schema**, `tokens.json`, les **paquets npm** et les **adaptateurs**.
+Elles ne se versionnent pas de la même façon. Cette politique sépare leurs
+numéros et les responsabilités de migration.
 
 Ce que la forme publiée vaut aujourd'hui est dans [FORMAT.md](./FORMAT.md) ; ce
-que chaque version a publié est dans [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md).
-Ce document classe les changements, nomme qui les publie et qui les migre, puis
-dit ce qui peut fusionner.
+que chaque version a publié est dans
+[CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md). Ce document classe les
+changements, nomme qui les publie et qui les migre, puis dit ce qui peut
+fusionner.
 
-## Les cinq numéros, et ce que chacun couvre
+## Les cinq numéros et ce que chacun couvre
 
 | Ce qui est publié | Numéro | Écrit où | Ce qu'il ne dit pas |
 |---|---|---|---|
@@ -21,7 +22,7 @@ dit ce qui peut fusionner.
 | un adaptateur | semver, comme tout paquet | son `package.json` | rien du format : ce qu'il mesure est une capacité, pas une garantie |
 
 **Le numéro du contrat et celui d'un paquet ne se suivent pas.** Un paquet peut
-monter sans que le format bouge, et le format peut bouger en n'obligeant qu'un
+monter sans que le format bouge. Un changement de format n'oblige parfois qu'un
 seul paquet. Le seul lien mécanique est la fenêtre de lecture ci-dessous.
 
 ## La fenêtre de lecture
@@ -39,8 +40,8 @@ est refusé **dans les deux sens**, parce que le geste correctif n'appartient pa
 | version plus récente que la borne haute | `recent` | le mainteneur du repository | mettre à jour les paquets UCM |
 | version illisible ou absente | `ancien` | le designer | réexporter, seul geste qui puisse la produire |
 
-Une mineure ne se présume jamais compatible : la 4.2 a renommé des slots
-d'icônes et cassé un lecteur, et c'est de là que vient la plage explicite.
+Une mineure ne se présume jamais compatible. La 4.2 a renommé des slots d'icônes
+et cassé un lecteur ; la plage explicite vient de là.
 
 Une plage élargie chez un consommateur est un choix temporaire d'une migration,
 jamais un état par défaut.
@@ -62,9 +63,9 @@ de ces classes, et la nomme.
 | **8. Contrat d'une version trop ancienne** | — | refusé, verdict `ancien` | le designer, par un réexport |
 | **9. Fichier sans version lisible** | — | traité comme ancien | le designer, par un réexport |
 
-**La classe 4 est la seule qu'aucun contrôle ne peut attraper**, et c'est ce qui
-la rend coûteuse : la forme ne bouge pas, donc le schéma accepte, les lecteurs
-acceptent, et le sens a changé. Elle se traite à la main, entrée par entrée du
+**La classe 4 est la seule qu'aucun contrôle ne peut attraper**, et son coût
+vient de là : la forme ne bouge pas, donc le schéma et les lecteurs acceptent un
+contrat dont le sens a changé. Elle se traite à la main, entrée par entrée du
 changelog.
 
 ### Application de la classe 4 à `@default`
@@ -72,8 +73,8 @@ changelog.
 Le défaut d'un axe de variantes ne vient plus de la position d'un variant dans
 son component set, mais d'une règle `@default` que le designer écrit. Le champ
 `props.<axe>.default` ne change ni de nom, ni de type, ni de place ; ce qui
-change est que son **absence** signifie désormais « aucun défaut publié » au lieu
-de « le premier variant ».
+change est que son **absence** signifie désormais « aucun défaut publié » au
+lieu de « le premier variant ».
 
 La migration suit ces règles :
 
@@ -94,12 +95,12 @@ externe réexporte tout le corpus concerné avant publication. Une évolution de
 même nature après cette diffusion monterait la version majeure du contrat : un
 lecteur doit pouvoir distinguer les deux sens.
 
-## `tokens.json` n'a pas de version, et c'est une décision
+## Pourquoi `tokens.json` n'a pas de version
 
 Aucun lecteur n'en cherche une : ni Style Dictionary en mode DTCG, ni
 `indexerTokensDtcg`, qui répond seulement « ce chemin existe-t-il ». Un numéro
-écrit aujourd'hui serait un champ décoratif, et un champ décoratif se lit comme
-une garantie.
+écrit aujourd'hui serait décoratif. Un consommateur le lirait pourtant comme une
+garantie.
 
 Le signal qui rouvre la question est la première évolution de la projection des
 tokens. La forme est tranchée d'avance pour que le geste soit alors mécanique :
@@ -125,7 +126,7 @@ Trois vérifications séparent ce cas d'un changement de format :
 
 Un verdict qui se relâche se publie comme une nouveauté. Le README du paquet
 l'annonce, puisqu'il part sur le registre avec lui et que son consommateur le
-lit ; sans cette mention, la date à laquelle un contrôle a cessé de refuser reste
+lit. Sans cette mention, le moment où un contrôle a cessé de refuser reste
 introuvable. La section « A repository with no contract at all » de
 `packages/kit/README.md` applique cette règle.
 
@@ -137,13 +138,13 @@ introuvable. La section « A repository with no contract at all » de
 - **migre** : le designer, quand le geste est un réexport (classes 3, 5, 8, 9) ;
   le développeur, quand le geste est une adaptation de code (classes 2, 3, 7) ;
   les deux, dans cet ordre, pour la classe 4 ;
-- **peut fusionner** : un contrat hors de la fenêtre de lecture bloque, et rien
+- **peut fusionner** : un contrat hors de la fenêtre de lecture bloque. Rien
   d'autre ici ne bloque. Un écart entre le contrat et le code avertit sans
-  refuser la fusion, parce qu'il accuse le code et non l'artefact déposé.
+  refuser la fusion, parce qu'il porte sur le code et non sur l'artefact déposé.
 
 ## Ce que cette politique ne fait pas
 
 Elle ne prescrit ni migration automatique, ni compatibilité déclarée par
-consommateur. Les deux ont été écartées pour la même raison : elles supposent de
-connaître, chez le producteur, ce qu'un repository tiers fait de son contrat.
-Un réexport et une fenêtre explicite disent la même chose sans le supposer.
+consommateur. Les deux ont été écartées pour la même raison : elles demandent au
+producteur de savoir ce qu'un repository tiers fait de son contrat. Un réexport
+et une fenêtre explicite obtiennent le même résultat sans cette connaissance.

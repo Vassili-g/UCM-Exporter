@@ -225,7 +225,8 @@ actionnable et vérifiable ; il ne déduit pas une cause que le contrôle n'a pa
 
 ## Relecture finale
 
-Relire le texte comme quelqu'un qui ne connaît pas la session en cours.
+Relire le texte du point de vue d'un lecteur qui ne connaît pas la session en
+cours.
 
 1. Chaque phrase ajoute-t-elle un fait, une règle, une conséquence ou une action
    vérifiable ? Sinon, la supprimer ou la raccourcir.

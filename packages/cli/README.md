@@ -5,17 +5,19 @@ exported them.
 
 A **UCM contract** is a JSON file describing a UI component exactly as it exists
 in Figma: its variants, its structure, its design tokens, its usage rules. It is
-written by the [UCM Contract Exporter](https://github.com/Vassili-g/UCM-Exporter)
-Figma plugin and committed next to the component's code. This command reads
-those files and says whether they still hold together.
+written by the [UCM Contract
+Exporter](https://github.com/Vassili-g/UCM-Exporter) Figma plugin and committed
+next to the component's code. This command reads those files and says whether
+they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.20 init
-npx --yes @ucm-kit/cli@0.1.20 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.21 init
+npx --yes @ucm-kit/cli@0.1.21 check --report ci-report.md
 ```
 
-Pin an exact version, without `^`. A range would let npx pick a build nobody
-tested, and the check would change its verdict without a single file moving.
+Pin an exact version, without `^`. A range would let npx install a build this
+project has not tested. Two runs would then return different verdicts for the
+same contract.
 
 ## Your repository does not have to be a Node project
 
@@ -24,8 +26,8 @@ an Android one, or a plain folder of contracts can have its exports checked. The
 only requirement is Node, and in CI `setup-node` provides it.
 
 If a `package-lock.json` happens to exist, the workflow runs `npm ci` first, so
-that any optional stack adapter the repository installed becomes visible to
-`ucm check`.
+that any optional stack adapter the repository installed becomes visible to `ucm
+check`.
 
 ## Commands
 
@@ -56,7 +58,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.20 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.21 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -82,8 +84,8 @@ has one.
 
 ## What `ucm init` writes
 
-Five files, and it explains each one as it writes it. An existing file is kept
-as it is, and the command tells you what it left alone.
+Five files. The command explains each one as it writes it. An existing file is
+kept as it is, and the command names what it left alone.
 
 | File | Why |
 |---|---|
@@ -97,14 +99,14 @@ The workflow is yours once written. It will never be overwritten.
 
 ### `ucm.config.json`
 
-Three paths, and nothing else. **This file is the only authority on where an
-export lands.** The Figma plugin reads it before publishing, and `ucm check`
-reads it before looking for contracts. A repository that arranges things
-differently says so here, once, and both sides follow.
+Three paths. **This file is the only authority on where an export lands.** The
+Figma plugin reads it before publishing, and `ucm check` reads it before looking
+for contracts. A repository that arranges things differently says so here, once,
+and both sides follow.
 
-Its absence is the nominal case, not an error: the defaults below apply, and a
-repository with a single `components/` folder works without writing a line. A
-file that exists but is malformed is refused on both sides.
+Its absence is the nominal case: the defaults below apply. A repository with a
+single `components/` folder works without writing a line. A file that exists but
+is malformed is refused on both sides.
 
 ```json
 {
@@ -115,8 +117,7 @@ file that exists but is malformed is refused on both sides.
 ```
 
 `implementation` is a pattern with two tokens, `{dir}` for the contract's folder
-and `{id}` for its identifier. Replace it with the pattern your repository
-uses.
+and `{id}` for its identifier. Replace it with the pattern your repository uses.
 
 No version number goes in this file. Which contract versions can be read belongs
 to the installed package, and repeating it here would create a second authority
@@ -124,17 +125,16 @@ that drifts on the first update.
 
 ## What the report says
 
-The report is written for the **designer** who validates the export, not for the
-developer who reads CI logs. Every reason a pull request is refused appears in
-it.
+The report is written for the **designer** who validates the export. It requires
+no CI log. Every reason a pull request is refused appears in it.
 
 Six checks run on each contract. Four block a merge, two only warn: **a check
 blocks when the file on disk cannot be read as it stands**, and warns when the
 read succeeds and the gap points at the code or at the token file.
 
-Who fixes it depends on the direction of the gap, never on who opened the pull
-request, which the CI does not know. A contract that is too old is re-exported;
-a contract that is too new needs this package upgraded, and no re-export helps.
+The direction of the gap names who fixes it. The CI never reads who opened the
+pull request. A contract that is too old is re-exported; a contract that is too
+new needs this package upgraded, which no re-export replaces.
 [`@ucm-kit/core`](https://www.npmjs.com/package/@ucm-kit/core) names both
 directions.
 
@@ -149,18 +149,18 @@ directions.
 
 A gap with the code needs a developer, so it warns and lets the merge through. A
 token removed from the design system does too: tokens are the source of truth,
-and an older contract does not hold back their evolution. A token file that is
+so an older contract does not hold back their evolution. A token file that is
 absent or unreadable is another matter: no reference can be resolved at all, so
 the check gives up rather than reporting every path as missing.
 
 A contract may land before the code that implements it. A missing implementation
-is an allowed state, not an error.
+is an allowed stage of the work.
 
 **So is a repository with no contract at all.** Right after `ucm init` nothing
 has been exported: there is no token file, and usually no contract folder. From
 `0.1.10` on, `ucm check` returns 0 there and reports what to do next. The number
 of contracts decides: with one or more, a missing token file blocks the merge
-again, because those contracts cite tokens nobody can resolve.
+again, because those contracts cite tokens that cannot be resolved.
 
 The report also relays two things it does not measure itself: the warnings the
 export wrote into the contract, and the verdict of the repository's own tests
@@ -169,8 +169,8 @@ when an orchestrator passes it in through `UCM_ECHECS_DE_TESTS`.
 ## Optional stack adapters
 
 The first five checks above read contracts and tokens only, so they work
-whatever the repository is written in. Comparing a contract to real code needs to read that
-code, which is a stack adapter's job.
+whatever the repository is written in. Comparing a contract to real code needs
+to read that code, which is a stack adapter's job.
 
 `ucm check` discovers an adapter installed **by the repository**, resolving from
 the checked root rather than from the npx cache. Install
