@@ -1,219 +1,267 @@
 # Aligner `tokens.json` sur le module de format DTCG `2025.10`
 
-**Statut : recherche, aucune décision prise.** Cette note pèse un changement de
-la projection des tokens. Elle ne fait autorité sur rien. La forme publiée
-aujourd'hui est décrite dans [FORMAT.md](../FORMAT.md#partie-2--export-tokens),
-et le moment où cette forme change dans
-[COMPATIBILITE.md](../COMPATIBILITE.md#pourquoi-tokensjson-na-pas-de-version).
+**Statut : décision prise, rien n'est implémenté.** La forme publiée reste celle
+de [FORMAT.md](../FORMAT.md#partie-2--export-tokens) tant que le
+[plan d'implémentation](./PLAN-ALIGNEMENT-DTCG.md) n'a pas livré sa phase 2. Les
+changements de compatibilité relèvent de [COMPATIBILITE.md](../COMPATIBILITE.md).
 
-## 1. Le problème
+Cette note justifie la décision. Le plan en porte les étapes et leurs critères
+de fermeture.
 
-`FORMAT.md` déclare les trois écarts entre la grammaire que l'export vise, celle
-que lit Style Dictionary v4, et le module de format `2025.10` : la couleur et la
-dimension y sont des objets, `boolean` et `string` n'y sont pas des types.
+## 1. La décision
 
-### Ce que ces écarts coûtent
+L'export se rapproche du module Format en trois tranches. Elles sont séparées
+par ce qui casse un consommateur et par ce qui dépend d'un fait que seul Figma
+détient.
 
-- **Une couleur hors sRGB se perd sans un mot.** `figma.root.documentColorProfile`
-  rend `LEGACY`, `SRGB` ou `DISPLAY_P3`. L'export ne le lit pas, et un
-  hexadécimal ne sait pas le porter : un fichier Figma en Display P3 sort donc
-  comme s'il était en sRGB. Des trois écarts, c'est le seul qui perde une
-  information au lieu d'en changer l'écriture.
-- **Les tokens de police portent un type qui ne dit pas ce qu'ils sont.** Figma
-  publie les graisses et les familles en `STRING`, `dtcgType` les type `string`,
-  et le module définit `fontFamily` et `fontWeight` pour cet usage. Chaque
-  consommateur écrit donc lui-même la traduction : le Playground porte deux
-  transforms et une table de quinze graisses pour la faire.
-- **Aucun contrôle ne juge le fichier.** Le contrat a son schéma, dérivé de
-  `types.ts` et appliqué par Ajv. `tokens.json` n'a que la prose de `FORMAT.md`.
-- **Les canaux sont arrondis sur huit bits.** Figma garde des flottants,
-  `toHex` les quantifie.
-
-### Ce que ces écarts ne coûtent pas
-
-- Les lecteurs du kit sont indifférents à la forme des valeurs. Deux fichiers
-  touchent `$value` : `tokens-dtcg.mjs` demande si un chemin existe,
-  `typography-token-types.mjs` demande si une valeur est un alias. Aucun n'ouvre
-  une couleur ni une dimension.
-- Le contrat de composant ne cite que des chemins de tokens.
-- Un alias s'écrit `"{chemin}"` dans les deux grammaires. L'invariant « les
-  tokens restent des références » ne dépend pas de ce choix.
-- Style Dictionary v4 produit le CSS attendu à partir du fichier actuel.
-
-## 2. L'état de l'écosystème
-
-La liste de suivi de Style Dictionary
-([issue 1590](https://github.com/style-dictionary/style-dictionary/issues/1590))
-donne l'état de la v5 face au module `2025.10`.
-
-| Élément du module | État chez Style Dictionary | Présent dans l'export UCM |
+| Tranche | Contenu | Sort |
 |---|---|---|
-| Couleur, module complet et ses espaces | fait | oui, chaque variable `COLOR` |
-| Dimension en objet `{value, unit}` | fait, les chaînes restent acceptées | oui, chaque `FLOAT` dimensionnel |
-| Border | fait | non |
-| Gradient | en cours | non, hors des types de variable Figma |
-| Duration | en cours | non, hors des types de variable Figma |
-| Module de résolution | non commencé | non, les modes passent par `$extensions` |
+| Valeurs | Dimension en `{ value, unit }` ; graisse `STRING` reconnue en `$type: "number"`, avec son poids numérique ; marque `$extensions["com.ucm.grammaire"]` au niveau du document | Engagée, après le passage du consommateur à Style Dictionary 5 |
+| Profil colorimétrique | Couleur en `{ colorSpace, components, alpha }`, espace lu dans `documentColorProfile` | Engagée avec les valeurs si le fichier Figma du Playground est en `SRGB` ou `LEGACY` ; après la recette externe s'il est en `DISPLAY_P3` |
+| Typage de la famille | `fontFamily` à la place de `string` | Différée |
 
-Tout ce que l'export écrit se trouve dans la colonne « fait ». Les deux chantiers
-ouverts portent sur des types qu'une variable Figma ne peut pas porter, puisque
-Figma n'offre que `COLOR`, `FLOAT`, `STRING` et `BOOLEAN`. L'avertissement
-général « le support de `2025.10` est incomplet » vaut donc pour l'outil, sans
-effet sur cette projection.
+Le module Resolver, le traitement dédié du booléen et le typage par contexte
+sont hors de cette décision.
 
-Les deux ruptures de la v5 laissent l'export intact : une référence ne vaut plus
-que sur une feuille portant `$value`, ce que les alias respectent déjà, et la
-syntaxe `{ref}` est figée, ce que l'export écrit déjà. La v5 demande Node 22.
+### Ce que la décision promet
 
-Des parseurs conformes au module existent, dont
-[`@styleframe/dtcg`](https://www.styleframe.dev/docs/getting-started/integrations/dtcg),
-qui couvre Format, Color et Resolver. Le schéma publié sur `designtokens.org` ne
-couvre que le module de résolution : un contrôle de conformité passerait donc
-par un de ces paquets.
+« Aligner sur DTCG » recouvre quatre questions distinctes.
 
-## 3. Les solutions
-
-| Option | Ce qu'elle change | Ce qu'elle laisse ouvert |
+| Question | Promesse | Contrôle |
 |---|---|---|
-| A. Garder la grammaire actuelle | rien ; `FORMAT.md` la déclare et nomme ses écarts | les quatre coûts de la partie 1 |
-| B. Aligner les valeurs | couleur et dimension en objets, espace colorimétrique porté | le typage des polices, `boolean`, les modes |
-| C. B, plus le typage des polices | `fontFamily` et `fontWeight` remplacent `string` sur les scopes de police | `boolean`, les modes |
-| D. C, plus un document de résolution | les modes s'expriment dans la forme du module | rien, hors `boolean` |
+| Conformité au module Format | Toutes les feuilles, sauf les `STRING` hors graisse reconnue, les `BOOLEAN`, les feuilles dont la cible d'alias est absente, et les `EASING` et `TIMING` tant que le plan ne les a pas traités | Test du plugin qui applique à chaque feuille la définition `token.json` du schéma figé, avec un compte qui ne peut pas monter |
+| Interopérabilité | Lecture par Style Dictionary 5 et ses transforms standard. Aucun autre outil n'est visé ni essayé | `diff` du CSS du Playground |
+| Fidélité à Figma | Composantes de couleur sans quantification, profil déclaré | Comparaison visuelle consignée dans la pull request du Playground, lors de la tranche du profil |
+| Lecteurs UCM | Aucun verdict ne change pour les tranches engagées | Lecture du fichier réexporté par le kit publié et par le kit qu'épingle le Playground : zéro référence absente, zéro erreur de type |
 
-L'option D attend une implémentation : aucun outil installé ne lit un document
-de résolution. Les modes restent donc sous `$extensions["com.ucm.modes"]`, où
-le module les autorise.
+### Les politiques retenues
 
-## 4. Les risques
+- **Booléens et chaînes quelconques.** Ils restent au même chemin, avec
+  `$type: "boolean"` ou `"string"`, et le fichier se déclare dialecte sur ces
+  feuilles. Les exclure réduirait la portée publiée de la commande, « toutes
+  les variables locales ». Les déplacer sous `$extensions` changerait
+  l'adressage que les contrats citent.
+- **Modes.** `com.ucm.modes` garde sa forme : un dictionnaire indexé par nom de
+  mode, dont les noms passent par le même assainissement que les segments de
+  chemin. Seule la forme de ses valeurs change. La décision ne publie ni axe, ni
+  mode par défaut explicite, ni combinaison entre collections ; la
+  [piste 2.4](./PISTES-EVOLUTION.md#24-consommer-les-modes-figma--marques-et-clairsombre)
+  porte cette question.
+- **Erreurs de graphe.** L'export ne refuse jamais le fichier et n'en exclut
+  aucune feuille. Une cible absente sort en `$value: null` avec un
+  avertissement, et le schéma juge cette feuille non conforme. Un cycle d'alias
+  sort tel quel : il passe le schéma, et l'export ne le signale pas
+  aujourd'hui. Le plan ajoute ce signalement.
+- **Inférence du type.** La décision n'ajoute qu'une inférence, celle de la
+  graisse. Elle reprend la règle de segment que `FORMAT.md` publie déjà pour
+  `number`, et la restreint : la valeur doit être un nom de graisse connu dans
+  chaque mode. L'autorité du type d'une `STRING` quelconque reste à décider
+  avant le typage de la famille.
 
-### Risques de le faire
+## 2. Les mesures
 
-- **Un fichier produit avant le changement, lu par un kit à jour.** Le contrôle
-  des types typographiques rendrait une erreur sur un `string` là où il
-  attendrait `fontWeight`. La parade est d'ajouter les types tolérés sans
-  retirer `string`, comme `typography-token-types.mjs` tolère déjà deux formes.
-- **Le Playground passe à Style Dictionary v5**, donc à Node 22. Sa CI doit
-  monter à cette version.
-- **La marque de grammaire devient un engagement.** Un lecteur s'en servira pour
-  distinguer les deux formes, et elle ne se retirera plus.
-- **Le mot « conforme » resterait qualifié.** `boolean` n'appartient à aucune
-  révision du module. Annoncer une conformité pleine serait faux.
-- **Les modes ne gagnent rien à cette passe.** L'alignement n'apporte rien au
-  multi-marque tant qu'aucun outil installé ne lit un document de résolution.
+**Méthode.** Le schéma Format `2025.10` publié par
+[designtokens.org](https://www.designtokens.org/schemas/2025.10/format.json) est
+compilé par Ajv 8 en draft-07, avec `strict: false`. Sa définition `token.json`
+est appliquée à chacune des 721 feuilles du `tokens.json` du Playground, et le
+schéma entier au document. Le CSS est produit par la configuration du
+Playground, sous Style Dictionary 4.4.0 (la version installée) et 5.5.3, puis
+comparé par `diff` au fichier généré au commit courant. Les lecteurs sont
+`indexerTokensDtcg` et `erreursTypesTypographiques` du kit, appliqués aux
+quatre contrats du Playground. Le plan prévoit le script qui rejoue ces
+mesures.
 
-### Risques de ne pas le faire
+Les variantes sont des transformations du fichier actuel. Leurs composantes de
+couleur sont dérivées de l'hexadécimal, et la table de poids ne couvre que les
+trois noms du corpus : `Regular`, `SemiBold` et `Bold`. Les valeurs sous
+`com.ucm.modes` restent en hexadécimal. Ni le schéma ni Style Dictionary ne
+lisent ces valeurs de mode : aucun chiffre ci-dessous n'en dépend.
 
-- La perte du profil colorimétrique reste muette, et elle grandit avec l'usage
-  de Display P3 dans les fichiers source.
-- Chaque consommateur qui arrive fige la grammaire actuelle. Le coût de la
-  migration croît avec leur nombre, et il est aujourd'hui à son minimum.
-- Les pistes [2.3, 2.5 et 5.4](./PISTES-EVOLUTION.md#23-produire-les-ressources-de-tokens)
-  restent suspendues à cette question, puisqu'elles supposent des outils qui
-  lisent le fichier.
-- Le positionnement de `CONCEPT.md`, un artefact que d'autres outils peuvent
-  lire, reste une affirmation de prose.
-- Un outil qui vise le module refuse le fichier, et la conversion s'écrit alors
-  chez chaque consommateur.
+| Variante | Feuilles conformes | Lecteurs du kit | CSS sous Style Dictionary 5.5.3 | CSS sous Style Dictionary 4.4.0 |
+|---|---|---|---|---|
+| Fichier actuel | 529 / 721 | 0 erreur | identique à l'octet | référence |
+| Couleurs et dimensions en objets, graisse en nombre | 720 / 721 | 0 erreur | identique à l'octet | 173 déclarations `[object Object]`, build sans erreur |
+| Même variante, couleurs laissées en hexadécimal | 618 / 721 | 0 erreur | identique à l'octet | 71 déclarations `[object Object]` |
+| Même variante, couleurs en `display-p3` | 720 / 721 | 0 erreur | 97 lignes changées | non mesuré |
+| Deuxième variante, graisse en `fontWeight` | 720 / 721 | 8 erreurs bloquantes, sur 3 contrats de 4 | identique à l'octet | non mesuré |
+| Deuxième variante, famille en `fontFamily` | 721 / 721 | 8 erreurs bloquantes, sur 3 contrats de 4 | 1 ligne changée | non mesuré |
 
-## 5. Les avantages
+Les 192 écarts du fichier actuel se répartissent en 102 couleurs littérales,
+71 dimensions littérales et 19 feuilles `$type: "string"` : une famille et
+18 graisses. Les 529 feuilles conformes sont toutes des alias. Le schéma
+vérifie la forme `{…}` d'une référence, jamais l'existence ni le type de sa
+cible. Le document entier n'est valide que dans la dernière variante, où
+toutes les feuilles sont conformes ; ailleurs, le compte par feuille localise
+les écarts.
 
-- **Le typage des polices retire du code au consommateur.** Les deux transforms
-  et la table de quinze graisses du Playground existent parce que ces tokens
-  sortent en `string`. Avec `fontWeight` et `fontFamily`, les transforms
-  standard font ce travail.
-- **La couleur porte son espace.** Le profil du document Figma cesse d'être
-  perdu, et un fichier en Display P3 s'exporte pour ce qu'il est.
-- **Un contrôle remplace une affirmation.** Un validateur conforme juge le
-  fichier en CI, comme Ajv juge le contrat.
-- **Les valeurs se rapprochent de leur source.** Figma rend des flottants de 0 à
-  1 et des nombres nus. `components` et `value` attendent ces deux formes, si
-  bien que l'alignement retire deux conversions au lieu d'en ajouter.
-- **Le kit peut devenir strict** là où il tolère aujourd'hui deux typages.
+Le fichier compte 187 segments de chemin distincts, et aucun ne contredit le
+motif de nom du module, `^[^${}.][^{}.]*$`.
 
-## 6. Plan d'action
+Sous Style Dictionary 5, avec le groupe `css` :
 
-Sept étapes. Chacune nomme le contrôle qui la ferme.
+- une graisse `fontWeight` écrite `semi-bold` sort `semi-bold`, valeur
+  invalide pour la propriété
+  [`font-weight`](https://www.w3.org/TR/css-fonts-4/#font-weight-prop) ; `600`
+  sort `600` ;
+- `fontFamily/css` écrit `'Open Sans'`, sans le repli `, sans-serif` que le
+  transform du Playground ajoute. Les deux transforms réunis écrivent
+  `"'Open Sans'", sans-serif`, et le navigateur cherche alors une famille dont
+  le nom contient les apostrophes : c'est la ligne changée de la dernière
+  variante ;
+- une couleur `display-p3` hors du gamut sRGB est ramenée dans ce gamut puis
+  écrite en hexadécimal : `#00fb29` pour le vert P3 pur. Le transform
+  `color/p3` convertit toutes les couleurs vers Display P3, sRGB comprises ;
+- une couleur translucide sort `rgba(…, 0.5)`, là où `#ffffff80` donnait
+  `0.50196…`. Le corpus n'en contient aucune.
 
-### Étape 1. Les valeurs, dans le moteur
+## 3. Pourquoi engager la tranche des valeurs
 
-`formatValue` rend `{ colorSpace, components, alpha, hex }` pour une couleur et
-`{ value, unit }` pour une dimension. `toHex` reste, son résultat devenant le
-repli `hex`. Les composantes viennent des flottants Figma sans passer par
-l'octet.
+[PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md#23-produire-les-ressources-de-tokens)
+nomme trois déclencheurs qui rendraient nécessaire une décision de grammaire :
+un deuxième consommateur, un outil cible qui exige `2025.10`, ou la première
+évolution de la projection. Aucun n'est survenu, et le Playground lit le
+fichier actuel sans défaut. Rien n'impose donc l'alignement.
 
-Ce qui le prouve : les assertions de forme de
-`packages/plugin/tests/exportTokens.test.ts`, dix-huit lignes, réécrites. Les
-lois du moteur ne bougent pas.
+La décision repose sur deux faits. Le premier : sous Style Dictionary 5, la
+tranche ne change ni le CSS du Playground ni un verdict du kit. Le second : elle
+ferme la seule perte d'information de l'export. Un document en Display P3 sort
+aujourd'hui comme s'il était en sRGB, et ses canaux sont arrondis à l'octet.
+Seul l'objet couleur du module porte l'espace et les flottants. L'export sert
+tout fichier Figma, et cette perte ne se répare pas depuis le JSON. Les
+dimensions et la graisse suivent dans la même publication, parce qu'elles
+exigent le même passage à Style Dictionary 5.
 
-### Étape 2. Le profil colorimétrique
+Si le fichier du Playground est en sRGB, ce consommateur n'en voit aucun effet
+à l'écran. La décision est alors préventive pour lui.
 
-`buildLeaf` lit `figma.root.documentColorProfile` une fois par export.
-`LEGACY` et `SRGB` donnent `srgb`, `DISPLAY_P3` donne `display-p3`.
+Ce que chaque changement rapporte :
 
-Ce qui le prouve : un test par valeur du profil, sur une racine simulée.
+- **Un contrôle.** Un test UCM applique à chaque feuille la définition
+  `token.json` du schéma publié et rend 720 conformes sur 721. Le document
+  entier reste refusé tant que la famille est en `string`. Ce jugement porte
+  sur la forme : une dimension bien formée attribuée à une opacité passe le
+  schéma.
+- **Une graisse typée d'une seule façon.** Le moteur sort déjà en `number` une
+  graisse stockée en `FLOAT`, et en `string` la même graisse stockée en
+  `STRING`. La tranche retire cet écart, et le Playground peut retirer le
+  transform `fontWeight/name-to-number`.
+- **Un profil déclaré.** Pour un document en Display P3, le groupe `css`
+  convertit chaque couleur vers sRGB. Les 97 lignes qui changent corrigent donc
+  une couleur que le fichier actuel fait lire comme sRGB. Un rendu en gamut
+  large demanderait en plus un transform qui lit `colorSpace`.
+- **Des composantes sans quantification.** Les flottants de Figma remplacent
+  l'octet. Le groupe `css` de Style Dictionary 5 les ramène à l'octet : seul un
+  lecteur qui garde les flottants en profite. L'effet sur le corpus n'est pas
+  mesuré, les variantes dérivant leurs composantes de l'hexadécimal.
 
-### Étape 3. La marque de grammaire
+Le coût est du travail : le passage du consommateur à Style Dictionary 5, trois
+publications de paquets, un réexport depuis Figma et une publication sur la
+Community. Seul le passage à Style Dictionary 5, avec la mise à jour de la
+version épinglée du CLI, se répète pour chaque consommateur. Il ne pèse que sur
+un consommateur qui branche la grammaire actuelle avant le changement ; le
+projet en connaît un.
 
-`COMPATIBILITE.md` en a fixé la forme : `$extensions`, namespace `com.ucm.*`,
-et un fichier sans ce champ vaut grammaire d'origine. L'écrire au niveau du
-document.
+**Risque accepté.** Un consommateur resté sur Style Dictionary 4 reçoit
+`[object Object]` à la place de chaque couleur et de chaque dimension, sans
+échec de build. Ni la marque de grammaire ni le kit ne le protègent : un
+lecteur ancien ignore la marque, et le kit ne lit pas les valeurs. Le seul
+consommateur connu passe à Style Dictionary 5 avant le réexport. La classe de
+compatibilité que le plan ajoute nomme ce geste pour un repository qui emploie
+le kit. Un utilisateur du plugin qui lit `tokens.json` sans le kit l'apprend
+par le README du plugin et par sa page Community, mis à jour avec la
+publication.
 
-Ce qui le prouve : un test qui lit la marque dans la sortie de la commande
-tokens, et `COMPATIBILITE.md` mis à jour dans le même geste.
+La tranche des valeurs est la première évolution de la projection :
+`COMPATIBILITE.md` lui impose la marque de grammaire. Elle rouvre aussi le
+typage de la famille, que la section suivante diffère.
 
-### Étape 4. Le typage des polices
+## 4. Pourquoi différer le typage de la famille
 
-`dtcgType` rend `fontFamily` pour le scope `FONT_FAMILY` et `fontWeight` pour
-`FONT_WEIGHT`, quel que soit le type Figma résolu. Deux appuis existent déjà :
-`isUnitless` lit le scope, et le type se décide sur la racine de la chaîne
-d'alias. La valeur d'une graisse se normalise vers un mot-clé du module,
-`SemiBold` donnant `semi-bold`, ou vers son nombre.
+La graisse est réglée par la tranche des valeurs : `number` donne le même
+compte conforme et le même CSS que `fontWeight`, sans ses 8 erreurs.
 
-`typography-token-types.mjs` ajoute `fontWeight` et `fontFamily` aux types
-tolérés sans retirer `string`.
+Le typage `fontFamily` gagne une feuille, la famille, et rend le document
+entier valide. Il produit 8 erreurs bloquantes chez un consommateur dont le
+kit n'a pas été mis à jour, et leur message demande de corriger l'exporteur.
+La tranche des valeurs élargit déjà les types que le lecteur typographique
+tolère : ces erreurs ne toucheront pas un repository qui a adopté cette
+version.
 
-Ce qui le prouve : les tests du kit sur les deux typages, et le corpus N-1 lu
-sans erreur.
+Le typage reste différé pour deux raisons qui ne dépendent pas de cette
+fenêtre :
 
-### Étape 5. Le Playground
+- **L'autorité du type d'une `STRING`.** La règle de segment suffit pour la
+  graisse, parce que `poidsDeGraisse` vérifie la valeur dans chaque mode.
+  Aucune liste ne vérifie un nom de famille : la même règle typerait
+  `fontFamily` toute chaîne rangée sous un segment `fontfamily`. Figma n'offre
+  que le scope `FONT_FAMILY`, et ce scope n'est pas obligatoire.
+- **Le CSS du Playground.** Sous Style Dictionary 5, le typage change la
+  famille en `"'Open Sans'"`, qu'aucune police installée ne porte. Le
+  Playground doit corriger `fontFamily/css-quote`, ou retirer `fontFamily/css`
+  de son groupe, avant de recevoir ce type.
 
-Style Dictionary v5, puis suppression des deux transforms devenus inutiles.
+Le [plan](./PLAN-ALIGNEMENT-DTCG.md#phase-4--différée--le-typage-fontfamily)
+nomme les conditions de sa reprise.
 
-Ce qui le prouve : `npm run build` du Playground, et le CSS produit comparé au
-précédent. Les graisses et les familles sont les seules valeurs qui doivent
-changer de provenance, sans changer de résultat.
+## 5. Les options écartées
 
-### Étape 6. Le contrôle de conformité
+| Option | Raison |
+|---|---|
+| Typer la graisse par le scope `FONT_WEIGHT` | Figma réserve ce scope aux `FLOAT`. Une `STRING` ne dispose que de `ALL_SCOPES`, `TEXT_CONTENT`, `FONT_FAMILY` et `FONT_STYLE` ([VariableScope](https://developers.figma.com/docs/plugins/api/VariableScope/)). Les 18 graisses du corpus sont des `STRING` : aucune ne serait typée |
+| `$type: "fontWeight"` avec un mot-clé du module | Style Dictionary 5 recopie `semi-bold` dans le CSS, où il est invalide ; le lecteur typographique publié refuse ce type |
+| `$type: "fontWeight"` avec un nombre | 8 erreurs bloquantes sur 3 contrats de 4, sans feuille conforme de plus, pour le même CSS que `number` |
+| Repli `hex` dans l'objet couleur | Style Dictionary 5 ne lit `hex` que pour une couleur hors du gamut sRGB, qu'il sait déjà ramener dans ce gamut, et Style Dictionary 4 ne lit pas l'objet. Le repli remplacerait le choix de Style Dictionary par celui du plugin, et devrait être calculé dans le plugin |
+| Contrôle de conformité chez le consommateur | Le test du plugin trouve l'écart une fois, avant la publication. Chez le consommateur, il apparaîtrait après, dans chaque repository, sans geste possible pour le designer ni pour le mainteneur du repository |
+| Paquet tiers de validation | Ajv, déjà dépendance du kit, compile le schéma publié. La documentation de `@styleframe/dtcg` présente `string` comme un type conforme |
+| Une feuille standard par variable, au même chemin | Impossible sans perte tant que Figma publie des `STRING` quelconques et des `BOOLEAN` : le fichier se déclare dialecte sur ces feuilles |
+| Projection stricte dérivée, publiée à côté du `tokens.json` actuel | Elle protégerait un consommateur resté sur Style Dictionary 4. Le Playground continuerait pourtant de lire le fichier actuel, sans profil déclaré ni graisse typée, et le plugin comme la pull request d'export porteraient un second artefact. Elle redevient l'option à retenir le jour où coexistent un consommateur sur Style Dictionary 4 que le projet ne migre pas et un outil qui exige le module strict |
+| Module Resolver | Aucun outil installé ne le lit. Le seul second mode du corpus vaut `#ffffff` sur ses dix tokens |
+| Retrait du transform `fontFamily/css-quote` | Il porte le repli `, sans-serif`, qui est une décision de l'application |
 
-Un parseur conforme au module, lancé sur la sortie de la commande tokens.
+## 6. Les contraintes que l'implémentation respecte
 
-Ce qui le prouve : le contrôle rougit sur une couleur privée de `colorSpace`,
-et repasse au vert quand elle le retrouve.
+- **Style Dictionary est le seul lecteur de valeurs du flux.**
+  `indexerTokensDtcg` reconnaît une feuille à la présence de `$value`.
+  `erreursTypesTypographiques` ne lit `$value` que pour suivre un alias, et
+  `cheminDeReference` rend `null` sur un objet. L'absence d'erreur du kit ne
+  prouve donc pas qu'un consommateur lit le fichier.
+- **Le type se décide sur la racine, dans le mode par défaut.** `buildLeaf`
+  appelle `dtcgType` avec la racine de la chaîne d'alias suivie par le mode par
+  défaut, et avec les scopes de cette racine. Une règle qui dépend de la valeur
+  doit vérifier chaque mode.
+- **Le schéma ne lit pas `$extensions`.** Il le déclare `{"type": "object"}`.
+  Les valeurs de `com.ucm.modes` demandent un contrôle propre à UCM : chacune a
+  la forme du `$type` de sa feuille.
+- **Un segment qui commence par `$` fait disparaître un token.**
+  [`indexerTokensDtcg`](../../packages/kit/src/lecteurs/tokens-dtcg.mjs) saute
+  toute clé en `$`, et `normalizeName` conserve ce caractère. Le point commun
+  aux deux commandes du plugin est `joinTokenPath`
+  ([`variables.ts`](../../packages/plugin/src/variables.ts)).
+- **`EASING` et `TIMING` sont des types de variable Figma.** `dtcgType` les
+  range en `string`, et une `EASING` y porte un objet `MotionEasing`. Le module
+  définit `duration` et `cubicBezier`, mais un ressort, que `MotionEasing` sait
+  décrire, n'a pas d'équivalent dans `cubicBezier`.
+- **Un document `LEGACY` ne porte aucun profil.** Un réexport ne le retrouve
+  pas. Seul un humain peut fixer le profil dans Figma, et le plugin ne modifie
+  jamais le document
+  ([gestion des profils](https://help.figma.com/hc/en-us/articles/360039825114-Manage-color-profiles-in-design-files)).
+- **Les avertissements de l'export n'entrent pas dans `tokens.json`.** Une CI
+  ne peut pas les relire depuis le fichier.
+- **Aucun `tokens.json` n'est figé dans le dépôt.** La compatibilité des
+  lecteurs avec un fichier ancien n'a pas encore de fixture.
+- **Les classes de [COMPATIBILITE.md](../COMPATIBILITE.md#les-neuf-classes-de-changement)
+  ne couvrent pas un changement de grammaire de `tokens.json`.** La classe 5
+  porte sur le nom d'un token.
+- **Le Playground épingle la version du CLI** dans son workflow. Une nouvelle
+  version du kit ne l'atteint qu'après la mise à jour de cette ligne.
 
-### Étape 7. Les documents
+## 7. Les limites des mesures
 
-`FORMAT.md` partie 2 et son exemple, `COMPATIBILITE.md`, et la piste 2.3 de
-[PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md), qui perd sa question ouverte.
-`CONTRACT_VERSION` ne bouge pas : le contrat de composant ne change pas de
-forme.
-
-### Découpage en commits
-
-Les étapes 1 à 3 tiennent dans un commit, l'étape 4 dans un deuxième, les
-étapes 5 et 6 dans un troisième. L'étape 7 suit chacun d'eux pour la part qui
-le concerne.
-
-### Effort
-
-Une demi-journée sur le moteur et ses tests, une passe sur le Playground, et le
-contrôle de conformité en supplément.
-
-## 7. Questions à trancher
-
-- **`boolean`** : type d'extension assumé, ou valeur rangée sous `$extensions` ?
-- **`fontWeight`** : publier le mot-clé normalisé, ou le nombre ?
-- **`FONT_STYLE`** : aucun type du module ne le porte. Reste-t-il en `string` ?
-- **Le profil colorimétrique** : lire `documentColorProfile`, ou fixer `srgb`
-  tant qu'aucun fichier source en Display P3 n'est constaté ?
-- **Le module de résolution** : attendre qu'un outil installé le lise, ou
-  produire le document dès maintenant pour ceux qui le lisent ?
+- Les variantes dérivent du fichier actuel. Elles ne mesurent ni un export réel
+  (flottants de Figma, couleurs translucides), ni un document en Display P3.
+- Le corpus compte 721 feuilles et un consommateur connu. Il ne contient ni
+  booléen, ni `$value` nul, ni cycle, et son second mode n'a pas de valeur
+  réelle. Il établit l'absence de régression sur ces valeurs, sans établir la
+  généralité du typage.
+- Aucun contrôle visuel n'a été mené. Le rendu d'une couleur P3 se juge à
+  l'œil, sur la pull request qui porte le réexport.
