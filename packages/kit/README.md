@@ -10,7 +10,7 @@ the repository that implements the component. This package is what both sides
 must share in order to talk about the same format.
 
 ```sh
-npm install @ucm-kit/core@0.1.22
+npm install @ucm-kit/core@0.1.23
 ```
 
 Most repositories never call this package directly. They run

@@ -112,19 +112,38 @@ function node(type: string, name: string, children: any[] = [], extra: any = {})
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id });
 
+/** Le component set dont chaque règle est une instance. */
+const setDeRegles = { type: 'COMPONENT_SET', name: '.rulesItems' };
+
 /**
- * Une règle `@usage` telle que Figma la porte : une instance de
- * `ComponentConfiguration` dont la variante est le tag et dont le calque
- * « content » porte le texte.
+ * Une règle telle que Figma la porte : une instance de `.rulesItems` dont un
+ * calque nomme le tag, et dont les autres portent le texte et la cible.
  */
-function regleUsage(texte: string) {
-  const setDeConfiguration = { type: 'COMPONENT_SET', name: 'ComponentConfiguration' };
-  const instance = node('INSTANCE', 'Règle', [node('TEXT', 'content', [], { characters: texte })], {
-    variantProperties: { Type: '@usage' },
+function regle(tag: string, calques: any[]) {
+  return node('INSTANCE', 'Règle', [
+    node('FRAME', 'rule-ids', [node('TEXT', tag, [], { characters: tag })]),
+    ...calques,
+  ], {
+    variantProperties: { Type: tag },
     componentProperties: {},
-    getMainComponentAsync: async () => ({ name: '@usage', parent: setDeConfiguration }),
+    getMainComponentAsync: async () => ({ name: `Type=${tag}`, parent: setDeRegles }),
   });
-  return instance;
+}
+
+/** Une règle `@usage`, la plus simple : un tag et un texte. */
+function regleUsage(texte: string) {
+  return regle('@usage', [node('TEXT', 'content', [], { characters: texte })]);
+}
+
+/**
+ * Le conteneur de règles d'un composant : une instance de `.componentRules`
+ * dont le calque « component-name » écrit le nom documenté.
+ */
+function conteneurDeRegles(nom: string, regles: any[] = []) {
+  return node('INSTANCE', '.componentRules', [
+    node('FRAME', 'component-name-wrap', [node('TEXT', 'component-name', [], { characters: nom })]),
+    ...regles,
+  ]);
 }
 
 /** Un variant : un auto layout horizontal dont le gap cite une variable. */
@@ -168,10 +187,10 @@ function monterFigma(options: {
 
   const enfantsDeLaPage: any[] = [componentSet];
   if (options.avecRegles !== false) {
-    enfantsDeLaPage.push(node('FRAME', 'Button-Rules', [regleUsage('Action principale')]));
+    enfantsDeLaPage.push(conteneurDeRegles('Button', [regleUsage('Action principale')]));
   }
   for (const nom of options.dependancesContractees ?? []) {
-    enfantsDeLaPage.push(node('FRAME', `${nom}-Rules`, []));
+    enfantsDeLaPage.push(conteneurDeRegles(nom));
   }
   const page = node('PAGE', 'Composants', enfantsDeLaPage);
 
@@ -949,20 +968,15 @@ test('une variable introuvable est rangée comme une perte de portabilité', asy
 test('une règle @icons sans layer est rangée comme une perte de portabilité', async () => {
   // La fusion des règles d'icônes a sa propre fenêtre, la dernière des cinq.
   const figmaFaux = monterFigma();
-  const setDeConfiguration = { type: 'COMPONENT_SET', name: 'ComponentConfiguration' };
   // La politique se lit sur la visibilité exclusive de deux layers : les deux
   // doivent exister, un seul être visible.
-  const regleIcones = node('INSTANCE', 'Règle', [
+  const regleIcones = regle('@icons', [
     node('TEXT', 'icon', [], { characters: 'fantome' }),
     node('FRAME', 'modifiable', []),
     node('FRAME', 'strict', [], { visible: false }),
-  ], {
-    variantProperties: { Type: '@icons' },
-    componentProperties: {},
-    getMainComponentAsync: async () => ({ name: '@icons', parent: setDeConfiguration }),
-  });
+  ]);
   const conteneur = (globalThis as any).figma.currentPage.children.find(
-    (enfant: any) => enfant.name === 'Button-Rules',
+    (enfant: any) => enfant.name === '.componentRules',
   );
   conteneur.children.push(regleIcones);
   regleIcones.parent = conteneur;

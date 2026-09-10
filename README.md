@@ -56,8 +56,8 @@ le commentaire de la pull request.
 Deux commandes suffisent.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.21 init                       # écrit les cinq fichiers manquants
-npx --yes @ucm-kit/cli@0.1.21 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.22 init                       # écrit les cinq fichiers manquants
+npx --yes @ucm-kit/cli@0.1.22 check --report ci-report.md
 ```
 
 `--yes` supprime l'invite de confirmation de `npx`, qui bloque une exécution non
@@ -70,7 +70,7 @@ alors un verdict différent sur le même contrat.
 `{dir}/{id}.tsx`. Un repository qui range autrement le dit à cet instant.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.21 init \
+npx --yes @ucm-kit/cli@0.1.22 init \
   --components src/components \
   --tokens src/tokens \
   --implementation '{dir}/{id}.vue'
@@ -134,6 +134,12 @@ l'installe lui-même, et un `tsconfig.json` à sa racine.
 | Exporter le composant | `<IdentifiantCode>.contract.json` | Variantes exactes, états, structure, tokens, icônes, règles d'usage, et un échantillon de maquette non normatif |
 | Exporter les tokens | `tokens.json` | Variables locales au format DTCG que lit Style Dictionary v4, avec leurs alias et leurs modes |
 
+Les règles d'usage sont la part que le designer écrit à la main : une instance
+de `.componentRules` posée à côté du composant, dont le calque `component-name`
+porte le nom de ce composant. [Documenter les règles
+d'usage](./packages/plugin/README.md#documenter-les-règles-dusage) donne les
+huit tags et le geste de chacun.
+
 ### Ce que le contrat garantit
 
 Le contrat est autoportant : un développeur ou un agent produit le composant
@@ -155,7 +161,7 @@ lit deux, la courante et la précédente, le temps qu'un réexport arrive.
 ## Utiliser le kit depuis votre code
 
 ```sh
-npm install @ucm-kit/core@0.1.22
+npm install @ucm-kit/core@0.1.23
 ```
 
 | Entrée | Usage |
@@ -168,7 +174,7 @@ Chaque entrée est détaillée dans
 [packages/kit/README.md](./packages/kit/README.md).
 
 Un projet TypeScript peut installer
-[`@ucm-kit/adapter-typescript@0.1.14`](./packages/adapter-typescript/README.md)
+[`@ucm-kit/adapter-typescript@0.1.15`](./packages/adapter-typescript/README.md)
 pour ajouter la comparaison statique des props et de la composition, ainsi que
 la génération des types dérivés des contrats.
 

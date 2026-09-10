@@ -32,6 +32,21 @@ const dimensionsLiees = {
   cornerRadius: alias('radius'),
 };
 
+/**
+ * Un conteneur de règles : une instance dont le calque « component-name » écrit
+ * le nom du composant documenté. C'est ce calque, et non le nom de l'instance,
+ * qui déclare qu'un contrat autonome existe pour ce nom.
+ */
+function conteneurDeRegles(nom: string) {
+  const calque = { type: 'TEXT', name: 'component-name', characters: nom };
+  return {
+    type: 'INSTANCE',
+    name: '.componentRules',
+    findOne: (predicat: (node: never) => boolean) =>
+      [calque].find(predicat as (node: unknown) => boolean) ?? null,
+  };
+}
+
 /** Instance dont le composant maître appartient au set nommé `setName`. */
 function instance(
   id: string,
@@ -85,8 +100,8 @@ test('indexContractedNames relève les composants qui possèdent un conteneur de
   const page = {
     findAll: (predicat: (n: never) => boolean) =>
       [
-        { type: 'SECTION', name: 'Button-Rules' },
-        { type: 'FRAME', name: 'Alert-Rules' },
+        conteneurDeRegles('Button'),
+        conteneurDeRegles('Alert'),
         // Ni un conteneur de règles, ni un type accepté : ignorés tous les deux.
         { type: 'FRAME', name: 'Notes de travail' },
         { type: 'TEXT', name: 'Chip-Rules' },
@@ -117,7 +132,7 @@ test('l’index de production laisse un wrapper interne parcourable', async () =
     findAll: (predicate: (node: never) => boolean) => [
       wrapperSet,
       wrapperVariant,
-      { type: 'FRAME', name: 'Button-Rules' },
+      conteneurDeRegles('Button'),
     ].filter(predicate as (node: unknown) => boolean),
   } as unknown as PageNode;
 
@@ -134,7 +149,7 @@ test('indexContractedNamesInDocument charge et indexe toutes les pages', async (
     type: 'PAGE',
     name,
     findAll: (predicate: (node: never) => boolean) => [
-      { type: 'FRAME', name: `${name}-Rules` },
+      conteneurDeRegles(name),
     ].filter(predicate as (node: unknown) => boolean),
   });
   const pages = [page('Button'), page('Alert')];

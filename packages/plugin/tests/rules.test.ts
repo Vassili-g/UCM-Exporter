@@ -142,33 +142,164 @@ test('iconPolicyFromVisibility exige une visibilité exclusive', () => {
   assert.equal(iconPolicyFromVisibility(null, false), undefined);
 });
 
-test('le conteneur de règles est reconnu par UNE seule règle, à la casse près', async (t) => {
-  // Le Component Set s'appelle « Icon Button », le conteneur « iconbutton-Rules ».
-  // Les deux lectures doivent conclure la même chose : un composant reconnu comme
-  // dépendance unifiée par ses parents doit rester exportable lui-même.
-  const container = { type: 'FRAME', name: 'iconbutton-Rules', findAll: () => [] };
-  const page = { findAll: (predicat: (node: any) => boolean) => [container].filter(predicat) };
-  // Restauré en sortie : sans cela, les tests suivants du fichier héritent d'un
-  // faux `figma` qui ne décrit pas leur cas.
+/** Un faux node dont la descendance se parcourt comme dans Figma. */
+function noeud(
+  type: string,
+  name: string,
+  enfants: any[] = [],
+  extra: Record<string, unknown> = {},
+): any {
+  const self: any = { type, name, id: `${type}:${name}`, children: enfants, ...extra };
+  const descendants = (n: any): any[] =>
+    (n.children ?? []).flatMap((enfant: any) => [enfant, ...descendants(enfant)]);
+  self.findAll = (predicat?: (n: any) => boolean) =>
+    descendants(self).filter((n) => !predicat || predicat(n));
+  self.findOne = (predicat: (n: any) => boolean) => descendants(self).find(predicat) ?? null;
+  return self;
+}
+
+/** Un conteneur de règles : une instance dont un calque écrit le nom documenté. */
+function conteneur(nomEcrit: string, regles: any[] = [], nomDeLInstance = '.componentRules') {
+  return noeud('INSTANCE', nomDeLInstance, [
+    noeud('FRAME', 'component-name-wrap', [
+      noeud('TEXT', 'component-name', [], { characters: nomEcrit }),
+    ]),
+    ...regles,
+  ]);
+}
+
+/**
+ * Une règle telle que Figma la porte : une instance de `.rulesItems` dont un
+ * calque nomme le tag. `variante` dit ce que la valeur de variante range, et
+ * vaut par défaut le tag lui-même.
+ */
+function regle(tagAffiche: string, calques: any[] = [], variante = tagAffiche) {
+  return noeud('INSTANCE', 'Règle', [
+    noeud('FRAME', 'rule-ids', [noeud('TEXT', tagAffiche, [], { characters: tagAffiche })]),
+    ...calques,
+  ], {
+    variantProperties: { Type: variante },
+    getMainComponentAsync: async () => ({
+      name: `Type=${variante}`,
+      parent: { type: 'COMPONENT_SET', name: '.rulesItems' },
+    }),
+  });
+}
+
+/** Monte une page comme page courante, et la démonte à la sortie du test. */
+function monterPage(t: { after: (fn: () => void) => void }, enfants: any[]) {
+  const page = noeud('PAGE', 'Composants', enfants);
   const precedent = (globalThis as { figma?: unknown }).figma;
   t.after(() => {
     (globalThis as { figma?: unknown }).figma = precedent;
   });
   (globalThis as any).figma = { currentPage: page };
+  return page;
+}
+
+test('le conteneur est reconnu par son calque, pas par son nom, à la casse près', async (t) => {
+  // Le Component Set s'appelle « Icon Button », et le conteneur est renommé.
+  // Les deux lectures doivent conclure la même chose : un composant reconnu
+  // comme dépendance unifiée par ses parents doit rester exportable lui-même.
+  const container = conteneur(' icon button ', [
+    regle('@usage', [noeud('TEXT', 'content', [], { characters: 'Action principale' })]),
+  ], 'Règles du bouton');
+  const page = monterPage(t, [container]);
 
   const componentSet = { name: 'Icon Button' } as ComponentSetNode;
   const rules = await extractRules(componentSet);
 
   assert.equal(rules.sectionFound, true);
+  assert.equal(rules.intent?.usage, 'Action principale');
   assert.equal(rulesContainerOwner(container), compactName(componentSet.name));
   assert.deepEqual([...indexContractedNames(page as unknown as PageNode)], ['iconbutton']);
 });
 
-test('rulesContainerOwner ignore un conteneur qui n’en est pas un', () => {
-  assert.equal(rulesContainerOwner({ type: 'FRAME', name: 'Button' }), null);
-  assert.equal(rulesContainerOwner({ type: 'COMPONENT', name: 'Button-Rules' }), null);
-  assert.equal(rulesContainerOwner({ type: 'SECTION', name: '-Rules' }), null);
-  assert.equal(rulesContainerOwner({ type: 'SECTION', name: ' Button-Rules ' }), 'button');
+test('rulesContainerOwner ignore ce qui n’est pas un conteneur', () => {
+  // Le composant maître porte le même calque, pré-rempli avec le composant qui
+  // a servi de modèle : sans la borne sur le type, il revendiquerait ses règles.
+  const maitre = conteneur('Button');
+  assert.equal(rulesContainerOwner({ ...maitre, type: 'COMPONENT' }), null);
+  assert.equal(rulesContainerOwner(noeud('FRAME', 'Button')), null);
+  assert.equal(rulesContainerOwner(noeud('INSTANCE', 'Bouton')), null);
+  assert.equal(rulesContainerOwner(conteneur('   ')), null);
+});
+
+test('un conteneur au calque vide ne documente personne, et le constat le situe', async (t) => {
+  const orphelin = conteneur('', [
+    regle('@usage', [noeud('TEXT', 'content', [], { characters: 'Action principale' })]),
+  ]);
+  monterPage(t, [orphelin]);
+
+  const rules = await extractRules({ name: 'Button' } as ComponentSetNode);
+
+  assert.equal(rules.sectionFound, false);
+  assert.deepEqual(rules.warnings, [
+    'Layer « .componentRules » : son calque « component-name » est vide, donc il ne documente '
+    + 'aucun composant. Le contrat dira comment utiliser le composant, mais pas quand : ni '
+    + 'intention, ni documentation de props, ni règle d’icône. Écrivez « Button » dans ce '
+    + 'calque, puis réexportez.',
+  ]);
+});
+
+test('un @default est lu alors que Figma a rangé son variant sous « Type8 »', async (t) => {
+  // Le cas est dans le fichier de référence : ajouter un variant l'auto-nomme
+  // « TypeN » sans toucher au tag qu'il affiche. Le calque affiché tranche, et
+  // un témoin muet ne contredit rien : aucun avertissement ne part.
+  monterPage(t, [conteneur('Button', [
+    regle('@default', [noeud('TEXT', 'prop', [], { characters: 'color.secondary' })], 'Type8'),
+  ])]);
+
+  const rules = await extractRules({ name: 'Button' } as ComponentSetNode);
+
+  assert.deepEqual(rules.enumDefaults, { color: 'secondary' });
+  assert.deepEqual(rules.warnings, []);
+});
+
+test('deux témoins qui nomment chacun un tag se contredisent, et le calque l’emporte', async (t) => {
+  monterPage(t, [conteneur('Button', [
+    regle('@dont', [noeud('TEXT', 'content', [], { characters: 'Empiler' })], '@do'),
+  ])]);
+
+  const rules = await extractRules({ name: 'Button' } as ComponentSetNode);
+
+  assert.deepEqual(rules.intent?.dont, ['Empiler']);
+  assert.deepEqual(rules.intent?.do, []);
+  assert.deepEqual(rules.warnings, [
+    'Layer « Règle » : elle affiche « @dont » alors que son variant la range en « @do ». '
+    + 'Le tag affiché est exporté, et la règle ne remplira pas le champ que son variant '
+    + 'annonce. Choisissez le variant qui porte le tag affiché, puis réexportez.',
+  ]);
+});
+
+test('le calque « prop » n’est pas lu comme le tag @prop', async (t) => {
+  // Le « @ » est ce qui sépare le calque du tag de celui de la cible : sans lui,
+  // une règle sans tag emprunterait celui de sa propre cible.
+  const sansTag = noeud('INSTANCE', 'Règle', [
+    noeud('FRAME', 'rule-ids', [noeud('TEXT', 'prop', [], { characters: 'variant.contained' })]),
+    noeud('TEXT', 'content', [], { characters: 'Action la plus importante' }),
+  ], {
+    variantProperties: {},
+    getMainComponentAsync: async () => ({
+      name: 'Type=?',
+      parent: { type: 'COMPONENT_SET', name: '.rulesItems' },
+    }),
+  });
+  monterPage(t, [conteneur('Button', [sansTag])]);
+
+  const rules = await extractRules({ name: 'Button' } as ComponentSetNode);
+
+  assert.deepEqual(rules.propDescriptions, {});
+  assert.deepEqual(rules.warnings, [
+    'Une règle de « .componentRules » : aucun de ses calques ne porte de tag (@usage, @do, '
+    + '@dont, @pairs, @prop, @boolean, @icons, @default). Elle est ignorée, et sa '
+    + 'documentation manquera au contrat. Choisissez son variant dans Figma, puis réexportez.',
+    // La seule règle du conteneur ayant été écartée, il n'en reste aucune :
+    // le second constat porte sur le conteneur, et non sur cette règle.
+    'Layer « .componentRules » : il ne contient aucune instance de « .rulesItems » lisible. '
+    + 'Aucune règle d’usage n’enrichira le contrat. Ajoutez-y au moins une règle, puis '
+    + 'réexportez.',
+  ]);
 });
 
 test('une règle @prop homonyme d’Object.prototype n’écrit pas sur le runtime', () => {

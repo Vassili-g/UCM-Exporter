@@ -320,7 +320,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Documentation par valeur, alimentée par les règles `@prop <prop>.<valeur>` (section `<Nom>-Rules`). Clé = valeur de l'enum, texte = quand l'utiliser. Absent si aucune règle `@prop` ne cible cette prop."
+          "description": "Documentation par valeur, alimentée par les règles `@prop <prop>.<valeur>` (de `.componentRules`). Clé = valeur de l'enum, texte = quand l'utiliser. Absent si aucune règle `@prop` ne cible cette prop."
         },
         "figmaName": {
           "type": "string"
@@ -345,7 +345,7 @@
         },
         "description": {
           "type": "string",
-          "description": "Rôle de la prop, alimenté par la règle `@boolean <prop>` du conteneur `<Nom>-Rules`. Absent si cette prop n'est pas documentée explicitement."
+          "description": "Rôle de la prop, alimenté par la règle `@boolean <prop>` du conteneur `.componentRules`. Absent si cette prop n'est pas documentée explicitement."
         },
         "figmaName": {
           "type": "string"

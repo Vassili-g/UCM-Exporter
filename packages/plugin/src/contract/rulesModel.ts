@@ -25,6 +25,19 @@ export function ruleTagFromValue(value: string): RuleTag | null {
   return match ? match[1].toLowerCase() as RuleTag : null;
 }
 
+/**
+ * Reconnaît un tag écrit sur un calque, où le « @ » est obligatoire.
+ *
+ * L'écart avec `ruleTagFromValue` n'est pas une tolérance de moins pour la
+ * forme : une règle range sa cible dans un calque nommé `prop`, qui serait lu
+ * comme le tag `@prop` si le « @ » était facultatif. Avec lui, les deux calques
+ * d'une même règle se distinguent sans qu'aucun nom de frame ne les sépare.
+ */
+export function ruleTagFromLayerName(name: string): RuleTag | null {
+  const match = /^@(usage|prop|boolean|do|dont|pairs|icons|default)$/i.exec(name.trim());
+  return match ? match[1].toLowerCase() as RuleTag : null;
+}
+
 /** Entrée brute extraite d'une instance de règle Figma. */
 export type RuleEntry = {
   tag: RuleTag;
