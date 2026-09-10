@@ -712,7 +712,9 @@ nomment chacun un tag différent produisent un warning.
 
 Les sections `.rulesSection` qui regroupent les règles servent la lecture dans
 Figma. Aucune n'entre dans le contrat, et le tag d'une règle ne dépend pas de la
-section où elle est rangée.
+section où elle est rangée. Une instance de `.rulesItems` qui n'écrit ni texte
+ni cible met en page, `divider` par exemple : elle est écartée sans warning,
+puisque rien n'en est perdu.
 
 Chaque tag remplit un champ :
 - `@usage` (un), `@do`/`@dont` (répétables), `@pairs` (virgules) → `intent`.

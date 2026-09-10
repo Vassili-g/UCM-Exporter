@@ -178,15 +178,32 @@ async function isRuleInstance(instance: InstanceNode): Promise<boolean> {
   return compactName(owner) === RULES_COMPONENT_NAME;
 }
 
+/** Les calques par lesquels une règle écrit quelque chose : son texte ou sa cible. */
+const RULE_CONTENT_LAYERS: readonly string[] = ['content', 'prop', 'icon'];
+
+/**
+ * Vrai d'une instance de règle qui n'écrit ni texte ni cible.
+ *
+ * Le catalogue `.rulesItems` porte des variants de mise en page, `divider` par
+ * exemple, qui ne documentent aucune règle. Les écarter sans un mot est ce que
+ * la borne du dépôt demande : rien n'est perdu, donc rien ne se dit, et un
+ * message qui réclame un geste déjà fait apprend au designer à survoler.
+ *
+ * Le critère est ce que l'instance écrit, jamais le nom d'un variant : un
+ * séparateur ajouté plus tard ne demandera aucune mise à jour du moteur.
+ */
+function nEcritRien(instance: InstanceNode): boolean {
+  return RULE_CONTENT_LAYERS.every((calque) => textOfLayer(instance, calque).trim() === '');
+}
+
 /**
  * Le tag d'une règle, lu sur deux témoins : le calque `@…` que le designer voit
  * et la valeur de variante que Figma range.
  *
  * Le calque tranche, parce qu'il est le seul des deux à s'afficher, et parce
  * que Figma auto-nomme un variant ajouté « TypeN » sans toucher à ce qu'il
- * montre : c'est l'état du variant `@default` de `.rulesItems`, dont la valeur
- * est « Type8 ». Une valeur de variante qui ne nomme aucun tag n'est donc pas
- * une contradiction mais un témoin muet, et rien ne se dit puisque rien n'est
+ * montre. Une valeur de variante qui ne nomme aucun tag n'est donc pas une
+ * contradiction mais un témoin muet, et rien ne se dit puisque rien n'est
  * perdu. Deux témoins qui nomment chacun un tag différent se contredisent, et
  * c'est au designer de trancher.
  */
@@ -307,6 +324,7 @@ export async function extractRules(
 
     const tag = ruleTagOf(instance, warnings);
     if (!tag) {
+      if (nEcritRien(instance)) continue;
       pousserSansNode(warnings, `Une règle de « ${RULES_CONTAINER_NAME} »`, {
         manque: 'aucun de ses calques ne porte de tag (@usage, @do, @dont, @pairs, @prop, '
           + '@boolean, @icons, @default).',
