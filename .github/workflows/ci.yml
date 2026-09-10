@@ -7,9 +7,9 @@ on:
   pull_request:
 
 # Le job ne fait que lire le dépôt. On fige ce minimum au lieu d'hériter du
-# réglage par défaut de l'organisation, qui peut accorder l'écriture : `npm ci`
-# exécute les scripts d'installation des dépendances, inutile de leur confier
-# un jeton capable d'écrire. À étendre (`pull-requests: write`) le jour où ce
+# réglage par défaut de l'organisation, qui peut accorder l'écriture : du code
+# tiers s'exécute ici, du transpileur au bundler, inutile de lui confier un
+# jeton capable d'écrire. À étendre (`pull-requests: write`) le jour où ce
 # workflow commentera une PR, comme le fait celui du playground.
 permissions:
   contents: read
@@ -32,6 +32,24 @@ jobs:
         with:
           node-version: 22
           cache: npm
+
+      # La version de npm est épinglée, exactement comme dans `publish.yml`, et
+      # pour une raison qui n'est pas le confort : npm 12 refuse par défaut les
+      # scripts d'installation des dépendances, npm 11 les exécute. Sans cet
+      # épinglage, ce workflow installerait autrement que celui qui publie, et
+      # il changerait de sémantique le jour où l'image du runner change de npm,
+      # sans qu'une ligne d'ici ait bougé. Le poste, la CI et la publication
+      # doivent répondre pareil sur le même arbre de dépendances.
+      #
+      # Le `postinstall` d'esbuild reste bloqué, et rien ne l'approuve. esbuild
+      # résout son binaire par ses `optionalDependencies`, un paquet par
+      # plateforme, et `install.js` n'est qu'un repli : la publication tourne
+      # déjà sous npm 12 avec ce script bloqué, et `tsx` y transpile les tests
+      # avec ce même esbuild. L'approuver rétablirait un chemin dont ce dépôt
+      # n'a pas besoin, et un `allowScripts` commité se lit comme une
+      # permission durable.
+      - run: npm install -g npm@12.0.2 && npm -v
+
       # `npm ci` construit le kit au passage : son script `prepare` le fait,
       # et npm l'exécute pour chaque workspace à l'installation. Sans cela,
       # `npm test` tournerait avant que `dist/` existe et les tests du plugin
