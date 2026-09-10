@@ -132,7 +132,7 @@ l'installe lui-même, et un `tsconfig.json` à sa racine.
 | Commande | Fichier | Contenu |
 |---|---|---|
 | Exporter le composant | `<IdentifiantCode>.contract.json` | Variantes exactes, états, structure, tokens, icônes, règles d'usage, et un échantillon de maquette non normatif |
-| Exporter les tokens | `tokens.json` | Variables locales au format DTCG, avec leurs alias et leurs modes |
+| Exporter les tokens | `tokens.json` | Variables locales au format DTCG que lit Style Dictionary v4, avec leurs alias et leurs modes |
 
 ### Ce que le contrat garantit
 

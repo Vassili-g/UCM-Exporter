@@ -282,17 +282,16 @@ par leurs valeurs. Son support de DTCG `2025.10` est annoncé comme incomplet.
 Terrazzo documente les résolveurs et la sélection de thèmes.
 [Résolveurs et thèmes](https://terrazzo.app/docs/guides/resolvers/).
 
-**Direction proposée.** Convertir la projection avant de comparer les outils.
-En DTCG `2025.10`, une couleur est un objet portant `colorSpace` et
-`components`, une dimension un objet portant `value` et `unit`, et ni `boolean`
-ni `string` n’est un type. L’export écrit `#C1440E`, `8px` et
-`$type: "boolean"` : il vise la grammaire que lit Style Dictionary v4, décrite
-dans [FORMAT.md](../FORMAT.md#partie-2--export-tokens). Cet essai est donc la
-première évolution de la projection des tokens, dont
+**Direction proposée.** Décider de la grammaire visée avant de comparer les
+outils. [FORMAT.md](../FORMAT.md#partie-2--export-tokens) déclare celle que
+l’export suit et ses trois écarts avec le module `2025.10` ; l’essai porte donc
+sur ce que chaque outil accepte et sur le coût de la conversion. Rien ne
+l’impose aujourd’hui, Style Dictionary v4 lisant le fichier tel quel. Trois
+déclencheurs la rendraient nécessaire : un deuxième consommateur, un outil cible
+qui exige `2025.10`, ou la première évolution de la projection, que
 [COMPATIBILITE.md](../COMPATIBILITE.md#pourquoi-tokensjson-na-pas-de-version)
-fixe déjà la forme : `$extensions`, namespace `com.ucm.*`, et un fichier sans ce
-champ vaut grammaire d’origine. La projection dédiée ne devient une option que
-si les deux outils refusent cette conversion.
+marque déjà par `$extensions` et le namespace `com.ucm.*`. La projection dédiée
+ne devient une option que si les outils refusent cette conversion.
 [Types et valeurs DTCG](https://www.designtokens.org/tr/2025.10/format/),
 [couleurs](https://www.designtokens.org/tr/2025.10/color/).
 
