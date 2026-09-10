@@ -1,13 +1,13 @@
 # UCM pour les designers
 
-Ce guide s'adresse à qui travaille dans Figma. Il n'attend aucune connaissance
-du code et ne demande jamais d'ouvrir un terminal.
+Ce guide s'adresse au designer qui travaille dans Figma. Il n'attend aucune
+connaissance du code et ne demande jamais d'ouvrir un terminal.
 
 ## 1. À quoi sert UCM
 
 Un composant existe à deux endroits : votre maquette Figma, et le code de
-l'application. Rien ne garantit que les deux disent la même chose. Un variant
-ajouté dans Figma peut ne jamais arriver dans le code, et personne ne le voit.
+l'application. Aucun contrôle ne compare les deux. Un variant ajouté dans Figma
+peut ne jamais arriver dans le code, sans que rien ne le signale.
 
 UCM répond en donnant un propriétaire unique à chaque information.
 
@@ -15,19 +15,19 @@ UCM répond en donnant un propriétaire unique à chaque information.
 |---|---|
 | Variantes, états, dimensions, couleurs, icônes, tokens | Vous, dans Figma |
 | Comportement, clics, accessibilité | Le développeur, dans le code |
-| Le fait que les deux correspondent | La CI, à chaque pull request |
+| L'écart entre les deux | La CI, à chaque pull request |
 
 Le plugin exporte ce que Figma possède dans un fichier appelé **contrat**. Ce
 fichier est déposé à côté du code du composant. La CI le relit à chaque
 modification et vous répond dans la pull request.
 
-Vous n'écrivez pas de code, et le plugin n'en écrit pas non plus. Il ne modifie
+Vous n'écrivez pas de code. Le plugin n'en écrit pas non plus. Il ne modifie
 jamais votre document Figma.
 
 ## 2. Préparer un composant
 
-Le plugin lit votre composant tel qu'il est. Il n'invente rien et ne devine
-rien. Ce qui suit augmente ce qu'il saura décrire.
+Le plugin lit votre composant tel qu'il est, sans rien ajouter. Ce qui suit
+augmente ce qu'il pourra décrire.
 
 **Liez vos valeurs à des variables.** Une couleur, un gap, un padding, un rayon
 ou une taille reliés à une variable Figma entrent dans le contrat sous le nom de
@@ -42,10 +42,10 @@ messages que vous recevrez.
 **Sélectionnez un seul composant.** Le plugin attend exactement un composant ou
 un set de variantes. Une autre sélection arrête l'export.
 
-**Documentez votre intention** Un conteneur nommé
-`<Nom>-Rules`, posé sur la même page, permet de décrire l'usage du composant,
-les combinaisons recommandées et la politique de ses icônes.
-Voir [7. Intention et documentation des props](./FORMAT.md#7-intention-et-documentation-des-props).
+**Documentez votre intention.** Un conteneur nommé `<Nom>-Rules`, posé sur la
+même page, permet de décrire l'usage du composant, les combinaisons recommandées
+et la politique de ses icônes. Voir [7. Intention et documentation des
+props](./FORMAT.md#7-intention-et-documentation-des-props).
 
 ## 3. Exporter
 
@@ -83,8 +83,8 @@ code. Vous devez pouvoir chercher dans votre écran le mot que le message
 emploie.
 
 **Un message n'apparaît que s'il vous demande quelque chose.** Une
-transformation que le plugin sait faire entièrement reste silencieuse. Si vous
-lisez un message, il y a un geste à faire.
+transformation que le plugin prend entièrement en charge reste silencieuse. Si
+vous lisez un message, il y a un geste à faire.
 
 Trois cas seulement produisent un message :
 
@@ -98,35 +98,35 @@ La pull request contient un seul fichier, celui que vous venez d'exporter. Son
 corps porte deux zones.
 
 **L'en-tête** dit ce qui est déposé : le chemin du fichier, et la version de
-schéma du contrat. C'est ce qui permet de retrouver le composant Figma d'où il
-vient, par son nom de fichier et son identifiant de nœud.
+schéma du contrat. Le nom de fichier et l'identifiant de nœud qu'il porte
+permettent de retrouver le composant Figma d'où il vient.
 
 **La liste** ne porte que des gestes. Ce que le plugin a compté, ce que la pull
 request liste et ce que le contrat publie sont la même liste.
 
 Quelques minutes après, la CI ajoute un commentaire. C'est le seul message que
-vous ayez besoin de lire ; vous n'avez jamais à ouvrir les journaux de la CI.
+vous ayez besoin de lire. Les journaux de la CI ne vous concernent pas.
 
-## 6. Ce qui bloque la fusion, et ce qui n'en bloque pas
+## 6. Ce qui bloque la fusion et ce qui avertit
 
 Presque tous les blocages se lèvent par un réexport, et le rapport vous dit
 lequel. Un seul fait exception : un contrat produit par une version du plugin
-que le repository ne sait pas encore lire. Le message s'adresse alors à un
+que le repository ne lit pas encore. Le message s'adresse alors à un
 développeur, qui doit mettre l'outillage à jour ; réexporter n'y changerait
 rien.
 
 | Contrôle | Ce qu'il vérifie | Verdict |
 |---|---|---|
 | Validité | Le contrat est lisible et complet | Bloque |
-| Version | Le repository sait lire cette version de contrat | Bloque |
+| Version | La version du contrat entre dans la fenêtre de lecture du repository | Bloque |
 | Composition | Chaque composant imbriqué a son propre contrat, les listes concordent, aucun cycle | Bloque |
 | Typographie | Les tokens typographiques ont le type attendu | Bloque |
 | Tokens | Les tokens cités existent dans `tokens.json` | Avertit, sauf si le fichier de tokens manque ou ne se lit pas |
 | Parité code | Le code expose bien les props du contrat | Avertit |
 
 Un écart avec le code attend un développeur, donc il avertit et laisse
-fusionner. Un token supprimé du design system aussi : les tokens font foi, et un
-ancien contrat ne retient pas leur évolution.
+fusionner. Un token supprimé du design system aussi : les tokens font foi, donc
+un ancien contrat ne retient pas leur évolution.
 
 Le rapport relaie en plus deux choses qu'il ne mesure pas lui-même : les
 avertissements que l'export a écrits dans le contrat, et le verdict des tests du
@@ -136,7 +136,7 @@ repository quand celui-ci le transmet.
 état d'avancement autorisé, pas une erreur.
 
 Sur le plan GitHub actuel, une pull request rouge reste techniquement
-fusionnable. La CI détecte ; elle n'empêche pas.
+fusionnable. La CI détecte l'écart sans empêcher la fusion.
 
 ## 7. Voir l'interface du plugin sans ouvrir Figma
 
@@ -155,8 +155,8 @@ dans Figma, dans les deux thèmes.
 
 ## 8. Vocabulaire
 
-Chaque terme renvoie au document qui en fait autorité. Les définitions
-complètes vivent là-bas, jamais ici.
+Chaque terme renvoie au document qui en fait autorité, seul endroit où la
+définition complète est écrite.
 
 | Terme | En une phrase |
 |---|---|
@@ -171,9 +171,9 @@ complètes vivent là-bas, jamais ici.
 | **Parité** | La comparaison entre les props du contrat et l'API réelle du composant dans le code. [ROADMAP](../ROADMAP.md) |
 | **Couverture portable** | Le champ qui dit si l'export a tout su décrire. `complete` : rien n'est perdu. `partial` : un message nomme le calque et la propriété concernés. [Métadonnées](./FORMAT.md#métadonnées) |
 | **Diagnostic** | Un message adressé à vous, avec son constat, son impact et son geste. [8. Rendu sémantique et garde-fous](./FORMAT.md#8-rendu-sémantique-et-garde-fous) |
-| **Échantillon de maquette** | Ce que Figma affichait au moment de l'export : textes, valeurs. Il aide à retrouver l'esthétique voulue, et aucun contrôle ne le compare au code. [9. Échantillon de maquette](./FORMAT.md#9-échantillon-de-maquette) |
+| **Échantillon de maquette** | Ce que Figma affichait au moment de l'export : textes, valeurs. Il aide à retrouver l'esthétique voulue. Aucun contrôle ne le compare au code. [9. Échantillon de maquette](./FORMAT.md#9-échantillon-de-maquette) |
 | **Adaptateur** | Un paquet optionnel qui apprend à la CI à lire le code d'une technologie donnée. Sans lui, les contrôles indépendants du langage fonctionnent quand même. [README du CLI](../packages/cli/README.md) |
-| **Composant jetable** | Un composant reconstruit depuis son seul contrat, pour vérifier que ce contrat suffit. Il se jette et se refait, et ne forme jamais une bibliothèque |
+| **Composant jetable** | Un composant reconstruit depuis son seul contrat, pour vérifier que ce contrat suffit. Il se jette et se refait. Il ne forme jamais une bibliothèque |
 
 ## 9. Où aller ensuite
 

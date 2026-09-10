@@ -4,9 +4,9 @@ Le plugin lit un composant Figma et en écrit un contrat JSON versionné, posé 
 côté du code de ce composant. Il exporte aussi les variables locales du fichier
 au format DTCG.
 
-Ce document dit comment l'ouvrir et ce qu'il produit.
-[SPEC.md](./SPEC.md) décrit ce qu'il élit dans l'arbre Figma,
-[docs/FORMAT.md](../../docs/FORMAT.md) la forme de ce qu'il écrit, et
+Ce document dit comment l'ouvrir et ce qu'il produit. [SPEC.md](./SPEC.md)
+décrit ce qu'il élit dans l'arbre Figma, [docs/FORMAT.md](../../docs/FORMAT.md)
+la forme de ce qu'il écrit, et
 [docs/POUR-LES-DESIGNERS.md](../../docs/POUR-LES-DESIGNERS.md) le geste du
 designer, pas à pas.
 
@@ -17,9 +17,9 @@ Il est publié sur la Figma Community, sous le nom « UCM Contract Exporter » :
 **<https://www.figma.com/community/plugin/1678431364325816914>**
 
 Installez-le une fois, puis lancez-le depuis le menu `Plugins` de l'application
-de bureau. Ni build ni manifeste à importer. Le chemin de développement, pour
-qui modifie le moteur, est décrit par
-[« Construire le plugin depuis ce dépôt »](../../README.md#construire-le-plugin-depuis-ce-dépôt).
+de bureau. Ni build ni manifeste à importer. Le chemin de développement, pour le
+contributeur qui modifie le moteur, est décrit par [« Construire le plugin
+depuis ce dépôt »](../../README.md#construire-le-plugin-depuis-ce-dépôt).
 
 ## Les deux commandes
 
@@ -28,9 +28,9 @@ qui modifie le moteur, est décrit par
 | Exporter le composant | Exactement un composant ou un set de variantes sélectionné | `<IdentifiantCode>.contract.json` : variantes, états, structure, tokens, icônes, règles d'usage |
 | Exporter les tokens | Rien, elle lit le fichier courant | `tokens.json` : les variables locales, avec leurs alias et leurs modes |
 
-Une seule implémentation projette les noms pour les deux commandes. Deux
-projections divergeraient, et un contrat citerait alors un token que
-`tokens.json` écrit sous un autre nom.
+Une seule implémentation projette les noms pour les deux commandes. Avec deux
+projections, un contrat citerait un token que `tokens.json` écrit sous un autre
+nom.
 
 ## Où l'export atterrit
 
@@ -39,18 +39,18 @@ renseignée, elle crée une branche et une pull request qui contient le seul
 fichier exporté.
 
 L'endroit où ce fichier est écrit appartient au repository visé, qui le déclare
-dans son `ucm.config.json`. Le plugin lit ce fichier au test de connexion, et
-non à la publication : un fichier fautif se sait ainsi avant le travail plutôt
-qu'après. Sans ce fichier, les valeurs par défaut du kit s'appliquent, et ce
-sont celles que `ucm check` applique aussi. Un chemin rangé sur le poste du
-designer ne pourrait décider que face à un repository qui ne se décrit pas,
-c'est-à-dire au moment précis où le contrôle applique ces mêmes défauts : il ne
-déposerait l'export que hors de vue de ce contrôle.
+dans son `ucm.config.json`. Le plugin lit ce fichier au test de connexion, avant
+la publication : le designer découvre un fichier fautif avant de travailler,
+plutôt qu'après. Sans ce fichier, les valeurs par défaut du kit s'appliquent, et
+ce sont celles que `ucm check` applique aussi. Un chemin rangé sur le poste du
+designer ne servirait que face à un repository sans `ucm.config.json`, au moment
+précis où le contrôle applique ces mêmes défauts. L'export atterrirait alors
+hors de vue de ce contrôle.
 
 La configuration contient l'URL du repository, la branche de base et un jeton
-d'accès personnel, qui demande les permissions `Contents: read/write` et
-`Pull requests: read/write`. Le jeton reste local à la machine et n'apparaît ni
-dans l'interface, ni dans les journaux, ni dans le document Figma.
+d'accès personnel, qui demande les permissions `Contents: read/write` et `Pull
+requests: read/write`. Le jeton reste local à la machine et n'apparaît ni dans
+l'interface, ni dans les journaux, ni dans le document Figma.
 
 Un export dont le contenu est identique à ce qui est déjà déposé n'ouvre pas de
 seconde pull request. Le plugin dit où il a trouvé le même contenu.

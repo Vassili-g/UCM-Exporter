@@ -1,33 +1,32 @@
 # Historique des versions du contrat
 
 Ce document dit ce que **chaque version du contrat a publié**, et ce que passer
-à la suivante casse. Il s'adresse à qui lit un contrat qu'il n'a pas exporté :
-la forme **courante** est dans [FORMAT.md](./FORMAT.md), et c'est elle qui fait
-autorité. La [politique de compatibilité](./COMPATIBILITE.md) classe les
-changements et dit qui migre. Ici, on ne trouve que le passé et ce qu'il coûte.
+à la suivante casse. Il s'adresse au développeur qui lit un contrat qu'il n'a
+pas exporté. La forme **courante** est dans [FORMAT.md](./FORMAT.md), qui en
+fait autorité. La [politique de compatibilité](./COMPATIBILITE.md) classe les
+changements et dit qui migre.
 
 À partir de la 12.0, chaque évolution nomme la classe de cette politique. Les
 entrées antérieures restent un historique de forme ; les reclasser n'ajouterait
 aucun fait sur les contrats qu'elles décrivent.
 
 Un consommateur lit **un seul** schéma à la fois, sauf pendant une migration où
-il en lit deux, la plage vit dans `version-contrat.mjs`
-(`@ucm-kit/core/lecteurs`), et tout écart hors plage est refusé dans les deux
-sens, parce que le geste correctif n'appartient pas à la même personne : un
-contrat plus ancien se répare par un réexport, un contrat plus récent par une
-adaptation des lecteurs.
+il en lit deux. `version-contrat.mjs` (`@ucm-kit/core/lecteurs`) porte cette
+plage. Tout écart hors plage est refusé dans les deux sens, parce que le geste
+correctif n'appartient pas à la même personne : un contrat plus ancien se répare
+par un réexport, un contrat plus récent par une adaptation des lecteurs.
 
 **La version courante est la 12.0**, et `CONTRACT_VERSION`
 (`packages/kit/src/format/version.ts`) en est le seul endroit où elle s'écrit.
-Une plage ouverte, chez un consommateur, est un choix explicite et **temporaire**,
-jamais un état par défaut : la laisser survivre à sa migration ferait rentrer en
-silence un schéma que plus personne n'adapte.
+Une plage ouverte chez un consommateur reste un choix explicite et
+**temporaire** : la laisser survivre à sa migration ferait rentrer en silence un
+schéma que le repository n'adapte plus.
 
-Ce fichier n'est pas un garde-fou et ne prouve rien. Le schéma et les lecteurs
-refusent un contrat illisible ; les reconstructions à froid et leur comparaison
-avec Figma éprouvent ce qu'une version permet réellement de rendre. Ces notes
-servent autre chose : relire un contrat ancien, ou reconstruire un composant
-depuis son contrat, en sachant ce que sa version publie.
+Ce fichier ne prouve rien. Le schéma et les lecteurs refusent un contrat
+illisible ; les reconstructions à froid et leur comparaison avec Figma éprouvent
+ce qu'une version permet réellement de rendre. Ces notes servent à relire un
+contrat ancien, ou à reconstruire un composant depuis son contrat, en sachant ce
+que sa version publie.
 
 Une entrée se rédige quand la version est adoptée, et décrit ce que le lecteur
 doit en savoir, jamais qu'une relecture a eu lieu.
@@ -37,7 +36,7 @@ doit en savoir, jamais qu'une relecture a eu lieu.
 Aucun lecteur de la fenêtre courante n'accepte ces contrats : les rencontrer
 demande de rouvrir un dépôt qui n'a pas réexporté depuis. La table dit ce que
 chaque version a ajouté et ce qu'elle a cassé, ce qui suffit à lire un fichier
-ancien ; le détail de chacune vit dans le commit qui l'a adoptée.
+ancien ; le détail de chacune est dans le commit qui l'a adoptée.
 
 | Version | Ce qu'elle publie | Ce qu'elle casse |
 |---|---|---|
@@ -54,7 +53,7 @@ ancien ; le détail de chacune vit dans le commit qui l'a adoptée.
 | 5.2 | un axe de `structure.sizing` peut citer une référence de token | le champ cesse d'être un enum de deux valeurs |
 | 5.3 | `bounds` (`minWidth`, `maxWidth`, `minHeight`, `maxHeight`), tokenisées | l'absence de `flexGrow`, `alignSelf` et `size` ne suffit plus à décrire une taille |
 | 5.4 | `wrap` et `rowGap` ; un cadre de dépendances publie aussi ses calques voisins | un cadre de dépendances ne peut plus être présumé ne contenir que des `composes` |
-| 5.5 | une clé de couleur s'allonge des segments qui séparent deux couleurs homonymes | une clé peut contenir des points, et aucun des cinq rôles n'est garanti présent |
+| 5.5 | une clé de couleur s'allonge des segments qui séparent deux couleurs homonymes | une clé peut contenir des points ; aucun des cinq rôles n'est garanti présent |
 | 6.0 | `structure.children` descend partout ; la grille et la position absolue deviennent contractuelles | un enfant n'est plus forcément un texte ou une dépendance ; `layout` peut valoir `grid` |
 | 7.0 | le détail par côté d'un champ à quatre côtés ; les pistes et l'ancre d'une grille | rupture de type : `padding.x`, `radius` et la largeur d'un stroke peuvent être un objet |
 | 8.0 | `variants` décrit chaque combinaison réellement présente ; `propertyBindings`, `meta.diagnostics`, `meta.coverage` ; `INSTANCE_SWAP` et `SLOT` deviennent des types de props | la matrice cesse d'être présumée dense |
@@ -69,8 +68,8 @@ ancien ; le détail de chacune vit dans le commit qui l'a adoptée.
 ## 11.0
 
 11.0 arrête de recopier. À donnée strictement égale, un contrat coûte **53 % de
-tokens en moins à lire**, c'est un fichier lu par un agent avant d'écrire une
-ligne de code, et sa longueur se paie à chaque lecture.
+tokens en moins à lire**. Un agent le lit avant d'écrire une ligne de code, et
+sa longueur se paie à chaque lecture.
 
 **Ce qui change pour un lecteur**, dans l'ordre où ça le concerne :
 
@@ -83,7 +82,7 @@ ligne de code, et sa longueur se paie à chaque lecture.
 2. **Une valeur vide n'est pas écrite.** `strokes` absent = aucun contour lié.
    `padding` absent = aucun padding tokenisé. `props`, `icons`, `textStyles`,
    `composes`, `samples` absents = vides. Une clé absente dit « rien à publier »,
-   jamais « inconnu ». Exception, et elle compte : sous un **dictionnaire** la clé est
+   jamais « inconnu ». Une exception compte : sous un **dictionnaire** la clé est
    une donnée, et `stateModel.states.default` vaut `{}` sans disparaître.
 3. **`tokensUsed` et `meta.warnings` ont disparu.** Le premier était l'index des
    références du contrat, le second le miroir mot pour mot de `meta.diagnostics`.
@@ -99,8 +98,8 @@ ligne de code, et sa longueur se paie à chaque lecture.
    hissée dans `propertyBindingDefinitions[b].nodeSuffix`. La recoller redonne
    l'id exact.
 6. **Le fichier s'écrit une entrée par ligne.** Un variant, une vue, un
-   échantillon tiennent chacun sur une ligne. C'est de là que vient l'essentiel
-   du gain, et ça ne change pas un octet de donnée.
+   échantillon tiennent chacun sur une ligne. L'essentiel du gain vient de là,
+   sans qu'un octet de donnée change.
 
 **Ce qui ne change pas** : la règle de partage des vues. Deux vues partagent une
 partie parce qu'elle est identique, au bit près (aucun merge, aucun défaut,
@@ -110,7 +109,7 @@ au lieu de forcer la republication de tout l'arbre.
 
 ## 12.0
 
-Trois champs de plus, et un champ qui cesse de se répéter. Les quatre points
+Trois champs s'ajoutent. Un quatrième cesse de se répéter. Les quatre points
 relèvent de la **classe 2, ajout qui change la résolution d'une vue** : un
 lecteur 11.0 ignore des informations qui modifient le rendu.
 
@@ -132,13 +131,13 @@ lecteur 11.0 ignore des informations qui modifient le rendu.
    un côté (`fills`, `strokes`) par arbre. La résolution est
    `roles[keyRoles[côté][clé] ?? clé]` : sans entrée, la clé est le rôle.
 4. **`rendering.roles` redevient strictement le vocabulaire partagé.** Il ne
-   reçoit plus de copie de descripteur par clé observée, c'est ce que le point
-   précédent remplace. Un lecteur qui parcourait `roles` pour y trouver ses clés
+   reçoit plus de copie de descripteur par clé observée, que le point précédent
+   remplace. Un lecteur qui parcourait `roles` pour y trouver ses clés
    doit passer par `keyRoles`.
 
 **Ce qui ne change pas** : tout le reste de la 11.0. Un contrat 12.0 sans calque
 hors du flux, sans rotation et dont chaque clé porte le nom de son rôle est
-identique à son équivalent 11.0, à `meta.contractVersion` près, trois des quatre
+identique à son équivalent 11.0, à `meta.contractVersion` près. Trois des quatre
 contrats du consommateur de référence l'ont vérifié en ne changeant que cette
 ligne.
 
@@ -148,9 +147,8 @@ Le sens de `props.<axe>.default` change dans la 12.0 sans changer sa forme. Il
 relève de la **classe 4, changement de signification d'une absence**. Le plugin
 ne reprend plus le variant placé en premier dans le component set : le designer
 déclare désormais le défaut avec `@default`, ou le champ reste absent. Les
-contrats 12.0 déjà exportés gardent leur forme, mais doivent être réexportés lors
-de la recette de migration pour recevoir ce sens.
-
+contrats 12.0 déjà exportés gardent leur forme, mais doivent être réexportés
+lors de la recette de migration pour recevoir ce sens.
 
 ### Adresses de slots et clés de props
 
@@ -166,9 +164,9 @@ réexport pour recevoir leur sens.
    L'ancien compte des homonymes en donnait deux au même nom, et une adresse de
    typographie, de peinture ou d'icône désignait alors le premier des deux.
    Seul un composant dont un parent portait des homonymes voit ses slots
-   changer, et son contrat était jusque-là ambigu ; les lecteurs le refusent
-   maintenant, ce qui relève de la **classe 3** pour ce composant-là : le
-   designer réexporte, le développeur adapte les adresses qu'il citait.
+   changer. Son contrat était jusque-là ambigu, et les lecteurs le refusent
+   maintenant. Ce composant relève donc de la **classe 3** : le designer
+   réexporte, le développeur adapte les adresses qu'il citait.
 2. **Une propriété `State` ou `Status` qui n'est pas un axe devient une prop.**
    La convention porte sur le type `VARIANT` ; une `BOOLEAN`, une `TEXT`, un
    `INSTANCE_SWAP` ou un `SLOT` de ce nom disparaissait du contrat sans qu'aucun
@@ -182,5 +180,5 @@ réexport pour recevoir leur sens.
 4. **Deux axes que la normalisation confond refusent l'export.** Le contrat
    produit citait deux fois le même axe et ne publiait qu'une des deux
    coordonnées de chaque variant ; les lecteurs le refusaient déjà. Aucun
-   artefact de cette forme n'existe donc chez un consommateur, et rien n'est à
+   artefact de cette forme n'existe donc chez un consommateur. Rien n'est à
    migrer : le geste appartient au designer, dans Figma.

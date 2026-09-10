@@ -1,7 +1,7 @@
 # La documentation d'UCM
 
-Chaque document a un lecteur et une autorité. Cette page dit lequel lire, dans
-quel ordre, et ce qu'il faut arrêter de chercher ailleurs.
+Chaque document a un lecteur et une autorité. Cette page dit lequel lire et dans
+quel ordre.
 
 ## Par profil
 
@@ -54,10 +54,10 @@ Commencez par [../AGENTS.md](../AGENTS.md). Il donne l'ordre de lecture, la
 carte du code et les invariants, puis renvoie aux procédures de
 [`.agents/skills/`](../.agents/skills/).
 
-## Où vit quelle règle
+## Quel document porte quelle règle
 
 Une même règle écrite à deux endroits finit par diverger. Une seule fait donc
-autorité, et les autres y renvoient.
+autorité. Les autres y renvoient.
 
 | Document | Ce dont il fait autorité |
 |---|---|
@@ -75,8 +75,8 @@ autorité, et les autres y renvoient.
 
 ## Ce qui n'est pas décidé
 
-Ces deux notes tiennent des options ouvertes. Elles ne font autorité sur rien,
-et rien du produit ne dépend d'elles.
+Ces deux notes tiennent des options ouvertes. Elles ne font autorité sur rien.
+Aucune partie du produit n'en dépend.
 
 | Document | Contenu |
 |---|---|

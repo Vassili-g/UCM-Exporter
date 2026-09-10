@@ -4,15 +4,14 @@ Cette recette fait tourner la boucle complète du produit, du plugin Figma
 jusqu'au rapport publié sur une pull request, dans un dépôt qui ne contient rien
 d'UCM. Elle se suit dans l'ordre, du début à la fin. Comptez une heure et demie.
 
-C'est un guide, et rien ne l'exige. Elle couvre les trois chemins qu'aucun test
-du dépôt ne parcourt, Figma, GitHub et une vraie pull request ; le reste est
-déjà tenu par `npm test`, par l'épreuve du registre et par le contrôle des pins
-servis. La jouer, et quand, est une décision du mainteneur.
+C'est un guide, qu'aucune règle n'impose. Elle couvre les trois chemins qu'aucun
+test du dépôt ne parcourt, Figma, GitHub et une vraie pull request ; le reste
+est déjà tenu par `npm test`, par l'épreuve du registre et par le contrôle des
+pins servis. La jouer, et quand, est une décision du mainteneur.
 
 Les deux dépôts concernés :
 
-- **UCM-Exporter**, le produit. C'est ici que vivent le plugin et le code des
-  paquets npm.
+- **UCM-Exporter**, le produit. Il porte le plugin et le code des paquets npm.
 - **UCM-Playground**, le consommateur de recette. Il porte quatre contrats,
   leurs composants et son `tokens.json`. Cette page part d'un dépôt qui ne
   contient rien d'UCM, donc la jouer commence par le vider.
@@ -35,8 +34,8 @@ Il vous faut :
 **La recette se joue sur ce qui est publié, jamais sur la copie de travail.** Le
 plugin vient de la Community, le CLI vient du registre npm, et les deux peuvent
 être en retard sur ce dépôt. C'est voulu : ce qu'un utilisateur reçoit est la
-seule chose que cette recette puisse prouver, et une version que personne ne sert
-encore ne prouve rien. Les commandes ci-dessous épinglent donc la version
+seule chose que cette recette puisse prouver, et une version que personne ne
+sert encore ne prouve rien. Les commandes ci-dessous épinglent donc la version
 publiée, et l'étape 8 publie ce que le dépôt porte de plus récent, une fois que
 tout est vert.
 
@@ -68,14 +67,13 @@ donc `src/generated/tokens.css` ne sera plus écrit et l'import échouerait.
 1. Dans l'application de bureau Figma, ouvrez le fichier du design system.
 2. Menu **Plugins**, puis **UCM Contract Exporter**. Lancez-le.
 
-Le plugin est publié sur la Figma Community : il n'y a ni build local à faire, ni
-manifeste à importer. Si vous ne le voyez pas dans la liste, installez-le une
+Le plugin est publié sur la Figma Community : il n'y a ni build local à faire,
+ni manifeste à importer. Si vous ne le voyez pas dans la liste, installez-le une
 fois depuis la Community, il y restera.
 
 **Le pied de page de la fenêtre porte la version de schéma que ce bundle
-produit.** Notez-la : c'est la seule chose qui distingue le plugin servi par la
-Community du code de ce dépôt, et un export « sans changement » ne se comprend
-pas sans elle.
+produit.** Notez-la : elle seule distingue le plugin servi par la Community du
+code de ce dépôt. Sans elle, un export « sans changement » ne se comprend pas.
 
 ---
 
@@ -85,15 +83,15 @@ Deux observations, qu'aucun test de ce dépôt ne couvre : elles ne se constaten
 qu'à l'œil, dans un vrai fichier Figma. Elles se refont à chaque passage de
 cette page.
 
-**Observation A.** Sélectionnez un calque depuis le plugin, par le bouton
-« Afficher dans Figma » d'un point à corriger. Regardez ensuite si Figma marque
-le fichier comme modifié, c'est-à-dire s'il propose d'enregistrer une nouvelle
+**Observation A.** Sélectionnez un calque depuis le plugin, par le bouton «
+Afficher dans Figma » d'un point à corriger. Regardez ensuite si Figma marque le
+fichier comme modifié, c'est-à-dire s'il propose d'enregistrer une nouvelle
 version. Attendu : non.
 
 **Observation B.** Faites un export, puis regardez les points à corriger du
 compte rendu, en thème clair puis en thème sombre. Vérifiez qu'ils restent
-lisibles et que rien ne déborde de la fenêtre. Regardez aussi les deux cartes
-de commande et l'écran sans sélection.
+lisibles et que rien ne déborde de la fenêtre. Regardez aussi les deux cartes de
+commande et l'écran sans sélection.
 
 ---
 
@@ -118,13 +116,13 @@ npx --yes @ucm-kit/cli@0.1.20 init --components src/components --tokens src/toke
 |---|---|
 | `--components <dossier>` | Le dossier sous lequel les contrats sont rangés |
 | `--tokens <dossier>` | Le dossier qui reçoit `tokens.json` |
-| `--implementation <motif>` | Où vit l'implémentation d'un contrat |
+| `--implementation <motif>` | Où se trouve l'implémentation d'un contrat |
 
 Les deux premières attendent un dossier relatif au repository, sans `..`, et
-toute autre valeur sort en 2. `--tokens src/tokens` écrit donc `src/tokens/tokens.json` dans
-`ucm.config.json` : le champ y reste un chemin de fichier, que les lecteurs
-traitent comme tel. Pour donner un autre nom à ce fichier, un développeur
-modifie la configuration à la main.
+toute autre valeur sort en 2. `--tokens src/tokens` écrit donc
+`src/tokens/tokens.json` dans `ucm.config.json` : le champ y reste un chemin de
+fichier, que les lecteurs traitent comme tel. Pour donner un autre nom à ce
+fichier, un développeur modifie la configuration à la main.
 
 `--implementation` reçoit un motif, où `{dir}` vaut le dossier du contrat et
 `{id}` son identifiant. Le défaut, `{dir}/{id}.tsx`, vise React parce que c'est
@@ -184,9 +182,9 @@ Attendu :
 ✓ Aucun contrat dans src/components : ce repository n'a pas encore reçu d'export. Rien à contrôler.
 ```
 
-Le code de sortie est 0. **L'absence d'export est un état d'avancement**, au même
-titre que l'absence d'implémentation : un dépôt qui vient d'être installé n'a
-rien à contrôler, et sa CI est verte dès le premier push.
+Le code de sortie est 0. **L'absence d'export est un état d'avancement**, au
+même titre que l'absence d'implémentation : un dépôt qui vient d'être installé
+n'a rien à contrôler, et sa CI est verte dès le premier push.
 
 Le discriminant est le nombre de contrats. Dès qu'un contrat existe, un
 `tokens.json` absent bloque la fusion, puisque ce contrat cite des tokens que
@@ -257,9 +255,9 @@ Attendu :
    `components/Button/Button.contract.json` ;
 3. la CI publie son rapport en commentaire.
 
-**Ce que le rapport doit dire, et qui compte :** l'implémentation est absente,
-et cette absence est un état d'avancement, pas une erreur. La pull request doit
-pouvoir être fusionnée. C'est le sixième critère du test.
+**Ce que le rapport doit dire :** l'implémentation est absente, et cette absence
+est un état d'avancement autorisé. La pull request doit pouvoir être fusionnée.
+C'est le sixième critère du test.
 
 **Un point à surveiller de près, propre à cette version.** Le défaut d'un axe de
 variantes ne se déduit plus de la position du variant dans le component set. Il
@@ -269,7 +267,7 @@ se déclare, par une règle écrite dans la description du component set :
 @default    color.secondary
 ```
 
-Sans cette règle, le contrat ne publie aucun défaut pour `color`, et c'est
+Sans cette règle, le contrat ne publie aucun défaut pour `color`. Ce silence est
 voulu : la position du premier variant est un effet de la mise en page, pas une
 décision de design. Comparez le contrat obtenu à l'ancien, qui portait
 `"default": "primary"`. Si vous voulez retrouver un défaut, écrivez la règle
@@ -286,8 +284,8 @@ Le contrat est arrivé, le code n'existe pas encore. Reconstruisez le composant 
 partir du seul contrat, sans regarder une implémentation antérieure. Le
 protocole est dans la skill `consommer-contrat` d'`UCM-Exporter`.
 
-Une fois `src/components/Button/Button.tsx` écrit, remettez dans
-`src/index.css` la ligne que la préparation avait commentée :
+Une fois `src/components/Button/Button.tsx` écrit, remettez dans `src/index.css`
+la ligne que la préparation avait commentée :
 
 ```css
 @import "./generated/tokens.css";
@@ -303,8 +301,8 @@ npm run dev
 Ajoutez le composant à `src/App.tsx` pour le voir à l'écran, et comparez son
 rendu à la maquette Figma, variante par variante.
 
-Ouvrez enfin une pull request avec le composant. Le rapport de CI doit maintenant
-parler de la parité entre le contrat et le code. Tant que
+Ouvrez enfin une pull request avec le composant. Le rapport de CI doit
+maintenant parler de la parité entre le contrat et le code. Tant que
 `@ucm-kit/adapter-typescript` n'est pas installé dans le Playground, il dira que
 l'implémentation n'a pas été lue, jamais qu'elle est conforme.
 
@@ -315,8 +313,8 @@ npm install --save-dev @ucm-kit/adapter-typescript@0.1.13
 ```
 
 Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
-version`, et non celle du dépôt : quand les deux diffèrent, c'est l'étape 8 qui
-publie la seconde. Poussez, et regardez le rapport changer.
+version`, et non celle du dépôt : quand les deux diffèrent, l'étape 8 publie la
+seconde. Poussez, et regardez le rapport changer.
 
 ---
 
@@ -332,12 +330,12 @@ par une, en relisant ce que vous avez observé.
 | 3. La CI publie un rapport lisible par un designer | Étape 4 |
 | 4. Un contrat d'une version non lue est refusé, avec un message qui dit qui corrige | à provoquer, voir ci-dessous |
 | 5. Une référence de token disparue avertit sans bloquer | à provoquer, voir ci-dessous |
-| 6. L'absence d'implémentation est un état d'avancement, pas une erreur | Étape 5 |
+| 6. L'absence d'implémentation est un état d'avancement autorisé | Étape 5 |
 | 7. Un contrat réellement cassé bloque | à provoquer, voir ci-dessous |
 
 Les critères 4, 5 et 7 demandent de casser volontairement quelque chose. Faites
-les trois dans une seule pull request de rebut, que vous fermerez sans
-fusionner :
+les trois dans une seule pull request de rebut, que vous fermerez sans fusionner
+:
 
 ```sh
 git checkout -b recette/echecs-attendus
@@ -406,12 +404,12 @@ sont servis », le paquet est publié.
 registre.
 
 Une version publiée ne se reprend pas. Relancer le workflow sans monter un
-numéro rend une erreur 409, et c'est le comportement voulu.
+numéro rend une erreur 409, qui est le comportement voulu.
 
 **Si la publication échoue en `ENEEDAUTH`**, la cause n'est pas dans ce dépôt :
 c'est l'entrée d'éditeur de confiance du paquet, chez npm, qui manque ou qui est
-périmée. npm ne la valide pas au moment où on l'écrit, donc aucun message ne peut
-la désigner. La supprimer et la recréer sur la page du paquet, en visant
+périmée. npm ne la valide pas au moment où on l'écrit, donc aucun message ne
+peut la désigner. La supprimer et la recréer sur la page du paquet, en visant
 `Vassili-g/UCM-Exporter` et le workflow `publish.yml`, a déjà suffi une fois.
 
 ---
@@ -438,7 +436,7 @@ vient d'être publié :
 3. ouvrez une dernière pull request et vérifiez que le rapport est toujours
    vert.
 
-C'est ce dernier passage qui prouve que ce qui a été publié fonctionne chez un
+Ce dernier passage prouve que ce qui a été publié fonctionne chez un
 consommateur, et pas seulement dans le monorepo qui l'a produit.
 
 ---
@@ -448,11 +446,11 @@ consommateur, et pas seulement dans le monorepo qui l'a produit.
 - Le **rendu visuel** d'un composant n'est comparé que par votre œil. Aucun
   contrôle automatique ne le mesure.
 - La **soumission à la Figma Community** n'est pas couverte par cette page. Le
-  plugin y est publié, et c'est ce bundle que la recette éprouve ; ce qui reste
-  hors champ est le geste de soumettre une version plus récente, qui passe par
-  une revue de Figma.
-- **Le code du plugin qui vit dans ce dépôt** n'est pas éprouvé ici, sauf s'il
-  est déjà celui que la Community sert. La version de schéma lue à l'étape 1
-  est ce qui permet de le savoir.
-- Les paquets sont en `0.x`. La surface publique n'est pas gelée, et c'est
-  pourquoi chaque version s'épingle à l'exact, sans `^`.
+  plugin y est publié, et la recette éprouve ce bundle. Reste hors champ le
+  geste de soumettre une version plus récente, qui passe par une revue de
+  Figma.
+- **Le code du plugin présent dans ce dépôt** n'est pas éprouvé ici, sauf s'il
+  est déjà celui que la Community sert. La version de schéma lue à l'étape 1 le
+  dit.
+- Les paquets sont en `0.x`. La surface publique n'est pas gelée, donc chaque
+  version s'épingle à l'exact, sans `^`.

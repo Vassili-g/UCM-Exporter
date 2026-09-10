@@ -18,9 +18,9 @@ L'étude de la [pipeline modulaire](#8-pipeline-modulaire-autour-des-contrats)
 détaille les intégrations envisagées : tokens, linter, Storybook, Chromatic,
 documentation zeroheight, diff sémantique, lecture par un agent, assistant
 d'implémentation et orchestration. Elle distingue les capacités documentées des
-outils, les propositions UCM et les essais nécessaires avant de les adopter. Elle
-confronte aussi la construction à l'achat d'une plateforme intégrée, nomme la
-panne silencieuse de chaque module et donne la grandeur qui ferait renoncer à
+outils, les propositions UCM et les essais nécessaires avant de les adopter.
+Elle confronte aussi la construction à l'achat d'une plateforme intégrée, nomme
+la panne silencieuse de chaque module et donne la grandeur qui ferait renoncer à
 chacun.
 
 ---
@@ -94,13 +94,13 @@ localisations isolées donneraient une carte trompeuse.
 
 ### Un canal de débogage dans le plugin
 
-Le plugin n’a plus de journal. Celui qui existait redisait le compte rendu, ligne
-pour ligne, et coûtait un dépliant permanent qu’il fallait ouvrir pour découvrir
-qu’il ne contenait rien de neuf.
+Le plugin n’a plus de journal. Celui qui existait redisait le compte rendu,
+ligne pour ligne, et coûtait un dépliant permanent qu’il fallait ouvrir pour
+découvrir qu’il ne contenait rien de neuf.
 
 Ce qui manquerait vraiment est ce que le compte rendu ne dit pas : l’ordre exact
-des appels Figma, leur durée, ce qu’une étape a lu. Cela ne se remet pas dans une
-fenêtre de 380 px par précaution.
+des appels Figma, leur durée, ce qu’une étape a lu. Cela ne se remet pas dans
+une fenêtre de 380 px par précaution.
 
 *À ouvrir quand* un défaut réel aura montré ce qu’il fallait voir pour le
 comprendre. Le canal se décide alors avec sa règle, et la règle vient du défaut.
@@ -109,8 +109,8 @@ comprendre. Le canal se décide alors avec sa règle, et la règle vient du déf
 
 Le JSON Schema est publié et dérivé de `types.ts`, et la politique de
 compatibilité l’accompagne dans [COMPATIBILITE.md](../COMPATIBILITE.md). Ce
-qu’elle laisse ouvert : `tokens.json` n’a pas de version propre, et n’en
-recevra une qu’au premier changement de sa grammaire de projection.
+qu’elle laisse ouvert : `tokens.json` n’a pas de version propre, et n’en recevra
+une qu’au premier changement de sa grammaire de projection.
 
 Une porte de CI fondée sur ce schéma a été examinée puis écartée : le
 consommateur prouve déjà la forme, et une seconde autorité sur la même
@@ -119,10 +119,10 @@ pour un consommateur hors Node.
 
 ### Distribution du plugin, et le lien vers Figma qui en dépend
 
-**Tranché : le plugin se distribue par la Figma
-Community.** `enablePrivatePluginApi` est retiré du manifest, `figma.fileKey`
-n'arrive donc plus, et `meta.figma.url` n'est plus écrit. Ce qui suit garde les
-termes de l'arbitrage, la décision se relit mieux à côté de ce qu'elle a écarté.
+**Tranché : le plugin se distribue par la Figma Community.**
+`enablePrivatePluginApi` est retiré du manifest, `figma.fileKey` n'arrive donc
+plus, et `meta.figma.url` n'est plus écrit. Ce qui suit garde les termes de
+l'arbitrage, la décision se relit mieux à côté de ce qu'elle a écarté.
 
 Le manifest déclarait `enablePrivatePluginApi`, réservé aux plugins privés d'une
 organisation. Un seul appel en dépendait : `figma.fileKey`, qui alimentait
@@ -136,12 +136,13 @@ une revue de pull request ouvre le composant source d'un clic. La distribution
 se limite en revanche aux membres de l'organisation Figma : personne d'autre ne
 peut installer le plugin, donc personne d'autre ne peut produire de contrat.
 
-**Publier sur la Community.** N'importe qui installe le plugin et produit des
-contrats. `figma.fileKey` devient indisponible : `meta.figma.url` disparaît, et
-la traçabilité repose sur `fileName` et `nodeId`, que le contrat conserve.
-L'export n'est pas bloqué et aucune information de rendu n'est perdue : ce qui
-tombe est un raccourci de navigation, pas une donnée du design. Reconstituer le
-lien à la main reste possible pour qui connaît la clé du fichier.
+**Publier sur la Community.** Le plugin s'installe sans restriction, et tout
+designer produit alors des contrats. `figma.fileKey` devient indisponible :
+`meta.figma.url` disparaît, et la traçabilité repose sur `fileName` et `nodeId`,
+que le contrat conserve. L'export n'est pas bloqué et aucune information de
+rendu n'est perdue : ce qui tombe est un raccourci de navigation, pas une donnée
+du design. Reconstituer le lien à la main reste possible pour qui connaît la clé
+du fichier.
 
 **Ce que la décision a coûté, et ce qu'elle a rendu.** Le point de bascule
 énoncé ici était « le nombre de personnes hors organisation qui doivent pouvoir
@@ -155,8 +156,8 @@ Les deux conditions posées avant d'ouvrir la publication, et où elles en sont 
 - **que l'absence de `meta.figma.url` soit traitée par tous les lecteurs comme
   un cas normal**, tenu. Le champ était déjà optionnel dans `ContractMeta`,
   aucun lecteur ne le réclame, et rien dans le schéma ne change : la
-  publication ne touche pas à la version du contrat. Ce qui a dû changer est
-  ailleurs, et c'est le point suivant.
+  publication ne touche pas à la version du contrat. Le point suivant porte ce
+  qui a dû changer.
 - **que la traçabilité par `fileName` et `nodeId` suffise réellement à une
   revue, ce qui se constate sur une pull request réelle et pas en principe**.
   La condition est désormais *observable*, ce qu'elle n'était pas. Le corps de
@@ -166,9 +167,9 @@ Les deux conditions posées avant d'ouvrir la publication, et où elles en sont 
   les revues à venir. Si `fileName` et `nodeId` ne suffisent pas, c'est là qu'on
   le verra, et la troisième voie ci-dessous devient la réponse.
 
-**L'avertissement « Lien vers Figma absent » est supprimé, et c'est la moitié la
-plus importante de l'exécution.** Il était écrit quand le cas était l'exception.
-La Community l'inverse : la clé n'arrive plus jamais, donc le message se serait
+**L'avertissement « Lien vers Figma absent » est supprimé, moitié la plus
+importante de l'exécution.** Il était écrit quand le cas était l'exception. La
+Community l'inverse : la clé n'arrive plus jamais, donc le message se serait
 imprimé sur chaque export, dans le corps de chaque pull request, pour un constat
 que le designer ne peut pas corriger. Une liste dont on apprend qu'elle se
 survole coûte la lecture de celles qui demandent un geste, la règle du projet,
@@ -223,8 +224,8 @@ relu par un designer.
 Cette piste reste sans décision de réalisation. Une revue qui laisse passer un
 changement, dépasse dix minutes ou fait intervenir plusieurs relecteurs
 justifierait son adoption. Un assistant chargé d'adapter du code aurait aussi
-besoin d'un relevé déterministe du changement. Le
-[module Diff](#88-diff-et-impact-du-changement) précise cette utilisation ; la
+besoin d'un relevé déterministe du changement. Le [module
+Diff](#88-diff-et-impact-du-changement) précise cette utilisation ; la
 [politique de compatibilité](../COMPATIBILITE.md) distingue déjà les changements
 de format des changements de paquets.
 
@@ -246,8 +247,8 @@ le nombre de combinaisons et la fréquence des changements.
 
 Deux garde-fous à ne pas perdre en l’ouvrant : elle ne doit connaître le nom
 d’aucun composant, et elle ne doit pas devenir une seconde implémentation du
-protocole de reconstruction porté par le skill `consommer-contrat`, deux
-implémentations divergent, et c’est la non-jetable qui deviendrait la vérité.
+protocole de reconstruction porté par le skill `consommer-contrat`. Deux
+implémentations divergeraient, et la copie non jetable deviendrait la vérité.
 
 ### Parité au-delà de l’existence
 
@@ -260,8 +261,7 @@ finit par contourner, et une CI contournée ne protège plus rien.
 ### Liaison explicite avec l’implémentation
 
 La co-localisation suffit au prototype. Sur un repository à plusieurs dizaines
-de composants, un manifeste pourrait associer contrat, source et export
-public :
+de composants, un manifeste pourrait associer contrat, source et export public :
 
 ```json
 {
@@ -311,12 +311,11 @@ de garder l’outillage chez lui, parce qu’un repository qui n’en a pas d’
 peut jamais prouver que son outillage est portable.
 
 Ce que le découpage devait **réaliser**, et non préserver, est l’autorité unique
-sur les conventions de version, d’identifiant et de références de tokens. Elle
-vit dans `@ucm-kit/core/format` : `CONTRACT_VERSION`, `codeIdentifier`,
+sur les conventions de version, d’identifiant et de références de tokens.
+`@ucm-kit/core/format` la porte : `CONTRACT_VERSION`, `codeIdentifier`,
 `isTokenReference` et `tokenCssVariable`, chacune écrite une fois. Les copies
-qui vivaient chez le consommateur sont parties, la dernière regex de référence
-puis la dernière projection de nom de token, puis le module d'identifiant de
-code.
+présentes chez le consommateur sont parties, la dernière regex de référence puis
+la dernière projection de nom de token, puis le module d'identifiant de code.
 
 ### Passerelles
 
@@ -344,10 +343,10 @@ proportionnée : date d’export visible, ancienneté signalée en revue, discip
 côté design.
 
 **Contrat → code : la divergence silencieuse.** La co-localisation rapproche
-sans garantir. La CI sait détecter une forme invalide, une référence de token
-cassée, une prop absente ; elle ne sait pas prouver un rendu. Annoncer une
-parité de rendu serait une fausse promesse, chaque contrôle doit dire ce qu’il
-vérifie **et** ce qu’il ne vérifie pas.
+sans garantir. La CI détecte une forme invalide, une référence de token cassée,
+une prop absente ; elle ne prouve aucun rendu. Annoncer une parité de rendu
+serait une fausse promesse, chaque contrôle doit dire ce qu’il vérifie **et** ce
+qu’il ne vérifie pas.
 
 **Code → runtime : les conventions cachées.** Ce que le contrat ne porte pas se
 réfugie dans le consommateur : dette non tokenisée, dépendance à un kit distant,
@@ -422,8 +421,8 @@ que l’exercice révèle vaut plus que son résultat.
 
 ### B. Le cycle du changement, joué en entier
 
-Le cas dominant en vie réelle est la modification. Tout
-le modèle est aujourd’hui raisonné à l’endroit de la naissance d’un composant.
+Le cas dominant en vie réelle est la modification. Tout le modèle est
+aujourd’hui raisonné à l’endroit de la naissance d’un composant.
 
 Un scénario canonique à rejouer de bout en bout, quatre changements qui couvrent
 les formes connues de rupture : une valeur de token qui change ; un variant
@@ -468,10 +467,10 @@ une équipe réelle entre dans la boucle, et elle est déjà rangée dans
 [ROADMAP.md](../../ROADMAP.md).
 
 **Les intégrations à éprouver.** Les stories dérivées, la revue visuelle et la
-documentation publiée sont étudiées dans la
-[pipeline modulaire](#8-pipeline-modulaire-autour-des-contrats). Leur adoption
-se jugerait sur les scénarios d'écran et de changement ci-dessus. L'étude ne
-vaut ni engagement de réalisation ni validation de leur bénéfice.
+documentation publiée sont étudiées dans la [pipeline
+modulaire](#8-pipeline-modulaire-autour-des-contrats). Leur adoption se jugerait
+sur les scénarios d'écran et de changement ci-dessus. L'étude ne vaut ni
+engagement de réalisation ni validation de leur bénéfice.
 
 **Ce qui s’achète.** La régression visuelle est un marché mûr ; un moteur maison
 serait une distraction. Un tableau de bord des divergences n’a de sens qu’à une
@@ -493,9 +492,9 @@ La valeur défendable est là : dans un artefact que personne ne possède et que
 tout le monde peut lire.
 
 Il serait prématuré de le formuler comme un objectif, et ce document ne le fait
-pas. Mais construire d’une manière qui l’interdirait serait une erreur nette, et
-c’est pourquoi « le contrat ne connaît ni framework, ni nom de composant, ni
-représentation Figma » est un invariant, pas un goût.
+pas. Mais construire d’une manière qui l’interdirait serait une erreur nette. «
+Le contrat ne connaît ni framework, ni nom de composant, ni représentation Figma
+» est donc un invariant, pas un goût.
 
 Reste, derrière tout cela, une question que rien n’a tranchée : **qui possède le
 cycle de vie d’un contrat** quand plusieurs repositories, plusieurs versions du
@@ -556,7 +555,8 @@ depuis la CI du repository consommateur.
 
 La répartition des sources reste celle du [concept](../../CONCEPT.md). Le
 contrat publié garderait sa forme portable ; les réglages de Storybook, les
-identifiants zeroheight et le choix d'un modèle appartiendraient au consommateur.
+identifiants zeroheight et le choix d'un modèle appartiendraient au
+consommateur.
 
 ### 8.1. Modules et dépendances
 
@@ -585,9 +585,9 @@ flowchart TD
     M --> DOC[Documentation et exemples publiés]
 ```
 
-Le schéma décrit les dépendances de données. Une équipe pourrait implémenter
-le composant sans assistant, utiliser les contrôles sans Storybook, ou produire
-la documentation d'un contrat dont le code n'existe pas encore.
+Le schéma décrit les dépendances de données. Une équipe pourrait implémenter le
+composant sans assistant, utiliser les contrôles sans Storybook, ou produire la
+documentation d'un contrat dont le code n'existe pas encore.
 
 | Brique | Entrées | Sortie proposée | Dépendance particulière |
 |---|---|---|---|
@@ -606,8 +606,8 @@ la documentation d'un contrat dont le code n'existe pas encore.
 L'indépendance concerne les installations et les sorties. Elle ne justifie pas
 plusieurs lecteurs du format : tous utiliseraient les autorités du kit. Les
 fonctions `vueExacteDuVariant`, `collecterReferences`, `indexerTokensDtcg` et
-`validerGrapheDesContrats` sont déjà exposées par la
-[porte publique des lecteurs](../../packages/kit/src/lecteurs/index.mjs).
+`validerGrapheDesContrats` sont déjà exposées par la [porte publique des
+lecteurs](../../packages/kit/src/lecteurs/index.mjs).
 
 ### 8.2. Interfaces communes et propriété des données
 
@@ -625,19 +625,19 @@ contrôle, la capture et la publication.
 | Écart observé, panne d'outil ou contrôle non réalisé | Distinguer un défaut du code d'une absence de preuve |
 | Chemins ou liens des artefacts produits | Ouvrir la story, le patch, le rapport ou la capture concernée |
 
-Cette enveloppe serait un protocole entre outils, extérieur aux contrats
-Figma. Sa version ne remplacerait ni `meta.contractVersion` ni celle des
-paquets. La [politique de compatibilité](../COMPATIBILITE.md) resterait
-l'autorité pour les formats existants.
+Cette enveloppe serait un protocole entre outils, extérieur aux contrats Figma.
+Sa version ne remplacerait ni `meta.contractVersion` ni celle des paquets. La
+[politique de compatibilité](../COMPATIBILITE.md) resterait l'autorité pour les
+formats existants.
 
 Les lecteurs communs résoudraient les catalogues avant qu'un module prenne une
 décision. Un générateur de stories, un diff et un assistant ne devraient pas
 réimplémenter chacun le sens d'une absence ou la résolution d'une vue.
 
-Le code source implémenté serait maintenu par les développeurs, y compris
-après une première génération par IA. Les sorties déterministes, comme les
-stories contractuelles et le Markdown dérivé, seraient régénérables et séparées
-des contributions humaines. Une reconstruction à données et versions identiques
+Le code source implémenté serait maintenu par les développeurs, y compris après
+une première génération par IA. Les sorties déterministes, comme les stories
+contractuelles et le Markdown dérivé, seraient régénérables et séparées des
+contributions humaines. Une reconstruction à données et versions identiques
 devrait produire les mêmes fichiers.
 
 **Essai préalable :** exécuter deux modules sur une même révision, modifier
@@ -646,31 +646,31 @@ plus être présentés comme décrivant le nouvel état.
 
 ### 8.3. Tokens et environnements de rendu
 
-**Capacité documentée.** Style Dictionary accepte le format DTCG et produit
-des sorties configurables. Pour CSS, `outputReferences` conserve des références
+**Capacité documentée.** Style Dictionary accepte le format DTCG et produit des
+sorties configurables. Pour CSS, `outputReferences` conserve des références
 entre variables ; certains filtrages ou certaines transformations demandent un
 traitement particulier des alias.
-[Configuration](https://styledictionary.com/reference/config/),
-[formats et références](https://styledictionary.com/reference/hooks/formats/).
+[Configuration](https://styledictionary.com/reference/config/), [formats et
+références](https://styledictionary.com/reference/hooks/formats/).
 
 **Version de la spécification.** Le groupe DTCG a publié une première version
 stable de son module de format, `2025.10`. Style Dictionary annonce une prise en
-charge native du format depuis sa version 4, et indique que `2025.10` n'y est pas
-encore entièrement pris en charge, ce travail étant en cours dans sa version 5.
-Terrazzo renvoie à cette même version du format et publie un guide de résolveurs
-et de thématisation. La comparaison des deux outils demande donc un essai sur le
-fichier réellement exporté.
-[Version stable](https://www.w3.org/community/design-tokens/2025/10/28/design-tokens-specification-reaches-first-stable-version/),
-[Style Dictionary et DTCG](https://styledictionary.com/info/dtcg/),
-[Terrazzo et DTCG](https://terrazzo.app/docs/guides/dtcg/).
+charge native du format depuis sa version 4, et indique que `2025.10` n'y est
+pas encore entièrement pris en charge, ce travail étant en cours dans sa version
+5. Terrazzo renvoie à cette même version du format et publie un guide de
+résolveurs et de thématisation. La comparaison des deux outils demande donc un
+essai sur le fichier réellement exporté. [Version
+stable](https://www.w3.org/community/design-tokens/2025/10/28/design-tokens-specification-reaches-first-stable-version/),
+[Style Dictionary et DTCG](https://styledictionary.com/info/dtcg/), [Terrazzo et
+DTCG](https://terrazzo.app/docs/guides/dtcg/).
 
 **Un module de résolution existe, sans être implémentable.** Un module de
 résolution en préparation décrit comment exprimer un même token dans plusieurs
 contextes : thèmes, tailles, modes d'accessibilité. Il définit des ensembles de
 sources fusionnées dans leur ordre de déclaration, des modificateurs portant au
 moins deux contextes, et l'énumération des combinaisons produites. Son texte
-demande de ne pas l'implémenter et de ne pas le citer comme autorité.
-[Module de résolution](https://www.designtokens.org/tr/drafts/resolver/).
+demande de ne pas l'implémenter et de ne pas le citer comme autorité. [Module de
+résolution](https://www.designtokens.org/tr/drafts/resolver/).
 
 Ce module recouvre le besoin auquel `com.ucm.modes` répond par une extension
 propre au projet. La conduite qui en découle est de le suivre sans migrer :
@@ -681,46 +681,46 @@ jour où la forme publiée se déplacerait vers un fichier de résolution.
 
 **Proposition UCM.** Un module lirait les modes publiés sous
 `$extensions["com.ucm.modes"]`, construirait la projection de chaque marque,
-puis produirait les ressources de la plateforme. Cette extension UCM demande
-une lecture explicite : la prise en charge du DTCG par un outil ne prouve pas
-qu'il interprète les marques de l'exporteur. La forme actuelle reste définie
-dans [FORMAT.md](../FORMAT.md#partie-2--export-tokens).
+puis produirait les ressources de la plateforme. Cette extension UCM demande une
+lecture explicite : la prise en charge du DTCG par un outil ne prouve pas qu'il
+interprète les marques de l'exporteur. La forme actuelle reste définie dans
+[FORMAT.md](../FORMAT.md#partie-2--export-tokens).
 
-Pour le web, l'application et Storybook consommeraient le même CSS produit.
-Le consommateur déclarerait comment sélectionner une marque ou un thème :
-attribut, classe ou provider. Les globals de Storybook appelleraient ce même
-mécanisme. Un mode Chromatic représenterait ensuite une configuration de test ;
-son nom ne serait pas déduit de celui d'une collection Figma.
+Pour le web, l'application et Storybook consommeraient le même CSS produit. Le
+consommateur déclarerait comment sélectionner une marque ou un thème : attribut,
+classe ou provider. Les globals de Storybook appelleraient ce même mécanisme. Un
+mode Chromatic représenterait ensuite une configuration de test ; son nom ne
+serait pas déduit de celui d'une collection Figma.
 
 La projection des noms utiliserait `tokenCssVariable` du kit. Une collision de
-noms CSS devrait être détectée avant d'écrire deux variables indiscernables.
-Le module conserverait la fermeture des alias nécessaires à chaque sortie,
-sans supprimer silencieusement une cible au filtrage.
+noms CSS devrait être détectée avant d'écrire deux variables indiscernables. Le
+module conserverait la fermeture des alias nécessaires à chaque sortie, sans
+supprimer silencieusement une cible au filtrage.
 
-**Première portée :** CSS du mode par défaut et de deux marques réelles.
-Les dimensions d'environnement supplémentaires, comme la langue et la largeur
-de fenêtre, resteraient configurées par le consommateur.
+**Première portée :** CSS du mode par défaut et de deux marques réelles. Les
+dimensions d'environnement supplémentaires, comme la langue et la largeur de
+fenêtre, resteraient configurées par le consommateur.
 
 **Preuve attendue :** changer la valeur d'un alias de marque modifie le même
-composant dans l'application et dans sa story, sans modifier son code ni
-aplatir la chaîne d'alias. Une marque incomplète est distinguée d'un mode par
-défaut valide.
+composant dans l'application et dans sa story, sans modifier son code ni aplatir
+la chaîne d'alias. Une marque incomplète est distinguée d'un mode par défaut
+valide.
 
 ### 8.4. Lint dans l'éditeur et en CI
 
 **Capacité documentée.** ESLint expose des règles de plugin, des diagnostics
 localisés, des suggestions et des corrections automatiques. `typescript-eslint`
-donne accès aux informations de types dans les règles et propose un outillage
-de test. Stylelint possède une interface de plugin pour les feuilles CSS.
-[Règles ESLint](https://eslint.org/docs/latest/extend/custom-rules),
-[règles TypeScript](https://typescript-eslint.io/developers/custom-rules/),
-[plugins Stylelint](https://stylelint.io/developer-guide/plugins/).
+donne accès aux informations de types dans les règles et propose un outillage de
+test. Stylelint possède une interface de plugin pour les feuilles CSS. [Règles
+ESLint](https://eslint.org/docs/latest/extend/custom-rules), [règles
+TypeScript](https://typescript-eslint.io/developers/custom-rules/), [plugins
+Stylelint](https://stylelint.io/developer-guide/plugins/).
 
 **Proposition UCM.** Le linter lirait le contrat associé au fichier par la
-configuration existante et rendrait les constats au plus près de l'écriture.
-La comparaison de l'API publique continuerait de dépendre de l'adaptateur
-TypeScript. Les règles partagées seraient extraites à une autorité commune
-avant d'être utilisées dans ESLint et dans `ucm check`.
+configuration existante et rendrait les constats au plus près de l'écriture. La
+comparaison de l'API publique continuerait de dépendre de l'adaptateur
+TypeScript. Les règles partagées seraient extraites à une autorité commune avant
+d'être utilisées dans ESLint et dans `ucm check`.
 
 | Règle candidate | Ce qui serait démontrable | Limite à conserver |
 |---|---|---|
@@ -732,9 +732,9 @@ avant d'être utilisées dans ESLint et dans `ucm check`.
 | API visuelle divergente | Une déclaration contredit une propriété publiée | Réutiliser la parité existante et ses limites |
 
 Une référence CSS devrait être rapprochée du token via la projection canonique,
-en conservant les collisions possibles. Une feuille CSS externe demanderait
-son propre parseur et une association au composant ; ESLint seul ne suffirait
-pas à couvrir toutes les écritures de styles.
+en conservant les collisions possibles. Une feuille CSS externe demanderait son
+propre parseur et une association au composant ; ESLint seul ne suffirait pas à
+couvrir toutes les écritures de styles.
 
 Les corrections automatiques seraient limitées aux remplacements non ambigus.
 Deux tokens de même valeur ne justifient aucun choix automatique. Une exception
@@ -744,25 +744,27 @@ de blocage resterait celle du repository.
 Le coût de l'analyse typée serait mesuré séparément du lint syntaxique.
 `projectService` est l'option recommandée par `typescript-eslint` pour accéder
 au projet TypeScript ; les fichiers hors projet demandent un traitement
-explicite. [Analyse typée](https://typescript-eslint.io/troubleshooting/typed-linting/).
+explicite. [Analyse
+typée](https://typescript-eslint.io/troubleshooting/typed-linting/).
 
 **Preuve attendue :** mêmes constats dans l'éditeur et en CI sur une référence
 supprimée, un import renommé et une combinaison inexistante. Un réexport seul
-doit invalider le cache du linter, même si le fichier source n'a pas changé.
-Le corpus doit aussi accepter une valeur en pixels autorisée par le contrat
-et signaler les expressions non analysables sans les déclarer conformes.
+doit invalider le cache du linter, même si le fichier source n'a pas changé. Le
+corpus doit aussi accepter une valeur en pixels autorisée par le contrat et
+signaler les expressions non analysables sans les déclarer conformes.
 
 ### 8.5. Stories dérivées et scénarios applicatifs
 
 **Capacité documentée.** Storybook décrit les cas de composant dans son format
 de stories, `CSF`. Les `args` fournissent les valeurs et les `argTypes`
-configurent les contrôles. Les decorators fournissent le contexte de rendu ;
-les fonctions `play` exécutent des interactions. Les stories portables peuvent
-être utilisées dans un environnement de test externe.
-[Format des stories](https://storybook.js.org/docs/api/csf),
+configurent les contrôles. Les decorators fournissent le contexte de rendu ; les
+fonctions `play` exécutent des interactions. Les stories portables peuvent être
+utilisées dans un environnement de test externe. [Format des
+stories](https://storybook.js.org/docs/api/csf),
 [contrôles](https://storybook.js.org/docs/essentials/controls),
 [interactions](https://storybook.js.org/docs/writing-tests/interaction-testing),
-[stories portables](https://storybook.js.org/docs/api/portable-stories/portable-stories-vitest).
+[stories
+portables](https://storybook.js.org/docs/api/portable-stories/portable-stories-vitest).
 
 **Le format visé se déplace.** Storybook 10 fait passer les fabriques `CSF` du
 statut expérimental au statut de préversion pour React, et annonce leur adoption
@@ -772,8 +774,8 @@ acceptées, ce qui concerne le repository consommateur avant le générateur.
 [Storybook 10](https://storybook.js.org/blog/storybook-10/).
 
 Un générateur déterministe écrirait donc dans une forme qui change d'une version
-majeure à l'autre. Deux conséquences pour le module : la forme émise appartient à
-un adaptateur épinglé sur une version de Storybook, et les cas dérivés se
+majeure à l'autre. Deux conséquences pour le module : la forme émise appartient
+à un adaptateur épinglé sur une version de Storybook, et les cas dérivés se
 décrivent d'abord dans une structure interne au module, traduite ensuite. Sans
 cette séparation, une montée de version demanderait de régénérer et de relire
 tous les fichiers produits.
@@ -799,15 +801,15 @@ icônes et les actions nécessaires aux états.
 
 Les contrôles d'axes indépendants peuvent fabriquer une combinaison absente
 d'une matrice clairsemée. La navigation proposerait des cas valides ou
-indiquerait cette absence ; elle n'ajouterait aucune combinaison au contrat.
-Une valeur initiale choisie pour la démonstration ne deviendrait pas un défaut
+indiquerait cette absence ; elle n'ajouterait aucune combinaison au contrat. Une
+valeur initiale choisie pour la démonstration ne deviendrait pas un défaut
 contractuel lorsqu'aucun `@default` n'est publié.
 
 Les identifiants de stories seraient dérivés de l'identité du composant et de
 ses coordonnées normalisées. Les identifiants internes de catalogues et la
 position d'un variant dans un tableau ne conviendraient pas : un réexport peut
-les modifier sans changer le cas visuel. Les conventions de génération
-devraient prévenir les collisions et expliquer les stories retirées.
+les modifier sans changer le cas visuel. Les conventions de génération devraient
+prévenir les collisions et expliquer les stories retirées.
 
 Pour le focus et le survol, distinguer les événements simulés des pseudo-classes
 effectivement activées dans le navigateur de capture. Une story ne serait
@@ -820,17 +822,17 @@ par les développeurs et importeraient les mêmes composants.
 
 **Preuve attendue :** ajouter un variant dans Figma ajoute un cas exécutable ;
 le retirer retire uniquement le cas dérivé correspondant. Régénérer ne modifie
-pas les stories métier. Un composant impossible à monter apparaît dans le
-relevé de couverture au lieu de disparaître de la liste.
+pas les stories métier. Un composant impossible à monter apparaît dans le relevé
+de couverture au lieu de disparaître de la liste.
 
 ### 8.6. Revue visuelle et conformité du rendu
 
-**Capacité documentée.** Chromatic capture les stories et compare leurs images
-à des références acceptées. Les branches et les modes possèdent des règles de
-sélection de référence ; les modes combinent notamment thème, langue et
-fenêtre, avec des approbations distinctes.
-[Captures](https://www.chromatic.com/docs/snapshots/),
-[branches et références](https://www.chromatic.com/docs/branching-and-baselines/),
+**Capacité documentée.** Chromatic capture les stories et compare leurs images à
+des références acceptées. Les branches et les modes possèdent des règles de
+sélection de référence ; les modes combinent notamment thème, langue et fenêtre,
+avec des approbations distinctes.
+[Captures](https://www.chromatic.com/docs/snapshots/), [branches et
+références](https://www.chromatic.com/docs/branching-and-baselines/),
 [modes](https://www.chromatic.com/docs/modes/).
 
 | Contrôle | Référence utilisée | Conclusion possible |
@@ -842,58 +844,59 @@ fenêtre, avec des approbations distinctes.
 
 **Proposition UCM.** Le module Visual utiliserait les stories produites et
 publierait les liens Chromatic dans le bilan de la révision. La première
-référence serait relue avec Figma. Une mise à jour de contrat pourrait exiger
-un changement visuel ; l'accepter serait une décision de revue, jamais un
-effet automatique du réexport ou de la proposition IA.
+référence serait relue avec Figma. Une mise à jour de contrat pourrait exiger un
+changement visuel ; l'accepter serait une décision de revue, jamais un effet
+automatique du réexport ou de la proposition IA.
 
 Un composant resté visuellement identique malgré un contrat modifié peut
-demander une adaptation. Chromatic peut constater cette stabilité sans
-constater l'écart au contrat. Le comparateur envisagé dans
+demander une adaptation. Chromatic peut constater cette stabilité sans constater
+l'écart au contrat. Le comparateur envisagé dans
 [PLAN-CONFORMITE-RENDU.md](./PLAN-CONFORMITE-RENDU.md) traiterait cette question
-sur les propriétés observables. Sa recherche pourrait réutiliser Storybook
-pour le montage et un navigateur réel pour les mesures, sans recopier son
-protocole de comparaison dans les stories.
+sur les propriétés observables. Sa recherche pourrait réutiliser Storybook pour
+le montage et un navigateur réel pour les mesures, sans recopier son protocole
+de comparaison dans les stories.
 
 L'identité d'un token resterait une question distincte de sa couleur calculée.
-Une capture ne distingue pas deux tokens de même valeur. Les contrôles
-statiques et la recherche sur l'observation conserveraient cette limite dans
-leurs résultats.
+Une capture ne distingue pas deux tokens de même valeur. Les contrôles statiques
+et la recherche sur l'observation conserveraient cette limite dans leurs
+résultats.
 
-**Alternative.** Playwright fournit des assertions de capture et la gestion
-des images de référence dans le repository. Cette option éviterait le service
-de revue externe, mais laisserait à l'équipe l'hébergement des résultats et
+**Alternative.** Playwright fournit des assertions de capture et la gestion des
+images de référence dans le repository. Cette option éviterait le service de
+revue externe, mais laisserait à l'équipe l'hébergement des résultats et
 l'organisation de leur approbation. Les environnements de capture doivent être
-stabilisés, car les images peuvent varier selon la plateforme.
-[Comparaisons visuelles Playwright](https://playwright.dev/docs/test-snapshots).
+stabilisés, car les images peuvent varier selon la plateforme. [Comparaisons
+visuelles Playwright](https://playwright.dev/docs/test-snapshots).
 
 **Maîtrise du volume.** Compter les cas exécutés par environnement et navigateur
 avant de sélectionner l'offre. Une sélection rapide sur les cas concernés peut
 compléter un passage intégral périodique ; ses exclusions doivent rester
 visibles. TurboSnap suit les dépendances du build et propose `externals` pour
 les fichiers extérieurs à ce graphe. Les contrats et tokens lus pendant la
-génération doivent donc être pris en compte dans l'invalidation.
-[Configuration TurboSnap](https://www.chromatic.com/docs/turbosnap/setup/),
-[facturation Chromatic](https://www.chromatic.com/docs/billing/).
+génération doivent donc être pris en compte dans l'invalidation. [Configuration
+TurboSnap](https://www.chromatic.com/docs/turbosnap/setup/), [facturation
+Chromatic](https://www.chromatic.com/docs/billing/).
 
 Les tests d'interaction et d'accessibilité seraient des contrôles voisins.
 Storybook dispose d'une intégration d'accessibilité fondée sur axe ; ses
 résultats ne couvrent pas toutes les obligations d'accessibilité. Leur
-définition resterait côté code, conformément au concept.
-[Tests d'accessibilité](https://storybook.js.org/docs/writing-tests/accessibility-testing).
+définition resterait côté code, conformément au concept. [Tests
+d'accessibilité](https://storybook.js.org/docs/writing-tests/accessibility-testing).
 
 **Preuve attendue :** un changement de token déclenche la capture de ses
-consommateurs ; une différence voulue demande une revue ; une capture absente
-ne vaut pas acceptation. Comparer aussi les résultats du passage ciblé à ceux
-du passage intégral avant d'activer une optimisation par défaut.
+consommateurs ; une différence voulue demande une revue ; une capture absente ne
+vaut pas acceptation. Comparer aussi les résultats du passage ciblé à ceux du
+passage intégral avant d'activer une optimisation par défaut.
 
 ### 8.7. Documentation dérivée et zeroheight
 
 **Capacités documentées.** Storybook Autodocs produit des pages à partir des
 stories et des métadonnées du code. zeroheight peut afficher du Markdown
 provenant d'un repository Git et intégrer les stories d'un Storybook.
-[Autodocs](https://storybook.js.org/docs/writing-docs/autodocs),
-[Markdown synchronisé](https://help.zeroheight.com/hc/en-us/articles/35886857994907-Sync-markdown-files-from-your-code-repositories),
-[intégration Storybook](https://help.zeroheight.com/hc/en-us/articles/35886994075547-Storybook-Native-Embedding-vs-Embedding-iframe).
+[Autodocs](https://storybook.js.org/docs/writing-docs/autodocs), [Markdown
+synchronisé](https://help.zeroheight.com/hc/en-us/articles/35886857994907-Sync-markdown-files-from-your-code-repositories),
+[intégration
+Storybook](https://help.zeroheight.com/hc/en-us/articles/35886994075547-Storybook-Native-Embedding-vs-Embedding-iframe).
 
 **Proposition UCM.** Un générateur déterministe produirait la référence visuelle
 du composant, accompagnée de ses sources. Un adaptateur de publication
@@ -910,42 +913,43 @@ documentation ou dans Git.
 | État de l'implémentation et contrôles disponibles | Résultats associés à la révision | Indication de leur périmètre et de leur provenance |
 
 Les props annoncées par le contrat et celles extraites du code seraient
-présentées avec leur provenance. Une fusion silencieuse de ces tables
-masquerait précisément les divergences que la parité cherche à montrer.
-Une recommandation absente du contrat ne serait pas inventée pour remplir
-une rubrique. Les contenus de `samples` resteraient des exemples.
+présentées avec leur provenance. Une fusion silencieuse de ces tables masquerait
+précisément les divergences que la parité cherche à montrer. Une recommandation
+absente du contrat ne serait pas inventée pour remplir une rubrique. Les
+contenus de `samples` resteraient des exemples.
 
 **Limites d'intégration vérifiées.** La documentation zeroheight réserve la
-synchronisation Markdown aux offres autres que Free et Starter. Elle décrit
-une mise à jour par le menu, utilise CommonMark et écarte le HTML incorporé.
-Un export destiné à cette surface privilégierait les titres, listes et blocs
-de code ; le rendu des tableaux et des liens internes serait testé.
-[Fonctionnement du Markdown](https://help.zeroheight.com/hc/en-us/articles/35886857994907-Sync-markdown-files-from-your-code-repositories).
+synchronisation Markdown aux offres autres que Free et Starter. Elle décrit une
+mise à jour par le menu, utilise CommonMark et écarte le HTML incorporé. Un
+export destiné à cette surface privilégierait les titres, listes et blocs de
+code ; le rendu des tableaux et des liens internes serait testé. [Fonctionnement
+du
+Markdown](https://help.zeroheight.com/hc/en-us/articles/35886857994907-Sync-markdown-files-from-your-code-repositories).
 
-L'API publiée documente la lecture des pages et l'écriture de leurs statuts.
-Ces capacités ne suffisent pas à annoncer la création automatique des pages,
-l'écriture arbitraire de leur contenu ou le rafraîchissement des Markdown.
-Ces opérations restent à confirmer par une interface prise en charge avant
-de promettre une publication sans intervention.
-[Périmètre de l'API zeroheight](https://help.zeroheight.com/hc/en-us/articles/35887050539035-Zeroheight-API-Use-the-zeroheight-REST-API).
+L'API publiée documente la lecture des pages et l'écriture de leurs statuts. Ces
+capacités ne suffisent pas à annoncer la création automatique des pages,
+l'écriture arbitraire de leur contenu ou le rafraîchissement des Markdown. Ces
+opérations restent à confirmer par une interface prise en charge avant de
+promettre une publication sans intervention. [Périmètre de l'API
+zeroheight](https://help.zeroheight.com/hc/en-us/articles/35887050539035-Zeroheight-API-Use-the-zeroheight-REST-API).
 
-**Première portée :** générer une fiche Markdown, l'associer manuellement à
-une page zeroheight et y intégrer une story. La mise en page humaine resterait
+**Première portée :** générer une fiche Markdown, l'associer manuellement à une
+page zeroheight et y intégrer une story. La mise en page humaine resterait
 séparée du bloc dérivé. Le module conserverait une association entre composant,
 page et référence de Storybook, sans modifier le contrat Figma.
 
 **Preuve attendue :** réexporter une variante modifie la fiche et ses exemples
-sans écraser les explications humaines. Une documentation de version donnée
-ne doit pas afficher un exemple provenant d'une autre livraison. La
-publication doit aussi décrire correctement un contrat encore sans code.
+sans écraser les explications humaines. Une documentation de version donnée ne
+doit pas afficher un exemple provenant d'une autre livraison. La publication
+doit aussi décrire correctement un contrat encore sans code.
 
 ### 8.8. Diff et impact du changement
 
 **Base technique.** JSON Patch décrit des opérations sur la structure d'un
 document JSON. Il peut représenter une modification, mais ne classe pas son
 effet sur l'API d'un composant. Le sens UCM de la comparaison reste à écrire
-au-dessus des lecteurs existants.
-[JSON Patch](https://www.rfc-editor.org/info/rfc6902/).
+au-dessus des lecteurs existants. [JSON
+Patch](https://www.rfc-editor.org/info/rfc6902/).
 
 **Proposition UCM.** Le diff recevrait deux ensembles cohérents de contrats et
 de tokens, avec leurs révisions. Il comparerait les vues résolues de chaque
@@ -969,17 +973,17 @@ exiger une adaptation d'un consommateur qui traite son union de façon
 exhaustive. Le diff annoncerait l'effet observé et l'incertitude, sans déduire
 la compatibilité applicative du seul caractère additif du JSON.
 
-L'impact sur les tokens suivrait les références et les alias transitifs dans
-les deux révisions. L'impact sur les composants remonterait le graphe de
-composition pour retrouver les parents potentiellement concernés. Une
-relation dans ce graphe justifie un contrôle ; elle ne prouve pas que tous les
-parents doivent être réécrits. Les usages applicatifs hors contrats exigeraient
-une analyse du code supplémentaire.
+L'impact sur les tokens suivrait les références et les alias transitifs dans les
+deux révisions. L'impact sur les composants remonterait le graphe de composition
+pour retrouver les parents potentiellement concernés. Une relation dans ce
+graphe justifie un contrôle ; elle ne prouve pas que tous les parents doivent
+être réécrits. Les usages applicatifs hors contrats exigeraient une analyse du
+code supplémentaire.
 
 **Preuve attendue :** comparer deux exports réels, puis rejouer la comparaison
 avec des catalogues renumérotés. Le résultat sémantique doit rester identique.
-Un changement d'alias doit retrouver ses consommateurs même lorsqu'aucun
-contrat de composant n'a changé.
+Un changement d'alias doit retrouver ses consommateurs même lorsqu'aucun contrat
+de composant n'a changé.
 
 ### 8.9. Contexte et assistant d'implémentation
 
@@ -1011,29 +1015,30 @@ ne constitue aucune mesure de qualité sur UCM.
 | `Qwen3-Coder-30B-A3B-Instruct` | 30,5 milliards de paramètres au total, 3,3 milliards actifs ; contexte natif de 262 144 tokens ; licence Apache 2.0 | Coût et qualité sur une création puis une adaptation de composant |
 | `Qwen3-Coder-Next` | 80 milliards de paramètres au total, 3 milliards actifs ; licence Apache 2.0 ; entraînement orienté agents de code | Gain sur les adaptations nécessitant plusieurs lectures et corrections |
 
-Sources : [fiche 30B-A3B](https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct),
-[fiche Coder-Next](https://huggingface.co/Qwen/Qwen3-Coder-Next).
-Le nombre de paramètres actifs ne donne pas la mémoire nécessaire au
-déploiement. Celle-ci dépend aussi des poids chargés, de leur quantification,
-du cache de contexte et des requêtes simultanées. Aucun matériel ni budget
-d'hébergement n'est arrêté dans cette étude.
+Sources : [fiche
+30B-A3B](https://huggingface.co/Qwen/Qwen3-Coder-30B-A3B-Instruct), [fiche
+Coder-Next](https://huggingface.co/Qwen/Qwen3-Coder-Next). Le nombre de
+paramètres actifs ne donne pas la mémoire nécessaire au déploiement. Celle-ci
+dépend aussi des poids chargés, de leur quantification, du cache de contexte et
+des requêtes simultanées. Aucun matériel ni budget d'hébergement n'est arrêté
+dans cette étude.
 
 Qwen Code fournit un agent en ligne de commande et un mode sans interface avec
 sorties JSON. Il constitue un premier adaptateur à éprouver avant d'écrire une
 boucle d'outils spécifique. Les capacités d'intégration restent celles de la
-version retenue et doivent être épinglées lors de l'essai.
-[Agent Qwen Code](https://github.com/QwenLM/qwen-code),
-[mode sans interface](https://qwenlm.github.io/qwen-code-docs/en/users/features/headless/).
+version retenue et doivent être épinglées lors de l'essai. [Agent Qwen
+Code](https://github.com/QwenLM/qwen-code), [mode sans
+interface](https://qwenlm.github.io/qwen-code-docs/en/users/features/headless/).
 
-Une autre option serait un agent UCM minimal appelant un modèle servi par
-vLLM. vLLM documente les sorties contraintes par schéma et les appels d'outils,
-avec des parseurs propres aux familles de modèles. Il faudrait vérifier la
-combinaison modèle, serveur, format de conversation et parseur.
-[Sorties structurées](https://docs.vllm.ai/en/latest/features/structured_outputs/),
-[appels d'outils](https://docs.vllm.ai/en/latest/features/tool_calling/).
-Un résultat JSON valide ne prouve ni la justesse du patch ni la réussite des
-tests. Ces résultats seraient recueillis par l'exécuteur, indépendamment du
-résumé du modèle.
+Une autre option serait un agent UCM minimal appelant un modèle servi par vLLM.
+vLLM documente les sorties contraintes par schéma et les appels d'outils, avec
+des parseurs propres aux familles de modèles. Il faudrait vérifier la
+combinaison modèle, serveur, format de conversation et parseur. [Sorties
+structurées](https://docs.vllm.ai/en/latest/features/structured_outputs/),
+[appels d'outils](https://docs.vllm.ai/en/latest/features/tool_calling/). Un
+résultat JSON valide ne prouve ni la justesse du patch ni la réussite des tests.
+Ces résultats seraient recueillis par l'exécuteur, indépendamment du résumé du
+modèle.
 
 #### Première automatisation proposée
 
@@ -1050,34 +1055,34 @@ résumé du modèle.
    relit le code et le comportement ; le designer relit les effets visuels.
 
 La V1 pourrait automatiser le déclenchement après un export accepté, sur les
-composants que le repository a autorisés. Un déclenchement manuel sur un
-contrat serait le premier essai. Un nouvel export pendant une exécution
-rendrait sa proposition périmée ; une modification humaine dans la branche
-de proposition demanderait une reprise explicite avant de réécrire.
+composants que le repository a autorisés. Un déclenchement manuel sur un contrat
+serait le premier essai. Un nouvel export pendant une exécution rendrait sa
+proposition périmée ; une modification humaine dans la branche de proposition
+demanderait une reprise explicite avant de réécrire.
 
-Les obligations contractuelles, les tests de référence et les réglages de
-revue resteraient hors des fichiers que l'agent peut affaiblir pour faire
-passer ses contrôles. Des tests supplémentaires pourraient être proposés dans
-le patch. Les publications et les jetons de service seraient confiés à une
-étape distincte, après l'exécution du code proposé.
+Les obligations contractuelles, les tests de référence et les réglages de revue
+resteraient hors des fichiers que l'agent peut affaiblir pour faire passer ses
+contrôles. Des tests supplémentaires pourraient être proposés dans le patch. Les
+publications et les jetons de service seraient confiés à une étape distincte,
+après l'exécution du code proposé.
 
-La création de code destiné à être maintenu demanderait un protocole propre.
-Le [test froid](../../CONCEPT.md#5-le-workflow) conserverait son rôle
-d'épreuve jetable depuis le seul contrat. L'assistant d'adaptation, lui, devrait
-lire le code existant pour préserver les événements et le comportement
-applicatif. Il n'inventerait pas ces obligations lorsqu'elles manquent.
+La création de code destiné à être maintenu demanderait un protocole propre. Le
+[test froid](../../CONCEPT.md#5-le-workflow) conserverait son rôle d'épreuve
+jetable depuis le seul contrat. L'assistant d'adaptation, lui, devrait lire le
+code existant pour préserver les événements et le comportement applicatif. Il
+n'inventerait pas ces obligations lorsqu'elles manquent.
 
 #### Évaluer avant de spécialiser le modèle
 
-Le banc d'essai comparerait les modèles sur les mêmes créations et mises à
-jour, avec les mêmes outils et budgets. Plusieurs exécutions seraient
-nécessaires : le résultat d'une génération n'est pas déterministe.
+Le banc d'essai comparerait les modèles sur les mêmes créations et mises à jour,
+avec les mêmes outils et budgets. Plusieurs exécutions seraient nécessaires : le
+résultat d'une génération n'est pas déterministe.
 
-Les mesures utiles seraient le taux de patches acceptés, les écarts
-contractuels restants, les régressions comportementales, le temps de revue et
-le coût total jusqu'à acceptation. Les corrections humaines feraient partie
-du coût. Un test sans contrat disposerait des sources habituelles de
-l'équipe, afin de comparer UCM à une pratique réelle.
+Les mesures utiles seraient le taux de patches acceptés, les écarts contractuels
+restants, les régressions comportementales, le temps de revue et le coût total
+jusqu'à acceptation. Les corrections humaines feraient partie du coût. Un test
+sans contrat disposerait des sources habituelles de l'équipe, afin de comparer
+UCM à une pratique réelle.
 
 Un entraînement spécialisé resterait une piste ultérieure, justifiée par des
 erreurs répétées que le contexte et les outils ne résolvent pas. Les contrats
@@ -1147,10 +1152,10 @@ vers l'accès agent.
 | zeroheight | Documentation, synchronisation Markdown depuis Git, intégration Storybook, accès agent limité en volume sur les offres basses | Les tokens en écriture, les contrôles et le code |
 | Knapsack | Gouvernance et accompagnement de déploiement | La même part de code |
 
-Source : [comparaison publiée par Supernova](https://www.supernova.io/vs/zeroheight).
-Cette page est publiée par un concurrent de zeroheight. Ses affirmations sur
-l'offre voisine demandent une vérification sur les grilles réelles avant d'entrer
-dans une décision.
+Source : [comparaison publiée par
+Supernova](https://www.supernova.io/vs/zeroheight). Cette page est publiée par
+un concurrent de zeroheight. Ses affirmations sur l'offre voisine demandent une
+vérification sur les grilles réelles avant d'entrer dans une décision.
 
 Trois questions départageraient l'achat et la construction.
 
@@ -1158,18 +1163,18 @@ Trois questions départageraient l'achat et la construction.
    coordonnée, ses catalogues de parties et son graphe de composition. Vérifier
    si une plateforme sert une donnée de ce grain, ou des tokens, des propriétés
    et des captures.
-2. La propriété et la lisibilité. Le contrat vit dans le repository et se lit
-   sans compte. Un abonnement déplace cette lecture chez un éditeur, et la
+2. La propriété et la lisibilité. Le contrat est déposé dans le repository et se
+   lit sans compte. Un abonnement déplace cette lecture chez un éditeur, et la
    coupure d'accès emporte la source.
 3. Le coût par siège, déjà l'argument retenu contre Code Connect dans le
    [positionnement](#1-positionnement). Il se compare au coût de construction et
    de maintenance des modules, pas à zéro.
 
 Deux réponses paraissent tenables sans essai supplémentaire. La capture et sa
-revue s'achètent, comme la [revue visuelle](#86-revue-visuelle-et-conformité-du-rendu)
-le retient pour Chromatic. La comparaison du rendu au contrat n'a pas
-d'équivalent vendu ; le [plan de conformité](./PLAN-CONFORMITE-RENDU.md) la
-traite.
+revue s'achètent, comme la [revue
+visuelle](#86-revue-visuelle-et-conformité-du-rendu) le retient pour Chromatic.
+La comparaison du rendu au contrat n'a pas d'équivalent vendu ; le [plan de
+conformité](./PLAN-CONFORMITE-RENDU.md) la traite.
 
 **Preuve attendue :** monter un essai sur un composant réel avec l'une de ces
 plateformes, puis comparer ce que reçoit un agent à révision et à budget
@@ -1177,17 +1182,17 @@ identiques. Sans cet essai, l'étude ne justifie ni l'achat ni la construction.
 
 ### 8.12. Orchestration et cycle de revue
 
-**Capacité documentée.** GitHub Actions propose des workflows réutilisables,
-des entrées et sorties, des dépendances entre jobs et des groupes de
-concurrence. Le cœur de la pipeline pourrait donc rester une suite de
-commandes locales, appelée par un workflow partagé.
-[Réutilisation des workflows](https://docs.github.com/en/actions/concepts/workflows-and-actions/reusing-workflow-configurations),
+**Capacité documentée.** GitHub Actions propose des workflows réutilisables, des
+entrées et sorties, des dépendances entre jobs et des groupes de concurrence. Le
+cœur de la pipeline pourrait donc rester une suite de commandes locales, appelée
+par un workflow partagé. [Réutilisation des
+workflows](https://docs.github.com/en/actions/concepts/workflows-and-actions/reusing-workflow-configurations),
 [concurrence](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
 
 **Proposition UCM.** L'orchestrateur recevrait une révision et la liste des
 modules activés. Il préparerait les entrées une fois, exécuterait les modules
-indépendants en parallèle et agrégerait leurs résultats. Un module pourrait
-être absent par configuration ; une panne d'un module activé resterait visible.
+indépendants en parallèle et agrégerait leurs résultats. Un module pourrait être
+absent par configuration ; une panne d'un module activé resterait visible.
 
 | Événement | Travail proposé | Point de revue |
 |---|---|---|
@@ -1198,46 +1203,47 @@ indépendants en parallèle et agrégerait leurs résultats. Un module pourrait
 | Fusion ou livraison désignée | Publication des artefacts dérivés et des exemples | Les liens publiés correspondent à la version annoncée |
 
 Le plugin ouvre une PR par artefact. L'orchestrateur ne devrait donc pas
-présumer que le contrat et ses nouveaux tokens arrivent ensemble. Il
-examinerait l'état proposé du repository et signalerait les dépendances
-manquantes avant de lancer une implémentation. Le contrat pourrait toujours
-précéder le code, conformément au modèle.
+présumer que le contrat et ses nouveaux tokens arrivent ensemble. Il examinerait
+l'état proposé du repository et signalerait les dépendances manquantes avant de
+lancer une implémentation. Le contrat pourrait toujours précéder le code,
+conformément au modèle.
 
 Une proposition IA pourrait suivre dans une PR distincte après acceptation du
-contrat. Le regroupement de plusieurs composants serait décidé selon leur
-graphe et le périmètre de la demande, sans réécrire automatiquement tous les
-parents qu'un changement rend potentiellement concernés.
+contrat. Le regroupement de plusieurs composants serait décidé selon leur graphe
+et le périmètre de la demande, sans réécrire automatiquement tous les parents
+qu'un changement rend potentiellement concernés.
 
 L'exécution du code et la publication seraient séparées. Les jobs de contrôle
 recevraient les droits nécessaires à la lecture et à l'exécution ; une étape
 autorisée publierait le patch ou les résultats. Une PR externe ne devrait pas
-obtenir un jeton de publication en faisant exécuter ses scripts.
-La configuration des permissions appartient au workflow consommateur.
-[Syntaxe et permissions GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax).
+obtenir un jeton de publication en faisant exécuter ses scripts. La
+configuration des permissions appartient au workflow consommateur. [Syntaxe et
+permissions GitHub
+Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax).
 
 Les événements produits avec `GITHUB_TOKEN` ont des règles particulières de
-redéclenchement. La documentation distingue notamment les événements dispatch
-et certains événements de PR soumis à approbation. La pipeline devrait
-vérifier ce parcours avec l'identité choisie, plutôt que supposer qu'une PR
-créée par le bot lance immédiatement tous ses contrôles.
-[Déclenchement des workflows](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).
+redéclenchement. La documentation distingue notamment les événements dispatch et
+certains événements de PR soumis à approbation. La pipeline devrait vérifier ce
+parcours avec l'identité choisie, plutôt que supposer qu'une PR créée par le bot
+lance immédiatement tous ses contrôles. [Déclenchement des
+workflows](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).
 
 Chaque exécution conserverait la révision réellement testée, y compris si le
 checkout correspond à un commit de fusion préparé par la forge. Les références
-de comparaison Chromatic seraient consignées séparément. Un rapport vert
-obtenu sur une ancienne révision ne serait pas réutilisé après un changement
-des entrées.
+de comparaison Chromatic seraient consignées séparément. Un rapport vert obtenu
+sur une ancienne révision ne serait pas réutilisé après un changement des
+entrées.
 
-Un groupe de concurrence par PR annulerait les vérifications devenues
-obsolètes. La publication aurait sa propre protection contre une exécution
-ancienne terminant après une plus récente. Une relance sur les mêmes entrées
-ne créerait ni PR ni page de documentation supplémentaire.
+Un groupe de concurrence par PR annulerait les vérifications devenues obsolètes.
+La publication aurait sa propre protection contre une exécution ancienne
+terminant après une plus récente. Une relance sur les mêmes entrées ne créerait
+ni PR ni page de documentation supplémentaire.
 
 **Politique de fusion.** Les contrôles UCM conserveraient leurs verdicts
-actuels. Ajouter un module ne rendrait pas implicitement bloquants les écarts
-de parité qui avertissent aujourd'hui. L'équipe choisirait les contrôles
-exigés et les approbations nécessaires dans son repository ; l'orchestrateur
-publierait les résultats sans s'attribuer le droit de fusionner.
+actuels. Ajouter un module ne rendrait pas implicitement bloquants les écarts de
+parité qui avertissent aujourd'hui. L'équipe choisirait les contrôles exigés et
+les approbations nécessaires dans son repository ; l'orchestrateur publierait
+les résultats sans s'attribuer le droit de fusionner.
 
 **Preuve attendue :** un réexport produit un diff, une proposition relisible et
 des résultats associés à sa révision. Réexporter pendant le calcul invalide
@@ -1246,10 +1252,10 @@ artefacts et sans effacer une correction humaine.
 
 ### 8.13. Structure de code et adoption indépendante
 
-Le produit pourrait conserver un monorepo et publier les modules utiles à
-chaque consommateur. Des paquets distincts éviteraient qu'un utilisateur du
-linter installe un navigateur, un client Chromatic ou un agent IA. La création
-de repositories séparés n'est pas nécessaire pour obtenir cette indépendance.
+Le produit pourrait conserver un monorepo et publier les modules utiles à chaque
+consommateur. Des paquets distincts éviteraient qu'un utilisateur du linter
+installe un navigateur, un client Chromatic ou un agent IA. La création de
+repositories séparés n'est pas nécessaire pour obtenir cette indépendance.
 
 Structure candidate, sans création de ces dossiers dans cette étude :
 
@@ -1270,12 +1276,12 @@ packages/
 
 Ces noms n'engagent pas le nommage des paquets publics. Une fonction pure
 resterait dans le kit si elle porte une convention du format. Un adaptateur
-resterait séparé s'il introduit une dépendance de framework ou de service.
-Le module Visual pourrait d'abord se limiter à un adaptateur de résultats et
-à un workflow, sans paquet supplémentaire.
+resterait séparé s'il introduit une dépendance de framework ou de service. Le
+module Visual pourrait d'abord se limiter à un adaptateur de résultats et à un
+workflow, sans paquet supplémentaire.
 
-Chez le consommateur, les contrats, le code et les fichiers dérivés auraient
-des propriétaires explicites :
+Chez le consommateur, les contrats, le code et les fichiers dérivés auraient des
+propriétaires explicites :
 
 | Surface | Propriétaire | Régénération |
 |---|---|---|
@@ -1288,19 +1294,19 @@ des propriétaires explicites :
 | Liaison à zeroheight et réglages Chromatic | Repository et comptes de l'équipe | Configuration de publication |
 
 `ucm.config.json` continuerait de localiser les contrats, les tokens et leurs
-implémentations. La configuration des nouveaux modules reste à spécifier :
-des champs ajoutés arbitrairement seraient refusés par les lecteurs actuels.
-La première intégration pourrait utiliser les configurations natives des
-outils et une liaison explicite au fichier UCM.
+implémentations. La configuration des nouveaux modules reste à spécifier : des
+champs ajoutés arbitrairement seraient refusés par les lecteurs actuels. La
+première intégration pourrait utiliser les configurations natives des outils et
+une liaison explicite au fichier UCM.
 
 Les réglages secrets resteraient dans l'environnement d'exécution. Les
 empreintes et références de livraison seraient publiables ; les jetons de
 service ne figureraient ni dans le contexte IA ni dans les artefacts dérivés.
 
-Chaque paquet déclarerait les versions du kit et des outils qu'il sait
-utiliser. Un essai d'installation dans un repository vide vérifierait cette
-compatibilité, puis un second repository vérifierait que le module n'importe
-aucun fichier privé du monorepo.
+Chaque paquet déclarerait les versions du kit et des outils qu'il accepte. Un
+essai d'installation dans un repository vide vérifierait cette compatibilité,
+puis un second repository vérifierait que le module n'importe aucun fichier
+privé du monorepo.
 
 ### 8.14. Modes de panne : un vert qui ne prouve rien
 
@@ -1324,10 +1330,10 @@ Un compte de cas exécutés, exclus et impossibles porte plus d'information qu'u
 état binaire, et l'enveloppe décrite en
 [8.2](#82-interfaces-communes-et-propriété-des-données) le prévoit déjà.
 
-La chaîne ajoute un risque que ses modules n'ont pas séparément. Un relecteur qui
-voit plusieurs contrôles verts relit moins, alors que leur périmètre cumulé peut
-rester étroit. Le bilan devrait donc présenter la couverture avant le verdict, et
-un module désactivé devrait rester nommé dans le rapport.
+La chaîne ajoute un risque que ses modules n'ont pas séparément. Un relecteur
+qui voit plusieurs contrôles verts relit moins, alors que leur périmètre cumulé
+peut rester étroit. Le bilan devrait donc présenter la couverture avant le
+verdict, et un module désactivé devrait rester nommé dans le rapport.
 
 ### 8.15. Mesurer si la chaîne paie
 
@@ -1344,19 +1350,19 @@ ci-dessous se relèvent sur le repository consommateur, avant puis après.
 | Implement | Coût total jusqu'au patch accepté, revue humaine comprise | Une implémentation écrite avec les sources habituelles coûte moins |
 | Interface d'agent | Part des tâches menées sans accès à Figma | L'agent retourne à la maquette pour trancher |
 
-Ces mesures ne se distinguent pas du bruit sur le corpus actuel. Le
-[périmètre du prototype](../../ROADMAP.md) tient à quatre composants et un
-relecteur, et plusieurs grandeurs ci-dessus demandent des dizaines de revues pour
-donner un écart lisible. Deux issues restent ouvertes : relever ces grandeurs
-dans une équipe réelle, ou construire les modules en sachant qu'aucune mesure ne
-les justifiera avant cette étape.
+Ces mesures ne se distinguent pas du bruit sur le corpus actuel. Le [périmètre
+du prototype](../../ROADMAP.md) tient à quatre composants et un relecteur, et
+plusieurs grandeurs ci-dessus demandent des dizaines de revues pour donner un
+écart lisible. Deux issues restent ouvertes : relever ces grandeurs dans une
+équipe réelle, ou construire les modules en sachant qu'aucune mesure ne les
+justifiera avant cette étape.
 
 ### 8.16. Ordre de construction proposé
 
 Les lots ci-dessous donnent un ordre d'expérimentation. Leur adoption dans la
 [roadmap](../../ROADMAP.md) demanderait une décision distincte. Les défauts
-connus du moteur restent suivis dans ses
-[fragilités connues](../../ROADMAP.md#fragilités-connues).
+connus du moteur restent suivis dans ses [fragilités
+connues](../../ROADMAP.md#fragilités-connues).
 
 | Lot | Travail | Résultat qui justifierait le lot suivant |
 |---|---|---|
@@ -1373,12 +1379,12 @@ La documentation peut être étudiée en parallèle du linter. Le lot 5 ne dépe
 d'aucun modèle et mesure ce que le contrat suffit à faire faire ; il précède
 donc l'assistant plutôt qu'il ne l'accompagne. L'assistant peut être essayé avec
 les contrôles existants, mais l'automatisation de son déclenchement devrait
-attendre une prévisualisation et des résultats fiables. Le multi-marque ne serait
-annoncé qu'après la projection de tokens décrite plus haut.
+attendre une prévisualisation et des résultats fiables. Le multi-marque ne
+serait annoncé qu'après la projection de tokens décrite plus haut.
 
 Chaque lot devrait entrer avec la grandeur qui le ferait sortir, relevée selon
-[8.15](#815-mesurer-si-la-chaîne-paie), et publier ce qu'il n'a pas observé selon
-[8.14](#814-modes-de-panne--un-vert-qui-ne-prouve-rien).
+[8.15](#815-mesurer-si-la-chaîne-paie), et publier ce qu'il n'a pas observé
+selon [8.14](#814-modes-de-panne--un-vert-qui-ne-prouve-rien).
 
 ### 8.17. Coût, limites et décisions restantes
 
@@ -1387,9 +1393,9 @@ exécutés, des navigateurs et des relances. Il se mesure sur la matrice choisie
 sans multiplier aveuglément toutes les options. Les abonnements et quotas
 seraient vérifiés au moment de l'essai sur les offres disponibles.
 
-Le coût de l'assistant comprend l'inférence ou l'hébergement, les exécutions
-de tests, les tentatives rejetées et la revue humaine. Le débit du modèle ou
-le nombre de lignes générées ne suffisent pas à mesurer le bénéfice.
+Le coût de l'assistant comprend l'inférence ou l'hébergement, les exécutions de
+tests, les tentatives rejetées et la revue humaine. Le débit du modèle ou le
+nombre de lignes générées ne suffisent pas à mesurer le bénéfice.
 
 | Décision ouverte | Élément nécessaire pour trancher |
 |---|---|
@@ -1407,7 +1413,7 @@ le nombre de lignes générées ne suffisent pas à mesurer le bénéfice.
 | Contrôles bloquants | Responsables de revue, faux positifs mesurés et politique du repository |
 | Conservation des artefacts dérivés | Reproductibilité, besoin de diff Git et exigences de publication |
 
-La pipeline pourrait prouver l'accord entre les révisions qu'elle reçoit.
-Elle ne prouverait pas que ces contrats représentent le dernier état de Figma
-sans nouvelle lecture de la source. La détection de péremption étudiée plus
-haut resterait donc un sujet distinct.
+La pipeline pourrait prouver l'accord entre les révisions qu'elle reçoit. Elle
+ne prouverait pas que ces contrats représentent le dernier état de Figma sans
+nouvelle lecture de la source. La détection de péremption étudiée plus haut
+resterait donc un sujet distinct.

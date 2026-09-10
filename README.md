@@ -6,9 +6,9 @@ contrat.
 
 ## Le problème
 
-Un même composant existe à plusieurs endroits, et rien ne garantit qu'ils disent
-la même chose. UCM donne un propriétaire unique à chaque information ;
-[CONCEPT.md](./CONCEPT.md) énonce le partage et ce qui l'a motivé.
+Le même composant existe dans Figma, dans le code et dans les tokens. Aucun
+contrôle ne compare ces trois copies. UCM donne un propriétaire unique à chaque
+information ; [CONCEPT.md](./CONCEPT.md) énonce le partage et ce qui l'a motivé.
 
 Figma exporte ce qu'il possède dans un fichier `.contract.json`, posé à côté du
 code du composant.
@@ -40,8 +40,8 @@ Rapport publié en commentaire de la pull request
 ```
 
 Le rapport est écrit pour le designer qui valide l'export. Il liste ce qui
-bloque, ce qui avertit, et l'action attendue de chacun. Aucun log de CI à
-ouvrir.
+bloque, ce qui avertit, et l'action attendue de chacun. Le designer le lit dans
+le commentaire de la pull request.
 
 ## À qui ça sert
 
@@ -53,57 +53,57 @@ ouvrir.
 
 ## Brancher un repository
 
-Deux commandes, et aucun script à écrire.
+Deux commandes suffisent.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.20 init                       # écrit les cinq fichiers manquants
-npx --yes @ucm-kit/cli@0.1.20 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.21 init                       # écrit les cinq fichiers manquants
+npx --yes @ucm-kit/cli@0.1.21 check --report ci-report.md
 ```
 
-`--yes` évite l'invite de confirmation de `npx`, qui bloquerait une exécution
-non interactive. La version est exacte, sans `^` : une plage laisserait npx
-choisir une version que personne n'a essayée, et le contrôle changerait d'avis
-sans qu'un fichier ait bougé.
+`--yes` supprime l'invite de confirmation de `npx`, qui bloque une exécution non
+interactive. La version est exacte, sans `^` : une plage laisserait `npx`
+installer une version que le dépôt n'a pas testée. Deux exécutions rendraient
+alors un verdict différent sur le même contrat.
 
 **Sans option, `init` écrit les chemins par défaut** : les contrats sous
 `components/`, les tokens dans `tokens.json`, l'implémentation d'un contrat en
 `{dir}/{id}.tsx`. Un repository qui range autrement le dit à cet instant.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.20 init \
+npx --yes @ucm-kit/cli@0.1.21 init \
   --components src/components \
   --tokens src/tokens \
   --implementation '{dir}/{id}.vue'
 ```
 
 Ces trois options n'agissent qu'à la première installation. `init` n'écrase
-jamais un `ucm.config.json` déjà présent, et ce fichier décide seul de l'endroit
-où un export atterrit, puisque le plugin Figma le lit avant de publier. Un
-chemin choisi trop tard se corrige donc à la main, dans le fichier.
+jamais un `ucm.config.json` déjà présent. Ce fichier est la seule autorité sur
+l'endroit où un export atterrit, puisque le plugin Figma le lit avant de
+publier. Pour changer un chemin ensuite, modifiez `ucm.config.json`.
 
-**Votre repository n'a pas besoin d'être un projet Node.** Le workflow
-qu'`ucm init` écrit n'exige aucun `package.json` : un repo iOS, Android, ou un
-simple dossier de contrats peut faire contrôler ses exports. Si un lockfile npm
-existe, le workflow exécute `npm ci`, ce qui rend visibles les adaptateurs
-optionnels du repository.
+**Votre repository n'a pas besoin d'être un projet Node.** Le workflow qu'`ucm
+init` écrit n'exige aucun `package.json` : un repo iOS, Android, ou un simple
+dossier de contrats peut faire contrôler ses exports. Si un lockfile npm existe,
+le workflow exécute `npm ci`, ce qui rend visibles les adaptateurs optionnels du
+repository.
 
 Le seul prérequis est Node. En CI, `setup-node` le fournit. En local, `npx`
 l'exige sur le poste, ce qu'un développeur iOS ou Android n'a pas forcément. Ce
-cas se documente et ne s'outille pas : distribuer un binaire par plateforme
-rendrait le contrôle installable, et du même coup installé deux fois, si bien
-que la CI et le poste pourraient répondre différemment sur le même contrat. Sans
-Node sur le poste, la CI reste l'autorité, et son rapport est de toute façon le
-seul message que le designer lira.
+cas reste documenté sans être outillé : distribuer un binaire par plateforme
+rendrait le contrôle installable deux fois, si bien que la CI et le poste
+pourraient répondre différemment sur le même contrat. Sans Node sur le poste, la
+CI reste l'autorité. Le designer ne lit de toute façon que son rapport.
 
-Les détails vivent dans [packages/cli/README.md](./packages/cli/README.md).
+Le détail des commandes est dans
+[packages/cli/README.md](./packages/cli/README.md).
 
 ## Les 6 contrôles
 
 | Contrôle | Question posée | Verdict |
 |---|---|---|
 | Validité | Le contrat est-il lisible et conforme au schéma ? | 🔴 bloque |
-| Version | Le repository sait-il lire cette version de contrat ? | 🔴 bloque |
-| Composition | Chaque composant imbriqué a-t-il son contrat, les listes concordent-elles, et aucun cycle n'existe-t-il ? | 🔴 bloque |
+| Version | La version du contrat entre-t-elle dans la fenêtre de lecture du repository ? | 🔴 bloque |
+| Composition | Chaque composant imbriqué a-t-il son contrat, les listes concordent-elles, le graphe est-il acyclique ? | 🔴 bloque |
 | Typographie | Les tokens typographiques ont-ils le type attendu ? | 🔴 bloque |
 | Tokens | Les références `{chemin.du.token}` citées existent-elles dans `tokens.json` ? | ⚠️ avertit, mais un fichier de tokens absent ou illisible bloque |
 | Parité code | Les props du contrat sont-elles dans l'API publique du composant, typées correctement, et chaque composant déclaré rendu autant de fois que le contrat le déclare ? | ⚠️ avertit |
@@ -113,14 +113,13 @@ contrat illisible, incomplet, dans une version hors de la fenêtre de lecture, o
 dont la composition ne se résout pas. Il avertit quand la lecture aboutit et que
 l'écart vise le code ou le fichier de tokens.
 
-Qui répare dépend du sens de l'écart, et non de la personne qui a ouvert la pull
-request, que la CI ne connaît pas. Un contrat trop ancien se réexporte ; un
-contrat trop récent demande une mise à jour du repository, et aucun réexport n'y
-changerait rien. [packages/kit/README.md](./packages/kit/README.md) nomme les
-deux sens.
+Le sens de l'écart désigne le réparateur. La CI ne lit pas l'auteur de la pull
+request. Un contrat trop ancien se réexporte ; un contrat trop récent demande
+une mise à jour du repository, qu'aucun réexport ne remplace.
+[packages/kit/README.md](./packages/kit/README.md) nomme les deux sens.
 
-Le rapport porte aussi deux verdicts qui ne viennent pas de ces contrôles :
-ceux de l'export et ceux des tests du repository.
+Le rapport porte aussi deux verdicts qui ne viennent pas de ces contrôles : ceux
+de l'export et ceux des tests du repository.
 
 Les cinq premiers contrôles ne lisent que des contrats et des tokens, ils
 fonctionnent donc quelle que soit la technologie du repository. Le sixième doit
@@ -156,7 +155,7 @@ lit deux, la courante et la précédente, le temps qu'un réexport arrive.
 ## Utiliser le kit depuis votre code
 
 ```sh
-npm install @ucm-kit/core@0.1.21
+npm install @ucm-kit/core@0.1.22
 ```
 
 | Entrée | Usage |
@@ -169,14 +168,14 @@ Chaque entrée est détaillée dans
 [packages/kit/README.md](./packages/kit/README.md).
 
 Un projet TypeScript peut installer
-[`@ucm-kit/adapter-typescript@0.1.13`](./packages/adapter-typescript/README.md)
+[`@ucm-kit/adapter-typescript@0.1.14`](./packages/adapter-typescript/README.md)
 pour ajouter la comparaison statique des props et de la composition, ainsi que
 la génération des types dérivés des contrats.
 
 ## Ouvrir le plugin
 
-Le plugin est publié sur la Figma Community, sous le nom « UCM Contract
-Exporter » :
+Le plugin est publié sur la Figma Community, sous le nom « UCM Contract Exporter
+» :
 
 **<https://www.figma.com/community/plugin/1678431364325816914>**
 
@@ -187,7 +186,7 @@ limites sont décrites dans
 
 ## Construire le plugin depuis ce dépôt
 
-Ce chemin s'adresse à qui modifie le moteur.
+Ce chemin s'adresse au contributeur qui modifie le moteur.
 
 ```sh
 npm install
@@ -195,8 +194,8 @@ npm run build
 ```
 
 `packages/plugin/dist/` contient le code du plugin, son interface et le
-`manifest.json` à importer dans Figma
-(`Plugins > Development > Import plugin from manifest`).
+`manifest.json` à importer dans Figma (`Plugins > Development > Import plugin
+from manifest`).
 
 | Commande | Rôle |
 |---|---|
@@ -214,48 +213,48 @@ packages/cli/       la commande : @ucm-kit/cli, publiée sur npm.
 packages/adapter-typescript/  l'adaptateur opt-in, publié sur npm.
 ```
 
-Le plugin importe le kit, jamais l'inverse. C'est ce qui rend le kit publiable
-seul. Le détail de chaque dossier vit dans [AGENTS.md](./AGENTS.md#carte-du-code).
+Le plugin importe le kit ; le kit n'importe pas le plugin. Cette dépendance à
+sens unique rend le kit publiable seul. [AGENTS.md](./AGENTS.md#carte-du-code)
+détaille chaque dossier.
 
 Le moteur ne contient aucune règle propre à `Button` ou à un autre composant.
 Les composants du corpus servent uniquement à éprouver sa généricité.
 
 ## État du projet
 
-C'est un **prototype avancé**. L'outillage consommateur vit entièrement dans les
-paquets `@ucm-kit/*`, et un repository quelconque s'y branche par `ucm init`
-sans écrire une ligne de script ni être un projet Node.
+C'est un **prototype avancé**. Les paquets `@ucm-kit/*` portent tout l'outillage
+consommateur. Un repository quelconque s'y branche par `ucm init`, sans être un
+projet Node.
 
 [UCM Playground](https://github.com/Vassili-g/UCM-Playground) est le
-consommateur de recette : une application React banale, qui ne porte aucun
-outillage UCM local. Il n'y a rien à y copier, et c'est cette absence qui le
-rend probant : son empreinte du produit se limite aux cinq fichiers qu'`ucm
-init` écrit. La boucle complète s'y rejoue depuis un dépôt vide, en suivant
-[docs/RECETTE.md](./docs/RECETTE.md).
+consommateur de recette : une application React banale, sans outillage UCM
+local. Les cinq fichiers d'`ucm init` y sont toute la trace du produit, et la
+recette tire de là sa valeur de preuve. La boucle complète s'y rejoue depuis un
+dépôt vide, en suivant [docs/RECETTE.md](./docs/RECETTE.md).
 
-La maturité, les limites connues et les prochaines validations vivent dans
-[ROADMAP.md](./ROADMAP.md).
+[ROADMAP.md](./ROADMAP.md) porte la maturité, les limites connues et les
+prochaines validations.
 
 ## Documentation
 
-Le sommaire complet, avec un chemin de lecture par profil, vit dans
-[docs/README.md](./docs/README.md).
+[docs/README.md](./docs/README.md) porte le sommaire complet, avec un chemin de
+lecture par profil.
 
 | Document | Pour qui |
 |---|---|
-| [packages/plugin/README.md](./packages/plugin/README.md) | Qui ouvre le plugin dans Figma |
+| [packages/plugin/README.md](./packages/plugin/README.md) | Le designer qui ouvre le plugin dans Figma |
 | [docs/POUR-LES-DESIGNERS.md](./docs/POUR-LES-DESIGNERS.md) | Le designer qui exporte et relit |
-| [CONCEPT.md](./CONCEPT.md) | Qui veut comprendre le problème et les responsabilités |
-| [docs/FORMAT.md](./docs/FORMAT.md) | Qui consomme un contrat ou `tokens.json` |
-| [docs/COMPATIBILITE.md](./docs/COMPATIBILITE.md) | Qui prépare une évolution du format ou une migration |
-| [docs/CHANGELOG-FORMAT.md](./docs/CHANGELOG-FORMAT.md) | Qui lit un contrat d'une version antérieure |
-| [packages/cli/README.md](./packages/cli/README.md) | Qui branche un repository |
-| [packages/adapter-typescript/README.md](./packages/adapter-typescript/README.md) | Qui branche un repository TypeScript |
-| [packages/kit/README.md](./packages/kit/README.md) | Qui appelle les lecteurs depuis son code |
-| [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) | Qui modifie le moteur |
+| [CONCEPT.md](./CONCEPT.md) | Le lecteur qui veut comprendre le problème et les responsabilités |
+| [docs/FORMAT.md](./docs/FORMAT.md) | Le développeur qui consomme un contrat ou `tokens.json` |
+| [docs/COMPATIBILITE.md](./docs/COMPATIBILITE.md) | Le mainteneur qui prépare une évolution du format ou une migration |
+| [docs/CHANGELOG-FORMAT.md](./docs/CHANGELOG-FORMAT.md) | Le développeur qui lit un contrat d'une version antérieure |
+| [packages/cli/README.md](./packages/cli/README.md) | Le développeur qui branche un repository |
+| [packages/adapter-typescript/README.md](./packages/adapter-typescript/README.md) | Le développeur qui branche un repository TypeScript |
+| [packages/kit/README.md](./packages/kit/README.md) | Le développeur qui appelle les lecteurs depuis son code |
+| [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) | Le contributeur qui modifie le moteur |
 | [AGENTS.md](./AGENTS.md) | L'agent, et le contributeur pressé |
-| [CONTRIBUTING.md](./CONTRIBUTING.md) | Qui écrit du code, un message ou un document |
-| [ROADMAP.md](./ROADMAP.md) | Qui veut savoir ce qui est prouvé et ce qui ne l'est pas |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Le contributeur qui écrit du code, un message ou un document |
+| [ROADMAP.md](./ROADMAP.md) | Le lecteur qui veut savoir ce qui est prouvé et ce qui ne l'est pas |
 
 ## Licence
 

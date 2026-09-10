@@ -1,7 +1,7 @@
 # Le concept UCM
 
-Ce document définit le problème, les responsabilités et les principes du
-modèle. La forme de ce qui est publié est spécifiée dans
+Ce document définit le problème, les responsabilités et les principes du modèle.
+La forme de ce qui est publié est spécifiée dans
 [docs/FORMAT.md](./docs/FORMAT.md), le comportement du plugin dans
 [packages/plugin/SPEC.md](./packages/plugin/SPEC.md), et l’avancement dans
 [ROADMAP.md](./ROADMAP.md).
@@ -9,9 +9,9 @@ modèle. La forme de ce qui est publié est spécifiée dans
 ## 1. Le problème
 
 Un designer ajoute une variante `danger` à son bouton. Trois mois plus tard,
-personne ne sait si le code la rend, si le token de sa couleur existe encore, ni
-laquelle des deux versions fait foi. Rien n'a signalé l'écart parce que rien ne
-le regardait.
+l'équipe ne sait plus si le code la rend, si le token de sa couleur existe
+encore, ni laquelle des deux versions fait foi. Aucun contrôle n'a comparé les
+deux.
 
 Un composant existe à plusieurs endroits : la maquette, le code, la
 documentation, les tokens et les exemples. Ces représentations peuvent diverger
@@ -19,8 +19,7 @@ sans que l’équipe s'en aperçoive. L'ambiguïté pénalise les humains comme 
 agents : ils ne savent plus quelle variante existe, quel token employer ni
 quelle source croire.
 
-L’UCM rapproche ces informations sans prétendre les fusionner en une seule
-source omnisciente.
+L’UCM rapproche ces informations sans les fusionner en une source unique.
 
 ## 2. Le composant unifié
 
@@ -86,13 +85,13 @@ préserver les thèmes et marques.
 ### Les noms restent traçables
 
 Le nom Figma lisible reste dans le contrat. Un identifiant de code canonique
-sert aux fichiers et aux symboles TypeScript. Tout renommage sémantique
-conserve le nom Figma d’origine.
+sert aux fichiers et aux symboles TypeScript. Tout renommage sémantique conserve
+le nom Figma d’origine.
 
 ### La composition ne duplique pas
 
-Un composant composé référence ses dépendances et réutilise leur
-implémentation. Il ne redécrit ni leurs tokens, ni leur structure interne.
+Un composant composé référence ses dépendances et réutilise leur implémentation.
+Il ne redécrit ni leurs tokens, ni leur structure interne.
 
 ### Un contrat peut précéder le code
 
@@ -119,8 +118,8 @@ une autre représentation.
 
 Chaque combinaison réelle est décrite de façon autonome, sans héritage ni merge
 implicite entre elles : deux combinaisons ne partagent une description que si
-elle leur est strictement identique. La forme exacte de cette projection vit
-dans [docs/FORMAT.md](./docs/FORMAT.md).
+elle leur est strictement identique. [docs/FORMAT.md](./docs/FORMAT.md) porte la
+forme exacte de cette projection.
 
 ## 5. Le workflow
 
@@ -138,10 +137,10 @@ repository consommateur
 ```
 
 Le designer relit la vérité visuelle exportée. Le développeur implémente ou
-adapte le code. La CI vérifie ce qu’elle sait prouver et signale explicitement
-ce qu’elle ne peut pas vérifier.
+adapte le code. La CI vérifie ce qu’elle peut prouver et signale explicitement
+ce qu’elle ne vérifie pas.
 
-Ce workflow se complète par un **test froid** : sur une branche de recette du
+Un **test froid** complète ce workflow : sur une branche de recette du
 repository consommateur, un agent reconstruit un composant à partir du seul
 contrat suivi, sans ouvrir l’implémentation précédente. Ce test mesure la
 qualité du contrat ; son résultat n’est pas du code de production, et le
@@ -154,5 +153,5 @@ composant obtenu est jetable.
 - **Confiance** : un humain ou un agent peut choisir et utiliser un composant
   sans inventer son API visuelle.
 
-La valeur du modèle dépend moins du nombre de champs exportés que de sa
-capacité à tenir ces deux promesses sur des composants réels et variés.
+Le modèle vaut par ces deux promesses tenues sur des composants réels et variés.
+Le nombre de champs exportés ne le mesure pas.

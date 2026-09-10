@@ -5,8 +5,8 @@ générique de rendu n’est implémenté et aucune décision de réalisation n�
 prise. Les points marqués **[À décider]** sont ouverts.
 
 Cette note conserve le détail de la piste. Elle distingue les contrôles déjà
-disponibles des blocs qui restent à concevoir ; elle ne sert ni
-de changelog, ni de description normative du contrat.
+disponibles des blocs qui restent à concevoir ; elle ne sert ni de changelog, ni
+de description normative du contrat.
 
 ---
 
@@ -33,7 +33,7 @@ Deux mots employés dans le code existant :
 
 ## 2. Le principe du projet
 
-Une règle gouverne tout le reste : **aucun contrôle ne connaît le nom d'un
+Une règle gouverne tout le reste : **aucun contrôle ne cite le nom d'un
 composant**. Les contrôles sont pilotés par la forme du contrat, jamais par des
 cas particuliers. Ajouter un composant ne doit demander aucune modification de
 l'outillage.
@@ -47,25 +47,23 @@ n'aurait plus de témoin indépendant.
 ## 3. Ce qui existe aujourd'hui
 
 Forme et version du contrat, existence des tokens, graphe de composition,
-adresses des échantillons, parité et références de tokens du code sont
-contrôlés par le noyau. Tous sont statiques. `ucm check` les agrège
-dans le terminal et dans `ci-report.md`. [ROADMAP.md](../../ROADMAP.md) en tient
-l'état.
+adresses des échantillons, parité et références de tokens du code sont contrôlés
+par le noyau. Tous sont statiques. `ucm check` les agrège dans le terminal et
+dans `ci-report.md`. [ROADMAP.md](../../ROADMAP.md) en tient l'état.
 
 **Ce qui manque : la vérification du rendu.** Rien ne prouve que le composant
 affiche réellement la bonne couleur, la bonne dimension et la bonne disposition
 pour chaque combinaison. Aucun contrôle n'exécute le rendu, et le Playground ne
-porte aucun test propre à un composant : la seule preuve visuelle
-disponible reste l'œil d'un humain qui compare une reconstruction à froid avec
-Figma.
+porte aucun test propre à un composant : la seule preuve visuelle disponible
+reste l'œil d'un humain qui compare une reconstruction à froid avec Figma.
 
 ---
 
 ## 4. Où ça intervient dans le workflow
 
-Le workflow est décrit par [CONCEPT.md](../../CONCEPT.md). Ce qui compte ici : les
-contrôles tournent en local pendant l'écriture et en CI au push, avec le même
-rapport et les mêmes mots, et un réexport ultérieur fait apparaître l'écart
+Le workflow est décrit par [CONCEPT.md](../../CONCEPT.md). Ce qui compte ici :
+les contrôles tournent en local pendant l'écriture et en CI au push, avec le
+même rapport et les mêmes mots, et un réexport ultérieur fait apparaître l'écart
 quand le design a changé sans que le code suive.
 
 ---
@@ -140,9 +138,9 @@ lui. Il ne fait entrer aucune donnée de design dans le code. Il sert uniquement
 ### À quoi ça sert
 
 C'est le cœur de la proposition : **une fonction qui reçoit un contrat, une
-combinaison et une observation normalisée du composant affiché, et rend la
-liste des écarts.** Elle ne dépend d'aucun framework, ne connaît aucun
-composant, et n'affiche rien elle-même.
+combinaison et une observation normalisée du composant affiché, et rend la liste
+des écarts.** Elle ne dépend d'aucun framework, ne connaît aucun composant, et
+n'affiche rien elle-même.
 
 C'est aussi la partie réutilisable dans n'importe quel repository, quelle que
 soit la technologie utilisée pour afficher les composants.
@@ -196,7 +194,7 @@ Elle est appelée par le bloc C, une fois par combinaison de chaque composant.
 | Dimensions | Espacement interne, marges et rayon des angles pour la taille en cours. |
 | Disposition | Sens et alignement du conteneur, et les exceptions déclarées sur chaque slot. |
 | Occupation de la place | Comment le composant occupe la largeur et la hauteur qu'on lui donne. |
-| Icônes | L'icône affichée est celle que le contrat associe à cette combinaison, et pas une autre. |
+| Icônes | L'icône affichée est celle que le contrat associe à cette combinaison. |
 | Visibilité | Une option qui masque un slot le fait réellement disparaître, sans emporter ses voisins. |
 | Composants imbriqués | Le contenu d'un composant embarqué est exclu : il relève de son propre contrat. |
 | Valeurs écrites en dur | Aucune couleur ni dimension brute ne subsiste dans le résultat. |
@@ -270,10 +268,9 @@ vérifications.
 **Elle est plus grosse qu'une première estimation ne le disait.** Importer un
 composant React tient en quelques lignes ; en monter un arbitraire n'y tient
 pas. Providers, props applicatives obligatoires, portals et racines multiples
-sont le cas courant d'un vrai repository, et ce sont eux qui décident si un
-composant est observable. C'est aussi ce qui rend la question « que fait-on d'un
-composant qui ne peut pas être affiché seul ? » plus centrale qu'un détail de
-bord.
+sont le cas courant d'un vrai repository ; l'observabilité d'un composant en
+dépend. C'est aussi ce qui rend la question « que fait-on d'un composant qui ne
+peut pas être affiché seul ? » plus centrale qu'un détail de bord.
 
 L'observation demande en outre un navigateur réel. Un DOM simulé sans moteur de
 disposition ni cascade CSS ne rendrait ni géométrie ni styles calculés fiables,
@@ -281,8 +278,8 @@ c'est-à-dire précisément ce que le bloc B est venu chercher.
 
 ### Ce que ça ne fait pas
 
-Un affichage sans navigateur n'atteint pas les états déclenchés par la souris
-ou le clavier : survol, focus, appui. Tout ce qui passe par une option du
+Un affichage sans navigateur n'atteint pas les états déclenchés par la souris ou
+le clavier : survol, focus, appui. Tout ce qui passe par une option du
 composant, comme « désactivé », est couvert. Le reste demande un environnement
 de navigateur simulé.
 
@@ -327,10 +324,10 @@ entrer dans ce message, et pas dans une sortie séparée.
 ### Point technique à traiter
 
 Le code actuel attribue un échec à un composant en lisant le nom du fichier de
-test qui a échoué. Si le vérificateur vit ailleurs, ses échecs seront présentés
-comme une panne de l'outillage, donc avec le mauvais responsable et le mauvais
-message. Il faut soit qu'il produise un nom rattachable au composant, soit
-adapter cette attribution.
+test qui a échoué. Si le vérificateur se range ailleurs, ses échecs seront
+présentés comme une panne de l'outillage, donc avec le mauvais responsable et le
+mauvais message. Il faut soit qu'il produise un nom rattachable au composant,
+soit adapter cette attribution.
 
 ### Étapes
 
@@ -437,8 +434,8 @@ rapporte.
 
 Rien à publier, mais **une chose à respecter dès le bloc B** : garder la
 séparation entre le cœur, qui ne dépend d'aucune technologie, et la couche
-d'affichage. Si cette séparation n'est pas posée au départ, l'extraction
-devient une réécriture.
+d'affichage. Si cette séparation n'est pas posée au départ, l'extraction devient
+une réécriture.
 
 ### Effort indicatif
 

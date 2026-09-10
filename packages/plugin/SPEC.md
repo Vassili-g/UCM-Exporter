@@ -1,13 +1,13 @@
 # UCM Contract Exporter — spécification
 
-Ce document décrit le **moteur** : ce que le plugin lit dans Figma, ce qu'il élit,
-ce dont il avertit, et ce qu'il dépose sur GitHub. La forme de ce qu'il produit
-est décrite dans [docs/FORMAT.md](../../docs/FORMAT.md).
+Ce document décrit le **moteur** : ce que le plugin lit dans Figma, ce qu'il
+élit, ce dont il avertit, et ce qu'il dépose sur GitHub. La forme de ce qu'il
+produit est décrite dans [docs/FORMAT.md](../../docs/FORMAT.md).
 
 ## Objet
 
-Le pourquoi et la répartition des responsabilités vivent dans
-[CONCEPT.md](../../CONCEPT.md). Le plugin produit :
+[CONCEPT.md](../../CONCEPT.md) porte le pourquoi et la répartition des
+responsabilités. Le plugin produit :
 
 - un contrat JSON décrivant la partie visuelle d’un composant ;
 - un export DTCG des variables locales, avec leurs alias et leurs modes.
@@ -27,7 +27,7 @@ lecture de Figma.
 - Stack : TypeScript, `@figma/plugin-typings`, build esbuild. L'UI expose le
   statut GitHub, les deux commandes, la configuration, un compte rendu, un retour
   en direct sur la sélection, et en pied de page la version de schéma que le
-  bundle chargé produit, Figma peut servir un bundle plus ancien que celui du
+  bundle chargé produit. Figma peut servir un bundle plus ancien que celui du
   disque, et rien d'autre ne le dirait.
 
 - **Les deux commandes projettent un nom de la même façon**, et citent un token
@@ -83,7 +83,7 @@ Ce que `props` contient est décrit par [1. Props](../../docs/FORMAT.md#1-props)
 Ce document garde la lecture des component properties de Figma et l'élection de
 la surface publique.
 
-Les props du contrat vivent dans un espace de noms plat, là où deux component
+Les props du contrat tiennent dans un espace de noms plat, là où deux component
 properties parfaitement légales peuvent prétendre à la même clé : la
 normalisation efface leur différence d'écriture (`Icon Left`, `icon-left` et
 `iconLeft` donnent tous `iconLeft`). Deux règles tranchent, et la seconde est
@@ -140,10 +140,10 @@ Ce que l'élection écarte n'est pas oublié : un calque posé **à côté** du 
 visibilité, alors que ses couleurs entrent bien dans `variants[].tokens`, relevé
 sur le variant entier. Chaque calque écarté produit donc un avertissement.
 
-La liste s'arrête là, et c'est délibéré : `RECTANGLE`, `ELLIPSE` et `LINE` en
-sont exclus. Ce sont les formes dont le type ne dit rien de l'usage (une
-surface, un liseré, un séparateur dont la hauteur est une vraie décision) et la
-règle « le type du node ne tranche pas » les vise nommément.
+La liste s'arrête là, délibérément : `RECTANGLE`, `ELLIPSE` et `LINE` en sont
+exclus. Ce sont les formes dont le type ne dit rien de l'usage (une surface, un
+liseré, un séparateur dont la hauteur est une vraie décision) et la règle « le
+type du node ne tranche pas » les vise nommément.
 
 **Applicabilité avant liaison.** Un gap et des paddings n'existent que sous un
 auto-layout, et une liaison de variable survit à sa désactivation. L'exporteur
@@ -175,7 +175,7 @@ warning et n'est jamais remplacée par une valeur brute.
 Ce que `structure` et `children` contiennent (descente, bornes, flux,
 dimensions, place hors du flux) est décrit par [6.
 Structure](../../docs/FORMAT.md#6-structure). Ce document ne garde que ce que le
-moteur décide en lisant Figma : ce dont il avertit, ce qu'il arrondit, et où il
+moteur tranche en lisant Figma : ce dont il avertit, ce qu'il arrondit, et où il
 relève.
 
 ##### Un dessin que rien ne déclare
@@ -187,11 +187,11 @@ ni icône déclarée, mais bien un tracé, est donc publié avec sa place et ses
 couleurs, et son dessin manque. C'est presque toujours l'icône qu'on a oublié de
 déclarer, et le geste est le même dans les autres cas : la déclarer.
 
-Le déclencheur est le **tracé**, jamais l'absence de texte : un cadre vide ou une
-surface colorée se décrivent entièrement par leurs tokens. Le message part une
-seule fois par dessin, et nomme le calque le plus profond qui contienne encore
-tout le dessin, celui que le designer déclarerait : « skull », jamais le «
-Vector » que Figma a nommé pour lui ni le cadre qui l'enveloppe. Un composant
+Le déclencheur est le **tracé**, jamais l'absence de texte : un cadre vide ou
+une surface colorée se décrivent entièrement par leurs tokens. Le message part
+une seule fois par dessin, et nomme le calque le plus profond qui contienne
+encore tout le dessin, celui que le designer déclarerait : « skull », jamais le
+« Vector » que Figma a nommé pour lui ni le cadre qui l'enveloppe. Un composant
 qui est un dessin de bout en bout ne dit rien : une icône exportée pour
 elle-même n'a aucune règle à se donner.
 
@@ -222,11 +222,11 @@ qu'aucun design ait changé.
 
 ##### Propriétés non portables : la portée du relevé
 
-Ce relevé vit dans l'extraction, jamais dans un balayage à part : on n'avertit
-que sur ce qu'on publie, et les entrailles d'une icône ou les calques d'une
-dépendance ne regardent pas ce contrat-ci. Aucune valeur au défaut de Figma ne
-produit de message : un `clip content` activé ne manque à personne, et un
-rapport que le designer cesse de lire ne protège plus rien. C'est la seule
+Ce relevé appartient à l'extraction, jamais à un balayage à part : le moteur
+n'avertit que sur ce qu'il publie, et les entrailles d'une icône ou les calques
+d'une dépendance ne regardent pas ce contrat-ci. Aucune valeur au défaut de
+Figma ne produit de message : un `clip content` activé ne manque à personne, et
+un rapport que le designer cesse de lire ne protège plus rien. C'est la seule
 réserve, et elle se lit sur la valeur, jamais sur l'usage supposé du calque. Les
 tracés internes d’une icône restent hors de la portée du relevé. Le seuil de
 neutralité de la rotation est un centième de degré, très en dessous du premier
@@ -251,9 +251,9 @@ ne manque, rien n'est à corriger.
 
 #### 7. Intention et documentation des props
 
-**Toute cette section vit dans [7. Intention et documentation des
-props](../../docs/FORMAT.md#7-intention-et-documentation-des-props), et c'est un
-cas limite qu'il faut nommer.**
+**[7. Intention et documentation des
+props](../../docs/FORMAT.md#7-intention-et-documentation-des-props) porte toute
+cette section, et ce cas limite demande d'être nommé.**
 
 La grammaire des règles (un conteneur `<Nom>-Rules` sur la même page, une
 instance par règle, un tag par variante) décrit ce que le moteur lit dans Figma,
@@ -262,10 +262,10 @@ remplit : `@icons` et sa politique, son slot, sa prop runtime, ses variants
 forment une seule explication, et la couper en deux la rendrait illisible des
 deux côtés.
 
-La frontière entre les deux documents tranche ce cas : une règle à cheval va du côté du
-consommateur, et le moteur y renvoie, c'est le moteur qui a le code sous la
-main, pas le repository qui lit l'artefact. Cette section est donc un renvoi,
-volontairement, et non un oubli du dédoublonnage.
+La frontière entre les deux documents tranche ce cas : une règle à cheval va du
+côté du consommateur, et le moteur y renvoie, puisque le moteur a le code sous
+la main et non le repository qui lit l'artefact. Cette section est donc un
+renvoi voulu, et non un oubli du dédoublonnage.
 
 #### 8. Rendu sémantique et garde-fous
 
@@ -318,20 +318,20 @@ Figma, et ce qu'il en dit.
 #### Métadonnées
 
 Le moteur écrit dans `meta.diagnostics` tout ce qu’il a eu à signaler en lisant
-Figma, et rien d’autre : **un diagnostic parle de l’export, jamais du
+Figma, et rien de plus : **un diagnostic parle de l’export, jamais du
 composant.** La forme d’une entrée et la règle qui la relie à
 `coverage.portable` appartiennent au format et sont décrites
 [là-bas](../../docs/FORMAT.md#métadonnées) ; ce qui relève du moteur est ce
 qu’il décide d’émettre.
 
-**Ce qui entre dans ce catalogue est borné :** un constat n’y est écrit
-que s’il bloque l’export, s’il rend le contrat partiel, ou s’il demande une
-vérification ou une correction dans Figma. Une transformation entièrement prise
-en charge : une piste `FIXED` publiée en pixels, la distance aux bords d’un
-calque hors du flux, une rotation, la structure propre à un variant que sa vue
-exacte conserve, ne produit aucun diagnostic. Elle est décrite ici et dans le
-format ; l’écrire à chaque export ferait relire au designer le fonctionnement
-interne de l’exporteur pour lui dire qu’il n’a rien à faire.
+**Ce qui entre dans ce catalogue est borné :** un constat n’y est écrit que s’il
+bloque l’export, s’il rend le contrat partiel, ou s’il demande une vérification
+ou une correction dans Figma. Une transformation entièrement prise en charge :
+une piste `FIXED` publiée en pixels, la distance aux bords d’un calque hors du
+flux, une rotation, la structure propre à un variant que sa vue exacte conserve,
+ne produit aucun diagnostic. Elle est décrite ici et dans le format ; l’écrire à
+chaque export ferait relire au designer le fonctionnement interne de l’exporteur
+pour lui dire qu’il n’a rien à faire.
 
 Le classement se fait au moment d’écrire, dans `exportComponent.ts` : une perte
 de projection portable l’emporte sur le reste, de sorte qu’un même texte relevé
@@ -340,21 +340,21 @@ par leur texte : deux extracteurs qui concluent la même chose ne le disent
 qu’une fois. Le compte que le plugin affiche, ce que la pull request liste et ce
 que `meta.diagnostics` publie sont désormais la même liste.
 
-**`meta.figma.url` est absent des contrats produits aujourd’hui, et c’est un
+**`meta.figma.url` est absent des contrats produits aujourd’hui, ce qui est un
 état normal du format.** L’URL se construit depuis `figma.fileKey`, que l’API ne
 donne qu’aux plugins déclarant `enablePrivatePluginApi`, un drapeau réservé aux
 plugins privés d’une organisation. Le plugin se distribue par la Figma Community
-(arbitrage dans `docs/notes/PISTES-EVOLUTION.md §2`), le drapeau est donc
-retiré du manifest et la clé n’arrive jamais. `url` reste optionnel dans le
-schéma, sans changement de version : un contrat produit avant cette décision le
-porte encore, et un lecteur doit accepter les deux.
+(arbitrage dans `docs/notes/PISTES-EVOLUTION.md §2`), le drapeau est donc retiré
+du manifest et la clé n’arrive jamais. `url` reste optionnel dans le schéma,
+sans changement de version : un contrat produit avant cette décision le porte
+encore, et un lecteur doit accepter les deux.
 
 La traçabilité repose donc sur `nodeId` et `fileName`, que le contrat porte
-toujours, et que le corps de la pull request annonce sur sa page de couverture,
-c’est là que se constate si elle suffit à une revue. **L’absence de lien ne
-produit aucun diagnostic** : elle n’est plus l’exception mais la règle, et un
-constat que le designer ne peut pas corriger, répété à chaque export,
-apprendrait à survoler la liste où vivent les gestes à faire.
+toujours, et que le corps de la pull request annonce sur sa page de couverture.
+Une revue y constate si cette traçabilité suffit. **L’absence de lien ne produit
+aucun diagnostic** : elle n’est plus l’exception mais la règle, et un constat
+que le designer ne peut pas corriger, répété à chaque export, apprendrait à
+survoler la liste qui porte les gestes à faire.
 
 ---
 
@@ -383,13 +383,13 @@ permissions **Contents: read/write** et **Pull requests: read/write**.
 Elle ne contient aucun chemin. **L'endroit où un export atterrit appartient au
 repository visé**, qui le déclare dans son `ucm.config.json` ou laisse
 s'appliquer les défauts du kit ; la grammaire de ce fichier et ses valeurs par
-défaut vivent dans `packages/kit/src/format/configuration.ts`,
-`CONFIGURATION_PAR_DEFAUT`. Un chemin rangé sur le poste du designer ne pourrait
-décider que face à un repository qui ne se décrit pas, c'est-à-dire au moment
-précis où `ucm check` applique ces mêmes défauts : il ne pourrait donc que
-déposer l'export hors de vue du contrôle. Le plugin lit ce fichier au test de
-connexion, et non à la publication, pour qu'un fichier fautif se sache avant le
-travail plutôt qu'après.
+défaut sont dans `packages/kit/src/format/configuration.ts`,
+`CONFIGURATION_PAR_DEFAUT`. Un chemin rangé sur le poste du designer ne
+servirait que face à un repository sans `ucm.config.json`, au moment précis où
+`ucm check` applique ces mêmes défauts. L'export atterrirait alors hors de vue
+du contrôle. Le plugin lit ce fichier au test de connexion, avant la
+publication, pour que le designer découvre un fichier fautif avant de
+travailler.
 
 L'en-tête expose en permanence l'état `connecté` / `non connecté` et un accès à
 la page de configuration via une icône `gear` Font Awesome Free embarquée. Le
@@ -426,9 +426,9 @@ lequel des deux endroits a répondu, et donne le lien de la pull request quand
 c'est elle : « aucun changement » sans l'endroit enverrait le designer chercher
 sur la branche de base un fichier qui n'y est pas encore. Un contenu différent
 pendant qu'une pull request d'export est ouverte n'est pas bloqué pour autant,
-réexporter après correction étant le geste normal, et c'est Git qui signale le
-reste : deux branches qui modifient le même fichier depuis la même base entrent
-en conflit à la seconde fusion.
+réexporter après correction étant le geste normal. Git signale le reste : deux
+branches qui modifient le même fichier depuis la même base entrent en conflit à
+la seconde fusion.
 
 L'API Contents omet le contenu des fichiers supérieurs à 1 Mo : dans ce cas, le
 plugin lit le blob Git correspondant avant de comparer, afin de ne pas créer une
@@ -462,15 +462,14 @@ Chaque avertissement nomme l'élément Figma concerné avec l'intitulé que Figm
 affiche, dit ce qui manquera au développeur, puis le geste à faire dans Figma.
 Les trois sont exigés, un constat qui ne nomme aucun geste n'étant pas émis :
 une liste dont la conclusion est toujours « rien à faire » apprend à son lecteur
-qu'elle se survole, et il survolera ensuite celles qui demandent un geste. La
-règle et le vocabulaire vivent dans
-[CONTRIBUTING.md](../../CONTRIBUTING.md).
+qu'elle se survole, et il survolera ensuite celles qui demandent un geste.
+[CONTRIBUTING.md](../../CONTRIBUTING.md) porte la règle et le vocabulaire.
 
-**Les trois parties voyagent séparées jusqu'à l'interface.** Un site
-d'émission écrit un `Constat` (ce qui manque, ce que ça coûte, quel geste le
-corrige) et `localisation.ts` en compose le titre puis la phrase compacte. La
-phrase est ce que publient `meta.diagnostics`, la pull request et le compte rendu ;
-les parties sont ce que l'interface met en page, sous une pastille qui nomme la
+**Les trois parties voyagent séparées jusqu'à l'interface.** Un site d'émission
+écrit un `Constat` (ce qui manque, ce que ça coûte, quel geste le corrige) et
+`localisation.ts` en compose le titre puis la phrase compacte. La phrase est ce
+que publient `meta.diagnostics`, la pull request et le compte rendu ; les
+parties sont ce que l'interface met en page, sous une pastille qui nomme la
 sévérité. Une seule rédaction, deux formes. Sans cette séparation, l'interface
 n'aurait le choix qu'entre afficher un paragraphe (où le geste se lit en
 dernier, après deux phrases de contexte) et découper une `string` dans le DOM,
@@ -482,8 +481,8 @@ chose que le designer : `@icons`, nom d'une variante de règle, y devenait le
 profil d'un inconnu, notifié à chaque export, au lieu du mot à taper dans le
 composant, et un calque nommé `#12` renverrait de même à une issue. Ces formes
 sont donc publiées en `code`, seule zone que l'autoliaison de GitHub épargne :
-le message reste celui que le compte rendu du plugin affiche, et le designer y lit le
-nom exact qu'il doit écrire.
+le message reste celui que le compte rendu du plugin affiche, et le designer y
+lit le nom exact qu'il doit écrire.
 
 Tous les champs de configuration sont validés et les chemins restent relatifs.
 Aucune branche ne survit à un export qui n'a pas ouvert de PR : si le commit ou
@@ -509,11 +508,12 @@ questions, **pas parce qu'elles sont une surface publique.**
 | `UCM_TOKENS_MODIFIES` | le workflow, depuis `git diff` | idem | `"true"` si `tokens.json` change dans cette pull request |
 | `UCM_ECHECS_DE_TESTS` | l'orchestrateur local, en JSON | idem | les échecs de tests que le rapport doit porter, parce qu'un test rouge doit atteindre le designer |
 
-**Aucune n'est figée, et c'est la décision.** Geler une interface publique avant
-qu'une CI tierce ne la lise, c'est fabriquer une contrainte qu'on devra tenir
-sans savoir pour qui. Les trois peuvent changer de nom, de forme ou disparaître
-le jour où `ucm check` reçoit un adaptateur : ce qui est stable est ce que la
-commande accepte, ses options, pas ce que l'environnement d'un dépôt contient.
+**Aucune de ces trois interfaces n'est figée, délibérément.** Geler une
+interface publique avant qu'une CI tierce ne la lise fabriquerait une contrainte
+à tenir sans savoir pour qui. Les trois peuvent changer de nom, de forme ou
+disparaître le jour où `ucm check` reçoit un adaptateur : ce qui est stable est
+ce que la commande accepte, ses options, pas ce que l'environnement d'un dépôt
+contient.
 
 `CI` et `GITHUB_STEP_SUMMARY` ne sont pas de ce projet : la première est posée
 par tout runner, la seconde par GitHub Actions, et les deux sont lues telles que
@@ -527,12 +527,12 @@ déclarée dans le manifest.
 
 ### Sélectionner et cadrer ne sont pas modifier
 
-**Tranché, et la question se reposera.**
-Rendre un avertissement cliquable demande de poser une sélection
-(`figma.currentPage.selection = […]`) et de déplacer la vue
-(`figma.viewport.scrollAndZoomIntoView(…)`). Une relecture rapide y voit une
-violation de « le plugin ne modifie jamais le document » ; ce n'en est pas une,
-et voici sur quoi la décision s'appuie plutôt que sur une intuition.
+**Tranché, et la question se reposera.** Rendre un avertissement cliquable
+demande de poser une sélection (`figma.currentPage.selection = […]`) et de
+déplacer la vue (`figma.viewport.scrollAndZoomIntoView(…)`). Une relecture
+rapide y voit une violation de « le plugin ne modifie jamais le document » ; ce
+n'en est pas une, et voici sur quoi la décision s'appuie plutôt que sur une
+intuition.
 
 - **Aucun contenu de document n'est écrit.** Une sélection et un cadrage sont un
   état de l'éditeur, propre à la personne qui regarde. Rien n'entre dans le
