@@ -509,24 +509,24 @@ Fichiers autorisés dans `UCM-Playground` :
 
 Actions :
 
-- [ ] Mesurer le CSS d'origine : propriétés, références, valeurs résolues et
+- [x] Mesurer le CSS d'origine : propriétés, références, valeurs résolues et
       diagnostics.
-- [ ] Relever les versions stables `5.x`, appliquer l'algorithme de sélection et
+- [x] Relever les versions stables `5.x`, appliquer l'algorithme de sélection et
       installer la version exacte retenue.
-- [ ] Examiner les changements majeurs de configuration entre la version
+- [x] Examiner les changements majeurs de configuration entre la version
       d'origine et la version retenue.
-- [ ] Adapter la configuration sans créer de transform de compatibilité si les
+- [x] Adapter la configuration sans créer de transform de compatibilité si les
       transforms fournis suffisent.
-- [ ] Construire avec le document structuré sRGB de L2.
-- [ ] Comparer le CSS obtenu au CSS d'origine à la tolérance colorimétrique
+- [x] Construire avec le document structuré sRGB de L2.
+- [x] Comparer le CSS obtenu au CSS d'origine à la tolérance colorimétrique
       décidée dans le test.
-- [ ] Conserver `color/css` dans la cible habituelle du Playground.
-- [ ] Construire le document Display P3 avec une configuration temporaire qui
+- [x] Conserver `color/css` dans la cible habituelle du Playground.
+- [x] Construire le document Display P3 avec une configuration temporaire qui
       remplace `color/css` par le transform standard `color/p3`.
-- [ ] Vérifier que la cible temporaire produit `color(display-p3 …)` et la
+- [x] Vérifier que la cible temporaire produit `color(display-p3 …)` et la
       supprimer après la mesure.
-- [ ] Réinstaller depuis un état propre et passer `npm run build`.
-- [ ] Enregistrer la version exacte, le lockfile et les versions refusées.
+- [x] Réinstaller depuis un état propre et passer `npm run build`.
+- [x] Enregistrer la version exacte, le lockfile et les versions refusées.
 
 Critère de sortie : le Playground compile le fichier d'origine et le document
 structuré, sans perte de propriété ni référence.
