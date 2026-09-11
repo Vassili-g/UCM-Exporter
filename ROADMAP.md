@@ -167,20 +167,18 @@ valeur oriente une décision. La [politique de
 compatibilité](./docs/COMPATIBILITE.md) relie le contrat, le schéma, les tokens,
 les paquets et les adaptateurs.
 
-`tokens.json` reste sans version tant que sa grammaire ne bouge pas. Le premier
-changement de projection rouvrira cette décision avec un lecteur réel à écrire.
-Le diff sémantique reste différé jusqu'au premier cycle de changement réel : il
-sera spécifié sur deux artefacts successifs et leur revue, pas sur un corpus
-inventé.
+L'[alignement DTCG](./docs/notes/ALIGNEMENT-DTCG.md) engage le premier changement
+de projection de `tokens.json`. Son plan ajoute la marque de version du format, le
+lecteur correspondant et le diff sémantique sur deux artefacts successifs.
 
 ### 6. Passer la recette externe
 
-La prochaine validation est la [recette externe](./docs/RECETTE.md). Elle part
-d'un dépôt vidé de tout UCM, ouvre le plugin depuis la Figma Community, installe
-le CLI publié, exporte les tokens puis un composant vers une vraie pull request,
-reconstruit le composant et laisse le workflow publier son rapport. C'est la
-seule preuve du projet qui traverse Figma, GitHub et npm dans le même geste.
-Aucun test de ce dépôt ne la remplace.
+La [recette externe](./docs/RECETTE.md) suit la publication de l'alignement
+DTCG. Elle part d'un dépôt vidé de tout UCM, ouvre le plugin depuis la Figma
+Community, installe le CLI publié, exporte les tokens puis un composant vers une
+vraie pull request, reconstruit le composant et laisse le workflow publier son
+rapport. C'est la seule preuve du projet qui traverse Figma, GitHub et npm dans
+le même geste. Aucun test de ce dépôt ne la remplace.
 
 Les trois paquets que le dépôt porte sont servis par le registre, et chacun a
 été réinstallé depuis un dossier vide par l'épreuve de registre de
