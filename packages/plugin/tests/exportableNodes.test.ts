@@ -8,11 +8,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { getAllNodes } from '../src/contract/exportableNodes';
+import { localisationsDe } from '../src/contract/localisation';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 
 type TestNode = {
   type: string;
+  id?: string;
   name: string;
   visible?: boolean;
   boundVariables?: Record<string, unknown>;
@@ -59,6 +61,27 @@ test('un sous-arbre statiquement masqué est élagué et son token est signalé'
   assert.deepEqual(nodes.map((node) => node.name), ['Button', 'Fond']);
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /« Archive ».*l'exclut avec tout son contenu/);
+});
+
+/**
+ * Deux variants qui masquent chacun un calque au même nom produisent la même
+ * phrase. Le message ne part qu'une fois, et il mène aux deux calques.
+ */
+test('un calque masqué répété dans deux variants se signale une fois et mène aux deux', () => {
+  const masque = (id: string): TestNode => ({
+    type: 'FRAME',
+    id,
+    name: 'Archive',
+    visible: false,
+    children: [{ type: 'RECTANGLE', name: 'Ancien fond', boundVariables: { fills: [alias('legacy')] } }],
+  });
+  const warnings: string[] = [];
+
+  getAllNodes(tree('State=Default', [masque('1:1')]), warnings);
+  getAllNodes(tree('State=Hover', [masque('2:2')]), warnings);
+
+  assert.equal(warnings.length, 1);
+  assert.deepEqual(localisationsDe(warnings).get(warnings[0]), ['1:1', '2:2']);
 });
 
 test('un calque masqué par une prop ou une variable de visibilité reste exportable', () => {

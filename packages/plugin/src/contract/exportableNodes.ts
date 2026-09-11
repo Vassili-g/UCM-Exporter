@@ -13,7 +13,7 @@
 import { variableAliases } from '../variables';
 import { getBinding } from './nodeBindings';
 import type { ComposedDependency } from '@ucm-kit/core/format';
-import { phraseDe, pointDe, pousserNote, sujet } from './localisation';
+import { noter, phraseDe, pointDe, pousserNote, sujet } from './localisation';
 import type { PointACorriger, Sujet } from './localisation';
 
 /** Vrai si la visibilité peut changer via l'API publique ou un mode de variable. */
@@ -62,10 +62,14 @@ function hiddenAncestor(node: SceneNode, root: SceneNode): SceneNode | null {
 /**
  * Un point à corriger poussé une seule fois, quel que soit le nombre de calques
  * qui l'ont produit. La déduplication porte sur la phrase, comme partout
- * ailleurs dans le moteur.
+ * ailleurs dans le moteur, et chaque calque reste inscrit comme cible du point.
  */
 function pousserUneFois(warnings: string[], point: PointACorriger, sujetDuPoint: Sujet): void {
-  if (warnings.includes(phraseDe(point))) return;
+  const message = phraseDe(point);
+  if (warnings.includes(message)) {
+    noter(warnings, message, sujetDuPoint);
+    return;
+  }
   pousserNote(warnings, point, sujetDuPoint);
 }
 

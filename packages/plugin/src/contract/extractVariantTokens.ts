@@ -19,7 +19,7 @@ import { getSlotTokens } from './extractSlotTokens';
 import type { TokenResolver, VariantColor, VariantStrokeColor } from './extractSlotTokens';
 import { toRef } from '@ucm-kit/core/format';
 import type { SlotStrokes, SlotTokens, VariantStrokes, VariantTokens } from '@ucm-kit/core/format';
-import { pousserLocalise, pousserSansNode } from './localisation';
+import { pousserLocalise, pousserSansNode, reporterLocalisations } from './localisation';
 export { getSlotTokens } from './extractSlotTokens';
 export type { VariantTokenLeaves } from './extractSlotTokens';
 
@@ -183,6 +183,7 @@ export async function extractVariantTokens(
   const retained: typeof exact = [];
   for (const { entry, leaf, variantWarnings } of collected) {
     warnings.push(...variantWarnings);
+    reporterLocalisations(variantWarnings, warnings);
     if (leaf.paints.length === 0 && leaf.strokes.length === 0) {
       pousserLocalise(notices, 'Variant', entry.component, {
         manque: 'aucun fill ni stroke n’est relié à une variable.',

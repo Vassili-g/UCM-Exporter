@@ -70,6 +70,11 @@ const AVERTISSEMENT_TEXT_STYLE = { // extractVariantTypography.ts — nomme un s
   impact: "Cette propriété typographique manquera au développeur.",
   action: "Reliez-la à une variable dans le text style, puis réexportez.",
 };
+const AVERTISSEMENT_SANS_TEXT_STYLE = { // extractVariantTypography.ts, loadTextStyle
+  titre: "Layer « text » : aucun text style unique n'est appliqué.",
+  impact: "Sa typographie manquera au développeur.",
+  action: "Appliquez un text style au layer entier, puis réexportez.",
+};
 const AVERTISSEMENT_COMPOSE = { // exportComponent.ts, dépendance non placée
   titre: "Layer « Icon slot » : il contient le composant « Icon », mais le contrat ne décrit ce layer nulle part.",
   impact: "Le développeur ne rendra pas « Icon » dans ce composant.",
@@ -153,17 +158,17 @@ const REGLAGES = {
 };
 
 /**
- * Un point à corriger relevé par l'export : ses trois parties, et le node
- * de son sujet quand il en a un.
+ * Un point à corriger relevé par l'export : ses trois parties, et les nodes
+ * de son sujet quand il en a.
  *
- * L'absence de `nodeId` n'est pas un raccourci de la galerie : c'est l'état
+ * L'absence de `nodeIds` n'est pas un raccourci de la galerie : c'est l'état
  * réel d'un message qui nomme un text style, une variable, ou un calque agrégé
  * sur toute la matrice. Les deux formes doivent se regarder côte À côte, parce
  * que c'est leur voisinage qui dit si l'absence du bouton « Sélectionner le
  * calque » se lit comme une réponse ou comme un oubli.
  */
-const diagnostic = (point, nodeId) => ({
-  message: { type: 'diagnostic', ...point, ...(nodeId ? { nodeId } : {}) },
+const diagnostic = (point, nodeIds) => ({
+  message: { type: 'diagnostic', ...point, ...(nodeIds ? { nodeIds } : {}) },
 });
 
 /** Vingt avertissements réels : le volume que le protocole de relecture exige. */
@@ -319,20 +324,21 @@ const ETATS = [
   },
   {
     id: 'resultat-avertissement-localisable',
-    titre: 'Un avertissement qui mène à son calque',
+    titre: 'Des avertissements qui mènent à leurs calques',
     quand:
-      "Un export dont un avertissement nomme un calque du composant, et un autre nomme un style de texte. Le premier porte le node de son sujet, le second n'en a aucun.",
+      "Un export dont deux avertissements nomment des calques du composant, et un troisième un style de texte. Le premier vient d'un calque ; le deuxième de trois calques au même nom, un par variant ; le troisième n'a aucun node.",
     regarder:
-      "Les deux entrées CÔTE À CÔTE. La première se clique et souligne au survol ; la seconde est un paragraphe. C'est ce voisinage qui décide si l'absence de lien se lit comme une réponse ou comme un oubli — et c'est pour lui que la loi de couverture existe.",
+      "Les trois entrées CÔTE À CÔTE. Les deux premières portent un bouton, et celui de la deuxième compte ses calques ; la troisième est un paragraphe. Ce voisinage décide si l'absence de bouton se lit comme une réponse ou comme un oubli, et c'est pour lui que la loi de couverture existe.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
       { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      diagnostic(AVERTISSEMENT_STROKE, '12:345'),
+      diagnostic(AVERTISSEMENT_STROKE, ['12:345']),
+      diagnostic(AVERTISSEMENT_SANS_TEXT_STYLE, ['12:346', '12:347', '12:348']),
       diagnostic(AVERTISSEMENT_TEXT_STYLE),
-      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 2 }),
+      verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 3 }),
     ],
   },
   /*

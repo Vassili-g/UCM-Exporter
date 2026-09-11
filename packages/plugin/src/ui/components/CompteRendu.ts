@@ -93,8 +93,9 @@ export function createCompteRendu(): CompteRenduUi {
    * **Le lien vers Figma est un bouton distinct.** Rendre toute la carte
    * cliquable ferait d'un bloc de trois phrases une cible unique, dont rien ne
    * dit ce que le clic déclenche. Le bouton n'apparaît que si le moteur a passé
-   * un node : un message sans `nodeId` nomme un text style, une variable, ou un
-   * calque agrégé sur toute la matrice, et le moteur a déclaré pourquoi.
+   * au moins un node : un message sans `nodeIds` nomme un text style, une
+   * variable, ou un calque agrégé sur toute la matrice, et le moteur a déclaré
+   * pourquoi.
    *
    * Un bouton, pas un lien : il n'y a pas d'URL, et un `<a href>` factice
    * mentirait au clavier comme au lecteur d'écran.
@@ -127,18 +128,22 @@ export function createCompteRendu(): CompteRenduUi {
       carte.appendChild(action);
     }
 
-    if (point.nodeId) {
-      const versLeCalque = document.createElement('button');
-      versLeCalque.type = 'button';
-      versLeCalque.className = 'btn btn-secondary carte-lien';
-      versLeCalque.textContent = 'Sélectionner le calque';
+    if (point.nodeIds && point.nodeIds.length > 0) {
+      const nodeIds = point.nodeIds;
+      const versLesCalques = document.createElement('button');
+      versLesCalques.type = 'button';
+      versLesCalques.className = 'btn btn-secondary carte-lien';
+      // Le nombre dit au designer que le même geste vaut pour plusieurs
+      // calques, que le titre, qui ne nomme qu'un nom, ne distingue pas.
+      versLesCalques.textContent = nodeIds.length === 1
+        ? 'Sélectionner le calque'
+        : `Sélectionner les ${nodeIds.length} calques`;
       // Seul le sandbox peut poser une sélection : on lui délègue, comme pour
       // l'ouverture d'un lien externe.
-      const nodeId = point.nodeId;
-      versLeCalque.addEventListener('click', () => {
-        versSandbox({ type: 'montrer-le-calque', nodeId });
+      versLesCalques.addEventListener('click', () => {
+        versSandbox({ type: 'montrer-les-calques', nodeIds });
       });
-      carte.appendChild(versLeCalque);
+      carte.appendChild(versLesCalques);
     }
 
     return carte;
@@ -160,7 +165,7 @@ export function createCompteRendu(): CompteRenduUi {
       publication.replaceChildren();
       section.hidden = true;
     },
-    /** `point` est ce que le moteur a écrit : titre, impact, action, node. */
+    /** `point` est ce que le moteur a écrit : titre, impact, action, nodes. */
     ajouterDiagnostic(point: PointACorriger) {
       aCorriger.ajouter(creerDiagnostic(point));
     },

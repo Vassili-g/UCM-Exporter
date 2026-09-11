@@ -20,6 +20,7 @@ import { findWrapperReference } from '../src/contract/componentTree';
 import { getAllNodes } from '../src/contract/exportableNodes';
 import { extractLayout } from '../src/contract/extractLayout';
 import type { PlacedDependencies } from '../src/contract/extractLayout';
+import { localisationsDe, partiesDe } from '../src/contract/localisation';
 import type { ChildStructure, ComposedDependency } from '@ucm-kit/core/format';
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
@@ -556,10 +557,11 @@ test('une instance dont le maître est illisible avertit au lieu de disparaître
   assert.match(warnings[0], /réexportez/);
 });
 
-test('le même layer orphelin ne se signale qu’une fois pour toute la matrice', async () => {
+test('le même layer orphelin ne se signale qu’une fois, et le constat mène à chaque instance', async () => {
   // Une instance orpheline vit dans tous les variants du set, et chaque scan la
   // relève avec le même texte. Le message porte le nom du layer, jamais celui
-  // du variant : un constat par layer, pas un par variant.
+  // du variant : un constat par layer, pas un par variant. Ce constat garde
+  // l'instance de chaque variant, et ses trois parties.
   const orphelin = (id: string) => instance(id, 'action', 'Button', {
     getMainComponentAsync: async () => {
       throw new Error('instance orpheline');
@@ -576,6 +578,8 @@ test('le même layer orphelin ne se signale qu’une fois pour toute la matrice'
 
   assert.equal(result.warnings.length, 1);
   assert.match(result.warnings[0], /« action »/);
+  assert.ok(partiesDe(result.warnings).has(result.warnings[0]), 'le constat arrive sans ses parties');
+  assert.deepEqual(localisationsDe(result.warnings).get(result.warnings[0]), ['btn-a', 'btn-b']);
 });
 
 /** Une instance nue, avec ses enfants et son maître, pour le relevé des maîtres. */

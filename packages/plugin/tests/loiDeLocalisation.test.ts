@@ -83,8 +83,8 @@ test('l’autorité produit bien la forme que les messages emploient', () => {
  * *Ce que la loi n'interdit pas, et il faut le lire avant de la croire plus
  * stricte qu'elle n'est.* Un message a le droit de nommer un second calque dans
  * son corps, « … mais le layer « Y » lui donne déjà ce rôle » est un contexte
- * utile, et l'interface n'a besoin que d'une cible : celle du sujet. Ce que la loi
- * exige est qu'un message qui parle d'un calque en ait une.
+ * utile, et l'interface ne mène qu'aux calques du sujet. Ce que la loi exige est
+ * qu'un message qui parle d'un calque en ait au moins un.
  *
  * *Son univers est les calques du composant exporté*, pas tous les nodes du
  * document. Un message qui cite le calque « icon » d'une instance de règle
@@ -100,7 +100,7 @@ test('l’autorité produit bien la forme que les messages emploient', () => {
  */
 export function verifierLaLocalisationDesDiagnostics(
   messages: readonly string[],
-  localisations: ReadonlyMap<string, string>,
+  localisations: ReadonlyMap<string, readonly string[]>,
   declarees: ReadonlyMap<string, string>,
   nomsDeCalques: ReadonlySet<string>,
   ou: string,
