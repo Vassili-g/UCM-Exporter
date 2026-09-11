@@ -395,16 +395,16 @@ Fichiers autorisés :
 
 Actions :
 
-- [ ] Relever la branche, le commit courant, le statut et la version de Node des deux
+- [x] Relever la branche, le commit courant, le statut et la version de Node des deux
       dépôts.
-- [ ] Relever les versions déclarées des trois paquets UCM et la version du
+- [x] Relever les versions déclarées des trois paquets UCM et la version du
       plugin.
-- [ ] Lancer `npm test`, `npm run typecheck` et `npm run build` dans l'Exporter.
-- [ ] Lancer `npm run build` dans le Playground.
-- [ ] Relever les fixtures de tokens existants. Aucun `tokens.json` n'est figé
+- [x] Lancer `npm test`, `npm run typecheck` et `npm run build` dans l'Exporter.
+- [x] Lancer `npm run build` dans le Playground.
+- [x] Relever les fixtures de tokens existants. Aucun `tokens.json` n'est figé
       aujourd'hui : les tests construisent leurs variables en ligne, et L2 crée
       le fixture d'origine.
-- [ ] Enregistrer les résultats et créer le journal.
+- [x] Enregistrer les résultats et créer le journal.
 
 Critère de sortie : les deux dépôts ont un état de référence vert, ou toute
 défaillance préexistante est expliquée et corrigée dans un lot séparé avant L1.
@@ -425,24 +425,24 @@ Fichiers autorisés :
 
 Actions :
 
-- [ ] Documenter les valeurs structurées, la marque de version et les quatre
+- [x] Documenter les valeurs structurées, la marque de version et les quatre
       états de lecture.
-- [ ] Remplacer la section « Pourquoi `tokens.json` n'a pas de version » de
+- [x] Remplacer la section « Pourquoi `tokens.json` n'a pas de version » de
       `COMPATIBILITE.md`.
-- [ ] Documenter l'ordre de publication et le maintien des anciennes clés.
-- [ ] Réécrire l'invariant d'`AGENTS.md` sur l'en-tête de pull request :
+- [x] Documenter l'ordre de publication et le maintien des anciennes clés.
+- [x] Réécrire l'invariant d'`AGENTS.md` sur l'en-tête de pull request :
       `tokens.json` y annonce la version du format lue dans le fichier.
-- [ ] Citer dans `AGENTS.md` le fixture de tokens d'origine et ses bornes, à
+- [x] Citer dans `AGENTS.md` le fixture de tokens d'origine et ses bornes, à
       côté du corpus de contrats du kit.
-- [ ] Classer séparément le changement du format des valeurs et l'ajout de la
+- [x] Classer séparément le changement du format des valeurs et l'ajout de la
       marque.
-- [ ] Décrire le choix de l'espace colorimétrique à partir de
+- [x] Décrire le choix de l'espace colorimétrique à partir de
       `documentColorProfile`.
-- [ ] Décrire le type des poids sur tous les modes et alias.
-- [ ] Ajouter les invariants correspondants dans `AGENTS.md`.
-- [ ] Passer le contrôle de style et les tests de liens, d'inventaire et de
+- [x] Décrire le type des poids sur tous les modes et alias.
+- [x] Ajouter les invariants correspondants dans `AGENTS.md`.
+- [x] Passer le contrôle de style et les tests de liens, d'inventaire et de
       version documentaire.
-- [ ] Prouver qu'une suppression temporaire d'un invariant attendu fait échouer
+- [x] Prouver qu'une suppression temporaire d'un invariant attendu fait échouer
       son test d'inventaire.
 
 Critère de sortie : aucune décision d'implémentation des lots L3 à L6 ne reste

@@ -17,7 +17,7 @@ fusionner.
 |---|---|---|---|
 | le contrat | `meta.contractVersion`, `majeure.mineure` | `CONTRACT_VERSION`, `packages/kit/src/format/version.ts` | rien du paquet qui l'a produit |
 | le JSON Schema | aucun : il est dérivé du contrat | `packages/kit/schema/`, régénéré depuis `types.ts` | il décrit la forme, jamais la cohérence |
-| `tokens.json` | aucun, délibérément | — | quelle grammaire de projection il porte |
+| `tokens.json` | la version du format de tokens, un entier à la racine | `TOKENS_FORMAT_VERSION`, `packages/kit/src/format/tokens.ts` | si un lecteur de valeurs sait lire cette forme : Style Dictionary ignore la marque |
 | les paquets npm | semver, un par paquet | chaque `package.json` | quelle version de contrat ils lisent |
 | un adaptateur | semver, comme tout paquet | son `package.json` | rien du format : ce qu'il mesure est une capacité, pas une garantie |
 
@@ -46,7 +46,7 @@ et cassé un lecteur ; la plage explicite vient de là.
 Une plage élargie chez un consommateur est un choix temporaire d'une migration,
 jamais un état par défaut.
 
-## Les neuf classes de changement
+## Les onze classes de changement
 
 Chaque entrée de [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md) appartient à une
 de ces classes, et la nomme.
@@ -62,6 +62,8 @@ de ces classes, et la nomme.
 | **7. Contrat d'une version future** | — | refusé, verdict `recent` | le mainteneur du repository |
 | **8. Contrat d'une version trop ancienne** | — | refusé, verdict `ancien` | le designer, par un réexport |
 | **9. Fichier sans version lisible** | — | traité comme ancien | le designer, par un réexport |
+| **10. Changement de la forme d'une valeur de `tokens.json`** | aucun ; `TOKENS_FORMAT_VERSION` monte | inchangé ; ses références résolvent toujours, les chemins ne bougeant pas | le mainteneur du repository, qui met à jour son lecteur de valeurs avant de fusionner le réexport |
+| **11. Ajout de la marque de version à `tokens.json`** | aucun | inchangé ; un `tokens.json` sans marque reste lu dans sa forme d'origine | personne ; un lecteur de valeurs ignore `$extensions` à la racine |
 
 **Classer un ajout en classe 1 ou en classe 2.** Supposer un lecteur de la
 version précédente, qui ignore le nouveau champ. Si son rendu reste conforme à
@@ -102,18 +104,49 @@ externe réexporte tout le corpus concerné avant publication. Une évolution de
 même nature après cette diffusion monterait la version majeure du contrat : un
 lecteur doit pouvoir distinguer les deux sens.
 
-## Pourquoi `tokens.json` n'a pas de version
+## La version du format de tokens
 
-Aucun lecteur n'en cherche une : ni Style Dictionary en mode DTCG, ni
-`indexerTokensDtcg`, qui répond seulement « ce chemin existe-t-il ». Un numéro
-écrit aujourd'hui serait décoratif. Un consommateur le lirait pourtant comme une
-garantie. La grammaire que ce fichier suit est une autre question, déclarée
-dans [FORMAT.md](./FORMAT.md#partie-2--export-tokens) avec ses écarts connus.
+`tokens.json` porte sa version à la racine du document, dans
+`$extensions["com.ucm.formatVersion"]`. C'est un entier positif, et la version
+courante est `1`. Un fichier sans marque est dans la forme d'origine, que le
+plugin publiait avant la version `1`. [FORMAT.md](./FORMAT.md#partie-2--export-tokens)
+décrit les deux formes.
 
-Le signal qui rouvre la question est la première évolution de la projection des
-tokens. La forme est tranchée d'avance pour que le geste soit alors mécanique :
-`$extensions`, namespace `com.ucm.*`, comme `com.ucm.modes` que le fichier
-emploie déjà. Un fichier sans ce champ voudra dire « grammaire d'origine ».
+Le kit lit la marque avant tout token, et la classe en quatre états :
+
+| Valeur observée | État | Effet sur `ucm check` | Qui corrige |
+|---|---|---|---|
+| marque absente | `origine` | lecture du fichier | personne |
+| `1` | `courante` | lecture du fichier | personne |
+| entier supérieur à `1` | `future` | refus, avant la lecture des tokens | le mainteneur du repository, en mettant à jour les paquets UCM |
+| toute autre valeur, ou `$extensions` qui n'est pas un objet | `invalide` | refus, avant la lecture des tokens | le designer, en relançant l'export des tokens |
+
+Seule la racine est examinée : une propriété homonyme sous un groupe ne compte
+pas. Le refus s'applique aussi à un repository qui n'a encore aucun contrat,
+parce qu'un fichier de tokens d'une version inconnue ne reçoit pas de bilan
+vert. Une version future n'est jamais présumée lisible, comme un contrat de
+version future.
+
+**La marque ne protège pas un lecteur de valeurs.** Style Dictionary ignore
+`$extensions` et ne refuse rien. Resté en version 4, il écrit `[object Object]`
+à la place de chaque couleur et de chaque dimension de la version `1`, et le
+build réussit. Le mainteneur d'un repository met donc à jour son lecteur de
+valeurs avant de fusionner le premier réexport d'une nouvelle version.
+
+### L'ordre d'une nouvelle version du format de tokens
+
+1. Les trois paquets npm sortent ensemble, le kit en premier : un kit qui
+   connaît la nouvelle version, et une CLI et un adaptateur qui l'épinglent.
+   Sur un fichier d'origine, ils rendent le même verdict qu'avant.
+2. Le repository consommateur met à jour son lecteur de valeurs et la version
+   de la CLI que son workflow épingle.
+3. Le plugin qui produit la nouvelle version est publié sur la Community.
+4. Le designer réexporte les tokens.
+
+Les chemins des tokens ne changent pas d'une version à l'autre. Les clés `$value`
+et les références restent les mêmes. Les valeurs changent de forme et la racine
+reçoit la marque. Aucune référence d'un contrat déjà fusionné ne cesse donc de
+résoudre.
 
 ## Un verdict qui change relève de la classe 6
 
@@ -142,12 +175,16 @@ introuvable. La section « A repository with no contract at all » de
 
 - **publie** : le mainteneur du format monte `CONTRACT_VERSION`, écrit l'entrée
   de changelog avec sa classe, régénère le schéma et déplace la fenêtre de
-  lecture ; les paquets montent leur semver dans le même commit ;
+  lecture ; les paquets montent leur semver dans le même commit. Pour la classe
+  10, il monte `TOKENS_FORMAT_VERSION` et écrit l'entrée de `tokens.json` dans le
+  changelog ;
 - **migre** : le designer, quand le geste est un réexport (classes 3, 5, 8, 9) ;
   le développeur, quand le geste est une adaptation de code (classes 2, 3, 7) ;
-  les deux, dans cet ordre, pour la classe 4 ;
-- **peut fusionner** : un contrat hors de la fenêtre de lecture bloque. Rien
-  d'autre ici ne bloque. Un écart entre le contrat et le code avertit sans
+  les deux, dans cet ordre, pour la classe 4 ; le mainteneur du repository, qui
+  met à jour son lecteur de valeurs, pour la classe 10 ;
+- **peut fusionner** : un contrat hors de la fenêtre de lecture bloque, comme un
+  `tokens.json` d'une version future ou d'une marque invalide. Rien d'autre ici
+  ne bloque. Un écart entre le contrat et le code avertit sans
   refuser la fusion, parce qu'il porte sur le code et non sur l'artefact déposé.
 
 ## Ce que cette politique ne fait pas

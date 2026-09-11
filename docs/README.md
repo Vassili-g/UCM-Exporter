@@ -36,7 +36,7 @@ Vous n'avez besoin d'aucun autre document.
 7. [COMPATIBILITE.md](./COMPATIBILITE.md) pour savoir ce qui peut fusionner et
    qui doit migrer lors d'un changement.
 8. [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md) le jour où une version de
-   contrat change.
+   contrat ou du format de tokens change.
 
 ### Vous modifiez le moteur ou les paquets
 
@@ -65,8 +65,8 @@ autorité. Les autres y renvoient.
 | [FORMAT.md](./FORMAT.md) | La forme de ce qui est publié, et ce que l'absence d'un champ signifie |
 | [../packages/plugin/README.md](../packages/plugin/README.md) | Où obtenir le plugin, ce que ses commandes écrivent, et ce qu'il ne fait pas |
 | [../packages/plugin/SPEC.md](../packages/plugin/SPEC.md) | Ce que le plugin lit dans Figma, ce qu'il élit, ce dont il avertit |
-| [COMPATIBILITE.md](./COMPATIBILITE.md) | Les classes de changement, la fenêtre de lecture et les responsabilités de migration |
-| [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md) | Ce que chaque version du contrat a publié |
+| [COMPATIBILITE.md](./COMPATIBILITE.md) | Les classes de changement, la fenêtre de lecture, les états de la version du format de tokens et les responsabilités de migration |
+| [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md) | Ce que chaque version du contrat, et chaque version du format de tokens, a publié |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Les règles de code, de test, de message et de rédaction |
 | [../AGENTS.md](../AGENTS.md) | Les invariants, avec leur borne et leur fichier autorité |
 | [../ROADMAP.md](../ROADMAP.md) | L'état du projet et ses limites |

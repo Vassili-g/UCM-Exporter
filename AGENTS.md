@@ -256,6 +256,34 @@ La spécification en lien porte le raisonnement.
   de `tokenCssVariable` : elle ne coupe pas sur les bosses de casse, ce qui la
   distingue d'un `kebabCase` de bibliothèque, et elle n'est pas une bijection.
   → [spec](./docs/FORMAT.md#nommer-et-citer-un-token)
+- `tokens.json` porte la version du format de tokens à la racine du document,
+  et nulle part ailleurs : `$extensions["com.ucm.formatVersion"]`, un entier
+  positif, écrit une fois et avant les groupes. `TOKENS_FORMAT_VERSION`
+  (`packages/kit/src/format/tokens.ts`) est l'unique endroit où le numéro
+  courant s'écrit. Une forme de valeur qui change monte ce numéro, jamais
+  `CONTRACT_VERSION`, et laisse les chemins et les alias en place.
+  → [spec](./docs/FORMAT.md#partie-2--export-tokens)
+- Le kit classe la marque avant de lire un seul token : absente, `origine` ;
+  `1`, `courante` ; entier supérieur, `future` ; toute autre valeur, ou
+  `$extensions` qui n'est pas un objet, `invalide`. `future` et `invalide`
+  refusent le contrôle, y compris dans un repository sans contrat. Seule la
+  racine est lue, et une version future n'est jamais présumée lisible.
+  `etatDuFormatDeTokens()` en est l'unique autorité.
+  → [compatibilité](./docs/COMPATIBILITE.md#la-version-du-format-de-tokens)
+- Une couleur s'écrit `{ colorSpace, components, alpha }`. L'espace vient de
+  `documentColorProfile`, lu une fois par export ; `LEGACY` donne `srgb` sous un
+  seul avertissement. Les composantes gardent la précision de Figma et `alpha`
+  est toujours écrit. Une dimension s'écrit `{ value, unit: "px" }`. Chaque
+  valeur de `com.ucm.modes` a la forme de `$value`, et un alias reste une
+  référence dans tous les modes.
+- Le type d'une graisse `STRING` se décide une fois par variable, sur tous ses
+  modes et son graphe d'alias, avant la sérialisation. Des littéraux que
+  `poidsDeGraisse()` reconnaît sous un segment `fontweight` ou `font-weight`,
+  et des alias qui aboutissent tous à `number`, donnent `number` ; une variable
+  faite d'alias seuls suit ses cibles quel que soit son nom. Tout le reste, une
+  cible absente et une boucle comprises, donne `string`. La table des graisses
+  n'est jamais recopiée, et la décision ne dépend d'aucun ordre.
+  → [spec](./packages/plugin/SPEC.md#partie-2--export-tokens)
 
 ### Couleurs
 
@@ -499,8 +527,9 @@ La spécification en lien porte le raisonnement.
   contrat. Un consommateur qui veut la liste lisible lit `diagnostics[].message`,
   sans filtrer sur `severity`.
 - Le corps de la pull request a deux zones. L’en-tête dit l’identité de ce qui
-  est déposé : le chemin, et le schéma de contrat pour un contrat. La liste ne
-  porte que des gestes. Ce que le plugin compte, ce que la pull request liste et
+  est déposé : le chemin, puis le schéma de contrat pour un contrat ou la
+  version du format de tokens pour `tokens.json`. La liste ne porte que des
+  gestes. Ce que le plugin compte, ce que la pull request liste et
   ce que `meta.diagnostics` publie sont la même liste.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
 - `meta.figma.url` est absent des contrats produits aujourd’hui, ce qui est un
@@ -511,9 +540,10 @@ La spécification en lien porte le raisonnement.
   produit aucun diagnostic : la traçabilité passe par `fileName` et `nodeId`, annoncés
   dans le corps de la pull request.
   → [spécification](./docs/FORMAT.md#métadonnées)
-- Le schéma annoncé dans l’en-tête est lu dans le fichier déposé
-  (`versionDeContrat()`, `format/version.ts`), jamais dans `CONTRACT_VERSION`.
-  `tokens.json` n’en reçoit aucun : il ne porte aucun schéma UCM.
+- Le numéro annoncé dans l’en-tête est lu dans le fichier déposé :
+  `versionDeContrat()` (`format/version.ts`) pour un contrat,
+  `etatDuFormatDeTokens()` (`format/tokens.ts`) pour `tokens.json`. Il ne vient
+  jamais de `CONTRACT_VERSION` ni de `TOKENS_FORMAT_VERSION`.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 - Un export identique n’ouvre jamais une seconde pull request. L’immobilité se
   juge sur la branche de base **et** sur les pull requests d’export encore
@@ -593,6 +623,9 @@ La spécification en lien porte le raisonnement.
 
 - Un changement de forme du JSON incrémente `contractVersion` et met à jour la
   spécification et les consommateurs.
+- Le kit qui connaît une nouvelle version du format de tokens sort avec la CLI
+  et l'adaptateur, le kit en premier, avant le plugin qui la produit.
+  → [compatibilité](./docs/COMPATIBILITE.md#lordre-dune-nouvelle-version-du-format-de-tokens)
 - `packages/kit/schema/ucm-contract.schema.json` est dérivé de `types.ts` par `npm run
   schema`, jamais rédigé. Il décrit la forme, pas la cohérence : il ignore les
   renvois internes et le format des valeurs tokenisées, et ne remplace aucun
@@ -643,6 +676,15 @@ garde le code qui lit la 11.0, et `refus-enregistres.test.mjs` mesure ce code
 sur lui. Il disparaît avec ce code.
 
 Il n’est pas publié : `files` du kit ne l’inclut pas.
+
+`packages/kit/fixtures/tokens/origine/` pose la même question à `tokens.json`.
+Il porte un fichier de la forme d'origine, antérieure à la version `1` du
+format de tokens, produit par le moteur d'avant cette version depuis le mock
+du producteur. Les tests du kit le lisent pour l'état `origine`. Les trois
+bornes du corpus de contrats valent pour lui : aucun test permanent ne le
+compare à une sortie du moteur ; il n'est jamais rafraîchi, et son empreinte
+SHA‑256 est dans le README voisin ; il disparaît avec le code qui lit la forme
+d'origine, jamais avant. Il n'est pas publié non plus.
 
 `packages/plugin/tests/lois.ts` est l’unique autorité sur les lois de forme d’un
 contrat, et `packages/plugin/tests/exportComponent.test.ts` les applique à chaque

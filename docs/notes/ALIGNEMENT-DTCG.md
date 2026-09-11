@@ -244,9 +244,10 @@ conditions hors de la tranche engagée.
   ne peut pas les relire depuis le fichier.
 - **Aucun `tokens.json` n'est figé dans le dépôt.** La compatibilité des
   lecteurs avec un fichier ancien n'a pas encore de fixture.
-- **Les classes de [COMPATIBILITE.md](../COMPATIBILITE.md#les-neuf-classes-de-changement)
-  ne couvrent pas un changement de format de `tokens.json`.** La classe 5
-  porte sur le nom d'un token.
+- **Un changement de format de `tokens.json` a ses propres classes.** Les
+  classes 10 et 11 de [COMPATIBILITE.md](../COMPATIBILITE.md#les-onze-classes-de-changement)
+  séparent la forme des valeurs et la marque. La classe 5 porte sur le nom d'un
+  token.
 - **Le Playground épingle la version du CLI** dans son workflow. Une nouvelle
   version du kit ne l'atteint qu'après la mise à jour de cette ligne.
 

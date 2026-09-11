@@ -283,7 +283,7 @@ sur ce que chaque outil accepte et sur le coût de la conversion. Rien ne
 l’impose aujourd’hui, Style Dictionary v4 lisant le fichier tel quel. Trois
 déclencheurs la rendraient nécessaire : un deuxième consommateur, un outil cible
 qui exige `2025.10`, ou la première évolution de la projection, que
-[COMPATIBILITE.md](../COMPATIBILITE.md#pourquoi-tokensjson-na-pas-de-version)
+[COMPATIBILITE.md](../COMPATIBILITE.md#la-version-du-format-de-tokens)
 marque déjà par `$extensions` et le namespace `com.ucm.*`. La projection dédiée
 ne devient une option que si les outils refusent cette conversion.
 [Types et valeurs DTCG](https://www.designtokens.org/tr/2025.10/format/),

@@ -70,6 +70,7 @@ const AUTORITES = [
   'bounds',
   'clipsContent',
   'codeIdentifier',
+  'com.ucm.modes',
   'colorKeys',
   'colorKeys.ts',
   'columnSizes',
@@ -126,6 +127,7 @@ const AUTORITES = [
   'padding.y',
   'paintPlacements',
   'phraseDe',
+  'poidsDeGraisse()',
   'propertyBindingDefinitions',
   'propertyBindings.appliedValue',
   'propertySurfaces',
@@ -205,6 +207,8 @@ const AUTORITES_FORMAT = [
   'structureTree.ts', 'swaps', 'textStyles', 'tokenCssVariable', 'tokens.json', 'types.ts',
   'userinput.background', 'variantAxes', 'variantViews', 'variants[].bindings',
   'variants[].tokens', 'visibilityProp', 'visibilityTargets',
+  'TOKENS_FORMAT_VERSION', 'colorSpace', 'com.ucm.formatVersion', 'com.ucm.modes',
+  'poidsDeGraisse',
 ];
 
 const AUTORITES_SPEC = [
@@ -212,6 +216,8 @@ const AUTORITES_SPEC = [
   'composes', 'enablePrivatePluginApi', 'figma.fileKey', 'figmaName', 'fileName',
   'meta.diagnostics', 'meta.figma.url', 'nodeId', 'normalizeName()', 'stateModel',
   'textStyles', 'tokens.json', 'variantViews', 'variants[].tokens',
+  'LEGACY', 'TOKENS_FORMAT_VERSION', 'documentColorProfile', 'etatDuFormatDeTokens()',
+  'poidsDeGraisse()',
 ];
 
 /**
@@ -285,6 +291,8 @@ const ENONCES_FORMAT = [
   "référence DTCG",
   "3. Modes = marques",
   "4. DTCG",
+  "La racine porte la version du format de tokens.",
+  "1. Forme des valeurs.",
 ];
 
 const ENONCES_SPEC = [
@@ -326,6 +334,9 @@ const ENONCES_SPEC = [
   "Tranché, et la question se reposera.",
   "Ce qui reste à vérifier, et qui n'est pas vérifiable depuis ce dépôt :",
   "La frontière que cette décision ne déplace pas.",
+  "Le profil colorimétrique se lit sur le document, une fois par export.",
+  "Le type d'une graisse `STRING` se décide sur tout le graphe, avant d'écrire.",
+  "La marque de version vient de la constante du kit.",
 ];
 
 const sansAccent = (texte: string): string =>
