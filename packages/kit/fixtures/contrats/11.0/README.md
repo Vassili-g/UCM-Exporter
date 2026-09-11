@@ -1,18 +1,19 @@
-# Corpus 11.0 figé, le jeu N-1
+# Corpus 11.0 figé, hors de la fenêtre de lecture
 
 Ces quatre contrats sont un **instantané assumé**, et c'est la seule chose qui
 les rend utiles.
 
 ## Pourquoi ils existent
 
-Le moteur ne fabrique que la version courante
-(`src/contract/exportComponent.ts`). La fenêtre de lecture porte deux versions,
-la courante et la précédente
-([COMPATIBILITE.md](../../../../../docs/COMPATIBILITE.md)) ; elle n'est donc
-observable qu'à partir de contrats que plus rien ne sait produire.
-Sans ce jeu, l'élagage des validateurs mesurerait sa couverture sur la seule version
-courante et marquerait « jamais atteint » tout ce qui sert la précédente : il
-supprimerait exactement les chemins que cette décision garde.
+La fenêtre de lecture porte la 12.0 et la 13.0
+([COMPATIBILITE.md](../../../../../docs/COMPATIBILITE.md)), et le jeu N-1 est
+[celui de la 12.0](../12.0/README.md). `validation-contrat.mjs` garde pourtant
+le code qui lit la 11.0 et les versions antérieures.
+
+`tests/refus-enregistres.test.mjs` mesure sur ce jeu les contrôles que ce code
+exerce. Sans lui, un élagage des validateurs marquerait « jamais atteint » les
+chemins propres à la 11.0. Il les supprimerait sans que l'empreinte enregistrée
+change.
 
 ## Ce qu'ils ne sont pas
 
@@ -24,7 +25,7 @@ l'immobilité est précisément la propriété recherchée. Un test qui les comp
 une sortie du moteur est une faute.
 
 Ils ne sont pas non plus une source à rafraîchir. **Un réexport les rendrait
-inutiles** : ils cesseraient d'être N-1.
+inutiles** : ils cesseraient de documenter la 11.0.
 
 ## Provenance
 
@@ -55,6 +56,6 @@ cf909b421642731d279fee233cf3740b959e0b9f42ebadeb8cc02669e7482f9f  TileLink.contr
 
 ## Cycle de vie
 
-Ce dossier vit tant que la
-fenêtre de lecture inclut la 11.0, et disparaît quand elle se referme au-dessus
- : au même moment que le code de compatibilité qu'il couvre, jamais avant.
+La fenêtre de lecture ne porte plus la 11.0. Ce dossier disparaît avec le code de
+compatibilité qu'il couvre, jamais avant : retirer ce code de
+`validation-contrat.mjs`, puis ce dossier dans le même commit.

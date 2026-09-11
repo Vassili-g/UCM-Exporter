@@ -10,8 +10,8 @@
  */
 
 /** Fenêtre explicite : le kit lit la version courante du contrat et la précédente. */
-export const VERSION_CONTRAT_MINIMALE = "11.0";
-export const VERSION_CONTRAT_MAXIMALE = "12.0";
+export const VERSION_CONTRAT_MINIMALE = "12.0";
+export const VERSION_CONTRAT_MAXIMALE = "13.0";
 
 /** Parse strictement une version de schéma `majeure.mineure`. */
 function lireVersion(version) {

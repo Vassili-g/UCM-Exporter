@@ -6,7 +6,7 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { champsInvalidesDuContrat } from "../src/lecteurs/validation-contrat.mjs";
 import { validerGrapheDesContrats } from "../src/lecteurs/validation-graphe-contrats.mjs";
-import { contratCourant, contrat120 } from "./contrats-fabriques.mjs";
+import { contratCourant, contrat120, contrat130 } from "./contrats-fabriques.mjs";
 
 function contrat(nom, composes = [], children = []) {
   return {
@@ -1879,4 +1879,46 @@ test("deux parents distincts portent librement un slot du même nom", () => {
   ];
 
   assert.deepEqual(champsInvalidesDuContrat(valeur), []);
+});
+
+test("la 13.0 accepte literals, les tokens de paragraphe et les champs d'usage d'un calque", () => {
+  assert.deepEqual(champsInvalidesDuContrat(contrat130()), []);
+});
+
+test("une valeur CSS absente du format est refusée, dans literals comme dans un usage", () => {
+  // Le navigateur ignore `text-transform: upper` sans erreur : le texte
+  // s'afficherait en minuscules.
+  const casse = contrat130();
+  casse.textStyles["label.large"].literals.textTransform = "upper";
+  casse.textStyles["label.large"].literals.color = "red";
+  casse.viewTypographies.ty1[0].textAlign = "middle";
+  casse.viewTypographies.ty1[0].lineClamp = 0;
+
+  assert.deepEqual(champsInvalidesDuContrat(casse).sort(), [
+    "textStyles.label.large.literals.color",
+    "textStyles.label.large.literals.textTransform",
+    "viewTypographies.ty1[0].lineClamp",
+    "viewTypographies.ty1[0].textAlign",
+  ]);
+});
+
+test("un style sans tokens ni literals est refusé", () => {
+  const casse = contrat130();
+  delete casse.textStyles.caption.literals;
+  assert.deepEqual(champsInvalidesDuContrat(casse), ["textStyles.caption.tokens"]);
+});
+
+test("un champ de la 13.0 publié sous une version antérieure est refusé", () => {
+  const casse = contrat130();
+  casse.meta.contractVersion = "12.0";
+  assert.deepEqual(champsInvalidesDuContrat(casse).sort(), [
+    "textStyles.caption.literals",
+    "textStyles.label.large.literals",
+    "textStyles.label.large.tokens.paragraphIndent",
+    "textStyles.label.large.tokens.paragraphSpacing",
+    "viewTypographies.ty1[0].alignContent",
+    "viewTypographies.ty1[0].lineClamp",
+    "viewTypographies.ty1[0].textAlign",
+    "viewTypographies.ty1[0].textOverflow",
+  ]);
 });

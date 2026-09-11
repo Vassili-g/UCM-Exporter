@@ -35,7 +35,7 @@
 export type * from './types.js';
 export { CONTRACT_VERSION, versionDeContrat } from './version.js';
 export { codeIdentifier, normalizeName, tokenCssVariable } from './names.js';
-export { nomsDeGraisseConnus, poidsDeGraisse } from './typography.js';
+export { estStyleItalique, nomsDeGraisseConnus, poidsDeGraisse } from './typography.js';
 export { TOKEN_REFERENCE, isTokenReference, refPath, toRef } from './references.js';
 export { comparerIdentiteDeContrat, identiteDeContrat } from './identite.js';
 export type { ArbitreIdentite, IdentiteDeContrat, VerdictIdentite } from './identite.js';

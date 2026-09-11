@@ -56,8 +56,8 @@ le commentaire de la pull request.
 Deux commandes suffisent.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.22 init                       # écrit les cinq fichiers manquants
-npx --yes @ucm-kit/cli@0.1.22 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.23 init                       # écrit les cinq fichiers manquants
+npx --yes @ucm-kit/cli@0.1.23 check --report ci-report.md
 ```
 
 `--yes` supprime l'invite de confirmation de `npx`, qui bloque une exécution non
@@ -70,7 +70,7 @@ alors un verdict différent sur le même contrat.
 `{dir}/{id}.tsx`. Un repository qui range autrement le dit à cet instant.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.22 init \
+npx --yes @ucm-kit/cli@0.1.23 init \
   --components src/components \
   --tokens src/tokens \
   --implementation '{dir}/{id}.vue'
@@ -154,14 +154,14 @@ Chaque champ, ce que son absence signifie et ce qu'un consommateur a le droit
 d'en conclure sont décrits par
 [docs/FORMAT.md](./docs/FORMAT.md#ce-que-le-contrat-publie-champ-par-champ).
 
-Version de contrat courante : **12.0**, écrite dans
+Version de contrat courante : **13.0**, écrite dans
 `packages/kit/src/format/version.ts` et nulle part ailleurs. Un consommateur en
 lit deux, la courante et la précédente, le temps qu'un réexport arrive.
 
 ## Utiliser le kit depuis votre code
 
 ```sh
-npm install @ucm-kit/core@0.1.23
+npm install @ucm-kit/core@0.1.24
 ```
 
 | Entrée | Usage |
@@ -174,7 +174,7 @@ Chaque entrée est détaillée dans
 [packages/kit/README.md](./packages/kit/README.md).
 
 Un projet TypeScript peut installer
-[`@ucm-kit/adapter-typescript@0.1.15`](./packages/adapter-typescript/README.md)
+[`@ucm-kit/adapter-typescript@0.1.16`](./packages/adapter-typescript/README.md)
 pour ajouter la comparaison statique des props et de la composition, ainsi que
 la génération des types dérivés des contrats.
 

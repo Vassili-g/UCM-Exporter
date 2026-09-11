@@ -5,7 +5,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { nomsDeGraisseConnus, poidsDeGraisse } from '../src/format/typography.js';
+import { estStyleItalique, nomsDeGraisseConnus, poidsDeGraisse } from '../src/format/typography.js';
 
 test('un nom de graisse Figma se traduit en poids CSS', () => {
   assert.equal(poidsDeGraisse('Regular'), 400);
@@ -48,4 +48,14 @@ test('la table est déclarée sous sa forme normalisée', () => {
     assert.equal(typeof poidsDeGraisse(nom), 'number', nom);
   }
   assert.ok(nomsDeGraisseConnus().length > 0, 'la table est vide');
+});
+
+test('estStyleItalique trouve Italic ou Oblique dans un style de police qui porte aussi la graisse', () => {
+  // Figma écrit la graisse et l'italique dans le même nom : « Bold Italic ».
+  for (const nom of ['Italic', 'Bold Italic', 'SemiBoldItalic', 'Light Oblique', 'Gras Italique']) {
+    assert.equal(estStyleItalique(nom), true, nom);
+  }
+  for (const nom of ['Regular', 'Bold', '', undefined, 42]) {
+    assert.equal(estStyleItalique(nom), false, String(nom));
+  }
 });

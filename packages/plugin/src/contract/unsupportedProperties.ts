@@ -42,7 +42,7 @@ function asPropertyBag(node: SceneNode): FigmaPropertyBag {
  * calque. Le symbole n'est pas exposé hors du runtime du plugin : on le
  * reconnaît à ce qu'il n'est ni un tableau, ni une valeur primitive attendue.
  */
-function estMixed(value: unknown): boolean {
+export function estMixed(value: unknown): boolean {
   return typeof value === 'symbol'
     || (typeof value === 'object' && value !== null && !Array.isArray(value)
       && String(value) === 'Symbol(figma.mixed)');
@@ -163,13 +163,12 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
 }
 
 /**
- * Les réglages de texte que `textStyles` ne porte pas.
+ * Les réglages de texte que le contrat ne porte pas.
  *
- * Le catalogue des text styles décrit une police, une taille, une graisse, une
- * interligne et un interlettrage : rien de ce qui suit. Un alignement n'est en
- * revanche relevé que s'il a un effet : un texte en `Hug` a une boîte à sa
- * mesure, et le centrer n'y change rien. Sans cette réserve, tout label centré
- * d'un bouton produirait un avertissement sans geste possible.
+ * `textStyles.*.literals` écrit `textCase`, `textDecoration`, l'italique,
+ * `textWrapStyle` et `leadingTrim`. L'usage du style écrit l'alignement et la
+ * troncature du calque (`textRendering.ts`). Le contrat ne décrit aucune liste :
+ * `listSpacing` et `hangingList` sont relevés ici, avec `hangingPunctuation`.
  */
 function proprietesDeTexteNonPortees(
   node: SceneNode,
@@ -178,54 +177,29 @@ function proprietesDeTexteNonPortees(
   if (node.type !== 'TEXT') return [];
   const relevees: ProprieteNonPortee[] = [];
 
-  if (values.layoutSizingHorizontal !== 'HUG'
-    && values.textAlignHorizontal !== undefined
-    && values.textAlignHorizontal !== 'LEFT') {
+  // « mixed » : l'espacement change d'une liste à l'autre dans le même calque.
+  if (estMixed(values.listSpacing)
+    || (typeof values.listSpacing === 'number' && values.listSpacing > 0)) {
     relevees.push({
-      champ: 'text align',
-      manque: 'l’alignement horizontal de ce texte dans sa boîte, qui sera rendu à gauche',
-      geste: 'Passez la largeur du layer en « Hug » si l’alignement n’a pas à être contractuel, ou signalez cette limite du schéma',
+      champ: 'list spacing',
+      manque: 'l’espacement entre les éléments de liste de ce texte',
+      geste: 'Retirez cet espacement si la liste peut s’en passer, ou signalez cette limite du schéma',
     });
   }
 
-  if (values.layoutSizingVertical !== 'HUG'
-    && values.textAlignVertical !== undefined
-    && values.textAlignVertical !== 'TOP') {
+  if (values.hangingList === true) {
     relevees.push({
-      champ: 'text align',
-      manque: 'l’alignement vertical de ce texte dans sa boîte, qui sera rendu en haut',
-      geste: 'Passez la hauteur du layer en « Hug » si l’alignement n’a pas à être contractuel, ou signalez cette limite du schéma',
+      champ: 'hanging lists',
+      manque: 'les puces et les numéros de liste placés hors de la boîte de ce texte',
+      geste: 'Désactivez ce réglage si le rendu peut s’en passer, ou signalez cette limite du schéma',
     });
   }
 
-  // `textCase` et `textDecoration` peuvent être « mixed » : le calque porte
-  // alors plusieurs réglages par plage, que le contrat ne sait pas davantage
-  // écrire. Les deux cas produisent le même manque, donc le même message.
-  if (values.textCase !== undefined
-    && (estMixed(values.textCase) || values.textCase !== 'ORIGINAL')) {
+  if (values.hangingPunctuation === true) {
     relevees.push({
-      champ: 'letter case',
-      manque: 'la casse appliquée à ce texte, qui sera rendu tel qu’il est écrit',
-      geste: 'Écrivez le texte dans sa casse finale si elle n’a pas à être contractuelle, ou signalez cette limite du schéma',
-    });
-  }
-
-  if (values.textDecoration !== undefined
-    && (estMixed(values.textDecoration) || values.textDecoration !== 'NONE')) {
-    relevees.push({
-      champ: 'decoration',
-      manque: 'le soulignement ou le barré de ce texte, qui sera rendu sans décoration',
-      geste: 'Retirez cette decoration si elle n’a pas à être contractuelle, ou signalez cette limite du schéma',
-    });
-  }
-
-  const tronque = values.textTruncation === 'ENDING'
-    || (typeof values.maxLines === 'number' && values.maxLines > 0);
-  if (tronque) {
-    relevees.push({
-      champ: 'truncate text',
-      manque: 'la troncature de ce texte, qui sera rendu en entier',
-      geste: 'Retirez cette troncature si elle n’a pas à être contractuelle, ou signalez cette limite du schéma',
+      champ: 'hanging punctuation',
+      manque: 'la ponctuation placée hors de la boîte de ce texte',
+      geste: 'Désactivez ce réglage si le rendu peut s’en passer, ou signalez cette limite du schéma',
     });
   }
 

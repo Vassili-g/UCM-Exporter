@@ -6,8 +6,8 @@
  * `npm test`, et les exports réels du corpus.
  *
  * **Le second n'existe pas.** Le seul importateur de ce fichier est
- * `exportComponent.test.ts` ; `packages/kit/fixtures/contrats/11.0/` n'est lu
- * par aucune loi. Le filet est donc simple : il ne porte que des montages
+ * `exportComponent.test.ts` ; aucun jeu de `packages/kit/fixtures/contrats/`
+ * n'est lu par une loi. Le filet est donc simple : il ne porte que des montages
  * synthétiques, et rien ici ne constate que de vraies données Figma les
  * satisfont, ce qu'aucun montage synthétique ne peut prouver, et qui reste
  * donc à prouver.

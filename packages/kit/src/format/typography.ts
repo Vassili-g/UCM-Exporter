@@ -1,7 +1,8 @@
 /**
- * Traduit les noms de graisse Figma en poids CSS, au niveau du format afin que
- * toutes les cibles partagent la table. La comparaison ignore casse et
- * séparateurs. Un nom inconnu n'est pas fautif : `poidsDeGraisse` rend `null`.
+ * Traduit le style de police Figma (`fontName.style`, « SemiBold », « Bold
+ * Italic ») en valeurs CSS, au niveau du format afin que toutes les cibles
+ * partagent la table. La comparaison ignore casse et séparateurs. Un nom
+ * inconnu n'est pas fautif : `poidsDeGraisse` rend `null`.
  */
 
 /** Noms de graisse connus → poids CSS, clés déjà normalisées. */
@@ -44,6 +45,21 @@ function cleDeGraisse(nom: string): string {
 export function poidsDeGraisse(nom: unknown): number | null {
   if (typeof nom !== 'string') return null;
   return POIDS_PAR_NOM[cleDeGraisse(nom)] ?? null;
+}
+
+/** Les mots d'un style de police italique, forme normalisée. */
+const MOTS_ITALIQUES: readonly string[] = ['italic', 'italique', 'oblique'];
+
+/**
+ * Vrai si le style de police Figma est italique.
+ *
+ * Le style réunit la graisse et l'italique en un seul nom, « Bold Italic » ou
+ * « SemiBoldItalic » : le mot se cherche donc à l'intérieur du nom.
+ */
+export function estStyleItalique(nom: unknown): boolean {
+  if (typeof nom !== 'string') return false;
+  const cle = cleDeGraisse(nom);
+  return MOTS_ITALIQUES.some((mot) => cle.includes(mot));
 }
 
 /** Les noms de graisse que cette table sait traduire, forme normalisée. */

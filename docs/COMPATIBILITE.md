@@ -63,6 +63,13 @@ de ces classes, et la nomme.
 | **8. Contrat d'une version trop ancienne** | — | refusé, verdict `ancien` | le designer, par un réexport |
 | **9. Fichier sans version lisible** | — | traité comme ancien | le designer, par un réexport |
 
+**Classer un ajout en classe 1 ou en classe 2.** Supposer un lecteur de la
+version précédente, qui ignore le nouveau champ. Si son rendu reste conforme à
+la maquette, l'ajout relève de la classe 1. S'il s'en écarte, l'ajout relève de
+la classe 2, même quand aucun renvoi de vue ne change : `rotation` en 12.0,
+`textTransform` en 13.0. Le coût ne départage pas les deux classes : la fenêtre
+de lecture se referme d'un cran à chaque version, mineure comprise.
+
 **La classe 4 est la seule qu'aucun contrôle ne peut attraper**, et son coût
 vient de là : la forme ne bouge pas, donc le schéma et les lecteurs acceptent un
 contrat dont le sens a changé. Elle se traite à la main, entrée par entrée du

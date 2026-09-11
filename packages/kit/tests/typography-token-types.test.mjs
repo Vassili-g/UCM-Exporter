@@ -52,3 +52,18 @@ test("une hauteur de ligne numérique est refusée avant de gonfler le rendu CSS
     recu: "number",
   }]);
 });
+
+test("un espacement et un retrait de paragraphe exigent une dimension", () => {
+  const tokens = structuredClone(tokensValides);
+  tokens.primitives.paragraphe = { $value: 12, $type: "number" };
+
+  assert.deepEqual(erreursTypesTypographiques(contrat({
+    paragraphSpacing: "{primitives.paragraphe}",
+    paragraphIndent: "{primitives.size}",
+  }), tokens), [{
+    chemin: "textStyles.body.large.tokens.paragraphSpacing",
+    reference: "{primitives.paragraphe}",
+    attendu: "dimension",
+    recu: "number",
+  }]);
+});

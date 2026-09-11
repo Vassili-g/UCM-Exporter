@@ -1,9 +1,9 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-12.0.schema.json",
-  "title": "Contrat de composant UCM 12.0",
+  "$id": "https://github.com/Vassili-g/UCM-Exporter/schema/ucm-contract-13.0.schema.json",
+  "title": "Contrat de composant UCM 13.0",
   "description": "Ce schéma décrit la FORME d'un contrat, pas sa cohérence interne. Il ne vérifie pas les renvois internes : une entrée de `variants` peut citer une vue absente de `variantViews`, une icône un slot absent de `structure`, un token une référence inexistante. Il ne contraint pas non plus le FORMAT des valeurs : une référence de token `{chemin.du.token}`, une mesure `120px` et une piste `1fr` y sont de simples chaînes, parce que TypeScript les décrit par des types que JSON Schema ne sait pas porter. Un contrat valide au sens de ce schéma reste donc à vérifier par un consommateur.",
-  "x-ucm-contract-version": "12.0",
+  "x-ucm-contract-version": "13.0",
   "$ref": "#/definitions/Contract",
   "definitions": {
     "Contract": {
@@ -156,7 +156,7 @@
         "contractVersion": {
           "type": "string",
           "description": "Version du schéma du contrat, à incrémenter à chaque changement de forme.",
-          "const": "12.0"
+          "const": "13.0"
         },
         "exportedAt": {
           "type": "string",
@@ -1118,6 +1118,32 @@
         "style": {
           "type": "string",
           "description": "Clé normalisée d'une entrée de `Contract.textStyles`."
+        },
+        "textAlign": {
+          "type": "string",
+          "enum": [
+            "center",
+            "right",
+            "justify"
+          ],
+          "description": "Vient de `textAlignHorizontal` `CENTER`, `RIGHT` ou `JUSTIFIED`."
+        },
+        "alignContent": {
+          "type": "string",
+          "enum": [
+            "center",
+            "end"
+          ],
+          "description": "Vient de `textAlignVertical` `CENTER` ou `BOTTOM`."
+        },
+        "lineClamp": {
+          "type": "number",
+          "description": "Vient de `maxLines`, publié seulement sous `textTruncation` `ENDING`."
+        },
+        "textOverflow": {
+          "type": "string",
+          "const": "ellipsis",
+          "description": "Vient de `textTruncation` `ENDING`."
         }
       },
       "required": [
@@ -1125,7 +1151,7 @@
         "style"
       ],
       "additionalProperties": false,
-      "description": "Application d'un text style à un slot textuel précis d'un variant."
+      "description": "Application d'un text style à un slot textuel précis d'un variant.\n\nLes quatre champs facultatifs sont lus sur le calque texte : deux calques du même style peuvent avoir des alignements différents. Chacun est une propriété CSS, absente quand le calque garde la valeur par défaut de Figma."
     },
     "ComposedDependency": {
       "type": "object",
@@ -1630,12 +1656,15 @@
           "type": "string"
         },
         "tokens": {
-          "$ref": "#/definitions/TypographyTokens"
+          "$ref": "#/definitions/TypographyTokens",
+          "description": "Absent quand aucune propriété du style n'est reliée à une variable."
+        },
+        "literals": {
+          "$ref": "#/definitions/TextStyleLiterals"
         }
       },
       "required": [
-        "figmaName",
-        "tokens"
+        "figmaName"
       ],
       "additionalProperties": false,
       "description": "Définition d'un text style utilisé par le composant, avec son nom Figma traçable."
@@ -1657,10 +1686,68 @@
         },
         "letterSpacing": {
           "type": "string"
+        },
+        "paragraphSpacing": {
+          "type": "string",
+          "description": "Espace entre deux paragraphes. Absent quand le style vaut zéro."
+        },
+        "paragraphIndent": {
+          "type": "string",
+          "description": "Retrait de la première ligne d'un paragraphe. Absent quand le style vaut zéro."
         }
       },
       "additionalProperties": false,
       "description": "Tokens réellement liés aux propriétés d'un text style Figma."
+    },
+    "TextStyleLiterals": {
+      "type": "object",
+      "properties": {
+        "textTransform": {
+          "type": "string",
+          "enum": [
+            "uppercase",
+            "lowercase",
+            "capitalize"
+          ],
+          "description": "Vient de `textCase` `UPPER`, `LOWER` ou `TITLE`. Le contenu du texte reste inchangé."
+        },
+        "fontVariantCaps": {
+          "type": "string",
+          "enum": [
+            "small-caps",
+            "all-small-caps"
+          ],
+          "description": "Vient de `textCase` `SMALL_CAPS` ou `SMALL_CAPS_FORCED`."
+        },
+        "textDecorationLine": {
+          "type": "string",
+          "enum": [
+            "underline",
+            "line-through"
+          ],
+          "description": "Vient de `textDecoration` `UNDERLINE` ou `STRIKETHROUGH`."
+        },
+        "fontStyle": {
+          "type": "string",
+          "const": "italic",
+          "description": "Vient d'un `fontName.style` italique. Absent quand `tokens.fontWeight` cite la variable reliée à `fontStyle`, dont la valeur contient déjà « Italic »."
+        },
+        "textWrapStyle": {
+          "type": "string",
+          "enum": [
+            "balance",
+            "pretty"
+          ],
+          "description": "Vient de `textWrapStyle` `BALANCE` ou `PRETTY`."
+        },
+        "textBox": {
+          "type": "string",
+          "const": "trim-both cap alphabetic",
+          "description": "Vient de `leadingTrim` `CAP_HEIGHT`. Valeur de la propriété raccourcie `text-box`."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Les propriétés d'un text style qu'aucune variable Figma ne peut porter.\n\nChaque clé est une propriété CSS, et sa valeur s'écrit telle quelle dans la déclaration. Une propriété à sa valeur par défaut dans Figma est absente."
     },
     "ContractSample": {
       "type": "object",

@@ -10,7 +10,7 @@ the repository that implements the component. This package is what both sides
 must share in order to talk about the same format.
 
 ```sh
-npm install @ucm-kit/core@0.1.23
+npm install @ucm-kit/core@0.1.24
 ```
 
 Most repositories never call this package directly. They run
@@ -124,7 +124,7 @@ yours.
 
 **0.x, the public surface is not frozen.** Pin an exact version, without `^`.
 
-**This release reads two contract versions, `11.0` and `12.0`**, the previous
+**This release reads two contract versions, `12.0` and `13.0`**, the previous
 one and the current one. The window exists so that a consumer is not red between
 the day the kit moves and the day its contracts are re-exported. Anything
 outside it is refused, major or minor alike, with a verdict that names the fix

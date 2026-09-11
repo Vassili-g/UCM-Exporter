@@ -348,6 +348,48 @@ catalogue ne contient que les styles réellement utilisés. Un layer sans style,
 un style introuvable ou deux noms normalisés en collision avertissent et l'usage
 ambigu reste absent.
 
+Une entrée de `textStyles` porte au moins l'un de ces deux blocs :
+
+- `tokens` cite les variables reliées au style : `fontFamily`, `fontSize`,
+  `fontWeight`, `lineHeight`, `letterSpacing`, `paragraphSpacing` et
+  `paragraphIndent` ;
+- `literals` porte les propriétés du style qu'aucune variable Figma ne peut
+  porter. Chaque clé est une propriété CSS, et sa valeur s'écrit telle quelle
+  dans la déclaration.
+
+| Clé de `literals` | Valeurs | Propriété Figma du text style |
+|---|---|---|
+| `textTransform` | `uppercase`, `lowercase`, `capitalize` | `textCase` `UPPER`, `LOWER`, `TITLE` |
+| `fontVariantCaps` | `small-caps`, `all-small-caps` | `textCase` `SMALL_CAPS`, `SMALL_CAPS_FORCED` |
+| `textDecorationLine` | `underline`, `line-through` | `textDecoration` `UNDERLINE`, `STRIKETHROUGH` |
+| `fontStyle` | `italic` | `fontName.style` contenant `Italic` ou `Oblique` |
+| `textWrapStyle` | `balance`, `pretty` | `textWrapStyle` `BALANCE`, `PRETTY` |
+| `textBox` | `trim-both cap alphabetic` | `leadingTrim` `CAP_HEIGHT` |
+
+Une propriété à sa valeur par défaut dans Figma est absente. `fontStyle` est
+aussi absent quand `tokens.fontWeight` cite la variable reliée à `fontStyle`,
+dont la valeur contient déjà `Italic`.
+
+`textTransform` change les lettres affichées et laisse le contenu intact :
+`samples` garde le texte tel que la maquette l'écrit. CSS applique `text-transform` selon la
+langue de l'élément (`lang`), et Figma ne publie pas la règle qu'il applique.
+Un texte en turc ou en grec peut donc s'afficher différemment dans les deux
+rendus.
+
+Un usage porte en plus quatre champs lus sur le calque texte, absents à la
+valeur par défaut de Figma. Deux calques du même style peuvent donc publier deux
+usages différents.
+
+| Champ d'usage | Valeurs | Propriété Figma du calque texte |
+|---|---|---|
+| `textAlign` | `center`, `right`, `justify` | `textAlignHorizontal` `CENTER`, `RIGHT`, `JUSTIFIED` |
+| `alignContent` | `center`, `end` | `textAlignVertical` `CENTER`, `BOTTOM` |
+| `lineClamp` | entier supérieur ou égal à 1 | `maxLines`, sous `textTruncation` `ENDING` |
+| `textOverflow` | `ellipsis` | `textTruncation` `ENDING` |
+
+L'alignement est publié même dans une boîte en `Hug` : un texte de plusieurs
+lignes l'applique à chacune.
+
 ### 6. Structure
 
 `children` = enfants directs réels du node de layout :
@@ -660,8 +702,11 @@ rien en silence.
   partielle, un **mask**, une peinture non unie (**dégradé**,
   image) en `fill` ou en `stroke`, plusieurs peintures « mixed » sur un même
   calque, un **blend mode** non neutre, un **pointillé**, et pour un texte :
-  l'**alignement** dans une boîte qui n'est pas en `Hug`, la **casse**, la
-  **décoration**, la **troncature**.
+  `listSpacing`, `hangingList` et `hangingPunctuation`, le contrat ne décrivant
+  aucune liste ;
+- sur un calque texte, une valeur de `textCase`, `textDecoration`,
+  `textWrapStyle` ou `leadingTrim` qui diffère de celle de son text style, ou
+  qui varie dans le calque (« mixed ») : `literals` publie la valeur du style.
 
 Une propriété que le contrat écrit n'entre pas dans ce relevé de ce qui manque,
 `rotation` et `inset` compris : la réclamer enverrait le designer redresser un

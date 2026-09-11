@@ -28,16 +28,17 @@ test("la fenêtre porte la version courante et la précédente", () => {
   // Elle reste un choix explicite : la borne basse décrit la version
   // précédente réelle, et se referme d'un cran à chaque montée. La laisser
   // vieillir ferait rentrer en silence un schéma que plus personne n'adapte.
-  assert.equal(VERSION_CONTRAT_MINIMALE, "11.0");
-  assert.equal(VERSION_CONTRAT_MAXIMALE, "12.0");
+  assert.equal(VERSION_CONTRAT_MINIMALE, "12.0");
+  assert.equal(VERSION_CONTRAT_MAXIMALE, "13.0");
+  assert.equal(verdictDeVersion("13.0"), "ok");
   assert.equal(verdictDeVersion("12.0"), "ok");
-  assert.equal(verdictDeVersion("11.0"), "ok");
   // Un cran plus bas que la fenêtre reste un réexport à demander.
-  assert.equal(verdictDeVersion("10.0"), "ancien");
+  assert.equal(verdictDeVersion("11.0"), "ancien");
 });
 
 test("une version antérieure est un contrat trop ancien", () => {
   // Le seul verdict qu'un réexport corrige.
+  assert.equal(verdictDeVersion("11.0"), "ancien");
   assert.equal(verdictDeVersion("10.3"), "ancien");
   assert.equal(verdictDeVersion("10.2"), "ancien");
   assert.equal(verdictDeVersion("10.1"), "ancien");
@@ -48,8 +49,8 @@ test("une version antérieure est un contrat trop ancien", () => {
 
 test("une version postérieure, même mineure, attend une adaptation", () => {
   // Aucun réexport n'y changera rien : c'est le repository qui doit rattraper.
-  assert.equal(verdictDeVersion("12.1"), "recent");
-  assert.equal(verdictDeVersion("13.0"), "recent");
+  assert.equal(verdictDeVersion("13.1"), "recent");
+  assert.equal(verdictDeVersion("14.0"), "recent");
 });
 
 test("une plage ouverte reste utilisable pendant une migration", () => {

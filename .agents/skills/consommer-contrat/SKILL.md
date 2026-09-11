@@ -214,7 +214,7 @@ cher que de laisser une transcription douteuse passer pour propre.
 | `stateModel` | déclencheurs runtime et priorité des états |
 | `rendering.roles` | nature d'une clé de couleur et propriétés à appliquer |
 | `icons` | politique, nom de repli, taille, visibilité et prop runtime |
-| `textStyles` | références typographiques par style |
+| `textStyles` | références typographiques (`tokens`) et propriétés CSS sans variable (`literals`) par style |
 | `composes` | union ordonnée à cardinalité maximale des dépendances |
 | `samples` | contenu indicatif et configuration montrés dans la maquette |
 | `intent` | usage et restrictions, sans donnée de rendu |
@@ -300,10 +300,18 @@ n'apparaît qu'au focus clavier, jamais au simple clic (§6.5).
 ### 4.3 Typographie
 
 Pour chaque usage de `view.typography`, joindre `slotPath` dans l'arbre puis
-`textStyles[usage.style]`. Appliquer uniquement les références présentes parmi
-`fontFamily`, `fontSize`, `fontWeight`, `lineHeight`, `letterSpacing`, toutes
-par le résolveur. `figmaName` est une identité, jamais un chemin de token ni un
-contenu.
+`textStyles[usage.style]`. Un style porte `tokens`, `literals`, ou les deux.
+
+- Appliquer chaque référence de `tokens` par le résolveur.
+- Appliquer chaque clé de `literals` comme la propriété CSS qu'elle nomme, avec
+  sa valeur telle quelle : `textTransform` donne `text-transform`.
+- Appliquer au seul slot visé les champs de l'usage : `textAlign`,
+  `alignContent`, `lineClamp` et `textOverflow`. Rendre `lineClamp` et
+  `textOverflow` sur une boîte en `overflow: hidden`.
+
+Ne pas réécrire le contenu en capitales : `textTransform` change l'affichage,
+et `samples` garde le texte de la maquette. `figmaName` est une identité, jamais
+un chemin de token ni un contenu.
 
 ### 4.4 Icônes
 

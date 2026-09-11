@@ -41,3 +41,48 @@ export function contrat120() {
   valeur.rendering.keyRoles = { fills: { "base.surface": "background" } };
   return valeur;
 }
+
+/**
+ * Contrat 13.0 minimal : la 12.0, plus la typographie que la 13.0 ajoute.
+ *
+ * Le premier style porte les deux tokens de paragraphe et cinq clés de
+ * `literals`. Le second n'a que `literals`, donc pas de `tokens`. L'usage du
+ * premier porte les quatre champs lus sur un calque.
+ */
+export function contrat130() {
+  const valeur = contrat120();
+  valeur.meta.contractVersion = "13.0";
+  valeur.textStyles = {
+    "label.large": {
+      figmaName: "Label/Large",
+      tokens: {
+        fontSize: "{typography.label.large.fontsize}",
+        paragraphSpacing: "{typography.label.large.paragraphspacing}",
+        paragraphIndent: "{typography.label.large.paragraphindent}",
+      },
+      literals: {
+        textTransform: "uppercase",
+        textDecorationLine: "underline",
+        fontStyle: "italic",
+        textWrapStyle: "balance",
+        textBox: "trim-both cap alphabetic",
+      },
+    },
+    caption: { figmaName: "Caption", literals: { fontVariantCaps: "small-caps" } },
+  };
+  valeur.viewTypographies = {
+    ty1: [
+      {
+        slotPath: ["label"],
+        style: "label.large",
+        textAlign: "center",
+        alignContent: "end",
+        lineClamp: 2,
+        textOverflow: "ellipsis",
+      },
+      { slotPath: ["badge"], style: "caption" },
+    ],
+  };
+  valeur.variantViews.v1.typography = "ty1";
+  return valeur;
+}

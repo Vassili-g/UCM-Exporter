@@ -7,10 +7,10 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { champsInvalidesDuContrat } from "../src/lecteurs/validation-contrat.mjs";
-import { contrat120, contratCourant } from "./contrats-fabriques.mjs";
+import { contrat120, contrat130, contratCourant } from "./contrats-fabriques.mjs";
 
 const ici = dirname(fileURLToPath(import.meta.url));
-const dossierFiges = join(ici, "..", "fixtures", "contrats", "11.0");
+const racineDesFiges = join(ici, "..", "fixtures", "contrats");
 const cheminReference = join(ici, "refus-enregistres.json");
 
 /**
@@ -121,24 +121,33 @@ export function releverLesRefus(contrat) {
   };
 }
 
-/** Les contrats mesurés : le jeu N‑1 figé, plus deux formes fabriquées. */
+/** Les contrats mesurés : chaque jeu figé, plus trois formes fabriquées. */
 export function corpusDeMesure() {
-  const entrees = readdirSync(dossierFiges)
-    .filter((nom) => nom.endsWith(".contract.json"))
+  const entrees = readdirSync(racineDesFiges, { withFileTypes: true })
+    .filter((entree) => entree.isDirectory())
+    .map((entree) => entree.name)
     .sort()
-    .map((nom) => [`11.0/${nom}`, JSON.parse(readFileSync(join(dossierFiges, nom), "utf8"))]);
+    .flatMap((version) => readdirSync(join(racineDesFiges, version))
+      .filter((nom) => nom.endsWith(".contract.json"))
+      .sort()
+      .map((nom) => [
+        `${version}/${nom}`,
+        JSON.parse(readFileSync(join(racineDesFiges, version, nom), "utf8")),
+      ]));
   // Les fabriqués atteignent ce que le corpus réel n'exerce pas : un layer hors
-  // du flux, une rotation, des rôles nommés. Sans eux, l'élagage pourrait
-  // emporter un contrôle 12.0 sans qu'aucune mutation ne s'en aperçoive.
+  // du flux, une rotation, des rôles nommés, une typographie en capitales et
+  // coupée. Sans eux, un élagage pourrait retirer un contrôle 12.0 ou 13.0
+  // sans que l'empreinte enregistrée change.
   entrees.push(["fabrique/courant", contratCourant()]);
   entrees.push(["fabrique/12.0", contrat120()]);
+  entrees.push(["fabrique/13.0", contrat130()]);
   return entrees;
 }
 
 /**
  * Le corpus est mesuré une fois pour les deux tests.
  *
- * 7 452 mutations, chacune revalidant un contrat entier : le relever deux fois
+ * 23 482 mutations, chacune revalidant un contrat entier : le relever deux fois
  * doublait la durée de toute la suite du kit pour ne rien prouver de plus.
  */
 const mesure = corpusDeMesure().map(([nom, contrat]) => [nom, contrat, releverLesRefus(contrat)]);

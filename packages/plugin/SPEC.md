@@ -165,10 +165,24 @@ Ce que `textStyles` et `variantViews.*.typography` contiennent est décrit par
 Chaque calque texte de chaque variant doit porter un text style Figma unique. Le
 moteur lit l'objet `TextStyle`, conserve son nom exact dans
 `textStyles.<clé>.figmaName`, puis résout ses `boundVariables` : `fontFamily`,
-`fontSize`, `fontWeight` (fallback `fontStyle`), `lineHeight` et
-`letterSpacing`. La clé du catalogue est le nom normalisé du style ; aucun lien
-vers les tokens n'est déduit de ce nom. Chaque propriété non liée produit un
-warning et n'est jamais remplacée par une valeur brute.
+`fontSize`, `fontWeight` (fallback `fontStyle`), `lineHeight`,
+`letterSpacing`, `paragraphSpacing` et `paragraphIndent`. La clé du catalogue
+est le nom normalisé du style ; aucun lien vers les tokens n'est déduit de ce
+nom. Chaque propriété non liée produit un warning et n'est jamais remplacée par
+une valeur brute. `paragraphSpacing` et `paragraphIndent` à zéro ne réclament
+aucune variable : un espacement nul ne change pas le rendu.
+
+`textRendering.ts` lit sur le même `TextStyle` les propriétés qu'aucune
+variable ne peut porter, et les publie dans `literals`. Un style sans variable
+reliée est publié s'il porte des `literals`, et absent du catalogue sinon. Les
+champs d'usage (`textAlign`, `alignContent`, `lineClamp`, `textOverflow`) sont
+lus sur le calque texte.
+
+Un calque peut modifier une propriété de son style. Quand `textCase`,
+`textDecoration`, `textWrapStyle` ou `leadingTrim` diffère entre le calque et
+son style, ou vaut « mixed » sur le calque, un warning nomme le layer et le
+style. Le contrat publie la valeur du style. Le contrôle porte sur chaque
+calque, y compris quand le style vient du cache de `loadTextStyle`.
 
 #### 6. Structure
 

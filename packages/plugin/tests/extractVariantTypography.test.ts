@@ -230,6 +230,168 @@ test('deux variantes aux mêmes coordonnées gardent leurs usages typographiques
   });
 });
 
+/** Un variant d'un seul calque texte, sous l'axe `state`. */
+function variantAUnTexte(id: string, calque: string, extra: object = {}) {
+  return node('COMPONENT', id, `State=${id}`, [
+    node('TEXT', `${id}-label`, calque, [], { textStyleId: 'overline', ...extra }),
+  ], { layoutMode: 'HORIZONTAL' }) as ComponentNode;
+}
+
+test('un text style sans variable est publié avec ses literals et sans tokens', async () => {
+  const component = variantAUnTexte('default', 'Label', {
+    textCase: 'UPPER',
+    textAlignHorizontal: 'CENTER',
+    textTruncation: 'ENDING',
+    maxLines: 2,
+  });
+  const warnings: string[] = [];
+
+  const result = await extractVariantTypography(
+    { axes: ['state'], variants: [{ values: { state: 'default' }, component }] },
+    nodesDeLayout(component),
+    resolverFor({}),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    async () => ({
+      type: 'TEXT', name: 'Overline', boundVariables: {}, textCase: 'UPPER',
+    } as unknown as BaseStyle),
+  );
+
+  assert.deepEqual(result.textStyles.overline, {
+    figmaName: 'Overline',
+    literals: { textTransform: 'uppercase' },
+  });
+  assert.deepEqual(result.typographyByComponent.get(component), [{
+    slotPath: ['label'],
+    style: 'overline',
+    textAlign: 'center',
+    lineClamp: 2,
+    textOverflow: 'ellipsis',
+  }]);
+  // Chaque propriété sans variable avertit. `textCase`, publié dans literals,
+  // n'avertit pas.
+  assert.ok(warnings.some((warning) => warning.includes('font size')));
+  assert.ok(warnings.every((warning) => !warning.includes('letter case')));
+});
+
+test('un calque dont textCase diffère de son text style avertit, même quand le style vient du cache', async () => {
+  // `loadTextStyle` ne lit le style qu'une fois : un contrôle placé là ne verrait
+  // que « Label », le premier calque rencontré.
+  const conforme = variantAUnTexte('default', 'Label', { textCase: 'UPPER' });
+  const contredit = variantAUnTexte('hover', 'Libellé', { textCase: 'ORIGINAL' });
+  const mixte = variantAUnTexte('press', 'Intitulé', { textCase: Symbol('figma.mixed') });
+  const warnings: string[] = [];
+  const loads: string[] = [];
+
+  await extractVariantTypography(
+    {
+      axes: ['state'],
+      variants: [
+        { values: { state: 'default' }, component: conforme },
+        { values: { state: 'hover' }, component: contredit },
+        { values: { state: 'press' }, component: mixte },
+      ],
+    },
+    nodesDeLayout(conforme, contredit, mixte),
+    resolverFor({ size: 'typography.overline.fontsize' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    async (id) => {
+      loads.push(id);
+      return {
+        type: 'TEXT', name: 'Overline', boundVariables: { fontSize: alias('size') },
+        textCase: 'UPPER',
+      } as unknown as BaseStyle;
+    },
+  );
+
+  assert.equal(loads.length, 1);
+  const surcharges = warnings.filter((warning) => warning.includes('letter case'));
+  assert.equal(surcharges.length, 2);
+  assert.ok(surcharges[0].includes('« Libellé »'));
+  assert.ok(surcharges[0].includes('text style « Overline »'));
+  assert.ok(surcharges[1].includes('« Intitulé »'));
+  assert.ok(surcharges[1].includes('plusieurs valeurs'));
+  assert.ok(surcharges.every((surcharge) => surcharge.includes('valeur du text style')));
+});
+
+test('paragraphSpacing et paragraphIndent ne réclament une variable que si leur valeur n’est pas zéro', async () => {
+  const component = variantAUnTexte('default', 'Label');
+  const warnings: string[] = [];
+
+  const result = await extractVariantTypography(
+    { axes: ['state'], variants: [{ values: { state: 'default' }, component }] },
+    nodesDeLayout(component),
+    resolverFor({ indent: 'typography.body.paragraphindent' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    async () => ({
+      type: 'TEXT',
+      name: 'Body',
+      boundVariables: { paragraphIndent: alias('indent') },
+      paragraphSpacing: 8,
+      paragraphIndent: 0,
+    } as unknown as BaseStyle),
+  );
+
+  // Une variable liée est publiée même quand sa valeur vaut zéro.
+  assert.deepEqual(result.textStyles.body.tokens, {
+    paragraphIndent: '{typography.body.paragraphindent}',
+  });
+  assert.ok(warnings.some((warning) => warning.includes('paragraph spacing')));
+  assert.ok(warnings.every((warning) => !warning.includes('paragraph indent')));
+});
+
+test('fontStyle italic est publié, sauf si tokens.fontWeight cite la variable reliée à fontStyle', async () => {
+  const lieAFontWeight = variantAUnTexte('default', 'Label', { textStyleId: 'lie-a-fontweight' });
+  const lieAFontStyle = variantAUnTexte('hover', 'Label', { textStyleId: 'lie-a-fontstyle' });
+  const styles: Record<string, BaseStyle> = {
+    // `tokens.fontWeight` cite la variable de `fontWeight`, lue avant celle de
+    // `fontStyle`.
+    'lie-a-fontweight': {
+      type: 'TEXT', name: 'Quote/Weight', fontName: { family: 'Inter', style: 'Bold Italic' },
+      boundVariables: { fontWeight: alias('weight'), fontStyle: alias('style') },
+    } as unknown as BaseStyle,
+    'lie-a-fontstyle': {
+      type: 'TEXT', name: 'Quote/Style', fontName: { family: 'Inter', style: 'Bold Italic' },
+      boundVariables: { fontStyle: alias('style') },
+    } as unknown as BaseStyle,
+  };
+
+  const result = await extractVariantTypography(
+    {
+      axes: ['state'],
+      variants: [
+        { values: { state: 'default' }, component: lieAFontWeight },
+        { values: { state: 'hover' }, component: lieAFontStyle },
+      ],
+    },
+    nodesDeLayout(lieAFontWeight, lieAFontStyle),
+    resolverFor({ weight: 'typography.quote.fontweight', style: 'typography.quote.fontstyle' }),
+    [],
+    new Map(),
+    new Set(),
+    undefined,
+    async (id) => styles[id] ?? null,
+  );
+
+  assert.deepEqual(result.textStyles['quote.weight'], {
+    figmaName: 'Quote/Weight',
+    tokens: { fontWeight: '{typography.quote.fontweight}' },
+    literals: { fontStyle: 'italic' },
+  });
+  assert.deepEqual(result.textStyles['quote.style'], {
+    figmaName: 'Quote/Style',
+    tokens: { fontWeight: '{typography.quote.fontstyle}' },
+  });
+});
+
 test('le chemin d’une part descend jusqu’au calque texte, pas jusqu’à son frame', () => {
   // `extractTextBranch` publie une part pour le frame et pour le texte qu'il
   // contient. Un chemin qui s'arrêtait au frame désignait un slot porteur de
