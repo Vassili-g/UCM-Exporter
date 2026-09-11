@@ -675,9 +675,9 @@ Actions :
 - [ ] Ajouter les contrôles UCM qui dépassent le schéma générique : marque à la
       racine, alpha présent, unité `px`, chemins réservés et ordre stable.
 - [ ] Déclarer la version exacte de Style Dictionary retenue en L3 dans les
-      `devDependencies` du plugin, qui est privé. Dans le manifeste du kit, elle
-      déclencherait `versionSuitLeContenu` et une montée de version sans
-      contenu publié.
+      `devDependencies` du plugin. Le test juge la sortie de `exportTokens.ts`,
+      et le plugin dépend du kit, jamais l'inverse. Le kit ne lit aucune valeur
+      de token : Style Dictionary n'y a pas d'usage.
 - [ ] Ajouter dans l'Exporter un test d'intégration qui passe à cette version
       les exports sérialisés du mock, calculés au moment du test.
 - [ ] Faire refuser par ce test `[object Object]`, une propriété absente, une
