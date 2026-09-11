@@ -184,6 +184,23 @@ son style, ou vaut « mixed » sur le calque, un warning nomme le layer et le
 style. Le contrat publie la valeur du style. Le contrôle porte sur chaque
 calque, y compris quand le style vient du cache de `loadTextStyle`.
 
+Figma garde aussi le `textStyleId` quand une plage reçoit du gras ou de
+l'italique par-dessus le style (`textStyleOverrides`, types `SEMANTIC_WEIGHT` et
+`SEMANTIC_ITALIC`). Le moteur lit ces surcharges plage par plage et avertit. Il
+ne compare pas le `fontName` du calque à celui du style : sous un mode de
+variable, les deux diffèrent sans qu'aucune surcharge existe.
+
+Une troncature sans `maxLines` avertit quand elle agit : sous `textAutoResize`
+`NONE` ou `TRUNCATE`, ou sous un `maxHeight`. Sous `HEIGHT` ou
+`WIDTH_AND_HEIGHT` sans `maxHeight`, la boîte suit le texte et rien n'est coupé.
+
+Les cinq réglages du soulignement (`textDecorationStyle`,
+`textDecorationOffset`, `textDecorationThickness`, `textDecorationColor`,
+`textDecorationSkipInk`) et `openTypeFeatures` n'ont aucun champ. Figma ne
+documente pas leurs valeurs par défaut : la valeur neutre, qui n'avertit pas,
+est celle que CSS rend sans déclaration. Les cinq réglages du soulignement
+donnent un seul message, leur geste étant le même.
+
 #### 6. Structure
 
 Ce que `structure` et `children` contiennent (descente, bornes, flux,

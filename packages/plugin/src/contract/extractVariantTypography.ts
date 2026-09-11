@@ -24,8 +24,13 @@ import type {
   VariantTypography,
 } from '@ucm-kit/core/format';
 import { pousserLocalise, pousserSansNode } from './localisation';
-import { litterauxDuStyle, PROPRIETES_LITTERALES, usageDuCalque } from './textRendering';
-import { estMixed } from './unsupportedProperties';
+import {
+  litterauxDuStyle,
+  PROPRIETES_LITTERALES,
+  tronqueSansMaxLines,
+  usageDuCalque,
+} from './textRendering';
+import { estMixed, valeursParPlage } from './unsupportedProperties';
 
 type TextStyleLoader = (id: string) => Promise<BaseStyle | null>;
 
@@ -35,10 +40,11 @@ type TextSlot = {
   /**
    * Le calque publié qui occupe ce slot.
    *
-   * Il n'est pas toujours `textNode` : un cadre dont la seule information est un
-   * unique texte reste ce texte, et c'est alors le cadre que l'arbre publie sous
-   * ce slot. Qui veut nommer le calque d'un slot doit donc lire celui-ci, sous
-   * peine de contredire le `figmaLayer` que la vue publie au même chemin.
+   * Il n'est pas toujours `textNode` : un calque désigné par `@icons`, ou coupé
+   * par la borne de profondeur, reste une feuille qui contient son texte, et
+   * c'est cette feuille que l'arbre publie sous ce slot. Nommer le calque d'un
+   * slot demande donc de lire celui-ci : `textNode` contredirait le
+   * `figmaLayer` que la vue publie au même chemin.
    */
   leaf: SceneNode;
 };
@@ -197,8 +203,22 @@ async function loadTextStyle(
 }
 
 /**
- * Avertit quand une propriété de `PROPRIETES_LITTERALES` a sur le calque une
- * autre valeur que sur son style, ou plusieurs valeurs (`figma.mixed`).
+ * Les surcharges que Figma pose par-dessus un text style en gardant son
+ * `textStyleId`. `libelle` reprend l'intitulé du panneau de typographie.
+ */
+const SURCHARGES_SEMANTIQUES = [
+  { type: 'SEMANTIC_ITALIC', libelle: 'font style', ajout: 'de l’italique' },
+  { type: 'SEMANTIC_WEIGHT', libelle: 'font weight', ajout: 'du gras' },
+] as const;
+
+/**
+ * Avertit quand le calque s'écarte de son style sans le détacher.
+ *
+ * Deux cas : une propriété de `PROPRIETES_LITTERALES` a sur le calque une autre
+ * valeur que sur son style, ou plusieurs valeurs (`figma.mixed`) ; une plage
+ * porte une surcharge sémantique (`textStyleOverrides`). Le style de police du
+ * calque n'est pas comparé à celui du style : sous un mode de variable, les
+ * deux diffèrent sans qu'aucune surcharge existe.
  *
  * `loadTextStyle` est mise en cache par style et ne reçoit que le premier
  * calque de chacun : cette fonction est donc appelée pour chaque calque.
@@ -216,6 +236,18 @@ function signalerSurcharges(textNode: TextNode, style: TextStyle, warnings: stri
         : `sa valeur diffère de celle du text style « ${style.name} ».`,
       impact: `Le développeur rendra la valeur du text style.`,
       action: `Appliquez au layer entier un text style qui porte ce réglage, puis réexportez.`,
+    });
+  }
+
+  const types = new Set(valeursParPlage(textNode, 'textStyleOverrides').flatMap((surcharges) =>
+    (Array.isArray(surcharges) ? surcharges : []).map((surcharge) => surcharge?.type)));
+  for (const { type, libelle, ajout } of SURCHARGES_SEMANTIQUES) {
+    if (!types.has(type)) continue;
+    pousserLocalise(warnings, 'Layer', textNode, {
+      champ: libelle,
+      manque: `le layer ajoute ${ajout} au text style « ${style.name} ».`,
+      impact: `Le développeur rendra le style de police du text style.`,
+      action: `Appliquez au layer un text style qui porte ce style de police, puis réexportez.`,
     });
   }
 }
@@ -292,6 +324,14 @@ export async function extractVariantTypography(
       textStyles.set(loaded.key, loaded.definition);
       signalerSurcharges(textNode, loaded.style, warnings);
       uses.push({ slotPath, style: loaded.key, ...usageDuCalque(textNode) });
+      if (tronqueSansMaxLines(textNode)) {
+        pousserLocalise(warnings, 'Layer', textNode, {
+          champ: 'truncate text',
+          manque: `le texte est coupé à la taille de sa boîte, sans « Max lines ».`,
+          impact: `Le développeur affichera le texte en entier.`,
+          action: `Réglez « Max lines » si la coupure doit être contractuelle, puis réexportez.`,
+        });
+      }
     }
 
     const values = matrix.axes.length > 0

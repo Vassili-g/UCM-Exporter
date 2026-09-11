@@ -306,8 +306,9 @@ Pour chaque usage de `view.typography`, joindre `slotPath` dans l'arbre puis
 - Appliquer chaque clé de `literals` comme la propriété CSS qu'elle nomme, avec
   sa valeur telle quelle : `textTransform` donne `text-transform`.
 - Appliquer au seul slot visé les champs de l'usage : `textAlign`,
-  `alignContent`, `lineClamp` et `textOverflow`. Rendre `lineClamp` et
-  `textOverflow` sur une boîte en `overflow: hidden`.
+  `alignContent`, `lineClamp` et `textOverflow`. Rendre `lineClamp` par
+  `line-clamp` sur une boîte en `overflow: hidden` ; `textOverflow` ne vient
+  qu'avec lui.
 
 Ne pas réécrire le contenu en capitales : `textTransform` change l'affichage,
 et `samples` garde le texte de la maquette. `figmaName` est une identité, jamais

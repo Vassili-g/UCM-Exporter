@@ -341,11 +341,13 @@ La spécification en lien porte le raisonnement.
 - Une typographie appartient à un calque texte et vient de son text style.
   `textStyles` lie le style à ses variables (`tokens`) et publie en CSS ce
   qu’aucune variable ne porte (`literals`). La vue exacte situe son usage par un
-  chemin de slots, et l’usage porte l’alignement et la troncature du calque.
-  `textRendering.ts` fait ces traductions. Un calque dont `textCase`,
-  `textDecoration`, `textWrapStyle` ou `leadingTrim` diffère de son style
-  avertit, et le contrat publie la valeur du style. Borne : un calque sans text
-  style ne publie aucun usage, donc ni alignement ni troncature.
+  chemin de slots, et l’usage porte l’alignement du calque et sa troncature
+  quand `maxLines` la borne. `textRendering.ts` fait ces traductions. Un calque
+  dont `textCase`, `textDecoration`, `textWrapStyle` ou `leadingTrim` diffère de
+  son style avertit, et le contrat publie la valeur du style ; du gras ou de
+  l’italique ajouté par-dessus le style (`textStyleOverrides`) avertit de même.
+  Borne : un calque sans text style ne publie aucun usage, donc ni alignement
+  ni troncature.
   Un slot à plusieurs textes décrit ses parts dans `children` :
   les nodes représentés y portent leur visibilité, les cibles graphiques non
   représentées restent dans `visibilityTargets`.
@@ -440,7 +442,9 @@ La spécification en lien porte le raisonnement.
   les tracés ; la seconde écarte `clipsContent` et un `listSpacing` nul. Aucune
   réserve ne se lit sur l’usage supposé d’un calque : sur un calque publié,
   `isMask` avertit comme le reste. Une propriété que le contrat écrit n’y figure
-  jamais, `rotation`, l’alignement et la casse d’un texte compris.
+  jamais, `rotation`, l’alignement et la casse d’un texte compris. Pour le
+  soulignement et `openTypeFeatures`, dont Figma ne documente pas les défauts,
+  la valeur neutre est celle que CSS rend sans déclaration.
   → [spec](./docs/FORMAT.md#propriétés-non-portables)
 
 ### Grilles
@@ -646,8 +650,9 @@ contrat que le moteur fabrique : renvois qui se résolvent, catalogues sans doub
 orpheline, adresses (slotPath de typographie, chemins de peintures,
 `icons.*.slot`) qui désignent un calque de l’arbre qui les porte, absence de
 valeur neutre écrite, résolution de chaque clé de couleur vers un rôle de la
-bonne nature, `inset` réservé aux calques hors du flux, accord avec le schéma
-publié, aller-retour de l’écriture.
+bonne nature, `inset` réservé aux calques hors du flux, `textOverflow` publié
+seulement avec son `lineClamp`, accord avec le schéma publié, aller-retour de
+l’écriture.
 
 La vérification est posée sur le chemin d’appel, une fois, et non à chaque
 scénario : un cas ajouté demain y est soumis sans que personne y pense, et une

@@ -75,7 +75,12 @@ export type Contrat = {
   samples?: Record<string, unknown>;
   composes?: Dependance[];
   viewStructures?: Record<string, Noeud>;
-  viewTypographies?: Record<string, { slotPath?: string[]; style?: string }[]>;
+  viewTypographies?: Record<string, {
+    slotPath?: string[];
+    style?: string;
+    lineClamp?: number;
+    textOverflow?: string;
+  }[]>;
   viewComposes?: Record<string, Dependance[]>;
   viewPaintPlacements?: Record<string, Record<string, Record<string, string[][]>>>;
 } & Record<string, unknown>;
@@ -448,7 +453,25 @@ function aucunDiagnosticNePorteDeNodeFigma(c: Contrat, ou: string): void {
   );
 }
 
+/**
+ * Un `textOverflow` publié accompagne toujours son `lineClamp`.
+ *
+ * `text-overflow: ellipsis` seul ne coupe qu'une ligne. Publié sans nombre de
+ * lignes, il annoncerait une troncature que le consommateur ne rend pas.
+ */
+function laTroncatureCiteSonNombreDeLignes(c: Contrat, ou: string): void {
+  for (const [id, usages] of Object.entries(c.viewTypographies ?? {})) {
+    usages.forEach((usage, rang) => {
+      assert.ok(
+        usage.textOverflow === undefined || usage.lineClamp !== undefined,
+        `${ou} : viewTypographies.${id}[${rang}] publie textOverflow sans lineClamp`,
+      );
+    });
+  }
+}
+
 export function verifierLesLois(contrat: Contrat, ou: string): void {
+  laTroncatureCiteSonNombreDeLignes(contrat, ou);
   lesRenvoisSeResolvent(contrat, ou);
   lesCataloguesSontNetsEtAtteints(contrat, ou);
   lesSlotsDUnMemeParentSontUniques(contrat, ou);

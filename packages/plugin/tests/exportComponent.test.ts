@@ -147,9 +147,9 @@ function conteneurDeRegles(nom: string, regles: any[] = []) {
 }
 
 /** Un variant : un auto layout horizontal dont le gap cite une variable. */
-function variant(nom: string, enfantsEnPlus: any[] = []) {
+function variant(nom: string, enfantsEnPlus: any[] = [], reglagesDuTexte: any = {}) {
   return node('COMPONENT', nom, [
-    node('TEXT', 'Suivant', [], { characters: 'Suivant' }),
+    node('TEXT', 'Suivant', [], { characters: 'Suivant', ...reglagesDuTexte }),
     ...enfantsEnPlus,
   ], {
     layoutMode: 'HORIZONTAL',
@@ -170,9 +170,21 @@ function monterFigma(options: {
   dependancesContractees?: string[];
   /** Clé du fichier, telle que l API la donne à un plugin privé. */
   fileKey?: string | null;
+  /** Réglages posés sur le calque texte « Suivant » de chaque variant. */
+  reglagesDuTexte?: Record<string, unknown>;
+  /** Le text style que `getStyleByIdAsync` rend, quel que soit l'identifiant. */
+  styleDeTexte?: unknown;
 } = {}) {
-  const contained = variant('Variant=Contained', options.enfantsDuVariant?.() ?? []);
-  const outlined = variant('Variant=Outlined', options.enfantsDuVariant?.() ?? []);
+  const contained = variant(
+    'Variant=Contained',
+    options.enfantsDuVariant?.() ?? [],
+    options.reglagesDuTexte,
+  );
+  const outlined = variant(
+    'Variant=Outlined',
+    options.enfantsDuVariant?.() ?? [],
+    options.reglagesDuTexte,
+  );
   const componentSet = node('COMPONENT_SET', 'Button', [contained, outlined], {
     key: 'cle-button',
     componentPropertyDefinitions: {
@@ -224,7 +236,7 @@ function monterFigma(options: {
     }),
     root: { name: 'Design System' },
     fileKey: options.fileKey ?? null,
-    getStyleByIdAsync: async () => null,
+    getStyleByIdAsync: async () => options.styleDeTexte ?? null,
     variables: {
       getLocalVariableCollectionsAsync: async () => [collection],
       getLocalVariablesAsync: async () => [variableGap, variableBackground],
@@ -375,6 +387,47 @@ test('l’échantillon reste hors du contrat normatif : ni token, ni couverture,
       !resultat.warnings.some((message: string) => message.includes('maquette')),
       'l’échantillon n’ajoute aucun point à corriger',
     );
+  } finally {
+    figmaFaux.restaurer();
+  }
+});
+
+test('un text style en capitales et un calque centré et coupé passent les lois et le schéma publiés', async () => {
+  // `lois.ts` ne juge que ce que le moteur fabrique : sans ce montage, `literals`
+  // et les champs d'usage n'y passeraient jamais.
+  const reglagesPartages = {
+    textCase: 'UPPER', textDecoration: 'NONE', textWrapStyle: 'AUTO', leadingTrim: 'NONE',
+  };
+  const figmaFaux = monterFigma({
+    styleDeTexte: {
+      type: 'TEXT',
+      name: 'Label/Large',
+      boundVariables: {},
+      fontName: { family: 'Inter', style: 'Bold Italic' },
+      ...reglagesPartages,
+    },
+    reglagesDuTexte: {
+      textStyleId: 'label-large',
+      textAlignHorizontal: 'CENTER',
+      textTruncation: 'ENDING',
+      maxLines: 2,
+      ...reglagesPartages,
+    },
+  });
+  try {
+    const contrat = JSON.parse((await handleExportComponent()).content);
+
+    assert.deepEqual(contrat.textStyles['label.large'], {
+      figmaName: 'Label/Large',
+      literals: { textTransform: 'uppercase', fontStyle: 'italic' },
+    });
+    assert.deepEqual(vueDe(contrat, contrat.variants[0]).typography, [{
+      slotPath: ['label'],
+      style: 'label.large',
+      textAlign: 'center',
+      lineClamp: 2,
+      textOverflow: 'ellipsis',
+    }]);
   } finally {
     figmaFaux.restaurer();
   }
