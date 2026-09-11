@@ -31,6 +31,9 @@ que sa version publie.
 Une entrée se rédige quand la version est adoptée, et décrit ce que le lecteur
 doit en savoir, jamais qu'une relecture a eu lieu.
 
+`tokens.json` se numérote à part, et [sa section](#tokensjson) termine ce
+document.
+
 ## Les versions antérieures à la fenêtre de lecture
 
 Aucun lecteur de la fenêtre courante n'accepte ces contrats : les rencontrer
@@ -221,3 +224,46 @@ La fenêtre de lecture porte la 12.0 et la 13.0.
 identique à son équivalent 12.0, à `meta.contractVersion` près, quand les textes
 du composant gardent les valeurs par défaut de Figma pour chaque réglage de
 cette entrée.
+
+---
+
+## `tokens.json`
+
+La version du format de tokens se lit à la racine du fichier, dans
+`$extensions["com.ucm.formatVersion"]`, et ne suit pas `contractVersion`. Ses
+états de lecture sont dans
+[COMPATIBILITE.md](./COMPATIBILITE.md#la-version-du-format-de-tokens).
+
+### Forme d'origine
+
+Le fichier ne porte pas de marque. Une couleur s'écrit en hexadécimal, `#rrggbb`
+ou `#rrggbbaa`, arrondie à l'octet et sans espace colorimétrique. Une dimension
+s'écrit en chaîne, `"8px"`. Une graisse stockée en `STRING` reste en
+`"$type": "string"`, avec son nom de style. Style Dictionary 4 et 5 lisent cette
+forme.
+
+### Version 1
+
+Le changement des valeurs relève de la **classe 10** et l'ajout de la marque de
+la **classe 11**.
+
+1. **Une couleur devient un objet** `{ colorSpace, components, alpha }`.
+   L'espace vaut `srgb` ou `display-p3` selon le profil du document Figma. Les
+   composantes gardent la précision de Figma, et `alpha` est toujours écrit.
+2. **Une dimension devient un objet** `{ value, unit }`, avec l'unité `px`.
+3. **Une graisse `STRING` reconnue devient `number`**, avec son poids dans
+   chaque mode. Un nom libre reste une chaîne.
+4. **La racine reçoit** `$extensions["com.ucm.formatVersion"]`, qui vaut `1`.
+
+**Ce qui ne change pas** : les chemins des tokens, leurs alias, les noms de
+modes sous `com.ucm.modes` et les types `boolean` et `string` hors graisse.
+Aucune référence d'un contrat ne cesse de résoudre, et `contractVersion` ne
+bouge pas.
+
+**Ce qui casse** : un lecteur resté sur Style Dictionary 4 écrit
+`[object Object]` à la place de chaque couleur et de chaque dimension, et son
+build réussit. Le lecteur de valeurs passe à Style Dictionary 5 avant la fusion
+du premier réexport.
+
+La première version du plugin qui produit cette forme n'est pas encore publiée
+sur la Community. Le plugin qu'elle sert produit la forme d'origine.

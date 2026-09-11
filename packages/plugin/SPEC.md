@@ -402,7 +402,52 @@ lecture des variables Figma, leurs collisions et leurs alias.
 ```ts
 const collections = await figma.variables.getLocalVariableCollectionsAsync();
 const variables   = await figma.variables.getLocalVariablesAsync();
+const profil      = figma.root.documentColorProfile;
 ```
+
+**Le profil colorimétrique se lit sur le document, une fois par export.**
+`documentColorProfile` vaut `SRGB`, `DISPLAY_P3` ou `LEGACY`. Les deux premiers
+donnent `srgb` et `display-p3`. Figma range les canaux d'une variable dans le
+profil du document : l'export les recopie sans conversion ni arrondi.
+
+`LEGACY` désigne un fichier créé avant la gestion des couleurs de Figma. Figma
+le rend dans le profil préféré de la personne qui le regarde, ou en sRGB faute
+de préférence : aucun profil n'est déclaré dans le fichier, et un réexport n'en
+trouve pas. L'export écrit alors `srgb` et avertit une fois par export, jamais
+une fois par couleur. Le message nomme le profil observé, dit que les couleurs
+sont publiées en sRGB, et demande de choisir un profil dans le menu **File
+color profile** de Figma. Le plugin ne le choisit pas à sa place : il ne modifie
+jamais le document.
+
+**Le type d'une graisse `STRING` se décide sur tout le graphe, avant d'écrire.**
+L'index des variables est construit d'abord, puis chaque `STRING` reçoit un type
+une seule fois, sur l'ensemble de ses modes :
+
+1. chaque valeur littérale est classée par `poidsDeGraisse()`, la table
+   partagée du kit, que le plugin ne recopie pas ;
+2. chaque alias est suivi jusqu'à une variable dont le type est décidé ;
+3. une variable dont le chemin contient le segment `fontweight` ou
+   `font-weight` devient `number` si tous ses littéraux sont reconnus et si
+   tous ses alias aboutissent à `number` ;
+4. une variable faite uniquement d'alias devient `number` si toutes ses cibles
+   aboutissent à `number`, même quand son propre nom ne contient pas ce
+   segment ;
+5. toute autre combinaison reste `string`, un mode sans valeur compris ;
+6. une cible absente de l'index garde son avertissement et force `string` ;
+7. une boucle, que Figma refuse de créer, est détectée par l'état de visite et
+   force `string`, sans récursion infinie.
+
+La décision est mémorisée par variable : elle ne dépend ni de l'ordre des
+variables, ni de celui des collections, ni de celui des modes. La sérialisation
+vient ensuite et publie chaque littéral reconnu en poids. Un alias reste une
+référence et ne devient jamais le nombre qu'il résout. La table ne s'élargit
+pas pour cette commande : la chaîne `"700"` n'y figure pas et reste `string`.
+
+**La marque de version vient de la constante du kit.** Le moteur écrit
+`TOKENS_FORMAT_VERSION` sous `$extensions["com.ucm.formatVersion"]`, à la racine
+et avant les groupes. Le résultat de la commande annonce le module et la version
+qu'il lit dans le fichier produit : « DTCG 2025.10, version 1 du format de
+tokens ».
 
 ---
 
@@ -470,9 +515,10 @@ PR inchangée. Au-delà de la limite GitHub de 100 Mo, il n'essaie pas de créer
 une branche et conserve directement le téléchargement local.
 
 **Le corps de la pull request a deux zones, et la frontière compte.** L'en-tête
-dit l'identité de ce qui est déposé : le chemin du fichier, et, pour un contrat
-seulement, le schéma qu'il porte. La liste qui suit ne porte que des gestes à
-faire dans Figma.
+dit l'identité de ce qui est déposé : le chemin du fichier, puis le numéro de
+forme qu'il porte, le schéma pour un contrat et la version du format de tokens
+pour `tokens.json`. La liste qui suit ne porte que des gestes à faire dans
+Figma.
 
 C'est la page que le plugin ouvre juste après l'export : le designer y lit ce
 qui n'a pas pu être décrit sans ouvrir le JSON ni le journal du plugin. Les deux
@@ -488,9 +534,14 @@ supportent le contrat étant refusé en bloc, et il est enfoui au milieu d'un di
 de plusieurs milliers de lignes. Sur la couverture, celui qui décide de
 fusionner le voit sans ouvrir le JSON. Annoncer la constante du plugin ferait de
 cette ligne un énoncé sur le plugin déguisé en énoncé sur le fichier : deux
-autorités pour la même chose, dont le désaccord serait muet. `tokens.json` n'en
-reçoit aucune, c'est un arbre DTCG. Un contrat dont la version est illisible la
-voit annoncée telle quelle, et un contrat qui n'en porte aucune le dit.
+autorités pour la même chose, dont le désaccord serait muet. Un contrat dont la
+version est illisible la voit annoncée telle quelle, et un contrat qui n'en
+porte aucune le dit.
+
+`tokens.json` suit la même règle : `Version du format de tokens : 1` est lu à
+la racine du fichier déposé, par `etatDuFormatDeTokens()`, jamais dans
+`TOKENS_FORMAT_VERSION`. Une marque absente, future ou invalide est annoncée
+telle quelle, dans les mots que le rapport du kit emploie pour elle.
 
 Chaque avertissement nomme l'élément Figma concerné avec l'intitulé que Figma
 affiche, dit ce qui manquera au développeur, puis le geste à faire dans Figma.

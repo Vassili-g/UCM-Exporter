@@ -1424,47 +1424,93 @@ le contrat porte toujours.
 
 **But** : exporter toutes les variables locales en `tokens.json` DTCG, chaîne
 d'alias préservée sur tous les tiers et tous les types, **modes de Brand Tokens
-inclus**. Entrée de Style Dictionary v4.
+inclus**. Les couleurs et les dimensions suivent le module de format DTCG
+`2025.10`. Style Dictionary 5 lit ces valeurs avec ses transforms standard.
+Style Dictionary 4 ne les lit pas : il écrit `[object Object]` à la place de
+chaque couleur et de chaque dimension, sans faire échouer le build.
 
-**La grammaire visée est celle que lit Style Dictionary v4**, et le module de
-format DTCG `2025.10` en demande une autre. Trois écarts les séparent, tous dans
-la forme des valeurs :
+**La racine porte la version du format de tokens.** La racine est l'objet JSON
+de premier niveau. Elle reçoit `$extensions`, écrit une fois et avant les
+groupes, puis les groupes de tokens :
 
-| Ce que l'export écrit | Ce que le module `2025.10` demande |
-|---|---|
-| `"$value": "#C1440E"` | un objet portant `colorSpace` et `components`, où `hex` n'est qu'un repli |
-| `"$value": "8px"` | un objet portant `value` et `unit` |
-| `"$type": "boolean"`, `"$type": "string"` | ces deux types n'y sont pas définis |
+```json
+{
+  "$extensions": { "com.ucm.formatVersion": 1 },
+  "primitives": { "terracota": { "600": { "$value": { "colorSpace": "srgb", "components": [0.7568627450980392, 0.26666666666666666, 0.054901960784313725], "alpha": 1 }, "$type": "color" } } }
+}
+```
 
-Les modes rangés sous `$extensions["com.ucm.modes"]` ne comptent pas parmi ces
-écarts : `$extensions` est un membre prévu par le module et le namespace
-appartient au projet. Le module de résolution `2025.10` décrit une autre façon
-d'exprimer un contexte, qui reste une évolution possible.
+La valeur est un entier positif, et la version courante est `1`. Un groupe ne
+porte jamais cette marque, et une propriété homonyme sous un groupe ne compte
+pas. Un fichier sans marque est dans la **forme d'origine**, celle que le plugin
+publiait avant la version `1` : couleur en hexadécimal `#rrggbb` ou
+`#rrggbbaa`, dimension en chaîne `"8px"`, graisse stockée en `STRING` laissée
+en `"$type": "string"`. Ce que le kit fait de chaque valeur de la marque, et
+qui corrige un refus, est dans
+[COMPATIBILITE.md](./COMPATIBILITE.md#la-version-du-format-de-tokens).
 
-Un consommateur qui vise `2025.10` convertit donc ces trois formes à la lecture.
-Quand cette projection change et ce qui marquerait alors le fichier sont dans
-[COMPATIBILITE.md](./COMPATIBILITE.md#pourquoi-tokensjson-na-pas-de-version).
+**1. Forme des valeurs.** Le `$type` et la forme de `$value` suivent le type de
+la variable Figma :
+
+| Variable Figma | `$type` | `$value` littéral |
+|---|---|---|
+| `COLOR` | `color` | `{ "colorSpace": "srgb", "components": [1, 0, 0], "alpha": 1 }` |
+| `FLOAT` qui mesure une longueur | `dimension` | `{ "value": 8, "unit": "px" }` |
+| `FLOAT` sans unité | `number` | `600` |
+| `STRING` dont chaque valeur est un nom de graisse connu | `number` | `600` |
+| autre `STRING` | `string` | `"Open Sans"` |
+| `BOOLEAN` | `boolean` | `true` |
+
+- **Couleur.** `colorSpace` vaut `srgb` ou `display-p3`, d'après le profil
+  colorimétrique du document Figma. Un document sans profil est exporté en
+  `srgb`, et l'export en avertit le designer. `components` porte les trois
+  canaux rouge, vert et bleu, entre 0 et 1, avec la précision que Figma
+  fournit : l'export n'arrondit rien. `alpha` est toujours écrit, `1`
+  compris. Aucun repli `hex` n'est publié.
+- **Dimension.** L'unité est toujours `px`. Zéro, une fraction et une valeur
+  négative gardent leur nombre tel quel.
+- **Graisse.** Un nom de graisse connu est un nom que la table
+  `poidsDeGraisse` de `@ucm-kit/core/format` traduit en poids : `Regular`
+  donne `400`, `SemiBold` `600`. Une `STRING` rangée sous un segment
+  `fontweight` ou `font-weight` devient `number` quand chacun de ses modes
+  porte un tel nom ou un alias vers une graisse déjà `number`. Chaque
+  valeur littérale est alors publiée en poids. Un nom libre et la chaîne
+  `"700"`, qui n'est pas un nom, restent en `string`, valeur inchangée. La
+  règle complète, alias compris, est dans la
+  [spécification du moteur](../packages/plugin/SPEC.md#partie-2--export-tokens).
+
+Le fichier reste un dialecte de `2025.10` sur quatre sortes de feuilles :
+`"$type": "boolean"` et `"$type": "string"`, que le module ne définit pas ;
+`"$value": null`, écrit quand un alias vise une variable absente ; et les
+variables Figma `EASING` et `TIMING`, publiées en `string`. Les modes rangés
+sous `$extensions["com.ucm.modes"]` ne sont pas un écart : `$extensions` est un
+membre prévu par le module et le namespace appartient au projet. Le module de
+résolution `2025.10` décrit une autre façon d'exprimer un contexte, qui reste
+une évolution possible.
 
 **2. Résolution des alias (tous types)**, `valuesByMode[modeId]` = valeur
 directe **ou** `{ type: "VARIABLE_ALIAS", id }`. Si alias → écrire une
 **référence DTCG** `"{cible}"`, jamais la valeur finale. Vaut pour COLOR comme
-FLOAT : `sizes.fontsize.base` sort `"{sizes.spacing.8}"`, pas `"8px"`. Les
-feuilles (Primitives, Spacing) portent la valeur directe.
+FLOAT : `sizes.fontsize.base` sort `"{sizes.spacing.8}"`, pas
+`{ "value": 8, "unit": "px" }`. Les feuilles (Primitives, Spacing) portent la
+valeur directe.
 
 **3. Modes = marques**, la collection **Brand Tokens** utilise les modes comme
 axe multi-marque (1 mode = 1 marque) : **non ignorés**. Stratégie actuelle (un
 seul fichier) : `$value` = valeur du mode par défaut, et **tous** les modes
-portés sous `$extensions["com.ucm.modes"]` (`{ nom-de-marque: valeur }`). Rien
-n'est perdu, tout est visible d'un coup d'œil. Collections mono-mode : juste
-`$value`. *(Évolution possible : un fichier DTCG par marque.)*
+portés sous `$extensions["com.ucm.modes"]` (`{ nom-de-marque: valeur }`). Chaque
+valeur de mode a la forme que le `$type` de sa feuille donne à `$value` :
+objet de couleur, objet de dimension, poids ou référence. Rien n'est perdu,
+tout est visible d'un coup d'œil. Collections mono-mode : juste `$value`.
+*(Évolution possible : un fichier DTCG par marque.)*
 
 **4. DTCG** : chaque variable → `{ $value, $type }`, groupes = objets imbriqués.
-Types : `COLOR`→`color` ; `FLOAT`→`dimension` (+`px`) **sauf** groupes sans
+Types : `COLOR`→`color` ; `FLOAT`→`dimension` **sauf** groupes sans
 unité (`opacity`, `fontweight` / `font-weight`, `z-index`, `aspect-ratio`) →
-`number` ; `STRING`→`string` ; `BOOLEAN`→`boolean`. Le scope Figma précis
+`number` ; `STRING`→`string`, sauf la graisse reconnue du point 1 →
+`number` ; `BOOLEAN`→`boolean`. Le scope Figma précis
 prévaut (`LINE_HEIGHT`, `FONT_SIZE`, `LETTER_SPACING` restent des dimensions ;
-`FONT_WEIGHT` conserve son type Figma, souvent `string`, que le transform de
-plateforme traduit en poids CSS). Lorsqu'une variable est disponible dans tous
+`FONT_WEIGHT` et `OPACITY` donnent `number`). Lorsqu'une variable est disponible dans tous
 les scopes, le repli compare chaque segment normalisé du chemin en ignorant
 seulement ses tirets : un token `FLOAT` `Font Weight/Bold` devient donc un
 nombre sans unité, tandis que `Font Weighted/Bold` reste une dimension. **Le
@@ -1476,7 +1522,8 @@ chaque maillon. Ex. `lineheight` alias `spacing` (des px) → `dimension`, et no
 
 ```json
 {
-  "primitives":  { "terracota": { "600": { "$value": "#C1440E", "$type": "color" } } },
+  "$extensions": { "com.ucm.formatVersion": 1 },
+  "primitives":  { "terracota": { "600": { "$value": { "colorSpace": "srgb", "components": [0.7568627450980392, 0.26666666666666666, 0.054901960784313725], "alpha": 1 }, "$type": "color" } } },
   "brands":      { "intencial": { "primary": { "600": { "$value": "{primitives.terracota.600}", "$type": "color" } } } },
   "brand-tokens":{ "primary": { "default": { "$value": "{brands.intencial.primary.600}", "$type": "color" } } },
   "components":  { "button": { "colors": { "primary": { "contained": { "default": {
@@ -1513,12 +1560,10 @@ il accepte uniquement les versions qu’il a explicitement auditées.
 Toute modification de forme incrémente `meta.contractVersion` et adapte la
 présente spécification, le schéma, les tests et les consommateurs concernés.
 
-`tokens.json` ne porte aucune version, et n'en portera pas tant que sa grammaire
-ne bouge pas : un numéro qu'aucun lecteur ne consulte est un champ décoratif. Le
-signal qui rouvre la question est la première évolution de la projection des
-tokens ; la forme est déjà tranchée pour que le geste soit alors mécanique,
-`$extensions` et le namespace `com.ucm.*`, que le fichier emploie déjà pour
-`com.ucm.modes`.
+`tokens.json` porte son propre numéro, la version du format de tokens, qui ne
+suit pas `contractVersion`. `TOKENS_FORMAT_VERSION`, dans
+`packages/kit/src/format/tokens.ts`, est l'unique endroit où la version courante
+s'écrit. [Partie 2](#partie-2--export-tokens) en donne la forme.
 
 ### Ce que le schéma décrit, et ce qu'il documente
 
