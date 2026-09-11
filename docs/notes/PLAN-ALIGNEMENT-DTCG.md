@@ -548,34 +548,34 @@ Fichiers autorisés :
 
 Actions :
 
-- [ ] Ajouter l'autorité unique du numéro de la version courante du format.
-- [ ] Décrire la forme racine dans les types publics sans autoriser
+- [x] Ajouter l'autorité unique du numéro de la version courante du format.
+- [x] Décrire la forme racine dans les types publics sans autoriser
       `$extensions` sous un groupe.
-- [ ] Ajouter le lecteur pur qui retourne `origine`, `courante`, `future` ou
+- [x] Ajouter le lecteur pur qui retourne `origine`, `courante`, `future` ou
       `invalide`.
-- [ ] Exposer le lecteur par la porte publique et sa déclaration TypeScript.
-- [ ] Brancher le contrôle avant `tokensDtcg()`, avant l'index des références et
+- [x] Exposer le lecteur par la porte publique et sa déclaration TypeScript.
+- [x] Brancher le contrôle avant `tokensDtcg()`, avant l'index des références et
       avant la sortie anticipée « aucun contrat ».
-- [ ] Produire un refus distinct pour une version future et une marque invalide.
-- [ ] Garder la lecture des fichiers d'origine.
-- [ ] Garder inchangée la table des types typographiques : le lecteur accepte
+- [x] Produire un refus distinct pour une version future et une marque invalide.
+- [x] Garder la lecture des fichiers d'origine.
+- [x] Garder inchangée la table des types typographiques : le lecteur accepte
       déjà `number` et `string` pour `fontWeight`.
-- [ ] Choisir trois versions npm encore libres, monter les trois manifestes et
+- [x] Choisir trois versions npm encore libres, monter les trois manifestes et
       leurs dépendances internes exactes dans le même commit que le premier
       changement publiable du kit.
-- [ ] Mettre les pins documentés en accord dans ce même commit.
-- [ ] Laisser `CONTRACT_VERSION` inchangé : le contrat de composant ne change
+- [x] Mettre les pins documentés en accord dans ce même commit.
+- [x] Laisser `CONTRACT_VERSION` inchangé : le contrat de composant ne change
       pas ; la nouvelle marque versionne `tokens.json`.
-- [ ] Ajouter toute la matrice de la version du format et les tests d'API
+- [x] Ajouter toute la matrice de la version du format et les tests d'API
       publique.
-- [ ] Muter temporairement l'ordre du contrôle pour prouver qu'un fichier futur
+- [x] Muter temporairement l'ordre du contrôle pour prouver qu'un fichier futur
       serait lu ; vérifier que le test le refuse.
-- [ ] Produire les archives des trois paquets dans un dossier temporaire,
+- [x] Produire les archives des trois paquets dans un dossier temporaire,
       examiner leur contenu, les installer dans un consommateur temporaire,
       kit en premier, et appeler leurs portes publiques.
-- [ ] Pousser le commit, puis publier la série dans l'ordre prévu, chaque
+- [x] Pousser le commit, puis publier la série dans l'ordre prévu, chaque
       paquet vérifié par `npm view` avant le suivant.
-- [ ] Monter la version du CLI épinglée dans le workflow du Playground ; sa CI
+- [x] Monter la version du CLI épinglée dans le workflow du Playground ; sa CI
       doit rester verte sur son fichier d'origine.
 
 Critère de sortie : aucune lecture métier des tokens ne précède le verdict de
