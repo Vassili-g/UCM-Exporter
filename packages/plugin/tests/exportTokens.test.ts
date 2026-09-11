@@ -171,6 +171,7 @@ test('buildLeaf garde le premier mode quand deux noms se normalisent pareil', ()
     variableById: new Map([['v1', variable]]),
     pathById: new Map([['v1', 'brand-tokens.primary.default']]),
     espace: 'srgb',
+    graisses: new Set(),
   }, []);
 
   // Premier conservé, comme partout ailleurs ; le doublon est signalé une
@@ -203,6 +204,7 @@ test('buildLeaf type un lineheight aliasé sur spacing comme dimension (racine),
     variableById: new Map([['s22', spacing], ['lh', lineheight]]),
     pathById: new Map([['s22', 'sizes.spacing.22'], ['lh', 'layouts.lineheight.base']]),
     espace: 'srgb',
+    graisses: new Set(),
   };
 
   assert.deepEqual(buildLeaf(lineheight, layoutsCol, ctx, []), {
@@ -252,6 +254,7 @@ test('un mode homonyme d’Object.prototype reste une marque exportée', () => {
     variableById: new Map([['v1', variable]]),
     pathById: new Map([['v1', 'brand.color.primary']]),
     espace: 'srgb',
+    graisses: new Set(),
   }, warnings);
 
   // L'index littéral tenait « constructor » pour un mode déjà écrit et laissait
@@ -519,4 +522,89 @@ test('le résultat annonce le module et la version lus dans le fichier produit',
   assert.equal(annonceDuFormat(exporte.content), 'DTCG 2025.10, version 1 du format de tokens');
   assert.equal(annonceDuFormat('{}'), null);
   assert.equal(annonceDuFormat('pas du JSON'), null);
+});
+
+/** Le `$type` et les valeurs de chaque mode d'une feuille, `$value` en tête. */
+function typeEtValeurs(feuille: { $type: string; $value: unknown; $extensions?: Record<string, Record<string, unknown>> }) {
+  const modes = feuille.$extensions?.['com.ucm.modes'];
+  return [feuille.$type, feuille.$value, ...(modes ? Object.values(modes) : [])];
+}
+
+test('une graisse dont chaque mode porte un nom connu devient un nombre, mode par mode', async () => {
+  const { tokens } = await documentExporte();
+
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontweight.regular), ['number', 400]);
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontweight.bold), ['number', 700]);
+  assert.deepEqual(typeEtValeurs(tokens.primitives['font-weight'].semibold), ['number', 600]);
+  assert.deepEqual(typeEtValeurs(tokens['brand-tokens'].fontweight.heading), ['number', 700, 700, 600]);
+});
+
+test('une graisse reste une chaîne, inchangée, dès qu’un mode n’est pas un nom connu', async () => {
+  const { tokens } = await documentExporte();
+  const marque = tokens['brand-tokens'].fontweight;
+
+  // « 700 » n'est pas un nom de graisse : la table ne s'élargit pas pour l'export.
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontweight.numeric), ['string', '700']);
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontweight.free), ['string', 'Condensed']);
+  assert.deepEqual(typeEtValeurs(marque.mixed), ['string', 'Bold', 'Bold', 'Condensed']);
+  assert.deepEqual(typeEtValeurs(marque.incomplete), ['string', 'Bold', 'Bold', null]);
+  // Une famille n'est jamais une graisse, même aliasée.
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontfamily.base), ['string', 'Open Sans']);
+  assert.equal(tokens['brand-tokens'].typography.family.$type, 'string');
+});
+
+test('une graisse faite de littéraux et d’alias numériques devient un nombre, et l’alias reste une référence', async () => {
+  const { tokens } = await documentExporte();
+
+  assert.deepEqual(typeEtValeurs(tokens['brand-tokens'].fontweight.body), [
+    'number', '{primitives.fontweight.regular}', '{primitives.fontweight.regular}', 500,
+  ]);
+});
+
+test('une chaîne d’alias suit ses cibles, même sous un nom qui ne dit pas « graisse »', async () => {
+  const { tokens } = await documentExporte();
+
+  assert.deepEqual(typeEtValeurs(tokens['brand-tokens'].typography['heading-weight']), [
+    'number', '{primitives.fontweight.bold}', '{primitives.fontweight.bold}', '{primitives.font-weight.semibold}',
+  ]);
+  assert.deepEqual(typeEtValeurs(tokens.semantic.text.weight), [
+    'number', '{brand-tokens.typography.heading-weight}',
+  ]);
+});
+
+test('un alias vers une chaîne, une cible absente ou une boucle laissent la graisse en chaîne', async () => {
+  const { tokens } = await documentExporte();
+
+  assert.deepEqual(typeEtValeurs(tokens['brand-tokens'].fontweight.numeric), [
+    'string', '{primitives.fontweight.numeric}', '{primitives.fontweight.numeric}', '{primitives.fontweight.numeric}',
+  ]);
+  assert.deepEqual(typeEtValeurs(tokens.semantic.fontweight.broken), ['string', null]);
+  assert.deepEqual(typeEtValeurs(tokens.semantic.fontweight['loop-a']), ['string', '{semantic.fontweight.loop-b}']);
+  assert.deepEqual(typeEtValeurs(tokens.semantic.fontweight['loop-b']), ['string', '{semantic.fontweight.loop-a}']);
+});
+
+test('un seul mode devenu libre ramène la graisse et toute sa chaîne d’alias en chaîne', async () => {
+  const fichier = fichierDeVariables();
+  const bold = fichier.variables.find((variable) => variable.id === 'bold')!;
+  (bold.valuesByMode as Record<string, VariableValue>)['primitives:0'] = 'Bolder';
+  const { tokens } = await documentExporte({ fichier });
+
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontweight.bold), ['string', 'Bolder']);
+  assert.equal(tokens['brand-tokens'].typography['heading-weight'].$type, 'string');
+  assert.equal(tokens.semantic.text.weight.$type, 'string');
+  // Une graisse qui ne cite pas `bold` garde sa décision.
+  assert.equal(tokens['brand-tokens'].fontweight.body.$type, 'number');
+});
+
+test('le type d’une graisse ne dépend ni de l’ordre des variables, ni des collections, ni des modes', async () => {
+  const reference = (await documentExporte()).tokens;
+
+  const inverse = fichierDeVariables();
+  inverse.variables.reverse();
+  inverse.collections.reverse();
+  for (const collection of inverse.collections) (collection.modes as unknown[]).reverse();
+  const { tokens } = await documentExporte({ fichier: inverse });
+
+  // Les modes inversés gardent leur mode par défaut : seules les clés changent d'ordre.
+  assert.deepEqual(tokens, reference);
 });

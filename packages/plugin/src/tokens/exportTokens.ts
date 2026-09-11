@@ -14,7 +14,9 @@ import {
   TOKENS_FORMAT_VERSION,
   etatDuFormatDeTokens,
   normalizeName,
+  poidsDeGraisse,
 } from '@ucm-kit/core/format';
+import { graissesNumeriques } from './graisses';
 import type { CouleurDeToken, DimensionDeToken } from '@ucm-kit/core/format';
 import { collisionWarnings, firstVariableAlias, indexVariables } from '../variables';
 import { serializeJson } from '../contract/serializeJson';
@@ -144,13 +146,16 @@ export function formatValue(
 
 /**
  * Index partagés entre les étapes de l'export (id → collection/variable/chemin),
- * et l'espace colorimétrique du document, lu une fois par export.
+ * l'espace colorimétrique du document, lu une fois par export, et les graisses
+ * `STRING` que `graissesNumeriques` a décidées `number` avant la première
+ * feuille.
  */
 export type ExportContext = {
   collectionById: Map<string, VariableCollection>;
   variableById: Map<string, Variable>;
   pathById: Map<string, string>;
   espace: EspaceColorimetrique;
+  graisses: ReadonlySet<string>;
 };
 
 /**
@@ -194,7 +199,8 @@ export function buildLeaf(
   const path = pathById.get(variable.id) ?? normalizeName(variable.name);
   const root = resolveRoot(variable, ctx);
   const rootPath = pathById.get(root.id) ?? path;
-  const $type = dtcgType(root.resolvedType, rootPath, root.scopes);
+  const graisse = ctx.graisses.has(variable.id);
+  const $type = graisse ? 'number' : dtcgType(root.resolvedType, rootPath, root.scopes);
 
   const valueForMode = (modeId: string): unknown => {
     const raw = variable.valuesByMode[modeId];
@@ -221,6 +227,8 @@ export function buildLeaf(
       }
       return target ? `{${target}}` : null;
     }
+    // Chaque littéral d'une graisse décidée `number` est un nom que la table connaît.
+    if (graisse) return poidsDeGraisse(raw);
     return formatValue(raw, variable.resolvedType, rootPath, root.scopes, ctx.espace);
   };
 
@@ -430,7 +438,11 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
   }
   avertissementDeProfil(figma.root, warnings);
   const ctx: ExportContext = {
-    collectionById, variableById, pathById, espace: espaceDuProfil(figma.root.documentColorProfile),
+    collectionById,
+    variableById,
+    pathById,
+    espace: espaceDuProfil(figma.root.documentColorProfile),
+    graisses: graissesNumeriques({ collectionById, variableById, pathById }),
   };
 
   // Parcourir l'index plutôt que la liste brute : une variable écartée pour

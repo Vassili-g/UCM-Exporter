@@ -82,6 +82,7 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
       propertyBindings.ts      component properties situées dans chaque variant
       propertySurface.ts       surface publique élue : owner direct et wrapper
     tokens/exportTokens.ts     export DTCG
+    tokens/graisses.ts         le type d'une graisse STRING, décidé sur tout le graphe d'alias
     variables.ts               index commun, collisions et alias
     base64.ts                  encodage UTF-8/Base64 sans dépendance au sandbox
     config.ts                  configuration GitHub locale
@@ -285,6 +286,7 @@ La spécification en lien porte le raisonnement.
   faite d'alias seuls suit ses cibles quel que soit son nom. Tout le reste, une
   cible absente et une boucle comprises, donne `string`. La table des graisses
   n'est jamais recopiée, et la décision ne dépend d'aucun ordre.
+  `graissesNumeriques` (`tokens/graisses.ts`) en est l'unique autorité.
   → [spec](./packages/plugin/SPEC.md#partie-2--export-tokens)
 
 ### Couleurs

@@ -5,7 +5,7 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 
 ## État
 
-- Lot courant : L6
+- Lot courant : L7
 - Exporter, branche et `HEAD` : `main`, `ff2a719` pour le code de L4
 - Playground, branche et `HEAD` : `main`, `8908c66` après L4
 - Style Dictionary retenu : `5.5.3`, exact ; `4.4.0` au départ
@@ -222,4 +222,38 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
   - Les graisses restent en `string` ; L6 les traite.
 - Artefacts et empreintes : captures dans `packages/plugin/dist/galerie/`,
   non suivies.
+- Écart ou réserve : aucun
+
+### L6 — Typographie et résolution des alias
+
+- Commit : celui qui porte cette entrée.
+- Commandes :
+  - `npx tsx --test tests/exportTokens.test.ts` avant `graisses.ts` : sortie 1,
+    4 tests rouges, ceux qui attendent `number` ; les 3 qui décrivent ce qui
+    reste `string` passaient déjà. Après : 35 tests verts, migration comprise.
+  - `npm test` : sortie 0, 980 tests verts (19, 52, 295, 591, 23) ;
+    `npm run typecheck`, `npm run build`, `git diff --check` : sortie 0.
+  - Mutations de `graisses.ts`, chacune restaurée par copie à l'identique :
+    boucle tenue pour numérique, 1 test rouge ; littéral sans chemin de
+    graisse, 4 rouges ; mode vide ignoré, 2 rouges ; cible d'alias non
+    vérifiée, 4 rouges.
+  - Mutation d'`exportTokens.ts`, littéral d'une graisse `number` non
+    converti : 3 tests rouges, dont la migration.
+  - Le test permanent « un seul mode devenu libre » passe `Bold` en `Bolder` :
+    la graisse, puis `typography.heading-weight` et `text.weight` qui la
+    citent, redeviennent `string`.
+- Résultats :
+  - `graissesNumeriques` décide chaque `STRING` sur tous ses modes, avec
+    mémoïsation et état de visite, avant la première feuille. Variables,
+    collections et modes inversés donnent le même document.
+  - Sur le fichier simulé : `regular`, `bold`, `semibold`, `heading`, `body`,
+    `heading-weight` et `text.weight` deviennent `number` ; `numeric`,
+    `free`, `mixed`, `incomplete`, `broken`, les deux boucles et les familles
+    restent `string`, valeurs inchangées.
+  - Le test provisoire de migration reste sans écart : le comparateur admet
+    chaque graisse devenue `number`.
+  - `exportTokens.ts` est en CRLF dans l'arbre de travail, que `core.autocrlf`
+    produit à l'extraction ; l'index le garde en LF. Un motif de mutation ne
+    doit donc pas contenir de fin de ligne.
+- Artefacts et empreintes : aucun.
 - Écart ou réserve : aucun

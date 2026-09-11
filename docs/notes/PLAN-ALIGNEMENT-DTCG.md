@@ -636,17 +636,17 @@ Fichiers autorisés :
 
 Actions :
 
-- [ ] Réutiliser `poidsDeGraisse()` ; ne recopier aucune table de poids.
-- [ ] Construire l'index des variables avant de décider leurs types.
-- [ ] Résoudre le graphe avec mémoïsation et état de visite pour borner les
+- [x] Réutiliser `poidsDeGraisse()` ; ne recopier aucune table de poids.
+- [x] Construire l'index des variables avant de décider leurs types.
+- [x] Résoudre le graphe avec mémoïsation et état de visite pour borner les
       chaînes et détecter une boucle.
-- [ ] Décider chaque variable sur l'ensemble de ses modes.
-- [ ] Sérialiser ensuite les littéraux avec le type déjà décidé.
-- [ ] Couvrir toute la matrice des poids, dont les modes mixtes et alias croisés.
-- [ ] Vérifier qu'un nom libre reste strictement identique.
-- [ ] Vérifier qu'un alias reste une référence et ne devient jamais un nombre
+- [x] Décider chaque variable sur l'ensemble de ses modes.
+- [x] Sérialiser ensuite les littéraux avec le type déjà décidé.
+- [x] Couvrir toute la matrice des poids, dont les modes mixtes et alias croisés.
+- [x] Vérifier qu'un nom libre reste strictement identique.
+- [x] Vérifier qu'un alias reste une référence et ne devient jamais un nombre
       résolu.
-- [ ] Muter un seul mode en chaîne libre ; le type racine doit redevenir
+- [x] Muter un seul mode en chaîne libre ; le type racine doit redevenir
       `string`.
 
 Critère de sortie : aucune décision de type ne dépend de l'ordre des variables,
