@@ -5,7 +5,7 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 
 ## État
 
-- Lot courant : L5
+- Lot courant : L6
 - Exporter, branche et `HEAD` : `main`, `ff2a719` pour le code de L4
 - Playground, branche et `HEAD` : `main`, `8908c66` après L4
 - Style Dictionary retenu : `5.5.3`, exact ; `4.4.0` au départ
@@ -185,4 +185,41 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
     `d3cc16de72b4747664753502d40cc659114535545e646a6c0d672b4f853f39f4`.
   - `ucm-kit-adapter-typescript-0.1.17.tgz` :
     `1778b1e0be055daf60c7aab112cccecebeda576eae4be9d58d0b200a65bd7885`.
+- Écart ou réserve : aucun
+
+### L5 — Producteur de couleurs, dimensions et marque
+
+- Commit : celui qui porte cette entrée. Avant lui, `8d0cdee` corrige à part
+  `galerie/capturer.cjs`, qu'une expression abîmée empêchait de compiler
+  depuis `3b24683`, et fait compiler chaque script de la galerie par un test.
+- Commandes :
+  - `npx tsx --test tests/exportTokens.test.ts` avant le moteur : sortie 1,
+    12 tests rouges. Après : 28 tests verts.
+  - `npx tsx --test tests/github.test.ts` avant `ligneDeFormatDeTokens` : 2
+    tests rouges. Après : 36 verts.
+  - `npx tsx --test tests/serializeJson.test.ts` : 6 verts ;
+    `tests/galerie.test.ts` : 8 verts.
+  - Mutations de `exportTokens.ts`, chacune restaurée par copie, `cmp`
+    identique : espace toujours `srgb`, sortie 1, 2 tests rouges dont
+    « Display P3 » ; alpha omis à 1, sortie 1, 6 rouges ; unité `rem`,
+    sortie 1, 4 rouges ; marque à `TOKENS_FORMAT_VERSION + 1`, sortie 1,
+    3 rouges dont « la racine porte la version 1 ».
+  - `npm test` : sortie 0, 973 tests verts (19, 52, 295, 584, 23) ;
+    `npm run typecheck`, `npm run build`, `git diff --check` : sortie 0.
+  - `npm run galerie` puis `npm run galerie:captures` : sortie 0, 27 captures.
+    La planche 6 montre « DTCG 2025.10, version 1 du format de tokens » sous
+    le résumé des tokens, au rang 3, et la carte unique de l'avertissement
+    `LEGACY`.
+- Résultats :
+  - Test provisoire de migration : l'export du fichier simulé, sous `SRGB`,
+    `LEGACY` et `DISPLAY_P3`, ne s'écarte du fichier d'origine figé que par la
+    version 1 ; le comparateur rend zéro écart.
+  - La marque s'écrit en tête du fichier même devant une collection nommée
+    `2026` : `serializeJson` écrit une `Map` dans l'ordre de ses clés.
+  - L'avertissement `LEGACY` dit « aucun profil de couleur n'est choisi » : le
+    designer ne voit pas le mot `LEGACY` dans Figma. `SPEC.md` décrit ce
+    message.
+  - Les graisses restent en `string` ; L6 les traite.
+- Artefacts et empreintes : captures dans `packages/plugin/dist/galerie/`,
+  non suivies.
 - Écart ou réserve : aucun

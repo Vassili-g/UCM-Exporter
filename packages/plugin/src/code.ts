@@ -7,7 +7,7 @@
 import { extractRules, hasUsableRules } from './contract/extractRules';
 import handleExportComponent from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
-import handleExportTokens, { etatDesTokensDuFichier } from './tokens/exportTokens';
+import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings, supprimerPat } from './config';
 import type { GithubConfig, SettingsInput } from './config';
 import { GithubApiError, publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './github';
@@ -250,6 +250,11 @@ async function analyser(
       succes,
       avertissements: result.warningCount,
     };
+
+    if (artifactKind === 'tokens') {
+      const annonce = annonceDuFormat(result.content);
+      if (annonce) versUi({ type: 'format-tokens', texte: annonce });
+    }
 
     const validation = await loadGithubConfig();
     if (!validation.valid || !validation.config) {

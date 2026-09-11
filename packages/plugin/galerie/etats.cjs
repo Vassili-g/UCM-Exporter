@@ -22,7 +22,7 @@ function chargerSandbox(nom) {
 
 const { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication } = chargerSandbox('connexion');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
-const { etatDesTokens } = chargerSandbox('tokens/exportTokens');
+const { annonceDuFormat, etatDesTokens } = chargerSandbox('tokens/exportTokens');
 const { verdictDePrevol } = chargerSandbox('prevol');
 
 /** Le verdict du pré-vol, calculé par le sandbox et non recopié ici. */
@@ -74,6 +74,20 @@ const AVERTISSEMENT_COMPOSE = { // exportComponent.ts, dépendance non placée
   titre: "Layer « Icon slot » : il contient le composant « Icon », mais le contrat ne décrit ce layer nulle part.",
   impact: "Le développeur ne rendra pas « Icon » dans ce composant.",
   action: "Placez ce layer dans l'auto layout frame qui porte le gap et le padding, puis réexportez.",
+};
+
+const AVERTISSEMENT_PROFIL = { // exportTokens.ts, avertissementDeProfil
+  titre: 'Fichier « Design System » : aucun profil de couleur n’est choisi.',
+  impact: 'Le développeur recevra ces couleurs en sRGB, que Figma les affiche en sRGB ou en Display P3.',
+  action: 'Choisissez sRGB ou Display P3 dans le menu File color profile, puis réexportez.',
+};
+
+/** Le format que porte le fichier produit, annoncé par le sandbox et non recopié. */
+const FORMAT_TOKENS = {
+  message: {
+    type: 'format-tokens',
+    texte: annonceDuFormat(JSON.stringify({ $extensions: { 'com.ucm.formatVersion': 1 } })),
+  },
 };
 
 const COMPOSANT = 'Button / Primary';
@@ -582,8 +596,27 @@ const ETATS = [
       SELECTION_VIDE,
       { clic: '.carte-tokens .btn-secondary' },
       { message: { type: 'status', state: 'loading', text: 'Lecture des variables…' } },
+      FORMAT_TOKENS,
       { message: { type: 'pull-request', url: URL_PR, path: CHEMIN_TOKENS } },
       { message: { type: 'status', state: 'success', text: 'Tokens exportés. Pull request créée.' } },
+    ],
+  },
+  {
+    id: 'tokens-sans-profil',
+    titre: 'Tokens d’un fichier sans profil de couleur',
+    quand:
+      "Un fichier Figma créé avant la gestion des couleurs : son profil vaut LEGACY, et l'export publie ses couleurs en sRGB.",
+    regarder:
+      'Un seul avertissement dans la carte des tokens, jamais un par couleur, et le format annoncé sous le résumé. Le geste nomme le menu File color profile, que le designer cherche tel quel dans Figma.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_VIDE,
+      { clic: '.carte-tokens .btn-secondary' },
+      { message: { type: 'status', state: 'loading', text: 'Lecture des variables…' } },
+      diagnostic(AVERTISSEMENT_PROFIL),
+      FORMAT_TOKENS,
+      verdict({ code: 'a-publier', genre: 'tokens', chemin: CHEMIN_TOKENS, source: SOURCE_CONFIG, avertissements: 1 }),
     ],
   },
   {

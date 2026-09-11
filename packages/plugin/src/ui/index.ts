@@ -142,6 +142,8 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
 
   if (message.type === 'tokens') tokens.afficher(message);
 
+  if (message.type === 'format-tokens') tokens.annoncerFormat(message.texte);
+
   if (message.type === 'phase') active.ecrireNote('loading', message.texte);
 
   if (message.type === 'verdict') {

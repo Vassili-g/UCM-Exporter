@@ -287,7 +287,8 @@ p {
   color: var(--texte-second);
 }
 
-.carte-tokens .tokens-resume {
+.carte-tokens .tokens-resume,
+.carte-tokens .tokens-format {
   color: var(--texte-second);
   overflow-wrap: anywhere;
 }

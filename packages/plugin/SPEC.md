@@ -414,10 +414,10 @@ profil du document : l'export les recopie sans conversion ni arrondi.
 le rend dans le profil préféré de la personne qui le regarde, ou en sRGB faute
 de préférence : aucun profil n'est déclaré dans le fichier, et un réexport n'en
 trouve pas. L'export écrit alors `srgb` et avertit une fois par export, jamais
-une fois par couleur. Le message nomme le profil observé, dit que les couleurs
-sont publiées en sRGB, et demande de choisir un profil dans le menu **File
-color profile** de Figma. Le plugin ne le choisit pas à sa place : il ne modifie
-jamais le document.
+une fois par couleur (`avertissementDeProfil`). Le message dit qu'aucun profil
+de couleur n'est choisi, que les couleurs sont publiées en sRGB, et demande de
+choisir sRGB ou Display P3 dans le menu **File color profile** de Figma. Le
+plugin ne le choisit pas à sa place : il ne modifie jamais le document.
 
 **Le type d'une graisse `STRING` se décide sur tout le graphe, avant d'écrire.**
 L'index des variables est construit d'abord, puis chaque `STRING` reçoit un type

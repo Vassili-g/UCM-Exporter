@@ -7,6 +7,7 @@ import {
   NOM_CONFIGURATION,
   comparerIdentiteDeContrat,
   configurationDepuisJson,
+  etatDuFormatDeTokens,
   identiteDeContrat,
   versionDeContrat,
 } from '@ucm-kit/core/format';
@@ -228,24 +229,46 @@ function sansLienAutomatique(warning: string): string {
   return warning.replace(FORMES_AUTOLIEES, '$1`$2`');
 }
 
+/** L'artefact analysé, ou `null` s'il n'est pas du JSON : une ligne de couverture ne lève pas. */
+function lireArtefact(artifact: RepositoryArtifact): unknown {
+  try {
+    return JSON.parse(artifact.content);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * La version du format que porte `tokens.json`, lue dans le fichier déposé par
+ * la même lecture que le contrôle du repository, jamais dans
+ * `TOKENS_FORMAT_VERSION`. Une marque illisible annonce le refus que ce
+ * contrôle rendra.
+ */
+function ligneDeFormatDeTokens(artifact: RepositoryArtifact): string {
+  const format = etatDuFormatDeTokens(lireArtefact(artifact));
+  if (format.etat === 'origine') {
+    return 'Version du format de tokens : absente du fichier, qui est dans la forme d’origine.';
+  }
+  if (format.etat === 'invalide') {
+    return 'Version du format de tokens : illisible. Le contrôle du repository refusera ce fichier.';
+  }
+  return `Version du format de tokens : \`${format.version}\``;
+}
+
 /**
  * Identité annoncée en tête de PR. La version est lue dans l'artefact, jamais
  * dans la constante du plugin ; l'origine emploie l'URL disponible ou, à défaut,
  * `fileName` et `nodeId`. Les intitulés passent par `sansLienAutomatique`.
- * `tokens.json`, qui n'est ni un contrat ni un composant, n'a pas ces lignes.
+ * `tokens.json`, qui n'est ni un contrat ni un composant, n'annonce que sa
+ * version du format de tokens.
  */
 function lignesDIdentite(artifact: RepositoryArtifact): string[] {
+  if (artifact.kind === 'tokens') return [ligneDeFormatDeTokens(artifact)];
   if (artifact.kind !== 'component') return [];
 
-  let contrat: unknown;
-  try {
-    contrat = JSON.parse(artifact.content);
-  } catch {
-    // Un artefact illisible n'a ni version ni origine : le dire est exactement
-    // ce que les deux branches ci-dessous écrivent, et lever ici ferait échouer
-    // un export pour une ligne de couverture.
-    contrat = null;
-  }
+  // Un artefact illisible n'a ni version ni origine : le dire est exactement ce
+  // que les deux branches ci-dessous écrivent.
+  const contrat = lireArtefact(artifact);
 
   const version = versionDeContrat(contrat);
   const origine = identiteDeContrat(contrat);
