@@ -87,10 +87,11 @@ Deux observations, qu'aucun test de ce dépôt ne couvre : elles ne se constaten
 qu'à l'œil, dans un vrai fichier Figma. Elles se refont à chaque passage de
 cette page.
 
-**Observation A.** Sélectionnez un calque depuis le plugin, par le bouton «
-Sélectionner le calque » d'un point à corriger. Regardez ensuite si Figma
-marque le fichier comme modifié, c'est-à-dire s'il propose d'enregistrer une
-nouvelle version. Attendu : non.
+**Observation A.** Sélectionnez des calques depuis le plugin, par le bouton «
+Sélectionner le calque » ou « Sélectionner les N calques » d'un point à
+corriger. Regardez ensuite si Figma marque le fichier comme modifié,
+c'est-à-dire s'il propose d'enregistrer une nouvelle version. Attendu : non, et
+tous les calques que le bouton compte sont sélectionnés.
 
 **Observation B.** Faites un export, puis regardez les points à corriger du
 compte rendu, en thème clair puis en thème sombre. Vérifiez qu'ils restent
