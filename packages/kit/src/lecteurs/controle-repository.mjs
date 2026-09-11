@@ -6,7 +6,13 @@
 import { basename, join } from "node:path";
 import { readFileSync } from "node:fs";
 
-import { CONFIGURATION_PAR_DEFAUT, versionDeContrat } from "@ucm-kit/core/format";
+import {
+  CONFIGURATION_PAR_DEFAUT,
+  EXTENSION_VERSION_TOKENS,
+  TOKENS_FORMAT_VERSION,
+  etatDuFormatDeTokens,
+  versionDeContrat,
+} from "@ucm-kit/core/format";
 
 import { avertissementsCorrigeables, resumeTerminalAvertissements, sectionAvertissementsExport } from "./avertissements-export.mjs";
 import { aUnEcartDeParite, resumeTerminalEcartsDeParite, sectionEcartsDeParite } from "./diagnostic-parite.mjs";
@@ -437,6 +443,50 @@ function abandon(titre, explication, terminal, echecsDeTests) {
   };
 }
 
+/** Ce qui rend la marque illisible, dit à l'endroit du fichier où il se lit. */
+function constatDeMarqueInvalide(tokens) {
+  if (tokens === null || typeof tokens !== "object" || Array.isArray(tokens)) {
+    return "Le fichier n'est pas un objet JSON.";
+  }
+  const extensions = tokens.$extensions;
+  if (extensions === null || typeof extensions !== "object" || Array.isArray(extensions)) {
+    return "À la racine du fichier, `$extensions` n'est pas un objet.";
+  }
+  return `À la racine du fichier, \`$extensions["${EXTENSION_VERSION_TOKENS}"]\` vaut \`${JSON.stringify(extensions[EXTENSION_VERSION_TOKENS])}\`, qui n'est pas une version du format de tokens.`;
+}
+
+/**
+ * Refuse un fichier de tokens dont la version du format n'est pas lue, avant
+ * d'en lire un seul token.
+ *
+ * Les deux refus n'appellent pas le même geste. Une version future demande une
+ * mise à jour des paquets du repository, qu'un réexport ne remplace pas. Une
+ * marque invalide ne sort pas du plugin, et un réexport la remplace.
+ */
+function refusDuFormatDeTokens(format, tokens, { sourceTokens, cheminTokens, echecsDeTests }) {
+  if (format.etat === "future") {
+    return abandon(
+      `\`${sourceTokens}\` utilise une version du format de tokens que ce repository ne lit pas`,
+      `Le fichier porte la version ${format.version} du format de tokens. Les paquets UCM de ce repository lisent la version ${TOKENS_FORMAT_VERSION}, et aucune référence n'a été vérifiée. Un développeur doit mettre à jour les paquets UCM du repository : réexporter les tokens ne corrigera pas ce problème. La fusion reste bloquée.`,
+      [{
+        flux: "error",
+        texte: `✗ ${cheminTokens} : version ${format.version} du format de tokens, ce repository lit la version ${TOKENS_FORMAT_VERSION}. Un développeur doit mettre à jour les paquets UCM ; réexporter n'y changera rien.`,
+      }],
+      echecsDeTests,
+    );
+  }
+  const constat = constatDeMarqueInvalide(tokens);
+  return abandon(
+    `\`${sourceTokens}\` porte une version du format de tokens illisible`,
+    `${constat} Le plugin n'écrit jamais cette forme. Relancez **Exporter les tokens** depuis Figma plutôt que de corriger le fichier. La fusion reste bloquée.`,
+    [{
+      flux: "error",
+      texte: `✗ ${cheminTokens} : version du format de tokens illisible. ${constat} Relancez l’export de tokens depuis Figma.`,
+    }],
+    echecsDeTests,
+  );
+}
+
 /**
  * Rend le verdict d'un repository sans aucun contrat : rien à contrôler, donc
  * aucun refus de fusion.
@@ -567,6 +617,15 @@ export function controlerRepository(racine, {
     }
     tokensAbsents = true;
     tokensDtcg = {};
+  }
+
+  // La version du format se juge avant tout token, et avant de compter les
+  // contrats : un fichier d'une version inconnue ne reçoit pas le bilan vert
+  // d'un repository qui démarre. Un fichier absent n'a pas de marque, donc
+  // passe pour la forme d'origine.
+  const format = etatDuFormatDeTokens(tokensDtcg);
+  if (format.etat === "future" || format.etat === "invalide") {
+    return refusDuFormatDeTokens(format, tokensDtcg, { sourceTokens, cheminTokens, echecsDeTests });
   }
 
   if (contrats.length === 0) {

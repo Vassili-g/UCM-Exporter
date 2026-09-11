@@ -28,7 +28,7 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
   - Versions déclarées : `@ucm-kit/core` 0.1.24, `@ucm-kit/cli` 0.1.23,
     `@ucm-kit/adapter-typescript` 0.1.16, toutes servies par npm ; plugin
     `ucm-exporter-plugin` 0.1.0, privé, sans numéro dans `manifest.json`.
-  - Le workflow du Playground épingle `@ucm-kit/cli@0.1.23`.
+  - Le workflow du Playground épingle la CLI en version 0.1.23.
   - Aucun `tokens.json` figé dans l'Exporter : les tests construisent leurs
     variables en ligne. `packages/kit/fixtures/` ne contient que `contrats/`.
 - Artefacts et empreintes :

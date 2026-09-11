@@ -119,7 +119,7 @@ Le kit lit la marque avant tout token, et la classe en quatre états :
 | marque absente | `origine` | lecture du fichier | personne |
 | `1` | `courante` | lecture du fichier | personne |
 | entier supérieur à `1` | `future` | refus, avant la lecture des tokens | le mainteneur du repository, en mettant à jour les paquets UCM |
-| toute autre valeur, ou `$extensions` qui n'est pas un objet | `invalide` | refus, avant la lecture des tokens | le designer, en relançant l'export des tokens |
+| toute autre valeur, ou un document ou `$extensions` qui n'est pas un objet | `invalide` | refus, avant la lecture des tokens | le designer, en relançant l'export des tokens |
 
 Seule la racine est examinée : une propriété homonyme sous un groupe ne compte
 pas. Le refus s'applique aussi à un repository qui n'a encore aucun contrat,
