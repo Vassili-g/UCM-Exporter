@@ -101,6 +101,7 @@ const AUTORITES = [
   'format/tokens.ts',
   'format/version.ts',
   'getSlotTokens',
+  'graissesNumeriques',
   'hasCompleteBinding',
   'icons.*.size',
   'icons.*.slot',

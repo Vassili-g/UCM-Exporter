@@ -437,7 +437,8 @@ une seule fois, sur l'ensemble de ses modes :
 7. une boucle, que Figma refuse de créer, est détectée par l'état de visite et
    force `string`, sans récursion infinie.
 
-La décision est mémorisée par variable : elle ne dépend ni de l'ordre des
+`graissesNumeriques` (`tokens/graisses.ts`) applique ces règles. La décision
+est mémorisée par variable : elle ne dépend ni de l'ordre des
 variables, ni de celui des collections, ni de celui des modes. La sérialisation
 vient ensuite et publie chaque littéral reconnu en poids. Un alias reste une
 référence et ne devient jamais le nombre qu'il résout. La table ne s'élargit
