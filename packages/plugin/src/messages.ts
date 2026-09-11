@@ -104,6 +104,13 @@ export type PluginMessage =
   /** Résumé des variables locales qui détermine si l'analyse est disponible. */
   | { type: 'tokens'; resume: string; presents: boolean }
 
+  /**
+   * Le module DTCG et la version du format de tokens que porte le fichier que
+   * l'analyse vient de produire, lus dans ce fichier. Il informe sans rien
+   * demander : la carte le pose au rang 3, sous le résumé.
+   */
+  | { type: 'format-tokens'; texte: string }
+
   /** Point exigeant un geste dans Figma, conservé dans ses trois parties. */
   | {
       type: 'diagnostic';

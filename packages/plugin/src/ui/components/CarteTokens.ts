@@ -10,6 +10,8 @@ type MessageTokens = Extract<PluginMessage, { type: 'tokens' }>;
 /** Ce que le routeur UI pilote sur la carte des tokens. */
 export interface CarteTokensUi extends CarteCommandeUi {
   afficher(message: MessageTokens): void;
+  /** Le module et la version du format que porte le fichier analysé. */
+  annoncerFormat(texte: string): void;
 }
 
 /** N'autorise l'analyse que lorsque le fichier contient des variables. */
@@ -31,7 +33,13 @@ export function createCarteTokens({
   const resume = document.createElement('p');
   resume.className = 'tokens-resume';
   resume.textContent = 'Lecture des variables du fichier…';
-  carte.sujet.append(resume);
+
+  // Le format appartient au fichier qu'une analyse a produit : il disparaît
+  // quand la suivante commence.
+  const format = document.createElement('p');
+  format.className = 'tokens-format';
+  format.hidden = true;
+  carte.sujet.append(resume, format);
 
   return {
     ...carte,
@@ -39,6 +47,16 @@ export function createCarteTokens({
     afficher({ resume: texte, presents }: MessageTokens) {
       resume.textContent = texte;
       carte.analyser.hidden = !presents;
+    },
+
+    annoncerFormat(texte: string) {
+      format.textContent = texte;
+      format.hidden = false;
+    },
+
+    reinitialiser() {
+      carte.reinitialiser();
+      format.hidden = true;
     },
   };
 }

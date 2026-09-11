@@ -53,3 +53,10 @@ test('les caractères que JSON échappe le restent', () => {
   const valeur = { texte: 'guillemet " et \\ et\nretour', accent: 'élément', cle: { 'a"b': 1 } };
   assert.deepEqual(JSON.parse(serializeJson(valeur)), valeur);
 });
+
+test('une Map s’écrit dans l’ordre de ses clés, clé entière comprise', () => {
+  const ecrit = serializeJson(new Map<string, unknown>([['$extensions', { v: 1 }], ['2026', { a: 1 }]]));
+  assert.equal(ecrit, '{\n  "$extensions":{\n    "v":1\n  },\n  "2026":{\n    "a":1\n  }\n}');
+  // Au-delà de la profondeur de découpage, son contenu reste écrit.
+  assert.equal(serializeJson({ a: { b: new Map([['c', 1]]) } }), '{\n  "a":{\n    "b":{"c":1}\n  }\n}');
+});

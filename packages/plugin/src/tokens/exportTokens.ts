@@ -2,10 +2,20 @@
 /**
  * Commande « Export tokens » : exporte toutes les variables locales du
  * fichier Figma en un arbre DTCG (`tokens.json`), consommable par Style
- * Dictionary. Principe fondamental : la chaîne d'alias est préservée,
+ * Dictionary 5. Principe fondamental : la chaîne d'alias est préservée,
  * un alias devient une référence `"{cible}"`, jamais sa valeur finale.
+ *
+ * Le fichier suit la version `TOKENS_FORMAT_VERSION` du format de tokens :
+ * couleurs et dimensions dans la forme du module DTCG 2025.10, et la marque
+ * de version à la racine. docs/FORMAT.md en décrit la forme.
  */
-import { normalizeName } from '@ucm-kit/core/format';
+import {
+  EXTENSION_VERSION_TOKENS,
+  TOKENS_FORMAT_VERSION,
+  etatDuFormatDeTokens,
+  normalizeName,
+} from '@ucm-kit/core/format';
+import type { CouleurDeToken, DimensionDeToken } from '@ucm-kit/core/format';
 import { collisionWarnings, firstVariableAlias, indexVariables } from '../variables';
 import { serializeJson } from '../contract/serializeJson';
 import { noterLesParties, partiesDe, pointDe, pousserSansNode } from '../contract/localisation';
@@ -90,12 +100,29 @@ export function dtcgType(
   }
 }
 
-/** Convertit une couleur Figma (canaux 0→1) en hexadécimal (#rrggbb[aa]). */
-export function toHex(color: RGB | RGBA): string {
-  const channel = (value: number) => Math.round(value * 255).toString(16).padStart(2, '0');
-  const base = `#${channel(color.r)}${channel(color.g)}${channel(color.b)}`;
-  const alpha = 'a' in color ? color.a : 1;
-  return alpha < 1 ? `${base}${channel(alpha)}` : base;
+/** L'espace colorimétrique qu'une couleur déclare. */
+export type EspaceColorimetrique = CouleurDeToken['colorSpace'];
+
+/**
+ * L'espace des couleurs d'un document, d'après son profil. `LEGACY` désigne un
+ * fichier qui n'en déclare aucun : ses couleurs sont publiées en sRGB, et
+ * `avertissementDeProfil` le dit au designer.
+ */
+export function espaceDuProfil(profil: DocumentNode['documentColorProfile']): EspaceColorimetrique {
+  return profil === 'DISPLAY_P3' ? 'display-p3' : 'srgb';
+}
+
+/**
+ * Une couleur Figma dans la forme DTCG 2025.10. Figma range les canaux dans le
+ * profil du document : ils sont recopiés sans conversion ni arrondi, et
+ * `alpha` est toujours écrit.
+ */
+export function couleurDtcg(color: RGB | RGBA, espace: EspaceColorimetrique): CouleurDeToken {
+  return {
+    colorSpace: espace,
+    components: [color.r, color.g, color.b],
+    alpha: 'a' in color ? color.a : 1,
+  };
 }
 
 /** Met en forme une valeur directe (non-alias) pour le `$value` DTCG. */
@@ -103,21 +130,27 @@ export function formatValue(
   raw: VariableValue,
   resolvedType: VariableResolvedDataType,
   path: string,
-  scopes: readonly VariableScope[] = [],
+  scopes: readonly VariableScope[],
+  espace: EspaceColorimetrique,
 ): unknown {
-  if (resolvedType === 'COLOR') return toHex(raw as RGB | RGBA);
+  if (resolvedType === 'COLOR') return couleurDtcg(raw as RGB | RGBA, espace);
   if (resolvedType === 'FLOAT') {
     const value = raw as number;
-    return isUnitless(path, scopes) ? value : `${value}px`;
+    const dimension: DimensionDeToken = { value, unit: 'px' };
+    return isUnitless(path, scopes) ? value : dimension;
   }
   return raw; // BOOLEAN et STRING passent tels quels.
 }
 
-/** Index partagés entre les étapes de l'export (id → collection/variable/chemin). */
+/**
+ * Index partagés entre les étapes de l'export (id → collection/variable/chemin),
+ * et l'espace colorimétrique du document, lu une fois par export.
+ */
 export type ExportContext = {
   collectionById: Map<string, VariableCollection>;
   variableById: Map<string, Variable>;
   pathById: Map<string, string>;
+  espace: EspaceColorimetrique;
 };
 
 /**
@@ -188,7 +221,7 @@ export function buildLeaf(
       }
       return target ? `{${target}}` : null;
     }
-    return formatValue(raw, variable.resolvedType, rootPath, root.scopes);
+    return formatValue(raw, variable.resolvedType, rootPath, root.scopes, ctx.espace);
   };
 
   const leaf: DtcgLeaf = { $value: valueForMode(collection.defaultModeId), $type };
@@ -299,6 +332,41 @@ export function modeCollisionWarnings(collections: VariableCollection[]): PointA
   return points;
 }
 
+/**
+ * Avertit d'un document qui ne déclare aucun profil de couleur. Le constat porte
+ * sur le fichier : il s'écrit une fois par export, jamais une fois par couleur.
+ */
+export function avertissementDeProfil(
+  document: Pick<DocumentNode, 'documentColorProfile' | 'name'>,
+  warnings: string[],
+): void {
+  if (document.documentColorProfile !== 'LEGACY') return;
+  pousserSansNode(warnings, `Fichier « ${document.name} »`, {
+    manque: 'aucun profil de couleur n’est choisi.',
+    impact: 'Le développeur recevra ces couleurs en sRGB, que Figma les affiche en sRGB ou en '
+      + 'Display P3.',
+    action: 'Choisissez sRGB ou Display P3 dans le menu File color profile, puis réexportez.',
+  });
+}
+
+/**
+ * Ce que le résultat de la commande annonce du fichier produit, lu dans le
+ * fichier et non dans la constante, ou `null` quand il ne porte pas la version
+ * courante. La version 1 est celle qui suit le module DTCG 2025.10.
+ */
+export function annonceDuFormat(contenu: string): string | null {
+  let document: unknown;
+  try {
+    document = JSON.parse(contenu);
+  } catch {
+    return null;
+  }
+  const format = etatDuFormatDeTokens(document);
+  return format.etat === 'courante'
+    ? `DTCG 2025.10, version ${format.version} du format de tokens`
+    : null;
+}
+
 /** Résumé de portée fichier : la sélection Figma n'intervient pas. */
 export type EtatDesTokens = {
 
@@ -360,7 +428,10 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
   for (const point of [...modeCollisionWarnings(collections), ...collisionWarnings(index)]) {
     warnings.push(noterLesParties(warnings, point));
   }
-  const ctx = { collectionById, variableById, pathById };
+  avertissementDeProfil(figma.root, warnings);
+  const ctx: ExportContext = {
+    collectionById, variableById, pathById, espace: espaceDuProfil(figma.root.documentColorProfile),
+  };
 
   // Parcourir l'index plutôt que la liste brute : une variable écartée pour
   // collision n'y figure pas, et chaque chemin est déjà calculé.
@@ -379,9 +450,17 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
     insert(tree, path, buildLeaf(variable, collection, ctx, warnings), warnings);
   }
 
+  // La marque s'écrit une fois, à la racine et avant les groupes. Une `Map` tient
+  // cet ordre même devant une collection au nom entier, qu'un objet rangerait
+  // en tête.
+  const document = new Map<string, unknown>([
+    ['$extensions', { [EXTENSION_VERSION_TOKENS]: TOKENS_FORMAT_VERSION }],
+    ...Object.entries(tree),
+  ]);
+
   return {
     filename: 'tokens.json',
-    content: serializeJson(tree),
+    content: serializeJson(document),
     warningCount: warnings.length,
     warnings,
     parties: partiesDe(warnings),

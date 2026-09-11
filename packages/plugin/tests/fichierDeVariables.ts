@@ -141,7 +141,7 @@ export async function exporterLeFichier(
   const { collections, variables } = fichier;
   const precedent = (globalThis as { figma?: unknown }).figma;
   (globalThis as { figma?: unknown }).figma = {
-    root: { documentColorProfile: profil },
+    root: { documentColorProfile: profil, name: 'Fichier de variables' },
     variables: {
       getLocalVariableCollectionsAsync: async () => collections,
       getLocalVariablesAsync: async () => variables,

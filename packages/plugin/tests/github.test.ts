@@ -784,6 +784,36 @@ test('une version illisible est annoncée telle quelle, une version absente est 
   }
 });
 
+/** Un tokens.json réduit à sa marque racine. */
+function tokensEn(version: unknown): string {
+  return JSON.stringify({ $extensions: { 'com.ucm.formatVersion': version }, a: {} });
+}
+
+test('l’en-tête de tokens.json annonce la version du format lue dans le fichier', () => {
+  const corps = pullRequestBody('src/tokens/tokens.json', artefactPourPr('tokens', tokensEn(1)));
+  assert.match(corps, /^Version du format de tokens : `1`$/m);
+
+  // La mutation attrapée : annoncer `TOKENS_FORMAT_VERSION`. Aucun plugin ne
+  // produit encore la version 2, donc cette ligne ne peut venir que du fichier.
+  const future = pullRequestBody('src/tokens/tokens.json', artefactPourPr('tokens', tokensEn(2)));
+  assert.match(future, /^Version du format de tokens : `2`$/m);
+});
+
+test('une marque absente ou illisible est nommée dans l’en-tête de tokens.json', () => {
+  const origine = pullRequestBody('src/tokens/tokens.json', artefactPourPr('tokens', '{"a":{}}'));
+  assert.match(origine, /^Version du format de tokens : absente du fichier, qui est dans la forme d’origine\.$/m);
+
+  for (const contenu of [tokensEn('1'), tokensEn(0), 'pas du JSON', '[]']) {
+    const corps = pullRequestBody('src/tokens/tokens.json', artefactPourPr('tokens', contenu));
+    assert.match(
+      corps,
+      /^Version du format de tokens : illisible\. Le contrôle du repository refusera ce fichier\.$/m,
+      contenu,
+    );
+    assert.doesNotMatch(corps, /—/);
+  }
+});
+
 test('tokens.json ne reçoit aucun schéma de contrat', () => {
   // Ce n'est pas un contrat mais un arbre DTCG : il ne porte aucun schéma UCM.
   // Lui en annoncer un (fût-ce celui du plugin) inventerait une version que

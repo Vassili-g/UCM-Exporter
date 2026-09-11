@@ -1,9 +1,18 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import test from 'node:test';
-import { toRef } from '@ucm-kit/core/format';
+import {
+  EXTENSION_VERSION_TOKENS,
+  TOKENS_FORMAT_VERSION,
+  etatDuFormatDeTokens,
+  toRef,
+} from '@ucm-kit/core/format';
 import { indexerTokensDtcg, referencesAbsentes } from '@ucm-kit/core/lecteurs';
 import {
+  annonceDuFormat,
   buildLeaf,
+  couleurDtcg,
   dtcgType,
   formatValue,
   handleExportTokens,
@@ -11,13 +20,13 @@ import {
   isUnitless,
   modeCollisionWarnings,
   etatDesTokens,
-  toHex,
 } from '../src/tokens/exportTokens';
 import type { ExportContext } from '../src/tokens/exportTokens';
 import { collisionWarnings, indexVariables, VariableNameResolver } from '../src/variables';
 import { phraseDe } from '../src/contract/localisation';
 import { serializeJson } from '../src/contract/serializeJson';
-import { exporterLeFichier } from './fichierDeVariables';
+import { ecartsDeTokens } from './comparerTokens';
+import { exporterLeFichier, fichierDeVariables } from './fichierDeVariables';
 import type { ProfilColorimetrique } from './fichierDeVariables';
 
 test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () => {
@@ -45,19 +54,17 @@ test('isUnitless détecte les groupes sans unité', () => {
   assert.equal(isUnitless('sizes.spacing.8'), false);
 });
 
-test('formatValue suffixe px les dimensions, laisse les nombres bruts', () => {
-  assert.equal(formatValue(8, 'FLOAT', 'sizes.spacing.8'), '8px');
-  assert.equal(formatValue(600, 'FLOAT', 'layouts.fontweight.600'), 600);
-  assert.equal(formatValue(600, 'FLOAT', 'layouts.font-weight.600'), 600);
-  assert.equal(formatValue(24, 'FLOAT', 'layouts.lineheight.base'), '24px');
-  assert.equal(formatValue(24, 'FLOAT', 'fondations.taille-de-ligne', ['LINE_HEIGHT']), '24px');
-  assert.equal(formatValue('Open Sans', 'STRING', 'layouts.fontfamily.base'), 'Open Sans');
-});
-
-test('toHex convertit RGB(A) 0-1 en hex', () => {
-  assert.equal(toHex({ r: 1, g: 0, b: 0 }), '#ff0000');
-  assert.equal(toHex({ r: 0, g: 0, b: 0, a: 1 }), '#000000');
-  assert.equal(toHex({ r: 1, g: 1, b: 1, a: 0.5 }), '#ffffff80');
+test('formatValue écrit une dimension en objet pixel, laisse les nombres bruts', () => {
+  const px = (value: number) => ({ value, unit: 'px' });
+  assert.deepEqual(formatValue(8, 'FLOAT', 'sizes.spacing.8', [], 'srgb'), px(8));
+  assert.equal(formatValue(600, 'FLOAT', 'layouts.fontweight.600', [], 'srgb'), 600);
+  assert.equal(formatValue(600, 'FLOAT', 'layouts.font-weight.600', [], 'srgb'), 600);
+  assert.deepEqual(formatValue(24, 'FLOAT', 'layouts.lineheight.base', [], 'srgb'), px(24));
+  assert.deepEqual(formatValue(24, 'FLOAT', 'fondations.taille-de-ligne', ['LINE_HEIGHT'], 'srgb'), px(24));
+  assert.equal(formatValue('Open Sans', 'STRING', 'layouts.fontfamily.base', [], 'srgb'), 'Open Sans');
+  assert.deepEqual(formatValue({ r: 1, g: 1, b: 1, a: 0.5 }, 'COLOR', 'c', [], 'display-p3'), {
+    colorSpace: 'display-p3', components: [1, 1, 1], alpha: 0.5,
+  });
 });
 
 test('insert niche les feuilles et refuse les collisions feuille/groupe dans les deux sens', () => {
@@ -163,11 +170,14 @@ test('buildLeaf garde le premier mode quand deux noms se normalisent pareil', ()
     collectionById: new Map([['brand', collection]]),
     variableById: new Map([['v1', variable]]),
     pathById: new Map([['v1', 'brand-tokens.primary.default']]),
+    espace: 'srgb',
   }, []);
 
   // Premier conservé, comme partout ailleurs ; le doublon est signalé une
   // seule fois par modeCollisionWarnings, pas à chaque variable.
-  assert.deepEqual(leaf.$extensions, { 'com.ucm.modes': { 'marque-2': '#ff0000' } });
+  assert.deepEqual(leaf.$extensions, {
+    'com.ucm.modes': { 'marque-2': { colorSpace: 'srgb', components: [1, 0, 0], alpha: 1 } },
+  });
 });
 
 test('buildLeaf type un lineheight aliasé sur spacing comme dimension (racine), pas number', () => {
@@ -192,6 +202,7 @@ test('buildLeaf type un lineheight aliasé sur spacing comme dimension (racine),
     collectionById: new Map([['sizes', sizesCol], ['layouts', layoutsCol]]),
     variableById: new Map([['s22', spacing], ['lh', lineheight]]),
     pathById: new Map([['s22', 'sizes.spacing.22'], ['lh', 'layouts.lineheight.base']]),
+    espace: 'srgb',
   };
 
   assert.deepEqual(buildLeaf(lineheight, layoutsCol, ctx, []), {
@@ -240,6 +251,7 @@ test('un mode homonyme d’Object.prototype reste une marque exportée', () => {
     collectionById: new Map([['c1', collection]]),
     variableById: new Map([['v1', variable]]),
     pathById: new Map([['v1', 'brand.color.primary']]),
+    espace: 'srgb',
   }, warnings);
 
   // L'index littéral tenait « constructor » pour un mode déjà écrit et laissait
@@ -251,9 +263,11 @@ test('un mode homonyme d’Object.prototype reste une marque exportée', () => {
   // test échouerait sur sa propre construction.
   const modes = (leaf.$extensions as Record<string, unknown>)['com.ucm.modes'];
   assert.deepEqual(Object.keys(modes as object), ['constructor', '__proto__', 'marque-3']);
+  const srgb = (r: number, g: number, b: number) =>
+    `{"colorSpace":"srgb","components":[${r},${g},${b}],"alpha":1}`;
   assert.equal(
     JSON.stringify(modes),
-    '{"constructor":"#ff0000","__proto__":"#00ff00","marque-3":"#0000ff"}',
+    `{"constructor":${srgb(1, 0, 0)},"__proto__":${srgb(0, 1, 0)},"marque-3":${srgb(0, 0, 1)}}`,
   );
   assert.deepEqual(warnings, []);
 });
@@ -312,6 +326,7 @@ test('un token de collection « $Brand » ou « {Brand} » se trouve par la réf
 
   const precedent = (globalThis as { figma?: unknown }).figma;
   (globalThis as { figma?: unknown }).figma = {
+    root: { documentColorProfile: 'SRGB', name: 'Collections' },
     variables: {
       getLocalVariableCollectionsAsync: async () => collections,
       getLocalVariablesAsync: async () => variables,
@@ -379,4 +394,129 @@ test('les clés héritées d’Object.prototype restent des tokens et des modes'
     const modes = tokens.keys[groupe].primary.$extensions['com.ucm.modes'];
     assert.deepEqual(Object.keys(modes), ['constructor', '__proto__', 'prototype'], groupe);
   }
+});
+
+/** Le document que la commande écrit, relu depuis son JSON. */
+async function documentExporte(options: Parameters<typeof exporterLeFichier>[0] = {}) {
+  const exporte = await exporterLeFichier(options);
+  return { exporte, tokens: JSON.parse(exporte.content) };
+}
+
+test('la racine porte la version 1 du format de tokens, écrite une fois et avant les groupes', async () => {
+  const { exporte, tokens } = await documentExporte();
+
+  assert.ok(exporte.content.startsWith('{\n  "$extensions":{\n    "com.ucm.formatVersion":1\n  },\n'));
+  assert.deepEqual(tokens.$extensions, { [EXTENSION_VERSION_TOKENS]: TOKENS_FORMAT_VERSION });
+  assert.deepEqual(etatDuFormatDeTokens(tokens), { etat: 'courante', version: 1 });
+  assert.equal(exporte.content.split('"$extensions":{\n').length - 1, 1, 'une seule marque, à la racine');
+  // La marque n'est ni un token ni un groupe de plus.
+  assert.equal(indexerTokensDtcg(tokens).size, 40);
+});
+
+test('la marque précède aussi une collection dont le nom est un nombre', async () => {
+  const fichier = fichierDeVariables();
+  (fichier.collections[0] as { name: string }).name = '2026';
+  const { exporte, tokens } = await documentExporte({ fichier });
+
+  // `JSON.parse` range une clé entière en tête de l'objet ; le fichier écrit,
+  // lui, commence toujours par la marque.
+  assert.deepEqual(Object.keys(tokens).slice(0, 2), ['2026', '$extensions']);
+  assert.ok(exporte.content.startsWith('{\n  "$extensions":'));
+});
+
+test('une couleur sRGB porte son espace, ses trois composantes et son alpha, sans arrondi', async () => {
+  const { tokens } = await documentExporte({ profil: 'SRGB' });
+  const couleur = (nom: string) => tokens.primitives.color[nom].$value;
+
+  assert.deepEqual(couleur('red'), { colorSpace: 'srgb', components: [1, 0, 0], alpha: 1 });
+  assert.deepEqual(couleur('transparent'), { colorSpace: 'srgb', components: [0, 0, 0], alpha: 0 });
+  assert.deepEqual(couleur('half'), { colorSpace: 'srgb', components: [1, 1, 1], alpha: 0.5 });
+  assert.deepEqual(couleur('precise'), {
+    colorSpace: 'srgb', components: [0.123456789, 0.987654321, 0.3333333333333333], alpha: 1,
+  });
+});
+
+test('une couleur sans alpha reçoit alpha 1', () => {
+  assert.deepEqual(couleurDtcg({ r: 1, g: 0.5, b: 0 }, 'srgb'), {
+    colorSpace: 'srgb', components: [1, 0.5, 0], alpha: 1,
+  });
+});
+
+test('un document Display P3 publie ses composantes en display-p3, sans conversion', async () => {
+  const { tokens, exporte } = await documentExporte({ profil: 'DISPLAY_P3' });
+
+  assert.deepEqual(tokens.primitives.color.green.$value, {
+    colorSpace: 'display-p3', components: [0, 1, 0], alpha: 1,
+  });
+  assert.deepEqual(tokens['brand-tokens'].primary.default.$extensions['com.ucm.modes']['marque-2'], {
+    colorSpace: 'display-p3', components: [0, 0, 1], alpha: 1,
+  });
+  assert.equal(exporte.content.includes('"srgb"'), false, 'aucune couleur ne reste en srgb');
+});
+
+test('un document sans profil est publié en sRGB, sous un seul avertissement', async () => {
+  const { tokens, exporte } = await documentExporte({ profil: 'LEGACY' });
+  const reference = await exporterLeFichier({ profil: 'SRGB' });
+
+  assert.equal(exporte.content, reference.content);
+  const profil = exporte.warnings.filter((message) => message.includes('profil de couleur'));
+  assert.deepEqual(profil, [
+    'Fichier « Fichier de variables » : aucun profil de couleur n’est choisi. Le développeur '
+      + 'recevra ces couleurs en sRGB, que Figma les affiche en sRGB ou en Display P3. Choisissez '
+      + 'sRGB ou Display P3 dans le menu File color profile, puis réexportez.',
+  ]);
+  assert.equal(exporte.warningCount, reference.warningCount + 1);
+  assert.ok(exporte.parties.get(profil[0]), 'les trois parties atteignent l’interface');
+  assert.equal(tokens.primitives.color.red.$value.colorSpace, 'srgb');
+});
+
+test('une dimension s’écrit { value, unit: "px" }, zéro, fraction et négatif compris', async () => {
+  const { tokens } = await documentExporte();
+  const dimensions = tokens.primitives.dimensions;
+
+  assert.deepEqual(dimensions.none.$value, { value: 0, unit: 'px' });
+  assert.deepEqual(dimensions['4'].$value, { value: 4, unit: 'px' });
+  assert.deepEqual(dimensions['0,5'].$value, { value: 0.5, unit: 'px' });
+  assert.deepEqual(dimensions.negative.$value, { value: -2, unit: 'px' });
+  // Un nombre sans unité reste un nombre.
+  assert.equal(tokens.primitives.opacity.disabled.$value, 0.4);
+  assert.equal(tokens.primitives.graisse.$value, 600);
+});
+
+test('un alias reste une référence, dans chaque mode, et chaque mode a la forme de $value', async () => {
+  const { tokens } = await documentExporte();
+  const marque = tokens['brand-tokens'];
+
+  assert.equal(marque.primary.default.$value, '{primitives.color.red}');
+  assert.deepEqual(marque.primary.chain.$extensions['com.ucm.modes'], {
+    intencial: '{brand-tokens.primary.default}', 'marque-2': '{brand-tokens.primary.default}',
+  });
+  assert.deepEqual(marque.radius.base.$extensions['com.ucm.modes'], {
+    intencial: '{primitives.dimensions.4}', 'marque-2': { value: 8, unit: 'px' },
+  });
+  assert.equal(tokens.semantic.spacing.chain.$value, '{brand-tokens.radius.base}');
+  assert.deepEqual(tokens.keys.value.primary.$extensions['com.ucm.modes'].__proto__, { value: 2, unit: 'px' });
+});
+
+/**
+ * Preuve de migration : la sortie du moteur, comparée au fichier d'origine figé,
+ * ne diffère que par ce que la version 1 autorise. Ce test est provisoire, et
+ * disparaît avant la publication du plugin : un test permanent qui compare le
+ * moteur à un instantané est ce qu'`AGENTS.md` interdit.
+ */
+test('migration : l’export ne s’écarte du fichier d’origine figé que par la version 1', async () => {
+  const origine = JSON.parse(readFileSync(
+    join(__dirname, '..', '..', 'kit', 'fixtures', 'tokens', 'origine', 'tokens.json'), 'utf8',
+  ));
+  for (const [profil, espace] of [['SRGB', 'srgb'], ['LEGACY', 'srgb'], ['DISPLAY_P3', 'display-p3']] as const) {
+    const { tokens } = await documentExporte({ profil });
+    assert.deepEqual(ecartsDeTokens(origine, tokens, { espace }), [], profil);
+  }
+});
+
+test('le résultat annonce le module et la version lus dans le fichier produit', async () => {
+  const { exporte } = await documentExporte();
+  assert.equal(annonceDuFormat(exporte.content), 'DTCG 2025.10, version 1 du format de tokens');
+  assert.equal(annonceDuFormat('{}'), null);
+  assert.equal(annonceDuFormat('pas du JSON'), null);
 });

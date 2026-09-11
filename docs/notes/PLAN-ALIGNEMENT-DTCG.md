@@ -598,25 +598,25 @@ Fichiers autorisés :
 
 Actions :
 
-- [ ] Ajouter `documentColorProfile` au contexte d'export obligatoire.
-- [ ] Faire porter `$extensions` par l'objet racine du document sans créer de
+- [x] Ajouter `documentColorProfile` au contexte d'export obligatoire.
+- [x] Faire porter `$extensions` par l'objet racine du document sans créer de
       token ni de groupe supplémentaire.
-- [ ] Écrire `$extensions` une fois, avant les groupes, dans un ordre stable.
-- [ ] Produire les couleurs sRGB et Display P3 selon le profil du document.
-- [ ] Traiter `LEGACY` comme sRGB et émettre un seul avertissement par export,
+- [x] Écrire `$extensions` une fois, avant les groupes, dans un ordre stable.
+- [x] Produire les couleurs sRGB et Display P3 selon le profil du document.
+- [x] Traiter `LEGACY` comme sRGB et émettre un seul avertissement par export,
       avec le profil observé, son effet et le geste qui permet de choisir un
       profil explicite.
-- [ ] Produire toutes les dimensions sous la forme `{ value, unit: "px" }`.
-- [ ] Garder les alias sous la forme `{chemin.du.token}`.
-- [ ] Vérifier tous les modes, les valeurs limites et les chaînes d'alias de la
+- [x] Produire toutes les dimensions sous la forme `{ value, unit: "px" }`.
+- [x] Garder les alias sous la forme `{chemin.du.token}`.
+- [x] Vérifier tous les modes, les valeurs limites et les chaînes d'alias de la
       matrice.
-- [ ] Comparer l'export au fixture d'origine avec le comparateur de L2.
-- [ ] Ajouter au résultat visible : « DTCG 2025.10, version 1 du format de
+- [x] Comparer l'export au fixture d'origine avec le comparateur de L2.
+- [x] Ajouter au résultat visible : « DTCG 2025.10, version 1 du format de
       tokens ».
-- [ ] Annoncer « Version du format de tokens : `1` » dans l'en-tête de la pull
+- [x] Annoncer « Version du format de tokens : `1` » dans l'en-tête de la pull
       request des tokens, lue dans le fichier déposé.
-- [ ] Relire l'état de résultat dans la galerie de l'interface.
-- [ ] Muter l'espace, l'alpha, l'unité et la marque un par un ; chaque mutation
+- [x] Relire l'état de résultat dans la galerie de l'interface.
+- [x] Muter l'espace, l'alpha, l'unité et la marque un par un ; chaque mutation
       doit être refusée.
 
 Critère de sortie : seules les différences autorisées par L2 existent dans le
