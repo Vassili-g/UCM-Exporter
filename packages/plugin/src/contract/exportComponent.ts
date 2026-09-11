@@ -102,10 +102,11 @@ export type ComponentExport = {
    */
   warnings: string[];
   /**
-   * Node du sujet, indexé par la phrase qui sert aussi au dédoublonnage. Cette
-   * aide d'interface n'entre jamais dans le contrat ; son absence peut être voulue.
+   * Nodes du sujet dans l'ordre d'émission, indexés par la phrase qui sert aussi
+   * au dédoublonnage. Cette aide d'interface n'entre jamais dans le contrat ;
+   * son absence peut être voulue.
    */
-  localisations: ReadonlyMap<string, string>;
+  localisations: ReadonlyMap<string, readonly string[]>;
   /**
    * Parties du message indexées par sa phrase. L'UI les met en page ; le contrat
    * et la pull request publient la phrase dérivée par `phraseDe`.

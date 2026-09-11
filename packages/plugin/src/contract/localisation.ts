@@ -3,9 +3,11 @@
  * son impact et son action jusqu'à l'interface.
  *
  * La phrase reste l'identité du dédoublonnage : les registres sont indexés par
- * texte et par tableau d'accumulation, sans état global entre exports. Les ids
- * ne sont jamais publiés dans le contrat. Toute copie d'un canal doit appeler
- * `reporterLocalisations`, obligation tenue par une loi de source.
+ * texte et par tableau d'accumulation, sans état global entre exports. Une
+ * phrase garde tous les nodes qui l'ont produite. Les ids ne sont jamais
+ * publiés dans le contrat. Toute copie d'un canal doit appeler
+ * `reporterLocalisations`, sans quoi le message arrive à l'interface sans ses
+ * parties ni ses cibles.
  */
 
 /** Un canal d'accumulation de messages. L'identité du tableau est la clé. */
@@ -106,7 +108,7 @@ export function phraseDe(point: PointACorriger): string {
   return `${point.titre} ${point.impact} ${point.action}`;
 }
 
-const registres = new WeakMap<Canal, Map<string, string>>();
+const registres = new WeakMap<Canal, Map<string, string[]>>();
 
 /**
  * Les parties de chaque message, indexées par sa phrase compacte.
@@ -128,7 +130,7 @@ const parties = new WeakMap<Canal, Map<string, PointACorriger>>();
  */
 const declarations = new WeakMap<Canal, Map<string, RaisonSansNode>>();
 
-const registreDe = (canal: Canal): Map<string, string> => {
+const registreDe = (canal: Canal): Map<string, string[]> => {
   let registre = registres.get(canal);
   if (!registre) {
     registre = new Map();
@@ -172,16 +174,18 @@ export function sujetNomme(
 }
 
 /**
- * Enregistre où vit le sujet d'un message déjà formé.
+ * Enregistre un node de plus pour un message déjà formé.
  *
- * Le premier inscrit gagne : deux calques qui produisent le même texte ne
- * donnent qu'un constat, donc qu'une cible. Choisir le premier plutôt que le
- * dernier n'a rien d'arbitraire : c'est l'ordre que le dédoublonnage retient
- * déjà.
+ * Deux calques qui produisent le même texte ne donnent qu'un constat, et ce
+ * constat les garde tous les deux, dans l'ordre d'émission. Avec le premier
+ * seul, le designer corrige un calque, réexporte, et retrouve le même message
+ * pour le suivant. Un node déjà inscrit pour cette phrase ne l'est pas deux fois.
  */
 export function noter(canal: Canal, message: string, sujetDuMessage: Sujet): string {
   const registre = registreDe(canal);
-  if (!registre.has(message)) registre.set(message, sujetDuMessage.nodeId);
+  const nodeIds = registre.get(message);
+  if (!nodeIds) registre.set(message, [sujetDuMessage.nodeId]);
+  else if (!nodeIds.includes(sujetDuMessage.nodeId)) nodeIds.push(sujetDuMessage.nodeId);
   return message;
 }
 
@@ -301,16 +305,18 @@ export function raisonsSansNode(canal: Canal): Map<string, RaisonSansNode> {
  * Reporte les localisations d'un canal vers un autre.
  *
  * À appeler partout où un tableau de messages est recopié, concaténé ou
- * dédoublonné : sans cela le message arrive à destination et son id reste
- * derrière. Ne reporte que ce que la cible ne connaît pas déjà, pour que la
- * règle du premier inscrit traverse les fusions.
+ * dédoublonné : sans cela le message arrive à destination et ses ids restent
+ * derrière. Les nodes que la destination connaît gardent leur rang, ceux de la
+ * source s'ajoutent à la suite, sans doublon. Parties et déclarations gardent
+ * la règle du premier inscrit : une même phrase porte les mêmes parties.
  */
 export function reporterLocalisations(source: Canal, cible: Canal): void {
   const depuis = registres.get(source);
   if (depuis && depuis.size > 0) {
     const vers = registreDe(cible);
-    for (const [message, nodeId] of depuis) {
-      if (!vers.has(message)) vers.set(message, nodeId);
+    for (const [message, nodeIds] of depuis) {
+      const connus = vers.get(message) ?? [];
+      vers.set(message, [...connus, ...nodeIds.filter((nodeId) => !connus.includes(nodeId))]);
     }
   }
   // Les parties voyagent par le même chemin, et pour la même raison : un
@@ -342,11 +348,15 @@ export function reporterLocalisations(source: Canal, cible: Canal): void {
 }
 
 /**
- * Ce que ce canal sait localiser, message par message.
+ * Ce que ce canal sait localiser : pour chaque message, ses nodes dans l'ordre
+ * où ils ont été inscrits.
  *
- * Rendu en copie : le registre est un relevé interne au moteur, et un appelant
- * qui le modifierait déplacerait une cible sans passer par un site d'émission.
+ * Rendu en copie, listes comprises : le registre est un relevé interne au
+ * moteur, et un appelant qui le modifierait déplacerait une cible sans passer
+ * par un site d'émission.
  */
-export function localisationsDe(canal: Canal): Map<string, string> {
-  return new Map(registres.get(canal) ?? []);
+export function localisationsDe(canal: Canal): Map<string, readonly string[]> {
+  const copie = new Map<string, readonly string[]>();
+  for (const [message, nodeIds] of registres.get(canal) ?? []) copie.set(message, [...nodeIds]);
+  return copie;
 }

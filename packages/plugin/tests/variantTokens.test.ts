@@ -5,6 +5,7 @@ import {
   getSlotTokens,
   insertVariantLeaf,
 } from '../src/contract/extractVariantTokens';
+import { localisationsDe, partiesDe } from '../src/contract/localisation';
 import { renderingSemanticsFor } from '../src/contract/semantics';
 import { collecterReferences } from '@ucm-kit/core/lecteurs';
 
@@ -891,6 +892,55 @@ test('un fill posé à la main sur un calque publié est signalé', async () => 
   assert.match(warnings[0], /Vector/);
   assert.match(warnings[0], /aucune variable Figma/);
   assert.match(warnings[0], /réexportez/);
+});
+
+/**
+ * Chaque variant relève ses peintures dans son propre canal. Un calque qui
+ * porte le même fill libre dans deux variants produit deux fois la même
+ * phrase. La recopie vers le canal commun doit emporter les parties et les deux
+ * calques : sans elles, le plugin affiche la phrase entière comme titre et ne
+ * propose aucune sélection.
+ */
+test('un fill libre répété dans deux variants arrive avec ses parties et ses deux calques', async () => {
+  const variant = (id: string, name: string) => {
+    const glyphe = {
+      type: 'RECTANGLE',
+      id: `${id}-glyph`,
+      name: 'Glyph',
+      fills: [{ type: 'SOLID', color: { r: 0.9, g: 0.9, b: 0.9 } }],
+      boundVariables: {},
+      findAll: () => [],
+    };
+    return {
+      type: 'COMPONENT',
+      id,
+      name,
+      boundVariables: { fills: [colorAlias] },
+      fills: [{ type: 'SOLID', color: { r: 0.1, g: 0.1, b: 0.1 } }],
+      children: [glyphe],
+      findAll: () => [glyphe],
+    } as unknown as ComponentNode;
+  };
+  const resolver = { resolve: async () => 'root.surface.background' };
+  const warnings: string[] = [];
+
+  await extractVariantTokens(
+    {
+      axes: ['state'],
+      variants: [
+        { values: { state: 'default' }, component: variant('1:1', 'State=Default') },
+        { values: { state: 'hover' }, component: variant('1:2', 'State=Hover') },
+      ],
+    },
+    resolver,
+    warnings,
+  );
+
+  const [message, ...autres] = new Set(warnings.filter((warning) => warning.includes('« Glyph »')));
+  assert.ok(message, 'le fill libre n’a produit aucun message');
+  assert.deepEqual(autres, []);
+  assert.ok(partiesDe(warnings).has(message), 'le message arrive sans ses parties');
+  assert.deepEqual(localisationsDe(warnings).get(message), ['1:1-glyph', '1:2-glyph']);
 });
 
 test('une peinture sans effet visible ne réclame aucune variable', async () => {

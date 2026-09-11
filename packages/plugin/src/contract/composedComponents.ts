@@ -20,7 +20,7 @@ import { normalizePropKey } from './parsers';
 import { buildContractPropertySurface } from './propertySurface';
 import type { ContractPropertySurface } from './propertySurface';
 import type { ComposedDependency } from '@ucm-kit/core/format';
-import { pousserLocalise } from './localisation';
+import { pousserLocalise, reporterLocalisations } from './localisation';
 
 /** Noms compactés des composants qui possèdent leur propre contrat. */
 export type ContractedNames = ReadonlySet<string>;
@@ -343,6 +343,7 @@ export async function scanComposedInstances(
   );
   const owners = lectures.map((lecture) => lecture.owner);
   const warnings = lectures.flatMap((lecture) => lecture.warnings);
+  for (const lecture of lectures) reporterLocalisations(lecture.warnings, warnings);
   const mainByInstanceId = new Map<string, ComponentNode>();
   instances.forEach((instance, index) => {
     const main = lectures[index]?.main;
@@ -430,8 +431,10 @@ export async function scanComposedMatrix(
 
   // Une instance orpheline vit dans tous les variants du set, et chaque scan la
   // relève avec le même texte. Le message porte le nom du layer, jamais celui
-  // du variant : le dédoublonnage rend donc exactement un constat par layer.
+  // du variant : le dédoublonnage rend donc exactement un constat par layer, et
+  // ce constat garde l'instance de chaque variant.
   const warnings = Array.from(new Set(scans.flatMap((scan) => scan.warnings)));
+  for (const scan of scans) reporterLocalisations(scan.warnings, warnings);
 
   return {
     composes: scans[0]?.composes ?? [],

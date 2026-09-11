@@ -43,9 +43,10 @@ export type UiRequest =
    */
   | { type: 'resize'; largeur: number; hauteur: number }
   /**
-   * Sélectionne et cadre le calque cité, sans modifier le document Figma.
+   * Sélectionne et cadre ensemble les calques d'un point à corriger, sans
+   * modifier le document Figma.
    */
-  | { type: 'montrer-le-calque'; nodeId: string };
+  | { type: 'montrer-les-calques'; nodeIds: string[] };
 
 /** Ce que le sandbox dit à l'UI. */
 export type PluginMessage =
@@ -121,10 +122,11 @@ export type PluginMessage =
       /** Le geste exact à faire dans Figma. Une phrase impérative. */
       action: string;
       /**
-       * Node du sujet. Absent pour un style, une variable ou un agrégat ; l'UI
-       * ne propose alors aucune navigation.
+       * Nodes du sujet : chaque calque qui a produit ce message. Absent pour un
+       * style, une variable ou un agrégat ; l'UI ne propose alors aucune
+       * navigation.
        */
-      nodeId?: string;
+      nodeIds?: string[];
     }
   /**
    * Ce que l'analyse conclut, et l'action qu'elle propose.

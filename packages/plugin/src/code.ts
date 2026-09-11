@@ -226,19 +226,19 @@ async function analyser(
     });
 
     const registre = result as {
-      localisations?: ReadonlyMap<string, string>;
+      localisations?: ReadonlyMap<string, readonly string[]>;
       parties?: ReadonlyMap<string, { titre: string; impact: string; action: string }>;
     };
     for (const warning of result.warnings ?? []) {
       const point = registre.parties?.get(warning);
       // Une loi impose les parties ; ce repli garde néanmoins le message lisible.
-      const nodeId = registre.localisations?.get(warning);
+      const nodeIds = registre.localisations?.get(warning);
       versUi({
         type: 'diagnostic',
         titre: point?.titre ?? warning,
         impact: point?.impact ?? '',
         action: point?.action ?? '',
-        ...(nodeId ? { nodeId } : {}),
+        ...(nodeIds && nodeIds.length > 0 ? { nodeIds: [...nodeIds] } : {}),
       });
     }
 
@@ -356,33 +356,36 @@ async function publier(): Promise<void> {
 
 // Routeur des demandes de l'UI vers le bon handler.
 /**
- * Montre le calque dont un avertissement parle : sélection, puis cadrage.
+ * Montre les calques dont un avertissement parle : sélection, puis cadrage.
  *
  * **Rien n'est écrit dans le document.** Une sélection et un cadrage sont un
  * état de l'éditeur, et les actions d'un plugin ne rejoignent l'historique
  * d'annulation que si `commitUndo()` est appelé : ce que ce plugin ne fait
  * jamais. La décision et ses sources sont dans `SPEC.md`.
  *
- * **Un node introuvable ne fait rien, et ne dit rien.** Le designer a pu
- * supprimer le calque, ou changer de page, entre l'export et le clic, et le
- * message d'origine est toujours là, avec le nom du calque.
+ * **Un node introuvable est ignoré, sans un mot.** Le designer a pu supprimer
+ * un calque entre l'export et le clic, et le message d'origine est toujours là,
+ * avec le nom du calque. Les calques retrouvés sont sélectionnés.
  *
  * **La page doit être la bonne avant de sélectionner.** Un node vit sur une
  * page, et `currentPage.selection` n'accepte que des nodes de la page courante :
  * sélectionner sans basculer lèverait, sur un composant exporté depuis une
- * autre page, le cas normal quand le designer a navigué depuis.
+ * autre page, le cas normal quand le designer a navigué depuis. Les calques
+ * d'un point appartiennent au composant exporté, donc à sa page : la page est
+ * celle du premier calque retrouvé, et un calque d'une autre page est écarté.
  */
-async function montrerLeCalque(nodeId: string): Promise<void> {
-  const node = await figma.getNodeByIdAsync(nodeId).catch(() => null);
-  if (!node || node.removed) return;
-
-  const page = pageDe(node);
+async function montrerLesCalques(nodeIds: readonly string[]): Promise<void> {
+  const lus = await Promise.all(
+    nodeIds.map((nodeId) => figma.getNodeByIdAsync(nodeId).catch(() => null)),
+  );
+  const retrouves = lus.filter((node): node is BaseNode => node !== null && !node.removed);
+  const page = retrouves.length > 0 ? pageDe(retrouves[0]) : null;
   if (!page) return;
   if (page !== figma.currentPage) await figma.setCurrentPageAsync(page);
 
-  const cible = node as SceneNode;
-  figma.currentPage.selection = [cible];
-  figma.viewport.scrollAndZoomIntoView([cible]);
+  const cibles = retrouves.filter((node) => pageDe(node) === page) as SceneNode[];
+  figma.currentPage.selection = cibles;
+  figma.viewport.scrollAndZoomIntoView(cibles);
 }
 
 /** La page qui porte ce node, en remontant ses parents. */
@@ -442,8 +445,8 @@ figma.ui.onmessage = async (message: UiRequest) => {
     return;
   }
 
-  if (message.type === 'montrer-le-calque') {
-    await montrerLeCalque(message.nodeId);
+  if (message.type === 'montrer-les-calques') {
+    await montrerLesCalques(message.nodeIds);
     return;
   }
 
