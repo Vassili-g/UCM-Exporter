@@ -4,6 +4,10 @@ Cette recette fait tourner la boucle complète du produit, du plugin Figma
 jusqu'au rapport publié sur une pull request, dans un dépôt qui ne contient rien
 d'UCM. Elle se suit dans l'ordre, du début à la fin. Comptez une heure et demie.
 
+L'[alignement DTCG](./notes/PLAN-ALIGNEMENT-DTCG.md) se termine avant cette
+recette. Elle éprouve ainsi la version du format de tokens, le plugin et les
+paquets destinés à rester publiés.
+
 C'est un guide, qu'aucune règle n'impose. Elle couvre les trois chemins qu'aucun
 test du dépôt ne parcourt, Figma, GitHub et une vraie pull request ; le reste
 est déjà tenu par `npm test`, par l'épreuve du registre et par le contrôle des

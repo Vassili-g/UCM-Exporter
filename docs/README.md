@@ -82,5 +82,5 @@ partie du produit n'en dépend.
 |---|---|
 | [notes/PISTES-EVOLUTION.md](./notes/PISTES-EVOLUTION.md) | Les modules d'évolution à étudier, leurs conditions et leurs essais |
 | [notes/PLAN-CONFORMITE-RENDU.md](./notes/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
-| [notes/ALIGNEMENT-DTCG.md](./notes/ALIGNEMENT-DTCG.md) | L'alignement de `tokens.json` sur le module de format `2025.10`, non engagé : les mesures, la décision et les conditions qui la rouvrent |
-| [notes/PLAN-ALIGNEMENT-DTCG.md](./notes/PLAN-ALIGNEMENT-DTCG.md) | Les étapes de cet alignement, dans leur ordre, avec le critère qui ferme chacune |
+| [notes/ALIGNEMENT-DTCG.md](./notes/ALIGNEMENT-DTCG.md) | L'alignement engagé de `tokens.json` sur le module de format `2025.10` : la décision, les mesures et les limites |
+| [notes/PLAN-ALIGNEMENT-DTCG.md](./notes/PLAN-ALIGNEMENT-DTCG.md) | Le protocole autonome, les preuves et les portes humaines de cet alignement |
