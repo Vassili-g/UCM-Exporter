@@ -103,12 +103,20 @@ export function litterauxDuStyle(
   return literals;
 }
 
+/** Vrai si le calque coupe son texte après un nombre de lignes fixé. */
+function coupeApresMaxLines(textNode: TextNode): boolean {
+  return textNode.textTruncation === 'ENDING'
+    && typeof textNode.maxLines === 'number'
+    && textNode.maxLines >= 1;
+}
+
 /**
  * Les champs d'usage lus sur le calque texte.
  *
  * L'alignement est publié même dans une boîte en `Hug`, où il place chaque ligne
- * d'un texte qui en compte plusieurs. `maxLines` n'agit que sous
- * `textTruncation` `ENDING` : il n'est publié qu'avec lui.
+ * d'un texte qui en compte plusieurs. La troncature n'est publiée qu'avec
+ * `maxLines`, que `line-clamp` rend à l'identique. Sans `maxLines`,
+ * `tronqueSansMaxLines` dit si elle manque au contrat.
  */
 export function usageDuCalque(textNode: TextNode): UsageDuCalque {
   const usage: UsageDuCalque = {};
@@ -116,11 +124,24 @@ export function usageDuCalque(textNode: TextNode): UsageDuCalque {
   if (textAlign) usage.textAlign = textAlign;
   const alignContent = ALIGN_CONTENT_PAR_TEXT_ALIGN_VERTICAL[textNode.textAlignVertical];
   if (alignContent) usage.alignContent = alignContent;
-  if (textNode.textTruncation === 'ENDING') {
-    if (typeof textNode.maxLines === 'number' && textNode.maxLines >= 1) {
-      usage.lineClamp = textNode.maxLines;
-    }
+  if (coupeApresMaxLines(textNode)) {
+    usage.lineClamp = textNode.maxLines as number;
     usage.textOverflow = 'ellipsis';
   }
   return usage;
+}
+
+/**
+ * Vrai quand Figma coupe le texte à la taille de sa boîte, sans `maxLines`.
+ *
+ * La documentation de `textTruncation` borne ce cas : la coupure agit sous
+ * `textAutoResize` `NONE` ou `TRUNCATE`, ou quand un `maxHeight` borne la
+ * hauteur. `text-overflow: ellipsis` ne coupe qu'une ligne, et aucun champ du
+ * contrat ne rend cette coupure.
+ */
+export function tronqueSansMaxLines(textNode: TextNode): boolean {
+  if (textNode.textTruncation !== 'ENDING' || coupeApresMaxLines(textNode)) return false;
+  return textNode.textAutoResize === 'NONE'
+    || textNode.textAutoResize === 'TRUNCATE'
+    || typeof textNode.maxHeight === 'number';
 }

@@ -199,6 +199,74 @@ test('listSpacing, hangingList et hangingPunctuation avertissent hors de leur va
   assert.ok(ponctuation[0].includes('hanging punctuation'));
 });
 
+test('une liste à puces ou numérotée avertit, lue plage par plage', () => {
+  const avecListes = (...types: string[]) => texteParDefaut({
+    getStyledTextSegments: () => types.map((type) => ({ listOptions: { type } })),
+  });
+  assert.deepEqual(avertissementsDe(avecListes('NONE')), []);
+
+  const puces = avertissementsDe(avecListes('NONE', 'UNORDERED'));
+  assert.equal(puces.length, 1);
+  assert.ok(puces[0].includes('bulleted list'));
+  assert.equal(avertissementsDe(avecListes('ORDERED', 'UNORDERED')).length, 2);
+
+  // Une lecture des plages qui lève ne fait pas échouer le relevé.
+  const illisible = texteParDefaut({
+    getStyledTextSegments: () => {
+      throw new Error('police non chargée');
+    },
+  });
+  assert.deepEqual(avertissementsDe(illisible), []);
+});
+
+test('un soulignement que CSS rend à l’identique n’avertit pas, un réglage différent avertit une fois', () => {
+  const souligne = (extra: Record<string, unknown> = {}) => texteParDefaut({
+    textDecoration: 'UNDERLINE',
+    textDecorationStyle: 'SOLID',
+    textDecorationOffset: { unit: 'AUTO' },
+    textDecorationThickness: { unit: 'AUTO' },
+    textDecorationColor: { value: 'AUTO' },
+    textDecorationSkipInk: true,
+    ...extra,
+  });
+  assert.deepEqual(avertissementsDe(souligne()), []);
+
+  const reglages: Record<string, unknown>[] = [
+    { textDecorationStyle: 'WAVY' },
+    { textDecorationOffset: { unit: 'PIXELS', value: 2 } },
+    { textDecorationThickness: { unit: 'PERCENT', value: 10 } },
+    { textDecorationColor: { value: { type: 'SOLID', color: { r: 1, g: 0, b: 0 } } } },
+    { textDecorationSkipInk: false },
+    { textDecorationStyle: Symbol('figma.mixed') },
+  ];
+  reglages.forEach((reglage, rang) => {
+    const avertissements = avertissementsDe(souligne(reglage));
+    assert.equal(avertissements.length, 1, `réglage ${rang}`);
+    assert.ok(avertissements[0].includes(', decoration'), `réglage ${rang}`);
+  });
+
+  // Plusieurs réglages différents donnent un seul message, le geste étant le même.
+  assert.equal(
+    avertissementsDe(souligne({ textDecorationStyle: 'DOTTED', textDecorationSkipInk: false })).length,
+    1,
+  );
+});
+
+test('openTypeFeatures avertit dès qu’un réglage diffère de ce que le navigateur applique seul', () => {
+  assert.deepEqual(avertissementsDe(texteParDefaut({ openTypeFeatures: {} })), []);
+  // Le crénage et les ligatures courantes sont actifs sans déclaration CSS.
+  assert.deepEqual(
+    avertissementsDe(texteParDefaut({ openTypeFeatures: { KERN: true, LIGA: true } })),
+    [],
+  );
+  const reglages: unknown[] = [{ SS01: true }, { LIGA: false }, Symbol('figma.mixed')];
+  reglages.forEach((openTypeFeatures, rang) => {
+    const avertissements = avertissementsDe(texteParDefaut({ openTypeFeatures }));
+    assert.equal(avertissements.length, 1, `réglage ${rang}`);
+    assert.ok(avertissements[0].includes('OpenType features'), `réglage ${rang}`);
+  });
+});
+
 test('deux propriétés du même layer donnent deux messages : deux gestes différents', () => {
   const cumul = frameParDefaut({
     opacity: 0.5,

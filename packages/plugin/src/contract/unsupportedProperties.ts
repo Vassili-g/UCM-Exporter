@@ -163,12 +163,74 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
 }
 
 /**
+ * Les valeurs d'un champ sur chaque plage d'un calque texte.
+ *
+ * `getStyledTextSegments` manque sur un node qui n'est pas un texte, et peut
+ * lever : la lecture rend alors une liste vide.
+ */
+export function valeursParPlage(
+  node: SceneNode,
+  champ: 'listOptions' | 'textStyleOverrides',
+): unknown[] {
+  const lire = (node as unknown as {
+    getStyledTextSegments?: (champs: string[]) => Array<Record<string, unknown>>;
+  }).getStyledTextSegments;
+  if (typeof lire !== 'function') return [];
+  try {
+    return lire.call(node, [champ]).map((segment) => segment[champ]);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Vrai si un réglage du soulignement s'écarte du rendu CSS sans déclaration.
+ *
+ * Figma ne documente pas les valeurs par défaut de ces cinq réglages, et les
+ * rend à `null` sans soulignement. La valeur neutre est donc celle que CSS rend
+ * seul : trait plein, épaisseur, décalage et couleur automatiques, jambages
+ * évités.
+ */
+function soulignementRegle(values: FigmaPropertyBag): boolean {
+  const neutre = (valeur: unknown, estNeutre: (valeurLue: Record<string, unknown>) => boolean) =>
+    valeur === null || valeur === undefined
+      || (!estMixed(valeur) && estNeutre(valeur as Record<string, unknown>));
+  return !neutre(values.textDecorationStyle, (valeur) => (valeur as unknown) === 'SOLID')
+    || !neutre(values.textDecorationOffset, (valeur) => valeur.unit === 'AUTO')
+    || !neutre(values.textDecorationThickness, (valeur) => valeur.unit === 'AUTO')
+    || !neutre(values.textDecorationColor, (valeur) => valeur.value === 'AUTO')
+    || !neutre(values.textDecorationSkipInk, (valeur) => (valeur as unknown) === true);
+}
+
+/**
+ * Les fonctionnalités OpenType qu'un navigateur applique sans déclaration :
+ * ligatures et alternatives contextuelles courantes, crénage, et celles que
+ * l'écriture exige (CSS Fonts, `font-feature-settings`).
+ */
+const OPENTYPE_ACTIVES_SANS_DECLARATION: ReadonlySet<string> = new Set([
+  'LIGA', 'CLIG', 'CALT', 'KERN', 'RLIG', 'RCLT', 'RVRN', 'CCMP', 'LOCL', 'MARK', 'MKMK',
+]);
+
+/**
+ * Vrai si un réglage OpenType du calque diffère de ce que le navigateur applique
+ * seul. Figma ne rend que les fonctionnalités réglées explicitement.
+ */
+function openTypeRegle(valeur: unknown): boolean {
+  if (estMixed(valeur)) return true;
+  if (!valeur || typeof valeur !== 'object') return false;
+  return Object.entries(valeur as Record<string, unknown>).some(
+    ([fonctionnalite, active]) => active !== OPENTYPE_ACTIVES_SANS_DECLARATION.has(fonctionnalite),
+  );
+}
+
+/**
  * Les réglages de texte que le contrat ne porte pas.
  *
  * `textStyles.*.literals` écrit `textCase`, `textDecoration`, l'italique,
  * `textWrapStyle` et `leadingTrim`. L'usage du style écrit l'alignement et la
- * troncature du calque (`textRendering.ts`). Le contrat ne décrit aucune liste :
- * `listSpacing` et `hangingList` sont relevés ici, avec `hangingPunctuation`.
+ * troncature avec `maxLines` (`textRendering.ts`). Restent les listes, que le
+ * contrat ne décrit pas, `hangingPunctuation`, les réglages du soulignement et
+ * `openTypeFeatures`.
  */
 function proprietesDeTexteNonPortees(
   node: SceneNode,
@@ -176,6 +238,40 @@ function proprietesDeTexteNonPortees(
 ): ProprieteNonPortee[] {
   if (node.type !== 'TEXT') return [];
   const relevees: ProprieteNonPortee[] = [];
+
+  const typesDeListe = new Set(valeursParPlage(node, 'listOptions')
+    .map((options) => (options as TextListOptions | undefined)?.type));
+  if (typesDeListe.has('UNORDERED')) {
+    relevees.push({
+      champ: 'bulleted list',
+      manque: 'les puces de ce texte',
+      geste: 'Retirez la liste à puces si le texte peut s’en passer, ou signalez cette limite du schéma',
+    });
+  }
+  if (typesDeListe.has('ORDERED')) {
+    relevees.push({
+      champ: 'numbered list',
+      manque: 'la numérotation de ce texte',
+      geste: 'Retirez la liste numérotée si le texte peut s’en passer, ou signalez cette limite du schéma',
+    });
+  }
+
+  // Les cinq réglages ont le même geste : un seul message les réunit.
+  if (soulignementRegle(values)) {
+    relevees.push({
+      champ: 'decoration',
+      manque: 'les réglages de ce soulignement, qui sera rendu en trait plein et dans la couleur du texte',
+      geste: 'Remettez les réglages du soulignement à leur valeur par défaut si le rendu peut s’en passer, ou signalez cette limite du schéma',
+    });
+  }
+
+  if (openTypeRegle(values.openTypeFeatures)) {
+    relevees.push({
+      champ: 'OpenType features',
+      manque: 'les fonctionnalités OpenType réglées sur ce texte',
+      geste: 'Retirez ces réglages si le rendu peut s’en passer, ou signalez cette limite du schéma',
+    });
+  }
 
   // « mixed » : l'espacement change d'une liste à l'autre dans le même calque.
   if (estMixed(values.listSpacing)

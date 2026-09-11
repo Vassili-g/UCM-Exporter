@@ -1,7 +1,11 @@
 /** Traduction en CSS des propriétés de texte sans variable, style et calque. */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { litterauxDuStyle, usageDuCalque } from '../src/contract/textRendering';
+import {
+  litterauxDuStyle,
+  tronqueSansMaxLines,
+  usageDuCalque,
+} from '../src/contract/textRendering';
 
 /** Un text style aux valeurs par défaut de Figma. */
 const style = (extra: Record<string, unknown> = {}) => ({
@@ -23,6 +27,8 @@ const calque = (extra: Record<string, unknown> = {}) => ({
   textAlignVertical: 'TOP',
   textTruncation: 'DISABLED',
   maxLines: null,
+  textAutoResize: 'WIDTH_AND_HEIGHT',
+  maxHeight: null,
   ...extra,
 }) as unknown as TextNode;
 
@@ -94,15 +100,27 @@ test('textAlignHorizontal et textAlignVertical se traduisent en CSS', () => {
   });
 });
 
-test('maxLines n’est publié que sous textTruncation ENDING', () => {
+test('lineClamp et textOverflow ne sont publiés qu’avec maxLines, sous textTruncation ENDING', () => {
   // L'API le documente : `maxLines` n'agit que sous `ENDING`. Publié seul, il
   // ferait couper par le développeur un texte que Figma affiche en entier.
   assert.deepEqual(usageDuCalque(calque({ maxLines: 2 })), {});
-  assert.deepEqual(usageDuCalque(calque({ textTruncation: 'ENDING' })), {
-    textOverflow: 'ellipsis',
-  });
+  // `text-overflow: ellipsis` seul ne coupe qu'une ligne, et ne rend pas la
+  // coupure de Figma à la taille de la boîte.
+  assert.deepEqual(usageDuCalque(calque({ textTruncation: 'ENDING' })), {});
   assert.deepEqual(usageDuCalque(calque({ textTruncation: 'ENDING', maxLines: 2 })), {
     lineClamp: 2,
     textOverflow: 'ellipsis',
   });
+});
+
+test('tronqueSansMaxLines est vrai seulement quand Figma coupe à la taille de la boîte', () => {
+  const tronque = (extra: Record<string, unknown>) =>
+    tronqueSansMaxLines(calque({ textTruncation: 'ENDING', ...extra }));
+  assert.equal(tronque({ textAutoResize: 'NONE' }), true);
+  assert.equal(tronque({ textAutoResize: 'TRUNCATE' }), true);
+  assert.equal(tronque({ textAutoResize: 'HEIGHT', maxHeight: 40 }), true);
+  // Sous `HEIGHT` sans `maxHeight`, la boîte grandit avec le texte : rien n'est coupé.
+  assert.equal(tronque({ textAutoResize: 'HEIGHT' }), false);
+  assert.equal(tronque({ textAutoResize: 'NONE', maxLines: 2 }), false);
+  assert.equal(tronqueSansMaxLines(calque({ textAutoResize: 'NONE' })), false);
 });

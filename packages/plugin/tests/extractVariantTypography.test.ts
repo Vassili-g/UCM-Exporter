@@ -392,6 +392,67 @@ test('fontStyle italic est publié, sauf si tokens.fontWeight cite la variable r
   });
 });
 
+/** Un style qui ne relie que sa font size, pour les tests qui regardent le calque. */
+const styleOverline = async () => ({
+  type: 'TEXT', name: 'Overline', boundVariables: { fontSize: alias('size') },
+} as unknown as BaseStyle);
+
+test('du gras ou de l’italique ajouté par-dessus le text style avertit, une fois par type', async () => {
+  // Figma garde alors le `textStyleId` : sans ce relevé, le calque serait publié
+  // dans le style de police du text style, sans un mot.
+  const component = variantAUnTexte('default', 'Label', {
+    getStyledTextSegments: () => [
+      { textStyleOverrides: [{ type: 'SEMANTIC_ITALIC' }] },
+      { textStyleOverrides: [{ type: 'SEMANTIC_ITALIC' }, { type: 'SEMANTIC_WEIGHT' }] },
+      { textStyleOverrides: [] },
+    ],
+  });
+  const warnings: string[] = [];
+
+  await extractVariantTypography(
+    { axes: ['state'], variants: [{ values: { state: 'default' }, component }] },
+    nodesDeLayout(component),
+    resolverFor({ size: 'typography.overline.fontsize' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    styleOverline,
+  );
+
+  const ajouts = warnings.filter((warning) => warning.includes('ajoute'));
+  assert.equal(ajouts.length, 2);
+  assert.ok(ajouts.some((ajout) => ajout.includes('font style') && ajout.includes('de l’italique')));
+  assert.ok(ajouts.some((ajout) => ajout.includes('font weight') && ajout.includes('du gras')));
+});
+
+test('une troncature sans maxLines dans une boîte fixe avertit, et l’usage ne la publie pas', async () => {
+  const component = variantAUnTexte('default', 'Label', {
+    textTruncation: 'ENDING',
+    maxLines: null,
+    textAutoResize: 'NONE',
+  });
+  const warnings: string[] = [];
+
+  const result = await extractVariantTypography(
+    { axes: ['state'], variants: [{ values: { state: 'default' }, component }] },
+    nodesDeLayout(component),
+    resolverFor({ size: 'typography.overline.fontsize' }),
+    warnings,
+    new Map(),
+    new Set(),
+    undefined,
+    styleOverline,
+  );
+
+  assert.deepEqual(result.typographyByComponent.get(component), [
+    { slotPath: ['label'], style: 'overline' },
+  ]);
+  const troncatures = warnings.filter((warning) => warning.includes('truncate text'));
+  assert.equal(troncatures.length, 1);
+  assert.ok(troncatures[0].includes('Max lines'));
+});
+
 test('le chemin d’une part descend jusqu’au calque texte, pas jusqu’à son frame', () => {
   // `extractTextBranch` publie une part pour le frame et pour le texte qu'il
   // contient. Un chemin qui s'arrêtait au frame désignait un slot porteur de

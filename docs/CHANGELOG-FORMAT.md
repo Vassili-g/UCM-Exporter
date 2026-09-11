@@ -200,15 +200,20 @@ libellé que la maquette montre en capitales.
    tester la présence de `tokens`.
 3. **Un usage de `variantViews.*.typography` gagne `textAlign`,
    `alignContent`, `lineClamp` et `textOverflow`**, lus sur le calque texte.
-   Deux vues qui ne diffèrent que par l'alignement d'un texte ont chacune leur
-   entrée dans `viewTypographies`.
+   `textOverflow` n'est publié qu'avec `lineClamp`. Deux vues qui ne diffèrent
+   que par l'alignement d'un texte ont chacune leur entrée dans
+   `viewTypographies`.
 
-L'alignement, la casse, la décoration et la troncature d'un texte n'avertissent
-plus. Au réexport, un composant qui ne perdait rien d'autre passe de
-`meta.coverage.portable: "partial"` à `"complete"`. Quatre cas avertissent en
-revanche : `listSpacing`, `hangingList`, `hangingPunctuation`, et un calque dont
-`textCase`, `textDecoration`, `textWrapStyle` ou `leadingTrim` diffère de son
-text style.
+L'alignement, la casse, la décoration et la troncature avec `maxLines`
+n'avertissent plus. Au réexport, un composant qui ne perdait rien d'autre passe
+de `meta.coverage.portable: "partial"` à `"complete"`. Avertissent en revanche :
+une liste, `listSpacing`, `hangingList`, `hangingPunctuation`, un réglage du
+soulignement ou d'`openTypeFeatures` que CSS ne rend pas sans déclaration, une
+troncature sans `maxLines`, et un calque qui s'écarte de son text style par une
+valeur différente ou par du gras et de l'italique ajoutés.
+
+La règle de `textOverflow` a été corrigée avant qu'aucun contrat 13.0 soit
+exporté : aucun artefact ne porte un `textOverflow` sans `lineClamp`.
 
 La fenêtre de lecture porte la 12.0 et la 13.0.
 

@@ -391,10 +391,15 @@ usages différents.
 | `textAlign` | `center`, `right`, `justify` | `textAlignHorizontal` `CENTER`, `RIGHT`, `JUSTIFIED` |
 | `alignContent` | `center`, `end` | `textAlignVertical` `CENTER`, `BOTTOM` |
 | `lineClamp` | entier supérieur ou égal à 1 | `maxLines`, sous `textTruncation` `ENDING` |
-| `textOverflow` | `ellipsis` | `textTruncation` `ENDING` |
+| `textOverflow` | `ellipsis` | `textTruncation` `ENDING`, publié seulement avec `lineClamp` |
 
-L'alignement est publié même dans une boîte en `Hug` : un texte de plusieurs
-lignes l'applique à chacune.
+L'alignement est publié même dans une boîte en `Hug` : il place chaque ligne
+d'un texte qui en compte plusieurs.
+
+La troncature n'est publiée qu'avec `maxLines`, que `line-clamp` rend à
+l'identique. Sans `maxLines`, Figma coupe le texte à la taille de sa boîte, et
+`text-overflow: ellipsis` ne coupe qu'une ligne. La troncature reste alors
+absente, et un avertissement le dit.
 
 ### 6. Structure
 
@@ -708,11 +713,14 @@ rien en silence.
   partielle, un **mask**, une peinture non unie (**dégradé**,
   image) en `fill` ou en `stroke`, plusieurs peintures « mixed » sur un même
   calque, un **blend mode** non neutre, un **pointillé**, et pour un texte :
-  `listSpacing`, `hangingList` et `hangingPunctuation`, le contrat ne décrivant
-  aucune liste ;
+  une liste à puces ou numérotée, `listSpacing` et `hangingList` (le contrat ne
+  décrit aucune liste), `hangingPunctuation`, un réglage du soulignement ou
+  d'`openTypeFeatures` que CSS ne rend pas sans déclaration, et une troncature
+  sans `maxLines` ;
 - sur un calque texte, une valeur de `textCase`, `textDecoration`,
   `textWrapStyle` ou `leadingTrim` qui diffère de celle de son text style, ou
   qui varie dans le calque (« mixed ») : `literals` publie la valeur du style.
+  Du gras ou de l'italique ajouté par-dessus le style avertit de même.
 
 Une propriété que le contrat écrit n'entre pas dans ce relevé de ce qui manque,
 `rotation` et `inset` compris : la réclamer enverrait le designer redresser un
