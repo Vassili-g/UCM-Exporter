@@ -2,6 +2,7 @@
  * L'inventaire des états ne doit pas pouvoir vieillir en silence.
  */
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
@@ -196,5 +197,20 @@ test('le décalque sert toutes les variables de thème que styles.css demande', 
       [],
       `${selecteur} ne sert pas : ${manquantes.join(', ')} — la galerie montrerait un repli en dur`,
     );
+  }
+});
+
+/**
+ * Un script de la galerie que Node ne compile pas ne se voit qu'au lancement
+ * des captures, qu'aucun autre test ne fait. `etats.cjs` est chargé plus haut ;
+ * les autres scripts ne le sont nulle part.
+ */
+test('chaque script de la galerie se compile', () => {
+  const dossier = path.join(racine, 'galerie');
+  const scripts = fs.readdirSync(dossier).filter((nom) => nom.endsWith('.cjs'));
+  assert.ok(scripts.includes('capturer.cjs'), 'capturer.cjs a quitté la galerie');
+  for (const nom of scripts) {
+    const resultat = spawnSync(process.execPath, ['--check', path.join(dossier, nom)], { encoding: 'utf8' });
+    assert.equal(resultat.status, 0, `${nom} ne compile pas :\n${resultat.stderr}`);
   }
 });
