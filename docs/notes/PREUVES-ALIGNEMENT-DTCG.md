@@ -5,7 +5,7 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 
 ## État
 
-- Lot courant : L7
+- Lot courant : L8
 - Exporter, branche et `HEAD` : `main`, `ff2a719` pour le code de L4
 - Playground, branche et `HEAD` : `main`, `8908c66` après L4
 - Style Dictionary retenu : `5.5.3`, exact ; `4.4.0` au départ
@@ -256,4 +256,53 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
     produit à l'extraction ; l'index le garde en LF. Un motif de mutation ne
     doit donc pas contenir de fin de ligne.
 - Artefacts et empreintes : aucun.
+- Écart ou réserve : aucun
+
+### L7 — Conformité DTCG et cohérence documentaire
+
+- Commit : celui qui porte cette entrée. Il ne contient que les hunks de ce
+  lot ; un travail étranger en cours dans la copie de travail (renommage
+  `.ruleItem`, message `montrer-les-calques`) reste hors de lui.
+- Méthode : l'index du lot, arbre `d74da76`, a été extrait dans un worktree du
+  dossier de session par un commit temporaire `f52ecdf`, jamais poussé, puis
+  réinstallé par `npm ci`. Toutes les commandes ci-dessous y ont tourné, hors
+  de la copie de travail partagée.
+- Commandes :
+  - `npm test` : kit 19, CLI 52, adaptateur 295 et plugin 608 tests verts.
+    Racine : 2 rouges d'inventaire sur `FORMAT.md` et `SPEC.md`, extraits en
+    CRLF par `core.autocrlf` ; les mêmes fichiers convertis en LF,
+    `node scripts/run-tests.cjs` rend 23 verts.
+  - `npm run typecheck`, `git diff --check` : sortie 0. `npm run build` rate
+    `build:ui:js` sur « 'esbuild' n'est pas reconnu », le `PATH` du worktree
+    étant trop long ; kit, `typecheck`, `build:code`, `build:ui` et
+    `build:manifest` lancés un par un : sortie 0.
+  - `npm run galerie` puis `npm run galerie:captures` : sortie 0, 27 captures.
+  - Mutations refusées puis restaurées à l'identique, contre
+    `styleDictionary.test.ts` : dimension typée `string`
+    (`[object Object]`), 3 rouges ; alias vers un chemin inexistant, 3 rouges ;
+    chaîne littérale vide, 2 rouges ; `$` de tête gardé dans un segment
+    (propriété absente), 2 rouges. Contre `conformiteDtcg.test.ts` : unité
+    `em`, 8 rouges ; composante hors de [0, 1], 6 rouges.
+- Résultats :
+  - designtokens.org sert le schéma empaqueté par `schemas/scripts/bundle.ts` ;
+    ses sous-schémas y répondent 404. Le fichier empaqueté est figé dans
+    `packages/plugin/tests/dtcg-2025.10/`, sources au commit `11f95e8` du dépôt
+    `design-tokens/community-group`.
+  - Export simulé : 28 feuilles conformes sur 40 ; les 12 autres sont le
+    dialecte que `FORMAT.md` énumère, `string`, `boolean` et `$value: null`.
+    Sans elles, le document entier est valide. Le document dérivé du Playground
+    en L2 rend 720 feuilles conformes sur 721, le chiffre de l'état des lieux.
+  - Style Dictionary 5.5.3, groupe `css` : 37 déclarations pour 38 feuilles,
+    `keys.__proto__.primary` étant ignorée depuis la 5.4.4. Un fichier qui porte
+    une boucle d'alias est refusé en « Reference Errors » ; le test
+    d'intégration construit le fichier simulé sans elle.
+  - Documents mis en accord : `CONCEPT.md`, `README.md`, `ROADMAP.md`,
+    `docs/RECETTE.md`, README du plugin et section Vérification d'`AGENTS.md`.
+- Artefacts et empreintes :
+  - `packages/plugin/tests/dtcg-2025.10/format.json` :
+    `32e93b780e4e4bca778d0780cb797a560deedc470c608af16576223f7e42915f`.
+  - Worktree de session, `packages/plugin/dist/galerie/clair/planche-6.png` :
+    `291756c75d0516ac5bcc7ce29f66913055f545205ba0899832a35dc121a32021`.
+  - Même dossier, `sombre/planche-6.png` :
+    `48b490a13adefb90b4fa126b67e0488dedce9deac63b9e325f352354550e2c0b`.
 - Écart ou réserve : aucun

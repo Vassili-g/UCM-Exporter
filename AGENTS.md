@@ -690,6 +690,18 @@ compare à une sortie du moteur ; il n'est jamais rafraîchi, et son empreinte
 SHA‑256 est dans le README voisin ; il disparaît avec le code qui lit la forme
 d'origine, jamais avant. Il n'est pas publié non plus.
 
+`packages/plugin/tests/dtcg-2025.10/` porte le schéma du module Format DTCG
+`2025.10`, tel que designtokens.org le sert, avec son empreinte.
+`conformiteDtcg.test.ts` y juge chaque feuille des exports du fichier simulé et
+fixe les chemins exacts du dialecte. Il ajoute les contrôles que le schéma ne
+porte pas : marque à la racine, alpha, unité `px`, motif des segments. Le schéma
+ne se rafraîchit pas : le remplacer suit la décision de viser une autre version
+du module. `styleDictionary.test.ts` passe le même export sérialisé à Style
+Dictionary, à la version exacte des `devDependencies` du plugin. Il refuse
+`[object Object]`, une propriété absente, une référence non résolue et une valeur
+vide. Il ne lit pas la configuration du Playground, dont la preuve est son
+propre build.
+
 `packages/plugin/tests/lois.ts` est l’unique autorité sur les lois de forme d’un
 contrat, et `packages/plugin/tests/exportComponent.test.ts` les applique à chaque
 contrat que le moteur fabrique : renvois qui se résolvent, catalogues sans doublon ni entrée

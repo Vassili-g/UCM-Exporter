@@ -34,12 +34,12 @@ un composant composé. Couvrir un catalogue entier n'en fait pas partie.
 |---|---|
 | Forme du contrat | Vues exactes publiées sous cinq catalogues de parties, plus un `samples` récursif non normatif. Valeurs neutres élidées, une entrée par ligne sur deux niveaux |
 | Lois du moteur | `packages/plugin/tests/lois.ts` les porte, `exportComponent.test.ts` les applique à chaque contrat fabriqué. Aucune ne cite le nom d'un composant |
-| Export DTCG | Variables locales, alias et modes exportés. Collisions diagnostiquées. Figma refuse de créer un cycle d'alias |
+| Export DTCG | Variables locales, alias et modes exportés dans la version 1 du format de tokens : couleurs et dimensions du module `2025.10`, graisses reconnues en nombre, marque de version à la racine. Collisions diagnostiquées. Figma refuse de créer un cycle d'alias |
 | Structure portable | Flex, wrap, grille, arbres récursifs, tailles, bornes, typographie, icônes et composition, tous couverts par le vocabulaire du contrat |
 | Position et rotation | Un calque hors du flux est placé par `constraints` et `inset`, sa `rotation` écrite en vocabulaire CSS |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlées |
 | Consommation | `@ucm-kit/core` lit deux versions et porte les contrôles indépendants du langage. `@ucm-kit/cli` les exécute et découvre l'adaptateur optionnel. `@ucm-kit/adapter-typescript` compare props et composition, puis génère les types dérivés |
-| Contrôles chez le consommateur | Forme, version, graphe de composition, adresses des échantillons, références de tokens, et parité statique quand l'adaptateur est installé. Tout vient du workflow qu'`ucm init` écrit |
+| Contrôles chez le consommateur | Forme, version du contrat et du format de tokens, graphe de composition, adresses des échantillons, références de tokens, et parité statique quand l'adaptateur est installé. Tout vient du workflow qu'`ucm init` écrit |
 | Rapport CI | Constats et avertissements agrégés dans le terminal, le résumé CI et le commentaire de pull request |
 | Interopérabilité | JSON Schema publié dans `schema/`, dérivé de `types.ts`. Il décrit la forme, jamais la cohérence. Il ne bloque aucune fusion |
 | Validation Figma | Quatre composants exportés à la forme courante, puis reconstruits à froid depuis leur seul contrat. Le Playground porte ce corpus, et son contrôle est vert |
@@ -54,7 +54,7 @@ Aucun contrôle n'exécute le rendu.
 | Aucun contrat existant ne publie de `SLOT` ni de propriété `INSTANCE_SWAP` native | Ces deux chemins du moteur ne sont éprouvés que par des tests synthétiques |
 | Le corpus tient à quatre composants | La généralité du moteur se mesure sur ses invariants, pas sur ce corpus |
 | Les protections de branche sont indisponibles sur le plan GitHub actuel | La CI détecte l'écart sans empêcher la fusion. Une pull request rouge reste fusionnable |
-| `tokens.json` n'a pas de version propre | Un consommateur ne peut pas refuser un fichier de tokens d'une forme qu'il ne lit pas |
+| La version 1 du format de tokens ne sort encore que d'un fichier simulé | Aucun export Figma réel ne l'a produite, ni en sRGB ni en Display P3, et le plugin servi par la Community produit la forme d'origine |
 | La projection CSS des modes n'est pas implémentée | Le multi-marque au runtime n'existe pas |
 
 ## Fragilités connues
@@ -167,9 +167,11 @@ valeur oriente une décision. La [politique de
 compatibilité](./docs/COMPATIBILITE.md) relie le contrat, le schéma, les tokens,
 les paquets et les adaptateurs.
 
-L'[alignement DTCG](./docs/notes/ALIGNEMENT-DTCG.md) engage le premier changement
-de projection de `tokens.json`. Son plan ajoute la marque de version du format, le
-lecteur correspondant et le diff sémantique sur deux artefacts successifs.
+L'[alignement DTCG](./docs/notes/ALIGNEMENT-DTCG.md) donne à `tokens.json` sa
+version 1 du format de tokens. `@ucm-kit/core` 0.1.25 lit la marque, et le
+plugin du dépôt produit cette version. Restent les exports Figma réels et la
+publication du plugin sur la Community, que le
+[plan](./docs/notes/PLAN-ALIGNEMENT-DTCG.md) ordonne.
 
 ### 6. Passer la recette externe
 

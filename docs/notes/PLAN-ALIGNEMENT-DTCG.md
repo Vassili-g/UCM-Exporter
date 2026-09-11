@@ -668,29 +668,29 @@ Fichiers autorisés :
 
 Actions :
 
-- [ ] Figer la révision exacte du
+- [x] Figer la révision exacte du
       [schéma DTCG 2025.10](https://www.designtokens.org/schemas/2025.10/format.json)
       utilisée par les tests, puis enregistrer sa source et son empreinte.
-- [ ] Valider un export complet et sérialisé contre ce schéma.
-- [ ] Ajouter les contrôles UCM qui dépassent le schéma générique : marque à la
+- [x] Valider un export complet et sérialisé contre ce schéma.
+- [x] Ajouter les contrôles UCM qui dépassent le schéma générique : marque à la
       racine, alpha présent, unité `px`, chemins réservés et ordre stable.
-- [ ] Déclarer la version exacte de Style Dictionary retenue en L3 dans les
+- [x] Déclarer la version exacte de Style Dictionary retenue en L3 dans les
       `devDependencies` du plugin. Le test juge la sortie de `exportTokens.ts`,
       et le plugin dépend du kit, jamais l'inverse. Le kit ne lit aucune valeur
       de token : Style Dictionary n'y a pas d'usage.
-- [ ] Ajouter dans l'Exporter un test d'intégration qui passe à cette version
+- [x] Ajouter dans l'Exporter un test d'intégration qui passe à cette version
       les exports sérialisés du mock, calculés au moment du test.
-- [ ] Faire refuser par ce test `[object Object]`, une propriété absente, une
+- [x] Faire refuser par ce test `[object Object]`, une propriété absente, une
       référence non résolue et une valeur CSS vide.
-- [ ] Prouver les quatre refus par mutation, sans ouvrir le clone voisin du
+- [x] Prouver les quatre refus par mutation, sans ouvrir le clone voisin du
       Playground. Le test compile avec le groupe `css` standard ; la preuve que
       la configuration du Playground compile reste son build, en L3 et en L8.
-- [ ] Prouver que le schéma refuse une composante ou une unité invalide.
-- [ ] Mettre `FORMAT`, `SPEC`, `COMPATIBILITE`, le changelog, le README du plugin,
+- [x] Prouver que le schéma refuse une composante ou une unité invalide.
+- [x] Mettre `FORMAT`, `SPEC`, `COMPATIBILITE`, le changelog, le README du plugin,
       la recette et la roadmap en accord avec le code terminé.
-- [ ] Vérifier les liens, l'inventaire des invariants, le style documentaire et
+- [x] Vérifier les liens, l'inventaire des invariants, le style documentaire et
       l'accord entre numéro de version et contenu.
-- [ ] Produire les captures de la galerie pour le résultat et l'avertissement
+- [x] Produire les captures de la galerie pour le résultat et l'avertissement
       `LEGACY`. Le plugin ne lit aucun fichier de tokens : le refus d'une
       version future appartient au rapport du kit, que les tests de L4
       vérifient.

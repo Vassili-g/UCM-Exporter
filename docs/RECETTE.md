@@ -231,9 +231,12 @@ Attendu :
 
 1. le plugin annonce « Prêt à publier dans `tokens.json` » et dit d'où vient ce
    chemin ;
-2. après publication, il affiche un lien vers une pull request ;
-3. sur GitHub, la pull request contient un seul fichier, `tokens.json` ;
-4. la CI tourne et publie un commentaire sur la pull request.
+2. sous le résumé des tokens, il annonce « DTCG 2025.10, version 1 du format de
+   tokens » ;
+3. après publication, il affiche un lien vers une pull request ;
+4. sur GitHub, la pull request contient un seul fichier, `tokens.json`, et son
+   en-tête annonce « Version du format de tokens : `1` » ;
+5. la CI tourne et publie un commentaire sur la pull request.
 
 **Lisez ce commentaire.** C'est le troisième critère du test : un rapport
 lisible par un designer, sans ouvrir un seul journal de CI.
