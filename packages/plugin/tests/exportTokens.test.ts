@@ -16,6 +16,9 @@ import {
 import type { ExportContext } from '../src/tokens/exportTokens';
 import { collisionWarnings, indexVariables, VariableNameResolver } from '../src/variables';
 import { phraseDe } from '../src/contract/localisation';
+import { serializeJson } from '../src/contract/serializeJson';
+import { exporterLeFichier } from './fichierDeVariables';
+import type { ProfilColorimetrique } from './fichierDeVariables';
 
 test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () => {
   assert.equal(dtcgType('COLOR', 'primitives.terracota.600'), 'color');
@@ -333,5 +336,47 @@ test('un token de collection « $Brand » ou « {Brand} » se trouve par la réf
     assert.deepEqual(exporte.warnings, []);
   } finally {
     (globalThis as { figma?: unknown }).figma = precedent;
+  }
+});
+
+/**
+ * Deux exports du même fichier Figma doivent donner les mêmes octets : une pull
+ * request d'export compare le contenu, et un écart d'ordre ou d'arrondi en
+ * ouvrirait une pour un fichier inchangé.
+ */
+test('deux exports du même fichier sont identiques à l’octet, et le fichier écrit se relit', async () => {
+  const premier = await exporterLeFichier();
+  const second = await exporterLeFichier();
+
+  assert.equal(second.content, premier.content);
+  assert.equal(serializeJson(JSON.parse(premier.content)), premier.content);
+});
+
+/** Les chemins, les types et les références d'un export, sans ses valeurs littérales. */
+function squelette(contenu: string) {
+  type Feuille = { $value: unknown; $type: string; $extensions?: Record<string, Record<string, unknown>> };
+  const index = indexerTokensDtcg(JSON.parse(contenu)) as Map<string, Feuille>;
+  return [...index].map(([chemin, feuille]) => {
+    const modes = feuille.$extensions?.['com.ucm.modes'] ?? {};
+    const references = [feuille.$value, ...Object.values(modes)]
+      .map((valeur) => (typeof valeur === 'string' && valeur.startsWith('{') ? valeur : '·'));
+    return `${chemin} ${feuille.$type} ${Object.keys(modes).join('|')} ${references.join(' ')}`;
+  });
+}
+
+test('le profil colorimétrique ne change ni un chemin, ni un type, ni une référence', async () => {
+  const reference = squelette((await exporterLeFichier({ profil: 'SRGB' })).content);
+  for (const profil of ['DISPLAY_P3', 'LEGACY'] as ProfilColorimetrique[]) {
+    assert.deepEqual(squelette((await exporterLeFichier({ profil })).content), reference, profil);
+  }
+});
+
+test('les clés héritées d’Object.prototype restent des tokens et des modes', async () => {
+  const tokens = JSON.parse((await exporterLeFichier()).content);
+
+  assert.deepEqual(Object.keys(tokens.keys), ['__proto__', 'constructor', 'prototype', 'value', 'type']);
+  for (const groupe of Object.keys(tokens.keys)) {
+    const modes = tokens.keys[groupe].primary.$extensions['com.ucm.modes'];
+    assert.deepEqual(Object.keys(modes), ['constructor', '__proto__', 'prototype'], groupe);
   }
 });

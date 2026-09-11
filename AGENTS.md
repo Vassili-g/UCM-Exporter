@@ -135,6 +135,7 @@ packages/kit/            le format et ses lecteurs : @ucm-kit/core, publié
   scripts/generer-refus.mjs  les refus de version, rendus pour la relecture
   schema/                  le schéma commité, publié en `@ucm-kit/core/schema`
   fixtures/contrats/       jeux figés que le moteur ne sait plus fabriquer : 12.0 (N-1), 11.0
+  fixtures/tokens/         le tokens.json d'origine, antérieur à la version 1 du format de tokens
   tests/                   `.test.ts` pour le format, `.test.mjs` pour les lecteurs
 
 packages/cli/            la ligne de commande : @ucm-kit/cli, publiée

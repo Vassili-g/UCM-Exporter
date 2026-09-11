@@ -472,25 +472,25 @@ documents fabriqués.
 
 Actions :
 
-- [ ] Figer dans `packages/kit/fixtures/tokens/origine/` un export d'origine
+- [x] Figer dans `packages/kit/fixtures/tokens/origine/` un export d'origine
       produit par le moteur actuel depuis le mock. Il couvre sRGB, dimensions,
       familles, graisses, modes et alias. Son empreinte SHA-256 va dans un
       README voisin.
-- [ ] Ajouter au mock du producteur les cas Display P3 et `LEGACY`. Leur sortie
+- [x] Ajouter au mock du producteur les cas Display P3 et `LEGACY`. Leur sortie
       se calcule au moment du test et ne se commite pas.
-- [ ] Dériver de l'export d'origine les documents structurés sRGB et Display P3
+- [x] Dériver de l'export d'origine les documents structurés sRGB et Display P3
       que L3 compile. Ce sont des artefacts temporaires : leur chemin et leur
       empreinte vont au journal.
-- [ ] Ajouter un comparateur, utilitaire de test, qui compare deux documents
+- [x] Ajouter un comparateur, utilitaire de test, qui compare deux documents
       token par token : chemin, `$type`, alias, mode, valeur numérique et espace
       colorimétrique.
-- [ ] Définir les seules différences autorisées : marque racine, structure des
+- [x] Définir les seules différences autorisées : marque racine, structure des
       couleurs et dimensions, type et valeur des graisses reconnues.
-- [ ] Vérifier que deux exports du même mock sont identiques octet pour octet.
-- [ ] Vérifier le JSON sérialisé, puis le document reparsé.
-- [ ] Conserver les cas de clés `$value`, `$type`, `__proto__`, `constructor` et
+- [x] Vérifier que deux exports du même mock sont identiques octet pour octet.
+- [x] Vérifier le JSON sérialisé, puis le document reparsé.
+- [x] Conserver les cas de clés `$value`, `$type`, `__proto__`, `constructor` et
       `prototype`.
-- [ ] Faire échouer le comparateur avec une clé renommée, un alias aplati, un
+- [x] Faire échouer le comparateur avec une clé renommée, un alias aplati, un
       mode perdu et une composante modifiée.
 
 Critère de sortie : le harnais échoue sur toute modification qui n'appartient
