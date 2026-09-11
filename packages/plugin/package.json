@@ -21,6 +21,7 @@
   "devDependencies": {
     "@figma/plugin-typings": "^1.68.0",
     "ajv": "^8.20.0",
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "style-dictionary": "5.5.3"
   }
 }

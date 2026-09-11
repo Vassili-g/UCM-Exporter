@@ -17,3 +17,7 @@ packages/kit/fixtures/contrats/**/*.json text eol=lf
 # Même raison pour le tokens.json d'origine figé, dont le README publie
 # l'empreinte.
 packages/kit/fixtures/tokens/**/*.json text eol=lf
+
+# Le schéma DTCG figé garde les octets servis par designtokens.org : son README
+# en publie l'empreinte.
+packages/plugin/tests/dtcg-2025.10/*.json -text
