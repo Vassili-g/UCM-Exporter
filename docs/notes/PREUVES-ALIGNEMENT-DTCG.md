@@ -5,11 +5,11 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 
 ## État
 
-- Lot courant : L4
-- Exporter, branche et `HEAD` : `main`, `23153fc` au départ de L0
-- Playground, branche et `HEAD` : `main`, `6489d88` après L3
+- Lot courant : L5
+- Exporter, branche et `HEAD` : `main`, `ff2a719` pour le code de L4
+- Playground, branche et `HEAD` : `main`, `8908c66` après L4
 - Style Dictionary retenu : `5.5.3`, exact ; `4.4.0` au départ
-- Versions npm prévues : `@ucm-kit/core` 0.1.25, `@ucm-kit/cli` 0.1.24,
+- Versions npm servies : `@ucm-kit/core` 0.1.25, `@ucm-kit/cli` 0.1.24,
   `@ucm-kit/adapter-typescript` 0.1.17
 - Dernière porte humaine franchie : aucune
 
@@ -142,4 +142,47 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
     `cc3c8f79657f12a5cd381dd58dbd5998755998724c33a2b7e2d593bab5d70b6b`.
   - Scripts de mesure : `l3/construire.mjs` et `l3/css.mjs`, dans le même
     dossier.
+- Écart ou réserve : aucun
+
+### L4 — Lecteur de version dans le kit
+
+- Commit : Exporter `ff2a719` (code, tests, versions, pins) puis celui qui
+  porte cette entrée ; Playground `8908c66` (pin de la CLI).
+- Commandes :
+  - `npx tsx --test tests/formatDeTokens.test.ts` avant le module : sortie 1,
+    `ERR_MODULE_NOT_FOUND`. Après : 11 tests verts, porte publique comprise.
+  - `npx tsx --test tests/controleRepository.test.mjs` : 25 tests verts.
+  - Mutation 1, contrôle placé après l'état de démarrage : sortie 1, le test
+    « aucun contrat encore » échoue.
+  - Mutation 2, contrôle placé après l'analyse des contrats : sortie 1, trois
+    tests échouent, dont « refus avant tout token ». Fichier restauré par
+    copie, `cmp` identique.
+  - `npm test` : sortie 0, 960 tests verts ; `npm run typecheck`,
+    `npm run build`, `git diff --check` : sortie 0. CI de `ff2a719` : succès.
+  - `npm pack` des trois paquets, installation dans un consommateur vierge,
+    kit en premier : `npm ls` montre `@ucm-kit/core@0.1.25` dédupliqué sous la
+    CLI et l'adaptateur. `ucm check` depuis l'archive : version 2, sortie 1 ;
+    marque `"1"`, sortie 1 ; fichier d'origine figé, sortie 0. Les trois sans
+    contrat.
+  - `gh workflow run publish.yml` pour `@ucm-kit/core` (run `34613788152`) et
+    `@ucm-kit/cli` (run `34614143651`) : rouges sur la seule étape des pins
+    servis, publication et épreuve du registre vertes ; pour
+    `@ucm-kit/adapter-typescript` (run `34614329580`) : succès.
+  - `npm view` : `@ucm-kit/core@0.1.25`, `@ucm-kit/cli@0.1.24`,
+    `@ucm-kit/adapter-typescript@0.1.17` servies ; la CLI dépend du kit 0.1.25.
+  - Playground : `npx --yes @ucm-kit/cli@0.1.24 check` sur son fichier
+    d'origine, sortie 0 ; CI `ucm` sur `8908c66` : succès.
+- Résultats :
+  - Un document qui n'est pas un objet est classé `invalide` ;
+    `COMPATIBILITE.md`, `AGENTS.md` et le README du kit le disent.
+  - Un entier positif inférieur à la version courante serait invalide : la
+    seule forme antérieure ne porte pas de marque.
+  - `CONTRACT_VERSION` reste 13.0, le schéma publié ne change pas.
+- Artefacts et empreintes, dossier temporaire de session `l4/archives/` :
+  - `ucm-kit-core-0.1.25.tgz` :
+    `51312e2cb98872c8d1aea56aa436cf35c6ab38eed77aef285b72c63af8a521d3`.
+  - `ucm-kit-cli-0.1.24.tgz` :
+    `d3cc16de72b4747664753502d40cc659114535545e646a6c0d672b4f853f39f4`.
+  - `ucm-kit-adapter-typescript-0.1.17.tgz` :
+    `1778b1e0be055daf60c7aab112cccecebeda576eae4be9d58d0b200a65bd7885`.
 - Écart ou réserve : aucun
