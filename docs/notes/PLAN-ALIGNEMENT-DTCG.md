@@ -104,8 +104,8 @@ côté de cette étape.
       `exportTokens.test.ts` ne teste jamais `handleExportTokens`, faute de
       global `figma`. Le seul mock existant est local à
       `exportComponent.test.ts`, non exporté, avec des variables codées en dur
-      et une racine sans `documentColorProfile`. Les tests de 1.6, 2A.1, 2B.1,
-      2B.2 et 2B.7 en dépendent.
+      et une racine sans `documentColorProfile`. Les tests de 2A.1, 2B.1, 2B.2
+      et 2B.7 en dépendent.
       Sortir un mock partagé : collections, variables, modes, liaisons et
       `documentColorProfile` paramétrables.
       *Ferme :* `exportComponent.test.ts` passe sur le mock partagé, et un test
@@ -155,17 +155,6 @@ côté de cette étape.
       conformes ; avec un kit antérieur à 2A.4, il rend 0 et 8 erreurs de
       lecteur ; `AGENTS.md` le cite dans la carte du dépôt.
 
-- [ ] **1.6. Signaler un cycle d'alias.**
-      `resolveRoot` détecte déjà le retour sur une variable vue, puis s'arrête
-      sans rien dire. Le cycle sort tel quel dans `tokens.json`, et il passe le
-      schéma. `ROADMAP.md` affirme pourtant que l'export diagnostique les
-      cycles.
-      `resolveRoot` étant appelé une fois par feuille, un cycle entre deux
-      variables serait vu deux fois : les cycles déjà signalés se retiennent
-      dans un champ optionnel d'`ExportContext`.
-      *Ferme :* l'export complet de deux variables qui s'aliasent rend
-      exactement un avertissement ; le test vu rouge avant la correction.
-
 ---
 
 ## Phase 2 — Valeurs en objets et graisse en nombre
@@ -184,25 +173,30 @@ commit qui touche `packages/kit/src/lecteurs` ou `src/format` monte les
 versions dans le même commit, et `monorepoCoherent` impose alors de monter
 aussi cli et adapter. Ces cinq tâches forment donc **un commit**.
 
-- [ ] **2A.1. Assainir les segments de chemin.**
+- [ ] **2A.1. Assainir le segment de collection, si Figma le laisse passer.**
       Un segment qui commence par `$` fait disparaître le token :
       `indexerTokensDtcg` saute toute clé en `$`, et le contrôle du repository
-      déclare ensuite la référence absente, en avertissement.
-      La règle vit dans `packages/kit/src/format/names.ts`, qui est le domicile
-      déclaré des projections de nom, et `joinTokenPath`
-      (`packages/plugin/src/variables.ts`) l'applique. `normalizeName` ne
-      change pas : elle nomme aussi les props, les valeurs d'enum, les slots et
-      les clés de `textStyles`, et la toucher modifierait des clés du contrat
-      sans `CONTRACT_VERSION`.
+      déclare ensuite la référence absente, en avertissement. Un nom de
+      variable ne produit ni ce segment ni une accolade (section 6 de la note).
+      Seul le nom de la collection le peut.
+      **[humain]** Renommer une collection en `$test`, puis en `{test}`. Si
+      Figma refuse les deux noms, la tâche disparaît.
+      Sinon, `packages/kit/src/format/names.ts` porte la règle, puisqu'il porte
+      les projections de nom, et `joinTokenPath`
+      (`packages/plugin/src/variables.ts`) l'applique au nom de collection.
+      `normalizeName` ne change pas : elle nomme aussi les props, les valeurs
+      d'enum, les slots et les clés de `textStyles`, et la toucher modifierait
+      des clés du contrat sans `CONTRACT_VERSION`.
       Règle : retirer `{` et `}` partout, tous les `$` de tête d'un segment, et
-      retirer un segment devenu vide. Appliquer la même fonction aux noms de
-      modes (`buildLeaf` et `modeCollisionWarnings`), qui deviennent des clés
-      de `com.ucm.modes`.
+      retirer un segment devenu vide. Les noms de modes n'y passent pas : ils
+      deviennent des clés sous `$extensions`, que `indexerTokensDtcg` ne lit
+      pas.
       Aucun diagnostic : la transformation est entièrement prise en charge, et
       `collisionWarnings` signale déjà la collision qu'elle pourrait provoquer.
-      *Ferme :* un test de la fonction ; un test qui exporte un composant et
-      les tokens depuis les mêmes variables `$b`, `{a}` et `c}d`, sur le mock
-      de 1.1, et vérifie que les deux artefacts citent le même chemin.
+      *Ferme :* le constat de Figma écrit dans la section 6 de la note ; un test
+      de la fonction ; un test qui exporte un composant et les tokens depuis la
+      même collection, sur le mock de 1.1, et vérifie que les deux artefacts
+      citent le même chemin.
 
 - [ ] **2A.2. Lire la marque de grammaire.**
       Un module du kit lit `$extensions["com.ucm.grammaire"]` au niveau du
@@ -350,8 +344,8 @@ et par une nouvelle publication.
       - `AGENTS.md` : les invariants de tokens et ceux de la pull request
         d'export.
       - `README.md`, `CONCEPT.md`, la piste 2.3 de `PISTES-EVOLUTION.md`, et
-        `ROADMAP.md` : la ligne sur la version de `tokens.json`, celle sur le
-        diff sémantique et celle qui annonce les cycles diagnostiqués.
+        `ROADMAP.md` : la ligne sur la version de `tokens.json` et celle sur le
+        diff sémantique.
       - `docs/README.md` et le statut de la note de décision.
       - `packages/plugin/README.md` : un utilisateur qui lit `tokens.json` sans
         le kit doit y apprendre qu'il faut Style Dictionary 5.

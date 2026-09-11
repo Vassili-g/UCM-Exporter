@@ -34,7 +34,7 @@ un composant composé. Couvrir un catalogue entier n'en fait pas partie.
 |---|---|
 | Forme du contrat | Vues exactes publiées sous cinq catalogues de parties, plus un `samples` récursif non normatif. Valeurs neutres élidées, une entrée par ligne sur deux niveaux |
 | Lois du moteur | `packages/plugin/tests/lois.ts` les porte, `exportComponent.test.ts` les applique à chaque contrat fabriqué. Aucune ne cite le nom d'un composant |
-| Export DTCG | Variables locales, alias et modes exportés. Collisions et cycles diagnostiqués |
+| Export DTCG | Variables locales, alias et modes exportés. Collisions diagnostiquées. Figma refuse de créer un cycle d'alias |
 | Structure portable | Flex, wrap, grille, arbres récursifs, tailles, bornes, typographie, icônes et composition, tous couverts par le vocabulaire du contrat |
 | Position et rotation | Un calque hors du flux est placé par `constraints` et `inset`, sa `rotation` écrite en vocabulaire CSS |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlées |

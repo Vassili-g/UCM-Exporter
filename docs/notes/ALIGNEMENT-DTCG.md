@@ -49,9 +49,9 @@ sont hors de cette décision.
   porte cette question.
 - **Erreurs de graphe.** L'export ne refuse jamais le fichier et n'en exclut
   aucune feuille. Une cible absente sort en `$value: null` avec un
-  avertissement, et le schéma juge cette feuille non conforme. Un cycle d'alias
-  sort tel quel : il passe le schéma, et l'export ne le signale pas
-  aujourd'hui. Le plan ajoute ce signalement.
+  avertissement, et le schéma juge cette feuille non conforme. Figma refuse de
+  créer un cycle d'alias
+  ([API REST](https://developers.figma.com/docs/rest-api/variables-endpoints/)).
 - **Inférence du type.** La décision n'ajoute qu'une inférence, celle de la
   graisse. Elle reprend la règle de segment que `FORMAT.md` publie déjà pour
   `number`, et la restreint : la valeur doit être un nom de graisse connu dans
@@ -236,7 +236,11 @@ nomme les conditions de sa reprise.
   [`indexerTokensDtcg`](../../packages/kit/src/lecteurs/tokens-dtcg.mjs) saute
   toute clé en `$`, et `normalizeName` conserve ce caractère. Le point commun
   aux deux commandes du plugin est `joinTokenPath`
-  ([`variables.ts`](../../packages/plugin/src/variables.ts)).
+  ([`variables.ts`](../../packages/plugin/src/variables.ts)). Un nom de
+  variable ne produit pas ce segment : Figma y refuse `.`, `{` et `}`
+  ([API REST](https://developers.figma.com/docs/rest-api/variables-endpoints/)),
+  et l'éditeur refuse un `$` de tête. Le nom de la collection forme le premier
+  segment du chemin, et aucune de ces règles ne le vise.
 - **`EASING` et `TIMING` sont des types de variable Figma.** `dtcgType` les
   range en `string`, et une `EASING` y porte un objet `MotionEasing`. Le module
   définit `duration` et `cubicBezier`, mais un ressort, que `MotionEasing` sait
@@ -260,7 +264,7 @@ nomme les conditions de sa reprise.
 - Les variantes dérivent du fichier actuel. Elles ne mesurent ni un export réel
   (flottants de Figma, couleurs translucides), ni un document en Display P3.
 - Le corpus compte 721 feuilles et un consommateur connu. Il ne contient ni
-  booléen, ni `$value` nul, ni cycle, et son second mode n'a pas de valeur
+  booléen, ni `$value` nul, et son second mode n'a pas de valeur
   réelle. Il établit l'absence de régression sur ces valeurs, sans établir la
   généralité du typage.
 - Aucun contrôle visuel n'a été mené. Le rendu d'une couleur P3 se juge à
