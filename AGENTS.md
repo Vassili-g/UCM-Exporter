@@ -247,7 +247,12 @@ La spécification en lien porte le raisonnement.
   trois dans `packages/kit/src/format/names.ts` : `normalizeName` va du chemin
   Figma au token, `codeIdentifier` du nom Figma à l'identifiant de code, et
   `tokenCssVariable` du token à la propriété personnalisée CSS. Une projection
-  recopiée ailleurs est une faute : elle diverge sans produire d'erreur. Borne
+  recopiée ailleurs est une faute : elle diverge sans produire d'erreur. Le
+  chemin d'un token s'assemble dans `joinTokenPath` seul
+  (`packages/plugin/src/variables.ts`) : collection et variable passent par
+  `normalizeName`, leurs segments perdent accolades et `$` de tête, puis la
+  collection n'est écrite qu'une fois. Figma accepte ces caractères dans un nom
+  de collection, et une référence DTCG ne sait pas les citer. Borne
   de `tokenCssVariable` : elle ne coupe pas sur les bosses de casse, ce qui la
   distingue d'un `kebabCase` de bibliothèque, et elle n'est pas une bijection.
   → [spec](./docs/FORMAT.md#nommer-et-citer-un-token)

@@ -97,8 +97,8 @@ côté de cette étape.
       `exportTokens.test.ts` ne teste jamais `handleExportTokens`, faute de
       global `figma`. Le seul mock existant est local à
       `exportComponent.test.ts`, non exporté, avec des variables codées en dur
-      et une racine sans `documentColorProfile`. Les tests de 2A.1, 2B.1, 2B.2
-      et 2B.7 en dépendent.
+      et une racine sans `documentColorProfile`. Les tests de 2B.1, 2B.2 et 2B.7
+      en dépendent.
       Sortir un mock partagé : collections, variables, modes, liaisons et
       `documentColorProfile` paramétrables.
       *Ferme :* `exportComponent.test.ts` passe sur le mock partagé, et un test
@@ -164,32 +164,7 @@ erreur. Aucune protection ne vient de 2A ; ce kit ignore les valeurs.
 `versionSuitLeContenu.test.mjs` n'excepte que `tests/` et `fixtures/` : tout
 commit qui touche `packages/kit/src/lecteurs` ou `src/format` monte les
 versions dans le même commit, et `monorepoCoherent` impose alors de monter
-aussi cli et adapter. Ces cinq tâches forment donc **un commit**.
-
-- [ ] **2A.1. Assainir le segment de collection, si Figma le laisse passer.**
-      Un segment qui commence par `$` fait disparaître le token :
-      `indexerTokensDtcg` saute toute clé en `$`, et le contrôle du repository
-      déclare ensuite la référence absente, en avertissement. Un nom de
-      variable ne produit ni ce segment ni une accolade (section 6 de la note).
-      Seul le nom de la collection le peut.
-      **[humain]** Renommer une collection en `$test`, puis en `{test}`. Si
-      Figma refuse les deux noms, la tâche disparaît.
-      Sinon, `packages/kit/src/format/names.ts` porte la règle, puisqu'il porte
-      les projections de nom, et `joinTokenPath`
-      (`packages/plugin/src/variables.ts`) l'applique au nom de collection.
-      `normalizeName` ne change pas : elle nomme aussi les props, les valeurs
-      d'enum, les slots et les clés de `textStyles`, et la toucher modifierait
-      des clés du contrat sans `CONTRACT_VERSION`.
-      Règle : retirer `{` et `}` partout, tous les `$` de tête d'un segment, et
-      retirer un segment devenu vide. Les noms de modes n'y passent pas : ils
-      deviennent des clés sous `$extensions`, que `indexerTokensDtcg` ne lit
-      pas.
-      Aucun diagnostic : la transformation est entièrement prise en charge, et
-      `collisionWarnings` signale déjà la collision qu'elle pourrait provoquer.
-      *Ferme :* le constat de Figma écrit dans la section 6 de la note ; un test
-      de la fonction ; un test qui exporte un composant et les tokens depuis la
-      même collection, sur le mock de 1.1, et vérifie que les deux artefacts
-      citent le même chemin.
+aussi cli et adapter. Ces quatre tâches forment donc **un commit**.
 
 - [ ] **2A.2. Lire la marque de grammaire.**
       Un module du kit lit `$extensions["com.ucm.grammaire"]` au niveau du
