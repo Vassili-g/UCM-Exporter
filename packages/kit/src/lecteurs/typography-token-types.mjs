@@ -23,6 +23,8 @@ const TYPES_TYPOGRAPHIQUES = {
   fontWeight: ["number", "string"],
   lineHeight: ["dimension"],
   letterSpacing: ["dimension"],
+  paragraphSpacing: ["dimension"],
+  paragraphIndent: ["dimension"],
 };
 
 function estObjet(valeur) {

@@ -64,34 +64,28 @@ au build, conformément au concept.
 
 **Besoin et appui dans le code.**
 [unsupportedProperties.ts](../../packages/plugin/src/contract/unsupportedProperties.ts)
-signale notamment `textCase` et `textDecoration` sur les calques publiés. Les
-ajouter aurait un effet vérifiable : un texte en capitales ou souligné pourrait
-être reconstruit depuis le contrat. La sélection des calques resterait celle de
-[structureTree.ts](../../packages/plugin/src/contract/structureTree.ts).
+signale les propriétés à effet visuel que le contrat n’écrit pas : effets,
+opacité partielle, mask, peinture non unie, blend mode, pointillé, et pour un
+texte `listSpacing`, `hangingList` et `hangingPunctuation`. Le texte publie une
+valeur uniforme par text style (`literals`) et par calque (les champs d’usage de
+`variantViews.*.typography`).
 
-**Solutions à comparer.** Une première extension pourrait décrire une valeur
-uniforme par calque texte. Une seconde pourrait décrire des segments de texte
-ayant des propriétés différentes. Un calque dont les caractères diffèrent rend
-`figma.mixed`, qui ne porte aucune valeur ; Figma lit alors les propriétés par
-plage et rend les segments stylés.
+**Solutions à comparer.** Les plages d’un même calque texte peuvent porter des
+réglages différents. Figma rend alors `figma.mixed`, qui ne porte aucune valeur,
+et lit les propriétés plage par plage.
 [Lecture des textes dans Figma](https://developers.figma.com/docs/plugins/working-with-text/).
+Un tel calque avertit, et le contrat publie la valeur de son style.
 
-**Direction proposée.** Commencer par les valeurs uniformes sur un composant
-réel. Déterminer si la propriété appartient au text style ou à son usage local
-avant de choisir son emplacement dans le contrat. La traduction de la casse
-devrait préciser les effets de la langue et les différences entre
-transformation du texte affiché et modification de son contenu.
-
-Le support des segments demanderait une décision distincte : leurs adresses
-peuvent dépendre d’un contenu de maquette indicatif. Des indices de caractères
-ne peuvent pas devenir une obligation sur un texte applicatif remplaçable sans
-définir cette relation.
+**Direction proposée.** Le support des segments demanderait une décision
+distincte : leurs adresses peuvent dépendre d’un contenu de maquette indicatif.
+Des indices de caractères ne peuvent pas devenir une obligation sur un texte
+applicatif remplaçable sans définir cette relation.
 
 **Module et validation.** L’extension appartiendrait au producteur et aux
 lecteurs du format. Son exploitation par un générateur ou un comparateur
 resterait facultative. Un consommateur incapable de traiter le champ
-l’indiquerait dans sa couverture. L’essai porterait sur un texte uniforme, un
-texte mixte et un contenu remplacé, avec une comparaison dans le navigateur.
+l’indiquerait dans sa couverture. L’essai porterait sur un texte mixte et un
+contenu remplacé, avec une comparaison dans le navigateur.
 Le coût comprend l’évolution du schéma, la compatibilité et les adaptateurs,
 au-delà de la seule extraction Figma.
 

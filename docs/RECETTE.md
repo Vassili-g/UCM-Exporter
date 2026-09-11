@@ -341,7 +341,7 @@ les trois dans une seule pull request de rebut, que vous fermerez sans fusionner
 git checkout -b recette/echecs-attendus
 ```
 
-**Critère 4.** Dans le contrat, remplacez `"contractVersion": "12.0"` par
+**Critère 4.** Dans le contrat, remplacez `"contractVersion": "13.0"` par
 `"contractVersion": "99.0"`. Attendu : la fusion est bloquée, et le message dit
 qu'un développeur doit mettre à jour l'outillage du repository, pas qu'un
 designer doit réexporter.

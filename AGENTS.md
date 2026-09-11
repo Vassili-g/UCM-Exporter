@@ -69,6 +69,7 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
       semantics.ts             vocabulaire sémantique partagé
       colorKeys.ts             clé d'une couleur dans la feuille d'un variant
       structureTree.ts         qui est un conteneur, qui est une feuille
+      textRendering.ts         les propriétés de texte sans variable, en CSS
       unsupportedProperties.ts ce qu'un calque publié porte et que le schéma ignore
       localisation.ts          le Constat : où, quoi, impact et action, séparés
       extract*.ts              structure, layout, tailles, tokens et règles
@@ -133,7 +134,7 @@ packages/kit/            le format et ses lecteurs : @ucm-kit/core, publié
   scripts/build-schema.ts  génère le schéma depuis types.ts
   scripts/generer-refus.mjs  les refus de version, rendus pour la relecture
   schema/                  le schéma commité, publié en `@ucm-kit/core/schema`
-  fixtures/contrats/11.0/  jeu N-1 figé, que le moteur ne sait plus fabriquer
+  fixtures/contrats/       jeux figés que le moteur ne sait plus fabriquer : 12.0 (N-1), 11.0
   tests/                   `.test.ts` pour le format, `.test.mjs` pour les lecteurs
 
 packages/cli/            la ligne de commande : @ucm-kit/cli, publiée
@@ -333,8 +334,14 @@ La spécification en lien porte le raisonnement.
   soient, jamais une sélection. `variants[].tokens` relève les couleurs du
   variant entier.
 - Une typographie appartient à un calque texte et vient de son text style.
-  `textStyles` lie le style à ses variables, la vue exacte situe son usage par un
-  chemin de slots. Un slot à plusieurs textes décrit ses parts dans `children` :
+  `textStyles` lie le style à ses variables (`tokens`) et publie en CSS ce
+  qu’aucune variable ne porte (`literals`). La vue exacte situe son usage par un
+  chemin de slots, et l’usage porte l’alignement et la troncature du calque.
+  `textRendering.ts` fait ces traductions. Un calque dont `textCase`,
+  `textDecoration`, `textWrapStyle` ou `leadingTrim` diffère de son style
+  avertit, et le contrat publie la valeur du style. Borne : un calque sans text
+  style ne publie aucun usage, donc ni alignement ni troncature.
+  Un slot à plusieurs textes décrit ses parts dans `children` :
   les nodes représentés y portent leur visibilité, les cibles graphiques non
   représentées restent dans `visibilityTargets`.
   → [spec](./docs/FORMAT.md#5-typographie)
@@ -425,10 +432,10 @@ La spécification en lien porte le raisonnement.
 - Une propriété à effet visuel qu’aucun champ du schéma n’écrit avertit, mais
   seulement sur un calque publié et jamais pour une valeur au défaut de Figma.
   La première réserve écarte le masque d’une icône, dont ce relevé ne voit jamais
-  les tracés ; la seconde écarte `clipsContent` et l’alignement d’un texte en
-  `Hug`. Aucune réserve ne se lit sur l’usage supposé d’un calque : sur un calque
-  publié, `isMask` avertit comme le reste. Une propriété que le contrat écrit
-  n’y figure jamais, `rotation` comprise.
+  les tracés ; la seconde écarte `clipsContent` et un `listSpacing` nul. Aucune
+  réserve ne se lit sur l’usage supposé d’un calque : sur un calque publié,
+  `isMask` avertit comme le reste. Une propriété que le contrat écrit n’y figure
+  jamais, `rotation`, l’alignement et la casse d’un texte compris.
   → [spec](./docs/FORMAT.md#propriétés-non-portables)
 
 ### Grilles
@@ -607,7 +614,7 @@ dessus ne prouverait que sa propre immobilité. Les tests de
 
 **Le lecteur, lui, pose la question inverse.**
 `packages/kit/fixtures/contrats/` porte un corpus de la version **précédente**,
-quatre contrats 11.0, et ce corpus est nécessaire : la fenêtre de lecture à deux
+quatre contrats 12.0, et ce corpus est nécessaire : la fenêtre de lecture à deux
 versions n’est observable qu’à partir de contrats que le moteur ne produit
 plus. L’immobilité, qui est le défaut de l’instantané côté moteur, est ici
 la propriété recherchée.
@@ -621,6 +628,10 @@ Trois bornes le tiennent :
   qui empêche de le croire frais ;
 - il **disparaît** quand la fenêtre de lecture se referme au-dessus de sa
   version, en même temps que le code de compatibilité qu’il couvre, jamais avant.
+
+Le jeu 11.0 est sorti de la fenêtre et reste en place : `validation-contrat.mjs`
+garde le code qui lit la 11.0, et `refus-enregistres.test.mjs` mesure ce code
+sur lui. Il disparaît avec ce code.
 
 Il n’est pas publié : `files` du kit ne l’inclut pas.
 

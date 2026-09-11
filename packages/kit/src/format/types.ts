@@ -216,20 +216,64 @@ export type TypographyTokens = Partial<{
   lineHeight: string;
   fontFamily: string;
   letterSpacing: string;
+  /** Espace entre deux paragraphes. Absent quand le style vaut zéro. */
+  paragraphSpacing: string;
+  /** Retrait de la première ligne d'un paragraphe. Absent quand le style vaut zéro. */
+  paragraphIndent: string;
+}>;
+
+/**
+ * Les propriétés d'un text style qu'aucune variable Figma ne peut porter.
+ *
+ * Chaque clé est une propriété CSS, et sa valeur s'écrit telle quelle dans la
+ * déclaration. Une propriété à sa valeur par défaut dans Figma est absente.
+ */
+export type TextStyleLiterals = Partial<{
+  /** Vient de `textCase` `UPPER`, `LOWER` ou `TITLE`. Le contenu du texte reste inchangé. */
+  textTransform: 'uppercase' | 'lowercase' | 'capitalize';
+  /** Vient de `textCase` `SMALL_CAPS` ou `SMALL_CAPS_FORCED`. */
+  fontVariantCaps: 'small-caps' | 'all-small-caps';
+  /** Vient de `textDecoration` `UNDERLINE` ou `STRIKETHROUGH`. */
+  textDecorationLine: 'underline' | 'line-through';
+  /**
+   * Vient d'un `fontName.style` italique. Absent quand `tokens.fontWeight` cite
+   * la variable reliée à `fontStyle`, dont la valeur contient déjà « Italic ».
+   */
+  fontStyle: 'italic';
+  /** Vient de `textWrapStyle` `BALANCE` ou `PRETTY`. */
+  textWrapStyle: 'balance' | 'pretty';
+  /** Vient de `leadingTrim` `CAP_HEIGHT`. Valeur de la propriété raccourcie `text-box`. */
+  textBox: 'trim-both cap alphabetic';
 }>;
 
 /** Définition d'un text style utilisé par le composant, avec son nom Figma traçable. */
 export type TextStyleDefinition = {
   figmaName: string;
-  tokens: TypographyTokens;
+  /** Absent quand aucune propriété du style n'est reliée à une variable. */
+  tokens?: TypographyTokens;
+  literals?: TextStyleLiterals;
 };
 
-/** Application d'un text style à un slot textuel précis d'un variant. */
+/**
+ * Application d'un text style à un slot textuel précis d'un variant.
+ *
+ * Les quatre champs facultatifs sont lus sur le calque texte : deux calques du
+ * même style peuvent avoir des alignements différents. Chacun est une propriété
+ * CSS, absente quand le calque garde la valeur par défaut de Figma.
+ */
 export type TextStyleUse = {
   /** Chemin de slots depuis `structure.children` jusqu'au texte concerné. */
   slotPath: string[];
   /** Clé normalisée d'une entrée de `Contract.textStyles`. */
   style: string;
+  /** Vient de `textAlignHorizontal` `CENTER`, `RIGHT` ou `JUSTIFIED`. */
+  textAlign?: 'center' | 'right' | 'justify';
+  /** Vient de `textAlignVertical` `CENTER` ou `BOTTOM`. */
+  alignContent?: 'center' | 'end';
+  /** Vient de `maxLines`, publié seulement sous `textTruncation` `ENDING`. */
+  lineClamp?: number;
+  /** Vient de `textTruncation` `ENDING`. */
+  textOverflow?: 'ellipsis';
 };
 
 /** Répartition des enfants sur l'axe principal d'un conteneur Flex. */

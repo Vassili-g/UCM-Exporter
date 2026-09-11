@@ -556,12 +556,16 @@ function layoutsAcceptes(capacites) {
 const LAYOUTS_FLEX = new Set(["flex-row", "flex-column"]);
 const LAYOUTS_AVEC_GRILLE = new Set(["flex-row", "flex-column", "grid"]);
 
+/** Les deux tokens de paragraphe, que la 13.0 ajoute à `TypographyTokens`. */
+const TOKENS_TYPOGRAPHIQUES_130 = ["paragraphSpacing", "paragraphIndent"];
+
 const CHAMPS_TYPOGRAPHIQUES = new Set([
   "fontFamily",
   "fontSize",
   "fontWeight",
   "lineHeight",
   "letterSpacing",
+  ...TOKENS_TYPOGRAPHIQUES_130,
 ]);
 
 /** Tous les chemins de slots réellement publiés par `structure.children`. */
@@ -628,6 +632,9 @@ function validerTextStyles(textStyles, invalides) {
     }
     cles.add(cle);
     if (!estTexte(definition.figmaName)) invalides.push(`${prefixe}.figmaName`);
+    // Depuis la 13.0, un style sans variable n'a pas de `tokens` et publie ses
+    // `literals`. `validerTypographie130` refuse `literals` avant la 13.0.
+    if (definition.tokens === undefined && estObjet(definition.literals)) continue;
     if (
       !estObjet(definition.tokens)
       || Object.keys(definition.tokens).length === 0
@@ -1505,6 +1512,79 @@ function validerKeyRoles120(contrat, invalides) {
   }
 }
 
+/** Les clés de `literals`, et les valeurs CSS que chacune accepte. */
+const LITTERAUX_TYPOGRAPHIQUES = {
+  textTransform: new Set(["uppercase", "lowercase", "capitalize"]),
+  fontVariantCaps: new Set(["small-caps", "all-small-caps"]),
+  textDecorationLine: new Set(["underline", "line-through"]),
+  fontStyle: new Set(["italic"]),
+  textWrapStyle: new Set(["balance", "pretty"]),
+  textBox: new Set(["trim-both cap alphabetic"]),
+};
+
+/** Les champs d'usage lus sur le calque, `lineClamp` excepté, et leurs valeurs CSS. */
+const USAGES_TYPOGRAPHIQUES = {
+  textAlign: new Set(["center", "right", "justify"]),
+  alignContent: new Set(["center", "end"]),
+  textOverflow: new Set(["ellipsis"]),
+};
+
+/**
+ * Valide ce que la 13.0 ajoute à la typographie : deux tokens et `literals` sur
+ * un style, quatre champs sur un usage.
+ *
+ * Le validateur ne double pas le schéma d'ordinaire. Ces valeurs font
+ * exception, parce qu'elles partent telles quelles dans une déclaration CSS :
+ * `text-transform: upper` est ignoré par le navigateur sans erreur ni repli.
+ *
+ * Même emplacement que `validerPlacement120`, pour la même raison : la passe
+ * canonique se lit selon la grammaire pivot, où une capacité « au moins 13.0 »
+ * serait toujours fausse.
+ */
+function validerTypographie130(contrat, invalides) {
+  const typographie130 = versionAuMoins(contrat, 13, 0);
+
+  for (const [cle, definition] of Object.entries(
+    estObjet(contrat?.textStyles) ? contrat.textStyles : {},
+  )) {
+    if (!estObjet(definition)) continue;
+    const prefixe = `textStyles.${cle}`;
+    for (const champ of TOKENS_TYPOGRAPHIQUES_130) {
+      if (!typographie130 && definition.tokens?.[champ] !== undefined) {
+        invalides.push(`${prefixe}.tokens.${champ}`);
+      }
+    }
+    const literals = definition.literals;
+    if (literals === undefined) continue;
+    if (!typographie130 || !estObjet(literals) || Object.keys(literals).length === 0) {
+      invalides.push(`${prefixe}.literals`);
+      continue;
+    }
+    for (const [champ, valeur] of Object.entries(literals)) {
+      if (!Object.hasOwn(LITTERAUX_TYPOGRAPHIQUES, champ)
+        || !LITTERAUX_TYPOGRAPHIQUES[champ].has(valeur)) {
+        invalides.push(`${prefixe}.literals.${champ}`);
+      }
+    }
+  }
+
+  for (const [vue, usages] of Object.entries(
+    estObjet(contrat?.viewTypographies) ? contrat.viewTypographies : {},
+  )) {
+    for (const [index, usage] of (Array.isArray(usages) ? usages : []).entries()) {
+      if (!estObjet(usage)) continue;
+      const prefixe = `viewTypographies.${vue}[${index}]`;
+      for (const [champ, valeurs] of Object.entries(USAGES_TYPOGRAPHIQUES)) {
+        if (usage[champ] === undefined) continue;
+        if (!typographie130 || !valeurs.has(usage[champ])) invalides.push(`${prefixe}.${champ}`);
+      }
+      if (usage.lineClamp !== undefined && (
+        !typographie130 || !Number.isInteger(usage.lineClamp) || usage.lineClamp < 1
+      )) invalides.push(`${prefixe}.lineClamp`);
+    }
+  }
+}
+
 function champsInvalidesDeLaFormeCanonique(contrat) {
   const invalides = [];
   const requis = [
@@ -1586,6 +1666,7 @@ function champsInvalidesDeLaFormeCanonique(contrat) {
 
   validerPlacement120(contrat, invalides);
   validerKeyRoles120(contrat, invalides);
+  validerTypographie130(contrat, invalides);
   return invalides;
 }
 

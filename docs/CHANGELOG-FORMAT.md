@@ -16,7 +16,7 @@ plage. Tout écart hors plage est refusé dans les deux sens, parce que le geste
 correctif n'appartient pas à la même personne : un contrat plus ancien se répare
 par un réexport, un contrat plus récent par une adaptation des lecteurs.
 
-**La version courante est la 12.0**, et `CONTRACT_VERSION`
+**La version courante est la 13.0**, et `CONTRACT_VERSION`
 (`packages/kit/src/format/version.ts`) en est le seul endroit où elle s'écrit.
 Une plage ouverte chez un consommateur reste un choix explicite et
 **temporaire** : la laisser survivre à sa migration ferait rentrer en silence un
@@ -182,3 +182,37 @@ réexport pour recevoir leur sens.
    coordonnées de chaque variant ; les lecteurs le refusaient déjà. Aucun
    artefact de cette forme n'existe donc chez un consommateur. Rien n'est à
    migrer : le geste appartient au designer, dans Figma.
+
+## 13.0
+
+La typographie publie les réglages de texte que Figma ne relie à aucune
+variable. Les trois points relèvent de la **classe 2, ajout qui change la
+résolution d'une vue** : un lecteur 12.0 qui les ignore affiche en minuscules un
+libellé que la maquette montre en capitales.
+
+1. **`textStyles.<clé>.literals` porte six propriétés CSS** : `textTransform`,
+   `fontVariantCaps`, `textDecorationLine`, `fontStyle`, `textWrapStyle` et
+   `textBox`. [5. Typographie](./FORMAT.md#5-typographie) donne la propriété
+   Figma d'où vient chacune.
+2. **`tokens` gagne `paragraphSpacing` et `paragraphIndent`, et devient
+   facultatif.** Un style sans variable reliée est publié s'il porte des
+   `literals`. Un lecteur qui lisait `tokens.fontSize` sans condition doit
+   tester la présence de `tokens`.
+3. **Un usage de `variantViews.*.typography` gagne `textAlign`,
+   `alignContent`, `lineClamp` et `textOverflow`**, lus sur le calque texte.
+   Deux vues qui ne diffèrent que par l'alignement d'un texte ont chacune leur
+   entrée dans `viewTypographies`.
+
+L'alignement, la casse, la décoration et la troncature d'un texte n'avertissent
+plus. Au réexport, un composant qui ne perdait rien d'autre passe de
+`meta.coverage.portable: "partial"` à `"complete"`. Quatre cas avertissent en
+revanche : `listSpacing`, `hangingList`, `hangingPunctuation`, et un calque dont
+`textCase`, `textDecoration`, `textWrapStyle` ou `leadingTrim` diffère de son
+text style.
+
+La fenêtre de lecture porte la 12.0 et la 13.0.
+
+**Ce qui ne change pas** : tout le reste de la 12.0. Un contrat 13.0 est
+identique à son équivalent 12.0, à `meta.contractVersion` près, quand les textes
+du composant gardent les valeurs par défaut de Figma pour chaque réglage de
+cette entrée.

@@ -3,6 +3,8 @@
  *
  * Le nom du style décrit son identité Figma ; ses `boundVariables` fournissent
  * les vraies références DTCG. Aucun lien n'est déduit d'une convention de nom.
+ * `textRendering.ts` traduit en CSS les propriétés sans variable du style et du
+ * calque.
  */
 import { normalizeName, toRef } from '@ucm-kit/core/format';
 import { firstVariableAlias } from '../variables';
@@ -22,6 +24,8 @@ import type {
   VariantTypography,
 } from '@ucm-kit/core/format';
 import { pousserLocalise, pousserSansNode } from './localisation';
+import { litterauxDuStyle, PROPRIETES_LITTERALES, usageDuCalque } from './textRendering';
+import { estMixed } from './unsupportedProperties';
 
 type TextStyleLoader = (id: string) => Promise<BaseStyle | null>;
 
@@ -43,12 +47,19 @@ type LoadedStyle = {
   id: string;
   key: string;
   definition: TextStyleDefinition;
+  /** Le style lu, auquel chaque calque est comparé. */
+  style: TextStyle;
 };
 
 const TYPOGRAPHY_FIELDS: Array<{
   contractField: keyof TypographyTokens;
   figmaFields: VariableBindableTextField[];
   label: string;
+  /**
+   * Propriété du style lue avant de réclamer une variable. À zéro, la variable
+   * n'est pas réclamée : un espacement nul ne change pas le rendu.
+   */
+  valeurFigma?: 'paragraphSpacing' | 'paragraphIndent';
 }> = [
   { contractField: 'fontFamily', figmaFields: ['fontFamily'], label: 'font family' },
   { contractField: 'fontSize', figmaFields: ['fontSize'], label: 'font size' },
@@ -62,6 +73,18 @@ const TYPOGRAPHY_FIELDS: Array<{
     contractField: 'letterSpacing',
     figmaFields: ['letterSpacing'],
     label: 'letter spacing',
+  },
+  {
+    contractField: 'paragraphSpacing',
+    figmaFields: ['paragraphSpacing'],
+    label: 'paragraph spacing',
+    valeurFigma: 'paragraphSpacing',
+  },
+  {
+    contractField: 'paragraphIndent',
+    figmaFields: ['paragraphIndent'],
+    label: 'paragraph indent',
+    valeurFigma: 'paragraphIndent',
   },
 ];
 
@@ -137,28 +160,64 @@ async function loadTextStyle(
   }
 
   const tokens: TypographyTokens = {};
-  for (const { contractField, figmaFields, label } of TYPOGRAPHY_FIELDS) {
+  let fontWeightCiteFontStyle = false;
+  for (const { contractField, figmaFields, label, valeurFigma } of TYPOGRAPHY_FIELDS) {
     let token: string | null = null;
     for (const field of figmaFields) {
       token = await resolver.resolve(firstVariableAlias(style.boundVariables?.[field]), {
         nodeName: style.name,
         field: label,
       });
-      if (token) break;
+      if (token) {
+        if (contractField === 'fontWeight') fontWeightCiteFontStyle = field === 'fontStyle';
+        break;
+      }
     }
-    if (token) tokens[contractField] = toRef(token);
-    else {
-      pousserSansNode(warnings, `Text style « ${style.name} »`, {
-        champ: label,
-        manque: `aucune variable Figma n'est reliée.`,
-        impact: `Cette propriété typographique manquera au développeur.`,
-        action: `Reliez-la à une variable dans le text style, puis réexportez.`,
-      });
+    if (token) {
+      tokens[contractField] = toRef(token);
+      continue;
     }
+    if (valeurFigma && !(typeof style[valeurFigma] === 'number' && style[valeurFigma] !== 0)) {
+      continue;
+    }
+    pousserSansNode(warnings, `Text style « ${style.name} »`, {
+      champ: label,
+      manque: `aucune variable Figma n'est reliée.`,
+      impact: `Cette propriété typographique manquera au développeur.`,
+      action: `Reliez-la à une variable dans le text style, puis réexportez.`,
+    });
   }
 
-  if (Object.keys(tokens).length === 0) return null;
-  return { id: styleId, key, definition: { figmaName: style.name, tokens } };
+  const literals = litterauxDuStyle(style, fontWeightCiteFontStyle);
+  const definition: TextStyleDefinition = { figmaName: style.name };
+  if (Object.keys(tokens).length > 0) definition.tokens = tokens;
+  if (Object.keys(literals).length > 0) definition.literals = literals;
+  if (!definition.tokens && !definition.literals) return null;
+  return { id: styleId, key, definition, style };
+}
+
+/**
+ * Avertit quand une propriété de `PROPRIETES_LITTERALES` a sur le calque une
+ * autre valeur que sur son style, ou plusieurs valeurs (`figma.mixed`).
+ *
+ * `loadTextStyle` est mise en cache par style et ne reçoit que le premier
+ * calque de chacun : cette fonction est donc appelée pour chaque calque.
+ */
+function signalerSurcharges(textNode: TextNode, style: TextStyle, warnings: string[]): void {
+  const duCalque = textNode as unknown as Record<string, unknown>;
+  const duStyle = style as unknown as Record<string, unknown>;
+  for (const { propriete, libelle } of PROPRIETES_LITTERALES) {
+    const valeur = duCalque[propriete];
+    if (valeur === undefined || valeur === duStyle[propriete]) continue;
+    pousserLocalise(warnings, 'Layer', textNode, {
+      champ: libelle,
+      manque: estMixed(valeur)
+        ? `ce layer porte plusieurs valeurs.`
+        : `sa valeur diffère de celle du text style « ${style.name} ».`,
+      impact: `Le développeur rendra la valeur du text style.`,
+      action: `Appliquez au layer entier un text style qui porte ce réglage, puis réexportez.`,
+    });
+  }
 }
 
 /**
@@ -231,7 +290,8 @@ export async function extractVariantTypography(
       }
       styleIdByKey.set(loaded.key, loaded.id);
       textStyles.set(loaded.key, loaded.definition);
-      uses.push({ slotPath, style: loaded.key });
+      signalerSurcharges(textNode, loaded.style, warnings);
+      uses.push({ slotPath, style: loaded.key, ...usageDuCalque(textNode) });
     }
 
     const values = matrix.axes.length > 0

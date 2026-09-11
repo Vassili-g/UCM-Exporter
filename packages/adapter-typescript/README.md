@@ -6,7 +6,7 @@ two capabilities without making
 TypeScript compiler, a 23 MB dependency no other consumer should pay for.
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.15 @ucm-kit/cli@0.1.22
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.16 @ucm-kit/cli@0.1.23
 npx ucm-typescript
 npx --no-install ucm check
 ```

@@ -13,7 +13,7 @@
  * au générateur de schéma de la lire sans tirer les vingt modules du moteur
  * d'extraction, et au bundle du plugin de la porter sans rien d'autre.
  */
-export const CONTRACT_VERSION = '12.0';
+export const CONTRACT_VERSION = '13.0';
 
 /**
  * La version de schéma que porte un contrat déjà analysé, telle qu'elle y est

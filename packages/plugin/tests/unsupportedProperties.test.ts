@@ -64,6 +64,9 @@ const texteParDefaut = (extra: Record<string, unknown> = {}) => ({
   textDecoration: 'NONE',
   textTruncation: 'DISABLED',
   maxLines: null,
+  listSpacing: 0,
+  hangingList: false,
+  hangingPunctuation: false,
   ...extra,
 }) as unknown as SceneNode;
 
@@ -163,42 +166,37 @@ test('un blend mode et un pointillé sont signalés, leurs valeurs neutres non',
   assert.equal(avertissementsDe(frameParDefaut({ dashPattern: [4, 4] })).length, 1);
 });
 
-test('un texte centré en Hug ne dit rien, le même texte en Fill est signalé', () => {
-  // Un texte en Hug a une boîte à sa mesure : son alignement n'a aucun effet
-  // visuel, et le signaler enverrait le designer corriger un bouton correct.
-  const centreEnHug = texteParDefaut({ textAlignHorizontal: 'CENTER' });
-  assert.deepEqual(avertissementsDe(centreEnHug), []);
-
-  const centreEnFill = texteParDefaut({
-    textAlignHorizontal: 'CENTER',
-    layoutSizingHorizontal: 'FILL',
-  });
-  const avertissements = avertissementsDe(centreEnFill);
-  assert.equal(avertissements.length, 1);
-  assert.ok(avertissements[0].includes('text align'));
-  assert.ok(avertissements[0].includes('horizontal'));
-
-  // Même règle sur l'axe vertical, lue indépendamment.
-  const basEnFill = texteParDefaut({
-    textAlignVertical: 'BOTTOM',
-    layoutSizingVertical: 'FILL',
-  });
-  assert.ok(avertissementsDe(basEnFill)[0].includes('vertical'));
+test('textAlignHorizontal, textAlignVertical, textCase, textDecoration et textTruncation n’avertissent pas : le contrat les écrit', () => {
+  // `textStyles.*.literals` et l'usage du style les publient. Un avertissement
+  // demanderait au designer de retirer un réglage que le développeur reçoit.
+  for (const reglage of [
+    { textAlignHorizontal: 'CENTER', layoutSizingHorizontal: 'FILL' },
+    { textAlignVertical: 'BOTTOM', layoutSizingVertical: 'FILL' },
+    { textCase: 'UPPER' },
+    { textDecoration: 'UNDERLINE' },
+    { textTruncation: 'ENDING', maxLines: 2 },
+  ]) {
+    assert.deepEqual(avertissementsDe(texteParDefaut(reglage)), [], JSON.stringify(reglage));
+  }
 });
 
-test('casse, décoration et troncature d’un texte sont signalées', () => {
-  assert.equal(avertissementsDe(texteParDefaut({ textCase: 'UPPER' })).length, 1);
+test('listSpacing, hangingList et hangingPunctuation avertissent hors de leur valeur par défaut', () => {
+  const espacement = avertissementsDe(texteParDefaut({ listSpacing: 8 }));
+  assert.equal(espacement.length, 1);
+  assert.ok(espacement[0].includes('list spacing'));
+  // « mixed » avertit comme une valeur non nulle.
   assert.equal(
-    avertissementsDe(texteParDefaut({ textDecoration: 'UNDERLINE' })).length,
+    avertissementsDe(texteParDefaut({ listSpacing: Symbol('figma.mixed') })).length,
     1,
   );
-  assert.equal(
-    avertissementsDe(texteParDefaut({ textTruncation: 'ENDING' })).length,
-    1,
-  );
-  assert.equal(avertissementsDe(texteParDefaut({ maxLines: 2 })).length, 1);
-  // `maxLines: null` est l'absence de troncature, pas une troncature à zéro.
-  assert.deepEqual(avertissementsDe(texteParDefaut({ maxLines: null })), []);
+
+  const puces = avertissementsDe(texteParDefaut({ hangingList: true }));
+  assert.equal(puces.length, 1);
+  assert.ok(puces[0].includes('hanging lists'));
+
+  const ponctuation = avertissementsDe(texteParDefaut({ hangingPunctuation: true }));
+  assert.equal(ponctuation.length, 1);
+  assert.ok(ponctuation[0].includes('hanging punctuation'));
 });
 
 test('deux propriétés du même layer donnent deux messages : deux gestes différents', () => {
