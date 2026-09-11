@@ -13,3 +13,7 @@ packages/kit/schema/*.json text eol=lf
 # empreintes sont publiées dans le README voisin, et une conversion en CRLF les
 # invaliderait toutes.
 packages/kit/fixtures/contrats/**/*.json text eol=lf
+
+# Même raison pour le tokens.json d'origine figé, dont le README publie
+# l'empreinte.
+packages/kit/fixtures/tokens/**/*.json text eol=lf

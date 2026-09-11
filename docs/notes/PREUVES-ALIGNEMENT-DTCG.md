@@ -5,7 +5,7 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 
 ## État
 
-- Lot courant : L2
+- Lot courant : L3
 - Exporter, branche et `HEAD` : `main`, `23153fc` au départ de L0
 - Playground, branche et `HEAD` : `main`, `0678761` au départ de L0
 - Style Dictionary retenu : à choisir en L3 ; installé au départ `4.4.0`
@@ -69,3 +69,35 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 - Artefacts et empreintes : aucun.
 - Écart ou réserve : aucun. Le renommage `.rulesItems` en `.ruleItem`, présent
   dans l'arbre et étranger à la migration, est conservé hors de ce commit.
+
+### L2 — Harnais de caractérisation
+
+- Commit : `fichierDeVariables.ts`, `comparerTokens.ts` et ses tests, trois
+  tests de l'export, le fixture `packages/kit/fixtures/tokens/origine/` et son
+  test, la règle `.gitattributes`, la ligne de la carte du code.
+- Commandes :
+  - `npx tsx --test tests/comparerTokens.test.ts` : sortie 0, 11 tests verts.
+  - `npx tsx --test tests/exportTokens.test.ts` : sortie 0, 19 tests verts.
+  - `npx tsx --test tests/fixturesTokens.test.mjs` (kit) : sortie 0, 4 tests.
+  - `npm test` : sortie 0, 943 tests verts (19, 52, 278, 571, 23).
+  - `npm run typecheck`, `npm run build`, `git diff --check` : sortie 0.
+  - Mutation du comparateur, tolérance de couleur neutralisée : sortie 1, le
+    test « une composante écartée de plus d'un demi-pas d'octet » échoue.
+  - Mutation du fixture, un octet de `#ff0000` changé : sortie 1, le test
+    « le tokens.json d'origine est intact » échoue. Les deux fichiers sont
+    restaurés par copie, `cmp` identique.
+- Résultats :
+  - Le moteur d'origine rend 40 feuilles et trois avertissements sur le fichier
+    simulé : un mode sans valeur et deux cibles absentes.
+  - Les documents dérivés du `tokens.json` du Playground passent le
+    comparateur sans écart, en `srgb` comme en `display-p3`. Ils portent 18
+    graisses `number` : 3 littéraux et 15 alias.
+- Artefacts et empreintes :
+  - `packages/kit/fixtures/tokens/origine/tokens.json` :
+    `433f7e1060e3aa4e8e6a45410d8c040ae27cf3b11241e8210ac6bc46d12e5ff8`.
+  - Dossier temporaire de session, `l2/playground-srgb.json` :
+    `4f65f2b85229b4967924da688e1d5860147ce79010273a5a34b2e8ea8f81608c`.
+  - Dossier temporaire de session, `l2/playground-p3.json` :
+    `666ea4be4e023db059220604be84e09f3b6754c39410c521e0958f1ff4bce850`.
+  - Le script de dérivation, `l2/deriver.ts`, reste dans ce dossier temporaire.
+- Écart ou réserve : aucun
