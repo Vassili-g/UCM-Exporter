@@ -75,20 +75,12 @@ autorité. Les autres y renvoient.
 
 ## Ce qui n'est pas décidé
 
-Ces deux notes tiennent des options ouvertes. Elles ne font autorité sur rien.
-Aucune partie du produit n'en dépend.
+Ces notes tiennent des options ouvertes. Elles ne font autorité sur rien. Aucune
+partie du produit n'en dépend.
 
 | Document | Contenu |
 |---|---|
 | [notes/PISTES-EVOLUTION.md](./notes/PISTES-EVOLUTION.md) | Les modules d'évolution à étudier, leurs conditions et leurs essais |
 | [notes/PLAN-CONFORMITE-RENDU.md](./notes/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
-
-## Ce qui est décidé sans être implémenté
-
-Ces deux notes portent une décision et son plan. La forme publiée reste celle
-de [FORMAT.md](./FORMAT.md) jusqu'à la livraison du plan.
-
-| Document | Contenu |
-|---|---|
-| [notes/ALIGNEMENT-DTCG.md](./notes/ALIGNEMENT-DTCG.md) | La décision d'aligner `tokens.json` sur le module de format `2025.10` en trois tranches, et les mesures qui la fondent |
+| [notes/ALIGNEMENT-DTCG.md](./notes/ALIGNEMENT-DTCG.md) | L'alignement de `tokens.json` sur le module de format `2025.10`, non engagé : les mesures, la décision et les conditions qui la rouvrent |
 | [notes/PLAN-ALIGNEMENT-DTCG.md](./notes/PLAN-ALIGNEMENT-DTCG.md) | Les étapes de cet alignement, dans leur ordre, avec le critère qui ferme chacune |

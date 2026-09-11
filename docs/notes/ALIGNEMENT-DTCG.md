@@ -1,29 +1,44 @@
 # Aligner `tokens.json` sur le module de format DTCG `2025.10`
 
-**Statut : décision prise, rien n'est implémenté.** La forme publiée reste celle
-de [FORMAT.md](../FORMAT.md#partie-2--export-tokens) tant que le
-[plan d'implémentation](./PLAN-ALIGNEMENT-DTCG.md) n'a pas livré sa phase 2. Les
-changements de compatibilité relèvent de [COMPATIBILITE.md](../COMPATIBILITE.md).
+**Statut : non engagé.** La forme publiée est celle de
+[FORMAT.md](../FORMAT.md#partie-2--export-tokens). Le
+[plan d'implémentation](./PLAN-ALIGNEMENT-DTCG.md) donne l'ordre des étapes si
+une condition de reprise survient. Les changements de compatibilité relèvent de
+[COMPATIBILITE.md](../COMPATIBILITE.md).
 
-Cette note justifie la décision. Le plan en porte les étapes et leurs critères
-de fermeture.
+Cette note justifie la décision. Le plan porte les étapes et leurs critères de
+fermeture.
 
 ## 1. La décision
 
-L'export se rapproche du module Format en trois tranches. Elles sont séparées
-par ce qui casse un consommateur et par ce qui dépend d'un fait que seul Figma
-détient.
+L'export garde sa grammaire. Le fichier Figma du Playground est en sRGB : sur ce
+fichier, les deux premières tranches ne changent ni le CSS produit ni un verdict
+du kit (section 2). Elles coûtent pourtant trois publications de paquets, un
+réexport et une publication sur la Community (section 3).
 
-| Tranche | Contenu | Sort |
+Trois conditions rouvrent la décision :
+
+- un fichier Figma exporté est en Display P3 : l'export actuel écrit ses
+  couleurs comme du sRGB ;
+- un deuxième consommateur, ou un outil qu'un consommateur emploie, exige le
+  module Format `2025.10` ;
+- la projection des tokens change pour une autre raison, ce qui impose déjà la
+  marque de grammaire
+  ([COMPATIBILITE.md](../COMPATIBILITE.md#pourquoi-tokensjson-na-pas-de-version)).
+
+Une reprise suit trois tranches. Elles sont séparées par ce qui casse un
+consommateur et par ce qui dépend d'un fait que seul Figma détient.
+
+| Tranche | Contenu | À la reprise |
 |---|---|---|
-| Valeurs | Dimension en `{ value, unit }` ; graisse `STRING` reconnue en `$type: "number"`, avec son poids numérique ; marque `$extensions["com.ucm.grammaire"]` au niveau du document | Engagée, après le passage du consommateur à Style Dictionary 5 |
-| Profil colorimétrique | Couleur en `{ colorSpace, components, alpha }`, espace lu dans `documentColorProfile` | Engagée avec les valeurs si le fichier Figma du Playground est en `SRGB` ou `LEGACY` ; après la recette externe s'il est en `DISPLAY_P3` |
+| Valeurs | Dimension en `{ value, unit }` ; graisse `STRING` reconnue en `$type: "number"`, avec son poids numérique ; marque `$extensions["com.ucm.grammaire"]` au niveau du document | Après le passage du consommateur à Style Dictionary 5 |
+| Profil colorimétrique | Couleur en `{ colorSpace, components, alpha }`, espace lu dans `documentColorProfile` | Dans la même publication que les valeurs pour un fichier en `SRGB` ou `LEGACY` ; après une comparaison visuelle pour un fichier en `DISPLAY_P3` |
 | Typage de la famille | `fontFamily` à la place de `string` | Différée |
 
 Le module Resolver, le traitement dédié du booléen et le typage par contexte
 sont hors de cette décision.
 
-### Ce que la décision promet
+### Ce qu'une reprise promet
 
 « Aligner sur DTCG » recouvre quatre questions distinctes.
 
@@ -32,7 +47,7 @@ sont hors de cette décision.
 | Conformité au module Format | Toutes les feuilles, sauf les `STRING` hors graisse reconnue, les `BOOLEAN`, les feuilles dont la cible d'alias est absente, et les `EASING` et `TIMING` tant que le plan ne les a pas traités | Test du plugin qui applique à chaque feuille la définition `token.json` du schéma figé, avec un compte qui ne peut pas monter |
 | Interopérabilité | Lecture par Style Dictionary 5 et ses transforms standard. Aucun autre outil n'est visé ni essayé | `diff` du CSS du Playground |
 | Fidélité à Figma | Composantes de couleur sans quantification, profil déclaré | Comparaison visuelle consignée dans la pull request du Playground, lors de la tranche du profil |
-| Lecteurs UCM | Aucun verdict ne change pour les tranches engagées | Lecture du fichier réexporté par le kit publié et par le kit qu'épingle le Playground : zéro référence absente, zéro erreur de type |
+| Lecteurs UCM | Aucun verdict ne change pour les deux premières tranches | Lecture du fichier réexporté par le kit publié et par le kit qu'épingle le Playground : zéro référence absente, zéro erreur de type |
 
 ### Les politiques retenues
 
@@ -114,7 +129,7 @@ Sous Style Dictionary 5, avec le groupe `css` :
 - une couleur translucide sort `rgba(…, 0.5)`, là où `#ffffff80` donnait
   `0.50196…`. Le corpus n'en contient aucune.
 
-## 3. Pourquoi engager la tranche des valeurs
+## 3. Pourquoi ne pas engager la tranche des valeurs
 
 [PISTES-EVOLUTION.md](./PISTES-EVOLUTION.md#23-produire-les-ressources-de-tokens)
 nomme trois déclencheurs qui rendraient nécessaire une décision de grammaire :
@@ -122,7 +137,7 @@ un deuxième consommateur, un outil cible qui exige `2025.10`, ou la première
 évolution de la projection. Aucun n'est survenu, et le Playground lit le
 fichier actuel sans défaut. Rien n'impose donc l'alignement.
 
-La décision repose sur deux faits. Le premier : sous Style Dictionary 5, la
+La tranche a deux effets. Le premier : sous Style Dictionary 5, la
 tranche ne change ni le CSS du Playground ni un verdict du kit. Le second : elle
 ferme la seule perte d'information de l'export. Un document en Display P3 sort
 aujourd'hui comme s'il était en sRGB, et ses canaux sont arrondis à l'octet.
@@ -131,10 +146,11 @@ tout fichier Figma, et cette perte ne se répare pas depuis le JSON. Les
 dimensions et la graisse suivent dans la même publication, parce qu'elles
 exigent le même passage à Style Dictionary 5.
 
-Si le fichier du Playground est en sRGB, ce consommateur n'en voit aucun effet
-à l'écran. La décision est alors préventive pour lui.
+Le fichier du Playground est en sRGB : ce consommateur n'en verrait aucun effet
+à l'écran. La perte d'information ne touche qu'un fichier en Display P3, et le
+projet n'en connaît aucun.
 
-Ce que chaque changement rapporte :
+Ce que chaque changement rapporterait :
 
 - **Un contrôle.** Un test UCM applique à chaque feuille la définition
   `token.json` du schéma publié et rend 720 conformes sur 721. Le document
@@ -161,30 +177,33 @@ version épinglée du CLI, se répète pour chaque consommateur. Il ne pèse que
 un consommateur qui branche la grammaire actuelle avant le changement ; le
 projet en connaît un.
 
-**Risque accepté.** Un consommateur resté sur Style Dictionary 4 reçoit
+**Risque.** Un consommateur resté sur Style Dictionary 4 recevrait
 `[object Object]` à la place de chaque couleur et de chaque dimension, sans
 échec de build. Ni la marque de grammaire ni le kit ne le protègent : un
-lecteur ancien ignore la marque, et le kit ne lit pas les valeurs. Le seul
-consommateur connu passe à Style Dictionary 5 avant le réexport. La classe de
-compatibilité que le plan ajoute nomme ce geste pour un repository qui emploie
-le kit. Un utilisateur du plugin qui lit `tokens.json` sans le kit l'apprend
-par le README du plugin et par sa page Community, mis à jour avec la
-publication.
+lecteur ancien ignore la marque, et le kit ne lit pas les valeurs. Le plan fait
+passer le seul consommateur connu à Style Dictionary 5 avant le réexport. La
+classe de compatibilité que le plan ajoute nomme ce geste pour un repository
+qui emploie le kit. Le plugin est public sur la Community : un utilisateur qui
+lit `tokens.json` sans le kit ne l'apprendrait que par le README du plugin et
+par sa page Community.
 
-La tranche des valeurs est la première évolution de la projection :
-`COMPATIBILITE.md` lui impose la marque de grammaire. Elle rouvre aussi le
-typage de la famille, que la section suivante diffère.
+**Bilan.** Sur le fichier du Playground, la tranche ne change aucun rendu.
+L'alignement ne s'engage donc qu'à l'une des conditions de la section 1.
+
+À la reprise, la tranche des valeurs serait la première évolution de la
+projection : `COMPATIBILITE.md` lui impose la marque de grammaire. Elle
+rouvrirait aussi le typage de la famille, que la section suivante diffère.
 
 ## 4. Pourquoi différer le typage de la famille
 
-La graisse est réglée par la tranche des valeurs : `number` donne le même
+La graisse serait réglée par la tranche des valeurs : `number` donne le même
 compte conforme et le même CSS que `fontWeight`, sans ses 8 erreurs.
 
 Le typage `fontFamily` gagne une feuille, la famille, et rend le document
 entier valide. Il produit 8 erreurs bloquantes chez un consommateur dont le
 kit n'a pas été mis à jour, et leur message demande de corriger l'exporteur.
-La tranche des valeurs élargit déjà les types que le lecteur typographique
-tolère : ces erreurs ne toucheront pas un repository qui a adopté cette
+La tranche des valeurs élargirait les types que le lecteur typographique
+tolère : ces erreurs ne toucheraient pas un repository qui a adopté cette
 version.
 
 Le typage reste différé pour deux raisons qui ne dépendent pas de cette

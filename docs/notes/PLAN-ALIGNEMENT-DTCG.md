@@ -1,8 +1,9 @@
 # Plan d'implémentation de l'alignement DTCG
 
-**Statut : aucune tâche commencée.** Ce plan exécute la décision de
-[ALIGNEMENT-DTCG.md](./ALIGNEMENT-DTCG.md), qui porte les mesures et leur
-justification. Chaque tâche nomme ce qui la ferme. Une tâche marquée
+**Statut : non engagé.** [ALIGNEMENT-DTCG.md](./ALIGNEMENT-DTCG.md) porte les
+mesures, la décision de ne pas engager l'alignement et les conditions qui la
+rouvrent. Ce plan donne l'ordre à suivre si l'une d'elles survient. Chaque
+tâche nomme ce qui la ferme. Une tâche marquée
 **[humain]** demande Figma, et personne d'autre que le mainteneur ne peut la
 faire ; l'agent publie les paquets et le plugin lui-même.
 
@@ -74,18 +75,10 @@ côté de cette étape.
       *Ferme :* la décision écrite dans `FORMAT.md` partie 2, avec ce que
       recouvre chaque cas.
 
-- [ ] **0.5. [humain] Lire le profil colorimétrique du fichier Figma du
-      Playground.**
-      Moyen : le profil affiché dans le menu du fichier Figma, ou
-      `figma.root.documentColorProfile` dans la console d'un build de dev du
-      plugin.
-      - `SRGB` ou `LEGACY` : la phase 2 convertit les couleurs ; 720 feuilles
-        conformes sur 721 à son issue.
-      - `DISPLAY_P3` : les couleurs passent en phase 3 ; 618 feuilles conformes
-        à l'issue de la phase 2.
-      Le faire pendant la recette externe, qui ouvre ce fichier.
-      *Ferme :* la valeur et le nom du fichier Figma écrits dans
-      `ALIGNEMENT-DTCG.md`, section 1.
+- [x] **0.5. [humain] Lire le profil colorimétrique du fichier Figma du
+      Playground.** Le fichier est en sRGB : la phase 2 convertit les couleurs,
+      et 720 feuilles sur 721 sont conformes à son issue. La phase 3 ne
+      concerne pas ce fichier.
 
 - [ ] **0.6. Décider l'ordre entre la recette externe et la phase 2.**
       La recette joue le plugin publié sur la Community. La phase 2 exige une
@@ -274,8 +267,7 @@ et par une nouvelle publication.
       *Ferme :* ces assertions réécrites ; un test qu'un alias vers une
       dimension reste une chaîne, y compris dans un mode.
 
-- [ ] **2B.4. Couleurs en objet.** *Bloquée par 0.5 si le profil est
-      `DISPLAY_P3`.*
+- [ ] **2B.4. Couleurs en objet.**
       `formatValue` rend `{ colorSpace, components, alpha }`, composantes prises
       sur les flottants de Figma, sans repli `hex`. Retirer `toHex` et son test
       si plus rien ne l'appelle. Réécrire les assertions de
@@ -367,8 +359,8 @@ et par une nouvelle publication.
       identique n'en ouvre jamais une seconde, et 2C.3 ne rendrait plus rien.
       Cet export est la porte avant la publication Community. Sur le fichier
       téléchargé :
-      - le script de 1.5 rend 720 feuilles conformes sur 721, ou 618 si le
-        document est en `DISPLAY_P3`, la famille étant la seule non conforme ;
+      - le script de 1.5 rend 720 feuilles conformes sur 721, la famille étant
+        la seule non conforme ;
       - le CSS produit sous Style Dictionary 5 est identique à celui de 1.2 ;
       - `npx --yes @ucm-kit/cli@<version 2A> check`, dans une copie du
         Playground où ce fichier remplace `src/tokens/tokens.json`, ne rend
@@ -407,11 +399,6 @@ et par une nouvelle publication.
       *Ferme :* chaque écart entre dans l'une des différences attendues, avant
       la fusion ; l'outil de comparaison commité à côté du script de 1.5.
 
-- [ ] **2C.5. [humain] Attribuer un profil colorimétrique explicite au fichier
-      Figma**, si 0.5 a rendu `LEGACY`. Sans ce geste, chaque export avertira
-      indéfiniment. Le plugin ne peut pas le faire.
-      *Ferme :* un export sans cet avertissement.
-
 ### 2D — Le consommateur
 
 - [ ] **2D.1. (optionnel) Retirer le transform `fontWeight/name-to-number`.**
@@ -432,7 +419,8 @@ et par une nouvelle publication.
 
 ## Phase 3 — Conditionnelle : un document en Display P3
 
-Seulement si 0.5 rend `DISPLAY_P3`. La couleur en objet change la forme
+Seulement pour un fichier Figma en `DISPLAY_P3`. Le fichier du Playground est
+en sRGB (0.5). La couleur en objet change la forme
 publiée : cette phase est une seconde grammaire, pas seulement une tâche de
 code.
 
