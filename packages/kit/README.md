@@ -10,7 +10,7 @@ the repository that implements the component. This package is what both sides
 must share in order to talk about the same format.
 
 ```sh
-npm install @ucm-kit/core@0.1.24
+npm install @ucm-kit/core@0.1.25
 ```
 
 Most repositories never call this package directly. They run
@@ -60,6 +60,29 @@ The number of contracts decides. With one contract or more, a missing tokens
 file blocks the merge, because that contract cites tokens that cannot be
 resolved. A tokens file that exists but does not parse blocks at any stage,
 whatever the number of contracts.
+
+## The token file has its own format version
+
+`tokens.json` carries its format version at the root of the document, under
+`$extensions["com.ucm.formatVersion"]`. It is not the contract version.
+`etatDuFormatDeTokens`, from `@ucm-kit/core/format`, reads it and returns one
+of four states:
+
+| Mark at the root | State | `controlerRepository` |
+|---|---|---|
+| absent | `origine` | reads the file |
+| `1` | `courante` | reads the file |
+| an integer above `1` | `future` | blocks before reading a token; a developer upgrades the UCM packages |
+| any other value, or a document or `$extensions` that is not an object | `invalide` | blocks before reading a token; the designer runs the token export again |
+
+The mark is read even in a repository with no contract yet.
+`@ucm-kit/core@0.1.25` is the first release that reads it; earlier releases
+ignore it.
+
+The mark does not protect a value reader. Style Dictionary 4 ignores it and
+writes `[object Object]` for every color and dimension of version `1`, and the
+build succeeds. Move to Style Dictionary 5 before merging the first export in
+that version.
 
 ## A version gap has a direction, which names who fixes it
 

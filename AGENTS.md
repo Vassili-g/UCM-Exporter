@@ -102,6 +102,7 @@ packages/kit/            le format et ses lecteurs : @ucm-kit/core, publié
   src/format/              sous-chemin SANS dépendance Node ni Figma
     types.ts                 schéma TypeScript du contrat
     version.ts               CONTRACT_VERSION, seul endroit où elle est écrite
+    tokens.ts                la forme de tokens.json, TOKENS_FORMAT_VERSION et la lecture de sa marque
     names.ts                 normalizeName, codeIdentifier, tokenCssVariable
     references.ts            la forme d'une référence de token, et son enveloppe
     configuration.ts         la grammaire de ucm.config.json, pour la CI et le plugin
@@ -265,8 +266,8 @@ La spécification en lien porte le raisonnement.
   `CONTRACT_VERSION`, et laisse les chemins et les alias en place.
   → [spec](./docs/FORMAT.md#partie-2--export-tokens)
 - Le kit classe la marque avant de lire un seul token : absente, `origine` ;
-  `1`, `courante` ; entier supérieur, `future` ; toute autre valeur, ou
-  `$extensions` qui n'est pas un objet, `invalide`. `future` et `invalide`
+  `1`, `courante` ; entier supérieur, `future` ; toute autre valeur, ou un
+  document ou `$extensions` qui n'est pas un objet, `invalide`. `future` et `invalide`
   refusent le contrôle, y compris dans un repository sans contrat. Seule la
   racine est lue, et une version future n'est jamais présumée lisible.
   `etatDuFormatDeTokens()` en est l'unique autorité.

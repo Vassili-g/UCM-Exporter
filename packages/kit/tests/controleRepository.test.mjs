@@ -4,9 +4,10 @@
  */
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { controlerRepository } from "../src/lecteurs/controle-repository.mjs";
 import {
@@ -556,4 +557,101 @@ test("des tests rouges bloquent, sous un titre qui n'accuse aucun contrat", () =
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
+});
+
+/**
+ * La version du format de tokens se juge avant tout token.
+ *
+ * Un lecteur qui lirait d'abord les tokens déclarerait absentes les références
+ * d'un fichier dont il ne connaît pas la forme, ou les dirait présentes : dans
+ * les deux cas, un verdict sur un fichier qu'il ne sait pas lire.
+ */
+const marquer = (version) => ({ $extensions: { "com.ucm.formatVersion": version }, ...TOKENS });
+
+test("tokens de la version courante : même verdict qu'un fichier d'origine", () => {
+  const origine = verdict();
+  const courante = verdict({ tokens: marquer(1) });
+
+  assert.equal(courante.bloquant, false);
+  assert.equal(courante.rapport, origine.rapport);
+});
+
+test("tokens d'une version future : refus avant tout token, et le geste revient au développeur", () => {
+  const { bloquant, bilans, rapport, terminal } = verdict({ tokens: marquer(2) });
+
+  assert.equal(bloquant, true);
+  assert.deepEqual(bilans, [], "aucun contrat n'a été analysé contre ce fichier");
+  assert.match(
+    rapport,
+    /^## ❌ `src\/tokens\/tokens\.json` utilise une version du format de tokens que ce repository ne lit pas$/m,
+  );
+  assert.match(rapport, /porte la version 2 du format de tokens/);
+  assert.match(rapport, /lisent la version 1/);
+  assert.match(rapport, /Un développeur doit mettre à jour les paquets UCM du repository/);
+  assert.match(rapport, /La fusion reste bloquée\./);
+  assert.doesNotMatch(rapport, /Exporter les tokens/, "un réexport ne corrige pas une version future");
+  assert.deepEqual(terminal.map(({ flux }) => flux), ["error"]);
+});
+
+test("marque de version invalide : refus, et le geste revient au designer", () => {
+  const cas = [
+    [0, "vaut `0`"],
+    [-1, "vaut `-1`"],
+    [1.5, "vaut `1.5`"],
+    ["1", 'vaut `"1"`'],
+    [{ version: 1 }, 'vaut `{"version":1}`'],
+  ];
+  for (const [valeur, constat] of cas) {
+    const { bloquant, bilans, rapport } = verdict({ tokens: marquer(valeur) });
+    assert.equal(bloquant, true, JSON.stringify(valeur));
+    assert.deepEqual(bilans, []);
+    assert.match(rapport, /^## ❌ `src\/tokens\/tokens\.json` porte une version du format de tokens illisible$/m);
+    assert.ok(rapport.includes(constat), `${JSON.stringify(valeur)} : ${rapport}`);
+    assert.match(rapport, /Relancez \*\*Exporter les tokens\*\* depuis Figma plutôt que de corriger le fichier\./);
+  }
+
+  const extensions = verdict({ tokens: { $extensions: "com.ucm.formatVersion", ...TOKENS } });
+  assert.equal(extensions.bloquant, true);
+  assert.match(extensions.rapport, /`\$extensions` n'est pas un objet\./);
+
+  const tableau = verdict({ tokens: [TOKENS] });
+  assert.equal(tableau.bloquant, true);
+  assert.match(tableau.rapport, /Le fichier n'est pas un objet JSON\./);
+});
+
+test("une marque posée sous un groupe n'est pas lue", () => {
+  const tokens = { couleurs: { $extensions: { "com.ucm.formatVersion": 2 }, ...TOKENS.couleurs } };
+  const { bloquant, rapport } = verdict({ tokens });
+
+  assert.equal(bloquant, false);
+  assert.equal(rapport, verdict().rapport);
+});
+
+test("tokens d'une version future, aucun contrat encore : le refus précède l'état de démarrage", () => {
+  const racine = preparerRepo({ tokens: marquer(2) });
+  try {
+    const { bloquant, rapport } = controlerRepository(racine, { configuration: CONFIGURATION });
+    assert.equal(bloquant, true, "un fichier de tokens illisible ne reçoit pas de bilan vert");
+    assert.match(rapport, /^## ❌ `src\/tokens\/tokens\.json` utilise une version du format de tokens/m);
+    assert.doesNotMatch(rapport, /n'a pas encore reçu d'export/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("le tokens.json d'origine figé passe le contrôle comme la forme d'origine", () => {
+  const origine = JSON.parse(readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "tokens", "origine", "tokens.json"),
+    "utf8",
+  ));
+  const document = contrat();
+  document.viewStructures.st1.children[0].tokens.color = "{brand-tokens.primary.chain}";
+  const { bloquant, rapport } = verdict({
+    composants: { Widget: { contrat: document, tsx: TSX } },
+    tokens: origine,
+  });
+
+  assert.equal(bloquant, false);
+  assert.match(rapport, /^## ✅ Aucun blocage détecté$/m);
+  assert.doesNotMatch(rapport, /absents de la source/);
 });

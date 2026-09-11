@@ -34,6 +34,17 @@
  */
 export type * from './types.js';
 export { CONTRACT_VERSION, versionDeContrat } from './version.js';
+export { EXTENSION_VERSION_TOKENS, TOKENS_FORMAT_VERSION, etatDuFormatDeTokens } from './tokens.js';
+export type {
+  CouleurDeToken,
+  DimensionDeToken,
+  DocumentDeTokens,
+  EtatDuFormatDeTokens,
+  ExtensionsDuDocument,
+  GroupeDeTokens,
+  TokenDeDocument,
+  ValeurDeToken,
+} from './tokens.js';
 export { codeIdentifier, normalizeName, tokenCssVariable } from './names.js';
 export { estStyleItalique, nomsDeGraisseConnus, poidsDeGraisse } from './typography.js';
 export { TOKEN_REFERENCE, isTokenReference, refPath, toRef } from './references.js';

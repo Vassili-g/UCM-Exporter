@@ -11,8 +11,8 @@ next to the component's code. This command reads those files and says whether
 they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.23 init
-npx --yes @ucm-kit/cli@0.1.23 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.24 init
+npx --yes @ucm-kit/cli@0.1.24 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx install a build this
@@ -58,7 +58,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.23 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.24 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -146,6 +146,14 @@ directions.
 | Typography tokens have the expected type | Blocks |
 | Every `{token.path}` cited exists in the token file | Warns, but a missing or unreadable token file blocks |
 | The code exposes the props the contract declares, with a stack adapter installed | Warns |
+
+Before any contract, the check reads the format version at the root of the
+token file. A version newer than this package reads, or a mark that is not a
+version, blocks the merge, even in a repository with no contract yet. A
+developer upgrades the UCM packages for the first case, and the designer runs
+the token export again for the second.
+[`@ucm-kit/core`](https://www.npmjs.com/package/@ucm-kit/core) lists the four
+states.
 
 A gap with the code needs a developer, so it warns and lets the merge through. A
 token removed from the design system does too: tokens are the source of truth,
