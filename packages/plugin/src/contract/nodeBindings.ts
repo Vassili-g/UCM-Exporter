@@ -370,9 +370,8 @@ async function resolveGroup<K extends string>(
     // produisent le même texte et la déduplication n'en garde qu'un. Le geste à
     // faire est le même pour les trois.
     pousserLocalise(warnings, 'Layer', node, {
-      manque: `ce layer n'utilise pas d'auto layout.`,
-      impact: `Son gap et ses paddings n'existent pas dans Figma et restent absents du `
-        + `contrat. Leur absence ne veut donc pas dire zéro.`,
+      manque: `il n'utilise pas d'auto layout, donc Figma ne lui applique ni gap ni padding.`,
+      impact: `Le contrat ne publie aucun espacement pour ce layer, ce qui ne veut pas dire zéro.`,
       action: `Appliquez un auto layout au layer si son espacement doit être contractuel, `
         + `puis réexportez.`,
     });
@@ -397,10 +396,10 @@ async function resolveGroup<K extends string>(
     pousserLocalise(warnings, 'Layer', node, {
       manque: `son vertical gap est réglé sur « Auto », donc Figma répartit lui-même `
         + `l'espace entre ses lignes.`,
-      impact: `Le contrat ne sait pas décrire cette répartition : aucun gap entre les lignes `
-        + `n'est exporté, et son absence ne veut donc pas dire zéro.`,
-      action: `Donnez une valeur reliée à une variable au vertical gap si cet espacement doit `
-        + `être contractuel, puis réexportez.`,
+      impact: `Le contrat ne publie aucun espacement entre ses lignes, ce qui ne veut pas dire `
+        + `zéro.`,
+      action: `Si cet espacement doit être contractuel, donnez au vertical gap une valeur `
+        + `reliée à une variable, puis réexportez.`,
     });
     return null;
   }
@@ -454,8 +453,8 @@ async function resolveGroup<K extends string>(
         champ: label,
         manque: `les côtés ne sont pas reliés à la même variable `
           + `(${tokensByAlternative[asymmetricIndex].join(', ')}).`,
-        impact: `Rien n'est exporté pour cette valeur.`,
-        action: `Reliez-les toutes à la même variable, puis réexportez.`,
+        impact: `Le développeur n'aura pas cette valeur.`,
+        action: `Reliez-les tous à la même variable, puis réexportez.`,
       });
       return null;
     }
@@ -465,7 +464,7 @@ async function resolveGroup<K extends string>(
       pousserLocalise(warnings, 'Layer', node, {
         champ: label,
         manque: `deux réglages Figma se contredisent (${candidates.join(', ')}).`,
-        impact: `Rien n'est exporté pour cette valeur.`,
+        impact: `Le développeur n'aura pas cette valeur.`,
         action: `Ne définissez cette valeur que d'une seule façon, puis réexportez.`,
       });
       return null;
@@ -508,11 +507,9 @@ async function resolveGroup<K extends string>(
       if (details.length > 0) {
         pousserLocalise(warnings, 'Layer', node, {
           champ: label,
-          manque: `les côtés tokenisés sont exportés, mais la définition reste partielle `
-            + `(${details.join(' ; ')}).`,
-          impact: `Les côtés qui restent sans variable manqueront au développeur.`,
-          action: `Reliez les valeurs non neutres manquantes à des variables, puis `
-            + `réexportez.`,
+          manque: `certains côtés n'ont pas de variable exploitable (${details.join(' ; ')}).`,
+          impact: `Ces côtés manqueront au développeur.`,
+          action: `Reliez ces côtés à des variables, puis réexportez.`,
         });
       }
       if (Object.keys(detail).length > 0) return detail;
@@ -525,7 +522,7 @@ async function resolveGroup<K extends string>(
     pousserLocalise(warnings, 'Layer', node, {
       champ: label,
       manque: `aucune variable Figma n'est reliée.`,
-      impact: `La valeur fixe n'est pas exportée.`,
+      impact: `Le développeur n'aura pas cette valeur.`,
       action: `Reliez-la à une variable, puis réexportez.`,
     });
     return null;
@@ -552,9 +549,9 @@ async function resolveGroup<K extends string>(
 
   pousserLocalise(warnings, 'Layer', node, {
     champ: label,
-    manque: `la définition est incomplète (${details.join(' ; ')}).`,
-    impact: `Rien n'est exporté pour cette valeur.`,
-    action: `Reliez les variables manquantes, puis réexportez.`,
+    manque: `certains côtés n'ont pas de variable exploitable (${details.join(' ; ')}).`,
+    impact: `Le développeur n'aura pas cette valeur.`,
+    action: `Reliez ces côtés à des variables, puis réexportez.`,
   });
   return null;
 }
@@ -810,9 +807,8 @@ export async function resolveSizeBounds(
   if (unbound.length > 0) {
     pousserLocalise(warnings, 'Layer', node, {
       manque: `il fixe ${unbound.map(fieldLabel).join(', ')} sans variable Figma.`,
-      impact: `Le contrat ne publie que les bornes reliées à une variable. Un nombre écrit à `
-        + `la main est une mesure de maquette, pas une décision du design system. Le `
-        + `développeur rendra donc ce layer sans elles.`,
+      impact: `Le contrat ne publie que les bornes reliées à une variable : le développeur `
+        + `rendra ce layer sans elles.`,
       action: `Reliez ces bornes à une variable, puis réexportez.`,
     });
   }

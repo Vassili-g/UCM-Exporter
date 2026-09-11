@@ -121,9 +121,9 @@ export function buildStateModel(
     if (!known) {
       pousserSansNode(warnings, `Variant property « ${axis} »`, {
         manque: `l'état « ${value} » n'est pas reconnu.`,
-        impact: `Le contrat ne dira pas quand l'afficher. États reconnus : default, hover, `
-          + `focus, press, disable.`,
-        action: `Renommez cette valeur avec l'un d'eux, puis réexportez.`,
+        impact: `Le développeur ne saura pas quand afficher ce variant.`,
+        action: `Renommez cette valeur en default, hover, focus, press ou disable, puis `
+          + `réexportez.`,
       });
     }
   }

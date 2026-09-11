@@ -166,7 +166,7 @@ test('un variant privé du wrapper est signalé au lieu d’être rattrapé en s
 
   assert.equal(nodes.get(plat), plat as unknown as SceneNode);
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /ne contient pas le composant imbriqué qui porte les dimensions/);
+  assert.match(warnings[0], /ne contient pas l'instance « .+ », qui porte les dimensions/);
 });
 
 test('findLayoutNode choisit le calque qui porte le plus de dimensions liées', () => {

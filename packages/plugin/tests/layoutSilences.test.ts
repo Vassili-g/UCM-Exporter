@@ -441,8 +441,7 @@ test('une borne posée sur un wrapper de layout est signalée, faute de proprié
   );
 
   assert.equal(layout.bounds, undefined);
-  const borne = warnings.find((warning) => warning.includes('s’intercale')
-    || warning.includes("s'intercale"));
+  const borne = warnings.find((warning) => warning.includes('il se trouve entre le composant'));
   assert.ok(borne?.includes('« Contenu »'));
   assert.ok(borne?.includes('max width'));
 });

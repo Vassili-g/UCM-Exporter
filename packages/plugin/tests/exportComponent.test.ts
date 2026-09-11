@@ -752,7 +752,9 @@ test('un Component Set clairsemé exporte uniquement les combinaisons existantes
       { variant: 'outlined', size: 'large' },
     ]);
     assert.ok(
-      messagesDe(contrat).some((warning: string) => warning.includes('produit cartésien')),
+      messagesDe(contrat).some((warning: string) => (
+        warning.includes('combinaisons de valeurs de ses variant properties n\'ont pas de variant')
+      )),
     );
   } finally {
     figmaFaux.restaurer();
@@ -790,7 +792,7 @@ test('les props propres au wrapper sont fusionnées avant leurs liaisons natives
     )));
     assert.equal(
       messagesDe(contrat).some((warning: string) => (
-        warning.includes('Wrapper label') && warning.includes('aucune prop publique')
+        warning.includes('Wrapper label') && warning.includes('mais le contrat ne la publie pas')
       )),
       false,
     );
@@ -803,7 +805,7 @@ test('un Component Set vide bloque avant de produire une fausse variante', async
   const figmaFaux = monterFigma();
   figmaFaux.componentSet.children = [];
   try {
-    await assert.rejects(handleExportComponent(), /ne contient aucun variant COMPONENT/);
+    await assert.rejects(handleExportComponent(), /ne contient aucun variant\./);
   } finally {
     figmaFaux.restaurer();
   }
@@ -932,7 +934,7 @@ test('une collision de props du set est rangée comme une perte de portabilité'
 
     // Une des deux props n'est pas exportée : le contrat décrit moins que Figma.
     assert.equal(
-      diagnosticPour(contrat, 'leurs noms deviennent identiques').code,
+      diagnosticPour(contrat, 'leurs noms donnent le même nom').code,
       'UCM_PORTABLE_PROJECTION_WARNING',
     );
     assert.equal(contrat.meta.coverage.portable, 'partial');
@@ -983,7 +985,7 @@ test('une liaison native sans prop publique est rangée comme une perte de porta
     const contrat = JSON.parse((await handleExportComponent()).content);
 
     assert.equal(
-      diagnosticPour(contrat, 'aucune prop publique ne peut la porter').code,
+      diagnosticPour(contrat, 'mais le contrat ne la publie pas').code,
       'UCM_PORTABLE_PROJECTION_WARNING',
     );
     assert.equal(contrat.meta.coverage.portable, 'partial');

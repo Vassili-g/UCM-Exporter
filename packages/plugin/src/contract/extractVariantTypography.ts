@@ -157,7 +157,7 @@ async function loadTextStyle(
       warnings,
       `Text style « ${style.name} » sur le layer « ${textNode.name} »`,
       {
-        manque: `son nom ne produit aucun identifiant exportable.`,
+        manque: `son nom ne contient que des espaces ou des « / ».`,
         impact: `Sa typographie manquera au développeur.`,
         action: `Renommez le style, puis réexportez.`,
       },
@@ -295,9 +295,10 @@ export async function extractVariantTypography(
       if (allowedSlotPaths && !allowedSlotPaths.has(JSON.stringify(slotPath))) {
         pousserLocalise(pathNotices, 'Variant', entry.component, {
           champ: `layer « ${textNode.name} »`,
-          manque: `son chemin de slots diffère du variant de référence.`,
-          impact: `Son text style ne peut pas être situé dans le contrat.`,
-          action: `Alignez les branches de texte entre variants, puis réexportez.`,
+          manque: `il n'occupe pas la même place que dans le variant par défaut.`,
+          impact: `Le développeur ne saura pas quel text style lui appliquer dans ce variant.`,
+          action: `Rangez ce layer dans les mêmes frames que dans le variant par défaut, puis `
+            + `réexportez.`,
         });
         continue;
       }
@@ -313,10 +314,10 @@ export async function extractVariantTypography(
       const existingId = styleIdByKey.get(loaded.key);
       if (existingId && existingId !== loaded.id) {
         pousserSansNode(warnings, `Text style « ${loaded.definition.figmaName} »`, {
-          manque: `son nom normalisé « ${loaded.key} » est déjà utilisé par un autre text `
-            + `style.`,
-          impact: `Son usage sur le layer « ${textNode.name} » n'est pas exporté.`,
-          action: `Renommez l'un des deux styles.`,
+          manque: `son nom et celui d'un autre text style donnent le même nom `
+            + `« ${loaded.key} » dans le contrat.`,
+          impact: `Le développeur n'aura pas la typographie du layer « ${textNode.name} ».`,
+          action: `Renommez l'un des deux styles, puis réexportez.`,
         });
         continue;
       }

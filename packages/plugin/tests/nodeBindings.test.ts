@@ -41,7 +41,7 @@ test('un groupe conjonctif incomplet n’affirme pas une valeur symétrique', as
 
   assert.equal(result, null);
   assert.ok(warnings.some((warning) => warning.includes('right padding')));
-  assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
+  assert.ok(warnings.some((warning) => warning.includes("Le développeur n'aura pas cette valeur")));
 });
 
 test('un groupe conjonctif complet exporte son unique token', async () => {
@@ -147,7 +147,7 @@ test('sans auto layout, gap et paddings sont dits inapplicables, pas non reliés
   // gardera qu'un, et le geste à faire est le même.
   assert.equal(new Set(warnings).size, 1);
   assert.ok(warnings[0].includes("n'utilise pas d'auto layout"));
-  assert.ok(warnings[0].includes('ne veut donc pas dire zéro'));
+  assert.ok(warnings[0].includes('ce qui ne veut pas dire zéro'));
   assert.ok(!warnings[0].includes('aucune variable'));
 });
 
@@ -197,7 +197,7 @@ test('un groupe complet mais asymétrique ne conserve pas arbitrairement le prem
 
   assert.equal(result, null);
   assert.ok(warnings.some((warning) => warning.includes('pas reliés à la même variable')));
-  assert.ok(warnings.some((warning) => warning.includes("Rien n'est exporté")));
+  assert.ok(warnings.some((warning) => warning.includes("Le développeur n'aura pas cette valeur")));
 });
 
 test('les représentations du rayon sont alternatives mais chacune reste complète', async () => {
@@ -345,7 +345,7 @@ test('un padding publie son côté relié et signale seulement le côté fixe no
 
   assert.deepEqual(result, { left: '{sizes.padding-left}' });
   assert.ok(warnings.some((warning) => warning.includes('right padding')));
-  assert.ok(warnings.some((warning) => warning.includes('les côtés tokenisés sont exportés')));
+  assert.ok(warnings.some((warning) => warning.includes('Ces côtés manqueront au développeur')));
 });
 
 test('quatre coins reliés à quatre variables publient les quatre', async () => {

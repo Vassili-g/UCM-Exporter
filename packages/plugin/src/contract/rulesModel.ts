@@ -98,8 +98,8 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
     if (entry.tag === 'usage') {
       if (usage === null) usage = content;
       else {
-        pousserSansNode(warnings, 'Plusieurs règles @usage', {
-          manque: 'le composant en déclare plus d’une.',
+        pousserSansNode(warnings, 'Règle @usage', {
+          manque: 'le composant en déclare plusieurs.',
           impact: 'Seule la première est exportée.',
           action: 'Ne gardez qu’un seul @usage, puis réexportez.',
         });
@@ -135,10 +135,10 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       const separator = cible.indexOf('.');
       if (separator <= 0 || separator === cible.length - 1) {
         pousserSansNode(warnings, 'Règle @default', {
-          manque: `elle vise « ${cible || 'rien'} », alors qu’il faut `
+          manque: `le layer « prop » contient « ${cible || 'rien'} », alors qu’il faut `
             + `« propriété.valeur », par exemple « color.secondary ».`,
-          impact: 'Aucune valeur par défaut n’entre dans le contrat pour cette propriété.',
-          action: 'Corrigez cette règle, puis réexportez.',
+          impact: 'La règle n’est pas exportée.',
+          action: 'Corrigez ce layer, puis réexportez.',
         });
         continue;
       }
@@ -167,7 +167,7 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
         });
       } else if (!entry.iconPolicy) {
         pousserSansNode(warnings, `Règle @icons « ${iconName} »`, {
-          manque: 'aucune politique n’est choisie.',
+          manque: 'ni le layer « modifiable » ni le layer « strict » n’est visible seul.',
           impact: 'La règle n’est pas exportée, et l’icône ne sera pas décrite.',
           action: 'Rendez visible exactement un des deux layers « modifiable » ou « strict », '
             + 'puis réexportez.',
@@ -189,7 +189,7 @@ export function buildRules(entries: RuleEntry[]): RulesResult {
       if (separator <= 0 || separator === key.length - 1) {
         pousserSansNode(warnings, 'Règle @prop', {
           manque: `le layer « prop » contient « ${key || 'rien'} », alors qu’il faut `
-            + `« property.valeur », par exemple « variant.contained ».`,
+            + `« propriété.valeur », par exemple « variant.contained ».`,
           impact: 'La règle n’est pas exportée.',
           action: 'Corrigez ce layer, puis réexportez.',
         });

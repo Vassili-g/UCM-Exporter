@@ -62,7 +62,7 @@ const AVERTISSEMENT_STROKE = { // extractSlotTokens.ts, strokeAlignment
 };
 const AVERTISSEMENT_AUTO_LAYOUT = { // extractLayout.ts, warnMissingDirection
   titre: "Layer « Button / Primary » : il n'utilise pas d'auto layout.",
-  impact: "Le contrat annonce malgré tout une disposition horizontale, la seule qu'il sache écrire par défaut, et le développeur placera donc ses layers autrement que dans Figma.",
+  impact: "Le contrat annonce par défaut une disposition horizontale : le développeur placera ses layers autrement que dans Figma.",
   action: "Appliquez un auto layout à ce layer, puis réexportez.",
 };
 const AVERTISSEMENT_TEXT_STYLE = { // extractVariantTypography.ts — nomme un style, pas un node
@@ -71,9 +71,9 @@ const AVERTISSEMENT_TEXT_STYLE = { // extractVariantTypography.ts — nomme un s
   action: "Reliez-la à une variable dans le text style, puis réexportez.",
 };
 const AVERTISSEMENT_COMPOSE = { // exportComponent.ts, dépendance non placée
-  titre: "Layer « Icon slot » : il porte le composant « Icon », qui a son propre contrat, mais le contrat n'a trouvé aucun emplacement où le situer.",
-  impact: "La dépendance ne sera ni décrite dans structure.children, ni déclarée dans composes : le développeur ne la rendra pas.",
-  action: "Placez ce layer dans l'auto layout frame que le composant décrit, puis réexportez.",
+  titre: "Layer « Icon slot » : il contient le composant « Icon », mais le contrat ne décrit ce layer nulle part.",
+  impact: "Le développeur ne rendra pas « Icon » dans ce composant.",
+  action: "Placez ce layer dans l'auto layout frame qui porte le gap et le padding, puis réexportez.",
 };
 
 const COMPOSANT = 'Button / Primary';
@@ -145,8 +145,8 @@ const REGLAGES = {
  * L'absence de `nodeId` n'est pas un raccourci de la galerie : c'est l'état
  * réel d'un message qui nomme un text style, une variable, ou un calque agrégé
  * sur toute la matrice. Les deux formes doivent se regarder côte À côte, parce
- * que c'est leur voisinage qui dit si l'absence du bouton « Afficher dans
- * Figma » se lit comme une réponse ou comme un oubli.
+ * que c'est leur voisinage qui dit si l'absence du bouton « Sélectionner le
+ * calque » se lit comme une réponse ou comme un oubli.
  */
 const diagnostic = (point, nodeId) => ({
   message: { type: 'diagnostic', ...point, ...(nodeId ? { nodeId } : {}) },
@@ -371,8 +371,8 @@ const ETATS = [
         message: {
           type: 'status',
           state: 'error',
-          text: 'Export impossible pour « Stresstest » : ce Component Set ne contient aucun '
-            + 'variant COMPONENT. Ajoutez au moins un variant dans Figma, puis réexportez.',
+          text: 'Export impossible pour « Stresstest » : ce component set ne contient aucun '
+            + 'variant. Ajoutez au moins un variant dans Figma, puis réexportez.',
         },
       },
     ],

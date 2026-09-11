@@ -131,7 +131,7 @@ export function createCompteRendu(): CompteRenduUi {
       const versLeCalque = document.createElement('button');
       versLeCalque.type = 'button';
       versLeCalque.className = 'btn btn-secondary carte-lien';
-      versLeCalque.textContent = 'Afficher dans Figma';
+      versLeCalque.textContent = 'Sélectionner le calque';
       // Seul le sandbox peut poser une sélection : on lui délègue, comme pour
       // l'ouverture d'un lien externe.
       const nodeId = point.nodeId;

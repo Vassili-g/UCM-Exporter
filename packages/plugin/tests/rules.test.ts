@@ -130,7 +130,7 @@ test('buildRules avertit quand une règle @icons n a pas de politique visible', 
 
   assert.deepEqual(result.iconRules, []);
   assert.deepEqual(result.warnings, [
-    'Règle @icons « fa-warning » : aucune politique n’est choisie. La règle n’est pas exportée, et l’icône ne sera pas décrite. Rendez visible exactement un des deux layers « modifiable » ou « strict », puis réexportez.',
+    'Règle @icons « fa-warning » : ni le layer « modifiable » ni le layer « strict » n’est visible seul. La règle n’est pas exportée, et l’icône ne sera pas décrite. Rendez visible exactement un des deux layers « modifiable » ou « strict », puis réexportez.',
   ]);
 });
 
@@ -235,11 +235,38 @@ test('un conteneur au calque vide ne documente personne, et le constat le situe'
 
   assert.equal(rules.sectionFound, false);
   assert.deepEqual(rules.warnings, [
-    'Layer « .componentRules » : son calque « component-name » est vide, donc il ne documente '
+    'Layer « .componentRules » : son layer « component-name » est vide, donc il ne documente '
     + 'aucun composant. Le contrat dira comment utiliser le composant, mais pas quand : ni '
-    + 'intention, ni documentation de props, ni règle d’icône. Écrivez « Button » dans ce '
-    + 'calque, puis réexportez.',
+    + 'intention, ni documentation de component properties, ni règle d’icône. Écrivez '
+    + '« Button » dans ce layer, puis réexportez.',
   ]);
+});
+
+/** Une règle @usage qui écrit un texte, donc que l'export lit. */
+const regleDUsage = () => regle('@usage', [noeud('TEXT', 'content', [], { characters: 'Texte' })]);
+
+test('deux conteneurs au même nom : le constat nomme le composant et le geste', async (t) => {
+  // Le maître `.componentRules` est livré avec un `component-name` pré-rempli :
+  // une instance posée sans être éditée revendique ce nom. Le designer doit lire
+  // quel nom est en double, sans deviner laquelle des instances est lue.
+  monterPage(t, [conteneur('Root', [regleDUsage()]), conteneur('Root', [regleDUsage()])]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.deepEqual(rules.warnings, [
+    'Layer « .componentRules » : 2 instances écrivent « Root » dans leur layer '
+    + '« component-name », et l’export n’en lit qu’une. Les règles de l’autre instance '
+    + 'manqueront au développeur. Ne laissez « Root » que dans une instance : écrivez dans '
+    + 'les autres le nom du composant qu’elles documentent, puis réexportez.',
+  ]);
+});
+
+test('trois conteneurs au même nom : le constat compte les deux jeux ignorés', async (t) => {
+  monterPage(t, [conteneur('Root', [regleDUsage()]), conteneur('Root'), conteneur('Root')]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.match(rules.warnings[0], /Les règles des 2 autres instances manqueront au développeur\./);
 });
 
 test('un @default est lu alors que Figma a rangé son variant sous « Type8 »', async (t) => {
@@ -266,9 +293,9 @@ test('deux témoins qui nomment chacun un tag se contredisent, et le calque l’
   assert.deepEqual(rules.intent?.dont, ['Empiler']);
   assert.deepEqual(rules.intent?.do, []);
   assert.deepEqual(rules.warnings, [
-    'Layer « Règle » : elle affiche « @dont » alors que son variant la range en « @do ». '
-    + 'Le tag affiché est exporté, et la règle ne remplira pas le champ que son variant '
-    + 'annonce. Choisissez le variant qui porte le tag affiché, puis réexportez.',
+    'Layer « Règle » : il affiche le tag « @dont », mais son variant est « @do ». '
+    + 'Le contrat range cette règle en « @dont », pas en « @do ». Choisissez le variant qui '
+    + 'correspond au tag voulu, puis réexportez.',
   ]);
 });
 
@@ -313,14 +340,14 @@ test('le calque « prop » n’est pas lu comme le tag @prop', async (t) => {
 
   assert.deepEqual(rules.propDescriptions, {});
   assert.deepEqual(rules.warnings, [
-    'Une règle de « .componentRules » : aucun de ses calques ne porte de tag (@usage, @do, '
-    + '@dont, @pairs, @prop, @boolean, @icons, @default). Elle est ignorée, et sa '
-    + 'documentation manquera au contrat. Choisissez son variant dans Figma, puis réexportez.',
+    'Une règle de « .componentRules » : aucun de ses layers ne porte de tag (@usage, @do, '
+    + '@dont, @pairs, @prop, @boolean, @icons, @default). Sa documentation manquera au '
+    + 'développeur. Choisissez son variant dans Figma, puis réexportez.',
     // La seule règle du conteneur ayant été écartée, il n'en reste aucune :
     // le second constat porte sur le conteneur, et non sur cette règle.
-    'Layer « .componentRules » : il ne contient aucune instance de « .rulesItems » lisible. '
-    + 'Aucune règle d’usage n’enrichira le contrat. Ajoutez-y au moins une règle, puis '
-    + 'réexportez.',
+    'Layer « .componentRules » : il ne contient aucune instance de « .rulesItems » qui porte '
+    + 'un tag. Le développeur ne recevra aucune règle d’usage pour ce composant. Ajoutez-y au '
+    + 'moins une règle, puis réexportez.',
   ]);
 });
 

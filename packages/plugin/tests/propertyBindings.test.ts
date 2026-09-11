@@ -73,7 +73,7 @@ test('une liaison orpheline avertit explicitement de son absence du contrat', ()
 
   assert.deepEqual(bindings, []);
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /n'est pas publiée dans le contrat/);
+  assert.match(warnings[0], /s'en sert pour la visibilité, mais le contrat ne la publie pas/);
 });
 
 test('une liaison portée par la racine du variant n’est publiée qu’une fois', () => {

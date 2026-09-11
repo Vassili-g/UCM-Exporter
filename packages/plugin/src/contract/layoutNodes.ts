@@ -152,11 +152,11 @@ export async function electVariantLayoutNodes(
       : null;
     if (wrapperOwnerId && !instance) {
       pousserLocalise(warnings, 'Variant', variant, {
-        manque: `il ne contient pas le composant imbriqué qui porte les dimensions des `
-          + `autres variants.`,
-        impact: `Ses dimensions et ses slots sont lus sur un autre layer, et peuvent décrire `
-          + `autre chose.`,
-        action: `Ajoutez-y ce composant, puis réexportez.`,
+        manque: `il ne contient pas l'instance « ${wrapperInstance?.name} », qui porte les `
+          + `dimensions des autres variants.`,
+        impact: `Le contrat décrit ce variant d'après un autre layer : le développeur peut le `
+          + `rendre autrement que dans Figma.`,
+        action: `Ajoutez-y cette instance, puis réexportez.`,
       });
     }
     // Les avertissements de parcours (calques masqués) ne sont relevés que sur
