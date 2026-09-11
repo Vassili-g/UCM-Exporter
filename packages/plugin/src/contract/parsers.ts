@@ -186,8 +186,8 @@ export function extractContractPropertyModel(
     const owner = owners.get(key);
     if (owner !== undefined) {
       pousserSansNode(warnings, `Component properties « ${owner} » et « ${figmaName} »`, {
-        manque: `leurs noms deviennent identiques une fois normalisés (« ${key} »).`,
-        impact: `Seule « ${owner} » est exportée.`,
+        manque: `leurs noms donnent le même nom « ${key} » dans le contrat.`,
+        impact: `Le contrat ne publie que la première : la seconde manquera au développeur.`,
         action: `Renommez l’une des deux, puis réexportez.`,
       });
       return false;
@@ -260,12 +260,12 @@ export function extractContractPropertyModel(
           ? (stateDefinition.variantOptions ?? []).find(isDisabledStateValue) ?? 'Disable'
           : 'Disable';
         pousserSansNode(warnings, `Component property « ${rawFigmaName} »`, {
-          manque: `l’axe « ${stateFigmaName} » possède déjà le variant `
-            + `« ${disabledStateName} », qui devient la prop publique « disabled ».`,
-          impact: `Cette boolean property n’est pas exportée séparément, donc sa valeur par `
-            + `défaut manquerait au développeur.`,
-          action: `Supprimez-la si elle pilote le même état ; sinon renommez-la selon le `
-            + `layer distinct qu’elle pilote, puis réexportez.`,
+          manque: `la variant property « ${stateFigmaName} » a déjà la valeur `
+            + `« ${disabledStateName} », que le contrat publie sous le nom « disabled ».`,
+          impact: `Le contrat ne publie pas cette boolean property : sa valeur par défaut `
+            + `manquera au développeur.`,
+          action: `Supprimez-la si elle pilote le même état, sinon renommez-la d’après le `
+            + `layer qu’elle pilote, puis réexportez.`,
         });
         continue;
       }

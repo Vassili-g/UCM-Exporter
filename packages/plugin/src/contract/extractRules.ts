@@ -218,10 +218,9 @@ function ruleTagOf(instance: InstanceNode, warnings: string[]): RuleTag | null {
 
   if (affiche !== null && range !== null && affiche !== range) {
     pousserLocalise(warnings, 'Layer', instance, {
-      manque: `elle affiche « @${affiche} » alors que son variant la range en « @${range} ».`,
-      impact: `Le tag affiché est exporté, et la règle ne remplira pas le champ que son `
-        + `variant annonce.`,
-      action: 'Choisissez le variant qui porte le tag affiché, puis réexportez.',
+      manque: `il affiche le tag « @${affiche} », mais son variant est « @${range} ».`,
+      impact: `Le contrat range cette règle en « @${affiche} », pas en « @${range} ».`,
+      action: 'Choisissez le variant qui correspond au tag voulu, puis réexportez.',
     });
   }
   return affiche ?? range;
@@ -259,11 +258,11 @@ export async function extractRules(
     const orphelin = figma.currentPage.findOne(estUnConteneurSansNom);
     if (orphelin) {
       pousserLocalise(absent, 'Layer', orphelin, {
-        manque: `son calque « ${COMPONENT_NAME_LAYER} » est vide, donc il ne documente `
+        manque: `son layer « ${COMPONENT_NAME_LAYER} » est vide, donc il ne documente `
           + 'aucun composant.',
         impact: 'Le contrat dira comment utiliser le composant, mais pas quand : ni intention, '
-          + 'ni documentation de props, ni règle d’icône.',
-        action: `Écrivez « ${componentSet.name} » dans ce calque, puis réexportez.`,
+          + 'ni documentation de component properties, ni règle d’icône.',
+        action: `Écrivez « ${componentSet.name} » dans ce layer, puis réexportez.`,
       });
     } else {
       // La cible n'existe pas : son absence est déclarée, pas subie. Le message
@@ -274,11 +273,11 @@ export async function extractRules(
         sujetSansNode('Layer', RULES_CONTAINER_NAME, 'inexistant'),
         {
           manque: `aucune instance de cette page n’écrit « ${componentSet.name} » dans son `
-            + `calque « ${COMPONENT_NAME_LAYER} ».`,
+            + `layer « ${COMPONENT_NAME_LAYER} ».`,
           impact: 'Le contrat dira comment utiliser le composant, mais pas quand : ni intention, '
-            + 'ni documentation de props, ni règle d’icône.',
+            + 'ni documentation de component properties, ni règle d’icône.',
           action: `Posez une instance de « ${RULES_CONTAINER_NAME} » à côté du composant, `
-            + `écrivez « ${componentSet.name} » dans son calque « ${COMPONENT_NAME_LAYER} », `
+            + `écrivez « ${componentSet.name} » dans son layer « ${COMPONENT_NAME_LAYER} », `
             + 'puis réexportez.',
         },
       );
@@ -306,14 +305,17 @@ export async function extractRules(
     // est livré avec un `component-name` pré-rempli, et toute instance fraîche
     // revendique donc ce nom-là jusqu'à sa première édition.
     const sujetDuDoublon = sujetNomme('Layer', RULES_CONTAINER_NAME, container);
+    const ignorees = containers.length - 1;
     pousserNote(
       warnings,
       pointDe(sujetDuDoublon.texte, {
-        manque: `${containers.length} instances de ce composant écrivent le même nom dans `
-          + `leur calque « ${COMPONENT_NAME_LAYER} », et seule celle-ci est lue.`,
-        impact: 'Les règles des autres sont perdues.',
-        action: `Vérifiez le calque « ${COMPONENT_NAME_LAYER} » de chacune : deux jeux de `
-          + 'règles ne documentent pas le même composant. Puis réexportez.',
+        manque: `${containers.length} instances écrivent « ${componentSet.name} » dans leur `
+          + `layer « ${COMPONENT_NAME_LAYER} », et l’export n’en lit qu’une.`,
+        impact: ignorees === 1
+          ? 'Les règles de l’autre instance manqueront au développeur.'
+          : `Les règles des ${ignorees} autres instances manqueront au développeur.`,
+        action: `Ne laissez « ${componentSet.name} » que dans une instance : écrivez dans `
+          + 'les autres le nom du composant qu’elles documentent, puis réexportez.',
       }),
       sujetDuDoublon,
     );
@@ -326,9 +328,9 @@ export async function extractRules(
     if (!tag) {
       if (nEcritRien(instance)) continue;
       pousserSansNode(warnings, `Une règle de « ${RULES_CONTAINER_NAME} »`, {
-        manque: 'aucun de ses calques ne porte de tag (@usage, @do, @dont, @pairs, @prop, '
+        manque: 'aucun de ses layers ne porte de tag (@usage, @do, @dont, @pairs, @prop, '
           + '@boolean, @icons, @default).',
-        impact: 'Elle est ignorée, et sa documentation manquera au contrat.',
+        impact: 'Sa documentation manquera au développeur.',
         action: 'Choisissez son variant dans Figma, puis réexportez.',
       });
       continue;
@@ -352,8 +354,8 @@ export async function extractRules(
     pousserNote(
       warnings,
       pointDe(sujetDuConteneur.texte, {
-        manque: 'il ne contient aucune instance de « .rulesItems » lisible.',
-        impact: 'Aucune règle d’usage n’enrichira le contrat.',
+        manque: 'il ne contient aucune instance de « .rulesItems » qui porte un tag.',
+        impact: 'Le développeur ne recevra aucune règle d’usage pour ce composant.',
         action: 'Ajoutez-y au moins une règle, puis réexportez.',
       }),
       sujetDuConteneur,

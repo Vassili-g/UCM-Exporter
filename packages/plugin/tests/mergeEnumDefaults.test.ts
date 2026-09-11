@@ -59,12 +59,13 @@ test('un @default qui vise un axe inexistant ne pose rien et le dit', () => {
 
   assert.deepEqual(props, { color: { type: 'enum', values: ['primary', 'secondary'] } });
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /aucun axe de variantes portant ce nom/);
+  assert.match(warnings[0], /aucune variant property portant ce nom/);
 });
 
 /**
  * Le rapport de ces avertissements est lu par un designer : il nomme la
- * propriété et la valeur, jamais le vocabulaire du code.
+ * propriété et la valeur, jamais le vocabulaire du code. Le layer « prop » de
+ * la règle est un nom que Figma affiche, et le message le cite tel quel.
  */
 test('aucun avertissement de @default n’emploie le vocabulaire du code', () => {
   const props = extractContractProps(axeDeCouleur());
@@ -73,7 +74,7 @@ test('aucun avertissement de @default n’emploie le vocabulaire du code', () =>
   mergeEnumDefaults(props, { couleur: 'primary' }, warnings);
   mergeEnumDefaults(props, { color: 'tertiary' }, warnings);
 
-  const texte = warnings.join('\n');
+  const texte = warnings.join('\n').replace(/layer « prop »/g, '');
   assert.doesNotMatch(texte, /\bprops?\b/i);
   assert.doesNotMatch(texte, /\benums?\b/i);
 });

@@ -108,7 +108,7 @@ test('le résolveur ne produit jamais un alias vers la variable écartée d’un
       null,
     );
     assert.equal(figmaStub.appels(), 0);
-    assert.match(warnings[0], /à la fois une valeur et un groupe de tokens/);
+    assert.match(warnings[0], /ne peuvent pas coexister : l'un sert de groupe à l'autre/);
   } finally {
     figmaStub.restaurer();
   }
@@ -134,7 +134,7 @@ test('le résolveur refuse d’écrire une référence pour une variable ambigu�
     // le calque avec la valeur de sa rivale.
     assert.equal(surLaPerdante, null);
     assert.equal(warnings.length, 1);
-    assert.match(warnings[0], /« foo-bar » : une fois normalisé, son nom est identique à celui de « Foo Bar »/);
+    assert.match(warnings[0], /« foo-bar » : son nom donne le même token « brand\.foo-bar » que la variable « Foo Bar »/);
   } finally {
     figmaStub.restaurer();
   }

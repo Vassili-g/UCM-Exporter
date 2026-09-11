@@ -172,7 +172,8 @@ function warnUndeclaredDrawing(
     manque: `il ne contient qu'un dessin, et aucune règle @icons ne le désigne.`,
     impact: `Le contrat ne décrit pas les tracés : le développeur connaîtra la place et les `
       + `couleurs de ce layer, jamais son dessin.`,
-    action: `Ajoutez une règle @icons dont le layer « icon » porte ce nom, puis réexportez.`,
+    action: `Ajoutez une règle @icons dont le layer « icon » porte « ${cible.name} », puis `
+      + `réexportez.`,
   });
 }
 
@@ -248,16 +249,16 @@ async function applyContainerProperties(
     if (childCount > 1) {
       pousserLocalise(warnings, 'Layer', node, {
         manque: `il range ${childCount} layers mais n'utilise pas d'auto layout.`,
-        impact: `Le contrat exporte leurs tokens et leurs visibilités, mais pas leur `
-          + `disposition : le développeur les placera autrement que dans Figma.`,
+        impact: `Le contrat ne décrit pas leur disposition : le développeur les placera `
+          + `autrement que dans Figma.`,
         action: `Appliquez un auto layout à ce layer, puis réexportez.`,
       });
     } else if (dependencies.length > 0) {
       pousserLocalise(warnings, 'Layer', node, {
         manque: `il enveloppe ${nommerDependances(dependencies)} mais n'utilise pas d'auto `
           + `layout.`,
-        impact: `Le contrat publie la dépendance sans la disposition de ce calque, et le `
-          + `développeur la rendra sans ce cadre.`,
+        impact: `Le développeur rendra ${nommerDependances(dependencies)} sans la disposition `
+          + `de ce layer.`,
         action: `Appliquez un auto layout à ce layer, puis réexportez.`,
       });
     }
@@ -463,8 +464,9 @@ async function describeNode(
       pousserLocalise(warnings, 'Layer', child, {
         manque: `sa visibilité et celle du composant « ${dependency.component} » qu'il `
           + `contient dépendent de deux component properties différentes.`,
-        impact: `Seule celle du layer est exportée.`,
-        action: `Utilisez la même pour les deux.`,
+        impact: `Le contrat ne publie que celle du layer : celle de « ${dependency.component} » `
+          + `manquera au développeur.`,
+        action: `Utilisez la même component property pour les deux, puis réexportez.`,
       });
     }
   }
@@ -512,16 +514,18 @@ async function describeNode(
     }
     const plusieurs = dependencies.length > 1;
     pousserLocalise(warnings, 'Layer', child, {
-      manque: `il enveloppe ${nommerDependances(dependencies)} mais aucun de ses calques `
-        + `exportables n'y mène.`,
+      manque: plusieurs
+        ? `il contient ${nommerDependances(dependencies)}, mais les layers qui portent leurs `
+          + `instances sont masqués.`
+        : `il contient ${nommerDependances(dependencies)}, mais le layer qui porte son `
+          + `instance est masqué.`,
       impact: plusieurs
-        ? 'Le contrat ne peut placer aucune de ces dépendances. Un slot ne porte qu’un '
-          + 'composant, donc le développeur ne les rendra pas.'
-        : 'Le contrat nomme la dépendance sans la disposition de ce calque, et le développeur '
-          + 'rendra le composant sans son cadre.',
+        ? 'Le développeur ne rendra aucun de ces composants.'
+        : `Le développeur rendra ${nommerDependances(dependencies)} sans la disposition de `
+          + 'ce layer.',
       action: plusieurs
-        ? 'Rendez visibles les calques qui portent les instances, puis réexportez.'
-        : 'Rendez visible le calque qui porte l’instance, puis réexportez.',
+        ? 'Rendez visibles les layers qui portent les instances, puis réexportez.'
+        : 'Rendez visible le layer qui porte l’instance, puis réexportez.',
     });
     await applySizing(entry, parent, child, resolver, warnings, suppressedSizeNodeIds);
     return entry;
@@ -600,7 +604,7 @@ export function warnLayersOutsideLayoutNode(
         pousserLocalise(warnings, 'Layer', sibling, {
           manque: `il est posé à côté de l'auto layout frame qui porte le gap et le padding, `
             + `pas dedans.`,
-          impact: `Le contrat ne lui donne ni slot, ni typographie, ni visibilité : le `
+          impact: `Le contrat ne décrit ni sa place, ni sa typographie, ni sa visibilité : le `
             + `développeur ne le rendra pas.`,
           action: `Déplacez-le dans cet auto layout frame, puis réexportez.`,
         });
@@ -628,11 +632,12 @@ function warnIntermediateBounds(
     const bornes = sizeBoundFields(current);
     if (bornes.length > 0) {
       pousserLocalise(warnings, 'Layer', current, {
-        manque: `il fixe ${bornes.map(fieldLabel).join(', ')}, mais il s'intercale entre le `
-          + `composant et ses slots.`,
-        impact: `Le contrat publie les bornes du composant et celles de chaque slot, jamais `
-          + `celles d'un layer intermédiaire : le développeur rendra ce layer sans elles.`,
-        action: `Portez ces bornes sur le composant ou sur le slot concerné, puis réexportez.`,
+        manque: `il fixe ${bornes.map(fieldLabel).join(', ')}, mais il se trouve entre le `
+          + `composant et les layers que le contrat décrit.`,
+        impact: `Le contrat ne publie les bornes que du composant et de ces layers : le `
+          + `développeur rendra ce layer sans elles.`,
+        action: `Déplacez ces bornes sur le composant ou sur le layer qu'elles contraignent, `
+          + `puis réexportez.`,
       });
     }
     const parent: BaseNode | null = current.parent;
@@ -650,8 +655,8 @@ function warnMissingDirection(layoutNode: SceneNode, warnings: string[]): void {
   if (autoLayoutDirection(layoutNode)) return;
   pousserLocalise(warnings, 'Layer', layoutNode, {
     manque: `il n'utilise pas d'auto layout.`,
-    impact: `Le contrat annonce malgré tout une disposition horizontale, la seule qu'il sache `
-      + `écrire par défaut, et le développeur placera donc ses layers autrement que dans Figma.`,
+    impact: `Le contrat annonce par défaut une disposition horizontale : le développeur `
+      + `placera ses layers autrement que dans Figma.`,
     action: `Appliquez un auto layout à ce layer, puis réexportez.`,
   });
 }

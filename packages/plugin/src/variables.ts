@@ -242,17 +242,17 @@ export function collisionWarnings(index: VariableIndex): PointACorriger[] {
     if (entry.kind === 'same-path') {
       return pointDe(`Variables « ${entry.owner} » et « ${entry.name} »`, {
         manque: `leurs noms donnent le même token « ${entry.path} ».`,
-        impact: 'Seule la première est exportée.',
-        action: 'Renommez la seconde.',
+        impact: `Le développeur n'aura pas « ${entry.name} ».`,
+        action: `Renommez l'une des deux, puis réexportez.`,
       });
     }
     return pointDe(
       `Variables « ${entry.owner} » (« ${entry.ownerPath} ») et « ${entry.name} » `
         + `(« ${entry.path} »)`,
       {
-        manque: 'un token ne peut pas être à la fois une valeur et un groupe de tokens.',
-        impact: 'Seule la première est exportée.',
-        action: `Renommez ou déplacez l'une des deux.`,
+        manque: 'le token de l’une sert de groupe au token de l’autre.',
+        impact: `Le développeur n'aura pas « ${entry.name} ».`,
+        action: `Renommez ou déplacez l'une des deux, puis réexportez.`,
       },
     );
   });
@@ -314,18 +314,17 @@ export class VariableNameResolver {
       if (warnings) {
         pousserSansNode(warnings, `Variable « ${ambiguous.name} »`, ambiguous.kind === 'same-path'
           ? {
-            manque: `une fois normalisé, son nom est identique à celui de `
-              + `« ${ambiguous.owner} » (« ${ambiguous.path} »).`,
-            impact: `Aucune référence n'est écrite${location}. Elle désignerait l'autre `
-              + `variable.`,
-            action: `Renommez l'une des deux.`,
+            manque: `son nom donne le même token « ${ambiguous.path} » que la variable `
+              + `« ${ambiguous.owner} ».`,
+            impact: `Le développeur n'aura pas cette valeur${location}.`,
+            action: `Renommez l'une des deux, puis réexportez.`,
           }
           : {
-            manque: `son nom « ${ambiguous.path} » entre en conflit avec `
-              + `« ${ambiguous.ownerPath} » (« ${ambiguous.owner} »).`,
-            impact: `Un token ne peut pas être à la fois une valeur et un groupe de tokens. `
-              + `Aucune référence n'est écrite${location}.`,
-            action: `Renommez ou déplacez l'une des deux.`,
+            manque: `son token « ${ambiguous.path} » et le token « ${ambiguous.ownerPath} » de la `
+              + `variable « ${ambiguous.owner} » ne peuvent pas coexister : l'un sert de groupe `
+              + `à l'autre.`,
+            impact: `Le développeur n'aura pas cette valeur${location}.`,
+            action: `Renommez ou déplacez l'une des deux, puis réexportez.`,
           });
       }
       return null;
@@ -341,10 +340,9 @@ export class VariableNameResolver {
       // y mène quand l'appelant a passé le node : un style de texte n'en a pas.
       pousserVersLeCalque(
         pointDe(`Variable introuvable${location}`, {
-          manque: `elle a sans doute été supprimée, ou vient d'une bibliothèque qui n'est `
-            + `plus publiée.`,
-          impact: `Rien n'est exporté pour cette valeur.`,
-          action: `Reliez de nouveau une variable existante.`,
+          manque: `elle a peut-être été supprimée, ou sa bibliothèque n'est plus publiée.`,
+          impact: `Le développeur n'aura pas cette valeur.`,
+          action: `Reliez de nouveau une variable existante, puis réexportez.`,
         }),
         usage,
         warnings,
@@ -357,8 +355,8 @@ export class VariableNameResolver {
       if (warnings) {
         pousserSansNode(warnings, `Variable « ${variable.name} »${location}`, {
           manque: `sa collection est introuvable.`,
-          impact: `Rien n'est exporté pour cette valeur.`,
-          action: `Republiez la bibliothèque, ou reliez une variable locale.`,
+          impact: `Le développeur n'aura pas cette valeur.`,
+          action: `Republiez la bibliothèque ou reliez une variable locale, puis réexportez.`,
         });
       }
       return null;

@@ -216,8 +216,7 @@ export function depthLimitWarning(
   return pointDe(sujet('Layer', node).texte, {
     manque: `il est imbriqué au-delà de ${MAX_STRUCTURE_DEPTH} niveaux, la profondeur `
       + `maximale que le contrat décrit.`,
-    impact: `Son contenu ne recevra ni slot, ni typographie, ni visibilité, et le développeur `
-      + `ne le rendra pas.`,
+    impact: `Le contrat ne décrit pas son contenu : le développeur ne le rendra pas.`,
     action: `Remontez ce layer ou découpez le composant, puis réexportez.`,
   });
 }

@@ -84,9 +84,9 @@ qu'à l'œil, dans un vrai fichier Figma. Elles se refont à chaque passage de
 cette page.
 
 **Observation A.** Sélectionnez un calque depuis le plugin, par le bouton «
-Afficher dans Figma » d'un point à corriger. Regardez ensuite si Figma marque le
-fichier comme modifié, c'est-à-dire s'il propose d'enregistrer une nouvelle
-version. Attendu : non.
+Sélectionner le calque » d'un point à corriger. Regardez ensuite si Figma
+marque le fichier comme modifié, c'est-à-dire s'il propose d'enregistrer une
+nouvelle version. Attendu : non.
 
 **Observation B.** Faites un export, puis regardez les points à corriger du
 compte rendu, en thème clair puis en thème sombre. Vérifiez qu'ils restent

@@ -81,7 +81,7 @@ export function gridTrackCounts(node: SceneNode): { columns?: number; rows?: num
 function pisteIllisible(nom: string, index: number): Constat {
   return {
     manque: `la taille de la ${nom} ${index + 1} de sa grille est illisible.`,
-    impact: 'Le contrat publie « auto » pour conserver la piste.',
+    impact: `Le développeur rendra cette ${nom} en taille automatique.`,
     action: 'Vérifiez ce réglage dans Figma, puis réexportez.',
   };
 }
@@ -523,8 +523,7 @@ export function flexContainerProperties(
 
   pousserLocalise(warnings, 'Layer', node, {
     manque: `son alignement d'auto layout est illisible.`,
-    impact: `Le contrat ne publie ni justifyContent ni alignItems, car une valeur CSS devinée `
-      + `déplacerait ses enfants.`,
+    impact: `Le développeur ne saura pas comment aligner ses enfants.`,
     action: `Réglez l'alignement principal et secondaire dans Figma, puis réexportez.`,
   });
   return wrap;
@@ -575,8 +574,8 @@ export function flexItemProperties(
     if (!mapped) {
       pousserLocalise(warnings, 'Layer', child, {
         manque: `son alignement dans l'auto layout « ${parent.name} » est illisible.`,
-        impact: `Le contrat ne publie pas alignSelf.`,
-        action: `Réglez ce layer dans Figma, puis réexportez.`,
+        impact: `Le développeur ne saura pas comment l'aligner dans « ${parent.name} ».`,
+        action: `Réglez son alignement dans cet auto layout, puis réexportez.`,
       });
     } else if (mapped !== 'stretch' || sizing.cross !== 'HUG') {
       result.alignSelf = mapped;
@@ -594,9 +593,11 @@ export function flexItemProperties(
   if (rawGrow === 1) return { ...result, flexGrow: 1 };
 
   pousserLocalise(warnings, 'Layer', child, {
-    manque: `son remplissage de l'auto layout « ${parent.name} » vaut « ${String(rawGrow)} ».`,
-    impact: `Le contrat sait représenter uniquement 0 ou 1, les valeurs exposées par Figma.`,
-    action: `Corrigez ce layer, puis réexportez.`,
+    manque: `son layout grow vaut « ${String(rawGrow)} » dans l'auto layout `
+      + `« ${parent.name} », une valeur que le menu Fill de Figma ne produit pas.`,
+    impact: `Le développeur ne saura pas si ce layer s'étire.`,
+    action: `Choisissez Fill ou Fixed pour sa dimension dans le sens de cet auto layout, puis `
+      + `réexportez.`,
   });
   return result;
 }

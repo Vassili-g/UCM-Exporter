@@ -41,6 +41,13 @@ function appliedValue(
   return main.parent?.type === 'COMPONENT_SET' ? main.parent.name : main.name;
 }
 
+/** Ce qu'une cible native pilote, dans les mots du panneau de Figma. */
+const USAGE_DE_LA_LIAISON = {
+  visible: 'la visibilité',
+  characters: 'le texte',
+  mainComponent: 'l’instance affichée',
+} as const;
+
 function pathFrom(node: SceneNode, root: ComponentNode): string[] {
   const path: string[] = [];
   let current: BaseNode | null | undefined = node;
@@ -91,10 +98,12 @@ export function extractPropertyBindings(
             pousserNote(
               warnings,
               pointDe(`Component property « ${figmaPropName.replace(/#.*$/, '')} »`, {
-                manque: `le layer « ${node.name} » la référence sur « ${target} », mais `
-                  + `aucune prop publique ne peut la porter.`,
-                impact: `Cette liaison n'est pas publiée dans le contrat.`,
-                action: `Renommez les propriétés en collision, puis réexportez.`,
+                manque: `le layer « ${node.name} » s'en sert pour ${USAGE_DE_LA_LIAISON[target]}, `
+                  + `mais le contrat ne la publie pas.`,
+                impact: `Le développeur ne pourra pas piloter ${USAGE_DE_LA_LIAISON[target]} `
+                  + `de ce layer.`,
+                action: `Donnez-lui un nom qu'aucune autre component property ne partage, puis `
+                  + `réexportez.`,
               }),
               sujet('Layer', node),
             );

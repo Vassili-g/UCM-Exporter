@@ -111,7 +111,8 @@ test('indexVariables nomme les deux variables en collision et écarte la seconde
   });
   assert.deepEqual(collisionWarnings(index).map(phraseDe), [
     'Variables « Foo Bar » et « foo-bar » : leurs noms donnent le même token ' +
-      '« brand.foo-bar ». Seule la première est exportée. Renommez la seconde.',
+      "« brand.foo-bar ». Le développeur n'aura pas « foo-bar ». Renommez l'une des deux, " +
+      'puis réexportez.',
   ]);
 });
 
@@ -132,7 +133,8 @@ test('modeCollisionWarnings signale une fois par collection, pas une fois par va
 
   assert.deepEqual(warnings, [
     'Collection « Brand Tokens » : deux de ses modes donnent le même nom ' +
-      "« marque-2 ». Seul le premier est exporté. Renommez l'un des deux.",
+      '« marque-2 » dans le fichier de tokens. Les valeurs du second manqueront au ' +
+      "développeur. Renommez l'un des deux, puis réexportez.",
   ]);
 });
 

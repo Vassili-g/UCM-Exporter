@@ -99,7 +99,7 @@ test('getSlotTokens avertit quand la largeur du stroke est une valeur brute', as
 
   assert.equal(tokens.strokes[0]?.width, null);
   assert.deepEqual(warnings, [
-    `Layer « Button ring », stroke weight : aucune variable Figma n'est reliée. La valeur fixe n'est pas exportée. Reliez-la à une variable, puis réexportez.`,
+    `Layer « Button ring », stroke weight : aucune variable Figma n'est reliée. Le développeur n'aura pas cette valeur. Reliez-la à une variable, puis réexportez.`,
   ]);
 });
 
@@ -127,7 +127,7 @@ test('getSlotTokens publie une largeur de stroke partiellement liée', async () 
 
   assert.deepEqual(tokens.strokes[0]?.width, { top: '{layouts.stroke.ring}' });
   assert.ok(warnings.some((warning) => warning.includes('right stroke weight')));
-  assert.ok(warnings.some((warning) => warning.includes('les côtés tokenisés sont exportés')));
+  assert.ok(warnings.some((warning) => warning.includes('Ces côtés manqueront au développeur')));
 });
 
 test('getSlotTokens ignore un ancien fond statiquement masqué au profit du fond visible', async () => {
@@ -509,7 +509,7 @@ test('deux fills du MÊME calque sont publiés, mais leur empilement est signal�
   assert.equal(tokens.paints.length, 2);
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /« Panneau »/);
-  assert.match(warnings[0], /laquelle est au-dessus/);
+  assert.match(warnings[0], /laquelle passe au-dessus/);
 });
 
 test('deux fills empilés avertissent même quand leurs noms finissent différemment', async () => {
@@ -537,7 +537,7 @@ test('deux fills empilés avertissent même quand leurs noms finissent différem
     'colors.accent',
   ]);
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /ne peut pas exprimer laquelle est au-dessus/);
+  assert.match(warnings[0], /sans savoir laquelle passe au-dessus/);
 });
 
 test('un même token utilisé pour deux rôles ne perd pas le conflit en silence', async () => {

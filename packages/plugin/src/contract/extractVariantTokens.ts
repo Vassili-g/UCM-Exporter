@@ -246,11 +246,10 @@ export async function extractVariantTokens(
         if (known === color.role || reportedRoleConflicts.has(conflit)) continue;
         reportedRoleConflicts.add(conflit);
         pousserSansNode(warnings, `Token ${toRef(color.token)}`, {
-          manque: `il est appliqué à des layers de natures différentes selon les variants `
-            + `(${known}, ${color.role}).`,
-          impact: `Le contrat ne peut décrire qu'une façon de le peindre et retient `
-            + `« ${known} ».`,
-          action: `Utilisez une variable par nature de layer.`,
+          manque: `il peint un « ${known} » dans un variant et un « ${color.role} » dans `
+            + `un autre.`,
+          impact: `Le développeur l'utilisera partout comme un « ${known} ».`,
+          action: `Utilisez une variable différente pour chaque usage, puis réexportez.`,
         });
       }
     };

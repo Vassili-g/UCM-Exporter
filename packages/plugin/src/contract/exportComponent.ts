@@ -135,7 +135,9 @@ function getSelectedComponent(): ComponentNode | ComponentSetNode {
 
   const node = selection[0];
   if (node.type !== 'COMPONENT_SET' && node.type !== 'COMPONENT') {
-    throw new ComponentExportError('La sélection doit être un COMPONENT ou un COMPONENT_SET.');
+    throw new ComponentExportError(
+      'La sélection n’est ni un component ni un component set. Sélectionnez-en un dans Figma.',
+    );
   }
 
   return node;
@@ -214,9 +216,10 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   if (axesConfondus) {
     const [premier, second] = axesConfondus;
     throw new ComponentExportError(
-      `Variant properties « ${premier} » et « ${second} » : leurs noms deviennent identiques `
-      + `une fois normalisés. Le contrat ne dirait plus de quel axe vient chaque variant, et `
-      + `aucun fichier n’est écrit. Renommez l’une des deux dans Figma, puis relancez l’export.`,
+      `Variant properties « ${premier} » et « ${second} » : leurs noms ne diffèrent que par `
+      + `la casse, les espaces ou les tirets. Le contrat ne dirait plus de quelle variant `
+      + `property vient chaque variant : aucun fichier n’est écrit. Renommez l’une des deux `
+      + `dans Figma, puis relancez l’export.`,
     );
   }
   const propertyModel = extractContractPropertyModel(
@@ -235,10 +238,13 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
     // plus à survoler dans la pull request.
     const plusieurs = missingVariants.missing > 1;
     pousserLocalise(warnings, 'Component Set', componentSet, {
-      manque: `${missingVariants.missing} combinaison${plusieurs ? 's' : ''} du produit `
-        + `cartésien de ses axes ${plusieurs ? "n'existent" : "n'existe"} pas.`,
-      impact: `Le contrat ${CONTRACT_VERSION} publie uniquement les combinaisons exactes `
-        + `présentes dans « variants » ; aucune combinaison interdite n'est inventée.`,
+      manque: plusieurs
+        ? `${missingVariants.missing} combinaisons de valeurs de ses variant properties `
+          + `n'ont pas de variant.`
+        : `une combinaison de valeurs de ses variant properties n'a pas de variant.`,
+      impact: plusieurs
+        ? 'Le développeur ne pourra pas afficher ces combinaisons.'
+        : 'Le développeur ne pourra pas afficher cette combinaison.',
       action: `${plusieurs ? 'Si ces combinaisons doivent exister, ajoutez-les'
         : 'Si cette combinaison doit exister, ajoutez-la'} dans Figma, puis réexportez.`,
     });
@@ -252,8 +258,8 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
   );
   if (matrix.variants.length === 0) {
     throw new ComponentExportError(
-      `Export impossible pour « ${componentSet.name} » : ce Component Set ne contient aucun `
-        + `variant COMPONENT. Ajoutez au moins un variant dans Figma, puis réexportez.`,
+      `Export impossible pour « ${componentSet.name} » : ce component set ne contient aucun `
+        + `variant. Ajoutez au moins un variant dans Figma, puis réexportez.`,
     );
   }
   // Le variant de référence sert de base au layout.
@@ -384,14 +390,15 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
         `Icône « ${definition.figmaName} » du variant « ${variant.figmaName} »`;
       const message = pousserSansNode(warnings, sujetDeLIcone, paths.length === 0
         ? {
-          manque: 'aucun slot exact ne la situe.',
-          impact: 'Le contrat ne dira pas où la placer, et le développeur ne la rendra pas.',
-          action: 'Rendez son layer publiable dans le composant, puis réexportez.',
+          manque: 'le contrat ne décrit pas son layer dans ce variant.',
+          impact: 'Le développeur ne saura pas où la placer et ne la rendra pas.',
+          action: 'Rendez son layer visible et placez-le dans l’auto layout frame qui porte '
+            + 'le gap et le padding, puis réexportez.',
         }
         : {
-          manque: 'plusieurs slots exacts portent ce nom.',
-          impact: 'Le contrat ne peut pas choisir lequel décrit cette icône.',
-          action: 'Donnez un nom Figma distinct à chaque layer, puis réexportez.',
+          manque: 'plusieurs layers de ce variant portent ce nom.',
+          impact: 'Le développeur ne saura pas lequel est l’icône.',
+          action: 'Donnez un nom distinct à chaque layer, puis réexportez.',
         });
       projectionWarnings.push(message);
     }
@@ -423,11 +430,10 @@ export async function handleExportComponent(annoncer: Annonce = () => {}): Promi
       warnings,
       sujetSansNode('Layer', dependency.figmaLayer, 'nom-publie'),
       {
-        manque: `il porte le composant « ${dependency.component} », qui a son propre contrat, `
-          + `mais le contrat n'a trouvé aucun emplacement où le situer.`,
-        impact: `La dépendance ne sera ni décrite dans structure.children, ni déclarée dans `
-          + `composes : le développeur ne la rendra pas.`,
-        action: `Placez ce layer dans l'auto layout frame que le composant décrit, puis `
+        manque: `il contient le composant « ${dependency.component} », mais le contrat ne `
+          + `décrit ce layer nulle part.`,
+        impact: `Le développeur ne rendra pas « ${dependency.component} » dans ce composant.`,
+        action: `Placez ce layer dans l'auto layout frame qui porte le gap et le padding, puis `
           + `réexportez.`,
       },
     );

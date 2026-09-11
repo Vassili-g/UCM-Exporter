@@ -92,7 +92,7 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
     relevees.push({
       champ: 'effect',
       manque: 'l’ombre ou le flou de ce layer',
-      geste: 'Retirez cet effect si le rendu peut s’en passer, ou signalez cette limite du schéma',
+      geste: 'Retirez cet effect si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -102,7 +102,7 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
     relevees.push({
       champ: 'opacity',
       manque: 'la transparence de ce layer, qui sera rendu opaque',
-      geste: 'Exprimez cette transparence par une couleur reliée à une variable, ou signalez cette limite du schéma',
+      geste: 'Exprimez cette transparence par une couleur reliée à une variable, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -124,8 +124,8 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
     if (nonSolides.length === 0) continue;
     relevees.push({
       champ: libelle,
-      manque: `le ${libelle} de ce layer : le contrat ne sait citer qu’une couleur unie reliée à une variable, jamais un dégradé ni une image`,
-      geste: `Remplacez ce ${libelle} par une couleur unie reliée à une variable si sa couleur doit être contractuelle, ou signalez cette limite du schéma`,
+      manque: `le ${libelle} de ce layer : le contrat ne cite qu’une couleur unie reliée à une variable, jamais un dégradé ni une image`,
+      geste: `Remplacez ce ${libelle} par une couleur unie reliée à une variable si sa couleur doit être contractuelle, ou signalez cette limite au mainteneur du plugin`,
     });
   }
 
@@ -133,7 +133,7 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
     relevees.push({
       champ: 'blend mode',
       manque: 'le mode de fusion de ce layer, qui sera rendu en normal',
-      geste: 'Repassez ce layer en blend mode « Normal » si sa fusion n’est pas nécessaire, ou signalez cette limite du schéma',
+      geste: 'Repassez ce layer en blend mode « Normal » si sa fusion n’est pas nécessaire, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -146,7 +146,7 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
     relevees.push({
       champ: 'mask',
       manque: 'le découpage que ce layer applique : sa surface sera rendue par-dessus les layers qu’il masque',
-      geste: 'Aplatissez ce mask dans le dessin qu’il découpe si le rendu peut s’en passer, ou signalez cette limite du schéma',
+      geste: 'Aplatissez ce mask dans le dessin qu’il découpe si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -154,7 +154,7 @@ function proprietesNonPortees(node: SceneNode): ProprieteNonPortee[] {
     relevees.push({
       champ: 'dash',
       manque: 'le pointillé de son stroke, qui sera rendu en trait plein',
-      geste: 'Repassez ce stroke en trait plein si le pointillé n’est pas nécessaire, ou signalez cette limite du schéma',
+      geste: 'Repassez ce stroke en trait plein si le pointillé n’est pas nécessaire, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -245,14 +245,14 @@ function proprietesDeTexteNonPortees(
     relevees.push({
       champ: 'bulleted list',
       manque: 'les puces de ce texte',
-      geste: 'Retirez la liste à puces si le texte peut s’en passer, ou signalez cette limite du schéma',
+      geste: 'Retirez la liste à puces si le texte peut s’en passer, ou signalez cette limite au mainteneur du plugin',
     });
   }
   if (typesDeListe.has('ORDERED')) {
     relevees.push({
       champ: 'numbered list',
       manque: 'la numérotation de ce texte',
-      geste: 'Retirez la liste numérotée si le texte peut s’en passer, ou signalez cette limite du schéma',
+      geste: 'Retirez la liste numérotée si le texte peut s’en passer, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -261,7 +261,7 @@ function proprietesDeTexteNonPortees(
     relevees.push({
       champ: 'decoration',
       manque: 'les réglages de ce soulignement, qui sera rendu en trait plein et dans la couleur du texte',
-      geste: 'Remettez les réglages du soulignement à leur valeur par défaut si le rendu peut s’en passer, ou signalez cette limite du schéma',
+      geste: 'Remettez les réglages du soulignement à leur valeur par défaut si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -269,7 +269,7 @@ function proprietesDeTexteNonPortees(
     relevees.push({
       champ: 'OpenType features',
       manque: 'les fonctionnalités OpenType réglées sur ce texte',
-      geste: 'Retirez ces réglages si le rendu peut s’en passer, ou signalez cette limite du schéma',
+      geste: 'Retirez ces réglages si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -279,7 +279,7 @@ function proprietesDeTexteNonPortees(
     relevees.push({
       champ: 'list spacing',
       manque: 'l’espacement entre les éléments de liste de ce texte',
-      geste: 'Retirez cet espacement si la liste peut s’en passer, ou signalez cette limite du schéma',
+      geste: 'Retirez cet espacement si la liste peut s’en passer, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -287,7 +287,7 @@ function proprietesDeTexteNonPortees(
     relevees.push({
       champ: 'hanging lists',
       manque: 'les puces et les numéros de liste placés hors de la boîte de ce texte',
-      geste: 'Désactivez ce réglage si le rendu peut s’en passer, ou signalez cette limite du schéma',
+      geste: 'Désactivez ce réglage si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -295,7 +295,7 @@ function proprietesDeTexteNonPortees(
     relevees.push({
       champ: 'hanging punctuation',
       manque: 'la ponctuation placée hors de la boîte de ce texte',
-      geste: 'Désactivez ce réglage si le rendu peut s’en passer, ou signalez cette limite du schéma',
+      geste: 'Désactivez ce réglage si le rendu peut s’en passer, ou signalez cette limite au mainteneur du plugin',
     });
   }
 
@@ -314,7 +314,7 @@ export function unsupportedPropertyWarnings(node: SceneNode): PointACorriger[] {
   return proprietesNonPortees(node).map(({ champ, manque, geste }) =>
     pointDe(sujet('Layer', node).texte, {
       champ,
-      manque: 'le contrat ne sait pas écrire cette propriété.',
+      manque: 'le contrat n’a aucun champ pour cette propriété.',
       impact: `Le développeur n’aura pas ${manque}.`,
       action: `${geste}, puis réexportez.`,
     }));

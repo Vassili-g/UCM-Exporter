@@ -19,17 +19,17 @@ export function mergeEnumDefaults(
     const prop = propByName(props, propName);
     if (!prop || prop.type !== 'enum') {
       pousserSansNode(warnings, `Règle @default « ${propName} »`, {
-        manque: 'le composant n’a aucun axe de variantes portant ce nom.',
-        impact: 'Le contrat ne publiera aucune valeur par défaut pour cette propriété.',
-        action: 'Vérifiez l’orthographe de cette règle, puis réexportez.',
+        manque: 'le composant n’a aucune variant property portant ce nom.',
+        impact: 'Le développeur n’aura aucune valeur par défaut pour cette variant property.',
+        action: 'Vérifiez l’orthographe dans le layer « prop » de la règle, puis réexportez.',
       });
       continue;
     }
     if (!prop.values.includes(value)) {
       pousserSansNode(warnings, `Règle @default « ${propName} »`, {
-        manque: `la propriété « ${propName} » n’a pas de valeur « ${value} ».`,
-        impact: 'Le contrat ne publiera aucune valeur par défaut pour cette propriété.',
-        action: 'Corrigez la valeur visée par cette règle, puis réexportez.',
+        manque: `la variant property « ${propName} » n’a pas de valeur « ${value} ».`,
+        impact: 'Le développeur n’aura aucune valeur par défaut pour cette variant property.',
+        action: `Corrigez « ${value} » dans le layer « prop » de la règle, puis réexportez.`,
       });
       continue;
     }

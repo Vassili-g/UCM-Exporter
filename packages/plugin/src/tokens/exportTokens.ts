@@ -166,10 +166,13 @@ export function buildLeaf(
   const valueForMode = (modeId: string): unknown => {
     const raw = variable.valuesByMode[modeId];
     if (raw === undefined) {
+      const mode = collection.modes.find((candidate) => candidate.modeId === modeId);
       pousserSansNode(warnings, `Variable « ${variable.name} »`, {
-        manque: 'un de ses modes n’a pas de valeur.',
-        impact: 'Ce mode est exporté vide.',
-        action: 'Donnez-lui une valeur dans Figma.',
+        manque: mode
+          ? `le mode « ${mode.name} » n’a pas de valeur.`
+          : 'un de ses modes n’a pas de valeur.',
+        impact: 'Le développeur n’aura aucune valeur pour ce mode.',
+        action: 'Donnez une valeur à ce mode dans Figma, puis réexportez.',
       });
       return null;
     }
@@ -178,9 +181,9 @@ export function buildLeaf(
       const target = pathById.get(alias.id);
       if (!target) {
         pousserSansNode(warnings, `Variable « ${variable.name} »`, {
-          manque: 'elle référence une variable introuvable.',
-          impact: 'Aucune référence n’est écrite.',
-          action: 'Reliez-la de nouveau.',
+          manque: 'elle cite une variable introuvable.',
+          impact: 'Le développeur n’aura pas sa valeur.',
+          action: 'Faites-la de nouveau pointer vers une variable existante, puis réexportez.',
         });
       }
       return target ? `{${target}}` : null;
@@ -237,9 +240,9 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
     // Un groupe ne peut pas traverser une feuille existante.
     if (existing && '$value' in existing) {
       pousserSansNode(warnings, `Token « ${path} »`, {
-        manque: 'un token porte déjà ce nom plus haut dans l’arborescence.',
-        impact: 'Il n’est pas exporté.',
-        action: 'Renommez ou déplacez l’un des deux.',
+        manque: 'un autre token porte déjà le nom d’un de ses groupes.',
+        impact: 'Le développeur n’aura pas ce token.',
+        action: 'Renommez ou déplacez l’un des deux, puis réexportez.',
       });
       return;
     }
@@ -254,13 +257,12 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
       ? {
         manque: 'un autre token porte déjà ce nom.',
         impact: 'Seul le premier est exporté.',
-        action: 'Renommez le second.',
+        action: 'Renommez l’un des deux, puis réexportez.',
       }
       : {
         manque: 'un groupe de tokens porte déjà ce nom.',
-        impact: 'Un token ne peut pas être à la fois une valeur et un groupe. Il n’est pas '
-          + 'exporté.',
-        action: 'Renommez ou déplacez l’un des deux.',
+        impact: 'Le développeur n’aura pas ce token.',
+        action: 'Renommez ou déplacez l’un des deux, puis réexportez.',
       });
     return;
   }
@@ -284,9 +286,9 @@ export function modeCollisionWarnings(collections: VariableCollection[]): PointA
       const name = normalizeName(mode.name);
       if (seen.has(name)) {
         points.push(pointDe(`Collection « ${collection.name} »`, {
-          manque: `deux de ses modes donnent le même nom « ${name} ».`,
-          impact: 'Seul le premier est exporté.',
-          action: `Renommez l'un des deux.`,
+          manque: `deux de ses modes donnent le même nom « ${name} » dans le fichier de tokens.`,
+          impact: 'Les valeurs du second manqueront au développeur.',
+          action: `Renommez l'un des deux, puis réexportez.`,
         }));
         continue;
       }

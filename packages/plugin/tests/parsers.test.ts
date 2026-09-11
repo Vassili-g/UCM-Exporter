@@ -128,7 +128,7 @@ test('extractContractProps conserve la première prop quand deux écritures donn
     iconLeft: { type: 'boolean', default: true },
   });
   assert.deepEqual(warnings, [
-    'Component properties « Icon Left » et « icon-left » : leurs noms deviennent identiques une fois normalisés (« iconLeft »). Seule « Icon Left » est exportée. Renommez l’une des deux, puis réexportez.',
+    'Component properties « Icon Left » et « icon-left » : leurs noms donnent le même nom « iconLeft » dans le contrat. Le contrat ne publie que la première : la seconde manquera au développeur. Renommez l’une des deux, puis réexportez.',
   ]);
 });
 
@@ -145,10 +145,10 @@ test('extractContractProps priorise State sur un BOOLEAN Disabled dans les deux 
   assert.deepEqual(extractContractProps({ Disabled: boolean, State: state } as ComponentPropertyDefinitions, secondWarnings), expected);
   assert.deepEqual(firstWarnings, secondWarnings);
   assert.deepEqual(firstWarnings, [
-    'Component property « Disabled » : l’axe « State » possède déjà le variant « Disable », qui devient la prop ' +
-      'publique « disabled ». Cette boolean property n’est pas exportée séparément, donc sa valeur par défaut ' +
-      'manquerait au développeur. Supprimez-la si elle pilote le même état ; sinon renommez-la selon le layer ' +
-      'distinct qu’elle pilote, puis réexportez.',
+    'Component property « Disabled » : la variant property « State » a déjà la valeur « Disable », que le ' +
+      'contrat publie sous le nom « disabled ». Le contrat ne publie pas cette boolean property : sa valeur par ' +
+      'défaut manquera au développeur. Supprimez-la si elle pilote le même état, sinon renommez-la d’après le ' +
+      'layer qu’elle pilote, puis réexportez.',
   ]);
 });
 
@@ -347,5 +347,5 @@ test('un axe State garde sa clé contre une BOOLEAN homonyme', () => {
   assert.deepEqual(modele.props, {});
   assert.equal(modele.publicVariantKeyByRawKey.get('state'), 'state');
   assert.equal(warnings.length, 1);
-  assert.match(warnings[0], /leurs noms deviennent identiques une fois normalisés/);
+  assert.match(warnings[0], /leurs noms donnent le même nom « state » dans le contrat/);
 });
