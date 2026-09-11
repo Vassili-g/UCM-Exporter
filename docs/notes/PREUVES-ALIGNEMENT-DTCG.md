@@ -5,8 +5,8 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 
 ## État
 
-- Lot courant : L8
-- Exporter, branche et `HEAD` : `main`, `ff2a719` pour le code de L4
+- Lot courant : porte humaine H1, voir le paquet en fin de journal
+- Exporter, branche et `HEAD` : `main`, `b2ad961` audité en L8
 - Playground, branche et `HEAD` : `main`, `8908c66` après L4
 - Style Dictionary retenu : `5.5.3`, exact ; `4.4.0` au départ
 - Versions npm servies : `@ucm-kit/core` 0.1.25, `@ucm-kit/cli` 0.1.24,
@@ -306,3 +306,105 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
   - Même dossier, `sombre/planche-6.png` :
     `48b490a13adefb90b4fa126b67e0488dedce9deac63b9e325f352354550e2c0b`.
 - Écart ou réserve : aucun
+
+### L8 — Audit automatisé avant Figma
+
+- Commit : celui qui porte cette entrée, le paquet H1 et les cases de L8.
+- Méthode : l'Exporter est audité dans un worktree du dossier de session,
+  extrait en LF depuis `b2ad961`, qui porte aussi les commits de l'autre
+  travail. La copie de travail partagée garde un renommage étranger en cours.
+- Commandes :
+  - Exporter, `npm ci` : sortie 0. Playground, `rm -rf node_modules` puis
+    `npm ci` : sortie 0, `style-dictionary@5.5.3`.
+  - Exporter, deux passes de `npm test`, `npm run typecheck`, build du kit et
+    étapes `build:code`, `build:ui`, `build:manifest` : sortie 0 à chaque
+    passe, 1 000 tests verts (19, 52, 295, 611, 23), aucun fichier suivi
+    modifié après l'une ou l'autre, `git diff --check` : sortie 0.
+  - Playground, deux `npm run build` : sortie 0, CSS identique à l'octet,
+    `ccf89371a396d7b538294ba38a088484940b89adbc236711fbb6b9974bccf0a3`,
+    arbre propre.
+  - Six cas du fichier simulé exportés deux fois (`SRGB`, `DISPLAY_P3`,
+    `LEGACY`, les deux premiers sans boucle, collection `2026`) : chaque paire
+    identique à l'octet. L'export `LEGACY` a l'empreinte de l'export sRGB et un
+    avertissement de plus.
+  - Configuration du Playground sur l'export sRGB sans boucle : 37
+    déclarations, 10 `var()`, aucun `[object Object]`, aucune valeur vide ni
+    accolade ; `null` sur les deux feuilles dont la cible est absente. Cible
+    temporaire `color/p3` sur l'export Display P3 : même relevé et 7
+    `color(display-p3 …)`, une par couleur littérale.
+  - Mutations rejouées dans le worktree, chacune restaurée à l'identique : L2,
+    tolérance neutralisée (1 rouge) et octet du fixture (1) ; L4, refus
+    désactivé (3) et version future lue comme courante (1) ; L5, espace (2),
+    alpha (6), unité (4), marque (3) ; L6, boucle (1), chemin (4), mode vide
+    (2), cible (4), sérialisation (3) ; L7, `[object Object]` (3), référence
+    (3), valeur vide (2), propriété absente (2), unité (8), composante (6).
+    Arbre propre ensuite.
+- Résultats :
+  - Aucun fichier publiable du kit, de la CLI ou de l'adaptateur n'a changé
+    depuis `ff2a719` : la série servie reste la bonne.
+  - Pins exacts et servis : la CLI 0.1.24 et l'adaptateur 0.1.17 dépendent du
+    kit 0.1.25 ; le Playground épingle la CLI 0.1.24 et Style Dictionary
+    5.5.3, comme les `devDependencies` du plugin.
+  - Chaque commit de la migration ne porte que les fichiers de son lot.
+- Artefacts et empreintes, dossier de session `l8/` :
+  - `exports/srgb.json` et `exports/legacy.json` :
+    `59e10a07eeb95e6d994fc5582d700de12187cf757da333bc2727f0fdc9218798`.
+  - `exports/display-p3.json` :
+    `aaee48b7e625e6484102ca710ba04f0c430edd8abb3115fc1ca28ab07d248493`.
+  - `pg/moteur-srgb/tokens.css` :
+    `caaafbff46810f31ffda6ec2691d65c346e90b68b3aa7d1fb886b71e5218a26d`.
+  - `pg/moteur-p3/tokens.css` :
+    `c52d93212108a65f568dde8dd5fd033f32c0ba1a6ec209f2a1c4044433d9ddc9`.
+- Écart ou réserve : aucun
+
+## Paquet de validation H1
+
+Cette porte revient au mainteneur : l'agent ne peut pas exécuter Figma. Les
+deux exports se déposent dans `A:\_5_Projets pros\Apicil - Intencial -
+FundShop\Projet UCM\recette-dtcg\h1\`, un dossier hors des deux dépôts.
+
+### Préalables
+
+1. Dans `UCM-Exporter`, sur `main` à jour, `git status --short` doit être vide.
+   Le renommage `.rulesItems` en `.ruleItem`, en cours dans la copie de
+   travail, est commité ou mis de côté par son auteur avant cette étape.
+2. À la racine : `npm ci`, puis `npm run build`.
+3. Dans l'application de bureau Figma : **Plugins**, **Development**, **Import
+   plugin from manifest**, puis `packages/plugin/dist/manifest.json`.
+4. Si le plugin est connecté à un repository, retirer le jeton dans sa page de
+   configuration pour la durée de H1 : sans repository, le plugin propose
+   **Télécharger les tokens** et n'ouvre aucune pull request. Le jeton se
+   ressaisit après H1.
+
+### Gestes
+
+1. Ouvrir le fichier Figma du design system. Vérifier dans **File color
+   profile** qu'il est en sRGB. Lancer **Analyser les tokens du fichier**.
+   Attendu : sous le résumé des tokens, « DTCG 2025.10, version 1 du format de
+   tokens », et aucun point « aucun profil de couleur n'est choisi ».
+   Télécharger, puis enregistrer sous `h1\tokens-srgb.json`.
+2. Dupliquer le fichier. Dans la copie, **File color profile**, **Change to
+   Display P3**, en gardant les valeurs de couleur (**Assign**). Analyser,
+   vérifier la même ligne de format, télécharger, puis enregistrer sous
+   `h1\tokens-display-p3.json`.
+3. Capturer la carte des tokens après l'analyse du fichier sRGB, sous
+   `h1\capture-resultat.png`. Un fichier sans profil de couleur, s'il en existe
+   encore un, donne la capture de l'avertissement sous
+   `h1\capture-legacy.png`. Figma n'en crée plus : sans ce fichier, l'écrire
+   dans `h1\notes.txt`, et la planche 6 de la galerie en tient lieu.
+4. Comparer dans Figma quelques couleurs des deux fichiers, et écrire dans
+   `h1\notes.txt` si elles correspondent au document ou quels écarts se voient.
+
+### Ce que l'agent vérifie ensuite
+
+| Contrôle | Attendu |
+|---|---|
+| `etatDuFormatDeTokens` sur les deux fichiers | `courante`, version `1` |
+| `ecartsDeTokens` entre `src/tokens/tokens.json` du Playground et `tokens-srgb.json`, espace `srgb` | aucun écart, sauf un token changé dans Figma depuis le dernier export, nommé un par un |
+| `tokens-display-p3.json` contre `tokens-srgb.json` | mêmes chemins, types et références ; mêmes composantes, `colorSpace` à `display-p3` |
+| `conformiteDtcg` appliqué aux deux fichiers | toutes les feuilles conformes sauf la famille et les autres feuilles du dialecte, chemin par chemin |
+| Style Dictionary 5.5.3, configuration du Playground, sur `tokens-srgb.json` | CSS égal au CSS actuel, chaque couleur à `0.5 / 255 + 1e-6` près, dimensions et références identiques |
+| Même fichier Display P3, cible temporaire `color/p3` | une déclaration `color(display-p3 …)` par couleur littérale, aucun des quatre défauts |
+| `npx --yes @ucm-kit/cli@0.1.24 check` sur une copie du Playground qui porte `tokens-srgb.json` | sortie 0, aucune référence absente |
+
+Un écart renvoie au lot responsable, et H1 se rejoue sur le seul cas touché.

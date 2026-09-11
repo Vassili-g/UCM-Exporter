@@ -705,21 +705,21 @@ mobiliser une personne.
 
 Actions :
 
-- [ ] Réinstaller les deux dépôts depuis leurs lockfiles.
-- [ ] Passer deux fois les suites complètes et les builds ; la seconde exécution
+- [x] Réinstaller les deux dépôts depuis leurs lockfiles.
+- [x] Passer deux fois les suites complètes et les builds ; la seconde exécution
       ne doit modifier aucun fichier suivi.
-- [ ] Exporter deux fois chaque cas du mock et comparer les octets.
-- [ ] Construire le Playground avec le fichier d'origine, puis avec l'export
+- [x] Exporter deux fois chaque cas du mock et comparer les octets.
+- [x] Construire le Playground avec le fichier d'origine, puis avec l'export
       sRGB structuré du moteur.
-- [ ] Construire l'export Display P3 avec la cible temporaire `color/p3`.
-- [ ] Vérifier le CSS, les alias et l'absence des quatre défauts contrôlés en L7.
-- [ ] Exécuter les tests de mutation de L2 à L7 puis remettre l'arbre propre.
-- [ ] Vérifier que le contenu publiable des trois paquets n'a pas changé depuis
+- [x] Construire l'export Display P3 avec la cible temporaire `color/p3`.
+- [x] Vérifier le CSS, les alias et l'absence des quatre défauts contrôlés en L7.
+- [x] Exécuter les tests de mutation de L2 à L7 puis remettre l'arbre propre.
+- [x] Vérifier que le contenu publiable des trois paquets n'a pas changé depuis
       la série publiée, ou qu'une nouvelle série publiée l'a suivi.
-- [ ] Vérifier les versions exactes croisées entre paquets.
-- [ ] Relire `git diff --check`, `git status --short` et la liste de fichiers de
+- [x] Vérifier les versions exactes croisées entre paquets.
+- [x] Relire `git diff --check`, `git status --short` et la liste de fichiers de
       chaque commit.
-- [ ] Préparer le paquet de validation H1 avec commandes, résultats attendus et
+- [x] Préparer le paquet de validation H1 avec commandes, résultats attendus et
       chemins où déposer les deux exports Figma.
 
 Critère de sortie : tout contrôle automatisable est vert et les deux arbres sont
