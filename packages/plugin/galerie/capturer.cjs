@@ -33,7 +33,7 @@ function trouverChrome() {
 }
 
 function urlFichier(chemin) {
-  return `file:///${chemin.replace(/\\/g, '/').replace(/^\ //, '')}`;
+  return `file:///${chemin.replace(/\\/g, '/').replace(/^\//, '')}`;
 }
 
 /**
