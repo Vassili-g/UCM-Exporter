@@ -22,9 +22,10 @@ Trois conditions rouvrent la décision :
   couleurs comme du sRGB ;
 - un deuxième consommateur, ou un outil qu'un consommateur emploie, exige le
   module Format `2025.10` ;
-- la projection des tokens change pour une autre raison, ce qui impose déjà la
-  marque de grammaire
+- la forme des valeurs de `tokens.json` change pour une autre raison, ce qui
+  impose déjà la marque de grammaire
   ([COMPATIBILITE.md](../COMPATIBILITE.md#pourquoi-tokensjson-na-pas-de-version)).
+  Un changement de nom de token relève de la classe 5 et n'en impose aucune.
 
 Une reprise suit trois tranches. Elles sont séparées par ce qui casse un
 consommateur et par ce qui dépend d'un fait que seul Figma détient.
@@ -251,15 +252,6 @@ nomme les conditions de sa reprise.
 - **Le schéma ne lit pas `$extensions`.** Il le déclare `{"type": "object"}`.
   Les valeurs de `com.ucm.modes` demandent un contrôle propre à UCM : chacune a
   la forme du `$type` de sa feuille.
-- **Un segment qui commence par `$` fait disparaître un token.**
-  [`indexerTokensDtcg`](../../packages/kit/src/lecteurs/tokens-dtcg.mjs) saute
-  toute clé en `$`, et `normalizeName` conserve ce caractère. Le point commun
-  aux deux commandes du plugin est `joinTokenPath`
-  ([`variables.ts`](../../packages/plugin/src/variables.ts)). Un nom de
-  variable ne produit pas ce segment : Figma y refuse `.`, `{` et `}`
-  ([API REST](https://developers.figma.com/docs/rest-api/variables-endpoints/)),
-  et l'éditeur refuse un `$` de tête. Le nom de la collection forme le premier
-  segment du chemin, et aucune de ces règles ne le vise.
 - **`EASING` et `TIMING` sont des types de variable Figma.** `dtcgType` les
   range en `string`, et une `EASING` y porte un objet `MotionEasing`. Le module
   définit `duration` et `cubicBezier`, mais un ressort, que `MotionEasing` sait

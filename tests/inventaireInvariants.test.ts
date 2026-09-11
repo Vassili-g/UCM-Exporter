@@ -101,6 +101,7 @@ const AUTORITES = [
   'inset',
   'isMask',
   'isVisibleInSample',
+  'joinTokenPath',
   'justifyContent',
   'kebabCase',
   'layoutNodes.ts',

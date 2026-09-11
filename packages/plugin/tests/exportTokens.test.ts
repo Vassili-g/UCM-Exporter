@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { toRef } from '@ucm-kit/core/format';
+import { indexerTokensDtcg, referencesAbsentes } from '@ucm-kit/core/lecteurs';
 import {
   buildLeaf,
   dtcgType,
   formatValue,
+  handleExportTokens,
   insert,
   isUnitless,
   modeCollisionWarnings,
@@ -11,7 +14,7 @@ import {
   toHex,
 } from '../src/tokens/exportTokens';
 import type { ExportContext } from '../src/tokens/exportTokens';
-import { collisionWarnings, indexVariables } from '../src/variables';
+import { collisionWarnings, indexVariables, VariableNameResolver } from '../src/variables';
 import { phraseDe } from '../src/contract/localisation';
 
 test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () => {
@@ -285,4 +288,48 @@ test('des collections vides ne comptent pas comme des tokens présents', () => {
     resume: 'Ce fichier ne contient aucune variable locale.',
     presents: false,
   });
+});
+
+/**
+ * Les deux artefacts se recoupent par la référence. Une collection « $Brand »
+ * faisait sortir son token de l'index du kit, et « {Brand} » écrivait une
+ * référence que le kit ne reconnaît pas : dans les deux cas, le contrôle du
+ * repository ne trouvait pas le token que le contrat citait.
+ */
+test('un token de collection « $Brand » ou « {Brand} » se trouve par la référence qu’un contrat écrit', async () => {
+  const collections = ['$Brand', '{Brand}'].map((name, rang) => ({
+    id: `c${rang}`, name, defaultModeId: 'm', modes: [{ modeId: 'm', name: 'Mode 1' }],
+  })) as unknown as VariableCollection[];
+  const variables = ['color/primary', 'color/secondary'].map((name, rang) => ({
+    id: `v${rang}`, name, variableCollectionId: `c${rang}`,
+    resolvedType: 'COLOR', scopes: [], valuesByMode: { m: { r: 1, g: 0, b: 0, a: 1 } },
+  })) as unknown as Variable[];
+
+  const precedent = (globalThis as { figma?: unknown }).figma;
+  (globalThis as { figma?: unknown }).figma = {
+    variables: {
+      getLocalVariableCollectionsAsync: async () => collections,
+      getLocalVariablesAsync: async () => variables,
+      getVariableByIdAsync: async (id: string) => variables.find((entry) => entry.id === id) ?? null,
+      getVariableCollectionByIdAsync: async (id: string) =>
+        collections.find((entry) => entry.id === id) ?? null,
+    },
+  };
+
+  try {
+    const exporte = await handleExportTokens();
+    const index = indexVariables(variables, new Map(collections.map((entry) => [entry.id, entry])));
+    const references: string[] = [];
+    // Avec l'index, le chemin d'une variable locale ; sans, celui d'une variable
+    // de bibliothèque. L'export composant écrit l'un ou l'autre.
+    for (const resolver of [new VariableNameResolver({ index }), new VariableNameResolver()]) {
+      for (const entry of variables) references.push(toRef((await resolver.resolveById(entry.id)) ?? ''));
+    }
+
+    assert.deepEqual(referencesAbsentes(references, indexerTokensDtcg(JSON.parse(exporte.content))), []);
+    assert.deepEqual([...new Set(references)], ['{brand.color.primary}', '{brand.color.secondary}']);
+    assert.deepEqual(exporte.warnings, []);
+  } finally {
+    (globalThis as { figma?: unknown }).figma = precedent;
+  }
 });

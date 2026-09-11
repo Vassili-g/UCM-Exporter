@@ -10,6 +10,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  collisionWarnings,
   firstVariableAlias,
   indexVariables,
   joinTokenPath,
@@ -240,6 +241,68 @@ test('joinTokenPath ajoute la collection une seule fois', () => {
     joinTokenPath('Brand Tokens', 'Brand Tokens/Primary/default'),
     'brand-tokens.primary.default',
   );
+});
+
+/**
+ * Figma accepte `$test` et `{test}` comme noms de collection. Tel quel, le
+ * premier sort de l'index du kit, qui lit un `$` de tête comme une métadonnée
+ * de groupe, et le second coupe la référence `{…}` qu'un contrat écrit.
+ */
+test('joinTokenPath retire d’un nom de collection les accolades et les $ de tête', () => {
+  for (const nom of ['$Brand', '{Brand}', '{$Brand}', '$$Brand', 'Br{an}d', '.Brand', 'Brand.']) {
+    assert.equal(joinTokenPath(nom, 'color/primary'), 'brand.color.primary', nom);
+  }
+  assert.equal(joinTokenPath('$', 'color/primary'), 'color.primary');
+  assert.equal(joinTokenPath('$Brand', 'Brand/primary'), 'brand.primary');
+});
+
+test('joinTokenPath rend inchangé un nom déjà citable', () => {
+  // Un `$` qui n'ouvre pas le segment ne masque rien, et la virgule d'un nom
+  // réel reste au consommateur, qui la projette par `tokenCssVariable`.
+  assert.equal(joinTokenPath('Brand$', 'color/primary'), 'brand$.color.primary');
+  assert.equal(joinTokenPath('Layouts', 'sizing/0,5'), 'layouts.sizing.0,5');
+});
+
+test('l’index et le résolveur donnent le même chemin citable, variable locale ou distante', async () => {
+  const locale = variable('locale', 'color/primary', 'dollar');
+  const distante = variable('distante', 'color/secondary', 'accolades');
+  const collections = [collection('dollar', '$Brand'), collection('accolades', '{Brand}')];
+  const figmaStub = stubFigma([locale, distante], collections);
+
+  try {
+    const index = indexVariables([locale], new Map([['dollar', collections[0]]]));
+    const resolver = new VariableNameResolver({ index });
+
+    assert.equal(index.pathById.get('locale'), 'brand.color.primary');
+    assert.equal(
+      await resolver.resolve({ type: 'VARIABLE_ALIAS', id: 'locale' } as VariableAlias),
+      'brand.color.primary',
+    );
+    // Absente de l'index : le résolveur passe par l'API, puis par le même assemblage.
+    assert.equal(
+      await resolver.resolve({ type: 'VARIABLE_ALIAS', id: 'distante' } as VariableAlias),
+      'brand.color.secondary',
+    );
+  } finally {
+    figmaStub.restaurer();
+  }
+});
+
+test('deux collections que le nettoyage rejoint se disputent un token, et l’index le signale', () => {
+  const premiere = variable('v1', 'color/primary', 'dollar');
+  const seconde = variable('v2', 'color/primary', 'nue');
+
+  const index = indexVariables(
+    [premiere, seconde],
+    new Map([
+      ['dollar', collection('dollar', '$Brand')],
+      ['nue', collection('nue', 'Brand')],
+    ]),
+  );
+
+  assert.deepEqual([...index.variableByPath.keys()], ['brand.color.primary']);
+  assert.equal(index.ambiguous.get('v2')?.path, 'brand.color.primary');
+  assert.equal(collisionWarnings(index).length, 1);
 });
 
 test('variableAliases accepte les bindings scalaires et multiples', () => {

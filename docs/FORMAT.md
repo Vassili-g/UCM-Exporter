@@ -21,6 +21,12 @@ du repository consommateur.
   (`/`→`.`, espaces d'un segment → `-`, minuscules). Un token s'écrit donc
   pareil dans `tokens.json` et dans un contrat, les références de la Partie 1
   recoupent la Partie 2.
+- **Un segment de chemin ne porte ni accolade ni `$` de tête.** Une accolade
+  couperait la référence `{…}`, et un lecteur DTCG lit une clé en `$` comme une
+  métadonnée de groupe. Figma accepte les deux dans un nom de collection, et
+  l'export les retire : la collection `{$Brand}` donne le préfixe `brand`. Deux
+  collections qui se rejoignent ainsi se disputent leurs tokens, et l'export
+  signale la collision.
 - **Références de tokens entre accolades** : dans un contrat, un token est cité
   comme référence `"{chemin.du.token}"`, jamais comme chemin nu ni valeur
   aplatie, même syntaxe que les références DTCG de `tokens.json`. Les accolades

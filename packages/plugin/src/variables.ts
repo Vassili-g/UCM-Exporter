@@ -40,15 +40,35 @@ export function firstVariableAlias(value: unknown): VariableAlias | null {
 }
 
 /**
+ * Réduit un nom normalisé à ce qu'une référence DTCG sait citer.
+ *
+ * Une accolade coupe la référence `{chemin}`, et un segment qui commence par
+ * `$` est lu comme une métadonnée de groupe : le token sort alors de l'index du
+ * kit. Figma refuse `.`, `{` et `}` dans un nom de variable, et son éditeur y
+ * refuse un `$` de tête, mais il accepte `$test` et `{test}` comme noms de
+ * collection. Les accolades partent avant les `$`, sans quoi `{$Brand}`
+ * garderait le sien. Un nom déjà citable ressort inchangé.
+ */
+function cheminCitable(nomNormalise: string): string {
+  return nomNormalise
+    .split('.')
+    .map((segment) => segment.replace(/[{}]/g, '').replace(/^\$+/, ''))
+    .filter(Boolean)
+    .join('.');
+}
+
+/**
  * Assemble le chemin canonique d'un token : collection + variable, chacun
- * normalisé. Évite les doublons si la variable répète déjà la collection.
+ * normalisé puis rendu citable. Évite les doublons si la variable répète déjà
+ * la collection.
  *
  * @example joinTokenPath('Brand Tokens', 'Primary/default')
  * // → 'brand-tokens.primary.default'
+ * @example joinTokenPath('{$Brand}', 'Primary/default') // → 'brand.primary.default'
  */
 export function joinTokenPath(collectionName: string, variableName: string): string {
-  const collection = normalizeName(collectionName);
-  const variable = normalizeName(variableName);
+  const collection = cheminCitable(normalizeName(collectionName));
+  const variable = cheminCitable(normalizeName(variableName));
 
   if (!collection) return variable;
   if (!variable || variable === collection || variable.startsWith(`${collection}.`)) {
