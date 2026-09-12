@@ -166,10 +166,11 @@ convention de nommage, que le format n'a pas et que le designer devrait
 apprendre. Le rendu chez le consommateur reste par ailleurs illisible pour
 `transition`.
 
-## 3. Les décisions à prendre
+## 3. Les décisions
 
-Quatre décisions ne se déduisent ni du code ni de la documentation Figma. Une
-recommandation accompagne chacune.
+Quatre décisions ne se déduisent ni du code ni de la documentation Figma. Les
+trois premières restent à prendre, et une recommandation accompagne chacune. La
+quatrième est prise.
 
 ### 3.1. Ce qu'une variable `EASING` non exprimable publie
 
@@ -207,18 +208,19 @@ reste `string`, et l'export avertit le designer avec le geste qui la décide.
 Cette règle a la forme de celle des graisses, et pour la même raison : une
 valeur libre ne se type pas sur un nom.
 
-### 3.4. Ce que la version 2 fait d'un fichier en version 1
+### 3.4. Ce que la version 2 fait d'un fichier en version 1, décidé
 
-`etatDuFormatDeTokens` rend `invalide` pour tout entier inférieur à la version
-courante, et son commentaire demande qu'une version suivante nomme ici la
-version qu'elle remplace. Passer `TOKENS_FORMAT_VERSION` à `2` rendrait donc
-tout fichier de la version 1 invalide, et refuserait le contrôle d'un
-repository qui n'a pas encore réexporté.
+Un fichier de la version 1 devient `invalide` sous la version 2, et son
+repository réexporte. Aucun état `ancienne` n'est ajouté, et
+`etatDuFormatDeTokens` garde sa règle : un entier positif inférieur à la
+version courante est invalide. Le format n'a aucun consommateur à migrer.
 
-Recommandation : ajouter un état `ancienne`, qui porte la version lue, autorise
-la lecture et produit un avertissement nommant le réexport. Les chemins, les
-clés `$value` et les références ne changent pas entre les deux versions, et
-aucune référence d'un contrat déjà fusionné ne cesse de résoudre.
+Une conséquence reste à traiter dans le code. `refusDuFormatDeTokens` écrit
+« Le plugin n'écrit jamais cette forme » et `constatDeMarqueInvalide` écrit que
+la valeur lue « n'est pas une version du format de tokens ». Les deux phrases
+sont fausses pour une marque qu'une version précédente du plugin a écrite. Le
+geste demandé reste le bon, et seul le constat change. L5 porte cette
+correction.
 
 ## 4. Le plan, lot par lot
 
@@ -233,10 +235,9 @@ les paquets d'abord, le consommateur ensuite, le plugin en dernier.
 - `packages/kit/src/format/tokens.ts` : `$type` de `TokenDeDocument` reçoit
   `fontFamily`, `duration` et `cubicBezier` ; `ValeurDeToken` reçoit les deux
   formes de valeur correspondantes.
-- `etatDuFormatDeTokens` reçoit l'état `ancienne` décidé en 3.4, et
-  `TOKENS_FORMAT_VERSION` reste à `1` dans ce lot.
-- Tests du kit : un contrat dont la famille est typée ne produit plus d'erreur,
-  un fichier marqué `1` sous une version courante `2` est `ancienne`.
+- `TOKENS_FORMAT_VERSION` reste à `1` dans ce lot, et `etatDuFormatDeTokens`
+  ne change pas.
+- Test du kit : un contrat dont la famille est typée ne produit plus d'erreur.
 
 Preuve : la mesure de la section 1.4 rejouée, 8 erreurs puis 0.
 
@@ -284,9 +285,13 @@ conformes monte.
 - `TOKENS_FORMAT_VERSION` passe à `2`, dans `packages/kit/src/format/tokens.ts`
   et nulle part ailleurs.
 - `annonceDuFormat` annonce la version lue dans le fichier produit.
+- `refusDuFormatDeTokens` et `constatDeMarqueInvalide` cessent d'affirmer que
+  le plugin n'écrit jamais la marque lue, pour la raison de la section 3.4. Le
+  constat nomme la version lue et la version courante, et le geste reste le
+  réexport.
 - `CHANGELOG-FORMAT.md` reçoit l'entrée, classée en classe 10.
-- `COMPATIBILITE.md` reçoit la ligne de la version 2 et celle de l'état
-  `ancienne`.
+- `COMPATIBILITE.md` reçoit la ligne de la version 2, et sa table des états dit
+  qu'un fichier de la version 1 est refusé.
 
 ### L6. Le Playground lit les nouvelles valeurs
 
@@ -319,7 +324,7 @@ direction d'un dégradé.
 
 | Porte | Ce qui est demandé |
 |---|---|
-| H1 | Les quatre décisions de la section 3 |
+| H1 | Les trois décisions ouvertes de la section 3 |
 | H2 | L'ouverture ou le refus du groupe B |
 | H3 | La publication du plugin sur la Community, après L6 |
 | H4 | Le réexport depuis Figma, et la relecture du CSS produit |
