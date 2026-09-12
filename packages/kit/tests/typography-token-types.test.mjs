@@ -38,6 +38,37 @@ test("les text styles acceptent les types DTCG attendus, à travers les alias", 
   }), tokensValides), []);
 });
 
+test("une famille passe sous les deux types que le producteur publie", () => {
+  // La version 2 type une famille prouvée en `fontFamily`, et laisse en
+  // `string` celle qu'aucun text style ni scope n'établit. Refuser l'un des
+  // deux bloquerait la fusion sur un fichier que le designer ne peut pas
+  // corriger.
+  for (const type of ["fontFamily", "string"]) {
+    const tokens = structuredClone(tokensValides);
+    tokens.primitives.family.$type = type;
+    tokens.typography.body.large.family.$type = type;
+
+    assert.deepEqual(erreursTypesTypographiques(contrat({
+      fontFamily: "{typography.body.large.family}",
+    }), tokens), [], type);
+  }
+});
+
+test("une famille d’un autre type reste refusée", () => {
+  const tokens = structuredClone(tokensValides);
+  tokens.primitives.family = { $value: 400, $type: "number" };
+  tokens.typography.body.large.family = { $value: "{primitives.family}", $type: "number" };
+
+  assert.deepEqual(erreursTypesTypographiques(contrat({
+    fontFamily: "{typography.body.large.family}",
+  }), tokens), [{
+    chemin: "textStyles.body.large.tokens.fontFamily",
+    reference: "{typography.body.large.family}",
+    attendu: "fontFamily ou string",
+    recu: "number",
+  }]);
+});
+
 test("une hauteur de ligne numérique est refusée avant de gonfler le rendu CSS", () => {
   const tokens = structuredClone(tokensValides);
   tokens.primitives.line = { $value: 24, $type: "number" };

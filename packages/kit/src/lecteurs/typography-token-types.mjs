@@ -15,7 +15,14 @@ import {
 } from "./tokens-dtcg.mjs";
 
 const TYPES_TYPOGRAPHIQUES = {
-  fontFamily: ["string"],
+  // Le producteur publie une famille en `fontFamily` dès qu'une preuve
+  // l'établit dans le fichier Figma, et en `string` sinon. Les deux sont
+  // acceptés quelle que soit la version : ce contrôle bloque la fusion dans la
+  // CI du consommateur, et une variable STRING sans liaison locale ni scope
+  // précis est une configuration Figma légitime, dont le CSS reste juste. Une
+  // régression du producteur se constate chez lui, par un test qui exige
+  // qu'une famille prouvée sorte en `fontFamily`.
+  fontFamily: ["fontFamily", "string"],
   fontSize: ["dimension"],
   // Figma publie les variables FONT_WEIGHT comme STRING ("Regular", "Bold"),
   // puis Style Dictionary les traduit en valeur CSS numérique. Une valeur DTCG

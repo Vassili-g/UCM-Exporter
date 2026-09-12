@@ -10,7 +10,7 @@ the repository that implements the component. This package is what both sides
 must share in order to talk about the same format.
 
 ```sh
-npm install @ucm-kit/core@0.1.26
+npm install @ucm-kit/core@0.1.27
 ```
 
 Most repositories never call this package directly. They run
@@ -82,9 +82,11 @@ explicit: an integer below the current version that is absent from it is
 
 The mark is read even in a repository with no contract yet.
 `@ucm-kit/core@0.1.25` is the first release that reads it; earlier releases
-ignore it. `@ucm-kit/core@0.1.26` is the first that reads version `2`, and it
+ignore it. `@ucm-kit/core@0.1.27` is the first that reads version `2`, and it
 still reads version `1` without a word in the report: a repository can upgrade
-its CLI before the plugin produces the new form.
+its CLI before the plugin produces the new form. Do not pin `0.1.26`: it reads
+the mark but its typography check still refuses a `fontFamily` token, so it
+blocks every contract that cites a font family.
 
 The mark does not protect a value reader. Style Dictionary 4 ignores it and
 writes `[object Object]` for every color and dimension of version `1`, and the
