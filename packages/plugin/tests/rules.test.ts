@@ -169,7 +169,7 @@ function conteneur(nomEcrit: string, regles: any[] = [], nomDeLInstance = '.comp
 }
 
 /**
- * Une règle telle que Figma la porte : une instance de `.rulesItems` dont un
+ * Une règle telle que Figma la porte : une instance de `.ruleItem` dont un
  * calque nomme le tag. `variante` dit ce que la valeur de variante range, et
  * vaut par défaut le tag lui-même.
  */
@@ -181,7 +181,7 @@ function regle(tagAffiche: string, calques: any[] = [], variante = tagAffiche) {
     variantProperties: { Type: variante },
     getMainComponentAsync: async () => ({
       name: `Type=${variante}`,
-      parent: { type: 'COMPONENT_SET', name: '.rulesItems' },
+      parent: { type: 'COMPONENT_SET', name: '.ruleItem' },
     }),
   });
 }
@@ -307,7 +307,7 @@ test('une règle qui n’écrit rien est un séparateur, et rien ne se dit', asy
     variantProperties: { Type: 'divider' },
     getMainComponentAsync: async () => ({
       name: 'Type=divider',
-      parent: { type: 'COMPONENT_SET', name: '.rulesItems' },
+      parent: { type: 'COMPONENT_SET', name: '.ruleItem' },
     }),
   });
   monterPage(t, [conteneur('Button', [
@@ -331,7 +331,7 @@ test('le calque « prop » n’est pas lu comme le tag @prop', async (t) => {
     variantProperties: {},
     getMainComponentAsync: async () => ({
       name: 'Type=?',
-      parent: { type: 'COMPONENT_SET', name: '.rulesItems' },
+      parent: { type: 'COMPONENT_SET', name: '.ruleItem' },
     }),
   });
   monterPage(t, [conteneur('Button', [sansTag])]);
@@ -345,7 +345,7 @@ test('le calque « prop » n’est pas lu comme le tag @prop', async (t) => {
     + 'développeur. Choisissez son variant dans Figma, puis réexportez.',
     // La seule règle du conteneur ayant été écartée, il n'en reste aucune :
     // le second constat porte sur le conteneur, et non sur cette règle.
-    'Layer « .componentRules » : il ne contient aucune instance de « .rulesItems » qui porte '
+    'Layer « .componentRules » : il ne contient aucune instance de « .ruleItem » qui porte '
     + 'un tag. Le développeur ne recevra aucune règle d’usage pour ce composant. Ajoutez-y au '
     + 'moins une règle, puis réexportez.',
   ]);

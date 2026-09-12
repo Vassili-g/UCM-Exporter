@@ -6,7 +6,7 @@
  * passe plus par un nom de calque mais par un texte affiché : le calque
  * « component-name » du conteneur porte le nom du composant documenté.
  *
- * Le conteneur range des instances de `.rulesItems`, une par règle, dont le
+ * Le conteneur range des instances de `.ruleItem`, une par règle, dont le
  * calque nommé `@usage`, `@prop`, `@boolean`, `@do`, `@dont`, `@pairs`,
  * `@icons` ou `@default` porte le tag, et dont le calque « content » porte le
  * texte (plus un calque « prop » pour `@prop`, `@boolean` et `@default`, ex.
@@ -56,7 +56,7 @@ export const RULES_CONTAINER_NAME = '.componentRules';
 /** Calque du conteneur qui porte le nom du composant documenté. */
 export const COMPONENT_NAME_LAYER = 'component-name';
 /** Nom (compacté) du composant qui matérialise une règle. */
-const RULES_COMPONENT_NAME = '.rulesitems';
+const RULES_COMPONENT_NAME = '.ruleitem';
 /** Compacte un nom (sans espaces, en minuscules) pour comparer un nom de composant. */
 export function compactName(name: string): string {
   return name.replace(/\s+/g, '').toLowerCase();
@@ -166,7 +166,7 @@ function iconRuleEntry(instance: InstanceNode): RuleEntry {
 }
 
 /**
- * Vrai si une instance est bien un `.rulesItems` : on remonte à son composant
+ * Vrai si une instance est bien un `.ruleItem` : on remonte à son composant
  * maître, puis à son component set, qui porte le nom du composant de règle.
  *
  * Le coût asynchrone est borné au sous-arbre du conteneur déjà trouvé, et non
@@ -184,7 +184,7 @@ const RULE_CONTENT_LAYERS: readonly string[] = ['content', 'prop', 'icon'];
 /**
  * Vrai d'une instance de règle qui n'écrit ni texte ni cible.
  *
- * Le catalogue `.rulesItems` porte des variants de mise en page, `divider` par
+ * Le catalogue `.ruleItem` porte des variants de mise en page, `divider` par
  * exemple, qui ne documentent aucune règle. Les écarter sans un mot est ce que
  * la borne du dépôt demande : rien n'est perdu, donc rien ne se dit, et un
  * message qui réclame un geste déjà fait apprend au designer à survoler.
@@ -354,7 +354,7 @@ export async function extractRules(
     pousserNote(
       warnings,
       pointDe(sujetDuConteneur.texte, {
-        manque: 'il ne contient aucune instance de « .rulesItems » qui porte un tag.',
+        manque: 'il ne contient aucune instance de « .ruleItem » qui porte un tag.',
         impact: 'Le développeur ne recevra aucune règle d’usage pour ce composant.',
         action: 'Ajoutez-y au moins une règle, puis réexportez.',
       }),

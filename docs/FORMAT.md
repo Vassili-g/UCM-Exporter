@@ -761,7 +761,7 @@ nom du composant documenté. Le rapprochement ignore la casse et les espaces
 pas une intention de design, et ne doit donc bloquer aucun export. Le nom de
 l'instance elle-même n'entre dans aucune lecture.
 
-Chaque règle est une instance de `.rulesItems` dont un calque nommé `@usage`,
+Chaque règle est une instance de `.ruleItem` dont un calque nommé `@usage`,
 `@prop`, `@boolean`, `@do`, `@dont`, `@pairs`, `@icons` ou `@default` porte le
 tag, et dont le calque `content` porte le texte. Le tag se lit sur ce calque
 parce qu'il est le seul des deux témoins à s'afficher : Figma auto-nomme un
@@ -771,7 +771,7 @@ nomment chacun un tag différent produisent un warning.
 
 Les sections `.rulesSection` qui regroupent les règles servent la lecture dans
 Figma. Aucune n'entre dans le contrat, et le tag d'une règle ne dépend pas de la
-section où elle est rangée. Une instance de `.rulesItems` qui n'écrit ni texte
+section où elle est rangée. Une instance de `.ruleItem` qui n'écrit ni texte
 ni cible met en page, `divider` par exemple : elle est écartée sans warning,
 puisque rien n'en est perdu.
 
