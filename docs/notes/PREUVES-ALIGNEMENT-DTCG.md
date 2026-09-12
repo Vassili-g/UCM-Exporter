@@ -5,13 +5,13 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 
 ## État
 
-- Lot courant : L10 ouvert, en attente des exports de la porte humaine H3
+- Lot courant : L10 fermé ; reste la porte humaine H4, jugement visuel
 - Exporter, branche et `HEAD` : `main`, L9 fermé
-- Playground, branche et `HEAD` : `main`, `8908c66` après L4
+- Playground, branche et `HEAD` : `main`, `35820eb` après H3
 - Style Dictionary retenu : `5.5.3`, exact ; `4.4.0` au départ
 - Versions npm servies : `@ucm-kit/core` 0.1.25, `@ucm-kit/cli` 0.1.24,
   `@ucm-kit/adapter-typescript` 0.1.17
-- Dernière porte humaine franchie : H2, le plugin est publié sur la Community
+- Dernière porte humaine franchie : H3, le plugin publié a déposé son export
 
 ## Lots
 
@@ -528,6 +528,107 @@ quatre autres attendent les exports de H3.
   préparation de H4. La dernière phrase de la section `tokens.json` de
   `CHANGELOG-FORMAT.md` attend la même preuve : elle nommera le plugin qui
   produit la version 1 quand un export de la Community l'aura montré.
+
+Fermeture du lot, après H3 :
+
+- Commandes :
+  - Recette externe, étape 4, relue sur la pull request 176 : les cinq attendus
+    du texte sont vérifiés, de l'annonce du chemin au commentaire de CI.
+  - Recette externe, étape 7, les trois critères à provoquer, joués dans une
+    copie de session avec les paquets publiés, chacun restauré ensuite :
+    critère 4, `contractVersion` à `99.0`, sortie 1 et message qui nomme le
+    développeur, « réexporter n'y changera rien » ; critère 5, un token cité
+    retiré de la source, sortie 0, avertissement qui nomme la référence et dit
+    ne pas bloquer ; critère 7, bloc `props` retiré, sortie 1 et message qui
+    dit quoi réexporter ; critère 6, implémentation retirée, sortie 0 et
+    « implémentation en attente (autorisé) ». Témoin vert avant et après.
+- Résultats :
+  - Les sept critères de la recette sont tenus. Les critères 1, 3, 4, 5, 6 et 7
+    sont mesurés ici ; le critère 2 l'est pour l'export de tokens, la pull
+    request 176 ayant été ouverte par le plugin depuis Figma. L'export d'un
+    composant par le plugin publié n'a pas été rejoué : le contrat ne change
+    pas dans cette migration, et les quatre contrats du Playground sont
+    contrôlés verts à chaque exécution.
+  - `CHANGELOG-FORMAT.md` nomme ce qui distingue le bundle publié de son
+    prédécesseur. Le pied du plugin annonce « Schéma de contrat 13.0 » dans les
+    deux cas, le contrat n'ayant pas changé ; le discriminant est la ligne du
+    format de tokens dans le résultat, et la marque dans le fichier.
+- Écart ou réserve : aucun, hors la réserve Display P3 de H1.
+
+## Paquet de validation H4
+
+L'agent ne juge pas une image. Cette porte demande un œil, et la question est
+étroite.
+
+### Ce que les mesures ont déjà réglé
+
+Le CSS produit par le Playground est identique à l'octet avant et après la
+migration, `ccf89371a396d7b538294ba38a088484940b89adbc236711fbb6b9974bccf0a3`.
+Aucune couleur, aucune dimension, aucune référence n'a bougé d'un bit. Une
+différence visible serait donc un défaut du rendu antérieur, pas de la
+migration.
+
+### Le diff final
+
+- Exporter, de `ff2a719` à `HEAD` sur `main` : le kit lit la version du format,
+  le plugin la produit, les graisses deviennent des nombres, le schéma DTCG et
+  Style Dictionary jugent le fichier, et les documents suivent.
+- Playground, de `6489d88` à `35820eb` sur `main` : Style Dictionary 5.5.3, le
+  pin de la CLI publiée, et le `tokens.json` en version 1 déposé par le plugin.
+  Aucun composant, aucun contrat, aucune feuille de style écrite à la main n'a
+  changé.
+
+### Ce qui reste à voir
+
+1. Ouvrir le Playground, `npm run dev`, et comparer la galerie des composants à
+   la maquette Figma, variante par variante et état par état.
+2. Vérifier en particulier les couleurs de marque et les graisses, les deux
+   familles de valeurs dont la forme a changé.
+3. Regarder le thème clair et le thème sombre.
+
+Un écart visible se rapporte au lot responsable et se mesure avant d'être
+corrigé : le CSS étant inchangé, l'explication est ailleurs que dans la
+migration.
+
+### Ce qui n'est pas demandé
+
+La pull request de tokens du Playground est déjà fusionnée, et sa CI est verte
+sur `main`. Aucune fusion n'attend d'autorisation.
+
+
+### H3 — Plugin publié
+
+Le plugin publié a déposé son export lui-même : connecté au repository, il a
+ouvert la pull request 176 du Playground, que le mainteneur a fusionnée. Le
+Display P3 reste hors d'atteinte, comme en H1.
+
+- Commandes :
+  - `gh pr view 176` : en-tête « Version du format de tokens : `1` », un seul
+    fichier changé, `src/tokens/tokens.json`, et « Aucun avertissement
+    d'export ».
+  - `gh run list` : la CI de la pull request passe en 21 secondes, celle de
+    `main` après fusion en 14 secondes, toutes deux vertes. Le commentaire
+    publié sur la pull request dit « Aucun blocage détecté », avec 4 contrats
+    et 387 références contrôlés.
+  - `etatDuFormatDeTokens` sur le fichier fusionné : `courante`, version `1`.
+  - `ecartsDeTokens` contre l'export de H1 : aucun écart. Contre la forme
+    d'origine du Playground : aucun écart.
+  - Schéma DTCG 2025.10 : 720 feuilles conformes sur 721, la même famille
+    typée `string` qu'en H1.
+  - Playground, `npm run build` : sortie 0, `tokens.css` toujours
+    `ccf89371a396d7b538294ba38a088484940b89adbc236711fbb6b9974bccf0a3`, 727
+    lignes, 721 déclarations, 544 `var()`, aucun défaut. Le bundle applicatif
+    garde son nom haché, donc son contenu.
+  - `npx --yes @ucm-kit/cli@0.1.24 check` : sortie 0, arbre propre.
+- Résultats :
+  - Le fichier déposé par le plugin Community a l'empreinte de l'export de H1,
+    `cc580cd9582a3dc8e2af02e4b0e82bd7e082e606387d16493901a897a5cf0d76` : le
+    bundle publié et le build de développement produisent les mêmes octets.
+  - Le Playground est passé à la version 1 du format sans qu'une seule valeur
+    rendue bouge.
+- Artefacts et empreintes : `src/tokens/tokens.json` du Playground au commit
+  `5602137`, empreinte ci-dessus.
+- Écart ou réserve : le Display P3, comme en H1.
 
 ## Paquet de validation H1
 
