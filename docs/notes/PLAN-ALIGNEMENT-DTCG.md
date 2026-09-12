@@ -776,18 +776,18 @@ But : transformer H1 en candidat immuable.
 
 Actions :
 
-- [ ] Valider les exports réels de H1 avec la même matrice que les exports du
+- [x] Valider les exports réels de H1 avec la même matrice que les exports du
       mock.
-- [ ] Ajouter un cas réel minimal et anonymisé au mock si H1 révèle une
+- [x] Ajouter un cas réel minimal et anonymisé au mock si H1 révèle une
       forme absente des mocks.
-- [ ] Rejouer L8 après toute correction.
-- [ ] Vérifier que chaque contenu publiable a reçu sa version dans le commit qui
+- [x] Rejouer L8 après toute correction.
+- [x] Vérifier que chaque contenu publiable a reçu sa version dans le commit qui
       l'a modifié, et que npm sert cette version ; corriger tout écart avant de
       poursuivre.
-- [ ] Retirer le test qui compare la sortie du moteur au fixture d'origine,
+- [x] Retirer le test qui compare la sortie du moteur au fixture d'origine,
       après avoir consigné son dernier résultat dans le journal.
-- [ ] Mettre à jour les pins documentés et le changelog.
-- [ ] Écrire dans le journal le manifeste : versions servies, commits,
+- [x] Mettre à jour les pins documentés et le changelog.
+- [x] Écrire dans le journal le manifeste : versions servies, commits,
       empreintes, workflow et résultat H1.
 
 Critère de sortie : le manifeste présenté en H2 désigne des commits testés et
