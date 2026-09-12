@@ -145,8 +145,9 @@ Chaque changement apporte une preuve distincte :
   schéma.
 - **Une graisse typée d'une seule façon.** Le moteur sort déjà en `number` une
   graisse stockée en `FLOAT`, et en `string` la même graisse stockée en
-  `STRING`. La tranche retire cet écart, et le Playground peut retirer le
-  transform `fontWeight/name-to-number`.
+  `STRING`. La tranche retire cet écart, et le Playground a retiré son transform
+  `fontWeight/name-to-number` : sa table recopiait celle du kit, et le CSS
+  produit sans lui est identique à l'octet.
 - **Un profil déclaré.** Pour un document en Display P3, le groupe `css`
   convertit chaque couleur vers sRGB. Les 97 lignes qui changent corrigent donc
   une couleur que le fichier actuel fait lire comme sRGB. Un rendu en gamut
