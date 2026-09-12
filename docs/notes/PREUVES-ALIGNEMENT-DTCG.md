@@ -1,18 +1,36 @@
 # Preuves de l'alignement DTCG
 
-Journal du [plan d'alignement](./PLAN-ALIGNEMENT-DTCG.md). Il ne contient que
-des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
+Journal de livraison du [plan d'alignement](./PLAN-ALIGNEMENT-DTCG.md). Les lots
+d'implémentation sont fermés ; la recette visuelle H4 reste à exécuter. Ce
+fichier conserve les commandes, les codes de sortie, les résultats et les
+empreintes de la version 1 du format de tokens. Le
+[plan des types restants](./PLAN-TYPES-DTCG.md) ouvrira son propre journal si sa
+version 2 est engagée.
 
 ## État
 
-- Lot courant : aucun. Les onze lots sont fermés ; reste la porte humaine H4,
-  dont le paquet termine ce journal
-- Exporter, branche et `HEAD` : `main`, L9 fermé
-- Playground, branche et `HEAD` : `main`, `35820eb` après H3
+- Lot courant : aucun. Les onze lots L0 à L10 sont fermés
+- Porte courante : H4, recette visuelle à exécuter
+- Exporter : preuve de fermeture au commit `00238eb` sur `main`
+- Playground : preuve de fermeture au commit `08baa62` sur `main`
 - Style Dictionary retenu : `5.5.3`, exact ; `4.4.0` au départ
 - Versions npm servies : `@ucm-kit/core` 0.1.25, `@ucm-kit/cli` 0.1.24,
   `@ucm-kit/adapter-typescript` 0.1.17
 - Dernière porte humaine franchie : H3, le plugin publié a déposé son export
+
+La réserve Display P3 reste ouverte. Les tests couvrent la conversion et le
+rendu CSS, mais aucun export ne provient d'un document Figma réellement réglé
+sur Display P3.
+
+| Étape | Statut | Preuve de sortie |
+|---|---|---|
+| L0 à L8 | fermés | référence, harnais, lecteur, producteur et audit automatisé |
+| H1 | franchie en sRGB | 721 feuilles sans écart contre le fichier du Playground |
+| L9 | fermé | candidat construit, testé et empreinté |
+| H2 | franchie | bundle publié sur la Figma Community |
+| H3 | franchie | export Community identique à l'export du build de développement |
+| L10 | fermé | paquets servis, recette externe et CI du Playground vérifiés |
+| H4 | ouverte | comparaison visuelle claire et sombre à effectuer |
 
 ## Lots
 
@@ -403,7 +421,7 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
   les deux profils, la mutation de l'espace en L5 faisait rougir deux tests, et
   L8 a construit le CSS `color(display-p3 …)` sur la cible temporaire. Seule la
   lecture vivante du profil sur un document réellement en Display P3 n'a pas de
-  preuve. H3 la fournira si un écran la permet.
+  preuve ; H3 n'a pas levé cette réserve.
 
 ### L9 — Candidat de publication
 
@@ -467,7 +485,7 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
   sur la Figma Community.
 - Le dernier commit qui touche une source de production est `a49c44d` ; le
   commit de L9 ne porte que des tests et des documents. Le bundle publié
-  correspond donc au code de production de `HEAD`.
+  correspond donc au code de production d'`a49c44d`.
 - Empreintes du bundle, reconstruit deux fois de suite et identique à l'octet :
   - `packages/plugin/dist/code.js` :
     `1d9171b3e5ad97547b2f9ab881b8a6417add24b36c2be43f0118b571e9910731`.
@@ -477,10 +495,40 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
     `2727d00e7313a02b8f23be3111f9cf41618547aebeffbc044d936c24897a4ae2`.
 - Écart ou réserve : aucun.
 
+### H3 — Export du plugin publié
+
+Le plugin Community a ouvert la pull request 176 du Playground, ensuite
+fusionnée par le mainteneur. Le Display P3 reste hors d'atteinte, comme en H1.
+
+- Commandes :
+  - `gh pr view 176` : en-tête « Version du format de tokens : `1` », un seul
+    fichier changé, `src/tokens/tokens.json`, et « Aucun avertissement
+    d'export ».
+  - `gh run list` : la CI de la pull request passe en 21 secondes, celle de
+    `main` après fusion en 14 secondes. Le commentaire de contrôle compte
+    quatre contrats et 387 références, sans blocage.
+  - `etatDuFormatDeTokens` : `courante`, version `1`.
+  - `ecartsDeTokens` contre l'export de H1 et contre la forme d'origine du
+    Playground : aucun écart.
+  - Schéma DTCG 2025.10 : 720 feuilles conformes sur 721. La seule feuille
+    refusée reste `primitives.fontfamily.base`, typée `string`.
+  - Playground, `npm run build` : sortie 0, `tokens.css` garde l'empreinte
+    `ccf89371a396d7b538294ba38a088484940b89adbc236711fbb6b9974bccf0a3`,
+    avec 721 déclarations et 544 `var()`.
+  - `npx --yes @ucm-kit/cli@0.1.24 check` : sortie 0, arbre propre.
+- Résultats :
+  - le fichier déposé porte l'empreinte de l'export H1,
+    `cc580cd9582a3dc8e2af02e4b0e82bd7e082e606387d16493901a897a5cf0d76` ;
+  - le bundle Community et le build de développement produisent les mêmes
+    octets ;
+  - le passage à la version 1 ne change aucune valeur CSS.
+- Artefact : `src/tokens/tokens.json` du Playground au commit `5602137`.
+- Écart ou réserve : aucun export d'un document Figma Display P3.
+
 ### L10 — Vérification après publication
 
-Lot ouvert : les cinq contrôles qui ne demandent pas Figma sont passés, les
-quatre autres attendent les exports de H3.
+Le lot est fermé. Cinq contrôles ont précédé H3 ; les contrôles dépendants de
+Figma ont suivi l'export Community.
 
 - Commandes :
   - `npm view` sur les trois paquets : versions, `shasum`, `integrity`,
@@ -523,12 +571,9 @@ quatre autres attendent les exports de H3.
     5.5.3, sans `^` ni `~`. Rien à changer.
   - Les paquets réellement servis par le registre produisent les résultats
     validés avant publication.
-- Écart ou réserve : le lot n'est pas fermé. Restent à faire, tous suspendus
-  aux exports du plugin Community : la comparaison avec les exports de H1, le
-  CSS issu du plugin publié, les étapes 4 à 7 de la recette externe, et la
-  préparation de H4. La dernière phrase de la section `tokens.json` de
-  `CHANGELOG-FORMAT.md` attend la même preuve : elle nommera le plugin qui
-  produit la version 1 quand un export de la Community l'aura montré.
+Point d'étape avant H3 : la comparaison avec les exports de H1, le CSS issu du
+plugin publié, les étapes 4 à 7 de la recette externe et la préparation de H4
+restaient suspendus à l'export Community.
 
 Fermeture du lot, après H3 :
 
@@ -556,30 +601,32 @@ Fermeture du lot, après H3 :
     format de tokens dans le résultat, et la marque dans le fichier.
 - Écart ou réserve : aucun, hors la réserve Display P3 de H1.
 
-## Paquet de validation H4
+### H4 — Recette visuelle
 
 L'agent ne juge pas une image. Cette porte demande un œil, et la question est
 étroite.
 
-### Ce que les mesures ont déjà réglé
+#### Ce que les mesures ont déjà réglé
 
 Le CSS produit par le Playground est identique à l'octet avant et après la
 migration, `ccf89371a396d7b538294ba38a088484940b89adbc236711fbb6b9974bccf0a3`.
-Aucune couleur, aucune dimension, aucune référence n'a bougé d'un bit. Une
-différence visible serait donc un défaut du rendu antérieur, pas de la
-migration.
+Les représentations JSON des couleurs, dimensions et graisses ont changé ; le
+comparateur sémantique ne relève aucun écart de valeur ou de référence. H4
+vérifie le rendu dans le navigateur, pas une seconde fois la conversion des
+tokens.
 
-### Le diff final
+#### Périmètre du diff
 
-- Exporter, de `ff2a719` à `HEAD` sur `main` : le kit lit la version du format,
+- Exporter, de `ff2a719` à `00238eb` sur `main` : le kit lit la version du format,
   le plugin la produit, les graisses deviennent des nombres, le schéma DTCG et
   Style Dictionary jugent le fichier, et les documents suivent.
-- Playground, de `6489d88` à `35820eb` sur `main` : Style Dictionary 5.5.3, le
-  pin de la CLI publiée, et le `tokens.json` en version 1 déposé par le plugin.
-  Aucun composant, aucun contrat, aucune feuille de style écrite à la main n'a
-  changé.
+- Playground, de `6489d88` à `08baa62` sur `main` : Style Dictionary 5.5.3, le
+  pin de la CLI publiée, le `tokens.json` en version 1 déposé par le plugin, et
+  le retrait du transform de graisse, que le fichier publie désormais en
+  nombre. Aucun composant, aucun contrat, aucune feuille de style écrite à la
+  main n'a changé.
 
-### Ce qui reste à voir
+#### Ce qui reste à voir
 
 1. Ouvrir le Playground, `npm run dev`, et comparer la galerie des composants à
    la maquette Figma, variante par variante et état par état.
@@ -587,98 +634,10 @@ migration.
    familles de valeurs dont la forme a changé.
 3. Regarder le thème clair et le thème sombre.
 
-Un écart visible se rapporte au lot responsable et se mesure avant d'être
-corrigé : le CSS étant inchangé, l'explication est ailleurs que dans la
-migration.
+Un écart visible se mesure avant d'être corrigé. Le CSS inchangé permet alors
+de chercher hors de la conversion des tokens.
 
-### Ce qui n'est pas demandé
+#### Ce qui n'est pas demandé
 
 La pull request de tokens du Playground est déjà fusionnée, et sa CI est verte
 sur `main`. Aucune fusion n'attend d'autorisation.
-
-
-### H3 — Plugin publié
-
-Le plugin publié a déposé son export lui-même : connecté au repository, il a
-ouvert la pull request 176 du Playground, que le mainteneur a fusionnée. Le
-Display P3 reste hors d'atteinte, comme en H1.
-
-- Commandes :
-  - `gh pr view 176` : en-tête « Version du format de tokens : `1` », un seul
-    fichier changé, `src/tokens/tokens.json`, et « Aucun avertissement
-    d'export ».
-  - `gh run list` : la CI de la pull request passe en 21 secondes, celle de
-    `main` après fusion en 14 secondes, toutes deux vertes. Le commentaire
-    publié sur la pull request dit « Aucun blocage détecté », avec 4 contrats
-    et 387 références contrôlés.
-  - `etatDuFormatDeTokens` sur le fichier fusionné : `courante`, version `1`.
-  - `ecartsDeTokens` contre l'export de H1 : aucun écart. Contre la forme
-    d'origine du Playground : aucun écart.
-  - Schéma DTCG 2025.10 : 720 feuilles conformes sur 721, la même famille
-    typée `string` qu'en H1.
-  - Playground, `npm run build` : sortie 0, `tokens.css` toujours
-    `ccf89371a396d7b538294ba38a088484940b89adbc236711fbb6b9974bccf0a3`, 727
-    lignes, 721 déclarations, 544 `var()`, aucun défaut. Le bundle applicatif
-    garde son nom haché, donc son contenu.
-  - `npx --yes @ucm-kit/cli@0.1.24 check` : sortie 0, arbre propre.
-- Résultats :
-  - Le fichier déposé par le plugin Community a l'empreinte de l'export de H1,
-    `cc580cd9582a3dc8e2af02e4b0e82bd7e082e606387d16493901a897a5cf0d76` : le
-    bundle publié et le build de développement produisent les mêmes octets.
-  - Le Playground est passé à la version 1 du format sans qu'une seule valeur
-    rendue bouge.
-- Artefacts et empreintes : `src/tokens/tokens.json` du Playground au commit
-  `5602137`, empreinte ci-dessus.
-- Écart ou réserve : le Display P3, comme en H1.
-
-## Paquet de validation H1
-
-Cette porte revient au mainteneur : l'agent ne peut pas exécuter Figma. Les
-deux exports se déposent dans `A:\_5_Projets pros\Apicil - Intencial -
-FundShop\Projet UCM\recette-dtcg\h1\`, un dossier hors des deux dépôts.
-
-### Préalables
-
-1. Dans `UCM-Exporter`, sur `main` à jour, `git status --short` doit être vide.
-   Le renommage `.rulesItems` en `.ruleItem`, en cours dans la copie de
-   travail, est commité ou mis de côté par son auteur avant cette étape.
-2. À la racine : `npm ci`, puis `npm run build`.
-3. Dans l'application de bureau Figma : **Plugins**, **Development**, **Import
-   plugin from manifest**, puis `packages/plugin/dist/manifest.json`.
-4. Si le plugin est connecté à un repository, retirer le jeton dans sa page de
-   configuration pour la durée de H1 : sans repository, le plugin propose
-   **Télécharger les tokens** et n'ouvre aucune pull request. Le jeton se
-   ressaisit après H1.
-
-### Gestes
-
-1. Ouvrir le fichier Figma du design system. Vérifier dans **File color
-   profile** qu'il est en sRGB. Lancer **Analyser les tokens du fichier**.
-   Attendu : sous le résumé des tokens, « DTCG 2025.10, version 1 du format de
-   tokens », et aucun point « aucun profil de couleur n'est choisi ».
-   Télécharger, puis enregistrer sous `h1\tokens-srgb.json`.
-2. Dupliquer le fichier. Dans la copie, **File color profile**, **Change to
-   Display P3**, en gardant les valeurs de couleur (**Assign**). Analyser,
-   vérifier la même ligne de format, télécharger, puis enregistrer sous
-   `h1\tokens-display-p3.json`.
-3. Capturer la carte des tokens après l'analyse du fichier sRGB, sous
-   `h1\capture-resultat.png`. Un fichier sans profil de couleur, s'il en existe
-   encore un, donne la capture de l'avertissement sous
-   `h1\capture-legacy.png`. Figma n'en crée plus : sans ce fichier, l'écrire
-   dans `h1\notes.txt`, et la planche 6 de la galerie en tient lieu.
-4. Comparer dans Figma quelques couleurs des deux fichiers, et écrire dans
-   `h1\notes.txt` si elles correspondent au document ou quels écarts se voient.
-
-### Ce que l'agent vérifie ensuite
-
-| Contrôle | Attendu |
-|---|---|
-| `etatDuFormatDeTokens` sur les deux fichiers | `courante`, version `1` |
-| `ecartsDeTokens` entre `src/tokens/tokens.json` du Playground et `tokens-srgb.json`, espace `srgb` | aucun écart, sauf un token changé dans Figma depuis le dernier export, nommé un par un |
-| `tokens-display-p3.json` contre `tokens-srgb.json` | mêmes chemins, types et références ; mêmes composantes, `colorSpace` à `display-p3` |
-| `conformiteDtcg` appliqué aux deux fichiers | toutes les feuilles conformes sauf la famille et les autres feuilles du dialecte, chemin par chemin |
-| Style Dictionary 5.5.3, configuration du Playground, sur `tokens-srgb.json` | CSS égal au CSS actuel, chaque couleur à `0.5 / 255 + 1e-6` près, dimensions et références identiques |
-| Même fichier Display P3, cible temporaire `color/p3` | une déclaration `color(display-p3 …)` par couleur littérale, aucun des quatre défauts |
-| `npx --yes @ucm-kit/cli@0.1.24 check` sur une copie du Playground qui porte `tokens-srgb.json` | sortie 0, aucune référence absente |
-
-Un écart renvoie au lot responsable, et H1 se rejoue sur le seul cas touché.
