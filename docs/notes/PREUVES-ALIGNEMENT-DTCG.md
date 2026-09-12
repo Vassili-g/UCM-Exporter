@@ -5,13 +5,13 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 
 ## État
 
-- Lot courant : porte humaine H1, voir le paquet en fin de journal
-- Exporter, branche et `HEAD` : `main`, `b2ad961` audité en L8
+- Lot courant : porte humaine H2, dont le manifeste est en fin de L9
+- Exporter, branche et `HEAD` : `main`, L9 fermé
 - Playground, branche et `HEAD` : `main`, `8908c66` après L4
 - Style Dictionary retenu : `5.5.3`, exact ; `4.4.0` au départ
 - Versions npm servies : `@ucm-kit/core` 0.1.25, `@ucm-kit/cli` 0.1.24,
   `@ucm-kit/adapter-typescript` 0.1.17
-- Dernière porte humaine franchie : aucune
+- Dernière porte humaine franchie : H1, avec une réserve sur le Display P3
 
 ## Lots
 
@@ -356,6 +356,109 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
   - `pg/moteur-p3/tokens.css` :
     `c52d93212108a65f568dde8dd5fd033f32c0ba1a6ec209f2a1c4044433d9ddc9`.
 - Écart ou réserve : aucun
+
+### H1 — Plugin de développement
+
+- Gestes du mainteneur : build de développement chargé dans Figma, jeton du
+  repository retiré, fichier du design system analysé, tokens téléchargés.
+  Export déposé dans `recette-dtcg\h1\tokens-srgb.json`, empreinte
+  `cc580cd9582a3dc8e2af02e4b0e82bd7e082e606387d16493901a897a5cf0d76`.
+- Commandes :
+  - `etatDuFormatDeTokens` sur l'export : `courante`, version `1`. Sur le
+    `tokens.json` du Playground : `origine`.
+  - Schéma DTCG 2025.10 figé, feuille par feuille : 720 conformes sur 721. La
+    seule refusée est `primitives.fontfamily.base`, typée `string`, le dialecte
+    que `FORMAT.md` énumère et que le typage de la famille lèvera.
+  - `ecartsDeTokens` entre le `tokens.json` du Playground et l'export, espace
+    `srgb` : **aucun écart** sur 721 feuilles.
+  - Style Dictionary 5.5.3, configuration du Playground, sur l'export :
+    `tokens.css` identique à l'octet au CSS d'origine,
+    `ccf89371a396d7b538294ba38a088484940b89adbc236711fbb6b9974bccf0a3`, 727
+    lignes, 721 déclarations, 544 `var()`, aucun `[object Object]`, aucune
+    valeur vide ni accolade orpheline.
+  - `npx --yes @ucm-kit/cli@0.1.24 check` sur une copie du Playground portant
+    l'export : sortie 0, 387 références contrôlées sur quatre contrats, aucune
+    absente.
+- Résultats :
+  - La racine porte `{"com.ucm.formatVersion":1}`, et la chaîne n'apparaît
+    qu'une fois dans le fichier : aucune homonyme imbriquée.
+  - Formes publiées : 102 couleurs `{colorSpace, components, alpha}` toutes en
+    `srgb`, `alpha` écrit partout ; 71 dimensions `{value, unit}`, `px` la
+    seule unité ; 18 feuilles de graisse en `number`, littéraux au poids de
+    `poidsDeGraisse()` et alias restés références.
+  - Le vocabulaire de formes de l'export réel est un sous-ensemble strict de
+    celui du mock : aucune forme du réel n'est absente du mock, qui en couvre
+    onze de plus, dont `boolean`, `$value: null` et les modes multiples de
+    `dimension`, `number` et `string`. Rien à ajouter au mock.
+- Artefacts et empreintes : l'export ci-dessus, hors des deux dépôts.
+- Écart ou réserve : **le cas Display P3 n'a pas été exercé sur un fichier
+  Figma réel.** L'écran du mainteneur ne rend pas le Display P3, et Figma ne
+  propose alors pas de changer le profil du fichier. Deux exports déposés se
+  sont révélés identiques à l'octet, tous deux en `srgb` : le second venait
+  d'un document resté en sRGB, et `figma.root.documentColorProfile` avait donc
+  raison. Un build instrumenté, qui affichait le profil lu, a été construit
+  puis retiré sans être commité ; le mainteneur a décidé de poursuivre sans ce
+  contrôle. Le chemin P3 reste couvert par le mock : `conformiteDtcg` valide
+  les deux profils, la mutation de l'espace en L5 faisait rougir deux tests, et
+  L8 a construit le CSS `color(display-p3 …)` sur la cible temporaire. Seule la
+  lecture vivante du profil sur un document réellement en Display P3 n'a pas de
+  preuve. H3 la fournira si un écran la permet.
+
+### L9 — Candidat de publication
+
+- Commit : celui qui porte cette entrée, le retrait du test provisoire et les
+  cases de L9.
+- Commandes :
+  - Dernier résultat du test retiré, avant son retrait :
+    `npx tsx --test --test-name-pattern="migration"
+    packages/plugin/tests/exportTokens.test.ts` : sortie 0, vert sur les trois
+    profils `SRGB`, `LEGACY` et `DISPLAY_P3`, aucun écart contre le fixture
+    d'origine.
+  - `npm test` : sortie 0, 999 tests verts (19, 52, 295, 610, 23), un de moins
+    qu'en L8, celui qui vient d'être retiré.
+  - `npm run typecheck` : sortie 0. `npm run build` : sortie 0.
+  - `npm view` sur les trois paquets : `@ucm-kit/core` 0.1.25, `@ucm-kit/cli`
+    0.1.24, `@ucm-kit/adapter-typescript` 0.1.17, tous servis et égaux aux
+    manifestes du dépôt.
+  - Mutations de l'export réel, pour prouver que le « aucun écart » de H1 est
+    une mesure : espace d'une couleur en `display-p3`, alpha retiré, composante
+    à 1,4, unité en `em`, graisse revenue à son nom, marque à `2`. Six
+    mutations, six refus, chacun nommant le chemin fautif ; la marque à `2` rend
+    en plus l'état `future`. Le témoin non muté reste à zéro écart et
+    `courante`. Le fichier déposé n'a pas été touché : chaque mutation portait
+    sur une copie en mémoire.
+- Résultats :
+  - Le test qui comparait la sortie du moteur au fixture d'origine est retiré
+    de `exportTokens.test.ts`, avec ses trois imports devenus orphelins. Le
+    fixture `packages/kit/fixtures/tokens/origine/` reste, empreinte
+    `433f7e1060e3aa4e8e6a45410d8c040ae27cf3b11241e8210ac6bc46d12e5ff8`, et
+    `fixturesTokens.test.mjs` continue de le lire sans le comparer au moteur.
+  - `comparerTokens.ts` reste : L10 compare avec lui les exports du plugin
+    publié à celui de H1.
+  - Pins documentés et `CHANGELOG-FORMAT.md` déjà en accord : le test des pins
+    et celui du contenu publiable passent sans modification. La dernière phrase
+    de la section `tokens.json` du changelog attend la publication Community,
+    comme L10 le prévoit.
+  - L8 n'est pas rejoué : aucune correction de la migration n'a eu lieu depuis.
+    Le seul commit ajouté, `a49c44d`, est le renommage `.rulesItems` en
+    `.ruleItem`, étranger à la migration, passé sous les mêmes contrôles
+    complets avant d'être poussé.
+- Manifeste présenté en H2 :
+  - Exporter, `main`, commits de la migration de `ff2a719` à cette entrée.
+  - Playground, `main`, `8908c66`.
+  - Versions servies : `@ucm-kit/core` 0.1.25, `@ucm-kit/cli` 0.1.24,
+    `@ucm-kit/adapter-typescript` 0.1.17.
+  - Workflows : `.github/workflows/publish.yml` dans l'Exporter, une exécution
+    par paquet ; `.github/workflows/ucm.yml` dans le Playground, qui épingle
+    `@ucm-kit/cli@0.1.24`.
+  - Plugin : `ucm-exporter-plugin` 0.1.0, privé, sans numéro dans
+    `manifest.json`. C'est la version que H2 publie sur la Community, et dont
+    L10 écrira le nom dans le changelog.
+  - Résultat H1 : l'export réel valide toute la matrice en sRGB, avec la
+    réserve Display P3 ci-dessus.
+- Artefacts et empreintes : aucun nouveau.
+- Écart ou réserve : la réserve Display P3 de H1, ouverte et assumée par le
+  mainteneur.
 
 ## Paquet de validation H1
 

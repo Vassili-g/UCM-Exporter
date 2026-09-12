@@ -1,6 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import test from 'node:test';
 import {
   EXTENSION_VERSION_TOKENS,
@@ -25,7 +23,6 @@ import type { ExportContext } from '../src/tokens/exportTokens';
 import { collisionWarnings, indexVariables, VariableNameResolver } from '../src/variables';
 import { phraseDe } from '../src/contract/localisation';
 import { serializeJson } from '../src/contract/serializeJson';
-import { ecartsDeTokens } from './comparerTokens';
 import { exporterLeFichier, fichierDeVariables } from './fichierDeVariables';
 import type { ProfilColorimetrique } from './fichierDeVariables';
 
@@ -499,22 +496,6 @@ test('un alias reste une référence, dans chaque mode, et chaque mode a la form
   });
   assert.equal(tokens.semantic.spacing.chain.$value, '{brand-tokens.radius.base}');
   assert.deepEqual(tokens.keys.value.primary.$extensions['com.ucm.modes'].__proto__, { value: 2, unit: 'px' });
-});
-
-/**
- * Preuve de migration : la sortie du moteur, comparée au fichier d'origine figé,
- * ne diffère que par ce que la version 1 autorise. Ce test est provisoire, et
- * disparaît avant la publication du plugin : un test permanent qui compare le
- * moteur à un instantané est ce qu'`AGENTS.md` interdit.
- */
-test('migration : l’export ne s’écarte du fichier d’origine figé que par la version 1', async () => {
-  const origine = JSON.parse(readFileSync(
-    join(__dirname, '..', '..', 'kit', 'fixtures', 'tokens', 'origine', 'tokens.json'), 'utf8',
-  ));
-  for (const [profil, espace] of [['SRGB', 'srgb'], ['LEGACY', 'srgb'], ['DISPLAY_P3', 'display-p3']] as const) {
-    const { tokens } = await documentExporte({ profil });
-    assert.deepEqual(ecartsDeTokens(origine, tokens, { espace }), [], profil);
-  }
 });
 
 test('le résultat annonce le module et la version lus dans le fichier produit', async () => {
