@@ -401,7 +401,10 @@ aucun artefact comparé.
 | propriétés JSON réordonnées | aucun changement |
 | catalogues et renvois renumérotés à contenu égal | aucun changement |
 | `exportedAt` seul modifié | aucun changement |
+| `contractVersion` seule modifiée entre deux versions lues | aucun changement |
 | nom ou chemin modifié sous la même identité Figma | changement `metadata` |
+| même `componentKey`, `nodeId` modifié | contrat rapproché et changement `metadata` |
+| `componentKey` différents, `nodeId` identiques | contrats distincts |
 | prop ajoutée ou retirée | fait `api` distinct |
 | prop retirée et autre prop ajoutée | deux faits, aucun renommage supposé |
 | type ou défaut de prop modifié | changement `api` |
@@ -413,6 +416,8 @@ aucun artefact comparé.
 | `nodeId` de variant seul modifié | changement `metadata` |
 | contenu de maquette seul modifié | changement `sample` |
 | diagnostic ou couverture modifié | changement `metadata` |
+| feuille publique mutée | un seul domaine, jamais aucun ni deux |
+| enfant inséré dans un tableau ordonné | un changement au chemin du tableau |
 
 ### Coordonnées dupliquées
 
@@ -422,6 +427,7 @@ aucun artefact comparé.
 | une occurrence égale et une modifiée | une modification située au groupe |
 | une occurrence retirée | un retrait |
 | plusieurs appariements possibles | ajouts et retraits, aucune association inventée |
+| projections normatives égales, échantillons différents | écart `sample` conservé |
 
 ### Tokens
 
@@ -430,6 +436,7 @@ aucun artefact comparé.
 | mêmes feuilles sous des clés JSON réordonnées | aucun changement |
 | token ajouté, retiré ou déplacé | faits distincts par chemin |
 | `$type` hérité modifié | changement sur chaque feuille concernée |
+| `$type` d'un groupe modifié | aucun second fait sur le groupe |
 | littéral modifié | changement dans le mode concerné |
 | mode ajouté, retiré ou passé à `null` | trois faits distincts |
 | alias modifié, valeur résolue identique | dépendance modifiée |
@@ -438,6 +445,7 @@ aucun artefact comparé.
 | cycle d'alias | comparaison refusée avec sa cause |
 | version de tokens acceptée différente | aucun changement pour la marque seule |
 | version future ou invalide | comparaison refusée avant l'index |
+| cible d'alias absente | résultat `failed` avec le chemin de l'alias |
 
 ### Composition et impact
 
@@ -448,6 +456,7 @@ aucun artefact comparé.
 | dépendance conditionnelle | seuls les variants concernés sont situés |
 | deux occurrences identiques | cardinalité conservée |
 | contrat enfant modifié | parents transitifs marqués `potential` |
+| contrat enfant renommé sous le même `componentKey` | anciennes et nouvelles arêtes réunies |
 | token modifié derrière deux alias | contrats qui citent les alias relevés |
 | token cité seulement dans `samples` ou `meta` | aucun impact normatif |
 | graphe de contrats invalide | comparaison refusée avant la propagation |
@@ -457,11 +466,15 @@ aucun artefact comparé.
 | Cas | Résultat attendu |
 |---|---|
 | base Git inconnue | code `2`, cause explicite |
+| base commençant par `-` | valeur résolue sans interprétation comme option Git |
 | configuration différente entre les révisions | chaque côté lit ses propres chemins |
+| chemin absolu ou sortant du repository | code `2`, aucun fichier extérieur lu |
 | contrat suivi retiré | retrait relevé |
 | contrat non suivi ajouté | ajout relevé |
 | changement présent | code `0` |
 | aucune différence | code `0` et résumé explicite |
+| identité ambiguë | statut `partial`, code `2` et autres contrats comparés |
+| artefact invalide | statut `failed`, code `2`, aucun changement partiel |
 | deux exécutions identiques | JSON identique à l'octet |
 | chemin `--json` fourni | ce seul fichier est écrit |
 | argument inconnu ou valeur manquante | code `2` et aide ciblée |
@@ -497,8 +510,9 @@ Chaque lot renseigne les cinq lignes. Les commandes portent leur code de sortie
 et un résultat court. Les sorties complètes ne sont pas copiées. Un artefact
 temporaire reçoit un chemin et une empreinte SHA-256.
 
-Une réserve non résolue arrête le lot suivant. Le journal rejoint le commit qui
-ferme le lot.
+Une réserve non résolue arrête le lot suivant. Le journal indique le commit qui
+ferme le lot, ou `non créé` lorsque le mainteneur n'a pas autorisé les commits.
+Dans ce second cas, il porte aussi les chemins modifiés et l'empreinte du diff.
 
 ## 7. Procédure de reprise
 
@@ -509,11 +523,13 @@ Au début du travail et après une interruption :
 3. relever la branche, `git rev-parse HEAD` et `git status --short` ;
 4. comparer ces valeurs à l'état du journal ;
 5. lire les modifications non commitées sans les remplacer ;
-6. relancer le dernier contrôle vert du lot courant ;
-7. reprendre à la première action sans preuve.
+6. vérifier que les chemins et l'empreinte du diff correspondent au journal ;
+7. relancer le dernier contrôle vert du lot courant ;
+8. reprendre à la première action sans preuve.
 
-Un conflit insoluble avec une modification étrangère constitue la seule raison
-de demander une intervention avant H1.
+L'agent s'arrête avant H1 si une modification étrangère recouvre un fichier
+visé, si un contrôle de référence échoue ou si une action exige une autorisation
+absente. Le journal nomme alors le lot et la preuve manquante.
 
 ## 8. Règles d'exécution
 
@@ -526,9 +542,17 @@ Chaque lot suit cette séquence :
 5. passer les contrôles complets des paquets touchés ;
 6. relire le diff ;
 7. exécuter la mutation négative prévue ;
-8. restaurer la mutation ;
+8. restaurer la mutation sans toucher aux modifications antérieures au lot ;
 9. mettre à jour le journal ;
-10. créer un commit atomique si l'exécution du plan autorise les commits.
+10. relever les chemins modifiés et l'empreinte du diff.
+
+Les lots sont des points de preuve, pas des commits obligatoires. Les lots L1 à
+L7 restent dans une même montée de version : les commiter séparément obligerait
+chaque lot qui touche le contenu publié à monter de nouveau la version du
+paquet. Si le mainteneur autorise les commits, un commit ferme L0, puis un seul
+commit d'implémentation ferme L1 à L7 après la montée des versions et les
+contrôles complets. L8 reçoit son propre commit lorsqu'il modifie l'issue de
+H1.
 
 Raccourcis interdits :
 
@@ -541,7 +565,10 @@ Raccourcis interdits :
 - continuer après une entrée invalide avec un résultat partiel silencieux ;
 - modifier un fixture ou un export réel pour satisfaire un attendu.
 
-Chaque lot de code passe au minimum :
+Chaque lot de code passe les tests, le typecheck et le build des paquets qu'il
+touche, puis `git diff --check`. L7 monte une seule fois les versions des
+paquets publiables concernés, met à jour leurs dépendances exactes et passe les
+contrôles complets du repository :
 
 ```sh
 npm test
