@@ -49,7 +49,7 @@ Posez une instance de `.componentRules` à côté du composant, sur la même pag
 règles au composant, et rien d'autre ne les relie : la casse et les espaces sont
 ignorés, et vous pouvez renommer l'instance comme vous voulez.
 
-Chaque règle est une instance de `.rulesItems`. Choisissez son variant : il
+Chaque règle est une instance de `.ruleItem`. Choisissez son variant : il
 affiche le tag qui dit ce que la règle remplit. Les sections qui les regroupent,
 `GÉNÉRAL`, `PROPRIÉTÉS`, `OPTIONS`, `ICONES` et `DOCUMENTATION`, servent la
 lecture. Le plugin lit le tag, jamais la section.
@@ -74,7 +74,7 @@ Un `@default` n'a pas de texte : sa cible est tout son contenu. Sans lui, aucune
 valeur par défaut n'entre dans le contrat pour cette variant property. La
 position d'un variant dans un set ne décide de rien.
 
-Les variants de `.rulesItems` qui n'écrivent ni texte ni cible, `divider` par
+Les variants de `.ruleItem` qui n'écrivent ni texte ni cible, `divider` par
 exemple, mettent en page sans rien documenter. Le plugin les ignore sans rien
 vous demander.
 

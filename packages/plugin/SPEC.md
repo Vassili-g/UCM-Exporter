@@ -289,7 +289,7 @@ cette section, et ce cas limite demande d'être nommé.**
 La grammaire des règles décrit ce que le moteur lit dans Figma, donc ce
 document. Une instance de `.componentRules` sur la même page, dont le calque
 `component-name` écrit le nom du composant documenté ; une instance de
-`.rulesItems` par règle, dont un calque nomme le tag. La lecture porte sur la
+`.ruleItem` par règle, dont un calque nomme le tag. La lecture porte sur la
 page courante, alors que le relevé des dépendances couvre tout le document :
 un jeu de règles rangé sur une autre page déclare la dépendance sans documenter
 le composant. Mais chaque règle n'a de sens qu'à côté du champ qu'elle

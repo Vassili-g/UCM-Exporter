@@ -113,10 +113,10 @@ function node(type: string, name: string, children: any[] = [], extra: any = {})
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id });
 
 /** Le component set dont chaque règle est une instance. */
-const setDeRegles = { type: 'COMPONENT_SET', name: '.rulesItems' };
+const setDeRegles = { type: 'COMPONENT_SET', name: '.ruleItem' };
 
 /**
- * Une règle telle que Figma la porte : une instance de `.rulesItems` dont un
+ * Une règle telle que Figma la porte : une instance de `.ruleItem` dont un
  * calque nomme le tag, et dont les autres portent le texte et la cible.
  */
 function regle(tag: string, calques: any[]) {
