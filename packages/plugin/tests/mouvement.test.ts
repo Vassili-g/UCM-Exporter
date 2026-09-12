@@ -15,10 +15,20 @@ import { fichierDeVariables } from './fichierDeVariables';
 const bezier = (x1: number, y1: number, x2: number, y2: number) =>
   ({ type: 'CUSTOM_CUBIC_BEZIER', easingFunctionCubicBezier: { x1, y1, x2, y2 } }) as MotionEasing;
 
-/** Les douze membres de `MotionEasing.type` qui ne décrivent aucune courbe. */
-const SANS_COURBE: Array<MotionEasing['type']> = [
-  'EASE_IN', 'EASE_OUT', 'EASE_IN_AND_OUT', 'EASE_IN_BACK', 'EASE_OUT_BACK',
-  'EASE_IN_AND_OUT_BACK', 'GENTLE', 'QUICK', 'BOUNCY', 'SLOW', 'CUSTOM_SPRING', 'HOLD',
+/**
+ * Les douze membres de `MotionEasing.type` qui ne décrivent aucune courbe, et
+ * la cause que chacun donne.
+ *
+ * La cause se lit sur ce que l'API rend, et non sur la section du sélecteur de
+ * Figma : un préréglage se reconnaît à l'absence de points, un ressort au
+ * champ que Figma joint ou à son `type`.
+ */
+const SANS_COURBE: Array<[MotionEasing['type'], string]> = [
+  ['EASE_IN', 'preregle'], ['EASE_OUT', 'preregle'], ['EASE_IN_AND_OUT', 'preregle'],
+  ['EASE_IN_BACK', 'preregle'], ['EASE_OUT_BACK', 'preregle'],
+  ['EASE_IN_AND_OUT_BACK', 'preregle'], ['GENTLE', 'preregle'], ['QUICK', 'preregle'],
+  ['BOUNCY', 'preregle'], ['SLOW', 'preregle'], ['CUSTOM_SPRING', 'ressort'],
+  ['HOLD', 'tenue'],
 ];
 
 test('une durée garde le nombre de Figma et son unité, sans arrondi ni conversion', () => {
@@ -56,23 +66,35 @@ test('une abscisse hors de [0, 1] est refusée, et sa cause la distingue', () =>
 });
 
 test('les douze autres easings de Figma n’ont aucune courbe cubique', () => {
-  for (const type of SANS_COURBE) {
-    assert.deepEqual(courbeDeToken({ type } as MotionEasing), { cause: 'sans-courbe' }, type);
+  for (const [type, cause] of SANS_COURBE) {
+    assert.deepEqual(courbeDeToken({ type } as MotionEasing), { cause }, type);
   }
   assert.equal(SANS_COURBE.length, 12);
 });
 
+test('un ressort se reconnaît au champ que Figma joint, pas à son seul nom', () => {
+  // Un préréglage de ressort que l'API accompagne de son champ est nommé
+  // comme tel ; sans ce champ, seul le fait observable est écrit, l'absence
+  // de points.
+  assert.deepEqual(courbeDeToken({
+    type: 'BOUNCY', easingFunctionSpring: { bounce: 0.36 },
+  } as unknown as MotionEasing), { cause: 'ressort' });
+  assert.deepEqual(courbeDeToken({
+    type: 'CUSTOM_SPRING', easingFunctionSpring: { bounce: 0.36 },
+  } as unknown as MotionEasing), { cause: 'ressort' });
+});
+
 test('un CUSTOM_CUBIC_BEZIER sans points, ou aux points illisibles, n’a pas de courbe', () => {
   assert.deepEqual(courbeDeToken({ type: 'CUSTOM_CUBIC_BEZIER' } as MotionEasing), {
-    cause: 'sans-courbe',
+    cause: 'points',
   });
-  assert.deepEqual(courbeDeToken(bezier(Number.NaN, 0, 0.64, 1)), { cause: 'sans-courbe' });
+  assert.deepEqual(courbeDeToken(bezier(Number.NaN, 0, 0.64, 1)), { cause: 'points' });
   assert.deepEqual(courbeDeToken(bezier(0.34, Number.POSITIVE_INFINITY, 0.64, 1)), {
-    cause: 'sans-courbe',
+    cause: 'points',
   });
   const sansY2 = { type: 'CUSTOM_CUBIC_BEZIER', easingFunctionCubicBezier: { x1: 0, y1: 0, x2: 1 } };
-  assert.deepEqual(courbeDeToken(sansY2 as unknown as MotionEasing), { cause: 'sans-courbe' });
-  assert.deepEqual(courbeDeToken(undefined), { cause: 'sans-courbe' });
+  assert.deepEqual(courbeDeToken(sansY2 as unknown as MotionEasing), { cause: 'points' });
+  assert.deepEqual(courbeDeToken(undefined), { cause: 'preregle' });
 });
 
 /** L'index que `easingsSansCourbe` lit, construit depuis le fichier simulé. */
@@ -94,10 +116,13 @@ test('le relevé nomme chaque variable sans courbe, et chacun de ses modes fauti
     'easing-sans-points', 'easing-tenue',
   ]);
   assert.deepEqual(releve.get('easing-abscisse')?.map(({ cause }) => cause), ['abscisse']);
-  assert.deepEqual(releve.get('easing-ressort')?.map(({ cause }) => cause), ['sans-courbe']);
+  assert.deepEqual(releve.get('easing-ressort')?.map(({ cause }) => cause), ['ressort']);
+  assert.deepEqual(releve.get('easing-preregle')?.map(({ cause }) => cause), ['preregle']);
+  assert.deepEqual(releve.get('easing-tenue')?.map(({ cause }) => cause), ['tenue']);
+  assert.deepEqual(releve.get('easing-sans-points')?.map(({ cause }) => cause), ['points']);
   // Un seul mode sans courbe relève la variable entière : le second mode de
   // `easing/mixed` porte un `LINEAR` valide, et la variable sort quand même.
-  assert.deepEqual(releve.get('easing-mixte')?.map(({ cause }) => cause), ['sans-courbe']);
+  assert.deepEqual(releve.get('easing-mixte')?.map(({ cause }) => cause), ['preregle']);
 });
 
 test('un alias et un mode vide ne sont pas relevés ici', () => {

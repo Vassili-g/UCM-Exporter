@@ -627,10 +627,18 @@ test('une EASING sans courbe quitte le fichier, et chaque cause nomme son geste'
   for (const cle of ['easingFunctionSpring', 'easingFunctionCubicBezier', 'CUSTOM_SPRING']) {
     assert.ok(!exporte.content.includes(cle), cle);
   }
-  assert.ok(exporte.warnings.some((message) =>
-    message.includes('« easing/spring »') && message.includes('Choisissez Linear ou Custom bezier')));
-  assert.ok(exporte.warnings.some((message) =>
-    message.includes('« easing/out-of-range »') && message.includes('abscisse')));
+  // Chaque cause dit un fait observé, et non une catégorie du sélecteur de
+  // Figma : un préréglage porte bien une courbe dans Figma, dont l'API ne
+  // publie pas les points.
+  const constat = (nom: string) =>
+    exporte.warnings.find((message) => message.includes(`« easing/${nom} »`)) ?? '';
+  assert.match(constat('spring'), /est un ressort/);
+  assert.match(constat('hold'), /est Hold, qui ne décrit aucune progression/);
+  assert.match(constat('ease-out'), /Figma ne publie pas les points/);
+  assert.match(constat('incomplete'), /n’a pas ses quatre points/);
+  assert.match(constat('out-of-range'), /sort de l’intervalle 0 à 1 en abscisse/);
+  assert.match(constat('spring'), /Choisissez Linear ou Custom bezier/);
+  assert.match(constat('incomplete'), /Reposez la courbe dans Figma/);
 });
 
 test('un alias vers une easing écartée nomme la variable à corriger, pas une absence', async () => {
