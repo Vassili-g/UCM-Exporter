@@ -169,6 +169,8 @@ test('buildLeaf garde le premier mode quand deux noms se normalisent pareil', ()
     pathById: new Map([['v1', 'brand-tokens.primary.default']]),
     espace: 'srgb',
     graisses: new Set(),
+    familles: new Set(),
+    easingsEcartees: new Map(),
   }, []);
 
   // Premier conservé, comme partout ailleurs ; le doublon est signalé une
@@ -202,6 +204,8 @@ test('buildLeaf type un lineheight aliasé sur spacing comme dimension (racine),
     pathById: new Map([['s22', 'sizes.spacing.22'], ['lh', 'layouts.lineheight.base']]),
     espace: 'srgb',
     graisses: new Set(),
+    familles: new Set(),
+    easingsEcartees: new Map(),
   };
 
   assert.deepEqual(buildLeaf(lineheight, layoutsCol, ctx, []), {
@@ -252,6 +256,8 @@ test('un mode homonyme d’Object.prototype reste une marque exportée', () => {
     pathById: new Map([['v1', 'brand.color.primary']]),
     espace: 'srgb',
     graisses: new Set(),
+    familles: new Set(),
+    easingsEcartees: new Map(),
   }, warnings);
 
   // L'index littéral tenait « constructor » pour un mode déjà écrit et laissait
@@ -334,6 +340,7 @@ test('un token de collection « $Brand » ou « {Brand} » se trouve par la réf
       getVariableCollectionByIdAsync: async (id: string) =>
         collections.find((entry) => entry.id === id) ?? null,
     },
+    getLocalTextStylesAsync: async () => [],
   };
 
   try {
@@ -402,15 +409,16 @@ async function documentExporte(options: Parameters<typeof exporterLeFichier>[0] 
   return { exporte, tokens: JSON.parse(exporte.content) };
 }
 
-test('la racine porte la version 1 du format de tokens, écrite une fois et avant les groupes', async () => {
+test('la racine porte la version 2 du format de tokens, écrite une fois et avant les groupes', async () => {
   const { exporte, tokens } = await documentExporte();
 
-  assert.ok(exporte.content.startsWith('{\n  "$extensions":{\n    "com.ucm.formatVersion":1\n  },\n'));
+  assert.ok(exporte.content.startsWith('{\n  "$extensions":{\n    "com.ucm.formatVersion":2\n  },\n'));
   assert.deepEqual(tokens.$extensions, { [EXTENSION_VERSION_TOKENS]: TOKENS_FORMAT_VERSION });
-  assert.deepEqual(etatDuFormatDeTokens(tokens), { etat: 'courante', version: 1 });
+  assert.deepEqual(etatDuFormatDeTokens(tokens), { etat: 'courante', version: 2 });
   assert.equal(exporte.content.split('"$extensions":{\n').length - 1, 1, 'une seule marque, à la racine');
-  // La marque n'est ni un token ni un groupe de plus.
-  assert.equal(indexerTokensDtcg(tokens).size, 40);
+  // La marque n'est ni un token ni un groupe de plus. Six variables `EASING`
+  // du fichier simulé n'ont aucune courbe, et l'export les écarte.
+  assert.equal(indexerTokensDtcg(tokens).size, 52);
 });
 
 test('la marque précède aussi une collection dont le nom est un nombre', async () => {
@@ -500,7 +508,7 @@ test('un alias reste une référence, dans chaque mode, et chaque mode a la form
 
 test('le résultat annonce le module et la version lus dans le fichier produit', async () => {
   const { exporte } = await documentExporte();
-  assert.equal(annonceDuFormat(exporte.content), 'DTCG 2025.10, version 1 du format de tokens');
+  assert.equal(annonceDuFormat(exporte.content), 'DTCG 2025.10, version 2 du format de tokens');
   assert.equal(annonceDuFormat('{}'), null);
   assert.equal(annonceDuFormat('pas du JSON'), null);
 });
@@ -529,9 +537,109 @@ test('une graisse reste une chaîne, inchangée, dès qu’un mode n’est pas u
   assert.deepEqual(typeEtValeurs(tokens.primitives.fontweight.free), ['string', 'Condensed']);
   assert.deepEqual(typeEtValeurs(marque.mixed), ['string', 'Bold', 'Bold', 'Condensed']);
   assert.deepEqual(typeEtValeurs(marque.incomplete), ['string', 'Bold', 'Bold', null]);
-  // Une famille n'est jamais une graisse, même aliasée.
-  assert.deepEqual(typeEtValeurs(tokens.primitives.fontfamily.base), ['string', 'Open Sans']);
-  assert.equal(tokens['brand-tokens'].typography.family.$type, 'string');
+  // Une famille n'est jamais une graisse, même aliasée : elle reçoit son
+  // propre type, décidé par `famillesDeTokens`.
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontfamily.base), ['fontFamily', 'Open Sans']);
+  assert.equal(tokens['brand-tokens'].typography.family.$type, 'fontFamily');
+});
+
+test('une famille prouvée par un text style type toute sa composante d’alias', async () => {
+  const { tokens } = await documentExporte();
+
+  // Un seul text style relie `fontfamily/base` ; `typography/family` l'alias
+  // et reçoit le même type, sans que son nom entre dans la décision.
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontfamily.base), ['fontFamily', 'Open Sans']);
+  assert.deepEqual(typeEtValeurs(tokens['brand-tokens'].typography.family), [
+    'fontFamily',
+    '{primitives.fontfamily.base}',
+    '{primitives.fontfamily.base}',
+    '{primitives.fontfamily.base}',
+  ]);
+});
+
+test('un scope limité à Font family prouve une famille, mode par mode', async () => {
+  const { tokens } = await documentExporte();
+
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontfamily.mono), ['fontFamily', 'Roboto Mono']);
+  assert.deepEqual(typeEtValeurs(tokens['brand-tokens'].typography['family-multi']), [
+    'fontFamily', 'Open Sans', 'Open Sans', 'Roboto Mono',
+  ]);
+});
+
+test('une preuve accompagnée d’un conflit laisse la famille en chaîne, et le dit', async () => {
+  const { exporte, tokens } = await documentExporte();
+
+  // Le même text style relie la variable par `fontFamily` et par `fontStyle` :
+  // la preuve existe, l'usage exclusif non.
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontfamily.conflit), ['string', 'Open Sans']);
+  assert.ok(exporte.warnings.some((message) =>
+    message.includes('« fontfamily/conflit »') && message.includes('deux usages')));
+});
+
+test('un nom de famille sans preuve reste une chaîne, et le nom ne décide jamais', async () => {
+  const { exporte, tokens } = await documentExporte();
+
+  assert.deepEqual(typeEtValeurs(tokens.primitives.fontfamily.unbound), ['string', 'Inter']);
+  assert.ok(exporte.warnings.some((message) =>
+    message.includes('« fontfamily/unbound »') && message.includes('Font family')));
+});
+
+test('une TIMING devient une durée en secondes, sans arrondi ni conversion', async () => {
+  const { tokens } = await documentExporte();
+
+  assert.deepEqual(typeEtValeurs(tokens.primitives.timing.fast), [
+    'duration', { value: 0.20000000298023224, unit: 's' },
+  ]);
+  assert.deepEqual(typeEtValeurs(tokens.primitives.timing.none), [
+    'duration', { value: 0, unit: 's' },
+  ]);
+  // Un alias reste une référence, et porte le type de sa racine.
+  assert.deepEqual(typeEtValeurs(tokens.semantic.motion.duration), [
+    'duration', '{primitives.timing.fast}',
+  ]);
+});
+
+test('une EASING exprimable devient une courbe, ordonnées libres comprises', async () => {
+  const { tokens } = await documentExporte();
+
+  assert.deepEqual(typeEtValeurs(tokens.primitives.easing.linear), ['cubicBezier', [0, 0, 1, 1]]);
+  assert.deepEqual(typeEtValeurs(tokens.primitives.easing.overshoot), [
+    'cubicBezier', [0.34, 1.56, 0.64, 1],
+  ]);
+  assert.deepEqual(typeEtValeurs(tokens['brand-tokens'].easing.brand), [
+    'cubicBezier', [0, 0, 1, 1], [0, 0, 1, 1], [0.4, 0, 0.2, 1],
+  ]);
+  assert.deepEqual(typeEtValeurs(tokens.semantic.motion.easing), [
+    'cubicBezier', '{primitives.easing.overshoot}',
+  ]);
+});
+
+test('une EASING sans courbe quitte le fichier, et chaque cause nomme son geste', async () => {
+  const { exporte, tokens } = await documentExporte();
+  const ecartees = ['ease-out', 'spring', 'hold', 'incomplete', 'out-of-range'];
+
+  for (const nom of ecartees) {
+    assert.equal(tokens.primitives.easing[nom], undefined, nom);
+  }
+  // Un seul mode sans courbe écarte la variable entière.
+  assert.equal(tokens['brand-tokens'].easing.mixed, undefined);
+  // Aucune clé de l'API Figma n'entre dans l'artefact.
+  for (const cle of ['easingFunctionSpring', 'easingFunctionCubicBezier', 'CUSTOM_SPRING']) {
+    assert.ok(!exporte.content.includes(cle), cle);
+  }
+  assert.ok(exporte.warnings.some((message) =>
+    message.includes('« easing/spring »') && message.includes('Choisissez Linear ou Custom bezier')));
+  assert.ok(exporte.warnings.some((message) =>
+    message.includes('« easing/out-of-range »') && message.includes('abscisse')));
+});
+
+test('un alias vers une easing écartée nomme la variable à corriger, pas une absence', async () => {
+  const { exporte, tokens } = await documentExporte();
+
+  assert.deepEqual(typeEtValeurs(tokens.semantic.motion['broken-easing']), ['cubicBezier', null]);
+  assert.ok(exporte.warnings.some((message) =>
+    message.includes('« motion/broken-easing »')
+    && message.includes('« easing/spring », que le fichier de tokens ne publie pas')));
 });
 
 test('une graisse faite de littéraux et d’alias numériques devient un nombre, et l’alias reste une référence', async () => {

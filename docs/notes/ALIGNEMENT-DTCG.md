@@ -2,6 +2,7 @@
 
 **Statut : livré, sauf le Display P3.** Le plugin servi par la Community
 produit la version 1 du format de tokens, et le dépôt consommateur la compile.
+La version 2 la prolonge, et son plan est dans [PLAN-TYPES-DTCG.md](./PLAN-TYPES-DTCG.md).
 Le [plan d'implémentation](./PLAN-ALIGNEMENT-DTCG.md) a ordonné la migration,
 et le [journal](./PREUVES-ALIGNEMENT-DTCG.md) porte ses preuves. La forme
 d'origine reste décrite dans

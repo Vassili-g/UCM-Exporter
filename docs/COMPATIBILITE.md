@@ -108,24 +108,37 @@ lecteur doit pouvoir distinguer les deux sens.
 
 `tokens.json` porte sa version à la racine du document, dans
 `$extensions["com.ucm.formatVersion"]`. C'est un entier positif, et la version
-courante est `1`. Un fichier sans marque est dans la forme d'origine, que le
+courante est `2`. Un fichier sans marque est dans la forme d'origine, que le
 plugin publiait avant la version `1`. [FORMAT.md](./FORMAT.md#partie-2--export-tokens)
-décrit les deux formes.
+décrit ces formes.
 
-Le kit lit la marque avant tout token, et la classe en quatre états :
+Le kit lit la marque avant tout token, et la classe en cinq états :
 
 | Valeur observée | État | Effet sur `ucm check` | Qui corrige |
 |---|---|---|---|
 | marque absente | `origine` | lecture du fichier | personne |
-| `1` | `courante` | lecture du fichier | personne |
-| entier supérieur à `1` | `future` | refus, avant la lecture des tokens | le mainteneur du repository, en mettant à jour les paquets UCM |
+| `2` | `courante` | lecture du fichier | personne |
+| `1` | `ancienne` | lecture du fichier | personne ; le prochain réexport monte la version |
+| entier supérieur à `2` | `future` | refus, avant la lecture des tokens | le mainteneur du repository, en mettant à jour les paquets UCM |
 | toute autre valeur, ou un document ou `$extensions` qui n'est pas un objet | `invalide` | refus, avant la lecture des tokens | le designer, en relançant l'export des tokens |
+
+`VERSIONS_DE_TOKENS_LUES` porte la fenêtre, et elle est énumérée : un entier
+inférieur à la version courante qui n'y figure pas est `invalide`. Une version
+qui cesse d'être lue sort de cette liste, et son retrait est un changement de
+classe 10 comme un autre.
 
 Seule la racine est examinée : une propriété homonyme sous un groupe ne compte
 pas. Le refus s'applique aussi à un repository qui n'a encore aucun contrat,
 parce qu'un fichier de tokens d'une version inconnue ne reçoit pas de bilan
 vert. Une version future n'est jamais présumée lisible, comme un contrat de
 version future.
+
+**L'état `ancienne` ne se voit pas dans le rapport.** Un repository dont le
+fichier attend le prochain réexport reste vert, et son rapport ne se distingue
+pas de celui d'un fichier courant. La fenêtre existe pour que l'ordre de
+publication ci-dessous tienne : entre la mise à jour de la CLI et le réexport,
+le consommateur lit forcément un fichier de la version précédente, et rien
+dans ce délai n'appelle un geste de sa part.
 
 **La marque ne protège pas un lecteur de valeurs.** Style Dictionary ignore
 `$extensions` et ne refuse rien. Resté en version 4, il écrit `[object Object]`
@@ -137,11 +150,19 @@ valeurs avant de fusionner le premier réexport d'une nouvelle version.
 
 1. Les trois paquets npm sortent ensemble, le kit en premier : un kit qui
    connaît la nouvelle version, et une CLI et un adaptateur qui l'épinglent.
-   Sur un fichier d'origine, ils rendent le même verdict qu'avant.
+   Sur un fichier d'origine comme sur un fichier de la version précédente, ils
+   rendent le même verdict qu'avant.
 2. Le repository consommateur met à jour son lecteur de valeurs et la version
    de la CLI que son workflow épingle.
 3. Le plugin qui produit la nouvelle version est publié sur la Community.
 4. Le designer réexporte les tokens.
+
+L'ordre tient parce que la fenêtre de lecture accueille la version précédente.
+Sans elle, l'étape 2 refuserait le fichier encore en place et bloquerait toute
+fusion jusqu'à l'étape 4 ; l'ordre inverse, le plugin d'abord, ferait refuser
+le réexport comme une version future. Aucun des deux ne se rattrape par une
+seule pull request, le producteur et le consommateur vivant dans deux
+repositories.
 
 Les chemins des tokens ne changent pas d'une version à l'autre. Les clés `$value`
 et les références restent les mêmes. Les valeurs changent de forme et la racine

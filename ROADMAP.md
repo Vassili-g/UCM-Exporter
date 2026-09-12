@@ -34,7 +34,7 @@ un composant composé. Couvrir un catalogue entier n'en fait pas partie.
 |---|---|
 | Forme du contrat | Vues exactes publiées sous cinq catalogues de parties, plus un `samples` récursif non normatif. Valeurs neutres élidées, une entrée par ligne sur deux niveaux |
 | Lois du moteur | `packages/plugin/tests/lois.ts` les porte, `exportComponent.test.ts` les applique à chaque contrat fabriqué. Aucune ne cite le nom d'un composant |
-| Export DTCG | Variables locales, alias et modes exportés dans la version 1 du format de tokens : couleurs et dimensions du module `2025.10`, graisses reconnues en nombre, marque de version à la racine. Collisions diagnostiquées. Figma refuse de créer un cycle d'alias |
+| Export DTCG | Variables locales, alias et modes exportés dans la version 2 du format de tokens : couleurs, dimensions, durées et courbes du module `2025.10`, graisses reconnues en nombre, familles prouvées typées, marque de version à la racine. Collisions diagnostiquées, et une easing sans courbe cubique écartée sous un constat. Figma refuse de créer un cycle d'alias |
 | Structure portable | Flex, wrap, grille, arbres récursifs, tailles, bornes, typographie, icônes et composition, tous couverts par le vocabulaire du contrat |
 | Position et rotation | Un calque hors du flux est placé par `constraints` et `inset`, sa `rotation` écrite en vocabulaire CSS |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlées |
@@ -174,6 +174,13 @@ compile avec Style Dictionary 5.5.3. Le fichier déposé par le bundle publié a
 l'empreinte de celui du build de développement, et le CSS produit est identique
 à l'octet à celui de la forme d'origine. Les preuves sont dans le
 [journal](./docs/notes/PREUVES-ALIGNEMENT-DTCG.md).
+
+La version 2 ajoute les trois types que la version 1 laissait en `string` :
+`duration`, `cubicBezier` et `fontFamily`. `@ucm-kit/core` 0.1.26 lit les
+versions 1 et 2, ce qui laisse un consommateur monter sa CLI avant que le
+plugin ne produise la nouvelle forme. Le plan, sa revue et le journal des
+preuves sont dans [docs/notes/](./docs/notes/). La publication Community du
+plugin et le réexport restent à faire.
 
 ### 6. Passer la recette externe
 

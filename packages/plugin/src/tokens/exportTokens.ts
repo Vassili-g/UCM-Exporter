@@ -16,9 +16,13 @@ import {
   normalizeName,
   poidsDeGraisse,
 } from '@ucm-kit/core/format';
+import { famillesDeTokens } from './familles';
+import type { LiaisonsDeTextStyles } from './familles';
 import { graissesNumeriques } from './graisses';
+import { courbeDeToken, dureeDeToken, easingsSansCourbe } from './mouvement';
 import type { CouleurDeToken, DimensionDeToken } from '@ucm-kit/core/format';
 import { collisionWarnings, firstVariableAlias, indexVariables } from '../variables';
+import type { VariableIndex } from '../variables';
 import { serializeJson } from '../contract/serializeJson';
 import { noterLesParties, partiesDe, pointDe, pousserSansNode } from '../contract/localisation';
 import type { PointACorriger } from '../contract/localisation';
@@ -84,6 +88,21 @@ export function isUnitless(path: string, scopes: readonly VariableScope[] = []):
   return path.split('.').some((segment) => UNITLESS_GROUPS.has(segment.replace(/-/g, '')));
 }
 
+/**
+ * Refuse un membre de `VariableResolvedDataType` que ce moteur ne traite pas.
+ *
+ * Le paramètre est typé `never` : ajouter un septième membre aux typings Figma
+ * produit une erreur de compilation ici, avant qu'une valeur de l'API puisse
+ * entrer telle quelle dans `tokens.json`.
+ */
+function typeInconnu(resolvedType: never): never {
+  void resolvedType;
+  throw new TokensExportError(
+    'Ce fichier contient un type de variable que cette version du plugin ne sait pas '
+    + 'exporter. Mettez à jour le plugin depuis la Figma Community, puis relancez l’analyse.',
+  );
+}
+
 /** Traduit un type de variable Figma en type DTCG. */
 export function dtcgType(
   resolvedType: VariableResolvedDataType,
@@ -97,9 +116,14 @@ export function dtcgType(
       return isUnitless(path, scopes) ? 'number' : 'dimension';
     case 'BOOLEAN':
       return 'boolean';
-    default:
+    case 'STRING':
       return 'string';
+    case 'TIMING':
+      return 'duration';
+    case 'EASING':
+      return 'cubicBezier';
   }
+  return typeInconnu(resolvedType);
 }
 
 /** L'espace colorimétrique qu'une couleur déclare. */
@@ -135,20 +159,36 @@ export function formatValue(
   scopes: readonly VariableScope[],
   espace: EspaceColorimetrique,
 ): unknown {
-  if (resolvedType === 'COLOR') return couleurDtcg(raw as RGB | RGBA, espace);
-  if (resolvedType === 'FLOAT') {
-    const value = raw as number;
-    const dimension: DimensionDeToken = { value, unit: 'px' };
-    return isUnitless(path, scopes) ? value : dimension;
+  switch (resolvedType) {
+    case 'COLOR':
+      return couleurDtcg(raw as RGB | RGBA, espace);
+    case 'FLOAT': {
+      const value = raw as number;
+      const dimension: DimensionDeToken = { value, unit: 'px' };
+      return isUnitless(path, scopes) ? value : dimension;
+    }
+    case 'TIMING':
+      return dureeDeToken(raw as number);
+    case 'EASING': {
+      // `easingsSansCourbe` écarte du fichier toute variable dont un mode n'a
+      // pas de courbe : sur une feuille exportée, le refus ne se produit pas.
+      // Le `null` garde la fonction totale sans laisser sortir un objet de
+      // l'API Figma.
+      const resultat = courbeDeToken(raw);
+      return 'courbe' in resultat ? resultat.courbe : null;
+    }
+    case 'BOOLEAN':
+    case 'STRING':
+      return raw;
   }
-  return raw; // BOOLEAN et STRING passent tels quels.
+  return typeInconnu(resolvedType);
 }
 
 /**
  * Index partagés entre les étapes de l'export (id → collection/variable/chemin),
- * l'espace colorimétrique du document, lu une fois par export, et les graisses
- * `STRING` que `graissesNumeriques` a décidées `number` avant la première
- * feuille.
+ * l'espace colorimétrique du document, lu une fois par export, et les deux
+ * ensembles de variables `STRING` décidés avant la première feuille :
+ * `graissesNumeriques` puis `famillesDeTokens`, dans cet ordre.
  */
 export type ExportContext = {
   collectionById: Map<string, VariableCollection>;
@@ -156,6 +196,9 @@ export type ExportContext = {
   pathById: Map<string, string>;
   espace: EspaceColorimetrique;
   graisses: ReadonlySet<string>;
+  familles: ReadonlySet<string>;
+  /** Variables `EASING` retirées du fichier, par identifiant, avec leur nom Figma. */
+  easingsEcartees: ReadonlyMap<string, string>;
 };
 
 /**
@@ -189,6 +232,25 @@ function resolveRoot(variable: Variable, ctx: ExportContext): Variable {
  * - collection multi-mode (ex. Brand Tokens, 1 mode = 1 marque) → tous les
  *   modes sous `$extensions["com.ucm.modes"]`, rien n'est perdu.
  */
+/**
+ * Le type d'une feuille, et la précédence entre les deux décisions prises sur
+ * des variables `STRING`.
+ *
+ * `graissesNumeriques` passe en premier, et `famillesDeTokens` ne reçoit que
+ * les variables qu'elle n'a pas retenues : les deux ensembles sont donc
+ * disjoints par construction, et aucune variable ne peut recevoir deux types.
+ */
+function typeDeFeuille(
+  variable: Variable,
+  root: Variable,
+  rootPath: string,
+  ctx: ExportContext,
+): string {
+  if (ctx.graisses.has(variable.id)) return 'number';
+  if (ctx.familles.has(variable.id)) return 'fontFamily';
+  return dtcgType(root.resolvedType, rootPath, root.scopes);
+}
+
 export function buildLeaf(
   variable: Variable,
   collection: VariableCollection,
@@ -200,7 +262,7 @@ export function buildLeaf(
   const root = resolveRoot(variable, ctx);
   const rootPath = pathById.get(root.id) ?? path;
   const graisse = ctx.graisses.has(variable.id);
-  const $type = graisse ? 'number' : dtcgType(root.resolvedType, rootPath, root.scopes);
+  const $type = typeDeFeuille(variable, root, rootPath, ctx);
 
   const valueForMode = (modeId: string): unknown => {
     const raw = variable.valuesByMode[modeId];
@@ -218,7 +280,17 @@ export function buildLeaf(
     const alias = firstVariableAlias(raw);
     if (alias) {
       const target = pathById.get(alias.id);
-      if (!target) {
+      // Une cible écartée pour son easing existe encore dans Figma : dire
+      // qu'elle est introuvable enverrait le designer chercher une variable
+      // supprimée, au lieu de la corriger là où elle est.
+      const ecartee = ctx.easingsEcartees.get(alias.id);
+      if (!target && ecartee !== undefined) {
+        pousserSansNode(warnings, `Variable « ${variable.name} »`, {
+          manque: `elle cite la variable « ${ecartee} », que le fichier de tokens ne publie pas.`,
+          impact: 'Le développeur n’aura pas sa valeur.',
+          action: `Choisissez Linear ou Custom bezier pour « ${ecartee} », puis réexportez.`,
+        });
+      } else if (!target) {
         pousserSansNode(warnings, `Variable « ${variable.name} »`, {
           manque: 'elle cite une variable introuvable.',
           impact: 'Le développeur n’aura pas sa valeur.',
@@ -413,6 +485,125 @@ export async function etatDesTokensDuFichier(): Promise<EtatDesTokens> {
   return etatDesTokens({ collections: collections.length, variables, modes: modes.size });
 }
 
+/**
+ * Champs de chaîne d'un text style autres que la famille.
+ *
+ * Les cinq autres champs de `VariableBindableTextField` mesurent une longueur
+ * et ne reçoivent pas de variable `STRING`. Une liaison par l'un de ces deux
+ * champs est au contraire un usage de chaîne qui contredit la famille.
+ */
+const CHAMPS_DE_CHAINE = new Set(['fontStyle', 'fontWeight']);
+
+/**
+ * Les liaisons des text styles locaux, par identifiant de variable.
+ *
+ * `getLocalTextStylesAsync` ne rend que les styles du fichier. Un text style
+ * publié par une bibliothèque lie les variables de cette bibliothèque, qui ne
+ * sont pas dans cet export : son absence ici ne prouve donc rien contre une
+ * variable locale, et laisse seulement la famille sans preuve.
+ */
+async function liaisonsDesTextStyles(warnings: string[]): Promise<LiaisonsDeTextStyles> {
+  const parFontFamily = new Set<string>();
+  const parAutreChampDeChaine = new Set<string>();
+
+  let styles: TextStyle[];
+  try {
+    styles = await figma.getLocalTextStylesAsync();
+  } catch {
+    pousserSansNode(warnings, `Fichier « ${figma.root.name} »`, {
+      manque: 'ses text styles n’ont pas pu être lus.',
+      impact: 'Les familles typographiques resteront sans type dans le fichier de tokens.',
+      action: 'Relancez l’analyse ; si l’erreur persiste, signalez-la au mainteneur du '
+        + 'plugin.',
+    });
+    return { parFontFamily, parAutreChampDeChaine };
+  }
+
+  for (const style of styles) {
+    for (const [champ, liaison] of Object.entries(style.boundVariables ?? {})) {
+      const alias = firstVariableAlias(liaison);
+      if (!alias) continue;
+      if (champ === 'fontFamily') parFontFamily.add(alias.id);
+      else if (CHAMPS_DE_CHAINE.has(champ)) parAutreChampDeChaine.add(alias.id);
+    }
+  }
+  return { parFontFamily, parAutreChampDeChaine };
+}
+
+/**
+ * Écarte du fichier les variables `EASING` qu'un mode empêche de publier, et
+ * nomme chacune au designer.
+ *
+ * Douze des quatorze easings de Figma ne décrivent aucune courbe cubique que
+ * l'API expose. Publier leur nom sous un type qui promet une courbe, ou une
+ * courbe inventée à leur place, tromperait le développeur ; refuser l'export
+ * entier priverait le fichier de toutes ses couleurs pour une animation. La
+ * feuille sort donc du fichier, comme une variable écartée pour collision, et
+ * un alias qui la vise retombe sur la politique des cibles absentes.
+ */
+function ecarterLesEasingsSansCourbe(
+  index: VariableIndex,
+  ctx: Pick<ExportContext, 'collectionById' | 'variableById' | 'pathById'>,
+  warnings: string[],
+): Map<string, string> {
+  const ecartees = new Map<string, string>();
+  for (const [id, modes] of easingsSansCourbe(ctx)) {
+    const variable = ctx.variableById.get(id);
+    const chemin = ctx.pathById.get(id);
+    if (!variable || chemin === undefined) continue;
+    const collection = ctx.collectionById.get(variable.variableCollectionId);
+
+    for (const { modeId, cause } of modes) {
+      const mode = collection?.modes.find((candidat) => candidat.modeId === modeId)?.name ?? '';
+      pousserSansNode(warnings, `Variable « ${variable.name} »`, cause === 'abscisse'
+        ? {
+          manque: `la courbe du mode « ${mode} » sort de l’intervalle 0 à 1 en abscisse.`,
+          impact: 'Le développeur n’aura pas ce token.',
+          action: 'Ramenez les deux poignées de la courbe entre 0 et 1 en abscisse, puis '
+            + 'réexportez.',
+        }
+        : {
+          manque: `l’easing du mode « ${mode} » n’est pas une courbe de Bézier.`,
+          impact: 'Le développeur n’aura pas ce token.',
+          action: 'Choisissez Linear ou Custom bezier dans Figma, puis réexportez.',
+        });
+    }
+
+    index.pathById.delete(id);
+    index.variableByPath.delete(chemin);
+    ecartees.set(id, variable.name);
+  }
+  return ecartees;
+}
+
+/** Nomme au designer les familles que l'export n'a pas pu typer. */
+function constatsDesFamilles(
+  decision: { ambigues: string[]; probables: string[] },
+  variableById: ReadonlyMap<string, Variable>,
+  warnings: string[],
+): void {
+  for (const id of decision.ambigues) {
+    const nom = variableById.get(id)?.name;
+    if (!nom) continue;
+    pousserSansNode(warnings, `Variable « ${nom} »`, {
+      manque: 'elle sert de famille typographique et d’un autre usage de texte.',
+      impact: 'Le développeur la recevra sans son type de famille.',
+      action: 'Séparez les deux usages en deux variables dans Figma, puis réexportez.',
+    });
+  }
+  for (const id of decision.probables) {
+    const nom = variableById.get(id)?.name;
+    if (!nom) continue;
+    pousserSansNode(warnings, `Variable « ${nom} »`, {
+      manque: 'son nom annonce une famille typographique, sans qu’un text style ni un scope '
+        + 'l’établisse.',
+      impact: 'Le développeur la recevra sans son type de famille.',
+      action: 'Reliez-la au champ Font family d’un text style, ou limitez son scope à Font '
+        + 'family, puis réexportez.',
+    });
+  }
+}
+
 /** Exporte toutes les variables locales en DTCG sans aplatir leurs alias. */
 export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<TokensExport> {
   annoncer('Lecture des variables du fichier…');
@@ -437,12 +628,32 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
     warnings.push(noterLesParties(warnings, point));
   }
   avertissementDeProfil(figma.root, warnings);
+
+  // Les easings sans courbe sortent de l'index avant les deux décisions de
+  // type et avant l'arbre : un alias qui vise l'une d'elles trouve alors une
+  // cible absente, et reçoit l'avertissement que cette politique prévoit déjà.
+  const easingsEcartees = ecarterLesEasingsSansCourbe(
+    index,
+    { collectionById, variableById, pathById },
+    warnings,
+  );
+
+  const graisses = graissesNumeriques({ collectionById, variableById, pathById });
+  const familles = famillesDeTokens(
+    { collectionById, variableById, pathById },
+    graisses,
+    await liaisonsDesTextStyles(warnings),
+  );
+  constatsDesFamilles(familles, variableById, warnings);
+
   const ctx: ExportContext = {
     collectionById,
     variableById,
     pathById,
     espace: espaceDuProfil(figma.root.documentColorProfile),
-    graisses: graissesNumeriques({ collectionById, variableById, pathById }),
+    graisses,
+    familles: familles.familles,
+    easingsEcartees,
   };
 
   // Parcourir l'index plutôt que la liste brute : une variable écartée pour

@@ -570,14 +570,24 @@ const marquer = (version) => ({ $extensions: { "com.ucm.formatVersion": version 
 
 test("tokens de la version courante : même verdict qu'un fichier d'origine", () => {
   const origine = verdict();
-  const courante = verdict({ tokens: marquer(1) });
+  const courante = verdict({ tokens: marquer(2) });
 
   assert.equal(courante.bloquant, false);
   assert.equal(courante.rapport, origine.rapport);
 });
 
+test("tokens d'une version ancienne : lus comme la version courante, sans mention", () => {
+  // La fenêtre accueille la version 1, et le rapport n'en dit rien : un
+  // repository qui attend le réexport du plugin reste vert, et rien ne
+  // distingue son rapport de celui d'un fichier courant.
+  const ancienne = verdict({ tokens: marquer(1) });
+
+  assert.equal(ancienne.bloquant, false);
+  assert.equal(ancienne.rapport, verdict().rapport);
+});
+
 test("tokens d'une version future : refus avant tout token, et le geste revient au développeur", () => {
-  const { bloquant, bilans, rapport, terminal } = verdict({ tokens: marquer(2) });
+  const { bloquant, bilans, rapport, terminal } = verdict({ tokens: marquer(3) });
 
   assert.equal(bloquant, true);
   assert.deepEqual(bilans, [], "aucun contrat n'a été analysé contre ce fichier");
@@ -585,8 +595,8 @@ test("tokens d'une version future : refus avant tout token, et le geste revient 
     rapport,
     /^## ❌ `src\/tokens\/tokens\.json` utilise une version du format de tokens que ce repository ne lit pas$/m,
   );
-  assert.match(rapport, /porte la version 2 du format de tokens/);
-  assert.match(rapport, /lisent la version 1/);
+  assert.match(rapport, /porte la version 3 du format de tokens/);
+  assert.match(rapport, /lisent la version 2/);
   assert.match(rapport, /Un développeur doit mettre à jour les paquets UCM du repository/);
   assert.match(rapport, /La fusion reste bloquée\./);
   assert.doesNotMatch(rapport, /Exporter les tokens/, "un réexport ne corrige pas une version future");
@@ -620,7 +630,7 @@ test("marque de version invalide : refus, et le geste revient au designer", () =
 });
 
 test("une marque posée sous un groupe n'est pas lue", () => {
-  const tokens = { couleurs: { $extensions: { "com.ucm.formatVersion": 2 }, ...TOKENS.couleurs } };
+  const tokens = { couleurs: { $extensions: { "com.ucm.formatVersion": 3 }, ...TOKENS.couleurs } };
   const { bloquant, rapport } = verdict({ tokens });
 
   assert.equal(bloquant, false);
@@ -628,7 +638,7 @@ test("une marque posée sous un groupe n'est pas lue", () => {
 });
 
 test("tokens d'une version future, aucun contrat encore : le refus précède l'état de démarrage", () => {
-  const racine = preparerRepo({ tokens: marquer(2) });
+  const racine = preparerRepo({ tokens: marquer(3) });
   try {
     const { bloquant, rapport } = controlerRepository(racine, { configuration: CONFIGURATION });
     assert.equal(bloquant, true, "un fichier de tokens illisible ne reçoit pas de bilan vert");

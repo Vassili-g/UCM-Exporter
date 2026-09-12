@@ -232,7 +232,7 @@ Attendu :
 
 1. le plugin annonce « Prêt à publier dans `tokens.json` » et dit d'où vient ce
    chemin ;
-2. sous le résumé des tokens, il annonce « DTCG 2025.10, version 1 du format de
+2. sous le résumé des tokens, il annonce « DTCG 2025.10, version 2 du format de
    tokens » ;
 3. après publication, il affiche un lien vers une pull request ;
 4. sur GitHub, la pull request contient un seul fichier, `tokens.json`, et son

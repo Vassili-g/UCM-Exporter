@@ -271,3 +271,49 @@ déjà : le contrat n'a pas changé. Ce qui distingue les deux est le résultat 
 l'analyse, qui annonce « DTCG 2025.10, version 1 du format de tokens » sous le
 résumé des tokens, et l'en-tête de la pull request, qui annonce « Version du
 format de tokens : `1` ». Un fichier sans marque vient du bundle antérieur.
+
+### Version 2
+
+Le changement des valeurs relève de la **classe 10**. Le verdict rendu à un
+consommateur change aussi, ce qui relève de la **classe 6** et se publie en
+semver de paquet.
+
+1. **Une variable `TIMING` devient une durée**, `{ value, unit }` sous
+   `$type: "duration"`, avec l'unité `s`. Figma compte en secondes, et le
+   nombre est recopié sans conversion ni arrondi.
+2. **Une variable `EASING` exprimable devient une courbe**,
+   `[x1, y1, x2, y2]` sous `$type: "cubicBezier"`. `LINEAR` donne
+   `[0, 0, 1, 1]`, et un `CUSTOM_CUBIC_BEZIER` donne ses points.
+3. **Une famille prouvée devient `fontFamily`**, sa valeur restant le nom que
+   Figma publie. La preuve est une liaison `fontFamily` d'un text style local
+   ou un scope `FONT_FAMILY` seul, et elle vaut pour toute la composante
+   d'alias.
+4. **La marque de la racine vaut `2`.**
+
+**Ce qui ne change pas** : les chemins des tokens, leurs alias, les noms de
+modes sous `com.ucm.modes`, les couleurs, les dimensions et les graisses de la
+version 1. Aucune référence d'un contrat ne cesse de résoudre, et
+`contractVersion` ne bouge pas.
+
+**Ce qui casse.** Trois points, et chacun a son geste.
+
+Une variable `EASING` que douze des quatorze easings de Figma décrivent,
+préréglages nommés, ressorts et `HOLD` compris, n'a aucune courbe cubique dans
+l'API : cette variable quitte le fichier sous un constat qui nomme son mode.
+La version 1 la publiait en `string` avec l'objet brut de l'API Figma. Le
+designer choisit **Linear** ou **Custom bezier**, puis réexporte.
+
+Un lecteur de valeurs sans transform de durée écrit `[object Object]` pour
+chaque feuille `duration` : le groupe `css` de Style Dictionary 5.5.3 n'en
+porte aucun, son `time/seconds` filtrant sur le type historique `time`. Le
+mainteneur du repository enregistre un transform qui rend `${value}${unit}`
+avant de fusionner le premier réexport.
+
+Un lecteur de valeurs qui reconnaissait une famille par un segment de chemin
+lui applique désormais aussi le transform standard `fontFamily/css`, qui pose
+ses propres apostrophes : la déclaration sort avec deux niveaux de guillemets,
+et le navigateur descend au repli sans rien signaler. Le mainteneur filtre sur
+`$type` avant de fusionner le premier réexport.
+
+La version 1 reste lue par le kit, sous l'état `ancienne` et sans mention dans
+le rapport.

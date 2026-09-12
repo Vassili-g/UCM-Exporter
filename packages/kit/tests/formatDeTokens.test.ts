@@ -1,5 +1,5 @@
 /**
- * La version du format de tokens : où elle se lit, et les quatre états qu'elle
+ * La version du format de tokens : où elle se lit, et les cinq états qu'elle
  * donne à un fichier.
  *
  * `etatDuFormatDeTokens` est l'unique lecture de la marque. Le contrôle du
@@ -13,6 +13,7 @@ import test from 'node:test';
 import {
   EXTENSION_VERSION_TOKENS,
   TOKENS_FORMAT_VERSION,
+  VERSIONS_DE_TOKENS_LUES,
   etatDuFormatDeTokens,
 } from '../src/format/tokens';
 import type { DocumentDeTokens, GroupeDeTokens } from '../src/format/tokens';
@@ -20,9 +21,17 @@ import * as porte from '@ucm-kit/core/format';
 
 const avecMarque = (valeur: unknown) => ({ $extensions: { [EXTENSION_VERSION_TOKENS]: valeur }, a: {} });
 
-test('la version courante est 1, et sa marque vit sous com.ucm.formatVersion', () => {
-  assert.equal(TOKENS_FORMAT_VERSION, 1);
+test('la version courante est 2, et sa marque vit sous com.ucm.formatVersion', () => {
+  assert.equal(TOKENS_FORMAT_VERSION, 2);
   assert.equal(EXTENSION_VERSION_TOKENS, 'com.ucm.formatVersion');
+});
+
+test('la fenêtre de lecture est explicite, et contient la version courante', () => {
+  // Une fenêtre qui se déduirait de la version courante accueillerait toute
+  // version inférieure, y compris une forme que plus aucun lecteur ne sait
+  // lire. La liste dit ce qu'elle accueille, et rien d'autre.
+  assert.deepEqual([...VERSIONS_DE_TOKENS_LUES], [1, 2]);
+  assert.ok(VERSIONS_DE_TOKENS_LUES.includes(TOKENS_FORMAT_VERSION));
 });
 
 test('un fichier sans marque est dans la forme d’origine', () => {
@@ -36,16 +45,20 @@ test('un fichier sans marque est dans la forme d’origine', () => {
   });
 });
 
-test('la marque 1 est la version courante', () => {
-  assert.deepEqual(etatDuFormatDeTokens(avecMarque(1)), { etat: 'courante', version: 1 });
+test('la marque 2 est la version courante', () => {
+  assert.deepEqual(etatDuFormatDeTokens(avecMarque(2)), { etat: 'courante', version: 2 });
   assert.deepEqual(etatDuFormatDeTokens(avecMarque(TOKENS_FORMAT_VERSION)), {
     etat: 'courante',
     version: TOKENS_FORMAT_VERSION,
   });
 });
 
+test('la marque 1 est une version ancienne, que la fenêtre accueille encore', () => {
+  assert.deepEqual(etatDuFormatDeTokens(avecMarque(1)), { etat: 'ancienne', version: 1 });
+});
+
 test('un entier supérieur est une version future, jamais présumée lisible', () => {
-  assert.deepEqual(etatDuFormatDeTokens(avecMarque(2)), { etat: 'future', version: 2 });
+  assert.deepEqual(etatDuFormatDeTokens(avecMarque(3)), { etat: 'future', version: 3 });
   assert.deepEqual(etatDuFormatDeTokens(avecMarque(40)), { etat: 'future', version: 40 });
 });
 
@@ -72,28 +85,28 @@ test('un document qui n’est pas un objet est invalide', () => {
 
 test('seule la racine est lue : une marque sous un groupe ne compte pas', () => {
   assert.deepEqual(
-    etatDuFormatDeTokens({ couleurs: { $extensions: { [EXTENSION_VERSION_TOKENS]: 2 } } }),
+    etatDuFormatDeTokens({ couleurs: { $extensions: { [EXTENSION_VERSION_TOKENS]: 3 } } }),
     { etat: 'origine' },
   );
   assert.deepEqual(
     etatDuFormatDeTokens({
-      $extensions: { [EXTENSION_VERSION_TOKENS]: 1 },
-      couleurs: { $extensions: { [EXTENSION_VERSION_TOKENS]: 2 } },
+      $extensions: { [EXTENSION_VERSION_TOKENS]: 2 },
+      couleurs: { $extensions: { [EXTENSION_VERSION_TOKENS]: 3 } },
     }),
-    { etat: 'courante', version: 1 },
+    { etat: 'courante', version: 2 },
   );
 });
 
 test('une marque héritée du prototype n’est pas une marque', () => {
-  const extensions = Object.create({ [EXTENSION_VERSION_TOKENS]: 2 });
+  const extensions = Object.create({ [EXTENSION_VERSION_TOKENS]: 3 });
   assert.deepEqual(etatDuFormatDeTokens({ $extensions: extensions }), { etat: 'origine' });
-  const document = Object.create({ $extensions: { [EXTENSION_VERSION_TOKENS]: 2 } });
+  const document = Object.create({ $extensions: { [EXTENSION_VERSION_TOKENS]: 3 } });
   assert.deepEqual(etatDuFormatDeTokens(document), { etat: 'origine' });
 });
 
 test('les types publics portent la marque à la racine, et nulle part ailleurs', () => {
   const document: DocumentDeTokens = {
-    $extensions: { [EXTENSION_VERSION_TOKENS]: 1 },
+    $extensions: { [EXTENSION_VERSION_TOKENS]: 2 },
     couleurs: {
       rouge: {
         $value: { colorSpace: 'srgb', components: [1, 0, 0], alpha: 1 },
@@ -101,9 +114,14 @@ test('les types publics portent la marque à la racine, et nulle part ailleurs',
         $extensions: { 'com.ucm.modes': { clair: '{couleurs.rouge}' } },
       },
     },
+    mouvement: {
+      rapide: { $value: { value: 0.2, unit: 's' }, $type: 'duration' },
+      sortie: { $value: [0, 0, 0.58, 1], $type: 'cubicBezier' },
+      police: { $value: 'Open Sans', $type: 'fontFamily' },
+    },
   };
   // @ts-expect-error : un groupe ne porte pas de marque de version.
-  const groupe: GroupeDeTokens = { $extensions: { [EXTENSION_VERSION_TOKENS]: 1 } };
+  const groupe: GroupeDeTokens = { $extensions: { [EXTENSION_VERSION_TOKENS]: 2 } };
   assert.ok(document && groupe);
 });
 
@@ -112,6 +130,7 @@ test('la porte publique @ucm-kit/core/format expose la lecture de la marque et l
   // lecteurs passent par elle, jamais par le chemin du source.
   assert.equal(porte.TOKENS_FORMAT_VERSION, TOKENS_FORMAT_VERSION);
   assert.equal(porte.EXTENSION_VERSION_TOKENS, EXTENSION_VERSION_TOKENS);
-  assert.deepEqual(porte.etatDuFormatDeTokens(avecMarque(2)), { etat: 'future', version: 2 });
+  assert.deepEqual(porte.etatDuFormatDeTokens(avecMarque(3)), { etat: 'future', version: 3 });
+  assert.deepEqual(porte.etatDuFormatDeTokens(avecMarque(1)), { etat: 'ancienne', version: 1 });
   assert.deepEqual(porte.etatDuFormatDeTokens({}), { etat: 'origine' });
 });

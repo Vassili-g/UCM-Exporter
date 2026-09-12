@@ -1,345 +1,461 @@
-# Les types DTCG restants : sources Figma, mesures et plan
+# Plan des types DTCG restants
 
-> Statut : proposé, rien n'est engagé. Cette note traite ce que
-> [le plan d'alignement](./PLAN-ALIGNEMENT-DTCG.md#périmètre-fermé) a laissé
-> dehors : le typage DTCG de `fontFamily`, les types composés `duration`,
-> `cubicBezier`, `strokeStyle`, `border`, `gradient`, `shadow` et `transition`,
-> et les variables Figma `EASING` et `TIMING`. Elle se lit avec
-> [l'état des lieux](./ALIGNEMENT-DTCG.md) de la version 1 du format de tokens.
+> Statut : engagé. Les décisions sont prises, le moteur produit la version 2,
+> et les paquets la lisent. Restent la publication Community du plugin et le
+> réexport. Cette note complète l'[état des lieux](./ALIGNEMENT-DTCG.md) et
+> s'appuie sur les preuves de la
+> [version 1](./PREUVES-ALIGNEMENT-DTCG.md) ; celles de la version 2 sont dans
+> son [journal](./PREUVES-TYPES-DTCG.md). La [revue](./REVUE-TYPES-DTCG.md)
+> corrige huit points de ce plan, et sa section 7 dit ce que
+> l'implémentation a encore changé.
 
-## 1. Ce que la recherche établit
+## 1. Résultat visé
 
-### 1.1. La source Figma de chaque type
+La version 2 traite trois types qui ont une source dans les variables locales :
 
-La commande « Export tokens » publie **toutes les variables locales**. Le type
-d'une variable Figma est `BOOLEAN`, `COLOR`, `EASING`, `FLOAT`, `STRING` ou
-`TIMING` (`VariableResolvedDataType`, typings `@figma/plugin-typings` 1.138.0).
-Aucun type de variable ne porte une bordure, une ombre, un dégradé ni une
-transition : ces objets sont des styles Figma, ou des propriétés de calque.
+- une variable `TIMING` devient un token `duration` ;
+- une variable `EASING` devient un token `cubicBezier` quand Figma fournit une
+  courbe exprimable sans approximation ;
+- une variable `STRING` devient un token `fontFamily` quand une liaison ou un
+  scope établit cet usage sans conflit.
 
-| Type DTCG | Source Figma | Fidélité possible |
-|---|---|---|
-| `fontFamily` | variable `STRING` | exacte, si le type de la variable est établi autrement que par son nom |
-| `duration` | variable `TIMING`, un nombre de secondes | exacte |
-| `cubicBezier` | variable `EASING`, un objet `MotionEasing` | partielle : seuls `CUSTOM_CUBIC_BEZIER` et `LINEAR` ont un équivalent |
-| `shadow` | `EffectStyle.effects`, via `getLocalEffectStylesAsync()` | exacte pour `DROP_SHADOW` et `INNER_SHADOW` |
-| `gradient` | `PaintStyle.paints`, via `getLocalPaintStylesAsync()` | partielle : DTCG ne porte ni la direction ni le genre du dégradé |
-| `strokeStyle` | `dashPattern` et `strokeCap` d'un calque | aucun objet Figma ne groupe ces deux propriétés |
-| `border` | couleur, `strokeWeight` et `dashPattern` d'un calque | aucun objet Figma ne les groupe |
-| `transition` | aucune | Figma ne publie aucun objet qui réunisse durée, délai et courbe |
+Le fichier ne doit plus recopier un objet `MotionEasing` sous `$type: "string"`.
+Chaque feuille publiée doit annoncer le type de sa valeur. Une valeur que DTCG
+ne sait pas représenter bloque l'export avant la sérialisation ; le plugin ne
+fabrique ni courbe, ni famille, ni token de remplacement.
 
-Trois précisions tirées des typings et de la documentation Figma :
+`shadow`, `gradient`, `strokeStyle`, `border` et `transition` restent hors de
+la version 2. Leur ajout changerait la portée de la commande, aujourd'hui
+limitée aux variables locales. Il demande une décision distincte sur l'identité
+et le nom des tokens issus de styles ou de calques.
 
-- une variable `TIMING` porte un nombre de secondes, et ce nombre garde le
-  bruit du flottant simple précision de Figma. La documentation de `reactions`
-  en donne un exemple, `duration: 0.20000000298023224` ;
-- `easingFunctionCubicBezier` n'est renseigné que pour le type
-  `CUSTOM_CUBIC_BEZIER`, et `easingFunctionSpring` que pour `CUSTOM_SPRING`
-  ([Transition](https://developers.figma.com/docs/plugins/api/Transition/)).
-  Figma ne publie pas les points de contrôle de ses préréglages nommés, et
-  `GENTLE`, `QUICK`, `BOUNCY` et `SLOW` sont des ressorts, qu'aucune courbe de
-  Bézier n'exprime ;
-- `ColorStop.boundVariables.color` et `DropShadowEffect.boundVariables`
-  existent. Les parties d'un dégradé ou d'une ombre peuvent donc rester des
-  références DTCG, sans aplatir une chaîne d'alias.
+## 2. Corrections apportées au premier plan
 
-### 1.2. Ce que le consommateur rend aujourd'hui
+La revue du schéma figé, des typings Figma 1.138.0, du moteur et du déploiement
+de la version 1 relève cinq points qui changent le plan.
 
-Mesure sur Style Dictionary `5.5.3`, la dernière version publiée, avec le
-groupe de transforms `css` et `usesDtcg: true`. Un fichier de tokens portant
-une feuille de chaque type a été compilé, et voici sa sortie.
+### 2.1. Une courbe ne borne que ses abscisses
 
-| Type publié | Déclaration CSS obtenue |
+Un `cubicBezier` vaut `[x1, y1, x2, y2]`. DTCG borne `x1` et `x2` à
+`[0, 1]`. `y1` et `y2` acceptent tout nombre réel. Le contrôle prévu sur les
+quatre coordonnées aurait donc refusé des courbes valides, dont les courbes
+avec dépassement.
+
+### 2.2. `null` ne représente pas une easing
+
+`$value: null` sous `$type: "cubicBezier"` est invalide. Cette valeur signifie
+déjà, dans le dialecte UCM, qu'un mode manque ou qu'un alias vise une variable
+absente. La réutiliser pour un ressort confondrait deux causes et augmenterait
+le dialecte au moment où le lot veut le réduire.
+
+Une easing non exprimable doit donc suivre une politique décidée avant le code.
+La recommandation D1 bloque l'export et conserve la promesse selon laquelle la
+commande publie toutes les variables locales.
+
+### 2.3. Un scope Figma n'est pas une preuve exclusive
+
+`Variable.scopes` limite les variables affichées dans les sélecteurs de Figma.
+L'API autorise encore une liaison dans un autre champ. `FONT_FAMILY` constitue
+une intention explicite ; il ne prouve pas que la variable ne sert qu'à une
+famille.
+
+Une liaison `TextStyle.boundVariables.fontFamily` prouve un usage, mais pas son
+exclusivité. Le même graphe d'alias peut aussi alimenter `fontStyle` ou du texte.
+Le typage doit donc relever les preuves positives et les conflits.
+
+### 2.4. Le graphe des familles se propage dans les deux sens
+
+Si `semantic.family`, reliée à un text style, cite
+`primitives.family`, typer seulement la première produit une référence
+`fontFamily` vers une feuille `string`. À l'inverse, une variable faite d'alias
+vers une famille doit recevoir le même type.
+
+La décision porte sur la composante connexe des alias entre variables `STRING`,
+pas sur une marche depuis la feuille courante vers sa cible. Un conflit sur un
+seul membre rend toute la composante ambiguë.
+
+### 2.5. Le refus de la version 1 empêche le déploiement par étapes
+
+L'ordre de publication de `COMPATIBILITE.md` exige que le lecteur précède le
+producteur. Si le nouveau kit refuse la version 1, la mise à jour de la CLI met
+la CI du Playground en échec avant le réexport. Si le plugin version 2 passe en
+premier, l'ancienne CLI refuse la version 2 comme future.
+
+Le workflow actuel ne sait pas déposer la CLI, la configuration du consommateur
+et `tokens.json` dans une seule pull request. La version 2 doit donc lire les
+versions 1 et 2 pendant la migration. La section D3 fixe cette fenêtre.
+
+## 3. Sources disponibles
+
+Les variables `EASING` et `TIMING` ont été ajoutées récemment à l'API. Le type
+`MotionEasing` appartient encore à l'API Motion bêta. Les liens officiels sont
+[VariableResolvedDataType](https://developers.figma.com/docs/plugins/api/VariableResolvedDataType/),
+[Motion](https://developers.figma.com/docs/plugins/api/Motion/) et le
+[module Format DTCG 2025.10](https://www.designtokens.org/TR/2025.10/format/).
+
+| Type DTCG | Source Figma nommée | Information conservée | Limite |
+|---|---|---|---|
+| `fontFamily` | variable `STRING`, liaisons de text styles et scopes | nom de famille et alias | une liaison ou un scope n'établit pas l'exclusivité |
+| `duration` | variable `TIMING` | nombre de secondes et alias | la précision et les bornes réelles doivent être mesurées dans Figma |
+| `cubicBezier` | variable `EASING` | `CUSTOM_CUBIC_BEZIER`, et `LINEAR` par définition | les préréglages nommés n'exposent pas leurs points ; ressort et `HOLD` ne sont pas des courbes cubiques |
+| `shadow` | `EffectStyle.effects` | parties d'une ombre et certaines liaisons | DTCG ne porte ni `blendMode`, ni `visible`, ni `showShadowBehindNode` ; un style peut contenir d'autres effets |
+| `gradient` | `PaintStyle.paints` | couleurs, positions et certaines liaisons | DTCG ne porte ni le genre, ni la géométrie du dégradé |
+| `strokeStyle` | propriétés d'un calque | tirets et terminaison | aucune source locale nommée ne forme un token autonome |
+| `border` | propriétés d'un calque | couleur, largeur et style | aucune source locale nommée ne groupe ces valeurs |
+| `transition` | réactions de prototype | durée et easing dans certains cas | aucun objet nommé ne forme un token ; le délai dépend du déclencheur |
+
+Cette table distingue l'existence d'une donnée Figma de l'existence d'une
+source de token. Un calque peut porter les parties d'une bordure sans donner à
+cette bordure une identité stable dans `tokens.json`.
+
+### 3.1. Défaut du producteur actuel
+
+`dtcgType` range `EASING` et `TIMING` dans sa branche `default`, donc en
+`string`. `formatValue` recopie ensuite leur valeur brute. Une `TIMING` de
+`0.2` reçoit ainsi `$type: "string"`, et une `EASING` laisse entrer l'objet
+`MotionEasing` dans l'artefact. Le type contredit la valeur dans les deux cas.
+
+Le mock `fichierDeVariables.ts` et le fichier réel du Playground ne contiennent
+aucun de ces types. Les 610 tests du plugin passent donc sans exercer cette
+branche. La correction doit ajouter un cas de régression qui refuse les clés
+`type`, `easingFunctionCubicBezier` et `easingFunctionSpring` sous la valeur
+d'un token de mouvement.
+
+### 3.2. Mesure du consommateur
+
+La mesure existante utilise Style Dictionary 5.5.3, le groupe `css` et
+`usesDtcg: true`.
+
+| Type | Sortie CSS mesurée |
 |---|---|
-| `fontFamily` chaîne | `'Open Sans'` |
-| `fontFamily` tableau | `'Open Sans', sans-serif` |
-| `duration` `{ value, unit }` | `[object Object]` |
+| `fontFamily` | `'Open Sans'` |
+| `duration` | `[object Object]` |
 | `cubicBezier` | `cubic-bezier(0, 0, 0.58, 1)` |
 | `strokeStyle` chaîne | `solid` |
-| `strokeStyle` objet | `dashed`, le repli que le module prévoit |
+| `strokeStyle` objet | `dashed`, repli du transform |
 | `border` | `1px solid rgb(0% 0% 0%)` |
+| `shadow` | `0px 2px 4px 0px rgb(0% 0% 0% / 0.25)` |
 | `gradient` | `[object Object],[object Object]` |
-| `shadow`, un ou plusieurs | `0px 2px 4px 0px rgb(0% 0% 0% / 0.25)` |
 | `transition` | `[object Object] cubic-bezier(0, 0, 0.58, 1) [object Object]` |
 
-Trois types sortent illisibles. Le transform standard `time/seconds` filtre sur
-`$type === "time"`, un nom que le module `2025.10` n'emploie pas, et laisse
-donc une `duration` sans traitement. `transition/css/shorthand` porte dans son
-code le commentaire `TODO: add support for DTCG duration object value type`, et
-concatène l'objet. Aucun transform de dégradé n'existe dans la bibliothèque.
+Le transform standard `time/seconds` filtre sur le type historique `time`.
+`transition/css/shorthand` concatène encore les objets de durée. Style
+Dictionary ne fournit aucun transform CSS de dégradé. Ces résultats justifient
+le transform de durée en version 2 et maintiennent `gradient` et `transition`
+hors de la tranche.
 
-Une `duration` et une `transition` demandent donc un transform propre au
-Playground, comme la famille en demande déjà un pour son repli.
+Sur le Playground, le transform local de famille ajoute déjà des guillemets et
+le repli. Après passage de la feuille au type `fontFamily`, le transform
+standard ajoute ses propres apostrophes. La sortie devient
+`"'Open Sans'", sans-serif`. Le lecteur typographique produit aussi huit
+erreurs sur trois contrats tant qu'il attend seulement `string` pour
+`fontFamily`.
 
-### 1.3. Le défaut courant des variables `EASING` et `TIMING`
+## 4. Décisions
 
-`dtcgType` range `EASING` et `TIMING` dans son cas par défaut, `string`, et
-`formatValue` recopie la valeur brute. Un export du fichier de variables de
-test, complété de quatre variables de mouvement, produit ceci :
+### D1. Easing non exprimable, décidée
 
-```json
-"easing": {
-  "out": { "$value": { "type": "EASE_OUT" }, "$type": "string" },
-  "bouncy": {
-    "$value": { "type": "CUSTOM_SPRING", "easingFunctionSpring": { "bounce": 0.4 } },
-    "$type": "string"
-  }
-},
-"duration": { "fast": { "$value": 0.2, "$type": "string" } }
-```
+Cas concernés : `EASE_IN`, `EASE_OUT`, `EASE_IN_AND_OUT`, les variantes
+`*_BACK`, `GENTLE`, `QUICK`, `BOUNCY`, `SLOW`, `CUSTOM_SPRING`, `HOLD`, un
+`CUSTOM_CUBIC_BEZIER` sans points, une abscisse hors de `[0, 1]` ou une
+coordonnée non finie. Douze des quatorze membres de `MotionEasing.type` sont
+concernés, et ce sont les entrées du sélecteur de Figma.
 
-Trois écarts se lisent dans cette sortie. Un objet d'extraction Figma entre
-dans l'artefact, avec ses noms de champs. Le `$type` annoncé contredit la
-valeur publiée, pour les deux types de variable. Et
-[FORMAT.md](../FORMAT.md#partie-2--export-tokens) décrit ces deux types comme
-« publiées en `string` », ce que le code ne fait que pour le `$type`.
+**Décision : écarter la variable du fichier, et le dire.** La feuille n'est pas
+écrite, un constat nomme la variable et le mode en cause, et le reste de
+l'export part normalement. Un alias vers cette variable suit la politique
+existante des cibles absentes, et son message nomme la variable à corriger
+plutôt qu'une absence. L'action demande de choisir `LINEAR` ou une courbe
+cubique personnalisée exprimable, puis de réexporter.
 
-Aucun test ne l'attrape : `packages/plugin/tests/fichierDeVariables.ts` ne
-contient ni variable `EASING` ni variable `TIMING`, et le corpus du Playground
-n'en contient pas non plus. Le plugin publié produit donc déjà cette sortie sur
-un fichier Figma qui emploie des variables de mouvement.
+Bloquer l'export entier a été écarté après mesure : un seul ressort aurait
+coûté les 721 feuilles de couleurs et de dimensions du fichier réel, et le
+moteur n'agit ainsi nulle part ailleurs. Une collision de chemin écarte déjà la
+variable sous un avertissement, et cette décision suit la même règle.
 
-### 1.4. L'autorité qui manquait au typage de la famille
+La copie du nom du préréglage sous `$type: "string"`, une table de courbes non
+publiée par Figma, une extension UCM pour les ressorts et `$value: null` sont
+écartés.
 
-[L'état des lieux](./ALIGNEMENT-DTCG.md#4-pourquoi-différer-le-typage-de-la-famille)
-diffère `fontFamily` pour deux raisons. La première est l'absence d'autorité :
-aucune table ne vérifie un nom de famille, et le seul scope Figma disponible,
-`FONT_FAMILY`, n'est pas obligatoire. La seconde est le transform
-`fontFamily/css-quote` du Playground.
+### D2. Autorité d'une famille, décidée
 
-Une troisième autorité existe et n'a pas été considérée : **les liaisons des
-text styles locaux**. `TextStyle.boundVariables.fontFamily` désigne la variable
-reliée à la police d'un style, et `VariableBindableTextField` réserve ce champ
-à une famille. Le moteur lit déjà ces liaisons pour le contrat
-(`extractVariantTypography.ts`, champ `fontFamily`). La commande de tokens ne
-lit pas les text styles, et `getLocalTextStylesAsync()` les rend.
+**Décision : décider une composante entière du graphe d'alias.** Une
+composante de variables `STRING` devient `fontFamily` si elle porte au moins une
+preuve positive et aucun conflit.
 
-Cette autorité est exacte, et elle se combine au graphe d'alias de la même
-façon que `graissesNumeriques` combine la table des graisses.
+Preuves positives :
 
-La seconde raison est mesurée. Sur le `tokens.json` du Playground, typer la
-seule feuille `primitives.fontfamily.base` en `fontFamily` change une ligne du
-CSS produit :
+1. un text style local lie l'un de ses membres par `fontFamily` ;
+2. un membre déclare uniquement le scope `FONT_FAMILY` parmi les scopes de
+   chaîne.
 
-```diff
--  --primitives-fontfamily-base: "Open Sans", sans-serif;
-+  --primitives-fontfamily-base: "'Open Sans'", sans-serif;
-```
+Conflits :
 
-Le transform standard `fontFamily/css` pose les apostrophes, puis
-`fontFamily/css-quote` pose les guillemets et le repli. Le navigateur cherche
-alors une famille dont le nom contient les apostrophes. Le geste de correction
-est de réduire le transform du Playground au seul repli, qui est la décision de
-l'application, et de laisser le transform standard poser les guillemets.
+1. un text style local lie un membre par un autre champ de chaîne, tel que
+   `fontStyle` ;
+2. un membre déclare `TEXT_CONTENT`, `FONT_STYLE` ou `ALL_SCOPES` en plus de
+   `FONT_FAMILY` ;
+3. une liaison quitte l'index des variables locales ou change de
+   `resolvedType`.
 
-Le coût côté kit est également mesuré. `TYPES_TYPOGRAPHIQUES` de
-`typography-token-types.mjs` attend `["string"]` pour `fontFamily`. Avec la
-feuille typée, `erreursTypesTypographiques` rend 8 erreurs bloquantes réparties
-sur 3 des 4 contrats du Playground, toutes de la forme « attendu `string`, reçu
-`fontFamily` ». Une entrée de table élargie à `["string", "fontFamily"]` les
-supprime.
+Une composante sans preuve reste `string`. Une composante avec preuve et
+conflit reste `string` et produit un constat sur les variables concernées. Le
+geste demande de séparer les usages dans Figma. Le nom `fontfamily` ne décide
+jamais le type ; il sert seulement à signaler une famille probable restée sans
+preuve.
 
-## 2. Le périmètre proposé
+Cette politique dégrade proprement sur le fichier réel. Sans text style local
+qui relie la famille, aucune preuve n'est trouvée, la composante reste `string`,
+et le constat part au designer. H0 ne décide donc pas si le code s'écrit ; il
+dit ce que le fichier réel obtient.
 
-Les huit types se répartissent en trois groupes, selon la source dont ils
-disposent.
+### D3. Unité et compatibilité, décidées
 
-**Groupe A, engageable.** `fontFamily`, `duration` et `cubicBezier` ont une
-source parmi les variables locales, donc à l'intérieur de la portée déclarée de
-la commande. Les sections 3 et 4 les traitent.
+Une `TIMING` littérale devient `{ "value": <valeur Figma>, "unit": "s" }`.
+Le moteur ne convertit pas en millisecondes et n'arrondit pas. DTCG accepte les
+unités `s` et `ms` ; garder l'unité source rend un second export identique au
+premier.
 
-**Groupe B, derrière une porte de produit.** `shadow` et `gradient` ont une
-source Figma exacte, les effect styles et les paint styles, hors des variables.
-Les publier élargit la portée de la commande, ce qu'aucun besoin n'a encore
-demandé. Trois conditions s'ajoutent : un nom de token pour un style, que
-`joinTokenPath` ne sait pas fabriquer ; la perte de la direction et du genre
-d'un dégradé, que DTCG ne porte pas et dont il faudrait avertir ; et
-l'illisibilité du dégradé chez le consommateur, mesurée en 1.2. Une quatrième
-condition tient au contrat : `unsupportedProperties.ts` signale aujourd'hui un
-effet et une peinture non unie comme non portés, et aucun champ du contrat ne
-cite un token d'ombre ou de dégradé. Publier ces tokens sans étendre le contrat
-livrerait des tokens qu'aucun contrat ne référence.
+La version 2 lit :
 
-**Groupe C, refusé.** `border`, `transition` et `strokeStyle` n'ont aucune
-source. Les construire demanderait de grouper des tokens voisins par une
-convention de nommage, que le format n'a pas et que le designer devrait
-apprendre. Le rendu chez le consommateur reste par ailleurs illisible pour
-`transition`.
+- la forme d'origine sans marque ;
+- la version 1 sous l'état `ancienne` ;
+- la version 2 sous l'état `courante`.
 
-## 3. Les décisions
+Une version supérieure reste `future`. Une marque non entière, non positive ou
+mal placée reste `invalide`. La liste des versions marquées lisibles est
+explicite ; le lecteur ne suppose pas que toute version inférieure reste
+compatible.
 
-Quatre décisions ne se déduisent ni du code ni de la documentation Figma. Les
-trois premières restent à prendre, et une recommandation accompagne chacune. La
-quatrième est prise.
+L'état `ancienne` ne bloque pas le contrôle. Il demande un réexport et nomme la
+version lue. La version 3 décidera si la version 1 quitte la fenêtre.
 
-### 3.1. Ce qu'une variable `EASING` non exprimable publie
+### D4. Styles et types composés, décidé pour cette tranche
 
-Un ressort, un préréglage nommé autre que `LINEAR`, `HOLD` et une courbe dont
-un point de contrôle sort de l'intervalle `[0, 1]` n'ont pas d'équivalent
-`cubicBezier`. Quatre sorties sont possibles : recopier le nom du préréglage en
-chaîne, retirer la variable du fichier, poser une table de correspondance, ou
-publier `$value: null` sous `$type: "cubicBezier"` avec un avertissement.
+La version 2 n'exporte aucun style local et ne construit aucun token depuis un
+calque. `shadow`, `gradient`, `strokeStyle`, `border` et `transition` feront
+l'objet d'une note distincte si un consommateur les demande.
 
-Recommandation : `$value: null` et un avertissement. Cette forme existe déjà
-pour un alias dont la cible est absente, le schéma juge alors la feuille non
-conforme, et le chemin du token reste dans le fichier. La table de
-correspondance est écartée pour la raison de la section 1.1 : Figma ne publie
-pas les points de contrôle de ses préréglages.
+Cette note devra d'abord décider :
 
-### 3.2. L'unité d'une `duration`
+- l'identité et le chemin d'un token de style ;
+- le traitement des parties que DTCG ne porte pas ;
+- la référence de ces tokens depuis les contrats ;
+- le rendu du consommateur sur chaque plateforme visée.
 
-Figma fournit des secondes, avec le bruit du flottant. DTCG accepte `s` et
-`ms`.
+## 5. Conception cible
 
-Recommandation : `{ "value": <le nombre de Figma>, "unit": "s" }`, sans
-conversion ni arrondi. La version 1 a déjà tranché ce principe pour les canaux
-d'une couleur, et tout arrondi appartient au transform du consommateur.
+### 5.1. Conversion exhaustive des types Figma
 
-### 3.3. Ce qui décide qu'une `STRING` est une famille
+`dtcgType` et `formatValue` traitent les six membres de
+`VariableResolvedDataType` sans branche `default`. Un nouveau membre des typings
+doit provoquer une erreur TypeScript ou un refus explicite à l'exécution. Cette
+borne empêche la copie brute d'un prochain objet Figma.
 
-Recommandation : deux autorités, et le nom du chemin n'en est pas une.
+La plage déclarée `@figma/plugin-typings: ^1.68.0` ne promet plus une version
+qui ignore `EASING` et `TIMING`. Son minimum devient la version vérifiée en H0 ;
+le lockfile en garde la résolution exacte.
 
-1. la variable est reliée au champ `fontFamily` d'un text style local ;
-2. la variable déclare le scope `FONT_FAMILY` sans déclarer `ALL_SCOPES` ;
-3. chacun de ses modes porte un alias vers une variable déjà décidée `fontFamily`.
+Le kit ajoute des types dédiés :
 
-Une `STRING` rangée sous un segment `fontfamily` que ni 1 ni 2 ni 3 ne décide
-reste `string`, et l'export avertit le designer avec le geste qui la décide.
-Cette règle a la forme de celle des graisses, et pour la même raison : une
-valeur libre ne se type pas sur un nom.
+- `FamilleDeToken = string` ;
+- `DureeDeToken = { value: number; unit: "s" }` ;
+- `CourbeDeToken = [number, number, number, number]`.
 
-### 3.4. Ce que la version 2 fait d'un fichier en version 1, décidé
+Ces types décrivent la sortie du producteur, comme `DimensionDeToken` limite
+déjà son unité à `px`. Le schéma DTCG figé vérifie le domaine plus large de la
+norme, dont les durées en `ms` et les familles de repli en tableau.
+`ValeurDeToken` et `TokenDeDocument` reçoivent les trois formes produites et
+leurs `$type`.
 
-Un fichier de la version 1 devient `invalide` sous la version 2, et son
-repository réexporte. Aucun état `ancienne` n'est ajouté, et
-`etatDuFormatDeTokens` garde sa règle : un entier positif inférieur à la
-version courante est invalide. Le format n'a aucun consommateur à migrer.
+### 5.2. Familles, telle qu'écrite
 
-Une conséquence reste à traiter dans le code. `refusDuFormatDeTokens` écrit
-« Le plugin n'écrit jamais cette forme » et `constatDeMarqueInvalide` écrit que
-la valeur lue « n'est pas une version du format de tokens ». Les deux phrases
-sont fausses pour une marque qu'une version précédente du plugin a écrite. Le
-geste demandé reste le bon, et seul le constat change. L5 porte cette
-correction.
+Un module `packages/plugin/src/tokens/familles.ts` reçoit les variables, les
+collections et les liaisons des text styles. Il construit les arêtes d'alias de
+tous les modes, calcule les composantes et rend trois ensembles : familles,
+ambiguïtés et familles probables sans preuve.
 
-## 4. Le plan, lot par lot
+`handleExportTokens` appelle `figma.getLocalTextStylesAsync()` une fois. Une
+erreur de lecture ne transforme aucune variable en famille ; elle produit le
+constat prévu par la politique D2.
 
-Chaque lot se ferme sur une preuve enregistrable : une sortie de test, un
-`diff` de CSS ou un relevé de compte. L'ordre suit celui de
-[COMPATIBILITE.md](../COMPATIBILITE.md#lordre-dune-nouvelle-version-du-format-de-tokens) :
-les paquets d'abord, le consommateur ensuite, le plugin en dernier.
+Le lecteur typographique accepte `["fontFamily", "string"]` quelle que soit la
+version. Il tourne dans la CI du repository consommateur et bloque la fusion :
+exiger `fontFamily` refuserait un fichier qu'une variable `STRING` sans liaison
+locale rend légitime, et le designer n'aurait aucun geste correctif. La
+régression du producteur se tient ailleurs, par un test du plugin qui exige
+qu'une famille prouvée sorte en `fontFamily`. Ce verdict relève de la classe 6
+de [COMPATIBILITE.md](../COMPATIBILITE.md).
 
-### L1. Le kit accepte les nouveaux types
+### 5.3. Mouvement
 
-- `typography-token-types.mjs` : `fontFamily: ["string", "fontFamily"]`.
-- `packages/kit/src/format/tokens.ts` : `$type` de `TokenDeDocument` reçoit
-  `fontFamily`, `duration` et `cubicBezier` ; `ValeurDeToken` reçoit les deux
-  formes de valeur correspondantes.
-- `TOKENS_FORMAT_VERSION` reste à `1` dans ce lot, et `etatDuFormatDeTokens`
-  ne change pas.
-- Test du kit : un contrat dont la famille est typée ne produit plus d'erreur.
+Un module `packages/plugin/src/tokens/mouvement.ts` porte les deux conversions :
 
-Preuve : la mesure de la section 1.4 rejouée, 8 erreurs puis 0.
+- `TIMING` recopie le nombre dans une durée en secondes ;
+- `EASING` convertit `LINEAR` en `[0, 0, 1, 1]` et recopie les points de
+  `CUSTOM_CUBIC_BEZIER` après validation.
 
-### L2. Le kit, la CLI et l'adaptateur sont publiés
+La validation exige quatre nombres finis. Elle borne seulement `x1` et `x2`.
+Elle examine tous les modes avant la première feuille. Une cible d'alias locale
+est suivie sans aplatir la référence publiée ; une cible absente suit la
+politique existante des alias absents.
 
-Publication et vérification sur npm dans l'ordre `@ucm-kit/core`,
-`@ucm-kit/cli`, `@ucm-kit/adapter-typescript`. Sur un fichier d'origine et sur
-un fichier de version 1, le verdict ne change pas.
+### 5.4. Version
 
-### L3. Le moteur décide le type d'une famille
+`TOKENS_FORMAT_VERSION` reste l'unique numéro produit. Son passage à `2`, la
+fenêtre de lecture, les diagnostics, le changelog et les tests entrent dans le
+même lot atomique. Aucun commit publiable ne doit annoncer la version 1 avec
+les nouvelles valeurs, ni la version 2 avec les anciennes.
 
-- Nouveau module `packages/plugin/src/tokens/familles.ts`, jumeau de
-  `graisses.ts` : une décision par variable, sur tous ses modes et tout son
-  graphe d'alias, mémorisée, bornée sur une boucle.
-- `handleExportTokens` lit `figma.getLocalTextStylesAsync()` une fois par
-  export et passe l'ensemble des variables reliées à une police au contexte.
-- `ExportContext` reçoit `familles`, à côté de `graisses`.
-- Avertissement pour une `STRING` sous un segment `fontfamily` qu'aucune
-  autorité ne décide, avec le geste de la section 3.3.
-- `fichierDeVariables.ts` reçoit un text style qui relie une famille, une
-  famille décidée par son scope, une famille qu'aucune autorité ne décide, et
-  une chaîne d'alias de familles. `exporterLeFichier` complète son faux
-  `figma` de `getLocalTextStylesAsync`.
+### 5.5. Playground
 
-### L4. Le moteur publie `duration` et `cubicBezier`
+Le transform de famille doit accepter les deux formats pendant la migration :
 
-- `dtcgType` : `TIMING` donne `duration`, `EASING` donne `cubicBezier`.
-- `formatValue` : une `TIMING` donne `{ value, unit: "s" }` ; une `EASING` de
-  type `CUSTOM_CUBIC_BEZIER` donne `[x1, y1, x2, y2]` ; une `EASING` de type
-  `LINEAR` donne `[0, 0, 1, 1]`.
-- La décision d'exprimabilité d'une `EASING` porte sur tous les modes et sur le
-  graphe d'alias, comme celle d'une graisse : un seul mode inexprimable rend la
-  variable entière inexprimable.
-- Tout autre cas donne `$value: null` et l'avertissement de la section 3.1 : un
-  ressort, `HOLD`, un préréglage nommé, et une abscisse hors de `[0, 1]`.
-- `fichierDeVariables.ts` reçoit une `TIMING`, une `EASING` de chaque cas
-  ci-dessus, et une `EASING` aliasée.
+- sous `string`, il conserve le rendu actuel ;
+- sous `fontFamily`, le transform standard `fontFamily/css` pose les guillemets
+  et le transform local ajoute seulement le repli `sans-serif`.
 
-Preuve : `conformiteDtcg.test.ts` rejoué. La liste `DIALECTE` perd la famille
-et gagne les feuilles d'easing inexprimables, et le compte des feuilles
-conformes monte.
+Un transform `duration/css` rend `${value}${unit}`. Le transform standard
+`time/seconds` de Style Dictionary 5.5.3 filtre sur le type historique `time`
+et ne traite pas `duration`. `cubicBezier/css` couvre déjà la courbe.
 
-### L5. La version 2 est écrite
+Les transforms locaux filtrent sur `$type` et non sur un segment du chemin dès
+que la version 2 fournit le type. Le support de la version 1 garde une branche
+de compatibilité isolée et testée.
 
-- `TOKENS_FORMAT_VERSION` passe à `2`, dans `packages/kit/src/format/tokens.ts`
-  et nulle part ailleurs.
-- `annonceDuFormat` annonce la version lue dans le fichier produit.
-- `refusDuFormatDeTokens` et `constatDeMarqueInvalide` cessent d'affirmer que
-  le plugin n'écrit jamais la marque lue, pour la raison de la section 3.4. Le
-  constat nomme la version lue et la version courante, et le geste reste le
-  réexport.
-- `CHANGELOG-FORMAT.md` reçoit l'entrée, classée en classe 10.
-- `COMPATIBILITE.md` reçoit la ligne de la version 2, et sa table des états dit
-  qu'un fichier de la version 1 est refusé.
+## 6. Matrice de vérification
 
-### L6. Le Playground lit les nouvelles valeurs
+### Familles
 
-- `fontFamily/css-quote` est réduit au seul repli `, sans-serif`, le transform
-  standard `fontFamily/css` posant les guillemets.
-- Nouveau transform `duration/css`, qui écrit `${value}${unit}`, puisque
-  `time/seconds` ne filtre pas ce type.
-- `cubicBezier` ne demande aucun transform.
-- Le `diff` du CSS produit avant et après le réexport est la preuve du lot.
-
-### L7. Les documents suivent
-
-- `FORMAT.md`, Partie 2 : la table des types reçoit `fontFamily`, `duration` et
-  `cubicBezier` ; le paragraphe du dialecte perd `EASING` et `TIMING` et gagne
-  le cas d'une easing inexprimable.
-- `SPEC.md`, Partie 2 : l'autorité du type d'une famille, la lecture des text
-  styles, et la décision d'exprimabilité d'une easing.
-- `AGENTS.md`, groupe « Tokens et variables » : deux invariants nommant
-  `familles.ts` et le module d'easing comme uniques autorités, et la carte du
-  code reçoit les deux fichiers.
-- `docs/README.md` référence cette note.
-
-### L8. Groupe B, si la porte s'ouvre
-
-Non planifié en détail tant que la décision de la section 2 n'est pas prise. Le
-lot commencerait par le nommage d'un token de style et par la décision sur la
-direction d'un dégradé.
-
-## 5. Les portes humaines
-
-| Porte | Ce qui est demandé |
+| Cas | Attendu en version 2 |
 |---|---|
-| H1 | Les trois décisions ouvertes de la section 3 |
-| H2 | L'ouverture ou le refus du groupe B |
-| H3 | La publication du plugin sur la Community, après L6 |
-| H4 | Le réexport depuis Figma, et la relecture du CSS produit |
+| liaison directe `fontFamily` | toute la composante d'alias vaut `fontFamily` |
+| scope précis `FONT_FAMILY` | toute la composante vaut `fontFamily` |
+| alias vers une famille | source et cible portent le même type |
+| famille reliée vers une primitive | la primitive reçoit aussi `fontFamily` |
+| littéraux différents selon les modes | valeurs inchangées, type commun |
+| preuve et usage `fontStyle` | composante `string`, constat actionnable |
+| segment `fontfamily` sans preuve | `string`, constat actionnable |
+| ordre des variables, collections et modes inversé | document sémantiquement identique |
+| boucle d'alias | terminaison garantie, diagnostic existant conservé |
 
-## 6. Les limites des mesures
+### Mouvement
 
-- Les mesures de Style Dictionary portent sur un fichier de tokens écrit à la
-  main, pas sur un export réel. Aucun fichier Figma disponible ne contient de
-  variable `EASING` ou `TIMING`.
-- Le corpus du Playground compte 721 feuilles et une seule `STRING`, la
-  famille. Il n'établit pas la généralité de la règle de la section 3.3 : une
-  seule variable de famille y sera décidée.
-- Le scope réel de `primitives.fontfamily.base` dans le fichier Figma n'est pas
-  connu, `tokens.json` ne portant pas les scopes. La première autorité de la
-  section 3.3 devra être vérifiée sur ce fichier avant L3.
-- Aucune vérification visuelle n'est prévue par ce plan. Le typage de la
-  famille change une déclaration CSS, et le rendu de la police se juge à l'œil
-  sur la pull request qui porte le réexport.
+| Cas | Attendu en version 2 |
+|---|---|
+| `TIMING` à `0`, fraction et bruit flottant | même nombre, unité `s` |
+| alias `TIMING` | référence conservée, type `duration` |
+| `LINEAR` | `[0, 0, 1, 1]` |
+| `CUSTOM_CUBIC_BEZIER` valide | `[x1, y1, x2, y2]` sans arrondi |
+| `y1` ou `y2` hors de `[0, 1]` | accepté si le nombre est fini |
+| `x1` ou `x2` hors de `[0, 1]` | export bloqué selon D1 |
+| préréglage opaque, ressort ou `HOLD` | export bloqué selon D1 |
+| mode exprimable et mode non exprimable | export bloqué avant sérialisation |
+| coordonnée absente, `NaN` ou infinie | export bloqué avant sérialisation |
+| nouvel objet Figma inconnu | aucun objet brut dans `tokens.json` |
+
+### Version et consommateur
+
+| Contrôle | Attendu |
+|---|---|
+| forme d'origine | verdict actuel conservé |
+| version 1 sous le kit version 2 | `ancienne`, contrôle non bloquant |
+| version 2 | `courante` |
+| version 3 | `future`, contrôle bloqué avant l'index |
+| marque invalide | `invalide`, contrôle bloqué avant l'index |
+| contrat version 1, famille `string` | accepté |
+| contrat version 2, famille `string` | erreur de type typographique |
+| CSS de la version 1 avant et après préparation du Playground | identique à l'octet |
+| CSS de la version 2 | aucune apostrophe doublée, aucun `[object Object]` |
+| deux exports du même fichier | identiques à l'octet |
+
+## 7. Lots
+
+### H0. Mesure Figma avant code
+
+Sur une copie du fichier :
+
+1. relever les scopes et les liaisons de `primitives.fontfamily.base` ;
+2. créer une `TIMING`, une `EASING` de chaque préréglage, une courbe
+   personnalisée, un ressort et une easing multi-mode ;
+3. relever `valuesByMode` et vérifier les champs réellement présents ;
+4. confirmer que les valeurs et leurs alias sont lisibles par le plugin
+   Community et par un build de développement.
+
+Preuve : un relevé JSON anonymisé, la version des typings et la version du
+plugin. Une différence avec les typings arrête le plan et corrige d'abord cette
+section.
+
+### L1. Implémentation atomique de la version 2
+
+Ce lot porte ensemble :
+
+- les types du kit et le lecteur typographique sensible à la version ;
+- la borne déclarée de `@figma/plugin-typings` ;
+- `familles.ts` et `mouvement.ts` ;
+- la conversion exhaustive des types Figma ;
+- l'état `ancienne` et la fenêtre explicite `1 | 2` ;
+- le passage de `TOKENS_FORMAT_VERSION` à `2` ;
+- les diagnostics décidés en D1 et D2 ;
+- les autorités `FORMAT.md`, `SPEC.md`, `COMPATIBILITE.md`,
+  `CHANGELOG-FORMAT.md` et `AGENTS.md`.
+
+Preuve : toute la matrice de la section 6 passe. Le schéma DTCG accepte chaque
+feuille publiée de type `fontFamily`, `duration` ou `cubicBezier`. La liste du
+dialecte ne gagne aucune feuille.
+
+### L2. Audit avant publication
+
+- `npm test`, `npm run typecheck`, `npm run build` et `git diff --check` ;
+- mutations des abscisses, des ordonnées, du graphe de familles et de la
+  fenêtre de versions ;
+- deux exports par profil colorimétrique, comparés à l'octet ;
+- compilation Style Dictionary d'un fichier synthétique version 2 ;
+- vérification qu'aucune clé Figma comme `easingFunctionSpring` n'entre dans
+  l'artefact.
+
+Preuve : commandes, codes de sortie, comptes et empreintes dans un nouveau
+journal. Le journal de la version 1 reste fermé.
+
+### L3. Publication des lecteurs
+
+Publier `@ucm-kit/core`, puis `@ucm-kit/cli`, puis
+`@ucm-kit/adapter-typescript`. Installer les archives et les paquets servis dans
+un consommateur vierge. Le même binaire doit accepter le fichier version 1 du
+Playground et un fixture version 2.
+
+### L4. Préparation du Playground
+
+Mettre à jour la CLI épinglée et les transforms sur une branche du Playground.
+Le `tokens.json` reste en version 1 pendant ce lot. Son CSS doit rester identique
+à l'octet. Compiler ensuite un fichier version 2 synthétique et vérifier la
+famille, la durée, la courbe et les références.
+
+### H1. Publication du plugin
+
+Le mainteneur relit le manifeste des paquets, les preuves de L2 à L4 et les
+diagnostics visibles. Il autorise ensuite la publication Community du bundle
+construit et empreinté.
+
+### L5. Réexport et fermeture
+
+Le plugin Community dépose lui-même `tokens.json` version 2. La CI du Playground
+doit lire le fichier avec les paquets publiés, produire le CSS attendu et
+résoudre toutes les références des contrats. La recette compare la police et
+les animations concernées dans Figma et dans le Playground.
+
+La version 1 reste lisible après cette fermeture. Son retrait demande une autre
+version du kit et une mesure des repositories qui la portent encore.
+
+## 8. Limites des preuves actuelles
+
+- Le fichier Figma réel ne contient encore aucune variable `EASING` ou
+  `TIMING`. Les mesures actuelles portent sur des objets ajoutés au mock.
+- Le corpus du Playground ne contient qu'une famille. Il ne couvre ni un conflit
+  de scopes, ni une famille multi-mode, ni deux graphes indépendants.
+- Le scope et les liaisons réels de `primitives.fontfamily.base` ne sont pas
+  enregistrés dans `tokens.json`.
+- Les sorties Style Dictionary mesurées ne remplacent pas une vérification du
+  comportement dans le navigateur.
+- L'API Motion est bêta. H0 doit être rejoué si la version de
+  `@figma/plugin-typings` change avant L1.

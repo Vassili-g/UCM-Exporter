@@ -444,10 +444,68 @@ vient ensuite et publie chaque littéral reconnu en poids. Un alias reste une
 référence et ne devient jamais le nombre qu'il résout. La table ne s'élargit
 pas pour cette commande : la chaîne `"700"` n'y figure pas et reste `string`.
 
+**Le type d'une famille `STRING` se décide sur une composante, pas sur une
+feuille.** `figma.getLocalTextStylesAsync()` est appelé une fois par export, et
+ses liaisons entrent dans la décision. Le graphe est celui des alias entre
+variables `STRING`, arêtes de tous les modes confondues, restreint à celles que
+`graissesNumeriques` n'a pas retenues. Chaque composante connexe reçoit un seul
+type :
+
+1. une liaison `TextStyle.boundVariables.fontFamily` vers un membre est une
+   preuve positive ;
+2. un membre dont les scopes portent `FONT_FAMILY` sans `ALL_SCOPES`,
+   `FONT_STYLE` ni `TEXT_CONTENT` est une seconde preuve positive ;
+3. une liaison vers un membre par un autre champ de chaîne du text style,
+   `fontStyle` ou `fontWeight`, est un conflit ;
+4. un membre dont les scopes portent `FONT_FAMILY` à côté de l'un des trois
+   scopes ci-dessus est un conflit : le scope déclare une intention, il ne
+   prouve pas l'exclusivité ;
+5. un alias qui quitte l'ensemble des candidates est un conflit, la composante
+   ne pouvant plus recevoir un type commun ;
+6. une preuve sans conflit publie toute la composante en `fontFamily` ; une
+   preuve avec conflit la laisse en `string` sous un constat ; une composante
+   sans preuve reste `string`.
+
+`famillesDeTokens` (`tokens/familles.ts`) applique ces règles. La décision
+porte sur la composante et non sur la feuille courante : `resolveRoot` ne suit
+que le mode par défaut, et une variable dont un autre mode alias une famille
+recevrait sans cela un type différent de sa cible. Un nom de token n'entre
+jamais dans la décision ; un segment `fontfamily` sur une composante sans
+preuve produit un constat, et rien d'autre.
+
+Une preuve porte sur les text styles **locaux**. Un style publié par une
+bibliothèque relie les variables de cette bibliothèque, absentes de cet export.
+Une erreur de lecture des text styles ne type aucune variable, et le constat
+nomme le geste.
+
+**Une `TIMING` est une durée, une `EASING` est une courbe ou rien.** Figma
+compte une `TIMING` en secondes, et l'export recopie ce nombre sous l'unité
+`s`, sans conversion ni arrondi. Une `EASING` ne se convertit que dans deux
+cas : `LINEAR`, dont les points sont connus par définition, et
+`CUSTOM_CUBIC_BEZIER`, qui les publie. La validation exige quatre nombres
+finis, et ne borne que les abscisses, à `[0, 1]` : DTCG laisse les ordonnées
+libres, et une courbe à dépassement est valide.
+
+`easingsSansCourbe` (`tokens/mouvement.ts`) relève, avant la construction de
+l'arbre, chaque variable `EASING` qu'un seul de ses modes empêche de publier.
+Ces variables quittent l'index : elles n'ont pas de feuille, un constat nomme
+chacune et son mode, et un alias qui les vise suit la politique des cibles
+absentes en nommant la variable à corriger. Publier le nom d'un préréglage sous
+un type qui promet une courbe, ou une courbe choisie à sa place, tromperait le
+développeur ; refuser l'export entier priverait le fichier de toutes ses
+couleurs pour une animation.
+
+**Les six types de variables sont traités sans branche par défaut.** `dtcgType`
+et `formatValue` énumèrent les membres de `VariableResolvedDataType`, et un
+septième membre des typings produit une erreur de compilation. Sans cette
+borne, un nouveau type de Figma entrerait dans `tokens.json` sous
+`$type: "string"` avec la valeur brute que l'API rend, ce que l'invariant de
+portabilité interdit.
+
 **La marque de version vient de la constante du kit.** Le moteur écrit
 `TOKENS_FORMAT_VERSION` sous `$extensions["com.ucm.formatVersion"]`, à la racine
 et avant les groupes. Le résultat de la commande annonce le module et la version
-qu'il lit dans le fichier produit : « DTCG 2025.10, version 1 du format de
+qu'il lit dans le fichier produit : « DTCG 2025.10, version 2 du format de
 tokens ».
 
 ---

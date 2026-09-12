@@ -10,7 +10,7 @@ the repository that implements the component. This package is what both sides
 must share in order to talk about the same format.
 
 ```sh
-npm install @ucm-kit/core@0.1.25
+npm install @ucm-kit/core@0.1.26
 ```
 
 Most repositories never call this package directly. They run
@@ -66,23 +66,32 @@ whatever the number of contracts.
 `tokens.json` carries its format version at the root of the document, under
 `$extensions["com.ucm.formatVersion"]`. It is not the contract version.
 `etatDuFormatDeTokens`, from `@ucm-kit/core/format`, reads it and returns one
-of four states:
+of five states:
 
 | Mark at the root | State | `controlerRepository` |
 |---|---|---|
 | absent | `origine` | reads the file |
-| `1` | `courante` | reads the file |
-| an integer above `1` | `future` | blocks before reading a token; a developer upgrades the UCM packages |
+| `2` | `courante` | reads the file |
+| `1` | `ancienne` | reads the file; the next export raises the version |
+| an integer above `2` | `future` | blocks before reading a token; a developer upgrades the UCM packages |
 | any other value, or a document or `$extensions` that is not an object | `invalide` | blocks before reading a token; the designer runs the token export again |
+
+`VERSIONS_DE_TOKENS_LUES` lists the marks this package reads. The list is
+explicit: an integer below the current version that is absent from it is
+`invalide`, and no version is assumed readable because it is lower.
 
 The mark is read even in a repository with no contract yet.
 `@ucm-kit/core@0.1.25` is the first release that reads it; earlier releases
-ignore it.
+ignore it. `@ucm-kit/core@0.1.26` is the first that reads version `2`, and it
+still reads version `1` without a word in the report: a repository can upgrade
+its CLI before the plugin produces the new form.
 
 The mark does not protect a value reader. Style Dictionary 4 ignores it and
 writes `[object Object]` for every color and dimension of version `1`, and the
-build succeeds. Move to Style Dictionary 5 before merging the first export in
-that version.
+build succeeds. Style Dictionary 5 writes the same for every `duration` of
+version `2` unless the reader registers a transform for that type: its `css`
+group ships none, `time/seconds` filtering on the older `time` type. Check both
+before merging the first export in a new version.
 
 ## A version gap has a direction, which names who fixes it
 

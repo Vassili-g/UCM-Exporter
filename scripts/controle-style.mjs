@@ -41,13 +41,15 @@ const TIRET_CADRATIN = '—';
  */
 export const ACRONYMES = [
   'API', 'ASCII', 'BASE', 'BOM', 'BOOLEAN', 'CI', 'CLI', 'COLOR', 'COMPONENT',
-  'CRLF', 'CSS', 'DOM', 'DS', 'DTCG', 'EACCES', 'ENOTDIR', 'ESM', 'FIXED',
+  'CRLF', 'CSS', 'DOM', 'DS', 'DTCG', 'EACCES', 'EASING', 'ENOTDIR', 'ESM',
+  'FIXED',
   'FLOAT', 'FRAME', 'GET', 'GIT', 'GNU', 'GRID', 'GROUP', 'HTML', 'HTTP',
   'HTTPS', 'HUG', 'IA', 'ID', 'ISO', 'JS', 'JSON', 'JSX', 'JWT', 'LF', 'LGPL',
   'LINE', 'LTR', 'MAX', 'MB', 'MCP', 'MD', 'MIN', 'MIT', 'MVP', 'NODE', 'NONE',
   'NPM', 'OIDC', 'OK', 'PAT', 'PDF', 'POLYGON', 'POST', 'PR', 'PUT', 'RECTANGLE',
   'REST', 'RTL', 'SET', 'SHA', 'SLOT', 'SOLID', 'SPEC', 'STAR', 'STRETCH',
-  'STRING', 'SVG', 'TAP', 'TAR', 'TEXT', 'TS', 'UCM', 'UI', 'URI', 'URL',
+  'STRING', 'SVG', 'TAP', 'TAR', 'TEXT', 'TIMING', 'TS', 'UCM', 'UI', 'URI',
+  'URL',
   'UTF', 'VECTOR', 'WRAP', 'YAML', 'ZIP', 'ELLIPSE', 'AUTO',
   // Les documents du dépôt, cités par leur nom sans extension.
   'AGENTS', 'CONCEPT', 'CONTRIBUTING', 'LICENSE', 'README', 'ROADMAP',
