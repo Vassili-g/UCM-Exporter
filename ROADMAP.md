@@ -54,7 +54,7 @@ Aucun contrôle n'exécute le rendu.
 | Aucun contrat existant ne publie de `SLOT` ni de propriété `INSTANCE_SWAP` native | Ces deux chemins du moteur ne sont éprouvés que par des tests synthétiques |
 | Le corpus tient à quatre composants | La généralité du moteur se mesure sur ses invariants, pas sur ce corpus |
 | Les protections de branche sont indisponibles sur le plan GitHub actuel | La CI détecte l'écart sans empêcher la fusion. Une pull request rouge reste fusionnable |
-| La version 1 du format de tokens ne sort encore que d'un fichier simulé | Aucun export Figma réel ne l'a produite, ni en sRGB ni en Display P3, et le plugin servi par la Community produit la forme d'origine |
+| La version 1 du format de tokens n'est éprouvée qu'en sRGB | Un export Figma réel la produit, déposé par le plugin de la Community, et le CSS du consommateur ne bouge pas d'un bit. Le Display P3 n'a pas d'export réel : un écran qui ne le rend pas prive Figma du réglage de profil |
 | La projection CSS des modes n'est pas implémentée | Le multi-marque au runtime n'existe pas |
 
 ## Fragilités connues
@@ -168,10 +168,12 @@ compatibilité](./docs/COMPATIBILITE.md) relie le contrat, le schéma, les token
 les paquets et les adaptateurs.
 
 L'[alignement DTCG](./docs/notes/ALIGNEMENT-DTCG.md) donne à `tokens.json` sa
-version 1 du format de tokens. `@ucm-kit/core` 0.1.25 lit la marque, et le
-plugin du dépôt produit cette version. Restent les exports Figma réels et la
-publication du plugin sur la Community, que le
-[plan](./docs/notes/PLAN-ALIGNEMENT-DTCG.md) ordonne.
+version 1 du format de tokens. `@ucm-kit/core` 0.1.25 lit la marque, le plugin
+publié sur la Community produit cette version, et le dépôt consommateur la
+compile avec Style Dictionary 5.5.3. Le fichier déposé par le bundle publié a
+l'empreinte de celui du build de développement, et le CSS produit est identique
+à l'octet à celui de la forme d'origine. Les preuves sont dans le
+[journal](./docs/notes/PREUVES-ALIGNEMENT-DTCG.md).
 
 ### 6. Passer la recette externe
 

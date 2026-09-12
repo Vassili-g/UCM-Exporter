@@ -5,7 +5,8 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 
 ## État
 
-- Lot courant : L10 fermé ; reste la porte humaine H4, jugement visuel
+- Lot courant : aucun. Les onze lots sont fermés ; reste la porte humaine H4,
+  dont le paquet termine ce journal
 - Exporter, branche et `HEAD` : `main`, L9 fermé
 - Playground, branche et `HEAD` : `main`, `35820eb` après H3
 - Style Dictionary retenu : `5.5.3`, exact ; `4.4.0` au départ

@@ -1,7 +1,9 @@
 # Plan d'alignement DTCG
 
-> Statut : engagé. Ce document pilote l'exécution jusqu'à la recette du plugin
-> publié. Il se lit avec [l'état des lieux](./ALIGNEMENT-DTCG.md).
+> Statut : exécuté. Les onze lots sont fermés et trois portes humaines sur
+> quatre sont franchies. Reste H4, le jugement visuel, et la réserve du Display
+> P3. Il se lit avec [l'état des lieux](./ALIGNEMENT-DTCG.md) et le
+> [journal](./PREUVES-ALIGNEMENT-DTCG.md).
 
 ## Instruction donnée à l'agent
 
@@ -841,18 +843,18 @@ ne redevient pas un brouillon par hypothèse de travail.
 
 Le plan est terminé seulement si :
 
-- [ ] tous les lots portent un commit et des preuves ;
-- [ ] les deux dépôts sont propres et leurs suites complètes sont vertes ;
-- [ ] le schéma DTCG et le comparateur sémantique acceptent les exports réels ;
-- [ ] chaque test de mutation prévu a échoué pour la bonne raison ;
-- [ ] le registre npm sert les trois versions attendues ;
-- [ ] le plugin Community publié reproduit les exports du build de
+- [x] tous les lots portent un commit et des preuves ;
+- [x] les deux dépôts sont propres et leurs suites complètes sont vertes ;
+- [x] le schéma DTCG et le comparateur sémantique acceptent les exports réels ;
+- [x] chaque test de mutation prévu a échoué pour la bonne raison ;
+- [x] le registre npm sert les trois versions attendues ;
+- [x] le plugin Community publié reproduit les exports du build de
       développement ;
-- [ ] le Playground compile ces exports sans valeur objet, référence perdue ni
+- [x] le Playground compile ces exports sans valeur objet, référence perdue ni
       propriété manquante ;
 - [ ] la recette externe et la comparaison visuelle sont validées ;
 - [ ] le journal ne contient aucune réserve ouverte ;
-- [ ] roadmap, changelog et documentation portent l'état livré.
+- [x] roadmap, changelog et documentation portent l'état livré.
 
 À ce point, l'agent livre un résumé court : commits, versions, preuves, portes
 humaines franchies et éventuelles limites hors périmètre.
