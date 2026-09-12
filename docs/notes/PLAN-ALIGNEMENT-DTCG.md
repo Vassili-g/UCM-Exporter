@@ -799,11 +799,11 @@ But : vérifier les artefacts distribués plutôt que les seuls workspaces locau
 
 Actions :
 
-- [ ] Vérifier les trois versions et fichiers servis par le registre npm.
-- [ ] Installer les versions publiées dans un consommateur temporaire vierge.
-- [ ] Passer le contrôle du kit, la CLI et l'adaptateur depuis ces paquets.
-- [ ] Mettre le Playground sur les versions publiées exactes.
-- [ ] Passer son installation propre, son build et sa CI.
+- [x] Vérifier les trois versions et fichiers servis par le registre npm.
+- [x] Installer les versions publiées dans un consommateur temporaire vierge.
+- [x] Passer le contrôle du kit, la CLI et l'adaptateur depuis ces paquets.
+- [x] Mettre le Playground sur les versions publiées exactes.
+- [x] Passer son installation propre, son build et sa CI.
 - [ ] Attendre H3, puis comparer les exports du plugin publié à ceux de H1.
 - [ ] Vérifier que le CSS issu du plugin publié conserve les mêmes propriétés,
       références et valeurs attendues.

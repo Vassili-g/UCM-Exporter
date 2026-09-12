@@ -5,13 +5,13 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 
 ## État
 
-- Lot courant : porte humaine H2, dont le manifeste est en fin de L9
+- Lot courant : L10 ouvert, en attente des exports de la porte humaine H3
 - Exporter, branche et `HEAD` : `main`, L9 fermé
 - Playground, branche et `HEAD` : `main`, `8908c66` après L4
 - Style Dictionary retenu : `5.5.3`, exact ; `4.4.0` au départ
 - Versions npm servies : `@ucm-kit/core` 0.1.25, `@ucm-kit/cli` 0.1.24,
   `@ucm-kit/adapter-typescript` 0.1.17
-- Dernière porte humaine franchie : H1, avec une réserve sur le Display P3
+- Dernière porte humaine franchie : H2, le plugin est publié sur la Community
 
 ## Lots
 
@@ -459,6 +459,75 @@ des faits courts : commande, code de sortie, résumé d'une ligne, empreinte.
 - Artefacts et empreintes : aucun nouveau.
 - Écart ou réserve : la réserve Display P3 de H1, ouverte et assumée par le
   mainteneur.
+
+### H2 — Autorisation et publication Community
+
+- Le mainteneur a donné son accord sur le manifeste de L9 et publié le plugin
+  sur la Figma Community.
+- Le dernier commit qui touche une source de production est `a49c44d` ; le
+  commit de L9 ne porte que des tests et des documents. Le bundle publié
+  correspond donc au code de production de `HEAD`.
+- Empreintes du bundle, reconstruit deux fois de suite et identique à l'octet :
+  - `packages/plugin/dist/code.js` :
+    `1d9171b3e5ad97547b2f9ab881b8a6417add24b36c2be43f0118b571e9910731`.
+  - `packages/plugin/dist/ui.html` :
+    `d2dda806c7f10d8a3f2328b3ccce3347383a7c40fc989f1f8f129eb776608f4b`.
+  - `packages/plugin/dist/manifest.json` :
+    `2727d00e7313a02b8f23be3111f9cf41618547aebeffbc044d936c24897a4ae2`.
+- Écart ou réserve : aucun.
+
+### L10 — Vérification après publication
+
+Lot ouvert : les cinq contrôles qui ne demandent pas Figma sont passés, les
+quatre autres attendent les exports de H3.
+
+- Commandes :
+  - `npm view` sur les trois paquets : versions, `shasum`, `integrity`,
+    nombre de fichiers et taille dépaquetée relevés. `@ucm-kit/core` 0.1.25,
+    44 fichiers ; `@ucm-kit/cli` 0.1.24, 8 fichiers ;
+    `@ucm-kit/adapter-typescript` 0.1.17, 9 fichiers.
+  - Consommateur vierge du dossier de session, `npm install` depuis le registre
+    seul, sans lien de workspace : les trois versions exactes installées.
+  - `ucm check` depuis ce consommateur, sur l'export réel de H1 : sortie 0,
+    387 références contrôlées, aucune absente, quatre contrats valides.
+    L'adaptateur chargé y compare aussi le code : trois composants conformes,
+    et trois cardinalités de composition en écart sur `StressTest`. Le même
+    écart sort du `tokens.json` d'origine : il précède la migration et ne la
+    concerne pas.
+  - `ucm-typescript` depuis ce consommateur : sortie 0, sept unions générées
+    pour quatre composants.
+  - Lecteurs du kit publié sur l'export réel : `TOKENS_FORMAT_VERSION` vaut 1,
+    la matrice des quatre états rend `origine`, `courante`, `future` et
+    `invalide` comme attendu, une marque imbriquée dans un groupe reste
+    `origine`, 721 feuilles indexées, 193 références relevées, aucune absente.
+  - Playground : `rm -rf node_modules` puis `npm ci` : sortie 0,
+    `style-dictionary@5.5.3`. `npm run build` : sortie 0, `tokens.css` toujours
+    `ccf89371a396d7b538294ba38a088484940b89adbc236711fbb6b9974bccf0a3`.
+    `npx --yes @ucm-kit/cli@0.1.24 check --report ci-report.md` : sortie 0,
+    arbre propre ensuite.
+  - `npm run pins` : sortie 0, les six versions épinglées par la documentation
+    sont servies, dont les trois de la série et les trois pins historiques de
+    la recette.
+  - Recette externe, étape 9, dans un dossier vide hors de tout dépôt :
+    la CLI 0.1.20 que la recette épingle écrit ses cinq fichiers, et son
+    `check` sort en 0 sur « ce repository n'a pas encore reçu d'export ».
+    Conforme au texte.
+  - Recette externe, étape 3, avec la version servie 0.1.24 :
+    `init --components src/components --tokens src/tokens` écrit le
+    `ucm.config.json` documenté, `check` sort en 0, et un second `init`
+    n'écrase rien et le dit.
+- Résultats :
+  - Le Playground est déjà sur les versions publiées exactes : son workflow
+    épingle `@ucm-kit/cli@0.1.24` et ses `devDependencies` `style-dictionary`
+    5.5.3, sans `^` ni `~`. Rien à changer.
+  - Les paquets réellement servis par le registre produisent les résultats
+    validés avant publication.
+- Écart ou réserve : le lot n'est pas fermé. Restent à faire, tous suspendus
+  aux exports du plugin Community : la comparaison avec les exports de H1, le
+  CSS issu du plugin publié, les étapes 4 à 7 de la recette externe, et la
+  préparation de H4. La dernière phrase de la section `tokens.json` de
+  `CHANGELOG-FORMAT.md` attend la même preuve : elle nommera le plugin qui
+  produit la version 1 quand un export de la Community l'aura montré.
 
 ## Paquet de validation H1
 
