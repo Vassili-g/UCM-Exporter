@@ -490,7 +490,16 @@ libres, et une courbe à dépassement est valide.
 l'arbre, chaque variable `EASING` qu'un seul de ses modes empêche de publier.
 Ces variables quittent l'index : elles n'ont pas de feuille, un constat nomme
 chacune et son mode, et un alias qui les vise suit la politique des cibles
-absentes en nommant la variable à corriger. Publier le nom d'un préréglage sous
+absentes en nommant la variable à corriger.
+
+Le constat dit ce que l'API rend, et non la section du sélecteur de Figma. Un
+préréglage nommé porte bien une courbe dans Figma, dont l'API ne publie pas
+les points : écrire qu'il n'est pas une courbe de Bézier serait faux. Cinq
+causes s'écrivent donc séparément : les points absents d'un préréglage, un
+ressort, reconnu à son `type` ou au champ `easingFunctionSpring`, un `HOLD`,
+une courbe personnalisée sans ses quatre points, et une abscisse hors de
+`[0, 1]`. Les trois premières demandent de changer d'easing, les deux
+dernières de corriger la courbe en place. Publier le nom d'un préréglage sous
 un type qui promet une courbe, ou une courbe choisie à sa place, tromperait le
 développeur ; refuser l'export entier priverait le fichier de toutes ses
 couleurs pour une animation.

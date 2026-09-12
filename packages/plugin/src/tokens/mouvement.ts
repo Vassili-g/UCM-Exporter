@@ -27,11 +27,12 @@ export type GrapheDesVariables = {
 /**
  * Pourquoi une valeur `EASING` n'a pas de courbe.
  *
- * Les deux causes appellent deux gestes différents dans Figma, d'où la
- * distinction : `sans-courbe` demande de changer d'easing, `abscisse` de
- * ramener une poignée de la courbe personnalisée dans son intervalle.
+ * Chaque cause est un fait observé sur la valeur que l'API rend, et non une
+ * catégorie du sélecteur de Figma : un préréglage nommé se reconnaît à
+ * l'absence de points, un ressort au champ que Figma joint. Les cinq causes
+ * appellent cinq phrases différentes, et trois gestes différents.
  */
-export type CauseSansCourbe = 'sans-courbe' | 'abscisse';
+export type CauseSansCourbe = 'preregle' | 'ressort' | 'tenue' | 'points' | 'abscisse';
 
 /** Un mode dont la valeur `EASING` n'a pas de courbe. */
 export type ModeSansCourbe = { modeId: string; cause: CauseSansCourbe };
@@ -55,12 +56,16 @@ function estFini(coordonnee: unknown): coordonnee is number {
 export function courbeDeToken(valeur: unknown): { courbe: CourbeDeToken } | { cause: CauseSansCourbe } {
   const easing = valeur as MotionEasing | undefined;
   if (easing?.type === 'LINEAR') return { courbe: [0, 0, 1, 1] };
-  if (easing?.type !== 'CUSTOM_CUBIC_BEZIER') return { cause: 'sans-courbe' };
+  if (easing?.type !== 'CUSTOM_CUBIC_BEZIER') {
+    if (easing?.type === 'CUSTOM_SPRING' || easing?.easingFunctionSpring) return { cause: 'ressort' };
+    if (easing?.type === 'HOLD') return { cause: 'tenue' };
+    return { cause: 'preregle' };
+  }
 
   const points = easing.easingFunctionCubicBezier;
-  if (!points) return { cause: 'sans-courbe' };
+  if (!points) return { cause: 'points' };
   const { x1, y1, x2, y2 } = points;
-  if (![x1, y1, x2, y2].every(estFini)) return { cause: 'sans-courbe' };
+  if (![x1, y1, x2, y2].every(estFini)) return { cause: 'points' };
   if (x1 < 0 || x1 > 1 || x2 < 0 || x2 > 1) return { cause: 'abscisse' };
   return { courbe: [x1, y1, x2, y2] };
 }

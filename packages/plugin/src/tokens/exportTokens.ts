@@ -20,6 +20,7 @@ import { famillesDeTokens } from './familles';
 import type { LiaisonsDeTextStyles } from './familles';
 import { graissesNumeriques } from './graisses';
 import { courbeDeToken, dureeDeToken, easingsSansCourbe } from './mouvement';
+import type { CauseSansCourbe } from './mouvement';
 import type { CouleurDeToken, DimensionDeToken } from '@ucm-kit/core/format';
 import { collisionWarnings, firstVariableAlias, indexVariables } from '../variables';
 import type { VariableIndex } from '../variables';
@@ -531,6 +532,30 @@ async function liaisonsDesTextStyles(warnings: string[]): Promise<LiaisonsDeText
 }
 
 /**
+ * Ce qui manque à une valeur `EASING`, dit par ce que l'API rend.
+ *
+ * Un préréglage nommé porte bien une courbe dans Figma, et l'API n'en publie
+ * pas les points : écrire qu'il « n'est pas une courbe de Bézier » serait
+ * faux. Un ressort, lui, n'en est pas une, et DTCG ne porte aucun type qui
+ * l'exprime.
+ */
+function manqueDeCourbe(cause: CauseSansCourbe, mode: string): string {
+  switch (cause) {
+    case 'abscisse':
+      return `la courbe du mode « ${mode} » sort de l’intervalle 0 à 1 en abscisse.`;
+    case 'points':
+      return `la courbe personnalisée du mode « ${mode} » n’a pas ses quatre points.`;
+    case 'ressort':
+      return `l’easing du mode « ${mode} » est un ressort, et le fichier de tokens ne porte `
+        + `que des courbes de Bézier.`;
+    case 'tenue':
+      return `l’easing du mode « ${mode} » est Hold, qui ne décrit aucune progression.`;
+    case 'preregle':
+      return `Figma ne publie pas les points de l’easing du mode « ${mode} ».`;
+  }
+}
+
+/**
  * Écarte du fichier les variables `EASING` qu'un mode empêche de publier, et
  * nomme chacune au designer.
  *
@@ -555,18 +580,15 @@ function ecarterLesEasingsSansCourbe(
 
     for (const { modeId, cause } of modes) {
       const mode = collection?.modes.find((candidat) => candidat.modeId === modeId)?.name ?? '';
-      pousserSansNode(warnings, `Variable « ${variable.name} »`, cause === 'abscisse'
-        ? {
-          manque: `la courbe du mode « ${mode} » sort de l’intervalle 0 à 1 en abscisse.`,
-          impact: 'Le développeur n’aura pas ce token.',
-          action: 'Ramenez les deux poignées de la courbe entre 0 et 1 en abscisse, puis '
-            + 'réexportez.',
-        }
-        : {
-          manque: `l’easing du mode « ${mode} » n’est pas une courbe de Bézier.`,
-          impact: 'Le développeur n’aura pas ce token.',
-          action: 'Choisissez Linear ou Custom bezier dans Figma, puis réexportez.',
-        });
+      pousserSansNode(warnings, `Variable « ${variable.name} »`, {
+        manque: manqueDeCourbe(cause, mode),
+        impact: 'Le développeur n’aura pas ce token.',
+        action: cause === 'abscisse'
+          ? 'Ramenez les deux poignées de la courbe entre 0 et 1 en abscisse, puis réexportez.'
+          : cause === 'points'
+            ? 'Reposez la courbe dans Figma, puis réexportez.'
+            : 'Choisissez Linear ou Custom bezier dans Figma, puis réexportez.',
+      });
     }
 
     index.pathById.delete(id);
