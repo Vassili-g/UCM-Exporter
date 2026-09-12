@@ -382,22 +382,22 @@ de commit les cite.
 
 ### Étape 4. Le consommateur, avant toute publication
 
-- [ ] **4.1.** Sur une branche du Playground, poser les deux branches de transform
+- [x] **4.1.** Sur une branche du Playground, poser les deux branches de transform
   de la section 4.4 et un transform de durée. Le `tokens.json` reste en version 1.
-- [ ] **4.2.** Vérifier que `src/generated/tokens.css` est identique à l'octet
+- [x] **4.2.** Vérifier que `src/generated/tokens.css` est identique à l'octet
   avant et après la tâche 4.1, par empreinte `sha256`.
-- [ ] **4.3.** Compiler un `tokens.json` version 2 synthétique portant une famille
+- [x] **4.3.** Compiler un `tokens.json` version 2 synthétique portant une famille
   littérale, une famille en alias, une durée, une courbe `LINEAR`, une courbe à
   dépassement et leurs références. Vérifier l'absence d'apostrophe doublée, de
   `[object Object]` et de référence non résolue.
-- [ ] **4.4.** Mettre à jour la version de `@ucm-kit/cli` épinglée dans
+- [x] **4.4.** Mettre à jour la version de `@ucm-kit/cli` épinglée dans
   `.github/workflows/ucm.yml`, après l'étape 5.
 
 ### Étape 5. Publier les lecteurs
 
-- [ ] **5.1.** Publier `@ucm-kit/core`, puis `@ucm-kit/cli`, puis
+- [x] **5.1.** Publier `@ucm-kit/core`, puis `@ucm-kit/cli`, puis
   `@ucm-kit/adapter-typescript`.
-- [ ] **5.2.** Installer les archives et les paquets servis dans un consommateur
+- [x] **5.2.** Installer les archives et les paquets servis dans un consommateur
   vierge. Le même binaire accepte le `tokens.json` version 1 du Playground, sous
   l'état `ancienne` et sans blocage, et un fixture version 2.
 
@@ -481,7 +481,15 @@ le kit d'abord. Le garde-fou des pins reçoit une exemption pour `docs/notes/` :
 un journal enregistre la version qu'une commande a réellement installée, et la
 réécrire à chaque publication effacerait la mesure.
 
-### 7.7. La tâche 4.4 se joue avant la publication du plugin
+### 7.7. La tâche 2.8 n'avait pas de test, et seule l'étape 5 l'a vue
+
+La table du lecteur typographique n'a pas été élargie dans le commit qui
+l'annonçait. Aucun test ne la couvrait pour la famille, et les 1 032 tests
+restaient verts. L'épreuve dans un consommateur vierge l'a trouvée, après la
+publication de trois paquets qui portent le défaut. Une décision écrite dans un
+document et nulle part dans un test n'est pas tenue.
+
+### 7.8. La tâche 4.4 se joue avant la publication du plugin
 
 Le texte la plaçait après l'étape 5. Elle doit aussi précéder l'étape 6 : un
 Playground resté sur la CLI de la version 1 refuserait le réexport comme une

@@ -7,11 +7,14 @@ Le journal de la version 1 reste fermé dans
 
 ## État
 
-- Étapes fermées : 0 sans sa mesure Figma, 1, 2, 3 et 4 sans le pin de la CLI
-- Porte courante : 0.3, la mesure Figma sur le fichier réel
-- Versions npm à publier : `@ucm-kit/core` 0.1.26, `@ucm-kit/cli` 0.1.25,
-  `@ucm-kit/adapter-typescript` 0.1.18
+- Étapes fermées : 0 sans sa mesure Figma, 1, 2, 3, 4 et 5
+- Portes courantes : 0.3, la mesure Figma sur le fichier réel, et 6.1, la
+  publication Community du plugin
+- Versions npm servies : `@ucm-kit/core` 0.1.27, `@ucm-kit/cli` 0.1.26,
+  `@ucm-kit/adapter-typescript` 0.1.19
 - Style Dictionary du consommateur : `5.5.3`, exact, inchangé
+- Exporter : commits `dbff037`, `4258149` et `a7ba762` sur `main`
+- Playground : commit `e5c0ccf` sur `main`, CI verte
 
 | Étape | Statut | Preuve de sortie |
 |---|---|---|
@@ -20,8 +23,8 @@ Le journal de la version 1 reste fermé dans
 | 0.4 | fermée | sortie courante mesurée, rouges constatés, fichier restauré |
 | 1 et 2 | fermées | un commit atomique, 1 032 tests verts |
 | 3 | fermée | six mutations rouges, plus la borne TypeScript |
-| 4 | fermée hors 4.4 | CSS de la version 1 identique à l'octet, version 2 sans défaut |
-| 5 | ouverte | publication des trois paquets |
+| 4 | fermée | CSS de la version 1 identique à l'octet, version 2 sans défaut, pin monté |
+| 5 | fermée | trois paquets servis, et un consommateur vierge lit les deux versions |
 | 6 | ouverte | porte humaine, publication Community et réexport |
 
 ## Étape 0 — Mesurer et décider
@@ -212,11 +215,65 @@ Les sept fichiers ont été restaurés par copie, identiques à leur sauvegarde,
     caractère, l'apostrophe au lieu du guillemet.
   - Le transform de durée est celui que `styleDictionary.test.ts` enregistre de
     son côté : sans lui, le groupe `css` standard écrit `[object Object]`.
-- Reste la tâche 4.4, le pin de `@ucm-kit/cli` dans `.github/workflows/ucm.yml`.
-  Il monte après la publication des paquets et **avant** celle du plugin : un
-  Playground resté sur la CLI de la version 1 refuserait le réexport comme une
-  version future.
+- Tâche 4.4 : `.github/workflows/ucm.yml` épingle `@ucm-kit/cli@0.1.26`. Le pin
+  monte après la publication des paquets et **avant** celle du plugin, un
+  Playground resté sur la CLI de la version 1 refusant le réexport comme une
+  version future. La CI du Playground passe au vert sur son `tokens.json`
+  version 1, lu sous l'état `ancienne` et sans mention dans le rapport.
 - Écart ou réserve : aucun.
+
+## Étape 5 — Les lecteurs publiés
+
+- Commits : Exporter `4258149` puis `a7ba762`.
+- Commandes :
+  - `gh workflow run publish.yml` pour les trois paquets, le kit d'abord. Les
+    deux premiers runs de chaque série rougissent sur la seule étape des pins
+    servis, la version suivante n'étant pas encore au registre ; la
+    publication et l'épreuve du registre sont vertes. Le run de l'adaptateur
+    ferme la série au vert.
+  - `npm view` : `@ucm-kit/core` 0.1.27, `@ucm-kit/cli` 0.1.26,
+    `@ucm-kit/adapter-typescript` 0.1.19, toutes servies.
+  - `npm run pins` : sortie 0, les neuf versions épinglées par la
+    documentation sont servies.
+  - Consommateur vierge du dossier de session, deux copies des quatre contrats
+    du Playground, l'une avec son `tokens.json` version 1, l'autre avec le même
+    fichier marqué `2`, sa famille typée `fontFamily` et deux feuilles de
+    mouvement ajoutées. `npx --yes @ucm-kit/cli@0.1.26 check` : sortie 0 sur
+    les deux, 387 références contrôlées, quatre contrats valides.
+
+### Ce que cette épreuve a trouvé, et que la suite ne voyait pas
+
+La tâche 2.8 n'avait pas été appliquée au code.
+`TYPES_TYPOGRAPHIQUES.fontFamily` exigeait encore `string` seul, alors que le
+plan, le changelog et le journal annonçaient la table élargie. Aucun test du
+dépôt ne couvrait cette table pour la famille, et `npm test` restait vert sur
+les 1 032 tests.
+
+`@ucm-kit/cli@0.1.25` refuse le fichier version 2 : cinq text styles sur trois
+contrats, « type typographique incompatible, est fontFamily, attendu string »,
+sortie 1. Le geste rendu au designer est impossible, et la CI du consommateur
+aurait bloqué toute fusion dès le premier réexport.
+
+Trois versions publiées portent ce défaut et restent servies :
+`@ucm-kit/core@0.1.26`, `@ucm-kit/cli@0.1.25` et
+`@ucm-kit/adapter-typescript@0.1.18`. Un numéro publié ne se reprend pas. Le
+README du kit déconseille le pin `0.1.26`, et la série suivante corrige.
+
+Deux tests tiennent maintenant la décision : une famille passe sous
+`fontFamily` comme sous `string`, et un autre type reste refusé. La même
+épreuve, rejouée sur `@ucm-kit/cli@0.1.26`, sort en 0 sur les deux fichiers.
+
+## Ce qui reste
+
+- **0.3**, la mesure Figma sur le fichier réel, décrite plus haut.
+- **6.1**, la porte humaine : le mainteneur relit le manifeste des paquets et
+  les preuves des étapes 2 à 5, puis autorise la publication Community du
+  bundle construit et empreinté.
+- **6.2**, le réexport par le plugin publié, et la CI du Playground sur le
+  fichier version 2.
+- **6.3**, la recette visuelle sur la police et les animations. La recette
+  visuelle H4 de la version 1 reste elle aussi ouverte, et les deux se jouent
+  ensemble.
 
 ## Limites de ce journal
 
