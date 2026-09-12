@@ -1,12 +1,12 @@
 # Aligner `tokens.json` sur le module de format DTCG `2025.10`
 
-**Statut : engagé.** Le plugin servi par la Community produit la forme
-d'origine, décrite dans
-[FORMAT.md](../FORMAT.md#partie-2--export-tokens), jusqu'à sa prochaine
-publication. Le
-[plan d'implémentation](./PLAN-ALIGNEMENT-DTCG.md) ordonne la migration. Les
-changements de compatibilité relèvent de
-[COMPATIBILITE.md](../COMPATIBILITE.md).
+**Statut : livré, sauf le Display P3.** Le plugin servi par la Community
+produit la version 1 du format de tokens, et le dépôt consommateur la compile.
+Le [plan d'implémentation](./PLAN-ALIGNEMENT-DTCG.md) a ordonné la migration,
+et le [journal](./PREUVES-ALIGNEMENT-DTCG.md) porte ses preuves. La forme
+d'origine reste décrite dans
+[FORMAT.md](../FORMAT.md#partie-2--export-tokens). Les changements de
+compatibilité relèvent de [COMPATIBILITE.md](../COMPATIBILITE.md).
 
 Cette note justifie la décision. Le plan porte les étapes et leurs critères de
 fermeture.
@@ -242,8 +242,9 @@ conditions hors de la tranche engagée.
   ([gestion des profils](https://help.figma.com/hc/en-us/articles/360039825114-Manage-color-profiles-in-design-files)).
 - **Les avertissements de l'export n'entrent pas dans `tokens.json`.** Une CI
   ne peut pas les relire depuis le fichier.
-- **Aucun `tokens.json` n'est figé dans le dépôt.** La compatibilité des
-  lecteurs avec un fichier ancien n'a pas encore de fixture.
+- **Un `tokens.json` d'origine est figé dans le dépôt.** Le lot du harnais a
+  posé `packages/kit/fixtures/tokens/origine/`, que son README empreinte et
+  qu'aucun test ne compare à une sortie du moteur.
 - **Un changement de format de `tokens.json` a ses propres classes.** Les
   classes 10 et 11 de [COMPATIBILITE.md](../COMPATIBILITE.md#les-onze-classes-de-changement)
   séparent la forme des valeurs et la marque. La classe 5 porte sur le nom d'un
@@ -254,7 +255,9 @@ conditions hors de la tranche engagée.
 ## 7. Les limites des mesures
 
 - Les variantes dérivent du fichier actuel. Elles ne mesurent ni un export réel
-  (flottants de Figma, couleurs translucides), ni un document en Display P3.
+  (flottants de Figma, couleurs translucides), ni un document en Display P3. Un
+  export réel en sRGB les a depuis confirmées, sans écart sur 721 feuilles ; le
+  Display P3 n'en a toujours pas.
 - Le corpus compte 721 feuilles et un consommateur connu. Il ne contient ni
   booléen, ni `$value` nul, et son second mode n'a pas de valeur
   réelle. Il établit l'absence de régression sur ces valeurs, sans établir la
