@@ -34,13 +34,21 @@
  */
 export type * from './types.js';
 export { CONTRACT_VERSION, versionDeContrat } from './version.js';
-export { EXTENSION_VERSION_TOKENS, TOKENS_FORMAT_VERSION, etatDuFormatDeTokens } from './tokens.js';
+export {
+  EXTENSION_VERSION_TOKENS,
+  TOKENS_FORMAT_VERSION,
+  VERSIONS_DE_TOKENS_LUES,
+  etatDuFormatDeTokens,
+} from './tokens.js';
 export type {
   CouleurDeToken,
+  CourbeDeToken,
   DimensionDeToken,
   DocumentDeTokens,
+  DureeDeToken,
   EtatDuFormatDeTokens,
   ExtensionsDuDocument,
+  FamilleDeToken,
   GroupeDeTokens,
   TokenDeDocument,
   ValeurDeToken,

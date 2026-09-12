@@ -3,8 +3,9 @@
  *
  * Il couvre ce que la forme de `tokens.json` doit tenir : couleurs opaques,
  * transparentes et de précision élevée, dimensions nulles, fractionnaires et
- * négatives, familles, graisses reconnues, numériques et libres, plusieurs
- * modes, alias directs et en chaîne, cibles absentes, clés héritées
+ * négatives, familles prouvées, ambiguës et sans preuve, graisses reconnues,
+ * numériques et libres, durées, easings avec et sans courbe, plusieurs modes,
+ * alias directs et en chaîne, cibles absentes, clés héritées
  * d'`Object.prototype`. Figma refuse une boucle d'alias ; le fichier en porte
  * une, parce que l'export doit rester borné si l'API en rendait une.
  *
@@ -22,12 +23,25 @@ export type ProfilColorimetrique = 'SRGB' | 'DISPLAY_P3' | 'LEGACY';
 export type FichierDeVariables = {
   collections: VariableCollection[];
   variables: Variable[];
+  /** Les text styles locaux, dont les liaisons prouvent l'usage d'une famille. */
+  textStyles: TextStyle[];
 };
 
 type Valeur = VariableValue | undefined;
 
 const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
 const rgba = (r: number, g: number, b: number, a: number) => ({ r, g, b, a });
+const bezier = (x1: number, y1: number, x2: number, y2: number) =>
+  ({ type: 'CUSTOM_CUBIC_BEZIER', easingFunctionCubicBezier: { x1, y1, x2, y2 } }) as MotionEasing;
+const easing = (type: MotionEasing['type']) => ({ type }) as MotionEasing;
+
+/** Un text style local, réduit à ce que l'export en lit. */
+function textStyle(
+  name: string,
+  boundVariables: Partial<Record<VariableBindableTextField, VariableAlias>>,
+): TextStyle {
+  return { id: `style-${name}`, name, type: 'TEXT', boundVariables } as unknown as TextStyle;
+}
 
 function collection(id: string, name: string, modes: string[]): VariableCollection {
   const modesFigma = modes.map((mode, rang) => ({ modeId: `${id}:${rang}`, name: mode }));
@@ -88,6 +102,30 @@ export function fichierDeVariables(): FichierDeVariables {
     variable(primitives, 'opacite', 'opacity/disabled', 'FLOAT', [0.4]),
     variable(primitives, 'graisse-float', 'graisse', 'FLOAT', [600], ['FONT_WEIGHT']),
     variable(primitives, 'drapeau', 'flags/visible', 'BOOLEAN', [true]),
+    // Une preuve par scope : la variable n'est offerte qu'au champ Font family.
+    variable(primitives, 'famille-mono', 'fontfamily/mono', 'STRING', ['Roboto Mono'],
+      ['FONT_FAMILY']),
+    variable(primitives, 'famille-sans-preuve', 'fontfamily/unbound', 'STRING', ['Inter']),
+    variable(primitives, 'famille-conflit', 'fontfamily/conflit', 'STRING', ['Open Sans']),
+    variable(primitives, 'duree-rapide', 'timing/fast', 'TIMING', [0.20000000298023224]),
+    variable(primitives, 'duree-nulle', 'timing/none', 'TIMING', [0]),
+    variable(primitives, 'easing-lineaire', 'easing/linear', 'EASING', [easing('LINEAR')]),
+    variable(primitives, 'easing-depassement', 'easing/overshoot', 'EASING', [
+      bezier(0.34, 1.56, 0.64, 1),
+    ]),
+    // Les cinq suivantes n'ont aucune courbe cubique : l'export les écarte et
+    // les nomme, une par cause.
+    variable(primitives, 'easing-preregle', 'easing/ease-out', 'EASING', [easing('EASE_OUT')]),
+    variable(primitives, 'easing-ressort', 'easing/spring', 'EASING', [{
+      type: 'CUSTOM_SPRING', easingFunctionSpring: { bounce: 0.4 },
+    } as MotionEasing]),
+    variable(primitives, 'easing-tenue', 'easing/hold', 'EASING', [easing('HOLD')]),
+    variable(primitives, 'easing-sans-points', 'easing/incomplete', 'EASING', [
+      easing('CUSTOM_CUBIC_BEZIER'),
+    ]),
+    variable(primitives, 'easing-abscisse', 'easing/out-of-range', 'EASING', [
+      bezier(1.1, 0, 0.64, 1),
+    ]),
 
     variable(marques, 'primaire', 'primary/default', 'COLOR', [alias('rouge'), rgba(0, 0, 1, 1)]),
     variable(marques, 'chaine', 'primary/chain', 'COLOR', [alias('primaire'), alias('primaire')]),
@@ -105,6 +143,16 @@ export function fichierDeVariables(): FichierDeVariables {
       alias('famille'), alias('famille'),
     ]),
     variable(marques, 'incomplet', 'fontweight/incomplete', 'STRING', ['Bold', undefined]),
+    variable(marques, 'famille-multi', 'typography/family-multi', 'STRING', [
+      'Open Sans', 'Roboto Mono',
+    ], ['FONT_FAMILY']),
+    variable(marques, 'easing-marque', 'easing/brand', 'EASING', [
+      easing('LINEAR'), bezier(0.4, 0, 0.2, 1),
+    ]),
+    // Un seul mode sans courbe suffit à écarter la variable entière.
+    variable(marques, 'easing-mixte', 'easing/mixed', 'EASING', [
+      easing('LINEAR'), easing('BOUNCY'),
+    ]),
 
     variable(semantique, 'chaine-de-poids', 'text/weight', 'STRING', [alias('poids-du-titre')]),
     variable(semantique, 'couleur-orpheline', 'broken/color', 'COLOR', [alias('absente')]),
@@ -113,6 +161,11 @@ export function fichierDeVariables(): FichierDeVariables {
     variable(semantique, 'boucle-b', 'fontweight/loop-b', 'STRING', [alias('boucle-a')]),
     variable(semantique, 'interligne', 'lineheight/base', 'FLOAT', [alias('quatre')]),
     variable(semantique, 'espacement', 'spacing/chain', 'FLOAT', [alias('rayon')]),
+    variable(semantique, 'duree-aliasee', 'motion/duration', 'TIMING', [alias('duree-rapide')]),
+    variable(semantique, 'easing-aliasee', 'motion/easing', 'EASING', [alias('easing-depassement')]),
+    variable(semantique, 'easing-orpheline', 'motion/broken-easing', 'EASING', [
+      alias('easing-ressort'),
+    ]),
 
     variable(cles, 'proto', '__proto__/primary', 'COLOR', [
       rgba(1, 0, 0, 1), rgba(0, 1, 0, 1), rgba(0, 0, 1, 1),
@@ -127,7 +180,18 @@ export function fichierDeVariables(): FichierDeVariables {
     variable(cles, 'dollar-type', '$type/primary', 'FLOAT', [1, 2, 3]),
   ];
 
-  return { collections: [primitives, marques, semantique, cles], variables };
+  // « Heading/H1 » prouve la famille de `primitives.fontfamily.base`, et la
+  // propage à `brand-tokens.typography.family` qui l'alias. « Body/Italic »
+  // relie la même variable à deux champs de chaîne : preuve et conflit sur la
+  // même composante.
+  const textStyles = [
+    textStyle('Heading/H1', { fontFamily: alias('famille'), fontWeight: alias('bold') }),
+    textStyle('Body/Italic', {
+      fontFamily: alias('famille-conflit'), fontStyle: alias('famille-conflit'),
+    }),
+  ];
+
+  return { collections: [primitives, marques, semantique, cles], variables, textStyles };
 }
 
 /**
@@ -138,10 +202,11 @@ export async function exporterLeFichier(
   { profil = 'SRGB', fichier = fichierDeVariables() }:
   { profil?: ProfilColorimetrique; fichier?: FichierDeVariables } = {},
 ): Promise<TokensExport> {
-  const { collections, variables } = fichier;
+  const { collections, variables, textStyles } = fichier;
   const precedent = (globalThis as { figma?: unknown }).figma;
   (globalThis as { figma?: unknown }).figma = {
     root: { documentColorProfile: profil, name: 'Fichier de variables' },
+    getLocalTextStylesAsync: async () => textStyles,
     variables: {
       getLocalVariableCollectionsAsync: async () => collections,
       getLocalVariablesAsync: async () => variables,

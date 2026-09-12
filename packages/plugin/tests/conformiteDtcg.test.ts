@@ -40,21 +40,27 @@ const validerToken = ajv.getSchema('https://www.designtokens.org/schemas/2025.10
 /**
  * Les feuilles du fichier simulé que le module ne reconnaît pas : les types
  * `string` et `boolean`, qu'il ne définit pas, et le `$value: null` d'un alias
- * dont la cible est absente.
+ * dont la cible manque au fichier.
+ *
+ * La liste se lit dans les deux sens. Une feuille qui cesse d'être conforme
+ * doit y entrer, et une feuille qui le redevient doit en sortir : la version 2
+ * a fait sortir les deux familles prouvées, et entrer une easing dont la cible
+ * est écartée.
  */
 const DIALECTE = [
   'brand-tokens.fontweight.incomplete',
   'brand-tokens.fontweight.mixed',
   'brand-tokens.fontweight.numeric',
-  'brand-tokens.typography.family',
   'primitives.flags.visible',
-  'primitives.fontfamily.base',
+  'primitives.fontfamily.conflit',
+  'primitives.fontfamily.unbound',
   'primitives.fontweight.free',
   'primitives.fontweight.numeric',
   'semantic.broken.color',
   'semantic.fontweight.broken',
   'semantic.fontweight.loop-a',
   'semantic.fontweight.loop-b',
+  'semantic.motion.broken-easing',
 ];
 
 const PROFILS: ProfilColorimetrique[] = ['SRGB', 'DISPLAY_P3'];
@@ -89,7 +95,7 @@ for (const profil of PROFILS) {
     const refusees = [...feuilles].filter(([, feuille]) => !validerToken(feuille)).map(([chemin]) => chemin);
 
     assert.deepEqual(refusees.sort(), DIALECTE);
-    assert.equal(feuilles.size - refusees.length, 28);
+    assert.equal(feuilles.size - refusees.length, 39);
   });
 
   test(`${profil} : chaque valeur de mode a la forme que le module donne à son type`, async () => {

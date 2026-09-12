@@ -26,7 +26,7 @@ depuis ce dépôt »](../../README.md#construire-le-plugin-depuis-ce-dépôt).
 | Commande | Ce qu'elle attend | Ce qu'elle écrit |
 |---|---|---|
 | Exporter le composant | Exactement un composant ou un set de variantes sélectionné | `<IdentifiantCode>.contract.json` : variantes, états, structure, tokens, icônes, règles d'usage |
-| Exporter les tokens | Rien, elle lit le fichier courant | `tokens.json` : les variables locales, avec leurs alias et leurs modes, dans la version 1 du format de tokens |
+| Exporter les tokens | Rien, elle lit le fichier courant | `tokens.json` : les variables locales, avec leurs alias et leurs modes, dans la version 2 du format de tokens |
 
 Une seule implémentation projette les noms pour les deux commandes. Avec deux
 projections, un contrat citerait un token que `tokens.json` écrit sous un autre

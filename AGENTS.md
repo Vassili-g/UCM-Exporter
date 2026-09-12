@@ -82,7 +82,9 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
       propertyBindings.ts      component properties situées dans chaque variant
       propertySurface.ts       surface publique élue : owner direct et wrapper
     tokens/exportTokens.ts     export DTCG
+    tokens/familles.ts         le type d'une famille STRING, décidé sur une composante d'alias
     tokens/graisses.ts         le type d'une graisse STRING, décidé sur tout le graphe d'alias
+    tokens/mouvement.ts        une TIMING en durée, une EASING en courbe, et les easings sans courbe
     variables.ts               index commun, collisions et alias
     base64.ts                  encodage UTF-8/Base64 sans dépendance au sandbox
     config.ts                  configuration GitHub locale
@@ -267,10 +269,13 @@ La spécification en lien porte le raisonnement.
   `CONTRACT_VERSION`, et laisse les chemins et les alias en place.
   → [spec](./docs/FORMAT.md#partie-2--export-tokens)
 - Le kit classe la marque avant de lire un seul token : absente, `origine` ;
-  `1`, `courante` ; entier supérieur, `future` ; toute autre valeur, ou un
-  document ou `$extensions` qui n'est pas un objet, `invalide`. `future` et `invalide`
-  refusent le contrôle, y compris dans un repository sans contrat. Seule la
-  racine est lue, et une version future n'est jamais présumée lisible.
+  la version courante, `courante` ; une version antérieure que
+  `VERSIONS_DE_TOKENS_LUES` énumère, `ancienne` ; entier supérieur, `future` ;
+  toute autre valeur, ou un document ou `$extensions` qui n'est pas un objet,
+  `invalide`. `future` et `invalide` refusent le contrôle, y compris dans un
+  repository sans contrat ; `ancienne` se lit comme `courante`. Seule la racine
+  est lue. La fenêtre est énumérée et jamais déduite : une version inférieure
+  n'est pas présumée lisible, une version future non plus.
   `etatDuFormatDeTokens()` en est l'unique autorité.
   → [compatibilité](./docs/COMPATIBILITE.md#la-version-du-format-de-tokens)
 - Une couleur s'écrit `{ colorSpace, components, alpha }`. L'espace vient de
@@ -287,6 +292,27 @@ La spécification en lien porte le raisonnement.
   cible absente et une boucle comprises, donne `string`. La table des graisses
   n'est jamais recopiée, et la décision ne dépend d'aucun ordre.
   `graissesNumeriques` (`tokens/graisses.ts`) en est l'unique autorité.
+  → [spec](./packages/plugin/SPEC.md#partie-2--export-tokens)
+- Le type d'une famille `STRING` se décide sur une composante connexe du graphe
+  d'alias, tous modes confondus, et jamais sur la feuille courante ni sur son
+  nom. Une composante devient `fontFamily` avec au moins une preuve positive,
+  liaison `fontFamily` d'un text style local ou scope `FONT_FAMILY` seul, et
+  aucun conflit ; une liaison par un autre champ de chaîne, un scope de texte
+  posé à côté de `FONT_FAMILY` et un alias qui quitte l'index sont des conflits.
+  Une composante sans preuve reste `string`. `graissesNumeriques` décide avant,
+  et `famillesDeTokens` (`tokens/familles.ts`) ne voit pas ce qu'elle a retenu :
+  les deux ensembles sont disjoints.
+  → [spec](./packages/plugin/SPEC.md#partie-2--export-tokens)
+- Une variable `TIMING` devient une durée en secondes, sans conversion ni
+  arrondi. Une variable `EASING` devient une courbe pour `LINEAR` et pour un
+  `CUSTOM_CUBIC_BEZIER` dont les quatre points sont finis et les abscisses dans
+  `[0, 1]` ; les ordonnées restent libres. Toute autre valeur écarte la
+  variable entière du fichier sous un constat, et un alias vers elle suit la
+  politique des cibles absentes. Aucune valeur de l'API Figma n'est recopiée :
+  `dtcgType` et `formatValue` traitent les six membres de
+  `VariableResolvedDataType` sans branche par défaut, et un septième produit
+  une erreur de compilation. `easingsSansCourbe` (`tokens/mouvement.ts`) en est
+  l'unique autorité.
   → [spec](./packages/plugin/SPEC.md#partie-2--export-tokens)
 
 ### Couleurs

@@ -1422,12 +1422,17 @@ le contrat porte toujours.
 
 ## Partie 2 — Export tokens
 
-**But** : exporter toutes les variables locales en `tokens.json` DTCG, chaîne
+**But** : exporter les variables locales en `tokens.json` DTCG, chaîne
 d'alias préservée sur tous les tiers et tous les types, **modes de Brand Tokens
-inclus**. Les couleurs et les dimensions suivent le module de format DTCG
-`2025.10`. Style Dictionary 5 lit ces valeurs avec ses transforms standard.
-Style Dictionary 4 ne les lit pas : il écrit `[object Object]` à la place de
-chaque couleur et de chaque dimension, sans faire échouer le build.
+inclus**. Les couleurs, les dimensions, les familles, les durées et les courbes
+suivent le module de format DTCG `2025.10`. Style Dictionary 5 lit ces valeurs
+avec ses transforms standard, la durée exceptée : son groupe `css` n'en porte
+aucun, et le consommateur enregistre le sien. Style Dictionary 4 ne lit aucune
+de ces formes : il écrit `[object Object]` à la place, sans faire échouer le
+build.
+
+Une variable `EASING` dont aucune courbe cubique ne décrit la valeur est la
+seule que l'export laisse dehors, avec celles qu'une collision de nom écarte.
 
 **La racine porte la version du format de tokens.** La racine est l'objet JSON
 de premier niveau. Elle reçoit `$extensions`, écrit une fois et avant les
@@ -1435,18 +1440,20 @@ groupes, puis les groupes de tokens :
 
 ```json
 {
-  "$extensions": { "com.ucm.formatVersion": 1 },
+  "$extensions": { "com.ucm.formatVersion": 2 },
   "primitives": { "terracota": { "600": { "$value": { "colorSpace": "srgb", "components": [0.7568627450980392, 0.26666666666666666, 0.054901960784313725], "alpha": 1 }, "$type": "color" } } }
 }
 ```
 
-La valeur est un entier positif, et la version courante est `1`. Un groupe ne
+La valeur est un entier positif, et la version courante est `2`. Un groupe ne
 porte jamais cette marque, et une propriété homonyme sous un groupe ne compte
 pas. Un fichier sans marque est dans la **forme d'origine**, celle que le plugin
 publiait avant la version `1` : couleur en hexadécimal `#rrggbb` ou
 `#rrggbbaa`, dimension en chaîne `"8px"`, graisse stockée en `STRING` laissée
-en `"$type": "string"`. Ce que le kit fait de chaque valeur de la marque, et
-qui corrige un refus, est dans
+en `"$type": "string"`. La version `1` publie les couleurs et les dimensions
+dans la forme du module, et laisse en `string` les familles, les durées et les
+easings. Ce que le kit fait de chaque valeur de la marque, et qui corrige un
+refus, est dans
 [COMPATIBILITE.md](./COMPATIBILITE.md#la-version-du-format-de-tokens).
 
 **1. Forme des valeurs.** Le `$type` et la forme de `$value` suivent le type de
@@ -1458,8 +1465,11 @@ la variable Figma :
 | `FLOAT` qui mesure une longueur | `dimension` | `{ "value": 8, "unit": "px" }` |
 | `FLOAT` sans unité | `number` | `600` |
 | `STRING` dont chaque valeur est un nom de graisse connu | `number` | `600` |
-| autre `STRING` | `string` | `"Open Sans"` |
+| `STRING` dont la composante d'alias est prouvée famille | `fontFamily` | `"Open Sans"` |
+| autre `STRING` | `string` | `"Condensed"` |
 | `BOOLEAN` | `boolean` | `true` |
+| `TIMING` | `duration` | `{ "value": 0.2, "unit": "s" }` |
+| `EASING` exprimable | `cubicBezier` | `[0, 0, 0.58, 1]` |
 
 - **Couleur.** `colorSpace` vaut `srgb` ou `display-p3`, d'après le profil
   colorimétrique du document Figma. Un document sans profil est exporté en
@@ -1478,15 +1488,32 @@ la variable Figma :
   `"700"`, qui n'est pas un nom, restent en `string`, valeur inchangée. La
   règle complète, alias compris, est dans la
   [spécification du moteur](../packages/plugin/SPEC.md#partie-2--export-tokens).
+- **Famille.** Une `STRING` devient `fontFamily` quand sa composante d'alias
+  porte une preuve d'usage et aucun conflit : un text style local relie l'un de
+  ses membres par son champ `fontFamily`, ou un membre n'offre que le scope
+  `FONT_FAMILY`. Le nom du token ne décide jamais. La valeur publiée est le nom
+  de la famille tel que Figma le donne, sans guillemets ni repli. La règle
+  complète est dans la
+  [spécification du moteur](../packages/plugin/SPEC.md#partie-2--export-tokens).
+- **Durée.** Figma compte une `TIMING` en secondes, et l'unité publiée est `s`.
+  Le nombre est recopié sans conversion ni arrondi, bruit flottant compris :
+  deux exports du même fichier restent identiques à l'octet. Le module admet
+  aussi `ms`, que cet export n'écrit pas.
+- **Courbe.** Une `EASING` devient `[x1, y1, x2, y2]`. `LINEAR` donne
+  `[0, 0, 1, 1]`, et un `CUSTOM_CUBIC_BEZIER` donne ses points sans arrondi. Le
+  module borne les abscisses à `[0, 1]` et laisse les ordonnées libres : une
+  courbe à dépassement est publiée telle quelle. Les douze autres membres de
+  `MotionEasing.type`, préréglages nommés, ressorts et `HOLD`, ne décrivent
+  aucune courbe cubique que l'API expose. L'export écarte alors la variable
+  entière du fichier et nomme au designer le mode fautif.
 
-Le fichier reste un dialecte de `2025.10` sur quatre sortes de feuilles :
-`"$type": "boolean"` et `"$type": "string"`, que le module ne définit pas ;
-`"$value": null`, écrit quand un alias vise une variable absente ; et les
-variables Figma `EASING` et `TIMING`, publiées en `string`. Les modes rangés
-sous `$extensions["com.ucm.modes"]` ne sont pas un écart : `$extensions` est un
-membre prévu par le module et le namespace appartient au projet. Le module de
-résolution `2025.10` décrit une autre façon d'exprimer un contexte, qui reste
-une évolution possible.
+Le fichier reste un dialecte de `2025.10` sur trois sortes de feuilles :
+`"$type": "boolean"` et `"$type": "string"`, que le module ne définit pas ; et
+`"$value": null`, écrit quand un alias vise une variable que le fichier ne
+publie pas. Les modes rangés sous `$extensions["com.ucm.modes"]` ne sont pas un
+écart : `$extensions` est un membre prévu par le module et le namespace
+appartient au projet. Le module de résolution `2025.10` décrit une autre façon
+d'exprimer un contexte, qui reste une évolution possible.
 
 **2. Résolution des alias (tous types)**, `valuesByMode[modeId]` = valeur
 directe **ou** `{ type: "VARIABLE_ALIAS", id }`. Si alias → écrire une
@@ -1507,8 +1534,11 @@ tout est visible d'un coup d'œil. Collections mono-mode : juste `$value`.
 **4. DTCG** : chaque variable → `{ $value, $type }`, groupes = objets imbriqués.
 Types : `COLOR`→`color` ; `FLOAT`→`dimension` **sauf** groupes sans
 unité (`opacity`, `fontweight` / `font-weight`, `z-index`, `aspect-ratio`) →
-`number` ; `STRING`→`string`, sauf la graisse reconnue du point 1 →
-`number` ; `BOOLEAN`→`boolean`. Le scope Figma précis
+`number` ; `STRING`→`string`, sauf la graisse reconnue du point 1 → `number` et
+la famille prouvée → `fontFamily` ; `BOOLEAN`→`boolean` ; `TIMING`→`duration` ;
+`EASING`→`cubicBezier`. Les six membres de `VariableResolvedDataType` sont
+traités sans branche par défaut : un septième arrête la compilation, plutôt que
+de laisser une valeur de l'API Figma entrer dans le fichier. Le scope Figma précis
 prévaut (`LINE_HEIGHT`, `FONT_SIZE`, `LETTER_SPACING` restent des dimensions ;
 `FONT_WEIGHT` et `OPACITY` donnent `number`). Lorsqu'une variable est disponible dans tous
 les scopes, le repli compare chaque segment normalisé du chemin en ignorant
@@ -1522,7 +1552,7 @@ chaque maillon. Ex. `lineheight` alias `spacing` (des px) → `dimension`, et no
 
 ```json
 {
-  "$extensions": { "com.ucm.formatVersion": 1 },
+  "$extensions": { "com.ucm.formatVersion": 2 },
   "primitives":  { "terracota": { "600": { "$value": { "colorSpace": "srgb", "components": [0.7568627450980392, 0.26666666666666666, 0.054901960784313725], "alpha": 1 }, "$type": "color" } } },
   "brands":      { "intencial": { "primary": { "600": { "$value": "{primitives.terracota.600}", "$type": "color" } } } },
   "brand-tokens":{ "primary": { "default": { "$value": "{brands.intencial.primary.600}", "$type": "color" } } },

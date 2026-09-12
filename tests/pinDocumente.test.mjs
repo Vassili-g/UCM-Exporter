@@ -13,7 +13,7 @@ const racine = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PAQUETS = ["@ucm-kit/cli", "@ucm-kit/adapter-typescript"];
 
 /**
- * Le seul document qui montre délibérément une autre version que celle du dépôt.
+ * Le document qui montre délibérément une autre version que celle du dépôt.
  *
  * La recette externe s'installe depuis le registre, jamais depuis le dépôt :
  * jouer une recette contre un paquet que npm ne sert pas encore ne prouve rien.
@@ -21,6 +21,16 @@ const PAQUETS = ["@ucm-kit/cli", "@ucm-kit/adapter-typescript"];
  * garde-fou.
  */
 const RECETTE = "docs/RECETTE.md";
+
+/**
+ * Les notes, où un numéro est une mesure et non une commande à copier.
+ *
+ * `docs/README.md` dit que ces notes ne font autorité sur rien et qu'aucune
+ * partie du produit n'en dépend. Un journal de preuves écrit la version que la
+ * commande a réellement installée le jour de la mesure : la réécrire à chaque
+ * publication effacerait le fait qu'elle enregistre.
+ */
+const NOTES = "docs/notes/";
 
 function documents(dossier = racine) {
   const trouves = [];
@@ -44,14 +54,17 @@ test("chaque pin montré par la documentation est celui que ce dépôt porte", (
   const fautes = [];
   let montres = 0;
   let exemptes = 0;
+  let exemptesDesNotes = 0;
 
   for (const chemin of documents()) {
     const relatif = relative(racine, chemin).split(sep).join("/");
     const contenu = readFileSync(chemin, "utf8");
-    if (relatif === RECETTE) {
+    if (relatif === RECETTE || relatif.startsWith(NOTES)) {
       for (const paquet of PAQUETS) {
         const motif = new RegExp(`${paquet.replace("/", "\\/")}@([\\w.-]+)`, "g");
-        exemptes += [...contenu.matchAll(motif)].length;
+        const trouves = [...contenu.matchAll(motif)].length;
+        if (relatif === RECETTE) exemptes += trouves;
+        else exemptesDesNotes += trouves;
       }
       continue;
     }
@@ -78,6 +91,7 @@ test("chaque pin montré par la documentation est celui que ce dépôt porte", (
   // recette a perdu ses commandes, soit elle a été renommée sans que le garde-fou
   // suive.
   assert.ok(exemptes > 0, `${RECETTE} ne montre plus aucune commande épinglée`);
+  assert.ok(exemptesDesNotes > 0, `aucune note de ${NOTES} ne montre plus de version mesurée`);
 
   assert.deepEqual(fautes, [], fautes.join("\n"));
 });
