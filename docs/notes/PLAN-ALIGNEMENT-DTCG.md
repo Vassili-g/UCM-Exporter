@@ -804,12 +804,12 @@ Actions :
 - [x] Passer le contrôle du kit, la CLI et l'adaptateur depuis ces paquets.
 - [x] Mettre le Playground sur les versions publiées exactes.
 - [x] Passer son installation propre, son build et sa CI.
-- [ ] Attendre H3, puis comparer les exports du plugin publié à ceux de H1.
-- [ ] Vérifier que le CSS issu du plugin publié conserve les mêmes propriétés,
+- [x] Attendre H3, puis comparer les exports du plugin publié à ceux de H1.
+- [x] Vérifier que le CSS issu du plugin publié conserve les mêmes propriétés,
       références et valeurs attendues.
-- [ ] Exécuter la recette externe de `docs/RECETTE.md` ; l'agent prend toutes les
+- [x] Exécuter la recette externe de `docs/RECETTE.md` ; l'agent prend toutes les
       étapes qui ne demandent ni Figma ni jugement visuel.
-- [ ] Préparer H4 avec le diff, les captures et les écarts nuls ou expliqués.
+- [x] Préparer H4 avec le diff, les captures et les écarts nuls ou expliqués.
 
 Critère de sortie : les paquets npm et le plugin Community réellement servis
 produisent les résultats validés avant publication.

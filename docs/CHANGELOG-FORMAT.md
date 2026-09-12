@@ -265,5 +265,9 @@ bouge pas.
 build réussit. Le lecteur de valeurs passe à Style Dictionary 5 avant la fusion
 du premier réexport.
 
-La première version du plugin qui produit cette forme n'est pas encore publiée
-sur la Community. Le plugin qu'elle sert produit la forme d'origine.
+Le plugin qui produit cette forme est publié sur la Figma Community. Son pied
+de page annonce « Schéma de contrat 13.0 », que le bundle précédent annonçait
+déjà : le contrat n'a pas changé. Ce qui distingue les deux est le résultat de
+l'analyse, qui annonce « DTCG 2025.10, version 1 du format de tokens » sous le
+résumé des tokens, et l'en-tête de la pull request, qui annonce « Version du
+format de tokens : `1` ». Un fichier sans marque vient du bundle antérieur.
