@@ -1499,12 +1499,13 @@ la variable Figma :
   Le nombre est recopié sans conversion ni arrondi, bruit flottant compris :
   deux exports du même fichier restent identiques à l'octet. Le module admet
   aussi `ms`, que cet export n'écrit pas.
-- **Courbe.** Une `EASING` devient `[x1, y1, x2, y2]`. `LINEAR` donne
-  `[0, 0, 1, 1]`, et un `CUSTOM_CUBIC_BEZIER` donne ses points sans arrondi. Le
-  module borne les abscisses à `[0, 1]` et laisse les ordonnées libres : une
-  courbe à dépassement est publiée telle quelle. Les douze autres membres de
-  `MotionEasing.type`, préréglages nommés, ressorts et `HOLD`, ne décrivent
-  aucune courbe cubique que l'API expose. L'export écarte alors la variable
+- **Courbe.** Une `EASING` devient `[x1, y1, x2, y2]` dès que l'API joint ses
+  quatre points, recopiés sans arrondi. `CUSTOM_CUBIC_BEZIER` les porte, et
+  Figma joint aussi ceux de certains préréglages, dont « Ease in and out
+  back ». `LINEAR` donne `[0, 0, 1, 1]`. Le module borne les abscisses à
+  `[0, 1]` et laisse les ordonnées libres : une courbe à dépassement est
+  publiée telle quelle. Un ressort, un `HOLD` et un préréglage sans points
+  joints ne décrivent aucune courbe cubique que l'API expose. L'export écarte alors la variable
   entière du fichier et nomme au designer le mode fautif.
 
 Le fichier reste un dialecte de `2025.10` sur trois sortes de feuilles :

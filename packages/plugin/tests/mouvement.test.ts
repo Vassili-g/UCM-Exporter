@@ -16,8 +16,8 @@ const bezier = (x1: number, y1: number, x2: number, y2: number) =>
   ({ type: 'CUSTOM_CUBIC_BEZIER', easingFunctionCubicBezier: { x1, y1, x2, y2 } }) as MotionEasing;
 
 /**
- * Les douze membres de `MotionEasing.type` qui ne décrivent aucune courbe, et
- * la cause que chacun donne.
+ * Les douze membres de `MotionEasing.type` qui n'ont pas de courbe quand l'API
+ * ne joint aucun point, et la cause que chacun donne.
  *
  * La cause se lit sur ce que l'API rend, et non sur la section du sélecteur de
  * Figma : un préréglage se reconnaît à l'absence de points, un ressort au
@@ -65,7 +65,7 @@ test('une abscisse hors de [0, 1] est refusée, et sa cause la distingue', () =>
   assert.deepEqual(courbeDeToken(bezier(0, 0, 1, 1)), { courbe: [0, 0, 1, 1] });
 });
 
-test('les douze autres easings de Figma n’ont aucune courbe cubique', () => {
+test('sans points joints, les douze autres easings de Figma n’ont aucune courbe', () => {
   for (const [type, cause] of SANS_COURBE) {
     assert.deepEqual(courbeDeToken({ type } as MotionEasing), { cause }, type);
   }
@@ -81,6 +81,24 @@ test('un ressort se reconnaît au champ que Figma joint, pas à son seul nom', (
   } as unknown as MotionEasing), { cause: 'ressort' });
   assert.deepEqual(courbeDeToken({
     type: 'CUSTOM_SPRING', easingFunctionSpring: { bounce: 0.36 },
+  } as unknown as MotionEasing), { cause: 'ressort' });
+});
+
+test('un préréglage dont l’API joint les points donne sa courbe', () => {
+  // Valeur que Figma rend pour « Ease in and out back » : les points
+  // accompagnent un `type` autre que CUSTOM_CUBIC_BEZIER.
+  assert.deepEqual(courbeDeToken({
+    type: 'EASE_IN_AND_OUT_BACK', easingFunctionCubicBezier: { x1: 0.7, y1: -0.4, x2: 0.4, y2: 1.4 },
+  } as MotionEasing), { courbe: [0.7, -0.4, 0.4, 1.4] });
+  // Ces points passent les mêmes contrôles que ceux d'une courbe personnalisée.
+  assert.deepEqual(courbeDeToken({
+    type: 'EASE_OUT', easingFunctionCubicBezier: { x1: 1.2, y1: 0, x2: 0.5, y2: 1 },
+  } as MotionEasing), { cause: 'abscisse' });
+  // Des points joints à un ressort ne décrivent pas sa trajectoire.
+  assert.deepEqual(courbeDeToken({
+    type: 'BOUNCY',
+    easingFunctionSpring: { bounce: 0.69 },
+    easingFunctionCubicBezier: { x1: 0, y1: 0, x2: 1, y2: 1 },
   } as unknown as MotionEasing), { cause: 'ressort' });
 });
 

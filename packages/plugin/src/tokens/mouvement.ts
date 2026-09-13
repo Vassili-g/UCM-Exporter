@@ -6,12 +6,11 @@
  * convertir ni l'arrondir, pour qu'un second export du même fichier rende les
  * mêmes octets.
  *
- * Une `EASING` n'a de courbe que dans deux cas : `LINEAR`, dont les points
- * sont connus par définition, et `CUSTOM_CUBIC_BEZIER`, qui les publie. Les
- * douze autres membres de `MotionEasing.type`, ressorts et `HOLD` compris, ne
- * décrivent aucune courbe cubique que l'API expose. `easingsSansCourbe` les
- * relève avant la première feuille, et `packages/plugin/SPEC.md` dit ce que
- * l'export en fait.
+ * Une `EASING` a une courbe dès que l'API publie ses quatre points, quel que
+ * soit le nom du préréglage, et `LINEAR` en a une par définition. Un ressort
+ * n'en a pas, `HOLD` non plus, et un préréglage dont l'API tait les points
+ * n'en donne aucune. `easingsSansCourbe` relève ces cas avant la première
+ * feuille, et `packages/plugin/SPEC.md` dit ce que l'export en fait.
  */
 import type { CourbeDeToken, DureeDeToken } from '@ucm-kit/core/format';
 
@@ -55,19 +54,26 @@ function estFini(coordonnee: unknown): coordonnee is number {
  */
 export function courbeDeToken(valeur: unknown): { courbe: CourbeDeToken } | { cause: CauseSansCourbe } {
   const easing = valeur as MotionEasing | undefined;
-  if (easing?.type === 'LINEAR') return { courbe: [0, 0, 1, 1] };
-  if (easing?.type !== 'CUSTOM_CUBIC_BEZIER') {
-    if (easing?.type === 'CUSTOM_SPRING' || easing?.easingFunctionSpring) return { cause: 'ressort' };
-    if (easing?.type === 'HOLD') return { cause: 'tenue' };
-    return { cause: 'preregle' };
+
+  // Un ressort passe avant les points : la trajectoire d'un ressort n'est pas
+  // cubique, et des points joints à une telle valeur ne la décriraient pas.
+  if (easing?.type === 'CUSTOM_SPRING' || easing?.easingFunctionSpring) return { cause: 'ressort' };
+  if (easing?.type === 'HOLD') return { cause: 'tenue' };
+
+  // `easingFunctionCubicBezier` est optionnel sur `MotionEasing` quel que soit
+  // le `type` : un préréglage dont Figma publierait les points donne donc sa
+  // courbe, au lieu d'être écarté sur son seul nom.
+  const points = easing?.easingFunctionCubicBezier;
+  if (points) {
+    const { x1, y1, x2, y2 } = points;
+    if (![x1, y1, x2, y2].every(estFini)) return { cause: 'points' };
+    if (x1 < 0 || x1 > 1 || x2 < 0 || x2 > 1) return { cause: 'abscisse' };
+    return { courbe: [x1, y1, x2, y2] };
   }
 
-  const points = easing.easingFunctionCubicBezier;
-  if (!points) return { cause: 'points' };
-  const { x1, y1, x2, y2 } = points;
-  if (![x1, y1, x2, y2].every(estFini)) return { cause: 'points' };
-  if (x1 < 0 || x1 > 1 || x2 < 0 || x2 > 1) return { cause: 'abscisse' };
-  return { courbe: [x1, y1, x2, y2] };
+  if (easing?.type === 'LINEAR') return { courbe: [0, 0, 1, 1] };
+  if (easing?.type === 'CUSTOM_CUBIC_BEZIER') return { cause: 'points' };
+  return { cause: 'preregle' };
 }
 
 /**
