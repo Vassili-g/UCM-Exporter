@@ -82,8 +82,6 @@ partie du produit n'en dépend.
 |---|---|
 | [notes/PISTES-EVOLUTION.md](./notes/PISTES-EVOLUTION.md) | Les modules d'évolution à étudier, leurs conditions et leurs essais |
 | [notes/PLAN-CONFORMITE-RENDU.md](./notes/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
-| [notes/ALIGNEMENT-DTCG.md](./notes/ALIGNEMENT-DTCG.md) | L'alignement engagé de `tokens.json` sur le module de format `2025.10` : la décision, les mesures et les limites |
-| [notes/PLAN-ALIGNEMENT-DTCG.md](./notes/PLAN-ALIGNEMENT-DTCG.md) | Le protocole autonome, les preuves et les portes humaines de cet alignement |
 | [notes/PLAN-TYPES-DTCG.md](./notes/PLAN-TYPES-DTCG.md) | Les types DTCG que la version 1 laisse dehors : leur source Figma, ce que le consommateur en rend, et le plan proposé |
 | [notes/REVUE-TYPES-DTCG.md](./notes/REVUE-TYPES-DTCG.md) | La revue mesurée de ce plan, ses corrections, et les lots d'implémentation |
 | [notes/PREUVES-TYPES-DTCG.md](./notes/PREUVES-TYPES-DTCG.md) | Le journal de la version 2 : commandes, mesures, mutations et portes restantes |

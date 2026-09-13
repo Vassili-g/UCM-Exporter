@@ -2,10 +2,8 @@
 
 > Statut : engagé. Les décisions sont prises, le moteur produit la version 2,
 > et les paquets la lisent. Restent la publication Community du plugin et le
-> réexport. Cette note complète l'[état des lieux](./ALIGNEMENT-DTCG.md) et
-> s'appuie sur les preuves de la
-> [version 1](./PREUVES-ALIGNEMENT-DTCG.md) ; celles de la version 2 sont dans
-> son [journal](./PREUVES-TYPES-DTCG.md). La [revue](./REVUE-TYPES-DTCG.md)
+> réexport. Les preuves de la version 2 sont dans son
+> [journal](./PREUVES-TYPES-DTCG.md). La [revue](./REVUE-TYPES-DTCG.md)
 > corrige huit points de ce plan, et sa section 7 dit ce que
 > l'implémentation a encore changé.
 

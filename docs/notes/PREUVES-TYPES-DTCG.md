@@ -2,8 +2,6 @@
 
 Journal de livraison de la version 2 du format de tokens. Il suit le
 [plan](./PLAN-TYPES-DTCG.md) et les lots de sa [revue](./REVUE-TYPES-DTCG.md).
-Le journal de la version 1 reste fermé dans
-[PREUVES-ALIGNEMENT-DTCG.md](./PREUVES-ALIGNEMENT-DTCG.md).
 
 ## État
 
@@ -271,9 +269,7 @@ Deux tests tiennent maintenant la décision : une famille passe sous
   bundle construit et empreinté.
 - **6.2**, le réexport par le plugin publié, et la CI du Playground sur le
   fichier version 2.
-- **6.3**, la recette visuelle sur la police et les animations. La recette
-  visuelle H4 de la version 1 reste elle aussi ouverte, et les deux se jouent
-  ensemble.
+- **6.3**, la recette visuelle sur la police et les animations.
 
 ## Limites de ce journal
 
@@ -286,5 +282,6 @@ Deux tests tiennent maintenant la décision : une famille passe sous
 - La preuve de famille du fichier réel n'est établie que par les contrats
   commités, qui montrent qu'un text style relie `primitives.fontfamily.base`.
   Que ce style soit local reste à confirmer.
-- La réserve Display P3 de la version 1 reste ouverte, et cette tranche ne la
-  touche pas.
+- Aucun export d'un document Figma réglé sur Display P3 n'a été mesuré. Cette
+  limite de la version 1 est dans la [roadmap](../../ROADMAP.md), et la
+  version 2 ne la change pas.
