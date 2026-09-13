@@ -167,13 +167,16 @@ valeur oriente une décision. La [politique de
 compatibilité](./docs/COMPATIBILITE.md) relie le contrat, le schéma, les tokens,
 les paquets et les adaptateurs.
 
-L'[alignement DTCG](./docs/notes/ALIGNEMENT-DTCG.md) donne à `tokens.json` sa
-version 1 du format de tokens. `@ucm-kit/core` 0.1.25 lit la marque, le plugin
-publié sur la Community produit cette version, et le dépôt consommateur la
-compile avec Style Dictionary 5.5.3. Le fichier déposé par le bundle publié a
-l'empreinte de celui du build de développement, et le CSS produit est identique
-à l'octet à celui de la forme d'origine. Les preuves sont dans le
-[journal](./docs/notes/PREUVES-ALIGNEMENT-DTCG.md).
+L'alignement DTCG donne à `tokens.json` sa version 1 du format de tokens.
+`@ucm-kit/core` 0.1.25 lit la marque, le plugin publié sur la Community produit
+cette version, et le dépôt consommateur la compile avec Style Dictionary 5.5.3.
+Le fichier déposé par le bundle publié a l'empreinte de celui du build de
+développement. Le CSS produit est identique à l'octet à celui de la forme
+d'origine, et la recette visuelle est validée.
+
+Limite : aucun export d'un document Figma réglé sur Display P3 n'a été mesuré.
+Le fichier simulé couvre ce profil dans les tests, jusqu'au CSS
+`color(display-p3 …)`.
 
 La version 2 ajoute les trois types que la version 1 laissait en `string` :
 `duration`, `cubicBezier` et `fontFamily`. `@ucm-kit/core` 0.1.26 lit les
