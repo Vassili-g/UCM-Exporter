@@ -283,7 +283,8 @@ semver de paquet.
    nombre est recopié sans conversion ni arrondi.
 2. **Une variable `EASING` exprimable devient une courbe**,
    `[x1, y1, x2, y2]` sous `$type: "cubicBezier"`. `LINEAR` donne
-   `[0, 0, 1, 1]`, et un `CUSTOM_CUBIC_BEZIER` donne ses points.
+   `[0, 0, 1, 1]`. Un `CUSTOM_CUBIC_BEZIER`, ou un préréglage dont l'API joint
+   les points, donne ces points.
 3. **Une famille prouvée devient `fontFamily`**, sa valeur restant le nom que
    Figma publie. La preuve est une liaison `fontFamily` d'un text style local
    ou un scope `FONT_FAMILY` seul, et elle vaut pour toute la composante
@@ -297,9 +298,9 @@ version 1. Aucune référence d'un contrat ne cesse de résoudre, et
 
 **Ce qui casse.** Trois points, et chacun a son geste.
 
-Une variable `EASING` que douze des quatorze easings de Figma décrivent,
-préréglages nommés, ressorts et `HOLD` compris, n'a aucune courbe cubique dans
-l'API : cette variable quitte le fichier sous un constat qui nomme son mode.
+Un ressort, un `HOLD` et un préréglage dont l'API ne joint pas les points n'ont
+aucune courbe cubique dans l'API. Une variable `EASING` qui en porte un quitte
+le fichier sous un constat qui nomme son mode.
 La version 1 la publiait en `string` avec l'objet brut de l'API Figma. Le
 designer choisit **Linear** ou **Custom bezier**, puis réexporte.
 

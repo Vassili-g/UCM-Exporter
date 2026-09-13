@@ -480,9 +480,11 @@ nomme le geste.
 
 **Une `TIMING` est une durée, une `EASING` est une courbe ou rien.** Figma
 compte une `TIMING` en secondes, et l'export recopie ce nombre sous l'unité
-`s`, sans conversion ni arrondi. Une `EASING` ne se convertit que dans deux
-cas : `LINEAR`, dont les points sont connus par définition, et
-`CUSTOM_CUBIC_BEZIER`, qui les publie. La validation exige quatre nombres
+`s`, sans conversion ni arrondi. Une `EASING` se convertit dès que l'API joint
+ses quatre points à la valeur, quel que soit son `type`. `CUSTOM_CUBIC_BEZIER`
+les porte, et Figma joint aussi ceux de certains préréglages, dont « Ease in
+and out back ». `LINEAR` a une courbe par définition. Un ressort n'en a jamais,
+même accompagné de points. La validation exige quatre nombres
 finis, et ne borne que les abscisses, à `[0, 1]` : DTCG laisse les ordonnées
 libres, et une courbe à dépassement est valide.
 
@@ -493,8 +495,8 @@ chacune et son mode, et un alias qui les vise suit la politique des cibles
 absentes en nommant la variable à corriger.
 
 Le constat dit ce que l'API rend, et non la section du sélecteur de Figma. Un
-préréglage nommé porte bien une courbe dans Figma, dont l'API ne publie pas
-les points : écrire qu'il n'est pas une courbe de Bézier serait faux. Cinq
+préréglage dont l'API ne joint pas les points porte pourtant une courbe dans
+Figma : écrire qu'il n'est pas une courbe de Bézier serait faux. Cinq
 causes s'écrivent donc séparément : les points absents d'un préréglage, un
 ressort, reconnu à son `type` ou au champ `easingFunctionSpring`, un `HOLD`,
 une courbe personnalisée sans ses quatre points, et une abscisse hors de

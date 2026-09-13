@@ -534,9 +534,8 @@ async function liaisonsDesTextStyles(warnings: string[]): Promise<LiaisonsDeText
 /**
  * Ce qui manque à une valeur `EASING`, dit par ce que l'API rend.
  *
- * Un préréglage nommé porte bien une courbe dans Figma, et l'API n'en publie
- * pas les points : écrire qu'il « n'est pas une courbe de Bézier » serait
- * faux. Un ressort, lui, n'en est pas une, et DTCG ne porte aucun type qui
+ * Un préréglage dont l'API ne joint pas les points porte pourtant une courbe
+ * dans Figma : écrire qu'il « n'est pas une courbe de Bézier » serait faux. Un ressort, lui, n'en est pas une, et DTCG ne porte aucun type qui
  * l'exprime.
  */
 function manqueDeCourbe(cause: CauseSansCourbe, mode: string): string {
@@ -559,8 +558,8 @@ function manqueDeCourbe(cause: CauseSansCourbe, mode: string): string {
  * Écarte du fichier les variables `EASING` qu'un mode empêche de publier, et
  * nomme chacune au designer.
  *
- * Douze des quatorze easings de Figma ne décrivent aucune courbe cubique que
- * l'API expose. Publier leur nom sous un type qui promet une courbe, ou une
+ * Un ressort, un `HOLD` et un préréglage dont l'API ne joint pas les points
+ * n'ont aucune courbe cubique à publier. Publier leur nom sous un type qui promet une courbe, ou une
  * courbe inventée à leur place, tromperait le développeur ; refuser l'export
  * entier priverait le fichier de toutes ses couleurs pour une animation. La
  * feuille sort donc du fichier, comme une variable écartée pour collision, et

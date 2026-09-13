@@ -304,9 +304,10 @@ La spécification en lien porte le raisonnement.
   les deux ensembles sont disjoints.
   → [spec](./packages/plugin/SPEC.md#partie-2--export-tokens)
 - Une variable `TIMING` devient une durée en secondes, sans conversion ni
-  arrondi. Une variable `EASING` devient une courbe pour `LINEAR` et pour un
-  `CUSTOM_CUBIC_BEZIER` dont les quatre points sont finis et les abscisses dans
-  `[0, 1]` ; les ordonnées restent libres. Toute autre valeur écarte la
+  arrondi. Une variable `EASING` devient une courbe dès que l'API joint ses
+  quatre points, quel que soit son `type`, s'ils sont finis et si les abscisses
+  sont dans `[0, 1]` ; les ordonnées restent libres. `LINEAR` en a une par
+  définition, un ressort jamais, même accompagné de points. Toute autre valeur écarte la
   variable entière du fichier sous un constat, et un alias vers elle suit la
   politique des cibles absentes. Aucune valeur de l'API Figma n'est recopiée :
   `dtcgType` et `formatValue` traitent les six membres de
