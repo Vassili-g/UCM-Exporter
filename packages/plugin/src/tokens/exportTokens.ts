@@ -286,6 +286,11 @@ export function buildLeaf(
       });
       return null;
     }
+    return formater(raw);
+  };
+
+  /** Une valeur de Figma dans la forme de `$value` : référence pour un alias, littéral sinon. */
+  function formater(raw: VariableValue): unknown {
     const alias = firstVariableAlias(raw);
     if (alias) {
       const target = pathById.get(alias.id);
@@ -308,10 +313,12 @@ export function buildLeaf(
       }
       return target ? `{${target}}` : null;
     }
-    // Chaque littéral d'une graisse décidée `number` est un nom que la table connaît.
-    if (graisse) return poidsDeGraisse(raw);
+    // Chaque littéral d'une graisse décidée `number` est un nom que la table
+    // connaît. Une surcharge d'extension n'entre pas dans cette décision : un
+    // nom qu'elle seule porte reste la chaîne de Figma.
+    if (graisse) return poidsDeGraisse(raw) ?? raw;
     return formatValue(raw, variable.resolvedType, rootPath, root.scopes, ctx.espace);
-  };
+  }
 
   const leaf: DtcgLeaf = { $value: valueForMode(collection.defaultModeId), $type };
 
@@ -331,12 +338,44 @@ export function buildLeaf(
     // lecteur sait que la collection a été écartée et que le compte rendu dit
     // pourquoi.
     const axe = ctx.axes.get(collection.id);
+    const surcharges = axe ? surchargesDeLaVariable(variable, axe, formater) : null;
     leaf.$extensions = axe
-      ? { 'com.ucm.axis': axe.cle, 'com.ucm.modes': Object.fromEntries(modes) }
+      ? {
+        'com.ucm.axis': axe.cle,
+        'com.ucm.modes': Object.fromEntries(modes),
+        ...(surcharges ? { 'com.ucm.extensions': surcharges } : {}),
+      }
       : { 'com.ucm.modes': Object.fromEntries(modes) };
   }
 
   return leaf;
+}
+
+/**
+ * Les surcharges d'une variable dans les extensions de son axe, creuses : seuls
+ * les couples d'extension et de mode surchargés sont écrits, chaque mode sous le
+ * nom du mode de la collection racine. `null` quand aucune extension ne la
+ * surcharge.
+ */
+function surchargesDeLaVariable(
+  variable: Variable,
+  axe: AxeDeCollection,
+  formater: (raw: VariableValue) => unknown,
+): Record<string, Record<string, unknown>> | null {
+  const surcharges = new Map<string, Record<string, unknown>>();
+  for (const extension of axe.extensions) {
+    const parMode = Object.prototype.hasOwnProperty.call(extension.collection.variableOverrides, variable.id)
+      ? extension.collection.variableOverrides[variable.id]
+      : undefined;
+    if (!parMode) continue;
+    const valeurs = new Map<string, unknown>();
+    for (const [modeId, raw] of Object.entries(parMode)) {
+      const mode = extension.modeRacine.get(modeId);
+      if (mode !== undefined && !valeurs.has(mode)) valeurs.set(mode, formater(raw));
+    }
+    if (valeurs.size > 0) surcharges.set(extension.nom, Object.fromEntries(valeurs));
+  }
+  return surcharges.size === 0 ? null : Object.fromEntries(surcharges);
 }
 
 /**
@@ -410,6 +449,9 @@ export function modeCollisionWarnings(collections: VariableCollection[]): PointA
   const points: PointACorriger[] = [];
 
   for (const collection of collections) {
+    // Une collection étendue hérite des modes de sa racine : la collision y est
+    // déjà nommée une fois.
+    if (estUneExtension(collection)) continue;
     const seen = new Set<string>();
     for (const mode of collection.modes) {
       const name = normalizeName(mode.name);
@@ -428,10 +470,115 @@ export function modeCollisionWarnings(collections: VariableCollection[]): PointA
   return points;
 }
 
-/** L'axe qu'une collection à plusieurs modes donne au fichier : sa clé, ses modes normalisés et son défaut. */
-export type AxeDeCollection = { cle: string; modes: string[]; defaut: string };
+/**
+ * Une collection étendue d'un axe : son nom d'extension, en un segment, sa
+ * parente, `base` pour la collection racine, et le nom du mode racine de chacun
+ * de ses modes.
+ */
+export type ExtensionDeCollection = {
+  nom: string;
+  parent: string;
+  collection: ExtendedVariableCollection;
+  modeRacine: Map<string, string>;
+};
+
+/** L'axe qu'une collection à plusieurs modes donne au fichier : sa clé, ses modes normalisés, son défaut et ses extensions. */
+export type AxeDeCollection = { cle: string; modes: string[]; defaut: string; extensions: ExtensionDeCollection[] };
 
 const IMPACT_SANS_AXE = 'Le développeur ne pourra pas générer les modes de cette collection.';
+
+/**
+ * Vrai pour une collection étendue (plan Enterprise). Ses variables et ses modes
+ * sont ceux de sa collection racine : elle ne compte ni comme un axe, ni comme
+ * des variables de plus.
+ */
+function estUneExtension(collection: VariableCollection): boolean {
+  return collection.isExtension === true;
+}
+
+const commeExtension = (collection: VariableCollection) => collection as unknown as ExtendedVariableCollection;
+
+/** Le nom d'extension d'une collection étendue : son nom normalisé, en un seul segment. */
+const nomDExtension = (collection: VariableCollection | ExtendedVariableCollection) =>
+  normalizeName(collection.name).replace(/\./g, '-');
+
+/**
+ * Les extensions d'une collection racine, ou `[]` sous un constat quand l'une
+ * d'elles s'appelle `base`, quand deux portent le même nom, ou quand une parente
+ * n'est pas dans le fichier.
+ */
+function extensionsDeLaCollection(
+  racine: VariableCollection,
+  collections: VariableCollection[],
+  points: PointACorriger[],
+): ExtensionDeCollection[] {
+  const etendues = collections.filter(estUneExtension).map(commeExtension)
+    .filter((collection) => collection.rootVariableCollectionId === racine.id);
+  if (etendues.length === 0) return [];
+
+  const impact = `Le développeur ne pourra pas générer les extensions de la collection « ${racine.name} ».`;
+  const parId = new Map(etendues.map((collection) => [collection.id, collection]));
+  let ecartees = false;
+
+  for (const collection of etendues.filter((candidate) => nomDExtension(candidate) === 'base')) {
+    ecartees = true;
+    points.push(pointDe(`Collection « ${collection.name} »`, {
+      manque: `son nom donne l’extension « base », qui désigne la collection « ${racine.name} » elle-même.`,
+      impact,
+      action: 'Renommez la collection étendue, puis réexportez.',
+    }));
+  }
+  const parNom = new Map<string, ExtendedVariableCollection[]>();
+  for (const collection of etendues) {
+    parNom.set(nomDExtension(collection), [...(parNom.get(nomDExtension(collection)) ?? []), collection]);
+  }
+  for (const [nom, porteurs] of parNom) {
+    if (porteurs.length < 2) continue;
+    ecartees = true;
+    points.push(pointDe(`Collections ${porteurs.map(({ name }) => `« ${name} »`).join(' et ')}`, {
+      manque: `leurs noms donnent la même extension « ${nom} » de la collection « ${racine.name} ».`,
+      impact,
+      action: 'Renommez les collections étendues pour que leurs noms diffèrent, puis réexportez.',
+    }));
+  }
+  for (const collection of etendues) {
+    if (collection.parentVariableCollectionId === racine.id || parId.has(collection.parentVariableCollectionId)) continue;
+    ecartees = true;
+    points.push(pointDe(`Collection « ${collection.name} »`, {
+      manque: 'elle étend une collection qui n’est pas dans ce fichier.',
+      impact,
+      action: 'Exportez les tokens depuis le fichier qui contient cette collection et sa parente.',
+    }));
+  }
+  if (ecartees) return [];
+
+  // Un mode d'extension désigne le mode de sa parente, qui peut être lui-même un
+  // mode d'extension : la remontée s'arrête au mode de la collection racine.
+  const parentDuMode = new Map<string, string>();
+  for (const collection of etendues) for (const mode of collection.modes) parentDuMode.set(mode.modeId, mode.parentModeId);
+  const nomRacine = new Map(racine.modes.map((mode) => [mode.modeId, normalizeName(mode.name)]));
+  const versRacine = (modeId: string): string | undefined => {
+    const vus = new Set<string>();
+    let courant = modeId;
+    while (!nomRacine.has(courant) && parentDuMode.has(courant) && !vus.has(courant)) {
+      vus.add(courant);
+      courant = parentDuMode.get(courant) as string;
+    }
+    return nomRacine.get(courant);
+  };
+
+  return etendues.map((collection) => ({
+    nom: nomDExtension(collection),
+    parent: collection.parentVariableCollectionId === racine.id
+      ? 'base'
+      : nomDExtension(parId.get(collection.parentVariableCollectionId) as ExtendedVariableCollection),
+    collection,
+    modeRacine: new Map(collection.modes.flatMap((mode) => {
+      const nom = versRacine(mode.modeId);
+      return nom === undefined ? [] : [[mode.modeId, nom] as [string, string]];
+    })),
+  }));
+}
 
 /**
  * Les axes que l'export retient, par identifiant de collection, et les constats
@@ -449,7 +596,7 @@ export function axesDesCollections(
   const points: PointACorriger[] = [];
   const parCle = new Map<string, VariableCollection[]>();
   for (const collection of collections) {
-    if (collection.modes.length < 2) continue;
+    if (collection.modes.length < 2 || estUneExtension(collection)) continue;
     const cle = prefixeDeCollection(collection.name);
     parCle.set(cle, [...(parCle.get(cle) ?? []), collection]);
   }
@@ -495,7 +642,12 @@ export function axesDesCollections(
       }));
       continue;
     }
-    axes.set(collection.id, { cle, modes, defaut: normalizeName(defaut.name) });
+    axes.set(collection.id, {
+      cle,
+      modes,
+      defaut: normalizeName(defaut.name),
+      extensions: extensionsDeLaCollection(collection, collections, points),
+    });
   }
   return { axes, points };
 }
@@ -551,13 +703,21 @@ function declarationDesAxes(
   collections: VariableCollection[],
   axes: ReadonlyMap<string, AxeDeCollection>,
   feuilles: FeuilleAModes[],
-): Record<string, { modes: string[]; default: string }> {
+): Record<string, { modes: string[]; default: string; extensions?: Record<string, { parent: string }> }> {
   const portees = new Set(feuilles.map(({ collection }) => collection.id));
   // `Object.fromEntries` crée des propriétés propres : une clé `__proto__`
   // reste un axe au lieu de fixer un prototype.
   return Object.fromEntries(collections.flatMap((collection) => {
     const axe = axes.get(collection.id);
-    return axe && portees.has(collection.id) ? [[axe.cle, { modes: axe.modes, default: axe.defaut }]] : [];
+    if (!axe || !portees.has(collection.id)) return [];
+    const declaration = axe.extensions.length === 0
+      ? { modes: axe.modes, default: axe.defaut }
+      : {
+        modes: axe.modes,
+        default: axe.defaut,
+        extensions: Object.fromEntries(axe.extensions.map(({ nom, parent }) => [nom, { parent }])),
+      };
+    return [[axe.cle, declaration]];
   }));
 }
 
@@ -628,7 +788,8 @@ export async function etatDesTokensDuFichier(): Promise<EtatDesTokens> {
   const modes = new Set<string>();
   let variables = 0;
   for (const collection of collections) {
-    variables += collection.variableIds.length;
+    // Une collection étendue liste aussi les variables héritées de sa racine.
+    if (!estUneExtension(collection)) variables += collection.variableIds.length;
     for (const mode of collection.modes) modes.add(mode.name);
   }
   return etatDesTokens({ collections: collections.length, variables, modes: modes.size });
