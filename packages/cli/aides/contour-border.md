@@ -9,8 +9,10 @@ Un `border` se dessine sans consommer la boîte ni déplacer un voisin. Sa coule
 et sa largeur viennent de `variants[].strokes[clé]`, ses cibles de
 `view.paintPlacements.strokes[clé]`. `align` donne sa géométrie : `inside` porte
 l'épaisseur entière vers l'intérieur, `outside` vers l'extérieur, `center` la
-moitié de chaque côté. Une largeur par côté se rend côté par côté. Le contour
-reste perceptible quand la plateforme force ses couleurs.
+moitié de chaque côté. Une largeur par côté se rend côté par côté, et une
+largeur `null` ne se rend pas. Plusieurs contours sur une même cible se
+composent, les tracés intérieurs d'abord, sans que l'un efface l'autre. Le
+contour reste perceptible quand la plateforme force ses couleurs.
 
 ## Écriture par défaut
 

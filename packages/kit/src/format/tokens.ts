@@ -98,7 +98,7 @@ export interface GroupeDeTokens {
 export const EXTENSION_AXES_TOKENS = 'com.ucm.axes';
 
 /**
- * Un axe : une collection Figma à plusieurs modes, sous la clé que
+ * Un axe : une collection Figma à plusieurs modes ou étendue, sous la clé que
  * `joinTokenPath` écrit pour elle. `modes` suit l'ordre de la collection et
  * `default` nomme son mode par défaut ; aucun lecteur ne déduit le défaut de
  * l'ordre. `extensions` nomme les collections étendues et leur parente, `base`

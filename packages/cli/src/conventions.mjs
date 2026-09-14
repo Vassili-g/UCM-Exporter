@@ -9,7 +9,7 @@
  */
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { NOM_CONFIGURATION, isTokenReference } from "@ucm-kit/core/format";
 
@@ -32,8 +32,15 @@ export function marqueurDeCopie(aide, version, ecriture) {
   return `<!-- ucm:copie ${aide} ${version} ${empreinteDEcriture(ecriture)} -->`;
 }
 
+/** Vrai quand `dossier` n'est ni `racine` ni l'un de ses descendants. */
+export function horsDeLaRacine(dossier, racine) {
+  const chemin = relative(resolve(racine), resolve(dossier));
+  return chemin === ".." || chemin.startsWith(`..${sep}`) || isAbsolute(chemin);
+}
+
 /**
- * Le chemin du fichier de conventions le plus proche de `depart`, ou `null`.
+ * Le chemin du fichier de conventions le plus proche de `depart`, ou `null`,
+ * aussi quand `depart` est hors de `racine`.
  *
  * La recherche remonte les dossiers et s'arrête au premier qui contient
  * `ucm.config.json`, ou à `racine` : un fichier de conventions situé au-dessus
@@ -42,6 +49,7 @@ export function marqueurDeCopie(aide, version, ecriture) {
 export function conventionsLesPlusProches(depart, racine) {
   const limite = resolve(racine);
   let dossier = resolve(depart);
+  if (horsDeLaRacine(dossier, limite)) return null;
   for (;;) {
     const candidat = join(dossier, CHEMIN_CONVENTIONS);
     if (existsSync(candidat)) return candidat;
@@ -129,9 +137,13 @@ export function lireConventions(texte, aides) {
   return { ecrituresParDefaut, tete, controles, sections, anomalies };
 }
 
-/** Les sections copiées dont l'écriture par défaut a changé depuis la copie. */
+/**
+ * Les sections copiées à relire : celles dont l'écriture par défaut a changé
+ * depuis la copie, et celles dont le marqueur ne porte pas d'empreinte, pour
+ * lesquelles `sansEmpreinte` vaut `true` puisque rien ne dit si elle a changé.
+ */
 export function sectionsARelire(conventions, aides) {
   return [...conventions.sections].filter(([nom, { copie }]) => (
     copie !== null && copie.empreinte !== empreinteDEcriture(aides.get(nom)?.ecriture ?? "")
-  )).map(([nom, { copie }]) => ({ nom, version: copie.version }));
+  )).map(([nom, { copie }]) => ({ nom, version: copie.version, sansEmpreinte: copie.empreinte === null }));
 }

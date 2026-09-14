@@ -1,7 +1,8 @@
 /**
  * Les axes de modes de `tokens.json`, et ce qu'un contexte en fait.
  *
- * Un axe est une collection Figma à plusieurs modes. La racine les déclare dans
+ * Un axe est une collection Figma à plusieurs modes, ou une collection que des
+ * collections étendues surchargent, même à un seul mode. La racine les déclare dans
  * `$extensions["com.ucm.axes"]`, et chaque feuille à modes nomme le sien dans
  * `com.ucm.axis`. Ce module n'écrit aucun CSS : il dit l'état du fichier, la
  * valeur d'une feuille dans un contexte, les axes dont dépend chaque feuille,
@@ -270,8 +271,9 @@ export function axesDeTokens(document) {
  * Une feuille sans axe rend sa `$value`. Une feuille à axe rend la valeur du
  * mode du contexte, ou de son défaut ; dans une collection étendue, la première
  * surcharge trouvée en remontant l'extension du contexte jusqu'à `base`
- * l'emporte. Rend `undefined` pour un chemin absent, un mode que l'axe ne
- * déclare pas ou une extension inconnue. Ne lève jamais.
+ * l'emporte. Rend `undefined` pour un chemin absent, une déclaration d'axe
+ * illisible, un mode que l'axe ne déclare pas ou une extension inconnue. Ne
+ * lève jamais.
  */
 export function valeurDansLeContexte(document, chemin, contexte = {}) {
   const feuille = indexDe(document).get(chemin);
@@ -283,7 +285,8 @@ export function valeurDansLeContexte(document, chemin, contexte = {}) {
   if (typeof nomAxe !== "string" || !estObjet(modes) || !possede(declarations, nomAxe)) return feuille.$value;
 
   const declaration = declarations[nomAxe];
-  const mode = valeurDuContexte(contexte, nomAxe) ?? declaration?.default;
+  if (!estObjet(declaration)) return undefined;
+  const mode = valeurDuContexte(contexte, nomAxe) ?? declaration.default;
   if (typeof mode !== "string" || !possede(modes, mode)) return undefined;
 
   const surcharges = estObjet(extensions[SURCHARGES]) ? extensions[SURCHARGES] : {};
@@ -380,7 +383,7 @@ export function axesDuContrat(contrat, contratsParNom, cones) {
       const axes = [...(cones.get(cheminDeReference(reference)) ?? [])].sort();
       for (const [rang, axe] of axes.entries()) {
         touches.add(axe);
-        for (const autre of axes.slice(rang + 1)) croisements.set(`${axe} ${autre}`, [axe, autre]);
+        for (const autre of axes.slice(rang + 1)) croisements.set(`${axe}\u0000${autre}`, [axe, autre]);
       }
     }
 
@@ -408,8 +411,9 @@ export function axesDuContrat(contrat, contratsParNom, cones) {
  * couple croisé. Un contexte ne nomme que ses axes hors défaut. Au plus
  * `1 + A + C` contextes.
  *
- * `axesTouches` porte les axes tels qu'`axesDeTokens` les rend, `croisements`
- * les couples de noms qu'`axesDuContrat` rend.
+ * `axesTouches` porte les axes tels que `contextesDesAxes` les rend, axes
+ * d'extension compris : avec la seule liste d'`axesDeTokens`, aucune extension
+ * n'est vérifiée. `croisements` porte les couples de noms qu'`axesDuContrat` rend.
  */
 export function contextesDeVerification(axesTouches, croisements = []) {
   const premierNonDefaut = new Map();

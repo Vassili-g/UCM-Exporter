@@ -38,13 +38,18 @@ export const USAGE_TOKENS = "ucm tokens css --out <fichier> [--sans-modes]";
 const possede = (objet, cle) => Object.prototype.hasOwnProperty.call(objet, cle);
 const fini = (valeur) => typeof valeur === "number" && Number.isFinite(valeur);
 
-/** Une chaîne CSS entre guillemets, dont les guillemets, antislashs et retours sont échappés. */
+/**
+ * Une chaîne CSS entre guillemets. Les guillemets et les antislashs s'échappent,
+ * et les trois caractères qui ferment une chaîne CSS, saut de ligne, retour et
+ * saut de page, s'écrivent par leur code.
+ */
 function chaineCss(texte) {
   const echappe = texte
     .replace(/\\/g, "\\\\")
     .replace(/"/g, "\\\"")
     .replace(/\n/g, "\\a ")
-    .replace(/\r/g, "\\d ");
+    .replace(/\r/g, "\\d ")
+    .replace(/\f/g, "\\c ");
   return `"${echappe}"`;
 }
 
@@ -130,6 +135,20 @@ export function attributsDesAxes(axes, modes = {}) {
   return { attributs, erreurs, notes };
 }
 
+/** Les refus de deux axes au même nom : un axe déclaré porte celui de l'axe d'extension d'un autre. */
+function axesHomonymes(axes) {
+  const refus = [];
+  const parNom = new Map();
+  for (const axe of axes) {
+    if (parNom.has(axe.nom)) {
+      const parent = axe.parent ?? parNom.get(axe.nom).parent;
+      refus.push(`Deux axes portent le nom « ${axe.nom} », dont l'axe d'extension de « ${parent} ».`);
+    }
+    parNom.set(axe.nom, axe);
+  }
+  return refus;
+}
+
 function regle(selecteur, declarations) {
   if (declarations.length === 0) return "";
   return `${selecteur} {\n${declarations.map(([nom, valeur]) => `  ${nom}: ${valeur};`).join("\n")}\n}\n`;
@@ -172,8 +191,8 @@ function valeurDans(variable, contexte) {
  * `axes` porte les axes à générer, tels qu'`axesDeTokens` les rend ; vide, la
  * feuille ne déclare que la base. `attributs` associe chaque axe, axes
  * d'extension compris, à son attribut. Rend `{ css, refus, notes }` : un refus
- * empêche d'écrire, une note nomme une feuille sans valeur, qui ne reçoit
- * aucune déclaration.
+ * empêche d'écrire, une note nomme une feuille sans valeur, déclarée `initial`
+ * dans chaque contexte où elle n'en a pas.
  *
  * Une collection étendue se ramène aux axes simples. Pour chaque feuille
  * surchargée `f`, `--ucm-x-base--f` et `--ucm-x-<e>--f`, pour chaque extension
@@ -186,10 +205,26 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
   const refus = [];
   const notes = [];
   const axesGeneres = contextesDesAxes(document, axes);
-  const axeParNom = new Map();
-  for (const axe of axesGeneres) {
-    if (axeParNom.has(axe.nom)) refus.push(`Deux axes portent le nom « ${axe.nom} », dont l'axe d'extension de « ${axe.parent ?? axe.nom} ».`);
-    axeParNom.set(axe.nom, axe);
+  refus.push(...axesHomonymes(axesGeneres));
+  const axeParNom = new Map(axesGeneres.map((axe) => [axe.nom, axe]));
+
+  // Le nom d'une extension entre dans ceux des intermédiaires : deux extensions
+  // qui s'y rejoignent déclareraient la même propriété, et la dernière gagnerait.
+  for (const axe of axes) {
+    const parProjection = new Map();
+    for (const extension of Object.keys(axe.extensions ?? {})) {
+      const projection = tokenCssVariable(extension).slice(2);
+      if (projection === "" || projection === "base") {
+        refus.push(projection === ""
+          ? `L'extension « ${extension} » de l'axe « ${axe.nom} » ne donne aucun nom CSS.`
+          : `L'extension « ${extension} » de l'axe « ${axe.nom} » donne le nom CSS « base », réservé à la collection elle-même.`);
+      } else if (parProjection.has(projection)) {
+        refus.push(`Les extensions « ${parProjection.get(projection)} » et « ${extension} » de l'axe « ${axe.nom} » `
+          + `donnent le même nom CSS « ${projection} ».`);
+      } else {
+        parProjection.set(projection, extension);
+      }
+    }
   }
 
   const proprietaire = new Map();
@@ -213,9 +248,11 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
     const ou = mode === undefined
       ? `La feuille « ${chemin} »`
       : `La feuille « ${chemin} », en mode « ${mode} »${extension ? ` de l'extension « ${extension} »` : ""},`;
+    // Sans déclaration, la propriété hériterait de la valeur d'un contexte
+    // englobant. `initial` la rend absente, et le repli d'un `var()` s'applique.
     if (valeur === null || valeur === undefined) {
-      notes.push(`${ou} n'a pas de valeur : elle ne reçoit aucune déclaration.`);
-      return null;
+      notes.push(`${ou} n'a pas de valeur : elle se déclare initial, qu'un var() lit comme une valeur absente.`);
+      return "initial";
     }
     const cible = cheminDeReference(valeur);
     if (cible !== null) {
@@ -323,7 +360,8 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
 
   const declarer = (entrees) => entrees.filter(([, valeur]) => valeur !== null);
   const parDefaut = (variable) => (variable.axe === null ? variable.valeur : valeurDans(variable, axeParNom.get(variable.axe).defaut));
-  const selecteurDe = (axe, mode) => `[${attributs.get(axe.nom)}="${mode}"]`;
+  // Un nom de mode normalisé garde les guillemets et les antislashs de Figma.
+  const selecteurDe = (axe, mode) => `[${attributs.get(axe.nom)}=${chaineCss(mode)}]`;
   const tousLesContextes = (axe) => `:is(${axe.modes.map((mode) => selecteurDe(axe, mode)).join(", ")})`;
 
   let css = regle(":root", declarer(variables.map((variable) => [variable.nom, parDefaut(variable)])));
@@ -503,12 +541,25 @@ export function tokensCss(arguments_, {
 
   const genereModes = etat === "complet" && !options.sansModes;
   const axesGeneres = genereModes ? axes : [];
+  const homonymes = axesHomonymes(contextesDesAxes(document, axesGeneres));
+  if (homonymes.length > 0) {
+    alerter([`${configuration.tokens} ne donne pas de feuille CSS, et ${options.out} reste inchangé :`, ...homonymes.map((ligne) => `  ${ligne}`)].join("\n"));
+    return 1;
+  }
+  // Une clé de `modes` se juge contre les axes déclarés. Un export antérieur n'en
+  // déclare aucun, et un axe écarté n'y figure plus : la clé n'y prouve rien.
+  const clesJugees = etat === "sans-modes" || etat === "complet";
+  const { erreurs: clesInconnues } = attributsDesAxes(
+    contextesDesAxes(document, axes),
+    clesJugees ? configuration.modes : {},
+  );
   const { attributs, erreurs, notes: notesDAttributs } = attributsDesAxes(
     contextesDesAxes(document, axesGeneres),
     genereModes ? configuration.modes : {},
   );
-  if (erreurs.length > 0) {
-    alerter(erreurs.join("\n"));
+  const fautes = [...new Set([...(clesJugees ? clesInconnues : []), ...erreurs])];
+  if (fautes.length > 0) {
+    alerter(fautes.join("\n"));
     return 2;
   }
 

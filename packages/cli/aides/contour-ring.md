@@ -7,7 +7,9 @@ quand: contour-ring
 
 Un `ring` se dessine hors du flux et ne déplace aucun voisin. Sa nature et ses
 tokens viennent de `rendering.roles.ring` ; son trait est plein ; `align` et
-`width` disent de quel côté de la boîte et sur quelle épaisseur. Pour un état de
+`width` disent de quel côté de la boîte et sur quelle épaisseur. Une largeur
+`null` ne se rend pas. Sur une cible qui porte un autre contour, les deux se
+composent sans que l'un efface l'autre. Pour un état de
 focus, il remplace l'indicateur natif et n'apparaît qu'au focus clavier.
 
 ## Écriture par défaut

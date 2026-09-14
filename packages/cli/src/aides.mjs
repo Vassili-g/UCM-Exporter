@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import {
   CHEMIN_CONVENTIONS,
   conventionsLesPlusProches,
+  horsDeLaRacine,
   lireConventions,
   marqueurDeCopie,
   sectionsARelire,
@@ -80,8 +81,9 @@ function avertissements(conventions, chemin, racine, catalogue) {
   const ou = relative(racine, chemin).split("\\").join("/");
   return [
     ...conventions.anomalies.map((anomalie) => `⚠ ${ou} : ${anomalie}`),
-    ...sectionsARelire(conventions, catalogue).map(({ nom, version }) => (
-      `⚠ ${ou} : la section « ${nom} » copie l'écriture par défaut de la version ${version}, qui a changé depuis. Relisez-la.`
+    ...sectionsARelire(conventions, catalogue).map(({ nom, version, sansEmpreinte }) => (sansEmpreinte
+      ? `⚠ ${ou} : la section « ${nom} » copie l'écriture par défaut de la version ${version}, sans empreinte qui dise si elle a changé depuis. Comparez-la à \`ucm aides ${nom}\`.`
+      : `⚠ ${ou} : la section « ${nom} » copie l'écriture par défaut de la version ${version}, qui a changé depuis. Relisez-la.`
     )),
   ];
 }
@@ -142,7 +144,17 @@ export function aides(arguments_, {
     return 0;
   }
 
+  if (aide.nom === "composant") {
+    alerter(`Aucune section ne personnalise l'aide composant : le texte avant la première section de ${CHEMIN_CONVENTIONS.split("\\").join("/")} `
+      + "est l'écriture de l'aide composant. Rédigez-y la stack, l'architecture et le gabarit du repository.");
+    return 2;
+  }
+
   const depart = resolve(racine, options.chemin ?? ".");
+  if (horsDeLaRacine(depart, racine)) {
+    alerter(`${options.chemin} est hors du repository : --personnaliser n'écrit que dans ses conventions.`);
+    return 2;
+  }
   const { chemin, conventions } = conventionsDepuis(depart, racine, catalogue);
   if (chemin === null) {
     alerter(`Aucun ${CHEMIN_CONVENTIONS.split("\\").join("/")} ne s'applique à ${relative(racine, depart) || "."}. `

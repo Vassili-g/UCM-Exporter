@@ -686,6 +686,14 @@ test("un mode qui cite un autre type sous un text style bloque, et le rapport no
   const { bloquant, rapport } = verdict({ composants: { Widget: { contrat: document, tsx: TSX } }, tokens });
 
   assert.equal(bloquant, true);
-  assert.match(rapport, /dont la feuille `typo\.ligne` cite un token de type `number` dans le mode `dense`/);
+  assert.match(rapport, /dont la feuille `typo\.ligne` cite un token de type `number` dans le mode `dense`\. Type attendu/);
   assert.match(rapport, /Un designer doit lier dans Figma une variable du même type/);
+
+  tokens.typo.ligne.$extensions = {
+    "com.ucm.modes": { confort: "{typo.base}" },
+    "com.ucm.extensions": { "marque-b": { confort: "{typo.poids}" } },
+  };
+  const etendu = verdict({ composants: { Widget: { contrat: document, tsx: TSX } }, tokens });
+  assert.equal(etendu.bloquant, true);
+  assert.match(etendu.rapport, /cite un token de type `number` dans le mode `confort` de l'extension `marque-b`\. Type attendu/);
 });

@@ -295,10 +295,11 @@ function rapportMarkdown(bilans, fautifs, bilansDuRapport, contexte) {
         count: bilan.typesTypographiques.length,
         itemSingular: "token",
         detailsTitle: "Écarts détectés",
-        details: bilan.typesTypographiques.map(({ chemin, reference, attendu, recu, feuille, mode }) => (
+        details: bilan.typesTypographiques.map(({ chemin, reference, attendu, recu, feuille, mode, extension }) => (
           mode === undefined
             ? `\`${chemin}\` utilise \`${reference}\` de type \`${recu}\`. Type attendu : \`${attendu}\`.`
-            : `\`${chemin}\` utilise \`${reference}\`, dont la feuille \`${feuille}\` cite un token de type \`${recu}\` dans le mode \`${mode}\`. Type attendu : \`${attendu}\`.`
+            : `\`${chemin}\` utilise \`${reference}\`, dont la feuille \`${feuille}\` cite un token de type \`${recu}\` dans le mode \`${mode}\``
+              + `${extension === undefined ? "" : ` de l'extension \`${extension}\``}. Type attendu : \`${attendu}\`.`
         )),
         action: bilan.typesTypographiques.some(({ mode }) => mode !== undefined)
           ? "Un designer doit lier dans Figma une variable du même type pour chaque mode cité, puis réexporter les tokens."
@@ -341,10 +342,11 @@ function terminalDesBilans(bilans) {
     for (const token of bilan.manquants) {
       fil.push({ flux: "warn", texte: `⚠ ${bilan.fichier} : référence absente de la source de tokens → ${token}` });
     }
-    for (const { chemin, reference, attendu, recu, feuille, mode } of bilan.typesTypographiques) {
+    for (const { chemin, reference, attendu, recu, feuille, mode, extension } of bilan.typesTypographiques) {
+      const ou = extension === undefined ? `le mode ${mode}` : `le mode ${mode} de l'extension ${extension}`;
       const constat = mode === undefined
         ? `${reference} est ${recu}, attendu ${attendu}`
-        : `${reference} traverse ${feuille}, qui cite un ${recu} dans le mode ${mode}, attendu ${attendu}`;
+        : `${reference} traverse ${feuille}, qui cite un ${recu} dans ${ou}, attendu ${attendu}`;
       fil.push({ flux: "error", texte: `✗ ${bilan.fichier} : type typographique incompatible → ${chemin}, ${constat}` });
     }
     for (const erreur of bilan.graphe) {

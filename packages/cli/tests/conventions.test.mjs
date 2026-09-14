@@ -125,5 +125,22 @@ test("une section copiée se relit quand l'écriture par défaut a changé depui
   assert.deepEqual(sectionsARelire(aJour, AIDES), []);
 
   const perimee = lireConventions(texte("`box-shadow: 0 0 0 <width> <color>`"), AIDES);
-  assert.deepEqual(sectionsARelire(perimee, AIDES), [{ nom: "contour-ring", version: "0.1.29" }]);
+  assert.deepEqual(sectionsARelire(perimee, AIDES), [{ nom: "contour-ring", version: "0.1.29", sansEmpreinte: false }]);
+
+  const sansEmpreinte = lireConventions("## contour-ring\n<!-- ucm:copie contour-ring 0.1.29 -->\nClasse.", AIDES);
+  assert.deepEqual(sectionsARelire(sansEmpreinte, AIDES), [{ nom: "contour-ring", version: "0.1.29", sansEmpreinte: true }]);
+});
+
+test("la recherche des conventions ne sort jamais du repository", () => {
+  const parent = mkdtempSync(join(tmpdir(), "ucm-conventions-"));
+  try {
+    const racine = join(parent, "repository");
+    mkdirSync(join(parent, ".ucm"), { recursive: true });
+    writeFileSync(join(parent, ".ucm", "conventions.md"), "au-dessus");
+    mkdirSync(racine, { recursive: true });
+    assert.equal(conventionsLesPlusProches(parent, racine), null);
+    assert.equal(conventionsLesPlusProches(racine, racine), null, "aucun fichier dans le repository");
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
 });

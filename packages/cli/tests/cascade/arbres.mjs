@@ -90,6 +90,15 @@ export const ELEMENT_A_TROIS_ATTRIBUTS = {
   corps: `<div data-sonde="meme" data-marque="m2" data-theme="dark" data-densite="confort">${sonde("dedans")}</div>`,
 };
 
+export const ARBRES_SANS_VALEUR = [
+  { nom: "aucun attribut", corps: sonde("seule") },
+  {
+    nom: "mode sans valeur, puis mode par défaut, puis mode sans valeur",
+    corps: `<div data-marque="m2">${sonde("1")}<div data-marque="m1">${sonde("2")}`
+      + `<div data-marque="m2">${sonde("3")}</div></div></div>`,
+  },
+];
+
 const E = "data-color-extensions";
 
 export const ARBRES_EXTENSIONS = [

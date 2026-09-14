@@ -63,6 +63,17 @@ export const TROIS_AXES = {
   composant: { fond: alias("{densite.espace}") },
 };
 
+/**
+ * Une feuille sans valeur dans un mode qui n'est pas le défaut, et un alias qui
+ * la cite. La valeur par défaut, déclarée sur `:root`, ne doit pas atteindre ce
+ * mode par héritage.
+ */
+export const SANS_VALEUR = {
+  $extensions: { ...MARQUE, "com.ucm.axes": { marque: { modes: ["m1", "m2"], default: "m1" } } },
+  marque: { vide: feuille("marque", { m1: 1, m2: null }) },
+  composant: { fond: alias("{marque.vide}") },
+};
+
 /** `TROIS_AXES` avec ses axes déclarés dans un autre ordre. */
 export function avecOrdreDesAxes(document, ordre) {
   const axes = document.$extensions["com.ucm.axes"];

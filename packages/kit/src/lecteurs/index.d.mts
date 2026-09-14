@@ -147,7 +147,8 @@ declare module "@ucm-kit/core/lecteurs" {
 
   /**
    * Les incohérences entre un text style et les types DTCG de ses références.
-   * Une incohérence qui vient d'un mode porte aussi `feuille` et `mode`.
+   * Une incohérence qui vient d'un mode porte aussi `feuille` et `mode`, et
+   * `extension` quand elle vient d'une surcharge d'extension.
    */
   export function erreursTypesTypographiques(contrat: unknown, tokens: unknown): Array<{
     chemin: string;
@@ -156,6 +157,7 @@ declare module "@ucm-kit/core/lecteurs" {
     recu: string;
     feuille?: string;
     mode?: string;
+    extension?: string;
   }>;
 
   // ─── Le fichier de tokens DTCG ────────────────────────────────────────────
@@ -246,7 +248,10 @@ declare module "@ucm-kit/core/lecteurs" {
     cones: Map<string, Set<string>>,
   ): { axes: string[]; croisements: Array<[string, string]>; manquantes: unknown[] };
 
-  /** Le défaut, un contexte par axe touchant, un par couple croisé : au plus `1 + A + C`. */
+  /**
+   * Le défaut, un contexte par axe touchant, un par couple croisé : au plus
+   * `1 + A + C`. Les axes viennent de `contextesDesAxes`, axes d'extension compris.
+   */
   export function contextesDeVerification(
     axesTouches: ReadonlyArray<Pick<AxeLu, "nom" | "modes" | "defaut">>,
     croisements?: ReadonlyArray<readonly [string, string]>,

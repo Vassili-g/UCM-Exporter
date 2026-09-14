@@ -10,7 +10,9 @@ catalogue `icons`. `size` donne la boîte de l'icône. Une icône `strict` rend
 toujours `figmaName`, une icône `modifiable` rend la valeur de `runtimeProp`
 avec `figmaName` en repli. `visibilityProp` décide seulement si l'icône
 s'affiche. Le contrat ne donne ni le dessin ni le jeu d'icônes, et une icône
-absente de `view.icons` ne se réintroduit pas.
+absente de `view.icons` ne se réintroduit pas. Les combinaisons de
+`icons.*.variants` se recopient littéralement quand une table est nécessaire,
+jamais en règle déduite.
 
 ## Écriture par défaut
 
