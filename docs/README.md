@@ -82,6 +82,5 @@ partie du produit n'en dépend.
 |---|---|
 | [notes/PISTES-EVOLUTION.md](./notes/PISTES-EVOLUTION.md) | Les modules d'évolution à étudier, leurs conditions et leurs essais |
 | [notes/PLAN-CONFORMITE-RENDU.md](./notes/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
-| [notes/PLAN-TYPES-DTCG.md](./notes/PLAN-TYPES-DTCG.md) | Les types DTCG que la version 1 laisse dehors : leur source Figma, ce que le consommateur en rend, et le plan proposé |
-| [notes/REVUE-TYPES-DTCG.md](./notes/REVUE-TYPES-DTCG.md) | La revue mesurée de ce plan, ses corrections, et les lots d'implémentation |
-| [notes/PREUVES-TYPES-DTCG.md](./notes/PREUVES-TYPES-DTCG.md) | Le journal de la version 2 : commandes, mesures, mutations et portes restantes |
+| [notes/PLAN-FINAL-MODES-ET-AIDES.md](./notes/PLAN-FINAL-MODES-ET-AIDES.md) | Le plan des modes de tokens et des aides à l'implémentation, sa revue et ses lots |
+| [notes/TODO-MODES-ET-AIDES.md](./notes/TODO-MODES-ET-AIDES.md) | La liste de tâches ordonnée qui exécute ce plan |
