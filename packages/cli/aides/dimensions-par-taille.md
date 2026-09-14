@@ -1,0 +1,21 @@
+---
+aide: dimensions-par-taille
+quand: dimensions-par-taille
+---
+
+## Sens
+
+`structure.sizes` remplace `gap`, `rowGap`, `columnGap`, `padding` et `radius`
+du conteneur de layout, pour chaque valeur de la prop enum dont les valeurs sont
+ses clés. L'entrée de la taille courante s'applique exactement. Une prop
+introuvable ou ambiguë, ou un conteneur que la vue exacte ne désigne pas sans
+ambiguïté, se rapporte au développeur au lieu d'un placement au hasard.
+
+## Écriture par défaut
+
+Une table littérale qui associe chaque taille à ses dimensions, appliquée au
+conteneur que la vue exacte désigne.
+
+## Preuve
+
+Relecture de chaque taille contre `structure.sizes`.

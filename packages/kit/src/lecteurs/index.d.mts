@@ -248,6 +248,28 @@ declare module "@ucm-kit/core/lecteurs" {
     axes: readonly AxeLu[],
   ): { cycles: string[][]; interrompue: boolean };
 
+  // ─── Les caractéristiques d'un contrat ────────────────────────────────────
+
+  /** Les caractéristiques, dans l'ordre où une aide les imprime. */
+  export const CARACTERISTIQUES: ReadonlyArray<{ id: string; relevee: string }>;
+
+  /**
+   * La caractéristique que relève chaque couple (définition, propriété) du
+   * schéma : un identifiant, une liste que le rôle d'une clé tranche, ou une
+   * table par valeur d'énumération.
+   */
+  export const CHAMPS: Readonly<Record<string, string | readonly string[] | { parValeur: Record<string, string> }>>;
+
+  /** Les couples du schéma qu'aucune aide ne couvre, et la raison de chacun. */
+  export const SANS_AIDE: Readonly<Record<string, string>>;
+
+  /** Les caractéristiques d'un contrat, dans l'ordre de `CARACTERISTIQUES`. */
+  export function caracteristiquesDuContrat(
+    contrat: unknown,
+    contratsParNom?: Map<string, unknown>,
+    cones?: Map<string, Set<string>>,
+  ): string[];
+
   // ─── Le schéma publié ─────────────────────────────────────────────────────
 
   /** Chemin résolu du JSON Schema commité, pour un éditeur ou un test d'accord. */
