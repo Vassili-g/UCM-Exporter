@@ -149,6 +149,7 @@ packages/cli/            la ligne de commande : @ucm-kit/cli, publiée
   src/check.mjs            lance le contrôle du kit, imprime, écrit le rapport
   src/adaptateur.mjs       découvre l'adaptateur de stack installé dans le repo
   src/icons.mjs            les icônes que les contrats du repo réclament
+  src/tokens-css.mjs       la feuille CSS des tokens et de leurs modes, depuis tokens.json
   tests/                   dont recette.test.mjs, sur des repositories temporaires
   tests/cascade/           la feuille des tokens rendue dans trois moteurs, par npm run cascade
 
