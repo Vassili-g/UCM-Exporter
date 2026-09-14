@@ -1,7 +1,8 @@
 /**
  * Grammaire portable de `ucm.config.json`, partagée par le plugin et la CI.
  * Ce module valide un objet sans lire de fichier. La configuration facultative
- * décrit trois chemins, jamais la version du format ; un fichier présent mais
+ * décrit trois chemins, l'attribut HTML des axes de modes et le repli des
+ * familles typographiques, jamais la version du format ; un fichier présent mais
  * invalide est une erreur, tandis que son absence applique les valeurs par défaut.
  */
 
@@ -19,7 +20,7 @@ export const NOM_CONFIGURATION = 'ucm.config.json';
  */
 export const MOTIF_IMPLEMENTATION_PAR_DEFAUT = '{dir}/{id}.tsx';
 
-/** Ce qu'un repository déclare de lui-même : trois chemins, jamais une version. */
+/** Ce qu'un repository déclare de lui-même : trois chemins et deux sections facultatives, jamais une version. */
 export type ConfigurationRepository = {
   /** Dossier sous lequel les contrats sont cherchés, récursivement. */
   components: string;
@@ -27,7 +28,18 @@ export type ConfigurationRepository = {
   tokens: string;
   /** Motif qui résout le chemin d'une implémentation depuis celui du contrat. */
   implementation: string;
+  /**
+   * L'attribut HTML d'un axe de `tokens.json`, quand ce n'est pas celui que
+   * `attributDeMode` dérive de son nom. Une clé qui ne nomme aucun axe est
+   * refusée par les commandes qui lisent aussi le fichier de tokens.
+   */
+  modes?: Record<string, string>;
+  /** Ce que la feuille CSS des tokens ajoute aux valeurs du fichier. */
+  css?: { fontFamilyFallback?: string };
 };
+
+/** Les champs qui portent un chemin, et qui ont un défaut. */
+const CHAMPS_DE_CHEMIN = ['components', 'tokens', 'implementation'] as const;
 
 /**
  * Ce qu'un repository vierge décrit sans rien écrire.
@@ -51,6 +63,9 @@ export const CONFIGURATION_PAR_DEFAUT: Readonly<ConfigurationRepository> = Objec
 const estTexteNonVide = (valeur: unknown): boolean =>
   typeof valeur === 'string' && valeur.trim() !== '';
 
+const estObjet = (valeur: unknown): valeur is Record<string, unknown> =>
+  valeur !== null && typeof valeur === 'object' && !Array.isArray(valeur);
+
 /**
  * `Object.hasOwn` n'est pas disponible ici, et ce n'est pas un oubli : ce
  * sous-chemin cible ES2019 parce qu'il est bundlé pour le sandbox Figma. Une
@@ -62,6 +77,17 @@ const declare = (objet: Record<string, unknown>, cle: string): boolean =>
   Object.prototype.hasOwnProperty.call(objet, cle);
 
 /**
+ * Un attribut de mode : `data-` suivi de lettres minuscules, de chiffres ou de
+ * tirets, avec au moins une lettre ou un chiffre. Une lettre sans casse passe,
+ * puisque `attributDeMode` la garde.
+ */
+function estAttributDeMode(valeur: unknown): boolean {
+  if (typeof valeur !== 'string' || !/^data-[\p{L}\p{N}-]+$/u.test(valeur)) return false;
+  const suite = valeur.slice('data-'.length);
+  return suite === suite.toLowerCase() && /[\p{L}\p{N}]/u.test(suite);
+}
+
+/**
  * Les champs absents ou mal formés d'une configuration.
  *
  * Même forme de réponse que `champsInvalidesDuContrat` (une liste de chemins,
@@ -70,12 +96,10 @@ const declare = (objet: Record<string, unknown>, cle: string): boolean =>
  * un champ écrit et inutilisable l'est.
  */
 export function champsInvalidesDeLaConfiguration(configuration: unknown): string[] {
-  if (configuration === null || typeof configuration !== 'object' || Array.isArray(configuration)) {
-    return [NOM_CONFIGURATION];
-  }
-  const objet = configuration as Record<string, unknown>;
+  if (!estObjet(configuration)) return [NOM_CONFIGURATION];
+  const objet = configuration;
   const invalides: string[] = [];
-  for (const cle of Object.keys(CONFIGURATION_PAR_DEFAUT)) {
+  for (const cle of CHAMPS_DE_CHEMIN) {
     if (declare(objet, cle) && !estTexteNonVide(objet[cle])) invalides.push(cle);
   }
   // Un numéro de version écrit ici est refusé, pas ignoré. L'ignorer laisserait
@@ -84,6 +108,23 @@ export function champsInvalidesDeLaConfiguration(configuration: unknown): string
   // qu'un geste refusé.
   for (const cle of ['contractVersion', 'version', 'schemaVersion']) {
     if (declare(objet, cle)) invalides.push(cle);
+  }
+
+  if (declare(objet, 'modes')) {
+    const modes = objet.modes;
+    if (!estObjet(modes)) invalides.push('modes');
+    else {
+      for (const [axe, attribut] of Object.entries(modes)) {
+        if (!estAttributDeMode(attribut)) invalides.push(`modes.${axe}`);
+      }
+    }
+  }
+  if (declare(objet, 'css')) {
+    const css = objet.css;
+    if (!estObjet(css)) invalides.push('css');
+    else if (declare(css, 'fontFamilyFallback') && !estTexteNonVide(css.fontFamilyFallback)) {
+      invalides.push('css.fontFamilyFallback');
+    }
   }
   return invalides.sort();
 }
@@ -104,16 +145,19 @@ export function configurationDepuisJson(
     return {
       configuration: { ...CONFIGURATION_PAR_DEFAUT },
       erreur:
-        `${NOM_CONFIGURATION} : ${invalides.join(', ')}. ` +
-        `Chaque champ est un chemin non vide, et aucun numéro de version ne s'y écrit — ` +
-        `la fenêtre de versions lues appartient au paquet installé.`,
+        `${NOM_CONFIGURATION} : ${invalides.join(', ')}. `
+        + 'Un chemin est une chaîne non vide ; un attribut de `modes` commence par `data-`, '
+        + 'suivi de minuscules, de chiffres ou de tirets ; aucun numéro de version ne s\'y '
+        + 'écrit, car la fenêtre de versions lues appartient au paquet installé.',
     };
   }
 
   const objet = brut as Record<string, unknown>;
-  const configuration = { ...CONFIGURATION_PAR_DEFAUT };
-  for (const cle of Object.keys(CONFIGURATION_PAR_DEFAUT) as (keyof ConfigurationRepository)[]) {
+  const configuration: ConfigurationRepository = { ...CONFIGURATION_PAR_DEFAUT };
+  for (const cle of CHAMPS_DE_CHEMIN) {
     if (declare(objet, cle)) configuration[cle] = objet[cle] as string;
   }
+  if (declare(objet, 'modes')) configuration.modes = { ...(objet.modes as Record<string, string>) };
+  if (declare(objet, 'css')) configuration.css = { ...(objet.css as { fontFamilyFallback?: string }) };
   return { configuration, erreur: null };
 }

@@ -10,7 +10,7 @@ the repository that implements the component. This package is what both sides
 must share in order to talk about the same format.
 
 ```sh
-npm install @ucm-kit/core@0.1.27
+npm install @ucm-kit/core@0.1.28
 ```
 
 Most repositories never call this package directly. They run
@@ -94,6 +94,16 @@ build succeeds. Style Dictionary 5 writes the same for every `duration` of
 version `2` unless the reader registers a transform for that type: its `css`
 group ships none, `time/seconds` filtering on the older `time` type. Check both
 before merging the first export in a new version.
+
+## A mode that changes the type of a chain is refused
+
+The typography check resolves a text style reference through `$value`, which is
+the default mode. From `@ucm-kit/core@0.1.28` it also reads every mode of each
+token on that chain, and refuses the reference when one mode aliases a token of
+another `$type`: a line height that cites a dimension by default and a plain
+number in a dense mode. The report names the token and the mode. A token file
+that passed before can be refused after the upgrade. The designer links a
+variable of the same type in that mode, then exports the tokens again.
 
 ## A version gap has a direction, which names who fixes it
 

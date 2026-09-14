@@ -70,6 +70,7 @@ const AUTORITES = [
   'alignSelf',
   'args',
   'argumentsOf',
+  'attributDeMode',
   'bounds',
   'clipsContent',
   'codeIdentifier',

@@ -80,7 +80,13 @@ export interface TokenDeDocument {
     | 'number'
     | 'string'
     | 'boolean';
-  $extensions?: { 'com.ucm.modes'?: Record<string, ValeurDeToken> };
+  $extensions?: {
+    'com.ucm.modes'?: Record<string, ValeurDeToken>;
+    /** L'axe propriétaire, écrit quand l'export a retenu la collection de la feuille. */
+    'com.ucm.axis'?: string;
+    /** Les surcharges d'une collection étendue, par extension puis par mode, creuses. */
+    'com.ucm.extensions'?: Record<string, Record<string, ValeurDeToken>>;
+  };
 }
 
 /** Un groupe ne porte que des groupes et des tokens : aucune métadonnée, aucune marque. */
@@ -88,8 +94,31 @@ export interface GroupeDeTokens {
   [cle: string]: GroupeDeTokens | TokenDeDocument;
 }
 
-/** Ce que la racine porte sous `$extensions`. */
-export type ExtensionsDuDocument = { [EXTENSION_VERSION_TOKENS]: number };
+/** La clé de `$extensions`, à la racine du document, qui déclare les axes de modes. */
+export const EXTENSION_AXES_TOKENS = 'com.ucm.axes';
+
+/**
+ * Un axe : une collection Figma à plusieurs modes, sous la clé que
+ * `joinTokenPath` écrit pour elle. `modes` suit l'ordre de la collection et
+ * `default` nomme son mode par défaut ; aucun lecteur ne déduit le défaut de
+ * l'ordre. `extensions` nomme les collections étendues et leur parente, `base`
+ * désignant la collection elle-même.
+ */
+export type AxeDeTokens = {
+  modes: string[];
+  default: string;
+  extensions?: Record<string, { parent: string }>;
+};
+
+/**
+ * Ce que la racine porte sous `$extensions`. `com.ucm.axes` est écrit dès
+ * qu'une feuille porte `com.ucm.modes`, et vaut `{}` quand l'export a écarté
+ * tous les axes.
+ */
+export type ExtensionsDuDocument = {
+  [EXTENSION_VERSION_TOKENS]: number;
+  [EXTENSION_AXES_TOKENS]?: Record<string, AxeDeTokens>;
+};
 
 /** Le document entier : la marque à la racine, puis les groupes. */
 export type DocumentDeTokens = { $extensions?: ExtensionsDuDocument } & {

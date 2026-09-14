@@ -68,3 +68,14 @@ export function tokenCssVariable(path: string): string {
     .replace(/^-+|-+$/g, '');
   return `--${kebab}`;
 }
+
+/**
+ * L'attribut HTML qui porte le mode d'un axe : `data-` suivi de la propriété
+ * personnalisée de l'axe sans ses deux tirets. Il dérive de `tokenCssVariable`
+ * sans en recopier la règle ; `ucm.config.json` peut nommer un autre attribut.
+ *
+ * @example attributDeMode('color-brand-tokens') // → 'data-color-brand-tokens'
+ */
+export function attributDeMode(axe: string): string {
+  return `data-${tokenCssVariable(axe).slice(2)}`;
+}

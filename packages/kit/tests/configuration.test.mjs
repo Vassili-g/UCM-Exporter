@@ -18,6 +18,7 @@ import {
   CONFIGURATION_PAR_DEFAUT,
   NOM_CONFIGURATION,
   champsInvalidesDeLaConfiguration,
+  configurationDepuisJson,
 } from "@ucm-kit/core/format";
 import { lireConfiguration } from "@ucm-kit/core/lecteurs";
 
@@ -136,6 +137,37 @@ test("le refus d'un numéro de version dit pourquoi, pas seulement que", () => {
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
+});
+
+test("un attribut de mode commence par data- et ne porte que minuscules, chiffres et tirets", () => {
+  // Une clé `__proto__` écrite dans le fichier est une donnée : JSON.parse en
+  // fait une propriété propre, qu'un littéral d'objet ne produirait pas.
+  assert.deepEqual(champsInvalidesDeLaConfiguration({
+    modes: JSON.parse('{"marque": "data-brand", "theme": "data-thème-2", "__proto__": "data-x"}'),
+  }), []);
+  assert.deepEqual(champsInvalidesDeLaConfiguration({
+    modes: { a: "brand", b: "data-", c: "data-Brand", d: "data---", e: "data-a b", f: 3 },
+  }), ["modes.a", "modes.b", "modes.c", "modes.d", "modes.e", "modes.f"]);
+});
+
+test("des sections modes ou css qui ne sont pas des objets sont refusées en bloc", () => {
+  assert.deepEqual(champsInvalidesDeLaConfiguration({ modes: ["data-brand"] }), ["modes"]);
+  assert.deepEqual(champsInvalidesDeLaConfiguration({ css: "sans-serif" }), ["css"]);
+});
+
+test("un repli de famille vide est refusé, un repli écrit est rendu avec les attributs", () => {
+  assert.deepEqual(
+    champsInvalidesDeLaConfiguration({ css: { fontFamilyFallback: " " } }),
+    ["css.fontFamilyFallback"],
+  );
+  const { configuration, erreur } = configurationDepuisJson({
+    modes: { marque: "data-brand" },
+    css: { fontFamilyFallback: "sans-serif" },
+  });
+  assert.equal(erreur, null);
+  assert.deepEqual(configuration.modes, { marque: "data-brand" });
+  assert.deepEqual(configuration.css, { fontFamilyFallback: "sans-serif" });
+  assert.equal(configuration.components, CONFIGURATION_PAR_DEFAUT.components);
 });
 
 test("une configuration qui n'est pas un objet est refusée en bloc", () => {

@@ -8,7 +8,13 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { codeIdentifier, normalizeName, tokenCssVariable } from '../src/format/names';
+import { attributDeMode, codeIdentifier, normalizeName, tokenCssVariable } from '../src/format/names';
+
+test("attributDeMode dérive l'attribut d'un axe de sa propriété CSS", () => {
+  assert.equal(attributDeMode('color-brand-tokens'), 'data-color-brand-tokens');
+  assert.equal(attributDeMode('Thème'), 'data-thème');
+  assert.equal(attributDeMode('marque.sous marque'), 'data-marque-sous-marque');
+});
 
 test('normalizeName suit la convention commune des tokens', () => {
   assert.equal(normalizeName('Brand Tokens/Primary/default'), 'brand-tokens.primary.default');

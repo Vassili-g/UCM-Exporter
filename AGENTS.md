@@ -120,6 +120,7 @@ packages/kit/            le format et ses lecteurs : @ucm-kit/core, publié
     version-contrat.mjs          la plage lue, et le SENS d'un écart de version
     references-token.mjs         la forme d'une référence, et son relevé
     tokens-dtcg.mjs              ce que le fichier de tokens contient, donc ce qui existe
+    modes-tokens.mjs             les axes de modes du fichier de tokens, sans CSS
     typography-token-types.mjs   les types DTCG qu'un style typographique exige
     schema-contrat.mjs           le schéma publié, chargé pour Ajv
     configuration.mjs            OUVRIR ucm.config.json ; sa grammaire est dans format/
@@ -252,7 +253,8 @@ La spécification en lien porte le raisonnement.
 - Un nom de token se projette de trois façons, et chacune a un propriétaire, tous
   trois dans `packages/kit/src/format/names.ts` : `normalizeName` va du chemin
   Figma au token, `codeIdentifier` du nom Figma à l'identifiant de code, et
-  `tokenCssVariable` du token à la propriété personnalisée CSS. Une projection
+  `tokenCssVariable` du token à la propriété personnalisée CSS ;
+  `attributDeMode` en dérive l'attribut HTML d'un axe de modes. Une projection
   recopiée ailleurs est une faute : elle diverge sans produire d'erreur. Le
   chemin d'un token s'assemble dans `joinTokenPath` seul
   (`packages/plugin/src/variables.ts`) : collection et variable passent par

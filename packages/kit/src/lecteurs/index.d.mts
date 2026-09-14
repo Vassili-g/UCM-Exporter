@@ -94,7 +94,13 @@ declare module "@ucm-kit/core/lecteurs" {
 
   /** Lit la configuration d'un repository ; rend toujours une configuration complète. */
   export function lireConfiguration(racine: string): {
-    configuration: { components: string; tokens: string; implementation: string };
+    configuration: {
+      components: string;
+      tokens: string;
+      implementation: string;
+      modes?: Record<string, string>;
+      css?: { fontFamilyFallback?: string };
+    };
     chemin: string | null;
     erreur: string | null;
   };
@@ -139,8 +145,18 @@ declare module "@ucm-kit/core/lecteurs" {
    */
   export function collecterReferences(valeur: unknown, trouvees?: Set<string>): Set<string>;
 
-  /** Les incohérences entre un text style et les types DTCG de ses références. */
-  export function erreursTypesTypographiques(contrat: unknown, tokens: unknown): string[];
+  /**
+   * Les incohérences entre un text style et les types DTCG de ses références.
+   * Une incohérence qui vient d'un mode porte aussi `feuille` et `mode`.
+   */
+  export function erreursTypesTypographiques(contrat: unknown, tokens: unknown): Array<{
+    chemin: string;
+    reference: string;
+    attendu: string;
+    recu: string;
+    feuille?: string;
+    mode?: string;
+  }>;
 
   // ─── Le fichier de tokens DTCG ────────────────────────────────────────────
 
@@ -164,6 +180,73 @@ declare module "@ucm-kit/core/lecteurs" {
     references: Iterable<string>,
     index: Map<string, unknown>,
   ): string[];
+
+  // ─── Les axes de modes du fichier de tokens ───────────────────────────────
+
+  /** Un axe tel qu'`axesDeTokens` le rend : ses feuilles suivent l'ordre du document. */
+  export interface AxeLu {
+    nom: string;
+    modes: string[];
+    defaut: string;
+    extensions: Record<string, { parent: string }>;
+    feuilles: string[];
+  }
+
+  /** Ce qui empêche un fichier d'être complet, nommé pour le développeur. */
+  export interface ConstatDeModes {
+    code: string;
+    message: string;
+    chemin?: string;
+    axe?: string;
+  }
+
+  /** Un contexte : un mode par axe, les axes absents prenant leur défaut. */
+  export type ContexteDeModes = Record<string, string> | Map<string, string>;
+
+  /** Le nombre de cycles énumérés au-delà duquel `cyclesActifs` s'arrête. */
+  export const BORNE_DES_CYCLES: number;
+
+  /** Le nom du contexte des collections étendues d'un axe. */
+  export function axeDesExtensions(axe: string): string;
+
+  /** L'état des modes d'un document, ses axes et ce qui l'empêche d'être complet. Ne lève jamais. */
+  export function axesDeTokens(document: unknown): {
+    etat: "sans-modes" | "anterieur" | "incoherent" | "axe-ecarte" | "complet";
+    axes: AxeLu[];
+    constats: ConstatDeModes[];
+  };
+
+  /** La valeur d'une feuille dans un contexte, alias conservés ; `undefined` si rien ne la désigne. */
+  export function valeurDansLeContexte(
+    document: unknown,
+    chemin: string,
+    contexte?: ContexteDeModes,
+  ): unknown;
+
+  /** Pour chaque feuille atteinte, les axes dont sa valeur dépend. */
+  export function conesDesAxes(document: unknown, axes: readonly AxeLu[]): Map<string, Set<string>>;
+
+  /**
+   * Les axes qui touchent un contrat, composition transitive comprise. Tant que
+   * `manquantes` n'est pas vide, la réponse ne conclut pas.
+   */
+  export function axesDuContrat(
+    contrat: unknown,
+    contratsParNom: Map<string, unknown>,
+    cones: Map<string, Set<string>>,
+  ): { axes: string[]; croisements: Array<[string, string]>; manquantes: unknown[] };
+
+  /** Le défaut, un contexte par axe touchant, un par couple croisé : au plus `1 + A + C`. */
+  export function contextesDeVerification(
+    axesTouches: ReadonlyArray<Pick<AxeLu, "nom" | "modes" | "defaut">>,
+    croisements?: ReadonlyArray<readonly [string, string]>,
+  ): Array<Record<string, string>>;
+
+  /** Les cycles d'alias qu'au moins un contexte réalise ; `interrompue` si la borne est atteinte. */
+  export function cyclesActifs(
+    document: unknown,
+    axes: readonly AxeLu[],
+  ): { cycles: string[][]; interrompue: boolean };
 
   // ─── Le schéma publié ─────────────────────────────────────────────────────
 

@@ -35,12 +35,14 @@
 export type * from './types.js';
 export { CONTRACT_VERSION, versionDeContrat } from './version.js';
 export {
+  EXTENSION_AXES_TOKENS,
   EXTENSION_VERSION_TOKENS,
   TOKENS_FORMAT_VERSION,
   VERSIONS_DE_TOKENS_LUES,
   etatDuFormatDeTokens,
 } from './tokens.js';
 export type {
+  AxeDeTokens,
   CouleurDeToken,
   CourbeDeToken,
   DimensionDeToken,
@@ -53,7 +55,7 @@ export type {
   TokenDeDocument,
   ValeurDeToken,
 } from './tokens.js';
-export { codeIdentifier, normalizeName, tokenCssVariable } from './names.js';
+export { attributDeMode, codeIdentifier, normalizeName, tokenCssVariable } from './names.js';
 export { estStyleItalique, nomsDeGraisseConnus, poidsDeGraisse } from './typography.js';
 export { TOKEN_REFERENCE, isTokenReference, refPath, toRef } from './references.js';
 export { comparerIdentiteDeContrat, identiteDeContrat } from './identite.js';

@@ -38,24 +38,46 @@ function estObjet(valeur) {
   return Boolean(valeur) && typeof valeur === "object" && !Array.isArray(valeur);
 }
 
-/** Résout uniquement le type d'une chaîne d'alias, jamais sa valeur. */
-function feuilleRacine(reference, index) {
-  let chemin = cheminDeReference(reference);
-  const vus = new Set();
-  while (chemin && !vus.has(chemin)) {
-    vus.add(chemin);
-    const feuille = index.get(chemin);
-    if (!feuille) return null;
-    const cible = cheminDeReference(feuille.$value);
-    if (!cible) return feuille;
-    chemin = cible;
+/** Le premier mode d'une feuille qui cite une feuille d'un autre type, ou `null`. */
+function ecartDeMode(chemin, feuille, index) {
+  const modes = feuille.$extensions?.["com.ucm.modes"];
+  if (!estObjet(modes)) return null;
+  for (const [mode, valeur] of Object.entries(modes)) {
+    const cible = index.get(cheminDeReference(valeur));
+    if (cible && cible.$type !== feuille.$type) {
+      return { feuille: chemin, mode, attendu: feuille.$type, recu: cible.$type };
+    }
   }
   return null;
 }
 
 /**
+ * Résout le type d'une chaîne d'alias, jamais sa valeur.
+ *
+ * La chaîne suit `$value`, donc le mode par défaut. Ce parcours n'est exact que
+ * si chaque feuille traversée cite, dans tous ses modes, des feuilles de son
+ * propre type : la première qui s'en écarte est rendue dans `ecart`.
+ */
+function parcourirChaine(reference, index) {
+  let chemin = cheminDeReference(reference);
+  const vus = new Set();
+  while (chemin && !vus.has(chemin)) {
+    vus.add(chemin);
+    const feuille = index.get(chemin);
+    if (!feuille) return { racine: null, ecart: null };
+    const ecart = ecartDeMode(chemin, feuille, index);
+    if (ecart) return { racine: feuille, ecart };
+    const cible = cheminDeReference(feuille.$value);
+    if (!cible) return { racine: feuille, ecart: null };
+    chemin = cible;
+  }
+  return { racine: null, ecart: null };
+}
+
+/**
  * Renvoie les incohérences entre les champs réellement déclarés d'un text
- * style 4.6 et les types DTCG de leurs références.
+ * style 4.6 et les types DTCG de leurs références. Une incohérence qui vient
+ * d'un mode porte en plus `feuille` et `mode`.
  */
 export function erreursTypesTypographiques(contrat, tokens) {
   const index = indexerTokensDtcg(tokens);
@@ -67,13 +89,18 @@ export function erreursTypesTypographiques(contrat, tokens) {
     for (const [champ, attendus] of Object.entries(TYPES_TYPOGRAPHIQUES)) {
       const reference = champs[champ];
       if (reference === undefined) continue;
-      const feuille = feuilleRacine(reference, index);
-      if (!feuille || attendus.includes(feuille.$type)) continue;
+      const chemin = `textStyles.${style}.tokens.${champ}`;
+      const { racine, ecart } = parcourirChaine(reference, index);
+      if (ecart) {
+        erreurs.push({ chemin, reference, ...ecart });
+        continue;
+      }
+      if (!racine || attendus.includes(racine.$type)) continue;
       erreurs.push({
-        chemin: `textStyles.${style}.tokens.${champ}`,
+        chemin,
         reference,
         attendu: attendus.join(" ou "),
-        recu: feuille.$type,
+        recu: racine.$type,
       });
     }
   }

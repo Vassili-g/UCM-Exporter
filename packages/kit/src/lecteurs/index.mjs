@@ -59,6 +59,18 @@ export {
   referencesAbsentes,
 } from "./tokens-dtcg.mjs";
 
+/** Les axes de modes du fichier de tokens, sans CSS. */
+export {
+  BORNE_DES_CYCLES,
+  axeDesExtensions,
+  axesDeTokens,
+  axesDuContrat,
+  conesDesAxes,
+  contextesDeVerification,
+  cyclesActifs,
+  valeurDansLeContexte,
+} from "./modes-tokens.mjs";
+
 /** Ce que l'export n'a pas su décrire, et comment le dire. */
 export {
   avertissementsCorrigeables,

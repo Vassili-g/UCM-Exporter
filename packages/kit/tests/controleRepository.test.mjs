@@ -665,3 +665,27 @@ test("le tokens.json d'origine figé passe le contrôle comme la forme d'origine
   assert.match(rapport, /^## ✅ Aucun blocage détecté$/m);
   assert.doesNotMatch(rapport, /absents de la source/);
 });
+
+test("un mode qui cite un autre type sous un text style bloque, et le rapport nomme la feuille et le mode", () => {
+  const document = contrat();
+  document.textStyles = { corps: { figmaName: "Corps", tokens: { lineHeight: "{typo.ligne}" } } };
+  document.viewTypographies = { ty1: [{ slotPath: ["label"], style: "corps" }] };
+  document.variantViews.v1.typography = "ty1";
+  const tokens = {
+    ...TOKENS,
+    typo: {
+      base: { $type: "dimension", $value: { value: 24, unit: "px" } },
+      poids: { $type: "number", $value: 600 },
+      ligne: {
+        $type: "dimension",
+        $value: "{typo.base}",
+        $extensions: { "com.ucm.modes": { confort: "{typo.base}", dense: "{typo.poids}" } },
+      },
+    },
+  };
+  const { bloquant, rapport } = verdict({ composants: { Widget: { contrat: document, tsx: TSX } }, tokens });
+
+  assert.equal(bloquant, true);
+  assert.match(rapport, /dont la feuille `typo\.ligne` cite un token de type `number` dans le mode `dense`/);
+  assert.match(rapport, /Un designer doit lier dans Figma une variable du même type/);
+});
