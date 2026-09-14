@@ -138,7 +138,7 @@ Ce qu'elle manque :
 | beaucoup de modes, imbriqués, sur plusieurs collections | un axe par collection, un axe d'extension pour les marques d'une collection étendue, une feuille CSS factorisée par cône avec croisements `@scope`, dont la taille suit le nombre de surcharges | 3, 4 |
 | règles concrètes pour l'agent (`ring`, `box-shadow`…) | un catalogue d'aides : sens fixé par UCM, écriture par défaut, preuve attendue | 6.1, 6.2 |
 | les personnaliser facilement | une section `## <aide>` dans `.ucm/conventions.md` ; `ucm aides <aide> --personnaliser` l'ajoute avec l'écriture par défaut à éditer | 6.3 |
-| une skill efficace et économe | un relais de trois lignes et `ucm guide <contrat>`, qui imprime en une commande procédure, extraction et seules aides employées ; construit seulement si la mesure préalable le justifie | 6.4, 6.5, 6.8 |
+| une skill efficace et économe | un relais de trois lignes et `ucm guide <contrat>`, qui imprime en une commande procédure, extraction et seules aides employées ; l'extraction n'est gardée que si la mesure préalable le justifie | 6.4, 6.5, 6.8 |
 | préférences de stack personnalisables | le texte libre en tête de `.ucm/conventions.md` ; le fichier le plus proche du contrat s'applique | 6.3 |
 | gabarits pour une architecture homogène | un composant d'exemple et son contrat, publiés par l'adaptateur de stack, copiés dans `.ucm/gabarits/` ; ou un composant du repository désigné dans les conventions | 6.6 |
 | tout installer facilement | `ucm init` écrit aussi relais, conventions et gabarit, puis imprime les lignes restantes à ajouter | 6.7 |
@@ -403,12 +403,32 @@ Changements :
 ### 4.4. Preuve de cascade
 
 Harnais conservé dans `packages/cli/tests/cascade/`. Il charge le CSS émis dans
-Chromium, Firefox et WebKit par Playwright, en `devDependencies` de la CLI, et
-compare chaque valeur calculée à l'oracle `valeurDansLeContexte` appliqué au
-contexte effectif de l'élément. Il couvre les arbres de l'annexe A.5, les sept arbres d'extension de la revue (section 10), et un axe d'extension
-à trois générations. Safari réel est rejoué par le mainteneur à la recette ;
-WebKit ne le remplace pas. Si `@scope` échoue, le repli par `@container style()`
-de l'annexe A.6 passe au même harnais.
+Chromium, Firefox et WebKit par Playwright, et compare chaque valeur calculée à
+l'oracle `valeurDansLeContexte` appliqué au contexte effectif de l'élément.
+Playwright est une `devDependencies` de la racine du monorepo : dans le
+manifeste de la CLI, il imposerait une montée de version sans changer le paquet
+publié. Le harnais se lance par `npm run cascade`, hors de `npm test`, et un job
+de `ci.yml` installe les trois moteurs pour le lancer.
+
+Il couvre les arbres de l'annexe A.5 et les sept arbres d'extension ci-dessous,
+dont l'axe à trois générations. Document : collection `color` en `light` et
+`dark`, défaut `light` ; extensions `marque-b` (parente `base`) et `sous-marque`
+(parente `marque-b`) ; axe `densite` en `confort` et `compact`, dont les
+feuilles citent des feuilles de `color`.
+
+| Arbre, du plus haut au plus bas | Attendu |
+|---|---|
+| aucun attribut | `base` en `light` |
+| `marque-b` sur `<html>`, puis `dark` | la surcharge de `marque-b` en `dark` |
+| `dark` sur `<html>`, puis `sous-marque` | `sous-marque` en `dark` ; une feuille qu'elle ne surcharge pas prend la valeur de `marque-b` |
+| `sous-marque` et `dark` sur le même élément | `sous-marque` en `dark` |
+| `marque-b`, puis `sous-marque`, puis `base` | `base` au niveau le plus bas |
+| `sous-marque` sur `<html>`, puis `compact` | la feuille de `densite` rend la valeur de `sous-marque` à travers son alias |
+| `f2` cite `f1`, surchargées par `marque-b` dans deux modes différents | la valeur de chaque contexte, `marque-b` et `sous-marque` en `light` et en `dark` |
+
+Safari réel est rejoué par le mainteneur à la recette ; WebKit ne le remplace
+pas. Si `@scope` échoue, le repli par `@container style()` de l'annexe A.6 passe
+au même harnais.
 
 ### 4.5. Contextes à vérifier pour un composant
 
@@ -966,7 +986,8 @@ retenu, la variable d'identité de mode sort du hors périmètre.
 | `typographie` | un usage de `typography` | `typographie` |
 | `troncature` | un `lineClamp` | `troncature` |
 | `icone` | une entrée de `icons` | `icone`, ancrage `icone-composant` |
-| `etats` | un état autre que `default` | `etats`, ancrage `focus-clavier` si un sélecteur de focus est publié |
+| `etats` | un état autre que `default` | `etats` |
+| `focus` | un état dont le `selector` contient `:focus` | ancrage `focus-clavier` |
 | `composition` | `composes` | `composition`, ancrage `comptage-dependances` |
 | `echantillon` | `samples` | `echantillon` |
 | `modes` | `axesDuContrat` rend au moins un axe | `modes`, ancrages `chargement-feuilles`, `portee-mode` |
