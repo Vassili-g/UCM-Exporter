@@ -21,10 +21,11 @@ import {
   tokenCssVariable,
 } from "@ucm-kit/core/format";
 import {
+  axeDesExtensions,
   axesDeTokens,
   cheminDeReference,
   collecterReferences,
-  conesDesAxes,
+  contextesDesAxes,
   cyclesActifs,
   indexerTokensDtcg,
   lireConfiguration,
@@ -150,22 +151,45 @@ export function statistiquesDeFeuille(css) {
   };
 }
 
+const citees = (texte) => (texte === null ? [] : [...texte.matchAll(/var\((--[^)]+)\)/g)].map((trouve) => trouve[1]));
+
+/** Toutes les valeurs qu'une variable déclare, un contexte après l'autre. */
+function textesDe(variable) {
+  if (variable.valeurs) return [...variable.valeurs.values()];
+  if (variable.propres) return [variable.base, ...variable.propres.values()];
+  return [variable.valeur];
+}
+
+/** La valeur d'une variable dans un contexte de son axe. */
+function valeurDans(variable, contexte) {
+  if (variable.valeurs) return variable.valeurs.get(contexte);
+  return variable.propres.get(contexte) ?? variable.base;
+}
+
 /**
  * La feuille d'un document de tokens déjà lu, sans en-tête ni écriture.
  *
  * `axes` porte les axes à générer, tels qu'`axesDeTokens` les rend ; vide, la
- * feuille ne déclare que la base. `attributs` associe chaque axe à son
- * attribut. Rend `{ css, refus, notes }` : un refus empêche d'écrire, une note
- * nomme une feuille sans valeur, qui ne reçoit aucune déclaration.
+ * feuille ne déclare que la base. `attributs` associe chaque axe, axes
+ * d'extension compris, à son attribut. Rend `{ css, refus, notes }` : un refus
+ * empêche d'écrire, une note nomme une feuille sans valeur, qui ne reçoit
+ * aucune déclaration.
+ *
+ * Une collection étendue se ramène aux axes simples. Pour chaque feuille
+ * surchargée `f`, `--ucm-x-base--f` et `--ucm-x-<e>--f`, pour chaque extension
+ * `e` qui la surcharge, appartiennent à l'axe parent ; `f` appartient à l'axe
+ * d'extension, qui la déclare dans une règle de repli sur `base`, puis dans la
+ * règle propre de chaque extension qui la surcharge elle-même ou par un ancêtre.
  */
 export function feuilleDesTokens(document, { axes = [], attributs = new Map(), repliDeFamille } = {}) {
   const index = indexerTokensDtcg(document);
   const refus = [];
   const notes = [];
-
-  if (axes.some((axe) => Object.keys(axe.extensions ?? {}).length > 0)) {
-    refus.push("Le fichier déclare des collections étendues, que cette version de la commande "
-      + "ne génère pas encore.");
+  const axesGeneres = contextesDesAxes(document, axes);
+  const axeParNom = new Map();
+  for (const axe of axesGeneres) {
+    if (axeParNom.has(axe.nom)) refus.push(`Deux axes portent le nom « ${axe.nom} », dont l'axe d'extension de « ${axe.parent ?? axe.nom} ».`);
+    axeParNom.set(axe.nom, axe);
   }
 
   const proprietaire = new Map();
@@ -174,6 +198,9 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
   const parNom = new Map();
   for (const chemin of index.keys()) {
     const nom = tokenCssVariable(chemin);
+    if (nom.startsWith("--ucm-x-")) {
+      refus.push(`La feuille « ${chemin} » donne la propriété « ${nom} », dont le préfixe --ucm-x- est réservé aux collections étendues.`);
+    }
     if (parNom.has(nom)) {
       refus.push(`Les feuilles « ${parNom.get(nom)} » et « ${chemin} » donnent la même propriété CSS « ${nom} ».`);
     } else {
@@ -182,8 +209,10 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
   }
 
   /** Le texte CSS d'une valeur, ou `null` quand elle ne se déclare pas. */
-  const texteDe = (chemin, feuille, valeur, mode) => {
-    const ou = mode === undefined ? `La feuille « ${chemin} »` : `La feuille « ${chemin} », en mode « ${mode} »,`;
+  const texteDe = (chemin, feuille, valeur, mode, extension) => {
+    const ou = mode === undefined
+      ? `La feuille « ${chemin} »`
+      : `La feuille « ${chemin} », en mode « ${mode} »${extension ? ` de l'extension « ${extension} »` : ""},`;
     if (valeur === null || valeur === undefined) {
       notes.push(`${ou} n'a pas de valeur : elle ne reçoit aucune déclaration.`);
       return null;
@@ -211,16 +240,53 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
     const axe = proprietaire.get(chemin);
     const nom = tokenCssVariable(chemin);
     if (!axe) {
-      variables.push({ chemin, nom, axe: null, valeur: texteDe(chemin, feuille, feuille.$value) });
+      variables.push({ nom, axe: null, valeur: texteDe(chemin, feuille, feuille.$value) });
       continue;
     }
     const modes = feuille.$extensions["com.ucm.modes"];
+    const parMode = (valeurDuMode, extension) => new Map(axe.modes.map((mode) => (
+      [mode, valeurDuMode(mode, extension)]
+    )));
+    const surcharges = feuille.$extensions["com.ucm.extensions"] ?? {};
+    const extensions = Object.keys(axe.extensions ?? {});
+    if (extensions.length === 0 || Object.keys(surcharges).length === 0) {
+      variables.push({ nom, axe: axe.nom, valeurs: parMode((mode) => texteDe(chemin, feuille, modes[mode], mode)) });
+      continue;
+    }
+
+    const suffixe = nom.slice(2);
+    const intermediaire = (extension) => `--ucm-x-${tokenCssVariable(extension).slice(2)}--${suffixe}`;
+    const plusProche = (extension) => {
+      for (let courante = extension; courante !== undefined && courante !== "base"; courante = axe.extensions[courante]?.parent) {
+        if (possede(surcharges, courante)) return courante;
+      }
+      return "base";
+    };
+
     variables.push({
-      chemin,
-      nom,
-      axe,
-      valeurs: new Map(axe.modes.map((mode) => [mode, texteDe(chemin, feuille, modes[mode], mode)])),
+      nom: intermediaire("base"),
+      axe: axe.nom,
+      valeurs: parMode((mode) => texteDe(chemin, feuille, modes[mode], mode)),
     });
+    for (const extension of extensions) {
+      if (!possede(surcharges, extension)) continue;
+      const repli = `var(${intermediaire(plusProche(axe.extensions[extension].parent))})`;
+      variables.push({
+        nom: intermediaire(extension),
+        axe: axe.nom,
+        valeurs: parMode((mode) => (
+          possede(surcharges[extension], mode)
+            ? texteDe(chemin, feuille, surcharges[extension][mode], mode, extension)
+            : repli
+        ), extension),
+      });
+    }
+    const propres = new Map();
+    for (const extension of extensions) {
+      const proche = plusProche(extension);
+      if (proche !== "base") propres.set(extension, `var(${intermediaire(proche)})`);
+    }
+    variables.push({ nom, axe: axeDesExtensions(axe.nom), base: `var(${intermediaire("base")})`, propres });
   }
 
   const { cycles, interrompue } = cyclesActifs(document, axes);
@@ -232,28 +298,71 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
 
   if (refus.length > 0) return { css: "", refus, notes };
 
+  // Les cônes se calculent sur les variables CSS, intermédiaires compris : une
+  // surcharge qui cite une autre feuille surchargée rattache son intermédiaire
+  // au cône de l'axe d'extension.
+  const citants = new Map();
+  for (const variable of variables) {
+    for (const cite of textesDe(variable).flatMap(citees)) {
+      if (!citants.has(cite)) citants.set(cite, []);
+      citants.get(cite).push(variable.nom);
+    }
+  }
+  const coneDe = (axe) => {
+    const atteintes = new Set();
+    const pile = variables.filter((variable) => variable.axe === axe.nom).map((variable) => variable.nom);
+    while (pile.length > 0) {
+      for (const citant of citants.get(pile.pop()) ?? []) {
+        if (atteintes.has(citant)) continue;
+        atteintes.add(citant);
+        pile.push(citant);
+      }
+    }
+    return atteintes;
+  };
+
   const declarer = (entrees) => entrees.filter(([, valeur]) => valeur !== null);
-  const parDefaut = (variable) => (variable.axe ? variable.valeurs.get(variable.axe.defaut) : variable.valeur);
+  const parDefaut = (variable) => (variable.axe === null ? variable.valeur : valeurDans(variable, axeParNom.get(variable.axe).defaut));
   const selecteurDe = (axe, mode) => `[${attributs.get(axe.nom)}="${mode}"]`;
+  const tousLesContextes = (axe) => `:is(${axe.modes.map((mode) => selecteurDe(axe, mode)).join(", ")})`;
 
   let css = regle(":root", declarer(variables.map((variable) => [variable.nom, parDefaut(variable)])));
 
-  const cones = conesDesAxes(document, axes);
-  for (const axe of axes) {
-    const possedees = variables.filter((variable) => variable.axe === axe);
-    for (const mode of axe.modes) {
-      css += regle(selecteurDe(axe, mode), declarer(possedees.map((variable) => [variable.nom, variable.valeurs.get(mode)])));
+  for (const axe of axesGeneres) {
+    const possedees = variables.filter((variable) => variable.axe === axe.nom);
+    const tous = tousLesContextes(axe);
+    if (axe.parent !== undefined) {
+      css += regle(tous, declarer(possedees.map((variable) => [variable.nom, variable.base])));
+      for (const extension of axe.modes.slice(1)) {
+        css += regle(selecteurDe(axe, extension), possedees
+          .filter((variable) => variable.propres.has(extension))
+          .map((variable) => [variable.nom, variable.propres.get(extension)]));
+      }
+    } else {
+      for (const mode of axe.modes) {
+        css += regle(selecteurDe(axe, mode), declarer(possedees.map((variable) => [variable.nom, variable.valeurs.get(mode)])));
+      }
     }
 
-    const tous = `:is(${axe.modes.map((mode) => selecteurDe(axe, mode)).join(", ")})`;
-    const reste = variables.filter((variable) => variable.axe !== axe && cones.get(variable.chemin)?.has(axe.nom));
+    const cone = coneDe(axe);
+    const reste = variables.filter((variable) => variable.axe !== axe.nom && cone.has(variable.nom));
     css += regle(tous, declarer(reste.map((variable) => [variable.nom, parDefaut(variable)])));
 
-    for (const autre of axes) {
+    for (const autre of axesGeneres) {
       if (autre === axe) continue;
-      const croisees = reste.filter((variable) => variable.axe === autre);
-      for (const mode of autre.modes) {
-        css += bloc(selecteurDe(autre, mode), tous, declarer(croisees.map((variable) => [variable.nom, variable.valeurs.get(mode)])));
+      const croisees = reste.filter((variable) => variable.axe === autre.nom);
+      if (croisees.length === 0) continue;
+      if (autre.parent !== undefined) {
+        css += bloc(tousLesContextes(autre), tous, declarer(croisees.map((variable) => [variable.nom, variable.base])));
+        for (const extension of autre.modes.slice(1)) {
+          css += bloc(selecteurDe(autre, extension), tous, croisees
+            .filter((variable) => variable.propres.has(extension))
+            .map((variable) => [variable.nom, variable.propres.get(extension)]));
+        }
+      } else {
+        for (const mode of autre.modes) {
+          css += bloc(selecteurDe(autre, mode), tous, declarer(croisees.map((variable) => [variable.nom, variable.valeurs.get(mode)])));
+        }
       }
     }
   }
@@ -394,7 +503,10 @@ export function tokensCss(arguments_, {
 
   const genereModes = etat === "complet" && !options.sansModes;
   const axesGeneres = genereModes ? axes : [];
-  const { attributs, erreurs, notes: notesDAttributs } = attributsDesAxes(axesGeneres, genereModes ? configuration.modes : {});
+  const { attributs, erreurs, notes: notesDAttributs } = attributsDesAxes(
+    contextesDesAxes(document, axesGeneres),
+    genereModes ? configuration.modes : {},
+  );
   if (erreurs.length > 0) {
     alerter(erreurs.join("\n"));
     return 2;
@@ -417,7 +529,9 @@ export function tokensCss(arguments_, {
   ecrire(`${options.out} : ${regles} règles, ${declarations} déclarations, ${octets} octets.`);
   for (const note of notesDAttributs) ecrire(note);
   if (genereModes) {
-    for (const axe of axes) ecrire(`Axe « ${axe.nom} » : attribut ${attributs.get(axe.nom)}, défaut « ${axe.defaut} ».`);
+    for (const axe of contextesDesAxes(document, axes)) {
+      ecrire(`Axe « ${axe.nom} » : attribut ${attributs.get(axe.nom)}, défaut « ${axe.defaut} ».`);
+    }
   } else if (etat !== "sans-modes") {
     ecrire(`--sans-modes : la feuille ne déclare que la valeur par défaut de chaque token.`);
   }

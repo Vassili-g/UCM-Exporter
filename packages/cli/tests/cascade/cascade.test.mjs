@@ -1,8 +1,8 @@
 /**
- * La preuve de cascade de la section 4.4 du plan final : la feuille des tokens,
- * chargée dans Chromium, Firefox et WebKit, rend dans chaque élément relevé la
- * valeur que `valeurDansLeContexte` lit sur le document, pour chaque feuille du
- * document. L'oracle ne lit jamais la feuille CSS.
+ * La preuve de cascade : la feuille qu'écrit `ucm tokens css`, chargée dans
+ * Chromium, Firefox et WebKit, rend dans chaque élément relevé la valeur que
+ * `valeurDansLeContexte` lit sur le document, pour chaque feuille du document.
+ * L'oracle ne lit jamais la feuille CSS.
  *
  * Se lance par `npm run cascade`, hors de `npm test` : les trois moteurs
  * s'installent à part, par `npx playwright install`.
@@ -15,52 +15,65 @@ import { tokenCssVariable } from "@ucm-kit/core/format";
 import {
   axesDeTokens,
   cheminDeReference,
+  contextesDesAxes,
   indexerTokensDtcg,
   valeurDansLeContexte,
 } from "@ucm-kit/core/lecteurs";
 import { chromium, firefox, webkit } from "playwright";
 
-import { attributsDesAxes, feuilleDesTokens } from "../../src/tokens-css.mjs";
+import { attributsDesAxes, feuilleDesTokens, statistiquesDeFeuille } from "../../src/tokens-css.mjs";
 import {
   ARBRES_AXES,
   ARBRES_EXTENSIONS,
   ELEMENT_A_TROIS_ATTRIBUTS,
   ORDRES_DE_DECLARATION,
 } from "./arbres.mjs";
-import { DEUX_AXES, EXTENSIONS, TROIS_AXES, avecOrdreDesAxes } from "./documents.mjs";
-import { emettre } from "./emetteur-provisoire.mjs";
+import { DEUX_AXES, EXTENSIONS, TROIS_AXES, avecOrdreDesAxes, documentDeTaille } from "./documents.mjs";
 
 const lire = (nom) => readFileSync(new URL(nom, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 
-const CSS_DEUX_AXES = lire("./attendu-deux-axes.css");
-const CSS_EXTENSIONS = lire("./attendu-extensions.css");
+/** Les axes générés d'un document, extensions comprises, chacun avec son attribut. */
+function axesAvecAttributs(document) {
+  const generes = contextesDesAxes(document, axesDeTokens(document).axes);
+  const { attributs } = attributsDesAxes(generes);
+  return generes.map((axe) => ({ ...axe, attribut: attributs.get(axe.nom) }));
+}
 
-/** La feuille qu'`ucm tokens css` écrit pour un document sans extension, en-tête retiré. */
+/** La feuille qu'`ucm tokens css` écrit pour un document, en-tête retiré. */
 function feuilleDeLaCommande(document) {
   const { axes } = axesDeTokens(document);
-  const { css, refus } = feuilleDesTokens(document, { axes, attributs: attributsDesAxes(axes).attributs });
+  const { attributs } = attributsDesAxes(contextesDesAxes(document, axes));
+  const { css, refus } = feuilleDesTokens(document, { axes, attributs });
   assert.deepEqual(refus, []);
   return css;
 }
 
-test("la commande rend le CSS écrit à la main et la sortie de l'émetteur provisoire", () => {
-  assert.equal(feuilleDeLaCommande(DEUX_AXES), CSS_DEUX_AXES);
-  assert.equal(feuilleDeLaCommande(TROIS_AXES), emettre(TROIS_AXES).css);
+test("la commande rend les deux feuilles écrites à la main", () => {
+  assert.equal(feuilleDeLaCommande(DEUX_AXES), lire("./attendu-deux-axes.css"));
+  assert.equal(feuilleDeLaCommande(EXTENSIONS), lire("./attendu-extensions.css"));
 });
 
-test("l'émetteur provisoire rend le CSS écrit à la main des extensions", () => {
-  assert.equal(emettre(EXTENSIONS).css, CSS_EXTENSIONS);
+test("sur 500 extensions, la feuille ne dépasse pas le relevé L0", () => {
+  // Relevé L0, section 11 du plan des modes : 80 000 déclarations et 3 952 438
+  // octets pour ce document.
+  const { declarations, octets } = statistiquesDeFeuille(feuilleDeLaCommande(documentDeTaille({
+    extensions: 500,
+    surchargesParExtension: 10,
+  })));
+  assert.ok(declarations <= 80_000, `${declarations} déclarations`);
+  assert.ok(octets <= 3_952_438, `${octets} octets`);
 });
 
 const CAS = [
-  ...ARBRES_AXES.map((arbre) => ({ ...arbre, document: DEUX_AXES, css: feuilleDeLaCommande(DEUX_AXES), source: "deux axes" })),
-  ...ARBRES_AXES.map((arbre) => ({ ...arbre, document: TROIS_AXES, css: feuilleDeLaCommande(TROIS_AXES), source: "trois axes" })),
-  ...ORDRES_DE_DECLARATION.map((ordre) => {
-    const document = avecOrdreDesAxes(TROIS_AXES, ordre);
-    return { ...ELEMENT_A_TROIS_ATTRIBUTS, document, css: feuilleDeLaCommande(document), source: `axes ${ordre.join(", ")}` };
-  }),
-  ...ARBRES_EXTENSIONS.map((arbre) => ({ ...arbre, document: EXTENSIONS, css: CSS_EXTENSIONS, source: "extensions" })),
-];
+  ...ARBRES_AXES.map((arbre) => ({ ...arbre, document: DEUX_AXES, source: "deux axes" })),
+  ...ARBRES_AXES.map((arbre) => ({ ...arbre, document: TROIS_AXES, source: "trois axes" })),
+  ...ORDRES_DE_DECLARATION.map((ordre) => ({
+    ...ELEMENT_A_TROIS_ATTRIBUTS,
+    document: avecOrdreDesAxes(TROIS_AXES, ordre),
+    source: `axes ${ordre.join(", ")}`,
+  })),
+  ...ARBRES_EXTENSIONS.map((arbre) => ({ ...arbre, document: EXTENSIONS, source: "extensions" })),
+].map((cas) => ({ ...cas, css: feuilleDeLaCommande(cas.document), axes: axesAvecAttributs(cas.document) }));
 
 function pageDe({ css, racine = {}, corps }) {
   const attributs = Object.entries(racine).map(([nom, valeur]) => ` ${nom}="${valeur}"`).join("");
@@ -87,7 +100,7 @@ function relever(page, noms) {
 function contexteDe(chaine, axes) {
   const contexte = new Map();
   for (const axe of axes) {
-    const porteur = [...chaine].reverse().find((attributs) => axe.contextes.includes(attributs[axe.attribut]));
+    const porteur = [...chaine].reverse().find((attributs) => axe.modes.includes(attributs[axe.attribut]));
     if (porteur) contexte.set(axe.nom, porteur[axe.attribut]);
   }
   return contexte;
@@ -109,8 +122,7 @@ function valeurResolue(document, chemin, contexte) {
 
 const cheminsDe = (document) => [...indexerTokensDtcg(document).keys()];
 
-function ecarts(releves, { document }) {
-  const { axes } = emettre(document);
+function ecarts(releves, { document, axes }) {
   const fautes = [];
   for (const { sonde, chaine, valeurs } of releves) {
     const contexte = contexteDe(chaine, axes);

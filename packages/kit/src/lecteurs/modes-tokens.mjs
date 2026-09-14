@@ -31,9 +31,48 @@ const possede = (objet, cle) => Object.prototype.hasOwnProperty.call(objet, cle)
 
 const extensionsDe = (feuille) => (estObjet(feuille?.$extensions) ? feuille.$extensions : {});
 
+const surchargesDe = (feuille) => {
+  const surcharges = extensionsDe(feuille)[SURCHARGES];
+  return estObjet(surcharges) ? surcharges : {};
+};
+
 /** Le nom du contexte des collections étendues d'un axe. */
 export function axeDesExtensions(axe) {
   return `${axe}-extensions`;
+}
+
+/**
+ * Les axes et leurs axes d'extension, chacun juste après son parent.
+ *
+ * Un axe d'extension a pour contextes `base` puis les extensions déclarées,
+ * pour défaut `base`, pour feuilles celles qu'au moins une extension surcharge,
+ * et nomme son axe dans `parent`. `axes` est la liste que rend `axesDeTokens`.
+ */
+export function contextesDesAxes(document, axes) {
+  const index = indexDe(document);
+  return axes.flatMap((axe) => {
+    const extensions = Object.keys(axe.extensions ?? {});
+    if (extensions.length === 0) return [axe];
+    return [axe, {
+      nom: axeDesExtensions(axe.nom),
+      modes: ["base", ...extensions],
+      defaut: "base",
+      extensions: {},
+      feuilles: axe.feuilles.filter((chemin) => Object.keys(surchargesDe(index.get(chemin))).length > 0),
+      parent: axe.nom,
+    }];
+  });
+}
+
+/**
+ * L'extension la plus proche de `extension`, elle comprise, qui surcharge la
+ * feuille, ou `base`. La chaîne de parentes a été validée par `axesDeTokens`.
+ */
+function surchargeLaPlusProche(axe, surcharges, extension) {
+  for (let courante = extension; courante !== undefined && courante !== "base"; courante = axe.extensions[courante]?.parent) {
+    if (possede(surcharges, courante)) return courante;
+  }
+  return "base";
 }
 
 /**
@@ -277,7 +316,8 @@ function valeursDe(feuille) {
 /**
  * Pour chaque feuille, les axes dont sa valeur dépend dans au moins un
  * contexte : son propre axe, et celui de toute feuille que ses alias
- * atteignent, dans n'importe quel mode ou surcharge.
+ * atteignent, dans n'importe quel mode ou surcharge. Une feuille surchargée
+ * dépend aussi de l'axe d'extension de son axe, et ce qui la cite avec elle.
  *
  * `axes` est la liste que rend `axesDeTokens`. Le graphe inverse des alias est
  * construit une fois, puis parcouru une fois par axe : `O(A × (V + E))`. Une
@@ -296,7 +336,7 @@ export function conesDesAxes(document, axes) {
   }
 
   const cones = new Map();
-  for (const axe of axes) {
+  for (const axe of contextesDesAxes(document, axes)) {
     const atteintes = new Set(axe.feuilles);
     const pile = [...axe.feuilles];
     while (pile.length > 0) {
@@ -504,44 +544,77 @@ const INTERRUPTION = Symbol("borne des cycles");
  * Les cycles d'alias qu'au moins un contexte réalise.
  *
  * Le graphe réunit les alias de `$value` pour une feuille sans axe, et ceux de
- * chaque mode pour une feuille à axe, chaque arête portant son mode. Sans
- * composante fortement connexe, il n'y a aucun cycle, en `O(V + E)`. Dans une
- * composante, les cycles élémentaires sont énumérés et gardés s'ils sont
- * actifs. Rend `{ cycles, interrompue }` ; chaque cycle se referme sur sa
- * première feuille. Au-delà de `BORNE_DES_CYCLES` cycles énumérés, actifs ou
- * non, `interrompue` vaut `true` et la liste est partielle. Les surcharges des
- * collections étendues ne sont pas encore parcourues.
+ * chaque mode pour une feuille à axe, chaque arête portant son contexte. Une
+ * feuille surchargée appartient à l'axe d'extension : une arête par contexte
+ * mène au nœud `chemin@extension` de sa surcharge la plus proche, et ce nœud,
+ * de l'axe parent, suit dans chaque mode sa surcharge ou le nœud de son
+ * ancêtre. Chaque arête ne pose ainsi de condition que sur un axe.
+ *
+ * Sans composante fortement connexe, il n'y a aucun cycle, en `O(V + E)`. Dans
+ * une composante, les cycles élémentaires sont énumérés et gardés s'ils sont
+ * actifs. Rend `{ cycles, interrompue }` ; chaque cycle se referme sur son
+ * premier nœud. Au-delà de `BORNE_DES_CYCLES` cycles énumérés, actifs ou non,
+ * `interrompue` vaut `true` et la liste est partielle.
  */
 export function cyclesActifs(document, axes) {
   const index = indexDe(document);
-  const proprietaire = new Map();
-  for (const axe of axes) for (const chemin of axe.feuilles) proprietaire.set(chemin, axe.nom);
+  const parChemin = new Map();
+  for (const axe of axes) for (const chemin of axe.feuilles) parChemin.set(chemin, axe);
 
+  const proprietaire = new Map();
   const aretes = new Map();
-  const ajouter = (source, valeur, mode) => {
-    const cible = cheminDeReference(valeur);
-    if (cible === null || !index.has(cible)) return;
+  const ajouter = (source, cible, contexte) => {
     if (!aretes.has(source)) aretes.set(source, new Map());
     const parCible = aretes.get(source);
-    if (mode === null) parCible.set(cible, null);
+    if (contexte === null) parCible.set(cible, null);
     else {
       if (!parCible.has(cible)) parCible.set(cible, new Set());
-      parCible.get(cible)?.add(mode);
+      parCible.get(cible)?.add(contexte);
     }
   };
+  const vers = (source, valeur, contexte) => {
+    const cible = cheminDeReference(valeur);
+    if (cible !== null && index.has(cible)) ajouter(source, cible, contexte);
+  };
+
   for (const [chemin, feuille] of index) {
+    const axe = parChemin.get(chemin);
     const modes = extensionsDe(feuille)[MODES];
-    if (!proprietaire.has(chemin) || !estObjet(modes)) {
-      ajouter(chemin, feuille.$value, null);
+    if (!axe || !estObjet(modes)) {
+      vers(chemin, feuille.$value, null);
       continue;
     }
-    for (const [mode, valeur] of Object.entries(modes)) ajouter(chemin, valeur, mode);
+    const surcharges = surchargesDe(feuille);
+    const extensions = Object.keys(axe.extensions ?? {});
+    if (extensions.length === 0 || Object.keys(surcharges).length === 0) {
+      proprietaire.set(chemin, axe.nom);
+      for (const [mode, valeur] of Object.entries(modes)) vers(chemin, valeur, mode);
+      continue;
+    }
+
+    const noeud = (extension) => `${chemin}@${extension}`;
+    proprietaire.set(chemin, axeDesExtensions(axe.nom));
+    for (const contexte of ["base", ...extensions]) {
+      ajouter(chemin, noeud(surchargeLaPlusProche(axe, surcharges, contexte)), contexte);
+    }
+    proprietaire.set(noeud("base"), axe.nom);
+    for (const [mode, valeur] of Object.entries(modes)) vers(noeud("base"), valeur, mode);
+    for (const extension of Object.keys(surcharges)) {
+      if (!possede(axe.extensions, extension)) continue;
+      const parMode = estObjet(surcharges[extension]) ? surcharges[extension] : {};
+      const repli = noeud(surchargeLaPlusProche(axe, surcharges, axe.extensions[extension].parent));
+      proprietaire.set(noeud(extension), axe.nom);
+      for (const mode of axe.modes) {
+        if (possede(parMode, mode)) vers(noeud(extension), parMode[mode], mode);
+        else ajouter(noeud(extension), repli, mode);
+      }
+    }
   }
 
   const cycles = [];
   let enumeres = 0;
   try {
-    for (const composante of composantesFortementConnexes([...index.keys()], aretes)) {
+    for (const composante of composantesFortementConnexes([...new Set([...index.keys(), ...aretes.keys()])], aretes)) {
       const seule = composante[0];
       if (composante.length === 1 && !aretes.get(seule)?.has(seule)) continue;
       enumererCycles(composante, aretes, (cycle) => {

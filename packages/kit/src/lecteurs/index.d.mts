@@ -223,6 +223,16 @@ declare module "@ucm-kit/core/lecteurs" {
     contexte?: ContexteDeModes,
   ): unknown;
 
+  /**
+   * Les axes et leurs axes d'extension, chacun juste après son parent. Un axe
+   * d'extension a pour contextes `base` puis les extensions, et nomme son axe
+   * dans `parent`.
+   */
+  export function contextesDesAxes(
+    document: unknown,
+    axes: readonly AxeLu[],
+  ): Array<AxeLu & { parent?: string }>;
+
   /** Pour chaque feuille atteinte, les axes dont sa valeur dépend. */
   export function conesDesAxes(document: unknown, axes: readonly AxeLu[]): Map<string, Set<string>>;
 

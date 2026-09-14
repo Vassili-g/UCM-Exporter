@@ -242,16 +242,34 @@ test("un fichier incohérent est refusé, même avec --sans-modes", () => {
   assert.match(refuse.erreur, /modes incohérents/);
 });
 
-test("une version future du format et des collections étendues sont refusées", () => {
+test("une version future du format est refusée", () => {
   assert.equal(lancer({ tokens: documentAvec(undefined, { a: { b: nombre(1) } }, 3) }).code, 1);
+});
 
-  const etendue = lancer({
-    tokens: documentAvec({ color: { ...THEME, extensions: { "marque-b": { parent: "base" } } } }, {
-      color: { fond: feuille("color", { light: 1, dark: 2 }) },
-    }),
+/** Une feuille de `color` surchargée par `marque-b` dans le mode `dark`. */
+function collectionEtendue(nomDeFeuille) {
+  const fond = feuille("color", { light: 1, dark: 2 });
+  fond.$extensions["com.ucm.extensions"] = { "marque-b": { dark: 3 } };
+  return documentAvec({ color: { ...THEME, extensions: { "marque-b": { parent: "base" } } } }, {
+    color: { [nomDeFeuille]: fond },
   });
-  assert.equal(etendue.code, 1);
-  assert.match(etendue.erreur, /collections étendues/);
+}
+
+test("une collection étendue donne ses intermédiaires, sa règle de repli et la règle propre de l'extension", () => {
+  const { code, css, log } = lancer({ tokens: collectionEtendue("fond") });
+  assert.equal(code, 0);
+  assert.match(css, /\[data-color="dark"\] \{\n {2}--ucm-x-base--color-fond: 2;\n {2}--ucm-x-marque-b--color-fond: 3;\n\}/);
+  assert.match(css, /:is\(\[data-color-extensions="base"\], \[data-color-extensions="marque-b"\]\) \{\n {2}--color-fond: var\(--ucm-x-base--color-fond\);\n\}/);
+  assert.match(css, /\[data-color-extensions="marque-b"\] \{\n {2}--color-fond: var\(--ucm-x-marque-b--color-fond\);\n\}/);
+  assert.match(log, /Axe « color-extensions » : attribut data-color-extensions, défaut « base »\./);
+});
+
+test("un token dont la propriété commence par --ucm-x- est refusé", () => {
+  const refuse = lancer({ tokens: documentAvec(undefined, { ucm: { x: { fond: nombre(1) } } }) });
+  assert.equal(refuse.code, 1);
+  assert.match(refuse.erreur, /« ucm\.x\.fond » donne la propriété « --ucm-x-fond », dont le préfixe --ucm-x- est réservé/);
+
+  assert.equal(lancer({ tokens: documentAvec(undefined, { ucm: { y: { fond: nombre(1) } } }) }).code, 0);
 });
 
 test("sans fichier de tokens, un contrat qui cite un token refuse la commande ; sans lui, la feuille vide est écrite", () => {
