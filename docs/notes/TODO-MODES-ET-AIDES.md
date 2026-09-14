@@ -215,15 +215,15 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 ## L6. Guide, conventions, relais, installation
 
-- [ ] Sans L5 : `packages/cli/procedure.md`, moins de 60 lignes, section 6.4 du
+- [x] Sans L5 : `packages/cli/procedure.md`, moins de 60 lignes, section 6.4 du
       plan final.
-- [ ] Sans L5 : `packages/cli/src/conventions.mjs` : recherche du fichier le plus
+- [x] Sans L5 : `packages/cli/src/conventions.mjs` : recherche du fichier le plus
       proche, retrait des commentaires sauf `ucm:copie`, drapeau
       `ecritures-par-defaut: non`, sections par `## `, titres setext ignorés,
       lignes `^Contrôle\s*:`, anomalies. Un test par règle de la section 6.3.
-- [ ] Sans L5 : `packages/cli/src/aides.mjs` : `ucm aides`, `ucm aides <aide>`,
-      `--personnaliser [chemin]` avec marqueur daté, refus d'écrire une section
-      existante. Tests.
+- [x] Sans L5 : `packages/cli/src/aides.mjs` : `ucm aides`, `ucm aides <aide>`,
+      `--personnaliser [chemin]` avec marqueur daté et empreinte de l'écriture
+      copiée, refus d'écrire une section existante. Tests.
 - [ ] `packages/cli/src/guide.mjs` : sortie dans l'ordre de la section 6.5,
       réutilisation de `vueExacteDuVariant` et `compositionsExactesDuVariant`,
       comparaison des pins, `--out`, codes de sortie.
@@ -235,7 +235,7 @@ Le plugin est privé : ses commits ne montent aucune version.
       `.claude/skills`, `.ucm/conventions.md`, lignes restantes imprimées,
       commentaire d'en-tête corrigé. Tests d'`init` et de `recette.test.mjs` :
       seconde exécution sans effet, fichiers existants conservés.
-- [ ] `files` de `packages/cli/package.json` : `aides`, `procedure.md`. Test sur
+- [x] `files` de `packages/cli/package.json` : `aides`, `procedure.md`. Test sur
       `npm pack --dry-run`.
 - [ ] Après L5 seulement : scinder `.agents/skills/consommer-contrat/SKILL.md`,
       que la première condition de la mesure emploie telle quelle : protocole de

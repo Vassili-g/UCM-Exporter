@@ -11,6 +11,7 @@ import { pathToFileURL } from "node:url";
 import { lireConfiguration } from "@ucm-kit/core/lecteurs";
 
 import { chargerAdaptateur, NOM_ADAPTATEUR_TYPESCRIPT } from "./adaptateur.mjs";
+import { aides } from "./aides.mjs";
 import { check } from "./check.mjs";
 import { iconesDuRepository, rendreIcones } from "./icons.mjs";
 import { init, lireArgumentsInit, rendreInit } from "./init.mjs";
@@ -40,6 +41,7 @@ const AIDE = `ucm — la ligne de commande UCM
   ucm check           contrôle les contrats et rend le rapport du designer
   ucm icons           liste les icônes que les contrats réclament
   ucm tokens css      écrit la feuille CSS des tokens et de leurs modes
+  ucm aides           liste les aides à l'implémentation et leur origine
   ucm --help          affiche cette aide
 
   ucm init [--components <dossier>] [--tokens <dossier>] [--implementation <motif>]
@@ -59,6 +61,11 @@ const AIDE = `ucm — la ligne de commande UCM
                     tokens donne une feuille
       --sans-modes  écrit la valeur par défaut de chaque token, pour un
                     fichier exporté avant la déclaration des axes
+
+  ucm aides [<aide> [--personnaliser [<chemin>]]]
+      <aide>           imprime son sens, son écriture par défaut et sa preuve
+      --personnaliser  ajoute la section de l'aide au .ucm/conventions.md le
+                       plus proche du chemin, à éditer, sans rien écraser
 
 Codes de sortie : 0 tout est passé, 1 des contrôles ont échoué, 2 l'invocation
 ou la configuration est fautive.`;
@@ -123,6 +130,10 @@ export function executer(arguments_, {
       ecrire,
       alerter: sorties.alerter ?? console.error,
     });
+  }
+
+  if (commande === "aides") {
+    return aides(arguments_.slice(1), { racine, ecrire, alerter: sorties.alerter ?? console.error });
   }
 
   if (commande === "icons") {
