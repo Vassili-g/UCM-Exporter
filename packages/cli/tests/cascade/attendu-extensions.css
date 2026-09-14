@@ -1,0 +1,108 @@
+:root {
+  --ucm-x-base--color-f1: 10;
+  --ucm-x-marque-b--color-f1: var(--ucm-x-base--color-f1);
+  --ucm-x-sous-marque--color-f1: 30;
+  --color-f1: var(--ucm-x-base--color-f1);
+  --ucm-x-base--color-f2: 12;
+  --ucm-x-marque-b--color-f2: var(--color-f1);
+  --color-f2: var(--ucm-x-base--color-f2);
+  --color-f3: 14;
+  --densite-espace: var(--color-f1);
+  --composant-fond: var(--densite-espace);
+}
+[data-color="light"] {
+  --ucm-x-base--color-f1: 10;
+  --ucm-x-marque-b--color-f1: var(--ucm-x-base--color-f1);
+  --ucm-x-sous-marque--color-f1: 30;
+  --ucm-x-base--color-f2: 12;
+  --ucm-x-marque-b--color-f2: var(--color-f1);
+  --color-f3: 14;
+}
+[data-color="dark"] {
+  --ucm-x-base--color-f1: 11;
+  --ucm-x-marque-b--color-f1: 21;
+  --ucm-x-sous-marque--color-f1: var(--ucm-x-marque-b--color-f1);
+  --ucm-x-base--color-f2: 13;
+  --ucm-x-marque-b--color-f2: var(--ucm-x-base--color-f2);
+  --color-f3: 15;
+}
+:is([data-color="light"], [data-color="dark"]) {
+  --color-f1: var(--ucm-x-base--color-f1);
+  --color-f2: var(--ucm-x-base--color-f2);
+  --densite-espace: var(--color-f1);
+  --composant-fond: var(--densite-espace);
+}
+@scope (:is([data-color-extensions="base"], [data-color-extensions="marque-b"], [data-color-extensions="sous-marque"])) {
+  :where(:scope, :scope *):is([data-color="light"], [data-color="dark"]) {
+    --color-f1: var(--ucm-x-base--color-f1);
+    --color-f2: var(--ucm-x-base--color-f2);
+  }
+}
+@scope ([data-color-extensions="marque-b"]) {
+  :where(:scope, :scope *):is([data-color="light"], [data-color="dark"]) {
+    --color-f1: var(--ucm-x-marque-b--color-f1);
+    --color-f2: var(--ucm-x-marque-b--color-f2);
+  }
+}
+@scope ([data-color-extensions="sous-marque"]) {
+  :where(:scope, :scope *):is([data-color="light"], [data-color="dark"]) {
+    --color-f1: var(--ucm-x-sous-marque--color-f1);
+    --color-f2: var(--ucm-x-marque-b--color-f2);
+  }
+}
+@scope ([data-densite="confort"]) {
+  :where(:scope, :scope *):is([data-color="light"], [data-color="dark"]) {
+    --densite-espace: var(--color-f1);
+  }
+}
+@scope ([data-densite="compact"]) {
+  :where(:scope, :scope *):is([data-color="light"], [data-color="dark"]) {
+    --densite-espace: var(--color-f2);
+  }
+}
+:is([data-color-extensions="base"], [data-color-extensions="marque-b"], [data-color-extensions="sous-marque"]) {
+  --color-f1: var(--ucm-x-base--color-f1);
+  --color-f2: var(--ucm-x-base--color-f2);
+}
+[data-color-extensions="marque-b"] {
+  --color-f1: var(--ucm-x-marque-b--color-f1);
+  --color-f2: var(--ucm-x-marque-b--color-f2);
+}
+[data-color-extensions="sous-marque"] {
+  --color-f1: var(--ucm-x-sous-marque--color-f1);
+  --color-f2: var(--ucm-x-marque-b--color-f2);
+}
+:is([data-color-extensions="base"], [data-color-extensions="marque-b"], [data-color-extensions="sous-marque"]) {
+  --ucm-x-marque-b--color-f2: var(--color-f1);
+  --densite-espace: var(--color-f1);
+  --composant-fond: var(--densite-espace);
+}
+@scope ([data-color="light"]) {
+  :where(:scope, :scope *):is([data-color-extensions="base"], [data-color-extensions="marque-b"], [data-color-extensions="sous-marque"]) {
+    --ucm-x-marque-b--color-f2: var(--color-f1);
+  }
+}
+@scope ([data-color="dark"]) {
+  :where(:scope, :scope *):is([data-color-extensions="base"], [data-color-extensions="marque-b"], [data-color-extensions="sous-marque"]) {
+    --ucm-x-marque-b--color-f2: var(--ucm-x-base--color-f2);
+  }
+}
+@scope ([data-densite="confort"]) {
+  :where(:scope, :scope *):is([data-color-extensions="base"], [data-color-extensions="marque-b"], [data-color-extensions="sous-marque"]) {
+    --densite-espace: var(--color-f1);
+  }
+}
+@scope ([data-densite="compact"]) {
+  :where(:scope, :scope *):is([data-color-extensions="base"], [data-color-extensions="marque-b"], [data-color-extensions="sous-marque"]) {
+    --densite-espace: var(--color-f2);
+  }
+}
+[data-densite="confort"] {
+  --densite-espace: var(--color-f1);
+}
+[data-densite="compact"] {
+  --densite-espace: var(--color-f2);
+}
+:is([data-densite="confort"], [data-densite="compact"]) {
+  --composant-fond: var(--densite-espace);
+}

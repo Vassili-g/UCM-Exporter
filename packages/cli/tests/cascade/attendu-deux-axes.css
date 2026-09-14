@@ -1,0 +1,37 @@
+:root {
+  --marque-primaire: 1;
+  --marque-sombre: 3;
+  --theme-fond: var(--marque-primaire);
+  --composant-fond: var(--theme-fond);
+}
+[data-marque="m1"] {
+  --marque-primaire: 1;
+  --marque-sombre: 3;
+}
+[data-marque="m2"] {
+  --marque-primaire: 2;
+  --marque-sombre: 4;
+}
+:is([data-marque="m1"], [data-marque="m2"]) {
+  --theme-fond: var(--marque-primaire);
+  --composant-fond: var(--theme-fond);
+}
+@scope ([data-theme="light"]) {
+  :where(:scope, :scope *):is([data-marque="m1"], [data-marque="m2"]) {
+    --theme-fond: var(--marque-primaire);
+  }
+}
+@scope ([data-theme="dark"]) {
+  :where(:scope, :scope *):is([data-marque="m1"], [data-marque="m2"]) {
+    --theme-fond: var(--marque-sombre);
+  }
+}
+[data-theme="light"] {
+  --theme-fond: var(--marque-primaire);
+}
+[data-theme="dark"] {
+  --theme-fond: var(--marque-sombre);
+}
+:is([data-theme="light"], [data-theme="dark"]) {
+  --composant-fond: var(--theme-fond);
+}

@@ -149,6 +149,7 @@ packages/cli/            la ligne de commande : @ucm-kit/cli, publiée
   src/adaptateur.mjs       découvre l'adaptateur de stack installé dans le repo
   src/icons.mjs            les icônes que les contrats du repo réclament
   tests/                   dont recette.test.mjs, sur des repositories temporaires
+  tests/cascade/           la feuille des tokens rendue dans trois moteurs, par npm run cascade
 
 packages/adapter-typescript/  l'adaptateur opt-in : parité TS/TSX et types générés
   src/parite.mjs              lit les props et la composition avec TypeScript
@@ -673,6 +674,11 @@ npm run build
 Chaque paquet a son `scripts/run-tests.cjs`, qui découvre les fichiers
 `tests/*.test.ts` et `tests/*.test.mjs` de son dossier. Tout bug corrigé
 reçoit un test de régression.
+
+`npm run cascade` charge la feuille des tokens dans Chromium, Firefox et
+WebKit, hors de `npm test`. Ses moteurs s'installent par
+`npx playwright install chromium firefox webkit`, et le job `cascade` de
+`ci.yml` le lance.
 
 Un changement dans `packages/kit/src/format/types.ts` demande `npm run schema` :
 le schéma commité en est dérivé, et `packages/kit/tests/schema.test.ts` refuse

@@ -12,10 +12,12 @@
     "build": "npm run build --workspace @ucm-kit/core && npm run build --workspace ucm-exporter-plugin",
     "schema": "npm run schema --workspace @ucm-kit/core",
     "pins": "node scripts/pins-servis.mjs",
+    "cascade": "npm run build --workspace @ucm-kit/core && node --test packages/cli/tests/cascade/cascade.test.mjs",
     "start": "npm run build"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "playwright": "1.63.0",
     "tsx": "^4.20.0",
     "typescript": "^5.5.3"
   }

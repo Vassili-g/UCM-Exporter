@@ -58,3 +58,21 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+
+  # La preuve de cascade de la feuille des tokens, dans les trois moteurs que
+  # Playwright installe. Le job est séparé de `test` : lui seul télécharge les
+  # navigateurs.
+  cascade:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install -g npm@12.0.2 && npm -v
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium firefox webkit
+      - run: npm run cascade
