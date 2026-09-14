@@ -29,8 +29,8 @@ export type FichierDeVariables = {
 
 type Valeur = VariableValue | undefined;
 
-const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
-const rgba = (r: number, g: number, b: number, a: number) => ({ r, g, b, a });
+export const alias = (id: string) => ({ type: 'VARIABLE_ALIAS', id }) as VariableAlias;
+export const rgba = (r: number, g: number, b: number, a: number) => ({ r, g, b, a });
 const bezier = (x1: number, y1: number, x2: number, y2: number) =>
   ({ type: 'CUSTOM_CUBIC_BEZIER', easingFunctionCubicBezier: { x1, y1, x2, y2 } }) as MotionEasing;
 const easing = (type: MotionEasing['type']) => ({ type }) as MotionEasing;
@@ -43,19 +43,20 @@ function textStyle(
   return { id: `style-${name}`, name, type: 'TEXT', boundVariables } as unknown as TextStyle;
 }
 
-function collection(id: string, name: string, modes: string[]): VariableCollection {
+/** Une collection dont le mode par défaut est `defaut`, ou le premier mode. */
+export function collection(id: string, name: string, modes: string[], defaut?: string): VariableCollection {
   const modesFigma = modes.map((mode, rang) => ({ modeId: `${id}:${rang}`, name: mode }));
   return {
     id,
     name,
     modes: modesFigma,
-    defaultModeId: modesFigma[0].modeId,
+    defaultModeId: (modesFigma.find((mode) => mode.name === defaut) ?? modesFigma[0]).modeId,
     variableIds: [],
   } as unknown as VariableCollection;
 }
 
 /** Une variable dont chaque mode reçoit la valeur de même rang ; `undefined` laisse le mode vide. */
-function variable(
+export function variable(
   proprietaire: VariableCollection,
   id: string,
   name: string,

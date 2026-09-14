@@ -1511,9 +1511,9 @@ la variable Figma :
 Le fichier reste un dialecte de `2025.10` sur trois sortes de feuilles :
 `"$type": "boolean"` et `"$type": "string"`, que le module ne définit pas ; et
 `"$value": null`, écrit quand un alias vise une variable que le fichier ne
-publie pas. Les modes rangés sous `$extensions["com.ucm.modes"]` ne sont pas un
-écart : `$extensions` est un membre prévu par le module et le namespace
-appartient au projet. Le module de résolution `2025.10` décrit une autre façon
+publie pas. Les modes rangés sous `$extensions["com.ucm.modes"]`, l'axe d'une
+feuille et la déclaration des axes ne sont pas un écart : `$extensions` est un
+membre prévu par le module et le namespace appartient au projet. Le module de résolution `2025.10` décrit une autre façon
 d'exprimer un contexte, qui reste une évolution possible.
 
 **2. Résolution des alias (tous types)**, `valuesByMode[modeId]` = valeur
@@ -1523,14 +1523,45 @@ FLOAT : `sizes.fontsize.base` sort `"{sizes.spacing.8}"`, pas
 `{ "value": 8, "unit": "px" }`. Les feuilles (Primitives, Spacing) portent la
 valeur directe.
 
-**3. Modes = marques**, la collection **Brand Tokens** utilise les modes comme
-axe multi-marque (1 mode = 1 marque) : **non ignorés**. Stratégie actuelle (un
-seul fichier) : `$value` = valeur du mode par défaut, et **tous** les modes
-portés sous `$extensions["com.ucm.modes"]` (`{ nom-de-marque: valeur }`). Chaque
-valeur de mode a la forme que le `$type` de sa feuille donne à `$value` :
-objet de couleur, objet de dimension, poids ou référence. Rien n'est perdu,
-tout est visible d'un coup d'œil. Collections mono-mode : juste `$value`.
-*(Évolution possible : un fichier DTCG par marque.)*
+**3. Modes et axes.** Une collection à plusieurs modes, comme **Brand Tokens**
+dont chaque mode est une marque, n'est jamais ignorée. `$value` porte la valeur
+du mode par défaut, et `$extensions["com.ucm.modes"]` porte chaque mode sous son
+nom normalisé (`{ nom-du-mode: valeur }`). Chaque valeur de mode a la forme que
+le `$type` de sa feuille donne à `$value` : objet de couleur, objet de
+dimension, poids ou référence. Une collection à un seul mode ne publie que
+`$value`.
+
+**La racine déclare les axes.** Une collection à plusieurs modes est un axe.
+`$extensions["com.ucm.axes"]` suit la marque de version, et s'écrit dès qu'une
+feuille porte `com.ucm.modes` :
+
+```json
+"$extensions": {
+  "com.ucm.formatVersion": 2,
+  "com.ucm.axes": { "brand-tokens": { "modes": ["intencial", "marque-2"], "default": "intencial" } }
+}
+```
+
+- La clé d'un axe est le préfixe que sa collection donne aux chemins de ses
+  tokens.
+- `modes` suit l'ordre des modes de la collection, et `default` nomme son mode
+  par défaut. Un lecteur ne déduit jamais le défaut de l'ordre.
+- Une feuille d'un axe nomme cet axe dans `$extensions["com.ucm.axis"]`. Le
+  premier segment de son chemin ne le désigne pas : une variable dont le nom
+  répète le préfixe de sa collection ne le reçoit pas deux fois, et la
+  collection `Color/Brand` a pour préfixe `color.brand`.
+- Un axe que l'export écarte laisse `com.ucm.modes` sur ses feuilles, sans
+  `com.ucm.axis`, et `com.ucm.axes` vaut `{}` quand l'export les écarte tous.
+  Le designer en reçoit la cause : préfixe vide ou partagé par deux collections
+  à modes, mode sans nom ou en collision, mode par défaut introuvable.
+- Dans chaque mode, un alias vise une feuille du même `$type`. L'export nomme
+  au designer la variable qui s'en écarte, sans écarter l'axe ; le contrôle
+  typographique du kit et `ucm tokens css` refusent ce fichier.
+
+`TOKENS_FORMAT_VERSION` ne monte pas pour ces deux extensions : aucune forme de
+valeur ne change, et un lecteur de valeurs ignore `$extensions`. Un fichier dont
+des feuilles portent des modes sans que la racine déclare d'axe vient d'un
+export antérieur, que `ucm tokens css` refuse en demandant un réexport.
 
 **4. DTCG** : chaque variable → `{ $value, $type }`, groupes = objets imbriqués.
 Types : `COLOR`→`color` ; `FLOAT`→`dimension` **sauf** groupes sans

@@ -171,6 +171,7 @@ test('buildLeaf garde le premier mode quand deux noms se normalisent pareil', ()
     graisses: new Set(),
     familles: new Set(),
     easingsEcartees: new Map(),
+    axes: new Map(),
   }, []);
 
   // Premier conservé, comme partout ailleurs ; le doublon est signalé une
@@ -206,6 +207,7 @@ test('buildLeaf type un lineheight aliasé sur spacing comme dimension (racine),
     graisses: new Set(),
     familles: new Set(),
     easingsEcartees: new Map(),
+    axes: new Map(),
   };
 
   assert.deepEqual(buildLeaf(lineheight, layoutsCol, ctx, []), {
@@ -258,6 +260,7 @@ test('un mode homonyme d’Object.prototype reste une marque exportée', () => {
     graisses: new Set(),
     familles: new Set(),
     easingsEcartees: new Map(),
+    axes: new Map(),
   }, warnings);
 
   // L'index littéral tenait « constructor » pour un mode déjà écrit et laissait
@@ -412,8 +415,9 @@ async function documentExporte(options: Parameters<typeof exporterLeFichier>[0] 
 test('la racine porte la version 2 du format de tokens, écrite une fois et avant les groupes', async () => {
   const { exporte, tokens } = await documentExporte();
 
-  assert.ok(exporte.content.startsWith('{\n  "$extensions":{\n    "com.ucm.formatVersion":2\n  },\n'));
-  assert.deepEqual(tokens.$extensions, { [EXTENSION_VERSION_TOKENS]: TOKENS_FORMAT_VERSION });
+  assert.ok(exporte.content.startsWith('{\n  "$extensions":{\n    "com.ucm.formatVersion":2,\n'));
+  assert.deepEqual(Object.keys(tokens.$extensions), [EXTENSION_VERSION_TOKENS, 'com.ucm.axes']);
+  assert.equal(tokens.$extensions[EXTENSION_VERSION_TOKENS], TOKENS_FORMAT_VERSION);
   assert.deepEqual(etatDuFormatDeTokens(tokens), { etat: 'courante', version: 2 });
   assert.equal(exporte.content.split('"$extensions":{\n').length - 1, 1, 'une seule marque, à la racine');
   // La marque n'est ni un token ni un groupe de plus. Six variables `EASING`
@@ -703,5 +707,12 @@ test('le type d’une graisse ne dépend ni de l’ordre des variables, ni des c
   const { tokens } = await documentExporte({ fichier: inverse });
 
   // Les modes inversés gardent leur mode par défaut : seules les clés changent d'ordre.
-  assert.deepEqual(tokens, reference);
+  // `com.ucm.axes` suit l'ordre des modes de chaque collection, et l'inverse
+  // donc ; son défaut, lui, ne bouge pas.
+  const { 'com.ucm.axes': axes, ...marque } = tokens.$extensions;
+  const { 'com.ucm.axes': axesDeReference, ...marqueDeReference } = reference.$extensions;
+  assert.deepEqual({ ...tokens, $extensions: marque }, { ...reference, $extensions: marqueDeReference });
+  for (const [cle, axe] of Object.entries(axesDeReference as Record<string, { modes: string[]; default: string }>)) {
+    assert.deepEqual(axes[cle], { modes: [...axe.modes].reverse(), default: axe.default }, cle);
+  }
 });
