@@ -132,7 +132,7 @@ l'installe lui-même, et un `tsconfig.json` à sa racine.
 | Commande | Fichier | Contenu |
 |---|---|---|
 | Exporter le composant | `<IdentifiantCode>.contract.json` | Variantes exactes, états, structure, tokens, icônes, règles d'usage, et un échantillon de maquette non normatif |
-| Exporter les tokens | `tokens.json` | Variables locales dans la version 1 du format de tokens, DTCG `2025.10` pour les couleurs et les dimensions, avec leurs alias et leurs modes. Style Dictionary 5 les lit |
+| Exporter les tokens | `tokens.json` | Variables locales dans la version 2 du format de tokens, DTCG `2025.10` pour leurs valeurs, avec leurs alias, leurs modes et la déclaration de leurs axes. `ucm tokens css` en écrit la feuille CSS |
 
 Les règles d'usage sont la part que le designer écrit à la main : une instance
 de `.componentRules` posée à côté du composant, dont le calque `component-name`
