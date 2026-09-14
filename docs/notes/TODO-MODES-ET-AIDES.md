@@ -1,0 +1,275 @@
+# Liste de tâches : modes de tokens et aides à l'implémentation
+
+Liste d'exécution du [plan final](PLAN-FINAL-MODES-ET-AIDES.md), pour un agent
+qui travaille seul. Le plan fait autorité sur le quoi et le pourquoi ; cette liste
+fixe l'ordre et la preuve de chaque geste. Une case se coche quand sa preuve est
+constatée, dans le commit qui la livre.
+
+Les tâches marquées **[mainteneur]** exigent Figma, Safari, une session d'agent
+mesurée ou une publication décidée par le mainteneur. L'agent prépare ce qui
+précède, écrit la demande dans le compte rendu et passe à la tâche suivante qui
+n'en dépend pas.
+
+## 0. Règles de conduite
+
+- [ ] Lire `AGENTS.md`, puis `CONTRIBUTING.md` sections « Code », « Tests » et
+      « Documentation », puis le plan final en entier.
+- [ ] Avant toute phrase écrite, charger `.agents/skills/rediger-sans-tics-ia` ;
+      avant tout message destiné au designer, charger aussi
+      `.agents/skills/rediger-diagnostics-ucm`.
+- [ ] Travailler sur `main`, sans branche ni pull request. Commiter chaque tâche
+      avec `git commit --only <chemins>` après avoir lu `git status` : d'autres
+      sessions écrivent dans le même arbre. Pousser après chaque commit, sans
+      rebase.
+- [ ] Ne jamais lancer `git checkout -- <fichier>` sur un travail non commité ;
+      restaurer par copie.
+- [ ] Une loi ou un refus nouveau se voit rouge avant d'être cru : casser ce
+      qu'il protège, constater l'échec, restaurer, et le dire dans le message de
+      commit. Chaque refus a un cas voisin accepté.
+- [ ] Aucun test ni aucune logique ne nomme un composant du corpus ; les tests
+      emploient des documents synthétiques.
+- [ ] Éditer par Write et Edit. Un script d'édition Python en mode texte convertit
+      en CRLF ; un heredoc avale les antislashs d'une regex.
+- [ ] Vérifier dans un worktree isolé : extraire en LF, lancer `npm test`,
+      `npm run typecheck`, `npm run build` étape par étape, supprimer le worktree
+      par Node.
+- [ ] Un changement de `packages/kit/src/format/types.ts` est suivi de
+      `npm run schema`.
+- [ ] Ne poser un plafond ou une borne numérique qu'à la fin d'une tâche, jamais
+      pour faire passer un rouge.
+
+## L0. Preuve de cascade
+
+- [ ] Ajouter `playwright` aux `devDependencies` de `packages/cli`, installer
+      Chromium, Firefox et WebKit.
+- [ ] Créer `packages/cli/tests/cascade/` : une page qui charge un CSS et un arbre
+      HTML, relève les valeurs calculées, et un oracle provisoire qui résout un
+      document synthétique dans le contexte effectif de chaque élément.
+- [ ] Écrire à la main le CSS attendu de la section 4.3 du plan pour : deux axes
+      croisés, trois axes, deux attributs sur le même élément, mode inconnu,
+      `display: contents`, retrait d'attribut.
+- [ ] Ajouter les arbres d'extension : `base`, `marque-b`, `sous-marque` sur un
+      axe `light`/`dark` croisé avec un thème ; les sept arbres de la section 10
+      du plan ; un alias entre deux feuilles surchargées.
+- [ ] Constater le vert dans les trois moteurs. Si `@scope` échoue, passer le
+      repli `@container style()` de l'annexe A.6 du plan final au même harnais et
+      écrire la forme retenue dans le plan final.
+- [ ] Mesurer sur un document synthétique : 500 extensions, 10 surcharges
+      distinctes par extension, 2 modes. Relever règles, déclarations et octets.
+      Écrire le relevé dans une section « Relevé L0 » du plan final.
+- [ ] **[mainteneur]** Rejouer le harnais dans Safari réel.
+
+## L1. Kit : le modèle de modes
+
+- [ ] `packages/kit/src/format/tokens.ts` : types `AxeDeTokens`, `com.ucm.axes`
+      dans `ExtensionsDuDocument`, `com.ucm.axis` et `com.ucm.extensions` dans le
+      `$extensions` d'une feuille. Lancer `npm run schema` si le schéma bouge.
+- [ ] `packages/kit/src/format/names.ts` : `attributDeMode(axe)`. Test : accents,
+      segments multiples. Citer la fonction dans l'invariant de `AGENTS.md` sur
+      les projections de nom.
+- [ ] `packages/kit/src/format/configuration.ts` : sections facultatives `modes`
+      (valeur `data-` suivie de lettres minuscules, chiffres, tirets) et `css`
+      (`fontFamilyFallback`). Tests des refus dans `configuration.test.mjs`.
+- [ ] `packages/kit/src/lecteurs/modes-tokens.mjs` : `axesDeTokens` avec les cinq
+      états de la table 3.1 du plan. Un test par état, et un cas voisin chacun.
+- [ ] `valeurDansLeContexte` : alias conservés, défaut, mode non défaut. Les
+      extensions arrivent en L8a.
+- [ ] `conesDesAxes` : graphe inverse construit une fois ; losange, trois axes,
+      défaut non premier, nom `__proto__` gardé en donnée.
+- [ ] `axesDuContrat` par `collecterReferences` et `sansEchantillon` ; dépendance
+      de dépendance, dépendance absente, cycle de composition.
+- [ ] `contextesDeVerification` : l'ensemble `1 + A + C` de la section 4.5.
+- [ ] `cyclesActifs` : Tarjan, conditions par arête, cycle de l'analyse 3.7
+      accepté, cycle réel refusé, borne de 10 000 cycles qui rend un refus
+      d'analyse.
+- [ ] `typography-token-types.mjs` : refus d'une chaîne qui traverse une feuille
+      dont le type change dans un mode. Test vu rouge avec le lecteur actuel.
+      Mention de classe 6 dans `docs/CHANGELOG-FORMAT.md` et le README du kit.
+- [ ] Exporter les fonctions par `lecteurs/index.mjs` et `index.d.mts`.
+- [ ] Remplacer l'oracle provisoire de L0 par `valeurDansLeContexte`.
+- [ ] Monter la version de `@ucm-kit/core` ; `@ucm-kit/cli` et
+      `@ucm-kit/adapter-typescript` épinglent la nouvelle version.
+
+## L2. CLI : `ucm tokens css`, axes simples
+
+- [ ] `packages/cli/src/tokens-css.mjs` et l'aiguillage dans `ucm.mjs`, aide de
+      `ucm --help` comprise. `--out` obligatoire, jamais une entrée.
+- [ ] Base sur `:root`, règle par mode, règle commune `:is()`, croisements
+      `@scope`, dans l'ordre de `com.ucm.axes`.
+- [ ] Littéraux de l'annexe A.3 du plan final, `string` et `boolean` compris,
+      repli de famille de la configuration.
+- [ ] Attribut lu dans `modes`, défaut `attributDeMode` ; partage d'un attribut
+      par deux axes aux ensembles de modes égaux, défauts différents imprimés.
+- [ ] Refus, code 1, sortie conservée : les états de 3.1, collision de noms CSS,
+      alias absent, cycle actif, écart de type, fichier de tokens absent quand un
+      contrat cite une référence. `--sans-modes`. Code 2 pour l'invocation.
+- [ ] Écriture par remplacement du fichier terminé ; statistiques imprimées.
+- [ ] `packages/cli/tests/tokens-css.test.mjs` : chaque refus et son voisin,
+      sortie identique sur deux exécutions, noms non ASCII.
+- [ ] Brancher le harnais de L0 sur la sortie de la commande, pour les arbres
+      sans extension.
+- [ ] `packages/cli/README.md` : la commande et la mise en place.
+
+## L3. Plugin : écrire les axes
+
+- [ ] Extraire `prefixeDeCollection` de `joinTokenPath`
+      (`packages/plugin/src/variables.ts`), sans changer un chemin.
+- [ ] `packages/plugin/src/tokens/exportTokens.ts` : `com.ucm.axes` à la racine
+      après la marque, toujours présent dès qu'une feuille a des modes, `{}`
+      compris ; `com.ucm.axis` sur chaque feuille d'un axe retenu.
+- [ ] Constats de la table 3.4 du plan, sauf les extensions : préfixe égal,
+      préfixe vide, mode vide ou en collision, défaut absent, alias d'un autre
+      type dans un mode. Un `Constat` par site, rédigé avec la skill des
+      diagnostics.
+- [ ] Étendre `packages/plugin/tests/fichierDeVariables.ts` et
+      `exportTokens.test.ts` : défaut non premier, préfixes imbriqués, chaque
+      constat, aucun `com.ucm.axes` sans modes.
+- [ ] `conformiteDtcg.test.ts` : la racine admet `com.ucm.axes` après la marque,
+      aucun groupe ne porte `$extensions`.
+- [ ] `styleDictionary.test.ts` reste vert sans modification.
+- [ ] Documents : `docs/FORMAT.md` partie 2, `packages/plugin/SPEC.md` partie 2,
+      `docs/CHANGELOG-FORMAT.md`, `docs/COMPATIBILITE.md` classe 12 et titre des
+      classes, invariants de `AGENTS.md` du groupe « Tokens et variables ».
+- [ ] **[mainteneur]** Lancer l'export local dans Figma et vérifier la racine du
+      `tokens.json` produit.
+
+## L4. Le catalogue d'aides
+
+- [ ] `docs/FORMAT.md` section 8 : `cssProperties` n'est pas exhaustif ;
+      `outline-style: solid` et `outline-offset` selon `align` ; la
+      recommandation du repli remplacée par la règle de `contour-ring`.
+- [ ] `packages/kit/src/lecteurs/caracteristiques.mjs` : `CARACTERISTIQUES`, table
+      des champs, `SANS_AIDE`, `caracteristiquesDuContrat`. Tests sur contrats
+      fabriqués, un par caractéristique, présente et absente.
+- [ ] `packages/cli/aides/<aide>.md` : une aide par ligne de l'annexe A.7 du plan
+      final, sections « Sens », « Écriture par défaut » sauf pour un ancrage,
+      « Preuve ». Contenu tiré des §1 à §6 de
+      `.agents/skills/consommer-contrat/SKILL.md`. `contour-ring` et
+      `contour-border` suivent la section 6.2 du plan final.
+- [ ] `packages/cli/tests/aides.test.mjs` : les lois de l'annexe A.8 du plan
+      final, plus la section « Preuve ». Voir rouge la loi du schéma en
+      retirant une entrée de la table.
+- [ ] Ajouter les aides à `PORTABLES` dans `tests/registrePortableDocuments.test.ts`.
+
+## L5. Mesure préalable du coût
+
+- [ ] Écrire un script jetable dans le dossier temporaire de session, jamais dans
+      le dépôt, qui assemble pour `Alert` et `Button` la sortie attendue de
+      `ucm guide` : procédure provisoire, extraction, aides employées.
+- [ ] Préparer pour le mainteneur les deux conditions, la liste fermée des
+      propriétés comparées à Figma et le critère de la section 6.8, écrits avant
+      la mesure.
+- [ ] **[mainteneur]** Rejouer trois reconstructions par condition et par
+      composant ; relever tours, contexte moyen, trafic facturé, écarts.
+- [ ] Écrire le résultat et la décision dans une section « Relevé L5 » du plan
+      final. Si le critère échoue, retirer l'extraction de la section 6.5 avant L6.
+
+## L6. Guide, conventions, relais, installation
+
+- [ ] `packages/cli/procedure.md`, moins de 60 lignes, section 6.4 du plan final.
+- [ ] `packages/cli/src/conventions.mjs` : recherche du fichier le plus proche,
+      retrait des commentaires sauf `ucm:copie`, drapeau
+      `ecritures-par-defaut: non`, sections par `## `, titres setext ignorés,
+      lignes `^Contrôle\s*:`, anomalies. Un test par règle de la section 6.3.
+- [ ] `packages/cli/src/guide.mjs` : sortie dans l'ordre de la section 6.5,
+      réutilisation de `vueExacteDuVariant` et `compositionsExactesDuVariant`,
+      comparaison des pins, `--out`, codes de sortie.
+- [ ] `packages/cli/tests/guide.test.mjs` sur un repository temporaire à deux
+      contrats dont l'un compose l'autre : les cas de l'annexe A.10 du plan
+      final et ceux ajoutés par la section 6.5 du plan final.
+- [ ] `packages/cli/src/aides.mjs` : `ucm aides`, `ucm aides <aide>`,
+      `--personnaliser [chemin]` avec marqueur daté, refus d'écrire une section
+      existante. Tests.
+- [ ] `packages/cli/src/init.mjs` et `ucm.mjs` : drapeaux sans valeur,
+      `--sans-agents`, `init` asynchrone, relais `.agents/skills` et
+      `.claude/skills`, `.ucm/conventions.md`, lignes restantes imprimées,
+      commentaire d'en-tête corrigé. Tests d'`init` et de `recette.test.mjs` :
+      seconde exécution sans effet, fichiers existants conservés.
+- [ ] `files` de `packages/cli/package.json` : `aides`, `procedure.md`. Test sur
+      `npm pack --dry-run`.
+- [ ] Scinder `.agents/skills/consommer-contrat/SKILL.md` : protocole de recette
+      seul, renvoi à `ucm guide`, en-tête YAML sur deux lignes.
+- [ ] Documents : `AGENTS.md` (carte du code, paragraphe de la skill),
+      `packages/cli/README.md`, `docs/RECETTE.md`, `ROADMAP.md`.
+
+## L7. Gabarit de l'adaptateur
+
+- [ ] `packages/adapter-typescript/gabarits/exemple.contract.json`, contrat
+      synthétique : props, variants, vue exacte, états, composition, icône,
+      `ring`, dimensions par taille.
+- [ ] `packages/adapter-typescript/gabarits/composant.tsx`, qui l'implémente selon
+      les écritures par défaut, ordre du fichier écrit en tête.
+- [ ] `cheminGabarits` dans l'objet exporté, chemin absolu depuis
+      `import.meta.url` ; `index.d.mts` ; `files` reçoit `gabarits`.
+- [ ] `@ucm-kit/cli` en `devDependencies` de l'adaptateur. Tests : parité sans
+      écart, contrôle de types, `ucm guide` sur l'exemple imprime chaque aide que
+      le gabarit illustre.
+- [ ] `init` copie les gabarits quand l'adaptateur est trouvé, sans écraser ; une
+      erreur de chargement est rapportée sans arrêter l'installation. Tests.
+- [ ] Montée de version et publication des trois paquets, noyau en premier, par
+      `gh workflow run publish.yml`, chaque exécution suivie par `gh run watch`,
+      chaque version constatée par `npm view`.
+
+## L8a. Kit et CLI : collections étendues
+
+- [ ] `valeurDansLeContexte` et `conesDesAxes` lisent `extensions` et
+      `com.ucm.extensions` ; chaîne de parents jusqu'à `base`, alias conservés.
+- [ ] `ucm tokens css` : axe `<axe>-extensions` après son axe parent,
+      intermédiaires `--ucm-x-base--<f>` et `--ucm-x-<e>--<f>` limités aux
+      surcharges, règle de repli puis règles propres, croisements au même schéma,
+      refus d'un token dont la projection commence par `--ucm-x-`.
+- [ ] `cyclesActifs` couvre les arêtes des surcharges et des intermédiaires.
+- [ ] Harnais de L0 branché sur la sortie : trois générations, les sept arbres de
+      la revue, taille au plus égale au relevé de L0 sur 500 extensions.
+- [ ] `docs/FORMAT.md` : collections étendues publiées comme expérimentales, limite
+      des cycles.
+
+## L8b. Plugin : lecture des collections étendues
+
+- [ ] Simulation de `ExtendedVariableCollection` dans `fichierDeVariables.ts` :
+      `parentVariableCollectionId`, `rootVariableCollectionId`,
+      `modes[].parentModeId`, `variableOverrides`.
+- [ ] Export de `extensions` et des surcharges creuses ; remontée de
+      `parentModeId` ; constats « extensions homonymes », « extension nommée
+      `base` », « parente distante ».
+- [ ] `etatDesTokensDuFichier` et `modeCollisionWarnings` comptent une fois une
+      variable héritée. Tests.
+- [ ] `packages/plugin/SPEC.md` partie 2 : lecture expérimentale, ce qui reste à
+      mesurer.
+- [ ] **[mainteneur]** Relevé sur un fichier Enterprise réel dès qu'un
+      utilisateur en fournit un.
+
+## L9. Recette
+
+- [ ] Recette sur un repository temporaire depuis les archives `npm pack` des
+      trois paquets : `init`, `tokens css`, `guide`, `aides --personnaliser`.
+- [ ] **[mainteneur]** Playground, dans l'ordre de la section 7 du plan final :
+      réexport des tokens, installation, remplacement de Style Dictionary,
+      `ucm init`, déplacement du tableau de `AGENTS.md`, règle 4 réécrite.
+- [ ] **[mainteneur]** Épreuves de la section 7 : build, galerie en deux marques,
+      harnais dans Safari, reconstructions à froid d'`Alert` et `Button`,
+      personnalisation de `contour-ring`, export antérieur refusé, couleurs
+      forcées dans Chrome.
+- [ ] Écrire le compte rendu de recette dans `docs/RECETTE.md` si une marche
+      change, sinon dans une section « Relevé L9 » du plan final.
+
+## L10. Modes fixés dans un composant
+
+- [ ] **[mainteneur]** Autoriser la lecture du fichier du design system par le
+      serveur MCP Figma.
+- [ ] Relever en lecture seule les calques publiés dont `explicitVariableModes`
+      n'est pas vide, racine et calques internes séparés, et les variables
+      `BOOLEAN` et `STRING` à plusieurs modes liées à `visible` ou `characters`.
+- [ ] Classer chaque cas selon la section 5.1 du plan final et écrire le relevé
+      dans une section « Relevé L10 ».
+- [ ] **[mainteneur]** Décider d'un traitement avant tout champ de contrat.
+
+## Clôture
+
+- [ ] Relire `AGENTS.md`, `docs/FORMAT.md`, `packages/plugin/SPEC.md`,
+      `docs/COMPATIBILITE.md`, `docs/CHANGELOG-FORMAT.md` et les README des
+      paquets ; retirer toute description devenue fausse ou dupliquée.
+- [ ] Ajouter au plan du diff sémantique les cinq cas de la section 9 du plan
+      final.
+- [ ] `npm test`, `npm run typecheck`, `npm run build` verts dans un worktree
+      isolé.
