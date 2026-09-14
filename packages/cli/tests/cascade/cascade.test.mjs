@@ -25,10 +25,11 @@ import { attributsDesAxes, feuilleDesTokens, statistiquesDeFeuille } from "../..
 import {
   ARBRES_AXES,
   ARBRES_EXTENSIONS,
+  ARBRES_SANS_VALEUR,
   ELEMENT_A_TROIS_ATTRIBUTS,
   ORDRES_DE_DECLARATION,
 } from "./arbres.mjs";
-import { DEUX_AXES, EXTENSIONS, TROIS_AXES, avecOrdreDesAxes, documentDeTaille } from "./documents.mjs";
+import { DEUX_AXES, EXTENSIONS, SANS_VALEUR, TROIS_AXES, avecOrdreDesAxes, documentDeTaille } from "./documents.mjs";
 
 const lire = (nom) => readFileSync(new URL(nom, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 
@@ -73,6 +74,7 @@ const CAS = [
     source: `axes ${ordre.join(", ")}`,
   })),
   ...ARBRES_EXTENSIONS.map((arbre) => ({ ...arbre, document: EXTENSIONS, source: "extensions" })),
+  ...ARBRES_SANS_VALEUR.map((arbre) => ({ ...arbre, document: SANS_VALEUR, source: "sans valeur" })),
 ].map((cas) => ({ ...cas, css: feuilleDeLaCommande(cas.document), axes: axesAvecAttributs(cas.document) }));
 
 function pageDe({ css, racine = {}, corps }) {
@@ -127,7 +129,9 @@ function ecarts(releves, { document, axes }) {
   for (const { sonde, chaine, valeurs } of releves) {
     const contexte = contexteDe(chaine, axes);
     for (const chemin of cheminsDe(document)) {
-      const attendu = String(valeurResolue(document, chemin, contexte));
+      // Une feuille sans valeur rend la propriété absente, que le moteur lit vide.
+      const resolue = valeurResolue(document, chemin, contexte);
+      const attendu = resolue === null ? "" : String(resolue);
       const rendu = valeurs[tokenCssVariable(chemin)];
       if (rendu !== attendu) fautes.push(`sonde ${sonde}, ${chemin} : attendu ${attendu}, rendu ${rendu}`);
     }

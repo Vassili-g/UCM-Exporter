@@ -94,6 +94,24 @@ test("--personnaliser ajoute la section marquée à la fin du fichier, puis refu
   }
 });
 
+test("--personnaliser refuse l'aide composant, dont l'écriture est le texte de tête", () => {
+  const racine = repository("Stack : CSS.\n");
+  const chemin = join(racine, ".ucm", "conventions.md");
+  try {
+    const refuse = lancer(racine, ["composant", "--personnaliser"]);
+    assert.equal(refuse.code, 2);
+    assert.match(refuse.erreur, /le texte avant la première section de \.ucm\/conventions\.md est l'écriture de l'aide composant/);
+    assert.equal(readFileSync(chemin, "utf8"), "Stack : CSS.\n");
+    assert.doesNotMatch(lancer(racine, []).log, /⚠/);
+
+    const dehors = lancer(racine, ["contour-ring", "--personnaliser", ".."]);
+    assert.equal(dehors.code, 2);
+    assert.match(dehors.erreur, /\.\. est hors du repository/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
 test("--personnaliser vise le fichier le plus proche du chemin donné, et refuse sans fichier", () => {
   const racine = repository();
   try {

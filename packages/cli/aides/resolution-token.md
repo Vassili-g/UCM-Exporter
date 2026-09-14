@@ -8,7 +8,9 @@ quand: reference-token
 Une référence `{chemin.du.token}` devient une valeur par le moyen que le
 repository fournit, et par aucun autre. Aucune couleur, dimension, famille ou
 graisse tokenisée ne s'écrit en dur. Les pixels de `structuralSize` et des
-pistes de grille sont les seules valeurs brutes prévues.
+pistes de grille sont les seules valeurs brutes prévues. Les références d'un
+contrat se relèvent partout sauf dans `samples` et `meta`, dont une chaîne en
+forme de référence est un texte.
 
 ## Preuve
 

@@ -38,14 +38,33 @@ function estObjet(valeur) {
   return Boolean(valeur) && typeof valeur === "object" && !Array.isArray(valeur);
 }
 
-/** Le premier mode d'une feuille qui cite une feuille d'un autre type, ou `null`. */
-function ecartDeMode(chemin, feuille, index) {
+/**
+ * Chaque valeur contextuelle d'une feuille : ses modes, puis les surcharges de
+ * chaque extension, sous `{ mode, extension?, valeur }`.
+ */
+function valeursContextuelles(feuille) {
+  const valeurs = [];
   const modes = feuille.$extensions?.["com.ucm.modes"];
-  if (!estObjet(modes)) return null;
-  for (const [mode, valeur] of Object.entries(modes)) {
+  for (const [mode, valeur] of Object.entries(estObjet(modes) ? modes : {})) valeurs.push({ mode, valeur });
+  const surcharges = feuille.$extensions?.["com.ucm.extensions"];
+  for (const [extension, parMode] of Object.entries(estObjet(surcharges) ? surcharges : {})) {
+    for (const [mode, valeur] of Object.entries(estObjet(parMode) ? parMode : {})) valeurs.push({ mode, extension, valeur });
+  }
+  return valeurs;
+}
+
+/** Le premier mode ou la première surcharge d'une feuille qui cite une feuille d'un autre type, ou `null`. */
+function ecartDeMode(chemin, feuille, index) {
+  for (const { mode, extension, valeur } of valeursContextuelles(feuille)) {
     const cible = index.get(cheminDeReference(valeur));
     if (cible && cible.$type !== feuille.$type) {
-      return { feuille: chemin, mode, attendu: feuille.$type, recu: cible.$type };
+      return {
+        feuille: chemin,
+        mode,
+        ...(extension === undefined ? {} : { extension }),
+        attendu: feuille.$type,
+        recu: cible.$type,
+      };
     }
   }
   return null;
@@ -55,8 +74,9 @@ function ecartDeMode(chemin, feuille, index) {
  * Résout le type d'une chaîne d'alias, jamais sa valeur.
  *
  * La chaîne suit `$value`, donc le mode par défaut. Ce parcours n'est exact que
- * si chaque feuille traversée cite, dans tous ses modes, des feuilles de son
- * propre type : la première qui s'en écarte est rendue dans `ecart`.
+ * si chaque feuille traversée cite, dans tous ses modes et toutes ses
+ * surcharges, des feuilles de son propre type : la première qui s'en écarte est
+ * rendue dans `ecart`.
  */
 function parcourirChaine(reference, index) {
   let chemin = cheminDeReference(reference);
@@ -77,7 +97,8 @@ function parcourirChaine(reference, index) {
 /**
  * Renvoie les incohérences entre les champs réellement déclarés d'un text
  * style 4.6 et les types DTCG de leurs références. Une incohérence qui vient
- * d'un mode porte en plus `feuille` et `mode`.
+ * d'un mode porte en plus `feuille` et `mode`, et `extension` quand elle vient
+ * d'une surcharge.
  */
 export function erreursTypesTypographiques(contrat, tokens) {
   const index = indexerTokensDtcg(tokens);

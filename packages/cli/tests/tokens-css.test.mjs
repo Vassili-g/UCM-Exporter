@@ -147,11 +147,17 @@ test("chaque type s'écrit selon sa table, en base comme en mode, famille suivie
   }
 });
 
-test("une feuille sans valeur ne reçoit aucune déclaration, est nommée, et ne change pas le code", () => {
+test("une feuille sans valeur se déclare initial dans chaque contexte, est nommée, et ne change pas le code", () => {
   const { code, css, erreur } = lancer({ tokens: documentAvec(undefined, { a: { vide: nombre(null), plein: nombre(1) } }) });
   assert.equal(code, 0);
-  assert.doesNotMatch(css, /--a-vide/);
-  assert.match(erreur, /« a\.vide » n'a pas de valeur/);
+  assert.match(css, /:root \{\n {2}--a-vide: initial;\n {2}--a-plein: 1;\n\}/);
+  assert.match(erreur, /« a\.vide » n'a pas de valeur : elle se déclare initial/);
+
+  // Sans déclaration, `[data-theme="dark"]` hériterait de la valeur par défaut.
+  const modes = lancer({ tokens: documentAvec({ theme: THEME }, { theme: { fond: feuille("theme", { light: 1, dark: null }) } }) });
+  assert.equal(modes.code, 0);
+  assert.match(modes.css, /\[data-theme="dark"\] \{\n {2}--theme-fond: initial;\n\}/);
+  assert.match(modes.erreur, /« theme\.fond », en mode « dark », n'a pas de valeur/);
 });
 
 test("un alias vers une feuille absente est refusé, et la feuille précédente reste en place", () => {
@@ -264,6 +270,34 @@ test("une collection étendue donne ses intermédiaires, sa règle de repli et l
   assert.match(log, /Axe « color-extensions » : attribut data-color-extensions, défaut « base »\./);
 });
 
+test("deux extensions dont les noms donnent la même propriété, ou une extension qui donne base, sont refusées", () => {
+  const avecExtensions = (noms) => {
+    const document = collectionEtendue("fond");
+    document.$extensions["com.ucm.axes"].color.extensions = Object.fromEntries(noms.map((nom) => [nom, { parent: "base" }]));
+    document.color.fond.$extensions["com.ucm.extensions"] = Object.fromEntries(noms.map((nom, rang) => [nom, { dark: 10 + rang }]));
+    return document;
+  };
+
+  const homonymes = lancer({ tokens: avecExtensions(["marque-b", "marque_b"]) });
+  assert.equal(homonymes.code, 1);
+  assert.match(homonymes.erreur, /Les extensions « marque-b » et « marque_b » de l'axe « color » donnent le même nom CSS « marque-b »/);
+
+  const base = lancer({ tokens: avecExtensions(["base!"]) });
+  assert.equal(base.code, 1);
+  assert.match(base.erreur, /L'extension « base! » de l'axe « color » donne le nom CSS « base », réservé à la collection elle-même/);
+
+  assert.equal(lancer({ tokens: avecExtensions(["marque-b", "marque-c"]) }).code, 0);
+});
+
+test("un axe déclaré sous le nom de l'axe d'extension d'un autre est refusé en nommant ce dernier", () => {
+  const document = collectionEtendue("fond");
+  document.$extensions["com.ucm.axes"]["color-extensions"] = THEME;
+  document["color-extensions"] = { fond: feuille("color-extensions", { light: 1, dark: 2 }) };
+  const refuse = lancer({ tokens: document });
+  assert.equal(refuse.code, 1);
+  assert.match(refuse.erreur, /Deux axes portent le nom « color-extensions », dont l'axe d'extension de « color »\./);
+});
+
 test("un token dont la propriété commence par --ucm-x- est refusé", () => {
   const refuse = lancer({ tokens: documentAvec(undefined, { ucm: { x: { fond: nombre(1) } } }) });
   assert.equal(refuse.code, 1);
@@ -292,6 +326,20 @@ test("l'attribut d'un axe vient de la configuration, et une clé qui ne nomme au
 
   assert.equal(lancer({ tokens: DEUX_AXES, configuration: { modes: { inconnu: "data-x" } } }).code, 2);
   assert.equal(lancer({ tokens: DEUX_AXES, configuration: { modes: ["data-x"] } }).code, 2);
+
+  const sansModes = documentAvec(undefined, { a: { b: nombre(1) } });
+  const orpheline = lancer({ tokens: sansModes, configuration: { modes: { theme: "data-mode" } } });
+  assert.equal(orpheline.code, 2, "un fichier sans modes ne rend pas une clé de modes valide");
+  assert.match(orpheline.erreur, /modes\.theme : aucun axe du fichier de tokens ne porte ce nom/);
+  assert.equal(lancer({ tokens: sansModes, configuration: {} }).code, 0);
+
+  const extension = lancer({ tokens: collectionEtendue("fond"), configuration: { modes: { "color-extensions": "data-marque" } } });
+  assert.equal(extension.code, 0);
+  assert.match(extension.css, /\[data-marque="marque-b"\] \{/);
+
+  const ecarte = documentAvec({}, { marque: { primaire: feuille(undefined, { m1: 1, m2: 2 }) } });
+  const repli = lancer({ tokens: ecarte, configuration: { modes: { marque: "data-marque" } } }, [...SORTIE, "--sans-modes"]);
+  assert.equal(repli.code, 0, "une clé qui vise un axe écarté n'empêche pas le repli");
 });
 
 test("deux axes aux mêmes modes partagent un attribut malgré des défauts différents ; des modes différents sont refusés", () => {
@@ -320,6 +368,19 @@ test("des noms non ASCII passent dans l'attribut, la propriété et la valeur du
   });
   assert.equal(code, 0);
   assert.match(css, /\[data-thème="sombre-été"\] \{\n {2}--thème-été: 2;\n\}/);
+});
+
+test("un guillemet ou un antislash dans un nom de mode s'échappe dans le sélecteur, comme dans une chaîne", () => {
+  const { code, css } = lancer({
+    tokens: documentAvec({ theme: { modes: ["clair", 'sombre"hc\\x'], default: "clair" } }, {
+      theme: { fond: feuille("theme", { clair: 1, 'sombre"hc\\x': 2 }) },
+      base: { texte: { $type: "string", $value: "ligne\nsuite\fpage\rfin" } },
+    }),
+  });
+  assert.equal(code, 0);
+  assert.match(css, /\n\[data-theme="sombre\\"hc\\\\x"\] \{\n {2}--theme-fond: 2;\n\}/);
+  assert.match(css, /\n\[data-theme="clair"\] \{/);
+  assert.ok(css.includes('  --base-texte: "ligne\\a suite\\c page\\d fin";\n'), "le saut de page ferme sinon la chaîne");
 });
 
 test("deux exécutions sur les mêmes entrées écrivent la même feuille", () => {

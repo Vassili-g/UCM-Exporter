@@ -11,8 +11,8 @@ next to the component's code. This command reads those files and says whether
 they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.31 init
-npx --yes @ucm-kit/cli@0.1.31 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.32 init
+npx --yes @ucm-kit/cli@0.1.32 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx install a build this
@@ -60,7 +60,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.31 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.32 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -115,10 +115,20 @@ the command prints it. A repository names another one in `ucm.config.json`:
 Two axes with the same set of modes may share an attribute. A component reads
 tokens and never declares one, which lets any ancestor switch its mode.
 
+A collection that Figma extended collections override, an experimental reading,
+adds the axis `<axis>-extensions`: its attribute takes `base` for the collection
+itself, or the name of an extension.
+
+A token without a value in a context, because the export found no target for its
+alias, is declared `initial` there. A `var()` reading it takes its fallback, and
+never the value of an enclosing context. The command names the token.
+
 The command writes nothing and exits with `1` when the file cannot give a
 correct stylesheet: an alias to a missing token, two token paths that give the
-same property, an alias cycle that a context can reach, an alias whose type
-changes in a mode, or modes the export did not attach to an axis. The previous
+same property, two extension names that give the same CSS name, an alias cycle
+that a context can reach, an alias whose type changes in a mode or an extension,
+or modes the export did not attach to an axis. A key of `modes` that names no
+axis of the token file exits with `2`. The previous
 stylesheet stays in place. A token file exported before axes were declared is
 refused with that reason; `--sans-modes` writes the default value of every token
 until the tokens are exported again. Without a token file, the command writes an
@@ -147,17 +157,24 @@ Class `ring` of `src/styles/outlines.module.css`.
 Contrôle : `npm run lint:css`
 ```
 
-The text before the first section describes the stack. A `## <aide>` section
-replaces that guide's default writing. A `Contrôle :` line adds its command to
-the proof. `ecritures-par-defaut: non` on the first line prints meanings only,
-for a repository that writes no CSS. The file closest to a contract applies,
-searching up to the folder that holds `ucm.config.json`.
+The text before the first section describes the stack, and is the writing of
+the `composant` guide. A `## <aide>` section replaces that guide's default
+writing. `ucm aides` reports an unknown title, a duplicate section, a
+`## composant` section and a token reference in a section. The file closest to
+a path applies, searching up to the folder that holds `ucm.config.json`, never
+above the repository.
+
+Two lines are reserved for `ucm guide`, which is not released yet: a
+`Contrôle :` line, whose command will be added to the proof, and
+`ecritures-par-defaut: non` on the first line, which will print meanings only.
+The current commands read neither.
 
 `ucm aides <aide> --personnaliser [<path>]` appends that guide's section, with
-its default writing to edit, to the closest conventions file. The marker records
-the version and a fingerprint of the copied writing: when the default writing
-changes, `ucm aides` names the section to read again. An existing section is
-never overwritten.
+its default writing to edit, to the closest conventions file. `composant` has no
+section, and the command refuses it. The marker records the version and a
+fingerprint of the copied writing: when the default writing changes, `ucm aides`
+names the section to read again, and a marker without a fingerprint is named as
+well. An existing section is never overwritten.
 
 ## What `ucm init` writes
 

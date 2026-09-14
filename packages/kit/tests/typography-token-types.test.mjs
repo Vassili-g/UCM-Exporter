@@ -105,6 +105,33 @@ test("une chaîne qui traverse une feuille dont un mode cite un autre type est r
   }]);
 });
 
+test("une chaîne qui traverse une surcharge d'extension citant un autre type est refusée", () => {
+  const tokens = structuredClone(tokensValides);
+  tokens.primitives.poids = { $value: 600, $type: "number" };
+  tokens.primitives.ligneDense = { $value: "20px", $type: "dimension" };
+  const surcharger = (cible) => {
+    tokens.typography.body.large.line.$extensions = {
+      "com.ucm.modes": { confort: "{primitives.line}" },
+      "com.ucm.extensions": { "marque-b": { confort: cible } },
+    };
+  };
+  const reference = contrat({ lineHeight: "{typography.body.large.line}" });
+
+  surcharger("{primitives.poids}");
+  assert.deepEqual(erreursTypesTypographiques(reference, tokens), [{
+    chemin: "textStyles.body.large.tokens.lineHeight",
+    reference: "{typography.body.large.line}",
+    attendu: "dimension",
+    recu: "number",
+    feuille: "typography.body.large.line",
+    mode: "confort",
+    extension: "marque-b",
+  }]);
+
+  surcharger("{primitives.ligneDense}");
+  assert.deepEqual(erreursTypesTypographiques(reference, tokens), []);
+});
+
 test("des modes qui citent tous le type de leur feuille sont acceptés", () => {
   const tokens = structuredClone(tokensValides);
   tokens.primitives.ligneDense = { $value: "20px", $type: "dimension" };

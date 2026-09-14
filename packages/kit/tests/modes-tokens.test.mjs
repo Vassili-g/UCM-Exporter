@@ -148,6 +148,15 @@ test("valeurDansLeContexte garde les alias et prend le défaut d'un axe absent d
   assert.equal(valeurDansLeContexte(document, "theme.absent", {}), undefined);
 });
 
+test("valeurDansLeContexte ne lève pas sur une déclaration d'axe qui n'est pas un objet", () => {
+  for (const declaration of [null, 3, "theme", []]) {
+    const document = documentAvec({ theme: declaration }, { theme: { fond: feuille("theme", { light: 1, dark: 2 }) } });
+    assert.equal(valeurDansLeContexte(document, "theme.fond", { theme: "dark" }), undefined, JSON.stringify(declaration));
+  }
+  const lisible = documentAvec({ theme: THEME }, { theme: { fond: feuille("theme", { light: 1, dark: 2 }) } });
+  assert.equal(valeurDansLeContexte(lisible, "theme.fond", { theme: "dark" }), 2);
+});
+
 test("valeurDansLeContexte remonte les extensions jusqu'à base, alias conservés", () => {
   const document = documentAvec({
     color: { ...THEME, extensions: { "marque-b": { parent: "base" }, "sous-marque": { parent: "marque-b" } } },

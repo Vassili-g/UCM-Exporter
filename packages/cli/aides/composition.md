@@ -9,8 +9,10 @@ Un slot qui porte `composes` est l'instance d'un autre composant : il se rend à
 cet emplacement par ce composant, sans recopier ses calques, tokens ni styles.
 `view.composes` est la séquence exacte de la vue courante ; le `composes` global
 en est l'union ordonnée à cardinalité maximale, qui donne les imports et le
-nombre d'occurrences. `visibilityProp` masque l'instance ou son cadre. L'API et
-l'échantillon de la dépendance se lisent dans son propre contrat.
+nombre d'occurrences. `visibilityProp` masque l'instance ou son cadre. L'API, la
+taille propre et l'échantillon de la dépendance se lisent dans son propre
+contrat. Le cadre et la dépendance ne fusionnent jamais : leurs flux et leurs
+dimensions appartiennent à deux contrats.
 
 ## Écriture par défaut
 
