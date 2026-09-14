@@ -1566,6 +1566,29 @@ feuille porte `com.ucm.modes` :
   au designer la variable qui s'en écarte, sans écarter l'axe ; le contrôle
   typographique du kit et `ucm tokens css` refusent ce fichier.
 
+**Collections étendues, à titre expérimental.** Une collection étendue de
+Figma, réservée au plan Enterprise, surcharge une partie des valeurs de sa
+collection parente. Sa lecture est prouvée sur une simulation de l'API, et pas
+encore sur un fichier réel. L'axe déclare ses extensions et la parente de
+chacune, `base` désignant la collection elle-même :
+
+```json
+"com.ucm.axes": { "color": { "modes": ["light", "dark"], "default": "light", "extensions": { "marque-b": { "parent": "base" }, "sous-marque": { "parent": "marque-b" } } } }
+```
+
+Une feuille surchargée garde dans `com.ucm.modes` les valeurs de la collection,
+et porte ses surcharges dans `$extensions["com.ucm.extensions"]`, où seuls les
+couples d'extension et de mode surchargés sont écrits :
+`{ "marque-b": { "dark": "{palette.bleu-nuit}" } }`. Dans l'extension `e` et le
+mode `m`, sa valeur est la première surcharge trouvée en remontant `e` et ses
+parentes jusqu'à `base`, puis `com.ucm.modes[m]`. Elle reste un alias quand la
+surcharge en est un. Un nom d'extension tient en un segment et ne vaut jamais
+`base`.
+
+Un lecteur juge les cycles d'alias par contexte : un cycle ne compte que si un
+même contexte réalise toutes ses arêtes. Au-delà de 10 000 cycles énumérés, la
+vérification s'arrête et refuse de conclure.
+
 `TOKENS_FORMAT_VERSION` ne monte pas pour ces deux extensions : aucune forme de
 valeur ne change, et un lecteur de valeurs ignore `$extensions`. Un fichier dont
 des feuilles portent des modes sans que la racine déclare d'axe vient d'un

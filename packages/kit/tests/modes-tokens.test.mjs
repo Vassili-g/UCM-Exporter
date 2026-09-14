@@ -12,6 +12,7 @@ import {
   axesDeTokens,
   axesDuContrat,
   conesDesAxes,
+  contextesDesAxes,
   contextesDeVerification,
   cyclesActifs,
   valeurDansLeContexte,
@@ -281,6 +282,46 @@ test("un cycle dans un seul mode, par une feuille sans axe ou sur elle-même est
 
   const surElleMeme = documentAvec(undefined, { libre: { x: alias("{libre.x}") } });
   assert.deepEqual(cyclesActifs(surElleMeme, []).cycles, [["libre.x", "libre.x"]]);
+});
+
+/** Une collection `color` étendue par `marque-b`, que `sous-marque` étend à son tour. */
+const COLLECTION_ETENDUE = { ...THEME, extensions: { "marque-b": { parent: "base" }, "sous-marque": { parent: "marque-b" } } };
+
+test("l'axe d'extension suit son parent, avec base pour défaut et les feuilles surchargées", () => {
+  const document = documentAvec({ color: COLLECTION_ETENDUE }, {
+    color: {
+      f1: feuille("color", { light: 1, dark: 2 }, { "marque-b": { dark: 3 } }),
+      f2: feuille("color", { light: 4, dark: 5 }),
+    },
+    composant: { fond: alias("{color.f1}"), texte: alias("{color.f2}") },
+  });
+  const { axes } = axesDeTokens(document);
+  assert.deepEqual(contextesDesAxes(document, axes).map(({ nom, modes, defaut, feuilles, parent }) => ({ nom, modes, defaut, feuilles, parent })), [
+    { nom: "color", modes: ["light", "dark"], defaut: "light", feuilles: ["color.f1", "color.f2"], parent: undefined },
+    { nom: "color-extensions", modes: ["base", "marque-b", "sous-marque"], defaut: "base", feuilles: ["color.f1"], parent: "color" },
+  ]);
+  const cones = conesDesAxes(document, axes);
+  assert.deepEqual([...cones.get("composant.fond")], ["color", "color-extensions"]);
+  assert.deepEqual([...cones.get("composant.texte")], ["color"]);
+});
+
+test("un cycle qui passe par une surcharge est actif dans le contexte qui la réalise, et pas ailleurs", () => {
+  const actif = documentAvec({ color: COLLECTION_ETENDUE }, {
+    color: {
+      f1: feuille("color", { light: 1, dark: 2 }, { "marque-b": { dark: "{color.f2}" } }),
+      f2: feuille("color", { light: 3, dark: "{color.f1}" }),
+    },
+  });
+  const { cycles } = cyclesActifs(actif, axesDeTokens(actif).axes);
+  assert.deepEqual(cycles, [["color.f1", "color.f1@marque-b", "color.f2", "color.f1"]]);
+
+  const jamais = documentAvec({ color: COLLECTION_ETENDUE }, {
+    color: {
+      f1: feuille("color", { light: 1, dark: 2 }, { "marque-b": { dark: "{color.f2}" } }),
+      f2: feuille("color", { light: 3, dark: 4 }, { "sous-marque": { light: "{color.f1}" } }),
+    },
+  });
+  assert.deepEqual(cyclesActifs(jamais, axesDeTokens(jamais).axes), { cycles: [], interrompue: false });
 });
 
 /** Un axe à `n` modes où chaque feuille cite toutes les autres, une par mode : un graphe complet. */

@@ -66,6 +66,7 @@ export {
   axesDeTokens,
   axesDuContrat,
   conesDesAxes,
+  contextesDesAxes,
   contextesDeVerification,
   cyclesActifs,
   valeurDansLeContexte,

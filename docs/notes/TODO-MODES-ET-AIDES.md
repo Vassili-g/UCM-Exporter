@@ -197,7 +197,7 @@ Le plugin est privé : ses commits ne montent aucune version.
       final, plus la section « Preuve ». Voir rouge la loi du schéma en
       retirant une entrée de la table.
 - [x] Ajouter les aides à `PORTABLES` dans `tests/registrePortableDocuments.test.ts`.
-- [ ] Monter `@ucm-kit/core`, les pins et les deux autres paquets, puis publier.
+- [x] Monter `@ucm-kit/core`, les pins et les deux autres paquets, puis publier.
 
 ## L5. Mesure préalable du coût
 
@@ -263,18 +263,18 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 ## L8a. Kit et CLI : collections étendues
 
-- [ ] `conesDesAxes` rend l'axe `<axe>-extensions` pour chaque feuille surchargée
+- [x] `conesDesAxes` rend l'axe `<axe>-extensions` pour chaque feuille surchargée
       et ce qui la cite. `valeurDansLeContexte` lit déjà la chaîne de parentes
       depuis L1.
-- [ ] `ucm tokens css` : axe `<axe>-extensions` après son axe parent,
+- [x] `ucm tokens css` : axe `<axe>-extensions` après son axe parent,
       intermédiaires `--ucm-x-base--<f>` et `--ucm-x-<e>--<f>` limités aux
       surcharges, règle de repli puis règles propres, croisements au même schéma,
       refus d'un token dont la projection commence par `--ucm-x-`.
-- [ ] `cyclesActifs` couvre les arêtes des surcharges et des intermédiaires.
-- [ ] Harnais de L0 branché sur la sortie : trois générations, les sept arbres
+- [x] `cyclesActifs` couvre les arêtes des surcharges et des intermédiaires.
+- [x] Harnais de L0 branché sur la sortie : trois générations, les sept arbres
       d'extension, taille au plus égale au relevé de L0 sur 500 extensions ;
       l'émetteur provisoire de L0 est retiré.
-- [ ] `docs/FORMAT.md` : collections étendues publiées comme expérimentales, limite
+- [x] `docs/FORMAT.md` : collections étendues publiées comme expérimentales, limite
       des cycles.
 - [ ] Monter `@ucm-kit/core`, les pins et les deux autres paquets, puis publier.
 
