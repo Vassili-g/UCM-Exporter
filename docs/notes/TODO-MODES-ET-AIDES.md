@@ -146,7 +146,8 @@ deux pins.
       sans extension. La sortie rend le CSS écrit à la main à deux axes, et celle
       de l'émetteur provisoire à quatre axes.
 - [x] `packages/cli/README.md` : la commande et la mise en place.
-- [ ] Monter et publier `@ucm-kit/cli`.
+- [x] Monter et publier `@ucm-kit/cli`, et `@ucm-kit/adapter-typescript` dont le
+      README publié montre le pin de la CLI.
 
 ## L3. Plugin : écrire les axes
 
@@ -179,32 +180,32 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 ## L4. Le catalogue d'aides
 
-- [ ] `docs/FORMAT.md` section 8 : `cssProperties` n'est pas exhaustif ;
+- [x] `docs/FORMAT.md` section 8 : `cssProperties` n'est pas exhaustif ;
       `outline-style: solid` et `outline-offset` selon `align` ; la
       recommandation du repli remplacée par la règle de `contour-ring`.
-- [ ] `packages/kit/src/lecteurs/caracteristiques.mjs` : `CARACTERISTIQUES`, table
+- [x] `packages/kit/src/lecteurs/caracteristiques.mjs` : `CARACTERISTIQUES`, table
       des champs, `SANS_AIDE`, `caracteristiquesDuContrat`. Tests sur contrats
       fabriqués, un par caractéristique, présente et absente. La caractéristique
       `focus`, relevée quand un état publie un `selector` qui contient `:focus`,
       porte l'ancrage `focus-clavier` (annexe A.7).
-- [ ] `packages/cli/aides/<aide>.md` : une aide par entrée de la colonne « Aides »
+- [x] `packages/cli/aides/<aide>.md` : une aide par entrée de la colonne « Aides »
       de l'annexe A.7 du plan final, sections « Sens », « Écriture par défaut »
       sauf pour un ancrage, « Preuve ». Contenu tiré des §1 à §6 de
       `.agents/skills/consommer-contrat/SKILL.md`. `contour-ring` et
       `contour-border` suivent la section 6.2 du plan final.
-- [ ] `packages/cli/tests/aides.test.mjs` : les lois de l'annexe A.8 du plan
+- [x] `packages/cli/tests/aides.test.mjs` : les lois de l'annexe A.8 du plan
       final, plus la section « Preuve ». Voir rouge la loi du schéma en
       retirant une entrée de la table.
-- [ ] Ajouter les aides à `PORTABLES` dans `tests/registrePortableDocuments.test.ts`.
+- [x] Ajouter les aides à `PORTABLES` dans `tests/registrePortableDocuments.test.ts`.
 - [ ] Monter `@ucm-kit/core`, les pins et les deux autres paquets, puis publier.
 
 ## L5. Mesure préalable du coût
 
-- [ ] Écrire un script jetable dans le dossier temporaire de session, jamais dans
+- [x] Écrire un script jetable dans le dossier temporaire de session, jamais dans
       le dépôt, qui assemble pour `Alert` et `Button`, contrats lus dans
       UCM-Playground, la sortie attendue de `ucm guide` : procédure provisoire,
       extraction, aides employées.
-- [ ] Préparer pour le mainteneur les deux conditions, la liste fermée des
+- [x] Préparer pour le mainteneur les deux conditions, la liste fermée des
       propriétés comparées à Figma et le critère de la section 6.8, écrits avant
       la mesure.
 - [ ] **[mainteneur]** Rejouer trois reconstructions par condition et par

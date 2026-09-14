@@ -121,6 +121,7 @@ packages/kit/            le format et ses lecteurs : @ucm-kit/core, publié
     references-token.mjs         la forme d'une référence, et son relevé
     tokens-dtcg.mjs              ce que le fichier de tokens contient, donc ce qui existe
     modes-tokens.mjs             les axes de modes du fichier de tokens, sans CSS
+    caracteristiques.mjs         ce qu'un contrat porte, qui décide des aides à imprimer
     typography-token-types.mjs   les types DTCG qu'un style typographique exige
     schema-contrat.mjs           le schéma publié, chargé pour Ajv
     configuration.mjs            OUVRIR ucm.config.json ; sa grammaire est dans format/
@@ -150,6 +151,7 @@ packages/cli/            la ligne de commande : @ucm-kit/cli, publiée
   src/adaptateur.mjs       découvre l'adaptateur de stack installé dans le repo
   src/icons.mjs            les icônes que les contrats du repo réclament
   src/tokens-css.mjs       la feuille CSS des tokens et de leurs modes, depuis tokens.json
+  aides/                   une aide par caractéristique : sens, écriture par défaut, preuve
   tests/                   dont recette.test.mjs, sur des repositories temporaires
   tests/cascade/           la feuille des tokens rendue dans trois moteurs, par npm run cascade
 

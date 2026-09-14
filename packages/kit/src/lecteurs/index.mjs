@@ -71,6 +71,14 @@ export {
   valeurDansLeContexte,
 } from "./modes-tokens.mjs";
 
+/** Les caractéristiques d'un contrat, qui décident des aides à imprimer. */
+export {
+  CARACTERISTIQUES,
+  CHAMPS,
+  SANS_AIDE,
+  caracteristiquesDuContrat,
+} from "./caracteristiques.mjs";
+
 /** Ce que l'export n'a pas su décrire, et comment le dire. */
 export {
   avertissementsCorrigeables,

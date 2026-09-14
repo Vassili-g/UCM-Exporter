@@ -6,8 +6,17 @@ import test from 'node:test';
 
 const racine = path.resolve(__dirname, '..');
 
+/**
+ * Les aides à l'implémentation, lues par un agent dans un repository de
+ * n'importe quelle stack. Leur écriture par défaut est du CSS ; aucune ne
+ * promet une bibliothèque de composants.
+ */
+const AIDES = fs.readdirSync(path.join(racine, 'packages/cli/aides'))
+  .filter((nom) => nom.endsWith('.md'))
+  .map((nom) => `packages/cli/aides/${nom}`);
+
 /** Les documents lus depuis dehors, et eux seuls. */
-const PORTABLES = ['CONCEPT.md', 'docs/FORMAT.md', 'docs/CHANGELOG-FORMAT.md'];
+const PORTABLES = ['CONCEPT.md', 'docs/FORMAT.md', 'docs/CHANGELOG-FORMAT.md', ...AIDES];
 
 /**
  * Les mots refusés, repris de `registrePortable.test.mjs` sans les élargir.

@@ -921,11 +921,19 @@ nomme pas son rôle :
 d'abord par `keyRoles.fills`, qui rend `background`. Les deux se peignent avec
 `background-color`.
 
-Pour un rôle avec `fallback`, les `cssProperties` sont le rendu candidat et le
-`fallback` le rendu **recommandé** dès que la fidélité l'exige : un `ring`
-aligné `outside` se rend en `box-shadow` (`0 0 0 <width> <color>`), qui épouse
-le `border-radius` et se dessine hors du flux, il ne déplace jamais les éléments
-voisins.
+`cssProperties` nomme la famille de propriétés qui porte les tokens du rôle, et
+non la liste exhaustive des déclarations. Un rôle de contour rendu par `outline`
+pose aussi `outline-style: solid`, puisque le trait publié est plein, et tire
+`outline-offset` de `align` et de `width` : `0` pour `outside`, moins la largeur
+pour `inside`, moins la demi-largeur pour `center`.
+
+Un `ring` se dessine hors du flux et ne déplace aucun voisin. Il se rend par
+`outline`, qui épouse le `border-radius`. Son `fallback`, `box-shadow`, sert
+quand la largeur diffère d'un côté à l'autre : une ombre décalée par côté, exacte
+pour `inside` seulement. Sur un calque qui porte aussi un `border`, le `border`
+garde `box-shadow` et le `ring` garde `outline`. Rendus par `outline` ou par
+`box-shadow`, une largeur uniforme et un même alignement donnent la même
+géométrie.
 
 **Aucun rôle de contour ne cite une propriété qui consomme la boîte.** Le rôle
 `border` se rend donc avec `box-shadow`, et `align` en donne la forme, `inside`
