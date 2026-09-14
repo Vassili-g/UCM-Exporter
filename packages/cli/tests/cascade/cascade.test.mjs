@@ -12,9 +12,15 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { tokenCssVariable } from "@ucm-kit/core/format";
-import { cheminDeReference, indexerTokensDtcg, valeurDansLeContexte } from "@ucm-kit/core/lecteurs";
+import {
+  axesDeTokens,
+  cheminDeReference,
+  indexerTokensDtcg,
+  valeurDansLeContexte,
+} from "@ucm-kit/core/lecteurs";
 import { chromium, firefox, webkit } from "playwright";
 
+import { attributsDesAxes, feuilleDesTokens } from "../../src/tokens-css.mjs";
 import {
   ARBRES_AXES,
   ARBRES_EXTENSIONS,
@@ -29,17 +35,29 @@ const lire = (nom) => readFileSync(new URL(nom, import.meta.url), "utf8").replac
 const CSS_DEUX_AXES = lire("./attendu-deux-axes.css");
 const CSS_EXTENSIONS = lire("./attendu-extensions.css");
 
-test("l'émetteur provisoire rend le CSS écrit à la main", () => {
-  assert.equal(emettre(DEUX_AXES).css, CSS_DEUX_AXES);
+/** La feuille qu'`ucm tokens css` écrit pour un document sans extension, en-tête retiré. */
+function feuilleDeLaCommande(document) {
+  const { axes } = axesDeTokens(document);
+  const { css, refus } = feuilleDesTokens(document, { axes, attributs: attributsDesAxes(axes).attributs });
+  assert.deepEqual(refus, []);
+  return css;
+}
+
+test("la commande rend le CSS écrit à la main et la sortie de l'émetteur provisoire", () => {
+  assert.equal(feuilleDeLaCommande(DEUX_AXES), CSS_DEUX_AXES);
+  assert.equal(feuilleDeLaCommande(TROIS_AXES), emettre(TROIS_AXES).css);
+});
+
+test("l'émetteur provisoire rend le CSS écrit à la main des extensions", () => {
   assert.equal(emettre(EXTENSIONS).css, CSS_EXTENSIONS);
 });
 
 const CAS = [
-  ...ARBRES_AXES.map((arbre) => ({ ...arbre, document: DEUX_AXES, css: CSS_DEUX_AXES, source: "deux axes" })),
-  ...ARBRES_AXES.map((arbre) => ({ ...arbre, document: TROIS_AXES, css: emettre(TROIS_AXES).css, source: "trois axes" })),
+  ...ARBRES_AXES.map((arbre) => ({ ...arbre, document: DEUX_AXES, css: feuilleDeLaCommande(DEUX_AXES), source: "deux axes" })),
+  ...ARBRES_AXES.map((arbre) => ({ ...arbre, document: TROIS_AXES, css: feuilleDeLaCommande(TROIS_AXES), source: "trois axes" })),
   ...ORDRES_DE_DECLARATION.map((ordre) => {
     const document = avecOrdreDesAxes(TROIS_AXES, ordre);
-    return { ...ELEMENT_A_TROIS_ATTRIBUTS, document, css: emettre(document).css, source: `axes ${ordre.join(", ")}` };
+    return { ...ELEMENT_A_TROIS_ATTRIBUTS, document, css: feuilleDeLaCommande(document), source: `axes ${ordre.join(", ")}` };
   }),
   ...ARBRES_EXTENSIONS.map((arbre) => ({ ...arbre, document: EXTENSIONS, css: CSS_EXTENSIONS, source: "extensions" })),
 ];

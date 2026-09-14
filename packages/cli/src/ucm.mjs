@@ -14,6 +14,7 @@ import { chargerAdaptateur, NOM_ADAPTATEUR_TYPESCRIPT } from "./adaptateur.mjs";
 import { check } from "./check.mjs";
 import { iconesDuRepository, rendreIcones } from "./icons.mjs";
 import { init, lireArgumentsInit, rendreInit } from "./init.mjs";
+import { tokensCss } from "./tokens-css.mjs";
 
 /** Le verdict de tests qu'un orchestrateur de stack peut transmettre au CLI. */
 function echecsDeTestsDepuis(env) {
@@ -38,6 +39,7 @@ const AIDE = `ucm — la ligne de commande UCM
   ucm init            installe ce qui manque à ce repository, sans rien écraser
   ucm check           contrôle les contrats et rend le rapport du designer
   ucm icons           liste les icônes que les contrats réclament
+  ucm tokens css      écrit la feuille CSS des tokens et de leurs modes
   ucm --help          affiche cette aide
 
   ucm init [--components <dossier>] [--tokens <dossier>] [--implementation <motif>]
@@ -51,6 +53,12 @@ const AIDE = `ucm — la ligne de commande UCM
   ucm check [--base <sha>] [--report <chemin>]
       --base    limite les états informatifs aux contrats modifiés depuis ce sha
       --report  écrit le rapport markdown à ce chemin, en plus du terminal
+
+  ucm tokens css --out <fichier> [--sans-modes]
+      --out         la feuille à écrire, remplacée seulement si le fichier de
+                    tokens donne une feuille
+      --sans-modes  écrit la valeur par défaut de chaque token, pour un
+                    fichier exporté avant la déclaration des axes
 
 Codes de sortie : 0 tout est passé, 1 des contrôles ont échoué, 2 l'invocation
 ou la configuration est fautive.`;
@@ -107,6 +115,14 @@ export function executer(arguments_, {
         );
         return 2;
       });
+  }
+
+  if (commande === "tokens") {
+    return tokensCss(arguments_.slice(1), {
+      racine,
+      ecrire,
+      alerter: sorties.alerter ?? console.error,
+    });
   }
 
   if (commande === "icons") {

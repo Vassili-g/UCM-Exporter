@@ -117,33 +117,35 @@ deux pins.
       Mention de classe 6 dans `docs/CHANGELOG-FORMAT.md` et le README du kit.
 - [x] Exporter les fonctions par `lecteurs/index.mjs` et `index.d.mts`.
 - [x] Remplacer l'oracle provisoire de L0 par `valeurDansLeContexte`.
-- [ ] Monter `@ucm-kit/core`, les pins et les versions de `@ucm-kit/cli` et
+- [x] Monter `@ucm-kit/core`, les pins et les versions de `@ucm-kit/cli` et
       `@ucm-kit/adapter-typescript`, puis publier les trois paquets.
 
 ## L2. CLI : `ucm tokens css`, axes simples
 
-- [ ] `packages/cli/src/tokens-css.mjs` et l'aiguillage dans `ucm.mjs`, aide de
+- [x] `packages/cli/src/tokens-css.mjs` et l'aiguillage dans `ucm.mjs`, aide de
       `ucm --help` comprise. `--out` obligatoire, jamais une entrée.
-- [ ] Base sur `:root`, règle par mode, règle commune `:is()`, croisements
+- [x] Base sur `:root`, règle par mode, règle commune `:is()`, croisements
       `@scope`, dans l'ordre de `com.ucm.axes`.
-- [ ] Littéraux de l'annexe A.3 du plan final, `string` et `boolean` compris,
+- [x] Littéraux de l'annexe A.3 du plan final, `string` et `boolean` compris,
       repli de famille de la configuration ; `$value: null` sans déclaration,
       nommé sur la sortie d'erreur.
-- [ ] Attribut lu dans `modes`, défaut `attributDeMode` ; partage d'un attribut
+- [x] Attribut lu dans `modes`, défaut `attributDeMode` ; partage d'un attribut
       par deux axes aux ensembles de modes égaux, défauts différents imprimés ;
       refus de deux ensembles différents sur un attribut et d'une clé de `modes`
       qui ne nomme aucun axe.
-- [ ] Refus, code 1, sortie conservée : les états de 3.1, collision de noms CSS,
+- [x] Refus, code 1, sortie conservée : les états de 3.1, collision de noms CSS,
       alias absent, cycle actif, écart de type, fichier de tokens absent quand un
       contrat cite une référence. `--sans-modes`. Sans fichier de tokens ni
       référence, feuille vide commentée et code 0. Code 2 pour l'invocation et
-      pour une configuration refusée.
-- [ ] Écriture par remplacement du fichier terminé ; statistiques imprimées.
-- [ ] `packages/cli/tests/tokens-css.test.mjs` : les tests de l'annexe A.4 du plan
+      pour une configuration refusée. Un fichier déclarant des collections
+      étendues est refusé jusqu'à L8a.
+- [x] Écriture par remplacement du fichier terminé ; statistiques imprimées.
+- [x] `packages/cli/tests/tokens-css.test.mjs` : les tests de l'annexe A.4 du plan
       final, chaque refus et son voisin, noms non ASCII.
-- [ ] Brancher le harnais de L0 sur la sortie de la commande, pour les arbres
-      sans extension.
-- [ ] `packages/cli/README.md` : la commande et la mise en place.
+- [x] Brancher le harnais de L0 sur la sortie de la commande, pour les arbres
+      sans extension. La sortie rend le CSS écrit à la main à deux axes, et celle
+      de l'émetteur provisoire à quatre axes.
+- [x] `packages/cli/README.md` : la commande et la mise en place.
 - [ ] Monter et publier `@ucm-kit/cli`.
 
 ## L3. Plugin : écrire les axes

@@ -11,8 +11,8 @@ next to the component's code. This command reads those files and says whether
 they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.27 init
-npx --yes @ucm-kit/cli@0.1.27 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.28 init
+npx --yes @ucm-kit/cli@0.1.28 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx install a build this
@@ -36,6 +36,7 @@ check`.
 | `ucm init` | Installs what the repository is missing, never overwriting a file that already exists |
 | `ucm check` | Checks every contract and renders the report |
 | `ucm icons` | Lists the icons the contracts ask this repository to draw |
+| `ucm tokens css --out <file>` | Writes the CSS stylesheet of the tokens and their modes |
 | `ucm --help` | Prints the above |
 
 `ucm init` takes three options:
@@ -58,7 +59,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.27 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.28 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -81,6 +82,46 @@ has one.
 | `2` | The invocation or the configuration is at fault |
 
 `1` and `2` never overlap. A typo in a flag must not read like a broken export.
+
+## The token stylesheet
+
+`ucm tokens css --out <file>` reads the token file that `ucm.config.json`
+names and writes one custom property per token. Each property is named by
+`tokenCssVariable`, the rule `@ucm-kit/core` publishes. An alias stays a
+`var()`, so a token keeps following the token it cites.
+
+```sh
+npx --no-install ucm tokens css --out src/generated/tokens.css
+```
+
+Run it before `dev` and `build`, in place of any other generator of the same
+stylesheet, and import the generated file once, from the application's CSS
+entry point.
+
+**Modes are attributes.** Each axis of `tokens.json`, one per Figma collection
+with several modes, is selected by an HTML attribute on any element: its
+subtree takes that mode, and removing the attribute gives back the mode
+inherited from above. The attribute is `data-` followed by the axis name, as
+the command prints it. A repository names another one in `ucm.config.json`:
+
+```json
+{
+  "modes": { "color-brand-tokens": "data-brand" },
+  "css": { "fontFamilyFallback": "sans-serif" }
+}
+```
+
+Two axes with the same set of modes may share an attribute. A component reads
+tokens and never declares one, which lets any ancestor switch its mode.
+
+The command writes nothing and exits with `1` when the file cannot give a
+correct stylesheet: an alias to a missing token, two token paths that give the
+same property, an alias cycle that a context can reach, an alias whose type
+changes in a mode, or modes the export did not attach to an axis. The previous
+stylesheet stays in place. A token file exported before axes were declared is
+refused with that reason; `--sans-modes` writes the default value of every token
+until the tokens are exported again. Without a token file, the command writes an
+empty stylesheet when no contract cites a token, and refuses otherwise.
 
 ## What `ucm init` writes
 
