@@ -152,22 +152,24 @@ deux pins.
 
 Le plugin est privé : ses commits ne montent aucune version.
 
-- [ ] Extraire `prefixeDeCollection` de `joinTokenPath`
+- [x] Extraire `prefixeDeCollection` de `joinTokenPath`
       (`packages/plugin/src/variables.ts`), sans changer un chemin.
-- [ ] `packages/plugin/src/tokens/exportTokens.ts` : `com.ucm.axes` à la racine
+- [x] `packages/plugin/src/tokens/exportTokens.ts` : `com.ucm.axes` à la racine
       après la marque, toujours présent dès qu'une feuille a des modes, `{}`
       compris ; `com.ucm.axis` sur chaque feuille d'un axe retenu.
-- [ ] Constats de la table 3.4 du plan, sauf les extensions : préfixe égal,
+- [x] Constats de la table 3.4 du plan, sauf les extensions : préfixe égal,
       préfixe vide, mode vide ou en collision, défaut absent, alias d'un autre
       type dans un mode. Un `Constat` par site, rédigé avec la skill des
       diagnostics.
-- [ ] Étendre `packages/plugin/tests/fichierDeVariables.ts` et
-      `exportTokens.test.ts` : défaut non premier, préfixes imbriqués, chaque
-      constat, aucun `com.ucm.axes` sans modes.
-- [ ] `conformiteDtcg.test.ts` : la racine admet `com.ucm.axes` après la marque,
+- [x] Étendre `packages/plugin/tests/fichierDeVariables.ts`, qui exporte ses
+      fabriques de collection et de variable, et couvrir les axes dans
+      `axesDeModes.test.ts` : défaut non premier, préfixes imbriqués, chaque
+      constat, aucun `com.ucm.axes` sans modes. `exportTokens.test.ts` suit la
+      nouvelle racine.
+- [x] `conformiteDtcg.test.ts` : la racine admet `com.ucm.axes` après la marque,
       aucun groupe ne porte `$extensions`.
-- [ ] `styleDictionary.test.ts` reste vert sans modification.
-- [ ] Documents : `docs/FORMAT.md` partie 2, `packages/plugin/SPEC.md` partie 2,
+- [x] `styleDictionary.test.ts` reste vert sans modification.
+- [x] Documents : `docs/FORMAT.md` partie 2, `packages/plugin/SPEC.md` partie 2,
       `docs/CHANGELOG-FORMAT.md`, `docs/COMPATIBILITE.md` classe 12 et titre des
       classes, invariants de `AGENTS.md` du groupe « Tokens et variables ».
 - [ ] **[mainteneur]** Lancer l'export local dans Figma et vérifier la racine du

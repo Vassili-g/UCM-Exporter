@@ -14,7 +14,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import test from 'node:test';
 import Ajv from 'ajv';
-import { EXTENSION_VERSION_TOKENS, TOKENS_FORMAT_VERSION } from '@ucm-kit/core/format';
+import { EXTENSION_AXES_TOKENS, EXTENSION_VERSION_TOKENS, TOKENS_FORMAT_VERSION } from '@ucm-kit/core/format';
 import { indexerTokensDtcg } from '@ucm-kit/core/lecteurs';
 
 import { exporterLeFichier } from './fichierDeVariables';
@@ -122,7 +122,7 @@ for (const profil of PROFILS) {
   });
 }
 
-test('la marque est à la racine, en tête du fichier, et sur aucun groupe', async () => {
+test('la marque puis les axes sont à la racine, en tête du fichier, et aucun groupe ne porte $extensions', async () => {
   const { content, tokens } = await exporte('SRGB');
   const groupesMarques: string[] = [];
   (function parcourir(noeud: Record<string, unknown>, chemin: string[]) {
@@ -133,7 +133,8 @@ test('la marque est à la racine, en tête du fichier, et sur aucun groupe', asy
     }
   })(tokens, []);
 
-  assert.deepEqual(tokens.$extensions, { [EXTENSION_VERSION_TOKENS]: TOKENS_FORMAT_VERSION });
+  assert.deepEqual(Object.keys(tokens.$extensions), [EXTENSION_VERSION_TOKENS, EXTENSION_AXES_TOKENS]);
+  assert.equal(tokens.$extensions[EXTENSION_VERSION_TOKENS], TOKENS_FORMAT_VERSION);
   assert.ok(content.startsWith('{\n  "$extensions":'));
   assert.deepEqual(groupesMarques, []);
 });

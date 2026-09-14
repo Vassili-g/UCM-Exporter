@@ -46,7 +46,7 @@ et cassé un lecteur ; la plage explicite vient de là.
 Une plage élargie chez un consommateur est un choix temporaire d'une migration,
 jamais un état par défaut.
 
-## Les onze classes de changement
+## Les douze classes de changement
 
 Chaque entrée de [CHANGELOG-FORMAT.md](./CHANGELOG-FORMAT.md) appartient à une
 de ces classes, et la nomme.
@@ -64,6 +64,7 @@ de ces classes, et la nomme.
 | **9. Fichier sans version lisible** | — | traité comme ancien | le designer, par un réexport |
 | **10. Changement de la forme d'une valeur de `tokens.json`** | aucun ; `TOKENS_FORMAT_VERSION` monte | inchangé ; ses références résolvent toujours, les chemins ne bougeant pas | le mainteneur du repository, qui met à jour son lecteur de valeurs avant de fusionner le réexport |
 | **11. Ajout de la marque de version à `tokens.json`** | aucun | inchangé ; un `tokens.json` sans marque reste lu dans sa forme d'origine | personne ; un lecteur de valeurs ignore `$extensions` à la racine |
+| **12. Ajout d'une extension facultative à `tokens.json`** | aucun ; `TOKENS_FORMAT_VERSION` ne monte pas | inchangé ; ses valeurs et ses références restent lues | personne ; l'extension arrive au réexport des tokens |
 
 **Classer un ajout en classe 1 ou en classe 2.** Supposer un lecteur de la
 version précédente, qui ignore le nouveau champ. Si son rendu reste conforme à

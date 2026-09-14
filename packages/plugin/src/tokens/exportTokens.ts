@@ -10,6 +10,7 @@
  * de version à la racine. docs/FORMAT.md en décrit la forme.
  */
 import {
+  EXTENSION_AXES_TOKENS,
   EXTENSION_VERSION_TOKENS,
   TOKENS_FORMAT_VERSION,
   etatDuFormatDeTokens,
@@ -22,7 +23,12 @@ import { graissesNumeriques } from './graisses';
 import { courbeDeToken, dureeDeToken, easingsSansCourbe } from './mouvement';
 import type { CauseSansCourbe } from './mouvement';
 import type { CouleurDeToken, DimensionDeToken } from '@ucm-kit/core/format';
-import { collisionWarnings, firstVariableAlias, indexVariables } from '../variables';
+import {
+  collisionWarnings,
+  firstVariableAlias,
+  indexVariables,
+  prefixeDeCollection,
+} from '../variables';
 import type { VariableIndex } from '../variables';
 import { serializeJson } from '../contract/serializeJson';
 import { noterLesParties, partiesDe, pointDe, pousserSansNode } from '../contract/localisation';
@@ -200,6 +206,8 @@ export type ExportContext = {
   familles: ReadonlySet<string>;
   /** Variables `EASING` retirées du fichier, par identifiant, avec leur nom Figma. */
   easingsEcartees: ReadonlyMap<string, string>;
+  /** Les axes que l'export retient, par identifiant de collection. */
+  axes: ReadonlyMap<string, AxeDeCollection>;
 };
 
 /**
@@ -319,7 +327,13 @@ export function buildLeaf(
       const modeName = normalizeName(mode.name);
       if (!modes.has(modeName)) modes.set(modeName, valueForMode(mode.modeId));
     }
-    leaf.$extensions = { 'com.ucm.modes': Object.fromEntries(modes) };
+    // Une feuille ne nomme son axe que si l'export l'a retenu : sans axe, un
+    // lecteur sait que la collection a été écartée et que le compte rendu dit
+    // pourquoi.
+    const axe = ctx.axes.get(collection.id);
+    leaf.$extensions = axe
+      ? { 'com.ucm.axis': axe.cle, 'com.ucm.modes': Object.fromEntries(modes) }
+      : { 'com.ucm.modes': Object.fromEntries(modes) };
   }
 
   return leaf;
@@ -335,9 +349,9 @@ export function buildLeaf(
  * occupé, et `__proto__` écrirait dans le prototype : le token quitterait le
  * fichier sans un mot.
  */
-export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: string[]): void {
+export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: string[]): boolean {
   const segments = path.split('.').filter(Boolean);
-  if (segments.length === 0) return;
+  if (segments.length === 0) return false;
 
   const own = (node: DtcgTree, key: string) =>
     (Object.prototype.hasOwnProperty.call(node, key) ? node[key] : undefined);
@@ -358,7 +372,7 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
         impact: 'Le développeur n’aura pas ce token.',
         action: 'Renommez ou déplacez l’un des deux, puis réexportez.',
       });
-      return;
+      return false;
     }
     if (!existing) set(node, key, {});
     node = node[key] as DtcgTree;
@@ -378,9 +392,10 @@ export function insert(tree: DtcgTree, path: string, leaf: DtcgLeaf, warnings: s
         impact: 'Le développeur n’aura pas ce token.',
         action: 'Renommez ou déplacez l’un des deux, puis réexportez.',
       });
-    return;
+    return false;
   }
   set(node, lastKey, leaf);
+  return true;
 }
 
 /**
@@ -411,6 +426,139 @@ export function modeCollisionWarnings(collections: VariableCollection[]): PointA
   }
 
   return points;
+}
+
+/** L'axe qu'une collection à plusieurs modes donne au fichier : sa clé, ses modes normalisés et son défaut. */
+export type AxeDeCollection = { cle: string; modes: string[]; defaut: string };
+
+const IMPACT_SANS_AXE = 'Le développeur ne pourra pas générer les modes de cette collection.';
+
+/**
+ * Les axes que l'export retient, par identifiant de collection, et les constats
+ * qui écartent les autres. Une collection à un seul mode n'est pas un axe.
+ *
+ * La clé d'un axe est le préfixe de sa collection (`prefixeDeCollection`). Un
+ * préfixe vide ou partagé par deux collections à modes, un mode sans nom ou en
+ * collision, et un défaut introuvable écartent l'axe : ses feuilles gardent
+ * `com.ucm.modes` sans `com.ucm.axis`. La collision de deux modes est déjà
+ * nommée par `modeCollisionWarnings`, et ne reçoit pas de second constat.
+ */
+export function axesDesCollections(
+  collections: VariableCollection[],
+): { axes: Map<string, AxeDeCollection>; points: PointACorriger[] } {
+  const points: PointACorriger[] = [];
+  const parCle = new Map<string, VariableCollection[]>();
+  for (const collection of collections) {
+    if (collection.modes.length < 2) continue;
+    const cle = prefixeDeCollection(collection.name);
+    parCle.set(cle, [...(parCle.get(cle) ?? []), collection]);
+  }
+
+  const axes = new Map<string, AxeDeCollection>();
+  for (const [cle, porteurs] of parCle) {
+    if (cle === '') {
+      for (const collection of porteurs) {
+        points.push(pointDe(`Collection « ${collection.name} »`, {
+          manque: 'son nom ne donne aucun préfixe de token.',
+          impact: IMPACT_SANS_AXE,
+          action: 'Donnez à la collection un nom qui contient une lettre ou un chiffre, puis réexportez.',
+        }));
+      }
+      continue;
+    }
+    if (porteurs.length > 1) {
+      points.push(pointDe(`Collections ${porteurs.map(({ name }) => `« ${name} »`).join(' et ')}`, {
+        manque: `leurs noms donnent le même préfixe « ${cle} » dans le fichier de tokens.`,
+        impact: 'Le développeur ne pourra pas générer les modes de ces collections.',
+        action: 'Renommez les collections pour que leurs noms diffèrent, puis réexportez.',
+      }));
+      continue;
+    }
+
+    const [collection] = porteurs;
+    const modes = collection.modes.map((mode) => normalizeName(mode.name));
+    if (modes.includes('')) {
+      points.push(pointDe(`Collection « ${collection.name} »`, {
+        manque: 'un de ses modes n’a pas de nom.',
+        impact: IMPACT_SANS_AXE,
+        action: 'Nommez chaque mode de la collection, puis réexportez.',
+      }));
+      continue;
+    }
+    if (new Set(modes).size !== modes.length) continue;
+    const defaut = collection.modes.find((mode) => mode.modeId === collection.defaultModeId);
+    if (!defaut) {
+      points.push(pointDe(`Collection « ${collection.name} »`, {
+        manque: 'son mode par défaut est introuvable.',
+        impact: IMPACT_SANS_AXE,
+        action: 'Choisissez de nouveau le mode par défaut de la collection, puis réexportez.',
+      }));
+      continue;
+    }
+    axes.set(collection.id, { cle, modes, defaut: normalizeName(defaut.name) });
+  }
+  return { axes, points };
+}
+
+/** Une feuille exportée dont la collection porte plusieurs modes. */
+type FeuilleAModes = { variable: Variable; collection: VariableCollection; leaf: DtcgLeaf };
+
+/** Ce qu'un type de token est, dans les mots d'un designer. */
+const LIBELLES_DE_TYPE: Record<string, string> = {
+  color: 'une couleur',
+  dimension: 'une longueur',
+  number: 'un nombre sans unité',
+  fontFamily: 'une famille typographique',
+  string: 'un texte',
+  boolean: 'un booléen',
+  duration: 'une durée',
+  cubicBezier: 'une courbe',
+};
+
+/**
+ * Nomme chaque mode où une variable cite une variable d'un autre type de token.
+ *
+ * L'axe reste publié. Le type d'une feuille se décide sur la chaîne du mode par
+ * défaut : un autre mode qui cite un autre type rend cette décision fausse pour
+ * lui, et le contrôle typographique du kit comme `ucm tokens css` le refusent.
+ */
+function constatsDeTypesParMode(
+  feuilles: FeuilleAModes[],
+  typeParChemin: ReadonlyMap<string, string>,
+  variableByPath: ReadonlyMap<string, Variable>,
+  warnings: string[],
+): void {
+  for (const { variable, collection, leaf } of feuilles) {
+    const modes = (leaf.$extensions?.['com.ucm.modes'] ?? {}) as Record<string, unknown>;
+    for (const mode of collection.modes) {
+      const valeur = modes[normalizeName(mode.name)];
+      const cible = typeof valeur === 'string' ? /^\{(.+)\}$/.exec(valeur)?.[1] : undefined;
+      const typeCible = cible === undefined ? undefined : typeParChemin.get(cible);
+      if (cible === undefined || typeCible === undefined || typeCible === leaf.$type) continue;
+      pousserSansNode(warnings, `Variable « ${variable.name} »`, {
+        manque: `dans le mode « ${mode.name} », elle cite « ${variableByPath.get(cible)?.name ?? cible} », `
+          + `qui est ${LIBELLES_DE_TYPE[typeCible] ?? typeCible}, alors qu’elle est `
+          + `${LIBELLES_DE_TYPE[leaf.$type] ?? leaf.$type}.`,
+        impact: 'Le développeur ne pourra pas générer la feuille CSS des tokens.',
+        action: 'Liez dans ce mode une variable du même type, puis réexportez.',
+      });
+    }
+  }
+}
+
+/** La déclaration des axes retenus qui portent au moins une feuille, dans l'ordre des collections. */
+function declarationDesAxes(
+  collections: VariableCollection[],
+  axes: ReadonlyMap<string, AxeDeCollection>,
+  feuilles: FeuilleAModes[],
+): Record<string, { modes: string[]; default: string }> {
+  const portees = new Set(feuilles.map(({ collection }) => collection.id));
+  // `Object.fromEntries` crée des propriétés propres : une clé `__proto__`
+  // reste un axe au lieu de fixer un prototype.
+  return Object.fromEntries(collections.flatMap((collection) => {
+    const axe = axes.get(collection.id);
+    return axe && portees.has(collection.id) ? [[axe.cle, { modes: axe.modes, default: axe.defaut }]] : [];
+  }));
 }
 
 /**
@@ -645,7 +793,12 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
   // Les collisions arrivent déjà découpées : elles sont poussées par le même
   // chemin que les autres, pour que leurs parties entrent au registre.
   const warnings: string[] = [];
-  for (const point of [...modeCollisionWarnings(collections), ...collisionWarnings(index)]) {
+  const { axes, points: pointsDesAxes } = axesDesCollections(collections);
+  for (const point of [
+    ...modeCollisionWarnings(collections),
+    ...pointsDesAxes,
+    ...collisionWarnings(index),
+  ]) {
     warnings.push(noterLesParties(warnings, point));
   }
   avertissementDeProfil(figma.root, warnings);
@@ -675,11 +828,14 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
     graisses,
     familles: familles.familles,
     easingsEcartees,
+    axes,
   };
 
   // Parcourir l'index plutôt que la liste brute : une variable écartée pour
   // collision n'y figure pas, et chaque chemin est déjà calculé.
   const tree: DtcgTree = {};
+  const feuillesAModes: FeuilleAModes[] = [];
+  const typeParChemin = new Map<string, string>();
   for (const [path, variable] of variableByPath) {
     const collection = collectionById.get(variable.variableCollectionId);
     if (!collection) {
@@ -691,14 +847,23 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
       });
       continue;
     }
-    insert(tree, path, buildLeaf(variable, collection, ctx, warnings), warnings);
+    const leaf = buildLeaf(variable, collection, ctx, warnings);
+    if (!insert(tree, path, leaf, warnings)) continue;
+    typeParChemin.set(path, leaf.$type);
+    if (leaf.$extensions) feuillesAModes.push({ variable, collection, leaf });
   }
+  constatsDeTypesParMode(feuillesAModes, typeParChemin, variableByPath, warnings);
 
   // La marque s'écrit une fois, à la racine et avant les groupes. Une `Map` tient
   // cet ordre même devant une collection au nom entier, qu'un objet rangerait
-  // en tête.
+  // en tête. Les axes suivent la marque dès qu'une feuille porte des modes, `{}`
+  // compris quand l'export les a tous écartés.
+  const racine: Record<string, unknown> = { [EXTENSION_VERSION_TOKENS]: TOKENS_FORMAT_VERSION };
+  if (feuillesAModes.length > 0) {
+    racine[EXTENSION_AXES_TOKENS] = declarationDesAxes(collections, axes, feuillesAModes);
+  }
   const document = new Map<string, unknown>([
-    ['$extensions', { [EXTENSION_VERSION_TOKENS]: TOKENS_FORMAT_VERSION }],
+    ['$extensions', racine],
     ...Object.entries(tree),
   ]);
 

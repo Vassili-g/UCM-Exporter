@@ -58,6 +58,15 @@ function cheminCitable(nomNormalise: string): string {
 }
 
 /**
+ * Le préfixe qu'une collection donne aux chemins de ses variables : son nom
+ * normalisé puis rendu citable. C'est aussi la clé de son axe de modes dans
+ * `com.ucm.axes`, si bien que les deux ne peuvent pas diverger.
+ */
+export function prefixeDeCollection(collectionName: string): string {
+  return cheminCitable(normalizeName(collectionName));
+}
+
+/**
  * Assemble le chemin canonique d'un token : collection + variable, chacun
  * normalisé puis rendu citable. Évite les doublons si la variable répète déjà
  * la collection.
@@ -67,7 +76,7 @@ function cheminCitable(nomNormalise: string): string {
  * @example joinTokenPath('{$Brand}', 'Primary/default') // → 'brand.primary.default'
  */
 export function joinTokenPath(collectionName: string, variableName: string): string {
-  const collection = cheminCitable(normalizeName(collectionName));
+  const collection = prefixeDeCollection(collectionName);
   const variable = cheminCitable(normalizeName(variableName));
 
   if (!collection) return variable;

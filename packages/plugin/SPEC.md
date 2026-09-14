@@ -519,6 +519,25 @@ et avant les groupes. Le résultat de la commande annonce le module et la versio
 qu'il lit dans le fichier produit : « DTCG 2025.10, version 2 du format de
 tokens ».
 
+**Un axe se décide par collection, avant l'arbre.** `axesDesCollections` examine
+une fois par export chaque collection à plusieurs modes. La clé de son axe vient
+de `prefixeDeCollection`, la fonction que `joinTokenPath` emploie pour le chemin
+de ses variables : les deux ne peuvent pas diverger. L'axe est écarté sous un
+constat quand son préfixe est vide, quand une autre collection à modes porte le
+même préfixe, quand un mode n'a pas de nom ou quand le mode par défaut est
+introuvable. Deux modes au même nom normalisé l'écartent sous le constat de
+`modeCollisionWarnings`, sans second message. `buildLeaf` écrit `com.ucm.axis`
+sur la feuille d'un axe retenu, et la racine déclare les axes qui portent au
+moins une feuille exportée, dans l'ordre des collections.
+
+**Un alias d'un autre type dans un mode se constate après l'arbre.** Le type
+d'une feuille se décide sur la chaîne du mode par défaut. Une fois les feuilles
+insérées, chaque valeur de mode qui cite une feuille d'un autre `$type` produit
+un constat : il nomme la variable, le mode et la cible, et dit le type de chacune
+en mots de designer, « une longueur » ou « un nombre sans unité ». L'axe reste
+publié, puisque la faute porte sur une liaison que le designer corrige dans
+Figma.
+
 ---
 
 ## Partie 3 — Configuration et dépôt GitHub

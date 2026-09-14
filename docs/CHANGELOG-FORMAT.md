@@ -327,3 +327,21 @@ le contrôle typographique lit chaque mode des feuilles qu'une référence de te
 style traverse. Une feuille dont un mode cite un token d'un autre `$type` fait
 refuser la référence, et le rapport nomme la feuille et le mode. Le designer lie
 dans Figma une variable du même type pour ce mode, puis réexporte les tokens.
+
+### Axes de modes
+
+Aucune forme de valeur ne change, et la marque reste `2`. L'ajout relève de la
+**classe 12**.
+
+1. **La racine reçoit `$extensions["com.ucm.axes"]`**, après la marque, dès
+   qu'une feuille porte `com.ucm.modes` : pour chaque collection à plusieurs
+   modes retenue, ses modes dans l'ordre de Figma et son mode par défaut.
+2. **Une feuille d'un axe retenu reçoit `$extensions["com.ucm.axis"]`**, qui
+   nomme cet axe.
+
+**Ce qui ne change pas** : les chemins des tokens, leurs alias, `$value` et
+`com.ucm.modes`. Aucune référence d'un contrat ne cesse de résoudre.
+
+**Ce qui casse** : rien pour un lecteur de valeurs, qui ignore `$extensions`.
+`ucm tokens css` refuse un fichier dont des feuilles portent des modes sans
+déclaration d'axes. `--sans-modes` écrit sa base jusqu'au réexport des tokens.

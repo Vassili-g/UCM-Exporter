@@ -272,6 +272,18 @@ La spécification en lien porte le raisonnement.
   courant s'écrit. Une forme de valeur qui change monte ce numéro, jamais
   `CONTRACT_VERSION`, et laisse les chemins et les alias en place.
   → [spec](./docs/FORMAT.md#partie-2--export-tokens)
+- `tokens.json` déclare ses axes de modes à la racine, après la marque :
+  `$extensions["com.ucm.axes"]`, écrit dès qu'une feuille porte `com.ucm.modes`,
+  et `{}` quand l'export les a tous écartés. La clé d'un axe vient de
+  `prefixeDeCollection`, que `joinTokenPath` emploie aussi ; `modes` suit
+  l'ordre de la collection, et `default` nomme le défaut sans le déduire de
+  l'ordre. Une feuille d'un axe retenu le nomme dans `com.ucm.axis`, et le
+  premier segment de son chemin ne le désigne pas. Un préfixe vide ou partagé,
+  un mode sans nom ou en collision et un défaut introuvable écartent l'axe sous
+  un constat ; un alias d'un autre type dans un mode se constate sans l'écarter.
+  `axesDesCollections` (`tokens/exportTokens.ts`) décide pour l'export,
+  `axesDeTokens` (`lecteurs/modes-tokens.mjs`) classe ce qu'un lecteur reçoit.
+  → [spec](./docs/FORMAT.md#partie-2--export-tokens)
 - Le kit classe la marque avant de lire un seul token : absente, `origine` ;
   la version courante, `courante` ; une version antérieure que
   `VERSIONS_DE_TOKENS_LUES` énumère, `ancienne` ; entier supérieur, `future` ;
