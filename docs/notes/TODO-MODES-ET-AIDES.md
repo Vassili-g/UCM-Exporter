@@ -53,31 +53,33 @@ marquées « sans L5 », puis par L8a et L8b.
 
 ## L0. Preuve de cascade
 
-- [ ] Ajouter `playwright` aux `devDependencies` de la racine du monorepo, qui
+- [x] Ajouter `playwright` aux `devDependencies` de la racine du monorepo, qui
       est privée : dans `packages/cli/package.json`, la dépendance exigerait une
       montée de version sans rien changer au paquet publié. Installer Chromium,
       Firefox et WebKit.
-- [ ] Créer `packages/cli/tests/cascade/` : une page qui charge un CSS et un arbre
+- [x] Créer `packages/cli/tests/cascade/` : une page qui charge un CSS et un arbre
       HTML, relève les valeurs calculées, et un oracle provisoire qui résout un
       document synthétique dans le contexte effectif de chaque élément. Le
       découvreur de la CLI ne lit que `tests/*.test.mjs` : le harnais se lance
       par le script racine `npm run cascade`, et un job `cascade` de `ci.yml`
       installe les trois moteurs puis le lance.
-- [ ] Écrire à la main le CSS attendu de la section 4.3 du plan pour les treize
-      arbres de l'annexe A.5, `display: contents` et retrait d'attribut compris.
-- [ ] Ajouter les sept arbres d'extension de la section 4.4 du plan : collection
+- [x] Écrire à la main le CSS attendu de la section 4.3 du plan pour un document
+      à deux axes et pour un document à extensions. Les lignes de l'annexe A.5
+      passent sur le premier, puis sur la sortie de l'émetteur provisoire pour un
+      document à quatre axes, `display: contents` et retrait d'attribut compris.
+- [x] Ajouter les sept arbres d'extension de la section 4.4 du plan : collection
       `color` en `light`/`dark`, extensions `marque-b` (parente `base`) et
       `sous-marque` (parente `marque-b`), axe `densite` dont les feuilles citent
       des feuilles de `color`.
-- [ ] Constater le vert dans les trois moteurs. Si `@scope` échoue, passer le
+- [x] Constater le vert dans les trois moteurs. Si `@scope` échoue, passer le
       repli `@container style()` de l'annexe A.6 du plan final au même harnais et
       écrire la forme retenue dans le plan final.
-- [ ] Écrire dans `packages/cli/tests/cascade/` un émetteur provisoire qui suit la
-      section 4.3, extensions comprises ; `ucm tokens css` le remplace en L2 et
-      L8a. Mesurer sa sortie sur un document synthétique : 500 extensions,
-      10 surcharges distinctes par extension, 2 modes. Relever règles,
-      déclarations et octets. Écrire le relevé dans une section « Relevé L0 » du
-      plan final.
+- [x] Écrire dans `packages/cli/tests/cascade/` un émetteur provisoire qui suit la
+      section 4.3, extensions comprises, et qui rend les deux CSS écrits à la
+      main ; `ucm tokens css` le remplace en L2 et L8a. Mesurer sa sortie sur un
+      document synthétique : 500 extensions, 10 surcharges distinctes par
+      extension, 2 modes. Relever règles, déclarations et octets. Écrire le
+      relevé dans une section « Relevé L0 » du plan final.
 - [ ] **[mainteneur]** Rejouer le harnais dans Safari réel.
 
 ## L1. Kit : le modèle de modes

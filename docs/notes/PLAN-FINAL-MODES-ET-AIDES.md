@@ -828,6 +828,62 @@ trouvé aucune valeur fausse, sous deux conditions désormais écrites en 3.3 et
 4.3 : les cônes incluent les intermédiaires, et une valeur effective garde ses
 alias.
 
+## 11. Relevé L0
+
+### Cascade
+
+Harnais `packages/cli/tests/cascade/`, lancé par `npm run cascade` avec
+Playwright 1.63.0.
+
+| Moteur | Version | Cas | Résultat |
+|---|---|---|---|
+| Chromium | 153.0.8010.12 | 47 | vert |
+| Firefox | 155.0 | 47 | vert |
+| WebKit | 26.6 | 47 | vert |
+
+Entrées, dans `documents.mjs` et `arbres.mjs`. Douze lignes de l'annexe A.5
+donnent 17 arbres une fois les six ordres d'imbrication déroulés. Ils passent
+sur un document à deux axes, dont le CSS est écrit à la main
+(`attendu-deux-axes.css`), puis sur un document à quatre axes, dont le CSS vient
+de l'émetteur provisoire. La ligne des trois attributs sur un élément passe sur
+les six ordres de déclaration des axes. Les sept arbres d'extension de la
+section 4.4 passent sur `attendu-extensions.css`, écrit à la main. Chaque sonde
+compare toutes les feuilles du document à l'oracle, et l'émetteur provisoire
+rend les deux CSS écrits à la main à l'octet près.
+
+Vu rouge. Sans les croisements `@scope` dans l'émetteur, douze cas du document à
+quatre axes échouent dans chaque moteur, avec l'égalité au CSS écrit à la main.
+Sans le croisement qui fixe `--ucm-x-marque-b--color-f2` en `dark`, trois arbres
+d'extension échouent dans chaque moteur.
+
+Forme retenue : `@scope`. Le repli de l'annexe A.6 n'a pas été éprouvé.
+
+### Taille sur 500 extensions
+
+`documentDeTaille` : collection `color` à deux modes, 5 000 feuilles surchargées
+chacune par une seule extension dans le mode `dark`, 5 000 feuilles de composant
+qui les citent. 250 extensions ont `base` pour parente, les 250 autres une
+extension de la première moitié.
+
+| Mesure | Valeur |
+|---|---|
+| règles de style | 1 007 |
+| déclarations | 80 000 |
+| octets | 3 952 438 |
+| émission par l'émetteur provisoire | 9,3 s |
+
+Répartition des déclarations : `:root` 20 000 ; règles de mode de `color`
+20 000 ; règle commune de `color` 10 000 ; croisements de `color` par l'axe
+d'extension 12 500 ; règles de repli et règles propres de l'axe d'extension
+12 500 ; sa règle commune 5 000.
+
+Comparaison calculée, non émise : les mêmes 500 marques en modes d'un axe simple
+déclareraient 10 000 feuilles sur `:root`, 5 000 par règle de mode et 5 000 dans
+la règle commune, soit 2 515 000 déclarations. Le terme principal de la feuille
+des extensions est l'intermédiaire, déclaré sur `:root` puis dans chaque mode de
+l'axe parent. Le temps mesure l'émetteur provisoire, qui recalcule les noms pour
+chaque extension, et ne borne pas `ucm tokens css`.
+
 ## Annexe A. Ce que ce plan reprend du plan courant
 
 Recopié du commit `7226eee` et adapté à la forme de la section 3 : le
