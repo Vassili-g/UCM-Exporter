@@ -11,8 +11,8 @@ next to the component's code. This command reads those files and says whether
 they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.29 init
-npx --yes @ucm-kit/cli@0.1.29 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.30 init
+npx --yes @ucm-kit/cli@0.1.30 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx install a build this
@@ -37,6 +37,7 @@ check`.
 | `ucm check` | Checks every contract and renders the report |
 | `ucm icons` | Lists the icons the contracts ask this repository to draw |
 | `ucm tokens css --out <file>` | Writes the CSS stylesheet of the tokens and their modes |
+| `ucm aides [<aide>]` | Lists the implementation guides, or prints one |
 | `ucm --help` | Prints the above |
 
 `ucm init` takes three options:
@@ -59,7 +60,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.29 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.30 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -122,6 +123,41 @@ stylesheet stays in place. A token file exported before axes were declared is
 refused with that reason; `--sans-modes` writes the default value of every token
 until the tokens are exported again. Without a token file, the command writes an
 empty stylesheet when no contract cites a token, and refuses otherwise.
+
+## Implementation guides
+
+Each characteristic a contract can carry, a grid, a `ring`, a composed
+dependency, has a guide in `aides/`. A guide has three parts: its meaning, which
+UCM owns and a repository never changes; a default way of writing it, in CSS;
+and the proof that checks it. Guides without a default writing are anchors: the
+repository answers them.
+
+`ucm aides` lists the guides and where each writing comes from. `ucm aides
+<aide>` prints one. A repository replaces a default writing, or answers an
+anchor, in `.ucm/conventions.md`:
+
+```md
+Stack: CSS Modules, one folder per component.
+
+## contour-ring
+<!-- ucm:copie contour-ring <version> <fingerprint> -->
+
+Class `ring` of `src/styles/outlines.module.css`.
+
+Contrôle : `npm run lint:css`
+```
+
+The text before the first section describes the stack. A `## <aide>` section
+replaces that guide's default writing. A `Contrôle :` line adds its command to
+the proof. `ecritures-par-defaut: non` on the first line prints meanings only,
+for a repository that writes no CSS. The file closest to a contract applies,
+searching up to the folder that holds `ucm.config.json`.
+
+`ucm aides <aide> --personnaliser [<path>]` appends that guide's section, with
+its default writing to edit, to the closest conventions file. The marker records
+the version and a fingerprint of the copied writing: when the default writing
+changes, `ucm aides` names the section to read again. An existing section is
+never overwritten.
 
 ## What `ucm init` writes
 

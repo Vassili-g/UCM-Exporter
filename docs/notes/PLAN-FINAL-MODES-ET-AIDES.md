@@ -593,8 +593,10 @@ Contrôle : `npm run lint:css`
   pas de section. Titre inconnu, section en double, section `## composant` :
   signalés en tête de sortie.
 - **Copie datée.** `ucm aides <aide> --personnaliser [chemin]` ajoute la section à
-  la fin du fichier le plus proche, avec le marqueur `ucm:copie <aide> <version>`
-  et l'écriture par défaut à éditer. Si la section existe, la commande le dit et
+  la fin du fichier le plus proche, avec le marqueur
+  `ucm:copie <aide> <version> <empreinte>` et l'écriture par défaut à éditer.
+  L'empreinte est celle de l'écriture copiée : la version seule ne dit pas si
+  l'écriture a changé depuis. Si la section existe, la commande le dit et
   n'écrit rien. Quand l'écriture par défaut a changé depuis la version du
   marqueur, `ucm guide` et `ucm aides` signalent la section à relire.
 - `ucm aides` liste le catalogue et l'origine de chaque écriture (UCM,

@@ -1,6 +1,6 @@
 {
   "name": "@ucm-kit/cli",
-  "version": "0.1.29",
+  "version": "0.1.30",
   "description": "La ligne de commande UCM : initialiser un repository, lister ce qu'il doit couvrir.",
   "type": "module",
   "license": "MIT",
@@ -20,6 +20,8 @@
   },
   "files": [
     "src",
+    "aides",
+    "procedure.md",
     "README.md",
     "LICENSE"
   ],
