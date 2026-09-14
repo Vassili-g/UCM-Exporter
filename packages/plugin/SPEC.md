@@ -520,13 +520,15 @@ qu'il lit dans le fichier produit : « DTCG 2025.10, version 2 du format de
 tokens ».
 
 **Un axe se décide par collection, avant l'arbre.** `axesDesCollections` examine
-une fois par export chaque collection à plusieurs modes. La clé de son axe vient
+une fois par export chaque collection à plusieurs modes, et chaque collection à
+un seul mode que des collections étendues surchargent. La clé de son axe vient
 de `prefixeDeCollection`, la fonction que `joinTokenPath` emploie pour le chemin
 de ses variables : les deux ne peuvent pas diverger. L'axe est écarté sous un
 constat quand son préfixe est vide, quand une autre collection à modes porte le
 même préfixe, quand un mode n'a pas de nom ou quand le mode par défaut est
 introuvable. Deux modes au même nom normalisé l'écartent sous le constat de
-`modeCollisionWarnings`, sans second message. `buildLeaf` écrit `com.ucm.axis`
+`modeCollisionWarnings`, un par nom en collision, dont l'impact dit que les modes
+de la collection ne se généreront pas. `buildLeaf` écrit `com.ucm.axis`
 sur la feuille d'un axe retenu, et la racine déclare les axes qui portent au
 moins une feuille exportée, dans l'ordre des collections.
 
@@ -539,21 +541,27 @@ nom normalisé en un segment, `/` devenant `-` ; sa parente est `base` quand
 `parentVariableCollectionId` désigne la racine. Chaque mode d'extension remonte
 `parentModeId` jusqu'au mode de la racine, dont il prend le nom.
 `variableOverrides` donne les surcharges, écrites creuses sous
-`com.ucm.extensions` par la même mise en forme que les modes. Une extension
-nommée `base`, deux extensions de même nom ou une parente absente du fichier
-écartent toutes les extensions de l'axe sous un constat, et l'axe reste publié.
+`com.ucm.extensions` par la même mise en forme que les modes. Une extension dont
+le nom CSS (`tokenCssVariable`) est vide ou vaut `base`, deux extensions de même
+nom CSS ou une parente absente du fichier écartent toutes les extensions de
+l'axe sous un constat. Un axe à plusieurs modes reste publié ; une collection à
+un seul mode dont toutes les extensions sont écartées ne devient pas un axe.
+Une extension locale dont la racine est dans une bibliothèque surcharge des
+variables absentes du fichier : un constat par collection distante nomme ses
+extensions.
 
 Ce qui reste à mesurer sur un fichier Enterprise réel : la collection que
 `variableCollectionId` désigne pour une variable héritée, les clés que rend
-`valuesByModeForCollectionAsync`, et la lecture d'une parente venue d'une
+`valuesByModeForCollectionAsync`, et ce que l'API rend pour une extension de
 bibliothèque. La décision de type d'une graisse et d'une famille ne lit pas les
 surcharges : un nom de graisse que seule une surcharge porte reste la chaîne de
-Figma.
+Figma, sous un constat qui nomme la collection étendue et le mode.
 
 **Un alias d'un autre type dans un mode se constate après l'arbre.** Le type
 d'une feuille se décide sur la chaîne du mode par défaut. Une fois les feuilles
-insérées, chaque valeur de mode qui cite une feuille d'un autre `$type` produit
-un constat : il nomme la variable, le mode et la cible, et dit le type de chacune
+insérées, chaque valeur de mode ou de surcharge qui cite une feuille d'un autre
+`$type` produit un constat : il nomme la variable, le mode, la collection étendue
+pour une surcharge, et la cible, et dit le type de chacune
 en mots de designer, « une longueur » ou « un nombre sans unité ». L'axe reste
 publié, puisque la faute porte sur une liaison que le designer corrige dans
 Figma.

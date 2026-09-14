@@ -131,17 +131,27 @@ test('modeCollisionWarnings signale une fois par collection, pas une fois par va
       modes: modes.map((mode, index) => ({ modeId: `m${index}`, name: mode })),
     }) as unknown as VariableCollection;
 
-  // « Marque 2 » et « marque-2 » se normalisent tous deux en « marque-2 » :
-  // sans avertissement, une marque entière disparaîtrait de $extensions.
+  // « Mode B » et « mode-b » se normalisent tous deux en « mode-b » : sans
+  // avertissement, un mode entier disparaîtrait de $extensions.
   const warnings = modeCollisionWarnings([
-    collection('Brand Tokens', ['Intencial', 'Marque 2', 'marque-2']),
-    collection('Sizes', ['Mode 1']),
+    collection('Axe', ['Mode A', 'Mode B', 'mode-b']),
+    collection('Tailles', ['Mode 1']),
   ]).map(phraseDe);
 
   assert.deepEqual(warnings, [
-    'Collection « Brand Tokens » : deux de ses modes donnent le même nom ' +
-      '« marque-2 » dans le fichier de tokens. Les valeurs du second manqueront au ' +
-      "développeur. Renommez l'un des deux, puis réexportez.",
+    'Collection « Axe » : deux de ses modes donnent le même nom ' +
+      '« mode-b » dans le fichier de tokens. Le développeur n’aura que les valeurs du ' +
+      'premier, et ne pourra pas générer les modes de cette collection. ' +
+      "Renommez l'un des deux, puis réexportez.",
+  ]);
+
+  // Trois modes homonymes donnent un seul constat, qui les compte.
+  assert.deepEqual(modeCollisionWarnings([
+    collection('Theme', ['Light', 'light', 'LIGHT']),
+  ]).map(phraseDe), [
+    'Collection « Theme » : 3 de ses modes donnent le même nom « light » dans le fichier ' +
+      'de tokens. Le développeur n’aura que les valeurs du premier, et ne pourra pas générer ' +
+      'les modes de cette collection. Renommez-les pour que leurs noms diffèrent, puis réexportez.',
   ]);
 });
 

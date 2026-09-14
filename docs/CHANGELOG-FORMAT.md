@@ -326,7 +326,9 @@ change, ce qui relève de la **classe 6** : à partir de `@ucm-kit/core` 0.1.28,
 le contrôle typographique lit chaque mode des feuilles qu'une référence de text
 style traverse. Une feuille dont un mode cite un token d'un autre `$type` fait
 refuser la référence, et le rapport nomme la feuille et le mode. Le designer lie
-dans Figma une variable du même type pour ce mode, puis réexporte les tokens.
+dans Figma une variable du même type pour ce mode, puis réexporte les tokens. À
+partir de `@ucm-kit/core` 0.1.31, le contrôle lit aussi chaque surcharge
+d'extension, et le rapport nomme alors l'extension.
 
 ### Axes de modes
 
@@ -345,3 +347,24 @@ Aucune forme de valeur ne change, et la marque reste `2`. L'ajout relève de la
 **Ce qui casse** : rien pour un lecteur de valeurs, qui ignore `$extensions`.
 `ucm tokens css` refuse un fichier dont des feuilles portent des modes sans
 déclaration d'axes. `--sans-modes` écrit sa base jusqu'au réexport des tokens.
+
+### Collections étendues
+
+Aucune forme de valeur ne change, et la marque reste `2`. L'ajout relève de la
+**classe 12**, et sa lecture est expérimentale : elle est prouvée sur une
+simulation de l'API de Figma, pas sur un fichier Enterprise réel.
+
+1. **Une déclaration d'axe reçoit `extensions`**, qui nomme chaque collection
+   étendue et sa parente, `base` désignant la collection elle-même.
+2. **Une feuille surchargée reçoit `$extensions["com.ucm.extensions"]`**, par
+   extension puis par mode, où seuls les couples surchargés sont écrits.
+3. **Une collection à un seul mode que des extensions surchargent devient un
+   axe**, et ses feuilles portent `com.ucm.modes` sous le nom de ce mode.
+
+**Ce qui ne change pas** : `$value` et `com.ucm.modes` gardent les valeurs de la
+collection, si bien qu'un lecteur qui ignore les extensions lit la collection
+de base.
+
+**Ce qui casse** : rien pour un lecteur de valeurs. `ucm tokens css` refuse deux
+extensions dont les noms donnent le même nom CSS, et une extension dont le nom
+CSS est vide ou vaut `base`.

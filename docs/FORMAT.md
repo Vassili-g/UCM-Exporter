@@ -1537,9 +1537,10 @@ du mode par défaut, et `$extensions["com.ucm.modes"]` porte chaque mode sous so
 nom normalisé (`{ nom-du-mode: valeur }`). Chaque valeur de mode a la forme que
 le `$type` de sa feuille donne à `$value` : objet de couleur, objet de
 dimension, poids ou référence. Une collection à un seul mode ne publie que
-`$value`.
+`$value`, sauf quand elle est un axe.
 
-**La racine déclare les axes.** Une collection à plusieurs modes est un axe.
+**La racine déclare les axes.** Une collection à plusieurs modes est un axe,
+comme une collection à un seul mode que des collections étendues surchargent.
 `$extensions["com.ucm.axes"]` suit la marque de version, et s'écrit dès qu'une
 feuille porte `com.ucm.modes` :
 
@@ -1562,9 +1563,10 @@ feuille porte `com.ucm.modes` :
   `com.ucm.axis`, et `com.ucm.axes` vaut `{}` quand l'export les écarte tous.
   Le designer en reçoit la cause : préfixe vide ou partagé par deux collections
   à modes, mode sans nom ou en collision, mode par défaut introuvable.
-- Dans chaque mode, un alias vise une feuille du même `$type`. L'export nomme
-  au designer la variable qui s'en écarte, sans écarter l'axe ; le contrôle
-  typographique du kit et `ucm tokens css` refusent ce fichier.
+- Dans chaque mode et chaque surcharge d'extension, un alias vise une feuille du
+  même `$type`. L'export nomme au designer la variable qui s'en écarte, sans
+  écarter l'axe ; le contrôle typographique du kit et `ucm tokens css` refusent
+  ce fichier.
 
 **Collections étendues, à titre expérimental.** Une collection étendue de
 Figma, réservée au plan Enterprise, surcharge une partie des valeurs de sa
@@ -1582,8 +1584,11 @@ couples d'extension et de mode surchargés sont écrits :
 `{ "marque-b": { "dark": "{palette.bleu-nuit}" } }`. Dans l'extension `e` et le
 mode `m`, sa valeur est la première surcharge trouvée en remontant `e` et ses
 parentes jusqu'à `base`, puis `com.ucm.modes[m]`. Elle reste un alias quand la
-surcharge en est un. Un nom d'extension tient en un segment et ne vaut jamais
-`base`.
+surcharge en est un. Un nom d'extension tient en un segment. Son nom CSS, que
+`tokenCssVariable` en tire, n'est ni vide, ni `base`, ni celui d'une autre
+extension du même axe : une variable CSS intermédiaire le porte. L'extension
+locale d'une collection de bibliothèque n'est pas publiée, et l'export le dit au
+designer.
 
 Un lecteur juge les cycles d'alias par contexte : un cycle ne compte que si un
 même contexte réalise toutes ses arêtes. Au-delà de 10 000 cycles énumérés, la
