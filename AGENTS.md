@@ -285,7 +285,9 @@ La spécification en lien porte le raisonnement.
   l'ordre. Une feuille d'un axe retenu le nomme dans `com.ucm.axis`, et le
   premier segment de son chemin ne le désigne pas. Un préfixe vide ou partagé,
   un mode sans nom ou en collision et un défaut introuvable écartent l'axe sous
-  un constat ; un alias d'un autre type dans un mode se constate sans l'écarter.
+  un constat ; un alias d'un autre type dans un mode ou dans une surcharge
+  d'extension se constate sans l'écarter. Une collection à un seul mode que des
+  collections étendues surchargent est aussi un axe.
   `axesDesCollections` (`tokens/exportTokens.ts`) décide pour l'export,
   `axesDeTokens` (`lecteurs/modes-tokens.mjs`) classe ce qu'un lecteur reçoit.
   → [spec](./docs/FORMAT.md#partie-2--export-tokens)

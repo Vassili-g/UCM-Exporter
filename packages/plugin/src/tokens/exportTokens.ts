@@ -16,6 +16,7 @@ import {
   etatDuFormatDeTokens,
   normalizeName,
   poidsDeGraisse,
+  tokenCssVariable,
 } from '@ucm-kit/core/format';
 import { famillesDeTokens } from './familles';
 import type { LiaisonsDeTextStyles } from './familles';
@@ -320,9 +321,27 @@ export function buildLeaf(
     return formatValue(raw, variable.resolvedType, rootPath, root.scopes, ctx.espace);
   }
 
+  /**
+   * Une surcharge d'extension, mise en forme comme un mode. La décision de
+   * graisse ne lit pas les surcharges : un nom qu'elle ne connaît pas reste la
+   * chaîne de Figma dans une feuille `number`, ce que le designer doit savoir.
+   */
+  const formaterSurcharge = (raw: VariableValue, extension: ExtensionDeCollection, mode: string): unknown => {
+    if (graisse && typeof raw === 'string' && poidsDeGraisse(raw) === null) {
+      pousserSansNode(warnings, `Variable « ${variable.name} »`, {
+        manque: `dans le mode « ${mode} » de la collection « ${extension.collection.name} », sa graisse « ${raw} » n’est pas un nom de graisse connu.`,
+        impact: 'Le développeur ne pourra pas générer la feuille CSS des tokens.',
+        action: 'Choisissez un nom de graisse standard, comme Regular ou Bold, puis réexportez.',
+      });
+    }
+    return formater(raw);
+  };
+
   const leaf: DtcgLeaf = { $value: valueForMode(collection.defaultModeId), $type };
 
-  if (collection.modes.length > 1) {
+  // Une collection à un seul mode n'écrit ses modes que si elle est un axe,
+  // c'est-à-dire si des extensions la surchargent.
+  if (collection.modes.length > 1 || ctx.axes.has(collection.id)) {
     // Les noms de modes viennent de Figma. Une `Map` n'a aucune clé héritée, là
     // où un objet littéral prendrait un mode « constructor » pour un doublon
     // déjà présent et laisserait « __proto__ » fixer son prototype : une marque
@@ -338,7 +357,7 @@ export function buildLeaf(
     // lecteur sait que la collection a été écartée et que le compte rendu dit
     // pourquoi.
     const axe = ctx.axes.get(collection.id);
-    const surcharges = axe ? surchargesDeLaVariable(variable, axe, formater) : null;
+    const surcharges = axe ? surchargesDeLaVariable(variable, axe, formaterSurcharge) : null;
     leaf.$extensions = axe
       ? {
         'com.ucm.axis': axe.cle,
@@ -360,7 +379,7 @@ export function buildLeaf(
 function surchargesDeLaVariable(
   variable: Variable,
   axe: AxeDeCollection,
-  formater: (raw: VariableValue) => unknown,
+  formater: (raw: VariableValue, extension: ExtensionDeCollection, nomFigmaDuMode: string) => unknown,
 ): Record<string, Record<string, unknown>> | null {
   const surcharges = new Map<string, Record<string, unknown>>();
   for (const extension of axe.extensions) {
@@ -371,7 +390,8 @@ function surchargesDeLaVariable(
     const valeurs = new Map<string, unknown>();
     for (const [modeId, raw] of Object.entries(parMode)) {
       const mode = extension.modeRacine.get(modeId);
-      if (mode !== undefined && !valeurs.has(mode)) valeurs.set(mode, formater(raw));
+      const nomFigma = extension.collection.modes.find((candidat) => candidat.modeId === modeId)?.name ?? modeId;
+      if (mode !== undefined && !valeurs.has(mode)) valeurs.set(mode, formater(raw, extension, nomFigma));
     }
     if (valeurs.size > 0) surcharges.set(extension.nom, Object.fromEntries(valeurs));
   }
@@ -452,18 +472,21 @@ export function modeCollisionWarnings(collections: VariableCollection[]): PointA
     // Une collection étendue hérite des modes de sa racine : la collision y est
     // déjà nommée une fois.
     if (estUneExtension(collection)) continue;
-    const seen = new Set<string>();
+    const parNom = new Map<string, number>();
     for (const mode of collection.modes) {
       const name = normalizeName(mode.name);
-      if (seen.has(name)) {
-        points.push(pointDe(`Collection « ${collection.name} »`, {
-          manque: `deux de ses modes donnent le même nom « ${name} » dans le fichier de tokens.`,
-          impact: 'Les valeurs du second manqueront au développeur.',
-          action: `Renommez l'un des deux, puis réexportez.`,
-        }));
-        continue;
-      }
-      seen.add(name);
+      parNom.set(name, (parNom.get(name) ?? 0) + 1);
+    }
+    // Une collision écarte aussi l'axe, sans second constat : l'impact le dit ici.
+    for (const [name, nombre] of parNom) {
+      if (nombre < 2) continue;
+      points.push(pointDe(`Collection « ${collection.name} »`, {
+        manque: `${nombre === 2 ? 'deux' : nombre} de ses modes donnent le même nom « ${name} » dans le fichier de tokens.`,
+        impact: 'Le développeur n’aura que les valeurs du premier, et ne pourra pas générer les modes de cette collection.',
+        action: nombre === 2
+          ? `Renommez l'un des deux, puis réexportez.`
+          : 'Renommez-les pour que leurs noms diffèrent, puis réexportez.',
+      }));
     }
   }
 
@@ -503,9 +526,16 @@ const nomDExtension = (collection: VariableCollection | ExtendedVariableCollecti
   normalizeName(collection.name).replace(/\./g, '-');
 
 /**
- * Les extensions d'une collection racine, ou `[]` sous un constat quand l'une
- * d'elles s'appelle `base`, quand deux portent le même nom, ou quand une parente
- * n'est pas dans le fichier.
+ * Le nom CSS d'une extension, que `ucm tokens css` écrit dans ses variables
+ * intermédiaires. Deux noms d'extension distincts peuvent donner le même.
+ */
+const nomCssDExtension = (collection: VariableCollection | ExtendedVariableCollection) =>
+  tokenCssVariable(nomDExtension(collection)).slice(2);
+
+/**
+ * Les extensions d'une collection racine, ou `[]` sous un constat quand le nom
+ * CSS de l'une d'elles est vide ou vaut `base`, quand deux donnent le même nom
+ * CSS, ou quand une parente n'est pas dans le fichier.
  */
 function extensionsDeLaCollection(
   racine: VariableCollection,
@@ -520,7 +550,15 @@ function extensionsDeLaCollection(
   const parId = new Map(etendues.map((collection) => [collection.id, collection]));
   let ecartees = false;
 
-  for (const collection of etendues.filter((candidate) => nomDExtension(candidate) === 'base')) {
+  for (const collection of etendues.filter((candidate) => nomCssDExtension(candidate) === '')) {
+    ecartees = true;
+    points.push(pointDe(`Collection « ${collection.name} »`, {
+      manque: 'son nom ne donne aucun nom d’extension.',
+      impact,
+      action: 'Donnez à la collection étendue un nom qui contient une lettre ou un chiffre, puis réexportez.',
+    }));
+  }
+  for (const collection of etendues.filter((candidate) => nomCssDExtension(candidate) === 'base')) {
     ecartees = true;
     points.push(pointDe(`Collection « ${collection.name} »`, {
       manque: `son nom donne l’extension « base », qui désigne la collection « ${racine.name} » elle-même.`,
@@ -530,7 +568,9 @@ function extensionsDeLaCollection(
   }
   const parNom = new Map<string, ExtendedVariableCollection[]>();
   for (const collection of etendues) {
-    parNom.set(nomDExtension(collection), [...(parNom.get(nomDExtension(collection)) ?? []), collection]);
+    const nom = nomCssDExtension(collection);
+    if (nom === '' || nom === 'base') continue;
+    parNom.set(nom, [...(parNom.get(nom) ?? []), collection]);
   }
   for (const [nom, porteurs] of parNom) {
     if (porteurs.length < 2) continue;
@@ -594,9 +634,12 @@ export function axesDesCollections(
   collections: VariableCollection[],
 ): { axes: Map<string, AxeDeCollection>; points: PointACorriger[] } {
   const points: PointACorriger[] = [];
+  const extensionsLocales = collections.filter(estUneExtension).map(commeExtension);
+  const racinesEtendues = new Set(extensionsLocales.map((extension) => extension.rootVariableCollectionId));
   const parCle = new Map<string, VariableCollection[]>();
   for (const collection of collections) {
-    if (collection.modes.length < 2 || estUneExtension(collection)) continue;
+    if (estUneExtension(collection)) continue;
+    if (collection.modes.length < 2 && !racinesEtendues.has(collection.id)) continue;
     const cle = prefixeDeCollection(collection.name);
     parCle.set(cle, [...(parCle.get(cle) ?? []), collection]);
   }
@@ -642,12 +685,38 @@ export function axesDesCollections(
       }));
       continue;
     }
-    axes.set(collection.id, {
-      cle,
-      modes,
-      defaut: normalizeName(defaut.name),
-      extensions: extensionsDeLaCollection(collection, collections, points),
-    });
+    const extensions = extensionsDeLaCollection(collection, collections, points);
+    // Une collection à un seul mode n'est un axe que par ses extensions : si
+    // toutes sont écartées, leur constat suffit et elle reste sans modes.
+    if (modes.length < 2 && extensions.length === 0) continue;
+    axes.set(collection.id, { cle, modes, defaut: normalizeName(defaut.name), extensions });
+  }
+
+  // L'extension locale d'une collection de bibliothèque surcharge des variables
+  // que ce fichier ne contient pas : aucun axe ne la reçoit.
+  const locales = new Set(collections.filter((collection) => !estUneExtension(collection)).map(({ id }) => id));
+  const parRacineDistante = new Map<string, ExtendedVariableCollection[]>();
+  for (const extension of extensionsLocales) {
+    if (locales.has(extension.rootVariableCollectionId)) continue;
+    const racine = extension.rootVariableCollectionId;
+    parRacineDistante.set(racine, [...(parRacineDistante.get(racine) ?? []), extension]);
+  }
+  for (const porteurs of parRacineDistante.values()) {
+    const seule = porteurs.length === 1;
+    points.push(pointDe(
+      seule
+        ? `Collection « ${porteurs[0].name} »`
+        : `Collections ${porteurs.map(({ name }) => `« ${name} »`).join(' et ')}`,
+      {
+        manque: seule
+          ? 'elle étend une collection d’une bibliothèque.'
+          : 'elles étendent une collection d’une bibliothèque.',
+        impact: seule ? 'Le développeur n’aura pas ses surcharges.' : 'Le développeur n’aura pas leurs surcharges.',
+        action: seule
+          ? 'Créez la collection étendue dans le fichier de la bibliothèque, puis réexportez depuis ce fichier.'
+          : 'Créez les collections étendues dans le fichier de la bibliothèque, puis réexportez depuis ce fichier.',
+      },
+    ));
   }
   return { axes, points };
 }
@@ -678,22 +747,35 @@ function constatsDeTypesParMode(
   feuilles: FeuilleAModes[],
   typeParChemin: ReadonlyMap<string, string>,
   variableByPath: ReadonlyMap<string, Variable>,
+  axes: ReadonlyMap<string, AxeDeCollection>,
   warnings: string[],
 ): void {
   for (const { variable, collection, leaf } of feuilles) {
-    const modes = (leaf.$extensions?.['com.ucm.modes'] ?? {}) as Record<string, unknown>;
-    for (const mode of collection.modes) {
-      const valeur = modes[normalizeName(mode.name)];
+    /** `ou` situe la valeur pour le designer : « le mode « Dark » », ou ce mode dans une collection étendue. */
+    const constater = (valeur: unknown, ou: string) => {
       const cible = typeof valeur === 'string' ? /^\{(.+)\}$/.exec(valeur)?.[1] : undefined;
       const typeCible = cible === undefined ? undefined : typeParChemin.get(cible);
-      if (cible === undefined || typeCible === undefined || typeCible === leaf.$type) continue;
+      if (cible === undefined || typeCible === undefined || typeCible === leaf.$type) return;
       pousserSansNode(warnings, `Variable « ${variable.name} »`, {
-        manque: `dans le mode « ${mode.name} », elle cite « ${variableByPath.get(cible)?.name ?? cible} », `
+        manque: `dans ${ou}, elle cite « ${variableByPath.get(cible)?.name ?? cible} », `
           + `qui est ${LIBELLES_DE_TYPE[typeCible] ?? typeCible}, alors qu’elle est `
           + `${LIBELLES_DE_TYPE[leaf.$type] ?? leaf.$type}.`,
         impact: 'Le développeur ne pourra pas générer la feuille CSS des tokens.',
         action: 'Liez dans ce mode une variable du même type, puis réexportez.',
       });
+    };
+
+    const modes = (leaf.$extensions?.['com.ucm.modes'] ?? {}) as Record<string, unknown>;
+    for (const mode of collection.modes) constater(modes[normalizeName(mode.name)], `le mode « ${mode.name} »`);
+
+    const surcharges = (leaf.$extensions?.['com.ucm.extensions'] ?? {}) as Record<string, Record<string, unknown>>;
+    for (const extension of axes.get(collection.id)?.extensions ?? []) {
+      const parMode = Object.prototype.hasOwnProperty.call(surcharges, extension.nom) ? surcharges[extension.nom] : {};
+      for (const mode of collection.modes) {
+        const nom = normalizeName(mode.name);
+        if (!Object.prototype.hasOwnProperty.call(parMode, nom)) continue;
+        constater(parMode[nom], `le mode « ${mode.name} » de la collection « ${extension.collection.name} »`);
+      }
     }
   }
 }
@@ -1013,7 +1095,7 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
     typeParChemin.set(path, leaf.$type);
     if (leaf.$extensions) feuillesAModes.push({ variable, collection, leaf });
   }
-  constatsDeTypesParMode(feuillesAModes, typeParChemin, variableByPath, warnings);
+  constatsDeTypesParMode(feuillesAModes, typeParChemin, variableByPath, axes, warnings);
 
   // La marque s'écrit une fois, à la racine et avant les groupes. Une `Map` tient
   // cet ordre même devant une collection au nom entier, qu'un objet rangerait

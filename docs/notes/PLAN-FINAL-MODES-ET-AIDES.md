@@ -563,7 +563,7 @@ Stack : React 19 et CSS Modules. Un composant par dossier, tests à côté.
 Gabarit : `.ucm/gabarits/composant.tsx`. Composant de référence : `src/components/Carte`.
 
 ## contour-ring
-<!-- ucm:copie contour-ring 0.2.0 -->
+<!-- ucm:copie contour-ring 0.2.0 <empreinte> -->
 
 Classe `ring` de `src/styles/contours.module.css`, qui reçoit `--ring-width`,
 `--ring-color` et `--ring-offset`.
@@ -886,6 +886,59 @@ des extensions est l'intermédiaire, déclaré sur `:root` puis dans chaque mode
 l'axe parent. Le temps mesure l'émetteur provisoire, qui recalcule les noms pour
 chaque extension, et ne borne pas `ucm tokens css`.
 
+## 12. Revue des lots L0 à L8b
+
+Revue du commit `0f023f5`, suivie d'une revue indépendante de son plan de
+corrections. Chaque défaut a été reproduit par une sonde, et chaque test ajouté
+a été vu rouge.
+
+### Défauts corrigés
+
+| Défaut | Conséquence avant correction | Correction |
+|---|---|---|
+| un nom de mode ou d'extension non échappé dans `[attr="…"]` | un guillemet détruit la règle et toutes les suivantes, code 0 | valeur écrite en chaîne CSS |
+| saut de page non échappé dans une chaîne | le bloc `:root` entier est vide | `\c ` |
+| feuille `null` sans déclaration | le contexte hérite de la valeur englobante, fausse et plausible, dans les trois moteurs | `initial` ; ligne A.3 corrigée ; document `SANS_VALEUR` au harnais |
+| deux extensions au même nom CSS, ou nom CSS `base` ou vide | la dernière déclaration gagne, ou l'intermédiaire de base se cite lui-même, code 0 | refus de la commande, constat de l'export |
+| surcharge d'extension d'un autre `$type` | `ucm check` l'accepte, `ucm tokens css` la refuse, l'export se tait | contrôle typographique et constat de l'export sur les surcharges |
+| collection racine à un seul mode, étendue | surcharges perdues sans constat | la collection devient un axe |
+| extension locale d'une collection de bibliothèque | surcharges perdues sans constat | constat par collection distante |
+| graisse inconnue dans une surcharge | chaîne dans une feuille `number`, refus de la commande sans constat | constat |
+| collision de noms de modes | le constat taisait l'axe écarté | impact complet, un constat par nom |
+| clé de `modes` sans axe, fichier sans modes | acceptée, contre A.1 | refus, code 2, sauf états `anterieur` et `axe-ecarte` |
+| axe déclaré sous le nom d'un axe d'extension | message qui nomme le mauvais parent, code 2 trompeur | refus code 1 qui nomme le parent |
+| `valeurDansLeContexte` sur une déclaration non objet | exception | `undefined` |
+| `ucm aides composant --personnaliser` | section ignorée, réécrite à chaque appel | refus |
+| `--personnaliser` au-dessus du repository | écriture possible hors du repository | refus |
+| marqueur de copie sans empreinte | signalé « a changé depuis », sans le savoir | message distinct ; exemple de 6.3 corrigé |
+| octet NUL littéral dans `modes-tokens.mjs` | fichier classé binaire par `grep` | séquence `\u0000` |
+
+Les aides ont reçu les règles des §1 à §6 de la skill qu'aucune n'avait
+reprises : `optional`, `visibilityProp` et `visibilityTargets`, l'ordre de
+résolution des échantillons et des `swaps`, `width: null`, la désignation du
+conteneur de `structure.sizes`, le cadre qui ne fusionne pas avec sa
+dépendance, les props `slot` et facultatives, l'exception des dictionnaires,
+l'exclusion de `samples` et `meta` du relevé des références. La transcription
+sans chargement à l'exécution et la composition des contours passent de
+l'écriture au sens, qu'aucune convention ne remplace. La preuve de `modes`
+énonce les contextes de 4.5 au lieu de citer `ucm guide`, qui n'existe pas
+encore, et le README de la CLI ne promet plus les lectures que seul `ucm guide`
+fera.
+
+### Recommandations
+
+- **L5 mesure le guide sur les aides corrigées.** Mesurée avant cette revue, la
+  condition « guide » aurait lu un contenu amputé de règles que la skill donne.
+- **Une loi de nommage des champs, limitée.** 87 à 90 des 223 couples de
+  `CHAMPS` ne sont nommés par aucune aide de leur caractéristique, selon la
+  méthode. Une grande part est du bruit (`Intent.*`, `SlotProp.*`, champs
+  typographiques nommés par leur propriété CSS). Une loi limitée aux
+  caractéristiques autres que `toujours` attraperait les pertes de cette revue
+  sans liste de raisons à entretenir.
+- **Le déclencheur de 4.5 n'est vérifiable qu'avec `contextesDesAxes`.** Avec la
+  seule liste d'`axesDeTokens`, `contextesDeVerification` ne vérifie aucune
+  extension ; `ucm guide` doit lui passer les axes d'extension.
+
 ## Annexe A. Ce que ce plan reprend du plan courant
 
 Recopié du commit `7226eee` et adapté à la forme de la section 3 : le
@@ -974,7 +1027,7 @@ Chaque règle de mode déclare 10 feuilles et la règle commune 50.
 | `fontFamily` | chaque famille entre guillemets, séparées par des virgules, suivies de `css.fontFamilyFallback` s'il est configuré |
 | `string` | une chaîne CSS entre guillemets, caractères échappés |
 | `boolean` | `true` ou `false` |
-| `$value: null`, alias dont l'export n'a pas trouvé la cible | aucune déclaration ; la feuille est nommée sur la sortie d'erreur, sans changer le code |
+| `$value: null`, alias dont l'export n'a pas trouvé la cible | `initial` dans chaque contexte où la valeur manque ; la feuille est nommée sur la sortie d'erreur, sans changer le code (section 12) |
 | toute autre forme | refus, code 1, qui nomme la feuille et le mode |
 
 Un alias de tout type s'écrit `var()`. Structure, nombres finis, unités et bornes
