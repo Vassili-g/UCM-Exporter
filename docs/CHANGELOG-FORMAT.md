@@ -318,3 +318,12 @@ et le navigateur descend au repli sans rien signaler. Le mainteneur filtre sur
 
 La version 1 reste lue par le kit, sous l'état `ancienne` et sans mention dans
 le rapport.
+
+### Un mode qui change le type d'une chaîne
+
+Aucune forme ne change, et `TOKENS_FORMAT_VERSION` ne monte pas. Le verdict
+change, ce qui relève de la **classe 6** : à partir de `@ucm-kit/core` 0.1.28,
+le contrôle typographique lit chaque mode des feuilles qu'une référence de text
+style traverse. Une feuille dont un mode cite un token d'un autre `$type` fait
+refuser la référence, et le rapport nomme la feuille et le mode. Le designer lie
+dans Figma une variable du même type pour ce mode, puis réexporte les tokens.

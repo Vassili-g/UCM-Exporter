@@ -87,34 +87,36 @@ marquées « sans L5 », puis par L8a et L8b.
 Un seul commit pour le code du kit, avec la montée de `@ucm-kit/core` et des
 deux pins.
 
-- [ ] `packages/kit/src/format/tokens.ts` : types `AxeDeTokens`, `com.ucm.axes`
+- [x] `packages/kit/src/format/tokens.ts` : types `AxeDeTokens`, `com.ucm.axes`
       dans `ExtensionsDuDocument`, `com.ucm.axis` et `com.ucm.extensions` dans le
       `$extensions` d'une feuille. Le schéma publié dérive de `types.ts` seul :
       `npm run schema` ne doit rien changer, et le constater.
-- [ ] `packages/kit/src/format/names.ts` : `attributDeMode(axe)`. Test : accents,
+- [x] `packages/kit/src/format/names.ts` : `attributDeMode(axe)`. Test : accents,
       segments multiples. Citer la fonction dans l'invariant de `AGENTS.md` sur
       les projections de nom.
-- [ ] `packages/kit/src/format/configuration.ts` : sections facultatives `modes`
+- [x] `packages/kit/src/format/configuration.ts` : sections facultatives `modes`
       (valeur `data-` suivie de lettres minuscules, chiffres, tirets) et `css`
       (`fontFamilyFallback`). Tests des refus dans `configuration.test.mjs`.
-- [ ] `packages/kit/src/lecteurs/modes-tokens.mjs` : `axesDeTokens` avec les cinq
+- [x] `packages/kit/src/lecteurs/modes-tokens.mjs` : `axesDeTokens` avec les cinq
       états de la table 3.1 du plan. Un test par état, et un cas voisin chacun.
-- [ ] `valeurDansLeContexte` : alias conservés, défaut, mode non défaut. Les
-      extensions arrivent en L8a.
-- [ ] `conesDesAxes` : graphe inverse construit une fois ; losange, trois axes,
-      défaut non premier, nom `__proto__` gardé en donnée.
-- [ ] `axesDuContrat` par `collecterReferences` et `sansEchantillon` ; dépendance
+- [x] `valeurDansLeContexte` : alias conservés, défaut, mode non défaut, chaîne
+      d'extensions jusqu'à `base`. L'oracle de la cascade en a besoin pour les
+      arbres d'extension de L0.
+- [x] `conesDesAxes` : graphe inverse construit une fois, alias des surcharges
+      compris ; losange, trois axes, défaut non premier, nom `__proto__` gardé en
+      donnée.
+- [x] `axesDuContrat` par `collecterReferences` et `sansEchantillon` ; dépendance
       de dépendance, dépendance absente, cycle de composition.
-- [ ] `contextesDeVerification` : l'ensemble `1 + A + C` de la section 4.5.
-- [ ] `cyclesActifs` : Tarjan, conditions par arête. Accepté : sur un seul axe,
+- [x] `contextesDeVerification` : l'ensemble `1 + A + C` de la section 4.5.
+- [x] `cyclesActifs` : Tarjan, conditions par arête. Accepté : sur un seul axe,
       `x` cite `y` en `light` et `y` cite `x` en `dark`. Refusé : `x` cite `y` et
       `y` cite `x` dans le même mode, ou via une feuille sans propriétaire. Borne
       de 10 000 cycles qui rend un refus d'analyse.
-- [ ] `typography-token-types.mjs` : refus d'une chaîne qui traverse une feuille
+- [x] `typography-token-types.mjs` : refus d'une chaîne qui traverse une feuille
       dont le type change dans un mode. Test vu rouge avec le lecteur actuel.
       Mention de classe 6 dans `docs/CHANGELOG-FORMAT.md` et le README du kit.
-- [ ] Exporter les fonctions par `lecteurs/index.mjs` et `index.d.mts`.
-- [ ] Remplacer l'oracle provisoire de L0 par `valeurDansLeContexte`.
+- [x] Exporter les fonctions par `lecteurs/index.mjs` et `index.d.mts`.
+- [x] Remplacer l'oracle provisoire de L0 par `valeurDansLeContexte`.
 - [ ] Monter `@ucm-kit/core`, les pins et les versions de `@ucm-kit/cli` et
       `@ucm-kit/adapter-typescript`, puis publier les trois paquets.
 
@@ -256,8 +258,9 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 ## L8a. Kit et CLI : collections étendues
 
-- [ ] `valeurDansLeContexte` et `conesDesAxes` lisent `extensions` et
-      `com.ucm.extensions` ; chaîne de parents jusqu'à `base`, alias conservés.
+- [ ] `conesDesAxes` rend l'axe `<axe>-extensions` pour chaque feuille surchargée
+      et ce qui la cite. `valeurDansLeContexte` lit déjà la chaîne de parentes
+      depuis L1.
 - [ ] `ucm tokens css` : axe `<axe>-extensions` après son axe parent,
       intermédiaires `--ucm-x-base--<f>` et `--ucm-x-<e>--<f>` limités aux
       surcharges, règle de repli puis règles propres, croisements au même schéma,

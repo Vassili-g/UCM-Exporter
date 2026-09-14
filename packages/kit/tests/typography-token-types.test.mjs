@@ -84,6 +84,39 @@ test("une hauteur de ligne numérique est refusée avant de gonfler le rendu CSS
   }]);
 });
 
+test("une chaîne qui traverse une feuille dont un mode cite un autre type est refusée", () => {
+  // Le parcours suit `$value`, donc le mode par défaut. Un autre mode qui cite
+  // un nombre sous une hauteur de ligne rend ce parcours faux pour ce mode.
+  const tokens = structuredClone(tokensValides);
+  tokens.primitives.poids = { $value: 600, $type: "number" };
+  tokens.typography.body.large.line.$extensions = {
+    "com.ucm.modes": { confort: "{primitives.line}", dense: "{primitives.poids}" },
+  };
+
+  assert.deepEqual(erreursTypesTypographiques(contrat({
+    lineHeight: "{typography.body.large.line}",
+  }), tokens), [{
+    chemin: "textStyles.body.large.tokens.lineHeight",
+    reference: "{typography.body.large.line}",
+    attendu: "dimension",
+    recu: "number",
+    feuille: "typography.body.large.line",
+    mode: "dense",
+  }]);
+});
+
+test("des modes qui citent tous le type de leur feuille sont acceptés", () => {
+  const tokens = structuredClone(tokensValides);
+  tokens.primitives.ligneDense = { $value: "20px", $type: "dimension" };
+  tokens.typography.body.large.line.$extensions = {
+    "com.ucm.modes": { confort: "{primitives.line}", dense: "{primitives.ligneDense}", brut: "18px" },
+  };
+
+  assert.deepEqual(erreursTypesTypographiques(contrat({
+    lineHeight: "{typography.body.large.line}",
+  }), tokens), []);
+});
+
 test("un espacement et un retrait de paragraphe exigent une dimension", () => {
   const tokens = structuredClone(tokensValides);
   tokens.primitives.paragraphe = { $value: 12, $type: "number" };

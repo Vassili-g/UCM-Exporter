@@ -10,9 +10,22 @@
  * compression par règle de repli que la section 4.3 décrit.
  */
 import { tokenCssVariable } from "@ucm-kit/core/format";
-import { cheminDeReference, indexerTokensDtcg } from "@ucm-kit/core/lecteurs";
+import { axeDesExtensions, axesDeTokens, cheminDeReference, indexerTokensDtcg } from "@ucm-kit/core/lecteurs";
 
-import { contextesDesAxes, nomDeLAxeDExtension } from "./oracle-provisoire.mjs";
+/** Les axes dans l'ordre de la racine, chaque axe d'extension juste après son parent. */
+function contextesDesAxes(document) {
+  return axesDeTokens(document).axes.flatMap((axe) => {
+    const simple = { nom: axe.nom, contextes: axe.modes, defaut: axe.defaut, extension: false };
+    const extensions = Object.keys(axe.extensions);
+    if (extensions.length === 0) return [simple];
+    return [simple, {
+      nom: axeDesExtensions(axe.nom),
+      contextes: ["base", ...extensions],
+      defaut: "base",
+      extension: true,
+    }];
+  });
+}
 
 const sansTirets = (nom) => tokenCssVariable(nom).slice(2);
 
@@ -68,7 +81,7 @@ function variablesDuDocument(document) {
       });
     }
     variables.set(nom, {
-      axe: nomDeLAxeDExtension(axe),
+      axe: axeDesExtensions(axe),
       valeurs: new Map(["base", ...Object.keys(declaration.extensions)].map((extension) => [
         extension,
         `var(${intermediaire(plusProcheSurcharge(extension), chemin)})`,

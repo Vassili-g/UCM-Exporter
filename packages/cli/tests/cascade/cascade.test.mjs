@@ -1,7 +1,8 @@
 /**
  * La preuve de cascade de la section 4.4 du plan final : la feuille des tokens,
  * chargée dans Chromium, Firefox et WebKit, rend dans chaque élément relevé la
- * valeur que l'oracle lit sur le document, pour chaque feuille du document.
+ * valeur que `valeurDansLeContexte` lit sur le document, pour chaque feuille du
+ * document. L'oracle ne lit jamais la feuille CSS.
  *
  * Se lance par `npm run cascade`, hors de `npm test` : les trois moteurs
  * s'installent à part, par `npx playwright install`.
@@ -11,6 +12,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 import { tokenCssVariable } from "@ucm-kit/core/format";
+import { cheminDeReference, indexerTokensDtcg, valeurDansLeContexte } from "@ucm-kit/core/lecteurs";
 import { chromium, firefox, webkit } from "playwright";
 
 import {
@@ -21,7 +23,6 @@ import {
 } from "./arbres.mjs";
 import { DEUX_AXES, EXTENSIONS, TROIS_AXES, avecOrdreDesAxes } from "./documents.mjs";
 import { emettre } from "./emetteur-provisoire.mjs";
-import { oracle } from "./oracle-provisoire.mjs";
 
 const lire = (nom) => readFileSync(new URL(nom, import.meta.url), "utf8").replace(/\r\n/g, "\n");
 
@@ -74,14 +75,29 @@ function contexteDe(chaine, axes) {
   return contexte;
 }
 
+/** Le littéral qu'une feuille prend dans un contexte, alias suivis. */
+function valeurResolue(document, chemin, contexte) {
+  const vus = new Set();
+  let courant = chemin;
+  for (;;) {
+    if (vus.has(courant)) throw new Error(`cycle d'alias sur ${chemin}`);
+    vus.add(courant);
+    const valeur = valeurDansLeContexte(document, courant, contexte);
+    const cible = cheminDeReference(valeur);
+    if (cible === null) return valeur;
+    courant = cible;
+  }
+}
+
+const cheminsDe = (document) => [...indexerTokensDtcg(document).keys()];
+
 function ecarts(releves, { document }) {
   const { axes } = emettre(document);
-  const lecteur = oracle(document);
   const fautes = [];
   for (const { sonde, chaine, valeurs } of releves) {
     const contexte = contexteDe(chaine, axes);
-    for (const chemin of lecteur.chemins) {
-      const attendu = String(lecteur.valeur(chemin, contexte));
+    for (const chemin of cheminsDe(document)) {
+      const attendu = String(valeurResolue(document, chemin, contexte));
       const rendu = valeurs[tokenCssVariable(chemin)];
       if (rendu !== attendu) fautes.push(`sonde ${sonde}, ${chemin} : attendu ${attendu}, rendu ${rendu}`);
     }
@@ -98,7 +114,7 @@ for (const [nom, moteur] of Object.entries({ chromium, firefox, webkit })) {
       for (const cas of CAS) {
         await contexte.test(`${cas.source} : ${cas.nom}`, async () => {
           await page.setContent(pageDe(cas));
-          const noms = oracle(cas.document).chemins.map(tokenCssVariable);
+          const noms = cheminsDe(cas.document).map(tokenCssVariable);
           const fautes = ecarts(await relever(page, noms), cas);
           for (const etape of cas.etapes ?? []) {
             await page.evaluate(({ selecteur, attribut, valeur }) => {
