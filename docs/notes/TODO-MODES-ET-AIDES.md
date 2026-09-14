@@ -276,7 +276,7 @@ Le plugin est privé : ses commits ne montent aucune version.
       l'émetteur provisoire de L0 est retiré.
 - [x] `docs/FORMAT.md` : collections étendues publiées comme expérimentales, limite
       des cycles.
-- [ ] Monter `@ucm-kit/core`, les pins et les deux autres paquets, puis publier.
+- [x] Monter `@ucm-kit/core`, les pins et les deux autres paquets, puis publier.
 
 ## L8b. Plugin : lecture des collections étendues
 
