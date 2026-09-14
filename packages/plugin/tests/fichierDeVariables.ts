@@ -55,6 +55,38 @@ export function collection(id: string, name: string, modes: string[], defaut?: s
   } as unknown as VariableCollection;
 }
 
+/**
+ * Une collection étendue, telle que `ExtendedVariableCollection` la décrit : ses
+ * modes reprennent ceux de sa parente par `parentModeId`, ses `variableIds`
+ * incluent les variables héritées, et `variableOverrides` porte ses surcharges
+ * par variable puis par mode de l'extension.
+ */
+export function extension(
+  id: string,
+  name: string,
+  parente: VariableCollection,
+  racine: VariableCollection,
+  surcharges: Record<string, Record<string, VariableValue>> = {},
+): VariableCollection {
+  const modes = parente.modes.map((mode, rang) => ({ modeId: `${id}:${rang}`, name: mode.name, parentModeId: mode.modeId }));
+  const parModeDeParente = new Map(modes.map((mode) => [mode.parentModeId, mode.modeId]));
+  return {
+    id,
+    name,
+    isExtension: true,
+    parentVariableCollectionId: parente.id,
+    rootVariableCollectionId: racine.id,
+    modes,
+    defaultModeId: parModeDeParente.get(parente.defaultModeId) ?? modes[0].modeId,
+    variableIds: [...parente.variableIds],
+    // Les surcharges sont écrites par rang de mode, puis traduites en identifiants.
+    variableOverrides: Object.fromEntries(Object.entries(surcharges).map(([variableId, parRang]) => [
+      variableId,
+      Object.fromEntries(Object.entries(parRang).map(([rang, valeur]) => [modes[Number(rang)].modeId, valeur])),
+    ])),
+  } as unknown as VariableCollection;
+}
+
 /** Une variable dont chaque mode reçoit la valeur de même rang ; `undefined` laisse le mode vide. */
 export function variable(
   proprietaire: VariableCollection,

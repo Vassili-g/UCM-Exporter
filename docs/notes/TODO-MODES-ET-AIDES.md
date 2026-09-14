@@ -280,15 +280,15 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 ## L8b. Plugin : lecture des collections étendues
 
-- [ ] Simulation de `ExtendedVariableCollection` dans `fichierDeVariables.ts` :
+- [x] Simulation de `ExtendedVariableCollection` dans `fichierDeVariables.ts` :
       `parentVariableCollectionId`, `rootVariableCollectionId`,
       `modes[].parentModeId`, `variableOverrides`.
-- [ ] Export de `extensions` et des surcharges creuses ; remontée de
+- [x] Export de `extensions` et des surcharges creuses ; remontée de
       `parentModeId` ; constats « extensions homonymes », « extension nommée
       `base` », « parente distante ».
-- [ ] `etatDesTokensDuFichier` et `modeCollisionWarnings` comptent une fois une
+- [x] `etatDesTokensDuFichier` et `modeCollisionWarnings` comptent une fois une
       variable héritée. Tests.
-- [ ] `packages/plugin/SPEC.md` partie 2 : lecture expérimentale, ce qui reste à
+- [x] `packages/plugin/SPEC.md` partie 2 : lecture expérimentale, ce qui reste à
       mesurer.
 - [ ] **[mainteneur]** Relevé sur un fichier Enterprise réel dès qu'un
       utilisateur en fournit un.

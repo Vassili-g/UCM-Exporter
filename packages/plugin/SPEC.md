@@ -530,6 +530,26 @@ introuvable. Deux modes au même nom normalisé l'écartent sous le constat de
 sur la feuille d'un axe retenu, et la racine déclare les axes qui portent au
 moins une feuille exportée, dans l'ordre des collections.
 
+**Les collections étendues se lisent à titre expérimental.** Une collection dont
+`isExtension` vaut `true` n'est pas un axe : ses variables et ses modes sont
+ceux de sa collection racine, si bien que le résumé des tokens et
+`modeCollisionWarnings` l'écartent. Chaque axe retenu reçoit les extensions dont
+`rootVariableCollectionId` désigne sa collection. Le nom d'une extension est son
+nom normalisé en un segment, `/` devenant `-` ; sa parente est `base` quand
+`parentVariableCollectionId` désigne la racine. Chaque mode d'extension remonte
+`parentModeId` jusqu'au mode de la racine, dont il prend le nom.
+`variableOverrides` donne les surcharges, écrites creuses sous
+`com.ucm.extensions` par la même mise en forme que les modes. Une extension
+nommée `base`, deux extensions de même nom ou une parente absente du fichier
+écartent toutes les extensions de l'axe sous un constat, et l'axe reste publié.
+
+Ce qui reste à mesurer sur un fichier Enterprise réel : la collection que
+`variableCollectionId` désigne pour une variable héritée, les clés que rend
+`valuesByModeForCollectionAsync`, et la lecture d'une parente venue d'une
+bibliothèque. La décision de type d'une graisse et d'une famille ne lit pas les
+surcharges : un nom de graisse que seule une surcharge porte reste la chaîne de
+Figma.
+
 **Un alias d'un autre type dans un mode se constate après l'arbre.** Le type
 d'une feuille se décide sur la chaîne du mode par défaut. Une fois les feuilles
 insérées, chaque valeur de mode qui cite une feuille d'un autre `$type` produit
