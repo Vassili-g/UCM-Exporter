@@ -313,9 +313,12 @@ Le plugin est privé : ses commits ne montent aucune version.
 - [x] Recette sur un repository temporaire depuis les archives `npm pack` des
       trois paquets : `init`, `tokens css`, `guide`, `aides --personnaliser`.
       Relevé en section 14 du plan final.
-- [ ] **[mainteneur]** Playground, dans l'ordre de la section 7 du plan final :
+- [x] **[mainteneur]** Playground, dans l'ordre de la section 7 du plan final :
       réexport des tokens, installation, remplacement de Style Dictionary,
       `ucm init`, déplacement du tableau de `AGENTS.md`, règle 4 réécrite.
+      Commit `7a1010f` du Playground ; l'adaptateur TypeScript n'est pas
+      installé, le dépôt garde la parité hors de son empreinte. Relevé en
+      section 14 du plan final.
 - [ ] **[mainteneur]** Épreuves de la section 7 : build, galerie en deux marques,
       harnais dans Safari, reconstructions à froid d'`Alert` et `Button`,
       personnalisation de `contour-ring`, export antérieur refusé, couleurs
