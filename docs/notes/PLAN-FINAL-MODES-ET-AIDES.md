@@ -1017,6 +1017,21 @@ son `tokens.json` exporté avec `com.ucm.axes` et ses quatre contrats.
   `Button` pèse 71 707 octets pour un contrat de 54 653. Le relevé L5 dira si
   ce poids réduit les tours.
 
+Migration du Playground, commit `7a1010f` : `ucm tokens css` remplace Style
+Dictionary dans `dev` et `build`, `ucm.config.json` nomme l'attribut
+`data-brand` et le repli `sans-serif`, `ucm init` écrit les relais et les
+conventions, et la galerie pose la marque sur `<html>`. Deux épreuves la
+jugent :
+
+- chaque token, placé dans une propriété de son type et calculé par Chromium,
+  vaut la même chose sous l'ancienne et la nouvelle feuille pour 758 tokens sur
+  760. Les deux autres sont des chaînes de la collection « Tests », qu'aucun
+  composant ne cite : Style Dictionary écrivait `0` nu et perdait les
+  antislashs, la nouvelle feuille rend leur texte exact ;
+- la galerie d'`Alert` et de `Button`, mesurée sur un clone du commit, rend 0
+  écart sur 2 368 propriétés calculées face à celle d'avant la migration, une
+  fois la notation des couleurs ramenée à `rgb()`.
+
 Défaut trouvé : un `package.json` qui installe la CLI depuis une archive faisait
 signaler des pins en désaccord par `ucm guide`, et réclamer la dépendance par
 `ucm init`. Un chemin d'archive, un lien ou un espace de travail ne se comparent
