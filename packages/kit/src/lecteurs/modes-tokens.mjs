@@ -143,10 +143,11 @@ const memesModes = (cles, modes) => cles.length === modes.length && cles.every((
 /**
  * L'état des modes d'un document, ses axes et ce qui l'empêche d'être complet.
  *
- * - `sans-modes` : aucune feuille ne porte `com.ucm.modes` ;
+ * - `sans-modes` : aucune feuille n'écrit `com.ucm.modes` ni `com.ucm.axis` ;
  * - `anterieur` : des feuilles portent des modes, la racine ne déclare aucun axe ;
  * - `incoherent` : une feuille nomme un axe que la racine ne déclare pas, ses
- *   modes diffèrent de ceux de son axe, ou une déclaration est illisible ;
+ *   modes manquent, ne sont pas un objet ou diffèrent de ceux de son axe, ou
+ *   une déclaration est illisible ;
  * - `axe-ecarte` : une feuille porte des modes sans axe, l'export ayant écarté
  *   sa collection ;
  * - `complet` : chaque feuille à modes a un axe déclaré et ses modes.
@@ -157,12 +158,14 @@ const memesModes = (cles, modes) => cles.length === modes.length && cles.every((
 export function axesDeTokens(document) {
   const index = indexDe(document);
   const feuilles = [...index];
-  if (!feuilles.some(([, feuille]) => estObjet(extensionsDe(feuille)[MODES]))) {
+  // Une clé écrite mais illisible se juge feuille par feuille, plus bas.
+  const nommeDesModes = ([, feuille]) => possede(extensionsDe(feuille), MODES) || possede(extensionsDe(feuille), AXE);
+  if (!feuilles.some(nommeDesModes)) {
     return { etat: "sans-modes", axes: [], constats: [] };
   }
 
   const racine = estObjet(document.$extensions) ? document.$extensions : {};
-  if (!possede(racine, AXES)) {
+  if (!possede(racine, AXES) && feuilles.some(([, feuille]) => estObjet(extensionsDe(feuille)[MODES]))) {
     return {
       etat: "anterieur",
       axes: [],
@@ -176,9 +179,9 @@ export function axesDeTokens(document) {
 
   const constats = [];
   const axes = new Map();
-  if (!estObjet(racine[AXES])) {
+  if (possede(racine, AXES) && !estObjet(racine[AXES])) {
     constats.push({ code: "axes-illisibles", message: "La déclaration des axes n'est pas un objet." });
-  } else {
+  } else if (estObjet(racine[AXES])) {
     for (const [nom, declaration] of Object.entries(racine[AXES])) {
       const defaut = defautDeDeclaration(declaration);
       if (defaut) {
@@ -199,6 +202,14 @@ export function axesDeTokens(document) {
   for (const [chemin, feuille] of feuilles) {
     const extensions = extensionsDe(feuille);
     const aDesModes = estObjet(extensions[MODES]);
+    if (possede(extensions, MODES) && !aDesModes) {
+      constats.push({
+        code: "modes-illisibles",
+        chemin,
+        message: `Les modes de la feuille « ${chemin} » ne sont pas un objet.`,
+      });
+      continue;
+    }
     if (!possede(extensions, AXE)) {
       if (aDesModes) ecartees.push(chemin);
       continue;
@@ -580,6 +591,8 @@ function estActif(cycle, aretes, proprietaire) {
 
 const INTERRUPTION = Symbol("borne des cycles");
 
+const nomDuNoeud = (noeud) => (typeof noeud === "string" ? noeud : `${noeud.chemin}@${noeud.extension}`);
+
 /**
  * Les cycles d'alias qu'au moins un contexte réalise.
  *
@@ -632,7 +645,13 @@ export function cyclesActifs(document, axes) {
       continue;
     }
 
-    const noeud = (extension) => `${chemin}@${extension}`;
+    // Un intermédiaire est un objet : aucun chemin de token, qui est une chaîne,
+    // ne peut le désigner. Un cycle rapporté le nomme `chemin@extension`.
+    const intermediaires = new Map();
+    const noeud = (extension) => {
+      if (!intermediaires.has(extension)) intermediaires.set(extension, { chemin, extension });
+      return intermediaires.get(extension);
+    };
     proprietaire.set(chemin, axeDesExtensions(axe.nom));
     for (const contexte of ["base", ...extensions]) {
       ajouter(chemin, noeud(surchargeLaPlusProche(axe, surcharges, contexte)), contexte);
@@ -661,7 +680,7 @@ export function cyclesActifs(document, axes) {
       enumererCycles(composante, aretes, (cycle) => {
         enumeres += 1;
         if (enumeres > BORNE_DES_CYCLES) throw INTERRUPTION;
-        if (estActif(cycle, aretes, proprietaire)) cycles.push([...cycle, cycle[0]]);
+        if (estActif(cycle, aretes, proprietaire)) cycles.push([...cycle, cycle[0]].map(nomDuNoeud));
       });
     }
   } catch (erreur) {

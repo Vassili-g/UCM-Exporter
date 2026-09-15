@@ -132,6 +132,36 @@ test("une chaîne qui traverse une surcharge d'extension citant un autre type es
   assert.deepEqual(erreursTypesTypographiques(reference, tokens), []);
 });
 
+test("une feuille atteinte par un mode, et non par $value, est contrôlée dans ses propres modes", () => {
+  // `$value` de `t.a` est un littéral : seul son mode dark mène à `t.b`, dont le
+  // mode dark cite un nombre sous une taille de police.
+  const modes = (dark) => ({ "com.ucm.axis": "theme", "com.ucm.modes": { light: "16px", dark } });
+  const tokens = {
+    t: {
+      a: { $value: "16px", $type: "dimension", $extensions: modes("{t.b}") },
+      b: { $value: "16px", $type: "dimension", $extensions: modes("{t.n}") },
+      n: { $value: 2, $type: "number" },
+      d: { $value: "20px", $type: "dimension" },
+    },
+  };
+  const reference = contrat({ fontSize: "{t.a}" });
+
+  assert.deepEqual(erreursTypesTypographiques(reference, tokens), [{
+    chemin: "textStyles.body.large.tokens.fontSize",
+    reference: "{t.a}",
+    attendu: "dimension",
+    recu: "number",
+    feuille: "t.b",
+    mode: "dark",
+  }]);
+
+  tokens.t.b.$extensions = modes("{t.d}");
+  assert.deepEqual(erreursTypesTypographiques(reference, tokens), []);
+
+  tokens.t.b.$extensions = modes("{t.a}");
+  assert.deepEqual(erreursTypesTypographiques(reference, tokens), [], "une boucle entre modes termine");
+});
+
 test("des modes qui citent tous le type de leur feuille sont acceptés", () => {
   const tokens = structuredClone(tokensValides);
   tokens.primitives.ligneDense = { $value: "20px", $type: "dimension" };

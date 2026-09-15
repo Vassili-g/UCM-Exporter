@@ -95,6 +95,24 @@ test("un axe inconnu, des modes divergents ou un défaut hors des modes rendent 
   assert.equal(axesDeTokens(voisin).etat, "complet", "l'ordre des clés d'une feuille ne compte pas");
 });
 
+test("des modes illisibles, ou un axe sans modes, rendent le fichier incohérent même sans autre feuille à modes", () => {
+  const seule = (extensions, axes = { theme: THEME }) => documentAvec(axes, {
+    theme: { fond: { $type: "number", $value: 1, $extensions: extensions } },
+  });
+  const codes = (document) => axesDeTokens(document).constats.map(({ code }) => code);
+
+  for (const modes of [null, [], 7]) {
+    const document = seule({ "com.ucm.axis": "theme", "com.ucm.modes": modes });
+    assert.equal(axesDeTokens(document).etat, "incoherent", JSON.stringify(modes));
+    assert.deepEqual(codes(document), ["modes-illisibles"]);
+  }
+  assert.deepEqual(codes(seule({ "com.ucm.modes": 7 })), ["modes-illisibles"]);
+  assert.deepEqual(codes(seule({ "com.ucm.modes": 7 }, undefined)), ["modes-illisibles"]);
+  assert.deepEqual(codes(seule({ "com.ucm.axis": "theme" })), ["modes-absents"]);
+
+  assert.equal(axesDeTokens(seule({ "com.autre": 1 })).etat, "sans-modes");
+});
+
 test("l'incohérence l'emporte sur un axe écarté", () => {
   const document = documentAvec({ theme: THEME }, {
     theme: { fond: feuille("theme", { light: 1, sombre: 2 }) },
@@ -345,6 +363,15 @@ test("un cycle qui passe par une surcharge est actif dans le contexte qui la ré
     },
   });
   assert.deepEqual(cyclesActifs(jamais, axesDeTokens(jamais).axes), { cycles: [], interrompue: false });
+});
+
+test("un token nommé comme l'intermédiaire d'une surcharge ne crée aucun cycle", () => {
+  const document = documentAvec({ theme: { ...THEME, extensions: { brand: { parent: "base" } } } }, {
+    theme: { x: feuille("theme", { light: 1, dark: 1 }, { brand: { dark: 2 } }), "x@base": alias("{theme.x}") },
+  });
+  const { etat, axes } = axesDeTokens(document);
+  assert.equal(etat, "complet");
+  assert.deepEqual(cyclesActifs(document, axes), { cycles: [], interrompue: false });
 });
 
 /** Un axe à `n` modes où chaque feuille cite toutes les autres, une par mode : un graphe complet. */

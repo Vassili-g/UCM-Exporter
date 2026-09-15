@@ -98,10 +98,16 @@ export function lireConventions(texte, aides) {
   }
 
   const blocs = [{ titre: null, lignes: [] }];
-  let dansUnBlocDeCode = false;
+  // Comme en CommonMark, un bloc ne se ferme que sur le caractère qui l'a ouvert,
+  // répété au moins autant de fois et sans texte après : un exemple Markdown
+  // peut ainsi contenir un bloc plus court.
+  let ouverture = null;
   for (const ligne of lignes) {
-    if (/^\s*(```|~~~)/.test(ligne)) dansUnBlocDeCode = !dansUnBlocDeCode;
-    const titre = dansUnBlocDeCode ? null : /^## (.+)$/.exec(ligne);
+    const cloture = /^[ \t]*(`{3,}|~{3,})(.*)$/.exec(ligne);
+    if (ouverture === null && cloture) ouverture = cloture[1];
+    else if (ouverture !== null && cloture && cloture[1][0] === ouverture[0]
+      && cloture[1].length >= ouverture.length && cloture[2].trim() === "") ouverture = null;
+    const titre = ouverture === null ? /^## (.+)$/.exec(ligne) : null;
     if (titre) blocs.push({ titre: titre[1].trim(), lignes: [] });
     else blocs[blocs.length - 1].lignes.push(ligne);
   }
