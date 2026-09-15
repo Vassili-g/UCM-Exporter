@@ -181,6 +181,9 @@ test("des pins de @ucm-kit/cli qui diffèrent sont nommés fichier par fichier ;
 
   const accord = lancer({ ...DEUX_CONTRATS, ".agents/skills/ucm-implementer/SKILL.md": relais("0.1.33"), "package.json": { devDependencies: { "@ucm-kit/cli": "0.1.33" } } });
   assert.doesNotMatch(accord.sortie, /À relire/);
+
+  const archive = lancer({ ...DEUX_CONTRATS, ".agents/skills/ucm-implementer/SKILL.md": relais("0.1.33"), "package.json": { devDependencies: { "@ucm-kit/cli": "file:../archives/ucm-kit-cli-0.1.33.tgz" } } });
+  assert.doesNotMatch(archive.sortie, /À relire/, "une archive installée ne porte pas de numéro à comparer");
 });
 
 test("le guide ne demande jamais de lancer le guide", () => {

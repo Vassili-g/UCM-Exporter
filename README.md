@@ -56,8 +56,8 @@ le commentaire de la pull request.
 Deux commandes suffisent.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.34 init                       # écrit les cinq fichiers manquants
-npx --yes @ucm-kit/cli@0.1.34 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.35 init                       # écrit les cinq fichiers manquants
+npx --yes @ucm-kit/cli@0.1.35 check --report ci-report.md
 ```
 
 `--yes` supprime l'invite de confirmation de `npx`, qui bloque une exécution non
@@ -70,7 +70,7 @@ alors un verdict différent sur le même contrat.
 `{dir}/{id}.tsx`. Un repository qui range autrement le dit à cet instant.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.34 init \
+npx --yes @ucm-kit/cli@0.1.35 init \
   --components src/components \
   --tokens src/tokens \
   --implementation '{dir}/{id}.vue'
@@ -174,7 +174,7 @@ Chaque entrée est détaillée dans
 [packages/kit/README.md](./packages/kit/README.md).
 
 Un projet TypeScript peut installer
-[`@ucm-kit/adapter-typescript@0.1.27`](./packages/adapter-typescript/README.md)
+[`@ucm-kit/adapter-typescript@0.1.28`](./packages/adapter-typescript/README.md)
 pour ajouter la comparaison statique des props et de la composition, ainsi que
 la génération des types dérivés des contrats.
 

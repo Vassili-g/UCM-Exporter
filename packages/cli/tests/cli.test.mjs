@@ -718,6 +718,12 @@ test("les lignes à ajouter à la main nomment leur fichier, et se taisent quand
     const second = rendreInit(init(racine));
     assert.doesNotMatch(second, /Reste à ajouter/);
     assert.match(second, /Rien à faire/);
+
+    writeFileSync(join(racine, "package.json"), JSON.stringify({
+      scripts: { build: "ucm tokens css --out src/generated/tokens.css && vite build" },
+      devDependencies: { "@ucm-kit/cli": "file:../archives/ucm-kit-cli.tgz" },
+    }));
+    assert.doesNotMatch(rendreInit(init(racine)), /devDependencies/, "une archive installée ne porte pas de numéro à comparer");
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
