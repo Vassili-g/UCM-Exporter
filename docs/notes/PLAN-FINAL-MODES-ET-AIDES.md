@@ -939,6 +939,48 @@ fera.
   seule liste d'`axesDeTokens`, `contextesDeVerification` ne vérifie aucune
   extension ; `ucm guide` doit lui passer les axes d'extension.
 
+## 13. Stress tests des lots L0 à L8b
+
+Stress tests du commit `04d6964`, écrits hors du dépôt puis gardés dans la suite
+quand ils tournent en moins d'une seconde. Chaque défaut corrigé a un test vu
+rouge.
+
+### Épreuves
+
+| Épreuve | Volume | Résultat |
+|---|---|---|
+| `cyclesActifs` contre une recherche exhaustive sur chaque contexte | 10 500 documents à extensions | aucun désaccord |
+| une feuille dont la valeur change avec un axe a cet axe dans son cône | plus de 100 000 couples | aucun manque |
+| feuille générée chargée dans Chromium, Firefox et WebKit contre `valeurDansLeContexte`, arbres aléatoires, `display: contents` et attributs invalides compris | 400 documents, 6 149 sondes par moteur | aucune divergence |
+| lecteurs des modes, `caracteristiquesDuContrat`, `feuilleDesTokens` et `lireConventions` sur des valeurs quelconques | 20 000 entrées | aucune exception |
+| export du plugin passé à la feuille CSS de la CLI | 1 500 fichiers simulés | trois motifs de refus sans constat |
+
+### Défauts corrigés
+
+| Défaut | Conséquence avant correction | Correction | Commit |
+|---|---|---|---|
+| énumération de Johnson récursive | `RangeError` dès 8 000 feuilles dans une composante | pile de cadres | `560e6ca` |
+| départs parcourus sans cycle | un cycle de 4 000 feuilles en 3,7 s | seule la composante coupée se redécoupe, 10 ms | `560e6ca` |
+| `--out` comparé comme chaîne | sous Windows, `--out TOKENS.JSON` remplace `tokens.json` et rend 0 | identité du fichier | `560e6ca` |
+| `--out` vers un dossier, écriture qui échoue | trace de Node, fichier provisoire laissé | code 2, fichier provisoire retiré | `560e6ca` |
+| axe au nom de l'axe d'extension d'un autre | export sans constat, feuille refusée | extensions écartées sous constat | `35906e3` |
+| deux tokens au même nom CSS, nom réservé aux intermédiaires | export sans constat, feuille refusée | constat, tokens gardés | `35906e3` |
+
+Tests gardés : `packages/kit/tests/modes-tokens-aleatoire.test.mjs` et
+`packages/plugin/tests/exportAccepteParLaCli.test.ts`.
+
+### Risques restants
+
+- Un cycle d'alias qu'une surcharge d'extension ferme passe l'export sans
+  constat, puis `ucm tokens css` le refuse. Le plugin ne lit pas `cyclesActifs`.
+  Un fichier Enterprise réel dira si Figma accepte ce cycle.
+- Le coût de `cyclesActifs` suit le nombre de cycles fois la taille de la
+  composante. Une chaîne de 4 000 feuilles où chaque paire forme un cycle
+  inactif coûte 6,1 s, et la borne de 10 000 cycles s'applique au-delà. Aucun
+  fichier de tokens mesuré ne présente cette forme.
+- Un groupe de tokens imbriqué sur 8 000 niveaux épuise la pile de
+  `indexerTokensDtcg`. Un nom de variable Figma n'atteint pas cette profondeur.
+
 ## Annexe A. Ce que ce plan reprend du plan courant
 
 Recopié du commit `7226eee` et adapté à la forme de la section 3 : le
