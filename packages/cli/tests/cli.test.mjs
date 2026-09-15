@@ -639,6 +639,17 @@ test("init refuse un argument inconnu, une valeur manquante et un chemin qui rem
   }
 });
 
+test("ucm icons sur un repository neuf, sans dossier de contrats, ne réclame aucune icône", () => {
+  const racine = repoVierge();
+  try {
+    const lignes = [];
+    assert.equal(executer(["icons"], { racine, ecrire: (texte) => lignes.push(texte) }), 0);
+    assert.match(lignes.join("\n"), /Aucune icône n'est réclamée/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
 test("--sans-agents n'écrit que les cinq fichiers de contrôle", () => {
   assert.equal(lireArgumentsInit(["--sans-agents", "--components", "src"]).sansAgents, true);
   assert.deepEqual(lireArgumentsInit(["--sans-agents", "--components", "src"]).chemins, { components: "src" });

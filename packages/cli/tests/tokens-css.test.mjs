@@ -317,6 +317,12 @@ test("sans fichier de tokens, un contrat qui cite un token refuse la commande ; 
   assert.match(vide.css, /ne déclare rien/);
 });
 
+test("un repository neuf, sans dossier de contrats ni fichier de tokens, reçoit la feuille vide", () => {
+  const vierge = lancer({});
+  assert.equal(vierge.code, 0, vierge.erreur);
+  assert.match(vierge.css, /ne déclare rien/);
+});
+
 test("l'attribut d'un axe vient de la configuration, et une clé qui ne nomme aucun axe est refusée", () => {
   const nomme = lancer({ tokens: DEUX_AXES, configuration: { modes: { theme: "data-mode" } } });
   assert.equal(nomme.code, 0);

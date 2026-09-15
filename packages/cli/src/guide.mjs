@@ -26,13 +26,13 @@ import {
   contextesDesAxes,
   lireConfiguration,
   messagesDExport,
-  trouverContrats,
   validerGrapheDesContrats,
   verdictDeVersion,
   vueExacteDuVariant,
 } from "@ucm-kit/core/lecteurs";
 
 import { avertissements, catalogueDesAides } from "./aides.mjs";
+import { contratsDuDossier } from "./contrats.mjs";
 import { conventionsLesPlusProches, lireConventions } from "./conventions.mjs";
 import { attributsDesAxes } from "./tokens-css.mjs";
 
@@ -346,7 +346,7 @@ function modesDuContrat(contrat, contratsParNom, racine, configuration) {
 
 /** Lit les contrats du repository ; le contrat visé est toujours du lot. */
 function documentsDuRepository(racine, configuration, cible) {
-  const chemins = trouverContrats(join(racine, configuration.components)).map((chemin) => resolve(chemin));
+  const chemins = contratsDuDossier(join(racine, configuration.components)).map((chemin) => resolve(chemin));
   if (!chemins.includes(cible)) chemins.push(cible);
   const documents = [];
   for (const chemin of chemins) {
