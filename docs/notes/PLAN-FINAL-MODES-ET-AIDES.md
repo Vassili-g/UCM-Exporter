@@ -1014,6 +1014,21 @@ signaler des pins en désaccord par `ucm guide`, et réclamer la dépendance par
 `ucm init`. Un chemin d'archive, un lien ou un espace de travail ne se comparent
 plus, depuis `@ucm-kit/cli` 0.1.35.
 
+## 15. Relevé L10 : modes fixés, premier fichier
+
+Relevé en lecture seule par le serveur MCP Figma, sur le fichier « UCM Tests -
+Tokens » : pages `Accueil` et `LAB`, huit collections locales.
+
+| Question | Réponse |
+|---|---|
+| composants publiés | aucun : le fichier porte les variables, les composants sont dans « UCM Tests - Composants » |
+| calques à modes fixés | deux instances `.sizeWrapperButton` de la page `LAB`, hors de tout composant, sur une collection de bibliothèque |
+| variables à plusieurs modes | les 10 variables `COLOR` de « Color Brand Tokens » |
+| variables `BOOLEAN` ou `STRING` à plusieurs modes liées à `visible` ou `characters` | aucune |
+
+Aucun cas de ce fichier ne relève de la section 5.1. Le relevé des composants
+publiés reste à faire sur « UCM Tests - Composants ».
+
 ## Annexe A. Ce que ce plan reprend du plan courant
 
 Recopié du commit `7226eee` et adapté à la forme de la section 3 : le
