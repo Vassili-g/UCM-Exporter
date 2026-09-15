@@ -208,9 +208,6 @@ declare module "@ucm-kit/core/lecteurs" {
   /** Le nombre de cycles énumérés au-delà duquel `cyclesActifs` s'arrête. */
   export const BORNE_DES_CYCLES: number;
 
-  /** Le nom du contexte des collections étendues d'un axe. */
-  export function axeDesExtensions(axe: string): string;
-
   /** L'état des modes d'un document, ses axes et ce qui l'empêche d'être complet. Ne lève jamais. */
   export function axesDeTokens(document: unknown): {
     etat: "sans-modes" | "anterieur" | "incoherent" | "axe-ecarte" | "complet";

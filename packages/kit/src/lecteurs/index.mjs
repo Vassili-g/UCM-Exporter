@@ -62,7 +62,6 @@ export {
 /** Les axes de modes du fichier de tokens, sans CSS. */
 export {
   BORNE_DES_CYCLES,
-  axeDesExtensions,
   axesDeTokens,
   axesDuContrat,
   conesDesAxes,

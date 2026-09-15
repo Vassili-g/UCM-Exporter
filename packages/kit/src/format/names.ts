@@ -79,3 +79,21 @@ export function tokenCssVariable(path: string): string {
 export function attributDeMode(axe: string): string {
   return `data-${tokenCssVariable(axe).slice(2)}`;
 }
+
+/**
+ * Le nom de l'axe que forment les collections étendues d'un axe. La feuille CSS
+ * des tokens le déclare à côté des axes de `com.ucm.axes`, si bien qu'un axe
+ * déclaré sous ce nom entre en collision avec lui.
+ *
+ * @example axeDesExtensions('color') // → 'color-extensions'
+ */
+export function axeDesExtensions(axe: string): string {
+  return `${axe}-extensions`;
+}
+
+/**
+ * Le début des propriétés que la feuille CSS des tokens fabrique pour les
+ * collections étendues. Un token dont la propriété commence ainsi rend la
+ * feuille impossible à générer.
+ */
+export const PREFIXE_DES_INTERMEDIAIRES = '--ucm-x-';

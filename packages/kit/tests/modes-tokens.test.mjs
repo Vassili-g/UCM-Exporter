@@ -6,9 +6,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { axeDesExtensions } from "@ucm-kit/core/format";
 import {
   BORNE_DES_CYCLES,
-  axeDesExtensions,
   axesDeTokens,
   axesDuContrat,
   conesDesAxes,
@@ -291,6 +291,20 @@ test("un cycle dans un seul mode, par une feuille sans axe ou sur elle-même est
 
   const surElleMeme = documentAvec(undefined, { libre: { x: alias("{libre.x}") } });
   assert.deepEqual(cyclesActifs(surElleMeme, []).cycles, [["libre.x", "libre.x"]]);
+});
+
+test("un cycle de vingt mille feuilles se trouve sans épuiser la pile d'appels", () => {
+  const taille = 20_000;
+  const groupe = {};
+  for (let rang = 0; rang < taille; rang += 1) groupe[`t${rang}`] = alias(`{groupe.t${(rang + 1) % taille}}`);
+  const { cycles, interrompue } = cyclesActifs(documentAvec(undefined, { groupe }), []);
+  assert.equal(interrompue, false);
+  assert.equal(cycles.length, 1);
+  assert.equal(cycles[0].length, taille + 1);
+
+  // Une chaîne longue qui ne se referme pas n'a aucun cycle.
+  delete groupe[`t${taille - 1}`];
+  assert.deepEqual(cyclesActifs(documentAvec(undefined, { groupe }), []), { cycles: [], interrompue: false });
 });
 
 /** Une collection `color` étendue par `marque-b`, que `sous-marque` étend à son tour. */

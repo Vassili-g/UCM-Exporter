@@ -55,7 +55,14 @@ export type {
   TokenDeDocument,
   ValeurDeToken,
 } from './tokens.js';
-export { attributDeMode, codeIdentifier, normalizeName, tokenCssVariable } from './names.js';
+export {
+  PREFIXE_DES_INTERMEDIAIRES,
+  attributDeMode,
+  axeDesExtensions,
+  codeIdentifier,
+  normalizeName,
+  tokenCssVariable,
+} from './names.js';
 export { estStyleItalique, nomsDeGraisseConnus, poidsDeGraisse } from './typography.js';
 export { TOKEN_REFERENCE, isTokenReference, refPath, toRef } from './references.js';
 export { comparerIdentiteDeContrat, identiteDeContrat } from './identite.js';

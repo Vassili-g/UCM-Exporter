@@ -260,7 +260,8 @@ La spécification en lien porte le raisonnement.
   trois dans `packages/kit/src/format/names.ts` : `normalizeName` va du chemin
   Figma au token, `codeIdentifier` du nom Figma à l'identifiant de code, et
   `tokenCssVariable` du token à la propriété personnalisée CSS ;
-  `attributDeMode` en dérive l'attribut HTML d'un axe de modes. Une projection
+  `attributDeMode` en dérive l'attribut HTML d'un axe de modes, et
+  `axeDesExtensions` le nom de l'axe de ses collections étendues. Une projection
   recopiée ailleurs est une faute : elle diverge sans produire d'erreur. Le
   chemin d'un token s'assemble dans `joinTokenPath` seul
   (`packages/plugin/src/variables.ts`) : collection et variable passent par
