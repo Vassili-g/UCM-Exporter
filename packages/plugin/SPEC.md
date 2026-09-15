@@ -544,16 +544,20 @@ nom normalisé en un segment, `/` devenant `-` ; sa parente est `base` quand
 `com.ucm.extensions` par la même mise en forme que les modes. Une extension dont
 le nom CSS (`tokenCssVariable`) est vide ou vaut `base`, deux extensions de même
 nom CSS ou une parente absente du fichier écartent toutes les extensions de
-l'axe sous un constat. Un axe à plusieurs modes reste publié ; une collection à
-un seul mode dont toutes les extensions sont écartées ne devient pas un axe.
+l'axe sous un constat. `ucm tokens css` déclare les extensions d'un axe sous
+`axeDesExtensions` : une collection dont le préfixe donne ce nom CSS écarte
+aussi ces extensions, sous un constat qui la nomme. Un axe à plusieurs modes
+reste publié ; une collection à un seul mode dont toutes les extensions sont
+écartées ne devient pas un axe.
 Une extension locale dont la racine est dans une bibliothèque surcharge des
 variables absentes du fichier : un constat par collection distante nomme ses
 extensions.
 
 Ce qui reste à mesurer sur un fichier Enterprise réel : la collection que
 `variableCollectionId` désigne pour une variable héritée, les clés que rend
-`valuesByModeForCollectionAsync`, et ce que l'API rend pour une extension de
-bibliothèque. La décision de type d'une graisse et d'une famille ne lit pas les
+`valuesByModeForCollectionAsync`, ce que l'API rend pour une extension de
+bibliothèque, et si Figma accepte une surcharge qui ferme un cycle d'alias.
+Le plugin ne détecte pas ce cycle ; `ucm tokens css` le refuse. La décision de type d'une graisse et d'une famille ne lit pas les
 surcharges : un nom de graisse que seule une surcharge porte reste la chaîne de
 Figma, sous un constat qui nomme la collection étendue et le mode.
 
@@ -565,6 +569,12 @@ pour une surcharge, et la cible, et dit le type de chacune
 en mots de designer, « une longueur » ou « un nombre sans unité ». L'axe reste
 publié, puisque la faute porte sur une liaison que le designer corrige dans
 Figma.
+
+**Un nom que la feuille CSS refuse se constate aussi après l'arbre.** Deux
+tokens dont `tokenCssVariable` rend la même propriété, et un token dont la
+propriété commence par `PREFIXE_DES_INTERMEDIAIRES`, restent dans le fichier.
+`ucm tokens css` refuse pourtant d'en écrire la feuille : un constat nomme les
+variables et leurs tokens.
 
 ---
 

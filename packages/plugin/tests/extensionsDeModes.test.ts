@@ -5,7 +5,8 @@
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { axesDeTokens, valeurDansLeContexte } from '@ucm-kit/core/lecteurs';
+import { tokenCssVariable } from '@ucm-kit/core/format';
+import { axesDeTokens, contextesDesAxes, valeurDansLeContexte } from '@ucm-kit/core/lecteurs';
 
 import { etatDesTokensDuFichier, modeCollisionWarnings } from '../src/tokens/exportTokens';
 import { alias, collection, exporterLeFichier, extension, rgba, variable } from './fichierDeVariables';
@@ -158,6 +159,38 @@ test('deux extensions dont les noms donnent le même nom CSS, ou un nom CSS base
   const couleur = collection('couleur', 'Color', ['Light', 'Dark']);
   const voisines = ['Marque B', 'Marque C'].map((nom, rang) => extension(`e${rang}`, nom, couleur, couleur, { fond: { 1: bleu } }));
   const voisin = await exporter([couleur, ...voisines], [variable(couleur, 'fond', 'surface', 'COLOR', [blanc, noir])]);
+  assert.deepEqual(voisin.warnings, []);
+});
+
+test('une collection dont le préfixe est le nom des extensions d’un axe écarte ces extensions sous un constat', async () => {
+  const exporterAvec = (racine: VariableCollection, nomRivale: string) => {
+    const rivale = collection('rivale', nomRivale, ['A', 'B']);
+    const variables = [
+      variable(racine, 'fond', 'surface', 'COLOR', racine.modes.map(() => blanc)),
+      variable(rivale, 'x', 'x', 'COLOR', [blanc, noir]),
+    ];
+    const marque = extension('marque', 'Marque B', racine, racine, { fond: { 0: bleu } });
+    return exporter([racine, rivale, marque], variables);
+  };
+
+  const multiple = await exporterAvec(collection('couleur', 'Color', ['Light', 'Dark']), 'Color Extensions');
+  assert.deepEqual(multiple.warnings, [
+    'Collection « Color Extensions » : son nom donne le préfixe « color-extensions », que le fichier de tokens '
+      + 'réserve aux collections étendues de « Color ». Le développeur ne pourra pas générer les extensions de la '
+      + 'collection « Color ». Renommez la collection « Color Extensions », puis réexportez.',
+  ]);
+  assert.deepEqual(multiple.tokens.$extensions['com.ucm.axes'].color, { modes: ['light', 'dark'], default: 'light' });
+  assert.equal(multiple.tokens.color.surface.$extensions['com.ucm.extensions'], undefined);
+  const lu = axesDeTokens(multiple.tokens);
+  assert.equal(lu.etat, 'complet');
+  const proprietes = contextesDesAxes(multiple.tokens, lu.axes).map(({ nom }) => tokenCssVariable(nom));
+  assert.equal(new Set(proprietes).size, proprietes.length, 'deux axes donneraient le même attribut');
+
+  const seul = await exporterAvec(collection('theme', 'Theme', ['Default']), 'Theme_Extensions');
+  assert.equal(seul.warnings.length, 1);
+  assert.equal(seul.tokens.theme.surface.$extensions, undefined, 'la collection à un seul mode n’est plus un axe');
+
+  const voisin = await exporterAvec(collection('couleur', 'Color', ['Light', 'Dark']), 'Color Brand');
   assert.deepEqual(voisin.warnings, []);
 });
 

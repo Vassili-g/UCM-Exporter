@@ -23,7 +23,7 @@ import type { ExportContext } from '../src/tokens/exportTokens';
 import { collisionWarnings, indexVariables, VariableNameResolver } from '../src/variables';
 import { phraseDe } from '../src/contract/localisation';
 import { serializeJson } from '../src/contract/serializeJson';
-import { exporterLeFichier, fichierDeVariables } from './fichierDeVariables';
+import { collection, exporterLeFichier, fichierDeVariables, variable } from './fichierDeVariables';
 import type { ProfilColorimetrique } from './fichierDeVariables';
 
 test('dtcgType mappe les types Figma, dimension vs number selon le groupe', () => {
@@ -518,6 +518,33 @@ test('un alias reste une référence, dans chaque mode, et chaque mode a la form
   });
   assert.equal(tokens.semantic.spacing.chain.$value, '{brand-tokens.radius.base}');
   assert.deepEqual(tokens.keys.value.primary.$extensions['com.ucm.modes'].__proto__, { value: 2, unit: 'px' });
+});
+
+test('deux tokens au même nom CSS, ou un token au nom réservé aux extensions, sont nommés et restent dans le fichier', async () => {
+  const exporter = async (nomDeCollection: string, noms: string[]) => {
+    const proprietaire = collection('proprietaire', nomDeCollection, ['Mode 1']);
+    const variables = noms.map((nom, rang) => variable(proprietaire, `v${rang}`, nom, 'FLOAT', [rang]));
+    const exporte = await exporterLeFichier({ fichier: { collections: [proprietaire], variables, textStyles: [] } });
+    return { tokens: JSON.parse(exporte.content), warnings: exporte.warnings };
+  };
+
+  const homonymes = await exporter('Opacity', ['x_y', 'x-y']);
+  assert.deepEqual(homonymes.warnings, [
+    'Variables « x_y » et « x-y » : leurs tokens « opacity.x_y » et « opacity.x-y » portent le même nom dans la '
+      + 'feuille CSS. Le développeur ne pourra pas générer la feuille CSS des tokens. Renommez l’une des deux, '
+      + 'puis réexportez.',
+  ]);
+  assert.deepEqual(Object.keys(homonymes.tokens.opacity), ['x_y', 'x-y']);
+
+  const reserve = await exporter('UCM', ['x/fond']);
+  assert.deepEqual(reserve.warnings, [
+    'Variable « x/fond » : son token « ucm.x.fond » commence par un nom que la feuille CSS réserve aux collections '
+      + 'étendues. Le développeur ne pourra pas générer la feuille CSS des tokens. Renommez la variable ou sa '
+      + 'collection, puis réexportez.',
+  ]);
+
+  assert.deepEqual((await exporter('Opacity', ['x_y', 'x-z'])).warnings, []);
+  assert.deepEqual((await exporter('UCM', ['y/fond'])).warnings, []);
 });
 
 test('le résultat annonce le module et la version lus dans le fichier produit', async () => {

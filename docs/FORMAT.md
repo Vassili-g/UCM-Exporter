@@ -1586,9 +1586,10 @@ mode `m`, sa valeur est la première surcharge trouvée en remontant `e` et ses
 parentes jusqu'à `base`, puis `com.ucm.modes[m]`. Elle reste un alias quand la
 surcharge en est un. Un nom d'extension tient en un segment. Son nom CSS, que
 `tokenCssVariable` en tire, n'est ni vide, ni `base`, ni celui d'une autre
-extension du même axe : une variable CSS intermédiaire le porte. L'extension
-locale d'une collection de bibliothèque n'est pas publiée, et l'export le dit au
-designer.
+extension du même axe : une variable CSS intermédiaire le porte. Les extensions
+d'un axe forment dans la feuille CSS l'axe `<axe>-extensions`, et aucun axe du
+fichier ne donne ce nom CSS. L'extension locale d'une collection de bibliothèque
+n'est pas publiée, et l'export le dit au designer.
 
 Un lecteur juge les cycles d'alias par contexte : un cycle ne compte que si un
 même contexte réalise toutes ses arêtes. Au-delà de 10 000 cycles énumérés, la
