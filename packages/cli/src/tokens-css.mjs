@@ -187,6 +187,64 @@ function valeurDans(variable, contexte) {
   return variable.propres.get(contexte) ?? variable.base;
 }
 
+/** Le début d'une phrase de refus : la feuille, et le mode et l'extension de la valeur. */
+function lieuDeLaValeur(chemin, mode, extension) {
+  if (mode === undefined) return `La feuille « ${chemin} »`;
+  return `La feuille « ${chemin} », en mode « ${mode} »${extension ? ` de l'extension « ${extension} »` : ""},`;
+}
+
+/**
+ * Les refus du graphe d'alias d'un document déjà lu : une cible absente, un
+ * mode ou une surcharge qui cite une feuille d'un autre type, un cycle actif,
+ * et l'arrêt de l'analyse des cycles à sa borne.
+ *
+ * `axes` porte les axes à générer, tels qu'`axesDeTokens` les rend. Une feuille
+ * d'un de ces axes est lue dans chaque mode et chaque surcharge, toute autre
+ * feuille dans sa `$value`. `ucm guide` pose la même question que la feuille.
+ */
+export function refusDuGrapheDesTokens(document, axes = []) {
+  const index = indexerTokensDtcg(document);
+  const refus = [];
+  const proprietaire = new Map();
+  for (const axe of axes) for (const chemin of axe.feuilles) proprietaire.set(chemin, axe);
+
+  const juger = (chemin, feuille, valeur, mode, extension) => {
+    const cible = cheminDeReference(valeur);
+    if (cible === null) return;
+    const ou = lieuDeLaValeur(chemin, mode, extension);
+    if (!index.has(cible)) {
+      refus.push(`${ou} cite « ${cible} », absente du fichier de tokens.`);
+    } else if (mode !== undefined && index.get(cible).$type !== feuille.$type) {
+      refus.push(`${ou} cite « ${cible} », de type « ${index.get(cible).$type} » et non « ${feuille.$type} ».`);
+    }
+  };
+
+  for (const [chemin, feuille] of index) {
+    const axe = proprietaire.get(chemin);
+    if (!axe) {
+      juger(chemin, feuille, feuille.$value);
+      continue;
+    }
+    const modes = feuille.$extensions["com.ucm.modes"];
+    for (const mode of axe.modes) juger(chemin, feuille, modes[mode], mode);
+    const surcharges = feuille.$extensions["com.ucm.extensions"] ?? {};
+    for (const extension of Object.keys(axe.extensions ?? {})) {
+      if (!possede(surcharges, extension)) continue;
+      for (const mode of axe.modes) {
+        if (possede(surcharges[extension], mode)) juger(chemin, feuille, surcharges[extension][mode], mode, extension);
+      }
+    }
+  }
+
+  const { cycles, interrompue } = cyclesActifs(document, axes);
+  if (interrompue) {
+    refus.push("L'analyse des cycles d'alias s'est arrêtée à sa borne : la commande ne peut pas "
+      + "établir qu'aucun cycle n'est actif.");
+  }
+  for (const cycle of cycles) refus.push(`Cycle d'alias : ${cycle.join(" → ")}.`);
+  return refus;
+}
+
 /**
  * La feuille d'un document de tokens déjà lu, sans en-tête ni écriture.
  *
@@ -247,28 +305,16 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
 
   /** Le texte CSS d'une valeur, ou `null` quand elle ne se déclare pas. */
   const texteDe = (chemin, feuille, valeur, mode, extension) => {
-    const ou = mode === undefined
-      ? `La feuille « ${chemin} »`
-      : `La feuille « ${chemin} », en mode « ${mode} »${extension ? ` de l'extension « ${extension} »` : ""},`;
+    const ou = lieuDeLaValeur(chemin, mode, extension);
     // Sans déclaration, la propriété hériterait de la valeur d'un contexte
     // englobant. `initial` la rend absente, et le repli d'un `var()` s'applique.
     if (valeur === null || valeur === undefined) {
       notes.push(`${ou} n'a pas de valeur : elle se déclare initial, qu'un var() lit comme une valeur absente.`);
       return "initial";
     }
+    // Une cible absente ou d'un autre type se refuse dans `refusDuGrapheDesTokens`.
     const cible = cheminDeReference(valeur);
-    if (cible !== null) {
-      if (!index.has(cible)) {
-        refus.push(`${ou} cite « ${cible} », absente du fichier de tokens.`);
-        return null;
-      }
-      const typeCible = index.get(cible).$type;
-      if (mode !== undefined && typeCible !== feuille.$type) {
-        refus.push(`${ou} cite « ${cible} », de type « ${typeCible} » et non « ${feuille.$type} ».`);
-        return null;
-      }
-      return `var(${tokenCssVariable(cible)})`;
-    }
+    if (cible !== null) return `var(${tokenCssVariable(cible)})`;
     const texte = litteral(feuille.$type, valeur, repliDeFamille);
     if (texte === null) refus.push(`${ou} porte une valeur que le type « ${feuille.$type} » ne décrit pas.`);
     return texte;
@@ -328,12 +374,7 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
     variables.push({ nom, axe: axeDesExtensions(axe.nom), base: `var(${intermediaire("base")})`, propres });
   }
 
-  const { cycles, interrompue } = cyclesActifs(document, axes);
-  if (interrompue) {
-    refus.push("L'analyse des cycles d'alias s'est arrêtée à sa borne : la commande ne peut pas "
-      + "établir qu'aucun cycle n'est actif.");
-  }
-  for (const cycle of cycles) refus.push(`Cycle d'alias : ${cycle.join(" → ")}.`);
+  refus.push(...refusDuGrapheDesTokens(document, axes));
 
   if (refus.length > 0) return { css: "", refus, notes };
 
@@ -460,7 +501,7 @@ function contratsQuiCitentDesTokens(racine, dossierComponents) {
  * porte sur l'identité du fichier : sous Windows et macOS, `TOKENS.JSON` et
  * `tokens.json` sont deux chaînes pour un seul fichier.
  */
-function memeFichier(chemin, autre) {
+export function memeFichier(chemin, autre) {
   if (chemin === autre) return true;
   try {
     const premier = statSync(chemin, { bigint: true });

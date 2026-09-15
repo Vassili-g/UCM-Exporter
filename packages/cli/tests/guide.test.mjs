@@ -3,7 +3,7 @@
  * contrat `Badge`. Chaque cas monte ses conventions, ses tokens et ses pins.
  */
 import assert from "node:assert/strict";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
@@ -21,6 +21,7 @@ function contrat(nom, { dependances = [], version = "13.0", tokens = {}, strokes
     viewStructures: {
       st1: {
         layout: "flex-row",
+        sizing: { width: "fit-content", height: "fit-content" },
         children: [...dependances.map((dependance) => ({ slot: dependance.toLowerCase(), composes: dependance })), { slot: "label" }],
       },
     },
@@ -31,6 +32,13 @@ function contrat(nom, { dependances = [], version = "13.0", tokens = {}, strokes
     structure: { view: "st1", variantAxes: ["tone"] },
     rendering: { roles: {} },
   };
+  const placements = Object.fromEntries([["fills", tokens], ["strokes", strokes ?? {}]]
+    .filter(([, feuille]) => Object.keys(feuille).length > 0)
+    .map(([champ, feuille]) => [champ, Object.fromEntries(Object.keys(feuille).map((cle) => [cle, [[]]]))]));
+  if (Object.keys(placements).length > 0) {
+    valeur.viewPaintPlacements = { pp1: placements };
+    valeur.variantViews.v1.paintPlacements = "pp1";
+  }
   if (composes.length > 0) {
     valeur.viewComposes = { co1: composes };
     valeur.variantViews.v1.composes = "co1";
@@ -102,7 +110,7 @@ test("une aide ne s'imprime que si sa caractéristique est présente", () => {
 
   const avecContour = lancer({
     ...DEUX_CONTRATS,
-    [CARTE]: contrat("Carte", { dependances: ["Badge"], strokes: { ring: { color: "{x}", align: "outside" } } }),
+    [CARTE]: contrat("Carte", { dependances: ["Badge"], strokes: { ring: { color: "{couleurs.x}", width: "{espace.contour}", align: "outside" } } }),
   });
   assert.notEqual(sectionDAide(avecContour.sortie, "contour-ring"), null);
 });
@@ -234,6 +242,116 @@ test("un fichier de tokens aux modes incohérents rend 1", () => {
   const { code, erreur } = lancer({ ...DEUX_CONTRATS, "tokens.json": incoherent });
   assert.equal(code, 1);
   assert.match(erreur, /déclare des modes incohérents/);
+});
+
+test("un contrat rangé hors du dossier de contrats, qui n'existe pas encore, se guide", () => {
+  const { code, sortie, erreur } = lancer({ "brouillon/Badge.contract.json": contrat("Badge") }, ["brouillon/Badge.contract.json"]);
+  assert.equal(code, 0, erreur);
+  assert.match(sortie, /^# Guide d'implémentation : Badge\n/);
+});
+
+test("une dépendance indirecte manquante rend 1 ; un contrat sans rapport en faute ne bloque pas", () => {
+  const indirecte = lancer({ [CARTE]: contrat("Carte", { dependances: ["Badge"] }), [BADGE]: contrat("Badge", { dependances: ["Icone"] }) });
+  assert.equal(indirecte.code, 1);
+  assert.match(indirecte.erreur, /components\/Badge\/Badge\.contract\.json : La dépendance « Icone » n’a aucun contrat local/);
+
+  const sansRapport = lancer({ ...DEUX_CONTRATS, "components/Autre/Autre.contract.json": contrat("Autre", { dependances: ["Absent"] }) });
+  assert.equal(sansRapport.code, 0, sansRapport.erreur);
+});
+
+test("un objet qui n'a pas la forme d'un contrat rend 2 et nomme ses champs", () => {
+  const { code, sortie, erreur } = lancer({ [CARTE]: { meta: { contractVersion: "13.0" } } });
+  assert.equal(code, 2);
+  assert.equal(sortie, "");
+  assert.match(erreur, /n'a pas la forme d'un contrat 13\.0 : name, /);
+});
+
+/** Un fichier de tokens où `theme.fond` porte `modes`, `x` une couleur et `n` un nombre. */
+function tokensDuFond(modes, x = { $type: "color", $value: 3 }) {
+  return {
+    $extensions: { "com.ucm.formatVersion": 2, "com.ucm.axes": { theme: { modes: ["light", "dark"], default: "light" } } },
+    theme: { fond: { $type: "color", $value: "{x}", $extensions: { "com.ucm.axis": "theme", "com.ucm.modes": modes } } },
+    x,
+    n: { $type: "number", $value: 1 },
+  };
+}
+
+test("un alias de token vers une feuille absente, vers un autre type ou en cycle rend 1", () => {
+  const avec = (tokens) => lancer({
+    ...DEUX_CONTRATS,
+    [CARTE]: contrat("Carte", { dependances: ["Badge"], tokens: { background: "{theme.fond}" } }),
+    "tokens.json": tokens,
+  });
+
+  const absente = avec(tokensDuFond({ light: "{absente}", dark: "{x}" }));
+  assert.equal(absente.code, 1);
+  assert.match(absente.erreur, /« theme\.fond », en mode « light », cite « absente », absente du fichier de tokens/);
+
+  const autreType = avec(tokensDuFond({ light: "{x}", dark: "{n}" }));
+  assert.equal(autreType.code, 1);
+  assert.match(autreType.erreur, /de type « number » et non « color »/);
+
+  const cycle = avec(tokensDuFond({ light: "{x}", dark: 2 }, { $type: "color", $value: "{theme.fond}" }));
+  assert.equal(cycle.code, 1);
+  assert.match(cycle.erreur, /Cycle d'alias : /);
+
+  assert.equal(avec(tokensDuFond({ light: "{x}", dark: "{x}" })).code, 0);
+});
+
+test("deux axes qui partagent un attribut ne demandent aucun contexte que cet attribut ne sait pas poser", () => {
+  const feuilleDe = (axe, modes = { light: 1, dark: 2 }) => ({ $type: "number", $value: 1, $extensions: { "com.ucm.axis": axe, "com.ucm.modes": modes } });
+  const tokens = (defautDeB) => ({
+    $extensions: {
+      "com.ucm.formatVersion": 2,
+      "com.ucm.axes": { a: { modes: ["light", "dark"], default: "light" }, b: { modes: ["light", "dark"], default: defautDeB } },
+    },
+    g: { b: feuilleDe("b"), croise: feuilleDe("a", { light: "{g.b}", dark: 3 }) },
+  });
+  const contextes = (defautDeB) => {
+    const { code, sortie } = lancer({
+      ...DEUX_CONTRATS,
+      [CARTE]: contrat("Carte", { dependances: ["Badge"], tokens: { background: "{g.croise}" } }),
+      "tokens.json": tokens(defautDeB),
+      "ucm.config.json": { modes: { a: "data-theme", b: "data-theme" } },
+    });
+    assert.equal(code, 0);
+    return sortie.slice(sortie.indexOf("Contextes à vérifier :"), sortie.indexOf("## Taille de ce guide"));
+  };
+
+  assert.equal(contextes("dark"), "Contextes à vérifier :\n\n- le contexte par défaut\n- `data-theme=\"dark\"`\n- `data-theme=\"light\"`\n\n");
+  assert.equal(contextes("light"), "Contextes à vérifier :\n\n- le contexte par défaut\n- `data-theme=\"dark\"`\n\n");
+});
+
+test("--out refuse chaque fichier que la commande lit, un contrat et un dossier, sans rien écrire", () => {
+  const racine = repository({
+    ...DEUX_CONTRATS,
+    "tokens.json": tokensDuFond({ light: "{x}", dark: "{x}" }),
+    ".ucm/conventions.md": "Stack.\n",
+  });
+  try {
+    const lus = [CARTE, BADGE, "tokens.json", ".ucm/conventions.md", "ucm.config.json"];
+    const avant = lus.map((chemin) => readFileSync(join(racine, chemin), "utf8"));
+    const erreurs = [];
+    const lancerIci = (out) => guide([CARTE, "--out", out], { racine, ecrire: () => {}, alerter: (texte) => erreurs.push(texte) });
+
+    for (const out of ["tokens.json", BADGE, ".ucm/conventions.md", "components/Carte/Nouveau.contract.json"]) {
+      assert.equal(lancerIci(out), 2, out);
+    }
+    // Sous Windows et macOS, une autre casse désigne le même fichier. Ailleurs
+    // c'est un autre fichier, que la commande a le droit d'écrire.
+    if (existsSync(join(racine, "TOKENS.JSON"))) {
+      assert.equal(lancerIci("TOKENS.JSON"), 2);
+      assert.equal(lancerIci(".UCM/CONVENTIONS.MD"), 2);
+      assert.equal(lancerIci("components/Carte/CARTE.CONTRACT.JSON"), 2);
+    }
+    assert.equal(lancerIci("components"), 2);
+    assert.match(erreurs.join("\n"), /--out désigne tokens\.json, que la commande lit/);
+    assert.match(erreurs.join("\n"), /--out désigne le dossier components/);
+    assert.deepEqual(lus.map((chemin) => readFileSync(join(racine, chemin), "utf8")), avant);
+    assert.equal(existsSync(join(racine, "components", "Carte", "Nouveau.contract.json")), false);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
 });
 
 test("--out écrit le guide et imprime sa taille ; une invocation fautive rend 2", () => {

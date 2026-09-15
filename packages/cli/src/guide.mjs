@@ -11,7 +11,7 @@
  * Codes : 0 guide rendu, 1 graphe de composition ou fichier de tokens
  * incohérent, 2 invocation, configuration ou contrat illisible.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
 import { NOM_CONFIGURATION, etatDuFormatDeTokens } from "@ucm-kit/core/format";
@@ -20,6 +20,7 @@ import {
   axesDeTokens,
   axesDuContrat,
   caracteristiquesDuContrat,
+  champsInvalidesDuContrat,
   compositionsExactesDuVariant,
   conesDesAxes,
   contextesDeVerification,
@@ -34,11 +35,18 @@ import {
 import { avertissements, catalogueDesAides } from "./aides.mjs";
 import { contratsDuDossier } from "./contrats.mjs";
 import { conventionsLesPlusProches, lireConventions } from "./conventions.mjs";
-import { attributsDesAxes } from "./tokens-css.mjs";
+import { attributsDesAxes, memeFichier, refusDuGrapheDesTokens } from "./tokens-css.mjs";
 
 export const USAGE_GUIDE = "ucm guide <contrat> [--out <fichier>]";
 
 const PROCEDURE = new URL("../procedure.md", import.meta.url);
+
+/** Les fichiers où un repository épingle `@ucm-kit/cli`, `package.json` à part. */
+const FICHIERS_EPINGLES = [
+  ".agents/skills/ucm-implementer/SKILL.md",
+  ".claude/skills/ucm-implementer/SKILL.md",
+  ".github/workflows/ucm.yml",
+];
 
 /** Les catalogues de second niveau, par partie de vue. */
 const CATALOGUES = {
@@ -258,11 +266,7 @@ function pinDans(texte) {
  */
 export function pinsEnDesaccord(racine) {
   const trouves = [];
-  for (const chemin of [
-    ".agents/skills/ucm-implementer/SKILL.md",
-    ".claude/skills/ucm-implementer/SKILL.md",
-    ".github/workflows/ucm.yml",
-  ]) {
+  for (const chemin of FICHIERS_EPINGLES) {
     const complet = join(racine, chemin);
     if (!existsSync(complet)) continue;
     const version = pinDans(readFileSync(complet, "utf8"));
@@ -311,6 +315,10 @@ function modesDuContrat(contrat, contratsParNom, racine, configuration) {
       cones: undefined,
     };
   }
+  const refus = refusDuGrapheDesTokens(document, axes);
+  if (refus.length > 0) {
+    return { refus: [`${configuration.tokens} ne forme pas un graphe d'alias cohérent :`, ...refus.map((ligne) => `  ${ligne}`)].join("\n") };
+  }
 
   const cones = conesDesAxes(document, axes);
   const generes = contextesDesAxes(document, axes);
@@ -322,11 +330,6 @@ function modesDuContrat(contrat, contratsParNom, racine, configuration) {
   if (touchants.length === 0) return { texte: "## Modes\n\nAucun axe de modes ne touche ce contrat.\n", cones };
 
   const axeParNom = new Map(generes.map((axe) => [axe.nom, axe]));
-  const selecteur = (contexte) => {
-    const entrees = Object.entries(contexte);
-    if (entrees.length === 0) return "le contexte par défaut";
-    return entrees.map(([nom, mode]) => `\`${attributs.get(nom)}="${mode}"\``).join(" et ");
-  };
   const lignes = [
     "## Modes",
     "",
@@ -337,11 +340,63 @@ function modesDuContrat(contrat, contratsParNom, racine, configuration) {
     "",
     "Contextes à vérifier :",
     "",
-    ...contextesDeVerification(touchants, touches.croisements.filter((couple) => couple.every((nom) => axeParNom.has(nom))))
-      .map((contexte) => `- ${selecteur(contexte)}`),
+    ...contextesPosables(
+      contextesDeVerification(touchants, touches.croisements.filter((couple) => couple.every((nom) => axeParNom.has(nom)))),
+      attributs,
+    ).map((ligne) => `- ${ligne}`),
     "",
   ];
   return { texte: lignes.join("\n"), cones };
+}
+
+/**
+ * Les contextes à vérifier, écrits en attributs. Deux axes qui partagent un
+ * attribut y prennent le même mode : un contexte qui leur en demande deux ne se
+ * pose sur aucun élément et disparaît, et deux contextes qui posent les mêmes
+ * attributs n'en font qu'un.
+ */
+function contextesPosables(contextes, attributs) {
+  const lignes = [];
+  for (const contexte of contextes) {
+    const poses = new Map();
+    const posable = Object.entries(contexte).every(([nom, mode]) => {
+      const attribut = attributs.get(nom);
+      if (poses.has(attribut) && poses.get(attribut) !== mode) return false;
+      poses.set(attribut, mode);
+      return true;
+    });
+    if (!posable) continue;
+    const ligne = poses.size === 0
+      ? "le contexte par défaut"
+      : [...poses].map(([attribut, mode]) => `\`${attribut}="${mode}"\``).join(" et ");
+    if (!lignes.includes(ligne)) lignes.push(ligne);
+  }
+  return lignes;
+}
+
+/**
+ * Les chemins du contrat visé et de ses dépendances transitives. Un nom que
+ * plusieurs contrats portent donne tous ces contrats.
+ */
+function cheminsDuGraphe(cible, documents) {
+  const parNom = new Map();
+  for (const document of documents) {
+    const nom = document.contrat?.name;
+    if (typeof nom === "string") parNom.set(nom, [...(parNom.get(nom) ?? []), document]);
+  }
+  const chemins = [cible];
+  const pile = documents.filter(({ chemin }) => chemin === cible);
+  while (pile.length > 0) {
+    const { contrat } = pile.pop();
+    for (const dependance of Array.isArray(contrat?.composes) ? contrat.composes : []) {
+      for (const document of parNom.get(dependance?.component) ?? []) {
+        if (chemins.includes(document.chemin)) continue;
+        chemins.push(document.chemin);
+        pile.push(document);
+      }
+    }
+  }
+  return chemins;
 }
 
 /** Lit les contrats du repository ; le contrat visé est toujours du lot. */
@@ -410,9 +465,19 @@ export function guide(arguments_, {
       : `${options.contrat} est en version ${contrat.meta?.contractVersion}, que cette CLI ne lit plus. Un designer doit réexporter le composant depuis Figma.`);
     return 2;
   }
+  const champs = champsInvalidesDuContrat(contrat);
+  if (champs.length > 0) {
+    alerter(`${options.contrat} n'a pas la forme d'un contrat ${contrat.meta.contractVersion} : ${champs.join(", ")} `
+      + "manquent ou sont mal formés. Un designer doit réexporter le composant depuis Figma.");
+    return 2;
+  }
 
   const documents = documentsDuRepository(racine, configuration, cible);
-  const fautes = validerGrapheDesContrats(documents).get(cible) ?? [];
+  // Une faute d'une dépendance, même indirecte, empêche de conclure sur ce
+  // contrat ; celle d'un contrat sans rapport ne le concerne pas.
+  const erreursDuGraphe = validerGrapheDesContrats(documents);
+  const fautes = cheminsDuGraphe(cible, documents).flatMap((chemin) => (erreursDuGraphe.get(chemin) ?? [])
+    .map((faute) => (chemin === cible ? faute : `${enSlash(relative(racine, chemin))} : ${faute}`)));
   if (fautes.length > 0) {
     alerter([`${options.contrat} ne forme pas un graphe de composition cohérent :`, ...fautes.map((faute) => `  ${faute}`)].join("\n"));
     return 1;
@@ -464,8 +529,19 @@ export function guide(arguments_, {
     return 0;
   }
   const destination = resolve(racine, options.out);
-  if (destination === cible || destination === resolve(racine, NOM_CONFIGURATION)) {
+  const lus = [
+    ...documents.map(({ chemin }) => chemin),
+    resolve(racine, NOM_CONFIGURATION),
+    resolve(racine, configuration.tokens),
+    ...(cheminConventions === null ? [] : [cheminConventions]),
+    ...[...FICHIERS_EPINGLES, "package.json"].map((chemin) => join(racine, chemin)),
+  ];
+  if (lus.some((lu) => memeFichier(destination, lu)) || destination.toLowerCase().endsWith(".contract.json")) {
     alerter(`--out désigne ${options.out}, que la commande lit : choisissez un fichier à part.`);
+    return 2;
+  }
+  if (existsSync(destination) && statSync(destination).isDirectory()) {
+    alerter(`--out désigne le dossier ${options.out} : nommez le fichier Markdown à écrire.`);
     return 2;
   }
   mkdirSync(dirname(destination), { recursive: true });

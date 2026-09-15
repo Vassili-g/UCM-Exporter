@@ -85,6 +85,27 @@ test("une section s'ouvre à ## hors d'un bloc de code, jamais à un titre setex
   assert.deepEqual([...sections.keys()], ["focus-clavier"]);
 });
 
+test("un bloc de code ne se ferme que sur une clôture du même caractère, au moins aussi longue", () => {
+  const { sections, anomalies } = lireConventions([
+    "## contour-ring",
+    "````markdown",
+    "```css",
+    "## focus-clavier",
+    "```",
+    "~~~",
+    "## focus-clavier",
+    "````",
+    "Écriture réelle.",
+  ].join("\n"), AIDES);
+  assert.deepEqual([...sections.keys()], ["contour-ring"]);
+  assert.match(sections.get("contour-ring").texte, /Écriture réelle\.$/);
+  assert.deepEqual(anomalies, []);
+
+  const apres = lireConventions("## contour-ring\n~~~~\n~~~\n## inconnue\n~~~~~\n## focus-clavier\nFocus.", AIDES);
+  assert.deepEqual([...apres.sections.keys()], ["contour-ring", "focus-clavier"]);
+  assert.deepEqual(apres.anomalies, []);
+});
+
 test("une ligne Contrôle ajoute ses commandes à la preuve, espace insécable compris, et quitte le texte", () => {
   const { controles, sections } = lireConventions([
     "Contrôle : `npm run typecheck`",

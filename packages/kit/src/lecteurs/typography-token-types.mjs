@@ -70,28 +70,46 @@ function ecartDeMode(chemin, feuille, index) {
   return null;
 }
 
-/**
- * Résout le type d'une chaîne d'alias, jamais sa valeur.
- *
- * La chaîne suit `$value`, donc le mode par défaut. Ce parcours n'est exact que
- * si chaque feuille traversée cite, dans tous ses modes et toutes ses
- * surcharges, des feuilles de son propre type : la première qui s'en écarte est
- * rendue dans `ecart`.
- */
-function parcourirChaine(reference, index) {
-  let chemin = cheminDeReference(reference);
+/** La feuille où finit la chaîne de `$value` partie de `chemin`, ou `null` sur une cible absente ou une boucle. */
+function racineDeLaChaine(chemin, index) {
   const vus = new Set();
   while (chemin && !vus.has(chemin)) {
     vus.add(chemin);
     const feuille = index.get(chemin);
-    if (!feuille) return { racine: null, ecart: null };
-    const ecart = ecartDeMode(chemin, feuille, index);
-    if (ecart) return { racine: feuille, ecart };
+    if (!feuille) return null;
     const cible = cheminDeReference(feuille.$value);
-    if (!cible) return { racine: feuille, ecart: null };
+    if (!cible) return feuille;
     chemin = cible;
   }
-  return { racine: null, ecart: null };
+  return null;
+}
+
+/**
+ * Résout le type d'une référence, jamais sa valeur.
+ *
+ * `racine` finit la chaîne de `$value`, donc du mode par défaut. Son type ne
+ * vaut dans tous les contextes que si chaque feuille atteignable par `$value`,
+ * un mode ou une surcharge cite des feuilles de son propre type. La première
+ * qui s'en écarte, dans l'ordre d'un parcours en largeur, est rendue dans
+ * `ecart`.
+ */
+function parcourirChaine(reference, index) {
+  const depart = cheminDeReference(reference);
+  const file = depart ? [depart] : [];
+  const vus = new Set(file);
+  for (let rang = 0; rang < file.length; rang += 1) {
+    const feuille = index.get(file[rang]);
+    if (!feuille) continue;
+    const ecart = ecartDeMode(file[rang], feuille, index);
+    if (ecart) return { racine: feuille, ecart };
+    const valeurs = [feuille.$value, ...valeursContextuelles(feuille).map(({ valeur }) => valeur)];
+    for (const cible of valeurs.map(cheminDeReference)) {
+      if (!cible || vus.has(cible)) continue;
+      vus.add(cible);
+      file.push(cible);
+    }
+  }
+  return { racine: racineDeLaChaine(depart, index), ecart: null };
 }
 
 /**
