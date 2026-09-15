@@ -303,7 +303,8 @@ function lignesRestantes(racine, version, configuration) {
   }
   if (manifeste !== null) {
     const epingle = manifeste.devDependencies?.["@ucm-kit/cli"] ?? manifeste.dependencies?.["@ucm-kit/cli"];
-    if (epingle !== version) {
+    // Une archive, un lien ou un espace de travail installent la CLI sans numéro à comparer.
+    if (epingle === undefined || (epingle !== version && !/^[a-z][a-z+]*:/i.test(epingle))) {
       lignes.push({ fichier: "package.json", ligne: `ajoutez \`"@ucm-kit/cli": "${version}"\` aux devDependencies.` });
     }
     const scripts = Object.values(manifeste.scripts ?? {}).join("\n");

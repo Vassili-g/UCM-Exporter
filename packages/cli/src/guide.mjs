@@ -271,7 +271,8 @@ export function pinsEnDesaccord(racine) {
   try {
     const manifeste = lireJson(join(racine, "package.json"));
     const version = manifeste.devDependencies?.["@ucm-kit/cli"] ?? manifeste.dependencies?.["@ucm-kit/cli"];
-    if (typeof version === "string") trouves.push({ chemin: "package.json", version });
+    // Une archive, un lien ou un espace de travail ne portent pas de numéro à comparer.
+    if (typeof version === "string" && !/^[a-z][a-z+]*:/i.test(version)) trouves.push({ chemin: "package.json", version });
   } catch {
     // Un repository sans package.json lisible n'épingle rien là.
   }
