@@ -11,8 +11,8 @@ next to the component's code. This command reads those files and says whether
 they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.33 init
-npx --yes @ucm-kit/cli@0.1.33 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.34 init
+npx --yes @ucm-kit/cli@0.1.34 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx install a build this
@@ -38,15 +38,17 @@ check`.
 | `ucm icons` | Lists the icons the contracts ask this repository to draw |
 | `ucm tokens css --out <file>` | Writes the CSS stylesheet of the tokens and their modes |
 | `ucm aides [<aide>]` | Lists the implementation guides, or prints one |
+| `ucm guide <contract>` | Prints what an agent reads before implementing that contract |
 | `ucm --help` | Prints the above |
 
-`ucm init` takes three options:
+`ucm init` takes four options:
 
 | Option | Effect |
 |---|---|
 | `--components <dir>` | The folder the contracts are stored under |
 | `--tokens <dir>` | The folder that holds `tokens.json` |
 | `--implementation <pattern>` | Where a contract's implementation lives |
+| `--sans-agents` | Writes neither the agent relays, nor `.ucm/conventions.md`, nor the templates |
 
 The first two take a folder, because a folder is what a repository arranges.
 `--tokens` appends the file name before writing it, so the `tokens` field of
@@ -60,7 +62,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.33 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.34 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -164,22 +166,46 @@ writing. `ucm aides` reports an unknown title, a duplicate section, a
 a path applies, searching up to the folder that holds `ucm.config.json`, never
 above the repository.
 
-Two lines are reserved for `ucm guide`, which is not released yet: a
-`Contrôle :` line, whose command will be added to the proof, and
-`ecritures-par-defaut: non` on the first line, which will print meanings only.
-The current commands read neither.
+A `Contrôle :` line adds its commands, between backticks, to the proof of the
+guide. `ecritures-par-defaut: non` on the first line prints meanings only, for a
+repository that writes no CSS.
 
 `ucm aides <aide> --personnaliser [<path>]` appends that guide's section, with
 its default writing to edit, to the closest conventions file. `composant` has no
 section, and the command refuses it. The marker records the version and a
 fingerprint of the copied writing: when the default writing changes, `ucm aides`
-names the section to read again, and a marker without a fingerprint is named as
-well. An existing section is never overwritten.
+and `ucm guide` name the section to read again, and a marker without a
+fingerprint is named as well. An existing section is never overwritten.
+
+## The guide of a contract
+
+`ucm guide <contract> [--out <file>]` prints, in one Markdown document:
+
+1. what to read again first: conventions anomalies, copied sections whose
+   default writing changed, and `@ucm-kit/cli` pins that differ between the two
+   relays, the workflow and `package.json`;
+2. the procedure, `procedure.md`;
+3. the text before the first section of the closest conventions file;
+4. the contract: its meta, props, structure, states, intent, rendering, variants
+   with their view reference, each view and catalog entry once, the icons, text
+   styles and binding definitions in use, and the props and samples of each
+   dependency;
+5. each guide the contract's characteristics use, with the repository's section
+   or the default writing, and the proof;
+6. the anchors the conventions leave open, as questions for a developer;
+7. the mode axes that reach the contract, their attributes, and the contexts to
+   check;
+8. the icons the contract asks for, then the size of each part.
+
+The command exits with `1` when the composition graph or the token file is
+inconsistent, and with `2` for an invocation, a configuration or a contract it
+cannot read, a contract version outside its reading window included.
 
 ## What `ucm init` writes
 
-Five files. The command explains each one as it writes it. An existing file is
-kept as it is, and the command names what it left alone.
+Five control files, then what an agent needs, unless `--sans-agents` is passed.
+The command explains each one as it writes it. An existing file is kept as it
+is, and the command names what it left alone.
 
 | File | Why |
 |---|---|
@@ -188,8 +214,18 @@ kept as it is, and the command names what it left alone.
 | `.vscode/settings.json` | Binds `*.contract.json` to the JSON Schema of the installed package, so the editor validates as you read |
 | `.gitignore` | Keeps `ci-report.md` out of the repository; it is regenerated on every run and describes only that run |
 | `.github/workflows/ucm.yml` | Runs the check on every pull request and posts the report as a comment |
+| `.agents/skills/ucm-implementer/SKILL.md`, `.claude/skills/ucm-implementer/SKILL.md` | Two identical relays: an agent loads one before writing a component, and runs `ucm guide` at the pinned version |
+| `.ucm/conventions.md` | The repository's stack and writings, with its instructions in a comment |
+| `.ucm/gabarits/` | The templates of the installed stack adapter, when it publishes some |
 
 The workflow is yours once written. It will never be overwritten.
+
+An installed adapter that fails to load is reported, and the rest is
+installed. The command then prints the lines it does not write, each with its
+file: `@ucm-kit/cli` in `devDependencies`, `ucm tokens css` at the head of the
+`dev` and `build` scripts, the import of the generated stylesheet, and the
+optional `modes` section when `tokens.json` declares axes. A line already present
+is not printed.
 
 ### `ucm.config.json`
 

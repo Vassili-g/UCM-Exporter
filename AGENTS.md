@@ -152,6 +152,7 @@ packages/cli/            la ligne de commande : @ucm-kit/cli, publiée
   src/icons.mjs            les icônes que les contrats du repo réclament
   src/tokens-css.mjs       la feuille CSS des tokens et de leurs modes, depuis tokens.json
   src/aides.mjs            ucm aides : le catalogue, une aide, la copie dans les conventions
+  src/guide.mjs            ucm guide : procédure, extraction, aides employées et modes d'un contrat
   src/conventions.mjs      .ucm/conventions.md : le fichier le plus proche, ses sections, ses anomalies
   aides/                   une aide par caractéristique : sens, écriture par défaut, preuve
   procedure.md             ce qui décide de quoi quand un agent implémente un contrat

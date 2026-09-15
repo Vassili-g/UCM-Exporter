@@ -13,6 +13,7 @@ import { lireConfiguration } from "@ucm-kit/core/lecteurs";
 import { chargerAdaptateur, NOM_ADAPTATEUR_TYPESCRIPT } from "./adaptateur.mjs";
 import { aides } from "./aides.mjs";
 import { check } from "./check.mjs";
+import { guide } from "./guide.mjs";
 import { iconesDuRepository, rendreIcones } from "./icons.mjs";
 import { init, lireArgumentsInit, rendreInit } from "./init.mjs";
 import { tokensCss } from "./tokens-css.mjs";
@@ -42,13 +43,16 @@ const AIDE = `ucm — la ligne de commande UCM
   ucm icons           liste les icônes que les contrats réclament
   ucm tokens css      écrit la feuille CSS des tokens et de leurs modes
   ucm aides           liste les aides à l'implémentation et leur origine
+  ucm guide           imprime ce qu'un agent lit avant d'implémenter un contrat
   ucm --help          affiche cette aide
 
-  ucm init [--components <dossier>] [--tokens <dossier>] [--implementation <motif>]
+  ucm init [--components <dossier>] [--tokens <dossier>] [--implementation <motif>] [--sans-agents]
       --components      dossier sous lequel les contrats sont rangés
       --tokens          dossier qui reçoit tokens.json
       --implementation  où vit l'implémentation d'un contrat, {dir} et {id}
                         pour son dossier et son identifiant
+      --sans-agents     n'écrit ni les relais d'agent, ni .ucm/conventions.md,
+                        ni les gabarits
       Les trois n'agissent qu'à la première installation : ucm init n'écrase
       jamais un ucm.config.json existant.
 
@@ -66,6 +70,10 @@ const AIDE = `ucm — la ligne de commande UCM
       <aide>           imprime son sens, son écriture par défaut et sa preuve
       --personnaliser  ajoute la section de l'aide au .ucm/conventions.md le
                        plus proche du chemin, à éditer, sans rien écraser
+
+  ucm guide <contrat> [--out <fichier>]
+      <contrat>  le fichier .contract.json à implémenter
+      --out      écrit le guide dans ce fichier plutôt que dans le terminal
 
 Codes de sortie : 0 tout est passé, 1 des contrôles ont échoué, 2 l'invocation
 ou la configuration est fautive.`;
@@ -85,14 +93,20 @@ export function executer(arguments_, {
   }
 
   if (commande === "init") {
-    const { chemins, erreur } = lireArgumentsInit(arguments_.slice(1));
+    const { chemins, sansAgents, erreur } = lireArgumentsInit(arguments_.slice(1));
     if (erreur) {
       const alerter = sorties.alerter ?? console.error;
-      alerter(`${erreur}\n\nucm init [--components <dossier>] [--tokens <dossier>]`);
+      alerter(`${erreur}\n\nucm init [--components <dossier>] [--tokens <dossier>] [--implementation <motif>] [--sans-agents]`);
       return 2;
     }
-    ecrire(rendreInit(init(racine, { chemins })));
-    return 0;
+    // Un adaptateur qui ne se charge pas prive le repository de ses gabarits,
+    // pas du reste de l'installation : `init` reçoit l'erreur et la rapporte.
+    return chargerAdaptateur(racine)
+      .then((adaptateur) => ({ adaptateur }), (erreurAdaptateur) => ({ erreurAdaptateur }))
+      .then((chargement) => {
+        ecrire(rendreInit(init(racine, { chemins, sansAgents, ...chargement })));
+        return 0;
+      });
   }
 
   if (commande === "check") {
@@ -134,6 +148,10 @@ export function executer(arguments_, {
 
   if (commande === "aides") {
     return aides(arguments_.slice(1), { racine, ecrire, alerter: sorties.alerter ?? console.error });
+  }
+
+  if (commande === "guide") {
+    return guide(arguments_.slice(1), { racine, ecrire, alerter: sorties.alerter ?? console.error });
   }
 
   if (commande === "icons") {

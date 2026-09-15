@@ -397,6 +397,27 @@ test("montée de version — un contrat d'une version révolue est refusé, puis
  * créerait une seconde autorité, que quelqu'un mettrait à jour en croyant
  * déplacer la fenêtre : un geste sans effet, pire qu'un geste refusé.
  */
+test("agents — init écrit les relais et les conventions, relancé ne touche à rien, et le guide se lit", () => {
+  const racine = repoDeRecette({ composants: { Badge: contrat("Badge") } });
+  try {
+    writeFileSync(join(racine, ".ucm", "conventions.md"), "Stack : Swift.\n", "utf8");
+    const relais = readFileSync(join(racine, ".agents", "skills", "ucm-implementer", "SKILL.md"), "utf8");
+    assert.equal(readFileSync(join(racine, ".claude", "skills", "ucm-implementer", "SKILL.md"), "utf8"), relais);
+
+    const seconde = ucm(racine, ["init"]);
+    assert.equal(seconde.code, 0, seconde.terminal);
+    assert.match(seconde.terminal, /Rien à faire : ce repository est déjà installé\./);
+    assert.equal(readFileSync(join(racine, ".ucm", "conventions.md"), "utf8"), "Stack : Swift.\n");
+
+    const lu = ucm(racine, ["guide", "components/Badge/Badge.contract.json"]);
+    assert.equal(lu.code, 0, lu.terminal);
+    assert.match(lu.terminal, /^# Guide d'implémentation : Badge\n/);
+    assert.match(lu.terminal, /## Conventions du repository\n\nStack : Swift\./);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
 test("montée de version — le repository épingle son outil et ne redéclare jamais le format", () => {
   surLeRepo({}, (racine) => {
     const workflow = readFileSync(join(racine, ".github", "workflows", "ucm.yml"), "utf8");
