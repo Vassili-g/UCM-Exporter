@@ -80,7 +80,9 @@ marquées « sans L5 », puis par L8a et L8b.
       document synthétique : 500 extensions, 10 surcharges distinctes par
       extension, 2 modes. Relever règles, déclarations et octets. Écrire le
       relevé dans une section « Relevé L0 » du plan final.
-- [ ] **[mainteneur]** Rejouer le harnais dans Safari réel.
+- [x] **[mainteneur]** Rejouer le harnais dans Safari réel. Abandonné par le
+      mainteneur : WebKit est vert, et l'écart de Safari réel reste un risque
+      accepté.
 
 ## L1. Kit : le modèle de modes
 
@@ -296,8 +298,9 @@ Le plugin est privé : ses commits ne montent aucune version.
       variable héritée. Tests.
 - [x] `packages/plugin/SPEC.md` partie 2 : lecture expérimentale, ce qui reste à
       mesurer.
-- [ ] **[mainteneur]** Relevé sur un fichier Enterprise réel dès qu'un
-      utilisateur en fournit un.
+- [x] **[mainteneur]** Relevé sur un fichier Enterprise réel dès qu'un
+      utilisateur en fournit un. Abandonné par le mainteneur : la lecture des
+      collections étendues reste expérimentale, prouvée sur simulation.
 
 ## L9. Recette
 
@@ -316,11 +319,13 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 ## L10. Modes fixés dans un composant
 
-- [ ] **[mainteneur]** Autoriser la lecture du fichier du design system par le
+- [x] **[mainteneur]** Autoriser la lecture du fichier du design system par le
       serveur MCP Figma.
 - [ ] Relever en lecture seule les calques publiés dont `explicitVariableModes`
       n'est pas vide, racine et calques internes séparés, et les variables
       `BOOLEAN` et `STRING` à plusieurs modes liées à `visible` ou `characters`.
+      Fichier « UCM Tests - Tokens » relevé en section 15 du plan final ; les
+      composants sont dans « UCM Tests - Composants », à relever.
 - [ ] Classer chaque cas selon la section 5.1 du plan final et écrire le relevé
       dans une section « Relevé L10 ».
 - [ ] **[mainteneur]** Décider d'un traitement avant tout champ de contrat.
@@ -330,7 +335,7 @@ Le plugin est privé : ses commits ne montent aucune version.
 - [ ] Relire `AGENTS.md`, `docs/FORMAT.md`, `packages/plugin/SPEC.md`,
       `docs/COMPATIBILITE.md`, `docs/CHANGELOG-FORMAT.md` et les README des
       paquets ; retirer toute description devenue fausse ou dupliquée.
-- [ ] Les cinq cas de la section 9 du plan final vont au plan du diff sémantique.
+- [x] Les cinq cas de la section 9 du plan final vont au plan du diff sémantique.
       `PLAN-DIFF-SEMANTIQUE.md` est hors suivi et son auteur le commitera : s'il
       l'est encore, les écrire dans le compte rendu et ne pas toucher au fichier.
 - [ ] `npm test`, `npm run typecheck`, `npm run build` et `npm run cascade` verts
