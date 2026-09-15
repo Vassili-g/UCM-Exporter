@@ -31,8 +31,9 @@ import {
   indexerTokensDtcg,
   lireConfiguration,
   sansEchantillon,
-  trouverContrats,
 } from "@ucm-kit/core/lecteurs";
+
+import { contratsDuDossier } from "./contrats.mjs";
 
 export const USAGE_TOKENS = "ucm tokens css --out <fichier> [--sans-modes]";
 
@@ -443,7 +444,7 @@ export function lireArgumentsTokens(arguments_) {
 /** Les contrats du repository qui citent au moins une référence de token. */
 function contratsQuiCitentDesTokens(racine, dossierComponents) {
   const cites = [];
-  for (const chemin of trouverContrats(join(racine, dossierComponents))) {
+  for (const chemin of contratsDuDossier(join(racine, dossierComponents))) {
     try {
       const contrat = JSON.parse(readFileSync(chemin, "utf8").replace(/^\uFEFF/, ""));
       if (collecterReferences(sansEchantillon(contrat)).size > 0) cites.push(relative(racine, chemin).split("\\").join("/"));

@@ -72,7 +72,16 @@ export function genererTypes(racine = process.cwd(), { dossierSortie = "src/gene
   const generes = [];
   const omis = [];
 
-  for (const chemin of trouverContrats(join(racine, configuration.components))) {
+  let contrats;
+  try {
+    contrats = trouverContrats(join(racine, configuration.components));
+  } catch (erreurDeLecture) {
+    // Un repository neuf n'a pas de dossier de contrats avant son premier export.
+    if (erreurDeLecture?.code !== "ENOENT") throw erreurDeLecture;
+    contrats = [];
+  }
+
+  for (const chemin of contrats) {
     let contrat;
     try {
       contrat = JSON.parse(readFileSync(chemin, "utf8").replace(/^﻿/, ""));

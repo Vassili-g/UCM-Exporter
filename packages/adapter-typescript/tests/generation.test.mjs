@@ -31,6 +31,17 @@ test("les types gardent les unions et la matrice clairsemée exacte", () => {
   assert.doesNotMatch(resultat.contenu, /"secondary"; "size": "lg"/);
 });
 
+test("un repository neuf, sans dossier de contrats, ne génère aucun type et ne lève pas", () => {
+  const racine = mkdtempSync(join(tmpdir(), "ucm-adapter-typescript-"));
+  try {
+    const resultat = genererTypes(racine);
+    assert.deepEqual(resultat.generes, []);
+    assert.deepEqual(resultat.omis, []);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
 test("la génération suit les chemins du repository et accepte une sortie configurable", () => {
   const racine = mkdtempSync(join(tmpdir(), "ucm-adapter-typescript-"));
   try {

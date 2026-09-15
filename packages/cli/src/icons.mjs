@@ -5,7 +5,7 @@
 import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 
-import { trouverContrats } from "@ucm-kit/core/lecteurs";
+import { contratsDuDossier } from "./contrats.mjs";
 
 /**
  * Les icônes réclamées par les contrats d'un repository.
@@ -17,7 +17,7 @@ import { trouverContrats } from "@ucm-kit/core/lecteurs";
 export function iconesDuRepository(racine, dossierComponents) {
   const parNom = new Map();
 
-  for (const chemin of trouverContrats(join(racine, dossierComponents))) {
+  for (const chemin of contratsDuDossier(join(racine, dossierComponents))) {
     let contrat;
     try {
       contrat = JSON.parse(readFileSync(chemin, "utf8").replace(/^﻿/, ""));
