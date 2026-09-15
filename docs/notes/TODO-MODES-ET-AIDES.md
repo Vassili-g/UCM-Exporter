@@ -321,13 +321,13 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 - [x] **[mainteneur]** Autoriser la lecture du fichier du design system par le
       serveur MCP Figma.
-- [ ] Relever en lecture seule les calques publiés dont `explicitVariableModes`
+- [x] Relever en lecture seule les calques publiés dont `explicitVariableModes`
       n'est pas vide, racine et calques internes séparés, et les variables
       `BOOLEAN` et `STRING` à plusieurs modes liées à `visible` ou `characters`.
-      Fichier « UCM Tests - Tokens » relevé en section 15 du plan final ; les
-      composants sont dans « UCM Tests - Composants », à relever.
-- [ ] Classer chaque cas selon la section 5.1 du plan final et écrire le relevé
-      dans une section « Relevé L10 ».
+      Fichiers « UCM Tests - Tokens » et « UCM Tests - Composants ».
+- [x] Classer chaque cas selon la section 5.1 du plan final et écrire le relevé
+      dans une section « Relevé L10 ». Section 15 : aucun mode fixé ne change
+      une valeur publiée.
 - [ ] **[mainteneur]** Décider d'un traitement avant tout champ de contrat.
 
 ## Clôture

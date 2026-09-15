@@ -1026,8 +1026,23 @@ Tokens » : pages `Accueil` et `LAB`, huit collections locales.
 | variables à plusieurs modes | les 10 variables `COLOR` de « Color Brand Tokens » |
 | variables `BOOLEAN` ou `STRING` à plusieurs modes liées à `visible` ou `characters` | aucune |
 
-Aucun cas de ce fichier ne relève de la section 5.1. Le relevé des composants
-publiés reste à faire sur « UCM Tests - Composants ».
+Aucun cas de ce fichier ne relève de la section 5.1.
+
+Sur « UCM Tests - Composants », pages `Components`, `Règles [.componentRules]`
+et `Figma Plugin Assets` :
+
+| Cas | Calques | Effet sur une valeur publiée |
+|---|---|---|
+| mode fixé à la racine de `Button` | le jeu de composants | aucun : la collection « Brand Color » n'a qu'un mode |
+| mode de « Layout » fixé à la racine de chaque variante de `.sizeWrapperButton` | `Size=Small`, `Size=Medium`, `Size=Big` | aucun : leurs liaisons citent des collections à un seul mode, et aucune variable de « Layout » |
+| mode de « Layout » fixé sur les instances internes de `.sizeWrapperButton` | dans `Button`, `Alert` et `StressTest` | aucun, pour la même raison |
+| variable `BOOLEAN` ou `STRING` à plusieurs modes liée à `visible` ou `characters` | aucun | sans objet |
+
+Classement selon la section 5.1 : aucune liaison normative n'est perdue et aucun
+échantillon ne change. Aucun geste honnête ne se demande au designer, donc
+aucun avertissement ni champ de contrat. Un mode fixé deviendrait un cas le jour
+où un calque publié lie une variable d'une collection à plusieurs modes sous ce
+mode.
 
 ## Annexe A. Ce que ce plan reprend du plan courant
 
