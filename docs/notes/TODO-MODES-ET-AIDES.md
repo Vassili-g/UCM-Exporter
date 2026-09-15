@@ -224,24 +224,29 @@ Le plugin est privé : ses commits ne montent aucune version.
 - [x] Sans L5 : `packages/cli/src/aides.mjs` : `ucm aides`, `ucm aides <aide>`,
       `--personnaliser [chemin]` avec marqueur daté et empreinte de l'écriture
       copiée, refus d'écrire une section existante. Tests.
-- [ ] `packages/cli/src/guide.mjs` : sortie dans l'ordre de la section 6.5,
+- [x] `packages/cli/src/guide.mjs` : sortie dans l'ordre de la section 6.5,
       réutilisation de `vueExacteDuVariant` et `compositionsExactesDuVariant`,
-      comparaison des pins, `--out`, codes de sortie.
-- [ ] `packages/cli/tests/guide.test.mjs` sur un repository temporaire à deux
+      comparaison des pins, `--out`, codes de sortie. Construit avant le relevé
+      L5 : si son critère échoue, retirer la partie « contrat » de la sortie.
+- [x] `packages/cli/tests/guide.test.mjs` sur un repository temporaire à deux
       contrats dont l'un compose l'autre : les cas de l'annexe A.10 du plan
       final et ceux ajoutés par la section 6.5 du plan final.
-- [ ] `packages/cli/src/init.mjs` et `ucm.mjs` : drapeaux sans valeur,
+- [x] `packages/cli/src/init.mjs` et `ucm.mjs` : drapeaux sans valeur,
       `--sans-agents`, `init` asynchrone, relais `.agents/skills` et
       `.claude/skills`, `.ucm/conventions.md`, lignes restantes imprimées,
       commentaire d'en-tête corrigé. Tests d'`init` et de `recette.test.mjs` :
-      seconde exécution sans effet, fichiers existants conservés.
+      seconde exécution sans effet, fichiers existants conservés. `init` reste
+      synchrone : l'aiguillage charge l'adaptateur et lui passe l'adaptateur ou
+      l'erreur, ce qui laisse les appels synchrones des tests en place.
 - [x] `files` de `packages/cli/package.json` : `aides`, `procedure.md`. Test sur
       `npm pack --dry-run`.
 - [ ] Après L5 seulement : scinder `.agents/skills/consommer-contrat/SKILL.md`,
       que la première condition de la mesure emploie telle quelle : protocole de
       recette seul, renvoi à `ucm guide`, en-tête YAML sur deux lignes.
 - [ ] Documents : `AGENTS.md` (carte du code, paragraphe de la skill),
-      `packages/cli/README.md`, `docs/RECETTE.md`, `ROADMAP.md`.
+      `packages/cli/README.md`, `docs/RECETTE.md`, `ROADMAP.md`. La carte du
+      code et le README de la CLI sont faits ; le reste suit la scission de la
+      skill.
 - [ ] Monter et publier `@ucm-kit/cli`.
 
 ## L7. Gabarit de l'adaptateur
@@ -257,7 +262,7 @@ Le plugin est privé : ses commits ne montent aucune version.
       workspace résolve la CLI d'à côté. Tests : parité sans écart, contrôle de
       types, `ucm guide` sur l'exemple imprime chaque aide que le gabarit
       illustre.
-- [ ] `init` copie les gabarits quand l'adaptateur est trouvé, sans écraser ; une
+- [x] `init` copie les gabarits quand l'adaptateur est trouvé, sans écraser ; une
       erreur de chargement est rapportée sans arrêter l'installation. Tests.
 - [ ] Monter et publier `@ucm-kit/cli` et `@ucm-kit/adapter-typescript`.
 
