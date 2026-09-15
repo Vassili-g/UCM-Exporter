@@ -14,6 +14,8 @@
  * étendue se nomme `axeDesExtensions(axe)` et vaut `base` par défaut, `base`
  * désignant la collection elle-même.
  */
+import { axeDesExtensions } from "@ucm-kit/core/format";
+
 import { collecterReferences, sansEchantillon } from "./references-token.mjs";
 import { cheminDeReference, indexerTokensDtcg } from "./tokens-dtcg.mjs";
 
@@ -36,11 +38,6 @@ const surchargesDe = (feuille) => {
   const surcharges = extensionsDe(feuille)[SURCHARGES];
   return estObjet(surcharges) ? surcharges : {};
 };
-
-/** Le nom du contexte des collections étendues d'un axe. */
-export function axeDesExtensions(axe) {
-  return `${axe}-extensions`;
-}
 
 /**
  * Les axes et leurs axes d'extension, chacun juste après son parent.
@@ -433,14 +430,16 @@ export function contextesDeVerification(axesTouches, croisements = []) {
   return contextes;
 }
 
-/** Les composantes fortement connexes, par l'algorithme de Tarjan sans récursion. */
-function composantesFortementConnexes(noeuds, aretes) {
+/**
+ * Les composantes fortement connexes, par l'algorithme de Tarjan sans récursion.
+ * `successeurs` rend les voisins d'un nœud, limités au sous-graphe étudié.
+ */
+function composantesFortementConnexes(noeuds, successeurs) {
   const rang = new Map();
   const bas = new Map();
   const surPile = new Set();
   const pile = [];
   const composantes = [];
-  const successeurs = (noeud) => [...(aretes.get(noeud)?.keys() ?? [])];
   const entrer = (noeud) => {
     rang.set(noeud, rang.size);
     bas.set(noeud, rang.get(noeud));
@@ -480,45 +479,82 @@ function composantesFortementConnexes(noeuds, aretes) {
   return composantes;
 }
 
-/** Les cycles élémentaires d'une composante, par l'algorithme de Johnson. */
-function enumererCycles(composante, aretes, rapporter) {
-  const ordre = new Map(composante.map((noeud, position) => [noeud, position]));
-  for (const depart of composante) {
-    const debut = ordre.get(depart);
-    const bloques = new Set();
-    const attente = new Map();
-    const chemin = [];
-    const successeurs = (noeud) => [...(aretes.get(noeud)?.keys() ?? [])]
-      .filter((suivant) => ordre.has(suivant) && ordre.get(suivant) >= debut);
-    const debloquer = (noeud) => {
+/** Les cycles élémentaires qui passent par `depart`, dans le sous-graphe que `successeurs` borne. */
+function circuitsDepuis(depart, successeurs, rapporter) {
+  const bloques = new Set([depart]);
+  const attente = new Map();
+  const chemin = [depart];
+  const debloquer = (premier) => {
+    const pile = [premier];
+    while (pile.length > 0) {
+      const noeud = pile.pop();
       bloques.delete(noeud);
-      const enAttente = attente.get(noeud) ?? new Set();
+      for (const autre of attente.get(noeud) ?? []) if (bloques.has(autre)) pile.push(autre);
       attente.delete(noeud);
-      for (const autre of enAttente) if (bloques.has(autre)) debloquer(autre);
-    };
-    const circuit = (noeud) => {
-      let trouve = false;
-      chemin.push(noeud);
-      bloques.add(noeud);
-      for (const suivant of successeurs(noeud)) {
-        if (suivant === depart) {
-          rapporter([...chemin]);
-          trouve = true;
-        } else if (!bloques.has(suivant) && circuit(suivant)) {
-          trouve = true;
-        }
+    }
+  };
+
+  // Une pile de cadres remplace la récursion : un cycle de plusieurs milliers de
+  // feuilles dépasserait la pile d'appels.
+  const cadres = [{ noeud: depart, suivants: successeurs(depart), position: 0, trouve: false }];
+  while (cadres.length > 0) {
+    const cadre = cadres[cadres.length - 1];
+    if (cadre.position < cadre.suivants.length) {
+      const suivant = cadre.suivants[cadre.position];
+      cadre.position += 1;
+      if (suivant === depart) {
+        rapporter([...chemin]);
+        cadre.trouve = true;
+      } else if (!bloques.has(suivant)) {
+        chemin.push(suivant);
+        bloques.add(suivant);
+        cadres.push({ noeud: suivant, suivants: successeurs(suivant), position: 0, trouve: false });
       }
-      if (trouve) debloquer(noeud);
-      else {
-        for (const suivant of successeurs(noeud)) {
-          if (!attente.has(suivant)) attente.set(suivant, new Set());
-          attente.get(suivant).add(noeud);
-        }
+      continue;
+    }
+    cadres.pop();
+    chemin.pop();
+    if (cadre.trouve) debloquer(cadre.noeud);
+    else {
+      for (const suivant of cadre.suivants) {
+        if (!attente.has(suivant)) attente.set(suivant, new Set());
+        attente.get(suivant).add(cadre.noeud);
       }
-      chemin.pop();
-      return trouve;
-    };
-    circuit(depart);
+    }
+    if (cadres.length > 0 && cadre.trouve) cadres[cadres.length - 1].trouve = true;
+  }
+}
+
+/**
+ * Les cycles élémentaires d'une composante, par l'algorithme de Johnson.
+ *
+ * Les cycles qui passent par le plus petit nœud d'une composante sont énumérés,
+ * puis ce nœud est retiré et seule cette composante se redécoupe : un cycle qui
+ * ne passait pas par lui reste entier dans l'une des parties. Chaque cycle est
+ * ainsi rapporté une fois, et une partie sans cycle n'est jamais parcourue.
+ */
+function enumererCycles(composante, aretes, rapporter) {
+  const position = new Map(composante.map((noeud, rang) => [noeud, rang]));
+  const voisins = composante.map((noeud) => [...(aretes.get(noeud)?.keys() ?? [])]
+    .filter((suivant) => position.has(suivant))
+    .map((suivant) => position.get(suivant)));
+  const membre = new Uint8Array(composante.length);
+  const nomme = (cycle) => rapporter(cycle.map((rang) => composante[rang]));
+
+  const aDecouper = [composante.map((_, rang) => rang)];
+  while (aDecouper.length > 0) {
+    const partie = aDecouper.pop();
+    for (const rang of partie) membre[rang] = 1;
+    const dedans = (rang) => voisins[rang].filter((suivant) => membre[suivant] === 1);
+    const depart = Math.min(...partie);
+    circuitsDepuis(depart, dedans, nomme);
+
+    membre[depart] = 0;
+    const reste = partie.filter((rang) => rang !== depart);
+    const sousParties = composantesFortementConnexes(reste, dedans)
+      .filter((sousPartie) => sousPartie.length > 1 || voisins[sousPartie[0]].includes(sousPartie[0]));
+    for (const rang of reste) membre[rang] = 0;
+    aDecouper.push(...sousParties);
   }
 }
 
@@ -618,7 +654,8 @@ export function cyclesActifs(document, axes) {
   const cycles = [];
   let enumeres = 0;
   try {
-    for (const composante of composantesFortementConnexes([...new Set([...index.keys(), ...aretes.keys()])], aretes)) {
+    const successeurs = (noeud) => [...(aretes.get(noeud)?.keys() ?? [])];
+    for (const composante of composantesFortementConnexes([...new Set([...index.keys(), ...aretes.keys()])], successeurs)) {
       const seule = composante[0];
       if (composante.length === 1 && !aretes.get(seule)?.has(seule)) continue;
       enumererCycles(composante, aretes, (cycle) => {

@@ -4,7 +4,7 @@
  * La cascade de la feuille dans les navigateurs se prouve dans `cascade/`.
  */
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -396,6 +396,54 @@ test("une invocation fautive rend 2 sans rien écrire", () => {
   const entree = lancer({ tokens: DEUX_AXES }, ["css", "--out", "tokens.json"]);
   assert.equal(entree.code, 2);
   assert.match(entree.erreur, /que la commande lit/);
+});
+
+test("--out qui désigne le fichier de tokens sous une autre casse, ou un dossier, est refusé sans rien écrire", () => {
+  const racine = mkdtempSync(join(tmpdir(), "ucm-tokens-css-"));
+  try {
+    const source = JSON.stringify(documentAvec(undefined, { a: { b: nombre(1) } }));
+    writeFileSync(join(racine, "tokens.json"), source);
+    mkdirSync(join(racine, "dossier"));
+    const erreurs = [];
+    const lancerIci = (out) => tokensCss(["css", "--out", out], { racine, ecrire: () => {}, alerter: (texte) => erreurs.push(texte) });
+
+    // Sous Windows et macOS, TOKENS.JSON désigne tokens.json. Ailleurs c'est un
+    // autre fichier, que la commande a le droit d'écrire.
+    if (existsSync(join(racine, "TOKENS.JSON"))) {
+      assert.equal(lancerIci("TOKENS.JSON"), 2);
+      assert.match(erreurs.join("\n"), /--out désigne TOKENS\.JSON, que la commande lit/);
+    }
+    assert.equal(lancerIci("dossier"), 2);
+    assert.match(erreurs.join("\n"), /--out désigne le dossier dossier : nommez le fichier \.css à écrire/);
+    assert.equal(readFileSync(join(racine, "tokens.json"), "utf8"), source);
+    assert.deepEqual(readdirSync(racine).sort(), ["dossier", "tokens.json"]);
+
+    assert.equal(lancerIci("dossier/tokens.css"), 0);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("une feuille qui ne peut pas s'écrire rend 2, garde la précédente et ne laisse aucun fichier provisoire", () => {
+  const racine = mkdtempSync(join(tmpdir(), "ucm-tokens-css-"));
+  try {
+    writeFileSync(join(racine, "tokens.json"), JSON.stringify(documentAvec(undefined, { a: { b: nombre(1) } })));
+    const erreurs = [];
+    const code = tokensCss(["css", "--out", "tokens.css"], {
+      racine,
+      ecrire: () => {},
+      alerter: (texte) => erreurs.push(texte),
+      ecrireFichier: (chemin) => {
+        writeFileSync(chemin, "demi");
+        throw Object.assign(new Error("disque plein"), { code: "ENOSPC" });
+      },
+    });
+    assert.equal(code, 2);
+    assert.match(erreurs.join("\n"), /tokens\.css n'a pas pu être écrit \(ENOSPC\) : la feuille précédente reste en place/);
+    assert.deepEqual(readdirSync(racine), ["tokens.json"]);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
 });
 
 test("ucm tokens passe par l'aiguillage, et l'aide nomme la commande", () => {

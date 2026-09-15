@@ -11,17 +11,18 @@
  * Codes : 0 feuille écrite, 1 fichier de tokens refusé, 2 invocation ou
  * configuration fautive. Un refus laisse la feuille précédente en place.
  */
-import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
 import {
   NOM_CONFIGURATION,
+  PREFIXE_DES_INTERMEDIAIRES,
   attributDeMode,
+  axeDesExtensions,
   etatDuFormatDeTokens,
   tokenCssVariable,
 } from "@ucm-kit/core/format";
 import {
-  axeDesExtensions,
   axesDeTokens,
   cheminDeReference,
   collecterReferences,
@@ -233,8 +234,8 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
   const parNom = new Map();
   for (const chemin of index.keys()) {
     const nom = tokenCssVariable(chemin);
-    if (nom.startsWith("--ucm-x-")) {
-      refus.push(`La feuille « ${chemin} » donne la propriété « ${nom} », dont le préfixe --ucm-x- est réservé aux collections étendues.`);
+    if (nom.startsWith(PREFIXE_DES_INTERMEDIAIRES)) {
+      refus.push(`La feuille « ${chemin} » donne la propriété « ${nom} », dont le préfixe ${PREFIXE_DES_INTERMEDIAIRES} est réservé aux collections étendues.`);
     }
     if (parNom.has(nom)) {
       refus.push(`Les feuilles « ${parNom.get(nom)} » et « ${chemin} » donnent la même propriété CSS « ${nom} ».`);
@@ -292,7 +293,7 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
     }
 
     const suffixe = nom.slice(2);
-    const intermediaire = (extension) => `--ucm-x-${tokenCssVariable(extension).slice(2)}--${suffixe}`;
+    const intermediaire = (extension) => `${PREFIXE_DES_INTERMEDIAIRES}${tokenCssVariable(extension).slice(2)}--${suffixe}`;
     const plusProche = (extension) => {
       for (let courante = extension; courante !== undefined && courante !== "base"; courante = axe.extensions[courante]?.parent) {
         if (possede(surcharges, courante)) return courante;
@@ -453,12 +454,37 @@ function contratsQuiCitentDesTokens(racine, dossierComponents) {
   return cites;
 }
 
-/** Écrit un fichier terminé à sa place, par remplacement : une écriture interrompue ne laisse pas de demi-feuille. */
+/**
+ * Vrai quand deux chemins désignent le même fichier existant. La comparaison
+ * porte sur l'identité du fichier : sous Windows et macOS, `TOKENS.JSON` et
+ * `tokens.json` sont deux chaînes pour un seul fichier.
+ */
+function memeFichier(chemin, autre) {
+  if (chemin === autre) return true;
+  try {
+    const premier = statSync(chemin, { bigint: true });
+    const second = statSync(autre, { bigint: true });
+    return premier.ino === second.ino && premier.dev === second.dev;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Écrit un fichier terminé à sa place, par remplacement : une écriture interrompue ne laisse pas de demi-feuille.
+ * Rend l'erreur du système quand l'écriture échoue, le fichier provisoire retiré.
+ */
 function remplacer(cible, contenu, ecrireFichier) {
-  mkdirSync(dirname(cible), { recursive: true });
   const provisoire = `${cible}.${process.pid}.tmp`;
-  ecrireFichier(provisoire, contenu, "utf8");
-  renameSync(provisoire, cible);
+  try {
+    mkdirSync(dirname(cible), { recursive: true });
+    ecrireFichier(provisoire, contenu, "utf8");
+    renameSync(provisoire, cible);
+    return null;
+  } catch (erreur) {
+    rmSync(provisoire, { force: true });
+    return erreur;
+  }
 }
 
 /**
@@ -487,10 +513,19 @@ export function tokensCss(arguments_, {
 
   const cible = resolve(racine, options.out);
   const source = resolve(racine, configuration.tokens);
-  if (cible === source || cible === resolve(racine, NOM_CONFIGURATION) || cible.endsWith(".contract.json")) {
+  const lus = [source, resolve(racine, NOM_CONFIGURATION)];
+  if (lus.some((lu) => memeFichier(cible, lu)) || cible.toLowerCase().endsWith(".contract.json")) {
     alerter(`--out désigne ${options.out}, que la commande lit : choisissez un fichier .css à part.`);
     return 2;
   }
+  if (existsSync(cible) && statSync(cible).isDirectory()) {
+    alerter(`--out désigne le dossier ${options.out} : nommez le fichier .css à écrire.`);
+    return 2;
+  }
+  const echecDEcriture = (erreur) => {
+    alerter(`${options.out} n'a pas pu être écrit (${erreur.code ?? erreur.message}) : la feuille précédente reste en place.`);
+    return 2;
+  };
 
   const enTete = `/* Généré par ucm tokens css depuis ${configuration.tokens}. Relancer la commande plutôt que modifier ce fichier. */\n`;
 
@@ -501,7 +536,8 @@ export function tokensCss(arguments_, {
         + `des tokens : ${cites.join(", ")}. Exportez les tokens depuis Figma, ou corrigez le chemin tokens de ${NOM_CONFIGURATION}.`);
       return 1;
     }
-    remplacer(cible, `${enTete}/* Aucun fichier de tokens, et aucun contrat ne cite de token : cette feuille ne déclare rien. */\n`, ecrireFichier);
+    const echec = remplacer(cible, `${enTete}/* Aucun fichier de tokens, et aucun contrat ne cite de token : cette feuille ne déclare rien. */\n`, ecrireFichier);
+    if (echec) return echecDEcriture(echec);
     ecrire(`${options.out} : aucun fichier de tokens, feuille vide écrite.`);
     return 0;
   }
@@ -575,7 +611,8 @@ export function tokensCss(arguments_, {
   }
 
   const contenu = `${enTete}${css}`;
-  remplacer(cible, contenu, ecrireFichier);
+  const echec = remplacer(cible, contenu, ecrireFichier);
+  if (echec) return echecDEcriture(echec);
   const { regles, declarations, octets } = statistiquesDeFeuille(contenu);
   ecrire(`${options.out} : ${regles} règles, ${declarations} déclarations, ${octets} octets.`);
   for (const note of notesDAttributs) ecrire(note);
