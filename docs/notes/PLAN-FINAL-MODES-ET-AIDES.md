@@ -981,6 +981,39 @@ Tests gardés : `packages/kit/tests/modes-tokens-aleatoire.test.mjs` et
 - Un groupe de tokens imbriqué sur 8 000 niveaux épuise la pile de
   `indexerTokensDtcg`. Un nom de variable Figma n'atteint pas cette profondeur.
 
+## 14. Relevé L9 : recette depuis les archives
+
+Archives `npm pack` de `@ucm-kit/core` 0.1.32, `@ucm-kit/cli` 0.1.34 et
+`@ucm-kit/adapter-typescript` 0.1.27, installées dans un repository temporaire
+qui ne porte aucun autre outillage UCM.
+
+| Geste | Résultat |
+|---|---|
+| `ucm init` | cinq fichiers de contrôle, deux relais identiques épinglés, `.ucm/conventions.md` |
+| `ucm tokens css`, document à deux axes et une extension | code 0, 10 règles, 18 déclarations |
+| `ucm guide` | code 0, 13 187 octets |
+| `ucm aides contour-ring --personnaliser`, puis section éditée | le guide imprime la section et reprend son contrôle |
+| `ucm init` relancé | aucun fichier écrit, les lignes restantes nommées avec leur fichier |
+
+Sur une copie du Playground, sans rien écrire dans son dépôt : sa configuration,
+son `tokens.json` exporté avec `com.ucm.axes` et ses quatre contrats.
+
+- La racine de ce `tokens.json`, exporté par le plugin dans le commit `276cd78`
+  du Playground, porte la marque puis `com.ucm.axes`. `axesDeTokens` le lit
+  complet : un axe `color-brand-tokens` de 10 feuilles, aucun cycle.
+- `ucm tokens css` rend l'épreuve 1 de l'annexe A.11 : `:root` déclare 760
+  feuilles, chaque règle de mode 10 et la règle commune 50.
+- `ucm check` rend 0.
+- Le guide d'`Alert` pèse 33 863 octets pour un contrat de 14 418 : procédure
+  2 160, contrat 15 831, aides 12 764, ancrages non tranchés 2 375. Celui de
+  `Button` pèse 71 707 octets pour un contrat de 54 653. Le relevé L5 dira si
+  ce poids réduit les tours.
+
+Défaut trouvé : un `package.json` qui installe la CLI depuis une archive faisait
+signaler des pins en désaccord par `ucm guide`, et réclamer la dépendance par
+`ucm init`. Un chemin d'archive, un lien ou un espace de travail ne se comparent
+plus, depuis `@ucm-kit/cli` 0.1.35.
+
 ## Annexe A. Ce que ce plan reprend du plan courant
 
 Recopié du commit `7226eee` et adapté à la forme de la section 3 : le

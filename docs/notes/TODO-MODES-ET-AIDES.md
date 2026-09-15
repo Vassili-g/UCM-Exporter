@@ -173,8 +173,9 @@ Le plugin est privé : ses commits ne montent aucune version.
 - [x] Documents : `docs/FORMAT.md` partie 2, `packages/plugin/SPEC.md` partie 2,
       `docs/CHANGELOG-FORMAT.md`, `docs/COMPATIBILITE.md` classe 12 et titre des
       classes, invariants de `AGENTS.md` du groupe « Tokens et variables ».
-- [ ] **[mainteneur]** Lancer l'export local dans Figma et vérifier la racine du
-      `tokens.json` produit.
+- [x] **[mainteneur]** Lancer l'export local dans Figma et vérifier la racine du
+      `tokens.json` produit. Export du Playground `276cd78` : marque puis
+      `com.ucm.axes`, état complet, un axe de 10 feuilles, aucun cycle.
 - [ ] **[mainteneur]** Publier le plugin sur la Community, après la publication
       du kit de L1.
 
@@ -300,8 +301,9 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 ## L9. Recette
 
-- [ ] Recette sur un repository temporaire depuis les archives `npm pack` des
+- [x] Recette sur un repository temporaire depuis les archives `npm pack` des
       trois paquets : `init`, `tokens css`, `guide`, `aides --personnaliser`.
+      Relevé en section 14 du plan final.
 - [ ] **[mainteneur]** Playground, dans l'ordre de la section 7 du plan final :
       réexport des tokens, installation, remplacement de Style Dictionary,
       `ucm init`, déplacement du tableau de `AGENTS.md`, règle 4 réécrite.
