@@ -12,7 +12,9 @@
 import {
   EXTENSION_AXES_TOKENS,
   EXTENSION_VERSION_TOKENS,
+  PREFIXE_DES_INTERMEDIAIRES,
   TOKENS_FORMAT_VERSION,
+  axeDesExtensions,
   etatDuFormatDeTokens,
   normalizeName,
   poidsDeGraisse,
@@ -621,6 +623,36 @@ function extensionsDeLaCollection(
 }
 
 /**
+ * Écarte les extensions d'un axe quand un autre axe porte leur nom.
+ *
+ * `ucm tokens css` déclare les extensions d'un axe sous `axeDesExtensions`, et
+ * refuse la feuille entière quand un axe du fichier donne la même propriété
+ * CSS. Les modes des deux collections restent publiés.
+ */
+function ecarterLesExtensionsHomonymesDUnAxe(
+  collections: VariableCollection[],
+  axes: Map<string, AxeDeCollection>,
+  points: PointACorriger[],
+): void {
+  const parPropriete = new Map([...axes].map(([id, axe]) => [tokenCssVariable(axe.cle), id]));
+  const nomDe = (id: string) => collections.find((collection) => collection.id === id)?.name ?? id;
+  for (const [id, axe] of axes) {
+    if (axe.extensions.length === 0) continue;
+    const rivale = parPropriete.get(tokenCssVariable(axeDesExtensions(axe.cle)));
+    if (rivale === undefined) continue;
+    points.push(pointDe(`Collection « ${nomDe(rivale)} »`, {
+      manque: `son nom donne le préfixe « ${axes.get(rivale)?.cle} », que le fichier de tokens réserve aux `
+        + `collections étendues de « ${nomDe(id)} ».`,
+      impact: `Le développeur ne pourra pas générer les extensions de la collection « ${nomDe(id)} ».`,
+      action: `Renommez la collection « ${nomDe(rivale)} », puis réexportez.`,
+    }));
+    // Une collection à un seul mode n'était un axe que par ses extensions.
+    if (axe.modes.length < 2) axes.delete(id);
+    else axes.set(id, { ...axe, extensions: [] });
+  }
+}
+
+/**
  * Les axes que l'export retient, par identifiant de collection, et les constats
  * qui écartent les autres. Une collection à un seul mode n'est pas un axe.
  *
@@ -691,6 +723,7 @@ export function axesDesCollections(
     if (modes.length < 2 && extensions.length === 0) continue;
     axes.set(collection.id, { cle, modes, defaut: normalizeName(defaut.name), extensions });
   }
+  ecarterLesExtensionsHomonymesDUnAxe(collections, axes, points);
 
   // L'extension locale d'une collection de bibliothèque surcharge des variables
   // que ce fichier ne contient pas : aucun axe ne la reçoit.
@@ -777,6 +810,45 @@ function constatsDeTypesParMode(
         constater(parMode[nom], `le mode « ${mode.name} » de la collection « ${extension.collection.name} »`);
       }
     }
+  }
+}
+
+/**
+ * Nomme les tokens que `ucm tokens css` refuse de déclarer : deux tokens dont
+ * `tokenCssVariable` rend la même propriété, et un token dont la propriété
+ * commence par `PREFIXE_DES_INTERMEDIAIRES`. Les tokens restent dans le fichier.
+ */
+function constatsDeNomsCss(
+  chemins: readonly string[],
+  variableByPath: ReadonlyMap<string, Variable>,
+  warnings: string[],
+): void {
+  const impact = 'Le développeur ne pourra pas générer la feuille CSS des tokens.';
+  const nomDe = (chemin: string) => variableByPath.get(chemin)?.name ?? chemin;
+  const parPropriete = new Map<string, string[]>();
+  for (const chemin of chemins) {
+    const propriete = tokenCssVariable(chemin);
+    parPropriete.set(propriete, [...(parPropriete.get(propriete) ?? []), chemin]);
+  }
+
+  for (const [propriete, porteurs] of parPropriete) {
+    if (propriete.startsWith(PREFIXE_DES_INTERMEDIAIRES)) {
+      for (const chemin of porteurs) {
+        pousserSansNode(warnings, `Variable « ${nomDe(chemin)} »`, {
+          manque: `son token « ${chemin} » commence par un nom que la feuille CSS réserve aux collections étendues.`,
+          impact,
+          action: 'Renommez la variable ou sa collection, puis réexportez.',
+        });
+      }
+    }
+    if (porteurs.length < 2) continue;
+    pousserSansNode(warnings, `Variables ${porteurs.map((chemin) => `« ${nomDe(chemin)} »`).join(' et ')}`, {
+      manque: `leurs tokens ${porteurs.map((chemin) => `« ${chemin} »`).join(' et ')} portent le même nom dans la feuille CSS.`,
+      impact,
+      action: porteurs.length === 2
+        ? 'Renommez l’une des deux, puis réexportez.'
+        : 'Renommez-les pour que leurs noms diffèrent, puis réexportez.',
+    });
   }
 }
 
@@ -1096,6 +1168,7 @@ export async function handleExportTokens(annoncer: Annonce = () => {}): Promise<
     if (leaf.$extensions) feuillesAModes.push({ variable, collection, leaf });
   }
   constatsDeTypesParMode(feuillesAModes, typeParChemin, variableByPath, axes, warnings);
+  constatsDeNomsCss([...typeParChemin.keys()], variableByPath, warnings);
 
   // La marque s'écrit une fois, à la racine et avant les groupes. Une `Map` tient
   // cet ordre même devant une collection au nom entier, qu'un objet rangerait
