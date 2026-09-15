@@ -9,9 +9,10 @@
  * workflow que quelqu'un a adapté serait la seule faute irréversible que cette
  * commande puisse commettre.
  *
- * **Elle n'écrit aucun numéro de version**, nulle part : ni dans la
- * configuration (voir `configuration.mjs` du kit), ni dans le workflow, qui
- * épingle le paquet et laisse le paquet dire ce qu'il lit.
+ * **Elle n'écrit aucune version du format**, nulle part : la configuration
+ * n'en porte aucune (voir `configuration.mjs` du kit), et le paquet installé
+ * dit ce qu'il lit. Le seul numéro écrit est le pin de la CLI, dans le workflow
+ * et dans les deux relais d'agent.
  *
  * **`--components`, `--tokens` et `--implementation` décident une seule fois.** Le
  * `ucm.config.json` écrit ici est la seule autorité sur l'endroit où les
@@ -22,7 +23,7 @@
  * comment nommer ses fichiers d'implémentation, au lieu de porter un `.tsx`
  * faux dès le jour de son installation.
  */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 import {
@@ -30,6 +31,10 @@ import {
   MOTIF_IMPLEMENTATION_PAR_DEFAUT,
   NOM_CONFIGURATION,
 } from "@ucm-kit/core/format";
+import { lireConfiguration } from "@ucm-kit/core/lecteurs";
+
+import { NOM_ADAPTATEUR_TYPESCRIPT } from "./adaptateur.mjs";
+import { CHEMIN_CONVENTIONS } from "./conventions.mjs";
 
 /** Les options qui reçoivent un dossier, et la clé que chacune décide. */
 const OPTIONS_DE_DOSSIER = { "--components": "components", "--tokens": "tokens" };
@@ -75,9 +80,14 @@ function cheminAcceptable(valeur) {
  */
 export function lireArgumentsInit(arguments_) {
   const chemins = {};
+  let sansAgents = false;
 
   for (let i = 0; i < arguments_.length; i += 1) {
     const argument = arguments_[i];
+    if (argument === "--sans-agents") {
+      sansAgents = true;
+      continue;
+    }
     const cle = OPTIONS_DE_DOSSIER[argument];
     if (!cle && argument !== "--implementation") {
       return { erreur: `Argument inconnu : ${argument}` };
@@ -113,7 +123,7 @@ export function lireArgumentsInit(arguments_) {
     chemins[cle] = cle === "tokens" ? `${resolu}/${NOM_FICHIER_TOKENS}` : resolu;
   }
 
-  return { chemins };
+  return { chemins, sansAgents };
 }
 
 /** La version de `@ucm-kit/cli`, lue dans son propre `package.json`. */
@@ -139,7 +149,7 @@ function versionDuPaquet() {
  * présents, le rappel se tait : trois lignes réclamées pour rien sont trois
  * lignes qu'on apprend à sauter.
  */
-function fichiers(version, chemins) {
+function fichiers(version, chemins, { agents = true, gabarits = [] } = {}) {
   return [
     {
       chemin: NOM_CONFIGURATION,
@@ -203,7 +213,122 @@ function fichiers(version, chemins) {
       chemin: ".github/workflows/ucm.yml",
       contenu: workflow(version),
     },
+    ...(agents
+      ? [
+        { chemin: ".agents/skills/ucm-implementer/SKILL.md", contenu: relais(version) },
+        { chemin: ".claude/skills/ucm-implementer/SKILL.md", contenu: relais(version) },
+        { chemin: CHEMIN_CONVENTIONS.split("\\").join("/"), contenu: CONVENTIONS },
+        ...gabarits,
+      ]
+      : []),
   ];
+}
+
+/**
+ * Le relais qu'un agent découvre dans `.agents/skills` ou `.claude/skills`. Il
+ * épingle la CLI et renvoie à `ucm guide`, qui imprime la procédure et les
+ * aides du contrat : le relais ne recopie aucune règle.
+ */
+function relais(version) {
+  return [
+    "---",
+    "name: ucm-implementer",
+    "description: Implémenter ou modifier un composant décrit par un fichier *.contract.json. Charger avant d'écrire le code du composant.",
+    "---",
+    "",
+    `Lancer \`npx --yes @ucm-kit/cli@${version} guide <chemin du contrat>\`, puis suivre sa sortie.`,
+    "",
+  ].join("\n");
+}
+
+/** Le fichier de conventions : sa marche à suivre et son exemple, en commentaire que la lecture retire. */
+const CONVENTIONS = [
+  "<!-- ucm : marche à suivre, retirée à la lecture.",
+  "",
+  "Le texte avant la première section décrit la stack, l'architecture et le",
+  "gabarit ou le composant de référence du repository.",
+  "",
+  "Une section « ## <aide> » remplace l'écriture par défaut de cette aide, ou",
+  "répond à un ancrage. `ucm aides` liste les aides ; `ucm aides <aide>",
+  "--personnaliser` ajoute la section, à éditer.",
+  "",
+  "Une ligne « Contrôle : `commande` » ajoute la commande à la preuve de l'aide.",
+  "",
+  "« ecritures-par-defaut: non » en première ligne retire les écritures par",
+  "défaut, pour un repository qui n'écrit pas de CSS.",
+  "",
+  "Exemple :",
+  "",
+  "Stack : React 19 et CSS Modules. Un composant par dossier, tests à côté.",
+  "Gabarit : `.ucm/gabarits/composant.tsx`.",
+  "",
+  "## contour-ring",
+  "",
+  "Classe `ring` de `src/styles/contours.module.css`.",
+  "",
+  "Contrôle : `npm run lint:css`",
+  "-->",
+  "",
+].join("\n");
+
+/**
+ * Les gabarits qu'un adaptateur publie, à copier dans `.ucm/gabarits/`. Rend
+ * `erreur` quand le dossier annoncé ne se lit pas.
+ */
+function gabaritsDe(adaptateur) {
+  const dossier = adaptateur?.cheminGabarits;
+  if (typeof dossier !== "string") return { gabarits: [], erreur: null };
+  try {
+    const gabarits = readdirSync(dossier, { withFileTypes: true })
+      .filter((entree) => entree.isFile())
+      .map(({ name }) => ({ chemin: `.ucm/gabarits/${name}`, contenu: readFileSync(join(dossier, name), "utf8") }));
+    return { gabarits, erreur: null };
+  } catch (erreur) {
+    return { gabarits: [], erreur: `ses gabarits ne se lisent pas (${erreur?.code ?? erreur?.message ?? erreur})` };
+  }
+}
+
+/**
+ * Les lignes qu'`init` n'écrit pas, parce qu'elles vivent dans un fichier que
+ * le repository possède, chacune avec son fichier. Une ligne déjà présente ne
+ * se réclame pas.
+ */
+function lignesRestantes(racine, version, configuration) {
+  const lignes = [];
+  let manifeste = null;
+  try {
+    manifeste = JSON.parse(readFileSync(join(racine, "package.json"), "utf8"));
+  } catch {
+    // Un repository sans package.json lisible ne génère pas la feuille des tokens par npm.
+  }
+  if (manifeste !== null) {
+    const epingle = manifeste.devDependencies?.["@ucm-kit/cli"] ?? manifeste.dependencies?.["@ucm-kit/cli"];
+    if (epingle !== version) {
+      lignes.push({ fichier: "package.json", ligne: `ajoutez \`"@ucm-kit/cli": "${version}"\` aux devDependencies.` });
+    }
+    const scripts = Object.values(manifeste.scripts ?? {}).join("\n");
+    if (!scripts.includes("ucm tokens css")) {
+      lignes.push({
+        fichier: "package.json",
+        ligne: "lancez `ucm tokens css --out src/generated/tokens.css` en tête des scripts dev et build, à la place de tout autre générateur de la même feuille.",
+      });
+      lignes.push({ fichier: "l'entrée CSS de l'application", ligne: "importez la feuille générée, `src/generated/tokens.css`." });
+    }
+  }
+  if (configuration && configuration.modes === undefined) {
+    try {
+      const axes = JSON.parse(readFileSync(join(racine, configuration.tokens), "utf8"))?.$extensions?.["com.ucm.axes"];
+      if (axes && typeof axes === "object" && Object.keys(axes).length > 0) {
+        lignes.push({
+          fichier: NOM_CONFIGURATION,
+          ligne: "la section modes, facultative, nomme l'attribut HTML de chaque axe ; sans elle, un axe prend `data-` suivi de son nom.",
+        });
+      }
+    } catch {
+      // Sans fichier de tokens lisible, aucun axe ne se lit.
+    }
+  }
+  return lignes;
 }
 
 /**
@@ -324,12 +449,19 @@ function workflow(version) {
  * mi-chemin laisserait un repo à moitié installé, état que rien ne sait
  * diagnostiquer ensuite.
  */
-export function init(racine, { ecrire = writeFileSync, chemins = {} } = {}) {
+export function init(racine, {
+  ecrire = writeFileSync,
+  chemins = {},
+  sansAgents = false,
+  adaptateur = null,
+  erreurAdaptateur = null,
+} = {}) {
   const version = versionDuPaquet();
   const aEcrire = [];
   const deja = [];
+  const { gabarits, erreur: erreurGabarits } = sansAgents ? { gabarits: [], erreur: null } : gabaritsDe(adaptateur);
 
-  for (const fichier of fichiers(version, chemins)) {
+  for (const fichier of fichiers(version, chemins, { agents: !sansAgents, gabarits })) {
     const cible = join(racine, fichier.chemin);
     if (existsSync(cible)) deja.push({ ...fichier, cible });
     else aEcrire.push({ ...fichier, cible });
@@ -367,6 +499,19 @@ export function init(racine, { ecrire = writeFileSync, chemins = {} } = {}) {
       ? { ...CONFIGURATION_PAR_DEFAUT, ...chemins }
       : null,
     version,
+    agents: !sansAgents,
+    // `absent` quand aucun adaptateur n'est installé, le message quand il n'a pas pu servir.
+    adaptateur: erreurAdaptateur
+      ? { erreur: erreurAdaptateur?.message ?? String(erreurAdaptateur) }
+      : erreurGabarits ? { erreur: erreurGabarits } : adaptateur ? "trouve" : "absent",
+    nodeJs: existsSync(join(racine, "package.json")),
+    lignes: lignesRestantes(
+      racine,
+      version,
+      aEcrire.some((f) => f.chemin === NOM_CONFIGURATION)
+        ? { ...CONFIGURATION_PAR_DEFAUT, ...chemins }
+        : lireConfiguration(racine).configuration,
+    ),
   };
 }
 
@@ -403,6 +548,10 @@ export function rendreInit({
   optionsIgnorees = false,
   chemins = null,
   version,
+  agents = false,
+  adaptateur = "absent",
+  nodeJs = false,
+  lignes: restantes = [],
 }) {
   const lignes = [];
   for (const chemin of ecrits) lignes.push(`✓ ${chemin}`);
@@ -416,9 +565,11 @@ export function rendreInit({
     : `Les chemins restent ceux que ce repository déclare dans son ${NOM_CONFIGURATION}. `
       + "Lancez `ucm check`.";
   lignes.push(
-    ecrits.length === 0
-      ? "Rien à faire : ce repository est déjà installé."
-      : `Installé avec @ucm-kit/cli ${version}.\n${ou}`,
+    ecrits.length > 0
+      ? `Installé avec @ucm-kit/cli ${version}.\n${ou}`
+      : restantes.length === 0
+        ? "Rien à faire : ce repository est déjà installé."
+        : "Aucun fichier à écrire : ce repository est déjà installé.",
   );
 
   if (optionsIgnorees) {
@@ -433,6 +584,22 @@ export function rendreInit({
   for (const { chemin, rappel } of rappels) {
     lignes.push("");
     lignes.push(`· \`${chemin}\` existait déjà : ${rappel}`);
+  }
+
+  if (typeof adaptateur === "object" && adaptateur !== null) {
+    lignes.push("");
+    lignes.push(`· ${NOM_ADAPTATEUR_TYPESCRIPT} est installé mais n'a pas servi : ${adaptateur.erreur}. `
+      + "Les gabarits n'ont pas été copiés ; le reste de l'installation est fait.");
+  } else if (agents && nodeJs && adaptateur === "absent") {
+    lignes.push("");
+    lignes.push(`· Relancez \`ucm init\` après avoir installé ${NOM_ADAPTATEUR_TYPESCRIPT} pour recevoir le gabarit `
+      + "dans `.ucm/gabarits/`.");
+  }
+
+  if (restantes.length > 0) {
+    lignes.push("");
+    lignes.push("Reste à ajouter à la main :");
+    for (const { fichier, ligne } of restantes) lignes.push(`- ${fichier} : ${ligne}`);
   }
   return lignes.join("\n");
 }

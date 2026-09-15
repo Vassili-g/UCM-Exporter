@@ -15,6 +15,8 @@ import test from "node:test";
 
 import { iconesDuRepository } from "../src/icons.mjs";
 import { chargerAdaptateur } from "../src/adaptateur.mjs";
+import { catalogueDesAides } from "../src/aides.mjs";
+import { lireConventions } from "../src/conventions.mjs";
 import { init, lireArgumentsInit, rendreInit } from "../src/init.mjs";
 import { executer } from "../src/ucm.mjs";
 
@@ -41,9 +43,12 @@ test("init installe ce qui manque dans un repository vierge", () => {
 
     assert.deepEqual(conserves, []);
     assert.deepEqual(ecrits.sort(), [
+      ".agents/skills/ucm-implementer/SKILL.md",
+      ".claude/skills/ucm-implementer/SKILL.md",
       ".gitattributes",
       ".github/workflows/ucm.yml",
       ".gitignore",
+      ".ucm/conventions.md",
       ".vscode/settings.json",
       "ucm.config.json",
     ]);
@@ -483,10 +488,10 @@ test("un repository sans paquet TypeScript garde le noyau portable", async () =>
  * main, et l'oubli ne se voyait qu'au premier export déposé là où `ucm check`
  * ne regarde pas.
  */
-test("init écrit les chemins demandés dans la configuration", () => {
+test("init écrit les chemins demandés dans la configuration", async () => {
   const racine = repoVierge();
   try {
-    executer(["init", "--components", "src/components", "--tokens", "src/tokens"], {
+    await executer(["init", "--components", "src/components", "--tokens", "src/tokens"], {
       racine,
       ecrire: () => {},
     });
@@ -575,10 +580,10 @@ test("des chemins demandés à un repository déjà configuré ne changent rien,
  * jamais, et rapportait « en attente d'implémentation » pour chaque contrat,
  * dans le commentaire de pull request que lit le designer.
  */
-test("init écrit le motif d'implémentation demandé", () => {
+test("init écrit le motif d'implémentation demandé", async () => {
   const racine = repoVierge();
   try {
-    executer(["init", "--components", "Sources/DS", "--implementation", "{dir}/{id}.swift"], {
+    await executer(["init", "--components", "Sources/DS", "--implementation", "{dir}/{id}.swift"], {
       racine,
       ecrire: () => {},
     });
@@ -629,6 +634,102 @@ test("init refuse un argument inconnu, une valeur manquante et un chemin qui rem
       2,
     );
     assert.match(alertes.join("\n"), /ucm init \[--components/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("--sans-agents n'écrit que les cinq fichiers de contrôle", () => {
+  assert.equal(lireArgumentsInit(["--sans-agents", "--components", "src"]).sansAgents, true);
+  assert.deepEqual(lireArgumentsInit(["--sans-agents", "--components", "src"]).chemins, { components: "src" });
+  const racine = repoVierge();
+  try {
+    const { ecrits } = init(racine, { sansAgents: true });
+    assert.deepEqual(ecrits.sort(), [".gitattributes", ".github/workflows/ucm.yml", ".gitignore", ".vscode/settings.json", "ucm.config.json"]);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("les deux relais sont identiques, épinglent la CLI et renvoient au guide ; les conventions se lisent vides", () => {
+  const racine = repoVierge();
+  try {
+    const { version } = init(racine);
+    const agents = readFileSync(join(racine, ".agents/skills/ucm-implementer/SKILL.md"), "utf8");
+    assert.equal(readFileSync(join(racine, ".claude/skills/ucm-implementer/SKILL.md"), "utf8"), agents);
+    assert.match(agents, /^---\nname: ucm-implementer\ndescription: [^\n]+\n---\n/);
+    assert.ok(agents.includes(`npx --yes @ucm-kit/cli@${version} guide <chemin du contrat>`));
+
+    const conventions = lireConventions(readFileSync(join(racine, ".ucm/conventions.md"), "utf8"), catalogueDesAides());
+    assert.deepEqual(conventions.anomalies, []);
+    assert.equal(conventions.tete, "");
+    assert.equal(conventions.sections.size, 0, "l'exemple reste en commentaire");
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("les gabarits d'un adaptateur se copient sans écraser, et une erreur de chargement n'arrête pas l'installation", () => {
+  const racine = repoVierge();
+  const gabarits = repoVierge();
+  try {
+    writeFileSync(join(gabarits, "composant.tsx"), "export const Gabarit = 1;\n");
+    const premier = init(racine, { adaptateur: { cheminGabarits: gabarits } });
+    assert.ok(premier.ecrits.includes(".ucm/gabarits/composant.tsx"));
+    assert.equal(readFileSync(join(racine, ".ucm/gabarits/composant.tsx"), "utf8"), "export const Gabarit = 1;\n");
+
+    writeFileSync(join(racine, ".ucm/gabarits/composant.tsx"), "adapté\n");
+    const second = init(racine, { adaptateur: { cheminGabarits: gabarits } });
+    assert.ok(second.conserves.includes(".ucm/gabarits/composant.tsx"));
+    assert.equal(readFileSync(join(racine, ".ucm/gabarits/composant.tsx"), "utf8"), "adapté\n");
+
+    const autre = repoVierge();
+    try {
+      const resultat = init(autre, { erreurAdaptateur: new Error("tsconfig.json illisible") });
+      assert.ok(resultat.ecrits.includes("ucm.config.json"));
+      assert.match(rendreInit(resultat), /@ucm-kit\/adapter-typescript est installé mais n'a pas servi : tsconfig\.json illisible\. Les gabarits n'ont pas été copiés/);
+    } finally {
+      rmSync(autre, { recursive: true, force: true });
+    }
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+    rmSync(gabarits, { recursive: true, force: true });
+  }
+});
+
+test("les lignes à ajouter à la main nomment leur fichier, et se taisent quand elles sont déjà là", () => {
+  const racine = repoVierge();
+  try {
+    writeFileSync(join(racine, "package.json"), JSON.stringify({ scripts: { build: "vite build" } }));
+    writeFileSync(join(racine, "tokens.json"), JSON.stringify({ $extensions: { "com.ucm.axes": { theme: { modes: ["a", "b"], default: "a" } } } }));
+    const premier = rendreInit(init(racine));
+    assert.match(premier, /Reste à ajouter à la main :\n- package\.json : ajoutez `"@ucm-kit\/cli": "[^"]+"` aux devDependencies\./);
+    assert.match(premier, /- package\.json : lancez `ucm tokens css --out src\/generated\/tokens\.css` en tête des scripts dev et build/);
+    assert.match(premier, /- l'entrée CSS de l'application : importez la feuille générée/);
+    assert.match(premier, /- ucm\.config\.json : la section modes, facultative/);
+    assert.match(premier, /Relancez `ucm init` après avoir installé @ucm-kit\/adapter-typescript/);
+
+    const { version } = init(racine);
+    writeFileSync(join(racine, "package.json"), JSON.stringify({
+      scripts: { build: "ucm tokens css --out src/generated/tokens.css && vite build" },
+      devDependencies: { "@ucm-kit/cli": version },
+    }));
+    writeFileSync(join(racine, "ucm.config.json"), JSON.stringify({ modes: { theme: "data-theme" } }));
+    const second = rendreInit(init(racine));
+    assert.doesNotMatch(second, /Reste à ajouter/);
+    assert.match(second, /Rien à faire/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("init passe par l'aiguillage : l'adaptateur absent ne l'arrête pas", async () => {
+  const racine = repoVierge();
+  try {
+    const lignes = [];
+    assert.equal(await executer(["init", "--sans-agents"], { racine, ecrire: (texte) => lignes.push(texte) }), 0);
+    assert.match(lignes.join("\n"), /Installé avec @ucm-kit\/cli/);
+    assert.doesNotMatch(lignes.join("\n"), /\.agents|Relancez/);
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }

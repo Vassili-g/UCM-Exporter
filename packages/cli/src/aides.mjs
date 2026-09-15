@@ -76,7 +76,7 @@ function conventionsDepuis(depart, racine, catalogue) {
 }
 
 /** Les anomalies et les sections à relire, à imprimer avant tout le reste. */
-function avertissements(conventions, chemin, racine, catalogue) {
+export function avertissements(conventions, chemin, racine, catalogue) {
   if (!conventions) return [];
   const ou = relative(racine, chemin).split("\\").join("/");
   return [

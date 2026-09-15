@@ -1,0 +1,474 @@
+/**
+ * `ucm guide <contrat>` : ce qu'un agent lit avant d'implémenter un contrat, en
+ * une seule commande.
+ *
+ * La sortie est un Markdown, dans cet ordre : ce qui est à relire avant de
+ * commencer, la procédure, le texte de tête des conventions, l'extraction du
+ * contrat, les aides que ses caractéristiques emploient, les ancrages que les
+ * conventions ne tranchent pas, les modes, les icônes, puis la taille de chaque
+ * partie. Une vue ou une entrée de catalogue s'imprime une fois, sous son renvoi.
+ *
+ * Codes : 0 guide rendu, 1 graphe de composition ou fichier de tokens
+ * incohérent, 2 invocation, configuration ou contrat illisible.
+ */
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, relative, resolve } from "node:path";
+
+import { NOM_CONFIGURATION, etatDuFormatDeTokens } from "@ucm-kit/core/format";
+import {
+  CARACTERISTIQUES,
+  axesDeTokens,
+  axesDuContrat,
+  caracteristiquesDuContrat,
+  compositionsExactesDuVariant,
+  conesDesAxes,
+  contextesDeVerification,
+  contextesDesAxes,
+  lireConfiguration,
+  messagesDExport,
+  trouverContrats,
+  validerGrapheDesContrats,
+  verdictDeVersion,
+  vueExacteDuVariant,
+} from "@ucm-kit/core/lecteurs";
+
+import { avertissements, catalogueDesAides } from "./aides.mjs";
+import { conventionsLesPlusProches, lireConventions } from "./conventions.mjs";
+import { attributsDesAxes } from "./tokens-css.mjs";
+
+export const USAGE_GUIDE = "ucm guide <contrat> [--out <fichier>]";
+
+const PROCEDURE = new URL("../procedure.md", import.meta.url);
+
+/** Les catalogues de second niveau, par partie de vue. */
+const CATALOGUES = {
+  structure: "viewStructures",
+  typography: "viewTypographies",
+  composes: "viewComposes",
+  icons: "viewIcons",
+  paintPlacements: "viewPaintPlacements",
+};
+
+const estObjet = (valeur) => Boolean(valeur) && typeof valeur === "object" && !Array.isArray(valeur);
+const enSlash = (chemin) => chemin.split("\\").join("/");
+const lireJson = (chemin) => JSON.parse(readFileSync(chemin, "utf8").replace(/^\uFEFF/, ""));
+
+/** Lit les arguments de `ucm guide`, sans lever. */
+export function lireArgumentsGuide(arguments_) {
+  const options = { contrat: null, out: null };
+  for (let i = 0; i < arguments_.length; i += 1) {
+    const argument = arguments_[i];
+    if (argument === "--out") {
+      const valeur = arguments_[i + 1];
+      if (valeur === undefined || valeur.startsWith("--")) return { erreur: "--out attend un chemin de fichier." };
+      options.out = valeur;
+      i += 1;
+      continue;
+    }
+    if (argument.startsWith("--") || options.contrat !== null) return { erreur: `Argument inconnu : ${argument}` };
+    options.contrat = argument;
+  }
+  if (options.contrat === null) return { erreur: "ucm guide attend le chemin d'un contrat." };
+  return { options };
+}
+
+/** Une ligne par entrée : la clé, puis sa valeur en JSON compact. */
+function lignesJson(valeur) {
+  if (!estObjet(valeur)) return [JSON.stringify(valeur)];
+  return Object.entries(valeur).map(([cle, entree]) => `${JSON.stringify(cle)}: ${JSON.stringify(entree)}`);
+}
+
+function blocJson(titre, valeur) {
+  if (valeur === undefined) return [];
+  return [`### ${titre}`, "", "```json", ...lignesJson(valeur), "```", ""];
+}
+
+/** Les clés de définition que des liaisons citent, à n'importe quelle profondeur. */
+function definitionsCitees(valeur, trouvees = new Set()) {
+  if (Array.isArray(valeur)) for (const entree of valeur) definitionsCitees(entree, trouvees);
+  else if (estObjet(valeur)) {
+    if (typeof valeur.definition === "string") trouvees.add(valeur.definition);
+    for (const entree of Object.values(valeur)) definitionsCitees(entree, trouvees);
+  }
+  return trouvees;
+}
+
+/** Les entrées d'un dictionnaire dont la clé est citée, dans l'ordre du contrat. */
+function entreesCitees(dictionnaire, cles) {
+  if (!estObjet(dictionnaire)) return undefined;
+  const choisies = Object.entries(dictionnaire).filter(([cle]) => cles.has(cle));
+  return choisies.length === 0 ? undefined : Object.fromEntries(choisies);
+}
+
+/** Les noms des dépendances qu'au moins un variant compose, dans l'ordre de première apparition. */
+function dependancesDuContrat(contrat) {
+  const noms = [];
+  for (const variant of Array.isArray(contrat.variants) ? contrat.variants : []) {
+    for (const { component } of compositionsExactesDuVariant(contrat, variant)) {
+      if (typeof component === "string" && !noms.includes(component)) noms.push(component);
+    }
+  }
+  return noms;
+}
+
+/** Les icônes que les vues des variants placent. */
+function iconesUtilisees(contrat) {
+  const cles = new Set();
+  for (const variant of Array.isArray(contrat.variants) ? contrat.variants : []) {
+    const icones = vueExacteDuVariant(contrat, variant)?.icons;
+    for (const cle of Object.keys(estObjet(icones) ? icones : {})) cles.add(cle);
+  }
+  return cles;
+}
+
+/**
+ * L'extraction du contrat. Les variants gardent leur renvoi de vue, chaque vue
+ * citée s'imprime une fois, puis chaque entrée de catalogue qu'une vue cite.
+ * Les identités Figma d'un variant, `nodeId` et `figmaName`, ne sont pas
+ * imprimées : elles tracent la maquette et ne décrivent aucun rendu.
+ */
+function extraction(contrat, contratsParNom) {
+  const variants = (Array.isArray(contrat.variants) ? contrat.variants : []).map((variant) => {
+    if (!estObjet(variant)) return variant;
+    const { nodeId, figmaName, ...rendu } = variant;
+    return rendu;
+  });
+  const vuesCitees = new Set(variants.map((variant) => variant?.view).filter((vue) => typeof vue === "string"));
+  const vues = entreesCitees(contrat.variantViews, vuesCitees);
+
+  const citees = Object.fromEntries(Object.keys(CATALOGUES).map((partie) => [partie, new Set()]));
+  if (typeof contrat.structure?.view === "string") citees.structure.add(contrat.structure.view);
+  for (const vue of Object.values(vues ?? {})) {
+    for (const partie of Object.keys(CATALOGUES)) {
+      if (typeof vue?.[partie] === "string") citees[partie].add(vue[partie]);
+    }
+  }
+
+  const styles = new Set();
+  for (const variant of Array.isArray(contrat.variants) ? contrat.variants : []) {
+    const usages = vueExacteDuVariant(contrat, variant)?.typography;
+    for (const usage of Array.isArray(usages) ? usages : []) if (typeof usage?.style === "string") styles.add(usage.style);
+  }
+
+  const lignes = [
+    "## Contrat",
+    "",
+    `Version ${contrat.meta?.contractVersion}, couverture portable ${contrat.meta?.coverage?.portable ?? "non déclarée"}.`,
+    "",
+  ];
+  const diagnostics = messagesDExport(contrat);
+  if (diagnostics.length > 0) {
+    lignes.push("Ce que l'export n'a pas su décrire, à rapporter au développeur :", "", ...diagnostics.map((message) => `- ${message}`), "");
+  }
+  lignes.push(
+    ...blocJson("props", contrat.props),
+    ...blocJson("structure", contrat.structure),
+    ...blocJson("stateModel", contrat.stateModel),
+    ...blocJson("intent", contrat.intent),
+    ...blocJson("rendering", contrat.rendering),
+    "### variants",
+    "",
+    "```json",
+    ...variants.map((variant) => JSON.stringify(variant)),
+    "```",
+    "",
+    ...blocJson("variantViews", vues),
+  );
+  for (const [partie, catalogue] of Object.entries(CATALOGUES)) {
+    lignes.push(...blocJson(catalogue, entreesCitees(contrat[catalogue], citees[partie])));
+  }
+  lignes.push(
+    ...blocJson("icons", entreesCitees(contrat.icons, iconesUtilisees(contrat))),
+    ...blocJson("textStyles", entreesCitees(contrat.textStyles, styles)),
+    ...blocJson("propertyBindingDefinitions", entreesCitees(contrat.propertyBindingDefinitions, definitionsCitees(contrat.variants))),
+    ...blocJson("samples", contrat.samples),
+  );
+
+  for (const nom of dependancesDuContrat(contrat)) {
+    const dependance = contratsParNom.get(nom);
+    lignes.push(`### Dépendance ${nom}`, "");
+    if (!estObjet(dependance)) {
+      lignes.push("Contrat introuvable ou ambigu dans ce repository.", "");
+      continue;
+    }
+    lignes.push("```json", ...lignesJson({ props: dependance.props, samples: dependance.samples }), "```", "");
+  }
+
+  lignes.push(
+    "### Ce que le contrat ne dit pas",
+    "",
+    "- Le comportement, l'accessibilité et les événements relèvent des conventions et de la relecture.",
+    "- Ce guide ne prouve pas qu'un sens a été appliqué : la preuve de chaque aide le vérifie.",
+    "",
+  );
+  return lignes.join("\n");
+}
+
+/** Le rang d'une aide : celui de sa caractéristique, `composant` en tête des aides de tout contrat. */
+function rangDAide(aide) {
+  const rang = CARACTERISTIQUES.findIndex(({ id }) => id === aide.quand);
+  return [rang, aide.nom === "composant" ? 0 : 1, aide.nom];
+}
+
+function comparerAides(gauche, droite) {
+  const [a, b] = [rangDAide(gauche), rangDAide(droite)];
+  return a[0] - b[0] || a[1] - b[1] || a[2].localeCompare(b[2]);
+}
+
+/** Les aides employées, rendues ; et les ancrages que les conventions ne tranchent pas. */
+function aidesDuContrat(caracteristiques, catalogue, conventions) {
+  const employees = [...catalogue.values()].filter((aide) => caracteristiques.includes(aide.quand)).sort(comparerAides);
+  const rendues = [];
+  const nonTranches = [];
+  const ecrituresParDefaut = conventions?.ecrituresParDefaut ?? true;
+
+  for (const aide of employees) {
+    const section = conventions?.sections.get(aide.nom);
+    if (aide.ancrage && !(section && section.texte !== "")) {
+      nonTranches.push(`- **${aide.nom}** : ${aide.sens.replace(/\s*\n\s*/g, " ")}`);
+      continue;
+    }
+    const parties = [`### ${aide.nom}`, "", "**Sens.**", "", aide.sens, ""];
+    if (aide.ancrage) parties.push("**Réponse du repository.**", "", section.texte, "");
+    else if (aide.nom === "composant" && conventions?.tete) parties.push("**Écriture.** Le texte de tête des conventions, plus haut.", "");
+    else if (section) parties.push("**Écriture du repository.**", "", section.texte, "");
+    else if (ecrituresParDefaut) parties.push("**Écriture par défaut.**", "", aide.ecriture, "");
+
+    const controles = [...(section?.controles ?? []), ...(aide.nom === "composant" ? conventions?.controles ?? [] : [])];
+    parties.push("**Preuve.**", "", aide.preuve, "");
+    if (controles.length > 0) parties.push(`Contrôles du repository : ${controles.map((commande) => `\`${commande}\``).join(", ")}.`, "");
+    rendues.push(parties.join("\n"));
+  }
+
+  return {
+    aides: ["## Aides", "", ...rendues].join("\n"),
+    nonTranches: nonTranches.length === 0 ? "" : ["## Non tranché : demander au développeur", "", ...nonTranches, ""].join("\n"),
+  };
+}
+
+/** Le numéro de `@ucm-kit/cli` qu'un fichier épingle, ou `null`. */
+function pinDans(texte) {
+  return /@ucm-kit\/cli@(\d+\.\d+\.\d+[^\s`"']*)/.exec(texte)?.[1] ?? null;
+}
+
+/**
+ * Les pins de `@ucm-kit/cli` du repository, comparés entre eux : les deux
+ * relais, le workflow et `package.json`. Rend une ligne par fichier quand deux
+ * numéros diffèrent, sinon rien.
+ */
+export function pinsEnDesaccord(racine) {
+  const trouves = [];
+  for (const chemin of [
+    ".agents/skills/ucm-implementer/SKILL.md",
+    ".claude/skills/ucm-implementer/SKILL.md",
+    ".github/workflows/ucm.yml",
+  ]) {
+    const complet = join(racine, chemin);
+    if (!existsSync(complet)) continue;
+    const version = pinDans(readFileSync(complet, "utf8"));
+    if (version !== null) trouves.push({ chemin, version });
+  }
+  try {
+    const manifeste = lireJson(join(racine, "package.json"));
+    const version = manifeste.devDependencies?.["@ucm-kit/cli"] ?? manifeste.dependencies?.["@ucm-kit/cli"];
+    if (typeof version === "string") trouves.push({ chemin: "package.json", version });
+  } catch {
+    // Un repository sans package.json lisible n'épingle rien là.
+  }
+  if (new Set(trouves.map(({ version }) => version)).size < 2) return [];
+  return [
+    "⚠ Les pins de @ucm-kit/cli diffèrent : alignez-les sur une seule version.",
+    ...trouves.map(({ chemin, version }) => `  ${chemin} : ${version}`),
+  ];
+}
+
+/**
+ * Les modes qui touchent le contrat : un refus quand le fichier de tokens est
+ * incohérent, sinon le texte de la section.
+ */
+function modesDuContrat(contrat, contratsParNom, racine, configuration) {
+  const source = resolve(racine, configuration.tokens);
+  if (!existsSync(source)) return { texte: `## Modes\n\nAucun fichier de tokens à ${configuration.tokens} : aucun axe ne se lit.\n`, cones: undefined };
+
+  let document;
+  try {
+    document = lireJson(source);
+  } catch {
+    return { refus: `${configuration.tokens} est illisible : ce n'est pas du JSON valide.` };
+  }
+  const format = etatDuFormatDeTokens(document);
+  if (format.etat === "future" || format.etat === "invalide") {
+    return { refus: `${configuration.tokens} porte une version du format de tokens que cette commande ne lit pas.` };
+  }
+  const { etat, axes, constats } = axesDeTokens(document);
+  if (etat === "incoherent") {
+    return { refus: [`${configuration.tokens} déclare des modes incohérents :`, ...constats.map(({ message }) => `  ${message}`)].join("\n") };
+  }
+  if (etat === "anterieur" || etat === "axe-ecarte") {
+    return {
+      texte: `## Modes\n\n${configuration.tokens} porte des modes sans axe déclaré : les contextes de ce contrat ne se déterminent pas. Un designer doit réexporter les tokens depuis Figma.\n`,
+      cones: undefined,
+    };
+  }
+
+  const cones = conesDesAxes(document, axes);
+  const generes = contextesDesAxes(document, axes);
+  const { attributs, erreurs, notes } = attributsDesAxes(generes, configuration.modes ?? {});
+  if (erreurs.length > 0) return { erreurConfiguration: erreurs.join("\n") };
+
+  const touches = axesDuContrat(contrat, contratsParNom, cones);
+  const touchants = generes.filter(({ nom }) => touches.axes.includes(nom));
+  if (touchants.length === 0) return { texte: "## Modes\n\nAucun axe de modes ne touche ce contrat.\n", cones };
+
+  const axeParNom = new Map(generes.map((axe) => [axe.nom, axe]));
+  const selecteur = (contexte) => {
+    const entrees = Object.entries(contexte);
+    if (entrees.length === 0) return "le contexte par défaut";
+    return entrees.map(([nom, mode]) => `\`${attributs.get(nom)}="${mode}"\``).join(" et ");
+  };
+  const lignes = [
+    "## Modes",
+    "",
+    "Chaque axe se pose par un attribut, sur n'importe quel élément. Le composant ne lit pas le mode et ne déclare aucune variable de token.",
+    "",
+    ...touchants.map((axe) => `- \`${axe.nom}\` : attribut \`${attributs.get(axe.nom)}\`, modes ${axe.modes.map((mode) => (mode === axe.defaut ? `${mode} (défaut)` : mode)).join(", ")}`),
+    ...notes.map((note) => `- ${note}`),
+    "",
+    "Contextes à vérifier :",
+    "",
+    ...contextesDeVerification(touchants, touches.croisements.filter((couple) => couple.every((nom) => axeParNom.has(nom))))
+      .map((contexte) => `- ${selecteur(contexte)}`),
+    "",
+  ];
+  return { texte: lignes.join("\n"), cones };
+}
+
+/** Lit les contrats du repository ; le contrat visé est toujours du lot. */
+function documentsDuRepository(racine, configuration, cible) {
+  const chemins = trouverContrats(join(racine, configuration.components)).map((chemin) => resolve(chemin));
+  if (!chemins.includes(cible)) chemins.push(cible);
+  const documents = [];
+  for (const chemin of chemins) {
+    try {
+      documents.push({ chemin, contrat: lireJson(chemin) });
+    } catch {
+      // Un contrat voisin illisible relève d'`ucm check`.
+    }
+  }
+  return documents;
+}
+
+function indexParNom(documents) {
+  const parNom = new Map();
+  for (const { contrat } of documents) {
+    if (typeof contrat?.name !== "string") continue;
+    const deja = parNom.get(contrat.name);
+    parNom.set(contrat.name, deja === undefined ? contrat : [...[deja].flat(), contrat]);
+  }
+  return parNom;
+}
+
+/**
+ * La commande `ucm guide`, et son code de sortie. `ecrire` reçoit le guide, ou
+ * le compte rendu de son écriture avec `--out` ; `alerter` reçoit les refus.
+ */
+export function guide(arguments_, {
+  racine = process.cwd(),
+  ecrire = console.log,
+  alerter = console.error,
+  ecrireFichier = writeFileSync,
+  catalogue = catalogueDesAides(),
+} = {}) {
+  const { options, erreur } = lireArgumentsGuide(arguments_);
+  if (erreur) {
+    alerter(`${erreur}\n\n${USAGE_GUIDE}`);
+    return 2;
+  }
+  const { configuration, erreur: erreurConfiguration } = lireConfiguration(racine);
+  if (erreurConfiguration) {
+    alerter(erreurConfiguration);
+    return 2;
+  }
+
+  const cible = resolve(racine, options.contrat);
+  let contrat;
+  try {
+    contrat = lireJson(cible);
+  } catch {
+    alerter(`${options.contrat} est introuvable ou n'est pas du JSON valide.`);
+    return 2;
+  }
+  if (!estObjet(contrat)) {
+    alerter(`${options.contrat} n'est pas un contrat : sa racine n'est pas un objet.`);
+    return 2;
+  }
+  const verdict = verdictDeVersion(contrat.meta?.contractVersion);
+  if (verdict !== "ok") {
+    alerter(verdict === "recent"
+      ? `${options.contrat} est en version ${contrat.meta?.contractVersion}, que cette CLI ne lit pas encore. Un développeur doit mettre à jour @ucm-kit/cli.`
+      : `${options.contrat} est en version ${contrat.meta?.contractVersion}, que cette CLI ne lit plus. Un designer doit réexporter le composant depuis Figma.`);
+    return 2;
+  }
+
+  const documents = documentsDuRepository(racine, configuration, cible);
+  const fautes = validerGrapheDesContrats(documents).get(cible) ?? [];
+  if (fautes.length > 0) {
+    alerter([`${options.contrat} ne forme pas un graphe de composition cohérent :`, ...fautes.map((faute) => `  ${faute}`)].join("\n"));
+    return 1;
+  }
+  const contratsParNom = indexParNom(documents);
+
+  const modes = modesDuContrat(contrat, contratsParNom, racine, configuration);
+  if (modes.erreurConfiguration) {
+    alerter(modes.erreurConfiguration);
+    return 2;
+  }
+  if (modes.refus) {
+    alerter(modes.refus);
+    return 1;
+  }
+
+  const cheminConventions = conventionsLesPlusProches(dirname(cible), racine);
+  const conventions = cheminConventions === null ? null : lireConventions(readFileSync(cheminConventions, "utf8"), catalogue);
+  const caracteristiques = caracteristiquesDuContrat(contrat, contratsParNom, modes.cones);
+  const { aides, nonTranches } = aidesDuContrat(caracteristiques, catalogue, conventions);
+
+  const aRelire = [...avertissements(conventions, cheminConventions, racine, catalogue), ...pinsEnDesaccord(racine)];
+  const icones = entreesCitees(contrat.icons, iconesUtilisees(contrat));
+  const parties = [
+    ["à relire", aRelire.length === 0 ? "" : ["## À relire avant de commencer", "", ...aRelire, ""].join("\n")],
+    ["procédure", `${readFileSync(PROCEDURE, "utf8").replace(/\r\n/g, "\n").replace(/^(#+) /gm, "#$1 ").trim()}\n`],
+    ["conventions", conventions?.tete
+      ? `## Conventions du repository\n\n${conventions.tete}\n`
+      : `## Conventions du repository\n\nAucun texte de tête dans ${cheminConventions === null ? ".ucm/conventions.md, absent" : enSlash(relative(racine, cheminConventions))}.\n`],
+    ["contrat", extraction(contrat, contratsParNom)],
+    ["aides", aides],
+    ["non tranché", nonTranches],
+    ["modes", modes.texte],
+    ["icônes", icones === undefined ? "" : ["## Icônes réclamées", "", ...Object.values(icones).map((icone) => `- ${icone?.figmaName}`), ""].join("\n")],
+  ].filter(([, texte]) => texte !== "");
+
+  const taille = [
+    "## Taille de ce guide",
+    "",
+    "| Partie | Octets |",
+    "|---|---|",
+    ...parties.map(([nom, texte]) => `| ${nom} | ${Buffer.byteLength(texte, "utf8")} |`),
+    "",
+  ].join("\n");
+  const sortie = [`# Guide d'implémentation : ${contrat.name}`, "", ...parties.map(([, texte]) => texte), taille].join("\n");
+
+  if (options.out === null) {
+    ecrire(sortie);
+    return 0;
+  }
+  const destination = resolve(racine, options.out);
+  if (destination === cible || destination === resolve(racine, NOM_CONFIGURATION)) {
+    alerter(`--out désigne ${options.out}, que la commande lit : choisissez un fichier à part.`);
+    return 2;
+  }
+  mkdirSync(dirname(destination), { recursive: true });
+  ecrireFichier(destination, sortie, "utf8");
+  ecrire(`${options.out} : ${Buffer.byteLength(sortie, "utf8")} octets.`);
+  return 0;
+}
