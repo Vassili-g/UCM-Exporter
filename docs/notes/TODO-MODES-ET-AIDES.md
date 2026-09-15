@@ -254,6 +254,12 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 ## L7. Gabarit de l'adaptateur
 
+- [ ] **[mainteneur]** Trancher la forme du gabarit. Contrainte posée : il est
+      neutre en technologie et ne porte aucun élément propre à React. Les
+      tâches ci-dessous nomment encore un `.tsx`, un contrôle de types et une
+      parité TypeScript : elles se réécrivent selon cette décision, avant
+      d'être exécutées.
+
 - [ ] `packages/adapter-typescript/gabarits/exemple.contract.json`, contrat
       synthétique : props, variants, vue exacte, états, composition, icône,
       `ring`, dimensions par taille.

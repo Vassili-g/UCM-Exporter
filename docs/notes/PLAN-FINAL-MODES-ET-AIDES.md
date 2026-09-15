@@ -683,6 +683,14 @@ Un repository sans adaptateur désigne un composant de référence dans le texte
 tête des conventions. Le gabarit montre une forme et ne prouve rien sur un autre
 composant.
 
+**Décision en attente du mainteneur.** Le gabarit est neutre en technologie et
+ne porte aucun élément propre à React. Cette contrainte remet en cause
+`composant.tsx`, le contrôle de types et le test de parité décrits plus haut.
+Trois questions restent à trancher avant L7 : la forme du gabarit, l'endroit
+qui le publie si ce n'est plus l'adaptateur TypeScript, et ce qui prouve qu'il
+suit les écritures par défaut. `init` copie déjà les gabarits d'un adaptateur
+qui publie `cheminGabarits`.
+
 ### 6.7. Installation
 
 `npx --yes @ucm-kit/cli@<version> init` écrit, sans écraser :
