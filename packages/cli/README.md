@@ -16,7 +16,7 @@ matches them.
 Requires Node 20 or later. At the root of the repository:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.42 init
+npx --yes @ucm-kit/cli@0.1.43 init
 ```
 
 1. Commit and push the files `init` wrote.
@@ -27,7 +27,7 @@ npx --yes @ucm-kit/cli@0.1.42 init
 To run the check locally:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.42 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.43 check --report ci-report.md
 ```
 
 `--yes` skips the npx confirmation prompt. Pin an exact version, without `^`:
@@ -78,7 +78,7 @@ contract would resolve to the same file. A repository that does not write React
 states its own extension:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.42 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.43 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 The three path options act only on a first install. `ucm init` never overwrites
@@ -159,7 +159,7 @@ global key, so the project's other jobs keep their rules. `ucm` runs the check
 in merge request pipelines and on the default branch; `ucm-rapport` posts the
 note in merge request pipelines. Both take the default `test` stage. A new
 `.gitlab-ci.yml` includes the file; an existing one is left alone, and the
-command prints the `include` line to add. It also prints three settings it
+command prints the `include` line to add. It also prints the settings it
 cannot make:
 
 - create the CI/CD variable `UCM_GITLAB_TOKEN`, masked and not protected,
@@ -172,8 +172,14 @@ cannot make:
 - tick "Pipelines must succeed" in the merge request settings. Without it, a red
   report does not block the merge it says is blocked;
 - keep `test` in `stages:` when `.gitlab-ci.yml` declares them: GitLab refuses a
-  pipeline whose job names a missing stage.
+  pipeline whose job names a missing stage;
+- put `- if: $CI_PIPELINE_SOURCE == "merge_request_event"` first in
+  `workflow:rules` when `.gitlab-ci.yml` declares rules without it: GitLab then
+  creates no merge request pipeline, and `ucm` checks no export.
 
+Both jobs set `inherit: default: false`. A project `default:` block does not
+reach them: its `before_script` would run before the token is unset, and would
+fail in `ucm-rapport`, which has no clone. Global variables are still inherited.
 `ucm` unsets `UCM_GITLAB_TOKEN` before `npm ci`, so install scripts do not
 inherit it on executors that set variables in the job script. `ucm-rapport`
 runs no code from the repository: it clones nothing, receives `ci-report.md`
@@ -182,7 +188,7 @@ directory. It writes a minimal report when the check stopped before writing
 one, then posts the report:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.42 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier "$CI_PROJECT_DIR/ci-report.md" --api "$CI_API_V4_URL"
+npx --yes @ucm-kit/cli@0.1.43 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier "$CI_PROJECT_DIR/ci-report.md" --api "$CI_API_V4_URL"
 ```
 
 | Option | Effect |

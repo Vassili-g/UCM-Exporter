@@ -566,6 +566,10 @@ function workflowGitlab(version) {
     "# Écrit par `ucm init`. Adaptez-le : il ne sera jamais réécrit par-dessus.",
     "ucm:",
     "  image: node:22",
+    "  # Le before_script d'un default: du projet tournerait avec le jeton de la",
+    "  # note. Les variables globales, elles, restent héritées.",
+    "  inherit:",
+    "    default: false",
     "  variables:",
     "    # Le diff avec la base délimite les états informatifs du rapport.",
     '    GIT_DEPTH: "0"',
@@ -591,6 +595,9 @@ function workflowGitlab(version) {
     "",
     "ucm-rapport:",
     "  image: node:22",
+    "  # Sans clone, le before_script d'un default: du projet échouerait.",
+    "  inherit:",
+    "    default: false",
     "  needs:",
     "    - job: ucm",
     "      artifacts: true",
@@ -623,8 +630,21 @@ function workflowGitlab(version) {
 }
 
 /**
+ * Le texte d'une clé de premier niveau d'un YAML, lignes indentées comprises,
+ * ou `null` quand la clé est absente.
+ *
+ * La CLI n'a aucune dépendance YAML : ce découpage lit la forme qu'écrit un
+ * `.gitlab-ci.yml` courant. Une clé venue d'un `include:` n'est pas vue.
+ */
+function blocDeRacine(yaml, cle) {
+  const bloc = new RegExp(`^${cle}:([^\\n]*(?:\\n(?:[ \\t]+[^\\n]*|-[^\\n]*|#[^\\n]*|[ \\t]*)(?=\\n|$))*)`, "m").exec(yaml);
+  return bloc ? bloc[1] : null;
+}
+
+/**
  * Les lignes qu'`init` ne peut pas écrire pour GitLab : des réglages du projet,
- * et un `stages:` qui refuserait le job.
+ * un `stages:` qui refuserait le job, et un `workflow:rules` qui ne crée aucun
+ * pipeline de merge request.
  */
 function lignesGitlab(racine) {
   const lignes = [
@@ -639,11 +659,18 @@ function lignesGitlab(racine) {
   ];
   try {
     const ci = readFileSync(join(racine, ".gitlab-ci.yml"), "utf8");
-    const stages = /^stages:([^\n]*(?:\n[ \t]+[^\n]*|\n-[^\n]*)*)/m.exec(ci);
-    if (stages && !/\btest\b/.test(stages[1])) {
+    const stages = blocDeRacine(ci, "stages");
+    if (stages !== null && !/\btest\b/.test(stages)) {
       lignes.push({
         fichier: ".gitlab-ci.yml",
         ligne: "ajoutez `test` à `stages:`. Le job ucm s'y range, et GitLab refuse un pipeline dont un job vise un stage absent.",
+      });
+    }
+    const workflow = blocDeRacine(ci, "workflow");
+    if (workflow !== null && /^[ \t]+rules:/m.test(workflow) && !workflow.includes("merge_request_event")) {
+      lignes.push({
+        fichier: ".gitlab-ci.yml",
+        ligne: "ajoutez `- if: $CI_PIPELINE_SOURCE == \"merge_request_event\"` en tête de `workflow:rules`. Sans cette règle, GitLab ne crée aucun pipeline de merge request et le job ucm ne contrôle aucun export.",
       });
     }
   } catch {

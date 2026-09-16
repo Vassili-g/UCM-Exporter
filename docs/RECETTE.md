@@ -108,7 +108,7 @@ commande et l'écran sans sélection.
 Dans un second terminal, à la racine d'`UCM-Playground` :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.40 init
+npx --yes @ucm-kit/cli@0.1.43 init
 ```
 
 Sans option, la commande écrit ses défauts : les contrats sous `components/`,
@@ -117,7 +117,7 @@ les tokens dans `tokens.json`. Le Playground range les siens sous
 que la recette emploie :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.40 init --components src/components --tokens src/tokens
+npx --yes @ucm-kit/cli@0.1.43 init --components src/components --tokens src/tokens
 ```
 
 | Option | Ce qu'elle reçoit |
@@ -159,14 +159,14 @@ Attendu, à peu de choses près :
 ✓ .ucm/conventions.md
 · .gitignore existait déjà, laissé tel quel
 
-Installé avec @ucm-kit/cli 0.1.40.
+Installé avec @ucm-kit/cli 0.1.43.
 Placez vos contrats sous `src/components/`, vos tokens dans `src/tokens/tokens.json`, puis lancez `ucm check`.
 CI écrite pour GitHub, d'après l'hôte du remote origin, github.com. L'option `--forge github` ou `--forge gitlab` en choisit une autre.
 
 · `.gitignore` existait déjà : ajoutez-y `ci-report.md`. […]
 
 Reste à ajouter à la main :
-- package.json : ajoutez `"@ucm-kit/cli": "0.1.40"` aux devDependencies.
+- package.json : ajoutez `"@ucm-kit/cli": "0.1.43"` aux devDependencies.
 - package.json : lancez `ucm tokens css --out src/generated/tokens.css` en tête des scripts dev et build, […]
 - l'entrée CSS de l'application : importez la feuille générée, `src/generated/tokens.css`.
 ```
@@ -190,7 +190,7 @@ ci-report.md
 Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.40 check
+npx --yes @ucm-kit/cli@0.1.43 check
 ```
 
 Attendu :
@@ -324,7 +324,7 @@ l'implémentation n'a pas été lue, jamais qu'elle est conforme.
 Pour lui donner à lire :
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.33
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.36
 ```
 
 Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
@@ -435,8 +435,8 @@ Le workflow le fait déjà après chaque publication, et le refaire à la main c
 une minute. Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.40 init
-npx --yes @ucm-kit/cli@0.1.40 check
+npx --yes @ucm-kit/cli@0.1.43 init
+npx --yes @ucm-kit/cli@0.1.43 check
 ```
 
 Attendu : `init` écrit ses sept fichiers, et `check` sort en 0 en disant que ce
@@ -467,7 +467,7 @@ de scope `api` ayant le rôle Developer sur ce projet. Dans ce qui suit,
 1. Dans un clone du projet, lancez :
 
    ```sh
-   npx --yes @ucm-kit/cli@0.1.40 init --forge gitlab
+   npx --yes @ucm-kit/cli@0.1.43 init --forge gitlab
    ```
 
    Vérifiez que le compte rendu nomme GitLab et le signal suivi, qu'il écrit

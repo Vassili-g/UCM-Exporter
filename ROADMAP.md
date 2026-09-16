@@ -40,7 +40,8 @@ un composant composé. Couvrir un catalogue entier n'en fait pas partie.
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlées |
 | Consommation | `@ucm-kit/core` lit deux versions et porte les contrôles indépendants du langage. `@ucm-kit/cli` les exécute et découvre l'adaptateur optionnel. `@ucm-kit/adapter-typescript` compare props et composition, puis génère les types dérivés |
 | Contrôles chez le consommateur | Forme, version du contrat et du format de tokens, graphe de composition, adresses des échantillons, références de tokens, et parité statique quand l'adaptateur est installé. Tout vient du workflow qu'`ucm init` écrit |
-| Rapport CI | Constats et avertissements agrégés dans le terminal, le résumé CI et le commentaire de pull request |
+| Rapport CI | Constats et avertissements agrégés dans le terminal, le résumé CI, le commentaire de pull request sur GitHub et la note de merge request sur GitLab |
+| Forges | Le plugin publie sur GitHub et sur gitlab.com : une branche, un fichier et une demande de fusion par export. `ucm init` écrit la CI de la forge du repository. Le parcours GitLab de la [recette](./docs/RECETTE.md#parcours-gitlab) a été joué sur un projet gitlab.com |
 | Interopérabilité | JSON Schema publié dans `schema/`, dérivé de `types.ts`. Il décrit la forme, jamais la cohérence. Il ne bloque aucune fusion |
 | Validation Figma | Quatre composants exportés à la forme courante, puis reconstruits à froid depuis leur seul contrat. Le Playground porte ce corpus, et son contrôle est vert |
 
@@ -54,6 +55,7 @@ Aucun contrôle n'exécute le rendu.
 | Aucun contrat existant ne publie de `SLOT` ni de propriété `INSTANCE_SWAP` native | Ces deux chemins du moteur ne sont éprouvés que par des tests synthétiques |
 | Le corpus tient à quatre composants | La généralité du moteur se mesure sur ses invariants, pas sur ce corpus |
 | Les protections de branche sont indisponibles sur le plan GitHub actuel | La CI détecte l'écart sans empêcher la fusion. Une pull request rouge reste fusionnable |
+| Le manifeste du plugin ne déclare que `api.github.com` et `gitlab.com` | Une équipe sur une instance GitLab auto-hébergée ne publie pas depuis Figma. Sa CI, elle, fonctionne |
 | La version 1 du format de tokens n'est éprouvée qu'en sRGB | Un export Figma réel la produit, déposé par le plugin de la Community, et le CSS du consommateur ne bouge pas d'un bit. Le Display P3 n'a pas d'export réel : un écran qui ne le rend pas prive Figma du réglage de profil |
 | La projection CSS des modes n'est pas implémentée | Le multi-marque au runtime n'existe pas |
 
@@ -143,6 +145,8 @@ décision correcte sur un cas réel.
 
 - rendre les contrôles bloquants après décision sur le plan GitHub ou la
   visibilité des repositories ;
+- installer UCM chez une première équipe consommatrice, sur gitlab.com, et
+  relever ce que son `.gitlab-ci.yml` existant demande à la main ;
 - faire relire de vraies pull requests d'export par un designer et un
   développeur ;
 - vérifier que chaque diagnostic est compréhensible sans ouvrir les logs ;

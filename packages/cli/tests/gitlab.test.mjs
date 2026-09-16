@@ -167,6 +167,50 @@ test("un .gitlab-ci.yml existant reçoit le rappel d'include, et un stages sans 
 });
 
 /**
+ * `workflow:rules` décide des pipelines de tout le projet. Une liste qui
+ * n'admet pas `merge_request_event` ne crée aucun pipeline de merge request, et
+ * le job ucm ne tourne sur aucun export, sans erreur dans GitLab.
+ */
+test("un workflow:rules existant sans merge_request_event est signalé, et lui seul", () => {
+  const racine = repoVierge();
+  const compteRendu = (ci) => {
+    writeFileSync(join(racine, ".gitlab-ci.yml"), ci);
+    return rendreInit(init(racine, { sansAgents: true, git: sansRemote }));
+  };
+  try {
+    const signal = /ajoutez `- if: \$CI_PIPELINE_SOURCE == "merge_request_event"` en tête de `workflow:rules`/i;
+    assert.match(compteRendu("workflow:\n  rules:\n    - if: $CI_COMMIT_BRANCH\n\nbuild:\n  script: [echo]\n"), signal);
+    assert.match(compteRendu("# CI\nworkflow:\n  name: app\n\n  rules:\n    # branches\n    - if: $CI_COMMIT_TAG\n"), signal);
+    assert.doesNotMatch(
+      compteRendu("workflow:\n  rules:\n    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'\n    - if: $CI_COMMIT_BRANCH\n"),
+      signal,
+    );
+    assert.doesNotMatch(compteRendu("workflow:\n  name: app\nbuild:\n  rules:\n    - if: $CI_COMMIT_BRANCH\n  script: [echo]\n"), signal);
+    assert.doesNotMatch(compteRendu("build:\n  script: [echo]\n"), signal);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Un `default:` du projet s'applique aux jobs inclus. Son `before_script`
+ * tournerait avant `unset UCM_GITLAB_TOKEN`, donc avec le jeton, et dans
+ * `ucm-rapport`, qui n'a pas de clone.
+ */
+test("les jobs UCM n'héritent pas du default: du projet, mais gardent ses variables", () => {
+  const racine = repoVierge();
+  try {
+    init(racine, { sansAgents: true, git: () => "git@gitlab.com:g/p.git" });
+    const job = parse(readFileSync(join(racine, ".gitlab/ucm.gitlab-ci.yml"), "utf8"));
+    for (const nom of ["ucm", "ucm-rapport"]) {
+      assert.deepEqual(job[nom].inherit, { default: false }, nom);
+    }
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
  * Une API GitLab simulée : un compte, des notes paginées, et le relevé de
  * chaque appel.
  */
