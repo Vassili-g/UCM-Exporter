@@ -4,11 +4,10 @@ Le plugin lit un composant Figma et en écrit un contrat JSON versionné, posé 
 côté du code de ce composant. Il exporte aussi les variables locales du fichier
 au format DTCG.
 
-Ce document dit comment l'ouvrir et ce qu'il produit. [SPEC.md](./SPEC.md)
-décrit ce qu'il élit dans l'arbre Figma, [docs/FORMAT.md](../../docs/FORMAT.md)
-la forme de ce qu'il écrit, et
-[docs/POUR-LES-DESIGNERS.md](../../docs/POUR-LES-DESIGNERS.md) le geste du
-designer, pas à pas.
+Ce document dit comment l'ouvrir et ce qu'il produit.
+[docs/POUR-LES-DESIGNERS.md](../../docs/POUR-LES-DESIGNERS.md) décrit le geste du
+designer pas à pas, [SPEC.md](./SPEC.md) ce que le plugin élit dans l'arbre
+Figma, et [docs/FORMAT.md](../../docs/FORMAT.md) la forme de ce qu'il écrit.
 
 ## Ouvrir le plugin
 
@@ -17,9 +16,8 @@ Il est publié sur la Figma Community, sous le nom « UCM Contract Exporter » :
 **<https://www.figma.com/community/plugin/1678431364325816914>**
 
 Installez-le une fois, puis lancez-le depuis le menu `Plugins` de l'application
-de bureau. Ni build ni manifeste à importer. Le chemin de développement, pour le
-contributeur qui modifie le moteur, est décrit par [« Construire le plugin
-depuis ce dépôt »](../../README.md#construire-le-plugin-depuis-ce-dépôt).
+de bureau. Pour modifier le moteur, suivez [« Construire le plugin depuis ce
+dépôt »](../../README.md#construire-le-plugin-depuis-ce-dépôt).
 
 ## Les deux commandes
 
@@ -28,17 +26,11 @@ depuis ce dépôt »](../../README.md#construire-le-plugin-depuis-ce-dépôt).
 | Exporter le composant | Exactement un composant ou un set de variantes sélectionné | `<IdentifiantCode>.contract.json` : variantes, états, structure, tokens, icônes, règles d'usage |
 | Exporter les tokens | Rien, elle lit le fichier courant | `tokens.json` : les variables locales, avec leurs alias et leurs modes, dans la version 2 du format de tokens |
 
-Une seule implémentation projette les noms pour les deux commandes. Avec deux
-projections, un contrat citerait un token que `tokens.json` écrit sous un autre
-nom.
-
-**`ucm tokens css` écrit la feuille CSS de `tokens.json`**, modes compris ; le
-[README du CLI](../cli/README.md#the-token-stylesheet) la décrit. Un autre
-outil doit lire le module DTCG `2025.10`, où couleurs et dimensions sont des
-objets : Style Dictionary 5 le lit, et Style Dictionary 4 écrit `[object
-Object]` à la place de chaque couleur et de chaque dimension sans faire échouer
-le build. [docs/FORMAT.md](../../docs/FORMAT.md#partie-2--export-tokens)
-décrit la forme.
+Un contrat cite ses tokens sous les noms que `tokens.json` écrit. `ucm tokens
+css` tire de `tokens.json` une feuille CSS, modes compris
+([README du CLI](../cli/README.md#the-token-stylesheet)). Un autre lecteur de
+tokens doit lire le module DTCG `2025.10`
+([docs/FORMAT.md](../../docs/FORMAT.md#partie-2--export-tokens)).
 
 ## Documenter les règles d'usage
 
@@ -77,40 +69,35 @@ valeur par défaut n'entre dans le contrat pour cette variant property. La
 position d'un variant dans un set ne décide de rien.
 
 Les variants de `.ruleItem` qui n'écrivent ni texte ni cible, `divider` par
-exemple, mettent en page sans rien documenter. Le plugin les ignore sans rien
-vous demander.
+exemple, mettent en page. Le plugin les ignore.
 
 Le plugin ne modifie jamais ces règles. Quand il ne sait pas en lire une, il
-vous dit laquelle et quel geste la répare. Ce que chaque champ devient est
-décrit par [7. Intention et documentation des
-props](../../docs/FORMAT.md#7-intention-et-documentation-des-props).
+vous dit laquelle et quel geste la répare. [7. Intention et documentation des
+props](../../docs/FORMAT.md#7-intention-et-documentation-des-props) décrit ce
+que chaque champ devient.
 
 ## Où l'export atterrit
 
 Un export est toujours téléchargeable. La configuration du dépôt est
 optionnelle ; renseignée, elle crée une branche et une demande de fusion, pull
 request sur GitHub ou merge request sur GitLab, qui contient le seul fichier
-exporté. La forge se déduit de l'adresse saisie : `github.com` ou
-`gitlab.com`. L'adresse d'une page du dépôt, un dossier par exemple, est
-acceptée, et le formulaire affiche le dépôt qu'il en retient.
+exporté. La forge se déduit de l'adresse saisie : `github.com` ou `gitlab.com`.
+[Configurer le dépôt](../../docs/POUR-LES-DESIGNERS.md#configurer-le-dépôt)
+donne la marche à suivre.
 
 L'endroit où ce fichier est écrit appartient au repository visé, qui le déclare
-dans son `ucm.config.json`. Le plugin lit ce fichier au test de connexion, avant
-la publication : le designer découvre un fichier fautif avant de travailler,
-plutôt qu'après. Sans ce fichier, les valeurs par défaut du kit s'appliquent, et
-ce sont celles que `ucm check` applique aussi. Un chemin rangé sur le poste du
-designer ne servirait que face à un repository sans `ucm.config.json`, au moment
-précis où le contrôle applique ces mêmes défauts. L'export atterrirait alors
-hors de vue de ce contrôle.
+dans son `ucm.config.json`. Le plugin lit ce fichier au test de connexion : le
+designer découvre un fichier fautif avant d'exporter. Sans ce fichier, les
+valeurs par défaut s'appliquent, les mêmes que celles de `ucm check`.
 
 La configuration contient l'URL du dépôt, la branche de base et un jeton. Sur
-GitHub, un Personal Access Token avec les permissions `Contents: read/write` et
-`Pull requests: read/write`. Sur GitLab, un jeton de scope `api` : un jeton
-d'accès projet de rôle Developer quand l'offre du projet le permet, un jeton
-personnel sinon. Le jeton reste local à la machine et n'apparaît ni dans
-l'interface, ni dans les journaux, ni dans le document Figma. Il ne part que vers
-la forge pour laquelle il a été saisi : changer l'URL de forge demande un
-nouveau jeton.
+GitHub, un fine-grained Personal Access Token limité au repository, avec
+`Contents: Read and write` et `Pull requests: Read and write`. Sur GitLab, un
+jeton de scope `api` : un jeton d'accès projet de rôle Developer quand l'offre
+du projet le permet, un jeton personnel sinon. Le jeton reste local à la
+machine et n'apparaît ni dans l'interface, ni dans les journaux, ni dans le
+document Figma. Il ne part que vers la forge pour laquelle il a été saisi :
+changer l'URL de forge demande un nouveau jeton.
 
 Un export dont le contenu est identique à ce qui est déjà déposé n'ouvre pas de
 seconde demande. Le plugin dit où il a trouvé le même contenu.
@@ -119,26 +106,15 @@ seconde demande. Le plugin dit où il a trouvé le même contenu.
 
 - Il n'écrit rien dans le document Figma : aucun calque créé, renommé, déplacé
   ou supprimé, aucune variable ni style écrit. Un test refuse ces appels dans la
-  source.
+  source. Il pose seulement la sélection et cadre la vue, deux gestes qui
+  n'entrent pas dans le fichier
+  ([SPEC.md](./SPEC.md#sélectionner-et-cadrer-ne-sont-pas-modifier)).
 - Il ne génère aucun code de production.
 - Il n'exporte pas plusieurs composants en une commande et ne fusionne aucune
   demande.
 - Il ne joint aucun domaine réseau autre que `https://api.github.com` et
   `https://gitlab.com`, déclarés dans son manifeste. Une instance GitLab
   auto-hébergée n'est pas joignable.
-
-Poser une sélection et cadrer la vue restent permis : ces deux gestes portent
-sur l'état de l'éditeur, n'entrent pas dans le fichier et ne créent aucune
-entrée d'annulation. Les preuves sont dans
-[SPEC.md](./SPEC.md#sélectionner-et-cadrer-ne-sont-pas-modifier).
-
-## Ce que la distribution Community change au contrat
-
-Le manifeste ne déclare pas `enablePrivatePluginApi`, drapeau réservé aux
-plugins privés d'une organisation. `figma.fileKey` est donc inaccessible et
-`meta.figma.url` n'est plus écrit : la traçabilité vers le composant source
-passe par `fileName` et `nodeId`, que le corps de la demande annonce.
-Aucune information de rendu n'est perdue.
 
 ## Après l'export
 

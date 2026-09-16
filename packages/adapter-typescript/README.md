@@ -1,15 +1,20 @@
 # @ucm-kit/adapter-typescript
 
 Optional adapter for TypeScript repositories that consume UCM contracts. It adds
-two capabilities without making
-[`@ucm-kit/core`](https://www.npmjs.com/package/@ucm-kit/core) depend on the
-TypeScript compiler, a 23 MB dependency no other consumer should pay for.
+static parity between contracts and code, and types generated from the
+contracts. It lives outside
+[`@ucm-kit/core`](https://www.npmjs.com/package/@ucm-kit/core) because it
+depends on the TypeScript compiler, a 23 MB dependency.
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.33 @ucm-kit/cli@0.1.40
-npx ucm-typescript
-npx --no-install ucm check
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.34 @ucm-kit/cli@0.1.41
+npx ucm-typescript          # generates the types from the contracts
+npx --no-install ucm check  # checks the contracts, parity included
 ```
+
+Requires Node 20 or later, a `tsconfig.json` at the repository root, and a
+`ucm.config.json` or the default paths. If `ucm init` already ran, run it again
+after installing the adapter to receive its templates in `.ucm/gabarits/`.
 
 ## Static parity
 
@@ -26,63 +31,55 @@ reported:
 | Unused enum | An enum prop is declared but never read by the component |
 | Wrong composition cardinality | A declared dependency is rendered a different number of times than the contract says |
 
-Parity requires a `tsconfig.json` at the root. Props are read with the
-TypeScript type checker; compositions are counted by their occurrences in JSX.
-The props of `Button.tsx` come from an interface or a type alias named
-`ButtonProps`. The component is the function named `Button`, or the file's
-default export. A prop counts as read whether it is destructured in the
-signature or from `props` in the body.
+Props are read with the TypeScript type checker; compositions are counted by
+their occurrences in JSX. The props of `Button.tsx` come from an interface or a
+type alias named `ButtonProps`. The component is the function named `Button`,
+or the file's default export. A prop counts as read whether it is destructured
+in the signature or from `props` in the body.
 
-Every one of these **warns without blocking**. The gap is in the code, so a
-developer closes it. No re-export helps.
+Every gap **warns without blocking**. The gap is in the code, so a developer
+closes it.
 
 ## The convention composition counting assumes
 
 **Counting is static: a dependency rendered by a loop is not counted.** Keep
 every occurrence explicit in the source, and neutralise in place the one a given
-view does not show, rather than removing it. Without that, a list built with
-`.map()` reports a cardinality gap the contract did not intend.
-
-Nothing enforces the convention. No opt-out exists for a single component. A
-warning names what the count did not see, without blocking anything.
+view does not show, rather than removing it. Otherwise a list built with
+`.map()` reports a cardinality gap the contract did not intend. No opt-out
+exists for a single component.
 
 ## What it does not measure
 
-Type comparison covers `boolean` props only. An enum is judged on its declared
-union, below; `string`, `icon`, `instance-swap` and `slot` props are checked for
-presence and never for type.
+Type comparison covers `boolean` props only. `string`, `icon`, `instance-swap`
+and `slot` props are checked for presence and never for type.
 
-Enum values are compared by the **declared union only**. A union smaller than
-the contract is reported; a union that accepts more is not, because accepting
-more contradicts nothing. On a widened type such as `string`, no value is
-resolved and nothing is reported.
+Enum values are compared with the **declared union only**. A union smaller than
+the contract is reported; a union that accepts more is not. On a widened type
+such as `string`, nothing is reported.
 
-What the component does with a value stays outside the static guarantee. A
-`switch` with a `default`, a partial mapping table, a value forwarded to a
-child, a table held in another file and a business rule that substitutes one
-value for another are all legitimate; telling them apart from an oversight would
-require the contract to describe behaviour. A contract describes the views that
-exist. The logic that picks one stays outside it.
+What the component does with a value is not checked: a `switch` with a
+`default`, a partial mapping table, or a value forwarded to a child all pass. A
+contract describes the views that exist, not the logic that picks one.
 
 A prop relayed through `{...rest}` without being read is reported as unused.
-Following a spread would mean knowing the child's contract, and the warning
-blocks nothing.
 
-Nothing here executes a render.
-
-None of this exists for a repository without this adapter, so the **absence of
-these messages means nothing**. It is a capability of one adapter. The format
-guarantees none of it.
+Nothing here executes a render. A repository without this adapter receives none
+of these messages, so their **absence proves nothing** there.
 
 ## Generated types
 
 ```sh
-npx ucm-typescript            # writes to src/generated/contracts/
+npx ucm-typescript             # writes to src/generated/contracts/
 npx ucm-typescript --out <dir>
 ```
 
-It derives the enum unions from the contracts, so that a component's props can
-be typed against the contract rather than against a hand-copied list.
+The command reads the contracts under the `components` folder of
+`ucm.config.json`, and writes one `<Component>.ts` per contract that has enum
+props. Each file exports one union per enum prop, such as `ButtonVariant`, and
+`ButtonVariantProps`, the combinations of variant axes that exist in Figma. Type
+a component's props against these unions rather than against a hand-copied
+list, and run the command again after each export. An unreadable contract is
+skipped and named; `ucm check` reports why.
 
 ## Status
 

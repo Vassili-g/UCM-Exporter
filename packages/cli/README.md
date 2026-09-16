@@ -7,71 +7,199 @@ A **UCM contract** is a JSON file describing a UI component exactly as it exists
 in Figma: its variants, its structure, its design tokens, its usage rules. It is
 written by the [UCM Contract
 Exporter](https://github.com/Vassili-g/UCM-Exporter) Figma plugin and committed
-next to the component's code. This command reads those files and says whether
-they still hold together.
+next to the component's code. This command reads those files and reports
+whether they are valid, whether their references resolve, and whether the code
+matches them.
+
+## Quick start
+
+Requires Node 20 or later. At the root of the repository:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.40 init
-npx --yes @ucm-kit/cli@0.1.40 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.41 init
 ```
 
-Pin an exact version, without `^`. A range would let npx install a build this
-project has not tested. Two runs would then return different verdicts for the
-same contract.
+1. Commit and push the files `init` wrote.
+2. Make the check block merges: see [GitHub](#github) or [GitLab](#gitlab).
+3. Give the repository URL to the designer, who enters it in the Figma plugin
+   with an access token.
 
-## Your repository does not have to be a Node project
+To run the check locally:
 
-`ucm init` writes a workflow that requires no `package.json`. An iOS repository,
-an Android one, or a plain folder of contracts can have its exports checked. The
-only requirement is Node, and in CI `setup-node` provides it.
+```sh
+npx --yes @ucm-kit/cli@0.1.41 check --report ci-report.md
+```
 
-If a `package-lock.json` happens to exist, the workflow runs `npm ci` first, so
-that any optional stack adapter the repository installed becomes visible to `ucm
-check`.
+`--yes` skips the npx confirmation prompt. Pin an exact version, without `^`:
+a range lets npx install a build this project has not tested.
+
+**The repository does not have to be a Node project.** The workflow `ucm init`
+writes needs no `package.json`, so an iOS or Android repository, or a plain
+folder of contracts, can have its exports checked. When a `package-lock.json`
+exists, the workflow runs `npm ci` first, so `ucm check` finds a stack adapter
+the repository installed.
 
 ## Commands
 
 | Command | What it does |
 |---|---|
-| `ucm init` | Installs what the repository is missing, never overwriting a file that already exists |
-| `ucm check` | Checks every contract and renders the report |
+| [`ucm init`](#ucm-init) | Installs what the repository is missing, never overwriting a file that already exists |
+| [`ucm check`](#ucm-check) | Checks every contract and renders the report |
 | `ucm icons` | Lists the icons the contracts ask this repository to draw |
-| `ucm tokens css --out <file>` | Writes the CSS stylesheet of the tokens and their modes |
-| `ucm aides [<aide>]` | Lists the implementation guides, or prints one |
-| `ucm guide <contract>` | Prints what an agent reads before implementing that contract |
-| `ucm rapport-gitlab` | Posts the report as a note on a GitLab merge request |
-| `ucm --help` | Prints the above |
+| [`ucm tokens css --out <file>`](#the-token-stylesheet) | Writes the CSS stylesheet of the tokens and their modes |
+| [`ucm aides [<aide>]`](#implementation-guides) | Lists the implementation guides, or prints one |
+| [`ucm guide <contract>`](#the-guide-of-a-contract) | Prints what an agent reads before implementing that contract |
+| [`ucm rapport-gitlab`](#gitlab) | Posts the report as a note on a GitLab merge request |
+| `ucm --help` | Prints every command and option |
 
-`ucm init` takes five options:
+Every command exits with the same codes:
+
+| Code | Meaning |
+|---|---|
+| `0` | The command did what it was asked |
+| `1` | Checks failed |
+| `2` | The invocation or the configuration is at fault |
+
+A faulty invocation never exits with `1`, so it cannot pass for failed checks.
+
+## `ucm init`
+
+| Option | Default | Effect |
+|---|---|---|
+| `--components <dir>` | `components` | The folder the contracts are stored under |
+| `--tokens <dir>` | the repository root | The folder that holds `tokens.json` |
+| `--implementation <pattern>` | `{dir}/{id}.tsx` | The file that implements a contract: `{dir}` is the contract's folder, `{id}` its identifier |
+| `--forge github\|gitlab` | detected, see below | The forge whose CI is written |
+| `--sans-agents` | off | Writes neither the agent relays, nor `.ucm/conventions.md`, nor the templates |
+
+`--tokens` takes a folder, and `ucm.config.json` stores the file path
+`<dir>/tokens.json`. `--implementation` must contain `{id}`; without it, every
+contract would resolve to the same file. A repository that does not write React
+states its own extension:
+
+```sh
+npx --yes @ucm-kit/cli@0.1.41 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+```
+
+The three path options act only on a first install. `ucm init` never overwrites
+an existing `ucm.config.json`, and says so when options were passed. To change
+a path later, edit that file.
+
+Without `--forge`, the host of the `origin` remote decides, then the presence of
+`.gitlab-ci.yml`, and GitHub otherwise. The command names the forge and the
+signal it followed.
+
+### What it writes
+
+Five control files, then what an agent needs, unless `--sans-agents` is passed.
+The command explains each file as it writes it. An existing file is kept as it
+is, and the command names what it left alone.
+
+| File | Why |
+|---|---|
+| `ucm.config.json` | Where the contracts, the tokens and the implementations live |
+| `.gitattributes` | Keeps contracts and tokens in LF, so a re-export from a Windows machine does not produce a whole-file diff |
+| `.vscode/settings.json` | Binds `*.contract.json` to the JSON Schema of the installed package, so the editor validates as you read |
+| `.gitignore` | Keeps `ci-report.md` out of the repository; it is regenerated on every run |
+| `.github/workflows/ucm.yml` | Runs the check on every pull request and posts the report as a comment. On GitLab, `.gitlab/ucm.gitlab-ci.yml` and `.gitlab-ci.yml` replace it |
+| `.agents/skills/ucm-implementer/SKILL.md`, `.claude/skills/ucm-implementer/SKILL.md` | Two identical relays: an agent loads one before writing a component, and runs `ucm guide` at the pinned version |
+| `.ucm/conventions.md` | The repository's stack and writings, with its instructions in a comment |
+| `.ucm/gabarits/` | The templates of the installed stack adapter, when it publishes some |
+
+The workflow is yours once written, and `ucm init` never rewrites it.
+
+The command then prints the lines it does not write, each with its file:
+`@ucm-kit/cli` in `devDependencies`, `ucm tokens css` at the head of the `dev`
+and `build` scripts, the import of the generated stylesheet, and the optional
+`modes` section when `tokens.json` declares axes. A line already present is not
+printed. An installed adapter that fails to load is reported, and the rest is
+installed.
+
+### `ucm.config.json`
+
+**This file is the only authority on where an export lands.** The Figma plugin
+reads it before publishing, and `ucm check` reads it before looking for
+contracts. Without the file, the defaults below apply on both sides. A file that
+exists but is malformed is refused on both sides.
+
+```json
+{
+  "components": "components",
+  "tokens": "tokens.json",
+  "implementation": "{dir}/{id}.tsx"
+}
+```
+
+Each path is relative to the repository root and written with `/`. A path that
+starts with `/` or a drive letter, contains `\`, or has an empty, `.` or `..`
+segment is refused: the plugin would write outside the repository with the
+designer's token, and the check would read outside it.
+
+The file holds no version number. The installed package decides which contract
+versions it reads.
+
+### GitHub
+
+The workflow runs on every pull request and on every push to `main`. If the
+default branch has another name, change it in `.github/workflows/ucm.yml`.
+
+Its `contrats` job runs the check with read-only permissions. Its `commentaire`
+job runs no code from the repository: it receives the report as an artifact
+and posts it, replacing its previous comment.
+
+A red check blocks a merge only when the base branch requires the `contrats`
+status check, in a branch protection rule or a ruleset. GitHub offers these on
+public repositories and on paid plans. Without that setting, the report
+announces a blocked merge that is not blocked.
+
+### GitLab
+
+`init --forge gitlab` writes `.gitlab/ucm.gitlab-ci.yml`, two jobs with no
+global key, so the project's other jobs keep their rules. `ucm` runs the check
+in merge request pipelines and on the default branch; `ucm-rapport` posts the
+note in merge request pipelines. Both take the default `test` stage. A new
+`.gitlab-ci.yml` includes the file; an existing one is left alone, and the
+command prints the `include` line to add. It also prints three settings it
+cannot make:
+
+- create the CI/CD variable `UCM_GITLAB_TOKEN`, masked and not protected,
+  holding an `api` token of an account with the Reporter role on this project
+  only: a service account's personal token, or a project access token where
+  the GitLab plan offers one. Export branches are not protected, so a
+  protected variable would be empty there. Every pipeline of every branch reads
+  an unprotected variable, and any user who can push a branch can print it: the
+  Reporter role limits that token to reading and commenting;
+- tick "Pipelines must succeed" in the merge request settings. Without it, a red
+  report does not block the merge it says is blocked;
+- keep `test` in `stages:` when `.gitlab-ci.yml` declares them: GitLab refuses a
+  pipeline whose job names a missing stage.
+
+`ucm` unsets `UCM_GITLAB_TOKEN` before `npm ci`, so install scripts do not
+inherit it on executors that set variables in the job script. `ucm-rapport`
+runs no code from the repository: it clones nothing, receives `ci-report.md`
+as an artifact, disables install scripts, and runs `npx` from an empty
+directory. It writes a minimal report when the check stopped before writing
+one, then posts the report:
+
+```sh
+npx --yes @ucm-kit/cli@0.1.41 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier "$CI_PROJECT_DIR/ci-report.md" --api "$CI_API_V4_URL"
+```
 
 | Option | Effect |
 |---|---|
-| `--components <dir>` | The folder the contracts are stored under |
-| `--tokens <dir>` | The folder that holds `tokens.json` |
-| `--implementation <pattern>` | Where a contract's implementation lives |
-| `--sans-agents` | Writes neither the agent relays, nor `.ucm/conventions.md`, nor the templates |
-| `--forge github\|gitlab` | The forge whose CI is written; see [GitLab](#gitlab) |
+| `--projet <id>` | The GitLab project, by identifier or path |
+| `--merge-request <iid>` | The merge request number within that project |
+| `--fichier <path>` | The report written by `ucm check --report` |
+| `--api <url>` | The GitLab API; `https://gitlab.com/api/v4` by default |
 
-The first two take a folder, because a folder is what a repository arranges.
-`--tokens` appends the file name before writing it, so the `tokens` field of
-`ucm.config.json` stays a file path: the readers treat it as one, and turning it
-into a folder would silently point every configuration already written at
-`tokens.json/tokens.json`.
+The command reads the token from `UCM_GITLAB_TOKEN` and never prints it. It
+replaces the note that the token's account wrote with the `<!-- ucm-rapport -->`
+marker, and creates one otherwise. Without the variable it says so and exits
+with `0`: the report stays in the job artifacts. A refused token exits with `1`
+and names the fix. The job allows failure, so a refused token leaves the
+pipeline the colour of the check.
 
-`--implementation` takes a pattern, not a folder. It must contain `{id}`;
-without it every contract would resolve to the same file. A repository that does
-not write React states its own extension here, rather than carrying a `.tsx`
-that was wrong the day it was installed:
-
-```sh
-npx --yes @ucm-kit/cli@0.1.40 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
-```
-
-All three act only on a first install: `ucm init` never overwrites an existing
-configuration, and says so when options were passed to a repository that already
-has one.
-
-`ucm check` takes two options:
+## `ucm check`
 
 | Option | Effect |
 |---|---|
@@ -82,15 +210,57 @@ The report stops before 65,536 characters, the size of a GitHub comment, and
 says so in its last line. The verdict opens the report and is never cut; the
 terminal output keeps every detail.
 
-### Exit codes
+### What the report says
 
-| Code | Meaning |
+The report is written for the **designer** who validates the export. Every
+reason a merge is refused appears in it, so the designer never opens a CI log.
+
+Six checks run on each contract. **A check blocks when the file on disk cannot
+be read as it stands**, and warns when the read succeeds and the gap points at
+the code or at the token file.
+
+| Check | Verdict |
 |---|---|
-| `0` | The command did what it was asked |
-| `1` | Checks failed |
-| `2` | The invocation or the configuration is at fault |
+| The contract is readable and complete | Blocks |
+| This repository can read that contract version | Blocks |
+| Composition: every nested component has its own contract, the lists agree, no cycles | Blocks |
+| Typography tokens have the expected type | Blocks |
+| Every `{token.path}` cited exists in the token file | Warns, but a missing or unreadable token file blocks |
+| The code exposes the props the contract declares, with a stack adapter installed | Warns |
 
-`1` and `2` never overlap. A typo in a flag must not read like a broken export.
+The direction of a version gap names who fixes it. A contract that is too old
+is re-exported by the designer. A contract that is too new needs this package
+upgraded by a developer.
+
+Before any contract, the check reads the format version at the root of the
+token file. A version newer than this package reads blocks the merge, and a
+developer upgrades the UCM packages. A mark that is not a version blocks too,
+and the designer runs the token export again. Both apply even in a repository
+with no contract yet.
+
+A gap with the code warns: a developer closes it, and the merge goes through. A
+token removed from the design system warns too, so an older contract does not
+hold back the tokens. A contract may land before the code that implements it.
+
+A repository with no contract passes. Right after `ucm init`, `ucm check`
+returns `0` and reports the next step. From the first contract on, a missing
+token file blocks the merge.
+
+The report also relays the warnings the export wrote into the contract, and the
+verdict of the repository's own tests when an orchestrator passes it in through
+the `UCM_ECHECS_DE_TESTS` environment variable, a JSON object with `echoue` and
+`echecs`.
+
+### Optional stack adapters
+
+The first five checks read contracts and tokens only, whatever the repository
+is written in. Comparing a contract to real code needs a stack adapter.
+
+`ucm check` discovers an adapter installed **by the repository**, resolving from
+the checked root rather than from the npx cache. Install
+[`@ucm-kit/adapter-typescript`](https://www.npmjs.com/package/@ucm-kit/adapter-typescript)
+for prop and composition parity in TypeScript projects. Without an adapter, the
+report says the implementation was not read, and never that it is conformant.
 
 ## The token stylesheet
 
@@ -103,9 +273,15 @@ names and writes one custom property per token. Each property is named by
 npx --no-install ucm tokens css --out src/generated/tokens.css
 ```
 
-Run it before `dev` and `build`, in place of any other generator of the same
+`--no-install` runs the version pinned in `devDependencies`. Run the command
+before `dev` and `build`, in place of any other generator of the same
 stylesheet, and import the generated file once, from the application's CSS
 entry point.
+
+| Option | Effect |
+|---|---|
+| `--out <file>` | The stylesheet to write. Required |
+| `--sans-modes` | Writes the default value of every token, for a token file exported before axes were declared |
 
 **Modes are attributes.** Each axis of `tokens.json`, one per Figma collection
 with several modes, is selected by an HTML attribute on any element: its
@@ -121,7 +297,7 @@ the command prints it. A repository names another one in `ucm.config.json`:
 ```
 
 Two axes with the same set of modes may share an attribute. A component reads
-tokens and never declares one, which lets any ancestor switch its mode.
+tokens and never declares an attribute, so any ancestor can switch its mode.
 
 A collection that Figma extended collections override, an experimental reading,
 adds the axis `<axis>-extensions`: its attribute takes `base` for the collection
@@ -136,11 +312,11 @@ correct stylesheet: an alias to a missing token, two token paths that give the
 same property, two extension names that give the same CSS name, an alias cycle
 that a context can reach, an alias whose type changes in a mode or an extension,
 or modes the export did not attach to an axis. A key of `modes` that names no
-axis of the token file exits with `2`. The previous
-stylesheet stays in place. A token file exported before axes were declared is
-refused with that reason; `--sans-modes` writes the default value of every token
-until the tokens are exported again. Without a token file, the command writes an
-empty stylesheet when no contract cites a token, and refuses otherwise.
+axis of the token file exits with `2`. The previous stylesheet stays in place. A
+token file exported before axes were declared is refused with that reason, and
+`--sans-modes` applies until the tokens are exported again. Without a token
+file, the command writes an empty stylesheet when no contract cites a token, and
+refuses otherwise.
 
 ## Implementation guides
 
@@ -177,15 +353,17 @@ guide. `ecritures-par-defaut: non` on the first line prints meanings only, for a
 repository that writes no CSS.
 
 `ucm aides <aide> --personnaliser [<path>]` appends that guide's section, with
-its default writing to edit, to the closest conventions file. `composant` has no
-section, and the command refuses it. The marker records the version and a
-fingerprint of the copied writing: when the default writing changes, `ucm aides`
-and `ucm guide` name the section to read again, and a marker without a
-fingerprint is named as well. An existing section is never overwritten.
+its default writing to edit, to the conventions file closest to `<path>`.
+`composant` has no section, and the command refuses it. The marker records the
+version and a fingerprint of the copied writing: when the default writing
+changes, `ucm aides` and `ucm guide` name the section to read again, and a
+marker without a fingerprint is named as well. An existing section is never
+overwritten.
 
 ## The guide of a contract
 
-`ucm guide <contract> [--out <file>]` prints, in one Markdown document:
+`ucm guide <contract> [--out <file>]` prints, in one Markdown document, or
+writes to `<file>`:
 
 1. what to read again first: conventions anomalies, copied sections whose
    default writing changed, and `@ucm-kit/cli` pins that differ between the two
@@ -206,176 +384,6 @@ fingerprint is named as well. An existing section is never overwritten.
 The command exits with `1` when the composition graph or the token file is
 inconsistent, and with `2` for an invocation, a configuration or a contract it
 cannot read, a contract version outside its reading window included.
-
-## What `ucm init` writes
-
-Five control files, then what an agent needs, unless `--sans-agents` is passed.
-The command explains each one as it writes it. An existing file is kept as it
-is, and the command names what it left alone.
-
-| File | Why |
-|---|---|
-| `ucm.config.json` | Where the contracts, the tokens and the implementations live |
-| `.gitattributes` | Keeps contracts and tokens in LF, so a re-export from a Windows machine does not produce a whole-file diff |
-| `.vscode/settings.json` | Binds `*.contract.json` to the JSON Schema of the installed package, so the editor validates as you read |
-| `.gitignore` | Keeps `ci-report.md` out of the repository; it is regenerated on every run and describes only that run |
-| `.github/workflows/ucm.yml` | Runs the check on every pull request and posts the report as a comment, from a second job |
-| `.agents/skills/ucm-implementer/SKILL.md`, `.claude/skills/ucm-implementer/SKILL.md` | Two identical relays: an agent loads one before writing a component, and runs `ucm guide` at the pinned version |
-| `.ucm/conventions.md` | The repository's stack and writings, with its instructions in a comment |
-| `.ucm/gabarits/` | The templates of the installed stack adapter, when it publishes some |
-
-The workflow is yours once written. It will never be overwritten. On GitLab,
-`.gitlab/ucm.gitlab-ci.yml` and `.gitlab-ci.yml` replace the GitHub workflow.
-
-An installed adapter that fails to load is reported, and the rest is
-installed. The command then prints the lines it does not write, each with its
-file: `@ucm-kit/cli` in `devDependencies`, `ucm tokens css` at the head of the
-`dev` and `build` scripts, the import of the generated stylesheet, and the
-optional `modes` section when `tokens.json` declares axes. A line already present
-is not printed.
-
-### `ucm.config.json`
-
-Three paths. **This file is the only authority on where an export lands.** The
-Figma plugin reads it before publishing, and `ucm check` reads it before looking
-for contracts. A repository that arranges things differently says so here, once,
-and both sides follow.
-
-Its absence is the nominal case: the defaults below apply. A repository with a
-single `components/` folder works without writing a line. A file that exists but
-is malformed is refused on both sides.
-
-```json
-{
-  "components": "components",
-  "tokens": "tokens.json",
-  "implementation": "{dir}/{id}.tsx"
-}
-```
-
-`implementation` is a pattern with two tokens, `{dir}` for the contract's folder
-and `{id}` for its identifier. Replace it with the pattern your repository uses.
-
-Each of the three paths is relative to the repository root and written with
-`/`. A path that starts with `/` or a drive letter, contains `\`, or has an
-empty, `.` or `..` segment is refused on both sides: the plugin would write
-outside the repository with the designer's token, and the check would read
-outside it.
-
-No version number goes in this file. Which contract versions can be read belongs
-to the installed package, and repeating it here would create a second authority
-that drifts on the first update.
-
-## What the report says
-
-The report is written for the **designer** who validates the export. It requires
-no CI log. Every reason a pull request is refused appears in it.
-
-Six checks run on each contract. Four block a merge, two only warn: **a check
-blocks when the file on disk cannot be read as it stands**, and warns when the
-read succeeds and the gap points at the code or at the token file.
-
-The direction of the gap names who fixes it. The CI never reads who opened the
-pull request. A contract that is too old is re-exported; a contract that is too
-new needs this package upgraded, which no re-export replaces.
-[`@ucm-kit/core`](https://www.npmjs.com/package/@ucm-kit/core) names both
-directions.
-
-| Check | Verdict |
-|---|---|
-| The contract is readable and complete | Blocks |
-| This repository can read that contract version | Blocks |
-| Composition: every nested component has its own contract, the lists agree, no cycles | Blocks |
-| Typography tokens have the expected type | Blocks |
-| Every `{token.path}` cited exists in the token file | Warns, but a missing or unreadable token file blocks |
-| The code exposes the props the contract declares, with a stack adapter installed | Warns |
-
-Before any contract, the check reads the format version at the root of the
-token file. A version newer than this package reads, or a mark that is not a
-version, blocks the merge, even in a repository with no contract yet. A
-developer upgrades the UCM packages for the first case, and the designer runs
-the token export again for the second.
-[`@ucm-kit/core`](https://www.npmjs.com/package/@ucm-kit/core) lists the four
-states.
-
-A gap with the code needs a developer, so it warns and lets the merge through. A
-token removed from the design system does too: tokens are the source of truth,
-so an older contract does not hold back their evolution. A token file that is
-absent or unreadable is another matter: no reference can be resolved at all, so
-the check gives up rather than reporting every path as missing.
-
-A contract may land before the code that implements it. A missing implementation
-is an allowed stage of the work.
-
-**So is a repository with no contract at all.** Right after `ucm init` nothing
-has been exported: there is no token file, and usually no contract folder. From
-`0.1.10` on, `ucm check` returns 0 there and reports what to do next. The number
-of contracts decides: with one or more, a missing token file blocks the merge
-again, because those contracts cite tokens that cannot be resolved.
-
-The report also relays two things it does not measure itself: the warnings the
-export wrote into the contract, and the verdict of the repository's own tests
-when an orchestrator passes it in through `UCM_ECHECS_DE_TESTS`.
-
-## GitLab
-
-`ucm init` writes the CI of one forge. `--forge` decides; without it, the host
-of the `origin` remote does, then the presence of `.gitlab-ci.yml`, and GitHub
-otherwise. The command names the forge and the signal it followed.
-
-For GitLab it writes `.gitlab/ucm.gitlab-ci.yml`, two jobs with no global key,
-so the project's other jobs keep their rules. `ucm` runs the check in merge
-request pipelines and on the default branch; `ucm-rapport` posts the note in
-merge request pipelines. Both take the default `test` stage. A new
-`.gitlab-ci.yml` includes the file; an existing one is left alone, and the
-command prints the `include` line to add. It also prints three settings it
-cannot make:
-
-- create the CI/CD variable `UCM_GITLAB_TOKEN`, masked and not protected,
-  holding an `api` token of an account with the Reporter role on this project
-  only: a service account's personal token, or a project access token where
-  the GitLab plan offers one. Export branches are not protected, so a
-  protected variable would be empty there. Every pipeline of every branch reads
-  an unprotected variable, and whoever pushes a branch can print it: the
-  Reporter role limits that token to reading and commenting;
-- tick "Pipelines must succeed" in the merge request settings. Without it, a red
-  report does not block the merge it says is blocked;
-- keep `test` in `stages:` when `.gitlab-ci.yml` declares them: GitLab refuses a
-  pipeline whose job names a missing stage.
-
-`ucm` unsets `UCM_GITLAB_TOKEN` before `npm ci`, so install scripts do not
-inherit it on executors that set variables in the job script. `ucm-rapport`
-runs no code from the repository: it clones nothing, receives `ci-report.md`
-as an artifact, disables install scripts, and runs `npx` from an empty
-directory. It writes a minimal report when the check stopped before writing
-one, then posts the report:
-
-```sh
-npx --yes @ucm-kit/cli@0.1.40 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier "$CI_PROJECT_DIR/ci-report.md" --api "$CI_API_V4_URL"
-```
-
-The job allows failure: a refused token leaves the pipeline the colour of the
-check, and the report stays in the artifacts.
-
-The command reads the token from `UCM_GITLAB_TOKEN` and never prints it. It
-replaces the note that the token's account wrote with the `<!-- ucm-rapport -->`
-marker, across every page of notes, and creates one otherwise. Without the
-variable it says so and exits with `0`: the report stays in the job artifacts.
-A refused token exits with `1` and names the fix. `--api` defaults to
-`https://gitlab.com/api/v4`.
-
-## Optional stack adapters
-
-The first five checks above read contracts and tokens only, so they work
-whatever the repository is written in. Comparing a contract to real code needs
-to read that code, which is a stack adapter's job.
-
-`ucm check` discovers an adapter installed **by the repository**, resolving from
-the checked root rather than from the npx cache. Install
-[`@ucm-kit/adapter-typescript`](https://www.npmjs.com/package/@ucm-kit/adapter-typescript)
-to add static prop and composition parity for TypeScript projects. Without an
-adapter, the report says the implementation was not read, and never that it is
-conformant.
 
 ## Status
 

@@ -72,19 +72,29 @@ l'interface, ni dans les journaux, ni dans le fichier.
 Un export identique à ce qui est déjà déposé n'ouvre pas de seconde demande. Le
 plugin vous dit où il a trouvé le même contenu.
 
-### Configurer un dépôt GitLab
+### Configurer le dépôt
 
-1. Collez dans le champ l'adresse du projet, ou celle de n'importe quelle page
-   du projet : un dossier, une merge request. Le plugin affiche sous le champ le
-   projet qu'il retient, par exemple « Projet GitLab : mon-groupe/design-system ». Si
-   l'adresse désignait un dossier, il le dit : c'est le fichier
-   `ucm.config.json` du projet qui décide où vont les exports, pas l'adresse.
-2. Créez un jeton sur GitLab, avec le seul scope **api**. Préférez un jeton
-   d'accès projet de rôle Developer, dans `Settings > Access tokens` du projet :
-   il n'ouvre que ce projet. Si votre offre GitLab ne le propose pas, créez un
-   jeton personnel dans vos préférences : il ouvre alors tous vos projets.
-3. Collez le jeton, puis enregistrez. La pastille passe au vert quand le projet
-   répond.
+Ouvrez `Configuration` depuis l'en-tête du plugin. Un développeur doit avoir
+branché le repository au préalable.
+
+1. Collez dans le champ l'adresse du repository, ou celle de n'importe quelle
+   page du repository : un dossier, une demande de fusion. Le plugin affiche
+   sous le champ le repository qu'il retient, par exemple « Projet GitLab :
+   mon-groupe/design-system ». Si l'adresse désignait un dossier, il le dit :
+   c'est le fichier `ucm.config.json` du repository qui décide où vont les
+   exports, pas l'adresse.
+2. Renseignez la branche de base, celle que la demande de fusion vise :
+   `main` le plus souvent.
+3. Créez un jeton.
+   - Sur GitHub, un fine-grained Personal Access Token, dans `Settings >
+     Developer settings > Personal access tokens` : limitez-le à ce repository,
+     avec `Contents: Read and write` et `Pull requests: Read and write`.
+   - Sur GitLab, un jeton de seul scope **api**. Préférez un jeton d'accès
+     projet de rôle Developer, dans `Settings > Access tokens` du projet : il
+     n'ouvre que ce projet. Si votre offre GitLab ne le propose pas, créez un
+     jeton personnel dans vos préférences : il ouvre alors tous vos projets.
+4. Collez le jeton, puis enregistrez. La pastille passe au vert quand le
+   repository répond.
 
 Un jeton enregistré pour GitHub ne sert pas pour GitLab, et l'inverse. Si vous
 remplacez une adresse GitHub par une adresse GitLab, le plugin demande un
@@ -160,8 +170,11 @@ repository quand celui-ci le transmet.
 **Un contrat peut arriver avant le code.** L'absence d'implémentation est un
 état d'avancement autorisé, pas une erreur.
 
-Sur le plan GitHub actuel, une pull request rouge reste techniquement
-fusionnable. La CI détecte l'écart sans empêcher la fusion.
+Sur GitHub, une pull request rouge n'est bloquée que si la protection de la
+branche de base exige le check `contrats`. GitHub n'offre cette protection
+qu'aux repositories publics et aux offres payantes. Sans elle, le rapport
+annonce une fusion bloquée qui ne l'est pas : demandez à un mainteneur du
+repository de l'activer.
 
 Sur GitLab, une merge request rouge n'est bloquée que si l'option « Pipelines
 must succeed » est cochée dans `Settings > Merge requests` du projet. Sans elle,

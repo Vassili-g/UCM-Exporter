@@ -29,7 +29,7 @@ inutiles** : ils cesseraient de documenter la 11.0.
 
 ## Provenance
 
-Copiés depuis `UCM-Playground`, avant le réexport en 12.0 (A2), à l'état de sa
+Copiés depuis `UCM-Playground`, avant le réexport en 12.0, à l'état de sa
 branche `main` du 4 septembre 2026.
 
 | Contrat | Commit d'export (UCM-Playground) | Date d'export |

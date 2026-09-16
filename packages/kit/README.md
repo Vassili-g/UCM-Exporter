@@ -6,21 +6,19 @@ A **UCM contract** is a JSON file describing a UI component exactly as it exists
 in Figma: its variants, its structure, its design tokens, its usage rules. It is
 written by the [UCM Contract
 Exporter](https://github.com/Vassili-g/UCM-Exporter) Figma plugin, and read by
-the repository that implements the component. This package is what both sides
-must share in order to talk about the same format.
+the repository that implements the component. The plugin and the readers both
+import the format from this package.
 
 ```sh
-npm install @ucm-kit/core@0.1.36
+npm install @ucm-kit/core@0.1.37
 ```
 
 Most repositories never call this package directly. They run
 [`@ucm-kit/cli`](https://www.npmjs.com/package/@ucm-kit/cli), which calls it for
-them. Install it when you want to run the checks from your own code.
+them. Install it to run the checks from your own code. Requires Node 20 or
+later for `@ucm-kit/core/lecteurs`.
 
 ## Validate a contract
-
-The package exists to answer one question in CI: **whether this contract can be
-read, and whether it holds together.**
 
 ```js
 import { readFileSync } from "node:fs";
@@ -46,20 +44,34 @@ for (const path of trouverContrats("./src/components")) {
 
 `trouverContrats` walks a directory for `*.contract.json`.
 `champsInvalidesDuContrat` returns the paths of the fields that are missing or
-malformed; an empty array means the contract holds. Neither throws.
+malformed; an empty array means the contract is valid. Neither throws.
+
+## A version gap has a direction
+
+`verdictDeVersion` returns `"ok"`, `"ancien"` (too old) or `"recent"` (too new).
+The direction names who fixes the gap:
+
+- **too old.** The contract predates fields the code now depends on. The
+  designer re-exports it from Figma.
+- **too new.** The contract comes from a plugin ahead of this repository. A
+  developer upgrades this package; no re-export helps.
+
+**This release reads two contract versions, `12.0` and `13.0`**, the previous
+one and the current one, so a consumer stays green until its contracts are
+re-exported. The lower bound moves up by one version with each contract
+version. `VERSION_CONTRAT_MINIMALE` and `VERSION_CONTRAT_MAXIMALE` expose the
+range in code.
 
 ## A repository with no contract at all
 
 Right after `ucm init` nothing has been exported: there is no token file, and
 usually no contract folder. `controlerRepository`, the whole-repository entry
 point that `@ucm-kit/cli` calls, returns a green verdict there and reports the
-next step. Earlier releases refused it; `@ucm-kit/core@0.1.14` is the first that
-does not.
+next step.
 
-The number of contracts decides. With one contract or more, a missing tokens
-file blocks the merge, because that contract cites tokens that cannot be
-resolved. A tokens file that exists but does not parse blocks at any stage,
-whatever the number of contracts.
+With one contract or more, a missing token file blocks the merge, because the
+contracts cite tokens that cannot be resolved. A token file that exists but
+does not parse blocks whatever the number of contracts.
 
 ## The token file has its own format version
 
@@ -76,59 +88,22 @@ of five states:
 | an integer above `2` | `future` | blocks before reading a token; a developer upgrades the UCM packages |
 | any other value, or a document or `$extensions` that is not an object | `invalide` | blocks before reading a token; the designer runs the token export again |
 
-`VERSIONS_DE_TOKENS_LUES` lists the marks this package reads. The list is
-explicit: an integer below the current version that is absent from it is
-`invalide`, and no version is assumed readable because it is lower.
+`VERSIONS_DE_TOKENS_LUES` lists the marks this package reads. An integer below
+the current version that is absent from the list is `invalide`. The mark is
+read even in a repository with no contract yet.
 
-The mark is read even in a repository with no contract yet.
-`@ucm-kit/core@0.1.25` is the first release that reads it; earlier releases
-ignore it. `@ucm-kit/core@0.1.27` is the first that reads version `2`, and it
-still reads version `1` without a word in the report: a repository can upgrade
-its CLI before the plugin produces the new form. Do not pin `0.1.26`: it reads
-the mark but its typography check still refuses a `fontFamily` token, so it
-blocks every contract that cites a font family.
+The typography check resolves a text style reference in every mode of each
+token on its alias chain. It refuses the reference when one mode aliases a
+token of another `$type`, and names the token and the mode. The designer links
+a variable of the same type in that mode, then exports the tokens again.
 
-The mark does not protect a value reader. Style Dictionary 4 ignores it and
-writes `[object Object]` for every color and dimension of version `1`, and the
-build succeeds. Style Dictionary 5 writes the same for every `duration` of
-version `2` unless the reader registers a transform for that type: its `css`
-group ships none, `time/seconds` filtering on the older `time` type. Check both
-before merging the first export in a new version.
+The mark does not protect another token reader. Style Dictionary 4 ignores it
+and writes `[object Object]` for every color and dimension, and the build
+succeeds. Style Dictionary 5 writes the same for every `duration` unless the
+reader registers a transform for that type. Check the generated output before
+merging the first export in a new format version.
 
-## A mode that changes the type of a chain is refused
-
-The typography check resolves a text style reference through `$value`, which is
-the default mode. From `@ucm-kit/core@0.1.28` it also reads every mode of each
-token on that chain, and refuses the reference when one mode aliases a token of
-another `$type`: a line height that cites a dimension by default and a plain
-number in a dense mode. The report names the token and the mode. A token file
-that passed before can be refused after the upgrade. The designer links a
-variable of the same type in that mode, then exports the tokens again.
-
-## A version gap has a direction, which names who fixes it
-
-`verdictDeVersion` returns `"ok"`, `"ancien"` (too old) or `"recent"` (too new):
-
-- **too old.** The contract predates fields the code now depends on, and is
-  silent about things it never knew. A re-export from Figma fixes it. That gesture
-  belongs to the designer.
-- **too new.** The contract comes from a plugin ahead of this repository. No
-  re-export will help. The repository has to catch up, by upgrading this
-  package.
-
-A validator that only says "invalid" cannot tell these apart. It hands the
-designer a gap the developer owns. That distinction is why this function exists
-rather than a boolean.
-
-The accepted range is exposed rather than documented, so that it cannot drift
-away from what the code actually does:
-
-```js
-import { VERSION_CONTRAT_MINIMALE, VERSION_CONTRAT_MAXIMALE } from "@ucm-kit/core/lecteurs";
-// The two versions this release reads, named in Status below.
-```
-
-## Why the three entry points are separate
+## The three entry points
 
 ```js
 import { CONTRACT_VERSION, codeIdentifier, normalizeName } from "@ucm-kit/core/format";
@@ -136,47 +111,34 @@ import { champsInvalidesDuContrat, verdictDeVersion } from "@ucm-kit/core/lecteu
 import { lireLeSchema, CHEMIN_DU_SCHEMA } from "@ucm-kit/core/lecteurs";
 ```
 
-**`@ucm-kit/core/format`** gives the shape of a contract, its version, the two
+**`@ucm-kit/core/format`** gives the shape of a contract, its version, the
 naming rules, and the shape of a token reference. **This subpath depends on
-nothing**: not Node, not Figma, not a third-party package. It travels inside a
-Figma plugin bundle, where `node:fs` does not exist, and inside a browser.
+nothing**: not Node, not Figma, not a third-party package. It runs inside a
+Figma plugin bundle and inside a browser.
 
-**`@ucm-kit/core/lecteurs`** holds everything that *judges* a contract already
+**`@ucm-kit/core/lecteurs`** holds everything that judges a contract already
 written: its shape, its composition graph, its token references, the meaning of
-a version gap. These modules use `ajv` and `node:fs`, so they have no business
-in a plugin bundle. Keeping them apart is what lets the producer and the
-consumer share one definition instead of each copying it.
+a version gap. These modules use `ajv` and `node:fs`, so they stay out of a
+plugin bundle.
 
-**`@ucm-kit/core/schema`** is the JSON Schema itself, as a file, for binding
+**`@ucm-kit/core/schema`** is the JSON Schema as a file, for binding
 `*.contract.json` to validation in an editor. From code, `lireLeSchema()`
-returns it parsed and `CHEMIN_DU_SCHEMA` gives its resolved path, which avoids
-depending on the JSON import syntax your Node version happens to support.
+returns it parsed and `CHEMIN_DU_SCHEMA` gives its resolved path, whatever JSON
+import syntax your Node version supports.
 
-The schema describes the *shape* of a contract. Its coherence, its internal
-cross-references and its tokenized value formats stay outside it, as its own
-`description` says. It derives from the same types the readers enforce, so it
-replaces none of them.
+The schema describes the shape of a contract. It does not check internal
+cross-references or tokenized value formats, as its own `description` says, so
+it replaces none of the readers.
 
 ## What this package does not do
 
 It does not read Figma, does not generate component code, and does not render
 anything. It never rewrites a contract; every reader takes a contract and
-returns a verdict. The plugin produces contracts. Implementing the component is
-yours.
+returns a verdict.
 
 ## Status
 
 **0.x, the public surface is not frozen.** Pin an exact version, without `^`.
-
-**This release reads two contract versions, `12.0` and `13.0`**, the previous
-one and the current one. The window exists so that a consumer is not red between
-the day the kit moves and the day its contracts are re-exported. Anything
-outside it is refused, major or minor alike, with a verdict that names the fix
-and its owner rather than a list of missing fields.
-
-The window is deliberate. Its lower bound tracks the real previous version and
-closes by one notch on each release. Read `VERSION_CONTRAT_MINIMALE` and
-`VERSION_CONTRAT_MAXIMALE` rather than trusting this paragraph.
 
 The exported symbols are French: `champsInvalidesDuContrat` reads as "invalid
 fields of the contract", `verdictDeVersion` as "version verdict".
