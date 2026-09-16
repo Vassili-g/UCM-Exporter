@@ -1,7 +1,7 @@
 # UCM Contract Exporter — spécification
 
 Ce document décrit le **moteur** : ce que le plugin lit dans Figma, ce qu'il
-élit, ce dont il avertit, et ce qu'il dépose sur GitHub. La forme de ce qu'il
+élit, ce dont il avertit, et ce qu'il dépose sur une forge. La forme de ce qu'il
 produit est décrite dans [docs/FORMAT.md](../../docs/FORMAT.md).
 
 ## Objet
@@ -22,11 +22,11 @@ lecture de Figma.
   `api.github.com` et `gitlab.com` sont autorisés pour le dépôt optionnel des
   artefacts ;
 - Tourne dans l'éditeur, produit des fichiers en téléchargement sans config
-  valide, ou les dépose sur une branche GitHub dédiée avec une config valide.
+  valide, ou les dépose sur une branche dédiée de la forge avec une config valide.
 - Deux commandes indépendantes qui partagent le même code Figma :
   **Export composant** (Partie 1) et **Export tokens** (Partie 2).
 - Stack : TypeScript, `@figma/plugin-typings`, build esbuild. L'UI expose le
-  statut GitHub, les deux commandes, la configuration, un compte rendu, un retour
+  statut de la connexion, les deux commandes, la configuration, un compte rendu, un retour
   en direct sur la sélection, et en pied de page la version de schéma que le
   bundle chargé produit. Figma peut servir un bundle plus ancien que celui du
   disque, et rien d'autre ne le dirait.
@@ -384,7 +384,7 @@ Le classement se fait au moment d’écrire, dans `exportComponent.ts` : une per
 de projection portable l’emporte sur le reste, de sorte qu’un même texte relevé
 des deux côtés dégrade bien `coverage.portable`. Les messages sont dédoublonnés
 par leur texte : deux extracteurs qui concluent la même chose ne le disent
-qu’une fois. Le compte que le plugin affiche, ce que la pull request liste et ce
+qu’une fois. Le compte que le plugin affiche, ce que la demande de fusion liste et ce
 que `meta.diagnostics` publie sont désormais la même liste.
 
 **`meta.figma.url` est absent des contrats produits aujourd’hui, ce qui est un
@@ -396,7 +396,7 @@ sans changement de version : un contrat produit avant cette décision le porte
 encore, et un lecteur doit accepter les deux.
 
 La traçabilité repose donc sur `nodeId` et `fileName`, que le contrat porte
-toujours, et que le corps de la pull request annonce sur sa page de couverture.
+toujours, et que le corps de la demande de fusion annonce sur sa page de couverture.
 Une revue y constate si cette traçabilité suffit. **L’absence de lien ne produit
 aucun diagnostic** : elle n’est plus l’exception mais la règle, et un constat
 que le designer ne peut pas corriger, répété à chaque export, apprendrait à
@@ -590,75 +590,139 @@ variables et leurs tokens.
 
 ---
 
-## Partie 3 — Configuration et dépôt GitHub
+## Partie 3 — Configuration et dépôt sur une forge
 
 La configuration est optionnelle et locale à la machine via
-`figma.clientStorage`. Elle contient l'URL du repository, la branche de base et
-un PAT fine-grained. Le PAT n'est jamais écrit dans le document Figma, renvoyé à
-l'UI après sauvegarde, ni logué. Il doit donner au repository cible les
-permissions **Contents: read/write** et **Pull requests: read/write**.
+`figma.clientStorage`. Elle contient l'URL du dépôt, la branche de base et un
+jeton. Le jeton n'est jamais écrit dans le document Figma, renvoyé à l'UI après
+sauvegarde, ni logué.
 
-Elle ne contient aucun chemin. **L'endroit où un export atterrit appartient au
-repository visé**, qui le déclare dans son `ucm.config.json` ou laisse
+**La forge se déduit de l'hôte de l'URL.** `github.com` désigne GitHub,
+`gitlab.com` désigne GitLab, et toute autre adresse est refusée avec un message
+qui nomme les deux hôtes. Le formulaire n'a pas de sélecteur de forge. Une
+instance GitLab auto-hébergée reste hors périmètre : son domaine devrait figurer
+dans le manifest au moment du build.
+
+**L'adresse d'une page du dépôt est acceptée.** Sur GitLab, tout ce qui suit
+`/-/` est retiré, puis la requête et le fragment ; le reste est le chemin du
+projet, sous-groupes compris. Sur GitHub, les deux premiers segments forment le
+repository. La branche et le dossier d'une adresse sont ignorés, parce qu'un nom
+de branche peut contenir `/`. Sous le champ, le formulaire affiche le dépôt
+retenu et, quand un chemin a été retiré, dit que `ucm.config.json` décide où vont
+les exports. `lireAdresseDuDepot()` (`src/config.ts`) est l'unique lecture ;
+l'interface l'importe.
+
+| Forge | Jeton | Droits |
+|---|---|---|
+| GitHub | Personal Access Token fine-grained | **Contents: read/write** et **Pull requests: read/write** sur le repository |
+| GitLab | jeton d'accès projet de rôle Developer quand l'offre le permet, jeton personnel sinon | scope **api** seul : `read_repository` et `write_repository` ne couvrent ni les merge requests ni l'API de commits |
+
+**Un jeton ne part que vers la forge qui l'a reçu.** Le stockage garde la clé
+`github_pat`, pour qu'une mise à jour du plugin ne retire pas le jeton des
+utilisateurs existants, et lui ajoute `forge_du_jeton` ; un jeton sans cette clé
+appartient à GitHub. `validateSettings()` refuse une configuration dont le seul
+jeton appartient à l'autre forge. Le chargement de l'ouverture, le pré-vol et la
+publication passent tous par elle, si bien qu'aucun appel réseau ne part et que
+la connexion affiche la cause `jeton-autre-forge`. À la saisie, un jeton dont le
+préfixe désigne l'autre forge est refusé : `ghp_` et `github_pat_` pour GitHub,
+`glpat-` pour GitLab. L'enregistrement écrit dans cet ordre : retrait de l'ancien
+jeton quand la forge change, `forge_du_jeton`, jeton, puis URL. Une sauvegarde
+interrompue à n'importe quelle étape laisse donc un jeton qui porte sa forge.
+L'UI ne reçoit que `forgeDuJeton`, et n'annonce « Token enregistré » que pour la
+forge de l'URL saisie.
+
+La configuration ne contient aucun chemin. **L'endroit où un export atterrit
+appartient au dépôt visé**, qui le déclare dans son `ucm.config.json` ou laisse
 s'appliquer les défauts du kit ; la grammaire de ce fichier et ses valeurs par
 défaut sont dans `packages/kit/src/format/configuration.ts`,
 `CONFIGURATION_PAR_DEFAUT`. Un chemin rangé sur le poste du designer ne
-servirait que face à un repository sans `ucm.config.json`, au moment précis où
+servirait que face à un dépôt sans `ucm.config.json`, au moment précis où
 `ucm check` applique ces mêmes défauts. L'export atterrirait alors hors de vue
 du contrôle. Le plugin lit ce fichier au test de connexion, avant la
 publication, pour que le designer découvre un fichier fautif avant de
 travailler.
 
-L'en-tête expose en permanence l'état `connecté` / `non connecté` et un accès à
-la page de configuration via une icône `gear` Font Awesome Free embarquée. Le
-test `GET /repos/{owner}/{repo}` est automatique à l'ouverture et après chaque
-sauvegarde. Le manifest n'autorise que `https://api.github.com` et
-`https://gitlab.com`.
+L'en-tête expose en permanence l'état de la connexion et un accès à la page de
+configuration via une icône `gear` Font Awesome Free embarquée. Le test lit le
+dépôt (`GET /repos/{owner}/{repo}` sur GitHub, `GET /projects/:id` sur GitLab),
+automatiquement à l'ouverture et après chaque sauvegarde. Un 401, un 403 et un
+404 donnent chacun leur cause et leur geste ; sur GitLab, le 404 dit que le
+projet peut être privé et que le jeton doit y avoir accès. Le manifest n'autorise
+que `https://api.github.com` et `https://gitlab.com`.
+
+**Les mots d'une forge se lisent à un seul endroit.** `src/forges/termes.ts`
+porte, pour chacune, le nom de la demande (« pull request », « merge request »),
+son abréviation, le nom du dépôt, le nom et l'aide du jeton, les droits qu'un 403
+réclame, les statuts de refus et de conflit, et ses limites. Tout texte du plugin
+qui nomme une forge les lit ; aucun message ne teste la forge.
 
 Chaque commande conserve son périmètre :
 
-- **Exporter le composant** → PR contenant uniquement
+- **Exporter le composant** → demande contenant uniquement
   `{components}/{IdentifiantCode}/{IdentifiantCode}.contract.json` ;
-- **Exporter les tokens** → PR contenant uniquement `{tokens}`, qui est un
+- **Exporter les tokens** → demande contenant uniquement `{tokens}`, qui est un
   chemin de fichier et jamais un dossier.
 
 `{components}` et `{tokens}` sont les deux champs de `ucm.config.json`.
 
-Pour un artefact modifié, le plugin lit la ref de base, crée la branche
+Pour un artefact modifié, le plugin écrit sur la branche
 `ucm-exporter/export-{component|tokens}-{YYYYMMDD-HHmmss}` (le type d'artefact
 et les secondes évitent toute collision quand on exporte le contrat puis les
-tokens dans la même minute), écrit le fichier avec l'API Contents puis ouvre une
-PR vers la branche de base, puis l'ouvre dans le navigateur par défaut
-(`figma.openExternal` : l'iframe de l'UI est isolée et ne peut pas naviguer
-elle-même) : le libellé du bouton l'annonce, faute de quoi trois exports
-d'affilée ouvrent trois onglets que rien n'avait laissé prévoir. Le lien reste
-dans le compte rendu pour y revenir. Si le contenu est identique (la comparaison
-ignore `meta.exportedAt`, régénéré à chaque export) aucune branche ni PR n'est
-créée. Config absente/invalide ou erreur GitHub : repli automatique vers le
-téléchargement local avec message explicite.
+tokens dans la même minute), ouvre une demande vers la branche de base, puis
+l'ouvre dans le navigateur par défaut (`figma.openExternal` : l'iframe de l'UI
+est isolée et ne peut pas naviguer elle-même) : le libellé du bouton l'annonce,
+faute de quoi trois exports d'affilée ouvrent trois onglets que rien n'avait
+laissé prévoir. Le lien reste dans le compte rendu pour y revenir. Si le contenu
+est identique (la comparaison ignore `meta.exportedAt`, régénéré à chaque
+export) aucune branche ni demande n'est créée. Config absente ou invalide, ou
+erreur de la forge : repli automatique vers le téléchargement local avec message
+explicite.
 
-**« Identique » se juge à deux endroits : la branche de base, et les pull
-requests d'export encore ouvertes.** Un artefact déposé et pas encore fusionné
-n'est pas sur la branche de base, et ne regarder qu'elle rouvrait une seconde
-pull request en tout point pareille à la première. Le compte rendu du plugin dit
-lequel des deux endroits a répondu, et donne le lien de la pull request quand
-c'est elle : « aucun changement » sans l'endroit enverrait le designer chercher
-sur la branche de base un fichier qui n'y est pas encore. Un contenu différent
-pendant qu'une pull request d'export est ouverte n'est pas bloqué pour autant,
-réexporter après correction étant le geste normal. Git signale le reste : deux
-branches qui modifient le même fichier depuis la même base entrent en conflit à
-la seconde fusion.
+La séquence d'écriture appartient à l'adaptateur de la forge (`src/forges/`),
+derrière le port `Forge` ; `src/depot.ts` porte tout ce qui n'en dépend pas.
 
-L'API Contents omet le contenu des fichiers supérieurs à 1 Mo : dans ce cas, le
-plugin lit le blob Git correspondant avant de comparer, afin de ne pas créer une
-PR inchangée. Au-delà de la limite GitHub de 100 Mo, il n'essaie pas de créer
-une branche et conserve directement le téléchargement local.
+- **GitHub** lit la ref de base, crée la branche, écrit le fichier par l'API
+  Contents, puis ouvre la pull request. L'API Contents omet le contenu des
+  fichiers supérieurs à 1 Mo : le plugin lit alors le blob Git correspondant
+  avant de comparer. Si l'écriture ou l'ouverture échoue, la branche est
+  supprimée avant le repli local.
+- **GitLab** crée la branche et le fichier par un seul commit
+  (`POST /projects/:id/repository/commits`). Quand le fichier existe sur la base,
+  le commit part du `commit_id` de sa lecture en action `update`, avec
+  `last_commit_id` ; sinon il part de la tête de la base en action `create`.
+  `force` n'est jamais posé. GitLab refuse en 400 une branche qui existe déjà et
+  ne crée alors rien : l'adaptateur ne vérifie pas son absence avant. La merge
+  request s'ouvre avec `remove_source_branch`, et son échec supprime la branche.
+  Le projet, le chemin d'un fichier et le nom d'une branche forment chacun un
+  seul segment d'URL, et le jeton part dans l'en-tête `PRIVATE-TOKEN`.
 
-**Le corps de la pull request a deux zones, et la frontière compte.** L'en-tête
-dit l'identité de ce qui est déposé : le chemin du fichier, puis le numéro de
-forme qu'il porte, le schéma pour un contrat et la version du format de tokens
-pour `tokens.json`. La liste qui suit ne porte que des gestes à faire dans
-Figma.
+GitLab ne vérifie pas `last_commit_id` quand le commit donne son point de
+départ. Le commit part de la version lue : un changement de la base entre la
+lecture et l'écriture apparaît donc en conflit dans la merge request, comme sur
+GitHub.
+
+| Forge | Au-delà de cette taille, le fichier reste téléchargé | Au-delà, le corps de la demande est refusé |
+|---|---|---|
+| GitHub | 100 Mo | 65 536 caractères |
+| GitLab | 20 Mo, où l'API de commits commence à ralentir | 1 048 576 caractères |
+
+**« Identique » se juge à deux endroits : la branche de base, et les demandes
+d'export encore ouvertes.** Un artefact déposé et pas encore fusionné n'est pas
+sur la branche de base, et ne regarder qu'elle rouvrait une seconde demande en
+tout point pareille à la première. Le compte rendu du plugin dit lequel des deux
+endroits a répondu, et donne le lien de la demande quand c'est elle : « aucun
+changement » sans l'endroit enverrait le designer chercher sur la branche de
+base un fichier qui n'y est pas encore. Un contenu différent pendant qu'une
+demande d'export est ouverte n'est pas bloqué pour autant, réexporter après
+correction étant le geste normal. Git signale le reste : deux branches qui
+modifient le même fichier depuis la même base entrent en conflit à la seconde
+fusion. Sur GitLab, une merge request venue d'une fourche n'est pas lue : sa
+branche appartient à un autre projet.
+
+**Le corps de la demande a deux zones, et la frontière compte.** L'en-tête dit
+l'identité de ce qui est déposé : le chemin du fichier, puis le numéro de forme
+qu'il porte, le schéma pour un contrat et la version du format de tokens pour
+`tokens.json`. La liste qui suit ne porte que des gestes à faire dans Figma.
 
 C'est la page que le plugin ouvre juste après l'export : le designer y lit ce
 qui n'a pas pu être décrit sans ouvrir le JSON ni le journal du plugin. Les deux
@@ -667,14 +731,14 @@ transporter les siens, là où un contrat les garde aussi dans `meta.diagnostics
 Un avertissement ne bloque jamais : seules les préconditions arrêtent un export
 (cf. [CONCEPT.md](../../CONCEPT.md)).
 
-**Le corps s'arrête avant 65 536 caractères.** Au-delà, GitHub refuse la pull
-request et l'export entier échouait. La liste garde les premiers avertissements
+**Le corps s'arrête avant la limite de la forge.** Au-delà, la forge refuse la
+demande et l'export entier échouait. La liste garde les premiers avertissements
 qui tiennent, et une dernière ligne compte ceux qu'elle omet ; le compte rendu du
 plugin les liste tous.
 
 **Le schéma annoncé est lu dans le fichier déposé, jamais dans la constante du
 plugin.** `Schéma de contrat : 12.0` est le seul champ qui décide si le fichier
-entier est lisible par le repository, hors de la fenêtre que ses lecteurs
+entier est lisible par le dépôt, hors de la fenêtre que ses lecteurs
 supportent le contrat étant refusé en bloc, et il est enfoui au milieu d'un diff
 de plusieurs milliers de lignes. Sur la couverture, celui qui décide de
 fusionner le voit sans ouvrir le JSON. Annoncer la constante du plugin ferait de
@@ -698,39 +762,52 @@ qu'elle se survole, et il survolera ensuite celles qui demandent un geste.
 **Les trois parties voyagent séparées jusqu'à l'interface.** Un site d'émission
 écrit un `Constat` (ce qui manque, ce que ça coûte, quel geste le corrige) et
 `localisation.ts` en compose le titre puis la phrase compacte. La phrase est ce
-que publient `meta.diagnostics`, la pull request et le compte rendu ; les
-parties sont ce que l'interface met en page, sous une pastille qui nomme la
-sévérité. Une seule rédaction, deux formes. Sans cette séparation, l'interface
-n'aurait le choix qu'entre afficher un paragraphe (où le geste se lit en
-dernier, après deux phrases de contexte) et découper une `string` dans le DOM,
-c'est-à-dire redéfinir chez elle une grammaire dont le moteur est propriétaire.
+que publient `meta.diagnostics`, la demande et le compte rendu ; les parties
+sont ce que l'interface met en page, sous une pastille qui nomme la sévérité.
+Une seule rédaction, deux formes. Sans cette séparation, l'interface n'aurait le
+choix qu'entre afficher un paragraphe (où le geste se lit en dernier, après deux
+phrases de contexte) et découper une `string` dans le DOM, c'est-à-dire
+redéfinir chez elle une grammaire dont le moteur est propriétaire.
 
-**Un avertissement arrive inerte dans la page GitHub.** Le message cite les
-intitulés de Figma tels quels, et GitHub lit dans certains d'entre eux autre
+**Un avertissement arrive inerte dans la page de la forge.** Le message cite les
+intitulés de Figma tels quels, et la forge lit dans certains d'entre eux autre
 chose que le designer : `@icons`, nom d'une variante de règle, y devenait le
 profil d'un inconnu, notifié à chaque export, au lieu du mot à taper dans le
 composant, et un calque nommé `#12` renverrait de même à une issue. Ces formes
-sont donc publiées en `code`, seule zone que l'autoliaison de GitHub épargne :
-le message reste celui que le compte rendu du plugin affiche, et le designer y
-lit le nom exact qu'il doit écrire.
+sont donc publiées en `code`, seule zone que l'autoliaison épargne : le message
+reste celui que le compte rendu du plugin affiche, et le designer y lit le nom
+exact qu'il doit écrire. Chaque forge neutralise ses propres formes :
+
+- GitHub : `@nom` et `#123` ;
+- GitLab : en plus, `!123`, `~label`, `%jalon`, `$123`, `&123`, la référence
+  croisée `groupe/projet#123` ou `groupe/projet!123`, et une ligne qui commence
+  par `/`. GitLab exécute cette ligne comme action rapide dans la description
+  d'une merge request créée par l'API, et une ligne `/close` fermerait la
+  demande à son ouverture. Un SHA de commit et `:emoji:` restent tels quels :
+  leur lien ne notifie personne et ne modifie rien.
 
 Tous les champs de configuration sont validés et les chemins restent relatifs.
-Aucune branche ne survit à un export qui n'a pas ouvert de PR : si le commit ou
-la PR échoue, la branche créée est supprimée avant le repli local.
+Aucune branche ne survit à un export qui n'a pas ouvert de demande.
 
 ---
 
 ### Les variables d'environnement, et pourquoi elles ne sont pas une interface
 
-`ucm check` ne lit **aucune** variable d'environnement : il calcule lui-même ce
-dont il a besoin, à partir de `--base <sha>` et du dépôt Git. C'est délibéré,
-une commande qui dépend de variables posées ailleurs ne se reproduit pas à la
-main, et le diagnostic qu'elle rend cesse d'être explicable.
+Deux sortes de variables se distinguent : une entrée du diagnostic change le
+verdict que le rapport rend, un secret n'y change rien.
 
-Celles qui existent appartiennent donc au consommateur de référence, dont le
-script de contrôle est plus ancien que cette commande. Elles sont documentées
-ici parce qu'un repository qui écrit son propre script rencontrera les mêmes
-questions, **pas parce qu'elles sont une surface publique.**
+**Une entrée du diagnostic ne passe par l'environnement qu'en dernier
+recours.** `ucm check` calcule lui-même ce dont il a besoin, à partir de
+`--base <sha>` et du dépôt Git : une commande qui dépend de variables posées
+ailleurs ne se reproduit pas à la main, et le diagnostic qu'elle rend cesse
+d'être explicable. Une seule entre par l'environnement : `ucm.mjs` lit
+`UCM_ECHECS_DE_TESTS` avant de lancer `check`, parce qu'aucun argument ne sait
+porter les échecs de tests d'un orchestrateur.
+
+Les autres entrées du tableau appartiennent au consommateur de référence, dont
+le script de contrôle est plus ancien que cette commande. Elles sont
+documentées ici parce qu'un repository qui écrit son propre script rencontrera
+les mêmes questions, **pas parce qu'elles sont une surface publique.**
 
 | Variable | Qui l'écrit | Qui la lit | Ce qu'elle porte |
 |---|---|---|---|
@@ -745,15 +822,22 @@ disparaître le jour où `ucm check` reçoit un adaptateur : ce qui est stable e
 ce que la commande accepte, ses options, pas ce que l'environnement d'un dépôt
 contient.
 
-`CI` et `GITHUB_STEP_SUMMARY` ne sont pas de ce projet : la première est posée
-par tout runner, la seconde par GitHub Actions, et les deux sont lues telles que
-leurs propriétaires les définissent.
+**Un secret est une interface publique, et il ne s'écrit jamais en argument.**
+`ucm rapport-gitlab` lit son jeton dans `UCM_GITLAB_TOKEN`, que le fichier
+écrit par `ucm init --forge gitlab` attend : un argument apparaîtrait dans le
+journal du job, que tout membre du projet lit. Son nom est figé comme une
+option. Sans elle, la commande le dit et sort en 0 ; le rapport reste dans les
+artefacts du job, et le verdict du contrôle ne change pas.
+
+`CI`, `GITHUB_STEP_SUMMARY` et les variables `CI_*` de GitLab ne sont pas de ce
+projet : la première est posée par tout runner, les autres par GitHub Actions et
+GitLab CI, et toutes sont lues telles que leurs propriétaires les définissent.
 
 ## Hors périmètre MVP
 
 Pas d'écriture dans le document Figma, pas d'auto-merge, pas de multi-composant
-en une commande, pas de scoring. Aucun domaine réseau autre que GitHub API
-déclarée dans le manifest.
+en une commande, pas de scoring. Aucun domaine réseau autre que l'API de GitHub
+et gitlab.com déclaré dans le manifest.
 
 ### Sélectionner et cadrer ne sont pas modifier
 

@@ -134,7 +134,7 @@ packages/kit/            le format et ses lecteurs : @ucm-kit/core, publié
     trouver-contrats.mjs         retrouver les contrats d'un dossier
     controle-repository.mjs      le contrôle complet et le rapport du designer
     verdict-bilan.mjs            ce qui refuse une fusion, et le titre de ce refus
-    perimetre-rapport.mjs        les états informatifs limités à la pull request
+    perimetre-rapport.mjs        les états informatifs limités à la demande de fusion
     avertissements-export.mjs    ce que l'export n'a pas su décrire
     diagnostic-tokens.mjs        les références que la source de tokens ne porte pas
     diagnostic-parite.mjs        l'écart contrat ↔ code : le juger et le dire
@@ -155,6 +155,7 @@ packages/cli/            la ligne de commande : @ucm-kit/cli, publiée
   src/check.mjs            lance le contrôle du kit, imprime, écrit le rapport
   src/adaptateur.mjs       découvre l'adaptateur de stack installé dans le repo
   src/icons.mjs            les icônes que les contrats du repo réclament
+  src/rapport-gitlab.mjs   la note du rapport sur une merge request GitLab
   src/tokens-css.mjs       la feuille CSS des tokens et de leurs modes, depuis tokens.json
   src/aides.mjs            ucm aides : le catalogue, une aide, la copie dans les conventions
   src/guide.mjs            ucm guide : procédure, extraction, aides employées et modes d'un contrat
@@ -575,7 +576,7 @@ La spécification en lien porte le raisonnement.
 - **Les trois parties voyagent séparées**, du site d’émission jusqu’à
   l’interface : un site écrit un `Constat` (`src/contract/localisation.ts`),
   jamais une phrase. La phrase compacte que publient `meta.diagnostics`, la
-  pull request et le journal s’en dérive (`phraseDe`), sans seconde rédaction ;
+  demande de fusion et le journal s’en dérive (`phraseDe`), sans seconde rédaction ;
   l’interface, elle, met les parties en page et ne recoupe rien. Deux lois le
   tiennent (`tests/loiDesParties.test.ts`) : l’une lit la source et refuse
   qu’un message s’écrive ailleurs qu’à l’autorité, l’autre lit la sortie du
@@ -583,16 +584,16 @@ La spécification en lien porte le raisonnement.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
 - **Un export ne remonte que ce qui demande une décision.** Trois portes, et
   rien d’autre. Une transformation entièrement prise en charge est silencieuse
-  dans le plugin, dans la pull request et dans `meta.diagnostics` ; la
+  dans le plugin, dans la demande de fusion et dans `meta.diagnostics` ; la
   spécification et les tests du format portent cette règle.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
 - `meta.diagnostics` est l’unique propriétaire des messages publiés dans le
   contrat. Un consommateur qui veut la liste lisible lit `diagnostics[].message`,
   sans filtrer sur `severity`.
-- Le corps de la pull request a deux zones. L’en-tête dit l’identité de ce qui
+- Le corps de la demande de fusion a deux zones. L’en-tête dit l’identité de ce qui
   est déposé : le chemin, puis le schéma de contrat pour un contrat ou la
   version du format de tokens pour `tokens.json`. La liste ne porte que des
-  gestes. Ce que le plugin compte, ce que la pull request liste et
+  gestes. Ce que le plugin compte, ce que la demande liste et
   ce que `meta.diagnostics` publie sont la même liste.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
 - `meta.figma.url` est absent des contrats produits aujourd’hui, ce qui est un
@@ -601,24 +602,41 @@ La spécification en lien porte le raisonnement.
   `enablePrivatePluginApi`, donc sans `figma.fileKey`. Le champ reste optionnel
   au schéma, puisqu’un contrat plus ancien le porte encore, et son absence ne
   produit aucun diagnostic : la traçabilité passe par `fileName` et `nodeId`, annoncés
-  dans le corps de la pull request.
+  dans le corps de la demande de fusion.
   → [spécification](./docs/FORMAT.md#métadonnées)
 - Le numéro annoncé dans l’en-tête est lu dans le fichier déposé :
   `versionDeContrat()` (`format/version.ts`) pour un contrat,
   `etatDuFormatDeTokens()` (`format/tokens.ts`) pour `tokens.json`. Il ne vient
   jamais de `CONTRACT_VERSION` ni de `TOKENS_FORMAT_VERSION`.
-  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
-- Un export identique n’ouvre jamais une seconde pull request. L’immobilité se
-  juge sur la branche de base **et** sur les pull requests d’export encore
-  ouvertes (`exportsEnVol()`, `src/depot.ts`). Le verdict porte l’endroit où le
-  contenu identique a été trouvé, et le journal le dit. Un contenu différent
-  pendant qu’une pull request est ouverte est un réexport après correction, donc
-  le geste normal, et il n’est pas refusé.
-  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
-- Un avertissement entre dans le corps de la pull request en Markdown :
-  `sansLienAutomatique()` (`src/forges/github.ts`) publie `@nom` et `#123` en
-  `code`.
-  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
+  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
+- Un export identique n’ouvre jamais une seconde demande de fusion. L’immobilité
+  se juge sur la branche de base **et** sur les demandes d’export encore
+  ouvertes (`exportsEnVol()`, `src/depot.ts`), sur l'une et l'autre forge. Le
+  verdict porte l’endroit où le contenu identique a été trouvé, et le journal le
+  dit. Un contenu différent pendant qu’une demande est ouverte est un réexport
+  après correction, donc le geste normal, et il n’est pas refusé.
+  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
+- Un avertissement entre dans le corps de la demande en Markdown, et chaque
+  forge y neutralise ses formes actives. `sansLienAutomatique()` publie en
+  `code` `@nom` et `#123` sur GitHub (`src/forges/github.ts`), et en plus
+  `!123`, `~label`, `%jalon`, `$123`, `&123`, la référence croisée et une
+  ligne qui commence par `/` sur GitLab (`src/forges/gitlab.ts`), où cette
+  ligne serait exécutée comme action rapide. Le rendu Markdown du kit, qui ne
+  sait pas sur quelle forge le rapport part, neutralise les formes des deux.
+  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
+- Un jeton ne part que vers la forge qui l'a reçu. La forge vient de l'hôte de
+  l'URL, et `forge_du_jeton` accompagne le jeton enregistré ; un jeton sans
+  elle appartient à GitHub. `validateSettings()` (`src/config.ts`) rend
+  invalide une configuration dont le seul jeton appartient à l'autre forge, et
+  l'ouverture, le pré-vol et la publication passent tous par elle : aucun appel
+  réseau ne part. L'enregistrement retire l'ancien jeton, puis écrit la forge,
+  le jeton et l'URL, dans cet ordre.
+  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
+- Tout texte du plugin qui nomme une forge, sa demande ou son jeton lit
+  `src/forges/termes.ts` ; aucun message ne teste la forge. La galerie tient
+  la frontière dans les deux sens : un état GitLab n'affiche aucun mot de
+  GitHub, et l'inverse.
+  → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
 
 ### Échantillon de maquette
 
@@ -787,15 +805,16 @@ consommateur.
 
 ### La frontière de recette
 
-Tout ce qui précède se prouve ici, hors de Figma et hors de GitHub. `npm test`
+Tout ce qui précède se prouve ici, hors de Figma et hors des forges. `npm test`
 couvre le moteur sur ses propres sorties, les lecteurs sur des contrats
 fabriqués, le CLI et l’adaptateur sur des fixtures, et `packages/cli/tests/`
 `recette.test.mjs` sur des repositories temporaires, dont le cas nominal n’a
 même pas de `package.json`. Aucun de ces tests n’ouvre un clone voisin.
 
-Ce qui ne se prouve pas ici : **Figma, GitHub et une vraie pull request**. Ces
-trois-là se rejouent dans
-[UCM-Playground](https://github.com/Vassili-g/UCM-Playground), une application
+Ce qui ne se prouve pas ici : **Figma, une forge et une vraie demande de
+fusion**. Ces trois-là se rejouent dans
+[UCM-Playground](https://github.com/Vassili-g/UCM-Playground) pour GitHub, et
+dans le projet GitLab de recette pour GitLab. UCM-Playground est une application
 React qui ne porte aucun outillage UCM local. Son empreinte du produit se limite
 aux cinq fichiers qu’`ucm init` écrit, ce qui rend la recette probante : un
 contrôle qui manque là-bas se referme ici, jamais par un script rendu au
@@ -842,9 +861,9 @@ qui est le comportement voulu.
   nécessite un réexport utilisateur.
 - Le réseau du plugin est limité à `https://api.github.com` et
   `https://gitlab.com`.
-- La configuration GitHub est facultative ; toute erreur conserve un
+- La configuration du dépôt est facultative ; toute erreur conserve un
   téléchargement local.
-- Le plugin ouvre une pull request par artefact et ne fusionne jamais
+- Le plugin ouvre une demande de fusion par artefact et ne fusionne jamais
   automatiquement.
 
 Avant de terminer une modification, relire les documents directement affectés

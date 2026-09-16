@@ -15,11 +15,11 @@ UCM répond en donnant un propriétaire unique à chaque information.
 |---|---|
 | Variantes, états, dimensions, couleurs, icônes, tokens | Vous, dans Figma |
 | Comportement, clics, accessibilité | Le développeur, dans le code |
-| L'écart entre les deux | La CI, à chaque pull request |
+| L'écart entre les deux | La CI, à chaque pull request ou merge request |
 
 Le plugin exporte ce que Figma possède dans un fichier appelé **contrat**. Ce
 fichier est déposé à côté du code du composant. La CI le relit à chaque
-modification et vous répond dans la pull request.
+modification et vous répond dans la pull request, ou dans la merge request sur GitLab.
 
 Vous n'écrivez pas de code. Le plugin n'en écrit pas non plus. Il ne modifie
 jamais votre document Figma.
@@ -63,13 +63,32 @@ Il apparaît ensuite dans votre menu `Plugins`, et propose deux commandes.
 | Exporter le composant | Un fichier `<Nom>.contract.json` : variantes, structure, tokens, icônes, règles d'usage |
 | Exporter les tokens | Un fichier `tokens.json` : vos variables locales, avec leurs alias et leurs modes |
 
-Le fichier est toujours téléchargeable. Si un dépôt GitHub a été configuré dans
-le plugin, l'export crée en plus une branche et une pull request contenant ce
-seul fichier. Le jeton d'accès reste dans le stockage local du plugin ; il
-n'apparaît ni dans l'interface, ni dans les journaux, ni dans le fichier.
+Le fichier est toujours téléchargeable. Si un dépôt a été configuré dans le
+plugin, l'export crée en plus une branche et une demande de fusion contenant ce
+seul fichier : une pull request sur GitHub, une merge request sur GitLab. Le
+jeton d'accès reste dans le stockage local du plugin ; il n'apparaît ni dans
+l'interface, ni dans les journaux, ni dans le fichier.
 
-Un export identique à ce qui est déjà déposé n'ouvre pas de seconde pull
-request. Le plugin vous dit où il a trouvé le même contenu.
+Un export identique à ce qui est déjà déposé n'ouvre pas de seconde demande. Le
+plugin vous dit où il a trouvé le même contenu.
+
+### Configurer un dépôt GitLab
+
+1. Collez dans le champ l'adresse du projet, ou celle de n'importe quelle page
+   du projet : un dossier, une merge request. Le plugin affiche sous le champ le
+   projet qu'il retient, par exemple « Projet GitLab : mon-groupe/design-system ». Si
+   l'adresse désignait un dossier, il le dit : c'est le fichier
+   `ucm.config.json` du projet qui décide où vont les exports, pas l'adresse.
+2. Créez un jeton sur GitLab, avec le seul scope **api**. Préférez un jeton
+   d'accès projet de rôle Developer, dans `Settings > Access tokens` du projet :
+   il n'ouvre que ce projet. Si votre offre GitLab ne le propose pas, créez un
+   jeton personnel dans vos préférences : il ouvre alors tous vos projets.
+3. Collez le jeton, puis enregistrez. La pastille passe au vert quand le projet
+   répond.
+
+Un jeton enregistré pour GitHub ne sert pas pour GitLab, et l'inverse. Si vous
+remplacez une adresse GitHub par une adresse GitLab, le plugin demande un
+nouveau jeton et n'envoie rien à GitLab d'ici là.
 
 ## 4. Lire ce que le plugin vous répond
 
@@ -96,20 +115,22 @@ Trois cas seulement produisent un message :
 2. le point rend le contrat incomplet ;
 3. le point demande une vérification ou une correction dans Figma.
 
-## 5. Relire une pull request d'export
+## 5. Relire une demande de fusion d'export
 
-La pull request contient un seul fichier, celui que vous venez d'exporter. Son
+La pull request, ou la merge request sur GitLab, contient un seul fichier, celui que vous venez d'exporter. Son
 corps porte deux zones.
 
 **L'en-tête** dit ce qui est déposé : le chemin du fichier, et la version de
 schéma du contrat. Le nom de fichier et l'identifiant de nœud qu'il porte
 permettent de retrouver le composant Figma d'où il vient.
 
-**La liste** ne porte que des gestes. Ce que le plugin a compté, ce que la pull
-request liste et ce que le contrat publie sont la même liste.
+**La liste** ne porte que des gestes. Ce que le plugin a compté, ce que la
+demande liste et ce que le contrat publie sont la même liste.
 
-Quelques minutes après, la CI ajoute un commentaire. C'est le seul message que
-vous ayez besoin de lire. Les journaux de la CI ne vous concernent pas.
+Quelques minutes après, la CI ajoute un commentaire sur GitHub, une note sur
+GitLab. C'est le seul message que vous ayez besoin de lire. Les journaux de la
+CI ne vous concernent pas. À chaque nouvel export sur la même branche, la note
+GitLab est remplacée, jamais empilée.
 
 ## 6. Ce qui bloque la fusion et ce qui avertit
 
@@ -141,6 +162,11 @@ repository quand celui-ci le transmet.
 
 Sur le plan GitHub actuel, une pull request rouge reste techniquement
 fusionnable. La CI détecte l'écart sans empêcher la fusion.
+
+Sur GitLab, une merge request rouge n'est bloquée que si l'option « Pipelines
+must succeed » est cochée dans `Settings > Merge requests` du projet. Sans elle,
+le rapport annonce une fusion bloquée qui ne l'est pas : demandez à un
+mainteneur du projet de la cocher.
 
 ## 7. Voir l'interface du plugin sans ouvrir Figma
 

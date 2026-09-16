@@ -42,12 +42,12 @@ corrige le plan et le dit dans son commit.
 | Le chargement de la configuration passe par un seul point | `loadGithubConfig()`, appelé à l'ouverture, au pré-vol et à la publication |
 | `saveSettings` écrit ses clés dans un `Promise.all` sans ordre | `config.ts:142` |
 
-Mesures de L0, faites le 16/09/2026 sur `_vass/ucm-playground` avec un jeton
+Mesures de L0, faites le 16/09/2026 sur le projet GitLab de recette avec un jeton
 d'accès projet de rôle Owner et de scope `api` :
 
 | Fait | Source |
 |---|---|
-| Un jeton d'accès projet se crée sur ce compte, que la documentation réserve à Premium sauf « pendant un essai, un seul » | `GET /personal_access_tokens/self` rend `["api"]` et un compte bot `project_<id>_bot_…` ; documentation GitLab, « Project access tokens » |
+| Un jeton d'accès projet se crée sur ce compte, que la documentation réserve à Premium sauf « pendant un essai, un seul » | `GET /personal_access_tokens/self` rend `["api"]` et un compte bot de projet ; documentation GitLab, « Project access tokens » |
 | Un jeton GitLab, personnel ou projet, commence par `glpat-` | Lecture du préfixe du jeton de recette, sans l'afficher |
 | Chaque appel du plugin et de la CLI rend 2xx : projet, fichier, branche, commit sur nouvelle branche, liste et création de merge request, suppression de branche, `/user`, création, modification et liste de notes | Script de mesure, statuts 200, 201 et 204 |
 | Un fichier absent rend 404 `File Not Found` ; un jeton invalide rend 401 ; une écriture sur un projet sans droit rend 403 | Idem |
@@ -57,7 +57,7 @@ d'accès projet de rôle Owner et de scope `api` :
 | Une ligne `/label` ou `/close` s'exécute dans une note **et** dans la description d'une merge request créée par l'API, puis disparaît du texte enregistré | Label posé, merge request fermée, corps relu sans la ligne |
 | `@nom`, `#1`, `!1`, `~label`, `%jalon`, `projet#1`, `projet!1`, un SHA de commit existant et `:emoji:` deviennent des liens ou des images ; `$1` et `&1` restent du texte sans snippet ni epic ; toute forme en `code` reste inerte | `POST /markdown` avec `project`, sur des cibles créées pour la mesure |
 | Les notes paginent par `x-next-page` | En-têtes d'une liste à `per_page=2` |
-| Une merge request ouverte par l'API depuis une branche non protégée déclenche le pipeline `merge_request_event` sur les runners partagés ; une variable masquée non protégée y est lisible ; `CI_MERGE_REQUEST_IID`, `CI_MERGE_REQUEST_DIFF_BASE_SHA` et `CI_API_V4_URL` sont définis | Pipeline 2853752446, job réussi en 30 s |
+| Une merge request ouverte par l'API depuis une branche non protégée déclenche le pipeline `merge_request_event` sur les runners partagés ; une variable masquée non protégée y est lisible ; `CI_MERGE_REQUEST_IID`, `CI_MERGE_REQUEST_DIFF_BASE_SHA` et `CI_API_V4_URL` sont définis | Pipeline de mesure, job réussi en 30 s |
 | `npx --yes` sur la CLI publiée, version 0.1.37, s'exécute en 2 s dans `after_script` | Journal du même job |
 | La branche par défaut d'un projet neuf est protégée | `GET /repository/branches/main` |
 
@@ -251,7 +251,7 @@ plan, et la décision qu'il touche est corrigée dans le même commit.
       suppression de branche). Voir « Ce qui est mesuré ».
 - [x] **[mainteneur]** Créer le projet `UCM-Playground` sur gitlab.com, un
       compte de service, et un jeton personnel scope `api` limité par ce
-      compte. Fait : `_vass/ucm-playground`, privé, avec un jeton d'accès
+      compte. Fait : un projet privé, avec un jeton d'accès
       projet scope `api` au lieu du compte de service. Le projet ne contient
       qu'un `README.md`.
 - [x] Vérifier avec ce jeton que chaque appel nécessaire au plugin et à la CLI
@@ -354,7 +354,7 @@ Un seul lot, parce que le renommage des clés de configuration et du message
 - [x] `config.ts` : `lireAdresseDuDepot(url)` remplace `parseGithubRepository`
       et rend `{ forge, projet, cheminRetire }` ou `null`, selon D1 et D2.
 - [x] Réécrire `tests/config.test.ts`, qui exige aujourd'hui le refus de
-      gitlab.com. Cas : l'adresse du designer de l'équipe rend
+      gitlab.com. Cas : l'adresse d'une page de dossier rend
       `{ forge: 'gitlab', projet: 'mon-groupe/design-system', cheminRetire: true }` ;
       sous-groupes ; suffixe `.git` ; lien Markdown ; GitHub
       `/tree/main/docs` ; hôte inconnu refusé ; `gitlab.com/groupe` refusé.
@@ -439,44 +439,52 @@ publication de la série en cours.
 
 ### L5. Documentation
 
-- [ ] `packages/plugin/SPEC.md`, partie 3 : titre « Configuration et dépôt sur
+- [x] `packages/plugin/SPEC.md`, partie 3 : titre « Configuration et dépôt sur
       une forge », séquence GitHub et séquence GitLab, D5, neutralisation par
       forge, domaines du manifest. Dans le même commit, les trois liens
       d'`AGENTS.md` vers l'ancienne ancre et les énoncés de `ENONCES_SPEC`
       dans `tests/inventaireInvariants.test.ts` qui citent « pull request » et
       « page GitHub ». Preuve : `docLinks` et l'inventaire passent.
-- [ ] `SPEC.md`, section sur les variables d'environnement : distinguer un secret
+- [x] `SPEC.md`, section sur les variables d'environnement : distinguer un secret
       d'une entrée du diagnostic ; `UCM_GITLAB_TOKEN` comme interface publique ;
       corriger la phrase qui dit que la CLI ne lit aucune variable, puisque
       `ucm.mjs` lit `UCM_ECHECS_DE_TESTS` avant `check`.
-- [ ] `README.md`, `packages/plugin/README.md` et `packages/cli/README.md` : les
+- [x] `README.md`, `packages/plugin/README.md` et `packages/cli/README.md` : les
       deux forges, `--forge`, `ucm rapport-gitlab`, sans recopier la
       spécification.
-- [ ] `docs/POUR-LES-DESIGNERS.md` : le lien de la merge request, le jeton GitLab
+- [x] `docs/POUR-LES-DESIGNERS.md` : le lien de la merge request, le jeton GitLab
       et ses permissions, « Pipelines must succeed ».
-- [ ] `docs/RECETTE.md` : le parcours GitLab sur le miroir de D14.
-- [ ] `AGENTS.md` : invariants de la publication écrits pour une forge, limites
+- [x] `docs/RECETTE.md` : le parcours GitLab sur le miroir de D14.
+- [x] `AGENTS.md` : invariants de la publication écrits pour une forge, limites
       d'environnement avec les deux domaines.
-- [ ] Relire chaque document touché et retirer toute phrase devenue fausse.
+- [x] Relire chaque document touché et retirer toute phrase devenue fausse.
       Preuve : `npm test` passe, liens et style compris.
 
 ### L6. Recette réelle
 
-- [ ] **[mainteneur]** Sur le miroir GitLab : `ucm init`, variable
+- [x] **[mainteneur]** Sur le miroir GitLab : `ucm init`, variable
       `UCM_GITLAB_TOKEN`, « Pipelines must succeed », commit sur la branche par
-      défaut.
+      défaut. Fait par l'agent avec l'API et `@ucm-kit/cli@0.1.39` publiée, sur
+      le projet GitLab de recette.
 - [ ] **[mainteneur]** Plugin de développement : saisir l'adresse d'une page du
       miroir, constater le projet retenu, la ligne du dossier retiré et la
       connexion.
 - [ ] **[mainteneur]** Exporter un composant avec au moins un avertissement.
       Constater la merge request, son corps, l'onglet ouvert, un seul job UCM,
-      la note du rapport.
+      la note du rapport. Constaté par l'agent hors Figma, en appelant
+      `publishArtifact` avec l'adaptateur GitLab : merge request !7, corps en
+      `code` et ligne `/close` inerte, un seul job `ucm`, note publiée.
+      Restent l'export depuis Figma et l'onglet ouvert.
 - [ ] **[mainteneur]** Réexporter sans changement : aucune seconde merge request,
       lien vers la première. Réexporter après correction : nouvelle merge
       request acceptée. Pousser un nouveau commit sur la branche d'export : la
-      note est remplacée.
+      note est remplacée. Constaté par l'agent hors Figma : réexport identique
+      rendu `unchanged` avec le lien, réexport corrigé accepté, note !7
+      remplacée au push d'un contrat illisible, pipeline rouge et fusion
+      refusée (`ci_must_pass`).
 - [ ] **[mainteneur]** Exporter les tokens : merge request sur le chemin de
-      `ucm.config.json`.
+      `ucm.config.json`. Constaté par l'agent hors Figma : merge request !8 sur
+      `tokens.json`, réexport identique reconnu.
 - [ ] **[mainteneur]** Basculer l'URL de GitHub vers GitLab sans saisir de
       jeton : aucun appel vers gitlab.com, et le plugin demande un jeton GitLab.
 - [ ] **[mainteneur]** Rejouer l'export GitHub sur `UCM-Playground` : aucun écart
@@ -485,10 +493,10 @@ publication de la série en cours.
 ### L7. Publication et accompagnement de l'équipe
 
 - [ ] **[mainteneur]** Publier la mise à jour du plugin sur la Community.
-- [ ] **[mainteneur]** Avec l'équipe consommatrice : confirmer où vit le design system
+- [ ] **[mainteneur]** Avec l'équipe : confirmer où vit le design system
       dans le projet. Si c'est `guidelines/`, `ucm.config.json` à la racine
       déclare `guidelines/…` pour les composants et les tokens.
-- [ ] **[mainteneur]** Avec l'équipe consommatrice : `ucm init --forge gitlab`, le jeton du
+- [ ] **[mainteneur]** Avec l'équipe : `ucm init --forge gitlab`, le jeton du
       designer, le jeton de la CI, « Pipelines must succeed », un premier export
       relu ensemble.
 
@@ -504,6 +512,7 @@ publication de la série en cours.
 | `npx` dans `after_script` dépasse la limite de cinq minutes | La note manque ; le rapport reste dans les artefacts | L0 |
 | Une variable non protégée est lisible par tout pipeline de merge request du projet | Un développeur du projet peut lire le jeton de la CI ; le compte de service limite ce qu'il ouvre | L5, L7 |
 | « Pipelines must succeed » reste décoché | Le rapport annonce une fusion bloquée qui ne l'est pas | L4, L7 |
+| Un job échoue avant ses scripts, au clonage par exemple | `after_script` ne tourne pas : la note du push précédent reste, verte, sur un pipeline rouge. Constaté en L6 sur une panne du runner partagé ; « Pipelines must succeed » bloque la fusion | Hors plan, dit dans `RECETTE.md` |
 | Plus de 100 merge requests ouvertes vers la base | Un export identique en vol peut passer inaperçu, comme sur GitHub aujourd'hui | Hors plan |
 
 ## 5. Estimation et ordre

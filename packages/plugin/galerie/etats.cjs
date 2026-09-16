@@ -166,7 +166,7 @@ const REGLAGES = {
   baseBranch: 'main',
   forgeDuJeton: 'github',
 };
-/** L'adresse que le designer de l'équipe a saisie : une page du projet, pas le projet. */
+/** L'adresse d'une page du projet copiée depuis le navigateur, pas celle du projet. */
 const REGLAGES_GITLAB = {
   repoUrl: 'https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines?ref_type=heads',
   baseBranch: 'main',
@@ -877,7 +877,7 @@ const ETATS = [
     id: 'gitlab-dossier-retire',
     forge: 'gitlab',
     titre: 'Adresse d’une page du projet GitLab',
-    quand: "Le designer colle l'adresse d'un dossier du projet, comme celle qu'a saisie l'équipe consommatrice.",
+    quand: "Le designer colle l'adresse d'un dossier du projet, copiée depuis le navigateur.",
     regarder: "Sous le champ, le projet retenu, puis la ligne qui dit que le dossier ne décide pas où vont les exports.",
     existe: true,
     atteinte: [

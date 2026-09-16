@@ -1,7 +1,7 @@
 # La recette externe : vérifier UCM depuis un dépôt vide
 
 Cette recette fait tourner la boucle complète du produit, du plugin Figma
-jusqu'au rapport publié sur une pull request, dans un dépôt qui ne contient rien
+jusqu'au rapport publié sur une pull request ou une merge request, dans un dépôt qui ne contient rien
 d'UCM. Elle se suit dans l'ordre, du début à la fin. Comptez une heure et demie.
 
 Elle éprouve la version du format de tokens, le plugin et les paquets publiés.
@@ -444,6 +444,70 @@ vient d'être publié :
 
 Ce dernier passage prouve que ce qui a été publié fonctionne chez un
 consommateur, et pas seulement dans le monorepo qui l'a produit.
+
+---
+
+## Parcours GitLab
+
+Ce parcours rejoue les étapes 3 à 5 sur un projet GitLab de recette, jamais
+sur le projet d'une équipe consommatrice. Il vous faut en plus un jeton GitLab
+de scope `api` ayant le rôle Developer sur ce projet. Dans ce qui suit,
+`<groupe>/<projet>` désigne son chemin.
+
+### Installer UCM dans le projet
+
+1. Dans un clone du projet, lancez :
+
+   ```sh
+   npx --yes @ucm-kit/cli@0.1.39 init --forge gitlab
+   ```
+
+   Vérifiez que le compte rendu nomme GitLab et le signal suivi, qu'il écrit
+   `.gitlab/ucm.gitlab-ci.yml` et `.gitlab-ci.yml`, et qu'il n'écrit aucun
+   `.github/workflows/ucm.yml`.
+2. Dans `Settings > CI/CD > Variables`, créez `UCM_GITLAB_TOKEN`, masquée et
+   non protégée, avec le jeton.
+3. Dans `Settings > Merge requests`, cochez « Pipelines must succeed ».
+4. Commitez sur la branche par défaut. Un pipeline tourne sur cette branche, avec
+   un seul job, `ucm`.
+
+### Configurer le plugin
+
+Chargez le plugin de développement tant que la version Community ne déclare
+pas `https://gitlab.com`. Dans la configuration :
+
+1. collez l'adresse d'un dossier du projet, par exemple
+   `https://gitlab.com/<groupe>/<projet>/-/tree/main/components` ;
+2. vérifiez que le formulaire affiche « Projet GitLab : <groupe>/<projet> »,
+   puis la ligne qui dit que l'adresse désignait un dossier ;
+3. vérifiez que le libellé du champ du jeton devient « Jeton d’accès » et que
+   son aide demande le scope api ;
+4. collez le jeton, enregistrez, et vérifiez que la pastille passe au vert.
+
+### Exporter et relire
+
+| Geste | Ce qui doit se voir |
+|---|---|
+| Exporter un composant qui porte au moins un avertissement | Une merge request s'ouvre dans le navigateur, avec un seul fichier. Son corps montre les formes comme `@icons` en code. Un seul job `ucm` tourne, et une note du compte du jeton porte le rapport |
+| Réexporter sans rien changer | Aucune seconde merge request ; le compte rendu donne le lien de la première |
+| Réexporter après une correction dans Figma | Une nouvelle merge request s'ouvre ; le plugin ne la refuse pas |
+| Pousser un nouveau commit sur la branche d'export | La note du rapport est remplacée, pas ajoutée |
+| Exporter les tokens | Une merge request sur le chemin que déclare `ucm.config.json` |
+| Pousser un contrat illisible sur une branche d'export | Le rapport est rouge et GitLab refuse la fusion tant que le pipeline échoue |
+
+### Changer de forge
+
+Remplacez l'adresse GitLab par celle d'`UCM-Playground` sur GitHub, sans saisir
+de jeton, et enregistrez. Le plugin doit demander un Personal Access Token
+GitHub, et aucun appel ne doit partir vers GitHub. Faites l'inverse avec un jeton
+GitHub enregistré : aucun appel ne doit partir vers gitlab.com. Rejouez enfin
+l'étape 5 sur GitHub : seuls les rapports où le kit neutralise désormais une
+forme comme `@icons` doivent différer.
+
+Ce que la recette GitLab ne couvre pas : un pipeline qui échoue avant ses
+scripts, au clonage par exemple, ne lance pas `after_script`. La note du push
+précédent reste alors en place sur un pipeline rouge. « Pipelines must succeed »
+bloque la fusion dans ce cas aussi.
 
 ---
 

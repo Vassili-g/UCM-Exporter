@@ -85,9 +85,12 @@ props](../../docs/FORMAT.md#7-intention-et-documentation-des-props).
 
 ## Où l'export atterrit
 
-Un export est toujours téléchargeable. La configuration GitHub est optionnelle ;
-renseignée, elle crée une branche et une pull request qui contient le seul
-fichier exporté.
+Un export est toujours téléchargeable. La configuration du dépôt est
+optionnelle ; renseignée, elle crée une branche et une demande de fusion, pull
+request sur GitHub ou merge request sur GitLab, qui contient le seul fichier
+exporté. La forge se déduit de l'adresse saisie : `github.com` ou
+`gitlab.com`. L'adresse d'une page du dépôt, un dossier par exemple, est
+acceptée, et le formulaire affiche le dépôt qu'il en retient.
 
 L'endroit où ce fichier est écrit appartient au repository visé, qui le déclare
 dans son `ucm.config.json`. Le plugin lit ce fichier au test de connexion, avant
@@ -98,13 +101,17 @@ designer ne servirait que face à un repository sans `ucm.config.json`, au momen
 précis où le contrôle applique ces mêmes défauts. L'export atterrirait alors
 hors de vue de ce contrôle.
 
-La configuration contient l'URL du repository, la branche de base et un jeton
-d'accès personnel, qui demande les permissions `Contents: read/write` et `Pull
-requests: read/write`. Le jeton reste local à la machine et n'apparaît ni dans
-l'interface, ni dans les journaux, ni dans le document Figma.
+La configuration contient l'URL du dépôt, la branche de base et un jeton. Sur
+GitHub, un Personal Access Token avec les permissions `Contents: read/write` et
+`Pull requests: read/write`. Sur GitLab, un jeton de scope `api` : un jeton
+d'accès projet de rôle Developer quand l'offre du projet le permet, un jeton
+personnel sinon. Le jeton reste local à la machine et n'apparaît ni dans
+l'interface, ni dans les journaux, ni dans le document Figma. Il ne part que vers
+la forge pour laquelle il a été saisi : changer l'URL de forge demande un
+nouveau jeton.
 
 Un export dont le contenu est identique à ce qui est déjà déposé n'ouvre pas de
-seconde pull request. Le plugin dit où il a trouvé le même contenu.
+seconde demande. Le plugin dit où il a trouvé le même contenu.
 
 ## Ce que le plugin ne fait pas
 
@@ -113,9 +120,10 @@ seconde pull request. Le plugin dit où il a trouvé le même contenu.
   source.
 - Il ne génère aucun code de production.
 - Il n'exporte pas plusieurs composants en une commande et ne fusionne aucune
-  pull request.
-- Il ne joint aucun domaine réseau autre que l'API GitHub, déclarée dans son
-  manifeste.
+  demande.
+- Il ne joint aucun domaine réseau autre que `https://api.github.com` et
+  `https://gitlab.com`, déclarés dans son manifeste. Une instance GitLab
+  auto-hébergée n'est pas joignable.
 
 Poser une sélection et cadrer la vue restent permis : ces deux gestes portent
 sur l'état de l'éditeur, n'entrent pas dans le fichier et ne créent aucune
@@ -127,14 +135,15 @@ entrée d'annulation. Les preuves sont dans
 Le manifeste ne déclare pas `enablePrivatePluginApi`, drapeau réservé aux
 plugins privés d'une organisation. `figma.fileKey` est donc inaccessible et
 `meta.figma.url` n'est plus écrit : la traçabilité vers le composant source
-passe par `fileName` et `nodeId`, que le corps de la pull request annonce.
+passe par `fileName` et `nodeId`, que le corps de la demande annonce.
 Aucune information de rendu n'est perdue.
 
 ## Après l'export
 
-Le repository qui reçoit le contrat le contrôle à chaque pull request avec
-[`@ucm-kit/cli`](../cli/README.md), et publie son rapport en commentaire. C'est
-le seul message que le designer ait besoin de lire.
+Le repository qui reçoit le contrat le contrôle à chaque demande de fusion avec
+[`@ucm-kit/cli`](../cli/README.md), et publie son rapport en commentaire de la
+pull request ou en note de la merge request. C'est le seul message que le
+designer ait besoin de lire.
 
 ## Licence
 

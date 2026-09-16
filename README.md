@@ -21,7 +21,7 @@ components/Button/
 
 Le code de production ne lit jamais ce JSON à l'exécution. Le développeur écrit
 le composant en s'appuyant sur le contrat, et la CI compare la surface d'API des
-deux à chaque pull request : les props déclarées, leur type, et les composants
+deux à chaque pull request ou merge request : les props déclarées, leur type, et les composants
 réellement rendus. Le rendu visuel lui-même n'est pas vérifié.
 
 ## La boucle
@@ -31,23 +31,23 @@ Figma
   │   commande « Exporter le composant »
   ▼
 Button.contract.json
-  │   dépôt GitHub optionnel : branche et pull request automatiques
+  │   dépôt GitHub ou GitLab optionnel : branche et demande de fusion automatiques
   ▼
 CI du repository consommateur
   │   6 contrôles
   ▼
-Rapport publié en commentaire de la pull request
+Rapport publié en commentaire de la pull request, ou en note de la merge request
 ```
 
 Le rapport est écrit pour le designer qui valide l'export. Il liste ce qui
 bloque, ce qui avertit, et l'action attendue de chacun. Le designer le lit dans
-le commentaire de la pull request.
+la pull request sur GitHub, ou dans la merge request sur GitLab.
 
 ## À qui ça sert
 
 | Vous êtes | Ce que vous y gagnez | Par où commencer |
 |---|---|---|
-| **Designer** | Vos variantes, vos tokens et vos règles d'usage arrivent au développeur sans être retapés, et une pull request vous dit ce qui manque | [docs/POUR-LES-DESIGNERS.md](./docs/POUR-LES-DESIGNERS.md) |
+| **Designer** | Vos variantes, vos tokens et vos règles d'usage arrivent au développeur sans être retapés, et la demande de fusion vous dit ce qui manque | [docs/POUR-LES-DESIGNERS.md](./docs/POUR-LES-DESIGNERS.md) |
 | **Développeur d'un repository consommateur** | Une source unique pour l'API visuelle d'un composant, et une CI qui signale les écarts avant la fusion | [Brancher un repository](#brancher-un-repository) |
 | **Contributeur du moteur** | Un moteur générique, sans aucune règle liée au nom d'un composant | [AGENTS.md](./AGENTS.md) |
 
@@ -186,7 +186,7 @@ Le plugin est publié sur la Figma Community, sous le nom « UCM Contract Export
 **<https://www.figma.com/community/plugin/1678431364325816914>**
 
 Installez-le une fois, puis lancez-le depuis le menu `Plugins` de l'application
-de bureau. Ses deux commandes, sa configuration GitHub optionnelle et ses
+de bureau. Ses deux commandes, sa configuration GitHub ou GitLab optionnelle et ses
 limites sont décrites dans
 [packages/plugin/README.md](./packages/plugin/README.md).
 
