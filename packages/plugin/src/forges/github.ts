@@ -106,6 +106,10 @@ export function forgeGithub(config: ConfigurationDeForge): Forge {
   /**
    * Au-delà de 1 Mo, l'API Contents rend `encoding: none` sans contenu : le
    * fichier se relit alors par son blob.
+   *
+   * Un fichier vide rend `content: ""`, et se lit comme un contenu vide. Le
+   * prendre pour un fichier absent appliquait les défauts à un
+   * `ucm.config.json` vide que la CI refuse.
    */
   async function lireFichier(chemin: string, ref = config.baseBranch): Promise<FichierLu | null> {
     let file = await githubRequest<GithubFile>(
@@ -119,7 +123,10 @@ export function forgeGithub(config: ConfigurationDeForge): Forge {
       );
       if (blob) file = { ...file, content: blob.content, encoding: blob.encoding };
     }
-    if (file?.type !== 'file' || !file.content) return null;
+    if (file?.type !== 'file') return null;
+    if (file.encoding === 'none' || typeof file.content !== 'string') {
+      throw new ErreurDeForge(`GitHub ne rend pas le contenu de ${chemin}.`);
+    }
     return { contenu: decodeBase64(file.content), version: { sha: file.sha } };
   }
 

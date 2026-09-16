@@ -96,7 +96,8 @@ export function forgeGitlab(config: ConfigurationDeForge): Forge {
       {},
       true,
     );
-    if (!fichier?.content) return null;
+    // Un fichier vide rend `content: ""` : il existe, et se lit vide.
+    if (typeof fichier?.content !== 'string') return null;
     return {
       contenu: decodeBase64(fichier.content),
       version: { commitId: fichier.commit_id, lastCommitId: fichier.last_commit_id },

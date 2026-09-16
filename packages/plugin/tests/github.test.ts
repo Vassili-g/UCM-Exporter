@@ -161,6 +161,24 @@ test('une configuration de repository fautive refuse l’export au lieu de devin
   );
 });
 
+/** Un fichier vide existe : le plugin le refuse comme la CI, sans appliquer les défauts. */
+test('un ucm.config.json vide refuse l’export au lieu de prendre les défauts', async () => {
+  await assert.rejects(
+    () => avecFetch(() => fichier(''), () => repositoryLayout(forge)),
+    /ucm\.config\.json du repository n'est pas du JSON valide/,
+  );
+});
+
+test('un fichier GitHub dont le contenu reste inconnu lève au lieu de passer pour absent', async () => {
+  await assert.rejects(
+    () => avecFetch(
+      () => new Response(JSON.stringify({ type: 'file', sha: 's', encoding: 'none' }), { status: 200 }),
+      () => forge.lireFichier('ucm.config.json'),
+    ),
+    /GitHub ne rend pas le contenu de ucm\.config\.json/,
+  );
+});
+
 test('encodeBase64 préserve les caractères Unicode', () => {
   const value = '{"usage":"Être cohérent"}';
   assert.equal(encodeBase64(value), Buffer.from(value, 'utf8').toString('base64'));
@@ -518,6 +536,21 @@ test('un contrat déjà présent sans identité Figma lisible refuse plutôt que
       (url) => sansConfiguration(url)
         ?? sansExportEnVol(url)
         ?? fichier(JSON.stringify({ name: 'IconButton', meta: { contractVersion: '3.0' } })),
+      () => publishArtifact(forge, {
+        kind: 'component',
+        filename: 'IconButton.contract.json',
+        content: contratFigma('IconButton', '67:890'),
+        warnings: [],
+      }),
+    ),
+    /aucune identité Figma lisible/,
+  );
+});
+
+test('un contrat vide déjà présent refuse plutôt que d’écraser', async () => {
+  await assert.rejects(
+    avecMethode(
+      (url) => sansConfiguration(url) ?? sansExportEnVol(url) ?? fichier(''),
       () => publishArtifact(forge, {
         kind: 'component',
         filename: 'IconButton.contract.json',

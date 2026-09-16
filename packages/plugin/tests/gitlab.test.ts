@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { encodeBase64 } from '../src/base64';
-import { corpsDeLaDemande, diagnostiquerConnexion, publishArtifact } from '../src/depot';
+import { corpsDeLaDemande, diagnostiquerConnexion, publishArtifact, repositoryLayout } from '../src/depot';
 import type { RepositoryArtifact } from '../src/depot';
 import { forgeGithub } from '../src/forges/github';
 import { forgeGitlab, sansLienAutomatiqueGitlab } from '../src/forges/gitlab';
@@ -172,6 +172,27 @@ test('un contrat sans identité Figma lisible refuse plutôt que d’écraser', 
       if (estConfiguration(url)) return introuvable();
       if (estListe(url)) return json([]);
       return fichier(JSON.stringify({ name: 'IconButton', meta: { contractVersion: '3.0' } }));
+    },
+    async () => assert.rejects(
+      publishArtifact(forge, composant(contratFigma('IconButton', '67:890'))),
+      /aucune identité Figma lisible/,
+    ),
+  );
+});
+
+test('un ucm.config.json vide refuse l’export au lieu de prendre les défauts', async () => {
+  await assert.rejects(
+    avecFetch(() => fichier(''), () => repositoryLayout(forge)),
+    /ucm\.config\.json du repository n'est pas du JSON valide/,
+  );
+});
+
+test('un contrat vide déjà présent refuse plutôt que d’écraser', async () => {
+  await avecFetch(
+    ({ url }) => {
+      if (estConfiguration(url)) return introuvable();
+      if (estListe(url)) return json([]);
+      return fichier('');
     },
     async () => assert.rejects(
       publishArtifact(forge, composant(contratFigma('IconButton', '67:890'))),
