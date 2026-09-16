@@ -122,7 +122,10 @@ export function champsInvalidesDeLaConfiguration(configuration: unknown): string
   if (declare(objet, 'css')) {
     const css = objet.css;
     if (!estObjet(css)) invalides.push('css');
-    else if (declare(css, 'fontFamilyFallback') && !estTexteNonVide(css.fontFamilyFallback)) {
+    else if (
+      declare(css, 'fontFamilyFallback')
+      && (!estTexteNonVide(css.fontFamilyFallback) || /[;{}\r\n]/.test(css.fontFamilyFallback as string))
+    ) {
       invalides.push('css.fontFamilyFallback');
     }
   }

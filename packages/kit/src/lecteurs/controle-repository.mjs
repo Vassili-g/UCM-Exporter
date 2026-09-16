@@ -180,6 +180,28 @@ function implementationsEnAttente(bilans) {
   );
 }
 
+/** Au-delà, `gh pr comment` refuse le corps et la pull request reste sans commentaire. */
+const LIMITE_COMMENTAIRE_GITHUB = 65_536;
+
+const SUITE_OMISE = [
+  "",
+  "---",
+  "",
+  "**La suite de ce rapport ne tient pas dans un commentaire GitHub.** Le verdict en tête reste celui de la vérification complète. Un développeur lit la liste entière dans le journal de la CI, à l'étape qui lance `ucm check`.",
+].join("\n");
+
+/**
+ * Coupe le rapport à la dernière ligne entière qui tient dans un commentaire.
+ * Le verdict ouvre le rapport, donc la coupe n'emporte que des détails, que le
+ * terminal a déjà écrits en entier.
+ */
+function bornerAuCommentaire(rapport) {
+  if (rapport.length <= LIMITE_COMMENTAIRE_GITHUB) return rapport;
+  const place = LIMITE_COMMENTAIRE_GITHUB - SUITE_OMISE.length;
+  const coupe = rapport.lastIndexOf("\n", place);
+  return `${rapport.slice(0, coupe > 0 ? coupe : place)}${SUITE_OMISE}`;
+}
+
 /** Ajoute au rapport l'état informatif des contrats encore sans implémentation. */
 function ajouterImplementationsEnAttente(lignes, bilans) {
   const attentes = implementationsEnAttente(bilans);
@@ -678,9 +700,9 @@ export function controlerRepository(racine, {
   // La validation reste globale. Seuls les états informatifs sont limités aux
   // contrats de la PR afin qu'un export ne parle pas d'un autre composant.
   const bilansDuRapport = selectionnerBilansDuRapport(bilans, contratsModifies);
-  const rapport = rapportMarkdown(bilans, fautifs, bilansDuRapport, {
+  const rapport = bornerAuCommentaire(rapportMarkdown(bilans, fautifs, bilansDuRapport, {
     echecsDeTests, tokensModifies, sourceTokens,
-  });
+  }));
 
   const terminal = [...terminalDesBilans(bilans), ...terminalDesFautifs(fautifs)];
 

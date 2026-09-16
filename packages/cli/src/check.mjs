@@ -9,6 +9,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
 import { controlerRepository, lireConfiguration } from "@ucm-kit/core/lecteurs";
+import { NOM_CONFIGURATION } from "@ucm-kit/core/format";
+import { contratsDuDossier } from "./contrats.mjs";
+import { memeFichier } from "./tokens-css.mjs";
 
 /**
  * Lit les arguments de `ucm check`.
@@ -109,6 +112,19 @@ export function check(arguments_, {
     // message quand le rapport manque : c'est exactement le cas qu'il couvre.
     alerter(erreurConfiguration);
     return 2;
+  }
+
+  if (options.report) {
+    const cible = resolve(racine, options.report);
+    const entrees = [
+      resolve(racine, NOM_CONFIGURATION),
+      resolve(racine, configuration.tokens),
+      ...contratsDuDossier(resolve(racine, configuration.components)),
+    ];
+    if (cible.toLowerCase().endsWith('.contract.json') || entrees.some((entree) => memeFichier(cible, entree))) {
+      alerter('--report désigne une entrée du contrôle. Choisissez un fichier Markdown séparé.');
+      return 2;
+    }
   }
 
   let perimetre = {};

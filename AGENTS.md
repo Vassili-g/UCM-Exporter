@@ -269,7 +269,9 @@ La spécification en lien porte le raisonnement.
   `normalizeName`, leurs segments perdent accolades et `$` de tête, puis la
   collection n'est écrite qu'une fois. Figma accepte ces caractères dans un nom
   de collection, et une référence DTCG ne sait pas les citer. Borne
-  de `tokenCssVariable` : elle ne coupe pas sur les bosses de casse, ce qui la
+  de `tokenCssVariable` : elle retire les accents, pour qu'un nom composé et le
+  même nom décomposé donnent la même propriété ; elle ne coupe pas sur les
+  bosses de casse, ce qui la
   distingue d'un `kebabCase` de bibliothèque, et elle n'est pas une bijection.
   → [spec](./docs/FORMAT.md#nommer-et-citer-un-token)
 - `tokens.json` porte la version du format de tokens à la racine du document,

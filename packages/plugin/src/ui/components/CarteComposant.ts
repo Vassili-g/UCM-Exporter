@@ -48,6 +48,7 @@ export function createCarteComposant({
   carte.sujet.append(nom, detail, avertissement);
 
   let cibleAffichee: Cible | null = null;
+  let selectionAffichee: string | undefined;
 
   let analysee = false;
   let occupee = false;
@@ -66,7 +67,8 @@ export function createCarteComposant({
 
     afficher(message: MessageCible) {
       const { cible, raison, avertissement: texte } = message;
-      const change = !memeCible(cibleAffichee, cible);
+      const change = message.selectionId !== selectionAffichee || !memeCible(cibleAffichee, cible);
+      selectionAffichee = message.selectionId;
       cibleAffichee = cible;
 
       carte.element.dataset.state = cible ? 'prete' : 'vide';

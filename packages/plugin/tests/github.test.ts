@@ -734,6 +734,30 @@ test('le corps de la pull request porte les avertissements de l’export', () =>
   assert.doesNotMatch(signale, /—|\w+\(s\)/);
 });
 
+test('un corps de pull request trop long pour GitHub s’arrête avant la limite et compte ce qu’il omet', () => {
+  // GitHub refuse en 422 un corps de plus de 65 536 caractères : la branche
+  // était supprimée et l'export entier échouait pour un composant trop signalé.
+  const avertissements = Array.from({ length: 2_000 }, (_, i) =>
+    `Calque « row-${i} », espacement : aucune variable Figma n’est reliée à cette valeur.`);
+  const corps = pullRequestBody(
+    'src/components/Alert/Alert.contract.json',
+    artefactPourPr('component', contratEn('12.0'), avertissements),
+  );
+  assert.ok(corps.length <= 65_536, `${corps.length} caractères`);
+  assert.match(corps, /\(2000 points\)/);
+  assert.match(corps, /- Calque « row-0 »/);
+  const listes = corps.split('\n').filter((ligne) => ligne.startsWith('- Calque')).length;
+  assert.ok(listes < 2_000);
+  assert.match(corps, new RegExp(`${2_000 - listes} autres points ne tiennent pas dans cette page`));
+  assert.match(corps, /### Action/);
+
+  const court = pullRequestBody(
+    'src/components/Alert/Alert.contract.json',
+    artefactPourPr('component', contratEn('12.0'), avertissements.slice(0, 3)),
+  );
+  assert.doesNotMatch(court, /ne tiennent pas/);
+});
+
 test('l’en-tête annonce le schéma que porte le contrat déposé', () => {
   // C'est le seul champ qui décide si le fichier entier est lisible par
   // le repository, et il est enfoui dans un diff de plusieurs milliers de

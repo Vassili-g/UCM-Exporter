@@ -29,11 +29,11 @@ export type UiRequest =
       type:
         | 'analyser-composant'
         | 'analyser-tokens'
-        | 'publier'
         | 'annuler'
         | 'supprimer-token'
         | 'ui-ready';
     }
+  | { type: 'publier'; genre: 'component' | 'tokens' }
   | { type: 'save-settings'; settings: SettingsInput }
   | { type: 'open-external'; url: string }
   /**
@@ -73,6 +73,7 @@ export type PluginMessage =
    */
   | {
       type: 'cible';
+      selectionId?: string;
       cible: Cible | null;
       /** « Component set · 12 variants », composé par `detailDeCible`. */
       detail: string | null;

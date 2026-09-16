@@ -39,8 +39,10 @@ du repository consommateur.
 projection : il publie des noms de tokens, et un consommateur choisit comment
 les écrire. Celui qui installe `@ucm-kit/core` emploie `tokenCssVariable` ;
 celui qui écrit la sienne applique la même règle, décrite ici pour qu'une copie
-dans une autre langue tombe juste : minuscules, toute suite de caractères qui
-n'est ni lettre ni chiffre devient un seul tiret, tirets de bord retirés. Elle
+dans une autre langue tombe juste : décomposition `NFKD` et accents retirés,
+minuscules, toute suite de caractères qui n'est ni lettre ni chiffre devient un
+seul tiret, tirets de bord retirés. `Café/Fond` donne `--cafe-fond`, que l'accent
+arrive composé ou décomposé ; le chemin du token, lui, garde ses accents. Elle
 ne coupe pas sur les bosses de casse, ce qui la distingue d'un `kebabCase` de
 bibliothèque. Elle n'est pas une bijection, `50%` et `50` se rejoignant : c'est
 au consommateur de refuser la collision, le format ne prétend pas l'empêcher.

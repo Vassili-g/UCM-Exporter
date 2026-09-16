@@ -78,8 +78,23 @@ const AIDE = `ucm — la ligne de commande UCM
 Codes de sortie : 0 tout est passé, 1 des contrôles ont échoué, 2 l'invocation
 ou la configuration est fautive.`;
 
-/** Le corps de la commande, séparé du processus pour être testable. */
-export function executer(arguments_, {
+/** Rapporte aussi les pannes synchrones et les rejets des commandes asynchrones. */
+export function executer(arguments_, options = {}) {
+  const signaler = (erreur) => {
+    const alerter = options.alerter ?? console.error;
+    alerter(`La commande ucm ${arguments_[0]} n'a pas pu aboutir : ${erreur?.message ?? erreur}\n`
+      + "Un développeur doit corriger l'erreur signalée, puis relancer la commande.");
+    return 2;
+  };
+  try {
+    const resultat = executerCommande(arguments_, options);
+    return resultat instanceof Promise ? resultat.catch(signaler) : resultat;
+  } catch (erreur) {
+    return signaler(erreur);
+  }
+}
+
+function executerCommande(arguments_, {
   racine = process.cwd(),
   env = process.env,
   ecrire = console.log,
@@ -126,8 +141,7 @@ export function executer(arguments_, {
         echecsDeTests: tests.valeur,
         ecrire,
         ...sorties,
-      }))
-      .catch((erreur) => {
+      }), (erreur) => {
         const alerter = sorties.alerter ?? console.error;
         alerter(
           `L'adaptateur ${NOM_ADAPTATEUR_TYPESCRIPT} est installé mais n'a pas pu être chargé : `

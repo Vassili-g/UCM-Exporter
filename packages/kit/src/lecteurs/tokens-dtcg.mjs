@@ -45,18 +45,25 @@ function estFeuille(valeur) {
  * fabriquerait des chemins qui ne désignent aucun token.
  */
 export function indexerTokensDtcg(tokens, chemin = [], index = new Map(), typeHerite = undefined) {
-  if (!estObjet(tokens)) return index;
-
-  const type = typeof tokens.$type === "string" ? tokens.$type : typeHerite;
-
-  if (estFeuille(tokens)) {
-    index.set(chemin.join("."), type === undefined ? tokens : { ...tokens, $type: type });
-    return index;
-  }
-
-  for (const [cle, enfant] of Object.entries(tokens)) {
-    if (cle.startsWith("$")) continue;
-    indexerTokensDtcg(enfant, [...chemin, cle], index, type);
+  const pile = [{ valeur: tokens, chemin: chemin.join("."), aChemin: chemin.length > 0, typeHerite }];
+  while (pile.length > 0) {
+    const courant = pile.pop();
+    if (!estObjet(courant.valeur)) continue;
+    const type = typeof courant.valeur.$type === "string" ? courant.valeur.$type : courant.typeHerite;
+    if (estFeuille(courant.valeur)) {
+      index.set(courant.chemin, type === undefined ? courant.valeur : { ...courant.valeur, $type: type });
+      continue;
+    }
+    // Empiler à rebours conserve l'ordre du document sans récursion.
+    for (const [cle, enfant] of Object.entries(courant.valeur).reverse()) {
+      if (cle.startsWith("$")) continue;
+      pile.push({
+        valeur: enfant,
+        chemin: courant.aChemin ? `${courant.chemin}.${cle}` : cle,
+        aChemin: true,
+        typeHerite: type,
+      });
+    }
   }
   return index;
 }

@@ -109,6 +109,27 @@ test("tout valide : rien ne bloque, et un rapport qui ne réclame rien", () => {
   );
 });
 
+test("un rapport trop long pour un commentaire GitHub s'arrête avant la limite et dit où lire la suite", () => {
+  // `gh pr comment` refuse un corps de plus de 65 536 caractères : les deux
+  // tentatives du workflow échouaient, et la pull request restait sans un mot.
+  const document = contrat();
+  document.viewStructures.st1.children = Array.from({ length: 3_000 }, (_, i) => ({
+    slot: `label${i}`,
+    tokens: { color: `{couleurs.absentes.de.la.source.numero${i}}` },
+  }));
+  const { bloquant, rapport } = verdict({ composants: { Widget: { contrat: document, tsx: TSX } }, tokens: {} });
+
+  assert.equal(bloquant, false);
+  assert.ok(rapport.length <= 65_536, `${rapport.length} caractères`);
+  assert.match(rapport, /^## ✅ Aucun blocage détecté$/m);
+  assert.match(rapport, /numero0\}/);
+  assert.doesNotMatch(rapport, /numero2999\}/);
+  assert.match(rapport, /La suite de ce rapport ne tient pas dans un commentaire/);
+
+  const court = verdict({ tokens: {} }).rapport;
+  assert.doesNotMatch(court, /ne tient pas/);
+});
+
 /**
  * Le seul contrôle qui protège le design. Il interroge la source
  * DTCG, et non plus les variables CSS qu'elle produit : le scénario donne donc

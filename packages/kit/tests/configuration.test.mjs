@@ -150,6 +150,22 @@ test("un attribut de mode commence par data- et ne porte que minuscules, chiffre
   }), ["modes.a", "modes.b", "modes.c", "modes.d", "modes.e", "modes.f"]);
 });
 
+test("un repli de famille qui fermerait la déclaration CSS est refusé", () => {
+  // Le repli est recopié tel quel après les familles : un `;` ou une accolade
+  // y terminait la déclaration et cassait la suite de la feuille sans message.
+  for (const repli of ["sans-serif; color: red", "sans-serif }", "{ sans-serif", "sans-serif\n"]) {
+    assert.deepEqual(
+      champsInvalidesDeLaConfiguration({ css: { fontFamilyFallback: repli } }),
+      ["css.fontFamilyFallback"],
+      repli,
+    );
+  }
+  assert.deepEqual(
+    champsInvalidesDeLaConfiguration({ css: { fontFamilyFallback: '"Helvetica Neue", Arial, sans-serif' } }),
+    [],
+  );
+});
+
 test("des sections modes ou css qui ne sont pas des objets sont refusées en bloc", () => {
   assert.deepEqual(champsInvalidesDeLaConfiguration({ modes: ["data-brand"] }), ["modes"]);
   assert.deepEqual(champsInvalidesDeLaConfiguration({ css: "sans-serif" }), ["css"]);

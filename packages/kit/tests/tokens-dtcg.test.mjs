@@ -24,6 +24,18 @@ const tokens = {
   },
 };
 
+test("un arbre JSON de 8 000 groupes garde sa feuille et le type hérité sans épuiser la pile", () => {
+  const profondeur = 8000;
+  const texte = '{"$type":"number","profond":' + '{"niveau":'.repeat(profondeur)
+    + '{"$value":7}' + '}'.repeat(profondeur) + ',"voisin":{"$value":8}}';
+  const document = JSON.parse(texte);
+  const index = indexerTokensDtcg(document);
+  const chemin = ['profond', ...Array(profondeur).fill('niveau')].join('.');
+  assert.deepEqual([...index.keys()], [chemin, 'voisin']);
+  assert.deepEqual(index.get(chemin), { $value: 7, $type: 'number' });
+  assert.deepEqual(index.get('voisin'), { $value: 8, $type: 'number' });
+});
+
 test("un chemin de token se retrouve tel qu'il est écrit, sans traduction", () => {
   const index = indexerTokensDtcg(tokens);
   assert.equal(index.get("primitives.couleurs.terracota").$value, "#b4552d");

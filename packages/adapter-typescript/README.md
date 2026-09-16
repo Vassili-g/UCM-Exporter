@@ -6,7 +6,7 @@ two capabilities without making
 TypeScript compiler, a 23 MB dependency no other consumer should pay for.
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.30 @ucm-kit/cli@0.1.37
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.31 @ucm-kit/cli@0.1.38
 npx ucm-typescript
 npx --no-install ucm check
 ```
@@ -28,6 +28,10 @@ reported:
 
 Parity requires a `tsconfig.json` at the root. Props are read with the
 TypeScript type checker; compositions are counted by their occurrences in JSX.
+The props of `Button.tsx` come from an interface or a type alias named
+`ButtonProps`. The component is the function named `Button`, or the file's
+default export. A prop counts as read whether it is destructured in the
+signature or from `props` in the body.
 
 Every one of these **warns without blocking**. The gap is in the code, so a
 developer closes it. No re-export helps.

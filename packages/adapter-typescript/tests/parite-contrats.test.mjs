@@ -128,6 +128,39 @@ test("le relevé traverse memo(forwardRef(…))", () => {
   assert.equal(releve.composants.get("ParityFixture"), 1);
 });
 
+test("une prop décomposée dans le corps compte comme lue, et une prop décomposée sans lecture non", () => {
+  const fixture = cheminFixture("PropsDansLeCorpsFixture.tsx");
+  const { props } = lireApiPublique([fixture], racinePaquet).get(fixture);
+
+  assert.equal(props.disabled.utilisee, true);
+  assert.equal(props.ton.utilisee, true);
+  assert.equal(props.ignored.utilisee, false);
+});
+
+test("une fonction exportée par défaut est trouvée, avec ou sans nom", () => {
+  for (const nom of ["DefautAnonymeFixture.tsx", "DefautRenommeFixture.tsx"]) {
+    const fixture = cheminFixture(nom);
+    const releve = lireApiPublique([fixture], racinePaquet).get(fixture);
+
+    assert.equal(releve.fonctionTrouvee, true, nom);
+    assert.equal(releve.props.action.utilisee, true, nom);
+  }
+});
+
+test("des props portées par un alias de type se lisent comme une interface", () => {
+  const fixture = cheminFixture("AliasDeTypeFixture.tsx");
+  const releve = lireApiPublique([fixture], racinePaquet).get(fixture);
+  const ecarts = ecartsDeParite(
+    { name: "AliasDeTypeFixture", props: { action: { type: "boolean" }, libelle: { type: "text" } } },
+    releve,
+    "AliasDeTypeFixtureProps",
+  );
+
+  assert.equal(ecarts.interfaceAbsente, null);
+  assert.deepEqual(ecarts.manquantes, []);
+  assert.deepEqual(ecarts.booleensNonUtilises, []);
+});
+
 test("une fonction introuvable produit un seul écart structurel", () => {
   const fixture = cheminFixture("SansFonctionFixture.tsx");
   const releve = lireApiPublique([fixture], racinePaquet).get(fixture);

@@ -38,6 +38,17 @@ lecture de Figma.
   deux projections du même nom divergeraient, et un contrat citerait alors un
   token que `tokens.json` n'écrit pas sous ce nom.
 
+### Analyses et publication
+
+Le routeur exécute une seule analyse ou publication à la fois. Chaque commande
+conserve son résultat et la demande de publication indique lequel envoyer.
+L'annulation se vérifie aussi après le dernier appel asynchrone du moteur.
+
+Un changement des identifiants sélectionnés invalide le contrat conservé et
+annule son analyse en cours, même si le nouveau composant porte le même nom.
+La seconde notification d'une sélection inchangée conserve le résultat.
+Une panne de configuration laisse téléchargeable le fichier déjà produit.
+
 ## Hypothèses sur le design system
 
 Ce que le contrat suppose d'un design system (clé de base, allongement,
@@ -653,6 +664,11 @@ artefacts sont couverts par le même mécanisme, `tokens.json` n'a aucun champ o
 transporter les siens, là où un contrat les garde aussi dans `meta.diagnostics`.
 Un avertissement ne bloque jamais : seules les préconditions arrêtent un export
 (cf. [CONCEPT.md](../../CONCEPT.md)).
+
+**Le corps s'arrête avant 65 536 caractères.** Au-delà, GitHub refuse la pull
+request et l'export entier échouait. La liste garde les premiers avertissements
+qui tiennent, et une dernière ligne compte ceux qu'elle omet ; le compte rendu du
+plugin les liste tous.
 
 **Le schéma annoncé est lu dans le fichier déposé, jamais dans la constante du
 plugin.** `Schéma de contrat : 12.0` est le seul champ qui décide si le fichier

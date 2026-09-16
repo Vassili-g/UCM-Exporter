@@ -78,9 +78,12 @@ function showExports() {
 const header = createHeader(PAGES.export, showConfiguration, showExports);
 
 let active: CarteCommandeUi = composant;
+let occupee = false;
 
 function occuper(valeur: boolean) {
+  occupee = valeur;
   active.marquerOccupee(valeur);
+  for (const carte of [composant, tokens]) carte.element.inert = valeur && carte !== active;
   app.setAttribute('aria-busy', String(valeur));
 }
 
@@ -88,6 +91,7 @@ function demanderAnalyse(
   carte: CarteCommandeUi,
   type: 'analyser-composant' | 'analyser-tokens',
 ) {
+  if (occupee) return;
   active = carte;
   carte.reinitialiser();
   occuper(true);
@@ -96,9 +100,10 @@ function demanderAnalyse(
 }
 
 function demanderPublication(carte: CarteCommandeUi) {
+  if (occupee) return;
   active = carte;
   occuper(true);
-  versSandbox({ type: 'publier' });
+  versSandbox({ type: 'publier', genre: carte === composant ? 'component' : 'tokens' });
 }
 
 function annuler() {

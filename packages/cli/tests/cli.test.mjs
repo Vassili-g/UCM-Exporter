@@ -25,6 +25,58 @@ function repoVierge() {
   return mkdtempSync(join(tmpdir(), "ucm-cli-"));
 }
 
+for (const commande of [["check"], ["icons"], ["tokens", "css", "--out", "tokens.css"]]) {
+  test(`${commande.join(" ")} rapporte un dossier de contrats illisible sans accuser l'adaptateur`, async () => {
+    const racine = repoVierge();
+    try {
+      writeFileSync(join(racine, "ucm.config.json"), JSON.stringify({ components: "fichier" }));
+      writeFileSync(join(racine, "fichier"), "pas un dossier");
+      const lignes = [];
+      const code = await executer(commande, {
+        racine, env: {}, ecrire: (texte) => lignes.push(texte), alerter: (texte) => lignes.push(texte),
+      });
+      assert.equal(code, 2);
+      assert.match(lignes.join("\n"), /fichier/);
+      assert.doesNotMatch(lignes.join("\n"), /adaptateur|tsconfig/);
+    } finally {
+      rmSync(racine, { recursive: true, force: true });
+    }
+  });
+}
+
+test("check distingue un adaptateur installé invalide d'une panne du contrôle", async () => {
+  const racine = repoVierge();
+  try {
+    const dossier = join(racine, "node_modules", "@ucm-kit", "adapter-typescript");
+    mkdirSync(dossier, { recursive: true });
+    writeFileSync(join(dossier, "package.json"), JSON.stringify({ main: "index.cjs" }));
+    writeFileSync(join(dossier, "index.cjs"), "module.exports = {};");
+    const lignes = [];
+    assert.equal(await executer(["check"], {
+      racine, env: {}, alerter: (texte) => lignes.push(texte),
+    }), 2);
+    assert.match(lignes.join("\n"), /adaptateur.*installé.*chargé/);
+    assert.match(lignes.join("\n"), /ne publie pas un adaptateur UCM valide/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("init rapporte aussi une panne asynchrone d'écriture sans rejeter sa promesse", async () => {
+  const racine = repoVierge();
+  try {
+    writeFileSync(join(racine, ".github"), "pas un dossier");
+    const lignes = [];
+    assert.equal(await executer(["init"], {
+      racine, alerter: (texte) => lignes.push(texte), ecrire: () => {},
+    }), 2);
+    assert.match(lignes.join("\n"), /\.github/);
+    assert.doesNotMatch(lignes.join("\n"), /adaptateur/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
 /** Écrit un contrat minimal portant les icônes données. */
 function contratAvecIcones(racine, nom, icones) {
   const dossier = join(racine, "components", nom);

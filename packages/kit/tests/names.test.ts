@@ -12,8 +12,18 @@ import { attributDeMode, codeIdentifier, normalizeName, tokenCssVariable } from 
 
 test("attributDeMode dérive l'attribut d'un axe de sa propriété CSS", () => {
   assert.equal(attributDeMode('color-brand-tokens'), 'data-color-brand-tokens');
-  assert.equal(attributDeMode('Thème'), 'data-thème');
+  assert.equal(attributDeMode('Thème'), 'data-theme');
   assert.equal(attributDeMode('marque.sous marque'), 'data-marque-sous-marque');
+});
+
+test('tokenCssVariable rend le même nom pour un accent composé et un accent décomposé', () => {
+  // `normalizeName` garde la forme reçue : les deux chaînes s'affichent pareil
+  // et diffèrent octet par octet.
+  const compose = normalizeName('Caf\u00e9/Fond');
+  const decompose = normalizeName('Cafe\u0301/Fond');
+  assert.notEqual(compose, decompose);
+  assert.equal(tokenCssVariable(compose), '--cafe-fond');
+  assert.equal(tokenCssVariable(decompose), '--cafe-fond');
 });
 
 test('normalizeName suit la convention commune des tokens', () => {
@@ -58,10 +68,8 @@ test("tokenCssVariable ne coupe pas sur les bosses de casse, là où un kebabCas
 });
 
 test('tokenCssVariable rend un nom utilisable quoi qu’on lui donne', () => {
-  // Les lettres accentuées survivent : une propriété personnalisée CSS les
-  // accepte, et les retirer perdrait un segment entier d'un design system
-  // francophone.
-  assert.equal(tokenCssVariable('couleurs.été'), '--couleurs-été');
+  // L'accent tombe, la lettre reste : le segment ne se perd pas.
+  assert.equal(tokenCssVariable('couleurs.été'), '--couleurs-ete');
   // Suites collapsées, tirets de bord retirés, sans quoi `--a-b-` et un nom
   // vide se glisseraient dans la feuille.
   assert.equal(tokenCssVariable('a...b'), '--a-b');

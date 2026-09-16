@@ -11,8 +11,8 @@ next to the component's code. This command reads those files and says whether
 they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.37 init
-npx --yes @ucm-kit/cli@0.1.37 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.38 init
+npx --yes @ucm-kit/cli@0.1.38 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx install a build this
@@ -62,7 +62,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.37 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.38 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -75,6 +75,10 @@ has one.
 |---|---|
 | `--base <sha>` | Limits informational notices to contracts changed since that commit |
 | `--report <path>` | Writes the markdown report to that path, in addition to the terminal |
+
+The report stops before 65,536 characters, the size of a GitHub comment, and
+says so in its last line. The verdict opens the report and is never cut; the
+terminal output keeps every detail.
 
 ### Exit codes
 

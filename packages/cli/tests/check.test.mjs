@@ -3,7 +3,7 @@
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -64,6 +64,26 @@ function lancer(racine, arguments_ = []) {
     alerter: (texte) => sortie.error.push(texte),
   });
   return { code, sortie, tout: [...sortie.log, ...sortie.warn, ...sortie.error].join("\n") };
+}
+
+for (const chemin of ['tokens.json', 'ucm.config.json', 'components/Widget/Widget.contract.json']) {
+  for (const lien of [false, true]) {
+    test(`--report préserve son entrée ${chemin}${lien ? ' même sous un autre nom' : ''}`, () => {
+      const racine = repoJouet();
+      try {
+        writeFileSync(join(racine, 'ucm.config.json'), '{}');
+        const avant = readFileSync(join(racine, chemin), 'utf8');
+        const destination = lien ? 'rapport.md' : chemin;
+        if (lien) linkSync(join(racine, chemin), join(racine, destination));
+        const { code, tout } = lancer(racine, ['--report', destination]);
+        assert.equal(readFileSync(join(racine, chemin), 'utf8'), avant);
+        assert.equal(code, 2);
+        assert.match(tout, /--report/);
+      } finally {
+        rmSync(racine, { recursive: true, force: true });
+      }
+    });
+  }
 }
 
 test("un repository aux emplacements par défaut est contrôlé sans configuration", () => {

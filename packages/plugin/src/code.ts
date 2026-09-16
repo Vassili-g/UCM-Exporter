@@ -46,6 +46,12 @@ function postStatus(state: 'loading' | 'success' | 'error', text: string): void 
   versUi({ type: 'status', state, text });
 }
 
+function signalerEchec(): void {
+  const texte = 'La demande n’a pas abouti. Réessayez ; si l’erreur persiste, relancez le plugin.';
+  postStatus('error', texte);
+  figma.notify(texte, { error: true });
+}
+
 /**
  * Met à jour l'indicateur de connexion toujours visible dans l'en-tête.
  *
@@ -117,7 +123,8 @@ async function reportSelectionState(): Promise<void> {
     })),
   );
 
-  versUi({ type: 'cible', ...etat, detail: detailDeCible(etat.cible), avertissement: null });
+  const selectionId = selection.map((node) => node.id).join(',');
+  versUi({ type: 'cible', ...etat, selectionId, detail: detailDeCible(etat.cible), avertissement: null });
   if (!etat.cible) return;
 
   const component = selection[0] as ComponentNode | ComponentSetNode;
@@ -130,6 +137,7 @@ async function reportSelectionState(): Promise<void> {
   versUi({
     type: 'cible',
     ...etat,
+    selectionId,
     detail: detailDeCible(etat.cible),
     avertissement:
       `Aucune règle d’usage exploitable ne documente quand l’utiliser. Les diagnostics diront `
@@ -142,10 +150,17 @@ const SELECTION_DEBOUNCE_MS = 200;
 let selectionTimer: number | null = null;
 
 figma.on('selectionchange', () => {
+  const identite = figma.currentPage.selection.map((node) => node.id).join(',');
+  if (identite !== selectionCourante) {
+    selectionCourante = identite;
+    selectionToken += 1;
+    analysesGardees.delete('component');
+    if (operationEnCours === 'component' && !publicationEnCours) annulationDemandee = true;
+  }
   if (selectionTimer !== null) clearTimeout(selectionTimer);
   selectionTimer = setTimeout(() => {
     selectionTimer = null;
-    void reportSelectionState();
+    void reportSelectionState().catch(signalerEchec);
   }, SELECTION_DEBOUNCE_MS);
 });
 
@@ -163,7 +178,10 @@ type AnalyseGardee = {
   avertissements: number;
 };
 
-let analyseGardee: AnalyseGardee | null = null;
+const analysesGardees = new Map<ArtifactKind, AnalyseGardee>();
+let selectionCourante = figma.currentPage.selection.map((node) => node.id).join(',');
+let operationEnCours: ArtifactKind | null = null;
+let publicationEnCours = false;
 
 /**
  * L'annulation coopérative.
@@ -186,17 +204,17 @@ function artefactDe(analyse: AnalyseGardee) {
 }
 
 function postVerdict(
+  analyse: AnalyseGardee,
   code: CodeVerdict,
   precision: { chemin?: string | null; source?: string | null; ou?: string | null } = {},
 ): void {
-  if (!analyseGardee) return;
   const verdict = verdictDePrevol({
     code,
-    genre: analyseGardee.kind,
-    avertissements: analyseGardee.avertissements,
+    genre: analyse.kind,
+    avertissements: analyse.avertissements,
     ...precision,
   });
-  versUi({ type: 'verdict', ...verdict, etat: analyseGardee.avertissements > 0 ? 'warning' : '' });
+  versUi({ type: 'verdict', ...verdict, etat: analyse.avertissements > 0 ? 'warning' : '' });
 }
 
 /**
@@ -216,14 +234,18 @@ async function analyser(
     warnings?: string[];
   }>,
 ): Promise<void> {
+  if (operationEnCours !== null) return;
+  operationEnCours = artifactKind;
   annulationDemandee = false;
-  analyseGardee = null;
+  analysesGardees.delete(artifactKind);
+  let analyseProduite: AnalyseGardee | null = null;
   postStatus('loading', loadingText);
   try {
     const result = await handler((etape) => {
       if (annulationDemandee) throw new ExportAnnule();
       versUi({ type: 'phase', texte: etape });
     });
+    if (annulationDemandee) throw new ExportAnnule();
 
     const registre = result as {
       localisations?: ReadonlyMap<string, readonly string[]>;
@@ -242,7 +264,7 @@ async function analyser(
       });
     }
 
-    analyseGardee = {
+    const analyse: AnalyseGardee = {
       kind: artifactKind,
       filename: result.filename,
       content: result.content,
@@ -250,6 +272,7 @@ async function analyser(
       succes,
       avertissements: result.warningCount,
     };
+    analyseProduite = analyse;
 
     if (artifactKind === 'tokens') {
       const annonce = annonceDuFormat(result.content);
@@ -257,13 +280,15 @@ async function analyser(
     }
 
     const validation = await loadGithubConfig();
+    if (annulationDemandee) throw new ExportAnnule();
     if (!validation.valid || !validation.config) {
-      postVerdict('sans-depot');
+      analysesGardees.set(artifactKind, analyse);
+      postVerdict(analyse, 'sans-depot');
       return;
     }
 
     versUi({ type: 'phase', texte: 'Lecture du repository…' });
-    const lecture = await lireAvantEcriture(validation.config, artefactDe(analyseGardee));
+    const lecture = await lireAvantEcriture(validation.config, artefactDe(analyse));
     if (annulationDemandee) throw new ExportAnnule();
 
     if (lecture.refus) {
@@ -275,20 +300,24 @@ async function analyser(
       if (lecture.jumeau.url) {
         versUi({ type: 'pull-request', url: lecture.jumeau.url, path: lecture.path });
       }
-      postVerdict('identique', { ou: lecture.jumeau.ou });
+      postVerdict(analyse, 'identique', { ou: lecture.jumeau.ou });
       return;
     }
 
-    postVerdict('a-publier', { chemin: lecture.path, source: lecture.layout.source });
+    analysesGardees.set(artifactKind, analyse);
+    postVerdict(analyse, 'a-publier', { chemin: lecture.path, source: lecture.layout.source });
   } catch (error) {
-    if (error instanceof ExportAnnule) {
-      analyseGardee = null;
+    if (error instanceof ExportAnnule || annulationDemandee) {
+      analysesGardees.delete(artifactKind);
       postStatus('error', "Export annulé. Rien n'a été écrit.");
       return;
     }
+    if (analyseProduite) postDownload(analyseProduite.filename, analyseProduite.content);
     const message = error instanceof Error ? error.message : 'Erreur inconnue pendant l’export.';
     postStatus('error', message);
     figma.notify(message, { error: true });
+  } finally {
+    operationEnCours = null;
   }
 }
 
@@ -299,21 +328,29 @@ async function analyser(
  * informe, elle ne fait pas autorité. Entre les deux, quelqu'un a pu fusionner
  * ou ouvrir une branche.
  */
-async function publier(): Promise<void> {
-  const analyse = analyseGardee;
-  if (!analyse) return;
-
-  const validation = await loadGithubConfig();
-  if (!validation.valid || !validation.config) {
-    postDownload(analyse.filename, analyse.content);
-    versUi({ type: 'log', text: 'Aucun repository connecté : téléchargement sur votre poste.' });
-    postStatus('success', `${analyse.succes}. Téléchargement terminé.`);
-    figma.notify(`${analyse.succes}. Téléchargement terminé.`);
+async function publier(genre: ArtifactKind): Promise<void> {
+  if (operationEnCours !== null) return;
+  const analyse = analysesGardees.get(genre);
+  if (!analyse) {
+    postStatus('error', 'Aucune analyse disponible. Relancez l’analyse avant de publier.');
     return;
   }
-
-  postStatus('loading', 'Publication sur GitHub…');
+  operationEnCours = genre;
+  publicationEnCours = true;
   try {
+    const validation = await loadGithubConfig();
+    if (analysesGardees.get(genre) !== analyse) {
+      postStatus('error', 'La sélection a changé. Analysez le composant sélectionné avant de publier.');
+      return;
+    }
+    if (!validation.valid || !validation.config) {
+      postDownload(analyse.filename, analyse.content);
+      versUi({ type: 'log', text: 'Aucun repository connecté : téléchargement sur votre poste.' });
+      postStatus('success', `${analyse.succes}. Téléchargement terminé.`);
+      figma.notify(`${analyse.succes}. Téléchargement terminé.`);
+      return;
+    }
+    postStatus('loading', 'Publication sur GitHub…');
     const publication = await publishArtifact(validation.config, artefactDe(analyse));
     if (publication.status === 'unchanged') {
       // Le dépôt a bougé entre l'analyse et la publication : c'est exactement le
@@ -321,7 +358,7 @@ async function publier(): Promise<void> {
       if (publication.pullRequestUrl) {
         versUi({ type: 'pull-request', url: publication.pullRequestUrl, path: publication.path });
       }
-      postVerdict('identique', { ou: publication.ou });
+      postVerdict(analyse, 'identique', { ou: publication.ou });
       postStatus('success', `Aucun changement pour ${publication.path} (${publication.ou}).`);
       figma.notify('Aucun changement : aucune PR créée.');
       return;
@@ -351,6 +388,9 @@ async function publier(): Promise<void> {
       etat: 'error',
     });
     figma.notify('Échec GitHub : fichier téléchargé localement.', { error: true });
+  } finally {
+    operationEnCours = null;
+    publicationEnCours = false;
   }
 }
 
@@ -395,7 +435,7 @@ function pageDe(node: BaseNode): PageNode | null {
   return courant?.type === 'PAGE' ? courant : null;
 }
 
-figma.ui.onmessage = async (message: UiRequest) => {
+async function traiterMessage(message: UiRequest): Promise<void> {
   if (message.type === 'ui-ready') {
     // Figma peut servir un bundle plus ancien que celui du disque. Sans version
     // affichée, un export « sans changement » est indiscernable d'un plugin
@@ -464,7 +504,7 @@ figma.ui.onmessage = async (message: UiRequest) => {
   }
 
   if (message.type === 'publier') {
-    await publier();
+    await publier(message.genre);
     return;
   }
 
@@ -475,5 +515,15 @@ figma.ui.onmessage = async (message: UiRequest) => {
 
   if (message.type === 'analyser-tokens') {
     await analyser('Lecture des variables…', 'Tokens exportés', 'tokens', handleExportTokens);
+  }
+}
+
+figma.ui.onmessage = async (message: UiRequest) => {
+  if (!message || typeof message.type !== 'string') return;
+  try {
+    await traiterMessage(message);
+  } catch {
+    if (message.type === 'save-settings') versUi({ type: 'settings-save-error' });
+    signalerEchec();
   }
 };

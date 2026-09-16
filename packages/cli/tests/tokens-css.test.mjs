@@ -366,14 +366,14 @@ test("deux axes aux mêmes modes partagent un attribut malgré des défauts diff
   assert.match(refuse.erreur, /dont les modes diffèrent/);
 });
 
-test("des noms non ASCII passent dans l'attribut, la propriété et la valeur du mode", () => {
+test("un nom accentué perd ses accents dans l'attribut et la propriété, et les garde dans la valeur du mode", () => {
   const { code, css } = lancer({
     tokens: documentAvec({ thème: { modes: ["clair", "sombre-été"], default: "clair" } }, {
       thème: { été: feuille("thème", { clair: 1, "sombre-été": 2 }) },
     }),
   });
   assert.equal(code, 0);
-  assert.match(css, /\[data-thème="sombre-été"\] \{\n {2}--thème-été: 2;\n\}/);
+  assert.match(css, /\[data-theme="sombre-été"\] \{\n {2}--theme-ete: 2;\n\}/);
 });
 
 test("un guillemet ou un antislash dans un nom de mode s'échappe dans le sélecteur, comme dans une chaîne", () => {

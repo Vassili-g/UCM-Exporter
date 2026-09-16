@@ -291,6 +291,16 @@ npm run typecheck
 npm run build
 ```
 
+Les interactions du plugin se vérifient dans Chromium :
+
+```sh
+npm run test:ui --workspace ucm-exporter-plugin
+```
+
+Cette commande reconstruit l'interface. Elle demande le navigateur installé par
+`npx playwright install chromium` ; le job `cascade` de la CI l'exécute après
+les vérifications de la feuille de tokens.
+
 ## Documentation
 
 Chaque document a une autorité limitée, et

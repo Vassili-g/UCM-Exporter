@@ -20,6 +20,8 @@ export { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_API_VERSION = '2022-11-28';
+/** Au-delà, GitHub refuse la pull request en 422 et l'export échoue entier. */
+const LIMITE_CORPS_PULL_REQUEST = 65_536;
 
 export type ArtifactKind = 'component' | 'tokens';
 
@@ -309,21 +311,40 @@ export function pullRequestBody(path: string, artifact: RepositoryArtifact): str
   }
 
   const points = `${warnings.length} point${warnings.length === 1 ? '' : 's'}`;
-  return [
+  const debut = [
     header,
     '',
     `## ⚠️ L'export n'a pas pu décrire certaines informations (${points})`,
     '',
     'Les informations suivantes sont absentes de l’artefact exporté :',
     '',
-    ...warnings.map((warning) => `- ${sansLienAutomatique(warning)}`),
+  ];
+  const fin = [
     '',
     '### Action',
     '',
     'Corrigez chaque point dans Figma, puis relancez l’export.',
     '',
     'Ces avertissements ne bloquent pas la fusion.',
-  ].join('\n');
+  ];
+  // La marge garde la place de la ligne qui compte les points omis.
+  let reste = LIMITE_CORPS_PULL_REQUEST - 200 - [...debut, ...fin].join('\n').length;
+  const lignes: string[] = [];
+  for (const warning of warnings) {
+    const ligne = `- ${sansLienAutomatique(warning)}`;
+    if (ligne.length + 1 > reste) break;
+    lignes.push(ligne);
+    reste -= ligne.length + 1;
+  }
+  const omis = warnings.length - lignes.length;
+  if (omis > 0) {
+    lignes.push(
+      '',
+      `${omis} autre${omis === 1 ? ' point ne tient' : 's points ne tiennent'} pas dans cette page : `
+        + 'le compte rendu du plugin les liste tous après l’export.',
+    );
+  }
+  return [...debut, ...lignes, ...fin].join('\n');
 }
 
 /** Effectue un appel GitHub authentifié avec un message d'erreur exploitable. */

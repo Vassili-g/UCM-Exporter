@@ -76,3 +76,4 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run cascade
+      - run: npm run test:ui --workspace ucm-exporter-plugin

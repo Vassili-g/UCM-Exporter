@@ -45,6 +45,15 @@ function trouverFonctionComposant(source, nomComposant) {
       nommee = noeud;
       return;
     }
+    // `export default function (…)` n'est pas une affectation d'export : c'est
+    // une déclaration, anonyme ou nommée autrement que le fichier.
+    if (
+      ts.isFunctionDeclaration(noeud)
+      && noeud.modifiers?.some((modificateur) => modificateur.kind === ts.SyntaxKind.DefaultKeyword)
+    ) {
+      parDefaut = noeud;
+      return;
+    }
     if (ts.isExportAssignment(noeud) && !noeud.isExportEquals) {
       parDefaut = fonctionEmballee(noeud.expression);
       return;
@@ -65,7 +74,8 @@ function symboleLuDans(noeud, symbole, verificateur) {
   let lu = false;
   const visiter = (enfant) => {
     if (lu) return;
-    if (ts.isIdentifier(enfant)) {
+    // Le nom d'une décomposition déclare le symbole, il ne le lit pas.
+    if (ts.isIdentifier(enfant) && !(ts.isBindingElement(enfant.parent) && enfant.parent.name === enfant)) {
       const symboleValeur = ts.isShorthandPropertyAssignment(enfant.parent)
         ? verificateur.getShorthandAssignmentValueSymbol(enfant.parent)
         : verificateur.getSymbolAtLocation(enfant);
@@ -121,6 +131,21 @@ function propsConsommees(fonction, nomsProps, verificateur) {
       && estLeParametre(noeud.expression)
     ) {
       for (const nom of nomsProps) consommees.add(nom);
+    } else if (
+      ts.isVariableDeclaration(noeud)
+      && ts.isObjectBindingPattern(noeud.name)
+      && noeud.initializer
+      && estLeParametre(noeud.initializer)
+    ) {
+      // `const { a } = props` : la prop compte si la variable locale est lue.
+      for (const element of noeud.name.elements) {
+        if (element.dotDotDotToken || !ts.isIdentifier(element.name)) continue;
+        const nom = nomDeBinding(element.propertyName ?? element.name);
+        const symbole = verificateur.getSymbolAtLocation(element.name);
+        if (nom && symbole && symboleLuDans(fonction.body, symbole, verificateur)) {
+          consommees.add(nom);
+        }
+      }
     }
     ts.forEachChild(noeud, visiter);
   };
@@ -267,7 +292,8 @@ export function lireApiPublique(fichiers, racine) {
     let props = null;
 
     ts.forEachChild(source, (noeud) => {
-      if (!ts.isInterfaceDeclaration(noeud) || noeud.name.text !== attendue) return;
+      if (!(ts.isInterfaceDeclaration(noeud) || ts.isTypeAliasDeclaration(noeud))) return;
+      if (noeud.name.text !== attendue) return;
       const type = verificateur.getTypeAtLocation(noeud.name);
       const membres = verificateur.getPropertiesOfType(type);
       const consommees = propsConsommees(

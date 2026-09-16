@@ -38,9 +38,15 @@ export function codeIdentifier(name: string): string {
  * et rendait `0px` là où le contrat demandait `2px`. Pas d'erreur, pas de
  * repli, une valeur fausse et plausible.
  *
- * La règle, en une phrase : **minuscules, et toute suite de caractères qui
- * n'est ni une lettre ni un chiffre devient un seul tiret**, les tirets de
- * bord retirés. Les points du chemin y passent comme le reste.
+ * La règle, en une phrase : **accents retirés, minuscules, et toute suite de
+ * caractères qui n'est ni une lettre ni un chiffre devient un seul tiret**, les
+ * tirets de bord retirés. Les points du chemin y passent comme le reste.
+ *
+ * Les accents tombent parce qu'un même nom arrive sous deux formes Unicode. Le
+ * `é` composé et le `e` suivi d'un accent combinant s'affichent pareil ; saisis
+ * sous macOS et sous Windows, ils rendaient `--café-fond` et `--cafe-fond`, et
+ * une référence écrite à la main pointait une variable absente, sans erreur.
+ * Décomposer puis retirer les marques donne le même nom aux deux formes.
  *
  * Ce qu'elle N'est pas, et c'est délibéré : le `kebabCase` d'une bibliothèque
  * de casse. Celui de Style Dictionary coupe aussi sur les bosses de casse (
@@ -63,6 +69,8 @@ export function codeIdentifier(name: string): string {
  */
 export function tokenCssVariable(path: string): string {
   const kebab = path
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]+/gu, '-')
     .replace(/^-+|-+$/g, '');
