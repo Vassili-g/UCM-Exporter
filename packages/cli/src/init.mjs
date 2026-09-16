@@ -630,7 +630,7 @@ function lignesGitlab(racine) {
   const lignes = [
     {
       fichier: "Settings > CI/CD > Variables",
-      ligne: "créez `UCM_GITLAB_TOKEN`, masquée et non protégée, avec un jeton de scope api d'un compte de service membre de ce seul projet, au rôle Reporter, ou un jeton d'accès de projet au rôle Reporter si l'offre le permet. Sans elle, le rapport n'est pas publié sur la merge request. Non protégée, parce que les branches d'export ne le sont pas ; tout pipeline d'une branche la lit, et le rôle Reporter borne ce qu'on en tire à lire et commenter.",
+      ligne: "créez `UCM_GITLAB_TOKEN`, masquée et non protégée. Sa valeur : un jeton de scope api d'un compte de service membre de ce seul projet, au rôle Reporter, ou un jeton d'accès de projet au rôle Reporter si l'offre le permet. Sans cette variable, le rapport n'est pas publié sur la merge request. Non protégée, parce que les branches d'export ne le sont pas ; tout pipeline d'une branche la lit, et le rôle Reporter borne ce qu'on en tire à lire et commenter.",
     },
     {
       fichier: "Settings > Merge requests",
@@ -792,8 +792,9 @@ export function rendreInit({
         : "Aucun fichier à écrire : ce repository est déjà installé.",
   );
   if (forge) {
-    lignes.push(`CI écrite pour ${forge.nom === "gitlab" ? "GitLab" : "GitHub"}, d'après ${forge.signal}. `
-      + "L'option `--forge github` ou `--forge gitlab` en choisit une autre.");
+    lignes.push("");
+    lignes.push(`CI écrite pour ${forge.nom === "gitlab" ? "GitLab" : "GitHub"}, d'après ${forge.signal}.`);
+    lignes.push("L'option `--forge github` ou `--forge gitlab` en choisit une autre.");
   }
 
   if (optionsIgnorees) {
@@ -823,7 +824,15 @@ export function rendreInit({
   if (restantes.length > 0) {
     lignes.push("");
     lignes.push("Reste à ajouter à la main :");
-    for (const { fichier, ligne } of restantes) lignes.push(`- ${fichier} : ${ligne}`);
+    // L'endroit en tête, puis une phrase par ligne : le geste d'abord, ses
+    // raisons ensuite, sans qu'un paragraphe replié par le terminal les mêle.
+    for (const { fichier, ligne } of restantes) {
+      lignes.push("");
+      lignes.push(`- ${fichier}`);
+      for (const phrase of ligne.split(/(?<=\.) (?=\p{Lu})/u)) {
+        lignes.push(`  ${phrase[0].toUpperCase()}${phrase.slice(1)}`);
+      }
+    }
   }
   return lignes.join("\n");
 }

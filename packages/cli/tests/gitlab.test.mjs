@@ -155,7 +155,7 @@ test("un .gitlab-ci.yml existant reçoit le rappel d'include, et un stages sans 
     assert.equal(readFileSync(join(racine, ".gitlab-ci.yml"), "utf8").includes("ucm"), false, "le fichier existant est intact");
     const compteRendu = rendreInit(resultat);
     assert.match(compteRendu, /\.gitlab-ci\.yml` existait déjà : ajoutez `- local: \.gitlab\/ucm\.gitlab-ci\.yml`/);
-    assert.match(compteRendu, /ajoutez `test` à `stages:`/);
+    assert.match(compteRendu, /Ajoutez `test` à `stages:`/);
 
     writeFileSync(join(racine, ".gitlab-ci.yml"), "stages: [build, test]\ninclude:\n  - local: .gitlab/ucm.gitlab-ci.yml\n");
     const relance = rendreInit(init(racine, { sansAgents: true, git: sansRemote }));

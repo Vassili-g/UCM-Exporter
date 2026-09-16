@@ -753,10 +753,10 @@ test("les lignes à ajouter à la main nomment leur fichier, et se taisent quand
     writeFileSync(join(racine, "package.json"), JSON.stringify({ scripts: { build: "vite build" } }));
     writeFileSync(join(racine, "tokens.json"), JSON.stringify({ $extensions: { "com.ucm.axes": { theme: { modes: ["a", "b"], default: "a" } } } }));
     const premier = rendreInit(init(racine));
-    assert.match(premier, /Reste à ajouter à la main :\n- package\.json : ajoutez `"@ucm-kit\/cli": "[^"]+"` aux devDependencies\./);
-    assert.match(premier, /- package\.json : lancez `ucm tokens css --out src\/generated\/tokens\.css` en tête des scripts dev et build/);
-    assert.match(premier, /- l'entrée CSS de l'application : importez la feuille générée/);
-    assert.match(premier, /- ucm\.config\.json : la section modes, facultative/);
+    assert.match(premier, /Reste à ajouter à la main :\n\n- package\.json\n  Ajoutez `"@ucm-kit\/cli": "[^"]+"` aux devDependencies\.\n\n/);
+    assert.match(premier, /- package\.json\n  Lancez `ucm tokens css --out src\/generated\/tokens\.css` en tête des scripts dev et build/);
+    assert.match(premier, /- l'entrée CSS de l'application\n  Importez la feuille générée/);
+    assert.match(premier, /- ucm\.config\.json\n  La section modes, facultative/);
     assert.match(premier, /Relancez `ucm init` après avoir installé @ucm-kit\/adapter-typescript/);
 
     const { version } = init(racine);
