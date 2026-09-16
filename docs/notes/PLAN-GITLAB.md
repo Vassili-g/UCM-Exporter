@@ -24,7 +24,8 @@ corrige le plan et le dit dans son commit.
 |---|---|
 | L'API de gitlab.com accepte une requête d'origine `null` | Preflight `OPTIONS` avec `Origin: null` et `private-token,content-type` : `access-control-allow-origin: *`, méthodes `GET POST PUT DELETE` |
 | `mon-groupe/design-system` est un projet privé | `GET /api/v4/projects/mon-groupe%2Fdesign-system` sans jeton rend 404 |
-| Les jetons fine-grained de GitLab sont disponibles sur l'offre gratuite | Documentation GitLab, « Fine-grained permissions for REST API » |
+| L'écran de création d'un jeton personnel gitlab.com propose des scopes classiques (`api`, `read_api`, `read_repository`, `write_repository`, `read_registry`, `write_registry`, `create_runner`, `manage_runner`, `k8s_proxy`, `self_rotate`, `ai_features`), pas des permissions par ressource | Constaté à la création d'un jeton sur gitlab.com |
+| Seul le scope `api` couvre l'API REST en écriture ; `write_repository` ne s'authentifie pas sur l'API | Documentation GitLab, « Access token scopes » : « `write_repository` … Uses Git-over-HTTP. Does not support API authentication. » |
 | Les jetons d'accès projet exigent Premium sur gitlab.com | Documentation GitLab, « Project access tokens » |
 | Les comptes de service existent sur l'offre gratuite | Documentation GitLab, « Service accounts » |
 | `CI_JOB_TOKEN` lit les notes d'une merge request sans pouvoir en écrire | Documentation GitLab, « CI/CD job token » |
@@ -41,8 +42,8 @@ corrige le plan et le dit dans son commit.
 | Le chargement de la configuration passe par un seul point | `loadGithubConfig()`, appelé à l'ouverture, au pré-vol et à la publication |
 | `saveSettings` écrit ses clés dans un `Promise.all` sans ordre | `config.ts:142` |
 
-Restent à mesurer, en L0 : les noms des permissions fine-grained, le préfixe
-d'un jeton fine-grained GitLab, le statut de l'API de commits dans les cas
+Restent à mesurer, en L0 : le préfixe d'un jeton personnel GitLab (pour le
+refus par préfixe de D5), le statut de l'API de commits dans les cas
 d'échec, le rendu Markdown d'une merge request, les actions rapides dans une
 note, et la durée d'`after_script`.
 
@@ -105,6 +106,10 @@ remplace `hasPat` par `forgeDuJeton`, pour que le texte « Token enregistré.
 Laissez ce champ vide pour le conserver. » ne s'affiche que pour la forge de
 l'URL saisie. Un jeton dont le préfixe désigne l'autre forge est refusé à la
 saisie : `ghp_` et `github_pat_` pour GitHub, le préfixe GitLab relevé en L0.
+Côté GitLab, l'aide du jeton demande un jeton personnel classique portant le
+seul scope `api` : c'est le seul qui couvre l'API REST en écriture, les scopes
+`read_repository`/`write_repository` ne s'appliquant qu'au clone/push Git et à
+une partie de la lecture de fichiers, jamais aux merge requests ni aux notes.
 
 **D6. Le commit GitLab est atomique.** `POST /projects/:id/repository/commits`
 crée la branche et le fichier en un appel. Quand le fichier existe sur la base,
@@ -163,9 +168,10 @@ porte le geste. Les artefacts gardent `ci-report.md` avec `when: always`.
 **D13. Le jeton de la CI appartient à un compte de service.** Les jetons d'accès
 projet exigent Premium et `CI_JOB_TOKEN` n'écrit pas de note. La variable
 `UCM_GITLAB_TOKEN` est masquée et non protégée, parce que les branches
-`ucm-exporter/export-*` ne sont pas protégées. Si un compte de service ne peut
-pas porter de jeton fine-grained, L0 le dit et le plan retient le jeton
-personnel fine-grained d'un membre de l'équipe.
+`ucm-exporter/export-*` ne sont pas protégées. Le jeton est un jeton personnel
+classique, scope `api` seul (voir D5), rattaché au compte de service. Si un
+compte de service ne peut pas créer de jeton personnel, L0 le dit et le plan
+retient le jeton personnel d'un membre de l'équipe.
 
 **D14. La recette réelle se joue sur un miroir du Playground.** Le mainteneur
 crée `UCM-Playground` sur gitlab.com. Le projet de l'équipe sert à la validation
@@ -206,15 +212,21 @@ finale avec l'équipe, jamais aux essais.
 Aucun code produit. Le résultat de chaque mesure entre dans la section 1 de ce
 plan, et la décision qu'il touche est corrigée dans le même commit.
 
+- [x] Relever les scopes disponibles à la création d'un jeton personnel sur
+      gitlab.com et celui qui couvre l'API REST en écriture. Mesuré :
+      l'écran propose des scopes classiques, pas des permissions par
+      ressource ; `api` seul suffit à tout ce que le plugin et la CI appellent
+      (lecture du projet, fichiers, commits, merge requests, notes, `/user`,
+      suppression de branche). Voir « Ce qui est mesuré ».
 - [ ] **[mainteneur]** Créer le projet `UCM-Playground` sur gitlab.com, un
-      compte de service, et un jeton fine-grained limité à ce projet.
-- [ ] Relever les permissions fine-grained minimales pour : lire un projet, lire
-      un fichier, lire une branche, créer un commit sur une nouvelle branche,
-      lister et créer une merge request, supprimer une branche, lire `/user`,
-      lire, créer et modifier une note. Preuve : chaque appel rend 2xx avec ce
-      jeton, et 403 quand la permission est retirée.
-- [ ] Relever si un compte de service porte un jeton fine-grained, et le préfixe
-      de ce jeton.
+      compte de service, et un jeton personnel scope `api` limité par ce
+      compte.
+- [ ] Vérifier avec ce jeton que chaque appel nécessaire au plugin et à la CLI
+      rend 2xx : lire le projet, lire un fichier, lire une branche, créer un
+      commit sur une nouvelle branche, lister et créer une merge request,
+      supprimer une branche, lire `/user`, lire, créer et modifier une note.
+- [ ] Relever le préfixe d'un jeton personnel GitLab, pour le refus par préfixe
+      de D5.
 - [ ] Depuis un plugin de développement (`devAllowedDomains`), appeler
       `GET /projects/:id` et `POST /repository/commits`. Preuve : les deux
       réponses arrivent dans le sandbox Figma.
@@ -449,7 +461,7 @@ publication de la série en cours.
 
 | Risque | Conséquence | Tâche qui le lève |
 |---|---|---|
-| Les permissions fine-grained ne couvrent pas l'API de commits ou les notes | Le jeton prend le scope `api`, qui ouvre tous les projets du compte ; l'aide du jeton le dit | L0 |
+| Un jeton personnel scope `api` n'est pas limité à un projet : il ouvre tous les projets du compte | Un jeton d'accès projet le limiterait, mais exige Premium sur gitlab.com ; l'aide du jeton le dit | L0, D13 |
 | L'API de commits écrit dans une branche existante au lieu de refuser | Deux exports de la même seconde écrivent dans la même branche ; l'adaptateur vérifie l'absence de la branche | L0 |
 | La revue Community retarde l'ajout de `gitlab.com` | L'équipe attend la publication ; le plugin de développement sert en attendant | L7 |
 | Les runners partagés de gitlab.com exigent une vérification du compte | Le pipeline ne démarre pas, et aucune note n'est publiée | L0, L6 |
