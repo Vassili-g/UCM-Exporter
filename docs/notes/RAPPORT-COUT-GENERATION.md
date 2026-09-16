@@ -11,6 +11,10 @@ Sources de la première partie : `mesure-l5/runs/<id>/transcript.jsonl`,
 lus en lecture seule. Chaque chiffre de la section 1 en provient. Les
 estimations de la section 2 sont signalées comme telles, avec leurs hypothèses.
 
+Le plan d'exécution qui en découle, phase par phase, avec sa porte
+d'acceptation et son budget, est dans
+[PLAN-REDUCTION-TOKENS.md](./PLAN-REDUCTION-TOKENS.md).
+
 ## 1. Analyse de la mesure L5
 
 ### 1.1. Ce que la décision garde
