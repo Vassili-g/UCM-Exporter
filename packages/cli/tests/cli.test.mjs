@@ -487,6 +487,19 @@ test("une configuration refusée arrête `icons` au lieu de le faire mentir", ()
   }
 });
 
+test("`icons` refuse un argument en 2 au lieu de l'ignorer", () => {
+  const alertes = [];
+  const sortie = [];
+  const code = executer(["icons", "--option-inconnue"], {
+    racine: tmpdir(),
+    ecrire: (t) => sortie.push(t),
+    alerter: (t) => alertes.push(t),
+  });
+  assert.equal(code, 2);
+  assert.match(alertes.join("\n"), /Argument inconnu : --option-inconnue/);
+  assert.deepEqual(sortie, []);
+});
+
 test("une commande inconnue sort en 2, et 1 reste réservé aux contrôles", () => {
   const sortie = [];
   assert.equal(executer(["verifie"], { racine: tmpdir(), ecrire: (t) => sortie.push(t) }), 2);

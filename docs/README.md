@@ -86,6 +86,5 @@ partie du produit n'en dépend.
 | [notes/PLAN-FINAL-MODES-ET-AIDES.md](./notes/PLAN-FINAL-MODES-ET-AIDES.md) | Le plan des modes de tokens et des aides à l'implémentation, sa revue et ses lots |
 | [notes/TODO-MODES-ET-AIDES.md](./notes/TODO-MODES-ET-AIDES.md) | La liste de tâches ordonnée qui exécute ce plan |
 | [notes/PLAN-DIFF-SEMANTIQUE.md](./notes/PLAN-DIFF-SEMANTIQUE.md) | Le plan d'un diff sémantique entre deux versions d'un contrat |
-| [notes/PLAN-GITLAB.md](./notes/PLAN-GITLAB.md) | Le plan de la publication sur GitLab, du plugin à la note de merge request |
 | [notes/PLAN-REDUCTION-TOKENS.md](./notes/PLAN-REDUCTION-TOKENS.md) | Les options qui réduisent le coût d'un composant reconstruit |
 | [notes/RAPPORT-COUT-GENERATION.md](./notes/RAPPORT-COUT-GENERATION.md) | L'analyse du coût mesuré d'une reconstruction, et les leviers à essayer |

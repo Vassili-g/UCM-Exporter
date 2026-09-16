@@ -192,6 +192,11 @@ function executerCommande(arguments_, {
   }
 
   if (commande === "icons") {
+    if (arguments_.length > 1) {
+      const alerter = sorties.alerter ?? console.error;
+      alerter(`Argument inconnu : ${arguments_[1]}\n\nucm icons`);
+      return 2;
+    }
     const { configuration, erreur } = lireConfiguration(racine);
     if (erreur) {
       // La configuration est refusée ici comme ailleurs : retomber sur les
