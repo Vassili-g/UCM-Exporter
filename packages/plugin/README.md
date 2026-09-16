@@ -92,9 +92,7 @@ optionnelle ; renseignée, elle crée une branche et une demande de fusion, pull
 request sur GitHub ou merge request sur GitLab, qui contient le seul fichier
 exporté. La forge se déduit de l'adresse saisie : `github.com` ou
 `gitlab.com`. L'adresse d'une page du dépôt, un dossier par exemple, est
-acceptée, et le formulaire affiche le dépôt qu'il en retient. Une version
-servie par la Community qui refuse une adresse gitlab.com est antérieure à
-GitLab : le plugin construit depuis ce dépôt, lui, y publie.
+acceptée, et le formulaire affiche le dépôt qu'il en retient.
 
 L'endroit où ce fichier est écrit appartient au repository visé, qui le déclare
 dans son `ucm.config.json`. Le plugin lit ce fichier au test de connexion, avant

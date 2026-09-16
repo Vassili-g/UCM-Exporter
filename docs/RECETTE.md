@@ -481,8 +481,7 @@ de scope `api` ayant le rôle Developer sur ce projet. Dans ce qui suit,
 
 ### Configurer le plugin
 
-Chargez le plugin de développement tant que la version Community ne déclare
-pas `https://gitlab.com`. Dans la configuration :
+Dans la configuration du plugin publié sur la Community :
 
 1. collez l'adresse d'un dossier du projet, par exemple
    `https://gitlab.com/<groupe>/<projet>/-/tree/main/components` ;

@@ -74,11 +74,6 @@ plugin vous dit où il a trouvé le même contenu.
 
 ### Configurer un dépôt GitLab
 
-Si le plugin refuse une adresse gitlab.com, la version que sert la Figma
-Community ne publie pas encore sur GitLab. Demandez alors à un développeur de
-vous charger le plugin construit depuis ce dépôt, décrit dans [« Construire le plugin depuis ce
-dépôt »](../README.md#construire-le-plugin-depuis-ce-dépôt).
-
 1. Collez dans le champ l'adresse du projet, ou celle de n'importe quelle page
    du projet : un dossier, une merge request. Le plugin affiche sous le champ le
    projet qu'il retient, par exemple « Projet GitLab : mon-groupe/design-system ». Si
