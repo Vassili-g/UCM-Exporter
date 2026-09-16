@@ -92,7 +92,9 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
     connexion.ts               ce que vaut la connexion au dépôt, et le geste qu'elle demande
     prevol.ts                  ce que l'analyse conclut avant d'écrire, et l'action qu'elle propose
     cible.ts                   ce sur quoi l'export porte, et pourquoi il ne porte pas
-    github.ts                  branche, fichier et pull request
+    depot.ts                   où écrire, immobilité, collision et corps de la demande
+    forges/forge.ts            le port qu'une forge implémente, et ses termes
+    forges/github.ts           branche, fichier et pull request par l'API GitHub
     messages.ts                les DEUX sens de la frontière sandbox ↔ UI
     ui/                        interface du plugin
   galerie/                   les états de l'UI, atteignables hors de Figma
@@ -605,13 +607,14 @@ La spécification en lien porte le raisonnement.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 - Un export identique n’ouvre jamais une seconde pull request. L’immobilité se
   juge sur la branche de base **et** sur les pull requests d’export encore
-  ouvertes (`exportsEnVol()`, `src/github.ts`). Le verdict porte l’endroit où le
+  ouvertes (`exportsEnVol()`, `src/depot.ts`). Le verdict porte l’endroit où le
   contenu identique a été trouvé, et le journal le dit. Un contenu différent
   pendant qu’une pull request est ouverte est un réexport après correction, donc
   le geste normal, et il n’est pas refusé.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 - Un avertissement entre dans le corps de la pull request en Markdown :
-  `sansLienAutomatique()` (`src/github.ts`) publie `@nom` et `#123` en `code`.
+  `sansLienAutomatique()` (`src/forges/github.ts`) publie `@nom` et `#123` en
+  `code`.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-github)
 
 ### Échantillon de maquette

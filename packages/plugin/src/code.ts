@@ -10,8 +10,10 @@ import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './tokens/exportTokens';
 import { loadGithubConfig, loadPublicSettings, saveSettings, supprimerPat } from './config';
 import type { GithubConfig, SettingsInput } from './config';
-import { GithubApiError, publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './github';
-import type { ArtifactKind, RepositoryLayout } from './github';
+import { publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './depot';
+import type { ArtifactKind, RepositoryLayout } from './depot';
+import { ErreurDeForge } from './forges/forge';
+import { forgeDe } from './forges';
 import { verdictDePrevol } from './prevol';
 import type { CodeVerdict } from './prevol';
 import type { Annonce, PluginMessage, UiRequest } from './messages';
@@ -100,7 +102,7 @@ async function refreshConfiguration(): Promise<void> {
     return;
   }
   postConnection('verification');
-  const diagnostic = await diagnostiquerConnexion(validation.config);
+  const diagnostic = await diagnostiquerConnexion(forgeDe(validation.config));
   postConnection(diagnostic.cause, { statut: diagnostic.statut, detail: diagnostic.detail });
   postDepot(diagnostic.layout, validation.config);
 }
@@ -288,7 +290,7 @@ async function analyser(
     }
 
     versUi({ type: 'phase', texte: 'Lecture du repository…' });
-    const lecture = await lireAvantEcriture(validation.config, artefactDe(analyse));
+    const lecture = await lireAvantEcriture(forgeDe(validation.config), artefactDe(analyse));
     if (annulationDemandee) throw new ExportAnnule();
 
     if (lecture.refus) {
@@ -351,7 +353,7 @@ async function publier(genre: ArtifactKind): Promise<void> {
       return;
     }
     postStatus('loading', 'Publication sur GitHub…');
-    const publication = await publishArtifact(validation.config, artefactDe(analyse));
+    const publication = await publishArtifact(forgeDe(validation.config), artefactDe(analyse));
     if (publication.status === 'unchanged') {
       // Le dépôt a bougé entre l'analyse et la publication : c'est exactement le
       // cas que la revérification existe pour attraper.
@@ -373,7 +375,7 @@ async function publier(genre: ArtifactKind): Promise<void> {
     figma.notify(`${analyse.succes}. Pull request créée.`);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur GitHub inconnue.';
-    const statut = error instanceof GithubApiError ? error.status : null;
+    const statut = error instanceof ErreurDeForge ? error.status : null;
     // La réponse de GitHub est un fait de publication ; le verdict dit ce que le
     // designer a entre les mains. L'analyse est gardée : la publication se
     // réessaie sans repasser par Figma.

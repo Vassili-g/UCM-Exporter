@@ -875,7 +875,7 @@ expliquant ce qui manque. Elle ne serait pas réactivée implicitement.
 | Nouvelle révision | Invalidation et nouvelle exécution des modules concernés | Relire les résultats qui ont changé |
 | Livraison retenue | Ressources et documentation dérivées | Autoriser la publication selon les règles du projet |
 
-Le [plugin](../../packages/plugin/src/github.ts) publie un artefact par pull
+Le [plugin](../../packages/plugin/src/depot.ts) publie un artefact par pull
 request. Le workflow ne présumerait donc pas que contrat et nouveaux tokens
 arrivent ensemble. Un contrat pourrait aussi précéder le code. L’état proposé
 du repository déterminerait les modules exécutables.

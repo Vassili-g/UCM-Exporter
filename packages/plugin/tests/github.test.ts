@@ -2,16 +2,16 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CONFIGURATION_PAR_DEFAUT, CONTRACT_VERSION } from '@ucm-kit/core/format';
 import type { GithubConfig } from '../src/config';
+import { decodeBase64, encodeBase64, utf8ByteLength } from '../src/base64';
 import {
   artifactPath,
-  decodeBase64,
-  encodeBase64,
+  corpsDeLaDemande,
   exportBranchName,
   publishArtifact,
-  pullRequestBody,
   repositoryLayout,
-  utf8ByteLength,
-} from '../src/github';
+} from '../src/depot';
+import type { RepositoryArtifact } from '../src/depot';
+import { forgeGithub } from '../src/forges/github';
 
 /**
  * Remplace `fetch` le temps d'un appel, et le rend toujours.
@@ -69,6 +69,8 @@ const config: GithubConfig = {
   baseBranch: 'main',
   githubPat: 'secret-never-logged',
 };
+const forge = forgeGithub(config);
+const pullRequestBody = (path: string, artifact: RepositoryArtifact) => corpsDeLaDemande(path, artifact, forge);
 
 const LAYOUT_DECRIT = {
   components: 'src/components',
@@ -103,7 +105,7 @@ test('la configuration du repository décide où l’export s’écrit', async (
   };
   const layout = await avecFetch(
     () => fichier(JSON.stringify(configuration)),
-    () => repositoryLayout(config),
+    () => repositoryLayout(forge),
   );
 
   assert.equal(layout.source, 'ucm.config.json');
@@ -131,7 +133,7 @@ test('la configuration du repository décide où l’export s’écrit', async (
 test('un repository sans ucm.config.json prend les défauts que le contrôle applique aussi', async () => {
   const layout = await avecFetch(
     () => new Response('{}', { status: 404 }),
-    () => repositoryLayout(config),
+    () => repositoryLayout(forge),
   );
 
   assert.deepEqual(layout, {
@@ -149,14 +151,14 @@ test('un repository sans ucm.config.json prend les défauts que le contrôle app
  */
 test('une configuration de repository fautive refuse l’export au lieu de deviner', async () => {
   await assert.rejects(
-    () => avecFetch(() => fichier('{ pas du json'), () => repositoryLayout(config)),
+    () => avecFetch(() => fichier('{ pas du json'), () => repositoryLayout(forge)),
     /ucm\.config\.json du repository n'est pas du JSON valide/,
   );
 
   await assert.rejects(
     () => avecFetch(
       () => fichier(JSON.stringify({ contractVersion: '12.0' })),
-      () => repositoryLayout(config),
+      () => repositoryLayout(forge),
     ),
     /aucun numéro de version ne s'y écrit/,
   );
@@ -199,7 +201,7 @@ test('publishArtifact ne crée aucune branche si le fichier est inchangé', asyn
       calls.push(url);
       return sansConfiguration(url) ?? fichier('{"same":true}\n');
     },
-    () => publishArtifact(config, {
+    () => publishArtifact(forge, {
       kind: 'tokens',
       filename: 'tokens.json',
       content: '{"same":true}\n',
@@ -226,7 +228,7 @@ test('publishArtifact fonctionne dans un runtime Figma sans TextEncoder', async 
   try {
     const result = await avecFetch(
       (url) => sansConfiguration(url) ?? fichier('{"same":true}\n'),
-      () => publishArtifact(config, {
+      () => publishArtifact(forge, {
         kind: 'tokens',
         filename: 'tokens.json',
         content: '{"same":true}\n',
@@ -264,7 +266,7 @@ test('publishArtifact compare aussi un fichier GitHub supérieur à 1 Mo via son
         { status: 200 },
       );
     },
-    () => publishArtifact(config, { kind: 'tokens', filename: 'tokens.json', content, warnings: [] }),
+    () => publishArtifact(forge, { kind: 'tokens', filename: 'tokens.json', content, warnings: [] }),
   );
 
   assert.deepEqual(result, {
@@ -291,7 +293,7 @@ test('publishArtifact ignore meta.exportedAt pour détecter un contrat inchangé
       calls.push(url);
       return sansConfiguration(url) ?? fichier(contractOnRepo);
     },
-    () => publishArtifact(config, {
+    () => publishArtifact(forge, {
       kind: 'component',
       filename: 'Button.contract.json',
       content: reExported,
@@ -337,7 +339,7 @@ test('publishArtifact supprime la branche quand l’ouverture de la PR échoue',
   try {
     await assert.rejects(
       publishArtifact(
-        config,
+        forge,
         { kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] },
         new Date(2026, 6, 17, 9, 5),
       ),
@@ -377,7 +379,7 @@ test('publishArtifact crée branche, commit et PR pour un nouveau fichier', asyn
 
   try {
     const result = await publishArtifact(
-      config,
+      forge,
       { kind: 'component', filename: 'Button.contract.json', content: '{}', warnings: [] },
       new Date(2026, 6, 17, 9, 5),
     );
@@ -423,7 +425,7 @@ test('deux composants Figma distincts au même chemin : l’export est refusé, 
           ?? sansExportEnVol(url)
           ?? fichier(contratFigma('Icon / Button', '12:345'));
       },
-      () => publishArtifact(config, {
+      () => publishArtifact(forge, {
         kind: 'component',
         filename: 'IconButton.contract.json',
         content: contratFigma('IconButton', '67:890'),
@@ -462,7 +464,7 @@ test('le même composant réexporté après un renommage dans Figma passe', asyn
           ? new Response(JSON.stringify({ object: { sha: 'base-sha' } }), { status: 200 })
           : fichier(contratFigma('Icon / Button', '12:345')));
     },
-    () => publishArtifact(config, {
+    () => publishArtifact(forge, {
       kind: 'component',
       filename: 'IconButton.contract.json',
       content: contratFigma('IconButton', '12:345'),
@@ -500,7 +502,7 @@ test('une collision encore en vol dans une pull request ouverte est vue', async 
         }
         return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
       },
-      () => publishArtifact(config, {
+      () => publishArtifact(forge, {
         kind: 'component',
         filename: 'IconButton.contract.json',
         content: contratFigma('IconButton', '67:890'),
@@ -519,7 +521,7 @@ test('un contrat déjà présent sans identité Figma lisible refuse plutôt que
       (url) => sansConfiguration(url)
         ?? sansExportEnVol(url)
         ?? fichier(JSON.stringify({ name: 'IconButton', meta: { contractVersion: '3.0' } })),
-      () => publishArtifact(config, {
+      () => publishArtifact(forge, {
         kind: 'component',
         filename: 'IconButton.contract.json',
         content: contratFigma('IconButton', '67:890'),
@@ -559,7 +561,7 @@ test('les tokens ne passent pas par la détection de collision', async () => {
       }
       return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
     },
-    () => publishArtifact(config, {
+    () => publishArtifact(forge, {
       kind: 'tokens',
       filename: 'tokens.json',
       content: '{"nouveau":true}',
@@ -601,7 +603,7 @@ test('un artefact identique déjà déposé en vol ne crée pas un second export
       if (url.includes(`ref=${encodeURIComponent(branche)}`)) return fichier(enVol);
       return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
     },
-    () => publishArtifact(config, {
+    () => publishArtifact(forge, {
       kind: 'component',
       filename: 'IconButton.contract.json',
       content: reexporte,
@@ -641,7 +643,7 @@ test('des tokens identiques déjà déposés en vol ne créent pas un second exp
       if (url.includes(`ref=${encodeURIComponent(branche)}`)) return fichier('{"same":true}\n');
       return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
     },
-    () => publishArtifact(config, {
+    () => publishArtifact(forge, {
       kind: 'tokens',
       filename: 'tokens.json',
       content: '{"same":true}\n',
@@ -685,7 +687,7 @@ test('un réexport corrigé pendant qu’une pull request est ouverte n’est pa
       }
       return new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 });
     },
-    () => publishArtifact(config, {
+    () => publishArtifact(forge, {
       kind: 'component',
       filename: 'IconButton.contract.json',
       // Le même nœud Figma, renommé depuis : ni un doublon, ni une collision.

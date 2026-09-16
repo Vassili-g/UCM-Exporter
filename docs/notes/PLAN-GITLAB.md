@@ -89,9 +89,11 @@ chemin de l'artefact, immobilité, collision, exports en vol, corps de la demand
 diagnostic de connexion. Deux adaptateurs implémentent le port `Forge`,
 `src/forges/github.ts` et `src/forges/gitlab.ts` :
 
-- `testerDepot()` : lecture du projet, rend une cause ;
+- `testerDepot()` : lecture du projet ; un échec lève une `ErreurDeForge` qui
+  porte le statut, et `depot.ts` en tire la cause ;
 - `lireFichier(chemin, ref)` : contenu décodé et version, ou `null` ;
-- `demandesOuvertes(base)` : branche source et URL de chaque demande ouverte ;
+- `demandesOuvertes()` : branche source et URL de chaque demande ouverte vers
+  la branche de base, que l'adaptateur porte dans `baseBranch` ;
 - `publier({ branche, base, chemin, contenu, version, message, titre, corps })` :
   écrit, ouvre la demande et rend son URL ; l'adaptateur retire sa branche quand
   l'écriture ou l'ouverture échoue ;
@@ -280,10 +282,10 @@ plan, et la décision qu'il touche est corrigée dans le même commit.
 
 Aucun changement de comportement.
 
-- [ ] Créer `src/forges/forge.ts` : le type `Forge`, le type `TermesDeForge` et
+- [x] Créer `src/forges/forge.ts` : le type `Forge`, le type `TermesDeForge` et
       la classe `ErreurDeForge` (statut et message, jamais d'en-tête).
       `ErreurDeDescription` en hérite.
-- [ ] Déplacer dans `src/depot.ts` : `repositoryLayout`, `artifactPath`,
+- [x] Déplacer dans `src/depot.ts` : `repositoryLayout`, `artifactPath`,
       `withoutExportTimestamp`, `sameContent`, `exportBranchName`,
       `prefixeDeBranche`, `refusDeCollision`, `lireArtefact`,
       `ligneDeFormatDeTokens`, `lignesDIdentite`, le corps de la demande,
@@ -292,18 +294,18 @@ Aucun changement de comportement.
       `RepositoryArtifact`, `PublishResult`, `LayoutSource`, `RepositoryLayout`,
       `LectureDuDepot`, `DiagnosticConnexion`. Chaque fonction qui appelait
       l'API reçoit une `Forge`.
-- [ ] Créer `src/forges/github.ts` : `githubRequest`, `encodePath`, lecture de
+- [x] Créer `src/forges/github.ts` : `githubRequest`, `encodePath`, lecture de
       fichier avec le repli sur le blob, liste des pull requests, `publier` avec
       la séquence actuelle et son ménage, suppression de branche.
-- [ ] Renommer `pullRequestBody` en `corpsDeLaDemande`, qui reçoit `termes`.
+- [x] Renommer `pullRequestBody` en `corpsDeLaDemande`, qui reçoit `termes`.
       Pour GitHub, le texte produit reste octet pour octet celui d'aujourd'hui.
-- [ ] Adapter `code.ts` : `forgeDe(config)` construit l'adaptateur, les appels
+- [x] Adapter `code.ts` : `forgeDe(config)` construit l'adaptateur, les appels
       passent par `depot.ts`.
-- [ ] Adapter `tests/github.test.ts` et `tests/code.test.ts`, qui remplace le
+- [x] Adapter `tests/github.test.ts` et `tests/code.test.ts`, qui remplace le
       module `./github`. Preuve : `git diff` des deux fichiers ne touche aucune
       assertion ni aucune valeur attendue, seulement les imports, la
       construction de la configuration et les points d'appel.
-- [ ] Dans le même commit : `AGENTS.md` (carte du code, invariants qui citent
+- [x] Dans le même commit : `AGENTS.md` (carte du code, invariants qui citent
       `exportsEnVol()` et `sansLienAutomatique()`) et la liste `AUTORITES` de
       `tests/inventaireInvariants.test.ts`, où `src/github.ts` devient
       `src/depot.ts` et `src/forges/github.ts`. Preuve : le test passe.

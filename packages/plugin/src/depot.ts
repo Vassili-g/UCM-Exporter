@@ -1,6 +1,7 @@
 /**
- * Client GitHub REST minimal pour déposer un artefact UCM Contract Exporter dans une
- * branche dédiée puis ouvrir une PR. Aucun PAT n'est logué ni renvoyé à l'UI.
+ * Déposer un artefact UCM dans le dépôt d'une forge : où l'écrire, s'il a
+ * changé, s'il entre en collision, et le corps de la demande qui le porte. Le
+ * transport appartient à l'adaptateur de la forge (`forges/`).
  */
 import {
   CONFIGURATION_PAR_DEFAUT,
@@ -12,16 +13,11 @@ import {
   versionDeContrat,
 } from '@ucm-kit/core/format';
 
-import type { GithubConfig } from './config';
-import { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
+import { utf8ByteLength } from './base64';
 import { causeDepuisStatut } from './connexion';
 import type { CauseConnexion } from './connexion';
-export { decodeBase64, encodeBase64, utf8ByteLength } from './base64';
-
-const GITHUB_API = 'https://api.github.com';
-const GITHUB_API_VERSION = '2022-11-28';
-/** Au-delà, GitHub refuse la pull request en 422 et l'export échoue entier. */
-const LIMITE_CORPS_PULL_REQUEST = 65_536;
+import { ErreurDeDescription, ErreurDeForge } from './forges/forge';
+import type { Forge, VersionDeFichier } from './forges/forge';
 
 export type ArtifactKind = 'component' | 'tokens';
 
@@ -35,7 +31,7 @@ export type RepositoryArtifact = {
 
 /**
  * Résultat d'une publication. Pour un contenu inchangé, `ou` distingue la
- * branche de base d'une PR ouverte et `pullRequestUrl` mène à cette PR.
+ * branche de base d'une demande ouverte et `pullRequestUrl` mène à cette demande.
  */
 export type PublishResult =
   | {
@@ -62,44 +58,6 @@ export type RepositoryLayout = {
   tokens: string;
   source: LayoutSource;
 };
-
-type GithubFile = {
-  type: string;
-  sha: string;
-  content?: string;
-  encoding?: string;
-};
-
-type GithubBlob = {
-  content: string;
-  encoding: string;
-};
-
-/**
- * Erreur réseau nettoyée : statut et message, jamais les headers. Le statut
- * distingue notamment une panne réseau d'une configuration du dépôt invalide.
- */
-export class GithubApiError extends Error {
-  constructor(message: string, public readonly status: number | null = null) {
-    super(message);
-    this.name = 'GithubApiError';
-  }
-}
-
-/**
- * Le repository répond, mais il se décrit mal.
- */
-export class ErreurDeDescription extends GithubApiError {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ErreurDeDescription';
-  }
-}
-
-/** Encode chaque segment sans casser les dossiers imbriqués. */
-function encodePath(path: string): string {
-  return path.split('/').map((segment) => encodeURIComponent(segment)).join('/');
-}
 
 /**
  * Neutralise la seule donnée volatile d'un artefact : `meta.exportedAt`,
@@ -143,7 +101,7 @@ export function exportBranchName(kind: ArtifactKind, date = new Date()): string 
  *
  * Il est extrait parce qu'un second lecteur en dépend : la détection de
  * collision doit retrouver les exports encore en vol (voir
- * `cheminsOccupesParUnExportEnCours`). Deux écritures du même préfixe
+ * `exportsEnVol`). Deux écritures du même préfixe
  * dériveraient, et la dérive serait muette : la recherche ne trouverait
  * simplement plus rien, ce qui se lit exactement comme « aucune collision ».
  */
@@ -168,9 +126,9 @@ function prefixeDeBranche(kind: ArtifactKind): string {
  * incompréhensible. C'est la même doctrine que côté CI : le fichier absent est
  * le cas nominal, le fichier fautif est une erreur.
  */
-export async function repositoryLayout(config: GithubConfig): Promise<RepositoryLayout> {
-  const fichier = await getRepositoryFile(config, NOM_CONFIGURATION);
-  if (!fichier || fichier.type !== 'file' || !fichier.content) {
+export async function repositoryLayout(forge: Forge): Promise<RepositoryLayout> {
+  const fichier = await forge.lireFichier(NOM_CONFIGURATION);
+  if (!fichier) {
     return {
       components: CONFIGURATION_PAR_DEFAUT.components,
       tokens: CONFIGURATION_PAR_DEFAUT.tokens,
@@ -182,7 +140,7 @@ export async function repositoryLayout(config: GithubConfig): Promise<Repository
   try {
     // Un BOM en tête ferait échouer JSON.parse, et l'éditeur qui l'a écrit ne
     // le montre pas.
-    brut = JSON.parse(decodeBase64(fichier.content).replace(/^﻿/, ''));
+    brut = JSON.parse(fichier.contenu.replace(/^﻿/, ''));
   } catch {
     throw new ErreurDeDescription(
       `${NOM_CONFIGURATION} du repository n'est pas du JSON valide : impossible de savoir où écrire cet export. Un développeur doit corriger ce fichier.`,
@@ -207,28 +165,6 @@ export function artifactPath(
   if (artifact.kind === 'tokens') return layout.tokens;
   const componentName = artifact.filename.replace(/\.contract\.json$/i, '');
   return `${layout.components}/${componentName}/${artifact.filename}`;
-}
-
-/**
- * Formes qu'une page GitHub relie d'elle-même : `@nom` vers un compte, `#123`
- * vers une issue. La borne de gauche est capturée faute de lookbehind dans le
- * moteur du plugin ; elle exclut l'accent grave, car ce qui est déjà du code
- * l'est.
- */
-const FORMES_AUTOLIEES = /(^|[^\w`])(@[A-Za-z0-9][\w-]*|#\d+)/g;
-
-/**
- * Rend un avertissement inerte dans la page qui l'affiche.
- *
- * Un message est écrit pour Figma et en cite les intitulés tels quels : `@icons`
- * y est le nom d'une variante de règle, que le designer doit taper dans son
- * composant. GitHub, lui, y lit une mention et ouvre le profil d'un inconnu,
- * notifié à chaque export. L'autoliaison s'applique au texte rendu et n'épargne
- * que le code : la forme ambiguë part donc en `code`, où elle se lit exactement
- * comme elle s'écrit dans Figma.
- */
-function sansLienAutomatique(warning: string): string {
-  return warning.replace(FORMES_AUTOLIEES, '$1`$2`');
 }
 
 /** L'artefact analysé, ou `null` s'il n'est pas du JSON : une ligne de couverture ne lève pas. */
@@ -258,13 +194,13 @@ function ligneDeFormatDeTokens(artifact: RepositoryArtifact): string {
 }
 
 /**
- * Identité annoncée en tête de PR. La version est lue dans l'artefact, jamais
- * dans la constante du plugin ; l'origine emploie l'URL disponible ou, à défaut,
- * `fileName` et `nodeId`. Les intitulés passent par `sansLienAutomatique`.
- * `tokens.json`, qui n'est ni un contrat ni un composant, n'annonce que sa
- * version du format de tokens.
+ * Identité annoncée en tête de la demande. La version est lue dans l'artefact,
+ * jamais dans la constante du plugin ; l'origine emploie l'URL disponible ou, à
+ * défaut, `fileName` et `nodeId`. Les intitulés passent par
+ * `sansLienAutomatique`. `tokens.json`, qui n'est ni un contrat ni un
+ * composant, n'annonce que sa version du format de tokens.
  */
-function lignesDIdentite(artifact: RepositoryArtifact): string[] {
+function lignesDIdentite(artifact: RepositoryArtifact, forge: Forge): string[] {
   if (artifact.kind === 'tokens') return [ligneDeFormatDeTokens(artifact)];
   if (artifact.kind !== 'component') return [];
 
@@ -284,27 +220,27 @@ function lignesDIdentite(artifact: RepositoryArtifact): string[] {
   // tracerait rien et se contenterait d'occuper la page.
   if (origine.nodeId === null) return lignes;
 
-  const nom = origine.nom === null ? 'Composant' : `« ${sansLienAutomatique(origine.nom)} »`;
+  const nom = origine.nom === null ? 'Composant' : `« ${forge.sansLienAutomatique(origine.nom)} »`;
   const designation = origine.url === null ? nom : `[${nom}](${origine.url})`;
   const fichier = origine.fileName === null
     ? ''
-    : `fichier « ${sansLienAutomatique(origine.fileName)} », `;
+    : `fichier « ${forge.sansLienAutomatique(origine.fileName)} », `;
   lignes.push(`Composant Figma : ${designation} — ${fichier}nœud \`${origine.nodeId}\``);
   return lignes;
 }
 
 /**
- * Corps de la pull request ouverte pour un export.
+ * Corps de la demande ouverte pour un export.
  * L'en-tête porte l'identité de l'artefact ; la liste ne contient que les
  * diagnostics qui demandent un geste dans Figma.
  */
-export function pullRequestBody(path: string, artifact: RepositoryArtifact): string {
+export function corpsDeLaDemande(path: string, artifact: RepositoryArtifact, forge: Forge): string {
   const warnings = artifact.warnings;
   const header = [
     'Export automatique depuis Figma.',
     '',
     `Fichier : \`${path}\``,
-    ...lignesDIdentite(artifact),
+    ...lignesDIdentite(artifact, forge),
   ].join('\n');
   if (warnings.length === 0) {
     return [header, '', `Aucun avertissement d'export.`].join('\n');
@@ -328,10 +264,10 @@ export function pullRequestBody(path: string, artifact: RepositoryArtifact): str
     'Ces avertissements ne bloquent pas la fusion.',
   ];
   // La marge garde la place de la ligne qui compte les points omis.
-  let reste = LIMITE_CORPS_PULL_REQUEST - 200 - [...debut, ...fin].join('\n').length;
+  let reste = forge.termes.limiteDeCorps - 200 - [...debut, ...fin].join('\n').length;
   const lignes: string[] = [];
   for (const warning of warnings) {
-    const ligne = `- ${sansLienAutomatique(warning)}`;
+    const ligne = `- ${forge.sansLienAutomatique(warning)}`;
     if (ligne.length + 1 > reste) break;
     lignes.push(ligne);
     reste -= ligne.length + 1;
@@ -347,45 +283,6 @@ export function pullRequestBody(path: string, artifact: RepositoryArtifact): str
   return [...debut, ...lignes, ...fin].join('\n');
 }
 
-/** Effectue un appel GitHub authentifié avec un message d'erreur exploitable. */
-async function githubRequest<T>(
-  config: GithubConfig,
-  path: string,
-  init: RequestInit = {},
-  allowNotFound = false,
-): Promise<T | null> {
-  let response: Response;
-  try {
-    response = await fetch(`${GITHUB_API}${path}`, {
-      ...init,
-      headers: {
-        Accept: 'application/vnd.github+json',
-        Authorization: `Bearer ${config.githubPat}`,
-        'X-GitHub-Api-Version': GITHUB_API_VERSION,
-        'Content-Type': 'application/json',
-        ...(init.headers ?? {}),
-      },
-    });
-  } catch {
-    throw new GithubApiError('Impossible de joindre api.github.com.');
-  }
-
-  if (allowNotFound && response.status === 404) return null;
-  if (!response.ok) {
-    let detail = '';
-    try {
-      const body = await response.json() as { message?: string };
-      detail = body.message ? ` : ${body.message}` : '';
-    } catch {
-      // Une réponse non JSON reste décrite par son statut HTTP.
-    }
-    throw new GithubApiError(`GitHub a répondu ${response.status}${detail}.`, response.status);
-  }
-
-  if (response.status === 204) return null;
-  return response.json() as Promise<T>;
-}
-
 /** Ce qu'un test de connexion apprend : une cause, et ce que le dépôt dit de lui-même. */
 export type DiagnosticConnexion = {
   cause: CauseConnexion;
@@ -398,18 +295,18 @@ export type DiagnosticConnexion = {
  * Test automatique de connexion demandé à l'ouverture et après sauvegarde.
  *
  * Il rend une cause, pas un booléen. L'ancienne version avalait l'erreur
- * et rendait `false` : le statut HTTP que `GithubApiError` porte déjà se
+ * et rendait `false` : le statut HTTP que `ErreurDeForge` porte déjà se
  * perdait au retour, si bien qu'un jeton refusé, un droit manquant et une URL
  * fautive arrivaient à l'identique devant le designer, dont le geste diffère
  * pourtant dans les trois cas.
  */
-export async function diagnostiquerConnexion(config: GithubConfig): Promise<DiagnosticConnexion> {
+export async function diagnostiquerConnexion(forge: Forge): Promise<DiagnosticConnexion> {
   try {
-    await githubRequest(config, `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`);
+    await forge.testerDepot();
   } catch (error) {
-    // Une erreur qui n'est pas une réponse de GitHub ne dit rien du réseau ni
+    // Une erreur qui n'est pas une réponse de la forge ne dit rien du réseau ni
     // des droits : la nommer autrement serait attribuer une cause non établie.
-    if (!(error instanceof GithubApiError)) return { cause: 'github-indisponible', layout: null };
+    if (!(error instanceof ErreurDeForge)) return { cause: 'github-indisponible', layout: null };
     return { cause: causeDepuisStatut(error.status), statut: error.status, layout: null };
   }
 
@@ -420,53 +317,16 @@ export async function diagnostiquerConnexion(config: GithubConfig): Promise<Diag
    * designer l'apprenait une fois son composant analysé.
    */
   try {
-    return { cause: 'connecte', layout: await repositoryLayout(config) };
+    return { cause: 'connecte', layout: await repositoryLayout(forge) };
   } catch (error) {
     if (error instanceof ErreurDeDescription) {
       return { cause: 'depot-mal-decrit', detail: error.message, layout: null };
     }
-    if (error instanceof GithubApiError) {
+    if (error instanceof ErreurDeForge) {
       return { cause: causeDepuisStatut(error.status), statut: error.status, layout: null };
     }
     return { cause: 'github-indisponible', layout: null };
   }
-}
-
-/**
- * Retire une branche d'export qui n'a pas abouti à une PR : l'UI retombe alors
- * sur le téléchargement local, et personne n'ira jamais voir cette branche.
- * Son propre échec est ignoré : c'est l'erreur d'origine qui doit remonter à
- * l'utilisateur, pas celle du ménage qui la suit.
- */
-async function deleteBranch(config: GithubConfig, repository: string, branch: string): Promise<void> {
-  await githubRequest(config, `/repos/${repository}/git/refs/heads/${encodePath(branch)}`, {
-    method: 'DELETE',
-  }).catch(() => undefined);
-}
-
-/**
- * Lit un fichier sur la branche de base, ou sur la `ref` demandée ; `null`
- * signifie qu'il n'existe pas là.
- */
-async function getRepositoryFile(
-  config: GithubConfig,
-  path: string,
-  ref = config.baseBranch,
-): Promise<GithubFile | null> {
-  const file = await githubRequest<GithubFile>(
-    config,
-    `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/contents/${encodePath(path)}?ref=${encodeURIComponent(ref)}`,
-    {},
-    true,
-  );
-  if (file?.type === 'file' && file.encoding === 'none') {
-    const blob = await githubRequest<GithubBlob>(
-      config,
-      `/repos/${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}/git/blobs/${encodeURIComponent(file.sha)}`,
-    );
-    if (blob) return { ...file, content: blob.content, encoding: blob.encoding };
-  }
-  return file;
 }
 
 /**
@@ -536,38 +396,26 @@ function refusDeCollision(
 type ExportEnVol = { contenu: string; ou: string; url: string | null };
 
 /**
- * Les exports du même artefact encore en vol, c'est-à-dire dans une pull request
+ * Les exports du même artefact encore en vol, c'est-à-dire dans une demande
  * ouverte et pas encore fusionnée.
  * Ils ferment les collisions de contrats et les doublons avant fusion. Un seul
- * appel liste les PR, puis seules les branches au préfixe d'export sont lues ;
- * un échec de lecture n'est jamais assimilé à une liste vide.
+ * appel liste les demandes, puis seules les branches au préfixe d'export sont
+ * lues ; un échec de lecture n'est jamais assimilé à une liste vide.
  */
-async function exportsEnVol(
-  config: GithubConfig,
-  repository: string,
-  kind: ArtifactKind,
-  path: string,
-): Promise<ExportEnVol[]> {
-  const ouvertes = await githubRequest<{ head: { ref: string }; html_url?: unknown }[]>(
-    config,
-    `/repos/${repository}/pulls?state=open&base=${encodeURIComponent(config.baseBranch)}&per_page=100`,
-  );
-  if (!ouvertes) return [];
-
+async function exportsEnVol(forge: Forge, kind: ArtifactKind, path: string): Promise<ExportEnVol[]> {
   const prefixe = prefixeDeBranche(kind);
   const trouves: ExportEnVol[] = [];
-  for (const pull of ouvertes) {
-    const branche = pull.head?.ref;
-    if (typeof branche !== 'string' || branche.indexOf(prefixe) !== 0) continue;
-    const fichier = await getRepositoryFile(config, path, branche);
-    if (fichier?.type === 'file' && fichier.content) {
+  for (const demande of await forge.demandesOuvertes()) {
+    if (demande.branche.indexOf(prefixe) !== 0) continue;
+    const fichier = await forge.lireFichier(path, demande.branche);
+    if (fichier) {
       trouves.push({
-        contenu: decodeBase64(fichier.content),
-        ou: `pull request d'export ouverte, branche ${branche}`,
+        contenu: fichier.contenu,
+        ou: `${forge.termes.demande} d'export ouverte, branche ${demande.branche}`,
         // L'URL n'est utile qu'au doublon, qui envoie le designer fusionner ce
         // qui est déjà déposé. Le refus de collision, lui, ne s'en sert pas :
-        // le geste qu'il demande se fait dans Figma, pas sur GitHub.
-        url: typeof pull.html_url === 'string' ? pull.html_url : null,
+        // le geste qu'il demande se fait dans Figma, pas sur la forge.
+        url: demande.url,
       });
     }
   }
@@ -576,14 +424,15 @@ async function exportsEnVol(
 
 /**
  * Ce que le repository apprend avant toute écriture.
- * La même lecture est rejouée à la publication, car branche et PR peuvent avoir
- * changé depuis le pré-vol ; deux implémentations de ce contrôle divergeraient.
+ * La même lecture est rejouée à la publication, car branche et demandes peuvent
+ * avoir changé depuis le pré-vol ; deux implémentations de ce contrôle
+ * divergeraient.
  */
 export type LectureDuDepot = {
   layout: RepositoryLayout;
   path: string;
   /** Le fichier déjà présent sur la branche de base, s'il y en a un. */
-  surLaBase: { contenu: string; sha: string } | null;
+  surLaBase: { contenu: string; version: VersionDeFichier } | null;
   /** Le même contenu, déjà déposé quelque part. Rien à publier alors. */
   jumeau: { ou: string; url: string | null } | null;
   /** Le refus de collision d'identité, quand il y en a un. */
@@ -591,39 +440,35 @@ export type LectureDuDepot = {
 };
 
 export async function lireAvantEcriture(
-  config: GithubConfig,
+  forge: Forge,
   artifact: RepositoryArtifact,
 ): Promise<LectureDuDepot> {
-  const repository = `${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
   // Le repository est interrogé avant toute écriture : il est seul à savoir où
   // ses contrats vivent, et se tromper d'endroit est indétectable ensuite.
-  const layout = await repositoryLayout(config);
+  const layout = await repositoryLayout(forge);
   const path = artifactPath(artifact, layout);
-  const ouLaBase = `branche ${config.baseBranch}`;
-  const existing = await getRepositoryFile(config, path);
-  const surLaBase = existing?.type === 'file' && existing.content
-    ? { contenu: decodeBase64(existing.content), sha: existing.sha }
-    : null;
+  const ouLaBase = `branche ${forge.baseBranch}`;
+  const surLaBase = await forge.lireFichier(path);
 
   if (surLaBase && sameContent(surLaBase.contenu, artifact.content)) {
     return { layout, path, surLaBase, jumeau: { ou: ouLaBase, url: null }, refus: null };
   }
 
   // Le contrôle ci-dessus ne regarde que la branche de base, et c'est là
-  // qu'un artefact déjà exporté n'est pas encore : il attend dans sa pull
-  // request. Réexporter un contenu strictement identique en ouvrait donc une
+  // qu'un artefact déjà exporté n'est pas encore : il attend dans sa demande.
+  // Réexporter un contenu strictement identique en ouvrait donc une
   // seconde, en tout point pareille : un doublon que rien ne signalait.
   //
   // La lecture est celle de la détection de collision, étendue et non
   // dupliquée. Elle vient après la branche de base et pas avant, parce que le
   // cas courant (rien n'a changé depuis la dernière fusion) se tranche alors
-  // sans lister aucune pull request.
-  const enVol = await exportsEnVol(config, repository, artifact.kind, path);
+  // sans lister aucune demande.
+  const enVol = await exportsEnVol(forge, artifact.kind, path);
   const jumeau = enVol.find((occupant) => sameContent(occupant.contenu, artifact.content));
   if (jumeau) return { layout, path, surLaBase, jumeau, refus: null };
 
   // Ce n'est pas un refus, et son pendant n'existe pas : un contenu différent
-  // pendant qu'une pull request d'export est ouverte, c'est un réexport après
+  // pendant qu'une demande d'export est ouverte, c'est un réexport après
   // correction dans Figma, le geste normal, que bloquer reviendrait à punir.
   // Git dit le reste : deux branches qui modifient le même fichier depuis la
   // même base entrent en conflit à la seconde fusion, et un conflit, lui, se
@@ -648,76 +493,46 @@ export async function lireAvantEcriture(
 }
 
 /**
- * Crée une branche, écrit l'unique artefact de l'export puis ouvre la PR.
+ * Écrit l'unique artefact de l'export sur une branche dédiée, puis ouvre la
+ * demande.
  *
  * Rien n'est écrit avant d'avoir cherché l'artefact aux deux seuls endroits où
- * il peut déjà être : la branche de base, et les pull requests d'export encore
- * ouvertes. Une PR vide n'a jamais eu de raison d'exister ; une seconde PR
- * identique non plus.
+ * il peut déjà être : la branche de base, et les demandes d'export encore
+ * ouvertes. Une demande vide n'a jamais eu de raison d'exister ; une seconde
+ * demande identique non plus.
  */
 export async function publishArtifact(
-  config: GithubConfig,
+  forge: Forge,
   artifact: RepositoryArtifact,
   date = new Date(),
 ): Promise<PublishResult> {
-  const maximumGithubFileSize = 100 * 1024 * 1024;
-  if (utf8ByteLength(artifact.content) > maximumGithubFileSize) {
-    throw new GithubApiError(
-      'Le contrat dépasse la limite GitHub de 100 Mo. Il reste disponible en téléchargement local.',
+  const { forge: nomDeForge, limiteDeFichier } = forge.termes;
+  if (utf8ByteLength(artifact.content) > limiteDeFichier.octets) {
+    throw new ErreurDeForge(
+      `Le contrat dépasse la limite ${nomDeForge} de ${limiteDeFichier.libelle}. Il reste disponible en téléchargement local.`,
     );
   }
-  const repository = `${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
   // La lecture est refaite ici, même quand le pré-vol vient de la faire : entre
   // les deux, le dépôt a pu bouger. Une analyse qui autoriserait une
   // écriture sur la foi d'une lecture périmée serait pire que pas d'analyse.
-  const { layout, path, surLaBase, jumeau, refus } = await lireAvantEcriture(config, artifact);
+  const { layout, path, surLaBase, jumeau, refus } = await lireAvantEcriture(forge, artifact);
   if (jumeau) {
     return { status: 'unchanged', path, source: layout.source, ou: jumeau.ou, pullRequestUrl: jumeau.url };
   }
-  if (refus) throw new GithubApiError(refus);
+  if (refus) throw new ErreurDeForge(refus);
 
   const branch = exportBranchName(artifact.kind, date);
-  const baseRef = await githubRequest<{ object: { sha: string } }>(
-    config,
-    `/repos/${repository}/git/ref/heads/${encodePath(config.baseBranch)}`,
-  );
-  if (!baseRef) throw new GithubApiError('La branche de base ne renvoie aucun SHA.');
-
-  await githubRequest(config, `/repos/${repository}/git/refs`, {
-    method: 'POST',
-    body: JSON.stringify({ ref: `refs/heads/${branch}`, sha: baseRef.object.sha }),
+  const titre = `UCM Contract Exporter: export ${artifact.filename}`;
+  const pullRequestUrl = await forge.publier({
+    branche: branch,
+    base: forge.baseBranch,
+    chemin: path,
+    contenu: artifact.content,
+    version: surLaBase?.version ?? null,
+    message: titre,
+    titre,
+    corps: corpsDeLaDemande(path, artifact, forge),
   });
 
-  // Commit et PR sous le même garde : la branche ne sert qu'à porter la PR.
-  let pullRequest: { html_url: string } | null;
-  try {
-    await githubRequest(config, `/repos/${repository}/contents/${encodePath(path)}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        message: `UCM Contract Exporter: export ${artifact.filename}`,
-        content: encodeBase64(artifact.content),
-        branch,
-        ...(surLaBase ? { sha: surLaBase.sha } : {}),
-      }),
-    });
-
-    pullRequest = await githubRequest<{ html_url: string }>(config, `/repos/${repository}/pulls`, {
-      method: 'POST',
-      body: JSON.stringify({
-        title: `UCM Contract Exporter: export ${artifact.filename}`,
-        head: branch,
-        base: config.baseBranch,
-        body: pullRequestBody(path, artifact),
-      }),
-    });
-  } catch (error) {
-    await deleteBranch(config, repository, branch);
-    throw error;
-  }
-
-  // Hors du try : une PR bel et bien créée ne doit pas voir sa branche
-  // supprimée sous elle, cela la refermerait aussitôt.
-  if (!pullRequest?.html_url) throw new GithubApiError('La PR a été créée sans URL exploitable.');
-
-  return { status: 'created', path, branch, pullRequestUrl: pullRequest.html_url, source: layout.source };
+  return { status: 'created', path, branch, pullRequestUrl, source: layout.source };
 }

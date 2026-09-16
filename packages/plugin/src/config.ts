@@ -6,7 +6,7 @@
  * quitte le sandbox que lorsqu'il est saisi par l'UI au moment de la sauvegarde.
  *
  * Ce qui est rangé ici décrit une machine, pas un repository : l'endroit où un
- * export atterrit n'en fait donc pas partie, et vit dans `github.ts`, qui le
+ * export atterrit n'en fait donc pas partie, et vit dans `depot.ts`, qui le
  * demande au repository lui-même.
  */
 

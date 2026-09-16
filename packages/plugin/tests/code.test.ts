@@ -56,8 +56,9 @@ function ouvrir() {
     './contract/extractRules': { extractRules: async () => ({}), hasUsableRules: () => true },
     './contract/exportComponent': { default: handler },
     './tokens/exportTokens': { default: handler, annonceDuFormat: () => null, etatDesTokensDuFichier: async () => ({ presents: true, resume: '1 variable' }) },
-    './github': {
-      GithubApiError: Error,
+    './forges/forge': { ErreurDeForge: Error },
+    './forges': { forgeDe: () => ({}) },
+    './depot': {
       lireAvantEcriture: async () => ({ path: 'tokens.json', layout: { source: 'configuration' } }),
       publishArtifact: async () => { appels.publications += 1; return publication.traiter(); },
     },
