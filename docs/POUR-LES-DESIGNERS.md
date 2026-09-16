@@ -72,6 +72,13 @@ l'interface, ni dans les journaux, ni dans le fichier.
 Un export identique à ce qui est déjà déposé n'ouvre pas de seconde demande. Le
 plugin vous dit où il a trouvé le même contenu.
 
+**Dans un repository neuf, exportez les tokens en premier**, et faites fusionner
+leur demande avant de publier un composant. Le contrôle du repository refuse la
+demande d'un composant tant que `tokens.json` n'est pas sur la branche de base.
+L'analyse d'un composant vous le rappelle, sans vous empêcher de publier. Si
+la demande d'un composant est déjà refusée pour cette raison, faites fusionner
+les tokens, puis relancez son contrôle : aucun nouvel export n'est nécessaire.
+
 ### Configurer le dépôt
 
 Ouvrez `Configuration` depuis l'en-tête du plugin. Un développeur doit avoir

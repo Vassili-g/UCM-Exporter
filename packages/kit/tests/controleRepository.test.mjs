@@ -344,7 +344,12 @@ test("tokens illisibles ou absents : le refus porte quand même un message", () 
   });
   assert.equal(sansTokens.bloquant, true);
   assert.match(sansTokens.rapport, /^## ❌ `src\/tokens\/tokens\.json` est introuvable$/m);
-  assert.match(sansTokens.rapport, /relancez \*\*Exporter les tokens\*\* depuis Figma/);
+  // Un composant exporté avant les tokens reste rouge tant que les tokens ne
+  // sont pas fusionnés et que son contrôle n'a pas été relancé : un nouvel
+  // export des tokens seul ouvre une autre demande et ne change rien ici.
+  assert.match(sansTokens.rapport, /lancez \*\*Exporter les tokens\*\* depuis Figma et faites fusionner la demande de fusion qu'il ouvre/);
+  assert.match(sansTokens.rapport, /relancez le contrôle de cette demande de fusion/);
+  assert.match(sansTokens.terminal.map(({ texte }) => texte).join("\n"), /introuvable\. Fusionnez l'export des tokens, puis relancez ce contrôle\./);
 
   const jsonCasse = verdict({
     casser: (racine) => writeFileSync(join(racine, CONFIGURATION.tokens), "{ pas du json"),

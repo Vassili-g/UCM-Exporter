@@ -636,12 +636,12 @@ export function controlerRepository(racine, {
       return abandon(
         absent ? `\`${sourceTokens}\` est introuvable` : `\`${sourceTokens}\` est illisible`,
         absent
-          ? `Le fichier de tokens est absent du repository : aucune référence n'a pu être vérifiée. Si cet export modifie les tokens, relancez **Exporter les tokens** depuis Figma ; sinon, signalez-le à un développeur.`
+          ? `Le fichier de tokens est absent du repository : aucune référence n'a pu être vérifiée. Si les tokens n'ont jamais été exportés, lancez **Exporter les tokens** depuis Figma et faites fusionner la demande de fusion qu'il ouvre, puis relancez le contrôle de cette demande de fusion : aucun nouvel export du composant n'est nécessaire. Si les tokens ont déjà été fusionnés, signalez-le à un développeur.`
           : "Le fichier de tokens n'est pas du JSON valide : il a sans doute été tronqué ou modifié à la main. Relancez **Exporter les tokens** depuis Figma plutôt que de le corriger.",
         [{
           flux: "error",
           texte: absent
-            ? `✗ ${cheminTokens} introuvable. Régénérez les tokens du repository.`
+            ? `✗ ${cheminTokens} introuvable. Fusionnez l'export des tokens, puis relancez ce contrôle.`
             : `✗ ${cheminTokens} est illisible. Relancez l’export de tokens depuis Figma.`,
         }],
         echecsDeTests,
