@@ -21,6 +21,11 @@ export type TermesDeForge = {
   droits: string;
   /** Les statuts d'une branche ou d'une demande refusée parce qu'elle existe déjà. */
   statutsDeRefus: readonly number[];
+  /**
+   * Les statuts d'un refus dont seule la réponse de la forge donne la cause :
+   * une règle du dépôt, ou une branche qui existe déjà.
+   */
+  statutsDeRegle: readonly number[];
   /** Les statuts d'un dépôt qui a changé pendant la publication. */
   statutsDeConflit: readonly number[];
   /** Au-delà, le fichier ne se publie pas et reste téléchargé sur le poste. */
@@ -39,6 +44,7 @@ export const TERMES_GITHUB: TermesDeForge = {
     'Utilisez un fine-grained token limité à ce repo avec Contents: Read and write et Pull requests: Read and write.',
   droits: 'Contents: Read and write et Pull requests: Read and write',
   statutsDeRefus: [422],
+  statutsDeRegle: [],
   statutsDeConflit: [409],
   limiteDeFichier: { octets: 100 * 1024 * 1024, libelle: '100 Mo' },
   // Au-delà, GitHub refuse la pull request en 422 et l'export échoue entier.
@@ -46,9 +52,10 @@ export const TERMES_GITHUB: TermesDeForge = {
 };
 
 /*
- * GitLab refuse en 400 une branche existante et en 409 une seconde merge
- * request sur la même branche : les deux demandent le même geste. Le commit
- * part de la version lue, si bien qu'aucun statut ne signale un conflit.
+ * GitLab refuse en 409 une seconde merge request sur la même branche. Son 400
+ * couvre une branche existante et les règles de push du projet (message de
+ * commit, nom de branche) : seule sa réponse les distingue. Le commit part de
+ * la version lue, si bien qu'aucun statut ne signale un conflit.
  */
 export const TERMES_GITLAB: TermesDeForge = {
   forge: 'GitLab',
@@ -59,7 +66,8 @@ export const TERMES_GITLAB: TermesDeForge = {
   aideDuJeton:
     'Utilisez un jeton d’accès projet de rôle Developer, ou à défaut un jeton personnel, avec le seul scope api.',
   droits: 'le scope api et le rôle Developer sur ce projet',
-  statutsDeRefus: [400, 409],
+  statutsDeRefus: [409],
+  statutsDeRegle: [400],
   statutsDeConflit: [],
   // L'API de commits ralentit au-delà de 20 Mo et refuse au-delà de 300 Mo.
   limiteDeFichier: { octets: 20 * 1024 * 1024, libelle: '20 Mo' },

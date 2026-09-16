@@ -168,11 +168,23 @@ test('les deux causes propres à la publication disent quoi relancer', () => {
   assert.match(gesteApresEchecDePublication(422, TERMES_GITHUB), /branche/);
 });
 
-test('sur GitLab, une branche existante et une merge request en double demandent le même geste', () => {
-  const refus = gesteApresEchecDePublication(400, TERMES_GITLAB);
-  assert.match(refus, /GitLab a refusé la branche ou la merge request/);
-  assert.equal(gesteApresEchecDePublication(409, TERMES_GITLAB), refus);
-  const statuts = [401, 403, 404, 400, 500, null];
+/**
+ * GitLab rend 400 pour une branche existante, mais aussi pour une règle de push
+ * du projet : message de commit, nom de branche. Seule sa réponse les
+ * distingue, et le geste appartient au mainteneur du projet.
+ */
+test('sur GitLab, un 400 transmet la réponse de GitLab à un mainteneur du projet', () => {
+  const reponse = "GitLab a répondu 400 : Commit message does not follow the pattern 'JIRA-\\d+'.";
+  const geste = gesteApresEchecDePublication(400, TERMES_GITLAB, reponse);
+  assert.ok(geste.startsWith(reponse), geste);
+  assert.match(geste, /mainteneur du projet/);
+  assert.doesNotMatch(geste, /Réessayez dans un moment/);
+  assert.match(gesteApresEchecDePublication(400, TERMES_GITLAB), /GitLab a refusé l’écriture sans donner de raison/);
+});
+
+test('sur GitLab, une merge request en double garde le geste du refus', () => {
+  assert.match(gesteApresEchecDePublication(409, TERMES_GITLAB), /GitLab a refusé la branche ou la merge request/);
+  const statuts = [401, 403, 404, 400, 409, 500, null];
   const gestes = statuts.map((statut) => gesteApresEchecDePublication(statut, TERMES_GITLAB));
   assert.equal(new Set(gestes).size, statuts.length, 'deux statuts partagent leur geste');
 });

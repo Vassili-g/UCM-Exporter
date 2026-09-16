@@ -164,7 +164,12 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
  * le vocabulaire de la connexion, parce que ce sont les mêmes faits vus au même
  * endroit. Les recopier ici en ferait un second domicile, promis à diverger.
  */
-export function gesteApresEchecDePublication(statut: number | null, termes: TermesDeForge): string {
+export function gesteApresEchecDePublication(statut: number | null, termes: TermesDeForge, reponse = ''): string {
+  if (statut !== null && termes.statutsDeRegle.includes(statut)) {
+    return reponse
+      ? `${reponse} Transmettez ce message à un mainteneur du ${termes.depot} : une règle de push du ${termes.depot} ou une branche du même nom produit ce refus.`
+      : `${termes.forge} a refusé l’écriture sans donner de raison. Un mainteneur du ${termes.depot} doit vérifier ses règles de push.`;
+  }
   if (statut !== null && termes.statutsDeConflit.includes(statut)) {
     return `Le ${termes.depot} a changé pendant la publication. Relancez l’analyse, puis republiez.`;
   }

@@ -942,7 +942,7 @@ const ETATS = [
         message: {
           type: 'verdict',
           code: 'a-publier',
-          texte: `Échec de la publication. ${gesteApresEchecDePublication(400, TERMES_GITLAB)}`,
+          texte: `Échec de la publication. ${gesteApresEchecDePublication(400, TERMES_GITLAB, "GitLab a répondu 400 : A branch called 'ucm-exporter/export-component-20260916-110000' already exists.")}`,
           action: 'Réessayer la publication',
           etat: 'error',
         },

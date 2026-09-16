@@ -691,7 +691,9 @@ derrière le port `Forge` ; `src/depot.ts` porte tout ce qui n'en dépend pas.
   le commit part du `commit_id` de sa lecture en action `update`, avec
   `last_commit_id` ; sinon il part de la tête de la base en action `create`.
   `force` n'est jamais posé. GitLab refuse en 400 une branche qui existe déjà et
-  ne crée alors rien : l'adaptateur ne vérifie pas son absence avant. La merge
+  ne crée alors rien : l'adaptateur ne vérifie pas son absence avant. Le même
+  statut sert aux règles de push du projet, si bien que le plugin affiche la
+  réponse de GitLab et adresse le geste à un mainteneur du projet. La merge
   request s'ouvre avec `remove_source_branch`, et son échec supprime la branche.
   Le projet, le chemin d'un fichier et le nom d'une branche forment chacun un
   seul segment d'URL, et le jeton part dans l'en-tête `PRIVATE-TOKEN`.

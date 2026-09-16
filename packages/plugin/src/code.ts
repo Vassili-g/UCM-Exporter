@@ -407,7 +407,7 @@ async function publier(genre: ArtifactKind): Promise<void> {
     postDownload(analyse.filename, analyse.content);
     postStatus('error', textes?.echec ?? 'Échec de la publication. Le fichier a été téléchargé sur votre poste.');
     const geste = termes
-      ? gesteApresEchecDePublication(statut, termes)
+      ? gesteApresEchecDePublication(statut, termes, message)
       : 'La demande n’a pas abouti. Réessayez ; si l’erreur persiste, relancez le plugin.';
     versUi({
       type: 'verdict',
