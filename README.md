@@ -56,7 +56,7 @@ la pull request sur GitHub, ou dans la merge request sur GitLab.
 Deux commandes suffisent.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.40 init                       # écrit les cinq fichiers manquants
+npx --yes @ucm-kit/cli@0.1.40 init                       # écrit ce qui manque, sans rien écraser
 npx --yes @ucm-kit/cli@0.1.40 check --report ci-report.md
 ```
 
@@ -192,7 +192,8 @@ limites sont décrites dans
 
 ## Construire le plugin depuis ce dépôt
 
-Ce chemin s'adresse au contributeur qui modifie le moteur.
+Ce chemin s'adresse au contributeur qui modifie le moteur. Il demande Node 22,
+la version de la CI, et l'application de bureau Figma.
 
 ```sh
 npm install

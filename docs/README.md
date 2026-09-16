@@ -10,7 +10,8 @@ quel ordre.
 1. [../packages/plugin/README.md](../packages/plugin/README.md) : où obtenir le
    plugin sur la Figma Community, et ce que chacune de ses deux commandes écrit.
 2. [POUR-LES-DESIGNERS.md](./POUR-LES-DESIGNERS.md) : ce que le plugin attend
-   d'un composant, comment exporter, comment relire la pull request, et le
+   d'un composant, comment exporter, comment relire la pull request ou la merge
+   request, et le
    vocabulaire du projet.
 3. [../README.md](../README.md) si vous voulez la vue d'ensemble du projet.
 
@@ -84,3 +85,7 @@ partie du produit n'en dépend.
 | [notes/PLAN-CONFORMITE-RENDU.md](./notes/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
 | [notes/PLAN-FINAL-MODES-ET-AIDES.md](./notes/PLAN-FINAL-MODES-ET-AIDES.md) | Le plan des modes de tokens et des aides à l'implémentation, sa revue et ses lots |
 | [notes/TODO-MODES-ET-AIDES.md](./notes/TODO-MODES-ET-AIDES.md) | La liste de tâches ordonnée qui exécute ce plan |
+| [notes/PLAN-DIFF-SEMANTIQUE.md](./notes/PLAN-DIFF-SEMANTIQUE.md) | Le plan d'un diff sémantique entre deux versions d'un contrat |
+| [notes/PLAN-GITLAB.md](./notes/PLAN-GITLAB.md) | Le plan de la publication sur GitLab, du plugin à la note de merge request |
+| [notes/PLAN-REDUCTION-TOKENS.md](./notes/PLAN-REDUCTION-TOKENS.md) | Les options qui réduisent le coût d'un composant reconstruit |
+| [notes/RAPPORT-COUT-GENERATION.md](./notes/RAPPORT-COUT-GENERATION.md) | L'analyse du coût mesuré d'une reconstruction, et les leviers à essayer |

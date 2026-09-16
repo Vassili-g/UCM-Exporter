@@ -2,7 +2,8 @@
 
 Cette note s'adresse au mainteneur. La première partie relit la mesure L5 à
 partir des transcripts des douze runs, et corrige ce que
-`RAPPORT-L5.md` en conclut. La seconde confronte les coûts
+`mesure-l5/RAPPORT-L5.md` en conclut. Ce rapport reste hors du dépôt, à côté
+des runs dont il vient. La seconde confronte les coûts
 mesurés aux modèles, architectures et réglages disponibles, et propose un ordre
 d'essai.
 

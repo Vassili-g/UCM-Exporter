@@ -53,14 +53,19 @@ npm view @ucm-kit/adapter-typescript version
 ### Vider le Playground
 
 Sur une branche dédiée d'`UCM-Playground`, retirez `src/components`,
-`src/tokens`, et quatre des cinq fichiers qu'`ucm init` écrit :
-`ucm.config.json`, `.gitattributes`, `.vscode/settings.json` et
-`.github/workflows/ucm.yml`. Gardez `.gitignore`, que l'étape 3 emploie pour
-montrer ce que la commande dit d'un fichier déjà présent.
+`src/tokens`, et tous les fichiers qu'`ucm init` écrit sauf `.gitignore` :
+`ucm.config.json`, `.gitattributes`, `.vscode/settings.json`,
+`.github/workflows/ucm.yml`, les deux relais
+`.agents/skills/ucm-implementer/SKILL.md` et
+`.claude/skills/ucm-implementer/SKILL.md`, et `.ucm/conventions.md`. Gardez
+`.gitignore`, que l'étape 3 emploie pour montrer ce que la commande dit d'un
+fichier déjà présent.
 
-Retirez ensuite de `src/App.tsx` les composants qu'il importe, et commentez la
-première ligne de `src/index.css` : Style Dictionary n'a plus de tokens à lire,
-donc `src/generated/tokens.css` ne sera plus écrit et l'import échouerait.
+Retirez ensuite ce qu'`ucm init` demande d'ajouter à la main : `@ucm-kit/cli`
+des `devDependencies` de `package.json`, `ucm tokens css --out
+src/generated/tokens.css &&` en tête des scripts `dev` et `build`, et la
+première ligne de `src/index.css`, qui importe cette feuille. Retirez enfin de
+`src/App.tsx` les composants qu'il importe.
 
 ---
 
@@ -103,7 +108,7 @@ commande et l'écran sans sélection.
 Dans un second terminal, à la racine d'`UCM-Playground` :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.20 init
+npx --yes @ucm-kit/cli@0.1.40 init
 ```
 
 Sans option, la commande écrit ses défauts : les contrats sous `components/`,
@@ -112,7 +117,7 @@ les tokens dans `tokens.json`. Le Playground range les siens sous
 que la recette emploie :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.20 init --components src/components --tokens src/tokens
+npx --yes @ucm-kit/cli@0.1.40 init --components src/components --tokens src/tokens
 ```
 
 | Option | Ce qu'elle reçoit |
@@ -149,21 +154,30 @@ Attendu, à peu de choses près :
 ✓ .gitattributes
 ✓ .vscode/settings.json
 ✓ .github/workflows/ucm.yml
+✓ .agents/skills/ucm-implementer/SKILL.md
+✓ .claude/skills/ucm-implementer/SKILL.md
+✓ .ucm/conventions.md
 · .gitignore existait déjà, laissé tel quel
 
-Installé avec @ucm-kit/cli 0.1.20.
+Installé avec @ucm-kit/cli 0.1.40.
 Placez vos contrats sous `src/components/`, vos tokens dans `src/tokens/tokens.json`, puis lancez `ucm check`.
+CI écrite pour GitHub, d'après l'hôte du remote origin, github.com. L'option `--forge github` ou `--forge gitlab` en choisit une autre.
 
-· `.gitignore` existait déjà : ajoutez-y `ci-report.md`. `ucm check --report` le
-  réécrit à chaque exécution ; commité, il montrerait le verdict d'un contrôle
-  passé, pas celui du code en cours.
+· `.gitignore` existait déjà : ajoutez-y `ci-report.md`. […]
+
+Reste à ajouter à la main :
+- package.json : ajoutez `"@ucm-kit/cli": "0.1.40"` aux devDependencies.
+- package.json : lancez `ucm tokens css --out src/generated/tokens.css` en tête des scripts dev et build, […]
+- l'entrée CSS de l'application : importez la feuille générée, `src/generated/tokens.css`.
 ```
 
-**Ce qu'il faut vérifier ici :** quatre fichiers écrits, un conservé, et la
-commande dit elle-même ce qu'elle n'a pas pu faire. C'est le premier critère du
-test : moins de quinze minutes, zéro ligne à écrire à la main.
+**Ce qu'il faut vérifier ici :** sept fichiers écrits, un conservé, la forge
+déduite du remote, et la commande dit elle-même ce qu'elle n'a pas pu faire.
+C'est le premier critère du test : moins de quinze minutes, et aucune ligne que
+la commande n'ait donnée.
 
-Faites ce qu'elle demande, en ajoutant `ci-report.md` au `.gitignore`. Ouvrez le
+Faites ce qu'elle demande. Les trois lignes de la fin se recopient telles
+qu'elles sont imprimées, puis `npm install`. Pour `.gitignore`, ouvrez le
 fichier et ajoutez ces quatre lignes à la fin :
 
 ```text
@@ -176,7 +190,7 @@ ci-report.md
 Puis regardez ce que le contrôle dit d'un dépôt encore vide :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.20 check
+npx --yes @ucm-kit/cli@0.1.40 check
 ```
 
 Attendu :
@@ -234,7 +248,7 @@ Attendu :
    tokens » ;
 3. après publication, il affiche un lien vers une pull request ;
 4. sur GitHub, la pull request contient un seul fichier, `tokens.json`, et son
-   en-tête annonce « Version du format de tokens : `1` » ;
+   en-tête annonce « Version du format de tokens : `2` » ;
 5. la CI tourne et publie un commentaire sur la pull request.
 
 **Lisez ce commentaire.** C'est le troisième critère du test : un rapport
@@ -287,17 +301,12 @@ Fusionnez la pull request.
 ## Étape 6 : reconstruire le composant
 
 Le contrat est arrivé, le code n'existe pas encore. Reconstruisez le composant à
-partir du seul contrat, sans regarder une implémentation antérieure. Le
-protocole est dans la skill `consommer-contrat` d'`UCM-Exporter`.
+partir du seul contrat, sans regarder une implémentation antérieure. L'agent
+charge le relais `ucm-implementer` qu'`ucm init` a écrit à l'étape 3 : il lance
+`ucm guide` sur le contrat, qui imprime la procédure, l'extraction du contrat
+et les conventions du dépôt.
 
-Une fois `src/components/Button/Button.tsx` écrit, remettez dans `src/index.css`
-la ligne que la préparation avait commentée :
-
-```css
-@import "./generated/tokens.css";
-```
-
-Puis :
+Une fois `src/components/Button/Button.tsx` écrit :
 
 ```sh
 npm run build
@@ -315,7 +324,7 @@ l'implémentation n'a pas été lue, jamais qu'elle est conforme.
 Pour lui donner à lire :
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.13
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.33
 ```
 
 Prenez la version que le registre sert, `npm view @ucm-kit/adapter-typescript
@@ -331,7 +340,7 @@ par une, en relisant ce que vous avez observé.
 
 | Critère | Où vous l'avez vu |
 |---|---|
-| 1. Une commande d'initialisation, moins de quinze minutes, zéro ligne à la main | Étape 3 |
+| 1. Une commande d'initialisation, moins de quinze minutes, aucune ligne que la commande n'ait donnée | Étape 3 |
 | 2. Un export depuis Figma ouvre une pull request | Étapes 4 et 5 |
 | 3. La CI publie un rapport lisible par un designer | Étape 4 |
 | 4. Un contrat d'une version non lue est refusé, avec un message qui dit qui corrige | à provoquer, voir ci-dessous |
@@ -426,11 +435,11 @@ Le workflow le fait déjà après chaque publication, et le refaire à la main c
 une minute. Dans un dossier temporaire, hors de tout dépôt :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.20 init
-npx --yes @ucm-kit/cli@0.1.20 check
+npx --yes @ucm-kit/cli@0.1.40 init
+npx --yes @ucm-kit/cli@0.1.40 check
 ```
 
-Attendu : `init` écrit ses cinq fichiers, et `check` sort en 0 en disant que ce
+Attendu : `init` écrit ses sept fichiers, et `check` sort en 0 en disant que ce
 repository n'a pas encore reçu d'export.
 
 Puis, dans `UCM-Playground`, alignez ce que le consommateur installe sur ce qui

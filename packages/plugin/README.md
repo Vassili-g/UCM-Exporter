@@ -32,10 +32,12 @@ Une seule implémentation projette les noms pour les deux commandes. Avec deux
 projections, un contrat citerait un token que `tokens.json` écrit sous un autre
 nom.
 
-**Lire `tokens.json` demande Style Dictionary 5.** Les couleurs et les
-dimensions y suivent le module DTCG `2025.10`, sous forme d'objets. Style
-Dictionary 4 écrit `[object Object]` à la place de chaque couleur et de chaque
-dimension, et le build réussit. [docs/FORMAT.md](../../docs/FORMAT.md#partie-2--export-tokens)
+**`ucm tokens css` écrit la feuille CSS de `tokens.json`**, modes compris ; le
+[README du CLI](../cli/README.md#the-token-stylesheet) la décrit. Un autre
+outil doit lire le module DTCG `2025.10`, où couleurs et dimensions sont des
+objets : Style Dictionary 5 le lit, et Style Dictionary 4 écrit `[object
+Object]` à la place de chaque couleur et de chaque dimension sans faire échouer
+le build. [docs/FORMAT.md](../../docs/FORMAT.md#partie-2--export-tokens)
 décrit la forme.
 
 ## Documenter les règles d'usage
@@ -90,7 +92,9 @@ optionnelle ; renseignée, elle crée une branche et une demande de fusion, pull
 request sur GitHub ou merge request sur GitLab, qui contient le seul fichier
 exporté. La forge se déduit de l'adresse saisie : `github.com` ou
 `gitlab.com`. L'adresse d'une page du dépôt, un dossier par exemple, est
-acceptée, et le formulaire affiche le dépôt qu'il en retient.
+acceptée, et le formulaire affiche le dépôt qu'il en retient. Une version
+servie par la Community qui refuse une adresse gitlab.com est antérieure à
+GitLab : le plugin construit depuis ce dépôt, lui, y publie.
 
 L'endroit où ce fichier est écrit appartient au repository visé, qui le déclare
 dans son `ucm.config.json`. Le plugin lit ce fichier au test de connexion, avant
