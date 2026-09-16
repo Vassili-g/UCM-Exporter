@@ -50,6 +50,13 @@ annule son analyse en cours, même si le nouveau composant porte le même nom.
 La seconde notification d'une sélection inchangée conserve le résultat.
 Une panne de configuration laisse téléchargeable le fichier déjà produit.
 
+L'analyse d'un composant lit aussi l'état des tokens du repository
+(`lireAvantEcriture`, option `avecTokens`) : sur la branche de base, dans une
+demande d'export ouverte, ou nulle part. Dans les deux derniers cas, le verdict
+garde l'action de publier et demande de faire fusionner les tokens d'abord, le
+contrôle du repository refusant la demande du composant jusque-là. La
+publication ne refait pas cette lecture.
+
 ## Hypothèses sur le design system
 
 Ce que le contrat suppose d'un design system (clé de base, allongement,

@@ -11,6 +11,7 @@ import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './t
 import { lireAdresseDuDepot, loadConfiguration, loadPublicSettings, saveSettings, supprimerPat } from './config';
 import type { ConfigurationDuDepot, SettingsInput } from './config';
 import { publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './depot';
+import type { EtatDesTokens } from './depot';
 import type { ArtifactKind, RepositoryLayout } from './depot';
 import { ErreurDeForge } from './forges/forge';
 import { forgeDe } from './forges';
@@ -221,7 +222,7 @@ function artefactDe(analyse: AnalyseGardee) {
 function postVerdict(
   analyse: AnalyseGardee,
   code: CodeVerdict,
-  precision: { chemin?: string | null; source?: string | null; ou?: string | null } = {},
+  precision: { chemin?: string | null; source?: string | null; ou?: string | null; tokens?: EtatDesTokens | null; demande?: string } = {},
 ): void {
   const verdict = verdictDePrevol({
     code,
@@ -229,7 +230,8 @@ function postVerdict(
     avertissements: analyse.avertissements,
     ...precision,
   });
-  versUi({ type: 'verdict', ...verdict, etat: analyse.avertissements > 0 ? 'warning' : '' });
+  const tokensNonFusionnes = precision.tokens === 'absents' || precision.tokens === 'en-attente';
+  versUi({ type: 'verdict', ...verdict, etat: analyse.avertissements > 0 || tokensNonFusionnes ? 'warning' : '' });
 }
 
 /**
@@ -304,7 +306,7 @@ async function analyser(
 
     versUi({ type: 'phase', texte: 'Lecture du repository…' });
     const forge = forgeDe(validation.config);
-    const lecture = await lireAvantEcriture(forge, artefactDe(analyse));
+    const lecture = await lireAvantEcriture(forge, artefactDe(analyse), { avecTokens: true });
     if (annulationDemandee) throw new ExportAnnule();
 
     if (lecture.refus) {
@@ -325,7 +327,12 @@ async function analyser(
     }
 
     analysesGardees.set(artifactKind, analyse);
-    postVerdict(analyse, 'a-publier', { chemin: lecture.path, source: lecture.layout.source });
+    postVerdict(analyse, 'a-publier', {
+      chemin: lecture.path,
+      source: lecture.layout.source,
+      tokens: lecture.tokens,
+      demande: forge.termes.demande,
+    });
   } catch (error) {
     if (error instanceof ExportAnnule || annulationDemandee) {
       analysesGardees.delete(artifactKind);

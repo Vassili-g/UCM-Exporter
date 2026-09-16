@@ -32,7 +32,7 @@ const verdict = (entree) => ({
   message: {
     type: 'verdict',
     ...verdictDePrevol(entree),
-    etat: entree.avertissements > 0 ? 'warning' : '',
+    etat: entree.avertissements > 0 || entree.tokens === 'absents' || entree.tokens === 'en-attente' ? 'warning' : '',
   },
 });
 
@@ -899,6 +899,29 @@ const ETATS = [
       { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       verdict({ code: 'a-publier', genre: 'component', chemin: 'guidelines/components/Button/Button.contract.json', source: SOURCE_CONFIG, avertissements: 0 }),
+    ],
+  },
+  {
+    id: 'gitlab-composant-avant-les-tokens',
+    forge: 'gitlab',
+    titre: 'Composant analysé avant la fusion des tokens',
+    quand: "L'analyse est finie, et le projet GitLab n'a de tokens ni sur la branche de base ni dans une merge request ouverte.",
+    regarder: 'Le verdict propose toujours la publication, et dit de faire fusionner les tokens d’abord, en nommant la merge request.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte', TOKENS_PRESENTS, TERMES_GITLAB),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      verdict({
+        code: 'a-publier',
+        genre: 'component',
+        chemin: 'guidelines/components/Button/Button.contract.json',
+        source: SOURCE_CONFIG,
+        avertissements: 0,
+        tokens: 'absents',
+        demande: TERMES_GITLAB.demande,
+      }),
     ],
   },
   {

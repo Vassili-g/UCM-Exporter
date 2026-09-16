@@ -2,6 +2,8 @@
  * Décrit l'analyse préalable sans publier. Elle évite d'ouvrir une pull request
  * avant la lecture des avertissements et n'offre l'action que si le contenu change.
  */
+import type { EtatDesTokens } from './depot';
+
 export type CodeVerdict = 'a-publier' | 'identique' | 'sans-depot';
 
 export type Verdict = {
@@ -25,7 +27,27 @@ export type EntreeDeVerdict = {
 
   ou?: string | null;
   avertissements: number;
+
+  /** L'état des tokens du repository, lu pour un composant à publier. */
+  tokens?: EtatDesTokens | null;
+
+  /** Le nom de la demande de fusion sur la forge visée. */
+  demande?: string;
 };
+
+/**
+ * Ce que le designer fait avant de publier un composant : le contrôle du
+ * repository refuse sa demande tant que les tokens ne sont pas fusionnés.
+ */
+function ordreDesTokens(tokens: EtatDesTokens | null | undefined, demande: string): string | null {
+  if (tokens === 'absents') {
+    return `Ce repository n’a pas encore de tokens : publiez-les et faites fusionner leur ${demande} avant celle de ce composant, que le contrôle refusera jusque-là.`;
+  }
+  if (tokens === 'en-attente') {
+    return `Les tokens attendent la fusion de leur ${demande} : faites-la fusionner avant celle de ce composant, que le contrôle refusera jusque-là.`;
+  }
+  return null;
+}
 
 const NOM = { component: 'le contrat', tokens: 'les tokens' } as const;
 
@@ -61,9 +83,10 @@ export function verdictDePrevol(entree: EntreeDeVerdict): Verdict {
 
   const ou = entree.chemin ?? 'le repository';
   const decide = entree.source ? ` (d’après ${entree.source})` : '';
+  const ordre = entree.genre === 'component' ? ordreDesTokens(entree.tokens, entree.demande ?? 'demande de fusion') : null;
   return {
     code: 'a-publier',
-    texte: joindre(points, `Prêt à publier dans ${ou}${decide}.`),
+    texte: [points, `Prêt à publier dans ${ou}${decide}.`, ordre].filter(Boolean).join(' '),
     action: PUBLIER[entree.genre],
   };
 }

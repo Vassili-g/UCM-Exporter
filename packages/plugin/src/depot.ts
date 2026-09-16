@@ -437,11 +437,31 @@ export type LectureDuDepot = {
   jumeau: { ou: string; url: string | null } | null;
   /** Le refus de collision d'identité, quand il y en a un. */
   refus: string | null;
+  /** Où en sont les tokens du repository, pour un composant à publier ; `null` sinon. */
+  tokens: EtatDesTokens | null;
 };
 
+/**
+ * `fusionnes` : sur la branche de base. `en-attente` : dans une demande d'export
+ * ouverte. `absents` : nulle part. Dans les deux derniers cas, le contrôle du
+ * repository refuse la demande d'un composant, parce que ses références de
+ * tokens ne se résolvent contre aucun fichier.
+ */
+export type EtatDesTokens = 'fusionnes' | 'en-attente' | 'absents';
+
+async function etatDesTokens(forge: Forge, layout: RepositoryLayout): Promise<EtatDesTokens> {
+  if (await forge.lireFichier(layout.tokens)) return 'fusionnes';
+  return (await exportsEnVol(forge, 'tokens', layout.tokens)).length > 0 ? 'en-attente' : 'absents';
+}
+
+/**
+ * `avecTokens` ajoute la lecture de l’état des tokens pour un composant. L’analyse
+ * la demande ; la publication, qui refait cette lecture, ne la demande pas.
+ */
 export async function lireAvantEcriture(
   forge: Forge,
   artifact: RepositoryArtifact,
+  { avecTokens = false }: { avecTokens?: boolean } = {},
 ): Promise<LectureDuDepot> {
   // Le repository est interrogé avant toute écriture : il est seul à savoir où
   // ses contrats vivent, et se tromper d'endroit est indétectable ensuite.
@@ -451,7 +471,7 @@ export async function lireAvantEcriture(
   const surLaBase = await forge.lireFichier(path);
 
   if (surLaBase && sameContent(surLaBase.contenu, artifact.content)) {
-    return { layout, path, surLaBase, jumeau: { ou: ouLaBase, url: null }, refus: null };
+    return { layout, path, surLaBase, jumeau: { ou: ouLaBase, url: null }, refus: null, tokens: null };
   }
 
   // Le contrôle ci-dessus ne regarde que la branche de base, et c'est là
@@ -465,7 +485,7 @@ export async function lireAvantEcriture(
   // sans lister aucune demande.
   const enVol = await exportsEnVol(forge, artifact.kind, path);
   const jumeau = enVol.find((occupant) => sameContent(occupant.contenu, artifact.content));
-  if (jumeau) return { layout, path, surLaBase, jumeau, refus: null };
+  if (jumeau) return { layout, path, surLaBase, jumeau, refus: null, tokens: null };
 
   // Ce n'est pas un refus, et son pendant n'existe pas : un contenu différent
   // pendant qu'une demande d'export est ouverte, c'est un réexport après
@@ -485,11 +505,12 @@ export async function lireAvantEcriture(
     const occupants = [...(surLaBase ? [{ contenu: surLaBase.contenu, ou: ouLaBase }] : []), ...enVol];
     for (const occupant of occupants) {
       const refus = refusDeCollision(occupant.contenu, artifact.content, path, occupant.ou);
-      if (refus) return { layout, path, surLaBase, jumeau: null, refus };
+      if (refus) return { layout, path, surLaBase, jumeau: null, refus, tokens: null };
     }
   }
 
-  return { layout, path, surLaBase, jumeau: null, refus: null };
+  const tokens = avecTokens && artifact.kind === 'component' ? await etatDesTokens(forge, layout) : null;
+  return { layout, path, surLaBase, jumeau: null, refus: null, tokens };
 }
 
 /**
