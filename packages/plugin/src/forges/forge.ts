@@ -5,6 +5,9 @@
  * Ce qui ne dépend d'aucune forge vit dans `depot.ts`. Un adaptateur ne décide
  * ni du chemin, ni de l'immobilité, ni de la collision : il transporte.
  */
+import type { TermesDeForge } from './termes';
+
+export type { TermesDeForge } from './termes';
 
 /**
  * Erreur réseau nettoyée : statut et message, jamais les en-têtes. Le statut
@@ -46,18 +49,6 @@ export type EcritureDemandee = {
   message: string;
   titre: string;
   corps: string;
-};
-
-/** Les mots et les limites propres à une forge. Tout texte qui nomme une forge les lit ici. */
-export type TermesDeForge = {
-  forge: string;
-  /** Le nom de la demande de fusion, au singulier et en minuscules. */
-  demande: string;
-  abreviation: string;
-  /** Au-delà, le fichier ne se publie pas et reste téléchargé sur le poste. */
-  limiteDeFichier: { octets: number; libelle: string };
-  /** Au-delà, la forge refuse le corps de la demande. */
-  limiteDeCorps: number;
 };
 
 export interface Forge {

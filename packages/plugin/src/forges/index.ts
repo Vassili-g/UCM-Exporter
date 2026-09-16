@@ -1,8 +1,11 @@
 /** Choisit l'adaptateur de la forge qu'une configuration validée désigne. */
-import type { GithubConfig } from '../config';
+import type { ConfigurationDuDepot } from '../config';
 import type { Forge } from './forge';
 import { forgeGithub } from './github';
+import { forgeGitlab } from './gitlab';
 
-export function forgeDe(config: GithubConfig): Forge {
-  return forgeGithub(config);
+const ADAPTATEURS = { github: forgeGithub, gitlab: forgeGitlab };
+
+export function forgeDe(config: ConfigurationDuDepot): Forge {
+  return ADAPTATEURS[config.forge](config);
 }

@@ -88,7 +88,8 @@ export type PluginMessage =
   /** L'état de l'action en cours, annoncé et repris dans le compte rendu. */
   | { type: 'status'; state: 'loading' | 'success' | 'error'; text: string }
   | { type: 'download'; filename: string; content: string }
-  | { type: 'pull-request'; url: string; path: string }
+  /** Le lien de la demande ouverte ou déjà en vol, et son libellé dans les mots de la forge. */
+  | { type: 'demande'; url: string; libelle: string }
   /**
    * La version de schéma que ce bundle produit. Elle arrive une fois, à
    * l'ouverture, et l'UI la pose en pied de page : Figma peut servir un bundle

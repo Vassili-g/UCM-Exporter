@@ -3,22 +3,16 @@
  * un fichier et ouvrir une pull request. Aucun jeton n'est logué ni renvoyé à
  * l'UI.
  */
-import type { GithubConfig } from '../config';
 import { decodeBase64, encodeBase64 } from '../base64';
 import { ErreurDeForge } from './forge';
-import type { DemandeOuverte, EcritureDemandee, FichierLu, Forge, TermesDeForge } from './forge';
+import type { DemandeOuverte, EcritureDemandee, FichierLu, Forge } from './forge';
+import { TERMES_GITHUB } from './termes';
+
+/** La configuration qu'un adaptateur lit : `projet` vaut `propriétaire/repository`. */
+export type ConfigurationDeForge = { projet: string; baseBranch: string; jeton: string };
 
 const GITHUB_API = 'https://api.github.com';
 const GITHUB_API_VERSION = '2022-11-28';
-
-export const TERMES_GITHUB: TermesDeForge = {
-  forge: 'GitHub',
-  demande: 'pull request',
-  abreviation: 'PR',
-  limiteDeFichier: { octets: 100 * 1024 * 1024, libelle: '100 Mo' },
-  // Au-delà, GitHub refuse la pull request en 422 et l'export échoue entier.
-  limiteDeCorps: 65_536,
-};
 
 type GithubFile = {
   type: string;
@@ -60,8 +54,8 @@ export function sansLienAutomatiqueGithub(texte: string): string {
 }
 
 /** Construit l'adaptateur GitHub d'une configuration validée. */
-export function forgeGithub(config: GithubConfig): Forge {
-  const repository = `${encodeURIComponent(config.owner)}/${encodeURIComponent(config.repo)}`;
+export function forgeGithub(config: ConfigurationDeForge): Forge {
+  const repository = config.projet.split('/').map(encodeURIComponent).join('/');
 
   /** Effectue un appel GitHub authentifié avec un message d'erreur exploitable. */
   async function githubRequest<T>(path: string, init: RequestInit = {}, allowNotFound = false): Promise<T | null> {
@@ -71,7 +65,7 @@ export function forgeGithub(config: GithubConfig): Forge {
         ...init,
         headers: {
           Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${config.githubPat}`,
+          Authorization: `Bearer ${config.jeton}`,
           'X-GitHub-Api-Version': GITHUB_API_VERSION,
           'Content-Type': 'application/json',
           ...(init.headers ?? {}),
@@ -183,7 +177,7 @@ export function forgeGithub(config: GithubConfig): Forge {
 
     // Hors du try : une PR bel et bien créée ne doit pas voir sa branche
     // supprimée sous elle, cela la refermerait aussitôt.
-    if (!pullRequest?.html_url) throw new ErreurDeForge('La PR a été créée sans URL exploitable.');
+    if (!pullRequest?.html_url) throw new ErreurDeForge('La pull request a été créée sans URL exploitable.');
     return pullRequest.html_url;
   }
 

@@ -351,49 +351,51 @@ Aucun changement de comportement.
 Un seul lot, parce que le renommage des clés de configuration et du message
 `pull-request` casse l'interface et la galerie dans le même commit.
 
-- [ ] `config.ts` : `lireAdresseDuDepot(url)` remplace `parseGithubRepository`
+- [x] `config.ts` : `lireAdresseDuDepot(url)` remplace `parseGithubRepository`
       et rend `{ forge, projet, cheminRetire }` ou `null`, selon D1 et D2.
-- [ ] Réécrire `tests/config.test.ts`, qui exige aujourd'hui le refus de
+- [x] Réécrire `tests/config.test.ts`, qui exige aujourd'hui le refus de
       gitlab.com. Cas : l'adresse du designer de l'équipe rend
       `{ forge: 'gitlab', projet: 'mon-groupe/design-system', cheminRetire: true }` ;
       sous-groupes ; suffixe `.git` ; lien Markdown ; GitHub
       `/tree/main/docs` ; hôte inconnu refusé ; `gitlab.com/groupe` refusé.
-- [ ] `GithubConfig` devient `ConfigurationDuDepot` (`forge`, `projet`,
+- [x] `GithubConfig` devient `ConfigurationDuDepot` (`forge`, `projet`,
       `baseBranch`, `jeton`) ; `SettingsInput.githubPat` devient `jeton`.
-- [ ] D5 entier : contrôle dans `validateSettings`, ordre d'écriture,
+- [x] D5 entier : contrôle dans `validateSettings`, ordre d'écriture,
       `supprimerPat`, `forgeDuJeton`, refus par préfixe.
-- [ ] Tests de D5, chacun vu rouge : un jeton GitHub enregistré avec une URL
+- [x] Tests de D5, chacun vu rouge : un jeton GitHub enregistré avec une URL
       GitLab ne produit aucun appel réseau à l'ouverture, au pré-vol ni à la
       publication ; un enregistrement interrompu après l'écriture de l'URL ne
       laisse pas un jeton de l'autre forge utilisable ; le texte indicatif du
       jeton enregistré ne s'affiche pas pour l'autre forge.
-- [ ] `connexion.ts` : `etatDeConnexion` et `gesteApresEchecDePublication`
+- [x] `connexion.ts` : `etatDeConnexion` et `gesteApresEchecDePublication`
       reçoivent `termes`. Cause `jeton-autre-forge`. Les statuts GitLab relevés
       en L0 prennent leur geste. Le 404 GitLab dit que le projet peut être privé
       et que le jeton doit y avoir accès. `DepotVise` porte `forge` et `projet`,
       et la ligne du dépôt devient « GitLab · mon-groupe/design-system · main ».
-- [ ] Inventaire de D4 dans `depot.ts`, `base64.ts`, `code.ts`, `connexion.ts`,
+- [x] Inventaire de D4 dans `depot.ts`, `base64.ts`, `code.ts`, `connexion.ts`,
       `config.ts`, `ui/` et `galerie/` : « pull request d'export ouverte », « La
       PR a été créée sans URL exploitable », « limite GitHub de 100 Mo »,
       « Impossible de joindre api.github.com », « Contenu Base64 GitHub
       invalide », « Publication sur GitHub… », « Échec GitHub », « Pull request
       créée », « aucune PR créée » et les autres occurrences du `grep`.
-- [ ] Le message `pull-request` devient `demande`, son lien est libellé par
+- [x] Le message `pull-request` devient `demande`, son lien est libellé par
       `termes`.
-- [ ] `ConfigurationPage.ts` : validation par `lireAdresseDuDepot` importée ; les
+- [x] `ConfigurationPage.ts` : validation par `lireAdresseDuDepot` importée ; les
       deux lignes de D2 sous le champ ; aide et libellé du jeton selon la forge
       de l'URL saisie, les deux forges nommées quand l'URL ne se lit pas ;
       sous-titre de la page sans nom de forge dans `ui/index.ts`.
-- [ ] `galerie/etats.cjs` : les états `pull-request` passent au message
+- [x] `galerie/etats.cjs` : les états `pull-request` passent au message
       `demande` ; les textes recopiés (« Publication sur GitHub… », « Échec
       GitHub », l'erreur d'URL) sont lus au sandbox ; ajout des états GitLab
       connecté, jeton refusé, accès refusé, projet introuvable, jeton d'une
       autre forge, dossier retiré de l'adresse, prêt à publier, merge request
       créée, échec de publication. Preuve : `tests/galerie.test.ts` passe.
-- [ ] Une loi refuse qu'un état GitLab contienne « GitHub » ou « pull request »,
+- [x] Une loi refuse qu'un état GitLab contienne « GitHub » ou « pull request »,
       et l'inverse. La voir rouge.
-- [ ] Protocole de relecture de `CONTRIBUTING.md#interface-du-plugin` sur chaque
+- [x] Protocole de relecture de `CONTRIBUTING.md#interface-du-plugin` sur chaque
       écran touché, captures en thème clair et sombre à la largeur minimale.
+      Fait sur les planches de la galerie ; les points (a) et (b), qui se
+      jugent dans Figma, reviennent au mainteneur en L6.
 
 ### L4. Le kit et la CLI
 

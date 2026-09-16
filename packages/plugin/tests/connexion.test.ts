@@ -10,16 +10,18 @@ import {
   gesteApresEchecDePublication,
 } from '../src/connexion';
 import type { CauseConnexion } from '../src/connexion';
+import { TERMES_GITHUB, TERMES_GITLAB } from '../src/forges/termes';
 
 const TOUTES: CauseConnexion[] = [
   'verification',
   'connecte',
   'non-configure',
+  'jeton-autre-forge',
   'jeton-refuse',
   'acces-refuse',
   'depot-introuvable',
   'depot-mal-decrit',
-  'github-indisponible',
+  'forge-indisponible',
   'reseau',
 ];
 
@@ -27,7 +29,7 @@ test('le statut HTTP décide de la cause, et l’absence de réponse aussi', () 
   assert.equal(causeDepuisStatut(401), 'jeton-refuse');
   assert.equal(causeDepuisStatut(403), 'acces-refuse');
   assert.equal(causeDepuisStatut(404), 'depot-introuvable');
-  assert.equal(causeDepuisStatut(500), 'github-indisponible');
+  assert.equal(causeDepuisStatut(500), 'forge-indisponible');
   assert.equal(causeDepuisStatut(null), 'reseau');
 });
 
@@ -65,8 +67,8 @@ test('le message du repository sur son propre fichier est repris tel quel', () =
   assert.match(geste ?? '', /ucm\.config\.json : components\./);
 });
 
-test('un statut inattendu de GitHub est cité dans le geste', () => {
-  const { geste } = etatDeConnexion('github-indisponible', { statut: 502 });
+test('un statut inattendu de la forge est cité dans le geste', () => {
+  const { geste } = etatDeConnexion('forge-indisponible', { statut: 502 });
   assert.match(geste ?? '', /502/);
 });
 
@@ -130,10 +132,14 @@ test('la ligne nomme le repository et sa branche', () => {
   // après le point de non-retour.
   const { ligne, repli } = etatDuDepot(
     { components: 'src/components', tokens: 'src/tokens/tokens.json', source: 'ucm.config.json' },
-    { owner: 'mon-org', repo: 'design-system-v3', baseBranch: 'main' },
+    { forge: 'GitHub', projet: 'mon-org/design-system-v3', baseBranch: 'main' },
   );
   assert.equal(repli, false);
-  assert.equal(ligne, 'mon-org/design-system-v3 · main');
+  assert.equal(ligne, 'GitHub · mon-org/design-system-v3 · main');
+  assert.equal(
+    etatDuDepot(null, { forge: 'GitLab', projet: 'mon-groupe/design-system', baseBranch: 'main' }).ligne,
+    'GitLab · mon-groupe/design-system · main',
+  );
 });
 
 /**
@@ -143,7 +149,7 @@ test('la ligne nomme le repository et sa branche', () => {
  */
 test('un échec de publication nomme un geste, et deux statuts n’en partagent pas un', () => {
   const statuts = [401, 403, 404, 409, 422, 500, null];
-  const gestes = statuts.map((statut) => gesteApresEchecDePublication(statut));
+  const gestes = statuts.map((statut) => gesteApresEchecDePublication(statut, TERMES_GITHUB));
   for (const [rang, geste] of gestes.entries()) {
     assert.notEqual(geste, '', `${statuts[rang]} n'a pas de geste`);
   }
@@ -152,12 +158,47 @@ test('un échec de publication nomme un geste, et deux statuts n’en partagent 
 
 test('les causes communes gardent le vocabulaire de la connexion', () => {
   // Les recopier ferait un second domicile, promis à diverger.
-  assert.equal(gesteApresEchecDePublication(401), etatDeConnexion('jeton-refuse').geste);
-  assert.equal(gesteApresEchecDePublication(403), etatDeConnexion('acces-refuse').geste);
-  assert.equal(gesteApresEchecDePublication(null), etatDeConnexion('reseau').geste);
+  assert.equal(gesteApresEchecDePublication(401, TERMES_GITHUB), etatDeConnexion('jeton-refuse', { termes: TERMES_GITHUB }).geste);
+  assert.equal(gesteApresEchecDePublication(403, TERMES_GITHUB), etatDeConnexion('acces-refuse', { termes: TERMES_GITHUB }).geste);
+  assert.equal(gesteApresEchecDePublication(null, TERMES_GITHUB), etatDeConnexion('reseau', { termes: TERMES_GITHUB }).geste);
 });
 
 test('les deux causes propres à la publication disent quoi relancer', () => {
-  assert.match(gesteApresEchecDePublication(409), /Relancez l’analyse/);
-  assert.match(gesteApresEchecDePublication(422), /branche/);
+  assert.match(gesteApresEchecDePublication(409, TERMES_GITHUB), /Relancez l’analyse/);
+  assert.match(gesteApresEchecDePublication(422, TERMES_GITHUB), /branche/);
+});
+
+test('sur GitLab, une branche existante et une merge request en double demandent le même geste', () => {
+  const refus = gesteApresEchecDePublication(400, TERMES_GITLAB);
+  assert.match(refus, /GitLab a refusé la branche ou la merge request/);
+  assert.equal(gesteApresEchecDePublication(409, TERMES_GITLAB), refus);
+  const statuts = [401, 403, 404, 400, 500, null];
+  const gestes = statuts.map((statut) => gesteApresEchecDePublication(statut, TERMES_GITLAB));
+  assert.equal(new Set(gestes).size, statuts.length, 'deux statuts partagent leur geste');
+});
+
+test('le 404 GitLab dit que le projet peut être privé et que le jeton doit y avoir accès', () => {
+  const { pastille, geste } = etatDeConnexion('depot-introuvable', { termes: TERMES_GITLAB });
+  assert.equal(pastille, 'projet introuvable');
+  assert.match(geste ?? '', /GitLab ne trouve aucun projet/);
+  assert.match(geste ?? '', /Si le projet est privé, donnez au jeton l’accès à ce projet./);
+});
+
+test('un jeton d’une autre forge nomme la forge visée et le jeton à coller', () => {
+  const { pastille, geste } = etatDeConnexion('jeton-autre-forge', { termes: TERMES_GITLAB });
+  assert.equal(pastille, 'jeton d’une autre forge');
+  assert.match(geste ?? '', /ne l’envoie pas à GitLab/);
+  assert.match(geste ?? '', /Collez un jeton d’accès GitLab/);
+});
+
+test('sur GitHub, les gestes de connexion gardent leurs phrases', () => {
+  assert.equal(
+    etatDeConnexion('jeton-refuse', { termes: TERMES_GITHUB }).geste,
+    'GitHub refuse ce Personal Access Token. Créez-en un nouveau sur GitHub, puis collez-le dans le champ ci-dessus.',
+  );
+  assert.equal(
+    etatDeConnexion('acces-refuse', { termes: TERMES_GITHUB }).geste,
+    'Le jeton est reconnu, mais il n’a pas les droits sur ce repository. '
+      + 'Donnez-lui Contents: Read and write et Pull requests: Read and write.',
+  );
 });

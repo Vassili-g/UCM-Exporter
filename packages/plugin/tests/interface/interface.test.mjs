@@ -68,3 +68,30 @@ test('un composant homonyme invalide le verdict, une seconde notification du mê
     await page.close();
   }
 });
+
+test('le jeton enregistré ne s’annonce que pour sa forge, et l’adresse d’un dossier dit ce qui est retenu', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await envoyer({
+      type: 'settings',
+      settings: { repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'main', forgeDuJeton: 'github' },
+    });
+    await page.locator('.icon-button').first().click();
+    const jeton = page.locator('input[name="jeton"]');
+    const adresse = page.locator('input[name="repoUrl"]');
+    assert.match(await jeton.getAttribute('placeholder'), /Token enregistré/);
+
+    await adresse.fill('https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines?ref_type=heads');
+    assert.equal(await jeton.getAttribute('placeholder'), '');
+    const champ = page.locator('label.field', { has: adresse });
+    assert.match(await champ.innerText(), /Projet GitLab : mon-groupe\/design-system/);
+    assert.match(await champ.innerText(), /désignait un dossier/);
+    assert.match(await page.locator('label.field', { has: jeton }).innerText(), /Jeton d’accès[\s\S]*scope api/);
+
+    await adresse.fill('https://github.com/mon-org/ds');
+    assert.match(await jeton.getAttribute('placeholder'), /Token enregistré/);
+    assert.doesNotMatch(await champ.innerText(), /désignait un dossier/);
+  } finally {
+    await page.close();
+  }
+});

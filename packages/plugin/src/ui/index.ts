@@ -55,7 +55,7 @@ const PAGES: Record<'export' | 'configuration', PageEnTete> = {
   },
   configuration: {
     title: 'Configuration',
-    subtitle: 'Le dépôt GitHub où les exports sont déposés, et le jeton qui les y autorise.',
+    subtitle: 'Le dépôt où les exports sont déposés, et le jeton qui les y autorise.',
   },
 };
 
@@ -202,8 +202,8 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
     );
   }
 
-  if (message.type === 'pull-request') {
-    active.compteRendu.ajouterLien(`Ouvrir la pull request de ${message.path}`, message.url);
+  if (message.type === 'demande') {
+    active.compteRendu.ajouterLien(message.libelle, message.url);
   }
 };
 

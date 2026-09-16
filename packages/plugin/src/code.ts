@@ -8,21 +8,21 @@ import { extractRules, hasUsableRules } from './contract/extractRules';
 import handleExportComponent from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './tokens/exportTokens';
-import { loadGithubConfig, loadPublicSettings, saveSettings, supprimerPat } from './config';
-import type { GithubConfig, SettingsInput } from './config';
+import { lireAdresseDuDepot, loadConfiguration, loadPublicSettings, saveSettings, supprimerPat } from './config';
+import type { ConfigurationDuDepot, SettingsInput } from './config';
 import { publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './depot';
 import type { ArtifactKind, RepositoryLayout } from './depot';
 import { ErreurDeForge } from './forges/forge';
 import { forgeDe } from './forges';
+import { TERMES } from './forges/termes';
+import type { TermesDeForge } from './forges/termes';
 import { verdictDePrevol } from './prevol';
 import type { CodeVerdict } from './prevol';
 import type { Annonce, PluginMessage, UiRequest } from './messages';
-import { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication } from './connexion';
+import { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication, textesDePublication } from './connexion';
 import { etatDeCible, detailDeCible } from './cible';
-import type { CauseConnexion } from './connexion';
+import type { CauseConnexion, PrecisionConnexion } from './connexion';
 
-/** Ce qu'`etatDeConnexion` accepte en plus de la cause. */
-type PrecisionConnexion = { statut?: number | null; detail?: string };
 import { TAILLE_PAR_DEFAUT, lireTaille, rangerTaille, tailleValide } from './fenetre';
 
 /*
@@ -68,8 +68,10 @@ function postConnection(cause: CauseConnexion, precision: PrecisionConnexion = {
  * Envoie les chemins effectifs et leur autorité : le `ucm.config.json` du
  * repository, ou les défauts du kit quand il n'en a pas.
  */
-function postDepot(layout: RepositoryLayout | null, config: GithubConfig | null): void {
-  const depot = config ? { owner: config.owner, repo: config.repo, baseBranch: config.baseBranch } : null;
+function postDepot(layout: RepositoryLayout | null, config: ConfigurationDuDepot | null): void {
+  const depot = config
+    ? { forge: TERMES[config.forge].forge, projet: config.projet, baseBranch: config.baseBranch }
+    : null;
   versUi({ type: 'depot', ...etatDuDepot(layout, depot) });
 }
 
@@ -89,21 +91,32 @@ function openExternal(url: string): void {
 }
 
 /**
- * Charge les champs publics puis teste automatiquement GitHub quand la config
- * est valide. Le PAT reste exclusivement dans ce sandbox.
+ * Charge les champs publics puis teste automatiquement la forge quand la config
+ * est valide. Le jeton reste exclusivement dans ce sandbox.
+ *
+ * Un jeton saisi pour l'autre forge rend la configuration invalide : aucun
+ * appel ne part, et la pastille nomme cette cause.
  */
 async function refreshConfiguration(): Promise<void> {
   const publicSettings = await loadPublicSettings();
   versUi({ type: 'settings', settings: publicSettings });
-  const validation = await loadGithubConfig();
+  const validation = await loadConfiguration();
   if (!validation.valid || !validation.config) {
-    postConnection('non-configure');
+    const adresse = lireAdresseDuDepot(publicSettings.repoUrl);
+    postConnection(
+      validation.jetonAutreForge ? 'jeton-autre-forge' : 'non-configure',
+      { termes: adresse ? TERMES[adresse.forge] : null },
+    );
     postDepot(null, null);
     return;
   }
   postConnection('verification');
   const diagnostic = await diagnostiquerConnexion(forgeDe(validation.config));
-  postConnection(diagnostic.cause, { statut: diagnostic.statut, detail: diagnostic.detail });
+  postConnection(diagnostic.cause, {
+    statut: diagnostic.statut,
+    detail: diagnostic.detail,
+    termes: TERMES[validation.config.forge],
+  });
   postDepot(diagnostic.layout, validation.config);
 }
 
@@ -220,7 +233,7 @@ function postVerdict(
 }
 
 /**
- * Premier temps : analyser. Rien n'est écrit ici, ni sur le poste ni sur GitHub.
+ * Premier temps : analyser. Rien n'est écrit ici, ni sur le poste ni sur la forge.
  * L'analyse refait tout le chemin de lecture (emplacement, immobilité, collision)
  * parce qu'un pré-vol qui annoncerait « rien à changer » sans avoir vu une collision
  * d'identifiant mentirait sur le seul point qui, lui, est un vrai refus.
@@ -281,7 +294,7 @@ async function analyser(
       if (annonce) versUi({ type: 'format-tokens', texte: annonce });
     }
 
-    const validation = await loadGithubConfig();
+    const validation = await loadConfiguration();
     if (annulationDemandee) throw new ExportAnnule();
     if (!validation.valid || !validation.config) {
       analysesGardees.set(artifactKind, analyse);
@@ -290,7 +303,8 @@ async function analyser(
     }
 
     versUi({ type: 'phase', texte: 'Lecture du repository…' });
-    const lecture = await lireAvantEcriture(forgeDe(validation.config), artefactDe(analyse));
+    const forge = forgeDe(validation.config);
+    const lecture = await lireAvantEcriture(forge, artefactDe(analyse));
     if (annulationDemandee) throw new ExportAnnule();
 
     if (lecture.refus) {
@@ -300,7 +314,11 @@ async function analyser(
     if (lecture.jumeau) {
       // Le message indique où le contenu identique se trouve déjà.
       if (lecture.jumeau.url) {
-        versUi({ type: 'pull-request', url: lecture.jumeau.url, path: lecture.path });
+        versUi({
+          type: 'demande',
+          url: lecture.jumeau.url,
+          libelle: textesDePublication(forge.termes).lienVers(lecture.path),
+        });
       }
       postVerdict(analyse, 'identique', { ou: lecture.jumeau.ou });
       return;
@@ -339,8 +357,9 @@ async function publier(genre: ArtifactKind): Promise<void> {
   }
   operationEnCours = genre;
   publicationEnCours = true;
+  let termes: TermesDeForge | null = null;
   try {
-    const validation = await loadGithubConfig();
+    const validation = await loadConfiguration();
     if (analysesGardees.get(genre) !== analyse) {
       postStatus('error', 'La sélection a changé. Analysez le composant sélectionné avant de publier.');
       return;
@@ -352,44 +371,52 @@ async function publier(genre: ArtifactKind): Promise<void> {
       figma.notify(`${analyse.succes}. Téléchargement terminé.`);
       return;
     }
-    postStatus('loading', 'Publication sur GitHub…');
-    const publication = await publishArtifact(forgeDe(validation.config), artefactDe(analyse));
+    const forge = forgeDe(validation.config);
+    termes = forge.termes;
+    const textes = textesDePublication(termes);
+    postStatus('loading', textes.enCours);
+    const publication = await publishArtifact(forge, artefactDe(analyse));
     if (publication.status === 'unchanged') {
       // Le dépôt a bougé entre l'analyse et la publication : c'est exactement le
       // cas que la revérification existe pour attraper.
       if (publication.pullRequestUrl) {
-        versUi({ type: 'pull-request', url: publication.pullRequestUrl, path: publication.path });
+        versUi({ type: 'demande', url: publication.pullRequestUrl, libelle: textes.lienVers(publication.path) });
       }
       postVerdict(analyse, 'identique', { ou: publication.ou });
       postStatus('success', `Aucun changement pour ${publication.path} (${publication.ou}).`);
-      figma.notify('Aucun changement : aucune PR créée.');
+      figma.notify(textes.aucunChangement);
       return;
     }
 
-    versUi({ type: 'pull-request', url: publication.pullRequestUrl, path: publication.path });
-    // Une PR d'export est faite pour être relue tout de suite par le designer
+    versUi({ type: 'demande', url: publication.pullRequestUrl, libelle: textes.lienVers(publication.path) });
+    // Une demande d'export est faite pour être relue tout de suite par le designer
     // qui vient de l'ouvrir : on l'amène dessus sans lui demander un clic.
     openExternal(publication.pullRequestUrl);
     postConnection('connecte');
-    postStatus('success', `${analyse.succes}. Pull request créée.`);
-    figma.notify(`${analyse.succes}. Pull request créée.`);
+    postStatus('success', textes.creee(analyse.succes));
+    figma.notify(textes.creee(analyse.succes));
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Erreur GitHub inconnue.';
+    const message = error instanceof Error ? error.message : 'Erreur inconnue.';
     const statut = error instanceof ErreurDeForge ? error.status : null;
-    // La réponse de GitHub est un fait de publication ; le verdict dit ce que le
+    // La réponse de la forge est un fait de publication ; le verdict dit ce que le
     // designer a entre les mains. L'analyse est gardée : la publication se
-    // réessaie sans repasser par Figma.
-    versUi({ type: 'log', text: `Échec GitHub : ${message}` });
+    // réessaie sans repasser par Figma. Sans termes, l'échec précède la lecture
+    // de la configuration, et aucune forge n'a été appelée.
+    const textes = termes ? textesDePublication(termes) : null;
+    versUi({ type: 'log', text: textes ? textes.echecDansLeJournal(message) : `Échec de la publication : ${message}` });
     postDownload(analyse.filename, analyse.content);
-    postStatus('error', 'Échec GitHub. Le fichier a été téléchargé sur votre poste.');
+    postStatus('error', textes?.echec ?? 'Échec de la publication. Le fichier a été téléchargé sur votre poste.');
+    const geste = termes
+      ? gesteApresEchecDePublication(statut, termes)
+      : 'La demande n’a pas abouti. Réessayez ; si l’erreur persiste, relancez le plugin.';
     versUi({
       type: 'verdict',
       code: 'a-publier',
-      texte: `Échec de la publication. ${gesteApresEchecDePublication(statut)}`,
+      texte: `Échec de la publication. ${geste}`,
       action: 'Réessayer la publication',
       etat: 'error',
     });
-    figma.notify('Échec GitHub : fichier téléchargé localement.', { error: true });
+    figma.notify(textes?.echecNotifie ?? 'Échec de la publication : fichier téléchargé localement.', { error: true });
   } finally {
     operationEnCours = null;
     publicationEnCours = false;
@@ -448,7 +475,7 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     // avant le cas qu'il existe pour couvrir. L'UI la pose en pied de page, où
     // elle reste.
     versUi({ type: 'schema-version', version: CONTRACT_VERSION });
-    // L'UI est prête : sélection, champs sauvegardés, test GitHub automatique,
+    // L'UI est prête : sélection, champs sauvegardés, test de la forge automatique,
     // et ce que l'export des tokens emporterait. Cette dernière lecture
     // est celle qui manquait pour qu'une commande de portée fichier annonce sa
     // taille avant de partir.

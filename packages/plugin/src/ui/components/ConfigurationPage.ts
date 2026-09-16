@@ -1,12 +1,15 @@
 /**
- * Page de configuration GitHub de l'UI UCM Contract Exporter.
+ * Page de configuration du dépôt de l'UI UCM Contract Exporter.
  *
  * Ce module possède le formulaire, sa validation locale et ses états visuels.
  * Le point d'entrée de l'UI ne conserve que le routage des messages Figma.
  */
 import { NOM_CONFIGURATION } from '@ucm-kit/core/format';
 
+import { lireAdresseDuDepot, validateSettings } from '../../config';
 import type { PublicSettings, SettingsInput } from '../../config';
+import { TERMES, avecMajuscule } from '../../forges/termes';
+import type { NomDeForge } from '../../forges/termes';
 import type { EtatConnexion, EtatDuDepot } from '../../connexion';
 import type { PluginMessage } from '../../messages';
 import { createButton } from './Button';
@@ -99,22 +102,13 @@ function createField(
   return { wrapper, input, error, label: labelNode };
 }
 
-/** Valide les erreurs simples avant d'envoyer le secret au sandbox Figma. */
-function localErrors(settings: SettingsInput, hasStoredPat: boolean): ErreursDeChamp {
-  const errors: ErreursDeChamp = {};
-  const markdownLink = settings.repoUrl.trim().match(/^\[[^\]]+\]\((https:\/\/github\.com\/[^)\s]+)\)$/i);
-  const repositoryUrl = markdownLink?.[1] ?? settings.repoUrl.trim();
-  if (!/^https:\/\/github\.com\/[^/?#\s]+\/[^/?#\s]+\/?(?:[?#].*)?$/i.test(repositoryUrl)) {
-    errors.repoUrl = 'Utilisez une URL https://github.com/owner/repo valide.';
-  }
-  if (!settings.baseBranch.trim()) errors.baseBranch = 'La branche de base est obligatoire.';
-  // `githubPat` est optionnel dans `SettingsInput`. Le formulaire en fournit
-  // toujours un, fût-il vide, mais un appel construit ailleurs peut l'omettre :
-  // sans l'accès optionnel, la validation lève au lieu de refuser la saisie.
-  if (!settings.githubPat?.trim() && !hasStoredPat) {
-    errors.githubPat = 'Le Personal Access Token est obligatoire.';
-  }
-  return errors;
+/**
+ * Valide la saisie avant d'envoyer le secret au sandbox Figma, par la même
+ * fonction que le sandbox. L'UI ne connaît du jeton enregistré que sa forge :
+ * un jeton factice la représente, et la validation n'en lit que la présence.
+ */
+function localErrors(settings: SettingsInput, forgeDuJeton: NomDeForge | null): ErreursDeChamp {
+  return validateSettings(settings, { jeton: forgeDuJeton ? 'enregistré' : '', forge: forgeDuJeton }).errors;
 }
 
 /**
@@ -124,7 +118,7 @@ function localErrors(settings: SettingsInput, hasStoredPat: boolean): ErreursDeC
 export function createConfigurationPage(
   onSave: (settings: SettingsInput) => void,
 ): PageConfigurationUi {
-  let hasStoredPat = false;
+  let forgeDuJeton: NomDeForge | null = null;
   let settingsDirty = false;
   /*
    * « Réglages enregistrés » ne se dit que si un enregistrement a eu lieu.
@@ -149,13 +143,28 @@ export function createConfigurationPage(
  * Les libellés sont en français. Ils étaient les quatre seuls mots d'anglais d'une
  * interface entièrement française, et le geste attendait l'arbitrage de langue que
  * la publication sur la Figma Community a rendu exigible : il est tranché, le
- * français reste. « Personal Access Token » garde son nom parce que c'est celui
- * que GitHub donne à la chose : le traduire enverrait chercher dans ses réglages
- * un intitulé qui n'y figure pas.
+ * français reste. Le nom du jeton suit la forge de l'URL saisie, parce que c'est
+ * celui que la forge donne à la chose : le traduire enverrait chercher dans ses
+ * réglages un intitulé qui n'y figure pas.
  */
-  const repoUrl = createField('repoUrl', 'URL du repository', {
+  const repoUrl = createField('repoUrl', 'URL du repository ou du projet', {
     placeholder: 'https://github.com/mon-org/design-system-v3',
-  }, markDirty);
+  }, () => {
+    markDirty();
+    suivreLaForge();
+  });
+
+  /*
+   * Ce que l'adresse désigne, lu par la fonction du sandbox. Une adresse de
+   * page est acceptée ; la seconde ligne dit que son dossier ne décide de rien.
+   */
+  const projetRetenu = document.createElement('span');
+  projetRetenu.className = 'field-help';
+  const dossierRetire = document.createElement('span');
+  dossierRetire.className = 'field-help';
+  dossierRetire.textContent = 'Cette adresse désignait un dossier : le ucm.config.json du dépôt décide où vont les exports.';
+  repoUrl.wrapper.insertBefore(projetRetenu, repoUrl.error);
+  repoUrl.wrapper.insertBefore(dossierRetire, repoUrl.error);
 
   /*
  * Où les exports vont atterrir, et qui l'a décidé. Le formulaire ne porte
@@ -168,11 +177,31 @@ export function createConfigurationPage(
   destination.append(destinationTitre, destinationDetail);
   destination.hidden = true;
   const baseBranch = createField('baseBranch', 'Branche de base', { placeholder: 'main' }, markDirty);
-  const githubPat = createField('githubPat', 'Personal Access Token', {
+  const jeton = createField('jeton', 'Jeton d’accès', {
     type: 'password',
-    help: 'Utilisez un fine-grained token limité à ce repo avec Contents: Read and write et Pull requests: Read and write.',
+    help: ' ',
   }, markDirty);
-  const fields = { repoUrl, baseBranch, githubPat };
+  const aideDuJeton = jeton.wrapper.querySelector('.field-help') as HTMLSpanElement;
+  const fields = { repoUrl, baseBranch, jeton };
+
+  /**
+   * Le libellé, l'aide et le texte du jeton enregistré suivent la forge de
+   * l'URL saisie. Sans URL lisible, l'aide nomme les deux forges.
+   */
+  function suivreLaForge() {
+    const adresse = lireAdresseDuDepot(repoUrl.input.value);
+    const termes = adresse ? TERMES[adresse.forge] : null;
+    projetRetenu.hidden = !adresse;
+    dossierRetire.hidden = !adresse?.cheminRetire;
+    if (adresse && termes) projetRetenu.textContent = `${avecMajuscule(termes.depot)} ${termes.forge} : ${adresse.projet}`;
+    jeton.label.textContent = termes ? avecMajuscule(termes.nomDuJeton) : 'Jeton d’accès';
+    aideDuJeton.textContent = termes?.aideDuJeton
+      ?? 'Un Personal Access Token GitHub ou un jeton d’accès GitLab, selon l’adresse saisie.';
+    jeton.input.placeholder = forgeDuJeton !== null && forgeDuJeton === adresse?.forge
+      ? 'Token enregistré. Laissez ce champ vide pour le conserver.'
+      : '';
+  }
+  suivreLaForge();
 
   /*
    * Retirer le jeton du poste. La confirmation est un second clic sur le
@@ -225,7 +254,7 @@ export function createConfigurationPage(
   const settingsPayload = () => ({
     repoUrl: repoUrl.input.value,
     baseBranch: baseBranch.input.value,
-    githubPat: githubPat.input.value,
+    jeton: jeton.input.value,
   });
 
   const saveButton = createButton({
@@ -233,7 +262,7 @@ export function createConfigurationPage(
     variant: 'primary',
     onClick: () => {
       const settings = settingsPayload();
-      const errors = localErrors(settings, hasStoredPat);
+      const errors = localErrors(settings, forgeDuJeton);
       renderErrors(errors);
       if (Object.keys(errors).length > 0) return;
       enregistrementEnCours = true;
@@ -248,7 +277,7 @@ export function createConfigurationPage(
     repoUrl.wrapper,
     baseBranch.wrapper,
     destination,
-    githubPat.wrapper,
+    jeton.wrapper,
     supprimerToken,
     saveButton,
   );
@@ -263,14 +292,12 @@ export function createConfigurationPage(
       if (settingsDirty) return;
       repoUrl.input.value = settings.repoUrl ?? '';
       baseBranch.input.value = settings.baseBranch ?? '';
-      hasStoredPat = Boolean(settings.hasPat);
+      forgeDuJeton = settings.forgeDuJeton ?? null;
       // Le bouton n'existe que s'il y a quelque chose à supprimer.
-      supprimerToken.hidden = !hasStoredPat;
+      supprimerToken.hidden = forgeDuJeton === null;
       reinitialiserSuppression();
-      githubPat.input.value = '';
-      githubPat.input.placeholder = hasStoredPat
-        ? 'Token enregistré. Laissez ce champ vide pour le conserver.'
-        : '';
+      jeton.input.value = '';
+      suivreLaForge();
     },
     acceptRemoteSettings(settings: PublicSettings) {
       settingsDirty = false;

@@ -87,13 +87,15 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
     tokens/mouvement.ts        une TIMING en durée, une EASING en courbe, et les easings sans courbe
     variables.ts               index commun, collisions et alias
     base64.ts                  encodage UTF-8/Base64 sans dépendance au sandbox
-    config.ts                  configuration GitHub locale
+    config.ts                  la configuration locale : adresse, forge et jeton
     fenetre.ts                 la taille de la fenêtre, ses bornes et son rangement
     connexion.ts               ce que vaut la connexion au dépôt, et le geste qu'elle demande
     prevol.ts                  ce que l'analyse conclut avant d'écrire, et l'action qu'elle propose
     cible.ts                   ce sur quoi l'export porte, et pourquoi il ne porte pas
     depot.ts                   où écrire, immobilité, collision et corps de la demande
-    forges/forge.ts            le port qu'une forge implémente, et ses termes
+    forges/forge.ts            le port qu'une forge implémente
+    forges/termes.ts           les mots et les limites de chaque forge
+    forges/index.ts            l'adaptateur que la configuration désigne
     forges/github.ts           branche, fichier et pull request par l'API GitHub
     forges/gitlab.ts           commit atomique et merge request par l'API GitLab
     messages.ts                les DEUX sens de la frontière sandbox ↔ UI

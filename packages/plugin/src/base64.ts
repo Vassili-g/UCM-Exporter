@@ -41,7 +41,7 @@ function binaryToBase64(value: string): string {
 function base64ToBinary(value: string): string {
   const source = value.replace(/\s/g, '');
   if (source.length % 4 !== 0 || !/^[A-Za-z0-9+/]*={0,2}$/.test(source)) {
-    throw new Error('Contenu Base64 GitHub invalide.');
+    throw new Error('Contenu Base64 invalide.');
   }
 
   let result = '';
@@ -50,7 +50,7 @@ function base64ToBinary(value: string): string {
     const second = BASE64_ALPHABET.indexOf(source[index + 1]);
     const third = source[index + 2] === '=' ? -1 : BASE64_ALPHABET.indexOf(source[index + 2]);
     const fourth = source[index + 3] === '=' ? -1 : BASE64_ALPHABET.indexOf(source[index + 3]);
-    if (first < 0 || second < 0) throw new Error('Contenu Base64 GitHub invalide.');
+    if (first < 0 || second < 0) throw new Error('Contenu Base64 invalide.');
 
     result += String.fromCharCode((first << 2) | (second >> 4));
     if (third >= 0) result += String.fromCharCode(((second & 15) << 4) | (third >> 2));
@@ -59,7 +59,7 @@ function base64ToBinary(value: string): string {
   return result;
 }
 
-/** Encode une chaîne Unicode en Base64 pour l'API Contents GitHub. */
+/** Encode une chaîne Unicode en Base64, comme l'API Contents de GitHub l'attend. */
 export function encodeBase64(value: string): string {
   return binaryToBase64(unicodeToBinary(value));
 }
@@ -69,7 +69,7 @@ export function utf8ByteLength(value: string): number {
   return unicodeToBinary(value).length;
 }
 
-/** Décode le contenu Base64 UTF-8 renvoyé par GitHub. */
+/** Décode le contenu Base64 UTF-8 qu'une forge renvoie. */
 export function decodeBase64(value: string): string {
   return binaryToUnicode(base64ToBinary(value));
 }

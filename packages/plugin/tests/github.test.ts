@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { CONFIGURATION_PAR_DEFAUT, CONTRACT_VERSION } from '@ucm-kit/core/format';
-import type { GithubConfig } from '../src/config';
 import { decodeBase64, encodeBase64, utf8ByteLength } from '../src/base64';
 import {
   artifactPath,
@@ -62,12 +61,10 @@ function fichier(contenu: string, sha = 'existing-sha'): Response {
   );
 }
 
-const config: GithubConfig = {
-  repoUrl: 'https://github.com/acme/design-system',
-  owner: 'acme',
-  repo: 'design-system',
+const config = {
+  projet: 'acme/design-system',
   baseBranch: 'main',
-  githubPat: 'secret-never-logged',
+  jeton: 'secret-never-logged',
 };
 const forge = forgeGithub(config);
 const pullRequestBody = (path: string, artifact: RepositoryArtifact) => corpsDeLaDemande(path, artifact, forge);
@@ -178,7 +175,7 @@ test('decodeBase64 accepte les retours à la ligne GitHub et refuse une Base64 i
   // Charge utile volontairement neutre : ce test porte sur le décodage Base64,
   // pas sur le nom du produit (un nom en dur ici casse à chaque renommage).
   assert.equal(decodeBase64('ZGVzaWdu\nIHN5c3RlbQ=='), 'design system');
-  assert.throws(() => decodeBase64('%%%='), /Base64 GitHub invalide/);
+  assert.throws(() => decodeBase64('%%%='), /Base64 invalide/);
 });
 
 test('exportBranchName inclut le type d’artefact et les secondes (anti-collision)', () => {

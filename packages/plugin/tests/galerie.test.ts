@@ -180,6 +180,29 @@ test('les trois issues d’un export ont chacune leur état', () => {
   );
 });
 
+/**
+ * Ce qu'un état affiche est ce que ses messages portent. Un état GitLab qui
+ * montrerait « pull request » ferait juger l'écran sur un texte que le plugin
+ * n'écrit pas pour GitLab, et l'inverse vaut pour GitHub. Un état sans dépôt
+ * configuré porte `forge: 'aucune'` : son texte nomme les deux demandes.
+ */
+test('un état GitLab n’affiche aucun mot de GitHub, et un autre état aucun mot de GitLab', () => {
+  const MOTS = {
+    github: /GitHub|[Pp]ull request|\bPR\b|Personal Access Token/,
+    gitlab: /GitLab|[Mm]erge request|\bMR\b/,
+  };
+  const fautes: string[] = [];
+  for (const etat of ETATS as Array<Etat & { forge?: 'gitlab' | 'aucune' }>) {
+    if (etat.forge === 'aucune') continue;
+    const affiche = JSON.stringify(etat.atteinte ?? []);
+    const interdit = etat.forge === 'gitlab' ? MOTS.github : MOTS.gitlab;
+    const trouve = interdit.exec(affiche);
+    if (trouve) fautes.push(`${etat.id} affiche « ${trouve[0]} »`);
+  }
+  assert.ok(ETATS.some((etat) => (etat as { forge?: string }).forge === 'gitlab'), 'aucun état GitLab');
+  assert.deepEqual(fautes, []);
+});
+
 test('le décalque sert toutes les variables de thème que styles.css demande', () => {
   const demandees = new Set(
     [...lire('src/ui/styles.css').matchAll(/var\(\s*(--figma-color-[\w-]+)/g)].map(

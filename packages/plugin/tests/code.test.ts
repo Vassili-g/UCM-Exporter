@@ -11,6 +11,7 @@ import * as connexion from '../src/connexion';
 import * as cible from '../src/cible';
 import * as fenetre from '../src/fenetre';
 import * as prevol from '../src/prevol';
+import * as termes from '../src/forges/termes';
 import type { PluginMessage, UiRequest } from '../src/messages';
 
 const source = ts.transpileModule(readFileSync(join(__dirname, '../src/code.ts'), 'utf8'), {
@@ -33,7 +34,7 @@ function ouvrir() {
   const evenements = new Map<string, () => void>();
   const temporisations = new Map<number, () => void>();
   const stockage = new Map<string, unknown>();
-  const appels = { analyses: 0, publications: 0 };
+  const appels = { analyses: 0, publications: 0, forges: 0, lectures: 0, connexions: 0 };
   const exporte = { traiter: async () => resultat('tokens.json') };
   const publication = { traiter: async () => ({ status: 'created', path: 'tokens.json', pullRequestUrl: 'https://github.com/o/r/pull/1' }) };
   const runtime = {
@@ -57,9 +58,11 @@ function ouvrir() {
     './contract/exportComponent': { default: handler },
     './tokens/exportTokens': { default: handler, annonceDuFormat: () => null, etatDesTokensDuFichier: async () => ({ presents: true, resume: '1 variable' }) },
     './forges/forge': { ErreurDeForge: Error },
-    './forges': { forgeDe: () => ({}) },
+    './forges/termes': termes,
+    './forges': { forgeDe: () => { appels.forges += 1; return { termes: termes.TERMES_GITHUB }; } },
     './depot': {
-      lireAvantEcriture: async () => ({ path: 'tokens.json', layout: { source: 'configuration' } }),
+      diagnostiquerConnexion: async () => { appels.connexions += 1; return { cause: 'connecte', layout: null }; },
+      lireAvantEcriture: async () => { appels.lectures += 1; return { path: 'tokens.json', layout: { source: 'configuration' } }; },
       publishArtifact: async () => { appels.publications += 1; return publication.traiter(); },
     },
   };
@@ -136,7 +139,7 @@ test('chaque commande publie son propre artefact après deux analyses', async ()
 test('une panne du stockage pendant la sauvegarde libère le formulaire', async () => {
   const h = ouvrir();
   h.runtime.clientStorage.setAsync = async () => { throw new Error('stockage indisponible'); };
-  await h.envoyer({ type: 'save-settings', settings: { repoUrl: 'https://github.com/o/r', baseBranch: 'main', githubPat: 'secret-test' } });
+  await h.envoyer({ type: 'save-settings', settings: { repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test' } });
   assert.ok(h.messages.some(({ type }) => type === 'settings-save-error'));
   assert.doesNotMatch(JSON.stringify(h.messages), /secret-test/);
 });
@@ -198,4 +201,23 @@ test('les messages sans type ou inconnus restent sans effet', async () => {
   const h = ouvrir();
   for (const message of [null, {}, { type: 'inconnu' }]) await h.envoyer(message as UiRequest);
   assert.equal(h.messages.length, 0);
+});
+
+/**
+ * Un jeton GitHub resté sur le poste après une bascule de l'URL vers GitLab ne
+ * doit partir nulle part. Le routeur ne construit donc aucune forge, ce qui
+ * est la seule porte vers le réseau.
+ */
+test('un jeton GitHub enregistré avec une URL GitLab n’atteint le réseau ni à l’ouverture, ni au pré-vol, ni à la publication', async () => {
+  const h = ouvrir();
+  h.stockage.set('repoUrl', 'https://gitlab.com/mon-groupe/design-system');
+  h.stockage.set('baseBranch', 'main');
+  h.stockage.set('github_pat', 'ghp_secret');
+  await h.envoyer({ type: 'ui-ready' });
+  await h.envoyer({ type: 'analyser-tokens' });
+  await h.envoyer({ type: 'publier', genre: 'tokens' });
+  assert.deepEqual({ forges: h.appels.forges, connexions: h.appels.connexions, lectures: h.appels.lectures, publications: h.appels.publications }, { forges: 0, connexions: 0, lectures: 0, publications: 0 });
+  const pastilles = h.messages.flatMap((message) => (message.type === 'connection' ? [message.pastille] : []));
+  assert.ok(pastilles.includes('jeton d’une autre forge'), pastilles.join(', '));
+  assert.ok(h.messages.some(({ type }) => type === 'download'));
 });

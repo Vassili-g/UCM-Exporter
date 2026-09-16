@@ -172,7 +172,7 @@ export function createCompteRendu(): CompteRenduUi {
     ajouterPublication(texte: string, niveau: LogLevel = 'info') {
       ajouterEntree(creerLignePublication(texte, niveau));
     },
-    /** Le lien de pull request est une sortie, pas une ligne de texte. */
+    /** Le lien de la demande est une sortie, pas une ligne de texte. */
     ajouterLien(libelle: string, url: string) {
       const lien = document.createElement('a');
       lien.className = 'entree entree-lien';

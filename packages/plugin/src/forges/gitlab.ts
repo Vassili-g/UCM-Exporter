@@ -8,21 +8,11 @@
  */
 import { decodeBase64 } from '../base64';
 import { ErreurDeForge } from './forge';
-import type { DemandeOuverte, EcritureDemandee, FichierLu, Forge, TermesDeForge } from './forge';
+import type { DemandeOuverte, EcritureDemandee, FichierLu, Forge } from './forge';
+import type { ConfigurationDeForge } from './github';
+import { TERMES_GITLAB } from './termes';
 
 const GITLAB_API = 'https://gitlab.com/api/v4';
-
-export const TERMES_GITLAB: TermesDeForge = {
-  forge: 'GitLab',
-  demande: 'merge request',
-  abreviation: 'MR',
-  // L'API de commits ralentit au-delà de 20 Mo et refuse au-delà de 300 Mo.
-  limiteDeFichier: { octets: 20 * 1024 * 1024, libelle: '20 Mo' },
-  limiteDeCorps: 1_048_576,
-};
-
-/** La configuration qu'un adaptateur GitLab lit. */
-export type ConfigurationGitlab = { projet: string; baseBranch: string; jeton: string };
 
 /**
  * Formes que GitLab relie d'elles-mêmes dans une description ou une note :
@@ -67,7 +57,7 @@ function detailDeReponse(corps: unknown): string {
 }
 
 /** Construit l'adaptateur GitLab d'une configuration validée. */
-export function forgeGitlab(config: ConfigurationGitlab): Forge {
+export function forgeGitlab(config: ConfigurationDeForge): Forge {
   const projet = `/projects/${encodeURIComponent(config.projet)}`;
 
   async function gitlabRequest<T>(path: string, init: RequestInit = {}, allowNotFound = false): Promise<T | null> {

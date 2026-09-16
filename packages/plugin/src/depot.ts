@@ -306,7 +306,7 @@ export async function diagnostiquerConnexion(forge: Forge): Promise<DiagnosticCo
   } catch (error) {
     // Une erreur qui n'est pas une réponse de la forge ne dit rien du réseau ni
     // des droits : la nommer autrement serait attribuer une cause non établie.
-    if (!(error instanceof ErreurDeForge)) return { cause: 'github-indisponible', layout: null };
+    if (!(error instanceof ErreurDeForge)) return { cause: 'forge-indisponible', layout: null };
     return { cause: causeDepuisStatut(error.status), statut: error.status, layout: null };
   }
 
@@ -325,7 +325,7 @@ export async function diagnostiquerConnexion(forge: Forge): Promise<DiagnosticCo
     if (error instanceof ErreurDeForge) {
       return { cause: causeDepuisStatut(error.status), statut: error.status, layout: null };
     }
-    return { cause: 'github-indisponible', layout: null };
+    return { cause: 'forge-indisponible', layout: null };
   }
 }
 

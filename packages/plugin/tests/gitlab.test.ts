@@ -313,7 +313,7 @@ test('le projet, un chemin de fichier et une branche forment chacun un seul segm
 
 test('un jeton ne part que dans l’en-tête de sa forge', async () => {
   const github = forgeGithub({
-    repoUrl: 'https://github.com/acme/ds', owner: 'acme', repo: 'ds', baseBranch: 'main', githubPat: 'ghp_x',
+    projet: 'acme/ds', baseBranch: 'main', jeton: 'ghp_x',
   });
   const { appels } = await avecFetch(
     () => json({}),

@@ -20,7 +20,9 @@ function chargerSandbox(nom) {
   return require(compile);
 }
 
-const { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication } = chargerSandbox('connexion');
+const { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication, textesDePublication } = chargerSandbox('connexion');
+const { TERMES_GITHUB, TERMES_GITLAB } = chargerSandbox('forges/termes');
+const { validateSettings } = chargerSandbox('config');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
 const { annonceDuFormat, etatDesTokens } = chargerSandbox('tokens/exportTokens');
 const { verdictDePrevol } = chargerSandbox('prevol');
@@ -103,12 +105,18 @@ const CHEMIN_TOKENS = 'src/tokens/tokens.json';
 const SOURCE_CONFIG = 'ucm.config.json';
 const BRANCHE_EN_VOL = 'ucm-exporter/export-component-2026-09-05-1412';
 const URL_PR = 'https://github.com/mon-org/design-system-v3/pull/128';
+const URL_MR = 'https://gitlab.com/mon-groupe/design-system/-/merge_requests/42';
+const PUBLICATION_GITHUB = textesDePublication(TERMES_GITHUB);
+const PUBLICATION_GITLAB = textesDePublication(TERMES_GITLAB);
 
 /** Les deux messages que le sandbox envoie à l'ouverture, avant toute action. */
-const ouverture = (cause, tokens = TOKENS_PRESENTS) => [
+const ouverture = (cause, tokens = TOKENS_PRESENTS, termes = TERMES_GITHUB) => [
   { message: { type: 'schema-version', version: VERSION_CONTRAT } },
-  { message: { type: 'connection', ...etatDeConnexion(cause) } },
-  cause === 'non-configure' ? DEPOT_ABSENT : DEPOT_DECRIT,
+  { message: { type: 'connection', ...etatDeConnexion(cause, cause === 'non-configure' ? {} : { termes }) } },
+  // Sans configuration valide, le sandbox n'envoie aucun dépôt visé.
+  ['non-configure', 'jeton-autre-forge'].includes(cause)
+    ? DEPOT_ABSENT
+    : (termes === TERMES_GITLAB ? DEPOT_GITLAB : DEPOT_DECRIT),
   tokens,
 ];
 
@@ -139,7 +147,8 @@ const SELECTION_MULTIPLE = cible([
 const SELECTION_PRETE = cible([{ type: 'COMPONENT_SET', name: COMPOSANT, variants: 12 }]);
 
 /** La destination, telle que le test de connexion l'a apprise. */
-const DEPOT_VISE = { owner: 'mon-org', repo: 'design-system-v3', baseBranch: 'main' };
+const DEPOT_VISE = { forge: TERMES_GITHUB.forge, projet: 'mon-org/design-system-v3', baseBranch: 'main' };
+const DEPOT_VISE_GITLAB = { forge: TERMES_GITLAB.forge, projet: 'mon-groupe/design-system', baseBranch: 'main' };
 const depot = (layout, vise = DEPOT_VISE) => ({
   message: { type: 'depot', ...etatDuDepot(layout, vise) },
 });
@@ -149,12 +158,19 @@ const DEPOT_DECRIT = depot({
   source: 'ucm.config.json',
 });
 const DEPOT_ABSENT = depot(null, null);
+const DEPOT_GITLAB = depot({ components: 'guidelines/components', tokens: 'guidelines/tokens.json', source: 'ucm.config.json' }, DEPOT_VISE_GITLAB);
 
 /** Les réglages publics rechargés par `refreshConfiguration`. */
 const REGLAGES = {
   repoUrl: 'https://github.com/mon-org/design-system-v3',
   baseBranch: 'main',
-  hasPat: true,
+  forgeDuJeton: 'github',
+};
+/** L'adresse que le designer de l'équipe a saisie : une page du projet, pas le projet. */
+const REGLAGES_GITLAB = {
+  repoUrl: 'https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines?ref_type=heads',
+  baseBranch: 'main',
+  forgeDuJeton: 'gitlab',
 };
 
 /**
@@ -443,7 +459,7 @@ const ETATS = [
       SELECTION_PRETE,
       { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      { message: { type: 'pull-request', url: URL_PR, path: CHEMIN } },
+      { message: { type: 'demande', url: URL_PR, libelle: PUBLICATION_GITHUB.lienVers(CHEMIN) } },
       verdict({
         code: 'identique',
         genre: 'component',
@@ -465,7 +481,7 @@ const ETATS = [
       SELECTION_PRETE,
       { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      { message: { type: 'phase', texte: 'Publication sur GitHub…' } },
+      { message: { type: 'phase', texte: PUBLICATION_GITHUB.enCours } },
     ],
   },
   {
@@ -484,7 +500,7 @@ const ETATS = [
       {
         message: {
           type: 'log',
-          text: 'Échec GitHub : GitHub a répondu 403 sur POST /repos/mon-org/design-system-v3/git/refs.',
+          text: PUBLICATION_GITHUB.echecDansLeJournal('GitHub a répondu 403 : Resource not accessible by personal access token.'),
         },
       },
       {
@@ -498,14 +514,14 @@ const ETATS = [
         message: {
           type: 'status',
           state: 'error',
-          text: 'Échec GitHub. Le fichier a été téléchargé sur votre poste.',
+          text: PUBLICATION_GITHUB.echec,
         },
       },
       {
         message: {
           type: 'verdict',
           code: 'a-publier',
-          texte: `Échec de la publication. ${gesteApresEchecDePublication(403)}`,
+          texte: `Échec de la publication. ${gesteApresEchecDePublication(403, TERMES_GITHUB)}`,
           action: 'Réessayer la publication',
           etat: 'error',
         },
@@ -514,9 +530,10 @@ const ETATS = [
   },
   {
     id: 'depot-non-configure',
+    forge: 'aucune',
     titre: 'Dépôt non configuré, au repos',
     quand:
-      "Premier lancement : aucun réglage GitHub. Rien d'autre que la pastille rouge ne l'annonce.",
+      "Premier lancement : aucun réglage de dépôt. Rien d'autre que la pastille rouge ne l'annonce.",
     regarder:
       "La ligne ambre « Aucun repository connecté » : le seul reste du bloc destination, et la seule chose qu'il disait que rien d'autre ne dit avant le clic.",
     existe: true,
@@ -527,8 +544,9 @@ const ETATS = [
   },
   {
     id: 'export-sans-depot',
+    forge: 'aucune',
     titre: 'Export sans dépôt : téléchargement local',
-    quand: 'Le même export, mené à son terme sans configuration GitHub valide.',
+    quand: 'Le même export, mené à son terme sans configuration de dépôt valide.',
     regarder:
       "Le repli a été ANNONCÉ avant le clic, en ambre sous le compte rendu, et le verdict le confirme ensuite au lieu de l'apprendre.",
     existe: true,
@@ -557,7 +575,7 @@ const ETATS = [
     id: 'connexion-en-cours',
     titre: 'Connexion en cours',
     quand:
-      "`refreshConfiguration` teste GitHub à l'ouverture. La pastille passe au gris le temps du GET.",
+      "`refreshConfiguration` teste la forge à l'ouverture. La pastille passe au gris le temps du GET.",
     regarder:
       "La pastille est au-dessus du titre du produit, et elle n'est pas cliquable alors qu'elle porte la seule information qui demande un geste.",
     existe: true,
@@ -603,8 +621,8 @@ const ETATS = [
       { clic: '.carte-tokens .btn-secondary' },
       { message: { type: 'status', state: 'loading', text: 'Lecture des variables…' } },
       FORMAT_TOKENS,
-      { message: { type: 'pull-request', url: URL_PR, path: CHEMIN_TOKENS } },
-      { message: { type: 'status', state: 'success', text: 'Tokens exportés. Pull request créée.' } },
+      { message: { type: 'demande', url: URL_PR, libelle: PUBLICATION_GITHUB.lienVers(CHEMIN_TOKENS) } },
+      { message: { type: 'status', state: 'success', text: PUBLICATION_GITHUB.creee('Tokens exportés') } },
     ],
   },
   {
@@ -657,6 +675,7 @@ const ETATS = [
   },
   {
     id: 'configuration-vierge',
+    forge: 'aucune',
     titre: 'Configuration, aucun réglage enregistré',
     quand: "Clic sur l'engrenage au premier lancement.",
     regarder:
@@ -667,7 +686,7 @@ const ETATS = [
       {
         message: {
           type: 'settings',
-          settings: { repoUrl: '', baseBranch: 'main', hasPat: false },
+          settings: { repoUrl: '', baseBranch: 'main', forgeDuJeton: null },
         },
       },
       { clic: '.icon-button' },
@@ -688,6 +707,7 @@ const ETATS = [
   },
   {
     id: 'configuration-erreurs-champs',
+    forge: 'aucune',
     titre: 'Configuration refusée par le sandbox',
     quand: '`saveSettings` renvoie ses erreurs de validation, champ par champ.',
     regarder:
@@ -698,18 +718,14 @@ const ETATS = [
       {
         message: {
           type: 'settings',
-          settings: { repoUrl: 'https://gitlab.com/mon-org/ds', baseBranch: '', hasPat: false },
+          settings: { repoUrl: 'https://gitlab.example.com/mon-org/ds', baseBranch: '', forgeDuJeton: null },
         },
       },
       { clic: '.icon-button' },
       {
         message: {
           type: 'settings-validation',
-          errors: {
-            repoUrl: 'Utilisez une URL https://github.com/owner/repo valide.',
-            baseBranch: 'La branche de base est obligatoire.',
-            githubPat: 'Le Personal Access Token est obligatoire.',
-          },
+          errors: validateSettings({ repoUrl: 'https://gitlab.example.com/mon-org/ds', baseBranch: '', jeton: '' }).errors,
         },
       },
       { message: { type: 'settings-save-error' } },
@@ -787,6 +803,150 @@ const ETATS = [
       ...ouverture('acces-refuse'),
       { message: { type: 'settings', settings: REGLAGES } },
       { clic: '.icon-button' },
+    ],
+  },
+  /*
+   * GitLab. Chaque état porte `forge: 'gitlab'` : une loi refuse qu'il affiche
+   * un mot de GitHub, et qu'un autre état affiche un mot de GitLab.
+   */
+  {
+    id: 'gitlab-connecte',
+    forge: 'gitlab',
+    titre: 'GitLab connecté, composant sélectionné',
+    quand: "Le projet GitLab répond et déclare ses chemins dans `ucm.config.json`.",
+    regarder: "L'écran de travail est celui de GitHub, mot pour mot : aucun texte n'y nomme la forge avant la publication.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte', TOKENS_PRESENTS, TERMES_GITLAB),
+      SELECTION_PRETE,
+    ],
+  },
+  {
+    id: 'gitlab-jeton-refuse',
+    forge: 'gitlab',
+    titre: 'GitLab refuse le jeton',
+    quand: "GitLab répond 401 au test d'ouverture : jeton révoqué, expiré ou mal copié.",
+    regarder: 'La pastille nomme la cause, et le geste nomme le jeton d’accès GitLab.',
+    existe: true,
+    atteinte: [
+      ...ouverture('jeton-refuse', TOKENS_PRESENTS, TERMES_GITLAB),
+      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
+      { clic: '.icon-button' },
+    ],
+  },
+  {
+    id: 'gitlab-acces-refuse',
+    forge: 'gitlab',
+    titre: 'Jeton GitLab sans les droits',
+    quand: 'GitLab répond 403 : le jeton est reconnu, mais son scope ou son rôle ne suffit pas.',
+    regarder: 'Le geste nomme le scope api et le rôle Developer, que le designer cherche tels quels dans GitLab.',
+    existe: true,
+    atteinte: [
+      ...ouverture('acces-refuse', TOKENS_PRESENTS, TERMES_GITLAB),
+      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
+      { clic: '.icon-button' },
+    ],
+  },
+  {
+    id: 'gitlab-projet-introuvable',
+    forge: 'gitlab',
+    titre: 'Projet GitLab introuvable',
+    quand: 'GitLab répond 404 : adresse fautive, ou projet privé auquel le jeton n’a pas accès.',
+    regarder: 'Le geste dit que le projet peut être privé, parce que GitLab rend 404 et non 403 dans ce cas.',
+    existe: true,
+    atteinte: [
+      ...ouverture('depot-introuvable', TOKENS_PRESENTS, TERMES_GITLAB),
+      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
+      { clic: '.icon-button' },
+    ],
+  },
+  {
+    id: 'gitlab-jeton-autre-forge',
+    forge: 'gitlab',
+    titre: 'URL GitLab, jeton GitHub enregistré',
+    quand: "Le designer a remplacé l'URL GitHub par une URL GitLab sans saisir de nouveau jeton. Aucun appel ne part.",
+    regarder: "Le champ du jeton n'annonce aucun jeton enregistré, et la pastille nomme la cause au lieu de dire « aucun repository ».",
+    existe: true,
+    atteinte: [
+      ...ouverture('jeton-autre-forge', TOKENS_PRESENTS, TERMES_GITLAB),
+      { message: { type: 'settings', settings: { ...REGLAGES_GITLAB, forgeDuJeton: 'github' } } },
+      { clic: '.icon-button' },
+    ],
+  },
+  {
+    id: 'gitlab-dossier-retire',
+    forge: 'gitlab',
+    titre: 'Adresse d’une page du projet GitLab',
+    quand: "Le designer colle l'adresse d'un dossier du projet, comme celle qu'a saisie l'équipe consommatrice.",
+    regarder: "Sous le champ, le projet retenu, puis la ligne qui dit que le dossier ne décide pas où vont les exports.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte', TOKENS_PRESENTS, TERMES_GITLAB),
+      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
+      { clic: '.icon-button' },
+    ],
+  },
+  {
+    id: 'gitlab-pret-a-publier',
+    forge: 'gitlab',
+    titre: 'Prêt à publier sur GitLab',
+    quand: "L'analyse est finie, le projet GitLab est lu, et le contenu diffère de la branche de base.",
+    regarder: 'Le verdict nomme le chemin et le fichier qui l’a décidé, sans nommer la forge.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte', TOKENS_PRESENTS, TERMES_GITLAB),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      verdict({ code: 'a-publier', genre: 'component', chemin: 'guidelines/components/Button/Button.contract.json', source: SOURCE_CONFIG, avertissements: 0 }),
+    ],
+  },
+  {
+    id: 'gitlab-merge-request-creee',
+    forge: 'gitlab',
+    titre: 'Merge request créée',
+    quand: 'La publication a abouti : commit sur une branche d’export, puis merge request.',
+    regarder: 'Le lien et le statut nomment la merge request.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte', TOKENS_PRESENTS, TERMES_GITLAB),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      { message: { type: 'phase', texte: PUBLICATION_GITLAB.enCours } },
+      { message: { type: 'demande', url: URL_MR, libelle: PUBLICATION_GITLAB.lienVers('guidelines/components/Button/Button.contract.json') } },
+      { message: { type: 'status', state: 'success', text: PUBLICATION_GITLAB.creee('Contrat généré') } },
+    ],
+  },
+  {
+    id: 'gitlab-echec-publication',
+    forge: 'gitlab',
+    titre: 'Échec de la publication sur GitLab',
+    quand: "GitLab refuse le commit en 400 : une branche d'export du même nom existe déjà.",
+    regarder: 'Le verdict donne le geste de GitLab, et le fichier est téléchargé.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte', TOKENS_PRESENTS, TERMES_GITLAB),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      {
+        message: {
+          type: 'log',
+          text: PUBLICATION_GITLAB.echecDansLeJournal("GitLab a répondu 400 : A branch called 'ucm-exporter/export-component-20260916-110000' already exists."),
+        },
+      },
+      { message: { type: 'download', filename: 'Button.contract.json', content: '{"contractVersion":"13.0"}' } },
+      { message: { type: 'status', state: 'error', text: PUBLICATION_GITLAB.echec } },
+      {
+        message: {
+          type: 'verdict',
+          code: 'a-publier',
+          texte: `Échec de la publication. ${gesteApresEchecDePublication(400, TERMES_GITLAB)}`,
+          action: 'Réessayer la publication',
+          etat: 'error',
+        },
+      },
     ],
   },
 ];
