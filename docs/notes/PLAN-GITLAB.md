@@ -58,7 +58,7 @@ d'accès projet de rôle Owner et de scope `api` :
 | `@nom`, `#1`, `!1`, `~label`, `%jalon`, `projet#1`, `projet!1`, un SHA de commit existant et `:emoji:` deviennent des liens ou des images ; `$1` et `&1` restent du texte sans snippet ni epic ; toute forme en `code` reste inerte | `POST /markdown` avec `project`, sur des cibles créées pour la mesure |
 | Les notes paginent par `x-next-page` | En-têtes d'une liste à `per_page=2` |
 | Une merge request ouverte par l'API depuis une branche non protégée déclenche le pipeline `merge_request_event` sur les runners partagés ; une variable masquée non protégée y est lisible ; `CI_MERGE_REQUEST_IID`, `CI_MERGE_REQUEST_DIFF_BASE_SHA` et `CI_API_V4_URL` sont définis | Pipeline 2853752446, job réussi en 30 s |
-| `npx --yes @ucm-kit/cli@0.1.37` s'exécute en 2 s dans `after_script` | Journal du même job |
+| `npx --yes` sur la CLI publiée, version 0.1.37, s'exécute en 2 s dans `after_script` | Journal du même job |
 | La branche par défaut d'un projet neuf est protégée | `GET /repository/branches/main` |
 
 Reste à mesurer, par le mainteneur : les deux appels depuis le sandbox d'un
