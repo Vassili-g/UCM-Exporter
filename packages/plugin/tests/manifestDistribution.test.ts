@@ -30,3 +30,15 @@ test('le manifest ne déclare aucun droit réservé à un plugin privé', () => 
     );
   }
 });
+
+test('le plugin ne joint que les API des deux forges', () => {
+  const manifest = JSON.parse(readFileSync(join(racine, 'manifest.json'), 'utf8')) as {
+    networkAccess?: { allowedDomains?: unknown };
+  };
+  // Un jeton part vers chaque domaine déclaré : un domaine de plus élargit ce
+  // que le plugin peut atteindre avec lui, et la revue Community le relit.
+  assert.deepEqual(
+    manifest.networkAccess?.allowedDomains,
+    ['https://api.github.com', 'https://gitlab.com'],
+  );
+});

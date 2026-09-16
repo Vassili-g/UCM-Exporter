@@ -95,6 +95,7 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
     depot.ts                   où écrire, immobilité, collision et corps de la demande
     forges/forge.ts            le port qu'une forge implémente, et ses termes
     forges/github.ts           branche, fichier et pull request par l'API GitHub
+    forges/gitlab.ts           commit atomique et merge request par l'API GitLab
     messages.ts                les DEUX sens de la frontière sandbox ↔ UI
     ui/                        interface du plugin
   galerie/                   les états de l'UI, atteignables hors de Figma
@@ -837,7 +838,8 @@ qui est le comportement voulu.
 
 - L’agent ne peut pas exécuter l’export dans Figma. Une validation runtime
   nécessite un réexport utilisateur.
-- Le réseau du plugin est limité à `https://api.github.com`.
+- Le réseau du plugin est limité à `https://api.github.com` et
+  `https://gitlab.com`.
 - La configuration GitHub est facultative ; toute erreur conserve un
   téléchargement local.
 - Le plugin ouvre une pull request par artefact et ne fusionne jamais

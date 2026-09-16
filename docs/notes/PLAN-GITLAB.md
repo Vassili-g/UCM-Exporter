@@ -312,36 +312,36 @@ Aucun changement de comportement.
 
 ### L2. Le client GitLab
 
-- [ ] Créer `src/forges/gitlab.ts`. Base `https://gitlab.com/api/v4`, en-tête
+- [x] Créer `src/forges/gitlab.ts`. Base `https://gitlab.com/api/v4`, en-tête
       `PRIVATE-TOKEN`. Le projet, le chemin d'un fichier et le nom d'une branche
       s'encodent chacun par `encodeURIComponent` sur la valeur entière ;
       `encodePath` n'est jamais employé ici.
-- [ ] `testerDepot` : `GET /projects/:id`. 401, 403 et 404 donnent les causes
+- [x] `testerDepot` : `GET /projects/:id`. 401, 403 et 404 donnent les causes
       existantes ; une erreur réseau donne `reseau`.
-- [ ] `lireFichier` : `GET /projects/:id/repository/files/:path?ref=`, contenu
+- [x] `lireFichier` : `GET /projects/:id/repository/files/:path?ref=`, contenu
       décodé par `decodeBase64`, version égale à `{ commitId, lastCommitId }`.
       Un 404 rend `null`.
-- [ ] `demandesOuvertes` : `GET /projects/:id/merge_requests?state=opened&target_branch=<base>&per_page=100`,
+- [x] `demandesOuvertes` : `GET /projects/:id/merge_requests?state=opened&target_branch=<base>&per_page=100`,
       qui rend `source_branch` et `web_url`. Une merge request dont
       `source_project_id` diffère du projet est écartée.
-- [ ] `publier` : commit atomique selon D6, puis `POST /merge_requests` avec
+- [x] `publier` : commit atomique selon D6, puis `POST /merge_requests` avec
       `remove_source_branch: true`. Un échec de la merge request appelle
       `DELETE /repository/branches/:branche`, dont l'échec est ignoré.
-- [ ] `sansLienAutomatique` selon D7 et la mesure de L0.
-- [ ] `termes` : limite de taille de 20 Mo, au-delà de laquelle le
+- [x] `sansLienAutomatique` selon D7 et la mesure de L0.
+- [x] `termes` : limite de taille de 20 Mo, au-delà de laquelle le
       téléchargement local est proposé avec la phrase qui nomme cette limite.
-- [ ] `tests/gitlab.test.ts` rejoue chaque scénario de `github.test.ts` qui
+- [x] `tests/gitlab.test.ts` rejoue chaque scénario de `github.test.ts` qui
       touche au transport : fichier inchangé, `exportedAt` ignoré, merge request
       identique en vol, collision sur la base, collision en vol, contrat sans
       identité, tokens hors collision, réexport corrigé accepté, échec de la
       merge request qui supprime la branche, nouveau fichier en `create`,
       fichier existant en `update` avec `last_commit_id` et `start_sha`.
-- [ ] Tests d'encodage : `groupe/sous-groupe/projet`,
+- [x] Tests d'encodage : `groupe/sous-groupe/projet`,
       `components/Button/Button.contract.json` et
       `ucm-exporter/export-component-…` forment chacun un seul segment d'URL.
-- [ ] Test : aucun appel GitLab ne porte `Authorization`, aucun appel GitHub ne
+- [x] Test : aucun appel GitLab ne porte `Authorization`, aucun appel GitHub ne
       porte `PRIVATE-TOKEN`.
-- [ ] Dans le même commit : `manifest.json` déclare
+- [x] Dans le même commit : `manifest.json` déclare
       `["https://api.github.com", "https://gitlab.com"]`, et
       `tests/manifestDistribution.test.ts` exige exactement ces deux domaines.
       Le voir rouge avec un troisième domaine.

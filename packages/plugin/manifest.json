@@ -7,6 +7,6 @@
   "editorType": ["figma"],
   "documentAccess": "dynamic-page",
   "networkAccess": {
-    "allowedDomains": ["https://api.github.com"]
+    "allowedDomains": ["https://api.github.com", "https://gitlab.com"]
   }
 }

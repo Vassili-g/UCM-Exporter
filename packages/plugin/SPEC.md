@@ -19,7 +19,8 @@ lecture de Figma.
 ## Contexte technique
 
 - Plugin Figma (Plugin API) : pas d'API Variables REST ni de Code Connect.
-  `api.github.com` est autorisé pour le dépôt optionnel des artefacts via PR ;
+  `api.github.com` et `gitlab.com` sont autorisés pour le dépôt optionnel des
+  artefacts ;
 - Tourne dans l'éditeur, produit des fichiers en téléchargement sans config
   valide, ou les dépose sur une branche GitHub dédiée avec une config valide.
 - Deux commandes indépendantes qui partagent le même code Figma :
@@ -611,7 +612,8 @@ travailler.
 L'en-tête expose en permanence l'état `connecté` / `non connecté` et un accès à
 la page de configuration via une icône `gear` Font Awesome Free embarquée. Le
 test `GET /repos/{owner}/{repo}` est automatique à l'ouverture et après chaque
-sauvegarde. Le manifest n'autorise que `https://api.github.com` pour GitHub.
+sauvegarde. Le manifest n'autorise que `https://api.github.com` et
+`https://gitlab.com`.
 
 Chaque commande conserve son périmètre :
 
