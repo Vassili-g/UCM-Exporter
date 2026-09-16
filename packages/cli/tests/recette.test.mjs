@@ -8,6 +8,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 import { VERSION_CONTRAT_MAXIMALE, VERSION_CONTRAT_MINIMALE } from "@ucm-kit/core/lecteurs";
+import { parse as lireYaml } from "yaml";
 
 /** Le fichier que `bin` désigne : le point d'entrée réel, pas un module voisin. */
 const BINAIRE = join(dirname(fileURLToPath(import.meta.url)), "..", "src", "ucm.mjs");
@@ -431,4 +432,49 @@ test("montée de version — le repository épingle son outil et ne redéclare j
       "la fenêtre de lecture appartient au paquet installé, jamais au repository",
     );
   });
+});
+
+/** Un repository git temporaire, avec ou sans remote `origin`. */
+function repoGit(remote = null) {
+  const racine = mkdtempSync(join(tmpdir(), "ucm-recette-gitlab-"));
+  const git = (...arguments_) => spawnSync("git", arguments_, { cwd: racine, encoding: "utf8" });
+  git("init", "-q");
+  if (remote) git("remote", "add", "origin", remote);
+  return racine;
+}
+
+test("GitLab — un repository au remote gitlab.com et au .gitlab-ci.yml existant reçoit le job et le rappel", () => {
+  const racine = repoGit("git@gitlab.com:mon-groupe/design-system.git");
+  try {
+    const existant = "stages:\n  - build\n  - test\n\nbuild:\n  stage: build\n  script:\n    - make\n";
+    writeFileSync(join(racine, ".gitlab-ci.yml"), existant, "utf8");
+    const installation = ucm(racine, ["init", "--sans-agents"]);
+    assert.equal(installation.code, 0, installation.terminal);
+    assert.match(installation.terminal, /CI écrite pour GitLab, d'après l'hôte du remote origin, gitlab\.com/);
+    assert.match(installation.terminal, /`\.gitlab-ci\.yml` existait déjà : ajoutez `- local: \.gitlab\/ucm\.gitlab-ci\.yml`/);
+    assert.equal(readFileSync(join(racine, ".gitlab-ci.yml"), "utf8"), existant);
+    assert.equal(existsSync(join(racine, ".github")), false);
+    assert.deepEqual(Object.keys(lireYaml(readFileSync(join(racine, ".gitlab", "ucm.gitlab-ci.yml"), "utf8"))), ["ucm"]);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+test("GitLab — un repository vide avec --forge gitlab reçoit les deux fichiers et aucun workflow GitHub", () => {
+  const racine = repoGit();
+  try {
+    const installation = ucm(racine, ["init", "--forge", "gitlab", "--sans-agents"]);
+    assert.equal(installation.code, 0, installation.terminal);
+    assert.match(installation.terminal, /d'après l'option --forge/);
+    assert.equal(existsSync(join(racine, ".github")), false);
+    const racineCi = lireYaml(readFileSync(join(racine, ".gitlab-ci.yml"), "utf8"));
+    assert.deepEqual(racineCi, { include: [{ local: ".gitlab/ucm.gitlab-ci.yml" }] });
+    const job = lireYaml(readFileSync(join(racine, ".gitlab", "ucm.gitlab-ci.yml"), "utf8"));
+    for (const globale of ["workflow", "image", "variables", "stages", "default", "include"]) {
+      assert.equal(globale in job, false, `clé globale ${globale}`);
+    }
+    assert.match(job.ucm.script.join("\n"), /npx --yes @ucm-kit\/cli@\d+\.\d+\.\d+ check --report ci-report\.md/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
 });

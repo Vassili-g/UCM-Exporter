@@ -48,7 +48,7 @@ export const ACRONYMES = [
   'LINE', 'LTR', 'MAX', 'MB', 'MCP', 'MD', 'MIN', 'MIT', 'MVP', 'NODE', 'NONE',
   'NPM', 'OIDC', 'OK', 'PAT', 'PATH', 'PDF', 'POLYGON', 'POST', 'PR', 'PUT',
   'RECTANGLE',
-  'REST', 'RTL', 'SET', 'SHA', 'SLOT', 'SOLID', 'SPEC', 'STAR', 'STRETCH',
+  'REST', 'RTL', 'SET', 'SHA', 'SLOT', 'SSH', 'SOLID', 'SPEC', 'STAR', 'STRETCH',
   'STRING', 'SVG', 'TAP', 'TAR', 'TEXT', 'TIMING', 'TS', 'UCM', 'UI', 'URI',
   'URL', 'USD',
   'UTF', 'VECTOR', 'WRAP', 'YAML', 'ZIP', 'ELLIPSE', 'AUTO',

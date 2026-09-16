@@ -25,7 +25,7 @@ export function sectionTokensManquants(bilans, { tokensModifies, sourceTokens })
     detailsTitle: "Références à mettre à jour",
     details,
     action: tokensModifies
-      ? "Réexportez les composants concernés pour aligner leurs contrats sur les tokens de cette pull request."
+      ? "Réexportez les composants concernés pour aligner leurs contrats sur les tokens de cette modification."
       : "Vérifiez que l'export de tokens est à jour, puis réexportez les composants concernés.",
     status: "Cet avertissement ne bloque pas la fusion.",
   });

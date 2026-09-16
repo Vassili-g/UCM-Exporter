@@ -402,39 +402,39 @@ Un seul lot, parce que le renommage des clés de configuration et du message
 Un seul numéro par paquet pour L4 : le kit et la CLI montent ensemble, après la
 publication de la série en cours.
 
-- [ ] Kit : réécrire les trois phrases de D8 selon la skill des diagnostics.
-- [ ] Kit : créer la neutralisation des formes actives dans
+- [x] Kit : réécrire les trois phrases de D8 selon la skill des diagnostics.
+- [x] Kit : créer la neutralisation des formes actives dans
       `diagnostic-markdown.mjs`, pour `@nom`, `#123` et les formes GitLab de D7.
       Elle change la sortie GitHub : un rapport qui cite `@icons` ne notifie
       plus de compte. Le commit le dit, et un test couvre chaque forme.
-- [ ] CLI : `lireArgumentsInit` accepte `--forge github|gitlab` ; une autre
+- [x] CLI : `lireArgumentsInit` accepte `--forge github|gitlab` ; une autre
       valeur rend une erreur d'invocation, code 2.
-- [ ] CLI : détection selon D9, `git` injectable. Tests : remote gitlab.com,
+- [x] CLI : détection selon D9, `git` injectable. Tests : remote gitlab.com,
       remote github.com, pas de remote avec `.gitlab-ci.yml`, rien du tout.
-- [ ] CLI : `fichiers()` n'écrit `.github/workflows/ucm.yml` que pour GitHub.
-- [ ] CLI : `workflowGitlab(version)` écrit `.gitlab/ucm.gitlab-ci.yml` selon D10
+- [x] CLI : `fichiers()` n'écrit `.github/workflows/ucm.yml` que pour GitHub.
+- [x] CLI : `workflowGitlab(version)` écrit `.gitlab/ucm.gitlab-ci.yml` selon D10
       et D12 : job `ucm`, `npm ci` si `package-lock.json` existe,
       `ucm check --report ci-report.md` avec
       `--base "$CI_MERGE_REQUEST_DIFF_BASE_SHA"` dans un pipeline de merge
       request, `after_script` avec le filet puis la note, artefacts
       `when: always`.
-- [ ] CLI : `.gitlab-ci.yml` écrit s'il est absent, rappel à marqueur sinon. Le
+- [x] CLI : `.gitlab-ci.yml` écrit s'il est absent, rappel à marqueur sinon. Le
       compte rendu d'`init` pour GitLab ajoute deux lignes : créer
       `UCM_GITLAB_TOKEN` masquée et non protégée, cocher « Pipelines must
       succeed ». Il dit aussi qu'un `stages:` sans `test` refuse le pipeline.
-- [ ] CLI : `guide.mjs`, `FICHIERS_EPINGLES` inclut `.gitlab/ucm.gitlab-ci.yml`.
-- [ ] CLI : `src/rapport-gitlab.mjs` et son aiguillage dans `ucm.mjs` selon D11,
+- [x] CLI : `guide.mjs`, `FICHIERS_EPINGLES` inclut `.gitlab/ucm.gitlab-ci.yml`.
+- [x] CLI : `src/rapport-gitlab.mjs` et son aiguillage dans `ucm.mjs` selon D11,
       `fetch` injectable. Tests : note créée ; note du compte au marqueur
       remplacée ; note d'un autre compte portant le marqueur ignorée ; note au
       marqueur trouvée au-delà de 100 notes ; jeton absent en code 0 avec la
       ligne qui nomme la variable ; 401 et 403 en code 1 avec le geste ;
       `--api` respecté ; le jeton absent de toute sortie.
-- [ ] `tests/recette.test.mjs` : repository temporaire avec remote GitLab et
+- [x] `tests/recette.test.mjs` : repository temporaire avec remote GitLab et
       `.gitlab-ci.yml` existant, qui reçoit le fichier inclus et le rappel ;
       repository vide avec `--forge gitlab`, qui reçoit les deux fichiers et
       aucun workflow GitHub ; le YAML écrit se lit par un analyseur YAML et ne
       contient aucune clé globale.
-- [ ] Monter `@ucm-kit/core`, `@ucm-kit/cli` et `@ucm-kit/adapter-typescript`,
+- [x] Monter `@ucm-kit/core`, `@ucm-kit/cli` et `@ucm-kit/adapter-typescript`,
       pins documentés compris, puis publier selon `AGENTS.md`.
 
 ### L5. Documentation

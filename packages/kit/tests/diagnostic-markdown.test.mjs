@@ -29,3 +29,48 @@ test("un diagnostic présente le constat avant l'action et le statut", () => {
   assert.doesNotMatch(rapport, /\w+\(s\)/);
   assert.doesNotMatch(rapport, /—/);
 });
+
+/**
+ * Le rapport part sur GitHub ou sur GitLab, et le kit ne sait pas laquelle.
+ * Chaque forme qu'une des deux relierait ou exécuterait part en code.
+ */
+test("chaque forme qu'une forge relie ou exécute part en code, dans toutes les parties du rapport", () => {
+  const formes = {
+    "@icons": "`@icons`",
+    "#12": "`#12`",
+    "!3": "`!3`",
+    "~primaire": "`~primaire`",
+    '~"deux mots"': '`~"deux mots"`',
+    "%v1": "`%v1`",
+    "$4": "`$4`",
+    "&5": "`&5`",
+    "groupe/projet#6": "`groupe/projet#6`",
+    "groupe/sous/projet!7": "`groupe/sous/projet!7`",
+  };
+  for (const [forme, attendu] of Object.entries(formes)) {
+    const rapport = rendreDiagnostic({
+      severity: "warning",
+      title: `Titre ${forme}.`,
+      summary: `Résumé ${forme}.`,
+      items: [`Élément ${forme}.`],
+      details: [`Détail ${forme}.`],
+      action: `Action ${forme}.`,
+      status: `État ${forme}.`,
+    }).join("\n");
+    for (const partie of ["Titre", "Résumé", "Élément", "Détail", "Action", "État"]) {
+      assert.ok(rapport.includes(`${partie} ${attendu}.`), `${forme} dans ${partie} :\n${rapport}`);
+    }
+  }
+});
+
+test("une ligne qui commencerait une action rapide GitLab part en code", () => {
+  const rapport = rendreDiagnostic({ severity: "error", title: "T", action: "Relisez.\n/close\n  /label ~x" }).join("\n");
+  assert.match(rapport, /^`\/close`$/m);
+  assert.match(rapport, /^ {2}`\/label` `~x`$/m);
+});
+
+test("le code, un lien, un pourcentage et une adresse restent tels quels", () => {
+  const texte = "Voir `@icons` et `#12`, [le run](https://gitlab.com/g/p/-/jobs/12#L3), 50 % et 100%, a@b.fr, v1!2.";
+  const rapport = rendreDiagnostic({ severity: "info", title: "T", summary: texte }).join("\n");
+  assert.ok(rapport.includes(texte), rapport);
+});

@@ -11,8 +11,8 @@ next to the component's code. This command reads those files and says whether
 they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.38 init
-npx --yes @ucm-kit/cli@0.1.38 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.39 init
+npx --yes @ucm-kit/cli@0.1.39 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx install a build this
@@ -39,9 +39,10 @@ check`.
 | `ucm tokens css --out <file>` | Writes the CSS stylesheet of the tokens and their modes |
 | `ucm aides [<aide>]` | Lists the implementation guides, or prints one |
 | `ucm guide <contract>` | Prints what an agent reads before implementing that contract |
+| `ucm rapport-gitlab` | Posts the report as a note on a GitLab merge request |
 | `ucm --help` | Prints the above |
 
-`ucm init` takes four options:
+`ucm init` takes five options:
 
 | Option | Effect |
 |---|---|
@@ -49,6 +50,7 @@ check`.
 | `--tokens <dir>` | The folder that holds `tokens.json` |
 | `--implementation <pattern>` | Where a contract's implementation lives |
 | `--sans-agents` | Writes neither the agent relays, nor `.ucm/conventions.md`, nor the templates |
+| `--forge github\|gitlab` | The forge whose CI is written; see [GitLab](#gitlab) |
 
 The first two take a folder, because a folder is what a repository arranges.
 `--tokens` appends the file name before writing it, so the `tokens` field of
@@ -62,7 +64,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.38 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.39 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -222,7 +224,8 @@ is, and the command names what it left alone.
 | `.ucm/conventions.md` | The repository's stack and writings, with its instructions in a comment |
 | `.ucm/gabarits/` | The templates of the installed stack adapter, when it publishes some |
 
-The workflow is yours once written. It will never be overwritten.
+The workflow is yours once written. It will never be overwritten. On GitLab,
+`.gitlab/ucm.gitlab-ci.yml` and `.gitlab-ci.yml` replace the GitHub workflow.
 
 An installed adapter that fails to load is reported, and the rest is
 installed. The command then prints the lines it does not write, each with its
@@ -307,6 +310,41 @@ again, because those contracts cite tokens that cannot be resolved.
 The report also relays two things it does not measure itself: the warnings the
 export wrote into the contract, and the verdict of the repository's own tests
 when an orchestrator passes it in through `UCM_ECHECS_DE_TESTS`.
+
+## GitLab
+
+`ucm init` writes the CI of one forge. `--forge` decides; without it, the host
+of the `origin` remote does, then the presence of `.gitlab-ci.yml`, and GitHub
+otherwise. The command names the forge and the signal it followed.
+
+For GitLab it writes `.gitlab/ucm.gitlab-ci.yml`, a single `ucm` job with no
+global key, so the project's other jobs keep their rules. The job runs in merge
+request pipelines and on the default branch, in the default `test` stage. A
+new `.gitlab-ci.yml` includes it; an existing one is left alone, and the
+command prints the `include` line to add. It also prints three settings it
+cannot make:
+
+- create the CI/CD variable `UCM_GITLAB_TOKEN`, masked and not protected,
+  holding a token with the `api` scope. Export branches are not protected, so a
+  protected variable would be empty there;
+- tick "Pipelines must succeed" in the merge request settings. Without it, a red
+  report does not block the merge it says is blocked;
+- keep `test` in `stages:` when `.gitlab-ci.yml` declares them: GitLab refuses a
+  pipeline whose job names a missing stage.
+
+`after_script` writes a minimal report when the check stopped before writing
+one, then posts the report:
+
+```sh
+npx --yes @ucm-kit/cli@0.1.39 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier ci-report.md --api "$CI_API_V4_URL"
+```
+
+The command reads the token from `UCM_GITLAB_TOKEN` and never prints it. It
+replaces the note that the token's account wrote with the `<!-- ucm-rapport -->`
+marker, across every page of notes, and creates one otherwise. Without the
+variable it says so and exits with `0`: the report stays in the job artifacts.
+A refused token exits with `1` and names the fix. `--api` defaults to
+`https://gitlab.com/api/v4`.
 
 ## Optional stack adapters
 

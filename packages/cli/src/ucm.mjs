@@ -16,6 +16,7 @@ import { check } from "./check.mjs";
 import { guide } from "./guide.mjs";
 import { iconesDuRepository, rendreIcones } from "./icons.mjs";
 import { init, lireArgumentsInit, rendreInit } from "./init.mjs";
+import { rapportGitlab } from "./rapport-gitlab.mjs";
 import { tokensCss } from "./tokens-css.mjs";
 
 /** Le verdict de tests qu'un orchestrateur de stack peut transmettre au CLI. */
@@ -44,15 +45,19 @@ const AIDE = `ucm — la ligne de commande UCM
   ucm tokens css      écrit la feuille CSS des tokens et de leurs modes
   ucm aides           liste les aides à l'implémentation et leur origine
   ucm guide           imprime ce qu'un agent lit avant d'implémenter un contrat
+  ucm rapport-gitlab  publie le rapport en note d'une merge request GitLab
   ucm --help          affiche cette aide
 
-  ucm init [--components <dossier>] [--tokens <dossier>] [--implementation <motif>] [--sans-agents]
+  ucm init [--components <dossier>] [--tokens <dossier>] [--implementation <motif>] [--sans-agents] [--forge github|gitlab]
       --components      dossier sous lequel les contrats sont rangés
       --tokens          dossier qui reçoit tokens.json
       --implementation  où vit l'implémentation d'un contrat, {dir} et {id}
                         pour son dossier et son identifiant
       --sans-agents     n'écrit ni les relais d'agent, ni .ucm/conventions.md,
                         ni les gabarits
+      --forge           la forge dont la CI est écrite ; sans elle, l'hôte du
+                        remote origin, puis la présence de .gitlab-ci.yml
+                        décident, et GitHub sinon
       Les trois n'agissent qu'à la première installation : ucm init n'écrase
       jamais un ucm.config.json existant.
 
@@ -74,6 +79,14 @@ const AIDE = `ucm — la ligne de commande UCM
   ucm guide <contrat> [--out <fichier>]
       <contrat>  le fichier .contract.json à implémenter
       --out      écrit le guide dans ce fichier plutôt que dans le terminal
+
+  ucm rapport-gitlab --projet <id> --merge-request <iid> --fichier <chemin> [--api <url>]
+      --projet         l'identifiant ou le chemin du projet GitLab
+      --merge-request  le numéro de la merge request dans ce projet
+      --fichier        le rapport écrit par ucm check --report
+      --api            l'API GitLab, https://gitlab.com/api/v4 par défaut
+      Le jeton se lit dans UCM_GITLAB_TOKEN. Sans lui, la commande le dit et
+      sort en 0.
 
 Codes de sortie : 0 tout est passé, 1 des contrôles ont échoué, 2 l'invocation
 ou la configuration est fautive.`;
@@ -108,10 +121,10 @@ function executerCommande(arguments_, {
   }
 
   if (commande === "init") {
-    const { chemins, sansAgents, erreur } = lireArgumentsInit(arguments_.slice(1));
+    const { chemins, sansAgents, forge, erreur } = lireArgumentsInit(arguments_.slice(1));
     if (erreur) {
       const alerter = sorties.alerter ?? console.error;
-      alerter(`${erreur}\n\nucm init [--components <dossier>] [--tokens <dossier>] [--implementation <motif>] [--sans-agents]`);
+      alerter(`${erreur}\n\nucm init [--components <dossier>] [--tokens <dossier>] [--implementation <motif>] [--sans-agents] [--forge github|gitlab]`);
       return 2;
     }
     // Un adaptateur qui ne se charge pas prive le repository de ses gabarits,
@@ -119,7 +132,7 @@ function executerCommande(arguments_, {
     return chargerAdaptateur(racine)
       .then((adaptateur) => ({ adaptateur }), (erreurAdaptateur) => ({ erreurAdaptateur }))
       .then((chargement) => {
-        ecrire(rendreInit(init(racine, { chemins, sansAgents, ...chargement })));
+        ecrire(rendreInit(init(racine, { chemins, sansAgents, forge, git: sorties.git, ...chargement })));
         return 0;
       });
   }
@@ -166,6 +179,16 @@ function executerCommande(arguments_, {
 
   if (commande === "guide") {
     return guide(arguments_.slice(1), { racine, ecrire, alerter: sorties.alerter ?? console.error });
+  }
+
+  if (commande === "rapport-gitlab") {
+    return rapportGitlab(arguments_.slice(1), {
+      racine,
+      env,
+      fetch: sorties.fetch,
+      ecrire,
+      alerter: sorties.alerter ?? console.error,
+    });
   }
 
   if (commande === "icons") {

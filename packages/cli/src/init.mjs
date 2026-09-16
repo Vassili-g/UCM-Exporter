@@ -23,6 +23,7 @@
  * comment nommer ses fichiers d'implémentation, au lieu de porter un `.tsx`
  * faux dès le jour de son installation.
  */
+import { execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -81,11 +82,21 @@ function cheminAcceptable(valeur) {
 export function lireArgumentsInit(arguments_) {
   const chemins = {};
   let sansAgents = false;
+  let forge;
 
   for (let i = 0; i < arguments_.length; i += 1) {
     const argument = arguments_[i];
     if (argument === "--sans-agents") {
       sansAgents = true;
+      continue;
+    }
+    if (argument === "--forge") {
+      const valeur = arguments_[i + 1];
+      if (!FORGES.includes(valeur)) {
+        return { erreur: `--forge attend github ou gitlab${valeur === undefined ? "." : ` : ${valeur} n'en est pas une.`}` };
+      }
+      forge = valeur;
+      i += 1;
       continue;
     }
     const cle = OPTIONS_DE_DOSSIER[argument];
@@ -123,7 +134,45 @@ export function lireArgumentsInit(arguments_) {
     chemins[cle] = cle === "tokens" ? `${resolu}/${NOM_FICHIER_TOKENS}` : resolu;
   }
 
-  return { chemins, sansAgents };
+  return { chemins, sansAgents, forge };
+}
+
+const FORGES = ["github", "gitlab"];
+
+/** Le fichier qu'`init` écrit pour GitLab, et que `.gitlab-ci.yml` inclut. */
+export const CHEMIN_CI_GITLAB = ".gitlab/ucm.gitlab-ci.yml";
+
+/** L'URL du remote `origin`, ou `null` sans git ni remote. */
+function remoteOrigin(racine) {
+  try {
+    return execFileSync("git", ["remote", "get-url", "origin"], { cwd: racine, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+/** L'hôte d'une URL de remote, en HTTPS, SSH ou forme `git@hôte:chemin`. */
+function hoteDuRemote(url) {
+  return /^(?:[a-z][a-z+]*:\/\/)?(?:[^@/]+@)?([^/:]+)/i.exec(url)?.[1]?.toLowerCase() ?? null;
+}
+
+/**
+ * La forge dont `init` écrit la CI, et le signal qui l'a désignée.
+ *
+ * Ordre : l'option, l'hôte du remote `origin`, la présence de `.gitlab-ci.yml`,
+ * puis GitHub. Le compte rendu nomme le signal : une forge devinée en silence
+ * écrirait une CI que la forge réelle ne lance jamais, et rien ne le dirait.
+ * Un hôte qui commence par `gitlab.` désigne une instance GitLab
+ * auto-hébergée, que le fichier écrit sait joindre par `CI_API_V4_URL`.
+ */
+export function forgeDuRepository(racine, { forge, git = remoteOrigin } = {}) {
+  if (forge) return { nom: forge, signal: "l'option --forge" };
+  const url = git(racine);
+  const hote = url ? hoteDuRemote(url) : null;
+  if (hote === "github.com") return { nom: "github", signal: `l'hôte du remote origin, ${hote}` };
+  if (hote === "gitlab.com" || hote?.startsWith("gitlab.")) return { nom: "gitlab", signal: `l'hôte du remote origin, ${hote}` };
+  if (existsSync(join(racine, ".gitlab-ci.yml"))) return { nom: "gitlab", signal: "la présence de .gitlab-ci.yml" };
+  return { nom: "github", signal: "aucun signal, GitHub par défaut" };
 }
 
 /** La version de `@ucm-kit/cli`, lue dans son propre `package.json`. */
@@ -149,7 +198,7 @@ function versionDuPaquet() {
  * présents, le rappel se tait : trois lignes réclamées pour rien sont trois
  * lignes qu'on apprend à sauter.
  */
-function fichiers(version, chemins, { agents = true, gabarits = [] } = {}) {
+function fichiers(version, chemins, { agents = true, gabarits = [], forge = "github" } = {}) {
   return [
     {
       chemin: NOM_CONFIGURATION,
@@ -209,10 +258,17 @@ function fichiers(version, chemins, { agents = true, gabarits = [] } = {}) {
       marqueurs: ["ci-report.md"],
       rappel: "ajoutez-y `ci-report.md`. `ucm check --report` le réécrit à chaque exécution ; commité, il montrerait le verdict d'un contrôle passé, pas celui du code en cours.",
     },
-    {
-      chemin: ".github/workflows/ucm.yml",
-      contenu: workflow(version),
-    },
+    ...(forge === "gitlab"
+      ? [
+        { chemin: CHEMIN_CI_GITLAB, contenu: workflowGitlab(version) },
+        {
+          chemin: ".gitlab-ci.yml",
+          contenu: `include:\n  - local: ${CHEMIN_CI_GITLAB}\n`,
+          marqueurs: [CHEMIN_CI_GITLAB],
+          rappel: `ajoutez \`- local: ${CHEMIN_CI_GITLAB}\` à sa liste \`include:\`. Sans cette ligne, le job ucm ne tourne jamais et aucune merge request n'est contrôlée.`,
+        },
+      ]
+      : [{ chemin: ".github/workflows/ucm.yml", contenu: workflow(version) }]),
     ...(agents
       ? [
         { chemin: ".agents/skills/ucm-implementer/SKILL.md", contenu: relais(version) },
@@ -444,6 +500,107 @@ function workflow(version) {
 }
 
 /**
+ * Le job de contrôle pour GitLab, dans un fichier que `.gitlab-ci.yml` inclut.
+ *
+ * **Un job, aucune clé globale.** Ni `workflow`, ni `image`, ni `variables`, ni
+ * `stages` : un fichier inclus qui en déclarerait changerait les pipelines de
+ * tous les jobs du projet. Le job porte ses propres règles, pipeline de merge
+ * request ou branche par défaut, et tourne donc une fois par export.
+ *
+ * **Le filet et la note vivent dans `after_script`.** Un échec de `npm ci`
+ * saute le reste de `script`, alors que `after_script` tourne toujours. Son
+ * échec ne change pas le statut du job : la note manquante se lit dans le
+ * journal, et le rapport reste dans les artefacts.
+ */
+function workflowGitlab(version) {
+  const cli = `npx --yes @ucm-kit/cli@${version}`;
+  return [
+    "# Contrôle des contrats UCM, inclus par .gitlab-ci.yml.",
+    "#",
+    "# Le rapport publié en note de la merge request est le seul message que",
+    "# reçoit le designer qui valide un export : il n'ouvre pas les journaux de",
+    "# la CI. Toute étape qui refuse une fusion doit donc lui laisser un message.",
+    "#",
+    "# Ce fichier ne déclare qu'un job et aucune clé globale : les autres jobs du",
+    "# projet gardent leurs règles. Le job prend le stage `test`.",
+    "#",
+    "# Un job rouge ne bloque la fusion que si « Pipelines must succeed » est",
+    "# coché dans Settings > Merge requests. La note demande la variable",
+    "# UCM_GITLAB_TOKEN, masquée et non protégée, portant un jeton de scope api.",
+    "#",
+    "# Écrit par `ucm init`. Adaptez-le : il ne sera jamais réécrit par-dessus.",
+    "ucm:",
+    "  image: node:22",
+    "  variables:",
+    "    # Le diff avec la base délimite les états informatifs du rapport.",
+    '    GIT_DEPTH: "0"',
+    "  rules:",
+    '    - if: $CI_PIPELINE_SOURCE == "merge_request_event"',
+    "    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH",
+    "  script:",
+    "    # Un adaptateur appartient à la stack du repository. Sans lockfile, le",
+    "    # noyau portable reste seul.",
+    "    - if [ -f package-lock.json ]; then npm ci; fi",
+    "    - |",
+    '      if [ -n "$CI_MERGE_REQUEST_DIFF_BASE_SHA" ]; then',
+    `        ${cli} check --report ci-report.md --base "$CI_MERGE_REQUEST_DIFF_BASE_SHA"`,
+    "      else",
+    `        ${cli} check --report ci-report.md`,
+    "      fi",
+    "  after_script:",
+    "    # Filet : sans rapport, la CI s'est arrêtée avant le contrôle (clone,",
+    "    # installation, plantage).",
+    "    - |",
+    "      if [ ! -f ci-report.md ]; then",
+    "        printf '%s\\n\\n%s\\n\\n%s\\n' \\",
+    "          \"## ❌ La vérification n'a pas pu rendre son diagnostic\" \\",
+    "          \"Les contrôles se sont arrêtés avant d'avoir pu analyser cet export : le rapport habituel n'a pas été produit. **Votre design n'est pas en cause** et réexporter depuis Figma n'y changerait rien.\" \\",
+    "          \"**Action attendue :** un développeur doit ouvrir [le job de la CI]($CI_JOB_URL) pour en connaître la raison.\" \\",
+    "          > ci-report.md",
+    "      fi",
+    "    - |",
+    '      if [ -n "$CI_MERGE_REQUEST_IID" ]; then',
+    `        ${cli} rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier ci-report.md --api "$CI_API_V4_URL"`,
+    "      fi",
+    "  artifacts:",
+    "    when: always",
+    "    paths:",
+    "      - ci-report.md",
+    "",
+  ].join("\n");
+}
+
+/**
+ * Les lignes qu'`init` ne peut pas écrire pour GitLab : des réglages du projet,
+ * et un `stages:` qui refuserait le job.
+ */
+function lignesGitlab(racine) {
+  const lignes = [
+    {
+      fichier: "Settings > CI/CD > Variables",
+      ligne: "créez `UCM_GITLAB_TOKEN`, masquée et non protégée, avec un jeton de scope api. Sans elle, le rapport n'est pas publié sur la merge request. Non protégée, parce que les branches d'export ne le sont pas.",
+    },
+    {
+      fichier: "Settings > Merge requests",
+      ligne: "cochez « Pipelines must succeed ». Sans cette case, un rapport rouge annonce une fusion bloquée qui ne l'est pas.",
+    },
+  ];
+  try {
+    const ci = readFileSync(join(racine, ".gitlab-ci.yml"), "utf8");
+    const stages = /^stages:([^\n]*(?:\n[ \t]+[^\n]*|\n-[^\n]*)*)/m.exec(ci);
+    if (stages && !/\btest\b/.test(stages[1])) {
+      lignes.push({
+        fichier: ".gitlab-ci.yml",
+        ligne: "ajoutez `test` à `stages:`. Le job ucm s'y range, et GitLab refuse un pipeline dont un job vise un stage absent.",
+      });
+    }
+  } catch {
+    // Sans .gitlab-ci.yml, celui qu'`init` écrit ne déclare aucun stage.
+  }
+  return lignes;
+}
+
+/**
  * Écrit ce qui manque, et rend le compte rendu de ce qui a été fait.
  *
  * Rien n'est écrit avant que tout soit décidé : un `init` interrompu à
@@ -456,13 +613,18 @@ export function init(racine, {
   sansAgents = false,
   adaptateur = null,
   erreurAdaptateur = null,
+  forge: forgeDemandee,
+  git,
 } = {}) {
   const version = versionDuPaquet();
   const aEcrire = [];
   const deja = [];
   const { gabarits, erreur: erreurGabarits } = sansAgents ? { gabarits: [], erreur: null } : gabaritsDe(adaptateur);
+  // Lue avant toute écriture : le `.gitlab-ci.yml` qu'`init` écrirait ne doit
+  // pas devenir le signal qui désigne GitLab.
+  const forge = forgeDuRepository(racine, { forge: forgeDemandee, git });
 
-  for (const fichier of fichiers(version, chemins, { agents: !sansAgents, gabarits })) {
+  for (const fichier of fichiers(version, chemins, { agents: !sansAgents, gabarits, forge: forge.nom })) {
     const cible = join(racine, fichier.chemin);
     if (existsSync(cible)) deja.push({ ...fichier, cible });
     else aEcrire.push({ ...fichier, cible });
@@ -500,19 +662,23 @@ export function init(racine, {
       ? { ...CONFIGURATION_PAR_DEFAUT, ...chemins }
       : null,
     version,
+    forge,
     agents: !sansAgents,
     // `absent` quand aucun adaptateur n'est installé, le message quand il n'a pas pu servir.
     adaptateur: erreurAdaptateur
       ? { erreur: erreurAdaptateur?.message ?? String(erreurAdaptateur) }
       : erreurGabarits ? { erreur: erreurGabarits } : adaptateur ? "trouve" : "absent",
     nodeJs: existsSync(join(racine, "package.json")),
-    lignes: lignesRestantes(
-      racine,
-      version,
-      aEcrire.some((f) => f.chemin === NOM_CONFIGURATION)
-        ? { ...CONFIGURATION_PAR_DEFAUT, ...chemins }
-        : lireConfiguration(racine).configuration,
-    ),
+    lignes: [
+      ...lignesRestantes(
+        racine,
+        version,
+        aEcrire.some((f) => f.chemin === NOM_CONFIGURATION)
+          ? { ...CONFIGURATION_PAR_DEFAUT, ...chemins }
+          : lireConfiguration(racine).configuration,
+      ),
+      ...(forge.nom === "gitlab" ? lignesGitlab(racine) : []),
+    ],
   };
 }
 
@@ -549,6 +715,7 @@ export function rendreInit({
   optionsIgnorees = false,
   chemins = null,
   version,
+  forge = null,
   agents = false,
   adaptateur = "absent",
   nodeJs = false,
@@ -572,6 +739,10 @@ export function rendreInit({
         ? "Rien à faire : ce repository est déjà installé."
         : "Aucun fichier à écrire : ce repository est déjà installé.",
   );
+  if (forge) {
+    lignes.push(`CI écrite pour ${forge.nom === "gitlab" ? "GitLab" : "GitHub"}, d'après ${forge.signal}. `
+      + "L'option `--forge github` ou `--forge gitlab` en choisit une autre.");
+  }
 
   if (optionsIgnorees) {
     lignes.push("");

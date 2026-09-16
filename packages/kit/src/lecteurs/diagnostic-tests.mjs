@@ -82,7 +82,7 @@ export function diagnosticEchecsDeTests({ echoue, echecs }, avertissements = nul
           "Si un avertissement concerne le même composant et la même propriété, corrigez ce point dans Figma puis réexportez. Sinon, un développeur doit mettre à jour le composant.",
         ]
         : [
-          "Un développeur doit mettre à jour les composants concernés dans cette pull request.",
+          "Un développeur doit mettre à jour les composants concernés dans cette modification.",
           "Réexporter depuis Figma ne corrigera pas ces écarts.",
         ];
 

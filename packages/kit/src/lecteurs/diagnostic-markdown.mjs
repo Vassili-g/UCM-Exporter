@@ -7,8 +7,47 @@ const ICONES = {
   success: "✅",
 };
 
+/**
+ * Formes qu'une forge relie d'elle-même dans un commentaire : `@nom` et `#1`
+ * sur GitHub et GitLab ; `!1`, `~label`, `%jalon`, `$1`, `&1` et la référence
+ * croisée `groupe/projet#1` sur GitLab. La référence croisée précède les formes
+ * courtes, qui en captureraient la fin, et un point final n'appartient pas au
+ * nom. La borne de gauche exclut l'accent grave : ce qui est déjà du code l'est.
+ */
+const FORMES_AUTOLIEES = new RegExp(
+  "(^|[^\\w`])("
+    + "[\\w.-]+(?:/[\\w.-]+)+[#!]\\d+"
+    + "|@[A-Za-z0-9](?:[\\w.-]*[\\w-])?"
+    + "|[#!$&]\\d+"
+    + "|[~%](?:\"[^\"\\n]+\"|[A-Za-z0-9_](?:[\\w.-]*[\\w-])?)"
+    + ")",
+  "g",
+);
+
+/** Une ligne qui commence par `/` : GitLab l'exécute comme action rapide dans une note. */
+const ACTION_RAPIDE = /^([ \t]*)(\/\S+)/gm;
+
+/** Ce qui est déjà inerte : un segment de code, ou la cible d'un lien. */
+const SEGMENTS_INERTES = /(`[^`\n]*`|\]\([^)\s]*\))/;
+
+/**
+ * Rend inertes les formes qu'une forge relierait ou exécuterait.
+ *
+ * Le rapport cite les intitulés Figma tels quels : `@icons` y est une règle,
+ * pas un compte à notifier. Le kit ne sait pas sur quelle forge le rapport
+ * sera publié, et neutralise donc les formes des deux. Un segment de code et la
+ * cible d'un lien restent intacts.
+ */
+function sansLienAutomatique(texte) {
+  return texte
+    .split(SEGMENTS_INERTES)
+    .map((segment, rang) => (rang % 2 === 1 ? segment : segment.replace(FORMES_AUTOLIEES, "$1`$2`")))
+    .join("")
+    .replace(ACTION_RAPIDE, "$1`$2`");
+}
+
 function texteDesigner(texte) {
-  return String(texte).replaceAll(" — ", ", ");
+  return sansLienAutomatique(String(texte).replaceAll(" — ", ", "));
 }
 
 /** Écrit un nombre avec le bon singulier ou pluriel. */

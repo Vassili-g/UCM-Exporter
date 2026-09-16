@@ -46,6 +46,7 @@ const FICHIERS_EPINGLES = [
   ".agents/skills/ucm-implementer/SKILL.md",
   ".claude/skills/ucm-implementer/SKILL.md",
   ".github/workflows/ucm.yml",
+  ".gitlab/ucm.gitlab-ci.yml",
 ];
 
 /** Les catalogues de second niveau, par partie de vue. */
