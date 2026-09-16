@@ -75,7 +75,7 @@ test("pour GitLab, init écrit le job inclus et .gitlab-ci.yml, jamais de workfl
 
     const job = parse(readFileSync(join(racine, ".gitlab/ucm.gitlab-ci.yml"), "utf8"));
     // Aucune clé globale : ni workflow, ni image, ni variables, ni stages.
-    assert.deepEqual(Object.keys(job), ["ucm"]);
+    assert.deepEqual(Object.keys(job), ["ucm", "ucm-rapport"]);
     assert.equal(job.ucm.image, "node:22");
     assert.equal(job.ucm.variables.GIT_DEPTH, "0");
     assert.equal(job.ucm.stage, undefined);
@@ -86,16 +86,49 @@ test("pour GitLab, init écrit le job inclus et .gitlab-ci.yml, jamais de workfl
     const script = job.ucm.script.join("\n");
     assert.match(script, /if \[ -f package-lock\.json \]; then npm ci; fi/);
     assert.match(script, new RegExp(`@ucm-kit/cli@${resultat.version} check --report ci-report\\.md --base "\\$CI_MERGE_REQUEST_DIFF_BASE_SHA"`));
-    const apres = job.ucm.after_script.join("\n");
-    assert.ok(apres.indexOf("if [ ! -f ci-report.md ]") < apres.indexOf("rapport-gitlab"), "le filet précède la note");
-    assert.match(apres, /if \[ -n "\$CI_MERGE_REQUEST_IID" \]/);
-    assert.match(apres, /--api "\$CI_API_V4_URL"/);
     assert.deepEqual(job.ucm.artifacts, { when: "always", paths: ["ci-report.md"] });
+
+    const note = job["ucm-rapport"];
+    const etapes = note.script.join("\n");
+    assert.ok(etapes.indexOf("if [ ! -f ci-report.md ]") < etapes.indexOf("rapport-gitlab"), "le filet précède la note");
+    assert.match(etapes, /--fichier "\$CI_PROJECT_DIR\/ci-report\.md" --api "\$CI_API_V4_URL"/);
+    assert.deepEqual(note.rules, [{ if: '$CI_PIPELINE_SOURCE == "merge_request_event"', when: "always" }]);
+    assert.deepEqual(note.needs, [{ job: "ucm", artifacts: true }]);
 
     const compteRendu = rendreInit(resultat);
     assert.match(compteRendu, /CI écrite pour GitLab, d'après l'hôte du remote origin, gitlab\.com/);
     assert.match(compteRendu, /UCM_GITLAB_TOKEN`, masquée et non protégée/);
+    assert.match(compteRendu, /au rôle Reporter/);
     assert.match(compteRendu, /Pipelines must succeed/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Une variable non protégée entre dans tous les jobs du pipeline, et `npm ci`
+ * exécute les scripts d'installation des dépendances. Le job qui installe ne
+ * garde pas le jeton, et le job qui publie n'exécute rien du repository. Une
+ * note refusée par GitLab ne rend pas rouge un contrôle vert.
+ */
+test("pour GitLab, le jeton de la note ne côtoie jamais le code du repository", () => {
+  const racine = repoVierge();
+  try {
+    init(racine, { sansAgents: true, git: () => "git@gitlab.com:g/p.git" });
+    const job = parse(readFileSync(join(racine, ".gitlab/ucm.gitlab-ci.yml"), "utf8"));
+
+    assert.equal(job.ucm.script[0], "unset UCM_GITLAB_TOKEN", "le jeton sort de l'environnement avant npm ci");
+    assert.equal(job.ucm.after_script, undefined, "after_script recevrait de nouveau le jeton");
+    assert.doesNotMatch(job.ucm.script.slice(1).join("\n"), /UCM_GITLAB_TOKEN|rapport-gitlab/);
+
+    const note = job["ucm-rapport"];
+    assert.equal(note.allow_failure, true, "un jeton refusé bloquerait une fusion dont les contrats sont verts");
+    assert.equal(note.variables.GIT_STRATEGY, "none");
+    assert.equal(note.variables.NPM_CONFIG_IGNORE_SCRIPTS, "true");
+    const etapes = note.script.join("\n");
+    assert.doesNotMatch(etapes, /npm ci| check /);
+    assert.ok(etapes.indexOf('cd "$(mktemp -d)"') !== -1, "npx part d'un dossier vide");
+    assert.ok(etapes.indexOf('cd "$(mktemp -d)"') < etapes.indexOf("rapport-gitlab"), "npx part d'un dossier vide");
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }

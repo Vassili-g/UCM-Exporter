@@ -63,6 +63,23 @@ export const CONFIGURATION_PAR_DEFAUT: Readonly<ConfigurationRepository> = Objec
 const estTexteNonVide = (valeur: unknown): boolean =>
   typeof valeur === 'string' && valeur.trim() !== '';
 
+/**
+ * Un chemin qui reste dans le repository : des segments séparés par `/`, aucun
+ * vide, aucun `.` ni `..`, aucune barre oblique inverse, et pas de lettre de
+ * lecteur en tête.
+ *
+ * Le plugin écrit l'export à ce chemin avec le jeton du designer, et GitHub
+ * garde un segment `..` dans l'URL : `fetch` la normalise alors vers un autre
+ * endpoint de l'API. La CI lit à ce chemin par `resolve`, qui sort de la
+ * racine sur un chemin absolu. `ucm init` applique la même règle à ce qu'on
+ * lui tape.
+ */
+export function estCheminDuRepository(valeur: unknown): boolean {
+  if (typeof valeur !== 'string' || valeur.trim() !== valeur || valeur === '') return false;
+  if (valeur.indexOf('\\') !== -1 || /^[A-Za-z]:/.test(valeur)) return false;
+  return valeur.split('/').every((segment) => segment !== '' && segment !== '.' && segment !== '..');
+}
+
 const estObjet = (valeur: unknown): valeur is Record<string, unknown> =>
   valeur !== null && typeof valeur === 'object' && !Array.isArray(valeur);
 
@@ -100,7 +117,7 @@ export function champsInvalidesDeLaConfiguration(configuration: unknown): string
   const objet = configuration;
   const invalides: string[] = [];
   for (const cle of CHAMPS_DE_CHEMIN) {
-    if (declare(objet, cle) && !estTexteNonVide(objet[cle])) invalides.push(cle);
+    if (declare(objet, cle) && !estCheminDuRepository(objet[cle])) invalides.push(cle);
   }
   // Un numéro de version écrit ici est refusé, pas ignoré. L'ignorer laisserait
   // croire qu'il compte : quelqu'un le mettrait à jour en pensant déplacer la
@@ -149,7 +166,7 @@ export function configurationDepuisJson(
       configuration: { ...CONFIGURATION_PAR_DEFAUT },
       erreur:
         `${NOM_CONFIGURATION} : ${invalides.join(', ')}. `
-        + 'Un chemin est une chaîne non vide ; un attribut de `modes` commence par `data-`, '
+        + 'Un chemin est relatif au repository, en `/`, sans segment vide, `.` ni `..` ; un attribut de `modes` commence par `data-`, '
         + 'suivi de minuscules, de chiffres ou de tirets ; aucun numéro de version ne s\'y '
         + 'écrit, car la fenêtre de versions lues appartient au paquet installé.',
     };

@@ -62,7 +62,7 @@ function gesteDuStatut(statut, action) {
   }
   if (statut === 403) {
     return `Le jeton de UCM_GITLAB_TOKEN n'a pas le droit de ${action} (403). `
-      + "Un mainteneur du projet doit lui donner le scope api et le rôle Developer sur ce projet.";
+      + "Un mainteneur du projet doit lui donner le scope api et le rôle Reporter sur ce projet.";
   }
   if (statut === 404) {
     return `GitLab ne trouve pas la merge request en voulant ${action} (404). `
@@ -94,7 +94,7 @@ export async function rapportGitlab(arguments_, {
   if (!jeton) {
     ecrire("UCM_GITLAB_TOKEN est absente : le rapport n'est pas publié sur la merge request. "
       + "Il reste dans les artefacts du job. Pour le publier, un mainteneur du projet doit créer "
-      + "cette variable, masquée et non protégée, avec un jeton de scope api.");
+      + "cette variable, masquée et non protégée, avec un jeton de scope api d'un compte au rôle Reporter sur ce projet.");
     return 0;
   }
 

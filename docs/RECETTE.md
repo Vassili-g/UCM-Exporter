@@ -437,8 +437,7 @@ Puis, dans `UCM-Playground`, alignez ce que le consommateur installe sur ce qui
 vient d'être publié :
 
 1. dans `.github/workflows/ucm.yml`, le pin de `@ucm-kit/cli` ;
-2. dans `package.json`, celui de `@ucm-kit/adapter-typescript`, puis relancez
-   `npm install` ;
+2. dans `package.json`, celui de `@ucm-kit/cli`, puis relancez `npm install` ;
 3. ouvrez une dernière pull request et vérifiez que le rapport est toujours
    vert.
 
@@ -459,14 +458,14 @@ de scope `api` ayant le rôle Developer sur ce projet. Dans ce qui suit,
 1. Dans un clone du projet, lancez :
 
    ```sh
-   npx --yes @ucm-kit/cli@0.1.39 init --forge gitlab
+   npx --yes @ucm-kit/cli@0.1.40 init --forge gitlab
    ```
 
    Vérifiez que le compte rendu nomme GitLab et le signal suivi, qu'il écrit
    `.gitlab/ucm.gitlab-ci.yml` et `.gitlab-ci.yml`, et qu'il n'écrit aucun
    `.github/workflows/ucm.yml`.
 2. Dans `Settings > CI/CD > Variables`, créez `UCM_GITLAB_TOKEN`, masquée et
-   non protégée, avec le jeton.
+   non protégée, avec le jeton d'un compte au rôle Reporter sur ce seul projet.
 3. Dans `Settings > Merge requests`, cochez « Pipelines must succeed ».
 4. Commitez sur la branche par défaut. Un pipeline tourne sur cette branche, avec
    un seul job, `ucm`.
@@ -488,7 +487,7 @@ pas `https://gitlab.com`. Dans la configuration :
 
 | Geste | Ce qui doit se voir |
 |---|---|
-| Exporter un composant qui porte au moins un avertissement | Une merge request s'ouvre dans le navigateur, avec un seul fichier. Son corps montre les formes comme `@icons` en code. Un seul job `ucm` tourne, et une note du compte du jeton porte le rapport |
+| Exporter un composant qui porte au moins un avertissement | Une merge request s'ouvre dans le navigateur, avec un seul fichier. Son corps montre les formes comme `@icons` en code. Les jobs `ucm` puis `ucm-rapport` tournent, et une note du compte du jeton porte le rapport |
 | Réexporter sans rien changer | Aucune seconde merge request ; le compte rendu donne le lien de la première |
 | Réexporter après une correction dans Figma | Une nouvelle merge request s'ouvre ; le plugin ne la refuse pas |
 | Pousser un nouveau commit sur la branche d'export | La note du rapport est remplacée, pas ajoutée |
@@ -504,10 +503,10 @@ GitHub enregistré : aucun appel ne doit partir vers gitlab.com. Rejouez enfin
 l'étape 5 sur GitHub : seuls les rapports où le kit neutralise désormais une
 forme comme `@icons` doivent différer.
 
-Ce que la recette GitLab ne couvre pas : un pipeline qui échoue avant ses
-scripts, au clonage par exemple, ne lance pas `after_script`. La note du push
-précédent reste alors en place sur un pipeline rouge. « Pipelines must succeed »
-bloque la fusion dans ce cas aussi.
+Ce que la recette GitLab ne couvre pas : un job `ucm` qui échoue avant ses
+scripts, au clonage par exemple. `ucm-rapport` tourne quand même et publie le
+rapport minimal, mais aucun geste de la recette ne provoque cette panne.
+« Pipelines must succeed » bloque la fusion dans ce cas aussi.
 
 ---
 

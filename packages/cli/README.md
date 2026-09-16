@@ -11,8 +11,8 @@ next to the component's code. This command reads those files and says whether
 they still hold together.
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.39 init
-npx --yes @ucm-kit/cli@0.1.39 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.40 init
+npx --yes @ucm-kit/cli@0.1.40 check --report ci-report.md
 ```
 
 Pin an exact version, without `^`. A range would let npx install a build this
@@ -64,7 +64,7 @@ not write React states its own extension here, rather than carrying a `.tsx`
 that was wrong the day it was installed:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.39 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.40 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 All three act only on a first install: `ucm init` never overwrites an existing
@@ -219,7 +219,7 @@ is, and the command names what it left alone.
 | `.gitattributes` | Keeps contracts and tokens in LF, so a re-export from a Windows machine does not produce a whole-file diff |
 | `.vscode/settings.json` | Binds `*.contract.json` to the JSON Schema of the installed package, so the editor validates as you read |
 | `.gitignore` | Keeps `ci-report.md` out of the repository; it is regenerated on every run and describes only that run |
-| `.github/workflows/ucm.yml` | Runs the check on every pull request and posts the report as a comment |
+| `.github/workflows/ucm.yml` | Runs the check on every pull request and posts the report as a comment, from a second job |
 | `.agents/skills/ucm-implementer/SKILL.md`, `.claude/skills/ucm-implementer/SKILL.md` | Two identical relays: an agent loads one before writing a component, and runs `ucm guide` at the pinned version |
 | `.ucm/conventions.md` | The repository's stack and writings, with its instructions in a comment |
 | `.ucm/gabarits/` | The templates of the installed stack adapter, when it publishes some |
@@ -255,6 +255,12 @@ is malformed is refused on both sides.
 
 `implementation` is a pattern with two tokens, `{dir}` for the contract's folder
 and `{id}` for its identifier. Replace it with the pattern your repository uses.
+
+Each of the three paths is relative to the repository root and written with
+`/`. A path that starts with `/` or a drive letter, contains `\`, or has an
+empty, `.` or `..` segment is refused on both sides: the plugin would write
+outside the repository with the designer's token, and the check would read
+outside it.
 
 No version number goes in this file. Which contract versions can be read belongs
 to the installed package, and repeating it here would create a second authority
@@ -317,27 +323,39 @@ when an orchestrator passes it in through `UCM_ECHECS_DE_TESTS`.
 of the `origin` remote does, then the presence of `.gitlab-ci.yml`, and GitHub
 otherwise. The command names the forge and the signal it followed.
 
-For GitLab it writes `.gitlab/ucm.gitlab-ci.yml`, a single `ucm` job with no
-global key, so the project's other jobs keep their rules. The job runs in merge
-request pipelines and on the default branch, in the default `test` stage. A
-new `.gitlab-ci.yml` includes it; an existing one is left alone, and the
+For GitLab it writes `.gitlab/ucm.gitlab-ci.yml`, two jobs with no global key,
+so the project's other jobs keep their rules. `ucm` runs the check in merge
+request pipelines and on the default branch; `ucm-rapport` posts the note in
+merge request pipelines. Both take the default `test` stage. A new
+`.gitlab-ci.yml` includes the file; an existing one is left alone, and the
 command prints the `include` line to add. It also prints three settings it
 cannot make:
 
 - create the CI/CD variable `UCM_GITLAB_TOKEN`, masked and not protected,
-  holding a token with the `api` scope. Export branches are not protected, so a
-  protected variable would be empty there;
+  holding an `api` token of an account with the Reporter role on this project
+  only: a service account's personal token, or a project access token where
+  the GitLab plan offers one. Export branches are not protected, so a
+  protected variable would be empty there. Every pipeline of every branch reads
+  an unprotected variable, and whoever pushes a branch can print it: the
+  Reporter role limits that token to reading and commenting;
 - tick "Pipelines must succeed" in the merge request settings. Without it, a red
   report does not block the merge it says is blocked;
 - keep `test` in `stages:` when `.gitlab-ci.yml` declares them: GitLab refuses a
   pipeline whose job names a missing stage.
 
-`after_script` writes a minimal report when the check stopped before writing
+`ucm` unsets `UCM_GITLAB_TOKEN` before `npm ci`, so install scripts do not
+inherit it on executors that set variables in the job script. `ucm-rapport`
+runs no code from the repository: it clones nothing, receives `ci-report.md`
+as an artifact, disables install scripts, and runs `npx` from an empty
+directory. It writes a minimal report when the check stopped before writing
 one, then posts the report:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.39 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier ci-report.md --api "$CI_API_V4_URL"
+npx --yes @ucm-kit/cli@0.1.40 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier "$CI_PROJECT_DIR/ci-report.md" --api "$CI_API_V4_URL"
 ```
+
+The job allows failure: a refused token leaves the pipeline the colour of the
+check, and the report stays in the artifacts.
 
 The command reads the token from `UCM_GITLAB_TOKEN` and never prints it. It
 replaces the note that the token's account wrote with the `<!-- ucm-rapport -->`

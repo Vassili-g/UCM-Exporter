@@ -19,6 +19,7 @@ import {
   NOM_CONFIGURATION,
   champsInvalidesDeLaConfiguration,
   configurationDepuisJson,
+  estCheminDuRepository,
 } from "@ucm-kit/core/format";
 import { lireConfiguration } from "@ucm-kit/core/lecteurs";
 
@@ -100,6 +101,27 @@ test("un chemin vide est un refus, parce qu'il ne désigne rien", () => {
   assert.deepEqual(champsInvalidesDeLaConfiguration({ components: "" }), ["components"]);
   assert.deepEqual(champsInvalidesDeLaConfiguration({ tokens: "   " }), ["tokens"]);
   assert.deepEqual(champsInvalidesDeLaConfiguration({ implementation: 42 }), ["implementation"]);
+});
+
+/**
+ * Le plugin écrit l'export à ces chemins sur la forge, et la CI les lit par
+ * `resolve` : un chemin qui sort de la racine vise un autre fichier, ou un
+ * autre endpoint de l'API avec le jeton du designer.
+ */
+test("un chemin qui sort du repository, ou qui s'écrit autrement qu'en segments /, est refusé", () => {
+  const refuses = [
+    "../x", "a/../../x", "..", "/abs", "\\abs", "C:/x", "C:\\x", "c:x",
+    "a\\b", "./components", "components/", "a//b", " components",
+  ];
+  for (const cle of ["components", "tokens", "implementation"]) {
+    for (const valeur of refuses) {
+      assert.deepEqual(champsInvalidesDeLaConfiguration({ [cle]: valeur }), [cle], `${cle} : ${JSON.stringify(valeur)}`);
+    }
+  }
+  assert.equal(estCheminDuRepository("src/components"), true);
+  assert.equal(estCheminDuRepository("src/tokens/tokens.json"), true);
+  assert.equal(estCheminDuRepository("{dir}/{id}.tsx"), true);
+  assert.equal(estCheminDuRepository("design system/..contrats"), true);
 });
 
 test("un champ absent n'est pas un champ invalide", () => {

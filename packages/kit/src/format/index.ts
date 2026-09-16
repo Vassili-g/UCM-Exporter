@@ -73,5 +73,6 @@ export {
   CONFIGURATION_PAR_DEFAUT,
   champsInvalidesDeLaConfiguration,
   configurationDepuisJson,
+  estCheminDuRepository,
 } from './configuration.js';
 export type { ConfigurationRepository } from './configuration.js';

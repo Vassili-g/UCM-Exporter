@@ -161,6 +161,17 @@ test('une configuration de repository fautive refuse l’export au lieu de devin
   );
 });
 
+/** `encodePath` garde `..`, que `fetch` normalise vers un autre endpoint de l'API. */
+test('un chemin de configuration qui sort du repository refuse l’export', async () => {
+  await assert.rejects(
+    () => avecFetch(
+      () => fichier(JSON.stringify({ components: '../../../user' })),
+      () => repositoryLayout(forge),
+    ),
+    /ucm\.config\.json : components\./,
+  );
+});
+
 /** Un fichier vide existe : le plugin le refuse comme la CI, sans appliquer les défauts. */
 test('un ucm.config.json vide refuse l’export au lieu de prendre les défauts', async () => {
   await assert.rejects(

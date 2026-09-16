@@ -454,7 +454,7 @@ test("GitLab — un repository au remote gitlab.com et au .gitlab-ci.yml existan
     assert.match(installation.terminal, /`\.gitlab-ci\.yml` existait déjà : ajoutez `- local: \.gitlab\/ucm\.gitlab-ci\.yml`/);
     assert.equal(readFileSync(join(racine, ".gitlab-ci.yml"), "utf8"), existant);
     assert.equal(existsSync(join(racine, ".github")), false);
-    assert.deepEqual(Object.keys(lireYaml(readFileSync(join(racine, ".gitlab", "ucm.gitlab-ci.yml"), "utf8"))), ["ucm"]);
+    assert.deepEqual(Object.keys(lireYaml(readFileSync(join(racine, ".gitlab", "ucm.gitlab-ci.yml"), "utf8"))), ["ucm", "ucm-rapport"]);
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }

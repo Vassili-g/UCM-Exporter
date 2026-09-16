@@ -31,6 +31,7 @@ import {
   CONFIGURATION_PAR_DEFAUT,
   MOTIF_IMPLEMENTATION_PAR_DEFAUT,
   NOM_CONFIGURATION,
+  estCheminDuRepository,
 } from "@ucm-kit/core/format";
 import { lireConfiguration } from "@ucm-kit/core/lecteurs";
 
@@ -51,18 +52,14 @@ const OPTIONS_DE_DOSSIER = { "--components": "components", "--tokens": "tokens" 
 const NOM_FICHIER_TOKENS = CONFIGURATION_PAR_DEFAUT.tokens.split("/").pop();
 
 /**
- * Un chemin acceptable dans la configuration : relatif, en `/`, sans segment
- * qui remonte. La garde est ici et pas dans la grammaire du kit : celle-ci
- * décrit ce qu'un `ucm.config.json` déjà écrit a le droit de contenir, et la
- * durcir changerait le format. Ce qu'une commande accepte de taper au clavier
- * est une autre question, et c'est celle-là qui se pose ici.
+ * Le chemin tapé, écrit comme la grammaire du kit l'accepte, ou `null`.
+ *
+ * Le clavier tolère `\` et des barres obliques de bord ; le fichier écrit n'en
+ * garde aucune, et la grammaire décide du reste.
  */
 function cheminAcceptable(valeur) {
   const normalise = valeur.trim().replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
-  if (!normalise) return null;
-  const segments = normalise.split("/");
-  if (segments.some((segment) => !segment || segment === "." || segment === "..")) return null;
-  return segments.join("/");
+  return estCheminDuRepository(normalise) ? normalise : null;
 }
 
 /**
@@ -407,6 +404,14 @@ function lignesRestantes(racine, version, configuration) {
  * « le rapport manque ». Le premier décrit sa chaîne de construction, qu'un
  * repo Swift n'a pas. Le second est universel : une pull request refusée sans
  * un mot laisse le designer sans recours.
+ *
+ * **Le job qui exécute le code du repository n'écrit nulle part.** `npm ci`
+ * lance les scripts d'installation des dépendances, et un paquet compromis
+ * lirait le jeton du job, même hors de l'environnement. Le commentaire part
+ * donc d'un second job, sans checkout ni npm, qui reçoit le rapport en
+ * artefact. L'auteur d'une branche du repository peut réécrire ce fichier :
+ * la séparation ne borne que ce qu'une dépendance obtient. Une fourche reçoit
+ * de GitHub un jeton en lecture seule, et son commentaire échoue.
  */
 function workflow(version) {
   const commande = `npx --yes @ucm-kit/cli@${version} check --report ci-report.md`;
@@ -417,6 +422,10 @@ function workflow(version) {
     "# designer qui valide un export : il n'ouvre pas les logs de la CI. Toute",
     "# étape qui refuse une fusion doit donc lui laisser un message.",
     "#",
+    "# Le job `contrats` exécute le code du repository et ses dépendances : il",
+    "# ne porte aucun droit d'écriture. Seul `commentaire`, qui n'exécute rien",
+    "# du repository, écrit sur la pull request.",
+    "#",
     "# Écrit par `ucm init`. Adaptez-le : il ne sera jamais réécrit par-dessus.",
     "name: ucm",
     "",
@@ -425,17 +434,15 @@ function workflow(version) {
     "    branches: [main]",
     "  pull_request:",
     "",
-    "# Nécessaire pour publier le diagnostic en commentaire de pull request.",
     "permissions:",
     "  contents: read",
-    "  pull-requests: write",
     "",
     "jobs:",
     "  contrats:",
     "    runs-on: ubuntu-latest",
     "    steps:",
     "      # Le job exécute le code de la pull request : il n'a aucune raison de",
-    "      # garder un jeton git utilisable. Le commentaire passe par GITHUB_TOKEN.",
+    "      # garder un jeton git utilisable.",
     "      - uses: actions/checkout@v4",
     "        with:",
     "          persist-credentials: false",
@@ -484,33 +491,59 @@ function workflow(version) {
     "          **Action attendue :** un développeur doit ouvrir [l'exécution de la CI]($RUN_URL) pour en connaître la raison.",
     "          EOF",
     "",
-    "      # `always()` car l'essentiel est justement de commenter les échecs.",
+    "      # Le rapport passe au job `commentaire`. Une dépendance a pu le",
+    "      # réécrire : il part en corps de commentaire, jamais en commande.",
+    "      - name: Transmettre le rapport",
+    "        if: always() && github.event_name == 'pull_request'",
+    "        uses: actions/upload-artifact@v4",
+    "        with:",
+    "          name: ucm-rapport",
+    "          path: ci-report.md",
+    "          retention-days: 1",
+    "",
+    "  commentaire:",
+    "    needs: contrats",
+    "    # `!cancelled()` et non `always()` : un run annulé ne commente pas.",
+    "    if: ${{ !cancelled() && github.event_name == 'pull_request' }}",
+    "    runs-on: ubuntu-latest",
+    "    permissions:",
+    "      pull-requests: write",
+    "    steps:",
+    "      - uses: actions/download-artifact@v4",
+    "        with:",
+    "          name: ucm-rapport",
+    "",
     "      - name: Publier le diagnostic sur la pull request",
-    "        if: always() && github.event_name == 'pull_request' && hashFiles('ci-report.md') != ''",
     "        env:",
     "          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
     "          NUMERO: ${{ github.event.number }}",
     "        # --edit-last met à jour le commentaire précédent au lieu d'en empiler",
     "        # un nouveau à chaque push ; s'il n'en existe pas encore, on en crée un.",
     "        run: |",
-    '          gh pr comment "$NUMERO" --body-file ci-report.md --edit-last \\',
-    '            || gh pr comment "$NUMERO" --body-file ci-report.md',
+    '          gh pr comment "$NUMERO" -R "$GITHUB_REPOSITORY" --body-file ci-report.md --edit-last \\',
+    '            || gh pr comment "$NUMERO" -R "$GITHUB_REPOSITORY" --body-file ci-report.md',
     "",
   ].join("\n");
 }
 
 /**
- * Le job de contrôle pour GitLab, dans un fichier que `.gitlab-ci.yml` inclut.
+ * Le contrôle pour GitLab, dans un fichier que `.gitlab-ci.yml` inclut.
  *
- * **Un job, aucune clé globale.** Ni `workflow`, ni `image`, ni `variables`, ni
- * `stages` : un fichier inclus qui en déclarerait changerait les pipelines de
- * tous les jobs du projet. Le job porte ses propres règles, pipeline de merge
- * request ou branche par défaut, et tourne donc une fois par export.
+ * **Deux jobs, aucune clé globale.** Ni `workflow`, ni `image`, ni `variables`,
+ * ni `stages` : un fichier inclus qui en déclarerait changerait les pipelines
+ * de tous les jobs du projet. Chaque job porte ses propres règles.
  *
- * **Le filet et la note vivent dans `after_script`.** Un échec de `npm ci`
- * saute le reste de `script`, alors que `after_script` tourne toujours. Son
- * échec ne change pas le statut du job : la note manquante se lit dans le
- * journal, et le rapport reste dans les artefacts.
+ * **Le job qui installe les dépendances ne publie pas la note.** Une variable
+ * CI/CD non protégée entre dans l'environnement de tous les jobs, et un script
+ * d'installation la lirait. `ucm` la retire avant `npm ci`, ce qui ne vaut que
+ * pour les exécuteurs qui posent les variables dans le script ; `ucm-rapport`
+ * publie sans clone, depuis un dossier vide, sans script d'installation. Qui
+ * pousse une branche peut réécrire ce fichier et lire la variable : seul le
+ * rôle du compte qui porte le jeton borne ce qu'il en tire.
+ *
+ * **La note ne refuse jamais une fusion.** `ucm-rapport` tourne après un échec
+ * de `ucm`, et `allow_failure` garde le pipeline de la couleur du contrôle
+ * quand GitLab refuse le jeton : le rapport reste dans les artefacts.
  */
 function workflowGitlab(version) {
   const cli = `npx --yes @ucm-kit/cli@${version}`;
@@ -521,12 +554,14 @@ function workflowGitlab(version) {
     "# reçoit le designer qui valide un export : il n'ouvre pas les journaux de",
     "# la CI. Toute étape qui refuse une fusion doit donc lui laisser un message.",
     "#",
-    "# Ce fichier ne déclare qu'un job et aucune clé globale : les autres jobs du",
-    "# projet gardent leurs règles. Le job prend le stage `test`.",
+    "# Ce fichier ne déclare que deux jobs et aucune clé globale : les autres jobs",
+    "# du projet gardent leurs règles. Les deux jobs prennent le stage `test`.",
     "#",
     "# Un job rouge ne bloque la fusion que si « Pipelines must succeed » est",
     "# coché dans Settings > Merge requests. La note demande la variable",
-    "# UCM_GITLAB_TOKEN, masquée et non protégée, portant un jeton de scope api.",
+    "# UCM_GITLAB_TOKEN, masquée et non protégée. Tout pipeline d'une branche du",
+    "# projet la lit : son jeton, de scope api, appartient à un compte de rôle",
+    "# Reporter sur ce seul projet.",
     "#",
     "# Écrit par `ucm init`. Adaptez-le : il ne sera jamais réécrit par-dessus.",
     "ucm:",
@@ -538,6 +573,8 @@ function workflowGitlab(version) {
     '    - if: $CI_PIPELINE_SOURCE == "merge_request_event"',
     "    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH",
     "  script:",
+    "    # Les scripts d'installation ne reçoivent pas le jeton de la note.",
+    "    - unset UCM_GITLAB_TOKEN",
     "    # Un adaptateur appartient à la stack du repository. Sans lockfile, le",
     "    # noyau portable reste seul.",
     "    - if [ -f package-lock.json ]; then npm ci; fi",
@@ -547,25 +584,40 @@ function workflowGitlab(version) {
     "      else",
     `        ${cli} check --report ci-report.md`,
     "      fi",
-    "  after_script:",
-    "    # Filet : sans rapport, la CI s'est arrêtée avant le contrôle (clone,",
+    "  artifacts:",
+    "    when: always",
+    "    paths:",
+    "      - ci-report.md",
+    "",
+    "ucm-rapport:",
+    "  image: node:22",
+    "  needs:",
+    "    - job: ucm",
+    "      artifacts: true",
+    "  rules:",
+    '    - if: $CI_PIPELINE_SOURCE == "merge_request_event"',
+    "      when: always",
+    "  # Un jeton refusé ne rend pas rouge un pipeline dont les contrats sont verts.",
+    "  allow_failure: true",
+    "  variables:",
+    "    # Aucun clone : ni .npmrc ni node_modules du repository.",
+    "    GIT_STRATEGY: none",
+    '    NPM_CONFIG_IGNORE_SCRIPTS: "true"',
+    "  script:",
+    "    # Filet : sans rapport, `ucm` s'est arrêté avant le contrôle (clone,",
     "    # installation, plantage).",
     "    - |",
     "      if [ ! -f ci-report.md ]; then",
     "        printf '%s\\n\\n%s\\n\\n%s\\n' \\",
     "          \"## ❌ La vérification n'a pas pu rendre son diagnostic\" \\",
     "          \"Les contrôles se sont arrêtés avant d'avoir pu analyser cet export : le rapport habituel n'a pas été produit. **Votre design n'est pas en cause** et réexporter depuis Figma n'y changerait rien.\" \\",
-    "          \"**Action attendue :** un développeur doit ouvrir [le job de la CI]($CI_JOB_URL) pour en connaître la raison.\" \\",
+    "          \"**Action attendue :** un développeur doit ouvrir [le pipeline de la CI]($CI_PIPELINE_URL) pour en connaître la raison.\" \\",
     "          > ci-report.md",
     "      fi",
-    "    - |",
-    '      if [ -n "$CI_MERGE_REQUEST_IID" ]; then',
-    `        ${cli} rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier ci-report.md --api "$CI_API_V4_URL"`,
-    "      fi",
-    "  artifacts:",
-    "    when: always",
-    "    paths:",
-    "      - ci-report.md",
+    "    # Depuis un dossier vide, npx ne lit ni configuration ni paquet laissés",
+    "    # par un job précédent sur le runner.",
+    "    - cd \"$(mktemp -d)\"",
+    `    - ${cli} rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier "$CI_PROJECT_DIR/ci-report.md" --api "$CI_API_V4_URL"`,
     "",
   ].join("\n");
 }
@@ -578,7 +630,7 @@ function lignesGitlab(racine) {
   const lignes = [
     {
       fichier: "Settings > CI/CD > Variables",
-      ligne: "créez `UCM_GITLAB_TOKEN`, masquée et non protégée, avec un jeton de scope api. Sans elle, le rapport n'est pas publié sur la merge request. Non protégée, parce que les branches d'export ne le sont pas.",
+      ligne: "créez `UCM_GITLAB_TOKEN`, masquée et non protégée, avec un jeton de scope api d'un compte de service membre de ce seul projet, au rôle Reporter, ou un jeton d'accès de projet au rôle Reporter si l'offre le permet. Sans elle, le rapport n'est pas publié sur la merge request. Non protégée, parce que les branches d'export ne le sont pas ; tout pipeline d'une branche la lit, et le rôle Reporter borne ce qu'on en tire à lire et commenter.",
     },
     {
       fichier: "Settings > Merge requests",

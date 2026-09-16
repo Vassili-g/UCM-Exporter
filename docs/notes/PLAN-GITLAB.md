@@ -187,12 +187,16 @@ distingue les deux, et `UCM_GITLAB_TOKEN` y entre comme interface publique, hors
 du tableau des variables non figées. Sans jeton, la commande écrit une ligne qui
 nomme la variable manquante et sort en 0.
 
-**D12. Le filet et la note vivent dans `after_script`.** Un échec de `npm ci`
-saute le reste de `script`. `after_script` écrit donc le rapport minimal quand
-`ci-report.md` manque, puis appelle `ucm rapport-gitlab` quand
-`$CI_MERGE_REQUEST_IID` est défini. Son code de sortie ne change pas le statut du
-job : les codes d'erreur de la commande servent à la main, et le journal du job
-porte le geste. Les artefacts gardent `ci-report.md` avec `when: always`.
+**D12. Le filet et la note vivent dans le job `ucm-rapport`.** Une variable
+non protégée entre dans tous les jobs, et `npm ci` exécute les scripts
+d'installation des dépendances : la note ne se publie donc pas depuis le job qui
+installe. `ucm` retire `UCM_GITLAB_TOKEN` avant `npm ci` et garde `ci-report.md`
+en artefact avec `when: always`. `ucm-rapport` tourne dans les pipelines de merge
+request, après `ucm` même en échec, sans clone, sans script d'installation, et
+lance `npx` depuis un dossier vide. Il écrit le rapport minimal quand
+`ci-report.md` manque, puis appelle `ucm rapport-gitlab`. `allow_failure: true`
+garde la décision de la première version : le code de sortie de la note ne
+change pas la couleur du pipeline.
 
 **D13. Le jeton de la CI appartient à un compte de service.** Les jetons d'accès
 projet exigent Premium et `CI_JOB_TOKEN` n'écrit pas de note. La variable
@@ -202,7 +206,10 @@ classique, scope `api` seul (voir D5), rattaché au compte de service. Si un
 compte de service ne peut pas créer de jeton personnel, le plan retient le
 jeton personnel d'un membre de l'équipe. Quand l'offre du projet permet un
 jeton d'accès projet, il remplace les deux : L0 l'a employé sur le projet de
-recette, dans le pipeline comme dans l'API.
+recette, dans le pipeline comme dans l'API. Dans tous les cas, le compte a le
+rôle Reporter sur ce seul projet : tout pipeline d'une branche lit la variable,
+et qui pousse une branche peut l'afficher. Reporter suffit à lire le compte,
+lister les notes, en créer une et remplacer la sienne.
 
 **D14. La recette réelle se joue sur un miroir du Playground.** Le mainteneur
 crée `UCM-Playground` sur gitlab.com. Le projet de l'équipe sert à la validation
@@ -464,7 +471,7 @@ publication de la série en cours.
 
 - [x] **[mainteneur]** Sur le miroir GitLab : `ucm init`, variable
       `UCM_GITLAB_TOKEN`, « Pipelines must succeed », commit sur la branche par
-      défaut. Fait par l'agent avec l'API et `@ucm-kit/cli@0.1.39` publiée, sur
+      défaut. Fait par l'agent avec l'API et `@ucm-kit/cli` 0.1.39 publiée, sur
       le projet GitLab de recette.
 - [ ] **[mainteneur]** Plugin de développement : saisir l'adresse d'une page du
       miroir, constater le projet retenu, la ligne du dossier retiré et la
@@ -512,7 +519,7 @@ publication de la série en cours.
 | `npx` dans `after_script` dépasse la limite de cinq minutes | La note manque ; le rapport reste dans les artefacts | L0 |
 | Une variable non protégée est lisible par tout pipeline de merge request du projet | Un développeur du projet peut lire le jeton de la CI ; le compte de service limite ce qu'il ouvre | L5, L7 |
 | « Pipelines must succeed » reste décoché | Le rapport annonce une fusion bloquée qui ne l'est pas | L4, L7 |
-| Un job échoue avant ses scripts, au clonage par exemple | `after_script` ne tourne pas : la note du push précédent reste, verte, sur un pipeline rouge. Constaté en L6 sur une panne du runner partagé ; « Pipelines must succeed » bloque la fusion | Hors plan, dit dans `RECETTE.md` |
+| Un job échoue avant ses scripts, au clonage par exemple | Avant D12 révisé, `after_script` ne tournait pas et la note du push précédent restait, verte, sur un pipeline rouge ; constaté en L6 sur une panne du runner partagé. `ucm-rapport` tourne désormais après l'échec de `ucm` et publie le rapport minimal ; « Pipelines must succeed » bloque la fusion | D12, dit dans `RECETTE.md` |
 | Plus de 100 merge requests ouvertes vers la base | Un export identique en vol peut passer inaperçu, comme sur GitHub aujourd'hui | Hors plan |
 
 ## 5. Estimation et ordre

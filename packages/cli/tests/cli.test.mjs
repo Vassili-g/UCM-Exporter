@@ -13,6 +13,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
+import { parse as parseYaml } from "yaml";
+
 import { iconesDuRepository } from "../src/icons.mjs";
 import { chargerAdaptateur } from "../src/adaptateur.mjs";
 import { catalogueDesAides } from "../src/aides.mjs";
@@ -223,86 +225,72 @@ test("le workflow publie un diagnostic même quand le rapport manque", () => {
 });
 
 /**
- * Les deux dernières étapes du workflow ne forment un filet que si elles se
- * relaient : l'une écrit le rapport quand il manque, l'autre le publie. Rien
- * ici ne vérifiait leur ACCORD — leurs conditions, leur fichier commun et
- * l'évènement sur lequel elles portent.
+ * Le filet, la transmission et la publication ne protègent le designer que
+ * s'ils se relaient : le filet écrit le rapport quand il manque, la
+ * transmission l'emporte quel que soit le verdict, la publication lit ce
+ * qu'elle a reçu.
  *
- * Trois façons de perdre le message du designer sans qu'une seule ligne
- * paraisse fausse : les deux conditions s'excluent mal et le filet écrase un
- * vrai rapport ; l'écriture et la publication ne visent pas le même fichier ;
- * l'évènement n'est pas borné, et un `push` sur `main` fait échouer une étape
- * qui n'avait aucun commentaire à écrire.
+ * Trois façons de perdre le message sans qu'une ligne paraisse fausse : le
+ * filet cesse d'être conditionné par l'absence et écrase un vrai rapport ; la
+ * transmission ou la réception visent un autre nom ; l'évènement n'est plus
+ * borné, et un `push` sur `main` échoue sur un fil qui n'existe pas.
  */
-/**
- * Le corps d'une étape nommée du workflow, sans son indentation.
- *
- * Il court du `- name:` demandé jusqu'à l'étape suivante. Rien ici ne cherche à
- * lire du YAML : on compare des lignes écrites par un générateur, pas un
- * fichier qu'un tiers aurait pu reformater.
- */
-function etape(workflow, nom) {
-  const lignes = workflow.split(/\r?\n/);
-  const debut = lignes.findIndex((l) => l.trim() === "- name: " + nom);
-  assert.notEqual(debut, -1, "le workflow généré n'écrit plus l'étape « " + nom + " »");
-
-  const corps = [];
-  for (const ligne of lignes.slice(debut + 1)) {
-    if (/^\s*- (name|uses):/.test(ligne)) break;
-    corps.push(ligne.trim());
-  }
-  return corps.join("\n");
-}
-
-/**
- * Les deux dernières étapes du workflow ne forment un filet que si elles se
- * relaient : l'une écrit le rapport quand il manque, l'autre publie celui qui
- * est là. Rien ici ne vérifiait leur accord : leurs conditions, leur fichier
- * commun et l'évènement sur lequel elles portent.
- *
- * Trois façons de perdre le message du designer sans qu'une ligne paraisse
- * fausse : les deux conditions cessent de s'exclure, et le filet écrase un vrai
- * rapport ; l'écriture et la publication ne visent plus le même fichier ;
- * l'évènement n'est plus borné, et un `push` sur `main` fait échouer une étape
- * qui n'avait aucun fil où écrire.
- */
-test("les deux filets de fin se relaient sur le même rapport, et seulement sur une pull request", () => {
+test("le filet, la transmission et la publication se relaient sur le même rapport, et seulement sur une pull request", () => {
   const racine = repoVierge();
   try {
     init(racine);
     const workflow = readFileSync(join(racine, ".github/workflows/ucm.yml"), "utf8");
-    const ecriture = etape(workflow, "Garantir un diagnostic même sans rapport");
-    const publication = etape(workflow, "Publier le diagnostic sur la pull request");
+    const { jobs } = parseYaml(workflow);
+    const ecriture = jobs.contrats.steps.find((pas) => pas.name === "Garantir un diagnostic même sans rapport");
+    const transmission = jobs.contrats.steps.find((pas) => pas.name === "Transmettre le rapport");
+    const reception = jobs.commentaire.steps.find((pas) => pas.uses?.startsWith("actions/download-artifact@"));
+    const publication = jobs.commentaire.steps.find((pas) => pas.name === "Publier le diagnostic sur la pull request");
 
-    for (const [quoi, corps] of [["l'écriture", ecriture], ["la publication", publication]]) {
-      assert.match(
-        corps,
-        /if: always\(\) && github\.event_name == 'pull_request'/,
-        "hors pull request, " + quoi + " n'a aucun fil où écrire",
-      );
-    }
+    assert.match(ecriture.if, /^always\(\) && github\.event_name == 'pull_request' && hashFiles\('ci-report\.md'\) == ''$/);
+    assert.equal(transmission.if, "always() && github.event_name == 'pull_request'", "le rapport part même quand le contrôle échoue");
+    assert.equal(jobs.commentaire.if, "${{ !cancelled() && github.event_name == 'pull_request' }}");
+    assert.equal(jobs.commentaire.needs, "contrats");
 
-    assert.match(ecriture, /hashFiles\('ci-report\.md'\) == ''/);
-    assert.match(
-      publication,
-      /hashFiles\('ci-report\.md'\) != ''/,
-      "les deux conditions s'excluent, sinon le filet écraserait un vrai rapport",
-    );
-    assert.match(ecriture, /cat > ci-report\.md <<EOF/, "le filet écrit le fichier publié");
-    assert.match(publication, /--body-file ci-report\.md/, "la publication lit le fichier écrit");
-    assert.match(ecriture, /\$RUN_URL/, "le message minimal nomme l'endroit où regarder");
+    assert.match(ecriture.run, /cat > ci-report\.md <<EOF/, "le filet écrit le fichier transmis");
+    assert.match(ecriture.run, /\$RUN_URL/, "le message minimal nomme l'endroit où regarder");
+    assert.equal(transmission.with.path, "ci-report.md");
+    assert.equal(reception.with.name, transmission.with.name, "la publication reçoit l'artefact transmis");
+    assert.match(publication.run, /--body-file ci-report\.md/, "la publication lit le fichier transmis");
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
 });
 
 /**
- * Le message ne part que si le workflow a le droit de l'écrire et un fil où
- * l'écrire. Le jeton et le numéro passent par l'environnement : interpolés dans
- * le shell, ils feraient exécuter au runner ce qu'un titre de pull request
- * contient. Et `--edit-last` échoue quand aucun commentaire n'existe encore :
- * sans son repli, le tout premier diagnostic d'une pull request serait perdu,
- * précisément celui que le designer attend.
+ * `npm ci` exécute les scripts d'installation des dépendances : un paquet
+ * compromis lirait le jeton du job qui l'installe. Ce job ne porte donc aucun
+ * droit d'écriture, et le seul job qui écrit sur la pull request n'exécute rien
+ * du repository.
+ */
+test("le job qui exécute le code du repository n'écrit nulle part", () => {
+  const racine = repoVierge();
+  try {
+    init(racine);
+    const { permissions, jobs } = parseYaml(readFileSync(join(racine, ".github/workflows/ucm.yml"), "utf8"));
+
+    assert.deepEqual(permissions, { contents: "read" });
+    assert.equal(jobs.contrats.permissions, undefined, "contrats hérite de la lecture seule");
+    assert.deepEqual(jobs.commentaire.permissions, { "pull-requests": "write" });
+
+    const commandes = jobs.commentaire.steps.map((pas) => `${pas.uses ?? ""} ${pas.run ?? ""}`).join("\n");
+    assert.doesNotMatch(commandes, /actions\/checkout|actions\/setup-node|npm |npx /);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * Le jeton et le numéro passent par l'environnement : interpolés dans le shell,
+ * ils feraient exécuter au runner ce qu'un titre de pull request contient. Sans
+ * checkout, `gh` ne connaît le repository que par `-R`. Et `--edit-last` échoue
+ * quand aucun commentaire n'existe encore : sans son repli, le tout premier
+ * diagnostic d'une pull request serait perdu, précisément celui que le designer
+ * attend.
  */
 test("le diagnostic est publié avec le droit de l'être, et crée le fil qu'il ne trouve pas", () => {
   const racine = repoVierge();
@@ -310,7 +298,6 @@ test("le diagnostic est publié avec le droit de l'être, et crée le fil qu'il 
     init(racine);
     const workflow = readFileSync(join(racine, ".github/workflows/ucm.yml"), "utf8");
 
-    assert.match(workflow, /^\s*pull-requests: write$/m);
     assert.match(workflow, /GITHUB_TOKEN: \$\{\{ secrets\.GITHUB_TOKEN \}\}/);
     assert.match(workflow, /NUMERO: \$\{\{ github\.event\.number \}\}/);
     assert.doesNotMatch(
@@ -320,7 +307,7 @@ test("le diagnostic est publié avec le droit de l'être, et crée le fil qu'il 
     );
     assert.match(
       workflow,
-      /--edit-last[\s\\]*\|\|\s*gh pr comment "\$NUMERO" --body-file ci-report\.md/,
+      /--edit-last[\s\\]*\|\|\s*gh pr comment "\$NUMERO" -R "\$GITHUB_REPOSITORY" --body-file ci-report\.md/,
       "sans repli, le premier commentaire d'une pull request n'est jamais créé",
     );
   } finally {
