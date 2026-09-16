@@ -42,10 +42,27 @@ corrige le plan et le dit dans son commit.
 | Le chargement de la configuration passe par un seul point | `loadGithubConfig()`, appelé à l'ouverture, au pré-vol et à la publication |
 | `saveSettings` écrit ses clés dans un `Promise.all` sans ordre | `config.ts:142` |
 
-Restent à mesurer, en L0 : le préfixe d'un jeton personnel GitLab (pour le
-refus par préfixe de D5), le statut de l'API de commits dans les cas
-d'échec, le rendu Markdown d'une merge request, les actions rapides dans une
-note, et la durée d'`after_script`.
+Mesures de L0, faites le 16/09/2026 sur `_vass/ucm-playground` avec un jeton
+d'accès projet de rôle Owner et de scope `api` :
+
+| Fait | Source |
+|---|---|
+| Un jeton d'accès projet se crée sur ce compte, que la documentation réserve à Premium sauf « pendant un essai, un seul » | `GET /personal_access_tokens/self` rend `["api"]` et un compte bot `project_<id>_bot_…` ; documentation GitLab, « Project access tokens » |
+| Un jeton GitLab, personnel ou projet, commence par `glpat-` | Lecture du préfixe du jeton de recette, sans l'afficher |
+| Chaque appel du plugin et de la CLI rend 2xx : projet, fichier, branche, commit sur nouvelle branche, liste et création de merge request, suppression de branche, `/user`, création, modification et liste de notes | Script de mesure, statuts 200, 201 et 204 |
+| Un fichier absent rend 404 `File Not Found` ; un jeton invalide rend 401 ; une écriture sur un projet sans droit rend 403 | Idem |
+| Commits : `create` sur un fichier existant rend 400 `A file with this name already exists` ; une branche cible existante rend 400 `A branch called '…' already exists` ; un `start_sha` inconnu rend 400 `Cannot find start_sha` ; un nom de branche invalide rend 400. Aucun de ces refus ne crée la branche | Idem, branches relues en 404 |
+| `last_commit_id` n'est pas vérifié quand `start_sha` est donné : un identifiant inconnu et un identifiant réel mais périmé rendent 201 | Idem |
+| Une seconde merge request sur la même branche source rend 409 ; une branche source absente rend 400 | Idem |
+| Une ligne `/label` ou `/close` s'exécute dans une note **et** dans la description d'une merge request créée par l'API, puis disparaît du texte enregistré | Label posé, merge request fermée, corps relu sans la ligne |
+| `@nom`, `#1`, `!1`, `~label`, `%jalon`, `projet#1`, `projet!1`, un SHA de commit existant et `:emoji:` deviennent des liens ou des images ; `$1` et `&1` restent du texte sans snippet ni epic ; toute forme en `code` reste inerte | `POST /markdown` avec `project`, sur des cibles créées pour la mesure |
+| Les notes paginent par `x-next-page` | En-têtes d'une liste à `per_page=2` |
+| Une merge request ouverte par l'API depuis une branche non protégée déclenche le pipeline `merge_request_event` sur les runners partagés ; une variable masquée non protégée y est lisible ; `CI_MERGE_REQUEST_IID`, `CI_MERGE_REQUEST_DIFF_BASE_SHA` et `CI_API_V4_URL` sont définis | Pipeline 2853752446, job réussi en 30 s |
+| `npx --yes @ucm-kit/cli@0.1.37` s'exécute en 2 s dans `after_script` | Journal du même job |
+| La branche par défaut d'un projet neuf est protégée | `GET /repository/branches/main` |
+
+Reste à mesurer, par le mainteneur : les deux appels depuis le sandbox d'un
+plugin de développement.
 
 ## 2. Décisions
 
@@ -105,11 +122,13 @@ puis `repoUrl`. `supprimerPat` retire aussi `forge_du_jeton`. `PublicSettings`
 remplace `hasPat` par `forgeDuJeton`, pour que le texte « Token enregistré.
 Laissez ce champ vide pour le conserver. » ne s'affiche que pour la forge de
 l'URL saisie. Un jeton dont le préfixe désigne l'autre forge est refusé à la
-saisie : `ghp_` et `github_pat_` pour GitHub, le préfixe GitLab relevé en L0.
-Côté GitLab, l'aide du jeton demande un jeton personnel classique portant le
-seul scope `api` : c'est le seul qui couvre l'API REST en écriture, les scopes
-`read_repository`/`write_repository` ne s'appliquant qu'au clone/push Git et à
-une partie de la lecture de fichiers, jamais aux merge requests ni aux notes.
+saisie : `ghp_` et `github_pat_` pour GitHub, `glpat-` pour GitLab.
+Côté GitLab, l'aide du jeton demande le seul scope `api` : c'est le seul qui
+couvre l'API REST en écriture, les scopes `read_repository`/`write_repository`
+ne s'appliquant qu'au clone/push Git et à une partie de la lecture de
+fichiers, jamais aux merge requests ni aux notes. Elle propose un jeton d'accès
+projet de rôle Developer quand l'offre du projet le permet, limité à ce
+projet, et sinon un jeton personnel.
 
 **D6. Le commit GitLab est atomique.** `POST /projects/:id/repository/commits`
 crée la branche et le fichier en un appel. Quand le fichier existe sur la base,
@@ -117,12 +136,20 @@ crée la branche et le fichier en un appel. Quand le fichier existe sur la base,
 `last_commit_id`. Quand il n'existe pas, `start_sha` vient de
 `GET /repository/branches/:base` et l'action est `create`. `force` n'est jamais
 posé. La merge request s'ouvre avec `remove_source_branch: true`.
+GitLab refuse en 400 un commit vers une branche qui existe déjà : l'adaptateur
+ne vérifie donc pas son absence avant d'écrire. GitLab ne vérifie pas
+`last_commit_id` quand `start_sha` est donné. Le commit part de la version lue,
+si bien qu'un changement de la base entre-temps apparaît en conflit dans la
+merge request, comme sur GitHub.
 
 **D7. Chaque forge neutralise ses propres formes actives.** GitHub garde `@nom`
 et `#123`. GitLab ajoute `!123`, `~label`, `%jalon`, `$123`, `&123`, la référence
-croisée `groupe/projet#123` et une ligne qui commence par `/`, qu'une note
-exécuterait comme action rapide. La forme reconnue part en `code`. La liste
-exacte se fixe sur le rendu mesuré en L0.
+croisée `groupe/projet#123` ou `groupe/projet!123`, et une ligne qui commence
+par `/`. GitLab exécute cette ligne comme action rapide dans une note et dans
+la description d'une merge request créée par l'API : le corps de la demande
+et le rapport de CI la neutralisent tous deux. La forme reconnue part en
+`code`. Un SHA de commit et `:emoji:` restent tels quels : leur lien ne
+notifie personne et ne modifie rien.
 
 **D8. Le rapport de CI ne nomme plus la forge.** Les trois phrases du kit
 remplacent « cette pull request » par « cet export » ou « cette modification »,
@@ -170,8 +197,10 @@ projet exigent Premium et `CI_JOB_TOKEN` n'écrit pas de note. La variable
 `UCM_GITLAB_TOKEN` est masquée et non protégée, parce que les branches
 `ucm-exporter/export-*` ne sont pas protégées. Le jeton est un jeton personnel
 classique, scope `api` seul (voir D5), rattaché au compte de service. Si un
-compte de service ne peut pas créer de jeton personnel, L0 le dit et le plan
-retient le jeton personnel d'un membre de l'équipe.
+compte de service ne peut pas créer de jeton personnel, le plan retient le
+jeton personnel d'un membre de l'équipe. Quand l'offre du projet permet un
+jeton d'accès projet, il remplace les deux : L0 l'a employé sur le projet de
+recette, dans le pipeline comme dans l'API.
 
 **D14. La recette réelle se joue sur un miroir du Playground.** Le mainteneur
 crée `UCM-Playground` sur gitlab.com. Le projet de l'équipe sert à la validation
@@ -218,29 +247,31 @@ plan, et la décision qu'il touche est corrigée dans le même commit.
       ressource ; `api` seul suffit à tout ce que le plugin et la CI appellent
       (lecture du projet, fichiers, commits, merge requests, notes, `/user`,
       suppression de branche). Voir « Ce qui est mesuré ».
-- [ ] **[mainteneur]** Créer le projet `UCM-Playground` sur gitlab.com, un
+- [x] **[mainteneur]** Créer le projet `UCM-Playground` sur gitlab.com, un
       compte de service, et un jeton personnel scope `api` limité par ce
-      compte.
-- [ ] Vérifier avec ce jeton que chaque appel nécessaire au plugin et à la CLI
+      compte. Fait : `_vass/ucm-playground`, privé, avec un jeton d'accès
+      projet scope `api` au lieu du compte de service. Le projet ne contient
+      qu'un `README.md`.
+- [x] Vérifier avec ce jeton que chaque appel nécessaire au plugin et à la CLI
       rend 2xx : lire le projet, lire un fichier, lire une branche, créer un
       commit sur une nouvelle branche, lister et créer une merge request,
       supprimer une branche, lire `/user`, lire, créer et modifier une note.
-- [ ] Relever le préfixe d'un jeton personnel GitLab, pour le refus par préfixe
+- [x] Relever le préfixe d'un jeton personnel GitLab, pour le refus par préfixe
       de D5.
 - [ ] Depuis un plugin de développement (`devAllowedDomains`), appeler
       `GET /projects/:id` et `POST /repository/commits`. Preuve : les deux
       réponses arrivent dans le sandbox Figma.
-- [ ] Relever le statut et le message de l'API de commits pour : `create` sur un
+- [x] Relever le statut et le message de l'API de commits pour : `create` sur un
       fichier existant, `update` avec un `last_commit_id` périmé, une branche
       cible qui existe déjà avec `start_sha` et sans `force`, un `start_sha`
       inconnu. Si la branche existante reçoit le commit au lieu d'un refus,
       l'adaptateur vérifie l'absence de la branche avant d'écrire, et D6 le dit.
-- [ ] Ouvrir à la main une merge request dont la description contient `@icons`,
+- [x] Ouvrir à la main une merge request dont la description contient `@icons`,
       `#12`, `!3`, `~primaire`, `%v1`, `$4`, `&5`, `groupe/projet#6` et un
       hexadécimal de huit caractères. Poster une note dont une ligne commence
       par `/label`. Relever les formes actives, puis vérifier qu'une forme en
-      `code` reste inerte.
-- [ ] Vérifier qu'une merge request ouverte par l'API déclenche le pipeline de
+      `code` reste inerte. Mesuré par l'API plutôt qu'à la main.
+- [x] Vérifier qu'une merge request ouverte par l'API déclenche le pipeline de
       merge request sur une branche non protégée, qu'une variable masquée non
       protégée y est lisible, et relever la durée de
       `npx --yes @ucm-kit/cli@<version>` dans `after_script`.
@@ -462,7 +493,8 @@ publication de la série en cours.
 | Risque | Conséquence | Tâche qui le lève |
 |---|---|---|
 | Un jeton personnel scope `api` n'est pas limité à un projet : il ouvre tous les projets du compte | Un jeton d'accès projet le limiterait, mais exige Premium sur gitlab.com ; l'aide du jeton le dit | L0, D13 |
-| L'API de commits écrit dans une branche existante au lieu de refuser | Deux exports de la même seconde écrivent dans la même branche ; l'adaptateur vérifie l'absence de la branche | L0 |
+| L'API de commits écrit dans une branche existante au lieu de refuser | Levé en L0 : GitLab rend 400 et ne crée rien | L0 |
+| L'essai Premium du compte de recette expire | Le jeton d'accès projet de recette cesse peut-être de fonctionner ; un jeton personnel scope `api` le remplace | L6 |
 | La revue Community retarde l'ajout de `gitlab.com` | L'équipe attend la publication ; le plugin de développement sert en attendant | L7 |
 | Les runners partagés de gitlab.com exigent une vérification du compte | Le pipeline ne démarre pas, et aucune note n'est publiée | L0, L6 |
 | `npx` dans `after_script` dépasse la limite de cinq minutes | La note manque ; le rapport reste dans les artefacts | L0 |
