@@ -3,28 +3,108 @@
 Cette note propose un plan d'exécution pour réduire les tokens dépensés par
 composant reconstruit, sans perdre la qualité d'intégration. Elle prolonge
 [RAPPORT-COUT-GENERATION.md](./RAPPORT-COUT-GENERATION.md), qui porte les
-mesures et les sources tarifaires. Les chiffres marqués « estimé » sont des
-calculs à partir des volumes mesurés, et chaque phase nomme la mesure qui les
-confirme ou les infirme.
+mesures de la campagne L5 et les sources tarifaires.
 
-## 1. Objectif et porte d'acceptation
+Trois choses la composent : un protocole qui rend chaque réduction vérifiable
+(section 3), un inventaire pondéré de vingt-quatre options (section 4), et le
+plan retenu, découpé en lots qui se branchent sur ceux du plan des modes
+(section 5).
 
-La cible porte sur `Button`, le composant le plus lourd du Playground :
+## 1. Ce que coûte un composant aujourd'hui
 
-| Étape | Tokens facturés | Coût | Appels au modèle |
-|---|---|---|---|
-| Aujourd'hui, médiane de `Button-S` | 1,68 M | 1,33 USD | 17 |
-| Après phase 1, estimé | 0,9 M | 0,80 USD | 15 |
-| Après phase 2, estimé | 0,4 M | 0,45 USD | 12 |
-| Après phase 3, estimé | 60 k | 0,15 à 0,25 USD | 2 |
-| Après phase 4, estimé | 60 k | 0,08 à 0,15 USD | 2 |
+Médianes de la condition `S` de L5, sur `claude-sonnet-5` à l'effort par
+défaut de Claude Code.
 
-Les deux colonnes ne baissent pas au même rythme : une lecture de cache coûte
-un cinquantième d'une écriture, donc diviser les tokens par vingt-cinq divise
-le coût par sept.
+| Poste | `Alert` | `Button` |
+|---|---|---|
+| Contexte initial du harnais | 48,5 k tokens | 39,9 k tokens |
+| Matière lue pour la tâche | 70 ko, dont le contrat de la dépendance | 55 ko |
+| Appels au modèle | 22 | 17 |
+| Sortie, dont réflexion | 38,9 k, dont 35,5 k | 53,8 k, dont 41,4 k |
+| Tokens facturés, toutes catégories | 2,64 M | 1,68 M |
+| Coût | 1,25 USD | 1,33 USD |
 
-**Qualité d'intégration.** Une phase se garde si les cinq contrôles suivants
-restent au vert sur les quatre composants du Playground, et se retire sinon.
+Le coût suit la formule : prix d'écriture fois le contexte final, plus prix de
+lecture fois la somme des contextes relus, plus prix de sortie fois la
+réflexion et le code. Aux tarifs de Sonnet 5 avec un cache d'une heure, un
+token posé au premier appel d'une boucle de vingt appels coûte quatre fois son
+prix d'entrée.
+
+## 2. Le plancher atteignable
+
+Un composant reconstruit a besoin de trois choses : la procédure et les aides,
+le contrat, les conventions du repository. Les deux premières se mesurent.
+
+| Composant | Contrat | Contrat sans ses données mécaniques | Guide entier | Guide sans l'extraction | Aides imprimées |
+|---|---|---|---|---|---|
+| `Alert` | 14,4 ko | 7,8 ko | 33,9 ko | 18,0 ko | 11 |
+| `Button` | 54,6 ko | 9,8 ko | 71,7 ko | 19,7 ko | 13 |
+| `StressTest` | 44,6 ko | 10,2 ko | 68,0 ko | 18,9 ko | 13 |
+| `TileLink` | 3,2 ko | 2,3 ko | 14,1 ko | 11,1 ko | 6 |
+
+Les données mécaniques sont `variants`, `viewStructures`, `viewPaintPlacements`,
+`viewTypographies`, `viewIcons` et `samples` : un script les résout depuis le
+contrat, avec `vueExacteDuVariant` et `compositionsExactesDuVariant`
+(`packages/kit/src/lecteurs/variant-views.mjs`).
+
+D'où un plancher, à 2,2 caractères par token pour le `JSON` et 3,5 pour la
+prose :
+
+| Élément | Volume | Payé |
+|---|---|---|
+| Préfixe partagé : procédure, catalogue d'aides entier, conventions, gabarit | 9 k tokens | une fois par campagne, si le cache tient |
+| Paquet variable, par composant | 1,5 k (`TileLink`) à 5,3 k (`StressTest`) tokens | à chaque composant |
+| Code que le modèle écrit encore | 0,6 k (`TileLink`) à 2,1 k (`Button`) tokens | à chaque composant |
+
+Coût plancher d'un composant de la taille de `Button`, un appel et une
+réparation, effort `medium` : environ 0,14 USD sur Sonnet 5, 0,07 USD sur
+Haiku 4.5, moitié moins en traitement par lot. Le facteur par rapport à
+aujourd'hui vaut environ neuf en dollars et vingt-cinq en tokens, l'écart entre
+les deux venant du prix d'une lecture de cache.
+
+## 3. Rendre les réductions vérifiables
+
+Sans ce protocole, aucune des options suivantes ne se juge.
+
+### 3.1. Un relevé versionné
+
+Sur le modèle de `scripts/mesurer-prose.mjs` et de
+`docs/notes/baseline-prose.json`, ajouter `scripts/mesurer-cout.mjs` et
+`docs/notes/baseline-cout.json`. Le script lit les transcripts d'une campagne
+et rend, par composant et par condition : appels au modèle, contexte initial,
+tokens par catégorie, coût, octets du paquet d'entrée, octets écrits par le
+modèle, défauts de rendu, code de sortie de `tsc`.
+
+Le relevé se commite. Chaque lot le met à jour, et le commit porte la
+différence.
+
+### 3.2. Les compteurs disponibles
+
+| Compteur | Où | Ce qu'il prouve |
+|---|---|---|
+| `usage` du premier message d'un transcript | `--output-format stream-json` | contexte initial du harnais |
+| `total_cost_usd` et `modelUsage` de l'événement `result` | même source | coût et répartition par catégorie |
+| Ligne `Prompt cache (main)` de `/usage` | session interactive | part des entrées servies par le cache, nombre de manques, cause probable du dernier |
+| `--max-budget-usd` | session non interactive | plafond par composant, arrêt au dépassement |
+| Exporteur OpenTelemetry de Claude Code | par utilisateur et par session | suivi si la pratique s'étend à une équipe |
+
+### 3.3. Un prédicat par lot
+
+Chaque lot porte un prédicat mesurable, vérifié par `mesurer-cout.mjs` ou par
+un test. Un lot dont le prédicat échoue se retire.
+
+| Lot | Prédicat |
+|---|---|
+| A. Harnais | contexte initial du premier appel inférieur à 15 k tokens |
+| B. Matière | paquet d'entrée inférieur à 12 ko par composant, et aucune occurrence de `"variants"` dans le paquet |
+| C. Génération | le fichier du composant ne contient aucune référence de token littérale, motif `{components.` ou `var(--` |
+| D. Boucle | au plus trois appels au modèle par composant |
+| E. Modèle | coût médian par composant inférieur au budget inscrit dans `baseline-cout.json` |
+
+### 3.4. La porte d'acceptation
+
+Un lot se garde si les cinq contrôles restent au vert sur les quatre
+composants du Playground, et se retire sinon.
 
 | Contrôle | Ce qu'il attrape | État |
 |---|---|---|
@@ -34,251 +114,297 @@ restent au vert sur les quatre composants du Playground, et se retire sinon.
 | Parité de rendu sur la liste fermée de propriétés | peinture, contour, typographie, dimensions faux sur une combinaison | existe hors dépôt, dans `mesure-l5/mesurer-fidelite.mjs` |
 | Compte rendu des manques, format fixe | une donnée absente du contrat, inventée ou masquée | à formaliser |
 
-Un sixième critère porte sur la relecture humaine : le mainteneur relit le code
-écrit par le modèle. Sur `Button`, la phase 2 fait passer ce volume de 33 ko à
-6,7 ko.
+Un sixième critère porte sur la relecture humaine. Le lot C fait passer le
+volume relu sur `Button` de 33 ko à 6,7 ko.
 
-## 2. Profil des contrats à traiter
+## 4. Inventaire pondéré
 
-| Composant | Contrat | Part mécanique du contrat | Code de référence | Part de tables dans le code |
-|---|---|---|---|---|
-| `Button` | 54,6 ko | `variants` 44,8 ko, 90 entrées, 82 % | 33,0 ko | 26,3 ko, 80 % |
-| `StressTest` | 44,6 ko | `viewStructures` 21,2 ko et `samples` 9,7 ko, 69 % | 20,9 ko | 0,1 ko, 0 % |
-| `Alert` | 14,4 ko | `variants` 3,7 ko et `viewStructures` 2,9 ko, 46 % | 6,2 ko | 1,9 ko, 31 % |
-| `TileLink` | 3,2 ko | `variants` 0,9 ko, 29 % | 2,7 ko | 0,6 ko, 24 % |
+Chaque option reçoit une note de 0 à 5 sur cinq critères, multipliée par le
+poids du critère. Total sur 55.
 
-Le contrat de `Button` fait 25 k tokens à 2,2 caractères par token. La part
-mécanique varie selon le composant : le gain de la phase 2 suit cette part, et
-se mesure donc sur les quatre.
+| Critère | Poids | Note 5 signifie |
+|---|---|---|
+| Gain | 3 | retire une part majeure du coût mesuré |
+| Qualité préservée | 3 | ne touche à aucun contrôle de la porte |
+| Effort | 2 | quelques heures, sans code à maintenir |
+| Vérifiabilité | 2 | un compteur existant prouve le gain |
+| Portée | 1 | vaut pour tous les composants et dans la durée |
 
-## 3. Phase 0 : rendre le banc décidable
+### 4.1. Options retenues
 
-Aucune phase suivante ne se juge sans cela. Les corrections sont listées dans
-la section 1.8 du rapport. En résumé :
+| Option | Gain | Qualité | Effort | Vérif. | Portée | Total |
+|---|---|---|---|---|---|---|
+| A1. Session isolée : `--strict-mcp-config`, `--setting-sources project`, `--tools`, `--disable-slash-commands` | 4 | 5 | 5 | 5 | 4 | 51 |
+| C1. Générer les données mécaniques, le modèle n'écrit plus de table | 5 | 5 | 2 | 5 | 5 | 49 |
+| B2. Extraction réduite dans `ucm guide` : props, structure, états, intentions, vues résumées | 4 | 4 | 4 | 5 | 5 | 47 |
+| D1. Pipeline : paquet fermé, un appel, contrôles hors contexte, une réparation | 5 | 4 | 2 | 5 | 4 | 45 |
+| E2. Effort `medium`, puis `low` | 4 | 3 | 5 | 5 | 3 | 44 |
+| A3. Durée de cache choisie selon l'intervalle entre appels | 2 | 5 | 5 | 5 | 2 | 43 |
+| D4. Traitement par lot pour une régénération de corpus | 3 | 5 | 3 | 5 | 3 | 43 |
+| A2. `--exclude-dynamic-system-prompt-sections` : préfixe partagé entre runs | 2 | 5 | 5 | 4 | 3 | 42 |
+| B5. Point de cache explicite sur le préfixe partagé | 3 | 5 | 3 | 4 | 4 | 42 |
+| B4. Paquet d'entrée fermé, aucune découverte du dépôt | 5 | 3 | 2 | 5 | 4 | 42 |
+| C3. Modification ciblée à la régénération plutôt que réécriture | 4 | 4 | 3 | 4 | 4 | 42 |
+| E1. Haiku 4.5 sur le reste du code, relance sur Sonnet à l'échec | 4 | 3 | 3 | 5 | 3 | 40 |
+| C5. Compte rendu des manques en format fixe | 1 | 5 | 4 | 5 | 4 | 40 |
+| C4. Budget de tâche vu par le modèle, et plafond de dépense | 2 | 4 | 4 | 5 | 3 | 39 |
+| A6. Skill scindée, chargement progressif | 2 | 4 | 4 | 4 | 4 | 38 |
+| B1. Retrait sec de l'extraction du contrat cible | 2 | 3 | 5 | 5 | 3 | 38 |
+| D2. Arrêt après deux réparations, main rendue à la boucle d'agent | 2 | 4 | 4 | 4 | 3 | 37 |
 
-1. `mesurer-fidelite.mjs` cible le premier enfant de `.scene` qui n'est ni
-   `<style>` ni `<script>` ; sinon un composant qui émet sa feuille de style
-   n'est pas mesuré, comme `Button-G-1`.
-2. `comparer.mjs` rend aussi le nombre de défauts distincts, par propriété et
-   par valeur rendue, et lève la borne de 200 entrées de `detail`.
-3. `analyser-run.mjs` décide sur `coutUsd`, relève le nombre d'erreurs de `tsc`,
-   le contexte initial et le nombre d'appels.
-4. `lancer-run.mjs` isole la session (phase 1) et fixe `--effort`.
-5. Cinq répétitions par cellule, et le jeu des quatre composants plutôt que
-   deux : `StressTest` et `TileLink` éprouvent une autre forme de contrat.
+`B1` est la décision brute que le critère de L5 impose. `B2` la remplace et la
+contient : l'extraction cesse d'imprimer les données mécaniques, que le lot
+`C1` génère, et garde ce qui aide le modèle à écrire.
 
-Coût de la campagne de référence, aux tarifs actuels : de l'ordre de 25 USD
-pour quatre composants en cinq répétitions.
+### 4.2. Options écartées
 
-## 4. Phase 1 : session isolée et guide allégé
+| Option | Total | Raison |
+|---|---|---|
+| A5. Hook qui filtre la sortie des commandes | 35 | le pipeline du lot D filtre déjà, hors du contexte |
+| A4. Sous-agent pour absorber les sorties volumineuses | 33 | même raison ; un sous-agent repart sur un préfixe neuf, sans cache partagé |
+| `TOON` ou autre notation compacte | 26 | le contrat minifié pèse 1,5 % de moins, et la leçon de syntaxe annule le gain ; deux études ne mesurent aucun effet net sur la justesse |
+| D3. Tirage multiple, meilleur des N | 26 | multiplie le coût par N ; la littérature donne l'avantage à la réparation guidée à budget égal |
+| E3. Autre fournisseur | 25 | exige un autre exécuteur que Claude Code ; à rouvrir une fois le pipeline en place |
+| E4. Affiner un petit modèle | 25 | quatre composants et un consommateur ; l'étude de référence s'appuie sur un millier d'exemples |
+| B8. Serveur MCP pour servir le contrat | 23 | le pipeline assemble le paquet lui-même, sans protocole à maintenir |
+| B6. Compression de prompt, famille `LLMLingua` | 22 | ces méthodes retirent des tokens jugés peu informatifs ; un contrat est une donnée exacte, et une référence de token perdue est un défaut de rendu |
+| E5. Auto-hébergement d'un modèle à poids ouverts | 16 | le seuil de rentabilité d'une carte dédiée se situe vers 2,5 à 3 milliards de tokens par mois ; le corpus en consomme quatre ordres de grandeur de moins |
 
-Aucune de ces corrections ne touche à ce que le modèle doit produire.
+## 5. Le plan
 
-**Isoler la session.** Le contexte initial mesuré va de 40 k à 52 k tokens, et
-pèse 21 à 59 % du coût d'un run. Il porte les skills, agents, commandes et
-connecteurs MCP du compte de l'utilisateur, étrangers à la tâche.
+### Lot A. Harnais et guide, sans toucher au code produit
+
+**Gestes.**
+
+1. Fixer la session de reconstruction dans `lancer-run.mjs` puis dans le
+   relais :
 
 ```sh
 claude -p --model claude-sonnet-5 --effort medium \
   --strict-mcp-config --setting-sources project --disable-slash-commands \
   --tools Read,Write,Edit,Bash --exclude-dynamic-system-prompt-sections \
-  --max-budget-usd 1
+  --append-system-prompt "$(cat .ucm/consigne.md)" --max-budget-usd 1
 ```
 
-La consigne du relais passe alors par `--append-system-prompt`, puisque
-`--disable-slash-commands` retire les skills. Mesurer le contexte initial
-obtenu avant de fixer ces options dans `lancer-run.mjs`.
+`--disable-slash-commands` retire les skills, donc la consigne du relais passe
+par `--append-system-prompt`. L'aide de `--bare` nomme aussi une variante
+`--append-system-prompt-file`, absente de la liste des drapeaux de la version
+2.1.272 : vérifier avant de s'en servir.
 
-**Alléger le guide.** Trois gestes, déjà prévus par le plan ou décidés par L5 :
-
-1. retirer l'extraction du contrat cible de `ucm guide`. Sur `Button`, elle
-   pèse 52,0 ko des 71,7 ko de la sortie, dont 43,1 ko pour le seul champ
-   `variants` ;
-2. écrire la sortie avec `--out` et nommer ce fichier dans le relais. Au-delà
-   d'une taille de sortie, Claude Code enregistre le résultat d'une commande
-   dans un fichier et n'en montre qu'un aperçu : les trois runs `Button-G` ont
-   payé un appel et deux lectures pour récupérer leur propre guide ;
-3. scinder `.agents/skills/consommer-contrat/SKILL.md`, comme le prévoit L6.
-   Une skill invoquée charge tout son corps dans le contexte et l'y laisse ;
-   ses fichiers voisins ne se chargent que si le modèle les ouvre. Les 23 ko de
-   la skill actuelle valent environ 11 k tokens dès le premier appel.
-
-**Rétablir la règle du contrôle de types.** `packages/cli/procedure.md` demande
-de ne lancer que les contrôles nommés par les preuves des aides. La skill `S`
-porte une règle que la procédure a perdue : les identifiants attendus par les
-consommateurs se découvrent dans les erreurs de `tsc`. Les trois échecs de
-types de la mesure sont tous en condition `G`. Ajouter à la procédure :
+2. Choisir la durée de cache selon l'intervalle entre deux appels. En L5,
+   trois runs sur douze ont dépassé cinq minutes entre deux appels, jusqu'à
+   507 s sur `Button-G-1`, le temps d'écrire le composant. Tant que le modèle
+   écrit un fichier de 33 ko d'un bloc, garder une heure ; après le lot C, le
+   plus long appel tombe sous la minute et `CLAUDE_CODE_PROMPT_CACHE_TTL=5m`
+   retire 37 % du prix des écritures.
+3. Écrire la sortie du guide avec `--out` et nommer ce fichier dans le relais.
+   Au-delà d'une taille, Claude Code enregistre le résultat d'une commande dans
+   un fichier et n'en montre qu'un aperçu : les trois runs `Button-G` ont payé
+   un appel et deux lectures pour récupérer leur propre guide.
+4. Scinder `.agents/skills/consommer-contrat/SKILL.md`, comme L6 le prévoit.
+   Une skill invoquée charge tout son corps et l'y laisse ; ses fichiers
+   voisins ne se chargent que si le modèle les ouvre. Les 23 ko actuels valent
+   environ 11 k tokens dès le premier appel.
+5. Rétablir dans `packages/cli/procedure.md` la règle que la skill portait :
 
 > Lancer le contrôle de types du projet. Une prop qu'un consommateur attend et
 > que le contrat ne publie pas s'ajoute à la surface publique, et se rapporte
 > dans le compte rendu.
 
-Gain attendu de la phase : 30 à 40 % du coût, sans changement du code produit.
-Mesure : campagne du banc corrigé, condition « session isolée » contre
-condition actuelle.
+**Prédicat.** Contexte initial inférieur à 15 k tokens, mesuré par
+`claude -p "ok" --output-format json` avec ces options.
 
-## 5. Phase 2 : générer ce qui est mécanique
+**Gain attendu.** 30 à 40 % du coût. **Risque.** Aucun sur la porte, sauf le
+point 5, qui la remonte.
 
-C'est le levier principal. Sur `Button`, le modèle lit 25 k tokens de contrat
-pour en recopier 8 k tokens sous forme de table : 82 % du contrat et 80 % du
-code écrit portent la même information.
+### Lot B. Ce que le guide imprime
 
-**Ce qui se génère.** Un module de données par composant, produit depuis le
-contrat par `@ucm-kit/adapter-typescript`, qui génère déjà les unions de props
-et le type exact des variants. Les lecteurs publics fournissent la résolution :
-`vueExacteDuVariant` et `compositionsExactesDuVariant`
-(`packages/kit/src/lecteurs/variant-views.mjs`).
+**Geste.** `packages/cli/src/guide.mjs` imprime une extraction réduite : props,
+axes de variantes, `structure`, `stateModel`, `intent`, `meta`, une ligne par
+vue utilisée, l'API et l'échantillon de chaque dépendance. Les données
+mécaniques ne sont plus imprimées : le lot C les génère. Sur `Button`,
+l'extraction passe de 52,0 ko à moins de 10 ko.
 
-Contenu du module, pour chaque combinaison de variant : les références de
-tokens de peinture, les contours, la vue exacte, et les tables de dimensions
-par taille. Le composant de référence de `Button` porte exactement cette
-table, sous le nom `VARIANTS`, suivie de `SIZES`.
+**Prédicat.** Paquet inférieur à 12 ko par composant, et aucune occurrence de
+`"variants"` dans la sortie. Un test de `guide.test.mjs` le tient.
 
-**Ce que le modèle écrit.** La surface publique, l'arbre, la composition, les
-états, les échantillons et le branchement des icônes, soit 6,7 ko sur `Button`.
-Il importe le module généré et n'en recopie aucune valeur.
+**Dépend de.** Le lot C, sinon le modèle n'a plus les données et les invente.
+Les deux sortent ensemble.
 
-**Règles qui accompagnent la génération.**
+### Lot C. Générer les données mécaniques
+
+C'est le levier principal : sur `Button`, 82 % du contrat et 80 % du code de
+référence portent la même information.
+
+**Geste.** `@ucm-kit/adapter-typescript` gagne une génération de données, à
+côté des unions de props et du type exact des variants qu'il produit déjà. Par
+composant, un module qui porte, pour chaque combinaison de variant : les
+références de tokens de peinture, les contours, la vue exacte, les dimensions
+par taille, et les échantillons. Le composant de référence de `Button` porte
+exactement cette forme, sous les noms `VARIANTS` et `SIZES`.
+
+**Règles.**
 
 | Règle | Où |
 |---|---|
-| Le composant importe le module généré ; aucune valeur du contrat ne se recopie dans le composant | `procedure.md` et aide `resolution-token` |
-| Le module se régénère au build, comme `tokens.css` | script `build` du repository |
+| Le composant importe le module généré et ne recopie aucune valeur du contrat | `procedure.md`, aide `resolution-token` |
+| Le module se régénère au build, comme `tokens.css` | script `build` du repository consommateur |
 | Un module absent ou périmé est une erreur de `ucm check` | `packages/cli/src/check.mjs` |
-| Le guide n'imprime ni `variants`, ni les vues, ni les échantillons complets | `packages/cli/src/guide.mjs` |
 
-**Preuve.** Un test de parité compare le module généré au contrat, entrée par
-entrée, et se voit rouge en retirant une entrée. La parité de rendu de la
-porte d'acceptation reste le juge final : elle a déjà attrapé, en condition
-`G`, des styles natifs de `<button>` non neutralisés sur les 58 combinaisons.
+**Preuve.** Un test compare le module généré au contrat, entrée par entrée, et
+se voit rouge quand une entrée est retirée. Une loi du dépôt consommateur
+refuse une référence de token littérale dans un composant, motif
+`{components.` ou `var(--`, ce qui rend le prédicat du lot vérifiable par
+`grep`.
 
-**Ce que la génération apporte à la qualité.** Une étude de janvier mesure la
+**Ce que la génération apporte à la qualité.** Une étude mesure la
 transcription littérale de données par onze modèles à poids ouverts : le taux
-de correspondance moyen tombe de 63 % à 100 entrées, à 16 % à 300 entrées et à
-7 % à 500. Les modèles tronquent, sautent des entrées ou dérivent, tout en
-produisant du code syntaxiquement correct. `Button` compte 90 entrées, et
+de correspondance moyen tombe de 63 % à 100 entrées, à 16 % à 300 et à 7 % à
+500 ; les modèles tronquent, sautent des entrées ou dérivent tout en produisant
+du code syntaxiquement correct. `Button` compte 90 entrées, et
 `claude-sonnet-5` les a transcrites sans écart de rendu dans les trois runs
-`S`. Le risque n'est donc pas constaté ici : il porte sur le composant suivant,
-plus large, et sur les modèles moins chers que la phase 4 met en jeu.
+`S` : le risque n'est pas constaté ici, il porte sur le composant suivant et
+sur les modèles moins chers du lot E.
 
-Gain attendu sur `Button` : 20 k tokens d'entrée et 9 k tokens de sortie en
-moins par reconstruction, soit environ 0,35 USD au tarif de Sonnet 5, avant
-même les phases suivantes. Gain nul sur `StressTest` tant que la génération ne
-couvre pas `viewStructures`, ce que la mesure dira.
+**Gain attendu.** 20 k tokens d'entrée et 9 k tokens de sortie en moins par
+reconstruction de `Button`, soit environ 0,35 USD. Sur `StressTest`, le gain
+suit `viewStructures` et `samples`, 69 % de son contrat.
 
-## 6. Phase 3 : sortir de la boucle d'agent pour la reconstruction à froid
+**Risque.** Le générateur devient l'autorité sur ces données. La parade est le
+test de parité, plus la parité de rendu de la porte.
 
-Une reconstruction à froid n'a rien à explorer : le contrat, les conventions,
-le point d'intégration des icônes et la configuration sont connus. Les runs de
-L5 consacrent pourtant 8 à 26 appels à les retrouver, et chaque appel relit
-tout le contexte accumulé.
+**Décision à prendre.** Le module généré est du TypeScript, donc il vit dans
+l'adaptateur. La question du gabarit neutre en technologie, ouverte en L7, ne
+se referme pas pour autant : le gabarit montre une forme, le module porte des
+données.
 
-**Forme proposée.** Une commande `ucm implement <contrat>` ou un script du
-Playground, qui enchaîne :
+### Lot D. Le pipeline
 
-1. assemblage du paquet d'entrée : procédure, aides employées, conventions,
-   contrat réduit, API et échantillon des dépendances, gabarit ;
-2. un appel au modèle, sortie attendue : le fichier du composant et le compte
-   rendu des manques, dans un format fixe ;
-3. écriture du fichier, puis contrôles lancés par le script, hors du contexte
-   du modèle ;
+Une reconstruction à froid n'a rien à explorer. Les runs de L5 consacrent
+pourtant 8 à 26 appels à retrouver le contrat, les conventions, `Icone.tsx` et
+la configuration, et chaque appel relit tout le contexte accumulé.
+
+**Geste.** Une commande `ucm implement <contrat>`, ou un script du Playground
+si la commande doit rester hors de la CLI :
+
+1. assembler le paquet : préfixe partagé, puis paquet variable du composant ;
+2. un appel, sortie attendue : le fichier du composant et le compte rendu des
+   manques, dans un format fixe ;
+3. écrire le fichier, puis lancer les contrôles, hors du contexte du modèle ;
 4. sur échec, un second appel qui reçoit les seules lignes en erreur et rend
-   une modification ciblée ;
-5. après deux réparations sans succès, la main revient à la boucle d'agent, et
-   le script le dit.
+   une modification ciblée, au format « chercher et remplacer » plutôt qu'un
+   diff unifié, que les mesures publiques donnent moins fiable ;
+5. après deux réparations sans succès, rendre la main à la boucle d'agent et le
+   dire.
 
-**Mise en cache du préfixe.** La procédure, le catalogue d'aides et les
-conventions ne changent pas d'un composant à l'autre. Un point de cache
-explicite sur ce préfixe le fait payer une fois pour tout le corpus. Le
-livre de recettes d'Anthropic mesure une facture divisée par deux environ sur
-une file de tâches indépendantes partageant un préfixe, et une baisse de 44 %
-entre un préfixe stable octet par octet et un préfixe instable.
+**Cache.** Un point de cache explicite sur le préfixe partagé le fait payer une
+fois pour toute la campagne. Le livre de recettes d'Anthropic mesure une
+facture divisée par deux environ sur une file de tâches indépendantes
+partageant un préfixe, et 44 % d'écart entre un préfixe stable octet par octet
+et un préfixe instable.
 
-**Traitement par lot.** Une régénération de tout le corpus après un réexport
-n'attend personne. L'API Batches facture la moitié de chaque token, lectures et
-écritures de cache comprises, pour un résultat rendu sous 24 heures.
+**Lot de traitement.** Une régénération de tout le corpus après un réexport
+n'attend personne : l'API Batches facture la moitié de chaque token, lectures
+et écritures de cache comprises, sous 24 heures.
 
 **Garde-fous.** `max_tokens` à 64 000 en flux, un budget de tâche que le modèle
-voit, et un plafond de dépense par composant. Un appel arrêté sur `max_tokens`
+voit, un plafond de dépense par composant. Un appel arrêté sur `max_tokens`
 compte comme un échec, pas comme une réponse à relancer au même plafond.
 
-Gain attendu : le coût passe sous 0,25 USD par composant, et le nombre d'appels
-de 12 à 2. Mesure : même porte d'acceptation, plus le nombre de réparations
-nécessaires par composant.
+**Prédicat.** Au plus trois appels au modèle par composant, coût médian sous
+0,30 USD.
 
-## 7. Phase 4 : effort et modèle
+**Risque.** Le paquet fermé peut oublier une convention. La parade est la porte
+d'acceptation et la relecture du compte rendu des manques à chaque campagne.
 
-À faire une fois le pipeline en place, une variable à la fois, sur le banc.
+### Lot E. Effort, modèle, régénération
 
-1. **Effort.** La réflexion vaut 27 % du coût mesuré, à l'effort par défaut.
-   Anthropic mesure sur du code long un passage en effort `medium` qui coûte
-   moitié moins pour environ deux points de réussite en moins. Balayer
-   `medium`, puis `low`, en gardant `Button` et `StressTest` comme cas durs.
-2. **Modèle sur le reste du code.** Une fois les tables générées, la part
-   écrite tient en 6,7 ko. `claude-haiku-4-5` coûte la moitié de Sonnet 5 par
-   token. Le schéma mesuré par Anthropic sur du code, tout passer au niveau
-   bas puis relancer les échecs au niveau par défaut, tient le même taux de
-   réussite pour la moitié du prix. La porte d'acceptation fournit le signal
-   d'échec dont ce schéma a besoin.
-3. **Contexte.** Haiku 4.5 s'arrête à 200 k tokens de contexte. La boucle
-   d'agent actuelle atteint 191 k sur `Button` : seul le pipeline de la phase 3
-   laisse la place.
-4. **Autre fournisseur.** À n'ouvrir qu'après la phase 3, puisqu'il faut un
-   autre exécuteur que Claude Code, et à juger sur le même banc. Compter le
-   contrat avec le tokeniseur du fournisseur visé avant de comparer des prix
-   par million de tokens.
+1. **Effort.** La réflexion vaut 27 % du coût mesuré. Anthropic mesure sur du
+   code long un passage en effort `medium` qui coûte moitié moins pour environ
+   deux points de réussite en moins. Balayer `medium` puis `low`, avec `Button`
+   et `StressTest` comme cas durs.
+2. **Modèle.** Une fois les données générées, la part écrite tient en 6,7 ko
+   sur `Button`. Haiku 4.5 coûte la moitié de Sonnet 5 par token. Le schéma
+   mesuré par Anthropic, tout passer au niveau bas puis relancer les échecs au
+   niveau par défaut, tient le même taux de réussite pour la moitié du prix ;
+   la porte fournit le signal d'échec dont il a besoin. Le contexte de Haiku
+   s'arrête à 200 k tokens, ce que seul le pipeline laisse tenir.
+3. **Régénération.** Après un réexport, le diff sémantique
+   ([PLAN-DIFF-SEMANTIQUE.md](./PLAN-DIFF-SEMANTIQUE.md)) donne les champs
+   touchés. Une modification qui ne porte que sur des données mécaniques ne
+   demande aucun appel : le module se régénère, et la porte vérifie le rendu.
+   Sinon, le paquet se réduit aux champs touchés et au fichier existant.
 
-## 8. Phase 5 : régénérer après un réexport
+**Prédicat.** Coût médian par composant sous le budget inscrit dans
+`baseline-cout.json`, porte au vert.
 
-Une modification du contrat ne justifie pas de réécrire le composant. Le diff
-sémantique décrit dans [PLAN-DIFF-SEMANTIQUE.md](./PLAN-DIFF-SEMANTIQUE.md)
-donne les champs touchés. Le paquet d'entrée se réduit alors à ces champs, au
-fichier existant et aux conventions, et la sortie attendue est une modification
-ciblée. Une modification du seul champ `variants` ne demande aucun appel : le
-module généré se régénère, et la porte d'acceptation vérifie le rendu.
+## 6. Ordre, budget et points de décision
 
-Mesure : coût par composant modifié, et nombre de cas où la modification
-ciblée échoue et demande une réécriture complète.
-
-## 9. Ordre, rattachement aux lots, budget
-
-| Phase | Rattachement | Dépend de | Coût de mise en œuvre | Gain attendu |
+| Lot | Rattachement | Dépend de | Effort | Budget visé pour `Button` |
 |---|---|---|---|---|
-| 0. Banc décidable | L5 | rien | une session d'agent, 25 USD de campagne | aucune, condition des suivantes |
-| 1. Session isolée, guide allégé, règle de `tsc` | L6 | 0 | une session | 30 à 40 % |
-| 2. Tables générées | nouveau lot, après L6 | 1 | adaptateur, `check`, guide, tests | 25 à 35 % de plus |
-| 3. Pipeline | nouveau lot | 2 | commande `implement`, contrôles, cache, lot | 50 à 60 % de plus |
-| 4. Effort et modèle | mesure | 3 | balayage sur le banc | 30 à 50 % de plus |
-| 5. Régénération ciblée | après le diff sémantique | 2 | script de paquet réduit | porte sur les réexports |
+| 0. Banc corrigé et relevé versionné | L5 | rien | une session, 25 USD de campagne | 1,33 USD, mesuré |
+| A. Harnais, guide, procédure | L6 | 0 | une session | 0,80 USD |
+| B. Extraction réduite | L6 | C | une session, tests | avec C |
+| C. Données générées | nouveau lot L11 | 0 | adaptateur, `check`, tests, loi du dépôt consommateur | 0,45 USD |
+| D. Pipeline | nouveau lot L12 | A, B, C | commande, contrôles, cache, lot | 0,25 USD |
+| E. Effort, modèle, régénération | nouveau lot L13 | D | balayage sur le banc | 0,08 à 0,15 USD |
 
-## 10. Risques et parades
+Le lot 0 reprend les corrections de la section 1.8 du rapport : sélecteur de
+`mesurer-fidelite.mjs` qui ignore `<style>`, défauts distincts dans
+`comparer.mjs`, décision sur `coutUsd`, cinq répétitions, et les quatre
+composants au lieu de deux.
+
+Trois décisions appartiennent au mainteneur :
+
+1. la forme du module généré, qui fixe TypeScript pour les données et croise la
+   question du gabarit de L7 ;
+2. la place du pipeline, commande `ucm implement` de la CLI ou script du
+   repository consommateur. La CLI le rend reproductible ailleurs ; le script
+   garde la CLI hors du métier d'appeler un modèle ;
+3. le budget inscrit dans `baseline-cout.json`, qui devient le seuil d'échec du
+   contrôle de non-régression.
+
+## 7. Risques et parades
 
 | Risque | Signe à surveiller | Parade |
 |---|---|---|
-| Le paquet d'entrée fermé oublie une convention | une aide non appliquée, un écart de rendu récurrent | la porte d'acceptation, et le compte rendu des manques relu à chaque campagne |
-| Le générateur de tables devient l'autorité sans preuve | un écart de rendu que `ucm check` ne voit pas | test de parité entre module généré et contrat, vu rouge |
-| Le contexte réduit prive le modèle de ce que les consommateurs attendent | `tsc` rouge sur un fichier que le modèle n'a pas écrit | la règle de la phase 1, et l'erreur de `tsc` renvoyée dans la réparation |
+| Le paquet fermé oublie une convention | une aide non appliquée, un écart de rendu récurrent | porte d'acceptation, compte rendu des manques relu à chaque campagne |
+| Le générateur devient l'autorité sans preuve | un écart de rendu que `ucm check` ne voit pas | test de parité module contre contrat, vu rouge |
+| Le contexte réduit prive le modèle de ce que les consommateurs attendent | `tsc` rouge sur un fichier que le modèle n'a pas écrit | règle du lot A, erreur renvoyée dans la réparation |
 | Un effort trop bas dégrade la fidélité | écarts de rendu en hausse sur `Button` et `StressTest` | balayage une variable à la fois, retour au niveau précédent |
-| Le cache de préfixe expire entre deux composants | `cache_read_input_tokens` à zéro sur le second composant | durée d'une heure sur le préfixe, et composants traités à la suite |
-| Deux sessions écrivent le même composant | index Git partagé | le pipeline écrit un seul fichier et le dit |
+| Le cache du préfixe expire entre deux composants | part des entrées servies par le cache en baisse dans `/usage` | durée d'une heure sur le préfixe, composants traités à la suite |
+| La réparation boucle sans converger | plus de deux réparations sur un composant | arrêt et main rendue à la boucle d'agent |
+| Le budget devient un plafond de qualité | composants acceptés avec des manques non traités | la porte décide, le budget ne la contourne pas |
 
-## 11. Écarté, et pourquoi
+## 8. Poids des preuves
 
-| Piste | Raison |
-|---|---|
-| Format `TOON` ou autre notation compacte pour le contrat | le contrat est déjà sans espacement ; sa version minifiée pèse 1,5 % de moins, et la leçon de syntaxe à placer dans le prompt annule le gain |
-| Affiner un petit modèle | trois composants et un consommateur ; l'étude de référence s'appuie sur un millier d'exemples |
-| Serveur MCP pour servir le contrat | le pipeline de la phase 3 assemble le paquet lui-même, sans protocole à maintenir |
-| Édition de contexte et compaction | les runs comptent 8 à 26 appels ; ces mécanismes visent des sessions longues et réécrivent le cache |
-| Sortie prédite par le modèle | non disponible chez Anthropic ; la phase 5 vise le même but par une modification ciblée |
-| Réduire `max_tokens` | le modèle ne le voit pas ; une réponse tronquée est un échec payé |
+| Affirmation | Origine | Force |
+|---|---|---|
+| Répartition du coût, contexte initial, réflexion | douze runs de L5 | mesurée ici |
+| Part mécanique des contrats et des composants | quatre contrats du Playground | mesurée ici |
+| Taille du guide par partie | `ucm guide` sur les quatre contrats | mesurée ici |
+| Effort `medium` à moitié prix pour deux points | guide de coût d'Anthropic, tâche de code longue | mesurée ailleurs, autre tâche |
+| Relance des échecs à effort supérieur | même source | mesurée ailleurs, autre tâche |
+| Préfixe caché, facture divisée par deux | livre de recettes d'Anthropic | mesurée ailleurs, autre tâche |
+| Chute de la transcription littérale au-delà de 100 entrées | étude sur onze modèles à poids ouverts | publiée, modèles différents |
+| Dégradation de la justesse quand l'entrée s'allonge | travaux sur le vieillissement du contexte | publiée, tâches différentes |
+| Format « chercher et remplacer » plus sûr qu'un diff unifié | bancs publics d'édition de code | publiée, outil différent |
+| Petit modèle affiné à qualité proche | étude sur une interface déclarative | publiée, volume hors de portée |
 
 ## Sources ajoutées
 
 | Source | Contenu utilisé |
 |---|---|
-| [Transcription littérale de données](https://arxiv.org/abs/2601.03640) | chute du taux de correspondance de 63 % à 100 entrées, 16 % à 300, 7 % à 500, sur onze modèles à poids ouverts |
-| [Table des données mal référencées](https://arxiv.org/html/2606.32029v1) | erreurs de référence à une table sur des modèles de 1,7 à 20 milliards de paramètres |
-| [Skills et contexte, Claude Code](https://code.claude.com/docs/en/skills) | corps de skill chargé à l'invocation et conservé, fichiers voisins chargés à la demande |
+| [Transcription littérale de données](https://arxiv.org/abs/2601.03640) | 63 % de correspondance à 100 entrées, 16 % à 300, 7 % à 500, sur onze modèles à poids ouverts |
+| [Tables mal référencées](https://arxiv.org/html/2606.32029v1) | erreurs de référence sur des modèles de 1,7 à 20 milliards de paramètres |
+| [Compression de prompt, revue](https://arxiv.org/pdf/2410.12388) et [compression sur tâches de dépôt](https://arxiv.org/pdf/2604.13725) | méthodes, taux, et sensibilité à la tâche |
+| [Réparation guidée contre meilleur des N](https://arxiv.org/pdf/2509.02330) | quatre appels contre onze et quinze pour le même résultat |
+| [Arrêt anticipé d'un agent de génie logiciel](https://arxiv.org/pdf/2601.05777) | l'arrêt après échecs répétés comme levier de coût |
+| [Formats d'édition d'un fichier](https://aider.chat/docs/benchmarks.html) | « chercher et remplacer » à parité avec la réécriture, diff unifié en retrait |
+| [Exécution de code contre appels d'outils](https://github.com/orgs/modelcontextprotocol/discussions/629) | le passage par du code plutôt que par des appels d'outils retire l'essentiel des tokens de définition |
+| [Skills et contexte](https://code.claude.com/docs/en/skills) | corps de skill chargé à l'invocation et conservé, fichiers voisins à la demande |
+| [Suivi des coûts de Claude Code](https://code.claude.com/docs/en/costs) | `/usage`, statistiques de cache, exporteur OpenTelemetry, plafond de dépense |
 | [Livre de recettes, coût](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) | préfixe stable, point de cache explicite, gains mesurés |
 | [Optimiser coût et intelligence](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) | effort, relance des échecs, budgets de tâche, lots |
+| [Seuil d'auto-hébergement](https://www.spheron.network/blog/vllm-vs-sglang-2026/) | rentabilité d'une carte dédiée vers 2,5 à 3 milliards de tokens par mois |
+| [Chaîne de Visual Copilot](https://www.builder.io/blog/figma-to-code-ai) | modèle, compilateur déterministe, passe de modèle affiné : même partage que le lot C |
