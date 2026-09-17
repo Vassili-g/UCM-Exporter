@@ -2,39 +2,46 @@
 
 > Statut : livrable de la section 11 de
 > [RECHERCHE-REGLAGES.md](./RECHERCHE-REGLAGES.md), rendu sous forme de plan
-> d'action et révisé après une revue indépendante
-> ([section 11](#11-revue-indépendante)). Porte H1 : le mainteneur tranche les
-> décisions de la [section 1](#1-décisions-attendues), puis le plan s'exécute
-> lot par lot. Commit lu : `94ec0a9`. Aucune ligne de code n'a été modifiée
-> pour l'écrire.
+> d'action, révisé après une revue indépendante
+> ([section 11](#11-revue-indépendante)), puis après la porte H1. Le mainteneur
+> a tranché les décisions de la [section 1](#1-décisions) ; deux décisions et
+> trois points de maquette attendent encore sa réponse. Commit lu : `94ec0a9`.
+> Aucune ligne de code n'a été modifiée pour l'écrire.
 
 Les mesures de ce plan ont été faites hors de Figma : l'interface reconstruite
 depuis la source du commit lu et rejouée dans Chromium par Playwright, police
 Inter, fenêtre de 320 px ; le routeur réel de `code.ts` exécuté dans les
-harnais de `tests/code.test.ts`. Ce qui demande Figma est rangé dans les
-[mesures préalables](#mesures-dans-figma-avant-le-lot-3) et dans la
+harnais de `tests/code.test.ts`. Ce qui demande Figma est rangé dans la
 [recette finale](#lot-6-recette-dans-figma).
 
-## 1. Décisions attendues
+## 1. Décisions
 
-Chaque ligne renvoie à la section qui compare les options. La recommandation
-est celle du plan ; le mainteneur décide.
-
-| # | Sujet | Options | Recommandation |
+| # | Sujet | Décision | Section |
 |---|---|---|---|
-| C1 | Défauts actuels de fraîcheur et de réinitialisation | Corriger d'abord ; corriger avec les réglages | Corriger d'abord, lot 0 ([2.2](#22-écarts-relevés-hors-du-plan)) |
-| C2 | Emplacement du réglage des tokens | A global ; B par dépôt ; C `ucm.config.json` ; D global surchargé par dépôt | A, onglet Général ([3.4](#34-où-ranger-le-réglage)) |
-| C3 | Identité d'un dépôt enregistré | Adresse modifiable ; adresse figée, identité forge et projet | Adresse figée, un projet enregistré une fois ([4.1](#41-ce-quun-dépôt-enregistré-contient)) |
-| C4 | Forme de l'onglet Repos | L1 liste à bouton « Activer » ; L2 liste à boutons radio ; L3 sélecteur et formulaire ; L4 liste puis page de détail | L1, geste d'échec en tête du panneau ([4.6](#46-interface-de-la-liste)) |
-| C5 | Test de connexion | T1 dépôt actif seul ; T2 tous à l'ouverture ; T3 actif, puis les autres à l'affichage de l'onglet | T1, plus le dépôt qu'on vient d'enregistrer ([4.5](#45-test-de-connexion)) |
-| C6 | Nom dans la pastille | N1 dernier segment ; N2 chemin complet ; N3 dernier segment, chemin complet en cas d'homonymie | N3, et le nom dans les états d'échec ([5](#5-la-pastille-de-len-tête)) |
-| C7 | Dépôt actif après le retrait de l'actif | Aucun ; le premier de la liste ; export local | Aucun ([4.7](#47-retrait-dun-dépôt)) |
-| C8 | Changement de destination entre l'analyse et la publication, dans la même fenêtre ou une autre | Accepter ; clé de destination ; relecture périodique | Clé de destination ([4.3](#43-la-clé-de-destination)) |
-| C9 | Débranchement | Mémorisé ; oublié à la fermeture | Mémorisé, rebranchement sur le dernier actif ([6](#6-débrancher-les-dépôts)) |
-| C10 | Anciennes clés de stockage (D3) | Ignorer ; effacer à l'ouverture | Effacer à l'ouverture ([4.2](#42-stockage-et-règle-du-jeton)) |
-| C11 | « Effacer les données du plugin » dans Général | Retenir ; écarter | Écarter ([7.2](#72-options-de-longlet-général)) |
-| C12 | Le verdict nomme le dépôt de destination | Non ; oui | Oui ([4.4](#44-changer-de-dépôt-actif)) |
-| C13 | Loi de la galerie « un état GitLab n'affiche aucun mot de GitHub » face à une liste mixte | Éviter les listes mixtes dans la galerie ; catégorie « mixte » | Catégorie « mixte » ([4.6](#46-interface-de-la-liste)) |
+| C1 | Défauts actuels de fraîcheur et de réinitialisation | Corriger d'abord, lot 0 | [2.2](#22-écarts-relevés-hors-du-plan) |
+| C2 | Emplacement du réglage des tokens | Option A : réglage global, onglet Général | [3.4](#34-où-ranger-le-réglage) |
+| C3 | Identité d'un dépôt enregistré | Adresse figée après le premier enregistrement, un projet enregistré une fois | [4.1](#41-ce-quun-dépôt-enregistré-contient) |
+| C4 | Forme de l'onglet des dépôts | Liste de cartes dépliables dessinée par le mainteneur | [4.6](#46-interface-de-la-liste) |
+| C5 | Test de connexion | Sans réponse explicite : la recommandation s'applique, dépôt actif seul plus le dépôt qu'on vient d'enregistrer | [4.5](#45-test-de-connexion) |
+| C6 | Nom dans la pastille | Dernier segment de l'adresse, suivi de « connecté », sans autre texte ; le nom figure aussi dans les états d'échec | [5](#5-la-pastille-de-len-tête) |
+| C7 | Dépôt actif après la suppression de l'actif | Aucun | [4.7](#47-suppression-dun-dépôt) |
+| C8 | Changement de destination entre l'analyse et la publication | Clé de destination | [4.3](#43-la-clé-de-destination) |
+| C9 | Débranchement | Mémorisé à la fermeture du plugin | [6](#6-débrancher-les-dépôts) |
+| C10 | Anciennes clés de stockage (D3) | En attente | [4.2](#42-stockage-et-règle-du-jeton) |
+| C11 | « Effacer les données du plugin » | Écarté : supprimer un dépôt efface ses données | [7.2](#72-options-de-longlet-général) |
+| C12 | Le verdict nomme le dépôt de destination | Oui | [4.4](#44-changer-de-dépôt-actif) |
+| C13 | Loi de la galerie face à une liste de deux forges | En attente | [4.6](#46-interface-de-la-liste) |
+| E3 | Phrase de `SPEC.md` sur le libellé qui annonce l'ouverture du navigateur | Retirer la phrase | [2.2](#22-écarts-relevés-hors-du-plan) |
+| M | Mesures dans Figma : deux fenêtres, application de bureau et navigateur | Non faites | [4.3](#43-la-clé-de-destination) |
+| Q | Intention de la réinitialisation ajoutée par `34e584c` | Close : la clé de destination remplace ce mécanisme | [4.3](#43-la-clé-de-destination) |
+
+Points de maquette à confirmer, détaillés en [4.6](#46-interface-de-la-liste) :
+
+| # | Point | Proposition |
+|---|---|---|
+| P1 | Nom de l'onglet | « Dépôts » |
+| P2 | Place de l'interrupteur de débranchement (D6) | Sous la description de l'onglet, au-dessus de « Ajouter un dépôt » |
+| P3 | Statut d'une carte active pendant le test ou en échec, et repli après enregistrement | « Connexion… » en gris, la cause en rouge ; la carte reste dépliée tant que l'enregistrement ou le test échoue |
 
 ## 2. Faits vérifiés
 
@@ -76,7 +83,8 @@ de sélection.
 **E3. La spécification annonce un libellé que le code n'écrit pas.**
 `SPEC.md`, partie 3 : l'ouverture dans le navigateur « le libellé du bouton
 l'annonce ». Les libellés de `PUBLIER` (`src/prevol.ts`) sont « Publier le
-composant » et « Publier les tokens ».
+composant » et « Publier les tokens ». Décision : la phrase de `SPEC.md` est
+retirée, le libellé ne change pas.
 
 **E4. Deux types et deux fonctions portent le nom `etatDesTokens`.**
 `src/depot.ts` déclare le type `EtatDesTokens` (`fusionnes | en-attente |
@@ -179,10 +187,10 @@ jusqu'au chargement de l'iframe
 | M1. Carte visible par défaut, retirée à la réception du réglage | La carte apparaît puis disparaît pour l'équipe consommatrice | Aucun |
 | M2. Carte masquée par défaut, affichée à la réception du réglage | La carte apparaît sous celle du composant pour l'équipe UCM, sans la déplacer | `ouverture()` de la galerie et le premier test de `interface.test.mjs` jouent le réglage |
 
-Recommandation : M2. Le sandbox lit le réglage dans `clientStorage` avant toute
-autre tâche de `ui-ready`, puis l'envoie dans `settings`. La carte des tokens
-est en bas de page : son apparition tardive ne déplace aucun rang 1. Le délai
-réel dans Figma reste à observer au lot 6.
+Retenu : M2. Le sandbox lit le réglage dans `clientStorage` avant toute autre
+tâche de `ui-ready`, puis l'envoie dans `settings`. La carte des tokens est en
+bas de page : son apparition tardive ne déplace aucun rang 1. Le délai réel
+dans Figma reste à observer au lot 6.
 
 **Appels évités, réglage désactivé.**
 
@@ -232,7 +240,9 @@ nouvelle analyse porte la consigne.
 
 ### 3.4. Où ranger le réglage
 
-| Critère | A. Global, Général | B. Par dépôt, Repos | C. `ucm.config.json` | D. Global surchargé |
+Décision : **A**, réglage global dans l'onglet Général.
+
+| Critère | A. Global, Général | B. Par dépôt | C. `ucm.config.json` | D. Global surchargé |
 |---|---|---|---|---|
 | Gestes par bascule, mainteneur | 0 : ses trois dépôts reçoivent des tokens | 0 | 0 | 0 |
 | Gestes par bascule, équipe consommatrice | 0 avec un seul projet | 0 | 0 | 0 |
@@ -242,17 +252,11 @@ nouvelle analyse porte la consigne.
 | Coût | Une clé, un interrupteur | Un champ par dépôt, une règle de repli, des états par dépôt | Grammaire publiée de `@ucm-kit/core` modifiée pour un seul lecteur | Le plus d'états |
 | Endroit où le designer le cherche | Réglage du plugin | Réglage du dépôt | Hors du plugin | Deux endroits |
 
-Recommandation : **A**. B n'apporte rien tant que les deux faits établis
-tiennent : les dépôts du mainteneur reçoivent tous des tokens, et un seul
-designer publie dans l'équipe consommatrice. A évite la valeur indéfinie de B
-en export local. C affiche la carte avant de la retirer, et fait évoluer
-`configuration.ts` et `COMPATIBILITE.md` pour un seul lecteur.
-
 Condition de réouverture : un designer publie à la fois vers un dépôt qui reçoit
 des tokens et vers un dépôt qui n'en reçoit pas. B devient alors la bonne
 réponse, et la clé globale en fournit la valeur initiale.
 
-## 4. Plusieurs dépôts : l'onglet Repos
+## 4. Plusieurs dépôts : l'onglet des dépôts
 
 ### 4.1. Ce qu'un dépôt enregistré contient
 
@@ -263,35 +267,33 @@ fournisseur, son dépôt, sa branche et son chemin de fichier
 [`clientstorage-data.md`](https://github.com/tokens-studio/figma-plugin/blob/main/developer-knowledgebase/clientstorage-data.md)).
 Chaque entrée y porte un nom libre, que le formulaire exige.
 
-**Identité.**
+**Identité.** Décision : **I2**. L'identité est la forge et le projet.
+L'adresse est modifiable tant que le dépôt n'a pas été enregistré, puis
+s'affiche en lecture seule : un jeton ne quitte jamais le projet pour lequel il
+a été collé. La branche et le jeton restent modifiables. Pour changer de
+projet, le designer ajoute un dépôt et supprime l'ancien.
 
-| Option | Identité | Adresse d'une entrée | Conséquences |
-|---|---|---|---|
-| I1 | Forge, projet et branche de base | Modifiable | Deux entrées pour un projet et deux branches ; le nom affiché porte alors la branche ; changer l'adresse d'une entrée pose la question du jeton |
-| I2 | Forge et projet | Figée après l'ajout | Un projet enregistré une fois ; branche et jeton modifiables ; changer de projet revient à ajouter une entrée et retirer l'ancienne |
-
-Recommandation : **I2**. Le mainteneur bascule entre trois projets, et aucun
-besoin de deux branches d'un même projet n'est établi. Une adresse figée donne
-une règle simple : un jeton ne quitte jamais le projet pour lequel il a été
-collé.
+| Option écartée | Raison |
+|---|---|
+| I1. Identité forge, projet et branche ; adresse modifiable | Aucun besoin de deux branches d'un même projet ; changer l'adresse d'une entrée pose la question du jeton |
 
 **Doublon.** L'identité se compare en minuscules. GitHub et GitLab servent un
 même chemin quelle que soit sa casse, fait non vérifié dans leur
 documentation ; une comparaison sensible à la casse accepterait deux entrées
-pour un même projet. Refus à l'ajout, sous le champ adresse : « Ce repository
-est déjà dans la liste. Modifiez-le dans sa ligne. », avec « projet » sur
-GitLab, lu dans `termes.depot`.
+pour un même projet. Refus à l'enregistrement, sous le champ adresse : « Ce
+repository est déjà dans la liste. », avec « projet » sur GitLab, lu dans
+`termes.depot`.
 
-**Activation à l'ajout.** Le premier dépôt ajouté à une liste vide devient
-actif, sauf pendant un débranchement. Les ajouts suivants restent inactifs.
+**Activation à l'enregistrement.** Le premier dépôt enregistré dans une liste
+vide devient actif, sauf pendant un débranchement. Les suivants attendent un
+clic sur « Se connecter ».
 
 **Ordre et nombre.** Ordre d'ajout. Le dépôt actif ne remonte pas en tête : une
 position stable sert la bascule fréquente. Aucun maximum : une entrée pèse
 quelques centaines d'octets face aux 5 Mo de `clientStorage`.
 
-**Libellé libre.** Écarté. Le seul cas trouvé où le nom du dépôt ne suffit pas
-est l'homonymie du dernier segment, que la règle N3 de la
-[section 5](#5-la-pastille-de-len-tête) règle sans saisie.
+**Libellé libre.** Écarté : le nom affiché est le dernier segment de l'adresse
+(C6).
 
 **Préfixe du jeton.** `forgeDuPrefixe` s'applique à la saisie de chaque entrée,
 contre la forge de son adresse.
@@ -315,21 +317,22 @@ contre la forge de son adresse.
 | Taille | Identique | Identique |
 | Lecture à chaque analyse et publication | Index puis N lectures | Une lecture |
 
-Recommandation : un tableau. La documentation de `clientStorage` ne dit rien
-de l'atomicité d'un `setAsync`
+Retenu : un tableau. La documentation de `clientStorage` ne dit rien de
+l'atomicité d'un `setAsync`
 ([documentation](https://developers.figma.com/docs/plugins/api/figma-clientStorage/)) :
 le plan suppose qu'une écriture aboutit ou n'a pas lieu, sans l'avoir vérifié.
 `depotActif`, `exportLocal` et `gestionDesTokens` restent des clés séparées :
 une bascule n'écrit pas la liste des jetons.
 
 **File d'écriture.** Le routeur traite les messages en parallèle. Une
-modification qui lit `depots` avant un retrait et l'écrit après lui ferait
-revenir l'entrée retirée, jeton compris. Toutes les demandes qui écrivent le
-stockage passent donc par une file du sandbox, une promesse chaînée à la
-précédente : lecture, calcul et écriture d'une demande se terminent avant la
-lecture de la suivante. Limite restante : deux fenêtres du plugin ne partagent
-pas cette file. Un retrait et une modification faits au même instant dans deux
-fenêtres peuvent encore faire revenir une entrée ; `SPEC.md` le dit.
+modification qui lit `depots` avant une suppression et l'écrit après elle
+ferait revenir l'entrée supprimée, jeton compris. Toutes les demandes qui
+écrivent le stockage passent donc par une file du sandbox, une promesse
+chaînée à la précédente : lecture, calcul et écriture d'une demande se
+terminent avant la lecture de la suivante. Limite restante : deux fenêtres du
+plugin ne partagent pas cette file. Une suppression et une modification faites
+au même instant dans deux fenêtres peuvent encore faire revenir une entrée ;
+`SPEC.md` le dit.
 
 **Règle du jeton, réécrite pour D2.** « Un jeton ne part que vers le dépôt
 qui l'a reçu. » Le jeton et l'adresse voyagent dans la même entrée, écrite en
@@ -349,11 +352,11 @@ autre adresse, ce qui retire l'ordre d'écriture en quatre temps de
 
 | Geste | Écritures | Interruption entre deux écritures |
 |---|---|---|
-| Ajouter | `depots`, puis `depotActif` si l'entrée devient active | Dépôt enregistré, pas encore actif |
+| Enregistrer un nouveau dépôt | `depots`, puis `depotActif` si l'entrée devient active | Dépôt enregistré, pas encore actif |
 | Modifier la branche ou le jeton | `depots` | Aucune étape intermédiaire |
-| Retirer | `depots` sans l'entrée, puis retrait de `depotActif` si elle était active | `depotActif` désigne une entrée absente : le chargement la traite comme « aucun dépôt actif » |
-| Activer | `depotActif`, puis `exportLocal` à `false` ([section 6](#6-débrancher-les-dépôts)) | Dépôt actif changé, encore débranché |
-| Modifier une entrée qu'une autre fenêtre a retirée | Aucune | Refus : « Ce repository n'est plus dans la liste. » |
+| Supprimer | `depots` sans l'entrée, puis retrait de `depotActif` si elle était active | `depotActif` désigne une entrée absente : le chargement la traite comme « aucun dépôt actif » |
+| Se connecter | `depotActif`, puis `exportLocal` à `false` ([section 6](#6-débrancher-les-dépôts)) | Dépôt actif changé, encore débranché |
+| Modifier une entrée qu'une autre fenêtre a supprimée | Aucune | Refus : « Ce dépôt n'est plus dans la liste. » |
 
 **Forme publique.** Le message `settings` porte :
 
@@ -367,7 +370,7 @@ type ReglagesPublics = {
     id: string;          // 'gitlab:mon-groupe/design-system'
     forge: NomDeForge;
     projet: string;
-    nom: string;         // calculé par le sandbox, règle N3
+    nom: string;         // dernier segment de l'adresse, calculé par le sandbox
     baseBranch: string;
     jeton: boolean;      // présence seule
   }>;
@@ -375,14 +378,16 @@ type ReglagesPublics = {
 ```
 
 L'interface rend la liste par `id` : un message `settings` met à jour les
-lignes existantes sans détruire une ligne dépliée en cours de saisie.
+cartes existantes sans refermer une carte dépliée en cours de saisie.
 
-**D3, anciennes clés.** Recommandation : effacer `repoUrl`, `baseBranch`,
-`github_pat` et `forge_du_jeton` à chaque ouverture, avant toute lecture.
-Ignorer ces clés laisserait sur le poste un jeton qu'aucun geste de
-l'interface ne retire. L'effacement coûte quatre `deleteAsync` locaux ; son
-retrait du code se décide plus tard. Le commentaire de `STORAGE_KEYS` sur
-`github_pat` disparaît avec lui.
+**D3, anciennes clés (C10, en attente).** Le plugin actuel range un seul dépôt
+dans quatre clés : `repoUrl`, `baseBranch`, `github_pat` et `forge_du_jeton`.
+La nouvelle version lit la liste `depots` et ne regarde plus ces clés. Si elles
+restent, le jeton de `github_pat` demeure sur le poste, et aucun bouton de
+l'interface ne peut plus l'atteindre. Recommandation : les effacer à chaque
+ouverture, avant toute lecture. Coût : quatre `deleteAsync` locaux. D3 accepte
+déjà que les dépôts soient à saisir de nouveau après la mise à jour. Le
+commentaire de `STORAGE_KEYS` sur `github_pat` disparaît avec elles.
 
 **Tests de `tests/config.test.ts`.**
 
@@ -393,9 +398,9 @@ retrait du code se décide plus tard. Le commentaire de `STORAGE_KEYS` sur
 | « utilise le jeton stocké quand le champ UI reste vide et que la forge concorde » | Adapté : un champ vide conserve le jeton de l'entrée |
 | « un jeton saisi dont le préfixe désigne l'autre forge est refusé à la saisie » | Conservé |
 | « un jeton GitHub enregistré ne vaut rien pour une URL GitLab » ; « un champ vide ne conserve pas le jeton d'une autre forge » | Retirés : l'adresse d'une entrée est figée |
-| « l'enregistrement écrit l'ancien retrait, la forge, le jeton, puis l'URL » ; « un enregistrement interrompu ne laisse aucun jeton utilisable par l'autre forge » | Remplacés : une entrée s'écrit en une écriture ; un retrait interrompu ne laisse ni jeton ni dépôt actif utilisable |
+| « l'enregistrement écrit l'ancien retrait, la forge, le jeton, puis l'URL » ; « un enregistrement interrompu ne laisse aucun jeton utilisable par l'autre forge » | Remplacés : une entrée s'écrit en une écriture ; une suppression interrompue ne laisse ni jeton ni dépôt actif utilisable |
 | « l'UI apprend la forge du jeton, jamais le jeton, et la suppression retire les deux » | Adapté : l'interface apprend la présence du jeton par dépôt |
-| « un jeton enregistré avant GitLab appartient à GitHub » | Remplacé : les quatre anciennes clés sont effacées à l'ouverture |
+| « un jeton enregistré avant GitLab appartient à GitHub » | Remplacé, selon C10 : les quatre anciennes clés sont effacées à l'ouverture |
 
 **Tests de `tests/code.test.ts`.**
 
@@ -407,9 +412,9 @@ retrait du code se décide plus tard. Le commentaire de `STORAGE_KEYS` sur
   l'ouverture, au pré-vol, à la publication et après une bascule.
 - « une panne du stockage pendant la sauvegarde libère le formulaire » et
   « une configuration enregistrée rend les analyses précédentes impropres à
-  publier » passent aux demandes d'ajout et de modification. L'assertion
+  publier » passent aux demandes d'enregistrement d'un dépôt. L'assertion
   « aucun message ne contient le jeton » reste sur chacune.
-- Nouveaux : un retrait et une modification envoyés ensemble ne font pas
+- Nouveaux : une suppression et une modification envoyées ensemble ne font pas
   revenir l'entrée ; un test de connexion périmé ne poste rien.
 
 ### 4.3. La clé de destination
@@ -431,9 +436,10 @@ local|tokens                       dépôts débranchés
 - `publier` relit la configuration, recalcule la clé et refuse si elle diffère
   de celle de l'analyse. L'analyse est retirée, et le texte nomme le
   changement.
-- `settings` porte la clé. L'interface vide les cartes quand elle change, et
-  seulement alors : une publication réussie ne vide plus rien (E1), une
-  réinitialisation remet « Analyser le composant » à disposition (E2).
+- `settings` porte la clé. L'interface vide les cartes de l'écran de travail
+  quand elle change, et seulement alors : une publication réussie ne vide plus
+  rien (E1), une réinitialisation remet « Analyser le composant » à disposition
+  (E2).
 - `analyser` compare la clé relue à la dernière clé envoyée à l'interface. Un
   écart relance `refreshConfiguration` avant le verdict : la pastille nomme le
   dépôt que le verdict vise.
@@ -441,45 +447,46 @@ local|tokens                       dépôts débranchés
 
 Cette clé couvre, par un seul mécanisme, la bascule dans la même fenêtre, un
 changement fait dans une autre fenêtre, le débranchement et le réglage des
-tokens. Elle remplace les règles de vidage au cas par cas : ajouter ou modifier
-un dépôt inactif ne change pas la clé et ne vide rien.
+tokens. Elle remplace les règles de vidage au cas par cas : enregistrer ou
+modifier un dépôt inactif ne change pas la clé et ne vide rien. Elle remplace
+aussi la réinitialisation par `settings` qu'avait ajoutée `34e584c`, dont
+l'intention n'a donc plus à être établie.
 
 **Deux fenêtres du plugin.** L'API de `clientStorage` n'offre ni événement ni
 abonnement : `getAsync`, `setAsync`, `deleteAsync` et `keysAsync`. Une fenêtre
-n'apprend un changement qu'en relisant, à l'analyse et à la publication.
+n'apprend un changement qu'en relisant, à l'analyse et à la publication. La
+clé de destination refuse la publication et rafraîchit la pastille à l'analyse.
+Le mainteneur a choisi de ne pas mesurer ce cas dans Figma : la clé couvre
+aussi la bascule dans la même fenêtre, qui justifie seule son coût.
 
-| Parade | Effet | Coût |
-|---|---|---|
-| P1. Accepter | Publication possible vers un dépôt que la pastille ne nomme pas | Aucun |
-| P2. Clé de destination | Refus à la publication, pastille rafraîchie à l'analyse | Une fonction, deux comparaisons, un texte, un état de galerie, des tests |
-| P3. Relecture périodique | Pastille rafraîchie toutes les N secondes | Minuterie, lectures et tests réseau répétés, fenêtre d'incohérence qui subsiste |
-
-Recommandation : **P2**. Texte du refus, qui dit le fait sans supposer sa
-cause : « La destination a changé depuis l'analyse : {destination}. Relancez
-l'analyse. », où `{destination}` vaut « le repository actif est maintenant
-design-system », « aucun repository n'est actif », « les exports sont
-téléchargés sur votre poste » ou « la gestion des tokens a changé ».
+Texte du refus, qui dit le fait sans supposer sa cause : « La destination a
+changé depuis l'analyse : {destination}. Relancez l'analyse. », où
+`{destination}` vaut « le dépôt actif est maintenant design-system », « aucun
+dépôt n'est actif », « les exports sont téléchargés sur votre poste » ou « la
+gestion des tokens a changé ».
 
 **Fraîcheur du test de connexion (E6).** `refreshConfiguration` incrémente un
 compteur de génération avant chaque lecture. Après chaque attente, un test dont
 la génération n'est plus la dernière ne poste rien.
 
-**Application de bureau et navigateur.** La documentation Figma ne le dit
-pas. Une réponse du forum Figma, relayée par le moteur de recherche, indique
-que l'application et chaque navigateur ont leur propre stockage ; la page
-exige une connexion et n'a pas pu être lue. Non vérifié. Si le fait se
-confirme, D4 vaut par application, et le designer enregistre ses dépôts une
-fois dans chacune.
+**Application de bureau et navigateur.** La documentation Figma ne dit pas
+s'ils partagent `clientStorage`. Une réponse du forum Figma, relayée par le
+moteur de recherche, indique que l'application et chaque navigateur ont leur
+propre stockage ; la page exige une connexion et n'a pas pu être lue. Non
+vérifié, et non mesuré par décision du mainteneur. Si le fait est exact, D4
+vaut par application, et le designer enregistre ses dépôts une fois dans
+chacune.
 
 ### 4.4. Changer de dépôt actif
 
-Demande `activer-depot { id }`, par la file d'écriture :
+Clic sur « Se connecter » : demande `activer-depot { id }`, par la file
+d'écriture.
 
-1. écrire `depotActif`, puis `exportLocal` à `false` ;
-2. annuler une analyse en cours, laisser finir une publication, comme
-   `selectionchange` ;
-3. relancer `refreshConfiguration` : `settings` avec la nouvelle clé, pastille
-   en vérification, test du nouveau dépôt, message `depot`.
+1. Écrire `depotActif`, puis `exportLocal` à `false`.
+2. Annuler une analyse en cours, laisser finir une publication, comme
+   `selectionchange`.
+3. Relancer `refreshConfiguration` : `settings` avec la nouvelle clé, carte en
+   « Connexion… », test du nouveau dépôt, message `depot`.
 
 Une publication en cours garde la configuration qu'elle a lue à son départ et
 aboutit dans l'ancien dépôt. Si elle échoue, « Réessayer la publication »
@@ -489,14 +496,11 @@ La carte du composant garde sa cible, puisque la sélection n'a pas changé, et
 perd verdict, compte rendu et bouton de publication. « Analyser le composant »
 redevient disponible.
 
-**Le verdict nomme la destination (C12).** Aujourd'hui : « Prêt à publier dans
-`src/components/Button/Button.contract.json` (d'après ucm.config.json). ». Avec
-trois dépôts et plusieurs bascules par jour, la pastille, au rang 3, est le
-seul indice du dépôt visé. Proposition : « Prêt à publier dans
-design-system-v3 : `src/components/Button/Button.contract.json` (d'après
-ucm.config.json). ». Le verdict est déjà à l'écran, au rang 1 : D5 ne
-l'interdit pas. `CONTRIBUTING.md` a retiré « le dépôt visé » de l'écran de
-travail quand il n'existait qu'un dépôt ; la liste change cette raison.
+**Le verdict nomme la destination (C12, décidé).** Aujourd'hui : « Prêt à
+publier dans `src/components/Button/Button.contract.json` (d'après
+ucm.config.json). ». Demain : « Prêt à publier dans design-system-v3 :
+`src/components/Button/Button.contract.json` (d'après ucm.config.json). ». Le
+verdict est déjà à l'écran : aucun objet n'est ajouté, et D5 est respectée.
 
 **Alternative écartée : garder l'analyse après la bascule.** Le contrat et ses
 points à corriger ne dépendent pas du dépôt, et le mainteneur qui publie un
@@ -513,26 +517,23 @@ quand le fichier dépasse 1 Mo.
 |---|---|---|---|
 | T1. Dépôt actif seul, à l'ouverture et à la bascule | 2 | Un test | Actif seulement |
 | T2. Tous à l'ouverture | 6 | Un test, si l'actif part en premier | Tous |
-| T3. Actif à l'ouverture, les autres à l'affichage de l'onglet Repos | 2, puis 4 à l'affichage | Un test | Tous, après affichage |
+| T3. Actif à l'ouverture, les autres à l'affichage de l'onglet des dépôts | 2, puis 4 à l'affichage | Un test | Tous, après affichage |
 
-Deux rythmes. En période de test, T3 dit avant la bascule qu'un jeton a
-expiré. Une fois le produit stabilisé, T3 teste à chaque visite de l'onglet
-des dépôts qu'on ne sélectionne plus.
-
-Recommandation : **T1, plus le dépôt qu'on vient d'enregistrer**. Enregistrer
-un ajout ou une modification teste cette entrée, qu'elle soit active ou non,
-et affiche le résultat dans son formulaire. Sans ce test, le retour d'un
-enregistrement sur un dépôt inactif décrirait la connexion de l'actif. Deux
-messages le portent, distincts de `connection` :
+Retenu, faute de réponse contraire : **T1, plus le dépôt qu'on vient
+d'enregistrer**. La maquette du mainteneur s'y accorde : une carte inactive
+affiche « Se connecter », sans statut. Enregistrer un dépôt teste cette entrée,
+qu'elle soit active ou non, et affiche le résultat dans sa carte. Sans ce test,
+le retour d'un enregistrement sur un dépôt inactif décrirait la connexion de
+l'actif. Deux messages le portent, distincts de `connection` :
 
 | Message | Contenu |
 |---|---|
-| `depot-enregistre` | `{ formulaire: 'ajout' | id, erreurs }` : refus par champ, ou succès qui libère le bouton « Enregistrer » |
-| `depot-teste` | `{ id, etat, geste }` : le résultat du test de cette entrée |
+| `depot-enregistre` | `{ carte: 'nouvelle' \| id, erreurs }` : refus par champ, ou succès qui libère le bouton « Enregistrer » |
+| `depot-teste` | `{ id, etat, statut, geste }` : le résultat du test de cette entrée |
 
-Une erreur levée pendant un ajout ou une modification envoie
-`depot-enregistre` avec une erreur générale, comme le `catch` du routeur le
-fait aujourd'hui pour `save-settings`.
+Une erreur levée pendant un enregistrement envoie `depot-enregistre` avec une
+erreur générale, comme le `catch` du routeur le fait aujourd'hui pour
+`save-settings`.
 
 ### 4.6. Interface de la liste
 
@@ -556,185 +557,213 @@ Sources : [`StorageItem.tsx`](https://github.com/tokens-studio/figma-plugin/blob
 [GitKraken](https://help.gitkraken.com/gitkraken-desktop/profiles/),
 [Tower](https://www.git-tower.com/help/guides/manage-hosting-services/connect-accounts/mac).
 
-**Options comparées**, pour trois dépôts. Le compte suit le protocole de
-relecture : en-tête de configuration (titre, « Retour », pastille), deux
-onglets, l'interrupteur de débranchement, « Ajouter un repository », puis les
-lignes.
+**Options comparées avant la décision**, pour trois dépôts.
 
-| Option | Gestes de bascule | Risque de publier dans le mauvais dépôt | Objets à l'écran | Lecture à 320 px | Bascule fréquente | Bascule rare |
-|---|---|---|---|---|---|---|
-| L1. Liste, bouton « Activer » par ligne, édition dépliée dans la ligne | 1 | Faible : bouton nommé | 13, puis 2 par dépôt | Nom et détail sur deux lignes | Bon | Correct |
-| L2. Liste de boutons radio, clic sur la ligne | 1 | Élevé : toute la ligne active | 13 | Idem | Bon | Correct |
-| L3. Sélecteur du dépôt actif, formulaire de l'actif dessous | 2 | Faible | 12 | Liste cachée dans le sélecteur | Moyen | Bon |
-| L4. Liste, page de détail avec « Activer » | 2 | Faible | 10, puis la page de détail | Bon | Lent | Bon |
+| Option | Gestes de bascule | Risque de publier dans le mauvais dépôt | Objets à l'écran | Bascule fréquente | Bascule rare |
+|---|---|---|---|---|---|
+| L1. Liste, bouton d'activation par ligne, édition dépliée dans la ligne | 1 | Faible : bouton nommé | 13 | Bon | Correct |
+| L2. Liste de boutons radio, clic sur la ligne | 1 | Élevé : toute la ligne active | 13 | Bon | Correct |
+| L3. Sélecteur du dépôt actif, formulaire de l'actif dessous | 2 | Faible | 12 | Moyen | Bon |
+| L4. Liste, page de détail avec activation | 2 | Faible | 10, puis la page de détail | Lent | Bon |
 
-L3 couple édition et activation : modifier le jeton d'un dépôt inactif oblige
-à l'activer, donc à y envoyer les exports. L2 transforme un clic d'exploration
-en changement de destination.
+**Décision : liste de cartes dépliables**, variante de L1 dessinée par le
+mainteneur.
 
-Recommandation : **L1**. Une ligne est un bouton de dépli, nom et détail, plus
-une action : « Actif » en texte pour le dépôt actif, « Activer » ailleurs. Une
-seule ligne est dépliée à la fois.
+Page de configuration, de haut en bas :
 
-Le compte dépasse d'un objet la douzaine du protocole à trois dépôts, et une
-ligne dépliée ajoute environ huit objets. Deux mesures le contiennent :
+1. en-tête : titre « Configuration », bouton « Retour ». La pastille n'y
+   figure plus : le statut de la carte active la remplace ;
+2. onglets « Général » et « Dépôts » (P1) ;
+3. description de l'onglet sélectionné ;
+4. onglet Dépôts : interrupteur de débranchement (P2), bouton « Ajouter un
+   dépôt », liste des dépôts.
 
-- le geste d'un dépôt actif en échec s'affiche en tête du panneau, sous les
-  onglets, à la place de l'actuel `config-status`. À 320 px de haut, sous une
-  troisième ligne, il sortirait en partie de la vue (estimation sur les
-  variables de `styles.css`, non mesurée) ;
-- la relecture du lot 3b compte les objets sur les captures. Si elle refuse
-  L1, L4 est le repli : 10 objets, un geste de plus par bascule.
+Liste :
+
+- aucun dépôt : le texte « Veuillez ajouter un dépôt. » ;
+- une carte par dépôt, repliée par défaut, sur `--fond-bloc`, le fond des
+  cartes de commande, plus clair que celui du plugin ;
+- carte repliée : le nom à gauche, dernier segment de l'adresse (C6) ; à
+  droite, « Connecté » en vert pour le dépôt actif connecté, ou un bouton gris
+  « Se connecter » ;
+- clic sur la carte : elle se déplie et montre « URL du dépôt », en lecture
+  seule après le premier enregistrement (C3), « Branche de base », le bloc de
+  destination quand il est connu, le jeton, « Enregistrer » et « Supprimer » ;
+- « Ajouter un dépôt » crée une carte dépliée en fin de liste ; elle se replie
+  à l'enregistrement ;
+- « Se connecter » active ce dépôt : l'ancien actif repasse à « Se
+  connecter ». Pendant un débranchement, « Se connecter » rebranche aussi.
+
+Accessibilité : la carte repliée porte deux commandes voisines, un bouton de
+dépli qui porte le nom et `aria-expanded`, et le bouton « Se connecter ». Un
+bouton ne se place pas dans un autre, et un clic sur « Se connecter » ne déplie
+pas la carte.
+
+**P3, états que la maquette ne couvre pas.**
+
+| Situation | Proposition |
+|---|---|
+| Dépôt actif pendant le test | « Connexion… » en couleur secondaire, à la place de « Connecté » |
+| Dépôt actif en échec | La cause en rouge à la place de « Connecté » : « Jeton refusé », « Accès refusé », « Repository introuvable » ou « Projet introuvable », « ucm.config.json fautif », « GitHub injoignable » ; le geste s'affiche en tête de la carte dépliée |
+| Arrivée par la pastille sur un dépôt actif en échec | Carte dépliée et amenée dans la vue |
+| Enregistrement refusé, ou test du dépôt enregistré en échec | La carte reste dépliée avec l'erreur ; elle se replie après un enregistrement accepté et un test réussi |
+| Carte nouvelle, jamais enregistrée | « Supprimer » l'abandonne sans confirmation : rien n'est stocké |
+| Libellé d'enregistrement | « Enregistrer », le mot du formulaire actuel |
+
+**Vocabulaire.** Les textes qui ne connaissent pas la forge disent « dépôt » :
+onglet, bouton d'ajout, liste vide, interrupteur, pastille sans dépôt actif.
+Les textes qui connaissent la forge lisent `src/forges/termes.ts`
+(« repository » ou « projet ») : causes, gestes, doublon, « Repository GitHub :
+… ».
+
+**Compte d'objets.** Onglet Dépôts à trois dépôts repliés : titre, « Retour »,
+deux onglets, description, interrupteur, « Ajouter un dépôt », puis deux objets
+par carte, soit 13. La relecture du lot 3b le vérifie sur les captures.
 
 **Maquettes à 320 px.** Largeur utile mesurée : 273 px, environ 46 caractères.
 Les crochets désignent un bouton, `( ━●)` un interrupteur activé.
 
-Aucun dépôt enregistré : le formulaire d'ajout est ouvert d'emblée, sans
-interrupteur.
+Aucun dépôt enregistré :
 
 ```text
 Configuration                         [Retour]
-● aucun repository
- Général  [Repos]
+ Général  [Dépôts]
 ──────────────────────────────────────────────
-Aucun repository enregistré. Les exports sont
-téléchargés sur votre poste.
+Les dépôts où les exports sont déposés, et le
+jeton qui autorise chacun.
 
-URL du repository ou du projet
-[https://github.com/mon-org/design-system-v3]
-Branche de base
-[main                                       ]
-Jeton d'accès
-[                                           ]
-Un Personal Access Token GitHub ou un jeton
-d'accès GitLab, selon l'adresse saisie.
-[Enregistrer]
+[             Ajouter un dépôt             ]
+
+Veuillez ajouter un dépôt.
 ```
 
 Trois dépôts sur deux forges, repliés :
 
 ```text
 Configuration                         [Retour]
-● design-system-v3 connecté
- Général  [Repos]
+ Général  [Dépôts]
 ──────────────────────────────────────────────
-Publier dans le repository actif        ( ━●)
+Les dépôts où les exports sont déposés, et le
+jeton qui autorise chacun.
 
-▸ design-system-v3                      Actif
-  GitHub · main
-▸ design-system                     [Activer]
-  GitLab · develop
-▸ recette-web                       [Activer]
-  GitHub · main
+Publier dans le dépôt actif             ( ━●)
 
-[Ajouter un repository]
+[             Ajouter un dépôt             ]
+
+┌────────────────────────────────────────────┐
+│ design-system-v3                  Connecté │
+└────────────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│ design-system               [Se connecter] │
+└────────────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│ recette-web                 [Se connecter] │
+└────────────────────────────────────────────┘
 ```
 
-Ajout refusé par `validateSettings`, champ par champ :
+Nouveau dépôt, enregistrement refusé par `validateSettings` :
 
 ```text
-▾ Nouveau repository
-  URL du repository ou du projet
-  [https://gitlab.example.com/mon-org/ds    ]
-  Utilisez l'adresse d'un repository
-  https://github.com/propriétaire/repository
-  ou d'un projet https://gitlab.com/groupe/projet.
-  Branche de base
-  [                                         ]
-  La branche de base est obligatoire.
-  Jeton d'accès
-  [                                         ]
-  Le jeton d'accès est obligatoire.
-  [Enregistrer]  [Annuler]
+┌────────────────────────────────────────────┐
+│ Nouveau dépôt                              │
+├────────────────────────────────────────────┤
+│ URL du dépôt                               │
+│ [https://gitlab.example.com/mon-org/ds   ] │
+│ Utilisez l'adresse d'un repository         │
+│ https://github.com/propriétaire/repository │
+│ ou d'un projet https://gitlab.com/groupe/  │
+│ projet.                                    │
+│ Branche de base                            │
+│ [                                        ] │
+│ La branche de base est obligatoire.        │
+│ Jeton d'accès                              │
+│ [                                        ] │
+│ Le jeton d'accès est obligatoire.          │
+│ [Enregistrer]                  [Supprimer] │
+└────────────────────────────────────────────┘
 ```
 
-Modification du dépôt actif :
+Dépôt actif déplié :
 
 ```text
-▾ design-system-v3                      Actif
-  GitHub · main
-  Repository GitHub : mon-org/design-system-v3
-  Contrats dans src/components, tokens dans
-  src/tokens/tokens.json.
-  Ce repository le déclare dans son
-  ucm.config.json.
-  Branche de base
-  [main                                     ]
-  Personal Access Token
-  [Token enregistré. Laissez ce champ vide… ]
-  Utilisez un fine-grained token limité à ce
-  repo avec Contents: Read and write et Pull
-  requests: Read and write.
-  [Enregistrer]
-  [Retirer de la liste]
+┌────────────────────────────────────────────┐
+│ design-system-v3                  Connecté │
+├────────────────────────────────────────────┤
+│ URL du dépôt                               │
+│ https://github.com/mon-org/design-system-v3│
+│ Repository GitHub : mon-org/design-system-v3
+│ Branche de base                            │
+│ [main                                    ] │
+│ Contrats dans src/components, tokens dans  │
+│ src/tokens/tokens.json.                    │
+│ Ce repository le déclare dans son          │
+│ ucm.config.json.                           │
+│ Personal Access Token                      │
+│ [Token enregistré. Laissez ce champ vide…] │
+│ Utilisez un fine-grained token limité à ce │
+│ repo avec Contents: Read and write et Pull │
+│ requests: Read and write.                  │
+│ [Enregistrer]                  [Supprimer] │
+└────────────────────────────────────────────┘
 ```
 
-Dépôt actif en panne, arrivée par la pastille. Le geste est en tête du
-panneau ; la ligne de l'actif s'ouvre dépliée.
+Dépôt actif en échec, arrivée par la pastille :
 
 ```text
-● design-system-v3 : jeton refusé
- Général  [Repos]
-──────────────────────────────────────────────
-▌ GitHub refuse le Personal Access Token de
-▌ design-system-v3. Collez-en un nouveau dans
-▌ sa ligne, puis enregistrez.
-Publier dans le repository actif        ( ━●)
-
-▸ design-system                     [Activer]
-  GitLab · develop
-▾ design-system-v3                      Actif
-  GitHub · main
-  Personal Access Token
-  …
+┌────────────────────────────────────────────┐
+│ design-system-v3              Jeton refusé │
+├────────────────────────────────────────────┤
+│ ▌ GitHub refuse ce Personal Access Token.  │
+│ ▌ Collez-en un nouveau ci-dessous, puis    │
+│ ▌ enregistrez.                             │
+│ URL du dépôt                               │
+│ …                                          │
+└────────────────────────────────────────────┘
 ```
 
-| Cause | Pastille | Geste en tête du panneau |
+| Cause | Statut de la carte | Geste en tête de la carte dépliée |
 |---|---|---|
-| 401 | `design-system : jeton refusé` | « GitLab refuse le jeton d'accès de design-system. Collez-en un nouveau dans sa ligne, puis enregistrez. » |
-| 403 | `design-system : accès refusé` | « Le jeton de design-system est reconnu, mais il n'a pas les droits sur ce projet. Donnez-lui le scope api et le rôle Developer sur ce projet. » |
-| 404 | `design-system : projet introuvable` | « GitLab ne trouve aucun projet à cette adresse avec ce jeton. Si le projet est privé, donnez au jeton l'accès à ce projet. Si l'adresse est fausse, retirez ce projet de la liste, puis ajoutez la bonne adresse. » |
-| `ucm.config.json` fautif | `design-system : ucm.config.json fautif` | « Un développeur doit corriger le fichier qui décrit ce projet. Tant qu'il est fautif, aucun export ne peut être publié. » suivi du détail du kit |
+| 401 | Jeton refusé | « GitLab refuse ce jeton d'accès. Collez-en un nouveau ci-dessous, puis enregistrez. » |
+| 403 | Accès refusé | « Le jeton est reconnu, mais il n'a pas les droits sur ce projet. Donnez-lui le scope api et le rôle Developer sur ce projet. » |
+| 404 | Projet introuvable | « GitLab ne trouve aucun projet à cette adresse avec ce jeton. Si le projet est privé, donnez au jeton l'accès à ce projet. Si l'adresse est fausse, supprimez ce dépôt, puis ajoutez la bonne adresse. » |
+| `ucm.config.json` fautif | ucm.config.json fautif | « Un développeur doit corriger le fichier qui décrit ce projet. Tant qu'il est fautif, aucun export ne peut être publié. » suivi du détail du kit |
 
-Retrait, second clic sur le même bouton :
+Suppression, second clic sur le même bouton :
 
 ```text
-  [Confirmer le retrait]
+│ [Enregistrer]      [Confirmer la suppression] │
 ```
 
-« Retirer de la liste » dit que le geste agit sur le plugin : « Supprimer ce
-repository » se lirait comme la suppression du dépôt sur la forge.
+**Galerie (C13, en attente).** La galerie est la page qui montre chaque écran
+du plugin hors de Figma. `tests/galerie.test.ts` y tient une loi : un écran
+GitLab ne montre aucun mot de GitHub, et l'inverse. Elle attrape un texte qui
+aurait oublié de lire les mots de sa forge, et `AGENTS.md` en fait un
+invariant. L'onglet Dépôts qui liste un dépôt GitHub et un projet GitLab
+montre les deux forges sur le même écran, par construction. Recommandation :
+une catégorie `forge: 'mixte'` pour ces écrans. La loi y reste appliquée aux
+messages qui parlent du dépôt actif (`connection`, `verdict`, `status`, `log`,
+`demande`, `depot-teste`). L'invariant de `AGENTS.md` change dans le même
+commit.
 
-**Galerie (C13).** `tests/galerie.test.ts` refuse qu'un état non GitLab joue
-un mot de GitLab, et l'inverse, et `AGENTS.md` en fait un invariant. Une liste
-à deux forges affiche « GitHub » et « GitLab » sur le même écran, par
-construction. Marquer ces états `forge: 'aucune'` éteindrait le contrôle.
-Recommandation : une catégorie `forge: 'mixte'`, où la loi s'applique aux
-seuls messages `connection`, `verdict`, `status`, `log` et `demande` : ce qui
-parle du dépôt actif reste dans les mots de sa forge. L'invariant de
-`AGENTS.md` change dans le même commit.
+### 4.7. Suppression d'un dépôt
 
-### 4.7. Retrait d'un dépôt
+Supprimer une entrée réécrit `depots` sans elle, par la file d'écriture : le
+jeton et les réglages du dépôt disparaissent du stockage. L'interface n'a
+jamais reçu le jeton, `analysesGardees` ne le contient pas, et un adaptateur de
+forge ne le tient en mémoire que le temps d'une opération. La limite entre deux
+fenêtres est décrite en [4.2](#42-stockage-et-règle-du-jeton). Le bouton
+« Supprimer le token enregistré » disparaît : une entrée sans jeton ne sert à
+rien, et coller un nouveau jeton remplace l'ancien.
 
-Retirer une entrée réécrit `depots` sans elle, par la file d'écriture : le
-jeton disparaît du stockage. L'interface n'a jamais reçu le jeton,
-`analysesGardees` ne le contient pas, et un adaptateur de forge ne le tient en
-mémoire que le temps d'une opération. Les anciennes clés sont effacées à
-l'ouverture (C10). La limite entre deux fenêtres est décrite en
-[4.2](#42-stockage-et-règle-du-jeton). Le bouton « Supprimer le token
-enregistré » disparaît : une entrée sans jeton ne sert à rien, et coller un
-nouveau jeton remplace l'ancien.
-
-| Dépôt actif après le retrait de l'actif | Effet |
-|---|---|
-| Aucun | Pastille « aucun repository actif », exports téléchargés jusqu'à un clic sur « Activer » |
-| Le premier de la liste | Les exports partent vers un dépôt que le designer n'a pas choisi |
-| Export local | Mélange deux situations distinctes, voir la section 6 |
-
-Recommandation : **aucun**. Tokens Studio revient de même à « Local document »
-quand le fournisseur actif est supprimé (`handleDelete`, `StorageItem.tsx`).
+Décision (C7) : après la suppression du dépôt actif, **aucun** dépôt n'est
+actif. Pastille « aucun dépôt actif », exports téléchargés jusqu'à un clic sur
+« Se connecter ». Tokens Studio revient de même à « Local document » quand le
+fournisseur actif est supprimé (`handleDelete`, `StorageItem.tsx`).
 
 ## 5. La pastille de l'en-tête
+
+La pastille reste sur l'écran de travail, et quitte la page de configuration
+(4.6).
 
 **Mesures.** Interface reconstruite, Inter 11 px, fenêtre de 320 px, largeur
 utile de 273 px.
@@ -749,30 +778,20 @@ utile de 273 px.
 | `mon-groupe/equipe-produit/plateforme/design-system connecté` | 273 px | 2 |
 | `mon-groupe/equipe-produit/design-system : jeton refusé` | 273 px | 2 |
 
-Aucun texte ne déborde de la page : Chromium coupe aux traits d'union. Un
-chemin GitLab à trois niveaux prend deux lignes et pousse d'autant le titre des
-cartes.
+Aucun texte ne déborde de la page : Chromium coupe aux traits d'union.
 
-**Le nom.**
+**Le nom (C6, décidé).** Le dernier segment de l'adresse, suivi de
+« connecté » : `design-system-v3 connecté`. Rien d'autre, ni forge ni
+chemin. Un chemin GitLab à sous-groupes donne son dernier segment. Limite
+acceptée : deux dépôts dont l'adresse finit par le même segment portent le même
+nom dans la pastille et dans la liste. Le sandbox calcule `nom`, que la
+pastille et la liste lisent. `etatDeConnexion` reçoit le nom dans sa précision
+et compose la pastille : `EtatConnexion.pastille` reste une chaîne. Les noms
+mesurés tiennent sur une ligne jusqu'à une quarantaine de caractères, et un
+nom plus long passe à la ligne sans déborder : aucune troncature, et l'attribut
+`title` garde « Ouvrir la configuration ».
 
-| Option | Exemple | Homonymie entre deux dépôts enregistrés |
-|---|---|---|
-| N1. Dernier segment | `design-system` | Ambiguë : `mon-org/design-system` et `mon-groupe/design-system` s'affichent pareil |
-| N2. Chemin complet | `mon-groupe/equipe-produit/design-system` | Levée, deux lignes à 320 px |
-| N3. Dernier segment, chemin complet pour les homonymes, forge en plus si le chemin est identique | `design-system`, ou `mon-org/design-system` et `mon-groupe/design-system`, ou `design-system (GitLab)` | Levée |
-
-Recommandation : **N3**. Le sandbox calcule `nom` sur toute la liste, et la
-pastille comme la liste le lisent. Ajouter un homonyme allonge le nom affiché
-d'un dépôt déjà enregistré. `etatDeConnexion` reçoit le nom dans sa
-précision et compose la pastille : `EtatConnexion.pastille` reste une chaîne.
-
-**La longueur.** Les noms mesurés tiennent sur une ligne jusqu'à une
-quarantaine de caractères, et un nom plus long passe à la ligne sans déborder.
-Recommandation : aucune troncature ni attribut `title`. L'attribut actuel,
-« Ouvrir la configuration », dit ce que fait le bouton et reste en place.
-
-**Les autres états.** Proposition, à décider : nommer le dépôt actif dans
-tous les états qui le concernent.
+**Les états (nom dans les échecs, décidé).**
 
 | Situation | Pastille | Couleur |
 |---|---|---|
@@ -781,18 +800,16 @@ tous les états qui le concernent.
 | 401, 403, 404 | `design-system-v3 : jeton refusé`, `: accès refusé`, `: repository introuvable` | Danger |
 | Réseau, forge en panne | `design-system-v3 : GitHub injoignable`, `: GitHub indisponible` | Danger |
 | `ucm.config.json` fautif | `design-system-v3 : ucm.config.json fautif` | Danger |
-| Aucun dépôt enregistré | `aucun repository` | Danger |
-| Aucun dépôt actif | `aucun repository actif` | Danger |
+| Aucun dépôt enregistré | `aucun dépôt` | Danger |
+| Aucun dépôt actif | `aucun dépôt actif` | Danger |
 | Dépôts débranchés | `export local` | Avertissement ([section 6](#6-débrancher-les-dépôts)) |
 
-Pendant la période de test, le nom dit lequel des trois dépôts échoue sans
-ouvrir la configuration. « repository mal décrit » devient
-`ucm.config.json fautif`, qui nomme le fichier à corriger et se dit de la même
-façon sur les deux forges.
+« repository mal décrit » devient `ucm.config.json fautif`, qui nomme le
+fichier à corriger et se dit de la même façon sur les deux forges.
 
 **La destination du clic.** Tous les états de la pastille concernent les
-dépôts : elle ouvre l'onglet Repos, et déplie la ligne du dépôt actif quand
-il est en échec.
+dépôts : elle ouvre l'onglet Dépôts, et déplie la carte du dépôt actif quand il
+est en échec.
 
 **Tests et galerie.** 32 appels de `ouverture('connecte')` dans
 `galerie/etats.cjs` lisent le texte de `etatDeConnexion` : ils suivent le
@@ -821,20 +838,14 @@ enregistré avec une URL GitLab » (réécrit, section 4.2).
 
 | Situation | Ligne sous la carte du composant | Verdict `sans-depot` | Journal de `publier` |
 |---|---|---|---|
-| S1 | « Aucun repository enregistré. L'export sera téléchargé sur votre poste. » | « Aucun repository enregistré. Le contrat sera téléchargé sur votre poste. » | « Aucun repository enregistré : téléchargement sur votre poste. » |
-| S2 | « Aucun repository actif. L'export sera téléchargé sur votre poste. » | « Aucun repository actif. Le contrat sera téléchargé sur votre poste. » | « Aucun repository actif : téléchargement sur votre poste. » |
+| S1 | « Aucun dépôt enregistré. L'export sera téléchargé sur votre poste. » | « Aucun dépôt enregistré. Le contrat sera téléchargé sur votre poste. » | « Aucun dépôt enregistré : téléchargement sur votre poste. » |
+| S2 | « Aucun dépôt actif. L'export sera téléchargé sur votre poste. » | « Aucun dépôt actif. Le contrat sera téléchargé sur votre poste. » | « Aucun dépôt actif : téléchargement sur votre poste. » |
 | S4 | « Export local : l'export sera téléchargé sur votre poste. » | « Export local. Le contrat sera téléchargé sur votre poste. » | « Export local : téléchargement sur votre poste. » |
 
-**Persistance.**
-
-| Option | Débranchement oublié | Débranchement voulu sur plusieurs jours |
-|---|---|---|
-| Mémorisé | Visible avant tout clic : pastille, ligne sous la carte, verdict | Conservé |
-| Oublié à la fermeture | Impossible | À refaire à chaque ouverture ; un export peut partir vers le dépôt avant le geste |
-
-Recommandation : **mémorisé** (`exportLocal`). Le rappel sur l'écran de travail
-emploie la ligne de repli existante, dans les limites de D5 : aucun objet
-nouveau.
+**Persistance (C9, décidé).** Le débranchement est mémorisé dans `exportLocal`.
+Un débranchement oublié reste visible avant tout clic : pastille, ligne sous la
+carte, verdict. Le rappel sur l'écran de travail emploie la ligne de repli
+existante, dans les limites de D5.
 
 **Sévérité.** Un débranchement voulu n'est pas une panne, et un débranchement
 oublié coûte une demande de fusion jamais ouverte. La pastille et la ligne
@@ -847,13 +858,14 @@ demande n'est ouverte, et le seul geste utile, rebrancher, est déjà nommé par
 la pastille.
 
 **Rebranchement.** L'interrupteur rallume le dernier dépôt actif, que
-`depotActif` garde pendant le débranchement. « Activer » sur une ligne
-rebranche aussi, puisque le designer choisit alors où publier. Alternative
-écartée : désactiver les boutons « Activer » pendant le débranchement, qui
-ajoute un état désactivé par ligne.
+`depotActif` garde pendant le débranchement. « Se connecter » sur une carte
+rebranche aussi, puisque le designer choisit alors où publier. Débranché,
+aucune carte n'affiche « Connecté ».
 
-**Libellé de l'interrupteur.** « Publier dans le repository actif », activé
-par défaut. Le libellé décrit l'effet de l'état activé
+**Interrupteur (P2, place à confirmer).** « Publier dans le dépôt actif »,
+activé par défaut, sous la description de l'onglet et au-dessus de « Ajouter un
+dépôt ». Il n'apparaît que lorsque la liste contient au moins un dépôt. Le
+libellé décrit l'effet de l'état activé
 ([Nielsen Norman Group](https://www.nngroup.com/articles/toggle-switch-guidelines/))
 et ne change pas avec l'état
 ([WAI-ARIA, switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)). Aide
@@ -861,17 +873,24 @@ sous l'interrupteur désactivé : « Les exports sont téléchargés sur votre
 poste. Aucune demande de fusion n'est ouverte. »
 
 ```text
-● export local
- Général  [Repos]
+Configuration                         [Retour]
+ Général  [Dépôts]
 ──────────────────────────────────────────────
-Publier dans le repository actif        (● ━)
+Les dépôts où les exports sont déposés, et le
+jeton qui autorise chacun.
+
+Publier dans le dépôt actif             (● ━)
 Les exports sont téléchargés sur votre poste.
 Aucune demande de fusion n'est ouverte.
 
-▸ design-system-v3                  [Activer]
-  GitHub · main
-▸ design-system                     [Activer]
-  GitLab · develop
+[             Ajouter un dépôt             ]
+
+┌────────────────────────────────────────────┐
+│ design-system-v3            [Se connecter] │
+└────────────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│ design-system               [Se connecter] │
+└────────────────────────────────────────────┘
 ```
 
 **Tokens.** Avec l'option A, l'export local propose la carte des tokens selon
@@ -883,6 +902,19 @@ S2 et S4 reçoivent chacune un état au repos et un état d'export.
 ## 7. Les onglets et l'onglet Général
 
 ### 7.1. Les onglets
+
+**Noms (P1).** D1 nommait les onglets « Général » et « Repos ». Le mainteneur
+propose « Dépôts » pour le second. Recommandation : « Dépôts », en français
+comme « Général », et le mot que la liste, le bouton d'ajout et le texte de
+liste vide emploient déjà.
+
+**Description.** Chaque onglet porte une phrase sous les onglets, à la place de
+l'actuel sous-titre de `PAGES` :
+
+| Onglet | Description proposée |
+|---|---|
+| Général | « Les réglages du plugin sur ce poste. » |
+| Dépôts | « Les dépôts où les exports sont déposés, et le jeton qui autorise chacun. » |
 
 **Aspect.** Le panneau de droite de Figma porte deux onglets, « Design » et
 « Prototype »
@@ -906,36 +938,32 @@ panneaux sont locaux et s'affichent sans délai, cas que le guide recommande.
 `@create-figma-plugin/ui` emploie des boutons radio sans ces rôles, et n'est
 donc pas repris tel quel.
 
-**Entrée.** La pastille ouvre Repos (section 5). L'engrenage ouvre le dernier
+**Entrée.** La pastille ouvre Dépôts (section 5). L'engrenage ouvre le dernier
 onglet consulté pendant la session, Général au premier clic. Aucune mémoire
 entre deux ouvertures du plugin. Le troisième test de `interface.test.mjs`
 ouvre la configuration par l'engrenage et remplit l'adresse : il passe à
-l'onglet Repos.
+l'onglet Dépôts.
 
 **Enregistrement.**
 
 | Contrôle | Effet |
 |---|---|
-| Interrupteurs « Gérer les tokens », « Publier dans le repository actif » | Immédiat : un interrupteur ne demande pas de bouton d'enregistrement ([Nielsen Norman Group](https://www.nngroup.com/articles/toggle-switch-guidelines/)) |
-| « Activer » | Immédiat |
-| Formulaire d'ajout, formulaire d'une ligne dépliée | Bouton « Enregistrer » propre au formulaire, libéré par `depot-enregistre` |
+| Interrupteurs « Gérer les tokens », « Publier dans le dépôt actif » | Immédiat : un interrupteur ne demande pas de bouton d'enregistrement ([Nielsen Norman Group](https://www.nngroup.com/articles/toggle-switch-guidelines/)) |
+| « Se connecter » | Immédiat |
+| Carte dépliée | Bouton « Enregistrer » propre à la carte, libéré par `depot-enregistre` |
 
-Au plus un bouton « Enregistrer » est visible, celui de la ligne dépliée ou du
-formulaire d'ajout. Les deux panneaux restent dans le DOM : une saisie survit à
-un changement d'onglet pendant la session. Replier la ligne ou cliquer
-« Annuler » abandonne la saisie. La garde `settingsDirty` passe au formulaire
-ouvert : un message `settings` ne remplace pas une saisie en cours.
-
-**En-tête.** Le titre « Configuration » reste. Le sous-titre de `PAGES`
-disparaît : il décrit un seul dépôt, et les onglets nomment le contenu.
+Plusieurs cartes peuvent être dépliées. Chacune garde sa saisie tant qu'elle
+n'est pas enregistrée, y compris repliée ou pendant un changement d'onglet :
+les deux panneaux restent dans le DOM. La garde `settingsDirty` passe à la
+carte : un message `settings` ne remplace pas une saisie en cours.
 
 ### 7.2. Options de l'onglet Général
 
 | Candidate | Décision | Raison |
 |---|---|---|
-| Gérer les tokens | Retenue | D7. Portée poste (option A). Deux états de galerie : écran à une carte, verdict sans consigne |
-| Effacer les données du plugin | Écartée (C11) | Aucun besoin établi : retirer un dépôt efface déjà son jeton, soit deux clics par dépôt pour quitter un poste. Le plugin Design Tokens propose un « Reset Settings » contre des réglages corrompus ([README](https://github.com/lukasoppermann/design-tokens)) ; aucun cas de ce genre n'est relevé ici |
-| Ouvrir la demande dans le navigateur | Écartée | Aucun besoin établi ; E3 se corrige au lot 0 |
+| Gérer les tokens | Retenue | D7, C2. Portée poste. Deux états de galerie : écran à une carte, verdict sans consigne |
+| Effacer les données du plugin | Écartée (C11) | Supprimer un dépôt efface son jeton et ses réglages |
+| Ouvrir la demande dans le navigateur | Écartée | Aucun besoin établi ; la phrase de `SPEC.md` qui la liait au libellé est retirée (E3) |
 | Avertissement « Aucune règle d'usage exploitable » | Écartée | L'équipe consommatrice emploie `.componentRules` |
 | Demande en brouillon | Écartée | Aucune équipe ne la demande ; l'API GitHub ne l'accepte pas sur un dépôt privé des offres Free et Pro ([documentation](https://docs.github.com/en/rest/pulls/pulls#create-a-pull-request)) ; GitLab ne la pose que par un préfixe de titre `Draft:` ([documentation](https://docs.gitlab.com/user/project/merge_requests/drafts/)) |
 | Préfixe de branche | Écartée | `exportsEnVol` lit le préfixe ; les règles de nom de branche de GitLab sont réservées aux offres Premium et Ultimate ([documentation](https://docs.gitlab.com/user/project/repository/push_rules/)) ; sur GitHub, la disponibilité des restrictions de nom par offre est non vérifiée. Un refus 400 affiche déjà la réponse de GitLab à un mainteneur du projet. Si la question 10 révèle une règle, le réglage appartiendrait au dépôt |
@@ -947,13 +975,14 @@ lot 2 :
 
 ```text
 Configuration                         [Retour]
-● design-system-v3 connecté
-[Général]  Repos
+[Général]  Dépôts
 ──────────────────────────────────────────────
+Les réglages du plugin sur ce poste.
+
 Gérer les tokens                        ( ━●)
 Affiche la commande d'export des tokens.
 L'analyse d'un composant vérifie aussi que
-les tokens sont fusionnés dans le repository.
+les tokens sont fusionnés dans le dépôt.
 ```
 
 Écran de travail, réglage désactivé :
@@ -980,19 +1009,18 @@ suite, les mutations et la galerie tournent dans un worktree isolé.
 
 | Ordre | Lot | Dépend de |
 |---|---|---|
-| 1 | Lot 0, destination et fraîcheur | C1 |
+| 1 | Lot 0, destination et fraîcheur | Rien |
 | 2 | Lot 1, condition des tokens en un point | Rien |
-| 3 | Lot 2, onglets et réglage des tokens | C2, lot 0 |
-| 4 | Mesures dans Figma | Rien, bundle actuel |
-| 5 | Lot 3a, stockage des dépôts | C3, C8, C10, lot 2, mesures |
-| 6 | Lot 3b, liste des dépôts | C4, C5, C7, C13, lot 3a |
-| 7 | Lot 3c, pastille nommée et verdict nommé | C6, C12, lot 3b |
-| 8 | Lot 4, débranchement | C9, lot 3b |
-| 9 | Lot 6, recette dans Figma | Tous |
+| 3 | Lot 2, onglets et réglage des tokens | Lot 0, P1 |
+| 4 | Lot 3a, stockage des dépôts | Lot 2, C10 |
+| 5 | Lot 3b, liste des dépôts | Lot 3a, C13, P2, P3 |
+| 6 | Lot 3c, pastille nommée et verdict nommé | Lot 3b |
+| 7 | Lot 4, débranchement | Lot 3b, P2 |
+| 8 | Lot 6, recette dans Figma | Tous |
 
 ### Lot 0. Destination et fraîcheur
 
-Préalable. Il corrige E1, E2, E3, E6 et E7 dans le modèle à un dépôt.
+Il corrige E1, E2, E3, E6 et E7 dans le modèle à un dépôt.
 
 - Clé de destination calculée pour le dépôt unique actuel
   (`forge:projet@baseBranch`), rangée dans `AnalyseGardee`, envoyée dans
@@ -1005,8 +1033,7 @@ Préalable. Il corrige E1, E2, E3, E6 et E7 dans le modèle à un dépôt.
 - Interface : les cartes se vident quand la clé change
   (`src/ui/index.ts`) ; `CarteComposant.reinitialiser` remet `analysee` à
   faux.
-- E3 : selon la question 10, le libellé annonce l'ouverture ou la phrase de
-  `SPEC.md` disparaît.
+- E3 : la phrase « le libellé du bouton l'annonce » quitte `SPEC.md`, partie 3.
 - Tests, rouges sur le commit lu : une publication réussie garde son lien et
   ses points à corriger ; un enregistrement rend « Analyser le composant »
   disponible (`interface.test.mjs`) ; un test de connexion périmé ne poste
@@ -1034,44 +1061,33 @@ Indépendant.
   collections à la réactivation.
 - `etatDuDepot` reçoit le réglage (`src/connexion.ts`).
 - Interface : carte des tokens masquée par défaut ; page de configuration en
-  deux onglets accessibles au clavier ; Général porte l'interrupteur ; Repos
-  porte le formulaire actuel, déplacé sans changement ; pastille vers Repos,
-  engrenage vers le dernier onglet (`src/ui/index.ts`,
+  deux onglets accessibles au clavier, avec leur description ; Général porte
+  l'interrupteur ; Dépôts porte le formulaire actuel, déplacé sans changement ;
+  pastille vers Dépôts, engrenage vers le dernier onglet (`src/ui/index.ts`,
   `ConfigurationPage.ts`, `Header.ts`, un composant d'onglets, `styles.css`).
 - Galerie : `ouverture()` joue `settings` ; nouveaux états
   `ecran-sans-tokens`, `gitlab-composant-sans-consigne-tokens`,
   `configuration-onglet-general` ; les états `configuration-*` passent par
-  l'onglet Repos ; textes « regarder » qui citent la carte des tokens.
+  l'onglet Dépôts ; textes « regarder » qui citent la carte des tokens.
 - Tests : `code.test.ts` (réglage désactivé : aucune lecture des collections,
   `avecTokens` faux, bascule qui annule une analyse et pas une publication) ;
   `connexion.test.ts` (titre sans chemin de tokens) ; `interface.test.mjs`
-  (premier test qui envoie `settings`, troisième test qui ouvre Repos, carte
+  (premier test qui envoie `settings`, troisième test qui ouvre Dépôts, carte
   masquée jusqu'au réglage, flèches et `aria-selected`).
 - Documents : `CONTRIBUTING.md` (section 3.3) ; `SPEC.md`, « Contexte
   technique » et « Analyses et publication » ; README du plugin, « Les deux
   commandes » ; `POUR-LES-DESIGNERS.md`, section 3 : l'ordre « tokens en
   premier » vaut quand la gestion des tokens est activée.
 
-### Mesures dans Figma avant le lot 3
-
-Faites par le mainteneur avec le bundle actuel. Elles décident de la portée de
-D4 et de l'utilité de la clé face à une seconde fenêtre.
-
-1. Deux fichiers ouverts, plugin lancé dans chacun. Changer l'adresse dans
-   l'un et enregistrer, puis analyser un composant dans l'autre : le chemin du
-   verdict et la pastille nomment-ils le nouveau dépôt ?
-2. Plugin configuré dans l'application de bureau, puis ouvert dans le
-   navigateur : la configuration est-elle vide ?
-
 ### Lot 3a. Stockage des dépôts
 
-Le formulaire actuel reste l'interface : il ajoute le premier dépôt ou modifie
-l'actif. La liste arrive au lot 3b.
+Le formulaire actuel reste l'interface : il enregistre le premier dépôt ou
+modifie l'actif. La liste arrive au lot 3b.
 
-- `src/config.ts` : clés `depots` et `depotActif`, effacement des quatre
-  anciennes clés, validation par entrée, identité en minuscules, ajout,
-  modification, retrait et activation dans l'ordre de la section 4.2 ; file
-  d'écriture dans `src/code.ts`.
+- `src/config.ts` : clés `depots` et `depotActif`, sort des anciennes clés
+  selon C10, validation par entrée, identité en minuscules, enregistrement,
+  modification, suppression et activation dans l'ordre de la section 4.2 ;
+  file d'écriture dans `src/code.ts`.
 - `src/connexion.ts` : retrait de `jeton-autre-forge`.
 - `src/messages.ts` : `ReglagesPublics`, `depot-enregistre`, `depot-teste` ;
   retrait de `supprimer-token`.
@@ -1086,22 +1102,25 @@ l'actif. La liste arrive au lot 3b.
 
 ### Lot 3b. Liste des dépôts
 
-- Interface : liste L1 rendue par `id`, lignes dépliables, formulaire d'ajout,
-  retrait au second clic, geste d'échec en tête du panneau, résultat de
-  `depot-teste` dans le formulaire enregistré.
-- Sandbox : demandes `ajouter-depot`, `modifier-depot`, `retirer-depot`,
-  `activer-depot` ; test du dépôt enregistré.
-- `src/connexion.ts` : gestes du 401 et du 404 de la section 4.6 ;
-  `repli` en cause.
-- Galerie : catégorie `mixte` et invariant de `AGENTS.md` (C13) ; réécriture
-  des autres `configuration-*` et de `gitlab-dossier-retire` ; nouveaux états
-  `repos-aucun`, `repos-trois-deux-forges`, `repos-ajout-erreurs`,
-  `repos-ajout-doublon`, `repos-modification-actif`,
-  `repos-actif-jeton-refuse`, `gitlab-repos-actif-introuvable`,
-  `repos-retrait-confirmation`, `repos-aucun-actif`,
+- Interface : cartes dépliables rendues par `id`, statut ou « Se connecter »,
+  « Ajouter un dépôt » qui crée une carte dépliée, adresse en lecture seule
+  après enregistrement, suppression au second clic, repli après un
+  enregistrement accepté, états de P3, pastille retirée de la page de
+  configuration.
+- Sandbox : demandes `enregistrer-depot`, `supprimer-depot`, `activer-depot` ;
+  test du dépôt enregistré.
+- `src/connexion.ts` : statut court par cause pour la carte ; gestes du 401 et
+  du 404 de la section 4.6 ; `repli` en cause.
+- Galerie : catégorie `mixte` et invariant de `AGENTS.md` selon C13 ;
+  réécriture des autres `configuration-*` et de `gitlab-dossier-retire` ;
+  nouveaux états `depots-aucun`, `depots-trois-deux-forges`,
+  `depots-nouveau-erreurs`, `depots-doublon`, `depots-actif-deplie`,
+  `depots-actif-jeton-refuse`, `gitlab-depots-actif-introuvable`,
+  `depots-suppression-confirmation`, `depots-aucun-actif`,
   `destination-changee`.
-- Tests : `interface.test.mjs` (activation en un clic, retrait au second clic,
-  ligne dépliée conservée à la réception de `settings`) ; `code.test.ts`
+- Tests : `interface.test.mjs` (« Se connecter » en un clic sans déplier la
+  carte, suppression au second clic, carte dépliée conservée à la réception de
+  `settings`, repli après enregistrement accepté seulement) ; `code.test.ts`
   (enregistrer un dépôt inactif teste ce dépôt et ne vide aucune analyse).
 - Relecture : compte des objets sur les captures (section 4.6).
 - Documents : `POUR-LES-DESIGNERS.md`, « Configurer le dépôt » ; README du
@@ -1109,36 +1128,37 @@ l'actif. La liste arrive au lot 3b.
 
 ### Lot 3c. Pastille nommée et verdict nommé
 
-- `nomsAffiches` (N3) dans `src/config.ts` ; nom dans `etatDeConnexion` et dans
-  le verdict `a-publier` (`src/prevol.ts`), si C6 et C12 le retiennent.
+- `nom` (dernier segment de l'adresse) dans `src/config.ts` ; nom dans
+  `etatDeConnexion` et dans le verdict `a-publier` (`src/prevol.ts`).
 - Galerie : `ouverture()` passe un nom ; état `pastille-nom-long` avec un
-  chemin GitLab à trois niveaux et deux homonymes.
-- Tests : `connexion.test.ts` (homonymes, même chemin sur deux forges) ;
-  `prevol.test.ts`.
+  chemin GitLab à sous-groupes.
+- Tests : `connexion.test.ts` (nom d'un chemin à sous-groupes, nom dans chaque
+  cause) ; `prevol.test.ts` (verdict nommé).
 
 ### Lot 4. Débranchement
 
 - Clé `exportLocal`, entrée dans la clé de destination ; demande
   `publier-dans-le-depot { valeur }` ; `loadConfiguration` ne rend aucune
   configuration quand elle vaut `true` ; aucun test de connexion ; état de
-  pastille `local` en avertissement ; textes de la section 6 ; « Activer »
+  pastille `local` en avertissement ; textes de la section 6 ; « Se connecter »
   rebranche.
-- Galerie : `repos-debranches`, `travail-export-local`, `export-local-termine`.
+- Galerie : `depots-debranches`, `travail-export-local`,
+  `export-local-termine`.
 - Tests : aucun appel réseau débranché ; une analyse faite branchée ne se
   publie pas débranchée ; rebranchement sur le dernier actif.
 - Documents : `SPEC.md` partie 3 ; `POUR-LES-DESIGNERS.md`.
 
 ### Lot 6. Recette dans Figma
 
-Faite par le mainteneur, les gestes de l'agent s'arrêtant hors de Figma.
+Faite par le mainteneur, les gestes de l'agent s'arrêtant hors de Figma. Les
+mesures à deux fenêtres et entre application et navigateur ne sont pas faites,
+par décision du mainteneur.
 
-1. Deux fenêtres : bascule dans l'une, publication dans l'autre ; le refus
-   nomme la destination.
-2. Réglage des tokens désactivé : aucune carte ne clignote à l'ouverture.
-3. Onglets à côté du panneau de droite de Figma, deux thèmes, fenêtre de
-   320 × 320 px, contraste du texte de sévérité à 11 px, geste d'échec visible
-   sans défiler.
-4. Bascule réelle entre un dépôt GitHub et un projet GitLab, publication dans
+1. Réglage des tokens désactivé : aucune carte ne clignote à l'ouverture.
+2. Onglets à côté du panneau de droite de Figma, deux thèmes, fenêtre de
+   320 × 320 px, contraste du texte de sévérité à 11 px, carte en échec amenée
+   dans la vue.
+3. Bascule réelle entre un dépôt GitHub et un projet GitLab, publication dans
    chacun.
 
 ## 9. Documents et tests touchés
@@ -1157,7 +1177,7 @@ Faite par le mainteneur, les gestes de l'agent s'arrêtant hors de Figma.
 | `packages/plugin/tests/prevol.test.ts`, `etatDesTokens.test.ts` | 1, 3c |
 | `packages/plugin/tests/code.test.ts` | 0, 2, 3a, 3b, 4 |
 | `packages/plugin/tests/interface/interface.test.mjs` | 0, 2, 3b |
-| `packages/plugin/tests/galerie.test.ts` | 3b : catégorie `mixte` |
+| `packages/plugin/tests/galerie.test.ts` | 3b, selon C13 |
 | `packages/plugin/tests/stylesUi.test.ts` | Sans changement : chaque classe nouvelle reçoit sa règle |
 | `tests/inventaireInvariants.test.ts` | 3a |
 
@@ -1176,15 +1196,19 @@ npm run galerie:captures --workspace ucm-exporter-plugin
 
 **Mainteneur**
 
-- La réinitialisation par `settings` du commit `34e584c` visait-elle
-  l'enregistrement seul ? Le lot 0 le suppose.
-- E3 : annoncer l'ouverture du navigateur dans le libellé, ou retirer la
-  phrase de `SPEC.md` ?
+- C10 : effacer les quatre anciennes clés à l'ouverture ?
+- C13 : catégorie `mixte` pour les écrans de la galerie qui listent deux
+  forges ?
+- P1 : « Dépôts » comme nom d'onglet ?
+- P2 : interrupteur de débranchement sous la description, au-dessus de
+  « Ajouter un dépôt » ?
+- P3 : statuts « Connexion… » et cause en rouge sur la carte active ; carte
+  qui reste dépliée tant que l'enregistrement ou le test échoue ?
 
 **Équipe consommatrice**
 
 - Dans combien de projets GitLab publie-t-elle ? Plus d'un projet ne change
-  pas la recommandation A, tant qu'aucun ne reçoit de tokens.
+  pas l'option A, tant qu'aucun ne reçoit de tokens.
 - Son projet impose-t-il un nom de branche ou un message de commit ? GitLab le
   signale par un refus 400.
 - Où ses composants sont-ils rangés, et le chemin
@@ -1196,28 +1220,28 @@ npm run galerie:captures --workspace ucm-exporter-plugin
 
 Un agent de revue a relu la première version de ce plan contre le code du
 commit lu, avec deux sondes sur le routeur réel. Chaque constat a été vérifié
-avant d'être retenu.
+avant d'être retenu. La porte H1 en a ensuite modifié trois.
 
 | # | Constat | Sort |
 |---|---|---|
 | 1 | Deux tests de connexion simultanés laissent une pastille fausse | Retenu, E6, rejoué ; compteur de génération au lot 0 |
 | 2 | Un drapeau `reinitialiser` par geste contredit « l'identité du sujet décide » et laisse publier vers un dépôt changé dans une autre fenêtre | Retenu ; clé de destination (4.3) |
-| 3 | Une modification concurrente d'un retrait fait revenir le jeton | Retenu ; file d'écriture (4.2), limite entre fenêtres documentée |
+| 3 | Une modification concurrente d'une suppression fait revenir le jeton | Retenu ; file d'écriture (4.2), limite entre fenêtres documentée |
 | 4 | Le retour d'enregistrement d'un dépôt inactif décrit l'actif | Retenu ; test du dépôt enregistré, `depot-enregistre` (4.5) |
 | 5 | « `galerie.test.ts` sans changement » est faux face à une liste mixte | Retenu ; C13 |
-| 6 | Les mesures dans Figma arrivent après le code qu'elles justifient | Retenu ; mesures avant le lot 3 |
-| 7 | Le verdict ne nomme pas le dépôt de destination | Retenu comme décision C12 |
-| 8 | « Supprimer ce repository » se lit comme une suppression sur la forge | Retenu ; « Retirer de la liste » |
-| 9 | Compte d'objets au-delà de la douzaine ; geste d'échec hors de vue | Retenu ; geste en tête du panneau, compte à la relecture du lot 3b, repli L4 |
+| 6 | Les mesures dans Figma arrivent après le code qu'elles justifient | Retenu, puis levé à H1 : le mainteneur ne fait pas ces mesures |
+| 7 | Le verdict ne nomme pas le dépôt de destination | Retenu ; C12, décidé |
+| 8 | « Supprimer » se lit comme une suppression sur la forge | Retenu, puis tranché à H1 : le mainteneur garde « Supprimer » |
+| 9 | Compte d'objets au-delà de la douzaine ; geste d'échec hors de vue | Retenu ; carte en échec dépliée et amenée dans la vue, compte à la relecture du lot 3b |
 | 10 | « Réessayer » après bascule ; « La sélection a changé » à tort | Retenu, E7, rejoué ; clé de destination |
 | 11 | Garder l'analyse après une bascule | Écarté : contenu figé avant une modification dans Figma, demande et état de plus (4.4) |
 | 12 | Revenir à `postConnection` après une publication | Retenu, lot 0 ; `gitlab-merge-request-creee` ajouté à E1 |
-| 13 | Textes qui supposent une cause ou omettent le geste | Retenu ; refus de destination, doublon, annulation par les réglages |
+| 13 | Textes qui supposent une cause ou omettent le geste | Retenu ; refus de destination, annulation par les réglages |
 | 14 | Deux sévérités pour le débranchement | Retenu ; avertissement pour la pastille et la ligne |
 | 15 | Lot 3 trop gros | Retenu ; lots 3a, 3b, 3c |
-| 16 | Règles non écrites : vidage, activation à l'ajout, entrée retirée ailleurs, rendu par `id`, casse du doublon | Retenu ; sections 4.1, 4.2, 4.3 |
+| 16 | Règles non écrites : vidage, activation à l'ajout, entrée supprimée ailleurs, rendu par `id`, casse du doublon | Retenu ; sections 4.1, 4.2, 4.3 |
 | 17 | Tests oubliés dans les harnais de `code.test.ts` et `interface.test.mjs` | Retenu ; sections 4.2, 7.1 et lot 2 |
-| 18 | C11 sans besoin ; N3 trop élaboré ; lot 1 présenté comme préalable ; quatre états d'échec en galerie | Retenu ; C11 écartée, N3 simplifiée, lot 1 indépendant, deux états d'échec |
+| 18 | C11 sans besoin ; nom par homonymie trop élaboré ; lot 1 présenté comme préalable ; quatre états d'échec en galerie | Retenu ; puis H1 : C11 écartée, dernier segment seul |
 | 19 | `title` de la pastille en conflit avec « Ouvrir la configuration » | Retenu ; ni troncature ni `title` |
 | 20 | E3 hors de tout lot ; `etatDesTokens` aussi en double comme fonction | Retenu ; E3 au lot 0, E4 étendu |
 
