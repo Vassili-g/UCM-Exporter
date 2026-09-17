@@ -3,7 +3,7 @@
 L'état du projet et ce qu'il reste à valider. [CONCEPT.md](./CONCEPT.md) porte
 les principes, [docs/format/FORMAT.md](./docs/format/FORMAT.md) la forme publiée,
 [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) le comportement du plugin,
-et [docs/notes/produit/PISTES-EVOLUTION.md](./docs/notes/produit/PISTES-EVOLUTION.md) les
+et [PISTES-EVOLUTION.md](./docs/notes/Recherches/Evolutions%20globales/PISTES-EVOLUTION.md) les
 options non engagées.
 
 Le projet est un **prototype avancé**. Les preuves durables portent sur les lois
@@ -95,7 +95,7 @@ de code peut en revanche échapper à l'analyse statique.
 Aucun contrôle n'exerce le rendu. Le Playground ne porte aucun test par
 composant. Aucun vérificateur générique n'exerce les vues exactes d'un composant
 arbitraire. Les contrôles disponibles et cette limite sont détaillés dans
-[PLAN-CONFORMITE-RENDU.md](./docs/notes/verification/PLAN-CONFORMITE-RENDU.md).
+[PLAN-CONFORMITE-RENDU.md](./docs/notes/Recherches/Linter%20Dev/PLAN-CONFORMITE-RENDU.md).
 
 Ce qui en approche le plus reste statique : `@ucm-kit/adapter-typescript` lit
 l'API publique avec le vérificateur de types et compte, dans le JSX, les

@@ -3,12 +3,12 @@
 Cette étude s’adresse aux contributeurs qui choisissent les prochaines
 expérimentations UCM. Chaque piste part d’une capacité ou d’une limite du code,
 compare des solutions et propose un essai. Les directions indiquées restent
-des hypothèses. Leur adoption relève de la [roadmap](../../../ROADMAP.md).
+des hypothèses. Leur adoption relève de la [roadmap](../../../../ROADMAP.md).
 
-La répartition des responsabilités est celle du [concept](../../../CONCEPT.md) :
+La répartition des responsabilités est celle du [concept](../../../../CONCEPT.md) :
 design dans Figma, comportement dans le code, association et contrôles dans le
 repository consommateur. Les extensions du contrat relèvent du
-[format](../../format/FORMAT.md) et de sa [compatibilité](../../format/COMPATIBILITE.md).
+[format](../../../format/FORMAT.md) et de sa [compatibilité](../../../format/COMPATIBILITE.md).
 
 | Base de l’étude | Portée de la vérification |
 |---|---|
@@ -38,14 +38,14 @@ prérequis à toute revue visuelle. La même séparation s’appliquerait aux to
 à la documentation et aux agents.
 
 Le code offre une première base : les fonctions des
-[lecteurs](../../../packages/kit/src/lecteurs/index.mjs) sont publiques,
+[lecteurs](../../../../packages/kit/src/lecteurs/index.mjs) sont publiques,
 `controlerRepository` accepte un adaptateur et `ADAPTATEUR_VIDE` représente
 l’absence d’analyse du code. La
-[découverte du CLI](../../../packages/cli/src/adaptateur.mjs) ne charge cependant
+[découverte du CLI](../../../../packages/cli/src/adaptateur.mjs) ne charge cependant
 que l’adaptateur TypeScript officiel. Elle ne constitue pas encore un mécanisme
 d’activation de modules arbitraires.
 
-La [configuration](../../../packages/kit/src/format/configuration.ts) lit trois
+La [configuration](../../../../packages/kit/src/format/configuration.ts) lit trois
 champs : `components`, `tokens` et `implementation`. Des clés supplémentaires
 ordinaires sont ignorées, tandis que certaines clés de version sont refusées.
 Ajouter `modules` aujourd’hui n’activerait donc rien. Une première intégration
@@ -63,7 +63,7 @@ au build, conformément au concept.
 ### 1.1. Décrire les propriétés visuelles manquantes
 
 **Besoin et appui dans le code.**
-[unsupportedProperties.ts](../../../packages/plugin/src/contract/unsupportedProperties.ts)
+[unsupportedProperties.ts](../../../../packages/plugin/src/contract/unsupportedProperties.ts)
 signale les propriétés à effet visuel que le contrat n’écrit pas : effets,
 opacité partielle, mask, peinture non unie, blend mode, pointillé, et pour un
 texte `listSpacing`, `hangingList` et `hangingPunctuation`. Le texte publie une
@@ -92,11 +92,11 @@ au-delà de la seule extraction Figma.
 ### 1.2. Publier la localisation des diagnostics
 
 **Besoin et appui dans le code.**
-[localisation.ts](../../../packages/plugin/src/contract/localisation.ts) conserve
+[localisation.ts](../../../../packages/plugin/src/contract/localisation.ts) conserve
 déjà les cibles Figma et les parties des messages pour l’interface. Le type
-[ContractDiagnostic](../../../packages/kit/src/format/types.ts) accepte `figma`
+[ContractDiagnostic](../../../../packages/kit/src/format/types.ts) accepte `figma`
 et `contractPath`, mais
-[exportComponent.ts](../../../packages/plugin/src/contract/exportComponent.ts)
+[exportComponent.ts](../../../../packages/plugin/src/contract/exportComponent.ts)
 ne publie que le code, la sévérité et le message. La piste concerne la
 transmission de ces adresses aux consommateurs.
 
@@ -126,7 +126,7 @@ le temps nécessaire pour retrouver et corriger le problème.
 l’identifiant du composant et, lorsqu’elle existe, sa clé de publication.
 L’URL dépend de `figma.fileKey`, accessible aux plugins privés dans les
 conditions précisées par Figma.
-[Métadonnées de l’export](../../../packages/plugin/src/contract/exportComponent.ts),
+[Métadonnées de l’export](../../../../packages/plugin/src/contract/exportComponent.ts),
 [API Figma](https://developers.figma.com/docs/plugins/api/figma/).
 
 **Solutions à comparer.** Un réglage du plugin pourrait recevoir l’URL du
@@ -151,8 +151,8 @@ l’intégration n’aurait pas de bénéfice établi.
 
 **Besoin et appui dans le code.** Les vues exactes, les grilles et `composes`
 permettent déjà de décrire des assemblages. En revanche,
-[la cible d’export](../../../packages/plugin/src/cible.ts) et
-[l’exporteur](../../../packages/plugin/src/contract/exportComponent.ts)
+[la cible d’export](../../../../packages/plugin/src/cible.ts) et
+[l’exporteur](../../../../packages/plugin/src/contract/exportComponent.ts)
 n’acceptent que `COMPONENT` et `COMPONENT_SET`. Un écran dessiné comme simple
 `FRAME` n’est pas directement exportable.
 
@@ -177,9 +177,9 @@ Un nouveau format ne serait étudié que pour les manques observés.
 ### 1.5. Diagnostiquer les lenteurs et les échecs de l’exporteur
 
 **Besoin et appui dans le code.** Les lectures et résolutions Figma de
-[l’exporteur](../../../packages/plugin/src/contract/exportComponent.ts) peuvent
+[l’exporteur](../../../../packages/plugin/src/contract/exportComponent.ts) peuvent
 être difficiles à reproduire. Les limites de performance connues sont suivies
-dans la [roadmap](../../../ROADMAP.md#fragilités-connues).
+dans la [roadmap](../../../../ROADMAP.md#fragilités-connues).
 
 **Solutions à comparer.** Des mesures locales par étape suffiraient pour une
 lenteur. Une trace structurée exportable aiderait à reproduire un défaut dont
@@ -202,7 +202,7 @@ du maintien de ce module.
 ### 2.1. Relier un contrat à ses implémentations
 
 **Besoin et appui dans le code.**
-[cheminImplementation](../../../packages/kit/src/lecteurs/implementation.mjs)
+[cheminImplementation](../../../../packages/kit/src/lecteurs/implementation.mjs)
 résout un motif avec `{dir}` et `{id}`. Il ne désigne pas un export public,
 plusieurs implémentations ou un montage de démonstration. Ces informations
 seraient utiles aux stories, aux contrôles et aux agents.
@@ -229,10 +229,10 @@ validation du contrat.
 ### 2.2. Déclarer les icônes disponibles dans un projet
 
 **Besoin et appui dans le code.**
-[ucm icons](../../../packages/cli/src/icons.mjs) énumère les noms demandés et les
+[ucm icons](../../../../packages/cli/src/icons.mjs) énumère les noms demandés et les
 contrats qui les citent. Le choix du jeu, de l’export et de la place du glyphe
 dans son carré appartient au consommateur selon le
-[format](../../format/FORMAT.md#ce-que-le-contrat-ne-dit-pas-dune-icône).
+[format](../../../format/FORMAT.md#ce-que-le-contrat-ne-dit-pas-dune-icône).
 
 **Solutions à comparer.** Un manifeste de données pourrait associer les noms
 Figma aux identifiants du jeu. Un adaptateur de code pourrait exposer des
@@ -254,9 +254,9 @@ dont l’occupation visuelle diffère malgré un carré identique.
 ### 2.3. Produire les ressources de tokens
 
 **Besoin et appui dans le code.**
-[buildLeaf](../../../packages/plugin/src/tokens/exportTokens.ts) écrit le mode
+[buildLeaf](../../../../packages/plugin/src/tokens/exportTokens.ts) écrit le mode
 par défaut dans `$value` et les modes nommés dans `com.ucm.modes`.
-[indexerTokensDtcg](../../../packages/kit/src/lecteurs/tokens-dtcg.mjs) indexe les
+[indexerTokensDtcg](../../../../packages/kit/src/lecteurs/tokens-dtcg.mjs) indexe les
 feuilles et leurs types ; il ne compose pas des thèmes et ne valide pas tous
 les alias dans tous les contextes.
 
@@ -277,13 +277,13 @@ Terrazzo documente les résolveurs et la sélection de thèmes.
 [Résolveurs et thèmes](https://terrazzo.app/docs/guides/resolvers/).
 
 **Direction proposée.** Décider de la grammaire visée avant de comparer les
-outils. [FORMAT.md](../../format/FORMAT.md#partie-2--export-tokens) déclare celle que
+outils. [FORMAT.md](../../../format/FORMAT.md#partie-2--export-tokens) déclare celle que
 l’export suit et ses trois écarts avec le module `2025.10` ; l’essai porte donc
 sur ce que chaque outil accepte et sur le coût de la conversion. Rien ne
 l’impose aujourd’hui, Style Dictionary v4 lisant le fichier tel quel. Trois
 déclencheurs la rendraient nécessaire : un deuxième consommateur, un outil cible
 qui exige `2025.10`, ou la première évolution de la projection, que
-[COMPATIBILITE.md](../../format/COMPATIBILITE.md#la-version-du-format-de-tokens)
+[COMPATIBILITE.md](../../../format/COMPATIBILITE.md#la-version-du-format-de-tokens)
 marque déjà par `$extensions` et le namespace `com.ucm.*`. La projection dédiée
 ne devient une option que si les outils refusent cette conversion.
 [Types et valeurs DTCG](https://www.designtokens.org/tr/2025.10/format/),
@@ -291,7 +291,7 @@ ne devient une option que si les outils refusent cette conversion.
 
 Le module aurait une lecture UCM, une sélection de contexte et des adaptateurs
 de sortie. Il utiliserait
-[tokenCssVariable](../../../packages/kit/src/format/names.ts) pour le CSS. Une
+[tokenCssVariable](../../../../packages/kit/src/format/names.ts) pour le CSS. Une
 collision de noms, un alias absent ou un cycle empêcherait la sortie concernée.
 La sélection conserverait tous les alias nécessaires, même lorsque leurs
 cibles sont extérieures au groupe demandé.
@@ -311,7 +311,7 @@ collection qui en compte plusieurs, sans condition sur leur nom, et conserve
 leurs valeurs et alias sous `com.ucm.modes` ; une collection mono-mode ne
 publie que `$value`. Cette lecture générique couvre donc le principe de
 clair/sombre. Les
-[tests d’export](../../../packages/plugin/tests/exportTokens.test.ts) éprouvent
+[tests d’export](../../../../packages/plugin/tests/exportTokens.test.ts) éprouvent
 notamment la conservation et les collisions de noms de modes.
 
 La piste restante porte sur la consommation : choisir les valeurs du mode
@@ -347,7 +347,7 @@ produites. Il serait étendu aux marques si le projet les utilise. Seul un
 ### 2.5. Adapter la sortie à d’autres plateformes et à Code Connect
 
 **Besoin et appui dans le code.** Les
-[interfaces du kit](../../../packages/kit/src/lecteurs/index.mjs) sont réutilisables
+[interfaces du kit](../../../../packages/kit/src/lecteurs/index.mjs) sont réutilisables
 par des outils Node. Le contrat reste indépendant du framework. Une sortie
 native ou une passerelle Figma ne demanderait donc pas de placer du code de
 plateforme dans le contrat.
@@ -380,7 +380,7 @@ versions prises en charge et les éventuels sièges Figma.
 ### 3.1. Étendre la parité aux cas observables
 
 **Besoin et appui dans le code.**
-[parite.mjs](../../../packages/adapter-typescript/src/parite.mjs) compare déjà les
+[parite.mjs](../../../../packages/adapter-typescript/src/parite.mjs) compare déjà les
 props attendues, le type des booléens, les valeurs manquantes dans les unions,
 l’utilisation des booléens et enums, ainsi que les occurrences de composants
 dans le JSX. Ces contrôles ne démontrent pas que chaque branche rend le bon
@@ -403,7 +403,7 @@ la configuration du projet, avec détection de celles devenues inutiles.
 L’essai comparerait une table, un branchement, une valeur calculée et une
 exception volontaire. Le taux de constats utiles et le temps d’analyse
 détermineraient la portée retenue. La politique actuelle de verdict resterait
-celle de [verdict-bilan.mjs](../../../packages/kit/src/lecteurs/verdict-bilan.mjs).
+celle de [verdict-bilan.mjs](../../../../packages/kit/src/lecteurs/verdict-bilan.mjs).
 
 ### 3.2. Signaler les écarts dans l’éditeur
 
@@ -445,7 +445,7 @@ les exceptions avant de rendre une règle bloquante.
 ### 3.3. Comparer deux exports et identifier leur impact
 
 **Besoin et appui dans le code.**
-[Le diff du CLI](../../../packages/cli/src/check.mjs) relève les fichiers modifiés
+[Le diff du CLI](../../../../packages/cli/src/check.mjs) relève les fichiers modifiés
 pour limiter le rapport. Il ne compare pas le sens des contrats. Les fonctions
 `vueExacteDuVariant`, `collecterReferences` et `indexerTokensDtcg` fournissent
 une base de lecture, sans calcul d’impact transitif déjà prêt.
@@ -487,7 +487,7 @@ manqués seraient comparés au diff brut avant d’adopter sa présentation.
 ### 3.4. Dériver des cas exécutables et des stories
 
 **Besoin et appui dans le code.**
-[variant-views.mjs](../../../packages/kit/src/lecteurs/variant-views.mjs) fournit
+[variant-views.mjs](../../../../packages/kit/src/lecteurs/variant-views.mjs) fournit
 la vue exacte de chaque combinaison. `samples` peut fournir un contenu
 d’exemple. Il manque une liaison au composant exécutable et un montage propre
 au projet.
@@ -530,9 +530,9 @@ des montages et des migrations de Storybook.
 ### 3.5. Comparer les captures et vérifier le rendu contractuel
 
 **Besoin et appui dans le code.** Les contrôles de
-[controle-repository.mjs](../../../packages/kit/src/lecteurs/controle-repository.mjs)
+[controle-repository.mjs](../../../../packages/kit/src/lecteurs/controle-repository.mjs)
 n’observent pas le navigateur. La
-[recherche sur la conformité](../verification/PLAN-CONFORMITE-RENDU.md) propose de séparer
+[recherche sur la conformité](../Linter%20Dev/PLAN-CONFORMITE-RENDU.md) propose de séparer
 l’observation et la comparaison au contrat.
 
 | Option | Ce qu’elle établit | Ce qui reste à fournir |
@@ -558,7 +558,7 @@ une recherche séparée.
 
 Ce comparateur, l’observation normalisée qu’il recevrait et les deux limites
 qu’elle doit porter sont décrits dans
-[PLAN-CONFORMITE-RENDU.md](../verification/PLAN-CONFORMITE-RENDU.md#bloc-b--comparateur).
+[PLAN-CONFORMITE-RENDU.md](../Linter%20Dev/PLAN-CONFORMITE-RENDU.md#bloc-b--comparateur).
 
 **Module et validation.** La capture serait utilisable sur les stories
 existantes ou sur des pages de test. Les contrôles d’interaction et d’accessibilité
@@ -595,7 +595,7 @@ droits, du contexte et du plan.
 **Direction proposée.** Joindre `LIBRARY_PUBLISH` aux contrats par
 `meta.figma.componentKey`, que `buildMeta` publie pour un composant publié.
 Cette clé est l’arbitre d’identité du format
-([identite.ts](../../../packages/kit/src/format/identite.ts)), stable au
+([identite.ts](../../../../packages/kit/src/format/identite.ts)), stable au
 renommage, là où un nom de fichier peut être dupliqué. Un composant sans clé
 retombe sur un suivi par fichier, déclaré dans le repository. Un réexport relu
 établirait ensuite les différences. Reproduire
@@ -617,7 +617,7 @@ nombre de demandes de revue inutiles déterminerait l’intérêt du signal.
 ### 4.1. Préparer les données utiles à une tâche
 
 **Besoin et appui dans le code.** Les
-[lecteurs publics](../../../packages/kit/src/lecteurs/index.mjs) savent valider un
+[lecteurs publics](../../../../packages/kit/src/lecteurs/index.mjs) savent valider un
 contrat, résoudre une vue et relever les références de tokens. Un module
 pourrait réunir ces résultats avec les dépendances et les conventions du
 repository. Le calcul des alias transitifs partirait de `feuilleRacine`
@@ -657,7 +657,7 @@ gain que s’il conserve les obligations utiles à la tâche.
 ### 4.2. Fournir une méthode de lecture ou une interface MCP
 
 **Besoin et appui dans le code.** La
-[skill de consommation](../../../.agents/skills/consommer-contrat/SKILL.md)
+[skill de consommation](../../../../.agents/skills/consommer-contrat/SKILL.md)
 décrit la reconstruction jetable à froid. Les lecteurs du kit fournissent les
 données et contrôles. Ces deux responsabilités pourraient être exposées aux
 outils de l’équipe sans recopier les règles du format.
@@ -706,7 +706,7 @@ Comparer les erreurs de sélection, les révisions confondues et le temps passé
 ### 4.3. Proposer une création ou une adaptation de code
 
 **Besoin et appui dans le code.** Le kit fournit des contrôles, et
-[l’adaptateur TypeScript](../../../packages/adapter-typescript/src/index.mjs)
+[l’adaptateur TypeScript](../../../../packages/adapter-typescript/src/index.mjs)
 peut générer des types. Aucun de ces modules ne produit une implémentation
 applicative. Un assistant pourrait proposer un patch à partir du contexte,
 puis faire exécuter les contrôles disponibles.
@@ -756,7 +756,7 @@ outils ne corrigent pas, sur un jeu d’évaluation distinct des exemples appris
 ### 5.1. Produire une documentation à partir des contrats
 
 **Besoin et appui dans le code.** Les vues, props, icônes et règles d’usage
-définies dans [types.ts](../../../packages/kit/src/format/types.ts) peuvent
+définies dans [types.ts](../../../../packages/kit/src/format/types.ts) peuvent
 alimenter une référence dérivée. Les lecteurs savent déjà retrouver les vues
 exactes. Ils ne fournissent pas de générateur de documentation de composant.
 
@@ -797,8 +797,8 @@ sur l’API permettraient de mesurer l’intérêt de la documentation produite.
 ### 5.2. Distribuer un ensemble cohérent à plusieurs repositories
 
 **Besoin et appui dans le code.** Les versions du format, des paquets et des
-adaptateurs sont distinctes selon la [politique de compatibilité](../../format/COMPATIBILITE.md).
-Les [lecteurs de versions](../../../packages/kit/src/lecteurs/version-contrat.mjs)
+adaptateurs sont distinctes selon la [politique de compatibilité](../../../format/COMPATIBILITE.md).
+Les [lecteurs de versions](../../../../packages/kit/src/lecteurs/version-contrat.mjs)
 ne décrivent pas une livraison complète de design system. Plusieurs projets
 pourraient avoir besoin du même ensemble de contrats et de tokens à des
 rythmes différents.
@@ -833,8 +833,8 @@ le kit installé dans chaque projet.
 ### 5.3. Composer les modules dans un workflow
 
 **Besoin et appui dans le code.**
-[ucm init](../../../packages/cli/src/init.mjs) installe le workflow de contrôle.
-[ucm check](../../../packages/cli/src/check.mjs) appelle le kit et peut écrire
+[ucm init](../../../../packages/cli/src/init.mjs) installe le workflow de contrôle.
+[ucm check](../../../../packages/cli/src/check.mjs) appelle le kit et peut écrire
 un rapport. Ces commandes offrent une base locale, sans orchestrateur
 générique des pistes de cette étude.
 
@@ -875,7 +875,7 @@ expliquant ce qui manque. Elle ne serait pas réactivée implicitement.
 | Nouvelle révision | Invalidation et nouvelle exécution des modules concernés | Relire les résultats qui ont changé |
 | Livraison retenue | Ressources et documentation dérivées | Autoriser la publication selon les règles du projet |
 
-Le [plugin](../../../packages/plugin/src/depot.ts) publie un artefact par pull
+Le [plugin](../../../../packages/plugin/src/depot.ts) publie un artefact par pull
 request. Le workflow ne présumerait donc pas que contrat et nouveaux tokens
 arrivent ensemble. Un contrat pourrait aussi précéder le code. L’état proposé
 du repository déterminerait les modules exécutables.
@@ -891,7 +891,7 @@ de pull request soumises à approbation lorsqu’elles proviennent de
 `GITHUB_TOKEN`. Ce parcours devrait être testé avec l’identité retenue.
 [Déclenchement des workflows](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow).
 
-Le [jeton local du plugin](../../../packages/plugin/src/config.ts) pourrait
+Le [jeton local du plugin](../../../../packages/plugin/src/config.ts) pourrait
 rester adapté à certains projets. Une organisation pourrait préférer une
 GitHub App pour l’automatisation ou un intermédiaire imposé par sa politique.
 Cette décision porterait sur l’authentification et l’exploitation du service ;
@@ -951,8 +951,8 @@ l’absence de solution sur le marché.
 
 ### 6.1. Vérifier l’indépendance des modules
 
-Le [kit](../../../packages/kit/src/lecteurs/index.mjs) et les
-[tests de recette du CLI](../../../packages/cli/tests/recette.test.mjs)
+Le [kit](../../../../packages/kit/src/lecteurs/index.mjs) et les
+[tests de recette du CLI](../../../../packages/cli/tests/recette.test.mjs)
 fournissent une base pour éprouver des installations dans des repositories
 séparés. Les limites de données propres à chaque piste détermineraient les
 combinaisons possibles.
@@ -988,7 +988,7 @@ des résultats courants après un changement de configuration.
 ### 6.2. Choisir un essai selon le besoin observé
 
 Les essais ci-dessous peuvent être engagés séparément. Ils ne constituent pas
-un ordre de construction imposé. La [recette externe](../../guides/RECETTE.md) reste
+un ordre de construction imposé. La [recette externe](../../../guides/RECETTE.md) reste
 le protocole de validation du produit existant.
 
 | Besoin observé | Premier essai | Décision rendue possible |

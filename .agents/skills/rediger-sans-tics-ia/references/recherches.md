@@ -32,8 +32,8 @@ peut pas entrer par construction.
 
 [Diátaxis](https://diataxis.fr/) sépare quatre genres : tutoriel, guide
 pratique, référence, explication. Une page qui les mélange demande au lecteur de
-trier lui-même. Ce cadre a produit la séparation entre `docs/FORMAT.md`, qui est
-une référence, et `docs/POUR-LES-DESIGNERS.md`, qui est un guide pratique.
+trier lui-même. Ce cadre a produit la séparation entre `docs/format/FORMAT.md`, qui est
+une référence, et `docs/guides/POUR-LES-DESIGNERS.md`, qui est un guide pratique.
 
 ## Pourquoi la justification narrative est bornée
 

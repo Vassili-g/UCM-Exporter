@@ -64,7 +64,7 @@ Ses défauts, par ordre de gravité :
    contextes. L'orthogonalité et les jetons synthétiques sont donc un choix d'UCM
    pour son CSS, pas une contrainte de la norme.
 3. **La correction de `ring` ajoute un champ sans nécessité et le classe mal.** Le
-   plan annonce une « classe 13, version mineure ». [COMPATIBILITE.md](../../format/COMPATIBILITE.md)
+   plan annonce une « classe 13, version mineure ». [COMPATIBILITE.md](../../../format/COMPATIBILITE.md)
    ne connaît que onze classes, et un champ dont l'absence laisse un lecteur
    précédent s'écarter de la maquette relève de la classe 2, en majeure. La
    section 5.2 corrige le rendu sans toucher au contrat.
@@ -476,7 +476,7 @@ Repris du plan courant, section 13, avec la distinction de la revue, point 1.
 
 Mesuré : `defaultRenderingSemantics()` publie pour `ring`
 `cssProperties: ['outline-color', 'outline-width']` et `fallback: 'box-shadow'`.
-`outline-style` vaut `none` par défaut en CSS. [FORMAT.md](../../format/FORMAT.md) recommande
+`outline-style` vaut `none` par défaut en CSS. [FORMAT.md](../../../format/FORMAT.md) recommande
 le repli « dès que la fidélité l'exige » ; la skill ne l'emploie « que si ces
 propriétés ne suffisent pas ». Un stroke pointillé avertit déjà
 (`unsupportedProperties.ts`) : le trait publié est plein.

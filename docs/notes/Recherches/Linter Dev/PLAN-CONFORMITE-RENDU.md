@@ -38,7 +38,7 @@ composant**. Les contrôles sont pilotés par la forme du contrat, jamais par de
 cas particuliers. Ajouter un composant ne doit demander aucune modification de
 l'outillage.
 
-Une seconde règle, développée dans [CONCEPT.md](../../../CONCEPT.md) : **le code ne
+Une seconde règle, développée dans [CONCEPT.md](../../../../CONCEPT.md) : **le code ne
 lit pas le contrat quand l'application tourne**. Sans elle, la vérification
 n'aurait plus de témoin indépendant.
 
@@ -49,7 +49,7 @@ n'aurait plus de témoin indépendant.
 Forme et version du contrat, existence des tokens, graphe de composition,
 adresses des échantillons, parité et références de tokens du code sont contrôlés
 par le noyau. Tous sont statiques. `ucm check` les agrège dans le terminal et
-dans `ci-report.md`. [ROADMAP.md](../../../ROADMAP.md) en tient l'état.
+dans `ci-report.md`. [ROADMAP.md](../../../../ROADMAP.md) en tient l'état.
 
 **Ce qui manque : la vérification du rendu.** Rien ne prouve que le composant
 affiche réellement la bonne couleur, la bonne dimension et la bonne disposition
@@ -61,7 +61,7 @@ reste l'œil d'un humain qui compare une reconstruction à froid avec Figma.
 
 ## 4. Où ça intervient dans le workflow
 
-Le workflow est décrit par [CONCEPT.md](../../../CONCEPT.md). Ce qui compte ici :
+Le workflow est décrit par [CONCEPT.md](../../../../CONCEPT.md). Ce qui compte ici :
 les contrôles tournent en local pendant l'écriture et en CI au push, avec le
 même rapport et les mêmes mots, et un réexport ultérieur fait apparaître l'écart
 quand le design a changé sans que le code suive.

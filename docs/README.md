@@ -81,10 +81,10 @@ partie du produit n'en dépend.
 
 | Document | Contenu |
 |---|---|
-| [notes/produit/PISTES-EVOLUTION.md](./notes/produit/PISTES-EVOLUTION.md) | Les modules d'évolution à étudier, leurs conditions et leurs essais |
-| [notes/verification/PLAN-CONFORMITE-RENDU.md](./notes/verification/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
-| [notes/modes-et-aides/PLAN-FINAL-MODES-ET-AIDES.md](./notes/modes-et-aides/PLAN-FINAL-MODES-ET-AIDES.md) | Le plan des modes de tokens et des aides à l'implémentation, sa revue et ses lots |
-| [notes/modes-et-aides/TODO-MODES-ET-AIDES.md](./notes/modes-et-aides/TODO-MODES-ET-AIDES.md) | La liste de tâches ordonnée qui exécute ce plan |
-| [notes/verification/PLAN-DIFF-SEMANTIQUE.md](./notes/verification/PLAN-DIFF-SEMANTIQUE.md) | Le plan d'un diff sémantique entre deux versions d'un contrat |
-| [notes/produit/PLAN-REDUCTION-TOKENS.md](./notes/produit/PLAN-REDUCTION-TOKENS.md) | Les options qui réduisent le coût d'un composant reconstruit |
-| [notes/produit/RAPPORT-COUT-GENERATION.md](./notes/produit/RAPPORT-COUT-GENERATION.md) | L'analyse du coût mesuré d'une reconstruction, et les leviers à essayer |
+| [notes/Recherches/Evolutions globales/PISTES-EVOLUTION.md](./notes/Recherches/Evolutions%20globales/PISTES-EVOLUTION.md) | Les modules d'évolution à étudier, leurs conditions et leurs essais |
+| [notes/Recherches/Linter Dev/PLAN-CONFORMITE-RENDU.md](./notes/Recherches/Linter%20Dev/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
+| [notes/Recherches/Support des modes/PLAN-FINAL-MODES-ET-AIDES.md](./notes/Recherches/Support%20des%20modes/PLAN-FINAL-MODES-ET-AIDES.md) | Le plan des modes de tokens et des aides à l'implémentation, sa revue et ses lots |
+| [notes/Recherches/Support des modes/TODO-MODES-ET-AIDES.md](./notes/Recherches/Support%20des%20modes/TODO-MODES-ET-AIDES.md) | La liste de tâches ordonnée qui exécute ce plan |
+| [notes/Recherches/Diff Sémantique/PLAN-DIFF-SEMANTIQUE.md](./notes/Recherches/Diff%20Sémantique/PLAN-DIFF-SEMANTIQUE.md) | Le plan d'un diff sémantique entre deux versions d'un contrat |
+| [notes/Recherches/Optimisation Tokens/PLAN-REDUCTION-TOKENS.md](./notes/Recherches/Optimisation%20Tokens/PLAN-REDUCTION-TOKENS.md) | Les options qui réduisent le coût d'un composant reconstruit |
+| [notes/Recherches/Optimisation Tokens/RAPPORT-COUT-GENERATION.md](./notes/Recherches/Optimisation%20Tokens/RAPPORT-COUT-GENERATION.md) | L'analyse du coût mesuré d'une reconstruction, et les leviers à essayer |

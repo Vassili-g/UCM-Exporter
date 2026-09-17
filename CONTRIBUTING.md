@@ -367,7 +367,7 @@ caractères, soit 2,4 % de sa prose, et le gain vient d’un seul geste : rendre
 une règle, sa borne ou son pourquoi, et en retirer une phrase retire une clause.
 Une nouvelle passe visant un volume plutôt qu’une redite coûterait donc de
 l’information. `scripts/mesurer-prose.mjs` mesure l’état courant et
-`docs/notes/qualite/baseline-prose.json` en garde un relevé de départ.
+`docs/notes/baseline-prose.json` en garde un relevé de départ.
 
 ### Une règle, un domicile
 

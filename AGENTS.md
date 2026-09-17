@@ -47,7 +47,7 @@ l'information et le protocole de relecture y font autorité, et la galerie des
 états rend chaque écran atteignable hors de Figma.
 
 [ROADMAP.md](./ROADMAP.md) porte la maturité et les priorités,
-[PISTES-EVOLUTION.md](./docs/notes/produit/PISTES-EVOLUTION.md) les idées non décidées.
+[PISTES-EVOLUTION.md](./docs/notes/Recherches/Evolutions%20globales/PISTES-EVOLUTION.md) les idées non décidées.
 
 ## Carte du code
 

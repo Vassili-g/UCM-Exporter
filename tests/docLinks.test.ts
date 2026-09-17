@@ -106,7 +106,10 @@ test('aucun lien entre documents ne pointe vers un fichier ou une ancre absente'
 
     for (const lien of liensRelatifs(contenu)) {
       const [chemin, ancre] = lien.split('#');
-      const cible = chemin === '' ? document : path.resolve(path.dirname(document), chemin);
+      // Un dossier des notes porte des espaces : le lien les écrit `%20`, seule
+      // forme que GitHub suit, et le disque les attend décodés.
+      const cible =
+        chemin === '' ? document : path.resolve(path.dirname(document), decodeURIComponent(chemin));
 
       if (!fs.existsSync(cible)) {
         morts.push(`${relatif} → ${lien} (fichier absent)`);
