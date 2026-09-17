@@ -4,8 +4,8 @@
 > [RECHERCHE-REGLAGES.md](./RECHERCHE-REGLAGES.md), rendu sous forme de plan
 > d'action, révisé après une revue indépendante
 > ([section 11](#11-revue-indépendante)), puis après la porte H1. Le mainteneur
-> a tranché les décisions de la [section 1](#1-décisions) ; deux décisions et
-> trois points de maquette attendent encore sa réponse. Commit lu : `94ec0a9`.
+> a tranché les décisions de la [section 1](#1-décisions) ; seule C10 attend
+> encore sa réponse. Commit lu : `94ec0a9`.
 > Aucune ligne de code n'a été modifiée pour l'écrire.
 
 Les mesures de ce plan ont été faites hors de Figma : l'interface reconstruite
@@ -26,22 +26,23 @@ harnais de `tests/code.test.ts`. Ce qui demande Figma est rangé dans la
 | C6 | Nom dans la pastille | Dernier segment de l'adresse, suivi de « connecté », sans autre texte ; le nom figure aussi dans les états d'échec | [5](#5-la-pastille-de-len-tête) |
 | C7 | Dépôt actif après la suppression de l'actif | Aucun | [4.7](#47-suppression-dun-dépôt) |
 | C8 | Changement de destination entre l'analyse et la publication | Clé de destination | [4.3](#43-la-clé-de-destination) |
-| C9 | Débranchement | Mémorisé à la fermeture du plugin | [6](#6-débrancher-les-dépôts) |
-| C10 | Anciennes clés de stockage (D3) | En attente | [4.2](#42-stockage-et-règle-du-jeton) |
+| C9 | Débranchement | Interrupteur « Activer l'export local » dans Général, désactivé par défaut, mémorisé à la fermeture du plugin | [6](#6-débrancher-les-dépôts) |
+| C10 | Anciennes clés de stockage (D3) | En attente : effacer, ou reprendre le dépôt configuré | [4.2](#42-stockage-et-règle-du-jeton) |
 | C11 | « Effacer les données du plugin » | Écarté : supprimer un dépôt efface ses données | [7.2](#72-options-de-longlet-général) |
 | C12 | Le verdict nomme le dépôt de destination | Oui | [4.4](#44-changer-de-dépôt-actif) |
-| C13 | Loi de la galerie face à une liste de deux forges | En attente | [4.6](#46-interface-de-la-liste) |
+| C13 | Loi de la galerie face à une liste de deux forges | Catégorie `mixte` | [4.6](#46-interface-de-la-liste) |
 | E3 | Phrase de `SPEC.md` sur le libellé qui annonce l'ouverture du navigateur | Retirer la phrase | [2.2](#22-écarts-relevés-hors-du-plan) |
 | M | Mesures dans Figma : deux fenêtres, application de bureau et navigateur | Non faites | [4.3](#43-la-clé-de-destination) |
 | Q | Intention de la réinitialisation ajoutée par `34e584c` | Close : la clé de destination remplace ce mécanisme | [4.3](#43-la-clé-de-destination) |
 
-Points de maquette à confirmer, détaillés en [4.6](#46-interface-de-la-liste) :
+Points de maquette, détaillés en [4.6](#46-interface-de-la-liste) :
 
-| # | Point | Proposition |
+| # | Point | Décision |
 |---|---|---|
-| P1 | Nom de l'onglet | « Dépôts » |
-| P2 | Place de l'interrupteur de débranchement (D6) | Sous la description de l'onglet, au-dessus de « Ajouter un dépôt » |
+| P1 | Nom de l'onglet | « Dépôts », proposé par le mainteneur |
+| P2 | Place de l'interrupteur de débranchement | Onglet Général, libellé « Activer l'export local ». Le mainteneur déplace l'interrupteur que D6 plaçait dans l'onglet des dépôts |
 | P3 | Statut d'une carte active pendant le test ou en échec, et repli après enregistrement | « Connexion… » en gris, la cause en rouge ; la carte reste dépliée tant que l'enregistrement ou le test échoue |
+| P4 | Libellés de la carte | « Enregistrer » ; « Supprimer » abandonne sans confirmation une carte jamais enregistrée |
 
 ## 2. Faits vérifiés
 
@@ -285,8 +286,8 @@ repository est déjà dans la liste. », avec « projet » sur GitLab, lu dans
 `termes.depot`.
 
 **Activation à l'enregistrement.** Le premier dépôt enregistré dans une liste
-vide devient actif, sauf pendant un débranchement. Les suivants attendent un
-clic sur « Se connecter ».
+vide devient actif, sauf quand l'export local est activé. Les suivants
+attendent un clic sur « Se connecter ».
 
 **Ordre et nombre.** Ordre d'ajout. Le dépôt actif ne remonte pas en tête : une
 position stable sert la bascule fréquente. Aucun maximum : une entrée pèse
@@ -382,12 +383,21 @@ cartes existantes sans refermer une carte dépliée en cours de saisie.
 
 **D3, anciennes clés (C10, en attente).** Le plugin actuel range un seul dépôt
 dans quatre clés : `repoUrl`, `baseBranch`, `github_pat` et `forge_du_jeton`.
-La nouvelle version lit la liste `depots` et ne regarde plus ces clés. Si elles
-restent, le jeton de `github_pat` demeure sur le poste, et aucun bouton de
-l'interface ne peut plus l'atteindre. Recommandation : les effacer à chaque
-ouverture, avant toute lecture. Coût : quatre `deleteAsync` locaux. D3 accepte
-déjà que les dépôts soient à saisir de nouveau après la mise à jour. Le
-commentaire de `STORAGE_KEYS` sur `github_pat` disparaît avec elles.
+La nouvelle version range la liste sous `depots`, qu'aucune option ci-dessous
+n'efface : les dépôts enregistrés restent d'une ouverture à l'autre. Les
+options ne portent que sur les quatre anciennes clés, lues au plus une fois,
+à la première ouverture de la nouvelle version.
+
+| Option | Première ouverture après la mise à jour | Ouvertures suivantes | Coût |
+|---|---|---|---|
+| O1. Ignorer (D3) | Liste vide : les dépôts se saisissent de nouveau. Le jeton de `github_pat` reste sur le poste, hors de portée de tout bouton | Rien | Aucun |
+| O2. Effacer (D3) | Liste vide : les dépôts se saisissent de nouveau. Le jeton ancien est effacé | Rien : les clés n'existent plus | Quatre `deleteAsync` |
+| O3. Reprendre, puis effacer | Le dépôt configuré devient la première carte, actif, avec son jeton ; les deux autres se saisissent de nouveau. Le jeton ancien quitte les quatre clés | Rien : les clés n'existent plus | Lecture des quatre clés, `validateSettings`, une écriture de `depots`, un test ; revient sur D3 |
+
+Le plugin actuel ne connaît qu'un dépôt : O3 évite la saisie de ce seul
+dépôt. Un jeton sans `forge_du_jeton` appartient à GitHub, et une configuration
+que `validateSettings` refuse n'est pas reprise. Dans les trois options,
+l'ancien commentaire de `STORAGE_KEYS` sur `github_pat` disparaît.
 
 **Tests de `tests/config.test.ts`.**
 
@@ -400,7 +410,7 @@ commentaire de `STORAGE_KEYS` sur `github_pat` disparaît avec elles.
 | « un jeton GitHub enregistré ne vaut rien pour une URL GitLab » ; « un champ vide ne conserve pas le jeton d'une autre forge » | Retirés : l'adresse d'une entrée est figée |
 | « l'enregistrement écrit l'ancien retrait, la forge, le jeton, puis l'URL » ; « un enregistrement interrompu ne laisse aucun jeton utilisable par l'autre forge » | Remplacés : une entrée s'écrit en une écriture ; une suppression interrompue ne laisse ni jeton ni dépôt actif utilisable |
 | « l'UI apprend la forge du jeton, jamais le jeton, et la suppression retire les deux » | Adapté : l'interface apprend la présence du jeton par dépôt |
-| « un jeton enregistré avant GitLab appartient à GitHub » | Remplacé, selon C10 : les quatre anciennes clés sont effacées à l'ouverture |
+| « un jeton enregistré avant GitLab appartient à GitHub » | Selon C10 : retiré (O1), remplacé par l'effacement des anciennes clés (O2), ou conservé pour la reprise (O3) |
 
 **Tests de `tests/code.test.ts`.**
 
@@ -575,8 +585,8 @@ Page de configuration, de haut en bas :
    figure plus : le statut de la carte active la remplace ;
 2. onglets « Général » et « Dépôts » (P1) ;
 3. description de l'onglet sélectionné ;
-4. onglet Dépôts : interrupteur de débranchement (P2), bouton « Ajouter un
-   dépôt », liste des dépôts.
+4. onglet Dépôts : bouton « Ajouter un dépôt », liste des dépôts.
+   L'interrupteur de l'export local est dans Général (P2).
 
 Liste :
 
@@ -592,16 +602,17 @@ Liste :
 - « Ajouter un dépôt » crée une carte dépliée en fin de liste ; elle se replie
   à l'enregistrement ;
 - « Se connecter » active ce dépôt : l'ancien actif repasse à « Se
-  connecter ». Pendant un débranchement, « Se connecter » rebranche aussi.
+  connecter ». Quand l'export local est activé, « Se connecter » le désactive
+  aussi ([section 6](#6-débrancher-les-dépôts)).
 
 Accessibilité : la carte repliée porte deux commandes voisines, un bouton de
 dépli qui porte le nom et `aria-expanded`, et le bouton « Se connecter ». Un
 bouton ne se place pas dans un autre, et un clic sur « Se connecter » ne déplie
 pas la carte.
 
-**P3, états que la maquette ne couvre pas.**
+**P3 et P4, états que la maquette ne couvrait pas, décidés.**
 
-| Situation | Proposition |
+| Situation | Décision |
 |---|---|
 | Dépôt actif pendant le test | « Connexion… » en couleur secondaire, à la place de « Connecté » |
 | Dépôt actif en échec | La cause en rouge à la place de « Connecté » : « Jeton refusé », « Accès refusé », « Repository introuvable » ou « Projet introuvable », « ucm.config.json fautif », « GitHub injoignable » ; le geste s'affiche en tête de la carte dépliée |
@@ -611,14 +622,21 @@ pas la carte.
 | Libellé d'enregistrement | « Enregistrer », le mot du formulaire actuel |
 
 **Vocabulaire.** Les textes qui ne connaissent pas la forge disent « dépôt » :
-onglet, bouton d'ajout, liste vide, interrupteur, pastille sans dépôt actif.
+onglet, bouton d'ajout, liste vide, pastille sans dépôt actif.
 Les textes qui connaissent la forge lisent `src/forges/termes.ts`
 (« repository » ou « projet ») : causes, gestes, doublon, « Repository GitHub :
 … ».
 
+**Export local activé.** Toutes les cartes affichent « Se connecter ». Une
+ligne en couleur d'avertissement, sous la description, dit pourquoi : « Export
+local activé dans Général : les exports sont téléchargés sur votre poste. ».
+Sans elle, le designer qui ouvre Dépôts voit trois dépôts non connectés sans en
+lire la raison.
+
 **Compte d'objets.** Onglet Dépôts à trois dépôts repliés : titre, « Retour »,
-deux onglets, description, interrupteur, « Ajouter un dépôt », puis deux objets
-par carte, soit 13. La relecture du lot 3b le vérifie sur les captures.
+deux onglets, description, « Ajouter un dépôt », puis deux objets par carte,
+soit 12, et 13 avec la ligne de l'export local. La relecture du lot 3b le
+vérifie sur les captures.
 
 **Maquettes à 320 px.** Largeur utile mesurée : 273 px, environ 46 caractères.
 Les crochets désignent un bouton, `( ━●)` un interrupteur activé.
@@ -645,8 +663,6 @@ Configuration                         [Retour]
 ──────────────────────────────────────────────
 Les dépôts où les exports sont déposés, et le
 jeton qui autorise chacun.
-
-Publier dans le dépôt actif             ( ━●)
 
 [             Ajouter un dépôt             ]
 
@@ -734,13 +750,13 @@ Suppression, second clic sur le même bouton :
 │ [Enregistrer]      [Confirmer la suppression] │
 ```
 
-**Galerie (C13, en attente).** La galerie est la page qui montre chaque écran
+**Galerie (C13, décidé).** La galerie est la page qui montre chaque écran
 du plugin hors de Figma. `tests/galerie.test.ts` y tient une loi : un écran
 GitLab ne montre aucun mot de GitHub, et l'inverse. Elle attrape un texte qui
 aurait oublié de lire les mots de sa forge, et `AGENTS.md` en fait un
 invariant. L'onglet Dépôts qui liste un dépôt GitHub et un projet GitLab
-montre les deux forges sur le même écran, par construction. Recommandation :
-une catégorie `forge: 'mixte'` pour ces écrans. La loi y reste appliquée aux
+montre les deux forges sur le même écran, par construction. Décision : une
+catégorie `forge: 'mixte'` pour ces écrans. La loi y reste appliquée aux
 messages qui parlent du dépôt actif (`connection`, `verdict`, `status`, `log`,
 `demande`, `depot-teste`). L'invariant de `AGENTS.md` change dans le même
 commit.
@@ -842,7 +858,7 @@ enregistré avec une URL GitLab » (réécrit, section 4.2).
 | S2 | « Aucun dépôt actif. L'export sera téléchargé sur votre poste. » | « Aucun dépôt actif. Le contrat sera téléchargé sur votre poste. » | « Aucun dépôt actif : téléchargement sur votre poste. » |
 | S4 | « Export local : l'export sera téléchargé sur votre poste. » | « Export local. Le contrat sera téléchargé sur votre poste. » | « Export local : téléchargement sur votre poste. » |
 
-**Persistance (C9, décidé).** Le débranchement est mémorisé dans `exportLocal`.
+**Persistance (C9, décidé).** L'export local est mémorisé dans `exportLocal`.
 Un débranchement oublié reste visible avant tout clic : pastille, ligne sous la
 carte, verdict. Le rappel sur l'écran de travail emploie la ligne de repli
 existante, dans les limites de D5.
@@ -857,41 +873,22 @@ compris. Le verdict n'ajoute rien sur l'immobilité ni sur la collision : aucune
 demande n'est ouverte, et le seul geste utile, rebrancher, est déjà nommé par
 la pastille.
 
-**Rebranchement.** L'interrupteur rallume le dernier dépôt actif, que
-`depotActif` garde pendant le débranchement. « Se connecter » sur une carte
-rebranche aussi, puisque le designer choisit alors où publier. Débranché,
-aucune carte n'affiche « Connecté ».
+**Rebranchement.** Désactiver l'export local rallume le dernier dépôt actif,
+que `depotActif` garde pendant l'export local. « Se connecter » sur une carte
+désactive aussi l'export local, puisque le designer choisit alors où publier ;
+la pastille le montre en passant de `export local` au nom du dépôt. Export
+local activé, aucune carte n'affiche « Connecté ».
 
-**Interrupteur (P2, place à confirmer).** « Publier dans le dépôt actif »,
-activé par défaut, sous la description de l'onglet et au-dessus de « Ajouter un
-dépôt ». Il n'apparaît que lorsque la liste contient au moins un dépôt. Le
-libellé décrit l'effet de l'état activé
+**Interrupteur (P2, décidé).** « Activer l'export local », dans l'onglet
+Général, désactivé par défaut. Il reste visible sans dépôt enregistré : les
+exports sont alors téléchargés de toute façon, et l'interrupteur n'y change
+rien. Le libellé décrit l'effet de l'état activé
 ([Nielsen Norman Group](https://www.nngroup.com/articles/toggle-switch-guidelines/))
 et ne change pas avec l'état
 ([WAI-ARIA, switch](https://www.w3.org/WAI/ARIA/apg/patterns/switch/)). Aide
-sous l'interrupteur désactivé : « Les exports sont téléchargés sur votre
-poste. Aucune demande de fusion n'est ouverte. »
-
-```text
-Configuration                         [Retour]
- Général  [Dépôts]
-──────────────────────────────────────────────
-Les dépôts où les exports sont déposés, et le
-jeton qui autorise chacun.
-
-Publier dans le dépôt actif             (● ━)
-Les exports sont téléchargés sur votre poste.
-Aucune demande de fusion n'est ouverte.
-
-[             Ajouter un dépôt             ]
-
-┌────────────────────────────────────────────┐
-│ design-system-v3            [Se connecter] │
-└────────────────────────────────────────────┘
-┌────────────────────────────────────────────┐
-│ design-system               [Se connecter] │
-└────────────────────────────────────────────┘
-```
+permanente sous l'interrupteur : « Les exports sont téléchargés sur votre
+poste, et aucune demande de fusion n'est ouverte. ». La maquette est en
+[7.2](#72-options-de-longlet-général).
 
 **Tokens.** Avec l'option A, l'export local propose la carte des tokens selon
 le réglage global, sans cas particulier.
@@ -903,10 +900,9 @@ S2 et S4 reçoivent chacune un état au repos et un état d'export.
 
 ### 7.1. Les onglets
 
-**Noms (P1).** D1 nommait les onglets « Général » et « Repos ». Le mainteneur
-propose « Dépôts » pour le second. Recommandation : « Dépôts », en français
-comme « Général », et le mot que la liste, le bouton d'ajout et le texte de
-liste vide emploient déjà.
+**Noms (P1, décidé).** D1 nommait les onglets « Général » et « Repos ». Le
+mainteneur retient « Dépôts » pour le second, le mot que la liste, le bouton
+d'ajout et le texte de liste vide emploient.
 
 **Description.** Chaque onglet porte une phrase sous les onglets, à la place de
 l'actuel sous-titre de `PAGES` :
@@ -948,7 +944,7 @@ l'onglet Dépôts.
 
 | Contrôle | Effet |
 |---|---|
-| Interrupteurs « Gérer les tokens », « Publier dans le dépôt actif » | Immédiat : un interrupteur ne demande pas de bouton d'enregistrement ([Nielsen Norman Group](https://www.nngroup.com/articles/toggle-switch-guidelines/)) |
+| Interrupteurs « Gérer les tokens », « Activer l'export local » | Immédiat : un interrupteur ne demande pas de bouton d'enregistrement ([Nielsen Norman Group](https://www.nngroup.com/articles/toggle-switch-guidelines/)) |
 | « Se connecter » | Immédiat |
 | Carte dépliée | Bouton « Enregistrer » propre à la carte, libéré par `depot-enregistre` |
 
@@ -962,6 +958,7 @@ carte : un message `settings` ne remplace pas une saisie en cours.
 | Candidate | Décision | Raison |
 |---|---|---|
 | Gérer les tokens | Retenue | D7, C2. Portée poste. Deux états de galerie : écran à une carte, verdict sans consigne |
+| Activer l'export local | Retenue | D6, déplacé dans Général par P2. Portée poste. Désactivée par défaut |
 | Effacer les données du plugin | Écartée (C11) | Supprimer un dépôt efface son jeton et ses réglages |
 | Ouvrir la demande dans le navigateur | Écartée | Aucun besoin établi ; la phrase de `SPEC.md` qui la liait au libellé est retirée (E3) |
 | Avertissement « Aucune règle d'usage exploitable » | Écartée | L'équipe consommatrice emploie `.componentRules` |
@@ -983,6 +980,10 @@ Gérer les tokens                        ( ━●)
 Affiche la commande d'export des tokens.
 L'analyse d'un composant vérifie aussi que
 les tokens sont fusionnés dans le dépôt.
+
+Activer l'export local                  (● ━)
+Les exports sont téléchargés sur votre poste,
+et aucune demande de fusion n'est ouverte.
 ```
 
 Écran de travail, réglage désactivé :
@@ -1013,9 +1014,9 @@ suite, les mutations et la galerie tournent dans un worktree isolé.
 | 2 | Lot 1, condition des tokens en un point | Rien |
 | 3 | Lot 2, onglets et réglage des tokens | Lot 0, P1 |
 | 4 | Lot 3a, stockage des dépôts | Lot 2, C10 |
-| 5 | Lot 3b, liste des dépôts | Lot 3a, C13, P2, P3 |
+| 5 | Lot 3b, liste des dépôts | Lot 3a |
 | 6 | Lot 3c, pastille nommée et verdict nommé | Lot 3b |
-| 7 | Lot 4, débranchement | Lot 3b, P2 |
+| 7 | Lot 4, export local | Lot 3b |
 | 8 | Lot 6, recette dans Figma | Tous |
 
 ### Lot 0. Destination et fraîcheur
@@ -1105,13 +1106,13 @@ modifie l'actif. La liste arrive au lot 3b.
 - Interface : cartes dépliables rendues par `id`, statut ou « Se connecter »,
   « Ajouter un dépôt » qui crée une carte dépliée, adresse en lecture seule
   après enregistrement, suppression au second clic, repli après un
-  enregistrement accepté, états de P3, pastille retirée de la page de
+  enregistrement accepté, états de P3 et P4, pastille retirée de la page de
   configuration.
 - Sandbox : demandes `enregistrer-depot`, `supprimer-depot`, `activer-depot` ;
   test du dépôt enregistré.
 - `src/connexion.ts` : statut court par cause pour la carte ; gestes du 401 et
   du 404 de la section 4.6 ; `repli` en cause.
-- Galerie : catégorie `mixte` et invariant de `AGENTS.md` selon C13 ;
+- Galerie : catégorie `mixte` et invariant de `AGENTS.md` (C13) ;
   réécriture des autres `configuration-*` et de `gitlab-dossier-retire` ;
   nouveaux états `depots-aucun`, `depots-trois-deux-forges`,
   `depots-nouveau-erreurs`, `depots-doublon`, `depots-actif-deplie`,
@@ -1135,17 +1136,20 @@ modifie l'actif. La liste arrive au lot 3b.
 - Tests : `connexion.test.ts` (nom d'un chemin à sous-groupes, nom dans chaque
   cause) ; `prevol.test.ts` (verdict nommé).
 
-### Lot 4. Débranchement
+### Lot 4. Export local
 
-- Clé `exportLocal`, entrée dans la clé de destination ; demande
-  `publier-dans-le-depot { valeur }` ; `loadConfiguration` ne rend aucune
+- Clé `exportLocal`, entrée dans la clé de destination ; interrupteur
+  « Activer l'export local » dans l'onglet Général, désactivé par défaut ;
+  demande `export-local { valeur }` ; `loadConfiguration` ne rend aucune
   configuration quand elle vaut `true` ; aucun test de connexion ; état de
-  pastille `local` en avertissement ; textes de la section 6 ; « Se connecter »
-  rebranche.
-- Galerie : `depots-debranches`, `travail-export-local`,
-  `export-local-termine`.
-- Tests : aucun appel réseau débranché ; une analyse faite branchée ne se
-  publie pas débranchée ; rebranchement sur le dernier actif.
+  pastille `local` en avertissement ; textes de la section 6 ; ligne
+  d'avertissement dans l'onglet Dépôts ; « Se connecter » désactive l'export
+  local.
+- Galerie : `general-export-local-active`, `depots-export-local`,
+  `travail-export-local`, `export-local-termine`.
+- Tests : aucun appel réseau en export local ; une analyse faite vers un dépôt
+  ne se publie pas en export local ; désactiver l'export local rallume le
+  dernier dépôt actif ; « Se connecter » le désactive.
 - Documents : `SPEC.md` partie 3 ; `POUR-LES-DESIGNERS.md`.
 
 ### Lot 6. Recette dans Figma
@@ -1196,14 +1200,9 @@ npm run galerie:captures --workspace ucm-exporter-plugin
 
 **Mainteneur**
 
-- C10 : effacer les quatre anciennes clés à l'ouverture ?
-- C13 : catégorie `mixte` pour les écrans de la galerie qui listent deux
-  forges ?
-- P1 : « Dépôts » comme nom d'onglet ?
-- P2 : interrupteur de débranchement sous la description, au-dessus de
-  « Ajouter un dépôt » ?
-- P3 : statuts « Connexion… » et cause en rouge sur la carte active ; carte
-  qui reste dépliée tant que l'enregistrement ou le test échoue ?
+- C10 : après la mise à jour, effacer les quatre anciennes clés (O2), ou
+  reprendre le dépôt qu'elles décrivent avant de les effacer (O3) ? La
+  question porte sur la seule première ouverture de la nouvelle version.
 
 **Équipe consommatrice**
 
