@@ -224,14 +224,10 @@ function postVerdict(
   code: CodeVerdict,
   precision: { chemin?: string | null; source?: string | null; ou?: string | null; tokens?: EtatDesTokens | null; demande?: string } = {},
 ): void {
-  const verdict = verdictDePrevol({
-    code,
-    genre: analyse.kind,
-    avertissements: analyse.avertissements,
-    ...precision,
+  versUi({
+    type: 'verdict',
+    ...verdictDePrevol({ code, genre: analyse.kind, avertissements: analyse.avertissements, ...precision }),
   });
-  const tokensNonFusionnes = precision.tokens === 'absents' || precision.tokens === 'en-attente';
-  versUi({ type: 'verdict', ...verdict, etat: analyse.avertissements > 0 || tokensNonFusionnes ? 'warning' : '' });
 }
 
 /**

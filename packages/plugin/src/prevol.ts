@@ -14,6 +14,9 @@ export type Verdict = {
 
   /** Le libellé de l'action, ou `null` quand il n'y a rien à faire. */
   action: string | null;
+
+  /** `warning` quand un point à corriger ou une consigne sur les tokens accompagne le verdict. */
+  etat: '' | 'warning';
 };
 
 export type EntreeDeVerdict = {
@@ -38,6 +41,8 @@ export type EntreeDeVerdict = {
 /**
  * Ce que le designer fait avant de publier un composant : le contrôle du
  * repository refuse sa demande tant que les tokens ne sont pas fusionnés.
+ * Seul endroit qui juge des tokens non fusionnés : l'état `warning` du verdict
+ * suit cette consigne.
  */
 function ordreDesTokens(tokens: EtatDesTokens | null | undefined, demande: string): string | null {
   if (tokens === 'absents') {
@@ -61,12 +66,14 @@ export function verdictDePrevol(entree: EntreeDeVerdict): Verdict {
   const points = entree.avertissements > 0
     ? `${entree.avertissements} point${entree.avertissements === 1 ? '' : 's'} à corriger dans Figma.`
     : null;
+  const etat = points ? 'warning' : '';
 
   if (entree.code === 'identique') {
     return {
       code: 'identique',
       texte: joindre(points, `Identique à ce qui est déjà déposé (${entree.ou ?? 'dépôt'}). Rien à publier.`),
       action: null,
+      etat,
     };
   }
 
@@ -78,6 +85,7 @@ export function verdictDePrevol(entree: EntreeDeVerdict): Verdict {
         `Aucun repository connecté. ${majuscule(NOM[entree.genre])} sera téléchargé sur votre poste.`,
       ),
       action: `Télécharger ${NOM[entree.genre]}`,
+      etat,
     };
   }
 
@@ -88,6 +96,7 @@ export function verdictDePrevol(entree: EntreeDeVerdict): Verdict {
     code: 'a-publier',
     texte: [points, `Prêt à publier dans ${ou}${decide}.`, ordre].filter(Boolean).join(' '),
     action: PUBLIER[entree.genre],
+    etat: points || ordre ? 'warning' : '',
   };
 }
 

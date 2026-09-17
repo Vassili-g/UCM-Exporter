@@ -911,7 +911,7 @@ export function annonceDuFormat(contenu: string): string | null {
 }
 
 /** Résumé de portée fichier : la sélection Figma n'intervient pas. */
-export type EtatDesTokens = {
+export type ResumeDesTokens = {
 
   resume: string;
 
@@ -919,9 +919,9 @@ export type EtatDesTokens = {
 };
 
 /** Forme le résumé affiché et indique si une analyse peut commencer. */
-export function etatDesTokens(
+export function resumeDesTokens(
   compte: { collections: number; variables: number; modes: number },
-): EtatDesTokens {
+): ResumeDesTokens {
   if (compte.variables === 0) {
     return { resume: 'Ce fichier ne contient aucune variable locale.', presents: false };
   }
@@ -937,7 +937,7 @@ export function etatDesTokens(
  * Compte sans tout charger : les collections portent déjà leurs identifiants de
  * variables et leurs modes, donc `getLocalVariablesAsync` n'est pas payé ici.
  */
-export async function etatDesTokensDuFichier(): Promise<EtatDesTokens> {
+export async function etatDesTokensDuFichier(): Promise<ResumeDesTokens> {
   const collections = await figma.variables.getLocalVariableCollectionsAsync();
   const modes = new Set<string>();
   let variables = 0;
@@ -946,7 +946,7 @@ export async function etatDesTokensDuFichier(): Promise<EtatDesTokens> {
     if (!estUneExtension(collection)) variables += collection.variableIds.length;
     for (const mode of collection.modes) modes.add(mode.name);
   }
-  return etatDesTokens({ collections: collections.length, variables, modes: modes.size });
+  return resumeDesTokens({ collections: collections.length, variables, modes: modes.size });
 }
 
 /**

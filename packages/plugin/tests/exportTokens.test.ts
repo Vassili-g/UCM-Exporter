@@ -17,7 +17,7 @@ import {
   insert,
   isUnitless,
   modeCollisionWarnings,
-  etatDesTokens,
+  resumeDesTokens,
 } from '../src/tokens/exportTokens';
 import type { ExportContext } from '../src/tokens/exportTokens';
 import { collisionWarnings, indexVariables, VariableNameResolver } from '../src/variables';
@@ -297,18 +297,18 @@ test('un mode homonyme d’Object.prototype reste une marque exportée', () => {
  * bien que la commande partait sans que personne sache sur quoi.
  */
 test('le résumé des tokens compte ce qui part, au singulier comme au pluriel', () => {
-  assert.deepEqual(etatDesTokens({ collections: 3, variables: 128, modes: 2 }), {
+  assert.deepEqual(resumeDesTokens({ collections: 3, variables: 128, modes: 2 }), {
     resume: '3 collections · 128 variables · 2 modes',
     presents: true,
   });
-  assert.deepEqual(etatDesTokens({ collections: 1, variables: 1, modes: 1 }), {
+  assert.deepEqual(resumeDesTokens({ collections: 1, variables: 1, modes: 1 }), {
     resume: '1 collection · 1 variable',
     presents: true,
   });
 });
 
 test('un fichier sans variable locale le dit, au lieu de compter zéro', () => {
-  assert.deepEqual(etatDesTokens({ collections: 0, variables: 0, modes: 0 }), {
+  assert.deepEqual(resumeDesTokens({ collections: 0, variables: 0, modes: 0 }), {
     resume: 'Ce fichier ne contient aucune variable locale.',
     presents: false,
   });
@@ -322,7 +322,7 @@ test('un fichier sans variable locale le dit, au lieu de compter zéro', () => {
  * clic pour un fichier parfaitement normal.
  */
 test('des collections vides ne comptent pas comme des tokens présents', () => {
-  assert.deepEqual(etatDesTokens({ collections: 3, variables: 0, modes: 2 }), {
+  assert.deepEqual(resumeDesTokens({ collections: 3, variables: 0, modes: 2 }), {
     resume: 'Ce fichier ne contient aucune variable locale.',
     presents: false,
   });

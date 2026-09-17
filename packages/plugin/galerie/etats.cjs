@@ -24,17 +24,11 @@ const { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication, textesDePubl
 const { TERMES_GITHUB, TERMES_GITLAB } = chargerSandbox('forges/termes');
 const { validateSettings } = chargerSandbox('config');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
-const { annonceDuFormat, etatDesTokens } = chargerSandbox('tokens/exportTokens');
+const { annonceDuFormat, resumeDesTokens } = chargerSandbox('tokens/exportTokens');
 const { verdictDePrevol } = chargerSandbox('prevol');
 
 /** Le verdict du pré-vol, calculé par le sandbox et non recopié ici. */
-const verdict = (entree) => ({
-  message: {
-    type: 'verdict',
-    ...verdictDePrevol(entree),
-    etat: entree.avertissements > 0 || entree.tokens === 'absents' || entree.tokens === 'en-attente' ? 'warning' : '',
-  },
-});
+const verdict = (entree) => ({ message: { type: 'verdict', ...verdictDePrevol(entree) } });
 
 /**
  * La version de schéma est lue à sa source. Une capture qui afficherait un
@@ -127,7 +121,7 @@ const ouverture = (cause, tokens = TOKENS_PRESENTS, termes = TERMES_GITHUB) => [
  * si l'absence de bouton se lit comme une réponse (« ce fichier n'a pas de
  * tokens ») ou comme une commande qui aurait disparu.
  */
-const tokensDuFichier = (compte) => ({ message: { type: 'tokens', ...etatDesTokens(compte) } });
+const tokensDuFichier = (compte) => ({ message: { type: 'tokens', ...resumeDesTokens(compte) } });
 const TOKENS_PRESENTS = tokensDuFichier({ collections: 3, variables: 128, modes: 2 });
 const TOKENS_ABSENTS = tokensDuFichier({ collections: 0, variables: 0, modes: 0 });
 

@@ -77,3 +77,25 @@ test('seul le verdict « identique » se passe d’action', () => {
     assert.equal(action === null, code === 'identique', code);
   }
 });
+
+/**
+ * L'état du verdict suit la consigne sur les tokens : la galerie et le routeur
+ * l'étalent sans recopier la condition.
+ */
+test('le verdict passe en warning quand il porte une consigne sur les tokens ou un point à corriger', () => {
+  const composant = (tokens: 'fusionnes' | 'en-attente' | 'absents' | null) =>
+    verdictDePrevol({ code: 'a-publier', genre: 'component', chemin: 'x', avertissements: 0, tokens });
+
+  assert.equal(composant('absents').etat, 'warning');
+  assert.equal(composant('en-attente').etat, 'warning');
+  assert.equal(composant('fusionnes').etat, '');
+  assert.equal(composant(null).etat, '');
+  assert.equal(
+    verdictDePrevol({ code: 'a-publier', genre: 'tokens', chemin: 'x', avertissements: 0, tokens: 'absents' }).etat,
+    '',
+  );
+  for (const code of ['a-publier', 'identique', 'sans-depot'] as const) {
+    assert.equal(verdictDePrevol({ code, genre: 'component', avertissements: 1, chemin: 'x', ou: 'y' }).etat, 'warning', code);
+    assert.equal(verdictDePrevol({ code, genre: 'component', avertissements: 0, chemin: 'x', ou: 'y' }).etat, '', code);
+  }
+});
