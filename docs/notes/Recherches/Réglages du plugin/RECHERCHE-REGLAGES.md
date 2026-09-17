@@ -52,8 +52,8 @@ Lire avant de commencer :
 | Utilisateur | Usage | Faits établis |
 |---|---|---|
 | Équipe du design system UCM | Toutes les commandes : contrats, tokens, contrôle de CI sur chaque demande de fusion | Publie avec `ucm.config.json` et `@ucm-kit/cli` |
-| Équipe consommatrice | La publication des contrats seule | Projet sur `gitlab.com`. Ses tokens viennent d'une autre chaîne d'outils. Les noms de tokens cités par ses contrats existent dans ses tokens. Elle n'installe aucun paquet `@ucm-kit/*` et n'utilise pas la CI UCM. Elle écrit ses propres contrôles |
-| Mainteneur | Publie vers trois dépôts : deux sur GitHub, un sur GitLab | Seul utilisateur actuel du plugin |
+| Équipe consommatrice | La publication des contrats seule | Projet sur `gitlab.com`. Un seul designer publie. Ses composants portent un composant de règles `.componentRules`. Ses tokens viennent d'une autre chaîne d'outils. Les noms de tokens cités par ses contrats existent dans ses tokens. Elle n'installe aucun paquet `@ucm-kit/*` et n'utilise pas la CI UCM. Elle écrit ses propres contrôles |
+| Mainteneur | Publie vers trois dépôts : deux sur GitHub, un sur GitLab | Seul utilisateur actuel du plugin. Ses trois dépôts reçoivent des tokens |
 
 ### 1.2. Demande
 
@@ -87,8 +87,13 @@ Lire avant de commencer :
 | La page de configuration reste accessible pendant une analyse. `occuper` ne rend inertes que les cartes | `occuper`, `src/ui/index.ts` |
 | La taille minimale de la fenêtre est 320 × 320 px | `TAILLE_MINIMALE`, `src/fenetre.ts` |
 | Aucun module de `src/contract/` n'importe `src/tokens/` | recherche des imports dans `src/contract/` |
+| Le plugin lit `ucm.config.json` par l'API de la forge. Le dépôt n'a besoin d'aucun paquet npm pour que le plugin applique ses chemins, et un fichier écrit à la main vaut un fichier écrit par `ucm init` | `repositoryLayout`, `src/depot.ts` ; `configurationDepuisJson`, `packages/kit/src/format/configuration.ts` |
+| Chaque champ de `ucm.config.json` est facultatif. Un champ absent prend sa valeur par défaut. Un champ écrit et invalide refuse l'export | `champsInvalidesDeLaConfiguration`, `CONFIGURATION_PAR_DEFAUT`, `packages/kit/src/format/configuration.ts` |
+| Sans `ucm.config.json`, les contrats vont sous `components/`, à la racine du dépôt. La configuration affiche alors un avertissement avant l'export | `repositoryLayout`, `src/depot.ts` ; `etatDuDepot`, `src/connexion.ts` |
+| Un contrat est écrit à `{components}/{Nom}/{Nom}.contract.json`, où `{Nom}` est l'identifiant de code du composant, en PascalCase | `artifactPath`, `src/depot.ts` |
+| La configuration du plugin ne porte aucun chemin d'export. Le commentaire de `RepositorySettings` en donne la raison : un chemin rangé sur le poste enverrait l'export hors de la vue de `ucm check` | `RepositorySettings`, `src/config.ts` |
 
-Tous les chemins de ce tableau partent de `packages/plugin/`.
+Sauf mention contraire, les chemins de ce tableau partent de `packages/plugin/`.
 
 ## 2. Décisions prises
 
@@ -252,9 +257,14 @@ entre trois dépôts.
 - coût sur le format publié, les tests, les états de galerie et les documents ;
 - lisibilité pour un designer : l'endroit où il cherche ce réglage.
 
-**Faits à obtenir du mainteneur** : ses trois dépôts ont-ils tous des tokens ?
-Le nombre de designers de l'équipe consommatrice est aussi inconnu
-([section 10](#10-questions-ouvertes)).
+**Faits établis.**
+
+- Les trois dépôts du mainteneur reçoivent des tokens. Le mainteneur ne
+  désactive donc pas le réglage en passant d'un de ses dépôts à un autre.
+- Un seul designer publie dans l'équipe consommatrice.
+
+Ces deux faits renseignent les critères « gestes par changement de dépôt » et «
+cohérence entre plusieurs designers ». Les peser avec les autres critères.
 
 ## 5. Plusieurs dépôts : l'onglet Repos
 
@@ -435,7 +445,7 @@ Sources à croiser :
 | Comportement actuel | Où | Question |
 |---|---|---|
 | La demande de fusion s'ouvre dans le navigateur après la publication | `figma.openExternal`, SPEC.md partie 3 | Un designer qui publie plusieurs composants d'affilée veut-il un onglet de navigateur par demande ? |
-| L'avertissement « Aucune règle d'usage exploitable » s'affiche à chaque sélection d'un composant sans `.componentRules` | `reportSelectionState`, `src/code.ts` | Une équipe sans composant de règles le lit à chaque sélection. Le veut-elle ? |
+| L'avertissement « Aucune règle d'usage exploitable » s'affiche à chaque sélection d'un composant sans `.componentRules` | `reportSelectionState`, `src/code.ts` | L'équipe consommatrice utilise `.componentRules`. Instruire s'il reste un besoin établi pour cette option |
 | La demande de fusion s'ouvre hors brouillon | `src/forges/github.ts`, `src/forges/gitlab.ts` | Les API des deux forges acceptent-elles un brouillon, et une équipe le demande-t-elle ? |
 | Les branches portent le préfixe `ucm-exporter/export-` | `prefixeDeBranche`, `src/depot.ts` | La détection des exports en vol lit ce préfixe. Une règle de nom de branche d'un dépôt peut-elle exiger de le changer ? |
 | La taille de la fenêtre est rangée automatiquement | `src/fenetre.ts` | Un geste de retour à la taille par défaut manque-t-il ? |
@@ -474,18 +484,18 @@ npm run galerie:captures --workspace ucm-exporter-plugin
 
 **Mainteneur**
 
-- Les trois dépôts du mainteneur ont-ils tous des tokens ? La réponse pèse sur la
-  [section 4.4](#44-où-ranger-le-réglage).
 - À quelle fréquence le mainteneur change-t-il de dépôt, et pour quel motif ?
 
 **Équipe consommatrice**
 
-- Combien de designers publient, et dans combien de projets ?
-- Ses composants portent-ils un composant de règles `.componentRules` ?
+- Dans combien de projets GitLab publie-t-elle ?
 - Son projet impose-t-il des règles de nom de branche ou de message de commit ?
   GitLab les signale par un refus 400.
-- Où les contrats doivent-ils atterrir, et l'équipe écrira-t-elle
-  `ucm.config.json` ?
+- Comment ses composants sont-ils rangés dans son dépôt ? Le chemin
+  `{components}/{Nom}/{Nom}.contract.json` place-t-il le contrat à côté du code
+  du composant ?
+- L'équipe écrira-t-elle `ucm.config.json` à la main, et avec quelle valeur de
+  `components` ?
 
 ## 11. Livrable attendu
 
