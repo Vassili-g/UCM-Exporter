@@ -1362,6 +1362,30 @@ test("le graphe voit un remplacement à n’importe quelle profondeur de composi
   ]);
 });
 
+test("le graphe voit un remplacement sous 10 000 niveaux d'échantillon sans épuiser la pile", () => {
+  let instance = {
+    figmaLayer: "Branch",
+    component: "Branch",
+    swaps: [{ masterPath: ["Missing"], component: "GlyphB" }],
+  };
+  for (let niveau = 0; niveau < 10_000; niveau += 1) {
+    instance = { figmaLayer: "Branch", component: "Branch", composes: [instance] };
+  }
+  const branch = dependanceAIcone("Branch", "Glyph", "glyphName");
+  branch.composes = [{ component: "Branch", figmaLayer: "Branch" }];
+
+  const erreurs = validerGrapheDesContrats([
+    document("Root.json", composeAvecRemplacement([instance])),
+    document("Branch.json", branch),
+  ]);
+
+  assert.deepEqual(erreurs.get("Root.json"), [
+    "Le remplacement « Missing » de la dépendance « Branch » ne joint aucune icône "
+      + "de son contrat. Le designer doit faire correspondre ce nom de layer à une seule "
+      + "icône de « Branch », puis réexporter les contrats concernés.",
+  ]);
+});
+
 test("un masterPath vide ou sans composant est une forme refusée dès la 10.3", () => {
   const casse = contratVersionne("10.3", { children: [] });
   casse.samples = { s1: { composes: [{

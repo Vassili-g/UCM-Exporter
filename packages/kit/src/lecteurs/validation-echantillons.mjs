@@ -315,20 +315,26 @@ function validerTextes(contrat, variant, cle, echantillon, ajouter) {
  * plusieurs variants ne produit donc qu'un constat.
  */
 export function validerAdressesDEchantillons(documents, parNom, ajouter) {
-  const visiter = (instance, chemin) => {
-    if (!estObjet(instance)) return;
-    const cibles = parNom.get(instance.component) ?? [];
-    const dependance = cibles.length === 1 ? cibles[0].contrat : null;
+  // Le parcours tient sa pile lui-même, dans l'ordre de la récursion d'origine :
+  // un échantillon imbriqué 10 000 fois épuisait la pile de Node, et le contrôle
+  // levait au lieu de conclure.
+  const visiter = (racine, chemin) => {
     const noter = (message) => ajouter(chemin, message);
+    const pile = [racine];
+    while (pile.length > 0) {
+      const instance = pile.pop();
+      if (!estObjet(instance)) continue;
+      const cibles = parNom.get(instance.component) ?? [];
+      const dependance = cibles.length === 1 ? cibles[0].contrat : null;
 
-    if (dependance) {
-      validerArgs(instance, dependance, noter);
-      validerRemplacements(instance, dependance, noter);
-      validerImbrications(instance, dependance, noter);
-    }
+      if (dependance) {
+        validerArgs(instance, dependance, noter);
+        validerRemplacements(instance, dependance, noter);
+        validerImbrications(instance, dependance, noter);
+      }
 
-    for (const enfant of Array.isArray(instance.composes) ? instance.composes : []) {
-      visiter(enfant, chemin);
+      const enfants = Array.isArray(instance.composes) ? instance.composes : [];
+      for (let index = enfants.length - 1; index >= 0; index -= 1) pile.push(enfants[index]);
     }
   };
 

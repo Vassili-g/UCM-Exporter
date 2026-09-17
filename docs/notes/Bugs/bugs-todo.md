@@ -16,8 +16,10 @@ coche quand le test de régression passe et a été vu rouge sur le code d'avant
   Fait : la chaîne se valide en 66 ms, et le test est rouge sur l'ancien code.
   Reste hors de ce constat : un cycle de 10 000 membres prend 11 s, parce que
   `cycleCanonique()` construit et trie toutes ses rotations.
-- [ ] 4. `validerAdressesDEchantillons()` déborde la pile sur un échantillon
+- [x] 4. `validerAdressesDEchantillons()` déborde la pile sur un échantillon
   imbriqué 10 000 fois. Geste : parcours par pile explicite, test de profondeur.
+  Fait : le remplacement fautif du niveau le plus profond est signalé, et le
+  test lève `RangeError` sur l'ancien code.
 - [ ] 3. `collecterReferences()` déborde la pile sur un champ inconnu profond
   de 10 000 niveaux. Geste : parcours par pile explicite, même ordre de relevé,
   test de profondeur.
