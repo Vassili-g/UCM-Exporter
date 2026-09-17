@@ -3,7 +3,7 @@
  * Point d'entrée de l'interface UCM Contract Exporter.
  * Il assemble les vues et route les messages entre le DOM et le sandbox Figma.
  */
-import type { PluginMessage } from '../messages';
+import type { PluginMessage, Provenance } from '../messages';
 import type { CarteCommandeUi } from './components/CarteCommande';
 import type { PageEnTete } from './components/Header';
 import { createHeader } from './components/Header';
@@ -80,6 +80,26 @@ const header = createHeader(PAGES.export, showConfiguration, showExports);
 let active: CarteCommandeUi = composant;
 let occupee = false;
 
+/** La destination du dernier `settings` reçu, `null` avant le premier. */
+let destinationCourante: string | null = null;
+/** Le numéro de la dernière analyse ou publication demandée. */
+let operationLancee = 0;
+
+/**
+ * Un résultat s'affiche s'il vient de la dernière opération et de la
+ * destination affichée. Un message sans provenance vient du routeur, hors de
+ * toute opération.
+ */
+function resultatActuel({ destination, operation }: Partial<Provenance>): boolean {
+  if (operation !== undefined && operation !== operationLancee) return false;
+  return destination === undefined || destinationCourante === null || destination === destinationCourante;
+}
+
+/** La fin de la dernière opération libère l'interface, même quand son résultat est écarté. */
+function finDeLOperation({ operation }: Partial<Provenance>): boolean {
+  return operation === undefined || operation === operationLancee;
+}
+
 function occuper(valeur: boolean) {
   occupee = valeur;
   active.marquerOccupee(valeur);
@@ -96,14 +116,16 @@ function demanderAnalyse(
   carte.reinitialiser();
   occuper(true);
   carte.ecrireNote('loading', 'Traitement en cours…');
-  versSandbox({ type });
+  operationLancee += 1;
+  versSandbox({ type, operation: operationLancee });
 }
 
 function demanderPublication(carte: CarteCommandeUi) {
   if (occupee) return;
   active = carte;
   occuper(true);
-  versSandbox({ type: 'publier', genre: carte === composant ? 'component' : 'tokens' });
+  operationLancee += 1;
+  versSandbox({ type: 'publier', genre: carte === composant ? 'component' : 'tokens', operation: operationLancee });
 }
 
 function annuler() {
@@ -138,8 +160,13 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
 
   if (message.type === 'settings') {
     configurationPage.acceptRemoteSettings(message.settings);
-    composant.reinitialiser();
-    tokens.reinitialiser();
+    const { destination } = message.settings;
+    // Un résultat décrit sa destination : il ne survit qu'à des réglages qui la gardent.
+    if (destinationCourante !== null && destination !== destinationCourante) {
+      composant.reinitialiser();
+      tokens.reinitialiser();
+    }
+    destinationCourante = destination;
   }
 
   if (message.type === 'cible') {
@@ -151,16 +178,17 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
 
   if (message.type === 'format-tokens') tokens.annoncerFormat(message.texte);
 
-  if (message.type === 'phase') active.ecrireNote('loading', message.texte);
+  if (message.type === 'phase' && resultatActuel(message)) active.ecrireNote('loading', message.texte);
 
   if (message.type === 'verdict') {
+    if (finDeLOperation(message)) occuper(false);
+    if (resultatActuel(message)) {
+      active.ecrireNote(message.etat, message.texte);
+      const publier = active.proposerPublication(message.action);
+      if (message.action) publier.focus();
 
-    occuper(false);
-    active.ecrireNote(message.etat, message.texte);
-    const publier = active.proposerPublication(message.action);
-    if (message.action) publier.focus();
-
-    if ('marquerAnalysee' in active) (active as { marquerAnalysee(): void }).marquerAnalysee();
+      if ('marquerAnalysee' in active) (active as { marquerAnalysee(): void }).marquerAnalysee();
+    }
   }
 
   if (message.type === 'depot') {
@@ -173,9 +201,9 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   if (message.type === 'settings-save-error') configurationPage.showSaveError();
   if (message.type === 'connection') updateConnection(message);
 
-  if (message.type === 'log') active.compteRendu.ajouterPublication(message.text, message.level);
+  if (message.type === 'log' && resultatActuel(message)) active.compteRendu.ajouterPublication(message.text, message.level);
 
-  if (message.type === 'diagnostic') {
+  if (message.type === 'diagnostic' && resultatActuel(message)) {
     active.compteRendu.ajouterDiagnostic(message);
   }
 
@@ -185,8 +213,13 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   }
 
   if (message.type === 'status') {
-    occuper(message.state === 'loading');
-    active.ecrireNote(message.state, message.text);
+    const actuel = resultatActuel(message);
+    if (message.state === 'loading') {
+      if (actuel) occuper(true);
+    } else if (finDeLOperation(message)) {
+      occuper(false);
+    }
+    if (actuel) active.ecrireNote(message.state, message.text);
   }
 
   if (message.type === 'download') {
@@ -198,13 +231,15 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
     link.click();
     document.body.removeChild(link);
     setTimeout(() => URL.revokeObjectURL(link.href), 0);
-    active.compteRendu.ajouterPublication(
-      `Fichier téléchargé : ${message.filename || 'download.json'}`,
-      'success',
-    );
+    if (resultatActuel(message)) {
+      active.compteRendu.ajouterPublication(
+        `Fichier téléchargé : ${message.filename || 'download.json'}`,
+        'success',
+      );
+    }
   }
 
-  if (message.type === 'demande') {
+  if (message.type === 'demande' && resultatActuel(message)) {
     active.compteRendu.ajouterLien(message.libelle, message.url);
   }
 };

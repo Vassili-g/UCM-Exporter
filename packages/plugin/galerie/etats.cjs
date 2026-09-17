@@ -22,7 +22,7 @@ function chargerSandbox(nom) {
 
 const { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication, textesDePublication } = chargerSandbox('connexion');
 const { TERMES_GITHUB, TERMES_GITLAB } = chargerSandbox('forges/termes');
-const { validateSettings } = chargerSandbox('config');
+const { cleDeDestination, validateSettings } = chargerSandbox('config');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
 const { annonceDuFormat, resumeDesTokens } = chargerSandbox('tokens/exportTokens');
 const { verdictDePrevol } = chargerSandbox('prevol');
@@ -154,17 +154,26 @@ const DEPOT_DECRIT = depot({
 const DEPOT_ABSENT = depot(null, null);
 const DEPOT_GITLAB = depot({ components: 'guidelines/components', tokens: 'guidelines/tokens.json', source: 'ucm.config.json' }, DEPOT_VISE_GITLAB);
 
+/** Les clés de destination des dépôts de la galerie, calculées par le sandbox. */
+const DESTINATIONS = {
+  github: cleDeDestination({ forge: 'github', projet: DEPOT_VISE.projet, baseBranch: 'main' }),
+  gitlab: cleDeDestination({ forge: 'gitlab', projet: DEPOT_VISE_GITLAB.projet, baseBranch: 'main' }),
+  aucune: cleDeDestination(null),
+};
+
 /** Les réglages publics rechargés par `refreshConfiguration`. */
 const REGLAGES = {
   repoUrl: 'https://github.com/mon-org/design-system-v3',
   baseBranch: 'main',
   forgeDuJeton: 'github',
+  destination: DESTINATIONS.github,
 };
 /** L'adresse d'une page du projet copiée depuis le navigateur, pas celle du projet. */
 const REGLAGES_GITLAB = {
   repoUrl: 'https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines?ref_type=heads',
   baseBranch: 'main',
   forgeDuJeton: 'gitlab',
+  destination: DESTINATIONS.gitlab,
 };
 
 /**
@@ -605,17 +614,19 @@ const ETATS = [
     id: 'export-tokens-reussi',
     titre: 'Export des tokens publié',
     quand:
-      'La seconde commande. Elle ignore la sélection et lit les variables du fichier entier, ce que rien à l’écran ne dit.',
+      'La seconde commande. Elle ignore la sélection et lit les variables du fichier entier, ce que rien à l’écran ne dit. Après la publication, le sandbox renvoie les réglages avant le statut de succès.',
     regarder:
-      "Une commande de portée FICHIER menée à son terme SANS sélection : la carte du composant reste vide et sans geste, et le libellé de publication a nommé les tokens.",
+      "Une commande de portée FICHIER menée à son terme SANS sélection : la carte du composant reste vide et sans geste, et le libellé de publication a nommé les tokens. Le lien de la pull request reste sous le statut : les réglages rechargés gardent la même destination.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
+      { message: { type: 'settings', settings: REGLAGES } },
       SELECTION_VIDE,
       { clic: '.carte-tokens .btn-secondary' },
       { message: { type: 'status', state: 'loading', text: 'Lecture des variables…' } },
       FORMAT_TOKENS,
       { message: { type: 'demande', url: URL_PR, libelle: PUBLICATION_GITHUB.lienVers(CHEMIN_TOKENS) } },
+      { message: { type: 'settings', settings: REGLAGES } },
       { message: { type: 'status', state: 'success', text: PUBLICATION_GITHUB.creee('Tokens exportés') } },
     ],
   },
@@ -680,7 +691,7 @@ const ETATS = [
       {
         message: {
           type: 'settings',
-          settings: { repoUrl: '', baseBranch: 'main', forgeDuJeton: null },
+          settings: { repoUrl: '', baseBranch: 'main', forgeDuJeton: null, destination: DESTINATIONS.aucune },
         },
       },
       { clic: '.icon-button' },
@@ -712,7 +723,7 @@ const ETATS = [
       {
         message: {
           type: 'settings',
-          settings: { repoUrl: 'https://gitlab.example.com/mon-org/ds', baseBranch: '', forgeDuJeton: null },
+          settings: { repoUrl: 'https://gitlab.example.com/mon-org/ds', baseBranch: '', forgeDuJeton: null, destination: DESTINATIONS.aucune },
         },
       },
       { clic: '.icon-button' },
@@ -863,7 +874,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('jeton-autre-forge', TOKENS_PRESENTS, TERMES_GITLAB),
-      { message: { type: 'settings', settings: { ...REGLAGES_GITLAB, forgeDuJeton: 'github' } } },
+      { message: { type: 'settings', settings: { ...REGLAGES_GITLAB, forgeDuJeton: 'github', destination: DESTINATIONS.aucune } } },
       { clic: '.icon-button' },
     ],
   },
@@ -922,16 +933,18 @@ const ETATS = [
     id: 'gitlab-merge-request-creee',
     forge: 'gitlab',
     titre: 'Merge request créée',
-    quand: 'La publication a abouti : commit sur une branche d’export, puis merge request.',
-    regarder: 'Le lien et le statut nomment la merge request.',
+    quand: 'La publication a abouti : commit sur une branche d’export, puis merge request. Le sandbox renvoie les réglages avant le statut de succès.',
+    regarder: 'Le lien et le statut nomment la merge request. Le lien reste affiché après les réglages rechargés, qui gardent la même destination.',
     existe: true,
     atteinte: [
       ...ouverture('connecte', TOKENS_PRESENTS, TERMES_GITLAB),
+      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
       SELECTION_PRETE,
       { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
       { message: { type: 'phase', texte: PUBLICATION_GITLAB.enCours } },
       { message: { type: 'demande', url: URL_MR, libelle: PUBLICATION_GITLAB.lienVers('guidelines/components/Button/Button.contract.json') } },
+      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
       { message: { type: 'status', state: 'success', text: PUBLICATION_GITLAB.creee('Contrat généré') } },
     ],
   },
@@ -968,4 +981,24 @@ const ETATS = [
   },
 ];
 
-module.exports = { ETATS, VERSION_CONTRAT };
+/**
+ * Le sandbox joint à chaque résultat d'opération la destination qu'elle a lue
+ * et le numéro de sa demande. L'interface numérote ses demandes à partir de 1,
+ * à chaque clic sur le geste d'une carte : le numéro d'un résultat est celui du
+ * dernier de ces clics dans l'état. La destination suit la forge de l'état.
+ */
+const RESULTATS_D_OPERATION = new Set(['phase', 'diagnostic', 'verdict', 'status', 'log', 'demande', 'download']);
+
+function avecProvenance(etat) {
+  if (!etat.atteinte) return etat;
+  const destination = DESTINATIONS[etat.forge ?? 'github'];
+  let operation = 0;
+  const atteinte = etat.atteinte.map((etape) => {
+    if (etape.clic?.startsWith('.carte-')) operation += 1;
+    if (operation === 0 || !RESULTATS_D_OPERATION.has(etape.message?.type)) return etape;
+    return { message: { ...etape.message, destination, operation } };
+  });
+  return { ...etat, atteinte };
+}
+
+module.exports = { ETATS: ETATS.map(avecProvenance), VERSION_CONTRAT };

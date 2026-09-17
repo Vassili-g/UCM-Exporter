@@ -225,24 +225,60 @@ async function lireJetonEnregistre(): Promise<JetonEnregistre> {
   };
 }
 
-/** Charge les clés locales et ne renvoie jamais le jeton à l'UI. */
-export async function loadPublicSettings(): Promise<PublicSettings> {
+/**
+ * La clé de destination : l'endroit où un export irait, sans le jeton.
+ *
+ * Un tuple JSON, parce qu'une branche peut contenir `|`, `@` ou `/`. La forge
+ * et le projet passent en minuscules : GitHub et GitLab servent un chemin
+ * quelle que soit sa casse. La branche garde la sienne. Sans configuration
+ * valide, l'export est téléchargé : la clé vaut alors `aucune`.
+ */
+export function cleDeDestination(
+  config: Pick<ConfigurationDuDepot, 'forge' | 'projet' | 'baseBranch'> | null,
+): string {
+  if (!config) return JSON.stringify(['aucune']);
+  return JSON.stringify([config.forge.toLowerCase(), config.projet.toLowerCase(), config.baseBranch]);
+}
+
+/** Le nom que les textes donnent à un dépôt : le dernier segment de son projet. */
+export function nomDuDepot(projet: string): string {
+  return projet.slice(projet.lastIndexOf('/') + 1);
+}
+
+/**
+ * Une lecture du stockage, et tout ce qui en dérive : les réglages publics, la
+ * configuration validée et la clé de destination. Les trois viennent des mêmes
+ * valeurs lues.
+ */
+export type Instantane = {
+  publics: PublicSettings;
+  validation: SettingsValidation;
+  destination: string;
+};
+
+export async function lireInstantane(): Promise<Instantane> {
   const [repoUrl, baseBranch, enregistre] = await Promise.all([
     figma.clientStorage.getAsync(STORAGE_KEYS.repoUrl),
     figma.clientStorage.getAsync(STORAGE_KEYS.baseBranch),
     lireJetonEnregistre(),
   ]);
-  return {
+  const publics: PublicSettings = {
     repoUrl: typeof repoUrl === 'string' ? repoUrl : '',
     baseBranch: typeof baseBranch === 'string' ? baseBranch : 'main',
     forgeDuJeton: enregistre.jeton.trim() ? enregistre.forge ?? 'github' : null,
   };
+  const validation = validateSettings(publics, enregistre);
+  return { publics, validation, destination: cleDeDestination(validation.config) };
+}
+
+/** Charge les clés locales et ne renvoie jamais le jeton à l'UI. */
+export async function loadPublicSettings(): Promise<PublicSettings> {
+  return (await lireInstantane()).publics;
 }
 
 /** Charge et valide la configuration complète, jeton inclus côté sandbox seulement. */
 export async function loadConfiguration(): Promise<SettingsValidation> {
-  const settings = await loadPublicSettings();
-  return validateSettings(settings, await lireJetonEnregistre());
+  return (await lireInstantane()).validation;
 }
 
 /**

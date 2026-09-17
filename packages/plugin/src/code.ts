@@ -8,8 +8,8 @@ import { extractRules, hasUsableRules } from './contract/extractRules';
 import handleExportComponent from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './tokens/exportTokens';
-import { lireAdresseDuDepot, loadConfiguration, loadPublicSettings, saveSettings, supprimerPat } from './config';
-import type { ConfigurationDuDepot, SettingsInput } from './config';
+import { cleDeDestination, lireAdresseDuDepot, lireInstantane, nomDuDepot, saveSettings, supprimerPat } from './config';
+import type { ConfigurationDuDepot, Instantane } from './config';
 import { publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './depot';
 import type { EtatDesTokens } from './depot';
 import type { ArtifactKind, RepositoryLayout } from './depot';
@@ -19,8 +19,14 @@ import { TERMES } from './forges/termes';
 import type { TermesDeForge } from './forges/termes';
 import { verdictDePrevol } from './prevol';
 import type { CodeVerdict } from './prevol';
-import type { Annonce, PluginMessage, UiRequest } from './messages';
-import { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication, textesDePublication } from './connexion';
+import type { Annonce, PluginMessage, Provenance, UiRequest } from './messages';
+import {
+  etatDeConnexion,
+  etatDuDepot,
+  gesteApresEchecDePublication,
+  refusDeDestinationChangee,
+  textesDePublication,
+} from './connexion';
 import { etatDeCible, detailDeCible } from './cible';
 import type { CauseConnexion, PrecisionConnexion } from './connexion';
 
@@ -44,9 +50,12 @@ function versUi(message: PluginMessage): void {
   figma.ui.postMessage(message);
 }
 
-/** Envoie un état (chargement / succès / erreur) à l'UI, avec trace dans le journal. */
-function postStatus(state: 'loading' | 'success' | 'error', text: string): void {
-  versUi({ type: 'status', state, text });
+/**
+ * Envoie un état (chargement / succès / erreur) à l'UI, avec trace dans le journal.
+ * Sans provenance, l'état ne vient d'aucune opération.
+ */
+function postStatus(state: 'loading' | 'success' | 'error', text: string, provenance: Partial<Provenance> = {}): void {
+  versUi({ type: 'status', state, text, ...provenance });
 }
 
 function signalerEchec(): void {
@@ -77,8 +86,8 @@ function postDepot(layout: RepositoryLayout | null, config: ConfigurationDuDepot
 }
 
 /** Envoie le fichier généré à l'UI pour déclencher le téléchargement local. */
-function postDownload(filename: string, content: string): void {
-  versUi({ type: 'download', filename, content });
+function postDownload(filename: string, content: string, provenance: Partial<Provenance> = {}): void {
+  versUi({ type: 'download', filename, content, ...provenance });
 }
 
 /**
@@ -91,19 +100,61 @@ function openExternal(url: string): void {
   if (url.startsWith('https://')) figma.openExternal(url);
 }
 
+/*
+ * La file du stockage de configuration.
+ *
+ * Le routeur traite les messages en parallèle. Chaque écriture de la
+ * configuration, et chaque lecture qui prépare une analyse, une publication ou
+ * `settings`, attend la fin de la tâche précédente : une lecture n'observe
+ * jamais une écriture à moitié faite dans cette fenêtre. Un rejet ne bloque pas
+ * la tâche suivante. Les appels réseau partent après la sortie de la file. Deux
+ * fenêtres du plugin ne partagent pas cette file. La taille de la fenêtre n'y
+ * passe pas : elle s'écrit à chaque geste de la poignée et ne décide d'aucune
+ * destination.
+ */
+let fileDuStockage: Promise<unknown> = Promise.resolve();
+
+function parLaFile<T>(tache: () => Promise<T>): Promise<T> {
+  const resultat = fileDuStockage.then(tache);
+  fileDuStockage = resultat.catch(() => undefined);
+  return resultat;
+}
+
 /**
- * Charge les champs publics puis teste automatiquement la forge quand la config
- * est valide. Le jeton reste exclusivement dans ce sandbox.
+ * Génération du test de connexion. Tout test lancé l'incrémente, et une
+ * mutation de la configuration aussi, avant sa première attente : un test dont
+ * la génération n'est plus la dernière ne poste rien.
+ */
+let generationDeConnexion = 0;
+
+/** La dernière clé de destination envoyée à l'interface dans `settings`. */
+let destinationAnnoncee: string | null = null;
+
+/**
+ * Envoie les réglages publics et leur destination. Une destination qui change
+ * sous une analyse en cours l'annule : son verdict décrirait l'ancienne.
+ */
+function annoncerReglages(instantane: Instantane): void {
+  if (
+    destinationDeLAnalyse !== null
+    && instantane.destination !== destinationDeLAnalyse
+    && !publicationEnCours
+  ) {
+    annulation ??= 'reglages';
+  }
+  destinationAnnoncee = instantane.destination;
+  versUi({ type: 'settings', settings: { ...instantane.publics, destination: instantane.destination } });
+}
+
+/**
+ * Teste la forge de l'instantané. Le jeton reste exclusivement dans ce sandbox.
  *
  * Un jeton saisi pour l'autre forge rend la configuration invalide : aucun
  * appel ne part, et la pastille nomme cette cause.
  */
-async function refreshConfiguration(): Promise<void> {
-  const publicSettings = await loadPublicSettings();
-  versUi({ type: 'settings', settings: publicSettings });
-  const validation = await loadConfiguration();
+async function testerConnexion({ publics, validation }: Instantane, generation: number): Promise<void> {
   if (!validation.valid || !validation.config) {
-    const adresse = lireAdresseDuDepot(publicSettings.repoUrl);
+    const adresse = lireAdresseDuDepot(publics.repoUrl);
     postConnection(
       validation.jetonAutreForge ? 'jeton-autre-forge' : 'non-configure',
       { termes: adresse ? TERMES[adresse.forge] : null },
@@ -113,12 +164,44 @@ async function refreshConfiguration(): Promise<void> {
   }
   postConnection('verification');
   const diagnostic = await diagnostiquerConnexion(forgeDe(validation.config));
+  if (generation !== generationDeConnexion) return;
   postConnection(diagnostic.cause, {
     statut: diagnostic.statut,
     detail: diagnostic.detail,
     termes: TERMES[validation.config.forge],
   });
   postDepot(diagnostic.layout, validation.config);
+}
+
+/**
+ * Relit la configuration, l'envoie à l'interface, puis teste la forge.
+ *
+ * `reglages: false` n'envoie `settings` que si la destination a changé : après
+ * un enregistrement refusé, le formulaire garde ainsi la saisie à corriger.
+ */
+async function refreshConfiguration({ reglages = true } = {}): Promise<void> {
+  const generation = (generationDeConnexion += 1);
+  const instantane = await parLaFile(lireInstantane);
+  if (generation !== generationDeConnexion) return;
+  if (reglages || instantane.destination !== destinationAnnoncee) annoncerReglages(instantane);
+  await testerConnexion(instantane, generation);
+}
+
+/**
+ * Aligne l'interface sur une destination relue par une opération. Un écart
+ * vient d'une autre fenêtre du plugin : la pastille doit nommer le dépôt que
+ * le verdict vise.
+ */
+function suivreLaDestination(instantane: Instantane): void {
+  if (instantane.destination === destinationAnnoncee) return;
+  const generation = (generationDeConnexion += 1);
+  annoncerReglages(instantane);
+  void testerConnexion(instantane, generation).catch(signalerEchec);
+}
+
+/** Le nom du dépôt qu'un instantané désigne, ou `null` quand l'export serait téléchargé. */
+function nomDeLaDestination({ validation }: Instantane): string | null {
+  return validation.config ? nomDuDepot(validation.config.projet) : null;
 }
 
 /** Jeton anti-course : seule la dernière analyse de sélection met à jour la note. */
@@ -171,7 +254,7 @@ figma.on('selectionchange', () => {
     selectionCourante = identite;
     selectionToken += 1;
     analysesGardees.delete('component');
-    if (operationEnCours === 'component' && !publicationEnCours) annulationDemandee = true;
+    if (operationEnCours === 'component' && !publicationEnCours) annulation ??= 'demandee';
   }
   if (selectionTimer !== null) clearTimeout(selectionTimer);
   selectionTimer = setTimeout(() => {
@@ -192,22 +275,32 @@ type AnalyseGardee = {
   warnings: string[];
   succes: string;
   avertissements: number;
+  /** La clé lue au pré-vol : une publication vers une autre destination est refusée. */
+  destination: string;
 };
 
 const analysesGardees = new Map<ArtifactKind, AnalyseGardee>();
 let selectionCourante = figma.currentPage.selection.map((node) => node.id).join(',');
 let operationEnCours: ArtifactKind | null = null;
 let publicationEnCours = false;
+/** La destination de l'analyse en cours, `null` hors analyse. */
+let destinationDeLAnalyse: string | null = null;
 
 /**
  * L'annulation coopérative.
  *
- * Rien ne peut interrompre un appel Figma déjà parti. Le drapeau est donc lu
+ * Rien ne peut interrompre un appel Figma déjà parti. La demande est donc lue
  * entre deux étapes, là où le moteur annonce la suivante : l'annulation prend
  * effet à la fin de l'étape en cours, et rien n'est publié après elle.
+ * `demandee` vient du bouton ou d'un changement de sélection, `reglages` d'une
+ * destination qui a changé pendant l'analyse.
  */
 class ExportAnnule extends Error {}
-let annulationDemandee = false;
+let annulation: 'demandee' | 'reglages' | null = null;
+
+function verifierAnnulation(): void {
+  if (annulation !== null) throw new ExportAnnule();
+}
 
 /** L'artefact tel que le repository le reçoit. */
 function artefactDe(analyse: AnalyseGardee) {
@@ -222,11 +315,13 @@ function artefactDe(analyse: AnalyseGardee) {
 function postVerdict(
   analyse: AnalyseGardee,
   code: CodeVerdict,
+  provenance: Provenance,
   precision: { chemin?: string | null; source?: string | null; ou?: string | null; tokens?: EtatDesTokens | null; demande?: string } = {},
 ): void {
   versUi({
     type: 'verdict',
     ...verdictDePrevol({ code, genre: analyse.kind, avertissements: analyse.avertissements, ...precision }),
+    ...provenance,
   });
 }
 
@@ -235,11 +330,16 @@ function postVerdict(
  * L'analyse refait tout le chemin de lecture (emplacement, immobilité, collision)
  * parce qu'un pré-vol qui annoncerait « rien à changer » sans avoir vu une collision
  * d'identifiant mentirait sur le seul point qui, lui, est un vrai refus.
+ *
+ * La destination se lit avant le premier message : chaque résultat la porte, et
+ * l'interface écarte ceux d'une destination qu'elle n'affiche plus. Relue après
+ * l'extraction, une destination différente annule l'analyse.
  */
 async function analyser(
   loadingText: string,
   succes: string,
   artifactKind: ArtifactKind,
+  operation: number,
   handler: (annoncer: Annonce) => Promise<{
     filename: string;
     content: string;
@@ -249,16 +349,25 @@ async function analyser(
 ): Promise<void> {
   if (operationEnCours !== null) return;
   operationEnCours = artifactKind;
-  annulationDemandee = false;
+  annulation = null;
   analysesGardees.delete(artifactKind);
   let analyseProduite: AnalyseGardee | null = null;
-  postStatus('loading', loadingText);
+  // Un stockage illisible n'empêche pas l'extraction : la lecture suivante lève
+  // alors, et le fichier produit est téléchargé.
+  const depart = await parLaFile(lireInstantane).catch(() => null);
+  const provenance: Provenance = {
+    destination: depart?.destination ?? destinationAnnoncee ?? cleDeDestination(null),
+    operation,
+  };
+  destinationDeLAnalyse = provenance.destination;
   try {
+    if (depart) suivreLaDestination(depart);
+    postStatus('loading', loadingText, provenance);
     const result = await handler((etape) => {
-      if (annulationDemandee) throw new ExportAnnule();
-      versUi({ type: 'phase', texte: etape });
+      verifierAnnulation();
+      versUi({ type: 'phase', texte: etape, ...provenance });
     });
-    if (annulationDemandee) throw new ExportAnnule();
+    verifierAnnulation();
 
     const registre = result as {
       localisations?: ReadonlyMap<string, readonly string[]>;
@@ -274,6 +383,7 @@ async function analyser(
         impact: point?.impact ?? '',
         action: point?.action ?? '',
         ...(nodeIds && nodeIds.length > 0 ? { nodeIds: [...nodeIds] } : {}),
+        ...provenance,
       });
     }
 
@@ -284,6 +394,7 @@ async function analyser(
       warnings: result.warnings ?? [],
       succes,
       avertissements: result.warningCount,
+      destination: provenance.destination,
     };
     analyseProduite = analyse;
 
@@ -292,21 +403,24 @@ async function analyser(
       if (annonce) versUi({ type: 'format-tokens', texte: annonce });
     }
 
-    const validation = await loadConfiguration();
-    if (annulationDemandee) throw new ExportAnnule();
+    const instantane = await parLaFile(lireInstantane);
+    if (instantane.destination !== provenance.destination) annulation ??= 'reglages';
+    verifierAnnulation();
+    suivreLaDestination(instantane);
+    const { validation } = instantane;
     if (!validation.valid || !validation.config) {
       analysesGardees.set(artifactKind, analyse);
-      postVerdict(analyse, 'sans-depot');
+      postVerdict(analyse, 'sans-depot', provenance);
       return;
     }
 
-    versUi({ type: 'phase', texte: 'Lecture du repository…' });
+    versUi({ type: 'phase', texte: 'Lecture du repository…', ...provenance });
     const forge = forgeDe(validation.config);
     const lecture = await lireAvantEcriture(forge, artefactDe(analyse), { avecTokens: true });
-    if (annulationDemandee) throw new ExportAnnule();
+    verifierAnnulation();
 
     if (lecture.refus) {
-      postStatus('error', lecture.refus);
+      postStatus('error', lecture.refus, provenance);
       return;
     }
     if (lecture.jumeau) {
@@ -316,32 +430,53 @@ async function analyser(
           type: 'demande',
           url: lecture.jumeau.url,
           libelle: textesDePublication(forge.termes).lienVers(lecture.path),
+          ...provenance,
         });
       }
-      postVerdict(analyse, 'identique', { ou: lecture.jumeau.ou });
+      postVerdict(analyse, 'identique', provenance, { ou: lecture.jumeau.ou });
       return;
     }
 
     analysesGardees.set(artifactKind, analyse);
-    postVerdict(analyse, 'a-publier', {
+    postVerdict(analyse, 'a-publier', provenance, {
       chemin: lecture.path,
       source: lecture.layout.source,
       tokens: lecture.tokens,
       demande: forge.termes.demande,
     });
   } catch (error) {
-    if (error instanceof ExportAnnule || annulationDemandee) {
+    if (error instanceof ExportAnnule || annulation !== null) {
       analysesGardees.delete(artifactKind);
-      postStatus('error', "Export annulé. Rien n'a été écrit.");
+      await annoncerLAnnulation(provenance);
       return;
     }
-    if (analyseProduite) postDownload(analyseProduite.filename, analyseProduite.content);
+    if (analyseProduite) postDownload(analyseProduite.filename, analyseProduite.content, provenance);
     const message = error instanceof Error ? error.message : 'Erreur inconnue pendant l’export.';
-    postStatus('error', message);
+    postStatus('error', message, provenance);
     figma.notify(message, { error: true });
   } finally {
     operationEnCours = null;
+    destinationDeLAnalyse = null;
   }
+}
+
+/**
+ * Dit pourquoi une analyse s'est arrêtée. Une annulation par les réglages est
+ * écrite sous la destination nouvelle : l'interface a vidé ses cartes pour
+ * elle, et le texte doit y rester.
+ */
+async function annoncerLAnnulation(provenance: Provenance): Promise<void> {
+  if (annulation !== 'reglages') {
+    postStatus('error', "Export annulé. Rien n'a été écrit.", provenance);
+    return;
+  }
+  const actuel = await parLaFile(lireInstantane).catch(() => null);
+  if (actuel) suivreLaDestination(actuel);
+  postStatus(
+    'error',
+    'Analyse annulée : les réglages du plugin ont changé. Relancez l’analyse.',
+    { destination: actuel?.destination ?? provenance.destination, operation: provenance.operation },
+  );
 }
 
 /**
@@ -350,74 +485,102 @@ async function analyser(
  * `publishArtifact` refait la lecture du repository de son côté : l'analyse
  * informe, elle ne fait pas autorité. Entre les deux, quelqu'un a pu fusionner
  * ou ouvrir une branche.
+ *
+ * La publication garde la destination qu'elle a lue à son départ. Ses
+ * résultats la portent : après une bascule, l'interface les écarte et se libère.
  */
-async function publier(genre: ArtifactKind): Promise<void> {
+async function publier(genre: ArtifactKind, operation: number): Promise<void> {
   if (operationEnCours !== null) return;
   const analyse = analysesGardees.get(genre);
   if (!analyse) {
-    postStatus('error', 'Aucune analyse disponible. Relancez l’analyse avant de publier.');
+    postStatus('error', 'Aucune analyse disponible. Relancez l’analyse avant de publier.', { operation });
     return;
   }
   operationEnCours = genre;
   publicationEnCours = true;
+  const provenance: Provenance = { destination: analyse.destination, operation };
   let termes: TermesDeForge | null = null;
   try {
-    const validation = await loadConfiguration();
+    const instantane = await parLaFile(lireInstantane);
     if (analysesGardees.get(genre) !== analyse) {
-      postStatus('error', 'La sélection a changé. Analysez le composant sélectionné avant de publier.');
+      postStatus('error', 'La sélection a changé. Analysez le composant sélectionné avant de publier.', provenance);
       return;
     }
+    if (instantane.destination !== analyse.destination) {
+      analysesGardees.delete(genre);
+      suivreLaDestination(instantane);
+      postStatus(
+        'error',
+        refusDeDestinationChangee(nomDeLaDestination(instantane)),
+        { destination: instantane.destination, operation },
+      );
+      return;
+    }
+    const { validation } = instantane;
     if (!validation.valid || !validation.config) {
-      postDownload(analyse.filename, analyse.content);
-      versUi({ type: 'log', text: 'Aucun repository connecté : téléchargement sur votre poste.' });
-      postStatus('success', `${analyse.succes}. Téléchargement terminé.`);
+      postDownload(analyse.filename, analyse.content, provenance);
+      versUi({ type: 'log', text: 'Aucun repository connecté : téléchargement sur votre poste.', ...provenance });
+      postStatus('success', `${analyse.succes}. Téléchargement terminé.`, provenance);
       figma.notify(`${analyse.succes}. Téléchargement terminé.`);
       return;
     }
     const forge = forgeDe(validation.config);
     termes = forge.termes;
     const textes = textesDePublication(termes);
-    postStatus('loading', textes.enCours);
+    postStatus('loading', textes.enCours, provenance);
     const publication = await publishArtifact(forge, artefactDe(analyse));
     if (publication.status === 'unchanged') {
       // Le dépôt a bougé entre l'analyse et la publication : c'est exactement le
       // cas que la revérification existe pour attraper.
       if (publication.pullRequestUrl) {
-        versUi({ type: 'demande', url: publication.pullRequestUrl, libelle: textes.lienVers(publication.path) });
+        versUi({ type: 'demande', url: publication.pullRequestUrl, libelle: textes.lienVers(publication.path), ...provenance });
       }
-      postVerdict(analyse, 'identique', { ou: publication.ou });
-      postStatus('success', `Aucun changement pour ${publication.path} (${publication.ou}).`);
+      postVerdict(analyse, 'identique', provenance, { ou: publication.ou });
+      postStatus('success', `Aucun changement pour ${publication.path} (${publication.ou}).`, provenance);
       figma.notify(textes.aucunChangement);
       return;
     }
 
-    versUi({ type: 'demande', url: publication.pullRequestUrl, libelle: textes.lienVers(publication.path) });
+    versUi({ type: 'demande', url: publication.pullRequestUrl, libelle: textes.lienVers(publication.path), ...provenance });
     // Une demande d'export est faite pour être relue tout de suite par le designer
     // qui vient de l'ouvrir : on l'amène dessus sans lui demander un clic.
     openExternal(publication.pullRequestUrl);
-    await refreshConfiguration();
-    postStatus('success', textes.creee(analyse.succes));
+    // Après une bascule, la connexion affichée est celle du nouveau dépôt, que
+    // son propre test décrit déjà.
+    if (destinationAnnoncee === analyse.destination) await refreshConfiguration();
+    postStatus('success', textes.creee(analyse.succes), provenance);
     figma.notify(textes.creee(analyse.succes));
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue.';
     const statut = error instanceof ErreurDeForge ? error.status : null;
     // La réponse de la forge est un fait de publication ; le verdict dit ce que le
     // designer a entre les mains. L'analyse est gardée : la publication se
-    // réessaie sans repasser par Figma. Sans termes, l'échec précède la lecture
-    // de la configuration, et aucune forge n'a été appelée.
+    // réessaie sans repasser par Figma, vers la même destination seulement. Sans
+    // termes, l'échec précède la lecture de la configuration, et aucune forge
+    // n'a été appelée.
     const textes = termes ? textesDePublication(termes) : null;
-    versUi({ type: 'log', text: textes ? textes.echecDansLeJournal(message) : `Échec de la publication : ${message}` });
-    postDownload(analyse.filename, analyse.content);
-    postStatus('error', textes?.echec ?? 'Échec de la publication. Le fichier a été téléchargé sur votre poste.');
+    versUi({
+      type: 'log',
+      text: textes ? textes.echecDansLeJournal(message) : `Échec de la publication : ${message}`,
+      ...provenance,
+    });
+    postDownload(analyse.filename, analyse.content, provenance);
+    postStatus('error', textes?.echec ?? 'Échec de la publication. Le fichier a été téléchargé sur votre poste.', provenance);
     const geste = termes
       ? gesteApresEchecDePublication(statut, termes, message)
       : 'La demande n’a pas abouti. Réessayez ; si l’erreur persiste, relancez le plugin.';
+    // Un stockage illisible ne dit pas que la destination a changé.
+    const destinationActuelle = await parLaFile(lireInstantane).then(
+      ({ destination }) => destination,
+      () => analyse.destination,
+    );
     versUi({
       type: 'verdict',
       code: 'a-publier',
       texte: `Échec de la publication. ${geste}`,
-      action: 'Réessayer la publication',
+      action: destinationActuelle === analyse.destination ? 'Réessayer la publication' : null,
       etat: 'error',
+      ...provenance,
     });
     figma.notify(textes?.echecNotifie ?? 'Échec de la publication : fichier téléchargé localement.', { error: true });
   } finally {
@@ -491,13 +654,21 @@ async function traiterMessage(message: UiRequest): Promise<void> {
   }
 
   if (message.type === 'save-settings') {
-    const validation = await saveSettings(message.settings);
-    versUi({ type: 'settings-validation', errors: validation.errors });
-    if (!validation.valid) {
-      versUi({ type: 'settings-save-error' });
-      return;
+    // La configuration active change : un test déjà parti ne décrit plus rien.
+    generationDeConnexion += 1;
+    try {
+      const validation = await parLaFile(() => saveSettings(message.settings));
+      versUi({ type: 'settings-validation', errors: validation.errors });
+      if (!validation.valid) {
+        versUi({ type: 'settings-save-error' });
+        await refreshConfiguration({ reglages: false });
+        return;
+      }
+    } catch (erreur) {
+      // La configuration conservée n'a plus de test en cours : il repart.
+      void refreshConfiguration({ reglages: false }).catch(() => undefined);
+      throw erreur;
     }
-    analysesGardees.clear();
     await refreshConfiguration();
     return;
   }
@@ -524,31 +695,31 @@ async function traiterMessage(message: UiRequest): Promise<void> {
   }
 
   if (message.type === 'supprimer-token') {
-    await supprimerPat();
-    analysesGardees.clear();
-    // La configuration est rechargée : sans jeton elle n'est plus valide, et la
-    // pastille le dit du même geste.
+    generationDeConnexion += 1;
+    await parLaFile(supprimerPat);
+    // Sans jeton, la configuration n'est plus valide : la destination change, et
+    // la pastille le dit du même geste.
     await refreshConfiguration();
     return;
   }
 
   if (message.type === 'annuler') {
-    annulationDemandee = true;
+    annulation ??= 'demandee';
     return;
   }
 
   if (message.type === 'publier') {
-    await publier(message.genre);
+    await publier(message.genre, message.operation);
     return;
   }
 
   if (message.type === 'analyser-composant') {
-    await analyser('Analyse du composant…', 'Contrat généré', 'component', handleExportComponent);
+    await analyser('Analyse du composant…', 'Contrat généré', 'component', message.operation, handleExportComponent);
     return;
   }
 
   if (message.type === 'analyser-tokens') {
-    await analyser('Lecture des variables…', 'Tokens exportés', 'tokens', handleExportTokens);
+    await analyser('Lecture des variables…', 'Tokens exportés', 'tokens', message.operation, handleExportTokens);
   }
 }
 

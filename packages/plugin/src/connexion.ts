@@ -266,6 +266,16 @@ export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null 
 }
 
 /**
+ * Le refus d'une publication dont la destination a changé depuis l'analyse.
+ * Il dit le fait sans en supposer la cause : le changement a pu venir d'une
+ * autre fenêtre du plugin. `nom` vaut `null` quand l'export serait téléchargé.
+ */
+export function refusDeDestinationChangee(nom: string | null): string {
+  const destination = nom ? `le dépôt actif est maintenant ${nom}` : 'aucun dépôt n’est actif';
+  return `La destination a changé depuis l’analyse : ${destination}. Relancez l’analyse.`;
+}
+
+/**
  * Les textes d'une publication, du lancement à l'échec. Le routeur et la
  * galerie les lisent ici : la capture montre la phrase que le plugin écrit.
  */

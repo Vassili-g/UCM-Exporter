@@ -1,10 +1,13 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  cleDeDestination,
   forgeDuPrefixe,
   lireAdresseDuDepot,
+  lireInstantane,
   loadConfiguration,
   loadPublicSettings,
+  nomDuDepot,
   saveSettings,
   supprimerPat,
   validateSettings,
@@ -200,4 +203,34 @@ test('un jeton enregistré avant GitLab appartient à GitHub', async () => {
   stockageFigma({ repoUrl: 'https://github.com/a/b', baseBranch: 'main', github_pat: 'ghp_ancien' });
   assert.equal((await loadPublicSettings()).forgeDuJeton, 'github');
   assert.equal((await loadConfiguration()).valid, true);
+});
+
+test('la clé de destination ignore la casse du projet et garde celle de la branche', () => {
+  const cle = (projet: string, baseBranch: string) => cleDeDestination({ forge: 'gitlab', projet, baseBranch });
+  assert.equal(cle('Mon-Groupe/Design-System', 'main'), cle('mon-groupe/design-system', 'main'));
+  assert.notEqual(cle('mon-groupe/design-system', 'Main'), cle('mon-groupe/design-system', 'main'));
+  assert.deepEqual(JSON.parse(cle('Mon-Groupe/Design-System', 'Release')), ['gitlab', 'mon-groupe/design-system', 'Release']);
+});
+
+test('une branche qui contient un séparateur ne confond pas deux destinations', () => {
+  const avecBarre = cleDeDestination({ forge: 'github', projet: 'a/b', baseBranch: 'x|y' });
+  const avecArobase = cleDeDestination({ forge: 'github', projet: 'a/b', baseBranch: 'x@y' });
+  assert.deepEqual(JSON.parse(avecBarre), ['github', 'a/b', 'x|y']);
+  assert.deepEqual(JSON.parse(avecArobase), ['github', 'a/b', 'x@y']);
+  assert.notEqual(avecBarre, avecArobase);
+});
+
+test('sans configuration valide, la destination est le téléchargement, et la clé ne porte aucun jeton', async () => {
+  assert.equal(cleDeDestination(null), JSON.stringify(['aucune']));
+  stockageFigma({ repoUrl: 'https://github.com/a/b', baseBranch: 'main' });
+  assert.equal((await lireInstantane()).destination, JSON.stringify(['aucune']));
+  stockageFigma({ repoUrl: 'https://github.com/a/b', baseBranch: 'main', github_pat: 'ghp_secret' });
+  const instantane = await lireInstantane();
+  assert.equal(instantane.destination, JSON.stringify(['github', 'a/b', 'main']));
+  assert.doesNotMatch(instantane.destination, /ghp_secret/);
+});
+
+test('le nom d’un dépôt est le dernier segment de son projet, sous-groupes compris', () => {
+  assert.equal(nomDuDepot('mon-org/design-system-v3'), 'design-system-v3');
+  assert.equal(nomDuDepot('mon-groupe/equipe-produit/design-system'), 'design-system');
 });

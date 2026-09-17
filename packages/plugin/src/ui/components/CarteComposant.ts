@@ -89,5 +89,12 @@ export function createCarteComposant({
       analysee = true;
       rafraichirGeste();
     },
+
+    /** Sans résultat, la même cible s'analyse de nouveau. */
+    reinitialiser() {
+      analysee = false;
+      rafraichirGeste();
+      carte.reinitialiser();
+    },
   };
 }

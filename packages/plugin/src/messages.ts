@@ -18,6 +18,13 @@ export type Annonce = (etape: string) => void;
 /** Niveau d'une ligne de compte rendu : il décide de sa couleur et de son marqueur. */
 export type LogLevel = 'info' | 'success' | 'error';
 
+/**
+ * D'où vient un résultat d'opération : la clé de destination que l'opération a
+ * lue, et le numéro que l'interface a donné à sa demande. L'interface écarte un
+ * résultat d'une autre destination ou d'une opération plus ancienne.
+ */
+export type Provenance = { destination: string; operation: number };
+
 /** Ce que l'UI demande au sandbox. */
 export type UiRequest =
   /**
@@ -25,15 +32,9 @@ export type UiRequest =
    * n'écrit rien ; la publication consomme ce qu'elle a produit, et
    * `annuler` prend effet entre deux étapes.
    */
-  | {
-      type:
-        | 'analyser-composant'
-        | 'analyser-tokens'
-        | 'annuler'
-        | 'supprimer-token'
-        | 'ui-ready';
-    }
-  | { type: 'publier'; genre: 'component' | 'tokens' }
+  | { type: 'annuler' | 'supprimer-token' | 'ui-ready' }
+  | { type: 'analyser-composant' | 'analyser-tokens'; operation: number }
+  | { type: 'publier'; genre: 'component' | 'tokens'; operation: number }
   | { type: 'save-settings'; settings: SettingsInput }
   | { type: 'open-external'; url: string }
   /**
@@ -50,8 +51,12 @@ export type UiRequest =
 
 /** Ce que le sandbox dit à l'UI. */
 export type PluginMessage =
-  /** Les champs publics rechargés : le PAT ne traverse jamais cette frontière. */
-  | { type: 'settings'; settings: PublicSettings }
+  /**
+   * Les champs publics rechargés : le PAT ne traverse jamais cette frontière.
+   * L'interface vide les cartes de l'écran de travail quand `destination`
+   * change, et seulement alors.
+   */
+  | { type: 'settings'; settings: PublicSettings & { destination: string } }
   | { type: 'settings-validation'; errors: Partial<Record<keyof SettingsInput, string>> }
   | { type: 'settings-save-error' }
   /**
@@ -84,12 +89,16 @@ export type PluginMessage =
    * Ligne de compte rendu. `level` conserve la distinction : un avertissement demande
    * un geste, une note n'en demande aucun.
    */
-  | { type: 'log'; text: string; level?: LogLevel }
-  /** L'état de l'action en cours, annoncé et repris dans le compte rendu. */
-  | { type: 'status'; state: 'loading' | 'success' | 'error'; text: string }
-  | { type: 'download'; filename: string; content: string }
+  | ({ type: 'log'; text: string; level?: LogLevel } & Provenance)
+  /**
+   * L'état de l'action en cours, annoncé et repris dans le compte rendu. Sans
+   * provenance, il vient du routeur, hors de toute opération.
+   */
+  | ({ type: 'status'; state: 'loading' | 'success' | 'error'; text: string } & Partial<Provenance>)
+  /** Le téléchargement part toujours ; sa ligne de compte rendu suit la provenance. */
+  | ({ type: 'download'; filename: string; content: string } & Partial<Provenance>)
   /** Le lien de la demande ouverte ou déjà en vol, et son libellé dans les mots de la forge. */
-  | { type: 'demande'; url: string; libelle: string }
+  | ({ type: 'demande'; url: string; libelle: string } & Provenance)
   /**
    * La version de schéma que ce bundle produit. Elle arrive une fois, à
    * l'ouverture, et l'UI la pose en pied de page : Figma peut servir un bundle
@@ -102,7 +111,7 @@ export type PluginMessage =
    * par export dirait le déroulé d'un traitement que personne ne relit, et
    * noierait les avertissements qui, eux, demandent un geste.
    */
-  | { type: 'phase'; texte: string }
+  | ({ type: 'phase'; texte: string } & Provenance)
 
   /** Résumé des variables locales qui détermine si l'analyse est disponible. */
   | { type: 'tokens'; resume: string; presents: boolean }
@@ -115,7 +124,7 @@ export type PluginMessage =
   | { type: 'format-tokens'; texte: string }
 
   /** Point exigeant un geste dans Figma, conservé dans ses trois parties. */
-  | {
+  | ({
       type: 'diagnostic';
       /** « Layer « Border » : l'alignement du stroke est illisible. » */
       titre: string;
@@ -129,7 +138,7 @@ export type PluginMessage =
        * navigation.
        */
       nodeIds?: string[];
-    }
+    } & Provenance)
   /**
    * Ce que l'analyse conclut, et l'action qu'elle propose.
    *
@@ -137,10 +146,10 @@ export type PluginMessage =
    * rien à publier : c'est ainsi que le clic supplémentaire n'est demandé que
    * lorsqu'il achète quelque chose.
    */
-  | {
+  | ({
       type: 'verdict';
       code: CodeVerdict;
       texte: string;
       action: string | null;
       etat: '' | 'warning' | 'error';
-    };
+    } & Provenance);

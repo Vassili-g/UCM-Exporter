@@ -4,8 +4,9 @@
 > [RECHERCHE-REGLAGES.md](./RECHERCHE-REGLAGES.md), rendu sous forme de plan
 > d'action, révisé après une revue indépendante
 > ([section 11](#11-revue-indépendante)), puis après la porte H1. Le mainteneur
-> a tranché les décisions de la [section 1](#1-décisions) ; seule C10 attend
-> encore sa réponse. Commit lu : `94ec0a9`.
+> a tranché les décisions de la [section 1](#1-décisions).
+> Les mesures ci-dessous portent sur `94ec0a9` ; la revue du plan contre
+> `43fc976` ne les remesure pas.
 > Aucune ligne de code n'a été modifiée pour l'écrire.
 
 Les mesures de ce plan ont été faites hors de Figma : l'interface reconstruite
@@ -27,10 +28,11 @@ harnais de `tests/code.test.ts`. Ce qui demande Figma est rangé dans la
 | C7 | Dépôt actif après la suppression de l'actif | Aucun | [4.7](#47-suppression-dun-dépôt) |
 | C8 | Changement de destination entre l'analyse et la publication | Clé de destination | [4.3](#43-la-clé-de-destination) |
 | C9 | Débranchement | Interrupteur « Activer l'export local » dans Général, désactivé par défaut, mémorisé à la fermeture du plugin | [6](#6-débrancher-les-dépôts) |
-| C10 | Anciennes clés de stockage (D3) | En attente : effacer, ou reprendre le dépôt configuré | [4.2](#42-stockage-et-règle-du-jeton) |
+| C10 | Anciennes clés de stockage (D3) | Reprendre le dépôt valide et son jeton, puis effacer les anciennes clés ; remplace D3 | [4.2](#42-stockage-et-règle-du-jeton) |
 | C11 | « Effacer les données du plugin » | Écarté : supprimer un dépôt efface ses données | [7.2](#72-options-de-longlet-général) |
 | C12 | Le verdict nomme le dépôt de destination | Oui | [4.4](#44-changer-de-dépôt-actif) |
 | C13 | Loi de la galerie face à une liste de deux forges | Catégorie `mixte` | [4.6](#46-interface-de-la-liste) |
+| C14 | Enregistrer un dépôt pendant l'export local | Tester à l'enregistrement ; le résultat concerne seulement la carte testée | [4.5](#45-test-de-connexion) |
 | E3 | Phrase de `SPEC.md` sur le libellé qui annonce l'ouverture du navigateur | Retirer la phrase | [2.2](#22-écarts-relevés-hors-du-plan) |
 | M | Mesures dans Figma : deux fenêtres, application de bureau et navigateur | Non faites | [4.3](#43-la-clé-de-destination) |
 | Q | Intention de la réinitialisation ajoutée par `34e584c` | Close : la clé de destination remplace ce mécanisme | [4.3](#43-la-clé-de-destination) |
@@ -144,7 +146,7 @@ Les lignes marquées « ajout » manquaient au plan de recherche.
 | Textes « regarder » qui citent la carte des tokens | `resultat-un-avertissement`, `resultat-vingt-avertissements` | Ajout |
 | États `fichier-sans-tokens`, `export-tokens-reussi`, `tokens-sans-profil` | `galerie/etats.cjs` | Relevé |
 | Tests du routeur écrits avec `analyser-tokens` comme commande générique | `tests/code.test.ts`, dix tests | Ajout, inchangés si le réglage vaut « activé » par défaut |
-| Tests | `tests/exportTokens.test.ts`, `tests/etatDesTokens.test.ts`, `tests/interface/interface.test.mjs` | Relevé |
+| Tests | `tests/exportTokens.test.ts`, `tests/interface/interface.test.mjs` | Relevé |
 | « deux commandes » dans les documents | `README.md` racine, `docs/README.md`, `SPEC.md` « Contexte technique », `POUR-LES-DESIGNERS.md` section 3, README du plugin | Ajout |
 
 **G2, dépendance du contrat à `tokens.json`**
@@ -238,6 +240,12 @@ compte rendu du composant. Passages de `CONTRIBUTING.md` à réécrire, section
 `etatDesTokensDuFichier`, sautée à l'ouverture. Une analyse de composant faite
 pendant la désactivation porte une autre clé : elle ne se publie pas, et la
 nouvelle analyse porte la consigne.
+
+Le sandbox refuse aussi `analyser-tokens` et une nouvelle publication de tokens
+quand le réglage est désactivé : masquer la carte ne suffit pas. Une lecture du
+résumé lancée avant la désactivation ne doit plus envoyer `tokens` ni
+`format-tokens` après celle-ci. Les lectures de variables nécessaires à G3
+restent actives pendant l'analyse d'un composant.
 
 ### 3.4. Où ranger le réglage
 
@@ -335,6 +343,14 @@ plugin ne partagent pas cette file. Une suppression et une modification faites
 au même instant dans deux fenêtres peuvent encore faire revenir une entrée ;
 `SPEC.md` le dit.
 
+Cette file entre dès le lot 0. Un rejet ne bloque pas les demandes suivantes.
+Les lectures qui préparent une analyse, une publication ou `settings` passent
+par la même file : chacune produit un instantané dont dérivent la clé, la
+configuration privée et les réglages publics. Les tests réseau se font après
+la sortie de la file. Cette règle empêche une lecture entre les deux écritures
+d'une activation dans une même fenêtre ; elle ne garantit pas une transaction
+entre fenêtres.
+
 **Règle du jeton, réécrite pour D2.** « Un jeton ne part que vers le dépôt
 qui l'a reçu. » Le jeton et l'adresse voyagent dans la même entrée, écrite en
 un seul `setAsync`. Aucune étape intermédiaire ne peut associer un jeton à une
@@ -380,24 +396,38 @@ type ReglagesPublics = {
 
 L'interface rend la liste par `id` : un message `settings` met à jour les
 cartes existantes sans refermer une carte dépliée en cours de saisie.
+Le sandbox vérifie l'adresse figée à chaque modification : la lecture seule
+du champ dans l'interface ne protège pas, à elle seule, l'association du jeton
+au projet. Une modification porte l'identité de l'entrée existante et ne peut
+pas changer son adresse.
 
-**D3, anciennes clés (C10, en attente).** Le plugin actuel range un seul dépôt
-dans quatre clés : `repoUrl`, `baseBranch`, `github_pat` et `forge_du_jeton`.
-La nouvelle version range la liste sous `depots`, qu'aucune option ci-dessous
-n'efface : les dépôts enregistrés restent d'une ouverture à l'autre. Les
-options ne portent que sur les quatre anciennes clés, lues au plus une fois,
-à la première ouverture de la nouvelle version.
+**Anciennes clés (C10, décidé).** Reprendre le dépôt configuré et son jeton,
+puis effacer `repoUrl`, `baseBranch`, `github_pat` et `forge_du_jeton`. Cette
+décision remplace D3, qui excluait la migration. Le dépôt repris devient actif
+et suit le test de connexion à l'ouverture, hors export local.
 
-| Option | Première ouverture après la mise à jour | Ouvertures suivantes | Coût |
-|---|---|---|---|
-| O1. Ignorer (D3) | Liste vide : les dépôts se saisissent de nouveau. Le jeton de `github_pat` reste sur le poste, hors de portée de tout bouton | Rien | Aucun |
-| O2. Effacer (D3) | Liste vide : les dépôts se saisissent de nouveau. Le jeton ancien est effacé | Rien : les clés n'existent plus | Quatre `deleteAsync` |
-| O3. Reprendre, puis effacer | Le dépôt configuré devient la première carte, actif, avec son jeton ; les deux autres se saisissent de nouveau. Le jeton ancien quitte les quatre clés | Rien : les clés n'existent plus | Lecture des quatre clés, `validateSettings`, une écriture de `depots`, un test ; revient sur D3 |
+La reprise passe par la file avant toute lecture de configuration :
 
-Le plugin actuel ne connaît qu'un dépôt : O3 évite la saisie de ce seul
-dépôt. Un jeton sans `forge_du_jeton` appartient à GitHub, et une configuration
-que `validateSettings` refuse n'est pas reprise. Dans les trois options,
-l'ancien commentaire de `STORAGE_KEYS` sur `github_pat` disparaît.
+1. Si `depots` est absente, lire les quatre anciennes clés et appliquer
+   `validateSettings` avec leur règle de forge : un jeton sans
+   `forge_du_jeton` appartient à GitHub. Une configuration invalide n'est pas
+   reprise, même si son jeton est présent.
+2. Écrire `depots` avec l'entrée valide, ou `[]` sans entrée valide. La présence
+   de cette clé marque la reprise effectuée, y compris pour une liste vide.
+   Activer l'entrée reprise selon l'ordre d'écriture de la section 4.2.
+3. Effacer les quatre anciennes clés, même si la configuration était invalide.
+   Si l'écriture de `depots` échoue, conserver les anciennes clés pour réessayer.
+
+Si `depots` existe déjà, conserver la liste et le choix du dépôt actif, puis
+terminer seulement le nettoyage des anciennes clés. Une suppression partielle
+ne réimporte donc pas un dépôt ni son jeton. Une interruption entre l'écriture
+de la liste et l'activation peut laisser le dépôt repris sans actif : le
+designer l'active avec « Se connecter ». Une donnée `depots` illisible produit
+une erreur de stockage ; elle n'autorise pas à écraser la liste par une reprise.
+
+Le mainteneur pourra retirer ce code après avoir confirmé la migration des
+deux équipes. L'ancien commentaire de `STORAGE_KEYS` sur `github_pat`
+disparaît dès le lot 3a.
 
 **Tests de `tests/config.test.ts`.**
 
@@ -410,7 +440,12 @@ l'ancien commentaire de `STORAGE_KEYS` sur `github_pat` disparaît.
 | « un jeton GitHub enregistré ne vaut rien pour une URL GitLab » ; « un champ vide ne conserve pas le jeton d'une autre forge » | Retirés : l'adresse d'une entrée est figée |
 | « l'enregistrement écrit l'ancien retrait, la forge, le jeton, puis l'URL » ; « un enregistrement interrompu ne laisse aucun jeton utilisable par l'autre forge » | Remplacés : une entrée s'écrit en une écriture ; une suppression interrompue ne laisse ni jeton ni dépôt actif utilisable |
 | « l'UI apprend la forge du jeton, jamais le jeton, et la suppression retire les deux » | Adapté : l'interface apprend la présence du jeton par dépôt |
-| « un jeton enregistré avant GitLab appartient à GitHub » | Selon C10 : retiré (O1), remplacé par l'effacement des anciennes clés (O2), ou conservé pour la reprise (O3) |
+| « un jeton enregistré avant GitLab appartient à GitHub » | Conservé pour la reprise ; une ancienne configuration invalide est écartée et ses clés sont effacées |
+
+La reprise se teste avec un dépôt GitHub et un projet GitLab, une configuration
+invalide, une liste nouvelle déjà présente et une panne à chaque écriture ou
+suppression. Une nouvelle ouverture termine le nettoyage sans réimporter ni
+écraser un dépôt, même si la liste nouvelle est vide.
 
 **Tests de `tests/code.test.ts`.**
 
@@ -425,7 +460,9 @@ l'ancien commentaire de `STORAGE_KEYS` sur `github_pat` disparaît.
   publier » passent aux demandes d'enregistrement d'un dépôt. L'assertion
   « aucun message ne contient le jeton » reste sur chacune.
 - Nouveaux : une suppression et une modification envoyées ensemble ne font pas
-  revenir l'entrée ; un test de connexion périmé ne poste rien.
+  revenir l'entrée ; un échec d'écriture ne bloque pas la demande suivante ;
+  une lecture n'observe pas une activation à moitié écrite ; une modification
+  ne peut pas changer l'adresse ; un test de connexion périmé ne poste rien.
 
 ### 4.3. La clé de destination
 
@@ -439,6 +476,12 @@ forge:projet@baseBranch|tokens     dépôt actif, réglage des tokens
 aucune|tokens                      aucun dépôt actif
 local|tokens                       dépôts débranchés
 ```
+
+Cette notation décrit les champs, pas leur sérialisation : employer un tuple
+JSON pour éviter les ambiguïtés de séparateurs dans une branche. Seule
+l'identité forge/projet passe en minuscules ; la branche garde sa casse. Le
+jeton reste absent de cette clé publique. Son remplacement relance le test
+de connexion sans invalider à lui seul le contenu analysé.
 
 **Usages.**
 
@@ -454,6 +497,15 @@ local|tokens                       dépôts débranchés
   écart relance `refreshConfiguration` avant le verdict : la pastille nomme le
   dépôt que le verdict vise.
 - « Réessayer la publication » n'est proposé qu'à clé inchangée.
+
+La clé accompagne aussi les résultats d'opération qui modifient une carte
+(`phase`, `diagnostic`, `verdict`, `status`, `log`, `demande`). L'interface
+écarte les résultats d'une autre destination. La fin de l'opération libère
+toutefois l'interface même si son résultat est écarté. Un téléchargement de
+repli et l'ouverture d'une demande déjà créée restent exécutés ; leur retour
+ne recrée pas un verdict ou un lien sous la nouvelle destination. Un
+identifiant d'opération distingue également une ancienne opération d'une
+nouvelle après un aller-retour entre deux destinations.
 
 Cette clé couvre, par un seul mécanisme, la bascule dans la même fenêtre, un
 changement fait dans une autre fenêtre, le débranchement et le réglage des
@@ -478,6 +530,13 @@ gestion des tokens a changé ».
 **Fraîcheur du test de connexion (E6).** `refreshConfiguration` incrémente un
 compteur de génération avant chaque lecture. Après chaque attente, un test dont
 la génération n'est plus la dernière ne poste rien.
+Une mutation de la configuration active invalide la génération avant sa
+première attente ; en cas d'échec de sauvegarde, le test de la configuration
+conservée est relancé.
+Les tests de cartes ont en plus une génération par dépôt : enregistrer B ne
+rend pas périmé un test de A, mais modifier ou supprimer A invalide son test.
+Une réponse de carte ne met à jour la pastille et `depot` que si cette entrée
+est encore active, avec les mêmes réglages et hors export local.
 
 **Application de bureau et navigateur.** La documentation Figma ne dit pas
 s'ils partagent `clientStorage`. Une réponse du forum Figma, relayée par le
@@ -538,12 +597,26 @@ l'actif. Deux messages le portent, distincts de `connection` :
 
 | Message | Contenu |
 |---|---|
-| `depot-enregistre` | `{ carte: 'nouvelle' \| id, erreurs }` : refus par champ, ou succès qui libère le bouton « Enregistrer » |
-| `depot-teste` | `{ id, etat, statut, geste }` : le résultat du test de cette entrée |
+| `depot-enregistre` | `{ requete, carte, id, erreurs }` : identifiants de la demande et de la carte, identité enregistrée en cas de succès, erreurs par champ ou erreur générale |
+| `depot-teste` | `{ id, generation, etat, statut, geste, destination }` : résultat du test et chemins effectifs de cette entrée |
+
+Chaque carte nouvelle reçoit un identifiant temporaire distinct, conservé dans
+la demande d'enregistrement et sa réponse. Le succès l'associe à l'identité
+enregistrée ; `settings` et l'accusé de réception ne créent pas deux cartes.
+La destination du test alimente le bloc de chemins de la carte concernée,
+y compris quand elle est inactive. Une réponse à une ancienne demande ne
+remplace pas une saisie plus récente.
 
 Une erreur levée pendant un enregistrement envoie `depot-enregistre` avec une
 erreur générale, comme le `catch` du routeur le fait aujourd'hui pour
 `save-settings`.
+
+**Export local (C14, décidé).** Cliquer sur « Enregistrer » teste le dépôt,
+même en export local. Le résultat met à jour uniquement la carte testée : il
+ne change ni le dépôt actif, ni la pastille « export local », ni la destination
+des exports. La carte se replie après une sauvegarde et un test réussis ; elle
+reste dépliée en cas d'échec. Aucun test automatique ne part à l'ouverture en
+export local. Désactiver l'export local teste le dépôt actif.
 
 ### 4.6. Interface de la liste
 
@@ -600,7 +673,7 @@ Liste :
   seule après le premier enregistrement (C3), « Branche de base », le bloc de
   destination quand il est connu, le jeton, « Enregistrer » et « Supprimer » ;
 - « Ajouter un dépôt » crée une carte dépliée en fin de liste ; elle se replie
-  à l'enregistrement ;
+  après l'enregistrement et le test réussis, y compris en export local ;
 - « Se connecter » active ce dépôt : l'ancien actif repasse à « Se
   connecter ». Quand l'export local est activé, « Se connecter » le désactive
   aussi ([section 6](#6-débrancher-les-dépôts)).
@@ -756,9 +829,11 @@ GitLab ne montre aucun mot de GitHub, et l'inverse. Elle attrape un texte qui
 aurait oublié de lire les mots de sa forge, et `AGENTS.md` en fait un
 invariant. L'onglet Dépôts qui liste un dépôt GitHub et un projet GitLab
 montre les deux forges sur le même écran, par construction. Décision : une
-catégorie `forge: 'mixte'` pour ces écrans. La loi y reste appliquée aux
-messages qui parlent du dépôt actif (`connection`, `verdict`, `status`, `log`,
-`demande`, `depot-teste`). L'invariant de `AGENTS.md` change dans le même
+catégorie `forge: 'mixte'` pour ces écrans. La loi y vérifie chaque message
+contre la forge de son sujet : dépôt actif pour `connection`, dépôt de
+l'opération pour `verdict`, `status`, `log` et `demande`, entrée désignée par
+`id` pour `depot-teste`. Tester un dépôt GitLab inactif pendant que GitHub est
+actif doit donc rester accepté. L'invariant de `AGENTS.md` change dans le même
 commit.
 
 ### 4.7. Suppression d'un dépôt
@@ -804,8 +879,11 @@ nom dans la pastille et dans la liste. Le sandbox calcule `nom`, que la
 pastille et la liste lisent. `etatDeConnexion` reçoit le nom dans sa précision
 et compose la pastille : `EtatConnexion.pastille` reste une chaîne. Les noms
 mesurés tiennent sur une ligne jusqu'à une quarantaine de caractères, et un
-nom plus long passe à la ligne sans déborder : aucune troncature, et l'attribut
-`title` garde « Ouvrir la configuration ».
+nom plus long doit passer à la ligne sans déborder : aucune troncature, et
+l'attribut `title` garde « Ouvrir la configuration ». Les mesures ci-dessus
+ne couvrent que des noms sécables. Ajouter un nom long sans espace ni trait
+d'union à la galerie et prévoir `overflow-wrap: anywhere` avec une largeur
+réductible pour la pastille et les noms des cartes.
 
 **Les états (nom dans les échecs, décidé).**
 
@@ -868,10 +946,13 @@ oublié coûte une demande de fusion jamais ouverte. La pastille et la ligne
 portent la même sévérité, avertissement : `.depot-repli` l'emploie déjà, et la
 pastille reçoit l'état `local` en `--texte-avertissement`.
 
-**Réseau.** Débranché, le sandbox n'appelle aucune forge, test de connexion
-compris. Le verdict n'ajoute rien sur l'immobilité ni sur la collision : aucune
-demande n'est ouverte, et le seul geste utile, rebrancher, est déjà nommé par
-la pastille.
+**Réseau.** Débranché, le sandbox ne lance aucune nouvelle opération vers une
+forge, sauf le test demandé par l'enregistrement d'un dépôt (C14). Une
+publication déjà lancée finit avec sa configuration de départ (4.4), y compris
+ses requêtes restantes. Un test déjà lancé peut répondre, mais son résultat ne
+rétablit pas l'état connecté. Le verdict d'une nouvelle analyse locale
+n'ajoute rien sur l'immobilité ni sur la collision : cette analyse ne prépare
+aucune demande de fusion.
 
 **Rebranchement.** Désactiver l'export local rallume le dernier dépôt actif,
 que `depotActif` garde pendant l'export local. « Se connecter » sur une carte
@@ -952,6 +1033,10 @@ Plusieurs cartes peuvent être dépliées. Chacune garde sa saisie tant qu'elle
 n'est pas enregistrée, y compris repliée ou pendant un changement d'onglet :
 les deux panneaux restent dans le DOM. La garde `settingsDirty` passe à la
 carte : un message `settings` ne remplace pas une saisie en cours.
+Après une sauvegarde réussie, le champ du jeton envoyé est vidé, même si le
+test réseau échoue ; une valeur retapée depuis l'envoi est conservée. Une
+erreur de stockage conserve la saisie à réessayer. Supprimer ou abandonner
+une carte retire aussi son champ de jeton.
 
 ### 7.2. Options de l'onglet Général
 
@@ -1013,7 +1098,7 @@ suite, les mutations et la galerie tournent dans un worktree isolé.
 | 1 | Lot 0, destination et fraîcheur | Rien |
 | 2 | Lot 1, condition des tokens en un point | Rien |
 | 3 | Lot 2, onglets et réglage des tokens | Lot 0, P1 |
-| 4 | Lot 3a, stockage des dépôts | Lot 2, C10 |
+| 4 | Lot 3a, stockage des dépôts | Lot 2 |
 | 5 | Lot 3b, liste des dépôts | Lot 3a |
 | 6 | Lot 3c, pastille nommée et verdict nommé | Lot 3b |
 | 7 | Lot 4, export local | Lot 3b |
@@ -1026,20 +1111,32 @@ Il corrige E1, E2, E3, E6 et E7 dans le modèle à un dépôt.
 - Clé de destination calculée pour le dépôt unique actuel
   (`forge:projet@baseBranch`), rangée dans `AnalyseGardee`, envoyée dans
   `settings` (`src/config.ts`, `src/code.ts`, `src/messages.ts`).
-- `publier` : `postConnection` à la place de `refreshConfiguration` après un
-  succès ; refus à clé changée, avec le texte de la section 4.3 à la place de
+- `publier` : conserver `refreshConfiguration` après un succès, avec sa garde
+  de génération ; un `postConnection('connecte')` inconditionnel pourrait
+  annoncer une connexion réussie sur une autre destination. Refus à clé
+  changée, avec le texte de la section 4.3 à la place de
   « La sélection a changé » quand la cause est la destination ; « Réessayer la
   publication » à clé inchangée seulement.
-- `refreshConfiguration` : compteur de génération.
+- `refreshConfiguration` : compteur de génération ; file des mutations et
+  lectures cohérentes avant les appels réseau (4.2).
+- `save-settings` ne vide plus `analysesGardees` : ce vidage produisait E7.
+  `analyser` lit la configuration avant son premier message, pour que chaque
+  résultat porte sa clé ; une clé relue différente après l'extraction annule
+  l'analyse.
 - Interface : les cartes se vident quand la clé change
   (`src/ui/index.ts`) ; `CarteComposant.reinitialiser` remet `analysee` à
-  faux.
+  faux. Les retours portent leur destination et leur opération (4.3).
+  L'interface numérote ses demandes, et un message sans provenance reste
+  accepté.
 - E3 : la phrase « le libellé du bouton l'annonce » quitte `SPEC.md`, partie 3.
 - Tests, rouges sur le commit lu : une publication réussie garde son lien et
-  ses points à corriger ; un enregistrement rend « Analyser le composant »
-  disponible (`interface.test.mjs`) ; un test de connexion périmé ne poste
+  ses points à corriger ; un changement de destination rend « Analyser le
+  composant » disponible, un enregistrement à destination inchangée conserve
+  le résultat (`interface.test.mjs`) ; un test de connexion périmé ne poste
   rien ; une publication croisée avec un enregistrement refuse en nommant la
-  destination (`code.test.ts`).
+  destination (`code.test.ts`). Une publication vers A terminée après une
+  bascule vers B ne change ni la pastille ni le verdict de B, et libère
+  l'interface. Le cas où A échoue ne propose pas de réessayer sur B.
 
 ### Lot 1. Condition des tokens en un point
 
@@ -1048,8 +1145,8 @@ Indépendant.
 - `verdictDePrevol` rend `etat` ; `postVerdict` et `verdict()` de la galerie
   l'étalent (`src/prevol.ts`, `src/code.ts`, `galerie/etats.cjs`).
 - E4 : le type et la fonction de `exportTokens.ts` deviennent
-  `ResumeDesTokens` et `resumeDesTokens`.
-- Tests : `prevol.test.ts`, `etatDesTokens.test.ts`.
+  `ResumeDesTokens` et `resumeDesTokens`, galerie comprise.
+- Tests : `prevol.test.ts`, `exportTokens.test.ts`.
 - Vérification : captures de la galerie identiques avant et après.
 
 ### Lot 2. Onglets et réglage des tokens
@@ -1070,8 +1167,10 @@ Indépendant.
   `ecran-sans-tokens`, `gitlab-composant-sans-consigne-tokens`,
   `configuration-onglet-general` ; les états `configuration-*` passent par
   l'onglet Dépôts ; textes « regarder » qui citent la carte des tokens.
-- Tests : `code.test.ts` (réglage désactivé : aucune lecture des collections,
-  `avecTokens` faux, bascule qui annule une analyse et pas une publication) ;
+- Tests : `code.test.ts` (réglage désactivé : aucune lecture du résumé des
+  collections à l'ouverture, demandes d'analyse et de publication de tokens
+  refusées, `avecTokens` faux, lectures G3 conservées, résumé tardif ignoré,
+  bascule qui annule une analyse et pas une publication) ;
   `connexion.test.ts` (titre sans chemin de tokens) ; `interface.test.mjs`
   (premier test qui envoie `settings`, troisième test qui ouvre Dépôts, carte
   masquée jusqu'au réglage, flèches et `aria-selected`).
@@ -1083,33 +1182,41 @@ Indépendant.
 ### Lot 3a. Stockage des dépôts
 
 Le formulaire actuel reste l'interface : il enregistre le premier dépôt ou
-modifie l'actif. La liste arrive au lot 3b.
+modifie l'actif, avec l'adresse en lecture seule après enregistrement. Sa
+commande de suppression retire l'entrée active entière. La liste arrive au
+lot 3b.
 
-- `src/config.ts` : clés `depots` et `depotActif`, sort des anciennes clés
-  selon C10, validation par entrée, identité en minuscules, enregistrement,
+- `src/config.ts` : clés `depots` et `depotActif`, reprise puis nettoyage des
+  anciennes clés selon C10, validation par entrée, identité en minuscules, enregistrement,
   modification, suppression et activation dans l'ordre de la section 4.2 ;
-  file d'écriture dans `src/code.ts`.
+  extension de la file du lot 0 dans `src/code.ts`.
 - `src/connexion.ts` : retrait de `jeton-autre-forge`.
-- `src/messages.ts` : `ReglagesPublics`, `depot-enregistre`, `depot-teste` ;
-  retrait de `supprimer-token`.
+- `src/messages.ts` : `ReglagesPublics`, `supprimer-depot` à la place de
+  `supprimer-token`, adaptation du formulaire à l'entrée active. Les messages
+  d'enregistrement et de test par carte arrivent avec leurs états de galerie
+  au lot 3b.
 - `AGENTS.md` : invariant « Un jeton ne part que vers la forge qui l'a reçu »
   réécrit pour D2, qui cite encore `src/config.ts` et `validateSettings()` ;
   description de `config.ts` dans la carte du code.
 - `SPEC.md`, partie 3 : stockage, règle du jeton, file d'écriture et sa limite
   entre deux fenêtres. L'énoncé en gras change : `ENONCES_SPEC` de
   `tests/inventaireInvariants.test.ts` change dans le même commit.
-- Galerie : retrait de `gitlab-jeton-autre-forge` et `configuration-remplie`.
-- Tests : `config.test.ts` et `code.test.ts`, section 4.2.
+- Galerie : retrait de `gitlab-jeton-autre-forge` ; adaptation de
+  `configuration-remplie` et du scénario de suppression aux nouveaux messages.
+- Tests : `config.test.ts` et `code.test.ts`, section 4.2 ;
+  `interface.test.mjs`, formulaire adapté et suppression de l'entrée active.
 
 ### Lot 3b. Liste des dépôts
 
 - Interface : cartes dépliables rendues par `id`, statut ou « Se connecter »,
   « Ajouter un dépôt » qui crée une carte dépliée, adresse en lecture seule
   après enregistrement, suppression au second clic, repli après un
-  enregistrement accepté, états de P3 et P4, pastille retirée de la page de
-  configuration.
-- Sandbox : demandes `enregistrer-depot`, `supprimer-depot`, `activer-depot` ;
-  test du dépôt enregistré.
+  enregistrement accepté et un test réussi, états de P3 et P4, pastille retirée
+  de la page de configuration.
+- Sandbox : demandes `enregistrer-depot` et `activer-depot` ;
+  réponses `depot-enregistre` et `depot-teste`, corrélation des nouvelles
+  cartes, générations de test par dépôt ; retrait des messages du formulaire
+  unique encore employés au lot 3a.
 - `src/connexion.ts` : statut court par cause pour la carte ; gestes du 401 et
   du 404 de la section 4.6 ; `repli` en cause.
 - Galerie : catégorie `mixte` et invariant de `AGENTS.md` (C13) ;
@@ -1121,8 +1228,10 @@ modifie l'actif. La liste arrive au lot 3b.
   `destination-changee`.
 - Tests : `interface.test.mjs` (« Se connecter » en un clic sans déplier la
   carte, suppression au second clic, carte dépliée conservée à la réception de
-  `settings`, repli après enregistrement accepté seulement) ; `code.test.ts`
-  (enregistrer un dépôt inactif teste ce dépôt et ne vide aucune analyse).
+  `settings`, repli après sauvegarde et test réussis, retours de deux cartes
+  nouvelles, champ du jeton vidé après sauvegarde) ; `code.test.ts`
+  (enregistrer un dépôt inactif teste ce dépôt et ne vide aucune analyse,
+  résultat ignoré après modification ou suppression de l'entrée).
 - Relecture : compte des objets sur les captures (section 4.6).
 - Documents : `POUR-LES-DESIGNERS.md`, « Configurer le dépôt » ; README du
   plugin, « Où l'export atterrit ».
@@ -1132,7 +1241,7 @@ modifie l'actif. La liste arrive au lot 3b.
 - `nom` (dernier segment de l'adresse) dans `src/config.ts` ; nom dans
   `etatDeConnexion` et dans le verdict `a-publier` (`src/prevol.ts`).
 - Galerie : `ouverture()` passe un nom ; état `pastille-nom-long` avec un
-  chemin GitLab à sous-groupes.
+  chemin GitLab à sous-groupes et un dernier segment long sans séparateur.
 - Tests : `connexion.test.ts` (nom d'un chemin à sous-groupes, nom dans chaque
   cause) ; `prevol.test.ts` (verdict nommé).
 
@@ -1141,15 +1250,19 @@ modifie l'actif. La liste arrive au lot 3b.
 - Clé `exportLocal`, entrée dans la clé de destination ; interrupteur
   « Activer l'export local » dans l'onglet Général, désactivé par défaut ;
   demande `export-local { valeur }` ; `loadConfiguration` ne rend aucune
-  configuration quand elle vaut `true` ; aucun test de connexion ; état de
+  configuration de publication quand elle vaut `true` ; aucun test automatique
+  à l'ouverture, test de l'entrée enregistrée conservé selon C14 ; état de
   pastille `local` en avertissement ; textes de la section 6 ; ligne
   d'avertissement dans l'onglet Dépôts ; « Se connecter » désactive l'export
   local.
 - Galerie : `general-export-local-active`, `depots-export-local`,
   `travail-export-local`, `export-local-termine`.
-- Tests : aucun appel réseau en export local ; une analyse faite vers un dépôt
-  ne se publie pas en export local ; désactiver l'export local rallume le
-  dernier dépôt actif ; « Se connecter » le désactive.
+- Tests : aucune nouvelle opération réseau en export local, sauf test après
+  enregistrement ; ce test met à jour sa carte sans changer le dépôt actif,
+  la pastille ni la destination des exports ; publication déjà lancée menée à
+  terme sans rétablir la connexion ; une analyse
+  faite vers un dépôt ne se publie pas en export local ; désactiver l'export
+  local rallume le dernier dépôt actif ; « Se connecter » le désactive.
 - Documents : `SPEC.md` partie 3 ; `POUR-LES-DESIGNERS.md`.
 
 ### Lot 6. Recette dans Figma
@@ -1178,10 +1291,10 @@ par décision du mainteneur.
 | `packages/plugin/galerie/etats.cjs` | 0 à 4 |
 | `packages/plugin/tests/config.test.ts` | 3a |
 | `packages/plugin/tests/connexion.test.ts` | 2, 3a, 3b, 3c, 4 |
-| `packages/plugin/tests/prevol.test.ts`, `etatDesTokens.test.ts` | 1, 3c |
+| `packages/plugin/tests/prevol.test.ts`, `exportTokens.test.ts` | 1, 3c |
 | `packages/plugin/tests/code.test.ts` | 0, 2, 3a, 3b, 4 |
-| `packages/plugin/tests/interface/interface.test.mjs` | 0, 2, 3b |
-| `packages/plugin/tests/galerie.test.ts` | 3b, selon C13 |
+| `packages/plugin/tests/interface/interface.test.mjs` | 0, 2, 3a, 3b, 3c, 4 |
+| `packages/plugin/tests/galerie.test.ts` | 3a, 3b (C13) |
 | `packages/plugin/tests/stylesUi.test.ts` | Sans changement : chaque classe nouvelle reçoit sa règle |
 | `tests/inventaireInvariants.test.ts` | 3a |
 
@@ -1197,12 +1310,6 @@ npm run galerie:captures --workspace ucm-exporter-plugin
 ```
 
 ## 10. Questions restantes
-
-**Mainteneur**
-
-- C10 : après la mise à jour, effacer les quatre anciennes clés (O2), ou
-  reprendre le dépôt qu'elles décrivent avant de les effacer (O3) ? La
-  question porte sur la seule première ouverture de la nouvelle version.
 
 **Équipe consommatrice**
 
@@ -1234,7 +1341,7 @@ avant d'être retenu. La porte H1 en a ensuite modifié trois.
 | 9 | Compte d'objets au-delà de la douzaine ; geste d'échec hors de vue | Retenu ; carte en échec dépliée et amenée dans la vue, compte à la relecture du lot 3b |
 | 10 | « Réessayer » après bascule ; « La sélection a changé » à tort | Retenu, E7, rejoué ; clé de destination |
 | 11 | Garder l'analyse après une bascule | Écarté : contenu figé avant une modification dans Figma, demande et état de plus (4.4) |
-| 12 | Revenir à `postConnection` après une publication | Retenu, lot 0 ; `gitlab-merge-request-creee` ajouté à E1 |
+| 12 | Revenir à `postConnection` après une publication | Écarté : ce retour peut décrire l'ancien dépôt après une bascule ; garder le rafraîchissement protégé, et ne vider les cartes qu'à destination changée (lot 0) |
 | 13 | Textes qui supposent une cause ou omettent le geste | Retenu ; refus de destination, annulation par les réglages |
 | 14 | Deux sévérités pour le débranchement | Retenu ; avertissement pour la pastille et la ligne |
 | 15 | Lot 3 trop gros | Retenu ; lots 3a, 3b, 3c |

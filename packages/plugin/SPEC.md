@@ -677,9 +677,7 @@ Pour un artefact modifié, le plugin écrit sur la branche
 et les secondes évitent toute collision quand on exporte le contrat puis les
 tokens dans la même minute), ouvre une demande vers la branche de base, puis
 l'ouvre dans le navigateur par défaut (`figma.openExternal` : l'iframe de l'UI
-est isolée et ne peut pas naviguer elle-même) : le libellé du bouton l'annonce,
-faute de quoi trois exports d'affilée ouvrent trois onglets que rien n'avait
-laissé prévoir. Le lien reste dans le compte rendu pour y revenir. Si le contenu
+est isolée et ne peut pas naviguer elle-même). Le lien reste dans le compte rendu pour y revenir. Si le contenu
 est identique (la comparaison ignore `meta.exportedAt`, régénéré à chaque
 export) aucune branche ni demande n'est créée. Config absente ou invalide, ou
 erreur de la forge : repli automatique vers le téléchargement local avec message

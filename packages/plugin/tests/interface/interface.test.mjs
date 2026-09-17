@@ -47,7 +47,7 @@ test('une analyse occupe les deux cartes et chaque publication nomme son artefac
     await envoyer(verdict);
     await page.locator('.carte-composant').getByRole('button', { name: 'Télécharger', exact: true }).click();
     await page.waitForFunction(() => window.demandes.at(-1)?.type === 'publier');
-    assert.deepEqual(await page.evaluate(() => window.demandes.at(-1)), { type: 'publier', genre: 'component' });
+    assert.deepEqual(await page.evaluate(() => window.demandes.at(-1)), { type: 'publier', genre: 'component', operation: 3 });
   } finally {
     await page.close();
   }
@@ -63,6 +63,54 @@ test('un composant homonyme invalide le verdict, une seconde notification du mê
     assert.equal(await bouton.isVisible(), true);
     await envoyer(cible('b'));
     assert.equal(await bouton.isVisible(), false);
+    assert.equal(await page.getByRole('button', { name: 'Analyser le composant', exact: true }).isEnabled(), true);
+  } finally {
+    await page.close();
+  }
+});
+
+const reglages = (destination) => ({
+  type: 'settings',
+  settings: { repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'main', forgeDuJeton: 'github', destination },
+});
+const A = JSON.stringify(['github', 'mon-org/ds', 'main']);
+const B = JSON.stringify(['github', 'mon-org/autre', 'main']);
+const point = { titre: 'Layer « Border » : l’alignement du stroke est illisible.', impact: 'Impact.', action: 'Action.' };
+
+/** Analyse le composant sous la destination A, avec un point à corriger. */
+async function analyserSousA(page, envoyer) {
+  await envoyer(reglages(A));
+  await page.getByRole('button', { name: 'Analyser le composant', exact: true }).click();
+  await envoyer({ type: 'diagnostic', ...point, destination: A, operation: 1 });
+  await envoyer({ type: 'verdict', code: 'a-publier', texte: 'Prêt', action: 'Publier le composant', etat: 'warning', destination: A, operation: 1 });
+}
+
+test('une publication réussie garde son lien et ses points à corriger après le rechargement des réglages', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await analyserSousA(page, envoyer);
+    await page.getByRole('button', { name: 'Publier le composant', exact: true }).click();
+    await envoyer({ type: 'demande', url: 'https://github.com/mon-org/ds/pull/1', libelle: 'Ouvrir la pull request', destination: A, operation: 2 });
+    await envoyer(reglages(A));
+    await envoyer({ type: 'status', state: 'success', text: 'Contrat généré. Pull request créée.', destination: A, operation: 2 });
+    assert.equal(await page.getByRole('link', { name: 'Ouvrir la pull request' }).isVisible(), true);
+    assert.equal(await page.getByText(point.titre).isVisible(), true);
+  } finally {
+    await page.close();
+  }
+});
+
+test('un changement de destination rend l’analyse disponible, un enregistrement à destination inchangée garde le résultat', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await analyserSousA(page, envoyer);
+    const publier = page.getByRole('button', { name: 'Publier le composant', exact: true });
+    await envoyer(reglages(A));
+    assert.equal(await publier.isVisible(), true);
+    assert.equal(await page.getByText(point.titre).isVisible(), true);
+
+    await envoyer(reglages(B));
+    assert.equal(await publier.isVisible(), false);
     assert.equal(await page.getByRole('button', { name: 'Analyser le composant', exact: true }).isEnabled(), true);
   } finally {
     await page.close();
