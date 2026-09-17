@@ -816,8 +816,9 @@ Ce qui ne se prouve pas ici : **Figma, une forge et une vraie demande de
 fusion**. Ces trois-là se rejouent dans
 [UCM-Playground](https://github.com/Vassili-g/UCM-Playground) pour GitHub, et
 dans le projet GitLab de recette pour GitLab. UCM-Playground est une application
-React qui ne porte aucun outillage UCM local. Son empreinte du produit se limite
-aux cinq fichiers qu’`ucm init` écrit, ce qui rend la recette probante : un
+React qui ne porte aucun script UCM à elle. Son empreinte du produit se limite
+aux huit fichiers qu’`ucm init` écrit et aux lignes qu’il demande d’ajouter,
+dont `@ucm-kit/cli` en `devDependencies`, ce qui rend la recette probante : un
 contrôle qui manque là-bas se referme ici, jamais par un script rendu au
 consommateur. [docs/guides/RECETTE.md](./docs/guides/RECETTE.md) porte la marche à suivre, ses
 critères de fin et le geste de publication qui la suit.

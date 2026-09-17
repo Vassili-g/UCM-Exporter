@@ -225,7 +225,7 @@ C'est un **prototype avancé**. Les paquets `@ucm-kit/*` sont en 0.x : leur
 surface publique n'est pas figée.
 
 [UCM Playground](https://github.com/Vassili-g/UCM-Playground) est le repository
-de recette, une application React sans outillage UCM local. La boucle complète
+de recette, une application React qui n'emploie que les paquets publiés. La boucle complète
 s'y rejoue en suivant [docs/guides/RECETTE.md](./docs/guides/RECETTE.md).
 [ROADMAP.md](./ROADMAP.md) porte la maturité, les limites connues et les
 prochaines validations.

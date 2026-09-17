@@ -439,7 +439,7 @@ npx --yes @ucm-kit/cli@0.1.44 init
 npx --yes @ucm-kit/cli@0.1.44 check
 ```
 
-Attendu : `init` écrit ses sept fichiers, et `check` sort en 0 en disant que ce
+Attendu : `init` écrit ses huit fichiers, et `check` sort en 0 en disant que ce
 repository n'a pas encore reçu d'export.
 
 Puis, dans `UCM-Playground`, alignez ce que le consommateur installe sur ce qui
