@@ -1,8 +1,8 @@
 {
   "11.0/Alert.contract.json": {
     "mutations": 1562,
-    "refusees": 913,
-    "muettes": 649,
+    "refusees": 899,
+    "muettes": 663,
     "controlesDeclenches": [
       "composes",
       "figmaVariantLabels",
@@ -286,12 +286,12 @@
       "viewStructures.st3",
       "viewTypographies.ty1"
     ],
-    "empreinte": "d8fd0f24334bb31be9c8d29822d28cb0ce082197e88884fd84a8f21feb74d580"
+    "empreinte": "73070c6b2c26b08141da0c523c107b92cebb914b32243ff01a1a476275bd7a6d"
   },
   "11.0/Button.contract.json": {
     "mutations": 5344,
-    "refusees": 4782,
-    "muettes": 562,
+    "refusees": 4640,
+    "muettes": 704,
     "controlesDeclenches": [
       "composes",
       "figmaVariantLabels",
@@ -589,12 +589,12 @@
       "viewStructures.st3",
       "viewTypographies.ty1"
     ],
-    "empreinte": "578591dc4437397a6ab8012f47a7d97330ea0914f79edb465b52605f15fa6c3f"
+    "empreinte": "206ea8bfd7ff9a409bea87157f4e859d78b0bf2fe1ca7e7ea9930439cbea3091"
   },
   "11.0/StressTest.contract.json": {
     "mutations": 3880,
-    "refusees": 1897,
-    "muettes": 1983,
+    "refusees": 1889,
+    "muettes": 1991,
     "controlesDeclenches": [
       "composes",
       "figmaVariantLabels",
@@ -830,7 +830,7 @@
       "viewTypographies.ty1",
       "viewTypographies.ty2"
     ],
-    "empreinte": "ff74a2868654b37185e26314364db84e6027754426029912f53d6836b906b8d4"
+    "empreinte": "d992e8bf61be1f406b70d301fe4bd78d7af592f046d38f9000257854b5f91861"
   },
   "11.0/TileLink.contract.json": {
     "mutations": 312,
@@ -904,8 +904,8 @@
   },
   "12.0/Alert.contract.json": {
     "mutations": 1546,
-    "refusees": 904,
-    "muettes": 642,
+    "refusees": 890,
+    "muettes": 656,
     "controlesDeclenches": [
       "composes",
       "figmaVariantLabels",
@@ -1185,12 +1185,12 @@
       "viewStructures.st3",
       "viewTypographies.ty1"
     ],
-    "empreinte": "ada6e1af802095ff0f941f242955d568705d94c73976bc02db6b973851a484c0"
+    "empreinte": "ffa1baab9088fc2e6014a4c842669404e52109a8d300b608721d9d99ade41a30"
   },
   "12.0/Button.contract.json": {
     "mutations": 5336,
-    "refusees": 4777,
-    "muettes": 559,
+    "refusees": 4635,
+    "muettes": 701,
     "controlesDeclenches": [
       "composes",
       "figmaVariantLabels",
@@ -1484,12 +1484,12 @@
       "viewStructures.st3",
       "viewTypographies.ty1"
     ],
-    "empreinte": "e86455cff76aed82786240390a6a75db468ba8604a3d9d254fd42338eb748681"
+    "empreinte": "f7b2b1ac29066aeb4a95e04587b1ce11d7f119a5b9d207c2da190070680bb045"
   },
   "12.0/StressTest.contract.json": {
     "mutations": 4864,
-    "refusees": 2399,
-    "muettes": 2465,
+    "refusees": 2387,
+    "muettes": 2477,
     "controlesDeclenches": [
       "composes",
       "figmaVariantLabels",
@@ -1810,7 +1810,7 @@
       "viewTypographies.ty2",
       "viewTypographies.ty3"
     ],
-    "empreinte": "926c992be8e3f6d29164cddf64b079a00b95feaef436567f43a1b75c5690d133"
+    "empreinte": "68c07cfe76e55a87d7da55dcf10251d2d452e9d7d58b6b0f96109eae2514cd9c"
   },
   "12.0/TileLink.contract.json": {
     "mutations": 308,
