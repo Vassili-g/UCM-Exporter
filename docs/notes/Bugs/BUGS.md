@@ -1,6 +1,6 @@
 # Bugs trouvés — zone 1 : lecteurs du kit
 
-Zone 1 en cours. Commit de départ : `34e584c`. Relevé du 17 septembre 2026.
+Zone 1 en cours. Commit de départ : `34e584c`.
 
 ## 1. Ligne de base
 
@@ -24,7 +24,7 @@ Les commits `fix(kit,` ou `fix(cli,kit)` des 80 derniers commits sont les suivan
 
 ## 3. Constats
 
-| Gravité | CONFIRMÉ | PLAUSIBLE |
+| Gravité | Confirmé | Plausible |
 |---|---:|---:|
 | Critique | 5 | 0 |
 | Haute | 0 | 0 |
@@ -35,7 +35,7 @@ Les commits `fix(kit,` ou `fix(cli,kit)` des 80 derniers commits sont les suivan
 
 - **Où** : `packages/kit/src/lecteurs/validation-graphe-contrats.mjs:167`
 - **Invariant ou promesse violé** : le lecteur vérifie que le graphe de composition reste acyclique ([AGENTS.md](../../../AGENTS.md#composition)). Une entrée hostile ne doit pas faire remonter une panne au lieu d’un verdict.
-- **Verdict** : CONFIRMÉ
+- **Verdict** : confirmé
 - **Scénario** : 10 000 contrats locaux forment une chaîne sans cycle. `validerCycles()` appelle récursivement `visiter()` une fois par contrat. Node lève `RangeError: Maximum call stack size exceeded` avant que le lecteur rende son `Map` de diagnostics.
 - **Reproduction** :
 
@@ -46,13 +46,13 @@ Les commits `fix(kit,` ou `fix(cli,kit)` des 80 derniers commits sont les suivan
   Sortie observée : `RangeError: Maximum call stack size exceeded`.
 - **Garde-fou** : `packages/kit/tests/validation-contrats.test.mjs` couvre les cycles courts. Il ne couvre pas la profondeur du parcours de `validerCycles()`.
 - **Famille** : `fix(kit): la recherche de cycles ne déborde plus la pile, et ucm tokens css n'écrase plus sa source`.
-- **Piste de correction** : remplacer le DFS récursif par une pile explicite. Ajouter une chaîne de 10 000 contrats acyclique au test du graphe.
+- **Piste de correction** : remplacer le parcours en profondeur récursif par une pile explicite. Ajouter une chaîne de 10 000 contrats acyclique au test du graphe.
 
 ### [Critique] Un fichier à la place du dossier de contrats fait tomber `ucm check`
 
 - **Où** : `packages/kit/src/lecteurs/controle-repository.mjs:624`, `packages/kit/src/lecteurs/trouver-contrats.mjs:11`
 - **Invariant ou promesse violé** : `components` désigne « le dossier sous lequel les contrats sont cherchés, récursivement » (`packages/kit/src/format/configuration.ts:25`). Le contrôle complet doit rendre un verdict et son rapport, pas une exception Node.
-- **Verdict** : CONFIRMÉ
+- **Verdict** : confirmé
 - **Scénario** : `estCheminDuRepository()` accepte `components`, car il vérifie seulement une forme de chemin relative. Si ce chemin vise un fichier, `readdirSync()` lève `ENOTDIR`. `controlerRepository()` ne traite que `ENOENT`, puis relance toute autre erreur à la ligne 629. La commande `ucm check` n'obtient ni `bloquant`, ni rapport, ni diagnostic.
 - **Reproduction** :
 
@@ -69,7 +69,7 @@ Les commits `fix(kit,` ou `fix(cli,kit)` des 80 derniers commits sont les suivan
 
 - **Où** : `packages/kit/src/lecteurs/controle-repository.mjs:160`, `packages/kit/src/lecteurs/references-token.mjs:38`
 - **Invariant ou promesse violé** : `controle-repository.mjs` porte le contrôle complet et le rapport du designer (`AGENTS.md:135`). Une entrée JSON ne doit pas interrompre ce contrôle avant son verdict.
-- **Verdict** : CONFIRMÉ
+- **Verdict** : confirmé
 - **Scénario** : `champsInvalidesDuContrat()` accepte un contrat 12.0 valide auquel s'ajoute un champ inconnu. `collecterReferences()` parcourt ensuite toutes les valeurs du contrat par récursion. Un objet supplémentaire de 10 000 niveaux déclenche `RangeError` à la ligne 44, après la validation et avant la construction du bilan.
 - **Reproduction** :
 
@@ -86,7 +86,7 @@ Les commits `fix(kit,` ou `fix(cli,kit)` des 80 derniers commits sont les suivan
 
 - **Où** : `packages/kit/src/lecteurs/validation-echantillons.mjs:292`
 - **Invariant ou promesse violé** : retirer `samples` laisse un contrat normatif et une donnée non normative ne dégrade jamais sa validation ([AGENTS.md](../../../AGENTS.md#échantillon-de-maquette)).
-- **Verdict** : CONFIRMÉ
+- **Verdict** : confirmé
 - **Scénario** : un contrat contient un seul échantillon dont les instances composées sont imbriquées 10 000 fois. `visiter()` suit chaque `instance.composes` par appel récursif. `controlerRepository()` appelle ensuite `validerGrapheDesContrats()` sans garde autour de ce parcours. Le contrôle s’arrête sur une exception au lieu de rendre un refus exploitable.
 - **Reproduction** :
 
@@ -103,7 +103,7 @@ Les commits `fix(kit,` ou `fix(cli,kit)` des 80 derniers commits sont les suivan
 
 - **Où** : `packages/kit/src/lecteurs/validation-contrat.mjs:1700`, relevé par `packages/kit/tests/refus-enregistres.test.mjs:169`
 - **Invariant ou promesse violé** : le corpus 11.0 reste mesuré par le code qui le lit ([AGENTS.md](../../../AGENTS.md#vérification)).
-- **Verdict** : CONFIRMÉ
+- **Verdict** : confirmé
 - **Scénario** : le contrat figé `11.0/Alert.contract.json` passe par `champsInvalidesDuContrat()` pendant le relevé. Le validateur compte 899 mutations refusées et 663 muettes. `refus-enregistres.json` attend 913 refusées et 649 muettes. La ligne de base échoue alors que ce garde-fou doit rester vert sur `HEAD`.
 - **Reproduction** :
 
