@@ -20,9 +20,12 @@ coche quand le test de régression passe et a été vu rouge sur le code d'avant
   imbriqué 10 000 fois. Geste : parcours par pile explicite, test de profondeur.
   Fait : le remplacement fautif du niveau le plus profond est signalé, et le
   test lève `RangeError` sur l'ancien code.
-- [ ] 3. `collecterReferences()` déborde la pile sur un champ inconnu profond
+- [x] 3. `collecterReferences()` déborde la pile sur un champ inconnu profond
   de 10 000 niveaux. Geste : parcours par pile explicite, même ordre de relevé,
   test de profondeur.
+  Fait : la référence du niveau le plus profond est relevée dans l'ordre de
+  lecture, et le rapport la cite. Les deux tests épuisent la pile sur l'ancien
+  code.
 - [ ] 2. Un fichier à la place du dossier `components` fait lever `ENOTDIR` dans
   `controlerRepository()`. Geste : verdict bloquant qui nomme `components`, test
   sur un fichier à la place du dossier.

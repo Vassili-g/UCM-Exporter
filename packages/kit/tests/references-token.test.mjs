@@ -32,6 +32,14 @@ test("un texte de maquette en forme de référence n'est pas une référence", (
   assert.equal(collecterReferences(contrat).size, 3);
 });
 
+test("le relevé garde l'ordre de lecture et atteint 10 000 niveaux sans épuiser la pile", () => {
+  let profonde = "{b.profonde}";
+  for (let niveau = 0; niveau < 10_000; niveau += 1) profonde = { suivante: [profonde] };
+  const valeur = { a: "{a.premiere}", b: profonde, c: ["{c.derniere}", "{a.premiere}"] };
+
+  assert.deepEqual([...collecterReferences(valeur)], ["{a.premiere}", "{b.profonde}", "{c.derniere}"]);
+});
+
 test("sansEchantillon laisse tout le reste intact et ne mute pas son entrée", () => {
   const contrat = { name: "X", samples: { s1: {} }, props: {} };
   const corps = sansEchantillon(contrat);

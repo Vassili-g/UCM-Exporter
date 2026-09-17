@@ -145,6 +145,24 @@ test("référence absente des tokens : avertissement, et la fusion reste ouverte
   assert.match(rapport, /Cet avertissement ne bloque pas la fusion\./);
 });
 
+test("une référence sous un champ inconnu de 10 000 niveaux est relevée sans épuiser la pile", () => {
+  // Le texte s'écrit à la main : `JSON.stringify` épuise lui-même la pile à
+  // cette profondeur, alors que `JSON.parse` la lit.
+  const profondeur = 10_000;
+  const source = JSON.stringify(contrat());
+  const texte = `${source.slice(0, -1)},"extensionInconnue":${'{"suivante":'.repeat(profondeur)}`
+    + `"{couleurs.profonde}"${"}".repeat(profondeur)}}`;
+  const { bloquant, rapport } = verdict({
+    casser: (racine) => writeFileSync(
+      join(racine, "src", "components", "Widget", "Widget.contract.json"),
+      texte,
+    ),
+  });
+
+  assert.equal(bloquant, false);
+  assert.match(rapport, /- \*\*`Widget\.contract\.json`\*\* : `\{couleurs\.profonde\}`/);
+});
+
 /**
  * Ce qui a été fait cesser, et qu'aucun test ne surveillait : Figma nomme des
  * tokens `layouts.sizing.0,5`, une projection CSS en fait

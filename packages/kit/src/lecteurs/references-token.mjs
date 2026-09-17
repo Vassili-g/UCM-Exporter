@@ -36,12 +36,18 @@ export function sansEchantillon(contrat) {
 }
 
 export function collecterReferences(valeur, trouvees = new Set()) {
-  if (typeof valeur === "string") {
-    if (isTokenReference(valeur)) trouvees.add(valeur);
-  } else if (Array.isArray(valeur)) {
-    for (const item of valeur) collecterReferences(item, trouvees);
-  } else if (valeur && typeof valeur === "object") {
-    for (const item of Object.values(valeur)) collecterReferences(item, trouvees);
+  // Le parcours tient sa pile lui-même, dans l'ordre de la récursion d'origine :
+  // un champ inconnu imbriqué 10 000 fois épuisait la pile de Node, et le
+  // contrôle du repository levait avant son verdict.
+  const pile = [valeur];
+  while (pile.length > 0) {
+    const courante = pile.pop();
+    if (typeof courante === "string") {
+      if (isTokenReference(courante)) trouvees.add(courante);
+    } else if (courante && typeof courante === "object") {
+      const items = Array.isArray(courante) ? courante : Object.values(courante);
+      for (let index = items.length - 1; index >= 0; index -= 1) pile.push(items[index]);
+    }
   }
   return trouvees;
 }
