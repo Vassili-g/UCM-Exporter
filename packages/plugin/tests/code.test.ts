@@ -40,9 +40,10 @@ function ouvrir() {
   const evenements = new Map<string, () => void>();
   const temporisations = new Map<number, () => void>();
   const stockage = new Map<string, unknown>();
-  const appels = { analyses: 0, publications: 0, forges: 0, lectures: 0, connexions: 0 };
+  const appels = { analyses: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[] };
   const exporte = { traiter: async () => resultat('tokens.json') };
   const publication = { traiter: async () => ({ status: 'created', path: 'tokens.json', pullRequestUrl: 'https://github.com/o/r/pull/1' }) };
+  const resumeDesTokens = { traiter: async () => ({ presents: true, resume: '1 variable' }) };
   /** Le test de connexion, par configuration reçue. */
   const connexionDe = { traiter: async (_config: { projet: string }): Promise<Diagnostic> => ({ cause: 'connecte', layout: null }) };
   const runtime = {
@@ -64,7 +65,7 @@ function ouvrir() {
     './cible': cible, './fenetre': fenetre, './prevol': prevol,
     './contract/extractRules': { extractRules: async () => ({}), hasUsableRules: () => true },
     './contract/exportComponent': { default: handler },
-    './tokens/exportTokens': { default: handler, annonceDuFormat: () => null, etatDesTokensDuFichier: async () => ({ presents: true, resume: '1 variable' }) },
+    './tokens/exportTokens': { default: handler, annonceDuFormat: () => null, etatDesTokensDuFichier: async () => { appels.collections += 1; return resumeDesTokens.traiter(); } },
     './forges/forge': { ErreurDeForge: Error },
     './forges/termes': termes,
     './forges': { forgeDe: (configuration: { projet: string }) => { appels.forges += 1; return { termes: termes.TERMES_GITHUB, configuration }; } },
@@ -73,7 +74,7 @@ function ouvrir() {
         appels.connexions += 1;
         return connexionDe.traiter(forge.configuration);
       },
-      lireAvantEcriture: async () => { appels.lectures += 1; return { path: 'tokens.json', layout: { source: 'configuration' } }; },
+      lireAvantEcriture: async (_forge: unknown, _artefact: unknown, options: { avecTokens: boolean }) => { appels.lectures += 1; appels.avecTokens.push(options.avecTokens); return { path: 'tokens.json', layout: { source: 'configuration' } }; },
       publishArtifact: async () => { appels.publications += 1; return publication.traiter(); },
     },
   };
@@ -84,7 +85,7 @@ function ouvrir() {
     clearTimeout: (id: number) => temporisations.delete(id),
   });
   return {
-    messages, appels, exporte, publication, connexionDe, runtime, stockage,
+    messages, appels, exporte, publication, connexionDe, resumeDesTokens, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
     selectionner(id: string) {
       runtime.currentPage.selection = [{ id, type: 'COMPONENT', name: 'Exemple' }];
@@ -341,3 +342,103 @@ for (const issue of ['réussie', 'échouée'] as const) {
     if (verdict?.type === 'verdict') assert.notEqual(verdict.action, 'Réessayer la publication');
   });
 }
+
+const statuts = (h: ReturnType<typeof ouvrir>) => h.messages.flatMap((message) => (message.type === 'status' ? [message.text] : []));
+
+test('gestion des tokens désactivée : aucune lecture des collections à l’ouverture', async () => {
+  const h = ouvrir();
+  h.stockage.set('gestionDesTokens', false);
+  await h.envoyer({ type: 'ui-ready' });
+
+  assert.equal(h.appels.collections, 0);
+  assert.equal(h.messages.some(({ type }) => type === 'tokens'), false);
+  const reglages = h.messages.find((message) => message.type === 'settings');
+  assert.ok(reglages?.type === 'settings');
+  assert.equal(reglages.settings.tokens, false);
+});
+
+test('gestion des tokens désactivée : analyse et publication des tokens refusées', async () => {
+  const h = ouvrir();
+  await h.envoyer({ type: 'analyser-tokens', operation: 1 });
+  h.stockage.set('gestionDesTokens', false);
+  await h.envoyer({ type: 'publier', genre: 'tokens', operation: 2 });
+  await h.envoyer({ type: 'analyser-tokens', operation: 3 });
+
+  assert.equal(h.appels.analyses, 1);
+  assert.equal(h.messages.some(({ type }) => type === 'download'), false);
+  assert.deepEqual(statuts(h).filter((texte) => /Gérer les tokens/.test(texte)).length, 2);
+});
+
+test('gestion des tokens désactivée : l’analyse d’un composant ne lit pas l’état des tokens, et son extraction a lieu', async () => {
+  const h = ouvrir();
+  h.connecter();
+  h.stockage.set('gestionDesTokens', false);
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  h.stockage.delete('gestionDesTokens');
+  await h.envoyer({ type: 'analyser-composant', operation: 2 });
+
+  assert.equal(h.appels.analyses, 2);
+  assert.deepEqual(h.appels.avecTokens, [false, true]);
+});
+
+test('un résumé des tokens lancé avant la désactivation ne s’affiche pas après elle', async () => {
+  const h = ouvrir();
+  const lent = differe<{ presents: boolean; resume: string }>();
+  h.resumeDesTokens.traiter = () => lent.promesse;
+  const ouverture = h.envoyer({ type: 'ui-ready' });
+  await tourner();
+  assert.equal(h.appels.collections, 1);
+  await h.envoyer({ type: 'gerer-tokens', valeur: false });
+  lent.resoudre({ presents: true, resume: '3 variables' });
+  await ouverture;
+
+  assert.equal(h.messages.some(({ type }) => type === 'tokens'), false);
+  assert.equal(h.stockage.get('gestionDesTokens'), false);
+});
+
+test('réactiver la gestion des tokens relit les collections du fichier', async () => {
+  const h = ouvrir();
+  h.stockage.set('gestionDesTokens', false);
+  await h.envoyer({ type: 'ui-ready' });
+  await h.envoyer({ type: 'gerer-tokens', valeur: true });
+
+  assert.equal(h.appels.collections, 1);
+  assert.ok(h.messages.some(({ type }) => type === 'tokens'));
+});
+
+test('basculer la gestion des tokens annule une analyse en cours et laisse finir une publication', async () => {
+  const h = ouvrir();
+  h.connecter();
+  const extraction = differe<ReturnType<typeof resultat>>();
+  h.exporte.traiter = () => extraction.promesse;
+  const analyse = h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await tourner();
+  await h.envoyer({ type: 'gerer-tokens', valeur: false });
+  extraction.resoudre(resultat('exemple.contract.json'));
+  await analyse;
+  assert.equal(h.messages.some(({ type }) => type === 'verdict'), false);
+  assert.equal(statuts(h).at(-1), 'Analyse annulée : les réglages du plugin ont changé. Relancez l’analyse.');
+
+  h.exporte.traiter = async () => resultat('exemple.contract.json');
+  await h.envoyer({ type: 'analyser-composant', operation: 2 });
+  const envoi = differe<Awaited<ReturnType<typeof h.publication.traiter>>>();
+  h.publication.traiter = () => envoi.promesse;
+  const publication = h.envoyer({ type: 'publier', genre: 'component', operation: 3 });
+  await tourner();
+  await h.envoyer({ type: 'gerer-tokens', valeur: true });
+  envoi.resoudre({ status: 'created', path: 'x.contract.json', pullRequestUrl: 'https://github.com/o/r/pull/3' });
+  await publication;
+  assert.equal(h.appels.publications, 1);
+  assert.match(statuts(h).at(-1) ?? '', /Pull request créée/);
+});
+
+test('une analyse faite avant un changement du réglage des tokens ne se publie pas', async () => {
+  const h = ouvrir();
+  h.connecter();
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await h.envoyer({ type: 'gerer-tokens', valeur: false });
+  await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
+
+  assert.equal(h.appels.publications, 0);
+  assert.equal(statuts(h).at(-1), 'La destination a changé depuis l’analyse : la gestion des tokens a changé. Relancez l’analyse.');
+});

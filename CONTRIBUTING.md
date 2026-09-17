@@ -208,19 +208,22 @@ Quatre bornes, sans quoi la table ne tient pas :
 - **un rang 1 hors de vue n’est pas un rang 1.** La position est un signal, et
   la limite de la fenêtre en fait partie : ce qui décide de l’action se lit sans
   défiler, y compris quand le contenu en dessous grandit ;
-- **une carte est une commande, et il n’y en a que deux.** Une carte regroupe un
+- **une carte est une commande : deux cartes, ou une seule quand la gestion des
+  tokens est désactivée.** Une carte regroupe un
   sujet, son état, le geste qui porte dessus et tout ce que ce geste produit :
   verdict, publication, points à corriger, lien de pull request. Rien de ce qui
   concerne l’autre commande n’y entre. Aucun autre objet ne porte de surface :
   un troisième objet à surface remettrait trois zones de poids égal à l’écran,
-  c’est-à-dire aucune hiérarchie. Ce qui vaut pour les deux, l’alerte de repli
-  local, se place entre elles et sans surface ;
+  c’est-à-dire aucune hiérarchie. L’alerte de repli local vaut pour toutes les
+  commandes : elle se place sous la carte du composant, sans surface ;
 - **un résultat ne survit pas à son sujet.** Le verdict et la publication
   disparaissent quand la sélection qui les a produits n’est plus là : un
   « prêt à publier » sous « aucun composant sélectionné » nomme un composant que
   l’écran ne montre plus. C’est l’identité du sujet qui décide, jamais l’arrivée
   d’un message, car le sandbox en envoie deux par sélection et le second peut
-  retomber pendant une analyse.
+  retomber pendant une analyse. La destination fait partie du sujet : les
+  cartes se vident quand la clé de destination de `settings` change, et
+  seulement alors.
 
 ### Regarder avant de conclure
 

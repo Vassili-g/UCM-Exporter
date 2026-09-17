@@ -40,8 +40,7 @@ export interface EnTeteUi {
  */
 export function createHeader(
   page: PageEnTete,
-  onSettings: () => void,
-  onBack: () => void,
+  { onSettings, onConnection, onBack }: { onSettings: () => void; onConnection: () => void; onBack: () => void },
 ): EnTeteUi {
   const header = document.createElement('div');
   header.className = 'header';
@@ -72,7 +71,7 @@ export function createHeader(
   connection.dataset.state = 'disconnected';
   connection.title = 'Ouvrir la configuration';
   connection.setAttribute('aria-live', 'polite');
-  connection.addEventListener('click', () => onSettings?.());
+  connection.addEventListener('click', () => onConnection());
 
   const settingsButton = document.createElement('button');
   settingsButton.type = 'button';
@@ -80,14 +79,14 @@ export function createHeader(
   settingsButton.setAttribute('aria-label', 'Ouvrir la configuration');
   settingsButton.title = 'Configuration';
   settingsButton.appendChild(createSettingsIcon());
-  settingsButton.addEventListener('click', () => onSettings?.());
+  settingsButton.addEventListener('click', () => onSettings());
 
   const backButton = document.createElement('button');
   backButton.type = 'button';
   backButton.className = 'header-back-button';
   backButton.textContent = 'Retour';
   backButton.hidden = true;
-  backButton.addEventListener('click', () => onBack?.());
+  backButton.addEventListener('click', () => onBack());
 
   topLine.append(titleElement, settingsButton, backButton);
   header.append(topLine, subtitleElement, connection);

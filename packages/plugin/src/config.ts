@@ -58,6 +58,8 @@ const STORAGE_KEYS = {
   baseBranch: 'baseBranch',
   jeton: 'github_pat',
   forgeDuJeton: 'forge_du_jeton',
+  /** Booléen, absent vaut `true` : l'équipe du design system emploie les tokens. */
+  gestionDesTokens: 'gestionDesTokens',
 } as const;
 
 /** Résultat de validation détaillé pour alimenter les erreurs inline de l'UI. */
@@ -226,18 +228,36 @@ async function lireJetonEnregistre(): Promise<JetonEnregistre> {
 }
 
 /**
- * La clé de destination : l'endroit où un export irait, sans le jeton.
+ * La clé de destination : l'endroit où un export irait et ce que son analyse
+ * vérifie, sans le jeton.
  *
  * Un tuple JSON, parce qu'une branche peut contenir `|`, `@` ou `/`. La forge
  * et le projet passent en minuscules : GitHub et GitLab servent un chemin
  * quelle que soit sa casse. La branche garde la sienne. Sans configuration
- * valide, l'export est téléchargé : la clé vaut alors `aucune`.
+ * valide, l'export est téléchargé : le dépôt vaut alors `aucune`. Le dernier
+ * membre est le réglage de la gestion des tokens.
  */
 export function cleDeDestination(
   config: Pick<ConfigurationDuDepot, 'forge' | 'projet' | 'baseBranch'> | null,
+  tokens: boolean,
 ): string {
-  if (!config) return JSON.stringify(['aucune']);
-  return JSON.stringify([config.forge.toLowerCase(), config.projet.toLowerCase(), config.baseBranch]);
+  const depot = config ? [config.forge.toLowerCase(), config.projet.toLowerCase(), config.baseBranch] : ['aucune'];
+  return JSON.stringify([...depot, tokens]);
+}
+
+/** `true` quand deux clés de destination désignent le même dépôt, quel que soit le réglage des tokens. */
+export function memeDepot(cle: string, autre: string): boolean {
+  const depot = (valeur: string) => JSON.stringify((JSON.parse(valeur) as unknown[]).slice(0, -1));
+  return depot(cle) === depot(autre);
+}
+
+/** Le réglage « Gérer les tokens » de ce poste. */
+export async function lireGestionDesTokens(): Promise<boolean> {
+  return (await figma.clientStorage.getAsync(STORAGE_KEYS.gestionDesTokens)) !== false;
+}
+
+export async function ecrireGestionDesTokens(valeur: boolean): Promise<void> {
+  await figma.clientStorage.setAsync(STORAGE_KEYS.gestionDesTokens, valeur);
 }
 
 /** Le nom que les textes donnent à un dépôt : le dernier segment de son projet. */
@@ -253,14 +273,17 @@ export function nomDuDepot(projet: string): string {
 export type Instantane = {
   publics: PublicSettings;
   validation: SettingsValidation;
+  /** Le réglage « Gérer les tokens ». */
+  tokens: boolean;
   destination: string;
 };
 
 export async function lireInstantane(): Promise<Instantane> {
-  const [repoUrl, baseBranch, enregistre] = await Promise.all([
+  const [repoUrl, baseBranch, enregistre, tokens] = await Promise.all([
     figma.clientStorage.getAsync(STORAGE_KEYS.repoUrl),
     figma.clientStorage.getAsync(STORAGE_KEYS.baseBranch),
     lireJetonEnregistre(),
+    lireGestionDesTokens(),
   ]);
   const publics: PublicSettings = {
     repoUrl: typeof repoUrl === 'string' ? repoUrl : '',
@@ -268,7 +291,7 @@ export async function lireInstantane(): Promise<Instantane> {
     forgeDuJeton: enregistre.jeton.trim() ? enregistre.forge ?? 'github' : null,
   };
   const validation = validateSettings(publics, enregistre);
-  return { publics, validation, destination: cleDeDestination(validation.config) };
+  return { publics, validation, tokens, destination: cleDeDestination(validation.config, tokens) };
 }
 
 /** Charge les clés locales et ne renvoie jamais le jeton à l'UI. */

@@ -103,16 +103,28 @@ const URL_MR = 'https://gitlab.com/mon-groupe/design-system/-/merge_requests/42'
 const PUBLICATION_GITHUB = textesDePublication(TERMES_GITHUB);
 const PUBLICATION_GITLAB = textesDePublication(TERMES_GITLAB);
 
-/** Les deux messages que le sandbox envoie à l'ouverture, avant toute action. */
-const ouverture = (cause, tokens = TOKENS_PRESENTS, termes = TERMES_GITHUB) => [
-  { message: { type: 'schema-version', version: VERSION_CONTRAT } },
-  { message: { type: 'connection', ...etatDeConnexion(cause, cause === 'non-configure' ? {} : { termes }) } },
+/**
+ * Les messages que le sandbox envoie à l'ouverture, avant toute action.
+ * Gestion des tokens désactivée, les collections du fichier ne sont pas lues :
+ * aucun résumé n'arrive.
+ */
+const ouverture = (cause, tokens = TOKENS_PRESENTS, termes = TERMES_GITHUB, gestion = true) => {
   // Sans configuration valide, le sandbox n'envoie aucun dépôt visé.
-  ['non-configure', 'jeton-autre-forge'].includes(cause)
-    ? DEPOT_ABSENT
-    : (termes === TERMES_GITLAB ? DEPOT_GITLAB : DEPOT_DECRIT),
-  tokens,
-];
+  const sansDepot = ['non-configure', 'jeton-autre-forge'].includes(cause);
+  const gitlab = termes === TERMES_GITLAB;
+  const reglages = cause === 'non-configure'
+    ? REGLAGES_VIERGES
+    : cause === 'jeton-autre-forge' ? { ...REGLAGES_GITLAB, forgeDuJeton: 'github' } : (gitlab ? REGLAGES_GITLAB : REGLAGES);
+  return [
+    { message: { type: 'schema-version', version: VERSION_CONTRAT } },
+    { message: { type: 'settings', settings: { ...reglages, ...reglagesDe(sansDepot ? 'aucune' : (gitlab ? 'gitlab' : 'github'), gestion) } } },
+    { message: { type: 'connection', ...etatDeConnexion(cause, cause === 'non-configure' ? {} : { termes }) } },
+    sansDepot
+      ? DEPOT_ABSENT
+      : depot(gitlab ? LAYOUT_GITLAB : LAYOUT_GITHUB, gitlab ? DEPOT_VISE_GITLAB : DEPOT_VISE, gestion),
+    ...(gestion ? [tokens] : []),
+  ];
+};
 
 /**
  * Ce que le fichier porte en variables, calculé par le sandbox.
@@ -143,38 +155,39 @@ const SELECTION_PRETE = cible([{ type: 'COMPONENT_SET', name: COMPOSANT, variant
 /** La destination, telle que le test de connexion l'a apprise. */
 const DEPOT_VISE = { forge: TERMES_GITHUB.forge, projet: 'mon-org/design-system-v3', baseBranch: 'main' };
 const DEPOT_VISE_GITLAB = { forge: TERMES_GITLAB.forge, projet: 'mon-groupe/design-system', baseBranch: 'main' };
-const depot = (layout, vise = DEPOT_VISE) => ({
-  message: { type: 'depot', ...etatDuDepot(layout, vise) },
+const depot = (layout, vise = DEPOT_VISE, gestion = true) => ({
+  message: { type: 'depot', ...etatDuDepot(layout, vise, gestion) },
 });
-const DEPOT_DECRIT = depot({
-  components: 'src/components',
-  tokens: 'src/tokens/tokens.json',
-  source: 'ucm.config.json',
-});
+const LAYOUT_GITHUB = { components: 'src/components', tokens: 'src/tokens/tokens.json', source: 'ucm.config.json' };
+const LAYOUT_GITLAB = { components: 'guidelines/components', tokens: 'guidelines/tokens.json', source: 'ucm.config.json' };
 const DEPOT_ABSENT = depot(null, null);
-const DEPOT_GITLAB = depot({ components: 'guidelines/components', tokens: 'guidelines/tokens.json', source: 'ucm.config.json' }, DEPOT_VISE_GITLAB);
 
-/** Les clés de destination des dépôts de la galerie, calculées par le sandbox. */
-const DESTINATIONS = {
-  github: cleDeDestination({ forge: 'github', projet: DEPOT_VISE.projet, baseBranch: 'main' }),
-  gitlab: cleDeDestination({ forge: 'gitlab', projet: DEPOT_VISE_GITLAB.projet, baseBranch: 'main' }),
-  aucune: cleDeDestination(null),
+/** La clé de destination d'un dépôt de la galerie, calculée par le sandbox. */
+const DEPOTS_DE_GALERIE = {
+  github: { forge: 'github', projet: DEPOT_VISE.projet, baseBranch: 'main' },
+  gitlab: { forge: 'gitlab', projet: DEPOT_VISE_GITLAB.projet, baseBranch: 'main' },
+  aucune: null,
 };
+const destinationDe = (forge, gestion = true) => cleDeDestination(DEPOTS_DE_GALERIE[forge], gestion);
+
+/** Les champs de `settings` que le sandbox ajoute aux réglages publics. */
+const reglagesDe = (forge, gestion = true) => ({ destination: destinationDe(forge, gestion), tokens: gestion });
 
 /** Les réglages publics rechargés par `refreshConfiguration`. */
 const REGLAGES = {
   repoUrl: 'https://github.com/mon-org/design-system-v3',
   baseBranch: 'main',
   forgeDuJeton: 'github',
-  destination: DESTINATIONS.github,
+  ...reglagesDe('github'),
 };
 /** L'adresse d'une page du projet copiée depuis le navigateur, pas celle du projet. */
 const REGLAGES_GITLAB = {
   repoUrl: 'https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines?ref_type=heads',
   baseBranch: 'main',
   forgeDuJeton: 'gitlab',
-  destination: DESTINATIONS.gitlab,
+  ...reglagesDe('gitlab'),
 };
+const REGLAGES_VIERGES = { repoUrl: '', baseBranch: 'main', forgeDuJeton: null, ...reglagesDe('aucune') };
 
 /**
  * Un point à corriger relevé par l'export : ses trois parties, et les nodes
@@ -330,7 +343,7 @@ const ETATS = [
     quand:
       "Un export qui publie et laisse un geste à faire dans Figma. L'avertissement employé est parmi les plus longs que le moteur produise.",
     regarder:
-      "L'ordre de lecture d'une carte de commande : le geste, la publication, le verdict, puis le point à corriger. Tout est dans la carte du composant, et la carte des tokens reste intacte en dessous.",
+      "L'ordre de lecture d'une carte de commande : le geste, la publication, le verdict, puis le point à corriger. Tout est dans la carte du composant, et la carte des tokens, quand la gestion des tokens est activée, reste intacte en dessous.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -422,7 +435,7 @@ const ETATS = [
     quand:
       "Une matrice de variants dont le layout n'est pas tokenisé. C'est le volume que le protocole de relecture exige de regarder.",
     regarder:
-      "Le compte rendu tient-il ? Vingt cartes ambre DANS la carte du composant, le compte dans le titre du groupe, et la carte des tokens repoussée très loin sous elles.",
+      "Le compte rendu tient-il ? Vingt cartes ambre DANS la carte du composant, le compte dans le titre du groupe, et la carte des tokens, quand la gestion des tokens est activée, repoussée très loin sous elles.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -575,6 +588,20 @@ const ETATS = [
     ],
   },
   {
+    id: 'ecran-sans-tokens',
+    gestionDesTokens: false,
+    titre: 'Gestion des tokens désactivée, écran de travail',
+    quand:
+      "Le designer a désactivé « Gérer les tokens » dans l'onglet Général. Le sandbox ne lit pas les collections du fichier, et la carte des tokens n'apparaît pas.",
+    regarder:
+      "Une seule carte, celle du composant, et l'alerte de repli sous elle quand elle existe. La hauteur libérée revient au compte rendu du composant, et rien ne signale l'absence de la seconde carte.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte', null, TERMES_GITHUB, false),
+      SELECTION_PRETE,
+    ],
+  },
+  {
     id: 'connexion-en-cours',
     titre: 'Connexion en cours',
     quand:
@@ -584,6 +611,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       { message: { type: 'schema-version', version: VERSION_CONTRAT } },
+      { message: { type: 'settings', settings: REGLAGES } },
       { message: { type: 'connection', ...etatDeConnexion('verification') } },
       SELECTION_VIDE,
     ],
@@ -620,7 +648,6 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
-      { message: { type: 'settings', settings: REGLAGES } },
       SELECTION_VIDE,
       { clic: '.carte-tokens .btn-secondary' },
       { message: { type: 'status', state: 'loading', text: 'Lecture des variables…' } },
@@ -691,9 +718,22 @@ const ETATS = [
       {
         message: {
           type: 'settings',
-          settings: { repoUrl: '', baseBranch: 'main', forgeDuJeton: null, destination: DESTINATIONS.aucune },
+          settings: { repoUrl: '', baseBranch: 'main', forgeDuJeton: null, ...reglagesDe('aucune') },
         },
       },
+      { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
+    ],
+  },
+  {
+    id: 'configuration-onglet-general',
+    titre: 'Configuration, onglet Général',
+    quand: "Clic sur l'engrenage : la configuration s'ouvre sur Général, le dernier onglet consulté ou le premier.",
+    regarder:
+      "Les deux onglets sous le titre, la description de l'onglet sélectionné, puis l'interrupteur « Gérer les tokens » et son aide. Aucun bouton d'enregistrement : l'interrupteur agit tout de suite.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
       { clic: '.icon-button' },
     ],
   },
@@ -708,6 +748,7 @@ const ETATS = [
       ...ouverture('connecte'),
       { message: { type: 'settings', settings: REGLAGES } },
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
     ],
   },
   {
@@ -723,10 +764,11 @@ const ETATS = [
       {
         message: {
           type: 'settings',
-          settings: { repoUrl: 'https://gitlab.example.com/mon-org/ds', baseBranch: '', forgeDuJeton: null, destination: DESTINATIONS.aucune },
+          settings: { repoUrl: 'https://gitlab.example.com/mon-org/ds', baseBranch: '', forgeDuJeton: null, ...reglagesDe('aucune') },
         },
       },
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
       {
         message: {
           type: 'settings-validation',
@@ -748,6 +790,7 @@ const ETATS = [
       ...ouverture('verification'),
       { message: { type: 'settings', settings: REGLAGES } },
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
       { message: { type: 'connection', ...etatDeConnexion('connecte') } },
     ],
   },
@@ -780,6 +823,7 @@ const ETATS = [
         source: 'ucm.config.json',
       }),
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
     ],
   },
   {
@@ -795,6 +839,7 @@ const ETATS = [
       { message: { type: 'settings', settings: REGLAGES } },
       depot({ components: 'components', tokens: 'tokens.json', source: 'les valeurs par défaut' }),
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
     ],
   },
   {
@@ -808,6 +853,7 @@ const ETATS = [
       ...ouverture('acces-refuse'),
       { message: { type: 'settings', settings: REGLAGES } },
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
     ],
   },
   /*
@@ -837,6 +883,7 @@ const ETATS = [
       ...ouverture('jeton-refuse', TOKENS_PRESENTS, TERMES_GITLAB),
       { message: { type: 'settings', settings: REGLAGES_GITLAB } },
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
     ],
   },
   {
@@ -850,6 +897,7 @@ const ETATS = [
       ...ouverture('acces-refuse', TOKENS_PRESENTS, TERMES_GITLAB),
       { message: { type: 'settings', settings: REGLAGES_GITLAB } },
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
     ],
   },
   {
@@ -863,6 +911,7 @@ const ETATS = [
       ...ouverture('depot-introuvable', TOKENS_PRESENTS, TERMES_GITLAB),
       { message: { type: 'settings', settings: REGLAGES_GITLAB } },
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
     ],
   },
   {
@@ -874,8 +923,9 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('jeton-autre-forge', TOKENS_PRESENTS, TERMES_GITLAB),
-      { message: { type: 'settings', settings: { ...REGLAGES_GITLAB, forgeDuJeton: 'github', destination: DESTINATIONS.aucune } } },
+      { message: { type: 'settings', settings: { ...REGLAGES_GITLAB, forgeDuJeton: 'github', ...reglagesDe('aucune') } } },
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
     ],
   },
   {
@@ -889,6 +939,7 @@ const ETATS = [
       ...ouverture('connecte', TOKENS_PRESENTS, TERMES_GITLAB),
       { message: { type: 'settings', settings: REGLAGES_GITLAB } },
       { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
     ],
   },
   {
@@ -930,6 +981,30 @@ const ETATS = [
     ],
   },
   {
+    id: 'gitlab-composant-sans-consigne-tokens',
+    forge: 'gitlab',
+    gestionDesTokens: false,
+    titre: 'Composant analysé, gestion des tokens désactivée',
+    quand: "L'équipe publie ses contrats sans tokens : l'analyse ne lit pas l'état des tokens du projet GitLab.",
+    regarder: 'Le verdict propose la publication sans aucune consigne sur les tokens, et la carte des tokens est absente.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte', null, TERMES_GITLAB, false),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
+      verdict({
+        code: 'a-publier',
+        genre: 'component',
+        chemin: 'guidelines/components/Button/Button.contract.json',
+        source: SOURCE_CONFIG,
+        avertissements: 0,
+        tokens: null,
+        demande: TERMES_GITLAB.demande,
+      }),
+    ],
+  },
+  {
     id: 'gitlab-merge-request-creee',
     forge: 'gitlab',
     titre: 'Merge request créée',
@@ -938,7 +1013,6 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte', TOKENS_PRESENTS, TERMES_GITLAB),
-      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
       SELECTION_PRETE,
       { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
@@ -991,7 +1065,7 @@ const RESULTATS_D_OPERATION = new Set(['phase', 'diagnostic', 'verdict', 'status
 
 function avecProvenance(etat) {
   if (!etat.atteinte) return etat;
-  const destination = DESTINATIONS[etat.forge ?? 'github'];
+  const destination = destinationDe(etat.forge ?? 'github', etat.gestionDesTokens ?? true);
   let operation = 0;
   const atteinte = etat.atteinte.map((etape) => {
     if (etape.clic?.startsWith('.carte-')) operation += 1;

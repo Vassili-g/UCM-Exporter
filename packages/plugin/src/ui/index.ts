@@ -8,6 +8,7 @@ import type { CarteCommandeUi } from './components/CarteCommande';
 import type { PageEnTete } from './components/Header';
 import { createHeader } from './components/Header';
 import { createConfigurationPage } from './components/ConfigurationPage';
+import type { OngletConfiguration } from './components/ConfigurationPage';
 import { createCarteComposant } from './components/CarteComposant';
 import { createCarteTokens } from './components/CarteTokens';
 import { createResizeGrip } from './components/ResizeGrip';
@@ -36,6 +37,12 @@ const tokens = createCarteTokens({
   onAnnuler: annuler,
 });
 
+/*
+ * La carte des tokens attend le réglage : l'afficher par défaut la ferait
+ * apparaître puis disparaître quand la gestion des tokens est désactivée.
+ */
+tokens.element.hidden = true;
+
 const depotRepli = document.createElement('p');
 depotRepli.className = 'depot-repli';
 depotRepli.hidden = true;
@@ -55,11 +62,16 @@ const PAGES: Record<'export' | 'configuration', PageEnTete> = {
   },
   configuration: {
     title: 'Configuration',
-    subtitle: 'Le dépôt où les exports sont déposés, et le jeton qui les y autorise.',
   },
 };
 
-function showConfiguration() {
+/**
+ * Tous les états de la pastille concernent les dépôts : elle ouvre Dépôts.
+ * L'engrenage rouvre le dernier onglet consulté pendant la session, Général au
+ * premier clic.
+ */
+function showConfiguration(onglet: OngletConfiguration = configurationPage.ongletActif()) {
+  configurationPage.ouvrirOnglet(onglet);
   exportPage.hidden = true;
   configPage.hidden = false;
   header.settingsButton.hidden = true;
@@ -75,13 +87,19 @@ function showExports() {
   header.setPage(PAGES.export);
 }
 
-const header = createHeader(PAGES.export, showConfiguration, showExports);
+const header = createHeader(PAGES.export, {
+  onSettings: () => showConfiguration(),
+  onConnection: () => showConfiguration('depots'),
+  onBack: showExports,
+});
 
 let active: CarteCommandeUi = composant;
 let occupee = false;
 
 /** La destination du dernier `settings` reçu, `null` avant le premier. */
 let destinationCourante: string | null = null;
+/** Le réglage « Gérer les tokens » du dernier `settings`, `null` avant le premier. */
+let gestionDesTokens: boolean | null = null;
 /** Le numéro de la dernière analyse ou publication demandée. */
 let operationLancee = 0;
 
@@ -167,6 +185,11 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
       tokens.reinitialiser();
     }
     destinationCourante = destination;
+    // Réactivée, la carte revient vide : le sandbox relit les collections. Au
+    // premier `settings`, le résumé a pu arriver avant lui et reste.
+    if (message.settings.tokens && gestionDesTokens === false) tokens.attendreLeResume();
+    gestionDesTokens = message.settings.tokens;
+    tokens.element.hidden = !gestionDesTokens;
   }
 
   if (message.type === 'cible') {

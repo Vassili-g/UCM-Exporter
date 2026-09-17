@@ -1152,7 +1152,9 @@ Indépendant.
 ### Lot 2. Onglets et réglage des tokens
 
 - Stockage : clé `gestionDesTokens`, lue en premier à `ui-ready`, et entrée
-  dans la clé de destination.
+  dans la clé de destination, dont elle est le dernier membre. Une commande des
+  tokens refusée dit : « La gestion des tokens est désactivée. Activez « Gérer
+  les tokens » dans l'onglet Général de la configuration. ».
 - Sandbox : `settings` porte `tokens` ; `etatDesTokensDuFichier` et
   `avecTokens` suivent le réglage ; demande `gerer-tokens { valeur }`, qui
   écrit par la file, annule une analyse en cours et relance la lecture des

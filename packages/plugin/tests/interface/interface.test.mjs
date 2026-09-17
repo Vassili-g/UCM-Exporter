@@ -21,7 +21,7 @@ async function ouvrir() {
   await page.evaluate(() => {
     window.demandes = [];
     window.addEventListener('message', (event) => {
-      if (event.data.pluginMessage?.type?.startsWith('analyser') || event.data.pluginMessage?.type === 'publier') {
+      if (event.data.pluginMessage?.type?.startsWith('analyser') || event.data.pluginMessage?.type === 'publier' || event.data.pluginMessage?.type === 'gerer-tokens') {
         window.demandes.push(event.data.pluginMessage);
       }
     });
@@ -38,6 +38,7 @@ async function ouvrir() {
 test('une analyse occupe les deux cartes et chaque publication nomme son artefact', async () => {
   const { page, envoyer } = await ouvrir();
   try {
+    await envoyer(reglages(A));
     await page.getByRole('button', { name: 'Analyser le composant', exact: true }).click();
     assert.equal(await page.locator('.carte-tokens').getAttribute('inert'), '');
     await page.locator('.carte-tokens button').first().evaluate((bouton) => bouton.click());
@@ -69,12 +70,12 @@ test('un composant homonyme invalide le verdict, une seconde notification du mê
   }
 });
 
-const reglages = (destination) => ({
+const reglages = (destination, tokens = true) => ({
   type: 'settings',
-  settings: { repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'main', forgeDuJeton: 'github', destination },
+  settings: { repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'main', forgeDuJeton: 'github', destination, tokens },
 });
-const A = JSON.stringify(['github', 'mon-org/ds', 'main']);
-const B = JSON.stringify(['github', 'mon-org/autre', 'main']);
+const A = JSON.stringify(['github', 'mon-org/ds', 'main', true]);
+const B = JSON.stringify(['github', 'mon-org/autre', 'main', true]);
 const point = { titre: 'Layer « Border » : l’alignement du stroke est illisible.', impact: 'Impact.', action: 'Action.' };
 
 /** Analyse le composant sous la destination A, avec un point à corriger. */
@@ -122,9 +123,10 @@ test('le jeton enregistré ne s’annonce que pour sa forge, et l’adresse d’
   try {
     await envoyer({
       type: 'settings',
-      settings: { repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'main', forgeDuJeton: 'github' },
+      settings: { repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'main', forgeDuJeton: 'github', destination: A, tokens: true },
     });
     await page.locator('.icon-button').first().click();
+    await page.getByRole('tab', { name: 'Dépôts' }).click();
     const jeton = page.locator('input[name="jeton"]');
     const adresse = page.locator('input[name="repoUrl"]');
     assert.match(await jeton.getAttribute('placeholder'), /Token enregistré/);
@@ -139,6 +141,65 @@ test('le jeton enregistré ne s’annonce que pour sa forge, et l’adresse d’
     await adresse.fill('https://github.com/mon-org/ds');
     assert.match(await jeton.getAttribute('placeholder'), /Token enregistré/);
     assert.doesNotMatch(await champ.innerText(), /désignait un dossier/);
+  } finally {
+    await page.close();
+  }
+});
+
+test('la carte des tokens attend le réglage, et suit sa valeur', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    const carte = page.locator('.carte-tokens');
+    assert.equal(await carte.isVisible(), false);
+    await envoyer(reglages(A));
+    assert.equal(await carte.isVisible(), true);
+    assert.match(await carte.innerText(), /1 variable/);
+    await envoyer(reglages(JSON.stringify(['github', 'mon-org/ds', 'main', false]), false));
+    assert.equal(await carte.isVisible(), false);
+    await envoyer(reglages(A));
+    assert.equal(await carte.isVisible(), true);
+    assert.match(await carte.innerText(), /Lecture des variables du fichier/);
+    assert.equal(await page.getByRole('button', { name: 'Analyser les tokens du fichier', exact: true }).isVisible(), false);
+  } finally {
+    await page.close();
+  }
+});
+
+test('les onglets de la configuration se parcourent au clavier, et chaque entrée ouvre le sien', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await envoyer(reglages(A));
+    const general = page.getByRole('tab', { name: 'Général' });
+    const depots = page.getByRole('tab', { name: 'Dépôts' });
+    await page.locator('.icon-button').first().click();
+    assert.equal(await general.getAttribute('aria-selected'), 'true');
+    assert.equal(await page.getByRole('tabpanel').getAttribute('aria-labelledby'), 'onglet-general');
+    assert.equal(await depots.getAttribute('tabindex'), '-1');
+
+    await general.focus();
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await depots.getAttribute('aria-selected'), 'true');
+    assert.equal(await page.evaluate(() => document.activeElement?.id), 'onglet-depots');
+    assert.equal(await page.locator('input[name="repoUrl"]').isVisible(), true);
+    await page.keyboard.press('Home');
+    assert.equal(await general.getAttribute('aria-selected'), 'true');
+    await page.keyboard.press('End');
+    assert.equal(await depots.getAttribute('aria-selected'), 'true');
+    await page.keyboard.press('ArrowRight');
+    assert.equal(await general.getAttribute('aria-selected'), 'true');
+
+    const interrupteur = page.getByRole('switch', { name: 'Gérer les tokens' });
+    assert.equal(await interrupteur.getAttribute('aria-checked'), 'true');
+    await interrupteur.click();
+    await page.waitForFunction(() => window.demandes.at(-1)?.type === 'gerer-tokens');
+    assert.deepEqual(await page.evaluate(() => window.demandes.at(-1)), { type: 'gerer-tokens', valeur: false });
+
+    await page.getByRole('button', { name: 'Retour' }).click();
+    await page.locator('.connection-status').click();
+    assert.equal(await depots.getAttribute('aria-selected'), 'true');
+    await page.getByRole('button', { name: 'Retour' }).click();
+    await page.locator('.icon-button').first().click();
+    assert.equal(await depots.getAttribute('aria-selected'), 'true');
   } finally {
     await page.close();
   }

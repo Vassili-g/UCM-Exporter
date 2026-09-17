@@ -8,7 +8,17 @@ import { extractRules, hasUsableRules } from './contract/extractRules';
 import handleExportComponent from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './tokens/exportTokens';
-import { cleDeDestination, lireAdresseDuDepot, lireInstantane, nomDuDepot, saveSettings, supprimerPat } from './config';
+import {
+  cleDeDestination,
+  ecrireGestionDesTokens,
+  lireAdresseDuDepot,
+  lireGestionDesTokens,
+  lireInstantane,
+  memeDepot,
+  nomDuDepot,
+  saveSettings,
+  supprimerPat,
+} from './config';
 import type { ConfigurationDuDepot, Instantane } from './config';
 import { publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './depot';
 import type { EtatDesTokens } from './depot';
@@ -26,6 +36,7 @@ import {
   gesteApresEchecDePublication,
   refusDeDestinationChangee,
   textesDePublication,
+  TOKENS_DESACTIVES,
 } from './connexion';
 import { etatDeCible, detailDeCible } from './cible';
 import type { CauseConnexion, PrecisionConnexion } from './connexion';
@@ -78,11 +89,11 @@ function postConnection(cause: CauseConnexion, precision: PrecisionConnexion = {
  * Envoie les chemins effectifs et leur autorité : le `ucm.config.json` du
  * repository, ou les défauts du kit quand il n'en a pas.
  */
-function postDepot(layout: RepositoryLayout | null, config: ConfigurationDuDepot | null): void {
+function postDepot(layout: RepositoryLayout | null, config: ConfigurationDuDepot | null, tokens: boolean): void {
   const depot = config
     ? { forge: TERMES[config.forge].forge, projet: config.projet, baseBranch: config.baseBranch }
     : null;
-  versUi({ type: 'depot', ...etatDuDepot(layout, depot) });
+  versUi({ type: 'depot', ...etatDuDepot(layout, depot, tokens) });
 }
 
 /** Envoie le fichier généré à l'UI pour déclencher le téléchargement local. */
@@ -143,7 +154,10 @@ function annoncerReglages(instantane: Instantane): void {
     annulation ??= 'reglages';
   }
   destinationAnnoncee = instantane.destination;
-  versUi({ type: 'settings', settings: { ...instantane.publics, destination: instantane.destination } });
+  versUi({
+    type: 'settings',
+    settings: { ...instantane.publics, destination: instantane.destination, tokens: instantane.tokens },
+  });
 }
 
 /**
@@ -152,14 +166,14 @@ function annoncerReglages(instantane: Instantane): void {
  * Un jeton saisi pour l'autre forge rend la configuration invalide : aucun
  * appel ne part, et la pastille nomme cette cause.
  */
-async function testerConnexion({ publics, validation }: Instantane, generation: number): Promise<void> {
+async function testerConnexion({ publics, validation, tokens }: Instantane, generation: number): Promise<void> {
   if (!validation.valid || !validation.config) {
     const adresse = lireAdresseDuDepot(publics.repoUrl);
     postConnection(
       validation.jetonAutreForge ? 'jeton-autre-forge' : 'non-configure',
       { termes: adresse ? TERMES[adresse.forge] : null },
     );
-    postDepot(null, null);
+    postDepot(null, null, tokens);
     return;
   }
   postConnection('verification');
@@ -170,7 +184,7 @@ async function testerConnexion({ publics, validation }: Instantane, generation: 
     detail: diagnostic.detail,
     termes: TERMES[validation.config.forge],
   });
-  postDepot(diagnostic.layout, validation.config);
+  postDepot(diagnostic.layout, validation.config, tokens);
 }
 
 /**
@@ -199,9 +213,22 @@ function suivreLaDestination(instantane: Instantane): void {
   void testerConnexion(instantane, generation).catch(signalerEchec);
 }
 
-/** Le nom du dépôt qu'un instantané désigne, ou `null` quand l'export serait téléchargé. */
-function nomDeLaDestination({ validation }: Instantane): string | null {
-  return validation.config ? nomDuDepot(validation.config.projet) : null;
+/** Ce qui sépare la destination d'une analyse de celle qu'un instantané désigne. */
+function changementDeDestination(avant: string, { validation, destination }: Instantane) {
+  if (memeDepot(avant, destination)) return 'tokens' as const;
+  return { nom: validation.config ? nomDuDepot(validation.config.projet) : null };
+}
+
+/**
+ * Génération de la lecture du résumé des tokens : un résumé lancé avant un
+ * changement du réglage ne s'affiche pas après lui.
+ */
+let generationDuResume = 0;
+
+async function resumerLesTokens(): Promise<void> {
+  const generation = (generationDuResume += 1);
+  const resume = await etatDesTokensDuFichier();
+  if (generation === generationDuResume) versUi({ type: 'tokens', ...resume });
 }
 
 /** Jeton anti-course : seule la dernière analyse de sélection met à jour la note. */
@@ -356,12 +383,17 @@ async function analyser(
   // alors, et le fichier produit est téléchargé.
   const depart = await parLaFile(lireInstantane).catch(() => null);
   const provenance: Provenance = {
-    destination: depart?.destination ?? destinationAnnoncee ?? cleDeDestination(null),
+    destination: depart?.destination ?? destinationAnnoncee ?? cleDeDestination(null, true),
     operation,
   };
   destinationDeLAnalyse = provenance.destination;
   try {
     if (depart) suivreLaDestination(depart);
+    // Masquer la carte ne suffit pas : une demande peut précéder le réglage.
+    if (artifactKind === 'tokens' && depart && !depart.tokens) {
+      postStatus('error', TOKENS_DESACTIVES, provenance);
+      return;
+    }
     postStatus('loading', loadingText, provenance);
     const result = await handler((etape) => {
       verifierAnnulation();
@@ -416,7 +448,9 @@ async function analyser(
 
     versUi({ type: 'phase', texte: 'Lecture du repository…', ...provenance });
     const forge = forgeDe(validation.config);
-    const lecture = await lireAvantEcriture(forge, artefactDe(analyse), { avecTokens: true });
+    // Gestion des tokens désactivée, l'analyse ne lit pas l'état des tokens du
+    // dépôt et le verdict ne porte aucune consigne à leur sujet.
+    const lecture = await lireAvantEcriture(forge, artefactDe(analyse), { avecTokens: instantane.tokens });
     verifierAnnulation();
 
     if (lecture.refus) {
@@ -506,12 +540,18 @@ async function publier(genre: ArtifactKind, operation: number): Promise<void> {
       postStatus('error', 'La sélection a changé. Analysez le composant sélectionné avant de publier.', provenance);
       return;
     }
+    if (genre === 'tokens' && !instantane.tokens) {
+      analysesGardees.delete(genre);
+      suivreLaDestination(instantane);
+      postStatus('error', TOKENS_DESACTIVES, { destination: instantane.destination, operation });
+      return;
+    }
     if (instantane.destination !== analyse.destination) {
       analysesGardees.delete(genre);
       suivreLaDestination(instantane);
       postStatus(
         'error',
-        refusDeDestinationChangee(nomDeLaDestination(instantane)),
+        refusDeDestinationChangee(changementDeDestination(analyse.destination, instantane)),
         { destination: instantane.destination, operation },
       );
       return;
@@ -644,12 +684,30 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     // L'UI est prête : sélection, champs sauvegardés, test de la forge automatique,
     // et ce que l'export des tokens emporterait. Cette dernière lecture
     // est celle qui manquait pour qu'une commande de portée fichier annonce sa
-    // taille avant de partir.
+    // taille avant de partir. Le réglage des tokens se lit avant tout : désactivé,
+    // les collections du fichier ne sont pas lues.
+    const gestionDesTokens = await parLaFile(lireGestionDesTokens);
     await Promise.all([
       reportSelectionState(),
       refreshConfiguration(),
-      etatDesTokensDuFichier().then((tokens) => versUi({ type: 'tokens', ...tokens })),
+      gestionDesTokens ? resumerLesTokens() : null,
     ]);
+    return;
+  }
+
+  if (message.type === 'gerer-tokens') {
+    generationDeConnexion += 1;
+    generationDuResume += 1;
+    try {
+      await parLaFile(() => ecrireGestionDesTokens(message.valeur));
+    } catch (erreur) {
+      // L'interrupteur revient à l'état conservé.
+      void refreshConfiguration().catch(() => undefined);
+      throw erreur;
+    }
+    // La destination change : `annoncerReglages` annule une analyse en cours.
+    await refreshConfiguration();
+    if (message.valeur) await resumerLesTokens();
     return;
   }
 

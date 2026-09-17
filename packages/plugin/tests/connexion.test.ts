@@ -102,6 +102,14 @@ test('un repository qui se décrit nomme ses deux chemins', () => {
  * s'appliquent. L'avertissement le dit avant l'export, et nomme le fichier
  * qu'un développeur doit écrire pour en décider.
  */
+test('gestion des tokens désactivée, la destination ne parle que des composants', () => {
+  const decrit = etatDuDepot({ components: 'src/components', tokens: 'src/tokens/tokens.json', source: 'ucm.config.json' }, null, false);
+  assert.equal(decrit.resume?.titre, 'Contrats dans src/components.');
+  const parDefaut = etatDuDepot({ components: 'components', tokens: 'tokens.json', source: 'les valeurs par défaut' }, null, false);
+  assert.doesNotMatch(parDefaut.resume?.detail ?? '', /tokens/);
+  assert.match(parDefaut.resume?.detail ?? '', /composants/);
+});
+
 test('un repository sans ucm.config.json reçoit un avertissement, pas un constat', () => {
   const { resume } = etatDuDepot({
     components: 'components',

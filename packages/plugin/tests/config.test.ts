@@ -2,11 +2,13 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   cleDeDestination,
+  ecrireGestionDesTokens,
   forgeDuPrefixe,
   lireAdresseDuDepot,
   lireInstantane,
   loadConfiguration,
   loadPublicSettings,
+  memeDepot,
   nomDuDepot,
   saveSettings,
   supprimerPat,
@@ -206,31 +208,45 @@ test('un jeton enregistré avant GitLab appartient à GitHub', async () => {
 });
 
 test('la clé de destination ignore la casse du projet et garde celle de la branche', () => {
-  const cle = (projet: string, baseBranch: string) => cleDeDestination({ forge: 'gitlab', projet, baseBranch });
+  const cle = (projet: string, baseBranch: string) => cleDeDestination({ forge: 'gitlab', projet, baseBranch }, true);
   assert.equal(cle('Mon-Groupe/Design-System', 'main'), cle('mon-groupe/design-system', 'main'));
   assert.notEqual(cle('mon-groupe/design-system', 'Main'), cle('mon-groupe/design-system', 'main'));
-  assert.deepEqual(JSON.parse(cle('Mon-Groupe/Design-System', 'Release')), ['gitlab', 'mon-groupe/design-system', 'Release']);
+  assert.deepEqual(JSON.parse(cle('Mon-Groupe/Design-System', 'Release')), ['gitlab', 'mon-groupe/design-system', 'Release', true]);
 });
 
 test('une branche qui contient un séparateur ne confond pas deux destinations', () => {
-  const avecBarre = cleDeDestination({ forge: 'github', projet: 'a/b', baseBranch: 'x|y' });
-  const avecArobase = cleDeDestination({ forge: 'github', projet: 'a/b', baseBranch: 'x@y' });
-  assert.deepEqual(JSON.parse(avecBarre), ['github', 'a/b', 'x|y']);
-  assert.deepEqual(JSON.parse(avecArobase), ['github', 'a/b', 'x@y']);
+  const avecBarre = cleDeDestination({ forge: 'github', projet: 'a/b', baseBranch: 'x|y' }, true);
+  const avecArobase = cleDeDestination({ forge: 'github', projet: 'a/b', baseBranch: 'x@y' }, true);
+  assert.deepEqual(JSON.parse(avecBarre), ['github', 'a/b', 'x|y', true]);
+  assert.deepEqual(JSON.parse(avecArobase), ['github', 'a/b', 'x@y', true]);
   assert.notEqual(avecBarre, avecArobase);
 });
 
 test('sans configuration valide, la destination est le téléchargement, et la clé ne porte aucun jeton', async () => {
-  assert.equal(cleDeDestination(null), JSON.stringify(['aucune']));
+  assert.equal(cleDeDestination(null, true), JSON.stringify(['aucune', true]));
   stockageFigma({ repoUrl: 'https://github.com/a/b', baseBranch: 'main' });
-  assert.equal((await lireInstantane()).destination, JSON.stringify(['aucune']));
+  assert.equal((await lireInstantane()).destination, JSON.stringify(['aucune', true]));
   stockageFigma({ repoUrl: 'https://github.com/a/b', baseBranch: 'main', github_pat: 'ghp_secret' });
   const instantane = await lireInstantane();
-  assert.equal(instantane.destination, JSON.stringify(['github', 'a/b', 'main']));
+  assert.equal(instantane.destination, JSON.stringify(['github', 'a/b', 'main', true]));
   assert.doesNotMatch(instantane.destination, /ghp_secret/);
 });
 
 test('le nom d’un dépôt est le dernier segment de son projet, sous-groupes compris', () => {
   assert.equal(nomDuDepot('mon-org/design-system-v3'), 'design-system-v3');
   assert.equal(nomDuDepot('mon-groupe/equipe-produit/design-system'), 'design-system');
+});
+
+test('la gestion des tokens vaut « activée » tant que rien n’est enregistré, et entre dans la clé', async () => {
+  const { valeurs } = stockageFigma({ repoUrl: 'https://github.com/a/b', baseBranch: 'main', github_pat: 'ghp_secret' });
+  const activee = await lireInstantane();
+  assert.equal(activee.tokens, true);
+
+  await ecrireGestionDesTokens(false);
+  assert.equal(valeurs.get('gestionDesTokens'), false);
+  const desactivee = await lireInstantane();
+  assert.equal(desactivee.tokens, false);
+  assert.notEqual(desactivee.destination, activee.destination);
+  assert.equal(memeDepot(desactivee.destination, activee.destination), true);
+  assert.equal(memeDepot(activee.destination, cleDeDestination(null, true)), false);
 });

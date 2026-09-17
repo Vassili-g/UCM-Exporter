@@ -72,7 +72,11 @@ l'interface, ni dans les journaux, ni dans le fichier.
 Un export identique à ce qui est déjà déposé n'ouvre pas de seconde demande. Le
 plugin vous dit où il a trouvé le même contenu.
 
-**Dans un repository neuf, exportez les tokens en premier**, et faites fusionner
+Si votre équipe ne publie pas de tokens, désactivez « Gérer les tokens » dans
+l'onglet Général de la configuration : seule la commande du composant reste.
+
+**Quand la gestion des tokens est activée, dans un repository neuf, exportez
+les tokens en premier**, et faites fusionner
 leur demande avant de publier un composant. Le contrôle du repository refuse la
 demande d'un composant tant que `tokens.json` n'est pas sur la branche de base.
 L'analyse d'un composant vous le rappelle, sans vous empêcher de publier. Si

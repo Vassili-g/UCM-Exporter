@@ -13,7 +13,18 @@ import type { NomDeForge } from '../../forges/termes';
 import type { EtatConnexion, EtatDuDepot } from '../../connexion';
 import type { PluginMessage } from '../../messages';
 import { createButton } from './Button';
+import { createInterrupteur } from './Interrupteur';
+import { createOnglets } from './Onglets';
 import { versSandbox } from '../pont';
+
+/** Les onglets de la configuration. */
+export type OngletConfiguration = 'general' | 'depots';
+
+/** La phrase sous les onglets, qui dit ce que l'onglet sélectionné règle. */
+const DESCRIPTIONS: Record<OngletConfiguration, string> = {
+  general: 'Les réglages du plugin sur ce poste.',
+  depots: 'Les dépôts où les exports sont déposés, et le jeton qui autorise chacun.',
+};
 
 /** Le nom d'un champ du formulaire : exactement les clés que le sandbox lit. */
 type NomDeChamp = keyof SettingsInput;
@@ -40,7 +51,9 @@ export interface PageConfigurationUi {
   element: HTMLDivElement;
   renderErrors(errors?: ErreursDeChamp): void;
   populate(settings: PublicSettings): void;
-  acceptRemoteSettings(settings: PublicSettings): void;
+  acceptRemoteSettings(settings: PublicSettings & { tokens: boolean }): void;
+  ouvrirOnglet(onglet: OngletConfiguration): void;
+  ongletActif(): OngletConfiguration;
   updateConnection(state: EtatConnexion['state'], geste: string | null): void;
   afficherDestination(depot: Extract<PluginMessage, { type: 'depot' }>): void;
   showSaveError(): void;
@@ -272,7 +285,9 @@ export function createConfigurationPage(
     },
   });
 
-  element.append(
+  const panneauDepots = document.createElement('div');
+  panneauDepots.className = 'page-stack';
+  panneauDepots.append(
     status,
     repoUrl.wrapper,
     baseBranch.wrapper,
@@ -281,6 +296,30 @@ export function createConfigurationPage(
     supprimerToken,
     saveButton,
   );
+
+  const gestionDesTokens = createInterrupteur(
+    'gerer-tokens',
+    'Gérer les tokens',
+    'Affiche la commande d’export des tokens. L’analyse d’un composant vérifie aussi que les tokens '
+      + 'sont fusionnés dans le dépôt.',
+    (valeur) => versSandbox({ type: 'gerer-tokens', valeur }),
+  );
+  const panneauGeneral = document.createElement('div');
+  panneauGeneral.className = 'page-stack';
+  panneauGeneral.append(gestionDesTokens.element);
+
+  const description = document.createElement('p');
+  description.className = 'subtitle';
+  const onglets = createOnglets<OngletConfiguration>(
+    'Configuration',
+    [
+      { id: 'general', libelle: 'Général', panneau: panneauGeneral },
+      { id: 'depots', libelle: 'Dépôts', panneau: panneauDepots },
+    ],
+    (id) => { description.textContent = DESCRIPTIONS[id]; },
+  );
+
+  element.append(onglets.liste, description, panneauGeneral, panneauDepots);
 
   return {
     element,
@@ -299,10 +338,13 @@ export function createConfigurationPage(
       jeton.input.value = '';
       suivreLaForge();
     },
-    acceptRemoteSettings(settings: PublicSettings) {
+    acceptRemoteSettings(settings: PublicSettings & { tokens: boolean }) {
       settingsDirty = false;
+      gestionDesTokens.poser(settings.tokens);
       this.populate(settings);
     },
+    ouvrirOnglet: onglets.selectionner,
+    ongletActif: onglets.actif,
     /*
  * Le statut est écrit même quand la page est cachée : ainsi le designer qui arrive
  * par la pastille trouve la cause déjà là, au lieu d'un cadre vide. C'est la phrase

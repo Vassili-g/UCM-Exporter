@@ -12,6 +12,8 @@ export interface CarteTokensUi extends CarteCommandeUi {
   afficher(message: MessageTokens): void;
   /** Le module et la version du format que porte le fichier analysé. */
   annoncerFormat(texte: string): void;
+  /** Revient à l'état d'avant le résumé : aucun geste tant que le sandbox n'a pas compté. */
+  attendreLeResume(): void;
 }
 
 /** N'autorise l'analyse que lorsque le fichier contient des variables. */
@@ -32,7 +34,8 @@ export function createCarteTokens({
 
   const resume = document.createElement('p');
   resume.className = 'tokens-resume';
-  resume.textContent = 'Lecture des variables du fichier…';
+  const EN_LECTURE = 'Lecture des variables du fichier…';
+  resume.textContent = EN_LECTURE;
 
   // Le format appartient au fichier qu'une analyse a produit : il disparaît
   // quand la suivante commence.
@@ -57,6 +60,13 @@ export function createCarteTokens({
     reinitialiser() {
       carte.reinitialiser();
       format.hidden = true;
+    },
+
+    attendreLeResume() {
+      carte.reinitialiser();
+      format.hidden = true;
+      resume.textContent = EN_LECTURE;
+      carte.analyser.hidden = true;
     },
   };
 }

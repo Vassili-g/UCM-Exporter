@@ -36,6 +36,11 @@ export type UiRequest =
   | { type: 'analyser-composant' | 'analyser-tokens'; operation: number }
   | { type: 'publier'; genre: 'component' | 'tokens'; operation: number }
   | { type: 'save-settings'; settings: SettingsInput }
+  /**
+   * L'interrupteur « Gérer les tokens ». L'effet est immédiat : une analyse en
+   * cours est annulée, une publication va à son terme.
+   */
+  | { type: 'gerer-tokens'; valeur: boolean }
   | { type: 'open-external'; url: string }
   /**
    * La poignée de redimensionnement. Figma ne redimensionne pas une fenêtre de
@@ -54,9 +59,10 @@ export type PluginMessage =
   /**
    * Les champs publics rechargés : le PAT ne traverse jamais cette frontière.
    * L'interface vide les cartes de l'écran de travail quand `destination`
-   * change, et seulement alors.
+   * change, et seulement alors. `tokens` porte le réglage « Gérer les
+   * tokens » : la carte des tokens n'est affichée qu'à `true`.
    */
-  | { type: 'settings'; settings: PublicSettings & { destination: string } }
+  | { type: 'settings'; settings: PublicSettings & { destination: string; tokens: boolean } }
   | { type: 'settings-validation'; errors: Partial<Record<keyof SettingsInput, string>> }
   | { type: 'settings-save-error' }
   /**

@@ -432,6 +432,78 @@ p {
   color: var(--texte-danger);
 }
 
+/*
+ * Les onglets reprennent le dessin de `@create-figma-plugin/ui`, décalque de
+ * l'éditeur : une rangée soulignée, des segments de 24 px, l'onglet actif en
+ * gras sur le fond des blocs.
+ */
+.onglets {
+  display: flex;
+  gap: var(--espace-serre);
+  padding-bottom: var(--espace-serre);
+  border-bottom: 1px solid var(--bordure);
+}
+
+.onglet {
+  height: var(--hauteur-secondaire);
+  padding: 0 var(--espace-controle);
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--texte-second);
+  cursor: pointer;
+}
+
+.onglet[aria-selected='true'] {
+  background: var(--fond-bloc);
+  color: var(--texte);
+  font-weight: 600;
+}
+
+.onglet:focus-visible,
+.interrupteur:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.reglage {
+  display: grid;
+  gap: var(--espace-serre);
+}
+
+.reglage-ligne {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+/* L'interrupteur de l'éditeur : 28 × 16 px, le curseur à droite quand il est activé. */
+.interrupteur {
+  display: inline-flex;
+  width: 28px;
+  height: 16px;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 2px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--texte-second);
+  cursor: pointer;
+}
+
+.interrupteur[aria-checked='true'] {
+  justify-content: flex-end;
+  background: var(--fond-marque);
+}
+
+.interrupteur-curseur {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fond);
+}
+
 /* Aucune hauteur réservée : le bloc est caché tant qu'il n'a rien à dire. */
 .config-status {
   color: var(--texte-second);

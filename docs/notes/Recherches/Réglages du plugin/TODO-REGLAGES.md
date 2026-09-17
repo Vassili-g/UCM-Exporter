@@ -232,29 +232,29 @@ appliquées : C2 (réglage global dans Général), P1 (onglet « Dépôts »).
 
 ### Sandbox
 
-- [ ] `src/config.ts` : clé `gestionDesTokens`, booléen, absente vaut `true`
+- [x] `src/config.ts` : clé `gestionDesTokens`, booléen, absente vaut `true`
       ([4.2, clés](PLAN-REGLAGES.md#42-stockage-et-règle-du-jeton)). Elle entre
       dans la clé de destination.
-- [ ] `src/code.ts`, `ui-ready` : lire le réglage par la file avant toute autre
+- [x] `src/code.ts`, `ui-ready` : lire le réglage par la file avant toute autre
       tâche, puis l'envoyer dans `settings` (champ `tokens`). Réglage
       désactivé : `etatDesTokensDuFichier` n'est pas appelée
       ([3.3, trajet du réglage](PLAN-REGLAGES.md#33-questions-sur-la-séparation)).
-- [ ] `analyser` passe `avecTokens` selon le réglage. Les lectures de variables
+- [x] `analyser` passe `avecTokens` selon le réglage. Les lectures de variables
       de G3 restent actives
       ([3.2, G3](PLAN-REGLAGES.md#32-inventaire-complété)).
-- [ ] Refuser `analyser-tokens` et la publication de genre `tokens` quand le
+- [x] Refuser `analyser-tokens` et la publication de genre `tokens` quand le
       réglage est désactivé. Un résumé lancé avant la désactivation n'envoie
       plus `tokens` ni `format-tokens` après elle.
-- [ ] Demande `gerer-tokens { valeur }` dans `src/messages.ts`. Elle écrit par
+- [x] Demande `gerer-tokens { valeur }` dans `src/messages.ts`. Elle écrit par
       la file, annule une analyse en cours avec « Analyse annulée : les
       réglages du plugin ont changé. Relancez l'analyse. », laisse finir une
       publication, et relance `refreshConfiguration`. « Export annulé. Rien n'a
       été écrit. » reste au bouton « Annuler après cette étape »
       ([3.3, changement pendant une opération](PLAN-REGLAGES.md#33-questions-sur-la-séparation)).
-- [ ] Réactivation : la carte revient vide et le sandbox lance
+- [x] Réactivation : la carte revient vide et le sandbox lance
       `etatDesTokensDuFichier`
       ([3.3, réactivation](PLAN-REGLAGES.md#33-questions-sur-la-séparation)).
-- [ ] `src/connexion.ts` : `etatDuDepot` reçoit le réglage. Désactivé, il rend
+- [x] `src/connexion.ts` : `etatDuDepot` reçoit le réglage. Désactivé, il rend
       « Contrats dans `components`. », et l'avertissement sans
       `ucm.config.json` ne parle que des composants. `repositoryLayout` valide
       toujours le champ `tokens`
@@ -262,77 +262,77 @@ appliquées : C2 (réglage global dans Général), P1 (onglet « Dépôts »).
 
 ### Interface
 
-- [ ] Carte des tokens masquée par défaut, affichée à la réception de
+- [x] Carte des tokens masquée par défaut, affichée à la réception de
       `settings` quand `tokens` vaut `true` (option M2). L'ordre du DOM ne
       change pas : l'alerte de repli reste après la carte du composant.
-- [ ] Composant d'onglets dans `src/ui/components/` : `role="tablist"`,
+- [x] Composant d'onglets dans `src/ui/components/` : `role="tablist"`,
       `role="tab"` avec `aria-selected` et `aria-controls`, `role="tabpanel"`
       avec `aria-labelledby` et `tabindex="0"`. Tabulation sur l'onglet actif
       seul ; flèches gauche et droite, Début et Fin ; activation au focus
       ([7.1, clavier](PLAN-REGLAGES.md#71-les-onglets)).
-- [ ] Aspect des onglets d'après `@create-figma-plugin/ui` : rangée soulignée
+- [x] Aspect des onglets d'après `@create-figma-plugin/ui` : rangée soulignée
       par `--bordure`, segment de 24 px, marge 4 px sur 8 px, rayon 4 px,
       inactif en `--texte-second`, actif en gras sur `--fond-bloc`, hauteur
       `--hauteur-secondaire` ([7.1, aspect](PLAN-REGLAGES.md#71-les-onglets)).
       Chaque classe nouvelle reçoit sa règle dans `styles.css`
       (`tests/stylesUi.test.ts`).
-- [ ] `ConfigurationPage.ts` : onglets « Général » et « Dépôts ». Une
+- [x] `ConfigurationPage.ts` : onglets « Général » et « Dépôts ». Une
       description sous les onglets remplace le sous-titre de `PAGES` :
       « Les réglages du plugin sur ce poste. » et « Les dépôts où les exports
       sont déposés, et le jeton qui autorise chacun. ». Les deux panneaux
       restent dans le DOM.
-- [ ] Onglet Général : interrupteur « Gérer les tokens », motif WAI-ARIA
+- [x] Onglet Général : interrupteur « Gérer les tokens », motif WAI-ARIA
       switch, libellé fixe, effet immédiat sans bouton d'enregistrement, aide
       de la maquette de [7.2](PLAN-REGLAGES.md#72-options-de-longlet-général)
       relue avec `rediger-diagnostics-ucm`.
-- [ ] Onglet Dépôts : le formulaire actuel, déplacé sans changement.
-- [ ] `Header.ts` et `src/ui/index.ts` : la pastille ouvre Dépôts ;
+- [x] Onglet Dépôts : le formulaire actuel, déplacé sans changement.
+- [x] `Header.ts` et `src/ui/index.ts` : la pastille ouvre Dépôts ;
       l'engrenage ouvre le dernier onglet consulté pendant la session, Général
       au premier clic ([7.1, entrée](PLAN-REGLAGES.md#71-les-onglets)).
 
 ### Galerie
 
-- [ ] `ouverture()` joue `settings`, réglage activé par défaut.
-- [ ] Nouveaux états : `ecran-sans-tokens`,
+- [x] `ouverture()` joue `settings`, réglage activé par défaut.
+- [x] Nouveaux états : `ecran-sans-tokens`,
       `gitlab-composant-sans-consigne-tokens`, `configuration-onglet-general`.
-- [ ] Les états `configuration-*` passent par l'onglet Dépôts.
-- [ ] Textes « regarder » de `resultat-un-avertissement` et
+- [x] Les états `configuration-*` passent par l'onglet Dépôts.
+- [x] Textes « regarder » de `resultat-un-avertissement` et
       `resultat-vingt-avertissements` qui citent la carte des tokens
       ([3.2, G1](PLAN-REGLAGES.md#32-inventaire-complété)).
-- [ ] Captures relues selon le protocole. Écran à une carte : la hauteur
+- [x] Captures relues selon le protocole. Écran à une carte : la hauteur
       libérée revient au compte rendu du composant
       ([3.3, écran à une carte](PLAN-REGLAGES.md#33-questions-sur-la-séparation)).
 
 ### Tests
 
-- [ ] `tests/code.test.ts`, réglage désactivé : aucune lecture des collections
+- [x] `tests/code.test.ts`, réglage désactivé : aucune lecture des collections
       à l'ouverture ; analyse et publication de tokens refusées ; `avecTokens`
       faux ; lectures G3 conservées ; résumé tardif ignoré ; bascule qui annule
       une analyse et laisse finir une publication. Les dix tests qui emploient
       `analyser-tokens` restent inchangés, puisque le défaut vaut « activé ».
-- [ ] `tests/connexion.test.ts` : titre sans chemin de tokens quand le réglage
+- [x] `tests/connexion.test.ts` : titre sans chemin de tokens quand le réglage
       est désactivé.
-- [ ] `tests/interface/interface.test.mjs` : le premier test envoie `settings` ;
+- [x] `tests/interface/interface.test.mjs` : le premier test envoie `settings` ;
       le troisième ouvre l'onglet Dépôts ; carte des tokens masquée jusqu'au
       réglage ; flèches et `aria-selected`.
-- [ ] Rouge constaté : forcer `avecTokens` à `true`, puis ne plus refuser
+- [x] Rouge constaté : forcer `avecTokens` à `true`, puis ne plus refuser
       `analyser-tokens` ; restaurer.
 
 ### Documents
 
-- [ ] `CONTRIBUTING.md`, « La hiérarchie de l'information » : les deux phrases
+- [x] `CONTRIBUTING.md`, « La hiérarchie de l'information » : les deux phrases
       réécrites de [3.3, écran à une carte](PLAN-REGLAGES.md#33-questions-sur-la-séparation).
-- [ ] `packages/plugin/SPEC.md` : « Contexte technique » et « Analyses et
+- [x] `packages/plugin/SPEC.md` : « Contexte technique » et « Analyses et
       publication ».
-- [ ] `packages/plugin/README.md`, « Les deux commandes ».
-- [ ] `docs/guides/POUR-LES-DESIGNERS.md`, section 3 : l'ordre « tokens en
+- [x] `packages/plugin/README.md`, « Les deux commandes ».
+- [x] `docs/guides/POUR-LES-DESIGNERS.md`, section 3 : l'ordre « tokens en
       premier » vaut quand la gestion des tokens est activée.
 - [ ] `README.md` et `docs/README.md` : rendre « deux commandes » conditionnel
       ([section 9](PLAN-REGLAGES.md#9-documents-et-tests-touchés)).
 
 ### Fin du lot
 
-- [ ] Vérification complète dans le worktree, `test:ui` et galerie compris.
+- [x] Vérification complète dans le worktree, `test:ui` et galerie compris.
       Commit, push.
 
 ## L3a. Stockage des dépôts
@@ -769,3 +769,31 @@ stockage avant l'extraction. Après un succès, `publier` ne relance le test que
 si la destination annoncée est encore la sienne : sinon le test de B aurait
 affiché « connexion… » une seconde fois. Un enregistrement refusé relance le
 test sans renvoyer `settings`, pour que le formulaire garde la saisie.
+
+### L2
+
+Rouges constatés par mutation : `avecTokens` forcé à `true` fait échouer
+« l'analyse d'un composant ne lit pas l'état des tokens » ; le refus
+d'`analyser-tokens` retiré fait échouer « analyse et publication des tokens
+refusées » ; la génération du résumé retirée fait échouer « un résumé lancé
+avant la désactivation ne s'affiche pas après elle ».
+
+Écarts au plan :
+
+- la clé de destination porte le réglage comme dernier membre du tuple.
+  `memeDepot` compare deux clés sans lui : le refus de publication dit alors
+  « la gestion des tokens a changé » ;
+- le refus d'une commande des tokens, que le plan ne rédigeait pas : « La
+  gestion des tokens est désactivée. Activez « Gérer les tokens » dans
+  l'onglet Général de la configuration. » ;
+- à la première réception de `settings`, la carte des tokens garde le résumé
+  s'il est arrivé avant : seule une réactivation la remet en lecture ;
+- la galerie joue `settings` dans `ouverture()` et dans `connexion-en-cours` ;
+  les deux états du lot 0 qui le jouaient avant l'analyse ne le rejouent plus ;
+- `README.md` et `docs/README.md` sont indexés par une autre session : leur
+  « deux commandes » attend son commit. `SPEC.md` décrit aussi la clé de
+  destination, et `CONTRIBUTING.md` la range dans l'identité du sujet.
+
+Relecture : `configuration-onglet-general` suit la maquette de 7.2 dans les
+deux thèmes ; `ecran-sans-tokens` ne montre que la carte du composant ;
+`gitlab-composant-sans-consigne-tokens` montre un verdict sans consigne.

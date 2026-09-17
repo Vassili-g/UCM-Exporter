@@ -228,8 +228,16 @@ export type EtatDuDepot = {
  * ligne de journal : qui a décidé de l'endroit ? Deux réponses, et deux
  * seulement, parce qu'il n'y a plus qu'une autorité : le repository l'a écrit,
  * ou il laisse s'appliquer les défauts que le contrôle applique aussi.
+ *
+ * Gestion des tokens désactivée, la phrase ne parle que des composants : le
+ * chemin des tokens reste validé par `repositoryLayout`, mais aucun export ne
+ * l'emploie.
  */
-export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null = null): EtatDuDepot {
+export function etatDuDepot(
+  layout: LayoutConnu | null,
+  depot: DepotVise | null = null,
+  tokens = true,
+): EtatDuDepot {
   /*
    * Sans repository, la ligne dit ce qui va se passer. Le repli en
    * téléchargement local est un comportement correct, mais il était subi :
@@ -250,7 +258,7 @@ export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null 
         ton: 'avertissement',
         titre: `Attention, le ${NOM_CONFIGURATION} de ce repository n'est pas configuré.`,
         detail: `Le fichier de configuration ${NOM_CONFIGURATION} permet de définir l'endroit où `
-          + 'seront poussés les composants et les tokens.',
+          + `seront poussés ${tokens ? 'les composants et les tokens' : 'les composants'}.`,
       },
     };
   }
@@ -259,7 +267,9 @@ export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null 
     ...situation,
     resume: {
       ton: 'info',
-      titre: `Contrats dans ${layout.components}, tokens dans ${layout.tokens}.`,
+      titre: tokens
+        ? `Contrats dans ${layout.components}, tokens dans ${layout.tokens}.`
+        : `Contrats dans ${layout.components}.`,
       detail: `Ce repository le déclare dans son ${NOM_CONFIGURATION}.`,
     },
   };
@@ -268,12 +278,21 @@ export function etatDuDepot(layout: LayoutConnu | null, depot: DepotVise | null 
 /**
  * Le refus d'une publication dont la destination a changé depuis l'analyse.
  * Il dit le fait sans en supposer la cause : le changement a pu venir d'une
- * autre fenêtre du plugin. `nom` vaut `null` quand l'export serait téléchargé.
+ * autre fenêtre du plugin. `tokens` quand seul le réglage des tokens a changé ;
+ * sinon le nom du dépôt, `null` quand l'export serait téléchargé.
  */
-export function refusDeDestinationChangee(nom: string | null): string {
-  const destination = nom ? `le dépôt actif est maintenant ${nom}` : 'aucun dépôt n’est actif';
+export function refusDeDestinationChangee(changement: { nom: string | null } | 'tokens'): string {
+  const destination = changement === 'tokens'
+    ? 'la gestion des tokens a changé'
+    : changement.nom
+      ? `le dépôt actif est maintenant ${changement.nom}`
+      : 'aucun dépôt n’est actif';
   return `La destination a changé depuis l’analyse : ${destination}. Relancez l’analyse.`;
 }
+
+/** Le refus d'une commande des tokens quand leur gestion est désactivée sur ce poste. */
+export const TOKENS_DESACTIVES =
+  'La gestion des tokens est désactivée. Activez « Gérer les tokens » dans l’onglet Général de la configuration.';
 
 /**
  * Les textes d'une publication, du lancement à l'échec. Le routeur et la

@@ -26,6 +26,10 @@ dépôt »](../../README.md#construire-le-plugin-depuis-ce-dépôt).
 | Exporter le composant | Exactement un composant ou un set de variantes sélectionné | `<IdentifiantCode>.contract.json` : variantes, états, structure, tokens, icônes, règles d'usage |
 | Exporter les tokens | Rien, elle lit le fichier courant | `tokens.json` : les variables locales, avec leurs alias et leurs modes, dans la version 2 du format de tokens |
 
+Une équipe qui ne publie que des contrats désactive « Gérer les tokens » dans
+l'onglet Général de la configuration. La commande des tokens disparaît, et
+l'analyse d'un composant ne vérifie plus que les tokens sont fusionnés.
+
 Un contrat cite ses tokens sous les noms que `tokens.json` écrit. `ucm tokens
 css` tire de `tokens.json` une feuille CSS, modes compris
 ([README du CLI](../cli/README.md#the-token-stylesheet)). Un autre lecteur de

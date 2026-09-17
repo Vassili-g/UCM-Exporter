@@ -24,9 +24,11 @@ lecture de Figma.
 - Tourne dans l'éditeur, produit des fichiers en téléchargement sans config
   valide, ou les dépose sur une branche dédiée de la forge avec une config valide.
 - Deux commandes indépendantes qui partagent le même code Figma :
-  **Export composant** (Partie 1) et **Export tokens** (Partie 2).
+  **Export composant** (Partie 1) et **Export tokens** (Partie 2). Le réglage
+  « Gérer les tokens », dans l'onglet Général de la configuration, retire la
+  seconde. Il est activé par défaut et rangé sur le poste.
 - Stack : TypeScript, `@figma/plugin-typings`, build esbuild. L'UI expose le
-  statut de la connexion, les deux commandes, la configuration, un compte rendu, un retour
+  statut de la connexion, les commandes, la configuration, un compte rendu, un retour
   en direct sur la sélection, et en pied de page la version de schéma que le
   bundle chargé produit. Figma peut servir un bundle plus ancien que celui du
   disque, et rien d'autre ne le dirait.
@@ -56,6 +58,19 @@ demande d'export ouverte, ou nulle part. Dans les deux derniers cas, le verdict
 garde l'action de publier et demande de faire fusionner les tokens d'abord, le
 contrôle du repository refusant la demande du composant jusque-là. La
 publication ne refait pas cette lecture.
+
+Gestion des tokens désactivée, le plugin ne lit ni les collections du fichier
+à l'ouverture, ni l'état des tokens du repository : le verdict d'un composant
+ne porte aucune consigne sur les tokens. Le sandbox refuse l'analyse et la
+publication des tokens, même si l'interface les demande. Les lectures de
+variables qui servent au contrat restent actives. Basculer le réglage annule
+une analyse en cours et laisse finir une publication.
+
+Chaque résultat d'analyse ou de publication porte sa clé de destination : le
+dépôt visé, ou le téléchargement, et le réglage des tokens. La publication
+refuse une analyse dont la clé diffère de celle qu'elle relit, en nommant le
+changement. L'interface vide ses cartes quand la clé change, et écarte les
+résultats d'une autre destination.
 
 ## Hypothèses sur le design system
 
