@@ -6,7 +6,7 @@ les rend utiles.
 ## Pourquoi ils existent
 
 La fenêtre de lecture porte deux versions, la courante et la précédente
-([COMPATIBILITE.md](../../../../../docs/COMPATIBILITE.md)). Le moteur ne
+([COMPATIBILITE.md](../../../../../docs/format/COMPATIBILITE.md)). Le moteur ne
 fabrique que la courante (`src/contract/exportComponent.ts`) : la précédente
 n'est donc observable qu'à partir de contrats que plus rien ne sait produire.
 `tests/fenetre-de-lecture.test.mjs` les passe par tous les lecteurs, et

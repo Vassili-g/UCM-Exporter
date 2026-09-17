@@ -39,6 +39,12 @@ function encodePath(path: string): string {
  */
 const FORMES_AUTOLIEES = /(^|[^\w`])(@[A-Za-z0-9][\w-]*|#\d+)/g;
 
+function codeInerte(texte: string): string {
+  const longueur = Math.max(0, ...[...texte.matchAll(/`+/g)].map(([suite]) => suite.length)) + 1;
+  const borne = '`'.repeat(longueur);
+  return `${borne}${texte}${borne}`;
+}
+
 /**
  * Rend un avertissement inerte dans la page qui l'affiche.
  *
@@ -50,7 +56,7 @@ const FORMES_AUTOLIEES = /(^|[^\w`])(@[A-Za-z0-9][\w-]*|#\d+)/g;
  * comme elle s'écrit dans Figma.
  */
 export function sansLienAutomatiqueGithub(texte: string): string {
-  return texte.replace(FORMES_AUTOLIEES, '$1`$2`');
+  return texte.replace(FORMES_AUTOLIEES, (_entier, avant, forme) => `${avant}${codeInerte(forme)}`);
 }
 
 /** Construit l'adaptateur GitHub d'une configuration validée. */
@@ -131,16 +137,21 @@ export function forgeGithub(config: ConfigurationDeForge): Forge {
   }
 
   async function demandesOuvertes(): Promise<DemandeOuverte[]> {
-    const ouvertes = await githubRequest<{ head: { ref: string }; html_url?: unknown }[]>(
-      `/repos/${repository}/pulls?state=open&base=${encodeURIComponent(config.baseBranch)}&per_page=100`,
-    );
-    if (!ouvertes) return [];
-    return ouvertes
-      .filter((pull) => typeof pull.head?.ref === 'string')
-      .map((pull) => ({
-        branche: pull.head.ref,
-        url: typeof pull.html_url === 'string' ? pull.html_url : null,
-      }));
+    const demandes: DemandeOuverte[] = [];
+    for (let page = 1; ; page += 1) {
+      const ouvertes = await githubRequest<{ head: { ref: string }; html_url?: unknown }[]>(
+        `/repos/${repository}/pulls?state=open&base=${encodeURIComponent(config.baseBranch)}&per_page=100${page === 1 ? '' : `&page=${page}`}`,
+      );
+      if (!ouvertes) break;
+      demandes.push(...ouvertes
+        .filter((pull) => typeof pull.head?.ref === 'string')
+        .map((pull) => ({
+          branche: pull.head.ref,
+          url: typeof pull.html_url === 'string' ? pull.html_url : null,
+        })));
+      if (ouvertes.length < 100) break;
+    }
+    return demandes;
   }
 
   /** Branche depuis la tête de la base, fichier par l'API Contents, puis pull request. */

@@ -1885,6 +1885,16 @@ test("la 13.0 accepte literals, les tokens de paragraphe et les champs d'usage d
   assert.deepEqual(champsInvalidesDuContrat(contrat130()), []);
 });
 
+test("la 13.0 accepte un seul axe de padding et un contour sans géométrie tokenisée", () => {
+  const valeur = contrat130();
+  valeur.viewStructures.st1.padding = { x: "{sizes.padding-x}" };
+  valeur.variants[0].strokes = { border: { color: "{colors.border}" } };
+  valeur.viewPaintPlacements = { pp1: { strokes: { border: [[]] } } };
+  valeur.variantViews.v1.paintPlacements = "pp1";
+
+  assert.deepEqual(champsInvalidesDuContrat(valeur), []);
+});
+
 test("une valeur CSS absente du format est refusée, dans literals comme dans un usage", () => {
   // Le navigateur ignore `text-transform: upper` sans erreur : le texte
   // s'afficherait en minuscules.

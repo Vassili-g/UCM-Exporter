@@ -5,9 +5,9 @@ côté du code de ce composant. Il exporte aussi les variables locales du fichie
 au format DTCG.
 
 Ce document dit comment l'ouvrir et ce qu'il produit.
-[docs/POUR-LES-DESIGNERS.md](../../docs/POUR-LES-DESIGNERS.md) décrit le geste du
+[docs/guides/POUR-LES-DESIGNERS.md](../../docs/guides/POUR-LES-DESIGNERS.md) décrit le geste du
 designer pas à pas, [SPEC.md](./SPEC.md) ce que le plugin élit dans l'arbre
-Figma, et [docs/FORMAT.md](../../docs/FORMAT.md) la forme de ce qu'il écrit.
+Figma, et [docs/format/FORMAT.md](../../docs/format/FORMAT.md) la forme de ce qu'il écrit.
 
 ## Ouvrir le plugin
 
@@ -30,7 +30,7 @@ Un contrat cite ses tokens sous les noms que `tokens.json` écrit. `ucm tokens
 css` tire de `tokens.json` une feuille CSS, modes compris
 ([README du CLI](../cli/README.md#the-token-stylesheet)). Un autre lecteur de
 tokens doit lire le module DTCG `2025.10`
-([docs/FORMAT.md](../../docs/FORMAT.md#partie-2--export-tokens)).
+([docs/format/FORMAT.md](../../docs/format/FORMAT.md#partie-2--export-tokens)).
 
 ## Documenter les règles d'usage
 
@@ -73,7 +73,7 @@ exemple, mettent en page. Le plugin les ignore.
 
 Le plugin ne modifie jamais ces règles. Quand il ne sait pas en lire une, il
 vous dit laquelle et quel geste la répare. [7. Intention et documentation des
-props](../../docs/FORMAT.md#7-intention-et-documentation-des-props) décrit ce
+props](../../docs/format/FORMAT.md#7-intention-et-documentation-des-props) décrit ce
 que chaque champ devient.
 
 ## Où l'export atterrit
@@ -82,7 +82,7 @@ Un export est toujours téléchargeable. La configuration du dépôt est
 optionnelle ; renseignée, elle crée une branche et une demande de fusion, pull
 request sur GitHub ou merge request sur GitLab, qui contient le seul fichier
 exporté. La forge se déduit de l'adresse saisie : `github.com` ou `gitlab.com`.
-[Configurer le dépôt](../../docs/POUR-LES-DESIGNERS.md#configurer-le-dépôt)
+[Configurer le dépôt](../../docs/guides/POUR-LES-DESIGNERS.md#configurer-le-dépôt)
 donne la marche à suivre.
 
 L'endroit où ce fichier est écrit appartient au repository visé, qui le déclare

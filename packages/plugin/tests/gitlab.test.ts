@@ -389,7 +389,7 @@ test('chaque forme que GitLab relie ou exécute part en code, et rien d’autre'
   );
   // Un pourcentage, une adresse, un mot suivi d'un chiffre et du code déjà
   // marqué restent tels quels.
-  const inertes = '50 % et 100%, mail a@b.fr, v1!2, `@deja` et `#3`.';
+  const inertes = '50 % et 100%, mail a@b.fr, `v1!2`, `@deja` et `#3`.';
   assert.equal(sansLienAutomatiqueGitlab(inertes), inertes);
 });
 

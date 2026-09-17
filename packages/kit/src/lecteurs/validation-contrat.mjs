@@ -604,10 +604,9 @@ function validerDimensionsLaterales(porteur, prefixe, invalides, partiels) {
   const padding = porteur.padding;
   if (
     !estObjet(padding)
-    || !Object.hasOwn(padding, "x")
-    || !Object.hasOwn(padding, "y")
-    || (padding.x !== null && !refsLateralesValides(padding.x, COTES_PADDING_X, partiels))
-    || (padding.y !== null && !refsLateralesValides(padding.y, COTES_PADDING_Y, partiels))
+    || (!Object.hasOwn(padding, "x") && !Object.hasOwn(padding, "y"))
+    || (Object.hasOwn(padding, "x") && padding.x !== null && !refsLateralesValides(padding.x, COTES_PADDING_X, partiels))
+    || (Object.hasOwn(padding, "y") && padding.y !== null && !refsLateralesValides(padding.y, COTES_PADDING_Y, partiels))
   ) invalides.push(`${prefixe}.padding`);
 }
 
@@ -842,6 +841,7 @@ function validerTokensExacts(tokens, prefixe, invalides) {
 }
 
 function largeurDeStrokeValide(width, partiels = false) {
+  if (width === undefined) return true;
   if (width === null || isTokenReference(width)) return true;
   if (!estObjet(width)) return false;
   const cotes = new Set(["top", "right", "bottom", "left"]);
@@ -858,7 +858,7 @@ function validerStrokesExacts(strokes, prefixe, invalides, partiels = false) {
       !estObjet(stroke)
       || !isTokenReference(stroke.color)
       || !largeurDeStrokeValide(stroke.width, partiels)
-      || ![null, "inside", "center", "outside"].includes(stroke.align)
+      || (stroke.align !== undefined && !["inside", "center", "outside"].includes(stroke.align))
     ) invalides.push(`${prefixe}.${cle}`);
   }
 }
@@ -1398,7 +1398,7 @@ function formeCanonique(contrat) {
     propertyBindingDefinitions: optionnel("propertyBindingDefinitions", {}),
     variants: (Array.isArray(contrat?.variants) ? contrat.variants : []).map((variant) => ({
       ...variant,
-      figmaName: nomFigmaDuVariant11(contrat, variant),
+      figmaName: nomFigmaDuVariant(contrat, variant),
       values: Object.hasOwn(variant ?? {}, "values") ? variant.values : {},
       tokens: Object.hasOwn(variant ?? {}, "tokens") ? variant.tokens : {},
       strokes: Object.hasOwn(variant ?? {}, "strokes") ? variant.strokes : {},
@@ -1605,6 +1605,9 @@ function champsInvalidesDeLaFormeCanonique(contrat) {
   }
   for (const interdit of ["tokensUsed", "meta.warnings"]) {
     if (lire(contrat, interdit) !== undefined) invalides.push(interdit);
+  }
+  for (const champ of Object.keys(estObjet(contrat?.structure) ? contrat.structure : {})) {
+    if (!["view", "sizes", "variantAxes"].includes(champ)) invalides.push(`structure.${champ}`);
   }
 
   const utilises = Object.fromEntries(

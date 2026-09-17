@@ -6,7 +6,7 @@
  * une information que la forme feuille ne sait pas exprimer.** Elle n'a pas
  * d'exception, et c'est ce qui la rend tenable : un cadre qui n'enveloppe qu'un
  * libellé est décrit comme un cadre, avec son padding, sa taille et son
- * alignement, puis le libellé dedans. Le pourquoi vit dans `docs/FORMAT.md`,
+ * alignement, puis le libellé dedans. Le pourquoi vit dans `docs/format/FORMAT.md`,
  * section « 6. Structure ».
  *
  * Cette décision vit ici et nulle part ailleurs. `extractLayout` la suit pour

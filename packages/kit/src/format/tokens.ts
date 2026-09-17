@@ -3,8 +3,8 @@
  * endroit où le numéro courant est écrit, et l'unique lecture de la marque.
  *
  * La version du format de tokens ne suit pas `CONTRACT_VERSION` : le contrat et
- * le fichier de tokens changent de forme séparément. docs/FORMAT.md décrit la
- * forme, docs/COMPATIBILITE.md ce que chaque état de la marque vaut à un
+ * le fichier de tokens changent de forme séparément. docs/format/FORMAT.md décrit la
+ * forme, docs/format/COMPATIBILITE.md ce que chaque état de la marque vaut à un
  * repository.
  *
  * Ce module ne dépend de rien, pour que le plugin annonce la version lue dans

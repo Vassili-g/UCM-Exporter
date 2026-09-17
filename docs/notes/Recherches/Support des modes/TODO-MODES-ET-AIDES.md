@@ -28,7 +28,7 @@ marquées « sans L5 », puis par L8a et L8b.
       touchent un même paquet partagent donc un commit. Monter `@ucm-kit/core`
       monte le pin exact de `@ucm-kit/cli` et de `@ucm-kit/adapter-typescript`
       (`monorepoCoherent.test.mjs`), donc leur version, et les commandes
-      épinglées de la documentation hors notes et hors `docs/RECETTE.md`
+      épinglées de la documentation hors notes et hors `docs/guides/RECETTE.md`
       (`pinDocumente.test.mjs`). Un commit de tests seuls ou de documents seuls
       reste séparé.
 - [ ] Un lot qui a monté une version se termine par la publication, selon
@@ -116,7 +116,7 @@ deux pins.
       de 10 000 cycles qui rend un refus d'analyse.
 - [x] `typography-token-types.mjs` : refus d'une chaîne qui traverse une feuille
       dont le type change dans un mode. Test vu rouge avec le lecteur actuel.
-      Mention de classe 6 dans `docs/CHANGELOG-FORMAT.md` et le README du kit.
+      Mention de classe 6 dans `docs/format/CHANGELOG-FORMAT.md` et le README du kit.
 - [x] Exporter les fonctions par `lecteurs/index.mjs` et `index.d.mts`.
 - [x] Remplacer l'oracle provisoire de L0 par `valeurDansLeContexte`.
 - [x] Monter `@ucm-kit/core`, les pins et les versions de `@ucm-kit/cli` et
@@ -172,8 +172,8 @@ Le plugin est privé : ses commits ne montent aucune version.
 - [x] `conformiteDtcg.test.ts` : la racine admet `com.ucm.axes` après la marque,
       aucun groupe ne porte `$extensions`.
 - [x] `styleDictionary.test.ts` reste vert sans modification.
-- [x] Documents : `docs/FORMAT.md` partie 2, `packages/plugin/SPEC.md` partie 2,
-      `docs/CHANGELOG-FORMAT.md`, `docs/COMPATIBILITE.md` classe 12 et titre des
+- [x] Documents : `docs/format/FORMAT.md` partie 2, `packages/plugin/SPEC.md` partie 2,
+      `docs/format/CHANGELOG-FORMAT.md`, `docs/format/COMPATIBILITE.md` classe 12 et titre des
       classes, invariants de `AGENTS.md` du groupe « Tokens et variables ».
 - [x] **[mainteneur]** Lancer l'export local dans Figma et vérifier la racine du
       `tokens.json` produit. Export du Playground `276cd78` : marque puis
@@ -183,7 +183,7 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 ## L4. Le catalogue d'aides
 
-- [x] `docs/FORMAT.md` section 8 : `cssProperties` n'est pas exhaustif ;
+- [x] `docs/format/FORMAT.md` section 8 : `cssProperties` n'est pas exhaustif ;
       `outline-style: solid` et `outline-offset` selon `align` ; la
       recommandation du repli remplacée par la règle de `contour-ring`.
 - [x] `packages/kit/src/lecteurs/caracteristiques.mjs` : `CARACTERISTIQUES`, table
@@ -247,7 +247,7 @@ Le plugin est privé : ses commits ne montent aucune version.
       que la première condition de la mesure emploie telle quelle : protocole de
       recette seul, renvoi à `ucm guide`, en-tête YAML sur deux lignes.
 - [ ] Documents : `AGENTS.md` (carte du code, paragraphe de la skill),
-      `packages/cli/README.md`, `docs/RECETTE.md`, `ROADMAP.md`. La carte du
+      `packages/cli/README.md`, `docs/guides/RECETTE.md`, `ROADMAP.md`. La carte du
       code et le README de la CLI sont faits ; le reste suit la scission de la
       skill.
 - [ ] Monter et publier `@ucm-kit/cli`.
@@ -288,7 +288,7 @@ Le plugin est privé : ses commits ne montent aucune version.
 - [x] Harnais de L0 branché sur la sortie : trois générations, les sept arbres
       d'extension, taille au plus égale au relevé de L0 sur 500 extensions ;
       l'émetteur provisoire de L0 est retiré.
-- [x] `docs/FORMAT.md` : collections étendues publiées comme expérimentales, limite
+- [x] `docs/format/FORMAT.md` : collections étendues publiées comme expérimentales, limite
       des cycles.
 - [x] Monter `@ucm-kit/core`, les pins et les deux autres paquets, puis publier.
 
@@ -323,7 +323,7 @@ Le plugin est privé : ses commits ne montent aucune version.
       harnais dans Safari, reconstructions à froid d'`Alert` et `Button`,
       personnalisation de `contour-ring`, export antérieur refusé, couleurs
       forcées dans Chrome.
-- [ ] Écrire le compte rendu de recette dans `docs/RECETTE.md` si une marche
+- [ ] Écrire le compte rendu de recette dans `docs/guides/RECETTE.md` si une marche
       change, sinon dans une section « Relevé L9 » du plan final.
 
 ## L10. Modes fixés dans un composant
@@ -341,8 +341,8 @@ Le plugin est privé : ses commits ne montent aucune version.
 
 ## Clôture
 
-- [ ] Relire `AGENTS.md`, `docs/FORMAT.md`, `packages/plugin/SPEC.md`,
-      `docs/COMPATIBILITE.md`, `docs/CHANGELOG-FORMAT.md` et les README des
+- [ ] Relire `AGENTS.md`, `docs/format/FORMAT.md`, `packages/plugin/SPEC.md`,
+      `docs/format/COMPATIBILITE.md`, `docs/format/CHANGELOG-FORMAT.md` et les README des
       paquets ; retirer toute description devenue fausse ou dupliquée.
 - [x] Les cinq cas de la section 9 du plan final vont au plan du diff sémantique.
       `PLAN-DIFF-SEMANTIQUE.md` est hors suivi et son auteur le commitera : s'il

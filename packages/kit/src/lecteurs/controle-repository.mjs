@@ -136,7 +136,12 @@ function analyser(chemin, contexte, erreursGraphe = []) {
   // Le garde-fou vérifie ensuite qu'il a bien de quoi travailler. Sans ce
   // contrôle, un fichier vidé de sa substance (`{}`, JSON parfaitement valide)
   // passerait au vert : zéro référence citée, donc zéro référence manquante.
-  const champsAbsents = champsInvalidesDuContrat(contrat);
+  let champsAbsents;
+  try {
+    champsAbsents = champsInvalidesDuContrat(contrat);
+  } catch {
+    champsAbsents = ["structure"];
+  }
   if (champsAbsents.length > 0) return { ...vide, champsAbsents };
 
   const implementation = cheminImplementation(chemin, motif);
@@ -176,7 +181,8 @@ function implementationsEnAttente(bilans) {
       && !bilan.illisible
       && bilan.champsAbsents.length === 0
       && !bilan.version
-      && bilan.graphe.length === 0,
+      && bilan.graphe.length === 0
+      && bilan.typesTypographiques.length === 0,
   );
 }
 
@@ -300,13 +306,26 @@ function rapportMarkdown(bilans, fautifs, bilansDuRapport, contexte) {
         status: "La fusion reste bloquée.",
       }));
     }
-    if (bilan.graphe.length > 0) {
+    const estErreurDEchantillon = (erreur) => /^(Le sample|Le slotPath|Le remplacement)/.test(erreur);
+    const erreursDEchantillon = bilan.graphe.filter(estErreurDEchantillon);
+    const erreursDeComposition = bilan.graphe.filter((erreur) => !estErreurDEchantillon(erreur));
+    if (erreursDeComposition.length > 0) {
       lignes.push(...rendreDiagnostic({
         severity: "error",
         title: `La composition du contrat est incohérente : \`${bilan.fichier}\``,
         detailsTitle: "Écarts détectés",
-        details: bilan.graphe,
+        details: erreursDeComposition,
         action: "Un développeur doit vérifier les contrats co-localisés, les slots composés et les cycles.",
+        status: "La fusion reste bloquée.",
+      }));
+    }
+    if (erreursDEchantillon.length > 0) {
+      lignes.push(...rendreDiagnostic({
+        severity: "error",
+        title: `Un échantillon du contrat est inatteignable : \`${bilan.fichier}\``,
+        detailsTitle: "Écarts détectés",
+        details: erreursDEchantillon,
+        action: "Réexportez les contrats concernés depuis Figma.",
         status: "La fusion reste bloquée.",
       }));
     }

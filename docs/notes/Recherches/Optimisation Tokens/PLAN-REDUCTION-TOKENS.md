@@ -69,8 +69,8 @@ Sans ce protocole, aucune des options suivantes ne se juge.
 ### 3.1. Un relevé versionné
 
 Sur le modèle de `scripts/mesurer-prose.mjs` et de
-`docs/notes/baseline-prose.json`, ajouter `scripts/mesurer-cout.mjs` et
-`docs/notes/baseline-cout.json`. Le script lit les transcripts d'une campagne
+`docs/notes/qualite/baseline-prose.json`, ajouter `scripts/mesurer-cout.mjs` et
+`docs/notes/produit/baseline-cout.json`. Le script lit les transcripts d'une campagne
 et rend, par composant et par condition : appels au modèle, contexte initial,
 tokens par catégorie, coût, octets du paquet d'entrée, octets écrits par le
 modèle, défauts de rendu, code de sortie de `tsc`.
@@ -330,7 +330,7 @@ d'acceptation et la relecture du compte rendu des manques à chaque campagne.
    la porte fournit le signal d'échec dont il a besoin. Le contexte de Haiku
    s'arrête à 200 k tokens, ce que seul le pipeline laisse tenir.
 3. **Régénération.** Après un réexport, le diff sémantique
-   ([PLAN-DIFF-SEMANTIQUE.md](./PLAN-DIFF-SEMANTIQUE.md)) donne les champs
+   ([PLAN-DIFF-SEMANTIQUE.md](../verification/PLAN-DIFF-SEMANTIQUE.md)) donne les champs
    touchés. Une modification qui ne porte que sur des données mécaniques ne
    demande aucun appel : le module se régénère, et la porte vérifie le rendu.
    Sinon, le paquet se réduit aux champs touchés et au fichier existant.

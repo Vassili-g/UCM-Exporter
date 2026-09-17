@@ -217,7 +217,7 @@ test("le workflow publie un diagnostic même quand le rapport manque", () => {
 
     assert.match(workflow, /hashFiles\('ci-report\.md'\) == ''/);
     assert.match(workflow, /La vérification n'a pas pu rendre son diagnostic/);
-    assert.match(workflow, /gh pr comment .* --edit-last/);
+    assert.match(workflow, /issues\/\$NUMERO\/comments" --paginate/);
     assert.match(workflow, /if: always\(\)/);
   } finally {
     rmSync(racine, { recursive: true, force: true });
@@ -255,7 +255,7 @@ test("le filet, la transmission et la publication se relaient sur le même rappo
     assert.match(ecriture.run, /\$RUN_URL/, "le message minimal nomme l'endroit où regarder");
     assert.equal(transmission.with.path, "ci-report.md");
     assert.equal(reception.with.name, transmission.with.name, "la publication reçoit l'artefact transmis");
-    assert.match(publication.run, /--body-file ci-report\.md/, "la publication lit le fichier transmis");
+    assert.match(publication.run, /cat ci-report\.md >> ucm-report\.md/, "la publication lit le fichier transmis");
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
@@ -307,7 +307,7 @@ test("le diagnostic est publié avec le droit de l'être, et crée le fil qu'il 
     );
     assert.match(
       workflow,
-      /--edit-last[\s\\]*\|\|\s*gh pr comment "\$NUMERO" -R "\$GITHUB_REPOSITORY" --body-file ci-report\.md/,
+      /if \[ -n "\$NOTE" \]; then[\s\S]*else[\s\S]*gh pr comment "\$NUMERO" -R "\$GITHUB_REPOSITORY" --body-file ucm-report\.md/,
       "sans repli, le premier commentaire d'une pull request n'est jamais créé",
     );
   } finally {

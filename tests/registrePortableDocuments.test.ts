@@ -16,7 +16,7 @@ const AIDES = fs.readdirSync(path.join(racine, 'packages/cli/aides'))
   .map((nom) => `packages/cli/aides/${nom}`);
 
 /** Les documents lus depuis dehors, et eux seuls. */
-const PORTABLES = ['CONCEPT.md', 'docs/FORMAT.md', 'docs/CHANGELOG-FORMAT.md', ...AIDES];
+const PORTABLES = ['CONCEPT.md', 'docs/format/FORMAT.md', 'docs/format/CHANGELOG-FORMAT.md', ...AIDES];
 
 /**
  * Les mots refusés, repris de `registrePortable.test.mjs` sans les élargir.
@@ -46,7 +46,7 @@ function nommeLeMotifParDefaut(ligne: string): boolean {
  */
 /**
  * **Elle est vide, et c'est le résultat recherché.** Elle a porté une entrée : la ligne
- * de `docs/FORMAT.md` qui promettait « le composant React et son interface Props » à
+ * de `docs/format/FORMAT.md` qui promettait « le composant React et son interface Props » à
  * qui lit la forme publiée. Elle ne pouvait pas être corrigée tant que
  * la scission de la spécification exigeait que chaque ligne du document figé
  * survive ; cette contrainte est tombée avec la fixture, et la ligne a été

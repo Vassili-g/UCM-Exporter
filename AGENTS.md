@@ -14,10 +14,10 @@ travail s'écrit là-bas.
 Lire uniquement ce qui concerne la tâche :
 
 1. [CONCEPT.md](./CONCEPT.md) pour les responsabilités du modèle ;
-2. [docs/FORMAT.md](./docs/FORMAT.md) si la tâche touche à la forme de ce qui
+2. [docs/format/FORMAT.md](./docs/format/FORMAT.md) si la tâche touche à la forme de ce qui
    est publié, [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) si elle
    touche à la façon dont le plugin lit Figma. Ce que les versions précédentes
-   publiaient est dans [docs/CHANGELOG-FORMAT.md](./docs/CHANGELOG-FORMAT.md),
+   publiaient est dans [docs/format/CHANGELOG-FORMAT.md](./docs/format/CHANGELOG-FORMAT.md),
    à ouvrir dès qu'une tâche touche à la compatibilité ;
 3. [CONTRIBUTING.md](./CONTRIBUTING.md) pour les règles de code et de test ;
 4. `packages/kit/src/format/types.ts` et les tests voisins pour la forme concrète.
@@ -47,7 +47,7 @@ l'information et le protocole de relecture y font autorité, et la galerie des
 états rend chaque écran atteignable hors de Figma.
 
 [ROADMAP.md](./ROADMAP.md) porte la maturité et les priorités,
-[PISTES-EVOLUTION.md](./docs/notes/PISTES-EVOLUTION.md) les idées non décidées.
+[PISTES-EVOLUTION.md](./docs/notes/produit/PISTES-EVOLUTION.md) les idées non décidées.
 
 ## Carte du code
 
@@ -173,14 +173,15 @@ packages/adapter-typescript/  l'adaptateur opt-in : parité TS/TSX et types gén
   src/index.mjs               ce que `ucm check` charge quand il le découvre
   src/index.d.mts             ce que cette porte promet à un consommateur TS
 
-docs/                    le format, pour qui consomme un contrat
+docs/                    la documentation classée par sujet
   README.md              le sommaire par profil de lecteur, et la table des autorités
-  FORMAT.md              la forme de chaque champ, et ce que son absence dit
-  CHANGELOG-FORMAT.md    ce que chaque version a publié, et ce qu'elle casse
-  COMPATIBILITE.md       les classes de changement, et qui migre pour chacune
-  POUR-LES-DESIGNERS.md  le guide du designer, et le vocabulaire du projet
-  RECETTE.md             comment éprouver le produit à la main, hors des tests
-  notes/                 les options non engagées, et rien dont le produit dépende
+  format/                la forme publiée, sa compatibilité et son historique
+  guides/                le geste du designer et la recette externe
+  notes/
+    modes-et-aides/      le plan et les tâches des modes et des aides
+    produit/             les pistes d'évolution et le coût de génération
+    qualite/             les relevés de qualité éditoriale
+    verification/        les plans et constats de vérification
 
 .agents/skills/          les procédures qu'un agent charge à la demande
   consommer-contrat/       reconstruire un composant depuis son seul contrat
@@ -224,7 +225,7 @@ La spécification en lien porte le raisonnement.
   `paintPlacements`, chacun catalogué à part et partagé par égalité stricte de
   son bloc JSON, à l’ordre des clés près. Ni merge, ni héritage, ni défaut.
   `structure` est la projection du variant de référence, publiée elle aussi par
-  renvoi, inconditionnellement. → [spec](./docs/FORMAT.md#sortie)
+  renvoi, inconditionnellement. → [spec](./docs/format/FORMAT.md#sortie)
 - Le contrat n’écrit aucune valeur neutre : une clé qui vaudrait `null`, `{}` ou
   `[]` est absente. Cette borne porte tout : un seul passage, jamais de point
   fixe. Une valeur qui est vide ne s’écrit pas ; une valeur qui contient du vide
@@ -236,9 +237,9 @@ La spécification en lien porte le raisonnement.
 - Une propriété native garde son type (`INSTANCE_SWAP`, `SLOT`) et ses liaisons
   `visible`, `characters`, `mainComponent` : définition dans
   `propertyBindingDefinitions`, `nodeId` dans `variants[].bindings`, aucun
-  rapprochement par nom de calque. → [spec](./docs/FORMAT.md#1-props)
+  rapprochement par nom de calque. → [spec](./docs/format/FORMAT.md#1-props)
 - Un enum renommé porte la même clé dans `props`, `variantAxes` et les arbres de
-  variantes. → [spec](./docs/FORMAT.md#1-props)
+  variantes. → [spec](./docs/format/FORMAT.md#1-props)
 - Un axe possède sa clé publique : `parsers.ts` la lui réserve avant les autres
   propriétés, si bien que l'ordre des déclarations Figma ne décide de rien. Deux
   axes que la normalisation confond refusent l'export, aucun artefact ne sort et
@@ -246,11 +247,11 @@ La spécification en lien porte le raisonnement.
   → [spec](./packages/plugin/SPEC.md#1-props)
 - La convention `State`/`Status` porte sur un axe, donc sur le seul type
   `VARIANT`. Une propriété d'un autre type qui porte ce nom reste une prop.
-  → [spec](./docs/FORMAT.md#1-props)
+  → [spec](./docs/format/FORMAT.md#1-props)
 - Les axes d’API sont dans `props`, l’axe d’états dans `stateModel` ; une règle
   `@prop` suit cette répartition. N’est une faute de frappe que ce que le contrat
   ne publie nulle part.
-  → [spec](./docs/FORMAT.md#7-intention-et-documentation-des-props)
+  → [spec](./docs/format/FORMAT.md#7-intention-et-documentation-des-props)
 
 ### Tokens et variables
 
@@ -258,11 +259,11 @@ La spécification en lien porte le raisonnement.
 - `normalizeName()` et `indexVariables()` sont communs aux deux commandes.
 - Une collision feuille/groupe ou deux chemins identiques sont tranchés avant la
   construction de l’arbre ; aucun alias ne pointe vers une variable rejetée.
-  → [spec](./docs/FORMAT.md#partie-2--export-tokens)
+  → [spec](./docs/format/FORMAT.md#partie-2--export-tokens)
 - Le contrat ne publie aucun index de ses tokens : `tokensUsed` se dérivait du
   contrat terminé, et ce qui se dérive ne se publie pas. Un consommateur qui en
   a besoin balaie les références du contrat, `samples` et `meta` exclus.
-  → [spec](./docs/FORMAT.md#8-rendu-sémantique-et-garde-fous)
+  → [spec](./docs/format/FORMAT.md#8-rendu-sémantique-et-garde-fous)
 - Un nom de token se projette de trois façons, et chacune a un propriétaire, tous
   trois dans `packages/kit/src/format/names.ts` : `normalizeName` va du chemin
   Figma au token, `codeIdentifier` du nom Figma à l'identifiant de code, et
@@ -279,14 +280,14 @@ La spécification en lien porte le raisonnement.
   même nom décomposé donnent la même propriété ; elle ne coupe pas sur les
   bosses de casse, ce qui la
   distingue d'un `kebabCase` de bibliothèque, et elle n'est pas une bijection.
-  → [spec](./docs/FORMAT.md#nommer-et-citer-un-token)
+  → [spec](./docs/format/FORMAT.md#nommer-et-citer-un-token)
 - `tokens.json` porte la version du format de tokens à la racine du document,
   et nulle part ailleurs : `$extensions["com.ucm.formatVersion"]`, un entier
   positif, écrit une fois et avant les groupes. `TOKENS_FORMAT_VERSION`
   (`packages/kit/src/format/tokens.ts`) est l'unique endroit où le numéro
   courant s'écrit. Une forme de valeur qui change monte ce numéro, jamais
   `CONTRACT_VERSION`, et laisse les chemins et les alias en place.
-  → [spec](./docs/FORMAT.md#partie-2--export-tokens)
+  → [spec](./docs/format/FORMAT.md#partie-2--export-tokens)
 - `tokens.json` déclare ses axes de modes à la racine, après la marque :
   `$extensions["com.ucm.axes"]`, écrit dès qu'une feuille porte `com.ucm.modes`,
   et `{}` quand l'export les a tous écartés. La clé d'un axe vient de
@@ -300,7 +301,7 @@ La spécification en lien porte le raisonnement.
   collections étendues surchargent est aussi un axe.
   `axesDesCollections` (`tokens/exportTokens.ts`) décide pour l'export,
   `axesDeTokens` (`lecteurs/modes-tokens.mjs`) classe ce qu'un lecteur reçoit.
-  → [spec](./docs/FORMAT.md#partie-2--export-tokens)
+  → [spec](./docs/format/FORMAT.md#partie-2--export-tokens)
 - Le kit classe la marque avant de lire un seul token : absente, `origine` ;
   la version courante, `courante` ; une version antérieure que
   `VERSIONS_DE_TOKENS_LUES` énumère, `ancienne` ; entier supérieur, `future` ;
@@ -310,7 +311,7 @@ La spécification en lien porte le raisonnement.
   est lue. La fenêtre est énumérée et jamais déduite : une version inférieure
   n'est pas présumée lisible, une version future non plus.
   `etatDuFormatDeTokens()` en est l'unique autorité.
-  → [compatibilité](./docs/COMPATIBILITE.md#la-version-du-format-de-tokens)
+  → [compatibilité](./docs/format/COMPATIBILITE.md#la-version-du-format-de-tokens)
 - Une couleur s'écrit `{ colorSpace, components, alpha }`. L'espace vient de
   `documentColorProfile`, lu une fois par export ; `LEGACY` donne `srgb` sous un
   seul avertissement. Les composantes gardent la précision de Figma et `alpha`
@@ -358,7 +359,7 @@ La spécification en lien porte le raisonnement.
 - `colorKeys.ts` en est l’unique autorité et décide sur toute la matrice : la clé
   d’un token est la même dans toutes les feuilles. Borne du coût : sélection
   exacte jusqu’à seize profondeurs candidates, gloutonne et déterministe au-delà.
-  → [spec](./docs/FORMAT.md#2-tokens-de-variantes)
+  → [spec](./docs/format/FORMAT.md#2-tokens-de-variantes)
 - Le site tranche la nature de ce qu’une couleur peint, le nom précise à
   l’intérieur de cette nature. Un dernier segment qui nomme un rôle partagé
   l’emporte seulement s’il est de la nature du calque, ce qui distingue un
@@ -375,7 +376,7 @@ La spécification en lien porte le raisonnement.
   `border` se rend en `box-shadow` et `ring` en `outline`, jamais l'un ni
   l'autre en bordure, et `align` donne la forme de l'ombre.
   `defaultRenderingSemantics()` en est l’unique autorité.
-  → [spec](./docs/FORMAT.md#8-rendu-sémantique-et-garde-fous)
+  → [spec](./docs/format/FORMAT.md#8-rendu-sémantique-et-garde-fous)
 - Le contrat ne publie que les couleurs liées. `lirePeintures` est l’unique
   lecture : ce qui est retenu et ce dont on avertit en sortent ensemble, la liste
   du node servant de repli. Une peinture posée à la main sur un calque parcouru
@@ -387,7 +388,7 @@ La spécification en lien porte le raisonnement.
   publié qui porte la peinture : une couleur sous une feuille appartient à cette
   feuille, et deux tracés d’une même icône ne donnent qu’une cible. Les deux
   relevés ne parcourent pas le même arbre ; leur égalité n’est pas exigée.
-  → [spec](./docs/FORMAT.md#2-tokens-de-variantes)
+  → [spec](./docs/format/FORMAT.md#2-tokens-de-variantes)
 
 ### Composition
 
@@ -408,7 +409,7 @@ La spécification en lien porte le raisonnement.
   l’enveloppe appartient au contrat parent : il publie son flux et range la
   dépendance dans `children`. Trois liens donnent trois enfants, et le cadre ne
   reprend une `visibilityProp` que lorsqu’une seule dépendance l’occupe.
-  → [spec](./docs/FORMAT.md#cadre-de-dépendance)
+  → [spec](./docs/format/FORMAT.md#cadre-de-dépendance)
 - Ce cadre publie tous ses calques, pas seulement les branches de dépendance.
   `structureTree.publishesChildren` tranche l’unique exception : un cadre dont
   aucune branche ne mène à une dépendance ne publie rien. Chemins de typographie
@@ -416,7 +417,7 @@ La spécification en lien porte le raisonnement.
 - Chaque `variantViews[variants[].view].composes` se dérive de son arbre publié,
   dans son ordre ; le `composes` global en est l’union ordonnée à cardinalité
   maximale. Une dépendance non située sort des deux champs à la fois, sous
-  avertissement. → [spec](./docs/FORMAT.md#composition-et-dépendances)
+  avertissement. → [spec](./docs/format/FORMAT.md#composition-et-dépendances)
 
 ### Arbre des slots
 
@@ -426,7 +427,7 @@ La spécification en lien porte le raisonnement.
   d’information reste une feuille. `structureTree.ts` en est l’unique autorité ;
   extraction, `textSlots` et signatures la consultent sans la recalculer.
   Profondeur bornée à 12 niveaux, coupure dite dès qu’elle emporte autre chose
-  qu’un dessin. → [spec](./docs/FORMAT.md#6-structure)
+  qu’un dessin. → [spec](./docs/format/FORMAT.md#6-structure)
 - Un conteneur publie tous ses calques rendables, à quelque profondeur qu’ils
   soient, jamais une sélection. `variants[].tokens` relève les couleurs du
   variant entier.
@@ -443,7 +444,7 @@ La spécification en lien porte le raisonnement.
   Un slot à plusieurs textes décrit ses parts dans `children` :
   les nodes représentés y portent leur visibilité, les cibles graphiques non
   représentées restent dans `visibilityTargets`.
-  → [spec](./docs/FORMAT.md#5-typographie)
+  → [spec](./docs/format/FORMAT.md#5-typographie)
 - `icons.*.slot` et `icons.*.size` disent où et à quelle taille placer chaque
   icône. `slotNames.ts` est l’unique autorité sur le nommage : un `icons.*.slot`
   publié désigne toujours un slot réel de `structure.children`.
@@ -451,7 +452,7 @@ La spécification en lien porte le raisonnement.
   numérote parmi les slots déjà réservés sous ce parent, et les lecteurs refusent
   un arbre qui les confond. Deux parents distincts les nomment librement de la
   même façon, une adresse étant un chemin.
-  → [spec](./docs/FORMAT.md#6-structure)
+  → [spec](./docs/format/FORMAT.md#6-structure)
 - Un dessin qu’aucune règle `@icons` ne désigne avertit : le contrat n’exporte
   aucun tracé, et le développeur recevra la place et les couleurs du calque,
   jamais son dessin. Le déclencheur est le tracé (`nodeBindings.estUnTrace`, la
@@ -461,28 +462,28 @@ La spécification en lien porte le raisonnement.
 - Masquer et remplacer sont deux libertés distinctes : le booléen Figma dit si
   une icône s’affiche, la prop runtime dit laquelle rendre. Une icône toujours
   visible est modifiable comme une autre, sans booléen et sans signalement.
-  → [spec](./docs/FORMAT.md#7-intention-et-documentation-des-props)
+  → [spec](./docs/format/FORMAT.md#7-intention-et-documentation-des-props)
 - Le contrat donne le carré d’une icône, jamais son dessin ni de quoi le
   trouver : il ne nomme aucun jeu d’icônes, ne porte aucune correspondance vers
   l’identifiant d’un tel jeu, et ne dit rien de la taille du glyphe à
   l’intérieur de ce carré. Ces trois décisions appartiennent au repository
   consommateur, et `ucm icons` est leur contrepartie : elle énumère ce
   qu’il y a à couvrir, jamais ce qui est couvert.
-  → [spec](./docs/FORMAT.md#ce-que-le-contrat-ne-dit-pas-dune-icône)
+  → [spec](./docs/format/FORMAT.md#ce-que-le-contrat-ne-dit-pas-dune-icône)
 
 ### Layout, dimensions et bornes
 
 - Le node de layout d’un variant s’élit au score, donc en fonction de la racine
   d’où part la recherche. `layoutNodes.ts` en est l’unique autorité. Aucune
   extraction ne choisit le calque qu’elle décrit : toutes reçoivent l’élection,
-  `sizes` comprise. → [spec](./docs/FORMAT.md#3-layout)
+  `sizes` comprise. → [spec](./docs/format/FORMAT.md#3-layout)
 - Ce que l’élection écarte est dit. Un calque hors du node élu, ou à côté d’une
   dépendance dans son cadre, ne reçoit ni slot, ni typographie, ni visibilité,
   alors que ses couleurs entrent dans `variants[].tokens` : il avertit.
 - Un auto-layout linéaire publie ses alignements (`justifyContent`,
   `alignItems`) ; ses slots ne publient que leurs exceptions (`alignSelf`,
   `flexGrow`). Une absence signifie hors flux ou non applicable, jamais
-  `flex-start` deviné. → [spec](./docs/FORMAT.md#flux-et-alignement)
+  `flex-start` deviné. → [spec](./docs/format/FORMAT.md#flux-et-alignement)
 - Le menu de dimensionnement Figma fait autorité, axe par axe ; un axe ne décide
   jamais de l’autre. Pour un slot : `Fill` se publie, `Fixed` cite une variable
   dans `size`, l’absence vaut `Hug`, une dimension figée sans variable avertit.
@@ -495,7 +496,7 @@ La spécification en lien porte le raisonnement.
   de lier. Ces exceptions sont énumérées : les pistes et cellules d’une
   grille, et la place d’un calque hors du flux. Toutes publient en pixels sous
   une notice, sans devenir des tokens et sans dégrader la couverture.
-  → [spec](./docs/FORMAT.md#dimensions-et-bornes)
+  → [spec](./docs/format/FORMAT.md#dimensions-et-bornes)
 - Un tracé n’est pas une boîte : sur un `VECTOR`, `BOOLEAN_OPERATION`, `STAR` ou
   `POLYGON`, la dimension est le dessin, et le contrat ne lui réclame aucune
   variable ; liée, elle se publie comme partout ailleurs. `RECTANGLE`, `ELLIPSE`
@@ -506,7 +507,7 @@ La spécification en lien porte le raisonnement.
   signification par clé : les côtés publiés sont ceux de l’accroche, les deux
   d’un axe sous `stretch`, `center` et `scale`. Le calcul passe par le centre.
   Rien n’est publié quand la géométrie manque.
-  → [spec](./docs/FORMAT.md#position-absolue)
+  → [spec](./docs/format/FORMAT.md#position-absolue)
 - La `rotation` d’un calque publié est écrite, en convention CSS, absente sous
   le centième de degré. `flexLayout.rotationDegrees` en est l’unique autorité.
   Une notice dit le seul écart restant : dans un auto layout, Figma espace ses
@@ -514,7 +515,7 @@ La spécification en lien porte le raisonnement.
 - `bounds` publie les bornes sur le composant et sur chaque slot, indépendamment
   du menu de dimensionnement, à la règle commune. Le geste demandé est de nommer
   la borne, jamais de la retirer. Un calque intermédiaire n’en est pas
-  propriétaire et avertit. → [spec](./docs/FORMAT.md#dimensions-et-bornes)
+  propriétaire et avertit. → [spec](./docs/format/FORMAT.md#dimensions-et-bornes)
 - Une valeur uniforme n’est valide que si tout le groupe requis est lié. Les
   côtés d’un même champ peuvent citer des variables différentes : le contrat
   publie alors le détail (`padding.x`, `padding.y`, `radius`, largeur d’un
@@ -524,7 +525,7 @@ La spécification en lien porte le raisonnement.
   L’élection du node de layout ne compte que `hasCompleteBinding`.
 - `wrap` est une propriété de flux et reste au niveau haut même sous `sizes`.
   `rowGap` est un token à la règle commune ; son absence sous `wrap` vaut `gap`.
-  → [spec](./docs/FORMAT.md#passage-à-la-ligne)
+  → [spec](./docs/format/FORMAT.md#passage-à-la-ligne)
 - Une propriété Figma qu’aucun champ du schéma ne porte avertit au lieu de
   disparaître. `layout` reste publié parce que sa forme l’exige, et son repli
   `flex-row` se signale.
@@ -537,7 +538,7 @@ La spécification en lien porte le raisonnement.
   jamais, `rotation`, l’alignement et la casse d’un texte compris. Pour le
   soulignement et `openTypeFeatures`, dont Figma ne documente pas les défauts,
   la valeur neutre est celle que CSS rend sans déclaration.
-  → [spec](./docs/FORMAT.md#propriétés-non-portables)
+  → [spec](./docs/format/FORMAT.md#propriétés-non-portables)
 
 ### Grilles
 
@@ -559,7 +560,7 @@ La spécification en lien porte le raisonnement.
   strictement tokenisé ; une seule piste non `HUG` sous l’étendue de l’enfant
   rend l’axe indécis et rien n’est publié ; un alignement explicite retire
   l’exception, sans quoi la valeur contredirait l’avertissement de
-  `resolveSlotSize` sur le même axe. → [spec](./docs/FORMAT.md#grilles)
+  `resolveSlotSize` sur le même axe. → [spec](./docs/format/FORMAT.md#grilles)
 
 ### Diagnostics
 
@@ -603,7 +604,7 @@ La spécification en lien porte le raisonnement.
   au schéma, puisqu’un contrat plus ancien le porte encore, et son absence ne
   produit aucun diagnostic : la traçabilité passe par `fileName` et `nodeId`, annoncés
   dans le corps de la demande de fusion.
-  → [spécification](./docs/FORMAT.md#métadonnées)
+  → [spécification](./docs/format/FORMAT.md#métadonnées)
 - Le numéro annoncé dans l’en-tête est lu dans le fichier déposé :
   `versionDeContrat()` (`format/version.ts`) pour un contrat,
   `etatDuFormatDeTokens()` (`format/tokens.ts`) pour `tokens.json`. Il ne vient
@@ -682,7 +683,7 @@ La spécification en lien porte le raisonnement.
   seule identité que deux contrats partagent, il adresse ce que ce contrat ne
   décrit pas, là où un slot adresse ce qu’il décrit. D’où `text` chez soi et
   `overrides` chez autrui.
-  → [spec](./docs/FORMAT.md#9-échantillon-de-maquette)
+  → [spec](./docs/format/FORMAT.md#9-échantillon-de-maquette)
 - Un remplacement d’instance dans une dépendance se publie dans `swaps`, jamais
   dans `overrides` : les deux relevés n’ont ni la même source, Figma ne
   rapportant pas `mainComponent`, ni la même adresse. `masterPath` nomme les
@@ -691,7 +692,7 @@ La spécification en lien porte le raisonnement.
   dépendance publie. Bornes : on compare le composant propriétaire et non la
   variante, et le relevé s’arrête sur une dépendance de la dépendance, un
   `SLOT`, ou un calque déjà déclaré remplacé.
-  → [spec](./docs/FORMAT.md#9-échantillon-de-maquette)
+  → [spec](./docs/format/FORMAT.md#9-échantillon-de-maquette)
 - `swaps` ne rapporte que ce qu’`args` ne sait pas dire. Une INSTANCE_SWAP native
   a déjà sa prop dans le contrat de la dépendance, `mergeIconRules` y posant
   `runtimeProp` plutôt qu’une prop de synthèse.
@@ -707,7 +708,7 @@ La spécification en lien porte le raisonnement.
   spécification et les consommateurs.
 - Le kit qui connaît une nouvelle version du format de tokens sort avec la CLI
   et l'adaptateur, le kit en premier, avant le plugin qui la produit.
-  → [compatibilité](./docs/COMPATIBILITE.md#lordre-dune-nouvelle-version-du-format-de-tokens)
+  → [compatibilité](./docs/format/COMPATIBILITE.md#lordre-dune-nouvelle-version-du-format-de-tokens)
 - `packages/kit/schema/ucm-contract.schema.json` est dérivé de `types.ts` par `npm run
   schema`, jamais rédigé. Il décrit la forme, pas la cohérence : il ignore les
   renvois internes et le format des valeurs tokenisées, et ne remplace aucun
@@ -818,7 +819,7 @@ dans le projet GitLab de recette pour GitLab. UCM-Playground est une application
 React qui ne porte aucun outillage UCM local. Son empreinte du produit se limite
 aux cinq fichiers qu’`ucm init` écrit, ce qui rend la recette probante : un
 contrôle qui manque là-bas se referme ici, jamais par un script rendu au
-consommateur. [docs/RECETTE.md](./docs/RECETTE.md) porte la marche à suivre, ses
+consommateur. [docs/guides/RECETTE.md](./docs/guides/RECETTE.md) porte la marche à suivre, ses
 critères de fin et le geste de publication qui la suit.
 
 Aucun contrôle ne la réclame et `publish.yml` ne la mentionne pas : le numéro

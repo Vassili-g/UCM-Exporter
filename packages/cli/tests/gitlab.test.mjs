@@ -123,7 +123,7 @@ test("pour GitLab, le jeton de la note ne côtoie jamais le code du repository",
 
     const note = job["ucm-rapport"];
     assert.equal(note.allow_failure, true, "un jeton refusé bloquerait une fusion dont les contrats sont verts");
-    assert.equal(note.variables.GIT_STRATEGY, "none");
+    assert.equal(note.variables.GIT_STRATEGY, "empty");
     assert.equal(note.variables.NPM_CONFIG_IGNORE_SCRIPTS, "true");
     const etapes = note.script.join("\n");
     assert.doesNotMatch(etapes, /npm ci| check /);

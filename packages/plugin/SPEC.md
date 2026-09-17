@@ -2,7 +2,7 @@
 
 Ce document décrit le **moteur** : ce que le plugin lit dans Figma, ce qu'il
 élit, ce dont il avertit, et ce qu'il dépose sur une forge. La forme de ce qu'il
-produit est décrite dans [docs/FORMAT.md](../../docs/FORMAT.md).
+produit est décrite dans [docs/format/FORMAT.md](../../docs/format/FORMAT.md).
 
 ## Objet
 
@@ -13,7 +13,7 @@ responsabilités. Le plugin produit :
 - un export DTCG des variables locales, avec leurs alias et leurs modes.
 
 Ce que ces deux artefacts contiennent, et ce que leur silence dit, appartient à
-[docs/FORMAT.md](../../docs/FORMAT.md) : ce document-ci ne parle que de la
+[docs/format/FORMAT.md](../../docs/format/FORMAT.md) : ce document-ci ne parle que de la
 lecture de Figma.
 
 ## Contexte technique
@@ -33,7 +33,7 @@ lecture de Figma.
 
 - **Les deux commandes projettent un nom de la même façon**, et citent un token
   sous la même forme. La règle est celle du format,
-  [Nommer et citer un token](../../docs/FORMAT.md#nommer-et-citer-un-token), et
+  [Nommer et citer un token](../../docs/format/FORMAT.md#nommer-et-citer-un-token), et
   `normalizeName()` en est l'implémentation partagée. Ce qui appartient à ce
   document est le fait qu'une seule implémentation serve les deux commandes :
   deux projections du même nom divergeraient, et un contrat citerait alors un
@@ -61,7 +61,7 @@ publication ne refait pas cette lecture.
 
 Ce que le contrat suppose d'un design system (clé de base, allongement,
 déclaration d'un rôle) est décrit par [Hypothèses sur le design
-system](../../docs/FORMAT.md#hypothèses-sur-le-design-system).
+system](../../docs/format/FORMAT.md#hypothèses-sur-le-design-system).
 
 Les noms de collections et le nombre de niveaux d’alias sont libres. Le moteur
 gère les chaînes profondes et les alias de tous types.
@@ -83,7 +83,7 @@ centralisées dans `semantics.ts`. Button sert d'exemple de référence.
 règles de `.componentRules` enrichissent l'intention mais ne conditionnent pas
 la fidélité de l'export. Ce qu'un set clairsemé produit dans `variants`, et ce
 qu'un consommateur a le droit d'en composer, est décrit par [Partie
-1](../../docs/FORMAT.md#ce-que-le-contrat-publie-champ-par-champ).
+1](../../docs/format/FORMAT.md#ce-que-le-contrat-publie-champ-par-champ).
 
 ### Algorithme
 
@@ -91,14 +91,14 @@ qu'un consommateur a le droit d'en composer, est décrit par [Partie
 
 Le silence commun à ces champs (une variable se publie, un nombre brut avertit,
 une valeur neutre reste absente sans un mot) est décrit par [La règle
-commune](../../docs/FORMAT.md#la-règle-commune).
+commune](../../docs/format/FORMAT.md#la-règle-commune).
 
 Le geste demandé au designer est toujours de **nommer** la valeur, jamais de la
 retirer du design.
 
 #### 1. Props
 
-Ce que `props` contient est décrit par [1. Props](../../docs/FORMAT.md#1-props).
+Ce que `props` contient est décrit par [1. Props](../../docs/format/FORMAT.md#1-props).
 Ce document garde la lecture des component properties de Figma et l'élection de
 la surface publique.
 
@@ -128,7 +128,7 @@ une **précondition d'export**.
 
 Ce que `tokens` et `strokes` contiennent (la clé d'une couleur, son allongement,
 les rôles, les emplacements de peinture) est décrit par [2. Tokens de
-variantes](../../docs/FORMAT.md#2-tokens-de-variantes). Ce document garde la
+variantes](../../docs/format/FORMAT.md#2-tokens-de-variantes). Ce document garde la
 façon dont le moteur lit les peintures d'un calque et ce qu'il en dit.
 
 La couleur publiée et l'avertissement sortent de la même lecture, peinture par
@@ -141,7 +141,7 @@ perdre une couleur coûterait plus qu'un diagnostic manquant.
 #### 3. Layout
 
 Ce que `layout`, `sizes` et les bornes contiennent est décrit par [3.
-Layout](../../docs/FORMAT.md#3-layout). Ce document garde l'élection du node de
+Layout](../../docs/format/FORMAT.md#3-layout). Ce document garde l'élection du node de
 layout et ce que cette élection écarte.
 
 Le **node de layout** d'un variant est le calque dont les enfants directs
@@ -174,12 +174,12 @@ produisent chacun leur propre diagnostic, distinct de « aucune variable reliée
 #### 4. Modèle d'interaction
 
 Ce que `stateModel` contient est décrit par [4. Modèle
-d'interaction](../../docs/FORMAT.md#4-modèle-dinteraction).
+d'interaction](../../docs/format/FORMAT.md#4-modèle-dinteraction).
 
 #### 5. Typographie
 
 Ce que `textStyles` et `variantViews.*.typography` contiennent est décrit par
-[5. Typographie](../../docs/FORMAT.md#5-typographie).
+[5. Typographie](../../docs/format/FORMAT.md#5-typographie).
 
 Chaque calque texte de chaque variant doit porter un text style Figma unique. Le
 moteur lit l'objet `TextStyle`, conserve son nom exact dans
@@ -224,7 +224,7 @@ donnent un seul message, leur geste étant le même.
 
 Ce que `structure` et `children` contiennent (descente, bornes, flux,
 dimensions, place hors du flux) est décrit par [6.
-Structure](../../docs/FORMAT.md#6-structure). Ce document ne garde que ce que le
+Structure](../../docs/format/FORMAT.md#6-structure). Ce document ne garde que ce que le
 moteur tranche en lisant Figma : ce dont il avertit, ce qu'il arrondit, et où il
 relève.
 
@@ -291,7 +291,7 @@ horizontal gap » et « vertical gap », les intitulés que le panneau affiche.
 
 Ce qu'un échantillon contient, ce qu'il n'a pas le droit de porter et comment
 ses adresses se résolvent est décrit par [9. Échantillon de
-maquette](../../docs/FORMAT.md#9-échantillon-de-maquette). Ce document garde ce
+maquette](../../docs/format/FORMAT.md#9-échantillon-de-maquette). Ce document garde ce
 que le moteur relève dans Figma, et ce qu'il omet plutôt que de deviner.
 
 **Une notice, jamais un avertissement.** Deux échantillons là où le design en
@@ -302,7 +302,7 @@ ne manque, rien n'est à corriger.
 #### 7. Intention et documentation des props
 
 **[7. Intention et documentation des
-props](../../docs/FORMAT.md#7-intention-et-documentation-des-props) porte toute
+props](../../docs/format/FORMAT.md#7-intention-et-documentation-des-props) porte toute
 cette section, et ce cas limite demande d'être nommé.**
 
 La grammaire des règles décrit ce que le moteur lit dans Figma, donc ce
@@ -328,7 +328,7 @@ propriété), non exportée, **export non bloqué**. C'est la seule décision de
 document dans cette section : comment un rôle se rend, et pourquoi aucun rôle de
 contour ne cite une propriété qui consomme la boîte, appartient au format, [8.
 Rendu sémantique et
-garde-fous](../../docs/FORMAT.md#8-rendu-sémantique-et-garde-fous).
+garde-fous](../../docs/format/FORMAT.md#8-rendu-sémantique-et-garde-fous).
 
 ### Ce que l'export écrit
 
@@ -338,7 +338,7 @@ Le moteur ne choisit pas librement le nom de ce qu'il dépose : il projette le
 nom Figma par `codeIdentifier`, l'unique autorité du kit sur cette question, et
 n'écrit nulle part une seconde règle de nommage. La forme obtenue et les
 exemples qui l'illustrent sont [du
-format](../../docs/FORMAT.md#fichier-et-exemple) ; ce qui appartient au moteur
+format](../../docs/format/FORMAT.md#fichier-et-exemple) ; ce qui appartient au moteur
 est qu'il conserve le nom Figma **intact** dans `name` à côté de l'identifiant
 projeté. Aucune des deux valeurs ne se déduit de l'autre en sécurité, et publier
 les deux évite au consommateur d'avoir à inverser une normalisation qui perd de
@@ -365,7 +365,7 @@ typographie appartient au catalogue `textStyles` et aux usages exacts de chaque
 #### Composition et dépendances
 
 Ce que `composes` et le cadre de dépendance contiennent est décrit par
-[Composition et dépendances](../../docs/FORMAT.md#composition-et-dépendances).
+[Composition et dépendances](../../docs/format/FORMAT.md#composition-et-dépendances).
 Ce document garde la façon dont le moteur reconnaît une dépendance dans l'arbre
 Figma, et ce qu'il en dit.
 
@@ -375,7 +375,7 @@ Le moteur écrit dans `meta.diagnostics` tout ce qu’il a eu à signaler en lis
 Figma, et rien de plus : **un diagnostic parle de l’export, jamais du
 composant.** La forme d’une entrée et la règle qui la relie à
 `coverage.portable` appartiennent au format et sont décrites
-[là-bas](../../docs/FORMAT.md#métadonnées) ; ce qui relève du moteur est ce
+[là-bas](../../docs/format/FORMAT.md#métadonnées) ; ce qui relève du moteur est ce
 qu’il décide d’émettre.
 
 **Ce qui entre dans ce catalogue est borné :** un constat n’y est écrit que s’il
@@ -414,7 +414,7 @@ survoler la liste qui porte les gestes à faire.
 ## Partie 2 — Export tokens
 
 La forme de `tokens.json` est décrite par [Partie 2 : Export
-tokens](../../docs/FORMAT.md#partie-2--export-tokens). Ce document garde la
+tokens](../../docs/format/FORMAT.md#partie-2--export-tokens). Ce document garde la
 lecture des variables Figma, leurs collisions et leurs alias.
 
 **1. Lister**,
@@ -887,4 +887,4 @@ est celle entre regarder et écrire, non une affaire de degré.
 ## Versions
 
 Ce qu'un numéro de version engage est décrit par
-[Versions](../../docs/FORMAT.md#versions).
+[Versions](../../docs/format/FORMAT.md#versions).

@@ -7,7 +7,7 @@
  *
  * Le fichier suit la version `TOKENS_FORMAT_VERSION` du format de tokens :
  * couleurs et dimensions dans la forme du module DTCG 2025.10, et la marque
- * de version à la racine. docs/FORMAT.md en décrit la forme.
+ * de version à la racine. docs/format/FORMAT.md en décrit la forme.
  */
 import {
   EXTENSION_AXES_TOKENS,

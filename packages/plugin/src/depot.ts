@@ -264,13 +264,13 @@ export function corpsDeLaDemande(path: string, artifact: RepositoryArtifact, for
     'Ces avertissements ne bloquent pas la fusion.',
   ];
   // La marge garde la place de la ligne qui compte les points omis.
-  let reste = forge.termes.limiteDeCorps - 200 - [...debut, ...fin].join('\n').length;
+  let reste = forge.termes.limiteDeCorps - 200 - utf8ByteLength([...debut, ...fin].join('\n'));
   const lignes: string[] = [];
   for (const warning of warnings) {
     const ligne = `- ${forge.sansLienAutomatique(warning)}`;
-    if (ligne.length + 1 > reste) break;
+    if (utf8ByteLength(ligne) + 1 > reste) break;
     lignes.push(ligne);
-    reste -= ligne.length + 1;
+    reste -= utf8ByteLength(ligne) + 1;
   }
   const omis = warnings.length - lignes.length;
   if (omis > 0) {

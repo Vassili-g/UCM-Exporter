@@ -6,7 +6,7 @@ celle qui ne porte pas de marque de version du format de tokens.
 ## Pourquoi il existe
 
 Le kit lit un fichier sans marque comme la forme d'origine
-([COMPATIBILITE.md](../../../../../docs/COMPATIBILITE.md#la-version-du-format-de-tokens)).
+([COMPATIBILITE.md](../../../../../docs/format/COMPATIBILITE.md#la-version-du-format-de-tokens)).
 Le moteur, lui, ne produit que la version courante : la forme d'origine n'est
 donc observable qu'à partir d'un fichier que plus rien ne fabrique. Les tests
 du kit le lisent pour l'état `origine`.

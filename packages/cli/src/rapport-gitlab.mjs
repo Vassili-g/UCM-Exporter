@@ -20,6 +20,14 @@ import { resolve } from "node:path";
 
 export const MARQUEUR_RAPPORT = "<!-- ucm-rapport -->";
 
+function neutraliserActionsRapides(texte) {
+  return texte.replace(/^([ \t]*)(\/\S.*)$/gm, (_entier, avant, action) => {
+    const longueur = Math.max(0, ...[...action.matchAll(/`+/g)].map(([suite]) => suite.length)) + 1;
+    const borne = "`".repeat(longueur);
+    return `${avant}${borne}${action}${borne}`;
+  });
+}
+
 const API_PAR_DEFAUT = "https://gitlab.com/api/v4";
 
 const USAGE = "ucm rapport-gitlab --projet <id> --merge-request <iid> --fichier <chemin> [--api <url>]";
@@ -105,7 +113,7 @@ export async function rapportGitlab(arguments_, {
     alerter(`Le rapport ${valeurs.fichier} ne se lit pas (${erreurLecture?.code ?? erreurLecture?.message}) : aucune note n'est publiée.`);
     return 1;
   }
-  const corps = `${MARQUEUR_RAPPORT}\n${rapport}`;
+  const corps = `${MARQUEUR_RAPPORT}\n${neutraliserActionsRapides(rapport)}`;
   const projet = encodeURIComponent(valeurs.projet);
   const notes = `${valeurs.api}/projects/${projet}/merge_requests/${encodeURIComponent(valeurs.mergeRequest)}/notes`;
 
@@ -114,23 +122,36 @@ export async function rapportGitlab(arguments_, {
     try {
       reponse = await requete(url, {
         ...init,
+        redirect: "manual",
         headers: { "PRIVATE-TOKEN": jeton, "Content-Type": "application/json" },
       });
     } catch (panne) {
-      throw new RefusGitlab(null, `La requête vers GitLab n'a pas abouti en voulant ${action} (${panne?.message ?? panne}). Relancez le job.`);
+      throw new RefusGitlab(null, `La requête vers GitLab n'a pas abouti en voulant ${action}. Relancez le job.`);
+    }
+    if (reponse.status >= 300 && reponse.status < 400) {
+      throw new RefusGitlab(reponse.status, `GitLab a redirige la requete en voulant ${action}.`);
     }
     if (!reponse.ok) throw new RefusGitlab(reponse.status, gesteDuStatut(reponse.status, action));
     return reponse;
   }
 
   try {
-    const compte = await (await appeler(`${valeurs.api}/user`, "lire le compte du jeton")).json();
+    let compte;
+    try {
+      compte = await (await appeler(`${valeurs.api}/user`, "lire le compte du jeton")).json();
+    } catch (error) {
+      if (error instanceof RefusGitlab) throw error;
+      throw new RefusGitlab(null, "GitLab a rendu une réponse illisible en lisant le compte du jeton. Relancez le job.");
+    }
 
     let existante = null;
     let page = "1";
     while (page && !existante) {
       const reponse = await appeler(`${notes}?per_page=100&sort=asc&page=${page}`, "lire les notes de la merge request");
-      const lues = await reponse.json();
+      let lues;
+      try { lues = await reponse.json(); } catch {
+        throw new RefusGitlab(null, "GitLab a rendu une réponse illisible en lisant les notes de la merge request. Relancez le job.");
+      }
       existante = lues.find((note) => !note.system && note.author?.id === compte.id
         && typeof note.body === "string" && note.body.includes(MARQUEUR_RAPPORT)) ?? null;
       page = reponse.headers.get("x-next-page");

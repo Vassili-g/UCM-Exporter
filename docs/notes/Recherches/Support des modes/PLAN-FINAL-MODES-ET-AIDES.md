@@ -64,7 +64,7 @@ Ses défauts, par ordre de gravité :
    contextes. L'orthogonalité et les jetons synthétiques sont donc un choix d'UCM
    pour son CSS, pas une contrainte de la norme.
 3. **La correction de `ring` ajoute un champ sans nécessité et le classe mal.** Le
-   plan annonce une « classe 13, version mineure ». [COMPATIBILITE.md](../COMPATIBILITE.md)
+   plan annonce une « classe 13, version mineure ». [COMPATIBILITE.md](../../format/COMPATIBILITE.md)
    ne connaît que onze classes, et un champ dont l'absence laisse un lecteur
    précédent s'écarter de la maquette relève de la classe 2, en majeure. La
    section 5.2 corrige le rendu sans toucher au contrat.
@@ -202,7 +202,7 @@ Changements induits, à faire dans le même lot :
   seule marque : le test admet `com.ucm.axes` et garde la marque en tête.
 - `format/tokens.ts` : `ExtensionsDuDocument` et le `$extensions` d'une feuille
   reçoivent les nouvelles clés.
-- `docs/COMPATIBILITE.md` : classe 12, « ajout d'une extension facultative à
+- `docs/format/COMPATIBILITE.md` : classe 12, « ajout d'une extension facultative à
   `tokens.json` », migrée par personne ; le titre « Les onze classes » suit.
 
 États qu'un lecteur distingue sans second fichier :
@@ -273,7 +273,7 @@ de la collection :
   variable héritée.
 - **À mesurer** : les clés que rend `valuesByModeForCollectionAsync`, et la
   parente venue d'une bibliothèque. Sans fichier Enterprise réel, le support est
-  publié comme expérimental dans `docs/FORMAT.md`, prouvé sur simulation.
+  publié comme expérimental dans `docs/format/FORMAT.md`, prouvé sur simulation.
 
 Le générateur CSS fabrique les variables intermédiaires (section 4.3). Le format
 reste la description fidèle de Figma et ne porte aucun jeton synthétique.
@@ -476,14 +476,14 @@ Repris du plan courant, section 13, avec la distinction de la revue, point 1.
 
 Mesuré : `defaultRenderingSemantics()` publie pour `ring`
 `cssProperties: ['outline-color', 'outline-width']` et `fallback: 'box-shadow'`.
-`outline-style` vaut `none` par défaut en CSS. [FORMAT.md](../FORMAT.md) recommande
+`outline-style` vaut `none` par défaut en CSS. [FORMAT.md](../../format/FORMAT.md) recommande
 le repli « dès que la fidélité l'exige » ; la skill ne l'emploie « que si ces
 propriétés ne suffisent pas ». Un stroke pointillé avertit déjà
 (`unsupportedProperties.ts`) : le trait publié est plein.
 
 Décision : aucun changement de contrat.
 
-- `docs/FORMAT.md`, section 8, écrit que `cssProperties` nomme la famille de
+- `docs/format/FORMAT.md`, section 8, écrit que `cssProperties` nomme la famille de
   propriétés qui porte les tokens, sans être la liste exhaustive des
   déclarations. Un rôle `stroke` rendu par `outline` pose `outline-style: solid`,
   et `align` et `width` donnent `outline-offset`.

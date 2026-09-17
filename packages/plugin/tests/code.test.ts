@@ -197,6 +197,21 @@ test('une panne du stockage après l’export conserve le fichier produit', asyn
   assert.ok(h.messages.some(({ type }) => type === 'download'));
 });
 
+test('une configuration enregistrée rend les analyses précédentes impropres à publier', async () => {
+  const h = ouvrir();
+  await h.envoyer({ type: 'analyser-tokens' });
+  await h.envoyer({ type: 'save-settings', settings: {
+    repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test',
+  } });
+  await h.envoyer({ type: 'publier', genre: 'tokens' });
+
+  assert.equal(h.appels.publications, 0);
+  assert.match(
+    h.messages.filter((message) => message.type === 'status').at(-1)?.text ?? '',
+    /Aucune analyse disponible/,
+  );
+});
+
 test('les messages sans type ou inconnus restent sans effet', async () => {
   const h = ouvrir();
   for (const message of [null, {}, { type: 'inconnu' }]) await h.envoyer(message as UiRequest);

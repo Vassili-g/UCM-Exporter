@@ -4,7 +4,8 @@
  * publient les décisions du noyau sans dupliquer son orchestration.
  * Codes : 0 succès, 1 contrôles rouges, 2 invocation ou configuration fautive.
  */
-import { realpathSync } from "node:fs";
+import { existsSync, realpathSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { pathToFileURL } from "node:url";
 
@@ -113,6 +114,18 @@ function executerCommande(arguments_, {
   ecrire = console.log,
   ...sorties
 } = {}) {
+  const racineInitiale = racine;
+  for (let candidate = resolve(racine); ; candidate = dirname(candidate)) {
+    if (existsSync(resolve(candidate, "ucm.config.json")) || existsSync(resolve(candidate, ".git"))) {
+      racine = candidate;
+      break;
+    }
+    const parent = dirname(candidate);
+    if (parent === candidate) {
+      racine = racineInitiale;
+      break;
+    }
+  }
   const [commande] = arguments_;
 
   if (commande === undefined || commande === "--help" || commande === "-h") {

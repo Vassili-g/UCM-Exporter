@@ -109,7 +109,8 @@ function defautDeDeclaration(declaration) {
   if (!estObjet(extensions)) return "déclare des extensions qui ne sont pas un objet";
   for (const [nom, extension] of Object.entries(extensions)) {
     if (nom === "base") return "déclare une extension nommée « base », qui désigne la collection elle-même";
-    const parent = extension?.parent;
+    if (!estObjet(extension)) return `extension ${nom} invalide`;
+    const parent = extension.parent;
     if (parent !== "base" && !possede(extensions, parent)) {
       return `déclare l'extension « ${nom} » avec une parente inconnue`;
     }

@@ -3,7 +3,7 @@
 Ce document définit le problème, les responsabilités et les principes du modèle,
 puis situe UCM parmi les outils de design system.
 La forme de ce qui est publié est spécifiée dans
-[docs/FORMAT.md](./docs/FORMAT.md), le comportement du plugin dans
+[docs/format/FORMAT.md](./docs/format/FORMAT.md), le comportement du plugin dans
 [packages/plugin/SPEC.md](./packages/plugin/SPEC.md), et l’avancement dans
 [ROADMAP.md](./ROADMAP.md).
 
@@ -119,7 +119,7 @@ une autre représentation.
 
 Chaque combinaison réelle est décrite de façon autonome, sans héritage ni merge
 implicite entre elles : deux combinaisons ne partagent une description que si
-elle leur est strictement identique. [docs/FORMAT.md](./docs/FORMAT.md) porte la
+elle leur est strictement identique. [docs/format/FORMAT.md](./docs/format/FORMAT.md) porte la
 forme exacte de cette projection.
 
 ## 5. Le workflow
@@ -169,7 +169,7 @@ standard ci-dessous, à partir de leurs documentations.
 | [Storybook](https://storybook.js.org/docs/writing-docs/autodocs) | Documente les composants depuis le code, les stories et les métadonnées de props | UCM fournit les obligations issues de Figma ; les stories montrent le comportement de l’implémentation. Leur comparaison permet d’étudier les écarts |
 | [UXPin Merge](https://www.uxpin.com/docs/merge/merge-design-system-documentation/) | Intègre une bibliothèque de composants codés dans l’outil de conception et en dérive la documentation | UCM conserve une source visuelle dans Figma, distincte du code applicatif, et contrôle leur relation |
 | [Backlight](https://backlight.dev/docs/make-your-first-design-system) | Regroupe le code, les stories, les tests, la documentation et les ressources design par composant, avec une intégration Git | UCM ajoute à cette organisation un contrat visuel exporté de Figma. Ce fichier peut être lu par les outils du repository |
-| [DTCG](https://www.designtokens.org/tr/2025.10/format/) | Définit un format d’échange pour les tokens et leurs références | UCM emprunte à DTCG la structure de `tokens.json`, ses alias, ses `$extensions` et la forme des couleurs et des dimensions du module `2025.10`, que Style Dictionary 5 lit ; [docs/FORMAT.md](./docs/FORMAT.md#partie-2--export-tokens) donne les écarts qui restent. Le contrat de composant décrit les variantes, états, placements et règles d’usage qui emploient ces tokens |
+| [DTCG](https://www.designtokens.org/tr/2025.10/format/) | Définit un format d’échange pour les tokens et leurs références | UCM emprunte à DTCG la structure de `tokens.json`, ses alias, ses `$extensions` et la forme des couleurs et des dimensions du module `2025.10`, que Style Dictionary 5 lit ; [docs/format/FORMAT.md](./docs/format/FORMAT.md#partie-2--export-tokens) donne les écarts qui restent. Le contrat de composant décrit les variantes, états, placements et règles d’usage qui emploient ces tokens |
 
 L’apport recherché est de rendre ces obligations visuelles accessibles à un
 développeur, une CI ou un agent depuis le repository. La reconstruction à froid

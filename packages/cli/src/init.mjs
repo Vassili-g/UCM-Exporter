@@ -520,8 +520,16 @@ function workflow(version) {
     "        # --edit-last met à jour le commentaire précédent au lieu d'en empiler",
     "        # un nouveau à chaque push ; s'il n'en existe pas encore, on en crée un.",
     "        run: |",
-    '          gh pr comment "$NUMERO" -R "$GITHUB_REPOSITORY" --body-file ci-report.md --edit-last \\',
-    '            || gh pr comment "$NUMERO" -R "$GITHUB_REPOSITORY" --body-file ci-report.md',
+    '          printf "<!-- ucm-rapport -->\\n" > ucm-report.md',
+    '          cat ci-report.md >> ucm-report.md',
+    '          COMPTE="$(gh api user --jq .login)"',
+    '          NOTE="$(gh api "repos/$GITHUB_REPOSITORY/issues/$NUMERO/comments" --paginate \\',
+    '            --jq ".[] | select(.user.login == \\\"$COMPTE\\\") | select(.body | startswith(\\\"<!-- ucm-rapport -->\\\")) | .id" | tail -n 1)"',
+    '          if [ -n "$NOTE" ]; then',
+    '            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$NOTE" -f body="$(cat ucm-report.md)"',
+    '          else',
+    '            gh pr comment "$NUMERO" -R "$GITHUB_REPOSITORY" --body-file ucm-report.md',
+    '          fi',
     "",
   ].join("\n");
 }
@@ -608,7 +616,7 @@ function workflowGitlab(version) {
     "  allow_failure: true",
     "  variables:",
     "    # Aucun clone : ni .npmrc ni node_modules du repository.",
-    "    GIT_STRATEGY: none",
+    "    GIT_STRATEGY: empty",
     '    NPM_CONFIG_IGNORE_SCRIPTS: "true"',
     "  script:",
     "    # Filet : sans rapport, `ucm` s'est arrêté avant le contrôle (clone,",
@@ -660,14 +668,15 @@ function lignesGitlab(racine) {
   try {
     const ci = readFileSync(join(racine, ".gitlab-ci.yml"), "utf8");
     const stages = blocDeRacine(ci, "stages");
-    if (stages !== null && !/\btest\b/.test(stages)) {
+    if (stages !== null && !/(?:^|[\s,\[])(?:-\s*)?test(?=$|[\s,\]])/m.test(stages)) {
       lignes.push({
         fichier: ".gitlab-ci.yml",
         ligne: "ajoutez `test` à `stages:`. Le job ucm s'y range, et GitLab refuse un pipeline dont un job vise un stage absent.",
       });
     }
     const workflow = blocDeRacine(ci, "workflow");
-    if (workflow !== null && /^[ \t]+rules:/m.test(workflow) && !workflow.includes("merge_request_event")) {
+    const exclutLesMr = /if:\s*[^\n]*merge_request_event[\s\S]{0,160}?when:\s*never/.test(workflow ?? '');
+    if (workflow !== null && /^[ \t]+rules:/m.test(workflow) && (!workflow.includes("merge_request_event") || exclutLesMr)) {
       lignes.push({
         fichier: ".gitlab-ci.yml",
         ligne: "ajoutez `- if: $CI_PIPELINE_SOURCE == \"merge_request_event\"` en tête de `workflow:rules`. Sans cette règle, GitLab ne crée aucun pipeline de merge request et le job ucm ne contrôle aucun export.",

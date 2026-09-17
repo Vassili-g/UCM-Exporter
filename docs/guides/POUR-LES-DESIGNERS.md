@@ -47,9 +47,9 @@ même page, décrit l'usage du composant, les combinaisons recommandées et la
 politique de ses icônes. Écrivez le nom du composant dans son calque
 `component-name` : c'est ce texte qui relie les règles au composant. Le geste
 complet est dans [Documenter les règles
-d'usage](../packages/plugin/README.md#documenter-les-règles-dusage), et ce que
+d'usage](../../packages/plugin/README.md#documenter-les-règles-dusage), et ce que
 chaque règle devient dans [7. Intention et documentation des
-props](./FORMAT.md#7-intention-et-documentation-des-props).
+props](../format/FORMAT.md#7-intention-et-documentation-des-props).
 
 ## 3. Exporter
 
@@ -210,27 +210,27 @@ définition complète est écrite.
 
 | Terme | En une phrase |
 |---|---|
-| **Contrat** | Le fichier `<Nom>.contract.json` exporté depuis Figma, posé à côté du code du composant. [Forme complète](./FORMAT.md#sortie) |
-| **Token** | Une variable du design system, citée par son nom et jamais par sa valeur, pour qu'un changement de thème n'oblige pas à réexporter. [Nommer et citer un token](./FORMAT.md#nommer-et-citer-un-token) |
-| **Variante** | Une combinaison de valeurs d'axes qui existe réellement dans votre set. Le contrat liste celles qui existent, jamais toutes celles qui seraient possibles. [1. Props](./FORMAT.md#1-props) |
-| **État** | Un axe `State` ou `Status` : hover, focus, disabled. Il est publié à part des props, parce qu'il vient de l'exécution et non d'un choix d'API. [4. Modèle d'interaction](./FORMAT.md#4-modèle-dinteraction) |
-| **Slot** | Un emplacement de l'arbre du composant, où se range un texte, une icône ou un composant imbriqué. [6. Structure](./FORMAT.md#6-structure) |
-| **Structure** | L'arbre des calques que le contrat publie, avec leur flux et leurs alignements. [6. Structure](./FORMAT.md#6-structure) |
-| **Vue** | La description exacte d'une variante, obtenue en suivant cinq renvois vers des catalogues partagés. Deux variantes identiques citent la même vue. [Sortie](./FORMAT.md#sortie) |
-| **Composition** | Le fait qu'un composant en réutilise un autre. Le contrat cite la dépendance sans recopier son contenu. [Composition et dépendances](./FORMAT.md#composition-et-dépendances) |
-| **Parité** | La comparaison entre les props du contrat et l'API réelle du composant dans le code. [ROADMAP](../ROADMAP.md) |
-| **Couverture portable** | Le champ qui dit si l'export a tout su décrire. `complete` : rien n'est perdu. `partial` : un message nomme le calque et la propriété concernés. [Métadonnées](./FORMAT.md#métadonnées) |
-| **Diagnostic** | Un message adressé à vous, avec son constat, son impact et son geste. [8. Rendu sémantique et garde-fous](./FORMAT.md#8-rendu-sémantique-et-garde-fous) |
-| **Échantillon de maquette** | Ce que Figma affichait au moment de l'export : textes, valeurs. Il aide à retrouver l'esthétique voulue. Aucun contrôle ne le compare au code. [9. Échantillon de maquette](./FORMAT.md#9-échantillon-de-maquette) |
-| **Adaptateur** | Un paquet optionnel qui apprend à la CI à lire le code d'une technologie donnée. Sans lui, les contrôles indépendants du langage fonctionnent quand même. [README du CLI](../packages/cli/README.md) |
+| **Contrat** | Le fichier `<Nom>.contract.json` exporté depuis Figma, posé à côté du code du composant. [Forme complète](../format/FORMAT.md#sortie) |
+| **Token** | Une variable du design system, citée par son nom et jamais par sa valeur, pour qu'un changement de thème n'oblige pas à réexporter. [Nommer et citer un token](../format/FORMAT.md#nommer-et-citer-un-token) |
+| **Variante** | Une combinaison de valeurs d'axes qui existe réellement dans votre set. Le contrat liste celles qui existent, jamais toutes celles qui seraient possibles. [1. Props](../format/FORMAT.md#1-props) |
+| **État** | Un axe `State` ou `Status` : hover, focus, disabled. Il est publié à part des props, parce qu'il vient de l'exécution et non d'un choix d'API. [4. Modèle d'interaction](../format/FORMAT.md#4-modèle-dinteraction) |
+| **Slot** | Un emplacement de l'arbre du composant, où se range un texte, une icône ou un composant imbriqué. [6. Structure](../format/FORMAT.md#6-structure) |
+| **Structure** | L'arbre des calques que le contrat publie, avec leur flux et leurs alignements. [6. Structure](../format/FORMAT.md#6-structure) |
+| **Vue** | La description exacte d'une variante, obtenue en suivant cinq renvois vers des catalogues partagés. Deux variantes identiques citent la même vue. [Sortie](../format/FORMAT.md#sortie) |
+| **Composition** | Le fait qu'un composant en réutilise un autre. Le contrat cite la dépendance sans recopier son contenu. [Composition et dépendances](../format/FORMAT.md#composition-et-dépendances) |
+| **Parité** | La comparaison entre les props du contrat et l'API réelle du composant dans le code. [ROADMAP](../../ROADMAP.md) |
+| **Couverture portable** | Le champ qui dit si l'export a tout su décrire. `complete` : rien n'est perdu. `partial` : un message nomme le calque et la propriété concernés. [Métadonnées](../format/FORMAT.md#métadonnées) |
+| **Diagnostic** | Un message adressé à vous, avec son constat, son impact et son geste. [8. Rendu sémantique et garde-fous](../format/FORMAT.md#8-rendu-sémantique-et-garde-fous) |
+| **Échantillon de maquette** | Ce que Figma affichait au moment de l'export : textes, valeurs. Il aide à retrouver l'esthétique voulue. Aucun contrôle ne le compare au code. [9. Échantillon de maquette](../format/FORMAT.md#9-échantillon-de-maquette) |
+| **Adaptateur** | Un paquet optionnel qui apprend à la CI à lire le code d'une technologie donnée. Sans lui, les contrôles indépendants du langage fonctionnent quand même. [README du CLI](../../packages/cli/README.md) |
 | **Composant jetable** | Un composant reconstruit depuis son seul contrat, pour vérifier que ce contrat suffit. Il se jette et se refait. Il ne forme jamais une bibliothèque |
 
 ## 9. Où aller ensuite
 
-- [../packages/plugin/README.md](../packages/plugin/README.md) : où obtenir le
+- [../../packages/plugin/README.md](../../packages/plugin/README.md) : où obtenir le
   plugin, et ce qu'il ne fait pas.
 - [../README.md](../README.md) : la vue d'ensemble du projet.
-- [FORMAT.md](./FORMAT.md) : la forme exacte de chaque champ, si vous voulez
+- [FORMAT.md](../format/FORMAT.md) : la forme exacte de chaque champ, si vous voulez
   lire un contrat en détail.
-- [../ROADMAP.md](../ROADMAP.md) : ce que le projet sait faire aujourd'hui, et
+- [../../ROADMAP.md](../../ROADMAP.md) : ce que le projet sait faire aujourd'hui, et
   ce qu'il ne prouve pas encore.

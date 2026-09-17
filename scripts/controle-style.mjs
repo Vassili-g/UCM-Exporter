@@ -360,11 +360,11 @@ export const AUTORITES = [
   'CONTRIBUTING.md',
   'ROADMAP.md',
   'docs/README.md',
-  'docs/FORMAT.md',
-  'docs/COMPATIBILITE.md',
-  'docs/CHANGELOG-FORMAT.md',
-  'docs/POUR-LES-DESIGNERS.md',
-  'docs/RECETTE.md',
+  'docs/format/FORMAT.md',
+  'docs/format/COMPATIBILITE.md',
+  'docs/format/CHANGELOG-FORMAT.md',
+  'docs/guides/POUR-LES-DESIGNERS.md',
+  'docs/guides/RECETTE.md',
   'packages/plugin/SPEC.md',
 ];
 

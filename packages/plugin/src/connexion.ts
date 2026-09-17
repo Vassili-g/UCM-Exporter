@@ -165,6 +165,9 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
  * endroit. Les recopier ici en ferait un second domicile, promis à diverger.
  */
 export function gesteApresEchecDePublication(statut: number | null, termes: TermesDeForge, reponse = ''): string {
+  if (statut === null && reponse) {
+    return `${reponse} Corrigez ce point, puis relancez la publication.`;
+  }
   if (statut !== null && termes.statutsDeRegle.includes(statut)) {
     return reponse
       ? `${reponse} Transmettez ce message à un mainteneur du ${termes.depot} : une règle de push du ${termes.depot} ou une branche du même nom produit ce refus.`

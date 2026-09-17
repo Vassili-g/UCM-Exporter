@@ -59,7 +59,7 @@ export function releveDuDiff(racine, base, sourceTokens, executer = execFileSync
   let contratsModifies;
   try {
     contratsModifies = git([
-      "diff", "--name-only", base, "HEAD", "--", ":(glob)**/*.contract.json",
+      "diff", "--name-only", "-z", base, "HEAD", "--", ":(glob)**/*.contract.json",
     ]);
   } catch (erreur) {
     return {
@@ -79,7 +79,7 @@ export function releveDuDiff(racine, base, sourceTokens, executer = execFileSync
     tokensModifies = true;
   }
 
-  return { contratsModifies, tokensModifies };
+  return { contratsModifies: contratsModifies.replaceAll("\0", "\n"), tokensModifies };
 }
 
 /**

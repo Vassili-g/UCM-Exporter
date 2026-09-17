@@ -20,7 +20,7 @@
  * regex ouvrirait un commentaire fantôme. Le dépôt n'en contient pas, et un
  * écart de quelques centaines de caractères ne changerait aucune décision.
  *
- * Usage : `node scripts/mesurer-prose.mjs > docs/notes/baseline-prose.json`
+ * Usage : `node scripts/mesurer-prose.mjs > docs/notes/qualite/baseline-prose.json`
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';

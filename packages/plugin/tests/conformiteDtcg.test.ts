@@ -4,7 +4,7 @@
  *
  * Le schéma juge la forme de chaque feuille. Il ne lit ni `$extensions`, ni
  * l'existence d'une cible, ni l'alpha qu'il tient pour facultatif. Le fichier
- * reste un dialecte sur les feuilles que docs/FORMAT.md énumère, et ce test en
+ * reste un dialecte sur les feuilles que docs/format/FORMAT.md énumère, et ce test en
  * fixe les chemins exacts : une feuille qui cesserait d'être conforme, ou le
  * redeviendrait, le fait échouer.
  */

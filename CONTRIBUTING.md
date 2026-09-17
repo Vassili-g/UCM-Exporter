@@ -6,7 +6,7 @@ message, un test, un document, et vérifier avant de proposer un changement.
 Il ne dit pas ce que le produit garantit. Les règles que le code doit tenir sont
 les invariants d'[AGENTS.md](./AGENTS.md#invariants), qui donnent pour chacune
 sa borne et son fichier autorité. Les deux spécifications portent leur
-raisonnement : [docs/FORMAT.md](./docs/FORMAT.md) pour la forme de ce qui est
+raisonnement : [docs/format/FORMAT.md](./docs/format/FORMAT.md) pour la forme de ce qui est
 publié, [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) pour ce que le
 plugin lit dans Figma. Lire la spécification concernée avant de modifier, et
 l'invariant avant de croire qu'une règle n'existe pas.
@@ -367,7 +367,7 @@ caractères, soit 2,4 % de sa prose, et le gain vient d’un seul geste : rendre
 une règle, sa borne ou son pourquoi, et en retirer une phrase retire une clause.
 Une nouvelle passe visant un volume plutôt qu’une redite coûterait donc de
 l’information. `scripts/mesurer-prose.mjs` mesure l’état courant et
-`docs/notes/baseline-prose.json` en garde un relevé de départ.
+`docs/notes/qualite/baseline-prose.json` en garde un relevé de départ.
 
 ### Une règle, un domicile
 
@@ -376,7 +376,7 @@ porte donc une altitude différente, et une seule fait autorité :
 
 | Endroit | Ce qu’il porte |
 |---|---|
-| `docs/FORMAT.md` | L’autorité sur la règle et son pourquoi, quand elle porte sur ce qui est publié |
+| `docs/format/FORMAT.md` | L’autorité sur la règle et son pourquoi, quand elle porte sur ce qui est publié |
 | `packages/plugin/SPEC.md` | L’autorité sur la règle et son pourquoi, quand elle porte sur ce que le plugin lit |
 | `AGENTS.md` | La règle, sa borne, le fichier qui la porte, un lien vers la spécification |
 | Commentaire de code | Ce qui ne vaut qu’à cet endroit du code |

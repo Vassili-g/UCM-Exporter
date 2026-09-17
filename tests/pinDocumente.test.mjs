@@ -20,7 +20,7 @@ const PAQUETS = ["@ucm-kit/cli", "@ucm-kit/adapter-typescript"];
  * Ses commandes épinglent donc la version publiée, et elles ont raison contre ce
  * garde-fou.
  */
-const RECETTE = "docs/RECETTE.md";
+const RECETTE = "docs/guides/RECETTE.md";
 
 function documents(dossier = racine) {
   const trouves = [];

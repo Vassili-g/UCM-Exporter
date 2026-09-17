@@ -138,6 +138,8 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
 
   if (message.type === 'settings') {
     configurationPage.acceptRemoteSettings(message.settings);
+    composant.reinitialiser();
+    tokens.reinitialiser();
   }
 
   if (message.type === 'cible') {

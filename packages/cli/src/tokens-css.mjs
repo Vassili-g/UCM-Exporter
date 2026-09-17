@@ -293,6 +293,10 @@ export function feuilleDesTokens(document, { axes = [], attributs = new Map(), r
   const parNom = new Map();
   for (const chemin of index.keys()) {
     const nom = tokenCssVariable(chemin);
+    if (nom === "--") {
+      refus.push(`La feuille « ${chemin} » ne donne aucun nom CSS.`);
+      continue;
+    }
     if (nom.startsWith(PREFIXE_DES_INTERMEDIAIRES)) {
       refus.push(`La feuille « ${chemin} » donne la propriété « ${nom} », dont le préfixe ${PREFIXE_DES_INTERMEDIAIRES} est réservé aux collections étendues.`);
     }
@@ -569,7 +573,8 @@ export function tokensCss(arguments_, {
     return 2;
   };
 
-  const enTete = `/* Généré par ucm tokens css depuis ${configuration.tokens}. Relancer la commande plutôt que modifier ce fichier. */\n`;
+  const cheminDansLEnTete = configuration.tokens.replaceAll("*/", "* /");
+  const enTete = `/* Généré par ucm tokens css depuis ${cheminDansLEnTete}. Relancer la commande plutôt que modifier ce fichier. */\n`;
 
   if (!existsSync(source)) {
     const cites = contratsQuiCitentDesTokens(racine, configuration.components);

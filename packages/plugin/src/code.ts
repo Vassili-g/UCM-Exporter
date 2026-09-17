@@ -51,7 +51,7 @@ function postStatus(state: 'loading' | 'success' | 'error', text: string): void 
 
 function signalerEchec(): void {
   const texte = 'La demande n’a pas abouti. Réessayez ; si l’erreur persiste, relancez le plugin.';
-  postStatus('error', texte);
+  if (operationEnCours === null) postStatus('error', texte);
   figma.notify(texte, { error: true });
 }
 
@@ -399,7 +399,7 @@ async function publier(genre: ArtifactKind): Promise<void> {
     // Une demande d'export est faite pour être relue tout de suite par le designer
     // qui vient de l'ouvrir : on l'amène dessus sans lui demander un clic.
     openExternal(publication.pullRequestUrl);
-    postConnection('connecte');
+    await refreshConfiguration();
     postStatus('success', textes.creee(analyse.succes));
     figma.notify(textes.creee(analyse.succes));
   } catch (error) {
@@ -501,6 +501,7 @@ async function traiterMessage(message: UiRequest): Promise<void> {
       versUi({ type: 'settings-save-error' });
       return;
     }
+    analysesGardees.clear();
     await refreshConfiguration();
     return;
   }
@@ -528,6 +529,7 @@ async function traiterMessage(message: UiRequest): Promise<void> {
 
   if (message.type === 'supprimer-token') {
     await supprimerPat();
+    analysesGardees.clear();
     // La configuration est rechargée : sans jeton elle n'est plus valide, et la
     // pastille le dit du même geste.
     await refreshConfiguration();

@@ -6,7 +6,7 @@ les rend utiles.
 ## Pourquoi ils existent
 
 La fenêtre de lecture porte la 12.0 et la 13.0
-([COMPATIBILITE.md](../../../../../docs/COMPATIBILITE.md)), et le jeu N-1 est
+([COMPATIBILITE.md](../../../../../docs/format/COMPATIBILITE.md)), et le jeu N-1 est
 [celui de la 12.0](../12.0/README.md). `validation-contrat.mjs` garde pourtant
 le code qui lit la 11.0 et les versions antérieures.
 

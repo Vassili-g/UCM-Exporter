@@ -1,9 +1,9 @@
 # Roadmap
 
 L'état du projet et ce qu'il reste à valider. [CONCEPT.md](./CONCEPT.md) porte
-les principes, [docs/FORMAT.md](./docs/FORMAT.md) la forme publiée,
+les principes, [docs/format/FORMAT.md](./docs/format/FORMAT.md) la forme publiée,
 [packages/plugin/SPEC.md](./packages/plugin/SPEC.md) le comportement du plugin,
-et [docs/notes/PISTES-EVOLUTION.md](./docs/notes/PISTES-EVOLUTION.md) les
+et [docs/notes/produit/PISTES-EVOLUTION.md](./docs/notes/produit/PISTES-EVOLUTION.md) les
 options non engagées.
 
 Le projet est un **prototype avancé**. Les preuves durables portent sur les lois
@@ -41,7 +41,7 @@ un composant composé. Couvrir un catalogue entier n'en fait pas partie.
 | Consommation | `@ucm-kit/core` lit deux versions et porte les contrôles indépendants du langage. `@ucm-kit/cli` les exécute et découvre l'adaptateur optionnel. `@ucm-kit/adapter-typescript` compare props et composition, puis génère les types dérivés |
 | Contrôles chez le consommateur | Forme, version du contrat et du format de tokens, graphe de composition, adresses des échantillons, références de tokens, et parité statique quand l'adaptateur est installé. Tout vient du workflow qu'`ucm init` écrit |
 | Rapport CI | Constats et avertissements agrégés dans le terminal, le résumé CI, le commentaire de pull request sur GitHub et la note de merge request sur GitLab |
-| Forges | Le plugin publie sur GitHub et sur gitlab.com : une branche, un fichier et une demande de fusion par export. `ucm init` écrit la CI de la forge du repository. Le parcours GitLab de la [recette](./docs/RECETTE.md#parcours-gitlab) a été joué sur un projet gitlab.com |
+| Forges | Le plugin publie sur GitHub et sur gitlab.com : une branche, un fichier et une demande de fusion par export. `ucm init` écrit la CI de la forge du repository. Le parcours GitLab de la [recette](./docs/guides/RECETTE.md#parcours-gitlab) a été joué sur un projet gitlab.com |
 | Interopérabilité | JSON Schema publié dans `schema/`, dérivé de `types.ts`. Il décrit la forme, jamais la cohérence. Il ne bloque aucune fusion |
 | Validation Figma | Quatre composants exportés à la forme courante, puis reconstruits à froid depuis leur seul contrat. Le Playground porte ce corpus, et son contrôle est vert |
 
@@ -51,7 +51,7 @@ Aucun contrôle n'exécute le rendu.
 
 | Limite | Ce qu'elle empêche de dire |
 |---|---|
-| La comparaison du rendu avec Figma n'est consignée nulle part | Le projet n'a aucune preuve visuelle écrite. C'est l'objet de la [recette externe](./docs/RECETTE.md) |
+| La comparaison du rendu avec Figma n'est consignée nulle part | Le projet n'a aucune preuve visuelle écrite. C'est l'objet de la [recette externe](./docs/guides/RECETTE.md) |
 | Aucun contrat existant ne publie de `SLOT` ni de propriété `INSTANCE_SWAP` native | Ces deux chemins du moteur ne sont éprouvés que par des tests synthétiques |
 | Le corpus tient à quatre composants | La généralité du moteur se mesure sur ses invariants, pas sur ce corpus |
 | Les protections de branche sont indisponibles sur le plan GitHub actuel | La CI détecte l'écart sans empêcher la fusion. Une pull request rouge reste fusionnable |
@@ -95,7 +95,7 @@ de code peut en revanche échapper à l'analyse statique.
 Aucun contrôle n'exerce le rendu. Le Playground ne porte aucun test par
 composant. Aucun vérificateur générique n'exerce les vues exactes d'un composant
 arbitraire. Les contrôles disponibles et cette limite sont détaillés dans
-[PLAN-CONFORMITE-RENDU.md](./docs/notes/PLAN-CONFORMITE-RENDU.md).
+[PLAN-CONFORMITE-RENDU.md](./docs/notes/verification/PLAN-CONFORMITE-RENDU.md).
 
 Ce qui en approche le plus reste statique : `@ucm-kit/adapter-typescript` lit
 l'API publique avec le vérificateur de types et compte, dans le JSX, les
@@ -168,7 +168,7 @@ passerait alors pour une garantie.
 
 Le schéma dérive de `types.ts` et documente les champs dont l'absence ou la
 valeur oriente une décision. La [politique de
-compatibilité](./docs/COMPATIBILITE.md) relie le contrat, le schéma, les tokens,
+compatibilité](./docs/format/COMPATIBILITE.md) relie le contrat, le schéma, les tokens,
 les paquets et les adaptateurs.
 
 L'alignement DTCG donne à `tokens.json` sa version 1 du format de tokens.
@@ -191,7 +191,7 @@ plugin et le réexport restent à faire.
 
 ### 6. Passer la recette externe
 
-La [recette externe](./docs/RECETTE.md) suit la publication de l'alignement
+La [recette externe](./docs/guides/RECETTE.md) suit la publication de l'alignement
 DTCG. Elle part d'un dépôt vidé de tout UCM, ouvre le plugin depuis la Figma
 Community, installe le CLI publié, exporte les tokens puis un composant vers une
 vraie pull request, reconstruit le composant et laisse le workflow publier son
@@ -220,5 +220,5 @@ Le MVP est validé lorsque :
   garanties.
 
 L'interface a été regardée dans un fichier Figma réel, dans les deux thèmes. La
-[recette externe](./docs/RECETTE.md) reste la preuve manquante avant de proposer
+[recette externe](./docs/guides/RECETTE.md) reste la preuve manquante avant de proposer
 le projet à une expérimentation sur un catalogue plus large.

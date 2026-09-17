@@ -24,7 +24,7 @@ const GITLAB_API = 'https://gitlab.com/api/v4';
  */
 const FORMES_AUTOLIEES = new RegExp(
   '(^|[^\\w`])('
-    + '[\\w.-]+(?:/[\\w.-]+)+[#!]\\d+'
+    + '[\\w.-]+(?:/[\\w.-]+)*[#!$~%&]\\d+'
     + '|@[A-Za-z0-9](?:[\\w.-]*[\\w-])?'
     + '|[#!$&]\\d+'
     + '|[~%](?:"[^"\\n]+"|[A-Za-z0-9_](?:[\\w.-]*[\\w-])?)'
@@ -35,6 +35,12 @@ const FORMES_AUTOLIEES = new RegExp(
 /** Une ligne qui commence par `/` : GitLab l'exécute comme action rapide, puis la retire du texte. */
 const ACTION_RAPIDE = /^([ \t]*)(\/\S+)/gm;
 
+function codeInerte(texte: string): string {
+  const longueur = Math.max(0, ...[...texte.matchAll(/`+/g)].map(([suite]) => suite.length)) + 1;
+  const borne = '`'.repeat(longueur);
+  return `${borne}${texte}${borne}`;
+}
+
 /**
  * Rend un texte inerte dans une page GitLab.
  *
@@ -44,7 +50,9 @@ const ACTION_RAPIDE = /^([ \t]*)(\/\S+)/gm;
  * relie ni n'exécute, et qui se lit comme elle s'écrit dans Figma.
  */
 export function sansLienAutomatiqueGitlab(texte: string): string {
-  return texte.replace(FORMES_AUTOLIEES, '$1`$2`').replace(ACTION_RAPIDE, '$1`$2`');
+  return texte
+    .replace(ACTION_RAPIDE, (_entier, avant, action) => `${avant}${codeInerte(action)}`)
+    .replace(FORMES_AUTOLIEES, (_entier, avant, forme) => `${avant}${codeInerte(forme)}`);
 }
 
 /** Le message d'une réponse d'erreur, qui est une chaîne ou un objet de champs. */
@@ -105,24 +113,29 @@ export function forgeGitlab(config: ConfigurationDeForge): Forge {
   }
 
   async function demandesOuvertes(): Promise<DemandeOuverte[]> {
-    const ouvertes = await gitlabRequest<{
-      source_branch?: unknown;
-      web_url?: unknown;
-      project_id?: unknown;
-      source_project_id?: unknown;
-    }[]>(
-      `${projet}/merge_requests?state=opened&target_branch=${encodeURIComponent(config.baseBranch)}&per_page=100`,
-    );
-    if (!ouvertes) return [];
-    // Une merge request venue d'une fourche porte une branche d'un autre projet,
-    // que la lecture de fichier chercherait en vain dans celui-ci.
-    return ouvertes
-      .filter((demande) => typeof demande.source_branch === 'string'
-        && demande.source_project_id === demande.project_id)
-      .map((demande) => ({
-        branche: demande.source_branch as string,
-        url: typeof demande.web_url === 'string' ? demande.web_url : null,
-      }));
+    const demandes: DemandeOuverte[] = [];
+    for (let page = 1; ; page += 1) {
+      const ouvertes = await gitlabRequest<{
+        source_branch?: unknown;
+        web_url?: unknown;
+        project_id?: unknown;
+        source_project_id?: unknown;
+      }[]>(
+        `${projet}/merge_requests?state=opened&target_branch=${encodeURIComponent(config.baseBranch)}&per_page=100${page === 1 ? '' : `&page=${page}`}`,
+      );
+      if (!ouvertes) break;
+      // Une merge request venue d'une fourche porte une branche d'un autre projet,
+      // que la lecture de fichier chercherait en vain dans celui-ci.
+      demandes.push(...ouvertes
+        .filter((demande) => typeof demande.source_branch === 'string'
+          && demande.source_project_id === demande.project_id)
+        .map((demande) => ({
+          branche: demande.source_branch as string,
+          url: typeof demande.web_url === 'string' ? demande.web_url : null,
+        })));
+      if (ouvertes.length < 100) break;
+    }
+    return demandes;
   }
 
   /**

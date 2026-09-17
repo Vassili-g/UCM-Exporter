@@ -4,9 +4,9 @@
  *
  * À incrémenter à chaque changement de forme du JSON, avec la spécification,
  * les fixtures et les consommateurs dans le même changement.
- * La forme courante est décrite par docs/FORMAT.md et `types.ts` ; ce que
+ * La forme courante est décrite par docs/format/FORMAT.md et `types.ts` ; ce que
  * chaque version a publié, et ce que la suivante casse, par
- * docs/CHANGELOG-FORMAT.md, où une entrée se rédige quand la version est
+ * docs/format/CHANGELOG-FORMAT.md, où une entrée se rédige quand la version est
  * adoptée.
  *
  * Ce module ne dépend de rien, ni de Figma, ni de Node. C'est ce qui permet

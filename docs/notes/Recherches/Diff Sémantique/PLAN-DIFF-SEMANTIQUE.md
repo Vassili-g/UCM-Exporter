@@ -2,7 +2,7 @@
 
 > Statut : proposé. Ce plan ferme les décisions nécessaires à une première
 > expérimentation locale. Son exécution commence après validation du périmètre.
-> Il développe la [piste 3.3](./PISTES-EVOLUTION.md#33-comparer-deux-exports-et-identifier-leur-impact)
+> Il développe la [piste 3.3](../produit/PISTES-EVOLUTION.md#33-comparer-deux-exports-et-identifier-leur-impact)
 > sans modifier le format des contrats ni celui de `tokens.json`.
 
 ## Instruction donnée à l'agent
@@ -517,7 +517,7 @@ aucun artefact comparé.
 
 ## 6. Journal de preuves
 
-Le lot L0 crée `docs/notes/PREUVES-DIFF-SEMANTIQUE.md`. Ce fichier sert de
+Le lot L0 crée `docs/notes/verification/PREUVES-DIFF-SEMANTIQUE.md`. Ce fichier sert de
 point de reprise. Il suit cette forme :
 
 ```markdown
@@ -624,7 +624,7 @@ But : enregistrer un état reproductible avant le premier changement.
 
 Fichiers autorisés :
 
-- `docs/notes/PREUVES-DIFF-SEMANTIQUE.md` ;
+- `docs/notes/verification/PREUVES-DIFF-SEMANTIQUE.md` ;
 - fixtures et utilitaires de test ajoutés pour ce plan ;
 - aucun fichier de production.
 

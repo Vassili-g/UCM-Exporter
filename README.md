@@ -46,7 +46,7 @@ qui avertit, et le geste attendu pour chaque écart.
 
 | Vous êtes | Ce que vous y gagnez | Par où commencer |
 |---|---|---|
-| **Designer** | Vos variantes, vos tokens et vos règles d'usage arrivent au développeur sans être retapés, et la demande de fusion vous dit ce qui manque | [Ouvrir le plugin](#ouvrir-le-plugin), puis [docs/POUR-LES-DESIGNERS.md](./docs/POUR-LES-DESIGNERS.md) |
+| **Designer** | Vos variantes, vos tokens et vos règles d'usage arrivent au développeur sans être retapés, et la demande de fusion vous dit ce qui manque | [Ouvrir le plugin](#ouvrir-le-plugin), puis [docs/guides/POUR-LES-DESIGNERS.md](./docs/guides/POUR-LES-DESIGNERS.md) |
 | **Développeur d'un repository consommateur** | Une source unique pour l'API visuelle d'un composant, et une CI qui signale les écarts avant la fusion | [Brancher un repository](#brancher-un-repository) |
 | **Contributeur du moteur** | Un moteur générique, sans aucune règle liée au nom d'un composant | [Construire le plugin](#construire-le-plugin-depuis-ce-dépôt), puis [AGENTS.md](./AGENTS.md) |
 
@@ -82,7 +82,7 @@ un simple dossier de contrats se branche de la même façon.
    que `init` imprime.
 4. Transmettez au designer l'adresse du repository. Il la saisit dans le
    plugin, avec un jeton
-   ([POUR-LES-DESIGNERS.md](./docs/POUR-LES-DESIGNERS.md#configurer-le-dépôt)).
+   ([POUR-LES-DESIGNERS.md](./docs/guides/POUR-LES-DESIGNERS.md#configurer-le-dépôt)).
 
 `--yes` retire l'invite de confirmation de `npx`. Gardez la version exacte, sans
 `^` : c'est la version que ce dépôt a testée.
@@ -158,7 +158,7 @@ Un développeur ou un agent écrit le composant depuis le seul contrat. Le contr
 cite chaque couleur par son token, si bien qu'un changement de thème ne demande
 aucun réexport. Il énumère les variantes qui existent, et catalogue ce qui se
 répète de l'une à l'autre : un composant à quatre-vingt-dix variantes ne publie
-pas quatre-vingt-dix arbres. [docs/FORMAT.md](./docs/FORMAT.md#ce-que-le-contrat-publie-champ-par-champ)
+pas quatre-vingt-dix arbres. [docs/format/FORMAT.md](./docs/format/FORMAT.md#ce-que-le-contrat-publie-champ-par-champ)
 décrit chaque champ et ce que son absence signifie.
 
 Version de contrat courante : **13.0**, écrite dans
@@ -226,7 +226,7 @@ surface publique n'est pas figée.
 
 [UCM Playground](https://github.com/Vassili-g/UCM-Playground) est le repository
 de recette, une application React sans outillage UCM local. La boucle complète
-s'y rejoue en suivant [docs/RECETTE.md](./docs/RECETTE.md).
+s'y rejoue en suivant [docs/guides/RECETTE.md](./docs/guides/RECETTE.md).
 [ROADMAP.md](./ROADMAP.md) porte la maturité, les limites connues et les
 prochaines validations.
 

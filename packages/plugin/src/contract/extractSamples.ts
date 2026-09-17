@@ -75,7 +75,7 @@ function componentPropertiesOf(instance: InstanceNode): ComponentProperties {
  *
  * Ce que cette lecture filtre est le relevé positionnel nu, et jamais `args` ;
  * la frontière est la racine du composant exporté, jamais l'instance de
- * dépendance. La règle et son pourquoi vivent dans `docs/FORMAT.md`, section
+ * dépendance. La règle et son pourquoi vivent dans `docs/format/FORMAT.md`, section
  * « 9. Échantillon de maquette ». La composition (`node` visible jusqu'à son
  * instance, puis l'instance visible jusqu'à la racine) garde au passage la
  * garde de confinement de la remontée.
