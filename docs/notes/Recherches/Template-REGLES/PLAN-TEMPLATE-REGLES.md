@@ -763,18 +763,24 @@ dans Figma ([AGENTS.md](../../../../AGENTS.md#limites-denvironnement)).
 | H1-G | D5 est-il confirmé ? | sans réponse explicite ; tenu, conformément à H1-D |
 | H1-H | Comment se défait une création ? | par la suppression du conteneur ; `commitUndo` n'entre dans le module que si E6 montre un Ctrl+Z qui défait aussi un geste antérieur au clic |
 
-Précisions confirmées : ni `@default` ni la section de documentation (`@do`,
-`@dont`, `@pairs`) ne sont posés ; l'avertissement du marqueur est groupé par
-tag, une ligne cliquable par tag.
+Précisions confirmées : une règle `@prop` par valeur, groupées par axe ; ni
+`@default` ni la section de documentation (`@do`, `@dont`, `@pairs`) ne sont
+posés ; l'avertissement du marqueur est groupé par tag, une ligne cliquable
+par tag.
 
-Restent ouvertes :
+Reste ouverte : les valeurs de l'axe d'états (`State`, `Status`) sont-elles
+posées ?
 
-1. « `@prop` affiché pour chaque axe » se lit comme une règle par valeur,
-   groupées par axe : le calque `prop` exige `propriété.valeur`, et une règle
-   qui vise un axe sans valeur n'est pas exportée.
-2. Les valeurs de l'axe d'états (`State`) sont-elles posées ? Le conteneur
-   rédigé du component set de test n'en documente aucune, et son export ne
-   perd rien d'autre que leur description.
+| Option | Effet | Risque |
+|---|---|---|
+| Les poser, en dernier groupe | une règle par état, à rédiger ou à supprimer | quelques règles évidentes (`hover`, `focus`) à supprimer à la main |
+| Ne pas les poser | aucune règle d'état | un axe d'états qui porte un comportement propre au composant (`loading`, `expanded`, `error`) ne reçoit aucune invite |
+
+Recommandation : les poser. Le plugin ne sait pas juger quel état va de soi, et
+le designer le sait. Supprimer une règle évidente coûte un geste, alors qu'un
+état oublié laisse le développeur sans explication. Le conteneur rédigé du
+component set de test n'en documente aucune, et son export ne perd que leur
+description.
 
 ## 12. L'équipe consommatrice
 
