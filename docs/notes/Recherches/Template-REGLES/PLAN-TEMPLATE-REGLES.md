@@ -1,6 +1,6 @@
 # Plan d'action du template de règles
 
-> Statut : décisions H1 prises, quatre lectures à confirmer (section 11). Ce
+> Statut : décisions H1 prises, deux questions ouvertes (section 11). Ce
 > document est le livrable de la
 > [section 12](./RECHERCHE-TEMPLATE-REGLES.md#12-livrable-attendu) du plan de
 > recherche, rédigé en plan d'action à la demande du mainteneur. Une revue
@@ -763,16 +763,18 @@ dans Figma ([AGENTS.md](../../../../AGENTS.md#limites-denvironnement)).
 | H1-G | D5 est-il confirmé ? | sans réponse explicite ; tenu, conformément à H1-D |
 | H1-H | Comment se défait une création ? | par la suppression du conteneur ; `commitUndo` n'entre dans le module que si E6 montre un Ctrl+Z qui défait aussi un geste antérieur au clic |
 
-Lectures faites de ces réponses, à confirmer :
+Précisions confirmées : ni `@default` ni la section de documentation (`@do`,
+`@dont`, `@pairs`) ne sont posés ; l'avertissement du marqueur est groupé par
+tag, une ligne cliquable par tag.
 
-1. « `@prop` affiché pour chaque axe » : une règle par valeur, groupées par axe.
-   La grammaire n'a pas de règle d'axe sans valeur.
-2. L'axe d'états (`State`) est un axe du composant : ses valeurs sont posées, en
-   dernier groupe.
-3. Ni `@default` ni la section de documentation (`@do`, `@dont`, `@pairs`) ne
-   sont posés.
-4. L'avertissement du marqueur est groupé par tag, une ligne cliquable par tag,
-   plutôt qu'une ligne par règle.
+Restent ouvertes :
+
+1. « `@prop` affiché pour chaque axe » se lit comme une règle par valeur,
+   groupées par axe : le calque `prop` exige `propriété.valeur`, et une règle
+   qui vise un axe sans valeur n'est pas exportée.
+2. Les valeurs de l'axe d'états (`State`) sont-elles posées ? Le conteneur
+   rédigé du component set de test n'en documente aucune, et son export ne
+   perd rien d'autre que leur description.
 
 ## 12. L'équipe consommatrice
 
