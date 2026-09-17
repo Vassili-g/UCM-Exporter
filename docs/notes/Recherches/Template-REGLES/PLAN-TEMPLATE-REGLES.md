@@ -1,10 +1,11 @@
 # Plan d'action du template de règles
 
-> Statut : recommandations en attente de la porte H1. Ce document est le
-> livrable de la [section 12](./RECHERCHE-TEMPLATE-REGLES.md#12-livrable-attendu)
-> du plan de recherche, rédigé en plan d'action à la demande du mainteneur. Une
-> revue indépendante l'a relu ; la [section 14](#14-revue-indépendante) dit ce
-> qui en a été retenu. Il ne contient aucune implémentation et rien n'a été
+> Statut : décisions H1 prises, quatre lectures à confirmer (section 11). Ce
+> document est le livrable de la
+> [section 12](./RECHERCHE-TEMPLATE-REGLES.md#12-livrable-attendu) du plan de
+> recherche, rédigé en plan d'action à la demande du mainteneur. Une revue
+> indépendante en a relu la première version ; la
+> [section 14](#14-revue-indépendante) dit ce qui en a été retenu. Rien n'a été
 > écrit dans Figma.
 
 Commit lu : `94ec0a9`. Fichier Figma lu : le fichier de tests du mainteneur,
@@ -21,47 +22,45 @@ Quatre statuts qualifient les faits :
 
 ## 1. Ce que la recherche change au plan
 
-Sept constats modifient la demande ou l'ordre du travail.
+Sept constats ont modifié la demande ou l'ordre du travail.
 
 1. **Le maître `.componentRules` n'est pas sur la page des composants.**
    Mesuré : il est rangé sur la page « Règles [.componentRules] », et la page
    « Components » ne porte que cinq instances. Avec D5, la source du template
    est donc le plus souvent une instance déjà posée, lue par
-   `getMainComponentAsync`. Une page qui ne porte encore ni maître ni instance
-   ne permet pas de créer le premier template.
+   `getMainComponentAsync`. Une page qui ne porte ni maître ni instance ne
+   permet pas de créer le premier template.
 2. **Une règle fraîchement posée publie son texte d'exemple.** Mesuré : chaque
    variant de `.ruleItem` est livré avec un texte dans `content` (« A quoi sert
    le composant ») et une cible fictive dans `prop` (`prop.name`). Une instance
    neuve de `@usage`, `@do`, `@dont` ou `@pairs` exporte ce texte comme
-   documentation réelle, aujourd'hui déjà, sans template.
+   documentation réelle, aujourd'hui déjà, sans template. Le marqueur
+   `[À compléter]` (section 6.2) corrige ce défaut.
 3. **Remplir un slot d'instance est documenté par Figma, avec des réserves.**
    Le guide MCP de Figma écrit qu'on ajoute un contenu au slot d'une instance
    « like any other node », et qu'un handle peut être invalidé par l'ajout. La
    référence de `SlotNode` n'en dit rien, et les deux sources se contredisent
    sur `resetSlot`. Rapporté : une issue ouverte donne l'erreur « Cannot move
    node. New parent is an instance », un fil du forum dit qu'un enfant existant
-   d'un slot d'instance ne se retire pas. Le template repose sur ces gestes :
-   un essai dans Figma précède le code.
-4. **La surface publique ne se lit pas sur le component set seul.** Mesuré, et
-   confirmé par la revue : sur le component set de test à trois variant
-   properties, le conteneur rédigé documente aussi un axe de tailles et trois
-   boolean properties portés par le wrapper `.sizeWrapperButton`. Un template
-   construit sur les seules définitions du set perdrait 6 des 17 règles de
-   propriétés rédigées. Une analyse les publie toutes.
+   d'un slot d'instance ne se retire pas. Le template retire des sections par
+   défaut : un essai dans Figma précède le code.
+4. **La surface publique ne se lit pas sur le component set seul.** Mesuré :
+   sur le component set de test à trois variant properties, le conteneur rédigé
+   documente aussi un axe de tailles et trois boolean properties portés par le
+   wrapper `.sizeWrapperButton`. Un template construit sur les seules
+   définitions du set perdrait 6 des 17 règles de propriétés rédigées. Une
+   analyse les publie toutes.
 5. **Sélectionner l'instance créée efface la carte.** Mesuré : un changement
    de sélection réinitialise la carte du composant (`CarteComposant.afficher`),
    conformément à la règle « un résultat ne survit pas à son sujet ».
 6. **L'annulation d'une création faite plugin ouvert n'est pas établie.**
    Documenté : « By default, plugin actions are not committed to undo
    history », avec un exemple qui se termine par `closePlugin`. Rien n'est écrit
-   sur un plugin qui reste ouvert, ce qui est le cas du plugin UCM. La loi du
-   document intact refuse aujourd'hui `commitUndo`.
-7. **La liste des avertissements est plus courte qu'on le croit.** Mesuré :
-   l'export fusionne les phrases identiques (`exportComponent.ts`,
-   `Array.from(new Set(…))`), et `buildRules` écrit la même phrase pour toutes
-   les règles vides d'un même tag. Un template de 29 règles aux textes vidés
-   donne 14 lignes, pas 29, et 9 d'entre elles ne disent pas quelle règle est
-   en cause (section 6.2).
+   sur un plugin qui reste ouvert, ce qui est le cas du plugin UCM.
+7. **L'export fusionne les avertissements identiques.** Mesuré
+   (`exportComponent.ts`, `Array.from(new Set(…))`) : deux sites qui écrivent la
+   même phrase donnent une ligne, et `noter` garde les nodes des deux. Un
+   avertissement groupé par tag s'appuie sur ce mécanisme (section 6.2).
 
 ## 2. Faits de la section 1.3, vérifiés
 
@@ -88,6 +87,9 @@ Sept constats modifient la demande ou l'ordre du travail.
 | Section 1.2 : l'instance `.rulesItems` de la section d'options est ignorée | Infirmé. Le calque s'appelle `.rulesItems`, son maître est la variante `@boolean` de `.ruleItem`, la règle est lue | `get_design_context` |
 
 ## 3. Structure relevée dans Figma
+
+Relevé fait avant la décision H1-B : les textes cités sont ceux d'avant le
+marqueur `[À compléter]`.
 
 ### 3.1. `.componentRules`
 
@@ -126,7 +128,7 @@ Mesuré : component set à une variant property, `Type`. Chaque variant mesure
 526 px. Tous les textes sont en Open Sans Regular 16 et aucun n'est exposé en
 component property.
 
-| Variant | Calques texte | Texte d'exemple | Effet d'une instance neuve à l'export |
+| Variant | Calques texte | Texte d'exemple relevé | Effet d'une instance neuve à l'export |
 |---|---|---|---|
 | `Type=@usage` | `@usage`, `content` | « A quoi sert le composant » | publié dans `intent.usage` |
 | `Type=@default` | `prop`, `@default`, `content` | `prop.name`, « Quel est la variante par défaut du composant » | avertissement : aucune variant property `prop` |
@@ -139,9 +141,8 @@ component property.
 | `Type=divider` | aucun | aucun | écarté sans avertissement |
 
 La variante `@default` porte un calque `content`, que FORMAT.md, section 7, dit
-absent. L'écart compte pour la section 6.2 : un designer qui suit le format
-remplit `prop` et laisse ce `content` intact. Le calque qui affiche `OR`
-s'appelle `or`, sans effet sur le moteur.
+absent : le moteur ne le lit pas. Le calque qui affiche `OR` s'appelle `or`,
+sans effet sur le moteur.
 
 ### 3.4. Un conteneur rédigé
 
@@ -159,8 +160,7 @@ la main :
 
 Aucune des cinq valeurs de l'axe d'états n'est documentée. Les exemples du
 maître ont disparu de tous les slots : le geste manuel retire les enfants par
-défaut d'un slot d'instance. Les quatre autres conteneurs de la page n'ont pas
-été relevés règle par règle (tâche 2.1).
+défaut d'un slot d'instance. Le template de la section 6 reprend cette forme.
 
 ## 4. L'écriture bornée à un module
 
@@ -197,24 +197,26 @@ test au rouge : il change dans le même commit.
 Nouvelle promesse proposée, pour `AGENTS.md` et SPEC.md : « L'analyse et la
 publication ne modifient jamais le document Figma. Un seul geste y écrit : la
 création des règles d'usage, qui pose une instance de `.componentRules` à côté
-du composant. »
+du composant, ou remplit une instance vierge. Supprimer cette instance défait
+la création. »
 
 ### 4.2. Les appels nécessaires et la loi
 
 | Geste | Appel | Motif actuel de la loi |
 |---|---|---|
 | Lire le maître d'une instance | `getMainComponentAsync` | lecture |
-| Créer le conteneur et chaque règle | `ComponentNode.createInstance` | aucun |
-| Choisir le variant d'une règle | `createInstance` sur la bonne variante | aucun |
-| Écrire `component-name`, `prop`, `icon` | affectation de `characters`, après `loadFontAsync` | aucun |
+| Créer le conteneur, chaque règle et chaque séparateur | `ComponentNode.createInstance` | aucun |
+| Écrire `component-name` et `prop` | affectation de `characters`, après `loadFontAsync` | aucun |
 | Étirer une règle à la largeur du slot | affectation de `layoutSizingHorizontal` | aucun |
 | Ranger une règle dans un slot | `appendChild`, `insertChild` | `déplacement de node` |
-| Retirer les exemples du maître | `.remove()` ou `resetSlot` | `suppression de node`, aucun |
+| Retirer les sections et les exemples inutiles | `.remove()` ou `resetSlot` | `suppression de node`, aucun |
 | Placer le conteneur | affectation de `x` et `y` | aucun |
 | Défaire un échec à mi-parcours | `.remove()` sur le conteneur créé | `suppression de node` |
-| Isoler l'annulation, si l'essai E6 l'exige | `figma.commitUndo()` | `entrée d'annulation` |
 
-Mesuré : aucun de ces motifs n'apparaît dans le sandbox, et la liste
+Le template n'écrit jamais `content` ni `icon` : ces calques gardent le texte
+d'aide du maître et son marqueur.
+
+Mesuré : aucun des motifs suivants n'apparaît dans le sandbox, et la liste
 `ECRITURES` peut les nommer sans faux positif :
 
 - `.createInstance(`, `.setProperties(`, `.detachInstance(`,
@@ -233,15 +235,12 @@ ligne, et une écriture par `Object.assign` ou par crochets lui échappe.
 
 ### 4.3. Emplacement et frontière
 
-| Option | Exclusion de la loi | Avantage | Limite |
-|---|---|---|---|
-| A. Un dossier `src/template/` exclu | un chemin de dossier | simple | un fichier de lecture ajouté au dossier échappe à la loi sans que rien ne le dise |
-| B. Un dossier `src/template/`, un seul fichier exclu : `src/template/ecriture.ts` | un chemin de fichier | la construction pure et la recherche des maîtres restent balayées | un fichier de plus |
-
-Recommandation : B. Trois fichiers :
+Un dossier `src/template/`, dont un seul fichier est exclu de la loi. Un dossier
+entier exclu laisserait un fichier de lecture ajouté plus tard échapper au
+balayage sans que rien ne le dise.
 
 - `src/template/modele.ts`, pur : du contrat analysé au modèle du template
-  (sections, règles, tag, cible) ;
+  (sections, règles, séparateurs, tag, cible) ;
 - `src/template/sources.ts`, lecture seule : trouver sur la page active un
   conteneur, un conteneur vierge et la source des maîtres ;
 - `src/template/ecriture.ts`, seul fichier exclu : poser le modèle dans le
@@ -271,56 +270,63 @@ création refuse les deux. Le commentaire de `UiRequest`, celui de
 - Documenté : `ComponentNode.createInstance` crée l'instance sous
   `figma.currentPage`. Un maître obtenu par `getMainComponentAsync` peut être
   distant ou sans parent, et un maître distant refuse qu'on change ses
-  propriétés. Créer une instance d'un maître distant est non vérifié.
+  propriétés. Créer une instance d'un maître distant est non vérifié ; c'est le
+  cas de l'équipe consommatrice (section 12).
 - Mesuré : `rulesContainerOwner` est synchrone, et `extractRules` parcourt déjà
   toute la page à chaque sélection, appelé par `reportSelectionState`.
 - Mesuré : le maître `.componentRules` range un exemple de chaque tag dans la
   section de ce tag (3.1). Ce rangement se lit sur le maître sans qu'aucun nom
   de section entre dans le code.
-- Mesuré : une analyse charge toutes les pages et indexe tous les conteneurs du
-  document (`indexContractedNamesInDocument`). Un conteneur rangé sur une autre
-  page y est donc connu sans parcours de plus.
 
 ### 5.2. Ordre des sources
 
-| Option | Ce qu'elle fait | Coût | Limite |
-|---|---|---|---|
-| A. Maître sur la page d'abord, instance ensuite | cherche un `COMPONENT` dont le nom compacté vaut `.componentrules`, puis lit le maître d'une instance qui porte `component-name` | un prédicat de plus dans le parcours existant, un appel asynchrone au clic | le nom du maître devient une convention lue, en plus du calque |
-| B. Instance seulement | lit le maître de la première instance qui porte `component-name` | aucun parcours de plus | une page qui ne porte que le maître ne permet pas de créer |
+1. Un `COMPONENT` de la page active dont le nom compacté vaut
+   `.componentrules`.
+2. Sinon, le maître d'une instance de la page active qui porte
+   `component-name`, quel que soit le composant qu'elle documente. Cette
+   instance n'est ni lue ni modifiée.
 
-Recommandation : A. La page de règles d'un design system porte le maître, la
-page d'un composant porte des instances, et les deux cas se rencontrent. Une
-instance qui documente un autre composant sert seulement à lire son maître ;
-elle n'est ni lue ni modifiée. D5 reste tenu : la recherche ne parcourt que la
-page active, et le maître lu peut vivre ailleurs.
+La page de règles d'un design system porte le maître, la page d'un composant
+porte des instances. D5 reste tenu : la recherche ne parcourt que la page
+active, et le maître lu peut vivre ailleurs.
 
 Le maître de chaque règle et de chaque section se lit sur les exemples du
 maître `.componentRules`, par `getMainComponentAsync`. La variante d'une règle
 se choisit par le calque de tag que porte l'exemple (`ruleTagFromLayerName`),
-jamais par le nom de la variant property `Type`. Un tag dont le maître ne range
-aucun exemple ne reçoit aucune règle, et la confirmation le dit.
+jamais par le nom de la variant property `Type`. La variante du séparateur est
+celle du component set de `.ruleItem` qui ne porte aucun calque texte ; sans
+component set lisible, le template ne pose aucun séparateur.
 
 ### 5.3. Le conteneur vierge
 
-Le message de 5.5 demande au designer de coller une instance. Cette instance
-écrit le nom par défaut du maître. Si le plugin en créait une seconde, la
-première resterait sur la page et le composant qui porte ce nom par défaut
-recevrait la note de doublon.
+Décision H1-D : une instance collée et jamais remplie est remplie par le
+plugin, qui n'en crée pas une seconde.
 
-Recommandation : au clic, une instance de la page dont `component-name` égale
-le texte du maître et dont aucune règle n'est rédigée (critère de 6.2) est un
-conteneur vierge. Le plugin la remplit à sa place au lieu d'en créer une. Les
-deux conditions sont nécessaires : dans le fichier de référence, le nom par
-défaut du maître est celui d'un vrai composant, dont le conteneur rédigé ne
-l'a jamais changé.
+Une instance est vierge quand son calque `component-name` contient
+`[À compléter]` et qu'aucune de ses règles n'est rédigée au sens de 6.2. La
+seconde condition protège un conteneur dont on aurait effacé le nom par erreur :
+le remplir détruirait ses règles. Le plugin remplit la première instance
+vierge de la page, à l'endroit où le designer l'a posée. Une instance au nom
+marqué qui porte une règle rédigée n'est pas vierge : le plugin crée alors une
+instance à côté du composant.
 
 ### 5.4. Au changement de sélection
 
 Aucun appel asynchrone de plus. Le parcours de la page que fait déjà
-`extractRules` relève en même temps : un conteneur pour ce nom, un conteneur
-orphelin (calque `component-name` vide), une source sur la page. La résolution
-des maîtres, la recherche du conteneur vierge et le chargement des polices se
-font au clic, avant toute écriture.
+`extractRules` relève en même temps :
+
+| Relevé | Offre |
+|---|---|
+| un conteneur écrit le nom du composant | pas de bouton |
+| un variant seul est sélectionné | pas de bouton |
+| une instance dont `component-name` contient `[À compléter]` | bouton : il remplira cette instance |
+| un maître ou une instance qui porte `component-name` | bouton : il créera une instance |
+| rien de tout cela | bouton inactif, avec le message de 5.5 |
+
+Un conteneur rangé sur une autre page n'est pas cherché (décision H1-D) : le
+bouton en crée un sur la page active. La résolution des maîtres, la
+vérification du conteneur vierge, la vérification des textes d'aide et le
+chargement des polices se font au clic, avant toute écriture.
 
 ### 5.5. Page sans source
 
@@ -330,186 +336,199 @@ pour créer celles de ce composant. »
 
 ## 6. Du contrat aux règles
 
-### 6.1. Correspondance
+### 6.1. Contenu du template
 
-La source est un contrat que le moteur produit pour le composant sélectionné
-(décision H1-C). Il publie la surface élue, les clés sémantiques (`size`) et
-l'axe d'états.
+Décision H1-E : le template ne pose que les règles que le composant emploie.
+La source est le contrat que `handleExportComponent` produit au clic : il
+publie la surface élue, les clés sémantiques (`size`) et l'axe d'états.
 
-| Ce que le contrat publie | Règle posée | Calque `prop` ou `icon` | Recommandation |
+| Section, lue sur le maître | Quand elle apparaît | Règles posées | Calque `prop` écrit |
 |---|---|---|---|
-| `props.<clé>` de type `enum`, une règle par valeur | `@prop` | `<clé>.<valeur>`, clé et valeur publiées | poser |
-| `props.<clé>` de type `enum`, une règle par axe | `@default` | `<clé>.` | poser, sans valeur |
-| `stateModel.states`, une règle par état | `@prop` | `<axe>.<état>` | décision H1-E, recommandation : ne pas poser |
-| `props.<clé>` de type `boolean` | `@boolean` | `<clé>`, forme publiée (`iconLeft`) | poser, sauf `disabled` issu de l'axe d'états |
-| `props.<clé>` de type `string`, `instance-swap`, `slot` | aucune | sans objet | ne rien poser (D2) |
-| dessin qu'aucune règle `@icons` ne désigne | `@icons` | nom du calque que l'avertissement nomme | décision H1-E, recommandation : poser |
-| intention | `@usage`, `@do`, `@dont`, `@pairs`, une de chaque | sans objet | poser |
+| celle de l'exemple `@usage` | toujours | une `@usage` | aucun |
+| celle de l'exemple `@prop` | dès qu'un axe est publié | une `@prop` par valeur, groupées par axe dans l'ordre de `props`, l'axe d'états en dernier ; un `divider` entre deux axes | `<clé>.<valeur>`, clé et valeur publiées |
+| celle de l'exemple `@boolean` | dès qu'une boolean property est publiée | une `@boolean` par boolean property, hors `disabled` issu de l'axe d'états | `<clé>`, forme publiée (`iconLeft`) |
+| celle de l'exemple `@icons` | toujours | une `@icons` | aucun : `icon` garde son texte d'aide |
 
-Chaque règle va dans la section où le maître range l'exemple du même tag.
+Ne sont pas posés : `@default`, `@do`, `@dont`, `@pairs`, et les propriétés
+`TEXT`, `INSTANCE_SWAP` et `SLOT`, qu'aucun tag ne documente (section 15).
+Une section sans règle est retirée du conteneur.
 
 La clé publiée est la seule forme que `mergePropDescriptions` retrouve à coup
 sûr : un axe renommé par la couche sémantique (`size`) ne se retrouve pas par
 son nom Figma. `normalizePropKey` accepte aussi `icon-left`, forme que le
 designer du corpus écrit ; le template écrit la forme publiée.
 
-Les dessins non déclarés sont ceux que `warnUndeclaredDrawing` signale pendant
-l'analyse. Le résultat d'analyse expose leur nom dans un champ interne, sans
-rien ajouter au contrat. Une règle `@icons` sans politique n'entre pas dans
-`iconRules`, donc l'avertissement « dessin non déclaré » continue de partir à
-côté de celui de la politique : deux messages pour une icône. La tâche 2.4
-propose de taire le premier quand une règle nomme déjà le calque.
+La section des icônes reçoit une règle vide même quand le composant n'a pas
+d'icône. L'analyse sait pourtant nommer les dessins qu'aucune règle ne
+désigne : c'est l'avertissement « dessin non déclaré » de
+`warnUndeclaredDrawing`. Écrire ces noms dans `icon` reste possible plus tard
+(section 15).
 
-### 6.2. Le texte de départ
+Volume mesuré sur le component set de test : 1 `@usage`, 17 `@prop` réparties
+sur quatre axes (3, 6, 3, et 5 états) avec 3 séparateurs, 3 `@boolean`, 1
+`@icons`, soit 22 règles.
 
-Volume mesuré pour le component set de test, états compris : 12 `@prop` d'axes
-d'API, 5 `@prop` d'états, 3 `@default`, 3 `@boolean`, 2 `@icons`, 4 règles
-d'intention, soit 29 règles. Sans les états, 24.
+### 6.2. Le marqueur `[À compléter]`
 
-| Option | Ce que le designer lit au premier export, 29 règles | Changement du moteur | Défaut |
-|---|---|---|---|
-| A. Le plugin vide `content` | 14 lignes : une par tag pour les `@prop` et les `@boolean`, 4 pour l'intention, 3 `@default` sans valeur, 2 politiques d'icône, « aucune règle @usage », 2 dessins non déclarés. Seules les 5 lignes `@default` et `@icons` nomment leur règle | aucun | le designer ne sait pas quelles règles restent vides |
-| A'. Comme A, et la ligne vide de `buildRules` porte ses nodes | les mêmes lignes, cliquables | `RuleEntry` reçoit le node de la règle | le constat 2 subsiste pour les règles posées à la main |
-| B. Le plugin laisse le texte d'exemple. Le moteur reconnaît une règle « à rédiger » et les regroupe dans une note | 6 lignes : la note « 27 règles ne sont pas rédigées », qui les sélectionne au clic, 2 politiques d'icône, « aucune règle @usage », 2 dessins non déclarés | critère par tag dans `extractRules` ; FORMAT.md et SPEC.md, section 7 | un texte identique à l'exemple, écrit exprès, n'est pas lu |
-| B'. Comme B, sans note | 5 lignes | le même | une règle oubliée ne se voit plus à l'export |
-| C. Le plugin écrit « À rédiger » | les lignes de A sans les vides | aucun | le texte est publié comme documentation réelle |
+Décision H1-B : un texte d'aide commence par `[À compléter]`. Une règle dont un
+calque lu contient ce marqueur n'est pas rédigée : elle n'entre pas dans le
+contrat et produit un avertissement. Le marqueur sert à toute règle, posée par
+le template ou à la main.
 
-Recommandation : B. Elle corrige aussi le constat 2, qui existe sans template.
-Elle réduit les écritures de texte à `prop`, `icon` et `component-name`, et ce
-sont les écritures que le forum dit fragiles dans un slot.
-
-Critère par tag, pour qu'aucune règle rédigée selon le format ne disparaisse :
-
-| Tag | Une règle est à rédiger quand |
+| Tag | Calques où le marqueur se cherche |
 |---|---|
-| `@usage`, `@do`, `@dont`, `@pairs`, `@prop`, `@boolean` | son calque `content` égale le calque `content` de son maître |
-| `@default` | son calque `prop` égale celui de son maître, ou se termine par un point sans valeur. Son `content` n'est jamais lu |
-| `@icons` | jamais : l'avertissement de politique existant nomme déjà la règle et le geste |
+| `@usage`, `@do`, `@dont`, `@pairs` | `content` |
+| `@prop`, `@boolean` | `content`, `prop` |
+| `@default` | `prop` ; son `content` n'est pas lu |
+| `@icons` | `icon` |
+| conteneur | `component-name` : le conteneur est vierge (5.3) |
 
-La comparaison porte sur le maître déjà obtenu par `isRuleInstance`, sans appel
-asynchrone de plus. La note se forme une fois à la fin de `extractRules`, par
-`pousserNote` sur le conteneur puis `noter` pour chaque règle, mécanisme que
-`localisation.ts` fournit déjà. Le changement ne touche pas la forme du
-contrat : `contractVersion` ne monte pas.
+Comparaison : la chaîne `[À compléter]` après normalisation Unicode, sans tenir
+compte de la casse. Le marqueur est une constante d'`extractRules.ts`, à côté
+de `component-name`. La vérification précède `buildRules` : une règle marquée
+ne produit ni l'avertissement « content est vide » ni celui de politique
+d'icône. Le changement ne touche pas la forme du contrat : `contractVersion` ne
+monte pas.
 
-Borne à écrire dans FORMAT.md : la comparaison porte sur le maître de la règle.
-Un texte d'exemple modifié dans le contenu par défaut d'un slot du maître
-`.componentRules` ou d'une `.rulesSection` lui échappe. Mesuré : le fichier de
-référence n'a aucune modification de texte à ces niveaux.
+Forme de l'avertissement, une ligne par tag, localisée sur toutes les règles de
+ce tag par `pousserLocalise` puis `noter`, mécanisme que `localisation.ts`
+fournit déjà :
 
-Texte proposé pour la note, selon `rediger-diagnostics-ucm` : « Layer
-« .componentRules » : 27 règles ne sont pas rédigées. Le développeur ne
-recevra pas leur documentation. Rédigez-les ou supprimez-les, puis
-réexportez. »
+> Layer « .ruleItem » : 17 règles @prop contiennent encore « [À compléter] ».
+> Le développeur ne recevra pas leur documentation. Rédigez-les ou
+> supprimez-les, puis réexportez.
 
-Pour `@default`, préremplir la position du variant contredit
-`RulesResult.enumDefaults`. La règle porte `<clé>.` sans valeur et rejoint la
-note.
+Au singulier : « une règle @usage contient encore « [À compléter] » ». Un clic
+sur la ligne sélectionne toutes les règles concernées. Sur le component set de
+test, le premier export après création donne quatre lignes de ce genre, plus
+« aucune règle @usage, @do, @dont ou @pairs n'est déclarée » et un
+avertissement par dessin non déclaré.
 
-### 6.3. Sections et exemples du maître
+Une instance vierge relevée en 5.4 et laissée telle quelle rejoint le constat
+existant du conteneur orphelin, reformulé : son calque `component-name`
+contient encore le marqueur au lieu d'être vide.
 
-Deux chemins d'écriture, que l'essai départage :
+### 6.3. Les textes d'aide du maître
+
+Le template n'écrit ni `content` ni `icon` : les textes d'aide viennent du
+maître. Le mainteneur les réécrit dans Figma, dans le composant du design
+system. Proposition, à l'impératif et en une phrase :
+
+| Maître et variant | Calque | Texte proposé |
+|---|---|---|
+| `.componentRules` | `component-name` | « [À compléter] Nom du composant » |
+| `.ruleItem`, `@usage` | `content` | « [À compléter] Décrivez à quoi sert le composant et quand le choisir. » |
+| `.ruleItem`, `@prop` | `prop` | « [À compléter] propriété.valeur » |
+| `.ruleItem`, `@prop` | `content` | « [À compléter] Décrivez quand choisir cette valeur. » |
+| `.ruleItem`, `@boolean` | `prop` | « [À compléter] nom-de-la-propriété » |
+| `.ruleItem`, `@boolean` | `content` | « [À compléter] Décrivez ce que cette option affiche, et quand l'activer. » |
+| `.ruleItem`, `@icons` | `icon` | « [À compléter] Nom exact du calque d'icône » |
+| `.ruleItem`, `@default` | `prop` | « [À compléter] propriété.valeur » |
+| `.ruleItem`, `@default` | `content` | « Écrivez dans prop la valeur par défaut, par exemple size.medium. » |
+| `.ruleItem`, `@do` | `content` | « [À compléter] Décrivez un usage recommandé. » |
+| `.ruleItem`, `@dont` | `content` | « [À compléter] Décrivez un usage à éviter. » |
+| `.ruleItem`, `@pairs` | `content` | « [À compléter] Listez les composants souvent associés, séparés par des virgules. » |
+
+Au clic, avant toute écriture, le plugin vérifie que les calques qu'il ne
+remplit pas portent le marqueur : `content` de `@usage`, `@prop` et `@boolean`,
+`icon` de `@icons`. Sinon il refuse, sans rien créer : « Les textes d'aide de
+« .ruleItem » ne commencent pas par « [À compléter] ». Ajoutez-le dans le
+composant « .ruleItem », puis recommencez. » Sans cette vérification, un
+maître encore à l'ancienne ferait publier ses textes d'aide comme documentation.
+
+### 6.4. Écriture dans les slots
+
+Deux chemins, que l'essai départage :
 
 | Chemin | Gestes | Risque |
 |---|---|---|
-| E. Réutiliser les sections par défaut | écrire `prop` ou `icon` dans l'exemple de chaque tag, puis ajouter les règles suivantes dans le `Rules-Wrapper` existant de la section | ajout dans un slot imbriqué dans le contenu d'un slot d'instance |
-| F. Reconstruire les sections | retirer les sections par défaut, créer chaque `.rulesSection` sur la page, la remplir, l'ajouter au slot du conteneur | retrait rapporté impossible ; deux niveaux de création |
+| E. Réutiliser les sections par défaut | retirer les sections et les exemples sans usage ; écrire `prop` dans l'exemple de chaque tag gardé ; ajouter les règles suivantes et les séparateurs dans le `Rules-Wrapper` existant | ajout dans un slot imbriqué dans le contenu d'un slot d'instance |
+| F. Reconstruire les sections | vider le slot du conteneur ; créer chaque `.rulesSection` utile sur la page, la remplir, l'ajouter au slot | deux niveaux de création |
 
-Recommandation : essayer E en premier. Il évite le retrait et la moitié des
-créations. Les exemples inutilisés, `@pairs` d'un composant sans intention par
-exemple, restent en place et rejoignent la note de B. Dans les deux chemins, une
-règle ajoutée reçoit Fill en largeur, sauf si le réglage `stretchChildOnInsert`
-du slot le fait déjà pour un ajout par l'API (non vérifié).
+Les deux chemins retirent des enfants de slot d'instance : la section de
+documentation et l'exemple `@default` au moins. Ce retrait est rapporté
+impossible par le forum, et le guide MCP dit que `resetSlot` vide le slot d'une
+instance. L'essai E2 tranche ; son échec ferme les deux chemins (porte H2).
 
-Ordre dans une section : axes dans l'ordre de `props`, valeurs dans l'ordre de
-`values`. Les séparateurs `divider` ne sont pas posés : ils ne portent aucune
-information et chacun coûte une écriture.
+Dans les deux chemins, une règle ajoutée reçoit Fill en largeur, sauf si le
+réglage `stretchChildOnInsert` du slot le fait déjà pour un ajout par l'API
+(non vérifié).
 
-### 6.4. Exemple pour un component set fictif `Button`
+### 6.5. Exemple pour un component set fictif `Button`
 
 Deux variant properties publiées, `variant` (`contained`, `outlined`) et `size`
-(`small`, `medium`), une boolean property `iconLeft`, un dessin non déclaré
-`arrow-left`, pas d'axe d'états. 13 règles.
+(`small`, `medium`), une boolean property `iconLeft`, pas d'axe d'états.
 
 ```text
 .componentRules                       à droite de Button
   component-name   Button
   Section=general
-    @usage         content : texte d'exemple
-    @default       prop : variant.
-    @default       prop : size.
+    @usage         content : [À compléter] Décrivez à quoi sert…
   Section=props
-    @prop          prop : variant.contained     content : texte d'exemple
-    @prop          prop : variant.outlined      content : texte d'exemple
-    @prop          prop : size.small            content : texte d'exemple
-    @prop          prop : size.medium           content : texte d'exemple
+    @prop          prop : variant.contained     content : [À compléter] …
+    @prop          prop : variant.outlined      content : [À compléter] …
+    divider
+    @prop          prop : size.small            content : [À compléter] …
+    @prop          prop : size.medium           content : [À compléter] …
   Section=options
-    @boolean       prop : iconLeft              content : texte d'exemple
+    @boolean       prop : iconLeft              content : [À compléter] …
   Section=icons
-    @icons         icon : arrow-left            strict et modifiable visibles
-  Section=documentation
-    @do, @dont, @pairs                          content : texte d'exemple
+    @icons         icon : [À compléter] Nom exact du calque d'icône
 ```
 
-Relu par le moteur sous l'option B : aucune documentation publiée, et quatre
-lignes. La note « 11 règles ne sont pas rédigées », la politique de
-`arrow-left`, « aucune règle @usage, @do, @dont ou @pairs n'est déclarée », et
-le dessin non déclaré `arrow-left`, qui disparaît si la tâche 2.4 est retenue.
+Sept règles et un séparateur. Relu par le moteur : aucune documentation
+publiée ; quatre lignes « contient encore « [À compléter] » » (`@usage`,
+`@prop` avec ses quatre règles, `@boolean`, `@icons`) ; « aucune règle @usage,
+@do, @dont ou @pairs n'est déclarée » ; un avertissement par dessin non
+déclaré.
 
 ## 7. Cas limites
 
-| Cas | Constat | Recommandation |
+| Cas | Constat | Comportement |
 |---|---|---|
 | Sélection vide, multiple ou instance | `etatDeCible` refuse | pas de bouton |
 | Variant seul sélectionné | `etatDeCible` l'accepte ; le template écrirait « Color=Primary, … » dans `component-name` | pas de bouton quand le parent est un `COMPONENT_SET` |
-| Composant sans propriété | le contrat ne publie aucune prop | template d'intention seule |
-| Un conteneur existe pour ce nom sur la page | la lecture le trouve déjà | pas de bouton (H1-D) |
-| Un conteneur orphelin est sur la page | `extractRules` le signale et demande d'y écrire le nom | pas de bouton : l'avertissement existant donne le geste |
-| Un conteneur existe sur une autre page | l'index de l'analyse le connaît ; la lecture des règles ne le voit pas | refuser au clic : « Un « .componentRules » d'une autre page documente déjà Button. Rangez le composant et ses règles sur la même page, puis analysez-le. » |
-| Un conteneur vierge est sur la page | il écrit le nom par défaut du maître | le remplir (5.3) |
+| Composant sans propriété | le contrat ne publie aucune prop | sections générale et icônes seulement |
+| Un conteneur existe pour ce nom sur la page | la lecture le trouve déjà | pas de bouton |
+| Un conteneur existe sur une autre page | la recherche ne le voit pas | le bouton en crée un sur la page active |
+| Une instance vierge est sur la page | son `component-name` porte le marqueur | le bouton la remplit |
+| Une règle existante porte le marqueur | elle n'est pas rédigée | avertissement de 6.2 |
+| Textes d'aide du maître sans marqueur | le template ferait publier l'aide | refus au clic, message de 6.3 |
+| Conteneur orphelin, `component-name` vide | `extractRules` le signale et demande d'y écrire le nom | il n'est pas vierge : le bouton crée une instance à côté |
 | Component set dans un frame ou une section | documenté : `SectionNode` accepte `appendChild` ; mesuré : le set de test est dans un frame, lui-même dans une section | section ancêtre la plus proche, sinon la page, à 80 px à droite du set en coordonnées absolues. Chevauchement non vérifié |
 | Parent en auto layout | un ajout décalerait les voisins | jamais dans un parent en auto layout |
 | Fichier en lecture seule | rapporté : un utilisateur en lecture seule ne lance pas de plugin de design | aucun état à prévoir |
-| Maître de bibliothèque | non vérifié | essai E9 |
-| Police absente du poste | documenté : `hasMissingFont` rend `fontName` illisible | vérifier toutes les polices avant la première écriture ; refuser sans rien créer |
-| Échec à mi-parcours | quota, slot refusé, limite `limitViolations` | supprimer le conteneur créé ; deux textes selon que la suppression réussit ou non |
+| Maître de bibliothèque | non vérifié ; cas de l'équipe consommatrice | essai E9 |
+| Police absente du poste | documenté : `hasMissingFont` rend `fontName` illisible | vérifier les polices avant la première écriture ; refuser sans rien créer |
+| Échec à mi-parcours | quota, slot refusé, limite `limitViolations` | supprimer le conteneur créé ; deux textes selon que la suppression réussit ou non. Une instance vierge remplie ne se supprime pas : le texte d'échec le dit |
 | Clic pendant une analyse ou une publication | `operationEnCours` refuse | la carte est inerte |
-| « Annuler » pendant la création | le drapeau `annulationDemandee` n'est lu par aucune création | pas de bouton d'annulation pendant la création, qui se défait par son retour arrière |
+| « Annuler » pendant la création | le drapeau `annulationDemandee` n'est lu par aucune création | pas de bouton d'annulation pendant la création |
 | Clic répété | le premier clic crée un conteneur | le relevé de sélection est relancé après la création, et le bouton disparaît |
 
 ## 8. Interface
 
-### 8.1. Placement et source
+### 8.1. Placement
 
-Décision H1-C. Trois options :
-
-| Option | Quand le bouton se voit | Source des règles | Coût |
-|---|---|---|---|
-| P1. Sous « Analyser », au repos, sur le component set seul | dès qu'un composant sans conteneur est sélectionné | définitions du component set | 6 règles de propriétés sur 17 manquent sur le composant mesuré |
-| P1-bis. Sous « Analyser », au repos, avec analyse au clic | dès qu'un composant sans conteneur est sélectionné | un contrat produit au clic par `handleExportComponent`, sans lecture du dépôt ni publication | le clic dure le temps d'une analyse ; un objet de plus, dans cet état seulement |
-| P2. Dans le résultat de l'analyse | après une analyse, quand aucun conteneur n'existe | le contrat de l'analyse gardée | sept chemins de `code.ts` à traiter : refus, verdict identique, erreur après production, annulation, publication réussie, réglages enregistrés, jeton supprimé |
-
-Recommandation : P1-bis. Le bouton ne dépend ni du verdict, ni de la
-publication, ni des réglages ; le contrat est frais au clic ; D1 est respecté
-à la lettre. Le relevé de sélection (5.4) décide de sa présence, dans l'état
-même où la carte affiche déjà « Aucune règle d'usage exploitable ».
+Décision H1-C : P1-bis. Le bouton « Créer les règles d'usage » est visible sous
+« Analyser le composant » dès que le relevé de 5.4 l'offre. Le clic produit un
+contrat par `handleExportComponent`, sans lecture du dépôt ni publication, puis
+crée les règles. Le bouton ne dépend ni du verdict, ni de la publication, ni
+des réglages.
 
 ### 8.2. Libellé et rang
 
 - Libellé : « Créer les règles d'usage ». « Générer template de règles »
   mélange deux langues ; « règles d'usage » est le terme du plugin
   (`reportSelectionState`) et de FORMAT.md.
-- Variante `secondary`, juste sous « Analyser le composant » : les deux gestes
-  portent sur le sujet. Après une analyse, il reste visible et repousse le
-  verdict d'une ligne ; les captures de la galerie jugent si le verdict reste
-  lisible sans défiler.
+- Variante `secondary`, juste sous « Analyser le composant ». Après une
+  analyse, il reste visible et repousse le verdict d'une ligne ; les captures
+  de la galerie jugent si le verdict reste lisible sans défiler.
 - Pendant la création : les deux boutons sont inactifs, la note suit les
   étapes par le message `status` existant, sans bouton d'annulation.
 - Après la création : le résultat d'une analyse précédente est effacé, puisque
   le contrat suivant change, et le relevé de sélection est relancé.
-- Sélection : décision H1-F. Recommandation : garder le component set
-  sélectionné et cadrer ensemble le component set et le conteneur. La
-  confirmation reste lisible dans la carte.
+- Décision H1-F : le component set reste sélectionné, et le plugin cadre
+  ensemble le component set et le conteneur.
 
 ### 8.3. Maquettes à 320 px
 
@@ -557,9 +576,10 @@ Après la création :
 │ Component set · 4 variants           │
 │ Aucune règle d’usage exploitable…    │
 │ [ Analyser le composant ]  (primary) │
-│ 13 règles créées à droite du         │
-│ composant. Rédigez-les, puis         │
-│ analysez le composant.               │
+│ 7 règles créées à droite du          │
+│ composant. Remplacez chaque          │
+│ « [À compléter] », puis analysez     │
+│ le composant.                        │
 └──────────────────────────────────────┘
 ```
 
@@ -582,100 +602,103 @@ En échec, conteneur resté en place :
 │ réessayez.                           │
 ```
 
+Textes d'aide du maître sans marqueur :
+
+```text
+│ [ Créer les règles d’usage ]         │
+│ Les textes d’aide de « .ruleItem »   │
+│ ne commencent pas par « [À           │
+│ compléter] ». Ajoutez-le dans le     │
+│ composant « .ruleItem », puis        │
+│ recommencez.                         │
+```
+
 ### 8.4. Messages et galerie
 
-Le message `cible` porte un champ de plus, l'offre de création : `a-creer`,
-`sans-source` ou absente. L'opération passe par `status`, qui pilote déjà
-`occuper` et la note. Deux états de galerie s'ajoutent pour l'offre, trois pour
-l'opération (en cours, créée, échec), avec le pire contenu réel : 29 règles et
-un nom de composant long. Le protocole de relecture (a) à (e) passe sur les
-captures, compte d'objets (e) compris.
+Le message `cible` porte un champ de plus, l'offre de création : `creer`,
+`remplir`, `sans-source` ou absente. L'opération passe par `status`, qui pilote
+déjà `occuper` et la note. Trois états de galerie s'ajoutent pour l'offre,
+quatre pour l'opération (en cours, créée, échec, textes d'aide sans marqueur),
+avec le pire contenu réel : 22 règles et un nom de composant long. Le protocole
+de relecture (a) à (e) passe sur les captures, compte d'objets (e) compris.
 
 ## 9. Documents et tests touchés
 
 | Fichier | Ce qui change |
 |---|---|
-| `AGENTS.md` | première phrase ; invariant de la frontière d'écriture ; invariant de la règle à rédiger ; carte du code, `src/template/` |
-| `packages/plugin/SPEC.md` | « Hors périmètre MVP » et sa sous-section ; nouvelle sous-section sur la création des règles ; section 7, conteneur sur une autre page |
-| `docs/format/FORMAT.md` | section 7 : règle à rédiger et sa borne ; `@default` sans valeur ; phrase « sans jamais écrire dans Figma » |
-| `packages/plugin/README.md`, `packages/plugin/package.json` | promesse de lecture seule ; geste de création des règles |
-| `docs/guides/POUR-LES-DESIGNERS.md` | promesse ; geste de création des règles |
+| `AGENTS.md` | première phrase ; invariant de la frontière d'écriture ; invariant du marqueur ; carte du code, `src/template/` |
+| `packages/plugin/SPEC.md` | « Hors périmètre MVP » et sa sous-section ; nouvelle sous-section sur la création des règles |
+| `docs/format/FORMAT.md` | section 7 : le marqueur `[À compléter]`, ses calques par tag, le conteneur vierge ; phrase « sans jamais écrire dans Figma » |
+| `packages/plugin/README.md`, `packages/plugin/package.json` | promesse de lecture seule ; geste de création des règles ; marqueur |
+| `docs/guides/POUR-LES-DESIGNERS.md` | promesse ; geste de création des règles ; marqueur |
 | `CONTRIBUTING.md` | aucun changement : le bouton est un geste de la commande composant |
 | `packages/plugin/src/messages.ts` | `creer-regles` ; offre dans `cible` |
 | `packages/plugin/src/code.ts` | routage, `creerRegles`, valeur d'`operationEnCours`, commentaire de `montrerLesCalques` |
-| `packages/plugin/src/contract/extractRules.ts`, `rulesModel.ts` | règle à rédiger, note groupée, relevé de l'offre au parcours de page |
-| `packages/plugin/src/contract/exportComponent.ts` | champs internes : dessins non déclarés, index des conteneurs |
-| `packages/plugin/src/contract/extractLayout.ts`, `structureTree.ts` | si la tâche 2.4 est retenue |
+| `packages/plugin/src/contract/extractRules.ts`, `rulesModel.ts` | marqueur, avertissement par tag, conteneur vierge, relevé de l'offre |
 | `packages/plugin/src/template/` | trois fichiers (4.3) |
 | `packages/plugin/src/ui/` | `CarteComposant.ts`, `index.ts`, `styles.css` |
-| `packages/plugin/galerie/etats.cjs` | cinq états |
+| `packages/plugin/galerie/etats.cjs` | sept états |
 | `packages/plugin/tests/loiDuDocumentIntact.test.ts` | motifs ajoutés ; exclusion d'un fichier ; test des imports |
 | `tests/inventaireInvariants.test.ts` | phrases figées de SPEC.md ; groupes d'`AGENTS.md` si un groupe s'ajoute |
-| `packages/plugin/tests/rules.test.ts` | règle à rédiger par tag, `@default` sans valeur, note groupée |
+| `packages/plugin/tests/rules.test.ts` | marqueur par tag, casse et normalisation, avertissement groupé, conteneur vierge |
 | `packages/plugin/tests/code.test.ts` | routage de `creer-regles`, refus croisés avec l'analyse et la publication |
 | `packages/plugin/tests/template.test.ts`, nouveau | modèle depuis un contrat synthétique ; relecture d'un template simulé par `extractRules` |
 | `packages/plugin/tests/galerie.test.ts`, `stylesUi.test.ts`, `interface/interface.test.mjs` | nouveaux états, classes et interactions |
+| Fichier Figma du design system, hors dépôt | textes d'aide de `.ruleItem` et `component-name` de `.componentRules` (6.3), par le mainteneur |
 
 Le test de relecture construit un component set synthétique à noms neutres
-(`Root`, axes `tone` et `scale`), produit le modèle, simule sa pose avec les
-objets Figma minimaux de `rules.test.ts`, puis vérifie que `extractRules` rend
-la note « à rédiger », et aucun autre message.
+(`Root`, axes `tone` et `scale`, un booléen `mark`), produit le modèle, simule
+sa pose avec les objets Figma minimaux de `rules.test.ts`, puis vérifie que
+`extractRules` rend les avertissements du marqueur, et aucun autre message des
+règles.
 
 ## 10. Plan d'action
 
-Chaque phase se termine par `npm test`, `npm run typecheck` et `npm run build`
-dans un worktree isolé, puis par un commit poussé sur `main`. Une loi ajoutée
-ou modifiée est vue rouge avant d'être crue, et le commit le dit.
-
-### Phase 0. Décisions du mainteneur (H1)
-
-Les décisions de la section 11. Sans H1-A, la phase 1 ne commence pas ; sans
-H1-B, la phase 2 ne commence pas ; sans H2, la phase 4 ne commence pas.
+Chaque phase de code se termine par `npm test`, `npm run typecheck` et
+`npm run build` dans un worktree isolé, puis par un commit poussé sur `main`.
+Une loi ajoutée ou modifiée est vue rouge avant d'être crue, et le commit le
+dit.
 
 ### Phase 1. Essai dans Figma
 
-Objectif : établir les gestes d'API dont dépend la fonction, avant toute ligne
-de code, sur une copie du fichier de tests. `use_figma` exécute l'API des
-plugins, sans la fenêtre du plugin, sans son manifeste et sans son historique
-d'annulation : les essais qui en dépendent reviennent au mainteneur, avec un
-plugin de développement jetable, hors du dépôt, au manifeste identique.
+Décision H1-A : le mainteneur mène tous les essais. L'agent prépare un plugin
+d'essai jetable, hors du dépôt, au manifeste identique à celui du plugin : un
+bouton par essai, et le résultat affiché dans sa fenêtre. Le mainteneur le lance
+sur une copie du fichier de tests et transmet les résultats. L'agent les
+consigne dans `ESSAI-TEMPLATE-REGLES.md`, dans ce dossier.
 
-| Essai | Mené par | Geste | Critère de succès |
-|---|---|---|---|
-| E1 | mainteneur | `createInstance` sur le maître lu par `getMainComponentAsync` depuis une instance, maître rangé sur une autre page, sous `dynamic-page` | l'instance apparaît sur la page active |
-| E2 | agent | chemin E de 6.3 : écrire `prop` dans les exemples, ajouter des règles dans les `Rules-Wrapper` existants | les règles sont dans les slots, instances vivantes |
-| E3 | agent | chemin F de 6.3 : `.remove()` puis `resetSlot` sur les sections par défaut ; section créée, remplie, ajoutée | le slot est vidé, puis l'arbre de 3.1 est reproduit |
-| E4 | agent | plusieurs écritures de `characters` dans un même sous-arbre de slot, avant et après l'ajout ; polices chargées, dont celle de `component-name` | les textes tiennent ; les ids relevés avant et après |
-| E5 | agent | largeur d'une règle ajoutée ; `limitViolations` des deux slots | la règle fait la largeur du slot, sans rognure ni violation |
-| E6 | mainteneur | Ctrl+Z plugin ouvert, focus dans le canevas puis dans la fenêtre du plugin, sans puis avec `commitUndo` avant et après la création | un Ctrl+Z retire tout le conteneur et rien de ce que le designer a fait avant le clic |
-| E7 | mainteneur | analyse UCM du composant avec le moteur actuel | les règles créées sont lues |
-| E8 | mainteneur | pose dans la section ancêtre, sélection gardée, cadrage | position, chevauchement et cadrage relevés |
-| E9 | agent | les gestes de E2 avec un maître de bibliothèque | parent du maître `.ruleItem`, création, lecture |
-| E10 | agent | 29 règles ; retour arrière après un échec provoqué au milieu | durée mesurée ; le conteneur partiel est supprimé |
+| Essai | Geste | Critère de succès |
+|---|---|---|
+| E1 | `createInstance` sur le maître lu par `getMainComponentAsync` depuis une instance, maître rangé sur une autre page, sous `dynamic-page` | l'instance apparaît sur la page active |
+| E2 | `.remove()`, puis `resetSlot`, sur une section par défaut du slot `Sections-Wrapper`, et sur un exemple d'un `Rules-Wrapper` | l'enfant disparaît du slot, instance vivante |
+| E3 | chemin E de 6.4, puis chemin F | l'arbre attendu est reproduit, instances vivantes |
+| E4 | plusieurs écritures de `characters` dans un même sous-arbre de slot, avant et après l'ajout ; polices chargées, dont celle de `component-name` | les textes tiennent ; les ids relevés avant et après |
+| E5 | largeur d'une règle ajoutée ; `limitViolations` des deux slots | la règle fait la largeur du slot, sans rognure ni violation |
+| E6 | Ctrl+Z après une création, plugin ouvert, focus dans le canevas puis dans la fenêtre du plugin | relever ce qui est défait, et si un geste antérieur au clic l'est aussi |
+| E7 | analyse UCM du composant avec le moteur actuel | les règles créées sont lues |
+| E8 | pose dans la section ancêtre, sélection gardée, cadrage | position, chevauchement et cadrage relevés |
+| E9 | E1 à E3 et E7 avec un maître de bibliothèque | création, parent du maître `.ruleItem`, variante `divider` atteignable, lecture par le moteur |
+| E10 | 22 règles et 3 séparateurs ; retour arrière après un échec provoqué au milieu | durée mesurée ; le conteneur partiel est supprimé |
 
-Livrable : `ESSAI-TEMPLATE-REGLES.md` dans ce dossier, un tableau par essai
-avec le code exécuté et le résultat. Porte H2 quand E1 échoue, quand E2 et E3
-échouent l'un et l'autre, ou quand E4 ou E7 échoue. Le mainteneur choisit alors entre un template
-partiel (exemples conservés, option B indispensable), une liste des règles à
-créer affichée dans la carte sans rien écrire, et l'abandon.
+Porte H2 quand E1, E2, E4 ou E7 échoue, ou quand E3 échoue sur les deux
+chemins. Le mainteneur choisit alors entre une liste des règles à créer
+affichée dans la carte sans rien écrire, et l'abandon. Un échec de E9 seul
+touche l'équipe consommatrice : la section 12 donne l'issue.
 
-### Phase 2. Règles à rédiger (moteur)
+### Phase 2. Le marqueur dans le moteur
 
-Indépendante de l'écriture : elle corrige la publication des textes d'exemple.
+Indépendante de l'écriture : elle corrige la publication des textes d'exemple,
+et sert les règles posées à la main.
 
-1. Relever, sur les cinq conteneurs du fichier de tests, les règles que le
-   critère de 6.2 retirerait. Un résultat non nul revient au mainteneur avant
-   la suite.
-2. Tests rouges dans `rules.test.ts` : une règle de chaque tag dont le calque
-   critère égale celui du maître n'est pas lue ; un `@default` rédigé dont le
-   `content` est intact reste lu ; un `@default` sans valeur rejoint la note ;
-   la note porte les nodes de toutes ces règles.
-3. `extractRules.ts` et `rulesModel.ts` ; FORMAT.md et SPEC.md, section 7 ;
-   invariant d'`AGENTS.md`.
-4. Si H1-E le retient : un dessin qu'une règle `@icons` nomme, même sans
-   politique, ne produit plus l'avertissement « dessin non déclaré ». Le nom
-   rejoint un ensemble lu par `warnUndeclaredDrawing` seul, jamais par
-   l'attribution des slots.
+1. Tests rouges dans `rules.test.ts` : une règle de chaque tag marquée dans
+   chacun de ses calques lus n'est pas lue ; le marqueur est reconnu sans
+   tenir compte de la casse ; le `content` d'un `@default` n'est pas lu ;
+   l'avertissement regroupe les règles d'un même tag et porte leurs nodes ;
+   un conteneur dont `component-name` est marqué rejoint le constat orphelin.
+2. `extractRules.ts` et `rulesModel.ts`.
+3. FORMAT.md et SPEC.md, section 7 ; invariant d'`AGENTS.md` ; README du
+   plugin et POUR-LES-DESIGNERS.md pour le geste du designer.
+4. Dans Figma, en parallèle, par le mainteneur : textes d'aide de 6.3.
 
 ### Phase 3. Les motifs de la loi du document intact
 
@@ -685,22 +708,22 @@ aucune exclusion, aucune promesse réécrite. La loi est vue rouge sur un
 
 ### Phase 4. Le modèle et les sources
 
-1. `src/template/modele.ts` : contrat et dessins non déclarés vers sections et
-   règles, selon 6.1 et H1-E.
+1. `src/template/modele.ts` : contrat vers sections, règles et séparateurs,
+   selon 6.1.
 2. `src/template/sources.ts` : relevé synchrone de l'offre ; conteneur vierge ;
-   résolution asynchrone des maîtres de règles et de sections.
-3. `exportComponent.ts` : champs internes des dessins non déclarés et de
-   l'index des conteneurs.
-4. `extractRules.ts` et `code.ts` : offre dans le message `cible`, garde du
+   résolution asynchrone des maîtres de règles, de sections et du séparateur ;
+   vérification des textes d'aide.
+3. `extractRules.ts` et `code.ts` : offre dans le message `cible`, garde du
    variant seul.
-5. `tests/template.test.ts` : contrats synthétiques, dont un axe renommé
+4. `tests/template.test.ts` : contrats synthétiques, dont un axe renommé
    `size`, un axe d'états, un composant sans propriété ; test de relecture.
 
 ### Phase 5. L'écriture et sa frontière
 
-1. `src/template/ecriture.ts` selon le chemin validé en phase 1 : polices
-   vérifiées et chargées d'abord, conteneur construit ou conteneur vierge
-   rempli, rangé, placé ; échec défait par suppression du conteneur.
+1. `src/template/ecriture.ts` selon le chemin validé en phase 1 : textes d'aide
+   et polices vérifiés d'abord, conteneur créé ou instance vierge remplie,
+   sections retirées, règles et séparateurs rangés, conteneur placé ; échec
+   défait par suppression du conteneur créé.
 2. `loiDuDocumentIntact.test.ts` : exclusion du seul `ecriture.ts`, ses deux
    assertions, test des imports, vus rouges sur un import de `src/template/`
    depuis `src/depot.ts`.
@@ -713,7 +736,7 @@ aucune exclusion, aucune promesse réécrite. La loi est vue rouge sur un
 ### Phase 6. L'interface et les documents
 
 1. `CarteComposant.ts`, `index.ts`, `styles.css` selon 8.2 et 8.3.
-2. Cinq états de galerie, captures, protocole de relecture (a) à (e).
+2. Sept états de galerie, captures, protocole de relecture (a) à (e).
 3. `interface.test.mjs` : bouton visible, inactif, absent.
 4. README du plugin, `package.json`, POUR-LES-DESIGNERS.md, en-tête
    d'`extractRules.ts`, commentaire de `montrerLesCalques`, relus contre
@@ -722,33 +745,56 @@ aucune exclusion, aucune promesse réécrite. La loi est vue rouge sur un
 ### Phase 7. Recette dans Figma
 
 Le mainteneur rejoue dans Figma : création sur une page de composants, sur une
-page qui ne porte que le maître, avec un conteneur vierge collé, dans une
-section, suppression après création, rédaction de trois règles, analyse,
-publication. L'agent ne peut pas exécuter l'export dans Figma
-([AGENTS.md](../../../../AGENTS.md#limites-denvironnement)).
+page qui ne porte que le maître, avec une instance vierge collée, dans une
+section, avec un maître de bibliothèque, suppression après création, rédaction
+de trois règles, analyse, publication. L'agent ne peut pas exécuter l'export
+dans Figma ([AGENTS.md](../../../../AGENTS.md#limites-denvironnement)).
 
-## 11. Décisions attendues à H1
+## 11. Décisions prises à H1
 
-| Id | Question | Options | Recommandation | Ce qui en dépend |
-|---|---|---|---|---|
-| H1-A | Qui mène l'essai de la phase 1 ? | agent seul, par `use_figma` ; mainteneur seul ; partage | partage : l'agent sur une copie du fichier, le mainteneur pour E1 et E6 à E8 | tout le reste |
-| H1-B | Que devient une règle qui garde le texte d'exemple ? | A vider ; A' vider et localiser ; B note groupée ; B' silence | B, avec le critère par tag | phase 2, texte des règles posées |
-| H1-C | Quand le bouton apparaît, et d'où viennent les règles ? | P1 set seul ; P1-bis analyse au clic ; P2 après analyse | P1-bis | modèle, interface, galerie |
-| H1-D | Que fait le plugin quand un conteneur existe déjà ? | rien ; compléter les règles manquantes ; créer un second conteneur | pas de bouton sur la page, refus s'il est ailleurs, remplissage d'un conteneur vierge ; compléter plus tard | cas limites, messages |
-| H1-E | Que contient le template ? | états ; `@default` par axe ; intention ; icônes détectées, avec ou sans la tâche 2.4 | tout sauf les états, avec la tâche 2.4 | modèle, volume |
-| H1-F | Que montre Figma après la création ? | garder le composant sélectionné et cadrer les deux ; sélectionner le conteneur | garder et cadrer | interface |
-| H1-G | D5 est-il confirmé, sachant qu'une page sans maître ni instance ne permet pas de créer ? | confirmer, avec le message de 5.5 ; chercher le maître sur tout le document | confirmer : l'analyse charge déjà les pages, la question est une règle de produit | sources, messages |
-| H1-H | Comment se défait une création ? | supprimer le conteneur, seul calque créé ; Ctrl+Z, avec `commitUndo` dans le seul module d'écriture si E6 l'exige | la suppression comme promesse ; `commitUndo` seulement si E6 montre que Ctrl+Z défait aussi un geste antérieur au clic | loi du document intact, SPEC.md |
+| Id | Question | Décision |
+|---|---|---|
+| H1-A | Qui mène l'essai de la phase 1 ? | le mainteneur, pour tous les essais ; l'agent prépare le plugin d'essai et consigne les résultats |
+| H1-B | Que devient une règle non rédigée ? | un texte d'aide commence par `[À compléter]` ; un calque lu qui le contient rend la règle non rédigée, avec un avertissement |
+| H1-C | Quand le bouton apparaît, et d'où viennent les règles ? | P1-bis : sous « Analyser », contrat produit au clic |
+| H1-D | Que fait le plugin quand un conteneur existe déjà ? | sur la page : pas de bouton ; sur une autre page : non cherché ; instance vierge : remplie ; règle marquée : avertissement |
+| H1-E | Que contient le template ? | les règles que le composant emploie, selon 6.1 |
+| H1-F | Que montre Figma après la création ? | le composant reste sélectionné, composant et conteneur sont cadrés |
+| H1-G | D5 est-il confirmé ? | sans réponse explicite ; tenu, conformément à H1-D |
+| H1-H | Comment se défait une création ? | par la suppression du conteneur ; `commitUndo` n'entre dans le module que si E6 montre un Ctrl+Z qui défait aussi un geste antérieur au clic |
 
-## 12. Questions à l'équipe consommatrice
+Lectures faites de ces réponses, à confirmer :
 
-La première question du plan de recherche a sa réponse dans
-[RECHERCHE-REGLAGES.md](../R%C3%A9glages%20du%20plugin/RECHERCHE-REGLAGES.md#11-utilisateurs) :
-les composants de l'équipe portent un `.componentRules`. Restent :
+1. « `@prop` affiché pour chaque axe » : une règle par valeur, groupées par axe.
+   La grammaire n'a pas de règle d'axe sans valeur.
+2. L'axe d'états (`State`) est un axe du composant : ses valeurs sont posées, en
+   dernier groupe.
+3. Ni `@default` ni la section de documentation (`@do`, `@dont`, `@pairs`) ne
+   sont posés.
+4. L'avertissement du marqueur est groupé par tag, une ligne cliquable par tag,
+   plutôt qu'une ligne par règle.
 
-- son maître `.componentRules` vient-il d'une bibliothèque ? L'essai E9 en
-  dépend, et `isRuleInstance` avec lui ;
-- ses designers ont-ils le droit de modifier les fichiers de composants ?
+## 12. L'équipe consommatrice
+
+Réponse du mainteneur : le `.componentRules` de l'équipe est une instance du
+composant d'origine, publié par le fichier du design system du mainteneur. Le
+maître est donc distant pour l'équipe.
+
+Deux conséquences :
+
+- les textes d'aide réécrits en 6.3 arrivent chez l'équipe par la mise à jour
+  de la bibliothèque, sauf dans les calques qu'elle a déjà modifiés ;
+- le template chez l'équipe dépend de l'essai E9 : créer une instance d'un
+  maître distant, et lire le parent de `.ruleItem`, dont `isRuleInstance`
+  dépend déjà aujourd'hui.
+
+Recommandation : garder l'instance de bibliothèque, qui propage les textes
+d'aide et garde une seule source. Si E9 échoue, donner la source à l'équipe
+pour qu'elle la range dans son propre design system : le maître devient local
+chez elle, et les essais E1 à E8 couvrent ce cas.
+
+Reste une question à l'équipe : ses designers ont-ils le droit de modifier les
+fichiers de composants ?
 
 ## 13. Sources
 
@@ -769,26 +815,38 @@ les composants de l'équipe portent un `.componentRules`. Restent :
 
 Un agent sans le contexte de la recherche a relu la première version de ce
 plan, le code du commit lu et le fichier Figma. Chaque point a été vérifié dans
-le code ou à sa source avant d'être retenu.
+le code ou à sa source avant d'être retenu. Les décisions H1, prises ensuite,
+ont remplacé certaines suites.
 
 | Point de la revue | Suite |
 |---|---|
-| Les avertissements identiques sont fusionnés : 14 lignes et non 29 | retenu, vérifié dans `exportComponent.ts` ; constat 7 et 6.2 réécrits |
-| L'exemple se trompait sur le dessin non déclaré, le compte de la note et « aucune règle @usage » | retenu, vérifié dans `rulesModel.ts` et `exportComponent.ts` ; 6.4 réécrit, tâche 2.4 ajoutée |
-| Le `content` de `@default` rendait l'option B dangereuse | retenu ; critère par tag |
+| Les avertissements identiques sont fusionnés : 14 lignes et non 29 | retenu, vérifié dans `exportComponent.ts` ; sert l'avertissement groupé de 6.2 |
+| L'exemple se trompait sur le dessin non déclaré, le compte de la note et « aucune règle @usage » | retenu, vérifié ; exemple réécrit |
+| Le `content` de `@default` rendait dangereuse la comparaison au maître | retenu ; le marqueur (H1-B) ne lit jamais ce calque |
 | Un variant seul est une cible valide | retenu, vérifié dans `cible.ts` ; garde ajoutée |
-| L'ajout dans un slot d'instance est documenté par le guide MCP de Figma | retenu, page relue ; constat 3 et sources |
+| L'ajout dans un slot d'instance est documenté par le guide MCP de Figma | retenu, page relue |
 | Le regroupement de l'annulation était présenté comme documenté | retenu ; constat 6 et H1-H |
 | `inventaireInvariants.test.ts` manquait | retenu, vérifié ; 4.1 et 9 |
 | Imprécisions : cinq instances, quatre faux positifs pour `.name`, onze promesses, ordre de la carte | retenues, vérifiées |
-| L'essai par `use_figma` ne reproduit ni la fenêtre du plugin ni son annulation | retenu ; essai partagé |
-| P2 laisse sept chemins de `code.ts` sans traitement ; P1-bis les évite | retenu, chemins vérifiés ; recommandation changée |
-| Conteneur vierge collé, conteneur sur une autre page, conteneur orphelin | retenu. Ajout : le vierge exige aussi qu'aucune règle ne soit rédigée, sans quoi le conteneur du composant qui porte le nom par défaut serait réécrit |
-| Réutiliser les sections par défaut | retenu comme chemin E, essayé en premier |
+| L'essai par `use_figma` ne reproduit ni la fenêtre du plugin ni son annulation | retenu ; tous les essais passent par un plugin d'essai (H1-A) |
+| P2 laisse sept chemins de `code.ts` sans traitement ; P1-bis les évite | retenu, chemins vérifiés ; H1-C |
+| Conteneur vierge, conteneur sur une autre page, conteneur orphelin | vierge retenu, défini par le marqueur ; autre page non cherchée (H1-D) ; orphelin non rempli |
+| Réutiliser les sections par défaut | retenu comme chemin E |
 | Largeur des règles dans un slot | retenu, mesuré dans Figma ; essai E5 et motif de la loi |
 | Motifs manquants, `figma.union` compris, et refus de `loadAllPagesAsync` dans `src/template/` | retenu, aucun faux positif mesuré |
 | Exclusion et promesses trop tôt dans l'ordre des phases | retenu ; déplacées en phase 5 |
 | Bouton « Annuler » sans effet pendant la création | retenu ; retiré pendant la création |
 | Un message `regles` doublait `status` | retenu ; offre portée par `cible` |
 | Phrase de confirmation sur les composants imbriqués, sans détection | retenu ; phrase retirée |
-| Troisième issue à H2 : lister les règles sans écrire | retenu comme option |
+| Troisième issue à H2 : lister les règles sans écrire | retenu comme option de H2 |
+
+## 15. Hors de cette version
+
+- Les tags `@text`, `@slot` et `@swap`, pour documenter les propriétés `TEXT`,
+  `SLOT` et `INSTANCE_SWAP`. Ils changent la grammaire de FORMAT.md, section 7,
+  et le contrat devra dire où leur description se range.
+- Écrire dans `icon` les noms des dessins que l'analyse signale comme non
+  déclarés, au lieu d'une règle d'icône vide.
+- Compléter un conteneur existant avec les règles qui lui manquent quand le
+  composant gagne une propriété.
+- Chercher un conteneur ou un maître sur les autres pages.
