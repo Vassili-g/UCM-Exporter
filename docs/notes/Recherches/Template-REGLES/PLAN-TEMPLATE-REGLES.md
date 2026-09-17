@@ -1,6 +1,6 @@
 # Plan d'action du template de règles
 
-> Statut : décisions H1 prises, deux questions ouvertes (section 11). Ce
+> Statut : décisions H1 prises (section 11), essais de la phase 1 à préparer. Ce
 > document est le livrable de la
 > [section 12](./RECHERCHE-TEMPLATE-REGLES.md#12-livrable-attendu) du plan de
 > recherche, rédigé en plan d'action à la demande du mainteneur. Une revue
@@ -351,7 +351,8 @@ publie la surface élue, les clés sémantiques (`size`) et l'axe d'états.
 
 Ne sont pas posés : `@default`, `@do`, `@dont`, `@pairs`, et les propriétés
 `TEXT`, `INSTANCE_SWAP` et `SLOT`, qu'aucun tag ne documente (section 15).
-Une section sans règle est retirée du conteneur.
+Une section sans règle est retirée du conteneur. L'axe d'états est celui que
+`stateModel` publie, nommé `State`, `States` ou `Status` dans Figma (phase 2).
 
 La clé publiée est la seule forme que `mergePropDescriptions` retrouve à coup
 sûr : un axe renommé par la couche sémantique (`size`) ne se retrouve pas par
@@ -635,6 +636,8 @@ de relecture (a) à (e) passe sur les captures, compte d'objets (e) compris.
 | `packages/plugin/src/messages.ts` | `creer-regles` ; offre dans `cible` |
 | `packages/plugin/src/code.ts` | routage, `creerRegles`, valeur d'`operationEnCours`, commentaire de `montrerLesCalques` |
 | `packages/plugin/src/contract/extractRules.ts`, `rulesModel.ts` | marqueur, avertissement par tag, conteneur vierge, relevé de l'offre |
+| `packages/plugin/src/contract/semantics.ts`, `parsers.ts` | une seule liste des noms de l'axe d'états, `states` ajouté |
+| `packages/plugin/tests/parsers.test.ts` et les tests de `buildStateModel` | axe `States` |
 | `packages/plugin/src/template/` | trois fichiers (4.3) |
 | `packages/plugin/src/ui/` | `CarteComposant.ts`, `index.ts`, `styles.css` |
 | `packages/plugin/galerie/etats.cjs` | sept états |
@@ -685,10 +688,10 @@ chemins. Le mainteneur choisit alors entre une liste des règles à créer
 affichée dans la carte sans rien écrire, et l'abandon. Un échec de E9 seul
 touche l'équipe consommatrice : la section 12 donne l'issue.
 
-### Phase 2. Le marqueur dans le moteur
+### Phase 2. Le moteur : marqueur et axe d'états
 
 Indépendante de l'écriture : elle corrige la publication des textes d'exemple,
-et sert les règles posées à la main.
+sert les règles posées à la main, et fixe les noms de l'axe d'états.
 
 1. Tests rouges dans `rules.test.ts` : une règle de chaque tag marquée dans
    chacun de ses calques lus n'est pas lue ; le marqueur est reconnu sans
@@ -699,6 +702,18 @@ et sert les règles posées à la main.
 3. FORMAT.md et SPEC.md, section 7 ; invariant d'`AGENTS.md` ; README du
    plugin et POUR-LES-DESIGNERS.md pour le geste du designer.
 4. Dans Figma, en parallèle, par le mainteneur : textes d'aide de 6.3.
+5. Axe d'états. Mesuré : deux listes recopiées reconnaissent son nom,
+   `isStateProperty` dans `parsers.ts` et `buildStateModel` dans
+   `semantics.ts`, chacune avec `state` et `status`. Les deux lisent désormais
+   une seule liste, rangée dans `semantics.ts` qui porte le vocabulaire
+   sémantique, et elle reçoit `states`. Tests rouges d'abord : un axe `States`
+   est publié par `stateModel`, sort des props, et sa valeur `Disable` donne
+   `disabled`. FORMAT.md, sections 1 et 7, et l'invariant d'`AGENTS.md` citent
+   les trois noms ; `tests/inventaireInvariants.test.ts` suit si la phrase de
+   l'invariant change. `contractVersion` ne monte pas : la forme du contrat ne
+   change pas. Mesuré : aucun contrat du Playground n'a d'axe `States`. Un
+   composant de l'équipe consommatrice qui en aurait un verrait cet axe quitter
+   ses props au prochain export.
 
 ### Phase 3. Les motifs de la loi du document intact
 
@@ -768,19 +783,15 @@ Précisions confirmées : une règle `@prop` par valeur, groupées par axe ; ni
 posés ; l'avertissement du marqueur est groupé par tag, une ligne cliquable
 par tag.
 
-Reste ouverte : les valeurs de l'axe d'états (`State`, `Status`) sont-elles
-posées ?
+Les valeurs de l'axe d'états sont posées, en dernier groupe de la section des
+propriétés. Le plugin ne sait pas juger quel état va de soi : le designer
+supprime une règle évidente d'un geste, alors qu'un état propre au composant
+(`loading`, `expanded`, `error`) oublié laisserait le développeur sans
+explication.
 
-| Option | Effet | Risque |
-|---|---|---|
-| Les poser, en dernier groupe | une règle par état, à rédiger ou à supprimer | quelques règles évidentes (`hover`, `focus`) à supprimer à la main |
-| Ne pas les poser | aucune règle d'état | un axe d'états qui porte un comportement propre au composant (`loading`, `expanded`, `error`) ne reçoit aucune invite |
-
-Recommandation : les poser. Le plugin ne sait pas juger quel état va de soi, et
-le designer le sait. Supprimer une règle évidente coûte un geste, alors qu'un
-état oublié laisse le développeur sans explication. Le conteneur rédigé du
-component set de test n'en documente aucune, et son export ne perd que leur
-description.
+Les noms d'axe d'états valides sont `State`, `States` et `Status`. Le moteur
+n'accepte aujourd'hui que les deux premiers en forme normalisée, `state` et
+`status` : la phase 2 ajoute `states`.
 
 ## 12. L'équipe consommatrice
 
