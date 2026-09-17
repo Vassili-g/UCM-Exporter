@@ -190,11 +190,14 @@ function validerCycles(parNom, erreurs) {
   );
   const visites = new Set();
   const actives = [];
+  const positions = new Map();
   const cyclesVus = new Set();
 
-  const visiter = (nom) => {
-    const indexActif = actives.indexOf(nom);
-    if (indexActif >= 0) {
+  // Le parcours tient sa pile lui-même : une chaîne de 10 000 contrats épuisait
+  // la pile de Node par récursion, et le contrôle levait au lieu de conclure.
+  const rencontrer = (nom, pile) => {
+    const indexActif = positions.get(nom);
+    if (indexActif !== undefined) {
       const cycle = cycleCanonique([...actives.slice(indexActif), nom]);
       const cle = cycle.join("\u0000");
       if (cyclesVus.has(cle)) return;
@@ -210,19 +213,31 @@ function validerCycles(parNom, erreurs) {
 
     const document = uniques.get(nom);
     if (!document) return;
+    positions.set(nom, actives.length);
     actives.push(nom);
-    for (const dependance of Array.isArray(document.contrat?.composes)
-      ? document.contrat.composes
-      : []) {
-      if (typeof dependance?.component === "string" && uniques.has(dependance.component)) {
-        visiter(dependance.component);
-      }
-    }
-    actives.pop();
-    visites.add(nom);
+    const composes = Array.isArray(document.contrat?.composes) ? document.contrat.composes : [];
+    pile.push({ nom, composes, suivante: 0 });
   };
 
-  for (const nom of uniques.keys()) visiter(nom);
+  for (const depart of uniques.keys()) {
+    const pile = [];
+    rencontrer(depart, pile);
+    while (pile.length > 0) {
+      const cadre = pile.at(-1);
+      if (cadre.suivante < cadre.composes.length) {
+        const dependance = cadre.composes[cadre.suivante];
+        cadre.suivante += 1;
+        if (typeof dependance?.component === "string" && uniques.has(dependance.component)) {
+          rencontrer(dependance.component, pile);
+        }
+        continue;
+      }
+      pile.pop();
+      actives.pop();
+      positions.delete(cadre.nom);
+      visites.add(cadre.nom);
+    }
+  }
 }
 
 /**

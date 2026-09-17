@@ -11,8 +11,11 @@ coche quand le test de régression passe et a été vu rouge sur le code d'avant
   Fait : les 332 mutations déplacées sur les six contrats figés suppriment
   toutes `padding.x`, `padding.y`, `strokes.*.width` ou `strokes.*.align`,
   que `types.ts` déclare optionnels. Aucun contrôle ne disparaît.
-- [ ] 1. `validerCycles()` déborde la pile sur une chaîne de 10 000 contrats.
+- [x] 1. `validerCycles()` déborde la pile sur une chaîne de 10 000 contrats.
   Geste : parcours par pile explicite, test sur une chaîne de 10 000 contrats.
+  Fait : la chaîne se valide en 66 ms, et le test est rouge sur l'ancien code.
+  Reste hors de ce constat : un cycle de 10 000 membres prend 11 s, parce que
+  `cycleCanonique()` construit et trie toutes ses rotations.
 - [ ] 4. `validerAdressesDEchantillons()` déborde la pile sur un échantillon
   imbriqué 10 000 fois. Geste : parcours par pile explicite, test de profondeur.
 - [ ] 3. `collecterReferences()` déborde la pile sur un champ inconnu profond

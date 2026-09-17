@@ -667,6 +667,26 @@ test("le graphe détecte un cycle de composition", () => {
   assert.match(erreurs.get("Card.json")[0], /Alert → Card → Alert/);
 });
 
+test("le graphe conclut sur une chaîne de 10 000 contrats sans épuiser la pile", () => {
+  const taille = 10_000;
+  const documents = Array.from({ length: taille }, (_, index) => document(
+    `C${index}.json`,
+    { name: `C${index}`, composes: index + 1 < taille ? [{ component: `C${index + 1}`, figmaLayer: "layer" }] : [] },
+  ));
+  // Le dernier maillon revient dix contrats en arrière : le cycle se trouve au
+  // fond de la pile, là où la récursion levait.
+  const boucle = structuredClone(documents);
+  boucle.at(-1).contrat.composes = [{ component: "C9990", figmaLayer: "layer" }];
+
+  const erreurs = validerGrapheDesContrats(documents);
+  assert.equal(erreurs.size, taille);
+  assert.ok([...erreurs.values()].every((liste) => !liste.some((message) => /Cycle/.test(message))));
+  assert.match(
+    validerGrapheDesContrats(boucle).get("C9999.json").find((message) => /Cycle/.test(message)) ?? "",
+    /C9999 → C9990/,
+  );
+});
+
 /**
  * Le passage à la ligne, introduit par la 5.4.
  *
