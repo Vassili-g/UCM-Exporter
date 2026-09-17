@@ -29,3 +29,10 @@ coche quand le test de régression passe et a été vu rouge sur le code d'avant
 - [ ] 2. Un fichier à la place du dossier `components` fait lever `ENOTDIR` dans
   `controlerRepository()`. Geste : verdict bloquant qui nomme `components`, test
   sur un fichier à la place du dossier.
+  En attente d'une décision. Le constat surestime l'effet : `ucm check` sort
+  déjà en 2, le code documenté d'une configuration fautive, avec un message qui
+  nomme le chemin, et le filet de la CI publie une note qui envoie un
+  développeur au journal. La fusion reste bloquée. `cli.test.mjs` fige ce
+  comportement pour `check`, `icons` et `tokens css`. Le verdict bloquant
+  proposé ferait sortir `check` en 1 et casserait ce test ; il ne gagne qu'une
+  note de demande de fusion qui nomme `components`.
