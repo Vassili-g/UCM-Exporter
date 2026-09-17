@@ -121,10 +121,13 @@ Tous les chemins partent de `packages/plugin/` sauf mention contraire.
 | D1. Le bouton vit dans la carte du composant, sous « Analyser le composant » | Instruire son rang, son état et ses textes, pas son existence |
 | D2. Le template suit la grammaire actuelle de FORMAT.md, section 7 | Aucun nouveau tag ni calque. Une propriété sans tag se signale au mainteneur |
 | D3. Le moteur reste générique | Aucun nom de composant du corpus dans le code ou les tests. Les noms `.componentRules`, `.ruleItem`, `component-name` restent des conventions |
+| D4. Un seul module du sandbox a le droit d'écrire dans le document. `loiDuDocumentIntact.test.ts` garde sa liste d'appels refusés et exclut ce module nommément | Instruire la forme de l'exclusion et les phrases d'autorité à réécrire, pas le choix de l'écriture |
+| D5. Le plugin cherche `.componentRules` sur la page active, jamais sur tout le document | Aucun `loadAllPagesAsync` ni aucune clé de bibliothèque. Sans `.componentRules` sur la page active, le bouton ne crée rien |
 
 ## 3. Contraintes
 
-- **Document intact.** Voir la [section 4](#4-le-conflit-avec-le-document-intact).
+- **Document intact.** Hors du module de D4, rien n'écrit dans le document.
+  Voir la [section 4](#4-lécriture-bornée-à-un-module).
 - **Hiérarchie de l'information.** « Une carte est une commande, et il n'y en a
   que deux » ([CONTRIBUTING.md](../../../../CONTRIBUTING.md#la-hiérarchie-de-linformation)).
   Un second bouton dans la carte du composant ajoute un geste à cette commande.
@@ -137,10 +140,10 @@ Tous les chemins partent de `packages/plugin/` sauf mention contraire.
 - **Diagnostics.** Un message au designer suit la forme manque, impact, action,
   et la loi de localisation (`tests/loiDeLocalisation.test.ts`).
 
-## 4. Le conflit avec le document intact
+## 4. L'écriture bornée à un module
 
-La feature écrit dans le document. C'est le premier sujet, et il conditionne
-tous les autres.
+La feature écrit dans le document. D4 retient une écriture bornée à un seul
+module du sandbox. Ce sujet conditionne tous les autres.
 
 ### 4.1. Faits à établir
 
@@ -154,33 +157,58 @@ tous les autres.
 - Le comportement d'annulation : une création faite par un plugin s'annule-t-elle
   en un seul Ctrl+Z ? Citer la documentation, sinon marquer « non vérifié ».
 
-### 4.2. Options à comparer
+### 4.2. Questions à instruire sur la borne
 
-| Option | Principe |
-|---|---|
-| A. Écriture bornée | Un seul module du sandbox a le droit d'écrire. La loi garde sa liste et exclut ce module nommément, avec un test qui prouve que l'exclusion ne couvre que lui |
-| B. Pas d'écriture | Le plugin produit la liste des règles à poser (texte à copier, ou aperçu dans le compte rendu). Le designer crée l'instance |
-| C. Écriture hors du plugin exporteur | Un second plugin, ou une commande de menu séparée dans le manifeste, porte l'écriture. Le plugin d'export garde sa promesse |
+- **Emplacement du module.** Proposer son chemin, par exemple `src/template/`,
+  et sa frontière : la construction du template en fonction pure d'un côté, les
+  appels d'écriture de l'autre.
+- **Forme de l'exclusion.** La loi exclut un chemin exact, pas un motif. Deux
+  assertions protègent déjà l'exclusion de `src/ui` : le dossier existe, et
+  aucun fichier exclu n'est balayé. Proposer leurs équivalents pour le module,
+  et un test qui refuse l'import de ce module par `src/contract/`,
+  `src/tokens/` et le chemin d'analyse et de publication.
+- **Appels couverts.** Lister les appels d'écriture du module et vérifier que la
+  liste `ECRITURES` les nomme tous. L'affectation de `characters`, `x` ou `y`
+  n'y figure pas : hors du module, elle passerait la loi. Dire s'il faut
+  étendre la liste.
+- **Déclenchement.** Seule la demande du bouton atteint le module. Relever dans
+  `code.ts` le routage qui le garantit, et le commentaire de `HORS_SANDBOX` à
+  réécrire.
+- **Phrases d'autorité.** Proposer la nouvelle promesse : l'analyse et la
+  publication ne modifient jamais le document, et seul le bouton du template y
+  crée une instance de `.componentRules`.
 
-Pour chaque option : phrases d'autorité à réécrire, forme du test de loi, coût
-pour le designer, risque d'une écriture involontaire dans un fichier de
-production. Appliquer à la loi modifiée le protocole du dépôt : casser ce
+Appliquer à la loi modifiée le protocole du dépôt : casser ce
 qu'elle protège, constater le rouge, restaurer.
 
 ## 5. Obtenir le maître `.componentRules`
 
-Le plugin doit créer une instance d'un maître qu'il ne connaît que par son nom.
+Le plugin crée une instance d'un maître qu'il ne connaît que par son nom. D5
+borne la recherche à la page active, où deux sources sont possibles :
 
-| Option | À instruire |
+| Source sur la page active | À instruire |
 |---|---|
-| Composant local au fichier | Recherche par nom sur toutes les pages : coût de `loadAllPagesAsync`, homonymes, maître absent |
-| Composant d'une bibliothèque | `importComponentByKeyAsync` exige une clé : où la ranger (réglage du plugin, constante), bibliothèque non activée dans le fichier, version publiée en retard |
-| Recopie d'une instance existante | Chercher une instance `.componentRules` du fichier et la dupliquer, puis vider ses règles |
-| Construction sans maître | Frames et textes créés par le plugin. `isRuleInstance` exige des instances de `.ruleItem` : cette option ne produit aucune règle lisible sans changer le moteur |
+| Le composant maître `.componentRules` | Recherche par nom compacté, homonymes, maître rangé dans un frame ou une section |
+| Une instance de `.componentRules` | Son maître se lit par `getMainComponentAsync`, même s'il est rangé sur une autre page ou dans une bibliothèque. Cette lecture respecte-t-elle D5 ? Coût et échec de l'appel |
 
-Questions : que fait le bouton quand aucun maître n'est trouvé ? Le composant
-`.ruleItem` est-il lui aussi à importer ? L'équipe consommatrice utilise-t-elle
-`.componentRules` ? La question est ouverte dans
+Questions :
+
+- Quelle source passe en premier quand la page active porte les deux ?
+- L'instance trouvée documente déjà un autre composant : sert-elle seulement à
+  lire le maître, ou est-elle écartée ?
+- Le maître de `.ruleItem` se lit-il sur les règles d'exemple du maître
+  `.componentRules`, sans autre recherche ?
+- Quel message affiche le bouton quand la page active ne porte aucun
+  `.componentRules` ? Le proposer selon `rediger-diagnostics-ucm`.
+- Le bouton est-il désactivé d'avance dans ce cas ? Mesurer le coût d'une
+  recherche sur la page à chaque changement de sélection.
+
+La construction sans maître est écartée : `isRuleInstance` exige des instances
+de `.ruleItem`, et des frames créés par le plugin ne produiraient aucune règle
+lisible.
+
+L'équipe consommatrice utilise-t-elle `.componentRules` ? La question est
+ouverte dans
 [RECHERCHE-REGLAGES.md](../Réglages%20du%20plugin/RECHERCHE-REGLAGES.md#10-questions-ouvertes).
 
 ## 6. Du component set aux règles
@@ -236,7 +264,7 @@ et la documentation Figma le décrit-elle ?
 |---|---|
 | Sélection : variant seul, instance, plusieurs component sets, composant sans propriété | Le bouton est-il actif ? Reprendre les cas de `etatDeCible` |
 | Un conteneur existe déjà pour ce nom | Refuser, compléter les règles manquantes, ou créer un second conteneur, ce qui déclenche la note de doublon |
-| Un conteneur existe sur une autre page | Il n'est pas lu à l'export mais compte comme dépendance |
+| Un conteneur existe sur une autre page | D5 : la recherche ne le voit pas, et le bouton en crée un second sur la page active. L'ancien n'est pas lu à l'export mais compte comme dépendance |
 | Le component set est rangé dans une section ou un frame | Emplacement de l'instance, chevauchement avec les nodes voisins |
 | Fichier en lecture seule, ou bibliothèque non modifiable | Message d'erreur et état du bouton |
 | Police du maître absente du poste | `loadFontAsync` échoue : comportement attendu |
@@ -283,11 +311,6 @@ npm run galerie --workspace ucm-exporter-plugin
 
 ## 10. Questions au mainteneur
 
-- La promesse « le plugin ne modifie jamais le document » est-elle une garantie
-  donnée aux utilisateurs, ou une règle de conception interne ? La réponse
-  départage les options de la section 4.
-- Le maître `.componentRules` est-il publié dans une bibliothèque, ou copié dans
-  chaque fichier ?
 - Un warning par règle non rédigée est-il acceptable pendant la rédaction ?
 - Le template doit-il lister les propriétés `TEXT`, `INSTANCE_SWAP` et `SLOT`,
   qu'aucun tag ne documente ?
@@ -323,7 +346,7 @@ revue indépendante avant d'être exécuté.
 
 | Sujet amont | Sujet qu'il conditionne |
 |---|---|
-| Conflit avec le document intact (4) | Tous les autres sujets |
+| Borne de l'écriture (4) | Tous les autres sujets |
 | Obtention du maître (5) | Cas du maître absent (7), messages d'échec (8) |
 | Texte de départ des règles (6.2) | Warnings à l'export, test de génération (9) |
 | Conteneur existant (7) | Libellé et comportement du bouton (8) |
