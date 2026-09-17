@@ -53,7 +53,7 @@ Lire avant de commencer :
 |---|---|---|
 | Équipe du design system UCM | Toutes les commandes : contrats, tokens, contrôle de CI sur chaque demande de fusion | Publie avec `ucm.config.json` et `@ucm-kit/cli` |
 | Équipe consommatrice | La publication des contrats seule | Projet sur `gitlab.com`. Un seul designer publie. Ses composants portent un composant de règles `.componentRules`. Ses tokens viennent d'une autre chaîne d'outils. Les noms de tokens cités par ses contrats existent dans ses tokens. Elle n'installe aucun paquet `@ucm-kit/*` et n'utilise pas la CI UCM. Elle écrit ses propres contrôles |
-| Mainteneur | Publie vers trois dépôts : deux sur GitHub, un sur GitLab | Seul utilisateur actuel du plugin. Ses trois dépôts reçoivent des tokens |
+| Mainteneur | Publie vers trois dépôts : deux sur GitHub, un sur GitLab | Seul utilisateur actuel du plugin. Ses trois dépôts reçoivent des tokens. Il change de dépôt plusieurs fois par jour en période de test, et plus rarement une fois le produit stabilisé |
 
 ### 1.2. Demande
 
@@ -347,6 +347,11 @@ Critères de comparaison : gestes vers la bascule, risque de publier dans le
 mauvais dépôt, compte des objets, lecture à 320 px, écart avec un panneau natif
 de Figma.
 
+Évaluer chaque option sur deux rythmes d'usage du mainteneur : plusieurs
+bascules par jour en période de test, et des bascules rares une fois le produit
+stabilisé. Une option rapide à basculer mais chargée à l'écran sert le premier
+rythme au détriment du second.
+
 États à maquetter pour chaque option retenue, en texte à 320 px de large :
 
 - aucun dépôt enregistré ;
@@ -481,10 +486,6 @@ npm run galerie:captures --workspace ucm-exporter-plugin
 ```
 
 ## 10. Questions ouvertes
-
-**Mainteneur**
-
-- À quelle fréquence le mainteneur change-t-il de dépôt, et pour quel motif ?
 
 **Équipe consommatrice**
 
