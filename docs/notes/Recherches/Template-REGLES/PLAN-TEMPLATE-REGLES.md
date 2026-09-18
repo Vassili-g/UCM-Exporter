@@ -1,6 +1,7 @@
 # Plan d'action du template de règles
 
-> Statut : décisions H1 prises (section 11), essais de la phase 1 à préparer. Ce
+> Statut : décisions H1 prises (section 11), essais de la phase 1 à préparer.
+> La [liste de tâches](./TODO-TEMPLATE-REGLES.md) fixe l'ordre d'exécution. Ce
 > document est le livrable de la
 > [section 12](./RECHERCHE-TEMPLATE-REGLES.md#12-livrable-attendu) du plan de
 > recherche, rédigé en plan d'action à la demande du mainteneur. Une revue
