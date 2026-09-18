@@ -68,12 +68,18 @@ deux calques `modifiable` ou `strict`. Le premier autorise le développeur à
 remplacer l'icône, le second impose celle de la maquette. Le nom écrit dans
 `icon` doit être celui du calque d'icône, à l'identique.
 
-Un `@default` n'a pas de texte : sa cible est tout son contenu. Sans lui, aucune
-valeur par défaut n'entre dans le contrat pour cette variant property. La
-position d'un variant dans un set ne décide de rien.
+Un `@default` n'a pas de texte à rédiger : le plugin ne lit que sa cible, dans
+`prop`. Sans lui, aucune valeur par défaut n'entre dans le contrat pour cette
+variant property. La position d'un variant dans un set ne décide de rien.
 
 Les variants de `.ruleItem` qui n'écrivent ni texte ni cible, `divider` par
 exemple, mettent en page. Le plugin les ignore.
+
+Un texte d'aide commence par `[À compléter]`. Tant qu'un calque lu d'une règle
+contient ce marqueur, le plugin ne publie pas la règle et vous le signale, en
+une ligne par tag. Remplacez le marqueur par votre texte, ou supprimez la
+règle. Un conteneur dont le calque `component-name` porte encore le marqueur ne
+documente aucun composant.
 
 Le plugin ne modifie jamais ces règles. Quand il ne sait pas en lire une, il
 vous dit laquelle et quel geste la répare. [7. Intention et documentation des

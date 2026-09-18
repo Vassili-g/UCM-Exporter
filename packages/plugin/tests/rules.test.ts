@@ -10,6 +10,7 @@ import {
   rulesContainerOwner,
 } from '../src/contract/extractRules';
 import { indexContractedNames } from '../src/contract/composedComponents';
+import { localisationsDe } from '../src/contract/localisation';
 
 test('ruleTagFromValue reconnaît @boolean comme les autres variantes de règle', () => {
   assert.equal(ruleTagFromValue('@boolean'), 'boolean');
@@ -400,4 +401,158 @@ test('un @default sans cible lisible nomme la forme attendue', () => {
   assert.deepEqual(enumDefaults, {});
   assert.equal(warnings.length, 1);
   assert.match(warnings[0], /propriété.valeur/);
+});
+
+/** Un calque texte d'une règle. */
+const texte = (nom: string, contenu: string, extra: Record<string, unknown> = {}) =>
+  noeud('TEXT', nom, [], { characters: contenu, ...extra });
+
+/** Les calques d'une règle @icons dont la politique est lisible. */
+const politiqueModifiable = () => [
+  texte('modifiable', 'modifiable', { visible: true }),
+  texte('strict', 'strict', { visible: false }),
+];
+
+/** Une règle dont l'id est propre : `noter` confond deux nodes de même id. */
+function regleNumerotee(id: string, tag: string, calques: any[]) {
+  const instance = regle(tag, calques);
+  instance.id = id;
+  return instance;
+}
+
+const MARQUEUR = '[À compléter]';
+
+test('une règle marquée dans un calque que son tag lit n’entre pas dans le contrat', async (t) => {
+  // Le tableau de la grammaire : chaque tag, chacun des calques où il cherche
+  // le marqueur, l'autre calque étant rédigé.
+  const cas: [string, any[]][] = [
+    ['@usage', [texte('content', `${MARQUEUR} Décrivez le composant.`)]],
+    ['@do', [texte('content', `${MARQUEUR} Un usage recommandé.`)]],
+    ['@dont', [texte('content', `${MARQUEUR} Un usage à éviter.`)]],
+    ['@pairs', [texte('content', `${MARQUEUR} Card, Dialog`)]],
+    ['@prop', [texte('prop', 'tone.a'), texte('content', `${MARQUEUR} Quand choisir a.`)]],
+    ['@prop', [texte('prop', `${MARQUEUR} propriété.valeur`), texte('content', 'Rédigé.')]],
+    ['@boolean', [texte('prop', 'mark'), texte('content', `${MARQUEUR} Ce que mark affiche.`)]],
+    ['@boolean', [texte('prop', `${MARQUEUR} nom`), texte('content', 'Rédigé.')]],
+    ['@default', [texte('prop', `${MARQUEUR} propriété.valeur`)]],
+    ['@icons', [texte('icon', `${MARQUEUR} Nom du calque`), ...politiqueModifiable()]],
+  ];
+
+  for (const [tag, calques] of cas) {
+    const marque = calques.find((c) => String(c.characters).startsWith(MARQUEUR)).name;
+    await t.test(`${tag}, calque ${marque}`, async (st) => {
+      monterPage(st, [conteneur('Root', [regle(tag, calques)])]);
+      const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+      assert.equal(hasUsableRules(rules), false);
+      assert.equal(rules.warnings.length, 1, rules.warnings.join(' | '));
+      assert.match(rules.warnings[0], /contient encore « \[À compléter\] »/);
+    });
+  }
+});
+
+test('le marqueur se reconnaît sans casse et après normalisation Unicode', async (t) => {
+  const decompose = '[À compléter]';
+  monterPage(t, [conteneur('Root', [
+    regleNumerotee('r1', '@do', [texte('content', '[à compléter] Un usage recommandé.')]),
+    regleNumerotee('r2', '@dont', [texte('content', `Un usage à éviter. ${decompose}`)]),
+    regleNumerotee('r3', '@pairs', [texte('content', '[À COMPLÉTER] Card')]),
+  ])]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.equal(rules.intent, null);
+  assert.equal(rules.warnings.length, 3);
+});
+
+test('le content d’un @default n’est pas lu : marqué, la règle reste rédigée', async (t) => {
+  monterPage(t, [conteneur('Root', [
+    regle('@default', [
+      texte('prop', 'tone.b'),
+      texte('content', `${MARQUEUR} Écrivez dans prop la valeur par défaut.`),
+    ]),
+  ])]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.deepEqual(rules.enumDefaults, { tone: 'b' });
+  assert.deepEqual(rules.warnings, []);
+});
+
+test('une règle marquée ne produit ni « content est vide » ni l’avertissement de politique d’icône', async (t) => {
+  monterPage(t, [conteneur('Root', [
+    regleNumerotee('r1', '@prop', [texte('prop', `${MARQUEUR} propriété.valeur`), texte('content', '')]),
+    regleNumerotee('r2', '@icons', [texte('icon', `${MARQUEUR} Nom du calque`)]),
+  ])]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.equal(rules.warnings.length, 2);
+  assert.ok(rules.warnings.every((w) => w.includes('contient encore « [À compléter] »')));
+});
+
+test('les règles marquées d’un même tag donnent une ligne, au pluriel, qui porte tous leurs nodes', async (t) => {
+  monterPage(t, [conteneur('Root', [
+    regleNumerotee('r1', '@usage', [texte('content', `${MARQUEUR} Décrivez le composant.`)]),
+    ...['a', 'b', 'c'].map((valeur, i) => regleNumerotee(`p${i}`, '@prop', [
+      texte('prop', `tone.${valeur}`),
+      texte('content', `${MARQUEUR} Décrivez quand choisir cette valeur.`),
+    ])),
+  ])]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.deepEqual(rules.warnings, [
+    'Layer « .ruleItem » : une règle @usage contient encore « [À compléter] ». Le développeur '
+    + 'ne recevra pas sa documentation. Remplacez « [À compléter] » par le texte de la règle, '
+    + 'ou supprimez-la, puis réexportez.',
+    'Layer « .ruleItem » : 3 règles @prop contiennent encore « [À compléter] ». Le développeur '
+    + 'ne recevra pas leur documentation. Remplacez « [À compléter] » par le texte de chaque '
+    + 'règle, ou supprimez-les, puis réexportez.',
+  ]);
+  const localisations = localisationsDe(rules.warnings);
+  assert.deepEqual(localisations.get(rules.warnings[0]), ['r1']);
+  assert.deepEqual(localisations.get(rules.warnings[1]), ['p0', 'p1', 'p2']);
+});
+
+test('l’avertissement du marqueur nomme « .ruleItem », quel que soit le nom du calque', async (t) => {
+  const renommee = regle('@boolean', [texte('prop', 'mark'), texte('content', `${MARQUEUR} x`)]);
+  renommee.name = '.rulesItems';
+  monterPage(t, [conteneur('Root', [renommee])]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.match(rules.warnings[0], /^Layer « \.ruleItem » : une règle @boolean/);
+});
+
+test('un conteneur dont toutes les règles sont marquées ne dit pas qu’il n’en contient aucune', async (t) => {
+  // Une règle marquée porte un tag : la note du conteneur vide réclamerait un
+  // geste déjà fait.
+  monterPage(t, [conteneur('Root', [
+    regle('@usage', [texte('content', `${MARQUEUR} Décrivez le composant.`)]),
+  ])]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.equal(rules.warnings.length, 1);
+  assert.doesNotMatch(rules.warnings[0], /aucune instance de « \.ruleItem »/);
+});
+
+test('un conteneur au nom marqué ne documente personne, et rejoint le constat du conteneur orphelin', async (t) => {
+  const vierge = conteneur(`${MARQUEUR} Nom du composant`, [
+    regle('@usage', [texte('content', `${MARQUEUR} Décrivez le composant.`)]),
+  ]);
+  const page = monterPage(t, [vierge]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.equal(rulesContainerOwner(vierge), null);
+  assert.deepEqual([...indexContractedNames(page as unknown as PageNode)], []);
+  assert.equal(rules.sectionFound, false);
+  assert.deepEqual(rules.warnings, [
+    'Layer « .componentRules » : son layer « component-name » contient encore '
+    + '« [À compléter] », donc il ne documente aucun composant. Le contrat dira comment '
+    + 'utiliser le composant, mais pas quand : ni intention, ni documentation de component '
+    + 'properties, ni règle d’icône. Remplacez ce texte par « Root », puis réexportez.',
+  ]);
 });

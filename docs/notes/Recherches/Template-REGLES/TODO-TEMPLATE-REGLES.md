@@ -171,28 +171,28 @@ nulle part.
 Référence : [phase 2](PLAN-TEMPLATE-REGLES.md#phase-2-le-moteur--marqueur-et-axe-détats),
 [section 6.2](PLAN-TEMPLATE-REGLES.md#62-le-marqueur-à-compléter), H1-B.
 
-- [ ] Tests rouges dans `tests/rules.test.ts`, en noms neutres :
-  - [ ] une règle de chaque tag, marquée dans chacun des calques que le tableau
+- [x] Tests rouges dans `tests/rules.test.ts`, en noms neutres :
+  - [x] une règle de chaque tag, marquée dans chacun des calques que le tableau
         de 6.2 lui attribue, n'entre pas dans le contrat ;
-  - [ ] le marqueur est reconnu sans tenir compte de la casse et après
+  - [x] le marqueur est reconnu sans tenir compte de la casse et après
         normalisation Unicode : `[à compléter]`, et `À` écrit en forme
         décomposée ;
-  - [ ] le `content` d'un `@default` n'est pas lu : un `@default` dont seul
+  - [x] le `content` d'un `@default` n'est pas lu : un `@default` dont seul
         `content` porte le marqueur reste une règle valide ;
-  - [ ] une règle marquée ne produit ni l'avertissement « content est vide »
+  - [x] une règle marquée ne produit ni l'avertissement « content est vide »
         ni celui de politique d'icône ;
-  - [ ] trois règles `@prop` marquées donnent une seule ligne d'avertissement,
+  - [x] trois règles `@prop` marquées donnent une seule ligne d'avertissement,
         au pluriel, qui porte les trois nodes ; une seule règle `@usage`
         marquée donne la forme au singulier ;
-  - [ ] un conteneur dont `component-name` porte le marqueur rejoint le
+  - [x] un conteneur dont `component-name` porte le marqueur rejoint le
         constat du conteneur orphelin, reformulé comme le dit la fin de 6.2 ;
-  - [ ] un conteneur dont toutes les règles sont marquées ne produit pas la
+  - [x] un conteneur dont toutes les règles sont marquées ne produit pas la
         note « il ne contient aucune instance de « .ruleItem » qui porte un
         tag » : une règle marquée porte un tag. Sans ce test, le test de
         relecture du lot 4 échoue ;
-  - [ ] le titre de l'avertissement nomme « .ruleItem », quel que soit le nom
+  - [x] le titre de l'avertissement nomme « .ruleItem », quel que soit le nom
         du calque de la première règle (`.rulesItems` par exemple).
-- [ ] `src/contract/extractRules.ts` : constante du marqueur à côté de
+- [x] `src/contract/extractRules.ts` : constante du marqueur à côté de
       `component-name` ; vérification avant `buildRules` ; une règle marquée
       compte comme règle à tag pour la note du conteneur vide. Avertissement
       par tag : `pousserLocalise` titre avec le nom du node, donc il ne
@@ -203,10 +203,10 @@ Référence : [phase 2](PLAN-TEMPLATE-REGLES.md#phase-2-le-moteur--marqueur-et-a
       fonction pousse un avertissement et non une note : le marqueur demande
       un geste. Les trois parties suivent la forme de 6.2 : titre, impact,
       action. `tests/loiDesParties.test.ts` reste vert.
-- [ ] `src/contract/rulesModel.ts` si le regroupement par tag y trouve mieux
+- [x] `src/contract/rulesModel.ts` si le regroupement par tag y trouve mieux
       sa place. `contractVersion` ne monte pas : la forme du contrat ne change
       pas.
-- [ ] Documents : `docs/format/FORMAT.md` et `packages/plugin/SPEC.md`,
+- [x] Documents : `docs/format/FORMAT.md` et `packages/plugin/SPEC.md`,
       section 7 (le marqueur, ses calques par tag, le conteneur vierge) ; un
       invariant dans le groupe « Portée et forme du contrat » d'`AGENTS.md`,
       à côté de celui des règles `@prop` ; le geste du designer dans
@@ -217,7 +217,7 @@ Référence : [phase 2](PLAN-TEMPLATE-REGLES.md#phase-2-le-moteur--marqueur-et-a
       d'aide de la [section 6.3](PLAN-TEMPLATE-REGLES.md#63-les-textes-daide-du-maître),
       marqueur compris. L'agent recopie le tableau dans le compte rendu. Ce
       geste ne bloque aucun lot jusqu'à la recette.
-- [ ] Vérification complète dans le worktree, commit, push.
+- [x] Vérification complète dans le worktree, commit, push.
 
 ## 2b. Moteur : l'axe d'états `States`
 
@@ -686,3 +686,60 @@ copie du fichier de tests, puis coller les résultats dans la conversation. Si
 les textes d'aide de 6.3 sont déjà réécrits dans Figma, E7 joué avec le moteur
 du lot 2a signale les règles créées au lieu de les publier : c'est le
 comportement attendu.
+
+### 2a. Le marqueur
+
+Rouge constaté avant le code, `npx tsx --test tests/rules.test.ts` : 27 verts,
+17 rouges (les dix sous-tests du tableau de 6.2, et les six autres tests
+nouveaux). Le test du `content` d'un `@default` est vert d'emblée : il garde un
+comportement existant, que le marqueur ne doit pas changer.
+
+```text
+✖ @usage, calque content
+✖ @prop, calque prop
+✖ le marqueur se reconnaît sans casse et après normalisation Unicode
+✖ les règles marquées d’un même tag donnent une ligne, au pluriel, qui porte tous leurs nodes
+✖ un conteneur dont toutes les règles sont marquées ne dit pas qu’il n’en contient aucune
+✖ un conteneur au nom marqué ne documente personne, et rejoint le constat du conteneur orphelin
+ℹ pass 27
+ℹ fail 17
+```
+
+Écarts et constats :
+
+- `localisation.ts` ne distingue pas une note d'un avertissement : tout message
+  du moteur sort en sévérité `warning` (`exportComponent.ts`). `pousserNote`
+  pousse un message au sujet choisi, et `noter` y ajoute les autres règles du
+  tag.
+- L'action du plan, « Rédigez-les ou supprimez-les », devient « Remplacez
+  « [À compléter] » par le texte de chaque règle, ou supprimez-les ». La skill
+  des diagnostics demande un verbe concret et l'objet nommé. Pour le conteneur
+  vierge : « Remplacez ce texte par « Root », puis réexportez. »
+- `rulesContainerOwner` rend `null` pour un nom marqué : un conteneur vierge
+  ne déclare plus son composant comme dépendance, puisqu'il n'en nomme aucun.
+- `rulesModel.ts` ne change pas : le regroupement par tag porte des nodes, que
+  le modèle pur ne voit pas.
+- SPEC.md, section 7, renvoie toute la grammaire des règles à FORMAT.md. La
+  règle du marqueur est donc dans FORMAT.md, et SPEC.md n'en porte qu'une
+  phrase.
+- L'inventaire d'`AGENTS.md` reçoit `MARQUEUR_A_COMPLETER` et
+  `porteLeMarqueur`. Vu rouge en retirant l'invariant, restauré par copie.
+
+**Demande au mainteneur.** Réécrire dans le fichier du design system les
+textes d'aide ci-dessous, repris de la section 6.3. Ce geste ne bloque aucun
+lot jusqu'à la recette.
+
+| Maître et variant | Calque | Texte |
+|---|---|---|
+| `.componentRules` | `component-name` | « [À compléter] Nom du composant » |
+| `.ruleItem`, `@usage` | `content` | « [À compléter] Décrivez à quoi sert le composant et quand le choisir. » |
+| `.ruleItem`, `@prop` | `prop` | « [À compléter] propriété.valeur » |
+| `.ruleItem`, `@prop` | `content` | « [À compléter] Décrivez quand choisir cette valeur. » |
+| `.ruleItem`, `@boolean` | `prop` | « [À compléter] nom-de-la-propriété » |
+| `.ruleItem`, `@boolean` | `content` | « [À compléter] Décrivez ce que cette option affiche, et quand l'activer. » |
+| `.ruleItem`, `@icons` | `icon` | « [À compléter] Nom exact du calque d'icône » |
+| `.ruleItem`, `@default` | `prop` | « [À compléter] propriété.valeur » |
+| `.ruleItem`, `@default` | `content` | « Écrivez dans prop la valeur par défaut, par exemple size.medium. » |
+| `.ruleItem`, `@do` | `content` | « [À compléter] Décrivez un usage recommandé. » |
+| `.ruleItem`, `@dont` | `content` | « [À compléter] Décrivez un usage à éviter. » |
+| `.ruleItem`, `@pairs` | `content` | « [À compléter] Listez les composants souvent associés, séparés par des virgules. » |

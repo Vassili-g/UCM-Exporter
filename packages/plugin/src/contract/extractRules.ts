@@ -34,6 +34,7 @@ export {
   ruleTagFromValue,
 } from './rulesModel';
 import {
+  noter,
   noterSansNode,
   pointDe,
   pousserLocalise,
@@ -55,11 +56,32 @@ export type { IconRule, RuleEntry, RuleTag, RulesResult } from './rulesModel';
 export const RULES_CONTAINER_NAME = '.componentRules';
 /** Calque du conteneur qui porte le nom du composant documenté. */
 export const COMPONENT_NAME_LAYER = 'component-name';
+/**
+ * Début d'un texte d'aide : un calque lu qui le contient n'est pas rédigé.
+ *
+ * Sans lui, le texte d'exemple d'une règle fraîchement posée, ou le nom
+ * pré-rempli d'un conteneur, partirait dans le contrat comme une documentation
+ * réelle.
+ */
+export const MARQUEUR_A_COMPLETER = '[À compléter]';
+/** Nom du composant qui matérialise une règle, tel qu'un message le nomme. */
+const RULE_ITEM_NAME = '.ruleItem';
 /** Nom (compacté) du composant qui matérialise une règle. */
 const RULES_COMPONENT_NAME = '.ruleitem';
 /** Compacte un nom (sans espaces, en minuscules) pour comparer un nom de composant. */
 export function compactName(name: string): string {
   return name.replace(/\s+/g, '').toLowerCase();
+}
+
+/**
+ * Vrai d'un texte qui contient le marqueur, sans tenir compte de la casse.
+ *
+ * La normalisation Unicode compte : un « À » collé depuis un autre outil
+ * arrive parfois en deux points de code, et le marqueur serait alors publié.
+ */
+export function porteLeMarqueur(texte: string): boolean {
+  return texte.normalize('NFC').toLowerCase()
+    .includes(MARQUEUR_A_COMPLETER.normalize('NFC').toLowerCase());
 }
 
 /** Résultat de lecture enrichi pour distinguer l'absence du conteneur de son contenu invalide. */
@@ -127,16 +149,24 @@ function nomDeComposantEcrit(node: NodeFouillable): string | null {
  *
  * La comparaison ignore la casse et les espaces : dans un nom écrit à la main,
  * ils ne portent aucune intention de design et ne doivent bloquer aucun export.
+ * Un nom qui porte le marqueur est le texte d'aide du maître : il ne nomme
+ * personne.
  */
 export function rulesContainerOwner(node: NodeFouillable): string | null {
   const nom = nomDeComposantEcrit(node);
-  return nom === null ? null : compactName(nom) || null;
+  if (nom === null || porteLeMarqueur(nom)) return null;
+  return compactName(nom) || null;
 }
 
-/** Vrai d'un conteneur dont le calque de nom existe mais ne nomme personne. */
-function estUnConteneurSansNom(node: NodeFouillable): boolean {
+/**
+ * Le calque de nom d'un conteneur qui ne nomme personne : vide, ou encore
+ * marqué. Null d'un node qui n'est pas un conteneur, ou qui nomme un composant.
+ */
+function nomOrphelin(node: NodeFouillable): 'vide' | 'marque' | null {
   const nom = nomDeComposantEcrit(node);
-  return nom !== null && compactName(nom) === '';
+  if (nom === null) return null;
+  if (porteLeMarqueur(nom)) return 'marque';
+  return compactName(nom) === '' ? 'vide' : null;
 }
 
 /**
@@ -194,6 +224,63 @@ const RULE_CONTENT_LAYERS: readonly string[] = ['content', 'prop', 'icon'];
  */
 function nEcritRien(instance: InstanceNode): boolean {
   return RULE_CONTENT_LAYERS.every((calque) => textOfLayer(instance, calque).trim() === '');
+}
+
+/**
+ * Les calques où chaque tag cherche le marqueur : ceux que le moteur lit.
+ * `@default` ne lit pas son `content`, qui explique au designer quoi écrire
+ * dans `prop` et garde donc son texte d'aide.
+ */
+const CALQUES_LUS: Record<RuleTag, readonly string[]> = {
+  usage: ['content'],
+  do: ['content'],
+  dont: ['content'],
+  pairs: ['content'],
+  prop: ['content', 'prop'],
+  boolean: ['content', 'prop'],
+  default: ['prop'],
+  icons: ['icon'],
+};
+
+/** Vrai d'une règle dont un calque lu porte encore le marqueur. */
+function nEstPasRedigee(instance: InstanceNode, tag: RuleTag): boolean {
+  return CALQUES_LUS[tag].some((calque) => porteLeMarqueur(textOfLayer(instance, calque)));
+}
+
+/**
+ * Une ligne par tag pour les règles encore marquées. Chaque ligne porte toutes
+ * les instances de son tag : un clic les sélectionne ensemble, et dix-sept
+ * `@prop` ne font pas dix-sept lignes.
+ */
+function signalerNonRedigees(
+  warnings: string[],
+  parTag: ReadonlyMap<RuleTag, readonly InstanceNode[]>,
+): void {
+  const marqueur = `« ${MARQUEUR_A_COMPLETER} »`;
+  for (const [tag, regles] of parTag) {
+    const sujetDesRegles = sujetNomme('Layer', RULE_ITEM_NAME, regles[0]);
+    const une = regles.length === 1;
+    const message = pousserNote(
+      warnings,
+      pointDe(sujetDesRegles.texte, une
+        ? {
+          manque: `une règle @${tag} contient encore ${marqueur}.`,
+          impact: 'Le développeur ne recevra pas sa documentation.',
+          action: `Remplacez ${marqueur} par le texte de la règle, ou supprimez-la, `
+            + 'puis réexportez.',
+        }
+        : {
+          manque: `${regles.length} règles @${tag} contiennent encore ${marqueur}.`,
+          impact: 'Le développeur ne recevra pas leur documentation.',
+          action: `Remplacez ${marqueur} par le texte de chaque règle, ou supprimez-les, `
+            + 'puis réexportez.',
+        }),
+      sujetDesRegles,
+    );
+    for (const regle of regles.slice(1)) {
+      noter(warnings, message, sujetNomme('Layer', RULE_ITEM_NAME, regle));
+    }
+  }
 }
 
 /**
@@ -255,14 +342,20 @@ export async function extractRules(
     // perdu en silence. Il ne mérite pas son propre message, qui partirait dans
     // l'export de composants qui n'y sont pour rien : il devient l'action de
     // celui-ci, seul message que son absence de règles concerne vraiment.
-    const orphelin = figma.currentPage.findOne(estUnConteneurSansNom);
+    const orphelin = figma.currentPage.findOne((node) => nomOrphelin(node) !== null);
     if (orphelin) {
+      const marque = nomOrphelin(orphelin) === 'marque';
       pousserLocalise(absent, 'Layer', orphelin, {
-        manque: `son layer « ${COMPONENT_NAME_LAYER} » est vide, donc il ne documente `
-          + 'aucun composant.',
+        manque: marque
+          ? `son layer « ${COMPONENT_NAME_LAYER} » contient encore « ${MARQUEUR_A_COMPLETER} », `
+            + 'donc il ne documente aucun composant.'
+          : `son layer « ${COMPONENT_NAME_LAYER} » est vide, donc il ne documente `
+            + 'aucun composant.',
         impact: 'Le contrat dira comment utiliser le composant, mais pas quand : ni intention, '
           + 'ni documentation de component properties, ni règle d’icône.',
-        action: `Écrivez « ${componentSet.name} » dans ce layer, puis réexportez.`,
+        action: marque
+          ? `Remplacez ce texte par « ${componentSet.name} », puis réexportez.`
+          : `Écrivez « ${componentSet.name} » dans ce layer, puis réexportez.`,
       });
     } else {
       // La cible n'existe pas : son absence est déclarée, pas subie. Le message
@@ -299,6 +392,7 @@ export async function extractRules(
     .filter((node): node is InstanceNode => node.type === 'INSTANCE');
 
   const entries: RuleEntry[] = [];
+  const nonRedigees = new Map<RuleTag, InstanceNode[]>();
   const warnings: string[] = [];
   if (containers.length > 1) {
     // La cause n'est pas un rangement à refaire : le maître `.componentRules`
@@ -335,6 +429,12 @@ export async function extractRules(
       });
       continue;
     }
+    // Avant `buildRules` : une règle marquée ne dit pas en plus que son
+    // content est vide ou que sa politique d'icône est illisible.
+    if (nEstPasRedigee(instance, tag)) {
+      nonRedigees.set(tag, [...(nonRedigees.get(tag) ?? []), instance]);
+      continue;
+    }
 
     entries.push(
       tag === 'icons'
@@ -349,7 +449,9 @@ export async function extractRules(
     );
   }
 
-  if (entries.length === 0) {
+  signalerNonRedigees(warnings, nonRedigees);
+  // Une règle marquée porte un tag : le conteneur n'est pas vide pour autant.
+  if (entries.length === 0 && nonRedigees.size === 0) {
     const sujetDuConteneur = sujetNomme('Layer', RULES_CONTAINER_NAME, container);
     pousserNote(
       warnings,

@@ -252,6 +252,13 @@ La spécification en lien porte le raisonnement.
   `@prop` suit cette répartition. N’est une faute de frappe que ce que le contrat
   ne publie nulle part.
   → [spec](./docs/format/FORMAT.md#7-intention-et-documentation-des-props)
+- Une règle dont un calque lu contient `[À compléter]` n'est pas rédigée : elle
+  n'entre pas dans le contrat et ne produit que son warning, une ligne par tag
+  qui porte toutes les règles marquées de ce tag. Un conteneur dont
+  `component-name` porte le marqueur ne documente aucun composant, et
+  `rulesContainerOwner` ne le rattache à personne. `MARQUEUR_A_COMPLETER` et
+  `porteLeMarqueur` (`extractRules.ts`) en sont l'unique autorité.
+  → [spec](./docs/format/FORMAT.md#7-intention-et-documentation-des-props)
 
 ### Tokens et variables
 

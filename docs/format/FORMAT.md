@@ -777,6 +777,24 @@ section où elle est rangée. Une instance de `.ruleItem` qui n'écrit ni texte
 ni cible met en page, `divider` par exemple : elle est écartée sans warning,
 puisque rien n'en est perdu.
 
+Un texte d'aide commence par `[À compléter]`. Une règle dont un calque lu
+contient ce marqueur n'est pas rédigée : elle n'entre pas dans le contrat, et
+elle ne produit aucun autre warning que le sien. Un warning par tag regroupe
+toutes les règles marquées de ce tag et les désigne dans Figma. Le marqueur se
+reconnaît sans tenir compte de la casse, après normalisation Unicode.
+
+| Tag | Calques où le marqueur se cherche |
+|---|---|
+| `@usage`, `@do`, `@dont`, `@pairs` | `content` |
+| `@prop`, `@boolean` | `content`, `prop` |
+| `@default` | `prop` ; son `content` n'est pas lu |
+| `@icons` | `icon` |
+
+Un conteneur dont le calque `component-name` contient le marqueur est vierge :
+il ne documente aucun composant. Quand aucun conteneur ne nomme le composant
+exporté, le warning de l'absence désigne ce conteneur vierge, comme il désigne
+un conteneur au calque vide.
+
 Chaque tag remplit un champ :
 - `@usage` (un), `@do`/`@dont` (répétables), `@pairs` (virgules) → `intent`.
   `@pairs` liste les composants du design system qui s'associent bien à
@@ -791,7 +809,7 @@ Chaque tag remplit un champ :
   exportées (`icon-left` → `iconLeft`) ; une cible absente ou non booléenne
   produit un warning et aucune prop n'est inventée.
 - `@default` + calque `prop` (ex. `color.secondary`) → `props.<prop>.default`
-  d'un axe de variantes. La règle n'a pas de calque `content` : sa cible est
+  d'un axe de variantes. Son calque `content` n'est pas lu : sa cible est
   tout son contenu. Un axe sans `@default` ne publie aucun défaut. Deux
   `@default` sur le même axe, un axe introuvable ou une valeur absente des
   `values` produisent chacun un warning ; rien n'est publié.
