@@ -678,12 +678,12 @@ du mainteneur ([4.3](PLAN-REGLAGES.md#43-la-clé-de-destination)).
 - [x] Préparer `packages/plugin/dist/` par `npm run build` et écrire dans le
       compte rendu les trois épreuves ci-dessous, avec les états de galerie qui
       leur correspondent.
-- [ ] **[mainteneur]** Réglage des tokens désactivé : aucune carte ne clignote
+- [X] **[mainteneur]** Réglage des tokens désactivé : aucune carte ne clignote
       à l'ouverture.
-- [ ] **[mainteneur]** Onglets à côté du panneau de droite de Figma, deux
+- [X] **[mainteneur]** Onglets à côté du panneau de droite de Figma, deux
       thèmes, fenêtre de 320 × 320 px, contraste du texte de sévérité à 11 px,
       carte en échec amenée dans la vue.
-- [ ] **[mainteneur]** Bascule réelle entre un dépôt GitHub et un projet
+- [X] **[mainteneur]** Bascule réelle entre un dépôt GitHub et un projet
       GitLab, publication dans chacun.
 
 ## Clôture
