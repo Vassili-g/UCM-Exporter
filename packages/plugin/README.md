@@ -98,8 +98,9 @@ La configuration contient une liste de dépôts, chacun avec son URL, sa branche
 de base et son jeton, et le dépôt actif, que « Se connecter » choisit. Sur
 GitHub, un fine-grained Personal Access Token limité au repository, avec
 `Contents: Read and write` et `Pull requests: Read and write`. Sur GitLab, un
-jeton de scope `api` : un jeton d'accès projet de rôle Developer quand l'offre
-du projet le permet, un jeton personnel sinon. Le jeton reste local à la
+jeton personnel fine-grained limité au projet, avec `Project: Read`,
+`Repository: Read`, `Branch: Read, Delete`, `Commit: Create` et
+`Merge Request: Read, Create` ; un jeton de scope `api` convient aussi. Le jeton reste local à la
 machine et n'apparaît ni dans l'interface, ni dans les journaux, ni dans le
 document Figma. Il ne part que vers le dépôt pour lequel il a été saisi, dont
 l'adresse ne se modifie plus après l'enregistrement.

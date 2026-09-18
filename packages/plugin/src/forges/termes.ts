@@ -6,6 +6,29 @@
 
 export type NomDeForge = 'github' | 'gitlab';
 
+/**
+ * L'aide sous le champ du jeton, en trois morceaux plutôt qu'en un paragraphe.
+ *
+ * Le designer recopie ces droits un par un dans l'écran de la forge, et GitLab
+ * en demande cinq : une phrase continue les noierait dans une fenêtre large de
+ * 320 px. Les droits gardent les mots exacts de la forge, en anglais, parce que
+ * c'est ainsi qu'ils sont écrits dans l'écran où il faut les cocher.
+ */
+export type AideDuJeton = {
+  intro: string;
+  /** Une ligne par droit à cocher. */
+  droits: readonly string[];
+  /** Ce qui convient aussi, en une phrase. `null` quand rien d'autre ne convient. */
+  aussi: string | null;
+};
+
+/** L'aide tant que l'adresse saisie ne désigne aucune forge. */
+export const AIDE_SANS_FORGE: AideDuJeton = {
+  intro: 'Un Personal Access Token GitHub ou un jeton d’accès GitLab, selon l’adresse saisie.',
+  droits: [],
+  aussi: null,
+};
+
 export type TermesDeForge = {
   forge: string;
   /** Le nom de la demande de fusion, au singulier et en minuscules. */
@@ -15,8 +38,8 @@ export type TermesDeForge = {
   depot: string;
   /** Le nom que la forge donne au jeton, tel qu'il figure dans ses réglages. */
   nomDuJeton: string;
-  /** L'aide sous le champ du jeton : quel jeton créer, et avec quels droits. */
-  aideDuJeton: string;
+  /** L'aide sous le champ du jeton : quel jeton créer, et que cocher dedans. */
+  aideDuJeton: AideDuJeton;
   /** Les droits qu'un 403 demande de donner, complément de « Donnez-lui ». */
   droits: string;
   /** Les statuts d'une branche ou d'une demande refusée parce qu'elle existe déjà. */
@@ -40,8 +63,11 @@ export const TERMES_GITHUB: TermesDeForge = {
   abreviation: 'PR',
   depot: 'repository',
   nomDuJeton: 'Personal Access Token',
-  aideDuJeton:
-    'Utilisez un fine-grained token limité à ce repo avec Contents: Read and write et Pull requests: Read and write.',
+  aideDuJeton: {
+    intro: 'Un fine-grained token limité à ce repository, avec :',
+    droits: ['Contents : Read and write', 'Pull requests : Read and write'],
+    aussi: null,
+  },
   droits: 'Contents: Read and write et Pull requests: Read and write',
   statutsDeRefus: [422],
   statutsDeRegle: [],
@@ -63,9 +89,18 @@ export const TERMES_GITLAB: TermesDeForge = {
   abreviation: 'MR',
   depot: 'projet',
   nomDuJeton: 'jeton d’accès',
-  aideDuJeton:
-    'Utilisez un jeton d’accès projet de rôle Developer, ou à défaut un jeton personnel, avec le seul scope api.',
-  droits: 'le scope api et le rôle Developer sur ce projet',
+  aideDuJeton: {
+    intro: 'Un jeton personnel fine-grained limité à ce projet, avec :',
+    droits: [
+      'Project : Read',
+      'Repository : Read',
+      'Branch : Read, Delete',
+      'Commit : Create',
+      'Merge Request : Read, Create',
+    ],
+    aussi: 'Un jeton de scope api convient aussi : personnel, ou de projet au rôle Developer.',
+  },
+  droits: 'les droits listés sous le champ du jeton, dans la configuration',
   statutsDeRefus: [409],
   statutsDeRegle: [400],
   statutsDeConflit: [],

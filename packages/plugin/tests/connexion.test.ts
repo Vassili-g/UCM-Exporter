@@ -253,7 +253,7 @@ test('le geste d’une carte désigne son champ, et la correction d’une adress
   );
   assert.equal(
     etatDeCarte('acces-refuse', { termes: TERMES_GITLAB }).geste,
-    'Le jeton est reconnu, mais il n’a pas les droits sur ce projet. Donnez-lui le scope api et le rôle Developer sur ce projet.',
+    'Le jeton est reconnu, mais il n’a pas les droits sur ce projet. Donnez-lui les droits listés sous le champ du jeton, dans la configuration.',
   );
   assert.match(etatDeCarte('depot-mal-decrit', { termes: TERMES_GITLAB, detail: 'Détail.' }).geste ?? '', /décrit ce projet\. .*Détail\.$/);
 });

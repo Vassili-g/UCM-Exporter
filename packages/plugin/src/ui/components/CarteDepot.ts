@@ -12,7 +12,7 @@ import { NOM_CONFIGURATION } from '@ucm-kit/core/format';
 import { lireAdresseDuDepot, validateSettings } from '../../config';
 import type { SettingsInput, SettingsValidation } from '../../config';
 import type { EtatDeCarte, ResumeDepot } from '../../connexion';
-import { TERMES, avecMajuscule } from '../../forges/termes';
+import { AIDE_SANS_FORGE, TERMES, avecMajuscule } from '../../forges/termes';
 import type { DepotPublic } from '../../messages';
 import { createButton } from './Button';
 
@@ -171,9 +171,19 @@ export function createCarteDepot({ cle, onEnregistrer, onSupprimer, onSeConnecte
   destination.hidden = true;
 
   const jeton = createField('jeton', 'Jeton d’accès', 'password', marquerModifiee);
-  const aideDuJeton = document.createElement('span');
-  aideDuJeton.className = 'field-help';
-  jeton.wrapper.insertBefore(aideDuJeton, jeton.error);
+  /*
+   * Trois enfants du champ plutôt qu'un : la grille de `.field` les espace
+   * elle-même, et chaque droit à cocher tient sa ligne.
+   */
+  const aideIntro = document.createElement('p');
+  aideIntro.className = 'field-help';
+  const aideDesDroits = document.createElement('ul');
+  aideDesDroits.className = 'field-help-droits';
+  const aideAussi = document.createElement('p');
+  aideAussi.className = 'field-help';
+  jeton.wrapper.insertBefore(aideIntro, jeton.error);
+  jeton.wrapper.insertBefore(aideDesDroits, jeton.error);
+  jeton.wrapper.insertBefore(aideAussi, jeton.error);
 
   const erreurGenerale = document.createElement('p');
   erreurGenerale.className = 'field-error';
@@ -192,8 +202,16 @@ export function createCarteDepot({ cle, onEnregistrer, onSupprimer, onSeConnecte
     dossierRetire.hidden = !adresse?.cheminRetire;
     if (adresse && termes) projetRetenu.textContent = `${avecMajuscule(termes.depot)} ${termes.forge} : ${adresse.projet}`;
     jeton.label.textContent = termes ? avecMajuscule(termes.nomDuJeton) : 'Jeton d’accès';
-    aideDuJeton.textContent = termes?.aideDuJeton
-      ?? 'Un Personal Access Token GitHub ou un jeton d’accès GitLab, selon l’adresse saisie.';
+    const aide = termes?.aideDuJeton ?? AIDE_SANS_FORGE;
+    aideIntro.textContent = aide.intro;
+    aideDesDroits.replaceChildren(...aide.droits.map((droit) => {
+      const ligne = document.createElement('li');
+      ligne.textContent = droit;
+      return ligne;
+    }));
+    aideDesDroits.hidden = aide.droits.length === 0;
+    aideAussi.textContent = aide.aussi ?? '';
+    aideAussi.hidden = aide.aussi === null;
     jeton.input.placeholder = depot?.jeton && depot.forge === adresse?.forge
       ? 'Token enregistré. Laissez ce champ vide pour le conserver.'
       : '';

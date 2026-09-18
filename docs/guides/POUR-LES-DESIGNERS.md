@@ -102,10 +102,12 @@ plusieurs dépôts ; les exports vont dans le dépôt actif, marqué « Connect�
    - Sur GitHub, un fine-grained Personal Access Token, dans `Settings >
      Developer settings > Personal access tokens` : limitez-le à ce repository,
      avec `Contents: Read and write` et `Pull requests: Read and write`.
-   - Sur GitLab, un jeton de seul scope **api**. Préférez un jeton d'accès
-     projet de rôle Developer, dans `Settings > Access tokens` du projet : il
-     n'ouvre que ce projet. Si votre offre GitLab ne le propose pas, créez un
-     jeton personnel dans vos préférences : il ouvre alors tous vos projets.
+   - Sur GitLab, un jeton personnel fine-grained, dans vos préférences :
+     limitez-le à ce projet, avec `Project: Read`, `Repository: Read`,
+     `Branch: Read, Delete`, `Commit: Create` et
+     `Merge Request: Read, Create`. Un jeton de seul scope **api** convient
+     aussi : un jeton d'accès projet de rôle Developer quand votre offre le
+     propose, un jeton personnel sinon, qui ouvre alors tous vos projets.
 4. Collez le jeton, puis enregistrez. Le plugin teste le dépôt : la carte se
    replie quand il répond, et reste dépliée avec le geste à faire sinon. Le
    premier dépôt enregistré devient actif, sauf quand l'export local est

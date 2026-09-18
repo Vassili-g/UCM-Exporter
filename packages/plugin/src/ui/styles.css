@@ -186,9 +186,19 @@ p {
 }
 
 .subtitle,
-.field-help {
+.field-help,
+.field-help-droits {
   color: var(--texte-second);
   line-height: var(--corps-interligne);
+}
+
+/*
+ * Un droit à cocher par ligne. GitLab en demande cinq, que le designer recopie
+ * un par un dans l'écran de la forge : en paragraphe, il en saute un.
+ */
+.field-help-droits {
+  margin: 0;
+  padding-left: var(--espace-bloc);
 }
 
 /*

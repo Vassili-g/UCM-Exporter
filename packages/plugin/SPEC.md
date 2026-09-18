@@ -637,7 +637,7 @@ l'interface l'importe.
 | Forge | Jeton | Droits |
 |---|---|---|
 | GitHub | Personal Access Token fine-grained | **Contents: read/write** et **Pull requests: read/write** sur le repository |
-| GitLab | jeton d'accès projet de rôle Developer quand l'offre le permet, jeton personnel sinon | scope **api** seul : `read_repository` et `write_repository` ne couvrent ni les merge requests ni l'API de commits |
+| GitLab | jeton personnel fine-grained limité au projet, ou jeton de scope **api** | **Project: Read**, **Repository: Read**, **Branch: Read + Delete**, **Commit: Create**, **Merge Request: Read + Create**. En scopes : **api** seul, car `read_repository` et `write_repository` ne couvrent ni les merge requests ni l'API de commits |
 
 **Un jeton ne part que vers le dépôt qui l'a reçu.** Le stockage range les
 dépôts dans la clé `depots`, un tableau d'entrées `{ repoUrl, baseBranch, jeton }`,
