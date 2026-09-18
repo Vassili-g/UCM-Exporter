@@ -52,7 +52,7 @@ npm run test:ui --workspace ucm-exporter-plugin
 npm run galerie --workspace ucm-exporter-plugin
 ```
 
-Sur `04e7880`, les cinq sont vertes : 785 tests pour le plugin, 12 tests
+Sur `84f4910`, les cinq sont vertes : 785 tests pour le plugin, 13 tests
 Playwright, 51 états de galerie atteignables.
 
 Elles étaient déjà toutes vertes sur `4d98c37`, avant le premier constat. Aucun
@@ -115,7 +115,7 @@ documents et les commentaires, jamais les chaînes affichées.
 | Critique | 4 | 0 |
 | Haute | 1 | 0 |
 | Moyenne | 4 | 0 |
-| Basse | 0 | 1 |
+| Basse | 1 | 0 |
 
 ### [Critique] Une publication réussie annoncée en échec
 
@@ -290,23 +290,34 @@ documents et les commentaires, jamais les chaînes affichées.
   français ordinaire et le repli des textes écrits avant qu'une forge soit
   connue.
 
+### [Basse] `enAttenteDeTest` gardait une carte dont le test n'arrive jamais
+
+- [x] Corrigé par `84f4910`.
+- **Où** : `src/ui/components/ListeDesDepots.ts`, `recevoirTest()`.
+- **Scénario** : une carte entrait dans `enAttenteDeTest` à chaque
+  enregistrement accepté et n'en sortait que sur un `depot-teste` terminal, quel
+  qu'il soit. Le sandbox annonce un test en `checking`, puis rend son résultat
+  sous la même génération, ou ne rend rien si cette génération a été périmée
+  entre les deux. Dans ce cas la carte restait armée, et le test suivant de son
+  dépôt, posté par le rafraîchissement qui suit une activation, la repliait
+  longtemps après l'enregistrement, alors que le designer venait de la déplier.
+- **Sonde** : harnais Chromium. Enregistrement accepté, `checking` sans
+  résultat, `settings`, puis un test complet d'une génération suivante : la
+  carte se repliait. Le témoin d'à côté, une carte jamais enregistrée, restait
+  dépliée sous le même test.
+- **Correction** : la carte retient la génération annoncée après son
+  enregistrement et ne se replie que sur le résultat qui la porte ; un résultat
+  d'une autre génération la désarme sans la replier. Les cartes que `settings`
+  retire sortent aussi de l'ensemble.
+- **Test** : `interface.test.mjs`, « une carte dont le test a été périmé ne se
+  replie pas sur le test suivant de son dépôt ».
+- **Constat annexe** : la loi voisine sur le repli après enregistrement envoyait
+  son `checking` en génération 1 et son résultat en génération 2, ce que le
+  sandbox n'écrit jamais. Elle emploie désormais une seule génération.
+
 ## 5. Ce qui reste
 
-### C1. `enAttenteDeTest` garde une carte dont le test n'arrive jamais
-
-- [ ] Sonder, puis corriger si confirmé.
-- **Gravité** : basse. **Verdict** : plausible, non reproduit.
-- **Où** : `src/ui/components/ListeDesDepots.ts`.
-- **Scénario** : une carte entre dans `enAttenteDeTest` à chaque enregistrement
-  accepté, et n'en sort que sur un `depot-teste` dont l'état n'est pas
-  `checking`. Un test qui n'aboutit jamais, parce que sa génération a été
-  périmée entre-temps, laisse la carte dans l'ensemble. Le `depot-teste` suivant
-  de ce dépôt, venu d'une autre cause, replierait alors la carte comme si elle
-  sortait d'un enregistrement.
-- **Piste** : retirer la carte de l'ensemble à la réception d'un `settings` qui
-  la repose, ou au prochain enregistrement qu'elle envoie.
-
-### C2. Zone Z5, fraîcheur croisée des générations
+### C1. Zone Z5, fraîcheur croisée des générations
 
 - [ ] Épuiser la zone.
 - `generationDeConnexion` et `generationsDesDepots` se croisent dans
@@ -322,7 +333,7 @@ documents et les commentaires, jamais les chaînes affichées.
   La carte est la seule touchée, ce qui semble correct ; le confirmer par une
   sonde.
 
-### C3. Zone Z6, identité des cartes de la liste
+### C2. Zone Z6, identité des cartes de la liste
 
 - [ ] Épuiser la zone.
 - Une carte vit sous une clé temporaire jusqu'à sa réponse, puis sous son
@@ -335,7 +346,7 @@ documents et les commentaires, jamais les chaînes affichées.
   valide en HTML et `aria-controls` le retrouve, mais aucun sélecteur CSS ne
   peut le viser sans échappement. Vérifier qu'aucun code ne tente de le faire.
 
-### C4. Zone Z7, reprise des anciennes clés
+### C3. Zone Z7, reprise des anciennes clés
 
 - [ ] Sonder la reprise.
 - `reprendreLAncienneConfiguration()` ouvre la file du stockage et lit quatre
@@ -347,7 +358,7 @@ documents et les commentaires, jamais les chaînes affichées.
   configuration sans `baseBranch`, que la reprise remplace par `main` sans le
   dire.
 
-### C5. Points relevés sans gravité établie
+### C4. Points relevés sans gravité établie
 
 - [ ] Trancher chacun : faute ou choix.
 - `signalerEchec()` ne poste rien quand `operationEnCours !== null` : une panne
