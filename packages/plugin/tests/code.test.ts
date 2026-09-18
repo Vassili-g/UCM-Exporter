@@ -626,6 +626,97 @@ test('un dépôt actif retiré laisse le repli « aucun dépôt actif » quand d
 });
 
 const pastillesDe = (h: ReturnType<typeof ouvrir>) => h.messages.flatMap((message) => (message.type === 'connection' ? [message.pastille] : []));
+const etatDeLaPastille = (h: ReturnType<typeof ouvrir>) => h.messages
+  .flatMap((message) => (message.type === 'connection' ? [message.state] : [])).at(-1);
+
+/**
+ * Deux générations se croisent : `generationDeConnexion` pour la pastille et la
+ * destination, `generationsDesDepots` pour chaque carte. Une demande qui périme
+ * l'une pendant que l'autre attend la forge doit laisser la pastille et toutes
+ * les cartes encore listées sur un état terminal. Sans cette loi, un test
+ * périmé des deux côtés ne laisserait aucun message pour remplacer son
+ * « Connexion… », et l'interface resterait sur une attente qui ne finit pas.
+ */
+function verifierLesAttentes(h: ReturnType<typeof ouvrir>, croisement: string): void {
+  assert.notEqual(etatDeLaPastille(h), 'checking', `${croisement} : la pastille reste sur Connexion…`);
+  for (const { id } of derniersReglages(h).depots) {
+    assert.notEqual(testsDe(h, id).at(-1)?.etat, 'checking', `${croisement} : la carte ${id} reste sur Connexion…`);
+  }
+}
+
+/**
+ * Enregistre le dépôt GitLab, dont le test reste en vol, envoie la demande qui
+ * croise ce test, puis laisse le test rendre son résultat.
+ */
+async function croiserLeTestDeLaCarte(demande: UiRequest): Promise<ReturnType<typeof ouvrir>> {
+  const h = ouvrir();
+  h.stockage.set('depots', DEUX_DEPOTS);
+  h.stockage.set('depotActif', 'github:o/r');
+  const lent = differe<Diagnostic>();
+  h.connexionDe.traiter = async ({ jeton }) => (jeton === 'glpat-b' ? lent.promesse : { cause: 'connecte', layout: null });
+  const enregistrement = h.envoyer({
+    type: 'enregistrer-depot', requete: 1, carte: 'gitlab:g/p', id: 'gitlab:g/p',
+    settings: { repoUrl: 'https://gitlab.com/g/p', baseBranch: 'develop', jeton: '' },
+  });
+  await tourner();
+  await tourner();
+  assert.deepEqual(testsDe(h, 'gitlab:g/p').map(({ statut }) => statut), ['Connexion…']);
+  const croisee = h.envoyer(demande);
+  await tourner();
+  lent.resoudre({ cause: 'connecte', layout: null });
+  await enregistrement;
+  await croisee;
+  return h;
+}
+
+test('une demande qui croise le test d’une carte laisse la pastille et les cartes sur un état terminal', async () => {
+  for (const [croisement, demande] of [
+    ['activer un dépôt', { type: 'activer-depot', id: 'gitlab:g/p' }],
+    ['supprimer un autre dépôt', { type: 'supprimer-depot', id: 'github:o/r' }],
+    ['basculer l’export local', { type: 'export-local', valeur: true }],
+    ['réinitialiser la liste', { type: 'reinitialiser-depots' }],
+  ] as [string, UiRequest][]) {
+    verifierLesAttentes(await croiserLeTestDeLaCarte(demande), croisement);
+  }
+});
+
+/**
+ * `testerDepot` ne lit que `generationsDesDepots` : la bascule de l'export
+ * local, qui ne périme que `generationDeConnexion`, ne l'arrête pas. Son
+ * résultat arrive donc après elle, et c'est correct, parce qu'il ne touche que
+ * sa carte : la pastille et la destination restent celles de l'export local.
+ */
+test('un test de carte rendu après la bascule de l’export local ne touche que sa carte', async () => {
+  const h = await croiserLeTestDeLaCarte({ type: 'export-local', valeur: true });
+  assert.equal(testsDe(h, 'gitlab:g/p').at(-1)?.statut, 'Connecté');
+  assert.equal(etatDeLaPastille(h), 'local');
+  assert.equal(dernierDepot(h).repli, 'debranche');
+});
+
+test('enregistrer un dépôt pendant le test du dépôt actif laisse les deux cartes sur leur résultat', async () => {
+  const h = ouvrir();
+  h.stockage.set('depots', DEUX_DEPOTS);
+  h.stockage.set('depotActif', 'github:o/r');
+  const lent = differe<Diagnostic>();
+  h.connexionDe.traiter = async ({ jeton }) => (jeton === 'jeton-a' ? lent.promesse : { cause: 'connecte', layout: null });
+  const ouverture = h.envoyer({ type: 'ui-ready' });
+  await tourner();
+  await tourner();
+  assert.equal(etatDeLaPastille(h), 'checking');
+  const enregistrement = h.envoyer({
+    type: 'enregistrer-depot', requete: 1, carte: 'gitlab:g/p', id: 'gitlab:g/p',
+    settings: { repoUrl: 'https://gitlab.com/g/p', baseBranch: 'develop', jeton: '' },
+  });
+  await tourner();
+  await tourner();
+  lent.resoudre({ cause: 'connecte', layout: null });
+  await ouverture;
+  await enregistrement;
+
+  verifierLesAttentes(h, 'enregistrer pendant le test du dépôt actif');
+  assert.deepEqual(testsDe(h, 'github:o/r').map(({ statut }) => statut), ['Connexion…', 'Connecté']);
+  assert.deepEqual(testsDe(h, 'gitlab:g/p').map(({ statut }) => statut), ['Connexion…', 'Connecté']);
+});
 const derniersReglages = (h: ReturnType<typeof ouvrir>) => {
   const reglagesRecus = h.messages.filter((message) => message.type === 'settings').at(-1);
   assert.ok(reglagesRecus?.type === 'settings');
