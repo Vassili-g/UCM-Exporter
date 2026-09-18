@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  activerDepot,
   cleDeDestination,
+  ecrireExportLocal,
   ecrireGestionDesTokens,
   enregistrerDepot,
   forgeDuPrefixe,
   lireAdresseDuDepot,
   lireInstantane,
+  loadConfiguration,
   memeDepot,
   nomDuDepot,
   reprendreLAncienneConfiguration,
@@ -327,4 +330,40 @@ test('la gestion des tokens vaut « activée » tant que rien n’est enregistr�
   assert.notEqual(desactivee.destination, activee.destination);
   assert.equal(memeDepot(desactivee.destination, activee.destination), true);
   assert.equal(memeDepot(activee.destination, cleDeDestination(null, true)), false);
+});
+
+test('l’export local vaut « désactivé » tant que rien n’est enregistré, garde le dépôt actif et ne rend aucune configuration', async () => {
+  const { valeurs } = stockageFigma({ depots: [GITHUB], depotActif: ID_GITHUB });
+  const branche = await lireInstantane();
+  assert.equal(branche.exportLocal, false);
+  assert.equal((await loadConfiguration()).config?.projet, 'mon-org/design-system-v3');
+
+  await ecrireExportLocal(true);
+  assert.equal(valeurs.get('exportLocal'), true);
+  const local = await lireInstantane();
+  assert.equal(local.actif, ID_GITHUB);
+  assert.equal(local.validation.config, null);
+  assert.equal((await loadConfiguration()).config, null);
+  assert.deepEqual(JSON.parse(local.destination), ['local', true]);
+  assert.equal(memeDepot(local.destination, cleDeDestination(null, true)), false);
+});
+
+test('en export local, le premier dépôt d’une liste vide ne devient pas actif', async () => {
+  const { ecritures, valeurs } = stockageFigma({ depots: [], exportLocal: true });
+  const premier = await enregistrerDepot(GITHUB, null);
+  assert.equal(premier.id, ID_GITHUB);
+  assert.deepEqual(ecritures, ['set depots']);
+  assert.equal(valeurs.has('depotActif'), false);
+});
+
+test('« Se connecter » écrit le dépôt actif, puis désactive l’export local', async () => {
+  const { ecritures, valeurs } = stockageFigma({ depots: [GITHUB, GITLAB], depotActif: ID_GITHUB, exportLocal: true });
+  await activerDepot(ID_GITLAB);
+  assert.deepEqual(ecritures, ['set depotActif', 'set exportLocal']);
+  assert.equal(valeurs.get('exportLocal'), false);
+  assert.equal((await lireInstantane()).validation.config?.projet, 'mon-groupe/design-system');
+
+  ecritures.length = 0;
+  await activerDepot('github:absent/depot');
+  assert.deepEqual(ecritures, []);
 });

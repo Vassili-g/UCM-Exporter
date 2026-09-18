@@ -232,6 +232,11 @@ p {
   color: var(--texte-second);
 }
 
+/* L'export local est voulu : un avertissement, la sévérité de la ligne de repli. */
+.connection-status[data-state='local'] {
+  color: var(--texte-avertissement);
+}
+
 /* L'outil de navigation est un contrôle secondaire : 24 px, une seule fois. */
 .icon-button,
 .header-back-button {

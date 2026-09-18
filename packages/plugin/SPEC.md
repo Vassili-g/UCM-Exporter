@@ -67,7 +67,7 @@ variables qui servent au contrat restent actives. Basculer le réglage annule
 une analyse en cours et laisse finir une publication.
 
 Chaque résultat d'analyse ou de publication porte sa clé de destination : le
-dépôt visé, ou le téléchargement, et le réglage des tokens. La publication
+dépôt visé, le téléchargement ou l'export local, et le réglage des tokens. La publication
 refuse une analyse dont la clé diffère de celle qu'elle relit, en nommant le
 changement. L'interface vide ses cartes quand la clé change, et écarte les
 résultats d'une autre destination.
@@ -657,6 +657,7 @@ pour GitLab. L'interface ne reçoit que la présence d'un jeton, par dépôt.
 | Enregistrer un premier dépôt | `depots`, puis `depotActif` | Dépôt enregistré, aucun dépôt actif |
 | Modifier la branche ou le jeton | `depots` | Aucune étape intermédiaire |
 | Supprimer | `depots` sans l'entrée, puis retrait de `depotActif` si elle était active | `depotActif` désigne une entrée absente, lue comme « aucun dépôt actif » |
+| Se connecter | `depotActif`, puis `exportLocal` à `false` | Dépôt actif changé, export local encore activé |
 
 Une file du sandbox ordonne les écritures de la configuration et les lectures
 qui préparent une analyse, une publication ou `settings` : une modification ne
@@ -664,6 +665,19 @@ peut pas relire la liste avant une suppression et l'écrire après elle. Deux
 fenêtres du plugin ne partagent pas cette file. Une suppression et une
 modification faites au même instant dans deux fenêtres peuvent encore faire
 revenir une entrée.
+
+**L'export local suspend toute publication vers une forge.** L'interrupteur
+« Activer l'export local » de l'onglet Général écrit la clé `exportLocal`,
+absente par défaut. Activé, il retire la configuration de publication :
+`loadConfiguration()` n'en rend aucune, et `depotActif` reste écrit pour le
+rebranchement. Aucun test ne part à l'ouverture, et les exports sont
+téléchargés ; la pastille dit `export local` en couleur d'avertissement, comme
+la ligne sous la carte du composant. Seul l'enregistrement d'un dépôt lance
+encore un test, dont le résultat ne met à jour que la carte de ce dépôt. Le
+premier dépôt d'une liste vide ne devient pas actif. Désactiver l'export local
+rend la destination au dernier dépôt actif et le teste ; « Se connecter » le
+désactive aussi. Une publication déjà lancée va à son terme vers le dépôt lu à
+son départ.
 
 La première ouverture reprend la configuration du plugin à un seul dépôt : les
 clés `repoUrl`, `baseBranch`, `github_pat` et `forge_du_jeton`, où un jeton sans
@@ -687,7 +701,7 @@ travailler.
 L'en-tête expose en permanence l'état de la connexion et un accès à la page de
 configuration via une icône `gear` Font Awesome Free embarquée. Le test lit le
 dépôt (`GET /repos/{owner}/{repo}` sur GitHub, `GET /projects/:id` sur GitLab),
-automatiquement à l'ouverture et après chaque sauvegarde. Un 401, un 403 et un
+automatiquement à l'ouverture, hors export local, et après chaque sauvegarde. Un 401, un 403 et un
 404 donnent chacun leur cause et leur geste ; sur GitLab, le 404 dit que le
 projet peut être privé et que le jeton doit y avoir accès. Le manifest n'autorise
 que `https://api.github.com` et `https://gitlab.com`.
@@ -714,8 +728,8 @@ tokens dans la même minute), ouvre une demande vers la branche de base, puis
 l'ouvre dans le navigateur par défaut (`figma.openExternal` : l'iframe de l'UI
 est isolée et ne peut pas naviguer elle-même). Le lien reste dans le compte rendu pour y revenir. Si le contenu
 est identique (la comparaison ignore `meta.exportedAt`, régénéré à chaque
-export) aucune branche ni demande n'est créée. Config absente ou invalide, ou
-erreur de la forge : repli automatique vers le téléchargement local avec message
+export) aucune branche ni demande n'est créée. Config absente ou invalide,
+export local activé, ou erreur de la forge : repli automatique vers le téléchargement local avec message
 explicite.
 
 La séquence d'écriture appartient à l'adaptateur de la forge (`src/forges/`),

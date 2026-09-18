@@ -11,6 +11,7 @@ import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './t
 import {
   activerDepot,
   cleDeDestination,
+  ecrireExportLocal,
   ecrireGestionDesTokens,
   lireGestionDesTokens,
   lireConfigurationDe,
@@ -104,7 +105,8 @@ function depotVise(cible: ConfigurationDuDepot | CauseDeRepli) {
 }
 
 /** Pourquoi un instantané ne vise aucun dépôt. */
-function repliDe({ depots }: Instantane): CauseDeRepli {
+function repliDe({ depots, exportLocal }: Instantane): CauseDeRepli {
+  if (exportLocal) return 'debranche';
   return depots.length === 0 ? 'aucun-depot' : 'aucun-actif';
 }
 
@@ -218,6 +220,7 @@ function annoncerReglages(instantane: Instantane): void {
     settings: {
       destination: instantane.destination,
       tokens: instantane.tokens,
+      exportLocal: instantane.exportLocal,
       actif: instantane.actif,
       depots: instantane.depots,
     },
@@ -227,7 +230,8 @@ function annoncerReglages(instantane: Instantane): void {
 /**
  * Teste la forge du dépôt actif de l'instantané : la pastille, la destination
  * des exports et la carte de ce dépôt. Le jeton reste exclusivement dans ce
- * sandbox.
+ * sandbox. En export local, l'instantané ne porte aucune configuration : aucun
+ * test ne part.
  */
 async function testerConnexion(instantane: Instantane, generation: number): Promise<void> {
   const { actif, validation, tokens } = instantane;
@@ -279,8 +283,9 @@ function suivreLaDestination(instantane: Instantane): void {
 }
 
 /** Ce qui sépare la destination d'une analyse de celle qu'un instantané désigne. */
-function changementDeDestination(avant: string, { validation, destination }: Instantane) {
+function changementDeDestination(avant: string, { validation, destination, exportLocal }: Instantane) {
   if (memeDepot(avant, destination)) return 'tokens' as const;
+  if (exportLocal) return 'local' as const;
   return { nom: validation.config ? nomDuDepot(validation.config.projet) : null };
 }
 
@@ -777,6 +782,22 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     return;
   }
 
+  if (message.type === 'export-local') {
+    // Un test lancé avant la bascule ne rétablit pas l'état connecté.
+    generationDeConnexion += 1;
+    try {
+      await parLaFile(() => ecrireExportLocal(message.valeur));
+    } catch (erreur) {
+      // L'interrupteur revient à l'état conservé.
+      void refreshConfiguration().catch(() => undefined);
+      throw erreur;
+    }
+    // La destination change : une analyse en cours est annulée. Désactivé,
+    // l'export local rend la destination au dernier dépôt actif, qui se teste.
+    await refreshConfiguration();
+    return;
+  }
+
   if (message.type === 'enregistrer-depot') {
     const { requete, carte, id, settings } = message;
     if (id !== null) perimerLeTestDe(id);
@@ -802,9 +823,10 @@ async function traiterMessage(message: UiRequest): Promise<void> {
       return;
     }
     // La liste change dans tous les cas. Actif, le dépôt enregistré se teste par
-    // la pastille ; inactif, pour sa seule carte, et la pastille ne bouge pas.
+    // la pastille ; inactif ou en export local, pour sa seule carte, et la
+    // pastille ne bouge pas.
     const instantane = await parLaFile(lireInstantane);
-    if (instantane.actif === enregistrement.id) {
+    if (instantane.actif === enregistrement.id && !instantane.exportLocal) {
       await refreshConfiguration();
       return;
     }

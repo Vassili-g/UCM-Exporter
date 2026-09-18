@@ -36,7 +36,8 @@ export type CauseConnexion =
 
 /** Ce que l'interface montre : une pastille, et le geste quand il y en a un. */
 export type EtatConnexion = {
-  state: 'checking' | 'connected' | 'disconnected';
+  /** `local` : l'export local est activé, un choix du designer et non une panne. */
+  state: 'checking' | 'connected' | 'disconnected' | 'local';
   /** Le texte de la pastille. Court : il vit dans l'en-tête, au rang 3. */
   pastille: string;
   /** Le constat et le geste, lus dans la configuration. `null` quand tout va bien. */
@@ -86,6 +87,8 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
     case 'connecte':
       return { state: 'connected', pastille: `${precision.nom ?? depot} connecté`, geste: null };
     case 'non-configure':
+      // Le designer a choisi l'export local : aucun geste n'est attendu de lui.
+      if (precision.repli === 'debranche') return { state: 'local', pastille: 'export local', geste: null };
       return precision.repli === 'aucun-actif'
         ? {
             state: 'disconnected',
@@ -262,8 +265,11 @@ export type EtatDuDepot = {
   repli: CauseDeRepli | null;
 };
 
-/** Pourquoi aucun dépôt n'est visé : aucun n'est enregistré, ou aucun n'est actif. */
-export type CauseDeRepli = 'aucun-depot' | 'aucun-actif';
+/**
+ * Pourquoi aucun dépôt n'est visé : aucun n'est enregistré, aucun n'est actif,
+ * ou l'export local est activé.
+ */
+export type CauseDeRepli = 'aucun-depot' | 'aucun-actif' | 'debranche';
 
 /**
  * Ce que le plugin dit d'un repli, à trois endroits : la ligne sous la carte
@@ -280,6 +286,11 @@ export const TEXTES_DE_REPLI: Record<CauseDeRepli, { ligne: string; verdict: str
     ligne: 'Aucun dépôt actif. L’export sera téléchargé sur votre poste.',
     verdict: 'Aucun dépôt actif.',
     journal: 'Aucun dépôt actif : téléchargement sur votre poste.',
+  },
+  debranche: {
+    ligne: 'Export local : l’export sera téléchargé sur votre poste.',
+    verdict: 'Export local.',
+    journal: 'Export local : téléchargement sur votre poste.',
   },
 };
 
@@ -334,13 +345,16 @@ export function etatDuDepot(
 /**
  * Le refus d'une publication dont la destination a changé depuis l'analyse.
  * Il dit le fait sans en supposer la cause : le changement a pu venir d'une
- * autre fenêtre du plugin. `tokens` quand seul le réglage des tokens a changé ;
- * sinon le nom du dépôt, `null` quand l'export serait téléchargé.
+ * autre fenêtre du plugin. `tokens` quand seul le réglage des tokens a changé,
+ * `local` quand l'export local est activé ; sinon le nom du dépôt, `null` quand
+ * aucun dépôt n'est actif.
  */
-export function refusDeDestinationChangee(changement: { nom: string | null } | 'tokens'): string {
+export function refusDeDestinationChangee(changement: { nom: string | null } | 'tokens' | 'local'): string {
   const destination = changement === 'tokens'
     ? 'la gestion des tokens a changé'
-    : changement.nom
+    : changement === 'local'
+      ? 'les exports sont téléchargés sur votre poste'
+      : changement.nom
       ? `le dépôt actif est maintenant ${changement.nom}`
       : 'aucun dépôt n’est actif';
   return `La destination a changé depuis l’analyse : ${destination}. Relancez l’analyse.`;

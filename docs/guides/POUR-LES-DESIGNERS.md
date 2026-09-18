@@ -108,12 +108,20 @@ plusieurs dépôts ; les exports vont dans le dépôt actif, marqué « Connect�
      jeton personnel dans vos préférences : il ouvre alors tous vos projets.
 4. Collez le jeton, puis enregistrez. Le plugin teste le dépôt : la carte se
    replie quand il répond, et reste dépliée avec le geste à faire sinon. Le
-   premier dépôt enregistré devient actif.
+   premier dépôt enregistré devient actif, sauf quand l'export local est
+   activé.
 
 Pour publier dans un autre dépôt, cliquez « Se connecter » sur sa carte : il
 devient actif, la pastille de l'en-tête le nomme, et le verdict de l'analyse
 suivante aussi. Une analyse faite
 pour l'ancien dépôt ne se publie pas dans le nouveau ; relancez-la.
+
+Pour télécharger vos exports sans ouvrir de demande de fusion, activez
+« Activer l'export local » dans l'onglet Général. La pastille de l'en-tête dit
+alors « export local », et aucune carte n'est « Connecté ». Vos dépôts restent
+enregistrés. Pour publier de nouveau, désactivez l'interrupteur, ou cliquez
+« Se connecter » sur un dépôt. Une analyse faite avant ce changement ne se
+publie pas ; relancez-la.
 
 Un jeton ne part que vers le dépôt pour lequel vous l'avez collé. L'adresse
 d'un dépôt enregistré ne se modifie plus : pour un autre projet, ajoutez un

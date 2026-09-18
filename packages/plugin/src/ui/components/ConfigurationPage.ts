@@ -43,9 +43,16 @@ export function createConfigurationPage(): PageConfigurationUi {
       + 'sont fusionnés dans le dépôt.',
     (valeur) => versSandbox({ type: 'gerer-tokens', valeur }),
   );
+  // Visible sans dépôt : les exports sont alors téléchargés de toute façon.
+  const exportLocal = createInterrupteur(
+    'export-local',
+    'Activer l’export local',
+    'Les exports sont téléchargés sur votre poste, et aucune demande de fusion n’est ouverte.',
+    (valeur) => versSandbox({ type: 'export-local', valeur }),
+  );
   const panneauGeneral = document.createElement('div');
   panneauGeneral.className = 'page-stack';
-  panneauGeneral.append(gestionDesTokens.element);
+  panneauGeneral.append(gestionDesTokens.element, exportLocal.element);
 
   const depots = createListeDesDepots();
   const panneauDepots = depots.element;
@@ -67,6 +74,7 @@ export function createConfigurationPage(): PageConfigurationUi {
     element,
     acceptRemoteSettings(settings: ReglagesPublics) {
       gestionDesTokens.poser(settings.tokens);
+      exportLocal.poser(settings.exportLocal);
       depots.accepterReglages(settings);
     },
     recevoirEnregistrement: depots.recevoirEnregistrement,

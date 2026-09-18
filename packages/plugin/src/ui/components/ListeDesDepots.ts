@@ -28,6 +28,15 @@ export function createListeDesDepots(): ListeDesDepotsUi {
   const element = document.createElement('div');
   element.className = 'page-stack';
 
+  /*
+   * Sans cette ligne, le designer qui ouvre Dépôts en export local voit des
+   * dépôts non connectés sans en lire la raison.
+   */
+  const exportLocal = document.createElement('p');
+  exportLocal.className = 'depot-repli';
+  exportLocal.textContent = 'Export local activé dans Général : les exports sont téléchargés sur votre poste.';
+  exportLocal.hidden = true;
+
   const vide = document.createElement('p');
   vide.className = 'subtitle';
   vide.textContent = 'Veuillez ajouter un dépôt.';
@@ -92,13 +101,15 @@ export function createListeDesDepots(): ListeDesDepotsUi {
     },
   });
 
-  element.append(ajouter, vide, liste);
+  element.append(exportLocal, ajouter, vide, liste);
   rafraichirVide();
 
   return {
     element,
     accepterReglages(reglages: ReglagesPublics) {
-      actif = reglages.actif;
+      // En export local, aucune carte n'est connectée : toutes proposent « Se connecter ».
+      actif = reglages.exportLocal ? null : reglages.actif;
+      exportLocal.hidden = !reglages.exportLocal;
       const recus = new Set(reglages.depots.map(({ id }) => id));
       for (const [cle, carte] of [...cartes]) {
         const id = carte.id();
@@ -115,7 +126,7 @@ export function createListeDesDepots(): ListeDesDepotsUi {
           carte = creer(depot.id);
           carte.deplier(false);
         }
-        carte.poser(depot, depot.id === reglages.actif);
+        carte.poser(depot, depot.id === actif);
         ordre.push(carte.element);
       }
       // Les cartes jamais enregistrées restent en fin de liste, avec leur saisie.

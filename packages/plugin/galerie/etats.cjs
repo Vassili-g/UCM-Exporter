@@ -22,6 +22,7 @@ function chargerSandbox(nom) {
 
 const {
   etatDeCarte, etatDeConnexion, etatDuDepot, gesteApresEchecDePublication, refusDeDestinationChangee, textesDePublication,
+  TEXTES_DE_REPLI,
 } = chargerSandbox('connexion');
 const { TERMES_GITHUB, TERMES_GITLAB } = chargerSandbox('forges/termes');
 const { cleDeDestination, identiteDuDepot, lireAdresseDuDepot, nomDuDepot, validateSettings } = chargerSandbox('config');
@@ -175,7 +176,9 @@ const DEPOTS_DE_GALERIE = {
   recette: { forge: 'github', projet: 'mon-org/recette-web', baseBranch: 'main' },
   aucune: null,
 };
-const destinationDe = (forge, gestion = true) => cleDeDestination(DEPOTS_DE_GALERIE[forge], gestion);
+const destinationDe = (forge, gestion = true) => (forge === 'local'
+  ? cleDeDestination(null, gestion, true)
+  : cleDeDestination(DEPOTS_DE_GALERIE[forge], gestion));
 
 /**
  * Un dépôt enregistré tel que `settings` le décrit, lu par les fonctions du
@@ -207,11 +210,33 @@ const listeDe = (depots, actif) => ({
     settings: {
       destination: destinationDe(actif ?? 'aucune'),
       tokens: true,
+      exportLocal: false,
       actif: actif ? DEPOTS_PUBLICS[actif].id : null,
       depots: depots.map((cle) => DEPOTS_PUBLICS[cle]),
     },
   },
 });
+
+/**
+ * L'export local activé : la liste, le dernier dépôt actif gardé, la pastille
+ * et la ligne de repli que `refreshConfiguration` envoie sans aucun test.
+ */
+const exportLocal = (depots, actif) => [
+  {
+    message: {
+      type: 'settings',
+      settings: {
+        destination: destinationDe('local'),
+        tokens: true,
+        exportLocal: true,
+        actif: actif ? DEPOTS_PUBLICS[actif].id : null,
+        depots: depots.map((cle) => DEPOTS_PUBLICS[cle]),
+      },
+    },
+  },
+  { message: { type: 'connection', ...etatDeConnexion('non-configure', { repli: 'debranche' }) } },
+  depot(null, 'debranche'),
+];
 
 /** Le test d'un dépôt pour sa carte, calculé par le sandbox. */
 const carteTestee = (cle, cause, precision = {}, layout = null) => ({
@@ -233,6 +258,7 @@ const carte = (rang) => `#panneau-depots .carte-depot:nth-of-type(${rang})`;
 const reglagesDe = (forge, gestion = true) => ({
   destination: destinationDe(forge, gestion),
   tokens: gestion,
+  exportLocal: false,
   actif: forge === 'aucune' ? null : DEPOTS_PUBLICS[forge].id,
   depots: forge === 'aucune' ? [] : [DEPOTS_PUBLICS[forge]],
 });
@@ -923,6 +949,67 @@ const ETATS = [
       { message: { type: 'connection', ...etatDeConnexion('non-configure', { repli: 'aucun-actif' }) } },
       depot(null, 'aucun-actif'),
       ...OUVRIR_DEPOTS,
+    ],
+  },
+  {
+    id: 'general-export-local-active',
+    titre: 'Configuration, export local activé',
+    quand: "Le designer active « Activer l'export local » dans l'onglet Général. Le réglage reste mémorisé à la réouverture du plugin.",
+    regarder:
+      "Les deux interrupteurs l'un sous l'autre, chacun avec son aide. « Activer l'export local » est activé, et son libellé ne change pas avec l'état.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      ...exportLocal(['github'], 'github'),
+      { clic: '.icon-button' },
+    ],
+  },
+  {
+    id: 'depots-export-local',
+    forge: 'mixte',
+    forgeActive: 'github',
+    titre: 'Onglet Dépôts en export local',
+    quand: "L'export local est activé, et trois dépôts sont enregistrés. Le dernier dépôt actif reste enregistré pour le rebranchement.",
+    regarder:
+      "La ligne ambre sous la description dit pourquoi aucune carte n'est connectée. Chaque carte propose « Se connecter », y compris le dernier dépôt actif. Le compte des objets passe à 13 avec cette ligne.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      ...exportLocal(['github', 'gitlab', 'recette'], 'github'),
+      ...OUVRIR_DEPOTS,
+    ],
+  },
+  {
+    id: 'travail-export-local',
+    titre: 'Écran de travail en export local',
+    quand: "L'export local est activé : aucun test ne part vers la forge à l'ouverture.",
+    regarder:
+      "La pastille « export local » et la ligne sous la carte du composant portent la même couleur d'avertissement. Un export local oublié se lit avant tout clic.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      ...exportLocal(['github'], 'github'),
+      SELECTION_PRETE,
+    ],
+  },
+  {
+    id: 'export-local-termine',
+    titre: 'Export local : contrat téléchargé',
+    quand: "Le designer analyse le composant en export local, puis clique « Télécharger le contrat ».",
+    regarder:
+      "Le verdict dit que le contrat sera téléchargé, sans parler d'immobilité ni de collision : aucune demande de fusion n'est préparée. Le compte rendu confirme le téléchargement.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      ...exportLocal(['github'], 'github'),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…', destination: destinationDe('local') } },
+      { message: { ...verdict({ code: 'sans-depot', genre: 'component', avertissements: 0, repli: 'debranche' }).message, destination: destinationDe('local') } },
+      { clic: '.carte-composant .btn-primary:not([hidden]):not(:disabled)' },
+      { message: { type: 'log', text: TEXTES_DE_REPLI.debranche.journal, destination: destinationDe('local') } },
+      { message: { type: 'download', filename: 'Button.contract.json', content: '{"contractVersion":"13.0"}', destination: destinationDe('local') } },
+      { message: { type: 'status', state: 'success', text: 'Contrat généré. Téléchargement terminé.', destination: destinationDe('local') } },
     ],
   },
   {

@@ -46,6 +46,9 @@ export type ReglagesPublics = {
   destination: string;
   /** Le réglage « Gérer les tokens » : la carte des tokens n'est affichée qu'à `true`. */
   tokens: boolean;
+  /** Le réglage « Activer l'export local » : aucune carte n'est alors connectée. */
+  exportLocal: boolean;
+  /** Le dépôt actif enregistré, gardé pendant l'export local pour le rebranchement. */
   actif: string | null;
   depots: DepotPublic[];
 };
@@ -66,7 +69,7 @@ export type UiRequest =
    * une carte nouvelle porte un identifiant temporaire jusqu'à sa réponse.
    */
   | { type: 'enregistrer-depot'; requete: number; carte: string; id: string | null; settings: SettingsInput }
-  /** « Se connecter » : ce dépôt devient la destination des exports. */
+  /** « Se connecter » : ce dépôt devient la destination des exports, et l'export local se désactive. */
   | { type: 'activer-depot'; id: string }
   /** Retire une entrée entière, jeton compris. */
   | { type: 'supprimer-depot'; id: string }
@@ -75,6 +78,11 @@ export type UiRequest =
    * cours est annulée, une publication va à son terme.
    */
   | { type: 'gerer-tokens'; valeur: boolean }
+  /**
+   * L'interrupteur « Activer l'export local ». Activé, aucun export ne part vers
+   * une forge ; désactivé, le dernier dépôt actif redevient la destination.
+   */
+  | { type: 'export-local'; valeur: boolean }
   | { type: 'open-external'; url: string }
   /**
    * La poignée de redimensionnement. Figma ne redimensionne pas une fenêtre de

@@ -623,3 +623,140 @@ test('un dépôt actif retiré laisse le repli « aucun dépôt actif » quand d
   const verdict = h.messages.find((message) => message.type === 'verdict');
   assert.match(verdict?.type === 'verdict' ? verdict.texte : '', /^Aucun dépôt actif\. Le contrat sera téléchargé/);
 });
+
+const pastillesDe = (h: ReturnType<typeof ouvrir>) => h.messages.flatMap((message) => (message.type === 'connection' ? [message.pastille] : []));
+const derniersReglages = (h: ReturnType<typeof ouvrir>) => {
+  const reglagesRecus = h.messages.filter((message) => message.type === 'settings').at(-1);
+  assert.ok(reglagesRecus?.type === 'settings');
+  return reglagesRecus.settings;
+};
+const dernierDepot = (h: ReturnType<typeof ouvrir>) => {
+  const depot = h.messages.filter((message) => message.type === 'depot').at(-1);
+  assert.ok(depot?.type === 'depot');
+  return depot;
+};
+
+test('export local : aucune opération réseau à l’ouverture, à l’analyse ni à la publication, et le contrat est téléchargé', async () => {
+  const h = ouvrir();
+  h.connecter();
+  h.stockage.set('exportLocal', true);
+  await h.envoyer({ type: 'ui-ready' });
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
+
+  assert.deepEqual([h.appels.forges, h.appels.connexions, h.appels.lectures, h.appels.publications], [0, 0, 0, 0]);
+  assert.deepEqual(pastillesDe(h), ['export local']);
+  assert.equal(dernierDepot(h).repli, 'debranche');
+  const verdict = h.messages.find((message) => message.type === 'verdict');
+  assert.equal(verdict?.type === 'verdict' ? verdict.texte : '', 'Export local. Le contrat sera téléchargé sur votre poste.');
+  assert.ok(h.messages.some((message) => message.type === 'log' && message.text === 'Export local : téléchargement sur votre poste.'));
+  assert.ok(h.messages.some(({ type }) => type === 'download'));
+  assert.equal(h.stockage.get('depotActif'), 'github:o/r');
+});
+
+test('export local : enregistrer un dépôt le teste pour sa seule carte, sans toucher au dépôt actif, à la pastille ni à la destination', async () => {
+  const h = ouvrir();
+  h.connecter();
+  h.stockage.set('exportLocal', true);
+  await h.envoyer({ type: 'ui-ready' });
+  const pastilles = pastillesDe(h).length;
+  const depots = h.messages.filter(({ type }) => type === 'depot').length;
+  const destination = derniersReglages(h).destination;
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'github:o/r', id: 'github:o/r', settings: { ...reglages('o/r'), jeton: 'autre-secret' } });
+  await h.envoyer({ type: 'enregistrer-depot', requete: 2, carte: 'nouvelle-1', id: null, settings: { repoUrl: 'https://gitlab.com/g/p', baseBranch: 'main', jeton: 'glpat-b' } });
+
+  assert.deepEqual(testsDe(h, 'github:o/r').map(({ statut }) => statut), ['Connexion…', 'Connecté']);
+  assert.deepEqual(testsDe(h, 'gitlab:g/p').map(({ statut }) => statut), ['Connexion…', 'Connecté']);
+  assert.equal(h.appels.connexions, 2);
+  assert.equal(pastillesDe(h).length, pastilles);
+  assert.equal(h.messages.filter(({ type }) => type === 'depot').length, depots);
+  assert.equal(derniersReglages(h).destination, destination);
+  assert.equal(derniersReglages(h).actif, 'github:o/r');
+  assert.equal(h.stockage.get('depotActif'), 'github:o/r');
+});
+
+test('en export local, le premier dépôt enregistré ne devient pas actif', async () => {
+  const h = ouvrir();
+  h.stockage.set('exportLocal', true);
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'nouvelle-1', id: null, settings: reglages('o/r') });
+
+  assert.equal(h.stockage.has('depotActif'), false);
+  assert.deepEqual(testsDe(h, 'github:o/r').map(({ statut }) => statut), ['Connexion…', 'Connecté']);
+  assert.deepEqual(pastillesDe(h), ['export local']);
+});
+
+test('activer l’export local laisse finir une publication lancée, sans rétablir la connexion', async () => {
+  const h = ouvrir();
+  h.connecter();
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  const envoi = differe<Awaited<ReturnType<typeof h.publication.traiter>>>();
+  h.publication.traiter = () => envoi.promesse;
+  const publication = h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
+  await tourner();
+  await h.envoyer({ type: 'export-local', valeur: true });
+  const avant = h.messages.length;
+  envoi.resoudre({ status: 'created', path: 'x.contract.json', pullRequestUrl: 'https://github.com/o/r/pull/4' });
+  await publication;
+
+  assert.equal(h.appels.publications, 1);
+  assert.match(statuts(h).at(-1) ?? '', /Pull request créée/);
+  assert.deepEqual(h.messages.slice(avant).filter(({ type }) => type === 'connection' || type === 'settings'), []);
+  assert.equal(pastillesDe(h).at(-1), 'export local');
+});
+
+test('un test de connexion lancé avant l’export local ne rétablit pas l’état connecté', async () => {
+  const h = ouvrir();
+  h.connecter();
+  const lent = differe<Diagnostic>();
+  h.connexionDe.traiter = () => lent.promesse;
+  const ouverture = h.envoyer({ type: 'ui-ready' });
+  await tourner();
+  await tourner();
+  assert.equal(h.appels.connexions, 1);
+  await h.envoyer({ type: 'export-local', valeur: true });
+  lent.resoudre({ cause: 'connecte', layout: null });
+  await ouverture;
+
+  assert.equal(pastillesDe(h).at(-1), 'export local');
+  assert.equal(dernierDepot(h).repli, 'debranche');
+});
+
+test('une analyse faite vers un dépôt ne se publie pas en export local', async () => {
+  const h = ouvrir();
+  h.connecter();
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await h.envoyer({ type: 'export-local', valeur: true });
+  await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
+
+  assert.equal(h.appels.publications, 0);
+  assert.equal(h.messages.some(({ type }) => type === 'download'), false);
+  assert.equal(statuts(h).at(-1), 'La destination a changé depuis l’analyse : les exports sont téléchargés sur votre poste. Relancez l’analyse.');
+});
+
+test('désactiver l’export local rallume le dernier dépôt actif et le teste', async () => {
+  const h = ouvrir();
+  h.stockage.set('depots', DEUX_DEPOTS);
+  h.stockage.set('depotActif', 'gitlab:g/p');
+  h.stockage.set('exportLocal', true);
+  await h.envoyer({ type: 'ui-ready' });
+  assert.equal(h.appels.connexions, 0);
+  await h.envoyer({ type: 'export-local', valeur: false });
+
+  assert.equal(h.stockage.get('exportLocal'), false);
+  assert.equal(h.appels.jetons.at(-1), 'g/p glpat-b');
+  assert.equal(pastillesDe(h).at(-1), 'p connecté');
+  assert.equal(testsDe(h, 'gitlab:g/p').at(-1)?.statut, 'Connecté');
+});
+
+test('« Se connecter » désactive l’export local', async () => {
+  const h = ouvrir();
+  h.stockage.set('depots', DEUX_DEPOTS);
+  h.stockage.set('depotActif', 'gitlab:g/p');
+  h.stockage.set('exportLocal', true);
+  await h.envoyer({ type: 'ui-ready' });
+  await h.envoyer({ type: 'activer-depot', id: 'github:o/r' });
+
+  assert.equal(h.stockage.get('exportLocal'), false);
+  assert.deepEqual([derniersReglages(h).exportLocal, derniersReglages(h).actif], [false, 'github:o/r']);
+  assert.equal(pastillesDe(h).at(-1), 'r connecté');
+});

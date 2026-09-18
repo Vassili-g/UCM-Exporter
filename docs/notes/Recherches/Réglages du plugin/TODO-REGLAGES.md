@@ -605,68 +605,68 @@ l'enregistrement même en export local), P2.
 
 ### Sandbox
 
-- [ ] `src/config.ts` : clé `exportLocal`, absente vaut `false`. Elle entre
+- [x] `src/config.ts` : clé `exportLocal`, absente vaut `false`. Elle entre
       dans la clé de destination (`local`).
-- [ ] Demande `export-local { valeur }`, par la file. `loadConfiguration` ne
+- [x] Demande `export-local { valeur }`, par la file. `loadConfiguration` ne
       rend aucune configuration de publication quand elle vaut `true`. Aucun
       test automatique ne part à l'ouverture.
-- [ ] Activer un dépôt (« Se connecter ») écrit `depotActif`, puis
+- [x] Activer un dépôt (« Se connecter ») écrit `depotActif`, puis
       `exportLocal` à `false`. Désactiver l'export local rallume le dernier
       dépôt actif, que `depotActif` garde, et teste ce dépôt
       ([6, rebranchement](PLAN-REGLAGES.md#6-débrancher-les-dépôts),
       [4.5, export local](PLAN-REGLAGES.md#45-test-de-connexion)).
-- [ ] Le premier dépôt enregistré dans une liste vide ne devient pas actif en
+- [x] Le premier dépôt enregistré dans une liste vide ne devient pas actif en
       export local ([4.1](PLAN-REGLAGES.md#41-ce-quun-dépôt-enregistré-contient)).
-- [ ] C14 : « Enregistrer » teste le dépôt, même en export local. Le résultat
+- [x] C14 : « Enregistrer » teste le dépôt, même en export local. Le résultat
       met à jour la seule carte testée. Il ne change ni le dépôt actif, ni la
       pastille `export local`, ni la destination des exports. La carte se
       replie après une sauvegarde et un test réussis, et reste dépliée en cas
       d'échec ([4.5, export local](PLAN-REGLAGES.md#45-test-de-connexion)).
-- [ ] Une publication déjà lancée finit avec sa configuration de départ. Un
+- [x] Une publication déjà lancée finit avec sa configuration de départ. Un
       test déjà lancé ne rétablit pas l'état connecté. Le verdict d'une analyse
       locale ne dit rien de l'immobilité ni de la collision
       ([6, réseau](PLAN-REGLAGES.md#6-débrancher-les-dépôts)).
-- [ ] `src/connexion.ts` : cause `debranche` et textes S4 de la
+- [x] `src/connexion.ts` : cause `debranche` et textes S4 de la
       [section 6](PLAN-REGLAGES.md#6-débrancher-les-dépôts), relus avec
       `rediger-diagnostics-ucm`. État de pastille `local`, texte
       `export local`, en `--texte-avertissement`.
 
 ### Interface
 
-- [ ] Onglet Général : interrupteur « Activer l'export local », sous « Gérer
+- [x] Onglet Général : interrupteur « Activer l'export local », sous « Gérer
       les tokens », désactivé par défaut, visible sans dépôt, aide « Les exports
       sont téléchargés sur votre poste, et aucune demande de fusion n'est
       ouverte. ».
-- [ ] Onglet Dépôts en export local : toutes les cartes affichent « Se
+- [x] Onglet Dépôts en export local : toutes les cartes affichent « Se
       connecter », et une ligne en couleur d'avertissement sous la description
       dit « Export local activé dans Général : les exports sont téléchargés sur
       votre poste. » ([4.6, export local](PLAN-REGLAGES.md#46-interface-de-la-liste)).
-- [ ] Ligne de repli sous la carte du composant en sévérité avertissement,
+- [x] Ligne de repli sous la carte du composant en sévérité avertissement,
       comme la pastille.
 
 ### Galerie et tests
 
-- [ ] États : `general-export-local-active`, `depots-export-local`,
+- [x] États : `general-export-local-active`, `depots-export-local`,
       `travail-export-local`, `export-local-termine`.
-- [ ] `tests/code.test.ts` : aucune nouvelle opération réseau en export local,
+- [x] `tests/code.test.ts` : aucune nouvelle opération réseau en export local,
       sauf le test après enregistrement ; ce test met à jour sa carte sans
       changer le dépôt actif, la pastille ni la destination des exports ;
       aucun test à l'ouverture en export local ; publication déjà lancée menée
       à terme sans rétablir la connexion ; une analyse faite vers un dépôt ne
       se publie pas en export local ; désactiver l'export local rallume et
       teste le dernier actif ; « Se connecter » désactive l'export local.
-- [ ] `tests/connexion.test.ts` et `tests/interface/interface.test.mjs` :
+- [x] `tests/connexion.test.ts` et `tests/interface/interface.test.mjs` :
       pastille `local`, ligne d'avertissement de l'onglet Dépôts.
-- [ ] Rouge constaté : laisser `loadConfiguration` rendre la configuration en
+- [x] Rouge constaté : laisser `loadConfiguration` rendre la configuration en
       export local ; restaurer.
 
 ### Documents
 
-- [ ] `packages/plugin/SPEC.md`, partie 3 ; `docs/guides/POUR-LES-DESIGNERS.md`.
+- [x] `packages/plugin/SPEC.md`, partie 3 ; `docs/guides/POUR-LES-DESIGNERS.md`.
 
 ### Fin du lot
 
-- [ ] Vérification complète dans le worktree, `test:ui` et galerie compris.
+- [x] Vérification complète dans le worktree, `test:ui` et galerie compris.
       Commit, push.
 
 ## L6. Recette dans Figma
@@ -891,3 +891,33 @@ deux lignes, son bord droit à 289 px, et la page défile sur 305 px pour
 - l'état `connexion-en-cours` de la galerie nomme aussi le dépôt ;
 - la galerie ne compte plus 32 appels de `ouverture('connecte')` à mettre à
   jour : `ouverture()` calcule le nom une fois pour tous.
+
+### L4
+
+Rouge constaté : `lireInstantane` qui garde la validation du dépôt actif en
+export local fait échouer « export local : aucune opération réseau à
+l'ouverture, à l'analyse ni à la publication, et le contrat est téléchargé »,
+« export local : enregistrer un dépôt le teste pour sa seule carte, sans
+toucher au dépôt actif, à la pastille ni à la destination » et « activer
+l'export local laisse finir une publication lancée, sans rétablir la
+connexion ». La suite s'arrête ensuite sur « un test de connexion lancé avant
+l'export local ne rétablit pas l'état connecté », dont l'attente ne se résout
+plus.
+
+Relecture des quatre nouveaux états, dans les deux thèmes : la pastille
+« export local » et la ligne sous la carte du composant portent la même couleur
+d'avertissement. L'onglet Dépôts en export local compte 13 objets, un de plus
+que la douzaine du protocole ; sans la ligne ambre, trois cartes « Se
+connecter » ne diraient pas pourquoi aucune n'est connectée.
+
+Écarts au plan :
+
+- `settings` garde l'identité du dépôt actif en export local, pour le
+  rebranchement, et la liste l'ignore : elle n'affiche « Connecté » sur aucune
+  carte ;
+- le repli `debranche` passe avant `aucun-depot` et `aucun-actif` : en export
+  local, la ligne et le verdict disent l'export local, même sans dépôt
+  enregistré ;
+- la galerie atteint ces états par un lot de trois messages (`settings`,
+  `connection`, `depot`) et aucun test, ce que `refreshConfiguration` envoie en
+  export local.

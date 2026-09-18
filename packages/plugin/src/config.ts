@@ -56,6 +56,8 @@ const STORAGE_KEYS = {
   depotActif: 'depotActif',
   /** Booléen, absent vaut `true` : l'équipe du design system emploie les tokens. */
   gestionDesTokens: 'gestionDesTokens',
+  /** Booléen, absent vaut `false`. Activé, `depotActif` reste écrit pour le rebranchement. */
+  exportLocal: 'exportLocal',
 } as const;
 
 /**
@@ -283,14 +285,18 @@ export async function reprendreLAncienneConfiguration(): Promise<void> {
  * Un tuple JSON, parce qu'une branche peut contenir `|`, `@` ou `/`. La forge
  * et le projet passent en minuscules : GitHub et GitLab servent un chemin
  * quelle que soit sa casse. La branche garde la sienne. Sans configuration
- * valide, l'export est téléchargé : le dépôt vaut alors `aucune`. Le dernier
- * membre est le réglage de la gestion des tokens.
+ * valide, l'export est téléchargé : le dépôt vaut alors `aucune`, ou `local`
+ * quand l'export local est activé. Le dernier membre est le réglage de la
+ * gestion des tokens.
  */
 export function cleDeDestination(
   config: Pick<ConfigurationDuDepot, 'forge' | 'projet' | 'baseBranch'> | null,
   tokens: boolean,
+  local = false,
 ): string {
-  const depot = config ? [config.forge.toLowerCase(), config.projet.toLowerCase(), config.baseBranch] : ['aucune'];
+  const depot = local
+    ? ['local']
+    : config ? [config.forge.toLowerCase(), config.projet.toLowerCase(), config.baseBranch] : ['aucune'];
   return JSON.stringify([...depot, tokens]);
 }
 
@@ -309,6 +315,15 @@ export async function ecrireGestionDesTokens(valeur: boolean): Promise<void> {
   await figma.clientStorage.setAsync(STORAGE_KEYS.gestionDesTokens, valeur);
 }
 
+/** Le réglage « Activer l'export local » de ce poste. */
+async function lireExportLocal(): Promise<boolean> {
+  return (await figma.clientStorage.getAsync(STORAGE_KEYS.exportLocal)) === true;
+}
+
+export async function ecrireExportLocal(valeur: boolean): Promise<void> {
+  await figma.clientStorage.setAsync(STORAGE_KEYS.exportLocal, valeur);
+}
+
 /** Le nom que les textes donnent à un dépôt : le dernier segment de son projet. */
 export function nomDuDepot(projet: string): string {
   return projet.slice(projet.lastIndexOf('/') + 1);
@@ -323,9 +338,12 @@ export type Instantane = {
   depots: DepotPublic[];
   /** L'identité du dépôt actif, `null` quand aucune entrée ne la porte. */
   actif: string | null;
+  /** La configuration du dépôt actif, invalide et sans configuration en export local. */
   validation: SettingsValidation;
   /** Le réglage « Gérer les tokens ». */
   tokens: boolean;
+  /** Le réglage « Activer l'export local ». */
+  exportLocal: boolean;
   destination: string;
 };
 
@@ -345,25 +363,31 @@ function publicDe(entree: DepotEnregistre): DepotPublic {
 }
 
 export async function lireInstantane(): Promise<Instantane> {
-  const [enregistres, actifLu, tokens] = await Promise.all([
+  const [enregistres, actifLu, tokens, exportLocal] = await Promise.all([
     lireDepots(),
     figma.clientStorage.getAsync(STORAGE_KEYS.depotActif),
     lireGestionDesTokens(),
+    lireExportLocal(),
   ]);
   const depots = enregistres ?? [];
   // Un `depotActif` qui désigne une entrée absente se lit comme « aucun dépôt actif ».
   const actif = depots.find((entree) => identiteDuDepot(adresseDe(entree)) === actifLu) ?? null;
-  const validation = actif ? validateSettings(actif, jetonDe(actif)) : AUCUNE_CONFIGURATION;
+  const validation = actif && !exportLocal ? validateSettings(actif, jetonDe(actif)) : AUCUNE_CONFIGURATION;
   return {
     depots: depots.map(publicDe),
     actif: actif ? identiteDuDepot(adresseDe(actif)) : null,
     validation,
     tokens,
-    destination: cleDeDestination(validation.config, tokens),
+    exportLocal,
+    destination: cleDeDestination(validation.config, tokens, exportLocal),
   };
 }
 
-/** Charge et valide la configuration du dépôt actif, jeton inclus côté sandbox seulement. */
+/**
+ * Charge et valide la configuration du dépôt actif, jeton inclus côté sandbox
+ * seulement. En export local, aucune configuration : aucune publication ne
+ * part vers une forge.
+ */
 export async function loadConfiguration(): Promise<SettingsValidation> {
   return (await lireInstantane()).validation;
 }
@@ -382,8 +406,8 @@ function refus(errors: SettingsValidation['errors'], id: string | null): Enregis
  * L'adresse d'une entrée enregistrée ne change pas : le jeton reste attaché au
  * projet pour lequel il a été collé, même si l'interface a laissé passer le
  * champ. Le premier dépôt d'une liste vide devient actif, par une seconde
- * écriture ; une interruption entre les deux laisse un dépôt enregistré sans
- * dépôt actif.
+ * écriture, sauf en export local ; une interruption entre les deux laisse un
+ * dépôt enregistré sans dépôt actif.
  */
 export async function enregistrerDepot(input: SettingsInput, id: string | null): Promise<Enregistrement> {
   const depots = (await lireDepots()) ?? [];
@@ -412,7 +436,9 @@ export async function enregistrerDepot(input: SettingsInput, id: string | null):
   }
   const { repoUrl, baseBranch, jeton } = validation.config;
   await figma.clientStorage.setAsync(STORAGE_KEYS.depots, [...depots, { repoUrl, baseBranch, jeton }]);
-  if (depots.length === 0) await figma.clientStorage.setAsync(STORAGE_KEYS.depotActif, nouvelle);
+  if (depots.length === 0 && !(await lireExportLocal())) {
+    await figma.clientStorage.setAsync(STORAGE_KEYS.depotActif, nouvelle);
+  }
   return { validation, id: nouvelle };
 }
 
@@ -433,13 +459,16 @@ export async function supprimerDepot(id: string): Promise<void> {
 }
 
 /**
- * Rend actif le dépôt `id`, par une seule écriture. Une identité absente de la
- * liste ne s'écrit pas : `depotActif` ne désigne qu'une entrée enregistrée.
+ * Rend actif le dépôt `id`, puis désactive l'export local : le designer a
+ * choisi où publier. Une interruption entre les deux écritures laisse le
+ * dépôt actif changé, encore débranché. Une identité absente de la liste ne
+ * s'écrit pas : `depotActif` ne désigne qu'une entrée enregistrée.
  */
 export async function activerDepot(id: string): Promise<void> {
   const depots = (await lireDepots()) ?? [];
   if (!depots.some((entree) => identiteDuDepot(adresseDe(entree)) === id)) return;
   await figma.clientStorage.setAsync(STORAGE_KEYS.depotActif, id);
+  await figma.clientStorage.setAsync(STORAGE_KEYS.exportLocal, false);
 }
 
 /**

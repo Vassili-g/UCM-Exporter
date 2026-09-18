@@ -21,7 +21,7 @@ async function ouvrir() {
   await page.evaluate(() => {
     window.demandes = [];
     window.addEventListener('message', (event) => {
-      if (event.data.pluginMessage?.type?.startsWith('analyser') || event.data.pluginMessage?.type === 'publier' || ['gerer-tokens', 'enregistrer-depot', 'activer-depot', 'supprimer-depot'].includes(event.data.pluginMessage?.type)) {
+      if (event.data.pluginMessage?.type?.startsWith('analyser') || event.data.pluginMessage?.type === 'publier' || ['gerer-tokens', 'export-local', 'enregistrer-depot', 'activer-depot', 'supprimer-depot'].includes(event.data.pluginMessage?.type)) {
         window.demandes.push(event.data.pluginMessage);
       }
     });
@@ -76,7 +76,7 @@ const DEPOT = {
 };
 const reglages = (destination, tokens = true, depots = [DEPOT]) => ({
   type: 'settings',
-  settings: { destination, tokens, actif: depots[0]?.id ?? null, depots },
+  settings: { destination, tokens, exportLocal: false, actif: depots[0]?.id ?? null, depots },
 });
 const A = JSON.stringify(['github', 'mon-org/ds', 'main', true]);
 const B = JSON.stringify(['github', 'mon-org/autre', 'main', true]);
@@ -128,7 +128,7 @@ const DEPOT_GITLAB = {
 };
 const DEUX = (actif = DEPOT.id) => ({
   type: 'settings',
-  settings: { destination: A, tokens: true, actif, depots: [DEPOT, DEPOT_GITLAB] },
+  settings: { destination: A, tokens: true, exportLocal: false, actif, depots: [DEPOT, DEPOT_GITLAB] },
 });
 const teste = (id, etat, statut, generation = 1) => ({
   type: 'depot-teste', id, generation, etat, statut, geste: null, destination: null,
@@ -143,6 +143,40 @@ async function ouvrirDepots(page, envoyer, reglages) {
 
 const derniere = (page, type) => page.waitForFunction((attendu) => window.demandes.at(-1)?.type === attendu, type)
   .then(() => page.evaluate(() => window.demandes.at(-1)));
+
+test('en export local, la pastille avertit, aucune carte n’est connectée, et l’onglet Dépôts dit pourquoi', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    const LOCAL = JSON.stringify(['local', true]);
+    await envoyer({ ...DEUX(), settings: { ...DEUX().settings, destination: LOCAL, exportLocal: true } });
+    await envoyer({ type: 'connection', state: 'local', pastille: 'export local', geste: null });
+    const pastille = page.locator('.connection-status');
+    assert.equal(await pastille.getAttribute('data-state'), 'local');
+    assert.notEqual(
+      await pastille.evaluate((element) => getComputedStyle(element).color),
+      await pastille.evaluate((element) => { element.dataset.state = 'disconnected'; const couleur = getComputedStyle(element).color; element.dataset.state = 'local'; return couleur; }),
+    );
+
+    await page.locator('.icon-button').first().click();
+    const interrupteur = page.getByRole('switch', { name: 'Activer l’export local' });
+    assert.equal(await interrupteur.getAttribute('aria-checked'), 'true');
+    await page.getByRole('tab', { name: 'Dépôts' }).click();
+    const ligne = page.getByText('Export local activé dans Général : les exports sont téléchargés sur votre poste.');
+    assert.equal(await ligne.isVisible(), true);
+    await envoyer(teste(DEPOT.id, 'connected', 'Connecté'));
+    assert.equal(await page.getByRole('button', { name: 'Se connecter', exact: true }).count(), 2);
+    assert.equal(await page.getByText('Connecté', { exact: true }).isVisible(), false);
+
+    await page.getByRole('tab', { name: 'Général' }).click();
+    await interrupteur.click();
+    assert.deepEqual(await derniere(page, 'export-local'), { type: 'export-local', valeur: false });
+    await envoyer(DEUX());
+    assert.equal(await ligne.isVisible(), false);
+    assert.equal(await interrupteur.getAttribute('aria-checked'), 'false');
+  } finally {
+    await page.close();
+  }
+});
 
 test('« Se connecter » agit en un clic sans déplier la carte, et la suppression attend un second clic', async () => {
   const { page, envoyer } = await ouvrir();
