@@ -34,6 +34,7 @@ import { TERMES } from './forges/termes';
 import type { TermesDeForge } from './forges/termes';
 import { verdictDePrevol } from './prevol';
 import type { CodeVerdict } from './prevol';
+import { offreDeCreation } from './template/sources';
 import type { Annonce, PluginMessage, Provenance, UiRequest } from './messages';
 import {
   etatDeCarte,
@@ -368,7 +369,10 @@ async function reportSelectionState(): Promise<void> {
   );
 
   const selectionId = selection.map((node) => node.id).join(',');
-  versUi({ type: 'cible', ...etat, selectionId, detail: detailDeCible(etat.cible), avertissement: null });
+  versUi({
+    type: 'cible', ...etat, selectionId, detail: detailDeCible(etat.cible),
+    offre: null, avertissement: null,
+  });
   if (!etat.cible) return;
 
   const component = selection[0] as ComponentNode | ComponentSetNode;
@@ -376,16 +380,24 @@ async function reportSelectionState(): Promise<void> {
 
   // La sélection a pu changer pendant la lecture asynchrone : on abandonne alors.
   if (token !== selectionToken) return;
-  if (hasUsableRules(rules)) return;
+  // Un variant se documente avec son component set, jamais séparément : lui
+  // offrir ses propres règles poserait un second conteneur pour le même
+  // composant. Un parent absent n'est pas une faute : le sandbox rend `null`
+  // pour un node détaché.
+  const estUnVariant = component.parent?.type === 'COMPONENT_SET';
+  const offre = estUnVariant ? null : offreDeCreation(rules.releve);
+  const exploitables = hasUsableRules(rules);
+  if (exploitables && offre === null) return;
 
   versUi({
     type: 'cible',
     ...etat,
     selectionId,
     detail: detailDeCible(etat.cible),
-    avertissement:
-      `Aucune règle d’usage exploitable ne documente quand l’utiliser. Les diagnostics diront `
-      + `ce que le contrat sait décrire, et intent vaudra null.`,
+    offre,
+    avertissement: exploitables ? null
+      : `Aucune règle d’usage exploitable ne documente quand l’utiliser. Les diagnostics diront `
+        + `ce que le contrat sait décrire, et intent vaudra null.`,
   });
 }
 

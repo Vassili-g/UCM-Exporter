@@ -314,12 +314,12 @@ sections [5.2](PLAN-TEMPLATE-REGLES.md#52-ordre-des-sources) à
       `src/contract/`, et `sources.ts` les importe. L'inverse ferait échouer le
       test des imports du lot 5 : aucun fichier de `src/contract/` n'importe
       `src/template/`.
-- [ ] `src/code.ts` : `reportSelectionState` ajoute l'offre au message
+- [x] `src/code.ts` : `reportSelectionState` ajoute l'offre au message
       `cible` ; un variant dont le parent est un `COMPONENT_SET` ne reçoit
       aucune offre, et un parent absent ne lève pas. `src/messages.ts` : le
       champ d'offre de `cible`, facultatif. L'interface l'ignore jusqu'au
       lot 6.
-- [ ] `tests/code.test.ts` : le banc vérifie que chaque `require` de
+- [x] `tests/code.test.ts` : le banc vérifie que chaque `require` de
       `code.ts` figure dans sa table `modules`. Ajouter `./template/sources`,
       et donner au faux `extractRules` un relevé d'offre. Nouveaux tests :
       l'offre arrive dans `cible` ; un variant seul n'en reçoit aucune.
@@ -819,6 +819,19 @@ Rouge constaté après coup, faute de l'avoir vu avant : l'offre réduite à
 `creer` et `sans-source` fait échouer les trois tests qui distinguent le
 conteneur déjà écrit et le conteneur vierge. Restauré, douze tests verts.
 
+Livré ensuite, et vert : l'offre dans le message `cible`. `reportSelectionState`
+la calcule après la lecture des règles, la seule qui connaisse la page, et le
+premier message d'une sélection part donc sans elle, ce que le champ facultatif
+de `messages.ts` dit. Un variant dont le parent est un `COMPONENT_SET` n'en
+reçoit aucune ; `component.parent?.type` traite le parent absent sans lever.
+
+Le banc de `code.test.ts` charge le vrai `src/template/sources`, comme il
+charge déjà `cible` et `prevol` : la logique de l'offre est jugée dans
+`template.test.ts`, et le banc juge ce que `code.ts` en fait. Le faux
+`extractRules` rend un relevé que le test choisit, et `selectionner` accepte un
+parent. Rouge constaté en échangeant les deux branches du variant : les deux
+tests tombent.
+
 Reste à faire dans ce lot, dans l'ordre :
 
 1. `src/template/sources.ts`, suite : la résolution asynchrone des maîtres au
@@ -827,8 +840,4 @@ Reste à faire dans ce lot, dans l'ordre :
    dès qu'une instance du conteneur écrit un `content`, un `prop` ou un `icon`
    sans marqueur, ce qui protège le travail du designer sans passer par
    `isRuleInstance`, qui est asynchrone.
-2. `src/code.ts` et `src/messages.ts` : l'offre dans le message `cible`, et le
-   variant dont le parent est un `COMPONENT_SET` qui n'en reçoit aucune.
-3. `tests/code.test.ts` : `./template/sources` dans la table `modules` du banc,
-   un relevé d'offre dans le faux `extractRules`, et les deux tests de l'offre.
-4. Tests des maîtres résolus, et test de relecture de la section 9.
+2. Tests des maîtres résolus, et test de relecture de la section 9.

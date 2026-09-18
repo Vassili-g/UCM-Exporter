@@ -10,6 +10,7 @@ import type { NomDeForge } from './forges/termes';
 import type { EtatConnexion, EtatDeCarte, EtatDuDepot, ResumeDepot } from './connexion';
 import type { Cible } from './cible';
 import type { CodeVerdict } from './prevol';
+import type { Offre } from './template/sources';
 
 /**
  * Annonce une étape sans donner au moteur de dépendance vers l'UI.
@@ -145,6 +146,12 @@ export type PluginMessage =
       /** « Component set · 12 variants », composé par `detailDeCible`. */
       detail: string | null;
       raison: string | null;
+      /**
+       * Ce que la page permet de créer pour ce composant, `null` quand il n'y
+       * a rien à proposer. Facultatif : le premier message d'une sélection
+       * part avant la lecture de la page, qui seule le sait.
+       */
+      offre?: Offre | null;
       avertissement: string | null;
     }
   /**

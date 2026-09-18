@@ -11,7 +11,9 @@ import * as connexion from '../src/connexion';
 import * as cible from '../src/cible';
 import * as fenetre from '../src/fenetre';
 import * as prevol from '../src/prevol';
+import * as sources from '../src/template/sources';
 import * as termes from '../src/forges/termes';
+import type { ReleveDeSource } from '../src/contract/extractRules';
 import type { PluginMessage, UiRequest } from '../src/messages';
 
 const source = ts.transpileModule(readFileSync(join(__dirname, '../src/code.ts'), 'utf8'), {
@@ -44,11 +46,20 @@ function ouvrir() {
   const exporte = { traiter: async () => resultat('tokens.json') };
   const publication = { traiter: async () => ({ status: 'created', path: 'tokens.json', pullRequestUrl: 'https://github.com/o/r/pull/1' }) };
   const resumeDesTokens = { traiter: async () => ({ presents: true, resume: '1 variable' }) };
+  /** Ce que la lecture des règles relève de la page ; le test le choisit. */
+  const releve: { actuel: ReleveDeSource } = {
+    actuel: {
+      conteneurDuComposant: false, conteneurMarque: null,
+      maitreLocal: null, instanceSource: null,
+    },
+  };
   /** Le test de connexion, par configuration reçue. */
   const connexionDe = { traiter: async (_config: { projet: string; jeton: string }): Promise<Diagnostic> => ({ cause: 'connecte', layout: null }) };
   const runtime = {
     showUI() {}, notify() {}, openExternal() {},
-    currentPage: { selection: [{ id: 'a', type: 'COMPONENT', name: 'Exemple' }] },
+    currentPage: {
+      selection: [{ id: 'a', type: 'COMPONENT', name: 'Exemple', parent: undefined as { type: string } | undefined }],
+    },
     ui: { postMessage: (message: PluginMessage) => messages.push(message), resize() {}, onmessage: async (_message: UiRequest) => {} },
     on: (nom: string, rappel: () => void) => evenements.set(nom, rappel),
     clientStorage: {
@@ -65,7 +76,8 @@ function ouvrir() {
   const modules: Record<string, unknown> = {
     '@ucm-kit/core/format': format, './config': config, './connexion': connexion,
     './cible': cible, './fenetre': fenetre, './prevol': prevol,
-    './contract/extractRules': { extractRules: async () => ({}), hasUsableRules: () => true },
+    './contract/extractRules': { extractRules: async () => ({ releve: releve.actuel }), hasUsableRules: () => true },
+    './template/sources': sources,
     './contract/exportComponent': { default: handler },
     './tokens/exportTokens': { default: handler, annonceDuFormat: () => null, etatDesTokensDuFichier: async () => { appels.collections += 1; return resumeDesTokens.traiter(); } },
     './forges/forge': { ErreurDeForge: Error },
@@ -93,10 +105,10 @@ function ouvrir() {
     clearTimeout: (id: number) => temporisations.delete(id),
   });
   return {
-    messages, appels, exporte, publication, connexionDe, resumeDesTokens, runtime, stockage,
+    messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
-    selectionner(id: string) {
-      runtime.currentPage.selection = [{ id, type: 'COMPONENT', name: 'Exemple' }];
+    selectionner(id: string, parent?: { type: string }) {
+      runtime.currentPage.selection = [{ id, type: 'COMPONENT', name: 'Exemple', parent }];
       evenements.get('selectionchange')!();
     },
     connecter() {
@@ -1030,4 +1042,33 @@ test('une suppression dont le retrait du dépôt actif échoue rend quand même 
   assert.deepEqual(h.stockage.get('depots'), []);
   assert.deepEqual(derniersReglages(h).depots, []);
   assert.equal(pastillesDe(h).at(-1), 'Aucun dépôt');
+});
+
+test('le relevé de la page décide de l’offre que la carte du composant reçoit', async () => {
+  const h = ouvrir();
+  h.releve.actuel = {
+    conteneurDuComposant: false, conteneurMarque: null,
+    maitreLocal: null, instanceSource: { id: 'i' } as never,
+  };
+  await h.envoyer({ type: 'ui-ready' });
+  await tourner();
+
+  const cibles = h.messages.filter((message) => message.type === 'cible');
+  assert.equal(cibles.at(-1)?.offre, 'creer');
+});
+
+test('un variant seul ne reçoit aucune offre, quoi que la page porte', async () => {
+  const h = ouvrir();
+  h.releve.actuel = {
+    conteneurDuComposant: false, conteneurMarque: null,
+    maitreLocal: null, instanceSource: { id: 'i' } as never,
+  };
+  h.runtime.currentPage.selection = [
+    { id: 'a', type: 'COMPONENT', name: 'Exemple', parent: { type: 'COMPONENT_SET' } },
+  ];
+  await h.envoyer({ type: 'ui-ready' });
+  await tourner();
+
+  const cibles = h.messages.filter((message) => message.type === 'cible');
+  for (const cible of cibles) assert.equal(cible.offre ?? null, null);
 });
