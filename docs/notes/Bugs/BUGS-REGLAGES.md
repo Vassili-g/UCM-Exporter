@@ -52,7 +52,7 @@ npm run test:ui --workspace ucm-exporter-plugin
 npm run galerie --workspace ucm-exporter-plugin
 ```
 
-Sur `ca037e1`, les cinq sont vertes : 788 tests pour le plugin, 15 tests
+Sur `f8788ef`, les cinq sont vertes : 790 tests pour le plugin, 15 tests
 Playwright, 51 états de galerie atteignables.
 
 Elles étaient déjà toutes vertes sur `4d98c37`, avant le premier constat. Aucun
@@ -346,6 +346,32 @@ ici, sous « Sans constat », avec les lois qu'elle laisse derrière elle.
   corps d'une carte se retrouve par l'identifiant que son en-tête annonce » le
   tient sur les deux formes de clé.
 
+### [Sans constat] Zone Z7, reprise des anciennes clés
+
+- [x] Zone épuisée par `f8788ef`.
+- **Où** : `src/config.ts`, `reprendreLAncienneConfiguration()`, qui ouvre la
+  file du stockage et lit les quatre clés du plugin à un seul dépôt.
+- **Ce que la liste annonçait, et ce que la mesure a rendu** : elle disait la
+  reprise non traitée, contrairement aux écritures en deux temps de
+  `activerDepot()` et `supprimerDepot()`. Deux de ses quatre points étaient déjà
+  tenus. « Une panne à chaque écriture de la reprise se termine à la prochaine
+  ouverture, sans doublon » interrompt le stockage avant chacune des six
+  écritures, les deux `setAsync` comme les quatre `deleteAsync` ; « une liste de
+  dépôts illisible lève, et la reprise ne l'écrase pas » couvre la lecture
+  abîmée.
+- **Point tranché** : une ancienne configuration sans branche est reprise sur
+  `main`, et cette branche n'est pas tue. Elle s'écrit dans l'entrée, part dans
+  la clé de destination et s'affiche dans le champ de la carte comme sous la
+  carte du composant. Le plugin à un seul dépôt écrivait la branche sous la même
+  clé : une branche absente vient d'une configuration partielle et non d'un autre
+  nom de clé, et la poser sur `main` garde le dépôt et son jeton plutôt que de
+  les effacer sans un mot. Une branche écrite mais vide, elle, ne se remplace
+  pas : `validateSettings` la refuse, et la reprise écarte la configuration comme
+  toute autre invalide.
+- **Lois** : `config.test.ts`, « une ancienne configuration sans branche est
+  reprise sur main, et la carte le montre » et « une ancienne configuration dont
+  la branche est vide est écartée, puis effacée ».
+
 ### [Sans constat] Zone Z5, fraîcheur croisée des générations
 
 - [x] Zone épuisée par `28f8b6b`.
@@ -372,19 +398,7 @@ ici, sous « Sans constat », avec les lois qu'elle laisse derrière elle.
 
 ## 5. Ce qui reste
 
-### C1. Zone Z7, reprise des anciennes clés
-
-- [ ] Sonder la reprise.
-- `reprendreLAncienneConfiguration()` ouvre la file du stockage et lit quatre
-  clés du plugin à un seul dépôt. Les écritures en deux temps de
-  `activerDepot()` et `supprimerDepot()` sont traitées ; la reprise ne l'est
-  pas.
-- Sonder : une panne sur l'écriture de `depots`, une panne sur chaque
-  effacement, une `depots` illisible pendant la reprise, et une ancienne
-  configuration sans `baseBranch`, que la reprise remplace par `main` sans le
-  dire.
-
-### C2. Points relevés sans gravité établie
+### C1. Points relevés sans gravité établie
 
 - [ ] Trancher chacun : faute ou choix.
 - `signalerEchec()` ne poste rien quand `operationEnCours !== null` : une panne
