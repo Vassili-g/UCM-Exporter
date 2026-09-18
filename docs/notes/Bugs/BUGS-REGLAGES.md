@@ -1,30 +1,67 @@
-# Bugs trouvés : les réglages du plugin
+# Chasse aux bugs : les réglages du plugin
 
-Chasse ouverte sur le travail livré par
-[TODO-REGLAGES](../Recherches/Réglages%20du%20plugin/TODO-REGLAGES.md), des
-commits `bfbb1d3` à `4d98c37`. Commit de départ de la chasse : `4d98c37`.
+Liste d'exécution de la chasse ouverte sur le travail livré par
+[TODO-REGLAGES](../Recherches/Réglages%20du%20plugin/TODO-REGLAGES.md), commits
+`bfbb1d3` à `4d98c37`.
 
-Ce relevé est la commande de l'agent qui corrige. Il porte la ligne de base, la
-carte des zones à sonder, les constats confirmés et leur reproduction. Il quitte
-le dépôt quand la dernière ligne du tableau tombe à zéro.
+Ce document se suffit à lui-même : un agent qui ne connaît ni la chasse ni le
+chantier y trouve la ligne de base, les règles de conduite, ce qui est corrigé,
+ce qui reste, et la méthode de sonde. Il quitte le dépôt quand la dernière case
+de la section 5 est cochée.
+
+Une case se coche dans le commit qui livre sa preuve.
+
+## 0. Règles de conduite
+
+- [x] Lire [`AGENTS.md`](../../../AGENTS.md), puis
+      [`CONTRIBUTING.md`](../../../CONTRIBUTING.md) sections « Code », « Tests »,
+      « Interface du plugin » et « Documentation ».
+- [x] Avant toute phrase écrite, dans un document ou dans un commentaire,
+      charger `.agents/skills/rediger-sans-tics-ia`. Avant tout texte affiché au
+      designer, charger aussi `.agents/skills/rediger-diagnostics-ucm`.
+- [x] Un lot se commite seul et laisse les cinq commandes de la section 1 au
+      vert.
+- [x] Une loi nouvelle se voit rouge avant d'être crue : casser ce qu'elle
+      protège, constater l'échec, restaurer par copie, et le dire dans le
+      message de commit.
+- [x] Ne jamais lancer `git checkout -- <fichier>` sur un travail non commité.
+- [x] Éditer par Write et Edit. Un script Python en mode texte convertit le
+      fichier en CRLF, et deux lois du dépôt échouent alors sur des phrases
+      intactes. Un heredoc avale les antislashs d'une regex.
+- [x] Travailler sur `main`, sans branche ni pull request. D'autres sessions
+      écrivent dans le même arbre : lire `git status` avant chaque commit et
+      commiter par `git commit --only <chemins>`. Pousser après chaque commit,
+      sans rebase.
+- [x] Un message de commit multiligne passe par un fichier et `git commit -F`.
+      Les here-strings PowerShell ne fonctionnent pas dans l'outil Bash.
+- [x] Aucun jeton, aucune adresse de projet privé ni aucun nom d'équipe cliente
+      dans un test, un état de galerie ou un commit : employer
+      `mon-org/design-system-v3`, `mon-groupe/design-system` et `recette-web`.
+- [x] Le plugin est privé (`"private": true`) : ne monter aucune version et ne
+      publier aucun paquet.
 
 ## 1. Ligne de base
 
-Sur `4d98c37`, tout est vert :
+Les cinq commandes de vérification, depuis la racine :
 
-| Commande | Résultat |
-|---|---|
-| `npm test` | 23 lois à la racine, suite du plugin et des paquets au vert |
-| `npm run typecheck` | sans erreur |
-| `npm run test:ui --workspace ucm-exporter-plugin` | 10 tests Playwright au vert |
-| galerie | les 18 états ajoutés par les lots 2 à 4 existent dans `galerie/etats.cjs` |
+```sh
+npm test
+npm run typecheck
+npm run build
+npm run test:ui --workspace ucm-exporter-plugin
+npm run galerie --workspace ucm-exporter-plugin
+```
 
-Les constats de la section 4 vivent donc tous sous une suite verte. Aucun ne se
-voit par une commande de vérification existante.
+Sur `adfdd79`, les cinq sont vertes : 784 tests pour le plugin, 12 tests
+Playwright, 51 états de galerie atteignables.
+
+Elles étaient déjà toutes vertes sur `4d98c37`, avant le premier constat. Aucun
+bug de cette liste ne se voyait par une commande existante : chacun a demandé
+une sonde écrite pour lui.
 
 ## 2. Ce que les lots promettent
 
-Les promesses que la chasse met à l'épreuve, et l'endroit qui en répond :
+Les promesses mises à l'épreuve, et l'endroit qui en répond :
 
 - une opération porte sa destination et son numéro, et l'interface écarte un
   résultat qui vient d'ailleurs (`src/messages.ts`, `Provenance` ;
@@ -38,80 +75,18 @@ Les promesses que la chasse met à l'épreuve, et l'endroit qui en répond :
   (`src/code.ts`, `generationDeConnexion`, `generationsDesDepots`) ;
 - un jeton ne part que vers le dépôt qui l'a reçu (`src/config.ts`,
   `validateSettings()`) ;
-- une publication réussie garde son lien et ses points à corriger
-  (`tests/interface/interface.test.mjs`) ;
 - une `depots` illisible rend une erreur de stockage et n'est jamais écrasée
   (`src/config.ts`, `lireDepots()`) ;
-- chaque texte affiché passe les règles de `scripts/controle-style.mjs`.
+- tout texte du plugin qui nomme une forge emploie les mots de cette forge
+  (`src/forges/termes.ts` ; `tests/galerie.test.ts`).
 
-## 3. Zones et méthode
-
-Sept zones. Les quatre premières portent les constats de la section 4 ; les
-trois dernières restent à épuiser.
-
-### Z1. Frontière entre l'occupation de l'interface et l'opération du sandbox
-
-L'interface se déclare occupée à l'envoi et se libère sur un message terminal.
-Le sandbox refuse une seconde opération par `operationEnCours`. Les deux états
-ne se parlent pas. Sonder chaque fenêtre où l'un est libre et l'autre occupé, et
-chaque chemin du sandbox qui rend la main sans message.
-
-Sonde : compter les messages rendus à un numéro d'opération donné.
-
-### Z2. Ce qu'une panne de stockage produit au milieu d'une opération
-
-`lireInstantane()` lève quand `depots` est illisible. Suivre chacun de ses
-appelants et regarder ce que le designer lit. Écrire la panne au moment précis
-où elle est plausible : entre la création de la demande de fusion et le
-rafraîchissement qui la suit, à l'ouverture, entre l'analyse et la publication.
-
-Sonde : `stockage.set('depots', 'corrompu')` posé depuis un doublon d'appel.
-
-### Z3. Gestes destructeurs de la liste des dépôts
-
-La suppression retire une entrée et son jeton, sans retour possible. Sonder
-l'armement du second clic, sa durée de vie, et ce qui le désarme.
-
-Sonde : Playwright sur `dist/ui.html`, comme `tests/interface/interface.test.mjs`.
-
-### Z4. Textes affichés
-
-Les textes ajoutés par les lots 2 à 4 passent par `etatDeConnexion`,
-`etatDeCarte`, `etatDuDepot`, `TEXTES_DE_REPLI`, `refusDeDestinationChangee` et
-les descriptions de `ConfigurationPage`. Les comparer aux textes arrêtés par
-[PLAN-REGLAGES](../Recherches/Réglages%20du%20plugin/PLAN-REGLAGES.md) et aux
-règles de `scripts/controle-style.mjs`.
-
-Sonde : `node scripts/controle-style.mjs` et lecture ligne à ligne.
-
-### Z5. Fraîcheur croisée des générations
-
-`generationDeConnexion` et `generationsDesDepots` se croisent dans
-`testerConnexion()`, `testerDepot()` et les cinq demandes qui les périment.
-Sonder les paires : enregistrer pendant un test, activer pendant un
-enregistrement, supprimer pendant le test d'un autre, basculer l'export local
-pendant le test d'une carte. Vérifier qu'aucune pastille ne reste sur
-« Connexion… » et qu'aucune carte n'affiche le test d'un autre dépôt.
-
-### Z6. Identité des cartes de la liste
-
-Une carte vit sous une clé temporaire jusqu'à sa réponse, puis sous son
-identité. `ListeDesDepots` retrouve une carte par sa clé, puis par son `id()`.
-Sonder les chemins qui laissent une carte enregistrée sous sa clé temporaire :
-réponse écartée par `recevoirEnregistrement()`, `liberer()` appelé par l'erreur
-de fenêtre, `settings` arrivé avant `depot-enregistre`.
-
-### Z7. Reprise des anciennes clés et écritures en deux temps
-
-`reprendreLAncienneConfiguration()`, `enregistrerDepot()`, `supprimerDepot()` et
-`activerDepot()` écrivent en deux temps. Sonder la panne sur la seconde écriture
-de chacune : ce que le stockage garde, et ce que l'interface affiche ensuite.
-
-### Comment sonder
+## 3. Méthode de sonde
 
 Le harnais de `packages/plugin/tests/code.test.ts` joue le routeur réel avec un
-faux `figma`. Copier ses 107 premières lignes dans un fichier de sonde, ajouter
-les cas, lancer, puis retirer le fichier :
+faux `figma`. Ses 107 premières lignes portent `ouvrir()`, qui rend `messages`,
+`appels`, `stockage`, `envoyer()`, `connecter()` et les points d'injection
+`exporte`, `publication`, `connexionDe` et `resumeDesTokens`. Copier ces lignes
+dans un fichier de sonde, ajouter les cas, lancer, puis retirer le fichier :
 
 ```sh
 head -107 packages/plugin/tests/code.test.ts > packages/plugin/tests/sonde.test.ts
@@ -120,292 +95,267 @@ npx tsx --test packages/plugin/tests/sonde.test.ts
 rm packages/plugin/tests/sonde.test.ts
 ```
 
+`tourner()` laisse le routeur avancer jusqu'à sa prochaine attente réelle, et
+`differe<T>()` rend une promesse que le test résout quand il veut : les deux
+servent à saisir une fenêtre entre deux messages.
+
 Le harnais de `packages/plugin/tests/interface/interface.test.mjs` ouvre
-`dist/ui.html` dans Chromium. `npm run build:ui --workspace ucm-exporter-plugin`
-le reconstruit.
+`dist/ui.html` dans Chromium et pilote l'interface réelle.
+`npm run build:ui --workspace ucm-exporter-plugin` la reconstruit.
 
-## 4. Constats
+`packages/plugin/tests/textesAffiches.test.ts` juge les phrases des fichiers
+qui portent les textes de l'interface. `scripts/controle-style.mjs` juge les
+documents et les commentaires, jamais les chaînes affichées.
 
-| Gravité | Confirmé | Plausible |
+## 4. Constats corrigés
+
+| Gravité | Corrigé | Ouvert |
 |---|---:|---:|
-| Critique | 0 | 0 |
-| Haute | 0 | 0 |
-| Moyenne | 1 | 0 |
-| Basse | 0 | 0 |
+| Critique | 4 | 0 |
+| Haute | 1 | 0 |
+| Moyenne | 3 | 1 |
+| Basse | 0 | 1 |
 
-Ce que chaque constat a laissé derrière lui :
+### [Critique] Une publication réussie annoncée en échec
 
-| Constat | Refermé par | Test qui le retient |
-|---|---|---|
-| Publication réussie annoncée en échec | `439691b` | `code.test.ts`, « une liste illisible après la demande de fusion garde le succès de la publication » |
-| Demande jetée sans réponse | `439691b` | `code.test.ts`, « une demande arrivée pendant la fin d'une publication reçoit une réponse portant son numéro » |
-| Interface occupée pendant le test de connexion | `439691b` | `code.test.ts`, « le succès d'une publication précède le test de connexion qu'elle relance » |
-| Liste illisible sans issue | `439691b` | `code.test.ts`, « une liste de dépôts illisible dit son constat et son geste » |
-| Suppression armée pour la session | ce commit | `interface.test.mjs`, « la suppression armée se désarme dès que le clic suivant va ailleurs » |
-| Textes hors des règles du dépôt | ce commit | `textesAffiches.test.ts`, ses deux lois |
-| Carte dédoublée après une erreur de fenêtre | ce commit | `interface.test.mjs`, « une réponse d'enregistrement arrivée après une erreur de fenêtre ne dédouble pas la carte » |
-| Activation à moitié écrite | ce commit | `code.test.ts`, ses deux lois sur la seconde écriture |
-
-Le constat moyen qui reste porte sur le contrôle lui-même, et non sur le
-plugin : il est décrit à la fin de cette section.
-
-### [Critique] Une publication réussie est annoncée en échec quand le stockage devient illisible
-
-- **Où** : `packages/plugin/src/code.ts:659`, dans `publier()`
-- **Promesse violée** : le verdict dit ce que le designer a entre les mains
-  (`src/code.ts`, commentaire du `catch` de `publier()`). La demande de fusion
-  existe et le navigateur l'a ouverte.
-- **Verdict** : confirmé
-- **Scénario** : `publishArtifact()` rend `created`, le lien part vers
-  l'interface, `openExternal()` ouvre la demande. La ligne
+- [x] Corrigé par `439691b`.
+- **Où** : `src/code.ts`, `publier()`.
+- **Scénario** : `publishArtifact()` rendait `created`, le lien partait,
+  `openExternal()` ouvrait la demande de fusion. La ligne
   `if (destinationAnnoncee === analyse.destination) await refreshConfiguration();`
-  se trouve dans le `try`. `refreshConfiguration()` appelle
-  `parLaFile(lireInstantane)`, qui lève quand `depots` est devenue illisible.
-  Le `catch` de la publication traite ce rejet comme un échec de publication :
-  il écrit « Échec GitHub. Le fichier a été téléchargé sur votre poste. »,
-  télécharge le contrat, et propose « Réessayer la publication ». Un second clic
-  ouvre une seconde demande de fusion pour le même contrat.
-- **Reproduction** : sonde sur le harnais de `code.test.ts`.
+  se trouvait dans le `try`. `refreshConfiguration()` appelle
+  `parLaFile(lireInstantane)`, qui lève quand `depots` est devenue illisible. Le
+  `catch` de la publication traitait ce rejet comme un échec : il écrivait
+  « Échec GitHub. Le fichier a été téléchargé sur votre poste. », téléchargeait
+  le contrat, et proposait « Réessayer la publication ». Un second clic aurait
+  ouvert une seconde demande de fusion pour le même contrat.
+- **Correction** : le succès se poste dès que la forge a répondu. Le
+  rafraîchissement part ensuite, sans être attendu.
+- **Test** : `code.test.ts`, « une liste illisible après la demande de fusion
+  garde le succès de la publication » et sa jumelle sur le stockage
+  indisponible.
 
-  ```ts
-  const h = ouvrir();
-  h.connecter();
-  await h.envoyer({ type: 'ui-ready' });
-  await h.envoyer({ type: 'analyser-composant', operation: 1 });
-  h.publication.traiter = async () => {
-    h.stockage.set('depots', 'corrompu');
-    return { status: 'created', path: 'x.contract.json', pullRequestUrl: 'https://github.com/o/r/pull/1' };
-  };
-  await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
-  ```
+### [Critique] Une demande jetée sans réponse bloque l'interface
 
-  Sortie observée : `publications=1`, un téléchargement, le statut
-  `error:Échec GitHub. Le fichier a été téléchargé sur votre poste.` et le
-  verdict `Échec de la publication. […] | action=Réessayer la publication`.
-- **Garde-fou** : `tests/code.test.ts`, « une panne de lecture du stockage
-  pendant la publication conserve le téléchargement », pose la panne avant la
-  publication, jamais après.
-- **Piste de correction** : sortir le rafraîchissement du `try` de la
-  publication, ou l'appeler avec son propre `catch`. Le succès est acquis dès
-  que `publishArtifact()` a rendu.
+- [x] Corrigé par `439691b`.
+- **Où** : `src/code.ts`, `analyser()` et `publier()`.
+- **Scénario** : dans le `catch` de `publier()`, `postStatus('error', …)`
+  partait avant `await parLaFile(lireInstantane)`. L'interface lisait ce statut,
+  appelait `occuper(false)` et rendait les boutons, pendant que le sandbox
+  gardait `operationEnCours`. Un clic sur « Analyser le composant » dans cette
+  fenêtre atteignait `if (operationEnCours !== null) return;` et rendait la main
+  sans message. L'interface avait incrémenté `operationLancee` et posé
+  `occupee = true` : plus aucun bouton ne répondait, et seul un redémarrage du
+  plugin en sortait.
+- **Correction** : la dernière lecture du sandbox passe avant le statut d'échec,
+  et les deux refus postent `OPERATION_DEJA_EN_COURS` avec le numéro reçu.
+- **Test** : `code.test.ts`, « une demande arrivée pendant la fin d'une
+  publication reçoit une réponse portant son numéro ».
 
-### [Critique] Une demande envoyée pendant la fin d'une opération est jetée sans réponse
+### [Critique] Une publication réussie tenait l'interface occupée
 
-- **Où** : `packages/plugin/src/code.ts:437` et `packages/plugin/src/code.ts:597`
-- **Promesse violée** : « la fin d'une opération libère l'interface même quand
-  son résultat est écarté » ([TODO-REGLAGES](../Recherches/Réglages%20du%20plugin/TODO-REGLAGES.md),
-  lot 0). L'interface se déclare occupée à l'envoi, et le sandbox ne lui répond
-  jamais.
-- **Verdict** : confirmé
-- **Scénario** : dans le `catch` de `publier()`, `postStatus('error', …)` part
-  avant `await parLaFile(lireInstantane)`. L'interface lit ce statut, appelle
-  `occuper(false)` et rend les boutons. Le sandbox, lui, garde
-  `operationEnCours` jusqu'à la fin de sa lecture. Un clic sur « Analyser le
-  composant » dans cette fenêtre atteint `analyser()`, qui rencontre
-  `if (operationEnCours !== null) return;` et rend la main sans message.
-  L'interface a incrémenté `operationLancee` et posé `occupee = true` : plus
-  aucun bouton ne répond, et seul un redémarrage du plugin en sort.
-- **Reproduction** : sonde sur le harnais de `code.test.ts`.
-
-  ```ts
-  const h = ouvrir();
-  h.connecter();
-  await h.envoyer({ type: 'ui-ready' });
-  await h.envoyer({ type: 'analyser-composant', operation: 1 });
-  const lente = differe<void>();
-  let apresEchec = false;
-  const getAsync = h.runtime.clientStorage.getAsync;
-  h.runtime.clientStorage.getAsync = async (cle: string) => {
-    if (apresEchec && cle === 'depots') await lente.promesse;
-    return getAsync(cle);
-  };
-  h.publication.traiter = async () => { apresEchec = true; throw new Error('boum'); };
-  const publication = h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
-  await tourner();
-  await tourner();
-  const avant = h.messages.length;
-  const analyse = h.envoyer({ type: 'analyser-composant', operation: 3 });
-  await tourner();
-  // h.messages.slice(avant) ne contient aucun message d'opération 3.
-  ```
-
-  Sortie observée : le dernier statut porte l'opération 2 et l'état `error` ;
-  l'opération 3 reçoit zéro message.
-- **Garde-fou** : `tests/code.test.ts`, « deux demandes simultanées ne lancent
-  qu'une analyse », compte les analyses. Aucun test ne compte les réponses.
-- **Piste de correction** : deux gestes, l'un suffit mais les deux tiennent
-  ensemble. Répondre au refus : `analyser()` et `publier()` postent un statut
-  d'erreur portant le numéro reçu avant de rendre la main. Et ne libérer
-  l'interface qu'après la dernière écriture du sandbox : dans le `catch` de
-  `publier()`, lire la destination avant de poster le statut d'échec.
-
-### [Critique] Une publication réussie tient l'interface occupée pendant tout le test de connexion
-
-- **Où** : `packages/plugin/src/code.ts:659`, dans `publier()`
-- **Promesse violée** : le statut de succès conclut l'opération. Ici il attend
-  un aller-retour réseau qui ne la concerne pas.
-- **Verdict** : confirmé
+- [x] Corrigé par `439691b`.
+- **Où** : `src/code.ts`, `publier()`.
 - **Scénario** : après la demande de fusion, `await refreshConfiguration()`
-  lance `testerConnexion()`, donc `diagnostiquerConnexion()`, donc deux
-  requêtes vers la forge. `postStatus('success', …)` ne part qu'ensuite.
-  Pendant ce temps, l'interface garde `aria-busy`, les deux cartes inertes et
-  le bouton de publication désactivé. Une forge lente ou injoignable étire
-  cette attente jusqu'au délai du réseau, sur une opération déjà terminée.
-- **Reproduction** : sonde sur le harnais de `code.test.ts`.
+  lançait `testerConnexion()`, donc deux requêtes vers la forge.
+  `postStatus('success', …)` ne partait qu'ensuite. Pendant ce temps,
+  l'interface gardait `aria-busy`, les deux cartes inertes et le bouton de
+  publication désactivé, sur une opération déjà terminée.
+- **Correction** : la même que le premier constat.
+- **Test** : `code.test.ts`, « le succès d'une publication précède le test de
+  connexion qu'elle relance ».
 
-  ```ts
-  const h = ouvrir();
-  h.connecter();
-  await h.envoyer({ type: 'ui-ready' });
-  await h.envoyer({ type: 'analyser-composant', operation: 1 });
-  const lent = differe<Diagnostic>();
-  h.connexionDe.traiter = async () => lent.promesse;
-  const enVol = h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
-  await tourner();
-  await tourner();
-  // h.appels.publications vaut 1, le message `demande` est parti,
-  // aucun statut `success` n'est encore posté.
-  ```
+### [Critique] Une liste de dépôts illisible sans issue
 
-  Sortie observée : `demande=true succes=false publications=1`.
-- **Garde-fou** : aucun test ne regarde l'ordre du succès et du test de
-  connexion.
-- **Piste de correction** : poster le succès avant le rafraîchissement, et
-  lancer celui-ci sans l'attendre. Le même geste referme le constat précédent.
+- [x] Corrigé par `439691b`.
+- **Où** : `src/config.ts`, `lireDepots()` ; `src/code.ts`, routeur.
+- **Scénario** : à l'ouverture, `refreshConfiguration()` levait.
+  `figma.ui.onmessage` appelait `signalerEchec()` et écrivait « La demande n'a
+  pas abouti. ». Le message
+  « La liste des dépôts enregistrés sur ce poste est illisible. » était perdu.
+  Aucun `settings` ne partait : la pastille restait vide, l'onglet Dépôts
+  restait vide, et la carte des tokens restait masquée, puisque son affichage
+  dépend de ce `settings`. « Ajouter un dépôt » échouait sur la même lecture, et
+  relancer le plugin rejouait la même ouverture.
+- **Correction** : `DepotsIllisibles` porte son propre type d'erreur. La
+  pastille dit « Réglages illisibles », l'onglet Dépôts montre le constat, le
+  geste et « Réinitialiser la liste », et `reinitialiser-depots` écrit une liste
+  vide sans la lire.
+- **Test** : `code.test.ts`, « une liste de dépôts illisible dit son constat et
+  son geste, et la réinitialisation rend la liste ». État de galerie
+  `depots-illisibles`.
 
-### [Critique] Une liste de dépôts illisible laisse l'interface sans réglages et sans issue
+### [Haute] « Confirmer la suppression » armé pour la session
 
-- **Où** : `packages/plugin/src/config.ts:228` et `packages/plugin/src/code.ts:750`
-- **Promesse violée** : « une `depots` illisible rend une erreur de stockage »
-  ([TODO-REGLAGES](../Recherches/Réglages%20du%20plugin/TODO-REGLAGES.md),
-  lot 3a). Le message existe et n'atteint jamais le designer.
-- **Verdict** : confirmé
-- **Scénario** : à l'ouverture, `refreshConfiguration()` lève. `traiterMessage`
-  remonte l'erreur à `figma.ui.onmessage`, qui appelle `signalerEchec()` et
-  écrit « La demande n'a pas abouti. Réessayez ; si l'erreur persiste, relancez
-  le plugin. ». Le message
-  « La liste des dépôts enregistrés sur ce poste est illisible. » est perdu.
-  Aucun `settings` ne part : la pastille reste vide, l'onglet Dépôts reste
-  vide, et la carte des tokens reste masquée, puisque son affichage dépend du
-  `settings` qui n'arrive pas. « Ajouter un dépôt » échoue à son tour, sur la
-  même lecture. Relancer le plugin rejoue la même ouverture.
-- **Reproduction** : sonde sur le harnais de `code.test.ts`.
+- [x] Corrigé par `adfdd79`.
+- **Où** : `src/ui/components/CarteDepot.ts`.
+- **Scénario** : le premier clic posait `supprimer.dataset.confirme = 'oui'` et
+  changeait le libellé. Rien ne reposait ce marqueur : ni le repli de la carte,
+  ni un changement d'onglet, ni un `settings`, ni un échec de suppression. Un
+  clic accidentel armait le bouton pour toute la session, et un clic ultérieur
+  sur la même carte retirait le dépôt et son jeton sans confirmation.
+- **Correction** : `desarmerLaSuppression()`, appelée au `blur` du bouton, au
+  repli de la carte et par `liberer()`.
+- **Test** : `interface.test.mjs`, « la suppression armée se désarme dès que le
+  clic suivant va ailleurs ».
 
-  ```ts
-  const h = ouvrir();
-  h.stockage.set('depots', 'corrompu');
-  await h.envoyer({ type: 'ui-ready' });
-  ```
+### [Moyenne] Deux textes affichés hors des règles du dépôt
 
-  Sortie observée : messages
-  `['schema-version', 'cible', 'tokens', 'status']`, et pour seul statut
-  `error:La demande n'a pas abouti. Réessayez ; si l'erreur persiste, relancez
-  le plugin.`.
-- **Garde-fou** : `tests/config.test.ts` vérifie que `lireDepots()` lève et que
-  la reprise n'écrase pas. Aucun test ne suit ce que le designer voit.
-- **Piste de correction** : faire remonter le message de `lireDepots()` jusqu'à
-  la pastille et à l'onglet Dépôts, et offrir une sortie. Une liste illisible
-  reste une configuration de ce poste : le designer doit pouvoir la remplacer,
-  ou au minimum lire pourquoi le plugin ne répond plus. Le texte se relit avec
-  `rediger-diagnostics-ucm`.
-
-### [Haute] « Confirmer la suppression » ne se désarme jamais
-
-- **Où** : `packages/plugin/src/ui/components/CarteDepot.ts:255`
-- **Promesse violée** : « Suppression au second clic »
-  ([PLAN-REGLAGES](../Recherches/Réglages%20du%20plugin/PLAN-REGLAGES.md),
-  4.7). Le second clic doit suivre le premier, pas survivre à la session.
-- **Verdict** : confirmé
-- **Scénario** : le premier clic pose `supprimer.dataset.confirme = 'oui'` et
-  change le libellé. Rien ne repose ce marqueur : ni le repli de la carte, ni
-  un changement d'onglet, ni un `settings`, ni une erreur de suppression, ni
-  un retour à l'écran de travail. Un clic accidentel arme donc le bouton pour
-  toute la durée de la session ; un clic ultérieur sur la même carte, dépliée
-  pour une autre raison, retire le dépôt et son jeton sans confirmation.
-- **Reproduction** : lecture du code. `grep -n confirme
-  packages/plugin/src/ui/components/CarteDepot.ts` rend deux lignes, toutes
-  deux dans le gestionnaire du clic.
-- **Garde-fou** : `tests/interface/interface.test.mjs`, « la suppression attend
-  un second clic », enchaîne les deux clics sans rien faire entre eux.
-- **Piste de correction** : désarmer dans `deplier(false)`, dans `poser()` et
-  après un échec de suppression. Ajouter au test Playwright un geste entre les
-  deux clics : replier la carte, la déplier, puis cliquer une fois.
-
-### [Moyenne] Deux textes affichés sortent des règles du dépôt
-
-- **Où** : `packages/plugin/src/connexion.ts:334` et
-  `packages/plugin/src/ui/components/ConfigurationPage.ts:19`
-- **Promesse violée** : `scripts/controle-style.mjs` et la skill
-  `rediger-sans-tics-ia` refusent « permet de » ; tous les autres textes du
-  plugin emploient l'apostrophe courbe.
-- **Verdict** : confirmé
-- **Scénario** : le résumé de destination écrit « Attention, le
+- [x] Corrigé par `adfdd79`.
+- **Où** : `src/connexion.ts`, `etatDuDepot()` ;
+  `src/ui/components/ConfigurationPage.ts`, `DESCRIPTIONS`.
+- **Scénario** : le résumé de destination écrivait « Attention, le
   ucm.config.json de ce repository n'est pas configuré. » et « Le fichier de
   configuration ucm.config.json permet de définir l'endroit où seront poussés
-  les composants et les tokens. » : apostrophes droites, et « permet de ». La
-  description de l'onglet Dépôts écrit « Permet de configurer les dépôts où les
-  contrats et tokens sont déposés. », là où le plan avait arrêté « Les dépôts
-  où les exports sont déposés, et le jeton qui autorise chacun. ». Ces textes
-  échappent au contrôle parce qu'il ne juge que les fichiers suivis pour les
-  tics de rédaction, et que « permet de » n'est pas dans sa liste.
-- **Reproduction** : `grep -rn "permet de\|Permet de" packages/plugin/src/`.
-- **Garde-fou** : `tests/stylesUi.test.ts` vérifie les classes, pas les
-  phrases.
-- **Piste de correction** : réécrire les trois phrases avec
-  `rediger-diagnostics-ucm`, apostrophes courbes comprises. Ajouter « permet
-  de » aux tics de `scripts/controle-style.mjs`, dans le même commit, avec son
-  rouge constaté.
+  les composants et les tokens. » : apostrophes droites, et « permet de », que
+  la skill `rediger-sans-tics-ia` refuse. La description de l'onglet Dépôts
+  écrivait « Permet de configurer les dépôts où les contrats et tokens sont
+  déposés. », là où le plan avait arrêté « Les dépôts où les exports sont
+  déposés, et le jeton qui autorise chacun. ».
+- **Correction** : les trois phrases réécrites, apostrophes courbes comprises.
+- **Test** : `textesAffiches.test.ts`, ses deux lois.
 
-### [Moyenne, plausible] Une carte peut se dédoubler après une erreur de fenêtre
+### [Moyenne] Aucun contrôle ne lisait les textes affichés
 
-- **Où** : `packages/plugin/src/ui/components/ListeDesDepots.ts:139`
-- **Verdict** : plausible, non reproduit
-- **Scénario** : `liberer()`, appelé par le gestionnaire d'erreur de la
+- [x] Corrigé par `adfdd79`, pour le plugin.
+- **Où** : `scripts/controle-style.mjs`, `fautesDeLaSource()`.
+- **Scénario** : `fautesDeLaSource()` ne juge que les blocs de commentaire d'une
+  source. Les chaînes que le plugin affiche n'étaient lues par aucune règle, et
+  c'est par là que le constat précédent est entré.
+- **Correction** : `packages/plugin/tests/textesAffiches.test.ts` juge les
+  phrases des six fichiers qui portent les textes de l'interface.
+- **Mesure qui a écarté l'autre voie** : ajouter « permet de » à
+  `INTENSIFICATEURS` de `scripts/controle-style.mjs` fait tomber 12 emplois dans
+  le dépôt, tous sur des commentaires qui donnent le mécanisme dans la même
+  phrase, pour un seul texte affiché fautif. Une règle qui refuse 12 emplois
+  justes pour en attraper un se désarme au premier contournement. La piste est
+  close.
+
+### [Moyenne] Une carte dédoublée après une erreur de fenêtre
+
+- [x] Corrigé par `adfdd79`.
+- **Où** : `src/ui/components/ListeDesDepots.ts`, `recevoirEnregistrement()`.
+- **Scénario** : `liberer()`, appelée par le gestionnaire d'erreur de la
   fenêtre, pose `requeteEnVol = null` sur chaque carte. Une réponse
-  `depot-enregistre` arrivée ensuite est écartée par
-  `recevoirEnregistrement()`, qui rend `false` : la carte garde sa clé
-  temporaire et son `id()` reste nul. Le dépôt, lui, est enregistré. Le
-  `settings` suivant ne retrouve la carte ni par la clé ni par l'identité, et
-  en crée une seconde pour le même dépôt, à côté de la première.
-- **Piste de correction** : migrer la clé dès que la réponse porte un `id`,
-  indépendamment de `requeteEnVol`.
+  `depot-enregistre` arrivée ensuite était écartée, la carte gardait sa clé
+  temporaire et son `id()` restait nul. Le dépôt, lui, était enregistré. Le
+  `settings` suivant ne retrouvait la carte ni par la clé ni par l'identité, et
+  en créait une seconde pour le même dépôt.
+- **Correction** : la clé suit l'identité dès que le sandbox en rend une, avant
+  la remise de la réponse à la carte.
+- **Test** : `interface.test.mjs`, « une réponse d'enregistrement arrivée après
+  une erreur de fenêtre ne dédouble pas la carte ».
 
-### [Moyenne, plausible] Une activation à moitié écrite laisse l'interface muette
+### [Moyenne] Une écriture à moitié faite laissait l'interface muette
 
-- **Où** : `packages/plugin/src/code.ts:824`
-- **Verdict** : plausible, non reproduit
-- **Scénario** : `activerDepot()` écrit `depotActif`, puis `exportLocal`. Si la
-  seconde écriture échoue, `parLaFile()` rejette, `refreshConfiguration()`
-  n'est jamais appelée, et `traiterMessage` remonte l'erreur à
-  `signalerEchec()`. Le stockage porte le dépôt nouveau, l'interface montre
-  l'ancien, et rien ne dit lequel recevra l'export suivant.
-- **Piste de correction** : rafraîchir la configuration dans tous les cas, y
-  compris après un rejet de la file, pour les quatre demandes qui écrivent en
-  deux temps.
+- [x] Corrigé par `adfdd79`.
+- **Où** : `src/code.ts`, demandes `activer-depot` et `supprimer-depot`.
+- **Scénario** : `activerDepot()` écrit `depotActif`, puis `exportLocal` ;
+  `supprimerDepot()` écrit `depots`, puis retire `depotActif`. Si la seconde
+  écriture échouait, `parLaFile()` rejetait, `refreshConfiguration()` n'était
+  jamais appelée, et l'erreur remontait à `signalerEchec()`. Le stockage portait
+  l'état nouveau, l'interface montrait l'ancien.
+- **Correction** : le rafraîchissement a lieu dans un `finally`.
+- **Test** : `code.test.ts`, ses deux lois sur la seconde écriture.
 
-### [Moyenne] Aucun contrôle ne lit les textes affichés au designer
+## 5. Ce qui reste
 
-- **Où** : `scripts/controle-style.mjs`, `fautesDeLaSource()`
-- **Verdict** : confirmé
-- **Scénario** : `fautesDeLaSource()` ne juge que les blocs de commentaire
-  d'une source. Les chaînes que le plugin affiche n'ont jamais été lues par
-  aucune règle, et c'est par là que « permet de » et deux apostrophes droites
-  sont entrées dans l'interface. Étendre `INTENSIFICATEURS` ne referme pas ce
-  trou : la mesure a été faite, et la tournure tombe 12 fois dans le dépôt,
-  toutes sur des commentaires qui donnent le mécanisme dans la même phrase,
-  pour un seul texte affiché fautif. Une règle qui refuse 12 emplois justes
-  pour en attraper un se désarme au premier contournement.
-- **Ce qui a été fait** : `packages/plugin/tests/textesAffiches.test.ts` juge
-  les phrases des six fichiers qui portent les textes de l'interface, et eux
-  seuls. Deux lois : aucune apostrophe droite, aucune tournure qui annonce un
-  effet sans son mécanisme.
-- **Ce qui reste** : les textes du kit et de la CLI ne sont toujours lus par
-  aucune règle. La liste `SOURCES` de ce test dit où elle porte ; l'étendre
-  demande de mesurer d'abord ce qui tombe, comme ici.
+### C1. Un mot de GitHub servi à un utilisateur GitLab
 
-## 5. Ce qui reste à sonder
+- [ ] Corriger et retenir.
+- **Gravité** : moyenne. **Verdict** : confirmé par sonde.
+- **Où** : `src/connexion.ts`, `etatDuDepot()`, branche `layout.source === NOM_CONFIGURATION`.
+- **Scénario** : le détail du résumé écrit « Ce repository le déclare dans son
+  ucm.config.json. ». `repository` est `TERMES_GITHUB.depot`. Tout projet GitLab
+  qui porte un `ucm.config.json` sert donc un mot de GitHub, dans sa carte de
+  l'onglet Dépôts et sous la carte du composant. L'invariant « tout texte du
+  plugin qui nomme une forge » est violé.
+- **Reproduction** : depuis `packages/plugin`,
 
-Les zones Z5 et Z6 ne sont pas épuisées. Z7 l'est pour les écritures en deux
-temps de `activerDepot()` et `supprimerDepot()` ; la reprise des anciennes
-clés n'a pas été sondée. Les reprendre avec la même méthode : une sonde, une
-sortie observée, un test qui la retient.
+  ```sh
+  npx tsx -e "import { etatDuDepot } from './src/connexion'; console.log(etatDuDepot({ components: 'a', tokens: 'b', source: 'ucm.config.json' }, { forge: 'GitLab', projet: 'g/p', baseBranch: 'main' }, true).resume.detail)"
+  ```
+
+  Sortie observée : `Ce repository le déclare dans son ucm.config.json.`
+- **Pourquoi la loi ne le voit pas** : `MOTS.github` de `tests/galerie.test.ts`
+  vaut `/GitHub|[Pp]ull request|\bPR\b|Personal Access Token/`. Le mot
+  `repository` n'y est pas, et l'état `gitlab-connecte` passe donc.
+- **Piste** : deux gestes, à trancher dans le commit. Écrire « dépôt », mot
+  neutre que le plan retient pour les textes qui ignorent la forge, ou passer
+  `termes` à `etatDuDepot()` comme `etatDeConnexion()` le reçoit déjà. Dans les
+  deux cas, ajouter `repository`, `[Mm]erge request` et les autres termes de
+  `src/forges/termes.ts` à `MOTS`, constater le rouge sur `gitlab-connecte`,
+  puis corriger.
+
+### C2. `enAttenteDeTest` garde une carte dont le test n'arrive jamais
+
+- [ ] Sonder, puis corriger si confirmé.
+- **Gravité** : basse. **Verdict** : plausible, non reproduit.
+- **Où** : `src/ui/components/ListeDesDepots.ts`.
+- **Scénario** : une carte entre dans `enAttenteDeTest` à chaque enregistrement
+  accepté, et n'en sort que sur un `depot-teste` dont l'état n'est pas
+  `checking`. Un test qui n'aboutit jamais, parce que sa génération a été
+  périmée entre-temps, laisse la carte dans l'ensemble. Le `depot-teste` suivant
+  de ce dépôt, venu d'une autre cause, replierait alors la carte comme si elle
+  sortait d'un enregistrement.
+- **Piste** : retirer la carte de l'ensemble à la réception d'un `settings` qui
+  la repose, ou au prochain enregistrement qu'elle envoie.
+
+### C3. Zone Z5, fraîcheur croisée des générations
+
+- [ ] Épuiser la zone.
+- `generationDeConnexion` et `generationsDesDepots` se croisent dans
+  `testerConnexion()`, `testerDepot()` et les six demandes qui les périment.
+  Sonder les paires : enregistrer pendant un test, activer pendant un
+  enregistrement, supprimer pendant le test d'un autre, basculer l'export local
+  pendant le test d'une carte, réinitialiser pendant un test.
+- Vérifier qu'aucune pastille ne reste sur « Connexion… », et qu'aucune carte
+  n'affiche le test d'un autre dépôt.
+- Point d'attention relevé sans être sondé : `testerDepot()` ne regarde que
+  `generationsDesDepots`, jamais `generationDeConnexion`. Un test de carte lancé
+  avant une bascule de l'export local peut donc rendre son résultat après elle.
+  La carte est la seule touchée, ce qui semble correct ; le confirmer par une
+  sonde.
+
+### C4. Zone Z6, identité des cartes de la liste
+
+- [ ] Épuiser la zone.
+- Une carte vit sous une clé temporaire jusqu'à sa réponse, puis sous son
+  identité. Sonder les chemins restants qui laisseraient les deux en désaccord :
+  `settings` arrivé avant `depot-enregistre`, deux cartes nouvelles dont les
+  réponses se croisent, une carte supprimée pendant que son enregistrement est
+  en vol.
+- Point d'attention relevé sans être sondé : `corps.id` vaut `corps-<clé>`, donc
+  `corps-github:mon-org/ds` pour une carte enregistrée. L'identifiant reste
+  valide en HTML et `aria-controls` le retrouve, mais aucun sélecteur CSS ne
+  peut le viser sans échappement. Vérifier qu'aucun code ne tente de le faire.
+
+### C5. Zone Z7, reprise des anciennes clés
+
+- [ ] Sonder la reprise.
+- `reprendreLAncienneConfiguration()` ouvre la file du stockage et lit quatre
+  clés du plugin à un seul dépôt. Les écritures en deux temps de
+  `activerDepot()` et `supprimerDepot()` sont traitées ; la reprise ne l'est
+  pas.
+- Sonder : une panne sur l'écriture de `depots`, une panne sur chaque
+  effacement, une `depots` illisible pendant la reprise, et une ancienne
+  configuration sans `baseBranch`, que la reprise remplace par `main` sans le
+  dire.
+
+### C6. Points relevés sans gravité établie
+
+- [ ] Trancher chacun : faute ou choix.
+- `signalerEchec()` ne poste rien quand `operationEnCours !== null` : une panne
+  hors opération reste alors muette dans l'interface, et n'apparaît que dans la
+  notification Figma.
+- `publier()` lance `void refreshConfiguration().catch(signalerEchec)` après le
+  succès. Une panne de ce rafraîchissement écrit donc une note d'erreur
+  par-dessus la note de succès de la publication.
+- `cleDeDestination(null, true)` sert de repli dans `analyser()` quand la
+  lecture du stockage échoue. Ce repli suppose la gestion des tokens activée,
+  quel que soit le réglage réel.
+- `generationsDesDepots` n'est jamais purgée : une entrée y reste après la
+  suppression de son dépôt.
+- `Interrupteur` pose `aria-checked="false"` à sa création. Le réglage
+  « Gérer les tokens » vaut `true` par défaut : l'interrupteur montre donc
+  l'état inverse jusqu'au premier `settings`.
