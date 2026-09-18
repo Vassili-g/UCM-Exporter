@@ -572,8 +572,8 @@ p {
 }
 
 .carte-depot:hover {
-  border-color: var(--bordure-marque);
-  box-shadow: 0 0 0 2px var(--bordure-marque);
+  border-color: #999999;
+  box-shadow: 0 0 0 1px #999999;
 }
 
 .carte-depot-entete {
@@ -586,8 +586,8 @@ p {
 }
 
 .carte-depot-entete:focus-visible {
-  outline: 2px solid var(--bordure-marque);
-  outline-offset: -2px;
+  outline: 1px solid #999999;
+  outline-offset: 2px;
 }
 
 /* Le nom passe à la ligne sans déborder, même sans espace ni trait d'union. */
@@ -607,7 +607,7 @@ p {
 
 .carte-depot .btn:hover:not(:disabled) {
   background: var(--fond-survol);
-  border-color: var(--bordure-marque);
+  border-color: #999999;
   color: var(--texte);
 }
 
