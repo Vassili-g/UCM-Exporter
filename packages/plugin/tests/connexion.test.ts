@@ -16,7 +16,6 @@ const TOUTES: CauseConnexion[] = [
   'verification',
   'connecte',
   'non-configure',
-  'jeton-autre-forge',
   'jeton-refuse',
   'acces-refuse',
   'depot-introuvable',
@@ -202,13 +201,6 @@ test('le 404 GitLab dit que le projet peut être privé et que le jeton doit y a
   assert.equal(pastille, 'projet introuvable');
   assert.match(geste ?? '', /GitLab ne trouve aucun projet/);
   assert.match(geste ?? '', /Si le projet est privé, donnez au jeton l’accès à ce projet./);
-});
-
-test('un jeton d’une autre forge nomme la forge visée et le jeton à coller', () => {
-  const { pastille, geste } = etatDeConnexion('jeton-autre-forge', { termes: TERMES_GITLAB });
-  assert.equal(pastille, 'jeton d’une autre forge');
-  assert.match(geste ?? '', /ne l’envoie pas à GitLab/);
-  assert.match(geste ?? '', /Collez un jeton d’accès GitLab/);
 });
 
 test('sur GitHub, les gestes de connexion gardent leurs phrases', () => {

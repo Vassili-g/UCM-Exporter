@@ -354,7 +354,7 @@ const ENONCES_SPEC = [
   "Le schéma annoncé est lu dans le fichier déposé, jamais dans la constante du\nplugin.",
   "Les trois parties voyagent séparées jusqu'à l'interface.",
   "Un avertissement arrive inerte dans la page de la forge.",
-  "Un jeton ne part que vers la forge qui l'a reçu.",
+  "Un jeton ne part que vers le dépôt qui l'a reçu.",
   "Un secret est une interface publique, et il ne s'écrit jamais en argument.",
   "Aucune de ces trois interfaces n'est figée, délibérément.",
   "Tranché, et la question se reposera.",

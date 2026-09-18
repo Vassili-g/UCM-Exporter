@@ -21,11 +21,6 @@ export type CauseConnexion =
   | 'verification'
   | 'connecte'
   | 'non-configure'
-  /**
-   * Le seul jeton enregistré a été saisi pour l'autre forge. La configuration
-   * le refuse avant tout appel : aucun réseau n'a été touché.
-   */
-  | 'jeton-autre-forge'
   | 'jeton-refuse'
   | 'acces-refuse'
   | 'depot-introuvable'
@@ -91,14 +86,6 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
           `Renseignez l’URL du ${depot} et un ${jeton}. `
           + 'Sans eux, un export est téléchargé sur votre poste au lieu d’ouvrir une '
           + `${termes?.demande ?? 'pull request ou une merge request'}.`,
-      };
-    case 'jeton-autre-forge':
-      return {
-        state: 'disconnected',
-        pastille: 'jeton d’une autre forge',
-        geste:
-          `Le jeton enregistré a été créé pour une autre forge, et le plugin ne l’envoie pas à ${forge}. `
-          + `Collez un ${jeton} ${forge} dans le champ du jeton, puis enregistrez.`,
       };
     case 'jeton-refuse':
       return {

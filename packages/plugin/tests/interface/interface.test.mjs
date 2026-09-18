@@ -21,7 +21,7 @@ async function ouvrir() {
   await page.evaluate(() => {
     window.demandes = [];
     window.addEventListener('message', (event) => {
-      if (event.data.pluginMessage?.type?.startsWith('analyser') || event.data.pluginMessage?.type === 'publier' || event.data.pluginMessage?.type === 'gerer-tokens') {
+      if (event.data.pluginMessage?.type?.startsWith('analyser') || event.data.pluginMessage?.type === 'publier' || ['gerer-tokens', 'save-settings', 'supprimer-depot'].includes(event.data.pluginMessage?.type)) {
         window.demandes.push(event.data.pluginMessage);
       }
     });
@@ -70,9 +70,13 @@ test('un composant homonyme invalide le verdict, une seconde notification du mê
   }
 });
 
-const reglages = (destination, tokens = true) => ({
+const DEPOT = {
+  id: 'github:mon-org/ds', forge: 'github', projet: 'mon-org/ds', nom: 'ds',
+  repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'main', jeton: true,
+};
+const reglages = (destination, tokens = true, depots = [DEPOT]) => ({
   type: 'settings',
-  settings: { repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'main', forgeDuJeton: 'github', destination, tokens },
+  settings: { destination, tokens, actif: depots[0]?.id ?? null, depots },
 });
 const A = JSON.stringify(['github', 'mon-org/ds', 'main', true]);
 const B = JSON.stringify(['github', 'mon-org/autre', 'main', true]);
@@ -118,18 +122,47 @@ test('un changement de destination rend l’analyse disponible, un enregistremen
   }
 });
 
-test('le jeton enregistré ne s’annonce que pour sa forge, et l’adresse d’un dossier dit ce qui est retenu', async () => {
+test('le formulaire modifie le dépôt actif sans changer son adresse, et le supprime entier', async () => {
   const { page, envoyer } = await ouvrir();
   try {
-    await envoyer({
-      type: 'settings',
-      settings: { repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'main', forgeDuJeton: 'github', destination: A, tokens: true },
-    });
+    await envoyer(reglages(A));
     await page.locator('.icon-button').first().click();
     await page.getByRole('tab', { name: 'Dépôts' }).click();
     const jeton = page.locator('input[name="jeton"]');
     const adresse = page.locator('input[name="repoUrl"]');
+    assert.equal(await adresse.inputValue(), 'https://github.com/mon-org/ds');
+    assert.equal(await adresse.getAttribute('readonly'), '');
     assert.match(await jeton.getAttribute('placeholder'), /Token enregistré/);
+
+    await page.locator('input[name="baseBranch"]').fill('develop');
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    await page.waitForFunction(() => window.demandes.at(-1)?.type === 'save-settings');
+    assert.deepEqual(await page.evaluate(() => window.demandes.at(-1)), {
+      type: 'save-settings',
+      settings: { repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'develop', jeton: '' },
+      id: 'github:mon-org/ds',
+    });
+
+    const supprimer = page.getByRole('button', { name: 'Supprimer', exact: true });
+    await supprimer.click();
+    await page.getByRole('button', { name: 'Confirmer la suppression', exact: true }).click();
+    await page.waitForFunction(() => window.demandes.at(-1)?.type === 'supprimer-depot');
+    assert.deepEqual(await page.evaluate(() => window.demandes.at(-1)), { type: 'supprimer-depot', id: 'github:mon-org/ds' });
+  } finally {
+    await page.close();
+  }
+});
+
+test('sans dépôt, l’adresse se saisit, et l’adresse d’un dossier dit ce qui est retenu', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await envoyer(reglages(JSON.stringify(['aucune', true]), true, []));
+    await page.locator('.icon-button').first().click();
+    await page.getByRole('tab', { name: 'Dépôts' }).click();
+    const jeton = page.locator('input[name="jeton"]');
+    const adresse = page.locator('input[name="repoUrl"]');
+    assert.equal(await adresse.getAttribute('readonly'), null);
+    assert.equal(await page.getByRole('button', { name: 'Supprimer', exact: true }).isVisible(), false);
 
     await adresse.fill('https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines?ref_type=heads');
     assert.equal(await jeton.getAttribute('placeholder'), '');
@@ -137,10 +170,6 @@ test('le jeton enregistré ne s’annonce que pour sa forge, et l’adresse d’
     assert.match(await champ.innerText(), /Projet GitLab : mon-groupe\/design-system/);
     assert.match(await champ.innerText(), /désignait un dossier/);
     assert.match(await page.locator('label.field', { has: jeton }).innerText(), /Jeton d’accès[\s\S]*scope api/);
-
-    await adresse.fill('https://github.com/mon-org/ds');
-    assert.match(await jeton.getAttribute('placeholder'), /Token enregistré/);
-    assert.doesNotMatch(await champ.innerText(), /désignait un dossier/);
   } finally {
     await page.close();
   }

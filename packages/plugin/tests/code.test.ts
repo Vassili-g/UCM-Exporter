@@ -40,19 +40,21 @@ function ouvrir() {
   const evenements = new Map<string, () => void>();
   const temporisations = new Map<number, () => void>();
   const stockage = new Map<string, unknown>();
-  const appels = { analyses: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[] };
+  const appels = { analyses: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[] };
   const exporte = { traiter: async () => resultat('tokens.json') };
   const publication = { traiter: async () => ({ status: 'created', path: 'tokens.json', pullRequestUrl: 'https://github.com/o/r/pull/1' }) };
   const resumeDesTokens = { traiter: async () => ({ presents: true, resume: '1 variable' }) };
   /** Le test de connexion, par configuration reçue. */
-  const connexionDe = { traiter: async (_config: { projet: string }): Promise<Diagnostic> => ({ cause: 'connecte', layout: null }) };
+  const connexionDe = { traiter: async (_config: { projet: string; jeton: string }): Promise<Diagnostic> => ({ cause: 'connecte', layout: null }) };
   const runtime = {
     showUI() {}, notify() {}, openExternal() {},
     currentPage: { selection: [{ id: 'a', type: 'COMPONENT', name: 'Exemple' }] },
     ui: { postMessage: (message: PluginMessage) => messages.push(message), resize() {}, onmessage: async (_message: UiRequest) => {} },
     on: (nom: string, rappel: () => void) => evenements.set(nom, rappel),
     clientStorage: {
-      getAsync: async (cle: string) => stockage.get(cle),
+      // Comme clientStorage, la valeur se lit après l'appel : la reprise lancée au
+      // chargement du routeur voit ce que le test écrit juste après `ouvrir()`.
+      getAsync: async (cle: string) => { await null; return stockage.get(cle); },
       setAsync: async (cle: string, valeur: unknown) => { stockage.set(cle, valeur); },
       deleteAsync: async (cle: string) => { stockage.delete(cle); },
     },
@@ -68,9 +70,15 @@ function ouvrir() {
     './tokens/exportTokens': { default: handler, annonceDuFormat: () => null, etatDesTokensDuFichier: async () => { appels.collections += 1; return resumeDesTokens.traiter(); } },
     './forges/forge': { ErreurDeForge: Error },
     './forges/termes': termes,
-    './forges': { forgeDe: (configuration: { projet: string }) => { appels.forges += 1; return { termes: termes.TERMES_GITHUB, configuration }; } },
+    './forges': {
+      forgeDe: (configuration: { projet: string; jeton: string }) => {
+        appels.forges += 1;
+        appels.jetons.push(`${configuration.projet} ${configuration.jeton}`);
+        return { termes: termes.TERMES_GITHUB, configuration };
+      },
+    },
     './depot': {
-      diagnostiquerConnexion: async (forge: { configuration: { projet: string } }) => {
+      diagnostiquerConnexion: async (forge: { configuration: { projet: string; jeton: string } }) => {
         appels.connexions += 1;
         return connexionDe.traiter(forge.configuration);
       },
@@ -91,7 +99,10 @@ function ouvrir() {
       runtime.currentPage.selection = [{ id, type: 'COMPONENT', name: 'Exemple' }];
       evenements.get('selectionchange')!();
     },
-    connecter() { stockage.set('repoUrl', 'https://github.com/o/r'); stockage.set('baseBranch', 'main'); stockage.set('github_pat', 'secret-test'); },
+    connecter() {
+      stockage.set('depots', [{ repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test' }]);
+      stockage.set('depotActif', 'github:o/r');
+    },
   };
 }
 
@@ -152,7 +163,7 @@ test('chaque commande publie son propre artefact après deux analyses', async ()
 test('une panne du stockage pendant la sauvegarde libère le formulaire', async () => {
   const h = ouvrir();
   h.runtime.clientStorage.setAsync = async () => { throw new Error('stockage indisponible'); };
-  await h.envoyer({ type: 'save-settings', settings: { repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test' } });
+  await h.envoyer({ type: 'save-settings', settings: { repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test' }, id: null });
   assert.ok(h.messages.some(({ type }) => type === 'settings-save-error'));
   assert.doesNotMatch(JSON.stringify(h.messages), /secret-test/);
 });
@@ -215,7 +226,7 @@ test('une configuration enregistrée rend les analyses précédentes impropres �
   await h.envoyer({ type: 'analyser-tokens', operation: 1 });
   await h.envoyer({ type: 'save-settings', settings: {
     repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test',
-  } });
+  }, id: null });
   await h.envoyer({ type: 'publier', genre: 'tokens', operation: 2 });
 
   assert.equal(h.appels.publications, 0);
@@ -236,7 +247,7 @@ test('un enregistrement à destination inchangée garde l’analyse', async () =
   await h.envoyer({ type: 'ui-ready' });
   await h.envoyer({ type: 'analyser-composant', operation: 1 });
   const connexions = h.appels.connexions;
-  await h.envoyer({ type: 'save-settings', settings: { repoUrl: 'https://github.com/O/R', baseBranch: 'main', jeton: 'nouveau-secret' } });
+  await h.envoyer({ type: 'save-settings', settings: { repoUrl: 'https://github.com/O/R', baseBranch: 'main', jeton: 'nouveau-secret' }, id: 'github:o/r' });
   assert.equal(h.appels.connexions, connexions + 1);
   await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
 
@@ -250,39 +261,46 @@ test('les messages sans type ou inconnus restent sans effet', async () => {
 });
 
 /**
- * Un jeton GitHub resté sur le poste après une bascule de l'URL vers GitLab ne
- * doit partir nulle part. Le routeur ne construit donc aucune forge, ce qui
- * est la seule porte vers le réseau.
+ * Le jeton d'un dépôt ne part que vers ce dépôt : la forge est la seule porte
+ * vers le réseau, et chaque forge créée relève le projet et le jeton reçus.
  */
-test('un jeton GitHub enregistré avec une URL GitLab n’atteint le réseau ni à l’ouverture, ni au pré-vol, ni à la publication', async () => {
+test('le jeton du dépôt A n’accompagne aucune requête vers B, avant comme après une bascule', async () => {
   const h = ouvrir();
-  h.stockage.set('repoUrl', 'https://gitlab.com/mon-groupe/design-system');
-  h.stockage.set('baseBranch', 'main');
-  h.stockage.set('github_pat', 'ghp_secret');
+  h.stockage.set('depots', [
+    { repoUrl: 'https://github.com/mon-org/design-system-v3', baseBranch: 'main', jeton: 'ghp_a' },
+    { repoUrl: 'https://gitlab.com/mon-groupe/design-system', baseBranch: 'main', jeton: 'glpat-b' },
+  ]);
+  h.stockage.set('depotActif', 'github:mon-org/design-system-v3');
   await h.envoyer({ type: 'ui-ready' });
-  await h.envoyer({ type: 'analyser-tokens', operation: 1 });
-  await h.envoyer({ type: 'publier', genre: 'tokens', operation: 2 });
-  assert.deepEqual({ forges: h.appels.forges, connexions: h.appels.connexions, lectures: h.appels.lectures, publications: h.appels.publications }, { forges: 0, connexions: 0, lectures: 0, publications: 0 });
-  const pastilles = h.messages.flatMap((message) => (message.type === 'connection' ? [message.pastille] : []));
-  assert.ok(pastilles.includes('jeton d’une autre forge'), pastilles.join(', '));
-  assert.ok(h.messages.some(({ type }) => type === 'download'));
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
+  // Une autre fenêtre du plugin active B.
+  h.stockage.set('depotActif', 'gitlab:mon-groupe/design-system');
+  await h.envoyer({ type: 'analyser-composant', operation: 3 });
+  await h.envoyer({ type: 'publier', genre: 'component', operation: 4 });
+
+  const recus = new Set(h.appels.jetons);
+  assert.deepEqual([...recus].sort(), ['mon-groupe/design-system glpat-b', 'mon-org/design-system-v3 ghp_a']);
+  assert.equal(h.appels.publications, 2);
+  assert.doesNotMatch(JSON.stringify(h.messages), /ghp_a|glpat-b/);
 });
 
 const reglages = (projet: string) => ({ repoUrl: `https://github.com/${projet}`, baseBranch: 'main', jeton: 'secret-test' });
 const provenance = (message: PluginMessage) => message as PluginMessage & { destination?: string; operation?: number };
 
 /**
- * E6. Le premier dépôt répond lentement « connecté », le second vite « jeton
- * refusé » : la pastille finale décrit le dépôt enregistré en dernier.
+ * E6. Le premier jeton répond lentement « connecté », le second vite « jeton
+ * refusé » : la pastille finale décrit le jeton enregistré en dernier.
  */
 test('deux enregistrements rapprochés : la pastille décrit le second, et le test périmé ne poste rien', async () => {
   const h = ouvrir();
   const lent = differe<Diagnostic>();
-  h.connexionDe.traiter = async ({ projet }) => (projet === 'o/lent' ? lent.promesse : { cause: 'jeton-refuse', statut: 401, layout: null });
-  const premier = h.envoyer({ type: 'save-settings', settings: reglages('o/lent') });
+  h.connecter();
+  h.connexionDe.traiter = async ({ jeton }) => (jeton === 'jeton-lent' ? lent.promesse : { cause: 'jeton-refuse', statut: 401, layout: null });
+  const premier = h.envoyer({ type: 'save-settings', settings: { ...reglages('o/r'), jeton: 'jeton-lent' }, id: 'github:o/r' });
   await tourner();
   assert.equal(h.appels.connexions, 1);
-  await h.envoyer({ type: 'save-settings', settings: reglages('o/rapide') });
+  await h.envoyer({ type: 'save-settings', settings: { ...reglages('o/r'), jeton: 'jeton-rapide' }, id: 'github:o/r' });
   const avant = h.messages.length;
   lent.resoudre({ cause: 'connecte', layout: null });
   await premier;
@@ -301,14 +319,14 @@ test('une publication croisée avec un enregistrement refuse en nommant la desti
   h.connecter();
   await h.envoyer({ type: 'analyser-composant', operation: 1 });
   await Promise.all([
-    h.envoyer({ type: 'save-settings', settings: reglages('o/autre') }),
+    h.envoyer({ type: 'save-settings', settings: { ...reglages('o/r'), baseBranch: 'develop' }, id: 'github:o/r' }),
     h.envoyer({ type: 'publier', genre: 'component', operation: 2 }),
   ]);
 
   const textes = h.messages.flatMap((message) => (message.type === 'status' ? [message.text] : []));
   assert.equal(h.appels.publications, 0);
   assert.equal(textes.some((texte) => /La sélection a changé/.test(texte)), false, textes.join(' | '));
-  assert.ok(textes.some((texte) => /La destination a changé depuis l.analyse : le dépôt actif est maintenant autre\./.test(texte)), textes.join(' | '));
+  assert.ok(textes.some((texte) => /La destination a changé depuis l.analyse : le dépôt actif est maintenant r\./.test(texte)), textes.join(' | '));
 });
 
 for (const issue of ['réussie', 'échouée'] as const) {
@@ -324,7 +342,7 @@ for (const issue of ['réussie', 'échouée'] as const) {
     const publication = h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
     await tourner();
     assert.equal(h.appels.publications, 1);
-    await h.envoyer({ type: 'save-settings', settings: reglages('o/b') });
+    await h.envoyer({ type: 'supprimer-depot', id: 'github:o/r' });
 
     const avant = h.messages.length;
     if (issue === 'réussie') attente.resoudre({ status: 'created', path: 'x.contract.json', pullRequestUrl: 'https://github.com/o/r/pull/2' });
@@ -441,4 +459,96 @@ test('une analyse faite avant un changement du réglage des tokens ne se publie 
 
   assert.equal(h.appels.publications, 0);
   assert.equal(statuts(h).at(-1), 'La destination a changé depuis l’analyse : la gestion des tokens a changé. Relancez l’analyse.');
+});
+
+/**
+ * La modification a lu la liste avant la suppression ; sa propre écriture est
+ * retenue jusqu'à ce que la suppression ait pu passer. Sans file, elle ferait
+ * revenir l'entrée, jeton compris.
+ */
+test('une suppression et une modification envoyées ensemble ne font pas revenir l’entrée', async () => {
+  const h = ouvrir();
+  h.connecter();
+  await tourner();
+  const ecrire = h.runtime.clientStorage.setAsync;
+  const retenue = differe<void>();
+  let premiere = true;
+  h.runtime.clientStorage.setAsync = async (cle: string, valeur: unknown) => {
+    if (cle === 'depots' && premiere && (valeur as unknown[]).length > 0) {
+      premiere = false;
+      await retenue.promesse;
+    }
+    return ecrire(cle, valeur);
+  };
+  const modification = h.envoyer({ type: 'save-settings', settings: { ...reglages('o/r'), jeton: 'autre-secret' }, id: 'github:o/r' });
+  const suppression = h.envoyer({ type: 'supprimer-depot', id: 'github:o/r' });
+  await tourner();
+  retenue.resoudre();
+  await Promise.all([modification, suppression]);
+
+  assert.deepEqual(h.stockage.get('depots'), []);
+  assert.equal(h.stockage.has('depotActif'), false);
+});
+
+test('un échec d’écriture ne bloque pas la demande suivante', async () => {
+  const h = ouvrir();
+  await tourner();
+  const ecrire = h.runtime.clientStorage.setAsync;
+  let pannes = 1;
+  h.runtime.clientStorage.setAsync = async (cle: string, valeur: unknown) => {
+    if (pannes > 0) { pannes -= 1; throw new Error('stockage indisponible'); }
+    return ecrire(cle, valeur);
+  };
+  await h.envoyer({ type: 'save-settings', settings: reglages('o/r'), id: null });
+  assert.ok(h.messages.some(({ type }) => type === 'settings-save-error'));
+  await h.envoyer({ type: 'save-settings', settings: reglages('o/r'), id: null });
+  assert.equal(h.stockage.get('depotActif'), 'github:o/r');
+});
+
+/**
+ * Le premier dépôt s'écrit, puis devient actif : une analyse demandée entre
+ * les deux écritures attend la fin de l'enregistrement.
+ */
+test('une lecture n’observe pas une activation à moitié écrite', async () => {
+  const h = ouvrir();
+  await tourner();
+  const ecrire = h.runtime.clientStorage.setAsync;
+  const liste = differe<void>();
+  h.runtime.clientStorage.setAsync = async (cle: string, valeur: unknown) => {
+    await ecrire(cle, valeur);
+    if (cle === 'depots') await liste.promesse;
+  };
+  const enregistrement = h.envoyer({ type: 'save-settings', settings: reglages('o/r'), id: null });
+  await tourner();
+  const analyse = h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await tourner();
+  liste.resoudre();
+  await Promise.all([enregistrement, analyse]);
+  const verdict = h.messages.find((message) => message.type === 'verdict');
+  assert.ok(verdict?.type === 'verdict');
+  assert.equal(verdict.code, 'a-publier');
+});
+
+test('une modification ne change pas l’adresse d’un dépôt, et l’identité se compare en minuscules', async () => {
+  const h = ouvrir();
+  h.connecter();
+  await h.envoyer({ type: 'save-settings', settings: reglages('o/autre'), id: 'github:o/r' });
+  await h.envoyer({ type: 'save-settings', settings: reglages('O/R'), id: null });
+  const erreurs = h.messages.flatMap((message) => (message.type === 'settings-validation' ? [message.errors.repoUrl] : []));
+  assert.equal(erreurs.length, 2);
+  assert.match(erreurs[0] ?? '', /ne change pas/);
+  assert.equal(erreurs[1], 'Ce repository est déjà dans la liste.');
+  assert.deepEqual(h.stockage.get('depots'), [{ repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test' }]);
+  assert.doesNotMatch(JSON.stringify(h.messages), /secret-test/);
+});
+
+test('les anciennes clés d’un seul dépôt sont reprises avant toute lecture', async () => {
+  const h = ouvrir();
+  h.stockage.set('repoUrl', 'https://github.com/o/r');
+  h.stockage.set('baseBranch', 'main');
+  h.stockage.set('github_pat', 'secret-test');
+  await h.envoyer({ type: 'ui-ready' });
+  assert.equal(h.stockage.get('depotActif'), 'github:o/r');
+  assert.equal(h.stockage.has('github_pat'), false);
+  assert.ok(h.appels.jetons.includes('o/r secret-test'));
 });

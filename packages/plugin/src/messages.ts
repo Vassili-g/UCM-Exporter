@@ -5,7 +5,8 @@
  * `code.ts`, ceux de l'interface par `versSandbox` dans `ui/pont.ts`. Un champ
  * renommé ici fait donc échouer la construction des deux côtés.
  */
-import type { PublicSettings, SettingsInput } from './config';
+import type { SettingsInput, SettingsValidation } from './config';
+import type { NomDeForge } from './forges/termes';
 import type { EtatConnexion, EtatDuDepot } from './connexion';
 import type { Cible } from './cible';
 import type { CodeVerdict } from './prevol';
@@ -25,6 +26,30 @@ export type LogLevel = 'info' | 'success' | 'error';
  */
 export type Provenance = { destination: string; operation: number };
 
+/** Un dépôt enregistré, tel que l'interface le voit : sans son jeton. */
+export type DepotPublic = {
+  /** `forge:projet`, projet en minuscules : `gitlab:mon-groupe/design-system`. */
+  id: string;
+  forge: NomDeForge;
+  projet: string;
+  /** Le dernier segment du projet, calculé par le sandbox. */
+  nom: string;
+  repoUrl: string;
+  baseBranch: string;
+  /** La présence d'un jeton, jamais sa valeur. */
+  jeton: boolean;
+};
+
+/** Ce que `settings` porte : les dépôts, le dépôt actif et les réglages du poste. */
+export type ReglagesPublics = {
+  /** La clé de destination : l'interface vide ses cartes quand elle change. */
+  destination: string;
+  /** Le réglage « Gérer les tokens » : la carte des tokens n'est affichée qu'à `true`. */
+  tokens: boolean;
+  actif: string | null;
+  depots: DepotPublic[];
+};
+
 /** Ce que l'UI demande au sandbox. */
 export type UiRequest =
   /**
@@ -32,10 +57,13 @@ export type UiRequest =
    * n'écrit rien ; la publication consomme ce qu'elle a produit, et
    * `annuler` prend effet entre deux étapes.
    */
-  | { type: 'annuler' | 'supprimer-token' | 'ui-ready' }
+  | { type: 'annuler' | 'ui-ready' }
   | { type: 'analyser-composant' | 'analyser-tokens'; operation: number }
   | { type: 'publier'; genre: 'component' | 'tokens'; operation: number }
-  | { type: 'save-settings'; settings: SettingsInput }
+  /** Enregistre un dépôt nouveau (`id` nul), ou la branche et le jeton de l'entrée `id`. */
+  | { type: 'save-settings'; settings: SettingsInput; id: string | null }
+  /** Retire une entrée entière, jeton compris. */
+  | { type: 'supprimer-depot'; id: string }
   /**
    * L'interrupteur « Gérer les tokens ». L'effet est immédiat : une analyse en
    * cours est annulée, une publication va à son terme.
@@ -56,14 +84,9 @@ export type UiRequest =
 
 /** Ce que le sandbox dit à l'UI. */
 export type PluginMessage =
-  /**
-   * Les champs publics rechargés : le PAT ne traverse jamais cette frontière.
-   * L'interface vide les cartes de l'écran de travail quand `destination`
-   * change, et seulement alors. `tokens` porte le réglage « Gérer les
-   * tokens » : la carte des tokens n'est affichée qu'à `true`.
-   */
-  | { type: 'settings'; settings: PublicSettings & { destination: string; tokens: boolean } }
-  | { type: 'settings-validation'; errors: Partial<Record<keyof SettingsInput, string>> }
+  /** Les réglages publics rechargés : aucun jeton ne traverse cette frontière. */
+  | { type: 'settings'; settings: ReglagesPublics }
+  | { type: 'settings-validation'; errors: SettingsValidation['errors'] }
   | { type: 'settings-save-error' }
   /**
    * Décision unique rendue en état visuel, libellé et geste éventuel.

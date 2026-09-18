@@ -1193,8 +1193,10 @@ lot 3b.
   modification, suppression et activation dans l'ordre de la section 4.2 ;
   extension de la file du lot 0 dans `src/code.ts`.
 - `src/connexion.ts` : retrait de `jeton-autre-forge`.
-- `src/messages.ts` : `ReglagesPublics`, `supprimer-depot` à la place de
-  `supprimer-token`, adaptation du formulaire à l'entrée active. Les messages
+- `src/messages.ts` : `ReglagesPublics`, dont chaque dépôt porte aussi son
+  `repoUrl`, `supprimer-depot` à la place de `supprimer-token`, adaptation du
+  formulaire à l'entrée active. Le refus du doublon arrive dès ce lot, pour
+  qu'une identité ne désigne qu'une entrée. Les messages
   d'enregistrement et de test par carte arrivent avec leurs états de galerie
   au lot 3b.
 - `AGENTS.md` : invariant « Un jeton ne part que vers la forge qui l'a reçu »

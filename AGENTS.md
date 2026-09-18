@@ -87,7 +87,7 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
     tokens/mouvement.ts        une TIMING en durée, une EASING en courbe, et les easings sans courbe
     variables.ts               index commun, collisions et alias
     base64.ts                  encodage UTF-8/Base64 sans dépendance au sandbox
-    config.ts                  la configuration locale : adresse, forge et jeton
+    config.ts                  la configuration locale : dépôts, dépôt actif, clé de destination, reprise des anciennes clés
     fenetre.ts                 la taille de la fenêtre, ses bornes et son rangement
     connexion.ts               ce que vaut la connexion au dépôt, et le geste qu'elle demande
     prevol.ts                  ce que l'analyse conclut avant d'écrire, et l'action qu'elle propose
@@ -625,13 +625,14 @@ La spécification en lien porte le raisonnement.
   ligne serait exécutée comme action rapide. Le rendu Markdown du kit, qui ne
   sait pas sur quelle forge le rapport part, neutralise les formes des deux.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
-- Un jeton ne part que vers la forge qui l'a reçu. La forge vient de l'hôte de
-  l'URL, et `forge_du_jeton` accompagne le jeton enregistré ; un jeton sans
-  elle appartient à GitHub. `validateSettings()` (`src/config.ts`) rend
-  invalide une configuration dont le seul jeton appartient à l'autre forge, et
-  l'ouverture, le pré-vol et la publication passent tous par elle : aucun appel
-  réseau ne part. L'enregistrement retire l'ancien jeton, puis écrit la forge,
-  le jeton et l'URL, dans cet ordre.
+- Un jeton ne part que vers le dépôt qui l'a reçu. Il voyage dans l'entrée de
+  son adresse, écrite en une seule écriture de `depots`, et l'adresse d'une
+  entrée enregistrée ne change plus : le sandbox refuse une modification qui la
+  changerait. `validateSettings()` (`src/config.ts`) valide chaque entrée avec
+  son propre jeton, et l'ouverture, le pré-vol, la publication et
+  l'enregistrement passent tous par elle. Une file du sandbox ordonne les
+  écritures de la configuration : une modification ne fait pas revenir une
+  entrée supprimée dans la même fenêtre.
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
 - Tout texte du plugin qui nomme une forge, sa demande ou son jeton lit
   `src/forges/termes.ts` ; aucun message ne teste la forge. La galerie tient

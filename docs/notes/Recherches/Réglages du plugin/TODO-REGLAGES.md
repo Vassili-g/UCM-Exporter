@@ -349,26 +349,26 @@ Le formulaire actuel reste l'interface de ce lot. La liste arrive au lot 3b.
 
 ### Stockage
 
-- [ ] `src/config.ts` : clés `depots`, tableau `{ repoUrl, baseBranch, jeton }`,
+- [x] `src/config.ts` : clés `depots`, tableau `{ repoUrl, baseBranch, jeton }`,
       et `depotActif`, identité `forge:projet` en minuscules. Forge, projet et
       identité se recalculent par `lireAdresseDuDepot`.
-- [ ] `validateSettings` reste l'unique validation, appelée par entrée avec le
+- [x] `validateSettings` reste l'unique validation, appelée par entrée avec le
       jeton de cette entrée. `forgeDuPrefixe` s'applique à la saisie contre la
       forge de l'adresse de l'entrée.
-- [ ] Écritures dans l'ordre du tableau « Ordre des écritures » de
+- [x] Écritures dans l'ordre du tableau « Ordre des écritures » de
       [4.2](PLAN-REGLAGES.md#42-stockage-et-règle-du-jeton) : enregistrer
       (`depots`, puis `depotActif` si l'entrée devient active), modifier
       (`depots`), supprimer (`depots`, puis retrait de `depotActif`),
       activer (`depotActif`). Un `depotActif` qui désigne une entrée absente se
       lit comme « aucun dépôt actif ».
-- [ ] Le premier dépôt enregistré dans une liste vide devient actif
+- [x] Le premier dépôt enregistré dans une liste vide devient actif
       ([4.1, activation](PLAN-REGLAGES.md#41-ce-quun-dépôt-enregistré-contient)).
       L'exception de l'export local arrive au lot 4.
-- [ ] Une modification porte l'identité de l'entrée existante. Le sandbox
+- [x] Une modification porte l'identité de l'entrée existante. Le sandbox
       refuse un changement d'adresse, même si l'interface a laissé passer le
       champ. Une entrée supprimée entre-temps : « Ce dépôt n'est plus dans la
       liste. ».
-- [ ] Reprise des anciennes clés `repoUrl`, `baseBranch`, `github_pat` et
+- [x] Reprise des anciennes clés `repoUrl`, `baseBranch`, `github_pat` et
       `forge_du_jeton` (C10), par la file, avant toute lecture de
       configuration
       ([4.2, anciennes clés](PLAN-REGLAGES.md#42-stockage-et-règle-du-jeton)) :
@@ -381,78 +381,78 @@ Le formulaire actuel reste l'interface de ce lot. La liste arrive au lot 3b.
       3. Effacer les quatre clés, même quand la configuration était invalide.
          Un échec d'écriture de `depots` conserve les anciennes clés pour la
          prochaine ouverture.
-- [ ] `depots` présente : garder la liste et le dépôt actif, et terminer
+- [x] `depots` présente : garder la liste et le dépôt actif, et terminer
       seulement l'effacement des anciennes clés. Une `depots` illisible rend
       une erreur de stockage et n'est jamais écrasée par une reprise.
-- [ ] Retirer le commentaire de `STORAGE_KEYS` sur `github_pat`.
-- [ ] Retirer l'ordre d'écriture en quatre temps de `saveSettings`,
+- [x] Retirer le commentaire de `STORAGE_KEYS` sur `github_pat`.
+- [x] Retirer l'ordre d'écriture en quatre temps de `saveSettings`,
       `jetonAutreForge` et la clé `forge_du_jeton`.
-- [ ] `src/code.ts` : les nouvelles écritures passent par la file du lot 0.
+- [x] `src/code.ts` : les nouvelles écritures passent par la file du lot 0.
 
 ### Messages, connexion, formulaire
 
-- [ ] `src/connexion.ts` : retrait de la cause `jeton-autre-forge`.
-- [ ] `src/messages.ts` : type `ReglagesPublics` de
+- [x] `src/connexion.ts` : retrait de la cause `jeton-autre-forge`.
+- [x] `src/messages.ts` : type `ReglagesPublics` de
       [4.2, forme publique](PLAN-REGLAGES.md#42-stockage-et-règle-du-jeton) ;
       `supprimer-depot` remplace `supprimer-token`.
-- [ ] `src/config.ts` : calculer `nom`, dernier segment de l'adresse, puisque
+- [x] `src/config.ts` : calculer `nom`, dernier segment de l'adresse, puisque
       `ReglagesPublics` le porte. Le plan range ce calcul au lot 3c ; cette
       liste l'avance ici pour que la liste du lot 3b ait un nom à afficher.
       Un chemin GitLab à sous-groupes donne son dernier segment.
-- [ ] `ConfigurationPage.ts` : le formulaire enregistre le premier dépôt ou
+- [x] `ConfigurationPage.ts` : le formulaire enregistre le premier dépôt ou
       modifie l'actif ; adresse en lecture seule après enregistrement ;
       suppression de l'entrée active entière. Le bouton « Supprimer le token
       enregistré » disparaît.
 
 ### Galerie
 
-- [ ] Retirer `gitlab-jeton-autre-forge`. Adapter `configuration-remplie` et le
+- [x] Retirer `gitlab-jeton-autre-forge`. Adapter `configuration-remplie` et le
       scénario de suppression aux nouveaux messages.
 
 ### Tests
 
-- [ ] `tests/config.test.ts` : appliquer le tableau « Tests de
+- [x] `tests/config.test.ts` : appliquer le tableau « Tests de
       `tests/config.test.ts` » de
       [4.2](PLAN-REGLAGES.md#42-stockage-et-règle-du-jeton), ligne par ligne.
       Le test « un jeton enregistré avant GitLab appartient à GitHub » reste,
       pour la reprise.
-- [ ] `tests/config.test.ts`, reprise : un dépôt GitHub, un projet GitLab, une
+- [x] `tests/config.test.ts`, reprise : un dépôt GitHub, un projet GitLab, une
       configuration invalide écartée et ses clés effacées, une liste `depots`
       déjà présente, une panne à chaque écriture et à chaque effacement. Une
       nouvelle ouverture termine le nettoyage sans réimporter ni écraser un
       dépôt, liste vide comprise.
-- [ ] `tests/code.test.ts` : harnais qui écrit `depots` et un faux `forgeDe` qui
+- [x] `tests/code.test.ts` : harnais qui écrit `depots` et un faux `forgeDe` qui
       enregistre le jeton et le projet de chaque adaptateur créé. Le jeton de A
       n'accompagne aucune requête vers B, à l'ouverture, au pré-vol, à la
       publication et après une bascule. Les deux tests de sauvegarde passent
       aux demandes d'enregistrement ; « aucun message ne contient le jeton »
       reste sur chacune.
-- [ ] `tests/code.test.ts`, nouveaux : suppression et modification envoyées
+- [x] `tests/code.test.ts`, nouveaux : suppression et modification envoyées
       ensemble sans retour de l'entrée ; échec d'écriture qui ne bloque pas la
       demande suivante ; lecture qui n'observe pas une activation à moitié
       écrite ; modification qui ne change pas l'adresse ; identité comparée en
       minuscules.
-- [ ] `tests/interface/interface.test.mjs` : formulaire adapté et suppression
+- [x] `tests/interface/interface.test.mjs` : formulaire adapté et suppression
       de l'entrée active.
-- [ ] Rouge constaté : retirer la file autour d'une suppression, la
+- [x] Rouge constaté : retirer la file autour d'une suppression, la
       vérification d'adresse figée, puis le marqueur de reprise faite ;
       restaurer.
 
 ### Documents
 
-- [ ] `AGENTS.md` : réécrire l'invariant « Un jeton ne part que vers la forge
+- [x] `AGENTS.md` : réécrire l'invariant « Un jeton ne part que vers la forge
       qui l'a reçu » en « Un jeton ne part que vers le dépôt qui l'a reçu ». Il
       cite encore `src/config.ts` et `validateSettings()`, que `AUTORITES` de
       `tests/inventaireInvariants.test.ts` exige. Mettre à jour la ligne de
       `config.ts` dans la carte du code.
-- [ ] `packages/plugin/SPEC.md`, partie 3 : stockage, règle du jeton, file
+- [x] `packages/plugin/SPEC.md`, partie 3 : stockage, règle du jeton, file
       d'écriture et sa limite entre deux fenêtres. L'énoncé en gras change :
       `ENONCES_SPEC` de `tests/inventaireInvariants.test.ts` change dans le
       même commit.
 
 ### Fin du lot
 
-- [ ] Vérification complète dans le worktree. Commit, push.
+- [x] Vérification complète dans le worktree. Commit, push.
 
 ## L3b. Liste des dépôts
 
@@ -797,3 +797,38 @@ avant la désactivation ne s'affiche pas après elle ».
 Relecture : `configuration-onglet-general` suit la maquette de 7.2 dans les
 deux thèmes ; `ecran-sans-tokens` ne montre que la carte du composant ;
 `gitlab-composant-sans-consigne-tokens` montre un verdict sans consigne.
+
+### L3a
+
+Rouges constatés par mutation : la suppression sortie de la file fait échouer
+« une suppression et une modification envoyées ensemble ne font pas revenir
+l'entrée » ; la vérification de l'adresse figée retirée fait échouer deux
+tests de modification ; le marqueur de reprise retiré fait échouer la reprise
+d'une configuration invalide. Le premier test ne rougissait pas dans sa
+première forme : il retient désormais l'écriture de la modification jusqu'à ce
+que la suppression ait pu passer.
+
+Écarts au plan :
+
+- `DepotPublic` porte aussi `repoUrl` : le formulaire affiche l'adresse
+  enregistrée, qu'une page GitLab copiée peut porter ;
+- le refus du doublon (« Ce repository est déjà dans la liste. ») arrive dès
+  ce lot : l'identité doit rester unique pour que `depotActif` désigne une
+  seule entrée ;
+- le refus d'un changement d'adresse dit : « L'adresse d'un dépôt enregistré
+  ne change pas. Pour un autre projet, ajoutez un dépôt. » ;
+- `save-settings` reste le message du formulaire, avec l'identité de l'entrée
+  modifiée ou `null` ; le lot 3b le remplace par `enregistrer-depot` ;
+- la reprise ouvre la file du sandbox au chargement du routeur, avant toute
+  lecture, même sans `ui-ready` ;
+- le harnais de `code.test.ts` lit son faux stockage après l'appel, comme
+  `clientStorage` : sans cela, la reprise lancée au chargement écrasait la
+  liste écrite par le test ;
+- la galerie gagne `configuration-suppression-confirmation`, le second clic
+  de « Supprimer » ; `configuration-erreurs-champs` ne peut plus préremplir
+  une adresse par `settings` ;
+- une adresse en lecture seule prend le fond des blocs et la couleur
+  secondaire ;
+- `AGENTS.md` porte encore une modification indexée par une autre session :
+  le commit ne prend que l'invariant et la carte du code, par un index
+  temporaire.

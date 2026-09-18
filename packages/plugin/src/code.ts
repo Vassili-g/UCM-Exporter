@@ -11,13 +11,13 @@ import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './t
 import {
   cleDeDestination,
   ecrireGestionDesTokens,
-  lireAdresseDuDepot,
   lireGestionDesTokens,
   lireInstantane,
   memeDepot,
   nomDuDepot,
-  saveSettings,
-  supprimerPat,
+  enregistrerDepot,
+  reprendreLAncienneConfiguration,
+  supprimerDepot,
 } from './config';
 import type { ConfigurationDuDepot, Instantane } from './config';
 import { publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './depot';
@@ -122,8 +122,12 @@ function openExternal(url: string): void {
  * fenêtres du plugin ne partagent pas cette file. La taille de la fenêtre n'y
  * passe pas : elle s'écrit à chaque geste de la poignée et ne décide d'aucune
  * destination.
+ *
+ * La reprise des clés du plugin à un seul dépôt ouvre la file : aucune lecture
+ * de la configuration ne la précède. Un échec la laisse à la prochaine
+ * ouverture.
  */
-let fileDuStockage: Promise<unknown> = Promise.resolve();
+let fileDuStockage: Promise<unknown> = reprendreLAncienneConfiguration().catch(() => undefined);
 
 function parLaFile<T>(tache: () => Promise<T>): Promise<T> {
   const resultat = fileDuStockage.then(tache);
@@ -156,23 +160,22 @@ function annoncerReglages(instantane: Instantane): void {
   destinationAnnoncee = instantane.destination;
   versUi({
     type: 'settings',
-    settings: { ...instantane.publics, destination: instantane.destination, tokens: instantane.tokens },
+    settings: {
+      destination: instantane.destination,
+      tokens: instantane.tokens,
+      actif: instantane.actif,
+      depots: instantane.depots,
+    },
   });
 }
 
 /**
  * Teste la forge de l'instantané. Le jeton reste exclusivement dans ce sandbox.
- *
- * Un jeton saisi pour l'autre forge rend la configuration invalide : aucun
- * appel ne part, et la pastille nomme cette cause.
  */
-async function testerConnexion({ publics, validation, tokens }: Instantane, generation: number): Promise<void> {
+async function testerConnexion({ depots, actif, validation, tokens }: Instantane, generation: number): Promise<void> {
   if (!validation.valid || !validation.config) {
-    const adresse = lireAdresseDuDepot(publics.repoUrl);
-    postConnection(
-      validation.jetonAutreForge ? 'jeton-autre-forge' : 'non-configure',
-      { termes: adresse ? TERMES[adresse.forge] : null },
-    );
+    const forge = depots.find(({ id }) => id === actif)?.forge;
+    postConnection('non-configure', { termes: forge ? TERMES[forge] : null });
     postDepot(null, null, tokens);
     return;
   }
@@ -715,7 +718,7 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     // La configuration active change : un test déjà parti ne décrit plus rien.
     generationDeConnexion += 1;
     try {
-      const validation = await parLaFile(() => saveSettings(message.settings));
+      const { validation } = await parLaFile(() => enregistrerDepot(message.settings, message.id));
       versUi({ type: 'settings-validation', errors: validation.errors });
       if (!validation.valid) {
         versUi({ type: 'settings-save-error' });
@@ -752,11 +755,11 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     return;
   }
 
-  if (message.type === 'supprimer-token') {
+  if (message.type === 'supprimer-depot') {
     generationDeConnexion += 1;
-    await parLaFile(supprimerPat);
-    // Sans jeton, la configuration n'est plus valide : la destination change, et
-    // la pastille le dit du même geste.
+    await parLaFile(() => supprimerDepot(message.id));
+    // L'entrée active retirée, aucun dépôt n'est actif : la destination change,
+    // et la pastille le dit du même geste.
     await refreshConfiguration();
     return;
   }

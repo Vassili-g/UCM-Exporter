@@ -22,7 +22,7 @@ function chargerSandbox(nom) {
 
 const { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication, textesDePublication } = chargerSandbox('connexion');
 const { TERMES_GITHUB, TERMES_GITLAB } = chargerSandbox('forges/termes');
-const { cleDeDestination, validateSettings } = chargerSandbox('config');
+const { cleDeDestination, identiteDuDepot, lireAdresseDuDepot, nomDuDepot, validateSettings } = chargerSandbox('config');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
 const { annonceDuFormat, resumeDesTokens } = chargerSandbox('tokens/exportTokens');
 const { verdictDePrevol } = chargerSandbox('prevol');
@@ -110,14 +110,11 @@ const PUBLICATION_GITLAB = textesDePublication(TERMES_GITLAB);
  */
 const ouverture = (cause, tokens = TOKENS_PRESENTS, termes = TERMES_GITHUB, gestion = true) => {
   // Sans configuration valide, le sandbox n'envoie aucun dépôt visé.
-  const sansDepot = ['non-configure', 'jeton-autre-forge'].includes(cause);
+  const sansDepot = cause === 'non-configure';
   const gitlab = termes === TERMES_GITLAB;
-  const reglages = cause === 'non-configure'
-    ? REGLAGES_VIERGES
-    : cause === 'jeton-autre-forge' ? { ...REGLAGES_GITLAB, forgeDuJeton: 'github' } : (gitlab ? REGLAGES_GITLAB : REGLAGES);
   return [
     { message: { type: 'schema-version', version: VERSION_CONTRAT } },
-    { message: { type: 'settings', settings: { ...reglages, ...reglagesDe(sansDepot ? 'aucune' : (gitlab ? 'gitlab' : 'github'), gestion) } } },
+    { message: { type: 'settings', settings: reglagesDe(sansDepot ? 'aucune' : (gitlab ? 'gitlab' : 'github'), gestion) } },
     { message: { type: 'connection', ...etatDeConnexion(cause, cause === 'non-configure' ? {} : { termes }) } },
     sansDepot
       ? DEPOT_ABSENT
@@ -170,24 +167,30 @@ const DEPOTS_DE_GALERIE = {
 };
 const destinationDe = (forge, gestion = true) => cleDeDestination(DEPOTS_DE_GALERIE[forge], gestion);
 
-/** Les champs de `settings` que le sandbox ajoute aux réglages publics. */
-const reglagesDe = (forge, gestion = true) => ({ destination: destinationDe(forge, gestion), tokens: gestion });
+/**
+ * Un dépôt enregistré tel que `settings` le décrit, lu par les fonctions du
+ * sandbox. L'adresse GitLab est celle d'une page du projet, copiée depuis le
+ * navigateur.
+ */
+const depotPublic = (repoUrl) => {
+  const { forge, projet } = lireAdresseDuDepot(repoUrl);
+  return { id: identiteDuDepot({ forge, projet }), forge, projet, nom: nomDuDepot(projet), repoUrl, baseBranch: 'main', jeton: true };
+};
+const DEPOTS_PUBLICS = {
+  github: depotPublic('https://github.com/mon-org/design-system-v3'),
+  gitlab: depotPublic('https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines?ref_type=heads'),
+};
 
-/** Les réglages publics rechargés par `refreshConfiguration`. */
-const REGLAGES = {
-  repoUrl: 'https://github.com/mon-org/design-system-v3',
-  baseBranch: 'main',
-  forgeDuJeton: 'github',
-  ...reglagesDe('github'),
-};
-/** L'adresse d'une page du projet copiée depuis le navigateur, pas celle du projet. */
-const REGLAGES_GITLAB = {
-  repoUrl: 'https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines?ref_type=heads',
-  baseBranch: 'main',
-  forgeDuJeton: 'gitlab',
-  ...reglagesDe('gitlab'),
-};
-const REGLAGES_VIERGES = { repoUrl: '', baseBranch: 'main', forgeDuJeton: null, ...reglagesDe('aucune') };
+/** Les réglages publics rechargés par `refreshConfiguration`, un seul dépôt actif ou aucun. */
+const reglagesDe = (forge, gestion = true) => ({
+  destination: destinationDe(forge, gestion),
+  tokens: gestion,
+  actif: forge === 'aucune' ? null : DEPOTS_PUBLICS[forge].id,
+  depots: forge === 'aucune' ? [] : [DEPOTS_PUBLICS[forge]],
+});
+const REGLAGES = reglagesDe('github');
+const REGLAGES_GITLAB = reglagesDe('gitlab');
+const REGLAGES_VIERGES = reglagesDe('aucune');
 
 /**
  * Un point à corriger relevé par l'export : ses trois parties, et les nodes
@@ -718,7 +721,7 @@ const ETATS = [
       {
         message: {
           type: 'settings',
-          settings: { repoUrl: '', baseBranch: 'main', forgeDuJeton: null, ...reglagesDe('aucune') },
+          settings: REGLAGES_VIERGES,
         },
       },
       { clic: '.icon-button' },
@@ -742,7 +745,7 @@ const ETATS = [
     titre: 'Configuration enregistrée, token conservé',
     quand: 'Retour dans la configuration après un enregistrement réussi.',
     regarder:
-      "Le placeholder du token porte une règle de comportement, et « Supprimer le token enregistré » n'apparaît que s'il y a quelque chose à supprimer.",
+      "Le placeholder du token porte une règle de comportement. L'adresse du dépôt enregistré se lit sans se modifier, et « Supprimer » retire le dépôt entier, jeton compris.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
@@ -752,10 +755,24 @@ const ETATS = [
     ],
   },
   {
+    id: 'configuration-suppression-confirmation',
+    titre: 'Suppression du dépôt, second clic attendu',
+    quand: 'Premier clic sur « Supprimer » dans la configuration du dépôt actif.',
+    regarder:
+      "Le même bouton demande la confirmation, sans boîte de dialogue. Le libellé dit ce qui disparaît au second clic : le dépôt entier, jeton compris.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      { clic: '.icon-button' },
+      { clic: '#onglet-depots' },
+      { clic: '#panneau-depots .btn-secondary' },
+    ],
+  },
+  {
     id: 'configuration-erreurs-champs',
     forge: 'aucune',
     titre: 'Configuration refusée par le sandbox',
-    quand: '`saveSettings` renvoie ses erreurs de validation, champ par champ.',
+    quand: '`enregistrerDepot` renvoie ses erreurs de validation, champ par champ.',
     regarder:
       "Le rang de l'erreur est porté par la seule couleur, et le formulaire annonce dans six régions à la fois.",
     existe: true,
@@ -764,7 +781,7 @@ const ETATS = [
       {
         message: {
           type: 'settings',
-          settings: { repoUrl: 'https://gitlab.example.com/mon-org/ds', baseBranch: '', forgeDuJeton: null, ...reglagesDe('aucune') },
+          settings: REGLAGES_VIERGES,
         },
       },
       { clic: '.icon-button' },
@@ -910,20 +927,6 @@ const ETATS = [
     atteinte: [
       ...ouverture('depot-introuvable', TOKENS_PRESENTS, TERMES_GITLAB),
       { message: { type: 'settings', settings: REGLAGES_GITLAB } },
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
-    ],
-  },
-  {
-    id: 'gitlab-jeton-autre-forge',
-    forge: 'gitlab',
-    titre: 'URL GitLab, jeton GitHub enregistré',
-    quand: "Le designer a remplacé l'URL GitHub par une URL GitLab sans saisir de nouveau jeton. Aucun appel ne part.",
-    regarder: "Le champ du jeton n'annonce aucun jeton enregistré, et la pastille nomme la cause au lieu de dire « aucun repository ».",
-    existe: true,
-    atteinte: [
-      ...ouverture('jeton-autre-forge', TOKENS_PRESENTS, TERMES_GITLAB),
-      { message: { type: 'settings', settings: { ...REGLAGES_GITLAB, forgeDuJeton: 'github', ...reglagesDe('aucune') } } },
       { clic: '.icon-button' },
       { clic: '#onglet-depots' },
     ],

@@ -1,10 +1,10 @@
 /**
- * Configuration optionnelle du dépôt : sur quelle forge publier, où, et avec
+ * Configuration optionnelle des dépôts : sur quelle forge publier, où, et avec
  * quel jeton.
  *
- * Les champs sont stockés un par un dans `figma.clientStorage`, donc localement
- * sur la machine de l'utilisateur et jamais dans le document Figma. Le jeton ne
- * quitte le sandbox que lorsqu'il est saisi par l'UI au moment de la sauvegarde.
+ * Les dépôts sont rangés dans `figma.clientStorage`, donc localement sur la
+ * machine de l'utilisateur et jamais dans le document Figma. Le jeton ne quitte
+ * le sandbox que lorsqu'il est saisi par l'UI au moment de l'enregistrement.
  *
  * Ce qui est rangé ici décrit une machine, pas un repository : l'endroit où un
  * export atterrit n'en fait donc pas partie, et vit dans `depot.ts`, qui le
@@ -12,6 +12,7 @@
  */
 import { TERMES } from './forges/termes';
 import type { NomDeForge } from './forges/termes';
+import type { DepotPublic } from './messages';
 
 /**
  * Champs visibles et éditables dans la page de configuration.
@@ -36,42 +37,44 @@ export type ConfigurationDuDepot = RepositorySettings & {
   jeton: string;
 };
 
-/** Valeurs envoyées par l'UI lors d'une sauvegarde. */
+/** Valeurs envoyées par l'UI lors d'un enregistrement. */
 export type SettingsInput = RepositorySettings & {
-  /** Vide = conserver le jeton déjà enregistré, s'il appartient à la forge de l'URL. */
+  /** Vide = conserver le jeton déjà enregistré pour ce dépôt. */
   jeton?: string;
 };
 
 /**
- * État public renvoyé à l'UI sans jamais révéler le jeton enregistré :
- * seulement la forge qui l'a reçu, ou `null` sans jeton.
+ * Un dépôt tel que le stockage le garde. Le jeton voyage dans l'entrée de son
+ * adresse, écrite en une seule écriture : aucune étape ne l'associe à une autre.
  */
-export type PublicSettings = RepositorySettings & { forgeDuJeton: NomDeForge | null };
+export type DepotEnregistre = RepositorySettings & { jeton: string };
 
-/*
- * `github_pat` garde son nom d'avant GitLab : le renommer retirerait le jeton
- * des utilisateurs actuels à la mise à jour du plugin. Un jeton sans
- * `forge_du_jeton` a été saisi pour GitHub.
- */
 const STORAGE_KEYS = {
+  /** Tableau de `DepotEnregistre`, dans l'ordre d'ajout. */
+  depots: 'depots',
+  /** Identité du dépôt actif ; une identité absente de `depots` vaut « aucun ». */
+  depotActif: 'depotActif',
+  /** Booléen, absent vaut `true` : l'équipe du design system emploie les tokens. */
+  gestionDesTokens: 'gestionDesTokens',
+} as const;
+
+/**
+ * Les clés du plugin à un seul dépôt, lues une fois par la reprise puis
+ * effacées. Un jeton sans `forge_du_jeton` a été saisi pour GitHub.
+ */
+const ANCIENNES_CLES = {
   repoUrl: 'repoUrl',
   baseBranch: 'baseBranch',
   jeton: 'github_pat',
   forgeDuJeton: 'forge_du_jeton',
-  /** Booléen, absent vaut `true` : l'équipe du design system emploie les tokens. */
-  gestionDesTokens: 'gestionDesTokens',
 } as const;
 
 /** Résultat de validation détaillé pour alimenter les erreurs inline de l'UI. */
 export type SettingsValidation = {
   valid: boolean;
-  errors: Partial<Record<keyof SettingsInput, string>>;
+  /** Par champ, et `general` pour une erreur qui ne tient à aucun champ. */
+  errors: Partial<Record<keyof SettingsInput | 'general', string>>;
   config: ConfigurationDuDepot | null;
-  /**
-   * `true` quand le seul jeton disponible a été saisi pour l'autre forge. La
-   * configuration est alors invalide, et aucun appel réseau ne part.
-   */
-  jetonAutreForge: boolean;
 };
 
 /** Ce qu'une adresse désigne, et si une partie de son chemin a été ignorée. */
@@ -139,17 +142,16 @@ export function forgeDuPrefixe(jeton: string): NomDeForge | null {
   return null;
 }
 
-/** Le jeton enregistré sur le poste, et la forge qui l'a reçu. */
+/** Le jeton enregistré pour un dépôt, et la forge qui l'a reçu. */
 export type JetonEnregistre = { jeton: string; forge: NomDeForge | null };
 
 /**
- * Valide et normalise les réglages avant tout appel réseau.
+ * Valide et normalise les réglages d'un dépôt avant tout appel réseau.
  *
- * Un jeton ne part que vers la forge qui l'a reçu. Un champ vide conserve le
- * jeton enregistré seulement si sa forge est celle de l'URL ; sinon la
- * configuration est invalide, et c'est la seule protection qui tienne à
- * l'ouverture, au pré-vol et à la publication, parce que les trois passent par
- * ici.
+ * L'ouverture, le pré-vol, la publication, l'enregistrement et la reprise des
+ * anciennes clés passent tous par ici, entrée par entrée, avec le jeton de
+ * cette entrée. Un champ vide conserve le jeton enregistré seulement si sa forge
+ * est celle de l'URL : la reprise d'une ancienne configuration en dépend.
  */
 export function validateSettings(
   input: SettingsInput,
@@ -166,7 +168,6 @@ export function validateSettings(
   const stocke = enregistre.jeton.trim();
   const forgeStockee = stocke ? enregistre.forge ?? 'github' : null;
   let jeton = saisi;
-  let jetonAutreForge = false;
 
   if (adresse) {
     const termes = TERMES[adresse.forge];
@@ -177,7 +178,6 @@ export function validateSettings(
     } else if (!saisi && stocke && forgeStockee === adresse.forge) {
       jeton = stocke;
     } else if (!saisi && stocke) {
-      jetonAutreForge = true;
       errors.jeton = `Le jeton enregistré ne sert pas pour ${termes.forge}. Collez un ${termes.nomDuJeton} ${termes.forge}.`;
     } else if (!saisi) {
       errors.jeton = `Le ${termes.nomDuJeton} est obligatoire pour ouvrir une ${termes.demande}.`;
@@ -187,7 +187,7 @@ export function validateSettings(
   }
 
   if (!adresse || !baseBranch || !jeton || errors.jeton) {
-    return { valid: false, errors, config: null, jetonAutreForge };
+    return { valid: false, errors, config: null };
   }
 
   return {
@@ -200,31 +200,80 @@ export function validateSettings(
       projet: adresse.projet,
       jeton,
     },
-    jetonAutreForge: false,
   };
 }
 
 /**
- * Retire le jeton du poste, et la forge qui l'accompagne.
- *
- * Aucun geste ne le faisait : ni rotation, ni changement de repository, ni
- * départ. Un champ vide signifie « conserver le jeton enregistré », si bien que
- * le formulaire ne pouvait que le remplacer, jamais l'effacer.
+ * L'identité d'un dépôt : sa forge et son projet, le projet en minuscules.
+ * GitHub et GitLab servent un chemin quelle que soit sa casse : deux entrées
+ * pour un même projet ne se distinguent pas autrement.
  */
-export async function supprimerPat(): Promise<void> {
-  await figma.clientStorage.deleteAsync(STORAGE_KEYS.jeton);
-  await figma.clientStorage.deleteAsync(STORAGE_KEYS.forgeDuJeton);
+export function identiteDuDepot({ forge, projet }: { forge: NomDeForge; projet: string }): string {
+  return `${forge}:${projet.toLowerCase()}`;
 }
 
-async function lireJetonEnregistre(): Promise<JetonEnregistre> {
-  const [jeton, forge] = await Promise.all([
-    figma.clientStorage.getAsync(STORAGE_KEYS.jeton),
-    figma.clientStorage.getAsync(STORAGE_KEYS.forgeDuJeton),
-  ]);
-  return {
-    jeton: typeof jeton === 'string' ? jeton : '',
-    forge: forge === 'github' || forge === 'gitlab' ? forge : null,
-  };
+/** L'adresse d'une entrée enregistrée, que la lecture du stockage a déjà validée. */
+function adresseDe(entree: DepotEnregistre): AdresseDuDepot {
+  return lireAdresseDuDepot(entree.repoUrl) as AdresseDuDepot;
+}
+
+function estUneEntree(valeur: unknown): valeur is DepotEnregistre {
+  if (typeof valeur !== 'object' || valeur === null) return false;
+  const { repoUrl, baseBranch, jeton } = valeur as Record<string, unknown>;
+  return typeof repoUrl === 'string' && typeof baseBranch === 'string' && typeof jeton === 'string'
+    && lireAdresseDuDepot(repoUrl) !== null;
+}
+
+/**
+ * La liste `depots`, ou `null` quand elle n'a jamais été écrite. Une liste que
+ * le plugin n'a pas pu écrire ainsi lève : la reprise ne l'écrase jamais.
+ */
+async function lireDepots(): Promise<DepotEnregistre[] | null> {
+  const valeur = await figma.clientStorage.getAsync(STORAGE_KEYS.depots);
+  if (valeur === undefined) return null;
+  if (!Array.isArray(valeur) || !valeur.every(estUneEntree)) {
+    throw new Error('La liste des dépôts enregistrés sur ce poste est illisible.');
+  }
+  return valeur;
+}
+
+/** Le jeton d'une entrée, rattaché à la forge de son adresse. */
+function jetonDe(entree: DepotEnregistre): JetonEnregistre {
+  return { jeton: entree.jeton, forge: adresseDe(entree).forge };
+}
+
+/**
+ * Reprend le dépôt du plugin à un seul dépôt, puis efface ses quatre clés.
+ *
+ * Tant que `depots` est absente, la configuration ancienne passe par
+ * `validateSettings` ; valide, elle devient la première entrée, active. Écrire
+ * `depots`, même vide, marque la reprise faite : une ouverture suivante ne
+ * termine que l'effacement, sans réimporter ni écraser. Un échec d'écriture de
+ * `depots` laisse les anciennes clés pour la prochaine ouverture.
+ */
+export async function reprendreLAncienneConfiguration(): Promise<void> {
+  if ((await lireDepots()) === null) {
+    const [repoUrl, baseBranch, jeton, forge] = await Promise.all([
+      figma.clientStorage.getAsync(ANCIENNES_CLES.repoUrl),
+      figma.clientStorage.getAsync(ANCIENNES_CLES.baseBranch),
+      figma.clientStorage.getAsync(ANCIENNES_CLES.jeton),
+      figma.clientStorage.getAsync(ANCIENNES_CLES.forgeDuJeton),
+    ]);
+    const { config } = validateSettings(
+      {
+        repoUrl: typeof repoUrl === 'string' ? repoUrl : '',
+        baseBranch: typeof baseBranch === 'string' ? baseBranch : 'main',
+      },
+      {
+        jeton: typeof jeton === 'string' ? jeton : '',
+        forge: forge === 'github' || forge === 'gitlab' ? forge : null,
+      },
+    );
+    const reprise = config ? [{ repoUrl: config.repoUrl, baseBranch: config.baseBranch, jeton: config.jeton }] : [];
+    await figma.clientStorage.setAsync(STORAGE_KEYS.depots, reprise);
+    if (config) await figma.clientStorage.setAsync(STORAGE_KEYS.depotActif, identiteDuDepot(config));
+  }
+  for (const cle of Object.values(ANCIENNES_CLES)) await figma.clientStorage.deleteAsync(cle);
 }
 
 /**
@@ -266,70 +315,119 @@ export function nomDuDepot(projet: string): string {
 }
 
 /**
- * Une lecture du stockage, et tout ce qui en dérive : les réglages publics, la
- * configuration validée et la clé de destination. Les trois viennent des mêmes
- * valeurs lues.
+ * Une lecture du stockage, et tout ce qui en dérive : la liste publique des
+ * dépôts, la configuration validée du dépôt actif et la clé de destination.
+ * Tous viennent des mêmes valeurs lues.
  */
 export type Instantane = {
-  publics: PublicSettings;
+  depots: DepotPublic[];
+  /** L'identité du dépôt actif, `null` quand aucune entrée ne la porte. */
+  actif: string | null;
   validation: SettingsValidation;
   /** Le réglage « Gérer les tokens ». */
   tokens: boolean;
   destination: string;
 };
 
+const AUCUNE_CONFIGURATION: SettingsValidation = { valid: false, errors: {}, config: null };
+
+function publicDe(entree: DepotEnregistre): DepotPublic {
+  const { forge, projet } = adresseDe(entree);
+  return {
+    id: identiteDuDepot({ forge, projet }),
+    forge,
+    projet,
+    nom: nomDuDepot(projet),
+    repoUrl: entree.repoUrl,
+    baseBranch: entree.baseBranch,
+    jeton: entree.jeton.trim() !== '',
+  };
+}
+
 export async function lireInstantane(): Promise<Instantane> {
-  const [repoUrl, baseBranch, enregistre, tokens] = await Promise.all([
-    figma.clientStorage.getAsync(STORAGE_KEYS.repoUrl),
-    figma.clientStorage.getAsync(STORAGE_KEYS.baseBranch),
-    lireJetonEnregistre(),
+  const [enregistres, actifLu, tokens] = await Promise.all([
+    lireDepots(),
+    figma.clientStorage.getAsync(STORAGE_KEYS.depotActif),
     lireGestionDesTokens(),
   ]);
-  const publics: PublicSettings = {
-    repoUrl: typeof repoUrl === 'string' ? repoUrl : '',
-    baseBranch: typeof baseBranch === 'string' ? baseBranch : 'main',
-    forgeDuJeton: enregistre.jeton.trim() ? enregistre.forge ?? 'github' : null,
+  const depots = enregistres ?? [];
+  // Un `depotActif` qui désigne une entrée absente se lit comme « aucun dépôt actif ».
+  const actif = depots.find((entree) => identiteDuDepot(adresseDe(entree)) === actifLu) ?? null;
+  const validation = actif ? validateSettings(actif, jetonDe(actif)) : AUCUNE_CONFIGURATION;
+  return {
+    depots: depots.map(publicDe),
+    actif: actif ? identiteDuDepot(adresseDe(actif)) : null,
+    validation,
+    tokens,
+    destination: cleDeDestination(validation.config, tokens),
   };
-  const validation = validateSettings(publics, enregistre);
-  return { publics, validation, tokens, destination: cleDeDestination(validation.config, tokens) };
 }
 
-/** Charge les clés locales et ne renvoie jamais le jeton à l'UI. */
-export async function loadPublicSettings(): Promise<PublicSettings> {
-  return (await lireInstantane()).publics;
-}
-
-/** Charge et valide la configuration complète, jeton inclus côté sandbox seulement. */
+/** Charge et valide la configuration du dépôt actif, jeton inclus côté sandbox seulement. */
 export async function loadConfiguration(): Promise<SettingsValidation> {
   return (await lireInstantane()).validation;
 }
 
-/**
- * Sauvegarde les réglages ; un jeton vide conserve la valeur déjà enregistrée.
- *
- * L'ordre des écritures est la garantie de D5 face à une sauvegarde
- * interrompue : l'ancien jeton part d'abord quand la forge change, puis la
- * forge du nouveau jeton, le jeton, et l'URL en dernier. À chaque étape, un
- * jeton enregistré porte la forge qui l'a reçu, et la validation refuse de
- * l'envoyer ailleurs.
- */
-export async function saveSettings(input: SettingsInput): Promise<SettingsValidation> {
-  const enregistre = await lireJetonEnregistre();
-  const validation = validateSettings(input, enregistre);
-  // Une erreur de saisie ne doit jamais écraser une configuration déjà valable.
-  if (!validation.valid || !validation.config) return validation;
+/** Ce qu'un enregistrement rend : la validation, et l'identité de l'entrée écrite. */
+export type Enregistrement = { validation: SettingsValidation; id: string | null };
 
-  const { forge } = validation.config;
-  const saisi = input.jeton?.trim();
-  if (saisi) {
-    const forgeStockee = enregistre.jeton.trim() ? enregistre.forge ?? 'github' : null;
-    if (forgeStockee !== null && forgeStockee !== forge) {
-      await figma.clientStorage.deleteAsync(STORAGE_KEYS.jeton);
+function refus(errors: SettingsValidation['errors'], id: string | null): Enregistrement {
+  return { validation: { valid: false, errors, config: null }, id };
+}
+
+/**
+ * Enregistre un dépôt nouveau (`id` nul), ou modifie la branche et le jeton de
+ * l'entrée `id`. Une entrée s'écrit en une seule écriture de `depots`.
+ *
+ * L'adresse d'une entrée enregistrée ne change pas : le jeton reste attaché au
+ * projet pour lequel il a été collé, même si l'interface a laissé passer le
+ * champ. Le premier dépôt d'une liste vide devient actif, par une seconde
+ * écriture ; une interruption entre les deux laisse un dépôt enregistré sans
+ * dépôt actif.
+ */
+export async function enregistrerDepot(input: SettingsInput, id: string | null): Promise<Enregistrement> {
+  const depots = (await lireDepots()) ?? [];
+  const adresse = lireAdresseDuDepot(input.repoUrl);
+
+  if (id !== null) {
+    const rang = depots.findIndex((entree) => identiteDuDepot(adresseDe(entree)) === id);
+    if (rang === -1) return refus({ general: 'Ce dépôt n’est plus dans la liste.' }, id);
+    if (!adresse || identiteDuDepot(adresse) !== id) {
+      return refus({ repoUrl: 'L’adresse d’un dépôt enregistré ne change pas. Pour un autre projet, ajoutez un dépôt.' }, id);
     }
-    await figma.clientStorage.setAsync(STORAGE_KEYS.forgeDuJeton, forge);
-    await figma.clientStorage.setAsync(STORAGE_KEYS.jeton, saisi);
+    const existante = depots[rang];
+    const validation = validateSettings({ ...input, repoUrl: existante.repoUrl }, jetonDe(existante));
+    if (!validation.config) return { validation, id };
+    const suivants = [...depots];
+    suivants[rang] = { repoUrl: existante.repoUrl, baseBranch: validation.config.baseBranch, jeton: validation.config.jeton };
+    await figma.clientStorage.setAsync(STORAGE_KEYS.depots, suivants);
+    return { validation, id };
   }
-  await figma.clientStorage.setAsync(STORAGE_KEYS.repoUrl, input.repoUrl.trim());
-  await figma.clientStorage.setAsync(STORAGE_KEYS.baseBranch, input.baseBranch.trim());
-  return validation;
+
+  const validation = validateSettings(input);
+  if (!validation.config) return { validation, id: null };
+  const nouvelle = identiteDuDepot(validation.config);
+  if (depots.some((entree) => identiteDuDepot(adresseDe(entree)) === nouvelle)) {
+    return refus({ repoUrl: `Ce ${TERMES[validation.config.forge].depot} est déjà dans la liste.` }, null);
+  }
+  const { repoUrl, baseBranch, jeton } = validation.config;
+  await figma.clientStorage.setAsync(STORAGE_KEYS.depots, [...depots, { repoUrl, baseBranch, jeton }]);
+  if (depots.length === 0) await figma.clientStorage.setAsync(STORAGE_KEYS.depotActif, nouvelle);
+  return { validation, id: nouvelle };
+}
+
+/**
+ * Retire l'entrée `id`, jeton compris, puis le dépôt actif s'il la désignait.
+ * Une interruption entre les deux laisse un `depotActif` sans entrée, lu comme
+ * « aucun dépôt actif ».
+ */
+export async function supprimerDepot(id: string): Promise<void> {
+  const depots = (await lireDepots()) ?? [];
+  await figma.clientStorage.setAsync(
+    STORAGE_KEYS.depots,
+    depots.filter((entree) => identiteDuDepot(adresseDe(entree)) !== id),
+  );
+  if ((await figma.clientStorage.getAsync(STORAGE_KEYS.depotActif)) === id) {
+    await figma.clientStorage.deleteAsync(STORAGE_KEYS.depotActif);
+  }
 }

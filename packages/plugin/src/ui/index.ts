@@ -47,8 +47,8 @@ const depotRepli = document.createElement('p');
 depotRepli.className = 'depot-repli';
 depotRepli.hidden = true;
 
-const configurationPage = createConfigurationPage((settings) => {
-  versSandbox({ type: 'save-settings', settings });
+const configurationPage = createConfigurationPage((settings, id) => {
+  versSandbox({ type: 'save-settings', settings, id });
 });
 const configPage = configurationPage.element;
 

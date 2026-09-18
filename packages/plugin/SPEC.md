@@ -615,8 +615,8 @@ variables et leurs tokens.
 ## Partie 3 — Configuration et dépôt sur une forge
 
 La configuration est optionnelle et locale à la machine via
-`figma.clientStorage`. Elle contient l'URL du dépôt, la branche de base et un
-jeton. Le jeton n'est jamais écrit dans le document Figma, renvoyé à l'UI après
+`figma.clientStorage`. Elle contient des dépôts, chacun avec son URL, sa branche
+de base et son jeton, et le dépôt actif. Le jeton n'est jamais écrit dans le document Figma, renvoyé à l'UI après
 sauvegarde, ni logué.
 
 **La forge se déduit de l'hôte de l'URL.** `github.com` désigne GitHub,
@@ -639,19 +639,39 @@ l'interface l'importe.
 | GitHub | Personal Access Token fine-grained | **Contents: read/write** et **Pull requests: read/write** sur le repository |
 | GitLab | jeton d'accès projet de rôle Developer quand l'offre le permet, jeton personnel sinon | scope **api** seul : `read_repository` et `write_repository` ne couvrent ni les merge requests ni l'API de commits |
 
-**Un jeton ne part que vers la forge qui l'a reçu.** Le stockage garde la clé
-`github_pat`, pour qu'une mise à jour du plugin ne retire pas le jeton des
-utilisateurs existants, et lui ajoute `forge_du_jeton` ; un jeton sans cette clé
-appartient à GitHub. `validateSettings()` refuse une configuration dont le seul
-jeton appartient à l'autre forge. Le chargement de l'ouverture, le pré-vol et la
-publication passent tous par elle, si bien qu'aucun appel réseau ne part et que
-la connexion affiche la cause `jeton-autre-forge`. À la saisie, un jeton dont le
-préfixe désigne l'autre forge est refusé : `ghp_` et `github_pat_` pour GitHub,
-`glpat-` pour GitLab. L'enregistrement écrit dans cet ordre : retrait de l'ancien
-jeton quand la forge change, `forge_du_jeton`, jeton, puis URL. Une sauvegarde
-interrompue à n'importe quelle étape laisse donc un jeton qui porte sa forge.
-L'UI ne reçoit que `forgeDuJeton`, et n'annonce « Token enregistré » que pour la
-forge de l'URL saisie.
+**Un jeton ne part que vers le dépôt qui l'a reçu.** Le stockage range les
+dépôts dans la clé `depots`, un tableau d'entrées `{ repoUrl, baseBranch, jeton }`,
+et l'identité du dépôt actif dans `depotActif`. L'identité d'un dépôt est sa
+forge et son projet, le projet en minuscules. Le jeton et l'adresse voyagent
+dans la même entrée, écrite en une seule écriture : aucune étape ne les sépare.
+L'adresse d'une entrée enregistrée ne change plus, et le sandbox refuse une
+modification qui la changerait ; pour un autre projet, le designer ajoute un
+dépôt. Un projet ne s'enregistre qu'une fois. `validateSettings()` valide
+chaque entrée avec son propre jeton : l'ouverture, le pré-vol, la publication et
+l'enregistrement passent tous par elle. À la saisie, un jeton dont le préfixe
+désigne l'autre forge est refusé : `ghp_` et `github_pat_` pour GitHub, `glpat-`
+pour GitLab. L'interface ne reçoit que la présence d'un jeton, par dépôt.
+
+| Geste | Écritures | Interruption entre deux écritures |
+|---|---|---|
+| Enregistrer un premier dépôt | `depots`, puis `depotActif` | Dépôt enregistré, aucun dépôt actif |
+| Modifier la branche ou le jeton | `depots` | Aucune étape intermédiaire |
+| Supprimer | `depots` sans l'entrée, puis retrait de `depotActif` si elle était active | `depotActif` désigne une entrée absente, lue comme « aucun dépôt actif » |
+
+Une file du sandbox ordonne les écritures de la configuration et les lectures
+qui préparent une analyse, une publication ou `settings` : une modification ne
+peut pas relire la liste avant une suppression et l'écrire après elle. Deux
+fenêtres du plugin ne partagent pas cette file. Une suppression et une
+modification faites au même instant dans deux fenêtres peuvent encore faire
+revenir une entrée.
+
+La première ouverture reprend la configuration du plugin à un seul dépôt : les
+clés `repoUrl`, `baseBranch`, `github_pat` et `forge_du_jeton`, où un jeton sans
+`forge_du_jeton` appartient à GitHub. Une configuration valide devient la
+première entrée, active ; une configuration invalide n'est pas reprise. Les
+quatre clés sont ensuite effacées. L'écriture de `depots`, même vide, marque la
+reprise faite : une ouverture suivante ne réimporte ni n'écrase rien. Une liste
+`depots` illisible produit une erreur, et la reprise ne l'écrase pas.
 
 La configuration ne contient aucun chemin. **L'endroit où un export atterrit
 appartient au dépôt visé**, qui le déclare dans son `ucm.config.json` ou laisse

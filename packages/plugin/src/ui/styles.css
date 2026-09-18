@@ -415,6 +415,12 @@ p {
   color: var(--texte);
 }
 
+/* L'adresse d'un dépôt enregistré se lit : le fond des blocs la distingue d'une saisie. */
+.input:read-only {
+  background: var(--fond-bloc);
+  color: var(--texte-second);
+}
+
 .input:focus-visible {
   border-color: var(--bordure-marque);
   box-shadow: 0 0 0 1px var(--bordure-marque);

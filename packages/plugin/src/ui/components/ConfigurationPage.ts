@@ -7,11 +7,11 @@
 import { NOM_CONFIGURATION } from '@ucm-kit/core/format';
 
 import { lireAdresseDuDepot, validateSettings } from '../../config';
-import type { PublicSettings, SettingsInput } from '../../config';
+import type { SettingsInput, SettingsValidation } from '../../config';
 import { TERMES, avecMajuscule } from '../../forges/termes';
 import type { NomDeForge } from '../../forges/termes';
 import type { EtatConnexion, EtatDuDepot } from '../../connexion';
-import type { PluginMessage } from '../../messages';
+import type { DepotPublic, PluginMessage, ReglagesPublics } from '../../messages';
 import { createButton } from './Button';
 import { createInterrupteur } from './Interrupteur';
 import { createOnglets } from './Onglets';
@@ -30,7 +30,7 @@ const DESCRIPTIONS: Record<OngletConfiguration, string> = {
 type NomDeChamp = keyof SettingsInput;
 
 /** Les erreurs de saisie, par champ. */
-export type ErreursDeChamp = Partial<Record<NomDeChamp, string>>;
+export type ErreursDeChamp = SettingsValidation['errors'];
 
 /** Un champ monté : son enveloppe, sa saisie, son erreur et son libellé. */
 interface ChampUi {
@@ -50,8 +50,8 @@ interface OptionsChamp {
 export interface PageConfigurationUi {
   element: HTMLDivElement;
   renderErrors(errors?: ErreursDeChamp): void;
-  populate(settings: PublicSettings): void;
-  acceptRemoteSettings(settings: PublicSettings & { tokens: boolean }): void;
+  populate(settings: ReglagesPublics): void;
+  acceptRemoteSettings(settings: ReglagesPublics): void;
   ouvrirOnglet(onglet: OngletConfiguration): void;
   ongletActif(): OngletConfiguration;
   updateConnection(state: EtatConnexion['state'], geste: string | null): void;
@@ -129,8 +129,11 @@ function localErrors(settings: SettingsInput, forgeDuJeton: NomDeForge | null): 
  * le routeur UI doit déclencher à la réception des messages du plugin.
  */
 export function createConfigurationPage(
-  onSave: (settings: SettingsInput) => void,
+  onSave: (settings: SettingsInput, id: string | null) => void,
 ): PageConfigurationUi {
+  /** Le dépôt actif que le formulaire modifie, `null` pour en enregistrer un premier. */
+  let depotEdite: DepotPublic | null = null;
+  /** La forge du jeton enregistré pour le dépôt édité. */
   let forgeDuJeton: NomDeForge | null = null;
   let settingsDirty = false;
   /*
@@ -217,29 +220,29 @@ export function createConfigurationPage(
   suivreLaForge();
 
   /*
-   * Retirer le jeton du poste. La confirmation est un second clic sur le
-   * même bouton, et non une boîte de dialogue : la sandbox n'en offre pas, et
-   * un `confirm()` bloquerait l'iframe. Le libellé de confirmation dit ce qui
-   * disparaît, parce que c'est irréversible.
+   * Retirer le dépôt actif, jeton compris. La confirmation est un second clic
+   * sur le même bouton, et non une boîte de dialogue : la sandbox n'en offre
+   * pas, et un `confirm()` bloquerait l'iframe.
    */
-  const supprimerToken = createButton({
-    label: 'Supprimer le token enregistré',
+  const supprimerDepot = createButton({
+    label: 'Supprimer',
     variant: 'secondary',
     onClick: () => {
-      if (supprimerToken.dataset.confirme !== 'oui') {
-        supprimerToken.dataset.confirme = 'oui';
-        supprimerToken.setLabel('Confirmer la suppression du token');
+      if (!depotEdite) return;
+      if (supprimerDepot.dataset.confirme !== 'oui') {
+        supprimerDepot.dataset.confirme = 'oui';
+        supprimerDepot.setLabel('Confirmer la suppression');
         return;
       }
       reinitialiserSuppression();
-      versSandbox({ type: 'supprimer-token' });
+      versSandbox({ type: 'supprimer-depot', id: depotEdite.id });
     },
   });
-  supprimerToken.hidden = true;
+  supprimerDepot.hidden = true;
 
   function reinitialiserSuppression() {
-    supprimerToken.dataset.confirme = 'non';
-    supprimerToken.setLabel('Supprimer le token enregistré');
+    supprimerDepot.dataset.confirme = 'non';
+    supprimerDepot.setLabel('Supprimer');
   }
   reinitialiserSuppression();
 
@@ -258,10 +261,14 @@ export function createConfigurationPage(
     status.hidden = !texte;
   };
 
+  /** Une erreur qui ne tient à aucun champ, écrite dans le statut par `showSaveError`. */
+  let erreurGenerale: string | null = null;
+
   const renderErrors = (errors: ErreursDeChamp = {}) => {
     for (const [name, field] of Object.entries(fields) as [NomDeChamp, ChampUi][]) {
       field.error.textContent = errors[name] ?? '';
     }
+    erreurGenerale = errors.general ?? null;
   };
 
   const settingsPayload = () => ({
@@ -281,7 +288,7 @@ export function createConfigurationPage(
       enregistrementEnCours = true;
       saveButton.disabled = true;
       ecrireStatut('loading', 'Enregistrement et test de connexion…');
-      onSave(settings);
+      onSave(settings, depotEdite?.id ?? null);
     },
   });
 
@@ -293,7 +300,7 @@ export function createConfigurationPage(
     baseBranch.wrapper,
     destination,
     jeton.wrapper,
-    supprimerToken,
+    supprimerDepot,
     saveButton,
   );
 
@@ -327,18 +334,22 @@ export function createConfigurationPage(
     /*
  * Les valeurs sont celles du sandbox, sans défaut inventé ici.
  */
-    populate(settings: PublicSettings) {
+    populate(settings: ReglagesPublics) {
       if (settingsDirty) return;
-      repoUrl.input.value = settings.repoUrl ?? '';
-      baseBranch.input.value = settings.baseBranch ?? '';
-      forgeDuJeton = settings.forgeDuJeton ?? null;
+      depotEdite = settings.depots.find(({ id }) => id === settings.actif) ?? null;
+      repoUrl.input.value = depotEdite?.repoUrl ?? '';
+      // Un jeton reste attaché au projet pour lequel il a été collé : l'adresse
+      // d'un dépôt enregistré se lit, elle ne se modifie plus.
+      repoUrl.input.readOnly = depotEdite !== null;
+      baseBranch.input.value = depotEdite?.baseBranch ?? 'main';
+      forgeDuJeton = depotEdite?.jeton ? depotEdite.forge : null;
       // Le bouton n'existe que s'il y a quelque chose à supprimer.
-      supprimerToken.hidden = forgeDuJeton === null;
+      supprimerDepot.hidden = depotEdite === null;
       reinitialiserSuppression();
       jeton.input.value = '';
       suivreLaForge();
     },
-    acceptRemoteSettings(settings: PublicSettings & { tokens: boolean }) {
+    acceptRemoteSettings(settings: ReglagesPublics) {
       settingsDirty = false;
       gestionDesTokens.poser(settings.tokens);
       this.populate(settings);
@@ -380,7 +391,7 @@ export function createConfigurationPage(
     showSaveError() {
       enregistrementEnCours = false;
       saveButton.disabled = false;
-      ecrireStatut('error', 'Réglages non enregistrés. Corrigez les champs signalés.');
+      ecrireStatut('error', erreurGenerale ?? 'Réglages non enregistrés. Corrigez les champs signalés.');
     },
     releaseSaveButton() {
       saveButton.disabled = false;
