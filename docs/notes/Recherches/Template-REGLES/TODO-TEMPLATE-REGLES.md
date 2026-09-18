@@ -44,15 +44,15 @@ Un résultat d'essai qui contredit le lot 4 (maître distant sans parent, varian
 
 ## 0. Règles de conduite
 
-- [ ] Lire `AGENTS.md`, puis `CONTRIBUTING.md` sections « Code », « Tests »,
+- [x] Lire `AGENTS.md`, puis `CONTRIBUTING.md` sections « Code », « Tests »,
       « Messages destinés au designer », « Interface du plugin » et
       « Documentation », puis le plan en entier.
-- [ ] Avant toute phrase écrite, charger `.agents/skills/rediger-sans-tics-ia`.
+- [x] Avant toute phrase écrite, charger `.agents/skills/rediger-sans-tics-ia`.
       Avant tout texte affiché au designer, charger aussi
       `.agents/skills/rediger-diagnostics-ucm`. Les textes du plan sont des
       propositions : la skill les relit, et un écart se note dans le compte
       rendu.
-- [ ] Avant de toucher l'interface, lire le protocole de relecture de
+- [x] Avant de toucher l'interface, lire le protocole de relecture de
       `CONTRIBUTING.md` et regarder les captures de la galerie avant de
       conclure.
 - [ ] Un lot se commite seul et laisse `npm test`, `npm run typecheck` et
@@ -87,7 +87,7 @@ Un résultat d'essai qui contredit le lot 4 (maître distant sans parent, varian
 
 ## P. Préparation
 
-- [ ] Constater l'écart du code depuis la mesure :
+- [x] Constater l'écart du code depuis la mesure :
       `git diff --stat 94ec0a9 HEAD -- packages/plugin/src packages/plugin/galerie packages/plugin/tests`.
       À la rédaction de cette liste, `src/contract/` n'a pas bougé, et les
       écarts de `code.ts`, `messages.ts` et `src/ui/` sont listés dans le
@@ -95,7 +95,7 @@ Un résultat d'essai qui contredit le lot 4 (maître distant sans parent, varian
       `src/contract/` modifié depuis `d5cd226` oblige à relire les faits de la
       [section 2](PLAN-TEMPLATE-REGLES.md#2-faits-de-la-section-13-vérifiés)
       qu'il porte.
-- [ ] Constater la présence des symboles cités par le plan :
+- [x] Constater la présence des symboles cités par le plan :
       `extractRules`, `hasUsableRules`, `rulesContainerOwner`,
       `nomDeComposantEcrit`, `isRuleInstance`, `ruleTagOf`,
       `ruleTagFromLayerName`, `nEcritRien`, `buildRules`, `pousserSansNode`,
@@ -104,12 +104,12 @@ Un résultat d'essai qui contredit le lot 4 (maître distant sans parent, varian
       `handleExportComponent`, `reportSelectionState`, `operationEnCours`,
       `ECRITURES` et `HORS_SANDBOX`. Un symbole absent se note dans le compte
       rendu avec son remplaçant.
-- [ ] Relever par recherche les promesses de lecture seule de la
+- [x] Relever par recherche les promesses de lecture seule de la
       [section 4.1](PLAN-TEMPLATE-REGLES.md#41-les-promesses-à-réécrire), et
       noter dans le compte rendu toute phrase ajoutée depuis `94ec0a9`. Chercher
       aussi « n'écrit rien », « ne modifie jamais » et « lecture seule » dans
       `docs/`, `packages/plugin/` et `README.md`.
-- [ ] Vérifier la suite de départ dans un worktree isolé et produire les
+- [x] Vérifier la suite de départ dans un worktree isolé et produire les
       captures de référence : `npm run galerie` puis `npm run galerie:captures`
       dans `ucm-exporter-plugin`. Garder ces captures hors du dépôt, dans le
       dossier temporaire de la session : le lot 6 les compare.
@@ -123,43 +123,43 @@ Le plugin d'essai vit hors du dépôt, dans le dossier voisin
 `Projet UCM/UCM-Essais-Template/`, à côté d'`UCM-Exporter`. Il ne se commite
 nulle part.
 
-- [ ] Créer `UCM-Essais-Template/manifest.json`. Il reprend `editorType`,
+- [x] Créer `UCM-Essais-Template/manifest.json`. Il reprend `editorType`,
       `documentAccess: "dynamic-page"` et `api` du manifeste du plugin, avec un
       autre `name` (« UCM essais template ») et un autre `id`, pour que Figma
       charge les deux plugins côte à côte. `main` vaut `code.js` et `ui` vaut
       `ui.html`. Aucun `networkAccess`.
-- [ ] Écrire `code.js` et `ui.html` en JavaScript direct, sans build ni
+- [x] Écrire `code.js` et `ui.html` en JavaScript direct, sans build ni
       dépendance : le mainteneur importe le manifeste et lance le plugin.
-- [ ] Un bouton par essai, E1 à E10, dans l'ordre du tableau de la phase 1.
+- [x] Un bouton par essai, E1 à E10, dans l'ordre du tableau de la phase 1.
       Chaque essai affiche dans la fenêtre : le geste, le critère, `réussi` ou
       `échoué`, l'erreur levée mot pour mot, et les ids et noms des nodes
       touchés. Un bouton « Copier les résultats » met le tout en texte brut
       dans le presse-papiers.
-- [ ] Chaque essai trouve sa source comme le fera le module : un `COMPONENT`
+- [x] Chaque essai trouve sa source comme le fera le module : un `COMPONENT`
       nommé `.componentRules` sur la page active, sinon le maître d'une
       instance qui porte `component-name`
       ([section 5.2](PLAN-TEMPLATE-REGLES.md#52-ordre-des-sources)). Il pose
       ce qu'il crée à côté du component set sélectionné et ne touche à aucun
       autre calque.
-- [ ] E2 essaie les deux gestes sur deux instances distinctes : `.remove()`
+- [x] E2 essaie les deux gestes sur deux instances distinctes : `.remove()`
       sur l'une, `resetSlot` sur l'autre. E3 essaie le chemin E puis le
       chemin F, chacun sur sa propre instance.
-- [ ] E4 relève les ids d'un même `.ruleItem` avant et après son ajout au slot,
+- [x] E4 relève les ids d'un même `.ruleItem` avant et après son ajout au slot,
       et relit `characters` après chaque écriture.
-- [ ] E5 relève `layoutSizingHorizontal`, la largeur rendue et
+- [x] E5 relève `layoutSizingHorizontal`, la largeur rendue et
       `limitViolations` des deux slots, avec et sans affectation de
       `layoutSizingHorizontal = 'FILL'`. Il lit aussi `stretchChildOnInsert`
       quand l'API l'expose.
-- [ ] E6 affiche, avant de créer, la consigne au mainteneur : faire un geste
+- [x] E6 affiche, avant de créer, la consigne au mainteneur : faire un geste
       manuel dans le canevas, cliquer, puis presser Ctrl+Z deux fois, focus
       dans le canevas puis dans la fenêtre du plugin, et noter ce qui disparaît
       à chaque appui.
-- [ ] E7 n'est pas un bouton du plugin d'essai : il se joue avec le plugin UCM
+- [x] E7 n'est pas un bouton du plugin d'essai : il se joue avec le plugin UCM
       actuel sur les règles créées par E3. La fenêtre le rappelle.
-- [ ] E10 pose 22 règles et 3 séparateurs, mesure la durée par
+- [x] E10 pose 22 règles et 3 séparateurs, mesure la durée par
       `Date.now()`, puis refait la pose en levant une erreur après la
       onzième règle, et vérifie que le conteneur partiel est supprimé.
-- [ ] Écrire `UCM-Essais-Template/LISEZ-MOI.md` : importer le manifeste,
+- [x] Écrire `UCM-Essais-Template/LISEZ-MOI.md` : importer le manifeste,
       dupliquer le fichier de tests, ouvrir la page d'un component set, le
       sélectionner, lancer chaque essai, rejouer E1 à E3 et E7 avec un maître
       de bibliothèque pour E9, puis coller les résultats dans la conversation.
@@ -643,3 +643,46 @@ d'être retenu.
 | Écart 8 : l'appel était déjà attendu à `94ec0a9` | retenu, écart reformulé |
 | Titre du test des domaines d'invariants, section « Messages destinés au designer », `main` et `ui` du manifeste d'essai, `code.ts` hors de `SOURCES` | retenus ; lots 5, 0, 1a et 6 |
 | Aucun motif du lot 3 n'attrape de code existant | constaté par la revue ; le lot 3 le revérifie |
+
+### P. Préparation
+
+Mesuré sur `b1d5710`.
+
+- `git diff --stat 94ec0a9 HEAD` sur `src`, `galerie` et `tests` du plugin :
+  33 fichiers. `git diff --stat d5cd226 HEAD -- packages/plugin/src/contract`
+  ne rend rien : les faits de la section 2 tiennent.
+- Les 22 symboles cités sont présents, ainsi que `sujetNomme` et `pointDe`,
+  que le lot 2a emploie. Aucun remplaçant à noter.
+- Aucune promesse de lecture seule ajoutée depuis `94ec0a9`. La recherche
+  trouve en plus la phrase « le plugin ne modifie jamais le document » de la
+  sous-section « Sélectionner et cadrer ne sont pas modifier » de SPEC.md, que
+  la ligne SPEC.md du tableau 4.1 couvre déjà. Deux titres de test contiennent
+  « n'écrit rien » (`code.test.ts`, `rules.test.ts`) et parlent d'autre chose.
+- Suite de départ dans un worktree isolé : 1 395 tests verts sur les cinq
+  suites, typage, build et `test:ui` verts. Galerie : 51 états, 39 captures,
+  gardées dans le dossier de la session.
+
+### 1a. Plugin d'essai
+
+Livré dans `Projet UCM/UCM-Essais-Template/` : `manifest.json`, `code.js`,
+`ui.html`, `LISEZ-MOI.md`. Un banc Node sur un faux `figma`, hors du dépôt, a
+fait tourner chaque bouton : E1 à E4, E6, E8 et E10 vont au bout ; E5 et E9
+échouent sur le banc seul, qui ne simule ni largeur rendue ni maître distant.
+
+Écarts à la liste :
+
+- un bouton E6 bis rejoue E6 avec `figma.commitUndo()` juste avant la création,
+  pour trancher H1-H sur une seconde mesure ;
+- E10 a deux boutons, un par chemin de 6.4, puisque le chemin n'est pas encore
+  choisi ;
+- un bouton retire les nodes créés par les essais, et eux seuls ;
+- E3 bâtit son modèle depuis les propriétés du component set, avec des clés en
+  camelCase approchées et sans la couche sémantique. E7 peut donc signaler une
+  cible introuvable sur un axe renommé : le critère d'E7 reste que les règles
+  créées soient lues.
+
+**Demande au mainteneur.** Suivre `UCM-Essais-Template/LISEZ-MOI.md` sur une
+copie du fichier de tests, puis coller les résultats dans la conversation. Si
+les textes d'aide de 6.3 sont déjà réécrits dans Figma, E7 joué avec le moteur
+du lot 2a signale les règles créées au lieu de les publier : c'est le
+comportement attendu.
