@@ -59,7 +59,8 @@ Exporter » :
 
 Installez-le une fois, puis lancez-le depuis le menu `Plugins` de l'application
 de bureau. [packages/plugin/README.md](./packages/plugin/README.md) décrit ses
-deux commandes, sa configuration GitHub ou GitLab et ses limites.
+commandes, sa configuration GitHub ou GitLab et ses limites. La commande des
+tokens n’apparaît que lorsque « Gérer les tokens » est activé.
 
 ## Brancher un repository
 

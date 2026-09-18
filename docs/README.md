@@ -8,7 +8,8 @@ quel ordre.
 ### Vous êtes designer et vous travaillez dans Figma
 
 1. [../packages/plugin/README.md](../packages/plugin/README.md) : où obtenir le
-   plugin sur la Figma Community, et ce que chacune de ses deux commandes écrit.
+   plugin sur la Figma Community, ce que chacune de ses commandes écrit, et le
+   réglage qui fait disparaître celle des tokens.
 2. [guides/POUR-LES-DESIGNERS.md](./guides/POUR-LES-DESIGNERS.md) : ce que le plugin attend
    d'un composant, comment exporter, comment relire la pull request ou la merge
    request, et le

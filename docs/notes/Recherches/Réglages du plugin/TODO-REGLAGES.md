@@ -327,7 +327,7 @@ appliquées : C2 (réglage global dans Général), P1 (onglet « Dépôts »).
 - [x] `packages/plugin/README.md`, « Les deux commandes ».
 - [x] `docs/guides/POUR-LES-DESIGNERS.md`, section 3 : l'ordre « tokens en
       premier » vaut quand la gestion des tokens est activée.
-- [ ] `README.md` et `docs/README.md` : rendre « deux commandes » conditionnel
+- [x] `README.md` et `docs/README.md` : rendre « deux commandes » conditionnel
       ([section 9](PLAN-REGLAGES.md#9-documents-et-tests-touchés)).
 
 ### Fin du lot
@@ -921,3 +921,8 @@ connecter » ne diraient pas pourquoi aucune n'est connectée.
 - la galerie atteint ces états par un lot de trois messages (`settings`,
   `connection`, `depot`) et aucun test, ce que `refreshConfiguration` envoie en
   export local.
+
+La phrase « deux commandes » du lot 2 attendait le commit d'une autre session
+sur `README.md` et `docs/README.md`. Les deux documents portent encore la
+montée de version de cette session : le commit de ce point ne prend que ses
+propres lignes, par un index temporaire.
