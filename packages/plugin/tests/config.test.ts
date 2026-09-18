@@ -264,6 +264,31 @@ test('un jeton enregistré avant GitLab appartient à GitHub, et une configurati
   assert.deepEqual(ANCIENNES.filter((cle) => valeurs.has(cle)), []);
 });
 
+/**
+ * Le plugin à un seul dépôt écrivait la branche sous la même clé : une branche
+ * absente vient d'une configuration partielle, et non d'un autre nom de clé. La
+ * reprise la pose sur `main` plutôt que d'écarter le dépôt et son jeton, et le
+ * designer lit cette branche dans sa carte comme sous la carte du composant.
+ * Une branche écrite mais vide ne se remplace pas : `validateSettings` la refuse
+ * comme toute configuration invalide, et la reprise l'écarte.
+ */
+test('une ancienne configuration sans branche est reprise sur main, et la carte le montre', async () => {
+  const { valeurs } = stockageFigma({ repoUrl: GITHUB.repoUrl, github_pat: 'ghp_ancien' });
+  await reprendreLAncienneConfiguration();
+  assert.deepEqual(valeurs.get('depots'), [{ repoUrl: GITHUB.repoUrl, baseBranch: 'main', jeton: 'ghp_ancien' }]);
+  const instantane = await lireInstantane();
+  assert.equal(instantane.depots[0]?.baseBranch, 'main');
+  assert.equal(instantane.destination, cleDeDestination({ forge: 'github', projet: 'mon-org/design-system-v3', baseBranch: 'main' }, true));
+});
+
+test('une ancienne configuration dont la branche est vide est écartée, puis effacée', async () => {
+  const { valeurs } = stockageFigma({ repoUrl: GITHUB.repoUrl, baseBranch: '   ', github_pat: 'ghp_ancien' });
+  await reprendreLAncienneConfiguration();
+  assert.deepEqual(valeurs.get('depots'), []);
+  assert.equal(valeurs.has('depotActif'), false);
+  assert.deepEqual(ANCIENNES.filter((cle) => valeurs.has(cle)), []);
+});
+
 test('une liste déjà présente, même vide, n’est ni réimportée ni écrasée : seul le nettoyage se termine', async () => {
   for (const depots of [[], [GITLAB]]) {
     const { valeurs } = stockageFigma({ depots, repoUrl: GITHUB.repoUrl, baseBranch: 'main', github_pat: 'ghp_ancien' });
