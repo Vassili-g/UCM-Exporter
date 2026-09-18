@@ -23,10 +23,27 @@ const HORS_SANDBOX = path.join(SOURCE, 'ui');
  *
  * La liste est nommément courte : elle vise les portes d'écriture de l'API, pas
  * tout ce qui ressemble à une mutation. `figma.currentPage.selection = …` n'y
- * est pas, et son absence est une décision écrite, pas un oubli.
+ * est pas, et son absence est une décision écrite, pas un oubli. L'affectation
+ * de `.name` et de `.visible` n'y est pas non plus : le moteur écrit ces deux
+ * noms sur ses propres objets, et le motif lèverait des faux positifs.
+ *
+ * Borne : la loi lit la source ligne par ligne. Une écriture par
+ * `Object.assign`, par crochets (`node['x'] = …`) ou répartie sur deux lignes
+ * lui échappe.
  */
 const ECRITURES: { motif: RegExp; quoi: string }[] = [
   { motif: /figma\.create[A-Z]\w*\s*\(/, quoi: 'création de node' },
+  {
+    motif: /figma\.(union|subtract|intersect|exclude|flatten)\s*\(/,
+    quoi: 'création de node par opération booléenne',
+  },
+  { motif: /\.createInstance\s*\(/, quoi: "création d'instance" },
+  { motif: /\.clone\s*\(/, quoi: 'copie de node' },
+  { motif: /\.detachInstance\s*\(/, quoi: "détachement d'instance" },
+  {
+    motif: /\.(setProperties|swapComponent|removeOverrides|resetOverrides|resetSlot)\s*\(/,
+    quoi: "écriture d'instance",
+  },
   { motif: /figma\.combineAsVariants\s*\(/, quoi: 'création de component set' },
   { motif: /figma\.group\s*\(|figma\.ungroup\s*\(/, quoi: 'regroupement de nodes' },
   { motif: /figma\.commitUndo\s*\(|figma\.triggerUndo\s*\(/, quoi: "entrée d'annulation" },
@@ -35,6 +52,19 @@ const ECRITURES: { motif: RegExp; quoi: string }[] = [
   { motif: /\.setPluginData\s*\(|\.setSharedPluginData\s*\(/, quoi: 'écriture de plugin data' },
   { motif: /\.remove\s*\(\s*\)/, quoi: 'suppression de node' },
   { motif: /\.appendChild\s*\(|\.insertChild\s*\(/, quoi: 'déplacement de node' },
+  {
+    motif: /\.(insertCharacters|deleteCharacters|setRange[A-Z]\w*)\s*\(/,
+    quoi: 'écriture de texte',
+  },
+  // Une affectation, précédée ou non d'un opérateur (`+=`), jamais une
+  // comparaison : `==`, `<=` et `>=` ne s'y lisent pas.
+  { motif: /\.characters\s*[-+*/]?=(?!=)/, quoi: 'écriture de texte' },
+  { motif: /\.(x|y)\s*[-+*/]?=(?!=)/, quoi: 'position de node' },
+  { motif: /\.mainComponent\s*=(?!=)/, quoi: "remplacement d'instance" },
+  {
+    motif: /\.(layoutSizingHorizontal|layoutSizingVertical)\s*=(?!=)/,
+    quoi: 'dimensionnement de node',
+  },
 ];
 
 function fichiersSource(dossier: string): string[] {

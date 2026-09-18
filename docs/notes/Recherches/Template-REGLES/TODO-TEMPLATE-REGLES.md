@@ -248,7 +248,7 @@ point 5, et la fin de la [section 11](PLAN-TEMPLATE-REGLES.md#11-décisions-pris
 Référence : [phase 3](PLAN-TEMPLATE-REGLES.md#phase-3-les-motifs-de-la-loi-du-document-intact),
 [section 4.2](PLAN-TEMPLATE-REGLES.md#42-les-appels-nécessaires-et-la-loi).
 
-- [ ] Ajouter à `ECRITURES` (`tests/loiDuDocumentIntact.test.ts`) les motifs
+- [x] Ajouter à `ECRITURES` (`tests/loiDuDocumentIntact.test.ts`) les motifs
       de 4.2 et eux seuls : `.createInstance(`, `.setProperties(`,
       `.detachInstance(`, `.swapComponent(`, `.resetSlot(`, `.clone(` ;
       l'affectation de `.characters`, `.x`, `.y`, `.mainComponent`,
@@ -259,17 +259,17 @@ Référence : [phase 3](PLAN-TEMPLATE-REGLES.md#phase-3-les-motifs-de-la-loi-du-
       `figma.flatten(`. Une affectation se reconnaît à `=`, précédé ou non
       d'un opérateur (`+=`, `-=`), et non suivi de `=` : par exemple
       `\.(x|y)\s*[-+*/]?=(?!=)`. Une comparaison n'est pas attrapée.
-- [ ] La suite reste verte sur le code actuel. Un faux positif arrête le lot :
+- [x] La suite reste verte sur le code actuel. Un faux positif arrête le lot :
       le noter dans le compte rendu avec la ligne en cause.
-- [ ] Écrire dans le commentaire de la loi sa borne : elle lit la source ligne
+- [x] Écrire dans le commentaire de la loi sa borne : elle lit la source ligne
       par ligne, et une écriture par `Object.assign` ou par crochets lui
       échappe.
-- [ ] Voir la loi rouge : poser un `createInstance(` puis une affectation de
+- [x] Voir la loi rouge : poser un `createInstance(` puis une affectation de
       `.characters` dans un fichier de `src/contract/`, constater les deux
       échecs, restaurer. Le message de commit le dit.
-- [ ] Aucune exclusion ajoutée, aucune promesse réécrite : la promesse
+- [x] Aucune exclusion ajoutée, aucune promesse réécrite : la promesse
       actuelle reste vraie jusqu'au lot 5.
-- [ ] Vérification complète dans le worktree, commit, push.
+- [x] Vérification complète dans le worktree, commit, push.
 
 ## 4. Modèle et sources
 
@@ -766,3 +766,16 @@ tests/semantics.test.ts` : 27 verts, 2 rouges, chacun sur `States` seul.
   `States`, revérifié : ses deux `stateModel` ont l'axe `state`. Un composant
   de l'équipe consommatrice qui aurait un axe `States` le verrait quitter ses
   props au prochain export, et entrer dans `stateModel`.
+
+### 3. Motifs de la loi
+
+`ECRITURES` reçoit les motifs de 4.2, regroupés en neuf entrées, et aucun
+autre. Aucun faux positif sur le code de `65b6f61`. Le commentaire de la loi
+écrit sa borne, et la raison qui laisse `.name` et `.visible` hors de la liste.
+
+Vue rouge sur un fichier temporaire de `src/contract/` : une ligne par motif,
+vingt lignes d'écriture, et une ligne de comparaisons (`n.x == 1`,
+`n.y >= 2`, `n.x <= 3`, `n.characters === ''`, `n.mainComponent !== null`).
+Les vingt lignes sont refusées, dont `createInstance(` (création d'instance)
+et l'affectation de `.characters` (écriture de texte) ; la ligne de
+comparaisons ne l'est pas. Fichier supprimé, loi verte.
