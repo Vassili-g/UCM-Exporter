@@ -28,13 +28,11 @@ exportPage.className = 'page-stack';
 const composant = createCarteComposant({
   onAnalyser: () => demanderAnalyse(composant, 'analyser-composant'),
   onPublier: () => demanderPublication(composant),
-  onAnnuler: annuler,
 });
 
 const tokens = createCarteTokens({
   onAnalyser: () => demanderAnalyse(tokens, 'analyser-tokens'),
   onPublier: () => demanderPublication(tokens),
-  onAnnuler: annuler,
 });
 
 /*
@@ -148,10 +146,6 @@ function demanderPublication(carte: CarteCommandeUi) {
   occuper(true);
   operationLancee += 1;
   versSandbox({ type: 'publier', genre: carte === composant ? 'component' : 'tokens', operation: operationLancee });
-}
-
-function annuler() {
-  versSandbox({ type: 'annuler' });
 }
 
 exportPage.append(composant.element, depotRepli, tokens.element);

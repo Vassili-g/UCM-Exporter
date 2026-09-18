@@ -388,9 +388,9 @@ let destinationDeLAnalyse: string | null = null;
  *
  * Rien ne peut interrompre un appel Figma déjà parti. La demande est donc lue
  * entre deux étapes, là où le moteur annonce la suivante : l'annulation prend
- * effet à la fin de l'étape en cours, et rien n'est publié après elle.
- * `demandee` vient du bouton ou d'un changement de sélection, `reglages` d'une
- * destination qui a changé pendant l'analyse.
+ * effet à la fin de l'étape en cours, et rien n'est publié après elle. Le
+ * designer ne la demande jamais directement : `demandee` vient d'un changement
+ * de sélection, `reglages` d'une destination qui a changé pendant l'analyse.
  */
 class ExportAnnule extends Error {}
 let annulation: 'demandee' | 'reglages' | null = null;
@@ -873,11 +873,6 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     // L'entrée active retirée, aucun dépôt n'est actif : la destination change,
     // et la pastille le dit du même geste.
     await refreshConfiguration();
-    return;
-  }
-
-  if (message.type === 'annuler') {
-    annulation ??= 'demandee';
     return;
   }
 

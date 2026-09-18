@@ -88,7 +88,7 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
       return { state: 'connected', pastille: `${precision.nom ?? depot} connecté`, geste: null };
     case 'non-configure':
       // Le designer a choisi l'export local : aucun geste n'est attendu de lui.
-      if (precision.repli === 'debranche') return { state: 'local', pastille: 'export local', geste: null };
+      if (precision.repli === 'debranche') return { state: 'local', pastille: 'Export en local', geste: null };
       return precision.repli === 'aucun-actif'
         ? {
             state: 'disconnected',
@@ -275,8 +275,12 @@ export type CauseDeRepli = 'aucun-depot' | 'aucun-actif' | 'debranche';
  * Ce que le plugin dit d'un repli, à trois endroits : la ligne sous la carte
  * du composant avant le clic, le verdict de l'analyse, et le journal de la
  * publication.
+ *
+ * L'export local n'a pas de ligne : la pastille de l'en-tête le nomme déjà, et
+ * c'est un choix du designer et non une panne, contrairement aux deux autres
+ * replis qu'il découvrirait sans elle.
  */
-export const TEXTES_DE_REPLI: Record<CauseDeRepli, { ligne: string; verdict: string; journal: string }> = {
+export const TEXTES_DE_REPLI: Record<CauseDeRepli, { ligne: string | null; verdict: string; journal: string }> = {
   'aucun-depot': {
     ligne: 'Aucun dépôt enregistré. L’export sera téléchargé sur votre poste.',
     verdict: 'Aucun dépôt enregistré.',
@@ -288,7 +292,7 @@ export const TEXTES_DE_REPLI: Record<CauseDeRepli, { ligne: string; verdict: str
     journal: 'Aucun dépôt actif : téléchargement sur votre poste.',
   },
   debranche: {
-    ligne: 'Export local : l’export sera téléchargé sur votre poste.',
+    ligne: null,
     verdict: 'Export local.',
     journal: 'Export local : téléchargement sur votre poste.',
   },

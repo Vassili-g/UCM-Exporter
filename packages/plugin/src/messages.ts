@@ -56,11 +56,10 @@ export type ReglagesPublics = {
 /** Ce que l'UI demande au sandbox. */
 export type UiRequest =
   /**
-   * Analyser, puis publier : deux demandes, jamais une. L'analyse
-   * n'écrit rien ; la publication consomme ce qu'elle a produit, et
-   * `annuler` prend effet entre deux étapes.
+   * Analyser, puis publier : deux demandes, jamais une. L'analyse n'écrit
+   * rien ; la publication consomme ce qu'elle a produit.
    */
-  | { type: 'annuler' | 'ui-ready' }
+  | { type: 'ui-ready' }
   | { type: 'analyser-composant' | 'analyser-tokens'; operation: number }
   | { type: 'publier'; genre: 'component' | 'tokens'; operation: number }
   /**

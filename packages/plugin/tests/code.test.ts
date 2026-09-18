@@ -118,18 +118,19 @@ test('deux demandes simultanées ne lancent qu’une analyse', async () => {
   await Promise.all([premiere, seconde]);
 });
 
-test('annuler après la dernière phase interdit le verdict et le téléchargement, puis permet une nouvelle analyse', async () => {
+test('une annulation après la dernière phase interdit le verdict et le téléchargement, puis permet une nouvelle analyse', async () => {
   const h = ouvrir();
   const attente = differe<ReturnType<typeof resultat>>();
   h.exporte.traiter = () => attente.promesse;
-  const analyse = h.envoyer({ type: 'analyser-tokens', operation: 1 });
-  await h.envoyer({ type: 'annuler' });
-  attente.resoudre(resultat('annule.json'));
+  const analyse = h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await tourner();
+  h.selectionner('b');
+  attente.resoudre(resultat('annule.contract.json'));
   await analyse;
-  await h.envoyer({ type: 'publier', genre: 'tokens', operation: 2 });
+  await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
   assert.equal(h.messages.some(({ type }) => type === 'verdict' || type === 'download'), false);
-  h.exporte.traiter = async () => resultat('nouveau.json');
-  await h.envoyer({ type: 'analyser-tokens', operation: 1 });
+  h.exporte.traiter = async () => resultat('nouveau.contract.json');
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
   assert.ok(h.messages.some(({ type }) => type === 'verdict'));
 });
 
@@ -645,7 +646,7 @@ test('export local : aucune opération réseau à l’ouverture, à l’analyse 
   await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
 
   assert.deepEqual([h.appels.forges, h.appels.connexions, h.appels.lectures, h.appels.publications], [0, 0, 0, 0]);
-  assert.deepEqual(pastillesDe(h), ['export local']);
+  assert.deepEqual(pastillesDe(h), ['Export en local']);
   assert.equal(dernierDepot(h).repli, 'debranche');
   const verdict = h.messages.find((message) => message.type === 'verdict');
   assert.equal(verdict?.type === 'verdict' ? verdict.texte : '', 'Export local. Le contrat sera téléchargé sur votre poste.');
@@ -682,7 +683,7 @@ test('en export local, le premier dépôt enregistré ne devient pas actif', asy
 
   assert.equal(h.stockage.has('depotActif'), false);
   assert.deepEqual(testsDe(h, 'github:o/r').map(({ statut }) => statut), ['Connexion…', 'Connecté']);
-  assert.deepEqual(pastillesDe(h), ['export local']);
+  assert.deepEqual(pastillesDe(h), ['Export en local']);
 });
 
 test('activer l’export local laisse finir une publication lancée, sans rétablir la connexion', async () => {
@@ -701,7 +702,7 @@ test('activer l’export local laisse finir une publication lancée, sans rétab
   assert.equal(h.appels.publications, 1);
   assert.match(statuts(h).at(-1) ?? '', /Pull request créée/);
   assert.deepEqual(h.messages.slice(avant).filter(({ type }) => type === 'connection' || type === 'settings'), []);
-  assert.equal(pastillesDe(h).at(-1), 'export local');
+  assert.equal(pastillesDe(h).at(-1), 'Export en local');
 });
 
 test('un test de connexion lancé avant l’export local ne rétablit pas l’état connecté', async () => {
@@ -717,7 +718,7 @@ test('un test de connexion lancé avant l’export local ne rétablit pas l’é
   lent.resoudre({ cause: 'connecte', layout: null });
   await ouverture;
 
-  assert.equal(pastillesDe(h).at(-1), 'export local');
+  assert.equal(pastillesDe(h).at(-1), 'Export en local');
   assert.equal(dernierDepot(h).repli, 'debranche');
 });
 

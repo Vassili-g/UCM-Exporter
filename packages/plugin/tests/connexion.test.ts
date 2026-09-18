@@ -136,9 +136,10 @@ test('sans dépôt visé, la ligne dit pourquoi, et ce qui VA se passer', () => 
   const inactif = etatDuDepot(null, 'aucun-actif');
   assert.equal(inactif.repli, 'aucun-actif');
   assert.equal(inactif.ligne, 'Aucun dépôt actif. L’export sera téléchargé sur votre poste.');
+  // L'export local n'a pas de ligne : sa pastille le nomme déjà, et il est choisi.
   const local = etatDuDepot(null, 'debranche');
   assert.equal(local.repli, 'debranche');
-  assert.equal(local.ligne, 'Export local : l’export sera téléchargé sur votre poste.');
+  assert.equal(local.ligne, null);
 });
 
 test('la ligne nomme le repository et sa branche', () => {
@@ -284,6 +285,6 @@ test('sans dépôt visé, la pastille dit s’il n’y en a aucun ou si aucun n�
 test('en export local, la pastille le dit en avertissement, sans geste', () => {
   assert.deepEqual(
     etatDeConnexion('non-configure', { repli: 'debranche', termes: TERMES_GITHUB, nom: 'design-system-v3' }),
-    { state: 'local', pastille: 'export local', geste: null },
+    { state: 'local', pastille: 'Export en local', geste: null },
   );
 });

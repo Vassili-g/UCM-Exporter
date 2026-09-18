@@ -23,7 +23,6 @@ function memeCible(avant: Cible | null, apres: Cible | null): boolean {
 export function createCarteComposant({
   onAnalyser,
   onPublier,
-  onAnnuler,
 }: OptionsCarteConcrete): CarteComposantUi {
   const carte = createCarteCommande({
     surtitre: 'Composant',
@@ -31,7 +30,6 @@ export function createCarteComposant({
     varianteAnalyse: 'primary',
     onAnalyser,
     onPublier,
-    onAnnuler,
   });
   carte.element.className = 'carte-commande carte-composant';
 

@@ -20,7 +20,6 @@ export interface CarteTokensUi extends CarteCommandeUi {
 export function createCarteTokens({
   onAnalyser,
   onPublier,
-  onAnnuler,
 }: OptionsCarteConcrete): CarteTokensUi {
   const carte = createCarteCommande({
     surtitre: 'Tokens du fichier',
@@ -28,7 +27,6 @@ export function createCarteTokens({
     varianteAnalyse: 'secondary',
     onAnalyser,
     onPublier,
-    onAnnuler,
   });
   carte.element.className = 'carte-commande carte-tokens';
 

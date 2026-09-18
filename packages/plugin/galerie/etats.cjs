@@ -218,8 +218,8 @@ const listeDe = (depots, actif) => ({
 });
 
 /**
- * L'export local activé : la liste, le dernier dépôt actif gardé, la pastille
- * et la ligne de repli que `refreshConfiguration` envoie sans aucun test.
+ * L'export local activé : la liste, le dernier dépôt actif gardé et la pastille
+ * que `refreshConfiguration` envoie sans aucun test. Ce repli n'a pas de ligne.
  */
 const exportLocal = (depots, actif) => [
   {
@@ -756,7 +756,7 @@ const ETATS = [
     id: 'export-annule',
     titre: 'Export annulé',
     quand:
-      "Clic sur « Annuler après cette étape » pendant une analyse. L'annulation est coopérative : elle prend effet à la fin de l'étape en cours.",
+      "La sélection change pendant une analyse du composant. L'annulation est coopérative : elle prend effet à la fin de l'étape en cours.",
     regarder:
       "Le message dit que RIEN n'a été écrit. C'est la seule chose que le designer ait besoin de savoir.",
     existe: true,
@@ -984,7 +984,7 @@ const ETATS = [
     titre: 'Écran de travail en export local',
     quand: "L'export local est activé : aucun test ne part vers la forge à l'ouverture.",
     regarder:
-      "La pastille « export local » et la ligne sous la carte du composant portent la même couleur d'avertissement. Un export local oublié se lit avant tout clic.",
+      "La pastille « Export en local » porte la couleur d'avertissement, et aucune ligne ne la répète sous la carte du composant. Un export local oublié se lit avant tout clic.",
     existe: true,
     atteinte: [
       ...ouverture('connecte'),

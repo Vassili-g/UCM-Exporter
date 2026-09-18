@@ -14,7 +14,6 @@ export interface OptionsCarteCommande {
   varianteAnalyse?: VarianteBouton;
   onAnalyser: () => void;
   onPublier: () => void;
-  onAnnuler: () => void;
 }
 
 /** La coquille commune que les deux cartes concrètes étendent. */
@@ -30,13 +29,12 @@ export interface CarteCommandeUi {
 }
 
 /**
- * Les trois gestes qu'une carte concrète reçoit. Son surtitre et son libellé
+ * Les deux gestes qu'une carte concrète reçoit. Son surtitre et son libellé
  * d'analyse sont déclarés par la carte elle-même.
  */
 export interface OptionsCarteConcrete {
   onAnalyser: () => void;
   onPublier: () => void;
-  onAnnuler: () => void;
 }
 
 /** Construit une carte dont l'appelant fournit le sujet et les opérations. */
@@ -46,7 +44,6 @@ export function createCarteCommande({
   varianteAnalyse = 'primary',
   onAnalyser,
   onPublier,
-  onAnnuler,
 }: OptionsCarteCommande): CarteCommandeUi {
 
   const section = document.createElement('section');
@@ -66,13 +63,6 @@ export function createCarteCommande({
   });
   analyser.hidden = true;
 
-  const annuler = createButton({
-    label: 'Annuler après cette étape',
-    variant: 'secondary',
-    onClick: () => onAnnuler(),
-  });
-  annuler.hidden = true;
-
   const publier = createButton({
     label: 'Publier',
     variant: 'primary',
@@ -88,7 +78,7 @@ export function createCarteCommande({
 
   const compteRendu = createCompteRendu();
 
-  section.append(titre, sujet, analyser, annuler, publier, note, compteRendu.element);
+  section.append(titre, sujet, analyser, publier, note, compteRendu.element);
 
   function ecrireNote(etat: EtatNote, texte: string | null) {
     note.dataset.state = etat;
@@ -111,7 +101,6 @@ export function createCarteCommande({
 
     marquerOccupee(occupee: boolean) {
       analyser.disabled = occupee;
-      annuler.hidden = !occupee;
       if (occupee) publier.hidden = true;
     },
 

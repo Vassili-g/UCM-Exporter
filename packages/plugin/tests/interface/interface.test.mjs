@@ -149,7 +149,7 @@ test('en export local, la pastille avertit, aucune carte n’est connectée, et 
   try {
     const LOCAL = JSON.stringify(['local', true]);
     await envoyer({ ...DEUX(), settings: { ...DEUX().settings, destination: LOCAL, exportLocal: true } });
-    await envoyer({ type: 'connection', state: 'local', pastille: 'export local', geste: null });
+    await envoyer({ type: 'connection', state: 'local', pastille: 'Export en local', geste: null });
     const pastille = page.locator('.connection-status');
     assert.equal(await pastille.getAttribute('data-state'), 'local');
     assert.notEqual(
