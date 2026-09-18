@@ -16,7 +16,7 @@ matches them.
 Requires Node 20 or later. At the root of the repository:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.45 init
+npx --yes @ucm-kit/cli@0.1.46 init
 ```
 
 1. Commit and push the files `init` wrote.
@@ -27,7 +27,7 @@ npx --yes @ucm-kit/cli@0.1.45 init
 To run the check locally:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.45 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.46 check --report ci-report.md
 ```
 
 `--yes` skips the npx confirmation prompt. Pin an exact version, without `^`:
@@ -78,7 +78,7 @@ contract would resolve to the same file. A repository that does not write React
 states its own extension:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.45 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.46 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 The three path options act only on a first install. `ucm init` never overwrites
@@ -188,7 +188,7 @@ directory. It writes a minimal report when the check stopped before writing
 one, then posts the report:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.45 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier "$CI_PROJECT_DIR/ci-report.md" --api "$CI_API_V4_URL"
+npx --yes @ucm-kit/cli@0.1.46 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier "$CI_PROJECT_DIR/ci-report.md" --api "$CI_API_V4_URL"
 ```
 
 | Option | Effect |
@@ -376,10 +376,9 @@ writes to `<file>`:
    relays, the workflow and `package.json`;
 2. the procedure, `procedure.md`;
 3. the text before the first section of the closest conventions file;
-4. the contract: its meta, props, structure, states, intent, rendering, variants
-   with their view reference, each view and catalog entry once, the icons, text
-   styles and binding definitions in use, and the props and samples of each
-   dependency;
+4. the target contract's version, portable coverage and export diagnostics,
+   then the props and samples of each dependency; the target contract stays in
+   its own file and is not copied into the guide;
 5. each guide the contract's characteristics use, with the repository's section
    or the default writing, and the proof;
 6. the anchors the conventions leave open, as questions for a developer;

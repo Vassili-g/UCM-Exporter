@@ -92,13 +92,11 @@ function sectionDAide(sortie, aide) {
   return fin === -1 ? sortie.slice(debut) : sortie.slice(debut, debut + 4 + fin);
 }
 
-test("une vue que deux variants partagent s'imprime une fois, et chaque variant garde son renvoi", () => {
+test("le contrat cible n'est pas recopié, et l'API de sa dépendance s'imprime", () => {
   const { code, sortie } = lancer(DEUX_CONTRATS);
   assert.equal(code, 0);
-  assert.equal(sortie.match(/^"st1": /gm)?.length, 1);
-  assert.equal(sortie.match(/^"v1": /gm)?.length, 1);
-  assert.equal(sortie.match(/"view":"v1"/g)?.length, 2);
-  assert.doesNotMatch(sortie, /"nodeId"|"figmaName":"Tone=/, "les identités Figma d'un variant ne sont pas imprimées");
+  assert.doesNotMatch(sortie, /"variants"|^"st1": |^"v1": /m);
+  assert.match(sortie, /Le contrat cible se lit dans son fichier\. Ce guide ne le recopie pas\./);
   assert.match(sortie, /### Dépendance Badge\n\n```json\n"props": /);
 });
 

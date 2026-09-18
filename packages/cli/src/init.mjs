@@ -756,7 +756,6 @@ export function init(racine, {
     adaptateur: erreurAdaptateur
       ? { erreur: erreurAdaptateur?.message ?? String(erreurAdaptateur) }
       : erreurGabarits ? { erreur: erreurGabarits } : adaptateur ? "trouve" : "absent",
-    nodeJs: existsSync(join(racine, "package.json")),
     lignes: [
       ...lignesRestantes(
         racine,
@@ -806,7 +805,6 @@ export function rendreInit({
   forge = null,
   agents = false,
   adaptateur = "absent",
-  nodeJs = false,
   lignes: restantes = [],
 }) {
   const lignes = [];
@@ -851,10 +849,6 @@ export function rendreInit({
     lignes.push("");
     lignes.push(`· ${NOM_ADAPTATEUR_TYPESCRIPT} est installé mais n'a pas servi : ${adaptateur.erreur}. `
       + "Les gabarits n'ont pas été copiés ; le reste de l'installation est fait.");
-  } else if (agents && nodeJs && adaptateur === "absent") {
-    lignes.push("");
-    lignes.push(`· Relancez \`ucm init\` après avoir installé ${NOM_ADAPTATEUR_TYPESCRIPT} pour recevoir le gabarit `
-      + "dans `.ucm/gabarits/`.");
   }
 
   if (restantes.length > 0) {

@@ -158,7 +158,7 @@ packages/cli/            la ligne de commande : @ucm-kit/cli, publiée
   src/rapport-gitlab.mjs   la note du rapport sur une merge request GitLab
   src/tokens-css.mjs       la feuille CSS des tokens et de leurs modes, depuis tokens.json
   src/aides.mjs            ucm aides : le catalogue, une aide, la copie dans les conventions
-  src/guide.mjs            ucm guide : procédure, extraction, aides employées et modes d'un contrat
+  src/guide.mjs            ucm guide : procédure, diagnostics, API des dépendances, aides et modes
   src/conventions.mjs      .ucm/conventions.md : le fichier le plus proche, ses sections, ses anomalies
   aides/                   une aide par caractéristique : sens, écriture par défaut, preuve
   procedure.md             ce qui décide de quoi quand un agent implémente un contrat

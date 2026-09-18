@@ -3,10 +3,10 @@
  * une seule commande.
  *
  * La sortie est un Markdown, dans cet ordre : ce qui est à relire avant de
- * commencer, la procédure, le texte de tête des conventions, l'extraction du
- * contrat, les aides que ses caractéristiques emploient, les ancrages que les
- * conventions ne tranchent pas, les modes, les icônes, puis la taille de chaque
- * partie. Une vue ou une entrée de catalogue s'imprime une fois, sous son renvoi.
+ * commencer, la procédure, le texte de tête des conventions, les limites de
+ * l'export et l'API des dépendances, les aides que ses caractéristiques
+ * emploient, les ancrages que les conventions ne tranchent pas, les modes, les
+ * icônes, puis la taille de chaque partie.
  *
  * Codes : 0 guide rendu, 1 graphe de composition ou fichier de tokens
  * incohérent, 2 invocation, configuration ou contrat illisible.
@@ -21,7 +21,6 @@ import {
   axesDuContrat,
   caracteristiquesDuContrat,
   champsInvalidesDuContrat,
-  compositionsExactesDuVariant,
   conesDesAxes,
   contextesDeVerification,
   contextesDesAxes,
@@ -48,15 +47,6 @@ const FICHIERS_EPINGLES = [
   ".github/workflows/ucm.yml",
   ".gitlab/ucm.gitlab-ci.yml",
 ];
-
-/** Les catalogues de second niveau, par partie de vue. */
-const CATALOGUES = {
-  structure: "viewStructures",
-  typography: "viewTypographies",
-  composes: "viewComposes",
-  icons: "viewIcons",
-  paintPlacements: "viewPaintPlacements",
-};
 
 const estObjet = (valeur) => Boolean(valeur) && typeof valeur === "object" && !Array.isArray(valeur);
 const enSlash = (chemin) => chemin.split("\\").join("/");
@@ -92,16 +82,6 @@ function blocJson(titre, valeur) {
   return [`### ${titre}`, "", "```json", ...lignesJson(valeur), "```", ""];
 }
 
-/** Les clés de définition que des liaisons citent, à n'importe quelle profondeur. */
-function definitionsCitees(valeur, trouvees = new Set()) {
-  if (Array.isArray(valeur)) for (const entree of valeur) definitionsCitees(entree, trouvees);
-  else if (estObjet(valeur)) {
-    if (typeof valeur.definition === "string") trouvees.add(valeur.definition);
-    for (const entree of Object.values(valeur)) definitionsCitees(entree, trouvees);
-  }
-  return trouvees;
-}
-
 /** Les entrées d'un dictionnaire dont la clé est citée, dans l'ordre du contrat. */
 function entreesCitees(dictionnaire, cles) {
   if (!estObjet(dictionnaire)) return undefined;
@@ -109,13 +89,12 @@ function entreesCitees(dictionnaire, cles) {
   return choisies.length === 0 ? undefined : Object.fromEntries(choisies);
 }
 
-/** Les noms des dépendances qu'au moins un variant compose, dans l'ordre de première apparition. */
+/** Les noms des dépendances, dans l'ordre du contrat. */
 function dependancesDuContrat(contrat) {
   const noms = [];
-  for (const variant of Array.isArray(contrat.variants) ? contrat.variants : []) {
-    for (const { component } of compositionsExactesDuVariant(contrat, variant)) {
-      if (typeof component === "string" && !noms.includes(component)) noms.push(component);
-    }
+  for (const dependance of Array.isArray(contrat.composes) ? contrat.composes : []) {
+    const nom = dependance?.component;
+    if (typeof nom === "string" && !noms.includes(nom)) noms.push(nom);
   }
   return noms;
 }
@@ -131,36 +110,15 @@ function iconesUtilisees(contrat) {
 }
 
 /**
- * L'extraction du contrat. Les variants gardent leur renvoi de vue, chaque vue
- * citée s'imprime une fois, puis chaque entrée de catalogue qu'une vue cite.
- * Les identités Figma d'un variant, `nodeId` et `figmaName`, ne sont pas
- * imprimées : elles tracent la maquette et ne décrivent aucun rendu.
+ * Le contexte qui complète le contrat cible : limites constatées par l'export,
+ * puis API et échantillons des dépendances directes.
+ *
+ * Le contrat cible reste sa propre source. Le recopier ici augmentait la sortie
+ * sans éviter sa lecture lors des reconstructions mesurées.
  */
 function extraction(contrat, contratsParNom) {
-  const variants = (Array.isArray(contrat.variants) ? contrat.variants : []).map((variant) => {
-    if (!estObjet(variant)) return variant;
-    const { nodeId, figmaName, ...rendu } = variant;
-    return rendu;
-  });
-  const vuesCitees = new Set(variants.map((variant) => variant?.view).filter((vue) => typeof vue === "string"));
-  const vues = entreesCitees(contrat.variantViews, vuesCitees);
-
-  const citees = Object.fromEntries(Object.keys(CATALOGUES).map((partie) => [partie, new Set()]));
-  if (typeof contrat.structure?.view === "string") citees.structure.add(contrat.structure.view);
-  for (const vue of Object.values(vues ?? {})) {
-    for (const partie of Object.keys(CATALOGUES)) {
-      if (typeof vue?.[partie] === "string") citees[partie].add(vue[partie]);
-    }
-  }
-
-  const styles = new Set();
-  for (const variant of Array.isArray(contrat.variants) ? contrat.variants : []) {
-    const usages = vueExacteDuVariant(contrat, variant)?.typography;
-    for (const usage of Array.isArray(usages) ? usages : []) if (typeof usage?.style === "string") styles.add(usage.style);
-  }
-
   const lignes = [
-    "## Contrat",
+    "## Contexte du contrat",
     "",
     `Version ${contrat.meta?.contractVersion}, couverture portable ${contrat.meta?.coverage?.portable ?? "non déclarée"}.`,
     "",
@@ -169,29 +127,6 @@ function extraction(contrat, contratsParNom) {
   if (diagnostics.length > 0) {
     lignes.push("Ce que l'export n'a pas su décrire, à rapporter au développeur :", "", ...diagnostics.map((message) => `- ${message}`), "");
   }
-  lignes.push(
-    ...blocJson("props", contrat.props),
-    ...blocJson("structure", contrat.structure),
-    ...blocJson("stateModel", contrat.stateModel),
-    ...blocJson("intent", contrat.intent),
-    ...blocJson("rendering", contrat.rendering),
-    "### variants",
-    "",
-    "```json",
-    ...variants.map((variant) => JSON.stringify(variant)),
-    "```",
-    "",
-    ...blocJson("variantViews", vues),
-  );
-  for (const [partie, catalogue] of Object.entries(CATALOGUES)) {
-    lignes.push(...blocJson(catalogue, entreesCitees(contrat[catalogue], citees[partie])));
-  }
-  lignes.push(
-    ...blocJson("icons", entreesCitees(contrat.icons, iconesUtilisees(contrat))),
-    ...blocJson("textStyles", entreesCitees(contrat.textStyles, styles)),
-    ...blocJson("propertyBindingDefinitions", entreesCitees(contrat.propertyBindingDefinitions, definitionsCitees(contrat.variants))),
-    ...blocJson("samples", contrat.samples),
-  );
 
   for (const nom of dependancesDuContrat(contrat)) {
     const dependance = contratsParNom.get(nom);
@@ -204,8 +139,9 @@ function extraction(contrat, contratsParNom) {
   }
 
   lignes.push(
-    "### Ce que le contrat ne dit pas",
+    "### Limites",
     "",
+    "- Le contrat cible se lit dans son fichier. Ce guide ne le recopie pas.",
     "- Le comportement, l'accessibilité et les événements relèvent des conventions et de la relecture.",
     "- Ce guide ne prouve pas qu'un sens a été appliqué : la preuve de chaque aide le vérifie.",
     "",

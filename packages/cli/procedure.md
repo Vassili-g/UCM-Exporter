@@ -15,7 +15,7 @@ partie concernée. L'écriture ne l'emporte jamais sur le sens.
 
 ## Ordre de travail
 
-1. Lire le texte de tête des conventions : stack, architecture, gabarit ou
+1. Lire le contrat cible une fois, puis le texte de tête des conventions : stack, architecture, gabarit ou
    composant de référence.
 2. Construire la surface publique depuis `props`.
 3. Transcrire la matrice des `variants` en table littérale.
@@ -44,5 +44,8 @@ partie concernée. L'écriture ne l'emporte jamais sur le sens.
 
 ## Vérifier
 
-Lancer les contrôles que la preuve de chaque aide nomme, et eux seuls. Relire le
-composant contre le contrat, puis rapporter au développeur ce qui reste ouvert.
+Lancer le contrôle du contrat et le contrôle de type ou de syntaxe du projet que
+les conventions nomment. Lancer aussi les contrôles que la preuve de chaque aide
+ajoute. Une prop attendue par un consommateur mais absente du contrat rejoint la
+surface publique et le compte rendu nomme cet ajout. Relire le composant contre
+le contrat, puis rapporter au développeur ce qui reste ouvert.

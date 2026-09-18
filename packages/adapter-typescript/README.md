@@ -7,14 +7,13 @@ contracts. It lives outside
 depends on the TypeScript compiler, a 23 MB dependency.
 
 ```sh
-npm install --save-dev @ucm-kit/adapter-typescript@0.1.38 @ucm-kit/cli@0.1.45
+npm install --save-dev @ucm-kit/adapter-typescript@0.1.39 @ucm-kit/cli@0.1.46
 npx ucm-typescript          # generates the types from the contracts
 npx --no-install ucm check  # checks the contracts, parity included
 ```
 
 Requires Node 20 or later, a `tsconfig.json` at the repository root, and a
-`ucm.config.json` or the default paths. If `ucm init` already ran, run it again
-after installing the adapter to receive its templates in `.ucm/gabarits/`.
+`ucm.config.json` or the default paths.
 
 ## Static parity
 

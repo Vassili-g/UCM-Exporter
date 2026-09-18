@@ -770,7 +770,7 @@ test("les lignes à ajouter à la main nomment leur fichier, et se taisent quand
     assert.match(premier, /- package\.json\n  Lancez `ucm tokens css --out src\/generated\/tokens\.css` en tête des scripts dev et build/);
     assert.match(premier, /- l'entrée CSS de l'application\n  Importez la feuille générée/);
     assert.match(premier, /- ucm\.config\.json\n  La section modes, facultative/);
-    assert.match(premier, /Relancez `ucm init` après avoir installé @ucm-kit\/adapter-typescript/);
+    assert.doesNotMatch(premier, /gabarit|template/i);
 
     const { version } = init(racine);
     writeFileSync(join(racine, "package.json"), JSON.stringify({

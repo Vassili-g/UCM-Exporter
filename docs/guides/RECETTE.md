@@ -302,9 +302,10 @@ Fusionnez la pull request.
 
 Le contrat est arrivé, le code n'existe pas encore. Reconstruisez le composant à
 partir du seul contrat, sans regarder une implémentation antérieure. L'agent
-charge le relais `ucm-implementer` qu'`ucm init` a écrit à l'étape 3 : il lance
-`ucm guide` sur le contrat, qui imprime la procédure, l'extraction du contrat
-et les conventions du dépôt.
+charge le relais `ucm-implementer` qu'`ucm init` a écrit à l'étape 3. Le relais
+lance `ucm guide`, qui imprime la procédure, les conventions, les aides, les
+diagnostics d'export et l'API des dépendances. L'agent lit ensuite le contrat
+cible dans son propre fichier.
 
 Une fois `src/components/Button/Button.tsx` écrit :
 

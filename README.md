@@ -60,7 +60,7 @@ Exporter » :
 Installez-le une fois, puis lancez-le depuis le menu `Plugins` de l'application
 de bureau. [packages/plugin/README.md](./packages/plugin/README.md) décrit ses
 commandes, sa configuration GitHub ou GitLab et ses limites. La commande des
-tokens n’apparaît que lorsque « Gérer les tokens » est activé.
+tokens n'apparaît que lorsque « Gérer les tokens » est activé.
 
 ## Brancher un repository
 
@@ -71,7 +71,7 @@ un simple dossier de contrats se branche de la même façon.
 1. À la racine du repository, lancez :
 
    ```sh
-   npx --yes @ucm-kit/cli@0.1.45 init
+   npx --yes @ucm-kit/cli@0.1.46 init
    ```
 
    `init` écrit `ucm.config.json`, la CI du contrôle et les fichiers lus par un
@@ -92,7 +92,7 @@ un simple dossier de contrats se branche de la même façon.
 autrement les passe à la première installation :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.45 init \
+npx --yes @ucm-kit/cli@0.1.46 init \
   --components src/components \
   --tokens src/tokens \
   --implementation '{dir}/{id}.vue'
@@ -113,7 +113,7 @@ de contrôler.
 Pour lancer le contrôle sur le poste :
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.45 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.46 check --report ci-report.md
 ```
 
 Sans Node sur le poste, la CI fait le contrôle. Les fichiers écrits, les autres
@@ -139,7 +139,7 @@ du repository.
 Les cinq premiers contrôles ne lisent que des contrats et des tokens, quelle que
 soit la technologie du repository. La parité lit le code par un adaptateur
 propre à la stack. Le seul existant,
-[`@ucm-kit/adapter-typescript@0.1.38`](./packages/adapter-typescript/README.md),
+[`@ucm-kit/adapter-typescript@0.1.39`](./packages/adapter-typescript/README.md),
 couvre TypeScript et React : le repository l'installe lui-même, et il demande un
 `tsconfig.json` à la racine.
 
