@@ -510,17 +510,85 @@ p {
   background: var(--fond);
 }
 
-/* Aucune hauteur réservée : le bloc est caché tant qu'il n'a rien à dire. */
-.config-status {
-  color: var(--texte-second);
+/*
+ * Une carte de dépôt porte le fond des cartes de commande. Repliée, elle ne
+ * montre que son nom et son état : deux objets par dépôt dans le compte de
+ * l'onglet.
+ */
+.carte-depot {
+  display: grid;
+  gap: var(--espace-bloc);
+  padding: var(--espace-controle) var(--espace-bloc);
+  border: 1px solid var(--bordure);
+  border-radius: 8px;
+  background: var(--fond-bloc);
 }
 
-.config-status[data-state='success'] {
+.carte-depot-entete {
+  display: flex;
+  min-height: var(--hauteur-secondaire);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+/* Le nom passe à la ligne sans déborder, même sans espace ni trait d'union. */
+.carte-depot-nom {
+  min-width: 0;
+  flex: 1 1 auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--texte);
+  cursor: pointer;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.carte-depot-nom:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: 2px;
+}
+
+.carte-depot-entete .btn {
+  width: auto;
+  height: var(--hauteur-secondaire);
+  flex-shrink: 0;
+}
+
+.carte-depot-statut {
+  flex-shrink: 0;
+  color: var(--texte-danger);
+}
+
+.carte-depot-statut[data-state='connected'] {
   color: var(--texte-succes);
 }
 
-.config-status[data-state='error'] {
-  color: var(--texte-danger);
+.carte-depot-statut[data-state='checking'] {
+  color: var(--texte-second);
+}
+
+.carte-depot-corps {
+  display: grid;
+  gap: var(--espace-bloc);
+}
+
+/* Le geste d'un test en échec, en tête de la carte : un filet de sévérité. */
+.carte-depot-geste {
+  padding-left: var(--espace-controle);
+  border-left: 2px solid var(--texte-danger);
+  color: var(--texte);
+}
+
+.carte-depot-actions {
+  display: flex;
+  gap: var(--espace-controle);
+}
+
+.carte-depot-actions .btn {
+  flex: 1 1 0;
 }
 
 /*

@@ -637,7 +637,10 @@ La spécification en lien porte le raisonnement.
 - Tout texte du plugin qui nomme une forge, sa demande ou son jeton lit
   `src/forges/termes.ts` ; aucun message ne teste la forge. La galerie tient
   la frontière dans les deux sens : un état GitLab n'affiche aucun mot de
-  GitHub, et l'inverse.
+  GitHub, et l'inverse. Un état `mixte`, où la liste des dépôts montre les
+  deux forges, vérifie chaque message contre la forge de son sujet : l'entrée
+  désignée pour `depot-teste`, la clé de destination d'un résultat
+  d'opération, le dépôt actif pour le reste (`tests/galerie.test.ts`).
   → [spécification](./packages/plugin/SPEC.md#partie-3--configuration-et-dépôt-sur-une-forge)
 
 ### Échantillon de maquette

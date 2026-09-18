@@ -20,7 +20,9 @@ function chargerSandbox(nom) {
   return require(compile);
 }
 
-const { etatDeConnexion, etatDuDepot, gesteApresEchecDePublication, textesDePublication } = chargerSandbox('connexion');
+const {
+  etatDeCarte, etatDeConnexion, etatDuDepot, gesteApresEchecDePublication, refusDeDestinationChangee, textesDePublication,
+} = chargerSandbox('connexion');
 const { TERMES_GITHUB, TERMES_GITLAB } = chargerSandbox('forges/termes');
 const { cleDeDestination, identiteDuDepot, lireAdresseDuDepot, nomDuDepot, validateSettings } = chargerSandbox('config');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
@@ -157,12 +159,13 @@ const depot = (layout, vise = DEPOT_VISE, gestion = true) => ({
 });
 const LAYOUT_GITHUB = { components: 'src/components', tokens: 'src/tokens/tokens.json', source: 'ucm.config.json' };
 const LAYOUT_GITLAB = { components: 'guidelines/components', tokens: 'guidelines/tokens.json', source: 'ucm.config.json' };
-const DEPOT_ABSENT = depot(null, null);
+const DEPOT_ABSENT = depot(null, 'aucun-depot');
 
 /** La clé de destination d'un dépôt de la galerie, calculée par le sandbox. */
 const DEPOTS_DE_GALERIE = {
   github: { forge: 'github', projet: DEPOT_VISE.projet, baseBranch: 'main' },
   gitlab: { forge: 'gitlab', projet: DEPOT_VISE_GITLAB.projet, baseBranch: 'main' },
+  recette: { forge: 'github', projet: 'mon-org/recette-web', baseBranch: 'main' },
   aucune: null,
 };
 const destinationDe = (forge, gestion = true) => cleDeDestination(DEPOTS_DE_GALERIE[forge], gestion);
@@ -179,7 +182,45 @@ const depotPublic = (repoUrl) => {
 const DEPOTS_PUBLICS = {
   github: depotPublic('https://github.com/mon-org/design-system-v3'),
   gitlab: depotPublic('https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines?ref_type=heads'),
+  recette: depotPublic('https://github.com/mon-org/recette-web'),
 };
+
+/** Les termes et le dépôt visé de chaque dépôt de la galerie. */
+const TERMES_DE = { github: TERMES_GITHUB, gitlab: TERMES_GITLAB, recette: TERMES_GITHUB };
+const VISE_DE = {
+  github: DEPOT_VISE,
+  gitlab: DEPOT_VISE_GITLAB,
+  recette: { forge: TERMES_GITHUB.forge, projet: 'mon-org/recette-web', baseBranch: 'main' },
+};
+
+/** La liste de plusieurs dépôts, et le dépôt actif ou aucun. */
+const listeDe = (depots, actif) => ({
+  message: {
+    type: 'settings',
+    settings: {
+      destination: destinationDe(actif ?? 'aucune'),
+      tokens: true,
+      actif: actif ? DEPOTS_PUBLICS[actif].id : null,
+      depots: depots.map((cle) => DEPOTS_PUBLICS[cle]),
+    },
+  },
+});
+
+/** Le test d'un dépôt pour sa carte, calculé par le sandbox. */
+const carteTestee = (cle, cause, precision = {}, layout = null) => ({
+  message: {
+    type: 'depot-teste',
+    id: DEPOTS_PUBLICS[cle].id,
+    generation: 1,
+    ...etatDeCarte(cause, { termes: TERMES_DE[cle], ...precision }),
+    destination: layout ? etatDuDepot(layout, VISE_DE[cle]).resume : null,
+  },
+});
+
+/** L'onglet Dépôts, ouvert par l'engrenage. */
+const OUVRIR_DEPOTS = [{ clic: '.icon-button' }, { clic: '#onglet-depots' }];
+const AJOUTER = '#panneau-depots > .btn';
+const carte = (rang) => `#panneau-depots .carte-depot:nth-of-type(${rang})`;
 
 /** Les réglages publics rechargés par `refreshConfiguration`, un seul dépôt actif ou aucun. */
 const reglagesDe = (forge, gestion = true) => ({
@@ -709,26 +750,6 @@ const ETATS = [
     ],
   },
   {
-    id: 'configuration-vierge',
-    forge: 'aucune',
-    titre: 'Configuration, aucun réglage enregistré',
-    quand: "Clic sur l'engrenage au premier lancement.",
-    regarder:
-      "Trois champs, et aucun chemin : l'endroit appartient au repository. L'en-tête suit la page.",
-    existe: true,
-    atteinte: [
-      ...ouverture('non-configure'),
-      {
-        message: {
-          type: 'settings',
-          settings: REGLAGES_VIERGES,
-        },
-      },
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
-    ],
-  },
-  {
     id: 'configuration-onglet-general',
     titre: 'Configuration, onglet Général',
     quand: "Clic sur l'engrenage : la configuration s'ouvre sur Général, le dernier onglet consulté ou le premier.",
@@ -738,77 +759,6 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       { clic: '.icon-button' },
-    ],
-  },
-  {
-    id: 'configuration-remplie',
-    titre: 'Configuration enregistrée, token conservé',
-    quand: 'Retour dans la configuration après un enregistrement réussi.',
-    regarder:
-      "Le placeholder du token porte une règle de comportement. L'adresse du dépôt enregistré se lit sans se modifier, et « Supprimer » retire le dépôt entier, jeton compris.",
-    existe: true,
-    atteinte: [
-      ...ouverture('connecte'),
-      { message: { type: 'settings', settings: REGLAGES } },
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
-    ],
-  },
-  {
-    id: 'configuration-suppression-confirmation',
-    titre: 'Suppression du dépôt, second clic attendu',
-    quand: 'Premier clic sur « Supprimer » dans la configuration du dépôt actif.',
-    regarder:
-      "Le même bouton demande la confirmation, sans boîte de dialogue. Le libellé dit ce qui disparaît au second clic : le dépôt entier, jeton compris.",
-    existe: true,
-    atteinte: [
-      ...ouverture('connecte'),
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
-      { clic: '#panneau-depots .btn-secondary' },
-    ],
-  },
-  {
-    id: 'configuration-erreurs-champs',
-    forge: 'aucune',
-    titre: 'Configuration refusée par le sandbox',
-    quand: '`enregistrerDepot` renvoie ses erreurs de validation, champ par champ.',
-    regarder:
-      "Le rang de l'erreur est porté par la seule couleur, et le formulaire annonce dans six régions à la fois.",
-    existe: true,
-    atteinte: [
-      ...ouverture('non-configure'),
-      {
-        message: {
-          type: 'settings',
-          settings: REGLAGES_VIERGES,
-        },
-      },
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
-      {
-        message: {
-          type: 'settings-validation',
-          errors: validateSettings({ repoUrl: 'https://gitlab.example.com/mon-org/ds', baseBranch: '', jeton: '' }).errors,
-        },
-      },
-      { message: { type: 'settings-save-error' } },
-    ],
-  },
-  {
-    id: 'configuration-connexion-reussie',
-    titre: 'Configuration enregistrée et connectée',
-    quand:
-      "Après un enregistrement valide : `refreshConfiguration` renvoie les champs, puis l'état de connexion.",
-    regarder:
-      "Le même fait est dit deux fois — la pastille de l'en-tête et la phrase de statut — et l'une des deux n'est pas sur l'écran de travail.",
-    existe: true,
-    atteinte: [
-      ...ouverture('verification'),
-      { message: { type: 'settings', settings: REGLAGES } },
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
-      { message: { type: 'connection', ...etatDeConnexion('connecte') } },
     ],
   },
   {
@@ -824,60 +774,6 @@ const ETATS = [
     ],
   },
   {
-    id: 'configuration-chemins-du-depot',
-    titre: 'Le repository décrit lui-même ses chemins',
-    quand:
-      "Le test de connexion a lu `ucm.config.json` sur la branche de base. Cette lecture n'avait lieu qu'à la publication, et le designer l'apprenait après coup.",
-    regarder:
-      "La phrase nomme les deux chemins et le fichier qui les porte. Elle se lit, elle ne se saisit pas.",
-    existe: true,
-    atteinte: [
-      ...ouverture('connecte'),
-      { message: { type: 'settings', settings: REGLAGES } },
-      depot({
-        components: 'packages/ui/src/components',
-        tokens: 'packages/ui/src/tokens/design-tokens.json',
-        source: 'ucm.config.json',
-      }),
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
-    ],
-  },
-  {
-    id: 'configuration-chemins-par-defaut',
-    titre: 'Le repository n’a pas de configuration, et le plugin le signale',
-    quand:
-      "Le repository n'a pas de `ucm.config.json`. C'est le cas nominal d'un dépôt neuf, et les défauts qui s'appliquent ici sont ceux que `ucm check` applique de son côté.",
-    regarder:
-      "Le bloc porte un filet de sévérité, et il le porte AVANT l'export. Le nom du fichier à écrire est en gras dans la phrase qui le demande.",
-    existe: true,
-    atteinte: [
-      ...ouverture('connecte'),
-      { message: { type: 'settings', settings: REGLAGES } },
-      depot({ components: 'components', tokens: 'tokens.json', source: 'les valeurs par défaut' }),
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
-    ],
-  },
-  {
-    id: 'configuration-cause-affichee',
-    titre: 'La cause de l’échec, là où on la corrige',
-    quand: "Arrivée dans la configuration par la pastille, après un 403 : le jeton est reconnu mais n'a pas les droits.",
-    regarder:
-      "Le geste est écrit sous le formulaire, et il y était AVANT l'arrivée : le statut n'attend plus un enregistrement pour dire quelque chose.",
-    existe: true,
-    atteinte: [
-      ...ouverture('acces-refuse'),
-      { message: { type: 'settings', settings: REGLAGES } },
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
-    ],
-  },
-  /*
-   * GitLab. Chaque état porte `forge: 'gitlab'` : une loi refuse qu'il affiche
-   * un mot de GitHub, et qu'un autre état affiche un mot de GitLab.
-   */
-  {
     id: 'gitlab-connecte',
     forge: 'gitlab',
     titre: 'GitLab connecté, composant sélectionné',
@@ -890,59 +786,163 @@ const ETATS = [
     ],
   },
   {
-    id: 'gitlab-jeton-refuse',
-    forge: 'gitlab',
-    titre: 'GitLab refuse le jeton',
-    quand: "GitLab répond 401 au test d'ouverture : jeton révoqué, expiré ou mal copié.",
-    regarder: 'La pastille nomme la cause, et le geste nomme le jeton d’accès GitLab.',
+    id: 'depots-aucun',
+    forge: 'aucune',
+    titre: 'Onglet Dépôts, aucun dépôt enregistré',
+    quand: "Premier lancement : la pastille mène à l'onglet Dépôts, vide.",
+    regarder: "Le bouton « Ajouter un dépôt », puis la phrase « Veuillez ajouter un dépôt. » : rien d'autre ne demande un geste.",
+    existe: true,
+    atteinte: [...ouverture('non-configure'), ...OUVRIR_DEPOTS],
+  },
+  {
+    id: 'depots-trois-deux-forges',
+    forge: 'mixte',
+    forgeActive: 'github',
+    titre: 'Trois dépôts sur deux forges, repliés',
+    quand: "Le mainteneur publie vers un repository GitHub et deux autres dépôts, dont un projet GitLab. Le dépôt GitHub est actif et connecté.",
+    regarder:
+      "Le compte des objets : titre, « Retour », deux onglets, description, « Ajouter un dépôt », puis le nom et l'état de chaque carte, soit 12. Seul le dépôt actif dit « Connecté » ; les deux autres proposent « Se connecter ».",
     existe: true,
     atteinte: [
-      ...ouverture('jeton-refuse', TOKENS_PRESENTS, TERMES_GITLAB),
-      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
+      ...ouverture('connecte'),
+      listeDe(['github', 'gitlab', 'recette'], 'github'),
+      carteTestee('github', 'connecte', {}, LAYOUT_GITHUB),
+      ...OUVRIR_DEPOTS,
     ],
   },
   {
-    id: 'gitlab-acces-refuse',
-    forge: 'gitlab',
-    titre: 'Jeton GitLab sans les droits',
-    quand: 'GitLab répond 403 : le jeton est reconnu, mais son scope ou son rôle ne suffit pas.',
-    regarder: 'Le geste nomme le scope api et le rôle Developer, que le designer cherche tels quels dans GitLab.',
+    id: 'depots-nouveau-erreurs',
+    forge: 'aucune',
+    titre: 'Nouveau dépôt refusé à l’enregistrement',
+    quand: "Le designer ajoute un dépôt, colle l'adresse d'un GitLab auto-hébergé, vide la branche et clique « Enregistrer » sans jeton.",
+    regarder: "Chaque erreur sous son champ, et la carte reste dépliée. L'erreur d'adresse nomme les deux hôtes acceptés.",
     existe: true,
     atteinte: [
-      ...ouverture('acces-refuse', TOKENS_PRESENTS, TERMES_GITLAB),
-      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
+      ...ouverture('non-configure'),
+      ...OUVRIR_DEPOTS,
+      { clic: AJOUTER },
+      { saisie: { dans: `${carte(1)} input[name="repoUrl"]`, valeur: 'https://gitlab.example.com/mon-org/ds' } },
+      { saisie: { dans: `${carte(1)} input[name="baseBranch"]`, valeur: '' } },
+      { clic: `${carte(1)} .carte-depot-actions .btn-primary` },
     ],
   },
   {
-    id: 'gitlab-projet-introuvable',
+    id: 'depots-doublon',
+    titre: 'Un repository déjà dans la liste',
+    quand: "Le designer ajoute l'adresse d'un repository déjà enregistré, écrite avec une autre casse. Le sandbox compare les identités en minuscules.",
+    regarder: 'Le refus sous le champ adresse, dans les mots de la forge, et la carte nouvelle reste dépliée avec sa saisie.',
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      carteTestee('github', 'connecte', {}, LAYOUT_GITHUB),
+      ...OUVRIR_DEPOTS,
+      { clic: AJOUTER },
+      { saisie: { dans: `${carte(2)} input[name="repoUrl"]`, valeur: 'https://github.com/Mon-Org/Design-System-v3' } },
+      { saisie: { dans: `${carte(2)} input[name="jeton"]`, valeur: 'jeton-exemple' } },
+      { clic: `${carte(2)} .carte-depot-actions .btn-primary` },
+      {
+        message: {
+          type: 'depot-enregistre', requete: 1, carte: 'nouvelle-1', id: null,
+          erreurs: { repoUrl: `Ce ${TERMES_GITHUB.depot} est déjà dans la liste.` },
+        },
+      },
+    ],
+  },
+  {
+    id: 'depots-actif-deplie',
+    titre: 'Dépôt actif déplié',
+    quand: 'Clic sur le nom du dépôt actif, connecté.',
+    regarder:
+      "L'adresse se lit sans se modifier, le repository retenu dessous, la branche, l'endroit où vont les exports d'après ucm.config.json, puis le jeton enregistré. « Enregistrer » et « Supprimer » ferment la carte.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      carteTestee('github', 'connecte', {}, LAYOUT_GITHUB),
+      ...OUVRIR_DEPOTS,
+      { clic: `${carte(1)} .carte-depot-nom` },
+    ],
+  },
+  {
+    id: 'depots-actif-jeton-refuse',
+    titre: 'Dépôt actif en échec, arrivée par la pastille',
+    quand: "GitHub refuse le jeton du dépôt actif. Le designer clique sur la pastille « jeton refusé » de l'écran de travail.",
+    regarder: "La carte arrive dépliée : « Jeton refusé » en rouge à la place de « Connecté », et le geste en tête de la carte, au-dessus du champ qu'il désigne.",
+    existe: true,
+    atteinte: [
+      ...ouverture('jeton-refuse'),
+      carteTestee('github', 'jeton-refuse', { statut: 401 }),
+      SELECTION_VIDE,
+      { clic: '.connection-status' },
+    ],
+  },
+  {
+    id: 'gitlab-depots-actif-introuvable',
     forge: 'gitlab',
-    titre: 'Projet GitLab introuvable',
+    titre: 'Projet GitLab introuvable, arrivée par la pastille',
     quand: 'GitLab répond 404 : adresse fautive, ou projet privé auquel le jeton n’a pas accès.',
-    regarder: 'Le geste dit que le projet peut être privé, parce que GitLab rend 404 et non 403 dans ce cas.',
+    regarder: "Le geste dit que le projet peut être privé, et qu'une adresse fausse se corrige en supprimant ce dépôt puis en ajoutant la bonne : l'adresse ne se modifie plus.",
     existe: true,
     atteinte: [
       ...ouverture('depot-introuvable', TOKENS_PRESENTS, TERMES_GITLAB),
-      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
+      carteTestee('gitlab', 'depot-introuvable', { statut: 404 }),
+      SELECTION_VIDE,
+      { clic: '.connection-status' },
     ],
   },
   {
-    id: 'gitlab-dossier-retire',
-    forge: 'gitlab',
-    titre: 'Adresse d’une page du projet GitLab',
-    quand: "Le designer colle l'adresse d'un dossier du projet, copiée depuis le navigateur.",
-    regarder: "Sous le champ, le projet retenu, puis la ligne qui dit que le dossier ne décide pas où vont les exports.",
+    id: 'depots-suppression-confirmation',
+    titre: 'Suppression d’un dépôt, second clic attendu',
+    quand: 'Premier clic sur « Supprimer » dans la carte dépliée du dépôt actif.',
+    regarder: "Le même bouton demande la confirmation, sans boîte de dialogue. Le second clic retire le dépôt entier, jeton compris.",
     existe: true,
     atteinte: [
-      ...ouverture('connecte', TOKENS_PRESENTS, TERMES_GITLAB),
-      { message: { type: 'settings', settings: REGLAGES_GITLAB } },
-      { clic: '.icon-button' },
-      { clic: '#onglet-depots' },
+      ...ouverture('connecte'),
+      carteTestee('github', 'connecte', {}, LAYOUT_GITHUB),
+      ...OUVRIR_DEPOTS,
+      { clic: `${carte(1)} .carte-depot-nom` },
+      { clic: `${carte(1)} .carte-depot-actions .btn-secondary` },
+    ],
+  },
+  {
+    id: 'depots-aucun-actif',
+    forge: 'aucune',
+    titre: 'Des dépôts enregistrés, aucun actif',
+    quand: 'Le designer a supprimé le dépôt actif : les autres restent, et aucun ne devient actif à sa place.',
+    regarder: "Chaque carte propose « Se connecter », et aucune ne dit « Connecté ». Sur l'écran de travail, la ligne sous la carte du composant dit que l'export sera téléchargé.",
+    existe: true,
+    atteinte: [
+      ...ouverture('non-configure'),
+      listeDe(['github', 'recette'], null),
+      depot(null, 'aucun-actif'),
+      ...OUVRIR_DEPOTS,
+    ],
+  },
+  {
+    id: 'destination-changee',
+    forge: 'mixte',
+    forgeActive: 'gitlab',
+    titre: 'La destination a changé depuis l’analyse',
+    quand:
+      "Le composant est analysé pour le repository GitHub, puis une autre fenêtre du plugin active le projet GitLab. Le designer clique « Publier le composant ».",
+    regarder: "Les cartes se sont vidées au changement de destination, et le refus dit le fait, sans supposer sa cause : il nomme le dépôt actif et demande une nouvelle analyse.",
+    existe: true,
+    atteinte: [
+      ...ouverture('connecte'),
+      SELECTION_PRETE,
+      { clic: '.carte-composant .btn-primary' },
+      { message: { type: 'status', state: 'loading', text: 'Analyse du composant…', destination: destinationDe('github') } },
+      { message: { ...verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 0 }).message, destination: destinationDe('github') } },
+      { clic: '.carte-composant .btn-primary:not([hidden]):not(:disabled)' },
+      listeDe(['github', 'gitlab'], 'gitlab'),
+      { message: { type: 'connection', ...etatDeConnexion('connecte', { termes: TERMES_GITLAB }) } },
+      {
+        message: {
+          type: 'status',
+          state: 'error',
+          text: refusDeDestinationChangee({ nom: DEPOTS_PUBLICS.gitlab.nom }),
+          destination: destinationDe('gitlab'),
+        },
+      },
     ],
   },
   {
@@ -1068,12 +1068,13 @@ const RESULTATS_D_OPERATION = new Set(['phase', 'diagnostic', 'verdict', 'status
 
 function avecProvenance(etat) {
   if (!etat.atteinte) return etat;
-  const destination = destinationDe(etat.forge ?? 'github', etat.gestionDesTokens ?? true);
+  const forge = etat.forge === 'mixte' ? etat.forgeActive : etat.forge ?? 'github';
+  const destination = destinationDe(forge, etat.gestionDesTokens ?? true);
   let operation = 0;
   const atteinte = etat.atteinte.map((etape) => {
     if (etape.clic?.startsWith('.carte-')) operation += 1;
     if (operation === 0 || !RESULTATS_D_OPERATION.has(etape.message?.type)) return etape;
-    return { message: { ...etape.message, destination, operation } };
+    return { message: { destination, ...etape.message, operation } };
   });
   return { ...etat, atteinte };
 }

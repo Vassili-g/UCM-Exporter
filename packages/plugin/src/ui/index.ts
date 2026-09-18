@@ -47,9 +47,7 @@ const depotRepli = document.createElement('p');
 depotRepli.className = 'depot-repli';
 depotRepli.hidden = true;
 
-const configurationPage = createConfigurationPage((settings, id) => {
-  versSandbox({ type: 'save-settings', settings, id });
-});
+const configurationPage = createConfigurationPage();
 const configPage = configurationPage.element;
 
 /**
@@ -73,6 +71,8 @@ const PAGES: Record<'export' | 'configuration', PageEnTete> = {
 function showConfiguration(onglet: OngletConfiguration = configurationPage.ongletActif()) {
   configurationPage.ouvrirOnglet(onglet);
   exportPage.hidden = true;
+  // Le statut de la carte du dépôt actif remplace la pastille sur cette page.
+  header.connection.hidden = true;
   configPage.hidden = false;
   header.settingsButton.hidden = true;
   header.backButton.hidden = false;
@@ -82,6 +82,7 @@ function showConfiguration(onglet: OngletConfiguration = configurationPage.ongle
 function showExports() {
   configPage.hidden = true;
   exportPage.hidden = false;
+  header.connection.hidden = false;
   header.settingsButton.hidden = false;
   header.backButton.hidden = true;
   header.setPage(PAGES.export);
@@ -89,7 +90,10 @@ function showExports() {
 
 const header = createHeader(PAGES.export, {
   onSettings: () => showConfiguration(),
-  onConnection: () => showConfiguration('depots'),
+  onConnection: () => {
+    showConfiguration('depots');
+    configurationPage.montrerLActifEnEchec();
+  },
   onBack: showExports,
 });
 
@@ -152,14 +156,9 @@ function annuler() {
 
 exportPage.append(composant.element, depotRepli, tokens.element);
 
-function updateConnection({
-  state,
-  pastille,
-  geste,
-}: Extract<PluginMessage, { type: 'connection' }>) {
+function updateConnection({ state, pastille }: Extract<PluginMessage, { type: 'connection' }>) {
   header.connection.dataset.state = state;
   header.connection.textContent = pastille;
-  configurationPage.updateConnection(state, geste);
 }
 
 /**
@@ -215,13 +214,11 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   }
 
   if (message.type === 'depot') {
-    configurationPage.afficherDestination(message);
-
     depotRepli.textContent = message.repli ? message.ligne ?? '' : '';
     depotRepli.hidden = !depotRepli.textContent;
   }
-  if (message.type === 'settings-validation') configurationPage.renderErrors(message.errors);
-  if (message.type === 'settings-save-error') configurationPage.showSaveError();
+  if (message.type === 'depot-enregistre') configurationPage.recevoirEnregistrement(message);
+  if (message.type === 'depot-teste') configurationPage.recevoirTest(message);
   if (message.type === 'connection') updateConnection(message);
 
   if (message.type === 'log' && resultatActuel(message)) active.compteRendu.ajouterPublication(message.text, message.level);

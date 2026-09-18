@@ -1222,7 +1222,7 @@ lot 3b.
   cartes, générations de test par dépôt ; retrait des messages du formulaire
   unique encore employés au lot 3a.
 - `src/connexion.ts` : statut court par cause pour la carte ; gestes du 401 et
-  du 404 de la section 4.6 ; `repli` en cause.
+  du 404 de la section 4.6, propres à la carte ; `repli` en cause.
 - Galerie : catégorie `mixte` et invariant de `AGENTS.md` (C13) ;
   réécriture des autres `configuration-*` et de `gitlab-dossier-retire` ;
   nouveaux états `depots-aucun`, `depots-trois-deux-forges`,

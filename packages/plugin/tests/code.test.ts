@@ -160,11 +160,11 @@ test('chaque commande publie son propre artefact après deux analyses', async ()
   assert.equal(telechargement.filename, 'exemple.contract.json');
 });
 
-test('une panne du stockage pendant la sauvegarde libère le formulaire', async () => {
+test('une panne du stockage pendant l’enregistrement rend une erreur générale', async () => {
   const h = ouvrir();
   h.runtime.clientStorage.setAsync = async () => { throw new Error('stockage indisponible'); };
-  await h.envoyer({ type: 'save-settings', settings: { repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test' }, id: null });
-  assert.ok(h.messages.some(({ type }) => type === 'settings-save-error'));
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: { repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test' }, id: null });
+  assert.ok(h.messages.some((message) => message.type === 'depot-enregistre' && /stockage du plugin a refusé/.test(message.erreurs.general ?? '')));
   assert.doesNotMatch(JSON.stringify(h.messages), /secret-test/);
 });
 
@@ -224,7 +224,7 @@ test('une panne du stockage après l’export conserve le fichier produit', asyn
 test('une configuration enregistrée rend les analyses précédentes impropres à publier', async () => {
   const h = ouvrir();
   await h.envoyer({ type: 'analyser-tokens', operation: 1 });
-  await h.envoyer({ type: 'save-settings', settings: {
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: {
     repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test',
   }, id: null });
   await h.envoyer({ type: 'publier', genre: 'tokens', operation: 2 });
@@ -247,7 +247,7 @@ test('un enregistrement à destination inchangée garde l’analyse', async () =
   await h.envoyer({ type: 'ui-ready' });
   await h.envoyer({ type: 'analyser-composant', operation: 1 });
   const connexions = h.appels.connexions;
-  await h.envoyer({ type: 'save-settings', settings: { repoUrl: 'https://github.com/O/R', baseBranch: 'main', jeton: 'nouveau-secret' }, id: 'github:o/r' });
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: { repoUrl: 'https://github.com/O/R', baseBranch: 'main', jeton: 'nouveau-secret' }, id: 'github:o/r' });
   assert.equal(h.appels.connexions, connexions + 1);
   await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
 
@@ -297,10 +297,10 @@ test('deux enregistrements rapprochés : la pastille décrit le second, et le te
   const lent = differe<Diagnostic>();
   h.connecter();
   h.connexionDe.traiter = async ({ jeton }) => (jeton === 'jeton-lent' ? lent.promesse : { cause: 'jeton-refuse', statut: 401, layout: null });
-  const premier = h.envoyer({ type: 'save-settings', settings: { ...reglages('o/r'), jeton: 'jeton-lent' }, id: 'github:o/r' });
+  const premier = h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: { ...reglages('o/r'), jeton: 'jeton-lent' }, id: 'github:o/r' });
   await tourner();
   assert.equal(h.appels.connexions, 1);
-  await h.envoyer({ type: 'save-settings', settings: { ...reglages('o/r'), jeton: 'jeton-rapide' }, id: 'github:o/r' });
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: { ...reglages('o/r'), jeton: 'jeton-rapide' }, id: 'github:o/r' });
   const avant = h.messages.length;
   lent.resoudre({ cause: 'connecte', layout: null });
   await premier;
@@ -319,7 +319,7 @@ test('une publication croisée avec un enregistrement refuse en nommant la desti
   h.connecter();
   await h.envoyer({ type: 'analyser-composant', operation: 1 });
   await Promise.all([
-    h.envoyer({ type: 'save-settings', settings: { ...reglages('o/r'), baseBranch: 'develop' }, id: 'github:o/r' }),
+    h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: { ...reglages('o/r'), baseBranch: 'develop' }, id: 'github:o/r' }),
     h.envoyer({ type: 'publier', genre: 'component', operation: 2 }),
   ]);
 
@@ -480,7 +480,7 @@ test('une suppression et une modification envoyées ensemble ne font pas revenir
     }
     return ecrire(cle, valeur);
   };
-  const modification = h.envoyer({ type: 'save-settings', settings: { ...reglages('o/r'), jeton: 'autre-secret' }, id: 'github:o/r' });
+  const modification = h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: { ...reglages('o/r'), jeton: 'autre-secret' }, id: 'github:o/r' });
   const suppression = h.envoyer({ type: 'supprimer-depot', id: 'github:o/r' });
   await tourner();
   retenue.resoudre();
@@ -499,9 +499,9 @@ test('un échec d’écriture ne bloque pas la demande suivante', async () => {
     if (pannes > 0) { pannes -= 1; throw new Error('stockage indisponible'); }
     return ecrire(cle, valeur);
   };
-  await h.envoyer({ type: 'save-settings', settings: reglages('o/r'), id: null });
-  assert.ok(h.messages.some(({ type }) => type === 'settings-save-error'));
-  await h.envoyer({ type: 'save-settings', settings: reglages('o/r'), id: null });
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: reglages('o/r'), id: null });
+  assert.ok(h.messages.some((message) => message.type === 'depot-enregistre' && /stockage du plugin a refusé/.test(message.erreurs.general ?? '')));
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: reglages('o/r'), id: null });
   assert.equal(h.stockage.get('depotActif'), 'github:o/r');
 });
 
@@ -518,7 +518,7 @@ test('une lecture n’observe pas une activation à moitié écrite', async () =
     await ecrire(cle, valeur);
     if (cle === 'depots') await liste.promesse;
   };
-  const enregistrement = h.envoyer({ type: 'save-settings', settings: reglages('o/r'), id: null });
+  const enregistrement = h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: reglages('o/r'), id: null });
   await tourner();
   const analyse = h.envoyer({ type: 'analyser-composant', operation: 1 });
   await tourner();
@@ -532,9 +532,9 @@ test('une lecture n’observe pas une activation à moitié écrite', async () =
 test('une modification ne change pas l’adresse d’un dépôt, et l’identité se compare en minuscules', async () => {
   const h = ouvrir();
   h.connecter();
-  await h.envoyer({ type: 'save-settings', settings: reglages('o/autre'), id: 'github:o/r' });
-  await h.envoyer({ type: 'save-settings', settings: reglages('O/R'), id: null });
-  const erreurs = h.messages.flatMap((message) => (message.type === 'settings-validation' ? [message.errors.repoUrl] : []));
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: reglages('o/autre'), id: 'github:o/r' });
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'c', settings: reglages('O/R'), id: null });
+  const erreurs = h.messages.flatMap((message) => (message.type === 'depot-enregistre' ? [message.erreurs.repoUrl] : []));
   assert.equal(erreurs.length, 2);
   assert.match(erreurs[0] ?? '', /ne change pas/);
   assert.equal(erreurs[1], 'Ce repository est déjà dans la liste.');
@@ -551,4 +551,76 @@ test('les anciennes clés d’un seul dépôt sont reprises avant toute lecture'
   assert.equal(h.stockage.get('depotActif'), 'github:o/r');
   assert.equal(h.stockage.has('github_pat'), false);
   assert.ok(h.appels.jetons.includes('o/r secret-test'));
+});
+
+const DEUX_DEPOTS = [
+  { repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'jeton-a' },
+  { repoUrl: 'https://gitlab.com/g/p', baseBranch: 'main', jeton: 'glpat-b' },
+];
+const testsDe = (h: ReturnType<typeof ouvrir>, id: string) => h.messages.flatMap((message) => (
+  message.type === 'depot-teste' && message.id === id ? [message] : []
+));
+
+test('enregistrer un dépôt inactif teste ce dépôt pour sa carte, et ne vide aucune analyse', async () => {
+  const h = ouvrir();
+  h.connecter();
+  await h.envoyer({ type: 'ui-ready' });
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  const pastilles = h.messages.filter(({ type }) => type === 'connection').length;
+  h.connexionDe.traiter = async ({ jeton }) => (jeton === 'glpat-b' ? { cause: 'jeton-refuse', statut: 401, layout: null } : { cause: 'connecte', layout: null });
+  await h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'nouvelle-1', id: null, settings: { repoUrl: 'https://gitlab.com/g/p', baseBranch: 'main', jeton: 'glpat-b' } });
+
+  const reponse = h.messages.find((message) => message.type === 'depot-enregistre');
+  assert.deepEqual(JSON.parse(JSON.stringify(reponse)), { type: 'depot-enregistre', requete: 1, carte: 'nouvelle-1', id: 'gitlab:g/p', erreurs: {} });
+  assert.deepEqual(testsDe(h, 'gitlab:g/p').map(({ statut }) => statut), ['Connexion…', 'Jeton refusé']);
+  assert.ok(h.appels.jetons.includes('g/p glpat-b'));
+  // La pastille décrit toujours le dépôt actif : seul son propre test l'a mise à jour.
+  const apres = h.messages.filter((message) => message.type === 'connection').slice(pastilles);
+  assert.ok(apres.every((message) => message.type === 'connection' && message.pastille === 'repository connecté'));
+  await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
+  assert.equal(h.appels.publications, 1);
+});
+
+test('le test d’une carte périmé par une suppression ne s’affiche pas', async () => {
+  const h = ouvrir();
+  h.stockage.set('depots', DEUX_DEPOTS);
+  h.stockage.set('depotActif', 'github:o/r');
+  const lent = differe<Diagnostic>();
+  h.connexionDe.traiter = async ({ jeton }) => (jeton === 'glpat-b' ? lent.promesse : { cause: 'connecte', layout: null });
+  const enregistrement = h.envoyer({ type: 'enregistrer-depot', requete: 1, carte: 'gitlab:g/p', id: 'gitlab:g/p', settings: { repoUrl: 'https://gitlab.com/g/p', baseBranch: 'develop', jeton: '' } });
+  await tourner();
+  await tourner();
+  assert.deepEqual(testsDe(h, 'gitlab:g/p').map(({ statut }) => statut), ['Connexion…']);
+  await h.envoyer({ type: 'supprimer-depot', id: 'gitlab:g/p' });
+  lent.resoudre({ cause: 'connecte', layout: null });
+  await enregistrement;
+  assert.deepEqual(testsDe(h, 'gitlab:g/p').map(({ statut }) => statut), ['Connexion…']);
+});
+
+test('« Se connecter » change la destination, teste le nouveau dépôt actif, et sa carte reçoit le test', async () => {
+  const h = ouvrir();
+  h.stockage.set('depots', DEUX_DEPOTS);
+  h.stockage.set('depotActif', 'github:o/r');
+  await h.envoyer({ type: 'ui-ready' });
+  await h.envoyer({ type: 'activer-depot', id: 'gitlab:g/p' });
+
+  assert.equal(h.stockage.get('depotActif'), 'gitlab:g/p');
+  const reglages = h.messages.filter((message) => message.type === 'settings').at(-1);
+  assert.ok(reglages?.type === 'settings');
+  assert.equal(reglages.settings.actif, 'gitlab:g/p');
+  assert.equal(h.appels.jetons.at(-1), 'g/p glpat-b');
+  assert.equal(testsDe(h, 'gitlab:g/p').at(-1)?.statut, 'Connecté');
+});
+
+test('un dépôt actif retiré laisse le repli « aucun dépôt actif » quand d’autres restent', async () => {
+  const h = ouvrir();
+  h.stockage.set('depots', DEUX_DEPOTS);
+  h.stockage.set('depotActif', 'github:o/r');
+  await h.envoyer({ type: 'supprimer-depot', id: 'github:o/r' });
+  const depot = h.messages.filter((message) => message.type === 'depot').at(-1);
+  assert.ok(depot?.type === 'depot');
+  assert.equal(depot.repli, 'aucun-actif');
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  const verdict = h.messages.find((message) => message.type === 'verdict');
+  assert.match(verdict?.type === 'verdict' ? verdict.texte : '', /^Aucun dépôt actif\. Le contrat sera téléchargé/);
 });

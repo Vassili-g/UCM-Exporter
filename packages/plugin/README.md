@@ -94,14 +94,15 @@ dans son `ucm.config.json`. Le plugin lit ce fichier au test de connexion : le
 designer découvre un fichier fautif avant d'exporter. Sans ce fichier, les
 valeurs par défaut s'appliquent, les mêmes que celles de `ucm check`.
 
-La configuration contient l'URL du dépôt, la branche de base et un jeton. Sur
+La configuration contient une liste de dépôts, chacun avec son URL, sa branche
+de base et son jeton, et le dépôt actif, que « Se connecter » choisit. Sur
 GitHub, un fine-grained Personal Access Token limité au repository, avec
 `Contents: Read and write` et `Pull requests: Read and write`. Sur GitLab, un
 jeton de scope `api` : un jeton d'accès projet de rôle Developer quand l'offre
 du projet le permet, un jeton personnel sinon. Le jeton reste local à la
 machine et n'apparaît ni dans l'interface, ni dans les journaux, ni dans le
-document Figma. Il ne part que vers la forge pour laquelle il a été saisi :
-changer l'URL de forge demande un nouveau jeton.
+document Figma. Il ne part que vers le dépôt pour lequel il a été saisi, dont
+l'adresse ne se modifie plus après l'enregistrement.
 
 Un export dont le contenu est identique à ce qui est déjà déposé n'ouvre pas de
 seconde demande. Le plugin dit où il a trouvé le même contenu.

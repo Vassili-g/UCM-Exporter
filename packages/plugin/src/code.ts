@@ -9,9 +9,11 @@ import handleExportComponent from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './tokens/exportTokens';
 import {
+  activerDepot,
   cleDeDestination,
   ecrireGestionDesTokens,
   lireGestionDesTokens,
+  lireConfigurationDe,
   lireInstantane,
   memeDepot,
   nomDuDepot,
@@ -21,7 +23,6 @@ import {
 } from './config';
 import type { ConfigurationDuDepot, Instantane } from './config';
 import { publishArtifact, diagnostiquerConnexion, lireAvantEcriture } from './depot';
-import type { EtatDesTokens } from './depot';
 import type { ArtifactKind, RepositoryLayout } from './depot';
 import { ErreurDeForge } from './forges/forge';
 import { forgeDe } from './forges';
@@ -31,15 +32,17 @@ import { verdictDePrevol } from './prevol';
 import type { CodeVerdict } from './prevol';
 import type { Annonce, PluginMessage, Provenance, UiRequest } from './messages';
 import {
+  etatDeCarte,
   etatDeConnexion,
   etatDuDepot,
   gesteApresEchecDePublication,
   refusDeDestinationChangee,
   textesDePublication,
+  TEXTES_DE_REPLI,
   TOKENS_DESACTIVES,
 } from './connexion';
 import { etatDeCible, detailDeCible } from './cible';
-import type { CauseConnexion, PrecisionConnexion } from './connexion';
+import type { CauseConnexion, CauseDeRepli, PrecisionConnexion } from './connexion';
 
 import { TAILLE_PAR_DEFAUT, lireTaille, rangerTaille, tailleValide } from './fenetre';
 
@@ -89,11 +92,60 @@ function postConnection(cause: CauseConnexion, precision: PrecisionConnexion = {
  * Envoie les chemins effectifs et leur autorité : le `ucm.config.json` du
  * repository, ou les défauts du kit quand il n'en a pas.
  */
-function postDepot(layout: RepositoryLayout | null, config: ConfigurationDuDepot | null, tokens: boolean): void {
-  const depot = config
-    ? { forge: TERMES[config.forge].forge, projet: config.projet, baseBranch: config.baseBranch }
-    : null;
-  versUi({ type: 'depot', ...etatDuDepot(layout, depot, tokens) });
+function postDepot(layout: RepositoryLayout | null, cible: ConfigurationDuDepot | CauseDeRepli, tokens: boolean): void {
+  versUi({ type: 'depot', ...etatDuDepot(layout, depotVise(cible), tokens) });
+}
+
+/** Le dépôt visé tel que `etatDuDepot` le lit, ou la cause du repli. */
+function depotVise(cible: ConfigurationDuDepot | CauseDeRepli) {
+  return typeof cible === 'string'
+    ? cible
+    : { forge: TERMES[cible.forge].forge, projet: cible.projet, baseBranch: cible.baseBranch };
+}
+
+/** Pourquoi un instantané ne vise aucun dépôt. */
+function repliDe({ depots }: Instantane): CauseDeRepli {
+  return depots.length === 0 ? 'aucun-depot' : 'aucun-actif';
+}
+
+/**
+ * Génération du test de chaque carte. Enregistrer ou supprimer un dépôt
+ * périme le test de ce dépôt, et de lui seul : enregistrer B ne périme pas un
+ * test de A.
+ */
+const generationsDesDepots = new Map<string, number>();
+
+function perimerLeTestDe(id: string): number {
+  const generation = (generationsDesDepots.get(id) ?? 0) + 1;
+  generationsDesDepots.set(id, generation);
+  return generation;
+}
+
+/** Le résultat du test d'un dépôt, pour sa seule carte. */
+function postDepotTeste(
+  id: string,
+  generation: number,
+  cause: CauseConnexion,
+  precision: PrecisionConnexion,
+  destination: ReturnType<typeof etatDuDepot>['resume'],
+): void {
+  versUi({ type: 'depot-teste', id, generation, ...etatDeCarte(cause, precision), destination });
+}
+
+/**
+ * Teste un dépôt qui n'est pas actif, pour sa seule carte : la pastille et la
+ * destination des exports restent celles du dépôt actif.
+ */
+async function testerDepot(id: string): Promise<void> {
+  const generation = perimerLeTestDe(id);
+  const lu = await parLaFile(() => lireConfigurationDe(id));
+  if (!lu || generationsDesDepots.get(id) !== generation) return;
+  const termes = TERMES[lu.config.forge];
+  postDepotTeste(id, generation, 'verification', { termes }, null);
+  const diagnostic = await diagnostiquerConnexion(forgeDe(lu.config));
+  if (generationsDesDepots.get(id) !== generation) return;
+  const destination = etatDuDepot(diagnostic.layout, depotVise(lu.config), lu.tokens).resume;
+  postDepotTeste(id, generation, diagnostic.cause, { statut: diagnostic.statut, detail: diagnostic.detail, termes }, destination);
 }
 
 /** Envoie le fichier généré à l'UI pour déclencher le téléchargement local. */
@@ -144,6 +196,8 @@ let generationDeConnexion = 0;
 
 /** La dernière clé de destination envoyée à l'interface dans `settings`. */
 let destinationAnnoncee: string | null = null;
+/** Le dépôt actif du dernier `settings`. */
+let actifAnnonce: string | null = null;
 
 /**
  * Envoie les réglages publics et leur destination. Une destination qui change
@@ -158,6 +212,7 @@ function annoncerReglages(instantane: Instantane): void {
     annulation ??= 'reglages';
   }
   destinationAnnoncee = instantane.destination;
+  actifAnnonce = instantane.actif;
   versUi({
     type: 'settings',
     settings: {
@@ -170,24 +225,30 @@ function annoncerReglages(instantane: Instantane): void {
 }
 
 /**
- * Teste la forge de l'instantané. Le jeton reste exclusivement dans ce sandbox.
+ * Teste la forge du dépôt actif de l'instantané : la pastille, la destination
+ * des exports et la carte de ce dépôt. Le jeton reste exclusivement dans ce
+ * sandbox.
  */
-async function testerConnexion({ depots, actif, validation, tokens }: Instantane, generation: number): Promise<void> {
-  if (!validation.valid || !validation.config) {
-    const forge = depots.find(({ id }) => id === actif)?.forge;
-    postConnection('non-configure', { termes: forge ? TERMES[forge] : null });
-    postDepot(null, null, tokens);
+async function testerConnexion(instantane: Instantane, generation: number): Promise<void> {
+  const { actif, validation, tokens } = instantane;
+  if (!actif || !validation.valid || !validation.config) {
+    postConnection('non-configure');
+    postDepot(null, repliDe(instantane), tokens);
     return;
   }
+  const termes = TERMES[validation.config.forge];
+  const generationDeCarte = perimerLeTestDe(actif);
   postConnection('verification');
+  postDepotTeste(actif, generationDeCarte, 'verification', { termes }, null);
   const diagnostic = await diagnostiquerConnexion(forgeDe(validation.config));
   if (generation !== generationDeConnexion) return;
-  postConnection(diagnostic.cause, {
-    statut: diagnostic.statut,
-    detail: diagnostic.detail,
-    termes: TERMES[validation.config.forge],
-  });
+  const precision = { statut: diagnostic.statut, detail: diagnostic.detail, termes };
+  postConnection(diagnostic.cause, precision);
   postDepot(diagnostic.layout, validation.config, tokens);
+  if (generationsDesDepots.get(actif) === generationDeCarte) {
+    const destination = etatDuDepot(diagnostic.layout, depotVise(validation.config), tokens).resume;
+    postDepotTeste(actif, generationDeCarte, diagnostic.cause, precision, destination);
+  }
 }
 
 /**
@@ -346,7 +407,7 @@ function postVerdict(
   analyse: AnalyseGardee,
   code: CodeVerdict,
   provenance: Provenance,
-  precision: { chemin?: string | null; source?: string | null; ou?: string | null; tokens?: EtatDesTokens | null; demande?: string } = {},
+  precision: Omit<Parameters<typeof verdictDePrevol>[0], 'code' | 'genre' | 'avertissements'> = {},
 ): void {
   versUi({
     type: 'verdict',
@@ -445,7 +506,7 @@ async function analyser(
     const { validation } = instantane;
     if (!validation.valid || !validation.config) {
       analysesGardees.set(artifactKind, analyse);
-      postVerdict(analyse, 'sans-depot', provenance);
+      postVerdict(analyse, 'sans-depot', provenance, { repli: repliDe(instantane) });
       return;
     }
 
@@ -562,7 +623,7 @@ async function publier(genre: ArtifactKind, operation: number): Promise<void> {
     const { validation } = instantane;
     if (!validation.valid || !validation.config) {
       postDownload(analyse.filename, analyse.content, provenance);
-      versUi({ type: 'log', text: 'Aucun repository connecté : téléchargement sur votre poste.', ...provenance });
+      versUi({ type: 'log', text: TEXTES_DE_REPLI[repliDe(instantane)].journal, ...provenance });
       postStatus('success', `${analyse.succes}. Téléchargement terminé.`, provenance);
       figma.notify(`${analyse.succes}. Téléchargement terminé.`);
       return;
@@ -714,22 +775,48 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     return;
   }
 
-  if (message.type === 'save-settings') {
-    // La configuration active change : un test déjà parti ne décrit plus rien.
-    generationDeConnexion += 1;
+  if (message.type === 'enregistrer-depot') {
+    const { requete, carte, id, settings } = message;
+    if (id !== null) perimerLeTestDe(id);
+    // Modifier le dépôt actif périme son test en cours ; enregistrer un autre
+    // dépôt ne touche pas à la pastille.
+    const actifModifie = id !== null && id === actifAnnonce;
+    if (actifModifie) generationDeConnexion += 1;
+    let enregistrement;
     try {
-      const { validation } = await parLaFile(() => enregistrerDepot(message.settings, message.id));
-      versUi({ type: 'settings-validation', errors: validation.errors });
-      if (!validation.valid) {
-        versUi({ type: 'settings-save-error' });
-        await refreshConfiguration({ reglages: false });
-        return;
-      }
-    } catch (erreur) {
-      // La configuration conservée n'a plus de test en cours : il repart.
-      void refreshConfiguration({ reglages: false }).catch(() => undefined);
-      throw erreur;
+      enregistrement = await parLaFile(() => enregistrerDepot(settings, id));
+    } catch {
+      versUi({
+        type: 'depot-enregistre', requete, carte, id,
+        erreurs: { general: 'Le dépôt n’a pas été enregistré : le stockage du plugin a refusé l’écriture. Réessayez.' },
+      });
+      if (actifModifie) void refreshConfiguration({ reglages: false }).catch(() => undefined);
+      return;
     }
+    const { validation } = enregistrement;
+    versUi({ type: 'depot-enregistre', requete, carte, id: enregistrement.id, erreurs: validation.errors });
+    if (!validation.valid || !enregistrement.id) {
+      if (actifModifie) await refreshConfiguration({ reglages: false });
+      return;
+    }
+    // La liste change dans tous les cas. Actif, le dépôt enregistré se teste par
+    // la pastille ; inactif, pour sa seule carte, et la pastille ne bouge pas.
+    const instantane = await parLaFile(lireInstantane);
+    if (instantane.actif === enregistrement.id) {
+      await refreshConfiguration();
+      return;
+    }
+    if (instantane.destination === destinationAnnoncee) annoncerReglages(instantane);
+    else suivreLaDestination(instantane);
+    await testerDepot(enregistrement.id);
+    return;
+  }
+
+  if (message.type === 'activer-depot') {
+    generationDeConnexion += 1;
+    await parLaFile(() => activerDepot(message.id));
+    // La destination change : `annoncerReglages` annule une analyse en cours,
+    // et une publication garde la destination lue à son départ.
     await refreshConfiguration();
     return;
   }
@@ -756,6 +843,7 @@ async function traiterMessage(message: UiRequest): Promise<void> {
   }
 
   if (message.type === 'supprimer-depot') {
+    perimerLeTestDe(message.id);
     generationDeConnexion += 1;
     await parLaFile(() => supprimerDepot(message.id));
     // L'entrée active retirée, aucun dépôt n'est actif : la destination change,
@@ -789,7 +877,6 @@ figma.ui.onmessage = async (message: UiRequest) => {
   try {
     await traiterMessage(message);
   } catch {
-    if (message.type === 'save-settings') versUi({ type: 'settings-save-error' });
     signalerEchec();
   }
 };

@@ -465,28 +465,28 @@ C4 (cartes dépliables), C5 (test de l'actif et du dépôt enregistré), C13
 
 ### Sandbox
 
-- [ ] Demandes `enregistrer-depot` et `activer-depot { id }`, par la file.
+- [x] Demandes `enregistrer-depot` et `activer-depot { id }`, par la file.
       `activer-depot` écrit `depotActif`, annule une analyse en cours, laisse
       finir une publication, relance `refreshConfiguration`
       ([4.4](PLAN-REGLAGES.md#44-changer-de-dépôt-actif)).
-- [ ] Refus du doublon, identité en minuscules, sous le champ adresse : « Ce
+- [x] Refus du doublon, identité en minuscules, sous le champ adresse : « Ce
       repository est déjà dans la liste. », mot lu dans `termes.depot`
       ([4.1, doublon](PLAN-REGLAGES.md#41-ce-quun-dépôt-enregistré-contient)).
-- [ ] Réponses `depot-enregistre { requete, carte, id, erreurs }` et
+- [x] Réponses `depot-enregistre { requete, carte, id, erreurs }` et
       `depot-teste { id, generation, etat, statut, geste, destination }`. Une
       erreur levée pendant l'enregistrement rend une erreur générale.
-- [ ] Enregistrer un dépôt teste cette entrée, active ou non. Aucun autre
+- [x] Enregistrer un dépôt teste cette entrée, active ou non. Aucun autre
       dépôt inactif n'est testé (T1).
-- [ ] Génération de test par dépôt : enregistrer B ne périme pas un test de A ;
+- [x] Génération de test par dépôt : enregistrer B ne périme pas un test de A ;
       modifier ou supprimer A le périme. Une réponse de carte ne met à jour la
       pastille et `depot` que si l'entrée est encore active avec les mêmes
       réglages ([4.3, fraîcheur](PLAN-REGLAGES.md#43-la-clé-de-destination)).
-- [ ] Retirer les messages du formulaire unique encore employés au lot 3a.
-- [ ] `src/connexion.ts` : statut court par cause pour la carte ; gestes du
+- [x] Retirer les messages du formulaire unique encore employés au lot 3a.
+- [x] `src/connexion.ts` : statut court par cause pour la carte ; gestes du
       401, du 403, du 404 et de `ucm.config.json` fautif du tableau de
       [4.6](PLAN-REGLAGES.md#46-interface-de-la-liste), relus avec
       `rediger-diagnostics-ucm`.
-- [ ] `src/connexion.ts` : `EtatDuDepot.repli` devient une cause,
+- [x] `src/connexion.ts` : `EtatDuDepot.repli` devient une cause,
       `null | 'aucun-depot' | 'aucun-actif' | 'debranche'`. Textes S1 et S2 de
       [section 6](PLAN-REGLAGES.md#6-débrancher-les-dépôts) pour la ligne sous
       la carte, le verdict `sans-depot` et le journal. Répartition propre à
@@ -495,79 +495,79 @@ C4 (cartes dépliables), C5 (test de l'actif et du dépôt enregistré), C13
 
 ### Interface
 
-- [ ] Liste rendue par `id`. Un message `settings` met à jour les cartes sans
+- [x] Liste rendue par `id`. Un message `settings` met à jour les cartes sans
       refermer une carte dépliée en cours de saisie.
-- [ ] Liste vide : « Veuillez ajouter un dépôt. ». Bouton « Ajouter un dépôt »
+- [x] Liste vide : « Veuillez ajouter un dépôt. ». Bouton « Ajouter un dépôt »
       qui crée une carte dépliée en fin de liste, avec un identifiant
       temporaire conservé dans la demande et sa réponse.
-- [ ] Carte repliée sur `--fond-bloc` : bouton de dépli qui porte le nom et
+- [x] Carte repliée sur `--fond-bloc` : bouton de dépli qui porte le nom et
       `aria-expanded`, et bouton voisin « Se connecter ». Aucun bouton dans un
       autre ; un clic sur « Se connecter » ne déplie pas la carte.
-- [ ] Nom de carte : `overflow-wrap: anywhere` et largeur réductible
+- [x] Nom de carte : `overflow-wrap: anywhere` et largeur réductible
       ([section 5, le nom](PLAN-REGLAGES.md#5-la-pastille-de-len-tête)).
       La carte lit `nom` dans `ReglagesPublics`, calculé depuis le lot 3a.
-- [ ] Statut : « Connecté » en vert pour l'actif connecté ; « Connexion… » en
+- [x] Statut : « Connecté » en vert pour l'actif connecté ; « Connexion… » en
       couleur secondaire pendant le test ; la cause en rouge en échec, geste en
       tête de la carte dépliée (P3).
-- [ ] Carte dépliée : « URL du dépôt » en lecture seule après enregistrement,
+- [x] Carte dépliée : « URL du dépôt » en lecture seule après enregistrement,
       « Repository GitHub : … », « Branche de base », bloc de destination issu
       de `depot-teste`, jeton, « Enregistrer », « Supprimer ».
-- [ ] Repli après un enregistrement accepté et un test réussi ; la carte reste
+- [x] Repli après un enregistrement accepté et un test réussi ; la carte reste
       dépliée tant que l'enregistrement ou le test échoue.
-- [ ] Suppression au second clic, « Confirmer la suppression ». Une carte jamais
+- [x] Suppression au second clic, « Confirmer la suppression ». Une carte jamais
       enregistrée s'abandonne sans confirmation (P4).
-- [ ] La garde `settingsDirty` passe à la carte. Après une sauvegarde réussie,
+- [x] La garde `settingsDirty` passe à la carte. Après une sauvegarde réussie,
       le champ du jeton envoyé est vidé, même si le test échoue ; une valeur
       retapée depuis l'envoi reste. Une erreur de stockage conserve la saisie
       ([7.1, enregistrement](PLAN-REGLAGES.md#71-les-onglets)).
-- [ ] Pastille retirée de la page de configuration. Arrivée par la pastille sur
+- [x] Pastille retirée de la page de configuration. Arrivée par la pastille sur
       un actif en échec : carte dépliée et amenée dans la vue.
-- [ ] Vocabulaire : « dépôt » pour les textes qui ignorent la forge,
+- [x] Vocabulaire : « dépôt » pour les textes qui ignorent la forge,
       `src/forges/termes.ts` pour les autres
       ([4.6, vocabulaire](PLAN-REGLAGES.md#46-interface-de-la-liste)).
 
 ### Galerie
 
-- [ ] `tests/galerie.test.ts` : catégorie `forge: 'mixte'`. La loi y vérifie
+- [x] `tests/galerie.test.ts` : catégorie `forge: 'mixte'`. La loi y vérifie
       chaque message contre la forge de son sujet : dépôt actif pour
       `connection`, dépôt de l'opération pour `verdict`, `status`, `log`,
       `demande`, entrée désignée par `id` pour `depot-teste`. Un test d'un dépôt
       GitLab inactif pendant que GitHub est actif reste accepté
       ([4.6, galerie](PLAN-REGLAGES.md#46-interface-de-la-liste)).
-- [ ] Rouge constaté : un état `mixte` où `connection` emploie un mot de l'autre
+- [x] Rouge constaté : un état `mixte` où `connection` emploie un mot de l'autre
       forge ; restaurer.
-- [ ] `AGENTS.md` : l'invariant « Tout texte du plugin qui nomme une forge »
+- [x] `AGENTS.md` : l'invariant « Tout texte du plugin qui nomme une forge »
       décrit la catégorie `mixte`, dans le même commit.
-- [ ] Réécrire les autres `configuration-*` et `gitlab-dossier-retire`.
+- [x] Réécrire les autres `configuration-*` et `gitlab-dossier-retire`.
       `depot-non-configure` et `export-sans-depot` deviennent S1.
-- [ ] Nouveaux états : `depots-aucun`, `depots-trois-deux-forges`,
+- [x] Nouveaux états : `depots-aucun`, `depots-trois-deux-forges`,
       `depots-nouveau-erreurs`, `depots-doublon`, `depots-actif-deplie`,
       `depots-actif-jeton-refuse`, `gitlab-depots-actif-introuvable`,
       `depots-suppression-confirmation`, `depots-aucun-actif`,
       `destination-changee`.
-- [ ] Relecture : les captures suivent les maquettes de
+- [x] Relecture : les captures suivent les maquettes de
       [4.6](PLAN-REGLAGES.md#46-interface-de-la-liste). Onglet Dépôts à trois
       dépôts repliés : 12 objets. Noter le compte dans le compte rendu.
 
 ### Tests
 
-- [ ] `tests/interface/interface.test.mjs` : « Se connecter » en un clic sans
+- [x] `tests/interface/interface.test.mjs` : « Se connecter » en un clic sans
       déplier ; suppression au second clic ; carte dépliée conservée à la
       réception de `settings` ; repli après sauvegarde et test réussis ; retours
       de deux cartes nouvelles sans doublon de carte ; champ du jeton vidé
       après sauvegarde.
-- [ ] `tests/code.test.ts` : enregistrer un dépôt inactif teste ce dépôt et ne
+- [x] `tests/code.test.ts` : enregistrer un dépôt inactif teste ce dépôt et ne
       vide aucune analyse ; résultat ignoré après modification ou suppression
       de l'entrée ; doublon refusé quelle que soit la casse.
 
 ### Documents
 
-- [ ] `docs/guides/POUR-LES-DESIGNERS.md`, « Configurer le dépôt ».
-- [ ] `packages/plugin/README.md`, « Où l'export atterrit ».
+- [x] `docs/guides/POUR-LES-DESIGNERS.md`, « Configurer le dépôt ».
+- [x] `packages/plugin/README.md`, « Où l'export atterrit ».
 
 ### Fin du lot
 
-- [ ] Vérification complète dans le worktree, `test:ui` et galerie compris.
+- [x] Vérification complète dans le worktree, `test:ui` et galerie compris.
       Commit, push.
 
 ## L3c. Pastille nommée et verdict nommé
@@ -832,3 +832,43 @@ que la suppression ait pu passer.
 - `AGENTS.md` porte encore une modification indexée par une autre session :
   le commit ne prend que l'invariant et la carte du code, par un index
   temporaire.
+
+### L3b
+
+Rouge constaté : un état `mixte` où `connection` nomme GitLab pendant que le
+dépôt actif est GitHub fait échouer la loi de la galerie
+(« depots-trois-deux-forges : connection affiche « GitLab » »). La loi a aussi
+attrapé deux états mal classés à sa première exécution.
+
+Le test « enregistrer un dépôt inactif teste ce dépôt pour sa carte » a
+révélé un défaut : l'enregistrement d'un dépôt inactif relançait aussi le test
+du dépôt actif, et la pastille repassait par « connexion… ». Seule la liste
+est désormais annoncée dans ce cas.
+
+Relecture : l'onglet Dépôts à trois dépôts repliés compte 12 objets (titre,
+« Retour », deux onglets, description, « Ajouter un dépôt », puis nom et état
+de chaque carte). Les captures suivent les maquettes de 4.6 : dépôt actif
+connecté, carte en échec dépliée à l'arrivée par la pastille, doublon refusé
+sous le champ adresse, carte nouvelle refusée.
+
+Écarts au plan :
+
+- la loi `mixte` lit le dépôt actif dans chaque `settings` et juge un résultat
+  d'opération sur sa propre clé de destination ; `forgeActive` ne sert qu'à
+  la provenance par défaut des résultats rejoués ;
+- la galerie gagne une étape `saisie`, pour rejouer une adresse tapée dans une
+  carte nouvelle ;
+- le statut court et le geste d'une carte viennent de `etatDeCarte`. Les
+  gestes du 401 et du 404 de 4.6 ne valent que dans la carte : la pastille et
+  l'échec d'une publication gardent les leurs. Le geste d'un `ucm.config.json`
+  fautif nomme désormais le dépôt dans les mots de sa forge ;
+- une carte nouvelle naît avec la branche `main`, comme l'ancien formulaire ;
+- `depots-aucun-actif` est un état `aucune` : sans dépôt actif, la pastille
+  nomme les deux demandes ;
+- les états `configuration-vierge`, `configuration-remplie`,
+  `configuration-erreurs-champs`, `configuration-connexion-reussie`,
+  `configuration-chemins-du-depot`, `configuration-chemins-par-defaut`,
+  `configuration-cause-affichee`, `configuration-suppression-confirmation`,
+  `gitlab-jeton-refuse`, `gitlab-acces-refuse`, `gitlab-projet-introuvable` et
+  `gitlab-dossier-retire` laissent la place aux états `depots-*`, qui
+  couvrent les mêmes situations dans la liste.

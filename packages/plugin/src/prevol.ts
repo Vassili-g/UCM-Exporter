@@ -3,6 +3,8 @@
  * avant la lecture des avertissements et n'offre l'action que si le contenu change.
  */
 import type { EtatDesTokens } from './depot';
+import { TEXTES_DE_REPLI } from './connexion';
+import type { CauseDeRepli } from './connexion';
 
 export type CodeVerdict = 'a-publier' | 'identique' | 'sans-depot';
 
@@ -36,6 +38,9 @@ export type EntreeDeVerdict = {
 
   /** Le nom de la demande de fusion sur la forge visée. */
   demande?: string;
+
+  /** Pourquoi aucun dépôt n'est visé, pour un verdict `sans-depot`. */
+  repli?: CauseDeRepli;
 };
 
 /**
@@ -82,7 +87,7 @@ export function verdictDePrevol(entree: EntreeDeVerdict): Verdict {
       code: 'sans-depot',
       texte: joindre(
         points,
-        `Aucun repository connecté. ${majuscule(NOM[entree.genre])} sera téléchargé sur votre poste.`,
+        `${TEXTES_DE_REPLI[entree.repli ?? 'aucun-depot'].verdict} ${majuscule(NOM[entree.genre])} sera téléchargé sur votre poste.`,
       ),
       action: `Télécharger ${NOM[entree.genre]}`,
       etat,

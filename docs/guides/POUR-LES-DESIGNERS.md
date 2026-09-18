@@ -85,10 +85,12 @@ les tokens, puis relancez son contrôle : aucun nouvel export n'est nécessaire.
 
 ### Configurer le dépôt
 
-Ouvrez `Configuration` depuis l'en-tête du plugin. Un développeur doit avoir
-branché le repository au préalable.
+Ouvrez `Configuration` depuis l'en-tête du plugin, puis l'onglet `Dépôts`. Un
+développeur doit avoir branché le repository au préalable. Le plugin garde
+plusieurs dépôts ; les exports vont dans le dépôt actif, marqué « Connecté ».
 
-1. Collez dans le champ l'adresse du repository, ou celle de n'importe quelle
+1. Cliquez « Ajouter un dépôt », puis collez dans le champ « URL du dépôt »
+   l'adresse du repository, ou celle de n'importe quelle
    page du repository : un dossier, une demande de fusion. Le plugin affiche
    sous le champ le repository qu'il retient, par exemple « Projet GitLab :
    mon-groupe/design-system ». Si l'adresse désignait un dossier, il le dit :
@@ -104,12 +106,18 @@ branché le repository au préalable.
      projet de rôle Developer, dans `Settings > Access tokens` du projet : il
      n'ouvre que ce projet. Si votre offre GitLab ne le propose pas, créez un
      jeton personnel dans vos préférences : il ouvre alors tous vos projets.
-4. Collez le jeton, puis enregistrez. La pastille passe au vert quand le
-   repository répond.
+4. Collez le jeton, puis enregistrez. Le plugin teste le dépôt : la carte se
+   replie quand il répond, et reste dépliée avec le geste à faire sinon. Le
+   premier dépôt enregistré devient actif.
 
-Un jeton enregistré pour GitHub ne sert pas pour GitLab, et l'inverse. Si vous
-remplacez une adresse GitHub par une adresse GitLab, le plugin demande un
-nouveau jeton et n'envoie rien à GitLab d'ici là.
+Pour publier dans un autre dépôt, cliquez « Se connecter » sur sa carte : il
+devient actif. Une analyse faite
+pour l'ancien dépôt ne se publie pas dans le nouveau ; relancez-la.
+
+Un jeton ne part que vers le dépôt pour lequel vous l'avez collé. L'adresse
+d'un dépôt enregistré ne se modifie plus : pour un autre projet, ajoutez un
+dépôt, puis supprimez l'ancien. « Supprimer » retire le dépôt et son jeton du
+poste.
 
 ## 4. Lire ce que le plugin vous répond
 

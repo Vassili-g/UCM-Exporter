@@ -122,7 +122,7 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
         state: 'disconnected',
         pastille: 'repository mal décrit',
         geste:
-          'Un développeur doit corriger le fichier qui décrit ce repository. '
+          `Un développeur doit corriger le fichier qui décrit ce ${depot}. `
           + 'Tant qu’il est fautif, aucun export ne peut être publié. '
           + (precision.detail ?? ''),
       };
@@ -136,6 +136,46 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
           + 'Si la réponse ne change pas, un mainteneur du plugin doit la regarder.',
       };
   }
+}
+
+/** Ce qu'une carte de la liste des dépôts affiche après le test de son dépôt. */
+export type EtatDeCarte = {
+  etat: EtatConnexion['state'];
+  /** Le statut court, à droite du nom de la carte repliée. */
+  statut: string;
+  /** Le geste, en tête de la carte dépliée. `null` quand tout va bien. */
+  geste: string | null;
+};
+
+/**
+ * Le statut et le geste d'une carte. Le geste s'affiche au-dessus des champs
+ * de la carte : pour un jeton refusé ou un dépôt introuvable, il désigne le
+ * champ où agir, ce que la pastille de l'en-tête ne peut pas faire.
+ */
+export function etatDeCarte(cause: CauseConnexion, precision: PrecisionConnexion = {}): EtatDeCarte {
+  const termes = precision.termes ?? null;
+  const forge = termes?.forge ?? 'La forge';
+  const depot = termes?.depot ?? 'dépôt';
+  const { state, geste } = etatDeConnexion(cause, precision);
+  const statuts: Record<CauseConnexion, string> = {
+    verification: 'Connexion…',
+    connecte: 'Connecté',
+    'non-configure': 'Jeton manquant',
+    'jeton-refuse': 'Jeton refusé',
+    'acces-refuse': 'Accès refusé',
+    'depot-introuvable': `${avecMajuscule(depot)} introuvable`,
+    'depot-mal-decrit': `${NOM_CONFIGURATION} fautif`,
+    reseau: `${termes?.forge ?? 'Forge'} injoignable`,
+    'forge-indisponible': `${termes?.forge ?? 'Forge'} indisponible`,
+  };
+  const gestes: Partial<Record<CauseConnexion, string>> = {
+    'jeton-refuse': `${forge} refuse ce ${termes?.nomDuJeton ?? 'jeton d’accès'}. Collez-en un nouveau ci-dessous, puis enregistrez.`,
+    'depot-introuvable':
+      `${forge} ne trouve aucun ${depot} à cette adresse avec ce jeton. `
+      + `Si le ${depot} est privé, donnez au jeton l’accès à ce ${depot}. `
+      + 'Si l’adresse est fausse, supprimez ce dépôt, puis ajoutez la bonne adresse.',
+  };
+  return { etat: state, statut: statuts[cause], geste: gestes[cause] ?? geste };
 }
 
 /**
@@ -197,15 +237,36 @@ export type ResumeDepot = {
 export type EtatDuDepot = {
   /** Ce que la configuration affiche sur l'endroit. `null` tant qu'il est inconnu. */
   resume: ResumeDepot | null;
-  /** La forge, le dépôt et sa branche, sur l'écran de travail. */
+  /** La forge, le dépôt et sa branche, ou la phrase du repli sur l'écran de travail. */
   ligne: string | null;
   /**
-   * `true` quand aucun repository n'est connecté : l'export sera téléchargé sur
-   * le poste. C'est un comportement correct, mais il était subi :
-   * découvert à l'arrivée, après le travail, alors que le bouton avait promis
-   * une pull request.
+   * Pourquoi l'export sera téléchargé sur le poste, `null` quand un dépôt est
+   * visé. Le repli est un comportement correct, mais il était subi : découvert
+   * à l'arrivée, après le travail, alors que le bouton avait promis une pull
+   * request.
    */
-  repli: boolean;
+  repli: CauseDeRepli | null;
+};
+
+/** Pourquoi aucun dépôt n'est visé : aucun n'est enregistré, ou aucun n'est actif. */
+export type CauseDeRepli = 'aucun-depot' | 'aucun-actif';
+
+/**
+ * Ce que le plugin dit d'un repli, à trois endroits : la ligne sous la carte
+ * du composant avant le clic, le verdict de l'analyse, et le journal de la
+ * publication.
+ */
+export const TEXTES_DE_REPLI: Record<CauseDeRepli, { ligne: string; verdict: string; journal: string }> = {
+  'aucun-depot': {
+    ligne: 'Aucun dépôt enregistré. L’export sera téléchargé sur votre poste.',
+    verdict: 'Aucun dépôt enregistré.',
+    journal: 'Aucun dépôt enregistré : téléchargement sur votre poste.',
+  },
+  'aucun-actif': {
+    ligne: 'Aucun dépôt actif. L’export sera téléchargé sur votre poste.',
+    verdict: 'Aucun dépôt actif.',
+    journal: 'Aucun dépôt actif : téléchargement sur votre poste.',
+  },
 };
 
 /**
@@ -222,19 +283,13 @@ export type EtatDuDepot = {
  */
 export function etatDuDepot(
   layout: LayoutConnu | null,
-  depot: DepotVise | null = null,
+  depot: DepotVise | CauseDeRepli = 'aucun-depot',
   tokens = true,
 ): EtatDuDepot {
-  /*
-   * Sans repository, la ligne dit ce qui va se passer. Le repli en
-   * téléchargement local est un comportement correct, mais il était subi :
-   * découvert à l'arrivée, alors que le bouton avait promis une pull request.
-   * L'annoncer avant le clic en fait un mode choisi.
-   */
-  const ligne = depot
-    ? `${depot.forge} · ${depot.projet} · ${depot.baseBranch}`
-    : 'Aucun repository connecté. L’export sera téléchargé sur votre poste.';
-  const situation = { ligne, repli: depot === null };
+  // Sans dépôt visé, la ligne dit ce qui va se passer, avant le clic.
+  const situation = typeof depot === 'string'
+    ? { ligne: TEXTES_DE_REPLI[depot].ligne, repli: depot }
+    : { ligne: `${depot.forge} · ${depot.projet} · ${depot.baseBranch}`, repli: null };
 
   if (!layout) return { ...situation, resume: null };
 

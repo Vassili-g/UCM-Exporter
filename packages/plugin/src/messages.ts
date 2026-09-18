@@ -7,7 +7,7 @@
  */
 import type { SettingsInput, SettingsValidation } from './config';
 import type { NomDeForge } from './forges/termes';
-import type { EtatConnexion, EtatDuDepot } from './connexion';
+import type { EtatConnexion, EtatDeCarte, EtatDuDepot, ResumeDepot } from './connexion';
 import type { Cible } from './cible';
 import type { CodeVerdict } from './prevol';
 
@@ -60,8 +60,14 @@ export type UiRequest =
   | { type: 'annuler' | 'ui-ready' }
   | { type: 'analyser-composant' | 'analyser-tokens'; operation: number }
   | { type: 'publier'; genre: 'component' | 'tokens'; operation: number }
-  /** Enregistre un dépôt nouveau (`id` nul), ou la branche et le jeton de l'entrée `id`. */
-  | { type: 'save-settings'; settings: SettingsInput; id: string | null }
+  /**
+   * Enregistre un dépôt nouveau (`id` nul), ou la branche et le jeton de
+   * l'entrée `id`. `requete` et `carte` reviennent dans `depot-enregistre` :
+   * une carte nouvelle porte un identifiant temporaire jusqu'à sa réponse.
+   */
+  | { type: 'enregistrer-depot'; requete: number; carte: string; id: string | null; settings: SettingsInput }
+  /** « Se connecter » : ce dépôt devient la destination des exports. */
+  | { type: 'activer-depot'; id: string }
   /** Retire une entrée entière, jeton compris. */
   | { type: 'supprimer-depot'; id: string }
   /**
@@ -86,8 +92,17 @@ export type UiRequest =
 export type PluginMessage =
   /** Les réglages publics rechargés : aucun jeton ne traverse cette frontière. */
   | { type: 'settings'; settings: ReglagesPublics }
-  | { type: 'settings-validation'; errors: SettingsValidation['errors'] }
-  | { type: 'settings-save-error' }
+  /**
+   * La réponse à `enregistrer-depot` : l'identité enregistrée en cas de succès,
+   * sinon les erreurs par champ ou une erreur générale.
+   */
+  | { type: 'depot-enregistre'; requete: number; carte: string; id: string | null; erreurs: SettingsValidation['errors'] }
+  /**
+   * Le test d'un dépôt, actif ou venant d'être enregistré, pour sa seule carte.
+   * `generation` croît à chaque test du même dépôt ; `destination` porte les
+   * chemins effectifs de ce dépôt quand le test les a lus.
+   */
+  | ({ type: 'depot-teste'; id: string; generation: number; destination: ResumeDepot | null } & EtatDeCarte)
   /**
    * Décision unique rendue en état visuel, libellé et geste éventuel.
    */

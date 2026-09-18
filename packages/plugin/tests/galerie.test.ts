@@ -11,6 +11,8 @@ import { createRequire } from 'node:module';
 type Etape = {
   message?: { type: string; titre?: string; impact?: string; action?: string };
   clic?: string;
+  /** Une valeur tapée dans un champ, comme le designer la taperait. */
+  saisie?: { dans: string; valeur: string };
   erreurUi?: string;
 };
 type Etat = {
@@ -103,7 +105,7 @@ test('un état atteignable dit ce qu’on regarde sur sa capture', () => {
     assert.ok((etat.regarder ?? '').length > 0, `${etat.id} est capturé sans qu'on sache pourquoi`);
     assert.ok((etat.atteinte ?? []).length > 0, `${etat.id} n'a aucune étape`);
     for (const etape of etat.atteinte ?? []) {
-      const gestes = [etape.message, etape.clic, etape.erreurUi].filter(Boolean);
+      const gestes = [etape.message, etape.clic, etape.saisie, etape.erreurUi].filter(Boolean);
       assert.equal(gestes.length, 1, `${etat.id} porte une étape qui n'est pas un geste unique`);
     }
   }
@@ -185,21 +187,63 @@ test('les trois issues d’un export ont chacune leur état', () => {
  * montrerait « pull request » ferait juger l'écran sur un texte que le plugin
  * n'écrit pas pour GitLab, et l'inverse vaut pour GitHub. Un état sans dépôt
  * configuré porte `forge: 'aucune'` : son texte nomme les deux demandes.
+ *
+ * Un état `mixte` montre des dépôts des deux forges, par construction : la
+ * liste de l'onglet Dépôts. La loi y vérifie chaque message contre la forge de
+ * son sujet : l'entrée désignée par `id` pour `depot-teste`, la clé de
+ * destination d'un résultat d'opération, et pour le reste le dépôt actif du
+ * dernier `settings`. La liste elle-même, `settings`, nomme les deux.
  */
-test('un état GitLab n’affiche aucun mot de GitHub, et un autre état aucun mot de GitLab', () => {
-  const MOTS = {
-    github: /GitHub|[Pp]ull request|\bPR\b|Personal Access Token/,
-    gitlab: /GitLab|[Mm]erge request|\bMR\b/,
-  };
+const MOTS = {
+  github: /GitHub|[Pp]ull request|\bPR\b|Personal Access Token/,
+  gitlab: /GitLab|[Mm]erge request|\bMR\b/,
+};
+type EtatDeForge = Etat & { forge?: 'gitlab' | 'aucune' | 'mixte'; forgeActive?: 'github' | 'gitlab' };
+type MessageDeForge = {
+  type: string;
+  id?: string;
+  destination?: string;
+  settings?: { actif: string | null };
+};
+
+/** Les fautes de forge d'un état `mixte`, message par message. */
+function fautesMixtes(etat: EtatDeForge): string[] {
   const fautes: string[] = [];
-  for (const etat of ETATS as Array<Etat & { forge?: 'gitlab' | 'aucune' }>) {
+  let actif: string | undefined;
+  for (const etape of etat.atteinte ?? []) {
+    const message = etape.message as MessageDeForge | undefined;
+    if (!message) continue;
+    if (message.type === 'settings') {
+      actif = message.settings?.actif?.split(':')[0];
+      continue;
+    }
+    const forge = message.type === 'depot-teste'
+      ? message.id?.split(':')[0]
+      : message.destination ? (JSON.parse(message.destination) as string[])[0] : actif;
+    if (forge !== 'github' && forge !== 'gitlab') continue;
+    const interdit = forge === 'gitlab' ? MOTS.github : MOTS.gitlab;
+    const trouve = interdit.exec(JSON.stringify(message));
+    if (trouve) fautes.push(`${etat.id} : ${message.type} affiche « ${trouve[0]} »`);
+  }
+  return fautes;
+}
+
+test('un état GitLab n’affiche aucun mot de GitHub, et un autre état aucun mot de GitLab', () => {
+  const fautes: string[] = [];
+  for (const etat of ETATS as EtatDeForge[]) {
     if (etat.forge === 'aucune') continue;
+    if (etat.forge === 'mixte') {
+      assert.ok(etat.forgeActive, `${etat.id} est mixte sans forgeActive`);
+      fautes.push(...fautesMixtes(etat));
+      continue;
+    }
     const affiche = JSON.stringify(etat.atteinte ?? []);
     const interdit = etat.forge === 'gitlab' ? MOTS.github : MOTS.gitlab;
     const trouve = interdit.exec(affiche);
     if (trouve) fautes.push(`${etat.id} affiche « ${trouve[0]} »`);
   }
   assert.ok(ETATS.some((etat) => (etat as { forge?: string }).forge === 'gitlab'), 'aucun état GitLab');
+  assert.ok(ETATS.some((etat) => (etat as { forge?: string }).forge === 'mixte'), 'aucun état mixte');
   assert.deepEqual(fautes, []);
 });
 

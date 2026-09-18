@@ -57,6 +57,11 @@ function pilote(etat) {
         var cible = document.querySelector(etape.clic);
         if (!cible) throw new Error('Galerie : aucun élément pour ' + etape.clic);
         cible.click();
+      } else if (etape.saisie) {
+        var champ = document.querySelector(etape.saisie.dans);
+        if (!champ) throw new Error('Galerie : aucun champ pour ' + etape.saisie.dans);
+        champ.value = etape.saisie.valeur;
+        champ.dispatchEvent(new Event('input', { bubbles: true }));
       } else if (etape.erreurUi) {
         window.dispatchEvent(new ErrorEvent('error', { message: etape.erreurUi }));
       }

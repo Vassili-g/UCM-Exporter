@@ -431,3 +431,24 @@ export async function supprimerDepot(id: string): Promise<void> {
     await figma.clientStorage.deleteAsync(STORAGE_KEYS.depotActif);
   }
 }
+
+/**
+ * Rend actif le dépôt `id`, par une seule écriture. Une identité absente de la
+ * liste ne s'écrit pas : `depotActif` ne désigne qu'une entrée enregistrée.
+ */
+export async function activerDepot(id: string): Promise<void> {
+  const depots = (await lireDepots()) ?? [];
+  if (!depots.some((entree) => identiteDuDepot(adresseDe(entree)) === id)) return;
+  await figma.clientStorage.setAsync(STORAGE_KEYS.depotActif, id);
+}
+
+/**
+ * La configuration validée de l'entrée `id`, active ou non, pour le test de sa
+ * carte ; `null` quand l'entrée n'est plus dans la liste.
+ */
+export async function lireConfigurationDe(id: string): Promise<{ config: ConfigurationDuDepot; tokens: boolean } | null> {
+  const [depots, tokens] = await Promise.all([lireDepots(), lireGestionDesTokens()]);
+  const entree = (depots ?? []).find((candidate) => identiteDuDepot(adresseDe(candidate)) === id);
+  const config = entree ? validateSettings(entree, jetonDe(entree)).config : null;
+  return config ? { config, tokens } : null;
+}

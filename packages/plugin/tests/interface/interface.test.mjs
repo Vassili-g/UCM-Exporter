@@ -21,7 +21,7 @@ async function ouvrir() {
   await page.evaluate(() => {
     window.demandes = [];
     window.addEventListener('message', (event) => {
-      if (event.data.pluginMessage?.type?.startsWith('analyser') || event.data.pluginMessage?.type === 'publier' || ['gerer-tokens', 'save-settings', 'supprimer-depot'].includes(event.data.pluginMessage?.type)) {
+      if (event.data.pluginMessage?.type?.startsWith('analyser') || event.data.pluginMessage?.type === 'publier' || ['gerer-tokens', 'enregistrer-depot', 'activer-depot', 'supprimer-depot'].includes(event.data.pluginMessage?.type)) {
         window.demandes.push(event.data.pluginMessage);
       }
     });
@@ -122,54 +122,111 @@ test('un changement de destination rend l’analyse disponible, un enregistremen
   }
 });
 
-test('le formulaire modifie le dépôt actif sans changer son adresse, et le supprime entier', async () => {
+const DEPOT_GITLAB = {
+  id: 'gitlab:mon-groupe/design-system', forge: 'gitlab', projet: 'mon-groupe/design-system', nom: 'design-system',
+  repoUrl: 'https://gitlab.com/mon-groupe/design-system', baseBranch: 'main', jeton: true,
+};
+const DEUX = (actif = DEPOT.id) => ({
+  type: 'settings',
+  settings: { destination: A, tokens: true, actif, depots: [DEPOT, DEPOT_GITLAB] },
+});
+const teste = (id, etat, statut, generation = 1) => ({
+  type: 'depot-teste', id, generation, etat, statut, geste: null, destination: null,
+});
+
+/** Ouvre l'onglet Dépôts avec la liste reçue. */
+async function ouvrirDepots(page, envoyer, reglages) {
+  await envoyer(reglages);
+  await page.locator('.icon-button').first().click();
+  await page.getByRole('tab', { name: 'Dépôts' }).click();
+}
+
+const derniere = (page, type) => page.waitForFunction((attendu) => window.demandes.at(-1)?.type === attendu, type)
+  .then(() => page.evaluate(() => window.demandes.at(-1)));
+
+test('« Se connecter » agit en un clic sans déplier la carte, et la suppression attend un second clic', async () => {
   const { page, envoyer } = await ouvrir();
   try {
-    await envoyer(reglages(A));
-    await page.locator('.icon-button').first().click();
-    await page.getByRole('tab', { name: 'Dépôts' }).click();
-    const jeton = page.locator('input[name="jeton"]');
-    const adresse = page.locator('input[name="repoUrl"]');
-    assert.equal(await adresse.inputValue(), 'https://github.com/mon-org/ds');
-    assert.equal(await adresse.getAttribute('readonly'), '');
-    assert.match(await jeton.getAttribute('placeholder'), /Token enregistré/);
+    await ouvrirDepots(page, envoyer, DEUX());
+    const carte = page.locator('.carte-depot').nth(1);
+    const deplier = carte.getByRole('button', { name: 'design-system', exact: true });
+    assert.equal(await deplier.getAttribute('aria-expanded'), 'false');
+    await carte.getByRole('button', { name: 'Se connecter', exact: true }).click();
+    assert.deepEqual(await derniere(page, 'activer-depot'), { type: 'activer-depot', id: DEPOT_GITLAB.id });
+    assert.equal(await deplier.getAttribute('aria-expanded'), 'false');
 
-    await page.locator('input[name="baseBranch"]').fill('develop');
-    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
-    await page.waitForFunction(() => window.demandes.at(-1)?.type === 'save-settings');
-    assert.deepEqual(await page.evaluate(() => window.demandes.at(-1)), {
-      type: 'save-settings',
-      settings: { repoUrl: 'https://github.com/mon-org/ds', baseBranch: 'develop', jeton: '' },
-      id: 'github:mon-org/ds',
-    });
-
-    const supprimer = page.getByRole('button', { name: 'Supprimer', exact: true });
-    await supprimer.click();
-    await page.getByRole('button', { name: 'Confirmer la suppression', exact: true }).click();
-    await page.waitForFunction(() => window.demandes.at(-1)?.type === 'supprimer-depot');
-    assert.deepEqual(await page.evaluate(() => window.demandes.at(-1)), { type: 'supprimer-depot', id: 'github:mon-org/ds' });
+    await deplier.click();
+    await carte.getByRole('button', { name: 'Supprimer', exact: true }).click();
+    assert.equal(await page.evaluate(() => window.demandes.at(-1)?.type), 'activer-depot');
+    await carte.getByRole('button', { name: 'Confirmer la suppression', exact: true }).click();
+    assert.deepEqual(await derniere(page, 'supprimer-depot'), { type: 'supprimer-depot', id: DEPOT_GITLAB.id });
   } finally {
     await page.close();
   }
 });
 
-test('sans dépôt, l’adresse se saisit, et l’adresse d’un dossier dit ce qui est retenu', async () => {
+test('une carte dépliée garde sa saisie à la réception des réglages, et se replie après un enregistrement et un test réussis', async () => {
   const { page, envoyer } = await ouvrir();
   try {
-    await envoyer(reglages(JSON.stringify(['aucune', true]), true, []));
-    await page.locator('.icon-button').first().click();
-    await page.getByRole('tab', { name: 'Dépôts' }).click();
-    const jeton = page.locator('input[name="jeton"]');
-    const adresse = page.locator('input[name="repoUrl"]');
-    assert.equal(await adresse.getAttribute('readonly'), null);
-    assert.equal(await page.getByRole('button', { name: 'Supprimer', exact: true }).isVisible(), false);
+    await ouvrirDepots(page, envoyer, DEUX());
+    const carte = page.locator('.carte-depot').first();
+    const deplier = carte.getByRole('button', { name: 'ds', exact: true });
+    await deplier.click();
+    await carte.locator('input[name="baseBranch"]').fill('develop');
+    await carte.locator('input[name="jeton"]').fill('ghp_nouveau');
+    await envoyer(DEUX());
+    assert.equal(await deplier.getAttribute('aria-expanded'), 'true');
+    assert.equal(await carte.locator('input[name="baseBranch"]').inputValue(), 'develop');
+    assert.equal(await carte.locator('input[name="repoUrl"]').getAttribute('readonly'), '');
 
-    await adresse.fill('https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines?ref_type=heads');
-    assert.equal(await jeton.getAttribute('placeholder'), '');
-    const champ = page.locator('label.field', { has: adresse });
-    assert.match(await champ.innerText(), /Projet GitLab : mon-groupe\/design-system/);
-    assert.match(await champ.innerText(), /désignait un dossier/);
-    assert.match(await page.locator('label.field', { has: jeton }).innerText(), /Jeton d’accès[\s\S]*scope api/);
+    await carte.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    const demande = await derniere(page, 'enregistrer-depot');
+    assert.deepEqual(demande.settings, { repoUrl: DEPOT.repoUrl, baseBranch: 'develop', jeton: 'ghp_nouveau' });
+    await envoyer({ type: 'depot-enregistre', requete: demande.requete, carte: demande.carte, id: DEPOT.id, erreurs: {} });
+    assert.equal(await carte.locator('input[name="jeton"]').inputValue(), '');
+    await envoyer(teste(DEPOT.id, 'checking', 'Connexion…'));
+    assert.equal(await deplier.getAttribute('aria-expanded'), 'true');
+    await envoyer(teste(DEPOT.id, 'connected', 'Connecté', 2));
+    assert.equal(await deplier.getAttribute('aria-expanded'), 'false');
+    assert.equal(await carte.locator('.carte-depot-statut').innerText(), 'Connecté');
+  } finally {
+    await page.close();
+  }
+});
+
+test('deux cartes nouvelles reçoivent chacune leur réponse, sans carte en double', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await ouvrirDepots(page, envoyer, reglages(JSON.stringify(['aucune', true]), true, []));
+    assert.equal(await page.getByText('Veuillez ajouter un dépôt.').isVisible(), true);
+    const ajouter = page.getByRole('button', { name: 'Ajouter un dépôt', exact: true });
+    await ajouter.click();
+    await ajouter.click();
+    const cartes = page.locator('.carte-depot');
+    assert.equal(await cartes.count(), 2);
+
+    const remplir = async (rang, adresse, jeton) => {
+      const carte = cartes.nth(rang);
+      await carte.locator('input[name="repoUrl"]').fill(adresse);
+      await carte.locator('input[name="jeton"]').fill(jeton);
+      await carte.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    };
+    await remplir(0, DEPOT.repoUrl, 'ghp_a');
+    const premiere = await derniere(page, 'enregistrer-depot');
+    await remplir(1, 'https://gitlab.com/mon-groupe/design-system/-/tree/main/guidelines', 'glpat-b');
+    await page.waitForFunction(() => window.demandes.filter(({ type }) => type === 'enregistrer-depot').length === 2);
+    const seconde = await page.evaluate(() => window.demandes.at(-1));
+    assert.notEqual(premiere.carte, seconde.carte);
+    const texteGitlab = await cartes.nth(1).innerText();
+    assert.ok(texteGitlab.includes('Projet GitLab : mon-groupe/design-system'), texteGitlab);
+    assert.ok(texteGitlab.includes('désignait un dossier'), texteGitlab);
+
+    await envoyer({ type: 'depot-enregistre', requete: seconde.requete, carte: seconde.carte, id: DEPOT_GITLAB.id, erreurs: {} });
+    await envoyer({ type: 'depot-enregistre', requete: premiere.requete, carte: premiere.carte, id: null, erreurs: { repoUrl: 'Ce repository est déjà dans la liste.' } });
+    await envoyer(reglages(A, true, [DEPOT_GITLAB]));
+    assert.equal(await cartes.count(), 2);
+    assert.ok((await cartes.nth(1).innerText()).includes('Ce repository est déjà dans la liste.'));
+    assert.equal(await cartes.nth(0).getByRole('button', { name: 'design-system', exact: true }).count(), 1);
   } finally {
     await page.close();
   }
@@ -209,7 +266,7 @@ test('les onglets de la configuration se parcourent au clavier, et chaque entré
     await page.keyboard.press('ArrowRight');
     assert.equal(await depots.getAttribute('aria-selected'), 'true');
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'onglet-depots');
-    assert.equal(await page.locator('input[name="repoUrl"]').isVisible(), true);
+    assert.equal(await page.getByRole('button', { name: 'Ajouter un dépôt', exact: true }).isVisible(), true);
     await page.keyboard.press('Home');
     assert.equal(await general.getAttribute('aria-selected'), 'true');
     await page.keyboard.press('End');

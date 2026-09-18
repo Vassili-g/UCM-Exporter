@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   causeDepuisStatut,
+  etatDeCarte,
   etatDeConnexion,
   etatDuDepot,
   gesteApresEchecDePublication,
@@ -102,9 +103,9 @@ test('un repository qui se décrit nomme ses deux chemins', () => {
  * qu'un développeur doit écrire pour en décider.
  */
 test('gestion des tokens désactivée, la destination ne parle que des composants', () => {
-  const decrit = etatDuDepot({ components: 'src/components', tokens: 'src/tokens/tokens.json', source: 'ucm.config.json' }, null, false);
+  const decrit = etatDuDepot({ components: 'src/components', tokens: 'src/tokens/tokens.json', source: 'ucm.config.json' }, 'aucun-depot', false);
   assert.equal(decrit.resume?.titre, 'Contrats dans src/components.');
-  const parDefaut = etatDuDepot({ components: 'components', tokens: 'tokens.json', source: 'les valeurs par défaut' }, null, false);
+  const parDefaut = etatDuDepot({ components: 'components', tokens: 'tokens.json', source: 'les valeurs par défaut' }, 'aucun-depot', false);
   assert.doesNotMatch(parDefaut.resume?.detail ?? '', /tokens/);
   assert.match(parDefaut.resume?.detail ?? '', /composants/);
 });
@@ -122,16 +123,19 @@ test('un repository sans ucm.config.json reçoit un avertissement, pas un consta
 });
 
 test('tant que rien n’est connu, rien n’est affirmé sur les chemins', () => {
-  const sansRien = etatDuDepot(null, null);
+  const sansRien = etatDuDepot(null, 'aucun-depot');
   assert.equal(sansRien.resume, null);
 });
 
-test('sans repository, la ligne dit ce qui VA se passer', () => {
+test('sans dépôt visé, la ligne dit pourquoi, et ce qui VA se passer', () => {
   // Le repli en téléchargement local était subi : découvert à l'arrivée,
   // alors que le bouton avait promis une pull request.
-  const { ligne, repli } = etatDuDepot(null, null);
-  assert.equal(repli, true);
-  assert.match(ligne ?? '', /téléchargé/);
+  const aucun = etatDuDepot(null, 'aucun-depot');
+  assert.equal(aucun.repli, 'aucun-depot');
+  assert.equal(aucun.ligne, 'Aucun dépôt enregistré. L’export sera téléchargé sur votre poste.');
+  const inactif = etatDuDepot(null, 'aucun-actif');
+  assert.equal(inactif.repli, 'aucun-actif');
+  assert.equal(inactif.ligne, 'Aucun dépôt actif. L’export sera téléchargé sur votre poste.');
 });
 
 test('la ligne nomme le repository et sa branche', () => {
@@ -141,7 +145,7 @@ test('la ligne nomme le repository et sa branche', () => {
     { components: 'src/components', tokens: 'src/tokens/tokens.json', source: 'ucm.config.json' },
     { forge: 'GitHub', projet: 'mon-org/design-system-v3', baseBranch: 'main' },
   );
-  assert.equal(repli, false);
+  assert.equal(repli, null);
   assert.equal(ligne, 'GitHub · mon-org/design-system-v3 · main');
   assert.equal(
     etatDuDepot(null, { forge: 'GitLab', projet: 'mon-groupe/design-system', baseBranch: 'main' }).ligne,
@@ -213,4 +217,39 @@ test('sur GitHub, les gestes de connexion gardent leurs phrases', () => {
     'Le jeton est reconnu, mais il n’a pas les droits sur ce repository. '
       + 'Donnez-lui Contents: Read and write et Pull requests: Read and write.',
   );
+});
+
+test('une carte nomme sa cause en statut court, dans les mots de sa forge', () => {
+  const statut = (cause: CauseConnexion, termes = TERMES_GITLAB) => etatDeCarte(cause, { termes }).statut;
+  assert.equal(statut('connecte'), 'Connecté');
+  assert.equal(statut('verification'), 'Connexion…');
+  assert.equal(statut('jeton-refuse'), 'Jeton refusé');
+  assert.equal(statut('acces-refuse'), 'Accès refusé');
+  assert.equal(statut('depot-introuvable'), 'Projet introuvable');
+  assert.equal(statut('depot-introuvable', TERMES_GITHUB), 'Repository introuvable');
+  assert.equal(statut('depot-mal-decrit'), 'ucm.config.json fautif');
+  assert.equal(statut('reseau', TERMES_GITHUB), 'GitHub injoignable');
+  assert.equal(etatDeCarte('connecte', { termes: TERMES_GITHUB }).geste, null);
+});
+
+/**
+ * Le geste d'une carte s'affiche au-dessus de ses champs : il désigne le champ
+ * où agir, et le geste d'un dépôt introuvable dit comment corriger l'adresse,
+ * qui ne se modifie plus.
+ */
+test('le geste d’une carte désigne son champ, et la correction d’une adresse figée', () => {
+  assert.equal(
+    etatDeCarte('jeton-refuse', { termes: TERMES_GITLAB }).geste,
+    'GitLab refuse ce jeton d’accès. Collez-en un nouveau ci-dessous, puis enregistrez.',
+  );
+  assert.equal(
+    etatDeCarte('depot-introuvable', { termes: TERMES_GITLAB }).geste,
+    'GitLab ne trouve aucun projet à cette adresse avec ce jeton. Si le projet est privé, donnez au jeton '
+      + 'l’accès à ce projet. Si l’adresse est fausse, supprimez ce dépôt, puis ajoutez la bonne adresse.',
+  );
+  assert.equal(
+    etatDeCarte('acces-refuse', { termes: TERMES_GITLAB }).geste,
+    'Le jeton est reconnu, mais il n’a pas les droits sur ce projet. Donnez-lui le scope api et le rôle Developer sur ce projet.',
+  );
+  assert.match(etatDeCarte('depot-mal-decrit', { termes: TERMES_GITLAB, detail: 'Détail.' }).geste ?? '', /décrit ce projet\. .*Détail\.$/);
 });
