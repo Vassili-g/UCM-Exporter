@@ -180,17 +180,33 @@ export function createListeDesDepots(): ListeDesDepotsUi {
     recevoirEnregistrement({ requete, carte: cle, id, erreurs }: DepotEnregistre) {
       const carte = cartes.get(cle);
       if (!carte) return;
+      // La carte que ce dépôt a déjà, quand un `settings` l'a créée pendant que
+      // la réponse était en vol.
+      const existante = id === null ? undefined : cartes.get(id);
       /*
        * La clé suit l'identité dès que le sandbox en rend une, même quand la
        * carte n'attend plus cette réponse. Le dépôt est alors enregistré, et
        * une clé restée temporaire faisait créer une seconde carte pour lui au
        * `settings` suivant.
        */
-      if (id && cle !== id && !cartes.has(id)) {
+      if (id && cle !== id && !existante) {
         cartes.delete(cle);
         cartes.set(id, carte);
       }
       if (!carte.recevoirEnregistrement(requete, id, erreurs)) return;
+      /*
+       * Deux cartes pour un dépôt : celle de la saisie n'a pas d'identité et
+       * aucun `settings` ne la retrouve, si bien qu'elle resterait en fin de
+       * liste sans plus jamais rien recevoir. C'est celle des réglages qui
+       * porte le dépôt, et c'est elle qui attend le test.
+       */
+      if (existante && existante !== carte) {
+        cartes.delete(cle);
+        carte.element.remove();
+        rafraichirVide();
+        enAttenteDeTest.set(existante, null);
+        return;
+      }
       enAttenteDeTest.set(carte, null);
     },
     recevoirTest(message: DepotTeste) {

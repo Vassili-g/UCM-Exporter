@@ -324,6 +324,62 @@ test('deux cartes nouvelles reçoivent chacune leur réponse, sans carte en doub
   }
 });
 
+/**
+ * Une carte vit sous une clé temporaire jusqu'à sa réponse, puis sous son
+ * identité, et c'est `settings` qui lui donne son dépôt. Un `settings` qui liste
+ * le dépôt avant que la réponse arrive crée donc la carte de ce dépôt : celle de
+ * la saisie reste sans identité, aucun `settings` ne la retrouve, et elle
+ * resterait en fin de liste sans plus rien recevoir.
+ */
+test('une réponse d’enregistrement pour un dépôt qui a déjà sa carte n’en laisse qu’une', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await ouvrirDepots(page, envoyer, reglages(A, true, [DEPOT]));
+    await page.getByRole('button', { name: 'Ajouter un dépôt', exact: true }).click();
+    const cartes = page.locator('.carte-depot');
+    await cartes.last().locator('input[name="repoUrl"]').fill(DEPOT_GITLAB.repoUrl);
+    await cartes.last().locator('input[name="jeton"]').fill('glpat-b');
+    await cartes.last().getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    const demande = await derniere(page, 'enregistrer-depot');
+
+    await envoyer(DEUX());
+    await envoyer({ type: 'depot-enregistre', requete: demande.requete, carte: demande.carte, id: DEPOT_GITLAB.id, erreurs: {} });
+    await envoyer(DEUX());
+    assert.equal(await cartes.count(), 2);
+    assert.equal(await cartes.getByRole('button', { name: 'design-system', exact: true }).count(), 1);
+  } finally {
+    await page.close();
+  }
+});
+
+/**
+ * La clé d'une carte enregistrée porte les deux-points de son identité, si bien
+ * que `corps-github:mon-org/ds` ne se vise par aucun sélecteur CSS sans
+ * échappement. L'identifiant reste valide en HTML et `aria-controls` le
+ * retrouve : cette loi tient ce point, et aucun code du plugin ne construit de
+ * sélecteur sur cet identifiant.
+ */
+test('le corps d’une carte se retrouve par l’identifiant que son en-tête annonce', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await ouvrirDepots(page, envoyer, reglages(A, true, [DEPOT]));
+    await page.getByRole('button', { name: 'Ajouter un dépôt', exact: true }).click();
+    const annonces = await page.locator('.carte-depot [aria-controls]')
+      .evaluateAll((entetes) => entetes.map((entete) => entete.getAttribute('aria-controls')));
+    assert.equal(annonces.length, 2);
+    assert.ok(annonces.includes(`corps-${DEPOT.id}`), annonces.join(', '));
+    for (const identifiant of annonces) {
+      assert.equal(
+        await page.evaluate((cible) => document.getElementById(cible)?.className, identifiant),
+        'carte-depot-corps',
+        `${identifiant} ne retrouve pas son corps`,
+      );
+    }
+  } finally {
+    await page.close();
+  }
+});
+
 test('la carte des tokens attend le réglage, et suit sa valeur', async () => {
   const { page, envoyer } = await ouvrir();
   try {
