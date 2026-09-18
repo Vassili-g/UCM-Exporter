@@ -308,7 +308,7 @@ test('deux enregistrements rapprochés : la pastille décrit le second, et le te
 
   assert.deepEqual(h.messages.slice(avant).map(({ type }) => type), []);
   const pastilles = h.messages.flatMap((message) => (message.type === 'connection' ? [message.pastille] : []));
-  assert.equal(pastilles.at(-1), 'r : jeton refusé');
+  assert.equal(pastilles.at(-1), 'r : Jeton refusé');
 });
 
 /**

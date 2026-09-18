@@ -206,7 +206,7 @@ test('sur GitLab, une merge request en double garde le geste du refus', () => {
 
 test('le 404 GitLab dit que le projet peut être privé et que le jeton doit y avoir accès', () => {
   const { pastille, geste } = etatDeConnexion('depot-introuvable', { termes: TERMES_GITLAB });
-  assert.equal(pastille, 'projet introuvable');
+  assert.equal(pastille, 'Projet introuvable');
   assert.match(geste ?? '', /GitLab ne trouve aucun projet/);
   assert.match(geste ?? '', /Si le projet est privé, donnez au jeton l’accès à ce projet./);
 });
@@ -266,19 +266,19 @@ test('la pastille nomme le dépôt actif dans chaque cause', () => {
   const nom = 'design-system';
   const pastille = (cause: CauseConnexion) => etatDeConnexion(cause, { termes: TERMES_GITLAB, nom }).pastille;
   assert.equal(pastille('connecte'), 'design-system connecté');
-  assert.equal(pastille('verification'), 'design-system : connexion…');
-  assert.equal(pastille('jeton-refuse'), 'design-system : jeton refusé');
-  assert.equal(pastille('acces-refuse'), 'design-system : accès refusé');
-  assert.equal(pastille('depot-introuvable'), 'design-system : projet introuvable');
+  assert.equal(pastille('verification'), 'design-system : Connexion…');
+  assert.equal(pastille('jeton-refuse'), 'design-system : Jeton refusé');
+  assert.equal(pastille('acces-refuse'), 'design-system : Accès refusé');
+  assert.equal(pastille('depot-introuvable'), 'design-system : Projet introuvable');
   assert.equal(pastille('reseau'), 'design-system : GitLab injoignable');
   assert.equal(pastille('forge-indisponible'), 'design-system : GitLab indisponible');
   assert.equal(pastille('depot-mal-decrit'), 'design-system : ucm.config.json fautif');
 });
 
 test('sans dépôt visé, la pastille dit s’il n’y en a aucun ou si aucun n’est actif', () => {
-  assert.equal(etatDeConnexion('non-configure', { repli: 'aucun-depot' }).pastille, 'aucun dépôt');
+  assert.equal(etatDeConnexion('non-configure', { repli: 'aucun-depot' }).pastille, 'Aucun dépôt');
   const inactif = etatDeConnexion('non-configure', { repli: 'aucun-actif' });
-  assert.equal(inactif.pastille, 'aucun dépôt actif');
+  assert.equal(inactif.pastille, 'Aucun dépôt actif');
   assert.match(inactif.geste ?? '', /Se connecter/);
 });
 
