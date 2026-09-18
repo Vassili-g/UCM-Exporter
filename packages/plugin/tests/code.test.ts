@@ -856,3 +856,44 @@ test('une liste de dépôts illisible dit son constat et son geste, et la réini
   assert.deepEqual(derniersReglages(h).depots, []);
   assert.equal(pastillesDe(h).at(-1), 'Aucun dépôt');
 });
+
+/**
+ * Les deux écritures d'une activation ne sont pas atomiques : la seconde peut
+ * échouer seule. L'interface doit alors montrer le stockage, pas ce qu'elle
+ * affichait.
+ */
+test('une activation dont la seconde écriture échoue rend quand même les réglages du stockage', async () => {
+  const h = ouvrir();
+  h.stockage.set('depots', [
+    { repoUrl: 'https://github.com/o/r', baseBranch: 'main', jeton: 'secret-test' },
+    { repoUrl: 'https://github.com/o/autre', baseBranch: 'main', jeton: 'secret-test' },
+  ]);
+  h.stockage.set('depotActif', 'github:o/r');
+  await h.envoyer({ type: 'ui-ready' });
+  const setAsync = h.runtime.clientStorage.setAsync;
+  h.runtime.clientStorage.setAsync = async (cle: string, valeur: unknown) => {
+    if (cle === 'exportLocal') throw new Error('stockage indisponible');
+    return setAsync(cle, valeur);
+  };
+  await h.envoyer({ type: 'activer-depot', id: 'github:o/autre' });
+
+  assert.equal(h.stockage.get('depotActif'), 'github:o/autre');
+  assert.equal(derniersReglages(h).actif, 'github:o/autre');
+  assert.equal(pastillesDe(h).at(-1), 'autre connecté');
+});
+
+test('une suppression dont le retrait du dépôt actif échoue rend quand même les réglages du stockage', async () => {
+  const h = ouvrir();
+  h.connecter();
+  await h.envoyer({ type: 'ui-ready' });
+  const deleteAsync = h.runtime.clientStorage.deleteAsync;
+  h.runtime.clientStorage.deleteAsync = async (cle: string) => {
+    if (cle === 'depotActif') throw new Error('stockage indisponible');
+    return deleteAsync(cle);
+  };
+  await h.envoyer({ type: 'supprimer-depot', id: 'github:o/r' });
+
+  assert.deepEqual(h.stockage.get('depots'), []);
+  assert.deepEqual(derniersReglages(h).depots, []);
+  assert.equal(pastillesDe(h).at(-1), 'Aucun dépôt');
+});

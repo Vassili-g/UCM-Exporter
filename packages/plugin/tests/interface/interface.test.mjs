@@ -199,6 +199,34 @@ test('« Se connecter » agit en un clic sans déplier la carte, et la suppressi
   }
 });
 
+test('la suppression armée se désarme dès que le clic suivant va ailleurs', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await ouvrirDepots(page, envoyer, DEUX());
+    const carte = page.locator('.carte-depot').nth(1);
+    const deplier = carte.getByRole('button', { name: 'design-system', exact: true });
+    await deplier.click();
+    const supprimer = carte.getByRole('button', { name: 'Supprimer', exact: true });
+    await supprimer.click();
+    await assert.doesNotReject(carte.getByRole('button', { name: 'Confirmer la suppression', exact: true }).waitFor());
+
+    // Le designer va ailleurs : le bouton reprend son libellé.
+    await carte.locator('input[name="baseBranch"]').click();
+    await assert.doesNotReject(supprimer.waitFor());
+
+    // Replier la carte désarme aussi : le bouton quitte la vue.
+    await supprimer.click();
+    await deplier.click();
+    await deplier.click();
+    await assert.doesNotReject(supprimer.waitFor());
+
+    // Un clic isolé n'a donc jamais supprimé le dépôt.
+    assert.equal(await page.evaluate(() => window.demandes.some(({ type }) => type === 'supprimer-depot')), false);
+  } finally {
+    await page.close();
+  }
+});
+
 test('une carte dépliée garde sa saisie à la réception des réglages, et se replie après un enregistrement et un test réussis', async () => {
   const { page, envoyer } = await ouvrir();
   try {
@@ -320,6 +348,32 @@ test('les onglets de la configuration se parcourent au clavier, et chaque entré
     await page.getByRole('button', { name: 'Retour' }).click();
     await page.locator('.icon-button').first().click();
     assert.equal(await depots.getAttribute('aria-selected'), 'true');
+  } finally {
+    await page.close();
+  }
+});
+
+/**
+ * Une erreur de fenêtre libère les cartes, donc la carte n'attend plus sa
+ * réponse. Le dépôt, lui, est enregistré : sa clé doit suivre son identité,
+ * sans quoi le `settings` suivant crée une seconde carte pour le même dépôt.
+ */
+test('une réponse d’enregistrement arrivée après une erreur de fenêtre ne dédouble pas la carte', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await ouvrirDepots(page, envoyer, reglages(A, true, []));
+    await page.getByRole('button', { name: 'Ajouter un dépôt', exact: true }).click();
+    const carte = page.locator('.carte-depot').first();
+    await carte.locator('input[name="repoUrl"]').fill(DEPOT.repoUrl);
+    await carte.locator('input[name="jeton"]').fill('ghp_jeton');
+    await carte.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    const demande = await derniere(page, 'enregistrer-depot');
+
+    await page.evaluate(() => window.dispatchEvent(new ErrorEvent('error', { message: 'panne' })));
+    await envoyer({ type: 'depot-enregistre', requete: demande.requete, carte: demande.carte, id: DEPOT.id, erreurs: {} });
+    await envoyer(reglages(A, true, [DEPOT]));
+
+    assert.equal(await page.locator('.carte-depot').count(), 1);
   } finally {
     await page.close();
   }

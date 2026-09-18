@@ -263,6 +263,24 @@ export function createCarteDepot({ cle, onEnregistrer, onSupprimer, onSeConnecte
     },
   });
 
+  /**
+   * Rend au bouton son libellé d'origine.
+   *
+   * Le second clic confirme le premier, il ne lui survit pas : sans ce
+   * désarmement, un clic isolé armait la suppression pour toute la session, et
+   * un clic ultérieur sur la même carte retirait le dépôt et son jeton sans
+   * rien demander.
+   */
+  function desarmerLaSuppression() {
+    if (supprimer.dataset.confirme !== 'oui') return;
+    delete supprimer.dataset.confirme;
+    supprimer.setLabel('Supprimer');
+  }
+
+  // Le second clic suit le premier sans quitter le bouton. Partir ailleurs
+  // désarme : le designer a fait autre chose de ce clic.
+  supprimer.addEventListener('blur', desarmerLaSuppression);
+
   const actions = document.createElement('div');
   actions.className = 'carte-depot-actions';
   actions.append(enregistrer, supprimer);
@@ -333,12 +351,16 @@ export function createCarteDepot({ cle, onEnregistrer, onSupprimer, onSeConnecte
     deplier(deplie: boolean) {
       corps.hidden = !deplie;
       deplier.setAttribute('aria-expanded', String(deplie));
+      // Replier la carte emporte le bouton hors de la vue : le second clic ne
+      // suivrait plus le premier.
+      if (!deplie) desarmerLaSuppression();
     },
     estDepliee: () => !corps.hidden,
     enEchec: () => echec,
     liberer() {
       enregistrer.disabled = false;
       requeteEnVol = null;
+      desarmerLaSuppression();
     },
   };
 

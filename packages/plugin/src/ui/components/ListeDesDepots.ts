@@ -170,11 +170,18 @@ export function createListeDesDepots(): ListeDesDepotsUi {
     },
     recevoirEnregistrement({ requete, carte: cle, id, erreurs }: DepotEnregistre) {
       const carte = cartes.get(cle);
-      if (!carte || !carte.recevoirEnregistrement(requete, id, erreurs)) return;
-      if (id && cle !== id) {
+      if (!carte) return;
+      /*
+       * La clé suit l'identité dès que le sandbox en rend une, même quand la
+       * carte n'attend plus cette réponse. Le dépôt est alors enregistré, et
+       * une clé restée temporaire faisait créer une seconde carte pour lui au
+       * `settings` suivant.
+       */
+      if (id && cle !== id && !cartes.has(id)) {
         cartes.delete(cle);
         cartes.set(id, carte);
       }
+      if (!carte.recevoirEnregistrement(requete, id, erreurs)) return;
       enAttenteDeTest.add(carte);
     },
     recevoirTest(message: DepotTeste) {

@@ -875,10 +875,15 @@ async function traiterMessage(message: UiRequest): Promise<void> {
 
   if (message.type === 'activer-depot') {
     generationDeConnexion += 1;
-    await parLaFile(() => activerDepot(message.id));
-    // La destination change : `annoncerReglages` annule une analyse en cours,
-    // et une publication garde la destination lue à son départ.
-    await refreshConfiguration();
+    try {
+      await parLaFile(() => activerDepot(message.id));
+    } finally {
+      // La destination change : `annoncerReglages` annule une analyse en cours,
+      // et une publication garde la destination lue à son départ. Le
+      // rafraîchissement a lieu même sur un rejet : ces deux écritures ne sont
+      // pas atomiques, et l'interface doit montrer ce que le stockage porte.
+      await refreshConfiguration();
+    }
     return;
   }
 
@@ -906,10 +911,15 @@ async function traiterMessage(message: UiRequest): Promise<void> {
   if (message.type === 'supprimer-depot') {
     perimerLeTestDe(message.id);
     generationDeConnexion += 1;
-    await parLaFile(() => supprimerDepot(message.id));
-    // L'entrée active retirée, aucun dépôt n'est actif : la destination change,
-    // et la pastille le dit du même geste.
-    await refreshConfiguration();
+    try {
+      await parLaFile(() => supprimerDepot(message.id));
+    } finally {
+      // L'entrée active retirée, aucun dépôt n'est actif : la destination
+      // change, et la pastille le dit du même geste. Le rafraîchissement a lieu
+      // même sur un rejet, puisque le retrait de l'entrée et celui du dépôt
+      // actif sont deux écritures.
+      await refreshConfiguration();
+    }
     return;
   }
 

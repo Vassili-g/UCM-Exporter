@@ -128,10 +128,26 @@ le reconstruit.
 
 | Gravité | Confirmé | Plausible |
 |---|---:|---:|
-| Critique | 4 | 0 |
-| Haute | 1 | 0 |
-| Moyenne | 1 | 2 |
+| Critique | 0 | 0 |
+| Haute | 0 | 0 |
+| Moyenne | 1 | 0 |
 | Basse | 0 | 0 |
+
+Ce que chaque constat a laissé derrière lui :
+
+| Constat | Refermé par | Test qui le retient |
+|---|---|---|
+| Publication réussie annoncée en échec | `439691b` | `code.test.ts`, « une liste illisible après la demande de fusion garde le succès de la publication » |
+| Demande jetée sans réponse | `439691b` | `code.test.ts`, « une demande arrivée pendant la fin d'une publication reçoit une réponse portant son numéro » |
+| Interface occupée pendant le test de connexion | `439691b` | `code.test.ts`, « le succès d'une publication précède le test de connexion qu'elle relance » |
+| Liste illisible sans issue | `439691b` | `code.test.ts`, « une liste de dépôts illisible dit son constat et son geste » |
+| Suppression armée pour la session | ce commit | `interface.test.mjs`, « la suppression armée se désarme dès que le clic suivant va ailleurs » |
+| Textes hors des règles du dépôt | ce commit | `textesAffiches.test.ts`, ses deux lois |
+| Carte dédoublée après une erreur de fenêtre | ce commit | `interface.test.mjs`, « une réponse d'enregistrement arrivée après une erreur de fenêtre ne dédouble pas la carte » |
+| Activation à moitié écrite | ce commit | `code.test.ts`, ses deux lois sur la seconde écriture |
+
+Le constat moyen qui reste porte sur le contrôle lui-même, et non sur le
+plugin : il est décrit à la fin de cette section.
 
 ### [Critique] Une publication réussie est annoncée en échec quand le stockage devient illisible
 
@@ -367,8 +383,29 @@ le reconstruit.
   compris après un rejet de la file, pour les quatre demandes qui écrivent en
   deux temps.
 
+### [Moyenne] Aucun contrôle ne lit les textes affichés au designer
+
+- **Où** : `scripts/controle-style.mjs`, `fautesDeLaSource()`
+- **Verdict** : confirmé
+- **Scénario** : `fautesDeLaSource()` ne juge que les blocs de commentaire
+  d'une source. Les chaînes que le plugin affiche n'ont jamais été lues par
+  aucune règle, et c'est par là que « permet de » et deux apostrophes droites
+  sont entrées dans l'interface. Étendre `INTENSIFICATEURS` ne referme pas ce
+  trou : la mesure a été faite, et la tournure tombe 12 fois dans le dépôt,
+  toutes sur des commentaires qui donnent le mécanisme dans la même phrase,
+  pour un seul texte affiché fautif. Une règle qui refuse 12 emplois justes
+  pour en attraper un se désarme au premier contournement.
+- **Ce qui a été fait** : `packages/plugin/tests/textesAffiches.test.ts` juge
+  les phrases des six fichiers qui portent les textes de l'interface, et eux
+  seuls. Deux lois : aucune apostrophe droite, aucune tournure qui annonce un
+  effet sans son mécanisme.
+- **Ce qui reste** : les textes du kit et de la CLI ne sont toujours lus par
+  aucune règle. La liste `SOURCES` de ce test dit où elle porte ; l'étendre
+  demande de mesurer d'abord ce qui tombe, comme ici.
+
 ## 5. Ce qui reste à sonder
 
-Les zones Z5, Z6 et Z7 ne sont pas épuisées. L'agent qui corrige les reprend
-après les constats confirmés, avec la même méthode : une sonde, une sortie
-observée, un test qui la retient.
+Les zones Z5 et Z6 ne sont pas épuisées. Z7 l'est pour les écritures en deux
+temps de `activerDepot()` et `supprimerDepot()` ; la reprise des anciennes
+clés n'a pas été sondée. Les reprendre avec la même méthode : une sonde, une
+sortie observée, un test qui la retient.

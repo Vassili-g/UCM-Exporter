@@ -352,9 +352,9 @@ export function etatDuDepot(
       ...situation,
       resume: {
         ton: 'avertissement',
-        titre: `Attention, le ${NOM_CONFIGURATION} de ce repository n'est pas configuré.`,
-        detail: `Le fichier de configuration ${NOM_CONFIGURATION} permet de définir l'endroit où `
-          + `seront poussés ${tokens ? 'les composants et les tokens' : 'les composants'}.`,
+        titre: `Ce dépôt ne déclare aucun ${NOM_CONFIGURATION}.`,
+        detail: `Les composants ${tokens ? 'et les tokens ' : ''}suivent les chemins par défaut du kit. `
+          + `Un développeur fixe les chemins de ce dépôt dans son ${NOM_CONFIGURATION}.`,
       },
     };
   }
