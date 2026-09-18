@@ -245,8 +245,10 @@ La spécification en lien porte le raisonnement.
   axes que la normalisation confond refusent l'export, aucun artefact ne sort et
   le designer en renomme un.
   → [spec](./packages/plugin/SPEC.md#1-props)
-- La convention `State`/`Status` porte sur un axe, donc sur le seul type
-  `VARIANT`. Une propriété d'un autre type qui porte ce nom reste une prop.
+- La convention `State`/`States`/`Status` porte sur un axe, donc sur le seul
+  type `VARIANT`. Une propriété d'un autre type qui porte ce nom reste une prop.
+  `STATE_AXIS_NAMES` (`semantics.ts`) est l'unique liste de ces noms : les props
+  et `stateModel` la lisent toutes deux.
   → [spec](./docs/format/FORMAT.md#1-props)
 - Les axes d’API sont dans `props`, l’axe d’états dans `stateModel` ; une règle
   `@prop` suit cette répartition. N’est une faute de frappe que ce que le contrat

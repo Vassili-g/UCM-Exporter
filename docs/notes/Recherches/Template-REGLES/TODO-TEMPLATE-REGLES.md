@@ -224,24 +224,24 @@ Référence : [phase 2](PLAN-TEMPLATE-REGLES.md#phase-2-le-moteur--marqueur-et-a
 Référence : [phase 2](PLAN-TEMPLATE-REGLES.md#phase-2-le-moteur--marqueur-et-axe-détats),
 point 5, et la fin de la [section 11](PLAN-TEMPLATE-REGLES.md#11-décisions-prises-à-h1).
 
-- [ ] Tests rouges : dans `tests/parsers.test.ts`, un axe `States` sort des
+- [x] Tests rouges : dans `tests/parsers.test.ts`, un axe `States` sort des
       props ; dans `tests/semantics.test.ts` ou le test voisin de
       `buildStateModel`, un axe `States` est publié par `stateModel`, et sa
       valeur `Disable` donne `disabled`. Un axe `State` et un axe `Status`
       restent couverts.
-- [ ] Une seule liste des noms normalisés de l'axe d'états, `state`, `states`
+- [x] Une seule liste des noms normalisés de l'axe d'états, `state`, `states`
       et `status`, exportée par `src/contract/semantics.ts`. `isStateProperty`
       (`parsers.ts`) et `buildStateModel` (`semantics.ts`) la lisent.
       `src/contract/extractSamples.ts` appelle aussi `isStateProperty` :
       vérifier que son comportement suit sans changement de code.
-- [ ] Documents : `docs/format/FORMAT.md`, sections 1 et 7, et l'invariant
+- [x] Documents : `docs/format/FORMAT.md`, sections 1 et 7, et l'invariant
       « La convention `State`/`Status` » d'`AGENTS.md` citent les trois noms.
       `tests/inventaireInvariants.test.ts` suit si la phrase de l'invariant
       est figée.
-- [ ] `contractVersion` ne monte pas. Noter dans le compte rendu le constat du
+- [x] `contractVersion` ne monte pas. Noter dans le compte rendu le constat du
       plan : un composant de l'équipe consommatrice qui aurait un axe `States`
       le verrait quitter ses props au prochain export.
-- [ ] Vérification complète dans le worktree, commit, push.
+- [x] Vérification complète dans le worktree, commit, push.
 
 ## 3. Motifs de la loi du document intact
 
@@ -743,3 +743,26 @@ lot jusqu'à la recette.
 | `.ruleItem`, `@do` | `content` | « [À compléter] Décrivez un usage recommandé. » |
 | `.ruleItem`, `@dont` | `content` | « [À compléter] Décrivez un usage à éviter. » |
 | `.ruleItem`, `@pairs` | `content` | « [À compléter] Listez les composants souvent associés, séparés par des virgules. » |
+
+### 2b. L'axe `States`
+
+Rouge constaté avant le code, `npx tsx --test tests/parsers.test.ts
+tests/semantics.test.ts` : 27 verts, 2 rouges, chacun sur `States` seul.
+
+```text
+✖ un axe State, States ou Status sort des props, et sa valeur Disable donne disabled
+✖ buildStateModel publie un axe states comme un axe state ou status
+```
+
+- `STATE_AXIS_NAMES` (`semantics.ts`) est la seule liste ; `isStateProperty` et
+  `buildStateModel` la lisent. `extractSamples.ts` suit sans changement de
+  code : il appelle `isStateProperty`.
+- FORMAT.md cite les trois noms dans ses sections 1, 4 et 7 ; la section 4, que
+  la liste ne nommait pas, portait aussi « `State` ou `Status` ». Le glossaire de
+  POUR-LES-DESIGNERS.md suit.
+- L'inventaire d'`AGENTS.md` reçoit `STATE_AXIS_NAMES`. Vu rouge en renommant
+  la constante dans le code, restauré par copie.
+- `contractVersion` ne monte pas. Aucun contrat du Playground n'a d'axe
+  `States`, revérifié : ses deux `stateModel` ont l'axe `state`. Un composant
+  de l'équipe consommatrice qui aurait un axe `States` le verrait quitter ses
+  props au prochain export, et entrer dans `stateModel`.

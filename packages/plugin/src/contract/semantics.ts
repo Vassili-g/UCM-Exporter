@@ -38,6 +38,13 @@ const STATE_SELECTORS: Record<string, string> = {
 const STATE_PRECEDENCE = ['disable', 'disabled', 'press', 'focus', 'hover', 'default'];
 
 /**
+ * Les noms, une fois normalisés, d'un axe d'états : `State`, `States` ou
+ * `Status` dans Figma. Unique liste : `parsers.ts` en retire l'axe des props,
+ * `buildStateModel` le publie, et les deux lectures ne peuvent pas diverger.
+ */
+export const STATE_AXIS_NAMES: readonly string[] = ['state', 'states', 'status'];
+
+/**
  * Échelles de tailles connues. Un enum dont toutes les valeurs figurent ici
  * est un axe de tailles, quel que soit son nom Figma.
  */
@@ -98,7 +105,7 @@ export function buildStateModel(
   variantValues: Array<Record<string, string>>,
   warnings: string[],
 ): StateModel | null {
-  const axis = axes.find((candidate) => candidate === 'state' || candidate === 'status');
+  const axis = axes.find((candidate) => STATE_AXIS_NAMES.includes(candidate));
   if (!axis) return null;
 
   const values = Array.from(

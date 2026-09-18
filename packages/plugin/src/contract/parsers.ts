@@ -3,7 +3,7 @@
  */
 import { normalizeName } from '@ucm-kit/core/format';
 import { pousserSansNode } from './localisation';
-import { semanticEnumName } from './semantics';
+import { STATE_AXIS_NAMES, semanticEnumName } from './semantics';
 import type { ContractProp } from '@ucm-kit/core/format';
 
 /**
@@ -82,7 +82,7 @@ export function definePropOn(
  * qu'aucun message ne la nomme.
  */
 export function isStateProperty(key: string): boolean {
-  return key === 'state' || key === 'status';
+  return STATE_AXIS_NAMES.includes(key);
 }
 
 /**

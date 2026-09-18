@@ -88,7 +88,7 @@ du Component ou Component Set propriétaire, complétée par le seul wrapper de
 dimensions élu. Deux occurrences exposées, ou une instance exposée qui ne vient
 pas de ce wrapper, ne peuvent jamais devenir une source implicite de props. Deux
 règles auto-détectées :
-- *Convention State* : un axe `State`/`Status` décrit des états d'interaction
+- *Convention State* : un axe `State`, `States` ou `Status` décrit des états d'interaction
   dérivés du runtime (hover, focus…), pas des choix d'API, il est donc **exclu
   des props** ; seule sa valeur `Disable` (orthographes `Disable` ou `Disabled`
   acceptées) devient `disabled: boolean`. Exclu des props ne veut pas dire
@@ -96,7 +96,7 @@ règles auto-détectées :
   indexe les arbres de variantes. Sa documentation `@prop` est donc rangée là, et
   non dans `props`. La convention porte sur un **axe**, donc sur
   le seul type `VARIANT` : une `BOOLEAN`, une `TEXT`, un `INSTANCE_SWAP` ou un
-  `SLOT` que le designer a nommé `State` ou `Status` reste une prop de son type,
+  `SLOT` que le designer a nommé `State`, `States` ou `Status` reste une prop de son type,
   puisque `stateModel` ne la décrit pas.
 - *Couche sémantique* : les noms Figma peu parlants sont mappés vers le
   vocabulaire partagé, ex. un enum dont toutes les valeurs sont des tailles
@@ -334,7 +334,7 @@ un padding selon un autre axe, le contrat ne le verrait pas.
 
 ### 4. Modèle d'interaction
 
-Lorsqu'un axe `State` ou `Status` est présent, le contrat ajoute `stateModel`
+Lorsqu'un axe `State`, `States` ou `Status` est présent, le contrat ajoute `stateModel`
 avec le déclencheur et, si une règle `@prop` la déclare, la description de
 chaque état connu : `hover` → `:hover`, `focus` → `:focus-visible`, `press` →
 `:active`, `disable`/`disabled` → `[disabled]`. La priorité générique est
@@ -801,7 +801,7 @@ Chaque tag remplit un champ :
   celui-ci (ex. `Icon, Tooltip`) : un agent peut s'en servir pour composer ;
 - `@prop` + calque `prop` (ex. `variant.contained`) → doc par valeur, rangée
   dans `props.<prop>.descriptions.<valeur>`. Une règle qui vise l'axe
-  `State`/`Status` est rangée dans `stateModel.states.<état>.description` : cet
+  `State`, `States` ou `Status` est rangée dans `stateModel.states.<état>.description` : cet
   axe est publié par `stateModel` et non par `props`, la documentation suit donc
   l'axe là où il est publié. Un nom ou une valeur introuvable reste un warning.
 - `@boolean` + calque `prop` (ex. `icon-left`) → description de la prop BOOLEAN,

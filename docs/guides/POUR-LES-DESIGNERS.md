@@ -237,7 +237,7 @@ définition complète est écrite.
 | **Contrat** | Le fichier `<Nom>.contract.json` exporté depuis Figma, posé à côté du code du composant. [Forme complète](../format/FORMAT.md#sortie) |
 | **Token** | Une variable du design system, citée par son nom et jamais par sa valeur, pour qu'un changement de thème n'oblige pas à réexporter. [Nommer et citer un token](../format/FORMAT.md#nommer-et-citer-un-token) |
 | **Variante** | Une combinaison de valeurs d'axes qui existe réellement dans votre set. Le contrat liste celles qui existent, jamais toutes celles qui seraient possibles. [1. Props](../format/FORMAT.md#1-props) |
-| **État** | Un axe `State` ou `Status` : hover, focus, disabled. Il est publié à part des props, parce qu'il vient de l'exécution et non d'un choix d'API. [4. Modèle d'interaction](../format/FORMAT.md#4-modèle-dinteraction) |
+| **État** | Un axe `State`, `States` ou `Status` : hover, focus, disabled. Il est publié à part des props, parce qu'il vient de l'exécution et non d'un choix d'API. [4. Modèle d'interaction](../format/FORMAT.md#4-modèle-dinteraction) |
 | **Slot** | Un emplacement de l'arbre du composant, où se range un texte, une icône ou un composant imbriqué. [6. Structure](../format/FORMAT.md#6-structure) |
 | **Structure** | L'arbre des calques que le contrat publie, avec leur flux et leurs alignements. [6. Structure](../format/FORMAT.md#6-structure) |
 | **Vue** | La description exacte d'une variante, obtenue en suivant cinq renvois vers des catalogues partagés. Deux variantes identiques citent la même vue. [Sortie](../format/FORMAT.md#sortie) |

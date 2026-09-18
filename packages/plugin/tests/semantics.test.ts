@@ -36,6 +36,21 @@ test('buildStateModel associe les états connus à leurs déclencheurs et à leu
   assert.deepEqual(warnings, []);
 });
 
+test('buildStateModel publie un axe states comme un axe state ou status', () => {
+  for (const axe of ['state', 'states', 'status']) {
+    const warnings: string[] = [];
+    const model = buildStateModel(
+      ['tone', axe],
+      [{ tone: 'a', [axe]: 'default' }, { tone: 'a', [axe]: 'disable' }],
+      warnings,
+    );
+
+    assert.equal(model?.axis, axe);
+    assert.deepEqual(model?.states, { default: {}, disable: { selector: '[disabled]' } });
+    assert.deepEqual(warnings, []);
+  }
+});
+
 test('buildStateModel conserve un état inconnu et avertit sans bloquer', () => {
   const warnings: string[] = [];
   const model = buildStateModel(['status'], [{ status: 'loading' }, { status: 'default' }], warnings);
