@@ -183,7 +183,7 @@ test('un contrat sans identité Figma lisible refuse plutôt que d’écraser', 
 test('un ucm.config.json vide refuse l’export au lieu de prendre les défauts', async () => {
   await assert.rejects(
     avecFetch(() => fichier(''), () => repositoryLayout(forge)),
-    /ucm\.config\.json du repository n'est pas du JSON valide/,
+    /ucm\.config\.json du dépôt n'est pas du JSON valide/,
   );
 });
 

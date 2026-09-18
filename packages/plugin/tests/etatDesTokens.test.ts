@@ -62,7 +62,7 @@ test('le verdict avertit sans bloquer quand les tokens ne sont pas fusionnés, e
 
   const absents = verdictDePrevol({ ...base, tokens: 'absents' });
   assert.equal(absents.action, 'Publier le composant');
-  assert.match(absents.texte, /Ce repository n’a pas encore de tokens : publiez-les et faites fusionner leur merge request avant celle de ce composant/);
+  assert.match(absents.texte, /Ce dépôt n’a pas encore de tokens : publiez-les et faites fusionner leur merge request avant celle de ce composant/);
 
   const enAttente = verdictDePrevol({ ...base, tokens: 'en-attente' });
   assert.equal(enAttente.action, 'Publier le composant');

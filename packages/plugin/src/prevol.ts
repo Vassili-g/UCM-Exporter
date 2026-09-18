@@ -54,7 +54,7 @@ export type EntreeDeVerdict = {
  */
 function ordreDesTokens(tokens: EtatDesTokens | null | undefined, demande: string): string | null {
   if (tokens === 'absents') {
-    return `Ce repository n’a pas encore de tokens : publiez-les et faites fusionner leur ${demande} avant celle de ce composant, que le contrôle refusera jusque-là.`;
+    return `Ce dépôt n’a pas encore de tokens : publiez-les et faites fusionner leur ${demande} avant celle de ce composant, que le contrôle refusera jusque-là.`;
   }
   if (tokens === 'en-attente') {
     return `Les tokens attendent la fusion de leur ${demande} : faites-la fusionner avant celle de ce composant, que le contrôle refusera jusque-là.`;
@@ -97,7 +97,7 @@ export function verdictDePrevol(entree: EntreeDeVerdict): Verdict {
     };
   }
 
-  const ou = entree.chemin ?? 'le repository';
+  const ou = entree.chemin ?? 'le dépôt';
   const decide = entree.source ? ` (d’après ${entree.source})` : '';
   const ordre = entree.genre === 'component' ? ordreDesTokens(entree.tokens, entree.demande ?? 'demande de fusion') : null;
   return {

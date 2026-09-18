@@ -143,7 +143,7 @@ export async function repositoryLayout(forge: Forge): Promise<RepositoryLayout> 
     brut = JSON.parse(fichier.contenu.replace(/^﻿/, ''));
   } catch {
     throw new ErreurDeDescription(
-      `${NOM_CONFIGURATION} du repository n'est pas du JSON valide : impossible de savoir où écrire cet export. Un développeur doit corriger ce fichier.`,
+      `${NOM_CONFIGURATION} du dépôt n'est pas du JSON valide : impossible de savoir où écrire cet export. Un développeur doit corriger ce fichier.`,
     );
   }
 
@@ -188,7 +188,7 @@ function ligneDeFormatDeTokens(artifact: RepositoryArtifact): string {
     return 'Version du format de tokens : absente du fichier, qui est dans la forme d’origine.';
   }
   if (format.etat === 'invalide') {
-    return 'Version du format de tokens : illisible. Le contrôle du repository refusera ce fichier.';
+    return 'Version du format de tokens : illisible. Le contrôle du dépôt refusera ce fichier.';
   }
   return `Version du format de tokens : \`${format.version}\``;
 }
@@ -212,7 +212,7 @@ function lignesDIdentite(artifact: RepositoryArtifact, forge: Forge): string[] {
   const origine = identiteDeContrat(contrat);
   const lignes = [
     version === null
-      ? 'Schéma de contrat : absent du fichier — le contrôle du repository refusera ce contrat.'
+      ? 'Schéma de contrat : absent du fichier — le contrôle du dépôt refusera ce contrat.'
       : `Schéma de contrat : \`${version}\``,
   ];
 

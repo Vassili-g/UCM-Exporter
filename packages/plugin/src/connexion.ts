@@ -88,7 +88,7 @@ export type PrecisionConnexion = {
 export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConnexion = {}): EtatConnexion {
   const termes = precision.termes ?? null;
   const forge = termes?.forge ?? 'la forge';
-  const depot = termes?.depot ?? 'repository';
+  const depot = termes?.depot ?? 'dépôt';
   const jeton = termes?.nomDuJeton ?? 'jeton d’accès';
   const nomme = (texte: string) => (precision.nom ? `${precision.nom} : ${texte}` : texte);
   switch (cause) {
@@ -366,7 +366,7 @@ export function etatDuDepot(
       titre: tokens
         ? `Contrats dans ${layout.components}, tokens dans ${layout.tokens}.`
         : `Contrats dans ${layout.components}.`,
-      detail: `Ce repository le déclare dans son ${NOM_CONFIGURATION}.`,
+      detail: `Ce dépôt le déclare dans son ${NOM_CONFIGURATION}.`,
     },
   };
 }

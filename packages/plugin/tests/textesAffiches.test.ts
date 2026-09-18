@@ -14,6 +14,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
+import { TERMES } from '../src/forges/termes';
+import { MOTS_DE_FORGE } from './motsDeForge';
+
 /** Les fichiers dont les chaînes atteignent l'écran du designer. */
 const SOURCES = [
   '../src/connexion.ts',
@@ -78,5 +81,36 @@ test('aucun texte affiché n’annonce un effet sans son mécanisme', () => {
   const fautifs = PHRASES.flatMap(({ source, texte }) => TICS
     .filter((tic) => texte.toLowerCase().includes(tic))
     .map((tic) => `${source} : « ${tic} » dans « ${texte} »`));
+  assert.deepEqual(fautifs, []);
+});
+
+/**
+ * Les fichiers qui écrivent une phrase où le nom du dépôt peut se glisser : les
+ * textes de l'interface, la phase d'une opération, et les lignes que la demande
+ * de fusion porte.
+ */
+const SOURCES_DE_FORGE = [...SOURCES, '../src/code.ts', '../src/depot.ts'];
+
+/**
+ * Une phrase affichée nomme les deux forges, ou aucune.
+ *
+ * Nommer une seule forge dans une phrase que les deux reçoivent sert le mot de
+ * GitHub à un utilisateur GitLab : « Ce repository le déclare dans son
+ * ucm.config.json. » s'écrivait sous la carte d'un projet GitLab. Une phrase
+ * qui dépend de la forge lit `src/forges/termes.ts`, seul domicile de ces mots,
+ * et n'en porte alors aucun en clair. Une phrase qui n'en dépend pas écrit
+ * « dépôt ». Tant que l'adresse n'est pas saisie, aucune forge n'est connue et
+ * la phrase les nomme toutes les deux.
+ */
+test('aucune phrase affichée ne nomme une seule forge', () => {
+  const fautifs = SOURCES_DE_FORGE
+    .filter((source) => !source.endsWith('termes.ts'))
+    .flatMap((source) => {
+      const phrases = phrasesDe(readFileSync(join(__dirname, source), 'utf8'));
+      return phrases.flatMap((texte) => {
+        const nommees = (['github', 'gitlab'] as const).filter((forge) => MOTS_DE_FORGE[forge].test(texte));
+        return nommees.length === 1 ? [`${source} : « ${TERMES[nommees[0]].forge} » dans « ${texte} »`] : [];
+      });
+    });
   assert.deepEqual(fautifs, []);
 });

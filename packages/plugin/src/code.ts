@@ -543,7 +543,7 @@ async function analyser(
       return;
     }
 
-    versUi({ type: 'phase', texte: 'Lecture du repository…', ...provenance });
+    versUi({ type: 'phase', texte: 'Lecture du dépôt…', ...provenance });
     const forge = forgeDe(validation.config);
     // Gestion des tokens désactivée, l'analyse ne lit pas l'état des tokens du
     // dépôt et le verdict ne porte aucune consigne à leur sujet.

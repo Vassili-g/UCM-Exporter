@@ -149,7 +149,7 @@ test('un repository sans ucm.config.json prend les défauts que le contrôle app
 test('une configuration de repository fautive refuse l’export au lieu de deviner', async () => {
   await assert.rejects(
     () => avecFetch(() => fichier('{ pas du json'), () => repositoryLayout(forge)),
-    /ucm\.config\.json du repository n'est pas du JSON valide/,
+    /ucm\.config\.json du dépôt n'est pas du JSON valide/,
   );
 
   await assert.rejects(
@@ -176,7 +176,7 @@ test('un chemin de configuration qui sort du repository refuse l’export', asyn
 test('un ucm.config.json vide refuse l’export au lieu de prendre les défauts', async () => {
   await assert.rejects(
     () => avecFetch(() => fichier(''), () => repositoryLayout(forge)),
-    /ucm\.config\.json du repository n'est pas du JSON valide/,
+    /ucm\.config\.json du dépôt n'est pas du JSON valide/,
   );
 });
 
@@ -847,7 +847,7 @@ test('une version illisible est annoncée telle quelle, une version absente est 
       artefactPourPr('component', contenu),
     );
     assert.match(corps, /Schéma de contrat : absent du fichier/);
-    assert.match(corps, /le contrôle du repository refusera ce contrat/);
+    assert.match(corps, /le contrôle du dépôt refusera ce contrat/);
   }
 });
 
@@ -874,7 +874,7 @@ test('une marque absente ou illisible est nommée dans l’en-tête de tokens.js
     const corps = pullRequestBody('src/tokens/tokens.json', artefactPourPr('tokens', contenu));
     assert.match(
       corps,
-      /^Version du format de tokens : illisible\. Le contrôle du repository refusera ce fichier\.$/m,
+      /^Version du format de tokens : illisible\. Le contrôle du dépôt refusera ce fichier\.$/m,
       contenu,
     );
     assert.doesNotMatch(corps, /—/);

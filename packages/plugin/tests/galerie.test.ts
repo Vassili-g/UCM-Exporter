@@ -8,6 +8,8 @@ import path from 'node:path';
 import test from 'node:test';
 import { createRequire } from 'node:module';
 
+import { MOTS_DE_FORGE } from './motsDeForge';
+
 type Etape = {
   message?: { type: string; titre?: string; impact?: string; action?: string };
   clic?: string;
@@ -194,10 +196,6 @@ test('les trois issues d’un export ont chacune leur état', () => {
  * destination d'un résultat d'opération, et pour le reste le dépôt actif du
  * dernier `settings`. La liste elle-même, `settings`, nomme les deux.
  */
-const MOTS = {
-  github: /GitHub|[Pp]ull request|\bPR\b|Personal Access Token/,
-  gitlab: /GitLab|[Mm]erge request|\bMR\b/,
-};
 type EtatDeForge = Etat & { forge?: 'gitlab' | 'aucune' | 'mixte'; forgeActive?: 'github' | 'gitlab' };
 type MessageDeForge = {
   type: string;
@@ -221,7 +219,7 @@ function fautesMixtes(etat: EtatDeForge): string[] {
       ? message.id?.split(':')[0]
       : message.destination ? (JSON.parse(message.destination) as string[])[0] : actif;
     if (forge !== 'github' && forge !== 'gitlab') continue;
-    const interdit = forge === 'gitlab' ? MOTS.github : MOTS.gitlab;
+    const interdit = forge === 'gitlab' ? MOTS_DE_FORGE.github : MOTS_DE_FORGE.gitlab;
     const trouve = interdit.exec(JSON.stringify(message));
     if (trouve) fautes.push(`${etat.id} : ${message.type} affiche « ${trouve[0]} »`);
   }
@@ -238,7 +236,7 @@ test('un état GitLab n’affiche aucun mot de GitHub, et un autre état aucun m
       continue;
     }
     const affiche = JSON.stringify(etat.atteinte ?? []);
-    const interdit = etat.forge === 'gitlab' ? MOTS.github : MOTS.gitlab;
+    const interdit = etat.forge === 'gitlab' ? MOTS_DE_FORGE.github : MOTS_DE_FORGE.gitlab;
     const trouve = interdit.exec(affiche);
     if (trouve) fautes.push(`${etat.id} affiche « ${trouve[0]} »`);
   }
