@@ -572,8 +572,8 @@ p {
 }
 
 .carte-depot:hover {
-  border-color: #999999;
-  box-shadow: 0 0 0 1px #999999;
+  border-color: #666666;
+  box-shadow: 0 0 0 1px #666666;
 }
 
 .carte-depot-entete {
@@ -586,7 +586,7 @@ p {
 }
 
 .carte-depot-entete:focus-visible {
-  outline: 1px solid #999999;
+  outline: 1px solid #666666;
   outline-offset: 2px;
 }
 
@@ -607,7 +607,7 @@ p {
 
 .carte-depot .btn:hover:not(:disabled) {
   background: var(--fond-survol);
-  border-color: #999999;
+  border-color: #666666;
   color: var(--texte);
 }
 
