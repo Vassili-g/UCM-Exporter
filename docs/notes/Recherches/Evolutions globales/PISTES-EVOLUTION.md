@@ -10,6 +10,16 @@ design dans Figma, comportement dans le code, association et contrôles dans le
 repository consommateur. Les extensions du contrat relèvent du
 [format](../../../format/FORMAT.md) et de sa [compatibilité](../../../format/COMPATIBILITE.md).
 
+> Note de mise à jour. Certaines pistes listées ici sont déjà
+> couvertes par le projet et ne sont plus des hypothèses non validées. Les
+> éléments déjà livrés comprennent la localisation des diagnostics dans le
+> contrat (`figma` et `contractPath`), la traçabilité Figma via
+> `meta.figma.componentKey` et `meta.figma.url`, la génération des ressources de
+> tokens par `ucm tokens css`, ainsi que la parité statique sur les props et la
+> composition via `@ucm-kit/adapter-typescript`. Le document conserve donc les
+> essais encore ouverts et marque désormais les évolutions livrées comme de la
+> roadmap, non comme de la recherche.
+
 | Base de l’étude | Portée de la vérification |
 |---|---|
 | Code du dépôt et interfaces publiques | Points d’extension existants, limites des lecteurs et de la configuration |
@@ -95,10 +105,10 @@ au-delà de la seule extraction Figma.
 [localisation.ts](../../../../packages/plugin/src/contract/localisation.ts) conserve
 déjà les cibles Figma et les parties des messages pour l’interface. Le type
 [ContractDiagnostic](../../../../packages/kit/src/format/types.ts) accepte `figma`
-et `contractPath`, mais
-[exportComponent.ts](../../../../packages/plugin/src/contract/exportComponent.ts)
-ne publie que le code, la sévérité et le message. La piste concerne la
-transmission de ces adresses aux consommateurs.
+et `contractPath`, et cette information est effectivement portée par le
+contrat exporté. La piste ouverte concerne désormais le traitement de ces
+adresses dans les outils de reporting et les rapports de revue, pas leur
+existence dans le format.
 
 **Solutions à comparer.** Enrichir le registre actuel limiterait les
 modifications, mais son indexation par phrase ne distingue pas deux cibles qui
@@ -125,7 +135,12 @@ le temps nécessaire pour retrouver et corriger le problème.
 **Besoin et appui dans le code.** `buildMeta` conserve le nom du fichier,
 l’identifiant du composant et, lorsqu’elle existe, sa clé de publication.
 L’URL dépend de `figma.fileKey`, accessible aux plugins privés dans les
-conditions précisées par Figma.
+conditions précisées par Figma. Cette piste est déjà couverte pour le noyau du
+coeur produit : le contrat publie `meta.figma.componentKey` et, quand l’API le
+permet, `meta.figma.url`, ce qui suffit pour retrouver la source Figma depuis un
+rapport ou un contrôle. Les recherches restantes portent sur la meilleure
+association entre un contrat et une revue externe, pas sur l’existence de la
+traçabilité.
 [Métadonnées de l’export](../../../../packages/plugin/src/contract/exportComponent.ts),
 [API Figma](https://developers.figma.com/docs/plugins/api/figma/).
 
@@ -258,7 +273,10 @@ dont l’occupation visuelle diffère malgré un carré identique.
 par défaut dans `$value` et les modes nommés dans `com.ucm.modes`.
 [indexerTokensDtcg](../../../../packages/kit/src/lecteurs/tokens-dtcg.mjs) indexe les
 feuilles et leurs types ; il ne compose pas des thèmes et ne valide pas tous
-les alias dans tous les contextes.
+les alias dans tous les contextes. La base de cette piste est déjà livrée : le
+CLI `ucm tokens css` produit la feuille du consommateur, la projection tient les
+modes et les collections étendues, et la recherche à garder porte désormais la
+sélection de contexte, les outils tiers et les sorties adaptatives.
 
 **Solutions à comparer.**
 
@@ -312,7 +330,10 @@ leurs valeurs et alias sous `com.ucm.modes` ; une collection mono-mode ne
 publie que `$value`. Cette lecture générique couvre donc le principe de
 clair/sombre. Les
 [tests d’export](../../../../packages/plugin/tests/exportTokens.test.ts) éprouvent
-notamment la conservation et les collisions de noms de modes.
+notamment la conservation et les collisions de noms de modes. La piste est
+ainsi déjà validée dans le moteur et le CLI ; l’étude restante concerne la
+sortie de ressource et la sélection de contexte par projet, plus que le support
+des modes eux-mêmes.
 
 La piste restante porte sur la consommation : choisir les valeurs du mode
 demandé lors de la production des ressources. Un nouvel axe de composant ou
@@ -383,8 +404,10 @@ versions prises en charge et les éventuels sièges Figma.
 [parite.mjs](../../../../packages/adapter-typescript/src/parite.mjs) compare déjà les
 props attendues, le type des booléens, les valeurs manquantes dans les unions,
 l’utilisation des booléens et enums, ainsi que les occurrences de composants
-dans le JSX. Ces contrôles ne démontrent pas que chaque branche rend le bon
-état. Ils ne comparent pas les valeurs par défaut du code à celles du contrat.
+dans le JSX. La base de cette piste est déjà livrée et testée dans
+l’adaptateur TypeScript. Les recherches restantes portent sur les branches non
+analysables, les valeurs par défaut et les exceptions explicites, et non sur la
+présence de la parité elle-même.
 
 **Solutions à comparer.** Étendre l’analyse statique aux écritures
 reconnaissables, comme une table indexée par enum ou un `switch`. Tester les
