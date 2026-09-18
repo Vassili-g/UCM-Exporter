@@ -34,7 +34,7 @@ un composant composé. Couvrir un catalogue entier n'en fait pas partie.
 |---|---|
 | Forme du contrat | Vues exactes publiées sous cinq catalogues de parties, plus un `samples` récursif non normatif. Valeurs neutres élidées, une entrée par ligne sur deux niveaux |
 | Lois du moteur | `packages/plugin/tests/lois.ts` les porte, `exportComponent.test.ts` les applique à chaque contrat fabriqué. Aucune ne cite le nom d'un composant |
-| Export DTCG | Variables locales, alias et modes exportés dans la version 2 du format de tokens : couleurs, dimensions, durées et courbes du module `2025.10`, graisses reconnues en nombre, familles prouvées typées, marque de version à la racine. Collisions diagnostiquées, et une easing sans courbe cubique écartée sous un constat. Figma refuse de créer un cycle d'alias |
+| Export DTCG | Variables locales, alias et modes exportés dans la version 2 du format de tokens : couleurs, dimensions, durées et courbes du module `2025.10`, graisses reconnues en nombre, familles prouvées typées, marque et axes à la racine. `ucm tokens css` projette ces axes et les collections étendues en attributs. La cascade passe dans Chromium, Firefox et WebKit |
 | Structure portable | Flex, wrap, grille, arbres récursifs, tailles, bornes, typographie, icônes et composition, tous couverts par le vocabulaire du contrat |
 | Position et rotation | Un calque hors du flux est placé par `constraints` et `inset`, sa `rotation` écrite en vocabulaire CSS |
 | Dépendances composées | Détection sur toutes les pages, graphe acyclique, cardinalité et dépendances conditionnelles contrôlées |
@@ -57,7 +57,7 @@ Aucun contrôle n'exécute le rendu.
 | Les protections de branche sont indisponibles sur le plan GitHub actuel | La CI détecte l'écart sans empêcher la fusion. Une pull request rouge reste fusionnable |
 | Le manifeste du plugin ne déclare que `api.github.com` et `gitlab.com` | Une équipe sur une instance GitLab auto-hébergée ne publie pas depuis Figma. Sa CI, elle, fonctionne |
 | La version 1 du format de tokens n'est éprouvée qu'en sRGB | Un export Figma réel la produit, déposé par le plugin de la Community, et le CSS du consommateur ne bouge pas d'un bit. Le Display P3 n'a pas d'export réel : un écran qui ne le rend pas prive Figma du réglage de profil |
-| La projection CSS des modes n'est pas implémentée | Le multi-marque au runtime n'existe pas |
+| Aucun cas mesuré de mode fixé dans un composant ne change une valeur publiée | Le contrat ne décrit pas encore un mode fixé sur un calque. Un cas réel doit montrer une perte avant l'ajout d'un champ |
 
 ## Fragilités connues
 
@@ -171,23 +171,19 @@ valeur oriente une décision. La [politique de
 compatibilité](./docs/format/COMPATIBILITE.md) relie le contrat, le schéma, les tokens,
 les paquets et les adaptateurs.
 
-L'alignement DTCG donne à `tokens.json` sa version 1 du format de tokens.
-`@ucm-kit/core` 0.1.25 lit la marque, le plugin publié sur la Community produit
-cette version, et le dépôt consommateur la compile avec Style Dictionary 5.5.3.
-Le fichier déposé par le bundle publié a l'empreinte de celui du build de
-développement. Le CSS produit est identique à l'octet à celui de la forme
-d'origine, et la recette visuelle est validée.
+L'alignement DTCG donne à `tokens.json` sa propre version. Le plugin publié sur
+la Community produit la version 1. Le build de développement produit la version
+2 et déclare les axes de modes. `@ucm-kit/core` lit les versions 1 et 2, et
+`ucm tokens css` produit la feuille du consommateur depuis la version 2.
 
 Limite : aucun export d'un document Figma réglé sur Display P3 n'a été mesuré.
 Le fichier simulé couvre ce profil dans les tests, jusqu'au CSS
 `color(display-p3 …)`.
 
 La version 2 ajoute les trois types que la version 1 laissait en `string` :
-`duration`, `cubicBezier` et `fontFamily`. `@ucm-kit/core` 0.1.26 lit les
-versions 1 et 2, ce qui laisse un consommateur monter sa CLI avant que le
-plugin ne produise la nouvelle forme. Le plan, sa revue et le journal des
-preuves sont dans [docs/notes/](./docs/notes/). La publication Community du
-plugin et le réexport restent à faire.
+`duration`, `cubicBezier` et `fontFamily`. Elle ajoute aussi les axes et les
+collections étendues expérimentales. La publication Community de ce build et
+le passage complet de la recette externe restent à faire.
 
 ### 6. Passer la recette externe
 
