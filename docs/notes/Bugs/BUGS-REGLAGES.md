@@ -52,7 +52,7 @@ npm run test:ui --workspace ucm-exporter-plugin
 npm run galerie --workspace ucm-exporter-plugin
 ```
 
-Sur `f8788ef`, les cinq sont vertes : 790 tests pour le plugin, 15 tests
+Sur `35bb864`, les cinq sont vertes : 792 tests pour le plugin, 16 tests
 Playwright, 51 états de galerie atteignables.
 
 Elles étaient déjà toutes vertes sur `4d98c37`, avant le premier constat. Aucun
@@ -114,8 +114,8 @@ documents et les commentaires, jamais les chaînes affichées.
 |---|---:|---:|
 | Critique | 4 | 0 |
 | Haute | 1 | 0 |
-| Moyenne | 4 | 0 |
-| Basse | 2 | 0 |
+| Moyenne | 5 | 0 |
+| Basse | 3 | 0 |
 
 Le compte porte sur les constats. Une zone sondée sans constat se range aussi
 ici, sous « Sans constat », avec les lois qu'elle laisse derrière elle.
@@ -400,18 +400,32 @@ ici, sous « Sans constat », avec les lois qu'elle laisse derrière elle.
 
 ### C1. Points relevés sans gravité établie
 
-- [ ] Trancher chacun : faute ou choix.
-- `signalerEchec()` ne poste rien quand `operationEnCours !== null` : une panne
-  hors opération reste alors muette dans l'interface, et n'apparaît que dans la
-  notification Figma.
-- `publier()` lance `void refreshConfiguration().catch(signalerEchec)` après le
-  succès. Une panne de ce rafraîchissement écrit donc une note d'erreur
-  par-dessus la note de succès de la publication.
-- `cleDeDestination(null, true)` sert de repli dans `analyser()` quand la
-  lecture du stockage échoue. Ce repli suppose la gestion des tokens activée,
-  quel que soit le réglage réel.
-- `generationsDesDepots` n'est jamais purgée : une entrée y reste après la
-  suppression de son dépôt.
-- `Interrupteur` pose `aria-checked="false"` à sa création. Le réglage
-  « Gérer les tokens » vaut `true` par défaut : l'interrupteur montre donc
-  l'état inverse jusqu'au premier `settings`.
+- [x] Tranchés par `35bb864` : deux fautes corrigées, trois choix écrits.
+- **`signalerEchec()`, choix.** La liste décrivait la condition à l'envers : le
+  statut ne part qu'**hors** opération. Pendant une analyse ou une publication,
+  il s'écrirait à la place de la phase en cours, et l'opération pose son propre
+  échec dans son `catch`, avec son numéro. La décision est écrite au-dessus de
+  la fonction.
+- **Le rafraîchissement après une publication, faute moyenne.** Il tourne après
+  la fin de l'opération : sa panne posait « La demande n'a pas abouti.
+  Réessayez » sur la carte, par-dessus « Pull request créée » et à côté du lien
+  de la demande déjà ouverte. Un nouvel essai en aurait ouvert une seconde.
+  `notifierEchec()` garde la notification Figma et n'écrit rien sur la carte.
+  Test : `code.test.ts`, « une panne du rafraîchissement après une publication
+  réussie n'écrit rien sur la carte ».
+- **`cleDeDestination(null, true)`, choix.** Ce repli ne sert que si la lecture
+  échoue avant tout `settings`. L'interface n'a alors aucune destination
+  courante et n'en compare aucune : le réglage des tokens supposé ne décide de
+  rien. Loi : `code.test.ts`, « une analyse lancée avant tout réglage, sur un
+  stockage en panne, porte le repli sans destination annoncée ».
+- **`generationsDesDepots` jamais purgée, choix.** La purger serait la faute :
+  l'interface tient une carte jumelle des générations, jamais vidée, et un dépôt
+  réenregistré qui repartirait de zéro verrait tous ses tests écartés. La
+  décision est écrite au-dessus de la déclaration.
+- **`Interrupteur` posé à `false`, faute basse.** Visible seulement quand
+  aucun `settings` n'arrive, c'est-à-dire sur une liste de dépôts illisible :
+  « Gérer les tokens », vrai par défaut, montrait l'inverse, et un clic
+  renvoyait la valeur déjà enregistrée. L'interrupteur reste désactivé jusqu'à sa
+  première valeur, sans second domicile pour le défaut. Test :
+  `interface.test.mjs`, « les interrupteurs attendent leur réglage avant de se
+  laisser actionner ».
