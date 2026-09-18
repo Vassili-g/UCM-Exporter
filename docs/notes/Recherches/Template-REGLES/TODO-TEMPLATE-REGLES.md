@@ -295,7 +295,7 @@ sections [5.2](PLAN-TEMPLATE-REGLES.md#52-ordre-des-sources) à
       cible). Aucun import de l'API Figma. Une section se désigne par le tag de
       son exemple, jamais par son nom.
 - [ ] `src/template/sources.ts`, lecture seule :
-  - [ ] relevé synchrone de l'offre à partir du parcours de page que fait déjà
+  - [x] relevé synchrone de l'offre à partir du parcours de page que fait déjà
         `extractRules` : `creer`, `remplir`, `sans-source`, ou aucune offre
         (conteneur qui écrit le nom du composant, variant seul) ;
   - [ ] conteneur vierge au sens de [5.3](PLAN-TEMPLATE-REGLES.md#53-le-conteneur-vierge) :
@@ -309,7 +309,7 @@ sections [5.2](PLAN-TEMPLATE-REGLES.md#52-ordre-des-sources) à
         `@boolean`, `icon` de `@icons` portent le marqueur ; sinon un refus,
         texte de 6.3 ;
   - [ ] aucun appel à `loadAllPagesAsync` ni à `importComponentByKeyAsync`.
-- [ ] `src/contract/extractRules.ts` rend le relevé nécessaire à l'offre sans
+- [x] `src/contract/extractRules.ts` rend le relevé nécessaire à l'offre sans
       second parcours de page. Le relevé et son type vivent dans
       `src/contract/`, et `sources.ts` les importe. L'inverse ferait échouer le
       test des imports du lot 5 : aucun fichier de `src/contract/` n'importe
@@ -804,24 +804,31 @@ Décisions prises en écrivant le modèle :
   et `SLOT`. Le plan ne la nommait pas ; seuls `enum` et `boolean` posent une
   règle, et la section des icônes reçoit sa règle vide dans tous les cas.
 
+Livré ensuite, et vert : `ReleveDeSource` dans `extractRules.ts`, et
+`offreDeCreation` dans `src/template/sources.ts`, avec six tests qui suivent le
+tableau de 5.4.
+
+Le relevé se remplit dans le prédicat du `findAll` que la lecture des règles
+faisait déjà, et n'ajoute aucune traversée. `rulesContainerOwner` reste
+l'unique autorité sur « ce node porte les règles de X », comme l'invariant
+d'`AGENTS.md` l'exige : le prédicat l'appelle au lieu de comparer les noms
+lui-même. Le relevé entre dans `ExtractedRules`, rendu par les deux sorties de
+la fonction, celle du conteneur absent comprise.
+
+Rouge constaté après coup, faute de l'avoir vu avant : l'offre réduite à
+`creer` et `sans-source` fait échouer les trois tests qui distinguent le
+conteneur déjà écrit et le conteneur vierge. Restauré, douze tests verts.
+
 Reste à faire dans ce lot, dans l'ordre :
 
-1. `src/contract/extractRules.ts` : le relevé de l'offre et son type, remplis
-   pendant le `findAll` de page que `extractRules` fait déjà. Forme retenue à
-   la conception, non encore écrite : un conteneur du composant existe-t-il,
-   première instance dont `component-name` porte le marqueur, maître
-   `.componentRules` de la page, première instance qui porte `component-name`.
-   Le relevé entre dans `ExtractedRules`, rendu par les deux sorties de la
-   fonction, celle du conteneur absent comprise.
-2. `src/template/sources.ts` : `creer`, `remplir`, `sans-source` ou aucune
-   offre, dans l'ordre du tableau de 5.4 ; puis la résolution asynchrone des
-   maîtres, le conteneur vierge de 5.3 et la vérification des textes d'aide.
-   La vérification du conteneur vierge se fait sans appel asynchrone : une
-   règle est rédigée dès qu'une instance du conteneur écrit un `content`, un
-   `prop` ou un `icon` sans marqueur, ce qui protège le travail du designer
-   sans passer par `isRuleInstance`.
-3. `src/code.ts` et `src/messages.ts` : l'offre dans le message `cible`, et le
+1. `src/template/sources.ts`, suite : la résolution asynchrone des maîtres au
+   clic, le conteneur vierge de 5.3 et la vérification des textes d'aide.
+   Le conteneur vierge se juge sans appel asynchrone : une règle est rédigée
+   dès qu'une instance du conteneur écrit un `content`, un `prop` ou un `icon`
+   sans marqueur, ce qui protège le travail du designer sans passer par
+   `isRuleInstance`, qui est asynchrone.
+2. `src/code.ts` et `src/messages.ts` : l'offre dans le message `cible`, et le
    variant dont le parent est un `COMPONENT_SET` qui n'en reçoit aucune.
-4. `tests/code.test.ts` : `./template/sources` dans la table `modules` du banc,
+3. `tests/code.test.ts` : `./template/sources` dans la table `modules` du banc,
    un relevé d'offre dans le faux `extractRules`, et les deux tests de l'offre.
-5. Tests de `sources.ts` et test de relecture de la section 9.
+4. Tests des maîtres résolus, et test de relecture de la section 9.

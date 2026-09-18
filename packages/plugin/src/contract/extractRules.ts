@@ -64,6 +64,8 @@ export const COMPONENT_NAME_LAYER = 'component-name';
  * réelle.
  */
 export const MARQUEUR_A_COMPLETER = '[À compléter]';
+/** Nom (compacté) du maître qui porte un jeu de règles. */
+const MAITRE_COMPACTE = '.componentrules';
 /** Nom du composant qui matérialise une règle, tel qu'un message le nomme. */
 const RULE_ITEM_NAME = '.ruleItem';
 /** Nom (compacté) du composant qui matérialise une règle. */
@@ -84,8 +86,41 @@ export function porteLeMarqueur(texte: string): boolean {
     .includes(MARQUEUR_A_COMPLETER.normalize('NFC').toLowerCase());
 }
 
+/**
+ * Ce que le parcours de page retient en plus des conteneurs du composant.
+ *
+ * L'interface offre de créer les règles d'un composant qui n'en a pas, et
+ * cette offre dépend de ce que la page porte. Le relevé se remplit pendant le
+ * parcours que la lecture des règles fait déjà : un second coûterait une
+ * traversée complète à chaque changement de sélection, sur le chemin que le
+ * designer sent passer.
+ */
+export type ReleveDeSource = {
+  /** Un conteneur écrit déjà le nom du composant sélectionné. */
+  conteneurDuComposant: boolean;
+  /** Première instance dont « component-name » porte encore le marqueur. */
+  conteneurMarque: InstanceNode | null;
+  /** Le maître « .componentRules » de la page, quand il s'y trouve. */
+  maitreLocal: ComponentNode | null;
+  /** Première instance qui porte « component-name », source à défaut du maître. */
+  instanceSource: InstanceNode | null;
+};
+
+/** Un relevé qui n'a encore rien vu. */
+function releveVide(): ReleveDeSource {
+  return {
+    conteneurDuComposant: false,
+    conteneurMarque: null,
+    maitreLocal: null,
+    instanceSource: null,
+  };
+}
+
 /** Résultat de lecture enrichi pour distinguer l'absence du conteneur de son contenu invalide. */
-export type ExtractedRules = RulesResult & { sectionFound: boolean };
+export type ExtractedRules = RulesResult & {
+  sectionFound: boolean;
+  releve: ReleveDeSource;
+};
 
 /**
  * Ce qu'un node doit offrir pour qu'on cherche un calque dans sa descendance.
@@ -329,11 +364,23 @@ export async function extractRules(
   componentSet: ComponentNode | ComponentSetNode,
 ): Promise<ExtractedRules> {
   const owner = compactName(componentSet.name);
+  const releve = releveVide();
   // On les cherche tous : n'en lire qu'un alors que la page en porte plusieurs
-  // ferait disparaître des règles sans que rien ne le dise.
-  const containers = figma.currentPage.findAll(
-    (node) => rulesContainerOwner(node) === owner,
-  ) as (SceneNode & ChildrenMixin)[];
+  // ferait disparaître des règles sans que rien ne le dise. Le même parcours
+  // relève ce dont l'offre de création a besoin.
+  const containers = figma.currentPage.findAll((node) => {
+    if (node.type === 'COMPONENT' && compactName(node.name) === MAITRE_COMPACTE) {
+      releve.maitreLocal ??= node;
+      return false;
+    }
+    const nom = nomDeComposantEcrit(node);
+    if (nom === null) return false;
+    releve.instanceSource ??= node as InstanceNode;
+    if (porteLeMarqueur(nom)) releve.conteneurMarque ??= node as InstanceNode;
+    const estConteneur = rulesContainerOwner(node) === owner;
+    if (estConteneur) releve.conteneurDuComposant = true;
+    return estConteneur;
+  }) as (SceneNode & ChildrenMixin)[];
 
   const container = containers[0];
   if (!container) {
@@ -384,6 +431,7 @@ export async function extractRules(
       iconRules: [],
       warnings: absent,
       sectionFound: false,
+      releve,
     };
   }
 
@@ -478,5 +526,6 @@ export async function extractRules(
     iconRules: built.iconRules,
     warnings: tous,
     sectionFound: true,
+    releve,
   };
 }

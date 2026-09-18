@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Contract } from '@ucm-kit/core/format';
+import { extractRules } from '../src/contract/extractRules';
 import { modeleDeRegles, nombreDeRegles } from '../src/template/modele';
 import type { ModeleDeRegles } from '../src/template/modele';
+import { offreDeCreation } from '../src/template/sources';
 
 type ContratLu = Pick<Contract, 'props' | 'stateModel'>;
 
@@ -93,4 +95,76 @@ test('TEXT, INSTANCE_SWAP, SLOT et icône runtime ne donnent aucune règle', () 
   for (const absent of ['default', 'do', 'dont', 'pairs']) {
     assert.equal(tags.includes(absent as never), false, absent);
   }
+});
+
+/** Un faux node dont la descendance se parcourt comme dans Figma. */
+function noeud(
+  type: string,
+  name: string,
+  enfants: any[] = [],
+  extra: Record<string, unknown> = {},
+): any {
+  const self: any = { type, name, id: `${type}:${name}`, children: enfants, ...extra };
+  const descendants = (n: any): any[] =>
+    (n.children ?? []).flatMap((enfant: any) => [enfant, ...descendants(enfant)]);
+  self.findAll = (predicat?: (n: any) => boolean) =>
+    descendants(self).filter((n) => !predicat || predicat(n));
+  self.findOne = (predicat: (n: any) => boolean) => descendants(self).find(predicat) ?? null;
+  return self;
+}
+
+/** Un node qui écrit un nom dans son calque « component-name ». */
+function porteurDeNom(type: string, nomEcrit: string, nomDuNode = '.componentRules') {
+  return noeud(type, nomDuNode, [
+    noeud('TEXT', 'component-name', [], { characters: nomEcrit }),
+  ]);
+}
+
+/** Monte une page comme page courante, et la démonte à la sortie du test. */
+function monterPage(t: { after: (fn: () => void) => void }, enfants: any[]) {
+  const precedent = (globalThis as { figma?: unknown }).figma;
+  t.after(() => {
+    (globalThis as { figma?: unknown }).figma = precedent;
+  });
+  (globalThis as any).figma = { currentPage: noeud('PAGE', 'Composants', enfants) };
+}
+
+/** L'offre que la page rend pour un composant nommé « Root ». */
+async function offreDeLaPage(t: Parameters<typeof monterPage>[0], enfants: any[]) {
+  monterPage(t, enfants);
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+  return offreDeCreation(rules.releve);
+}
+
+test('un conteneur qui écrit le nom du composant ne donne aucune offre', async (t) => {
+  assert.equal(await offreDeLaPage(t, [porteurDeNom('INSTANCE', 'Root')]), null);
+});
+
+test('une instance dont le nom porte le marqueur se remplit plutôt que de se doubler', async (t) => {
+  assert.equal(
+    await offreDeLaPage(t, [porteurDeNom('INSTANCE', '[À compléter] Nom du composant')]),
+    'remplir',
+  );
+});
+
+test('une instance qui documente un autre composant sert de source à une création', async (t) => {
+  assert.equal(await offreDeLaPage(t, [porteurDeNom('INSTANCE', 'Chip')]), 'creer');
+});
+
+test('le maître « .componentRules » de la page sert de source à une création', async (t) => {
+  assert.equal(await offreDeLaPage(t, [porteurDeNom('COMPONENT', 'Chip', '.componentRules')]), 'creer');
+});
+
+test('une page sans aucun modèle à copier laisse le bouton sans source', async (t) => {
+  assert.equal(await offreDeLaPage(t, [noeud('FRAME', 'Root')]), 'sans-source');
+});
+
+test('le maître prime, et le conteneur vierge prime sur les deux', async (t) => {
+  // Une instance vierge est le geste du designer, qui l'a posée où il la
+  // voulait : la remplir passe avant toute création ailleurs.
+  const offre = await offreDeLaPage(t, [
+    porteurDeNom('COMPONENT', 'Chip', '.componentRules'),
+    porteurDeNom('INSTANCE', '[à compléter] Nom du composant', 'Collé ici'),
+  ]);
+  assert.equal(offre, 'remplir');
 });
