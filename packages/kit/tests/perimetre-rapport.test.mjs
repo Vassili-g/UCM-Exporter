@@ -5,20 +5,22 @@
  */
 import test from "node:test";
 import assert from "node:assert/strict";
+import { join } from "node:path";
 import { perimetreDeLaDemande } from "../src/lecteurs/perimetre-rapport.mjs";
 
 const MOTIF = "{dir}/{id}.tsx";
 
-const bilans = [
-  {
-    fichier: "Alert.contract.json",
-    relatif: ".\\src\\components\\Alert\\Alert.contract.json",
-  },
-  {
-    fichier: "Button.contract.json",
-    relatif: ".\\src\\components\\Button\\Button.contract.json",
-  },
-];
+/**
+ * Les chemins d'un bilan portent le séparateur de la plateforme : `analyser`
+ * les tire de `chemin.replace(racine, ".")`, et `cheminImplementation` les
+ * résout par `node:path`. Un antislash écrit en dur passait sous Windows et
+ * désignait un fichier unique sous Linux, où la résolution rendait `index.vue`
+ * à la racine.
+ */
+const bilans = ["Alert", "Button"].map((nom) => ({
+  fichier: `${nom}.contract.json`,
+  relatif: join(".", "src", "components", nom, `${nom}.contract.json`),
+}));
 
 /** Raccourci : le périmètre d'une demande qui modifie ces chemins. */
 function perimetre(chemins, options = {}) {
@@ -98,4 +100,23 @@ test("un contrat déposé là où personne ne le cherche concerne quand même UC
 
 test("un contrat supprimé par la demande la fait concerner UCM", () => {
   assert.equal(perimetre("src/components/Card/Card.contract.json").concerne, true);
+});
+
+/**
+ * `git diff` rend des `/` sur toute plateforme, et un bilan produit sous
+ * Windows porte des `\`. Sans normalisation, aucun contrat ne serait jamais
+ * reconnu sur cette plateforme, et tout le rapport y perdrait sa portée.
+ */
+test("un bilan écrit avec des antislashs désigne le contrat que git nomme avec des slashs", () => {
+  const windows = [{
+    fichier: "Alert.contract.json",
+    relatif: ".\\src\\components\\Alert\\Alert.contract.json",
+  }];
+  const { bilans: selection } = perimetreDeLaDemande(
+    windows,
+    "src/components/Alert/Alert.contract.json",
+    { motif: MOTIF },
+  );
+
+  assert.deepEqual(selection.map((bilan) => bilan.fichier), ["Alert.contract.json"]);
 });
