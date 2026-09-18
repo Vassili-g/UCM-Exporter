@@ -485,6 +485,8 @@ p {
   width: 60px;
   min-width: 60px;
   height: var(--hauteur-secondaire);
+  align-items: center;
+  justify-content: center;
   padding: 0 var(--espace-controle);
   border: 0;
   border-radius: 4px;
@@ -492,7 +494,7 @@ p {
   color: var(--texte-second);
   cursor: pointer;
   font-weight: 600;
-  justify-content: center;
+  line-height: var(--libelle-interligne);
 }
 
 .onglet:hover:not([aria-selected='true']) {
@@ -566,6 +568,12 @@ p {
   border: 1px solid var(--bordure);
   border-radius: 8px;
   background: var(--fond-bloc);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.carte-depot:hover {
+  border-color: var(--bordure-marque);
+  box-shadow: 0 0 0 2px var(--bordure-marque);
 }
 
 .carte-depot-entete {
@@ -574,6 +582,12 @@ p {
   align-items: center;
   justify-content: space-between;
   gap: var(--espace-controle);
+  cursor: pointer;
+}
+
+.carte-depot-entete:focus-visible {
+  outline: 2px solid var(--bordure-marque);
+  outline-offset: -2px;
 }
 
 /* Le nom passe à la ligne sans déborder, même sans espace ni trait d'union. */
@@ -582,30 +596,27 @@ p {
   flex: 1 1 auto;
   min-height: var(--hauteur-action);
   padding: 0 var(--espace-controle);
-  border: 0;
-  border-radius: var(--rayon);
+  border: none;
   background: transparent;
   color: var(--texte);
   cursor: pointer;
   font-weight: 600;
   overflow-wrap: anywhere;
   text-align: left;
-  transition: background-color 120ms ease, color 120ms ease;
 }
 
-.carte-depot-nom:hover {
+.carte-depot .btn:hover:not(:disabled) {
   background: var(--fond-survol);
-}
-
-.carte-depot-nom:focus-visible {
-  outline: 2px solid var(--bordure-marque);
-  outline-offset: 2px;
+  border-color: var(--bordure-marque);
+  color: var(--texte);
 }
 
 .carte-depot-entete .btn {
   width: auto;
   height: var(--hauteur-action);
   flex-shrink: 0;
+  border-color: var(--bordure);
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .carte-depot-statut {

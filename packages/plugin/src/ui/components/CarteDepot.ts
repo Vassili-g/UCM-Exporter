@@ -112,13 +112,17 @@ export function createCarteDepot({ cle, onEnregistrer, onSupprimer, onSeConnecte
 
   const entete = document.createElement('div');
   entete.className = 'carte-depot-entete';
+  entete.setAttribute('tabindex', '0');
+  entete.setAttribute('aria-controls', `corps-${cle}`);
 
   const deplier = document.createElement('button');
   deplier.type = 'button';
   deplier.className = 'carte-depot-nom';
-  deplier.setAttribute('aria-controls', `corps-${cle}`);
   deplier.textContent = 'Nouveau dépôt';
-  deplier.addEventListener('click', () => api.deplier(corps.hidden));
+  deplier.addEventListener('click', (e) => {
+    e.stopPropagation();
+    api.deplier(corps.hidden);
+  });
 
   const statut = document.createElement('span');
   statut.className = 'carte-depot-statut';
@@ -127,10 +131,27 @@ export function createCarteDepot({ cle, onEnregistrer, onSupprimer, onSeConnecte
   const seConnecter = createButton({
     label: 'Se connecter',
     variant: 'secondary',
-    onClick: () => { if (depot) onSeConnecter(depot.id); },
+    onClick: (e) => { e.stopPropagation(); if (depot) onSeConnecter(depot.id); },
   });
   seConnecter.hidden = true;
   entete.append(deplier, statut, seConnecter);
+
+  // Rendre toute l'entete cliquable pour deplier/replier
+  entete.addEventListener('click', (e) => {
+    // Ne pas deplier si on a clique sur un bouton enfant
+    if (e.target === deplier || e.target === seConnecter || seConnecter.contains(e.target as Node)) {
+      return;
+    }
+    api.deplier(corps.hidden);
+  });
+
+  // Gestion du clavier pour l'accessibilite
+  entete.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      api.deplier(corps.hidden);
+    }
+  });
 
   const corps = document.createElement('div');
   corps.className = 'carte-depot-corps';
