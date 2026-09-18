@@ -52,7 +52,7 @@ npm run test:ui --workspace ucm-exporter-plugin
 npm run galerie --workspace ucm-exporter-plugin
 ```
 
-Sur `adfdd79`, les cinq sont vertes : 784 tests pour le plugin, 12 tests
+Sur `04e7880`, les cinq sont vertes : 785 tests pour le plugin, 12 tests
 Playwright, 51 états de galerie atteignables.
 
 Elles étaient déjà toutes vertes sur `4d98c37`, avant le premier constat. Aucun
@@ -78,7 +78,8 @@ Les promesses mises à l'épreuve, et l'endroit qui en répond :
 - une `depots` illisible rend une erreur de stockage et n'est jamais écrasée
   (`src/config.ts`, `lireDepots()`) ;
 - tout texte du plugin qui nomme une forge emploie les mots de cette forge
-  (`src/forges/termes.ts` ; `tests/galerie.test.ts`).
+  (`src/forges/termes.ts` ; `tests/motsDeForge.ts`, lu par `tests/galerie.test.ts`
+  et `tests/textesAffiches.test.ts`).
 
 ## 3. Méthode de sonde
 
@@ -113,7 +114,7 @@ documents et les commentaires, jamais les chaînes affichées.
 |---|---:|---:|
 | Critique | 4 | 0 |
 | Haute | 1 | 0 |
-| Moyenne | 3 | 1 |
+| Moyenne | 4 | 0 |
 | Basse | 0 | 1 |
 
 ### [Critique] Une publication réussie annoncée en échec
@@ -258,36 +259,40 @@ documents et les commentaires, jamais les chaînes affichées.
 - **Correction** : le rafraîchissement a lieu dans un `finally`.
 - **Test** : `code.test.ts`, ses deux lois sur la seconde écriture.
 
+### [Moyenne] Un mot de GitHub servi à un utilisateur GitLab
+
+- [x] Corrigé par `04e7880`.
+- **Où** : `src/connexion.ts`, `etatDuDepot()` et `etatDeConnexion()` ;
+  `src/prevol.ts`, `ordreDesTokens()` et `verdictDePrevol()` ; `src/code.ts`,
+  `analyser()` ; `src/depot.ts`, `repositoryLayout()`, `ligneDeFormatDeTokens()`
+  et `lignesDIdentite()`.
+- **Scénario** : `repository` est `TERMES_GITHUB.depot`. Six phrases affichées le
+  portaient en clair alors qu'elles servent les deux forges : « Ce repository le
+  déclare dans son ucm.config.json. » dans la carte de l'onglet Dépôts et sous
+  la carte du composant, « Ce repository n'a pas encore de tokens : publiez-les
+  et faites fusionner leur merge request… », qui mélangeait les deux
+  vocabulaires dans la même phrase, la phase « Lecture du repository… », le
+  refus d'un `ucm.config.json` illisible, et les deux lignes de format que la
+  demande de fusion porte. Les replis de `etatDeConnexion()` et de
+  `verdictDePrevol()` valaient aussi `repository`, là où `etatDeCarte()` écrivait
+  déjà « dépôt ».
+- **Correction** : ces phrases écrivent « dépôt », comme la branche voisine
+  « Ce dépôt ne déclare aucun ucm.config.json. ». La seconde piste, passer
+  `termes` à `etatDuDepot()`, est close : la branche fautive est atteinte sans
+  dépôt visé, donc sans forge à nommer.
+- **Test** : `tests/motsDeForge.ts` porte les mots de chaque forge pour les deux
+  lois qui cherchent celui d'une autre. `galerie.test.ts` les cherche dans les
+  messages d'un état ; `textesAffiches.test.ts`, « aucune phrase affichée ne
+  nomme une seule forge », les cherche dans les littéraux de huit sources.
+- **Mesure qui a corrigé l'énoncé** : `repository` ajouté à `MOTS` fait tomber
+  sept états GitLab, et non le seul `gitlab-connecte` que cette liste attendait.
+  `projet` et `jeton d'accès` restent hors de la liste : ce sont aussi le
+  français ordinaire et le repli des textes écrits avant qu'une forge soit
+  connue.
+
 ## 5. Ce qui reste
 
-### C1. Un mot de GitHub servi à un utilisateur GitLab
-
-- [ ] Corriger et retenir.
-- **Gravité** : moyenne. **Verdict** : confirmé par sonde.
-- **Où** : `src/connexion.ts`, `etatDuDepot()`, branche `layout.source === NOM_CONFIGURATION`.
-- **Scénario** : le détail du résumé écrit « Ce repository le déclare dans son
-  ucm.config.json. ». `repository` est `TERMES_GITHUB.depot`. Tout projet GitLab
-  qui porte un `ucm.config.json` sert donc un mot de GitHub, dans sa carte de
-  l'onglet Dépôts et sous la carte du composant. L'invariant « tout texte du
-  plugin qui nomme une forge » est violé.
-- **Reproduction** : depuis `packages/plugin`,
-
-  ```sh
-  npx tsx -e "import { etatDuDepot } from './src/connexion'; console.log(etatDuDepot({ components: 'a', tokens: 'b', source: 'ucm.config.json' }, { forge: 'GitLab', projet: 'g/p', baseBranch: 'main' }, true).resume.detail)"
-  ```
-
-  Sortie observée : `Ce repository le déclare dans son ucm.config.json.`
-- **Pourquoi la loi ne le voit pas** : `MOTS.github` de `tests/galerie.test.ts`
-  vaut `/GitHub|[Pp]ull request|\bPR\b|Personal Access Token/`. Le mot
-  `repository` n'y est pas, et l'état `gitlab-connecte` passe donc.
-- **Piste** : deux gestes, à trancher dans le commit. Écrire « dépôt », mot
-  neutre que le plan retient pour les textes qui ignorent la forge, ou passer
-  `termes` à `etatDuDepot()` comme `etatDeConnexion()` le reçoit déjà. Dans les
-  deux cas, ajouter `repository`, `[Mm]erge request` et les autres termes de
-  `src/forges/termes.ts` à `MOTS`, constater le rouge sur `gitlab-connecte`,
-  puis corriger.
-
-### C2. `enAttenteDeTest` garde une carte dont le test n'arrive jamais
+### C1. `enAttenteDeTest` garde une carte dont le test n'arrive jamais
 
 - [ ] Sonder, puis corriger si confirmé.
 - **Gravité** : basse. **Verdict** : plausible, non reproduit.
@@ -301,7 +306,7 @@ documents et les commentaires, jamais les chaînes affichées.
 - **Piste** : retirer la carte de l'ensemble à la réception d'un `settings` qui
   la repose, ou au prochain enregistrement qu'elle envoie.
 
-### C3. Zone Z5, fraîcheur croisée des générations
+### C2. Zone Z5, fraîcheur croisée des générations
 
 - [ ] Épuiser la zone.
 - `generationDeConnexion` et `generationsDesDepots` se croisent dans
@@ -317,7 +322,7 @@ documents et les commentaires, jamais les chaînes affichées.
   La carte est la seule touchée, ce qui semble correct ; le confirmer par une
   sonde.
 
-### C4. Zone Z6, identité des cartes de la liste
+### C3. Zone Z6, identité des cartes de la liste
 
 - [ ] Épuiser la zone.
 - Une carte vit sous une clé temporaire jusqu'à sa réponse, puis sous son
@@ -330,7 +335,7 @@ documents et les commentaires, jamais les chaînes affichées.
   valide en HTML et `aria-controls` le retrouve, mais aucun sélecteur CSS ne
   peut le viser sans échappement. Vérifier qu'aucun code ne tente de le faire.
 
-### C5. Zone Z7, reprise des anciennes clés
+### C4. Zone Z7, reprise des anciennes clés
 
 - [ ] Sonder la reprise.
 - `reprendreLAncienneConfiguration()` ouvre la file du stockage et lit quatre
@@ -342,7 +347,7 @@ documents et les commentaires, jamais les chaînes affichées.
   configuration sans `baseBranch`, que la reprise remplace par `main` sans le
   dire.
 
-### C6. Points relevés sans gravité établie
+### C5. Points relevés sans gravité établie
 
 - [ ] Trancher chacun : faute ou choix.
 - `signalerEchec()` ne poste rien quand `operationEnCours !== null` : une panne
