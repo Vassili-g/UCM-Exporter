@@ -330,6 +330,19 @@ test("le diagnostic est publié avec le droit de l'être, et crée le fil qu'il 
       /printf "<!-- ucm-rapport -->/,
       "le marqueur est écrit par `ucm check`, qui seul peut le compter dans la borne du commentaire",
     );
+    // `GITHUB_TOKEN` est un jeton d'intégration : `GET /user` lui répond 403,
+    // et `gh` écrit quand même le corps de l'erreur sur la sortie standard. Un
+    // repli placé dans la substitution capturait les deux textes : le jq ne se
+    // compilait plus, aucun commentaire n'était retrouvé, et un verdict périmé
+    // restait affiché sous une étape verte.
+    assert.match(
+      workflow,
+      /if ! COMPTE="\$\(gh api user --jq \.login 2>\/dev\/null\)"; then\s+COMPTE='github-actions\[bot\]'/,
+      "le compte d'un jeton d'intégration se replie sur github-actions[bot], hors de la substitution",
+    );
+    // Sans `pipefail`, `| tail -n 1` rend le code de `tail` : une recherche du
+    // commentaire en échec passait pour « aucun commentaire », en silence.
+    assert.match(workflow, /run: \|\n\s+set -o pipefail\n/, "une recherche en échec arrête l'étape");
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
@@ -337,8 +350,9 @@ test("le diagnostic est publié avec le droit de l'être, et crée le fil qu'il 
 
 /**
  * Le rapport se régénère à chaque exécution : commité, il ferait lire un
- * verdict périmé. Un `.gitignore` déjà présent n'est pas réécrit — la seule
- * faute irréversible de cette commande —, et la ligne manquante est alors dite.
+ * verdict périmé. Un `.gitignore` déjà présent n'est pas réécrit (ce serait la
+ * seule faute irréversible de cette commande), et la ligne manquante est alors
+ * dite.
  */
 test("le rapport est ignoré, et un .gitignore existant reçoit la consigne au lieu d'être écrasé", () => {
   const vierge = repoVierge();
