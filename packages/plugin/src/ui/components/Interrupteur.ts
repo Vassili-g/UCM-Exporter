@@ -44,7 +44,17 @@ export function createInterrupteur(
   detail.id = `${id}-aide`;
   detail.textContent = aide;
 
+  /*
+   * Tant que le sandbox n'a rien envoyé, l'interrupteur n'a pas d'état à
+   * montrer. « Gérer les tokens » vaut `true` par défaut : posé à `false` et
+   * cliquable, il montrait l'inverse du réglage et un clic renvoyait au sandbox
+   * la valeur qu'il portait déjà. Le réglage n'a qu'un domicile, et l'interface
+   * ne le devine pas : elle attend, comme la carte des tokens attend le sien.
+   */
+  bouton.disabled = true;
+
   function poser(active: boolean) {
+    bouton.disabled = false;
     bouton.setAttribute('aria-checked', String(active));
   }
 
@@ -56,6 +66,6 @@ export function createInterrupteur(
 
   ligne.append(texte, bouton);
   element.append(ligne, detail);
-  poser(false);
+  bouton.setAttribute('aria-checked', 'false');
   return { element, bouton, poser };
 }

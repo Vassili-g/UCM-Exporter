@@ -899,6 +899,49 @@ test('le succès d’une publication précède le test de connexion qu’elle re
   await enVol;
 });
 
+/**
+ * Le rafraîchissement qui suit une publication réussie tourne après la fin de
+ * l'opération. Sa panne écrivait « la demande n'a pas abouti » sur la carte, par
+ * dessus « Pull request créée » et à côté du lien de la demande déjà ouverte.
+ */
+test('une panne du rafraîchissement après une publication réussie n’écrit rien sur la carte', async () => {
+  const h = ouvrir();
+  h.connecter();
+  await h.envoyer({ type: 'ui-ready' });
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  const lire = h.runtime.clientStorage.getAsync;
+  h.runtime.clientStorage.getAsync = async (cle: string) => {
+    if (h.appels.publications > 0) throw new Error('stockage indisponible');
+    return lire(cle);
+  };
+  await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
+  await tourner();
+  await tourner();
+  await tourner();
+
+  const statuts = h.messages.flatMap((message) => (message.type === 'status' ? [message] : []));
+  assert.equal(statuts.at(-1)?.state, 'success');
+  assert.equal(statuts.at(-1)?.operation, 2);
+});
+
+/**
+ * Le repli `cleDeDestination(null, true)` ne sert que si la lecture échoue
+ * avant tout `settings`. L'interface n'a alors aucune destination courante et
+ * n'en compare aucune : le réglage des tokens que ce repli suppose ne décide
+ * de rien.
+ */
+test('une analyse lancée avant tout réglage, sur un stockage en panne, porte le repli sans destination annoncée', async () => {
+  const h = ouvrir();
+  h.runtime.clientStorage.getAsync = async () => { throw new Error('stockage indisponible'); };
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  assert.equal(h.messages.some(({ type }) => type === 'settings'), false);
+  const resultats = operationDe(h, 1);
+  assert.ok(resultats.some(({ type }) => type === 'download'));
+  for (const message of resultats) {
+    assert.equal((message as { destination?: string }).destination, config.cleDeDestination(null, true));
+  }
+});
+
 test('une demande arrivée pendant la fin d’une publication reçoit une réponse portant son numéro', async () => {
   const h = ouvrir();
   h.connecter();

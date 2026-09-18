@@ -78,10 +78,29 @@ function postStatus(state: 'loading' | 'success' | 'error', text: string, proven
   versUi({ type: 'status', state, text, ...provenance });
 }
 
+const ECHEC_GENERIQUE = 'La demande n’a pas abouti. Réessayez ; si l’erreur persiste, relancez le plugin.';
+
+/**
+ * Une panne qu'aucun message ne sait décrire.
+ *
+ * Le statut ne part qu'hors opération : pendant une analyse ou une publication,
+ * il s'écrirait sur la carte à la place de la phase en cours, et le résultat de
+ * l'opération le remplacerait aussitôt. L'opération pose son propre statut
+ * d'échec dans son `catch`, avec le numéro qui va avec.
+ */
 function signalerEchec(): void {
-  const texte = 'La demande n’a pas abouti. Réessayez ; si l’erreur persiste, relancez le plugin.';
-  if (operationEnCours === null) postStatus('error', texte);
-  figma.notify(texte, { error: true });
+  if (operationEnCours === null) postStatus('error', ECHEC_GENERIQUE);
+  figma.notify(ECHEC_GENERIQUE, { error: true });
+}
+
+/**
+ * Une panne survenue après le résultat d'une opération, dans un travail de fond
+ * qu'elle a lancé. Elle ne s'écrit pas sur la carte : le succès d'une
+ * publication y est acquis, et « la demande n'a pas abouti » par-dessus ferait
+ * relancer une publication dont la demande de fusion est déjà ouverte.
+ */
+function notifierEchec(): void {
+  figma.notify(ECHEC_GENERIQUE, { error: true });
 }
 
 /**
@@ -119,6 +138,11 @@ function repliDe({ depots, exportLocal }: Instantane): CauseDeRepli {
  * Génération du test de chaque carte. Enregistrer ou supprimer un dépôt
  * périme le test de ce dépôt, et de lui seul : enregistrer B ne périme pas un
  * test de A.
+ *
+ * Aucune entrée n'en sort, pas même à la suppression de son dépôt. L'interface
+ * tient la même carte des générations pour écarter un résultat plus ancien que
+ * celui qu'elle affiche ; vider celle-ci seule ferait repartir de zéro un dépôt
+ * réenregistré, et l'interface écarterait alors tous ses tests.
  */
 const generationsDesDepots = new Map<string, number>();
 
@@ -694,7 +718,7 @@ async function publier(genre: ArtifactKind, operation: number): Promise<void> {
     figma.notify(textes.creee(analyse.succes));
     // Après une bascule, la connexion affichée est celle du nouveau dépôt, que
     // son propre test décrit déjà.
-    if (destinationAnnoncee === analyse.destination) void refreshConfiguration().catch(signalerEchec);
+    if (destinationAnnoncee === analyse.destination) void refreshConfiguration().catch(notifierEchec);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue.';
     const statut = error instanceof ErreurDeForge ? error.status : null;

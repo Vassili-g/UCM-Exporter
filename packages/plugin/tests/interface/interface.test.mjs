@@ -380,6 +380,29 @@ test('le corps d’une carte se retrouve par l’identifiant que son en-tête an
   }
 });
 
+/**
+ * Une liste de dépôts illisible n'envoie aucun `settings`. Les interrupteurs ne
+ * reçoivent donc jamais leur valeur, et « Gérer les tokens », posé à `false`,
+ * montrait l'inverse de son réglage par défaut.
+ */
+test('les interrupteurs attendent leur réglage avant de se laisser actionner', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await page.locator('.icon-button').first().click();
+    const tokens = page.getByRole('switch', { name: 'Gérer les tokens' });
+    const local = page.getByRole('switch', { name: 'Activer l’export local' });
+    assert.equal(await tokens.isDisabled(), true);
+    assert.equal(await local.isDisabled(), true);
+    await envoyer(reglages(A));
+    assert.equal(await tokens.isDisabled(), false);
+    assert.equal(await tokens.getAttribute('aria-checked'), 'true');
+    assert.equal(await local.isDisabled(), false);
+    assert.equal(await local.getAttribute('aria-checked'), 'false');
+  } finally {
+    await page.close();
+  }
+});
+
 test('la carte des tokens attend le réglage, et suit sa valeur', async () => {
   const { page, envoyer } = await ouvrir();
   try {
