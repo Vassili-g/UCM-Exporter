@@ -720,8 +720,9 @@ Aucun dépôt enregistré :
 Configuration                         [Retour]
  Général  [Dépôts]
 ──────────────────────────────────────────────
-Les dépôts où les exports sont déposés, et le
-jeton qui autorise chacun.
+Configuration des dépôts sur lesquels sont
+exportés les contrats de composants et les
+tokens via Pull Request.
 
 [             Ajouter un dépôt             ]
 
@@ -734,8 +735,9 @@ Trois dépôts sur deux forges, repliés :
 Configuration                         [Retour]
  Général  [Dépôts]
 ──────────────────────────────────────────────
-Les dépôts où les exports sont déposés, et le
-jeton qui autorise chacun.
+Configuration des dépôts sur lesquels sont
+exportés les contrats de composants et les
+tokens via Pull Request.
 
 [             Ajouter un dépôt             ]
 
@@ -991,7 +993,7 @@ l'actuel sous-titre de `PAGES` :
 | Onglet | Description proposée |
 |---|---|
 | Général | « Les réglages du plugin sur ce poste. » |
-| Dépôts | « Les dépôts où les exports sont déposés, et le jeton qui autorise chacun. » |
+| Dépôts | « Configuration des dépôts sur lesquels sont exportés les contrats de composants et les tokens via Pull Request. » |
 
 **Aspect.** Le panneau de droite de Figma porte deux onglets, « Design » et
 « Prototype »

@@ -184,10 +184,13 @@ test('les onglets gardent une largeur stable et les cartes de dépôt affichent 
     await envoyer(DEUX());
     await page.locator('.icon-button').first().click();
     await page.getByRole('tab', { name: 'Dépôts' }).click();
-    const largeurs = await page.locator('.onglet').evaluateAll((onglets) =>
-      onglets.map((onglet) => Math.round(onglet.getBoundingClientRect().width)),
+    const onglets = page.locator('.onglet');
+    const largeurs = await onglets.evaluateAll((elements) =>
+      elements.map((onglet) => Math.round(onglet.getBoundingClientRect().width)),
     );
     assert.deepEqual(largeurs, [largeurs[0], largeurs[0]]);
+    const alignement = await onglets.first().evaluate((onglet) => getComputedStyle(onglet).alignItems);
+    assert.equal(alignement, 'center');
 
     const hauteurs = await page.locator('.carte-depot-entete').evaluateAll((entetes) =>
       entetes.map((entete) => Math.round(entete.getBoundingClientRect().height)),

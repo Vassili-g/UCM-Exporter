@@ -16,7 +16,7 @@ export type OngletConfiguration = 'general' | 'depots';
 /** La phrase sous les onglets, qui dit ce que l'onglet sélectionné règle. */
 const DESCRIPTIONS: Record<OngletConfiguration, string> = {
   general: 'Les réglages du plugin sur ce poste.',
-  depots: 'Les dépôts où les exports sont déposés, et le jeton qui autorise chacun.',
+  depots: 'Configuration des dépôts sur lesquels sont exportés les contrats de composants et les tokens via Pull Request.',
 };
 
 /** Ce que le routeur UI pilote sur la page de configuration. */
