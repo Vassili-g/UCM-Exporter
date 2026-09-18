@@ -218,12 +218,18 @@ p {
   overflow-wrap: anywhere;
   align-items: center;
   gap: var(--espace-serre);
-  padding: 0;
+  padding: 0 var(--espace-serre);
   border: 0;
-  background: none;
+  border-radius: var(--rayon);
+  background: transparent;
   color: var(--texte-danger);
   cursor: pointer;
   text-align: left;
+  transition: background-color 120ms ease;
+}
+
+.connection-status:hover {
+  background: var(--fond-survol);
 }
 
 .connection-status::before {
@@ -261,6 +267,7 @@ p {
   color: var(--texte);
   cursor: pointer;
   font-weight: 600;
+  transition: background-color 120ms ease;
 }
 
 .icon-button {
@@ -473,6 +480,10 @@ p {
 }
 
 .onglet {
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: 60px;
+  min-width: 60px;
   height: var(--hauteur-secondaire);
   padding: 0 var(--espace-controle);
   border: 0;
@@ -480,12 +491,18 @@ p {
   background: none;
   color: var(--texte-second);
   cursor: pointer;
+  font-weight: 600;
+  justify-content: center;
+}
+
+.onglet:hover:not([aria-selected='true']) {
+  background: var(--fond-survol);
+  color: var(--texte);
 }
 
 .onglet[aria-selected='true'] {
   background: var(--fond-bloc);
   color: var(--texte);
-  font-weight: 600;
 }
 
 .onglet:focus-visible,
@@ -553,7 +570,7 @@ p {
 
 .carte-depot-entete {
   display: flex;
-  min-height: var(--hauteur-secondaire);
+  min-height: var(--hauteur-action);
   align-items: center;
   justify-content: space-between;
   gap: var(--espace-controle);
@@ -563,14 +580,21 @@ p {
 .carte-depot-nom {
   min-width: 0;
   flex: 1 1 auto;
-  padding: 0;
+  min-height: var(--hauteur-action);
+  padding: 0 var(--espace-controle);
   border: 0;
-  background: none;
+  border-radius: var(--rayon);
+  background: transparent;
   color: var(--texte);
   cursor: pointer;
   font-weight: 600;
   overflow-wrap: anywhere;
   text-align: left;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.carte-depot-nom:hover {
+  background: var(--fond-survol);
 }
 
 .carte-depot-nom:focus-visible {
@@ -580,7 +604,7 @@ p {
 
 .carte-depot-entete .btn {
   width: auto;
-  height: var(--hauteur-secondaire);
+  height: var(--hauteur-action);
   flex-shrink: 0;
 }
 

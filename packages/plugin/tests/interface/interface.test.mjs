@@ -178,6 +178,34 @@ test('en export local, la pastille avertit, aucune carte n’est connectée, et 
   }
 });
 
+test('les onglets gardent une largeur stable et les cartes de dépôt affichent un indice de clic', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await envoyer(DEUX());
+    await page.locator('.icon-button').first().click();
+    await page.getByRole('tab', { name: 'Dépôts' }).click();
+    const largeurs = await page.locator('.onglet').evaluateAll((onglets) =>
+      onglets.map((onglet) => Math.round(onglet.getBoundingClientRect().width)),
+    );
+    assert.deepEqual(largeurs, [largeurs[0], largeurs[0]]);
+
+    const hauteurs = await page.locator('.carte-depot-entete').evaluateAll((entetes) =>
+      entetes.map((entete) => Math.round(entete.getBoundingClientRect().height)),
+    );
+    assert.deepEqual(hauteurs, [hauteurs[0], hauteurs[0]]);
+
+    const nom = page.locator('.carte-depot-nom').first();
+    await nom.scrollIntoViewIfNeeded();
+    const avant = await nom.evaluate((bouton) => bouton.matches(':hover'));
+    await nom.hover();
+    const survole = await nom.evaluate((bouton) => bouton.matches(':hover'));
+    assert.equal(avant, false);
+    assert.equal(survole, true);
+  } finally {
+    await page.close();
+  }
+});
+
 test('« Se connecter » agit en un clic sans déplier la carte, et la suppression attend un second clic', async () => {
   const { page, envoyer } = await ouvrir();
   try {
