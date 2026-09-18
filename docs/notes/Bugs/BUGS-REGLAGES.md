@@ -52,7 +52,7 @@ npm run test:ui --workspace ucm-exporter-plugin
 npm run galerie --workspace ucm-exporter-plugin
 ```
 
-Sur `28f8b6b`, les cinq sont vertes : 788 tests pour le plugin, 13 tests
+Sur `ca037e1`, les cinq sont vertes : 788 tests pour le plugin, 15 tests
 Playwright, 51 états de galerie atteignables.
 
 Elles étaient déjà toutes vertes sur `4d98c37`, avant le premier constat. Aucun
@@ -115,7 +115,7 @@ documents et les commentaires, jamais les chaînes affichées.
 | Critique | 4 | 0 |
 | Haute | 1 | 0 |
 | Moyenne | 4 | 0 |
-| Basse | 1 | 0 |
+| Basse | 2 | 0 |
 
 Le compte porte sur les constats. Une zone sondée sans constat se range aussi
 ici, sous « Sans constat », avec les lois qu'elle laisse derrière elle.
@@ -318,6 +318,34 @@ ici, sous « Sans constat », avec les lois qu'elle laisse derrière elle.
   son `checking` en génération 1 et son résultat en génération 2, ce que le
   sandbox n'écrit jamais. Elle emploie désormais une seule génération.
 
+### [Basse] Une carte de saisie orpheline quand le dépôt a déjà la sienne
+
+- [x] Corrigé par `ca037e1`, et zone Z6 épuisée du même geste.
+- **Où** : `src/ui/components/ListeDesDepots.ts`, `recevoirEnregistrement()`.
+- **Scénario** : une carte vit sous une clé temporaire jusqu'à sa réponse, puis
+  sous son identité, et c'est `settings` qui lui donne son dépôt. Un `settings`
+  qui liste le dépôt avant l'arrivée de la réponse crée la carte de ce dépôt. La
+  réponse trouvait alors la clé prise, renonçait à renommer la sienne, et
+  laissait une carte sans identité qu'aucun `settings` ne retrouve : trois
+  cartes pour deux dépôts, sans retour possible.
+- **Correction** : la carte des réglages porte le dépôt, celle de la saisie
+  s'efface, et c'est la première qui attend le test.
+- **Portée** : cet ordre de messages n'est pas produit par le sandbox
+  d'aujourd'hui. `versUi` poste `depot-enregistre` dès que l'écriture est rendue,
+  et toute lecture concurrente est mise en file derrière elle. La carte reste
+  écrite pour n'importe quel ordre, comme le reste de la frontière.
+- **Test** : `interface.test.mjs`, « une réponse d'enregistrement pour un dépôt
+  qui a déjà sa carte n'en laisse qu'une ».
+- **Deux autres chemins de la zone, sans constat** : une carte nouvelle retirée
+  pendant que son enregistrement est en vol disparaît, puis revient au `settings`
+  qui liste le dépôt enregistré, ce qui est correct ; deux cartes nouvelles dont
+  les réponses se croisent étaient déjà tenues par une loi.
+- **Point d'attention tranché** : `corps.id` vaut `corps-github:mon-org/ds` pour
+  une carte enregistrée. `getElementById` le retrouve, aucun sélecteur CSS ne le
+  vise sans échappement, et aucun code du plugin n'en construit. La loi « le
+  corps d'une carte se retrouve par l'identifiant que son en-tête annonce » le
+  tient sur les deux formes de clé.
+
 ### [Sans constat] Zone Z5, fraîcheur croisée des générations
 
 - [x] Zone épuisée par `28f8b6b`.
@@ -344,20 +372,7 @@ ici, sous « Sans constat », avec les lois qu'elle laisse derrière elle.
 
 ## 5. Ce qui reste
 
-### C1. Zone Z6, identité des cartes de la liste
-
-- [ ] Épuiser la zone.
-- Une carte vit sous une clé temporaire jusqu'à sa réponse, puis sous son
-  identité. Sonder les chemins restants qui laisseraient les deux en désaccord :
-  `settings` arrivé avant `depot-enregistre`, deux cartes nouvelles dont les
-  réponses se croisent, une carte supprimée pendant que son enregistrement est
-  en vol.
-- Point d'attention relevé sans être sondé : `corps.id` vaut `corps-<clé>`, donc
-  `corps-github:mon-org/ds` pour une carte enregistrée. L'identifiant reste
-  valide en HTML et `aria-controls` le retrouve, mais aucun sélecteur CSS ne
-  peut le viser sans échappement. Vérifier qu'aucun code ne tente de le faire.
-
-### C2. Zone Z7, reprise des anciennes clés
+### C1. Zone Z7, reprise des anciennes clés
 
 - [ ] Sonder la reprise.
 - `reprendreLAncienneConfiguration()` ouvre la file du stockage et lit quatre
@@ -369,7 +384,7 @@ ici, sous « Sans constat », avec les lois qu'elle laisse derrière elle.
   configuration sans `baseBranch`, que la reprise remplace par `main` sans le
   dire.
 
-### C3. Points relevés sans gravité établie
+### C2. Points relevés sans gravité établie
 
 - [ ] Trancher chacun : faute ou choix.
 - `signalerEchec()` ne poste rien quand `operationEnCours !== null` : une panne
