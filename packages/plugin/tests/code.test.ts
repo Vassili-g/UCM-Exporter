@@ -49,7 +49,7 @@ function ouvrir() {
   /** Ce que la lecture des règles relève de la page ; le test le choisit. */
   const releve: { actuel: ReleveDeSource } = {
     actuel: {
-      conteneurDuComposant: false, conteneurMarque: null,
+      conteneurDuComposant: false, conteneurVierge: null,
       maitreLocal: null, instanceSource: null,
     },
   };
@@ -1047,7 +1047,7 @@ test('une suppression dont le retrait du dépôt actif échoue rend quand même 
 test('le relevé de la page décide de l’offre que la carte du composant reçoit', async () => {
   const h = ouvrir();
   h.releve.actuel = {
-    conteneurDuComposant: false, conteneurMarque: null,
+    conteneurDuComposant: false, conteneurVierge: null,
     maitreLocal: null, instanceSource: { id: 'i' } as never,
   };
   await h.envoyer({ type: 'ui-ready' });
@@ -1060,7 +1060,7 @@ test('le relevé de la page décide de l’offre que la carte du composant reço
 test('un variant seul ne reçoit aucune offre, quoi que la page porte', async () => {
   const h = ouvrir();
   h.releve.actuel = {
-    conteneurDuComposant: false, conteneurMarque: null,
+    conteneurDuComposant: false, conteneurVierge: null,
     maitreLocal: null, instanceSource: { id: 'i' } as never,
   };
   h.runtime.currentPage.selection = [

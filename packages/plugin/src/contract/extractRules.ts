@@ -98,8 +98,8 @@ export function porteLeMarqueur(texte: string): boolean {
 export type ReleveDeSource = {
   /** Un conteneur écrit déjà le nom du composant sélectionné. */
   conteneurDuComposant: boolean;
-  /** Première instance dont « component-name » porte encore le marqueur. */
-  conteneurMarque: InstanceNode | null;
+  /** Première instance collée et jamais remplie, prête à recevoir des règles. */
+  conteneurVierge: InstanceNode | null;
   /** Le maître « .componentRules » de la page, quand il s'y trouve. */
   maitreLocal: ComponentNode | null;
   /** Première instance qui porte « component-name », source à défaut du maître. */
@@ -110,10 +110,29 @@ export type ReleveDeSource = {
 function releveVide(): ReleveDeSource {
   return {
     conteneurDuComposant: false,
-    conteneurMarque: null,
+    conteneurVierge: null,
     maitreLocal: null,
     instanceSource: null,
   };
+}
+
+/**
+ * Vrai d'un conteneur au nom marqué qu'aucune règle rédigée n'occupe.
+ *
+ * Le nom marqué ne suffit pas : un conteneur dont on aurait effacé le nom par
+ * erreur serait rempli par-dessus son travail. Le critère est ce que ses
+ * instances écrivent, et non ce qu'elles sont : `isRuleInstance` est
+ * asynchrone, et ce relevé se fait pendant le parcours de page. Une instance
+ * qui n'est pas une règle et qui écrit quelque chose compte donc pour du
+ * travail, ce qui range la prudence du bon côté.
+ */
+function estVierge(conteneur: InstanceNode): boolean {
+  return conteneur
+    .findAll((node) => node.type === 'INSTANCE')
+    .every((node) => RULE_CONTENT_LAYERS.every((calque) => {
+      const texte = textOfLayer(node as InstanceNode, calque).trim();
+      return texte === '' || porteLeMarqueur(texte);
+    }));
 }
 
 /** Résultat de lecture enrichi pour distinguer l'absence du conteneur de son contenu invalide. */
@@ -376,7 +395,9 @@ export async function extractRules(
     const nom = nomDeComposantEcrit(node);
     if (nom === null) return false;
     releve.instanceSource ??= node as InstanceNode;
-    if (porteLeMarqueur(nom)) releve.conteneurMarque ??= node as InstanceNode;
+    if (porteLeMarqueur(nom) && estVierge(node as InstanceNode)) {
+      releve.conteneurVierge ??= node as InstanceNode;
+    }
     const estConteneur = rulesContainerOwner(node) === owner;
     if (estConteneur) releve.conteneurDuComposant = true;
     return estConteneur;

@@ -29,7 +29,7 @@ export type Offre = 'creer' | 'remplir' | 'sans-source';
  */
 export function offreDeCreation(releve: ReleveDeSource): Offre | null {
   if (releve.conteneurDuComposant) return null;
-  if (releve.conteneurMarque) return 'remplir';
+  if (releve.conteneurVierge) return 'remplir';
   if (releve.maitreLocal || releve.instanceSource) return 'creer';
   return 'sans-source';
 }

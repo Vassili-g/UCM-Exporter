@@ -298,7 +298,7 @@ sections [5.2](PLAN-TEMPLATE-REGLES.md#52-ordre-des-sources) à
   - [x] relevé synchrone de l'offre à partir du parcours de page que fait déjà
         `extractRules` : `creer`, `remplir`, `sans-source`, ou aucune offre
         (conteneur qui écrit le nom du composant, variant seul) ;
-  - [ ] conteneur vierge au sens de [5.3](PLAN-TEMPLATE-REGLES.md#53-le-conteneur-vierge) :
+  - [x] conteneur vierge au sens de [5.3](PLAN-TEMPLATE-REGLES.md#53-le-conteneur-vierge) :
         `component-name` marqué et aucune règle rédigée ;
   - [ ] résolution asynchrone, au clic : maître `.componentRules`, maître de
         chaque section et de chaque tag lu sur les exemples par
@@ -832,12 +832,21 @@ charge déjà `cible` et `prevol` : la logique de l'offre est jugée dans
 parent. Rouge constaté en échangeant les deux branches du variant : les deux
 tests tombent.
 
-Reste à faire dans ce lot, dans l'ordre :
+Livré ensuite, et vert : le conteneur vierge de 5.3. Il ne vit pas dans
+`sources.ts` mais dans le relevé, contre la lettre de la liste : la seconde
+condition de 5.3 décide de l'offre elle-même, un conteneur au nom marqué qui
+porte une règle rédigée devant donner `creer` et non `remplir`. La juger au
+clic aurait fait mentir le bouton. Le coût reste borné au sous-arbre des seuls
+conteneurs marqués.
+
+Le critère est ce qu'une instance écrit, jamais ce qu'elle est : `isRuleInstance`
+est asynchrone, et le relevé se fait pendant le parcours de page. Une instance
+qui n'est pas une règle et qui écrit quelque chose compte donc pour du travail,
+ce qui range la prudence du bon côté. Rouge constaté en retirant la condition :
+le conteneur rédigé recevait `remplir`, et le plugin aurait écrit par-dessus.
+
+Reste à faire dans ce lot :
 
 1. `src/template/sources.ts`, suite : la résolution asynchrone des maîtres au
-   clic, le conteneur vierge de 5.3 et la vérification des textes d'aide.
-   Le conteneur vierge se juge sans appel asynchrone : une règle est rédigée
-   dès qu'une instance du conteneur écrit un `content`, un `prop` ou un `icon`
-   sans marqueur, ce qui protège le travail du designer sans passer par
-   `isRuleInstance`, qui est asynchrone.
+   clic, et la vérification des textes d'aide de 6.3.
 2. Tests des maîtres résolus, et test de relecture de la section 9.

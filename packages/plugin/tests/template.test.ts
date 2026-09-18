@@ -168,3 +168,24 @@ test('le maître prime, et le conteneur vierge prime sur les deux', async (t) =>
   ]);
   assert.equal(offre, 'remplir');
 });
+
+/** Une instance de règle qui écrit `texte` dans son calque « content ». */
+function regleEcrite(texte: string) {
+  return noeud('INSTANCE', 'Règle', [noeud('TEXT', 'content', [], { characters: texte })]);
+}
+
+test('un conteneur au nom marqué dont une règle est rédigée n’est pas vierge', async (t) => {
+  // Le remplir détruirait ce que le designer y a écrit : le plugin en crée un
+  // autre à côté du composant plutôt que d'écraser celui-là.
+  const conteneur = porteurDeNom('INSTANCE', '[À compléter] Nom du composant');
+  conteneur.children.push(regleEcrite('Action principale du formulaire.'));
+
+  assert.equal(await offreDeLaPage(t, [conteneur]), 'creer');
+});
+
+test('un conteneur au nom marqué dont les règles portent toutes le marqueur est vierge', async (t) => {
+  const conteneur = porteurDeNom('INSTANCE', '[À compléter] Nom du composant');
+  conteneur.children.push(regleEcrite('[À compléter] Décrivez à quoi sert le composant.'));
+
+  assert.equal(await offreDeLaPage(t, [conteneur]), 'remplir');
+});
