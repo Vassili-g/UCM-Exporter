@@ -5,8 +5,10 @@
 > [section 12](./RECHERCHE-TEMPLATE-REGLES.md#12-livrable-attendu) du plan de
 > recherche, rédigé en plan d'action à la demande du mainteneur. Une revue
 > indépendante en a relu la première version ; la
-> [section 14](#14-revue-indépendante) dit ce qui en a été retenu. Rien n'a été
-> écrit dans Figma.
+> [section 14](#14-revue-indépendante) dit ce qui en a été retenu. La source du
+> composant de règles a été réinstruite ensuite, pour les équipes qui ne l'ont
+> pas : décision H1-I, [section 12.2](#122-les-équipes-sans-source--le-kit-community).
+> Rien n'a été écrit dans Figma.
 
 Commit lu : `94ec0a9`. Fichier Figma lu : le fichier de tests du mainteneur,
 pages « Components » et « Règles [.componentRules] », par `get_metadata` et
@@ -334,6 +336,14 @@ Texte proposé, sous le bouton inactif : « Aucune instance de
 « .componentRules » sur cette page. Collez-en une depuis la page de vos règles
 pour créer celles de ce composant. »
 
+Ce texte suppose que le fichier porte des règles ailleurs. Une équipe qui vient
+d'installer le plugin depuis la Community n'en a nulle part, et le kit de la
+[section 12.2](#122-les-équipes-sans-source--le-kit-community) est sa seule
+source. La même note porte donc un lien vers le kit. Le chemin existe déjà :
+`UiRequest` déclare `{ type: 'open-external'; url: string }`
+(`src/messages.ts`), et `code.ts` le route vers `figma.openExternal`, qui
+n'accepte que `https://`. Rien à ajouter au sandbox, un libellé et une URL.
+
 ## 6. Du contrat aux règles
 
 ### 6.1. Contenu du template
@@ -619,8 +629,12 @@ Textes d'aide du maître sans marqueur :
 Le message `cible` porte un champ de plus, l'offre de création : `creer`,
 `remplir`, `sans-source` ou absente. L'opération passe par `status`, qui pilote
 déjà `occuper` et la note. Trois états de galerie s'ajoutent pour l'offre,
-quatre pour l'opération (en cours, créée, échec, textes d'aide sans marqueur),
-avec le pire contenu réel : 22 règles et un nom de composant long. Le protocole
+quatre pour l'opération (en cours, créée, échec, textes d'aide sans marqueur).
+L'état `sans-source` porte le lien vers le kit (5.5) : il entre dans la capture,
+dans `stylesUi.test.ts` s'il reçoit une classe, et dans `interface.test.mjs`,
+qui vérifie qu'un clic émet `open-external` et non une navigation. Les captures
+sont prises avec le pire contenu réel : 22 règles et un nom de composant long.
+Le protocole
 de relecture (a) à (e) passe sur les captures, compte d'objets (e) compris.
 
 ## 9. Documents et tests touchés
@@ -631,7 +645,8 @@ de relecture (a) à (e) passe sur les captures, compte d'objets (e) compris.
 | `packages/plugin/SPEC.md` | « Hors périmètre MVP » et sa sous-section ; nouvelle sous-section sur la création des règles |
 | `docs/format/FORMAT.md` | section 7 : le marqueur `[À compléter]`, ses calques par tag, le conteneur vierge ; phrase « sans jamais écrire dans Figma » |
 | `packages/plugin/README.md`, `packages/plugin/package.json` | promesse de lecture seule ; geste de création des règles ; marqueur |
-| `docs/guides/POUR-LES-DESIGNERS.md` | promesse ; geste de création des règles ; marqueur |
+| `docs/guides/POUR-LES-DESIGNERS.md` | promesse ; geste de création des règles ; marqueur ; lien vers le kit, à côté de celui du plugin |
+| `docs/guides/KIT-DE-REGLES.md`, nouveau | contenu du kit, vérifications avant publication, marche à suivre pour le publier et le republier, gestes d'une équipe qui le duplique (12.2) |
 | `CONTRIBUTING.md` | aucun changement : le bouton est un geste de la commande composant |
 | `packages/plugin/src/messages.ts` | `creer-regles` ; offre dans `cible` |
 | `packages/plugin/src/code.ts` | routage, `creerRegles`, valeur d'`operationEnCours`, commentaire de `montrerLesCalques` |
@@ -648,6 +663,8 @@ de relecture (a) à (e) passe sur les captures, compte d'objets (e) compris.
 | `packages/plugin/tests/template.test.ts`, nouveau | modèle depuis un contrat synthétique ; relecture d'un template simulé par `extractRules` |
 | `packages/plugin/tests/galerie.test.ts`, `stylesUi.test.ts`, `interface/interface.test.mjs` | nouveaux états, classes et interactions |
 | Fichier Figma du design system, hors dépôt | textes d'aide de `.ruleItem` et `component-name` de `.componentRules` (6.3), par le mainteneur |
+| Fichier Figma du kit, hors dépôt | les trois maîtres, les textes d'aide, le composant d'exemple, la page « Lisez-moi » (12.2) |
+| Fiche du plugin sur la Figma Community, hors dépôt | description qui cite le kit |
 
 Le test de relecture construit un component set synthétique à noms neutres
 (`Root`, axes `tone` et `scale`, un booléen `mark`), produit le modèle, simule
@@ -765,6 +782,25 @@ section, avec un maître de bibliothèque, suppression après création, rédact
 de trois règles, analyse, publication. L'agent ne peut pas exécuter l'export
 dans Figma ([AGENTS.md](../../../../AGENTS.md#limites-denvironnement)).
 
+### Phase 8. Le kit Community
+
+Dernière, et elle attend une condition : la version du plugin qui reconnaît le
+marqueur (phase 2) doit être servie par la Community avant que le kit ne
+circule. Un kit publié plus tôt livrerait des textes d'aide que le moteur
+d'alors publie comme documentation réelle, ce qui est le défaut que la
+[section 6.2](#62-le-marqueur-à-compléter) corrige.
+
+1. Le mainteneur compose le fichier du kit et passe la liste de vérifications
+   de la section 12.2. Aucun agent n'écrit dans Figma.
+2. Le mainteneur le publie sur la Community et relie les deux fiches.
+3. L'agent écrit `docs/guides/KIT-DE-REGLES.md` et pose le lien du kit dans le
+   README du plugin, POUR-LES-DESIGNERS.md et FORMAT.md, section 7.
+4. L'agent pose le lien dans la note `sans-source` (5.5) et son état de
+   galerie, si la phase 6 ne l'a pas déjà fait avec l'URL en attente.
+5. Recette : sur un fichier neuf, sans aucun `.componentRules`, dupliquer le
+   kit, copier les trois maîtres, créer les règles d'un composant, analyser.
+   C'est l'épreuve de l'équipe qui n'a pas la source.
+
 ## 11. Décisions prises à H1
 
 | Id | Question | Décision |
@@ -777,6 +813,7 @@ dans Figma ([AGENTS.md](../../../../AGENTS.md#limites-denvironnement)).
 | H1-F | Que montre Figma après la création ? | le composant reste sélectionné, composant et conteneur sont cadrés |
 | H1-G | D5 est-il confirmé ? | sans réponse explicite ; tenu, conformément à H1-D |
 | H1-H | Comment se défait une création ? | par la suppression du conteneur ; `commitUndo` n'entre dans le module que si E6 montre un Ctrl+Z qui défait aussi un geste antérieur au clic |
+| H1-I | D'où vient le kit pour une équipe qui n'a pas la source ? | un second fichier publié sur la Community, selon la section 12.2. L'import par clé et les champs natifs de Figma sont écartés |
 
 Précisions confirmées : une règle `@prop` par valeur, groupées par axe ; ni
 `@default` ni la section de documentation (`@do`, `@dont`, `@pairs`) ne sont
@@ -793,7 +830,9 @@ Les noms d'axe d'états valides sont `State`, `States` et `Status`. Le moteur
 n'accepte aujourd'hui que les deux premiers en forme normalisée, `state` et
 `status` : la phase 2 ajoute `states`.
 
-## 12. L'équipe consommatrice
+## 12. Les équipes qui n'ont pas la source
+
+### 12.1. L'équipe consommatrice
 
 Réponse du mainteneur : le `.componentRules` de l'équipe est une instance du
 composant d'origine, publié par le fichier du design system du mainteneur. Le
@@ -815,6 +854,114 @@ chez elle, et les essais E1 à E8 couvrent ce cas.
 Reste une question à l'équipe : ses designers ont-ils le droit de modifier les
 fichiers de composants ?
 
+### 12.2. Les équipes sans source : le kit Community
+
+Décision H1-I. Mesuré : le plugin est publié sur la Figma Community
+([README du plugin](../../../../packages/plugin/README.md)), et `.componentRules`
+ne l'est pas. Une équipe qui l'installe depuis la Community n'a donc ni maître,
+ni instance, ni bibliothèque à activer : le bouton de création ne lui sert à
+rien et les règles d'usage lui restent fermées. FORMAT.md, section 7, décrit la
+grammaire assez complètement pour qu'elle rebâtisse le kit à la main, mais rien
+ne le lui livre, et rien ne lui dit qu'elle a bien nommé ses calques.
+
+Un second fichier publié sur la Community répond sans une ligne de code, sans
+toucher au module d'écriture et sans identifiant privé dans le dépôt. Nom
+proposé : « UCM Rules Kit ». L'anglais suit le nom du plugin sur la Community,
+« UCM Contract Exporter », et non la règle de langue de la
+[section 8.2](#82-libellé-et-rang), qui vaut pour l'interface française.
+
+#### Ce que le kit contient
+
+| Contenu | Pourquoi |
+|---|---|
+| `.componentRules`, `.rulesSection` (5 variants), `.ruleItem` (9 variants, `divider` compris), dans la forme relevée en [section 3](#3-structure-relevée-dans-figma) | le moteur n'exige rien d'autre |
+| Les textes d'aide de la [section 6.3](#63-les-textes-daide-du-maître), marqueur `[À compléter]` compris | sans le marqueur, le template refuse au clic ([section 7](#7-cas-limites)), et le moteur publierait ces textes comme documentation réelle |
+| Un composant d'exemple `Button` et son conteneur rédigé | montre la forme attendue ; nom neutre, aucun composant du corpus |
+| Une page « Lisez-moi » : les deux gestes ci-dessous, le fait que le plugin ne cherche que sur la page active (D5), le lien vers FORMAT.md, section 7 | le kit se lit sans le dépôt |
+
+#### Ce qu'il faut vérifier avant de publier
+
+- **Autonomie.** Aucun style, aucune variable, aucun composant du kit ne vient
+  d'une bibliothèque tierce : chez un inconnu, ces références ne se résolvent
+  pas. Mesuré en [section 3.1](#31-componentrules) : le calque `component-name`
+  emploie un text style dont la famille est une variable. Ces liaisons
+  deviennent locales, ou disparaissent.
+- **Polices.** Le kit n'emploie que des polices servies par Figma à tous les
+  comptes. Une police absente du poste rend `fontName` illisible et le template
+  refuse d'écrire ([section 7](#7-cas-limites)).
+- **Neutralité.** Ni nom de client, ni nom de projet, ni couleur de marque : le
+  fichier est public, sa description et ses tags compris.
+- **Noms exacts.** `.componentRules`, `.rulesSection`, `.ruleItem`, et les
+  calques `component-name`, `content`, `prop`, `icon`, `modifiable`, `strict`,
+  plus les calques de tag. Le moteur rapproche par nom compacté, jamais par
+  clé : une faute de nom rend le kit muet, sans message.
+
+#### Comment on le publie
+
+Documenté : n'importe quel compte Figma disposant d'un accès en édition publie
+un fichier sur la Community, depuis l'éditeur et non depuis l'explorateur ;
+c'est gratuit, et cela ne demande ni équipe ni plan payant.
+
+1. dupliquer le fichier de règles du design system, ou composer un fichier neuf
+   à partir des trois maîtres ;
+2. passer la liste de vérifications ci-dessus ;
+3. publier sur la Community : nom, description qui dit la version du plugin
+   attendue, catégorie, tags ;
+4. relier les deux fiches : la description du plugin cite le kit, celle du kit
+   cite le plugin.
+
+#### Ce que fait l'équipe qui le duplique
+
+Documenté : la copie arrive dans ses brouillons. Deux gestes, selon son plan.
+
+| Geste | Ce qu'il demande | Ce que le plugin voit |
+|---|---|---|
+| Copier les trois maîtres du kit, les coller dans son fichier de composants | rien, aucun plan payant : un maître copié d'un fichier à l'autre reste un maître | un `COMPONENT` nommé `.componentRules` sur la page active, première source de la [section 5.2](#52-ordre-des-sources) |
+| Publier le kit en bibliothèque, puis poser une instance de `.componentRules` sur la page du composant | documenté : la publication d'une bibliothèque demande un plan payant | une instance, seconde source de la section 5.2 ; le maître est distant, comme pour l'équipe consommatrice, et le cas dépend de l'essai E9 |
+
+Le premier geste couvre les essais E1 à E8 sans rien de plus. Le second est
+celui de la section 12.1.
+
+#### La source reste le fichier du design system
+
+Le kit en est une copie, donc une seconde source. Règle : le fichier du design
+system fait autorité, et le kit est republié quand les textes d'aide de la
+section 6.3 ou la grammaire de FORMAT.md changent. La marche à suivre vit dans
+`docs/guides/KIT-DE-REGLES.md`, pour survivre à ce plan.
+
+#### Ce qui a été écarté
+
+Embarquer la clé du maître dans le plugin et l'importer par
+`importComponentByKeyAsync`. Documenté : l'appel charge le composant depuis la
+bibliothèque d'équipe, et seul un composant déjà publié s'importe. Le composant
+n'est donc pas dans le plugin, il est cherché dans une bibliothèque à laquelle
+l'utilisateur doit avoir accès : hors de l'organisation du mainteneur, la
+promesse est rejetée (non vérifié, mais c'est le modèle de permissions de
+Figma). La [section 4.3](#43-emplacement-et-frontière) fait déjà refuser cet
+appel dans `src/template/` au titre de D5, et une clé de composant serait un
+identifiant privé écrit dans le dépôt.
+
+Bâtir les maîtres par le code, ce qui serait le seul vrai « embarquer » :
+`createComponent`, `createText`, `createSlot` et `combineAsVariants` suffisent,
+et le moteur lirait le résultat puisqu'`isRuleInstance` rapproche par nom. Mais
+ces appels ne posent ni text style ni variable, le kit naîtrait détaché ;
+`createNodeFromJSXAsync`, la voie ergonomique, est fermée, les typings disant
+qu'elle ne rend ni les identifiants de style ni les instances, dont le kit est
+fait ; le module d'écriture de D4 ne poserait plus des instances mais créerait
+des component sets, ce qui change la nature du trou dans la loi ; et D3 ferait
+entrer la mise en page d'un composant de documentation dans un moteur qui ne
+connaît que des conventions de nom. Reste comme troisième issue de la porte H2,
+à côté de la liste des règles affichée sans rien écrire.
+
+Lire la documentation dans les champs natifs de Figma plutôt que dans un
+composant : `description` et `descriptionMarkdown` d'un component set,
+`componentPropertyDefinitions[].description` (que `parsers.ts` lit déjà pour les
+seules propriétés `SLOT`), `annotations` d'un node. Écarté par le mainteneur :
+impraticable pour un designer. Un fait le ferme de toute façon pour `@prop` :
+`variantOptions` est une liste de chaînes, sans champ de description, donc
+aucune valeur d'axe ne peut y être documentée. La question ne se repose pas
+dans cette version.
+
 ## 13. Sources
 
 | Source | Ce qu'elle établit | Statut |
@@ -829,6 +976,12 @@ fichiers de composants ?
 | [Forum Figma, connecteur et slots](https://forum.figma.com/share-your-feedback-26/figma-connector-with-claude-ai-and-slots-feature-52864) | l'ajout fonctionne, textes écrits avant ; une seule écriture de texte sûre par sous-arbre de slot ; un enfant existant ne se retire pas | rapporté |
 | [Forum Figma, annulation groupée](https://forum.figma.com/t/enable-a-single-undo-for-multiple-operations/28276) | plugin ouvert, chaque opération peut recevoir sa propre entrée ; page non relue, extrait de recherche seulement | rapporté |
 | [Forum Figma, plugins en lecture seule](https://forum.figma.com/t/can-users-with-view-access-only-run-plugins/25383) | seul un utilisateur qui peut éditer lance un plugin de design | rapporté |
+| `@figma/plugin-typings` 1.138.0, `importComponentByKeyAsync` et `PublishableMixin.key` | l'appel charge depuis la bibliothèque d'équipe ; seul un composant publié s'importe | documenté |
+| `@figma/plugin-typings` 1.138.0, `createNodeFromJSXAsync` | la voie JSX ne rend ni les identifiants de style ni les instances | documenté |
+| `@figma/plugin-typings` 1.138.0, `figma.openExternal` et `ComponentPropertyDefinitions` | ouverture d'une URL depuis le sandbox ; `variantOptions` est une liste de chaînes, sans description | documenté |
+| [Publier un fichier sur la Community](https://help.figma.com/hc/en-us/articles/360040035974-Publish-files-to-the-Figma-Community) | tout compte disposant d'un accès en édition publie, depuis l'éditeur | documenté |
+| [Publier une bibliothèque](https://help.figma.com/hc/en-us/articles/360025508373-Publish-a-library) | la publication d'une bibliothèque demande un plan payant | documenté |
+| [Dupliquer un fichier Community](https://help.figma.com/hc/en-us/articles/360038510873-Duplicate-Community-files) | la copie arrive dans les brouillons, sans historique ni permissions d'origine | documenté |
 
 ## 14. Revue indépendante
 

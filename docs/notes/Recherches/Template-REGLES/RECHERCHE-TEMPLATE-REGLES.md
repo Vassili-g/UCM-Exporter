@@ -211,6 +211,12 @@ L'équipe consommatrice utilise-t-elle `.componentRules` ? La question est
 ouverte dans
 [RECHERCHE-REGLAGES.md](../Réglages%20du%20plugin/RECHERCHE-REGLAGES.md#10-questions-ouvertes).
 
+Cette section suppose que le fichier porte le composant quelque part. Le plugin
+étant publié sur la Figma Community, une équipe peut l'installer sans avoir
+jamais vu `.componentRules` : d'où vient alors le maître ? La question a été
+instruite après le rapport et tranchée en H1-I, dans
+[PLAN-TEMPLATE-REGLES.md, section 12.2](./PLAN-TEMPLATE-REGLES.md#122-les-équipes-sans-source--le-kit-community).
+
 ## 6. Du component set aux règles
 
 ### 6.1. Correspondance à instruire
@@ -319,8 +325,11 @@ npm run galerie --workspace ucm-exporter-plugin
 
 ## 11. Questions à l'équipe consommatrice
 
-- Ses fichiers contiennent-ils `.componentRules` et `.ruleItem` ?
+- Ses fichiers contiennent-ils `.componentRules` et `.ruleItem` ? Répondu :
+  oui, par une instance dont le maître est distant
+  ([PLAN-TEMPLATE-REGLES.md, section 12.1](./PLAN-TEMPLATE-REGLES.md#121-léquipe-consommatrice)).
 - Ses designers ont-ils le droit de modifier les fichiers de composants ?
+  Toujours ouverte.
 
 ## 12. Livrable attendu
 
