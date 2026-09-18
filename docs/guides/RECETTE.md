@@ -369,6 +369,13 @@ Attendu : un avertissement, la fusion reste possible.
 la fusion est bloquée, et le message dit ce qui manque et ce qu'il faut
 réexporter.
 
+**Épreuve du silence.** Ouvrez une pull request qui ne touche aucun fichier
+d'UCM : un mot dans le README suffit. Attendu : la CI tourne, et aucun
+commentaire n'apparaît sur la pull request. Poussez ensuite sur cette même
+branche un contrat cassé, constatez le rapport rouge, puis retirez-le par un
+troisième commit. Attendu : le commentaire rouge est remplacé par une ligne, et
+non laissé tel quel.
+
 Ces trois modifications se font à la main dans une branche de rebut, et elles
 sont la seule exception à la règle « un contrat ne se retouche jamais ». Fermez
 la branche sans la fusionner :

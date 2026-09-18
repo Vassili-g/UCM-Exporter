@@ -16,7 +16,7 @@ matches them.
 Requires Node 20 or later. At the root of the repository:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.46 init
+npx --yes @ucm-kit/cli@0.1.47 init
 ```
 
 1. Commit and push the files `init` wrote.
@@ -27,7 +27,7 @@ npx --yes @ucm-kit/cli@0.1.46 init
 To run the check locally:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.46 check --report ci-report.md
+npx --yes @ucm-kit/cli@0.1.47 check --report ci-report.md
 ```
 
 `--yes` skips the npx confirmation prompt. Pin an exact version, without `^`:
@@ -78,7 +78,7 @@ contract would resolve to the same file. A repository that does not write React
 states its own extension:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.46 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
+npx --yes @ucm-kit/cli@0.1.47 init --components Sources/DesignSystem --implementation '{dir}/{id}.swift'
 ```
 
 The three path options act only on a first install. `ucm init` never overwrites
@@ -188,7 +188,7 @@ directory. It writes a minimal report when the check stopped before writing
 one, then posts the report:
 
 ```sh
-npx --yes @ucm-kit/cli@0.1.46 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier "$CI_PROJECT_DIR/ci-report.md" --api "$CI_API_V4_URL"
+npx --yes @ucm-kit/cli@0.1.47 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-request "$CI_MERGE_REQUEST_IID" --fichier "$CI_PROJECT_DIR/ci-report.md" --api "$CI_API_V4_URL"
 ```
 
 | Option | Effect |
@@ -200,7 +200,11 @@ npx --yes @ucm-kit/cli@0.1.46 rapport-gitlab --projet "$CI_PROJECT_ID" --merge-r
 
 The command reads the token from `UCM_GITLAB_TOKEN` and never prints it. It
 replaces the note that the token's account wrote with the `<!-- ucm-rapport -->`
-marker, and creates one otherwise. Without the variable it says so and exits
+marker, and creates one otherwise. A report carrying `<!-- ucm-sans-objet -->`
+is the exception: it replaces an existing note, and never opens one, so a merge
+request that touches nothing UCM stays free of comments. Written by `ucm check`
+when the merge request changes no contract, no `tokens.json`, no
+`ucm.config.json` and no resolved implementation. Without the variable it says so and exits
 with `0`: the report stays in the job artifacts. A refused token exits with `1`
 and names the fix. The job allows failure, so a refused token leaves the
 pipeline the colour of the check.
@@ -209,12 +213,19 @@ pipeline the colour of the check.
 
 | Option | Effect |
 |---|---|
-| `--base <sha>` | Limits informational notices to contracts changed since that commit |
+| `--base <sha>` | Scopes the report to what the merge request changes, since that commit |
 | `--report <path>` | Writes the markdown report to that path, in addition to the terminal |
 
 The report stops before 65,536 characters, the size of a GitHub comment, and
-says so in its last line. The verdict opens the report and is never cut; the
-terminal output keeps every detail.
+says so in its last line. It opens with the `<!-- ucm-rapport -->` marker, which
+counts towards that limit and lets a publisher find the comment to replace. The
+verdict follows and is never cut; the terminal output keeps every detail.
+
+With `--base`, a merge request that changes no contract, no `tokens.json`, no
+`ucm.config.json` and no resolved implementation gets a one-line report marked
+`<!-- ucm-sans-objet -->`. A publisher replaces an existing comment with it and
+never creates one. Blocking verdicts ignore this rule and always print in full.
+Without `--base`, the report covers the whole repository.
 
 ### What the report says
 

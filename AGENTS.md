@@ -134,7 +134,7 @@ packages/kit/            le format et ses lecteurs : @ucm-kit/core, publié
     trouver-contrats.mjs         retrouver les contrats d'un dossier
     controle-repository.mjs      le contrôle complet et le rapport du designer
     verdict-bilan.mjs            ce qui refuse une fusion, et le titre de ce refus
-    perimetre-rapport.mjs        les états informatifs limités à la demande de fusion
+    perimetre-rapport.mjs        ce que la demande de fusion touche, et si elle concerne UCM
     avertissements-export.mjs    ce que l'export n'a pas su décrire
     diagnostic-tokens.mjs        les références que la source de tokens ne porte pas
     diagnostic-parite.mjs        l'écart contrat ↔ code : le juger et le dire
@@ -588,6 +588,15 @@ La spécification en lien porte le raisonnement.
   dans le plugin, dans la demande de fusion et dans `meta.diagnostics` ; la
   spécification et les tests du format portent cette règle.
   → [CONTRIBUTING](./CONTRIBUTING.md#avertissements-de-lexport)
+- **Le rapport CI suit la même règle que l’export : il ne parle que d’une
+  demande de fusion qu’il concerne.** Le contrôle, lui, tourne sur toutes, sans
+  filtre de chemin : la conformité se casse aussi dans le code seul. Une demande
+  qui ne touche ni contrat, ni `tokens.json`, ni `ucm.config.json`, ni
+  l’implémentation résolue d’un contrat reçoit le rapport sans objet, une ligne
+  qui remplace un verdict devenu faux et ne crée jamais un commentaire. Un
+  refus, lui, s’écrit toujours en entier. `perimetre-rapport.mjs` est l’autorité
+  unique de ce périmètre, et le marqueur `<!-- ucm-sans-objet -->` le porte
+  jusqu’aux deux publicateurs.
 - `meta.diagnostics` est l’unique propriétaire des messages publiés dans le
   contrat. Un consommateur qui veut la liste lisible lit `diagnostics[].message`,
   sans filtrer sur `severity`.

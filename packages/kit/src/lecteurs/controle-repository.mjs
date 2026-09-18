@@ -21,7 +21,7 @@ import { libelleNombre, rendreDiagnostic } from "./diagnostic-markdown.mjs";
 import { resumeTerminalTokensManquants, sectionTokensManquants } from "./diagnostic-tokens.mjs";
 import { cheminImplementation, implementationPresente } from "./implementation.mjs";
 import { collecterReferences, sansEchantillon } from "./references-token.mjs";
-import { selectionnerBilansDuRapport } from "./perimetre-rapport.mjs";
+import { perimetreDeLaDemande } from "./perimetre-rapport.mjs";
 import { indexerTokensDtcg, referencesAbsentes } from "./tokens-dtcg.mjs";
 import { erreursTypesTypographiques } from "./typography-token-types.mjs";
 import { trouverContrats } from "./trouver-contrats.mjs";
@@ -189,6 +189,28 @@ function implementationsEnAttente(bilans) {
 /** Au-delà, `gh pr comment` refuse le corps et la pull request reste sans commentaire. */
 const LIMITE_COMMENTAIRE_GITHUB = 65_536;
 
+/**
+ * Le marqueur qui identifie, parmi les commentaires d'une demande de fusion,
+ * celui que le rapport possède et doit remplacer.
+ *
+ * Il est écrit ici, et non par les deux publicateurs, pour deux raisons. Il
+ * entre ainsi dans la borne ci-dessus : préfixé après coup, il poussait le
+ * corps publié au-delà de la limite que cette borne existe pour tenir, et la
+ * demande se retrouvait sans commentaire, le défaut exact contre lequel elle a
+ * été écrite. Et le littéral cesse d'exister en trois endroits.
+ */
+export const MARQUEUR_RAPPORT = "<!-- ucm-rapport -->";
+
+/**
+ * Le second marqueur : ce rapport ne demande aucun geste.
+ *
+ * Un publicateur qui le lit remplace le commentaire du rapport s'il en existe
+ * un, et n'en crée jamais. Une demande étrangère à UCM reste donc vierge, et
+ * une demande qui portait un refus depuis corrigé ne garde pas un verdict
+ * périmé sous les yeux.
+ */
+export const MARQUEUR_SANS_OBJET = "<!-- ucm-sans-objet -->";
+
 const SUITE_OMISE = [
   "",
   "---",
@@ -201,12 +223,45 @@ const SUITE_OMISE = [
  * Le verdict ouvre le rapport, donc la coupe n'emporte que des détails, que le
  * terminal a déjà écrits en entier.
  */
-function bornerAuCommentaire(rapport) {
-  if (rapport.length <= LIMITE_COMMENTAIRE_GITHUB) return rapport;
-  const place = LIMITE_COMMENTAIRE_GITHUB - SUITE_OMISE.length;
+function bornerAuCommentaire(rapport, reserve) {
+  const limite = LIMITE_COMMENTAIRE_GITHUB - reserve;
+  if (rapport.length <= limite) return rapport;
+  const place = limite - SUITE_OMISE.length;
   const coupe = rapport.lastIndexOf("\n", place);
   return `${rapport.slice(0, coupe > 0 ? coupe : place)}${SUITE_OMISE}`;
 }
+
+/**
+ * Coiffe le rapport de ses marqueurs et le borne, une fois pour toutes.
+ *
+ * Tout rapport passe par ici, y compris ceux des sorties anticipées : un
+ * rapport sans marqueur ne serait jamais retrouvé, donc jamais remplacé, et
+ * chaque push empilerait un commentaire de plus.
+ *
+ * La réserve compte les marqueurs et le saut de ligne que `ucm check` ajoute
+ * en écrivant le fichier : ce que les forges publient est ce fichier, pas la
+ * chaîne rendue ici.
+ */
+function finaliserRapport(rapport, { sansObjet = false } = {}) {
+  const marqueurs = sansObjet
+    ? `${MARQUEUR_RAPPORT}\n${MARQUEUR_SANS_OBJET}`
+    : MARQUEUR_RAPPORT;
+  return `${marqueurs}\n${bornerAuCommentaire(rapport, marqueurs.length + 2)}`;
+}
+
+/**
+ * Le rapport d'une demande de fusion qui ne touche rien d'UCM.
+ *
+ * Il ne demande aucun geste, et la règle du projet veut qu'un message sans
+ * geste ne s'écrive pas. Celui-ci existe pour un seul lecteur : celui dont le
+ * commentaire portait un verdict que cette demande ne concerne plus. Il dit
+ * donc ce qui a été constaté et l'état de la fusion, et rien d'autre.
+ */
+const RAPPORT_SANS_OBJET = [
+  "## ✅ Cette demande de fusion ne touche aucun fichier suivi par UCM",
+  "",
+  "Le contrôle a tourné et ne demande aucun geste. La fusion n'est pas bloquée.",
+].join("\n");
 
 /** Ajoute au rapport l'état informatif des contrats encore sans implémentation. */
 function ajouterImplementationsEnAttente(lignes, bilans) {
@@ -228,7 +283,15 @@ function ajouterImplementationsEnAttente(lignes, bilans) {
 
 /** Rapport markdown destiné au designer : ce qui bloque, et quoi faire. */
 function rapportMarkdown(bilans, fautifs, bilansDuRapport, contexte) {
-  const { echecsDeTests, tokensModifies, sourceTokens } = contexte;
+  const { echecsDeTests, tokensModifies, sourceTokens, concerne } = contexte;
+
+  // Une demande qui ne touche rien d'UCM n'a aucun geste à recevoir. Le
+  // périmètre a déjà vidé toutes les sections informatives ; ce qui resterait
+  // est un en-tête qui annonce un contrôle dont il ne rapporte rien. La borne
+  // du refus est plus forte : un rapport qui bloque s'écrit toujours en entier.
+  if (fautifs.length === 0 && !echecsDeTests.echoue && !concerne) {
+    return finaliserRapport(RAPPORT_SANS_OBJET, { sansObjet: true });
+  }
   // Une PR de tokens peut rendre obsolète n'importe quel contrat : dans ce
   // cas, tous les écarts nouvellement visibles sont utiles. Dans une autre PR,
   // on limite cet avertissement aux contrats effectivement modifiés.
@@ -251,7 +314,7 @@ function rapportMarkdown(bilans, fautifs, bilansDuRapport, contexte) {
     lignes.push(...sectionAvertissementsExport(bilansDuRapport));
     lignes.push(...sectionEcartsDeParite(bilansDuRapport));
     ajouterImplementationsEnAttente(lignes, bilansDuRapport);
-    return lignes.join("\n");
+    return finaliserRapport(lignes.join("\n"));
   }
 
   // Le titre sépare les erreurs internes du contrat des échecs du repository,
@@ -357,7 +420,7 @@ function rapportMarkdown(bilans, fautifs, bilansDuRapport, contexte) {
 
   lignes.push(...sectionEcartsDeParite(bilansDuRapport));
   ajouterImplementationsEnAttente(lignes, bilansDuRapport);
-  return lignes.join("\n");
+  return finaliserRapport(lignes.join("\n"));
 }
 
 /** Le fil du terminal, contrat par contrat, dans l'ordre où il s'écrit. */
@@ -483,13 +546,13 @@ function abandon(titre, explication, terminal, echecsDeTests) {
     bilans: [],
     fautifs: [],
     bloquant: true,
-    rapport: [
+    rapport: finaliserRapport([
       `## ❌ ${titre}`,
       "",
       explication,
       "",
       ...diagnosticEchecsDeTests(echecsDeTests),
-    ].join("\n"),
+    ].join("\n")),
     terminal,
   };
 }
@@ -554,8 +617,27 @@ function refusDuFormatDeTokens(format, tokens, { sourceTokens, cheminTokens, ech
  * dossier inexistant produit le même relevé qu'un repository neuf, et aucune
  * mesure ne les sépare ; nommer l'endroit cherché laisse un développeur repérer
  * un chemin fautif sans que ce module ait à le supposer.
+ *
+ * Ce message s'adresse au designer qui vient d'installer UCM, et il lui demande
+ * un export. Une demande de fusion qui ne touche rien d'UCM n'a pas ce
+ * destinataire : elle reçoit le rapport sans objet. Sans cette borne, le seul
+ * repository qui n'a rien exporté republiait sa procédure d'accueil sur chaque
+ * demande, jusqu'à son premier composant.
  */
-function demarrage({ dossierDeclare, dossierAbsent, sourceTokens, tokensAbsents, echecsDeTests }) {
+function demarrage({ dossierDeclare, dossierAbsent, sourceTokens, tokensAbsents, echecsDeTests, concerne }) {
+  if (!concerne && !echecsDeTests.echoue) {
+    return {
+      bilans: [],
+      fautifs: [],
+      bloquant: false,
+      rapport: finaliserRapport(RAPPORT_SANS_OBJET, { sansObjet: true }),
+      terminal: [{
+        flux: "log",
+        texte: `✓ Aucun contrat dans ${dossierDeclare}, et cette demande de fusion n'en dépose aucun. Rien à contrôler.`,
+      }],
+    };
+  }
+
   const lignes = echecsDeTests.echoue
     ? enteteDuVerdict([], false)
     : [
@@ -584,7 +666,7 @@ function demarrage({ dossierDeclare, dossierAbsent, sourceTokens, tokensAbsents,
     bilans: [],
     fautifs: [],
     bloquant: echecsDeTests.echoue,
-    rapport: lignes.join("\n"),
+    rapport: finaliserRapport(lignes.join("\n")),
     terminal: [{
       flux: "log",
       texte: `✓ Aucun contrat dans ${dossierDeclare} : ce repository n'a pas encore reçu d'export. Rien à contrôler.`,
@@ -604,7 +686,7 @@ export function controlerRepository(racine, {
   configuration = CONFIGURATION_PAR_DEFAUT,
   adaptateur = ADAPTATEUR_VIDE,
   echecsDeTests = { echoue: false, echecs: [] },
-  contratsModifies,
+  cheminsModifies,
   tokensModifies = false,
 } = {}) {
   const sourceTokens = configuration.tokens;
@@ -686,6 +768,9 @@ export function controlerRepository(racine, {
       sourceTokens,
       tokensAbsents,
       echecsDeTests,
+      // Sans contrat sur le disque, aucun bilan ne peut entrer dans le
+      // périmètre : seuls comptent ici les chemins que la demande touche.
+      concerne: perimetreDeLaDemande([], cheminsModifies, { motif, tokensModifies }).concerne,
     });
   }
 
@@ -716,12 +801,14 @@ export function controlerRepository(racine, {
   );
   const fautifs = bilans.filter(bilanEstBloquant);
 
-  // La validation reste globale. Seuls les états informatifs sont limités aux
-  // contrats de la PR afin qu'un export ne parle pas d'un autre composant.
-  const bilansDuRapport = selectionnerBilansDuRapport(bilans, contratsModifies);
-  const rapport = bornerAuCommentaire(rapportMarkdown(bilans, fautifs, bilansDuRapport, {
-    echecsDeTests, tokensModifies, sourceTokens,
-  }));
+  // La validation reste globale. Seuls les états informatifs sont limités à ce
+  // que la demande touche, afin qu'un export ne parle pas d'un autre composant.
+  const { bilans: bilansDuRapport, concerne } = perimetreDeLaDemande(bilans, cheminsModifies, {
+    motif, tokensModifies,
+  });
+  const rapport = rapportMarkdown(bilans, fautifs, bilansDuRapport, {
+    echecsDeTests, tokensModifies, sourceTokens, concerne,
+  });
 
   const terminal = [...terminalDesBilans(bilans), ...terminalDesFautifs(fautifs)];
 

@@ -56,11 +56,14 @@ export function releveDuDiff(racine, base, sourceTokens, executer = execFileSync
   const git = (arguments_) =>
     executer("git", arguments_, { cwd: racine, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
 
-  let contratsModifies;
+  // Le relevé ne filtre rien. Un glob de contrats, qui était ici, cachait au
+  // noyau les fichiers d'implémentation, donc l'écart de conformité qu'une
+  // demande vient d'ouvrir dans le code seul. Où vit une implémentation se
+  // résout par le motif de `ucm.config.json` ; ce module n'a pas à le savoir,
+  // et aucune extension de fichier ne s'écrit ici.
+  let cheminsModifies;
   try {
-    contratsModifies = git([
-      "diff", "--name-only", "-z", base, "HEAD", "--", ":(glob)**/*.contract.json",
-    ]);
+    cheminsModifies = git(["diff", "--name-only", "-z", base, "HEAD"]);
   } catch (erreur) {
     return {
       erreur: `Le diff depuis « ${base} » a échoué : ${erreur?.message ?? erreur}.\n`
@@ -71,6 +74,10 @@ export function releveDuDiff(racine, base, sourceTokens, executer = execFileSync
 
   // `git diff --quiet` sort en 1 quand il y a une différence : l'exception est
   // la réponse, et l'absence d'exception veut dire « rien n'a bougé ».
+  //
+  // La question reste posée à git, et non déduite de la liste ci-dessus : lui
+  // seul normalise le `./` d'un chemin de configuration, la casse selon
+  // `core.ignorecase` et le dossier passé en pathspec.
   let tokensModifies = true;
   try {
     git(["diff", "--quiet", base, "HEAD", "--", sourceTokens]);
@@ -79,7 +86,7 @@ export function releveDuDiff(racine, base, sourceTokens, executer = execFileSync
     tokensModifies = true;
   }
 
-  return { contratsModifies: contratsModifies.replaceAll("\0", "\n"), tokensModifies };
+  return { cheminsModifies: cheminsModifies.replaceAll("\0", "\n"), tokensModifies };
 }
 
 /**

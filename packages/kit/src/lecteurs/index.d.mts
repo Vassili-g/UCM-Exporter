@@ -418,7 +418,7 @@ declare module "@ucm-kit/core/lecteurs" {
       configuration?: { components: string; tokens: string; implementation: string };
       adaptateur?: AdaptateurDImplementation;
       echecsDeTests?: { echoue: boolean; echecs: readonly EchecDeTest[] };
-      contratsModifies?: string;
+      cheminsModifies?: string;
       tokensModifies?: boolean;
     },
   ): VerdictDeControle;
@@ -439,13 +439,21 @@ declare module "@ucm-kit/core/lecteurs" {
   ): string[];
 
   /**
-   * Limite les états informatifs aux contrats que la pull request modifie.
-   * Sans liste, tous les bilans restent visibles.
+   * Ce que la demande de fusion touche : les états informatifs qu'elle peut
+   * publier, et si elle concerne UCM. Sans liste, tous les bilans restent
+   * visibles et la demande concerne UCM.
    */
-  export function selectionnerBilansDuRapport<T>(
+  export function perimetreDeLaDemande<T extends { relatif: string }>(
     bilans: readonly T[],
-    cheminsModifies?: string,
-  ): T[];
+    cheminsModifies: string | undefined,
+    options?: { motif?: string; tokensModifies?: boolean },
+  ): { bilans: readonly T[]; concerne: boolean };
+
+  /** Le marqueur qui identifie le commentaire du rapport sur une demande de fusion. */
+  export const MARQUEUR_RAPPORT: string;
+
+  /** Le marqueur d'un rapport sans geste : il remplace un commentaire, il n'en crée jamais. */
+  export const MARQUEUR_SANS_OBJET: string;
 
   /** La section des références que la source de tokens ne porte pas. */
   export function sectionTokensManquants(

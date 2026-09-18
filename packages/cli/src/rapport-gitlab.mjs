@@ -18,7 +18,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-export const MARQUEUR_RAPPORT = "<!-- ucm-rapport -->";
+import { MARQUEUR_RAPPORT, MARQUEUR_SANS_OBJET } from "@ucm-kit/core/lecteurs";
+
+export { MARQUEUR_RAPPORT, MARQUEUR_SANS_OBJET };
 
 function neutraliserActionsRapides(texte) {
   return texte.replace(/^([ \t]*)(\/\S.*)$/gm, (_entier, avant, action) => {
@@ -113,7 +115,13 @@ export async function rapportGitlab(arguments_, {
     alerter(`Le rapport ${valeurs.fichier} ne se lit pas (${erreurLecture?.code ?? erreurLecture?.message}) : aucune note n'est publiée.`);
     return 1;
   }
-  const corps = `${MARQUEUR_RAPPORT}\n${neutraliserActionsRapides(rapport)}`;
+  // `ucm check` écrit le marqueur en tête du rapport, et le compte dans la
+  // borne d'un commentaire. Le préfixe qui subsiste ici ne sert qu'à un fichier
+  // venu d'ailleurs : sans marqueur, la note ne serait jamais retrouvée, donc
+  // jamais remplacée, et chaque push en empilerait une de plus.
+  const marque = rapport.startsWith(MARQUEUR_RAPPORT) ? rapport : `${MARQUEUR_RAPPORT}\n${rapport}`;
+  const sansObjet = marque.includes(MARQUEUR_SANS_OBJET);
+  const corps = neutraliserActionsRapides(marque);
   const projet = encodeURIComponent(valeurs.projet);
   const notes = `${valeurs.api}/projects/${projet}/merge_requests/${encodeURIComponent(valeurs.mergeRequest)}/notes`;
 
@@ -160,6 +168,12 @@ export async function rapportGitlab(arguments_, {
     if (existante) {
       await appeler(`${notes}/${existante.id}`, "remplacer la note du rapport", { method: "PUT", body: JSON.stringify({ body: corps }) });
       ecrire(`Rapport remplacé dans la note ${existante.id} de la merge request !${valeurs.mergeRequest}.`);
+    } else if (sansObjet) {
+      // Un rapport qui ne demande aucun geste remplace une note, il n'en ouvre
+      // jamais une. Une merge request étrangère à UCM reste vierge ; une merge
+      // request dont le refus a été corrigé voit son verdict remplacé plutôt
+      // que laissé périmé sous les yeux de qui la relit.
+      ecrire(`Cette merge request ne touche aucun fichier suivi par UCM : aucune note n'est publiée.`);
     } else {
       await appeler(notes, "écrire la note du rapport", { method: "POST", body: JSON.stringify({ body: corps }) });
       ecrire(`Rapport publié en note de la merge request !${valeurs.mergeRequest}.`);

@@ -8,7 +8,7 @@ import test from "node:test";
 import { parse } from "yaml";
 
 import { forgeDuRepository, init, lireArgumentsInit, rendreInit } from "../src/init.mjs";
-import { MARQUEUR_RAPPORT, rapportGitlab } from "../src/rapport-gitlab.mjs";
+import { MARQUEUR_RAPPORT, MARQUEUR_SANS_OBJET, rapportGitlab } from "../src/rapport-gitlab.mjs";
 import { executer } from "../src/ucm.mjs";
 
 function repoVierge() {
@@ -259,6 +259,32 @@ test("sans note du compte, le rapport est créé avec son marqueur", () => avecR
   assert.equal(creation.url, "https://gitlab.com/api/v4/projects/42/merge_requests/3/notes");
   assert.equal(creation.body.body, `${MARQUEUR_RAPPORT}\n## ✅ Tout est conforme\n`);
   assert.equal(creation.headers["PRIVATE-TOKEN"], JETON);
+}));
+
+/**
+ * Un rapport sans geste remplace une note, il n'en ouvre jamais une.
+ *
+ * Sans cette borne, la note de démarrage d'UCM reparaissait sur chaque merge
+ * request d'un projet, y compris celles qui ne touchent rien d'UCM.
+ */
+test("un rapport sans objet ne crée aucune note", () => avecRapport(async (racine) => {
+  writeFileSync(join(racine, "ci-report.md"), `${MARQUEUR_RAPPORT}\n${MARQUEUR_SANS_OBJET}\n## Rien à signaler\n`);
+  const api = gitlabSimule();
+  const { code, sortie } = await lancer(racine, api);
+
+  assert.equal(code, 0, "se taire n'est pas échouer");
+  assert.equal(api.appels.some(({ methode }) => methode === "POST"), false);
+  assert.match(sortie, /aucune note n'est publiée/);
+}));
+
+test("un rapport sans objet remplace la note qui porte un verdict périmé", () => avecRapport(async (racine) => {
+  writeFileSync(join(racine, "ci-report.md"), `${MARQUEUR_RAPPORT}\n${MARQUEUR_SANS_OBJET}\n## Rien à signaler\n`);
+  const api = gitlabSimule({
+    notes: [{ id: 3, system: false, author: { id: 7 }, body: `${MARQUEUR_RAPPORT}\n## ❌ 1 contrat invalide` }],
+  });
+  await lancer(racine, api);
+
+  assert.ok(api.appels.some(({ methode, url }) => methode === "PUT" && url.endsWith("/notes/3")));
 }));
 
 test("la note du compte au marqueur est remplacée, celle d'un autre compte ignorée", () => avecRapport(async (racine) => {

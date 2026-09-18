@@ -106,13 +106,18 @@ export { libelleNombre, rendreDiagnostic } from "./diagnostic-markdown.mjs";
  * noyau seul : il dit où une implémentation devrait être et si elle y est, et
  * ne prétend jamais avoir lu du code.
  */
-export { ADAPTATEUR_VIDE, controlerRepository } from "./controle-repository.mjs";
+export {
+  ADAPTATEUR_VIDE,
+  MARQUEUR_RAPPORT,
+  MARQUEUR_SANS_OBJET,
+  controlerRepository,
+} from "./controle-repository.mjs";
 
 /** Ce qui refuse une fusion, et le titre que ce refus mérite. */
 export { bilanEstBloquant, enteteDuVerdict } from "./verdict-bilan.mjs";
 
-/** Les états informatifs se limitent aux contrats que la pull request modifie. */
-export { selectionnerBilansDuRapport } from "./perimetre-rapport.mjs";
+/** Ce que la demande de fusion touche : ses états informatifs, et si elle concerne UCM. */
+export { perimetreDeLaDemande } from "./perimetre-rapport.mjs";
 
 /** Les références qu'un contrat cite et que la source de tokens ne porte pas. */
 export {

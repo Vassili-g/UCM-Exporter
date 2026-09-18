@@ -85,14 +85,14 @@ function preparerRepo({ composants = {}, tokens = {} }) {
  * démonte, même quand l'assertion échoue, sinon un test rouge laisserait un
  * dossier derrière lui à chaque exécution.
  */
-function verdict({ composants, tokens = TOKENS, casser } = {}) {
+function verdict({ composants, tokens = TOKENS, casser, ...portee } = {}) {
   const racine = preparerRepo({
     composants: composants ?? { Widget: { contrat: contrat(), tsx: TSX } },
     tokens,
   });
   try {
     if (casser) casser(racine);
-    return controlerRepository(racine, { configuration: CONFIGURATION });
+    return controlerRepository(racine, { configuration: CONFIGURATION, ...portee });
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
@@ -104,7 +104,8 @@ test("tout valide : rien ne bloque, et un rapport qui ne réclame rien", () => {
   assert.equal(bloquant, false);
   assert.equal(
     rapport,
-    "## ✅ Aucun blocage détecté\n\n"
+    "<!-- ucm-rapport -->\n"
+      + "## ✅ Aucun blocage détecté\n\n"
       + "1 contrat et 1 référence de token contrôlés. Les contrôles bloquants sont passés.",
   );
 });
@@ -740,4 +741,124 @@ test("un mode qui cite un autre type sous un text style bloque, et le rapport no
   const etendu = verdict({ composants: { Widget: { contrat: document, tsx: TSX } }, tokens });
   assert.equal(etendu.bloquant, true);
   assert.match(etendu.rapport, /cite un token de type `number` dans le mode `confort` de l'extension `marque-b`\. Type attendu/);
+});
+
+/**
+ * Le rapport ne parle que si la demande le concerne.
+ *
+ * Le contrôle tourne sur toute demande de fusion, et c'est délibéré : une
+ * demande qui ne touche aucun contrat peut casser la conformité dans le code.
+ * Mais une demande qui ne touche rien d'UCM n'a aucun geste à recevoir, et la
+ * règle d'écriture du projet est nette : un message qui ne demande rien ne
+ * s'écrit pas.
+ */
+test("une demande étrangère à UCM reçoit une ligne, pas un verdict", () => {
+  const { bloquant, rapport } = verdict({
+    cheminsModifies: ".github/workflows/ucm.yml",
+    tokensModifies: false,
+  });
+
+  assert.equal(bloquant, false);
+  assert.match(rapport, /^## ✅ Cette demande de fusion ne touche aucun fichier suivi par UCM$/m);
+  assert.doesNotMatch(rapport, /contrôlés/, "elle n'annonce pas un contrôle qu'elle ne résume pas");
+  assert.doesNotMatch(rapport, /Figma/, "aucun geste de designer n'est demandé ici");
+});
+
+test("un dépôt sans export se tait sur une demande qui ne le concerne pas", () => {
+  const racine = mkdtempSync(join(tmpdir(), "ucm-demarrage-"));
+  try {
+    const { bloquant, rapport } = controlerRepository(racine, {
+      configuration: CONFIGURATION,
+      cheminsModifies: ".github/workflows/ucm.yml",
+    });
+
+    assert.equal(bloquant, false);
+    assert.doesNotMatch(rapport, /n'a pas encore reçu d'export/);
+    assert.doesNotMatch(rapport, /\*\*Exporter les tokens\*\*/);
+    assert.match(rapport, /^## ✅ Cette demande de fusion ne touche aucun fichier suivi par UCM$/m);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * L'inverse, et c'est le cas qui compte : un premier export déposé sous un
+ * dossier que `ucm.config.json` ne déclare pas. Personne ne trouve le contrat,
+ * et ce rapport est le seul endroit où le dossier cherché est nommé.
+ */
+test("un premier export hors du dossier déclaré reçoit le rapport entier", () => {
+  const racine = mkdtempSync(join(tmpdir(), "ucm-demarrage-"));
+  try {
+    const { rapport } = controlerRepository(racine, {
+      configuration: CONFIGURATION,
+      cheminsModifies: "composants/Button/Button.contract.json",
+    });
+
+    assert.match(rapport, /^## ✅ Ce repository n'a pas encore reçu d'export$/m);
+    assert.match(rapport, /Le dossier `src`, déclaré par `ucm\.config\.json`, n'existe pas encore/);
+  } finally {
+    rmSync(racine, { recursive: true, force: true });
+  }
+});
+
+/**
+ * La borne du silence s'arrête là où commence celle du refus : une demande
+ * refusée laisse toujours un message, quel que soit ce qu'elle touche.
+ */
+test("un refus s'écrit en entier, même sur une demande étrangère à UCM", () => {
+  const { bloquant, rapport } = verdict({
+    cheminsModifies: "README.md",
+    casser: (racine) =>
+      writeFileSync(join(racine, "src/components/Widget/Widget.contract.json"), "{ pas du json"),
+  });
+
+  assert.equal(bloquant, true);
+  assert.match(rapport, /^## ❌ 1 contrat invalide$/m);
+  assert.doesNotMatch(rapport, /ne touche aucun fichier suivi par UCM/);
+});
+
+test("une suite de tests rouge parle, même sur une demande étrangère à UCM", () => {
+  const { bloquant, rapport } = verdict({
+    cheminsModifies: "README.md",
+    echecsDeTests: { echoue: true, echecs: [{ composant: "Widget", message: "rouge" }] },
+  });
+
+  assert.equal(bloquant, true);
+  assert.doesNotMatch(rapport, /ne touche aucun fichier suivi par UCM/);
+});
+
+/**
+ * Le marqueur appartient au noyau, et non aux deux publicateurs.
+ *
+ * C'est lui qui retrouve le commentaire à remplacer, et le second marqueur qui
+ * interdit d'en créer un. Les compter dans la borne du commentaire est la
+ * raison de les écrire ici : préfixés par le publicateur, ils poussaient le
+ * corps publié au-delà de la limite que la borne existe pour tenir.
+ */
+test("tout rapport porte le marqueur, et lui seul quand il demande un geste", () => {
+  const { rapport } = verdict();
+
+  assert.ok(rapport.startsWith("<!-- ucm-rapport -->\n"), rapport.slice(0, 60));
+  assert.doesNotMatch(rapport, /ucm-sans-objet/);
+});
+
+test("le rapport sans objet porte le marqueur qui interdit de créer un commentaire", () => {
+  const { rapport } = verdict({ cheminsModifies: "README.md" });
+
+  assert.ok(rapport.startsWith("<!-- ucm-rapport -->\n<!-- ucm-sans-objet -->\n"), rapport.slice(0, 80));
+});
+
+test("les marqueurs et le saut de ligne du fichier tiennent dans la borne du commentaire", () => {
+  const document = contrat();
+  document.viewStructures.st1.children = Array.from({ length: 3_000 }, (_, i) => ({
+    slot: `label${i}`,
+    tokens: { color: `{couleurs.absentes.de.la.source.numero${i}}` },
+  }));
+  const { rapport } = verdict({ composants: { Widget: { contrat: document, tsx: TSX } }, tokens: {} });
+
+  assert.ok(rapport.startsWith("<!-- ucm-rapport -->\n"));
+  // `ucm check` écrit le rapport suivi d'un saut de ligne : c'est ce fichier,
+  // et non la chaîne rendue, que les deux forges publient.
+  assert.ok(`${rapport}\n`.length <= 65_536, `${rapport.length + 1} caractères publiés`);
+  assert.match(rapport, /La suite de ce rapport ne tient pas dans un commentaire/);
 });

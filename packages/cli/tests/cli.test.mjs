@@ -253,9 +253,14 @@ test("le filet, la transmission et la publication se relaient sur le même rappo
 
     assert.match(ecriture.run, /cat > ci-report\.md <<EOF/, "le filet écrit le fichier transmis");
     assert.match(ecriture.run, /\$RUN_URL/, "le message minimal nomme l'endroit où regarder");
+    // Le filet ne passe pas par `ucm check`, donc aucun marqueur n'a été écrit
+    // pour lui. Sans celui-ci, le commentaire qu'il crée reste introuvable, et
+    // l'exécution suivante en empile un second au lieu de le remplacer.
+    assert.match(ecriture.run, /<!-- ucm-rapport -->/, "le filet marque le rapport qu'il écrit");
     assert.equal(transmission.with.path, "ci-report.md");
     assert.equal(reception.with.name, transmission.with.name, "la publication reçoit l'artefact transmis");
-    assert.match(publication.run, /cat ci-report\.md >> ucm-report\.md/, "la publication lit le fichier transmis");
+    assert.match(publication.run, /--body-file ci-report\.md/, "la publication lit le fichier transmis");
+    assert.match(publication.run, /-f body="\$\(cat ci-report\.md\)"/, "le remplacement lit le même fichier");
   } finally {
     rmSync(racine, { recursive: true, force: true });
   }
@@ -287,10 +292,15 @@ test("le job qui exécute le code du repository n'écrit nulle part", () => {
 /**
  * Le jeton et le numéro passent par l'environnement : interpolés dans le shell,
  * ils feraient exécuter au runner ce qu'un titre de pull request contient. Sans
- * checkout, `gh` ne connaît le repository que par `-R`. Et `--edit-last` échoue
- * quand aucun commentaire n'existe encore : sans son repli, le tout premier
- * diagnostic d'une pull request serait perdu, précisément celui que le designer
- * attend.
+ * checkout, `gh` ne connaît le repository que par `-R`. Et la recherche du
+ * commentaire précédent échoue quand aucun n'existe encore : sans son repli, le
+ * tout premier diagnostic d'une pull request serait perdu, précisément celui
+ * que le designer attend.
+ *
+ * Ce repli a une seule exception, et elle se lit dans le fichier : un rapport
+ * qui porte le marqueur du sans-objet ne crée rien. Une demande de fusion
+ * étrangère à UCM reste vierge ; une demande qui portait un refus depuis
+ * corrigé voit son verdict remplacé, jamais laissé périmé.
  */
 test("le diagnostic est publié avec le droit de l'être, et crée le fil qu'il ne trouve pas", () => {
   const racine = repoVierge();
@@ -307,8 +317,18 @@ test("le diagnostic est publié avec le droit de l'être, et crée le fil qu'il 
     );
     assert.match(
       workflow,
-      /if \[ -n "\$NOTE" \]; then[\s\S]*else[\s\S]*gh pr comment "\$NUMERO" -R "\$GITHUB_REPOSITORY" --body-file ucm-report\.md/,
+      /if \[ -n "\$NOTE" \]; then[\s\S]*elif[\s\S]*gh pr comment "\$NUMERO" -R "\$GITHUB_REPOSITORY" --body-file ci-report\.md/,
       "sans repli, le premier commentaire d'une pull request n'est jamais créé",
+    );
+    assert.match(
+      workflow,
+      /elif ! head -n 2 ci-report\.md \| grep -qF "<!-- ucm-sans-objet -->"; then/,
+      "un rapport qui ne demande aucun geste ne crée pas de commentaire",
+    );
+    assert.doesNotMatch(
+      workflow,
+      /printf "<!-- ucm-rapport -->/,
+      "le marqueur est écrit par `ucm check`, qui seul peut le compter dans la borne du commentaire",
     );
   } finally {
     rmSync(racine, { recursive: true, force: true });

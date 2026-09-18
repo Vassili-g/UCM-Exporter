@@ -33,7 +33,7 @@ import {
   NOM_CONFIGURATION,
   estCheminDuRepository,
 } from "@ucm-kit/core/format";
-import { lireConfiguration } from "@ucm-kit/core/lecteurs";
+import { MARQUEUR_RAPPORT, MARQUEUR_SANS_OBJET, lireConfiguration } from "@ucm-kit/core/lecteurs";
 
 import { NOM_ADAPTATEUR_TYPESCRIPT } from "./adaptateur.mjs";
 import { CHEMIN_CONVENTIONS } from "./conventions.mjs";
@@ -484,6 +484,10 @@ function workflow(version) {
     "          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
     "        run: |",
     "          cat > ci-report.md <<EOF",
+    // Le filet n'est pas passé par `ucm check` : il écrit lui-même le marqueur
+    // que le noyau aurait posé. Sans lui, le commentaire qu'il crée ne serait
+    // retrouvé par aucune exécution suivante, et chaque push en empilerait un.
+    `          ${MARQUEUR_RAPPORT}`,
     "          ## ❌ La vérification n'a pas pu rendre son diagnostic",
     "",
     "          Les contrôles se sont arrêtés avant d'avoir pu analyser cet export : le rapport habituel n'a pas été produit. **Votre design n'est pas en cause** et ré-exporter depuis Figma n'y changerait rien.",
@@ -517,18 +521,25 @@ function workflow(version) {
     "        env:",
     "          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}",
     "          NUMERO: ${{ github.event.number }}",
-    "        # --edit-last met à jour le commentaire précédent au lieu d'en empiler",
-    "        # un nouveau à chaque push ; s'il n'en existe pas encore, on en crée un.",
+    "        # `ucm check` écrit le marqueur en tête du rapport et le compte dans la",
+    "        # limite d'un commentaire. Le préfixer ici portait le corps publié",
+    "        # au-delà de cette limite, que GitHub refuse.",
+    "        #",
+    "        # Le commentaire précédent est remplacé au lieu d'en empiler un nouveau à",
+    "        # chaque push. S'il n'en existe pas encore, on en crée un, SAUF si le",
+    "        # rapport ne demande aucun geste : une demande de fusion étrangère à UCM",
+    "        # reste vierge, et une demande dont le refus est corrigé voit son verdict",
+    "        # remplacé plutôt que laissé périmé.",
     "        run: |",
-    '          printf "<!-- ucm-rapport -->\\n" > ucm-report.md',
-    '          cat ci-report.md >> ucm-report.md',
     '          COMPTE="$(gh api user --jq .login)"',
     '          NOTE="$(gh api "repos/$GITHUB_REPOSITORY/issues/$NUMERO/comments" --paginate \\',
-    '            --jq ".[] | select(.user.login == \\\"$COMPTE\\\") | select(.body | startswith(\\\"<!-- ucm-rapport -->\\\")) | .id" | tail -n 1)"',
+    `            --jq ".[] | select(.user.login == \\\"$COMPTE\\\") | select(.body | startswith(\\\"${MARQUEUR_RAPPORT}\\\")) | .id" | tail -n 1)"`,
     '          if [ -n "$NOTE" ]; then',
-    '            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$NOTE" -f body="$(cat ucm-report.md)"',
+    '            gh api --method PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$NOTE" -f body="$(cat ci-report.md)"',
+    `          elif ! head -n 2 ci-report.md | grep -qF "${MARQUEUR_SANS_OBJET}"; then`,
+    '            gh pr comment "$NUMERO" -R "$GITHUB_REPOSITORY" --body-file ci-report.md',
     '          else',
-    '            gh pr comment "$NUMERO" -R "$GITHUB_REPOSITORY" --body-file ucm-report.md',
+    "            echo \"Cette demande de fusion ne touche aucun fichier suivi par UCM : aucun commentaire n'est créé.\"",
     '          fi',
     "",
   ].join("\n");

@@ -226,7 +226,7 @@ test("un diff impossible arrête la commande au lieu d'élargir le périmètre",
  * est la syntaxe exacte que `git diff` accepte, et un faux `git` prouverait
  * qu'on sait écrire un faux `git`.
  */
-test("le diff relève les contrats modifiés et le sort du fichier de tokens", () => {
+test("le diff relève tout ce que la demande touche, et le sort du fichier de tokens", () => {
   const racine = repoJouet();
   const git = (...arguments_) =>
     execFileSync("git", arguments_, { cwd: racine, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -244,12 +244,20 @@ test("le diff relève les contrats modifiés et le sort du fichier de tokens", (
       JSON.stringify(contrat("Autre")),
       "utf8",
     );
+    writeFileSync(
+      join(racine, "components", "Widget", "Widget.tsx"),
+      "export const Widget = null;\n",
+      "utf8",
+    );
     git("add", "-A");
     git("commit", "-qm", "un export");
 
     const releve = releveDuDiff(racine, base, "tokens.json");
-    assert.match(releve.contratsModifies, /components\/Autre\/Autre\.contract\.json/);
-    assert.doesNotMatch(releve.contratsModifies, /Widget/);
+    assert.match(releve.cheminsModifies, /components\/Autre\/Autre\.contract\.json/);
+    // Le relevé ne filtre plus sur `*.contract.json` : sans le fichier
+    // d'implémentation, le noyau ne verrait pas l'écart qu'une demande ouvre
+    // dans le code seul, et la conformité repartirait au vert sans un mot.
+    assert.match(releve.cheminsModifies, /components\/Widget\/Widget\.tsx/);
     assert.equal(releve.tokensModifies, false, "cette pull request ne touche pas les tokens");
 
     writeFileSync(join(racine, "tokens.json"), JSON.stringify({ ...TOKENS, autre: {} }), "utf8");
