@@ -39,6 +39,9 @@ export type EntreeDeVerdict = {
   /** Le nom de la demande de fusion sur la forge visée. */
   demande?: string;
 
+  /** Le nom du dépôt visé, pour un verdict `a-publier`. */
+  nom?: string;
+
   /** Pourquoi aucun dépôt n'est visé, pour un verdict `sans-depot`. */
   repli?: CauseDeRepli;
 };
@@ -99,7 +102,7 @@ export function verdictDePrevol(entree: EntreeDeVerdict): Verdict {
   const ordre = entree.genre === 'component' ? ordreDesTokens(entree.tokens, entree.demande ?? 'demande de fusion') : null;
   return {
     code: 'a-publier',
-    texte: [points, `Prêt à publier dans ${ou}${decide}.`, ordre].filter(Boolean).join(' '),
+    texte: [points, `Prêt à publier dans ${entree.nom ? `${entree.nom} : ` : ''}${ou}${decide}.`, ordre].filter(Boolean).join(' '),
     action: PUBLIER[entree.genre],
     etat: points || ordre ? 'warning' : '',
   };

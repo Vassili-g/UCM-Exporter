@@ -29,8 +29,8 @@ const { etatDeCible, detailDeCible } = chargerSandbox('cible');
 const { annonceDuFormat, resumeDesTokens } = chargerSandbox('tokens/exportTokens');
 const { verdictDePrevol } = chargerSandbox('prevol');
 
-/** Le verdict du pré-vol, calculé par le sandbox et non recopié ici. */
-const verdict = (entree) => ({ message: { type: 'verdict', ...verdictDePrevol(entree) } });
+/** Le verdict du pré-vol ; un verdict `a-publier` nomme le repository GitHub, sauf mention contraire. */
+const verdict = (entree) => ({ message: { type: 'verdict', ...verdictDePrevol({ nom: 'design-system-v3', ...entree }) } });
 
 /**
  * La version de schéma est lue à sa source. Une capture qui afficherait un
@@ -117,7 +117,14 @@ const ouverture = (cause, tokens = TOKENS_PRESENTS, termes = TERMES_GITHUB, gest
   return [
     { message: { type: 'schema-version', version: VERSION_CONTRAT } },
     { message: { type: 'settings', settings: reglagesDe(sansDepot ? 'aucune' : (gitlab ? 'gitlab' : 'github'), gestion) } },
-    { message: { type: 'connection', ...etatDeConnexion(cause, cause === 'non-configure' ? {} : { termes }) } },
+    {
+      message: {
+        type: 'connection',
+        ...etatDeConnexion(cause, sansDepot
+          ? { repli: 'aucun-depot' }
+          : { termes, nom: DEPOTS_PUBLICS[gitlab ? 'gitlab' : 'github'].nom }),
+      },
+    },
     sansDepot
       ? DEPOT_ABSENT
       : depot(gitlab ? LAYOUT_GITLAB : LAYOUT_GITHUB, gitlab ? DEPOT_VISE_GITLAB : DEPOT_VISE, gestion),
@@ -595,7 +602,7 @@ const ETATS = [
     quand:
       "Premier lancement : aucun réglage de dépôt. Rien d'autre que la pastille rouge ne l'annonce.",
     regarder:
-      "La ligne ambre « Aucun repository connecté » : le seul reste du bloc destination, et la seule chose qu'il disait que rien d'autre ne dit avant le clic.",
+      "La ligne ambre « Aucun dépôt enregistré » : le seul reste du bloc destination, et la seule chose qu'il disait que rien d'autre ne dit avant le clic. La pastille dit « aucun dépôt ».",
     existe: true,
     atteinte: [
       ...ouverture('non-configure'),
@@ -656,7 +663,7 @@ const ETATS = [
     atteinte: [
       { message: { type: 'schema-version', version: VERSION_CONTRAT } },
       { message: { type: 'settings', settings: REGLAGES } },
-      { message: { type: 'connection', ...etatDeConnexion('verification') } },
+      { message: { type: 'connection', ...etatDeConnexion('verification', { termes: TERMES_GITHUB, nom: DEPOTS_PUBLICS.github.nom }) } },
       SELECTION_VIDE,
     ],
   },
@@ -913,6 +920,7 @@ const ETATS = [
     atteinte: [
       ...ouverture('non-configure'),
       listeDe(['github', 'recette'], null),
+      { message: { type: 'connection', ...etatDeConnexion('non-configure', { repli: 'aucun-actif' }) } },
       depot(null, 'aucun-actif'),
       ...OUVRIR_DEPOTS,
     ],
@@ -934,7 +942,7 @@ const ETATS = [
       { message: { ...verdict({ code: 'a-publier', genre: 'component', chemin: CHEMIN, source: SOURCE_CONFIG, avertissements: 0 }).message, destination: destinationDe('github') } },
       { clic: '.carte-composant .btn-primary:not([hidden]):not(:disabled)' },
       listeDe(['github', 'gitlab'], 'gitlab'),
-      { message: { type: 'connection', ...etatDeConnexion('connecte', { termes: TERMES_GITLAB }) } },
+      { message: { type: 'connection', ...etatDeConnexion('connecte', { termes: TERMES_GITLAB, nom: DEPOTS_PUBLICS.gitlab.nom }) } },
       {
         message: {
           type: 'status',
@@ -957,7 +965,8 @@ const ETATS = [
       SELECTION_PRETE,
       { clic: '.carte-composant .btn-primary' },
       { message: { type: 'status', state: 'loading', text: 'Analyse du composant…' } },
-      verdict({ code: 'a-publier', genre: 'component', chemin: 'guidelines/components/Button/Button.contract.json', source: SOURCE_CONFIG, avertissements: 0 }),
+      verdict({ code: 'a-publier', genre: 'component', chemin: 'guidelines/components/Button/Button.contract.json',
+        nom: DEPOTS_PUBLICS.gitlab.nom, source: SOURCE_CONFIG, avertissements: 0 }),
     ],
   },
   {
@@ -976,6 +985,7 @@ const ETATS = [
         code: 'a-publier',
         genre: 'component',
         chemin: 'guidelines/components/Button/Button.contract.json',
+        nom: DEPOTS_PUBLICS.gitlab.nom,
         source: SOURCE_CONFIG,
         avertissements: 0,
         tokens: 'absents',
@@ -1000,11 +1010,35 @@ const ETATS = [
         code: 'a-publier',
         genre: 'component',
         chemin: 'guidelines/components/Button/Button.contract.json',
+        nom: DEPOTS_PUBLICS.gitlab.nom,
         source: SOURCE_CONFIG,
         avertissements: 0,
         tokens: null,
         demande: TERMES_GITLAB.demande,
       }),
+    ],
+  },
+  {
+    id: 'pastille-nom-long',
+    forge: 'gitlab',
+    titre: 'Pastille d’un projet au nom long, sans séparateur',
+    quand:
+      "Le projet GitLab actif vit sous deux sous-groupes, et le dernier segment de son adresse est un seul mot de plus de quarante caractères.",
+    regarder:
+      "À 320 px, la pastille passe à la ligne à l'intérieur du nom, sans déborder de la fenêtre ni tronquer le texte : ni points de suspension, ni barre de défilement horizontale.",
+    existe: true,
+    atteinte: [
+      { message: { type: 'schema-version', version: VERSION_CONTRAT } },
+      {
+        message: {
+          type: 'connection',
+          ...etatDeConnexion('jeton-refuse', {
+            termes: TERMES_GITLAB,
+            nom: nomDuDepot('mon-groupe/equipe-produit/designsystemmobileetwebdeuxmillevingtsix'),
+          }),
+        },
+      },
+      SELECTION_PRETE,
     ],
   },
   {

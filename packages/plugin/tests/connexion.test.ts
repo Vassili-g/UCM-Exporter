@@ -253,3 +253,27 @@ test('le geste d’une carte désigne son champ, et la correction d’une adress
   );
   assert.match(etatDeCarte('depot-mal-decrit', { termes: TERMES_GITLAB, detail: 'Détail.' }).geste ?? '', /décrit ce projet\. .*Détail\.$/);
 });
+
+/**
+ * Avec plusieurs dépôts, « connecté » seul ne dit pas où l'export ira : la
+ * pastille nomme le dépôt actif dans chaque état, succès comme échec.
+ */
+test('la pastille nomme le dépôt actif dans chaque cause', () => {
+  const nom = 'design-system';
+  const pastille = (cause: CauseConnexion) => etatDeConnexion(cause, { termes: TERMES_GITLAB, nom }).pastille;
+  assert.equal(pastille('connecte'), 'design-system connecté');
+  assert.equal(pastille('verification'), 'design-system : connexion…');
+  assert.equal(pastille('jeton-refuse'), 'design-system : jeton refusé');
+  assert.equal(pastille('acces-refuse'), 'design-system : accès refusé');
+  assert.equal(pastille('depot-introuvable'), 'design-system : projet introuvable');
+  assert.equal(pastille('reseau'), 'design-system : GitLab injoignable');
+  assert.equal(pastille('forge-indisponible'), 'design-system : GitLab indisponible');
+  assert.equal(pastille('depot-mal-decrit'), 'design-system : ucm.config.json fautif');
+});
+
+test('sans dépôt visé, la pastille dit s’il n’y en a aucun ou si aucun n’est actif', () => {
+  assert.equal(etatDeConnexion('non-configure', { repli: 'aucun-depot' }).pastille, 'aucun dépôt');
+  const inactif = etatDeConnexion('non-configure', { repli: 'aucun-actif' });
+  assert.equal(inactif.pastille, 'aucun dépôt actif');
+  assert.match(inactif.geste ?? '', /Se connecter/);
+});

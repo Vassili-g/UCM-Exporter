@@ -578,21 +578,21 @@ Référence : [lot 3c](PLAN-REGLAGES.md#lot-3c-pastille-nommée-et-verdict-nomm�
 appliquées : C6 (dernier segment suivi de « connecté », nom dans les échecs),
 C12 (le verdict nomme le dépôt).
 
-- [ ] `src/connexion.ts` : `etatDeConnexion` reçoit le nom dans sa précision.
+- [x] `src/connexion.ts` : `etatDeConnexion` reçoit le nom dans sa précision.
       `EtatConnexion.pastille` reste une chaîne. Textes du tableau « Les états »
       de la [section 5](PLAN-REGLAGES.md#5-la-pastille-de-len-tête), dont
       `ucm.config.json fautif` à la place de « repository mal décrit »,
       `aucun dépôt` et `aucun dépôt actif`.
-- [ ] Pastille : `overflow-wrap: anywhere`, largeur réductible, aucune
+- [x] Pastille : `overflow-wrap: anywhere`, largeur réductible, aucune
       troncature ; l'attribut `title` garde « Ouvrir la configuration ».
-- [ ] `src/prevol.ts` : verdict `a-publier` « Prêt à publier dans
+- [x] `src/prevol.ts` : verdict `a-publier` « Prêt à publier dans
       {nom} : `{chemin}` (d'après ucm.config.json). ».
-- [ ] Galerie : `ouverture()` passe un nom, ce qui met à jour les 32 appels de
+- [x] Galerie : `ouverture()` passe un nom, ce qui met à jour les 32 appels de
       `ouverture('connecte')`. Nouvel état `pastille-nom-long` : chemin GitLab
       à sous-groupes et dernier segment long sans séparateur.
-- [ ] Tests : `tests/connexion.test.ts` (nom d'un chemin à sous-groupes, nom
+- [x] Tests : `tests/connexion.test.ts` (nom d'un chemin à sous-groupes, nom
       dans chaque cause) ; `tests/prevol.test.ts` (verdict nommé).
-- [ ] Vérification complète dans le worktree, galerie comprise. Regarder
+- [x] Vérification complète dans le worktree, galerie comprise. Regarder
       `pastille-nom-long` à 320 px : aucun débordement. Commit, push.
 
 ## L4. Export local
@@ -872,3 +872,22 @@ sous le champ adresse, carte nouvelle refusée.
   `gitlab-jeton-refuse`, `gitlab-acces-refuse`, `gitlab-projet-introuvable` et
   `gitlab-dossier-retire` laissent la place aux états `depots-*`, qui
   couvrent les mêmes situations dans la liste.
+
+### L3c
+
+Rouge constaté : la pastille qui oublie le nom fait échouer « la pastille
+nomme le dépôt actif dans chaque cause ».
+
+Mesure de `pastille-nom-long` à 320 px, par Playwright : la pastille tient sur
+deux lignes, son bord droit à 289 px, et la page défile sur 305 px pour
+320 px visibles, sans défilement horizontal.
+
+Écarts au plan :
+
+- la pastille sans dépôt visé suit la cause du repli : « aucun dépôt » ou
+  « aucun dépôt actif », et son geste dit où agir (« Ajoutez un dépôt et son
+  jeton dans la configuration. », « Cliquez « Se connecter » sur un dépôt de
+  la configuration. ») ;
+- l'état `connexion-en-cours` de la galerie nomme aussi le dépôt ;
+- la galerie ne compte plus 32 appels de `ouverture('connecte')` à mettre à
+  jour : `ouverture()` calcule le nom une fois pour tous.

@@ -111,7 +111,8 @@ plusieurs dépôts ; les exports vont dans le dépôt actif, marqué « Connect�
    premier dépôt enregistré devient actif.
 
 Pour publier dans un autre dépôt, cliquez « Se connecter » sur sa carte : il
-devient actif. Une analyse faite
+devient actif, la pastille de l'en-tête le nomme, et le verdict de l'analyse
+suivante aussi. Une analyse faite
 pour l'ancien dépôt ne se publie pas dans le nouveau ; relancez-la.
 
 Un jeton ne part que vers le dépôt pour lequel vous l'avez collé. L'adresse

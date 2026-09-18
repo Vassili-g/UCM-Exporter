@@ -307,7 +307,7 @@ test('deux enregistrements rapprochés : la pastille décrit le second, et le te
 
   assert.deepEqual(h.messages.slice(avant).map(({ type }) => type), []);
   const pastilles = h.messages.flatMap((message) => (message.type === 'connection' ? [message.pastille] : []));
-  assert.equal(pastilles.at(-1), 'jeton refusé');
+  assert.equal(pastilles.at(-1), 'r : jeton refusé');
 });
 
 /**
@@ -574,9 +574,8 @@ test('enregistrer un dépôt inactif teste ce dépôt pour sa carte, et ne vide 
   assert.deepEqual(JSON.parse(JSON.stringify(reponse)), { type: 'depot-enregistre', requete: 1, carte: 'nouvelle-1', id: 'gitlab:g/p', erreurs: {} });
   assert.deepEqual(testsDe(h, 'gitlab:g/p').map(({ statut }) => statut), ['Connexion…', 'Jeton refusé']);
   assert.ok(h.appels.jetons.includes('g/p glpat-b'));
-  // La pastille décrit toujours le dépôt actif : seul son propre test l'a mise à jour.
-  const apres = h.messages.filter((message) => message.type === 'connection').slice(pastilles);
-  assert.ok(apres.every((message) => message.type === 'connection' && message.pastille === 'repository connecté'));
+  // La pastille décrit toujours le dépôt actif : aucun message ne la change.
+  assert.equal(h.messages.filter((message) => message.type === 'connection').length, pastilles);
   await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
   assert.equal(h.appels.publications, 1);
 });

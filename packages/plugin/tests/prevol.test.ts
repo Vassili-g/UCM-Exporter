@@ -99,3 +99,15 @@ test('le verdict passe en warning quand il porte une consigne sur les tokens ou 
     assert.equal(verdictDePrevol({ code, genre: 'component', avertissements: 0, chemin: 'x', ou: 'y' }).etat, '', code);
   }
 });
+
+test('le verdict à publier nomme le dépôt de destination avant le chemin', () => {
+  const { texte } = verdictDePrevol({
+    code: 'a-publier',
+    genre: 'component',
+    chemin: 'src/components/Button/Button.contract.json',
+    source: 'ucm.config.json',
+    nom: 'design-system-v3',
+    avertissements: 0,
+  });
+  assert.equal(texte, 'Prêt à publier dans design-system-v3 : src/components/Button/Button.contract.json (d’après ucm.config.json).');
+});

@@ -196,9 +196,16 @@ p {
  * bouton large d'une fenêtre entière se cliquerait par accident, et rien ne
  * dirait où il commence.
  */
+/*
+ * Le nom du dépôt passe à la ligne sans déborder, même sans espace ni trait
+ * d'union : `anywhere` entre dans la largeur minimale, là où `break-word` ne
+ * compte pas.
+ */
 .connection-status {
   display: inline-flex;
   width: fit-content;
+  max-width: 100%;
+  overflow-wrap: anywhere;
   align-items: center;
   gap: var(--espace-serre);
   padding: 0;

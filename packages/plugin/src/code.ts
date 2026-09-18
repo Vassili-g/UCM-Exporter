@@ -232,18 +232,19 @@ function annoncerReglages(instantane: Instantane): void {
 async function testerConnexion(instantane: Instantane, generation: number): Promise<void> {
   const { actif, validation, tokens } = instantane;
   if (!actif || !validation.valid || !validation.config) {
-    postConnection('non-configure');
+    postConnection('non-configure', { repli: repliDe(instantane) });
     postDepot(null, repliDe(instantane), tokens);
     return;
   }
   const termes = TERMES[validation.config.forge];
+  const nom = nomDuDepot(validation.config.projet);
   const generationDeCarte = perimerLeTestDe(actif);
-  postConnection('verification');
+  postConnection('verification', { termes, nom });
   postDepotTeste(actif, generationDeCarte, 'verification', { termes }, null);
   const diagnostic = await diagnostiquerConnexion(forgeDe(validation.config));
   if (generation !== generationDeConnexion) return;
   const precision = { statut: diagnostic.statut, detail: diagnostic.detail, termes };
-  postConnection(diagnostic.cause, precision);
+  postConnection(diagnostic.cause, { ...precision, nom });
   postDepot(diagnostic.layout, validation.config, tokens);
   if (generationsDesDepots.get(actif) === generationDeCarte) {
     const destination = etatDuDepot(diagnostic.layout, depotVise(validation.config), tokens).resume;
@@ -541,6 +542,7 @@ async function analyser(
       source: lecture.layout.source,
       tokens: lecture.tokens,
       demande: forge.termes.demande,
+      nom: nomDuDepot(validation.config.projet),
     });
   } catch (error) {
     if (error instanceof ExportAnnule || annulation !== null) {

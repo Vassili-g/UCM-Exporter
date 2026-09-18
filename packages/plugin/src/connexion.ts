@@ -60,37 +60,51 @@ export type PrecisionConnexion = {
   detail?: string;
   /** Les termes de la forge visée ; absents tant que l'URL ne se lit pas. */
   termes?: TermesDeForge | null;
+  /** Le nom du dépôt actif, dernier segment de son adresse. */
+  nom?: string;
+  /** Pourquoi aucun dépôt n'est visé, pour la cause `non-configure`. */
+  repli?: CauseDeRepli;
 };
 
 /**
  * L'unique autorité sur ce que l'interface affiche d'une connexion.
  *
  * Sans termes, la forge n'est pas connue : c'est le cas d'une configuration
- * absente, et les textes nomment alors les deux demandes.
+ * absente, et les textes nomment alors les deux demandes. La pastille nomme le
+ * dépôt actif, dans ses succès comme dans ses échecs : avec plusieurs dépôts,
+ * « connecté » seul ne dit pas où l'export ira.
  */
 export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConnexion = {}): EtatConnexion {
   const termes = precision.termes ?? null;
   const forge = termes?.forge ?? 'la forge';
   const depot = termes?.depot ?? 'repository';
   const jeton = termes?.nomDuJeton ?? 'jeton d’accès';
+  const nomme = (texte: string) => (precision.nom ? `${precision.nom} : ${texte}` : texte);
   switch (cause) {
     case 'verification':
-      return { state: 'checking', pastille: 'connexion…', geste: null };
+      return { state: 'checking', pastille: nomme('connexion…'), geste: null };
     case 'connecte':
-      return { state: 'connected', pastille: 'repository connecté', geste: null };
+      return { state: 'connected', pastille: `${precision.nom ?? depot} connecté`, geste: null };
     case 'non-configure':
-      return {
-        state: 'disconnected',
-        pastille: 'aucun repository',
-        geste:
-          `Renseignez l’URL du ${depot} et un ${jeton}. `
-          + 'Sans eux, un export est téléchargé sur votre poste au lieu d’ouvrir une '
-          + `${termes?.demande ?? 'pull request ou une merge request'}.`,
-      };
+      return precision.repli === 'aucun-actif'
+        ? {
+            state: 'disconnected',
+            pastille: 'aucun dépôt actif',
+            geste:
+              'Cliquez « Se connecter » sur un dépôt de la configuration. Sans dépôt actif, un export est '
+              + 'téléchargé sur votre poste au lieu d’ouvrir une pull request ou une merge request.',
+          }
+        : {
+            state: 'disconnected',
+            pastille: 'aucun dépôt',
+            geste:
+              'Ajoutez un dépôt et son jeton dans la configuration. Sans dépôt, un export est téléchargé '
+              + 'sur votre poste au lieu d’ouvrir une pull request ou une merge request.',
+          };
     case 'jeton-refuse':
       return {
         state: 'disconnected',
-        pastille: 'jeton refusé',
+        pastille: nomme('jeton refusé'),
         geste:
           `${termes?.forge ?? 'La forge'} refuse ce ${jeton}. Créez-en un nouveau sur ${forge}, `
           + 'puis collez-le dans le champ ci-dessus.',
@@ -98,7 +112,7 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
     case 'acces-refuse':
       return {
         state: 'disconnected',
-        pastille: 'accès refusé',
+        pastille: nomme('accès refusé'),
         geste:
           `Le jeton est reconnu, mais il n’a pas les droits sur ce ${depot}. `
           + `Donnez-lui ${termes?.droits ?? 'le droit d’écrire et d’ouvrir une demande de fusion'}.`,
@@ -106,7 +120,7 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
     case 'depot-introuvable':
       return {
         state: 'disconnected',
-        pastille: `${depot} introuvable`,
+        pastille: nomme(`${depot} introuvable`),
         geste:
           `${termes?.forge ?? 'La forge'} ne trouve aucun ${depot} à cette adresse avec ce jeton. `
           + `Vérifiez l’URL. Si le ${depot} est privé, donnez au jeton l’accès à ce ${depot}.`,
@@ -114,13 +128,13 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
     case 'reseau':
       return {
         state: 'disconnected',
-        pastille: `${termes?.forge ?? 'forge'} injoignable`,
+        pastille: nomme(`${termes?.forge ?? 'forge'} injoignable`),
         geste: `La requête vers ${forge} n’a pas abouti. Vérifiez votre connexion, puis réessayez.`,
       };
     case 'depot-mal-decrit':
       return {
         state: 'disconnected',
-        pastille: 'repository mal décrit',
+        pastille: nomme(`${NOM_CONFIGURATION} fautif`),
         geste:
           `Un développeur doit corriger le fichier qui décrit ce ${depot}. `
           + 'Tant qu’il est fautif, aucun export ne peut être publié. '
@@ -129,7 +143,7 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
     case 'forge-indisponible':
       return {
         state: 'disconnected',
-        pastille: `${termes?.forge ?? 'forge'} indisponible`,
+        pastille: nomme(`${termes?.forge ?? 'forge'} indisponible`),
         geste:
           `${termes?.forge ?? 'La forge'} a répondu ${precision.statut ?? 'une erreur'} à la demande du plugin. `
           + 'Réessayez dans un moment. '
