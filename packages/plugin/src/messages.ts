@@ -73,6 +73,11 @@ export type UiRequest =
   /** Retire une entrée entière, jeton compris. */
   | { type: 'supprimer-depot'; id: string }
   /**
+   * Remplace une liste de dépôts illisible par une liste vide. Seule écriture
+   * qui n'en lit pas l'état : toutes les autres lèvent sur cette liste.
+   */
+  | { type: 'reinitialiser-depots' }
+  /**
    * L'interrupteur « Gérer les tokens ». L'effet est immédiat : une analyse en
    * cours est annulée, une publication va à son terme.
    */
@@ -110,6 +115,12 @@ export type PluginMessage =
    * chemins effectifs de ce dépôt quand le test les a lus.
    */
   | ({ type: 'depot-teste'; id: string; generation: number; destination: ResumeDepot | null } & EtatDeCarte)
+  /**
+   * La liste des dépôts de ce poste ne se lit plus. Aucun `settings` ne peut
+   * partir : l'interface n'a alors ni liste, ni dépôt actif, ni destination, et
+   * ce message est le seul qui lui dise pourquoi et comment en sortir.
+   */
+  | { type: 'depots-illisibles'; texte: string; geste: string }
   /**
    * Décision unique rendue en état visuel, libellé et geste éventuel.
    */

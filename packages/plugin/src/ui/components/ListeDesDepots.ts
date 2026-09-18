@@ -13,12 +13,15 @@ import { versSandbox } from '../pont';
 
 type DepotEnregistre = Extract<PluginMessage, { type: 'depot-enregistre' }>;
 type DepotTeste = Extract<PluginMessage, { type: 'depot-teste' }>;
+type DepotsIllisibles = Extract<PluginMessage, { type: 'depots-illisibles' }>;
 
 export interface ListeDesDepotsUi {
   element: HTMLDivElement;
   accepterReglages(reglages: ReglagesPublics): void;
   recevoirEnregistrement(message: DepotEnregistre): void;
   recevoirTest(message: DepotTeste): void;
+  /** Remplace la liste par le constat et le geste, tant qu'elle ne se lit pas. */
+  signalerIllisible(message: DepotsIllisibles): void;
   /** L'arrivée par la pastille : un dépôt actif en échec se déplie et vient dans la vue. */
   montrerLActifEnEchec(): void;
   liberer(): void;
@@ -43,6 +46,26 @@ export function createListeDesDepots(): ListeDesDepotsUi {
 
   const liste = document.createElement('div');
   liste.className = 'page-stack';
+
+  /*
+   * Une liste illisible prend toute la place de l'onglet : le sandbox n'envoie
+   * plus de `settings`, donc aucune carte n'est à jour, et toute écriture
+   * commence par une lecture qui lève. Ajouter un dépôt échouerait.
+   */
+  let illisible = false;
+  const panneauIllisible = document.createElement('div');
+  panneauIllisible.className = 'page-stack';
+  panneauIllisible.hidden = true;
+  const constatIllisible = document.createElement('p');
+  constatIllisible.className = 'depot-repli';
+  const gesteIllisible = document.createElement('p');
+  gesteIllisible.className = 'subtitle';
+  const reinitialiser = createButton({
+    label: 'Réinitialiser la liste',
+    variant: 'secondary',
+    onClick: () => versSandbox({ type: 'reinitialiser-depots' }),
+  });
+  panneauIllisible.append(constatIllisible, gesteIllisible, reinitialiser);
 
   /** Les cartes, par clé : l'identité enregistrée, ou un identifiant temporaire. */
   const cartes = new Map<string, CarteDepotUi>();
@@ -86,7 +109,7 @@ export function createListeDesDepots(): ListeDesDepotsUi {
   }
 
   function rafraichirVide() {
-    vide.hidden = cartes.size > 0;
+    vide.hidden = illisible || cartes.size > 0;
   }
 
   const ajouter = createButton({
@@ -101,12 +124,23 @@ export function createListeDesDepots(): ListeDesDepotsUi {
     },
   });
 
-  element.append(exportLocal, ajouter, vide, liste);
+  element.append(exportLocal, panneauIllisible, ajouter, vide, liste);
   rafraichirVide();
+
+  /** Ce que l'onglet montre selon que la liste se lit ou non. */
+  function afficherSelonLecture() {
+    panneauIllisible.hidden = !illisible;
+    ajouter.hidden = illisible;
+    liste.hidden = illisible;
+    rafraichirVide();
+  }
 
   return {
     element,
     accepterReglages(reglages: ReglagesPublics) {
+      // Un `settings` prouve que la liste se lit de nouveau.
+      illisible = false;
+      afficherSelonLecture();
       // En export local, aucune carte n'est connectée : toutes proposent « Se connecter ».
       actif = reglages.exportLocal ? null : reglages.actif;
       exportLocal.hidden = !reglages.exportLocal;
@@ -154,6 +188,13 @@ export function createListeDesDepots(): ListeDesDepotsUi {
       // elle reste dépliée tant que le test échoue.
       enAttenteDeTest.delete(carte);
       if (message.etat === 'connected') carte.deplier(false);
+    },
+    signalerIllisible({ texte, geste }: DepotsIllisibles) {
+      illisible = true;
+      constatIllisible.textContent = texte;
+      gesteIllisible.textContent = geste;
+      exportLocal.hidden = true;
+      afficherSelonLecture();
     },
     montrerLActifEnEchec() {
       const carte = actif ? cartes.get(actif) ?? [...cartes.values()].find((candidate) => candidate.id() === actif) : null;

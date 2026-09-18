@@ -226,6 +226,23 @@ function estUneEntree(valeur: unknown): valeur is DepotEnregistre {
     && lireAdresseDuDepot(repoUrl) !== null;
 }
 
+/** Le constat qu'une `depots` illisible produit, à son unique site d'émission. */
+export const DEPOTS_ILLISIBLES = 'La liste des dépôts enregistrés sur ce poste est illisible.';
+
+/**
+ * La liste `depots` de ce poste n'a pas la forme que le plugin écrit.
+ *
+ * Elle porte son propre type parce que le routeur la traite autrement qu'une
+ * panne du stockage : elle se répare sur ce poste, et le designer doit lire
+ * comment.
+ */
+export class DepotsIllisibles extends Error {
+  constructor() {
+    super(DEPOTS_ILLISIBLES);
+    this.name = 'DepotsIllisibles';
+  }
+}
+
 /**
  * La liste `depots`, ou `null` quand elle n'a jamais été écrite. Une liste que
  * le plugin n'a pas pu écrire ainsi lève : la reprise ne l'écrase jamais.
@@ -233,9 +250,7 @@ function estUneEntree(valeur: unknown): valeur is DepotEnregistre {
 async function lireDepots(): Promise<DepotEnregistre[] | null> {
   const valeur = await figma.clientStorage.getAsync(STORAGE_KEYS.depots);
   if (valeur === undefined) return null;
-  if (!Array.isArray(valeur) || !valeur.every(estUneEntree)) {
-    throw new Error('La liste des dépôts enregistrés sur ce poste est illisible.');
-  }
+  if (!Array.isArray(valeur) || !valeur.every(estUneEntree)) throw new DepotsIllisibles();
   return valeur;
 }
 
@@ -469,6 +484,18 @@ export async function activerDepot(id: string): Promise<void> {
   if (!depots.some((entree) => identiteDuDepot(adresseDe(entree)) === id)) return;
   await figma.clientStorage.setAsync(STORAGE_KEYS.depotActif, id);
   await figma.clientStorage.setAsync(STORAGE_KEYS.exportLocal, false);
+}
+
+/**
+ * Vide la liste des dépôts et oublie le dépôt actif, sans lire l'existant.
+ *
+ * Seule sortie d'une liste illisible : toute autre écriture commence par
+ * `lireDepots()`, qui lève. Le designer perd les entrées et leurs jetons, que
+ * le plugin ne sait de toute façon plus lire.
+ */
+export async function reinitialiserDepots(): Promise<void> {
+  await figma.clientStorage.setAsync(STORAGE_KEYS.depots, []);
+  await figma.clientStorage.deleteAsync(STORAGE_KEYS.depotActif);
 }
 
 /**

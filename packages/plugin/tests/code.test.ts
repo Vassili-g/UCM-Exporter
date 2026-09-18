@@ -761,3 +761,98 @@ test('« Se connecter » désactive l’export local', async () => {
   assert.deepEqual([derniersReglages(h).exportLocal, derniersReglages(h).actif], [false, 'github:o/r']);
   assert.equal(pastillesDe(h).at(-1), 'r connecté');
 });
+
+/** Les messages d'une opération donnée, dans leur ordre d'envoi. */
+const operationDe = (h: ReturnType<typeof ouvrir>, operation: number) => h.messages.filter(
+  (message) => (message as { operation?: number }).operation === operation,
+);
+
+for (const panne of ['une liste illisible', 'un stockage indisponible'] as const) {
+  test(`${panne} après la demande de fusion garde le succès de la publication`, async () => {
+    const h = ouvrir();
+    h.connecter();
+    await h.envoyer({ type: 'ui-ready' });
+    await h.envoyer({ type: 'analyser-composant', operation: 1 });
+    const getAsync = h.runtime.clientStorage.getAsync;
+    h.publication.traiter = async () => {
+      if (panne === 'une liste illisible') h.stockage.set('depots', 'corrompu');
+      else h.runtime.clientStorage.getAsync = async () => { throw new Error('stockage indisponible'); };
+      return { status: 'created', path: 'x.contract.json', pullRequestUrl: 'https://github.com/o/r/pull/1' };
+    };
+    await h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
+    await tourner();
+    h.runtime.clientStorage.getAsync = getAsync;
+
+    assert.equal(h.appels.publications, 1);
+    const etats = operationDe(h, 2).flatMap((message) => (message.type === 'status' ? [message.state] : []));
+    assert.deepEqual(etats, ['loading', 'success']);
+    assert.equal(h.messages.some(({ type }) => type === 'download'), false);
+    assert.equal(operationDe(h, 2).some(({ type }) => type === 'verdict'), false);
+  });
+}
+
+test('le succès d’une publication précède le test de connexion qu’elle relance', async () => {
+  const h = ouvrir();
+  h.connecter();
+  await h.envoyer({ type: 'ui-ready' });
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  const lent = differe<Diagnostic>();
+  h.connexionDe.traiter = async () => lent.promesse;
+  const enVol = h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
+  await tourner();
+  await tourner();
+
+  const etats = operationDe(h, 2).flatMap((message) => (message.type === 'status' ? [message.state] : []));
+  assert.deepEqual(etats, ['loading', 'success']);
+  lent.resoudre({ cause: 'connecte', layout: null });
+  await enVol;
+});
+
+test('une demande arrivée pendant la fin d’une publication reçoit une réponse portant son numéro', async () => {
+  const h = ouvrir();
+  h.connecter();
+  await h.envoyer({ type: 'ui-ready' });
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  const lente = differe<void>();
+  let apresEchec = false;
+  const getAsync = h.runtime.clientStorage.getAsync;
+  h.runtime.clientStorage.getAsync = async (cle: string) => {
+    if (apresEchec && cle === 'depots') await lente.promesse;
+    return getAsync(cle);
+  };
+  h.publication.traiter = async () => { apresEchec = true; throw new Error('boum'); };
+  const publication = h.envoyer({ type: 'publier', genre: 'component', operation: 2 });
+  await tourner();
+  await tourner();
+  // Le statut d'échec ne part pas avant la dernière lecture du sandbox.
+  assert.equal(operationDe(h, 2).some((message) => message.type === 'status' && message.state === 'error'), false);
+
+  const analyse = h.envoyer({ type: 'analyser-composant', operation: 3 });
+  await tourner();
+  assert.deepEqual(
+    operationDe(h, 3).map((message) => message.type),
+    ['status'],
+    'une demande refusée doit répondre, sinon l’interface reste occupée',
+  );
+
+  lente.resoudre();
+  await Promise.all([publication, analyse]);
+});
+
+test('une liste de dépôts illisible dit son constat et son geste, et la réinitialisation rend la liste', async () => {
+  const h = ouvrir();
+  h.stockage.set('depots', 'corrompu');
+  await h.envoyer({ type: 'ui-ready' });
+
+  assert.equal(pastillesDe(h).at(-1), 'Réglages illisibles');
+  const constat = h.messages.find((message) => message.type === 'depots-illisibles');
+  assert.ok(constat?.type === 'depots-illisibles');
+  assert.equal(constat.texte, 'La liste des dépôts enregistrés sur ce poste est illisible.');
+  assert.ok(constat.geste.includes('Réinitialisez la liste'));
+  assert.equal(statuts(h).length, 0, 'aucun statut générique ne recouvre le constat');
+
+  await h.envoyer({ type: 'reinitialiser-depots' });
+  assert.deepEqual(h.stockage.get('depots'), []);
+  assert.deepEqual(derniersReglages(h).depots, []);
+  assert.equal(pastillesDe(h).at(-1), 'Aucun dépôt');
+});

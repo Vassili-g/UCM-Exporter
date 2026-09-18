@@ -11,6 +11,8 @@ import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './t
 import {
   activerDepot,
   cleDeDestination,
+  DepotsIllisibles,
+  DEPOTS_ILLISIBLES,
   ecrireExportLocal,
   ecrireGestionDesTokens,
   lireGestionDesTokens,
@@ -19,6 +21,7 @@ import {
   memeDepot,
   nomDuDepot,
   enregistrerDepot,
+  reinitialiserDepots,
   reprendreLAncienneConfiguration,
   supprimerDepot,
 } from './config';
@@ -39,6 +42,8 @@ import {
   gesteApresEchecDePublication,
   refusDeDestinationChangee,
   textesDePublication,
+  GESTE_DEPOTS_ILLISIBLES,
+  OPERATION_DEJA_EN_COURS,
   TEXTES_DE_REPLI,
   TOKENS_DESACTIVES,
 } from './connexion';
@@ -264,10 +269,29 @@ async function testerConnexion(instantane: Instantane, generation: number): Prom
  */
 async function refreshConfiguration({ reglages = true } = {}): Promise<void> {
   const generation = (generationDeConnexion += 1);
-  const instantane = await parLaFile(lireInstantane);
+  let instantane: Instantane;
+  try {
+    instantane = await parLaFile(lireInstantane);
+  } catch (erreur) {
+    if (!(erreur instanceof DepotsIllisibles)) throw erreur;
+    if (generation === generationDeConnexion) annoncerDepotsIllisibles();
+    return;
+  }
   if (generation !== generationDeConnexion) return;
   if (reglages || instantane.destination !== destinationAnnoncee) annoncerReglages(instantane);
   await testerConnexion(instantane, generation);
+}
+
+/**
+ * Dit que la liste des dépôts de ce poste ne se lit plus, et où la réparer.
+ *
+ * Sans ce message, l'erreur remontait à `signalerEchec()` : le designer lisait
+ * « la demande n'a pas abouti » sur une panne qui ne vient d'aucune demande, et
+ * aucun écran ne lui offrait de sortie.
+ */
+function annoncerDepotsIllisibles(): void {
+  postConnection('depots-illisibles');
+  versUi({ type: 'depots-illisibles', texte: DEPOTS_ILLISIBLES, geste: GESTE_DEPOTS_ILLISIBLES });
 }
 
 /**
@@ -444,7 +468,10 @@ async function analyser(
     warnings?: string[];
   }>,
 ): Promise<void> {
-  if (operationEnCours !== null) return;
+  if (operationEnCours !== null) {
+    postStatus('error', OPERATION_DEJA_EN_COURS, { operation });
+    return;
+  }
   operationEnCours = artifactKind;
   annulation = null;
   analysesGardees.delete(artifactKind);
@@ -595,7 +622,10 @@ async function annoncerLAnnulation(provenance: Provenance): Promise<void> {
  * résultats la portent : après une bascule, l'interface les écarte et se libère.
  */
 async function publier(genre: ArtifactKind, operation: number): Promise<void> {
-  if (operationEnCours !== null) return;
+  if (operationEnCours !== null) {
+    postStatus('error', OPERATION_DEJA_EN_COURS, { operation });
+    return;
+  }
   const analyse = analysesGardees.get(genre);
   if (!analyse) {
     postStatus('error', 'Aucune analyse disponible. Relancez l’analyse avant de publier.', { operation });
@@ -656,11 +686,15 @@ async function publier(genre: ArtifactKind, operation: number): Promise<void> {
     // Une demande d'export est faite pour être relue tout de suite par le designer
     // qui vient de l'ouvrir : on l'amène dessus sans lui demander un clic.
     openExternal(publication.pullRequestUrl);
-    // Après une bascule, la connexion affichée est celle du nouveau dépôt, que
-    // son propre test décrit déjà.
-    if (destinationAnnoncee === analyse.destination) await refreshConfiguration();
+    // Le succès est acquis dès que la forge a répondu : il se poste avant le
+    // rafraîchissement, qui ne concerne plus cette opération. L'attendre tenait
+    // l'interface occupée pendant tout le test de connexion, et un rejet de sa
+    // lecture faisait annoncer en échec une demande de fusion déjà ouverte.
     postStatus('success', textes.creee(analyse.succes), provenance);
     figma.notify(textes.creee(analyse.succes));
+    // Après une bascule, la connexion affichée est celle du nouveau dépôt, que
+    // son propre test décrit déjà.
+    if (destinationAnnoncee === analyse.destination) void refreshConfiguration().catch(signalerEchec);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erreur inconnue.';
     const statut = error instanceof ErreurDeForge ? error.status : null;
@@ -670,6 +704,14 @@ async function publier(genre: ArtifactKind, operation: number): Promise<void> {
     // termes, l'échec précède la lecture de la configuration, et aucune forge
     // n'a été appelée.
     const textes = termes ? textesDePublication(termes) : null;
+    // La dernière lecture du sandbox passe avant le statut d'échec : celui-ci
+    // libère l'interface, et une demande envoyée dans cette fenêtre se heurtait
+    // à `operationEnCours` sans recevoir de réponse.
+    // Un stockage illisible ne dit pas que la destination a changé.
+    const destinationActuelle = await parLaFile(lireInstantane).then(
+      ({ destination }) => destination,
+      () => analyse.destination,
+    );
     versUi({
       type: 'log',
       text: textes ? textes.echecDansLeJournal(message) : `Échec de la publication : ${message}`,
@@ -680,11 +722,6 @@ async function publier(genre: ArtifactKind, operation: number): Promise<void> {
     const geste = termes
       ? gesteApresEchecDePublication(statut, termes, message)
       : 'La demande n’a pas abouti. Réessayez ; si l’erreur persiste, relancez le plugin.';
-    // Un stockage illisible ne dit pas que la destination a changé.
-    const destinationActuelle = await parLaFile(lireInstantane).then(
-      ({ destination }) => destination,
-      () => analyse.destination,
-    );
     versUi({
       type: 'verdict',
       code: 'a-publier',
@@ -872,6 +909,15 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     await parLaFile(() => supprimerDepot(message.id));
     // L'entrée active retirée, aucun dépôt n'est actif : la destination change,
     // et la pastille le dit du même geste.
+    await refreshConfiguration();
+    return;
+  }
+
+  if (message.type === 'reinitialiser-depots') {
+    generationDeConnexion += 1;
+    await parLaFile(reinitialiserDepots);
+    // La liste redevient lisible : `settings` repart, et l'interface retrouve
+    // l'onglet Dépôts et son bouton d'ajout.
     await refreshConfiguration();
     return;
   }

@@ -25,6 +25,7 @@ export interface PageConfigurationUi {
   acceptRemoteSettings(settings: ReglagesPublics): void;
   recevoirEnregistrement(message: Extract<PluginMessage, { type: 'depot-enregistre' }>): void;
   recevoirTest(message: Extract<PluginMessage, { type: 'depot-teste' }>): void;
+  signalerDepotsIllisibles(message: Extract<PluginMessage, { type: 'depots-illisibles' }>): void;
   ouvrirOnglet(onglet: OngletConfiguration): void;
   ongletActif(): OngletConfiguration;
   montrerLActifEnEchec(): void;
@@ -79,6 +80,7 @@ export function createConfigurationPage(): PageConfigurationUi {
     },
     recevoirEnregistrement: depots.recevoirEnregistrement,
     recevoirTest: depots.recevoirTest,
+    signalerDepotsIllisibles: depots.signalerIllisible,
     ouvrirOnglet: onglets.selectionner,
     ongletActif: onglets.actif,
     montrerLActifEnEchec: depots.montrerLActifEnEchec,

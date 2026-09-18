@@ -213,6 +213,7 @@ onmessage = (event: MessageEvent<{ pluginMessage?: PluginMessage }>) => {
   }
   if (message.type === 'depot-enregistre') configurationPage.recevoirEnregistrement(message);
   if (message.type === 'depot-teste') configurationPage.recevoirTest(message);
+  if (message.type === 'depots-illisibles') configurationPage.signalerDepotsIllisibles(message);
   if (message.type === 'connection') updateConnection(message);
 
   if (message.type === 'log' && resultatActuel(message)) active.compteRendu.ajouterPublication(message.text, message.level);

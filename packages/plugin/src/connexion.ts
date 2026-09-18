@@ -32,7 +32,13 @@ export type CauseConnexion =
    */
   | 'depot-mal-decrit'
   | 'forge-indisponible'
-  | 'reseau';
+  | 'reseau'
+  /**
+   * La liste des dépôts de ce poste ne se lit plus. Aucune forge n'est en
+   * cause, et aucun test n'est parti : le plugin n'a pas pu lire vers quoi le
+   * lancer.
+   */
+  | 'depots-illisibles';
 
 /** Ce que l'interface montre : une pastille, et le geste quand il y en a un. */
 export type EtatConnexion = {
@@ -156,8 +162,22 @@ export function etatDeConnexion(cause: CauseConnexion, precision: PrecisionConne
           + 'Réessayez dans un moment. '
           + 'Si la réponse ne change pas, un mainteneur du plugin doit la regarder.',
       };
+    case 'depots-illisibles':
+      return {
+        state: 'disconnected',
+        pastille: 'Réglages illisibles',
+        geste: 'Ouvrez l’onglet Dépôts de la configuration pour réinitialiser la liste des dépôts de ce poste.',
+      };
   }
 }
+
+/**
+ * Le geste que l'onglet Dépôts propose sur une liste illisible. Il diffère de
+ * celui de la pastille, qui envoie le designer sur cet onglet.
+ */
+export const GESTE_DEPOTS_ILLISIBLES =
+  'Réinitialisez la liste, puis saisissez de nouveau chaque dépôt et son jeton. '
+  + 'Le plugin ne sait plus rien lire de ces dépôts.';
 
 /** Ce qu'une carte de la liste des dépôts affiche après le test de son dépôt. */
 export type EtatDeCarte = {
@@ -188,6 +208,7 @@ export function etatDeCarte(cause: CauseConnexion, precision: PrecisionConnexion
     'depot-mal-decrit': `${NOM_CONFIGURATION} fautif`,
     reseau: `${termes?.forge ?? 'Forge'} injoignable`,
     'forge-indisponible': `${termes?.forge ?? 'Forge'} indisponible`,
+    'depots-illisibles': 'Réglages illisibles',
   };
   const gestes: Partial<Record<CauseConnexion, string>> = {
     'jeton-refuse': `${forge} refuse ce ${termes?.nomDuJeton ?? 'jeton d’accès'}. Collez-en un nouveau ci-dessous, puis enregistrez.`,
@@ -367,6 +388,16 @@ export function refusDeDestinationChangee(changement: { nom: string | null } | '
       : 'aucun dépôt n’est actif';
   return `La destination a changé depuis l’analyse : ${destination}. Relancez l’analyse.`;
 }
+
+/**
+ * Le refus d'une demande arrivée pendant qu'une autre opération se termine.
+ *
+ * L'interface se libère sur le statut terminal, que le sandbox poste avant sa
+ * dernière écriture. Une demande envoyée dans cette fenêtre reçoit ce refus,
+ * qui porte son numéro : sans lui, l'interface resterait occupée sans réponse.
+ */
+export const OPERATION_DEJA_EN_COURS =
+  'Une autre commande est en cours. Attendez qu’elle se termine, puis relancez.';
 
 /** Le refus d'une commande des tokens quand leur gestion est désactivée sur ce poste. */
 export const TOKENS_DESACTIVES =

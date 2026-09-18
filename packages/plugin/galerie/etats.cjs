@@ -22,10 +22,12 @@ function chargerSandbox(nom) {
 
 const {
   etatDeCarte, etatDeConnexion, etatDuDepot, gesteApresEchecDePublication, refusDeDestinationChangee, textesDePublication,
-  TEXTES_DE_REPLI,
+  GESTE_DEPOTS_ILLISIBLES, TEXTES_DE_REPLI,
 } = chargerSandbox('connexion');
 const { TERMES_GITHUB, TERMES_GITLAB } = chargerSandbox('forges/termes');
-const { cleDeDestination, identiteDuDepot, lireAdresseDuDepot, nomDuDepot, validateSettings } = chargerSandbox('config');
+const {
+  cleDeDestination, identiteDuDepot, lireAdresseDuDepot, nomDuDepot, validateSettings, DEPOTS_ILLISIBLES,
+} = chargerSandbox('config');
 const { etatDeCible, detailDeCible } = chargerSandbox('cible');
 const { annonceDuFormat, resumeDesTokens } = chargerSandbox('tokens/exportTokens');
 const { verdictDePrevol } = chargerSandbox('prevol');
@@ -826,6 +828,23 @@ const ETATS = [
     regarder: "Le bouton « Ajouter un dépôt », puis la phrase « Veuillez ajouter un dépôt. » : rien d'autre ne demande un geste.",
     existe: true,
     atteinte: [...ouverture('non-configure'), ...OUVRIR_DEPOTS],
+  },
+  {
+    id: 'depots-illisibles',
+    forge: 'aucune',
+    titre: 'Onglet Dépôts, liste illisible',
+    quand: "La liste des dépôts rangée sur ce poste n'a plus la forme que le plugin écrit. Aucun `settings` ne part : l'interface n'a ni liste, ni dépôt actif, ni destination.",
+    regarder:
+      "Le constat, le geste, et « Réinitialiser la liste » : rien d'autre ne s'affiche dans l'onglet, puisque toute autre écriture commencerait par la lecture qui lève. La pastille de l'écran de travail dit « Réglages illisibles » et mène ici.",
+    existe: true,
+    atteinte: [
+      { message: { type: 'schema-version', version: VERSION_CONTRAT } },
+      SELECTION_PRETE,
+      TOKENS_PRESENTS,
+      { message: { type: 'connection', ...etatDeConnexion('depots-illisibles') } },
+      { message: { type: 'depots-illisibles', texte: DEPOTS_ILLISIBLES, geste: GESTE_DEPOTS_ILLISIBLES } },
+      ...OUVRIR_DEPOTS,
+    ],
   },
   {
     id: 'depots-trois-deux-forges',
