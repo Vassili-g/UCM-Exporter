@@ -278,19 +278,19 @@ sections [5.2](PLAN-TEMPLATE-REGLES.md#52-ordre-des-sources) à
 [5.4](PLAN-TEMPLATE-REGLES.md#54-au-changement-de-sélection) et
 [6.1](PLAN-TEMPLATE-REGLES.md#61-contenu-du-template).
 
-- [ ] Tests rouges dans `tests/template.test.ts`, nouveau :
-  - [ ] contrat synthétique `Root`, axes `tone` et `scale`, booléen `mark` :
+- [x] Tests rouges dans `tests/template.test.ts`, nouveau :
+  - [x] contrat synthétique `Root`, axes `tone` et `scale`, booléen `mark` :
         une `@usage`, une `@prop` par valeur groupée par axe dans l'ordre de
         `props`, un `divider` entre deux axes, une `@boolean`, une `@icons` ;
-  - [ ] un axe renommé par la couche sémantique écrit sa clé publiée
+  - [x] un axe renommé par la couche sémantique écrit sa clé publiée
         (`size.small`), jamais son nom Figma ;
-  - [ ] un axe d'états vient en dernier groupe de la section des propriétés ;
+  - [x] un axe d'états vient en dernier groupe de la section des propriétés ;
         `disabled` issu de l'axe d'états ne donne aucune `@boolean` ;
-  - [ ] un composant sans propriété donne les sections générale et icônes
+  - [x] un composant sans propriété donne les sections générale et icônes
         seules ;
-  - [ ] les propriétés `TEXT`, `INSTANCE_SWAP` et `SLOT` ne donnent aucune
+  - [x] les propriétés `TEXT`, `INSTANCE_SWAP` et `SLOT` ne donnent aucune
         règle ; aucun `@default`, `@do`, `@dont` ni `@pairs` n'est posé.
-- [ ] `src/template/modele.ts`, pur : du contrat produit par
+- [x] `src/template/modele.ts`, pur : du contrat produit par
       `handleExportComponent` au modèle (sections, règles, séparateurs, tag,
       cible). Aucun import de l'API Figma. Une section se désigne par le tag de
       son exemple, jamais par son nom.
@@ -779,3 +779,49 @@ vingt lignes d'écriture, et une ligne de comparaisons (`n.x == 1`,
 Les vingt lignes sont refusées, dont `createInstance(` (création d'instance)
 et l'affectation de `.characters` (écriture de texte) ; la ligne de
 comparaisons ne l'est pas. Fichier supprimé, loi verte.
+
+### 4. Modèle et sources
+
+**Lot en cours, livré par morceaux.** La limite hebdomadaire de jetons a coupé
+la session : le lot est commité partiellement, à l'écart de la règle « un lot,
+un commit ». Ce que le dépôt porte est vert ; ce qui manque est listé plus bas,
+et les cases non cochées du lot 4 en font foi.
+
+Livré et vert : `tests/template.test.ts` et `src/template/modele.ts`. Rouge
+constaté avant le code, `npx tsx --test tests/template.test.ts` : le module
+`../src/template/modele` était introuvable, les six tests échouaient d'un bloc.
+
+Décisions prises en écrivant le modèle :
+
+- l'ordre des valeurs de l'axe d'états est celui de `stateModel.states`, jamais
+  celui de `precedence`, qui range par priorité de rendu et donnerait
+  `disable, hover, default` dans la carte du designer ;
+- la `@boolean` écartée est celle dont la clé répond à `isDisabledStateValue`
+  (`parsers.ts`) quand l'axe d'états publie cet état. Cette fonction est déjà
+  l'unique autorité sur l'orthographe de `disable`/`disabled` : le modèle la
+  lit au lieu d'écrire une seconde fois le littéral ;
+- une prop de type `icon` ne donne aucune règle, comme `TEXT`, `INSTANCE_SWAP`
+  et `SLOT`. Le plan ne la nommait pas ; seuls `enum` et `boolean` posent une
+  règle, et la section des icônes reçoit sa règle vide dans tous les cas.
+
+Reste à faire dans ce lot, dans l'ordre :
+
+1. `src/contract/extractRules.ts` : le relevé de l'offre et son type, remplis
+   pendant le `findAll` de page que `extractRules` fait déjà. Forme retenue à
+   la conception, non encore écrite : un conteneur du composant existe-t-il,
+   première instance dont `component-name` porte le marqueur, maître
+   `.componentRules` de la page, première instance qui porte `component-name`.
+   Le relevé entre dans `ExtractedRules`, rendu par les deux sorties de la
+   fonction, celle du conteneur absent comprise.
+2. `src/template/sources.ts` : `creer`, `remplir`, `sans-source` ou aucune
+   offre, dans l'ordre du tableau de 5.4 ; puis la résolution asynchrone des
+   maîtres, le conteneur vierge de 5.3 et la vérification des textes d'aide.
+   La vérification du conteneur vierge se fait sans appel asynchrone : une
+   règle est rédigée dès qu'une instance du conteneur écrit un `content`, un
+   `prop` ou un `icon` sans marqueur, ce qui protège le travail du designer
+   sans passer par `isRuleInstance`.
+3. `src/code.ts` et `src/messages.ts` : l'offre dans le message `cible`, et le
+   variant dont le parent est un `COMPONENT_SET` qui n'en reçoit aucune.
+4. `tests/code.test.ts` : `./template/sources` dans la table `modules` du banc,
+   un relevé d'offre dans le faux `extractRules`, et les deux tests de l'offre.
+5. Tests de `sources.ts` et test de relecture de la section 9.
