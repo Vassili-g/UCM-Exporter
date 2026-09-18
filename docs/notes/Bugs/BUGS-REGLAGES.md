@@ -52,7 +52,7 @@ npm run test:ui --workspace ucm-exporter-plugin
 npm run galerie --workspace ucm-exporter-plugin
 ```
 
-Sur `84f4910`, les cinq sont vertes : 785 tests pour le plugin, 13 tests
+Sur `28f8b6b`, les cinq sont vertes : 788 tests pour le plugin, 13 tests
 Playwright, 51 états de galerie atteignables.
 
 Elles étaient déjà toutes vertes sur `4d98c37`, avant le premier constat. Aucun
@@ -116,6 +116,9 @@ documents et les commentaires, jamais les chaînes affichées.
 | Haute | 1 | 0 |
 | Moyenne | 4 | 0 |
 | Basse | 1 | 0 |
+
+Le compte porte sur les constats. Une zone sondée sans constat se range aussi
+ici, sous « Sans constat », avec les lois qu'elle laisse derrière elle.
 
 ### [Critique] Une publication réussie annoncée en échec
 
@@ -315,25 +318,33 @@ documents et les commentaires, jamais les chaînes affichées.
   son `checking` en génération 1 et son résultat en génération 2, ce que le
   sandbox n'écrit jamais. Elle emploie désormais une seule génération.
 
+### [Sans constat] Zone Z5, fraîcheur croisée des générations
+
+- [x] Zone épuisée par `28f8b6b`.
+- **Où** : `src/code.ts`, `generationDeConnexion` pour la pastille et la
+  destination, `generationsDesDepots` pour chaque carte, croisées dans
+  `testerConnexion()`, `testerDepot()` et les six demandes qui les périment.
+- **Sondé** : enregistrer pendant le test du dépôt actif, activer pendant un
+  enregistrement, supprimer un autre dépôt pendant un test, basculer l'export
+  local pendant un test, réinitialiser pendant un test. Aucun croisement ne
+  laisse la pastille ni une carte encore listée sur « Connexion… », et aucune
+  carte n'affiche le test d'un autre dépôt.
+- **Point d'attention tranché** : `testerDepot()` ne lit que
+  `generationsDesDepots`. Un test lancé avant la bascule de l'export local rend
+  donc son résultat après elle, sur sa seule carte, la pastille et la
+  destination restant celles de l'export local. C'est correct, et lui faire lire
+  `generationDeConnexion` serait une faute : la carte resterait sur
+  « Connexion… » après cette bascule comme après la suppression d'un autre
+  dépôt. Les deux premières lois ci-dessous rougissent sous cette correction.
+- **Lois** : `code.test.ts`, « une demande qui croise le test d'une carte laisse
+  la pastille et les cartes sur un état terminal », « un test de carte rendu
+  après la bascule de l'export local ne touche que sa carte » et « enregistrer
+  un dépôt pendant le test du dépôt actif laisse les deux cartes sur leur
+  résultat ».
+
 ## 5. Ce qui reste
 
-### C1. Zone Z5, fraîcheur croisée des générations
-
-- [ ] Épuiser la zone.
-- `generationDeConnexion` et `generationsDesDepots` se croisent dans
-  `testerConnexion()`, `testerDepot()` et les six demandes qui les périment.
-  Sonder les paires : enregistrer pendant un test, activer pendant un
-  enregistrement, supprimer pendant le test d'un autre, basculer l'export local
-  pendant le test d'une carte, réinitialiser pendant un test.
-- Vérifier qu'aucune pastille ne reste sur « Connexion… », et qu'aucune carte
-  n'affiche le test d'un autre dépôt.
-- Point d'attention relevé sans être sondé : `testerDepot()` ne regarde que
-  `generationsDesDepots`, jamais `generationDeConnexion`. Un test de carte lancé
-  avant une bascule de l'export local peut donc rendre son résultat après elle.
-  La carte est la seule touchée, ce qui semble correct ; le confirmer par une
-  sonde.
-
-### C2. Zone Z6, identité des cartes de la liste
+### C1. Zone Z6, identité des cartes de la liste
 
 - [ ] Épuiser la zone.
 - Une carte vit sous une clé temporaire jusqu'à sa réponse, puis sous son
@@ -346,7 +357,7 @@ documents et les commentaires, jamais les chaînes affichées.
   valide en HTML et `aria-controls` le retrouve, mais aucun sélecteur CSS ne
   peut le viser sans échappement. Vérifier qu'aucun code ne tente de le faire.
 
-### C3. Zone Z7, reprise des anciennes clés
+### C2. Zone Z7, reprise des anciennes clés
 
 - [ ] Sonder la reprise.
 - `reprendreLAncienneConfiguration()` ouvre la file du stockage et lit quatre
@@ -358,7 +369,7 @@ documents et les commentaires, jamais les chaînes affichées.
   configuration sans `baseBranch`, que la reprise remplace par `main` sans le
   dire.
 
-### C4. Points relevés sans gravité établie
+### C3. Points relevés sans gravité établie
 
 - [ ] Trancher chacun : faute ou choix.
 - `signalerEchec()` ne poste rien quand `operationEnCours !== null` : une panne
