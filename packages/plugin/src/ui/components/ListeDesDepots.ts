@@ -69,8 +69,16 @@ export function createListeDesDepots(): ListeDesDepotsUi {
 
   /** Les cartes, par clé : l'identité enregistrée, ou un identifiant temporaire. */
   const cartes = new Map<string, CarteDepotUi>();
-  /** Les cartes qui attendent le test de leur enregistrement pour se replier. */
-  const enAttenteDeTest = new Set<CarteDepotUi>();
+  /**
+   * Les cartes qui attendent le test de leur enregistrement pour se replier, et
+   * la génération de ce test : `null` tant qu'il n'a pas commencé.
+   *
+   * Un test annonce sa génération en `checking` avant de rendre son résultat,
+   * et une génération périmée ne rend rien. Sans ce numéro, une carte dont le
+   * test a été périmé attendait sans fin, et le test suivant de son dépôt, venu
+   * d'un rafraîchissement, la repliait comme s'il suivait un enregistrement.
+   */
+  const enAttenteDeTest = new Map<CarteDepotUi, number | null>();
   /** La génération du dernier test affiché, par dépôt. */
   const generations = new Map<string, number>();
   let actif: string | null = null;
@@ -149,6 +157,7 @@ export function createListeDesDepots(): ListeDesDepotsUi {
         const id = carte.id();
         if (id !== null && !recus.has(id)) {
           cartes.delete(cle);
+          enAttenteDeTest.delete(carte);
           carte.element.remove();
         }
       }
@@ -182,7 +191,7 @@ export function createListeDesDepots(): ListeDesDepotsUi {
         cartes.set(id, carte);
       }
       if (!carte.recevoirEnregistrement(requete, id, erreurs)) return;
-      enAttenteDeTest.add(carte);
+      enAttenteDeTest.set(carte, null);
     },
     recevoirTest(message: DepotTeste) {
       const carte = cartes.get(message.id)
@@ -190,11 +199,18 @@ export function createListeDesDepots(): ListeDesDepotsUi {
       if (!carte || (generations.get(message.id) ?? 0) > message.generation) return;
       generations.set(message.id, message.generation);
       carte.afficherTest(message, message.destination);
-      if (message.etat === 'checking' || !enAttenteDeTest.has(carte)) return;
-      // La carte se replie après un enregistrement accepté et un test réussi ;
-      // elle reste dépliée tant que le test échoue.
+      if (!enAttenteDeTest.has(carte)) return;
+      if (message.etat === 'checking') {
+        // Le premier test annoncé après l'enregistrement est le sien.
+        if (enAttenteDeTest.get(carte) === null) enAttenteDeTest.set(carte, message.generation);
+        return;
+      }
+      const attendue = enAttenteDeTest.get(carte);
       enAttenteDeTest.delete(carte);
-      if (message.etat === 'connected') carte.deplier(false);
+      // La carte se replie après un enregistrement accepté et un test réussi ;
+      // elle reste dépliée tant que le test échoue, et sur le résultat d'un
+      // test qui n'est pas celui de son enregistrement.
+      if (attendue === message.generation && message.etat === 'connected') carte.deplier(false);
     },
     signalerIllisible({ texte, geste }: DepotsIllisibles) {
       illisible = true;

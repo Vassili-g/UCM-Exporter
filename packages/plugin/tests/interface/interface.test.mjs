@@ -248,8 +248,38 @@ test('une carte dépliée garde sa saisie à la réception des réglages, et se 
     assert.equal(await carte.locator('input[name="jeton"]').inputValue(), '');
     await envoyer(teste(DEPOT.id, 'checking', 'Connexion…'));
     assert.equal(await deplier.getAttribute('aria-expanded'), 'true');
-    await envoyer(teste(DEPOT.id, 'connected', 'Connecté', 2));
+    await envoyer(teste(DEPOT.id, 'connected', 'Connecté'));
     assert.equal(await deplier.getAttribute('aria-expanded'), 'false');
+    assert.equal(await carte.locator('.carte-depot-statut').innerText(), 'Connecté');
+  } finally {
+    await page.close();
+  }
+});
+
+/**
+ * Un test annonce sa génération avant de rendre son résultat, et une génération
+ * périmée ne rend rien. La carte qui attend le test de son enregistrement
+ * attend donc ce numéro, et non le prochain résultat venu : le test suivant du
+ * dépôt, venu d'un rafraîchissement, la repliait sinon sous les yeux du
+ * designer, longtemps après l'enregistrement.
+ */
+test('une carte dont le test a été périmé ne se replie pas sur le test suivant de son dépôt', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await ouvrirDepots(page, envoyer, DEUX());
+    const carte = page.locator('.carte-depot').first();
+    const deplier = carte.getByRole('button', { name: 'ds', exact: true });
+    await deplier.click();
+    await carte.locator('input[name="jeton"]').fill('ghp_nouveau');
+    await carte.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    const demande = await derniere(page, 'enregistrer-depot');
+    await envoyer({ type: 'depot-enregistre', requete: demande.requete, carte: demande.carte, id: DEPOT.id, erreurs: {} });
+    await envoyer(teste(DEPOT.id, 'checking', 'Connexion…'));
+    // La génération 1 est périmée ici : elle ne rendra aucun résultat.
+    await envoyer(DEUX());
+    await envoyer(teste(DEPOT.id, 'checking', 'Connexion…', 2));
+    await envoyer(teste(DEPOT.id, 'connected', 'Connecté', 2));
+    assert.equal(await deplier.getAttribute('aria-expanded'), 'true');
     assert.equal(await carte.locator('.carte-depot-statut').innerText(), 'Connecté');
   } finally {
     await page.close();
