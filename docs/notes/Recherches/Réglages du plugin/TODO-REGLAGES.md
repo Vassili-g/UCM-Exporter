@@ -675,7 +675,7 @@ Référence : [lot 6](PLAN-REGLAGES.md#lot-6-recette-dans-figma). Les mesures à
 deux fenêtres et entre application et navigateur ne se font pas, par décision
 du mainteneur ([4.3](PLAN-REGLAGES.md#43-la-clé-de-destination)).
 
-- [ ] Préparer `packages/plugin/dist/` par `npm run build` et écrire dans le
+- [x] Préparer `packages/plugin/dist/` par `npm run build` et écrire dans le
       compte rendu les trois épreuves ci-dessous, avec les états de galerie qui
       leur correspondent.
 - [ ] **[mainteneur]** Réglage des tokens désactivé : aucune carte ne clignote
@@ -688,15 +688,15 @@ du mainteneur ([4.3](PLAN-REGLAGES.md#43-la-clé-de-destination)).
 
 ## Clôture
 
-- [ ] Relire `AGENTS.md`, `CONTRIBUTING.md`, `packages/plugin/SPEC.md`,
+- [x] Relire `AGENTS.md`, `CONTRIBUTING.md`, `packages/plugin/SPEC.md`,
       `packages/plugin/README.md`, `docs/guides/POUR-LES-DESIGNERS.md`,
       `README.md` et `docs/README.md` ; retirer toute description devenue
       fausse ou dupliquée, dont « repository connecté », « Supprimer le token
       enregistré » et `forge_du_jeton`.
-- [ ] Les questions à l'équipe consommatrice de la
+- [x] Les questions à l'équipe consommatrice de la
       [section 10](PLAN-REGLAGES.md#10-questions-restantes) ne bloquent aucun
       lot : les recopier dans le compte rendu si elles restent ouvertes.
-- [ ] `npm test`, `npm run typecheck`, `npm run build`, `test:ui` et la galerie
+- [x] `npm test`, `npm run typecheck`, `npm run build`, `test:ui` et la galerie
       verts dans un worktree isolé.
 
 ## Compte rendu
@@ -926,3 +926,45 @@ La phrase « deux commandes » du lot 2 attendait le commit d'une autre session
 sur `README.md` et `docs/README.md`. Les deux documents portent encore la
 montée de version de cette session : le commit de ce point ne prend que ses
 propres lignes, par un index temporaire.
+
+### L6
+
+`packages/plugin/dist/` est prêt : `npm run build` y a écrit `code.js`,
+`ui.html` et `manifest.json`. Le mainteneur charge ce dossier par « Import
+plugin from manifest » et passe les trois épreuves ci-dessous. Chacune a ses
+états de galerie, déjà relus hors de Figma ; la colonne de droite dit ce que
+seule l'application ajoute.
+
+| Épreuve | États de galerie | Ce que Figma seul montre |
+|---|---|---|
+| Réglage des tokens désactivé : aucune carte ne clignote à l'ouverture | `ecran-sans-tokens`, `fichier-sans-tokens` | L'ordre réel des messages au démarrage, que la galerie rejoue sans attente |
+| Onglets à côté du panneau de droite, deux thèmes, fenêtre de 320 × 320 px, contraste du texte de sévérité à 11 px, carte en échec amenée dans la vue | `configuration-onglet-general`, `general-export-local-active`, `depots-trois-deux-forges`, `depots-actif-jeton-refuse`, `depots-export-local`, `pastille-nom-long` | La densité du panneau natif et le contraste sur les vraies `--figma-color-*`, que le décalque de la galerie ne prouve pas |
+| Bascule réelle entre un dépôt GitHub et un projet GitLab, publication dans chacun | `depots-trois-deux-forges`, `destination-changee`, `gitlab-merge-request-creee`, `echec-github-repli-local` | Les deux API et les deux demandes de fusion, hors de la frontière de recette |
+
+### Clôture
+
+Relecture des sept documents. « repository connecté » et « Supprimer le token
+enregistré » ont disparu avec les lots 3c et 3a. `forge_du_jeton` reste dans
+`packages/plugin/SPEC.md`, partie 3 : la reprise des anciennes clés lit encore
+cette clé, et la phrase décrit ce que le code fait. Deux descriptions y étaient
+devenues fausses, et sont corrigées : « le formulaire » pour la carte d'un
+dépôt, et l'écriture de `depotActif` à l'enregistrement d'un premier dépôt,
+donnée sans sa condition d'export local.
+
+Les quatre questions à l'équipe consommatrice de la
+[section 10](PLAN-REGLAGES.md#10-questions-restantes) restent ouvertes, et
+aucun lot ne les attendait :
+
+- dans combien de projets GitLab publie-t-elle ?
+- son projet impose-t-il un nom de branche ou un message de commit ?
+- où ses composants sont-ils rangés, et le chemin
+  `{components}/{Nom}/{Nom}.contract.json` place-t-il le contrat à côté du
+  code ?
+- écrira-t-elle `ucm.config.json` à la main ?
+
+Vérification finale, dans le worktree : `npm test` (23, 168, 371, 774 et 23
+tests), `npm run typecheck`, `npm run build` étape par étape, `test:ui`
+(10 tests) et la galerie (50 états atteignables, aucune situation sans écran).
+`node scripts/controle-style.mjs` passe sur le dépôt entier.
+
+Reste le lot 6, qui demande Figma.

@@ -621,7 +621,7 @@ sauvegarde, ni logué.
 
 **La forge se déduit de l'hôte de l'URL.** `github.com` désigne GitHub,
 `gitlab.com` désigne GitLab, et toute autre adresse est refusée avec un message
-qui nomme les deux hôtes. Le formulaire n'a pas de sélecteur de forge. Une
+qui nomme les deux hôtes. La carte d'un dépôt n'a pas de sélecteur de forge. Une
 instance GitLab auto-hébergée reste hors périmètre : son domaine devrait figurer
 dans le manifest au moment du build.
 
@@ -629,7 +629,7 @@ dans le manifest au moment du build.
 `/-/` est retiré, puis la requête et le fragment ; le reste est le chemin du
 projet, sous-groupes compris. Sur GitHub, les deux premiers segments forment le
 repository. La branche et le dossier d'une adresse sont ignorés, parce qu'un nom
-de branche peut contenir `/`. Sous le champ, le formulaire affiche le dépôt
+de branche peut contenir `/`. Sous le champ, la carte affiche le dépôt
 retenu et, quand un chemin a été retiré, dit que `ucm.config.json` décide où vont
 les exports. `lireAdresseDuDepot()` (`src/config.ts`) est l'unique lecture ;
 l'interface l'importe.
@@ -654,7 +654,7 @@ pour GitLab. L'interface ne reçoit que la présence d'un jeton, par dépôt.
 
 | Geste | Écritures | Interruption entre deux écritures |
 |---|---|---|
-| Enregistrer un premier dépôt | `depots`, puis `depotActif` | Dépôt enregistré, aucun dépôt actif |
+| Enregistrer un premier dépôt | `depots`, puis `depotActif` hors export local | Dépôt enregistré, aucun dépôt actif |
 | Modifier la branche ou le jeton | `depots` | Aucune étape intermédiaire |
 | Supprimer | `depots` sans l'entrée, puis retrait de `depotActif` si elle était active | `depotActif` désigne une entrée absente, lue comme « aucun dépôt actif » |
 | Se connecter | `depotActif`, puis `exportLocal` à `false` | Dépôt actif changé, export local encore activé |
