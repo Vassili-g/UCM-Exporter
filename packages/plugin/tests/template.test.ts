@@ -382,23 +382,20 @@ test('un content d’aide sans marqueur refuse la création', async (t) => {
   );
 });
 
-test('l’icon d’aide de @icons est vérifié, et son content ne l’est pas', async (t) => {
-  // `@icons` ne lit aucun `content` : exiger le marqueur sur un calque que le
-  // moteur ignore refuserait un maître correct.
-  const sansMarqueur = catalogueDeRegles({
+test('le calque icon de @icons n’est pas vérifié, et son content non plus', async (t) => {
+  // Une `@icons` dont la politique n'est pas choisie ne publie rien : ses trois
+  // mots restent visibles tant que le designer n'a pas masqué celui qui ne vaut
+  // pas, et le moteur refuse déjà la règle. Exiger le marqueur en plus
+  // refuserait la création sur un maître correct.
+  const catalogue = catalogueDeRegles({
     ...AIDES,
-    icons: { icon: 'Nom exact du calque d’icône', content: 'Texte libre' },
+    icons: { icon: 'icon-name', content: 'Texte libre' },
   });
 
-  const { refus } = await sourcesDeLaPage(t, [maitreDeRegles(sansMarqueur, SECTIONS)]);
-  assert.match(refus ?? '', /textes d’aide/);
+  const { sources, refus } = await sourcesDeLaPage(t, [maitreDeRegles(catalogue, SECTIONS)]);
 
-  const correct = catalogueDeRegles({
-    ...AIDES,
-    icons: { icon: '[À compléter] Nom exact du calque d’icône', content: 'Texte libre' },
-  });
-  const { refus: aucun } = await sourcesDeLaPage(t, [maitreDeRegles(correct, SECTIONS)]);
-  assert.equal(aucun, null);
+  assert.equal(refus, null);
+  assert.equal(sources?.regles.get('icons')?.name, 'Type=@icons');
 });
 
 test('un maître sans exemple de règle refuse la création', async (t) => {

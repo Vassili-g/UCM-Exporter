@@ -306,8 +306,9 @@ sections [5.2](PLAN-TEMPLATE-REGLES.md#52-ordre-des-sources) à
         séparateur pris dans le component set de `.ruleItem` comme la variante
         sans calque texte ;
   - [x] vérification des textes d'aide : `content` de `@usage`, `@prop` et
-        `@boolean`, `icon` de `@icons` portent le marqueur ; sinon un refus,
-        texte de 6.3 ;
+        `@boolean` portent le marqueur ; sinon un refus, texte de 6.3. `@icons`
+        en est sorti après les essais, sa politique non choisie disant déjà que
+        la règle ne publie rien ;
   - [x] aucun appel à `loadAllPagesAsync` ni à `importComponentByKeyAsync`.
 - [x] `src/contract/extractRules.ts` rend le relevé nécessaire à l'offre sans
       second parcours de page. Le relevé et son type vivent dans
@@ -1059,8 +1060,13 @@ mot pour mot et les sept règles que le lot 5 hérite. Le plan reçoit le chemin
 retenu (6.4), les trois faits d'écriture d'E4, la nécessité de `FILL` (E5), le
 verdict d'H1-H (E6) et le chevauchement mesuré (E8, section 7).
 
-**Deux gestes attendent le mainteneur dans Figma**, et le premier bloque la
-recette : préfixer par `[À compléter]` le calque `icon` de la variante
-`@icons`, que la vérification des textes d'aide du lot 4 exige, et le calque
-`prop` des variantes `@prop`, `@boolean` et `@default`. E9 reste à jouer le
-jour où une page de bibliothèque sera disponible.
+**Le maître du design system n'a rien à corriger**, contre ce que la première
+lecture de ce relevé annonçait. Le mainteneur a rappelé la forme de `@icons` :
+le designer y masque celui des deux mots qui ne vaut pas, et les trois mots
+visibles sont déjà le signe que rien n'est choisi. Le lot 4 est corrigé en
+conséquence, son test vu rouge d'abord : `AIDES_LUES` ne porte plus que les
+trois `content` de `@usage`, `@prop` et `@boolean`. Le calque `prop` des
+variantes reste tel quel, le marqueur de leur `content` suffisant à écarter la
+règle.
+
+E9 reste à jouer le jour où une page de bibliothèque sera disponible.

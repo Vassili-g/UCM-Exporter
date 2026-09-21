@@ -195,20 +195,22 @@ son component set, lit le tag affiché de chacune, et écarte les dix règles do
 un calque lu porte encore `[À compléter]`. Le séparateur est reconnu comme
 `.ruleItem` sans tag et n'écrit rien : il traverse la lecture sans un mot,
 comme la borne du dépôt le demande. La onzième règle, `@icons`, passe le
-marqueur, son calque `icon` portant encore `icon-name`, puis `buildRules`
-l'écarte faute d'une politique d'icône lisible : le maître montre à la fois
-`modifiable` et `strict`.
+marqueur, son calque `icon` portant un nom de calque et non une phrase, puis
+`buildRules` l'écarte faute d'une politique d'icône lisible : le maître montre
+à la fois `modifiable` et `strict`, ce qui est précisément ce que le designer
+doit trancher.
 
 Rien n'est donc publiable, et la carte du plugin le dit : « Aucune règle
 d'usage exploitable ne documente quand l'utiliser ». C'est le comportement
 prévu en [6.5](PLAN-TEMPLATE-REGLES.md#65-exemple-pour-un-component-set-fictif-button),
 et non un défaut de lecture.
 
-**Deux gestes restent au mainteneur dans le fichier du design system.**
-Préfixer par `[À compléter]` le calque `icon` de la variante `@icons` et le
-calque `prop` des variantes `@prop`, `@boolean` et `@default`, qui portent
-encore `icon-name` et `prop.name`. Tant que le calque `icon` n'est pas préfixé,
-la vérification des textes d'aide du lot 4 refusera la création.
+**Le maître n'a rien à corriger.** Les textes d'aide de `@usage`, `@prop` et
+`@boolean` portent déjà le marqueur, et `@icons` dit autrement la même chose :
+ses trois mots restent visibles tant que le designer n'a pas masqué celui qui
+ne vaut pas, et la règle ne publie rien jusque-là. La vérification des textes
+d'aide du lot 4 a donc été réduite à ces trois `content` : exiger le marqueur
+sur le calque `icon` aurait refusé la création sur un maître correct.
 
 ## E8. Où le conteneur se pose
 

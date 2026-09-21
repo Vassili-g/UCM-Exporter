@@ -178,14 +178,19 @@ function separateurDuCatalogue(regles: Map<RuleTag, ComponentNode>): ComponentNo
 
 /**
  * Les calques d'aide que l'écriture ne remplit pas, et qui doivent donc porter
- * le marqueur. `@default` n'y est pas : le template ne pose aucune règle de ce
- * tag.
+ * le marqueur : le texte d'une règle que le template pose sans le rédiger.
+ *
+ * `@default` n'y est pas, le template ne posant aucune règle de ce tag.
+ * `@icons` non plus, et pour une raison de forme : sa cible n'est pas une
+ * phrase mais un nom de calque, et sa politique se choisit en masquant l'un de
+ * ses deux mots. Tant que le designer ne l'a pas fait, la règle ne publie rien,
+ * et le moteur le lui dit. Exiger le marqueur en plus refuserait la création
+ * sur un maître correct.
  */
 const AIDES_LUES: Partial<Record<RuleTag, string>> = {
   usage: 'content',
   prop: 'content',
   boolean: 'content',
-  icons: 'icon',
 };
 
 /** Vrai dès qu'un texte d'aide du maître passerait pour une documentation. */

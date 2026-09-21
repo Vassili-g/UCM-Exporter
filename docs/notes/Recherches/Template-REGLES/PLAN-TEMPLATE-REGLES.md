@@ -434,7 +434,7 @@ system. Proposition, à l'impératif et en une phrase :
 | `.ruleItem`, `@prop` | `content` | « [À compléter] Décrivez quand choisir cette valeur. » |
 | `.ruleItem`, `@boolean` | `prop` | « [À compléter] nom-de-la-propriété » |
 | `.ruleItem`, `@boolean` | `content` | « [À compléter] Décrivez ce que cette option affiche, et quand l'activer. » |
-| `.ruleItem`, `@icons` | `icon` | « [À compléter] Nom exact du calque d'icône » |
+| `.ruleItem`, `@icons` | `icon` | inchangé : `icon-name`, et les trois mots visibles disent que la politique reste à choisir |
 | `.ruleItem`, `@default` | `prop` | « [À compléter] propriété.valeur » |
 | `.ruleItem`, `@default` | `content` | « Écrivez dans prop la valeur par défaut, par exemple size.medium. » |
 | `.ruleItem`, `@do` | `content` | « [À compléter] Décrivez un usage recommandé. » |
@@ -442,11 +442,18 @@ system. Proposition, à l'impératif et en une phrase :
 | `.ruleItem`, `@pairs` | `content` | « [À compléter] Listez les composants souvent associés, séparés par des virgules. » |
 
 Au clic, avant toute écriture, le plugin vérifie que les calques qu'il ne
-remplit pas portent le marqueur : `content` de `@usage`, `@prop` et `@boolean`,
-`icon` de `@icons`. Sinon il refuse, sans rien créer : « Les textes d'aide de
-« .ruleItem » ne commencent pas par « [À compléter] ». Ajoutez-le dans le
-composant « .ruleItem », puis recommencez. » Sans cette vérification, un
-maître encore à l'ancienne ferait publier ses textes d'aide comme documentation.
+remplit pas portent le marqueur : `content` de `@usage`, `@prop` et `@boolean`.
+Sinon il refuse, sans rien créer : « Les textes d'aide de « .ruleItem » ne
+commencent pas par « [À compléter] ». Ajoutez-le dans le composant
+« .ruleItem », puis recommencez. » Sans cette vérification, un maître encore à
+l'ancienne ferait publier ses textes d'aide comme documentation.
+
+`@icons` est hors de cette vérification. Sa cible n'est pas une phrase mais un
+nom de calque, et sa politique se choisit en masquant celui des deux mots qui
+ne vaut pas. Tant que le designer ne l'a pas fait, les trois mots restent
+visibles, aucune politique n'est lisible, la règle ne publie rien et le moteur
+le dit. Le marqueur y serait un second signal pour un fait déjà signalé, et
+l'exiger refuserait la création sur un maître correct.
 
 ### 6.4. Écriture dans les slots
 
