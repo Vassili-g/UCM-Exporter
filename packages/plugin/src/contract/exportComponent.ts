@@ -127,8 +127,14 @@ export class ComponentExportError extends Error {
 }
 
 /** Message bloquant, formulé comme une action Figma plutôt que comme un concept mathématique. */
-/** Vérifie que la sélection est bien un composant exportable, sinon erreur claire. */
-function getSelectedComponent(): ComponentNode | ComponentSetNode {
+/**
+ * Vérifie que la sélection est bien un composant exportable, sinon erreur claire.
+ *
+ * Exporté parce que la création des règles vise le même composant que l'export,
+ * et qu'une seconde lecture de la sélection se désaccorderait de celle-ci le
+ * jour où l'une des deux changerait.
+ */
+export function getSelectedComponent(): ComponentNode | ComponentSetNode {
   const selection = figma.currentPage.selection;
   if (selection.length !== 1) {
     throw new ComponentExportError('Sélectionnez un seul Component ou Component Set dans Figma.');

@@ -1,7 +1,10 @@
 # Guide agent
 
-Plugin Figma qui exporte des contrats de composant et des tokens DTCG. Il ne
-modifie jamais le document Figma.
+Plugin Figma qui exporte des contrats de composant et des tokens DTCG.
+L'analyse et la publication ne modifient jamais le document Figma. Un seul
+geste y écrit : la création des règles d'usage, qui pose une instance de
+`.componentRules` à côté du composant, ou remplit une instance vierge.
+Supprimer cette instance défait la création.
 
 Ce document dit **ce que le projet garantit** : où se trouve chaque chose, et
 quelles règles le code tient. [CONTRIBUTING.md](./CONTRIBUTING.md) dit **comment
@@ -24,7 +27,8 @@ Lire uniquement ce qui concerne la tâche :
 
 Les [invariants](#invariants) sont groupés par domaine : portée du contrat,
 tokens, couleurs, composition, arbre des slots, layout, grilles, diagnostics,
-versionnage. Lire le groupe que la tâche touche, pas la section entière.
+échantillon de maquette, versionnage, écriture dans le document. Lire le groupe
+que la tâche touche, pas la section entière.
 
 **Avant d'écrire une phrase, dans un document ou dans un commentaire, charger la
 skill [`rediger-sans-tics-ia`](./.agents/skills/rediger-sans-tics-ia/SKILL.md).**
@@ -81,6 +85,9 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
       nodeBindings.ts          groupes complets de liaisons Figma
       propertyBindings.ts      component properties situées dans chaque variant
       propertySurface.ts       surface publique élue : owner direct et wrapper
+    template/modele.ts         du contrat au modèle des règles à poser, sans Figma
+    template/sources.ts        ce que la page offre, et les maîtres à copier
+    template/ecriture.ts       le seul fichier qui écrive dans le document
     tokens/exportTokens.ts     export DTCG
     tokens/familles.ts         le type d'une famille STRING, décidé sur une composante d'alias
     tokens/graisses.ts         le type d'une graisse STRING, décidé sur tout le graphe d'alias
@@ -735,6 +742,26 @@ La spécification en lien porte le raisonnement.
   schema`, jamais rédigé. Il décrit la forme, pas la cohérence : il ignore les
   renvois internes et le format des valeurs tokenisées, et ne remplace aucun
   contrôle du consommateur. Sa propre `description` énonce ses limites.
+
+### Écriture dans le document
+
+- Un seul fichier du moteur écrit dans Figma, `src/template/ecriture.ts`, et il
+  est le seul exclu de `loiDuDocumentIntact.test.ts`. `src/template/modele.ts`
+  et `src/template/sources.ts` restent balayés : un fichier de lecture ajouté
+  au dossier ne passerait pas sous l'exclusion sans que la loi le dise.
+- Une seule porte y mène : `creerRegles` dans `src/code.ts`, routée par la
+  demande `creer-regles`. Aucun fichier de `src/contract/`, `src/tokens/`,
+  `src/forges/`, ni `depot.ts` ni `prevol.ts` n'importe `src/template/`.
+- Ce que la création écrit se défait d'un geste : supprimer le conteneur. Le
+  plugin n'appelle pas `commitUndo`, un Ctrl+Z défaisant déjà la création
+  entière.
+- Une règle s'écrit hors de l'arbre, puis se range d'un seul geste. Un ajout
+  dans un slot déjà imbriqué laisse une coquille à l'ancien chemin du node, et
+  tout parcours du conteneur lève jusqu'à la fin de la session.
+- Aucun handle de sous-calque ne se garde d'une écriture à l'autre : son id est
+  un chemin, et le chemin bouge. Toute écriture se relit, une écriture perdue
+  ne levant pas.
+  → [essais](./docs/notes/Recherches/Template-REGLES/ESSAI-TEMPLATE-REGLES.md)
 
 ## Vérification
 

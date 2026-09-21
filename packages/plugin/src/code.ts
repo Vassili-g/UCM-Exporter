@@ -5,7 +5,7 @@
  * handler et lui renvoyer le fichier produit ou l'erreur.
  */
 import { extractRules, hasUsableRules } from './contract/extractRules';
-import handleExportComponent from './contract/exportComponent';
+import handleExportComponent, { getSelectedComponent } from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './tokens/exportTokens';
 import {
@@ -34,7 +34,10 @@ import { TERMES } from './forges/termes';
 import type { TermesDeForge } from './forges/termes';
 import { verdictDePrevol } from './prevol';
 import type { CodeVerdict } from './prevol';
-import { offreDeCreation } from './template/sources';
+import { offreDeCreation, resoudreLesSources } from './template/sources';
+import { modeleDeRegles } from './template/modele';
+import type { ContratLu } from './template/modele';
+import { creerLesRegles } from './template/ecriture';
 import type { Annonce, PluginMessage, Provenance, UiRequest } from './messages';
 import {
   etatDeCarte,
@@ -438,7 +441,7 @@ type AnalyseGardee = {
 
 const analysesGardees = new Map<ArtifactKind, AnalyseGardee>();
 let selectionCourante = figma.currentPage.selection.map((node) => node.id).join(',');
-let operationEnCours: ArtifactKind | null = null;
+let operationEnCours: ArtifactKind | 'regles' | null = null;
 let publicationEnCours = false;
 /** La destination de l'analyse en cours, `null` hors analyse. */
 let destinationDeLAnalyse: string | null = null;
@@ -773,6 +776,66 @@ async function publier(genre: ArtifactKind, operation: number): Promise<void> {
   }
 }
 
+/**
+ * Le seul geste du plugin qui écrive dans le document.
+ *
+ * Il ne lit aucun dépôt et ne publie rien : le contrat sert de modèle, jamais
+ * d'artefact. Ses messages ne portent donc pas de destination, et l'interface
+ * les accepte sans elle.
+ *
+ * L'annulation ne l'atteint pas. Elle a été écrite pour une analyse, qu'un
+ * changement de sélection rend caduque ; ici, elle laisserait un conteneur à
+ * moitié posé sur un geste que le designer n'a pas demandé. Le retour arrière
+ * de la création, c'est Ctrl+Z, qui la défait d'un coup.
+ */
+async function creerRegles(operation: number): Promise<void> {
+  if (operationEnCours !== null) {
+    postStatus('error', OPERATION_DEJA_EN_COURS, { operation });
+    return;
+  }
+  operationEnCours = 'regles';
+  const provenance = { operation };
+  const annoncer: Annonce = (etape) => versUi({ type: 'phase', texte: etape, ...provenance });
+  try {
+    postStatus('loading', 'Création des règles d’usage…', provenance);
+    const composant = getSelectedComponent();
+    annoncer('Lecture de la page…');
+    const releve = (await extractRules(composant)).releve;
+    const { sources, refus } = await resoudreLesSources(releve);
+    if (!sources) {
+      postStatus('error', refus ?? ECHEC_GENERIQUE, provenance);
+      return;
+    }
+
+    annoncer('Analyse du composant…');
+    // Le contrat que le développeur recevra est ce que les règles documentent :
+    // le modèle se lit dessus, jamais sur les propriétés Figma brutes, qui
+    // ignorent la couche sémantique.
+    const analyse = await handleExportComponent(annoncer);
+    const modele = modeleDeRegles(composant.name, JSON.parse(analyse.content) as ContratLu);
+
+    const resultat = await creerLesRegles(composant, modele, sources, annoncer);
+    // Le contrat suivant ne dira plus la même chose : garder l'analyse d'avant
+    // ferait publier un contrat sans les règles qu'on vient de poser.
+    analysesGardees.delete('component');
+    figma.currentPage.selection = [composant];
+    figma.viewport.scrollAndZoomIntoView([composant, resultat.conteneur]);
+    postStatus(
+      'success',
+      `${resultat.regles} règles posées. Rédigez-les dans Figma, puis relancez l’analyse.`,
+      provenance,
+    );
+  } catch (erreur) {
+    const message = erreur instanceof Error ? erreur.message : ECHEC_GENERIQUE;
+    postStatus('error', message, provenance);
+    figma.notify(message, { error: true });
+  } finally {
+    operationEnCours = null;
+    // Le bouton disparaît une fois le conteneur posé : le relevé le dit.
+    await reportSelectionState();
+  }
+}
+
 // Routeur des demandes de l'UI vers le bon handler.
 /**
  * Montre les calques dont un avertissement parle : sélection, puis cadrage.
@@ -970,6 +1033,11 @@ async function traiterMessage(message: UiRequest): Promise<void> {
 
   if (message.type === 'publier') {
     await publier(message.genre, message.operation);
+    return;
+  }
+
+  if (message.type === 'creer-regles') {
+    await creerRegles(message.operation);
     return;
   }
 

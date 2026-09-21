@@ -893,18 +893,39 @@ GitLab CI, et toutes sont lues telles que leurs propriétaires les définissent.
 
 ## Hors périmètre MVP
 
-Pas d'écriture dans le document Figma, pas d'auto-merge, pas de multi-composant
-en une commande, pas de scoring. Aucun domaine réseau autre que l'API de GitHub
-et gitlab.com déclaré dans le manifest.
+Pas d'auto-merge, pas de multi-composant en une commande, pas de scoring. Aucun
+domaine réseau autre que l'API de GitHub et gitlab.com déclaré dans le manifest.
+
+L'analyse et la publication ne modifient jamais le document Figma. Un seul
+geste y écrit : la création des règles d'usage, décrite ci-dessous.
+
+### La création des règles d'usage
+
+Le plugin pose une instance de `.componentRules` à côté du composant
+sélectionné, ou remplit une instance vierge que le designer a collée, et y
+range une règle par valeur de propriété publiée. Supprimer cette instance
+défait la création ; un Ctrl+Z aussi, d'un seul appui, et le plugin n'appelle
+pas `commitUndo`.
+
+Ce que la création n'écrit pas est une décision : les calques `content` et
+`icon` gardent le texte d'aide du maître et son marqueur `[À compléter]`, si
+bien qu'une règle fraîchement posée ne documente rien tant que le designer ne
+l'a pas rédigée, et que l'analyse le dit.
+
+L'écriture vit dans un seul fichier, `src/template/ecriture.ts`, atteint par
+une seule porte, la demande `creer-regles`. `loiDuDocumentIntact.test.ts`
+l'exclut nommément de son balayage et refuse à tout autre fichier du moteur
+d'importer l'écriture, ou de poser un appel qui écrirait.
 
 ### Sélectionner et cadrer ne sont pas modifier
 
 **Tranché, et la question se reposera.** Rendre un avertissement cliquable
 demande de poser une sélection (`figma.currentPage.selection = […]`) et de
 déplacer la vue (`figma.viewport.scrollAndZoomIntoView(…)`). Une relecture
-rapide y voit une violation de « le plugin ne modifie jamais le document » ; ce
+rapide y voit une violation de « l'analyse ne modifie jamais le document » ; ce
 n'en est pas une, et voici sur quoi la décision s'appuie plutôt que sur une
-intuition.
+intuition. Elle vaut pour tout ce que le plugin fait hors de la création des
+règles.
 
 - **Aucun contenu de document n'est écrit.** Une sélection et un cadrage sont un
   état de l'éditeur, propre à la personne qui regarde. Rien n'entre dans le
@@ -927,9 +948,11 @@ décision tient sur la documentation de l'API, ce qui est écrit ici plutôt que
 sous-entendu.
 
 **La frontière que cette décision ne déplace pas.** Créer, renommer, déplacer,
-supprimer un node, écrire une variable ou un style : tout cela reste interdit,
-et `loiDuDocumentIntact.test.ts` le refuse en lisant la source. La différence
-est celle entre regarder et écrire, non une affaire de degré.
+supprimer un node, écrire une variable ou un style : tout cela reste interdit
+partout ailleurs que dans `src/template/ecriture.ts`, et
+`loiDuDocumentIntact.test.ts` le refuse en lisant la source. La différence est
+celle entre regarder et écrire, non une affaire de degré, et la création des
+règles est la seule exception, nommée dans la loi.
 
 ---
 

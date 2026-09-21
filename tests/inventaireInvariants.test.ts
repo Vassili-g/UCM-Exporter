@@ -34,6 +34,7 @@ const DOMAINES = [
   'Diagnostics',
   'Echantillon de maquette',
   'Versionnage',
+  'Ecriture dans le document',
 ];
 
 /**
@@ -371,7 +372,7 @@ const ENONCES_SPEC = [
 const sansAccent = (texte: string): string =>
   texte.normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-test("les dix domaines d'invariants sont la, dans leur ordre", () => {
+test("les onze domaines d'invariants sont la, dans leur ordre", () => {
   const bloc = sansAccent(sectionDesInvariants());
   const trouves = [...bloc.matchAll(/^### (.+)$/gm)].map((t) => t[1].trim());
   assert.deepEqual(trouves, DOMAINES);

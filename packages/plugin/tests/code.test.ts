@@ -12,6 +12,7 @@ import * as cible from '../src/cible';
 import * as fenetre from '../src/fenetre';
 import * as prevol from '../src/prevol';
 import * as sources from '../src/template/sources';
+import * as modele from '../src/template/modele';
 import * as termes from '../src/forges/termes';
 import type { ReleveDeSource } from '../src/contract/extractRules';
 import type { PluginMessage, UiRequest } from '../src/messages';
@@ -42,8 +43,12 @@ function ouvrir() {
   const evenements = new Map<string, () => void>();
   const temporisations = new Map<number, () => void>();
   const stockage = new Map<string, unknown>();
-  const appels = { analyses: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[] };
+  const appels = { analyses: 0, ecritures: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[] };
   const exporte = { traiter: async () => resultat('tokens.json') };
+  /** Ce que la résolution des maîtres rend au clic ; le test le choisit. */
+  const resolution = { traiter: async (): Promise<{ sources: unknown; refus: string | null }> => ({ sources: { maitre: {}, aRemplir: null, sections: new Map(), regles: new Map(), separateur: null }, refus: null }) };
+  /** L'écriture elle-même, jamais jouée : le banc juge ce que le routeur en fait. */
+  const creation = { traiter: async () => ({ conteneur: { id: 'conteneur' }, regles: 2 }) };
   const publication = { traiter: async () => ({ status: 'created', path: 'tokens.json', pullRequestUrl: 'https://github.com/o/r/pull/1' }) };
   const resumeDesTokens = { traiter: async () => ({ presents: true, resume: '1 variable' }) };
   /** Ce que la lecture des règles relève de la page ; le test le choisit. */
@@ -57,6 +62,7 @@ function ouvrir() {
   const connexionDe = { traiter: async (_config: { projet: string; jeton: string }): Promise<Diagnostic> => ({ cause: 'connecte', layout: null }) };
   const runtime = {
     showUI() {}, notify() {}, openExternal() {},
+    viewport: { scrollAndZoomIntoView() {} },
     currentPage: {
       selection: [{ id: 'a', type: 'COMPONENT', name: 'Exemple', parent: undefined as { type: string } | undefined }],
     },
@@ -77,8 +83,10 @@ function ouvrir() {
     '@ucm-kit/core/format': format, './config': config, './connexion': connexion,
     './cible': cible, './fenetre': fenetre, './prevol': prevol,
     './contract/extractRules': { extractRules: async () => ({ releve: releve.actuel }), hasUsableRules: () => true },
-    './template/sources': sources,
-    './contract/exportComponent': { default: handler },
+    './template/sources': { ...sources, resoudreLesSources: async () => resolution.traiter() },
+    './template/modele': modele,
+    './template/ecriture': { creerLesRegles: async () => { appels.ecritures += 1; return creation.traiter(); } },
+    './contract/exportComponent': { default: handler, getSelectedComponent: () => runtime.currentPage.selection[0] },
     './tokens/exportTokens': { default: handler, annonceDuFormat: () => null, etatDesTokensDuFichier: async () => { appels.collections += 1; return resumeDesTokens.traiter(); } },
     './forges/forge': { ErreurDeForge: Error },
     './forges/termes': termes,
@@ -105,7 +113,7 @@ function ouvrir() {
     clearTimeout: (id: number) => temporisations.delete(id),
   });
   return {
-    messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, runtime, stockage,
+    messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, resolution, creation, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
     selectionner(id: string, parent?: { type: string }) {
       runtime.currentPage.selection = [{ id, type: 'COMPONENT', name: 'Exemple', parent }];
@@ -1071,4 +1079,126 @@ test('un variant seul ne reçoit aucune offre, quoi que la page porte', async ()
 
   const cibles = h.messages.filter((message) => message.type === 'cible');
   for (const cible of cibles) assert.equal(cible.offre ?? null, null);
+});
+
+/** Le dernier texte de compte rendu, celui que la carte montre. */
+function derniereNote(h: ReturnType<typeof ouvrir>): string | undefined {
+  return h.messages.filter((message) => message.type === 'status').at(-1)?.text;
+}
+
+test('« creer-regles » écrit une fois, et relance le relevé de sélection', async () => {
+  const h = ouvrir();
+  const relevesAvant = h.messages.filter((message) => message.type === 'cible').length;
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.equal(h.appels.ecritures, 1);
+  assert.match(derniereNote(h) ?? '', /2 règles posées/);
+  assert.ok(h.messages.filter((message) => message.type === 'cible').length > relevesAvant);
+});
+
+test('le modèle vient du contrat analysé, et la création le dit en étapes', async () => {
+  const h = ouvrir();
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.equal(h.appels.analyses, 1);
+  // Aucune destination : la création ne lit aucun dépôt, et l'interface
+  // accepte une étape qui n'en porte pas.
+  const etapes = h.messages.filter((message) => message.type === 'phase');
+  assert.ok(etapes.length > 0);
+  assert.ok(etapes.every((etape) => !('destination' in etape)));
+});
+
+test('un refus de résolution n’écrit rien', async () => {
+  const h = ouvrir();
+  h.resolution.traiter = async () => ({ sources: null, refus: 'Maître introuvable.' });
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.equal(h.appels.ecritures, 0);
+  assert.equal(derniereNote(h), 'Maître introuvable.');
+});
+
+test('une analyse en cours refuse la création, et la création refuse les deux', async () => {
+  const h = ouvrir();
+  const analyse = differe<ReturnType<typeof resultat>>();
+  h.exporte.traiter = () => analyse.promesse;
+  const enCours = h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await tourner();
+
+  await h.envoyer({ type: 'creer-regles', operation: 2 });
+  assert.equal(h.appels.ecritures, 0);
+  assert.equal(derniereNote(h), connexion.OPERATION_DEJA_EN_COURS);
+  analyse.resoudre(resultat('Exemple.contract.json'));
+  await enCours;
+
+  const creation = differe<{ conteneur: { id: string }; regles: number }>();
+  h.creation.traiter = () => creation.promesse;
+  const posee = h.envoyer({ type: 'creer-regles', operation: 3 });
+  await tourner();
+  await h.envoyer({ type: 'analyser-composant', operation: 4 });
+  await h.envoyer({ type: 'publier', genre: 'component', operation: 5 });
+  assert.equal(derniereNote(h), connexion.OPERATION_DEJA_EN_COURS);
+  creation.resoudre({ conteneur: { id: 'c' }, regles: 2 });
+  await posee;
+
+  // La création rend la main : sans cela, le plugin resterait inerte jusqu'à
+  // sa relance, et rien ne le dirait.
+  const analyses = h.appels.analyses;
+  await h.envoyer({ type: 'analyser-composant', operation: 6 });
+  assert.equal(h.appels.analyses, analyses + 1);
+});
+
+test('aucune autre demande n’appelle l’écriture', async () => {
+  const h = ouvrir();
+  await h.envoyer({ type: 'ui-ready' });
+  await h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await h.envoyer({ type: 'analyser-tokens', operation: 2 });
+  await h.envoyer({ type: 'publier', genre: 'component', operation: 3 });
+  await h.envoyer({ type: 'montrer-les-calques', nodeIds: [] });
+
+  assert.equal(h.appels.ecritures, 0);
+});
+
+test('un changement de sélection pendant la création ne l’annule pas', async () => {
+  const h = ouvrir();
+  const creation = differe<{ conteneur: { id: string }; regles: number }>();
+  h.creation.traiter = () => creation.promesse;
+  const posee = h.envoyer({ type: 'creer-regles', operation: 1 });
+  await tourner();
+
+  h.selectionner('b');
+  creation.resoudre({ conteneur: { id: 'c' }, regles: 2 });
+  await posee;
+
+  // Le geste a été demandé sur un composant : changer de sélection pendant
+  // qu'il se pose ne le retire pas.
+  assert.match(derniereNote(h) ?? '', /2 règles posées/);
+});
+
+test('une analyse annulée juste avant n’arrête pas la création', async () => {
+  const h = ouvrir();
+  const analyse = differe<ReturnType<typeof resultat>>();
+  h.exporte.traiter = () => analyse.promesse;
+  const annulee = h.envoyer({ type: 'analyser-composant', operation: 1 });
+  await tourner();
+  h.selectionner('b');
+  analyse.resoudre(resultat('Exemple.contract.json'));
+  await annulee;
+
+  await h.envoyer({ type: 'creer-regles', operation: 2 });
+
+  assert.equal(h.appels.ecritures, 1);
+  assert.match(derniereNote(h) ?? '', /2 règles posées/);
+});
+
+test('une écriture qui échoue laisse son message au designer', async () => {
+  const h = ouvrir();
+  h.creation.traiter = async () => {
+    throw new Error('Le conteneur à moitié créé a été supprimé.');
+  };
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.equal(derniereNote(h), 'Le conteneur à moitié créé a été supprimé.');
 });

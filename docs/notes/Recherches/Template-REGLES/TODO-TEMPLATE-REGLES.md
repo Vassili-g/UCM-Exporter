@@ -375,61 +375,61 @@ Un seul commit livre ce lot : l'écriture, son exclusion de la loi et la
 nouvelle promesse entrent ensemble. Avant lui, la promesse actuelle reste
 vraie.
 
-- [ ] `src/template/ecriture.ts`, sur le chemin retenu en 1b, dans cet ordre :
-  - [ ] textes d'aide vérifiés et polices chargées par `loadFontAsync` avant la
+- [x] `src/template/ecriture.ts`, sur le chemin retenu en 1b, dans cet ordre :
+  - [x] textes d'aide vérifiés et polices chargées par `loadFontAsync` avant la
         première écriture, `component-name` compris ; une police absente
         (`hasMissingFont`) refuse sans rien créer ;
-  - [ ] conteneur créé par `createInstance`, ou instance vierge remplie ;
-  - [ ] sections et exemples sans usage retirés ;
-  - [ ] règles et séparateurs rangés, `prop` et `component-name` écrits ;
+  - [x] conteneur créé par `createInstance`, ou instance vierge remplie ;
+  - [x] sections et exemples sans usage retirés ;
+  - [x] règles et séparateurs rangés, `prop` et `component-name` écrits ;
         `content` et `icon` jamais écrits ;
-  - [ ] conteneur placé dans la section ancêtre la plus proche, sinon sur la
+  - [x] conteneur placé dans la section ancêtre la plus proche, sinon sur la
         page, à 80 px à droite du component set en coordonnées absolues ;
         jamais dans un parent en auto layout ;
-  - [ ] échec à mi-parcours : conteneur créé supprimé, et le résultat dit si
+  - [x] échec à mi-parcours : conteneur créé supprimé, et le résultat dit si
         la suppression a réussi ; une instance vierge remplie n'est jamais
         supprimée.
-- [ ] `commitUndo` n'entre dans `ecriture.ts` que si 1b l'a établi (H1-H).
+- [x] `commitUndo` n'entre dans `ecriture.ts` que si 1b l'a établi (H1-H).
       Sinon, aucun appel.
-- [ ] `tests/loiDuDocumentIntact.test.ts` :
-  - [ ] exclusion du seul fichier `src/template/ecriture.ts` ;
-  - [ ] deux assertions : le fichier exclu existe ; exactement un fichier est
+- [x] `tests/loiDuDocumentIntact.test.ts` :
+  - [x] exclusion du seul fichier `src/template/ecriture.ts` ;
+  - [x] deux assertions : le fichier exclu existe ; exactement un fichier est
         exclu hors de `src/ui` ;
-  - [ ] test des imports : seul `src/code.ts` importe `ecriture.ts` ; aucun
+  - [x] test des imports : seul `src/code.ts` importe `ecriture.ts` ; aucun
         fichier de `src/contract/`, `src/tokens/`, `src/forges/`, ni
         `src/depot.ts` ni `src/prevol.ts` n'importe `src/template/` ;
         `src/template/` n'appelle ni `loadAllPagesAsync` ni
         `importComponentByKeyAsync` ;
-  - [ ] vus rouges : un import de `src/template/` posé dans `src/depot.ts`, un
+  - [x] vus rouges : un import de `src/template/` posé dans `src/depot.ts`, un
         `createInstance(` posé dans `sources.ts`, et `ecriture.ts` renommé.
         Le message de commit le dit ;
-  - [ ] le commentaire de `HORS_SANDBOX`, qui affirme qu'aucun membre de
+  - [x] le commentaire de `HORS_SANDBOX`, qui affirme qu'aucun membre de
         `UiRequest` n'écrit, et le message d'échec de la loi (« Le plugin lit,
         sélectionne et cadre ; il n'écrit pas ») sont réécrits
         ([section 4.4](PLAN-TEMPLATE-REGLES.md#44-déclenchement)).
-- [ ] `src/messages.ts` : `{ type: 'creer-regles'; operation: number }` dans
+- [x] `src/messages.ts` : `{ type: 'creer-regles'; operation: number }` dans
       `UiRequest`, avec un commentaire qui dit que c'est la seule demande qui
       écrit dans le document. Le message `phase` passe de `& Provenance` à
       `& Partial<Provenance>`, pour porter une étape sans destination.
-- [ ] `src/code.ts` :
-  - [ ] `creerRegles`, seule fonction qui importe `ecriture.ts`, routée par
+- [x] `src/code.ts` :
+  - [x] `creerRegles`, seule fonction qui importe `ecriture.ts`, routée par
         `traiterMessage` ;
-  - [ ] `operationEnCours` accepte une valeur propre à la création ; une
+  - [x] `operationEnCours` accepte une valeur propre à la création ; une
         analyse ou une publication en cours refuse la création, et la
         création refuse les deux, par `OPERATION_DEJA_EN_COURS` ;
-  - [ ] le contrat vient de `handleExportComponent`, sans lecture du dépôt ni
+  - [x] le contrat vient de `handleExportComponent`, sans lecture du dépôt ni
         publication ;
-  - [ ] les messages de la création portent `operation` et aucune
+  - [x] les messages de la création portent `operation` et aucune
         `destination` (écart 1 du compte rendu) : les étapes par `phase`, le
         début et la fin par `status` ;
-  - [ ] la création ne lit pas `annulation` : son annonceur d'étapes
+  - [x] la création ne lit pas `annulation` : son annonceur d'étapes
         n'appelle pas `verifierAnnulation` (écart 9) ;
-  - [ ] après la création : `analysesGardees.delete('component')`, sélection
+  - [x] après la création : `analysesGardees.delete('component')`, sélection
         gardée sur le component set, cadrage du component set et du conteneur
         (H1-F), `reportSelectionState` relancé ;
-  - [ ] commentaire de `montrerLesCalques` réécrit : il ne dit plus que le
+  - [x] commentaire de `montrerLesCalques` réécrit : il ne dit plus que le
         plugin n'écrit jamais.
-- [ ] `tests/code.test.ts` : ajouter `./template/ecriture` et
+- [x] `tests/code.test.ts` : ajouter `./template/ecriture` et
       `./template/modele` à la table `modules` du banc, avec une fausse
       écriture qui compte ses appels. Tests : routage de `creer-regles` ;
       refus croisés avec l'analyse et la publication ; aucune autre demande
@@ -437,7 +437,7 @@ vraie.
       pendant la création ne l'annule pas ; une analyse annulée juste avant
       n'arrête pas la création ; le relevé de sélection est relancé après
       elle.
-- [ ] Nouvelle promesse de 4.1 dans `AGENTS.md`, première phrase et un nouveau
+- [x] Nouvelle promesse de 4.1 dans `AGENTS.md`, première phrase et un nouveau
       groupe d'invariants « Écriture dans le document » ; mettre à jour la
       liste des groupes dans le paragraphe « Les invariants sont groupés par
       domaine » ; ajouter `src/template/` et ses trois fichiers à la carte du
@@ -445,7 +445,7 @@ vraie.
       MVP » et sa sous-section, et une sous-section sur la création des
       règles. `tests/inventaireInvariants.test.ts` suit : phrases figées de
       SPEC.md, liste des groupes, et titre du test qui compte les domaines.
-- [ ] Vérification complète dans le worktree, commit, push.
+- [x] Vérification complète dans le worktree, commit, push.
 
 ## 6. Interface et documents
 
@@ -1070,3 +1070,42 @@ variantes reste tel quel, le marqueur de leur `content` suffisant à écarter la
 règle.
 
 E9 reste à jouer le jour où une page de bibliothèque sera disponible.
+
+### 5. Écriture et frontière
+
+`src/template/ecriture.ts` pose le modèle par le chemin F, et il est le seul
+fichier du moteur exclu de la loi du document intact. Vu rouge avant
+l'exclusion : treize appels refusés dans ce fichier, un par geste d'écriture.
+
+Trois protections nouvelles, vues rouges chacune avant d'être crues :
+
+- un `createInstance(` posé dans `sources.ts` : refusé par la loi, le dossier
+  `src/template/` restant balayé sauf son seul fichier d'écriture ;
+- un import de `template/ecriture` posé dans `depot.ts` : le test des imports
+  rend `['code.ts', 'depot.ts']` là où il attend `code.ts` seul ;
+- `ecriture.ts` renommé : l'exclusion vise le vide, et l'assertion le dit.
+
+Décisions prises en écrivant :
+
+- `component-name` s'écrit en dernier. Tant qu'il ne l'est pas, le conteneur ne
+  revendique le nom d'aucun composant : une création interrompue dont la
+  suppression échoue laisse un orphelin, que l'analyse signale, plutôt qu'un
+  doublon qui ferait disparaître les règles écrites ailleurs ;
+- la pose glisse vers la droite tant qu'une boîte occupe sa place, ce que le
+  chevauchement mesuré par E8 demande ;
+- `getSelectedComponent` est exporté d'`exportComponent.ts` : la création vise
+  le même composant que l'export, et une seconde lecture de la sélection se
+  serait désaccordée de celle-ci ;
+- le modèle se lit sur le contrat produit par `handleExportComponent`, jamais
+  sur les propriétés Figma brutes, qui ignorent la couche sémantique ;
+- la création ne lit pas `annulation` et ne la remet pas à zéro : une analyse
+  annulée juste avant ne l'arrête pas, et un test le tient.
+
+Le banc de `code.test.ts` reçoit `./template/ecriture`, `./template/modele` et
+une résolution des maîtres que le test choisit. Deux mutations éprouvées : le
+routage retiré fait tomber sept tests ; `operationEnCours` laissé occupé n'en
+faisait tomber aucun, et une assertion a été ajoutée pour qu'il en tombe un.
+
+Vérification dans un worktree isolé : 1 427 tests verts, typage, build par
+étapes et `test:ui` verts. Le seul rouge de la suite reste les quatre `#666666`
+de `styles.css`, étrangers à ce lot.

@@ -99,7 +99,14 @@ export type UiRequest =
    * Sélectionne et cadre ensemble les calques d'un point à corriger, sans
    * modifier le document Figma.
    */
-  | { type: 'montrer-les-calques'; nodeIds: string[] };
+  | { type: 'montrer-les-calques'; nodeIds: string[] }
+  /**
+   * La seule demande qui écrive dans le document : elle pose une instance de
+   * « .componentRules » à côté du composant sélectionné, ou remplit une
+   * instance vierge que le designer a collée. Supprimer cette instance défait
+   * la création. Toutes les autres demandes lisent, sélectionnent ou cadrent.
+   */
+  | { type: 'creer-regles'; operation: number };
 
 /** Ce que le sandbox dit à l'UI. */
 export type PluginMessage =
@@ -179,8 +186,11 @@ export type PluginMessage =
    * L'étape en cours. Elle ne va que dans la note : quatre lignes de compte rendu
    * par export dirait le déroulé d'un traitement que personne ne relit, et
    * noierait les avertissements qui, eux, demandent un geste.
+   *
+   * La provenance est partielle : la création des règles ne lit aucun dépôt et
+   * n'a donc pas de destination à porter.
    */
-  | ({ type: 'phase'; texte: string } & Provenance)
+  | ({ type: 'phase'; texte: string } & Partial<Provenance>)
 
   /** Résumé des variables locales qui détermine si l'analyse est disponible. */
   | { type: 'tokens'; resume: string; presents: boolean }
