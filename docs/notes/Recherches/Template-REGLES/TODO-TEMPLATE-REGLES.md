@@ -882,3 +882,86 @@ de ses rôles » (`stylesUi.test.ts`). Quatre `#666666` sont entrés dans
 autre session. Le lot 4 ne touche ni l'interface ni sa feuille, et son commit
 ne porte que ses trois fichiers. La couleur doit rejoindre le bloc de rôles,
 et c'est à la session qui règle les états de survol de le faire.
+
+### 1b. Première salve d'essais, et correction du harnais
+
+Le mainteneur a joué E1 à E6b, E8, E10E et E10F sur une copie du fichier de
+tests, et E7 avec le plugin UCM. Verdicts rendus par le harnais : E1 et E5
+verts, E6 et E6b à relever, E2, E3, E4, E9, E10E et E10F rouges. Les faits
+tiennent, les verdicts non : le relevé de chaque rouge dit autre chose que son
+verdict.
+
+**Mesuré, et acquis.**
+
+- E1 : `createInstance` sur un maître lu par `getMainComponentAsync` depuis une
+  instance pose bien l'instance sur la page active.
+- E5 : l'affectation de `layoutSizingHorizontal = 'FILL'` est nécessaire. Sans
+  elle, la règle reste FIXED à 689 px et déborde du slot ; avec elle, 526 px,
+  sans rognure. `limitViolations` vides sur les deux slots, `slotSettings` à
+  `null` sur les deux propriétés de slot.
+- E6 et E6b : un Ctrl+Z, focus dans le canevas, défait toute la création d'un
+  coup ; un second défait le geste que le designer avait fait avant. Focus dans
+  la fenêtre du plugin, Ctrl+Z ne fait rien. `figma.commitUndo()` appelé avant
+  la création ne change ni l'un ni l'autre. **H1-H tranché : le template ne
+  l'appelle pas**, puisqu'il ne sépare rien que Figma ne sépare déjà.
+- E8 : le conteneur se range dans la section ancêtre sans l'agrandir, et la
+  sélection reste sur le component set. **Le chevauchement est avéré** : le
+  conteneur posé recouvre une instance `.componentRules` déjà présente. Le plan
+  le disait non vérifié ; la position de pose doit donc tenir compte des
+  voisins.
+- E10 : après un échec provoqué à la onzième règle, le conteneur partiel est
+  supprimé, sur les deux chemins. Pose complète de 22 règles et 3 séparateurs
+  en 3 298 ms par le chemin E, 3 050 ms par le chemin F.
+
+**Un seul défaut derrière E3, E4, E10 et la moitié d'E2 : la péremption des
+handles.** Un sous-calque d'instance porte un id de chemin (`I<instance>;<…>`).
+Ranger une règle dans un slot change ce chemin, et l'ancien handle meurt : le
+lire lève « The node … does not exist ». Quatre relevés le disent :
+
+- E4, écriture 1, par un handle capturé avant une écriture voisine : « écrit
+  tone.a, relu prop.name ». L'écriture est perdue sans un mot. Écriture 2, par
+  un calque retrouvé juste avant : tenue.
+- E4, après l'ajout : l'id d'avant ne résout plus.
+- E3 et E10, chemin E : toutes les écritures sont relues correctement ; c'est
+  la vérification du harnais, qui reparcourt le conteneur par ses handles de
+  pose, qui lève.
+- E3 et E10, chemin F : le bloc « arbre attendu » n'est pas imprimé, or le
+  harnais ne l'imprime qu'en cas d'écart. L'arbre posé est donc exactement
+  l'arbre voulu, 22 règles et 3 séparateurs compris. Le rouge vient du dernier
+  critère, le compte des calques morts.
+
+Et la moitié d'E2 ne mesurait rien : `resetSlot` était appelé sur un slot resté
+à son contenu par défaut, où ne rien faire est le comportement juste. Le
+`.remove()`, lui, est vert aux deux niveaux, instance vivante.
+
+**Correction du harnais.** Aucun handle n'est plus gardé : chaque calque est
+retrouvé juste avant usage, chaque slot est relu par son id après un ajout,
+l'exemple gardé se désigne par son rang, la vérification repart du conteneur
+relu par son id, et les boucles de retrait sont bornées. `ecrireDans` relit
+après écriture et recommence une fois sur un calque retrouvé, ce qui distingue
+une écriture perdue d'un refus. E2 retire d'abord un enfant, puis mesure si
+`resetSlot` le rend. E4 garde volontairement un handle périmé, pour que la
+péremption reste mesurée au lieu d'être supposée.
+
+Un banc Node sur un faux Figma, hors du dépôt, rejoue chaque bouton : le faux
+document tue le handle d'un node rangé dans une instance, comme Figma. E1, E2,
+E3, E4, E6, E6b, E10E et E10F y passent au vert, arbre conforme et conteneur
+partiel supprimé. E5, E8 et E9 n'y sont pas jugeables : le banc ne simule ni
+largeur rendue, ni boîte absolue, ni maître distant.
+
+**E7 contredit le reste, et reste ouvert.** Sur le component set `Alert`, dont
+la page portait alors plusieurs conteneurs créés par les essais, le plugin
+répond « Aucune règle d'usage exploitable ne documente quand l'utiliser ». Or
+un conteneur écrit bien « Alert ». Le relevé transmis ne porte que cette
+phrase, pas la liste des constats, et la cause reste inconnue : conteneur lu
+parmi plusieurs, règles non reconnues comme `.ruleItem`, ou textes d'aide sans
+marqueur. E7 est dans la liste de la porte H2 ; elle ne se referme pas avant
+que la liste complète des constats soit relevée, sur une page ne portant qu'un
+seul conteneur.
+
+**Reste à faire dans ce lot.** Rejouer E2, E3, E4, E10E et E10F avec le harnais
+corrigé ; relever E7 en entier sur un conteneur unique ; rejouer E9 sur une
+page dont la seule source est une instance venue d'une bibliothèque publiée.
+Puis `ESSAI-TEMPLATE-REGLES.md`, la porte H2 et le choix du chemin. Ce que la
+première salve suggère, sans le prouver : le chemin F, seul à avoir reproduit
+l'arbre attendu.
