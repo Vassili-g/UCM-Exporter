@@ -1022,5 +1022,14 @@ chacune, les textes des calques que le moteur lit, et la raison pour laquelle
 chaque règle est retenue ou écartée. Un parcours qui lève est rapporté au lieu
 d'arrêter l'essai.
 
-**Reste à faire dans ce lot.** E7 bis, puis E7 ; E9 quand une page de
-bibliothèque sera disponible. Puis `ESSAI-TEMPLATE-REGLES.md` et la porte H2.
+**Premier E7 bis : la page ne portait aucun conteneur.** Aucune instance
+n'écrivait « Alert » ; les quatre que la page porte documentent d'autres
+composants. Les conteneurs créés par les essais avaient été supprimés entre la
+création et la lecture. Le message de sélection disait donc vrai, et l'hypothèse
+d'un conteneur illisible tombe : elle n'a jamais été mise à l'épreuve. E7 bis
+lit maintenant chaque conteneur qui écrit le nom, pas seulement celui que le
+moteur retiendrait : un clic après E3 juge les deux chemins.
+
+**Reste à faire dans ce lot.** E3 puis E7 bis d'affilée, sans ménage entre les
+deux ; E9 quand une page de bibliothèque sera disponible. Puis
+`ESSAI-TEMPLATE-REGLES.md` et la porte H2.
