@@ -226,6 +226,40 @@ test('rulesContainerOwner ignore ce qui n’est pas un conteneur', () => {
   assert.equal(rulesContainerOwner(conteneur('   ')), null);
 });
 
+/**
+ * Un calque que Figma ne rend plus : son nom lève, comme sur le sous-calque
+ * d'instance qui a fait échouer la lecture des règles dans un document réel.
+ */
+function calqueIllisible(): any {
+  const calque = noeud('TEXT', 'illisible');
+  Object.defineProperty(calque, 'name', {
+    get() {
+      throw new Error('in get_name: The node (instance sublayer or table cell) '
+        + 'with id "I2014:10527;713:1174" does not exist');
+    },
+  });
+  return calque;
+}
+
+test('un calque que Figma ne rend plus laisse lire les règles du conteneur', async (t) => {
+  // Le calque illisible précède ceux que la lecture cherche, dans le conteneur
+  // comme dans la règle : sans la lecture gardée, la première rencontre lève et
+  // le composant n'a plus de règles du tout.
+  const complet = conteneur('Button', [
+    regle('@usage', [
+      calqueIllisible(),
+      noeud('TEXT', 'content', [], { characters: 'Action principale' }),
+    ]),
+  ]);
+  monterPage(t, [noeud('INSTANCE', '.componentRules', [calqueIllisible(), ...complet.children])]);
+
+  const rules = await extractRules({ name: 'Button' } as ComponentSetNode);
+
+  assert.equal(rules.sectionFound, true);
+  assert.equal(rules.intent?.usage, 'Action principale');
+  assert.deepEqual(rules.warnings, []);
+});
+
 test('un conteneur au calque vide ne documente personne, et le constat le situe', async (t) => {
   const orphelin = conteneur('', [
     regle('@usage', [noeud('TEXT', 'content', [], { characters: 'Action principale' })]),

@@ -155,6 +155,29 @@ export type NodeFouillable = {
   findOne?: (predicat: (child: SceneNode) => boolean) => SceneNode | null;
 };
 
+/**
+ * Nom d'un node, ou null quand Figma refuse de le servir.
+ *
+ * Un sous-calque d'instance reste annoncé par le parcours de la page alors que
+ * Figma ne le rend plus : lire son nom lève « The node ... does not exist », et
+ * l'exception traverse le `findOne` natif, qui fait échouer la lecture des
+ * règles du composant sélectionné. Un node que Figma ne rend pas n'est le
+ * calque cherché par aucun parcours d'ici, et le passer laisse les autres
+ * lisibles.
+ */
+function nomLisible(node: { name: string }): string | null {
+  try {
+    return node.name;
+  } catch {
+    return null;
+  }
+}
+
+/** Vrai d'un node dont le nom vaut la cible, espaces et casse en moins. */
+function porteLeNom(node: { name: string }, cible: string): boolean {
+  return nomLisible(node)?.trim().toLowerCase() === cible;
+}
+
 /** Texte du premier calque texte d'un nom donné dans un node (vide si absent). */
 export function textOfLayer(node: NodeFouillable, layerName: string): string {
   const found = layerOfName(node, layerName.trim().toLowerCase());
@@ -164,7 +187,7 @@ export function textOfLayer(node: NodeFouillable, layerName: string): string {
 /** Premier calque texte d'un nom donné, ou null : `textOfLayer` confond les deux. */
 function layerOfName(node: NodeFouillable, target: string): TextNode | null {
   const found = node.findOne?.(
-    (child) => child.type === 'TEXT' && child.name.trim().toLowerCase() === target,
+    (child) => child.type === 'TEXT' && porteLeNom(child, target),
   );
   return (found ?? null) as TextNode | null;
 }
@@ -232,7 +255,7 @@ function nomOrphelin(node: NodeFouillable): 'vide' | 'marque' | null {
  */
 function visibilityOfLayer(instance: InstanceNode, layerName: string): boolean | null {
   const target = layerName.trim().toLowerCase();
-  const node = instance.findOne((child) => child.name.trim().toLowerCase() === target) as
+  const node = instance.findOne((child) => porteLeNom(child, target)) as
     | (SceneNode & { visible?: boolean })
     | null;
   return node ? node.visible !== false : null;
@@ -364,7 +387,7 @@ function signalerNonRedigees(
  */
 function ruleTagOf(instance: InstanceNode, warnings: string[]): RuleTag | null {
   const calque = instance.findOne(
-    (child) => child.type === 'TEXT' && ruleTagFromLayerName(child.name) !== null,
+    (child) => child.type === 'TEXT' && ruleTagFromLayerName(nomLisible(child) ?? '') !== null,
   );
   const affiche = calque ? ruleTagFromLayerName(calque.name) : null;
   const range = Object.values(instance.variantProperties ?? {})
