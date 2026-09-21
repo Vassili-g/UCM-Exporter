@@ -902,12 +902,12 @@ test('un avertissement n’ouvre aucun lien depuis le corps de la pull request',
   const corps = pullRequestBody(
     'src/components/StressTest/StressTest.contract.json',
     artefactPourPr('component', contratEn('12.0'), [
-      'Layer « skull » : aucune règle @icons ne le désigne. Ajoutez une règle @icons '
-        + 'dont le layer « icon » porte ce nom, puis réexportez.',
+      'Layer « skull » : aucune règle @icons n’indique quelle icône il dessine. Ajoutez une '
+        + 'règle @icons dont le layer « icon » porte ce nom, puis réexportez.',
       'Layer « #12 », espacement : aucune variable Figma n’est reliée.',
     ]),
   );
-  assert.match(corps, /- Layer « skull » : aucune règle `@icons` ne le désigne\./);
+  assert.match(corps, /- Layer « skull » : aucune règle `@icons` n’indique quelle icône/);
   assert.match(corps, /Ajoutez une règle `@icons` dont/);
   assert.match(corps, /Layer « `#12` », espacement/);
   assert.doesNotMatch(corps, /[^`]@icons/);

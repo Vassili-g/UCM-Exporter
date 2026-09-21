@@ -169,9 +169,10 @@ function warnUndeclaredDrawing(
   if (estUnDessinNonDeclare(parent, iconNames, composed)) return;
   const cible = calqueDeDessinANommer(child, iconNames, composed);
   pousserLocalise(warnings, 'Layer', cible, {
-    manque: `il ne contient qu'un dessin, et aucune règle @icons ne le désigne.`,
-    impact: `Le contrat ne décrit pas les tracés : le développeur connaîtra la place et les `
-      + `couleurs de ce layer, jamais son dessin.`,
+    manque: `il n’est fait que de tracés vectoriels, et aucune règle @icons n’indique quelle `
+      + `icône il dessine.`,
+    impact: `Le contrat ne publie aucun tracé : le développeur recevra la place et les couleurs `
+      + `de ce layer, mais pas l’icône à y afficher.`,
     action: `Ajoutez une règle @icons dont le layer « icon » porte « ${cible.name} », puis `
       + `réexportez.`,
   });

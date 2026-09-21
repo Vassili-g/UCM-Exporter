@@ -1237,7 +1237,8 @@ test('un calque graphique sans règle @icons garde le nom de son calque', async 
 
 test('un dessin qu’aucune règle @icons ne désigne est signalé, sous le nom que le designer connaît', async () => {
   // Le contrat n'exporte aucun tracé : sans règle `@icons`, le développeur
-  // recevra la place et les couleurs de ce layer, jamais son dessin. C'est
+  // recevra la place et les couleurs de ce layer, mais pas l'icône à y
+  // afficher. C'est
   // l'icône qu'on a oublié de déclarer, et le message nomme le layer que le
   // designer déclarerait : « skull », jamais le « Vector » que Figma a nommé
   // pour lui, ni le cadre qui l'enveloppe.
@@ -1271,7 +1272,7 @@ test('un dessin qu’aucune règle @icons ne désigne est signalé, sous le nom 
   const warnings: string[] = [];
   await extractLayout(racine, resolverFor({}), warnings, new Map(), new Set());
 
-  const dessin = warnings.filter((warning) => warning.includes('règle @icons ne le désigne'));
+  const dessin = warnings.filter((warning) => warning.includes('règle @icons n’indique quelle icône il dessine'));
   assert.equal(dessin.length, 1);
   assert.ok(dessin[0].includes('Layer « skull »'));
   assert.ok(dessin[0].includes('Ajoutez une règle @icons'));
@@ -1299,7 +1300,7 @@ test('une icône déclarée ne réclame plus rien, et un composant qui EST un de
 
   const declare: string[] = [];
   await extractLayout(racine, resolverFor({}), declare, new Map(), new Set(['skull']));
-  assert.deepEqual(declare.filter((w) => w.includes('règle @icons ne le désigne')), []);
+  assert.deepEqual(declare.filter((w) => w.includes('règle @icons n’indique quelle icône il dessine')), []);
 
   // Une icône exportée pour elle-même n'a aucune règle à se donner : le dessin
   // n'est pas un layer égaré dans le composant, il est le composant.
@@ -1313,7 +1314,7 @@ test('une icône déclarée ne réclame plus rien, et un composant qui EST un de
   } as unknown as ComponentNode;
   const seule: string[] = [];
   await extractLayout(icone, resolverFor({}), seule, new Map(), new Set());
-  assert.deepEqual(seule.filter((w) => w.includes('règle @icons ne le désigne')), []);
+  assert.deepEqual(seule.filter((w) => w.includes('règle @icons n’indique quelle icône il dessine')), []);
 });
 
 test('une surface colorée n’est pas un dessin : rien à déclarer', async () => {
@@ -1334,7 +1335,7 @@ test('une surface colorée n’est pas un dessin : rien à déclarer', async () 
   const warnings: string[] = [];
   await extractLayout(racine, resolverFor({}), warnings, new Map(), new Set());
 
-  assert.deepEqual(warnings.filter((w) => w.includes('règle @icons ne le désigne')), []);
+  assert.deepEqual(warnings.filter((w) => w.includes('règle @icons n’indique quelle icône il dessine')), []);
 });
 
 test('un slot masquable conserve les visibilités portées plus bas', () => {
