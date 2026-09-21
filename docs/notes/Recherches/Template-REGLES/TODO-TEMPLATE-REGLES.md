@@ -163,7 +163,7 @@ nulle part.
       dupliquer le fichier de tests, ouvrir la page d'un component set, le
       sélectionner, lancer chaque essai, rejouer E1 à E3 et E7 avec un maître
       de bibliothèque pour E9, puis coller les résultats dans la conversation.
-- [ ] **[mainteneur]** Lancer les essais sur une copie du fichier de tests et
+- [x] **[mainteneur]** Lancer les essais sur une copie du fichier de tests et
       transmettre les résultats. L'agent passe au lot 2 sans attendre.
 
 ## 2a. Moteur : le marqueur `[À compléter]`
@@ -341,27 +341,27 @@ Référence : [phase 1](PLAN-TEMPLATE-REGLES.md#phase-1-essai-dans-figma),
 
 Le lot 5 ne commence pas avant que cette section soit cochée.
 
-- [ ] **[mainteneur]** Résultats des essais E1 à E10 transmis.
-- [ ] Créer `ESSAI-TEMPLATE-REGLES.md` dans ce dossier : un tableau par essai
+- [x] **[mainteneur]** Résultats des essais E1 à E10 transmis.
+- [x] Créer `ESSAI-TEMPLATE-REGLES.md` dans ce dossier : un tableau par essai
       (geste, critère, résultat, erreur mot pour mot), les ids relevés par E4,
       la durée de E10, le comportement de Ctrl+Z relevé par E6. Statut de
       chaque fait : mesuré.
-- [ ] Porte H2 : si E1, E2, E4 ou E7 échoue, ou si E3 échoue sur les deux
+- [x] Porte H2 : si E1, E2, E4 ou E7 échoue, ou si E3 échoue sur les deux
       chemins, s'arrêter. Écrire dans le compte rendu les trois issues du plan
       (liste des règles affichée dans la carte sans rien écrire, maîtres bâtis
       par le code, abandon), et attendre le choix du mainteneur. Les lots 5 à 8
       ne s'exécutent pas tels quels.
-- [ ] Choisir le chemin E ou F de 6.4 d'après E3, et l'écrire dans la section
+- [x] Choisir le chemin E ou F de 6.4 d'après E3, et l'écrire dans la section
       6.4 du plan. À succès égal, le chemin E, qui crée moins de nodes.
-- [ ] Reporter dans le plan les faits établis : affectation de
+- [x] Reporter dans le plan les faits établis : affectation de
       `layoutSizingHorizontal` nécessaire ou non (E5), handles à relire par
       id après un ajout (E4), `commitUndo` nécessaire ou non (E6, H1-H),
       chevauchement à la pose (E8).
-- [ ] E9 échoué seul : noter l'issue de 12.1 dans le compte rendu, puis
+- [x] E9 échoué seul : noter l'issue de 12.1 dans le compte rendu, puis
       continuer. Le template fonctionnera avec un maître local.
-- [ ] Corriger `src/template/sources.ts` si E1 ou E9 contredit la résolution
+- [x] Corriger `src/template/sources.ts` si E1 ou E9 contredit la résolution
       des maîtres, avec son test.
-- [ ] Commit du compte rendu d'essai et du plan, push.
+- [x] Commit du compte rendu d'essai et du plan, push.
 
 ## 5. Écriture et frontière
 
@@ -1030,6 +1030,37 @@ d'un conteneur illisible tombe : elle n'a jamais été mise à l'épreuve. E7 bi
 lit maintenant chaque conteneur qui écrit le nom, pas seulement celui que le
 moteur retiendrait : un clic après E3 juge les deux chemins.
 
-**Reste à faire dans ce lot.** E3 puis E7 bis d'affilée, sans ménage entre les
-deux ; E9 quand une page de bibliothèque sera disponible. Puis
-`ESSAI-TEMPLATE-REGLES.md` et la porte H2.
+### 1b. Clôture : la porte H2 ne s'ouvre pas
+
+E7 bis, joué sur les deux conteneurs qu'E3 venait de poser, rend E7 vert : le
+moteur lit les deux en entier, reconnaît douze règles par leur component set,
+lit le tag de onze d'entre elles, et écarte les dix qui portent encore le
+marqueur. La onzième, `@icons`, passe le marqueur parce que son calque `icon`
+n'a pas été préfixé dans le fichier du design system, puis `buildRules`
+l'écarte : le maître montre à la fois `modifiable` et `strict`. Rien n'est
+publiable, et la carte le dit. C'est le comportement prévu en 6.5.
+
+Le relevé apporte un fait qui corrige la salve précédente : **la coquille morte
+ne survit pas à la session qui l'a créée.** E7 bis lit sans lever le conteneur
+du chemin E, que le harnais n'avait pas pu relire. Le défaut du chemin E est
+donc borné à la session d'écriture, et il y est total. Cela ne change pas le
+choix : le plugin relance la lecture de la sélection juste après la création,
+donc dans cette session-là, et seul le chemin F y survit.
+
+Porte H2 : E1, E2 et E7 verts, E3 vert du côté F, E4 rouge sur la seule
+relecture en session, que la discipline retenue évite. **Elle ne s'ouvre pas**,
+et les trois issues du plan n'ont pas à être écrites. E9 n'a pas été joué,
+faute de page de bibliothèque ; l'issue de 12.1 reste ouverte, elle ne concerne
+que l'équipe consommatrice, et le lot 5 continue. E1 confirme l'ordre des
+sources de 5.2 : `src/template/sources.ts` n'a rien à corriger.
+
+`ESSAI-TEMPLATE-REGLES.md` porte le détail, essai par essai, avec les erreurs
+mot pour mot et les sept règles que le lot 5 hérite. Le plan reçoit le chemin
+retenu (6.4), les trois faits d'écriture d'E4, la nécessité de `FILL` (E5), le
+verdict d'H1-H (E6) et le chevauchement mesuré (E8, section 7).
+
+**Deux gestes attendent le mainteneur dans Figma**, et le premier bloque la
+recette : préfixer par `[À compléter]` le calque `icon` de la variante
+`@icons`, que la vérification des textes d'aide du lot 4 exige, et le calque
+`prop` des variantes `@prop`, `@boolean` et `@default`. E9 reste à jouer le
+jour où une page de bibliothèque sera disponible.

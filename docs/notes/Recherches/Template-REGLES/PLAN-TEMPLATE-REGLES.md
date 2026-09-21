@@ -450,7 +450,16 @@ maître encore à l'ancienne ferait publier ses textes d'aide comme documentatio
 
 ### 6.4. Écriture dans les slots
 
-Deux chemins, que l'essai départage :
+**Chemin retenu : F**, mesuré par E3 et E10
+([ESSAI-TEMPLATE-REGLES.md](ESSAI-TEMPLATE-REGLES.md#e3-les-deux-chemins-de-lécriture)).
+Le chemin E pose l'arbre correctement, mais aucun parcours du conteneur n'est
+plus possible dans la session qui vient d'écrire : un node rangé dans un slot
+imbriqué laisse une coquille à son ancien chemin, et la lire lève. Or le plugin
+relance la lecture de la sélection juste après la création, dans cette
+session-là. Le chemin F laisse des coquilles inertes, une par section ajoutée,
+et reproduit l'arbre attendu à chaque essai, pour 61 ms de plus sur 22 règles.
+
+Les deux chemins mesurés :
 
 | Chemin | Gestes | Risque |
 |---|---|---|
@@ -458,13 +467,23 @@ Deux chemins, que l'essai départage :
 | F. Reconstruire les sections | vider le slot du conteneur ; créer chaque `.rulesSection` utile sur la page, la remplir, l'ajouter au slot | deux niveaux de création |
 
 Les deux chemins retirent des enfants de slot d'instance : la section de
-documentation et l'exemple `@default` au moins. Ce retrait est rapporté
-impossible par le forum, et le guide MCP dit que `resetSlot` vide le slot d'une
-instance. L'essai E2 tranche ; son échec ferme les deux chemins (porte H2).
+documentation et l'exemple `@default` au moins. Le forum rapportait ce retrait
+impossible ; E2 montre qu'il ne l'est pas, et que `resetSlot` rend bien le
+contenu par défaut.
 
-Dans les deux chemins, une règle ajoutée reçoit Fill en largeur, sauf si le
-réglage `stretchChildOnInsert` du slot le fait déjà pour un ajout par l'API
-(non vérifié).
+Une règle ajoutée reçoit Fill en largeur par `layoutSizingHorizontal`. E5 le
+mesure nécessaire : les deux `slotSettings` sont nuls, `stretchChildOnInsert`
+ne joue pas, et sans l'affectation la règle garde les 689 px du variant et
+déborde du slot de 526 px.
+
+Trois faits d'écriture, mesurés par E4, valent pour tout le module :
+
+- un handle de sous-calque périme dès qu'on écrit ailleurs dans la même
+  instance, et l'écriture qu'il reçoit est perdue sans rien lever. Chaque
+  calque se retrouve juste avant usage ;
+- toute écriture se relit, et se recommence une fois sur un calque retrouvé ;
+- une règle s'écrit avant d'être rangée, jamais après : son id change en
+  entrant dans le slot.
 
 ### 6.5. Exemple pour un component set fictif `Button`
 
@@ -507,7 +526,7 @@ déclaré.
 | Une règle existante porte le marqueur | elle n'est pas rédigée | avertissement de 6.2 |
 | Textes d'aide du maître sans marqueur | le template ferait publier l'aide | refus au clic, message de 6.3 |
 | Conteneur orphelin, `component-name` vide | `extractRules` le signale et demande d'y écrire le nom | il n'est pas vierge : le bouton crée une instance à côté |
-| Component set dans un frame ou une section | documenté : `SectionNode` accepte `appendChild` ; mesuré : le set de test est dans un frame, lui-même dans une section | section ancêtre la plus proche, sinon la page, à 80 px à droite du set en coordonnées absolues. Chevauchement non vérifié |
+| Component set dans un frame ou une section | documenté : `SectionNode` accepte `appendChild` ; mesuré : le set de test est dans un frame, lui-même dans une section | section ancêtre la plus proche, sinon la page, à 80 px à droite du set en coordonnées absolues. Mesuré par E8 : la section accepte l'enfant sans s'agrandir, mais le conteneur recouvre un voisin. La place se choisit en regardant les voisins |
 | Parent en auto layout | un ajout décalerait les voisins | jamais dans un parent en auto layout |
 | Fichier en lecture seule | rapporté : un utilisateur en lecture seule ne lance pas de plugin de design | aucun état à prévoir |
 | Maître de bibliothèque | non vérifié ; cas de l'équipe consommatrice | essai E9 |
@@ -813,7 +832,7 @@ d'alors publie comme documentation réelle, ce qui est le défaut que la
 | H1-E | Que contient le template ? | les règles que le composant emploie, selon 6.1 |
 | H1-F | Que montre Figma après la création ? | le composant reste sélectionné, composant et conteneur sont cadrés |
 | H1-G | D5 est-il confirmé ? | sans réponse explicite ; tenu, conformément à H1-D |
-| H1-H | Comment se défait une création ? | par la suppression du conteneur ; `commitUndo` n'entre dans le module que si E6 montre un Ctrl+Z qui défait aussi un geste antérieur au clic |
+| H1-H | Comment se défait une création ? | par la suppression du conteneur. Tranché par E6 : un Ctrl+Z défait déjà toute la création d'un coup, et `commitUndo` n'y change rien. Le module ne l'appelle pas |
 | H1-I | D'où vient le kit pour une équipe qui n'a pas la source ? | un second fichier publié sur la Community, selon la section 12.2. L'import par clé et les champs natifs de Figma sont écartés |
 
 Précisions confirmées : une règle `@prop` par valeur, groupées par axe ; ni
