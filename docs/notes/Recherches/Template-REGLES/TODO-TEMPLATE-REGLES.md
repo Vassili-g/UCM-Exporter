@@ -508,7 +508,7 @@ sections [8.2](PLAN-TEMPLATE-REGLES.md#82-libellé-et-rang) à
 
 Référence : [phase 7](PLAN-TEMPLATE-REGLES.md#phase-7-recette-dans-figma).
 
-- [ ] Préparer `packages/plugin/dist/` par `npm run build` et écrire dans le
+- [x] Préparer `packages/plugin/dist/` par `npm run build` et écrire dans le
       compte rendu les épreuves ci-dessous, avec l'état de galerie qui
       correspond à chacune.
 - [ ] **[mainteneur]** Création sur une page de composants qui porte une
@@ -1194,3 +1194,37 @@ verts.
 **Rouge du dépôt, étranger à ce lot.** Toujours les quatre `#666666` de
 `styles.css`, entrés par `7e7bb83` et `45be9a2`. Ce lot touche la feuille et n'y
 écrit aucune couleur : ses deux règles nouvelles lisent les rôles.
+
+### 7. Recette dans Figma
+
+`packages/plugin/dist/` est bâti sur `2d28f1d` : `code.js`, `ui.html` et
+`manifest.json`. Le mainteneur importe ce manifeste dans Figma, comme pour le
+plugin d'essai, et joue les huit épreuves ci-dessous. Chacune se regarde contre
+l'état de galerie qui lui correspond ; un écart entre l'écran de Figma et la
+capture est un écart à rapporter.
+
+| # | Épreuve | Avant | Après | État de galerie |
+|---|---|---|---|---|
+| 1 | Page de composants portant une instance de `.componentRules` rédigée pour un autre composant | bouton actif | conteneur posé à droite, 22 règles marquées | `creation-offerte`, puis `creation-faite` |
+| 2 | Page ne portant que le maître `.componentRules`, aucune instance | bouton actif | même pose | `creation-offerte` |
+| 3 | Instance vierge collée par le designer, jamais remplie | bouton actif | l'instance collée est remplie où elle est, aucune seconde instance | `creation-conteneur-vierge` |
+| 4 | Component set rangé dans une section Figma | bouton actif | conteneur dans la même section, sans l'agrandir ; component set et conteneur cadrés ensemble, sélection restée sur le component set | `creation-faite` |
+| 5 | Maître de `.componentRules` venu d'une bibliothèque (le cas de l'équipe consommatrice, E9 jamais joué) | bouton actif | même pose ; un refus ici est l'issue de 12.1, à noter sans arrêter la recette | `creation-offerte` |
+| 6 | Conteneur supprimé après une création, puis seconde création | bouton revenu | conteneur reposé, sans doublon | `creation-faite`, puis `creation-offerte` |
+| 7 | Trois règles rédigées sur les 22, puis « Analyser le composant » | — | les trois publiées, les autres signalées par tag ; publication possible | `regle-usage-absente`, puis `resultat-un-avertissement` |
+| 8 | Page sans aucune instance ni maître de `.componentRules` | bouton inactif sous sa note | le lien ouvre FORMAT.md dans le navigateur, la fenêtre du plugin reste en place | `creation-sans-source` |
+
+Trois états de galerie ne se provoquent pas à la demande, et ne sont pas dans
+cette liste : les deux échecs d'écriture et le refus des textes d'aide sans
+marqueur. Ce dernier se provoque pourtant, en retirant le marqueur d'un
+`content` du maître de `.ruleItem` : à jouer si le mainteneur veut le voir dans
+Figma (`creation-aides-sans-marqueur`).
+
+À vérifier aussi pendant l'épreuve 1, ce que les essais ont mesuré et que la
+recette confirme sur le vrai fichier : le conteneur ne recouvre aucun voisin
+(E8), Ctrl+Z défait la création d'un coup (E6), et le relevé de sélection qui
+suit fait disparaître le bouton sans effacer la note du succès.
+
+**Demande au mainteneur.** Jouer les huit épreuves et transmettre, pour chacune,
+le résultat et ce que l'écran affichait. Un écart ouvre une tâche de correction
+avec son test de régression, avant le lot 8.
