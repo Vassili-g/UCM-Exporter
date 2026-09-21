@@ -959,9 +959,68 @@ marqueur. E7 est dans la liste de la porte H2 ; elle ne se referme pas avant
 que la liste complète des constats soit relevée, sur une page ne portant qu'un
 seul conteneur.
 
-**Reste à faire dans ce lot.** Rejouer E2, E3, E4, E10E et E10F avec le harnais
-corrigé ; relever E7 en entier sur un conteneur unique ; rejouer E9 sur une
-page dont la seule source est une instance venue d'une bibliothèque publiée.
-Puis `ESSAI-TEMPLATE-REGLES.md`, la porte H2 et le choix du chemin. Ce que la
-première salve suggère, sans le prouver : le chemin F, seul à avoir reproduit
-l'arbre attendu.
+### 1b. Seconde salve : la coquille morte, et le chemin tranché
+
+E2, E3, E4, E10E et E10F rejoués avec le harnais corrigé. E2 passe au vert ;
+les quatre autres restent rouges, et leurs relevés disent maintenant pourquoi,
+sans rien laisser à la déduction.
+
+**E2 est acquis en entier.** `.remove()` retire une section et un exemple,
+instance vivante. `resetSlot`, mesuré cette fois sur un slot dont un enfant
+vient d'être retiré, rend le contenu par défaut : 5 par défaut, 4 après le
+retrait, 5 après l'appel.
+
+**La péremption est mesurée.** E4 garde un handle pris avant d'écrire
+`component-name`, puis écrit par lui : « écrit tone.a, relu prop.name ».
+L'écriture est perdue et rien ne le dit. La même écriture par un calque
+retrouvé juste avant tient. Le harnais le nomme : « handle capturé après une
+écriture voisine : périmé ».
+
+**Le fantôme est dans le document, pas dans le plugin.** C'est le fait neuf de
+cette salve. Après l'ajout d'une règle dans un slot, E4 relit le conteneur par
+son id, et le parcours lève quand même : « The node … with id
+I2004:7889;175:228 does not exist ». Relire par l'id ne purge donc rien : le
+sous-arbre du conteneur porte une coquille morte à l'ancien chemin de chaque
+node rangé dans un slot.
+
+**Les deux chemins ne s'en tirent pas pareil.**
+
+| | Chemin E | Chemin F |
+|---|---|---|
+| Ajout | une règle dans le slot d'une section, elle-même dans le slot du conteneur | une section entière dans le slot du conteneur, règles déjà posées hors de l'arbre |
+| Coquilles | lèvent au premier parcours qui lit un nom | inertes : elles répondent `removed`, sans lever |
+| Arbre obtenu | jamais relu | exactement l'arbre attendu, séparateurs compris |
+| Compte | relecture impossible | 4 calques morts, un par section ajoutée |
+| Durée, 22 règles | 1 926 ms | 1 987 ms |
+| Retour arrière | conteneur partiel supprimé | conteneur partiel supprimé |
+
+**Décision : le chemin F.** Le plan préférait E « à succès égal » ; le succès
+n'est pas égal. E échoue à chaque essai, sur un défaut qui n'est pas dans le
+harnais mais dans ce que Figma laisse derrière un ajout imbriqué. F reproduit
+l'arbre voulu à chaque essai. La contrepartie est connue et bornée : une
+coquille morte par section ajoutée, inerte.
+
+**Ce que le lot 5 en hérite.**
+
+1. Construire chaque section hors de l'arbre, la remplir, puis la ranger d'un
+   seul geste. Jamais d'ajout dans un slot déjà imbriqué.
+2. Ne garder aucun handle : retrouver chaque calque juste avant d'écrire.
+3. Relire après chaque écriture, et recommencer une fois sur un calque
+   retrouvé : une écriture perdue ne lève pas.
+4. `commitUndo` n'est pas appelé (E6).
+5. La pose tient compte des voisins : le chevauchement d'E8 est avéré.
+
+**E7 reste ouvert, et devient un bouton.** La phrase relevée deux fois,
+« Aucune règle d'usage exploitable… », ne vient pas de l'analyse : c'est le
+message de sélection de `reportSelectionState`, et il dit seulement que
+`hasUsableRules` est faux. Il ne dit pas si le moteur a lu le conteneur, ni
+pourquoi il en a écarté les règles. Le harnais reçoit donc E7 bis, qui rejoue
+la lecture du moteur sur la page et relève, pas à pas : les conteneurs qui
+écrivent le nom du composant et lequel serait lu, les instances du conteneur,
+celles que leur component set désigne comme `.ruleItem`, le tag affiché de
+chacune, les textes des calques que le moteur lit, et la raison pour laquelle
+chaque règle est retenue ou écartée. Un parcours qui lève est rapporté au lieu
+d'arrêter l'essai.
+
+**Reste à faire dans ce lot.** E7 bis, puis E7 ; E9 quand une page de
+bibliothèque sera disponible. Puis `ESSAI-TEMPLATE-REGLES.md` et la porte H2.
