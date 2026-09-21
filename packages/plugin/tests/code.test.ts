@@ -58,6 +58,8 @@ function ouvrir() {
       maitreLocal: null, instanceSource: null,
     },
   };
+  /** Ce que la lecture des règles conclut du conteneur ; le test le choisit. */
+  const regles = { exploitables: true, aRediger: 0 };
   /** Le test de connexion, par configuration reçue. */
   const connexionDe = { traiter: async (_config: { projet: string; jeton: string }): Promise<Diagnostic> => ({ cause: 'connecte', layout: null }) };
   const runtime = {
@@ -82,7 +84,11 @@ function ouvrir() {
   const modules: Record<string, unknown> = {
     '@ucm-kit/core/format': format, './config': config, './connexion': connexion,
     './cible': cible, './fenetre': fenetre, './prevol': prevol,
-    './contract/extractRules': { extractRules: async () => ({ releve: releve.actuel }), hasUsableRules: () => true },
+    './contract/extractRules': {
+      extractRules: async () => ({ releve: releve.actuel, aRediger: regles.aRediger }),
+      hasUsableRules: () => regles.exploitables,
+      MARQUEUR_A_COMPLETER: '[À compléter]',
+    },
     './template/sources': { ...sources, resoudreLesSources: async () => resolution.traiter() },
     './template/modele': modele,
     './template/ecriture': { creerLesRegles: async () => { appels.ecritures += 1; return creation.traiter(); } },
@@ -113,7 +119,7 @@ function ouvrir() {
     clearTimeout: (id: number) => temporisations.delete(id),
   });
   return {
-    messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, resolution, creation, runtime, stockage,
+    messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, regles, resolution, creation, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
     selectionner(id: string, parent?: { type: string }) {
       runtime.currentPage.selection = [{ id, type: 'COMPONENT', name: 'Exemple', parent }];
@@ -1079,6 +1085,51 @@ test('un variant seul ne reçoit aucune offre, quoi que la page porte', async ()
 
   const cibles = h.messages.filter((message) => message.type === 'cible');
   for (const cible of cibles) assert.equal(cible.offre ?? null, null);
+});
+
+/** Le dernier avertissement posé sous le nom du composant. */
+function dernierAvertissement(h: ReturnType<typeof ouvrir>): string | null {
+  const cibles = h.messages.filter((message) => message.type === 'cible');
+  return cibles.at(-1)?.avertissement ?? null;
+}
+
+test('des règles posées qui attendent leur texte ne se disent pas « aucune règle »', async () => {
+  // La création vient de poser le conteneur : lui répondre qu'aucune règle ne
+  // documente le composant dément la note du succès et cache le geste restant.
+  const h = ouvrir();
+  h.regles.exploitables = false;
+  h.regles.aRediger = 22;
+  await h.envoyer({ type: 'ui-ready' });
+  await tourner();
+
+  assert.equal(
+    dernierAvertissement(h),
+    'Les 22 règles posées portent encore « [À compléter] », donc aucune n’est exportée. '
+    + 'Rédigez-les dans Figma, puis relancez l’analyse.',
+  );
+});
+
+test('une seule règle à rédiger se dit au singulier', async () => {
+  const h = ouvrir();
+  h.regles.exploitables = false;
+  h.regles.aRediger = 1;
+  await h.envoyer({ type: 'ui-ready' });
+  await tourner();
+
+  assert.equal(
+    dernierAvertissement(h),
+    'La règle posée porte encore « [À compléter] », donc elle n’est pas exportée. '
+    + 'Rédigez-la dans Figma, puis relancez l’analyse.',
+  );
+});
+
+test('un composant sans règle à rédiger garde le constat de l’absence', async () => {
+  const h = ouvrir();
+  h.regles.exploitables = false;
+  await h.envoyer({ type: 'ui-ready' });
+  await tourner();
+
+  assert.match(dernierAvertissement(h) ?? '', /^Aucune règle d’usage exploitable/);
 });
 
 /** Le dernier texte de compte rendu, celui que la carte montre. */

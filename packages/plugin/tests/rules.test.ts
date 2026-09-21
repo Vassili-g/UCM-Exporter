@@ -549,6 +549,28 @@ test('les règles marquées d’un même tag donnent une ligne, au pluriel, qui 
   assert.deepEqual(localisations.get(rules.warnings[1]), ['p0', 'p1', 'p2']);
 });
 
+test('la lecture compte les règles qui attendent encore leur texte', async (t) => {
+  // La carte du composant distingue un conteneur fraîchement posé d'un composant
+  // qui n'en a aucun : le compte est ce qui les sépare.
+  monterPage(t, [conteneur('Root', [
+    regle('@usage', [texte('content', `${MARQUEUR} Décrivez le composant.`)]),
+    regle('@do', [texte('content', `${MARQUEUR} Décrivez un usage recommandé.`)]),
+    regle('@dont', [texte('content', `${MARQUEUR} Décrivez un usage à éviter.`)]),
+  ])]);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.equal(rules.aRediger, 3);
+});
+
+test('un composant sans conteneur n’a aucune règle qui attende son texte', async (t) => {
+  monterPage(t, []);
+
+  const rules = await extractRules({ name: 'Root' } as ComponentSetNode);
+
+  assert.equal(rules.aRediger, 0);
+});
+
 test('l’avertissement du marqueur nomme « .ruleItem », quel que soit le nom du calque', async (t) => {
   const renommee = regle('@boolean', [texte('prop', 'mark'), texte('content', `${MARQUEUR} x`)]);
   renommee.name = '.rulesItems';

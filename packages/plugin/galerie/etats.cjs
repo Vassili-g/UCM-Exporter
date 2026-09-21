@@ -165,6 +165,10 @@ const SELECTION_PRETE = cible([{ type: 'COMPONENT_SET', name: COMPOSANT, variant
 const SANS_REGLE_LISIBLE = 'Aucune règle d’usage exploitable ne documente quand l’utiliser. '
   + 'Les diagnostics diront ce que le contrat sait décrire, et intent vaudra null.';
 
+/** Ce que le même relevé écrit quand le conteneur est posé mais pas rédigé. */
+const REGLES_A_REDIGER = 'Les 22 règles posées portent encore « [À compléter] », donc aucune '
+  + 'n’est exportée. Rédigez-les dans Figma, puis relancez l’analyse.';
+
 /**
  * Le pire nom réel d'un component set : quatre segments, aucune coupure
  * naturelle dans le dernier.
@@ -172,9 +176,9 @@ const SANS_REGLE_LISIBLE = 'Aucune règle d’usage exploitable ne documente qua
 const COMPOSANT_LONG = 'Feedback / Notification / Contextual / InlineMessageWithAction';
 
 /** Un composant à documenter, avec l'offre que la page justifie. */
-const aCreer = (offre, nom = COMPOSANT_LONG) => cible(
+const aCreer = (offre, nom = COMPOSANT_LONG, avertissement = SANS_REGLE_LISIBLE) => cible(
   [{ type: 'COMPONENT_SET', name: nom, variants: 12 }],
-  SANS_REGLE_LISIBLE,
+  avertissement,
   offre,
 );
 
@@ -457,12 +461,12 @@ const ETATS = [
     titre: 'Les règles sont posées',
     quand: 'Vingt-deux règles créées à droite du composant, toutes marquées « [À compléter] ».',
     regarder:
-      'La note du succès survit au relevé de sélection qui suit, et le bouton de création a disparu : le composant a désormais son conteneur. « Analyser le composant » est redevenu disponible.',
+      'La note du succès survit au relevé de sélection qui suit, et le bouton de création a disparu : le composant a désormais son conteneur. L’avertissement compte les règles qui attendent leur texte, au lieu de dire qu’aucune règle ne documente le composant. « Analyser le composant » est redevenu disponible.',
     existe: true,
     atteinte: [
       ...lancerLaCreation(),
       { message: { type: 'status', state: 'success', text: CREATION_FAITE } },
-      aCreer(null),
+      aCreer(null, COMPOSANT_LONG, REGLES_A_REDIGER),
     ],
   },
   {

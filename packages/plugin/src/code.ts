@@ -4,7 +4,8 @@
  * Rôle : afficher l'UI, écouter ses demandes d'export, lancer le bon
  * handler et lui renvoyer le fichier produit ou l'erreur.
  */
-import { extractRules, hasUsableRules } from './contract/extractRules';
+import { extractRules, hasUsableRules, MARQUEUR_A_COMPLETER } from './contract/extractRules';
+import type { ExtractedRules } from './contract/extractRules';
 import handleExportComponent, { getSelectedComponent } from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './tokens/exportTokens';
@@ -357,6 +358,27 @@ async function resumerLesTokens(): Promise<void> {
 let selectionToken = 0;
 
 /**
+ * Ce que la carte dit d'un composant dont aucune règle n'est exportable.
+ *
+ * Deux situations s'y rejoignent, et le geste n'est pas le même : le composant
+ * n'a pas de conteneur, ou il vient d'en recevoir un dont les règles attendent
+ * leur texte. Une création qui vient de réussir se ferait démentir par le
+ * constat de l'absence, et le designer chercherait un conteneur qu'il a sous
+ * les yeux.
+ */
+function avertissementDesRegles(regles: ExtractedRules): string {
+  if (regles.aRediger === 0) {
+    return `Aucune règle d’usage exploitable ne documente quand l’utiliser. Les diagnostics diront `
+      + `ce que le contrat sait décrire, et intent vaudra null.`;
+  }
+  return regles.aRediger === 1
+    ? `La règle posée porte encore « ${MARQUEUR_A_COMPLETER} », donc elle n’est pas exportée. `
+      + 'Rédigez-la dans Figma, puis relancez l’analyse.'
+    : `Les ${regles.aRediger} règles posées portent encore « ${MARQUEUR_A_COMPLETER} », donc `
+      + 'aucune n’est exportée. Rédigez-les dans Figma, puis relancez l’analyse.';
+}
+
+/**
  * Analyse la sélection courante et prévient l'utilisateur avant toute action.
  * Les règles enrichissent la documentation ; elles ne conditionnent pas la capture.
  */
@@ -398,9 +420,7 @@ async function reportSelectionState(): Promise<void> {
     selectionId,
     detail: detailDeCible(etat.cible),
     offre,
-    avertissement: exploitables ? null
-      : `Aucune règle d’usage exploitable ne documente quand l’utiliser. Les diagnostics diront `
-        + `ce que le contrat sait décrire, et intent vaudra null.`,
+    avertissement: exploitables ? null : avertissementDesRegles(rules),
   });
 }
 

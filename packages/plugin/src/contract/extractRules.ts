@@ -141,6 +141,16 @@ function estVierge(conteneur: InstanceNode): boolean {
 export type ExtractedRules = RulesResult & {
   sectionFound: boolean;
   releve: ReleveDeSource;
+  /**
+   * Combien de règles posées attendent encore leur texte, c'est-à-dire portent
+   * le marqueur dans un calque que leur tag lit.
+   *
+   * La carte du composant s'en sert pour séparer deux situations qui ne
+   * demandent pas le même geste : poser un conteneur, ou rédiger celui qui
+   * vient d'être posé. Sans ce compte, la carte dirait « aucune règle » juste
+   * après en avoir créé vingt-deux.
+   */
+  aRediger: number;
 };
 
 /**
@@ -490,6 +500,7 @@ export async function extractRules(
       warnings: absent,
       sectionFound: false,
       releve,
+      aRediger: 0,
     };
   }
 
@@ -585,5 +596,6 @@ export async function extractRules(
     warnings: tous,
     sectionFound: true,
     releve,
+    aRediger: [...nonRedigees.values()].reduce((total, regles) => total + regles.length, 0),
   };
 }
