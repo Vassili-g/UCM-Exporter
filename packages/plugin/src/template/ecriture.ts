@@ -148,7 +148,7 @@ async function ecrireDans(
     calque.characters = texte;
     if (calque.characters === texte) return;
   }
-  throw new Error(`Le layer « ${nomDuCalque} » n'a pas gardé le texte « ${texte} ».`);
+  throw new Error(`Le layer « ${nomDuCalque} » n’a pas gardé le texte écrit.`);
 }
 
 /** Le maître d'un élément du modèle, ou `null` pour un séparateur sans catalogue. */

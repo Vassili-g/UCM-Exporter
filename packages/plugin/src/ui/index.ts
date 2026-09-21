@@ -28,6 +28,7 @@ exportPage.className = 'page-stack';
 const composant = createCarteComposant({
   onAnalyser: () => demanderAnalyse(composant, 'analyser-composant'),
   onPublier: () => demanderPublication(composant),
+  onCreer: () => demanderCreation(),
 });
 
 const tokens = createCarteTokens({
@@ -138,6 +139,23 @@ function demanderAnalyse(
   carte.ecrireNote('loading', 'Traitement en cours…');
   operationLancee += 1;
   versSandbox({ type, operation: operationLancee });
+}
+
+/**
+ * La création des règles, seule demande qui écrive dans le document.
+ *
+ * `reinitialiser()` efface ici le résultat de l'analyse précédente, qui portait
+ * sur un composant sans ses règles, et rend « Analyser le composant » de
+ * nouveau disponible. Il ne s'appelle jamais au succès : il effacerait la note
+ * qui dit combien de règles ont été posées.
+ */
+function demanderCreation() {
+  if (occupee) return;
+  active = composant;
+  composant.reinitialiser();
+  occuper(true);
+  operationLancee += 1;
+  versSandbox({ type: 'creer-regles', operation: operationLancee });
 }
 
 function demanderPublication(carte: CarteCommandeUi) {

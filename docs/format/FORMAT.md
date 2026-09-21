@@ -869,8 +869,10 @@ Chaque tag remplit un champ :
   liaison native `mainComponent`, sinon ajoutée par l'exporteur |
   | `figmaName` | l'icône de **repli** | nom du calque Figma, utilisé quand la
   prop runtime est vide |
-Convention uniforme (aucune logique par composant), lue **sans jamais écrire
-dans Figma**. Les règles sont facultatives : leur absence laisse `intent: null`
+Convention uniforme (aucune logique par composant). **Lire les règles n'écrit
+rien dans Figma.** Un seul geste du plugin y écrit, « Créer les règles
+d'usage », et il pose le conteneur vide de ses textes. Les règles sont
+facultatives : leur absence laisse `intent: null`
 et produit un diagnostic de documentation, sans réduire
 `meta.coverage.portable`. Un `@prop` visant une prop/valeur inexistante produit
 un warning non bloquant.

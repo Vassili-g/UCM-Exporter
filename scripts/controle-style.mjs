@@ -49,7 +49,10 @@ export const ACRONYMES = [
   'NPM', 'OIDC', 'OK', 'PAT', 'PATH', 'PDF', 'POLYGON', 'POST', 'PR', 'PUT',
   'RECTANGLE',
   'REST', 'RTL', 'SET', 'SHA', 'SLOT', 'SSH', 'SOLID', 'SPEC', 'STAR', 'STRETCH',
-  'STRING', 'SVG', 'TAP', 'TAR', 'TEXT', 'TIMING', 'TS', 'UCM', 'UI', 'URI',
+  // `TODO(sujet)` est le marqueur conventionnel d'un point à reprendre, que les
+  // éditeurs et `grep` retrouvent. Le sujet entre parenthèses nomme la tâche qui
+  // le retirera.
+  'STRING', 'SVG', 'TAP', 'TAR', 'TEXT', 'TIMING', 'TODO', 'TS', 'UCM', 'UI', 'URI',
   'URL', 'USD',
   'UTF', 'VECTOR', 'WRAP', 'YAML', 'ZIP', 'ELLIPSE', 'AUTO',
   // Les documents du dépôt, cités par leur nom sans extension.

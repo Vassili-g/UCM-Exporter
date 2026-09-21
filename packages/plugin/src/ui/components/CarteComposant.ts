@@ -2,6 +2,8 @@
 /** Carte de la commande composant et de son résultat. */
 import type { Cible } from '../../cible';
 import type { PluginMessage } from '../../messages';
+import type { Offre } from '../../template/sources';
+import { createButton } from './Button';
 import type { CarteCommandeUi, OptionsCarteConcrete } from './CarteCommande';
 import { createCarteCommande } from './CarteCommande';
 
@@ -14,6 +16,22 @@ export interface CarteComposantUi extends CarteCommandeUi {
   marquerAnalysee(): void;
 }
 
+/** La carte du composant porte un troisième geste, qui n'existe pas ailleurs. */
+export interface OptionsCarteComposant extends OptionsCarteConcrete {
+  onCreer: () => void;
+}
+
+/**
+ * Où mène la note d'une page sans source.
+ *
+ * Une équipe qui vient d'installer le plugin n'a aucune instance de
+ * « .componentRules » à copier, et le kit de la Community sera sa source. Tant
+ * qu'il n'est pas publié, la grammaire des règles dit au moins ce qu'un
+ * conteneur doit porter.
+ */
+// TODO(kit-community) : remplacer par l'URL du kit publié sur la Community (lot 8).
+const LIEN_DE_SECOURS = 'https://github.com/Vassili-g/UCM-Exporter/blob/main/docs/format/FORMAT.md#7-intention-et-documentation-des-props';
+
 function memeCible(avant: Cible | null, apres: Cible | null): boolean {
   if (!avant || !apres) return avant === apres;
   return avant.nom === apres.nom && avant.genre === apres.genre && avant.variants === apres.variants;
@@ -23,7 +41,8 @@ function memeCible(avant: Cible | null, apres: Cible | null): boolean {
 export function createCarteComposant({
   onAnalyser,
   onPublier,
-}: OptionsCarteConcrete): CarteComposantUi {
+  onCreer,
+}: OptionsCarteComposant): CarteComposantUi {
   const carte = createCarteCommande({
     surtitre: 'Composant',
     libelleAnalyse: 'Analyser le composant',
@@ -32,6 +51,32 @@ export function createCarteComposant({
     onPublier,
   });
   carte.element.className = 'carte-commande carte-composant';
+
+  const creer = createButton({
+    label: 'Créer les règles d’usage',
+    variant: 'secondary',
+    onClick: () => onCreer(),
+  });
+  creer.hidden = true;
+
+  const sansSource = document.createElement('p');
+  sansSource.className = 'creation-sans-source';
+  sansSource.hidden = true;
+  sansSource.textContent = 'Aucune instance de « .componentRules » sur cette page. '
+    + 'Collez-en une depuis la page de vos règles pour créer celles de ce composant. ';
+
+  const lien = document.createElement('a');
+  lien.className = 'creation-lien';
+  lien.href = LIEN_DE_SECOURS;
+  lien.textContent = 'Lire la grammaire des règles';
+  // Une iframe de plugin n'a pas de navigateur : seul le sandbox ouvre un lien.
+  lien.addEventListener('click', (evenement) => {
+    evenement.preventDefault();
+    parent.postMessage({ pluginMessage: { type: 'open-external', url: LIEN_DE_SECOURS } }, '*');
+  });
+  sansSource.append(lien);
+
+  carte.analyser.after(creer, sansSource);
 
   const nom = document.createElement('div');
   nom.className = 'cible-nom';
@@ -50,9 +95,16 @@ export function createCarteComposant({
 
   let analysee = false;
   let occupee = false;
+  /** Ce que la page permet de créer, `null` quand rien n'est à proposer. */
+  let offre: Offre | null = null;
 
   function rafraichirGeste() {
     carte.analyser.disabled = occupee || analysee;
+    creer.hidden = offre === null;
+    // Une page sans source ne porte rien à copier : le geste reste montré pour
+    // que la note en dise la cause, et inactif pour qu'il ne mente pas.
+    creer.disabled = occupee || offre === 'sans-source';
+    sansSource.hidden = offre !== 'sans-source';
   }
 
   return {
@@ -75,12 +127,11 @@ export function createCarteComposant({
       avertissement.textContent = texte ?? '';
       avertissement.hidden = !texte;
       carte.analyser.hidden = !cible;
+      offre = cible ? message.offre ?? null : null;
 
-      if (change) {
-        analysee = false;
-        rafraichirGeste();
-        carte.reinitialiser();
-      }
+      if (change) analysee = false;
+      rafraichirGeste();
+      if (change) carte.reinitialiser();
     },
 
     marquerAnalysee() {

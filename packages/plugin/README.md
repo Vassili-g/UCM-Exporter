@@ -47,6 +47,17 @@ Posez une instance de `.componentRules` à côté du composant, sur la même pag
 règles au composant, et rien d'autre ne les relie : la casse et les espaces sont
 ignorés, et vous pouvez renommer l'instance comme vous voulez.
 
+Le bouton « Créer les règles d'usage », sous « Analyser le composant », fait ce
+geste à votre place. Il part du maître de `.componentRules` qu'il retrouve
+depuis la page active, pose une règle par propriété du composant et écrit son
+nom dans `component-name`. Une instance vierge que vous avez collée est remplie
+au lieu d'en poser une seconde. Supprimer le conteneur défait la création, et
+Ctrl+Z aussi.
+
+Le bouton n'apparaît que si ce composant n'a pas déjà son conteneur. Sur une
+page d'où aucune instance de `.componentRules` n'est joignable, il reste inactif
+et la note dessous dit quoi copier.
+
 Chaque règle est une instance de `.ruleItem`. Choisissez son variant : il
 affiche le tag qui dit ce que la règle remplit. Les sections qui les regroupent,
 `GÉNÉRAL`, `PROPRIÉTÉS`, `OPTIONS`, `ICONES` et `DOCUMENTATION`, servent la
@@ -79,10 +90,11 @@ Un texte d'aide commence par `[À compléter]`. Tant qu'un calque lu d'une règl
 contient ce marqueur, le plugin ne publie pas la règle et vous le signale, en
 une ligne par tag. Remplacez le marqueur par votre texte, ou supprimez la
 règle. Un conteneur dont le calque `component-name` porte encore le marqueur ne
-documente aucun composant.
+documente aucun composant. Une règle que le bouton vient de créer porte ce
+marqueur : elle attend votre texte.
 
-Le plugin ne modifie jamais ces règles. Quand il ne sait pas en lire une, il
-vous dit laquelle et quel geste la répare. [7. Intention et documentation des
+Passé la création, le plugin ne modifie plus ces règles ; il les lit. Quand il
+ne sait pas en lire une, il vous dit laquelle et quel geste la répare. [7. Intention et documentation des
 props](../../docs/format/FORMAT.md#7-intention-et-documentation-des-props) décrit ce
 que chaque champ devient.
 
@@ -116,10 +128,12 @@ seconde demande. Le plugin dit où il a trouvé le même contenu.
 
 ## Ce que le plugin ne fait pas
 
-- Il n'écrit rien dans le document Figma : aucun calque créé, renommé, déplacé
-  ou supprimé, aucune variable ni style écrit. Un test refuse ces appels dans la
-  source. Il pose seulement la sélection et cadre la vue, deux gestes qui
-  n'entrent pas dans le fichier
+- Il n'écrit dans le document Figma que par « Créer les règles d'usage », et ce
+  geste ne touche qu'à l'instance de `.componentRules` qu'il pose. L'analyse et
+  la publication ne créent, ne renomment, ne déplacent ni ne suppriment aucun
+  calque, et n'écrivent ni variable ni style. Un test refuse ces appels partout
+  ailleurs que dans `src/template/ecriture.ts`. Poser la sélection et cadrer la
+  vue n'entrent pas dans le fichier
   ([SPEC.md](./SPEC.md#sélectionner-et-cadrer-ne-sont-pas-modifier)).
 - Il ne génère aucun code de production.
 - Il n'exporte pas plusieurs composants en une commande et ne fusionne aucune

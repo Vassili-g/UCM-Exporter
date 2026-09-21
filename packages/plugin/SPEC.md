@@ -453,7 +453,7 @@ trouve pas. L'export écrit alors `srgb` et avertit une fois par export, jamais
 une fois par couleur (`avertissementDeProfil`). Le message dit qu'aucun profil
 de couleur n'est choisi, que les couleurs sont publiées en sRGB, et demande de
 choisir sRGB ou Display P3 dans le menu **File color profile** de Figma. Le
-plugin ne le choisit pas à sa place : il ne modifie jamais le document.
+plugin ne le choisit pas à sa place : un export ne modifie pas le document.
 
 **Le type d'une graisse `STRING` se décide sur tout le graphe, avant d'écrire.**
 L'index des variables est construit d'abord, puis chaque `STRING` reçoit un type

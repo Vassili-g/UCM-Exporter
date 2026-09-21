@@ -16,8 +16,10 @@
  * règle et les tags sont des conventions uniformes, valables pour n'importe
  * quel composant.
  *
- * Le plugin n'écrit jamais dans Figma : ce conteneur reste la source de vérité,
- * lu tel quel et reversé dans le contrat.
+ * Ce fichier ne fait que lire : le conteneur reste la source de vérité, lu tel
+ * quel et reversé dans le contrat. Le geste qui le pose vit dans
+ * `src/template/ecriture.ts`, seul fichier du moteur qui écrive dans le
+ * document.
  */
 import {
   buildRules,

@@ -638,7 +638,7 @@ async function analyser(
  */
 async function annoncerLAnnulation(provenance: Provenance): Promise<void> {
   if (annulation !== 'reglages') {
-    postStatus('error', "Export annulé. Rien n'a été écrit.", provenance);
+    postStatus('error', 'Export annulé. Rien n’a été écrit.', provenance);
     return;
   }
   const actuel = await parLaFile(lireInstantane).catch(() => null);

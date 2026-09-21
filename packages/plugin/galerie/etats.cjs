@@ -147,10 +147,10 @@ const TOKENS_PRESENTS = tokensDuFichier({ collections: 3, variables: 128, modes:
 const TOKENS_ABSENTS = tokensDuFichier({ collections: 0, variables: 0, modes: 0 });
 
 /** Ce que `reportSelectionState` envoie, calculé par le sandbox lui-même. */
-function cible(selection, avertissement = null) {
+function cible(selection, avertissement = null, offre = null) {
   const etat = etatDeCible(selection);
   return {
-    message: { type: 'cible', ...etat, detail: detailDeCible(etat.cible), avertissement },
+    message: { type: 'cible', ...etat, detail: detailDeCible(etat.cible), offre, avertissement },
   };
 }
 
@@ -160,6 +160,51 @@ const SELECTION_MULTIPLE = cible([
   { type: 'FRAME', name: 'Card' },
 ]);
 const SELECTION_PRETE = cible([{ type: 'COMPONENT_SET', name: COMPOSANT, variants: 12 }]);
+
+/** Ce qu'un composant sans règle lisible reçoit, écrit par `reportSelectionState`. */
+const SANS_REGLE_LISIBLE = 'Aucune règle d’usage exploitable ne documente quand l’utiliser. '
+  + 'Les diagnostics diront ce que le contrat sait décrire, et intent vaudra null.';
+
+/**
+ * Le pire nom réel d'un component set : quatre segments, aucune coupure
+ * naturelle dans le dernier.
+ */
+const COMPOSANT_LONG = 'Feedback / Notification / Contextual / InlineMessageWithAction';
+
+/** Un composant à documenter, avec l'offre que la page justifie. */
+const aCreer = (offre, nom = COMPOSANT_LONG) => cible(
+  [{ type: 'COMPONENT_SET', name: nom, variants: 12 }],
+  SANS_REGLE_LISIBLE,
+  offre,
+);
+
+/** Le clic qui écrit dans le document. Ses messages ne portent aucune destination. */
+const CLIC_CREATION = '.carte-composant .btn-secondary';
+
+/*
+ * Les textes de la création des règles, copiés de `src/template/sources.ts`,
+ * `src/template/ecriture.ts` et `src/code.ts`. Comme les avertissements
+ * ci-dessus, ce sont des échantillons et non une autorité : ils servent à
+ * regarder la carte sous la longueur réelle de chaque message.
+ *
+ * Les deux textes d'échec portent la même cause et se séparent sur ce que la
+ * création a laissé dans le document : chacun demande sa capture.
+ */
+const CREATION_FAITE = '22 règles posées. Rédigez-les dans Figma, puis relancez l’analyse.';
+const CREATION_CAUSE = 'Le layer « content » n’a pas gardé le texte écrit.';
+const CREATION_ECHEC_RETIRE = `${CREATION_CAUSE} Rien n’a été laissé dans le document.`;
+const CREATION_ECHEC_RESTE = `${CREATION_CAUSE} Le conteneur à moitié créé n’a pas pu être `
+  + 'supprimé : supprimez-le, puis recommencez.';
+const CREATION_AIDES_SANS_MARQUEUR = 'Les textes d’aide de « .ruleItem » ne commencent pas par '
+  + '« [À compléter] ». Ajoutez-le dans le composant « .ruleItem », puis recommencez.';
+
+/** Une création lancée sur un composant qui n'a pas encore ses règles. */
+const lancerLaCreation = (offre = 'creer') => [
+  ...ouverture('connecte'),
+  aCreer(offre),
+  { clic: CLIC_CREATION },
+  { message: { type: 'status', state: 'loading', text: 'Création des règles d’usage…' } },
+];
 
 /** La destination, telle que le test de connexion l'a apprise. */
 const DEPOT_VISE = { forge: TERMES_GITHUB.forge, projet: 'mon-org/design-system-v3', baseBranch: 'main' };
@@ -350,11 +395,7 @@ const ETATS = [
     existe: true,
     atteinte: [
       ...ouverture('connecte'),
-      cible(
-        [{ type: 'COMPONENT_SET', name: COMPOSANT, variants: 12 }],
-        'Aucune règle d’usage exploitable ne documente quand l’utiliser. Les diagnostics diront '
-          + 'ce que le contrat sait décrire, et intent vaudra null.',
-      ),
+      cible([{ type: 'COMPONENT_SET', name: COMPOSANT, variants: 12 }], SANS_REGLE_LISIBLE),
     ],
   },
   {
@@ -367,6 +408,101 @@ const ETATS = [
     atteinte: [
       ...ouverture('connecte'),
       SELECTION_PRETE,
+    ],
+  },
+  {
+    id: 'creation-offerte',
+    titre: 'La page porte de quoi créer les règles',
+    quand:
+      'Un component set sans conteneur de règles, sur une page qui porte une instance de « .componentRules » ou son maître.',
+    regarder:
+      'Le second geste sous « Analyser le composant » : variante secondaire, et il ne repousse pas le nom hors de vue. Le nom du composant est le plus long qu’une bibliothèque produise.',
+    existe: true,
+    atteinte: [...ouverture('connecte'), aCreer('creer')],
+  },
+  {
+    id: 'creation-conteneur-vierge',
+    titre: 'Un conteneur vierge attend d’être rempli',
+    quand:
+      'Le designer a collé une instance de « .componentRules » sans rien y écrire. Le plugin la remplira au lieu d’en poser une autre.',
+    regarder:
+      'Rien ne distingue cet état du précédent : le libellé du bouton ne change pas. Comparer les deux dit si le designer a besoin de savoir laquelle des deux poses l’attend.',
+    existe: true,
+    atteinte: [...ouverture('connecte'), aCreer('remplir')],
+  },
+  {
+    id: 'creation-sans-source',
+    titre: 'Aucune source de règles sur la page',
+    quand:
+      'Une équipe qui vient d’installer le plugin : aucune instance de « .componentRules » nulle part dans le fichier.',
+    regarder:
+      'Le bouton reste montré et inactif, et la note dessous dit pourquoi. Le lien est la seule sortie de cet écran ; il vit dans la note, sans surface ni filet de sévérité.',
+    existe: true,
+    atteinte: [...ouverture('connecte'), aCreer('sans-source')],
+  },
+  {
+    id: 'creation-en-cours',
+    titre: 'Création des règles en cours',
+    quand: 'Après le clic sur « Créer les règles d’usage », pendant la pose des sections.',
+    regarder:
+      'Les deux gestes sont inactifs et aucun bouton d’annulation n’apparaît : le retour arrière de la création est Ctrl+Z, pas un geste du plugin.',
+    existe: true,
+    atteinte: [
+      ...lancerLaCreation(),
+      { message: { type: 'phase', texte: 'Création du conteneur…' } },
+    ],
+  },
+  {
+    id: 'creation-faite',
+    titre: 'Les règles sont posées',
+    quand: 'Vingt-deux règles créées à droite du composant, toutes marquées « [À compléter] ».',
+    regarder:
+      'La note du succès survit au relevé de sélection qui suit, et le bouton de création a disparu : le composant a désormais son conteneur. « Analyser le composant » est redevenu disponible.',
+    existe: true,
+    atteinte: [
+      ...lancerLaCreation(),
+      { message: { type: 'status', state: 'success', text: CREATION_FAITE } },
+      aCreer(null),
+    ],
+  },
+  {
+    id: 'creation-echec-conteneur-retire',
+    titre: 'Création interrompue, document inchangé',
+    quand: 'Une écriture perdue en route. Le conteneur à moitié posé a pu être supprimé.',
+    regarder:
+      'Le texte dit la cause, puis ce que le document a gardé. Le bouton de création est redevenu actif : recommencer est le geste attendu.',
+    existe: true,
+    atteinte: [
+      ...lancerLaCreation(),
+      { message: { type: 'status', state: 'error', text: CREATION_ECHEC_RETIRE } },
+      aCreer('creer'),
+    ],
+  },
+  {
+    id: 'creation-echec-conteneur-reste',
+    titre: 'Création interrompue, conteneur resté en place',
+    quand: 'Même échec, mais la suppression du conteneur a échoué à son tour.',
+    regarder:
+      'Comparer avec l’état précédent : la première phrase est la même, et seule la seconde change. C’est elle qui demande un geste, et elle doit se lire sans relire la première.',
+    existe: true,
+    atteinte: [
+      ...lancerLaCreation(),
+      { message: { type: 'status', state: 'error', text: CREATION_ECHEC_RESTE } },
+      aCreer('creer'),
+    ],
+  },
+  {
+    id: 'creation-aides-sans-marqueur',
+    titre: 'Les textes d’aide du maître n’ont pas le marqueur',
+    quand:
+      'Le maître de « .ruleItem » est resté à l’ancienne. Le refus arrive avant toute écriture : rien n’a été posé.',
+    regarder:
+      'Le refus nomme le composant Figma à corriger et le texte à y ajouter. Le document est intact, et rien ne le dit : c’est ce que l’absence de seconde phrase doit se charger de faire.',
+    existe: true,
+    atteinte: [
+      ...lancerLaCreation(),
+      { message: { type: 'status', state: 'error', text: CREATION_AIDES_SANS_MARQUEUR } },
+      aCreer('creer'),
     ],
   },
   {
@@ -1203,6 +1339,9 @@ const ETATS = [
  * et le numéro de sa demande. L'interface numérote ses demandes à partir de 1,
  * à chaque clic sur le geste d'une carte : le numéro d'un résultat est celui du
  * dernier de ces clics dans l'état. La destination suit la forge de l'état.
+ *
+ * La création des règles ne lit aucun dépôt et ne publie rien : ses messages
+ * portent leur numéro d'opération et aucune destination.
  */
 const RESULTATS_D_OPERATION = new Set(['phase', 'diagnostic', 'verdict', 'status', 'log', 'demande', 'download']);
 
@@ -1211,9 +1350,14 @@ function avecProvenance(etat) {
   const forge = etat.forge === 'mixte' ? etat.forgeActive : etat.forge ?? 'github';
   const destination = destinationDe(forge, etat.gestionDesTokens ?? true);
   let operation = 0;
+  let creation = false;
   const atteinte = etat.atteinte.map((etape) => {
-    if (etape.clic?.startsWith('.carte-')) operation += 1;
+    if (etape.clic?.startsWith('.carte-')) {
+      operation += 1;
+      creation = etape.clic === CLIC_CREATION;
+    }
     if (operation === 0 || !RESULTATS_D_OPERATION.has(etape.message?.type)) return etape;
+    if (creation) return { message: { ...etape.message, operation } };
     return { message: { destination, ...etape.message, operation } };
   });
   return { ...etat, atteinte };

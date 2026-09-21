@@ -8,9 +8,9 @@ let navigateur;
 before(async () => { navigateur = await chromium.launch(); });
 after(async () => { await navigateur?.close(); });
 const html = readFileSync(new URL('../../dist/ui.html', import.meta.url), 'utf8');
-const cible = (selectionId) => ({
+const cible = (selectionId, offre = null) => ({
   type: 'cible', selectionId, cible: { nom: 'Exemple', genre: 'component', variants: 1 },
-  detail: 'Component', raison: null, avertissement: null,
+  detail: 'Component', raison: null, offre, avertissement: null,
 });
 const verdict = { type: 'verdict', code: 'sans-depot', texte: 'Prêt', action: 'Télécharger', etat: '' };
 
@@ -21,7 +21,7 @@ async function ouvrir() {
   await page.evaluate(() => {
     window.demandes = [];
     window.addEventListener('message', (event) => {
-      if (event.data.pluginMessage?.type?.startsWith('analyser') || event.data.pluginMessage?.type === 'publier' || ['gerer-tokens', 'export-local', 'enregistrer-depot', 'activer-depot', 'supprimer-depot'].includes(event.data.pluginMessage?.type)) {
+      if (event.data.pluginMessage?.type?.startsWith('analyser') || event.data.pluginMessage?.type === 'publier' || ['gerer-tokens', 'export-local', 'enregistrer-depot', 'activer-depot', 'supprimer-depot', 'creer-regles', 'open-external'].includes(event.data.pluginMessage?.type)) {
         window.demandes.push(event.data.pluginMessage);
       }
     });
@@ -65,6 +65,72 @@ test('un composant homonyme invalide le verdict, une seconde notification du mê
     await envoyer(cible('b'));
     assert.equal(await bouton.isVisible(), false);
     assert.equal(await page.getByRole('button', { name: 'Analyser le composant', exact: true }).isEnabled(), true);
+  } finally {
+    await page.close();
+  }
+});
+
+const creer = (page) => page.getByRole('button', { name: 'Créer les règles d’usage', exact: true });
+
+test('le bouton de création suit l’offre de la page : actif, inactif sous sa note, ou absent', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    // Le premier message d'une sélection part avant la lecture de la page.
+    assert.equal(await creer(page).count(), 0);
+
+    await envoyer(cible('b', 'creer'));
+    assert.equal(await creer(page).isEnabled(), true);
+    assert.equal(await page.locator('.creation-sans-source').isVisible(), false);
+
+    await envoyer(cible('c', 'remplir'));
+    assert.equal(await creer(page).isEnabled(), true);
+
+    await envoyer(cible('d', 'sans-source'));
+    assert.equal(await creer(page).isVisible(), true);
+    assert.equal(await creer(page).isDisabled(), true);
+    assert.match(await page.locator('.creation-sans-source').innerText(), /Aucune instance de « .componentRules »/);
+
+    await envoyer(cible('e', null));
+    assert.equal(await creer(page).count(), 0);
+    assert.equal(await page.locator('.creation-sans-source').isVisible(), false);
+  } finally {
+    await page.close();
+  }
+});
+
+test('la création occupe les deux gestes de la carte et n’offre aucune annulation', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await envoyer(cible('b', 'creer'));
+    await creer(page).click();
+    assert.deepEqual(await derniere(page, 'creer-regles'), { type: 'creer-regles', operation: 1 });
+    await envoyer({ type: 'status', state: 'loading', text: 'Création des règles d’usage…', operation: 1 });
+    assert.equal(await creer(page).isDisabled(), true);
+    assert.equal(await page.getByRole('button', { name: 'Analyser le composant', exact: true }).isDisabled(), true);
+    assert.equal(await page.locator('.carte-composant').getByRole('button').count(), 2);
+
+    await envoyer({ type: 'status', state: 'success', text: '7 règles posées.', operation: 1 });
+    assert.equal(await page.getByRole('button', { name: 'Analyser le composant', exact: true }).isEnabled(), true);
+    assert.match(await page.locator('.carte-composant .note').innerText(), /7 règles posées\./);
+  } finally {
+    await page.close();
+  }
+});
+
+/**
+ * Une iframe de plugin n'a pas de navigateur : un lien suivi y remplacerait
+ * l'interface par la page visée, sans retour possible.
+ */
+test('le lien de la note sans source passe par le sandbox, sans quitter l’interface', async () => {
+  const { page, envoyer } = await ouvrir();
+  try {
+    await envoyer(cible('b', 'sans-source'));
+    const avant = page.url();
+    await page.getByRole('link', { name: 'Lire la grammaire des règles' }).click();
+    const demande = await derniere(page, 'open-external');
+    assert.equal(demande.type, 'open-external');
+    assert.match(demande.url, /^https:\/\//);
+    assert.equal(page.url(), avant);
   } finally {
     await page.close();
   }

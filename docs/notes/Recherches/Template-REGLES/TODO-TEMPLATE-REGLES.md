@@ -454,12 +454,12 @@ sections [8.2](PLAN-TEMPLATE-REGLES.md#82-libellé-et-rang) à
 [8.4](PLAN-TEMPLATE-REGLES.md#84-messages-et-galerie) et
 [5.5](PLAN-TEMPLATE-REGLES.md#55-page-sans-source).
 
-- [ ] `src/ui/components/CarteComposant.ts` : bouton « Créer les règles
+- [x] `src/ui/components/CarteComposant.ts` : bouton « Créer les règles
       d'usage », variante `secondary`, sous « Analyser le composant », visible
       selon l'offre du message `cible` ; inactif avec la note de 5.5 pour
       `sans-source` ; absent sans offre. Pendant la création, les deux boutons
       sont inactifs et aucun bouton d'annulation n'apparaît.
-- [ ] Lien provisoire de la note `sans-source`. Le kit n'existe pas encore
+- [x] Lien provisoire de la note `sans-source`. Le kit n'existe pas encore
       (lot 8). La note porte un lien vers la grammaire des règles :
       `https://github.com/Vassili-g/UCM-Exporter/blob/main/docs/format/FORMAT.md#7-intention-et-documentation-des-props`,
       libellé « Lire la grammaire des règles ». L'URL est une constante
@@ -468,40 +468,40 @@ sections [8.2](PLAN-TEMPLATE-REGLES.md#82-libellé-et-rang) à
       Vérifier par `curl -sI` que l'URL répond 200 sans authentification ;
       sinon, s'arrêter et le noter dans le compte rendu. Le clic passe par
       `open-external`.
-- [ ] `src/ui/index.ts` : `demanderCreation`, sur le modèle de
+- [x] `src/ui/index.ts` : `demanderCreation`, sur le modèle de
       `demanderAnalyse` : `active = composant`, `composant.reinitialiser()`
       au clic, `occuper(true)`, `operationLancee` incrémenté, envoi de
       `creer-regles`. `reinitialiser()` efface le résultat d'une analyse
       précédente et réactive « Analyser le composant » (écart 10). Il ne
       s'appelle jamais au succès : il effacerait la note « 7 règles
       créées ».
-- [ ] `src/ui/styles.css` : les classes nouvelles, et
+- [x] `src/ui/styles.css` : les classes nouvelles, et
       `tests/stylesUi.test.ts` qui les couvre.
-- [ ] Textes affichés : relus par `rediger-diagnostics-ucm` ; ajouter à
+- [x] Textes affichés : relus par `rediger-diagnostics-ucm` ; ajouter à
       `SOURCES` de `tests/textesAffiches.test.ts` les fichiers qui les portent,
       `CarteComposant.ts`, `src/template/` et `src/code.ts` compris si des
       textes de création y sont écrits.
-- [ ] `galerie/etats.cjs` : huit états. Pour l'offre : `creer`, `remplir`,
+- [x] `galerie/etats.cjs` : huit états. Pour l'offre : `creer`, `remplir`,
       `sans-source`. Pour l'opération : en cours, créée, échec avec conteneur
       retiré, échec avec conteneur resté en place, textes d'aide sans
       marqueur. La [section 8.4](PLAN-TEMPLATE-REGLES.md#84-messages-et-galerie)
       en compte sept, mais ses deux textes d'échec demandent chacun une
       capture. Pire contenu réel : 22 règles et un nom de composant long.
       `tests/galerie.test.ts` suit.
-- [ ] `tests/interface/interface.test.mjs` : bouton visible, inactif, absent ;
+- [x] `tests/interface/interface.test.mjs` : bouton visible, inactif, absent ;
       un clic sur le lien de `sans-source` émet `open-external` et aucune
       navigation.
-- [ ] Captures de la galerie et protocole de relecture (a) à (e) de
+- [x] Captures de la galerie et protocole de relecture (a) à (e) de
       `CONTRIBUTING.md`, compte d'objets compris. Le verdict reste lisible
       sans défiler à 320 px. Les états existants sont identiques aux captures
       de la préparation, sauf la carte du composant.
-- [ ] Documents : `packages/plugin/README.md` et
+- [x] Documents : `packages/plugin/README.md` et
       `packages/plugin/package.json` (promesse et geste de création) ;
       `docs/guides/POUR-LES-DESIGNERS.md` (promesse, geste, marqueur) ;
       `docs/format/FORMAT.md`, section 7 (« sans jamais écrire dans Figma ») ;
       en-tête de `src/contract/extractRules.ts`. Chaque phrase relue par
       `rediger-sans-tics-ia`.
-- [ ] Vérification complète dans le worktree, `test:ui` et galerie compris,
+- [x] Vérification complète dans le worktree, `test:ui` et galerie compris,
       commit, push.
 
 ## 7. Recette dans Figma
@@ -1109,3 +1109,88 @@ faisait tomber aucun, et une assertion a été ajoutée pour qu'il en tombe un.
 Vérification dans un worktree isolé : 1 427 tests verts, typage, build par
 étapes et `test:ui` verts. Le seul rouge de la suite reste les quatre `#666666`
 de `styles.css`, étrangers à ce lot.
+
+### 6. Interface et documents
+
+Le bouton « Créer les règles d'usage » suit l'offre du message `cible` : actif
+pour `creer` et pour `remplir`, montré et inactif sous sa note pour
+`sans-source`, absent sans offre. Rouge constaté avant le code,
+`npm run test:ui` : les trois tests nouveaux échouaient sur un bouton et un lien
+introuvables, 17 verts sur 20.
+
+Ce qu'il a fallu décider :
+
+- `demanderCreation` n'écrit aucune note au clic, là où `demanderAnalyse` pose
+  « Traitement en cours… ». Le sandbox envoie son `status` de départ dans la
+  foulée, et deux textes se seraient succédé pour la même attente. Ce que le
+  clic montre, c'est l'inactivation des deux gestes.
+- La note `sans-source` reste sans surface ni filet de sévérité. Le geste
+  qu'elle demande se fait dans le canevas, pas dans la fenêtre ; lui donner le
+  poids d'un avertissement l'aurait mise au rang du verdict, qui décide de la
+  publication.
+- `avecProvenance` (galerie) ne joint plus de destination aux messages qui
+  suivent le clic de création. La création ne lit aucun dépôt (écart 1), et un
+  état qui lui en aurait prêté une aurait fait juger l'interface sur un message
+  que le sandbox n'envoie pas.
+- `TODO` entre dans `ACRONYMES` (`scripts/controle-style.mjs`), qui refusait le
+  marqueur du lien provisoire comme une emphase. Le lot 8 retire son unique
+  emploi, et la liste garde le mot pour les suivants.
+
+Ce que la relecture des textes a changé :
+
+- `SOURCES` de `textesAffiches.test.ts` reçoit `code.ts`, `template/ecriture.ts`,
+  `template/sources.ts` et `CarteComposant.ts` ; `code.ts` sort de
+  `SOURCES_DE_FORGE`, qui l'aurait compté deux fois. La loi a relevé deux
+  apostrophes droites dans des textes affichés écrits avant ce lot, « Export
+  annulé. Rien n'a été écrit. » (`code.ts`) et « Le layer … n'a pas gardé le
+  texte … » (`ecriture.ts`). Corrigées.
+- Le second de ces messages citait le texte qu'il n'avait pas pu écrire, c'est-à-dire
+  une phrase d'aide entière. La capture le montrait sur trois lignes, avant le
+  geste. Il dit maintenant « Le layer « content » n'a pas gardé le texte
+  écrit. » : le calque suffit à retrouver l'endroit.
+- Les deux textes d'échec gardent leur cause en tête, contre la proposition de
+  la [section 8.3](PLAN-TEMPLATE-REGLES.md#83-maquettes-à-320-px) qui n'en
+  portait pas. Une cause dit parfois le geste à faire, « ne range aucune section
+  pour « @prop », ajoutez-y un exemple » : la retirer ferait réessayer sans fin
+  une création qu'un maître incomplet empêche.
+- Le pluriel de « 22 règles posées » ne se gère pas, et n'a pas à l'être : le
+  modèle pose toujours au moins la règle `@usage` et la règle `@icons`, donc le
+  compte ne descend jamais à un.
+
+**Une onzième promesse de lecture seule**, que le relevé de la préparation avait
+rangée sous la ligne SPEC.md du tableau 4.1 : « il ne modifie jamais le
+document », dans le passage du profil de couleur. Elle dit maintenant qu'un
+export ne modifie pas le document.
+
+Protocole de relecture, sur les huit états nouveaux, clair et sombre :
+
+| Point | Constat |
+|---|---|
+| (a) densité | Le bouton secondaire est celui des cartes de dépôt, sans règle nouvelle. La note `sans-source` prend la couleur et l'interligne de `.cible-detail` |
+| (b) thèmes | Le refus reste lisible sur son fond dans les deux thèmes ; le lien garde la couleur de marque et son soulignement |
+| (c) 320 px | Le nom du composant reste visible sans défiler dans les huit états. La note de l'opération finit au plus bas à 280 px sur 320, dans « conteneur resté en place » |
+| (d) pire contenu | 22 règles, un nom de component set de quatre segments, et l'avertissement des règles illisibles au-dessus |
+| (e) objets | 11 ou 12 selon l'état, contre 10 pour « composant sans règle d'usage exploitable » et 16 pour « résultat avec un avertissement » |
+
+La galerie passe de 51 à 59 états. **Les 51 états existants sont inchangés hors
+de la carte du composant**, mesuré et non supposé : les deux bundles, celui de
+`ff79da6` et celui de ce lot, rejouent chacun les 51 scénarios communs dans un
+navigateur, et le HTML rendu en dehors de `.carte-composant` est identique au
+caractère près. Dans la carte, la seule différence est les deux éléments
+nouveaux, présents et masqués dans les 51. Une comparaison des captures elles-mêmes
+a d'abord signalé six écarts ; le même bundle comparé à lui-même en signale
+sept, et le rendu n'est donc pas reproductible au pixel. `regle-usage-absente`
+lit désormais son avertissement dans une constante partagée, au même texte.
+
+La loi des classes de `stylesUi.test.ts` a été vue rouge avant d'être crue :
+`.creation-sans-source` et `.creation-lien` retirées de la feuille, elle rend
+« Classes posées que rien ne stylise : creation-sans-source, creation-lien ».
+Restaurée par copie, le worktree revient propre.
+
+Vérification dans un worktree isolé, extrait de l'index en LF : 1 451 tests sur
+les cinq suites, typage, build par étapes, `test:ui` (20 verts) et galerie
+verts.
+
+**Rouge du dépôt, étranger à ce lot.** Toujours les quatre `#666666` de
+`styles.css`, entrés par `7e7bb83` et `45be9a2`. Ce lot touche la feuille et n'y
+écrit aucune couleur : ses deux règles nouvelles lisent les rôles.

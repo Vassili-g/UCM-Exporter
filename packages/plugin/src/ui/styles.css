@@ -417,6 +417,7 @@ p {
 .icon-button:focus-visible,
 .header-back-button:focus-visible,
 .connection-status:focus-visible,
+.creation-lien:focus-visible,
 .entree-lien:focus-visible {
   outline: 2px solid var(--bordure-marque);
   outline-offset: 2px;
@@ -651,6 +652,23 @@ p {
 
 .carte-depot-actions .btn {
   flex: 1 1 0;
+}
+
+/*
+ * Pourquoi « Créer les règles d'usage » est inactif : la page ne porte aucune
+ * instance à copier. La note reste sans surface ni filet de sévérité. Le geste
+ * qu'elle demande se fait ailleurs, dans le canevas, et lui donner le poids
+ * d'un avertissement la mettrait au rang du verdict, qui décide de la
+ * publication.
+ */
+.creation-sans-source {
+  color: var(--texte-second);
+  line-height: var(--corps-interligne);
+  overflow-wrap: anywhere;
+}
+
+.creation-lien {
+  color: var(--texte-marque);
 }
 
 /*

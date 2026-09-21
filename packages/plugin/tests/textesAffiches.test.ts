@@ -19,9 +19,13 @@ import { MOTS_DE_FORGE } from './motsDeForge';
 
 /** Les fichiers dont les chaînes atteignent l'écran du designer. */
 const SOURCES = [
+  '../src/code.ts',
   '../src/connexion.ts',
   '../src/forges/termes.ts',
   '../src/prevol.ts',
+  '../src/template/ecriture.ts',
+  '../src/template/sources.ts',
+  '../src/ui/components/CarteComposant.ts',
   '../src/ui/components/ConfigurationPage.ts',
   '../src/ui/components/CarteDepot.ts',
   '../src/ui/components/ListeDesDepots.ts',
@@ -89,7 +93,7 @@ test('aucun texte affiché n’annonce un effet sans son mécanisme', () => {
  * textes de l'interface, la phase d'une opération, et les lignes que la demande
  * de fusion porte.
  */
-const SOURCES_DE_FORGE = [...SOURCES, '../src/code.ts', '../src/depot.ts'];
+const SOURCES_DE_FORGE = [...SOURCES, '../src/depot.ts'];
 
 /**
  * Une phrase affichée nomme les deux forges, ou aucune.

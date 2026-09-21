@@ -21,8 +21,10 @@ Le plugin exporte ce que Figma possède dans un fichier appelé **contrat**. Ce
 fichier est déposé à côté du code du composant. La CI le relit à chaque
 modification et vous répond dans la pull request, ou dans la merge request sur GitLab.
 
-Vous n'écrivez pas de code. Le plugin n'en écrit pas non plus. Il ne modifie
-jamais votre document Figma.
+Vous n'écrivez pas de code. Le plugin n'en écrit pas non plus. Exporter ne
+modifie jamais votre document Figma. Un seul bouton y écrit, « Créer les règles
+d'usage », et il ne pose qu'une instance de `.componentRules` à côté de votre
+composant.
 
 ## 2. Préparer un composant
 
@@ -45,9 +47,14 @@ un set de variantes. Une autre sélection arrête l'export.
 **Documentez votre intention.** Une instance de `.componentRules`, posée sur la
 même page, décrit l'usage du composant, les combinaisons recommandées et la
 politique de ses icônes. Écrivez le nom du composant dans son calque
-`component-name` : c'est ce texte qui relie les règles au composant. Remplacez
-chaque « [À compléter] » par votre texte : une règle qui le contient encore
-n'entre pas dans le contrat. Le geste complet est dans [Documenter les règles
+`component-name` : c'est ce texte qui relie les règles au composant.
+
+Sélectionnez votre composant, puis cliquez sur « Créer les règles d'usage » :
+le plugin pose ce conteneur et y range une règle par propriété, chacune
+marquée « [À compléter] ». Remplacez chaque « [À compléter] » par votre texte :
+une règle qui le contient encore n'entre pas dans le contrat. Le bouton
+disparaît une fois le conteneur posé ; le supprimer le fait revenir. Le geste
+complet est dans [Documenter les règles
 d'usage](../../packages/plugin/README.md#documenter-les-règles-dusage), et ce que
 chaque règle devient dans [7. Intention et documentation des
 props](../format/FORMAT.md#7-intention-et-documentation-des-props).
