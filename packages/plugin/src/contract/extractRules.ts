@@ -67,9 +67,9 @@ export const MARQUEUR_A_COMPLETER = '[À compléter]';
 /** Nom (compacté) du maître qui porte un jeu de règles. */
 const MAITRE_COMPACTE = '.componentrules';
 /** Nom du composant qui matérialise une règle, tel qu'un message le nomme. */
-const RULE_ITEM_NAME = '.ruleItem';
+export const RULE_ITEM_NAME = '.ruleItem';
 /** Nom (compacté) du composant qui matérialise une règle. */
-const RULES_COMPONENT_NAME = '.ruleitem';
+export const RULES_COMPONENT_NAME = '.ruleitem';
 /** Compacte un nom (sans espaces, en minuscules) pour comparer un nom de composant. */
 export function compactName(name: string): string {
   return name.replace(/\s+/g, '').toLowerCase();
@@ -148,13 +148,13 @@ export type ExtractedRules = RulesResult & {
  * tous les types de node, feuilles comprises : un `TextNode` n'a pas de
  * descendance, et exiger la méthode ferait de ce fait un cast.
  */
-type NodeFouillable = {
+export type NodeFouillable = {
   type: string;
   findOne?: (predicat: (child: SceneNode) => boolean) => SceneNode | null;
 };
 
 /** Texte du premier calque texte d'un nom donné dans un node (vide si absent). */
-function textOfLayer(node: NodeFouillable, layerName: string): string {
+export function textOfLayer(node: NodeFouillable, layerName: string): string {
   const found = layerOfName(node, layerName.trim().toLowerCase());
   return found ? found.characters : '';
 }
@@ -250,6 +250,19 @@ function iconRuleEntry(instance: InstanceNode): RuleEntry {
 }
 
 /**
+ * Nom compacté du catalogue d'où vient un maître : son component set quand il
+ * en a un, lui-même sinon.
+ *
+ * Un composant de règle ou de section vit dans un component set, et c'est le
+ * set qui porte le nom que les conventions emploient ; le variant, lui, porte
+ * `Type=@usage`. Un composant sans set reste lisible par son propre nom.
+ */
+export function nomDuCatalogue(main: ComponentNode | null): string {
+  const owner = main?.parent?.type === 'COMPONENT_SET' ? main.parent.name : main?.name ?? '';
+  return compactName(owner);
+}
+
+/**
  * Vrai si une instance est bien un `.ruleItem` : on remonte à son composant
  * maître, puis à son component set, qui porte le nom du composant de règle.
  *
@@ -258,8 +271,7 @@ function iconRuleEntry(instance: InstanceNode): RuleEntry {
  */
 async function isRuleInstance(instance: InstanceNode): Promise<boolean> {
   const main = await instance.getMainComponentAsync().catch(() => null);
-  const owner = main?.parent?.type === 'COMPONENT_SET' ? main.parent.name : main?.name ?? '';
-  return compactName(owner) === RULES_COMPONENT_NAME;
+  return nomDuCatalogue(main) === RULES_COMPONENT_NAME;
 }
 
 /** Les calques par lesquels une règle écrit quelque chose : son texte ou sa cible. */

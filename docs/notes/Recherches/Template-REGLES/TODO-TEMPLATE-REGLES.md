@@ -294,21 +294,21 @@ sections [5.2](PLAN-TEMPLATE-REGLES.md#52-ordre-des-sources) à
       `handleExportComponent` au modèle (sections, règles, séparateurs, tag,
       cible). Aucun import de l'API Figma. Une section se désigne par le tag de
       son exemple, jamais par son nom.
-- [ ] `src/template/sources.ts`, lecture seule :
+- [x] `src/template/sources.ts`, lecture seule :
   - [x] relevé synchrone de l'offre à partir du parcours de page que fait déjà
         `extractRules` : `creer`, `remplir`, `sans-source`, ou aucune offre
         (conteneur qui écrit le nom du composant, variant seul) ;
   - [x] conteneur vierge au sens de [5.3](PLAN-TEMPLATE-REGLES.md#53-le-conteneur-vierge) :
         `component-name` marqué et aucune règle rédigée ;
-  - [ ] résolution asynchrone, au clic : maître `.componentRules`, maître de
+  - [x] résolution asynchrone, au clic : maître `.componentRules`, maître de
         chaque section et de chaque tag lu sur les exemples par
         `getMainComponentAsync`, variante choisie par `ruleTagFromLayerName`,
         séparateur pris dans le component set de `.ruleItem` comme la variante
         sans calque texte ;
-  - [ ] vérification des textes d'aide : `content` de `@usage`, `@prop` et
+  - [x] vérification des textes d'aide : `content` de `@usage`, `@prop` et
         `@boolean`, `icon` de `@icons` portent le marqueur ; sinon un refus,
         texte de 6.3 ;
-  - [ ] aucun appel à `loadAllPagesAsync` ni à `importComponentByKeyAsync`.
+  - [x] aucun appel à `loadAllPagesAsync` ni à `importComponentByKeyAsync`.
 - [x] `src/contract/extractRules.ts` rend le relevé nécessaire à l'offre sans
       second parcours de page. Le relevé et son type vivent dans
       `src/contract/`, et `sources.ts` les importe. L'inverse ferait échouer le
@@ -323,16 +323,16 @@ sections [5.2](PLAN-TEMPLATE-REGLES.md#52-ordre-des-sources) à
       `code.ts` figure dans sa table `modules`. Ajouter `./template/sources`,
       et donner au faux `extractRules` un relevé d'offre. Nouveaux tests :
       l'offre arrive dans `cible` ; un variant seul n'en reçoit aucune.
-- [ ] Tests de `sources.ts` avec les objets Figma minimaux de
+- [x] Tests de `sources.ts` avec les objets Figma minimaux de
       `tests/rules.test.ts` : chaque ligne du tableau de 5.4 ; un conteneur au
       nom marqué qui porte une règle rédigée n'est pas vierge ; un maître sans
       `divider` donne un modèle sans séparateur ; des textes d'aide sans
       marqueur donnent le refus.
-- [ ] Test de relecture ([section 9](PLAN-TEMPLATE-REGLES.md#9-documents-et-tests-touchés)) :
+- [x] Test de relecture ([section 9](PLAN-TEMPLATE-REGLES.md#9-documents-et-tests-touchés)) :
       poser le modèle de `Root` sur des objets simulés, puis vérifier
       qu'`extractRules` rend les avertissements du marqueur et aucun autre
       message des règles.
-- [ ] Vérification complète dans le worktree, commit, push.
+- [x] Vérification complète dans le worktree, commit, push.
 
 ## 1b. Essais : résultats et porte H2
 
@@ -782,10 +782,9 @@ comparaisons ne l'est pas. Fichier supprimé, loi verte.
 
 ### 4. Modèle et sources
 
-**Lot en cours, livré par morceaux.** La limite hebdomadaire de jetons a coupé
-la session : le lot est commité partiellement, à l'écart de la règle « un lot,
-un commit ». Ce que le dépôt porte est vert ; ce qui manque est listé plus bas,
-et les cases non cochées du lot 4 en font foi.
+**Lot livré par morceaux.** La limite hebdomadaire de jetons a coupé la
+session, et le lot est commité en cinq fois, à l'écart de la règle « un lot, un
+commit ». Chaque morceau laisse le dépôt vert.
 
 Livré et vert : `tests/template.test.ts` et `src/template/modele.ts`. Rouge
 constaté avant le code, `npx tsx --test tests/template.test.ts` : le module
@@ -845,8 +844,41 @@ qui n'est pas une règle et qui écrit quelque chose compte donc pour du travail
 ce qui range la prudence du bon côté. Rouge constaté en retirant la condition :
 le conteneur rédigé recevait `remplir`, et le plugin aurait écrit par-dessus.
 
-Reste à faire dans ce lot :
+Livré en dernier, et vert : `resoudreLesSources` dans `sources.ts`, la
+vérification des textes d'aide, et les dix tests qui les jugent. Rouge constaté
+avant le code, `npx tsx --test tests/template.test.ts` : 15 verts, 9 rouges,
+tous sur `resoudreLesSources` introuvable.
 
-1. `src/template/sources.ts`, suite : la résolution asynchrone des maîtres au
-   clic, et la vérification des textes d'aide de 6.3.
-2. Tests des maîtres résolus, et test de relecture de la section 9.
+Le lot est clos. Ce qu'il a fallu décider en résolvant :
+
+- le parcours des exemples descend par les sections, et une règle rangée
+  ailleurs dans le maître est ignorée. Le maître de sa section est ce que
+  l'écriture copie : un exemple sans section n'aurait aucun endroit où aller ;
+- le séparateur se reconnaît à ce qu'il ne montre aucun texte, jamais à son nom
+  de variante. Un catalogue sans variante muette ne refuse rien : le template
+  posera ses règles à la suite, et un groupe de moins se voit ;
+- `nomDuCatalogue` est sorti d'`isRuleInstance` et exporté : reconnaître un
+  `.ruleItem` et reconnaître une `.rulesSection` est la même lecture, et la
+  section était le second endroit où l'écrire ;
+- le nom compacté de `.rulesSection` vit dans `src/template/`, seul à en avoir
+  besoin : le moteur ignore les sections, et les nommer dans `src/contract/`
+  lui donnerait une connaissance qu'il n'emploie pas ;
+- deux refus s'ajoutent à celui de 6.3, que le plan ne nommait pas : un maître
+  introuvable depuis la page, et un maître sans aucun exemple de règle. Le
+  second n'est pas théorique, un maître dont on a vidé les slots le produit.
+
+Le test de relecture est vert d'emblée, comme celui du `content` d'un
+`@default` au lot 2a : il garde un comportement que le marqueur a livré. Un
+écart au plan s'y mesure : 6.5 comptait « aucune règle @usage, @do, @dont ou
+@pairs n'est déclarée » parmi les messages du premier export, mais cette phrase
+vient d'`exportComponent.ts`, pas d'`extractRules`. La relecture d'un conteneur
+fraîchement posé ne rend donc que les quatre lignes du marqueur, et rien
+d'autre.
+
+**Rouge du dépôt, étranger à ce lot.** Sur la suite complète du worktree,
+1 417 tests verts et un rouge : « la feuille n'écrit aucune couleur en dur hors
+de ses rôles » (`stylesUi.test.ts`). Quatre `#666666` sont entrés dans
+`src/ui/styles.css` par les commits `7e7bb83` et `45be9a2`, qui sont d'une
+autre session. Le lot 4 ne touche ni l'interface ni sa feuille, et son commit
+ne porte que ses trois fichiers. La couleur doit rejoindre le bloc de rôles,
+et c'est à la session qui règle les états de survol de le faire.
