@@ -73,6 +73,7 @@
   --fond-marque: var(--figma-color-bg-brand, #0d99ff);
   --fond-marque-survol: var(--figma-color-bg-brand-hover, #007be5);
   --fond-avertissement: var(--figma-color-bg-warning-tertiary, #fff1d6);
+  --fond-danger: var(--figma-color-bg-danger-tertiary, #ffe0db);
   --bordure: var(--figma-color-border, #e6e6e6);
   --bordure-marque: var(--figma-color-border-brand-strong, #0d99ff);
   --texte: var(--figma-color-text, #1e1e1e);
@@ -92,6 +93,7 @@
   --fond-marque: var(--figma-color-bg-brand, #0d99ff);
   --fond-marque-survol: var(--figma-color-bg-brand-hover, #3ab0ff);
   --fond-avertissement: var(--figma-color-bg-warning-tertiary, #4a3a10);
+  --fond-danger: var(--figma-color-bg-danger-tertiary, #4d1f17);
   --bordure: var(--figma-color-border, #444444);
   --bordure-marque: var(--figma-color-border-brand-strong, #0d99ff);
   --texte: var(--figma-color-text, #ffffff);
@@ -822,6 +824,12 @@ p {
   color: var(--texte);
 }
 
+.carte-danger {
+  border-left: 2px solid var(--texte-danger);
+  background: var(--fond-danger);
+  color: var(--texte);
+}
+
 /*
  * La pastille NOMME la sévérité, elle ne fait pas que la colorer : une puce ou
  * un fond seuls demandent au lecteur de connaître le code couleur.
@@ -838,6 +846,10 @@ p {
 
 .pastille-avertissement {
   color: var(--texte-avertissement);
+}
+
+.pastille-danger {
+  color: var(--texte-danger);
 }
 
 .carte-titre {

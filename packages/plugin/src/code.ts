@@ -965,6 +965,40 @@ function clesDeclareesPar(
   }
 }
 
+/** Une énumération lisible : « a », « b » et « c ». */
+function enumerer(mots: readonly string[]): string {
+  const cites = mots.map((mot) => `« ${mot} »`);
+  if (cites.length <= 1) return cites.join('');
+  return `${cites.slice(0, -1).join(', ')} et ${cites[cites.length - 1]}`;
+}
+
+/**
+ * Le point rouge des propriétés que le template ne documente pas.
+ *
+ * Elles entrent dans le contrat par l'élection du wrapper, faute d'un enfant
+ * reconnu comme dépendance. Les taire ferait croire à un template complet,
+ * alors que le contrat publié décrira ces propriétés sans un mot d'usage.
+ */
+function signalerLesPropsEcartees(
+  nomDuComposant: string,
+  ecartees: readonly string[],
+  provenance: Partial<Provenance>,
+): void {
+  if (ecartees.length === 0) return;
+  const accord = ecartees.length === 1 ? 'Une propriété du contrat' : `${ecartees.length} propriétés du contrat`;
+  versUi({
+    type: 'diagnostic',
+    severite: 'danger',
+    titre: `${accord} n’est pas documentée dans les règles de « ${nomDuComposant} » : `
+      + `${enumerer(ecartees)}.`,
+    impact: `Elles viennent d’un composant imbriqué qui n’a pas encore ses propres règles, et `
+      + `« ${nomDuComposant} » les publie comme si elles étaient les siennes.`,
+    action: `Créez les règles du composant imbriqué qui les porte, puis relancez l’analyse de `
+      + `« ${nomDuComposant} ».`,
+    ...provenance,
+  });
+}
+
 async function creerRegles(operation: number): Promise<void> {
   if (operationEnCours !== null) {
     postStatus('error', OPERATION_DEJA_EN_COURS, { operation });
@@ -991,10 +1025,10 @@ async function creerRegles(operation: number): Promise<void> {
     const analyse = await handleExportComponent(annoncer);
     const contrat = JSON.parse(analyse.content) as ContratLu;
     const clesDuParent = clesDeclareesPar(composant);
-    const modele = modeleDeRegles(
-      composant.name,
-      clesDuParent ? restreindreAuParent(contrat, clesDuParent) : contrat,
-    );
+    const propre = clesDuParent ? restreindreAuParent(contrat, clesDuParent) : contrat;
+    const modele = modeleDeRegles(composant.name, propre);
+    const ecartees = Object.keys(contrat.props ?? {})
+      .filter((cle) => !(cle in (propre.props ?? {})));
 
     const resultat = await creerLesRegles(composant, modele, sources, annoncer);
     // Le conteneur posé déclare le composant comme dépendance UCM. L'index
@@ -1010,6 +1044,9 @@ async function creerRegles(operation: number): Promise<void> {
       `${resultat.regles} règles posées. Rédigez-les dans Figma, puis relancez l’analyse.`,
       provenance,
     );
+    // Après le statut : la création a réussi, et ce point dit ce qu'elle laisse
+    // au designer plutôt que ce qu'elle a raté.
+    signalerLesPropsEcartees(composant.name, ecartees, provenance);
   } catch (erreur) {
     const message = erreur instanceof Error ? erreur.message : ECHEC_GENERIQUE;
     postStatus('error', message, provenance);

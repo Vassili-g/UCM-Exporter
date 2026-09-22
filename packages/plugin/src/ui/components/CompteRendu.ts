@@ -101,12 +101,18 @@ export function createCompteRendu(): CompteRenduUi {
    * mentirait au clavier comme au lecteur d'écran.
    */
   function creerDiagnostic(point: PointACorriger): HTMLDivElement {
+    // Un point `danger` dit que le contrat décrit déjà le composant de travers.
+    // Il se distingue au premier coup d'œil, la pile pouvant en porter un parmi
+    // des avertissements qui, eux, laissent le contrat exact.
+    const grave = point.severite === 'danger';
     const carte = document.createElement('div');
     carte.className = 'carte carte-avertissement';
+    if (grave) carte.className = 'carte carte-danger';
 
     const pastille = document.createElement('span');
     pastille.className = 'pastille pastille-avertissement';
-    pastille.textContent = 'À corriger';
+    if (grave) pastille.className = 'pastille pastille-danger';
+    pastille.textContent = grave ? 'Bloquant' : 'À corriger';
 
     const titre = document.createElement('p');
     titre.className = 'carte-titre';

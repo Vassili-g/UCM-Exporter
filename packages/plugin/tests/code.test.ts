@@ -1174,6 +1174,47 @@ test('« creer-regles » écrit une fois, et relance le relevé de sélection', 
   assert.deepEqual(h.appels.relevesDeProps, [['severity']]);
 });
 
+test('les propriétés écartées du template donnent un point rouge, nommées une à une', async () => {
+  // Le contrat porte les propriétés d'un enfant élu wrapper ; le composant
+  // sélectionné ne déclare que « severity ». Les taire ferait croire à un
+  // template complet, alors que le contrat publié les décrit sans un mot
+  // d'usage.
+  const h = ouvrir();
+  h.exporte.traiter = async () => ({
+    ...resultat('Exemple.contract.json'),
+    content: JSON.stringify({
+      props: {
+        severity: { type: 'enum', values: ['info'] },
+        size: { type: 'enum', values: ['small'] },
+        label: { type: 'boolean', default: true },
+      },
+    }),
+  });
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  const points = h.messages.filter((message) => message.type === 'diagnostic');
+  assert.equal(points.length, 1);
+  assert.equal(points[0].severite, 'danger');
+  assert.match(points[0].titre, /« size » et « label »/);
+  assert.match(points[0].titre, /2 propriétés du contrat/);
+  assert.match(points[0].action, /Créez les règles du composant imbriqué/);
+  // Le point suit le succès : la création a bien posé les règles.
+  assert.match(derniereNote(h) ?? '', /règles posées/);
+});
+
+test('un template qui documente tout ne rend aucun point', async () => {
+  const h = ouvrir();
+  h.exporte.traiter = async () => ({
+    ...resultat('Exemple.contract.json'),
+    content: JSON.stringify({ props: { severity: { type: 'enum', values: ['info'] } } }),
+  });
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(h.messages.filter((message) => message.type === 'diagnostic'), []);
+});
+
 test('le modèle vient du contrat analysé, et la création le dit en étapes', async () => {
   const h = ouvrir();
   await h.envoyer({ type: 'creer-regles', operation: 1 });

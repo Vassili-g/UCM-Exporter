@@ -206,6 +206,13 @@ export type PluginMessage =
   /** Point exigeant un geste dans Figma, conservé dans ses trois parties. */
   | ({
       type: 'diagnostic';
+      /**
+       * Le poids du point. `avertissement` dit qu'un contrat exact manque de
+       * quelque chose ; `danger` dit qu'il décrit déjà le composant de travers,
+       * et qu'aucune relecture du résultat ne le rattrapera. Absent vaut
+       * `avertissement`.
+       */
+      severite?: 'avertissement' | 'danger';
       /** « Layer « Border » : l'alignement du stroke est illisible. » */
       titre: string;
       /** Ce que le développeur n'aura pas. Une phrase. */
@@ -218,7 +225,13 @@ export type PluginMessage =
        * navigation.
        */
       nodeIds?: string[];
-    } & Provenance)
+      /**
+       * Provenance partielle, comme `status` et `phase` : la création des règles
+       * ne lit aucun dépôt et n'a donc pas de destination, alors qu'elle rend
+       * des points à corriger. `resultatActuel` accepte déjà une destination
+       * absente et n'écarte que sur le numéro d'opération.
+       */
+    } & Partial<Provenance>)
   /**
    * Ce que l'analyse conclut, et l'action qu'elle propose.
    *
