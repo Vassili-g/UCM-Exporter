@@ -1,14 +1,23 @@
 # Plan de réduction du coût par composant
 
+> Statut : en partie remplacé. Ce document porte les leviers du **chemin
+> agent**, celui où un agent lit le contrat et écrit le fichier. Le
+> [plan de l'implémenteur](../Formalisation%20de%20la%20solution/PLAN-IMPLEMENTEUR.md)
+> décrit le **chemin compilé**, qui est retenu, et il absorbe les lots C, D et E
+> ci-dessous. La table de la section 5 dit lequel de ses lots survit et pourquoi.
+>
+> Ce qui reste valable sans réserve : le protocole de la section 3, l'inventaire
+> pondéré de la section 4, et le lot A, qui vaut tant qu'un agent travaille sur
+> ce repository.
+
 Cette note propose un plan d'exécution pour réduire les tokens dépensés par
 composant reconstruit, sans perdre la qualité d'intégration. Elle prolonge
 [RAPPORT-COUT-GENERATION.md](./RAPPORT-COUT-GENERATION.md), qui porte les
-mesures de la campagne L5 et les sources tarifaires.
+mesures de la campagne L5.
 
 Trois choses la composent : un protocole qui rend chaque réduction vérifiable
 (section 3), un inventaire pondéré de vingt-quatre options (section 4), et le
-plan retenu, découpé en lots qui se branchent sur ceux du plan des modes
-(section 5).
+plan retenu, découpé en lots (section 5).
 
 ## 1. Ce que coûte un composant aujourd'hui
 
@@ -168,9 +177,17 @@ contient : l'extraction cesse d'imprimer les données mécaniques, que le lot
 | E4. Affiner un petit modèle | 25 | quatre composants et un consommateur ; l'étude de référence s'appuie sur un millier d'exemples |
 | B8. Serveur MCP pour servir le contrat | 23 | le pipeline assemble le paquet lui-même, sans protocole à maintenir |
 | B6. Compression de prompt, famille `LLMLingua` | 22 | ces méthodes retirent des tokens jugés peu informatifs ; un contrat est une donnée exacte, et une référence de token perdue est un défaut de rendu |
-| E5. Auto-hébergement d'un modèle à poids ouverts | 16 | le seuil de rentabilité d'une carte dédiée se situe vers 2,5 à 3 milliards de tokens par mois ; le corpus en consomme quatre ordres de grandeur de moins |
+| E5. Auto-hébergement d'un modèle à poids ouverts | 16 | aucun seuil universel ne vaut : l'[étude](./ETUDE-GENERATION-A-FROID.md) donne la formule à recalculer sur la charge réelle, et le corpus en est de plusieurs ordres de grandeur en dessous |
 
 ## 5. Le plan
+
+| Lot | Sort |
+|---|---|
+| A. Harnais et guide | Valable. Il porte sur la session d'un agent, que le chemin compilé ne remplace pas |
+| B. Ce que le guide imprime | Valable pour le chemin agent, sans objet pour le chemin compilé, où le modèle ne lit plus le contrat |
+| C. Générer les données mécaniques | Absorbé. Le compilateur du plan de l'implémenteur en est la forme complète : il n'émet pas seulement les tables, il émet le composant |
+| D. Le pipeline | Absorbé par le module et ses ports, section 10 du plan de l'implémenteur |
+| E. Effort, modèle, régénération | Absorbé, et son assiette rétrécit : sous les conventions du plan, le corpus entier pose vingt questions, et le prix du million de tokens cesse de décider |
 
 ### Lot A. Harnais et guide, sans toucher au code produit
 
@@ -210,6 +227,25 @@ par `--append-system-prompt`. L'aide de `--bare` nomme aussi une variante
 > Lancer le contrôle de types du projet. Une prop qu'un consommateur attend et
 > que le contrat ne publie pas s'ajoute à la surface publique, et se rapporte
 > dans le compte rendu.
+
+**Les réglages, un par un.** Relevés dans `claude --help` de la version 2.1.272
+et dans la documentation de Claude Code.
+
+| Réglage | Effet sur le coût | Précaution |
+|---|---|---|
+| `--bare` | retire hooks, mémoire automatique, découverte de `CLAUDE.md`, plugins | exige une clé d'API ; l'authentification d'abonnement n'est pas lue |
+| `--strict-mcp-config` sans `--mcp-config` | retire les connecteurs MCP de l'utilisateur | |
+| `--setting-sources project` | ignore les réglages de l'utilisateur | |
+| `--disable-slash-commands` | retire la liste des skills et commandes | désactive aussi la skill du relais : passer la consigne par `--append-system-prompt` |
+| `--tools Read,Write,Edit,Bash` | retire les définitions des autres outils | |
+| `--exclude-dynamic-system-prompt-sections` | déplace dossier de travail et état Git dans le premier message, et rend le prompt système partageable entre runs | sans effet avec `--system-prompt` |
+| `--effort medium` | réduit la réflexion, 27 % du coût en L5 | à mesurer sur la fidélité |
+| `--max-budget-usd` | arrête un run au-delà d'un montant | |
+| `CLAUDE_CODE_PROMPT_CACHE_TTL=5m` | écriture de cache à 1,25 fois l'entrée au lieu de 2 | en L5, trois runs sur douze ont un intervalle de plus de cinq minutes entre deux appels, jusqu'à 507 s, causé par la génération du composant : ils auraient perdu leur cache |
+
+Sur l'API directe, les mêmes leviers s'écrivent `output_config.effort`,
+`cache_control` sur le préfixe stable et `task_budget`, un plafond que le
+modèle voit et respecte.
 
 **Prédicat.** Contexte initial inférieur à 15 k tokens, mesuré par
 `claude -p "ok" --output-format json` avec ces options.
@@ -330,7 +366,7 @@ d'acceptation et la relecture du compte rendu des manques à chaque campagne.
    la porte fournit le signal d'échec dont il a besoin. Le contexte de Haiku
    s'arrête à 200 k tokens, ce que seul le pipeline laisse tenir.
 3. **Régénération.** Après un réexport, le diff sémantique
-   ([PLAN-DIFF-SEMANTIQUE.md](../Diff%20Sémantique/PLAN-DIFF-SEMANTIQUE.md)) donne les champs
+   ([PLAN-DIFF-SEMANTIQUE.md](../../Diff%20Sémantique/PLAN-DIFF-SEMANTIQUE.md)) donne les champs
    touchés. Une modification qui ne porte que sur des données mécaniques ne
    demande aucun appel : le module se régénère, et la porte vérifie le rendu.
    Sinon, le paquet se réduit aux champs touchés et au fichier existant.
@@ -354,15 +390,13 @@ Le lot 0 reprend les corrections de la section 1.8 du rapport : sélecteur de
 `comparer.mjs`, décision sur `coutUsd`, cinq répétitions, et les quatre
 composants au lieu de deux.
 
-Trois décisions appartiennent au mainteneur :
+Une décision reste propre à ce document : le budget inscrit dans
+`baseline-cout.json`, qui devient le seuil d'échec du contrôle de
+non-régression.
 
-1. la forme du module généré, qui fixe TypeScript pour les données et croise la
-   question du gabarit de L7 ;
-2. la place du pipeline, commande `ucm implement` de la CLI ou script du
-   repository consommateur. La CLI le rend reproductible ailleurs ; le script
-   garde la CLI hors du métier d'appeler un modèle ;
-3. le budget inscrit dans `baseline-cout.json`, qui devient le seuil d'échec du
-   contrôle de non-régression.
+Les deux autres, la forme du module généré et la place du pipeline, sont passées
+au [plan de l'implémenteur](../Formalisation%20de%20la%20solution/PLAN-IMPLEMENTEUR.md),
+dont la section 17 rassemble les quatorze décisions de l'architecte.
 
 ## 7. Risques et parades
 

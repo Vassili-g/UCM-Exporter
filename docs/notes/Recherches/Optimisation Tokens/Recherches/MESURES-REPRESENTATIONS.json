@@ -1,0 +1,171 @@
+{
+  "tiktoken": "0.12.0",
+  "script_sha256": "cd75b4fa89ba3f2a6b2bd126a3196e96fbc0e736491d81d861bfc3d923a16f91",
+  "encodages": [
+    "cl100k_base",
+    "o200k_base"
+  ],
+  "appels_modele": 0,
+  "resultats": [
+    {
+      "composant": "Alert",
+      "source": "src/components/Alert/Alert.contract.json",
+      "sha256": "b427c872766d79034d5d8d47185fa630f9c1b1f0b356076e0cb3bde2b62e9aba",
+      "version_contrat": "13.0",
+      "variants": 8,
+      "aller_retour_verifie": true,
+      "mesures": {
+        "original": {
+          "octets_utf8": 14418,
+          "cl100k_base": 3687,
+          "o200k_base": 3754
+        },
+        "minifie": {
+          "octets_utf8": 14036,
+          "cl100k_base": 3536,
+          "o200k_base": 3611
+        },
+        "dictionnaire": {
+          "octets_utf8": 13620,
+          "cl100k_base": 3472,
+          "o200k_base": 3548
+        },
+        "colonnes": {
+          "octets_utf8": 13759,
+          "cl100k_base": 3558,
+          "o200k_base": 3609
+        },
+        "colonnes_dictionnaire": {
+          "octets_utf8": 13343,
+          "cl100k_base": 3494,
+          "o200k_base": 3546
+        },
+        "reste_plan_non_autosuffisant": {
+          "octets_utf8": 4930,
+          "cl100k_base": 1255,
+          "o200k_base": 1257
+        }
+      }
+    },
+    {
+      "composant": "Button",
+      "source": "src/components/Button/Button.contract.json",
+      "sha256": "c60ee1e0e1ad23ef896f29c637eb900fc23ac5903ec45377a6d5342655a8beba",
+      "version_contrat": "13.0",
+      "variants": 90,
+      "aller_retour_verifie": true,
+      "mesures": {
+        "original": {
+          "octets_utf8": 54653,
+          "cl100k_base": 13878,
+          "o200k_base": 14169
+        },
+        "minifie": {
+          "octets_utf8": 53857,
+          "cl100k_base": 13557,
+          "o200k_base": 13862
+        },
+        "dictionnaire": {
+          "octets_utf8": 52126,
+          "cl100k_base": 13235,
+          "o200k_base": 13542
+        },
+        "colonnes": {
+          "octets_utf8": 49366,
+          "cl100k_base": 13095,
+          "o200k_base": 13130
+        },
+        "colonnes_dictionnaire": {
+          "octets_utf8": 47635,
+          "cl100k_base": 12773,
+          "o200k_base": 12810
+        },
+        "reste_plan_non_autosuffisant": {
+          "octets_utf8": 5774,
+          "cl100k_base": 1467,
+          "o200k_base": 1466
+        }
+      }
+    },
+    {
+      "composant": "StressTest",
+      "source": "src/components/StressTest/StressTest.contract.json",
+      "sha256": "eedecbe121ad8d07f5b7b24220602c4646d49f3723aad144218af17dd11f3888",
+      "version_contrat": "13.0",
+      "variants": 3,
+      "aller_retour_verifie": true,
+      "mesures": {
+        "original": {
+          "octets_utf8": 44674,
+          "cl100k_base": 11983,
+          "o200k_base": 12105
+        },
+        "minifie": {
+          "octets_utf8": 44313,
+          "cl100k_base": 11837,
+          "o200k_base": 11961
+        },
+        "dictionnaire": {
+          "octets_utf8": 39910,
+          "cl100k_base": 10874,
+          "o200k_base": 11087
+        },
+        "colonnes": {
+          "octets_utf8": 44286,
+          "cl100k_base": 11862,
+          "o200k_base": 11981
+        },
+        "colonnes_dictionnaire": {
+          "octets_utf8": 39883,
+          "cl100k_base": 10899,
+          "o200k_base": 11107
+        },
+        "reste_plan_non_autosuffisant": {
+          "octets_utf8": 5682,
+          "cl100k_base": 1398,
+          "o200k_base": 1406
+        }
+      }
+    },
+    {
+      "composant": "TileLink",
+      "source": "src/components/TileLink/TileLink.contract.json",
+      "sha256": "87c1c1f8ca81cb51c565d43d03cf3bce772a88debd05b614de097808c42ebd74",
+      "version_contrat": "13.0",
+      "variants": 4,
+      "aller_retour_verifie": true,
+      "mesures": {
+        "original": {
+          "octets_utf8": 3216,
+          "cl100k_base": 834,
+          "o200k_base": 839
+        },
+        "minifie": {
+          "octets_utf8": 3014,
+          "cl100k_base": 745,
+          "o200k_base": 751
+        },
+        "dictionnaire": {
+          "octets_utf8": 3017,
+          "cl100k_base": 747,
+          "o200k_base": 754
+        },
+        "colonnes": {
+          "octets_utf8": 2968,
+          "cl100k_base": 757,
+          "o200k_base": 755
+        },
+        "colonnes_dictionnaire": {
+          "octets_utf8": 2971,
+          "cl100k_base": 759,
+          "o200k_base": 758
+        },
+        "reste_plan_non_autosuffisant": {
+          "octets_utf8": 1627,
+          "cl100k_base": 420,
+          "o200k_base": 416
+        }
+      }
+    }
+  ]
+}

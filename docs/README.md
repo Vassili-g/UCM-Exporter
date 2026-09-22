@@ -85,6 +85,5 @@ partie du produit n'en dépend.
 | [notes/Recherches/Evolutions globales/PISTES-EVOLUTION.md](./notes/Recherches/Evolutions%20globales/PISTES-EVOLUTION.md) | Les modules d'évolution à étudier, leurs conditions et leurs essais |
 | [notes/Recherches/Linter Dev/PLAN-CONFORMITE-RENDU.md](./notes/Recherches/Linter%20Dev/PLAN-CONFORMITE-RENDU.md) | La piste d'une vérification générique du rendu, non engagée |
 | [notes/Recherches/Diff Sémantique/PLAN-DIFF-SEMANTIQUE.md](./notes/Recherches/Diff%20Sémantique/PLAN-DIFF-SEMANTIQUE.md) | Le plan d'un diff sémantique entre deux versions d'un contrat |
-| [notes/Recherches/Optimisation Tokens/PLAN-REDUCTION-TOKENS.md](./notes/Recherches/Optimisation%20Tokens/PLAN-REDUCTION-TOKENS.md) | Les options qui réduisent le coût d'un composant reconstruit |
-| [notes/Recherches/Optimisation Tokens/RAPPORT-COUT-GENERATION.md](./notes/Recherches/Optimisation%20Tokens/RAPPORT-COUT-GENERATION.md) | L'analyse du coût mesuré d'une reconstruction, et les leviers à essayer |
+| [notes/Recherches/Optimisation Tokens/README.md](./notes/Recherches/Optimisation%20Tokens/README.md) | Le dossier de la génération de composants depuis un contrat : son index dit qui fait autorité sur quoi, du coût mesuré au plan du module |
 | [notes/Recherches/Réglages du plugin/RECHERCHE-REGLAGES.md](./notes/Recherches/Réglages%20du%20plugin/RECHERCHE-REGLAGES.md) | Les sujets à instruire avant des réglages en onglets : options générales, plusieurs dépôts, export local |
