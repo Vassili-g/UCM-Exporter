@@ -12,6 +12,7 @@ import test from 'node:test';
 import {
   indexContractedNames,
   indexContractedNamesInDocument,
+  oublierLIndexDuDocument,
   indexMasterInstances,
   scanComposedMatrix,
   scanComposedInstances,
@@ -43,9 +44,37 @@ function conteneurDeRegles(nom: string) {
   return {
     type: 'INSTANCE',
     name: '.componentRules',
+    // L'entête range le calque sous un cadre : l'index remonte au plus proche
+    // ancêtre qui tranche, et non au parent immédiat.
+    children: [{ type: 'FRAME', name: 'entete', children: [calque] }],
     findOne: (predicat: (node: never) => boolean) =>
       [calque].find(predicat as (node: unknown) => boolean) ?? null,
   };
+}
+
+/**
+ * Une page dont la descendance se parcourt comme dans Figma, parents câblés.
+ *
+ * L'index part des calques « component-name » et remonte la chaîne des
+ * parents : une page qui ne rendrait que ses enfants directs ne prouverait
+ * rien de ce parcours.
+ */
+function pageAvec(nom: string, enfants: unknown[]): PageNode {
+  const descendants: any[] = [];
+  const collecter = (noeuds: any[], parent: unknown) => {
+    for (const noeud of noeuds) {
+      noeud.parent = parent;
+      descendants.push(noeud);
+      collecter(noeud.children ?? [], noeud);
+    }
+  };
+  const page: any = { type: 'PAGE', name: nom, children: enfants };
+  collecter(enfants as any[], page);
+  page.findAll = (predicat?: (n: never) => boolean) =>
+    descendants.filter((n) => !predicat || (predicat as (n: unknown) => boolean)(n));
+  page.findAllWithCriteria = ({ types }: { types: string[] }) =>
+    descendants.filter((n) => types.includes(n.type));
+  return page as PageNode;
 }
 
 /** Instance dont le composant maître appartient au set nommé `setName`. */
@@ -98,18 +127,40 @@ function racine(id: string, name: string, enfants: unknown[]) {
 }
 
 test('indexContractedNames relève les composants qui possèdent un conteneur de règles', () => {
-  const page = {
-    findAll: (predicat: (n: never) => boolean) =>
-      [
-        conteneurDeRegles('Button'),
-        conteneurDeRegles('Alert'),
-        // Ni un conteneur de règles, ni un type accepté : ignorés tous les deux.
-        { type: 'FRAME', name: 'Notes de travail' },
-        { type: 'TEXT', name: 'Chip-Rules' },
-      ].filter(predicat as (n: unknown) => boolean),
-  } as unknown as PageNode;
+  const page = pageAvec('Composants', [
+    conteneurDeRegles('Button'),
+    conteneurDeRegles('Alert'),
+    // Ni un conteneur de règles, ni un type accepté : ignorés tous les deux.
+    { type: 'FRAME', name: 'Notes de travail' },
+    { type: 'TEXT', name: 'Chip-Rules' },
+  ]);
 
   assert.deepEqual(Array.from(indexContractedNames(page)).sort(), ['alert', 'button']);
+});
+
+test('le calque de nom du maître ne déclare aucune dépendance', () => {
+  // Le maître `.componentRules` porte le même calque, pré-rempli avec le nom du
+  // composant qui a servi de modèle. Le compter déclarerait une dépendance vers
+  // un composant que ce maître ne documente pas.
+  const maitre = {
+    type: 'COMPONENT',
+    name: '.componentRules',
+    children: [{ type: 'TEXT', name: 'component-name', characters: 'Button' }],
+  };
+
+  assert.deepEqual(Array.from(indexContractedNames(pageAvec('Règles', [maitre]))), []);
+});
+
+test('un calque de nom posé hors de toute instance ne déclare aucune dépendance', () => {
+  const calque = { type: 'TEXT', name: 'component-name', characters: 'Button' };
+
+  assert.deepEqual(Array.from(indexContractedNames(pageAvec('Notes', [calque]))), []);
+});
+
+test('un conteneur dont le nom porte le marqueur ne déclare aucune dépendance', () => {
+  const marque = conteneurDeRegles('[À compléter] Nom du composant');
+
+  assert.deepEqual(Array.from(indexContractedNames(pageAvec('Composants', [marque]))), []);
 });
 
 test('indexContractedNames ne confond pas composant exportable et dépendance UCM', () => {
@@ -129,13 +180,11 @@ test('l’index de production laisse un wrapper interne parcourable', async () =
   const wrapperVariant = { type: 'COMPONENT', name: 'Size=Medium', parent: wrapperSet };
   const wrapper = instance('wrap', 'Button-Wrapper', 'Button-Construc');
   const bouton = racine('button', 'Color=Primary', [wrapper]);
-  const page = {
-    findAll: (predicate: (node: never) => boolean) => [
-      wrapperSet,
-      wrapperVariant,
-      conteneurDeRegles('Button'),
-    ].filter(predicate as (node: unknown) => boolean),
-  } as unknown as PageNode;
+  const page = pageAvec('Composants', [
+    wrapperSet,
+    wrapperVariant,
+    conteneurDeRegles('Button'),
+  ]);
 
   const contracted = indexContractedNames(page);
   const { composes, composed } = await scanComposedInstances(bouton, contracted);
@@ -145,27 +194,67 @@ test('l’index de production laisse un wrapper interne parcourable', async () =
   assert.equal(composed.size, 0);
 });
 
-test('indexContractedNamesInDocument charge et indexe toutes les pages', async () => {
-  const page = (name: string) => ({
-    type: 'PAGE',
-    name,
-    findAll: (predicate: (node: never) => boolean) => [
-      conteneurDeRegles(name),
-    ].filter(predicate as (node: unknown) => boolean),
-  });
-  const pages = [page('Button'), page('Alert')];
-  const precedent = (globalThis as { figma?: unknown }).figma;
-  let loaded = 0;
+/** Monte un document dont chaque page porte le conteneur du composant homonyme. */
+function documentDeDeuxPages() {
+  const pages = ['Button', 'Alert'].map((nom) => pageAvec(nom, [conteneurDeRegles(nom)]));
+  const compteur = { charges: 0, abonnements: [] as (() => void)[] };
   (globalThis as { figma?: unknown }).figma = {
     root: { children: pages },
     currentPage: pages[0],
-    loadAllPagesAsync: async () => { loaded += 1; },
+    loadAllPagesAsync: async () => { compteur.charges += 1; },
+    on: (type: string, rappel: () => void) => {
+      if (type === 'documentchange') compteur.abonnements.push(rappel);
+    },
   };
+  return compteur;
+}
+
+test('indexContractedNamesInDocument charge et indexe toutes les pages', async () => {
+  const precedent = (globalThis as { figma?: unknown }).figma;
+  const compteur = documentDeDeuxPages();
   try {
     const names = await indexContractedNamesInDocument();
-    assert.equal(loaded, 1);
+    assert.equal(compteur.charges, 1);
     assert.deepEqual(Array.from(names).sort(), ['alert', 'button']);
   } finally {
+    oublierLIndexDuDocument();
+    (globalThis as { figma?: unknown }).figma = precedent;
+  }
+});
+
+test('l’index gardé épargne un second parcours, et un changement du document l’oublie', async () => {
+  // Chaque analyse appelait cet index, donc chargeait et parcourait tout le
+  // document une fois par composant analysé.
+  const precedent = (globalThis as { figma?: unknown }).figma;
+  const compteur = documentDeDeuxPages();
+  try {
+    await indexContractedNamesInDocument();
+    await indexContractedNamesInDocument();
+    assert.equal(compteur.charges, 1, 'le document est rechargé alors que rien n’a changé');
+
+    for (const oublier of compteur.abonnements) oublier();
+    await indexContractedNamesInDocument();
+    assert.equal(compteur.charges, 2, 'un changement du document ne fait pas oublier l’index');
+  } finally {
+    oublierLIndexDuDocument();
+    (globalThis as { figma?: unknown }).figma = precedent;
+  }
+});
+
+test('sans abonnement aux changements, rien n’est gardé', async () => {
+  // Un runtime qui refuse `documentchange` ne dirait jamais que l'index a
+  // vieilli : mieux vaut reparcourir que servir un index périmé.
+  const precedent = (globalThis as { figma?: unknown }).figma;
+  const compteur = documentDeDeuxPages();
+  (globalThis as any).figma.on = () => {
+    throw new Error('documentchange exige loadAllPagesAsync');
+  };
+  try {
+    await indexContractedNamesInDocument();
+    await indexContractedNamesInDocument();
+    assert.equal(compteur.charges, 2);
+  } finally {
+    oublierLIndexDuDocument();
     (globalThis as { figma?: unknown }).figma = precedent;
   }
 });

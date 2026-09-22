@@ -189,7 +189,7 @@ export function nomLisible(node: { name: string }): string | null {
 }
 
 /** Vrai d'un node dont le nom vaut la cible, espaces et casse en moins. */
-function porteLeNom(node: { name: string }, cible: string): boolean {
+export function porteLeNom(node: { name: string }, cible: string): boolean {
   return nomLisible(node)?.trim().toLowerCase() === cible;
 }
 

@@ -43,7 +43,7 @@ function ouvrir() {
   const evenements = new Map<string, () => void>();
   const temporisations = new Map<number, () => void>();
   const stockage = new Map<string, unknown>();
-  const appels = { analyses: 0, ecritures: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[] };
+  const appels = { analyses: 0, ecritures: 0, oublisDIndex: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[] };
   const exporte = { traiter: async () => resultat('tokens.json') };
   /** Ce que la résolution des maîtres rend au clic ; le test le choisit. */
   const resolution = { traiter: async (): Promise<{ sources: unknown; refus: string | null }> => ({ sources: { maitre: {}, aRemplir: null, sections: new Map(), regles: new Map(), separateur: null }, refus: null }) };
@@ -88,6 +88,9 @@ function ouvrir() {
       extractRules: async () => ({ releve: releve.actuel, aRediger: regles.aRediger }),
       hasUsableRules: () => regles.exploitables,
       MARQUEUR_A_COMPLETER: '[À compléter]',
+    },
+    './contract/composedComponents': {
+      oublierLIndexDuDocument: () => { appels.oublisDIndex += 1; },
     },
     './template/sources': { ...sources, resoudreLesSources: async () => resolution.traiter() },
     './template/modele': modele,
@@ -1146,6 +1149,10 @@ test('« creer-regles » écrit une fois, et relance le relevé de sélection', 
   assert.equal(h.appels.ecritures, 1);
   assert.match(derniereNote(h) ?? '', /2 règles posées/);
   assert.ok(h.messages.filter((message) => message.type === 'cible').length > relevesAvant);
+  // Le conteneur posé déclare le composant comme dépendance UCM, et l'index
+  // gardé l'ignore encore : `documentchange` arrive par lots, trop tard pour
+  // l'analyse qui suit immédiatement la création.
+  assert.equal(h.appels.oublisDIndex, 1, 'la création ne fait pas oublier l’index du document');
 });
 
 test('le modèle vient du contrat analysé, et la création le dit en étapes', async () => {

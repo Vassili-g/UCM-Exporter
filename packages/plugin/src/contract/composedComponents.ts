@@ -13,7 +13,13 @@
  * qu'un contrat autonome existe : sans elle, un component set peut n'être qu'un
  * wrapper ou un détail d'implémentation du composant parent.
  */
-import { compactName, rulesContainerOwner } from './extractRules';
+import {
+  COMPONENT_NAME_LAYER,
+  compactName,
+  porteLeMarqueur,
+  porteLeNom,
+  rulesContainerOwner,
+} from './extractRules';
 import { findWrapperReference } from './componentTree';
 import { getAllNodes, hasAncestorIn } from './exportableNodes';
 import { normalizePropKey } from './parsers';
@@ -104,11 +110,58 @@ export type ComposedMatrixScan = ComposedInstancesScan & {
  */
 export function indexContractedNames(page: PageNode): Set<string> {
   const names = new Set<string>();
-  for (const container of page.findAll((node) => rulesContainerOwner(node) !== null)) {
-    const owner = rulesContainerOwner(container);
+  for (const calque of calquesDeNomDeComposant(page)) {
+    const owner = proprietaireDuCalque(calque);
     if (owner) names.add(owner);
   }
   return names;
+}
+
+/**
+ * Les calques « component-name » de la page.
+ *
+ * Le filtre par type est natif, et il remplace un prédicat JavaScript évalué
+ * sur chaque node. Le repli garde les tests et les runtimes qui ne servent pas
+ * `findAllWithCriteria`.
+ */
+function calquesDeNomDeComposant(page: PageNode): TextNode[] {
+  const parCriteres = (page as Partial<PageNode>).findAllWithCriteria;
+  const textes = typeof parCriteres === 'function'
+    ? (parCriteres.call(page, { types: ['TEXT'] }) as TextNode[])
+    : (page.findAll((node) => node.type === 'TEXT') as TextNode[]);
+  return textes.filter((calque) => porteLeNom(calque, COMPONENT_NAME_LAYER));
+}
+
+/**
+ * Nom compacté du composant qu'un calque « component-name » documente, ou null.
+ *
+ * Le calque doit vivre dans une instance. Le maître `.componentRules` porte le
+ * même calque, pré-rempli avec le nom du composant qui a servi de modèle, et
+ * revendiquerait les règles d'un composant qu'il ne documente pas : le premier
+ * ancêtre qui tranche gagne, et un maître l'emporte donc sur rien.
+ *
+ * Partir du calque plutôt que de l'instance évite le parcours complet du
+ * sous-arbre de chaque instance de la page, que le prédicat d'un `findAll`
+ * imposait. Le résultat est le même : dans une instance imbriquée, le calque
+ * remonte à l'instance la plus proche, qui écrit le même nom que celle du
+ * dessus.
+ */
+function proprietaireDuCalque(calque: TextNode): string | null {
+  try {
+    // La remontée s'arrête à la page : Figma interdit un `COMPONENT` dans une
+    // instance, donc un calque qui atteint la page sans rencontrer d'instance
+    // appartient au maître, ou à un dessin quelconque.
+    let parent: BaseNode | null = calque.parent;
+    while (parent && parent.type !== 'INSTANCE' && parent.type !== 'PAGE') parent = parent.parent;
+    if (parent?.type !== 'INSTANCE') return null;
+    const nom = calque.characters;
+    if (porteLeMarqueur(nom)) return null;
+    return compactName(nom) || null;
+  } catch {
+    // Figma annonce des nodes qu'il ne sert plus : un calque illisible ne
+    // déclare aucune dépendance, et n'emporte pas l'index de la page.
+    return null;
+  }
 }
 
 /**
@@ -119,6 +172,7 @@ export function indexContractedNames(page: PageNode): Set<string> {
  * runtimes fonctionnels sans réduire la portée dans un document moderne.
  */
 export async function indexContractedNamesInDocument(): Promise<Set<string>> {
+  if (indexDuDocument) return indexDuDocument;
   if (typeof figma.loadAllPagesAsync === 'function') await figma.loadAllPagesAsync();
   const pages = (figma.root.children ?? []).filter(
     (node): node is PageNode => node.type === 'PAGE',
@@ -129,7 +183,57 @@ export async function indexContractedNamesInDocument(): Promise<Set<string>> {
   for (const page of pages) {
     for (const name of indexContractedNames(page)) names.add(name);
   }
+  if (ecouterLesChangements()) indexDuDocument = names;
   return names;
+}
+
+/**
+ * L'index du document, gardé tant que rien n'a changé dans le fichier.
+ *
+ * Chaque analyse le reconstruisait, et le designer paie ce parcours une fois
+ * par composant analysé. Il n'est gardé que si `documentchange` a pu être
+ * écouté : sans cet abonnement, rien ne dirait que l'index a vieilli.
+ */
+let indexDuDocument: Set<string> | null = null;
+/**
+ * L'hôte Figma auquel l'abonnement est posé.
+ *
+ * Le repère est l'objet lui-même, et non un booléen : un booléen dirait « déjà
+ * abonné » d'un hôte qui ne porte plus l'abonnement, et l'index serait gardé
+ * sans que rien ne le fasse oublier.
+ */
+let figmaEcoute: unknown = null;
+
+/**
+ * Abonne l'oubli de l'index aux changements du document, et dit si l'index
+ * peut être gardé.
+ *
+ * L'abonnement exige `loadAllPagesAsync`, que l'indexation vient d'appeler. Un
+ * runtime qui refuse l'événement ne garde rien : mieux vaut reparcourir que
+ * servir un index périmé.
+ */
+function ecouterLesChangements(): boolean {
+  if (figmaEcoute === figma) return true;
+  try {
+    figma.on('documentchange', () => {
+      indexDuDocument = null;
+    });
+  } catch {
+    return false;
+  }
+  figmaEcoute = figma;
+  return true;
+}
+
+/**
+ * Oublie l'index gardé.
+ *
+ * `documentchange` est envoyé par lots, et non à chaque geste : une écriture
+ * que le plugin vient de faire doit donc l'oublier elle-même, sans attendre
+ * l'événement qu'elle déclenchera.
+ */
+export function oublierLIndexDuDocument(): void {
+  indexDuDocument = null;
 }
 
 /**

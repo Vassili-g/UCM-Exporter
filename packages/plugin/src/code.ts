@@ -4,6 +4,7 @@
  * Rôle : afficher l'UI, écouter ses demandes d'export, lancer le bon
  * handler et lui renvoyer le fichier produit ou l'erreur.
  */
+import { oublierLIndexDuDocument } from './contract/composedComponents';
 import { extractRules, hasUsableRules, MARQUEUR_A_COMPLETER } from './contract/extractRules';
 import type { ExtractedRules, ReleveDeSource } from './contract/extractRules';
 import handleExportComponent, { getSelectedComponent } from './contract/exportComponent';
@@ -965,6 +966,9 @@ async function creerRegles(operation: number): Promise<void> {
     const modele = modeleDeRegles(composant.name, JSON.parse(analyse.content) as ContratLu);
 
     const resultat = await creerLesRegles(composant, modele, sources, annoncer);
+    // Le conteneur posé déclare le composant comme dépendance UCM. L'index
+    // gardé l'ignore encore, et `documentchange` arrive par lots.
+    oublierLIndexDuDocument();
     // Le contrat suivant ne dira plus la même chose : garder l'analyse d'avant
     // ferait publier un contrat sans les règles qu'on vient de poser.
     analysesGardees.delete('component');

@@ -151,6 +151,9 @@ function noeud(
   extra: Record<string, unknown> = {},
 ): any {
   const self: any = { type, name, id: `${type}:${name}`, children: enfants, ...extra };
+  // Chaque node Figma connaît son parent, et l'index des dépendances remonte
+  // cette chaîne depuis le calque « component-name ».
+  for (const enfant of enfants) enfant.parent = self;
   const descendants = (n: any): any[] =>
     (n.children ?? []).flatMap((enfant: any) => [enfant, ...descendants(enfant)]);
   self.findAll = (predicat?: (n: any) => boolean) =>
