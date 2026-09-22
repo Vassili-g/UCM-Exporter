@@ -837,18 +837,30 @@ règles vivent sur une page séparée. Elle suppose la phase 5 faite, le parcour
 vivant dans `src/template/sources.ts`. Son motif est en
 [section 12.3](#123-la-source-rangée-sur-une-autre-page).
 
-1. `Offre` gagne la valeur `document-sans-source`. `offreDeCreation` ne la rend
-   jamais ; le sandbox la pose après un parcours sans résultat et la garde pour
-   la session.
-2. `resoudreLesSources` parcourt les pages par `PageNode.loadAsync` quand le
-   relevé de la page active ne porte ni maître ni instance, et retient la page
-   trouvée.
-3. La note de la section 5.5, le commentaire de
+1. Relever les temps de la section 12.4 avant d'écrire une ligne : le parcours
+   actuel de l'index des dépendances, sur le fichier du mainteneur et sur un
+   fichier d'une centaine de pages. Sans ces deux nombres, l'étape 2 n'a pas de
+   cible.
+2. Écrire le parcours dans `src/template/` : `figma.root.children`,
+   `PageNode.loadAsync` page par page, `findAllWithCriteria({ types })`,
+   `figma.skipInvisibleInstanceChildren` posé et restauré autour du seul
+   parcours, arrêt à la première page qui porte un maître.
+3. Le lancer à l'ouverture du plugin, sans l'attendre, et le suspendre tant
+   qu'`operationEnCours` n'est pas nul.
+4. `Offre` gagne la valeur `document-sans-source`. `offreDeCreation` ne la rend
+   jamais ; le sandbox la pose à la fin d'un parcours sans résultat et la garde
+   pour la session.
+5. La note de la section 5.5, le commentaire de
    `tests/loiDuDocumentIntact.test.ts` et l'énoncé de D5 dans `AGENTS.md`
    passent du mot « page » au mot « document ».
-4. Recette : un fichier à deux pages, règles sur la seconde, composant sur la
+6. Une loi tient le piège de la section 12.4 : aucun fichier ne pose
+   `skipInvisibleInstanceChildren` sans le restaurer. Elle se voit rouge sur un
+   drapeau laissé à `true`, et la politique d'icône d'un composant d'essai le
+   montre.
+7. Recette : un fichier à deux pages, règles sur la seconde, composant sur la
    première ; puis un fichier sans aucun `.componentRules`, qui doit rendre la
-   note et son lien vers le kit.
+   note et son lien vers le kit. Relever les temps de nouveau, et les comparer
+   à ceux de l'étape 1.
 
 ## 11. Décisions prises à H1
 
@@ -1017,14 +1029,18 @@ dans cette version.
 
 ### 12.3. La source rangée sur une autre page
 
-Décision H3-A : au clic sur « Créer les règles d'usage », le plugin parcourt les
-pages du document jusqu'à la première qui porte un `.componentRules`. Aucun
-réglage n'est ajouté à la configuration, et aucune URL n'est demandée au
-designer.
+Décision H3-A : le plugin parcourt les pages du document jusqu'à la première qui
+porte un `.componentRules`. Aucun réglage n'est ajouté à la configuration, et
+aucune URL n'est demandée au designer.
 
-Cette décision ne touche que le clic de création. La lecture des règles par
-`extractRules` et l'offre calculée au changement de sélection restent sur la
-page active, comme la section 5.4 les décrit.
+Décision H3-B : ce parcours part en arrière-plan, sans que le designer le
+demande et sans qu'aucun affichage l'attende. La
+[section 12.4](#124-le-parcours-en-arrière-plan) dit comment il rend la main et
+ce qui le rend rapide.
+
+La lecture des règles par `extractRules` reste sur la page active, comme la
+section 5.4 la décrit. Le parcours ne lui apporte que les maîtres de la
+section 5.2.
 
 #### Le chargement est déjà payé
 
@@ -1063,7 +1079,9 @@ cette page » dans un fichier dont l'analyse vient de charger les cent pages.
   comme dans l'ordre des sources de la section 5.2.
 - Le conteneur reste créé sur la page active, à côté du composant. La page
   trouvée ne fournit que les maîtres de la section 5.2, et n'est pas modifiée.
-- La page trouvée est gardée pour la session : un second clic ne recharge rien.
+- La page trouvée est gardée pour la session : un second parcours ne part pas.
+- Un clic sur « Créer les règles d'usage » avant la fin attend le parcours en
+  cours, sans en lancer un second.
 
 #### Pourquoi aucun réglage dans la configuration
 
@@ -1120,10 +1138,87 @@ et `AGENTS.md` suivent.
 #### Ce que la carte montre
 
 `Offre` gagne une quatrième valeur. `sans-source` garde son sens, la page active
-ne portant rien, et le bouton devient actif pour lancer le parcours.
-`document-sans-source` dit qu'un parcours n'a rien trouvé ; le bouton redevient
-inactif, et la note de la section 5.5 porte alors son lien vers le kit, dans les
-mots du document et non de la page.
+ne portant rien, et le bouton reste inactif pendant que le parcours court.
+`document-sans-source` dit qu'un parcours a fini sans rien trouver ; la note de
+la section 5.5 porte alors son lien vers le kit, dans les mots du document et
+non de la page.
+
+Le sandbox pose l'offre deux fois pour une même sélection : `sans-source` au
+relevé de la page, puis `creer` ou `document-sans-source` à la fin du parcours.
+La carte suit ce second message sans que le designer ait rien cliqué. Le
+`selectionId` de la section 5.4 la protège d'un message venu d'une sélection
+abandonnée.
+
+### 12.4. Le parcours en arrière-plan
+
+#### Ce que l'arrière-plan veut dire ici
+
+Le sandbox d'un plugin Figma tient un seul fil d'exécution, sans worker. Un
+parcours ne court donc pas à côté du reste du plugin : il rend la main entre
+deux pages, et `figma.ui.onmessage` traite les demandes de l'interface dans ces
+intervalles. La fenêtre du plugin vit dans une iframe séparée et reste réactive
+quelle que soit la charge du sandbox. Ce qui se fige pendant un relevé
+synchrone est le canevas de Figma, le temps d'une page.
+
+Le parcours découpe donc son travail par page : un `await page.loadAsync()`, un
+relevé, puis la page suivante. Une opération lancée par le designer prend le
+pas : le parcours s'interrompt tant qu'`operationEnCours` n'est pas nul, et
+reprend après.
+
+#### Quand il part
+
+Décision H3-B : à l'ouverture du plugin, sans attendre une sélection. Il ne part
+pas si la page active porte déjà un maître ou une instance, ce que le relevé de
+la section 5.4 dit sans charger quoi que ce soit.
+
+#### Ce qui le rend rapide
+
+Le parcours de l'index des dépendances montre le coût à éviter.
+`indexContractedNamesInDocument` appelle
+`page.findAll((node) => rulesContainerOwner(node) !== null)`. `findAll` visite
+chaque node de la page, et `rulesContainerOwner` lance sur chaque `INSTANCE` un
+`findOne` qui redescend tout son sous-arbre à la recherche d'un calque texte. Le
+coût croît avec le nombre d'instances multiplié par leur profondeur, sur chaque
+page du document.
+
+| Mesure | Ce que Figma en dit | Statut |
+|---|---|---|
+| `findAllWithCriteria({ types })` | « a faster but more limited search compared to `findAll` » ; le filtrage par type est natif | documenté |
+| `figma.skipInvisibleInstanceChildren = true` | « often makes document traversal significantly faster » ; avec `findAllWithCriteria`, « hundreds of times faster in large documents » | documenté |
+| `PageNode.loadAsync` | une page se charge seule, au lieu du document entier | documenté |
+| Arrêt à la première page qui porte un maître | aucune page n'est chargée au-delà | mesuré dans le parcours proposé |
+
+Le maître `.componentRules` est un `COMPONENT` posé sur une page, jamais rangé
+dans une instance. Le chercher par `findAllWithCriteria({ types: ['COMPONENT'] })`
+puis comparer les noms compactés évite toute descente dans les instances.
+
+#### Le piège de `skipInvisibleInstanceChildren`
+
+`visibilityOfLayer` lit la visibilité des calques `modifiable` et `strict` d'une
+règle `@icons`, et la politique d'icône se choisit en masquant l'un des deux
+(section 6.1). Le drapeau à `true` rend un calque masqué introuvable par
+`findOne` : `visibilityOfLayer` rendrait `null` au lieu de `false`, et la
+politique publiée changerait sans qu'aucun avertissement la signale.
+
+Le drapeau se pose donc autour du seul parcours des sources, et reprend sa
+valeur d'avant à la fin, y compris sur une exception. Le poser une fois pour
+tout le plugin casserait le contrat publié.
+
+#### Ce qui reste à mesurer
+
+Non vérifié : aucun temps n'a été relevé. L'essai tient dans le plugin d'essai
+de la phase 1, sur le fichier du mainteneur puis sur un fichier d'une centaine
+de pages. Relever `Date.now()` autour d'`indexContractedNamesInDocument`, puis
+autour du parcours optimisé, et comparer les deux. Sans ce relevé, la rapidité
+attendue reste une hypothèse.
+
+#### Ce que l'analyse y gagne
+
+`indexContractedNamesInDocument` porte le même parcours, sur toutes les pages et
+sans arrêt anticipé, et chaque analyse l'appelle. Les mesures ci-dessus
+l'accélèrent plus que le parcours des sources, dont elles n'écourtent qu'un cas
+borné. Ce travail dépasse ce plan : il touche l'index des dépendances, que la
+section 9 ne liste pas, et il se mesure avant d'être écrit.
 
 ## 13. Sources
 
@@ -1144,6 +1239,8 @@ mots du document et non de la page.
 | `@figma/plugin-typings` 1.138.0, `figma.openExternal` et `ComponentPropertyDefinitions` | ouverture d'une URL depuis le sandbox ; `variantOptions` est une liste de chaînes, sans description | documenté |
 | `@figma/plugin-typings` 1.138.0, `PageNode.loadAsync` et `BaseNodeMixin.children` | une page se charge seule ; en `dynamic-page`, seuls les enfants d'une page exigent ce chargement, ses nom et identifiant restant lisibles | documenté |
 | `@figma/plugin-typings` 1.138.0, `figma.getNodeByIdAsync` et `figma.fileKey` | un identifiant ne se résout que dans le document courant ; la clé de fichier n'est servie qu'à un plugin privé d'organisation, avec `enablePrivatePluginApi` | documenté |
+| `@figma/plugin-typings` 1.138.0, `ChildrenMixin.findAllWithCriteria` et `figma.skipInvisibleInstanceChildren` | le filtrage par type est natif et plus rapide que `findAll` ; les deux ensemble valent « hundreds of times faster » sur un grand document | documenté |
+| [Recommandations de parcours du document](https://developers.figma.com/docs/plugins/accessing-document#full-document-traversal) | `findOne` sur `figma.root` est signalé comme très lent sur un document de dizaines de milliers de nodes | documenté |
 | [Publier un fichier sur la Community](https://help.figma.com/hc/en-us/articles/360040035974-Publish-files-to-the-Figma-Community) | tout compte disposant d'un accès en édition publie, depuis l'éditeur | documenté |
 | [Publier une bibliothèque](https://help.figma.com/hc/en-us/articles/360025508373-Publish-a-library) | la publication d'une bibliothèque demande un plan payant | documenté |
 | [Dupliquer un fichier Community](https://help.figma.com/hc/en-us/articles/360038510873-Duplicate-Community-files) | la copie arrive dans les brouillons, sans historique ni permissions d'origine | documenté |
