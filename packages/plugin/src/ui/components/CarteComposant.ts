@@ -69,19 +69,31 @@ export function createCarteComposant({
   const sansSource = document.createElement('p');
   sansSource.className = 'creation-sans-source';
   sansSource.hidden = true;
+  // Le geste vise cette page, et pas une autre : le parcours ne repart pas de
+  // lui-même, alors que le relevé de la page active voit une instance collée
+  // dès le changement de sélection.
   sansSource.textContent = 'Aucune instance de « .componentRules » dans ce document. '
-    + 'Collez-en une depuis un fichier qui en porte pour créer celles de ce composant. ';
+    + 'Collez-en une sur cette page, depuis un fichier qui en porte, pour créer '
+    + 'les règles de ce composant. ';
 
-  const lien = document.createElement('a');
-  lien.className = 'creation-lien';
-  lien.href = LIEN_DE_SECOURS;
-  lien.textContent = 'Lire la grammaire des règles';
-  // Une iframe de plugin n'a pas de navigateur : seul le sandbox ouvre un lien.
-  lien.addEventListener('click', (evenement) => {
-    evenement.preventDefault();
-    parent.postMessage({ pluginMessage: { type: 'open-external', url: LIEN_DE_SECOURS } }, '*');
-  });
-  sansSource.append(lien);
+  /** Le lien vers la grammaire, que les deux notes portent. */
+  function lienDeSecours(): HTMLAnchorElement {
+    const lien = document.createElement('a');
+    lien.className = 'creation-lien';
+    lien.href = LIEN_DE_SECOURS;
+    lien.textContent = 'Lire la grammaire des règles';
+    // Une iframe de plugin n'a pas de navigateur : seul le sandbox ouvre un lien.
+    lien.addEventListener('click', (evenement) => {
+      evenement.preventDefault();
+      parent.postMessage({ pluginMessage: { type: 'open-external', url: LIEN_DE_SECOURS } }, '*');
+    });
+    return lien;
+  }
+
+  // La recherche porte le même lien : une équipe qui n'a aucune source attend
+  // sinon la fin du parcours avant de savoir quoi faire.
+  recherche.append(' ', lienDeSecours());
+  sansSource.append(lienDeSecours());
 
   carte.analyser.after(creer, recherche, sansSource);
 
@@ -102,7 +114,7 @@ export function createCarteComposant({
 
   let analysee = false;
   let occupee = false;
-  /** Ce que la page permet de créer, `null` quand rien n'est à proposer. */
+  /** Ce que le document permet de créer, `null` quand rien n'est à proposer. */
   let offre: Offre | null = null;
 
   function rafraichirGeste() {

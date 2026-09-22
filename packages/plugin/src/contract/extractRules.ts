@@ -96,15 +96,20 @@ export function porteLeMarqueur(texte: string): boolean {
  * parcours que la lecture des règles fait déjà : un second coûterait une
  * traversée complète à chaque changement de sélection, sur le chemin que le
  * designer sent passer.
+ *
+ * Ce que `extractRules` remplit vient de la page active. Le parcours des
+ * sources (`src/template/sources.ts`) rend un relevé de même forme pour une
+ * autre page, dont `code.ts` ne garde que les deux maîtres : les deux premiers
+ * champs décrivent toujours la page active.
  */
 export type ReleveDeSource = {
-  /** Un conteneur écrit déjà le nom du composant sélectionné. */
+  /** Un conteneur écrit déjà le nom du composant sélectionné, sur la page active. */
   conteneurDuComposant: boolean;
-  /** Première instance collée et jamais remplie, prête à recevoir des règles. */
+  /** Instance de la page active, collée et jamais remplie, prête à recevoir des règles. */
   conteneurVierge: InstanceNode | null;
-  /** Le maître « .componentRules » de la page, quand il s'y trouve. */
+  /** Le maître « .componentRules », de la page active ou d'une autre page. */
   maitreLocal: ComponentNode | null;
-  /** Première instance qui porte « component-name », source à défaut du maître. */
+  /** L'instance qui sert de source à défaut du maître, de la page active ou d'une autre. */
   instanceSource: InstanceNode | null;
 };
 
@@ -175,7 +180,7 @@ export type NodeFouillable = {
  * calque cherché par aucun parcours d'ici, et le passer laisse les autres
  * lisibles.
  */
-function nomLisible(node: { name: string }): string | null {
+export function nomLisible(node: { name: string }): string | null {
   try {
     return node.name;
   } catch {

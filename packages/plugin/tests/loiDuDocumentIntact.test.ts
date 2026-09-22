@@ -213,6 +213,12 @@ test('le drapeau des calques invisibles se restaure, et aucun await ne le traver
   // à `true` rend ce calque introuvable : laissé posé, ou posé de part et
   // d'autre d'un `await`, il fait publier à une analyse concurrente une
   // politique que le designer n'a pas choisie.
+  //
+  // Borne : la loi lit le texte d'un seul fichier, entre la première pose et la
+  // première restauration. Elle ne suit pas le graphe d'appels, et rendre
+  // asynchrone une fonction appelée depuis ce bloc la laisserait verte. Ce que
+  // le bloc appelle est donc gardé court, et nommé dans le commentaire de
+  // `sourceDeLaPage`.
   const porteurs = tousLesFichiers(SOURCE).filter(
     (fichier) => /skipInvisibleInstanceChildren/.test(fs.readFileSync(fichier, 'utf8')),
   );

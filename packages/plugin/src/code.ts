@@ -391,7 +391,11 @@ function avertissementDesRegles(regles: ExtractedRules): string {
  * ferait échouer au clic. L'offre est reposée quand le parcours finit.
  */
 function offreSelonLeDocument(offre: Offre | null): Offre | null {
-  if (offre !== 'sans-source' || !parcoursAcheve) return offre;
+  if (offre !== 'sans-source') return offre;
+  // Le parcours repart quand sa source a disparu, et la carte remontre alors sa
+  // recherche plutôt qu'un bouton qui échouerait au clic.
+  if (oublierUneSourceDisparue()) void lancerLeParcours().catch(() => undefined);
+  if (!parcoursAcheve) return offre;
   return sourceDuDocument ? 'creer' : 'document-sans-source';
 }
 
@@ -536,6 +540,35 @@ function lancerLeParcours(): Promise<ReleveDeSource | null> {
   return parcoursDesSources;
 }
 
+/** Vrai d'un node que Figma ne sert plus, ou qui refuse de dire s'il existe. */
+function disparu(node: SceneNode | null): boolean {
+  if (!node) return false;
+  try {
+    return node.removed;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Oublie une source que le designer a supprimée depuis, et rend vrai quand le
+ * parcours doit repartir.
+ *
+ * Le parcours garde un node d'une autre page pour toute la session. Sans cet
+ * oubli, le bouton resterait actif sur un maître effacé, et le clic rendrait
+ * au designer l'erreur brute de Figma sur un node inexistant.
+ */
+function oublierUneSourceDisparue(): boolean {
+  if (!sourceDuDocument) return false;
+  if (!disparu(sourceDuDocument.maitreLocal) && !disparu(sourceDuDocument.instanceSource)) {
+    return false;
+  }
+  parcoursDesSources = null;
+  sourceDuDocument = null;
+  parcoursAcheve = false;
+  return true;
+}
+
 /**
  * Le relevé complété par la source trouvée ailleurs dans le document, quand la
  * page active n'en porte aucune.
@@ -546,6 +579,9 @@ function lancerLeParcours(): Promise<ReleveDeSource | null> {
  */
 async function avecLaSourceDuDocument(releve: ReleveDeSource): Promise<ReleveDeSource> {
   if (releve.maitreLocal || releve.instanceSource) return releve;
+  // Un maître supprimé depuis le parcours ferait échouer l'écriture sur une
+  // erreur de Figma : le parcours repart plutôt que de le servir.
+  oublierUneSourceDisparue();
   parcoursReclame = true;
   try {
     const distante = await lancerLeParcours();
@@ -1007,12 +1043,14 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     // est celle qui manquait pour qu'une commande de portée fichier annonce sa
     // taille avant de partir. Le réglage des tokens se lit avant tout : désactivé,
     // les collections du fichier ne sont pas lues.
-    const gestionDesTokens = await parLaFile(lireGestionDesTokens);
-    // Le parcours des sources part ici et n'est pas attendu : la carte s'affiche
-    // sur le relevé de la page active, et se corrige quand le parcours finit.
+    // Le parcours des sources part avant toute lecture qui peut lever, et n'est
+    // pas attendu : la carte s'affiche sur le relevé de la page active, et se
+    // corrige quand le parcours finit. Lancé plus bas, une lecture de réglages
+    // en échec laisserait la carte chercher jusqu'à la fermeture du plugin.
     void lancerLeParcours()
       .then(() => reportSelectionState())
       .catch(signalerEchec);
+    const gestionDesTokens = await parLaFile(lireGestionDesTokens);
     await Promise.all([
       reportSelectionState(),
       refreshConfiguration(),

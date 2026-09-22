@@ -14,8 +14,8 @@ import {
   RULES_CONTAINER_NAME,
   RULE_ITEM_NAME,
   compactName,
-  nomDeComposantEcrit,
   nomDuCatalogue,
+  nomLisible,
   porteLeMarqueur,
   releveVide,
   ruleTagFromLayerName,
@@ -35,8 +35,11 @@ import type { ReleveDeSource, RuleTag } from '../contract/extractRules';
 export type Offre = 'creer' | 'remplir' | 'sans-source' | 'document-sans-source';
 
 /**
- * L'offre que le relevé de la page justifie, ou `null` quand il n'y a rien à
- * proposer.
+ * L'offre que le relevé de la page active justifie, ou `null` quand il n'y a
+ * rien à proposer.
+ *
+ * `document-sans-source` n'est jamais rendue ici : elle demande le verdict du
+ * parcours, que `code.ts` pose sur cette offre une fois le parcours fini.
  *
  * Un composant qui a déjà son conteneur n'en reçoit aucune : le créer une
  * seconde fois ferait deux instances revendiquant le même nom, ce que
@@ -68,11 +71,22 @@ function nodesDeType(page: PageNode, type: 'COMPONENT' | 'INSTANCE'): SceneNode[
 /**
  * La source qu'une page porte, ou `null` quand elle n'en porte aucune.
  *
- * Le relevé est synchrone de bout en bout, et c'est ce qui rend
- * `skipInvisibleInstanceChildren` sûr : aucune autre lecture du plugin ne peut
- * s'intercaler entre sa pose et sa restauration. Posé de part et d'autre d'un
- * `await`, ce drapeau ferait lire une politique d'icône fausse à une analyse
- * concurrente, dont `visibilityOfLayer` dépend d'un calque masqué.
+ * Le critère est le nom du node, jamais ce qu'il écrit. Le relevé de la page
+ * active accepte plus large : toute instance qui porte « component-name » y
+ * sert de source, le designer ayant cette page sous les yeux. Sur cent pages
+ * d'archives, ce même critère élirait la première carte de spécification venue,
+ * dont le maître ne porte aucun exemple de règle, et le refus du clic
+ * désignerait un composant que le designer n'a pas choisi.
+ *
+ * Aucune descente dans les instances n'a lieu ici, et c'est ce qui rend
+ * `skipInvisibleInstanceChildren` inoffensif : un maître est un `COMPONENT`
+ * posé sur la page, jamais un sous-calque d'instance.
+ *
+ * Le relevé est synchrone de bout en bout, et c'est ce qui rend le drapeau sûr :
+ * aucune autre lecture du plugin ne peut s'intercaler entre sa pose et sa
+ * restauration. Posé de part et d'autre d'un `await`, il ferait lire une
+ * politique d'icône fausse à une analyse concurrente, dont `visibilityOfLayer`
+ * dépend d'un calque masqué.
  *
  * La page doit être chargée avant l'appel.
  */
@@ -80,14 +94,30 @@ function sourceDeLaPage(page: PageNode): ReleveDeSource | null {
   const avant = figma.skipInvisibleInstanceChildren;
   figma.skipInvisibleInstanceChildren = true;
   try {
-    const maitre = nodesDeType(page, 'COMPONENT')
-      .find((node) => compactName(node.name) === MAITRE_COMPACTE);
+    const porteLeNomDuMaitre = (node: SceneNode) =>
+      compactName(nomLisible(node) ?? '') === MAITRE_COMPACTE;
+    const maitre = nodesDeType(page, 'COMPONENT').find(porteLeNomDuMaitre);
     if (maitre) return { ...releveVide(), maitreLocal: maitre as ComponentNode };
-    const instance = nodesDeType(page, 'INSTANCE')
-      .find((node) => nomDeComposantEcrit(node) !== null);
+    const instance = nodesDeType(page, 'INSTANCE').find(porteLeNomDuMaitre);
     return instance ? { ...releveVide(), instanceSource: instance as InstanceNode } : null;
   } finally {
     figma.skipInvisibleInstanceChildren = avant;
+  }
+}
+
+/**
+ * Le relevé d'une page, ou `null` quand la page lève.
+ *
+ * Figma annonce des sous-calques d'instance qu'il ne sert plus, et lire un tel
+ * node lève. Une page qui lève ne doit pas emporter le parcours : les suivantes
+ * portent peut-être la source, et le document entier passerait pour sans source
+ * jusqu'à la fermeture du plugin.
+ */
+function sourceDeLaPageOuRien(page: PageNode): ReleveDeSource | null {
+  try {
+    return sourceDeLaPage(page);
+  } catch {
+    return null;
   }
 }
 
@@ -97,17 +127,18 @@ function sourceDeLaPage(page: PageNode): ReleveDeSource | null {
  *
  * La page active passe d'abord : elle est déjà chargée, et un document dont les
  * règles y vivent ne fait charger aucune autre page. Les suivantes se chargent
- * une par une, et `avantChaquePage` rend la main entre deux, le sandbox n'ayant
- * qu'un fil d'exécution.
+ * une par une. `avantChaquePage` rend la main avant le chargement, puis avant
+ * le relevé : le sandbox n'a qu'un fil, et relever une page fraîchement chargée
+ * le tient sans interruption.
  *
- * Le parcours s'arrête à la première page qui porte une source, comme l'ordre
- * des sources garde le premier maître d'une page. Il ne modifie rien.
+ * Le parcours s'arrête à la première page qui porte une source. Il ne modifie
+ * rien.
  */
 export async function chercherLaSourceDansLeDocument(
   avantChaquePage: () => Promise<void>,
 ): Promise<ReleveDeSource | null> {
   const active = figma.currentPage;
-  const trouveeSurLActive = sourceDeLaPage(active);
+  const trouveeSurLActive = sourceDeLaPageOuRien(active);
   if (trouveeSurLActive) return trouveeSurLActive;
 
   const pages = (figma.root.children ?? []).filter(
@@ -115,8 +146,13 @@ export async function chercherLaSourceDansLeDocument(
   );
   for (const page of pages) {
     await avantChaquePage();
-    if (typeof page.loadAsync === 'function') await page.loadAsync();
-    const trouvee = sourceDeLaPage(page);
+    try {
+      if (typeof page.loadAsync === 'function') await page.loadAsync();
+    } catch {
+      continue;
+    }
+    await avantChaquePage();
+    const trouvee = sourceDeLaPageOuRien(page);
     if (trouvee) return trouvee;
   }
   return null;

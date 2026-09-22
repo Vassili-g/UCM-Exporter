@@ -48,39 +48,30 @@ function page(nom: string, enfants: any[], compteurs: Compteurs) {
   return self;
 }
 
-/** Monte un document de plusieurs pages, et le démonte à la sortie du test. */
-function monterDocument(
-  t: { after: (fn: () => void) => void },
-  pages: any[],
-  active = pages[0],
-): Compteurs {
+/** Monte un document de pages déjà construites, et le démonte à la sortie. */
+function monterDocument(t: { after: (fn: () => void) => void }, pages: any[]): void {
   const precedent = (globalThis as { figma?: unknown }).figma;
   t.after(() => {
     (globalThis as { figma?: unknown }).figma = precedent;
   });
-  const compteurs: Compteurs = { charges: [], parCriteres: [] };
   (globalThis as any).figma = {
-    currentPage: active,
+    currentPage: pages[0],
     root: { children: pages },
     skipInvisibleInstanceChildren: false,
     loadAllPagesAsync: () => {
       throw new Error('loadAllPagesAsync est interdit ici');
     },
   };
-  return compteurs;
 }
 
-/** Les pages d'un document, chacune tenant ses compteurs de la même mesure. */
+/** Les pages d'un document, toutes alimentant les mêmes compteurs. */
 function documentDe(
   t: { after: (fn: () => void) => void },
   contenus: { nom: string; enfants: any[] }[],
 ) {
   const compteurs: Compteurs = { charges: [], parCriteres: [] };
   const pages = contenus.map((contenu) => page(contenu.nom, contenu.enfants, compteurs));
-  const monte = monterDocument(t, pages);
-  monte.charges = compteurs.charges;
-  monte.parCriteres = compteurs.parCriteres;
-  (globalThis as any).figma.currentPage = pages[0];
+  monterDocument(t, pages);
   return { pages, compteurs };
 }
 
@@ -110,7 +101,7 @@ test('le maître rangé sur une autre page est trouvé', async (t) => {
   assert.deepEqual(compteurs.charges, ['Règles']);
 });
 
-test('une instance qui documente un autre composant sert de source à distance', async (t) => {
+test('une instance nommée « .componentRules » sert de source à distance', async (t) => {
   documentDe(t, [
     { nom: 'Composants', enfants: [noeud('FRAME', 'Root')] },
     { nom: 'Doc', enfants: [porteurDeNom('INSTANCE', 'Chip')] },
@@ -120,6 +111,85 @@ test('une instance qui documente un autre composant sert de source à distance',
 
   assert.equal(trouvee?.maitreLocal, null);
   assert.equal(trouvee?.instanceSource?.name, '.componentRules');
+});
+
+test('une instance qui écrit un nom sans porter celui du maître n’est pas une source', async (t) => {
+  // Le relevé de la page active accepte toute instance qui porte
+  // « component-name ». À distance, ce critère élirait la première carte de
+  // spécification venue, et le clic refuserait sur un composant que le designer
+  // n'a pas choisi. Ici, « Règles » doit gagner contre « Specs ».
+  const { compteurs } = documentDe(t, [
+    { nom: 'Composants', enfants: [noeud('FRAME', 'Root')] },
+    { nom: 'Specs', enfants: [porteurDeNom('INSTANCE', 'Chip', 'Spec card')] },
+    { nom: 'Règles', enfants: [porteurDeNom('COMPONENT', 'Chip', '.componentRules')] },
+  ]);
+
+  const trouvee = await chercherLaSourceDansLeDocument(rienAAttendre);
+
+  assert.equal(trouvee?.maitreLocal?.name, '.componentRules');
+  assert.deepEqual(compteurs.charges, ['Specs', 'Règles']);
+});
+
+test('un node dont Figma refuse le nom n’emporte pas le parcours', async (t) => {
+  // Figma annonce des nodes qu'il ne sert plus : lire leur nom lève. Le nom se
+  // lit donc par `nomLisible`, et non par `node.name`. Sans lui, la page
+  // suivante ne serait jamais examinée.
+  const pourri = noeud('COMPONENT', 'Pourri');
+  Object.defineProperty(pourri, 'name', {
+    get() {
+      throw new Error('The node with id "1:2" does not exist');
+    },
+  });
+  const { compteurs } = documentDe(t, [
+    { nom: 'Composants', enfants: [noeud('FRAME', 'Root')] },
+    { nom: 'Doc', enfants: [pourri] },
+    { nom: 'Règles', enfants: [porteurDeNom('COMPONENT', 'Chip', '.componentRules')] },
+  ]);
+
+  const trouvee = await chercherLaSourceDansLeDocument(rienAAttendre);
+
+  assert.equal(trouvee?.maitreLocal?.name, '.componentRules');
+  assert.deepEqual(compteurs.charges, ['Doc', 'Règles']);
+});
+
+test('une page dont le parcours lève n’emporte pas le reste du document', async (t) => {
+  // `nomLisible` couvre le nom d'un node, et rien d'autre : la recherche
+  // elle-même peut lever sur une page que Figma sert mal. Le document entier
+  // passerait alors pour sans source jusqu'à la fermeture du plugin.
+  const { pages, compteurs } = documentDe(t, [
+    { nom: 'Composants', enfants: [noeud('FRAME', 'Root')] },
+    { nom: 'Doc', enfants: [noeud('FRAME', 'Autre')] },
+    { nom: 'Règles', enfants: [porteurDeNom('COMPONENT', 'Chip', '.componentRules')] },
+  ]);
+  pages[1].findAllWithCriteria = () => {
+    throw new Error('The node with id "1:2" does not exist');
+  };
+
+  const trouvee = await chercherLaSourceDansLeDocument(rienAAttendre);
+
+  assert.equal(trouvee?.maitreLocal?.name, '.componentRules');
+  assert.deepEqual(compteurs.charges, ['Doc', 'Règles']);
+  assert.equal(
+    (globalThis as any).figma.skipInvisibleInstanceChildren,
+    false,
+    'le drapeau n’est pas rendu quand la page lève',
+  );
+});
+
+test('un chargement de page en échec n’emporte pas le parcours', async (t) => {
+  const { pages, compteurs } = documentDe(t, [
+    { nom: 'Composants', enfants: [noeud('FRAME', 'Root')] },
+    { nom: 'Doc', enfants: [noeud('FRAME', 'Autre')] },
+    { nom: 'Règles', enfants: [porteurDeNom('COMPONENT', 'Chip', '.componentRules')] },
+  ]);
+  pages[1].loadAsync = async () => {
+    throw new Error('page illisible');
+  };
+
+  const trouvee = await chercherLaSourceDansLeDocument(rienAAttendre);
+
+  assert.equal(trouvee?.maitreLocal?.name, '.componentRules');
+  assert.deepEqual(compteurs.charges, ['Règles']);
 });
 
 test('le parcours s’arrête à la première page qui porte une source', async (t) => {
@@ -186,17 +256,20 @@ test('le drapeau est posé pendant le relevé d’une page', async (t) => {
   assert.deepEqual(releve, [true, true], 'le relevé ne descend pas sans le drapeau');
 });
 
-test('la main est rendue avant chaque page chargée, et jamais pour la page active', async (t) => {
+test('la main est rendue avant le chargement puis avant le relevé, jamais pour la page active', async (t) => {
+  // Le relevé d'une page fraîchement chargée est synchrone et tient le seul fil
+  // du sandbox : le rendre après le chargement seul laisserait une analyse
+  // lancée pendant ce chargement attendre la fin du relevé.
   documentDe(t, [
     { nom: 'Composants', enfants: [noeud('FRAME', 'Root')] },
     { nom: 'Brouillons', enfants: [noeud('FRAME', 'Autre')] },
     { nom: 'Règles', enfants: [porteurDeNom('COMPONENT', 'Chip', '.componentRules')] },
   ]);
-  let mains = 0;
+  const mains: string[] = [];
 
   await chercherLaSourceDansLeDocument(async () => {
-    mains += 1;
+    mains.push('main');
   });
 
-  assert.equal(mains, 2, 'la main n’est pas rendue une fois par page chargée');
+  assert.equal(mains.length, 4, 'la main n’est pas rendue deux fois par page chargée');
 });

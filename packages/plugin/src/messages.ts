@@ -154,9 +154,10 @@ export type PluginMessage =
       detail: string | null;
       raison: string | null;
       /**
-       * Ce que la page permet de créer pour ce composant, `null` quand il n'y
-       * a rien à proposer. Facultatif : le premier message d'une sélection
-       * part avant la lecture de la page, qui seule le sait.
+       * Ce que le document permet de créer pour ce composant, `null` quand il
+       * n'y a rien à proposer. Facultatif : le premier message d'une sélection
+       * part avant la lecture de la page, qui seule le sait. Une même sélection
+       * en reçoit un second quand le parcours des autres pages finit.
        */
       offre?: Offre | null;
       avertissement: string | null;
