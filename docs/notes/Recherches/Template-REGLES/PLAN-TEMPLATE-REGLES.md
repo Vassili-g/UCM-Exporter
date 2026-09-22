@@ -1028,18 +1028,30 @@ page active, comme la section 5.4 les décrit.
 
 #### Le chargement est déjà payé
 
-Mesuré : le clic de création charge déjà toutes les pages. `creerRegles` appelle
-`handleExportComponent` (`src/code.ts`), qui passe
-`indexContractedNamesInDocument()` à `scanComposedMatrix`
+Mesuré : toute analyse charge les pages du document. `handleExportComponent`
+passe `indexContractedNamesInDocument()` à `scanComposedMatrix`
 (`src/contract/exportComponent.ts`), et cette fonction appelle
-`figma.loadAllPagesAsync()` (`src/contract/composedComponents.ts`). L'analyse
-parcourt ensuite chaque page par `findAll`.
+`figma.loadAllPagesAsync()` (`src/contract/composedComponents.ts`), puis
+parcourt chaque page par `findAll`. Le bouton « Analyser le composant » est
+offert dès qu'une cible est sélectionnée, sans égard à la page où vivent les
+règles.
 
-D5 protège le coût d'un parcours répété à chaque changement de sélection, que la
-section 5.4 continue d'écarter. Sur le clic de création, ce coût est déjà
-engagé : les pages sont chargées quelques lignes plus loin dans le même clic.
-Le nombre de pages ne change pas cette conclusion, l'appel étant le même pour
-un fichier de dix pages et pour un fichier de cent.
+Mesuré : `creerRegles` appelle `handleExportComponent` (`src/code.ts`) avant
+d'écrire. Une création offerte aujourd'hui charge donc déjà tout le document.
+
+Le cas `sans-source` est le seul où rien n'est chargé, le bouton y étant
+inactif. Le parcours ne lui ajoute pas un chargement de plus : il avance de
+quelques lignes celui que l'analyse suivante ferait dans le même clic. D5
+protège le coût d'un parcours répété à chaque changement de sélection, que la
+section 5.4 continue d'écarter. Le nombre de pages ne change pas cette
+conclusion, l'appel étant le même pour un fichier de dix pages et pour un
+fichier de cent.
+
+La note de la section 5.5 se lit donc à côté de cette mesure sans la contredire.
+Elle naît du relevé que `reportSelectionState` tire d'`extractRules` sur la
+seule page active, alors que l'index des dépendances charge tout le document
+pendant l'analyse. Les deux lectures ne se parlent pas, et la note dit « sur
+cette page » dans un fichier dont l'analyse vient de charger les cent pages.
 
 #### Ce que le parcours fait
 
