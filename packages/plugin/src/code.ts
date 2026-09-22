@@ -372,10 +372,10 @@ let selectionToken = 0;
  * constat de l'absence, et le designer chercherait un conteneur qu'il a sous
  * les yeux.
  */
-function avertissementDesRegles(regles: ExtractedRules): string {
+function avertissementDesRegles(regles: ExtractedRules, nomDuComposant: string): string {
   if (regles.aRediger === 0) {
-    return `Aucune règle d’usage exploitable ne documente quand l’utiliser. Les diagnostics diront `
-      + `ce que le contrat sait décrire, et intent vaudra null.`;
+    return `Règles d’usages du composant ${nomDuComposant} manquantes. Veuillez les créer puis `
+      + 'les compléter pour documenter l’intégralité de ses paramètres.';
   }
   return regles.aRediger === 1
     ? `La règle posée porte encore « ${MARQUEUR_A_COMPLETER} », donc elle n’est pas exportée. `
@@ -442,7 +442,7 @@ async function reportSelectionState(): Promise<void> {
     selectionId,
     detail: detailDeCible(etat.cible),
     offre,
-    avertissement: exploitables ? null : avertissementDesRegles(rules),
+    avertissement: exploitables ? null : avertissementDesRegles(rules, component.name),
   });
 }
 

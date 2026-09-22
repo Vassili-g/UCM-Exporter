@@ -1132,7 +1132,9 @@ test('un composant sans règle à rédiger garde le constat de l’absence', asy
   await h.envoyer({ type: 'ui-ready' });
   await tourner();
 
-  assert.match(dernierAvertissement(h) ?? '', /^Aucune règle d’usage exploitable/);
+  // L'avertissement nomme le composant : la carte peut porter plusieurs
+  // messages, et celui-ci dit lequel attend ses règles.
+  assert.match(dernierAvertissement(h) ?? '', /^Règles d’usages du composant Exemple manquantes\./);
 });
 
 /** Le dernier texte de compte rendu, celui que la carte montre. */

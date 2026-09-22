@@ -581,7 +581,7 @@ Au repos, composant sans conteneur :
 │ COMPOSANT                            │
 │ Button                               │
 │ Component set · 4 variants           │
-│ Aucune règle d’usage exploitable…    │
+│ Règles d’usages du composant…      │
 │ [ Analyser le composant ]  (primary) │
 │ [ Créer les règles d’usage ]         │
 └──────────────────────────────────────┘
@@ -590,7 +590,7 @@ Au repos, composant sans conteneur :
 Au repos, aucune source sur la page :
 
 ```text
-│ Aucune règle d’usage exploitable…    │
+│ Règles d’usages du composant…      │
 │ [ Analyser le composant ]  (primary) │
 │ [ Créer les règles d’usage ] inactif │
 │ Aucune instance de « .componentRules │
@@ -614,7 +614,7 @@ Après la création :
 │ COMPOSANT                            │
 │ Button                               │
 │ Component set · 4 variants           │
-│ Aucune règle d’usage exploitable…    │
+│ Règles d’usages du composant…      │
 │ [ Analyser le composant ]  (primary) │
 │ 7 règles créées à droite du          │
 │ composant. Remplacez chaque          │
