@@ -34,6 +34,26 @@ const tourner = () => new Promise((resolve) => setImmediate(resolve));
 type Diagnostic = { cause: string; statut?: number; layout: null };
 
 const resultat = (nom: string) => ({ filename: nom, content: '{}', warningCount: 0, warnings: [] });
+
+/** Un set nommé, tel que Figma le rend au-dessus d'un variant. */
+const setDe = (nom: string, definitions: Record<string, unknown>) =>
+  ({ id: `set-${nom}`, type: 'COMPONENT_SET', name: nom, componentPropertyDefinitions: definitions });
+
+/** Une instance d'un variant de ce set, telle que le parcours la rencontre. */
+const instanceDe = (id: string, set: ReturnType<typeof setDe>) => ({
+  id,
+  type: 'INSTANCE',
+  name: `${set.name} imbriqué`,
+  getMainComponentAsync: async () => ({ id: `main-${id}`, name: 'Size=Small', parent: set }),
+});
+
+const setBouton = setDe('Button', { size: {}, label: {} });
+const setIcone = setDe('Icon', { iconName: {} });
+const enfantsImbriques = [
+  instanceDe('btn-1', setBouton),
+  instanceDe('btn-2', setBouton),
+  instanceDe('ico-1', setIcone),
+];
 const globalFigma = globalThis as unknown as { figma?: unknown };
 const figmaInitial = globalFigma.figma;
 afterEach(() => { globalFigma.figma = figmaInitial; });
@@ -66,7 +86,14 @@ function ouvrir() {
     showUI() {}, notify() {}, openExternal() {},
     viewport: { scrollAndZoomIntoView() {} },
     currentPage: {
-      selection: [{ id: 'a', type: 'COMPONENT', name: 'Exemple', componentPropertyDefinitions: { severity: {} }, parent: undefined as { type: string } | undefined }],
+      selection: [{
+        id: 'a', type: 'COMPONENT', name: 'Exemple',
+        componentPropertyDefinitions: { severity: {} },
+        // Deux enfants imbriqués, chacun dans son component set : c'est là que
+        // le signalement des propriétés écartées va chercher leur porteur.
+        findAll: (predicat: (n: { type: string }) => boolean) => enfantsImbriques.filter(predicat),
+        parent: undefined as { type: string } | undefined,
+      }],
     },
     ui: { postMessage: (message: PluginMessage) => messages.push(message), resize() {}, onmessage: async (_message: UiRequest) => {} },
     on: (nom: string, rappel: () => void) => evenements.set(nom, rappel),
@@ -133,9 +160,12 @@ function ouvrir() {
     messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, regles, resolution, creation, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
     selectionner(id: string, parent?: { type: string }) {
-      runtime.currentPage.selection = [
-        { id, type: 'COMPONENT', name: 'Exemple', componentPropertyDefinitions: { severity: {} }, parent },
-      ];
+      runtime.currentPage.selection = [{
+        id, type: 'COMPONENT', name: 'Exemple',
+        componentPropertyDefinitions: { severity: {} },
+        findAll: (predicat: (n: { type: string }) => boolean) => enfantsImbriques.filter(predicat),
+        parent,
+      }];
       evenements.get('selectionchange')!();
     },
     connecter() {
@@ -1093,7 +1123,9 @@ test('un variant seul ne reçoit aucune offre, quoi que la page porte', async ()
   h.runtime.currentPage.selection = [
     {
       id: 'a', type: 'COMPONENT', name: 'Exemple',
-      componentPropertyDefinitions: { severity: {} }, parent: { type: 'COMPONENT_SET' },
+      componentPropertyDefinitions: { severity: {} },
+      findAll: (predicat: (n: { type: string }) => boolean) => enfantsImbriques.filter(predicat),
+      parent: { type: 'COMPONENT_SET' },
     },
   ];
   await h.envoyer({ type: 'ui-ready' });
@@ -1196,11 +1228,53 @@ test('les propriétés écartées du template donnent un point rouge, nommées u
   const points = h.messages.filter((message) => message.type === 'diagnostic');
   assert.equal(points.length, 1);
   assert.equal(points[0].severite, 'danger');
-  assert.match(points[0].titre, /« size » et « label »/);
-  assert.match(points[0].titre, /2 propriétés du contrat/);
-  assert.match(points[0].action, /Créez les règles du composant imbriqué/);
+  assert.equal(points[0].titre, 'Règles de « Exemple » : 2 propriétés ne sont pas documentées, « size » et « label ».');
+  assert.match(points[0].impact, /à « Button », qui n’a pas encore ses propres règles/);
+  assert.equal(points[0].action, 'Créez les règles de « Button », puis relancez l’analyse de « Exemple ».');
+  // Les deux instances du Button, pour que la carte offre d'aller les voir.
+  assert.deepEqual([...points[0].nodeIds ?? []], ['btn-1', 'btn-2']);
   // Le point suit le succès : la création a bien posé les règles.
   assert.match(derniereNote(h) ?? '', /règles posées/);
+});
+
+test('chaque composant imbriqué a son propre point, avec son geste', async () => {
+  // Dix enfants donneraient dix gestes noyés dans une phrase unique. Le geste
+  // vise un composant : le point aussi.
+  const h = ouvrir();
+  h.exporte.traiter = async () => ({
+    ...resultat('Exemple.contract.json'),
+    content: JSON.stringify({
+      props: {
+        severity: { type: 'enum', values: ['info'] },
+        size: { type: 'enum', values: ['small'] },
+        iconName: { type: 'boolean', default: true },
+      },
+    }),
+  });
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  const points = h.messages.filter((message) => message.type === 'diagnostic');
+  assert.deepEqual(points.map((point) => point.titre), [
+    'Règles de « Exemple » : Une propriété n’est pas documentée, « size ».',
+    'Règles de « Exemple » : Une propriété n’est pas documentée, « iconName ».',
+  ]);
+  assert.deepEqual(points.map((point) => [...point.nodeIds ?? []]), [['btn-1', 'btn-2'], ['ico-1']]);
+});
+
+test('une propriété qu’aucun imbriqué ne revendique est nommée quand même', async () => {
+  const h = ouvrir();
+  h.exporte.traiter = async () => ({
+    ...resultat('Exemple.contract.json'),
+    content: JSON.stringify({ props: { orpheline: { type: 'boolean', default: true } } }),
+  });
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  const points = h.messages.filter((message) => message.type === 'diagnostic');
+  assert.equal(points.length, 1);
+  assert.match(points[0].impact, /un composant imbriqué que le plugin n’a pas su nommer/);
+  assert.equal(points[0].nodeIds, undefined);
 });
 
 test('un template qui documente tout ne rend aucun point', async () => {

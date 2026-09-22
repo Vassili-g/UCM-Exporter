@@ -979,24 +979,104 @@ function enumerer(mots: readonly string[]): string {
  * reconnu comme dépendance. Les taire ferait croire à un template complet,
  * alors que le contrat publié décrira ces propriétés sans un mot d'usage.
  */
-function signalerLesPropsEcartees(
-  nomDuComposant: string,
+/** Un composant imbriqué, les propriétés qu'il porte et ses instances. */
+type PorteurEcarte = { nom: string | null; cles: string[]; nodeIds: string[] };
+
+/**
+ * Le composant nommé dont une instance est une occurrence : son component set
+ * quand elle en a un, son maître sinon.
+ *
+ * Le set porte le nom que le designer lit, alors que le variant porte
+ * « Size=Small », et Figma refuse `componentPropertyDefinitions` sur un variant.
+ */
+function porteurDeLInstance(main: ComponentNode): ComponentNode | ComponentSetNode {
+  return main.parent?.type === 'COMPONENT_SET' ? main.parent : main;
+}
+
+/**
+ * Les propriétés écartées, groupées par le composant imbriqué qui les déclare.
+ *
+ * La recherche ne quitte pas le composant sélectionné, et ne part que sur le
+ * chemin d'erreur. Les clés se comparent après `extractContractPropertyModel`,
+ * comme celles du parent : un axe renommé par la couche sémantique porte des
+ * deux côtés sa clé publiée.
+ *
+ * Une propriété qu'aucun imbriqué ne revendique forme un dernier groupe sans
+ * nom : la nommer quand même vaut mieux que la taire.
+ */
+async function porteursDesPropsEcartees(
+  composant: ComponentNode | ComponentSetNode,
+  ecartees: readonly string[],
+): Promise<PorteurEcarte[]> {
+  const restantes = new Set(ecartees);
+  const parPorteur = new Map<string, { porteur: ComponentNode | ComponentSetNode; nodeIds: string[] }>();
+  const instances = composant.findAll((node) => node.type === 'INSTANCE') as InstanceNode[];
+  for (const instance of instances) {
+    const main = await instance.getMainComponentAsync().catch(() => null);
+    if (!main) continue;
+    const porteur = porteurDeLInstance(main);
+    const connu = parPorteur.get(porteur.id);
+    if (connu) connu.nodeIds.push(instance.id);
+    else parPorteur.set(porteur.id, { porteur, nodeIds: [instance.id] });
+  }
+
+  const groupes: PorteurEcarte[] = [];
+  for (const { porteur, nodeIds } of parPorteur.values()) {
+    if (restantes.size === 0) break;
+    let declarees: string[] = [];
+    try {
+      const { props } = extractContractPropertyModel(porteur.componentPropertyDefinitions, []);
+      declarees = Object.keys(props);
+    } catch {
+      continue;
+    }
+    const cles = declarees.filter((cle) => restantes.has(cle));
+    if (cles.length === 0) continue;
+    for (const cle of cles) restantes.delete(cle);
+    groupes.push({ nom: porteur.name, cles, nodeIds });
+  }
+  if (restantes.size > 0) groupes.push({ nom: null, cles: [...restantes], nodeIds: [] });
+  return groupes;
+}
+
+/**
+ * Les points rouges des propriétés que le template ne documente pas, un par
+ * composant imbriqué qui les porte.
+ *
+ * Un point par composant plutôt qu'une liste unique : le geste qu'il demande
+ * vise un composant, et dix composants donneraient dix gestes noyés dans une
+ * seule phrase.
+ */
+async function signalerLesPropsEcartees(
+  composant: ComponentNode | ComponentSetNode,
   ecartees: readonly string[],
   provenance: Partial<Provenance>,
-): void {
+): Promise<void> {
   if (ecartees.length === 0) return;
-  const accord = ecartees.length === 1 ? 'Une propriété du contrat' : `${ecartees.length} propriétés du contrat`;
-  versUi({
-    type: 'diagnostic',
-    severite: 'danger',
-    titre: `${accord} n’est pas documentée dans les règles de « ${nomDuComposant} » : `
-      + `${enumerer(ecartees)}.`,
-    impact: `Elles viennent d’un composant imbriqué qui n’a pas encore ses propres règles, et `
-      + `« ${nomDuComposant} » les publie comme si elles étaient les siennes.`,
-    action: `Créez les règles du composant imbriqué qui les porte, puis relancez l’analyse de `
-      + `« ${nomDuComposant} ».`,
-    ...provenance,
-  });
+  const parent = composant.name;
+  for (const { nom, cles, nodeIds } of await porteursDesPropsEcartees(composant, ecartees)) {
+    const uneSeule = cles.length === 1;
+    const sujet = uneSeule ? 'Une propriété' : `${cles.length} propriétés`;
+    const verbe = uneSeule ? 'n’est pas documentée' : 'ne sont pas documentées';
+    const appartiennent = uneSeule ? 'Elle appartient' : 'Elles appartiennent';
+    const publie = uneSeule ? 'la publie comme si elle était la sienne' : 'les publie comme si elles étaient les siennes';
+    versUi({
+      type: 'diagnostic',
+      severite: 'danger',
+      titre: `Règles de « ${parent} » : ${sujet} ${verbe}, ${enumerer(cles)}.`,
+      impact: nom === null
+        ? `${appartiennent} à un composant imbriqué que le plugin n’a pas su nommer, et `
+          + `« ${parent} » ${publie}.`
+        : `${appartiennent} à « ${nom} », qui n’a pas encore ses propres règles, et `
+          + `« ${parent} » ${publie}.`,
+      action: nom === null
+        ? `Créez les règles du composant imbriqué qui les porte, puis relancez l’analyse de `
+          + `« ${parent} ».`
+        : `Créez les règles de « ${nom} », puis relancez l’analyse de « ${parent} ».`,
+      ...(nodeIds.length > 0 ? { nodeIds } : {}),
+      ...provenance,
+    });
+  }
 }
 
 async function creerRegles(operation: number): Promise<void> {
@@ -1046,7 +1126,7 @@ async function creerRegles(operation: number): Promise<void> {
     );
     // Après le statut : la création a réussi, et ce point dit ce qu'elle laisse
     // au designer plutôt que ce qu'elle a raté.
-    signalerLesPropsEcartees(composant.name, ecartees, provenance);
+    await signalerLesPropsEcartees(composant, ecartees, provenance);
   } catch (erreur) {
     const message = erreur instanceof Error ? erreur.message : ECHEC_GENERIQUE;
     postStatus('error', message, provenance);
