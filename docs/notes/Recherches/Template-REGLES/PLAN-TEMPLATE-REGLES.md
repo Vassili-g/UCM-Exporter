@@ -9,6 +9,8 @@
 > [section 14](#14-revue-indépendante) dit ce qui en a été retenu. La source du
 > composant de règles a été réinstruite ensuite, pour les équipes qui ne l'ont
 > pas : décision H1-I, [section 12.2](#122-les-équipes-sans-source--le-kit-community).
+> La recherche de la source hors de la page active a été instruite ensuite :
+> décision H3-A, [section 12.3](#123-la-source-rangée-sur-une-autre-page).
 > Rien n'a été écrit dans Figma.
 
 Commit lu : `94ec0a9`. Fichier Figma lu : le fichier de tests du mainteneur,
@@ -828,6 +830,26 @@ d'alors publie comme documentation réelle, ce qui est le défaut que la
    kit, copier les trois maîtres, créer les règles d'un composant, analyser.
    C'est l'épreuve de l'équipe qui n'a pas la source.
 
+### Phase 9. La source hors de la page active
+
+Indépendante du kit : elle sert d'abord l'équipe du design system, dont les
+règles vivent sur une page séparée. Elle suppose la phase 5 faite, le parcours
+vivant dans `src/template/sources.ts`. Son motif est en
+[section 12.3](#123-la-source-rangée-sur-une-autre-page).
+
+1. `Offre` gagne la valeur `document-sans-source`. `offreDeCreation` ne la rend
+   jamais ; le sandbox la pose après un parcours sans résultat et la garde pour
+   la session.
+2. `resoudreLesSources` parcourt les pages par `PageNode.loadAsync` quand le
+   relevé de la page active ne porte ni maître ni instance, et retient la page
+   trouvée.
+3. La note de la section 5.5, le commentaire de
+   `tests/loiDuDocumentIntact.test.ts` et l'énoncé de D5 dans `AGENTS.md`
+   passent du mot « page » au mot « document ».
+4. Recette : un fichier à deux pages, règles sur la seconde, composant sur la
+   première ; puis un fichier sans aucun `.componentRules`, qui doit rendre la
+   note et son lien vers le kit.
+
 ## 11. Décisions prises à H1
 
 | Id | Question | Décision |
@@ -856,6 +878,10 @@ explication.
 Les noms d'axe d'états valides sont `State`, `States` et `Status`. Le moteur
 n'accepte aujourd'hui que les deux premiers en forme normalisée, `state` et
 `status` : la phase 2 ajoute `states`.
+
+H1-D et H1-G ont été rouverts après une mesure du coût réel du chargement. La
+[section 12.3](#123-la-source-rangée-sur-une-autre-page) porte la décision H3-A
+qui les remplace sur le seul point du clic de création.
 
 ## 12. Les équipes qui n'ont pas la source
 
@@ -989,6 +1015,104 @@ impraticable pour un designer. Un fait le ferme de toute façon pour `@prop` :
 aucune valeur d'axe ne peut y être documentée. La question ne se repose pas
 dans cette version.
 
+### 12.3. La source rangée sur une autre page
+
+Décision H3-A : au clic sur « Créer les règles d'usage », le plugin parcourt les
+pages du document jusqu'à la première qui porte un `.componentRules`. Aucun
+réglage n'est ajouté à la configuration, et aucune URL n'est demandée au
+designer.
+
+Cette décision ne touche que le clic de création. La lecture des règles par
+`extractRules` et l'offre calculée au changement de sélection restent sur la
+page active, comme la section 5.4 les décrit.
+
+#### Le chargement est déjà payé
+
+Mesuré : le clic de création charge déjà toutes les pages. `creerRegles` appelle
+`handleExportComponent` (`src/code.ts`), qui passe
+`indexContractedNamesInDocument()` à `scanComposedMatrix`
+(`src/contract/exportComponent.ts`), et cette fonction appelle
+`figma.loadAllPagesAsync()` (`src/contract/composedComponents.ts`). L'analyse
+parcourt ensuite chaque page par `findAll`.
+
+D5 protège le coût d'un parcours répété à chaque changement de sélection, que la
+section 5.4 continue d'écarter. Sur le clic de création, ce coût est déjà
+engagé : les pages sont chargées quelques lignes plus loin dans le même clic.
+Le nombre de pages ne change pas cette conclusion, l'appel étant le même pour
+un fichier de dix pages et pour un fichier de cent.
+
+#### Ce que le parcours fait
+
+- Il ne part que si le relevé de la page active ne porte ni maître ni instance,
+  soit l'offre `sans-source` de la section 5.4.
+- Il lit `figma.root.children`, dont les noms de page sont lisibles sans
+  chargement (documenté), puis appelle `PageNode.loadAsync()` page par page et
+  s'arrête à la première qui porte un `.componentRules`. La première gagne,
+  comme dans l'ordre des sources de la section 5.2.
+- Le conteneur reste créé sur la page active, à côté du composant. La page
+  trouvée ne fournit que les maîtres de la section 5.2, et n'est pas modifiée.
+- La page trouvée est gardée pour la session : un second clic ne recharge rien.
+
+#### Pourquoi aucun réglage dans la configuration
+
+Le nom de la page décrit un document. `src/config.ts` range ses réglages dans
+`figma.clientStorage`, donc sur la machine du designer, et son en-tête pose la
+règle : ce qui est rangé là décrit une machine. Un designer qui ouvre trois
+fichiers de composants aurait un seul nom de page pour trois conventions de
+nommage.
+
+Aucune clé ne permet de ranger ce réglage par document. `figma.fileKey` vaut
+`undefined` hors d'un plugin privé d'organisation (documenté), et écrire dans
+`figma.root` par `setPluginData` modifierait le document, ce que la promesse du
+document intact interdit (section 4.1).
+
+Un réglage demande en plus au designer un fait que le parcours établit. Une
+faute de frappe ou une page renommée rendrait l'offre `sans-source` alors que
+le maître est à une page de là, sans qu'aucun message ne le dise.
+
+#### L'URL d'un élément source
+
+Écartée. Une URL Figma porte une clé de fichier et un `node-id`. La clé de
+fichier ne se compare à rien, `figma.fileKey` étant indisponible, et
+`getNodeByIdAsync` ne résout un identifiant que dans le document courant
+(documenté). Pour le document ouvert, une URL ne dit donc rien de plus qu'un nom
+de page, et elle demande un aller-retour dans Figma pour la copier.
+
+#### Un autre document reste fermé
+
+`importComponentByKeyAsync` charge depuis la bibliothèque d'équipe (documenté)
+et reste le seul passage entre deux fichiers. La section 12.2 l'a écarté pour
+deux motifs, dont un ne tient plus : la clé d'un kit publié sur la Community est
+publique par construction, et la règle de l'identifiant privé ne s'y applique
+pas. L'accès reste le motif qui tient. Publier une bibliothèque demande un plan
+payant, et aucune documentation n'établit qu'un compte tiers importe par clé
+depuis une bibliothèque de la Community.
+
+Non vérifié, mesurable en un essai : publier un composant en bibliothèque,
+relever sa clé, appeler `importComponentByKeyAsync` depuis un autre compte sur
+un autre plan. Sans cet essai, le copier-coller des maîtres de la section 12.2
+reste la seule voie vers un autre fichier.
+
+#### Ce que la loi devient
+
+`tests/loiDuDocumentIntact.test.ts` refuse `loadAllPagesAsync` et
+`importComponentByKeyAsync` dans tout `src/template/`. `PageNode.loadAsync` ne
+correspond à aucune des deux chaînes : le test passe sans modification, et il
+continue de refuser l'appel qui charge tout le document et celui qui quitte le
+fichier.
+
+D5 se réénonce ainsi : le template charge une page à la fois, il ne charge
+jamais le document entier et il n'importe rien par clé. Le commentaire du test
+et `AGENTS.md` suivent.
+
+#### Ce que la carte montre
+
+`Offre` gagne une quatrième valeur. `sans-source` garde son sens, la page active
+ne portant rien, et le bouton devient actif pour lancer le parcours.
+`document-sans-source` dit qu'un parcours n'a rien trouvé ; le bouton redevient
+inactif, et la note de la section 5.5 porte alors son lien vers le kit, dans les
+mots du document et non de la page.
+
 ## 13. Sources
 
 | Source | Ce qu'elle établit | Statut |
@@ -1006,6 +1130,8 @@ dans cette version.
 | `@figma/plugin-typings` 1.138.0, `importComponentByKeyAsync` et `PublishableMixin.key` | l'appel charge depuis la bibliothèque d'équipe ; seul un composant publié s'importe | documenté |
 | `@figma/plugin-typings` 1.138.0, `createNodeFromJSXAsync` | la voie JSX ne rend ni les identifiants de style ni les instances | documenté |
 | `@figma/plugin-typings` 1.138.0, `figma.openExternal` et `ComponentPropertyDefinitions` | ouverture d'une URL depuis le sandbox ; `variantOptions` est une liste de chaînes, sans description | documenté |
+| `@figma/plugin-typings` 1.138.0, `PageNode.loadAsync` et `BaseNodeMixin.children` | une page se charge seule ; en `dynamic-page`, seuls les enfants d'une page exigent ce chargement, ses nom et identifiant restant lisibles | documenté |
+| `@figma/plugin-typings` 1.138.0, `figma.getNodeByIdAsync` et `figma.fileKey` | un identifiant ne se résout que dans le document courant ; la clé de fichier n'est servie qu'à un plugin privé d'organisation, avec `enablePrivatePluginApi` | documenté |
 | [Publier un fichier sur la Community](https://help.figma.com/hc/en-us/articles/360040035974-Publish-files-to-the-Figma-Community) | tout compte disposant d'un accès en édition publie, depuis l'éditeur | documenté |
 | [Publier une bibliothèque](https://help.figma.com/hc/en-us/articles/360025508373-Publish-a-library) | la publication d'une bibliothèque demande un plan payant | documenté |
 | [Dupliquer un fichier Community](https://help.figma.com/hc/en-us/articles/360038510873-Duplicate-Community-files) | la copie arrive dans les brouillons, sans historique ni permissions d'origine | documenté |
