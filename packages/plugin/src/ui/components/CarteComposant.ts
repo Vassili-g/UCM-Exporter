@@ -59,11 +59,18 @@ export function createCarteComposant({
   });
   creer.hidden = true;
 
+  // Le parcours des autres pages court encore : le bouton ne peut rien promettre,
+  // et cette note dit pourquoi il est inactif.
+  const recherche = document.createElement('p');
+  recherche.className = 'creation-sans-source';
+  recherche.hidden = true;
+  recherche.textContent = 'Recherche de vos règles dans les autres pages du document…';
+
   const sansSource = document.createElement('p');
   sansSource.className = 'creation-sans-source';
   sansSource.hidden = true;
-  sansSource.textContent = 'Aucune instance de « .componentRules » sur cette page. '
-    + 'Collez-en une depuis la page de vos règles pour créer celles de ce composant. ';
+  sansSource.textContent = 'Aucune instance de « .componentRules » dans ce document. '
+    + 'Collez-en une depuis un fichier qui en porte pour créer celles de ce composant. ';
 
   const lien = document.createElement('a');
   lien.className = 'creation-lien';
@@ -76,7 +83,7 @@ export function createCarteComposant({
   });
   sansSource.append(lien);
 
-  carte.analyser.after(creer, sansSource);
+  carte.analyser.after(creer, recherche, sansSource);
 
   const nom = document.createElement('div');
   nom.className = 'cible-nom';
@@ -101,10 +108,12 @@ export function createCarteComposant({
   function rafraichirGeste() {
     carte.analyser.disabled = occupee || analysee;
     creer.hidden = offre === null;
-    // Une page sans source ne porte rien à copier : le geste reste montré pour
-    // que la note en dise la cause, et inactif pour qu'il ne mente pas.
-    creer.disabled = occupee || offre === 'sans-source';
-    sansSource.hidden = offre !== 'sans-source';
+    // Un document sans source ne porte rien à copier, et un parcours inachevé ne
+    // sait pas encore s'il en porte : le geste reste montré pour que la note en
+    // dise la cause, et inactif pour qu'il ne mente pas.
+    creer.disabled = occupee || offre === 'sans-source' || offre === 'document-sans-source';
+    recherche.hidden = offre !== 'sans-source';
+    sansSource.hidden = offre !== 'document-sans-source';
   }
 
   return {

@@ -189,10 +189,12 @@ test('l’écriture n’est atteignable que par code.ts', () => {
   assert.deepEqual(fautifs, [], 'la lecture et la publication n’importent pas le template');
 });
 
-test('le template ne cherche jamais hors de la page active', () => {
-  // D5 : un conteneur rangé sur une autre page n'est pas cherché, et un maître
-  // ne se rapatrie pas par sa clé. Les deux appels qui le permettraient sont
-  // donc refusés dans tout le dossier, écriture comprise.
+test('le template charge une page à la fois, et n’importe rien par clé', () => {
+  // D5 : le parcours des sources charge une page à la fois, par
+  // `PageNode.loadAsync`. Charger le document entier ferait payer au designer
+  // des pages que l'arrêt à la première source lui épargne, et un maître ne se
+  // rapatrie pas par sa clé. Les deux appels sont donc refusés dans tout le
+  // dossier, écriture comprise.
   const fautifs: string[] = [];
   for (const fichier of tousLesFichiers(path.join(SOURCE, 'template'))) {
     fs.readFileSync(fichier, 'utf8').split('\n').forEach((ligne, rang) => {
@@ -204,4 +206,30 @@ test('le template ne cherche jamais hors de la page active', () => {
     });
   }
   assert.deepEqual(fautifs, [], 'le template quitte la page active');
+});
+
+test('le drapeau des calques invisibles se restaure, et aucun await ne le traverse', () => {
+  // `visibilityOfLayer` tire la politique d'icône d'un calque masqué. Le drapeau
+  // à `true` rend ce calque introuvable : laissé posé, ou posé de part et
+  // d'autre d'un `await`, il fait publier à une analyse concurrente une
+  // politique que le designer n'a pas choisie.
+  const porteurs = tousLesFichiers(SOURCE).filter(
+    (fichier) => /skipInvisibleInstanceChildren/.test(fs.readFileSync(fichier, 'utf8')),
+  );
+  assert.deepEqual(
+    porteurs.map((fichier) => path.relative(SOURCE, fichier)),
+    [path.join('template', 'sources.ts')],
+    'un autre fichier pose skipInvisibleInstanceChildren',
+  );
+
+  const source = fs.readFileSync(porteurs[0], 'utf8');
+  const pose = source.indexOf('figma.skipInvisibleInstanceChildren = true');
+  const restauration = source.indexOf('figma.skipInvisibleInstanceChildren = avant');
+  assert.ok(pose !== -1, 'la pose du drapeau ne se lit pas sous sa forme attendue');
+  assert.ok(restauration > pose, 'le drapeau n’est pas restauré après sa pose');
+  assert.equal(
+    /\bawait\b/.test(source.slice(pose, restauration)),
+    false,
+    'un await traverse la pose du drapeau',
+  );
 });

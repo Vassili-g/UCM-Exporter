@@ -5,7 +5,7 @@
  * handler et lui renvoyer le fichier produit ou l'erreur.
  */
 import { extractRules, hasUsableRules, MARQUEUR_A_COMPLETER } from './contract/extractRules';
-import type { ExtractedRules } from './contract/extractRules';
+import type { ExtractedRules, ReleveDeSource } from './contract/extractRules';
 import handleExportComponent, { getSelectedComponent } from './contract/exportComponent';
 import { CONTRACT_VERSION } from '@ucm-kit/core/format';
 import handleExportTokens, { annonceDuFormat, etatDesTokensDuFichier } from './tokens/exportTokens';
@@ -35,7 +35,12 @@ import { TERMES } from './forges/termes';
 import type { TermesDeForge } from './forges/termes';
 import { verdictDePrevol } from './prevol';
 import type { CodeVerdict } from './prevol';
-import { offreDeCreation, resoudreLesSources } from './template/sources';
+import {
+  chercherLaSourceDansLeDocument,
+  offreDeCreation,
+  resoudreLesSources,
+} from './template/sources';
+import type { Offre } from './template/sources';
 import { modeleDeRegles } from './template/modele';
 import type { ContratLu } from './template/modele';
 import { creerLesRegles } from './template/ecriture';
@@ -379,6 +384,18 @@ function avertissementDesRegles(regles: ExtractedRules): string {
 }
 
 /**
+ * L'offre de la page active, corrigée par ce que le parcours du document sait.
+ *
+ * Tant que le parcours court, `sans-source` reste affichée et le bouton reste
+ * inactif : promettre une création que le document ne porte peut-être pas la
+ * ferait échouer au clic. L'offre est reposée quand le parcours finit.
+ */
+function offreSelonLeDocument(offre: Offre | null): Offre | null {
+  if (offre !== 'sans-source' || !parcoursAcheve) return offre;
+  return sourceDuDocument ? 'creer' : 'document-sans-source';
+}
+
+/**
  * Analyse la sélection courante et prévient l'utilisateur avant toute action.
  * Les règles enrichissent la documentation ; elles ne conditionnent pas la capture.
  */
@@ -410,7 +427,7 @@ async function reportSelectionState(): Promise<void> {
   // composant. Un parent absent n'est pas une faute : le sandbox rend `null`
   // pour un node détaché.
   const estUnVariant = component.parent?.type === 'COMPONENT_SET';
-  const offre = estUnVariant ? null : offreDeCreation(rules.releve);
+  const offre = estUnVariant ? null : offreSelonLeDocument(offreDeCreation(rules.releve));
   const exploitables = hasUsableRules(rules);
   if (exploitables && offre === null) return;
 
@@ -465,6 +482,83 @@ let operationEnCours: ArtifactKind | 'regles' | null = null;
 let publicationEnCours = false;
 /** La destination de l'analyse en cours, `null` hors analyse. */
 let destinationDeLAnalyse: string | null = null;
+
+/**
+ * Le parcours des sources, lancé une fois par session et partagé par tous ceux
+ * qui l'attendent. `null` tant qu'il n'a pas été lancé.
+ */
+let parcoursDesSources: Promise<ReleveDeSource | null> | null = null;
+/** Ce que le parcours a trouvé, lisible une fois `parcoursAcheve` vrai. */
+let sourceDuDocument: ReleveDeSource | null = null;
+let parcoursAcheve = false;
+/**
+ * Vrai quand un clic attend le parcours.
+ *
+ * La création est une opération, et le parcours se suspend pendant une
+ * opération : sans cette levée, un clic qui attend le parcours attendrait une
+ * reprise que son propre `operationEnCours` empêche.
+ */
+let parcoursReclame = false;
+/** Délai entre deux tentatives de reprise du parcours suspendu. */
+const PAUSE_PARCOURS_MS = 150;
+
+/**
+ * Suspend le parcours tant qu'une opération demandée par le designer court.
+ *
+ * Le sandbox n'a qu'un fil : une page relevée pendant une analyse la ralentit
+ * d'autant, et le designer attend cette analyse.
+ */
+function laisserPasserLesOperations(): Promise<void> {
+  if (operationEnCours === null || parcoursReclame) return Promise.resolve();
+  return new Promise((resolve) => {
+    const reprendre = () => {
+      if (operationEnCours === null || parcoursReclame) resolve();
+      else setTimeout(reprendre, PAUSE_PARCOURS_MS);
+    };
+    setTimeout(reprendre, PAUSE_PARCOURS_MS);
+  });
+}
+
+/**
+ * Lance le parcours des sources, ou rend celui qui court déjà.
+ *
+ * Un parcours en échec tient le document pour sans source : la carte le dira,
+ * et le refus de `resoudreLesSources` reste le message qui compte au clic.
+ */
+function lancerLeParcours(): Promise<ReleveDeSource | null> {
+  parcoursDesSources ??= chercherLaSourceDansLeDocument(laisserPasserLesOperations)
+    .catch(() => null)
+    .then((trouvee) => {
+      sourceDuDocument = trouvee;
+      parcoursAcheve = true;
+      return trouvee;
+    });
+  return parcoursDesSources;
+}
+
+/**
+ * Le relevé complété par la source trouvée ailleurs dans le document, quand la
+ * page active n'en porte aucune.
+ *
+ * Le conteneur vierge du relevé n'est jamais remplacé : il vit sur la page
+ * active, là où le designer l'a posé, et la page distante ne fournit que les
+ * maîtres.
+ */
+async function avecLaSourceDuDocument(releve: ReleveDeSource): Promise<ReleveDeSource> {
+  if (releve.maitreLocal || releve.instanceSource) return releve;
+  parcoursReclame = true;
+  try {
+    const distante = await lancerLeParcours();
+    if (!distante) return releve;
+    return {
+      ...releve,
+      maitreLocal: distante.maitreLocal,
+      instanceSource: distante.instanceSource,
+    };
+  } finally {
+    parcoursReclame = false;
+  }
+}
 
 /**
  * L'annulation coopérative.
@@ -820,7 +914,7 @@ async function creerRegles(operation: number): Promise<void> {
     postStatus('loading', 'Création des règles d’usage…', provenance);
     const composant = getSelectedComponent();
     annoncer('Lecture de la page…');
-    const releve = (await extractRules(composant)).releve;
+    const releve = await avecLaSourceDuDocument((await extractRules(composant)).releve);
     const { sources, refus } = await resoudreLesSources(releve);
     if (!sources) {
       postStatus('error', refus ?? ECHEC_GENERIQUE, provenance);
@@ -914,6 +1008,11 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     // taille avant de partir. Le réglage des tokens se lit avant tout : désactivé,
     // les collections du fichier ne sont pas lues.
     const gestionDesTokens = await parLaFile(lireGestionDesTokens);
+    // Le parcours des sources part ici et n'est pas attendu : la carte s'affiche
+    // sur le relevé de la page active, et se corrige quand le parcours finit.
+    void lancerLeParcours()
+      .then(() => reportSelectionState())
+      .catch(signalerEchec);
     await Promise.all([
       reportSelectionState(),
       refreshConfiguration(),

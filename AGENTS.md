@@ -86,7 +86,7 @@ packages/plugin/         le moteur : extraction Figma, dépend du kit
       propertyBindings.ts      component properties situées dans chaque variant
       propertySurface.ts       surface publique élue : owner direct et wrapper
     template/modele.ts         du contrat au modèle des règles à poser, sans Figma
-    template/sources.ts        ce que la page offre, et les maîtres à copier
+    template/sources.ts        ce que le document offre, et les maîtres à copier
     template/ecriture.ts       le seul fichier qui écrive dans le document
     tokens/exportTokens.ts     export DTCG
     tokens/familles.ts         le type d'une famille STRING, décidé sur une composante d'alias
@@ -752,6 +752,13 @@ La spécification en lien porte le raisonnement.
 - Une seule porte y mène : `creerRegles` dans `src/code.ts`, routée par la
   demande `creer-regles`. Aucun fichier de `src/contract/`, `src/tokens/`,
   `src/forges/`, ni `depot.ts` ni `prevol.ts` n'importe `src/template/`.
+- Le parcours des sources charge une page à la fois, par `PageNode.loadAsync`,
+  et s'arrête à la première qui porte une source. `loadAllPagesAsync` et
+  `importComponentByKeyAsync` restent refusés dans tout `src/template/`.
+- `figma.skipInvisibleInstanceChildren` ne se pose qu'autour d'un relevé
+  synchrone, et reprend sa valeur d'avant. À `true` pendant un `await`, il ferait
+  lire à une analyse concurrente une politique d'icône fausse, `visibilityOfLayer`
+  dépendant d'un calque masqué.
 - Ce que la création écrit se défait d'un geste : supprimer le conteneur. Le
   plugin n'appelle pas `commitUndo`, un Ctrl+Z défaisant déjà la création
   entière.

@@ -1,19 +1,23 @@
 /**
- * Ce que la page active offre pour créer les règles d'un composant.
+ * Ce que le document offre pour créer les règles d'un composant.
  *
  * Le module lit, et rien d'autre : il dit quel bouton l'interface montre, et
- * il trouve les maîtres que l'écriture emploiera. La recherche ne quitte
- * jamais la page active, sans `loadAllPagesAsync` ni `importComponentByKeyAsync` :
- * un conteneur rangé sur une autre page n'est pas cherché, et le bouton en
- * crée un ici.
+ * il trouve les maîtres que l'écriture emploiera. Le relevé de la page active
+ * reste synchrone, et lui seul décide l'offre affichée sans délai ; le parcours
+ * des autres pages charge une page à la fois, sans `loadAllPagesAsync` ni
+ * `importComponentByKeyAsync`.
  */
 import {
+  MAITRE_COMPACTE,
   MARQUEUR_A_COMPLETER,
   RULES_COMPONENT_NAME,
   RULES_CONTAINER_NAME,
   RULE_ITEM_NAME,
+  compactName,
+  nomDeComposantEcrit,
   nomDuCatalogue,
   porteLeMarqueur,
+  releveVide,
   ruleTagFromLayerName,
   textOfLayer,
 } from '../contract/extractRules';
@@ -24,10 +28,11 @@ import type { ReleveDeSource, RuleTag } from '../contract/extractRules';
  *
  * `remplir` vise une instance collée et jamais remplie, que le designer a
  * posée où il la voulait ; `creer` en pose une neuve à côté du composant ;
- * `sans-source` dit que la page ne porte aucun modèle à copier, et le bouton
- * reste inactif sous la note qui mène au kit.
+ * `sans-source` dit que la page active ne porte aucun modèle à copier, le
+ * parcours des autres pages n'ayant pas encore rendu son verdict ;
+ * `document-sans-source` dit qu'il l'a rendu et qu'aucune page n'en porte.
  */
-export type Offre = 'creer' | 'remplir' | 'sans-source';
+export type Offre = 'creer' | 'remplir' | 'sans-source' | 'document-sans-source';
 
 /**
  * L'offre que le relevé de la page justifie, ou `null` quand il n'y a rien à
@@ -42,6 +47,79 @@ export function offreDeCreation(releve: ReleveDeSource): Offre | null {
   if (releve.conteneurVierge) return 'remplir';
   if (releve.maitreLocal || releve.instanceSource) return 'creer';
   return 'sans-source';
+}
+
+/**
+ * Les nodes d'un type donné dans la descendance d'une page.
+ *
+ * `findAllWithCriteria` filtre par type nativement, ce que Figma documente
+ * comme bien plus rapide qu'un prédicat JavaScript sur un grand document. Le
+ * repli sur `findAll` garde les tests et les runtimes qui ne servent pas cette
+ * méthode.
+ */
+function nodesDeType(page: PageNode, type: 'COMPONENT' | 'INSTANCE'): SceneNode[] {
+  const parCriteres = (page as Partial<PageNode>).findAllWithCriteria;
+  if (typeof parCriteres === 'function') {
+    return parCriteres.call(page, { types: [type] }) as SceneNode[];
+  }
+  return page.findAll((node) => node.type === type);
+}
+
+/**
+ * La source qu'une page porte, ou `null` quand elle n'en porte aucune.
+ *
+ * Le relevé est synchrone de bout en bout, et c'est ce qui rend
+ * `skipInvisibleInstanceChildren` sûr : aucune autre lecture du plugin ne peut
+ * s'intercaler entre sa pose et sa restauration. Posé de part et d'autre d'un
+ * `await`, ce drapeau ferait lire une politique d'icône fausse à une analyse
+ * concurrente, dont `visibilityOfLayer` dépend d'un calque masqué.
+ *
+ * La page doit être chargée avant l'appel.
+ */
+function sourceDeLaPage(page: PageNode): ReleveDeSource | null {
+  const avant = figma.skipInvisibleInstanceChildren;
+  figma.skipInvisibleInstanceChildren = true;
+  try {
+    const maitre = nodesDeType(page, 'COMPONENT')
+      .find((node) => compactName(node.name) === MAITRE_COMPACTE);
+    if (maitre) return { ...releveVide(), maitreLocal: maitre as ComponentNode };
+    const instance = nodesDeType(page, 'INSTANCE')
+      .find((node) => nomDeComposantEcrit(node) !== null);
+    return instance ? { ...releveVide(), instanceSource: instance as InstanceNode } : null;
+  } finally {
+    figma.skipInvisibleInstanceChildren = avant;
+  }
+}
+
+/**
+ * La première source trouvée dans le document, ou `null` quand aucune page n'en
+ * porte.
+ *
+ * La page active passe d'abord : elle est déjà chargée, et un document dont les
+ * règles y vivent ne fait charger aucune autre page. Les suivantes se chargent
+ * une par une, et `avantChaquePage` rend la main entre deux, le sandbox n'ayant
+ * qu'un fil d'exécution.
+ *
+ * Le parcours s'arrête à la première page qui porte une source, comme l'ordre
+ * des sources garde le premier maître d'une page. Il ne modifie rien.
+ */
+export async function chercherLaSourceDansLeDocument(
+  avantChaquePage: () => Promise<void>,
+): Promise<ReleveDeSource | null> {
+  const active = figma.currentPage;
+  const trouveeSurLActive = sourceDeLaPage(active);
+  if (trouveeSurLActive) return trouveeSurLActive;
+
+  const pages = (figma.root.children ?? []).filter(
+    (node): node is PageNode => node.type === 'PAGE' && node.id !== active.id,
+  );
+  for (const page of pages) {
+    await avantChaquePage();
+    if (typeof page.loadAsync === 'function') await page.loadAsync();
+    const trouvee = sourceDeLaPage(page);
+    if (trouvee) return trouvee;
+  }
+  return null;
 }
 
 /**
@@ -85,12 +163,12 @@ function refuser(refus: string): ResolutionDeSources {
 }
 
 /**
- * Le maître de la page, dans l'ordre de la section 5.2 : le composant local
+ * Le maître du relevé, dans l'ordre de la section 5.2 : le composant local
  * d'abord, puis le maître de la première instance qui porte « component-name ».
  *
  * Cette instance n'est ni lue ni modifiée : la page d'un composant porte des
- * instances, la page des règles porte le maître, et remonter à lui est ce qui
- * évite de chercher hors de la page active.
+ * instances, la page des règles porte le maître, et remonter à lui donne la
+ * source sans charger la page où ce maître vit.
  */
 async function maitreDeLaPage(releve: ReleveDeSource): Promise<ComponentNode | null> {
   if (releve.maitreLocal) return releve.maitreLocal;
@@ -207,14 +285,15 @@ function aideSansMarqueur(regles: Map<RuleTag, ComponentNode>): boolean {
  *
  * Tout se résout ici, au clic : le changement de sélection n'a relevé que ce
  * qu'un parcours synchrone pouvait dire, et remonter à un maître demande un
- * aller-retour par instance. La recherche ne quitte jamais la page active.
+ * aller-retour par instance. Le relevé reçu peut venir d'une autre page, et
+ * cette résolution n'en charge aucune.
  */
 export async function resoudreLesSources(releve: ReleveDeSource): Promise<ResolutionDeSources> {
   const maitre = await maitreDeLaPage(releve);
   if (!maitre) {
     return refuser(
-      `Le maître de « ${RULES_CONTAINER_NAME} » est introuvable depuis cette page. `
-        + 'Collez-y une instance de vos règles, puis recommencez.',
+      `Le maître de « ${RULES_CONTAINER_NAME} » est introuvable dans ce document. `
+        + 'Collez une instance de vos règles sur la page du composant, puis recommencez.',
     );
   }
 

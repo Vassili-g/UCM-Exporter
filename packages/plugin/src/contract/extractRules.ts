@@ -67,7 +67,7 @@ export const COMPONENT_NAME_LAYER = 'component-name';
  */
 export const MARQUEUR_A_COMPLETER = '[À compléter]';
 /** Nom (compacté) du maître qui porte un jeu de règles. */
-const MAITRE_COMPACTE = '.componentrules';
+export const MAITRE_COMPACTE = '.componentrules';
 /** Nom du composant qui matérialise une règle, tel qu'un message le nomme. */
 export const RULE_ITEM_NAME = '.ruleItem';
 /** Nom (compacté) du composant qui matérialise une règle. */
@@ -109,7 +109,7 @@ export type ReleveDeSource = {
 };
 
 /** Un relevé qui n'a encore rien vu. */
-function releveVide(): ReleveDeSource {
+export function releveVide(): ReleveDeSource {
   return {
     conteneurDuComposant: false,
     conteneurVierge: null,
@@ -215,7 +215,7 @@ function layerOfName(node: NodeFouillable, target: string): TextNode | null {
  * composant qui a servi de modèle. Sans cette borne, ce maître revendiquerait
  * les règles d'un composant qu'il ne documente pas.
  */
-function nomDeComposantEcrit(node: NodeFouillable): string | null {
+export function nomDeComposantEcrit(node: NodeFouillable): string | null {
   if (node.type !== 'INSTANCE') return null;
   const calque = layerOfName(node, COMPONENT_NAME_LAYER);
   return calque ? calque.characters : null;
