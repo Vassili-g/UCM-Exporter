@@ -42,8 +42,9 @@ import {
   resoudreLesSources,
 } from './template/sources';
 import type { Offre } from './template/sources';
-import { modeleDeRegles } from './template/modele';
+import { modeleDeRegles, restreindreAuParent } from './template/modele';
 import type { ContratLu } from './template/modele';
+import { extractContractPropertyModel } from './contract/parsers';
 import { creerLesRegles } from './template/ecriture';
 import type { Annonce, PluginMessage, Provenance, UiRequest } from './messages';
 import {
@@ -939,6 +940,31 @@ async function publier(genre: ArtifactKind, operation: number): Promise<void> {
  * moitié posé sur un geste que le designer n'a pas demandé. Le retour arrière
  * de la création, c'est Ctrl+Z, qui la défait d'un coup.
  */
+/**
+ * Les clés publiques que le composant sélectionné déclare lui-même.
+ *
+ * Elles se lisent sur la même source et par la même fonction que la surface
+ * publiée : un axe que la couche sémantique renomme porte donc ici la clé
+ * publiée, et non son nom Figma.
+ *
+ * Figma refuse `componentPropertyDefinitions` sur un variant et renvoie à son
+ * component set. Un relevé qui lève ne restreint rien, et le template pose
+ * alors ce que le contrat porte.
+ */
+function clesDeclareesPar(
+  composant: ComponentNode | ComponentSetNode,
+): ReadonlySet<string> | null {
+  const porteur = composant.type === 'COMPONENT' && composant.parent?.type === 'COMPONENT_SET'
+    ? composant.parent
+    : composant;
+  try {
+    const { props } = extractContractPropertyModel(porteur.componentPropertyDefinitions, []);
+    return new Set(Object.keys(props));
+  } catch {
+    return null;
+  }
+}
+
 async function creerRegles(operation: number): Promise<void> {
   if (operationEnCours !== null) {
     postStatus('error', OPERATION_DEJA_EN_COURS, { operation });
@@ -963,7 +989,12 @@ async function creerRegles(operation: number): Promise<void> {
     // le modèle se lit dessus, jamais sur les propriétés Figma brutes, qui
     // ignorent la couche sémantique.
     const analyse = await handleExportComponent(annoncer);
-    const modele = modeleDeRegles(composant.name, JSON.parse(analyse.content) as ContratLu);
+    const contrat = JSON.parse(analyse.content) as ContratLu;
+    const clesDuParent = clesDeclareesPar(composant);
+    const modele = modeleDeRegles(
+      composant.name,
+      clesDuParent ? restreindreAuParent(contrat, clesDuParent) : contrat,
+    );
 
     const resultat = await creerLesRegles(composant, modele, sources, annoncer);
     // Le conteneur posé déclare le composant comme dépendance UCM. L'index

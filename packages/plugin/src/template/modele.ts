@@ -20,6 +20,30 @@ import type { Contract } from '@ucm-kit/core/format';
 export type ContratLu = Pick<Contract, 'props' | 'stateModel'>;
 
 /**
+ * Le contrat réduit aux propriétés que le composant sélectionné déclare
+ * lui-même.
+ *
+ * La surface publiée fusionne celle d'un wrapper interne élu par
+ * `findWrapperReference`. Ce wrapper n'est une coquille de mise en page que
+ * tant qu'aucun vrai composant enfant n'est éligible : un enfant sans règles
+ * n'est pas une dépendance, donc rien ne l'écarte de l'élection, et ses
+ * propriétés entrent dans le contrat du parent. Les poser en règles ferait
+ * documenter au designer l'API du voisin, sous le nom du parent.
+ *
+ * `stateModel` n'est pas filtré : son axe vient des variants du composant
+ * sélectionné, jamais d'un wrapper.
+ */
+export function restreindreAuParent(
+  contrat: ContratLu,
+  clesDuParent: ReadonlySet<string>,
+): ContratLu {
+  const props = Object.fromEntries(
+    Object.entries(contrat.props ?? {}).filter(([cle]) => clesDuParent.has(cle)),
+  );
+  return { props, stateModel: contrat.stateModel };
+}
+
+/**
  * Une règle à poser, ou un séparateur. `cible` est le texte du calque `prop` ;
  * son absence dit que la règle n'en écrit aucun, et que le calque garde le
  * texte d'aide du maître.

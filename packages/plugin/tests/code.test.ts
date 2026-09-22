@@ -43,7 +43,7 @@ function ouvrir() {
   const evenements = new Map<string, () => void>();
   const temporisations = new Map<number, () => void>();
   const stockage = new Map<string, unknown>();
-  const appels = { analyses: 0, ecritures: 0, oublisDIndex: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[] };
+  const appels = { analyses: 0, ecritures: 0, oublisDIndex: 0, publications: 0, forges: 0, lectures: 0, connexions: 0, collections: 0, avecTokens: [] as boolean[], jetons: [] as string[], relevesDeProps: [] as string[][] };
   const exporte = { traiter: async () => resultat('tokens.json') };
   /** Ce que la résolution des maîtres rend au clic ; le test le choisit. */
   const resolution = { traiter: async (): Promise<{ sources: unknown; refus: string | null }> => ({ sources: { maitre: {}, aRemplir: null, sections: new Map(), regles: new Map(), separateur: null }, refus: null }) };
@@ -66,7 +66,7 @@ function ouvrir() {
     showUI() {}, notify() {}, openExternal() {},
     viewport: { scrollAndZoomIntoView() {} },
     currentPage: {
-      selection: [{ id: 'a', type: 'COMPONENT', name: 'Exemple', parent: undefined as { type: string } | undefined }],
+      selection: [{ id: 'a', type: 'COMPONENT', name: 'Exemple', componentPropertyDefinitions: { severity: {} }, parent: undefined as { type: string } | undefined }],
     },
     ui: { postMessage: (message: PluginMessage) => messages.push(message), resize() {}, onmessage: async (_message: UiRequest) => {} },
     on: (nom: string, rappel: () => void) => evenements.set(nom, rappel),
@@ -91,6 +91,14 @@ function ouvrir() {
     },
     './contract/composedComponents': {
       oublierLIndexDuDocument: () => { appels.oublisDIndex += 1; },
+    },
+    // Le vrai relevé lit les définitions Figma ; ici la clé publique vaut le
+    // nom brut, ce qui suffit à dire quelles props le parent déclare.
+    './contract/parsers': {
+      extractContractPropertyModel: (definitions: Record<string, unknown> | undefined) => {
+        appels.relevesDeProps.push(Object.keys(definitions ?? {}));
+        return { props: Object.fromEntries(Object.keys(definitions ?? {}).map((c) => [c, {}])) };
+      },
     },
     './template/sources': { ...sources, resoudreLesSources: async () => resolution.traiter() },
     './template/modele': modele,
@@ -125,7 +133,9 @@ function ouvrir() {
     messages, appels, exporte, publication, connexionDe, resumeDesTokens, releve, regles, resolution, creation, runtime, stockage,
     envoyer: (message: UiRequest) => runtime.ui.onmessage(message),
     selectionner(id: string, parent?: { type: string }) {
-      runtime.currentPage.selection = [{ id, type: 'COMPONENT', name: 'Exemple', parent }];
+      runtime.currentPage.selection = [
+        { id, type: 'COMPONENT', name: 'Exemple', componentPropertyDefinitions: { severity: {} }, parent },
+      ];
       evenements.get('selectionchange')!();
     },
     connecter() {
@@ -1081,7 +1091,10 @@ test('un variant seul ne reçoit aucune offre, quoi que la page porte', async ()
     maitreLocal: null, instanceSource: { id: 'i' } as never,
   };
   h.runtime.currentPage.selection = [
-    { id: 'a', type: 'COMPONENT', name: 'Exemple', parent: { type: 'COMPONENT_SET' } },
+    {
+      id: 'a', type: 'COMPONENT', name: 'Exemple',
+      componentPropertyDefinitions: { severity: {} }, parent: { type: 'COMPONENT_SET' },
+    },
   ];
   await h.envoyer({ type: 'ui-ready' });
   await tourner();
@@ -1155,6 +1168,10 @@ test('« creer-regles » écrit une fois, et relance le relevé de sélection', 
   // gardé l'ignore encore : `documentchange` arrive par lots, trop tard pour
   // l'analyse qui suit immédiatement la création.
   assert.equal(h.appels.oublisDIndex, 1, 'la création ne fait pas oublier l’index du document');
+  // Le contrat porte aussi les propriétés d'un enfant élu wrapper. Le template
+  // ne documente que celles que le composant sélectionné déclare, et c'est ce
+  // relevé qui les nomme.
+  assert.deepEqual(h.appels.relevesDeProps, [['severity']]);
 });
 
 test('le modèle vient du contrat analysé, et la création le dit en étapes', async () => {

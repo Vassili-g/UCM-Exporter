@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { Contract } from '@ucm-kit/core/format';
 import { extractRules } from '../src/contract/extractRules';
-import { modeleDeRegles, nombreDeRegles } from '../src/template/modele';
+import { modeleDeRegles, nombreDeRegles, restreindreAuParent } from '../src/template/modele';
 import type { ModeleDeRegles } from '../src/template/modele';
 import { offreDeCreation, resoudreLesSources } from '../src/template/sources';
 
@@ -37,6 +37,51 @@ test('le modèle pose une @usage, une @prop par valeur groupée par axe, une @bo
     'icons : @icons',
   ]);
   assert.equal(nombreDeRegles(modele), 8);
+});
+
+test('les propriétés venues d’un enfant élu wrapper ne sont pas documentées', () => {
+  // Un Alert qui contient un Button sans règles : le Button n'est pas une
+  // dépendance, rien ne l'écarte de l'élection du wrapper, et ses propriétés
+  // entrent dans le contrat de l'Alert. Les poser ferait documenter l'API du
+  // Button sous le nom de l'Alert.
+  const contratAbsorbe: ContratLu = {
+    props: {
+      severity: { type: 'enum', values: ['info', 'error'] },
+      action: { type: 'boolean', default: true },
+      size: { type: 'enum', values: ['small', 'medium'] },
+      label: { type: 'boolean', default: true },
+      iconRight: { type: 'boolean', default: true },
+    },
+  };
+  const declareesParLAlert = new Set(['severity', 'action']);
+
+  const modele = modeleDeRegles('Alert', restreindreAuParent(contratAbsorbe, declareesParLAlert));
+
+  assert.deepEqual(resume(modele), [
+    'usage : @usage',
+    'prop : severity.info severity.error',
+    'boolean : action',
+    'icons : @icons',
+  ]);
+});
+
+test('restreindre au parent garde l’axe d’états, qui vient des variants du parent', () => {
+  const contrat: ContratLu = {
+    props: { size: { type: 'enum', values: ['small'] } },
+    stateModel: {
+      axis: 'state',
+      states: { default: {}, hover: { selector: ':hover' } },
+      precedence: ['hover', 'default'],
+    },
+  };
+
+  const modele = modeleDeRegles('Alert', restreindreAuParent(contrat, new Set()));
+
+  assert.deepEqual(resume(modele), [
+    'usage : @usage',
+    'prop : state.default state.hover',
+    'icons : @icons',
+  ]);
 });
 
 test('un axe renommé par la couche sémantique écrit sa clé publiée, jamais son nom Figma', () => {
