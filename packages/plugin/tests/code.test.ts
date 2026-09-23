@@ -40,24 +40,35 @@ const resultat = (nom: string) => ({ filename: nom, content: '{}', warningCount:
 const setDe = (nom: string, definitions: Record<string, unknown>) =>
   ({ id: `set-${nom}`, type: 'COMPONENT_SET', name: nom, componentPropertyDefinitions: definitions });
 
-/** Une instance d'un variant de ce set, telle que le parcours la rencontre. */
-const instanceDe = (id: string, set: ReturnType<typeof setDe>) => ({
+/**
+ * Une instance d'un variant de ce set, telle que le parcours la rencontre.
+ * `parent` la range sous une autre instance ; son absence la met directement
+ * sous le composant sélectionné.
+ */
+const instanceDe = (id: string, set: ReturnType<typeof setDe>, parent?: unknown) => ({
   id,
   type: 'INSTANCE',
   name: `${set.name} imbriqué`,
+  parent,
   getMainComponentAsync: async () => ({ id: `main-${id}`, name: 'Size=Small', parent: set }),
 });
 
 const setBouton = setDe('Button', { size: {}, label: {} });
 const setIcone = setDe('Icon', { iconName: {} });
 // Un point en tête : Figma ne publie pas ce composant, qui n'est donc qu'une
-// pièce interne du parent, jamais une dépendance à documenter à part.
+// pièce interne, jamais une dépendance à documenter à part. Ce qu'elle prête
+// dépend de l'endroit où elle est posée, d'où les deux ci-dessous.
 const setInterne = setDe('.pieceInterne', { taille: {} });
+const setInterneDuBouton = setDe('.pieceDuBouton', { profondeur: {} });
+const premierBouton = instanceDe('btn-1', setBouton);
 const enfantsImbriques = [
-  instanceDe('btn-1', setBouton),
+  premierBouton,
   instanceDe('btn-2', setBouton),
   instanceDe('ico-1', setIcone),
+  // Sous le composant sélectionné : sa propre architecture.
   instanceDe('int-1', setInterne),
+  // Sous le Button : l'architecture du Button, pas celle du parent.
+  instanceDe('int-2', setInterneDuBouton, premierBouton),
 ];
 const globalFigma = globalThis as unknown as { figma?: unknown };
 const figmaInitial = globalFigma.figma;
@@ -1340,6 +1351,37 @@ test('une pièce interne et un composant sans règles se distinguent dans la mê
   assert.deepEqual(points.map((point) => point.titre), [
     'Règles de « Exemple » : Une propriété n’est pas documentée, « size ».',
   ]);
+});
+
+test('la pièce interne d’un composant publié rend son point à ce composant', async () => {
+  // Le cas d'un composé dont l'enfant n'a pas reçu ses règles : le parcours
+  // descend dans cet enfant, faute de dépendance qui l'élague, et trouve la
+  // pièce interne de l'enfant. Ses propriétés sont celles de l'enfant, pas
+  // celles du parent : le geste à faire reste de créer les règles de l'enfant.
+  const h = ouvrir();
+  h.exporte.traiter = async () => ({
+    ...resultat('Exemple.contract.json'),
+    content: JSON.stringify({
+      props: {
+        severity: { type: 'enum', values: ['info'] },
+        profondeur: { type: 'enum', values: ['deux'] },
+      },
+    }),
+  });
+
+  await h.envoyer({ type: 'creer-regles', operation: 1 });
+
+  assert.deepEqual(ciblesPosees(h), ['severity.info']);
+  const points = h.messages.filter((message) => message.type === 'diagnostic');
+  assert.equal(points.length, 1);
+  assert.equal(
+    points[0].titre,
+    'Règles de « Exemple » : Une propriété n’est pas documentée, « profondeur ».',
+  );
+  // Le composant publié, jamais la pièce interne : c'est lui qui peut recevoir
+  // des règles, et le geste demandé le vise.
+  assert.match(points[0].impact, /à « Button », qui n’a pas encore ses propres règles/);
+  assert.deepEqual([...points[0].nodeIds ?? []], ['btn-1', 'btn-2']);
 });
 
 test('un template qui documente tout ne rend aucun point', async () => {

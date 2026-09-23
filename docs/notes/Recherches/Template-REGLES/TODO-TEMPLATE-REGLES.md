@@ -529,11 +529,12 @@ Référence : [phase 7](PLAN-TEMPLATE-REGLES.md#phase-7-recette-dans-figma).
       de correction avec son test de régression, avant le lot 8.
 - [x] **Correction 7.1** : une pièce interne ne demande plus ses propres
       règles. Le point rouge visait un composant que Figma ne publie pas, et
-      dont le parent porte les propriétés pour de bon. Deux tests de régression
+      dont le parent porte les propriétés pour de bon. Trois tests de régression
       dans `tests/code.test.ts` : les propriétés d'une pièce interne sont
-      documentées par le parent sans point, et une pièce interne se distingue
-      d'un composant sans règles dans la même création. Constat dans le
-      [compte rendu](#7-recette-dans-figma-1).
+      documentées par le parent sans point, une pièce interne se distingue d'un
+      composant sans règles dans la même création, et la pièce interne d'un
+      composant publié rend son point à ce composant. Constat, premier critère
+      faux compris, dans le [compte rendu](#7-recette-dans-figma-1).
 
 ## 8. Kit Community
 
@@ -1255,20 +1256,38 @@ un Alert qui contient un Button sans règles publiait l'API du Button comme la
 sienne. Les deux cas arrivent par le même chemin, l'élection du wrapper, et le
 correctif d'alors les a traités comme un seul.
 
-**Le critère.** Le porteur des propriétés tranche. Un nom qui commence par un
-point ou un tiret bas est une pièce interne : Figma la retient de la
-bibliothèque, elle n'aura jamais de règles à elle, et ses propriétés reviennent
-au parent, qui les documente. Tout autre porteur garde son point rouge, car il
-peut recevoir un conteneur de règles, et ses propriétés quitteront alors le
-contrat du parent. `getPublishStatusAsync` aurait été plus direct et vaut moins :
-sur une bibliothèque jamais publiée, elle dit tout le monde non publié, et le
-défaut d'origine redeviendrait muet.
+**Un premier critère, faux, livré puis corrigé.** Le nom du porteur avait
+d'abord servi à trancher : un nom commençant par un point ou un tiret bas
+désignait une pièce interne, dont les propriétés revenaient au parent. Ce
+critère éteignait aussi le point du cas d'origine, et le mainteneur l'a constaté
+dans la foulée. La raison : quand un composé contient un composant publié sans
+règles, le parcours descend dans ce composant, faute de dépendance qui l'élague,
+et c'est la pièce interne de ce composant qui déclare les propriétés absorbées.
+Le porteur déclarant est le même objet dans les deux cas. Le nom ne pouvait donc
+rien séparer.
 
-**Vu rouge avant d'être cru.** Les deux tests de régression échouaient sur les
-cibles du modèle posé, `taille.small` et `taille.medium` absentes. Le banc de
-`code.test.ts` garde maintenant le modèle que `creerLesRegles` reçoit, ce qui
-permet d'affirmer ce que le template documente et non seulement ce qu'il tait.
+**Le critère retenu.** La profondeur tranche, pas le nom. Une propriété revient
+au premier composant publié rencontré en descendant du composant sélectionné
+jusqu'à celui qui la déclare, lui compris. Aucun composant publié sur ce chemin,
+et elle est au parent, qui la documente. Un composant publié sur ce chemin, et
+elle est à lui : il peut recevoir un conteneur de règles, et ses propriétés,
+celles de son architecture comprises, quitteront alors le contrat du parent. Le
+premier publié, et non le dernier, parce que ses règles élaguent du contrat tout
+ce qu'il contient. Un nom sert encore, mais seulement à reconnaître un composant
+publié : `getPublishStatusAsync` aurait été plus direct et vaut moins, car sur
+une bibliothèque jamais publiée elle dit tout le monde non publié.
+
+Effet de bord utile : le point nomme désormais le composant publié, alors que le
+code d'origine nommait la pièce interne qui déclare, c'est-à-dire un composant
+dont le geste demandé n'avait pas de sens.
+
+**Vu rouge avant d'être cru.** Trois tests de régression, chacun rouge avant son
+code. Les deux premiers échouaient sur les cibles du modèle posé, `taille.small`
+et `taille.medium` absentes. Le troisième, celui du critère corrigé, échouait sur
+le point disparu du composant publié. Le banc de `code.test.ts` garde maintenant
+le modèle que `creerLesRegles` reçoit, ce qui permet d'affirmer ce que le
+template documente et non seulement ce qu'il tait, et ses instances imbriquées
+portent un `parent`, sans quoi la profondeur ne s'éprouve pas.
 
 Ce que la correction ne touche pas : le contrat publié, qui portait déjà ces
-propriétés et continue de les porter ; le point rouge du composant à part
-entière, que ses tests tiennent inchangé ; l'axe d'états, jamais filtré.
+propriétés et continue de les porter ; l'axe d'états, jamais filtré.

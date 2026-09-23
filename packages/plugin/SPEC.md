@@ -917,16 +917,29 @@ porte aussi la surface d'un wrapper élu (voir
 [FORMAT.md, section 3](../../docs/format/FORMAT.md#3-layout)), et le template ne
 les traite pas toutes de la même façon.
 
+La propriété est rendue à qui elle appartient : le **premier composant publié**
+rencontré en descendant du composant sélectionné jusqu'à celui qui la déclare,
+lui compris. Un composant est publié tant que son nom ne commence ni par `.` ni
+par `_` ; Figma retient les autres de la bibliothèque, et une pièce interne
+n'aura donc jamais de règles à elle.
+
 | Origine de la propriété | Règle posée | Pourquoi |
 |---|---|---|
 | Le composant sélectionné la déclare | oui | c'est son API |
-| Une pièce interne la déclare (nom commençant par `.` ou `_`) | oui | Figma ne publie pas ce composant : personne ne l'instanciera seule, elle n'aura jamais de règles à elle, et le parent porte ses propriétés pour de bon |
-| Un composant à part entière la déclare | non, et un point rouge la nomme | il n'a été absorbé que faute d'un conteneur de règles qui en fasse une dépendance ; ses propriétés quitteront le contrat du parent dès qu'il aura les siennes |
-| Aucun imbriqué ne la revendique | non, et un point rouge la nomme | le plugin n'a pas su nommer son porteur, et la taire ferait croire à un template complet |
+| Une de ses pièces internes la déclare, et rien de publié ne s'interpose | oui | cette pièce fait partie de son architecture : personne ne l'instanciera seule, elle n'aura jamais de règles à elle, et le parent porte ses propriétés pour de bon |
+| Un composant publié la déclare, ou l'une de ses pièces internes la déclare | non, et un point rouge nomme ce composant publié | il n'a été traversé que faute d'un conteneur de règles qui en fasse une dépendance ; ses propriétés, et celles de son architecture, quitteront le contrat du parent dès qu'il aura les siennes |
+| Aucun imbriqué ne la revendique, ou le chemin ne se lit pas | non, et un point rouge la nomme sans nommer son porteur | la taire ferait croire à un template complet |
 
-Le nom sert de critère parce qu'aucune lecture ne fait mieux :
-`getPublishStatusAsync` dit tout le monde non publié sur une bibliothèque qui ne
-l'a jamais été, et le vrai défaut passerait alors sous silence.
+**La profondeur tranche, pas le nom.** La même pièce interne se rencontre aux
+deux endroits : posée dans le composant sélectionné, elle est à lui ; posée dans
+un composant publié que le parcours a traversé, elle est à celui-là. Le premier
+publié, et non le dernier, parce que ses règles, une fois créées, élaguent du
+contrat du parent tout ce qu'il contient.
+
+Le nom sert à reconnaître un composant publié parce qu'aucune lecture ne fait
+mieux : `getPublishStatusAsync` dit tout le monde non publié sur une
+bibliothèque qui ne l'a jamais été, et le vrai défaut passerait alors sous
+silence.
 
 L'écriture vit dans un seul fichier, `src/template/ecriture.ts`, atteint par
 une seule porte, la demande `creer-regles`. `loiDuDocumentIntact.test.ts`

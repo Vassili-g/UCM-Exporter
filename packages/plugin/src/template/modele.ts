@@ -25,13 +25,14 @@ export type ContratLu = Pick<Contract, 'props' | 'stateModel'>;
  *
  * La surface publiée fusionne celle d'un wrapper élu par
  * `findWrapperReference`, et deux choses très différentes passent par là. Une
- * pièce interne, que Figma ne publie pas, n'existe que dans ce composant :
- * personne ne l'instanciera seule, elle n'aura donc jamais de règles à elle, et
- * ses propriétés sont celles du parent, à documenter ici. Un composant à part
- * entière, lui, n'est élu que faute d'être reconnu comme dépendance, ce qui
- * demande un conteneur de règles : poser ses propriétés ferait documenter au
- * designer l'API du voisin, sous le nom du parent, et elles s'en iront du
- * contrat dès que ce voisin aura ses règles.
+ * pièce interne du composant sélectionné, que Figma ne publie pas, n'existe que
+ * dans ce composant : personne ne l'instanciera seule, elle n'aura donc jamais
+ * de règles à elle, et ses propriétés sont celles du parent, à documenter ici.
+ * Un composant publié, lui, n'est traversé que faute d'être reconnu comme
+ * dépendance, ce qui demande un conteneur de règles : poser ses propriétés, ou
+ * celles de sa propre architecture, ferait documenter au designer l'API du
+ * voisin, sous le nom du parent, et elles s'en iront du contrat dès que ce
+ * voisin aura ses règles.
  *
  * L'appelant fait le tri, seul à voir l'arbre Figma ; cette fonction reçoit la
  * surface déjà tranchée. L'ordre du contrat est gardé, et une propriété remontée
