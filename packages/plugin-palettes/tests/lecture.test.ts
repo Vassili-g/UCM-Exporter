@@ -1,10 +1,10 @@
-/** La lecture de la recette rangée et du profil du document ([REC-01], [REC-03]). */
+/** La lecture de la recette rangée, du profil du document et de la sélection ([REC-01], [REC-03], [ENT-04]). */
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { FORMAT_RECETTE, jsonCanonique, recetteParDefaut } from 'ucm-couleur';
+import { FORMAT_RECETTE, jsonCanonique, recetteParDefaut, rgb8VersP3 } from 'ucm-couleur';
 
-import { empreinteDuTexte, lireEtat } from '../src/lecture';
+import { couleurDeLaSelection, empreinteDuTexte, lireEtat } from '../src/lecture';
 import { documentDeTest } from './document';
 
 test('[REC-03] sans recette rangée, la recette par défaut est proposée, sans empreinte', () => {
@@ -31,4 +31,30 @@ test('[REC-03] une recette future ou illisible se classe, et son empreinte reste
 
 test('le profil de couleur du document accompagne l’état', () => {
   assert.equal(lireEtat(documentDeTest('', 'DISPLAY_P3').root).profil, 'DISPLAY_P3');
+});
+
+const uni = (r: number, g: number, b: number, reste: Record<string, unknown> = {}) =>
+  ({ type: 'SOLID', visible: true, opacity: 1, color: { r, g, b }, ...reste });
+
+test('[ENT-04] la sélection propose la première peinture unie, visible et opaque', () => {
+  const noeuds = [
+    { fills: [] },
+    { fills: [uni(1, 0, 0, { visible: false }), uni(0, 1, 0, { opacity: 0.5 }), uni(30 / 255, 111 / 255, 217 / 255)] },
+  ];
+  assert.deepEqual(couleurDeLaSelection(noeuds, 'SRGB'), { hexa: '#1E6FD9', ramenee: false });
+});
+
+test('[ENT-04] une sélection vide, ou sans peinture unie, dit pourquoi elle ne propose rien', () => {
+  assert.deepEqual(couleurDeLaSelection([], 'SRGB'), { raison: 'vide' });
+  const degrade = { type: 'GRADIENT_LINEAR', visible: true, opacity: 1 };
+  // `figma.mixed` n'est pas un tableau : un texte aux remplissages mêlés ne propose rien.
+  assert.deepEqual(couleurDeLaSelection([{ fills: [degrade] }, { fills: Symbol('mixed') }, {}], 'SRGB'), { raison: 'sans-remplissage-uni' });
+});
+
+test('E10 : dans un document Display P3, la couleur passe en sRGB, et une couleur hors gamut est ramenée', () => {
+  const dansSrgb = rgb8VersP3([30, 111, 217]);
+  assert.deepEqual(couleurDeLaSelection([{ fills: [uni(...dansSrgb)] }], 'DISPLAY_P3'), { hexa: '#1E6FD9', ramenee: false });
+  const lue = couleurDeLaSelection([{ fills: [uni(1, 0, 0)] }], 'DISPLAY_P3');
+  assert.ok('hexa' in lue && lue.ramenee, JSON.stringify(lue));
+  assert.equal('hexa' in lue && lue.hexa, '#FF0000');
 });

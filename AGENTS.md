@@ -219,6 +219,10 @@ packages/plugin-palettes/  le plugin UCM Palettes : ucm-palettes-plugin, privé
   src/ui/                  l'en-tête du socle, les onglets Palettes et Planche, la configuration
   src/ui/ongletPalettes.ts barre du verdict, référence, dérive repliée, aperçu et constats
   src/ui/apercu.ts         les pastilles de 24 px en grille, et le détail du cran survolé
+  src/ui/selecteur.ts      la palette ouverte, en liste déroulante avec la pastille de chaque référence
+  src/ui/creation.ts       une palette neuve, par sa référence ou par la couleur de la sélection
+  src/ui/menuPalette.ts    dupliquer, monter, descendre, supprimer
+  src/ui/frontiere.ts      la numérotation des demandes, et un seul rangement en vol
   src/ui/textes.ts         tous les textes destinés au designer, provisoires jusqu'au point M2
   galerie/                 les états de l'interface, à la taille par défaut et à la taille minimale
   tests/                   dont la loi d'écriture, et interface/ pour Chromium
@@ -869,6 +873,11 @@ La spécification en lien porte le raisonnement.
   l'empreinte que l'interface a lue. `commitUndo` suit l'écriture. Un refus
   n'écrit rien. `packages/plugin-palettes/tests/rangement.test.ts` le tient.
   → [spec](./docs/notes/Recherches/Plugin%20Palettes/RECHERCHE-PLUGIN-PALETTES.md#73-rangement-et-version)
+- L'interface range à la fin d'un geste, jamais pendant une saisie, et un seul
+  rangement est en vol : un geste suivant attend l'empreinte que la réponse
+  apporte. Après un refus, rien ne se range avant « Recharger ».
+  `src/ui/frontiere.ts` en est l'unique autorité, et
+  `packages/plugin-palettes/tests/frontiere.test.ts` le tient.
 - Le manifest n'ouvre aucun domaine et ne déclare pas `enablePrivatePluginApi`.
 - Aucun des deux plugins n'importe l'autre : `tests/pluginsSepares.test.ts` lit
   les deux sens, à la racine, sans qu'un paquet lise les sources de l'autre.

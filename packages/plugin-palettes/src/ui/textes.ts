@@ -42,7 +42,72 @@ export const TEXTES = {
   titrePromesses: 'Promesses manquées',
   titreAlertes: 'Alertes',
   titreNotices: 'Notices',
+  nouvellePalette: 'Nouvelle palette',
+  creer: 'Créer',
+  depuisLaSelection: 'Depuis la sélection',
+  annuler: 'Annuler',
+  gestesDeLaPalette: 'Gestes de la palette',
+  dupliquer: 'Dupliquer',
+  monter: 'Monter',
+  descendre: 'Descendre',
+  supprimer: 'Supprimer',
+  recharger: 'Recharger',
+  selectionVide: 'Aucun calque n’est sélectionné dans Figma.',
+  selectionSansRemplissage: 'Aucun calque sélectionné ne porte un remplissage uni, visible et opaque.',
 } as const;
+
+/** L'indication discrète de rangement, au rang 3 (D-D). */
+export const STATUTS_DU_RANGEMENT = {
+  lu: '',
+  'en-cours': 'rangement…',
+  range: 'rangé',
+  refuse: 'non rangé',
+  invalide: 'non rangé',
+} as const;
+
+/** Le nom d'une copie de palette. */
+export function nomDeLaCopie(nom: string): string {
+  return `${nom} (copie)`;
+}
+
+/** Un hexa que le champ refuse : il le dit sous le champ, l'aperçu ne change pas. */
+export function hexaInvalide(saisie: string): string {
+  return `« ${saisie} » n’est pas une couleur : six chiffres hexadécimaux, #1E6FD9 par exemple.`;
+}
+
+/** La confirmation d'une suppression ([ENT-03]). */
+export function confirmationDeSuppression(nom: string): string {
+  return `Supprimer « ${nom} » ? Son cadre restera sur la planche, signalé orphelin.`;
+}
+
+/** Le refus d'un rangement : la recette rangée a changé depuis sa lecture ([REC-10]). */
+export function recetteModifieeAilleurs(): Constat {
+  return {
+    ou: 'Recette du fichier',
+    quoi: 'Elle a changé depuis sa lecture, par un autre designer ou par une annulation dans Figma : votre dernière modification n’est pas rangée.',
+    geste: 'Rechargez la recette du fichier. Votre dernière modification sera perdue.',
+  };
+}
+
+/** Un rangement que le sandbox refuse pour une recette invalide : l'interface en est la cause. */
+export function rangementInvalide(refus: readonly Refus[]): Constat {
+  return {
+    ou: 'Recette du fichier',
+    quoi: refus.length > 0
+      ? `Le plugin a produit une recette invalide, qui n’a pas été rangée : ${texteDuRefus(refus[0])}`
+      : 'Le plugin a produit une recette invalide, qui n’a pas été rangée.',
+    geste: 'Rechargez la recette du fichier, puis refaites la modification.',
+  };
+}
+
+/** La notice d'une couleur de sélection ramenée dans le gamut sRGB (E10). */
+export function couleurRamenee(hexa: string): Constat {
+  return {
+    ou: `Référence ${hexa}`,
+    quoi: 'La couleur Display P3 de la sélection sortait du gamut sRGB : elle a été ramenée à la plus proche que sRGB porte.',
+    geste: 'Gardez cette référence, ou choisissez une couleur que sRGB porte.',
+  };
+}
 
 /** Le nom qu'une palette affiche : son nom, ou son hexa de référence. */
 export function nomDeLaPalette(palette: Palette): string {

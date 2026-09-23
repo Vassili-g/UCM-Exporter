@@ -83,10 +83,19 @@ test('[ARC-13] aucun fichier de src/ ne touche aux variables, à toutes les page
   assert.deepEqual(fautes(fichiers(SOURCE), INTERDITS), []);
 });
 
+/**
+ * Les imports d'un fichier qui chargent `src/ecriture/` à l'exécution : avec
+ * ou sans liaison, `import '…'` compris. Un `import type` disparaît à la
+ * compilation et ne mène à aucune écriture.
+ */
+function importeLEcriture(fichier: string): boolean {
+  return [...fs.readFileSync(fichier, 'utf8').matchAll(/import\s+(type\s+)?(?:[^'";]*?\s+from\s+)?'([^']+)'/g)]
+    .some(([, type, chemin]) => !type && /ecriture\//.test(chemin));
+}
+
 test('l’écriture n’est atteignable que par code.ts', () => {
   const importeurs = fichiers(SOURCE)
-    // `from '…'` comme un import sans liaison, `import '…'`.
-    .filter((fichier) => /(?:from|import)\s+'[^']*ecriture\//.test(fs.readFileSync(fichier, 'utf8')))
+    .filter(importeLEcriture)
     .map((fichier) => path.relative(SOURCE, fichier));
   assert.deepEqual(importeurs, ['code.ts']);
 });

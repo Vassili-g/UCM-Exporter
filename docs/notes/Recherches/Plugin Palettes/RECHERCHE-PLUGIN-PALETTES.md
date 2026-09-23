@@ -1012,6 +1012,7 @@ Exporter.
 |---|---|
 | Premier lancement | Aucune recette rangée, recette par défaut proposée, aucune palette |
 | Premier lancement, palette créée | La première palette ouverte, recette rangée |
+| Palette créée depuis la sélection | Couleur Display P3 ramenée dans sRGB, notice sous la barre |
 | Palette en saisie | Aperçu à jour, rien de dessiné |
 | Configuration de la recette | Courbes, parts et seuils, avec le nombre de palettes que chaque champ modifie |
 | Courbe hors garantie | Alerte sous la courbe : cran, mode, profil, teinte du pire cas et contraste |

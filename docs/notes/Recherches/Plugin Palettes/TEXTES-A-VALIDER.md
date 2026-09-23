@@ -163,6 +163,32 @@ où et quoi sur la même ligne ; le geste est commun, en fin de liste :
 | `identifiants-uniques` | Deux palettes portent l'identifiant « {valeur} ». | L'identifiant « {valeur} » revient deux fois. | |
 | `crans-emplois` | Crans : le cran {valeur} manque, et la table des emplois l'emploie. | La liste des crans doit contenir {valeur}, que les composants citent. | |
 
+## Textes ajoutés aux lots 3 et 4
+
+Ces messages sont nés avec l'interface. Ils n'ont qu'une rédaction, celle que
+l'interface affiche : à garder, ou à réécrire.
+
+| Message | Où | Quoi | Geste |
+|---|---|---|---|
+| Promesse manquée, écrite | {palette}, {mode}, {profil} : {emploi} {état} sur {autre membre} | Contraste {valeur} pour {seuil} demandé : le cran {cran} ne tient pas la table des emplois. | Réglez la dérive ou les parts de la palette, ou la courbe {mode} dans la configuration. |
+| Recette modifiée ailleurs | Recette du fichier | Elle a changé depuis sa lecture, par un autre designer ou par une annulation dans Figma : votre dernière modification n'est pas rangée. | Rechargez la recette du fichier. Votre dernière modification sera perdue. |
+| Rangement invalide | Recette du fichier | Le plugin a produit une recette invalide, qui n'a pas été rangée : {refus} | Rechargez la recette du fichier, puis refaites la modification. |
+| Couleur ramenée | Référence {hexa} | La couleur Display P3 de la sélection sortait du gamut sRGB : elle a été ramenée à la plus proche que sRGB porte. | Gardez cette référence, ou choisissez une couleur que sRGB porte. |
+| Notice `LEGACY` | Document, profil de couleur | Profil non géré : Figma ne dit pas dans quel espace les couleurs de la planche seront peintes. | Choisissez sRGB ou Display P3 dans les réglages de couleur du fichier. |
+
+Lignes simples, sans les trois parties :
+
+- sélection vide : « Aucun calque n'est sélectionné dans Figma. » ;
+- sélection sans remplissage : « Aucun calque sélectionné ne porte un
+  remplissage uni, visible et opaque. » ;
+- hexa refusé : « « {saisie} » n'est pas une couleur : six chiffres
+  hexadécimaux, #1E6FD9 par exemple. » ;
+- suppression : « Supprimer « {palette} » ? Son cadre restera sur la
+  planche, signalé orphelin. » ;
+- recette absente : « Aucune recette dans ce fichier : la recette par défaut
+  s'appliquera à la première palette. » ;
+- rangement : « rangement… », « rangé », « non rangé ».
+
 ## Questions pour le mainteneur
 
 - La notice « Référence plus vive que vivid » n'a de geste que si la rampe doit

@@ -7,7 +7,7 @@
  */
 import { rangerRecette } from './ecriture/recette';
 import { TAILLE_PAR_DEFAUT, lireTaille, rangerTaille, tailleValide } from './fenetre';
-import { lireEtat } from './lecture';
+import { couleurDeLaSelection, lireEtat } from './lecture';
 import type { PluginMessage, UiRequest } from './messages';
 
 /*
@@ -36,11 +36,14 @@ async function traiterMessage(message: UiRequest): Promise<void> {
     return;
   }
 
+  if (message.type === 'lire-selection') {
+    const lecture = couleurDeLaSelection(figma.currentPage.selection, figma.root.documentColorProfile);
+    versUi({ type: 'selection', demande: message.demande, lecture });
+    return;
+  }
+
   if (message.type === 'ranger-recette') {
-    // L'interface relit l'état après chaque rangement, refusé ou non : il dit
-    // quelle recette est rangée, et c'est lui qu'elle affiche.
-    rangerRecette(figma, message.recette, message.empreinteLue);
-    envoyerEtat(message.demande);
+    versUi({ type: 'rangement', demande: message.demande, issue: rangerRecette(figma, message.recette, message.empreinteLue) });
     return;
   }
 

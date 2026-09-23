@@ -454,18 +454,18 @@ avec E22.
 
 ### 4b : gestion des palettes et rangement
 
-- [ ] **L4.8** Créer, renommer, dupliquer, réordonner, supprimer [ENT-03] ;
+- [x] **L4.8** Créer, renommer, dupliquer, réordonner, supprimer [ENT-03] ;
   identifiants de D-K.
-- [ ] **L4.9** Créer depuis la sélection [ENT-04], avec E10.
+- [x] **L4.9** Créer depuis la sélection [ENT-04], avec E10.
 - [x] **L4.10** [ENT-01] : changer la référence recalcule le préréglage selon
   l'origine de la dérive.
-- [ ] **L4.11** Rangement automatique de D-D, avec l'empreinte lue (E13).
+- [x] **L4.11** Rangement automatique de D-D, avec l'empreinte lue (E13).
   Indication discrète de rang 3 : « rangé » ou « rangement… ».
-- [ ] **L4.12** Refus pour recette modifiée ailleurs, geste « Recharger ».
+- [x] **L4.12** Refus pour recette modifiée ailleurs, geste « Recharger ».
   Relecture de l'état au retour du focus.
-- [ ] **L4.13** Galerie : premier lancement avec une palette créée, recette
+- [x] **L4.13** Galerie : premier lancement avec une palette créée, recette
   modifiée ailleurs, hexa invalide.
-- [ ] **L4.14** Protocole de relecture, points (c), (d) et (e), sur les
+- [x] **L4.14** Protocole de relecture, points (c), (d) et (e), sur les
   captures ; les comptes d'objets entrent dans le message du commit.
 
 ### 4c : configuration de la recette

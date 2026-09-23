@@ -18,7 +18,7 @@ const RELEVE = `<script>
   window.demandes = [];
   window.addEventListener('message', (event) => {
     const type = event.data.pluginMessage && event.data.pluginMessage.type;
-    if (type === 'lire-etat' || type === 'ranger-recette') window.demandes.push(event.data.pluginMessage);
+    if (['lire-etat', 'lire-selection', 'ranger-recette'].includes(type)) window.demandes.push(event.data.pluginMessage);
   });
 </script>`;
 
@@ -202,6 +202,182 @@ test('le banc de galerie joue une touche : le focus avance d’un cran', async (
   const page = await pageDeGalerie('promesses-manquees');
   try {
     assert.match(await page.evaluate(() => document.activeElement.getAttribute('aria-label')), /^vivid\.800 /);
+  } finally {
+    await page.close();
+  }
+});
+
+const envoyer = async (page, message) => {
+  await page.evaluate((pluginMessage) => window.postMessage({ pluginMessage }, '*'), message);
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 0)));
+};
+const demandes = (page) => page.evaluate(() => window.demandes);
+const compte = async (page) => (await demandes(page)).length;
+/** La prochaine demande que l'interface envoie après la `rang`-ième : `postMessage` est asynchrone. */
+async function prochaine(page, rang) {
+  await page.waitForFunction((n) => window.demandes.length > n, rang);
+  return (await demandes(page))[rang];
+}
+const rangee = (demande) => ({ type: 'rangement', demande, issue: { issue: 'rangee', empreinte: '0000000f' } });
+
+test('[ENT-03] au premier lancement, créer une palette la range, sans empreinte lue', async () => {
+  const page = await ouvrir();
+  try {
+    await envoyer(page, messageDe('premier-lancement'));
+    const avant = await compte(page);
+    await page.locator('.champ-creation').fill('#1E6FD9');
+    await page.getByRole('button', { name: 'Créer', exact: true }).click();
+    const demande = await prochaine(page, avant);
+    assert.equal(demande.type, 'ranger-recette');
+    assert.equal(demande.empreinteLue, null);
+    assert.equal(demande.recette.palettes.length, 1);
+    assert.match(demande.recette.palettes[0].id, /^p-[0-9a-f]{8}$/);
+    assert.equal(await page.locator('.etat-rangement').textContent(), 'rangement…');
+    await envoyer(page, rangee(demande.demande));
+    assert.equal(await page.locator('.etat-rangement').textContent(), 'rangé');
+  } finally {
+    await page.close();
+  }
+});
+
+test('D-D : un nom se range quand le champ est validé, jamais pendant la saisie', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const avant = await compte(page);
+    const nom = page.getByRole('textbox', { name: 'Nom' });
+    await nom.fill('Soleil');
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 20)));
+    assert.equal(await compte(page), avant, 'la saisie ne range rien');
+    await nom.press('Tab');
+    const demande = await prochaine(page, avant);
+    assert.equal(demande.type, 'ranger-recette');
+    assert.equal(demande.recette.palettes[0].nom, 'Soleil');
+    assert.equal(demande.empreinteLue, messageDe('alertes-seules').empreinte);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[ENT-03] dupliquer, monter, puis supprimer après confirmation', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const geste = async (nom) => {
+      const avant = await compte(page);
+      await page.getByRole('button', { name: 'Gestes de la palette' }).click();
+      await page.getByRole('menuitem', { name: nom }).click();
+      return avant;
+    };
+    let demande = await prochaine(page, await geste('Dupliquer'));
+    assert.deepEqual(demande.recette.palettes.map((palette) => palette.nom), ['Jaune', 'Jaune (copie)', 'Bleu']);
+    assert.equal(await page.locator('.selecteur-nom').textContent(), 'Jaune (copie)');
+    await envoyer(page, rangee(demande.demande));
+    demande = await prochaine(page, await geste('Monter'));
+    assert.deepEqual(demande.recette.palettes.map((palette) => palette.nom), ['Jaune (copie)', 'Jaune', 'Bleu']);
+    await envoyer(page, rangee(demande.demande));
+    const avant = await geste('Supprimer');
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 20)));
+    assert.equal(await compte(page), avant, 'la suppression attend sa confirmation');
+    await page.locator('.confirmation').getByRole('button', { name: 'Supprimer' }).click();
+    demande = await prochaine(page, avant);
+    assert.deepEqual(demande.recette.palettes.map((palette) => palette.nom), ['Jaune', 'Bleu']);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[REC-10] un rangement refusé propose « Recharger », qui relit l’état', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    let avant = await compte(page);
+    await page.getByRole('button', { name: 'Gestes de la palette' }).click();
+    await page.getByRole('menuitem', { name: 'Dupliquer' }).click();
+    const demande = await prochaine(page, avant);
+    await envoyer(page, { type: 'rangement', demande: demande.demande, issue: { issue: 'modifiee-ailleurs' } });
+    avant = await compte(page);
+    await page.getByRole('button', { name: 'Recharger' }).click();
+    const relecture = await prochaine(page, avant);
+    assert.equal(relecture.type, 'lire-etat');
+    await envoyer(page, { ...messageDe('alertes-seules'), demande: relecture.demande });
+    assert.equal(await page.getByRole('button', { name: 'Recharger' }).count(), 0);
+    assert.equal(await page.locator('.selecteur-nom').textContent(), 'Jaune');
+  } finally {
+    await page.close();
+  }
+});
+
+test('E13 : la fenêtre relit l’état quand elle reprend le focus', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const avant = await compte(page);
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('blur'));
+      window.dispatchEvent(new Event('focus'));
+    });
+    assert.equal((await prochaine(page, avant)).type, 'lire-etat');
+  } finally {
+    await page.close();
+  }
+});
+
+test('[ENT-04] une palette se crée depuis la couleur de la sélection', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    let avant = await compte(page);
+    await page.getByRole('button', { name: 'Nouvelle palette' }).click();
+    await page.getByRole('button', { name: 'Depuis la sélection' }).click();
+    const demande = await prochaine(page, avant);
+    assert.equal(demande.type, 'lire-selection');
+    await envoyer(page, { type: 'selection', demande: demande.demande, lecture: { raison: 'sans-remplissage-uni' } });
+    assert.match(await page.locator('.creation .field-error').textContent(), /remplissage uni/);
+    avant = await compte(page);
+    await envoyer(page, { type: 'selection', demande: demande.demande, lecture: { hexa: '#16A34A', ramenee: false } });
+    const rangement = await prochaine(page, avant);
+    assert.equal(rangement.type, 'ranger-recette');
+    assert.equal(rangement.recette.palettes.at(-1).reference, '#16A34A');
+    assert.equal(await page.locator('.champ-hexa').inputValue(), '#16A34A');
+  } finally {
+    await page.close();
+  }
+});
+
+test('un hexa impossible se signale sous le champ, et l’aperçu ne change pas', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const avant = await page.locator('[aria-label^="vivid.700 "]').getAttribute('aria-label');
+    await page.locator('.champ-hexa').fill('#FACZ15');
+    assert.equal(await page.locator('.champ-hexa').getAttribute('aria-invalid'), 'true');
+    assert.match(await page.locator('.ligne-reference + .field-error').textContent(), /n’est pas une couleur/);
+    assert.equal(await page.locator('[aria-label^="vivid.700 "]').getAttribute('aria-label'), avant);
+  } finally {
+    await page.close();
+  }
+});
+
+test('E13 : le premier focus de la fenêtre ne relit rien, l’état vient d’être lu', async () => {
+  const page = await ouvrirSur('alertes-seules');
+  try {
+    const avant = await compte(page);
+    await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+    await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 20)));
+    assert.equal(await compte(page), avant);
+  } finally {
+    await page.close();
+  }
+});
+
+test('[UI-03] un nom de palette long ne pousse ni les gestes ni « Dessiner » hors de la fenêtre', async () => {
+  const page = await ouvrir();
+  try {
+    const message = structuredClone(messageDe('alertes-seules'));
+    message.classement.recette.palettes[0].nom = 'Jaune principal de la marque, déclinaison institutionnelle';
+    await envoyer(page, message);
+    // Le bord droit du contenu est celui de l'en-tête : il est hors des grilles de l'onglet.
+    const enTete = await page.locator('.header').boundingBox();
+    const largeur = enTete.x + enTete.width;
+    for (const locator of [page.getByRole('button', { name: 'Gestes de la palette' }), page.getByRole('button', { name: 'Dessiner' }), page.getByRole('textbox', { name: 'Nom' })]) {
+      const boite = await locator.boundingBox();
+      assert.ok(boite.x + boite.width <= largeur, JSON.stringify(boite));
+    }
   } finally {
     await page.close();
   }

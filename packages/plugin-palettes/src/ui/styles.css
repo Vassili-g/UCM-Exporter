@@ -4,6 +4,14 @@
  * packages/plugin-socle, que le build place avant cette feuille.
  */
 
+/*
+ * Une colonne bornée à la fenêtre : la colonne `auto` d'une grille prendrait la
+ * largeur d'un nom de palette sans retour à la ligne, et tout l'onglet déborderait.
+ */
+.colonne {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 /* Rang 3 : ce qui informe sans rien demander. */
 .etat-lecture,
 .ligne-secondaire,
@@ -18,15 +26,100 @@
  */
 .barre-palette {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--espace-controle);
 }
 
+.barre-gestes,
 .barre-verdict {
   display: flex;
+  min-width: 0;
   align-items: center;
   gap: var(--espace-controle);
+}
+
+/* Un nom de palette long se coupe dans le sélecteur : les gestes restent dans la fenêtre. */
+.barre-gestes {
+  flex: 1 1 auto;
+}
+
+.barre-gestes .icon-button {
+  flex-shrink: 0;
+}
+
+.barre-verdict {
+  margin-left: auto;
+}
+
+.menu-palette {
+  position: relative;
+}
+
+.menu-liste {
+  position: absolute;
+  z-index: 1;
+  top: calc(var(--hauteur-secondaire) + var(--espace-serre));
+  left: 0;
+  min-width: 140px;
+  margin: 0;
+  padding: var(--espace-serre);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  background: var(--fond);
+  list-style: none;
+}
+
+.menu-option {
+  padding: var(--espace-serre) var(--espace-controle);
+  border-radius: var(--rayon);
+  cursor: pointer;
+}
+
+.menu-option:hover,
+.menu-option:focus {
+  background: var(--fond-survol);
+  outline: none;
+}
+
+.menu-option[aria-disabled='true'] {
+  color: var(--texte-second);
+  cursor: not-allowed;
+}
+
+/* La création et la confirmation portent le fond des blocs : un geste en cours. */
+.creation,
+.confirmation {
+  display: grid;
+  gap: var(--espace-controle);
+  padding: var(--espace-controle);
+  border-radius: var(--rayon);
+  background: var(--fond-bloc);
+}
+
+.creation-ligne,
+.confirmation-gestes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espace-controle);
+}
+
+.champ-creation {
+  width: 96px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ligne-infos {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espace-controle);
+}
+
+/* Rang 3 : « rangé » ou « rangement… », à droite de la ligne d'informations. */
+.etat-rangement {
+  flex-shrink: 0;
 }
 
 .verdict {
@@ -42,6 +135,7 @@
 .selecteur {
   position: relative;
   min-width: 0;
+  flex: 0 1 auto;
 }
 
 .selecteur-bouton {
@@ -64,6 +158,7 @@
 }
 
 .selecteur-nom {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -147,8 +242,14 @@
   gap: var(--espace-controle);
 }
 
-.champ-hexa {
+.champ-ligne .input {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.champ-ligne .champ-hexa {
   width: 88px;
+  flex: 0 0 88px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -270,4 +371,9 @@
 /* Le geste garde la couleur de lecture ; son rang vient de sa position, la dernière. */
 .constat-geste {
   color: inherit;
+}
+
+/* Le geste d'un constat, « Recharger », garde la largeur de son libellé. */
+.constat .btn {
+  justify-self: start;
 }
