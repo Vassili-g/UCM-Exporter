@@ -29,9 +29,12 @@ donne donc le même contraste contre le fond de page, quelle que soit la couleur
 | 700 | 5,23 à 6,79 | texte (seuil 4,5:1) |
 | 800 | 7,45 à 9,50 | texte appuyé |
 
-Ces bornes valent sur les 360 teintes, les deux profils et les deux thèmes. Un
-composant peut citer `theme.primary.vivid.700` ou `theme.success.soft.700` pour
-un texte dans toutes les marques.
+Ces bornes valent sur les 360 teintes, les deux profils et les deux thèmes,
+calculées en flottant à teinte constante. Avec la dérive de Tailwind et
+l'arrondi à 8 bits, les minimums baissent d'au plus 0,02 : 3,62 pour le 600,
+7,44 pour le 800. Aucun ne franchit un seuil. Un composant peut citer
+`theme.primary.vivid.700` ou `theme.success.soft.700` pour un texte dans toutes
+les marques.
 
 Le thème sombre a sa propre courbe, avec les mêmes numéros. Le cran 50 est le
 fond de page dans les deux thèmes : le plus clair en clair, le plus sombre en
@@ -53,7 +56,7 @@ et son cran 500 y va de 2,2:1 à 6,9:1.
 | Collection | Modes | Contenu |
 |---|---|---|
 | `primitives` | aucun | Ce que les marques partagent : le neutre, les quatre utilitaires, les espacements, les durées |
-| `brand` | un par marque | Ce qui change d'une marque à l'autre : ses rampes de couleur, sa couleur exacte, le câblage de ses rôles |
+| `brand` | un par marque | Ce qui change d'une marque à l'autre : ses rampes de couleur et sa couleur exacte |
 | `theme` | `light`, `dark` | Les noms que les composants citent. Chaque nom pointe vers sa valeur claire ou sa valeur sombre |
 | `components` | aucun | Les tokens de composants |
 
@@ -95,13 +98,11 @@ cite `theme`.
 | Neutre | `theme.neutral.700` | `primitives.neutral.light.700` | 11 |
 | Utilitaires | `theme.danger.vivid.700` | `primitives.danger.vivid.light.700` | 88 |
 | Rampes de marque | `theme.primary.soft.100` | `brand.palette.primary.soft.light.100` | 44 |
-| Rôles | `theme.role.primary.solid` | `brand.role.light.primary.solid` | 14 |
 | Exceptions | `theme.exception.…` | `brand.exception.light.…` | 0 |
 
-En sombre, la cible remplace `light` par `dark`. `theme` compte 157 variables à
+En sombre, la cible remplace `light` par `dark`. `theme` compte 143 variables à
 deux colonnes. `primitives` compte 198 couleurs : 22 pour le neutre, 176 pour
-les utilitaires. `brand` en compte 117 par marque : 88 crans, la couleur exacte et
-28 câblages de rôles.
+les utilitaires. `brand` en compte 89 par marque : 88 crans et la couleur exacte.
 
 ### Les réglages et les exceptions de marque
 
@@ -124,16 +125,17 @@ identique aux autres en clair. `brand` porte les deux valeurs de chaque marque,
 et `theme` choisit la claire ou la sombre :
 
 ```text
-brand.exception.light.button.primary.background   A et B → brand.role.light.primary.solid
-brand.exception.dark.button.primary.background    A      → brand.role.dark.primary.solid
+brand.exception.light.button.primary.background   A et B → brand.palette.primary.vivid.light.700
+brand.exception.dark.button.primary.background    A      → brand.palette.primary.vivid.dark.700
                                                   B      → primitives.neutral.dark.200
 theme.exception.button.primary.background         light → brand.exception.light.button.primary.background
                                                   dark  → brand.exception.dark.button.primary.background
 components.button.primary.background           →  theme.exception.button.primary.background
 ```
 
-Une exception fonctionne comme un rôle réservé à un composant. Les six marques
-en renseignent les deux valeurs, y compris celles qui gardent le rôle commun.
+Les six marques renseignent les deux valeurs d'une exception, y compris celles
+qui gardent le cran commun. Une exception sur un fond porte aussi ses états :
+le survol et l'appui en ont chacun une.
 
 Trois règles permettent d'ajouter l'un ou l'autre sans toucher à un composant
 publié :
@@ -233,7 +235,14 @@ et le designer l'ajuste.
 
 La couleur de la charte tombe rarement pile sur un cran. Elle reste hors de la
 rampe, sous `brand.identity.primary`, pour le logo et les aplats imposés par la
-charte. L'outil de génération dit ce qu'elle peut porter.
+charte. L'outil de génération affiche le cran dont elle est la plus proche en
+clarté, et dit ce qu'elle peut porter.
+
+Aucun composant ne la cite. Le fond plein d'un bouton prend le cran 700 dans
+toutes les marques, quel que soit le cran de la couleur de charte. Une couleur
+plus claire que le 700 donne donc un bouton plus foncé qu'elle, et l'outil de
+génération le signale. Material 3 procède de même : la couleur choisie donne la
+teinte de la palette, et le bouton prend toujours le même ton.
 
 Exemple, un jaune de marque très clair (clarté 0,85, teinte 95°) :
 
@@ -261,44 +270,48 @@ Les couleurs sortent en sRGB. Display P3 est écarté : il changerait toutes les
 valeurs, et un écran sRGB ne montre pas la différence au designer qui les
 choisit.
 
-## 4. Les rôles
+## 4. Les emplois et les états
 
-Un rôle est un nom que le composant cite, et que chaque marque relie au cran de
-son choix. Les marques ne visent pas toutes le même cran : une marque très
-claire ne remplit pas un bouton avec son cran 700 sans perdre son identité, une
-autre mène avec sa couleur secondaire.
+Un composant cite un cran de `theme`, et ce cran est le même dans toutes les
+marques. Aucune marque ne relie un emploi à un autre cran. Un cran câblé par
+marque obligerait à câbler aussi chacun de ses états, survol, appui et focus,
+dans chaque marque et chaque thème.
 
-```text
-theme.role.primary.solid        light → brand.role.light.primary.solid
-                                dark  → brand.role.dark.primary.solid
+La table des emplois fixe le cran de chaque usage et de chacun de ses états.
+Elle vaut pour toutes les rampes, marques et utilitaires, et pour les deux
+profils.
 
-brand.role.light.primary.solid  marque A → brand.palette.primary.vivid.light.700
-                                marque B → brand.palette.secondary.vivid.light.700
-                                marque C → brand.identity.primary
-```
+| Emploi | Repos | Survol | Appui | Paire vérifiée | Minimum |
+|---|---|---|---|---|---|
+| `solid`, fond plein d'un bouton, d'un badge | 700 | 800 | 900 | `neutral.50` sur le fond, 4,5:1 | 5,23 · 7,45 · 10,50 |
+| `text`, texte de marque sur le fond de page | 700 | | | contre le fond de page, 4,5:1 | 5,23 |
+| `surface`, fond teinté discret | 100 | 200 | 300 | texte 700, 800, 900 sur le fond, 4,5:1 | 4,99 · 6,32 · 7,28 |
+| `border-control`, contour d'un champ, d'une case | 600 | 700 | 800 | contre `surface` au même état, 3:1 | 3,46 · 4,46 · 5,25 |
+| `border-decorative`, séparateur, filet | 300 | | | aucune | |
+| `focus`, anneau de focus | 600 | | | contre le fond de page, 3:1 | 3,63 |
 
-Sept rôles pour `primary`, autant pour `secondary`. Chaque marque câble ces
-quatorze rôles une fois par thème, soit 28 variables dans sa colonne de `brand`.
-Le câblage par défaut tient chaque promesse sur les 360 teintes, les deux
-profils et les deux thèmes.
+Les minimums valent sur 360 teintes, les deux profils et les deux thèmes ; la
+section 5 de `verifier-courbes.mjs` les produit. Une relecture indépendante a
+vérifié que chaque paire tient encore son seuil quand ses deux membres prennent
+des teintes différentes : la garantie ne dépend pas de la dérive.
 
-| Rôle | Emploi | Défaut | Promesse |
-|---|---|---|---|
-| `solid` | Fond plein d'un bouton, d'un badge | cran 700 | `on-solid` s'y lit à 4,5:1 |
-| `on-solid` | Texte posé sur ce fond | `neutral.50` | idem |
-| `text` | Texte de marque sur le fond de page | cran 700 | 4,5:1 |
-| `surface` | Fond teinté discret | cran 100 | `text` s'y lit à 4,5:1 |
-| `border-control` | Contour d'un champ, d'une case | cran 600 | 3:1 |
-| `border-decorative` | Séparateur, filet | cran 300 | aucune |
-| `focus` | Anneau de focus | cran 600 | 3:1 |
+**Un état avance d'un cran**, fond et texte ensemble. Un texte resté au 700 sur
+un fond au 200 tombe à 4,46:1, sous le seuil. En sombre, les mêmes numéros
+s'appliquent : l'état s'éloigne du fond de page dans les deux thèmes.
 
-**Un état avance d'un cran**, fond et texte ensemble. Au survol, un fond au cran
-100 passe au 200, et son texte passe du 700 au 800. Un texte resté au 700 sur un
-fond au 200 tombe à 4,46:1, sous le seuil.
+**Un bouton texte** n'a pas de fond au repos : texte 700. Au survol, il prend
+le fond 200 et le texte 800 ; à l'appui, le fond 300 et le texte 900.
+
+**Un contrôle désactivé** prend les neutres, fond 200 et texte 500, hors seuil :
+WCAG n'exige aucun contraste d'un composant inactif.
 
 **L'anneau de focus laisse un espace** entre lui et le contrôle. Posé au contact
-d'un bouton plein, aucun cran de la rampe ne s'en détache à 3:1. En CSS, un
-`outline-offset` non nul.
+d'un bouton plein, aucun cran de la rampe ne s'en détache à 3:1 : l'anneau 600
+au contact du 700 donne 1,40:1. En CSS, un `outline-offset` non nul.
+
+**La palette `primary` d'une marque porte ses actions**, pas forcément la
+première couleur de sa charte. Une marque qui mène avec sa deuxième couleur la
+place dans `primary` en générant ses palettes, sans aucune variable de plus.
 
 ## 5. Un composant différent selon la marque
 
@@ -306,7 +319,7 @@ Prendre la première ligne qui répond au besoin :
 
 | Besoin | Réponse | Exemple |
 |---|---|---|
-| Une autre couleur, pour toute la marque | Relier un rôle ailleurs dans `brand` | La marque B mène avec sa couleur secondaire |
+| Une autre couleur, pour toute la marque | Placer cette couleur dans la palette `primary` de la marque | La marque B mène avec sa couleur secondaire |
 | Une autre valeur, sans être une couleur | Un réglage de marque | Boutons en pilule chez la marque B |
 | Une autre valeur dans un seul thème | Une exception | Bouton gris foncé en sombre chez la marque B |
 | Un autre dessin | Une variante de composant | Une icône présente chez la marque A seulement |
@@ -327,9 +340,8 @@ préférence du système ; la feuille n'émet aucune règle `prefers-color-schem
 
 ## 7. Ce que coûte une marque
 
-Environ cinq décisions : la couleur primaire et la secondaire en hexa, leurs
-teintes de bout sombre si la proposition ne convient pas, et les rôles à relier
-ailleurs quand un contrôle refuse le câblage par défaut.
+Quatre décisions : la couleur primaire et la secondaire en hexa, et leurs
+teintes de bout sombre si la proposition ne convient pas.
 
 Une nouvelle colonne de mode dans Figma recopie les valeurs de la première. Une
 marque ajoutée paraît donc couverte avant d'être renseignée : relire chacune de
@@ -342,7 +354,9 @@ ses variables avant de la publier.
   se confondent.
 - Les teintes de bout sombre proposées par défaut, famille par famille.
 - Les contrôles automatiques sur `tokens.json` : graphe d'alias, couverture de
-  chaque marque et de chaque thème, promesses des rôles. Aucun n'est écrit.
+  chaque marque et de chaque thème, paires de la table des emplois. Aucun n'est
+  écrit. Les paires texte et fond d'un composant se lisent dans ses contrats,
+  qui situent chaque peinture, et non dans les noms de ses tokens.
 
 Avant d'étendre à la bibliothèque, un prototype à six marques éprouve les cas
 limites : un jaune clair, un bleu très sombre, une teinte très vive, une marque
@@ -355,6 +369,7 @@ focus, un libellé long, une exception en sombre, un élément `soft` à côté 
 - [Understanding the scale, Radix Colors](https://www.radix-ui.com/colors/docs/palette-composition/understanding-the-scale)
 - [How to generate color palettes for design systems, Matt Ström-Awn](https://mattstromawn.com/writing/generating-color-palettes/)
 - [Leonardo, Adobe](https://github.com/adobe/leonardo)
+- [How the color system works, Material 3](https://m3.material.io/styles/color/system/how-the-system-works)
 - [Palette de Tailwind CSS en OKLCH, `theme.css`](https://github.com/tailwindlabs/tailwindcss/blob/main/packages/tailwindcss/theme.css)
 - [Contraste du texte, WCAG](https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html)
 - [Contraste non textuel, WCAG](https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html)

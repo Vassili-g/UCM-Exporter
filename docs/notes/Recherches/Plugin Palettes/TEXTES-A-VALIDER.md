@@ -13,29 +13,16 @@ deux décimales, une distance ΔEok et une part de chroma à deux décimales.
 
 ## Promesses
 
-### Promesse manquée, avec un cran proposé
+Depuis la décision D-O (M7), la table des emplois est fixe : une promesse
+manquée ne propose plus de cran, et aucune promesse n'est non vérifiable.
+
+### Promesse manquée
 
 | Partie | A | B | Retenue |
 |---|---|---|---|
-| Où | {palette}, {mode} : {rôle} sur {autre membre} | {palette} · {rôle} sur {autre membre} ({mode}) | |
-| Quoi | Contraste {valeur} pour {seuil} demandé. | Le contraste tombe à {valeur}, sous {seuil}. | |
-| Geste | Reliez {rôle} au cran {cran proposé}. | Passez {rôle} au cran {cran proposé} dans « Rôles ». | |
-
-### Promesse manquée, sans cran proposé
-
-| Partie | A | B | Retenue |
-|---|---|---|---|
-| Où | {palette}, {mode} : {rôle} sur {autre membre} | {palette} · {rôle} sur {autre membre} ({mode}) | |
-| Quoi | Contraste {valeur} pour {seuil} demandé. Aucun cran de la rampe ne le tient. | Le contraste tombe à {valeur}, sous {seuil}, et aucun cran de la rampe ne le remonte. | |
-| Geste | Reliez {rôle} à une autre cible dans « Rôles », ou changez le fond de référence. | Choisissez une autre cible pour {rôle}, ou un autre fond dans la configuration. | |
-
-### Promesse non vérifiable
-
-| Partie | A | B | Retenue |
-|---|---|---|---|
-| Où | {palette}, {mode} : {rôle}+{n} sur {autre membre} | {palette} · état {survol ou appui} de {rôle} ({mode}) | |
-| Quoi | {rôle} vise {le fond ou la référence} : aucun cran ne le suit. Ou : {rôle}+{n} dépasse le cran {dernier cran}. | L'état {survol ou appui} n'a pas de cran : {rôle} vise {le fond ou la référence}, ou le cran {dernier cran} est dépassé. | |
-| Geste | Reliez {rôle} à un cran d'où deux crans suivent. | Reliez {rôle} à un cran plus bas dans la rampe. | |
+| Où | {palette}, {mode}, {profil} : {emploi} {état} sur {autre membre} | {palette} · {emploi} {état} sur {autre membre} ({mode}, {profil}) | |
+| Quoi | Contraste {valeur} pour {seuil} demandé : le cran {cran} ne tient pas la table des emplois. | Le contraste tombe à {valeur}, sous {seuil}, au cran {cran} que les composants citent. | |
+| Geste | Réglez la dérive ou les parts de la palette, ou la courbe {mode} dans la configuration. | Ajustez la dérive ou les parts propres de la palette ; si toutes les palettes échouent, la courbe {mode}. | |
 
 ## Alertes
 
@@ -45,7 +32,21 @@ deux décimales, une distance ΔEok et une part de chroma à deux décimales.
 |---|---|---|---|
 | Où | {palette}, crans {liste « mode cran »} | {palette} · soft et vivid, {liste « mode cran »} | |
 | Quoi | soft et vivid ne s'écartent que de {distance} ΔEok, sous {seuil}. | soft et vivid se confondent : {distance} ΔEok, pour un écart de {seuil} attendu. | |
-| Geste | Éloignez les parts de chroma des deux profils dans la configuration, ou reliez le rôle à un autre cran. | Écartez les parts de soft et vivid (configuration), ou choisissez un autre cran pour ce rôle. | |
+| Geste | Éloignez les parts de chroma des deux profils dans la configuration. | Écartez les parts de soft et vivid dans la configuration. | |
+
+### Référence plus claire que le bouton
+
+Le message montre les deux pastilles côte à côte : la référence et le cran 700
+`vivid` en clair. Une variante C, plus courte, suit le tableau.
+
+| Partie | A | B | Retenue |
+|---|---|---|---|
+| Où | {palette}, couleur de référence {hexa} | {palette} · référence {hexa} | |
+| Quoi | Les boutons ne seront pas de cette couleur. Au cran 700, qui porte les boutons et les textes, elle devient {hexa 700}, plus foncée. | Trop claire pour porter un texte blanc lisible : les boutons prendront {hexa 700}, sa version plus foncée au cran 700. | |
+| Geste | Gardez cette couleur pour le logo et les aplats de charte, ou choisissez une référence plus sombre. | La couleur exacte reste disponible pour le logo. Pour un bouton plus proche d'elle, saisissez une référence plus sombre. | |
+
+Variante C, en une ligne : « Bouton : {hexa 700} au lieu de {hexa}, plus
+foncé pour que le texte blanc se lise. »
 
 ### Palettes proches
 
@@ -160,9 +161,7 @@ où et quoi sur la même ligne ; le geste est commun, en fin de liste :
 | `origine-inconnue` | {champ} : origine « {valeur} » inconnue. | « {valeur} » n'est pas une origine connue ({champ}). | |
 | `identifiant-forme` | Palette « {valeur} » : identifiant mal formé. | L'identifiant « {valeur} » n'a pas la forme p- suivi de huit chiffres hexadécimaux. | |
 | `identifiants-uniques` | Deux palettes portent l'identifiant « {valeur} ». | L'identifiant « {valeur} » revient deux fois. | |
-| `role-absent` | Câblage commun : le rôle {rôle} manque. | Le câblage commun ne dit pas où va {rôle}. | |
-| `cible-forme` | {où}, rôle {rôle} : cible mal formée. | La cible de {rôle} ({où}) n'est ni un cran, ni le fond, ni la référence. | |
-| `cible-cran-inconnu` | {où}, rôle {rôle} : le cran {valeur} n'existe pas. | {rôle} vise le cran {valeur}, absent de la liste des crans ({où}). | |
+| `crans-emplois` | Crans : le cran {valeur} manque, et la table des emplois l'emploie. | La liste des crans doit contenir {valeur}, que les composants citent. | |
 
 ## Questions pour le mainteneur
 

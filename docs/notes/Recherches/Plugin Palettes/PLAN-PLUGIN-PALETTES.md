@@ -13,8 +13,9 @@ sont dans [Décisions](#décisions).
 
 ## Mode d'emploi
 
-- Les lots s'exécutent dans cet ordre : 0, 1, 2, 8, 3, 4, 5, 6, 7, 9. Le lot 8
-  garde son numéro et ses identifiants de cases (M6). Un lot commence quand le
+- Les lots s'exécutent dans cet ordre : 0, 1, 2, 8, 2b, 3, 4, 5, 6, 7, 9. Le
+  lot 8 garde son numéro et ses identifiants de cases (M6). Le lot 2b reprend
+  le moteur du lot 2 après la décision D-O (M7). Un lot commence quand le
   précédent est commité et poussé.
 - Chaque case porte un identifiant, `L4.3` par exemple. Un commit cite les
   identifiants qu'il ferme, et la case se coche dans ce même commit.
@@ -102,6 +103,7 @@ devenu vrai avec le test qui le tient, CONTRIBUTING.md pour une commande. Le lot
 | D-C | Abscisse du graphe de dérive | Le rang du cran, onze positions régulières. La courbe devient une ligne brisée qui passe par la dérive de chaque cran | [DER-01], [DER-16] |
 | D-D | Moment où la recette se range dans le fichier | Automatiquement, à la fin de chaque geste : relâcher une poignée, valider un champ, créer ou supprimer une palette. Jamais pendant un glisser | [REC-06], [DER-13] |
 | D12 | Nom des deux profils | `soft` et `vivid`, comme l'architecture. Renommés au lot 2, avant qu'une recette soit rangée dans un fichier : aucune migration de lecture. Après la première recette rangée, un renommage demandera une migration | D12, et chaque mention des profils |
+| D-O | Où se décide le cran d'un emploi | Nulle part : la table des emplois de l'architecture est fixe, commune à toutes les palettes et aux deux profils. Le fond plein prend le 700 dans toutes les marques. La recette perd `cablage`, sans migration : aucune recette n'est encore rangée. Une référence plus claire que le cran 700 déclenche l'alerte `[VER-12]` (M7) | D9, Q6, §7, §9.4, §11.2, §11.3, §13.2 |
 
 Raison de D-A : `tests/versionSuitLeContenu.test.mjs` exige qu'un contenu
 modifié sous `packages/kit` monte la version du kit. La CLI et l'adaptateur
@@ -117,7 +119,7 @@ défaut s'applique.
 
 | # | Question | Défaut | Avant le lot |
 |---|---|---|---|
-| D-E | L'alerte « Profils confondus » sonne sur 320 teintes sur 360, aux crans 50 et 100 | Elle ne porte que sur les crans que le câblage vise, états `+1` et `+2` compris. Ailleurs, la carte garde sa mention « ≈ » ([PLA-15]) | 2 |
+| D-E | L'alerte « Profils confondus » sonne sur 320 teintes sur 360, aux crans 50 et 100 | Elle ne porte que sur les crans de la table des emplois, états `+1` et `+2` compris. Ailleurs, la carte garde sa mention « ≈ » ([PLA-15]) | 2 |
 | D-F | « Référence plus vive que `vivid` » sonne pour toute couleur au plafond du gamut | Elle devient une notice | 2 |
 | D-G | Une référence presque grise donne une rampe vive : `#6B7280` produit `#0E44F7` en `vivid.700` | Sous `seuils.chromaGrise`, la palette reçoit des parts propres égales à la part de la référence, marquées `origine: "grise"`. Elles disparaissent si la référence cesse d'être grise. L'alerte « Profils confondus » se tait pour cette palette | 2 |
 | D-H | Un calque ajouté par le designer dans un cadre disparaît au redessin ([PLA-03]) | Le plugin compte ces calques avant de redessiner et demande confirmation, en les nommant. Chaque calque posé par le plugin porte un marqueur | 6 |
@@ -126,10 +128,10 @@ défaut s'applique.
 | D-K | Format de l'identifiant d'une palette | `p-` suivi de huit chiffres hexadécimaux tirés au hasard dans l'interface. Le moteur reste sans hasard | 2 |
 
 Mesure faite au lot 0 sur D-E : à dérive nulle, l'alerte portée sur tous les
-crans sonne pour 320 teintes, aux crans 50, 100 et 950. Bornée aux crans
-câblés, elle sonne encore pour 249 teintes, parce que le câblage par défaut
-vise `vivid.100` pour `surface` : le cran 100 confond les deux profils sur 216
-teintes en clair et 39 en sombre. Le défaut s'applique tel quel, et
+crans sonne pour 320 teintes, aux crans 50, 100 et 950. Bornée aux crans de la
+table des emplois, elle sonne encore pour 249 teintes, parce que `surface` vise
+le cran 100 : ce cran confond les deux profils sur 216 teintes en clair et 39
+en sombre. Le défaut s'applique tel quel, et
 `[VER-11]` porte ces nombres ; le mainteneur peut le revoir avant le lot 2.
 
 ## Écarts à corriger dans la spécification
@@ -327,6 +329,45 @@ réduite à l'ordre des modules du bundle, montrée dans le commit. Un besoin qu
 le plugin Palettes découvre plus tard se règle dans le socle, sous la même
 preuve.
 
+## Lot 2b : table fixe des emplois
+
+Exécuté après le lot 8 et avant le lot 3 (D-O, M7). Spécification :
+[section 11.2](./RECHERCHE-PLUGIN-PALETTES.md#112-promesses-des-emplois),
+[section 11.3](./RECHERCHE-PLUGIN-PALETTES.md#113-alertes),
+[section 7.1](./RECHERCHE-PLUGIN-PALETTES.md#71-contenu). Même paquet
+`packages/couleur`. Aucune recette n'est rangée dans un fichier :
+`FORMAT_RECETTE` reste à 1, sans migration.
+
+- [ ] **L2b.1** `recette.ts` : retirer `cablage` de `Recette`, de `Palette`, de
+  `recetteParDefaut` et de la liste des clés connues. Retirer `Cible`,
+  `Cablage`, `validerCible`, `validerCablage` et les règles `role-absent`,
+  `cible-forme`, `cible-cran-inconnu`. Une clé `cablage` devient une
+  `cle-inconnue`. Ajouter la règle `crans-emplois` ([VER-05]) : `crans`
+  contient 100, 200, 300, 600, 700, 800 et 900.
+- [ ] **L2b.2** Table des emplois : `Role` devient `Emploi`, et une constante
+  exportée donne son cran à chaque emploi (§11.2), `on-solid` valant le fond.
+  Le nom la range là où `promesses.ts` et `alertes.ts` la lisent, sans cycle
+  d'import.
+- [ ] **L2b.3** `palette.ts` : retirer `cablageDe`.
+- [ ] **L2b.4** `promesses.ts` : les quatorze paires sur la table fixe, pour
+  chaque mode et chaque profil, 56 par palette. Retirer `Proposition`, la
+  recherche du cran proposé et le verdict `non-verifiable` ([VER-06]). Une
+  promesse porte son profil.
+- [ ] **L2b.5** `alertes.ts` : `rangsCables` devient les crans de la table, états
+  compris ([VER-11]) ; alerte `reference-plus-claire-que-bouton` ([VER-12]),
+  mesurée sur `courbes.light` au cran 700, portant la référence et l'hexa du
+  cran 700 `vivid` en clair.
+- [ ] **L2b.6** Tests : ceux du câblage et du cran proposé retirés ; chaque
+  paire vue tenir et échouer pour chaque profil ; `crans-emplois` vue refuser ;
+  `[VER-12]` vue sonner pour `#FACC15` (yellow-400 de Tailwind, clarté 0,86) et
+  se taire pour `#1D4ED8` (blue-700, clarté 0,49). Les vecteurs de §6.8 restent verts.
+- [ ] **L2b.7** `TEXTES-A-VALIDER.md` est déjà à jour pour ce lot (M7) : ne pas
+  le réécrire. AGENTS.md : carte du code de `packages/couleur` si un fichier
+  change de rôle.
+
+Critère : suite, typecheck et build verts ; aucune occurrence de `cablage`
+ni de `Cible` dans `packages/couleur` ; chaque règle neuve vue rouge.
+
 ## Lot 3 : squelette du plugin
 
 Spécification : [section 13](./RECHERCHE-PLUGIN-PALETTES.md#13-linterface),
@@ -395,7 +436,7 @@ avec E22.
   « Dessiner » inactif jusqu'au lot 6 et marqué comme tel.
 - [ ] **L4.2** Référence et nom ; part de chroma et cran le plus proche.
 - [ ] **L4.3** Aperçu [UI-04] : bascule `light` et `dark`, deux rampes de onze
-  pastilles de 24 px ; survol et focus donnent nom, hexa, contrastes, rôles.
+  pastilles de 24 px ; survol et focus donnent nom, hexa, contrastes, emplois.
   Tabulation mobile sur les pastilles, flèches pour se déplacer.
 - [ ] **L4.4** Promesses manquées, puis alertes, puis notices, dans l'ordre de
   L2.3, avec les textes provisoires.
@@ -491,7 +532,7 @@ Spécification : [section 9](./RECHERCHE-PLUGIN-PALETTES.md#9-sortie-1--la-planc
 - [ ] **L6.1** `src/planche/modele.ts` [ARC-07] : arbre pur de cadres, textes,
   couleurs, tailles et noms de calque, calculé depuis la recette rangée
   ([ARC-11]).
-- [ ] **L6.2** Cadre de palette §9.2, carte de cran §9.3, table des rôles
+- [ ] **L6.2** Cadre de palette §9.2, carte de cran §9.3, table des emplois
   §9.4, grille de contraste §9.5 : [PLA-07] à [PLA-18], [PLA-21] à [PLA-23].
 - [ ] **L6.3** Peinture selon le profil du document, table de §6.7.
 - [ ] **L6.4** Empreinte du modèle (E2).
@@ -542,10 +583,10 @@ et repris.
 Spécification : [section 8.3](./RECHERCHE-PLUGIN-PALETTES.md#83-la-recette-commune),
 [section 10](./RECHERCHE-PLUGIN-PALETTES.md#10-sortie-2--la-recette-et-le-rapport).
 
-- [ ] **L7.1** Configuration, à la suite de 4c : fonds, autres seuils, câblage
-  commun ; nombre de palettes touchées par champ [ENT-05] [ENT-07] [ENT-08].
-- [ ] **L7.2** Palette, sections repliées « Avancé » (parts propres, D-G
-  visible) et « Rôles » (câblage propre).
+- [ ] **L7.1** Configuration, à la suite de 4c : fonds et autres seuils ;
+  nombre de palettes touchées par champ [ENT-05] [ENT-07] [ENT-08].
+- [ ] **L7.2** Palette, section repliée « Avancé » (parts propres, D-G
+  visible).
 - [ ] **L7.3** Export de la recette [REC-07] ; import avec écart par
   identifiant et confirmation [REC-08].
 - [ ] **L7.4** Gestes de sortie d'une recette illisible ou future (E19).
@@ -578,6 +619,7 @@ Critère : scénario de L7.7 vert.
 | M4 | L6.16 | Rejouer la recette de §16 et rendre ses constats | 7 |
 | M5 | L8.9 | Ouvrir UCM Exporter dans Figma, analyser un composant, publier | tous |
 | M6 | interlude du lot 2 | Trancher le placement de la configuration, la réaction à une courbe hors garantie et le moment de l'extraction du socle | aucun : l'ordre des lots en dépend |
+| M7 | interlude après le lot 8 | Trancher le sort des rôles câblés et valider les textes du lot 2b | tous ; les textes validés remplacent les provisoires au lot 4 |
 
 ## Journal des points mainteneur
 
@@ -643,3 +685,34 @@ d'UCM Exporter ont le même innerHTML et le même style calculé qu'avant
 l'extraction, sur 23 067 éléments. La suite, le typecheck, le build et
 `test:ui` sont verts. Ce qui ne se prouve pas hors de Figma : le sandbox
 (la fenêtre lit et range sa taille par le socle) et une publication réelle.
+
+### M7 : rôles câblés et table des emplois
+
+Ouvert par le mainteneur après le lot 8, pendant la mise à jour de
+l'architecture multi-marques.
+
+Question : un rôle câblé par marque vers un cran oblige à câbler aussi chacun
+de ses états, survol, appui et focus, dans chaque marque et chaque thème.
+Faut-il garder le câblage ?
+
+Préparé : une relecture indépendante a mesuré les paires d'état sur une table
+fixe, 360 teintes, deux profils, deux modes, en flottant, à 8 bits, avec la
+dérive de Tailwind et sous une borne où les deux membres prennent des teintes
+indépendantes. Aucune paire n'échoue ; le pire cas vaut 4,79 pour le texte 700
+sur la surface 100. Chaque saut d'état dépasse 0,04 en ΔEok. Une couleur de
+charte de clarté moyenne donne un cran 700 proche d'elle ; une couleur claire
+donne un bouton plus foncé, une couleur quasi noire un bouton gris moyen.
+
+Réponses du mainteneur :
+
+- aucun câblage : la table des emplois est fixe, le fond plein prend le 700
+  dans toutes les marques, survol 800, appui 900 (D-O) ;
+- pas d'inversion du texte pour une marque claire : le bouton reste au 700,
+  avec le texte `on-solid` ;
+- la couleur de charte se place au cran dont elle est la plus proche, et le
+  plugin avertit quand elle est plus claire que le 700 (`[VER-12]`) ;
+- une marque quasi noire garde des boutons gris.
+
+Préparé pour le lot 2b : la spécification, ce plan et
+[TEXTES-A-VALIDER.md](./TEXTES-A-VALIDER.md), dont les textes des promesses et
+de `[VER-12]` attendent le choix du mainteneur, comme ceux de M2.

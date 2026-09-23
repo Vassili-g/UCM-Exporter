@@ -6,8 +6,8 @@ multi-marques](../Archi%20Tokens%20Multi-marques/ARCHITECTURE-FINALE-MULTIMARQUE
 et les dessine dans le fichier Figma. Une palette part d'une couleur de
 référence et produit quatre rampes de onze crans : `soft` et `vivid`, en clair
 et en sombre. La planche dessinée montre, pour chaque cran, son hexa, ses
-valeurs OKLCH, ses contrastes, le seuil qu'il tient et les rôles qu'un câblage
-proposé lui confie.
+valeurs OKLCH, ses contrastes, le seuil qu'il tient et les emplois que la table
+de l'architecture lui confie.
 
 Une palette ne sait pas à quoi elle sert : couleur de marque, utilitaire ou
 autre. Le designer lui donne un nom s'il le souhaite, et ce nom n'a aucun effet
@@ -21,7 +21,8 @@ critique](./REVUE-CRITIQUE-PLUGIN-PALETTES.md).
 
 ## 1. Statut et lecture
 
-- **Statut** : spécification. Aucune ligne de code n'existe.
+- **Statut** : spécification en cours d'implémentation. Le plan coche les lots
+  livrés.
 - **Utilisateur** : l'équipe du design system.
 - **Dépôt** : ce monorepo, en paquet séparé d'UCM Exporter. Le renommage du
   dépôt en UCM-Kit est prévu ; ce plugin ne l'attend pas et ne le prépare pas.
@@ -52,7 +53,7 @@ critique](./REVUE-CRITIQUE-PLUGIN-PALETTES.md).
 | Mode | `light` ou `dark` : la courbe de clarté employée |
 | Dérive de teinte | La rotation de teinte, en degrés, entre la couleur de référence et chaque bout de la rampe |
 | Fond de référence | L'hexa contre lequel se mesurent les contrastes d'un mode |
-| Rôle | Un emploi, `text` ou `solid` par exemple, et le cran que le câblage proposé lui confie |
+| Emploi | Un usage d'un cran, `text` ou `solid` par exemple. La table des emplois de l'architecture lui fixe un cran, et un cran par état |
 | Recette | Tous les nombres qui fabriquent les palettes du fichier |
 | Planche | Les cadres que le plugin dessine dans Figma |
 
@@ -68,7 +69,7 @@ critique](./REVUE-CRITIQUE-PLUGIN-PALETTES.md).
 | D6 | Le plugin n'a aucun accès réseau | La recette exportée se range à la main dans un dépôt |
 | D7 | Le moteur de couleur est un module pur, rangé dans le paquet privé `packages/couleur`, nom `ucm-couleur`, servi en source | Le plugin et ses tests emploient le même code. Le moteur entre dans le kit le jour où un lecteur de `tokens.json` en a besoin, avec une montée de version du kit |
 | D8 | Les contrastes se mesurent contre deux fonds de référence saisis, un clair et un sombre | Le plugin ne fabrique pas de rampe neutre |
-| D9 | Les rôles s'affichent comme un câblage proposé, vérifié | Le designer voit quel cran sert à quoi et si la promesse tient ; rien n'est câblé dans le fichier |
+| D9 | Les emplois forment une table fixe, celle de l'architecture, commune à toutes les palettes | Le designer voit quel cran sert à quoi et si la promesse tient. Aucune palette ne relie un emploi à un autre cran, et la recette ne porte aucun câblage |
 | D10 | La recette rangée dans le fichier Figma fait autorité ; le JSON exporté en est une copie | Un import de JSON est un geste explicite, précédé de l'écart |
 | D11 | Les couleurs produites sont des hexas sRGB à 8 bits par canal | Chaque contraste et chaque distance se calcule sur l'hexa, jamais sur le flottant |
 | D12 | Les profils se nomment `soft` et `vivid`, comme dans l'architecture | La recette, le moteur et la planche emploient ces deux noms. Aucune recette n'était rangée quand le nom a changé : la lecture n'a pas de migration pour `subtle` |
@@ -88,7 +89,7 @@ paramètre de la recette.
 | Q3 | Seuil de confusion entre profils | 0,02 en distance Oklab | Recette, `seuils` |
 | Q4 | Gamut de fabrication | sRGB, tranché par l'architecture, qui écarte Display P3 | Recette, `gamut`, qui n'accepte que `srgb` |
 | Q5 | Fonds de référence | `#F7F7F7` en clair, `#121212` en sombre : le gris de clarté 0,975 et 0,18 | Recette, `fonds` |
-| Q6 | Profil visé par le câblage proposé | `vivid` pour les rôles qui visent un cran | Recette, `cablage` |
+| Q6 | Profil vérifié par les promesses | Les deux, `soft` et `vivid` | Aucun endroit : la table des emplois vaut pour les deux profils |
 | Q7 | Dérive d'une palette nouvelle | Préréglage Tailwind | Réglage de la palette |
 
 Les courbes et les parts de chroma sont des choix visuels : l'architecture les
@@ -103,7 +104,7 @@ Le plugin fait :
 - fabriquer, pour chaque palette, ses quatre rampes ;
 - régler la dérive de teinte aux deux bouts, avec un aperçu en direct ;
 - mesurer les contrastes de chaque cran contre les fonds de référence ;
-- vérifier les promesses des rôles sur le câblage proposé ;
+- vérifier les promesses de la table des emplois ;
 - signaler les alertes ;
 - dessiner un cadre par palette, et le redessiner quand la recette change ;
 - ranger la recette dans le fichier, l'exporter et l'importer en JSON ;
@@ -318,7 +319,7 @@ référence n'entre pas dans les dépendances du paquet.
 | `#767676` sur `#FFFFFF` | contraste 4,54 |
 | `#1E6FD9` | `L ≈ 0,555`, `C ≈ 0,179`, `H ≈ 257,4` |
 | `plafond(0.5, h, srgb)` sur 360 teintes | jamais hors gamut, et une chroma supérieure de `1e-3` en sort |
-| dérives nulles, 360 teintes, deux profils, deux modes | les quatorze promesses de la [section 11.2](#112-promesses-des-rôles) tenues après arrondi |
+| dérives nulles, 360 teintes, deux profils, deux modes | les quatorze promesses de la [section 11.2](#112-promesses-des-emplois) tenues après arrondi |
 | gris de clarté 0,975 et 0,180 | `#F7F7F7` et `#121212`, les fonds par défaut |
 | toute dérive, toute référence dans `[Ls, Lc]` | la teinte à la clarté `La` vaut `Ha` |
 
@@ -348,11 +349,13 @@ Deux outils qui la lisent produisent les mêmes hexas.
 | `courbes` | `light` et `dark`, une clarté par cran | Toutes les rampes |
 | `profils` | `soft` et `vivid`, une part de chroma chacun | Toutes les palettes, sauf surcharge |
 | `gamut` | `"srgb"` | Fichier |
-| `fonds` | `light` et `dark`, un hexa chacun | Contrastes et rôles |
+| `fonds` | `light` et `dark`, un hexa chacun | Contrastes, et texte posé sur un fond plein |
 | `seuils` | `texte` 4,5 ; `nonTexte` 3 ; `profilsConfondus` 0,02 ; `palettesProches` 0,05 ; `chromaGrise` 0,03 | Vérifications |
 | `derives` | Les dix-sept paires de Tailwind | Préréglage |
-| `cablage` | La cible proposée pour chaque rôle | Rôles, sauf surcharge |
 | `palettes` | Une entrée par palette, dans l'ordre d'affichage | Palettes |
+
+La table des emplois n'entre pas dans la recette : elle est fixe, et la
+[section 11.2](#112-promesses-des-emplois) la donne.
 
 La recette ne porte pas la planche. L'identifiant de la page et ceux des cadres
 dessinés se rangent sous la clé partagée `ucm_palettes/planche`, que l'export
@@ -369,11 +372,6 @@ Une palette porte :
 | `derive.lien` | `true` quand `soft` et `vivid` partagent la même dérive |
 | `derive.soft`, `derive.vivid` | `clair` et `sombre` en degrés, et `origine` : `tailwind`, `constante` ou `libre` |
 | `parts` | Facultatif : `soft` et `vivid`, une part de chroma chacun, qui remplace celle de la recette, et `origine` : `designer` ou `grise` (`[ENT-09]`) |
-| `cablage` | Facultatif : les rôles que cette palette relie ailleurs que le câblage commun |
-
-Une cible de rôle s'écrit `{ "profil": "vivid", "cran": 700 }`,
-`{ "fond": true }` pour le fond de référence du mode, ou
-`{ "reference": true }` pour la couleur de référence.
 
 ### 7.2 Exemple
 
@@ -393,15 +391,6 @@ Une cible de rôle s'écrit `{ "profil": "vivid", "cran": 700 }`,
     "palettesProches": 0.05, "chromaGrise": 0.03
   },
   "derives": [["rose", 12.422, 12.094], ["red", 17.38, 26.042]],
-  "cablage": {
-    "solid": { "profil": "vivid", "cran": 700 },
-    "on-solid": { "fond": true },
-    "text": { "profil": "vivid", "cran": 700 },
-    "surface": { "profil": "vivid", "cran": 100 },
-    "border-control": { "profil": "vivid", "cran": 600 },
-    "border-decorative": { "profil": "vivid", "cran": 300 },
-    "focus": { "profil": "vivid", "cran": 600 }
-  },
   "palettes": [
     {
       "id": "p-3fa2c91e",
@@ -451,7 +440,8 @@ dix-sept paires.
   sombre croissante, clartés dans `[0, 1]`, parts dans `[0, 1]` avec
   `soft ≤ vivid` dans la recette et après les parts propres de chaque
   palette, dérives dans `[-90, 90]`, seuils strictement positifs, hexas valides,
-  identifiants uniques, cibles de rôle qui désignent un cran existant. `derives`
+  identifiants uniques, `crans` qui contient chaque cran de la table des emplois
+  (`[VER-05]`). `derives`
   compte au moins deux paires, aux noms uniques, aux teintes dans `[0, 360)`, et
   leurs teintes claires sont distinctes : deux teintes claires égales annulent
   le dénominateur de l'interpolation de `dériveTailwind`. Une clé que la
@@ -484,7 +474,6 @@ dix-sept paires.
 | Nom | Texte libre, facultatif | l'hexa de référence |
 | Dérive de teinte | Deux angles par profil, dans l'éditeur de la [section 12](#12-léditeur-de-dérive) | préréglage Tailwind |
 | Part de chroma par profil | Nombre dans `[0, 1]`, facultatif, sous « Avancé » | celle de la recette |
-| Câblage de la palette | Cible par rôle, facultative, sous « Rôles » | le câblage commun |
 
 - `[ENT-01]` Changer la couleur de référence recalcule le préréglage Tailwind.
   Une dérive d'origine `tailwind` suit ce nouveau calcul ; une dérive `libre` ou
@@ -512,7 +501,8 @@ dix-sept paires.
 - `[ENT-05]` Deux hexas, `fonds.light` et `fonds.dark`, dans la configuration
   de la recette.
   Ils servent de fond de page pour tous les contrastes du mode, de couleur du
-  rôle `on-solid` par défaut, et de fond aux sections de la planche.
+  texte posé sur un fond plein (`on-solid`), et de fond aux sections de la
+  planche.
 - `[ENT-06]` Un fond clair plus sombre que le cran 50 clair, ou un fond sombre
   plus clair que le cran 50 sombre, produit l'alerte « fond hors de la
   courbe » : les contrastes promis par l'architecture supposent le cran 50. La
@@ -522,7 +512,7 @@ dix-sept paires.
 ### 8.3 La recette commune
 
 La configuration de la recette règle ce qui touche toutes les palettes :
-courbes, parts, fonds, seuils, câblage commun. Le bouton en forme d'engrenage
+courbes, parts, fonds, seuils. Le bouton en forme d'engrenage
 de l'en-tête l'ouvre, comme la configuration d'UCM Exporter, et le même
 composant du socle la porte (`[UI-02]`).
 
@@ -540,7 +530,7 @@ composant du socle la porte (`[UI-02]`).
 ## 9. Sortie 1 : la planche
 
 La planche dessine chaque palette dans Figma, avec ses valeurs, ses
-contrastes, ses rôles et ses alertes. Elle sert à relire une palette, à la
+contrastes, ses emplois et ses alertes. Elle sert à relire une palette, à la
 présenter et à comparer des palettes côte à côte.
 
 ### 9.1 Emplacement et propriété
@@ -581,7 +571,7 @@ présenter et à comparer des palettes côte à côte.
 
 ```text
 ┌ Bleu ────────────────────────────────────────────────────────────────────┐
-│ Bleu          recette v1 · empreinte 3fa2c91e · sRGB · 28/28 promesses   │
+│ Bleu          recette v1 · empreinte 3fa2c91e · sRGB · 56/56 promesses   │
 │ Dessiné par UCM Palettes. Ce cadre est remplacé à chaque dessin.         │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ Référence  [■ #1E6FD9]   dérive soft et vivid : clair −7,5° sombre +5,1°│
@@ -594,7 +584,7 @@ présenter et à comparer des palettes côte à côte.
 │  soft   [50]...                                                        │
 │  vivid    [50]...                                                        │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ Rôles     light                        │ dark                            │
+│ Emplois   light                        │ dark                            │
 │  (table de la section 9.4)             │                                 │
 ├──────────────────────────────────────────────────────────────────────────┤
 │ Alertes   (une ligne par alerte, section 11.3)                           │
@@ -610,7 +600,9 @@ présenter et à comparer des palettes côte à côte.
   large : pastille, hexa, OKLCH, part de chroma, cran le plus proche en clarté,
   contraste contre le blanc, le noir et les deux fonds, verdict de chaque
   contraste contre 4,5 et 3. À côté, les dérives de chaque profil et leur
-  origine.
+  origine. Quand l'alerte « Référence plus claire que le bouton » sonne
+  (`[VER-12]`), la carte montre à côté de la référence le cran 700 `vivid` en
+  clair, que les boutons emploient.
 - `[PLA-09]` La section `light` est peinte de `fonds.light`, la section `dark`
   de `fonds.dark`. Chaque rampe se lit ainsi sur le fond où elle servira. Les
   légendes de la section sombre sont claires ; celles de la section claire sont
@@ -635,7 +627,7 @@ présenter et à comparer des palettes côte à côte.
 │ H 258°       │
 │ fond 5,76 4,5│  contraste contre le fond de référence du mode, et le seuil tenu
 │ blanc 6,17   │  le plus fort des contrastes contre le blanc et le noir
-│ text · solid │  les rôles que le câblage proposé confie à ce cran
+│ text · solid │  les emplois que la table confie à ce cran, états compris
 └──────────────┘
 ```
 
@@ -649,43 +641,44 @@ présenter et à comparer des palettes côte à côte.
   l'option de la [section 17](#17-option-ultérieure--créer-les-variables).
 - `[PLA-15]` Une carte où les deux profils se confondent porte la mention
   « ≈ soft » ou « ≈ vivid », sur tous les crans. L'alerte « Profils
-  confondus » ne porte que sur les crans que le câblage vise
+  confondus » ne porte que sur les crans de la table des emplois
   ([section 11.3](#113-alertes)).
 - `[PLA-16]` Le texte de la carte est sélectionnable et copiable : un hexa se
   copie depuis la planche sans ouvrir le plugin.
 
-### 9.4 Les rôles
+### 9.4 Les emplois
 
-Une table par mode, une ligne par rôle : sept lignes. Les rôles sont ceux de
-l'architecture, rapportés à une seule palette.
+Une table par mode et par profil, une ligne par emploi : sept lignes. Les
+emplois et leurs crans sont ceux de la table de l'architecture, les mêmes pour
+toutes les palettes.
 
 | Colonne | Contenu |
 |---|---|
-| Rôle | `text` |
-| Emploi | « Texte sur le fond de page » |
-| Cible proposée | `vivid.700`, `fond` ou `référence` |
+| Emploi | `text` |
+| Usage | « Texte sur le fond de page » |
+| Cran | `700`, ou `fond` pour `on-solid` |
 | Spécimen | Un cadre de 120 × 32 : le fond et le texte de la paire principale, texte « Aa Libellé » |
-| Contraste | Le rapport de la paire principale du rôle |
+| Contraste | Le rapport de la paire principale de l'emploi |
 | Seuil | 4,5, 3 ou un tiret |
-| Verdict | « tenu », « manqué » ou « non vérifiable » |
+| Verdict | « tenu » ou « manqué » |
 
-La paire principale de chaque rôle :
+La paire principale de chaque emploi :
 
-| Rôle | Emploi | Paire principale | Seuil |
-|---|---|---|---|
-| `solid` | Fond plein d'un bouton, d'un badge | `on-solid` sur `solid` | 4,5 |
-| `on-solid` | Texte posé sur ce fond | `on-solid` sur `solid` | 4,5 |
-| `text` | Texte coloré sur le fond de page | `text` sur fond | 4,5 |
-| `surface` | Fond teinté discret | `text` sur `surface` | 4,5 |
-| `border-control` | Contour d'un champ, d'une case | `border-control` sur fond | 3 |
-| `border-decorative` | Séparateur, filet | aucune | aucun |
-| `focus` | Anneau de focus, décalé du contrôle | `focus` sur fond | 3 |
+| Emploi | Usage | Cran | Paire principale | Seuil |
+|---|---|---|---|---|
+| `solid` | Fond plein d'un bouton, d'un badge | 700 | `on-solid` sur `solid` | 4,5 |
+| `on-solid` | Texte posé sur ce fond | fond | `on-solid` sur `solid` | 4,5 |
+| `text` | Texte coloré sur le fond de page | 700 | `text` sur fond | 4,5 |
+| `surface` | Fond teinté discret | 100 | `text` sur `surface` | 4,5 |
+| `border-control` | Contour d'un champ, d'une case | 600 | `border-control` sur fond | 3 |
+| `border-decorative` | Séparateur, filet | 300 | aucune | aucun |
+| `focus` | Anneau de focus, décalé du contrôle | 600 | `focus` sur fond | 3 |
 
 - `[PLA-17]` Sous la table, les paires d'état de la
-  [section 11.2](#112-promesses-des-rôles) : une ligne par paire, sans
+  [section 11.2](#112-promesses-des-emplois) : une ligne par paire, sans
   spécimen.
-- `[PLA-18]` L'en-tête de la table rappelle que le câblage est une proposition :
-  les composants ne le reçoivent pas du plugin.
+- `[PLA-18]` L'en-tête de la table rappelle que ces crans sont ceux que les
+  composants citent, dans toutes les marques.
 
 ### 9.5 La grille de contraste
 
@@ -757,13 +750,25 @@ référence de la recette.
 - `[VER-03]` Chaque cran de chaque rampe reçoit son contraste contre le fond de
   référence de son mode, contre le blanc et contre le noir, et le seuil tenu
   contre le fond.
-- `[VER-04]` Un cran n'a pas de verdict : seul un rôle promet un contraste.
+- `[VER-04]` Un cran n'a pas de verdict : seule une paire de la table des
+  emplois promet un contraste.
 
-### 11.2 Promesses des rôles
+### 11.2 Promesses des emplois
 
-Pour chaque palette et chaque mode, quatorze paires, calculées sur le câblage
-proposé. `R+1` désigne le cran suivant celui que le rôle `R` vise, dans la même
-rampe : l'architecture fait avancer un état d'un cran.
+Pour chaque palette, chaque mode et chaque profil, quatorze paires, sur la
+table des emplois de l'architecture. `R+1` désigne le cran suivant celui que
+l'emploi `R` vise, dans la même rampe : l'architecture fait avancer un état
+d'un cran. `on-solid` est le fond de référence du mode.
+
+| Emploi | Cran |
+|---|---|
+| `solid` | 700 |
+| `on-solid` | fond |
+| `text` | 700 |
+| `surface` | 100 |
+| `border-control` | 600 |
+| `border-decorative` | 300 |
+| `focus` | 600 |
 
 | # | Paire | Seuil |
 |---|---|---|
@@ -782,21 +787,17 @@ rampe : l'architecture fait avancer un état d'un cran.
 | 13 | `focus` sur `surface` | 3 |
 | 14 | `solid+1` sur fond | 3 |
 
-Une palette compte 28 paires : quatorze par mode.
+Une palette compte 56 paires : quatorze par mode et par profil. Les deux
+profils partagent leurs clartés, mais pas leur chroma : leurs contrastes
+diffèrent un peu, et les composants citent l'un comme l'autre.
 
-- `[VER-05]` Une paire est « non vérifiable » quand un de ses membres vise le
-  fond ou la référence et que la paire demande un cran suivant, ou quand `R+1`
-  dépasse le dernier cran de `crans`. Elle s'affiche comme telle, jamais comme
-  tenue.
-- `[VER-06]` Une promesse manquée nomme la paire, le contraste obtenu, le seuil,
-  et le cran de la même rampe qui la tiendrait. Le membre qui vise un cran
-  bouge, le premier si les deux en visent un : pour les paires 5 à 7, le
-  premier membre vise le fond, et `solid` bouge. Si le premier ne trouve aucun
-  cran, le second bouge : `surface` au cran 400 ne laisse aucun cran de `text`
-  tenir la paire 2, et c'est `surface` qui revient au 200. Le cran proposé tient
-  toutes les paires du rôle, dans les deux modes, puisque le câblage leur est
-  commun. Il se cherche par distance croissante au cran courant, et à égalité
-  le plus contrasté l'emporte.
+- `[VER-05]` Les paires visent les crans 100, 200, 300, 600, 700, 800 et 900.
+  `[REC-05]` refuse une recette dont `crans` n'en contient pas un : aucune
+  paire ne peut viser un cran absent.
+- `[VER-06]` Une promesse manquée nomme la paire, le profil, le contraste
+  obtenu et le seuil. Aucun cran ne se propose : la table est commune à toutes
+  les palettes. Le geste qui la lève règle la palette, sa dérive ou ses parts
+  propres, ou la courbe dans la configuration.
 - `[VER-07]` Une promesse manquée n'empêche pas le dessin. Elle s'affiche au
   premier rang, et le verdict de la palette devient « {n} promesses
   manquées ».
@@ -805,7 +806,8 @@ Une palette compte 28 paires : quatorze par mode.
 
 | Alerte | Mesure | Seuil | Portée |
 |---|---|---|---|
-| Profils confondus | ΔEok entre `soft` et `vivid`, même cran et même mode, sur les crans que le câblage vise, états `+1` et `+2` compris | `profilsConfondus` | chaque palette, sauf parts `grise` (`[ENT-09]`) |
+| Profils confondus | ΔEok entre `soft` et `vivid`, même cran et même mode, sur les crans de la table des emplois, états `+1` et `+2` compris | `profilsConfondus` | chaque palette, sauf parts `grise` (`[ENT-09]`) |
+| Référence plus claire que le bouton | clarté de la référence au-dessus de celle du cran 700 de la courbe claire | sans seuil | chaque palette |
 | Palettes proches | ΔEok moyen sur les crans 500, 600 et 700 de `vivid`, en clair | `palettesProches` | chaque paire de palettes de la recette |
 | Couleur presque grise | chroma de la référence | `chromaGrise` | chaque palette |
 | Référence plus terne que `soft` | part de chroma de la référence inférieure à la part de `soft` | sans seuil | chaque palette |
@@ -816,20 +818,27 @@ Une palette compte 28 paires : quatorze par mode.
   le seuil et le geste qui la lève.
 - `[VER-10]` Une référence plus vive que `vivid` est une notice. Toute couleur
   au plafond du gamut la déclencherait, et aucun réglage ne la lève.
-- `[VER-11]` « Profils confondus » ne porte que sur les crans que le câblage
-  vise ; ailleurs, la carte de la planche porte la mention « ≈ » (`[PLA-15]`).
-  À dérive nulle, sur 360 teintes, l'alerte portée sur tous les crans sonne
-  pour 320 teintes, aux crans 50, 100 et 950. Bornée aux crans câblés, elle
-  sonne encore pour 249 teintes : le câblage par défaut vise `vivid.100` pour
-  `surface`, et le cran 100 confond les deux profils sur 216 teintes en clair
-  et 39 en sombre.
+- `[VER-11]` « Profils confondus » ne porte que sur les crans de la table des
+  emplois ; ailleurs, la carte de la planche porte la mention « ≈ »
+  (`[PLA-15]`). À dérive nulle, sur 360 teintes, l'alerte portée sur tous les
+  crans sonne pour 320 teintes, aux crans 50, 100 et 950. Bornée aux crans de
+  la table, elle sonne encore pour 249 teintes : `surface` vise le cran 100, qui
+  confond les deux profils sur 216 teintes en clair et 39 en sombre.
+- `[VER-12]` « Référence plus claire que le bouton » sonne quand la clarté de
+  la référence dépasse celle du cran 700 de `courbes.light`. Le fond plein d'un
+  bouton prend le 700 dans toutes les marques, avec le texte `on-solid` : une
+  référence plus claire donne un bouton plus foncé qu'elle. Le message montre
+  la référence et le cran 700 `vivid` en clair côte à côte. Le geste : garder
+  la référence pour le logo et les aplats de charte, ou choisir une référence
+  plus sombre. L'alerte ne regarde pas le mode sombre, où le bouton est clair
+  et porte un texte foncé.
 
 ### 11.4 Sévérités et messages
 
 | Sévérité | Emploi | Rang dans l'interface |
 |---|---|---|
 | Bloquant | Le dessin ne peut pas se faire : recette illisible ou future, police absente | Premier, avant toute autre ligne |
-| Promesse manquée | Un rôle ne tient pas son seuil | Juste après les bloquants |
+| Promesse manquée | Une paire de la table des emplois ne tient pas son seuil | Juste après les bloquants |
 | Alerte | Une mesure franchit un seuil de conception | Ensuite |
 | Notice | Profil `LEGACY`, cadre orphelin, copie de cadre, référence plus vive que `vivid`, couleur ramenée dans le gamut sRGB | Dernier, en couleur secondaire |
 
@@ -959,13 +968,13 @@ Onglet Palettes, une palette ouverte :
 │ [Light | Dark]                                                │
 │  soft  ▪▪▪▪▪▪▪▪▪▪▪                                          │
 │  vivid   ▪▪▪▪▪▪▪▪▪▪▪                                          │
-│  survol d'une pastille : nom, hexa, contrastes, rôles          │
+│  survol d'une pastille : nom, hexa, contrastes, emplois        │
 ├──────────────────────────────────────────────────────────────┤
 │ Promesses manquées                                            │
-│  text sur surface, dark : 4,31 pour 4,5 · viser le cran 800   │
+│  text sur surface, dark, vivid : 4,31 pour 4,5                │
 │ Alertes                                                       │
 │  proche de « Violet » : ΔEok 0,03 pour 0,05                   │
-│ ▸ Rôles  ▸ Avancé                                             │
+│ ▸ Avancé                                                      │
 └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -1055,7 +1064,7 @@ packages/couleur/                ucm-couleur, privé, le moteur pur    [ARC-01]
   src/rampe.ts                     cran, teinte pivotée, rampe entière
   src/tailwind.ts                  le préréglage et son relevé
   src/contraste.ts                 contraste WCAG, ΔEok, part de chroma
-  src/promesses.ts                 les quatorze paires, sur un câblage résolu
+  src/promesses.ts                 la table des emplois, ses quatorze paires
   src/alertes.ts                   les alertes de la section 11.3
   src/recette.ts                   forme, validation, migration, recette par défaut
   src/empreinte.ts                 JSON canonique, encodeur UTF-8 et FNV-1a
@@ -1181,8 +1190,8 @@ cases et donne son critère de sortie. Chaque lot se termine par `npm test`,
 lot qui touche l'interface passe le protocole de relecture de
 [CONTRIBUTING.md](../../../../CONTRIBUTING.md#le-protocole-de-relecture).
 
-Les lots s'exécutent dans cet ordre : 0, 1, 2, 8, 3, 4, 5, 6, 7, 9. Le lot 8
-garde son numéro, et le plan ses identifiants de cases.
+Les lots s'exécutent dans cet ordre : 0, 1, 2, 8, 2b, 3, 4, 5, 6, 7, 9. Le lot
+8 garde son numéro, et le plan ses identifiants de cases.
 
 | Lot | Contenu | Exigences |
 |---|---|---|
@@ -1190,6 +1199,7 @@ garde son numéro, et le plan ses identifiants de cases.
 | 1 | Moteur de couleur, préréglage Tailwind, dans `packages/couleur` | MOT-01 à MOT-24, MOT-26, MOT-27, ARC-01, ARC-04 |
 | 2 | Promesses, alertes, recette, empreinte | VER-03 à VER-11, ENT-06, ENT-09, REC-02 à REC-05 |
 | 8 | Extraction du socle commun, avant le squelette | ARC-02, ARC-09, ARC-10 |
+| 2b | Table fixe des emplois : câblage retiré de la recette, promesses par profil, alerte de la référence plus claire que le bouton | VER-04 à VER-06, VER-11, VER-12, REC-05 |
 | 3 | Squelette du plugin sur le socle, lecture et rangement de la recette, galerie | ARC-03, ARC-05, ARC-06, ARC-12 à ARC-15, REC-01, REC-04, REC-10, UI-01, UI-02, UI-07, UI-08 |
 | 4 | Onglet Palettes, aperçu, gestion des palettes ; configuration des courbes, des parts et du seuil de profils confondus | ENT-01 à ENT-04, ENT-07, ENT-10, REC-06, UI-03 à UI-06, ARC-11 |
 | 5 | Éditeur de dérive | DER-01 à DER-16, ARC-08 |
